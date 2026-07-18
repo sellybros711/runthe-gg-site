@@ -10391,6 +10391,28 @@ allows Google Fonts, or self-host Anton.*
     call; the shot text is generic) — a polish item; and team modes (Best Ball / Scramble) decisions.
     Tunable: `H2H_DEC_MODES`, the bot aggression in `h2hGenBotDec`.
 
+- **CS438 — bonus coins for specialty-event success in career mode (owner: "reward different types of
+  success in career mode with bonus coins... not enough ways to make coins by actually playing. Simming
+  shouldn't reward coins. winning your Ryder cup matches, winning Ryder cup, winning Olympics, silver,
+  bronze, winning captaincy, etc").** The season coin reward (`seasonCoins`) only counted tour wins/majors/
+  finishes, so the team-cup + international-medal successes paid nothing. New `seasonBonusCoins()` awards:
+  - **Team Cup (Atlantic/Nations)**: **150 per match you win** (rewarded even if your team loses the Cup —
+    it's *your* matches), a **500** perfect-5-0-week bonus, **1,200** for winning the Cup (played), and
+    **1,800** for a **captaincy** Cup win.
+  - **The Games (international medals)**: **gold 2,000 / silver 1,200 / bronze 800**.
+  - **Cup Champion** (Tour Cup / Legends Cup playoff title): **1,500**.
+  So a grand year (win the Cup with 2 match wins + a gold medal + the Tour Cup) = **5,000** bonus coins on
+  top of the season reward.
+  Awarded once at the season summary, folded into the single season-coins toast (lists the feats, e.g.
+  "3 cup matches won · won the Cup · gold medal") so it doesn't clobber it. **Gated on `!S.season.skipped`**
+  — a season SIMMED to the end (Skip to End) forfeits ALL of these (matching the existing seasonCoins skip
+  rule), so you only earn them by actually playing/watching the events through. A fan whose nation won but
+  who wasn't selected, and a captain whose team lost, correctly earn nothing.
+  Verified in Playwright across all cases (player cup win 1,650; perfect 5-0 + cup 2,450; match wins in a
+  team loss 150; captaincy win 1,800; captain loss 0; fan-only 0; gold/silver/bronze 2,000/1,200/800; Tour
+  Cup 1,500; grand year 5,000; empty 0), 0 page errors. Deployed to /golf. Tunable: `COIN_CUP_MATCH`,
+  `COIN_CUP_WIN`, `COIN_CUP_CAPTAIN_WIN`, `COIN_CUP_PERFECT`, `COIN_MEDAL`, `COIN_TOURCUP`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
