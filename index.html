@@ -366,8 +366,10 @@ window.GA_ID='G-L29P5MRWKE';
     border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px);}
   .nav-in{max-width:var(--maxw);margin:0 auto;height:var(--nav-h);display:flex;align-items:center;gap:12px;
     padding:0 max(16px,env(safe-area-inset-left,0px));}
-  .nav-brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--ink);margin-right:auto;}
-  .nav-brand img{width:30px;height:30px;border-radius:7px;display:block;box-shadow:0 3px 10px -4px rgba(0,0,0,.6);}
+  .nav-brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--ink);margin-right:auto;min-width:0;}
+  .nav-brand .app-icon{width:30px;height:30px;border-radius:7px;display:block;box-shadow:0 3px 10px -4px rgba(0,0,0,.6);}
+  /* the full "Run The Games" wordmark only rides in the top bar on mobile (desktop keeps the big hero banner) */
+  .nav-wordmark{display:none;height:30px;width:auto;}
   .nav-brand .wm{font-weight:900;font-size:17px;letter-spacing:.01em;}
   .nav-brand .wm .gg{color:var(--teal);}
   .nav-acct{display:flex;align-items:center;gap:8px;}
@@ -384,7 +386,15 @@ window.GA_ID='G-L29P5MRWKE';
   .nav-chip .av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:0 0 auto;
     background:linear-gradient(180deg,#35C4CD,#1c8d97);color:#04241f;font-weight:900;font-size:14px;}
   .nav-chip .nm{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  @media (max-width:440px){ .nav-brand .wm{display:none;} .nav-btn{padding:9px 12px;font-size:13px;} }
+  @media (max-width:440px){ .nav-btn{padding:9px 12px;font-size:13px;} }
+  /* Mobile: move the wordmark up into the top bar and drop the oversized hero banner so games surface sooner */
+  @media (max-width:640px){
+    .nav-brand .app-icon, .nav-brand .wm{display:none;}
+    .nav-wordmark{display:block;}
+    .brand.hero .wordmark, .brand:before{display:none;}
+    .brand.hero{padding-top:6px;}
+    .tag{margin-top:2px;}
+  }
 
   /* ---- wider portal layout; keep text columns readable + centered ---- */
   .wrap{max-width:var(--maxw);padding:6px 16px 46px;}
@@ -473,8 +483,9 @@ window.GA_ID='G-L29P5MRWKE';
   <nav class="nav">
     <div class="nav-in">
       <a class="nav-brand" href="/" aria-label="RunThe.GG home">
-        <img src="/assets/runthegames-icon_192.png?v=3" alt="" width="30" height="30" />
+        <img class="app-icon" src="/assets/runthegames-icon_192.png?v=3" alt="" width="30" height="30" />
         <span class="wm">RunThe<span class="gg">.GG</span></span>
+        <img class="nav-wordmark" src="/assets/runthegames-wordmark.png?v=2" alt="Run The Games" width="2172" height="724" />
       </a>
       <div class="nav-acct" id="nav-acct" aria-live="polite">
         <button class="nav-btn ghost" type="button" data-open="signin">Sign in</button>
