@@ -4888,6 +4888,29 @@ function seasonCoins(t, moneyRank){ if(!t) return 0;
   const r=moneyRank||999;
   c += r===1?400 : r<=3?275 : r<=5?180 : r<=10?110 : r<=25?50 : r<=50?20 : 0;
   return Math.round(c); }
+// CS438: SPECIALTY-EVENT bonus coins - the team-cup + international-medal successes that seasonCoins (which
+// only counts tour wins/majors/finishes) doesn't reward. Earned by PLAYING through the season; a SIMMED
+// (Skip-to-End) season forfeits them (gated on !S.season.skipped at the call site). Tunable amounts.
+const COIN_CUP_MATCH=150, COIN_CUP_PERFECT=500, COIN_CUP_WIN=1200, COIN_CUP_CAPTAIN_WIN=1800, COIN_TOURCUP=1500;
+const COIN_MEDAL={gold:2000, silver:1200, bronze:800};
+function seasonBonusCoins(){
+  let total=0; const parts=[];
+  const T=S.season&&S.season.teamCup;
+  if(T){
+    const rec=T.playerRec||{w:0,l:0,h:0};
+    if(T.captain){
+      if(T.mineWon){ total+=COIN_CUP_CAPTAIN_WIN; parts.push('captained the Cup win'); }
+    } else {
+      if(rec.w>0){ total+=rec.w*COIN_CUP_MATCH; parts.push(`${rec.w} cup match${rec.w>1?'es':''} won`); }
+      if(rec.w>=5 && (rec.l||0)===0){ total+=COIN_CUP_PERFECT; parts.push('perfect 5-0 week'); }
+      if(T.playerWon){ total+=COIN_CUP_WIN; parts.push('won the Cup'); }
+    }
+  }
+  const med=S.season&&S.season.olympicMyMedal;
+  if(med && COIN_MEDAL[med]){ total+=COIN_MEDAL[med]; parts.push(`${med} medal`); }
+  if(S.season&&S.season.cupYouWon){ total+=COIN_TOURCUP; parts.push('Cup champion'); }
+  return {total, parts};
+}
 // award + a "spend it" nudge toward the Pro Shop (owner: tell players to spend / buy packs)
 function awardPlayCoins(n, label){ if(!sbSignedIn()||!(n>0)) return 0; addBonusCoins(n,{silent:true});
   try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(label?' · '+label:'')+'<br><span class="small" style="color:#8fe0c4">Spend them at the Pro Shop, or open a pack ▸</span>', 3400); }catch(e){}
@@ -14857,9 +14880,16 @@ function scrSummary(){
     // fraction of it (fewer, not zero). Show the toast even for a simmed season so the payout is visible.
     if(!S.daily && sbSignedIn()){
       const skipped=!!(S.season && S.season.skipped);
-      const amt=Math.round(seasonCoins(t, moneyRank) * (skipped?COIN_SEASON_SKIP:1));
-      if(amt>0){ _coinsSuppressToast=false; awardPlayCoins(amt, skipped?'season simmed to the end':('season'+(t.wins?(' · '+t.wins+' win'+(t.wins>1?'s':'')):''))); }
-      track('season_coins',{year:S.year||1,amt,skipped,wins:t.wins,majors:t.majors,moneyRank});
+      const base=Math.round(seasonCoins(t, moneyRank) * (skipped?COIN_SEASON_SKIP:1));
+      // CS438: specialty-event bonuses (cup matches/win/captaincy, Games medals, Cup champion) - PLAYING only,
+      // a simmed season forfeits them. Folded into the single season-coins toast so it doesn't clobber it.
+      const bonus = skipped ? {total:0,parts:[]} : seasonBonusCoins();
+      const amt=base+bonus.total;
+      if(amt>0){ _coinsSuppressToast=false;
+        let label = skipped?'season simmed to the end':('season'+(t.wins?(' · '+t.wins+' win'+(t.wins>1?'s':'')):''));
+        if(bonus.parts.length) label += ' · ' + bonus.parts.join(' · ');
+        awardPlayCoins(amt, label); }
+      track('season_coins',{year:S.year||1,amt,base,bonus:bonus.total,skipped,wins:t.wins,majors:t.majors,moneyRank});
     }
     // CS412: the header coin pill was built at the top of THIS render pass, BEFORE these season coins were
     // awarded, so it shows the stale pre-award balance until the next render (owner: "coins not going into my
