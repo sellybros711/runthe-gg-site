@@ -10448,6 +10448,18 @@ allows Google Fonts, or self-host Anton.*
   golfer fills it without clipping, more of the item grid on screen, 0 page errors. Deployed to /golf.
   Tunable: the `.shop-preview` height/width.
 
+- **CS441 — season banner Fans counter no longer reads as "red" every event (owner: "every single round,
+  the fans turn red at the start of an event").** The CS434 live Fans counter on the franchise banner
+  used a resting color of `#f78fb3` (pink/salmon), which reads as red for a growing stat — so at the start
+  of every event the newly-rendered banner showed the Fans number in what looked like red. The flash logic
+  is correct (green `#35d6a0` up / red `#E14A33` down on a genuine change, reverting after 1.1s) — the
+  problem was purely the RESTING color. Confirmed fans don't actually drop every event for a cut-making
+  player (they grow on wins/high finishes/decisions, CS398/399), so this is a color fix, not a flash-logic
+  fix. Changed the resting color to `#ff9d3a` (the app's established fans-orange, used in `lbStatVal` +
+  the Popularity meter) at both the render (line ~14194) and the flash-revert (line ~14215), keeping the
+  green up-flash / red down-flash for genuine per-event changes. Verified in Playwright: the banner renders
+  Fans in `rgb(255,157,58)`, 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
