@@ -181,9 +181,9 @@ window.GA_ID='G-L29P5MRWKE';
   .bnprofile:active{transform:translateY(1px)}
   .bnname{font:800 13px/1 var(--body); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:110px}
   .banner .coinhdr{margin-left:0; flex:0 0 auto; padding:6px 12px 6px 10px; font-size:13px}
-  /* on phones the signed-in name is hidden (avatar-only) so the right group stays compact and the
-     centered wordmark never collides with it; guests keep the "Sign in" label */
-  @media (max-width:520px){ .bnprofile.pin .bnname{display:none} .bnprofile.pin{padding:5px 5px} }
+  /* CS433: on phones the profile pill is avatar-only (name/"Sign in" hidden) for both signed-in AND guests,
+     so the left group stays compact and the absolutely-centered wordmark clears it and the right-side pills. */
+  @media (max-width:520px){ .bnprofile .bnname{display:none} .bnprofile{padding:5px 5px} }
   @media (max-width:430px){ .bnwm b{font-size:15px} .bnwm i{font-size:15px} .bnname{max-width:70px} .banner{gap:6px} }
   @media (max-width:380px){ .bnwm b{font-size:13px} .bnwm i{font-size:13px} }   /* CS429: smaller wordmark on tiny phones so it clears the pills */
   /* CS427: skin-tone slider (light→dark). The inline background sets the gradient track. */
@@ -5229,31 +5229,35 @@ function header(){
   const profNew=signedIn && (typeof cosNewTotal==='function') && cosNewTotal()>0;   // CS422: unviewed new items → dot on the profile pill
   const pl=$(`<button class="bnprofile${signedIn?' pin':''}" aria-label="${signedIn?'Your profile':'Sign in'}" style="position:relative">${pxAvatarChip(S.look,26)}<span class="bnname">${signedIn?esc(sbUsername||'Player'):'Sign in'}</span>${profNew?'<span style="position:absolute;top:-2px;right:-2px;width:11px;height:11px;border-radius:50%;background:#e2554e;border:2px solid #0b1a12;box-shadow:0 0 5px rgba(226,85,78,.9)"></span>':''}</button>`);
   pl.onclick=()=>{ if(sbSignedIn()){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} render(); };
-  // CS432: a signed-in player's profile pill sits on the LEFT (next to the menu); a GUEST's wide "Sign in"
-  // pill goes on the RIGHT so the left group is just the menu — that keeps the absolutely-centered wordmark
-  // clear of it and truly centered on the banner.
-  if(signedIn) left.appendChild(pl);
+  // CS432/CS433: the profile pill always sits on the LEFT (next to the menu). The wordmark is absolutely
+  // centered on the banner (see CSS), so it stays centered for guests and signed-in alike.
+  left.appendChild(pl);
   bar.appendChild(left);
-  // brand wordmark, centered horizontally across the banner → home
+  // brand wordmark, absolutely centered horizontally across the banner → home
   const brand=$(`<button class="bnbrand" aria-label="Home"><span class="bnwm"><b>Run The</b><i>Tour</i></span></button>`);
   brand.onclick=()=>{ S.screen='title'; S.overlay=null; render(); };
   bar.appendChild(brand);
-  // right group: legends-token counter + coin pill
+  // right group: legends-token counter + coin pill. CS433: shown for GUESTS too (as "0"), where a tap leads
+  // to the login-walled screen — a couple more nudges to sign up.
   const right=$(`<div class="bnright"></div>`);
-  if(signedIn && (typeof hasFreeLegends==='function') && hasFreeLegends()){   // CS426: playable-Legend counter → jump to your Legends in the daily
-    const n=legendTokensUnused().length;
-    const leg=$(`<button class="legendhdr" aria-label="${n} Legend token${n>1?'s':''}. Play one in today's daily."><span class="li">${ic('legendtoken',{size:'16px'})}</span>${n}</button>`);
-    leg.onclick=()=>{ track('legend_pill_open',{n}); startDailyChallenge();
-      requestAnimationFrame(()=>{ const el=document.getElementById('legend-play'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }); };
+  const hasLeg = signedIn && (typeof hasFreeLegends==='function') && hasFreeLegends();
+  if(!signedIn || hasLeg){   // CS426/CS433: playable-Legend counter (guests see 0 → sign-in nudge)
+    const n = hasLeg ? legendTokensUnused().length : 0;
+    const legLabel = signedIn ? (n+' Legend token'+(n>1?'s':'')+'. Play one in the daily.') : 'Legend golfers. Sign in to unlock.';
+    const leg=$(`<button class="legendhdr" aria-label="${legLabel}"><span class="li">${ic('legendtoken',{size:'16px'})}</span>${n}</button>`);
+    if(signedIn){ leg.onclick=()=>{ track('legend_pill_open',{n}); startDailyChallenge();
+      requestAnimationFrame(()=>{ const el=document.getElementById('legend-play'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }); }; }
+    else { leg.onclick=()=>{ track('legend_pill_guest'); S.overlay='account'; S.acctMode='signup'; S.acctErr='';
+      S.acctNote='Finish a career to earn Legend golfers, then replay the daily as them for free.'; render(); }; }
     right.appendChild(leg);
   }
-  if(SHOP_ENABLED && signedIn){   // global coin counter (owner: everywhere, tap → Pro Shop). Signed-in only.
-    const bal=coinBalance(); const bump=(_coinHdrPrev!=null && bal>_coinHdrPrev);
-    const coin=$(`<button class="coinhdr${bump?' bump':''}" aria-label="Coins: ${coinFmt(bal)}. Open Packs."><span class="ci">${ic('coin',{size:'16px'})}</span>${coinFmt(bal)}</button>`);
-    coin.onclick=()=>{ track('coin_pill_open'); S.overlay='shop'; S.shopSec='packs'; render(); };   // CS423: coin pill always opens the Packs menu
-    right.appendChild(coin); _coinHdrPrev=bal;
+  if(SHOP_ENABLED){   // global coin counter (owner: everywhere, tap → Pro Shop). Guests see 0 → the shop's sign-in wall.
+    const bal = signedIn ? coinBalance() : 0;
+    const bump = signedIn && (_coinHdrPrev!=null && bal>_coinHdrPrev);
+    const coin=$(`<button class="coinhdr${bump?' bump':''}" aria-label="${signedIn?('Coins: '+coinFmt(bal)+'. Open Packs.'):'Coins. Sign in to earn and shop.'}"><span class="ci">${ic('coin',{size:'16px'})}</span>${coinFmt(bal)}</button>`);
+    coin.onclick=()=>{ track(signedIn?'coin_pill_open':'coin_pill_guest'); S.overlay='shop'; S.shopSec='packs'; render(); };   // CS423: opens Packs (guests hit the shop's sign-in wall)
+    right.appendChild(coin); if(signedIn) _coinHdrPrev=bal;
   }
-  if(!signedIn) right.appendChild(pl);   // CS432: guest "Sign in" pill lives on the right (see above)
   bar.appendChild(right);
   h.appendChild(bar);
   return h;

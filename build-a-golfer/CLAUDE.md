@@ -10269,6 +10269,19 @@ allows Google Fonts, or self-host Anton.*
   clear on both sides (left 78–96, right 10–28), signed-in unchanged. Screenshot confirms the guest banner
   is centered with the Sign-in pill on the right. Deployed to /golf.
 
+- **CS433 — coin + Legend-token pills shown for guests too (as "0"), tap → the login-walled screen (owner:
+  a few more sign-up nudges).** The right-side pills now render for guests: a violet Legend pill and a gold
+  coin pill, both showing **0**. Tapping the coin pill opens the Pro Shop, which already shows a guest
+  sign-in wall ("Sign in to earn coins & shop"); tapping the Legend pill opens the sign-up overlay with a
+  Legend-flavored note ("Finish a career to earn Legend golfers…"). Together with the avatar and menu,
+  that's a few more one-tap paths to sign up. Structural cleanup (supersedes CS432's guest-Sign-in-on-right):
+  the profile pill is now ALWAYS on the left for everyone, the pills always on the right; the wordmark stays
+  absolutely centered on the banner (CS432), and the profile name/"Sign in" label is hidden on phones
+  (avatar-only, both guest + signed-in) so the centered wordmark clears the pills. Verified in Playwright:
+  guest shows legend "0" + coin "0", wordmark offset-from-center 0 at 360/390/412 (right gap +4 at 390,
+  −3 at 360 into the pill's padding — same as the signed-in case), coin→shop wall, legend→signup+note, 0
+  page errors. Screenshot confirms. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
