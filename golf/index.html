@@ -14189,7 +14189,7 @@ function scrSeason(){
       <div class="cb-stat"><div class="k">Wins</div><div class="v">${t.wins}</div></div>
       <div class="cb-stat"><div class="k">Top 10</div><div class="v">${t.top10}</div></div>
       <div class="cb-stat"><div class="k">Cuts</div><div class="v">${t.made}/${t.played||0}</div></div>
-      ${showMeters?`<div class="cb-stat"><div class="k">Fans</div><div class="v" id="cb-fans" style="color:#f78fb3">${fmtFollowers(fansVal)}</div></div>`:''}
+      ${showMeters?`<div class="cb-stat"><div class="k">Fans</div><div class="v" id="cb-fans" style="color:#ff9d3a">${fmtFollowers(fansVal)}</div></div>`:''}
       <div class="cb-stat"><div class="k">Net</div><div class="v" id="cb-net" style="color:${netCol};font-size:16px">${netShort}</div></div>
     </div>
     ${metersHTML}
@@ -14210,7 +14210,7 @@ function scrSeason(){
     if(showMeters && _fe && _pfn!=null && _pfn!==fansVal && !reduce){
       _animCount(_fe, _pfn, fansVal, v=>fmtFollowers(v), 950);
       const up=fansVal>_pfn; _fe.style.transition='color .2s'; _fe.style.color=up?'#35d6a0':'#E14A33';
-      setTimeout(()=>{ if(_fe.isConnected) _fe.style.color='#f78fb3'; }, 1100);
+      setTimeout(()=>{ if(_fe.isConnected) _fe.style.color='#ff9d3a'; }, 1100);
     }
     S._bannerFans = showMeters ? fansVal : null;
     // CS285: the Confidence / Respect meter bars GLIDE to their new width when they change (reusing the
