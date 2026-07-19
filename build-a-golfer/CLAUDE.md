@@ -10885,6 +10885,20 @@ allows Google Fonts, or self-host Anton.*
   errors. Deployed to /golf. Tunable: `LOGIN_TRACK` + `LOGIN_COIN_DAY` (login rewards), `STREAK_WEEK_TRACK`
   (daily-challenge rewards).
 
+- **CS462 — fixed the H2H result scorecard's sticky name column bleeding through (owner screenshot: garbled
+  overlap on the left).** The online result scorecard (`h2hResultCard`, CS176/178) pins the player/team name
+  column (`position:sticky;left:0`) while the hole columns scroll horizontally — but its background was
+  `rgba(6,20,14,.97)` (97% opaque) and the WINNER row's name cell was a fully-transparent gold tint
+  (`rgba(241,208,74,.11)`). So when the card was scrolled sideways, the hole cells slid *under* the sticky
+  column and showed through it — the HOLE/Par/name labels overlapping holes 1-3 in a garbled mess. Fix: the
+  sticky column is now a **fully opaque** solid fill (`#0a2014`), the winner row layers its gold tint OVER
+  that opaque base (`linear-gradient(...gold...), #0a2014`) so it's never see-through, z-index raised 1→3,
+  and a clean 1px right border added so the pinned column reads as a distinct edge. Verified in Playwright
+  with a constructed 18-hole result: all 4 sticky cells compute an opaque `rgb(10,32,20)` at z-index 3 (0
+  transparent), and a screenshot after scrolling the card 140px right shows the hole columns sliding cleanly
+  under the pinned name column with NO bleed-through. It was the only left-sticky column in the app (grep-
+  confirmed), so no other scorecard has the same bug. 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
