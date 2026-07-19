@@ -10976,6 +10976,20 @@ allows Google Fonts, or self-host Anton.*
   page errors. Deployed to /golf. NEXT categories (owner-approved order): balls, cleats, then headwear,
   eyewear, patterns, outerwear/legwear — polishing each + adding new items where they fit.
 
+- **CS467 — store-art pass 2: BALLS category expanded 2 → 8 (owner: "add items if you think of any more").**
+  The ball category had only Featherie + Comet. Added 6 new cosmetic golf balls (a natural, fun
+  collectible), each a distinct clean sprite off a shared teed-ball base + its own palette + a matching
+  hole-view tracer colour: **Sunday Red** (common), **Neon Flash** (rare, glow ring), **Blue Marble**
+  (rare, white swirl), **Eight Ball** (rare, black + white spot), **Golden Egg** (epic, gold + glow),
+  **Frost Ball** (epic, pale ice). Each ball's `PXBALL.price` sets its rarity via `packRarityOf`, so the
+  actual coin price flows through the CS464 ladder (common 15k / rare 45k / epic 110k) and they drop into
+  the pack pool automatically (verified: all 8 in `packPool`). Wired as data only — sprites into `PXG_BALL`,
+  palettes into `PXG_BALL_PAL`, metadata (name/hist/col/tracer) into `PXBALL`; `cosmeticItems('ball')`
+  already maps from `PXBALL`, so the shop + Golf Bag picker pick them up with no extra wiring. Verified in
+  Playwright: all 6 render distinct thumbnails, correct rarities/prices, appear in the pack pool, and a
+  daily round (which uses the ball's hole-view tracer) runs clean; 0 page errors. Deployed to /golf. NEXT:
+  cleats (add a few), then headwear, eyewear, patterns, outerwear/legwear.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
