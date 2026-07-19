@@ -10859,6 +10859,32 @@ allows Google Fonts, or self-host Anton.*
   with the winner as row 0, and a real draft spin still lands correctly (Hiroshi Tai, spinning→false), 0
   page errors. Applies everywhere the reel is used (career draft, daily draft, off-season, online H2H).
 
+- **CS461 — Daily Login Bonus (7-day loop) + best pack for the daily-challenge day 7 (owner: "create a
+  daily login bonus... on a 7 day loop. The 7th day of login gives a medium level pack, but 7 days of the
+  daily gives the best level pack. The login pop-up should come up the first time someone signs in each
+  day").** A NEW login-reward loop, separate from the existing daily-CHALLENGE streak week:
+  • **Daily Login Bonus** (`LOGIN_TRACK`, `maybeLoginBonus`, `overlayLogin`): just signing in each (ET) day
+    advances a 7-day loop and grants that day's reward — day1 200 / day2 300 / day3 500 coins · day4 a Base
+    pack · day5 700 coins · day6 a Mulli-Spin · **day7 a Tour (medium) pack** — then loops back to day 1.
+    Runs from the sbApply post-`cloudPull` chain (covers a fresh sign-in AND app-open while already signed
+    in), so the celebratory popup appears the FIRST time an account is seen each day. Grants on detect
+    (idempotent via a stored `day` == `todayKey()` so it fires once/day and never double-grants), signed-in
+    only (coins/packs need an account), and FORGIVING — a missed day doesn't reset the loop, it just advances
+    on the next login. The popup (`.ov` overlay, registered as `S.overlay='login'`) shows the 7-day calendar
+    with claimed days ✓, today highlighted with its reward, and a Collect button. `bag_login {day,n}` is
+    cloud-synced via `cloudBundle`/`mergeLogin` (the later claim-day wins, so a device that already claimed
+    today won't re-pop or double-grant).
+  • **Daily CHALLENGE 7-day track → best pack:** `STREAK_WEEK_TRACK[7]` changed `tourpack`→`champpack`, so
+    completing the daily challenge through day 7 now grants a **Champion (best) pack** (was Tour); wired
+    through `streakWeekReward` (grants tier `champ`) + the advent-calendar slot renderer (shows a Champion
+    pack on day 7).
+  Verified in Playwright: an 8-day login walk grants exactly the right reward each day (coins → base pack →
+  mulligan → Tour pack on day 7 → loops to day 1), same-day re-run is a no-op (no grant, no popup), the
+  popup renders the calendar + reward (screenshots confirm day-2 coins and day-7 Tour Pack), the
+  daily-challenge day-7 now grants a Champion pack, `mergeLogin` picks the later day / max-n, and 0 page
+  errors. Deployed to /golf. Tunable: `LOGIN_TRACK` + `LOGIN_COIN_DAY` (login rewards), `STREAK_WEEK_TRACK`
+  (daily-challenge rewards).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

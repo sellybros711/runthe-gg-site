@@ -2806,7 +2806,7 @@ function streakDays(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.
 // CS407b (owner): the 3 coin days (1, 2, 5) scale UP hard - 1,000 → 2,500 → 7,500. Non-coin days are unused.
 const STREAK_WEEK_COIN_DAY={1:1000, 2:2500, 3:2500, 4:2500, 5:7500, 6:7500, 7:7500};
 function streakDayCoins(day){ return STREAK_WEEK_COIN_DAY[Math.max(1,Math.min(7,day||1))]||1000; }
-const STREAK_WEEK_TRACK={1:'coins',2:'coins',3:'mulligan',4:'basepack',5:'coins',6:'mulligan',7:'tourpack'};
+const STREAK_WEEK_TRACK={1:'coins',2:'coins',3:'mulligan',4:'basepack',5:'coins',6:'mulligan',7:'champpack'};   // CS461: daily-CHALLENGE day 7 = the BEST (Champion) pack
 function sundayWeekKey(){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
   const dt=new Date(Date.UTC(y,m-1,d,12,0,0)); dt.setUTCDate(dt.getUTCDate()-dt.getUTCDay());   // back up to the week's Sunday (ET day-of-week)
   return dt.getUTCFullYear()*10000+(dt.getUTCMonth()+1)*100+dt.getUTCDate(); }
@@ -2822,6 +2822,7 @@ function streakWeekReward(){ if(!sbSignedIn()) return null;
   if(kind==='mulligan'){ if(typeof addMulliSpin==='function') addMulliSpin(1); }
   else if(kind==='basepack'||kind==='pack'){ out.tier='base'; if(typeof grantFreePack==='function') grantFreePack(1,{silent:true,tier:'base'}); }
   else if(kind==='tourpack'){ out.tier='tour'; if(typeof grantFreePack==='function') grantFreePack(1,{silent:true,tier:'tour'}); }
+  else if(kind==='champpack'){ out.tier='champ'; if(typeof grantFreePack==='function') grantFreePack(1,{silent:true,tier:'champ'}); }
   else { out.amt=streakDayCoins(n); if(typeof addBonusCoins==='function') addBonusCoins(out.amt,{silent:true}); }
   if(w.done.indexOf(n)<0) w.done.push(n);
   LS.set(acctKey('bag_streakweek'),w); if(typeof cloudPush==='function') cloudPush();
@@ -2842,6 +2843,7 @@ function streakAdventNode(){ if(!sbSignedIn()) return null;
   // CS407: per-day slot content - coins scale up (200→1000), a mulligan symbol, a base pack (day 4) + tour pack (day 7)
   const slot=(kind,d)=>{
     if(kind==='mulligan') return '<div style="height:16px;display:flex;align-items:center;justify-content:center;color:#8fd0ff">'+ic('repeat',{size:'15px'})+'</div><div style="font:800 8px var(--body);color:#8fd0ff;margin-top:1px">Mulli</div>';
+    if(kind==='champpack') return pxPackImg(19,'champ')+'<div style="font:800 8px var(--body);color:'+packType('champ').col+';margin-top:1px">Champ</div>';
     if(kind==='tourpack') return pxPackImg(19,'tour')+'<div style="font:800 8px var(--body);color:'+packType('tour').col+';margin-top:1px">Tour</div>';
     if(kind==='basepack'||kind==='pack') return pxPackImg(19,'base')+'<div style="font:800 8px var(--body);color:'+packType('base').col+';margin-top:1px">Pack</div>';
     return '<div style="font:800 12px var(--body);color:#ffd45e">'+streakDayCoins(d)+'</div><div style="font:800 7px var(--body);color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;margin-top:1px">coins</div>'; };
@@ -2863,6 +2865,68 @@ function streakAdventNode(){ if(!sbSignedIn()) return null;
       <span style="font:800 11.5px var(--body);color:#ffd45e">🎁 7-Day Rewards</span>
       <span class="small muted" style="letter-spacing:0">Play daily to claim · resets Sunday</span></div>
     <div style="display:flex;gap:4px">${cells}</div></div>`); }
+// CS461: DAILY LOGIN BONUS — a 7-day rotating login calendar, SEPARATE from the daily-CHALLENGE streak week
+// above. Just signing in each (ET) day advances the loop and grants that day's reward; DAY 7 = a medium
+// (Tour) pack. (The daily-challenge track gives the BEST (Champion) pack on ITS day 7.) Signed-in only
+// (coins/packs need an account). Forgiving: a missed day doesn't reset - the loop advances on the next login.
+const LOGIN_TRACK={1:'coins',2:'coins',3:'coins',4:'basepack',5:'coins',6:'mulligan',7:'tourpack'};
+const LOGIN_COIN_DAY={1:200,2:300,3:500,5:700};
+function loginState(){ let s=LS.get(acctKey('bag_login'),null); if(!s||typeof s!=='object') s={day:null,n:0}; s.n=s.n||0; return s; }
+function loginSave(s){ LS.set(acctKey('bag_login'),s); if(typeof cloudPush==='function') cloudPush(); }
+function loginReward(n){ n=Math.max(1,Math.min(7,n||1)); const kind=LOGIN_TRACK[n]||'coins'; const o={day:n,kind:kind};
+  if(kind==='basepack') o.tier='base'; else if(kind==='tourpack') o.tier='tour'; else if(kind==='champpack') o.tier='champ';
+  else if(kind==='coins') o.amt=(LOGIN_COIN_DAY[n]||300); return o; }
+function grantLoginReward(o){ if(!o) return;
+  if(o.kind==='mulligan'){ if(typeof addMulliSpin==='function') addMulliSpin(1); }
+  else if(o.tier){ if(typeof grantFreePack==='function') grantFreePack(1,{silent:true,tier:o.tier}); }
+  else if(o.amt){ if(typeof addBonusCoins==='function') addBonusCoins(o.amt,{silent:true}); } }
+function loginRewLabel(o){ if(!o) return '';
+  if(o.kind==='mulligan') return 'a Mulli-Spin';
+  if(o.kind==='basepack') return 'a Base Pack';
+  if(o.kind==='tourpack') return 'a Tour Pack';
+  if(o.kind==='champpack') return 'a Champion Pack';
+  return '+'+coinFmt(o.amt||0)+' coins'; }
+// Fires from the sbApply post-cloudPull chain (covers a fresh sign-in AND app-open while already signed in),
+// so the popup shows the first time an account is seen each day. Grants on detect (idempotent via `day`),
+// then opens the celebratory popup.
+function maybeLoginBonus(){ if(!sbSignedIn()) return; const t=todayKey(), s=loginState();
+  if(s.day===t) return;                              // already claimed today
+  const n=((s.n||0)%7)+1;                            // advance the 7-day loop (a missed day doesn't reset it)
+  const rew=loginReward(n); grantLoginReward(rew);
+  loginSave({day:t, n:n});
+  S.loginReward=rew; S.overlay='login';
+  try{ track('login_bonus',{day:n,kind:rew.kind}); }catch(e){}
+  try{ render(); }catch(e){} }
+function loginSlotInner(d){ const kind=LOGIN_TRACK[d];
+  if(kind==='mulligan') return '<div style="height:16px;display:flex;align-items:center;justify-content:center;color:#8fd0ff">'+ic('repeat',{size:'15px'})+'</div><div style="font:800 8px var(--body);color:#8fd0ff;margin-top:1px">Mulli</div>';
+  if(kind==='tourpack') return pxPackImg(19,'tour')+'<div style="font:800 8px var(--body);color:'+packType('tour').col+';margin-top:1px">Tour</div>';
+  if(kind==='basepack') return pxPackImg(19,'base')+'<div style="font:800 8px var(--body);color:'+packType('base').col+';margin-top:1px">Pack</div>';
+  return '<div style="font:800 12px var(--body);color:#ffd45e">'+(LOGIN_COIN_DAY[d]||300)+'</div><div style="font:800 7px var(--body);color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;margin-top:1px">coins</div>'; }
+function overlayLogin(screen){
+  const rew=S.loginReward||loginReward(loginState().n||1), n=rew.day;
+  let cells='';
+  for(let d=1;d<=7;d++){ const got=d<n, today=(d===n);
+    const bg=got?'rgba(53,214,160,.14)':(today?'rgba(241,208,74,.2)':'rgba(255,255,255,.04)');
+    const bd=got?'rgba(53,214,160,.5)':(today?'var(--gold)':'rgba(255,255,255,.09)');
+    cells+=`<div style="flex:1;text-align:center;padding:7px 1px 6px;border-radius:9px;background:${bg};border:1px solid ${bd};${today?'box-shadow:0 0 12px rgba(241,208,74,.4)':''}">
+      <div style="font:800 8.5px var(--body);color:#8ea9bb;letter-spacing:.03em">DAY ${d}</div>
+      <div style="margin-top:3px;min-height:29px;display:flex;flex-direction:column;align-items:center;justify-content:center">${got?'<div style="font:800 16px var(--body);color:#8fe8c4">✓</div>':loginSlotInner(d)}</div>
+      ${today?'<div style="font:800 7.5px var(--body);color:var(--gold);margin-top:1px;letter-spacing:.04em">TODAY</div>':''}</div>`; }
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" style="text-align:center">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <div class="tag" style="color:var(--gold);border-color:var(--gold);margin:0 auto">🎁 Daily Login Bonus</div>
+    <h3 style="margin:12px 0 2px">Welcome back!</h3>
+    <p class="lede" style="margin:0 0 14px">Day ${n} of 7 · sign in every day for a bigger reward. Day 7 is a Tour Pack.</p>
+    <div style="display:flex;gap:4px;max-width:460px;margin:0 auto 14px">${cells}</div>
+    <div style="background:linear-gradient(160deg,rgba(241,208,74,.16),rgba(241,208,74,.03));border:1px solid var(--gold);border-radius:12px;padding:12px;max-width:360px;margin:0 auto 14px">
+      <div style="font:800 10px var(--body);letter-spacing:.15em;text-transform:uppercase;color:#8ea9bb">Today's reward</div>
+      <div style="font-family:var(--display);font-size:22px;color:var(--gold);margin-top:3px">${loginRewLabel(rew)}</div>
+      <div class="small muted" style="margin-top:3px">Added to your account.</div></div>
+    <button class="btn goldfill collect" style="max-width:360px;margin:0 auto">Collect</button></div>`);
+  const close=()=>{ S.overlay=null; S.loginReward=null; render(); };
+  ov.querySelector('.x').onclick=close; ov.querySelector('.collect').onclick=close;
+  screen.appendChild(ov);
+}
 function dayKeyBack(n){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
   const dt=new Date(Date.UTC(y,m-1,d,12,0,0)); dt.setUTCDate(dt.getUTCDate()-n);   // calendar arithmetic on the ET date, anchored at noon (DST-safe)
   return dt.getUTCFullYear()*10000+(dt.getUTCMonth()+1)*100+dt.getUTCDate(); }
@@ -5716,6 +5780,7 @@ function render(){
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
     if(S.overlay==='confirmRetire') overlayConfirmRetire(app);
     if(S.overlay==='challenges') overlayChallenges(app);
+    if(S.overlay==='login') overlayLogin(app);
     if(S.overlay==='about') overlayAbout(app);
     if(S.overlay==='feedback') overlayFeedback(app);
     if(S.overlay==='privacy') overlayPrivacy(app);
@@ -21594,7 +21659,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459)
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461)
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -21775,7 +21840,16 @@ function cloudBundle(){
     weeklychal: LS.get(acctKey('bag_weeklychal'), null),         // this week's challenge progress
     coins: LS.get(acctKey('bag_coins'), null),                   // CS183 currency: {spent,seen,owned} (earned is derived)
     packs: LS.get(acctKey('bag_packs'), null),                   // pack pity counters + first-pack-free flag
+    login: LS.get(acctKey('bag_login'), null),                   // CS461: daily-login bonus loop {day, n}
   };
+}
+// daily-login loop: the more-recent claim day wins (so a device that already claimed today won't re-pop);
+// same day → keep the higher loop position.
+function mergeLogin(local, server){
+  const l=(local&&typeof local==='object')?local:{day:null,n:0}, s=(server&&typeof server==='object')?server:{day:null,n:0};
+  const ld=l.day||0, sd=s.day||0;
+  if(ld===sd) return {day:l.day||s.day||null, n:Math.max(l.n||0,s.n||0)};
+  return (ld>sd)?{day:l.day,n:l.n||0}:{day:s.day,n:s.n||0};
 }
 // packs: keep the more-recent pity state (higher `opened`) and UNION the first-pack-free flag (once used
 // on any device, it's used everywhere), so pity + the free pack sync without being re-granted.
@@ -21973,6 +22047,7 @@ async function cloudPull(){
     { const mw=mergeWeeklyChal(LS.get(acctKey('bag_weeklychal'),null), server.weeklychal); if(mw) LS.set(acctKey('bag_weeklychal'), mw); }
     LS.set(acctKey('bag_coins'), mergeCoins(coinState(), server.coins));   // CS183 coins/gear cross-device
     if(server.packs) LS.set(acctKey('bag_packs'), mergePacks(packState(), server.packs));   // pack pity + first-pack-free cross-device
+    { const ml=mergeLogin(LS.get(acctKey('bag_login'),null), server.login); if(ml&&(ml.day||ml.n)) LS.set(acctKey('bag_login'), ml); }   // CS461: daily-login loop cross-device
     reconcileCoins(true);   // self-heal earned total + grant milestone gear silently after a cross-device merge
     cloudPush();
     render();
