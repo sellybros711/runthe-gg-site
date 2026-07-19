@@ -11027,6 +11027,20 @@ allows Google Fonts, or self-host Anton.*
   with a 7-digit balance + a legend pill: the wordmark clears both side groups (no overlap either side),
   reads cleanly, coin shows "1.02M", 0 page errors. Deployed to /golf.
 
+- **CS472 — fix (real root cause): bottom nav bar "comes up" into the screen mid-scroll on iOS (owner
+  video).** The persistent bottom tab bar (`.botnav`, `position:fixed; bottom:0` on `document.body`) kept
+  drifting up on iOS despite CS306/329/430/439. Root cause finally isolated: CS439 added
+  `transform:translateZ(0)` to the SHOWN bar to "GPU-pin" it — but a `transform` (even `translateZ(0)`) on a
+  `position:fixed` element makes iOS Safari anchor it to the DOCUMENT instead of the viewport, so it scrolls
+  up with the page. The GPU-promote hack was the cause, not the cure. Removed the `transform`/
+  `-webkit-transform` from the shown `.botnav` rule (the `.navhide` state keeps its `translate3d(0,130%,0)`
+  slide-off — a transform only matters when hidden, where drift is irrelevant). Verified in Playwright: the
+  nav still computes `position:fixed; bottom:0` with `transform:none` in the shown state, still hides
+  (`navhide`) on live-play screens, 0 page errors. NOTE: iOS-specific fixed-position drift can't be
+  reproduced in headless Chromium, so this is the documented-correct fix but needs on-device confirmation;
+  the guaranteed-structural fallback if it ever recurs is an app-shell (a `position:fixed` `#app` with an
+  inner scroll region so nothing is viewport-fixed against a scrolling body). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
