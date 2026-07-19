@@ -11001,6 +11001,19 @@ allows Google Fonts, or self-host Anton.*
   pool; 0 page errors. Deployed to /golf. NEXT: headwear (biggest category — polish + add), then eyewear,
   patterns, outerwear/legwear.
 
+- **CS469 — store-art pass 4: HEADWEAR polish + additions (26 → 29).** Rendered all headwear on the golfer
+  and found most read well (cowboy/tophat/wizard/crown/fedora/sombrero/chef/santa/laurel/propeller/…); two
+  were weak: **halo** (a flat gold rectangle, not a ring) and **viking** (horns were thin verticals that
+  didn't read). Redrew both — halo is now a glowing gold hoop floating above the head, viking a silver
+  helmet with prominent curved cream horns. Added 3 new hats off the head region: **Backwards Cap** (rare,
+  blue snapback worn backwards — front strap + flipped-up brim), **Pirate Tricorn** (epic, black tricorn +
+  gold trim + skull), **Graduation Cap** (rare, black mortarboard + gold tassel). All use existing `PXG_NOV`
+  palette chars (no palette additions). Wired: PXG_HALO/PXG_VIKING replaced in place; backwards/pirate/grad
+  added to the `PXG_HATS` map + the `cosmeticPriceBase('hw')` price map (rarity via `packRarityOf` → CS464
+  ladder) + the hardcoded `cosmeticItems('hw')` list. Verified in Playwright: all render correctly on the
+  golfer, hw item count 26→29, new 3 have correct rarities (rare/epic/rare) and appear in the pack pool; 0
+  page errors. Deployed to /golf. NEXT: eyewear, then patterns, outerwear/legwear.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
