@@ -395,10 +395,9 @@ window.GA_ID='G-L29P5MRWKE';
     .brand.hero{display:none;}
     .games-head{margin-top:14px;}
     /* signed in: no sign-up buttons, so the wordmark spans the whole banner and the account collapses to its avatar, floated over the top-right corner */
-    .nav.signed-in .nav-in{position:relative;height:auto;min-height:var(--nav-h);padding-top:8px;padding-bottom:8px;}
-    .nav.signed-in .nav-brand{flex:1;min-width:0;margin-right:0;}
-    .nav.signed-in .nav-wordmark{width:100%;height:auto;max-height:96px;}
-    .nav.signed-in .nav-acct{position:absolute;top:8px;right:max(12px,env(safe-area-inset-right,0px));}
+    /* signed in: a larger wordmark, but sized by HEIGHT only so its aspect ratio is always kept (never stretched) */
+    .nav.signed-in .nav-in{padding-top:8px;padding-bottom:8px;}
+    .nav.signed-in .nav-wordmark{height:48px;width:auto;max-width:100%;}
     .nav.signed-in .nav-chip .nm{display:none;}
     .nav.signed-in .nav-chip{padding:5px;}
     /* RunThePitch on phones: title → description → animated phones → Play now. The widget chips are a desktop-only
