@@ -4,12 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <!-- RunTheTour, solo season · v2 · RunThePitch skin -->
-<title>Run The Tour — Free Daily Golf Simulation Game</title>
+<title>Run The Tour · Daily Golf Simulation Game</title>
 <meta name="description" content="Run The Tour is a free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the pro on a new course every day, run a full career, and play head-to-head online.">
-  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <meta name="theme-color" content="#11432f">
 <link rel="canonical" href="https://runthe.gg/golf/">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"VideoGame","@id":"https://runthe.gg/golf/#game","name":"Run The Tour","alternateName":"RunTheTour","url":"https://runthe.gg/golf/","description":"Run The Tour is a free daily golf simulation game. Draft a signature skill from each real pro to build your own golfer, then beat the pro on a new famous course every day, run a full career of up to 42 years, and play head-to-head online.","image":"https://runthe.gg/golf/og.png","genre":["Sports game","Simulation game","Golf"],"gamePlatform":["Web browser"],"operatingSystem":"Any modern web browser (desktop or mobile)","applicationCategory":"Game","playMode":["SinglePlayer","MultiPlayer"],"inLanguage":"en","isAccessibleForFree":true,"publisher":{"@id":"https://runthe.gg/#org"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD","availability":"https://schema.org/InStock"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"RunThe.GG","item":"https://runthe.gg/"},{"@type":"ListItem","position":2,"name":"Run The Tour","item":"https://runthe.gg/golf/"}]}]}</script>
 <!-- Open Graph / Twitter. Absolute URLs for the runthe.gg/golf deploy; og.png sits beside this file. -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
@@ -23,7 +21,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Tour · Daily Golf Simulation Game">
 <meta name="twitter:description" content="A free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the pro on a new course every day, run a full career, and play head-to-head online.">
-<meta name="twitter:image" content="https://runthe.gg/golf/og.png?v=8">
+<meta name="twitter:image" content="https://runthe.gg/golf/og.png?v=2">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 76'%3E%3Cpath d='M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z' fill='%2311432f' stroke='%23cda24a' stroke-width='3'/%3E%3Cpath d='M26 17 v36' stroke='%23e9d8ac' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M26 18 h16 l-4 5 4 5 h-16 z' fill='%23EBA61F'/%3E%3Cellipse cx='32' cy='57' rx='17' ry='5.4' fill='none' stroke='%23cda54a' stroke-width='1.6'/%3E%3Ccircle cx='38' cy='57' r='2.2' fill='%23f4ecd9'/%3E%3C/svg%3E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1570,81 +1568,6 @@ h2{font-size:11px;letter-spacing:.04em}
 
 <div id="app" aria-live="polite"></div>
 
-<!-- Static, crawlable overview of Run The Tour for search engines and no-JS clients.
-     Sits below the app; the game renders into #app and never touches this footer. -->
-<footer class="rt-seo" aria-label="About Run The Tour">
-  <style>
-    /* opaque background + generous bottom padding so it reads cleanly below the game and clears the fixed nav bar */
-    .rt-seo{position:relative;z-index:3;background:#06200f;border-top:1px solid rgba(235,166,31,.22);
-      padding:34px 20px 104px;font-family:'Barlow Semi Condensed',system-ui,'Segoe UI',Roboto,sans-serif;
-      line-height:1.55;color:#b7d0be}
-    .rt-seo>*{max-width:700px;margin-left:auto;margin-right:auto}
-    .rt-seo h1{font-family:'Anton',Impact,'Arial Narrow',sans-serif;font-weight:400;text-transform:uppercase;
-      letter-spacing:.01em;font-size:clamp(24px,6vw,34px);line-height:1.05;color:#F4E3C9;margin:0 0 14px}
-    .rt-seo h2{font-family:'Anton',Impact,'Arial Narrow',sans-serif;font-weight:400;text-transform:uppercase;
-      letter-spacing:.02em;font-size:18px;color:#EBA61F;margin:26px 0 8px}
-    .rt-seo p{margin:0 0 13px;font-size:15.5px;color:#b7d0be}
-    .rt-seo b{color:#eaf6ee}
-    .rt-seo ol,.rt-seo ul{margin:0 0 14px;padding-left:20px;font-size:15.5px;color:#b7d0be}
-    .rt-seo li{margin:0 0 7px}
-    .rt-seo li b{color:#eaf6ee}
-    .rt-seo a{color:#EBA61F;font-weight:700;text-decoration:none}
-    .rt-seo a:hover{text-decoration:underline}
-    .rt-links{margin-top:26px;font-size:13.5px;color:#8fae9c}
-    .rt-links a{color:#cfe3d6;font-weight:700}
-    .rt-links .sep{margin:0 7px;color:#4a6a5a}
-  </style>
-
-  <h1>Run The Tour — a free daily golf simulation game</h1>
-  <p><b>Run The Tour</b> (RunTheTour) is a free, browser-based <b>golf simulation game</b> from RunThe.GG.
-     You draft one signature skill from each of golf's greats to build your own golfer, then put that golfer
-     to the test — beat the pros on a new famous course every day, live out a full pro career, or go
-     head-to-head with other players online. No download and no sign-up required: it runs right in your web
-     browser on desktop and mobile.</p>
-
-  <h2>How to play</h2>
-  <ol>
-    <li><b>Build your golfer.</b> Draft a signature skill (driving, approach, putting and more) from real pro
-       golfers to create a player that's uniquely yours.</li>
-    <li><b>Pick a mode.</b> Play the quick <b>Daily Challenge</b>, commit to <b>Career Mode</b>, or take on
-       other players in <b>online</b> Head-to-Head and Scramble matches.</li>
-    <li><b>Play the shot.</b> Choose to attack or play it safe on each signature hole and chase the lowest
-       score — every round is a simulation driven by your golfer's ratings, not twitch reflexes.</li>
-  </ol>
-
-  <h2>Daily Challenge — play 18 a day</h2>
-  <p>Every day brings a new famous course. Play your 18 holes, try to beat the tour average, and build a
-     daily streak. It's the same course for everyone that day, so the leaderboard comes down to how well you
-     build and play your golfer.</p>
-
-  <h2>Career Mode — up to a 42-year career</h2>
-  <p>Start a career and play season after season: chase majors and titles, climb the money list, earn coins
-     and gear, and watch your golfer rise, peak and retire. A standard tour career runs 30 years, and the
-     Legend Circuit extends play to up to 42 years in all — retire whenever you choose.</p>
-
-  <h2>Play online, head-to-head</h2>
-  <p>Run The Tour also has live online play. Face a friend or a matched opponent in a real-time
-     <b>Head-to-Head</b> round, or play a multi-player <b>Scramble</b>. Make a free RunThe.GG account and your
-     trophies, streaks and leaderboard rank follow you across every device and every game on the site.</p>
-
-  <h2>Frequently asked questions</h2>
-  <p><b>Is Run The Tour free to play?</b> Yes. It is completely free, with no download and no account
-     required. Ads keep the game free.</p>
-  <p><b>Do I need an account?</b> No — you can play as a guest. A free account is optional and saves your
-     progress, careers, streaks and leaderboard rank across devices.</p>
-  <p><b>Is this an official PGA Tour or golf game?</b> No. Run The Tour is an independent, unofficial,
-     fan-made game and is not affiliated with, endorsed by, or sponsored by the PGA Tour or any golf
-     organization, tournament or player. Real player names are used to build a fictional, simulated golf game
-     for entertainment only.</p>
-
-  <div class="rt-links">
-    <a href="/">RunThe.GG home</a><span class="sep">·</span>
-    <a href="/soccer/">RunThePitch</a><span class="sep">·</span>
-    <a href="privacy.html">Privacy</a><span class="sep">·</span>
-    <a href="terms.html">Terms</a>
-  </div>
-</footer>
-
 <script>
 const $=(h)=>{const t=document.createElement('template'); t.innerHTML=emojifyIcons(h.trim()); return t.content.firstChild;};
 const app=document.getElementById('app');
@@ -2881,7 +2804,7 @@ function streakDays(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.
 // CS407b (owner): the 3 coin days (1, 2, 5) scale UP hard - 1,000 → 2,500 → 7,500. Non-coin days are unused.
 const STREAK_WEEK_COIN_DAY={1:1000, 2:2500, 3:2500, 4:2500, 5:7500, 6:7500, 7:7500};
 function streakDayCoins(day){ return STREAK_WEEK_COIN_DAY[Math.max(1,Math.min(7,day||1))]||1000; }
-const STREAK_WEEK_TRACK={1:'coins',2:'coins',3:'mulligan',4:'basepack',5:'coins',6:'mulligan',7:'tourpack'};
+const STREAK_WEEK_TRACK={1:'coins',2:'coins',3:'mulligan',4:'basepack',5:'coins',6:'mulligan',7:'champpack'};   // CS461: daily-CHALLENGE day 7 = the BEST (Champion) pack
 function sundayWeekKey(){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
   const dt=new Date(Date.UTC(y,m-1,d,12,0,0)); dt.setUTCDate(dt.getUTCDate()-dt.getUTCDay());   // back up to the week's Sunday (ET day-of-week)
   return dt.getUTCFullYear()*10000+(dt.getUTCMonth()+1)*100+dt.getUTCDate(); }
@@ -2897,6 +2820,7 @@ function streakWeekReward(){ if(!sbSignedIn()) return null;
   if(kind==='mulligan'){ if(typeof addMulliSpin==='function') addMulliSpin(1); }
   else if(kind==='basepack'||kind==='pack'){ out.tier='base'; if(typeof grantFreePack==='function') grantFreePack(1,{silent:true,tier:'base'}); }
   else if(kind==='tourpack'){ out.tier='tour'; if(typeof grantFreePack==='function') grantFreePack(1,{silent:true,tier:'tour'}); }
+  else if(kind==='champpack'){ out.tier='champ'; if(typeof grantFreePack==='function') grantFreePack(1,{silent:true,tier:'champ'}); }
   else { out.amt=streakDayCoins(n); if(typeof addBonusCoins==='function') addBonusCoins(out.amt,{silent:true}); }
   if(w.done.indexOf(n)<0) w.done.push(n);
   LS.set(acctKey('bag_streakweek'),w); if(typeof cloudPush==='function') cloudPush();
@@ -2917,6 +2841,7 @@ function streakAdventNode(){ if(!sbSignedIn()) return null;
   // CS407: per-day slot content - coins scale up (200→1000), a mulligan symbol, a base pack (day 4) + tour pack (day 7)
   const slot=(kind,d)=>{
     if(kind==='mulligan') return '<div style="height:16px;display:flex;align-items:center;justify-content:center;color:#8fd0ff">'+ic('repeat',{size:'15px'})+'</div><div style="font:800 8px var(--body);color:#8fd0ff;margin-top:1px">Mulli</div>';
+    if(kind==='champpack') return pxPackImg(19,'champ')+'<div style="font:800 8px var(--body);color:'+packType('champ').col+';margin-top:1px">Champ</div>';
     if(kind==='tourpack') return pxPackImg(19,'tour')+'<div style="font:800 8px var(--body);color:'+packType('tour').col+';margin-top:1px">Tour</div>';
     if(kind==='basepack'||kind==='pack') return pxPackImg(19,'base')+'<div style="font:800 8px var(--body);color:'+packType('base').col+';margin-top:1px">Pack</div>';
     return '<div style="font:800 12px var(--body);color:#ffd45e">'+streakDayCoins(d)+'</div><div style="font:800 7px var(--body);color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;margin-top:1px">coins</div>'; };
@@ -2938,6 +2863,68 @@ function streakAdventNode(){ if(!sbSignedIn()) return null;
       <span style="font:800 11.5px var(--body);color:#ffd45e">🎁 7-Day Rewards</span>
       <span class="small muted" style="letter-spacing:0">Play daily to claim · resets Sunday</span></div>
     <div style="display:flex;gap:4px">${cells}</div></div>`); }
+// CS461: DAILY LOGIN BONUS — a 7-day rotating login calendar, SEPARATE from the daily-CHALLENGE streak week
+// above. Just signing in each (ET) day advances the loop and grants that day's reward; DAY 7 = a medium
+// (Tour) pack. (The daily-challenge track gives the BEST (Champion) pack on ITS day 7.) Signed-in only
+// (coins/packs need an account). Forgiving: a missed day doesn't reset - the loop advances on the next login.
+const LOGIN_TRACK={1:'coins',2:'coins',3:'coins',4:'basepack',5:'coins',6:'mulligan',7:'tourpack'};
+const LOGIN_COIN_DAY={1:200,2:300,3:500,5:700};
+function loginState(){ let s=LS.get(acctKey('bag_login'),null); if(!s||typeof s!=='object') s={day:null,n:0}; s.n=s.n||0; return s; }
+function loginSave(s){ LS.set(acctKey('bag_login'),s); if(typeof cloudPush==='function') cloudPush(); }
+function loginReward(n){ n=Math.max(1,Math.min(7,n||1)); const kind=LOGIN_TRACK[n]||'coins'; const o={day:n,kind:kind};
+  if(kind==='basepack') o.tier='base'; else if(kind==='tourpack') o.tier='tour'; else if(kind==='champpack') o.tier='champ';
+  else if(kind==='coins') o.amt=(LOGIN_COIN_DAY[n]||300); return o; }
+function grantLoginReward(o){ if(!o) return;
+  if(o.kind==='mulligan'){ if(typeof addMulliSpin==='function') addMulliSpin(1); }
+  else if(o.tier){ if(typeof grantFreePack==='function') grantFreePack(1,{silent:true,tier:o.tier}); }
+  else if(o.amt){ if(typeof addBonusCoins==='function') addBonusCoins(o.amt,{silent:true}); } }
+function loginRewLabel(o){ if(!o) return '';
+  if(o.kind==='mulligan') return 'a Mulli-Spin';
+  if(o.kind==='basepack') return 'a Base Pack';
+  if(o.kind==='tourpack') return 'a Tour Pack';
+  if(o.kind==='champpack') return 'a Champion Pack';
+  return '+'+coinFmt(o.amt||0)+' coins'; }
+// Fires from the sbApply post-cloudPull chain (covers a fresh sign-in AND app-open while already signed in),
+// so the popup shows the first time an account is seen each day. Grants on detect (idempotent via `day`),
+// then opens the celebratory popup.
+function maybeLoginBonus(){ if(!sbSignedIn()) return; const t=todayKey(), s=loginState();
+  if(s.day===t) return;                              // already claimed today
+  const n=((s.n||0)%7)+1;                            // advance the 7-day loop (a missed day doesn't reset it)
+  const rew=loginReward(n); grantLoginReward(rew);
+  loginSave({day:t, n:n});
+  S.loginReward=rew; S.overlay='login';
+  try{ track('login_bonus',{day:n,kind:rew.kind}); }catch(e){}
+  try{ render(); }catch(e){} }
+function loginSlotInner(d){ const kind=LOGIN_TRACK[d];
+  if(kind==='mulligan') return '<div style="height:16px;display:flex;align-items:center;justify-content:center;color:#8fd0ff">'+ic('repeat',{size:'15px'})+'</div><div style="font:800 8px var(--body);color:#8fd0ff;margin-top:1px">Mulli</div>';
+  if(kind==='tourpack') return pxPackImg(19,'tour')+'<div style="font:800 8px var(--body);color:'+packType('tour').col+';margin-top:1px">Tour</div>';
+  if(kind==='basepack') return pxPackImg(19,'base')+'<div style="font:800 8px var(--body);color:'+packType('base').col+';margin-top:1px">Pack</div>';
+  return '<div style="font:800 12px var(--body);color:#ffd45e">'+(LOGIN_COIN_DAY[d]||300)+'</div><div style="font:800 7px var(--body);color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;margin-top:1px">coins</div>'; }
+function overlayLogin(screen){
+  const rew=S.loginReward||loginReward(loginState().n||1), n=rew.day;
+  let cells='';
+  for(let d=1;d<=7;d++){ const got=d<n, today=(d===n);
+    const bg=got?'rgba(53,214,160,.14)':(today?'rgba(241,208,74,.2)':'rgba(255,255,255,.04)');
+    const bd=got?'rgba(53,214,160,.5)':(today?'var(--gold)':'rgba(255,255,255,.09)');
+    cells+=`<div style="flex:1;text-align:center;padding:7px 1px 6px;border-radius:9px;background:${bg};border:1px solid ${bd};${today?'box-shadow:0 0 12px rgba(241,208,74,.4)':''}">
+      <div style="font:800 8.5px var(--body);color:#8ea9bb;letter-spacing:.03em">DAY ${d}</div>
+      <div style="margin-top:3px;min-height:29px;display:flex;flex-direction:column;align-items:center;justify-content:center">${got?'<div style="font:800 16px var(--body);color:#8fe8c4">✓</div>':loginSlotInner(d)}</div>
+      ${today?'<div style="font:800 7.5px var(--body);color:var(--gold);margin-top:1px;letter-spacing:.04em">TODAY</div>':''}</div>`; }
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" style="text-align:center">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <div class="tag" style="color:var(--gold);border-color:var(--gold);margin:0 auto">🎁 Daily Login Bonus</div>
+    <h3 style="margin:12px 0 2px">Welcome back!</h3>
+    <p class="lede" style="margin:0 0 14px">Day ${n} of 7 · sign in every day for a bigger reward. Day 7 is a Tour Pack.</p>
+    <div style="display:flex;gap:4px;max-width:460px;margin:0 auto 14px">${cells}</div>
+    <div style="background:linear-gradient(160deg,rgba(241,208,74,.16),rgba(241,208,74,.03));border:1px solid var(--gold);border-radius:12px;padding:12px;max-width:360px;margin:0 auto 14px">
+      <div style="font:800 10px var(--body);letter-spacing:.15em;text-transform:uppercase;color:#8ea9bb">Today's reward</div>
+      <div style="font-family:var(--display);font-size:22px;color:var(--gold);margin-top:3px">${loginRewLabel(rew)}</div>
+      <div class="small muted" style="margin-top:3px">Added to your account.</div></div>
+    <button class="btn goldfill collect" style="max-width:360px;margin:0 auto">Collect</button></div>`);
+  const close=()=>{ S.overlay=null; S.loginReward=null; render(); };
+  ov.querySelector('.x').onclick=close; ov.querySelector('.collect').onclick=close;
+  screen.appendChild(ov);
+}
 function dayKeyBack(n){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
   const dt=new Date(Date.UTC(y,m-1,d,12,0,0)); dt.setUTCDate(dt.getUTCDate()-n);   // calendar arithmetic on the ET date, anchored at noon (DST-safe)
   return dt.getUTCFullYear()*10000+(dt.getUTCMonth()+1)*100+dt.getUTCDate(); }
@@ -5791,6 +5778,7 @@ function render(){
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
     if(S.overlay==='confirmRetire') overlayConfirmRetire(app);
     if(S.overlay==='challenges') overlayChallenges(app);
+    if(S.overlay==='login') overlayLogin(app);
     if(S.overlay==='about') overlayAbout(app);
     if(S.overlay==='feedback') overlayFeedback(app);
     if(S.overlay==='privacy') overlayPrivacy(app);
@@ -21669,7 +21657,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459)
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461)
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -21850,7 +21838,16 @@ function cloudBundle(){
     weeklychal: LS.get(acctKey('bag_weeklychal'), null),         // this week's challenge progress
     coins: LS.get(acctKey('bag_coins'), null),                   // CS183 currency: {spent,seen,owned} (earned is derived)
     packs: LS.get(acctKey('bag_packs'), null),                   // pack pity counters + first-pack-free flag
+    login: LS.get(acctKey('bag_login'), null),                   // CS461: daily-login bonus loop {day, n}
   };
+}
+// daily-login loop: the more-recent claim day wins (so a device that already claimed today won't re-pop);
+// same day → keep the higher loop position.
+function mergeLogin(local, server){
+  const l=(local&&typeof local==='object')?local:{day:null,n:0}, s=(server&&typeof server==='object')?server:{day:null,n:0};
+  const ld=l.day||0, sd=s.day||0;
+  if(ld===sd) return {day:l.day||s.day||null, n:Math.max(l.n||0,s.n||0)};
+  return (ld>sd)?{day:l.day,n:l.n||0}:{day:s.day,n:s.n||0};
 }
 // packs: keep the more-recent pity state (higher `opened`) and UNION the first-pack-free flag (once used
 // on any device, it's used everywhere), so pity + the free pack sync without being re-granted.
@@ -22048,6 +22045,7 @@ async function cloudPull(){
     { const mw=mergeWeeklyChal(LS.get(acctKey('bag_weeklychal'),null), server.weeklychal); if(mw) LS.set(acctKey('bag_weeklychal'), mw); }
     LS.set(acctKey('bag_coins'), mergeCoins(coinState(), server.coins));   // CS183 coins/gear cross-device
     if(server.packs) LS.set(acctKey('bag_packs'), mergePacks(packState(), server.packs));   // pack pity + first-pack-free cross-device
+    { const ml=mergeLogin(LS.get(acctKey('bag_login'),null), server.login); if(ml&&(ml.day||ml.n)) LS.set(acctKey('bag_login'), ml); }   // CS461: daily-login loop cross-device
     reconcileCoins(true);   // self-heal earned total + grant milestone gear silently after a cross-device merge
     cloudPush();
     render();
