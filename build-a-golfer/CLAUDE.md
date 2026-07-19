@@ -10765,6 +10765,29 @@ allows Google Fonts, or self-host Anton.*
   Room (tab highlights), tapping Pro Shop opens the shop (tab highlights), 0 page errors; screenshot
   confirms the bar. Deployed to /golf.
 
+- **CS456 — pixel-ify every icon in the game to match the new Home Screen nav tiles (owner: "make sure
+  all icons throughout the game are pixel like the new ones we did on the Home Screen").** CS454 pixelized
+  the 5 home nav-tile icons (via `PXI` char-grids + `pxMedalSVG`); this extends that pixel look to the
+  ENTIRE `ic()`-driven icon set (~90 vector path icons used across menus, chips, buttons, stat labels,
+  overlays) so the whole UI reads consistently pixel. Built an auto-rasterization pipeline rather than
+  hand-drawing 90 sprites: a Playwright canvas rasterizer (`/tmp/raster2.mjs`) drew each of the 65
+  monochrome `ICONS` SVGs to a canvas, downsampled to an 18×18 grid (alpha>60 threshold), and emitted a
+  char-grid per icon → `PXICONS` (65 mono entries). Colored emblems (coin/coins/medals/legend-token) are
+  handled separately by `pxColorEmblem(name)` → a pixel char-grid + tint hex (coin→PXI.dollar/gold,
+  coins→PX_COINS/gold, medalGold/medalSilver/medalBronze→PXI.medal in the metal color,
+  legendtoken→PX_TOKEN/violet). New renderer `pxIconSVG(rows, sz, color, style)` emits crisp-edges
+  `<rect>` blocks (mono → `fill="currentColor"` so each icon still inherits its text color; colored →
+  the emblem palette via `pxMedalSVG`). The new `ic(name,o)` dispatches: `PXICONS[name]` → pixel mono,
+  else `pxColorEmblem(name)` → pixel colored, else falls back to the original vector `ICONS[name]` (kept
+  in place) so any icon not in the raster set still renders. `pxColorEmblem`/`pxIconSVG` reference
+  `PXI`/`pxShadeHex`/`pxLiteHex`/`pxMedalSVG` (defined later ~13696) only inside function bodies, so they
+  resolve at call time (no TDZ). Verified in Playwright: all sampled icons (trophy/flag/target/cart/user/
+  home/coin/coins/medalGold/legendtoken/gear/fire/swords/cap) return pixel SVGs (viewBox 0 0 18 18); the
+  ≡ menu renders 14/14 pixel icons, the title 14/14; 0 page errors; the icons inherit their theme colors
+  and align inline. The special-case pixel trophies (`PXT_*`, CS356) + the standing/swing golfer sprites
+  are unaffected (separate systems). Deployed to /golf. Tunable: the `PXICONS` char-grids (regen via the
+  rasterizer), the `pxColorEmblem` map.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
