@@ -470,9 +470,11 @@ window.GA_ID='G-L29P5MRWKE';
   .howtop:active{transform:translateY(1px)}
   .howtop:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   /* CS304: persistent bottom tab nav - hub navigation from any page (Home / Career / Daily / Online / Leaderboard) */
+  /* CS472: NO transform on the shown bar. A transform (even translateZ(0)) on a position:fixed element makes
+     iOS Safari anchor it to the document instead of the viewport, so it scrolls up into the screen mid-scroll
+     ("the bottom bar is coming up"). CS439's GPU-promote hack was the cause, not the cure. */
   .botnav{position:fixed; left:0; right:0; bottom:0; z-index:25; background:linear-gradient(180deg,#072612,#04160b);
-    border-top:1px solid var(--line); box-shadow:0 -8px 22px -10px rgba(0,0,0,.7); padding-bottom:env(safe-area-inset-bottom,0px);
-    transform:translateZ(0); -webkit-transform:translateZ(0)}   /* CS439: promote to its own GPU layer so iOS keeps it pinned to the viewport bottom (no mid-scroll drift) */
+    border-top:1px solid var(--line); box-shadow:0 -8px 22px -10px rgba(0,0,0,.7); padding-bottom:env(safe-area-inset-bottom,0px)}
   .botnav-in{display:flex; width:100%; max-width:600px; margin:0 auto}
   .botnav button{flex:1; min-width:0; background:none; border:0; cursor:pointer; color:#9fb3a8; display:flex;
     flex-direction:column; align-items:center; gap:3px; padding:7px 2px 6px; font:800 9px/1 var(--body);
