@@ -11014,6 +11014,19 @@ allows Google Fonts, or self-host Anton.*
   golfer, hw item count 26→29, new 3 have correct rarities (rare/epic/rare) and appear in the pack pool; 0
   page errors. Deployed to /golf. NEXT: eyewear, then patterns, outerwear/legwear.
 
+- **CS471 — fix: top banner wordmark bleeding over the pills on mobile (owner screenshot).** The
+  "RUN THE TOUR" banner wordmark was absolutely centered (CS432, `position:absolute; left:50%;
+  z-index:1`), so it rendered ON TOP of the side pills and collided with the right group — the purple
+  Legend-token pill ("2") was sitting over "TOUR" — because the right group had grown wide (a 7-digit coin
+  balance like "1,017,520" + the legend pill). Two-part fix: (1) the wordmark is now **flex-centered** in
+  the space BETWEEN the two side groups (`.bnbrand{flex:1 1 auto; min-width:0; display:flex; justify-content:
+  center; overflow:hidden}`, `.bnwm{max-width:100%; overflow:hidden}`) — each group owns its own flex track,
+  so the wordmark can never overlap them and clips gracefully if it ever ran out of room; (2) the header
+  coin pill now shows a **compact balance** via new `coinShort()` (1,017,520 → "1.02M", 12,500 → "12.5k",
+  etc.; <10k stays exact) so the right group is much narrower. Verified in Playwright at 390px and 430px
+  with a 7-digit balance + a legend pill: the wordmark clears both side groups (no overlap either side),
+  reads cleanly, coin shows "1.02M", 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

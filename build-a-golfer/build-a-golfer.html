@@ -156,14 +156,14 @@ window.GA_ID='G-L29P5MRWKE';
     padding:calc(env(safe-area-inset-top, 0px) + 7px) 12px 7px;
     background:rgba(9,30,20,.88); -webkit-backdrop-filter:blur(9px); backdrop-filter:blur(9px);
     border-bottom:1px solid rgba(244,227,201,.10)}
-  /* CS432: the wordmark is ABSOLUTELY centered on the banner (true center regardless of side-group widths),
-     so it stays centered whether a guest (empty right side) or a signed-in player (coins/token pills) is
-     playing. The side groups sit at the edges via space-between; the ≤380px font step keeps it clear of the
-     pills on small phones. */
-  .banner{display:flex; align-items:center; justify-content:space-between; gap:10px; max-width:780px; margin:0 auto; position:relative}
+  /* CS471: the wordmark is FLEX-centered in the space BETWEEN the two side groups (not absolutely centered),
+     so it can never overlap the profile/legend/coin pills — each group owns its own flex track. It clips
+     gracefully if it ever ran out of room. (CS432's absolute centering could bleed over the pills once the
+     coin number got wide.) */
+  .banner{display:flex; align-items:center; gap:10px; max-width:780px; margin:0 auto; position:relative}
   .banner .icobtn{width:36px;height:36px;font-size:17px; flex:0 0 auto}
-  .bnbrand{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); background:none;border:0;padding:0;cursor:pointer; z-index:1}
-  .bnwm{display:inline-flex; align-items:baseline; gap:5px; font-family:var(--serif); text-transform:uppercase; white-space:nowrap; line-height:1}
+  .bnbrand{flex:1 1 auto; min-width:0; display:flex; justify-content:center; align-items:center; overflow:hidden; background:none;border:0;padding:0;cursor:pointer}
+  .bnwm{display:inline-flex; align-items:baseline; gap:5px; font-family:var(--serif); text-transform:uppercase; white-space:nowrap; line-height:1; max-width:100%; overflow:hidden}
   .bnwm b{font-weight:700; font-size:17px; letter-spacing:.05em; color:var(--oncard)}   /* CS424: match "Tour" size */
   .bnwm i{font-style:normal; font-weight:700; font-size:17px; letter-spacing:.05em; color:var(--gold)}
   .bnleft{display:flex; align-items:center; gap:8px; min-width:0; flex:0 0 auto}   /* CS426: menu + profile on the left */
@@ -5278,6 +5278,13 @@ function awardPlayCoins(n, label){ if(!sbSignedIn()||!(n>0)) return 0; addBonusC
   try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(label?' · '+label:'')+'<br><span class="small" style="color:#8fe0c4">Spend them at the Pro Shop, or open a pack ▸</span>', 3400); }catch(e){}
   return n; }
 function coinFmt(n){ n=Math.round(n||0); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','); }   // comma-grouped, no $ - the coin icon is the currency mark
+// CS471: compact coin display for the tight top banner pill so a 7-digit balance (1,017,520) doesn't push
+// the right group into the centered wordmark. <10k = exact; then k / M / B with a trimmed decimal.
+function coinShort(n){ n=Math.round(n||0);
+  if(n<10000) return coinFmt(n);
+  if(n<1e6)  return (n/1e3).toFixed(n<1e5?1:0).replace(/\.0$/,'')+'k';
+  if(n<1e9)  return (n/1e6).toFixed(n<1e7?2:1).replace(/\.?0+$/,'')+'M';
+  return (n/1e9).toFixed(2).replace(/\.?0+$/,'')+'B'; }
 function grantMilestoneItems(s){ const m=achMetrics(); MILESTONE_ITEMS.forEach(mi=>{ try{ if(!s.owned[mi.id] && mi.when(m)) s.owned[mi.id]=1; }catch(e){} }); }
 // Legend gear (earn:true special shirts) is auto-granted to owned once its hard req is met, so it's a true unlock.
 function grantUnlockShirts(s){ const m=badgeMetrics(); COSMETIC_SHIRTS.forEach(cs=>{ if(!cs.earn) return; const k='sh:'+cs.id; try{ if(!s.owned[k] && cs.req(m)) s.owned[k]=1; }catch(e){} }); }
@@ -5700,7 +5707,7 @@ function header(){
   if(SHOP_ENABLED){   // global coin counter (owner: everywhere, tap → Pro Shop). Guests see 0 → the shop's sign-in wall.
     const bal = signedIn ? coinBalance() : 0;
     const bump = signedIn && (_coinHdrPrev!=null && bal>_coinHdrPrev);
-    const coin=$(`<button class="coinhdr${bump?' bump':''}" aria-label="${signedIn?('Coins: '+coinFmt(bal)+'. Open Packs.'):'Coins. Sign in to earn and shop.'}"><span class="ci">${ic('coin',{size:'20px'})}</span>${coinFmt(bal)}</button>`);
+    const coin=$(`<button class="coinhdr${bump?' bump':''}" aria-label="${signedIn?('Coins: '+coinFmt(bal)+'. Open Packs.'):'Coins. Sign in to earn and shop.'}"><span class="ci">${ic('coin',{size:'20px'})}</span>${coinShort(bal)}</button>`);
     coin.onclick=()=>{ track(signedIn?'coin_pill_open':'coin_pill_guest'); S.overlay='shop'; S.shopSec='packs'; render(); };   // CS423: opens Packs (guests hit the shop's sign-in wall)
     right.appendChild(coin); if(signedIn) _coinHdrPrev=bal;
   }
