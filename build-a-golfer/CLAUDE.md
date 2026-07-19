@@ -10753,6 +10753,18 @@ allows Google Fonts, or self-host Anton.*
   ("Amateur · quests" / "🎁 1 free pack!") both render, 0 page errors; screenshots confirm the balanced,
   colour-coded, pixel-icon layout. Deployed to /golf.
 
+- **CS455 — bottom nav: Leaderboard → Pro Shop + a new Profile tab (owner).** The persistent bottom tab bar
+  (CS304) was Home · Career · Daily · Online · Leaderboard. Per the owner (AskUserQuestion: keep Daily, 6
+  tabs) it's now **Home · Career · Daily · Profile · Online · Pro Shop**: the rightmost Leaderboard tab
+  became **Pro Shop** (`ic('cart')` → `S.overlay='shop'`), and a **Profile** tab (`ic('user')` →
+  `S.overlay='record'`, the Trophy Room = your profile) was inserted in the middle. `navActiveTab()` updated
+  to highlight `profile` for the record overlay and `shop` for the shop overlay (dropped the old
+  leaderboard→board mapping). Leaderboard is still reachable from the home nav tile + the season-summary
+  "View Leaderboard" button, so nothing is stranded. Verified in Playwright (390px): 6 tabs in the right
+  order with all labels fitting (incl. "Pro Shop") + pixel/vector icons, tapping Profile opens the Trophy
+  Room (tab highlights), tapping Pro Shop opens the shop (tab highlights), 0 page errors; screenshot
+  confirms the bar. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
