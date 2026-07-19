@@ -10942,6 +10942,23 @@ allows Google Fonts, or self-host Anton.*
   prices still 8k/22k/45k, free items still free, 0 page errors. Deployed to /golf. Tunable: `RARITY_PRICE`,
   `BAG_TIER_PRICE`.
 
+- **CS465 — Hockey Stick Putter redrawn to actually look like a hockey stick (owner: "the hockey stick
+  doesn't look like a hockey stick," attached a Happy-Gilmore-style reference — wooden shaft with a black
+  tape ring, an L-shaped blade lying FLAT on the ground with an upturned toe).** The old `hockey` club
+  sprite (in `PXG_CLUBS`, the held-club overlay on the standing golfer + the shop thumbnail) was just a wide
+  rectangular block at the bottom of the shaft — read as a brown blob, not a stick. Re-authored it (via a
+  Python grid builder + PIL/Playwright preview loop): a 2px taped wooden shaft descending from the hand
+  along the same grip path as the other clubs (so it sits in the hand), TWO black tape rings near the blade,
+  then a proper hockey blade lying **flat and horizontal along the ground** — a long paddle with an
+  **upturned toe** at the far end and a cream tape/logo patch on the face — matching the reference. Palette
+  gained an `h` wood highlight and a darker `w` blade-shadow. Only the `hockey` entry of `PXG_CLUBS` +
+  `PXG_CLUB_PAL` changed; the renderer (`paintClub`/`pxGolferCanvas`/`pxClubThumb`), hand placement, and
+  lefty mirroring are untouched, so it renders correctly held (right- AND left-handed) and as a standalone
+  shop tile. Verified in Playwright: the golfer holds a recognizable hockey stick (both handedness) and the
+  Pro Shop thumbnail reads as a hockey stick (taped shaft + flat blade + tape patch), 0 page errors.
+  Deployed to /golf. **This is pass 1 of the broader "enhance all store items" ask — the hockey stick was
+  the specific, referenced complaint; further item art polish continues in follow-up passes.**
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
