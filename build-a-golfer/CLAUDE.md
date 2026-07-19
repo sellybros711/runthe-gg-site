@@ -10788,6 +10788,29 @@ allows Google Fonts, or self-host Anton.*
   are unaffected (separate systems). Deployed to /golf. Tunable: the `PXICONS` char-grids (regen via the
   rasterizer), the `pxColorEmblem` map.
 
+- **CS457 — icon legibility pass: hand-redrew the illegible icons, globe for Online, bigger header coins
+  (owner: "coins too small at the top · use a globe for Online · a lot of them are hard to tell what they
+  are").** CS456 auto-rasterized the vector icons to 18×18, which produced clean pixels but several
+  downsampled to unrecognizable blobs. Rendered a contact sheet of all 65 to spot the worst, then
+  HAND-REDREW 23 of them in a Python authoring+preview harness (`scratchpad/`, render→look→fix loop) for
+  clear silhouettes: **flag** (proper golf pin flag), **fire** (a flame, was a bomb), **trophy** (cup with
+  handles + base), **target** (clean concentric bullseye), **globe** (circle + meridian + equator),
+  **money** (money bag with a $, was a $ with wings), **crown**, **star**, **sparkle**, **bolt**, **cap**,
+  **goat** (horns + face + beard, was reading as a cat), **golfer**, **driver** (club with a head, was a
+  bare stick), **putter**, **ball** (golf ball with dimples, was a plain dot), **shield** (with a
+  checkmark), **medal**, **grit** (flexed bicep), **rock**, **snake**, **ribbon** (award rosette), **jug**,
+  **scales**, **swords** — the high-visibility + previously-illegible set. These are surfaced everywhere via
+  the emoji→icon map (🏆⛳🔥🎯💰👑✨⚡🐐🛡… ) so the whole UI reads clearer. Injected the redrawn grids into
+  `PXICONS` (the renderer/`ic()`/`pxColorEmblem` are unchanged). **Online tab → globe:** the bottom-nav
+  Online tab icon changed from `swords` to `globe` (the crossed-swords now only serve the ⚔ grudge/versus
+  emoji). **Bigger header coins:** the header coin pill icon 16→21px (`.ci`) with the `ic('coin')` render
+  20px, and the Legend-Token pill icon 16→20px, so the currency reads at a glance (a stray global sed also
+  hit a shop pack-button coin whose span is 16px — reverted that one back to 16px). Verified in Playwright:
+  all sampled icons (globe/trophy/flag/fire/target/money/crown/goat/driver/coin/coins/legendtoken/swords/
+  ball/shield) return pixel SVGs (viewBox 0 0 18 18), the Online tab renders the globe, the header coin icon
+  is 20px, 0 page errors; contact-sheet screenshots confirm every redrawn icon now reads clearly. Deployed
+  to /golf. Tunable: the `PXICONS` char-grids, the header `.ci`/`.li` sizes.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
