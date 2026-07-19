@@ -10833,6 +10833,22 @@ allows Google Fonts, or self-host Anton.*
   now unused (left defined). Deployed to /golf. Tunable: the thumb crop padding + `px` scale in
   `pxItemThumb`/`pxPatThumb`, the pattern-swatch base color.
 
+- **CS459 — one-time 1,000,000-coin grant to CSel8 and RunnyJ (owner request; nobody else).** Coins aren't
+  a server table — they're derived from lifetime progress + a cloud-synced `bonus` accumulator (`bag_coins`),
+  so the grant is a targeted, idempotent client credit (the same pattern as the welcome pack / referral /
+  streak rewards). `COIN_GRANTS={csel8:1000000, runnyj:1000000}` + `COIN_GRANT_V=1`; `maybeCoinGrant()` runs
+  after `cloudPull` on sign-in (in the sbApply post-pull chain) and credits `addBonus`-style
+  (`s.bonus += amt`) ONLY when the **server-attributed username** (`sbUsername`, unique — no one else can
+  hold these handles) matches AND the synced version flag hasn't fired (`coinState().grantV < COIN_GRANT_V`).
+  The flag rides in `bag_coins` and is carried by `mergeCoins` (`grantV: max`), so each named account is
+  credited EXACTLY ONCE across all its devices and never anyone else — even a concurrent two-device race
+  yields +1M once (both compute base+1M, merge takes the max). The two accounts get the coins on their next
+  sign-in / app open (iOS may need a full close-and-reopen to load the new code). Verified in Playwright:
+  CSel8 3,300→1,003,300 and idempotent on re-run; RunnyJ (case-insensitive) →1,000,300; any other username
+  unchanged; a signed-out guest gets nothing; `mergeCoins` carries grantV+bonus; 0 page errors. Re-grant
+  later by bumping `COIN_GRANT_V`. NOTE: a future `COIN_EPOCH` re-baseline zeroes `bonus` (would wipe the
+  grant) — re-grant then by bumping `COIN_GRANT_V`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
