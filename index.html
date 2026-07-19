@@ -401,16 +401,16 @@ window.GA_ID='G-L29P5MRWKE';
     .nav.signed-in .nav-acct{position:absolute;top:8px;right:max(12px,env(safe-area-inset-right,0px));}
     .nav.signed-in .nav-chip .nm{display:none;}
     .nav.signed-in .nav-chip{padding:5px;}
-    /* RunThePitch on phones: swap the Now Online strip for the animated phones in that exact slot — below the title, above Play now.
-       display:contents lets the phones (a sibling of .feat-info) interleave with the title + Play now via order. */
-    .feat.soccer .online-strip{display:none;}
+    /* RunThePitch on phones: title → description → animated phones → Play now. The widget chips are a desktop-only
+       feature for this card (the phones are its mobile visual). display:contents lets the phones — a sibling of
+       .feat-info — interleave with the title/description/Play now via order. */
     .feat.soccer .feat-info{display:contents;}
     .feat.soccer .g-head{order:1;}
-    .feat.soccer .shots{order:2;gap:10px;padding:2px 2px 0;}
-    .feat.soccer .phone{width:118px;}
-    .feat.soccer .g-foot{order:3;padding-top:0;}
-    /* phones: drop the paragraph descriptions so both cards' titles, widget chips + Play now fit on one screen (desktop keeps the full copy) */
-    .feat .g-desc{display:none;}
+    .feat.soccer .g-desc{order:2;margin:0;}
+    .feat.soccer .g-chips{display:none;}
+    .feat.soccer .shots{order:3;gap:9px;padding:2px 2px 0;}
+    .feat.soccer .phone{width:100px;}
+    .feat.soccer .g-foot{order:4;padding-top:0;}
     .feat .g-chips{padding-top:2px;}
   }
 
@@ -544,7 +544,7 @@ window.GA_ID='G-L29P5MRWKE';
                 <span class="nm"><span><span class="r">Run</span><span class="t">The</span><span class="g">Tour</span></span><span class="badge-new">New</span><span class="modes"><span class="badge-mode">Solo</span><span class="badge-mode">H2H</span></span></span>
               </span>
             </span>
-            <p class="g-desc">Draft one skill from golf's greatest, build your player, then chase majors and glory across a 30-year pro career.</p>
+            <p class="g-desc">A daily golf challenge at its core — plus a full 30-year career mode and online head-to-head play.</p>
             <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" fill="#EBA61F"/><rect x="2" y="2" width="8" height="8" fill="#f3dca0"/><rect x="4" y="4" width="4" height="4" fill="#EBA61F"/><rect x="5" y="5" width="2" height="2" fill="#E5402A"/></svg>Daily Challenge</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="5" y="2" width="1" height="8" fill="#f3dca0"/><rect x="6" y="2" width="4" height="1" fill="#EBA61F"/><rect x="6" y="3" width="3" height="1" fill="#EBA61F"/><rect x="6" y="4" width="2" height="1" fill="#EBA61F"/><rect x="6" y="5" width="1" height="1" fill="#EBA61F"/><rect x="3" y="10" width="6" height="1" fill="#cda24a"/></svg>Career Mode</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="4" y="1" width="1" height="2" fill="#EBA61F"/><rect x="7" y="1" width="1" height="2" fill="#EBA61F"/><rect x="2" y="2" width="8" height="8" fill="#f3dca0"/><rect x="2" y="2" width="8" height="3" fill="#EBA61F"/><rect x="3" y="6" width="1" height="1" fill="#11432f"/><rect x="5" y="6" width="1" height="1" fill="#11432f"/><rect x="7" y="6" width="1" height="1" fill="#11432f"/><rect x="3" y="8" width="1" height="1" fill="#11432f"/><rect x="5" y="8" width="1" height="1" fill="#11432f"/><rect x="7" y="8" width="1" height="1" fill="#11432f"/></svg>30-Year Sim</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="4" y="1" width="4" height="1" fill="#EBA61F"/><rect x="3" y="2" width="6" height="1" fill="#EBA61F"/><rect x="2" y="3" width="8" height="1" fill="#EBA61F"/><rect x="2" y="4" width="8" height="1" fill="#EBA61F"/><rect x="2" y="5" width="8" height="1" fill="#EBA61F"/><rect x="2" y="6" width="8" height="1" fill="#EBA61F"/><rect x="2" y="7" width="8" height="1" fill="#EBA61F"/><rect x="3" y="8" width="6" height="1" fill="#EBA61F"/><rect x="4" y="9" width="4" height="1" fill="#EBA61F"/><rect x="3" y="5" width="6" height="1" fill="#35C4CD"/><rect x="5" y="2" width="1" height="7" fill="#35C4CD"/><rect x="3" y="4" width="1" height="3" fill="#35C4CD"/><rect x="8" y="4" width="1" height="3" fill="#35C4CD"/></svg>Online Modes</span></span>
             <div class="g-foot"><a class="play" href="/golf/">Play now <span class="arw">→</span></a></div>
           </div>
@@ -567,13 +567,7 @@ window.GA_ID='G-L29P5MRWKE';
               </span>
             </span>
             <p class="g-desc">Spin a nation &amp; year, draft a legend each round, build your dream squad, then simulate your World Cup run.</p>
-            <span class="online-strip">
-              <span class="ol-hd"><span class="ol-dot"></span>Now Online</span>
-              <span class="ol-modes">
-                <span class="ol-mode"><span class="m-nm">1v1 Friendlies</span><span class="m-sub">Live head-to-head match</span></span>
-                <span class="ol-mode"><span class="m-nm">World Cup Pool</span><span class="m-sub">48 players · full tournament</span></span>
-              </span>
-            </span>
+            <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="3" width="1" height="3" fill="#EBA61F"/><rect x="9" y="3" width="1" height="3" fill="#EBA61F"/><rect x="3" y="2" width="6" height="1" fill="#EBA61F"/><rect x="3" y="3" width="6" height="1" fill="#EBA61F"/><rect x="3" y="4" width="6" height="1" fill="#EBA61F"/><rect x="4" y="5" width="4" height="1" fill="#EBA61F"/><rect x="5" y="6" width="2" height="1" fill="#EBA61F"/><rect x="5" y="7" width="2" height="1" fill="#EBA61F"/><rect x="4" y="8" width="4" height="1" fill="#EBA61F"/><rect x="3" y="9" width="6" height="1" fill="#EBA61F"/></svg>World Cup</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" fill="#35C4CD"/><rect x="2" y="2" width="8" height="8" fill="#bfe9df"/><rect x="4" y="4" width="4" height="4" fill="#35C4CD"/><rect x="5" y="5" width="2" height="2" fill="#EF4E50"/></svg>Daily Challenge</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="5" y="1" width="2" height="1" fill="#EBA61F"/><rect x="5" y="2" width="2" height="1" fill="#EBA61F"/><rect x="1" y="3" width="10" height="1" fill="#EBA61F"/><rect x="2" y="4" width="8" height="1" fill="#EBA61F"/><rect x="3" y="5" width="6" height="1" fill="#EBA61F"/><rect x="4" y="6" width="4" height="1" fill="#EBA61F"/><rect x="3" y="7" width="3" height="1" fill="#EBA61F"/><rect x="6" y="7" width="3" height="1" fill="#EBA61F"/><rect x="2" y="8" width="2" height="1" fill="#EBA61F"/><rect x="8" y="8" width="2" height="1" fill="#EBA61F"/></svg>Draft Legends</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="4" y="1" width="4" height="1" fill="#35C4CD"/><rect x="3" y="2" width="6" height="1" fill="#35C4CD"/><rect x="2" y="3" width="8" height="1" fill="#35C4CD"/><rect x="2" y="4" width="8" height="1" fill="#35C4CD"/><rect x="2" y="5" width="8" height="1" fill="#35C4CD"/><rect x="2" y="6" width="8" height="1" fill="#35C4CD"/><rect x="2" y="7" width="8" height="1" fill="#35C4CD"/><rect x="3" y="8" width="6" height="1" fill="#35C4CD"/><rect x="4" y="9" width="4" height="1" fill="#35C4CD"/><rect x="3" y="5" width="6" height="1" fill="#EBA61F"/><rect x="5" y="2" width="1" height="7" fill="#EBA61F"/><rect x="3" y="4" width="1" height="3" fill="#EBA61F"/><rect x="8" y="4" width="1" height="3" fill="#EBA61F"/></svg>Online Modes</span></span>
             <div class="g-foot"><a class="play" href="/soccer/">Play now <span class="arw">→</span></a></div>
           </div>
         </div>
