@@ -10899,6 +10899,29 @@ allows Google Fonts, or self-host Anton.*
   under the pinned name column with NO bleed-through. It was the only left-sticky column in the app (grep-
   confirmed), so no other scorecard has the same bug. 0 page errors. Deployed to /golf.
 
+- **CS463 — fixed: Pro Shop / pack-opening buttons freezing mid-open (owner: "Buttons in the pro shop
+  and when opening packs/bundles are getting frozen/not working").** Root-caused + reproduced in Playwright:
+  `overlayPackWheel` (the CS404 spinning-reel pack reveal) keeps all its animation/footer state in closures
+  over DOM built during ONE render pass. If a background `render()` fires MID-SPIN — e.g.
+  `sbLoadProfile().then(render)` landing a few seconds after sign-in (slow for a data-heavy account like
+  CSel8) — the overlay is rebuilt from scratch; the new instance saw `w.spun=true, w.done=false` but never
+  re-invoked the animation, so it stranded on "Landing..." (a.k.a. "Good luck...") with NO footer buttons
+  and no Close, freezing the whole shop behind it. Confirmed the exact frozen state pre-fix:
+  `{spun:true, done:false, footBtns:[], footText:"Good luck..."}` that never resolved.
+  Fix (all in `overlayPackWheel`): (1) split the reel animation out of `spin()` into a standalone
+  `runSpinAnim()`; the overlay tail now RESUMES a spin in progress (`if(w.spun && !w.done) runSpinAnim();`)
+  instead of only auto-spinning a fresh bundle — so a mid-spin rebuild replays the animation and lands
+  normally. (2) A `land()` guard (`if(ov && ov.isConnected===false) return;`) so a STALE (detached, re-rendered-
+  away) instance's pending `transitionend`/safety-net timeout can't touch detached DOM or append confetti to
+  the live app. (3) A Close ✕ escape hatch on the `.ov.packov` overlay — shown ONLY when nothing prepaid is
+  left un-opened (a single pack, or the last pack of a bundle), since `rollPackWin` grants the shown item at
+  `startPackDeal` time so closing then loses nothing; deliberately HIDDEN mid-bundle (done<total) so it can
+  never forfeit prepaid packs. Verified in Playwright: a background `render()` mid-spin now resumes and lands
+  with the full footer (`Equip / Open another / Done`) + the item granted (was permanently stranded); a
+  5-pack bundle auto-spins, resumes correctly on a mid-spin re-render, lands pack 1 with the "Next pack ▸"
+  button, and the Close ✕ is correctly absent while 4 prepaid packs remain; 0 page errors on both paths.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -20950,6 +20950,13 @@ function overlayPackWheel(app){
   var ov=$('<div class="ov packov" role="dialog" aria-modal="true" aria-label="Pack wheel"></div>');
   function titleTxt(){ var pre=(pt.id!=='base'?('<span style="color:'+pt.col+'">'+esc(pt.name)+'</span> · '):''); if(S.packBundle){ pre+='Pack '+(S.packBundle.done||1)+' of '+S.packBundle.total+' · '; } return pre+(w.done?'You got it!':(w.spun?'Landing...':'Spin for your pack')); }
   var title=$('<div class="packtitle">'+titleTxt()+'</div>'); ov.appendChild(title);
+  // CS463: an escape hatch so a pack open can never trap the shop. Only shown when nothing prepaid is left
+  // un-opened (a single pack, or the last pack of a bundle) — the shown item is already granted, so closing loses nothing.
+  if(!S.packBundle || (S.packBundle.done||0) >= S.packBundle.total){
+    var xb=$('<button class="x" aria-label="Close">✕</button>');
+    xb.onclick=function(){ S.packWheel=null; S.packBundle=null; S.overlay='shop'; S.shopSec='packs'; render(); };
+    ov.appendChild(xb);
+  }
   var wheel=$('<div class="pwheel" style="border-color:'+pt.col+';box-shadow:inset 0 0 30px rgba(0,0,0,.5),0 0 22px '+pt.glow+'"></div>');
   var strip=$('<div class="pwstrip"></div>');
   var CW=104, GAP=8, PITCH=CW+GAP;
@@ -20996,6 +21003,7 @@ function overlayPackWheel(app){
   // final resting transform: center the winning cell under the pointer, with a small random offset within it
   function finalX(vw, jitter){ return vw/2 - (w.winIdx*PITCH + CW/2) + (jitter||0); }
   function land(){
+    if(ov && ov.isConnected===false) return;   // CS463: a stale (re-rendered-away) instance must not touch detached DOM / append confetti to the live app
     w.done=true; title.innerHTML=titleTxt();
     var winCell=strip.children[w.winIdx];
     if(winCell) winCell.classList.add('pwlit');
@@ -21005,8 +21013,9 @@ function overlayPackWheel(app){
       try{ confettiRun(cv,{colors:[rc,PACK_RCOL.legendary,'#ffffff'],mode:'cannons',count:80}); }catch(e){} }
     renderFoot();
   }
-  function spin(){
-    if(w.spun) return; w.spun=true; title.innerHTML=titleTxt(); renderFoot();
+  // CS463: the actual reel animation, split out of spin() so a mid-spin re-render (e.g. a background
+  // sbLoadProfile().then(render) landing seconds after sign-in) can RESUME it instead of stranding on "Landing..."
+  function runSpinAnim(){
     var vw=wheel.clientWidth||360;
     var jitter=Math.round((Math.random()*2-1)*(CW*0.28));   // land slightly off dead-center, still under the pointer
     if(reduce){ strip.style.transform='translateX('+finalX(vw,jitter)+'px)'; land(); return; }
@@ -21025,11 +21034,17 @@ function overlayPackWheel(app){
     strip.addEventListener('transitionend', onEnd, {once:true});
     setTimeout(onEnd, DUR+260);   // safety net
   }
+  function spin(){
+    if(w.spun) return; w.spun=true; title.innerHTML=titleTxt(); renderFoot();
+    runSpinAnim();
+  }
   renderFoot();
   app.appendChild(ov);
-  // bundle packs are prepaid, so auto-spin them (no tapping "Spin" 5 times); a single pack waits for a
-  // deliberate tap for the dopamine moment. Reduced-motion still resolves instantly inside spin().
-  if(!w.spun && !w.done && S.packBundle){ setTimeout(spin, 300); }
+  // CS463: resume a spin that was in progress when this overlay was rebuilt (w.spun && !w.done); otherwise
+  // bundle packs are prepaid so auto-spin them (no tapping "Spin" 5 times); a single pack waits for a
+  // deliberate tap for the dopamine moment. Reduced-motion still resolves instantly.
+  if(w.spun && !w.done){ runSpinAnim(); }
+  else if(!w.spun && !w.done && S.packBundle){ setTimeout(spin, 300); }
 }
 function overlayPackReveal(app){
   var d=S.packDeal; if(!d||!d.cards||!d.cards.length){ S.overlay=null; return; }
