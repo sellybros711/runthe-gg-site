@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <!-- RunTheTour, solo season · v2 · RunThePitch skin -->
-<title>Run The Tour · Daily Golf Simulation Game</title>
+<title>Run The Tour — Free Daily Golf Simulation Game</title>
 <meta name="description" content="Run The Tour is a free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the pro on a new course every day, run a full career, and play head-to-head online.">
 <meta name="theme-color" content="#11432f">
 <link rel="canonical" href="https://runthe.gg/golf/">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"VideoGame","@id":"https://runthe.gg/golf/#game","name":"Run The Tour","alternateName":"RunTheTour","url":"https://runthe.gg/golf/","description":"Run The Tour is a free daily golf simulation game. Draft a signature skill from each real pro to build your own golfer, then beat the pro on a new famous course every day, run a full career of up to 42 years, and play head-to-head online.","image":"https://runthe.gg/golf/og.png","genre":["Sports game","Simulation game","Golf"],"gamePlatform":["Web browser"],"operatingSystem":"Any modern web browser (desktop or mobile)","applicationCategory":"Game","playMode":["SinglePlayer","MultiPlayer"],"inLanguage":"en","isAccessibleForFree":true,"publisher":{"@id":"https://runthe.gg/#org"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD","availability":"https://schema.org/InStock"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"RunThe.GG","item":"https://runthe.gg/"},{"@type":"ListItem","position":2,"name":"Run The Tour","item":"https://runthe.gg/golf/"}]}]}</script>
 <!-- Open Graph / Twitter. Absolute URLs for the runthe.gg/golf deploy; og.png sits beside this file. -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
@@ -21,7 +22,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Tour · Daily Golf Simulation Game">
 <meta name="twitter:description" content="A free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the pro on a new course every day, run a full career, and play head-to-head online.">
-<meta name="twitter:image" content="https://runthe.gg/golf/og.png?v=2">
+<meta name="twitter:image" content="https://runthe.gg/golf/og.png?v=8">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 76'%3E%3Cpath d='M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z' fill='%2311432f' stroke='%23cda24a' stroke-width='3'/%3E%3Cpath d='M26 17 v36' stroke='%23e9d8ac' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M26 18 h16 l-4 5 4 5 h-16 z' fill='%23EBA61F'/%3E%3Cellipse cx='32' cy='57' rx='17' ry='5.4' fill='none' stroke='%23cda54a' stroke-width='1.6'/%3E%3Ccircle cx='38' cy='57' r='2.2' fill='%23f4ecd9'/%3E%3C/svg%3E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1567,6 +1568,81 @@ h2{font-size:11px;letter-spacing:.04em}
 <body>
 
 <div id="app" aria-live="polite"></div>
+
+<!-- Static, crawlable overview of Run The Tour for search engines and no-JS clients.
+     Sits below the app; the game renders into #app and never touches this footer. -->
+<footer class="rt-seo" aria-label="About Run The Tour">
+  <style>
+    /* opaque background + generous bottom padding so it reads cleanly below the game and clears the fixed nav bar */
+    .rt-seo{position:relative;z-index:3;background:#06200f;border-top:1px solid rgba(235,166,31,.22);
+      padding:34px 20px 104px;font-family:'Barlow Semi Condensed',system-ui,'Segoe UI',Roboto,sans-serif;
+      line-height:1.55;color:#b7d0be}
+    .rt-seo>*{max-width:700px;margin-left:auto;margin-right:auto}
+    .rt-seo h1{font-family:'Anton',Impact,'Arial Narrow',sans-serif;font-weight:400;text-transform:uppercase;
+      letter-spacing:.01em;font-size:clamp(24px,6vw,34px);line-height:1.05;color:#F4E3C9;margin:0 0 14px}
+    .rt-seo h2{font-family:'Anton',Impact,'Arial Narrow',sans-serif;font-weight:400;text-transform:uppercase;
+      letter-spacing:.02em;font-size:18px;color:#EBA61F;margin:26px 0 8px}
+    .rt-seo p{margin:0 0 13px;font-size:15.5px;color:#b7d0be}
+    .rt-seo b{color:#eaf6ee}
+    .rt-seo ol,.rt-seo ul{margin:0 0 14px;padding-left:20px;font-size:15.5px;color:#b7d0be}
+    .rt-seo li{margin:0 0 7px}
+    .rt-seo li b{color:#eaf6ee}
+    .rt-seo a{color:#EBA61F;font-weight:700;text-decoration:none}
+    .rt-seo a:hover{text-decoration:underline}
+    .rt-links{margin-top:26px;font-size:13.5px;color:#8fae9c}
+    .rt-links a{color:#cfe3d6;font-weight:700}
+    .rt-links .sep{margin:0 7px;color:#4a6a5a}
+  </style>
+
+  <h1>Run The Tour — a free daily golf simulation game</h1>
+  <p><b>Run The Tour</b> (RunTheTour) is a free, browser-based <b>golf simulation game</b> from RunThe.GG.
+     You draft one signature skill from each of golf's greats to build your own golfer, then put that golfer
+     to the test — beat the pros on a new famous course every day, live out a full pro career, or go
+     head-to-head with other players online. No download and no sign-up required: it runs right in your web
+     browser on desktop and mobile.</p>
+
+  <h2>How to play</h2>
+  <ol>
+    <li><b>Build your golfer.</b> Draft a signature skill (driving, approach, putting and more) from real pro
+       golfers to create a player that's uniquely yours.</li>
+    <li><b>Pick a mode.</b> Play the quick <b>Daily Challenge</b>, commit to <b>Career Mode</b>, or take on
+       other players in <b>online</b> Head-to-Head and Scramble matches.</li>
+    <li><b>Play the shot.</b> Choose to attack or play it safe on each signature hole and chase the lowest
+       score — every round is a simulation driven by your golfer's ratings, not twitch reflexes.</li>
+  </ol>
+
+  <h2>Daily Challenge — play 18 a day</h2>
+  <p>Every day brings a new famous course. Play your 18 holes, try to beat the tour average, and build a
+     daily streak. It's the same course for everyone that day, so the leaderboard comes down to how well you
+     build and play your golfer.</p>
+
+  <h2>Career Mode — up to a 42-year career</h2>
+  <p>Start a career and play season after season: chase majors and titles, climb the money list, earn coins
+     and gear, and watch your golfer rise, peak and retire. A standard tour career runs 30 years, and the
+     Legend Circuit extends play to up to 42 years in all — retire whenever you choose.</p>
+
+  <h2>Play online, head-to-head</h2>
+  <p>Run The Tour also has live online play. Face a friend or a matched opponent in a real-time
+     <b>Head-to-Head</b> round, or play a multi-player <b>Scramble</b>. Make a free RunThe.GG account and your
+     trophies, streaks and leaderboard rank follow you across every device and every game on the site.</p>
+
+  <h2>Frequently asked questions</h2>
+  <p><b>Is Run The Tour free to play?</b> Yes. It is completely free, with no download and no account
+     required. Ads keep the game free.</p>
+  <p><b>Do I need an account?</b> No — you can play as a guest. A free account is optional and saves your
+     progress, careers, streaks and leaderboard rank across devices.</p>
+  <p><b>Is this an official PGA Tour or golf game?</b> No. Run The Tour is an independent, unofficial,
+     fan-made game and is not affiliated with, endorsed by, or sponsored by the PGA Tour or any golf
+     organization, tournament or player. Real player names are used to build a fictional, simulated golf game
+     for entertainment only.</p>
+
+  <div class="rt-links">
+    <a href="/">RunThe.GG home</a><span class="sep">·</span>
+    <a href="/soccer/">RunThePitch</a><span class="sep">·</span>
+    <a href="privacy.html">Privacy</a><span class="sep">·</span>
+    <a href="terms.html">Terms</a>
+  </div>
+</footer>
 
 <script>
 const $=(h)=>{const t=document.createElement('template'); t.innerHTML=emojifyIcons(h.trim()); return t.content.firstChild;};
