@@ -691,7 +691,7 @@ window.GA_ID='G-L29P5MRWKE';
   .osreel .name.preview{height:36px; overflow:hidden; display:block; width:100%; padding:0; animation:none}
   .previewstrip{will-change:transform; animation-name:previewscroll; animation-timing-function:linear; animation-iteration-count:infinite}
   .previewstrip .slotrow{height:36px; line-height:36px; font-family:var(--display); font-weight:400; font-size:19px; text-transform:uppercase; letter-spacing:.02em}
-  @keyframes previewscroll{from{transform:translateY(0)} to{transform:translateY(-50%)}}
+  @keyframes previewscroll{from{transform:translateY(-50%)} to{transform:translateY(0)}}   /* CS460: scroll DOWN (was up) */
   @media(prefers-reduced-motion:reduce){ .previewstrip{animation:none} }
   .osgridhint{max-width:520px; margin:0 auto 7px}
   .osgrid{max-width:520px; margin:0 auto; grid-template-columns:1fr 1fr!important; gap:6px}
@@ -11105,16 +11105,17 @@ function reveal(){
 // so it reads as a spinning wheel rather than names flickering in place. Used by every draft/off-season spin.
 function slotSpin(el, finalName, done){
   const H=34;   // slot row height (matches .name.slotting viewport)
-  const rows=[]; for(let i=0;i<24;i++) rows.push(GOLFERS[Math.floor(Math.random()*GOLFERS.length)].name);
-  rows.push(finalName);
+  // CS460: reverse the spin direction (names scroll DOWN, not up). Winner is the FIRST row; start scrolled
+  // up so it's above the viewport, then animate DOWN to translateY(0), decelerating to a stop on the winner.
+  const rows=[finalName]; for(let i=0;i<24;i++) rows.push(GOLFERS[Math.floor(Math.random()*GOLFERS.length)].name);
   el.classList.add('slotting');
   el.innerHTML=`<div class="slotstrip">${rows.map(nm=>`<div class="slotrow" style="height:${H}px;line-height:${H}px">${esc(nm)}</div>`).join('')}</div>`;
-  const strip=el.querySelector('.slotstrip'), endY=-(rows.length-1)*H;
-  strip.style.transform='translateY(0)';
+  const strip=el.querySelector('.slotstrip'), startY=-(rows.length-1)*H;
+  strip.style.transform=`translateY(${startY}px)`;
   let fired=false; const fin=()=>{ if(fired) return; fired=true; done(); };
   requestAnimationFrame(()=>requestAnimationFrame(()=>{   // 2 frames so the start transform is committed before the transition
     strip.style.transition='transform 1.25s cubic-bezier(.13,.72,.14,1)';   // fast → decelerate to a stop
-    strip.style.transform=`translateY(${endY}px)`;
+    strip.style.transform='translateY(0)';
   }));
   strip.addEventListener('transitionend', fin, {once:true});
   setTimeout(fin, 1600);   // safety net if transitionend is missed

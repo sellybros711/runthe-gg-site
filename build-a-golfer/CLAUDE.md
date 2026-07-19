@@ -10849,6 +10849,16 @@ allows Google Fonts, or self-host Anton.*
   later by bumping `COIN_GRANT_V`. NOTE: a future `COIN_EPOCH` re-baseline zeroes `bonus` (would wipe the
   grant) — re-grant then by bumping `COIN_GRANT_V`.
 
+- **CS460 — reversed the golfer wheel spin direction + the idle preview wheel (owner).** Both the draft/
+  off-season/H2H slot-machine spin (`slotSpin`, CS341) and the idle preview wheel (`reelPreviewHTML` +
+  the `previewscroll` keyframe, CS449) scrolled UP (content translated upward). Reversed both to scroll
+  DOWN: `slotSpin` now puts the winner as the FIRST row and animates from scrolled-up (`translateY(-(n-1)*H)`)
+  to `translateY(0)`, decelerating onto the winner as the names roll downward (same cubic-bezier ease, just
+  reversed start/end); the `previewscroll` keyframe flipped from `0→-50%` to `-50%→0`. Verified in
+  Playwright: the preview keyframe is now `-50% → 0`, the slot strip starts at `-816px` and animates to `0`
+  with the winner as row 0, and a real draft spin still lands correctly (Hiroshi Tai, spinning→false), 0
+  page errors. Applies everywhere the reel is used (career draft, daily draft, off-season, online H2H).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
