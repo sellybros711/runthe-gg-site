@@ -10959,6 +10959,23 @@ allows Google Fonts, or self-host Anton.*
   Deployed to /golf. **This is pass 1 of the broader "enhance all store items" ask — the hockey stick was
   the specific, referenced complaint; further item art polish continues in follow-up passes.**
 
+- **CS466 — store-art polish pass 1: CLUBS category redrawn for clarity + distinctness (owner: "go
+  category by category ... make them look better and more like the items they are").** The club head
+  sprites (in `PXG_CLUBS`, shown held on the standing golfer + as Pro Shop tiles) were samey/blobby: driver
+  & wood were near-identical small blobs, iron/wedge/blade all read as the same striped block, and the
+  "Blade Putter" (blade) looked like an iron rather than a putter. Redrew 7 heads via a parametric Python
+  builder + PIL/Playwright preview loop (standard chrome palette for stock clubs, each club's own
+  PXG_CLUB_PAL for cosmetics): **driver** = a big rounded 460cc titanium head (now clearly the biggest),
+  **wood** = a smaller rounded fairway-wood head, **iron** = a compact blade with a hosel, **wedge** = a
+  taller lofted face with visible groove lines, **putter** = a flat mallet with a sight dot, **persimmon**
+  = a classic pear-shaped wood head with a cream face insert + gold sole, **blade** = a thin flat milled
+  BLADE PUTTER with a sight (no longer an iron look-alike). The shaft path + grip alignment + lefty
+  mirroring are unchanged, so every club still sits correctly in the hand (both handedness) and as a
+  standalone tile; excalibur/wand (CS414) and hockey (CS465) were already good and untouched. Verified all
+  10 clubs render distinct + correctly-placed on the golfer and as shop thumbnails from the live file, 0
+  page errors. Deployed to /golf. NEXT categories (owner-approved order): balls, cleats, then headwear,
+  eyewear, patterns, outerwear/legwear — polishing each + adding new items where they fit.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
