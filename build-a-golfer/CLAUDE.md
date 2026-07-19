@@ -10811,6 +10811,28 @@ allows Google Fonts, or self-host Anton.*
   is 20px, 0 page errors; contact-sheet screenshots confirm every redrawn icon now reads clearly. Deployed
   to /golf. Tunable: the `PXICONS` char-grids, the header `.ci`/`.li` sizes.
 
+- **CS458 — Pro Shop item tiles show a clean picture of the ITEM by itself (owner: "the preview for each
+  item needs to be a clean picture of each item by itself").** Every Headwear/Eyewear/Pattern/Outerwear/
+  Legwear tile was rendering `pxCosThumb` — a cropped band of the whole GOLFER wearing the item — so all
+  the hats showed the same teal-shirt torso crop and you couldn't see the actual hat (the crop math was
+  also stale: it assumed a 24-row sprite, but the golfer is 44×56 since CS353, so it cropped the torso for
+  everything). Replaced with standalone item pictures, matching how the club/ball/cleats thumbs already
+  work: new **`pxItemThumb(cat,id)`** paints JUST that item's sprite map (headwear `PXG_HATS`/`PXG_CAP`/
+  `PXG_VISOR`, eyewear `PXG_EYEWEAR`, outerwear `PXG_TOPS`, legwear `PXG_LEGS`) with its own palette
+  (heritage/novelty/basic-cap colors + lens/chrome), auto-crops to the item's bounding box, and scales it
+  into the tile — no golfer. New **`pxPatThumb(id)`** renders a clean pattern SWATCH by sampling the
+  pattern's `f(x,y)` over the shirt-region coordinates (so absolute-position patterns like Rainbow Tie-Dye
+  and Ripple read correctly; fixed patterns show their real locked colors — camo green, tie-dye rainbow).
+  A `none`/empty item shows a "None" placeholder. `cosTileHTML` now routes `pat`→`pxPatThumb`,
+  `hw`/`ew`/`top`/`leg`→`pxItemThumb`; `club`/`ball`/`cleats` already rendered standalone (unchanged), and
+  the color swatches (shirt/hat/trousers/shoes) were already clean. The big dressing-room preview + the
+  buy-preview-on-golfer are untouched (those SHOULD show the golfer). Verified in Playwright: Headwear (25
+  tiles) / Eyewear / Patterns all render distinct standalone item images (full-URL distinctness: 7/7
+  patterns, 5/5 hats), outerwear/legwear/heritage/none all produce valid thumbs, 0 page errors; screenshots
+  confirm each tile is now a clean picture of the hat/glasses/pattern itself. `pxCosThumb`/`pxCropImg` are
+  now unused (left defined). Deployed to /golf. Tunable: the thumb crop padding + `px` scale in
+  `pxItemThumb`/`pxPatThumb`, the pattern-swatch base color.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

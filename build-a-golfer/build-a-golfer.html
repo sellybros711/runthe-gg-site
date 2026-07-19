@@ -7215,6 +7215,45 @@ function pxCleatsThumb(id){ const map=PXG_CLEATS[id], pal=PXG_CLEATS_PAL[id];
   const ox=12,oy=49,W=22,H=8,px=5; const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
   for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
   return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
+// CS458: a clean standalone picture of a wearable ITEM by itself (headwear/eyewear/outerwear/legwear) —
+// paint just that item's sprite map, auto-crop to its bounding box, and scale it into the tile (no golfer).
+function pxNoneThumb(){ return `<span class="sthumb color" style="background:#12251b;display:flex;align-items:center;justify-content:center;color:#7fae9a;font:800 11px var(--body)">None</span>`; }
+function pxItemThumb(cat,id){
+  if(!id||id==='none') return pxNoneThumb();
+  const look=S.look||DEFLOOK, av=avLook(look);
+  const P=Object.assign({ k:PXG_FIX.k, c:av.hatHex, b:pxShade(av.hatHex,-24), w:pxShade(av.hatHex,26), E:'#20242c', S:'#e8ebf0' }, PXG_NOV);
+  let map=null, pal=null;
+  if(cat==='hw'){ map=(id==='visor')?PXG_VISOR:(PXG_HATS[id]||PXG_CAP); pal=PXG_HERITAGE_HAT_PAL[id]||null; }
+  else if(cat==='ew'){ map=PXG_EYEWEAR[id]; }
+  else if(cat==='top'){ map=PXG_TOPS[id]; pal=PXG_TOP_PAL[id]; }
+  else if(cat==='leg'){ map=PXG_LEGS[id]; pal=PXG_LEG_PAL[id]; }
+  if(!map) return pxNoneThumb();
+  const col=(ch)=>{ if(ch==='.'||ch===' ')return null; return (pal&&pal[ch])||P[ch]||null; };
+  let x0=99,y0=99,x1=-1,y1=-1;
+  for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ if(!col(row[x]))continue;
+    if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } }
+  if(x1<0) return pxNoneThumb();
+  x0=Math.max(0,x0-1); y0=Math.max(0,y0-1); x1=Math.min(PXG_W-1,x1+1); y1=Math.min(PXG_H-1,y1+1);
+  const W=x1-x0+1, H=y1-y0+1, px=6;
+  const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
+  for(let y=y0;y<=y1;y++){ const row=map[y]||''; for(let x=x0;x<=x1;x++){ const c=col(row[x]); if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-x0)*px,(y-y0)*px,px,px); } }
+  return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`;
+}
+// CS458: a clean pattern SWATCH (the pattern itself, not on the golfer) — sample the pattern fn over the
+// shirt-region coordinates onto a small square so absolute-position patterns (tie-dye, ripple) read right.
+function pxPatThumb(id){
+  const base='#54736a';
+  const pd=PXPAT_BY[id];
+  if(!pd||id==='none') return `<span class="sthumb color" style="background:${base}"></span>`;
+  const px=8, W=18, H=15, sx=13, sy=25;
+  const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
+  const a1=pxShade(base,42), a2=pxShade(base,80);
+  for(let j=0;j<H;j++){ for(let i=0;i<W;i++){ const gx=sx+i, gy=sy+j; let c;
+    if(pd.fixed){ const cols=pd.cols||[base]; c=cols[pd.f(gx,gy)|0]||cols[0]; }
+    else { const a=pd.f(gx,gy); c=a?(a===2?a2:a1):base; }
+    ctx.fillStyle=c; ctx.fillRect(i*px,j*px,px,px); } }
+  return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`;
+}
 function scrSetup(){
   const guest=!sbSignedIn();
   const editing=!!S.setupEdit;   // CS356c: editing the profile golfer from the Trophy Room (not starting a career)
@@ -20421,7 +20460,8 @@ function cosTileHTML(cat,o){
      : (cat==='club') ? pxClubThumb(o.id)
      : (cat==='ball') ? pxBallThumb(o.id)
      : (cat==='cleats') ? pxCleatsThumb(o.id)
-     : (cat==='pat'||cat==='hw'||cat==='ew'||cat==='top'||cat==='leg') ? pxCosThumb(cat,o.id)
+     : (cat==='pat') ? pxPatThumb(o.id)
+     : (cat==='hw'||cat==='ew'||cat==='top'||cat==='leg') ? pxItemThumb(cat,o.id)
      : (o.pat!==undefined
         ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
         : `<span class="sthumb color" style="background:${o.col}"></span>`);
