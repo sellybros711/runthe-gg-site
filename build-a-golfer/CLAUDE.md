@@ -10990,6 +10990,17 @@ allows Google Fonts, or self-host Anton.*
   daily round (which uses the ball's hole-view tracer) runs clean; 0 page errors. Deployed to /golf. NEXT:
   cleats (add a few), then headwear, eyewear, patterns, outerwear/legwear.
 
+- **CS468 — store-art pass 3: CLEATS category expanded 1 → 5 (owner: keep adding items).** Cleats only had
+  Rocket. Added 4 new footwear cosmetics off a clean golf-shoe base sprite (toe/saddle/heel/spiked sole,
+  both feet) recoloured per item: **Saddle Shoes** (common, brown/white two-tone), **Sunday Kicks** (rare,
+  red/white sneaker), **Neon Trainers** (rare, green/white), **Golden Spikes** (epic, gold). Rocket stays
+  the legendary. Wired: sprites into `PXG_CLEATS`, palettes into `PXG_CLEATS_PAL`, prices into the
+  `cosmeticPriceBase('cleats')` map (rarity via `packRarityOf` → CS464 ladder: common 15k/rare 45k/epic
+  110k), and 4 entries into the hardcoded `cosmeticItems('cleats')` list. Verified in Playwright: all render
+  as shoes on the golfer's feet + as shop thumbnails, correct rarities/prices, and all 5 appear in the pack
+  pool; 0 page errors. Deployed to /golf. NEXT: headwear (biggest category — polish + add), then eyewear,
+  patterns, outerwear/legwear.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
