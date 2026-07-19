@@ -433,17 +433,26 @@ window.GA_ID='G-L29P5MRWKE';
   @media (prefers-reduced-motion:reduce){.online-dot{animation:none}}
   /* secondary menu row: demoted small links */
   /* ---- title nav tiles (Leaderboard / Trophy Room / Pro Shop / How to Play) ---- */
-  .home-nav{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; max-width:440px; margin:18px auto 0}
-  @media(min-width:600px){ .home-nav{grid-template-columns:repeat(4,1fr); max-width:640px} }
-  .navtile{display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center; gap:5px;
-    padding:15px 8px 13px; border-radius:15px; background:var(--panel); border:1.5px solid var(--panelb); color:var(--oncard);
-    font-family:var(--body); cursor:pointer; box-shadow:0 4px 10px -3px rgba(0,0,0,.4), 0 14px 26px -12px rgba(0,0,0,.55); transition:transform .12s ease, border-color .12s ease, background .12s ease}
-  .navtile:hover{transform:translateY(-2px); border-color:var(--gold); background:rgba(241,208,74,.09)}
-  .navtile:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
-  .navtile .ni{font-size:23px; line-height:1; color:var(--gold); margin-bottom:1px}
-  .navtile .nl{font-weight:800; font-size:13.5px; letter-spacing:.01em}
-  .navtile .ns{font-size:11px; color:var(--muted); font-weight:700; display:inline-flex; align-items:center; gap:4px}
-  .navtile.hot{border-color:rgba(241,208,74,.55); background:linear-gradient(160deg,rgba(241,208,74,.12),rgba(241,208,74,.03))}
+  /* CS454: balanced 2-col grid (Invite spans full-width so nothing floats orphaned); each tile carries
+     its own accent color (--acc, set inline) + a pixel icon so it stands out on its own. */
+  .home-nav{display:grid; grid-template-columns:repeat(2,1fr); gap:11px; max-width:470px; margin:18px auto 0}
+  .navtile{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center; gap:8px;
+    padding:14px 8px 12px; border-radius:14px; color:var(--oncard); font-family:var(--body); cursor:pointer;
+    box-shadow:0 6px 14px -9px rgba(0,0,0,.55); transition:transform .12s ease, border-color .12s ease, box-shadow .12s ease}
+  .navtile:hover{transform:translateY(-2px); border-color:var(--acc)!important; box-shadow:0 9px 20px -8px var(--acc)}
+  .navtile:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+  .navtile .nichip{width:42px; height:42px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex:0 0 auto}
+  .navtile .nichip svg{width:30px; height:30px; display:block}
+  .navtile .ntext{display:flex; flex-direction:column; gap:2px; align-items:center; min-width:0}
+  .navtile .nl{font-weight:800; font-size:13px; letter-spacing:.01em; line-height:1.1}
+  .navtile .ns{font-size:10.5px; color:var(--muted); font-weight:700; display:inline-flex; align-items:center; gap:4px; line-height:1.1}
+  .navtile .ndot{position:absolute; top:8px; right:9px; width:11px; height:11px; border-radius:50%; background:#e2554e; border:2px solid #0e2016; box-shadow:0 0 6px rgba(226,85,78,.9)}
+  .navtile.wide{grid-column:1/-1; flex-direction:row; text-align:left; justify-content:flex-start; gap:12px; padding:13px 15px}
+  .navtile.wide .ntext{align-items:flex-start}
+  .navtile.wide .nl{font-size:14.5px}
+  .navtile.wide .nichip{width:46px; height:46px}
+  .navtile.wide .nichip svg{width:33px; height:33px}
+  .navtile.wide .ngo{margin-left:auto; color:var(--acc); font-size:19px; font-weight:800; align-self:center}
   /* CS287: "How to Play" pill-button under the hero (replaces the 30-year-sim badge) */
   .howtop{display:inline-flex; align-items:center; gap:7px; cursor:pointer; font:800 12px/1 var(--body); letter-spacing:.06em;
     text-transform:uppercase; color:var(--gold); padding:9px 18px; border-radius:999px; border:1px solid var(--gold);
@@ -1552,7 +1561,7 @@ window.GA_ID='G-L29P5MRWKE';
 .btn .sub{font-family:var(--body);font-weight:800;font-size:10.5px}
 .btn.goldfill{font-weight:900; box-shadow:0 9px 22px -8px rgba(154,110,18,.85), inset 0 1px 0 rgba(255,255,255,.55), 0 0 0 1.5px rgba(241,208,74,.55)}
 .segrow button.on, .catchip.on{font-weight:900}
-.navtile .nl{font-size:11px}
+.navtile .nl{font-size:13px}
 h2{font-size:11px;letter-spacing:.04em}
 .gc-kick{font-size:9px;letter-spacing:.03em}
 </style>
@@ -6993,18 +7002,26 @@ function scrTitle(){
   // ── destinations, promoted to prominent nav tiles (Leaderboard / Trophy Room / Pro Shop stand out) ──
   const sec=$(`<div class="home-nav"></div>`);
   const signedIn=sbSignedIn();
-  const mkTile=(icon,label,sub,fn,hot,dot)=>{ const b=$(`<button type="button" class="navtile${hot?' hot':''}" aria-label="${esc(label)}${dot?' · new items':''}" style="position:relative">
-      <span class="ni" aria-hidden="true">${icon}</span><span class="nl">${esc(label)}</span>${sub?`<span class="ns">${sub}</span>`:''}${dot?'<span style="position:absolute;top:8px;right:10px;width:11px;height:11px;border-radius:50%;background:#e2554e;border:2px solid #0e2016;box-shadow:0 0 6px rgba(226,85,78,.9)"></span>':''}</button>`);
+  // CS454: each tile carries its own accent + a pixel icon (pxMedalSVG tints the 18x18 sprite to the accent).
+  const navRgba=(hex,a)=>{ hex=hex.replace('#',''); const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16); return `rgba(${r},${g},${b},${a})`; };
+  const mkTile=(pxrows,acc,label,sub,fn,opts)=>{ opts=opts||{};
+    const svg=pxMedalSVG(pxrows,acc), dot=opts.dot, wide=opts.wide;
+    const tileStyle=`--acc:${acc};border:1.5px solid ${navRgba(acc,.34)};background:linear-gradient(160deg,${navRgba(acc,.13)},rgba(6,18,12,.5))`;
+    const chipStyle=`background:${navRgba(acc,.18)};border:1px solid ${navRgba(acc,.4)}`;
+    const b=$(`<button type="button" class="navtile${wide?' wide':''}" aria-label="${esc(label)}${dot?' · new items':''}" style="${tileStyle}">
+      <span class="nichip" aria-hidden="true" style="${chipStyle}">${svg}</span>
+      <span class="ntext"><span class="nl">${esc(label)}</span>${sub?`<span class="ns">${sub}</span>`:''}</span>
+      ${wide?'<span class="ngo" aria-hidden="true">↗</span>':''}${dot?'<span class="ndot"></span>':''}</button>`);
     b.onclick=fn; sec.appendChild(b); };
   // CS290: Challenges is now a prominent nav tile (was buried in the ≡ menu) - daily quests + weekly
   // challenges - daily/weekly quests feed your Tour Rep tier + earn coins / mulli-spins.
-  mkTile('🎯','Challenges', signedIn?(repTier().tier.name+' · quests'):'Sign in to earn', ()=>{S.overlay='challenges';render();}, true);
-  mkTile('🏆','Leaderboard','Rankings', ()=>{S.overlay='leaderboard';render();}, true);
-  mkTile('🏅','Trophy Room', signedIn?'Trophies & rank':'Sign in', ()=>{S.overlay='record';render();}, true);
+  mkTile(PXI.target,'#16b5a6','Challenges', signedIn?(repTier().tier.name+' · quests'):'Sign in to earn', ()=>{S.overlay='challenges';render();});
+  mkTile(PXI.podium,'#4aa3ff','Leaderboard','Rankings', ()=>{S.overlay='leaderboard';render();});
+  mkTile(PXI.cup,'#F1D04A','Trophy Room', signedIn?'Trophies & rank':'Sign in', ()=>{S.overlay='record';render();});
   if(SHOP_ENABLED){ const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')):0);
     const shopNew=(typeof cosNewTotal==='function')&&cosNewTotal()>0;   // CS423: NEW-item dot on the Pro Shop tile (leads to the gear)
-    mkTile(ic('cart'),'Pro Shop', shopNew?('✨ '+cosNewTotal()+' new item'+(cosNewTotal()>1?'s':'')):(nFree>0?('🎁 '+nFree+' free pack'+(nFree>1?'s':'')+'!'):(signedIn?(ic('coin')+' '+coinFmt(coinBalance())):'Gear & boosts')), ()=>{S.overlay='shop'; if(nFree>0)S.shopSec='packs'; render();}, true, shopNew); }
-  mkTile('🎁','Invite','You both get a pack', ()=>{ referralShare(); }, true);   // CS403: refer a friend → free packs
+    mkTile(PXI.cart,'#3fbf7a','Pro Shop', shopNew?('✨ '+cosNewTotal()+' new item'+(cosNewTotal()>1?'s':'')):(nFree>0?('🎁 '+nFree+' free pack'+(nFree>1?'s':'')+'!'):(signedIn?(ic('coin')+' '+coinFmt(coinBalance())):'Gear & boosts')), ()=>{S.overlay='shop'; if(nFree>0)S.shopSec='packs'; render();}, {dot:shopNew}); }
+  mkTile(PXI.gift,'#b06be0','Invite a friend','Share your link — you both get a free pack', ()=>{ referralShare(); }, {wide:true});   // CS403: refer a friend → free packs (full-width featured tile)
   // (How to Play moved up under the hero, CS287)
   w.appendChild(sec);
   // CS303: the once-a-day challenges pop-up is removed (owner) - the "🎯 Daily Quests" button under the hero opens it.
@@ -13693,7 +13710,10 @@ function pxTrophySVG(rows, cls){
   return `<svg${cls?' class="'+cls+'"':''} viewBox="0 0 ${PXT_W} ${PXT_H}" width="100%" height="100%" shape-rendering="crispEdges" preserveAspectRatio="xMidYMid meet">${cells}</svg>`;
 }
 // CS356c: small pixel icons for the Trophy Room medal/cup/honor chips, tinted per-chip.
-const PXI={"medal":[".....kkkkkkkk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddddddk.....",".....kkkkmkkkk....","....kkmmmmmmmkk...","....kmmmhmmmmmk...","....kmmhmhmmmmk...","...kkmmmhhhmmmkk..","...kmmmhhdhhmmmk..","...kkmmmhhhmmmkk..","....kmmmmhmmmmk...","....kmmmmmmmmmk...","....kkmmmmmmmkk...",".....kkkkmkkkk...."],"cup":["..................","...kkkkkkkkkkkk...",".kkkmmmmmmmmmmkkk.",".kmmkmhmmmmdmkmmk.",".kmkkmhmmmmmmkkmk.",".kmkkmmmmmmmmkkmk.",".kmmmmmmmmmmmmmmk.",".kkkkkmmmmmdkkkkk.",".....kkmmmmkk.....","......kkmmkk......",".......kmmk.......","....kkkkmmkkkk....","...kkmmmmmmmmkk...","...khhhhhhhhhhk...","...kmmmmmmmmmmk...","...kkkkkkkkkkkk...","..................",".................."],"shield":["..................","..kkkkkkkkkkkkkk..","..kmmmmmmmmmmmmk..","..kmmmmmddmmmmmk..","..kkmmmmhhmmmmkk..","...kmmmhhhhmmmk...","...kmmmhhhhmmmk...","...kmmmmhhmmmmk...","...kkkmmmmmmkkk...",".....kkkmmkkk.....",".......kkkk.......","......kkmmkk......","......kmmmmk......","......kkmmkk......",".......kkkk.......","..................","..................",".................."],"star":[".......kkkk.......",".......kmmk.......",".......khmk.......","......kkmmkk......","......kmmmmk......",".kkkkkkmmmmkkkkkk.",".kmmmmmhhhmmmmmmk.",".kmmmmmhhhmmmmmmk.",".kkkmmmmmmmmmmkkk.","...kmmmmmmmmmmk...","...kkmmmmmmmmkk...","...kkmmmmmmmmkk...","...kmmmmmmmmmmk...","...kmmmkkkkmmmk...","...kmmmk..kmmmk...","...kkkkk..kkkkk...","..................",".................."],"crown":["..................","..................",".......kkkk.......",".......khhk.......","..kkkk.kmmk.kkkk..","..khhk.kmmk.khhk..","..kmmk.kmmk.kmmk..","..kmmk.khhk.kmmk..","..kmmkkkmmkkkmmk..","..kmmmmmmmmmmmmk..","..kmmmmmmmmmmmmk..","..kmmmmmmmmmmmmk..","..kmmmmmmmmmmmmk..","..kddddddddddddk..","..kkkkkkkkkkkkkk..","..................","..................",".................."],"dollar":["..................","........kkk.......",".....kkkkmkkkk....","....kkmmmmmmmkk...","...kkmmmhhmmmmkk..","..kkmmhhhhhhdmmkk.","..kmmdhhhhhhddmmk.","..kmmdhdhhddddmmk.",".kkmmdhhhhhhddmmkk",".kmmddhhhhhhdddmmk",".kkmmdddhhdhddmmkk","..kmmdhhhhhhddmmk.","..kmmdhhhhhhddmmk.","..kkmmddhhdddmmkk.","...kkmmmhhmmmmkk..","....kkmmmmmmmkk...",".....kkkkmkkkk....","........kkk......."],"target":["..................","........kkk.......",".....kkkkmkkkk....","....kkmmmmmmmkk...","...kkmmhhhhhmmkk..","..kkmmhhmmmhhmmkk.","..kmmhmmhhhmmhmmk.","..kmhhmhdddhmhhmk.",".kkmhmhddhddhmhmkk",".kmmhmhdhhhdhmhmmk",".kkmhmhddhddhmhmkk","..kmhhmhdddhmhhmk.","..kmmhmmhhhmmhmmk.","..kkmmhhmmmhhmmkk.","...kkmmhhhhhmmkk..","....kkmmmmmmmkk...",".....kkkkmkkkk....","........kkk......."],"globe":["..................","........kkk.......",".....kkkkbkkkk....","....kkbbbbbbbkk...","...kkbwbbgggggkk..","..kkgwgbgggggggkk.","..kbggggbgggggbbk.","..kggggbbbbbbbbbk.",".kkbbbbbbbgggbbbkk",".kbbgggbbbgggbbbbk",".kkbggggbbbbbbbbkk","..kbgggbbbgggbbbk.","..kbgggbbgggggbbk.","..kkbgbbbbgggbbkk.","...kkbbbbbbbbbkk..","....kkbbbbbbbkk...",".....kkkkbkkkk....","........kkk......."],"ribbon":["..................","......kkkkkkk.....",".....kkdddddkk....","....kkddmmmddkk...","...kkdmmmmmmmdkk..","...kddmhmhmmmddk..","...kdmmmhhhmmmdk..","...kdmmhhhhhmmdk..","...kdmmmhhhmmmdk..","...kddmmmhmmmddk..","...kkdmmmmmmmdkk..","....kkmmmmmmmkk...",".....kdddddddk....",".....kdddkdddk....",".....kdddkdddk....",".....kdddkdddk....",".....kkdkkkdkk....","......kdk.kdk....."]};
+const PXI={"medal":[".....kkkkkkkk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddddddk.....",".....kkkkmkkkk....","....kkmmmmmmmkk...","....kmmmhmmmmmk...","....kmmhmhmmmmk...","...kkmmmhhhmmmkk..","...kmmmhhdhhmmmk..","...kkmmmhhhmmmkk..","....kmmmmhmmmmk...","....kmmmmmmmmmk...","....kkmmmmmmmkk...",".....kkkkmkkkk...."],"cup":["..................","...kkkkkkkkkkkk...",".kkkmmmmmmmmmmkkk.",".kmmkmhmmmmdmkmmk.",".kmkkmhmmmmmmkkmk.",".kmkkmmmmmmmmkkmk.",".kmmmmmmmmmmmmmmk.",".kkkkkmmmmmdkkkkk.",".....kkmmmmkk.....","......kkmmkk......",".......kmmk.......","....kkkkmmkkkk....","...kkmmmmmmmmkk...","...khhhhhhhhhhk...","...kmmmmmmmmmmk...","...kkkkkkkkkkkk...","..................",".................."],"shield":["..................","..kkkkkkkkkkkkkk..","..kmmmmmmmmmmmmk..","..kmmmmmddmmmmmk..","..kkmmmmhhmmmmkk..","...kmmmhhhhmmmk...","...kmmmhhhhmmmk...","...kmmmmhhmmmmk...","...kkkmmmmmmkkk...",".....kkkmmkkk.....",".......kkkk.......","......kkmmkk......","......kmmmmk......","......kkmmkk......",".......kkkk.......","..................","..................",".................."],"star":[".......kkkk.......",".......kmmk.......",".......khmk.......","......kkmmkk......","......kmmmmk......",".kkkkkkmmmmkkkkkk.",".kmmmmmhhhmmmmmmk.",".kmmmmmhhhmmmmmmk.",".kkkmmmmmmmmmmkkk.","...kmmmmmmmmmmk...","...kkmmmmmmmmkk...","...kkmmmmmmmmkk...","...kmmmmmmmmmmk...","...kmmmkkkkmmmk...","...kmmmk..kmmmk...","...kkkkk..kkkkk...","..................",".................."],"crown":["..................","..................",".......kkkk.......",".......khhk.......","..kkkk.kmmk.kkkk..","..khhk.kmmk.khhk..","..kmmk.kmmk.kmmk..","..kmmk.khhk.kmmk..","..kmmkkkmmkkkmmk..","..kmmmmmmmmmmmmk..","..kmmmmmmmmmmmmk..","..kmmmmmmmmmmmmk..","..kmmmmmmmmmmmmk..","..kddddddddddddk..","..kkkkkkkkkkkkkk..","..................","..................",".................."],"dollar":["..................","........kkk.......",".....kkkkmkkkk....","....kkmmmmmmmkk...","...kkmmmhhmmmmkk..","..kkmmhhhhhhdmmkk.","..kmmdhhhhhhddmmk.","..kmmdhdhhddddmmk.",".kkmmdhhhhhhddmmkk",".kmmddhhhhhhdddmmk",".kkmmdddhhdhddmmkk","..kmmdhhhhhhddmmk.","..kmmdhhhhhhddmmk.","..kkmmddhhdddmmkk.","...kkmmmhhmmmmkk..","....kkmmmmmmmkk...",".....kkkkmkkkk....","........kkk......."],"target":["..................","........kkk.......",".....kkkkmkkkk....","....kkmmmmmmmkk...","...kkmmhhhhhmmkk..","..kkmmhhmmmhhmmkk.","..kmmhmmhhhmmhmmk.","..kmhhmhdddhmhhmk.",".kkmhmhddhddhmhmkk",".kmmhmhdhhhdhmhmmk",".kkmhmhddhddhmhmkk","..kmhhmhdddhmhhmk.","..kmmhmmhhhmmhmmk.","..kkmmhhmmmhhmmkk.","...kkmmhhhhhmmkk..","....kkmmmmmmmkk...",".....kkkkmkkkk....","........kkk......."],"globe":["..................","........kkk.......",".....kkkkbkkkk....","....kkbbbbbbbkk...","...kkbwbbgggggkk..","..kkgwgbgggggggkk.","..kbggggbgggggbbk.","..kggggbbbbbbbbbk.",".kkbbbbbbbgggbbbkk",".kbbgggbbbgggbbbbk",".kkbggggbbbbbbbbkk","..kbgggbbbgggbbbk.","..kbgggbbgggggbbk.","..kkbgbbbbgggbbkk.","...kkbbbbbbbbbkk..","....kkbbbbbbbkk...",".....kkkkbkkkk....","........kkk......."],"ribbon":["..................","......kkkkkkk.....",".....kkdddddkk....","....kkddmmmddkk...","...kkdmmmmmmmdkk..","...kddmhmhmmmddk..","...kdmmmhhhmmmdk..","...kdmmhhhhhmmdk..","...kdmmmhhhmmmdk..","...kddmmmhmmmddk..","...kkdmmmmmmmdkk..","....kkmmmmmmmkk...",".....kdddddddk....",".....kdddkdddk....",".....kdddkdddk....",".....kdddkdddk....",".....kkdkkkdkk....","......kdk.kdk....."],
+"podium":["..................","..................","......kkkkkkk.....","......khhhhhk.....","......kmmmmmk.....","......kmmmmmk.....",".kkkkkkmmmmmk.....",".khhhhkmmmmmk.....",".kmmmmkmmmmmk.....",".kmmmmkmmmmmkkkkkk",".kmmmmkmmmmmkhhhhk",".kmmmmkmmmmmkmmmmk",".kmmmmkmmmmmkmmmmk",".kmmmmkmmmmmkmmmmk",".kmmmmkmmmmmkmmmmk","kkmmmmkmmmmmkmmmmk","kddddddddddddddddk","kkkkkkkkkkkkkkkkkk"],
+"cart":["..................","..................","kkkkk.............","kmmmk.............","kkkmk.............","..kmkkkkkkkkkkkk..","..kkmmmmmmmmmmmk..","...kmhhhhhhhhhmk..","...kmhhhhhhhhhmk..","...kmhhhhhhhhhmk..","...kmhhhhhhhhhmk..","...kmhhhhhhhhhmk..","...kmmmmmmmmmmmk..","...kkkkkkkkkkkkk..",".....kddk.kddk....",".....kddk.kddk....",".....kkkk.kkkk....",".................."],
+"gift":["..................","..................",".....kkkkkkkkk....",".....kdddkdddk....",".....kdddddddk....",".kkkkkdddddddkkkkk",".kmmmmmmdddmmmmmmk",".kmmmmmmdddmmmmmmk",".kmmmmmmdddmmmmmmk",".kkmhhhhdddhhhhmkk","..kmhhhhdddhhhhmk.","..kmhhhhdddhhhhmk.","..kmhhhhdddhhhhmk.","..kmhhhhdddhhhhmk.","..kmhhhhdddhhhhmk.","..kmhhhhdddhhhhmk.","..kmmmmmdddmmmmmk.","..kkkkkkkkkkkkkkk."]};
 function pxShadeHex(hex,f){ hex=hex.replace('#',''); const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16); const C=v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0'); return '#'+C(r*f)+C(g*f)+C(b*f); }
 function pxLiteHex(hex,f){ hex=hex.replace('#',''); const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16); const C=v=>Math.max(0,Math.min(255,Math.round(v+(255-v)*f))).toString(16).padStart(2,'0'); return '#'+C(r)+C(g)+C(b); }
 function pxMedalSVG(rows, color){

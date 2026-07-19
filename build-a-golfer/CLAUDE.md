@@ -10731,6 +10731,28 @@ allows Google Fonts, or self-host Anton.*
   all green, 0 page errors. Screenshot confirms the frozen golfer over the scrolling shirt-color grid.
   Deployed to /golf.
 
+- **CS454 — home-screen nav-tile row redesigned: balanced, each tile stands out, pixel icons (owner: "not
+  so unbalanced · each button to stand out on their own · all icons pixelated to match the theme").** The
+  `.home-nav` row was 5 tiles that laid out 4-across + 1 orphaned Invite (unbalanced), all using emoji/
+  vector `ic()` icons. Rebuilt:
+  • **Balanced layout:** always a 2-column grid (dropped the `@media(min-width:600px)` 4-col that produced
+    the 4+1), with the **Invite tile spanning full width** (`.navtile.wide`, `grid-column:1/-1`) as a
+    horizontal featured CTA at the bottom — so it's 2×2 + a full-width banner, nothing floats orphaned.
+  • **Each tile stands out:** every tile now carries its OWN accent color (`--acc`, set inline) driving a
+    tinted border, background wash, icon chip, and hover glow — Challenges teal, Leaderboard blue, Trophy
+    Room gold, Pro Shop green, Invite purple (accent tints computed as rgba inline via a `navRgba` helper,
+    no `color-mix` dependency). The icon sits in a rounded accent-tinted chip.
+  • **Pixel icons matching the theme:** authored 3 new 18×18 pixel sprites in the existing `PXI` map —
+    `podium` (a 3-bar chart for Leaderboard), `cart` (Pro Shop), `gift` (Invite) — and reused `PXI.target`
+    (Challenges) + `PXI.cup` (Trophy Room); all rendered via `pxMedalSVG(rows, accent)` so each tints to its
+    tile's accent, replacing the 🎯🏆🏅🎁 emoji + the vector cart. (Generated/previewed with a Python
+    PIL harness before inlining.)
+  `mkTile` was rewritten to take `(pxrows, accent, label, sub, fn, opts)` with `opts.wide`/`opts.dot`; the
+  Pro Shop NEW-item dot + free-pack/coin-balance sub logic is unchanged. Verified in Playwright (430px): 5
+  tiles, 1 wide, 2-col grid, every tile has a pixel `<svg>` icon, guest ("Sign in to earn") and signed-in
+  ("Amateur · quests" / "🎁 1 free pack!") both render, 0 page errors; screenshots confirm the balanced,
+  colour-coded, pixel-icon layout. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
