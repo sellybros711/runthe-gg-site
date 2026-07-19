@@ -10994,7 +10994,7 @@ function scrDraft(){
   add($(`<div class="osreel ${S.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
     ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:(idlePrev?`<div class="reeltag">PREVIEW · THE POOL</div>`:'')}
     <div class="name${idlePrev?' preview':''}">${S.spinning?'…':(spun?esc(g.name):(idlePrev?reelPreviewHTML():'…'))}</div>
-    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.spinning?'':(idlePrev?'Spin below to lock one in':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`));
+    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.spinning?'':(idlePrev?'Spin the wheel below':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`));
 
   // hint
   if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(g.name)}</b>'s attribute into your bag</div>`));
@@ -23021,7 +23021,7 @@ function scrH2HDraft(){
   add($(`<div class="osreel ${S.h2h.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
     ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:(idlePrev?`<div class="reeltag">PREVIEW · THE POOL</div>`:'')}
     <div class="name${idlePrev?' preview':''}">${S.h2h.spinning?'…':(spun?esc(g.name):(idlePrev?reelPreviewHTML():'…'))}</div>
-    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.h2h.spinning?'':(idlePrev?'Spin below to lock one in':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`));
+    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.h2h.spinning?'':(idlePrev?'Spin the wheel below':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`));
 
   // hint
   if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(g.name)}</b>'s attribute into your bag</div>`));
