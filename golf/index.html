@@ -5138,6 +5138,22 @@ function addBonusCoins(n, opts){ opts=opts||{}; n=Math.round(n||0); if(!sbSigned
   const s=coinState(); s.bonus=(s.bonus||0)+n; s.seen=(s.seen||0); coinSave(s);
   if(!opts.silent){ try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(opts.label?' '+opts.label:' earned')+'!'); }catch(e){} }
   return n; }
+// CS459 (owner): one-time coin grant to specific accounts. Keyed on the SERVER-attributed username
+// (unique, so only the real accounts match - nobody else can hold these handles) + a synced version flag
+// (grantV rides in bag_coins, so mergeCoins carries it across devices), so it credits each named account
+// EXACTLY ONCE, on any device, and never anyone else. To grant again later: bump COIN_GRANT_V and set the
+// amounts. Runs after cloudPull on sign-in (so grantV/bonus are the synced values). NOTE: a future
+// COIN_EPOCH re-baseline zeroes bonus; re-grant then by bumping COIN_GRANT_V.
+const COIN_GRANT_V=1;
+const COIN_GRANTS={ 'csel8':1000000, 'runnyj':1000000 };
+function maybeCoinGrant(){ try{
+  if(!sbSignedIn()) return; const uname=(sbUsername||'').toLowerCase(); if(!uname) return;
+  const amt=COIN_GRANTS[uname]; if(!amt) return;
+  const s=coinState(); if((s.grantV||0)>=COIN_GRANT_V) return;   // already granted this version (synced)
+  s.grantV=COIN_GRANT_V; s.bonus=(s.bonus||0)+amt; coinSave(s);
+  try{ toast('<b style="color:#ffd45e">+'+coinFmt(amt)+' coins</b> added to your account!'); }catch(e){}
+  try{ render(); }catch(e){}
+}catch(e){} }
 // coins awarded for PLAYING a Moment round yourself (simming forfeits this). Bigger stage = bigger bonus.
 // CS435 (owner): bumped up (200 felt too little vs pack prices) - base 500, big 800, major 1200.
 function momentPlayCoins(evt){ if(!evt) return 500; return evt.major?1200:(evt.big||evt.playoff||evt.type==='finale')?800:500; }
@@ -21575,7 +21591,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403)
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459)
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -21794,7 +21810,8 @@ function mergeCoins(local, server){ const d={spent:0,seen:0,owned:{}};
   const le=l.epoch||0, se=s.epoch||0;
   if(le!==se){ return Object.assign({}, le>se?l:s); }
   return {epoch:le, baseline:Math.max(l.baseline||0,s.baseline||0), spent:Math.max(l.spent||0,s.spent||0),
-    forfeit:Math.max(l.forfeit||0,s.forfeit||0), bonus:Math.max(l.bonus||0,s.bonus||0), seen:Math.max(l.seen||0,s.seen||0), owned:Object.assign({}, l.owned||{}, s.owned||{})}; }
+    forfeit:Math.max(l.forfeit||0,s.forfeit||0), bonus:Math.max(l.bonus||0,s.bonus||0), seen:Math.max(l.seen||0,s.seen||0),
+    grantV:Math.max(l.grantV||0,s.grantV||0), owned:Object.assign({}, l.owned||{}, s.owned||{})}; }   // CS459: carry the one-time coin-grant flag across devices
 // XP: monotonic - xp/mulliEarned/mulliSpent all merge by MAX (grow-only, correct cross-device).
 function mergeXp(local, server){
   const l=(local&&typeof local==='object')?local:{}, s=(server&&typeof server==='object')?server:{};
