@@ -5107,10 +5107,11 @@ const COIN_EPOCH=2;                          // bump to re-baseline every accoun
 const ACC_SKILL_CAP=10, ACC_TOTAL_CAP=80;    // Pro Shop relaunch: +10 hard cap on any single stat (from all gear combined). No total governor to start (80 = effectively off).
 const ACC_BOOST_SCALE=1;                      // full-strength catalog boosts (owner: bring the boosts back)
 // CS408 — ONE coherent direct-buy price ladder by RARITY, applied to every pack-poolable item (cosmetics +
-// accessories), so a "rare" costs the same whether it's a hat or a driver and the ladder lines up with the
-// pack tiers/odds. Direct-buy is the PREMIUM path (pick exactly what you want); packs are the value path.
+// accessories), so a "rare" costs the same whether it's a hat or a driver. CS464: direct-buy is a STEEP
+// premium (these items give real skill boosts, so buying a specific one costs well above the pack that
+// could yield its tier) - PACKS are the main way to earn items. Pack tiers (8k/22k/45k) are unchanged.
 // These are the final coin prices (no separate hike - PACKS_ENABLED is permanent). Clubs cost a touch more.
-const RARITY_PRICE={common:6000, rare:16000, epic:40000, legendary:90000};
+const RARITY_PRICE={common:15000, rare:45000, epic:110000, legendary:275000};
 function itemRarityPrice(rar,isClub){ return Math.round((RARITY_PRICE[rar]||RARITY_PRICE.common)*(isClub?1.2:1)); }
 function accPrice(it){ if(!it||it.rarity==='exclusive') return 0;
   return itemRarityPrice(it.rarity, it.slot==='driver'||it.slot==='putter'); }
@@ -5457,7 +5458,7 @@ const BAG_CLUBS=[
   {k:'wedges', name:'Wedges',        sub:'the short game',   ic:'driver', tiers:[{n:'Tour Wedges',b:{sht:1}},{n:'Pro Wedges',b:{sht:2,bnk:1}},{n:'Signature Wedges',b:{sht:3,bnk:2,dist:-1}}]},
   {k:'putter', name:'Putter',        sub:'on the greens',    ic:'putter', tiers:[{n:'Tour Putter',b:{put:1}},{n:'Pro Putter',b:{put:2}},{n:'Signature Putter',b:{put:3,clu:-1}}]}
 ];
-const BAG_TIER_PRICE=[3000,12000,35000];   // Tour / Pro / Signature
+const BAG_TIER_PRICE=[7500,27500,75000];   // Tour / Pro / Signature (bagPrice x2 hike -> 15k/55k/150k; CS464 direct-buy premium, packs are the main path). [0]<9000 keeps tier-1 pool rarity = common.
 const BAG_TIER_LABEL=['Tour','Pro','Signature'];
 const BAG_BY={}; BAG_CLUBS.forEach(c=>BAG_BY[c.k]=c);
 function bagKey(club,tier){ return 'bag:'+club+':'+tier; }

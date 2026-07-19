@@ -10922,6 +10922,26 @@ allows Google Fonts, or self-host Anton.*
   button, and the Close ✕ is correctly absent while 4 prepaid packs remain; 0 page errors on both paths.
   Deployed to /golf.
 
+- **CS464 — direct-buy prices raised steeply so PACKS are the main way to earn boost items (owner: "If
+  these items are going to give such big boosts, they need to be more expensive. This applies throughout.
+  Packs should be the main way people earn these items").** The Pro Shop's boost-giving gear (headwear/
+  eyewear cosmetics + the ACC accessory catalog + bag clubs) was cheap relative to its power (e.g. a Wizard
+  Hat, epic, +4 PUT/+2 APP, at 40k). All direct-buy prices flow through ONE coherent ladder — cosmetics via
+  `cosmeticPriceBase`→`packRarityOf`→`itemRarityPrice`, accessories via `accPrice`→`itemRarityPrice`, both
+  reading `RARITY_PRICE` — so raising that ladder lifts everything at once, consistently ("throughout").
+  Raised `RARITY_PRICE` {common 6k, rare 16k, epic 40k, legendary 90k} → **{common 15k, rare 45k, epic
+  110k, legendary 275k}** (~2.5-3x), and the boost-club `BAG_TIER_PRICE` [3k,12k,35k] → [7.5k,27.5k,75k]
+  (x2 hike → **15k/55k/150k**, [0]<9k keeps tier-1 pool rarity = common). **Pack prices are UNCHANGED**
+  (Base 8k / Tour 22k / Champion 45k), so direct-buy is now a clear "pay a steep premium for the exact item
+  you want" path while packs are the efficient/main way — a specific epic (110k) ~= the EV of pulling any
+  epic from Champion packs (~2.6 packs = ~118k), a specific legendary (275k) ~= ~6 Champion packs (~270k).
+  The RARITY *selection* (`packRarityOf`, which reads the base SELECTOR numbers, not the ladder) is
+  untouched, so pack pool odds/rarities don't shift; dupe refunds + free/earned items unchanged. Verified in
+  Playwright: the new ladder renders (Wizard 40k→110k, Cowboy/Flat/Party 16k→45k, Crown 90k→275k, epic
+  accessory→110k, legendary accessory→275k, bag clubs 15k/55k/150k), rarity selection unchanged, pack
+  prices still 8k/22k/45k, free items still free, 0 page errors. Deployed to /golf. Tunable: `RARITY_PRICE`,
+  `BAG_TIER_PRICE`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
