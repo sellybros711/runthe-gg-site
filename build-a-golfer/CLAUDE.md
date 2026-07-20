@@ -11595,6 +11595,38 @@ allows Google Fonts, or self-host Anton.*
   errors throughout. Deployed to /golf. Tunable: the closet golfer height / section labels, the profile tab
   set.
 
+- **CS485 — TourTracer golfer: bigger on the green, smoother swing, and ALL outfit items now visible
+  (owner: "improving the golfer look and smoothening the tourtracer animations ... the golfer could be
+  bigger when it zooms into the green to allow more detail ... make sure all items in the game are visible
+  in tour tracer mode").** Builds on CS483u (which added shirt patterns + effect auras). Three parts:
+  1. **Bigger on the green.** The putt/green-close-up golfer size (`GH` in `hvSwingMarkup`) went from
+     `max(10, min(20, cam·0.14))` to `max(22, min(36, cam·0.26))` — noticeably larger on the zoom so the
+     outfit + accessories read. Full-swing size unchanged (24).
+  2. **Smoother swing animation.** The swing/chip/putt frame animations were hard `steps(1,end)` opacity
+     cuts; now `linear` with short crossfades between poses (a subtle motion-blur) + a quick fade-in on
+     appear, so the swing reads smooth instead of choppy. Reduced-motion still holds the finish pose.
+  3. **All outfit items visible on the swing golfer.** `pxStrokeURLs` now renders, on top of the base colors
+     + pattern + aura:
+     - **Headwear STYLES** (crown / cowboy / wizard / tophat / santa / beanie / sombrero / … the full
+       `PXG_HATS` set): the standing hat art is STAMPED at each swing frame's head anchor (detected from the
+       sprite's baked `'c'` cap cluster), nearest-neighbor scaled to the head — so one hat sprite reuses onto
+       every pose/view (side/back/front × swing/chip/putt). The baked basic cap is hidden (painted as hair)
+       under a style hat. Verified aligned across all three views.
+     - **Outerwear** (blazer/cardigan), **Legwear** (plus-fours), **Cleats** (rocket): recolor their region
+       on the swing sprite to the item's palette (jacket over the polo — which also hides the pattern —
+       tweed knickers, rocket-red shoes), so each reads as that item.
+     - Already handled: shirt color/pattern, hat color, trousers, shoes, skin, hair, effect aura, and the
+       ball style (the hole-view engine ball + tracer already tint to the equipped ball, CS414).
+     Deliberately NOT ported (flagged): **eyewear** (a ~2px item, only visible on a front-facing face which
+     is rare in-round — near-invisible at swing scale) and **club styles** (the swing correctly shows a
+     shot-appropriate club — driver off the tee, putter on the green — which is more realistic than always
+     drawing your excalibur; the club is baked per-frame). Both are low-value at this size.
+  Verified in Playwright: a sprite grid across all 3 views renders crown/cowboy/wizard/tophat/santa/beanie/
+  sombrero hats + blazer/cardigan/plus-fours/cleats recolors + combos, all aligned and reading clearly; an
+  in-context practice-round green close-up shows the bigger putting golfer wearing its crown; a full round
+  plays clean; `node --check` clean; 0 page errors. Deployed to /golf. Tunable: the putt `GH` clamp, the
+  swing crossfade %s, the headwear stamp width factor (1.5×) + brow anchor in `pxStrokeURLs`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
