@@ -1430,11 +1430,15 @@ window.GA_ID='G-L29P5MRWKE';
   .cb-av .avatarfig{width:54px; height:54px}
   .cb-name{font-family:var(--display); font-style:italic; font-size:24px; line-height:1; color:#f4eddc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .cb-sub{font:800 10px/1.3 var(--body); letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-top:4px}
-  .cb-stats{display:flex; gap:15px; margin-left:auto; flex-wrap:wrap}
+  /* CS483q (owner): NET money now lives in its own top-right space beside the name; the stats sit on a full row below */
+  .cb-nethero{flex:0 0 auto; margin-left:auto; text-align:right; align-self:flex-start}
+  .cb-nethero .k{font:800 8.5px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+  .cb-nethero .v{font-family:var(--mono); font-weight:800; font-size:23px; margin-top:5px; color:var(--oncard); white-space:nowrap}
+  .cb-stats{display:flex; gap:15px; flex-wrap:wrap; flex-basis:100%; width:100%; margin-top:10px; padding-top:11px; border-top:1px solid rgba(255,255,255,.07)}
   .cb-stat{text-align:center; min-width:48px}
   .cb-stat .k{font:800 8.5px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
   .cb-stat .v{font-family:var(--mono); font-weight:800; font-size:19px; margin-top:5px; color:var(--oncard); white-space:nowrap}
-  @media(max-width:540px){ .cb-stats{width:100%; margin-left:0; justify-content:space-between; gap:8px} .cb-stat{min-width:0} }
+  @media(max-width:540px){ .cb-stats{justify-content:space-between; gap:8px} .cb-stat{min-width:0} }
   .cb-meters{flex-basis:100%; width:100%; margin-top:6px; padding-top:11px; border-top:1px solid rgba(255,255,255,.09)}
   .seasonrail{display:flex; gap:7px; overflow-x:auto; overflow-y:hidden; padding:1px 0 9px; margin-bottom:10px; -webkit-overflow-scrolling:touch; scrollbar-width:none}
   .seasonrail::-webkit-scrollbar{display:none}
@@ -14902,6 +14906,7 @@ function scrSeason(){
   const _bnr=$(`<div class="careerbanner">
     <div class="cb-id"><div class="cb-av">${avatarHTML()}</div>
       <div style="min-width:0"><div class="cb-name">${cbName}</div><div class="cb-sub">${cbYr} · Age ${playerAge()}</div></div></div>
+    <div class="cb-nethero"><div class="k">Net</div><div class="v"><span id="cb-net">${netShort}</span>${cbArrow(S._bannerNetDir||0)}</div></div>
     <div class="cb-stats">
       ${!S.daily?`<div class="cb-stat"><div class="k">World</div><div class="v" style="color:var(--gold)">#${wr}</div></div>`:''}
       <div class="cb-stat"><div class="k">Tour</div><div class="v" style="color:var(--gold)">${rankTxt}</div></div>
@@ -14909,7 +14914,6 @@ function scrSeason(){
       <div class="cb-stat"><div class="k">Top 10</div><div class="v">${t.top10}</div></div>
       <div class="cb-stat"><div class="k">Cuts</div><div class="v">${t.made}/${t.played||0}</div></div>
       ${showMeters?`<div class="cb-stat"><div class="k">Fans</div><div class="v" style="color:var(--oncard)"><span id="cb-fans">${fmtFollowers2(fansVal)}</span>${cbArrow(S._bannerFansDir||0)}</div></div>`:''}
-      <div class="cb-stat"><div class="k">Net</div><div class="v" style="color:var(--oncard);font-size:16px"><span id="cb-net">${netShort}</span>${cbArrow(S._bannerNetDir||0)}</div></div>
     </div>
     ${metersHTML}
   </div>`);
