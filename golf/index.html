@@ -611,6 +611,18 @@ window.GA_ID='G-L29P5MRWKE';
   .btn.goldsel:active{transform:translateY(2px)}
   /* CS483i: lemon-gold gradient number/text utility (Option 3 hero numbers) */
   .goldgrad{background:var(--gold-grad); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent}
+  .mintgrad{background:linear-gradient(177deg,#b6f5dd 0%,#5fe6b6 40%,#2fd0a2 66%,#17b7a6 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent}
+  /* CS483j: the Play 18 target + course-record card - richer box, two even columns (grid keeps both big
+     numbers on one line), two accent colors (gold target / mint record) split by a two-tone divider. */
+  .dtcard{max-width:600px; margin:14px auto 0; border-radius:18px; padding:16px 18px; position:relative; overflow:hidden;
+    background:radial-gradient(135% 92% at 50% -16%, rgba(241,208,74,.11), transparent 55%), radial-gradient(120% 90% at 100% 120%, rgba(47,208,162,.09), transparent 52%), linear-gradient(178deg, rgba(27,63,42,.9), rgba(9,30,19,.94));
+    border:1px solid rgba(241,208,74,.38); box-shadow:0 16px 42px rgba(0,0,0,.44), inset 0 1px 0 rgba(255,255,255,.08)}
+  .dtgrid{display:grid; grid-template-columns:1fr 1px 1fr; grid-template-rows:auto auto auto; column-gap:16px; row-gap:5px; align-items:center; justify-items:center}
+  .dtlab{font-size:10px; letter-spacing:.1em; text-transform:uppercase; font-weight:800; text-align:center; line-height:1.25}
+  .dtnum{font-family:var(--mono); font-weight:800; font-size:clamp(20px,6.2vw,27px); line-height:1; white-space:nowrap}
+  .dtsub{font-size:11px; color:var(--muted)}
+  .dtdiv{grid-column:2; grid-row:1/4; width:1px; align-self:stretch; background:linear-gradient(180deg, transparent, rgba(241,208,74,.4) 22%, rgba(47,208,162,.4) 78%, transparent)}
+  .dtnote{text-align:center; font-size:11px; color:var(--muted); margin-top:12px; padding-top:11px; border-top:1px solid rgba(255,255,255,.08); line-height:1.35}
 
   /* ---- draft ---- */
   .draftbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px}
@@ -18679,21 +18691,21 @@ function scrDailyPreview(){
   // the main objective: beat the real tour scoring average for this venue. CS483h (owner): the course record
   // now sits on the SAME line as the target (split card), removing the standalone Course Record card.
   const av=dTourAvg(c);
-  const recTxt=rec?`<span class="mono goldgrad" style="font-weight:800;font-size:22px;white-space:nowrap">${dTot(rec.toPar, c.par)}</span><div class="small muted" style="margin-top:1px">by ${esc(crHolders(rec))}</div>`
-    :(sbSignedIn()?`<span style="font-weight:800;font-size:16px;color:var(--gold)">Unclaimed</span><div class="small muted" style="margin-top:1px">be the first</div>`:`<span style="font-weight:800;font-size:16px;color:var(--gold)">Sign in</span><div class="small muted" style="margin-top:1px">to post a score</div>`);
-  add($(`<div class="scout" style="max-width:600px;margin:14px auto 0;text-align:center;border-color:var(--gold)">
-    <div style="display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap">
-      <div>
-        <div class="small muted" style="text-transform:uppercase;letter-spacing:.1em;font-weight:800">Target · beat the tour avg</div>
-        <div style="margin-top:4px"><span class="mono goldgrad" style="font-weight:800;font-size:27px;white-space:nowrap">${(c.par+av).toFixed(1)} (${dAvgTxt(av)})</span> <span class="small muted">par ${c.par}</span></div>
-      </div>
-      <div style="align-self:stretch;width:1px;background:var(--line)"></div>
-      <div>
-        <div class="small muted" style="text-transform:uppercase;letter-spacing:.1em;font-weight:800">Course record</div>
-        <div style="margin-top:4px">${recTxt}</div>
-      </div>
+  // record column: number (mint) + a sub line, so it mirrors the target column's number + "par" sub (even grid)
+  const recNum = rec?`<span class="mono mintgrad dtnum">${dTot(rec.toPar, c.par)}</span>`
+    :`<span class="dtnum mintgrad" style="font-size:18px">${sbSignedIn()?'Unclaimed':'Sign in'}</span>`;
+  const recSub = rec?`by ${esc(crHolders(rec))}`:(sbSignedIn()?'be the first':'to post a score');
+  add($(`<div class="dtcard">
+    <div class="dtgrid">
+      <div class="dtlab" style="color:#e2c25e">Target · beat the tour avg</div>
+      <div class="dtdiv"></div>
+      <div class="dtlab" style="color:#63d9bb">Course record</div>
+      <div class="mono goldgrad dtnum">${(c.par+av).toFixed(1)} (${dAvgTxt(av)})</div>
+      <div>${recNum}</div>
+      <div class="dtsub">par ${c.par}</div>
+      <div class="dtsub">${recSub}</div>
     </div>
-    <div class="small muted" style="margin-top:8px">What real tour pros average here. Post a lower round to win the day.</div></div>`));
+    <div class="dtnote">What real tour pros average here. Post a lower round to win the day.</div></div>`));
   // CS257: streak calendar in the Beat-the-Pro flow. (CS302: quests/weekly/rep panel removed from here -
   // it lives in the ≡ Challenges overlay; the owner wanted the Beat-the-Pro page decluttered.)
   if(!S.special && !PRACTICE && sbSignedIn()){
