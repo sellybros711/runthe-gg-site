@@ -17523,7 +17523,7 @@ function dailyTheme(key){
 }
 // the themed "today's daily challenge" feature card (owner Option 3). Folds the course name, meta, tagline,
 // vibe blurb, palette and motif chips into one branded hero so every day's Daily feels special.
-function dailyFeatureCard(key){
+function dailyFeatureCard(key, extra){
   const c=DAILY_COURSES[key]; if(!c) return $('<div></div>');
   const th=dailyTheme(key), A=th.accent, A2=th.accent2;
   const kicker=S.special?'MONTHLY SPOTLIGHT':"TODAY'S PLAY 18";
@@ -17545,6 +17545,9 @@ function dailyFeatureCard(key){
     more.appendChild($(`<div class="small" style="color:#e9e0cfdd;line-height:1.5;margin-top:8px">${esc(c.blurb)}</div>`));
     more.appendChild($(`<div style="display:flex;gap:6px;margin-top:13px">${th.palette.map(h=>`<span style="width:24px;height:24px;border-radius:6px;background:${h};border:1px solid rgba(255,255,255,.16)"></span>`).join('')}</div>`));
     if(th.motifs.length) more.appendChild($(`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">${th.motifs.map(m=>`<span style="font:600 11px system-ui;color:#f7ecd6;background:${A}1f;border:1px solid ${A}44;padding:4px 9px;border-radius:999px">${esc(m)}</span>`).join('')}</div>`));
+    // CS483f (owner): fold "What wins here", the game-plan note + the signature holes into this dropdown so
+    // the main Play 18 screen is just the essential decisions.
+    if(extra) more.appendChild(extra);
     card.appendChild(more);
   }
   return card;
@@ -18655,10 +18658,17 @@ function scrDailyPreview(){
   // CS240: themed "today's course" feature card - name, tagline, vibe, palette + motif chips, accent from
   // the course's own biome so every day's Daily feels special (owner-picked Option 3).
   add($(`<div style="height:6px"></div>`));
-  add(dailyFeatureCard(key));
-  if(!S.special) add($(`<div class="small center" style="margin:9px 0 0;color:var(--muted)">Playable for <span style="color:var(--gold);font-weight:800">${dCd('clock')}</span>, then a new course rotates in</div>`));
+  // CS483f (owner): fold "What wins here", the game-plan note and the signature holes into the course card's
+  // "More about this course" dropdown, so the main Play 18 screen is just the essential decisions + fits a phone.
   const top=dCourseSkillTop(c,3).map(x=>`<span class="tag" style="font-size:12px">${x.short}</span>`).join(' ');
-  add($(`<div class="center" style="margin:14px 0 4px"><div class="small muted" style="letter-spacing:.14em;text-transform:uppercase;font-weight:800">What wins here</div><div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">${top}</div></div>`));
+  const sigRows=[...c.sig].sort((a,b)=>a[0]-b[0]).map(s=>{ const h=c.holes[s[0]-1]; return `<div class="lb" style="grid-template-columns:34px 1fr"><span class="pos" style="color:var(--gold)">${s[0]}</span><span class="pl" style="min-width:0"><div style="font-weight:700">Par ${h[0]} · ${h[1]}y${h[2]?' · '+esc(h[2]):''}</div><div class="small muted" style="font-size:10.5px;line-height:1.3">${esc(s[1])}</div></span></div>`; }).join('');
+  const details=$(`<div>
+    <div style="margin-top:14px"><div class="small muted" style="letter-spacing:.14em;text-transform:uppercase;font-weight:800">What wins here</div><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">${top}</div></div>
+    <div style="margin-top:16px"><div class="small muted" style="letter-spacing:.14em;text-transform:uppercase;font-weight:800">Signature holes</div><div class="board" style="margin-top:8px">${sigRows}</div></div>
+    <div style="margin-top:16px"><div class="small muted" style="letter-spacing:.14em;text-transform:uppercase;font-weight:800">Your game plan</div><div class="small muted" style="margin-top:6px;line-height:1.4">Pick how boldly to play below. You'll still make the big calls on the signature holes.</div></div>
+  </div>`);
+  add(dailyFeatureCard(key, details));
+  if(!S.special) add($(`<div class="small center" style="margin:9px 0 0;color:var(--muted)">Playable for <span style="color:var(--gold);font-weight:800">${dCd('clock')}</span>, then a new course rotates in</div>`));
   // the main objective: beat the real tour scoring average for this venue
   const av=dTourAvg(c);
   add($(`<div class="scout" style="max-width:560px;margin:14px auto 0;text-align:center;border-color:var(--gold)">
@@ -18673,12 +18683,7 @@ function scrDailyPreview(){
   const recTxt=rec?`<b style="color:var(--gold)">${dTot(rec.toPar, c.par)}</b> by ${esc(crHolders(rec))}`
     :(sbSignedIn()?`<b style="color:var(--gold)">Unclaimed</b>, be the first to set it`:`<b style="color:var(--gold)">Sign in</b> to post your score`);
   add($(`<div class="scout" style="max-width:560px;margin:12px auto 0;text-align:center"><div class="small muted" style="text-transform:uppercase;letter-spacing:.12em;font-weight:800">Course record</div><div style="margin-top:4px">${recTxt}</div></div>`));
-  add($(`<h2 class="center" style="margin:16px 0 8px;font-size:15px">Signature holes</h2>`));
-  const sig=$(`<div class="board" style="max-width:560px;margin:0 auto"></div>`);
-  [...c.sig].sort((a,b)=>a[0]-b[0]).forEach(s=>{ const h=c.holes[s[0]-1]; sig.appendChild($(`<div class="lb" style="grid-template-columns:34px 1fr"><span class="pos" style="color:var(--gold)">${s[0]}</span><span class="pl" style="min-width:0"><div style="font-weight:700">Par ${h[0]} · ${h[1]}y${h[2]?' · '+esc(h[2]):''}</div><div class="small muted" style="font-size:10.5px;line-height:1.3">${esc(s[1])}</div></span></div>`)); });
-  add(sig);
-  add($(`<h2 class="center" style="margin:18px 0 6px;font-size:15px">Your game plan</h2>`));
-  add($(`<p class="lede center" style="font-size:12px;margin:0 auto 8px;max-width:520px">Pick how boldly to play. You'll still make the big calls on the signature holes.</p>`));
+  add($(`<h2 class="center" style="margin:16px 0 6px;font-size:15px">Your game plan</h2>`));
   const dial=$(`<div class="mini" style="max-width:520px;margin:0 auto;gap:8px"></div>`);
   [['conservative','🛡 Safe'],['balanced','⚖ Balanced'],['aggressive','⚡ Aggressive']].forEach(([k,lab])=>{
     const on=S.dailyPlan===k; const b=$(`<button class="btn ${on?'goldfill':'ghost'}" style="font-size:13px">${lab}</button>`);
