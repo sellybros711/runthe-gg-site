@@ -11554,6 +11554,47 @@ allows Google Fonts, or self-host Anton.*
   0 page errors; `node --check` clean. Deployed to /golf. FOLLOW-UP (owner requested): headwear styles on the
   swing golfer (the per-frame hat-sprite art investment). Tunable: the pattern overlay + glow keyframe.
 
+- **CS484 — profile/closet navigation + two big layout revamps (owner batch, from a Closet screenshot).**
+  Four coordinated pieces:
+  1. **Banner profile image → CLOSET; bottom Profile tab → Profile** (owner: "if a player clicks their
+     profile image on the top banner I want it to take them to their closet. The profile button on the
+     bottom will take them to their overall profile"). The top-banner profile pill (avatar + name) now opens
+     the Closet (dress your golfer) for signed-in players instead of the Profile overlay — and it's
+     non-destructive: it stores `{screen,overlay}` and the Closet's Done/Back restores exactly where you
+     were (guests still get the sign-in flow). The bottom-nav Profile tab still opens the Profile overlay.
+     Generalized the closet `ret()` to restore an object return (banner) or the `'record'` return (from the
+     Profile's own avatar).
+  2. **"Trophy Room" → "Profile"** everywhere user-facing (the overlay `<h3>`, guest preview, ≡-menu row,
+     title nav tile, the "+N more · see your Profile" achievement line, guest sign-up CTA). Internal keys
+     (`S.overlay='record'`) + code comments unchanged.
+  3. **Profile page reorganized into TABS** (owner: "enhance and reorganize the page so there is less
+     scrolling"). `overlayRecord` was one giant scroll (header → trophy cabinet → legend tokens → account →
+     stat bar → best careers → titles → Hall of Fame → rep bar → achievement list). Now: a compact always-on
+     header (avatar → Closet, name, equipped title, **Tour Rep rank**) + the account card, then a
+     `.segrow` tab bar — **Stats** (stat bar · best careers · player title · Hall of Fame) / **Trophies**
+     (trophy case · legend tokens) / **Achievements** (Tour Rep bar · achievement list). Each tab is a short
+     scroll instead of the whole page at once. `S.profileTab` drives it.
+  4. **Closet layout revamp** (owner: "way too much scrolling ... I don't like how it's a bunch of loose
+     tabs, can we tie everything together into one clean intuitive layout"). `scrSetup` (the create/edit
+     golfer screen) replaced the wall of ~5 label-grouped category-chip rows (Appearance/Apparel/Gear/
+     Effects/Profile all shown at once, pushing the item tiles far down) with a clean **two-tier nav**: a
+     SECTION segmented control (`Look · Apparel · Gear · Effects · Profile`) + only the selected section's
+     category chips, and BOTH are PINNED with the golfer (sticky) — so only the ITEM TILES scroll, never the
+     chrome. Tapping a section jumps to its first category; a single-category section (Effects/Profile) shows
+     no redundant chip row. The live equipped-gear boosts + the "Pro Shop & Packs" button moved BELOW the
+     tiles (utility, not primary) so the tiles sit right under the pinned nav. This fixes both complaints:
+     far less scrolling (tiles are always ~one row below the golfer) and a clear tied-together hierarchy
+     instead of loose chip groups — reusing the Pro Shop's own liked tab pattern, but with every category
+     reachable (the section's chips wrap, so nothing is hidden like the old scrolling row hid "Clubs"). The
+     golfer preview was sized down slightly (164px) so the pinned header stays lean.
+  Verified in Playwright (430 + 360 px): the Closet renders the section tabs + category chips + tiles with
+  the golfer + nav pinning on scroll (section tabs fit at 360 with the "Look" label, Gear→Clubs reachable,
+  Effects shows no chip row); the banner profile pill opens the Closet with `{screen,overlay}` return and
+  Done restores the prior screen; the Profile overlay renders "Profile" with the 3 tabs + the Tour Rep rank
+  in the header; the bottom-nav Profile tab and the guest profile preview both render as "Profile"; 0 page
+  errors throughout. Deployed to /golf. Tunable: the closet golfer height / section labels, the profile tab
+  set.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
