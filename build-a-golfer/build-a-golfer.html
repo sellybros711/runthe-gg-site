@@ -21638,7 +21638,7 @@ function scrCareerEnd(){
   add(tiles);
   // CS483t (owner): where this career ranks on the global career board - Today / This week / All-time.
   { const rc=careerRankCard(); if(rc) add(rc);
-    else if(sbSignedIn() && S._careerRankLoading!=='career'){ S._careerRankLoading='career'; loadCareerRank(c.money); } }
+    else if(sbSignedIn() && S._careerRankLoading!=='career'){ S._careerRankLoading='career'; loadCareerRank(c.net); } }
   // ---- Career Stats (CS214) ----
   { const cSk=careerAvgSkills(c); if(cSk){ const w=$(`<div style="max-width:520px;margin:6px auto"></div>`); w.innerHTML=emojifyIcons(statSheetHTML(cSk, careerRealStats(c), {title:'Career Stats'})); add(w); } }
   { const tl=careerTimelineNode(c); if(tl) add(tl); }   // CS265 career milestone timeline
@@ -21796,7 +21796,7 @@ function scrCircuitEnd(){
   ceTabBody(S.ceTab==='career'?career : S.ceTab==='full'?full : c, S.ceTab);
   // CS483t (owner): where the tour career ranks on the global career board - Today / This week / All-time.
   { const rc=careerRankCard(); if(rc) add(rc);
-    else if(sbSignedIn() && S._careerRankLoading!=='circuit'){ S._careerRankLoading='circuit'; loadCareerRank(career.money); } }
+    else if(sbSignedIn() && S._careerRankLoading!=='circuit'){ S._careerRankLoading='circuit'; loadCareerRank(career.net); } }
   const share=`RUNTHETOUR LEGEND CIRCUIT, ${S.name||'Your Golfer'}\n${e.years} seasons on the Legend Circuit · net worth ${fmtSigned(c.net)}\n${c.wins}W · ${c.majors} majors · ${fmt(c.money)} earned\nhttps://runthe.gg/golf`;
   const careerVals=CATS.map(x=> S.slots[x.k]? S.slots[x.k].value : REPLACEMENT);
   const cv=document.createElement('canvas'); cv.style.cssText='width:100%;max-width:300px;display:block;margin:16px auto 4px;border-radius:14px;border:1px solid var(--line)';
@@ -22386,18 +22386,18 @@ async function loadSeasonRank(earnings){
     render();
   }catch(_){ /* fail open, the summary just shows no rank */ }
 }
-// CS483t: where this CAREER's total earnings rank on the global career board - today / this week / all-time.
+// CS483t: where this CAREER's total NET PROFIT ranks on the global career board - today / this week / all-time.
 // Mirrors loadSeasonRank; cached on S.careerRank; renders the ceremony rank card once it resolves. Fail-open
 // (no card pre-migration 59 / signed out). Career mode requires an account, so this only runs when signed in.
-async function loadCareerRank(earnings){
+async function loadCareerRank(net){
   if(!sb || !sbSignedIn()) return;
-  const e=Math.round(earnings||0);
+  const e=Math.round(net||0);
   let sinceToday=null, sinceWeek=null;
   try{ sinceToday=new Date(Date.now()-(86400000-dNextResetMs())).toISOString(); }catch(_){}
   try{ sinceWeek=new Date(weekKey()*7*86400000).toISOString(); }catch(_){}
   try{
-    let r=await sb.rpc('runtour_career_rank',{p_earnings:e,p_since_today:sinceToday,p_since_week:sinceWeek});
-    if(r.error){ r=await sb.rpc('runtour_career_rank',{p_earnings:e}); }   // pre-migration 59 → all-time only
+    let r=await sb.rpc('runtour_career_rank',{p_net:e,p_since_today:sinceToday,p_since_week:sinceWeek});
+    if(r.error){ r=await sb.rpc('runtour_career_rank',{p_net:e}); }   // pre-migration 59 → all-time only
     if(r.error || !r.data || !r.data.length) return;
     S.careerRank=r.data[0];
     if(S.screen==='careerend'||S.screen==='circuitend') render();
@@ -22414,7 +22414,7 @@ function careerRankCard(){
       <span><span style="font-family:var(--mono);font-weight:800;font-size:18px;color:var(--gold)">#${Number(rank).toLocaleString()}</span> <span class="small muted">of ${Number(total).toLocaleString()}</span></span></div>`).join('');
   const card=$(`<div class="scout" style="max-width:520px;margin:16px auto 0;text-align:left;padding:13px 16px">
     <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">${ic('trophy')} Career Leaderboard</div>
-    <div class="small muted" style="margin:3px 0 6px">Where your career earnings rank</div>
+    <div class="small muted" style="margin:3px 0 6px">Where your career net profit ranks</div>
     ${body}
     <button class="btn gold" style="width:100%;margin-top:11px;font-size:12px;padding:8px 14px">View Career Leaderboard</button></div>`);
   card.querySelector('button').onclick=()=>{ S.lbTab='career'; S.lbWindow='all'; S.overlay='leaderboard'; render(); };
