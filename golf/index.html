@@ -12966,7 +12966,9 @@ function signSponsor(offer, slot){ const s=ensureSponsors(); const prev=s[slot];
   S.career.pendingSigning=(S.career.pendingSigning||0)+signing;   // paid into next season's net (accumulates if you sign two)
   S.career.sponsorOffers=(S.career.sponsorOffers||[]).filter(o=>o.brand!==offer.brand);
   track('sponsor_sign',{brand:offer.brand, tier:offer.tier, slot, signing});
-  try{ saveCareer(offseasonResumeExtra()); }catch(e){}
+  // CS480: sponsor decisions can now be made on the season-summary Sponsors tab (not just the off-season), so
+  // save with the resume state of whichever screen we're on, else a resume would wrongly jump to the off-season.
+  try{ saveCareer(S.screen==='summary'?summaryResumeExtra():offseasonResumeExtra()); }catch(e){}
   toast('Signed '+offer.brand+' as your '+SPONSOR_SLOT_LABEL[slot].toLowerCase()+' sponsor · +'+fmtShort(signing));
   render(); }
 // CS351: a brand wanting to sign you is now a MOMENT, not a quiet card. Once per off-season, if a brand is
@@ -13346,7 +13348,10 @@ function contractReportCardHTML(x){
 function contractsReportHTML(list, signing){
   if(!list||!list.length) return '';
   const cards=list.map(x=>contractReportCardHTML(x)).join('');
-  const sign=(signing>0)?`<div class="scout" style="text-align:left;margin:0 0 10px;border-color:#ffd45e66"><div style="display:flex;justify-content:space-between;gap:10px"><span class="small" style="color:#ffd45e;font-weight:700">✍ Signing bonus${list.length?'':''}</span><span class="mono small" style="color:#ffd45e;font-weight:800">+${fmt(signing)}</span></div></div>`:'';
+  const sign=(signing>0)?`<div class="scout" style="text-align:left;margin:0 auto 10px;max-width:520px;border-color:#ffd45e66"><div style="display:flex;justify-content:space-between;gap:10px"><span class="small" style="color:#ffd45e;font-weight:700">✍ Signing bonus</span><span class="mono small" style="color:#ffd45e;font-weight:800">+${fmt(signing)}</span></div></div>`:'';
+  // CS480 (owner): the two sponsor report cards sit SIDE BY SIDE (via .cols, which stacks on mobile) instead
+  // of stacked, so the Sponsors tab is much shorter on desktop.
+  if(list.length>1) return `<div class="cols" style="max-width:900px;margin:10px auto;align-items:start">${cards}</div>${sign}`;
   return `<div style="max-width:520px;margin:10px auto">${cards}${sign}</div>`;
 }
 // map a scheduled event to a playable DAILY_COURSES venue (EVENT_COURSE references those objects
@@ -15414,6 +15419,10 @@ function scrSummary(){
     }
     // consume the one-time signing bonus (set at the off-season switch); store it so re-renders stay stable
     S.season._signingPaid=signing; if(S.career) S.career.pendingSigning=0;
+    // CS480 (owner): compute sponsor OFFERS at season end so the stay/switch decision lives on the summary
+    // Sponsors tab (moved off the off-season re-roll screen). Undecided offers are cleared when the next
+    // season starts (finishOffseason). Computed once here in the record block, never re-run on re-renders.
+    try{ S.career.sponsorOffers=computeSponsorOffers(); }catch(e){ S.career.sponsorOffers=[]; }
     if(t.best<S.career.best)S.career.best=t.best;
     // record the actual tournaments won this season for the career Wins list
     S.season.results.forEach(r=>{ const meR=r.order.find(o=>o.p.you); if(meR&&meR.pos===1) S.career.winsList.push({name:r.evt.name,year:S.year||1,major:!!r.evt.major}); });
@@ -15603,21 +15612,28 @@ function scrSummary(){
   // MONEY in ONE compact HORIZONTAL bar (owner CS478: "the Earnings tab is so close to one page - make the
   // earnings and net profit go horizontal, not vertical"). Label + big value sit inline on one row, the two
   // stats split by a divider; wraps to two rows on a narrow phone. Much shorter than the old two stacked cards.
-  add($(`<div class="tile" style="margin:4px 0 8px;padding:13px 18px">
-    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 26px">
-      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-        <span class="k" style="font:800 11.5px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Earnings</span>
-        <span class="v cream" style="font-family:var(--mono);font-weight:800;font-size:24px;white-space:nowrap;color:var(--oncard)">${fmt(t.money)}</span>
-        <span class="small muted" style="font-size:10px">prize money won</span>
-      </div>
-      <div style="width:1px;align-self:stretch;min-height:26px;background:rgba(255,255,255,.1)"></div>
-      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-        <span class="k" style="font:800 11.5px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Net profit</span>
-        <span class="v" style="font-family:var(--mono);font-weight:800;font-size:24px;white-space:nowrap;color:${netCol0}">${fmtSigned(netTotal)}</span>
-        <span class="small muted" style="font-size:10px">${contractBonus>0?('incl. +'+fmt(contractBonus)+' sponsor'):('after −'+fmt(ec.costs)+' costs')}</span>
+  const moneyBar=$(`<div class="tile" style="margin:4px 0 8px;padding:13px 18px">
+    <div class="moneybar-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 26px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 26px">
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+          <span class="k" style="font:800 11.5px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Earnings</span>
+          <span class="v cream" style="font-family:var(--mono);font-weight:800;font-size:24px;white-space:nowrap;color:var(--oncard)">${fmt(t.money)}</span>
+          <span class="small muted" style="font-size:10px">prize money won</span>
+        </div>
+        <div style="width:1px;align-self:stretch;min-height:26px;background:rgba(255,255,255,.1)"></div>
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+          <span class="k" style="font:800 11.5px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Net profit</span>
+          <span class="v" style="font-family:var(--mono);font-weight:800;font-size:24px;white-space:nowrap;color:${netCol0}">${fmtSigned(netTotal)}</span>
+          <span class="small muted" style="font-size:10px">${contractBonus>0?('incl. +'+fmt(contractBonus)+' sponsor'):('after −'+fmt(ec.costs)+' costs')}</span>
+        </div>
       </div>
     </div>
-  </div>`));
+  </div>`);
+  // CS479 (owner): Full Season Recap moved into the money bar's unused right space (right of Net Profit).
+  const recapBtn=$(`<button class="btn gold" style="width:auto;flex:0 0 auto;margin:0 0 0 auto;padding:9px 16px;font-size:12px;text-align:left;line-height:1.2">Full Season Recap<span class="sub" style="font-size:9px;letter-spacing:.06em">Every event, leaderboard by leaderboard</span></button>`);
+  recapBtn.onclick=()=>{S.recapEvent=null; S.recapYear=S.year||1; S.screen='recap'; render();};
+  moneyBar.querySelector('.moneybar-row').appendChild(recapBtn);
+  add(moneyBar);
   __cur=moC;
   // expandable itemized expense sheet (caddie / agent / travel / tour overhead)
   const expWrap=$(`<div class="center" style="margin:0 0 8px"></div>`);
@@ -15645,7 +15661,10 @@ function scrSummary(){
       <div style="font:800 11px/1 var(--body);letter-spacing:.2em;color:#ffd45e;text-transform:uppercase">${ic('coin')} No coins this season</div>
       <div class="small" style="color:#dbe7ee;margin-top:4px">You simmed this season to the end, so it earned no coins. Stay in the sim and play the rounds (and the Moments) next year to earn.</div></div>`));
   // CS477 (owner): sponsor season report cards get their OWN "Sponsors" tab (spC), off the Earnings tab.
+  // CS480 (owner): this tab is ALSO where you're asked to change sponsors when an offer is on the table
+  // (moved off the off-season re-roll screen). The stay/switch decision renders above the report cards.
   __cur=spC;
+  { const sd=sponsorDecisionNode(); if(sd && (S.career.sponsorOffers||[]).length) add(sd); }
   if(contractL.length) add($(contractsReportHTML(contractL, signing)));   // sponsor season report cards (both slots)
   __cur=ovC;
   if(sbSignedIn() && S.freshAch&&S.freshAch.length){   // Tour Rep / achievements are a signed-in feature, never shown to guests
@@ -15826,16 +15845,16 @@ function scrSummary(){
     left.appendChild($(`<h2 style="margin:2px 0 8px">Season earnings list</h2>`));
   }
   const board=$(`<div class="board"></div>`);
+  // CS479: top 6 + you (with Full Season Recap moved into the money bar) keeps the Earnings tab on one screen
+  // so the Continue button is visible without the scroll-down cue. Full list is in Full Season Recap.
   if(tab==='career'){
-    careerList.slice(0,10).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
-    if(cRank>10){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(careerList[cRank-1],cRank,true));}
+    careerList.slice(0,6).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
+    if(cRank>6){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(careerList[cRank-1],cRank,true));}
   } else {
-    byMoney.slice(0,10).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
-    if(moneyRank>10){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(byMoney[moneyRank-1],moneyRank,true));}
+    byMoney.slice(0,6).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
+    if(moneyRank>6){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(byMoney[moneyRank-1],moneyRank,true));}
   }
   left.appendChild(board);
-  const recapBtn=$(`<button class="btn gold" style="margin-top:10px">Full Season Recap<span class="sub">Every event, leaderboard by leaderboard</span></button>`);
-  recapBtn.onclick=()=>{S.recapEvent=null; S.recapYear=S.year||1; S.screen='recap'; render();}; left.appendChild(recapBtn);
   // (CS413: the season leaderboard-rank card moved up to right above Tournaments Won.)
   if(!S.daily && S.career && S.career.seasons.length>1){
     const c=S.career, ccol=c.net>=0?'#35d6a0':'#E14A33';
@@ -16028,7 +16047,9 @@ function continueFranchise(){
   // off-season tune-up: re-spin to swap fresh skills in (now also to repair age decline)
   // CS383: always 3 re-spins; CHANGES vary by last season's finish (offChanges). Not Tour Rep.
   S.offseason={changes:0,maxChanges:offChanges(),reSpins:offRespins(),decline:_decline,locked:[]}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
-  try{ S.career.sponsorOffers=computeSponsorOffers(); }catch(e){ S.career.sponsorOffers=[]; }   // CS236: interested brands (fill a slot / upgrade) this off-season
+  // CS480: sponsor offers are now computed at the SEASON SUMMARY (record block) and decided on the Sponsors
+  // tab, so the off-season no longer recomputes them (that would overwrite an undecided offer). They carry
+  // over untouched here and are cleared at season start (finishOffseason) if never acted on.
   track('offseason_start',{year:S.year});
   saveCareer(offseasonResumeExtra());   // checkpoint the off-season (world advanced, decline applied) so a refresh resumes HERE, not the prior results page
   S.screen='offseason'; render();
@@ -16229,10 +16250,9 @@ function scrOffseason(){
     add($(`<div class="osstat">${r.tier.name==='G.O.A.T.'?'🐐':'🏅'} <b style="color:var(--gold)">${esc(r.tier.name)}</b> · ${ageMsg}</div>`));
     const bn=offBudgetNote(); if(bn) add($(`<div class="osstat">${bn}</div>`)); }
 
-  // sponsors: an actual OFFER (a decision) always shows; the passive strip is hidden while mid-swap (CS356s).
-  if(!S.circuitMode){ const offers=(S.career&&S.career.sponsorOffers)||[];
-    if(offers.length){ const sn=sponsorDecisionNode(); if(sn) add(sn); }
-    else if(!spun){ const sn=sponsorStripNode(); if(sn) add(sn); } }
+  // CS480 (owner): the sponsor stay/switch DECISION moved to the season-summary Sponsors tab, so the
+  // off-season (where you re-roll attributes) only shows the passive informational strip (hidden mid-swap).
+  if(!S.circuitMode && !spun){ const sn=sponsorStripNode(); if(sn) add(sn); }
 
   // reserved reel slot - same height whether idle / spinning / landed, so tapping Spin causes NO layout jump
   const rar=spun?g.rarity:null, RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
