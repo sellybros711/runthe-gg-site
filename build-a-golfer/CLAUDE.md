@@ -11257,6 +11257,16 @@ allows Google Fonts, or self-host Anton.*
     list, Career stat sheet) are capped for the summary; the full ledgers live in the Full Season Recap +
     career-end ceremony, which intentionally show everything.
 
+- **CS483b — off-season declutter: avatar on the chart's line, sponsors + rival removed (owner, from
+  screenshots).** On `scrOffseason`: (1) the pixel-golfer avatar now sits on the SAME horizontal line as the
+  rating chart (a new `.oshero-row` = avatar left, `dynRadar()` right), with the name + change/re-spin budget
+  on a slim `.oshero-meta` line below — replacing the separate avatar card stacked above the radar (saves
+  vertical room, reads as one unit). (2) Removed the passive **Sponsors** strip (`sponsorStripNode` — sponsors
+  live on the season-summary Sponsors tab) and the **Your Rival** panel (`rivalStatusNode` — the rivalry lives
+  on the Reputation tab + the in-season head-to-head); the off-season is now just for re-rolling attributes.
+  Verified in Playwright (390px): the avatar renders left-of + vertically-centered-with the radar, and the
+  rendered `#app` has no SPONSORS strip / YOUR RIVAL panel; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
