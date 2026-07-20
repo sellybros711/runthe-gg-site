@@ -3374,7 +3374,7 @@ function resumeCareer(){ const r=careerSaveInfo(); if(!r || r.ended) return;   /
   track('career_resume',{year:S.year}); continueFranchise(); }   // legacy save with no screen tag: pick up at next off-season
 // A retired/ended career (endCareer()) is kept addressable so an accidental refresh mid-ceremony
 // doesn't lose it, but it must never be played on from here, just redisplay the same ceremony screen.
-function viewEndedCareer(){ const r=careerSaveInfo(); if(!r || !r.ended) return; reset();
+function viewEndedCareer(){ const r=careerSaveInfo(); if(!r || !r.ended) return; reset(); S.careerRank=null; S._careerRankLoading=null;
   S.career=normalizeCareerNames(r.career); S.name=r.name||''; S.look=Object.assign({},DEFLOOK,r.look||{}); S.year=r.year||1;
   S.slots=r.slots||S.slots; S.daily=false; S.careerOver=true;
   if(r.circuitEnded){   // Legend Circuit finale reviewed instead of the regular 30-year ceremony
@@ -16269,6 +16269,7 @@ function mintLegendToken(){
 }
 function endCareer(reason){
   S._repAnimShown=false;   // let the Tour Rep meter animate once on the career-end ceremony
+  S.careerRank=null; S._careerRankLoading=null;   // CS483t: fresh ceremony reloads its leaderboard rank
   S.freshLegendToken = (reason==='age') ? mintLegendToken() : null;   // full 30 years only
   if(S.career){ const c=S.career; S.careerEnd={reason,years:c.seasons.length,
     money:c.money,net:c.net,wins:c.wins,majors:c.majors,top10:c.top10,
@@ -16322,6 +16323,7 @@ function mintCircuitLegendToken(){
 }
 function endCircuit(){
   S._repAnimShown=false;
+  S.careerRank=null; S._careerRankLoading=null;   // CS483t: fresh ceremony reloads its leaderboard rank
   // No Legend Token here: the token is earned once, at the 30-year career end, for that golfer's PEAK build.
   // The Legend Circuit is the SAME golfer's epilogue, so a second token would be a duplicate (you only get
   // each golfer once).
@@ -21634,6 +21636,9 @@ function scrCareerEnd(){
   tiles.appendChild(tile('Best season',fmt(e.best||0),true));
   tiles.appendChild(tile('Seasons',e.years+''));
   add(tiles);
+  // CS483t (owner): where this career ranks on the global career board - Today / This week / All-time.
+  { const rc=careerRankCard(); if(rc) add(rc);
+    else if(sbSignedIn() && S._careerRankLoading!=='career'){ S._careerRankLoading='career'; loadCareerRank(c.money); } }
   // ---- Career Stats (CS214) ----
   { const cSk=careerAvgSkills(c); if(cSk){ const w=$(`<div style="max-width:520px;margin:6px auto"></div>`); w.innerHTML=emojifyIcons(statSheetHTML(cSk, careerRealStats(c), {title:'Career Stats'})); add(w); } }
   { const tl=careerTimelineNode(c); if(tl) add(tl); }   // CS265 career milestone timeline
@@ -21789,6 +21794,9 @@ function scrCircuitEnd(){
   });
   add(tabrow);
   ceTabBody(S.ceTab==='career'?career : S.ceTab==='full'?full : c, S.ceTab);
+  // CS483t (owner): where the tour career ranks on the global career board - Today / This week / All-time.
+  { const rc=careerRankCard(); if(rc) add(rc);
+    else if(sbSignedIn() && S._careerRankLoading!=='circuit'){ S._careerRankLoading='circuit'; loadCareerRank(career.money); } }
   const share=`RUNTHETOUR LEGEND CIRCUIT, ${S.name||'Your Golfer'}\n${e.years} seasons on the Legend Circuit · net worth ${fmtSigned(c.net)}\n${c.wins}W · ${c.majors} majors · ${fmt(c.money)} earned\nhttps://runthe.gg/golf`;
   const careerVals=CATS.map(x=> S.slots[x.k]? S.slots[x.k].value : REPLACEMENT);
   const cv=document.createElement('canvas'); cv.style.cssText='width:100%;max-width:300px;display:block;margin:16px auto 4px;border-radius:14px;border:1px solid var(--line)';
@@ -22377,6 +22385,40 @@ async function loadSeasonRank(earnings){
     S.seasonRank=r.data[0];
     render();
   }catch(_){ /* fail open, the summary just shows no rank */ }
+}
+// CS483t: where this CAREER's total earnings rank on the global career board - today / this week / all-time.
+// Mirrors loadSeasonRank; cached on S.careerRank; renders the ceremony rank card once it resolves. Fail-open
+// (no card pre-migration 59 / signed out). Career mode requires an account, so this only runs when signed in.
+async function loadCareerRank(earnings){
+  if(!sb || !sbSignedIn()) return;
+  const e=Math.round(earnings||0);
+  let sinceToday=null, sinceWeek=null;
+  try{ sinceToday=new Date(Date.now()-(86400000-dNextResetMs())).toISOString(); }catch(_){}
+  try{ sinceWeek=new Date(weekKey()*7*86400000).toISOString(); }catch(_){}
+  try{
+    let r=await sb.rpc('runtour_career_rank',{p_earnings:e,p_since_today:sinceToday,p_since_week:sinceWeek});
+    if(r.error){ r=await sb.rpc('runtour_career_rank',{p_earnings:e}); }   // pre-migration 59 → all-time only
+    if(r.error || !r.data || !r.data.length) return;
+    S.careerRank=r.data[0];
+    if(S.screen==='careerend'||S.screen==='circuitend') render();
+  }catch(_){ /* fail open, the ceremony just shows no rank */ }
+}
+// the ceremony leaderboard-rank card: where the career ranks Today / This week / All-time, + View Leaderboard.
+function careerRankCard(){
+  const r=S.careerRank; if(!r) return null;
+  const rows=[]; const mk=(lab,rank,total)=>{ if(rank==null||total==null) return; rows.push([lab,rank,total]); };
+  mk('Today', r.today_rank, r.today_total); mk('This week', r.week_rank, r.week_total); mk('All time', r.rank, r.total);
+  if(!rows.length) return null;
+  const body=rows.map(([lab,rank,total],i)=>`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 2px;${i<rows.length-1?'border-bottom:1px solid rgba(255,255,255,.07)':''}">
+      <span class="small" style="color:var(--muted)">${lab}</span>
+      <span><span style="font-family:var(--mono);font-weight:800;font-size:18px;color:var(--gold)">#${Number(rank).toLocaleString()}</span> <span class="small muted">of ${Number(total).toLocaleString()}</span></span></div>`).join('');
+  const card=$(`<div class="scout" style="max-width:520px;margin:16px auto 0;text-align:left;padding:13px 16px">
+    <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">${ic('trophy')} Career Leaderboard</div>
+    <div class="small muted" style="margin:3px 0 6px">Where your career earnings rank</div>
+    ${body}
+    <button class="btn gold" style="width:100%;margin-top:11px;font-size:12px;padding:8px 14px">View Career Leaderboard</button></div>`);
+  card.querySelector('button').onclick=()=>{ S.lbTab='career'; S.lbWindow='all'; S.overlay='leaderboard'; render(); };
+  return card;
 }
 // fetch ONE board for the given (tab, sort) into lbCache[`${tab}:${sort}`]. Falls back to the legacy
 // (no p_sort) call so the board still loads before migration 28 is applied.

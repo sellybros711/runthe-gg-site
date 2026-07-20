@@ -11510,6 +11510,26 @@ allows Google Fonts, or self-host Anton.*
   champion): Net profit renders on Overview ($13.07M), tabs intact, 0 page errors; screenshot sent to owner
   for approval. **Deploy to /golf once owner approves.**
 
+- **CS483t — career-end ceremony: a leaderboard-rank section (Today / This week / All-time) (owner: "the
+  career results page should have a leaderboard section that tells you where your career ranks amongst
+  today, this week, and all time"). PREVIEW SENT; needs migration 59 to show live.** Mirrors the CS413
+  season-rank pattern but for CAREERS. New migration **`supabase/59_runtour_career_rank.sql`** (owner-run):
+  `runtour_career_rank(p_earnings, p_since_today, p_since_week)` aggregates careers per (user_id, career_id)
+  by summed `season_earnings`, ranks this career's total earnings, and scopes the today/week windows by each
+  career's COMPLETION time (max `created_at` of its seasons, so a career finished today counts as "today").
+  Returns rank/total (all-time) + today_/week_ rank/total; both window args nullable so a 1-arg call resolves
+  (all-time only). Validated on a local Postgres (4 seeded careers: all-time 3/4, today 2/2, week 2/3 for a
+  100M career; a 250M career 2/4·1/2·1/3; the 1-arg fallback; idempotent re-run). Client: `loadCareerRank`
+  (mirrors `loadSeasonRank`, ET-day/UTC-week boundaries, tries the 3-arg call then falls back to 1-arg on
+  error) + `careerRankCard()` (a `.scout` card: Today/This week/All-time #rank of N + a "View Career
+  Leaderboard" button that opens the Career board). Wired into BOTH `scrCareerEnd` (30-yr) and `scrCircuitEnd`
+  (ranks by the TOUR career earnings `S.career.money`, the board-comparable metric — the circuit isn't on the
+  global board), fired once per ceremony via `S._careerRankLoading`, and reset in endCareer/endCircuit/
+  viewEndedCareer so a later career reloads fresh. Fail-open: signed-out or pre-migration → no card, no crash
+  (career mode requires an account anyway). Verified in Playwright (mocked RPC): the card renders "Today #2
+  of 9 · This week #3 of 58 · All time #7 of 1,240" + working View button, 0 page errors; screenshot sent to
+  owner. **ACTION: run `supabase/59_runtour_career_rank.sql`; deploy client on owner go-ahead.**
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
