@@ -11443,6 +11443,20 @@ allows Google Fonts, or self-host Anton.*
   in Playwright (win result): Share = blue, primary = goldfill, both in one row, 0 page errors; screenshot
   confirms the side-by-side layout. Deployed to /golf.
 
+- **CS483o — Daily mulligan now RE-PLAYS the hole shot-by-shot (owner: "when I re-rolled my bogey it only
+  showed my putt, it should re-do the hole").** `dailyMulligan()` re-rolls the last hole's score + shot
+  sequence, but it set `S.dailyRevealN=(last.shots).length` — the FULL shot count — so the re-rolled hole
+  rendered as already-complete and only the final shot (the putt/result) showed, then it advanced. Fixed to
+  replay from the start, mirroring how a normal hole kicks off its fresh reveal: clear the shot timer, reset
+  `dailyRevealN=min(1,shots.length)` (first shot lands now, the rest reveal one-by-one), clear
+  holePause/sinking/prov/viewHole, `render()`, then `startShotReveal()` — whose own completion path
+  advances/finishes once the ball drops. `dMullAccept` no longer calls `scheduleDailyAdvance()` itself (the
+  reveal handles it), so it no longer skips straight past the replay. Works in both Quick and Full watch
+  modes (`dailyQuickStatic=false` forces the shot-by-shot view). Verified in Playwright driving the real
+  mulligan path on a seeded bogey hole: after accepting, RevealN starts at 1 and climbs 1→N as the hole
+  replays (was jumping straight to N = only the putt), mull applied, offer cleared, 0 page errors. Deployed
+  to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
