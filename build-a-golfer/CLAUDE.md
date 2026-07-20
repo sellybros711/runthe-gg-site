@@ -11279,6 +11279,20 @@ allows Google Fonts, or self-host Anton.*
   (390px): no idle reel, name under the avatar, scrollHeight === viewport (0 overflow); a real spin still
   brings the reel in, lands on a golfer, and shows the 8 swap tiles; 0 page errors. Deployed to /golf.
 
+- **CS483d — off-season cleaner + easier to understand (owner: "cleaner and easier to understand while
+  constraining it to this area").** Replaced the three stacked text lines between the chart and the tiles
+  (Tour-Rep+age line, "N changes earned by last season (…)" line, "⚠ Spinning is optional/risk" line) with
+  a clear hierarchy: (1) the Tour Rep rank is now a small `🏅 ROOKIE` chip under the avatar name (part of the
+  player identity, `.oshero-rank`); (2) ONE adaptive gold instruction `.oscard` states exactly what the
+  screen is for — normal: "**N skill changes available** · Spin the wheel to swap a skill — optional & risky,
+  you keep whatever you land on. Or start as-is."; age-decline: a red-tinted "Age is catching up — N changes
+  to repair a skill" variant; no-changes: "No skill changes this off-season · … start and run your bag
+  as-is." (+ a "🔒 N stats already changed" note when mid-off-season); (3) a small "YOUR SKILLS" label
+  (`.oslabel`) above the 8 tiles so the numbers read as your current bag. Mid-swap (spun) still hides the
+  card and shows the reel + the tap-to-swap ▲/▼ hint. Still fits a 390×844 phone with 0 overflow. Verified
+  in Playwright: the normal / no-changes / spun states all render the right card/label/reel with 0 page
+  errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
