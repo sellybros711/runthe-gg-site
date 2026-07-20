@@ -16316,30 +16316,36 @@ function scrOffseason(){
 
   add(scrHero(S.circuitMode?'Legend Circuit':'Off-Season', S.circuitMode?('Off-Season · Yr '+yr+' · train your golfer'):('Year '+S.year+' · train your golfer')));
 
-  // owner CS483c/d: avatar + username + Tour-Rep rank chip stacked in the left column, on the SAME LINE as
-  // the rating chart. No pips / changes / re-spins here (that's in the one instruction card below).
+  // owner CS483c/d: avatar + username stacked in the left column, on the SAME LINE as the rating chart.
   const rankName=repTier().tier.name;
   const heroRow=$(`<div class="oshero-row"></div>`);
   const avcol=$(`<div class="oshero-avcol"></div>`);
   const av=$(`<div class="oshero-av"></div>`); av.innerHTML=avatarShowHTML(); avcol.appendChild(av);
   avcol.appendChild($(`<div class="oshero-nm">${esc(S.name||'Your Golfer')}</div>`));
-  avcol.appendChild($(`<div class="oshero-rank">${rankName==='G.O.A.T.'?'🐐':'🏅'} ${esc(rankName)}</div>`));
   heroRow.appendChild(avcol);
   heroRow.appendChild(dynRadar());   // CS339: the live animated rating web (OVR in the centre)
   add(heroRow);
 
-  // owner CS483d: ONE clear instruction card (replaces the 3 stacked text lines) - tells you exactly what
-  // this screen is for. Adaptive: no-changes / age-decline / normal. Hidden mid-swap (the swap hint takes over).
+  // owner CS483e: the instruction card shows your RANKING + HOW you earned your changes (from last season's
+  // finish). No em dashes, no verbose description. Adaptive: no-changes / age-decline / normal. Hidden mid-swap.
   if(!spun){
     const changesLeft=os.maxChanges-os.changes;
-    let hd, sub, cls='';
-    if(os.maxChanges===0){ hd='No skill changes this off-season';
-      sub='A stronger finish next season earns them. Start below and run your bag as-is.'; }
-    else if(nDec){ cls='warn'; hd=`Age is catching up — ${changesLeft} change${changesLeft===1?'':'s'} to repair a skill`;
-      sub='Spin to swap in a better rating (you keep whatever you land on), or start as-is.'; }
-    else { hd=`${changesLeft} skill change${changesLeft===1?'':'s'} available`;
-      sub='Spin the wheel to swap a skill — optional & risky, you keep whatever you land on. Or start as-is.'; }
-    add($(`<div class="oscard ${cls}"><div class="oscard-hd">${hd}</div><div class="oscard-sub">${sub}</div>${lockedNow.length?`<div class="oscard-lock">🔒 ${lockedNow.length} stat${lockedNow.length>1?'s':''} already changed — a spin can't land there again</div>`:''}</div>`));
+    const rankEmoji=rankName==='G.O.A.T.'?'🐐':'🏅';
+    // how you earned the changes = last season's wins / majors / money-list finish
+    const last=lastCareerSeason(); let reason='';
+    if(last && last.rank!=null){ const p=[];
+      if(last.wins) p.push(last.wins+(last.wins===1?' win':' wins'));
+      if(last.majors) p.push(last.majors+(last.majors===1?' major':' majors'));
+      p.push(ord(last.rank)+' on the money list');
+      reason=p.join(', '); }
+    const hd = os.maxChanges===0 ? 'No skill changes this off-season'
+      : `${changesLeft} skill change${changesLeft===1?'':'s'} available`;
+    let sub=`${rankEmoji} <b style="color:var(--gold)">${esc(rankName)}</b>`;
+    if(reason) sub+=` · earned by ${reason}`;
+    else if(os.maxChanges===0) sub+=' · a stronger finish next season earns changes';
+    const note = nDec ? `<div class="oscard-lock" style="color:#e07a5f">Age is trimming your skills. Spin to repair one.</div>`
+      : (lockedNow.length?`<div class="oscard-lock">🔒 ${lockedNow.length} stat${lockedNow.length>1?'s':''} already changed this off-season</div>`:'');
+    add($(`<div class="oscard ${nDec?'warn':''}"><div class="oscard-hd">${hd}</div><div class="oscard-sub">${sub}</div>${note}</div>`));
   }
 
   // CS483b (owner): the sponsor strip is removed from the off-season - sponsors live on the season-summary

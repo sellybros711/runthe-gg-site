@@ -11293,6 +11293,22 @@ allows Google Fonts, or self-host Anton.*
   in Playwright: the normal / no-changes / spun states all render the right card/label/reel with 0 page
   errors. Deployed to /golf.
 
+- **CS483e — off-season instruction card: your RANK + HOW you earned your changes, no em dash / AI copy
+  (owner: "Have it say your ranking (my last image said All Star) and how you earned your changes in that
+  little box there. Take out the em dash and AI description").** Rebuilt the CS483d `.oscard` on
+  `scrOffseason`: the sub now leads with your Tour Rep RANK (`repTier().tier.name`, e.g. All-Star / Rookie /
+  G.O.A.T. with the medal / goat icon) and states exactly HOW the changes were earned from last season's
+  finish (`lastCareerSeason()` → "earned by 3 wins, 1 major, 5th on the money list", pluralised, majors/wins
+  only when non-zero). Removed the redundant `.oshero-rank` chip from the avatar column (the rank now lives
+  in the instruction card). Dropped the em dashes and the verbose AI-style description entirely: the header
+  is just "N skill changes available" (or "No skill changes this off-season"), the no-changes sub reads
+  "· a stronger finish next season earns changes", and the age-decline note is the plain "Age is trimming
+  your skills. Spin to repair one." (was "Age is catching up — N changes to repair a skill"). Mid-swap
+  (spun) still hides the card and shows the reel + swap tiles. Still fits a 390×844 phone with 0 overflow.
+  Verified in Playwright: the normal card shows the rank + earned-by reason (no em dash), the no-changes /
+  age-decline / spun variants all render correctly, and 0 em dashes remain in the card, with 0 page errors.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
