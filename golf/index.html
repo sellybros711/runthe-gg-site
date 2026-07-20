@@ -20520,8 +20520,8 @@ function scrDailyResult(){
   } else {
     const cr=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Course Records ▸<span class="sub">See every course's record holder</span></button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
   }
-  // CS311: Legend golfers play the Daily FREE - always available here, even when all draft attempts are used.
-  if(!practice && !r.isLegend && !S.special){ const w=legendPlaySection(); if(w) add(w); }
+  // CS483L: Legend Tokens section removed from the result page (owner) - it already lives on the daily
+  // preview + the header Legend-token pill routes there, so it's not duplicated here.
   const pass=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">🎫 Course Passport<span class="sub">Your best grade &amp; score at all ${DAILY_KEYS.length} courses</span></button>`);
   pass.onclick=()=>{S.overlay='passport';render();}; add(pass);
   const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Return to home</button>`); home.onclick=()=>{S._claimDaily=null;S._dailyClaimFlow=false;S.dailyClaimMsg=null;S.screen='title';S.daily=false;render();}; add(home);
