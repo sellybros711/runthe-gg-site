@@ -11726,6 +11726,36 @@ allows Google Fonts, or self-host Anton.*
   + pushed to the feature branch, **NOT deployed** (awaiting owner review with CS490). Tunable: the per-hat
   parametric shapes in `dir8hats.py`, the head anchors per direction.
 
+- **CS493 — lefties play LEFT-HANDED on the dir8 TourTracer golfer (same style/size, always behind the
+  ball).** Owner: "make lefty animations the exact same style and size as the righty" (after the earlier
+  CS492 flip-approach was reverted for "looking much different"). A left-handed golfer is now the EXACT same
+  body/style/size as the righty, playing left-handed at every aim. New `PXG_DIR8_L` (44KB, 8 facings × 7
+  poses) built by `scratchpad/dir8blefty2.py` + `emit_dir8_l.py`; wired via `pxDir8Canvas`
+  (`SET=lefty?PXG_DIR8_L:PXG_DIR8`, cache key gains 'L'), `dir8Anchor(dir,kind,lefty)`
+  (`PXG_DIR8_ANCH_L`), and `hvSwingMarkup`/`hvAddressGolfer` (pass `!!look.lefty`, use `dir` directly, no
+  screen flip). The full-detail Closet/Profile golfer already respected `look.lefty`; this is the hole-view
+  swing golfer.
+  - **Construction (why it's correct at every aim):** a 3/4 top-down sprite can't be turned into a correct
+    left-hander for sideways aims by any single mirror (a horizontal flip flips the FACING; a vertical flip
+    turns the golfer upside-down). So per facing: **N/S (vertical aim)** = horizontal mirror of the righty
+    (strong stance cue, ball flips to the lefty side, everything upright + connected); **E/NE/SE (+ their
+    W/NW/SW mirrors)** = keep the righty BODY + ARM + ADDRESS + CHIP + PUTT and the ball anchor on the
+    TARGET side (so the golfer always stays BEHIND the ball — fixes the sideways wrong-side bug), and flip
+    ONLY the backswing (B) + follow-through (C) so the club sweeps over the opposite shoulder = the real
+    visible left-handed cue for sideways aims (a lefty and righty look alike at address; handedness shows in
+    the swing). Anchors: `full E:[23,13] W:[0,13]` (target side kept), `N:[4,16] S:[6,19]` (flipped).
+  - **First cut was wrong** (mirrored the pose layer + the ball anchor for sideways aims → the lefty stood
+    on the TARGET side of the ball, in the shot's path, for E/W). Caught via an in-context E/W render, then
+    the owner picked "author correct art" over a fallback stance.
+  - **Verified:** parse OK; all 56 lefty sprites (8 dirs × 7 poses) + 8 anchors + 8 URL sets render 0/0 bad,
+    0 real page errors; in-context E/W now shows the golfer behind the ball exactly like the righty at every
+    facing; swing-sequence render confirms the backswing/follow-through sweep the opposite shoulder.
+    Comparison images in `scratchpad/` (dir8_swing.png, dir8_ew.png, dir8_all8.png, dir8_sprite_zoom.png).
+  - **Committed to the feature branch, NOT deployed** (redesign pending owner sign-off on the screenshots).
+    Tunable: `HAND`/`AIM` + the B/C `sgn` flip in `dir8blefty2.py`, the per-facing anchor rule in
+    `emit_dir8_l.py`. To ship: regenerate → `python3 scratchpad/dir8blefty2.py && python3
+    scratchpad/emit_dir8_l.py`, splice into the two `PXG_DIR8_L*` consts, deploy with CS490/CS491.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
