@@ -10611,12 +10611,15 @@ function hvSwingMarkup(g,p,look){
   const cam=hvCamFor2(g,p);
   const W=PXG_TOP_W, H=PXG_TOP_H, lefty=!!look.lefty;
   // putt plays under the tight green close-up → size to that frame; full/chip use a fixed small size.
-  const GH = kind==='putt' ? Math.max(16, Math.min(26, cam[3]*0.19)) : 22;
+  const GH = kind==='putt' ? Math.max(13, Math.min(21, cam[3]*0.16)) : 22;
   const GW=GH*W/H;
   const anch=PXG_TOP_ANCHOR[kind]||PXG_TOP_ANCHOR.full;
   const bx=lefty?(W-anch[0]):anch[0], by=anch[1];   // ball-anchor (flipped for a lefty)
   const x0=A[0]-GW*(bx/W), y0=A[1]-GH*(by/H);        // place the anchor at the shot origin A
-  const deg=Math.atan2(vy,vx)*180/Math.PI+90;        // rotate the sprite's "up" onto the aim vector
+  // rotate the sprite's "up" onto the aim vector - EXCEPT on a putt, where the golfer stands UPRIGHT on the
+  // green (owner: "it should be standing on the green", not rotated at an angle). The green close-up is
+  // oriented up-the-hole, so facing up already faces the cup.
+  const deg = kind==='putt' ? 0 : Math.atan2(vy,vx)*180/Math.PI+90;
   const flip=lefty?` transform="translate(${(2*x0+GW).toFixed(1)},0) scale(-1,1)"`:'';
   const img=(u,cls)=>`<image class="hvsw ${cls}" href="${u}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"${flip}/>`;
   // Holed beat: the stroke is over - hold the finish frame statically so a re-render can't re-fire the swing.
