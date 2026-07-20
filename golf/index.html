@@ -10267,7 +10267,10 @@ function pxLum(hex){ hex=(hex||'#888').replace('#',''); if(hex.length<6) return 
 const _pxCanvas=new Map();
 // Build (and cache) the pixel golfer as a CANVAS element - so it can be drawn synchronously
 // onto other canvases (e.g. the share cards) via ctx.drawImage, with no async image load.
-function pxGolferCanvas(look){
+// CS486: front-facing SWING bodies for TourTracer. head/chest-core/belt/legs identical to PXG_BODY so
+// every accessory composites in place via pxGolferCanvas; only the two arms + club move per frame.
+const PXG_SWING={A:["............................................","............................................","............................................","............................................","............................................","......................s.....................","...................sssssss..................",".................sssssssssss................",".................sssssssssss................","................sssssssssssss...............","...............sssssssssssssss..............","...............sssssssssssssss..............","...............sssssssssssssss..............","...............sssssssssssssss..............","..............ssxxxssssssssssss.............","...............sxxxsssssssssss..............","...............sxxxsssssssssss..............","...............sxxxsssssssssss..............","...............sssssssssssssss..............","................ssssjjjjjjjss...............",".................sssjjjjjjjs................",".................sssssssssss................","...................sssssss..................","................vvvvjjsjjvvvv...............","...................vjjjjjvvvv...............","..............ttdt.vtdddtvttdt..............","..............ttdt.ttdddttttdt..............",".............ttdt..ttdddtttttdt.............",".............ttdt..ttdndtttttdt.............",".............ttdt..ttdddtttttdt.............","............ttdt...ttdddtttdttdt............","............jxss...ttdddtttdjxss............",".............jxss..ttdndtttjxss.............",".............jxss..ttdddtttjxss.............","..............jxss.ttdddttjxss..............","...............jxssttdddtjxss...............","................jxsstdddtjxss...............","................jxsstdddjxssd...............",".................jxssdddjxssd...............","..................jxssdjxssdd...............","..............nnnnnjxsjxssnnnnn.............","..............nnnnnjxxxxxsnnnnn.............","..............nnnnnnsssjjnnnnnn.............","...............mmpppsssjjppppp..............","...............mmppppllppppppp..............","...............mmpqqqllpmmpqqq..............","...............mmpqqqll.mmpqqq..............","...............mmpqqqll.mmpqqq..............","...............mmpqqqll.mmpqqq..............","...............mmpqqqll.mmpqqq..............","...............mmpqqqll.mmpqqq..............","...............mmpqqqll.mmpqqq..............","...............mmpqqqll.mmpqqq..............",".............uuuuoooGGGGuuuooooo............",".............oooooozGGGGooooozzz...nnnnnnnnn",".............nnnnnnnnn.nnnnnnnnn............"],B:["............................................","............................................","............................................","............................................","............................................","......................s.....................","l..................sssssss..................","l................sssssssssss................","ll...............sssssssssss................","ll..............sssssssssssss...............",".ll............sssssssssssssss..............","..ll...........sssssssssssssss..............","..ll...........sssssssssssssss..............","...ll..........sssssssssssssss..............","...ll.........ssxxxssssssssssss.............","....ll.........sxxxsssssssssss..............",".....ll........sxxxsssssssssss..............",".....ll........sxxxsssssssssss..............","......ll.......sssssssssssssss..............","......llxxx.....ssssjjjjjjjss...............","......slljj......sssjjjjjjjs................","......sssjj......sssssssssss................",".......jjxxss......sssssss..................","........jxjxxxssvvvvjjsjjvvvv...............",".........jxssjxxxxssjjjjjvvvv...............","..........jxssdddjxxssdddddddt..............","...................ttdddtttdd...............","...................ttdddtttdd...............","...................ttdndtttdd...............","...................ttdddtttdd...............","...................ttdddtttdd...............","...................ttdddtttdd...............","...................ttdndtttdd...............","...................ttdddtttdd...............","...................ttdddtttdd...............","...................ttdddtttdd...............","...................ttdddtttdd...............","...................ttdddtttdd...............","...................dddddddddd...............","...................dddddddddd...............","..............nnnnnngggggnnnnnn.............","..............nnnnnngggggnnnnnn.............","..............nnnnnngggggnnnnnn.............","...............mmppppppppppppp..............","...............mmppppppppppppp..............","...............mmpqqqpppmmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............",".............uuuuooooo.uuuuooooo............",".............oooooozzz.oooooozzz...nnnnnnnnn",".............nnnnnnnnn.nnnnnnnnn............"],C:["............................................","............................................","............................................","............................................","............................................","......................s.....................","...................sssssss.................l",".................sssssssssss...............l",".................sssssssssss..............ll","................sssssssssssss.............ll","...............sssssssssssssss...........ll.","...............sssssssssssssss..........ll..","...............sssssssssssssss..........ll..","...............sssssssssssssss.........ll...","..............ssxxxssssssssssss........ll...","...............sxxxsssssssssss........ll....","...............sxxxsssssssssss.......ll.....","...............sxxxsssssssssss.......ll.....","...............sssssssssssssss......ll......","................ssssjjjjjjjss.....xxllx.....",".................sssjjjjjjjs......slljj.....",".................sssssssssss......sssjj.....","...................sssssss.....jxxsss.......","................vvvvjjsjjvvvjxxxssss........","...................vjjjjjxxxxssjxss.........","..............ttddddddjxxsstddjxss..........","...................ttdddtttdd...............","...................ttdddtttdd...............","...................ttdndtttdd...............","...................ttdddtttdd...............","...................ttdddtttdd...............","...................ttdddtttdd...............","...................ttdndtttdd...............","...................ttdddtttdd...............","...................ttdddtttdd...............","...................ttdddtttdd...............","...................ttdddtttdd...............","...................ttdddtttdd...............","...................dddddddddd...............","...................dddddddddd...............","..............nnnnnngggggnnnnnn.............","..............nnnnnngggggnnnnnn.............","..............nnnnnngggggnnnnnn.............","...............mmppppppppppppp..............","...............mmppppppppppppp..............","...............mmpqqqpppmmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............",".............uuuuooooo.uuuuooooo............",".............oooooozzz.oooooozzz...nnnnnnnnn",".............nnnnnnnnn.nnnnnnnnn............"],CH0:["............................................","............................................","............................................","............................................","............................................","......................s.....................","...................sssssss..................",".................sssssssssss................",".................sssssssssss................","................sssssssssssss...............","...............sssssssssssssss..............","...............sssssssssssssss..............","...............sssssssssssssss..............","...............sssssssssssssss..............","..............ssxxxssssssssssss.............","...............sxxxsssssssssss..............","...............sxxxsssssssssss..............","...............sxxxsssssssssss..............","...............sssssssssssssss..............","................ssssjjjjjjjss...............",".................sssjjjjjjjs................",".................sssssssssss................","...................sssssss..................","................vvvvjjsjjvvvv...............","...................vjjjjjvvvv...............","..............ttdt.vtdddtvttdt..............","..............ttdt.ttdddttttdt..............","..............ttdt.ttdddttttdt..............","..............ttdt.ttdndttttdt..............",".............ttdt..ttdddtttttdt.............",".............ttdt..ttdddtttttdt.............",".............jxss..ttdddtttjxss.............","..............jxss.ttdndttjxss..............","..............jxss.ttdddttjxss..............","...............jxssttdddtjxss...............","................jxsstdddjxssd...............","................jxsstdddjxssd...............",".................jxssddjxssdd...............","..................jxssjxssddd...............","..................jxxxxxxsddd...............","..............nnnnnjsssjjnnnnnn.............","..............nnnnnnsssjjnnnnnn.............","..............nnnnnngllggnnnnnn.............","...............mmppppllppppppp..............","...............mmppppllppppppp..............","...............mmpqqqllpmmpqqq..............","...............mmpqqq.llmmpqqq..............","...............mmpqqq.llmmpqqq..............","...............mmpqqq.llmmpqqq..............","...............mmpqqqGGGGmpqqq..............","...............mmpqqqGGGGmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............",".............uuuuooooo.uuuuooooo............",".............oooooozzz.oooooozzz...nnnnnnnnn",".............nnnnnnnnn.nnnnnnnnn............"],CH1:["............................................","............................................","............................................","............................................","............................................","......................s.....................","...................sssssss..................",".................sssssssssss................",".................sssssssssss................","................sssssssssssss...............","...............sssssssssssssss..............","...............sssssssssssssss..............","...............sssssssssssssss..............","...............sssssssssssssss..............","..............ssxxxssssssssssss.............","...............sxxxsssssssssss..............","...............sxxxsssssssssss..............","...............sxxxsssssssssss..............","...............sssssssssssssss..............","................ssssjjjjjjjss...............",".................sssjjjjjjjs................",".................sssssssssss................","...................sssssss..................","................vvvvjjsjjvvvv...............","...................vjjjjjvvvv...............","..............ttdt.vtdddtvttdt..............","..............ttdt.ttdddttttdt..............","..............ttdt.ttdddtttttdt.............",".............ttdt..ttdndtttttdt.............",".............ttdt..ttdddtttGGGGt............",".............jxss..ttdddtttGGGGs............","..............jxss.ttdddtttllss.............","...............jxssttdndttllxs..............","................jxsstdddttllss..............","................jsxstdddtllss...............",".................jxssdddjllsd...............","..................jxssddllssd...............","...................jxxxxllsdd...............","...................djsslljddd...............","...................ddsslljddd...............","..............nnnnnnggllgnnnnnn.............","..............nnnnnngggggnnnnnn.............","..............nnnnnngggggnnnnnn.............","...............mmppppppppppppp..............","...............mmppppppppppppp..............","...............mmpqqqpppmmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............",".............uuuuooooo.uuuuooooo............",".............oooooozzz.oooooozzz...nnnnnnnnn",".............nnnnnnnnn.nnnnnnnnn............"],PT0:["............................................","............................................","............................................","............................................","............................................","......................s.....................","...................sssssss..................",".................sssssssssss................",".................sssssssssss................","................sssssssssssss...............","...............sssssssssssssss..............","...............sssssssssssssss..............","...............sssssssssssssss..............","...............sssssssssssssss..............","..............ssxxxssssssssssss.............","...............sxxxsssssssssss..............","...............sxxxsssssssssss..............","...............sxxxsssssssssss..............","...............sssssssssssssss..............","................ssssjjjjjjjss...............",".................sssjjjjjjjs................",".................sssssssssss................","...................sssssss..................","................vvvvjjsjjvvvv...............","...................vjjjjjvvvv...............","..............ttdt.vtdddtvttdt..............","..............ttdt.ttdddttttdt..............","..............ttdt.ttdddttttdt..............","..............ttdt.ttdndttttdt..............",".............ttdt..ttdddtttttdt.............",".............ttdt..ttdddtttttdt.............",".............ttdt..ttdddtttttdt.............",".............jxss..ttdndtttjxss.............","..............jxss.ttdddttjxss..............","..............jxss.ttdddttjxss..............","...............jxssttdddtjxss...............","................jxsstdddjxssd...............","................jxsstdddjxssd...............",".................jxssddjxssdd...............","..................jxssjxssddd...............","..............nnnnjxxxxxxsnnnnn.............","..............nnnnnjsssjjnnnnnn.............","..............nnnnnnsssjjnnnnnn.............","...............mmpppppllpppppp..............","...............mmpppppllpppppp..............","...............mmpqqqpllmmpqqq..............","...............mmpqqq.llmmpqqq..............","...............mmpqqq.llmmpqqq..............","...............mmpqqq.llmmpqqq..............","...............mmpqqHHHHHHpqqq..............","...............mmpqqFFFFFFpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............",".............uuuuooooo.uuuuooooo............",".............oooooozzz.oooooozzz...nnnnnnnnn",".............nnnnnnnnn.nnnnnnnnn............"],PT1:["............................................","............................................","............................................","............................................","............................................","......................s.....................","...................sssssss..................",".................sssssssssss................",".................sssssssssss................","................sssssssssssss...............","...............sssssssssssssss..............","...............sssssssssssssss..............","...............sssssssssssssss..............","...............sssssssssssssss..............","..............ssxxxssssssssssss.............","...............sxxxsssssssssss..............","...............sxxxsssssssssss..............","...............sxxxsssssssssss..............","...............sssssssssssssss..............","................ssssjjjjjjjss...............",".................sssjjjjjjjs................",".................sssssssssss................","...................sssssss..................","................vvvvjjsjjvvvv...............","...................vjjjjjvvvv...............","..............ttdt.vtdddtvttdt..............","..............ttdt.ttdddttttdt..............","..............ttdt.ttdddttttdt..............","..............ttdt.ttdndttttdt..............",".............ttdt..ttdddtttttdt.............",".............ttdt..ttdddtttttdt.............",".............ttdt..ttdddtttttdt.............",".............jxss..ttdndtttjxss.............","..............jxss.ttdddttjxss..............","...............jxssttdddttjxss..............","...............jxssttdddtjxss...............","................jxsstdddtjxss...............",".................jxssdddjxssd...............","..................jxssddjxssd...............","..................jxssdjxssdd...............","..............nnnnnjxxxxxxsnnnn.............","..............nnnnnnjsssjjnnnnn.............","..............nnnnnngsssjjnnnnn.............","...............mmppppppllppppp..............","...............mmppppppllppppp..............","...............mmpqqqppllmpqqq..............","...............mmpqqq..llmpqqq..............","...............mmpqqq..llmpqqq..............","...............mmpqqq..HHHHHHq..............","...............mmpqqq..FFFFFFq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............","...............mmpqqq...mmpqqq..............",".............uuuuooooo.uuuuooooo............",".............oooooozzz.oooooozzz...nnnnnnnnn",".............nnnnnnnnn.nnnnnnnnn............"]};
+function pxGolferCanvas(look,opts){
   look=look||S.look||DEFLOOK; const av=avLook(look);
   const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===(look.pants||'stone')))||{a:'#c7bfa8'}).a;
   const style=(look.hairStyle&&PXG_HAIR[look.hairStyle])?look.hairStyle:'short';
@@ -10280,7 +10283,8 @@ function pxGolferCanvas(look){
   const legw=(look.leg&&PXG_LEGS[look.leg])?look.leg:'';   // CS411: heritage legwear (plus-fours)
   const ball=(look.ball&&PXG_BALL[look.ball])?look.ball:'';   // CS414: teed ball beside the golfer
   const cleats=(look.cleats&&PXG_CLEATS[look.cleats])?look.cleats:'';   // CS414: rocket cleats (footwear overlay)
-  const key=av.key+'|st'+style+'|cap'+(capOn?hatStyle:'0')+'|pn'+(look.pants||'stone')+'|pt'+pat+'|ew'+shades+'|cl'+club+'|tp'+top+'|lg'+legw+'|bl'+ball+'|ct'+cleats+(look.lefty?'L':'R');
+  const BODY=(opts&&opts.body)||PXG_BODY;   // CS486: swing-pose body override (club/ball drawn in the body, so noClub/noBall)
+  const key=av.key+'|st'+style+'|cap'+(capOn?hatStyle:'0')+'|pn'+(look.pants||'stone')+'|pt'+pat+'|ew'+shades+'|cl'+club+'|tp'+top+'|lg'+legw+'|bl'+ball+'|ct'+cleats+(look.lefty?'L':'R')+((opts&&opts.bkey)?'|b'+opts.bkey:'');
   let cached=_pxCanvas.get(key); if(cached) return cached;
   const P={ k:PXG_FIX.k, l:PXG_FIX.l, g:PXG_FIX.g, n:PXG_FIX.n, G:PXG_FIX.G, H:PXG_FIX.H, F:PXG_FIX.F,
     s:av.skinHex, h:av.hairHex, t:av.shirtHex, d:pxShade(av.shirtHex,-26), v:pxShade(av.shirtHex,34),
@@ -10296,7 +10300,7 @@ function pxGolferCanvas(look){
   const paint=(map,minY)=>{ for(let y=(minY||0);y<map.length;y++){ const row=map[y];
     for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue; const col=P[ch]; if(!col)continue;
       ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } } };
-  paint(PXG_BODY);
+  paint(BODY);
   // CS370: favorite club in the correct hand - authored on the golfer's LEFT hand (lefty); a right-handed
   // golfer mirrors it to the RIGHT hand (viewer's left). Drawn on the body layer so it sits with the hands.
   // CS414: vintage/legendary clubs carry their OWN fixed palette (PXG_CLUB_PAL); stock clubs use the body's
@@ -10304,9 +10308,9 @@ function pxGolferCanvas(look){
   const paintClub=(map,flip,pal)=>{ for(let y=0;y<map.length;y++){ const row=map[y];
     for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue; const col=(pal&&pal[ch])||P[ch]; if(!col)continue;
       const dx=flip?(PXG_W-1-x):x; ctx.fillStyle=col; ctx.fillRect(dx*px,y*px,px,px); } } };
-  paintClub(PXG_CLUBS[club], !look.lefty, PXG_CLUB_PAL[club]);
+  if(!(opts&&opts.noClub)) paintClub(PXG_CLUBS[club], !look.lefty, PXG_CLUB_PAL[club]);
   // CS414: teed ball on the TRAIL side (flip=look.lefty → opposite the club, so they never collide)
-  if(ball) paintClub(PXG_BALL[ball], !!look.lefty, PXG_BALL_PAL[ball]);
+  if(ball && !(opts&&opts.noBall)) paintClub(PXG_BALL[ball], !!look.lefty, PXG_BALL_PAL[ball]);
   // CS411: paint a garment OVERLAY map with its own palette (heritage outerwear/legwear/hats)
   const paintOverlay=(map,pal)=>{ if(!map||!pal) return; for(let y=0;y<map.length;y++){ const row=map[y];
     for(let x=0;x<row.length;x++){ const ch=row[x]; const col=pal[ch]; if(!col)continue;
@@ -10315,13 +10319,13 @@ function pxGolferCanvas(look){
   // shirt region (ignoring the shirt color); normal patterns are a tonal accent over the shirt color.
   if(pat){ const pd=PXPAT_BY[pat];
     if(pd.fixed){ const cols=pd.cols||[];
-      for(let y=0;y<PXG_BODY.length;y++){ const row=PXG_BODY[y]; for(let x=0;x<row.length;x++){ const ch=row[x];
+      for(let y=0;y<BODY.length;y++){ const row=BODY[y]; for(let x=0;x<row.length;x++){ const ch=row[x];
         if(ch!=='t'&&ch!=='d'&&ch!=='v')continue; let col=cols[pd.f(x,y)|0]||cols[0]; if(!col)continue;
         if(ch==='d') col=pxShade(col,-20); else if(ch==='v') col=pxShade(col,16);   // keep the body's 3D shading
         ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } }
     } else {
       const light=pxLum(av.shirtHex)>0.55, a1=pxShade(av.shirtHex, light?-52:46), a2=pxShade(av.shirtHex, light?-90:82);
-      for(let y=0;y<PXG_BODY.length;y++){ const row=PXG_BODY[y]; for(let x=0;x<row.length;x++){ const ch=row[x];
+      for(let y=0;y<BODY.length;y++){ const row=BODY[y]; for(let x=0;x<row.length;x++){ const ch=row[x];
         if(ch!=='t'&&ch!=='d'&&ch!=='v')continue; const a=pd.f(x,y); if(!a)continue;
         let col=(a===2)?a2:a1; if(ch==='d') col=pxShade(col,-16); else if(ch==='v') col=pxShade(col,14);
         ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } }
@@ -10350,6 +10354,16 @@ function pxGolferCanvas(look){
     for(let y=0;y<ewm.length;y++){ const row=ewm[y]; for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue;
       const col=P[ch]; if(!col)continue; ctx.fillStyle=col; ctx.fillRect((x+dx)*px,y*px,px,px); } } }
   _pxCanvas.set(key,cv); return cv;
+}
+// CS486: high-detail FRONT-FACING swing frames for TourTracer - the full profile golfer (all accessories
+// native) rendered through the PXG_SWING body override, one data-URL per pose. Cached per look.
+function pxSwingHi(look){
+  look=look||S.look||DEFLOOK;
+  // pxGolferCanvas caches per full look-key (incl. bkey), and _pxURL caches the data-URL per canvas,
+  // so repeat calls are O(1) - no separate cache needed here (and no risk of a partial-key collision).
+  const url=(k)=>{ const cv=pxGolferCanvas(look,{body:PXG_SWING[k],noClub:true,noBall:true,bkey:'sw'+k});
+    let u=_pxURL.get(cv); if(!u){ u=cv.toDataURL('image/png'); _pxURL.set(cv,u); } return u; };
+  return { full:[url('A'),url('B'),url('C')], chip:[url('CH0'),url('CH1')], putt:[url('PT0'),url('PT1')] };
 }
 function pxGolferURL(look){
   const cv=pxGolferCanvas(look);
@@ -10460,58 +10474,24 @@ function hvSwingMarkup(g,p,look){
   if(!HV_SWING) return '';
   const kind = (p.k==='putt'||p.k==='hole')?'putt' : (p.k==='chip'?'chip' : ((p.k==='tee'||p.k==='app'||p.k==='adv')?'full':''));
   if(!kind) return '';
-  let set; try{ set=pxStrokeURLs(look); }catch(e){ return ''; }
+  // CS486: high-detail FRONT-FACING swing (the full profile golfer, facing the camera at the ball). Replaces
+  // the low-res directional side/back/front sprites (pxStrokeURLs) with pxSwingHi, which renders every pose
+  // through the profile-golfer accessory pipeline. The golfer always faces the camera; a lefty is mirrored so
+  // the swing sweeps to the correct side and the club sits in the correct hand.
+  let set; try{ set=pxSwingHi(look); }catch(e){ return ''; }
   if(!set) return '';
   look=look||S.look||DEFLOOK;
   const A=hvProj(g,p.from[0],p.from[1]);
-  // aim vector (screen) from the shot origin toward its resting point; up = toward the hole (away from cam)
-  let vx=0, vy=-1;
-  try{ const rx=(p.rest&&p.rest[0]!=null)?p.rest[0]:p.from[0], ry=(p.rest&&p.rest[1]!=null)?p.rest[1]:p.from[1];
-    const T=hvProj(g,rx,ry); vx=T[0]-A[0]; vy=T[1]-A[1];
-  }catch(e){}
-  const L=Math.hypot(vx,vy)||1, up=-vy/L, right=vx/L;   // up=1 up the hole, right=1 to the right of screen
-  let view, mirror, badgeF;
-  if(kind==='putt'){
-    // Owner-specified putt facings. A right-handed golfer's chest faces 90° clockwise from the putt line
-    // (left shoulder leads the target); a lefty is the mirror. Facings by putt DIRECTION:
-    //   righty: up→look right · right→face camera · down→look left · left→back to camera
-    //   lefty (inverse looking, same putt direction): up→look left · right→back · down→look right · left→face camera
-    // The facing is what reads at this pixel scale, so we pick view+mirror to produce it directly.
-    const dir = (Math.abs(up)>=Math.abs(right)) ? (up>0?'up':'down') : (right>0?'right':'left');
-    const M={ up:['sright','sleft'], right:['front','back'], down:['sleft','sright'], left:['back','front'] };
-    const facing=M[dir][look.lefty?1:0];
-    if(facing==='front'){ view='front'; mirror=false; }
-    else if(facing==='back'){ view='back'; mirror=false; }
-    else if(facing==='sright'){ view='side'; mirror=false; }   // base side sprite faces right
-    else { view='side'; mirror=true; }                          // side facing left
-    badgeF=0.5;
-  }
-  else {
-    // CS412: a NON-putt swing is a PERPENDICULAR stance (owner: hitting north → a righty faces RIGHT).
-    // Facing = the target rotated 90° (clockwise for a righty, counter-clockwise for a lefty); map that
-    // facing direction to a view + mirror. (up=1 aims up the hole, right=1 to the right of screen.)
-    const fRight = look.lefty ? -up : up, fUp = look.lefty ? right : -right;
-    if(Math.abs(fRight) >= Math.abs(fUp)){ view='side'; mirror=!(fRight>0); badgeF=(fRight>0)?0.62:0.38; }  // base side sprite faces right
-    else if(fUp>0){ view='back'; mirror=false; badgeF=0.5; }     // facing away from camera
-    else { view='front'; mirror=false; badgeF=0.5; }             // facing the camera
-  }
-  // CS377: align the CLUB/PUTTER with the ball. The contact column depends on the shot (a putter contacts the
-  // ball near lower-center, not out at the driver-head column) and flips when the golfer faces left (mirror),
-  // so a leftward putt no longer stands in front of the ball.
-  const pf = view!=='side' ? 0.50 : (kind==='putt' ? 0.75 : (kind==='chip' ? 0.86 : 0.90));
-  const clubFrac = mirror ? (1-pf) : pf;
-  if(kind==='putt') badgeF=0.5;
-  const vset=set[view]||set.side;
-  const frames = kind==='full'?vset.full : (kind==='chip'?vset.chip : vset.putt);
+  const mirror=!!look.lefty, badgeF=0.5, clubFrac=0.5;   // club addresses the ball at the sprite's centre
+  const frames = kind==='full'?set.full : (kind==='chip'?set.chip : set.putt);
   const clsBase = kind==='full'?['sw0','sw1','sw2'] : (kind==='chip'?['ch0','ch1'] : ['pt0','pt1']);
   const cam=hvCamFor2(g,p);
   // putts play under the tight green close-up, so size the golfer to a fraction of THAT frame
   // CS485 (owner): the golfer is BIGGER on the green close-up so its detail (outfit/accessories) reads.
   const GH = kind==='putt' ? Math.max(22, Math.min(36, cam[3]*0.26)) : 24;
-  const GW=GH*PXS_W/PXS_H;
-  // ball address point (grid rows, of PXS_H): side ~48 bottom-right, back/front ~47 bottom-center
-  const ballGy = kind==='putt' ? 48 : (view==='side' ? 49 : 47);
-  let x0=A[0]-GW*clubFrac, y0=A[1]-GH*(ballGy/PXS_H);
+  const GW=GH*PXG_W/PXG_H;
+  const ballGy = 50;   // front-facing: the club/feet address the ball at ~grid row 50 (of PXG_H)
+  let x0=A[0]-GW*clubFrac, y0=A[1]-GH*(ballGy/PXG_H);
   const pad=3, botPad=(kind==='putt'?6:14);   // CS371: less lift so the golfer sits at the ball/tee, not floating above it
   y0=Math.max(cam[1]+pad, Math.min(y0, cam[1]+cam[3]-GH-botPad));
   x0=Math.max(cam[0]+pad, Math.min(x0, cam[0]+cam[2]-GW-pad));
@@ -10553,7 +10533,7 @@ function hvAddressGolfer(hole, holeIdx, courseKey, look){
   if(!HV_SWING) return '';
   const shots=(hole&&hole.shots)||[]; if(!shots.length || !shots[0].k) return '';
   look=look||S.look||DEFLOOK;
-  let set; try{ set=pxStrokeURLs(look); }catch(e){ return ''; }
+  let set; try{ set=pxSwingHi(look); }catch(e){ return ''; }   // CS486: front-facing high-detail
   if(!set) return '';
   const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
   let g, plots;
@@ -10561,11 +10541,11 @@ function hvAddressGolfer(hole, holeIdx, courseKey, look){
   else { g=hvGeom(seedN, hole.par, hole.yards||hole.yd||400, courseKey, holeIdx); plots=hvPlots(g, shots, seedN); }
   const p0=plots[0]; if(!p0 || !p0.rest) return '';
   const A=hvProj(g, p0.rest[0], p0.rest[1]);   // the drive's resting spot = where the approach is played from
-  const view='back', mirror=!!look.lefty;      // aiming up the hole toward the green → back to camera
-  const addr=(set[view]&&set[view].full&&set[view].full[0]);   // address frame (frame 0 of the full swing)
+  const mirror=!!look.lefty;
+  const addr=set.full&&set.full[0];            // address frame (frame 0 of the full swing)
   if(!addr) return '';
-  const GH=24, GW=GH*PXS_W/PXS_H, clubFrac=0.50, ballGy=47;
-  let x0=A[0]-GW*clubFrac, y0=A[1]-GH*(ballGy/PXS_H);
+  const GH=24, GW=GH*PXG_W/PXG_H, clubFrac=0.50, ballGy=50;
+  let x0=A[0]-GW*clubFrac, y0=A[1]-GH*(ballGy/PXG_H);
   const pad=3, botPad=14;
   y0=Math.max(HV_CAM[1]+pad, Math.min(y0, HV_CAM[1]+HV_CAM[3]-GH-botPad));
   x0=Math.max(HV_CAM[0]+pad, Math.min(x0, HV_CAM[0]+HV_CAM[2]-GW-pad));
