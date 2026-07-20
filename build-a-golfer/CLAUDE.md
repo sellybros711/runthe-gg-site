@@ -11691,6 +11691,41 @@ allows Google Fonts, or self-host Anton.*
   ~16 novelty hats (fall back to the recoloured cap today); H2H multi-ball watch still uses per-player
   colours (the created golfer isn't drawn there yet).
 
+- **CS490 — directional 3/4 TourTracer golfer (8 facings, no rotation).** Owner: the CS489 overhead golfer
+  "doesn't face left or right... looks like they're always aiming the wrong way." Chose "Detailed 3/4, all
+  directions." Replaced the overhead-rotation system with an 8-direction 3/4 golfer that FACES the shot's
+  aim with NO rotation (rotating a 3/4 sprite fell over at non-up angles). `PXG_DIR8` = 5 authored facings
+  (N/NE/E/SE/S) × 7 poses (address/back/through + chip×2 + putt×2); NW/W/SW are horizontal mirrors at render.
+  `dir8For(vx,vy)` snaps the shot's aim to the nearest compass facing; `pxDir8Canvas` renders one facing+pose
+  (palette-swapped from the created look, shirt-pattern overlay), `pxDir8` returns the frame URLs, and
+  `hvSwingMarkup` places the picked facing at the shot origin (ball anchor per `PXG_DIR8_ANCH`, scaled per
+  kind, no rotation, no lefty flip — a directional sprite can't mirror the stance without also mirroring the
+  facing, so the tiny hole-view golfer renders all-righty; the full-detail Closet/Profile golfer still
+  respects lefty). `hvAddressGolfer` (the over-the-ball approach-decision golfer) uses the N facing. Owner
+  approved the base address-pose look. Committed (54a603a); **NOT deployed** (awaiting owner review before
+  the /golf deploy). Sprites authored/generated in `scratchpad/dir8b.py` → `dir8b.json` → `emit_dir8.py`.
+
+- **CS491 — novelty hats + hat styles (visor / backwards / no hat) on the dir8 golfer (owner: "render the
+  novelty hats, as well as the different hat styles").** The CS490 dir8 golfer only recoloured its baked cap;
+  novelty hats + visor fell back to the default cap and cap:false remapped the cap to hair. Now every hat
+  style renders. New `PXG_DIR8_HATS = {hatId:{N,NE,E,SE,S:[rows]}}` — per-direction overlays for all 26
+  `PXG_HATS` novelty ids (cowboy/crown/tophat/wizard/sombrero/santa/chef/party/viking/pirate/grad/beanie/
+  fedora/bucket/safari/straw/propeller/halo/flatbrim/headphones/beret/laurel/headband/flat/tweed) + **visor**
+  + **backwards**, generated in `scratchpad/dir8hats.py` (parametric shapes at each facing's head anchor,
+  brim oriented by facing: back dirs hide the front brim, E projects the brim to the right, front dirs dip
+  it toward the viewer) → `dir8hats.json` → `dir8hats_const.js`. `pxDir8Canvas`: when an OVERLAY hat is
+  chosen (novelty / visor / backwards — 'cap'/falsy keep the baked cap), the baked cap chars c/b/w remap to
+  HAIR (bald-hair head), the body + pattern paint, then the hat overlay paints on top (mirrored for NW/W/SW)
+  in its own PXG_NOV colours. **No hat** (cap:false) already renders bare hair. Visor + backwards are
+  "your colour" styles — their body char 'X' maps to the player's hat colour (+ shades), so a red/purple/gold
+  visor or backwards cap reads correctly; novelty hats keep their fixed PXG_NOV palette. Cache key gains the
+  hat style, so it renders on every swing frame automatically (and mirrors correctly — a bill flips with the
+  facing). Verified in Playwright: all ~27 hats + no-hat render across all 8 directions (5 authored + 3
+  mirrored) with 0 page errors; visor/backwards recolour to red/purple/gold; and a wizard hat renders on the
+  tee golfer in a real hole-view context (`hvSwingMarkup` over the Pebble course). Builds on CS490 — committed
+  + pushed to the feature branch, **NOT deployed** (awaiting owner review with CS490). Tunable: the per-hat
+  parametric shapes in `dir8hats.py`, the head anchors per direction.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
