@@ -11495,6 +11495,21 @@ allows Google Fonts, or self-host Anton.*
   Palm Coast Classic · NOW" cell, done cells showing place + score, 0 page errors; screenshot confirms the
   calendar look. Deployed to /golf.
 
+- **CS483s — season-summary Overview redesign: stats-first + net profit surfaced (owner: "this overview
+  page is awkward and not balanced ... missing vital information like net profit ... stats and wins should
+  be the first 2 things ... followed by a brief and specific season highlights summary"). PREVIEW SENT,
+  NOT YET DEPLOYED (owner asked to see it before pushing).** Reordered `scrSummary`'s Overview tab (`ovC`)
+  to **STATS → WINS → HIGHLIGHTS → event-result cards**: (1) a new `statHero` block leads the page — a money
+  row (**Net profit**, previously only on the Earnings tab, now up top in green/red + **Earnings**) over a
+  4-tile grid (Wins / Majors / Top 10's / Tour Rank); (2) **Tournaments Won** trophy cards (now full-width,
+  no longer paired side-by-side with Highlights); (3) the **Season N Highlights** masthead; (4) the
+  Race-to-the-Cup | team-Cup symmetric row + the Games medal. Removed the CS477 Highlights|Tournaments
+  `.cols` pairing; the final assembly inserts `[statHero, tourWon, highlights, raceCupRow]` before the
+  (already-appended) Games callout. The Earnings tab keeps its detailed money bar + expense breakdown
+  (Overview shows the at-a-glance summary). Verified in Playwright (real headless season, strong build → Cup
+  champion): Net profit renders on Overview ($13.07M), tabs intact, 0 page errors; screenshot sent to owner
+  for approval. **Deploy to /golf once owner approves.**
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

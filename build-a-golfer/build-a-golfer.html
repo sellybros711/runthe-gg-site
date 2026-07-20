@@ -15775,15 +15775,20 @@ function scrSummary(){
     add(seasonRepNode(achPoints()-gained, S.freshAch));   // status bar on top → achievements reveal one by one, rep climbs in sync
   }
   if(sbSignedIn() && S.freshRep){ add($(repUpHTML(S.freshRep))); }
-  __cur=ovC;
-  // performance stats row (money now lives only in the grouped card above - no more duplicate Profit tile)
-  const tilesB=$(`<div class="tiles" style="grid-template-columns:repeat(4,1fr);margin-top:0;gap:8px"></div>`);
-  const statTile=(k,v)=>$(`<div class="tile" style="padding:9px 6px"><div class="k">${k}</div><div class="v" style="font-size:18px;white-space:nowrap">${v}</div></div>`);
-  tilesB.appendChild(statTile('Wins',t.wins+''));
-  tilesB.appendChild(statTile('Majors',t.majors+''));
-  tilesB.appendChild(statTile("Top 10's",t.top10+''));
-  tilesB.appendChild(statTile('Tour Rank',fedexRank+' / '+N));
-  add(tilesB);
+  // CS483s (owner Overview redesign): the season STATS lead the page, and NET PROFIT - previously missing
+  // from Overview (it lived only on the Earnings tab) - is surfaced right up top next to Earnings. A money
+  // row (net profit + earnings) sits over a 4-stat grid (Wins / Majors / Top 10's / Tour Rank). Built here,
+  // placed FIRST in the reorder below (stats → wins → highlights → event results).
+  const bigTile=(k,v,col,sub)=>`<div class="tile" style="padding:11px 8px"><div class="k">${k}</div>
+      <div class="v" style="font-size:23px;white-space:nowrap;color:${col}">${v}</div>
+      ${sub?`<div class="small muted" style="font-size:9px;margin-top:2px">${sub}</div>`:''}</div>`;
+  const sTile=(k,v)=>`<div class="tile" style="padding:9px 6px"><div class="k">${k}</div><div class="v" style="font-size:19px;white-space:nowrap">${v}</div></div>`;
+  const statHero=$(`<div style="margin:0 0 12px"></div>`);
+  statHero.appendChild($(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin:0 0 8px;gap:8px">
+      ${bigTile('Net profit', fmtSigned(netTotal), netCol0, contractBonus>0?('incl. +'+fmt(contractBonus)+' sponsor'):('after −'+fmt(ec.costs)+' costs'))}
+      ${bigTile('Earnings', fmt(t.money), 'var(--oncard)', 'prize money won')}</div>`));
+  statHero.appendChild($(`<div class="tiles" style="grid-template-columns:repeat(4,1fr);margin:0;gap:8px">
+      ${sTile('Wins',t.wins+'')}${sTile('Majors',t.majors+'')}${sTile("Top 10's",t.top10+'')}${sTile('Tour Rank',fedexRank+' / '+N)}</div>`));
   __cur=stC;
   // ---- Stats (CS214): real measured scoring + a full derived tour-stat profile.
   // CS483 (owner mobile pass): a Season|Career toggle so only ONE stat sheet shows at a time (each ~350px
@@ -15828,15 +15833,8 @@ function scrSummary(){
       add(wrap);
     }
   }
-  // CS477 (owner): Highlights (left) + Tournaments Won (right) side by side; stacks on mobile via .cols.
-  // Prepended so this row LEADS the Overview tab (above the stat tiles + achievements).
-  let _hrow=null;
-  if(hiCol.childNodes.length || tourCol.childNodes.length){
-    _hrow=$(`<div class="cols" style="margin-bottom:8px"></div>`);
-    _hrow.appendChild(hiCol); if(tourCol.childNodes.length) _hrow.appendChild(tourCol);
-    ovC.insertBefore(_hrow, ovC.firstChild);
-  }
-  // (CS482 Race|Cup symmetric row is assembled AFTER the Cup block below fills cupCol - see _assembleRaceCup.)
+  // CS483s (owner): Highlights + Tournaments Won are no longer paired side by side - they're full-width
+  // blocks placed in the STATS → WINS → HIGHLIGHTS order in the final reorder below.
   __cur=awC;
   // CS267: Season Impact - a broadcast-style recap card whose numbers COUNT UP on first view
   // (world rank prev→now, tour points gained, season earnings, net). Tour Card status underneath.
@@ -15907,13 +15905,17 @@ function scrSummary(){
       <div class="small" style="margin-top:5px;color:#cfe0d6;line-height:1.4">${emojifyIcons(hl)}</div>
       <div class="small muted" style="margin-top:3px">${sub}</div>${stakeLine}</div>`));
   }
-  // CS482 (owner): now that both columns are filled, assemble the Race to the Cup (left) | team-Cup result
-  // (right) SYMMETRIC row and insert it right under the Highlights row. If only one exists this season it
-  // centers on its own instead of a half-empty row; both -> split evenly (stacks on mobile via .cols).
-  { const hasRace=raceCol.childNodes.length, hasCup=cupCol.childNodes.length; let _crow=null;
-    if(hasRace && hasCup){ _crow=$(`<div class="cols" style="margin-bottom:8px;align-items:stretch"></div>`); _crow.appendChild(raceCol); _crow.appendChild(cupCol); }
-    else if(hasRace){ _crow=raceCol; } else if(hasCup){ _crow=cupCol; }
-    if(_crow){ if(_hrow) ovC.insertBefore(_crow, _hrow.nextSibling); else ovC.insertBefore(_crow, ovC.firstChild); }
+  // CS483s (owner Overview redesign): order the Overview tab as STATS → WINS → HIGHLIGHTS → event-result
+  // cards (Race to the Cup | team-Cup, then the Games medal). The Games callout is already appended to ovC;
+  // everything else is inserted before it in the requested order.
+  { const hasRace=raceCol.childNodes.length, hasCup=cupCol.childNodes.length;
+    let raceCupRow=null;
+    if(hasRace && hasCup){ raceCupRow=$(`<div class="cols" style="margin-bottom:8px;align-items:stretch"></div>`); raceCupRow.appendChild(raceCol); raceCupRow.appendChild(cupCol); }
+    else if(hasRace){ raceCupRow=raceCol; } else if(hasCup){ raceCupRow=cupCol; }
+    const tourWon = tourCol.childNodes.length ? tourCol : null;    // Tournaments Won (full width now)
+    const highlights = hiCol.childNodes.length ? hiCol : null;     // Season N Highlights masthead
+    const anchor = ovC.firstChild;   // the Games callout, if any (else append at the end)
+    [statHero, tourWon, highlights, raceCupRow].filter(Boolean).forEach(n=>{ if(anchor) ovC.insertBefore(n, anchor); else ovC.appendChild(n); });
   }
   // CS481 (owner): rivalry belongs on the REPUTATION tab.
   __cur=reC;
