@@ -11658,6 +11658,39 @@ allows Google Fonts, or self-host Anton.*
   caveat (arms not visible), which this fixed. Tunable: the `PXG_SWING` poses, the full-swing `GH` (24) /
   green `GH` clamp, `ballGy`, the pixel-golfer palette.
 
+- **CS487/CS488 (SUPERSEDED by CS489) — directional elevation golfer.** After CS486's front-facing golfer,
+  owner wanted the golfer to face perpendicular-to-aim "in all directions like before." CS487 restored the
+  view-by-aim selection (front=native, side/back=old low-detail sprites). Owner rejected the mismatch ("look
+  how much bigger the front is than the back... same golfer in 4 views, same style as the front"). CS488
+  authored NEW side/back swing bodies rendered through the front's P palette (pxSwingView) so all 4 elevation
+  views matched scale/shading + carried shirt colour/pattern. Owner then flagged the deeper issue: the
+  elevation (side-view) golfer never meshed with our TOP-DOWN course camera — so the whole elevation approach
+  was scrapped for CS489. The CS487/CS488 code (pxSwingHi/pxSwingView, PXG_SWING/_SIDE/_BACK) is now DEAD but
+  left defined.
+
+- **CS489 — OVERHEAD TourTracer golfer (matches the top-down course camera). DEPLOYED.** Owner shared a
+  reference pixel-golf game with a small overhead/back-3/4 golfer that rotates to aim, and noted our
+  elevation heads didn't mesh with our perspective ("this may simplify everything a ton"). Owner picks:
+  pivot to overhead + show as much outfit detail from above as possible. Built ONE overhead golfer (cap-from-
+  above + shoulders + short foreshortened legs) that ROTATES to the shot's aim about the club-contact anchor,
+  animated swing/chip/putt, REPLACING the entire front/side/back elevation system. New PXG_TOP bodies (7
+  poses) + PXG_CAP_TOP/PXG_VISOR_TOP + PXG_TOP_HATS (9 overhead novelty hats: crown/cowboy/wizard/tophat/
+  sombrero/santa/halo/party/chef, own PXG_NOV colours) + PXG_TOP_ANCHOR; pxOverheadCanvas/pxOverhead
+  renderers (recolour through the front's P palette + shirt pattern + cap/hat overlay). hvSwingMarkup +
+  hvAddressGolfer rewritten: place the ball-anchor at the shot origin A, rotate the group by
+  atan2(aim)+90°; PUTTS are UPRIGHT (deg=0, no rotation — owner: "standing on the green") with a proper
+  visible putter (hands together, shaft to a flat blade); putt aims at g.pin (a tap-in's rest vector is
+  noisy). Small on the full hole (GH 22), smaller on the green close-up (GH ~13-21). `.hvsw` got
+  image-rendering:pixelated so it stays crisp under scale/rotate. Lefty mirrors the sprite + flips the
+  anchor. Reduced-motion hides the golfer by design (round still plays). Owner reviewed each step via
+  screenshots (tee/green/putter/hats) + approved. Verified: every shot type renders the golfer righty +
+  lefty across 4 holes (32/32), 9 overhead hats + cap/visor/bare all read clearly, 0 page errors. Deployed
+  to /golf (golf/index.html only; the golfer is pure code, no new assets). The full-body standing golfer in
+  the Closet/Profile is unchanged (still shows all detail). Tunable: PXG_TOP poses + PXG_TOP_HATS, the
+  GH sizes, the putt-upright rule, PXG_TOP_ANCHOR. FOLLOW-UPS if wanted: overhead versions of the remaining
+  ~16 novelty hats (fall back to the recoloured cap today); H2H multi-ball watch still uses per-player
+  colours (the created golfer isn't drawn there yet).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
