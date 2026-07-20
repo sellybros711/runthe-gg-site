@@ -7108,6 +7108,46 @@ function scheduleFitHero(){
   try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitHero); }catch(e){}
   if(!_fitHeroBound){ _fitHeroBound=true; window.addEventListener('resize', ()=>{ if(document.getElementById('herohead')) fitHero(); }); }
 }
+// CS473 — first-run onboarding. The #1 piece of feedback is "too many buttons/text, don't know what to do."
+// For a brand-new player the home collapses to ONE focused path (build → play one round), the rest of the
+// menu hidden until they've played once or tapped "explore". Additive: anyone with any history never sees it.
+function isNewPlayer(){
+  try{
+    if(careerSaveInfo()) return false;                                  // has a career to continue
+    if(resumeInfo()) return false;                                       // has a half-built golfer
+    const c=(typeof career==='function')?career():null; if(c && c.builds>0) return false;
+    if(typeof dailyStats==='function' && dailyStats().played>0) return false;  // has played a daily
+    return true;
+  }catch(e){ return false; }
+}
+function onboardStyleOnce(){ if(document.getElementById('obcss')) return; const st=document.createElement('style'); st.id='obcss';
+  st.textContent='.onboard{background:linear-gradient(165deg,rgba(22,181,166,.16),rgba(6,18,12,.6));border:1.5px solid rgba(22,181,166,.4);border-radius:18px;padding:16px 15px 15px;box-shadow:0 10px 30px -14px rgba(0,0,0,.7)}'
+   +'.ob-tag{font:800 11px/1 var(--body);letter-spacing:.14em;color:#6fe0cf;text-align:center;margin-bottom:12px}'
+   +'.ob-steps{display:flex;flex-direction:column;gap:9px;margin-bottom:14px}'
+   +'.ob-step{display:flex;align-items:flex-start;gap:11px}'
+   +'.ob-n{flex:0 0 auto;width:24px;height:24px;border-radius:999px;background:var(--gold);color:#12321f;font:900 13px/24px var(--body);text-align:center;box-shadow:0 2px 8px -2px rgba(0,0,0,.5)}'
+   +'.ob-step b{display:block;color:var(--oncard);font:800 15px/1.2 var(--body)}'
+   +'.ob-step span{display:block;color:var(--muted);font:600 12.5px/1.35 var(--body);margin-top:2px}'
+   +'.ob-skip{display:block;margin:11px auto 0;background:none;border:0;color:var(--muted);font:700 13px var(--body);cursor:pointer;text-decoration:underline;text-underline-offset:3px}'
+   +'.ob-skip:active{transform:translateY(1px)}';
+  document.head.appendChild(st); }
+function onboardPanel(){
+  onboardStyleOnce();
+  const box=$(`<div class="onboard"></div>`);
+  box.appendChild($(`<div class="ob-tag">NEW HERE? IT'S 3 SIMPLE STEPS</div>`));
+  const steps=$(`<div class="ob-steps">
+    <div class="ob-step"><span class="ob-n">1</span><div><b>Build a golfer</b><span>Spin the wheel and draft one skill from each pro.</span></div></div>
+    <div class="ob-step"><span class="ob-n">2</span><div><b>Play a round</b><span>Watch your golfer take on a real course, shot by shot.</span></div></div>
+    <div class="ob-step"><span class="ob-n">3</span><div><b>Beat the pro</b><span>Finish under the tour average to win the day.</span></div></div></div>`);
+  box.appendChild(steps);
+  const cta=$(`<button class="btn goldfill" style="margin:0">▶ Play your first round<span class="sub">Build your golfer, then play — about 3 minutes</span></button>`);
+  cta.onclick=()=>{ try{ track('onboard_start'); }catch(e){} startDailyChallenge(); };
+  box.appendChild(cta);
+  const skip=$(`<button class="ob-skip" type="button">Skip — explore the full menu ▸</button>`);
+  skip.onclick=()=>{ LS.set('bag_onboard_done',true); try{ track('onboard_skip'); }catch(e){} render(); };
+  box.appendChild(skip);
+  return box;
+}
 function scrTitle(){
   reconcileDailyAttempts();   // self-heal "attempts left" against the server before it's even displayed below
   // CS363: pixel-art dusk-course backdrop (matches the game's pixel theme) instead of the old smooth vector scene
@@ -7139,6 +7179,14 @@ function scrTitle(){
   const stack=$(`<div class="stack"></div>`);
   const ri=resumeInfo();
   const cs=careerSaveInfo();
+  // CS473: brand-new player → the focused first-run path instead of the full menu (until they play or skip).
+  if(isNewPlayer() && !LS.get('bag_onboard_done',false)){
+    stack.appendChild(onboardPanel());
+    w.appendChild(stack);
+    w.appendChild($(`<div class="small muted center" style="margin-top:14px;line-height:1.6;opacity:.7">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`));
+    add(w);
+    return;
+  }
   // ════════════════════════════════════════════════════════════════════
   // Home = a clean set of MODE cards (owner): 1) Play 18 (daily), 2) Career,
   // 3) Play Online, 4) Monthly Spotlight. The daily companions (streak
