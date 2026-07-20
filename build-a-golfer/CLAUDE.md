@@ -11219,7 +11219,10 @@ allows Google Fonts, or self-host Anton.*
   initial bug: cupCol was empty at assembly time — fixed by moving the assembly after the Cup block). If only
   one exists that season it centers on its own; the Games medal stays a standalone centered block (rare).
   Verified in Playwright (seeded Cup result): a 2-column Race|Cup row (Race left, Cup right), 0 page errors.
-  Deployed to /golf.
+  Deployed to /golf. **Follow-up (owner: "this doesn't look good"):** the Race/Cup cards were `.center`
+  inline-block pills floating narrow in their big columns (unbalanced). Made them full-width `.ovcard`s
+  (`width:100%`, `height:100%` in a flex column) so they FILL their column, align with the Highlights/
+  Tournaments row above, and match each other's height — a clean balanced grid. Deployed to /golf.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
