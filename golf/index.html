@@ -15741,7 +15741,8 @@ function scrSummary(){
     ].filter(x=>x[1]);
     const won=items.filter(x=>x[1].you).length;
     add($(`<h2 class="center" style="margin:14px 0 8px;font-size:15px">Season Awards${won?` · <span style="color:var(--gold)">you won ${won}</span>`:''}</h2>`));
-    const wrap=$(`<div class="scout" style="padding:2px 12px;margin-bottom:6px"></div>`);
+    // CS481 (owner): the awards list shouldn't run the full screen width - constrain + center it.
+    const wrap=$(`<div class="scout" style="padding:2px 12px;margin:0 auto 6px;max-width:520px"></div>`);
     items.forEach(([label,a,sub],i)=>{
       const you=a.you, br=i<items.length-1?'border-bottom:1px solid rgba(255,255,255,.06)':'';
       wrap.appendChild($(`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 2px;${br}">
@@ -15751,7 +15752,10 @@ function scrSummary(){
     });
     add(wrap);
   }
-  // ---- Olympic medal callout (Olympic years only) ----
+  // CS481 (owner): team/international EVENT RESULTS (the Cup + the Games medal) belong on the OVERVIEW tab,
+  // not Awards. They append to ovC so they show up with the season's headline results.
+  __cur=ovC;
+  // ---- Games medal callout (Games years only) ----
   if(!S.daily && S.season.olympicMedals){
     const med=S.season.olympicMyMedal, M={gold:['🥇','GOLD Medal','var(--gold)'],silver:['🥈','Silver Medal','#c7ced8'],bronze:['🥉','Bronze Medal','#cd8e5a']};
     const gold=S.season.olympicMedals[0];
@@ -15783,6 +15787,8 @@ function scrSummary(){
       <div class="small" style="margin-top:5px;color:#cfe0d6;line-height:1.4">${emojifyIcons(hl)}</div>
       <div class="small muted" style="margin-top:3px">${sub}</div>${stakeLine}</div></div>`));
   }
+  // CS481 (owner): rivalry belongs on the REPUTATION tab.
+  __cur=reC;
   if(S.freshRivalOutgrown) add($(rivalOutgrownHTML(S.freshRivalOutgrown)));
   if(S.freshRival) add($(rivalFormedHTML(S.freshRival)));
   if(S.rivalOutcome) add($(rivalCardHTML(S.rivalOutcome)));
