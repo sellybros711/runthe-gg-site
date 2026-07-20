@@ -11390,6 +11390,23 @@ allows Google Fonts, or self-host Anton.*
   line, the label wraps cleanly on mobile without breaking the grid, gold/mint accents render, 0 page errors.
   Deployed to /golf.
 
+- **CS483k — Daily result page revamp: unified hero + button hierarchy (owner: "this is the next page that
+  needs to get revamped").** The result screen (`scrDailyResult`) opened with FIVE separate stacked blocks
+  (a tag pill, the course `<h1>`, the big score, a "Par · OVR · conditions" lede, and a separate beat-the-pro
+  scout card) and then had TWO competing solid-gold buttons (Share + Go Lower). Rebuilt: (1) those five top
+  blocks are merged into ONE richer **`.dhero` result card** — eyebrow (Daily Challenge complete / Practice /
+  Played as Legend) → course name → the big to-par score (colored green/red by result) → the Par·OVR·conditions
+  meta → a divider → the beat-the-pro verdict + "use your N remaining attempts" line. The card tints **green
+  on a win** (green glow + border) and gold otherwise, so the emotional payoff reads at a glance. (2) **Button
+  hierarchy fixed** (Option 3): "Go Lower / Play again" is the single **solid-gold primary**, "Share your
+  result" is now a distinct **teal** button (social action, its own color), and Course Records / Course
+  Passport / Return home stay ghost — so there's exactly one gold block to land on. The middle sections
+  (Tour Rep bar, achievements-unlocked, streaks, 7-Day Rewards, Your Daily Record, course record, scorecard)
+  are unchanged and already consistent with the CS483i gold-outline direction. Verified in Playwright (win +
+  achievements + daily-stats populated, animation settled): the hero renders green-tinted, Tour Rep +
+  achievements + daily-record all render, the Share button is teal and there's exactly ONE solid-gold button
+  (Go Lower), 0 page errors; screenshot confirms the cohesive layout. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
