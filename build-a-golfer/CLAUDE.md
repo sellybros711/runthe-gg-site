@@ -11527,6 +11527,33 @@ allows Google Fonts, or self-host Anton.*
   (career mode requires an account anyway). Verified in Playwright (mocked RPC): the card renders "Today #2
   of 9 · This week #3 of 58 · All time #7 of 1,240" + working View button, 0 page errors; owner approved. Deployed client to /golf. **ACTION: run `supabase/59_runtour_career_rank.sql`.**
 
+- **CS483u — TourTracer swing golfer now reflects the chosen outfit: shirt PATTERNS + effect AURAS (owner:
+  "enhance the tour tracer golfer so it more clearly reflects the user's chosen outfit ... it looks way too
+  basic and poorly designed compared to our standing golfer in the profile").** The swing/TourTracer golfer
+  (`pxStrokeURLs`) only palette-swapped the base colors (skin/hair/shirt/pants/shoe/hat), so a player who
+  bought a Leopard / Tie-Dye / Camo / Argyle shirt or a glowing aura saw a plain polo while playing —
+  nothing like the fully-decked standing profile golfer (`pxGolferCanvas`). Added the two most-visible outfit
+  elements at swing scale, both flowing through every single-golfer mode (Daily / Moments / Spotlight /
+  Legend rounds; H2H multi-ball is excluded by construction):
+  1. **Shirt patterns.** `pxStrokeURLs` now overlays the equipped `look.shirtPat` onto the shirt pixels
+     ('t' base / 'd' shade) of every one of the 21 rendered frames (side/back/front × full-swing 3 / chip 2 /
+     putt 2), mirroring `pxGolferCanvas`'s logic — FIXED patterns (Leopard/Tie-Dye/Camo/Zebra/…) paint their
+     own locked palette over the shirt, tonal patterns (Argyle/Pinstripe/…) a shirt-color accent. The pattern
+     id is folded into the sprite cache key.
+  2. **Effect auras.** `hvSwingMarkup` adds an `hvsw-glow` class + inline `--fxc` (the effect's color) to the
+     swing `<g>` when an effect (`look.fx`) is equipped; a new `@keyframes hvswGlow` pulses a drop-shadow on
+     the group in the effect's color (the frames cycle opacity inside, so the glow follows the visible pose).
+     A single generic glow per effect (Golden/Prismatic/Inferno/Electric/Frost/Void → its `col`), which reads
+     at the ~24px figure size; reduced-motion → a static glow.
+  Scope call (flagged to owner, who approved deploying this + wants headwear NEXT): deliberately did NOT port
+  headwear STYLES (cowboy/wizard hats) or outerwear (blazer/cardigan) to the swing golfer — each needs ~21
+  hand-authored per-frame/per-view sprites and reads poorly at swing scale; hat COLOR, pants, shoes, skin and
+  hair already show. Verified in Playwright: a sprite grid renders Leopard/Tie-Dye/Argyle/Camo patterns +
+  Gold/Prism auras clearly on the follow-through pose; in-context (a real practice daily tee shot in Full
+  watch mode) the swing golfer renders on the tracer with `hvsw-full` + `hvsw-glow` + the leopard pattern,
+  0 page errors; `node --check` clean. Deployed to /golf. FOLLOW-UP (owner requested): headwear styles on the
+  swing golfer (the per-frame hat-sprite art investment). Tunable: the pattern overlay + glow keyframe.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
