@@ -11196,6 +11196,19 @@ allows Google Fonts, or self-host Anton.*
   the off-season shows 0 decision buttons (just the info strip) with offers persisting (cleared at season
   start); 0 page errors. Deployed to /golf.
 
+- **CS481 — Awards/Overview/Reputation tab cleanup (owner, on the Awards tab: "Player of the Year → Rookie
+  of the Year do not need to be the entire screen wide · the Atlantic Cup results should have gone in the
+  Overview · Rivalry can go in Reputation").** In `scrSummary`: (1) the **Season Awards** list card is now
+  `max-width:520px` centered (was full width); (2) the **team-Cup callout** (Atlantic/Nations Cup result) AND
+  the **Games medal callout** — both "international event results" — moved from the Awards tab (awC) to the
+  **Overview** tab (ovC), so they show with the season's headline results; (3) the **Rivalry** cards
+  (`rivalOutcome` / freshRival / freshRivalOutgrown) moved from Awards to the **Reputation** tab (reC),
+  alongside the two-axis Popularity/Respect reputation content. Verified in Playwright (seeded a Cup result +
+  rivalry): the Cup renders on Overview and NOT Awards, the rivalry renders on Reputation and NOT Awards/
+  Overview, and the Season Awards card computes max-width 520px; 0 page errors. (The Games medal was moved
+  alongside the Cup for consistency since it's the same class of event result — the owner named the Cup.)
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
