@@ -11407,6 +11407,13 @@ allows Google Fonts, or self-host Anton.*
   achievements + daily-record all render, the Share button is teal and there's exactly ONE solid-gold button
   (Go Lower), 0 page errors; screenshot confirms the cohesive layout. Deployed to /golf.
 
+- **CS483L — removed the Legend Tokens section from the daily RESULT page (owner: "you can remove the
+  legends tokens from that page since they're already on the other page").** Dropped the
+  `legendPlaySection()` call from `scrDailyResult` — it's duplicated: the same section already renders on the
+  daily PREVIEW (`scrDailyPreview`), and the header Legend-token pill (CS426) routes straight to it, so a
+  Legend is still always playable. Verified in Playwright (with a token owned): the result page no longer
+  shows "Your Legend Tokens" while the preview still does, 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
