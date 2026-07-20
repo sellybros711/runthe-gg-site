@@ -11414,6 +11414,19 @@ allows Google Fonts, or self-host Anton.*
   Legend is still always playable. Verified in Playwright (with a token owned): the result page no longer
   shows "Your Legend Tokens" while the preview still does, 0 page errors. Deployed to /golf.
 
+- **CS483m — daily-result action buttons recolored off the score palette (owner: "share and play again
+  should be different colors than birdie and bogey").** On the result page the scorecard sits right above the
+  buttons, and the CS483k button colors collided with the score coding: teal **Share** ≈ the birdie green
+  (`#35d6a0`), gold **Go Lower** ≈ the bogey amber (`#e9a23b`). Moved both off the score palette: **Share** is
+  now **violet** (new `.btn.violet`), and every primary result action (Go Lower / Play again / Sign in to
+  save / Course Records / Legend "Play the Daily") is now **blue** (`.btn.blue`, the daily challenge's own
+  accent color). Neither matches the green(birdie)/amber(bogey)/red(double) score colors, so the scorecard
+  reads cleanly and the buttons stand on their own. (Blue as the daily-result primary is a deliberate
+  per-screen choice — the daily's brand color — vs the game-wide gold primary; the scorecard clash made gold
+  the wrong pick here.) Verified in Playwright with a birdie/bogey scorecard rendered above: Share = violet,
+  Go Lower = blue, 0 gold buttons on the page, 0 page errors; screenshot confirms the buttons are distinct
+  from the scorecard. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
