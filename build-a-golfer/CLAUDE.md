@@ -11726,6 +11726,20 @@ allows Google Fonts, or self-host Anton.*
   + pushed to the feature branch, **NOT deployed** (awaiting owner review with CS490). Tunable: the per-hat
   parametric shapes in `dir8hats.py`, the head anchors per direction.
 
+- **CS492 — lefties play left-handed on the dir8 TourTracer golfer (owner: "I want lefties to play as
+  lefties in tour tracer").** `hvSwingMarkup` (+ the static `hvAddressGolfer`) now honour `look.lefty`: a
+  lefty renders as the mirror-aim righty sprite (`DIR8_MIRROR[dir]`) reflected about the ball anchor
+  (`transform="translate(2·A[0]) scale(-1 1)"`), so the golfer stands on the other side of the ball with the
+  club on the left and still faces the target; the shot-number pin stays outside the flip (upright). For the
+  up/down-the-hole shots (the dominant tee/approach/putt framing) the lefty is a clean, correct mirror of
+  the righty — verified in-context (a lefty tee shot on Pebble reads clearly left-handed). KNOWN LIMITATION:
+  the 3 right-facing diagonals (NE/E/SE aims) collapse to look like a righty — a 3/4 sprite can't be
+  re-posed left-handed by a screen transform without genuinely-authored lefty art for those facings (only
+  the vertical N/S facings mirror cleanly). It NEVER renders facing the wrong way (no "aiming wrong"
+  frames). Righty rendering is byte-identical (lefty=false → no-op). Follow-up if the owner wants the
+  sideways shots perfected: author genuine lefty NE/E/SE poses in `dir8b.py` (×7 frames, mirror to NW/W/SW).
+  Committed + pushed with CS490/CS491; NOT deployed (owner review).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

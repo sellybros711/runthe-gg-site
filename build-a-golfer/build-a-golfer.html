@@ -10561,6 +10561,8 @@ function dir8Anchor(dir, kind){
   const a=tbl[src]||[12,18];
   return mir?[(PXG_DIR8_W-1)-a[0], a[1]]:a;
 }
+// CS492: mirror a facing across the vertical axis (for lefty rendering: lefty(D)=flip(righty(mirror(D)))).
+const DIR8_MIRROR={ N:'N', S:'S', E:'W', W:'E', NE:'NW', NW:'NE', SE:'SW', SW:'SE' };
 // snap a screen-space aim vector to the nearest of 8 compass facings (N=up).
 function dir8For(vx, vy){
   if(Math.hypot(vx,vy)<3) return 'N';
@@ -10696,7 +10698,12 @@ function hvSwingMarkup(g,p,look){
   // CS490: snap the aim to the nearest of 8 compass facings and render THAT directional sprite - NO rotation
   // (rotating a 3/4 sprite fell over at non-up angles). A putt/chip faces the cup, a full shot faces its rest.
   const dir=dir8For(vx,vy);
-  let set; try{ set=pxDir8(look,dir); }catch(e){ return ''; }
+  // CS492: a LEFTY plays left-handed. A lefty aiming D = the horizontal mirror of a righty aiming mirror(D),
+  // flipped about the ball anchor - so the golfer stands on the other side of the ball, club on the left,
+  // and still faces the target. Render the mirror-aim righty sprite + flip the group about A[0].
+  const lefty=!!look.lefty;
+  const rdir=lefty?(DIR8_MIRROR[dir]||dir):dir;
+  let set; try{ set=pxDir8(look,rdir); }catch(e){ return ''; }
   const frames=set[kind]||set.full; if(!frames||!frames[0]) return '';
   const clsBase = kind==='full'?['sw0','sw1','sw2'] : (kind==='chip'?['ch0','ch1'] : ['pt0','pt1']);
   const cam=hvCamFor2(g,p);
@@ -10704,7 +10711,7 @@ function hvSwingMarkup(g,p,look){
   // putt plays under the tight green close-up → size to that frame; full/chip use a fixed small size.
   const GH = kind==='putt' ? Math.max(13, Math.min(21, cam[3]*0.16)) : 22;
   const GW=GH*W/H;
-  const anch=dir8Anchor(dir, kind);
+  const anch=dir8Anchor(rdir, kind);
   const x0=A[0]-GW*(anch[0]/W), y0=A[1]-GH*(anch[1]/H);   // place the ball-anchor at the shot origin A; NO rotation
   const img=(u,cls)=>`<image class="hvsw ${cls}" href="${u}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/>`;
   // Holed beat: the stroke is over - hold the finish frame statically so a re-render can't re-fire the swing.
@@ -10725,7 +10732,9 @@ function hvSwingMarkup(g,p,look){
       +`</g>`; }
   // CS483u: an equipped effect (aura) glows on the golfer - a pulse in the effect's colour on the group.
   const fx=fxOf(look); const glow=fx?` hvsw-glow`:'', gsty=fx?` style="--fxc:${fx.col}"`:'';
-  return `<g class="hvswing hvsw-${kind}${glow}"${gsty}>${imgs}</g>${badge}`;
+  // CS492: lefty → reflect the group about the ball anchor A[0] (ball stays put, golfer flips left-handed).
+  const flip=lefty?` transform="translate(${(2*A[0]).toFixed(1)} 0) scale(-1 1)"`:'';
+  return `<g class="hvswing hvsw-${kind}${glow}"${flip}${gsty}>${imgs}</g>${badge}`;
 }
 // CS378-A1: a STATIC address-pose golfer standing OVER the ball, used during a par-4/5 approach decision so
 // the drive's ball rests on the fairway with the golfer set over it (owner: "not a ball frozen in the air.
@@ -10749,7 +10758,8 @@ function hvAddressGolfer(hole, holeIdx, courseKey, look){
   const W=PXG_DIR8_W, H=PXG_DIR8_H;
   const GH=22, GW=GH*W/H, anch=dir8Anchor('N','full');
   const x0=A[0]-GW*(anch[0]/W), y0=A[1]-GH*(anch[1]/H);   // stands over the ball facing up the hole (no rotation)
-  return `<g class="hvswing hvsw-full"><image class="hvsw hvsw-static" href="${addr}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/></g>`;
+  const flip=look.lefty?` transform="translate(${(2*A[0]).toFixed(1)} 0) scale(-1 1)"`:'';   // CS492: lefty flips about the ball
+  return `<g class="hvswing hvsw-full"${flip}><image class="hvsw hvsw-static" href="${addr}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/></g>`;
 }
 // in the Pro Shop, preview pending COLOR purchases live (worn gear is dropped, so only colors preview)
 // true in the Pro Shop overlay AND the customization (setup) screen, which share the tile/preview UI
