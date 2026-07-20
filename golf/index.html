@@ -324,6 +324,9 @@ window.GA_ID='G-L29P5MRWKE';
   .btn.teal:active{transform:translateY(2px)}
   .btn.blue{background:linear-gradient(180deg,#4a90d9,#1f5fa8); color:#eaf3ff; box-shadow:0 8px 20px -8px rgba(20,70,140,.75), inset 0 1px 0 rgba(255,255,255,.32)}
   .btn.blue:active{transform:translateY(2px)}
+  /* CS483m: violet share button - distinct from the scorecard's green(birdie)/amber(bogey)/red score colors */
+  .btn.violet{background:linear-gradient(180deg,#a78bfa,#7048d6); color:#f4eeff; box-shadow:0 8px 20px -8px rgba(90,55,175,.72), inset 0 1px 0 rgba(255,255,255,.3)}
+  .btn.violet:active{transform:translateY(2px)}
   .btn.ghost{background:transparent; color:var(--oncard); border:1px solid var(--line); font-size:18px}
   /* paired risk/reward choices read as ONE decision: same neutral style, "or" between them */
   .btn.choice{background:rgba(244,227,201,.10); color:var(--oncard); border:1.5px solid rgba(244,227,201,.5)}
@@ -20409,7 +20412,7 @@ function scrDailyResult(){
   if(r.isLegend){
     if(justPlayed && S.dailyFreshAch && S.dailyFreshAch.length){ const g=S.dailyFreshAch.reduce((s,a)=>s+(a.pts||0),0); add(seasonRepNode(achPoints()-g, S.dailyFreshAch)); }
     add($(`<div class="small muted center" style="max-width:520px;margin:2px auto 12px">Free play with your created golfer · no daily attempt used. Your Legend scores post to the <b style="color:var(--gold)">Career Golfers</b> board.</div>`));
-    const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Play the Daily ▸<span class="sub">Build a golfer, or play free as another Legend</span></button>`);
+    const again=$(`<button class="btn blue" style="max-width:520px;margin:0 auto">Play the Daily ▸<span class="sub">Build a golfer, or play free as another Legend</span></button>`);
     again.onclick=()=>{ S.dailyResult=null; beginDailyAttempt(); }; add(again);
     const cr2=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr2.onclick=()=>{ S.overlay='courserecords'; render(); }; add(cr2);
     const home2=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Return to home</button>`); home2.onclick=()=>{ S.daily=false; S.dailyLegend=null; S.dailyResult=null; S.screen='title'; render(); }; add(home2);
@@ -20500,25 +20503,25 @@ function scrDailyResult(){
   }
   // viral hook: Wordle-style emoji result, ready to paste anywhere
   const shareR=best||r;
-  const shr=$(`<button class="btn teal" style="max-width:520px;margin:14px auto 0">↗ Share your result<span class="sub">Emoji scorecard, challenge a friend</span></button>`);
+  const shr=$(`<button class="btn violet" style="max-width:520px;margin:14px auto 0">↗ Share your result<span class="sub">Emoji scorecard, challenge a friend</span></button>`);
   shr.onclick=()=>{ track('daily_result_shared'); shareText(dailyShareText(shareR)); }; add(shr);
   add($(`<div style="height:10px"></div>`));
   if(practice){
     // practice: play as many rounds as you like, nothing is consumed or recorded
-    const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Play again ▸<span class="sub">Unlimited practice rounds · nothing is recorded</span></button>`);
+    const again=$(`<button class="btn blue" style="max-width:520px;margin:0 auto">Play again ▸<span class="sub">Unlimited practice rounds · nothing is recorded</span></button>`);
     again.onclick=beginDailyAttempt; add(again);
     const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
   } else if(!sbSignedIn()){
     // guest: primary action is signing in (which logs this score and unlocks more attempts)
-    const si=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">🔐 Sign in to save this score ▸<span class="sub">Log it to your account &amp; unlock ${DAILY_MAX_ATTEMPTS} attempts a day</span></button>`);
+    const si=$(`<button class="btn blue" style="max-width:520px;margin:0 auto">🔐 Sign in to save this score ▸<span class="sub">Log it to your account &amp; unlock ${DAILY_MAX_ATTEMPTS} attempts a day</span></button>`);
     si.onclick=()=>{ S._dailyClaimFlow=true; S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); }; add(si);
     const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
   } else if(left>0){
-    const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">${wonDay?'Go lower ▸':'Play again ▸'}<span class="sub">${wonDay?`Pro beaten, chase a lower score (${left} left)`:`${left} of ${dailyMaxAttempts()} attempt${left>1?'s':''} left, beat the tour average`}</span></button>`);
+    const again=$(`<button class="btn blue" style="max-width:520px;margin:0 auto">${wonDay?'Go lower ▸':'Play again ▸'}<span class="sub">${wonDay?`Pro beaten, chase a lower score (${left} left)`:`${left} of ${dailyMaxAttempts()} attempt${left>1?'s':''} left, beat the tour average`}</span></button>`);
     again.onclick=beginDailyAttempt; add(again);
     const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
   } else {
-    const cr=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Course Records ▸<span class="sub">See every course's record holder</span></button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
+    const cr=$(`<button class="btn blue" style="max-width:520px;margin:0 auto">Course Records ▸<span class="sub">See every course's record holder</span></button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
   }
   // CS483L: Legend Tokens section removed from the result page (owner) - it already lives on the daily
   // preview + the header Legend-token pill routes there, so it's not duplicated here.
