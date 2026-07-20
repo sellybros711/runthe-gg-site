@@ -7532,7 +7532,7 @@ function scrSetup(){
   const guest=!sbSignedIn();
   const editing=!!S.setupEdit;   // CS356c: editing the profile golfer from the Trophy Room (not starting a career)
   const wrap=$(`<div class="retro-creator setup-shop"></div>`);
-  wrap.appendChild($(`<div class="retro-title">▸ ${editing?'Closet':'Create Your Golfer'}</div>`));
+  wrap.appendChild($(`<div class="retro-title">▸ ${editing?'Your Closet':'Create Your Golfer'}</div>`));
   wrap.appendChild($(`<div class="retro-sub">${editing?'Your closet &middot; dress your golfer with everything you own':((S.special?'Monthly Spotlight':(S.daily?'Play 18':'Career Mode'))+' &middot; style your golfer, then build your skills')}</div>`));
 
   // CS484: CLOSET revamp — one clean two-tier layout (owner: "way too much scrolling ... don't like a bunch
