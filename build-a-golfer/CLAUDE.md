@@ -11427,19 +11427,21 @@ allows Google Fonts, or self-host Anton.*
   Go Lower = blue, 0 gold buttons on the page, 0 page errors; screenshot confirms the buttons are distinct
   from the scorecard. Deployed to /golf.
 
-- **CS483n — daily result: Share blue, Go Lower red, side by side (owner: "make share blue and go lower
-  red" then "put them next to each other").** On `scrDailyResult` the CS483m colors were reversed and the
-  two main actions stacked full-width. Now **Share** is blue (`.btn.blue`, the daily accent) and the primary
-  action (**Go lower / Play again / Sign in to save / Course Records**) is red (`.btn.red`), and the two sit
-  SIDE BY SIDE in one flex row (`display:flex;gap:10px;max-width:520px`, each `flex:1`) directly under the
-  scorecard. Their subs were shortened ("Emoji scorecard", "3 left · beat the avg", "Unlock 3 tries/day",
-  etc.) so both two-line buttons fit next to each other on a 390px phone without wrapping tall. The secondary
-  Course Records ghost button (in the practice / guest / attempts-left branches) still renders full-width
-  below the row; the no-attempts-left branch pairs Share with a red "Course Records ▸" and has no secondary.
-  Note: red is technically the double-bogey score color, but the scorecard sits above the buttons and the
-  owner explicitly asked for blue Share + red Go Lower, so it's honored. Verified in Playwright (win result):
-  Share = blue, primary = red, both in one row, 0 page errors; screenshot confirms the side-by-side layout.
-  Deployed to /golf.
+- **CS483n — daily result: Share blue, Go Lower gold, side by side (owner: "make share blue and go lower
+  red" → "put them next to each other" → asked what color signifies "play again" → picked "gold").** On
+  `scrDailyResult` the two main actions were stacked full-width and the colors clashed with the scorecard.
+  Now **Share** is blue (`.btn.blue`, the daily accent) and the primary action (**Go lower / Play again /
+  Sign in to save / Course Records**) is **gold** (`.btn.goldfill`, the game's primary-action foil — reads
+  as "tap here to keep playing" and, unlike red/amber/green, doesn't collide with the birdie/bogey/double
+  score colors on the scorecard directly above). The two sit SIDE BY SIDE in one flex row
+  (`display:flex;gap:10px;max-width:520px`, each `flex:1`) directly under the scorecard. Their subs were
+  shortened ("Emoji scorecard", "3 left · beat the avg", "Unlock 3 tries/day", etc.) so both two-line
+  buttons fit next to each other on a 390px phone without wrapping tall. The secondary Course Records ghost
+  button (practice / guest / attempts-left branches) still renders full-width below the row; the
+  no-attempts-left branch pairs Share with a gold "Course Records ▸" and has no secondary. (Interim: the
+  primary was briefly red per the first ask, then switched to gold after discussing color meaning.) Verified
+  in Playwright (win result): Share = blue, primary = goldfill, both in one row, 0 page errors; screenshot
+  confirms the side-by-side layout. Deployed to /golf.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
