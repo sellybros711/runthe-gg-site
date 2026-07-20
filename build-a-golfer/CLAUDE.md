@@ -11071,6 +11071,32 @@ allows Google Fonts, or self-host Anton.*
   per-screen declutter, and an optional "Simple Mode." Tunable: the 3-step copy + the CTA target (currently
   the daily; could be a guided first career draft instead).
 
+- **CS474 — screen declutter pass (NOT yet deployed — owner reviewing a before/after preview first).**
+  Follow-up to CS473, addressing the same "lots of buttons, texts etc" feedback across the whole game.
+  Cut repeated chrome + redundant text; NO feature removed (every action is still reachable):
+  - **Footer (biggest cross-screen win):** the full footer (Send Feedback + Add to Home + "Love soccer?
+    Try RunThePitch" pills) rendered on EVERY screen. Now it shows only on the **title/home**; every other
+    screen gets just the compact link row (About · Privacy · Terms · Feedback) - Feedback still one tap away
+    there + in the ≡ menu. `footer()` branches on `S.screen==='title'`.
+  - **Title:** dropped the "A RunThe.GG Game" subtitle (brand is in the banner). The home nav-tile grid no
+    longer duplicates the bottom nav - **Trophy Room** (= Profile tab) and the always-on **Pro Shop** tile
+    are removed; the grid is now Challenges · Leaderboard · Invite, with the Pro Shop tile shown ONLY when it
+    carries a real nudge (a free pack waiting / new items). Bottom nav + coin pill still reach the shop.
+  - **Off-season (~490px shorter):** removed the duplicated "N changes · N re-spins" line (already in the
+    golfer card) - `offBudgetNote()` now shows only the "earned by last season" context (or '' when there's
+    no prior season); shortened the wordy spin warning; and `rivalStatusNode()` returns null (hidden) when
+    there's no active rival, no just-retired rival note, and no past rivals (was an empty gold "no rival yet"
+    box for the first several seasons).
+  - **Season summary:** dropped the redundant "Found a bug? Tell us ›" line (footer Feedback link + menu
+    already cover it).
+  Verified in Playwright (title/setup/draft/build/season/summary/offseason/daily-preview): all render with
+  0 page errors; the off-season no longer repeats the budget, hides the empty rival box, and is ~490px
+  shorter; the compact footer shows on non-title screens; the title nav grid has no Trophy Room/Pro Shop
+  dupes. Built a private before/after preview artifact for the owner to review before deploying. **ACTION:
+  on owner approval, deploy to /golf.** This is step 2 of the "too complicated" fix (CS473 = step 1).
+  Follow-ups still open: contextual coach tips on other screens, an optional "Simple Mode", and further
+  per-screen trims (e.g. the daily-preview's standalone "Course Records" button, build-screen flavor text).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

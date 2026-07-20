@@ -4730,9 +4730,6 @@ function rivalStatusNode(){
     const gw=rv.grudgeWins||0, gl=rv.grudgeLosses||0;
     box.appendChild($(`<div class="small" style="color:var(--oncard)">Your nemesis is <b style="color:var(--gold)">${esc(rv.name)}</b> · OVR ${rv.ovr}. ${tot?`You're ahead in <b>${h.meAhead}</b> of <b>${tot}</b> career meetings`:'Your battle starts this season'}${(rv.seasonsWon+rv.seasonsLost)?` · season series <b>${rv.seasonsWon}–${rv.seasonsLost}</b>`:''}. Finish the season ahead of them to win the year and earn a <b>Rivalry tee</b>.</div>`));
     if(gw+gl>0) box.appendChild($(`<div class="small" style="margin-top:6px;color:#ff8f7e;font-weight:700">⚔ Grudge matches (both in Sunday contention): <b style="color:var(--oncard)">${gw}–${gl}</b></div>`));
-  } else if(!fr){
-    const seasons=(S.career&&S.career.seasons&&S.career.seasons.length)||0;
-    box.appendChild($(`<div class="small muted">${seasons<RIVAL_MIN_SEASONS?`No rival yet, keep competing. After a few seasons, the player who battles you closest will emerge as your nemesis. No picking required.`:`No clear rival has emerged yet. Stay in the mix with players near your level and one will surface.`}</div>`));
   }
   // past rivalries, the nemeses you've outgrown or outlasted, kept for the record
   const past=(S.career&&S.career.pastRivals)||[];
@@ -4740,6 +4737,10 @@ function rivalStatusNode(){
     const rows=past.slice().reverse().map(p=>`<div class="small" style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;color:var(--muted)"><span>${p.reason==='outgrew'?'✓':'·'} <b style="color:var(--oncard);font-weight:700">${esc(p.name)}</b> <span style="font-size:11px">Yr ${p.fromYear}–${p.toYear}</span></span><span style="white-space:nowrap">${p.meAhead}–${p.themAhead} H2H</span></div>`).join('');
     box.appendChild($(`<div style="margin-top:9px;border-top:1px solid var(--line);padding-top:8px"><div class="small" style="color:var(--muted);font-weight:700;letter-spacing:.04em;margin-bottom:3px">Past rivalries</div>${rows}</div>`));
   }
+  // CS474 declutter: with no active rival, no just-retired-rival note, and no past rivals, this was an empty
+  // gold box full of "no rival yet" filler on the off-season for the first few seasons. Drop it entirely -
+  // the rivalry surfaces on its own with a proper card the season it forms (rivalFormedHTML).
+  if(!fr && !rv && !past.length) return null;
   return box;
 }
 // season-summary card announcing a newly-emerged rival
@@ -4824,16 +4825,17 @@ function offChanges(){
 }
 // a short human note: re-spins are always 3; changes are earned by last season's finish.
 function offBudgetNote(){
+  // CS474 declutter: the change/re-spin COUNTS are already shown in the off-season hero card (pips + number),
+  // so this line no longer repeats them - it only explains WHY you earned this budget (last season's finish).
+  // Returns '' when there's no prior season, so the status line is dropped entirely.
   const ch=(S.offseason&&S.offseason.maxChanges!=null)?S.offseason.maxChanges:offChanges();
-  const rs=(S.offseason&&S.offseason.reSpins!=null)?S.offseason.reSpins:offRespins();
-  const budget=`<b style="color:var(--gold)">${ch}</b> change${ch===1?'':'s'} · <b style="color:var(--gold)">${rs}</b> re-spin${rs===1?'':'s'}`;
   const last=lastCareerSeason();
-  if(!last || last.rank==null) return `🎡 ${budget}`;
+  if(!last || last.rank==null) return '';
   const parts=[];
   if(last.wins) parts.push(last.wins+(last.wins===1?' win':' wins'));
   if(last.majors) parts.push(last.majors+(last.majors===1?' major':' majors'));
   parts.push(ord(last.rank)+' on the money list');
-  return `🎡 ${budget} · ${ch} change${ch===1?'':'s'} earned by last season (${parts.join(' · ')})`;
+  return `🎡 <b style="color:var(--gold)">${ch}</b> change${ch===1?'':'s'} earned by last season (${parts.join(' · ')})`;
 }
 /* golfer customization palettes */
 // `file` = canonical avatar-art filename token (see public/avatars/golfers/README.md).
@@ -5719,14 +5721,19 @@ function header(){
 }
 function footer(){
   const f=$(`<div class="foot"></div>`);
-  const fp=$(`<div class="footpills"></div>`);
-  const fbPill=$(`<button type="button" class="pill" style="cursor:pointer;border-color:var(--gold);color:var(--gold)">${ic('chat')} Send Feedback</button>`);
-  fbPill.onclick=()=>openFeedback();
-  fp.appendChild(fbPill);
-  const a2h=$(`<button type="button" class="pill" style="cursor:pointer">▣ Add to Home</button>`); a2h.onclick=installApp;
-  fp.appendChild(a2h);
-  fp.appendChild($(`<a class="pill" href="/soccer/" target="_blank" rel="noopener" style="text-decoration:none;border-color:var(--teal);color:var(--teal)">↗ <span style="font-style:italic;opacity:.8">Love soccer?</span> Try RunThePitch</a>`));
-  f.appendChild(fp);
+  // CS474 declutter: the full footer (Send Feedback + Add to Home + cross-promo pills) is heavy and was
+  // repeating on EVERY screen. Show it only on the title/home (where a first-time visitor sees it); every
+  // other screen gets just the compact link row (Feedback still reachable there + in the menu).
+  if(S.screen==='title'){
+    const fp=$(`<div class="footpills"></div>`);
+    const fbPill=$(`<button type="button" class="pill" style="cursor:pointer;border-color:var(--gold);color:var(--gold)">${ic('chat')} Send Feedback</button>`);
+    fbPill.onclick=()=>openFeedback();
+    fp.appendChild(fbPill);
+    const a2h=$(`<button type="button" class="pill" style="cursor:pointer">▣ Add to Home</button>`); a2h.onclick=installApp;
+    fp.appendChild(a2h);
+    fp.appendChild($(`<a class="pill" href="/soccer/" target="_blank" rel="noopener" style="text-decoration:none;border-color:var(--teal);color:var(--teal)">↗ <span style="font-style:italic;opacity:.8">Love soccer?</span> Try RunThePitch</a>`));
+    f.appendChild(fp);
+  }
   const links=$(`<div class="footlinks"></div>`);
   const mk=(t,fn)=>{const s=$(`<button type="button" style="background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer">${t}</button>`); s.onclick=fn; return s;};
   links.appendChild($(`<a href="/" style="color:inherit;text-decoration:none;cursor:pointer">Home</a>`));
@@ -7157,7 +7164,7 @@ function scrTitle(){
   const scene=$(`<div class="scene" aria-hidden="true">${sceneHtml}</div>`);
   add(scene);
   const w=$(`<div class="titlewrap center"></div>`);
-  w.appendChild($(`<div class="herotag center">A RunThe.GG Game</div>`));
+  // CS474 declutter: dropped the "A RunThe.GG Game" subtitle (the brand is already in the top banner).
   w.appendChild($(`<h1 id="herohead" class="hero" style="white-space:nowrap;font-size:46px"><span class="hr1">Build your </span><span class="hr2">Dream Golfer</span></h1>`));
   // CS374: one big single-line headline - fit the text to fill the width so it reads large on any device
   // (Anton loads async / may fall back, so measure & scale rather than trust a fixed clamp).
@@ -7254,12 +7261,15 @@ function scrTitle(){
     b.onclick=fn; sec.appendChild(b); };
   // CS290: Challenges is now a prominent nav tile (was buried in the ≡ menu) - daily quests + weekly
   // challenges - daily/weekly quests feed your Tour Rep tier + earn coins / mulli-spins.
+  // CS474 declutter: the bottom nav already carries Profile (=Trophy Room) and Pro Shop, so the title tiles
+  // only surface what the nav DOESN'T: Challenges + Leaderboard + Invite. The Pro Shop tile is shown here
+  // only when it carries a real nudge (a free pack waiting / new items) - otherwise it's redundant with the
+  // Pro Shop nav tab and the coin pill, so it's dropped to keep the home clean.
   mkTile(PXI.target,'#16b5a6','Challenges', signedIn?(repTier().tier.name+' · quests'):'Sign in to earn', ()=>{S.overlay='challenges';render();});
   mkTile(PXI.podium,'#4aa3ff','Leaderboard','Rankings', ()=>{S.overlay='leaderboard';render();});
-  mkTile(PXI.cup,'#F1D04A','Trophy Room', signedIn?'Trophies & rank':'Sign in', ()=>{S.overlay='record';render();});
   if(SHOP_ENABLED){ const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')):0);
     const shopNew=(typeof cosNewTotal==='function')&&cosNewTotal()>0;   // CS423: NEW-item dot on the Pro Shop tile (leads to the gear)
-    mkTile(PXI.cart,'#3fbf7a','Pro Shop', shopNew?('✨ '+cosNewTotal()+' new item'+(cosNewTotal()>1?'s':'')):(nFree>0?('🎁 '+nFree+' free pack'+(nFree>1?'s':'')+'!'):(signedIn?(ic('coin')+' '+coinFmt(coinBalance())):'Gear & boosts')), ()=>{S.overlay='shop'; if(nFree>0)S.shopSec='packs'; render();}, {dot:shopNew}); }
+    if(nFree>0 || shopNew) mkTile(PXI.cart,'#3fbf7a','Pro Shop', shopNew?('✨ '+cosNewTotal()+' new item'+(cosNewTotal()>1?'s':'')):('🎁 '+nFree+' free pack'+(nFree>1?'s':'')+'!'), ()=>{S.overlay='shop'; if(nFree>0)S.shopSec='packs'; render();}, {dot:shopNew}); }
   mkTile(PXI.gift,'#b06be0','Invite a friend','Share your link — you both get a free pack', ()=>{ referralShare(); }, {wide:true});   // CS403: refer a friend → free packs (full-width featured tile)
   // (How to Play moved up under the hero, CS287)
   w.appendChild(sec);
@@ -15894,9 +15904,8 @@ function scrSummary(){
       const joinCircuit=$(`<button class="btn teal" style="margin-top:10px">Join the Legend Circuit ▸<span class="sub">Face off against every retired legend on tour, at age ${playerAge()}</span></button>`);
       joinCircuit.onclick=()=>{ endCareer('age'); startCircuit(); }; actC.appendChild(joinCircuit);
     }
-    const fbLink=$(`<button type="button" style="display:block;width:100%;margin-top:16px;background:none;border:0;color:var(--muted);cursor:pointer;font-family:var(--body);font-size:13px">${ic('chat')} Found a bug or have an idea for the game? <span style="color:var(--gold);font-weight:800">Tell us ›</span></button>`);
-    fbLink.onclick=()=>openFeedback();
-    actC.appendChild(fbLink);
+    // CS474 declutter: dropped the "Found a bug? Tell us" line here - the footer Feedback link + the ≡ menu
+    // already surface feedback, and this was extra text on an already-long page.
   }
   // the summary is long and the advance button sits at the very bottom - many players don't realize they
   // have to scroll to continue. Show a floating cue that points down to it, visible only while that button
@@ -16191,7 +16200,7 @@ function scrOffseason(){
       : 'In your prime, no age decline this year';
     // CS382: both changes + re-spins are earned by career stage / last season now (offBudgetNote), not Tour Rep.
     add($(`<div class="osstat">${r.tier.name==='G.O.A.T.'?'🐐':'🏅'} <b style="color:var(--gold)">${esc(r.tier.name)}</b> · ${ageMsg}</div>`));
-    add($(`<div class="osstat">${offBudgetNote()}</div>`)); }
+    const bn=offBudgetNote(); if(bn) add($(`<div class="osstat">${bn}</div>`)); }
 
   // sponsors: an actual OFFER (a decision) always shows; the passive strip is hidden while mid-swap (CS356s).
   if(!S.circuitMode){ const offers=(S.career&&S.career.sponsorOffers)||[];
@@ -16210,7 +16219,7 @@ function scrOffseason(){
   if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap a stat to swap it, <span style="color:#35d6a0">▲ applies instantly</span> · <span style="color:#e07a5f">▼ asks to confirm</span></div>`));
   else if(nDec) add($(`<div class="small center osgridhint" style="color:#e07a5f">▼ Age cost you ground, red shows what each skill dropped. Re-spin to repair.</div>`));
   else if(lockedNow.length) add($(`<div class="small center osgridhint" style="color:var(--gold)">🔒 Locked stats already changed this off-season, a spin can only land on your open stats</div>`));
-  else add($(`<div class="small center osgridhint" style="color:#d9c48a">⚠ Spinning is optional and a <b>risk</b>, you can start the season as-is. If you spin, you <b>must lock in</b> whatever you land on, even if it's worse.</div>`));
+  else add($(`<div class="small center osgridhint" style="color:#d9c48a">⚠ Spinning is optional, and a <b>risk</b> — you must keep whatever you land on.</div>`));
 
   // THE unified grid: always 8 tiles. Idle → current bag; spun → current value + the swap it would make.
   const grid=$(`<div class="attrs osgrid"></div>`);
@@ -16264,7 +16273,7 @@ function scrOffseason(){
   actions.appendChild(cont);
   add(actions);
 
-  if(!spun) add(rivalStatusNode());   // emergent nemesis status (read-only); hidden mid-swap (CS356s)
+  if(!spun){ const rn=rivalStatusNode(); if(rn) add(rn); }   // emergent nemesis status (read-only); hidden mid-swap (CS356s); CS474: null when no rival/history
   // CS356d: the sponsor offer is now shown INLINE above (sponsorDecisionNode) instead of a full-screen
   // popup (owner: the popup can go away). maybeSponsorMoment() intentionally not called here.
 }
