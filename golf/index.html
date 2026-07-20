@@ -707,9 +707,10 @@ window.GA_ID='G-L29P5MRWKE';
   .oshero-row{display:flex; align-items:center; justify-content:center; gap:6px; max-width:360px; margin:2px auto 4px}
   .oshero-row .dynradar{margin:0; flex:0 1 250px; min-width:0}
   .oshero-avcol{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:2px}
-  .oshero-avcol .oshero-av{width:78px; height:120px}
-  .oshero-avcol .oshero-av .avatarfig.fullbody{height:212px!important}   /* show head + torso beside the chart */
-  .oshero-nm{font-family:var(--serif); font-weight:700; font-size:16px; color:var(--oncard); text-align:center; max-width:96px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  /* CS483p: much bigger golfer beside the chart (was a tiny 64px). object-fit:contain scales the full figure up. */
+  .oshero-avcol .oshero-av{width:132px; height:176px; align-items:center}
+  .oshero-avcol .oshero-av .avatarfig{width:132px!important; height:174px!important}
+  .oshero-nm{font-family:var(--serif); font-weight:700; font-size:16px; color:var(--oncard); text-align:center; max-width:132px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   /* CS483c: fit the whole off-season on one phone screen - tighten the hero, radar, status lines + tiles */
   .scr-offseason .scrhero{margin:2px 0 2px}
   .scr-offseason .scrhero .sh-t{font-size:clamp(26px,7vw,38px)}
