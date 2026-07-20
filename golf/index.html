@@ -20508,20 +20508,20 @@ function scrDailyResult(){
   let primary=null, cr=null;
   if(practice){
     // practice: play as many rounds as you like, nothing is consumed or recorded
-    primary=$(`<button class="btn red" style="flex:1;margin:0">Play again ▸<span class="sub">Unlimited practice</span></button>`);
+    primary=$(`<button class="btn goldfill" style="flex:1;margin:0">Play again ▸<span class="sub">Unlimited practice</span></button>`);
     primary.onclick=beginDailyAttempt;
     cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();};
   } else if(!sbSignedIn()){
     // guest: primary action is signing in (which logs this score and unlocks more attempts)
-    primary=$(`<button class="btn red" style="flex:1;margin:0">🔐 Sign in to save ▸<span class="sub">Unlock ${DAILY_MAX_ATTEMPTS} tries/day</span></button>`);
+    primary=$(`<button class="btn goldfill" style="flex:1;margin:0">🔐 Sign in to save ▸<span class="sub">Unlock ${DAILY_MAX_ATTEMPTS} tries/day</span></button>`);
     primary.onclick=()=>{ S._dailyClaimFlow=true; S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); };
     cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();};
   } else if(left>0){
-    primary=$(`<button class="btn red" style="flex:1;margin:0">${wonDay?'Go lower ▸':'Play again ▸'}<span class="sub">${wonDay?`Chase lower (${left} left)`:`${left} left · beat the avg`}</span></button>`);
+    primary=$(`<button class="btn goldfill" style="flex:1;margin:0">${wonDay?'Go lower ▸':'Play again ▸'}<span class="sub">${wonDay?`Chase lower (${left} left)`:`${left} left · beat the avg`}</span></button>`);
     primary.onclick=beginDailyAttempt;
     cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();};
   } else {
-    primary=$(`<button class="btn red" style="flex:1;margin:0">Course Records ▸<span class="sub">Every record holder</span></button>`); primary.onclick=()=>{S.overlay='courserecords';render();};
+    primary=$(`<button class="btn goldfill" style="flex:1;margin:0">Course Records ▸<span class="sub">Every record holder</span></button>`); primary.onclick=()=>{S.overlay='courserecords';render();};
   }
   const btnrow=$(`<div style="display:flex;gap:10px;max-width:520px;margin:14px auto 0"></div>`);
   btnrow.appendChild(shr); btnrow.appendChild(primary); add(btnrow);
