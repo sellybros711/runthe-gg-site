@@ -235,6 +235,8 @@ window.GA_ID='G-L29P5MRWKE';
   }
   .cols{display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start}
   .col{min-width:0}
+  /* CS482: Race-to-the-Cup / team-Cup result cards fill their column + match heights (was floaty/narrow). */
+  .ovcard{width:100%; box-sizing:border-box; border-radius:14px; padding:16px 20px; text-align:center; display:flex; flex-direction:column; justify-content:center; height:100%}
   /* align-items:stretch (overriding .cols' :start) so the avatar column's own box spans the full
      row height, matching the (taller) customization column, without this, a position:sticky child
      has no room to travel and just scrolls away with the rest of the row instead of staying put. */
@@ -15570,8 +15572,9 @@ function scrSummary(){
   const hdr=$(`<div></div>`), ovC=$(`<div></div>`), moC=$(`<div></div>`), spC=$(`<div></div>`), stC=$(`<div></div>`), reC=$(`<div></div>`), awC=$(`<div></div>`), caC=$(`<div></div>`), hiC=$(`<div></div>`), shC=$(`<div></div>`), actC=$(`<div class="sumacts"></div>`);
   // CS477 (owner Overview redesign): Highlights + Tournaments sit side by side in a responsive .cols row.
   const hiCol=$(`<div class="col"></div>`), tourCol=$(`<div class="col"></div>`);
-  // CS482 (owner): Race to the Cup (left) + the team-Cup result (right) form their own symmetric row.
-  const raceCol=$(`<div class="col center"></div>`), cupCol=$(`<div class="col center"></div>`);
+  // CS482 (owner): Race to the Cup (left) + the team-Cup result (right) form their own symmetric row; the
+  // cards FILL their column (flex) so they align with the Highlights/Tournaments row above and match heights.
+  const raceCol=$(`<div class="col" style="display:flex;flex-direction:column"></div>`), cupCol=$(`<div class="col" style="display:flex;flex-direction:column"></div>`);
   let __cur=hdr;
   const add=(n)=>{ if(n) __cur.appendChild(n); return n; };
   // CS477: career mode drops the green "Year N complete" bubble (owner) - it duplicated the "Year N of 30" in
@@ -15591,20 +15594,20 @@ function scrSummary(){
     const el=S.season.eliminated, champ=S.season.cupChampion;
     const cupName=S.circuitMode?'Legends Cup':'Tour Cup', finaleName=S.circuitMode?'Legends Cup Championship':'Tour Championship at East Lake';
     if(S.season.cupYouWon){
-      add($(`<div class="center" style="margin:10px 0 2px"><div style="display:inline-block;background:linear-gradient(180deg,#1c5638,#0c2e1d);border:1px solid var(--gold);border-radius:14px;padding:13px 20px">
+      add($(`<div class="ovcard" style="background:linear-gradient(180deg,#1c5638,#0c2e1d);border:1px solid var(--gold)">
         <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">${cupName}</div>
         <div style="font:800 22px/1.1 var(--body);color:var(--gold);margin-top:6px">🏆 You are the Cup Champion</div>
-        <div class="small muted" style="margin-top:4px">Won the ${finaleName} · ${fedexRank===1?'led the Race wire-to-wire':'#'+fedexRank+' seed surged to the title'}</div></div></div>`));
+        <div class="small muted" style="margin-top:4px">Won the ${finaleName} · ${fedexRank===1?'led the Race wire-to-wire':'#'+fedexRank+' seed surged to the title'}</div></div>`));
     } else if(el){
-      add($(`<div class="center" style="margin:10px 0 2px"><div style="display:inline-block;background:#0a2740;border:1px solid #E14A33;border-radius:14px;padding:12px 18px">
+      add($(`<div class="ovcard" style="background:#0a2740;border:1px solid #E14A33">
         <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:#E14A33">Playoffs · eliminated</div>
         <div style="font:800 17px/1.15 var(--body);color:var(--oncard);margin-top:6px">Bounced at the ${esc(el.event)}</div>
-        <div class="small muted" style="margin-top:4px">Finished #${el.rank} in the Race to the ${S.circuitMode?'Legends Cup':'Cup'}${champ?` · ${esc(champ)} took the Cup`:''}</div></div></div>`));
+        <div class="small muted" style="margin-top:4px">Finished #${el.rank} in the Race to the ${S.circuitMode?'Legends Cup':'Cup'}${champ?` · ${esc(champ)} took the Cup`:''}</div></div>`));
     } else if(champ){
-      add($(`<div class="center" style="margin:10px 0 2px"><div style="display:inline-block;background:#0a2740;border:1px solid var(--line);border-radius:14px;padding:12px 18px">
+      add($(`<div class="ovcard" style="background:#0a2740;border:1px solid var(--line)">
         <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">Race to the ${S.circuitMode?'Legends Cup':'Cup'}</div>
         <div style="font:800 17px/1.15 var(--body);color:var(--oncard);margin-top:6px">#${fedexRank} in the final standings</div>
-        <div class="small muted" style="margin-top:4px">🏆 ${esc(champ)} won the ${finaleName}</div></div></div>`));
+        <div class="small muted" style="margin-top:4px">🏆 ${esc(champ)} won the ${finaleName}</div></div>`));
     }
   }
   __cur=hdr;
@@ -15788,11 +15791,11 @@ function scrSummary(){
       : (T.playerWon?`You went ${T.playerRec.w}-${T.playerRec.l}-${T.playerRec.h} as ${cupShortName(mine)} lifted the Cup.`:tie?`You battled to a ${cupShortName(mine)} tie, the Cup retained.`:`You gave it everything, but ${cupShortName(winName)} took it.`);
     const st=T.stake;
     const stakeLine = st ? `<div class="small" style="margin-top:5px;color:#9fe6c4;font-weight:700">${st.fans>0?`🔥 Fan base +${fmtFollowers(st.fans)}`:''}${st.fans>0&&st.conf?' · ':''}${st.conf?`Confidence ${st.conf>0?'▲ +':'▼ '}${st.conf}`:''}${st.grudge?' · ⚔️ beat your rival':''}</div>` : '';
-    add($(`<div class="center" style="margin:8px 0 12px"><div style="display:inline-block;background:linear-gradient(180deg,#15331f,#0a2740);border:1px solid ${col};border-radius:14px;padding:12px 20px">
+    add($(`<div class="ovcard" style="background:linear-gradient(180deg,#15331f,#0a2740);border:1px solid ${col}">
       <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${col}">${esc(T.short)} · ${esc(mine)}${T.captain?' · Captain':''}</div>
       <div style="font:800 19px/1.15 var(--body);color:${col};margin-top:6px">${tie?esc(winName)+' retain the Cup':(mineWon?'🏆 ':'')+esc(winName)+' win the Cup'}</div>
       <div class="small" style="margin-top:5px;color:#cfe0d6;line-height:1.4">${emojifyIcons(hl)}</div>
-      <div class="small muted" style="margin-top:3px">${sub}</div>${stakeLine}</div></div>`));
+      <div class="small muted" style="margin-top:3px">${sub}</div>${stakeLine}</div>`));
   }
   // CS482 (owner): now that both columns are filled, assemble the Race to the Cup (left) | team-Cup result
   // (right) SYMMETRIC row and insert it right under the Highlights row. If only one exists this season it
