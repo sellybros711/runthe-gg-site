@@ -11376,6 +11376,20 @@ allows Google Fonts, or self-host Anton.*
   their solid fill. Deployed to /golf. (Extending the foil gradient to other hero numbers — OVR badges,
   season net — is an easy follow-up if wanted; left for now since some of those are semantically color-coded.)
 
+- **CS483j — richer, even, two-color target/course-record card (owner: "make a richer box and more even.
+  Change up the colors").** Rebuilt the Play 18 target+record split (`.dtcard`) from a flex row into a
+  3-column CSS **grid** (`1fr 1px 1fr` × 3 rows) so the two big numbers always sit on the SAME line and the
+  subs align — even when the longer "Target · beat the tour avg" label wraps to two lines on a phone (the
+  old flex version stacked/misaligned). **Richer box:** a layered background (a warm gold glow top + a cool
+  mint glow bottom-right over a deep-green vertical gradient), a soft 1px gold border, a drop shadow + inset
+  top highlight, and the helper note separated by its own top divider. **Two colors:** the target number
+  keeps the gold foil gradient; the **course record number now uses a new mint→teal gradient** (`.mintgrad`),
+  with the two column labels tinted to match (gold / mint) and the center divider a gold→mint two-tone fade —
+  so the box reads as two distinct stats, not a wall of gold. Number font is `clamp(20px,6.2vw,27px)` so both
+  fit side-by-side down to a 390px phone. Verified in Playwright at 760px + 390px: both numbers align on one
+  line, the label wraps cleanly on mobile without breaking the grid, gold/mint accents render, 0 page errors.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
