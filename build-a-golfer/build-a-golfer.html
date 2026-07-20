@@ -1467,13 +1467,21 @@ window.GA_ID='G-L29P5MRWKE';
     .sumbtns>#sum-advance{grid-column:1/-1}
     .sumbtns .btn.sumsq{min-height:46px; font-size:12.5px; padding:8px 5px; line-height:1.1}
   }
-  .srev{flex:0 0 auto; min-width:56px; max-width:118px; border-radius:10px; padding:7px 9px; text-align:center;
+  /* CS483r (owner): each event reads as a CALENDAR CELL - a "WK n" header strip (like a date on a calendar
+     page) over the event name + result. Uniform-width cells so the scrolling rail looks like a calendar. */
+  .srev{flex:0 0 auto; width:94px; border-radius:10px; overflow:hidden; display:flex; flex-direction:column;
     background:var(--panel); border:1px solid var(--line); opacity:.5}
   .srev.done{opacity:1}
-  .srev.cur{opacity:1; border-color:var(--gold); background:rgba(216,173,74,.15); box-shadow:0 0 0 1px rgba(216,173,74,.45)}
-  .srev.win{border-color:var(--gold); background:rgba(216,173,74,.22)}
-  .srev .en{font:800 8.5px/1.15 var(--body); letter-spacing:.02em; text-transform:uppercase; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .srev .er{font-family:var(--mono); font-weight:800; font-size:13px; margin-top:4px; color:var(--oncard); white-space:nowrap}
+  .srev.cur{opacity:1; border-color:var(--gold); box-shadow:0 0 0 1px rgba(216,173,74,.45)}
+  .srev.win{border-color:var(--gold)}
+  .srev .srev-wk{font:800 8px/1 var(--body); letter-spacing:.13em; text-transform:uppercase; color:var(--muted);
+    text-align:center; padding:4px 4px 3px; background:rgba(255,255,255,.055); border-bottom:1px solid var(--line)}
+  .srev.cur .srev-wk{color:#12140e; background:var(--gold); border-bottom-color:transparent}
+  .srev.win .srev-wk{color:var(--gold); background:rgba(216,173,74,.2); border-bottom-color:rgba(216,173,74,.38)}
+  .srev .srev-body{flex:1; display:flex; flex-direction:column; justify-content:space-between; padding:6px 7px 7px; text-align:center}
+  .srev .en{font:800 8.5px/1.2 var(--body); letter-spacing:.01em; text-transform:uppercase; color:var(--muted);
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.4em}
+  .srev .er{font-family:var(--mono); font-weight:800; font-size:13px; margin-top:5px; color:var(--oncard); white-space:nowrap}
   .srev.win .er{color:var(--gold)}
   .srev .er .ersc{font-size:10.5px; font-weight:700}
   /* CS265: career milestone timeline */
@@ -14824,7 +14832,8 @@ function seasonRailNode(){
         const sc=tp!=null?` <span class="ersc" style="color:${tp<0?'#35d6a0':tp>0?'#e2a23a':'var(--muted)'}">(${dtp(tp)})</span>`:'';
         if(me.pos==='CUT'){ res='CUT'; } else if(me.pos===1){ cls+=' win'; res='WIN'+sc; } else res=(me.tied?'T'+me.pos:ord(me.pos))+sc; } else res='✓'; }
     else if(i===S.evtIndex){ cls+=' cur'; res='NOW'; }
-    rail.appendChild($(`<div class="${cls}" title="${esc(evt.name)}"><div class="en">${evt.major?'★ ':''}${esc(evt.name)}</div><div class="er">${res}</div></div>`));
+    const wk=evt.wk||(i+1);   // calendar week of the season (majors/regs/playoffs carry a real wk slot)
+    rail.appendChild($(`<div class="${cls}" title="Week ${wk} · ${esc(evt.name)}"><div class="srev-wk">Wk ${wk}</div><div class="srev-body"><div class="en">${evt.major?'★ ':''}${esc(evt.name)}</div><div class="er">${res}</div></div></div>`));
   });
   // Center the current event. CS285: glide SMOOTHLY when the schedule ADVANCES (event to event) so the
   // calendar reads as a clean scroll; on a same-event re-render (the many mid-round redraws) snap straight

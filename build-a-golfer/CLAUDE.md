@@ -11480,6 +11480,21 @@ allows Google Fonts, or self-host Anton.*
   top-right (right ~398, same top as the id), the stats moved to their own row below, NET is no longer inside
   `.cb-stats`, 0 page errors; screenshot confirms the roomier layout. Deployed to /golf.
 
+- **CS483r — season event rail redesigned to read like a CALENDAR + week numbers (owner: "make the
+  scrolling calendar look more like a calendar ... include the week # with the tournament so players can keep
+  track of where they are in the season clearly").** The CS264 `seasonRailNode` was a row of flat pills
+  (name + result). Rebuilt each event as a calendar CELL: a **"Wk n" header strip** across the top (like a
+  date on a calendar page — muted bg + bottom divider) over a body holding the event name (now 2-line clamped
+  so cells align) + the result/NOW/·. Cells are a **uniform 94px width** so the scrolling row reads as a
+  calendar grid; the **current event's header goes solid gold** (dark text) so it stands out like "today"
+  (plus the existing gold border), and a won event's header is gold-tinted. The week number is the event's
+  real `evt.wk` calendar slot (majors/regs/playoffs/Games/cup all carry one; falls back to the sequence index
+  if ever missing), and it's woven into the tile's hover `title` ("Week n · {event}") too. The smooth
+  center-on-advance scroll (CS285) is unchanged. Verified in Playwright (real season, several events
+  simmed): 21 uniform 94px cells with "Wk 1 / 4 / 6 / 7 / 9 …" headers, the current event a gold "Wk 9 ·
+  Palm Coast Classic · NOW" cell, done cells showing place + score, 0 page errors; screenshot confirms the
+  calendar look. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
