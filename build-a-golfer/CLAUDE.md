@@ -11326,6 +11326,35 @@ allows Google Fonts, or self-host Anton.*
   header / the game-plan paragraph while the "More about this course" button is present; opening it reveals
   all three; 0 page errors. Deployed to /golf.
 
+- **CS483g — Pro Shop "Bag" tab: can't buy fix (silent locked tiers + off-screen confirm) (owner:
+  "im clicking things in the bag tab in the store and can't click to buy anything").** Two real causes,
+  both in the shop's buy flow (the underlying `bagBuy`/purchase logic was fine — verified a full buy deducts
+  coins + grants the club). (1) **Higher tiers were completely unclickable.** Each Golf-Bag club has 3 tiers
+  (Tour/Pro/Signature) that upgrade in order; a tier whose previous tier you don't own rendered as a locked
+  tile with NO click handler (`data` left empty) and only a tiny "· upgrade prev first" hint — so tapping the
+  nicer Pro/Signature clubs (the appealing ones) did literally nothing with no feedback, reading as "can't
+  buy anything." Now those tiles are tappable (`data-kind="bag-locked"`) and a tap fires a clear toast, e.g.
+  "Buy the Tour Driver first, then you can upgrade to this one." (2) **The confirm card landed off-screen.**
+  Tapping a buyable tile REPLACES the tile grid with the confirm/Buy card, but the shop overlay preserves its
+  scroll position — so a tile tapped far down the list left the (now short) confirm card scrolled out of
+  view, and unlike apparel a club gives no visible change on the golfer to signal something happened. Added
+  `S._shopPreviewScroll`: opening any shop preview now scrolls the Buy card into view (`#pv-buy`
+  `scrollIntoView`) on the next frame, so the confirm is always visible. Applies to every shop section (bag,
+  apparel, accessories, effects), not just Bag. Verified in Playwright: a signed-in account with coins opens
+  the Bag tab → 6 buyable tier-1 tiles + 12 locked higher-tier tiles; tapping a buyable tile opens the
+  confirm and Buy deducts exactly the price + grants the club + clears the preview; tapping a locked
+  higher-tier tile fires the "Buy the … first" toast and opens no preview; the scroll flag is consumed each
+  open; 0 page errors. Deployed to /golf.
+
+- **CS483h — Play 18: course record on the same line as the target (owner: "Put the course record on the
+  same line as the target score").** Removed the standalone "Course record" card and folded it into the
+  target card as a two-column split: **Target · beat the tour avg** (big gold number + par) on the left, a
+  thin divider, and **Course record** (the score + holder, or "Unclaimed · be the first" / "Sign in · to
+  post a score") on the right. Widened the card to 600px and tightened both labels (dropped "Your", compacted
+  the record to a stacked score + "by holder") so both halves fit side by side; on a narrow phone the two
+  columns wrap and stack cleanly. Verified in Playwright with a real record set — "TARGET · BEAT THE TOUR AVG
+  / 69.0 (−1.0) par 70 | COURSE RECORD / 66 (−4) / by bonflume" on one line, 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -5542,7 +5542,7 @@ function bagTileHTML(club,tier){ const c=BAG_BY[club]; const ti=c.tiers[tier-1];
   let state,data;
   if(active){ state='eq'; data=''; }
   else if(owned){ state='own'; data=''; }
-  else if(needPrev){ state='lock'; data=''; }
+  else if(needPrev){ state='lock'; data=`data-tile data-kind="bag-locked" data-club="${club}" data-tier="${tier}"`; }   // CS483g: tappable → explains why it's locked
   else { state='lock'; data=`data-tile data-kind="bag-buy" data-club="${club}" data-tier="${tier}"`; }
   return shopTile({thumb,name:ti.n,sub:shopBoostTxt(ti.b)+(needPrev?' <span style="color:#c9a520">· upgrade prev first</span>':''),
     state,price,afford:coinBalance()>=price,data});
@@ -18671,20 +18671,29 @@ function scrDailyPreview(){
   </div>`);
   add(dailyFeatureCard(key, details));
   if(!S.special) add($(`<div class="small center" style="margin:9px 0 0;color:var(--muted)">Playable for <span style="color:var(--gold);font-weight:800">${dCd('clock')}</span>, then a new course rotates in</div>`));
-  // the main objective: beat the real tour scoring average for this venue
+  // the main objective: beat the real tour scoring average for this venue. CS483h (owner): the course record
+  // now sits on the SAME line as the target (split card), removing the standalone Course Record card.
   const av=dTourAvg(c);
-  add($(`<div class="scout" style="max-width:560px;margin:14px auto 0;text-align:center;border-color:var(--gold)">
-    <div class="small muted" style="text-transform:uppercase;letter-spacing:.12em;font-weight:800">Your target · beat the tour average</div>
-    <div style="margin-top:4px"><span class="mono" style="font-weight:800;font-size:30px;color:var(--gold);white-space:nowrap">${(c.par+av).toFixed(1)} (${dAvgTxt(av)})</span> <span class="small muted">par ${c.par}</span></div>
-    <div class="small muted" style="margin-top:3px">What real tour pros average here. Post a lower round to win the day.</div></div>`));
+  const recTxt=rec?`<span class="mono" style="font-weight:800;font-size:22px;color:var(--gold);white-space:nowrap">${dTot(rec.toPar, c.par)}</span><div class="small muted" style="margin-top:1px">by ${esc(crHolders(rec))}</div>`
+    :(sbSignedIn()?`<span style="font-weight:800;font-size:16px;color:var(--gold)">Unclaimed</span><div class="small muted" style="margin-top:1px">be the first</div>`:`<span style="font-weight:800;font-size:16px;color:var(--gold)">Sign in</span><div class="small muted" style="margin-top:1px">to post a score</div>`);
+  add($(`<div class="scout" style="max-width:600px;margin:14px auto 0;text-align:center;border-color:var(--gold)">
+    <div style="display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap">
+      <div>
+        <div class="small muted" style="text-transform:uppercase;letter-spacing:.1em;font-weight:800">Target · beat the tour avg</div>
+        <div style="margin-top:4px"><span class="mono" style="font-weight:800;font-size:27px;color:var(--gold);white-space:nowrap">${(c.par+av).toFixed(1)} (${dAvgTxt(av)})</span> <span class="small muted">par ${c.par}</span></div>
+      </div>
+      <div style="align-self:stretch;width:1px;background:var(--line)"></div>
+      <div>
+        <div class="small muted" style="text-transform:uppercase;letter-spacing:.1em;font-weight:800">Course record</div>
+        <div style="margin-top:4px">${recTxt}</div>
+      </div>
+    </div>
+    <div class="small muted" style="margin-top:8px">What real tour pros average here. Post a lower round to win the day.</div></div>`));
   // CS257: streak calendar in the Beat-the-Pro flow. (CS302: quests/weekly/rep panel removed from here -
   // it lives in the ≡ Challenges overlay; the owner wanted the Beat-the-Pro page decluttered.)
   if(!S.special && !PRACTICE && sbSignedIn()){
     const an=streakAdventNode(); if(an) add(an);   // CS402: play/win streak counters + 7-day advent calendar
   }
-  const recTxt=rec?`<b style="color:var(--gold)">${dTot(rec.toPar, c.par)}</b> by ${esc(crHolders(rec))}`
-    :(sbSignedIn()?`<b style="color:var(--gold)">Unclaimed</b>, be the first to set it`:`<b style="color:var(--gold)">Sign in</b> to post your score`);
-  add($(`<div class="scout" style="max-width:560px;margin:12px auto 0;text-align:center"><div class="small muted" style="text-transform:uppercase;letter-spacing:.12em;font-weight:800">Course record</div><div style="margin-top:4px">${recTxt}</div></div>`));
   add($(`<h2 class="center" style="margin:16px 0 6px;font-size:15px">Your game plan</h2>`));
   const dial=$(`<div class="mini" style="max-width:520px;margin:0 auto;gap:8px"></div>`);
   [['conservative','🛡 Safe'],['balanced','⚖ Balanced'],['aggressive','⚡ Aggressive']].forEach(([k,lab])=>{
@@ -20702,7 +20711,13 @@ function shopTileClick(b){
     S.shopPreview={kind:'acc', id, slot:(it&&it.slot)||null, name:(it&&it.name)||'Item', price:it?accPrice(it):0}; }
   else if(kind==='bag-buy'){ const club=b.getAttribute('data-club'), tier=+b.getAttribute('data-tier'); const c=BAG_BY[club], ti=c&&c.tiers[tier-1];
     S.shopPreview={kind:'bag', club, tier, name:(ti&&ti.n)||'Club', price:bagPrice(tier)}; }
+  else if(kind==='bag-locked'){ const club=b.getAttribute('data-club'), tier=+b.getAttribute('data-tier'); const c=BAG_BY[club], prev=c&&c.tiers[tier-2];   // CS483g: upgrade in order
+    try{ toast(`Buy the ${prev?esc(prev.n):'previous tier'} first, then you can upgrade to this one.`); }catch(e){} return; }
   else if(kind==='cos-req'){ try{ toast('🔒 '+(b.getAttribute('data-req')||'Locked')); }catch(e){} return; }   // earned Legend gear: show the requirement
+  // CS483g: opening a preview REPLACES the tile grid with the confirm card. The shop overlay keeps its scroll,
+  // so a tile tapped far down the list would leave the (short) confirm card off-screen - "nothing happened".
+  // Flag it so the render scrolls the Buy card into view (esp. for Bag clubs, which don't change the golfer).
+  if(S.shopPreview) S._shopPreviewScroll=true;
   render();
 }
 // ============================ PACK SYSTEM (behind PACKS_ENABLED) ============================
@@ -21348,6 +21363,8 @@ function overlayShop(screen){
     sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.shopSec=x.getAttribute('data-sec'); render(); });
     sticky.querySelectorAll('[data-cat]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.shopCat=x.getAttribute('data-cat'); render(); });
     ov.querySelectorAll('.x2').forEach(el=>el.onclick=()=>{S.shopPreview=null;S.overlay=null;render();});
+    // CS483g: scroll the confirm card into view (render restores the overlay's old scroll, so override next frame)
+    if(S._shopPreviewScroll){ S._shopPreviewScroll=false; requestAnimationFrame(()=>{ const el=document.getElementById('pv-buy'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }); }
     screen.appendChild(ov); return;
   }
   grid.innerHTML = tiles.length?tiles.join('')
