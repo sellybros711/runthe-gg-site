@@ -15570,6 +15570,8 @@ function scrSummary(){
   const hdr=$(`<div></div>`), ovC=$(`<div></div>`), moC=$(`<div></div>`), spC=$(`<div></div>`), stC=$(`<div></div>`), reC=$(`<div></div>`), awC=$(`<div></div>`), caC=$(`<div></div>`), hiC=$(`<div></div>`), shC=$(`<div></div>`), actC=$(`<div class="sumacts"></div>`);
   // CS477 (owner Overview redesign): Highlights + Tournaments sit side by side in a responsive .cols row.
   const hiCol=$(`<div class="col"></div>`), tourCol=$(`<div class="col"></div>`);
+  // CS482 (owner): Race to the Cup (left) + the team-Cup result (right) form their own symmetric row.
+  const raceCol=$(`<div class="col center"></div>`), cupCol=$(`<div class="col center"></div>`);
   let __cur=hdr;
   const add=(n)=>{ if(n) __cur.appendChild(n); return n; };
   // CS477: career mode drops the green "Year N complete" bubble (owner) - it duplicated the "Year N of 30" in
@@ -15582,6 +15584,8 @@ function scrSummary(){
   // (The global leaderboard rank moved down into the left column, below the Full Season Recap button.)
   const HL=(!S.daily)?seasonHeadlines({t,moneyRank,N,ec,year:S.year||1}):null;
   if(HL) add($(headlinesHTML(HL)));
+  // CS482 (owner): Race to the Cup builds into its own column (paired with the team-Cup result below).
+  __cur=raceCol;
   // Race to the Cup outcome, champion, eliminated, or finished the season in the standings
   if(!S.daily){
     const el=S.season.eliminated, champ=S.season.cupChampion;
@@ -15713,11 +15717,13 @@ function scrSummary(){
   }
   // CS477 (owner): Highlights (left) + Tournaments Won (right) side by side; stacks on mobile via .cols.
   // Prepended so this row LEADS the Overview tab (above the stat tiles + achievements).
+  let _hrow=null;
   if(hiCol.childNodes.length || tourCol.childNodes.length){
-    const _hrow=$(`<div class="cols" style="margin-bottom:10px"></div>`);
+    _hrow=$(`<div class="cols" style="margin-bottom:10px"></div>`);
     _hrow.appendChild(hiCol); if(tourCol.childNodes.length) _hrow.appendChild(tourCol);
     ovC.insertBefore(_hrow, ovC.firstChild);
   }
+  // (CS482 Race|Cup symmetric row is assembled AFTER the Cup block below fills cupCol - see _assembleRaceCup.)
   __cur=awC;
   // CS267: Season Impact - a broadcast-style recap card whose numbers COUNT UP on first view
   // (world rank prev→now, tour points gained, season earnings, net). Tour Card status underneath.
@@ -15770,7 +15776,8 @@ function scrSummary(){
         <span class="small" style="margin-left:8px;color:var(--oncard)">🥇 ${natFlag(gold.nat)} ${esc(gold.name)} took gold</span></div></div>`));
     }
   }
-  // ---- Ryder/Nations Cup callout ----
+  // ---- Ryder/Nations Cup callout ---- CS482: into cupCol, paired opposite Race to the Cup.
+  __cur=cupCol;
   if(!S.daily && S.season.teamCup && (S.season.teamCup.playerSide || S.season.teamCup.captain)){
     const T=S.season.teamCup, mineWon=T.mineWon, tie=T.retained, col=mineWon?'var(--gold)':tie?'#c9b25a':'#9fb0bf';
     const winName=T.winner==='A'?T.nameA:T.nameB, mine=(T.captain?T.mySide:T.playerSide)==='A'?T.nameA:T.nameB;
@@ -15786,6 +15793,14 @@ function scrSummary(){
       <div style="font:800 19px/1.15 var(--body);color:${col};margin-top:6px">${tie?esc(winName)+' retain the Cup':(mineWon?'🏆 ':'')+esc(winName)+' win the Cup'}</div>
       <div class="small" style="margin-top:5px;color:#cfe0d6;line-height:1.4">${emojifyIcons(hl)}</div>
       <div class="small muted" style="margin-top:3px">${sub}</div>${stakeLine}</div></div>`));
+  }
+  // CS482 (owner): now that both columns are filled, assemble the Race to the Cup (left) | team-Cup result
+  // (right) SYMMETRIC row and insert it right under the Highlights row. If only one exists this season it
+  // centers on its own instead of a half-empty row; both -> split evenly (stacks on mobile via .cols).
+  { const hasRace=raceCol.childNodes.length, hasCup=cupCol.childNodes.length; let _crow=null;
+    if(hasRace && hasCup){ _crow=$(`<div class="cols" style="margin-bottom:10px;align-items:stretch"></div>`); _crow.appendChild(raceCol); _crow.appendChild(cupCol); }
+    else if(hasRace){ _crow=raceCol; } else if(hasCup){ _crow=cupCol; }
+    if(_crow){ if(_hrow) ovC.insertBefore(_crow, _hrow.nextSibling); else ovC.insertBefore(_crow, ovC.firstChild); }
   }
   // CS481 (owner): rivalry belongs on the REPUTATION tab.
   __cur=reC;
