@@ -670,13 +670,23 @@ window.GA_ID='G-L29P5MRWKE';
   .oshero-ovr span{font:800 9px/1 var(--body); letter-spacing:.14em; color:var(--muted); margin-left:2px}
   .oshero-budget{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
   .oshero-budget .pips{margin-top:0}
-  /* CS483b: avatar on the SAME LINE as the rating chart, name + budget on a slim line below */
-  .oshero-row{display:flex; align-items:center; justify-content:center; gap:6px; max-width:360px; margin:2px auto 0}
+  /* CS483c: avatar + username stacked in the left column, on the SAME LINE as the rating chart */
+  .oshero-row{display:flex; align-items:center; justify-content:center; gap:6px; max-width:360px; margin:2px auto 4px}
   .oshero-row .dynradar{margin:0; flex:0 1 250px; min-width:0}
-  .oshero-row .oshero-av{width:72px; height:118px}
-  .oshero-row .oshero-av .avatarfig.fullbody{height:210px!important}   /* show head + torso beside the chart */
-  .oshero-meta{display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px 10px; max-width:360px; margin:0 auto 8px; line-height:1.3}
-  .oshero-nm{font-family:var(--serif); font-weight:700; font-size:16px; color:var(--oncard)}
+  .oshero-avcol{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:2px}
+  .oshero-avcol .oshero-av{width:78px; height:120px}
+  .oshero-avcol .oshero-av .avatarfig.fullbody{height:212px!important}   /* show head + torso beside the chart */
+  .oshero-nm{font-family:var(--serif); font-weight:700; font-size:16px; color:var(--oncard); text-align:center; max-width:96px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  /* CS483c: fit the whole off-season on one phone screen - tighten the hero, radar, status lines + tiles */
+  .scr-offseason .scrhero{margin:2px 0 2px}
+  .scr-offseason .scrhero .sh-t{font-size:clamp(26px,7vw,38px)}
+  .scr-offseason .scrhero .sh-s{margin-top:4px; font-size:11px}
+  .scr-offseason .oshero-row{margin:0 auto 2px}
+  .scr-offseason .oshero-row .dynradar{flex:0 1 208px; max-width:208px}
+  .scr-offseason .osstat{margin-bottom:4px; font-size:11.5px}
+  .scr-offseason .osgridhint{margin:2px auto 6px}
+  .scr-offseason .osgrid{gap:5px}
+  .scr-offseason .osgrid .attr{min-height:40px; padding-top:6px; padding-bottom:6px}
   .osstat{max-width:520px; margin:0 auto 8px; text-align:center; font-size:12px; color:var(--muted); line-height:1.45}
   /* CS341: bigger, more-noticeable wheel with an inviting glow */
   .osreel{height:88px; max-width:520px; margin:0 auto 9px; border-radius:16px; border:1.5px solid rgba(241,208,74,.32);
@@ -5794,12 +5804,12 @@ function render(){
   if(!document.getElementById('topmask')){ const tm=document.createElement('div'); tm.id='topmask'; tm.className='topmask'; document.body.appendChild(tm); }
   app.appendChild(header());
   const card=$(`<main class="card"></main>`);
-  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','rules','h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwatch','h2hresult','h2hboard'].includes(S.screen)?' wide':''}"></div>`);
+  const screen=$(`<div class="screen scr-${S.screen}${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','rules','h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwatch','h2hresult','h2hboard'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
-  // CS483: the season-summary is a tabbed results modal fighting for vertical room — skip the footer link
-  // row there (About/Privacy/Terms/Feedback all stay in the ≡ menu) so the tabs fit without scrolling.
-  if(S.screen!=='summary') app.appendChild(footer());
+  // CS483/483c: the season-summary + off-season are focused, one-screen action pages — skip the footer link
+  // row there (About/Privacy/Terms/Feedback all stay in the ≡ menu) so they fit without scrolling.
+  if(S.screen!=='summary' && S.screen!=='offseason') app.appendChild(footer());
   // returning from a Google redirect, the token exchange + profile fetch take a few network
   // round-trips. Show a visible "finishing" pill so the wait reads as in-progress instead of
   // "sign-in is broken" (otherwise the confirmation can land mid-sim and feel like a bug).
@@ -16295,15 +16305,15 @@ function scrOffseason(){
 
   add(scrHero(S.circuitMode?'Legend Circuit':'Off-Season', S.circuitMode?('Off-Season · Yr '+yr+' · train your golfer'):('Year '+S.year+' · train your golfer')));
 
-  // owner CS483b: the avatar sits on the SAME LINE as the rating chart (compact) - name + budget on a slim
-  // line below. (Was a separate avatar card stacked above the radar.)
-  const pips=Array.from({length:os.maxChanges},(_,i)=>`<span class="pip ${i<(os.maxChanges-os.changes)?'on':''}"></span>`).join('');
+  // owner CS483c: avatar + username stacked in the left column, on the SAME LINE as the rating chart. No
+  // pips / changes / re-spins here (that budget is on the perk line + the Spin button).
   const heroRow=$(`<div class="oshero-row"></div>`);
-  const av=$(`<div class="oshero-av"></div>`); av.innerHTML=avatarShowHTML(); heroRow.appendChild(av);
+  const avcol=$(`<div class="oshero-avcol"></div>`);
+  const av=$(`<div class="oshero-av"></div>`); av.innerHTML=avatarShowHTML(); avcol.appendChild(av);
+  avcol.appendChild($(`<div class="oshero-nm">${esc(S.name||'Your Golfer')}</div>`));
+  heroRow.appendChild(avcol);
   heroRow.appendChild(dynRadar());   // CS339: the live animated rating web (OVR in the centre)
   add(heroRow);
-  add($(`<div class="oshero-meta"><b class="oshero-nm">${esc(S.name||'Your Golfer')}</b> <span class="pips">${pips}</span>
-    <span class="small"><b style="color:var(--gold)">${os.maxChanges-os.changes}</b> change${os.maxChanges-os.changes===1?'':'s'} · <b style="color:var(--gold)">${os.reSpins}</b> re-spin${os.reSpins===1?'':'s'}</span></div>`));
 
   // one tight status line: Tour Rep perk + prime/age. CS356s: hidden while you're mid-swap (spun) so the
   // decision moment stays focused - this is between-decision context, not needed while choosing a stat.
@@ -16316,13 +16326,14 @@ function scrOffseason(){
   // CS483b (owner): the sponsor strip is removed from the off-season - sponsors live on the season-summary
   // Sponsors tab. This screen is just for re-rolling attributes.
 
-  // reserved reel slot - same height whether idle / spinning / landed, so tapping Spin causes NO layout jump
-  const rar=spun?g.rarity:null, RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
-  const idlePrev=(!spun && !S.spinning);
-  add($(`<div class="osreel ${S.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
-    ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:(idlePrev?`<div class="reeltag">PREVIEW · THE POOL</div>`:'')}
-    <div class="name${idlePrev?' preview':''}">${S.spinning?'…':(spun?esc(g.name):(idlePrev?reelPreviewHTML():'…'))}</div>
-    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current'].filter(Boolean).join(' · ')):(S.spinning?'':'Optional · spin at your own risk')}</div></div>`));
+  // CS483c (owner): the reel only appears once you actually spin (spinning / landed) - no idle preview wheel.
+  if(S.spinning || spun){
+    const rar=spun?g.rarity:null, RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
+    add($(`<div class="osreel ${S.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
+      ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:''}
+      <div class="name">${S.spinning?'…':esc(g.name)}</div>
+      <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current'].filter(Boolean).join(' · ')):''}</div></div>`));
+  }
 
   // one-line hint above the grid (CS356s: trimmed - the tiles already show ▲/▼)
   if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap a stat to swap it, <span style="color:#35d6a0">▲ applies instantly</span> · <span style="color:#e07a5f">▼ asks to confirm</span></div>`));

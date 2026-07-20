@@ -11267,6 +11267,18 @@ allows Google Fonts, or self-host Anton.*
   Verified in Playwright (390px): the avatar renders left-of + vertically-centered-with the radar, and the
   rendered `#app` has no SPONSORS strip / YOUR RIVAL panel; 0 page errors. Deployed to /golf.
 
+- **CS483c — off-season fits one phone screen: no idle preview wheel, username under the avatar (owner).**
+  Three tweaks to `scrOffseason`: (1) the reel only renders once you actually spin (`if(S.spinning || spun)`)
+  — the idle "PREVIEW · THE POOL" wheel is gone (tapping Spin now brings the reel in, accepting the small
+  layout shift). (2) The username moved UNDER the avatar in the left column (`.oshero-avcol`: avatar over
+  name), dropping the 3 change-pips and the "N changes · N re-spins" text from that line (the budget still
+  shows on the perk/earned line + the Spin button's "N changes left"). (3) Trimmed the whole screen to fit a
+  390×844 phone with 0 overflow: added a per-screen `scr-<name>` class to the `.screen` div, hid the footer
+  link row on the off-season (like the summary — links stay in the ≡ menu), and scoped `.scr-offseason`
+  trims (smaller hero title, radar 250→208px, tighter status lines + skill tiles). Verified in Playwright
+  (390px): no idle reel, name under the avatar, scrollHeight === viewport (0 overflow); a real spin still
+  brings the reel in, lands on a golfer, and shows the 8 swap tiles; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
