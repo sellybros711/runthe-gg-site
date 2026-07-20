@@ -1143,6 +1143,11 @@ window.GA_ID='G-L29P5MRWKE';
      hole view re-renders and the golfer simply teleports to the next spot, so it no longer fades in/out
      over and over. Impact ~34%. */
   .hvsw{opacity:0}
+  /* CS483u: an equipped effect (aura) pulses on the swing golfer in the effect's color. The frames cycle
+     opacity inside the group, so the group drop-shadow follows the visible pose. --fxc set inline. */
+  .hvswing.hvsw-glow{ animation:hvswGlow 2.4s ease-in-out infinite }
+  @keyframes hvswGlow{ 0%,100%{filter:drop-shadow(0 0 1px var(--fxc,#f1d04a))} 50%{filter:drop-shadow(0 0 4px var(--fxc,#f1d04a)) drop-shadow(0 0 2px var(--fxc,#f1d04a))} }
+  @media (prefers-reduced-motion:reduce){ .hvswing.hvsw-glow{ animation:none; filter:drop-shadow(0 0 3px var(--fxc,#f1d04a)) } }
   /* CS378-A1: a STATIC address-pose golfer (no swing) set over the ball during a par-4/5 approach decision */
   .hvsw-static{opacity:1;animation:none}
   .hvswing .sw0{animation:hvswA 1000ms steps(1,end) forwards}
@@ -10355,11 +10360,22 @@ const _pxSwing=new Map();
 function pxStrokeURLs(look){
   look=look||S.look||DEFLOOK; const av=avLook(look);
   const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===(look.pants||'stone')))||{a:'#c7bfa8'}).a;
-  const key='sw|'+av.key+'|pn'+(look.pants||'stone');
+  // CS483u: the swing/TourTracer golfer now renders the chosen SHIRT PATTERN (fixed + tonal) so it reflects
+  // the user's outfit like the standing profile golfer, instead of a plain polo.
+  const pat=(look.shirtPat&&PXPAT_BY[look.shirtPat])?look.shirtPat:'';
+  const key='sw|'+av.key+'|pn'+(look.pants||'stone')+'|pt'+pat;
   let u=_pxSwing.get(key); if(u) return u;
   const P={ s:av.skinHex, j:pxShade(av.skinHex,-26), h:av.hairHex, c:av.hatHex,
     t:av.shirtHex, d:pxShade(av.shirtHex,-30), p:pantsHex, q:pxShade(pantsHex,-22),
     o:av.shoesHex, e:pxShade(av.shoesHex,-24), b:'#2a2c32', l:PXG_FIX.l, g:PXG_FIX.G, k:'#1c241b', w:'#f4f6f2' };
+  // CS483u: shirt pattern overlay on the shirt pixels ('t' base / 'd' shade), mirroring pxGolferCanvas.
+  const pd=pat?PXPAT_BY[pat]:null;
+  const patLight=(pd&&!pd.fixed)?pxLum(av.shirtHex)>0.55:false;
+  const pa1=(pd&&!pd.fixed)?pxShade(av.shirtHex, patLight?-52:46):null;
+  const pa2=(pd&&!pd.fixed)?pxShade(av.shirtHex, patLight?-90:82):null;
+  const patCol=(x,y,ch)=>{ if(!pd) return null;
+    if(pd.fixed){ const cols=pd.cols||[]; let col=cols[pd.f(x,y)|0]||cols[0]; if(!col) return null; return (ch==='d')?pxShade(col,-18):col; }
+    const a=pd.f(x,y); if(!a) return null; const col=(a===2)?pa2:pa1; if(!col) return null; return (ch==='d')?pxShade(col,-14):col; };
   const render=map=>{ const px=4, cv=document.createElement('canvas'); cv.width=PXS_W*px; cv.height=PXS_H*px;
     const ctx=cv.getContext('2d');
     const tp=(x,y)=>{ if(y<0||y>=map.length)return true; const r=map[y]; if(x<0||x>=r.length)return true; const c=r[x]; return c==='.'||c===' '; };
@@ -10368,7 +10384,8 @@ function pxStrokeURLs(look){
         if(ch==='k'){ // OUTER-perimeter outline = a soft translucent rim (lets the course show through so the golfer sits ON the grass, not a sticker); internal detail lines stay crisp
           const outer=tp(x-1,y)||tp(x+1,y)||tp(x,y-1)||tp(x,y+1);
           ctx.fillStyle=outer?'rgba(24,32,24,0.34)':P.k; ctx.fillRect(x*px,y*px,px,px); continue; }
-        const col=P[ch]; if(!col)continue;
+        let col=P[ch]; if(!col)continue;
+        if(pd&&(ch==='t'||ch==='d')){ const pc=patCol(x,y,ch); if(pc) col=pc; }
         ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } }
     return cv.toDataURL('image/png'); };
   const vset=(A,B,C,H0,H1,T0,T1)=>({ full:[render(A),render(B),render(C)], chip:[render(H0),render(H1)], putt:[render(T0),render(T1)] });
@@ -10462,7 +10479,10 @@ function hvSwingMarkup(g,p,look){
       +`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" fill="#0a1626" stroke="#F1D04A" stroke-width="1.2"/>`
       +`<text x="${bx.toFixed(1)}" y="${(by+fs*0.34).toFixed(1)}" text-anchor="middle" font-size="${fs.toFixed(1)}" font-weight="800" fill="#F6E88F" font-family="inherit">${num}</text>`
       +`</g>`; }
-  return `<g class="hvswing hvsw-${kind}"${tf}>${imgs}</g>${badge}`;
+  // CS483u: an equipped effect (aura) glows on the swing golfer too - a single pulse in the effect's color
+  // on the group (the frames cycle opacity inside, so the drop-shadow follows the visible pose).
+  const fx=fxOf(look); const glow=fx?` hvsw-glow`:'', gsty=fx?` style="--fxc:${fx.col}"`:'';
+  return `<g class="hvswing hvsw-${kind}${glow}"${gsty}${tf}>${imgs}</g>${badge}`;
 }
 // CS378-A1: a STATIC address-pose golfer standing OVER the ball, used during a par-4/5 approach decision so
 // the drive's ball rests on the fairway with the golfer set over it (owner: "not a ball frozen in the air.
