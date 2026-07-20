@@ -685,6 +685,17 @@ window.GA_ID='G-L29P5MRWKE';
   .scr-offseason .osgridhint{margin:2px auto 6px}
   .scr-offseason .osgrid{gap:5px}
   .scr-offseason .osgrid .attr{min-height:40px; padding-top:6px; padding-bottom:6px}
+  /* CS483d: rank chip under the avatar name + ONE instruction card + a clear "Your Skills" label */
+  .oshero-rank{font:800 9.5px/1 var(--body); letter-spacing:.09em; text-transform:uppercase; color:var(--gold); margin-top:3px; display:flex; align-items:center; gap:3px}
+  .oshero-rank .ic{width:.95em; height:.95em}
+  .oscard{max-width:430px; margin:2px auto 8px; text-align:center; border-radius:13px; padding:9px 15px;
+    background:linear-gradient(180deg,rgba(241,208,74,.12),rgba(241,208,74,.04)); border:1px solid rgba(241,208,74,.32)}
+  .oscard.warn{background:linear-gradient(180deg,rgba(224,122,95,.14),rgba(224,122,95,.05)); border-color:rgba(224,122,95,.42)}
+  .oscard-hd{font-family:var(--body); font-weight:800; font-size:15px; color:var(--oncard); line-height:1.15}
+  .oscard.warn .oscard-hd{color:#f0b49f}
+  .oscard-sub{font-size:11.5px; color:var(--muted); margin-top:3px; line-height:1.32}
+  .oscard-lock{font-size:10.5px; color:var(--gold); margin-top:5px}
+  .oslabel{max-width:520px; margin:2px auto 5px; font:800 10px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--muted); text-align:left; padding-left:2px}
   .osstat{max-width:520px; margin:0 auto 8px; text-align:center; font-size:12px; color:var(--muted); line-height:1.45}
   /* CS341: bigger, more-noticeable wheel with an inviting glow */
   .osreel{height:88px; max-width:520px; margin:0 auto 9px; border-radius:16px; border:1.5px solid rgba(241,208,74,.32);
@@ -16303,23 +16314,31 @@ function scrOffseason(){
 
   add(scrHero(S.circuitMode?'Legend Circuit':'Off-Season', S.circuitMode?('Off-Season · Yr '+yr+' · train your golfer'):('Year '+S.year+' · train your golfer')));
 
-  // owner CS483c: avatar + username stacked in the left column, on the SAME LINE as the rating chart. No
-  // pips / changes / re-spins here (that budget is on the perk line + the Spin button).
+  // owner CS483c/d: avatar + username + Tour-Rep rank chip stacked in the left column, on the SAME LINE as
+  // the rating chart. No pips / changes / re-spins here (that's in the one instruction card below).
+  const rankName=repTier().tier.name;
   const heroRow=$(`<div class="oshero-row"></div>`);
   const avcol=$(`<div class="oshero-avcol"></div>`);
   const av=$(`<div class="oshero-av"></div>`); av.innerHTML=avatarShowHTML(); avcol.appendChild(av);
   avcol.appendChild($(`<div class="oshero-nm">${esc(S.name||'Your Golfer')}</div>`));
+  avcol.appendChild($(`<div class="oshero-rank">${rankName==='G.O.A.T.'?'🐐':'🏅'} ${esc(rankName)}</div>`));
   heroRow.appendChild(avcol);
   heroRow.appendChild(dynRadar());   // CS339: the live animated rating web (OVR in the centre)
   add(heroRow);
 
-  // one tight status line: Tour Rep perk + prime/age. CS356s: hidden while you're mid-swap (spun) so the
-  // decision moment stays focused - this is between-decision context, not needed while choosing a stat.
-  if(!spun){ const r=repTier(); const ageMsg = nDec ? '<b style="color:#e9a23b">▼ Age catching up</b>, power fades first; a spin can repair a slot'
-      : 'In your prime, no age decline this year';
-    // CS382: both changes + re-spins are earned by career stage / last season now (offBudgetNote), not Tour Rep.
-    add($(`<div class="osstat">${r.tier.name==='G.O.A.T.'?'🐐':'🏅'} <b style="color:var(--gold)">${esc(r.tier.name)}</b> · ${ageMsg}</div>`));
-    const bn=offBudgetNote(); if(bn) add($(`<div class="osstat">${bn}</div>`)); }
+  // owner CS483d: ONE clear instruction card (replaces the 3 stacked text lines) - tells you exactly what
+  // this screen is for. Adaptive: no-changes / age-decline / normal. Hidden mid-swap (the swap hint takes over).
+  if(!spun){
+    const changesLeft=os.maxChanges-os.changes;
+    let hd, sub, cls='';
+    if(os.maxChanges===0){ hd='No skill changes this off-season';
+      sub='A stronger finish next season earns them. Start below and run your bag as-is.'; }
+    else if(nDec){ cls='warn'; hd=`Age is catching up — ${changesLeft} change${changesLeft===1?'':'s'} to repair a skill`;
+      sub='Spin to swap in a better rating (you keep whatever you land on), or start as-is.'; }
+    else { hd=`${changesLeft} skill change${changesLeft===1?'':'s'} available`;
+      sub='Spin the wheel to swap a skill — optional & risky, you keep whatever you land on. Or start as-is.'; }
+    add($(`<div class="oscard ${cls}"><div class="oscard-hd">${hd}</div><div class="oscard-sub">${sub}</div>${lockedNow.length?`<div class="oscard-lock">🔒 ${lockedNow.length} stat${lockedNow.length>1?'s':''} already changed — a spin can't land there again</div>`:''}</div>`));
+  }
 
   // CS483b (owner): the sponsor strip is removed from the off-season - sponsors live on the season-summary
   // Sponsors tab. This screen is just for re-rolling attributes.
@@ -16333,11 +16352,10 @@ function scrOffseason(){
       <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current'].filter(Boolean).join(' · ')):''}</div></div>`));
   }
 
-  // one-line hint above the grid (CS356s: trimmed - the tiles already show ▲/▼)
+  // owner CS483d: idle → a simple "Your Skills" label (the instruction card above already explains the
+  // spin/risk); mid-swap → the tap-to-swap hint. (The age/locked context now lives in the card.)
   if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap a stat to swap it, <span style="color:#35d6a0">▲ applies instantly</span> · <span style="color:#e07a5f">▼ asks to confirm</span></div>`));
-  else if(nDec) add($(`<div class="small center osgridhint" style="color:#e07a5f">▼ Age cost you ground, red shows what each skill dropped. Re-spin to repair.</div>`));
-  else if(lockedNow.length) add($(`<div class="small center osgridhint" style="color:var(--gold)">🔒 Locked stats already changed this off-season, a spin can only land on your open stats</div>`));
-  else add($(`<div class="small center osgridhint" style="color:#d9c48a">⚠ Spinning is optional, and a <b>risk</b> — you must keep whatever you land on.</div>`));
+  else add($(`<div class="oslabel">Your Skills</div>`));
 
   // THE unified grid: always 8 tiles. Idle → current bag; spun → current value + the swap it would make.
   const grid=$(`<div class="attrs osgrid"></div>`);
