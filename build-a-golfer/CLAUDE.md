@@ -11165,6 +11165,37 @@ allows Google Fonts, or self-host Anton.*
   with the divider, net color correct, expense breakdown + earnings list intact, 0 page errors. Deployed to
   /golf.
 
+- **CS479 — Earnings tab fits one screen (Full Season Recap moved into the money bar; owner: "ideally we
+  would be able to build these tabs without needing the scroll-down button" + "move full season recap in the
+  spot to the right of Net Profit that is currently unused").** Moved the **Full Season Recap** button off
+  the bottom of the earnings list and INTO the money bar's unused right space (right of Net Profit,
+  `margin-left:auto` so it sits far-right on wide screens and right-aligns when it wraps on narrower ones),
+  and trimmed the season/career earnings list to **top 6 + you** (full list still in the recap). Together the
+  Continue-to-Year-X button is now in view without scrolling and the CS134 scroll-down cue no longer appears.
+  Verified in Playwright (IntersectionObserver): desktop (1440×820) Continue bottom 771px (in view), mobile
+  (430×880) 861px (in view), `.scrollcue` not shown either case; 0 page errors. Deployed to /golf.
+
+- **CS480 — Sponsors tab: cards side by side + the sponsor stay/switch DECISION moved here from the
+  off-season (owner: "the sponsors should go next to each other. Also, this is where you should be asked to
+  change your sponsors if an offer is on the table, and then it should go away from the screen where you
+  re-roll for the new attributes").** Three coordinated changes:
+  1. **Report cards side by side** — `contractsReportHTML` now wraps the two per-slot report cards in `.cols`
+     (2-col grid, stacks on mobile) instead of stacking them, so the Sponsors tab is much shorter on desktop.
+  2. **The sponsor offer/decision now lives on the Sponsors tab.** `computeSponsorOffers()` is computed once
+     at SEASON END (in the summary record block, right after the sponsor settlement — reads the just-settled
+     sponsors + market value), stored on `S.career.sponsorOffers`; the Sponsors tab renders
+     `sponsorDecisionNode()` (Your sponsors + "An offer on the table" → Replace/Sign-as-Hat/Shirt + Not now)
+     above the report cards when an offer exists. `signSponsor` now saves with the SCREEN-appropriate resume
+     state (`summaryResumeExtra()` on the summary, else off-season) so signing from the summary doesn't
+     mis-stamp the resume to the off-season.
+  3. **Removed from the off-season re-roll screen.** `scrOffseason` no longer renders the sponsor decision —
+     only the passive `sponsorStripNode()` info strip — and `continueFranchise` no longer recomputes offers
+     (they carry over from the summary and clear at season start / `finishOffseason` if never acted on).
+  Verified in Playwright: an offer generates at the summary (e.g. Voltaic, step-up), the Sponsors tab renders
+  2 side-by-side report cards + the offer decision with Replace-on-Hat/Shirt buttons; after `continueFranchise`
+  the off-season shows 0 decision buttons (just the info strip) with offers persisting (cleared at season
+  start); 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
