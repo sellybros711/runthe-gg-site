@@ -18929,8 +18929,8 @@ function maybeOfferMulligan(){
 }
 function dMullAccept(){
   S.dailyMullOffer=null;
-  dailyMulligan();           // re-rolls the last hole (keeps the better score), mullUsed=true, renders the new result
-  scheduleDailyAdvance();    // then continue: auto holds a beat + advances; manual leaves the between-holes controls up
+  dailyMulligan();           // re-rolls the last hole (keeps the better score) and REPLAYS it shot-by-shot;
+                             // the reveal's own completion path advances/finishes when the ball drops.
 }
 function dMullDecline(){
   const p=S.dailyHoles, k=p.length-1;
@@ -19189,7 +19189,14 @@ function dailyMulligan(){
   if(alt<last.toPar) last.toPar=alt;
   const mopts=last.decPhase?{decPhase:last.decPhase,decAgg:last.attack, ...(last._d0?{teePreset:last._d0}:{})}:{};
   last.shots=dShotSeq(last.par,last.yards,last.par+last.toPar,dHoleRng(S.dailySeed,S.dailyCourse,last.i,dAttSalt(0x5408)),S.dailySkills,mopts);
-  last.mull=true; S.dailyMullUsed=true; S.dailyRevealN=(last.shots||[]).length; S.dailyQuickStatic=false; track('daily_mulligan'); render();
+  last.mull=true; S.dailyMullUsed=true; S.dailyQuickStatic=false; track('daily_mulligan');
+  // CS483o: REPLAY the re-rolled hole shot-by-shot from the start (was: jump straight to the final shot,
+  // so only the last putt/result showed). Mirror how a normal hole kicks off its fresh reveal.
+  if(_shotTimer){clearTimeout(_shotTimer);_shotTimer=null;}
+  S.dailyHolePause=false; S.dailySinking=false; S.dailyProv=null; S.dailyViewHole=null;
+  S.dailyRevealN=Math.min(1,(last.shots||[]).length);   // first shot lands now; the rest reveal one-by-one
+  render();
+  startShotReveal();   // its own completion path advances/finishes once the ball drops
 }
 // ---- In-progress daily round persistence (survives an accidental / memory-pressure page RELOAD) ----
 // The daily round lives only in memory, so a reload mid-round used to lose it entirely (e.g. iOS reloading
