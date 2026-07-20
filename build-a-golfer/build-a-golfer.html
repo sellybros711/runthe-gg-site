@@ -238,7 +238,7 @@ window.GA_ID='G-L29P5MRWKE';
   .cols{display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start}
   .col{min-width:0}
   /* CS482: Race-to-the-Cup / team-Cup result cards fill their column + match heights (was floaty/narrow). */
-  .ovcard{width:100%; box-sizing:border-box; border-radius:14px; padding:16px 20px; text-align:center; display:flex; flex-direction:column; justify-content:center; height:100%}
+  .ovcard{width:100%; box-sizing:border-box; border-radius:14px; padding:12px 16px; text-align:center; display:flex; flex-direction:column; justify-content:center; height:100%}
   /* align-items:stretch (overriding .cols' :start) so the avatar column's own box spans the full
      row height, matching the (taller) customization column, without this, a position:sticky child
      has no room to travel and just scrolls away with the rest of the row instead of staying put. */
@@ -1386,10 +1386,19 @@ window.GA_ID='G-L29P5MRWKE';
   .sumtabbtn{flex:0 0 auto; font:800 12.5px/1 var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); background:none; border:0; border-bottom:3px solid transparent; margin-bottom:-2px; border-radius:0; padding:13px 15px; cursor:pointer; white-space:nowrap; transition:color .12s}
   .sumtabbtn:hover{color:var(--oncard)}
   .sumtabbtn.on{color:var(--gold); border-bottom-color:var(--gold)}
-  .sumacts{margin-top:18px}
+  .sumacts{margin-top:14px}
   /* CS477: season-summary actions as a compact 2×2 grid of square-ish buttons (not full-width bars) */
   .sumbtns{display:grid; grid-template-columns:1fr 1fr; gap:10px; max-width:520px; margin:0 auto}
   .sumbtns .btn.sumsq{margin-top:0; min-height:62px; display:flex; align-items:center; justify-content:center; gap:6px; text-align:center; line-height:1.15}
+  /* CS483: compact the persistent action area on mobile so every summary tab fits without scrolling -
+     Continue spans full width, the 3 secondary actions share one short row below it. Desktop keeps the 2x2.
+     (Placed AFTER the base .sumbtns so it wins on equal specificity.) */
+  @media(max-width:700px){
+    .sumacts{margin-top:10px}
+    .sumbtns{grid-template-columns:1fr 1fr 1fr; gap:8px}
+    .sumbtns>#sum-advance{grid-column:1/-1}
+    .sumbtns .btn.sumsq{min-height:46px; font-size:12.5px; padding:8px 5px; line-height:1.1}
+  }
   .srev{flex:0 0 auto; min-width:56px; max-width:118px; border-radius:10px; padding:7px 9px; text-align:center;
     background:var(--panel); border:1px solid var(--line); opacity:.5}
   .srev.done{opacity:1}
@@ -2654,21 +2663,24 @@ function seasonRepNode(oldPts, list){
     if(gainEl) gainEl.textContent='+'+(c-oldPts);
     footEl.innerHTML=goat?'<b style="color:#f6cd74">Every achievement complete.</b>':(r.next?`${hi-c} pts to <b style="color:var(--gold)">${esc(r.next.name)}</b>`:''); }
   // --- the unlocked-achievement list, revealed one at a time ---
+  // CS483: cap the visible rows (mobile fit) - the meter still climbs the full gain; any overflow shows a "+N more".
+  const REP_MAX=4, shown=list.slice(0,REP_MAX), extra=list.length-shown.length;
   const listBox=$(`<div class="scout" style="margin:0 auto;border-color:#ffd76a"><b style="color:var(--gold);display:block;text-align:center;margin-bottom:2px">Achievement${list.length>1?'s':''} unlocked</b></div>`);
   wrap.appendChild(listBox);
-  const rows=list.map(a=>{ const row=$(`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 2px;border-top:1px solid rgba(255,255,255,.07);opacity:0;transform:translateY(7px);transition:opacity .32s ease,transform .32s ease">
+  const rows=shown.map(a=>{ const row=$(`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 2px;border-top:1px solid rgba(255,255,255,.07);opacity:0;transform:translateY(7px);transition:opacity .32s ease,transform .32s ease">
     <span style="display:flex;align-items:baseline;gap:7px;flex:0 0 auto;white-space:nowrap"><b style="color:#ffd76a">🏅 ${esc(a.name)}</b><span class="small" style="color:#35d6a0;font-weight:800">+${a.pts}</span></span>
     <span class="small muted" style="flex:1 1 auto;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(a.desc.replace(/\.$/,''))}</span></div>`);
     listBox.appendChild(row); return row; });
+  if(extra>0) listBox.appendChild($(`<div class="small muted center" style="padding:6px 2px 0;border-top:1px solid rgba(255,255,255,.07)">+${extra} more unlocked · see the Trophy Room</div>`));
   const show=row=>{ row.style.opacity='1'; row.style.transform='none'; };
   if(S._repAnimShown || gain<=0 || !list.length){ paint(newPts); rows.forEach(show); return wrap; }   // already played → settled
   S._repAnimShown=true; paint(oldPts);
-  const N=list.length, STEP=Math.min(680,Math.max(320,Math.round(3800/N))), TWEEN=Math.min(560,STEP-60);
+  const N=shown.length, STEP=Math.min(680,Math.max(320,Math.round(3800/N))), TWEEN=Math.min(560,STEP-60);
   const now=()=>((typeof performance!=='undefined'&&performance.now)?performance.now():Date.now());
   function tween(from,to){ const t0=now(); (function fr(){ const t=Math.min(1,(now()-t0)/TWEEN), e=1-Math.pow(1-t,3);
     paint(from+(to-from)*e); if(t<1) requestAnimationFrame(fr); else paint(to); })(); }
   let cum=oldPts;
-  list.forEach((a,i)=>setTimeout(()=>{ show(rows[i]); const to=cum+(a.pts||0); tween(cum,to); cum=to;
+  shown.forEach((a,i)=>setTimeout(()=>{ show(rows[i]); const to=cum+(a.pts||0); tween(cum,to); cum=to;
     if(i===N-1) setTimeout(()=>paint(newPts), TWEEN+40); }, i*STEP));
   return wrap;
 }
@@ -5061,14 +5073,14 @@ function careerAvgSkills(c){ const ss=(c&&c.skillSeasons)||[]; if(!ss.length) re
 // the shared stat-sheet card: measured scoring on top, then the derived SG + traditional stat profile
 function statSheetHTML(sk, real, opts){
   opts=opts||{}; const s=golferStats(sk);
-  const row=(k,v,strong)=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 2px;border-bottom:1px solid rgba(255,255,255,.06)"><span class="small ${strong?'':'muted'}" style="text-align:left${strong?';font-weight:800':''}">${k}</span><span class="mono" style="white-space:nowrap;font-weight:${strong?800:700};color:var(--oncard)">${v}</span></div>`;
+  const row=(k,v,strong)=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:3.5px 2px;border-bottom:1px solid rgba(255,255,255,.06)"><span class="small ${strong?'':'muted'}" style="text-align:left;font-size:11.5px${strong?';font-weight:800':''}">${k}</span><span class="mono" style="white-space:nowrap;font-size:11.5px;font-weight:${strong?800:700};color:var(--oncard)">${v}</span></div>`;
   let scoreCard='';
   if(real){
     const tpTxt=(real.toPar<=0?'−':'+')+Math.abs(real.toPar).toFixed(2);
-    scoreCard=`<div class="tiles" style="grid-template-columns:1fr 1fr 1fr;margin:0 0 10px;gap:8px">
-      <div class="tile"><div class="k">Scoring avg</div><div class="v cream" style="font-size:20px">${real.scoringAvg.toFixed(1)}</div><div class="small muted" style="font-size:10px;margin-top:2px">${tpTxt}/round</div></div>
-      <div class="tile"><div class="k">SG: Total</div><div class="v" style="font-size:20px">${real.sgVsField!=null?fmtSG(real.sgVsField):fmtSG(s.sgTot)}</div><div class="small muted" style="font-size:10px;margin-top:2px">${real.sgVsField!=null?'vs the field':'modeled'}</div></div>
-      <div class="tile"><div class="k">Handicap</div><div class="v cream" style="font-size:20px">${fmtHcp(s.hcp)}</div><div class="small muted" style="font-size:10px;margin-top:2px">${real.rounds} rounds</div></div>
+    scoreCard=`<div class="tiles" style="grid-template-columns:1fr 1fr 1fr;margin:0 0 8px;gap:7px">
+      <div class="tile" style="padding:8px 6px"><div class="k">Scoring avg</div><div class="v cream" style="font-size:18px">${real.scoringAvg.toFixed(1)}</div><div class="small muted" style="font-size:9.5px;margin-top:1px">${tpTxt}/round</div></div>
+      <div class="tile" style="padding:8px 6px"><div class="k">SG: Total</div><div class="v" style="font-size:18px">${real.sgVsField!=null?fmtSG(real.sgVsField):fmtSG(s.sgTot)}</div><div class="small muted" style="font-size:9.5px;margin-top:1px">${real.sgVsField!=null?'vs the field':'modeled'}</div></div>
+      <div class="tile" style="padding:8px 6px"><div class="k">Handicap</div><div class="v cream" style="font-size:18px">${fmtHcp(s.hcp)}</div><div class="small muted" style="font-size:9.5px;margin-top:1px">${real.rounds} rounds</div></div>
     </div>`;
   }
   const left=[
@@ -5088,13 +5100,13 @@ function statSheetHTML(sk, real, opts){
     ['Scrambling', s.scramble.toFixed(0)+'%'],
     ['Sand saves', s.sandSave.toFixed(0)+'%'],
   ].map(r=>row(r[0],r[1],r[2])).join('');
-  return `<div class="scout" style="padding:12px 14px;margin:6px 0 8px;text-align:left">
-    ${opts.title?`<div style="font:800 11.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:10px">${opts.title}</div>`:''}
+  return `<div class="scout" style="padding:10px 13px;margin:6px 0 8px;text-align:left">
+    ${opts.title?`<div style="font:800 11px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:8px">${opts.title}</div>`:''}
     ${scoreCard}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
       <div>${left}</div><div>${right}</div>
     </div>
-    <div class="small muted" style="margin-top:9px;font-size:10.5px;line-height:1.4">Scoring average is measured from rounds played. Strokes-gained splits and traditional stats are modeled from your golfer's ratings.</div>
+    <div class="small muted" style="margin-top:7px;font-size:9.5px;line-height:1.35">Scoring average is measured from rounds played; the SG splits &amp; traditional stats are modeled from your golfer's ratings.</div>
   </div>`;
 }
 /* ===================== COINS + SHOP + ACCESSORIES (CS183) =====================
@@ -5778,7 +5790,9 @@ function render(){
   const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','rules','h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwatch','h2hresult','h2hboard'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
-  app.appendChild(footer());
+  // CS483: the season-summary is a tabbed results modal fighting for vertical room — skip the footer link
+  // row there (About/Privacy/Terms/Feedback all stay in the ≡ menu) so the tabs fit without scrolling.
+  if(S.screen!=='summary') app.appendChild(footer());
   // returning from a Google redirect, the token exchange + profile fetch take a few network
   // round-trips. Show a visible "finishing" pill so the wait reads as in-progress instead of
   // "sign-in is broken" (otherwise the confirmation can land mid-sim and feel like a bug).
@@ -5853,7 +5867,10 @@ function render(){
   // overlapping/blocking the Spin button) and was redundant. Hidden here like setup already was; Home and
   // the rest stay reachable from the ≡ menu. This also removes the fixed-nav drift surface on these
   // long, frequently-re-rendering screens.
-  const NAV_HIDE=['dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','h2hwatch','h2hpreview','h2hplay','h2hdraft','h2hlobby','setup','draft','build','offseason'];
+  // CS483: 'summary' hidden too — the season-summary screen is a tabbed results modal with its OWN action
+  // buttons (Continue / Leaderboard / Exit / Retire in .sumacts), so the persistent nav was redundant AND
+  // ate ~48px of vertical room on every tab, forcing scrolling. Home + the rest stay in the ≡ menu.
+  const NAV_HIDE=['dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','h2hwatch','h2hpreview','h2hplay','h2hdraft','h2hlobby','setup','draft','build','offseason','summary'];
   const showNav = !NAV_HIDE.includes(S.screen) && !app.classList.contains('has-cupbar');
   app.classList.toggle('has-botnav', showNav);
   document.body.classList.toggle('has-botnav', showNav);   // CS305: cascades --botnav-space so bottom pop-ups clear the nav
@@ -15287,16 +15304,16 @@ function seasonHeadlines(x){
   if(rr&&rr.status==='h2h') notes.unshift(rr.beat
     ?{icon:'⚔️',text:`Won the rivalry series vs ${rr.name}, ${rr.meAhead}–${rr.rvAhead}.`}
     :{icon:'⚔️',text:`${rr.name} took the rivalry series ${rr.rvAhead}–${rr.meAhead}. Get them next year.`});
-  return {lead,notes:notes.slice(0,4),year};
+  return {lead,notes:notes.slice(0,2),year};   // CS483: cap to 2 supporting notes (mobile fit)
 }
 function headlinesHTML(h){
-  const notes=h.notes.map(n=>`<div style="display:flex;gap:9px;align-items:flex-start;margin-top:7px"><span style="font-size:15px;line-height:1.2;flex:0 0 auto">${n.icon}</span><span class="small" style="color:var(--oncard);line-height:1.35;text-align:left">${n.text}</span></div>`).join('');
-  return `<div class="scout" style="max-width:520px;margin:8px auto 14px;text-align:left;border-color:rgba(241,208,74,.4)">
-    <div style="letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;border-bottom:1px solid rgba(241,208,74,.25);padding-bottom:6px;margin-bottom:10px;display:flex;justify-content:space-between"><span>Season ${h.year} Highlights</span></div>
-    <div style="display:flex;gap:11px;align-items:center">
-      <div style="font-size:30px;flex:0 0 auto">${h.lead.icon}</div>
-      <div style="min-width:0;font-family:var(--serif);font-weight:800;font-size:20px;line-height:1.08;color:var(--oncard)">${h.lead.head}</div></div>
-    <div class="small" style="margin-top:7px;color:var(--oncard);line-height:1.4">${h.lead.sub}</div>
+  const notes=h.notes.map(n=>`<div style="display:flex;gap:8px;align-items:flex-start;margin-top:5px"><span style="font-size:13px;line-height:1.2;flex:0 0 auto">${n.icon}</span><span class="small" style="color:var(--oncard);line-height:1.3;text-align:left">${n.text}</span></div>`).join('');
+  return `<div class="scout" style="max-width:520px;margin:6px auto 10px;text-align:left;border-color:rgba(241,208,74,.4);padding:10px 13px">
+    <div style="letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;border-bottom:1px solid rgba(241,208,74,.25);padding-bottom:5px;margin-bottom:8px;display:flex;justify-content:space-between"><span>Season ${h.year} Highlights</span></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div style="font-size:26px;flex:0 0 auto">${h.lead.icon}</div>
+      <div style="min-width:0;font-family:var(--serif);font-weight:800;font-size:19px;line-height:1.05;color:var(--oncard)">${h.lead.head}</div></div>
+    <div class="small" style="margin-top:5px;color:var(--oncard);line-height:1.35">${h.lead.sub}</div>
     ${notes}</div>`;
 }
 /* ---------- summary ---------- */
@@ -15571,7 +15588,7 @@ function scrSummary(){
   // CS356w: split this long summary into tabs (owner: too long / too much info). Sections build into
   // per-tab containers via a shadowed local add() that appends to __cur; the header + persistent actions
   // sit OUTSIDE the tabs so Continue is always reachable.
-  const hdr=$(`<div></div>`), ovC=$(`<div></div>`), moC=$(`<div></div>`), spC=$(`<div></div>`), stC=$(`<div></div>`), reC=$(`<div></div>`), awC=$(`<div></div>`), caC=$(`<div></div>`), hiC=$(`<div></div>`), shC=$(`<div></div>`), actC=$(`<div class="sumacts"></div>`);
+  const hdr=$(`<div></div>`), ovC=$(`<div></div>`), moC=$(`<div></div>`), spC=$(`<div></div>`), stC=$(`<div></div>`), reC=$(`<div></div>`), awC=$(`<div></div>`), rwC=$(`<div></div>`), caC=$(`<div></div>`), hiC=$(`<div></div>`), shC=$(`<div></div>`), actC=$(`<div class="sumacts"></div>`);
   // CS477 (owner Overview redesign): Highlights + Tournaments sit side by side in a responsive .cols row.
   const hiCol=$(`<div class="col"></div>`), tourCol=$(`<div class="col"></div>`);
   // CS482 (owner): Race to the Cup (left) + the team-Cup result (right) form their own symmetric row; the
@@ -15613,36 +15630,33 @@ function scrSummary(){
     }
   }
   __cur=hdr;
-  add($(`<h1 class="center" style="font-size:30px;margin:6px 0 2px">${me.name}</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:8px">${S.daily?'':(S.circuitMode?('Year '+circuitYear+' of '+CIRCUIT_MAX_YEARS+' · '):('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS+' · '))}Overall ${ovr}</p>`));
+  // CS483 (owner mobile pass): tighter header (name + year/overall on one compact line) reclaims vertical room on every tab.
+  add($(`<h1 class="center" style="font-size:25px;margin:2px 0 1px">${me.name}</h1>`));
+  add($(`<p class="lede center" style="margin:0 0 6px;font-size:13px">${S.daily?'':(S.circuitMode?('Year '+circuitYear+' of '+CIRCUIT_MAX_YEARS+' · '):('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS+' · '))}Overall ${ovr}</p>`));
   const netCol=ec.net>=0?'#35d6a0':'#E14A33';
   // CS477 (owner): the Earnings / Net-profit money card now lives on the EARNINGS tab (moC), not Overview.
   __cur=moC;
   // MONEY in ONE compact HORIZONTAL bar (owner CS478: "the Earnings tab is so close to one page - make the
   // earnings and net profit go horizontal, not vertical"). Label + big value sit inline on one row, the two
   // stats split by a divider; wraps to two rows on a narrow phone. Much shorter than the old two stacked cards.
-  const moneyBar=$(`<div class="tile" style="margin:4px 0 8px;padding:13px 18px">
-    <div class="moneybar-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 26px">
-      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 26px">
-        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-          <span class="k" style="font:800 11.5px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Earnings</span>
-          <span class="v cream" style="font-family:var(--mono);font-weight:800;font-size:24px;white-space:nowrap;color:var(--oncard)">${fmt(t.money)}</span>
-          <span class="small muted" style="font-size:10px">prize money won</span>
-        </div>
-        <div style="width:1px;align-self:stretch;min-height:26px;background:rgba(255,255,255,.1)"></div>
-        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-          <span class="k" style="font:800 11.5px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Net profit</span>
-          <span class="v" style="font-family:var(--mono);font-weight:800;font-size:24px;white-space:nowrap;color:${netCol0}">${fmtSigned(netTotal)}</span>
-          <span class="small muted" style="font-size:10px">${contractBonus>0?('incl. +'+fmt(contractBonus)+' sponsor'):('after −'+fmt(ec.costs)+' costs')}</span>
-        </div>
-      </div>
+  // CS483 (owner mobile pass): the two stats are each a compact one-line row (label left, value right, tiny
+  // subtext under the value), so on a phone they stack tightly instead of the old wrapped bar with a floating
+  // divider + big gaps (~234px → ~120px). The two rows sit side by side on a wide screen (CS478 intent).
+  const statRow=(lab,val,col,sub)=>`<div style="flex:1 1 200px;min-width:0;display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:4px 0">
+      <span class="k" style="font:800 11px/1 var(--body);letter-spacing:.13em;text-transform:uppercase;color:var(--muted)">${lab}</span>
+      <span style="text-align:right;min-width:0"><span class="v" style="font-family:var(--mono);font-weight:800;font-size:21px;white-space:nowrap;color:${col}">${val}</span><br><span class="small muted" style="font-size:9.5px">${sub}</span></span>
+    </div>`;
+  const moneyBar=$(`<div class="tile" style="margin:4px 0 8px;padding:11px 16px">
+    <div class="moneybar-row" style="display:flex;flex-wrap:wrap;align-items:stretch;gap:2px 24px">
+      ${statRow('Earnings', fmt(t.money), 'var(--oncard)', 'prize money won')}
+      ${statRow('Net profit', fmtSigned(netTotal), netCol0, contractBonus>0?('incl. +'+fmt(contractBonus)+' sponsor'):('after −'+fmt(ec.costs)+' costs'))}
     </div>
   </div>`);
-  // CS479 (owner): Full Season Recap moved into the money bar's unused right space (right of Net Profit).
-  const recapBtn=$(`<button class="btn gold" style="width:auto;flex:0 0 auto;margin:0 0 0 auto;padding:9px 16px;font-size:12px;text-align:left;line-height:1.2">Full Season Recap<span class="sub" style="font-size:9px;letter-spacing:.06em">Every event, leaderboard by leaderboard</span></button>`);
-  recapBtn.onclick=()=>{S.recapEvent=null; S.recapYear=S.year||1; S.screen='recap'; render();};
-  moneyBar.querySelector('.moneybar-row').appendChild(recapBtn);
   add(moneyBar);
+  // CS479/483 (owner): Full Season Recap — a slim full-width button under the money bar (was crammed into the bar).
+  const recapBtn=$(`<button class="btn gold" style="width:100%;margin:0 0 8px;padding:8px 14px;font-size:12px;line-height:1.15">Full Season Recap<span class="sub" style="font-size:9px;letter-spacing:.05em;opacity:.85"> · every event, leaderboard by leaderboard</span></button>`);
+  recapBtn.onclick=()=>{S.recapEvent=null; S.recapYear=S.year||1; S.screen='recap'; render();};
+  add(recapBtn);
   __cur=moC;
   // expandable itemized expense sheet (caddie / agent / travel / tour overhead)
   const expWrap=$(`<div class="center" style="margin:0 0 8px"></div>`);
@@ -15675,24 +15689,41 @@ function scrSummary(){
   __cur=spC;
   { const sd=sponsorDecisionNode(); if(sd && (S.career.sponsorOffers||[]).length) add(sd); }
   if(contractL.length) add($(contractsReportHTML(contractL, signing)));   // sponsor season report cards (both slots)
-  __cur=ovC;
+  // CS483 (owner mobile pass): the Tour Rep meter + fresh-achievements reveal get their OWN "Rewards" tab (it's
+  // a ~220px celebration that crowded Overview). The tab only appears when there's something (empty-tab filter),
+  // like Sponsors - so a season with no new achievements simply doesn't show it. Overview leads with the results.
+  __cur=rwC;
   if(sbSignedIn() && S.freshAch&&S.freshAch.length){   // Tour Rep / achievements are a signed-in feature, never shown to guests
     const gained=S.freshAch.reduce((s,a)=>s+(a.pts||0),0);
     add(seasonRepNode(achPoints()-gained, S.freshAch));   // status bar on top → achievements reveal one by one, rep climbs in sync
   }
   if(sbSignedIn() && S.freshRep){ add($(repUpHTML(S.freshRep))); }
+  __cur=ovC;
   // performance stats row (money now lives only in the grouped card above - no more duplicate Profit tile)
-  const tilesB=$(`<div class="tiles" style="grid-template-columns:repeat(4,1fr);margin-top:0"></div>`);
-  const statTile=(k,v)=>$(`<div class="tile"><div class="k">${k}</div><div class="v" style="font-size:19px;white-space:nowrap">${v}</div></div>`);
+  const tilesB=$(`<div class="tiles" style="grid-template-columns:repeat(4,1fr);margin-top:0;gap:8px"></div>`);
+  const statTile=(k,v)=>$(`<div class="tile" style="padding:9px 6px"><div class="k">${k}</div><div class="v" style="font-size:18px;white-space:nowrap">${v}</div></div>`);
   tilesB.appendChild(statTile('Wins',t.wins+''));
   tilesB.appendChild(statTile('Majors',t.majors+''));
   tilesB.appendChild(statTile("Top 10's",t.top10+''));
   tilesB.appendChild(statTile('Tour Rank',fedexRank+' / '+N));
   add(tilesB);
   __cur=stC;
-  // ---- Season Stats (CS214): real measured scoring + a full derived tour-stat profile ----
+  // ---- Stats (CS214): real measured scoring + a full derived tour-stat profile.
+  // CS483 (owner mobile pass): a Season|Career toggle so only ONE stat sheet shows at a time (each ~350px
+  // fits a phone), instead of the season sheet here + a second career sheet crammed onto the Career tab. ----
   { const seasonSk=Object.fromEntries(CATS.map(c=>[c.k, me[c.k]!=null?me[c.k]:REPLACEMENT]));
-    add($(statSheetHTML(seasonSk, seasonRealStats(), {title:(S.circuitMode?'Legend Circuit · Season Stats':'Season Stats')}))); }
+    const hasCar = !S.daily && S.career && S.career.seasons && S.career.seasons.length>1;
+    const cSk0 = hasCar ? careerAvgSkills(S.career) : null;
+    const view = (hasCar && cSk0 && S.statsTab==='career') ? 'career' : 'season';
+    if(hasCar && cSk0){
+      const seg=$(`<div class="mini" style="margin:2px 0 6px;width:auto;display:flex;gap:6px"></div>`);
+      const t1=$(`<button class="btn ${view==='season'?'gold':'ghost'}" style="font-size:11px;padding:6px 13px;width:auto">This Season</button>`);
+      const t2=$(`<button class="btn ${view==='career'?'gold':'ghost'}" style="font-size:11px;padding:6px 13px;width:auto">Career</button>`);
+      t1.onclick=()=>{S.statsTab='season';render();}; t2.onclick=()=>{S.statsTab='career';render();};
+      seg.appendChild(t1); seg.appendChild(t2); add(seg);
+    }
+    if(view==='career') add($(statSheetHTML(cSk0, careerRealStats(S.career), {title:'Career Stats · '+S.career.seasons.length+' years'})));
+    else add($(statSheetHTML(seasonSk, seasonRealStats(), {title:(S.circuitMode?'Legend Circuit · Season Stats':'Season Stats')}))); }
   __cur=reC;
   { const sf=storyFeedHTML(); if(sf) add($(sf)); }   // CS225: Career Story feed + persona payoff
   // CS477 (owner): Tournaments Won builds into the RIGHT column, side by side with Highlights (row assembled below).
@@ -15724,7 +15755,7 @@ function scrSummary(){
   // Prepended so this row LEADS the Overview tab (above the stat tiles + achievements).
   let _hrow=null;
   if(hiCol.childNodes.length || tourCol.childNodes.length){
-    _hrow=$(`<div class="cols" style="margin-bottom:10px"></div>`);
+    _hrow=$(`<div class="cols" style="margin-bottom:8px"></div>`);
     _hrow.appendChild(hiCol); if(tourCol.childNodes.length) _hrow.appendChild(tourCol);
     ovC.insertBefore(_hrow, ovC.firstChild);
   }
@@ -15803,7 +15834,7 @@ function scrSummary(){
   // (right) SYMMETRIC row and insert it right under the Highlights row. If only one exists this season it
   // centers on its own instead of a half-empty row; both -> split evenly (stacks on mobile via .cols).
   { const hasRace=raceCol.childNodes.length, hasCup=cupCol.childNodes.length; let _crow=null;
-    if(hasRace && hasCup){ _crow=$(`<div class="cols" style="margin-bottom:10px;align-items:stretch"></div>`); _crow.appendChild(raceCol); _crow.appendChild(cupCol); }
+    if(hasRace && hasCup){ _crow=$(`<div class="cols" style="margin-bottom:8px;align-items:stretch"></div>`); _crow.appendChild(raceCol); _crow.appendChild(cupCol); }
     else if(hasRace){ _crow=raceCol; } else if(hasCup){ _crow=cupCol; }
     if(_crow){ if(_hrow) ovC.insertBefore(_crow, _hrow.nextSibling); else ovC.insertBefore(_crow, ovC.firstChild); }
   }
@@ -15874,11 +15905,11 @@ function scrSummary(){
   // CS479: top 6 + you (with Full Season Recap moved into the money bar) keeps the Earnings tab on one screen
   // so the Continue button is visible without the scroll-down cue. Full list is in Full Season Recap.
   if(tab==='career'){
-    careerList.slice(0,6).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
-    if(cRank>6){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(careerList[cRank-1],cRank,true));}
+    careerList.slice(0,4).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
+    if(cRank>4){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(careerList[cRank-1],cRank,true));}
   } else {
-    byMoney.slice(0,6).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
-    if(moneyRank>6){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(byMoney[moneyRank-1],moneyRank,true));}
+    byMoney.slice(0,4).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
+    if(moneyRank>4){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(byMoney[moneyRank-1],moneyRank,true));}
   }
   left.appendChild(board);
   // (CS413: the season leaderboard-rank card moved up to right above Tournaments Won.)
@@ -15895,8 +15926,8 @@ function scrSummary(){
     const bestS=(c.seasons||[]).reduce((m,s)=>(!m||s.money>m.money)?s:m,null);
     if(bestS) ct.appendChild($(`<div class="tile"><div class="k">Season high</div><div class="v cream" style="font-size:17px">${fmt(bestS.money)}</div><div class="small muted" style="font-size:10px;margin-top:2px">Year ${bestS.year}</div></div>`));
     caC.appendChild(ct);
-    // ---- Career Stats (CS214): measured career scoring + career-average derived profile ----
-    { const cSk=careerAvgSkills(c); if(cSk) caC.appendChild($(statSheetHTML(cSk, careerRealStats(c), {title:'Career Stats · '+c.seasons.length+' years'}))); }
+    // CS483: the detailed career stat sheet moved to the Analytics tab's Season|Career toggle (mobile fit).
+    caC.appendChild($(`<div class="small muted center" style="margin-top:8px">Full career stats → the <b style="color:var(--gold)">Analytics</b> tab (switch it to Career).</div>`));
     { const tl=careerTimelineNode(c); if(tl) hiC.appendChild(tl); }   // CS265 career milestone timeline
     // Wins + seasons, grouped into dropdowns so a long career stays readable
     const wl=(c.winsList||[]);
@@ -15905,9 +15936,9 @@ function scrSummary(){
     if(!wl.length) hiC.appendChild($(`<div class="scout small muted" style="margin-top:2px">No tournament wins yet, keep grinding.</div>`));
     else if(majWins) hiC.appendChild($(careerMajorsHTML(c)));
     hiC.appendChild($(`<h3 style="margin:16px 0 7px;font-size:14px;letter-spacing:.02em">Season by season <span class="small muted" style="font-weight:600">· ${c.seasons.length} yrs · tap a year for its wins</span></h3>`));
-    hiC.appendChild($(`<div>${careerSeasonsHTML(c)}</div>`));
+    hiC.appendChild($(`<div>${careerSeasonsHTML(c, 4)}</div>`));
     // the career share CARD lives only on the end-of-career ceremony now, here we just point to it
-    hiC.appendChild($(`<div class="scout small muted" style="margin-top:12px;text-align:center">Your shareable career card unlocks when you finish your career.</div>`));
+    hiC.appendChild($(`<div class="small muted center" style="margin-top:8px">Your shareable career card unlocks when you finish your career.</div>`));
   }
 
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
@@ -15915,10 +15946,11 @@ function scrSummary(){
   const headLine=HL?`${HL.lead.icon} ${HL.lead.head}, `:'';
   const share=`⛳ RUNTHETOUR, ${me.name} (OVR ${ovr})\n${headLine}Year ${S.year||1}: ${fmt(t.money)} earned · #${moneyRank} of ${N}${wreath}\n${t.wins}W · ${t.majors} major${t.majors===1?'':'s'} · ${finTxt}\nThink you can build better? → https://runthe.gg/golf`;
   right.appendChild($(`<h2 style="margin:2px 0 2px">Share your season</h2>`));
-  right.appendChild($(`<p class="small muted" style="margin:0 0 10px">Post your card and dare a friend to beat your number.</p>`));
+  right.appendChild($(`<p class="small muted" style="margin:0 0 8px">Post your card and dare a friend to beat your number.</p>`));
   const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
   const cv=document.createElement('canvas');
-  cv.style.cssText='width:100%;max-width:320px;display:block;margin:0 auto 4px;border-radius:14px;border:1px solid var(--line)';
+  // CS483: smaller display size (mobile fit) - the card is still 560×720, just rendered narrower on screen.
+  cv.style.cssText='width:100%;max-width:232px;display:block;margin:0 auto 4px;border-radius:14px;border:1px solid var(--line)';
   cv.setAttribute('role','img');
   cv.setAttribute('aria-label',`Season share card: ${esc(me.name)}, overall ${ovr}, ${fmt(t.money)} earned, ${t.wins} wins, ${t.majors} majors`);
   drawShareCard(cv,{name:me.name,ovr,year:S.year||1,events:S.schedule.length,majors:S.schedule.filter(e=>e.major).length,money:t.money,net:netTotal,moneyRank,N,wins:t.wins,majorsWon:t.majors,best:t.best,fedexRank},vals);
@@ -15943,7 +15975,7 @@ function scrSummary(){
     const declining=pastPeak();
     const circuitYear2=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):null;
     if(sbSignedIn()){
-      actC.appendChild($(`<div class="small center" style="margin:0 0 10px;color:#35d6a0;font-weight:700">✓ Progress auto-saved, your career is checkpointed at the home screen</div>`));
+      actC.appendChild($(`<div class="small center" style="margin:0 0 8px;color:#35d6a0;font-weight:700">✓ Progress auto-saved</div>`));
     } else if(!S.circuitMode){   // guests can't save (login wall at ${GUEST_SEASON_WALL} seasons) - honest nudge instead of a false "saved"
       const left=GUEST_SEASON_WALL-(S.year||1);
       const warn=left<=2;
@@ -15975,9 +16007,8 @@ function scrSummary(){
       const joinCircuit=$(`<button class="btn teal" style="margin-top:10px">Join the Legend Circuit ▸<span class="sub">Face off against every retired legend on tour, at age ${playerAge()}</span></button>`);
       joinCircuit.onclick=()=>{ endCareer('age'); startCircuit(); }; actC.appendChild(joinCircuit);
     }
-    const fbLink=$(`<button type="button" style="display:block;width:100%;margin-top:16px;background:none;border:0;color:var(--muted);cursor:pointer;font-family:var(--body);font-size:13px">${ic('chat')} Found a bug or have an idea for the game? <span style="color:var(--gold);font-weight:800">Tell us ›</span></button>`);
-    fbLink.onclick=()=>openFeedback();
-    actC.appendChild(fbLink);
+    // CS483: the "Found a bug? Tell us" link was dropped from here (it added ~44px to every tab's chrome);
+    // feedback stays one tap away in the footer link row + the ≡ menu.
   }
   // the summary is long and the advance button sits at the very bottom - many players don't realize they
   // have to scroll to continue. Show a floating cue that points down to it, visible only while that button
@@ -15986,7 +16017,7 @@ function scrSummary(){
   shC.appendChild(right);
   RT.appendChild(hdr);
   // CS356x: finer, content-driven tabs - only tabs that actually have content, in a fixed order.
-  const TABDEFS=[['overview','Overview',ovC],['money','Earnings',moC],['sponsors','Sponsors',spC],['stats','Analytics',stC],['rep','Reputation',reC],['awards','Awards',awC],['career','Career',caC],['history','History',hiC],['share','Share',shC]];
+  const TABDEFS=[['overview','Overview',ovC],['money','Earnings',moC],['sponsors','Sponsors',spC],['stats','Analytics',stC],['rep','Reputation',reC],['awards','Awards',awC],['rewards','Rewards',rwC],['career','Career',caC],['history','History',hiC],['share','Share',shC]];
   const TABS=TABDEFS.filter(d=>d[2].childNodes.length);
   if(S.daily || TABS.length<=1){
     TABDEFS.forEach(d=>{ if(d[2].childNodes.length) RT.appendChild(d[2]); });
@@ -21389,9 +21420,14 @@ function careerMajorsHTML(c){
   return `<details class="acc" open><summary class="accsum"><span class="chev">▸</span><span class="acctitle">🏆 Majors</span><span class="accmeta">${majors.length} won</span></summary><div class="accbody">${rows}</div></details>`;
 }
 // season-by-season accordion: each year is a row (record + net); years with wins expand to the trophies
-function careerSeasonsHTML(c){
+function careerSeasonsHTML(c, limit){
   const winsByYear={}; (c.winsList||[]).forEach(w=>{ (winsByYear[w.year]=winsByYear[w.year]||[]).push(w); });
-  return (c.seasons||[]).slice().sort((a,b)=>a.year-b.year).map(s=>{
+  let all=(c.seasons||[]).slice().sort((a,b)=>a.year-b.year);
+  // CS483: on the season-summary History tab, cap to the most recent `limit` years (mobile fit); the full
+  // year-by-year ledger is always in the Full Season Recap. The career-end ceremony passes no limit (shows all).
+  let capNote='';
+  if(limit && all.length>limit){ const hid=all.length-limit; all=all.slice(-limit); capNote=`<div class="small muted center" style="padding:8px 2px 2px">+${hid} earlier year${hid>1?'s':''} in the Full Season Recap</div>`; }
+  return all.map(s=>{
     const wins=(winsByYear[s.year]||[]).slice().sort((a,b)=>(b.major?1:0)-(a.major?1:0));
     const netCol=s.net>=0?'#35d6a0':'#E14A33';
     const line=`${s.wins}W · ${s.majors} maj · best ${bestTxt(s.best)}`;
@@ -21401,7 +21437,7 @@ function careerSeasonsHTML(c){
       return `<details class="acc"><summary class="accsum"><span class="chev">▸</span><span class="yrtag">Yr ${s.year}</span><span class="acctitle thin">${line}</span><span class="accmeta">${meta}</span></summary><div class="accbody">${body}</div></details>`;
     }
     return `<div class="acc flat"><div class="accsum nochev"><span class="chev dim">·</span><span class="yrtag">Yr ${s.year}</span><span class="acctitle thin">${line}</span><span class="accmeta">${meta}</span></div></div>`;
-  }).join('');
+  }).join('')+capNote;
 }
 // From the career-end pop-up "Play now": set up today's Daily and drop straight into it as this Legend.
 function playLegendNow(token){

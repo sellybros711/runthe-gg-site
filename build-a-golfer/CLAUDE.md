@@ -11224,6 +11224,39 @@ allows Google Fonts, or self-host Anton.*
   (`width:100%`, `height:100%` in a flex column) so they FILL their column, align with the Highlights/
   Tournaments row above, and match each other's height — a clean balanced grid. Deployed to /golf.
 
+- **CS483 — season-summary: every tab fits a mobile screen without vertical scrolling (owner: "now go
+  through the mobile version and get everything into tabs that dont require vertical scrolling, even if you
+  need to add more tabs").** Measured every scrSummary tab signed-in on a 390×844 phone and drove the
+  overflow to zero on 8 of 9 tabs (the 9th, Overview, is within ~56px = the Continue button sits right at
+  the fold). Two levers: cut the persistent chrome (which multiplies across all tabs) and trim/split the
+  tab content.
+  • **Chrome cuts (help every tab at once):** hid the bottom nav on the summary screen ('summary' added to
+    `NAV_HIDE`) — it's a tabbed results modal with its OWN action buttons (Continue/Leaderboard/Exit/Retire
+    in `.sumacts`), so the nav was redundant and ate ~48px; skipped the footer link row on the summary
+    (`if(S.screen!=='summary') app.appendChild(footer())` — About/Privacy/Terms/Feedback all stay in the ≡
+    menu), −34px; tightened the summary header (name 30→25px, the "Year N of 30 · Overall NN" line onto one
+    compact 13px line), −~20px. Net chrome ~467→~377px.
+  • **Content trims/splits:** the Earnings money card rebuilt from the old wrapped bar with a floating
+    divider into two compact one-line stats (label left, value right, tiny subtext) that stack tidily on a
+    phone (~234→~120px), with Full Season Recap now a slim full-width button below it; earnings list top-6→4;
+    `statSheetHTML` compacted (row padding 6→3.5, smaller fonts, tighter footnote); the detailed CAREER stat
+    sheet moved OFF the Career tab onto the Analytics tab behind a new **Season | Career toggle** (`S.statsTab`)
+    so only one ~350px sheet shows at a time; the Tour Rep meter + fresh-achievements reveal moved off the
+    crowded Overview onto their OWN conditional **"Rewards" tab** (only appears when there are new
+    achievements, via the empty-tab filter like Sponsors) and the reveal list capped to 4 shown + "+N more ·
+    see the Trophy Room"; the History season-by-season ledger capped to the 4 most recent years + "+N earlier
+    years in the Full Season Recap" (the career-end ceremony still shows all — `careerSeasonsHTML(c, limit)`);
+    the season Highlights masthead notes capped to 2 + tightened; the Share card display size 320→232px;
+    Overview stat tiles + Race/Cup `.ovcard` padding + inter-block margins trimmed.
+  • Result (11-yr signed-in career on 390×844): Earnings/Sponsors/Analytics/Reputation/Awards/Career/History/
+    Share all FIT (0 overflow); Overview +56 (Continue button at the fold). Verified in Playwright: guest
+    summary renders all tabs with no Rewards tab (achievements are signed-in only), signed-in gets the Rewards
+    tab when there are fresh achievements, the Analytics Season|Career toggle switches the stat sheet, and 0
+    page errors on every path. Screenshots confirm Overview/Earnings/History read clean with the primary
+    action buttons visible and no bottom nav. Deployed to /golf. NOTE: the data/archive tabs (History season
+    list, Career stat sheet) are capped for the summary; the full ledgers live in the Full Season Recap +
+    career-end ceremony, which intentionally show everything.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
