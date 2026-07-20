@@ -606,6 +606,13 @@ window.GA_ID='G-L29P5MRWKE';
   .swchip::after{content:'•'; color:var(--pagemut); font-style:normal; margin:0 16px; opacity:.6}
   .btn.goldfill{background:var(--gold-grad-d); color:#2a1c06; box-shadow:0 9px 22px -8px rgba(154,110,18,.8), inset 0 1px 0 rgba(255,255,255,.55); text-shadow:0 1px 0 rgba(255,255,255,.28)}
   .btn.goldfill:active{transform:translateY(2px)}
+  /* CS483i (Option 3): a SELECTED toggle is a gold OUTLINE, not a solid gold block - reserves the solid
+     gradient fill for the one primary action per screen. Faint gold tint + gold border + gold text. */
+  .btn.goldsel{background:rgba(241,208,74,.13); color:var(--gold); border:1.6px solid var(--gold); font-weight:900; box-shadow:0 0 0 3px rgba(241,208,74,.1), 0 4px 14px -8px rgba(154,110,18,.55); text-shadow:none}
+  .btn.goldsel .sub{color:var(--gold2)}
+  .btn.goldsel:active{transform:translateY(2px)}
+  /* CS483i: lemon-gold gradient number/text utility (Option 3 hero numbers) */
+  .goldgrad{background:var(--gold-grad); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent}
 
   /* ---- draft ---- */
   .draftbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px}
@@ -18674,13 +18681,13 @@ function scrDailyPreview(){
   // the main objective: beat the real tour scoring average for this venue. CS483h (owner): the course record
   // now sits on the SAME line as the target (split card), removing the standalone Course Record card.
   const av=dTourAvg(c);
-  const recTxt=rec?`<span class="mono" style="font-weight:800;font-size:22px;color:var(--gold);white-space:nowrap">${dTot(rec.toPar, c.par)}</span><div class="small muted" style="margin-top:1px">by ${esc(crHolders(rec))}</div>`
+  const recTxt=rec?`<span class="mono goldgrad" style="font-weight:800;font-size:22px;white-space:nowrap">${dTot(rec.toPar, c.par)}</span><div class="small muted" style="margin-top:1px">by ${esc(crHolders(rec))}</div>`
     :(sbSignedIn()?`<span style="font-weight:800;font-size:16px;color:var(--gold)">Unclaimed</span><div class="small muted" style="margin-top:1px">be the first</div>`:`<span style="font-weight:800;font-size:16px;color:var(--gold)">Sign in</span><div class="small muted" style="margin-top:1px">to post a score</div>`);
   add($(`<div class="scout" style="max-width:600px;margin:14px auto 0;text-align:center;border-color:var(--gold)">
     <div style="display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap">
       <div>
         <div class="small muted" style="text-transform:uppercase;letter-spacing:.1em;font-weight:800">Target · beat the tour avg</div>
-        <div style="margin-top:4px"><span class="mono" style="font-weight:800;font-size:27px;color:var(--gold);white-space:nowrap">${(c.par+av).toFixed(1)} (${dAvgTxt(av)})</span> <span class="small muted">par ${c.par}</span></div>
+        <div style="margin-top:4px"><span class="mono goldgrad" style="font-weight:800;font-size:27px;white-space:nowrap">${(c.par+av).toFixed(1)} (${dAvgTxt(av)})</span> <span class="small muted">par ${c.par}</span></div>
       </div>
       <div style="align-self:stretch;width:1px;background:var(--line)"></div>
       <div>
@@ -18697,7 +18704,7 @@ function scrDailyPreview(){
   add($(`<h2 class="center" style="margin:16px 0 6px;font-size:15px">Your game plan</h2>`));
   const dial=$(`<div class="mini" style="max-width:520px;margin:0 auto;gap:8px"></div>`);
   [['conservative','🛡 Safe'],['balanced','⚖ Balanced'],['aggressive','⚡ Aggressive']].forEach(([k,lab])=>{
-    const on=S.dailyPlan===k; const b=$(`<button class="btn ${on?'goldfill':'ghost'}" style="font-size:13px">${lab}</button>`);
+    const on=S.dailyPlan===k; const b=$(`<button class="btn ${on?'goldsel':'ghost'}" style="font-size:13px">${lab}</button>`);
     b.onclick=()=>{ S.dailyPlan=k; render(); }; dial.appendChild(b); });
   add(dial);
   // Watch mode: Quick Play (fast-sim routine holes, watch the ones that matter) vs Watch Full Round.
@@ -18705,7 +18712,7 @@ function scrDailyPreview(){
   const wm=LS.get('bag_daily_mode','quick')==='full'?'full':'quick';
   const wdial=$(`<div style="display:flex;gap:8px;max-width:520px;margin:0 auto"></div>`);
   [['quick','⚡ Quick Play','~2 min · watch the key holes'],['full','🎬 Full Round','watch every shot']].forEach(([k,lab,sub])=>{
-    const on=wm===k; const btn=$(`<button class="btn ${on?'goldfill':'ghost'}" style="flex:1;font-size:13px">${lab}<span class="sub" style="font-size:9.5px">${sub}</span></button>`);
+    const on=wm===k; const btn=$(`<button class="btn ${on?'goldsel':'ghost'}" style="flex:1;font-size:13px">${lab}<span class="sub" style="font-size:9.5px">${sub}</span></button>`);
     btn.onclick=()=>{ LS.set('bag_daily_mode',k); render(); }; wdial.appendChild(btn); });
   add(wdial);
   add($(`<div style="height:14px"></div>`));
@@ -21412,8 +21419,8 @@ function overlayCourseRecords(screen){
       <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(dShort(c.v))}${isToday?' · <span style="color:var(--gold)">today</span>':''}</div><div class="small muted" style="font-size:10.5px">Par ${c.par} · ${esc(c.loc)}</div></span>
       <span style="text-align:right">${rec?`<div class="sc" style="color:var(--gold);font-weight:800;white-space:nowrap">${dTot(rec.toPar, c.par)}</div><div class="small muted" style="font-size:10px">${esc(crHolders(rec))}</div>`:'<div class="small muted">unclaimed</div>'}</span></div>`; }).join('');
   const tabs=$(`<div class="mini" style="margin-bottom:2px"></div>`);
-  const humanTab=$(`<button class="btn ${tab==='human'?'goldfill':'ghost'}" style="font-size:12.5px">Human</button>`);
-  const legendTab=$(`<button class="btn ${tab==='legend'?'goldfill':'ghost'}" style="font-size:12.5px">🏆 Legend</button>`);
+  const humanTab=$(`<button class="btn ${tab==='human'?'goldsel':'ghost'}" style="font-size:12.5px">Human</button>`);
+  const legendTab=$(`<button class="btn ${tab==='legend'?'goldsel':'ghost'}" style="font-size:12.5px">🏆 Legend</button>`);
   humanTab.onclick=()=>{S.crTab='human';render();}; legendTab.onclick=()=>{S.crTab='legend';render();};
   tabs.appendChild(humanTab); tabs.appendChild(legendTab);
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
@@ -21714,7 +21721,7 @@ function scrCircuitEnd(){
   const tabrow=$(`<div class="cetabs" style="display:flex;gap:6px;max-width:520px;margin:0 auto 6px;justify-content:center;flex-wrap:wrap"></div>`);
   TABS.forEach(([k,lab])=>{
     const on=S.ceTab===k;
-    const b=$(`<button class="btn ${on?'goldfill':'ghost'}" style="width:auto;flex:0 0 auto;padding:8px 14px;font-size:12.5px">${lab}</button>`);
+    const b=$(`<button class="btn ${on?'goldsel':'ghost'}" style="width:auto;flex:0 0 auto;padding:8px 14px;font-size:12.5px">${lab}</button>`);
     b.onclick=()=>{ S.ceTab=k; render(); };
     tabrow.appendChild(b);
   });
@@ -23127,7 +23134,7 @@ function scrH2HHome(){
   add($(`<div class="center" style="margin:0 0 6px"><span class="small muted">Game mode</span></div>`));
   const mrow=$(`<div style="max-width:440px;margin:0 auto 4px;display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>`);
   H2H_MODES.forEach(mm=>{ const on=S.h2h.mode===mm.id;
-    const b=$(`<button class="btn ${on?'goldfill':'gold'}" style="width:100%;text-align:left;padding:11px 13px">${mm.label}<span class="sub">${mm.cap} players${mm.teams?' · 2v2':''}</span></button>`);
+    const b=$(`<button class="btn ${on?'goldsel':'ghost'}" style="width:100%;text-align:left;padding:11px 13px">${mm.label}<span class="sub">${mm.cap} players${mm.teams?' · 2v2':''}</span></button>`);
     b.onclick=()=>{ S.h2h.mode=mm.id; render(); }; mrow.appendChild(b);
   }); add(mrow);
   add($(`<p class="small muted center" style="max-width:440px;margin:6px auto 12px">${esc(m.desc)}</p>`));
@@ -23136,7 +23143,7 @@ function scrH2HHome(){
   const row=$(`<div class="mini" style="justify-content:center;gap:10px;margin-bottom:6px"></div>`);
   [[9,'9 holes','Quick, ~a minute'],[18,'18 holes','Full round']].forEach(o=>{
     const on=S.h2h.holes===o[0];
-    const b=$(`<button class="btn ${on?'goldfill':'gold'}" style="width:auto;min-width:150px">${o[1]}<span class="sub">${o[2]}</span></button>`);
+    const b=$(`<button class="btn ${on?'goldsel':'ghost'}" style="width:auto;min-width:150px">${o[1]}<span class="sub">${o[2]}</span></button>`);
     b.onclick=()=>{ S.h2h.holes=o[0]; render(); }; row.appendChild(b);
   }); add(row);
   // course picker for a private "Play with friends" room (Quick Match is always a random course)
@@ -23149,7 +23156,7 @@ function scrH2HHome(){
   // equipment-boosts toggle for a private friends match: gear applies, but it's an EXHIBITION (off the record)
   const bon=!!S.h2h.boostsOn;
   const bwrap=$(`<div class="center" style="max-width:420px;margin:2px auto 0">
-    <button id="h2h-boost" class="btn ${bon?'goldfill':'ghost'}" style="width:100%">${bon?'Equipment boosts: ON':'Equipment boosts: OFF'}<span class="sub">${bon?'Both players’ gear counts · exhibition, not on the leaderboard':'Pure skill · counts for your W/L record'}</span></button></div>`);
+    <button id="h2h-boost" class="btn ${bon?'goldsel':'ghost'}" style="width:100%">${bon?'Equipment boosts: ON':'Equipment boosts: OFF'}<span class="sub">${bon?'Both players’ gear counts · exhibition, not on the leaderboard':'Pure skill · counts for your W/L record'}</span></button></div>`);
   bwrap.querySelector('#h2h-boost').onclick=()=>{ S.h2h.boostsOn=!S.h2h.boostsOn; render(); };
   add(bwrap);
   add($(`<div style="height:8px"></div>`));
@@ -23641,7 +23648,7 @@ function scrH2HBoard(){
   // mode tabs
   const tabs=$(`<div style="max-width:520px;margin:0 auto 10px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px"></div>`);
   H2H_MODES.forEach(mm=>{ const on=_h2hBoardMode===mm.id;
-    const b=$(`<button class="btn ${on?'goldfill':'gold'}" style="width:100%;padding:8px 4px;font-size:12px">${mm.label}</button>`);
+    const b=$(`<button class="btn ${on?'goldsel':'ghost'}" style="width:100%;padding:8px 4px;font-size:12px">${mm.label}</button>`);
     b.onclick=()=>{ _h2hBoardMode=mm.id; render(); }; tabs.appendChild(b);
   }); add(tabs);
   const wrap=$(`<div id="h2hboardwrap" class="board" style="max-width:520px;margin:0 auto"><div class="center muted" style="padding:24px">Loading…</div></div>`);

@@ -11355,6 +11355,27 @@ allows Google Fonts, or self-host Anton.*
   columns wrap and stack cleanly. Verified in Playwright with a real record set — "TARGET · BEAT THE TOUR AVG
   / 69.0 (−1.0) par 70 | COURSE RECORD / 66 (−4) / by bonflume" on one line, 0 page errors. Deployed to /golf.
 
+- **CS483i — gold "Option 3" pass: reserve solid gold for the primary action, selected toggles become
+  outlines, hero numbers get the foil gradient (owner picked Option 3 from a 3-way mockup).** The gold was
+  doing five jobs at once (target card, reward numbers, course record, selected toggles, AND the primary
+  button all wore the same bright gold), so nothing stood out. Built an interactive comparison Artifact
+  (current + 3 directions) for the owner; they chose Option 3 — "gradient foil + fewer fills." Implemented
+  globally: (1) new `.btn.goldsel` = a **gold OUTLINE** (1.6px gold border + faint gold tint + gold text +
+  bold), used for every SELECTED TOGGLE — the Play 18 game-plan (Safe/Balanced/Aggressive) + watch-mode
+  (Quick/Full Round) pickers, the Course Records Human/Legend tabs, the H2H mode + length pickers, the H2H
+  "Equipment boosts" toggle, and the leaderboard-style chip toggles (9 sites, converting `?'goldfill':'ghost'`
+  and the H2H `?'goldfill':'gold'` → `?'goldsel':'ghost'`). (2) The **primary CTA** buttons (Draft, Continue,
+  Send-out-team, Start-Cup, Buy, etc.) keep the **solid `--gold-grad-d` foil fill** (unchanged from CS354),
+  so now the ONE solid gold block per screen is the action to tap. (3) New `.goldgrad` utility (lemon-gold
+  `background-clip:text` foil) applied to the Play 18 hero numbers — the beat-the-tour-average target and the
+  course record. Net: the Play 18 screen now reads with a clear hierarchy (solid-gold Draft button as the
+  focal point, elegant gold-outline toggles, gradient hero numbers) instead of a wall of yellow. Verified in
+  Playwright: Play 18 renders the gradient target/record + gold-outline Balanced/Quick toggles + the single
+  solid-gold Draft button; the converted toggle screens (H2H, Course Records, Leaderboard) render with 0 page
+  errors; the 4 primary-action `goldfill` ternaries (Send team / Start Cup / two Buy buttons) correctly kept
+  their solid fill. Deployed to /golf. (Extending the foil gradient to other hero numbers — OVR badges,
+  season net — is an easy follow-up if wanted; left for now since some of those are semantically color-coded.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
