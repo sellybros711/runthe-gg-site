@@ -11627,6 +11627,37 @@ allows Google Fonts, or self-host Anton.*
   plays clean; `node --check` clean; 0 page errors. Deployed to /golf. Tunable: the putt `GH` clamp, the
   swing crossfade %s, the headwear stamp width factor (1.5×) + brow anchor in `pxStrokeURLs`.
 
+- **CS486 — TourTracer swing golfer rebuilt as the FULL high-detail profile art, front-facing & animated
+  (owner: the swing golfer "looks way too basic vs the standing golfer in the profile"; after rejecting a
+  broadcast player-cam, chose "keep on-course, render the profile art at the ball, front-facing animated
+  swing").** Replaces the low-res directional swing sprite (`pxStrokeURLs`, side/back/front palette-swap +
+  headwear stamping) with the EXACT profile-golfer pipeline, so every accessory renders natively at full
+  detail while it swings. The insight: a real swing keeps head/torso/legs still and only moves arms+club, and
+  no accessory lives on the arms - so `PXG_SWING` holds 7 front-facing swing-pose bodies (full swing
+  address/backswing/follow-through, chip ×2, putt ×2) whose head/chest-core/belt/legs are byte-identical to
+  `PXG_BODY`; only the two arms (both hands on the grip, prominent skin forearms) + club move per frame.
+  `pxGolferCanvas` gained a body override (`opts:{body,noClub,noBall,bkey}`) - it paints the swing body, skips
+  the baked club/ball, and runs the whole accessory stack (hat/hair/eyewear/shirt-pattern/outerwear/legwear/
+  cleats) over it, so a cowboy hat / wizard hat / crown / blazer / aviators / tie-dye / leopard / argyle all
+  composite in place across all 3 poses (verified: 0 misalignment). New `pxSwingHi(look)` renders each pose
+  through that pipeline to a data-URL (`{full,chip,putt}`), relying on the existing `_pxCanvas`/`_pxURL` caches
+  (no separate cache - avoids a partial-key collision). `hvSwingMarkup` rewired to `pxSwingHi`: the golfer is
+  now FRONT-FACING for every shot (per the owner's steer; the high-detail art faces the camera), a lefty is
+  mirrored so the swing sweeps the correct side + the club sits in the correct hand, `clubFrac=0.5` (club
+  addresses the ball at the sprite centre), `ballGy=50`; the size logic (bigger on the green close-up, CS485),
+  the gold shot-number pin, the holed-beat `hvsw-static` hold, and the effect-aura glow (CS483u) are all
+  kept. `hvAddressGolfer` (the static over-the-ball approach-decision golfer) uses the new address frame too.
+  The old directional side/back/front sprite system (`pxStrokeURLs` and its per-view/mirror/facing logic in
+  hvSwingMarkup) is superseded - `pxStrokeURLs` is now dead (no callers) but left defined. H2H multi-ball
+  watch is unaffected (it passes `pcol`, so the created golfer isn't drawn - a planned follow-up). Verified in
+  Playwright: a 6-outfit composite grid (cowboy+argyle / wizard+tie-dye / crown / blazer+aviators / beanie+
+  leopard-lefty) renders each accessory clearly across the 3 poses with visible arms; in-context on real
+  courses a green close-up shows the big front-facing golfer gripping the putter at the ball (cowboy+argyle
+  righty AND blazer+aviators lefty), a full 18-hole auto practice round completes to the result, `node --check`
+  clean, 0 page errors throughout. Deployed to /golf. Owner saw + approved the look (composite) with one
+  caveat (arms not visible), which this fixed. Tunable: the `PXG_SWING` poses, the full-swing `GH` (24) /
+  green `GH` clamp, `ballGy`, the pixel-golfer palette.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
