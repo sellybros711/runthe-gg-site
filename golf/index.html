@@ -11298,7 +11298,7 @@ function startSeason(majorsOnly){
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0,toPar:0,rounds:0}]))};
   S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0; S.seasonRank=null;
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false; S._impactShown=false;   // unlocked during THIS season (shown on the summary)
-  S._bannerNet=null; S._bannerFans=null; S._confBar=null; S._respBar=null;   // CS284/285/434: reset the banner count-up + meter-glide baselines so a new season's first render doesn't animate from prior values
+  S._bannerNet=null; S._bannerFans=null; S._bannerNetDir=0; S._bannerFansDir=0; S._confBar=null; S._respBar=null;   // CS284/285/434/476: reset the banner count-up + arrow-direction + meter-glide baselines so a new season's first render doesn't animate/arrow from prior values
   S._railIdx=null; S._railScroll=null;                   // CS285: reset the season-rail smooth-scroll tracking so a new season snaps to center (no glide from last season's schedule position)
   if(S.career && S.career.story){ S.career.story.seasonCount=0; }   // reset the per-season storyline cap (CS225)
   S.season.stops=0; S.season.momentsShown=0; S.season.grudgeShown=0; S.season.sideMoney=0; S.season._lastStopEvt=-99;   // interruption budget + grudge cap (CS295) + off-course money (CS325) + no-back-to-back tracker (CS327)
@@ -11522,6 +11522,11 @@ function fmtFollowers(n){ n=Math.round(n||0);
   if(n>=1e6) return (n/1e6).toFixed(n>=1e7?0:1).replace(/\.0$/,'')+'M';
   if(n>=1e4) return Math.round(n/1e3)+'K';
   if(n>=1e3) return (n/1e3).toFixed(1).replace(/\.0$/,'')+'K';
+  return ''+n; }
+// CS476: 2-decimal fan count for the live season banner (owner) — 8,234,567 → "8.23M", 12,345 → "12.35K".
+function fmtFollowers2(n){ n=Math.round(n||0);
+  if(n>=1e6) return (n/1e6).toFixed(2)+'M';
+  if(n>=1e3) return (n/1e3).toFixed(2)+'K';
   return ''+n; }
 // per-event momentum from a finish: confidence swing + follower growth (career, non-circuit)
 // CS399: a deliberate fan-value LADDER by finish tier x event tier ({pct, flat}: pct compounds early,
@@ -14796,6 +14801,13 @@ function scrSeason(){
       <div class="cb-conf">${confMeterHTML(conf)}</div>
       <div class="cb-resp" style="margin-top:9px">${respMeterHTML(rspVal)}</div>
     </div>`:'';
+  // CS476 (owner): Fans + Net now read in WHITE with a persistent green/red up/down arrow showing which way
+  // the last event moved them (fans also gets 2 decimals). The direction persists across the many mid-round
+  // re-renders (stored on S), updating only when the value actually changes.
+  if(showMeters && S._bannerFans!=null && fansVal!==S._bannerFans) S._bannerFansDir=Math.sign(fansVal-S._bannerFans);
+  if(S._bannerNet!=null && ec.net!==S._bannerNet) S._bannerNetDir=Math.sign(ec.net-S._bannerNet);
+  const cbArrow=(dir)=> dir>0?'<span style="color:#35d6a0;font-size:12px;margin-left:3px;vertical-align:1px">▲</span>'
+                     : dir<0?'<span style="color:#E14A33;font-size:12px;margin-left:3px;vertical-align:1px">▼</span>' : '';
   const _bnr=$(`<div class="careerbanner">
     <div class="cb-id"><div class="cb-av">${avatarHTML()}</div>
       <div style="min-width:0"><div class="cb-name">${cbName}</div><div class="cb-sub">${cbYr} · Age ${playerAge()}</div></div></div>
@@ -14805,8 +14817,8 @@ function scrSeason(){
       <div class="cb-stat"><div class="k">Wins</div><div class="v">${t.wins}</div></div>
       <div class="cb-stat"><div class="k">Top 10</div><div class="v">${t.top10}</div></div>
       <div class="cb-stat"><div class="k">Cuts</div><div class="v">${t.made}/${t.played||0}</div></div>
-      ${showMeters?`<div class="cb-stat"><div class="k">Fans</div><div class="v" id="cb-fans" style="color:#ff9d3a">${fmtFollowers(fansVal)}</div></div>`:''}
-      <div class="cb-stat"><div class="k">Net</div><div class="v" id="cb-net" style="color:${netCol};font-size:16px">${netShort}</div></div>
+      ${showMeters?`<div class="cb-stat"><div class="k">Fans</div><div class="v" style="color:var(--oncard)"><span id="cb-fans">${fmtFollowers2(fansVal)}</span>${cbArrow(S._bannerFansDir||0)}</div></div>`:''}
+      <div class="cb-stat"><div class="k">Net</div><div class="v" style="color:var(--oncard);font-size:16px"><span id="cb-net">${netShort}</span>${cbArrow(S._bannerNetDir||0)}</div></div>
     </div>
     ${metersHTML}
   </div>`);
@@ -14820,14 +14832,11 @@ function scrSeason(){
     if(_ne && _pr!=null && _pr!==ec.net && !reduce)
       _animCount(_ne, _pr, ec.net, v=>(v>=0?'+':'−')+fmtShort(Math.abs(v)), 950);
     S._bannerNet=ec.net;
-    // CS434: the Fans counter counts up/down to its new value each event, and flashes green (gained) /
-    // red (lost) briefly so the direction reads at a glance.
+    // CS434/CS476: the Fans counter counts up/down to its new value each event (white number; a persistent
+    // green/red arrow beside it, built above, shows the direction).
     const _fe=_bnr.querySelector('#cb-fans'), _pfn=S._bannerFans;
-    if(showMeters && _fe && _pfn!=null && _pfn!==fansVal && !reduce){
-      _animCount(_fe, _pfn, fansVal, v=>fmtFollowers(v), 950);
-      const up=fansVal>_pfn; _fe.style.transition='color .2s'; _fe.style.color=up?'#35d6a0':'#E14A33';
-      setTimeout(()=>{ if(_fe.isConnected) _fe.style.color='#ff9d3a'; }, 1100);
-    }
+    if(showMeters && _fe && _pfn!=null && _pfn!==fansVal && !reduce)
+      _animCount(_fe, _pfn, fansVal, v=>fmtFollowers2(v), 950);
     S._bannerFans = showMeters ? fansVal : null;
     // CS285: the Confidence / Respect meter bars GLIDE to their new width when they change (reusing the
     // .cmeter width transition), matching the polished feel of the count-up. Snaps on the first render.
@@ -20111,6 +20120,22 @@ function scrDailyRound(){
   let decPending=null;
   if(prov && prov.await) decPending={sc:prov.scenario, pick:(agg)=>dailyResolveApproach(agg), sub:`Your drive found ${dLieName(prov.d0.shot.lie)} · ${prov.d0.dist} yds to the green`};
   else if(teeSig){ const teeSc=dScenario(S.dailyCourse,i,total,dTourAvg(c)); decPending={sc:teeSc, pick:(agg)=>playDailyHole(agg, teeSc.phase)}; }
+  // CS475 (owner): the scorecard strip now sits ABOVE the tracer window in every round mode (daily / Moment
+  // / Spotlight / Legend) - more effective on mobile, where the tall tracer used to push the scorecard below
+  // the fold. Built here and added before the window; the old below-the-window copy is gone. The sudden-death
+  // playoff plays one extra hole at a time (overlay resolves it), so the 18-cell strip is skipped there.
+  if(!S.momentPO){
+    const wrap=$(`<div class="dcardwrap"></div>`);
+    wrap.appendChild($(`<div class="dcardhd"><span class="t">Scorecard · thru ${through}</span><span class="h">${(played.length>1&&!reviewing)?'Tap a hole to rewatch':''}</span></div>`));
+    const strip=$(`<div class="dcard"></div>`);
+    for(let k=0;k<18;k++){ const pl=played[k], isReveal=(k===lastIdx&&revealing), cur=(k===i&&!done&&!revealing);
+      const showScore=pl&&!isReveal;   // the in-flight hole shows no score until the ball drops
+      const cell=$(`<div class="dcell ${(cur||isReveal)?'cur':''} ${showScore?'done':''} ${(showScore&&k===vh&&played.length>1)?'sel':''}"><div class="dn">${k+1}</div><div class="ds" style="color:${showScore?dScoreCol(pl.toPar):'var(--muted)'}">${showScore?dCellScore(pl):'·'}</div></div>`);
+      if(pl){ cell.style.cursor='pointer'; cell.setAttribute('role','button'); cell.setAttribute('aria-label',`Rewatch hole ${k+1}`); cell.onclick=()=>{ if(S.dailyViewHole===k) dailyReviewClose(); else dailyReviewOpen(k); }; }
+      strip.appendChild(cell); }
+    wrap.appendChild(strip);
+    add(wrap);
+  }
   // The tracer window renders only when there's a decision to watch or a hole to rewatch (in QUICK play
   // routine holes show no tracer at all - just the scorecard reveal). In full mode showTracer is always true.
   if(showTracer){
@@ -20147,20 +20172,7 @@ function scrDailyRound(){
   }
   // on-course decision cards, docked directly under the course view (the tap-targets are ON the window)
   if(decPending) add(dDecisionBar(decPending.sc, decPending.pick, decPending.sub));
-  // scorecard strip lives BELOW the window now (the tracer is the star, H2H-style). The sudden-death
-  // playoff plays one extra hole at a time (overlay resolves it), so the 18-cell strip is skipped.
-  if(!S.momentPO){
-  const wrap=$(`<div class="dcardwrap"></div>`);
-  wrap.appendChild($(`<div class="dcardhd"><span class="t">Scorecard · thru ${through}</span><span class="h">${(played.length>1&&!reviewing)?'Tap a hole to rewatch':''}</span></div>`));
-  const strip=$(`<div class="dcard"></div>`);
-  for(let k=0;k<18;k++){ const pl=played[k], isReveal=(k===lastIdx&&revealing), cur=(k===i&&!done&&!revealing);
-    const showScore=pl&&!isReveal;   // the in-flight hole shows no score until the ball drops
-    const cell=$(`<div class="dcell ${(cur||isReveal)?'cur':''} ${showScore?'done':''} ${(showScore&&k===vh&&played.length>1)?'sel':''}"><div class="dn">${k+1}</div><div class="ds" style="color:${showScore?dScoreCol(pl.toPar):'var(--muted)'}">${showScore?dCellScore(pl):'·'}</div></div>`);
-    if(pl){ cell.style.cursor='pointer'; cell.setAttribute('role','button'); cell.setAttribute('aria-label',`Rewatch hole ${k+1}`); cell.onclick=()=>{ if(S.dailyViewHole===k) dailyReviewClose(); else dailyReviewOpen(k); }; }
-    strip.appendChild(cell); }
-  wrap.appendChild(strip);
-  add(wrap);
-  }
+  // (CS475: the scorecard strip moved ABOVE the tracer window - see the block before `if(showTracer)`.)
   add($(`<div style="height:10px"></div>`));
   // CS366: the 5-button control bar (Speed · Last hole · PLAY/PAUSE · Next hole · Sim to end). The mulligan
   // (streak reward) is now offered automatically via a bogey+ prompt at the top (dMullOfferNode), so the old
