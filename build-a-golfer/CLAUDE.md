@@ -11041,6 +11041,36 @@ allows Google Fonts, or self-host Anton.*
   the guaranteed-structural fallback if it ever recurs is an app-shell (a `position:fixed` `#app` with an
   inner scroll region so nothing is viewport-fixed against a scrolling body). Deployed to /golf.
 
+- **CS473 — first-run guided home for brand-new players (owner: a tester said "frankly speaking, it's
+  complicated to understand what to do in game as there are lots of buttons, texts etc" — "What can we do
+  to fix this issue? It's a big issue I have noticed as well").** The title screen throws a first-time
+  player at a wall of choices (Beat the Pro / Career / Online / Spotlight cards + login/daily/streak popups
+  + a full bottom nav), so someone who's never played doesn't know where to start. Added a focused,
+  one-path first-run home: for a brand-new player, the busy stack is replaced by a single onboarding panel
+  that gives ONE clear thing to do.
+  - **`isNewPlayer()`** — true only when there's no career save (`careerSaveInfo()`), no in-progress draft
+    (`resumeInfo()`), zero builds ever (`career().builds===0`), and zero dailies played (`dailyStats().played
+    ===0`); wrapped in try/catch → false on any error (fail toward the normal home, never a broken screen).
+  - **`onboardPanel()`** (+ `onboardStyleOnce()` injecting its `#obcss` styles) — a clean card: a
+    "NEW HERE? IT'S 3 SIMPLE STEPS" tag, three numbered steps (1 Build a golfer · 2 Play a round · 3 Beat
+    the pro), one gold primary CTA **"▶ Play your first round"** → `startDailyChallenge()` (the shortest,
+    lowest-commitment path to actually playing — a single Beat-the-Pro round, not a 30-year career), and a
+    quiet **"Skip — explore the full menu ▸"** link that sets `bag_onboard_done` and renders the normal home.
+    Tracks `onboard_start`/`onboard_skip`.
+  - **Branch in `scrTitle`** (after `careerSaveInfo()`): when `isNewPlayer() && !LS.get('bag_onboard_done')`,
+    it renders ONLY the onboarding panel + the DataGolf disclaimer (hides the mode cards, daily/login/streak
+    popups, and the busy stack) and returns. The instant the player plays a round or taps Skip, the flag/
+    state flips and every subsequent visit is the full home — so this is a one-time funnel, never a
+    permanent simplification. Signed-in vs guest is irrelevant (a fresh account is a new player either way).
+  Verified in Playwright: a fresh player sees ONLY the onboarding panel with the "▶ Play your first round"
+  CTA and no daily card / bottom nav (`{newP:true, hasOnboard:true, hasDailyCard:false, hasNav:false}`);
+  tapping Skip sets `bag_onboard_done` and the full home renders (`{hasOnboard:false, hasNav:true}`); a
+  returning player (any build/daily/career history) never sees it (`{newP:false, hasOnboard:false}`); 0 page
+  errors; screenshot confirms the clean 3-step first-run card. Deployed to /golf. NOTE: this is step 1 of
+  the broader "too complicated" fix — follow-ups to consider are contextual coach tips on the other screens,
+  per-screen declutter, and an optional "Simple Mode." Tunable: the 3-step copy + the CTA target (currently
+  the daily; could be a guided first career draft instead).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
