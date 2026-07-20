@@ -11093,6 +11093,35 @@ allows Google Fonts, or self-host Anton.*
   non-title screens, off-season de-duplicated + empty-rival box hidden, 0 page errors. Deployed to /golf.
   Step 2 of the "too complicated" fix (CS473 = step 1); further per-screen trims remain optional follow-ups.
 
+- **CS475 — scorecard moved ABOVE the TourTracer view in every round mode (owner: "more effective
+  especially on mobile").** In `scrDailyRound` (which serves the Daily / career Moments / Monthly Spotlight /
+  Legend Token rounds) the 18-cell scorecard strip (`.dcardwrap`) rendered BELOW the tall tracer window, so
+  on a phone it sat below the fold. Moved the whole strip to render directly under the broadcast header and
+  ABOVE the tracer window (built once, before the `if(showTracer)` block; removed the old below-the-window
+  copy). DOM order is now header → scorecard → tracer. The sudden-death playoff (which plays one extra hole
+  at a time via an overlay) still skips the 18-cell strip. The online H2H watch + playoff watch already show
+  the scoreboard ON the tracer (the one-window floating HUD), so "all modes" is covered with no change there.
+  Verified in Playwright (full-mode practice round, mid-round): DOM order `bcasthd → dcardwrap → holeview`,
+  scorecard renders above the course view with the running "thru N" + tap-to-rewatch cells, 0 page errors;
+  screenshot confirms the scorecard sits cleanly above the hole view. Deployed to /golf.
+
+- **CS476 — season banner Fans + Net: white value, 2 decimals, persistent green/red change-arrow (owner:
+  "the base color for fans is orange, make it white, add 2 decimal places, and a little green/red arrow when
+  it goes up or down; same with the money").** On the CS264 franchise banner (`scrSeason`):
+  - **Fans:** base color orange (`#ff9d3a`) → white (`--oncard`, matching the other stat values); new
+    `fmtFollowers2()` shows 2 decimals (8,234,567 → "8.23M", 12,345 → "12.35K"); the count-up animation now
+    uses the 2-decimal formatter. The old transient full-number color flash was removed (redundant with the
+    arrow).
+  - **Net:** base color green/red-by-sign → white; already 2 decimals via `fmtShort` (CS286); count-up kept.
+  - **Persistent change-arrow (both):** a small green ▲ (up) / red ▼ (down) beside the value shows which way
+    the LAST event moved it. Direction is stored on `S._bannerFansDir`/`S._bannerNetDir` so it PERSISTS
+    across the many mid-round re-renders (updates only when the value actually changes), reset with the other
+    banner baselines in `startSeason`. The value + arrow are separate elements so the count-up (which rewrites
+    the number) never wipes the arrow.
+  Verified in Playwright: forcing a fans-up / net-down change renders Fans "6.73M" white + green ▲ and Net
+  "+$6.00M" white + red ▼, 0 page errors; screenshot confirms. Deployed to /golf. Tunable: `fmtFollowers2`
+  precision, the arrow colors/size.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
