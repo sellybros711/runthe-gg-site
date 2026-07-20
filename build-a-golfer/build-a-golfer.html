@@ -15602,11 +15602,23 @@ function scrSummary(){
   const netCol=ec.net>=0?'#35d6a0':'#E14A33';
   // CS477 (owner): the Earnings / Net-profit money card now lives on the EARNINGS tab (moC), not Overview.
   __cur=moC;
-  // MONEY grouped in ONE horizontal card (owner: money was scattered across ~4 spots and net profit was
-  // shown twice - the big hero AND a "Profit" tile). Earnings (gross) + Net profit side by side, one place.
-  add($(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin:4px 0 6px">
-    <div class="tile"><div class="k">Earnings</div><div class="v cream" style="font-size:23px;white-space:nowrap">${fmt(t.money)}</div><div class="small muted" style="font-size:10px;margin-top:3px">prize money won</div></div>
-    <div class="tile"><div class="k">Net profit</div><div class="v" style="font-size:23px;white-space:nowrap;color:${netCol0}">${fmtSigned(netTotal)}</div><div class="small muted" style="font-size:10px;margin-top:3px">${contractBonus>0?('incl. +'+fmt(contractBonus)+' sponsor'):('after −'+fmt(ec.costs)+' costs')}</div></div>
+  // MONEY in ONE compact HORIZONTAL bar (owner CS478: "the Earnings tab is so close to one page - make the
+  // earnings and net profit go horizontal, not vertical"). Label + big value sit inline on one row, the two
+  // stats split by a divider; wraps to two rows on a narrow phone. Much shorter than the old two stacked cards.
+  add($(`<div class="tile" style="margin:4px 0 8px;padding:13px 18px">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 26px">
+      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+        <span class="k" style="font:800 11.5px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Earnings</span>
+        <span class="v cream" style="font-family:var(--mono);font-weight:800;font-size:24px;white-space:nowrap;color:var(--oncard)">${fmt(t.money)}</span>
+        <span class="small muted" style="font-size:10px">prize money won</span>
+      </div>
+      <div style="width:1px;align-self:stretch;min-height:26px;background:rgba(255,255,255,.1)"></div>
+      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+        <span class="k" style="font:800 11.5px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Net profit</span>
+        <span class="v" style="font-family:var(--mono);font-weight:800;font-size:24px;white-space:nowrap;color:${netCol0}">${fmtSigned(netTotal)}</span>
+        <span class="small muted" style="font-size:10px">${contractBonus>0?('incl. +'+fmt(contractBonus)+' sponsor'):('after −'+fmt(ec.costs)+' costs')}</span>
+      </div>
+    </div>
   </div>`));
   __cur=moC;
   // expandable itemized expense sheet (caddie / agent / travel / tour overhead)

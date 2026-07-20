@@ -11151,6 +11151,20 @@ allows Google Fonts, or self-host Anton.*
   outlook). Deployed to /golf. NEXT: the owner will send directions for the next scrSummary tab; keep every
   tab mobile-friendly by default.
 
+- **CS478 — Earnings-tab money card → one compact HORIZONTAL bar (owner: "the Earnings tab is so close to
+  being on 1 page, maybe the Earnings and net profit can go horizontal and not vertical?").** The CS477
+  Earnings-tab money card was two side-by-side `.tile`s, each internally stacked (label → big value →
+  subtext), which was tall enough to push the season earnings list + Continue button below the fold on
+  desktop. Replaced the two stacked tiles with a SINGLE compact bar (one `.tile`): a flex row holding two
+  inline stat groups — **Earnings** (label + `fmt` value + "prize money won") and **Net profit** (label +
+  `fmtSigned(netTotal)` in green/red + "incl. +$X sponsor" / "after −$X costs") — split by a thin vertical
+  divider, so the label and big value sit on ONE line each instead of stacked. Wraps to two rows on a narrow
+  phone (each stat still one line). Saves ~90px of vertical height, so the whole Earnings tab (money bar →
+  See-expense-breakdown → season earnings list → Full Season Recap) now fits one screen on desktop. Verified
+  in Playwright (desktop + mobile, seeded sponsor season → Earnings tab): the bar renders both stats inline
+  with the divider, net color correct, expense breakdown + earnings list intact, 0 page errors. Deployed to
+  /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
