@@ -11468,6 +11468,18 @@ allows Google Fonts, or self-host Anton.*
   the golfer renders 132×174 (was 64×64) with the full figure (head→feet) beside the chart, 0 page errors;
   screenshot confirms the balanced layout. Deployed to /golf.
 
+- **CS483q — season banner: NET money moved to its own top-right space (owner: "the money can move to its
+  own space in the top right ... this will give everything more space").** On the CS264 live-season franchise
+  banner (`scrSeason`), NET sat inside the `.cb-stats` flex row (World/Tour/Wins/Top10/Cuts/Fans/Net); on a
+  phone the 7th stat wrapped NET onto its own half-row while the top-right beside the name sat empty. Pulled
+  NET out into a new `.cb-nethero` block placed right after the id, `margin-left:auto`/`align-self:flex-start`
+  so it sits in the empty top-right corner beside the name/year (23px value + the CS476 green/red
+  up/down arrow, keeping `id="cb-net"` so the count-up animation still targets it). `.cb-stats` is now a
+  full-width row on all sizes (dropped `margin-left:auto`, added `flex-basis:100%` + a subtle top divider) so
+  the six remaining stats spread evenly with more room. Verified in Playwright at 430px: NET renders
+  top-right (right ~398, same top as the id), the stats moved to their own row below, NET is no longer inside
+  `.cb-stats`, 0 page errors; screenshot confirms the roomier layout. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
