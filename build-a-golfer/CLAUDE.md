@@ -11457,6 +11457,17 @@ allows Google Fonts, or self-host Anton.*
   replays (was jumping straight to N = only the putt), mull applied, offer cleared, 0 page errors. Deployed
   to /golf.
 
+- **CS483p — off-season golfer made much bigger beside the rating chart (owner: "the golfer is way too
+  small here, feel like it could be much bigger").** On `scrOffseason` the pixel golfer in the left column
+  (`.oshero-avcol .oshero-av`) was capped at a tiny **64×64** — the CS483b `.oshero-av .avatarfig{64px}` rule
+  won because the avatar div carries no `.fullbody` class, so the CS483c `.avatarfig.fullbody{212px}` override
+  was dead. Replaced those two rules with a more-specific `.oshero-avcol .oshero-av .avatarfig{width:132px;
+  height:174px}` (box 132×176, vertically centered) so `object-fit:contain` scales the full golfer up ~2.5×;
+  bumped the name max-width 96→132. Fits cleanly next to the 208px radar on a phone (avatar ~132 + gap + radar
+  208 well within a 430 viewport; the radar can flex-shrink if ever needed). Verified in Playwright at 430px:
+  the golfer renders 132×174 (was 64×64) with the full figure (head→feet) beside the chart, 0 page errors;
+  screenshot confirms the balanced layout. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
