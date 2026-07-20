@@ -11497,8 +11497,7 @@ allows Google Fonts, or self-host Anton.*
 
 - **CS483s — season-summary Overview redesign: stats-first + net profit surfaced (owner: "this overview
   page is awkward and not balanced ... missing vital information like net profit ... stats and wins should
-  be the first 2 things ... followed by a brief and specific season highlights summary"). PREVIEW SENT,
-  NOT YET DEPLOYED (owner asked to see it before pushing).** Reordered `scrSummary`'s Overview tab (`ovC`)
+  be the first 2 things ... followed by a brief and specific season highlights summary"). Deployed to /golf (owner approved).** Reordered `scrSummary`'s Overview tab (`ovC`)
   to **STATS → WINS → HIGHLIGHTS → event-result cards**: (1) a new `statHero` block leads the page — a money
   row (**Net profit**, previously only on the Earnings tab, now up top in green/red + **Earnings**) over a
   4-tile grid (Wins / Majors / Top 10's / Tour Rank); (2) **Tournaments Won** trophy cards (now full-width,
@@ -11507,12 +11506,11 @@ allows Google Fonts, or self-host Anton.*
   `.cols` pairing; the final assembly inserts `[statHero, tourWon, highlights, raceCupRow]` before the
   (already-appended) Games callout. The Earnings tab keeps its detailed money bar + expense breakdown
   (Overview shows the at-a-glance summary). Verified in Playwright (real headless season, strong build → Cup
-  champion): Net profit renders on Overview ($13.07M), tabs intact, 0 page errors; screenshot sent to owner
-  for approval. **Deploy to /golf once owner approves.**
+  champion): Net profit renders on Overview ($13.07M), tabs intact, 0 page errors; screenshot approved by owner. Deployed to /golf.
 
 - **CS483t — career-end ceremony: a leaderboard-rank section (Today / This week / All-time) (owner: "the
   career results page should have a leaderboard section that tells you where your career ranks amongst
-  today, this week, and all time"). PREVIEW SENT; needs migration 59 to show live.** Mirrors the CS413
+  today, this week, and all time"). Deployed to /golf; needs migration 59 to show live.** Mirrors the CS413
   season-rank pattern but for CAREERS. New migration **`supabase/59_runtour_career_rank.sql`** (owner-run):
   `runtour_career_rank(p_earnings, p_since_today, p_since_week)` aggregates careers per (user_id, career_id)
   by summed `season_net`, ranks this career's total net profit, and scopes the today/week windows by each
@@ -11527,8 +11525,7 @@ allows Google Fonts, or self-host Anton.*
   global board), fired once per ceremony via `S._careerRankLoading`, and reset in endCareer/endCircuit/
   viewEndedCareer so a later career reloads fresh. Fail-open: signed-out or pre-migration → no card, no crash
   (career mode requires an account anyway). Verified in Playwright (mocked RPC): the card renders "Today #2
-  of 9 · This week #3 of 58 · All time #7 of 1,240" + working View button, 0 page errors; screenshot sent to
-  owner. **ACTION: run `supabase/59_runtour_career_rank.sql`; deploy client on owner go-ahead.**
+  of 9 · This week #3 of 58 · All time #7 of 1,240" + working View button, 0 page errors; owner approved. Deployed client to /golf. **ACTION: run `supabase/59_runtour_career_rank.sql`.**
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
