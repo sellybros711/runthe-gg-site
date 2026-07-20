@@ -1150,21 +1150,23 @@ window.GA_ID='G-L29P5MRWKE';
   @media (prefers-reduced-motion:reduce){ .hvswing.hvsw-glow{ animation:none; filter:drop-shadow(0 0 3px var(--fxc,#f1d04a)) } }
   /* CS378-A1: a STATIC address-pose golfer (no swing) set over the ball during a par-4/5 approach decision */
   .hvsw-static{opacity:1;animation:none}
-  .hvswing .sw0{animation:hvswA 1000ms steps(1,end) forwards}
-  .hvswing .sw1{animation:hvswB 1000ms steps(1,end) forwards}
-  .hvswing .sw2{animation:hvswC 1000ms steps(1,end) forwards}
-  @keyframes hvswA{0%,21%{opacity:1}22%,100%{opacity:0}}
-  @keyframes hvswB{0%,22%{opacity:0}23%,43%{opacity:1}44%,100%{opacity:0}}
-  @keyframes hvswC{0%,43%{opacity:0}44%,100%{opacity:1}}
+  /* CS485: smoother swing — short crossfades between poses (a subtle motion-blur) + a quick fade-in on
+     appear, instead of hard step cuts. */
+  .hvswing .sw0{animation:hvswA 1000ms linear forwards}
+  .hvswing .sw1{animation:hvswB 1000ms linear forwards}
+  .hvswing .sw2{animation:hvswC 1000ms linear forwards}
+  @keyframes hvswA{0%{opacity:0}5%,19%{opacity:1}26%,100%{opacity:0}}
+  @keyframes hvswB{0%,19%{opacity:0}26%,40%{opacity:1}47%,100%{opacity:0}}
+  @keyframes hvswC{0%,40%{opacity:0}47%,100%{opacity:1}}
   /* CS355d: chip (2-frame) + putt (2-frame, hunched) strokes - hold the finish frame too */
-  .hvsw-chip .ch0{animation:hvswC0 600ms steps(1,end) forwards}
-  .hvsw-chip .ch1{animation:hvswC1 600ms steps(1,end) forwards}
-  .hvsw-putt .pt0{animation:hvswP0 520ms steps(1,end) forwards}
-  .hvsw-putt .pt1{animation:hvswP1 520ms steps(1,end) forwards}
-  @keyframes hvswC0{0%,50%{opacity:1}51%,100%{opacity:0}}
-  @keyframes hvswC1{0%,50%{opacity:0}51%,100%{opacity:1}}
-  @keyframes hvswP0{0%,50%{opacity:1}51%,100%{opacity:0}}
-  @keyframes hvswP1{0%,50%{opacity:0}51%,100%{opacity:1}}
+  .hvsw-chip .ch0{animation:hvswC0 600ms linear forwards}
+  .hvsw-chip .ch1{animation:hvswC1 600ms linear forwards}
+  .hvsw-putt .pt0{animation:hvswP0 560ms linear forwards}
+  .hvsw-putt .pt1{animation:hvswP1 560ms linear forwards}
+  @keyframes hvswC0{0%{opacity:0}6%,45%{opacity:1}56%,100%{opacity:0}}
+  @keyframes hvswC1{0%,45%{opacity:0}56%,100%{opacity:1}}
+  @keyframes hvswP0{0%{opacity:0}6%,45%{opacity:1}56%,100%{opacity:0}}
+  @keyframes hvswP1{0%,45%{opacity:0}56%,100%{opacity:1}}
   /* CS355c: the shot-number "pin" above the golfer's head (the golfer covers the resting marker); held */
   .hvswnum{opacity:0; animation:hvswNum 1000ms ease forwards}
   @keyframes hvswNum{0%{opacity:0;transform:translateY(2px)}10%,100%{opacity:1;transform:translateY(0)}}
@@ -10392,33 +10394,58 @@ const _pxSwing=new Map();
 function pxStrokeURLs(look){
   look=look||S.look||DEFLOOK; const av=avLook(look);
   const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===(look.pants||'stone')))||{a:'#c7bfa8'}).a;
-  // CS483u: the swing/TourTracer golfer now renders the chosen SHIRT PATTERN (fixed + tonal) so it reflects
-  // the user's outfit like the standing profile golfer, instead of a plain polo.
+  // CS483u: the swing/TourTracer golfer renders the SHIRT PATTERN. CS485: also renders HEADWEAR styles +
+  // OUTERWEAR / LEGWEAR / CLEATS, so every outfit item shows in TourTracer (not just the base colors).
   const pat=(look.shirtPat&&PXPAT_BY[look.shirtPat])?look.shirtPat:'';
-  const key='sw|'+av.key+'|pn'+(look.pants||'stone')+'|pt'+pat;
+  const hatStyle=(look.cap!==false && look.hatStyle && look.hatStyle!=='visor' && look.hatStyle!=='cap' && (PXG_HATS[look.hatStyle]||PXG_HERITAGE_HAT_PAL[look.hatStyle]))?look.hatStyle:'';   // a STYLE hat to stamp (basic cap/visor are drawn by the sprite's own 'c')
+  const top=(look.top&&PXG_TOPS[look.top])?look.top:'';
+  const legw=(look.leg&&PXG_LEGS[look.leg])?look.leg:'';
+  const cle=(look.cleats&&PXG_CLEATS[look.cleats])?look.cleats:'';
+  const key='sw|'+av.key+'|pn'+(look.pants||'stone')+'|pt'+pat+'|hw'+hatStyle+'|tp'+top+'|lg'+legw+'|cl'+cle;
   let u=_pxSwing.get(key); if(u) return u;
   const P={ s:av.skinHex, j:pxShade(av.skinHex,-26), h:av.hairHex, c:av.hatHex,
     t:av.shirtHex, d:pxShade(av.shirtHex,-30), p:pantsHex, q:pxShade(pantsHex,-22),
     o:av.shoesHex, e:pxShade(av.shoesHex,-24), b:'#2a2c32', l:PXG_FIX.l, g:PXG_FIX.G, k:'#1c241b', w:'#f4f6f2' };
+  // CS485: worn garments recolor their region on the swing sprite so they read as that item.
+  let pd=pat?PXPAT_BY[pat]:null;
+  if(top){ const b=(PXG_TOP_PAL[top]||{})['1']||av.shirtHex; P.t=b; P.d=pxShade(b,-26); pd=null; }   // a jacket over the polo hides the pattern
+  if(legw){ const b=(PXG_LEG_PAL[legw]||{})['1']||pantsHex; P.p=b; P.q=pxShade(b,-24); }
+  if(cle){ const cp=PXG_CLEATS_PAL[cle]||{}; const b=cp.R||cp.T||cp.M||av.shoesHex; P.o=b; P.e=pxShade(b,-28); }
   // CS483u: shirt pattern overlay on the shirt pixels ('t' base / 'd' shade), mirroring pxGolferCanvas.
-  const pd=pat?PXPAT_BY[pat]:null;
   const patLight=(pd&&!pd.fixed)?pxLum(av.shirtHex)>0.55:false;
   const pa1=(pd&&!pd.fixed)?pxShade(av.shirtHex, patLight?-52:46):null;
   const pa2=(pd&&!pd.fixed)?pxShade(av.shirtHex, patLight?-90:82):null;
   const patCol=(x,y,ch)=>{ if(!pd) return null;
     if(pd.fixed){ const cols=pd.cols||[]; let col=cols[pd.f(x,y)|0]||cols[0]; if(!col) return null; return (ch==='d')?pxShade(col,-18):col; }
     const a=pd.f(x,y); if(!a) return null; const col=(a===2)?pa2:pa1; if(!col) return null; return (ch==='d')?pxShade(col,-14):col; };
+  // CS485: a STYLE hat is STAMPED at each frame's head anchor (the sprite's 'c' cap cluster), nearest-neighbor
+  // scaled to the head — so the standing hat art reuses onto whatever pose the swing golfer is in.
+  const hatMap=hatStyle?PXG_HATS[hatStyle]:null;
+  const hatPal=hatStyle?(PXG_HERITAGE_HAT_PAL[hatStyle]||PXG_NOV):null;
+  const hbb=hatMap?(()=>{let t=99,b=-1,l=99,r=-1;for(let y=0;y<hatMap.length;y++){const rw=hatMap[y];for(let x=0;x<rw.length;x++){const ch=rw[x];if(ch!=='.'&&ch!==' '){if(y<t)t=y;if(y>b)b=y;if(x<l)l=x;if(x>r)r=x;}}}return{t,b,l,r};})():null;
   const render=map=>{ const px=4, cv=document.createElement('canvas'); cv.width=PXS_W*px; cv.height=PXS_H*px;
     const ctx=cv.getContext('2d');
     const tp=(x,y)=>{ if(y<0||y>=map.length)return true; const r=map[y]; if(x<0||x>=r.length)return true; const c=r[x]; return c==='.'||c===' '; };
     for(let y=0;y<map.length;y++){ const row=map[y];
-      for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue;
+      for(let x=0;x<row.length;x++){ let ch=row[x]; if(ch==='.'||ch===' ')continue;
         if(ch==='k'){ // OUTER-perimeter outline = a soft translucent rim (lets the course show through so the golfer sits ON the grass, not a sticker); internal detail lines stay crisp
           const outer=tp(x-1,y)||tp(x+1,y)||tp(x,y-1)||tp(x,y+1);
           ctx.fillStyle=outer?'rgba(24,32,24,0.34)':P.k; ctx.fillRect(x*px,y*px,px,px); continue; }
+        if(hatMap && ch==='c') ch='h';   // a style hat replaces the baked basic cap → reveal hair under it
         let col=P[ch]; if(!col)continue;
         if(pd&&(ch==='t'||ch==='d')){ const pc=patCol(x,y,ch); if(pc) col=pc; }
         ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } }
+    if(hatMap && hbb && hbb.b>=0){
+      let ct=99,cb=-1,cl=99,cr=-1;   // this frame's head anchor = its baked 'c' cap cluster
+      for(let y=0;y<map.length;y++){const rw=map[y];for(let x=0;x<rw.length;x++){ if(rw[x]==='c'){ if(y<ct)ct=y;if(y>cb)cb=y;if(x<cl)cl=x;if(x>cr)cr=x; } }}
+      if(cb>=0){ const headCx=(cl+cr)/2, headW=cr-cl+1, cw=hbb.r-hbb.l+1, chh=hbb.b-hbb.t+1;
+        const tw=Math.max(7,Math.round(headW*1.5)), th=Math.max(3,Math.round(chh*tw/cw));
+        const tx0=Math.round(headCx-tw/2+0.5), ty0=(cb+1)-th;   // hat brim sits at the head brow
+        for(let ty=0;ty<th;ty++)for(let tx=0;tx<tw;tx++){
+          const sx=hbb.l+Math.min(cw-1,Math.floor(tx*cw/tw)), sy=hbb.t+Math.min(chh-1,Math.floor(ty*chh/th));
+          const ch=hatMap[sy]&&hatMap[sy][sx]; if(!ch||ch==='.'||ch===' ')continue;
+          const col=(hatPal&&hatPal[ch])||PXG_NOV[ch]||PXG_FIX[ch]||P[ch]; if(!col)continue;
+          ctx.fillStyle=col; ctx.fillRect((tx0+tx)*px,(ty0+ty)*px,px,px); } } }
     return cv.toDataURL('image/png'); };
   const vset=(A,B,C,H0,H1,T0,T1)=>({ full:[render(A),render(B),render(C)], chip:[render(H0),render(H1)], putt:[render(T0),render(T1)] });
   u={ side:vset(PXS_A,PXS_B,PXS_C,PXS_CH0,PXS_CH1,PXS_PT0,PXS_PT1),
@@ -10479,7 +10506,8 @@ function hvSwingMarkup(g,p,look){
   const clsBase = kind==='full'?['sw0','sw1','sw2'] : (kind==='chip'?['ch0','ch1'] : ['pt0','pt1']);
   const cam=hvCamFor2(g,p);
   // putts play under the tight green close-up, so size the golfer to a fraction of THAT frame
-  const GH = kind==='putt' ? Math.max(10, Math.min(20, cam[3]*0.14)) : 24;   // CS371: smaller so it's in scale with the trees/course
+  // CS485 (owner): the golfer is BIGGER on the green close-up so its detail (outfit/accessories) reads.
+  const GH = kind==='putt' ? Math.max(22, Math.min(36, cam[3]*0.26)) : 24;
   const GW=GH*PXS_W/PXS_H;
   // ball address point (grid rows, of PXS_H): side ~48 bottom-right, back/front ~47 bottom-center
   const ballGy = kind==='putt' ? 48 : (view==='side' ? 49 : 47);
