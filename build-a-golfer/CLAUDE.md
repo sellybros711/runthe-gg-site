@@ -11209,6 +11209,18 @@ allows Google Fonts, or self-host Anton.*
   alongside the Cup for consistency since it's the same class of event result — the owner named the Cup.)
   Deployed to /golf.
 
+- **CS482 — Overview symmetry: Race to the Cup (left) + team-Cup result (right) on one row (owner: "make
+  sure everything here is symmetrical - move the atlantic cup to the right and move the race to the cup on
+  the left of that line").** On the Overview tab, the **Race to the Cup** card was stacked under the Highlights
+  column and the **Atlantic/Nations Cup** result was a lone centered block below the stat tiles. Paired them
+  into one SYMMETRIC `.cols` row — Race to the Cup left, team-Cup result right — placed right under the
+  Highlights|Tournaments row (stacks on mobile). Built each into its own `raceCol`/`cupCol`; the row is
+  assembled AFTER both blocks fill (the Cup block runs later than the highlights-row assembly, which was the
+  initial bug: cupCol was empty at assembly time — fixed by moving the assembly after the Cup block). If only
+  one exists that season it centers on its own; the Games medal stays a standalone centered block (rare).
+  Verified in Playwright (seeded Cup result): a 2-column Race|Cup row (Race left, Cup right), 0 page errors.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
