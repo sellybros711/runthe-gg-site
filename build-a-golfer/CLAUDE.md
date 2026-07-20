@@ -11122,6 +11122,35 @@ allows Google Fonts, or self-host Anton.*
   "+$6.00M" white + red ▼, 0 page errors; screenshot confirms. Deployed to /golf. Tunable: `fmtFollowers2`
   precision, the arrow colors/size.
 
+- **CS477 — season-summary Overview tab reorganized (owner, tab-by-tab, from screenshots).** First tab of the
+  owner's "each scrSummary tab should fit one mobile screen" pass (standing requirement: everything must be
+  mobile-friendly, don't re-ask). Five changes to the Overview tab of `scrSummary` (career mode):
+  1. **Removed the green "CAREER MODE · YEAR N COMPLETE" bubble** and tightened the header vertical room; the
+     year no longer appears twice (the header reads just "JJ" + "Year N of 30 · Overall NN"). The career-mode
+     branch renders NO bubble (daily keeps its "★ Daily Challenge complete", circuit keeps "Legend Circuit ·
+     Year N complete").
+  2. **Season Highlights + Tournaments Won are side by side.** Highlights (+ Race to the Cup) build into a
+     left column `hiCol`, Tournaments Won into a right column `tourCol`; a `.cols` row (`hiCol` + `tourCol`)
+     is prepended so it LEADS the Overview, above the stat tiles/achievements. On mobile `.cols` collapses to
+     one column (stacks) per the standing mobile requirement. When there are 0 wins, `tourCol` is empty so
+     only Highlights shows (no empty box).
+  3. **The action buttons are a 2×2 square set** (`.sumbtns` grid, `.btn.sumsq`): top row **Continue to
+     Year X** (goldfill, `continueFranchise`) + **View Leaderboard** (opens the leaderboard overlay, replacing
+     the old standalone Season-Leaderboard-Rank scout card); bottom row **Exit to Home** + **Retire/End
+     Circuit** — square-ish, centered, no longer full-width.
+  4. **The Earnings/Net-Profit money card moved to the Earnings tab** (`__cur=moC` before the money card), so
+     Overview leads with highlights + stats instead of the big money hero.
+  5. **The sponsor season report cards moved to their own new Sponsors tab** (`__cur=spC`;
+     `TABDEFS` gains `['sponsors','Sponsors',spC]` between Earnings and Analytics; the empty-tab filter hides
+     it when there's no sponsor deal, same pattern as Career/History).
+  Verified in Playwright (real headless career season → summary, recorded, 0 page errors): Overview mobile
+  shows no green bubble, a tight header, highlights → race → stat tiles (Wins/Majors/Top10/Tour Rank), no
+  money card, and the 2×2 buttons; Overview desktop shows the Highlights/Tournaments `.cols` row; the money
+  card + expense breakdown + season earnings list render on the Earnings tab; and with a seeded two-slot
+  sponsor the Sponsors tab appears in the bar and renders both sponsor report cards (goals + loyalty +
+  outlook). Deployed to /golf. NEXT: the owner will send directions for the next scrSummary tab; keep every
+  tab mobile-friendly by default.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

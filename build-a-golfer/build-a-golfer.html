@@ -1385,6 +1385,9 @@ window.GA_ID='G-L29P5MRWKE';
   .sumtabbtn:hover{color:var(--oncard)}
   .sumtabbtn.on{color:var(--gold); border-bottom-color:var(--gold)}
   .sumacts{margin-top:18px}
+  /* CS477: season-summary actions as a compact 2×2 grid of square-ish buttons (not full-width bars) */
+  .sumbtns{display:grid; grid-template-columns:1fr 1fr; gap:10px; max-width:520px; margin:0 auto}
+  .sumbtns .btn.sumsq{margin-top:0; min-height:62px; display:flex; align-items:center; justify-content:center; gap:6px; text-align:center; line-height:1.15}
   .srev{flex:0 0 auto; min-width:56px; max-width:118px; border-radius:10px; padding:7px 9px; text-align:center;
     background:var(--panel); border:1px solid var(--line); opacity:.5}
   .srev.done{opacity:1}
@@ -15557,11 +15560,17 @@ function scrSummary(){
   // CS356w: split this long summary into tabs (owner: too long / too much info). Sections build into
   // per-tab containers via a shadowed local add() that appends to __cur; the header + persistent actions
   // sit OUTSIDE the tabs so Continue is always reachable.
-  const hdr=$(`<div></div>`), ovC=$(`<div></div>`), moC=$(`<div></div>`), stC=$(`<div></div>`), reC=$(`<div></div>`), awC=$(`<div></div>`), caC=$(`<div></div>`), hiC=$(`<div></div>`), shC=$(`<div></div>`), actC=$(`<div class="sumacts"></div>`);
+  const hdr=$(`<div></div>`), ovC=$(`<div></div>`), moC=$(`<div></div>`), spC=$(`<div></div>`), stC=$(`<div></div>`), reC=$(`<div></div>`), awC=$(`<div></div>`), caC=$(`<div></div>`), hiC=$(`<div></div>`), shC=$(`<div></div>`), actC=$(`<div class="sumacts"></div>`);
+  // CS477 (owner Overview redesign): Highlights + Tournaments sit side by side in a responsive .cols row.
+  const hiCol=$(`<div class="col"></div>`), tourCol=$(`<div class="col"></div>`);
   let __cur=hdr;
   const add=(n)=>{ if(n) __cur.appendChild(n); return n; };
-  add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':(S.circuitMode?('Legend Circuit · Year '+circuitYear+' complete'):(S.year>1?('Career Mode · Year '+S.year+' complete'):'Season complete'))}</span></div>`));
-  __cur=ovC;
+  // CS477: career mode drops the green "Year N complete" bubble (owner) - it duplicated the "Year N of 30" in
+  // the lede and ate vertical space; the results screen already implies the season is complete. Daily/circuit
+  // keep a slim tag since their mode/context isn't otherwise stated.
+  if(S.daily) add($(`<div class="center"><span class="tag">★ Daily Challenge complete</span></div>`));
+  else if(S.circuitMode) add($(`<div class="center"><span class="tag">Legend Circuit · Year ${circuitYear} complete</span></div>`));
+  __cur=hiCol;
   // season highlights masthead (#6) leads the summary now - the year's story up top.
   // (The global leaderboard rank moved down into the left column, below the Full Season Recap button.)
   const HL=(!S.daily)?seasonHeadlines({t,moneyRank,N,ec,year:S.year||1}):null;
@@ -15588,10 +15597,11 @@ function scrSummary(){
     }
   }
   __cur=hdr;
-  add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':(S.circuitMode?('Year '+circuitYear+' of '+CIRCUIT_MAX_YEARS+' · '):('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS+' · '))}Overall ${ovr}</p>`));
+  add($(`<h1 class="center" style="font-size:30px;margin:6px 0 2px">${me.name}</h1>`));
+  add($(`<p class="lede center" style="margin-bottom:8px">${S.daily?'':(S.circuitMode?('Year '+circuitYear+' of '+CIRCUIT_MAX_YEARS+' · '):('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS+' · '))}Overall ${ovr}</p>`));
   const netCol=ec.net>=0?'#35d6a0':'#E14A33';
-  __cur=ovC;
+  // CS477 (owner): the Earnings / Net-profit money card now lives on the EARNINGS tab (moC), not Overview.
+  __cur=moC;
   // MONEY grouped in ONE horizontal card (owner: money was scattered across ~4 spots and net profit was
   // shown twice - the big hero AND a "Profit" tile). Earnings (gross) + Net profit side by side, one place.
   add($(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin:4px 0 6px">
@@ -15624,7 +15634,8 @@ function scrSummary(){
     add($(`<div class="scout" style="border-color:#b98a2a;text-align:left;margin:8px auto;max-width:520px">
       <div style="font:800 11px/1 var(--body);letter-spacing:.2em;color:#ffd45e;text-transform:uppercase">${ic('coin')} No coins this season</div>
       <div class="small" style="color:#dbe7ee;margin-top:4px">You simmed this season to the end, so it earned no coins. Stay in the sim and play the rounds (and the Moments) next year to earn.</div></div>`));
-  __cur=moC;
+  // CS477 (owner): sponsor season report cards get their OWN "Sponsors" tab (spC), off the Earnings tab.
+  __cur=spC;
   if(contractL.length) add($(contractsReportHTML(contractL, signing)));   // sponsor season report cards (both slots)
   __cur=ovC;
   if(sbSignedIn() && S.freshAch&&S.freshAch.length){   // Tour Rep / achievements are a signed-in feature, never shown to guests
@@ -15646,16 +15657,14 @@ function scrSummary(){
     add($(statSheetHTML(seasonSk, seasonRealStats(), {title:(S.circuitMode?'Legend Circuit · Season Stats':'Season Stats')}))); }
   __cur=reC;
   { const sf=storyFeedHTML(); if(sf) add($(sf)); }   // CS225: Career Story feed + persona payoff
-  __cur=ovC;
-  // (CS413: the season leaderboard-rank card renders just above the "Continue to Year N" button, below.)
-  // WINS grouped with the Wins stat: the actual tournaments won this season sit right under the row
-  // (owner: "wins are at top once and then tiny" - keep the count and the won-events together).
+  // CS477 (owner): Tournaments Won builds into the RIGHT column, side by side with Highlights (row assembled below).
+  __cur=tourCol;
   { const wonThisSeason=[];
     (S.season.results||[]).forEach(r=>{ const meR=r.order&&r.order.find(o=>o.p&&o.p.you); if(meR&&meR.pos===1) wonThisSeason.push({name:r.evt.name,major:!!r.evt.major}); });
     if(wonThisSeason.length){
       // Prominent trophy showcase (owner: "make it much more apparent, bigger") - a titled section with
       // per-tournament trophy cards; majors get their custom trophy + gold treatment.
-      add($(`<div class="center" style="font:800 12px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin:20px 0 3px">Tournaments Won</div>`));
+      add($(`<div class="center" style="font:800 12px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin:2px 0 3px">Tournaments Won</div>`));
       add($(`<div class="center small muted" style="margin:0 0 11px">${wonThisSeason.length} title${wonThisSeason.length>1?'s':''} this season</div>`));
       const wrap=$(`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:11px;max-width:600px;margin:0 auto 6px"></div>`);
       wonThisSeason.forEach(w=>{ const maj=w.major, th=maj?majorTheme(w.name):null;
@@ -15672,6 +15681,13 @@ function scrSummary(){
       });
       add(wrap);
     }
+  }
+  // CS477 (owner): Highlights (left) + Tournaments Won (right) side by side; stacks on mobile via .cols.
+  // Prepended so this row LEADS the Overview tab (above the stat tiles + achievements).
+  if(hiCol.childNodes.length || tourCol.childNodes.length){
+    const _hrow=$(`<div class="cols" style="margin-bottom:10px"></div>`);
+    _hrow.appendChild(hiCol); if(tourCol.childNodes.length) _hrow.appendChild(tourCol);
+    ovC.insertBefore(_hrow, ovC.firstChild);
   }
   __cur=awC;
   // CS267: Season Impact - a broadcast-style recap card whose numbers COUNT UP on first view
@@ -15881,28 +15897,22 @@ function scrSummary(){
       nudge.onclick=()=>{ S.pendingCareerAdopt=true; S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); };
       actC.appendChild(nudge);
     }
-    // CS413: where this SEASON's earnings rank on today's / this week's / all-time boards - right above the
-    // Continue-to-next-season button (owner-placed). Resolves async via loadSeasonRank (fail-open until it lands).
-    if(!S.daily && !S.circuitMode && S.seasonRank){
-      const sr=S.seasonRank;
-      const line=(lab,rk,tot)=> (rk!=null&&tot!=null)
-        ? `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:3px 2px"><span class="small muted" style="text-transform:uppercase;letter-spacing:.08em;font-weight:800">${lab}</span><span style="font:800 15px var(--body);color:var(--gold)">#${Number(rk).toLocaleString()} <span class="small muted" style="font-weight:600">of ${Number(tot).toLocaleString()}</span></span></div>` : '';
-      const rankNode=$(`<div class="scout" style="margin:0 auto 12px;max-width:440px;padding:13px 18px">
-        <div class="center small muted" style="letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:7px">Season Leaderboard Rank</div>
-        ${line('Today',sr.today_rank,sr.today_total)}${line('This week',sr.week_rank,sr.week_total)}${line('All time',sr.rank,sr.total)}
-        <button class="btn gold lb-open" style="width:auto;margin:11px auto 0;padding:8px 16px;font-size:12px;display:block">🏆 View Leaderboard</button>
-      </div>`);
-      rankNode.querySelector('.lb-open').onclick=()=>{S.overlay='leaderboard';render();};
-      actC.appendChild(rankNode);
-    }
+    // CS477 (owner): the actions are a compact 2×2 grid of square-ish buttons, not full-width bars.
+    //   [ Continue to Year X ]  [ View Leaderboard ]
+    //   [ Exit to Home       ]  [ Retire           ]
+    // "View Leaderboard" REPLACES the old Season-Leaderboard-Rank card (removed), opening the full board.
     advanceLabel=lastYear?(S.circuitMode?'Finish Legend Circuit':'Finish Career'):'Continue to Year '+((S.year||1)+1);
-    const cont=$(`<button class="btn goldfill" id="sum-advance">${lastYear?(S.circuitMode?'Finish Legend Circuit ▸':'Finish Career ▸'):'Continue to Year '+((S.year||1)+1)+' ▸'}</button>`);
-    cont.onclick=continueFranchise; actC.appendChild(cont);
-    const save=$(`<button class="btn gold" style="margin-top:10px">Exit to Home<span class="sub">Already saved, come back and resume anytime</span></button>`);
+    const cont=$(`<button class="btn goldfill sumsq" id="sum-advance">${lastYear?(S.circuitMode?'Finish Legend Circuit ▸':'Finish Career ▸'):'Continue to Year '+((S.year||1)+1)+' ▸'}</button>`);
+    cont.onclick=continueFranchise;
+    const lb=$(`<button class="btn gold sumsq">${ic('trophy')} View Leaderboard</button>`);
+    lb.onclick=()=>{S.overlay='leaderboard';render();};
+    const save=$(`<button class="btn gold sumsq">Exit to Home</button>`);
     save.onclick=()=>{ saveCareer(summaryResumeExtra()); track('career_saved_exit',{year:S.year||1}); reset(); render(); };
-    actC.appendChild(save);
-    const retire=$(`<button class="btn ghost" style="margin-top:10px">${S.circuitMode?'End Circuit Now':'Retire, End Career'}</button>`);
-    retire.onclick=()=>{ S.overlay='confirmRetire'; render(); }; actC.appendChild(retire);
+    const retire=$(`<button class="btn ghost sumsq">${S.circuitMode?'End Circuit':'Retire'}</button>`);
+    retire.onclick=()=>{ S.overlay='confirmRetire'; render(); };
+    const grid=$(`<div class="sumbtns"></div>`);
+    grid.appendChild(cont); grid.appendChild(lb); grid.appendChild(save); grid.appendChild(retire);
+    actC.appendChild(grid);
     // right on the year-30 result page itself (not just the separate ceremony screen after "Finish
     // Career ▸"), finalizes the just-completed career exactly as "Finish Career" does, then drops
     // straight into the circuit's own off-season instead of lingering on the ceremony first.
@@ -15921,7 +15931,7 @@ function scrSummary(){
   shC.appendChild(right);
   RT.appendChild(hdr);
   // CS356x: finer, content-driven tabs - only tabs that actually have content, in a fixed order.
-  const TABDEFS=[['overview','Overview',ovC],['money','Earnings',moC],['stats','Analytics',stC],['rep','Reputation',reC],['awards','Awards',awC],['career','Career',caC],['history','History',hiC],['share','Share',shC]];
+  const TABDEFS=[['overview','Overview',ovC],['money','Earnings',moC],['sponsors','Sponsors',spC],['stats','Analytics',stC],['rep','Reputation',reC],['awards','Awards',awC],['career','Career',caC],['history','History',hiC],['share','Share',shC]];
   const TABS=TABDEFS.filter(d=>d[2].childNodes.length);
   if(S.daily || TABS.length<=1){
     TABDEFS.forEach(d=>{ if(d[2].childNodes.length) RT.appendChild(d[2]); });
