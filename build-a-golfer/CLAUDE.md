@@ -11309,6 +11309,23 @@ allows Google Fonts, or self-host Anton.*
   age-decline / spun variants all render correctly, and 0 em dashes remain in the card, with 0 page errors.
   Deployed to /golf.
 
+- **CS483f — Play 18 preview decluttered: What Wins Here + game-plan note + Signature Holes folded into
+  "More about this course" (owner: "What wins here, gameplan up top, gameplan down at the bottom, signature
+  holes should all go in 'more about this course'").** The daily-challenge preview (`scrDailyPreview`,
+  shared by Beat the Pro + Monthly Spotlight) was a ~2.5-screen scroll. Moved the three informational blocks
+  the owner named INTO the course card's existing "More about this course" dropdown (`dailyFeatureCard` now
+  takes an optional `extra` node appended inside the expander): **What Wins Here** (the top-3 skill tags),
+  the **game-plan explanation** ("Pick how boldly to play below…"), and the **Signature Holes** list (the
+  three holes with par/yardage/blurb). The main preview now shows only the essential decisions — course card,
+  countdown, beat-the-tour-average target, streaks + 7-Day Rewards, course record, the Safe/Balanced/Aggressive
+  game-plan picker (its paragraph gone, just a compact "Your game plan" label above the buttons), the Quick
+  Play / Full Round watch picker, Draft button, Course Records, and Legend tokens. Page height dropped from
+  ~2,100px to ~1,277px (a phone-and-a-half → the Draft button is now near the first-screen fold instead of
+  two screens down); opening the dropdown reveals the tagline/blurb/palette/motifs plus the three moved
+  sections. Verified in Playwright (390×844): closed preview no longer shows What Wins Here / Signature Holes
+  header / the game-plan paragraph while the "More about this course" button is present; opening it reveals
+  all three; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
