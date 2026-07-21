@@ -23698,8 +23698,8 @@ function scrH2HDraft(){
   // actions
   const actions=$(`<div class="osactions"></div>`);
   if(filled>=8){
-    const decMode=h2hHasDecisions(S.h2h.mode);   // CS437: 1v1/FFA go to the "make your calls" phase first
-    const sub=$(`<button class="btn goldfill"${S.h2h.submitting?' disabled':''}>${S.h2h.submitting?'Submitting…':(decMode?'Lock in & make your calls ▸':'Lock in my golfer ▸')}<span class="sub">OVR ${h2hOvr()} · ${decMode?'set your strategy':'ready to play'}</span></button>`);
+    const decMode=h2hHasDecisions(S.h2h.mode);   // CS495: 1v1/FFA pick a single game plan before the reveal
+    const sub=$(`<button class="btn goldfill"${S.h2h.submitting?' disabled':''}>${S.h2h.submitting?'Submitting…':(decMode?'Set your game plan ▸':'Lock in my golfer ▸')}<span class="sub">OVR ${h2hOvr()} · ${decMode?'pick your strategy':'ready to play'}</span></button>`);
     sub.onclick=(decMode?h2hStartPlay:h2hSubmitDraft); actions.appendChild(sub);
   } else if(spun){
     if(S.h2h.reSpins>0){ const re=$(`<button class="btn gold">Re-spin · ${S.h2h.reSpins} left<span class="sub">Pass on ${esc(g.name)} for a new golfer</span></button>`); re.onclick=h2hReSpin; actions.appendChild(re); }
@@ -23710,38 +23710,35 @@ function scrH2HDraft(){
   }
   add(actions);
 }
-// CS437: the quick "make your calls" phase (1v1 + FFA). You set Attack/Safe on each signature hole, blind,
-// before the head-to-head reveal. Your calls affect YOUR score in the watch, so bold calls that pay off win.
+// CS495: ONE quick strategic game plan (1v1 + FFA) instead of blind hole-by-hole calls. You pick how
+// aggressively to play the round, blind, before the reveal - a single golf-knowledge-free choice that rides
+// in the transmitted look (look._dec) and shapes YOUR score on every signature hole. A bold plan that pays
+// off can win the match, a safe plan protects your score. Fast, and no future-hole guessing.
 function scrH2HPlay(){
-  const cards=S.h2h.decCards||[], idx=S.h2h.decIdx||0, card=cards[idx];
-  add(h2hTag(`Your game plan · call ${Math.min(idx+1,cards.length)} of ${cards.length}`, true));
-  if(!card){ add($(`<p class="lede center" style="margin-top:24px">Locking in your calls…</p>`)); return; }
-  const key=h2hCourseKey(S.h2h.seed), course=DAILY_COURSES[key], h=course.holes[card.i], par=h[0], yards=h[1];
-  const sc=card.sc, od=card.odds, agg=sc.opts.find(o=>o.agg)||sc.opts[0], safe=sc.opts.find(o=>!o.agg)||sc.opts[1];
-  add($(`<h1 class="center" style="font-size:23px;margin:6px 0 2px">Set Your Strategy</h1>`));
-  add($(`<p class="lede center" style="margin:0 0 12px">Your opponent is making the same calls, blind. A bold call that pays off can win the match — but it can cost you.</p>`));
-  // progress pips (which calls are made)
-  const pips=cards.map((c,ci)=>`<span class="pip ${ci<idx?'on':''}${ci===idx?' cur':''}"></span>`).join('');
-  add($(`<div class="center" style="margin:0 0 12px"><span class="pips">${pips}</span></div>`));
-  // the hole + scenario
-  add($(`<div class="scout" style="max-width:540px;margin:0 auto 14px;border-color:#eab308;background:rgba(234,179,8,.06)">
-    <div class="small" style="color:#eab308;font-weight:800;letter-spacing:.06em;text-transform:uppercase">Hole ${card.i+1} · Par ${par} · ${yards}y · ${esc(sc.tag)}</div>
-    <p style="margin:8px 0 0;font-size:15px">${esc(sc.prompt)}</p></div>`));
-  // two calls: aggressive (red) vs safe (teal), each with its risk/reward odds
-  const wrap=$(`<div style="max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:10px"></div>`);
-  const oddsSub = od ? `${esc(od.stat.name)} ${od.val} · <b style="color:#35d6a0">${od.aggGood}%</b> ${esc(od.goodWord)} · <b style="color:#ff8f7e">${od.aggRisk}%</b> ${esc(od.riskWord)}` : esc(agg.s||'');
-  const aggB=$(`<button class="btn" style="background:linear-gradient(180deg,#e0533b,#b83824);border:1px solid #ff8f7e;text-align:left;padding:14px 16px">
-    <span style="display:block;font-weight:800;font-size:16px">⚡ ${esc(agg.l)}</span>
-    <span class="sub" style="opacity:.95;text-transform:none;letter-spacing:0;font-weight:600">${oddsSub}</span></button>`);
-  aggB.onclick=()=>h2hPickDec(true);
-  const safeSub = od ? `Steady play · <b style="color:#35d6a0">${od.safeGood}%</b> ${esc(od.goodWord)} · protect par` : esc(safe.s||'');
-  const safeB=$(`<button class="btn" style="background:linear-gradient(180deg,#0f8f86,#0b6f68);border:1px solid #35d6a0;text-align:left;padding:14px 16px">
-    <span style="display:block;font-weight:800;font-size:16px">🛡 ${esc(safe.l)}</span>
-    <span class="sub" style="opacity:.95;text-transform:none;letter-spacing:0;font-weight:600">${safeSub}</span></button>`);
-  safeB.onclick=()=>h2hPickDec(false);
-  wrap.appendChild(aggB); wrap.appendChild(safeB);
+  add(h2hTag('Your game plan', true));
+  add($(`<h1 class="center" style="font-size:24px;margin:8px 0 6px">Pick your game plan</h1>`));
+  add($(`<p class="lede center" style="max-width:460px;margin:0 auto 4px">How do you want to play this match? Your opponent is choosing too, blind.</p>`));
+  add($(`<p class="small muted center" style="margin:0 0 18px">Going for it can win it, or cost you. Play it safe to protect your score.</p>`));
+  const wrap=$(`<div style="max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:11px"></div>`);
+  [['attack','⚡','Go for it','Attack every chance. High risk, high reward.','linear-gradient(180deg,#e0533b,#b83824)','#ff8f7e'],
+   ['bal','⚖','Balanced','A measured mix of safe and bold.','linear-gradient(180deg,#2a5c8a,#1d3f61)','#7fb2e6'],
+   ['safe','🛡','Play it safe','Steady, low-risk golf. Protect your score.','linear-gradient(180deg,#0f8f86,#0b6f68)','#35d6a0']]
+  .forEach(o=>{
+    const b=$(`<button class="btn" style="background:${o[4]};border:1px solid ${o[5]};text-align:left;padding:15px 16px">
+      <span style="display:block;font-weight:800;font-size:17px">${o[1]} ${o[2]}</span>
+      <span class="sub" style="opacity:.95;text-transform:none;letter-spacing:0;font-weight:600">${o[3]}</span></button>`);
+    b.onclick=()=>h2hPickPlan(o[0]);
+    wrap.appendChild(b);
+  });
   add(wrap);
-  add($(`<p class="small muted center" style="margin:14px 0 0">Make all ${cards.length} calls to lock in your golfer.</p>`));
+  add($(`<p class="small muted center" style="margin:16px 0 0">This sets your strategy for the whole round.</p>`));
+}
+// apply the chosen plan to every signature hole (true=attack / false=safe / null=balanced), then submit.
+function h2hPickPlan(plan){
+  const val = plan==='attack' ? true : plan==='safe' ? false : null;
+  S.h2h.myDec={}; (S.h2h.decCards||[]).forEach(c=>{ S.h2h.myDec[c.i]=val; });
+  try{ track('h2h_plan',{mode:S.h2h.mode, plan}); }catch(e){}
+  h2hSubmitDraft();
 }
 function h2hSum(scores,n){ let t=0; for(let i=0;i<Math.min(n,scores.length);i++) t+=scores[i]; return t; }
 // which units' ball is IN THE CUP at this reveal step of a hole (a unit is done when ALL its shots for
@@ -23880,7 +23877,7 @@ function scrH2HWatch(){
       // hole info + scoreboard stay in FIXED corners all round (owner: they must not flip between holes)
       shell.appendChild($(`<div class="hvob hvhole">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
       const curW=h.order[Math.max(0,Math.min(S.h2h.wStep||1,h.order.length)-1)], stW=curW?h.shots[curW.u][curW.i]:null;
-      const bd=$(`<div class="hvob hvboard${(stW&&stW.d)?'':' nodesc'}"><div class="hvbcap">THRU ${played} · ${holes} HOLES</div></div>`);
+      const bd=$(`<div class="hvob hvboard${(stW&&stW.d)?'':' nodesc'}"><div class="hvbcap">HOLE ${h.n} · PAR ${h.par} · THRU ${played}/${holes}</div></div>`);
       // the scoreboard updates the MOMENT a ball drops, not when the hole advances (owner) - add the
       // current hole's score for any unit whose ball is already in the cup at this reveal step.
       const holed=h2hHoledUnits(h, S.h2h.wStep);
