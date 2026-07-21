@@ -20715,7 +20715,7 @@ function scrDailyRound(){
     const big=ace?'HOLE-IN-ONE!':esc(dResultLong(lh.par,lh.toPar)).toUpperCase();
     add($(`<div class="center" style="margin:2px 0 8px"><span style="display:inline-block;padding:7px 16px;border-radius:12px;border:1.5px solid ${col};background:rgba(255,255,255,.03);font-weight:800;letter-spacing:.03em;color:${col}">Hole ${lh.n} · ${big} · ${lh.par+lh.toPar} (${dtp(lh.toPar)})</span></div>`));
   }
-  const lg=(revealing||holePause||reviewing)?null:dLegend(); if(lg) add(lg);
+  // CS514 (owner): the "New to golf?" primer card is removed - it was bothersome popping up on the round.
   // review controls (title + selected-shot description + shot scrubber) render ABOVE the tall tracer
   // so the chips and the replaying window are visible together (owner: "rewatch any shot", great UX)
   if(reviewing && played.length){
