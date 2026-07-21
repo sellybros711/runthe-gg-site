@@ -159,6 +159,72 @@ def frame_W(ph):
 FRAMES={'N':frame_N,'E':frame_E,'S':frame_S,'W':frame_W}
 ANCH={'N':[18,17],'E':[11,21],'S':[W-1-18,17],'W':[10,18]}
 
+# ============================================================================
+# CS506: CHIP + PUTT reuse the EXACT swing BODY (head+torso+legs of the address
+# pose) so the golfer looks identical to the driving/approach swing, just with a
+# small chip / putt motion. 2 frames each (the game loops ch0/ch1, pt0/pt1).
+# ============================================================================
+def body_addr(dirK, f):   # the address-pose body (no arms) for a direction
+    if dirK=='N': head_side(f,'down'); torso_side(f,'A'); legs_addr(f)
+    elif dirK=='E': head_front(f,'down'); torso_front(f,'A'); legs_front(f)
+    elif dirK=='W': head_back(f,None); torso_back(f,'A'); legs_front(f)
+
+# --- SIDE view (N): golfer left of ball, club reaches down-right to the ball ---
+def arms_chip_side(f,i):
+    sx,sy=CX+1,11
+    if i==0:   # address = same low club as the full-swing address
+        hx,hy=CX+5,15; seg(f,sx,sy,hx,hy,'s'); f[15][min(W-1,CX+5)]='x'
+        seg(f,hx,hy,CX+7,16,'l',wide=False); clubhead(f,CX+8,16)
+    else:      # small follow: hands forward, club to ~1 o'clock (NOT over the shoulder)
+        hx,hy=CX+4,12; seg(f,sx,sy,hx,hy,'s'); f[12][min(W-1,CX+4)]='x'
+        seg(f,hx,hy,CX+6,9,'l',wide=False); clubhead(f,CX+7,8)
+def arms_putt_side(f,i):
+    sx,sy=CX+1,12
+    hx,hy=CX+5,15
+    seg(f,sx,sy,hx,hy,'s'); f[15][min(W-1,CX+5)]='x'
+    ty=18 if i==0 else 17   # putter near-vertical to the ball; a tiny stroke forward
+    seg(f,hx,hy,CX+7,ty,'l',wide=False); clubhead(f,CX+8,ty)
+# --- FRONT view (E): golfer above ball, club straight down to the ball below ---
+def arms_chip_front(f,i):
+    ls,rs=FCX-4,FCX+4
+    if i==0:
+        seg(f,ls,12,FCX-1,17,'s',wide=False); seg(f,rs,12,FCX+1,17,'s',wide=False)
+        box(f,FCX-1,FCX+1,17,18,'s'); f[18][FCX]='x'; seg(f,FCX,18,FCX,20,'l',wide=False); clubhead(f,FCX+1,20)
+    else:      # small follow toward the target (viewer-right)
+        seg(f,ls,12,FCX,16,'s',wide=False); seg(f,rs,12,FCX+2,15,'s',wide=False)
+        box(f,FCX,FCX+2,15,16,'s'); f[16][FCX+1]='x'; seg(f,FCX+2,15,FCX+4,12,'l',wide=False); clubhead(f,FCX+5,11)
+def arms_putt_front(f,i):
+    ls,rs=FCX-4,FCX+4
+    seg(f,ls,12,FCX-1,17,'s',wide=False); seg(f,rs,12,FCX+1,17,'s',wide=False)
+    box(f,FCX-1,FCX+1,17,18,'s'); f[18][FCX]='x'
+    ty=21 if i==0 else 20
+    seg(f,FCX,18,FCX,ty,'l',wide=False); clubhead(f,FCX+1,ty)
+# --- BACK view (W): back to camera, short club poking down to the ball below ---
+def arms_chip_back(f,i):
+    box(f,FCX-1,FCX+1,15,17,'s'); f[16][FCX]='x'                # a hint of hands low-centre
+    if i==0:
+        seg(f,FCX,17,FCX,19,'l',wide=False); clubhead(f,FCX+1,19)
+    else:
+        seg(f,FCX,16,FCX+2,13,'l',wide=False); clubhead(f,FCX+3,12)
+def arms_putt_back(f,i):
+    box(f,FCX-1,FCX+1,15,17,'s'); f[16][FCX]='x'
+    ty=19 if i==0 else 18
+    seg(f,FCX,17,FCX,ty,'l',wide=False); clubhead(f,FCX+1,ty)
+
+def _side_cp(kind,i):   # build a SIDE (N) chip/putt frame
+    f=blank(); body_addr('N',f)
+    (arms_chip_side if kind=='chip' else arms_putt_side)(f,i); return rows(f)
+def frame_chip(dirK,i):
+    if dirK=='N': return _side_cp('chip',i)
+    if dirK=='S': return mirror(_side_cp('chip',i))
+    f=blank(); body_addr(dirK,f)
+    (arms_chip_front if dirK=='E' else arms_chip_back)(f,i); return rows(f)
+def frame_putt(dirK,i):
+    if dirK=='N': return _side_cp('putt',i)
+    if dirK=='S': return mirror(_side_cp('putt',i))
+    f=blank(); body_addr(dirK,f)
+    (arms_putt_front if dirK=='E' else arms_putt_back)(f,i); return rows(f)
+
 PAL={'c':'#20304f','b':'#16223a','w':'#3a4c6b','h':'#3b2a1d','i':'#2a1d13',
      't':'#1f8f7e','d':'#166b5e','v':'#33a894','p':'#2a3350','q':'#1c2338',
      'o':'#181b22','s':'#c9926a','x':'#b07f56','j':'#a3714e','l':'#d3d6dc',
@@ -181,9 +247,20 @@ if __name__=='__main__':
     for ri,d in enumerate(dirs):
         fr={ph:FRAMES[d](ph) for ph in ['A','B','C']}
         out[d]={ph:fr[ph] for ph in ['A','B','C']}
+        out[d]['cA']=frame_chip(d,0); out[d]['cB']=frame_chip(d,1)
+        out[d]['pA']=frame_putt(d,0); out[d]['pB']=frame_putt(d,1)
         dr.text((6,10+ri*(H*sc+34)+H*sc//2),dirlab[d],fill=(245,240,200,255))
         for ci,(ph,lab) in enumerate(seq):
             if ri==0: dr.text((110+ci*(W*sc+8),4),lab,fill=(235,235,235,255))
             grid.alpha_composite(render(fr[ph],sc),(110+ci*(W*sc+8),18+ri*(H*sc+34)))
     grid.save('scratchpad/swing4.png'); print('4-dir ok')
+    # separate preview for chip + putt (address/motion per direction)
+    cseq=[('cA','chip 1'),('cB','chip 2'),('pA','putt 1'),('pB','putt 2')]
+    cg=Image.new('RGBA',(W*sc*4+130,(H*sc+34)*4+20),(70,116,68,255)); cd=ImageDraw.Draw(cg)
+    for ri,d in enumerate(dirs):
+        cd.text((6,10+ri*(H*sc+34)+H*sc//2),dirlab[d],fill=(245,240,200,255))
+        for ci,(ph,lab) in enumerate(cseq):
+            if ri==0: cd.text((110+ci*(W*sc+8),4),lab,fill=(235,235,235,255))
+            cg.alpha_composite(render(out[d][ph],sc),(110+ci*(W*sc+8),18+ri*(H*sc+34)))
+    cg.save('scratchpad/chipputt4.png'); print('chip/putt ok')
     json.dump({'frames':out,'anch':ANCH}, open('scratchpad/swing4.json','w'))

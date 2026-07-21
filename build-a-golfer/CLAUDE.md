@@ -11947,6 +11947,26 @@ allows Google Fonts, or self-host Anton.*
   career board podium = top 3, list = #4-6 (no overlap); Play 18 podium = top 3 by score, list = the rest
   with avatars; 0 page errors. Deployed to /golf.
 
+- **CS506 — chipping & putting use the perfected SW4 golfer body (owner: "the chipping and putting needs to
+  be updated so the golfer body positions are the same as the driving and approach that we perfected").**
+  After CS503 the righty FULL swing used the new 4-direction `pxSw4` bodies, but chip/putt still fell back to
+  the old `pxDir8` golfer (a different build/stance). Now chip and putt reuse the EXACT SW4 body (head + torso
+  + legs of the address pose) in all 4 directions, so the golfer looks identical to the driving/approach
+  swing — only the arms/club do a small chip (address → modest lift, never over the shoulder) or putt (club
+  low to the ball → tiny stroke) motion. Authored in `scratchpad/swing4.py` (`frame_chip`/`frame_putt` reuse
+  the swing's `head_*`/`torso_*`/`legs_*` helpers; only new small-motion arm/club functions per view: side
+  N/S, front E, back W), 2 frames each, placed at the same per-direction ball anchor (`PXG_SW4_ANCH`) as the
+  full swing so the club addresses the ball. Wired: `PXG_SW4` regenerated with `cA/cB/pA/pB` per direction;
+  `pxSw4` now returns `{full, chip:[cA,cB], putt:[pA,pB]}`; `hvSwingMarkup`'s `useSw4` gate widened from
+  `kind==='full' && !lefty` to just `!lefty`, so the righty golfer uses SW4 for full AND chip AND putt (facing
+  = `sw4For(aim-to-cup)`; chip→`ch0/ch1`, putt→`pt0/pt1`). Lefty still keeps the pxDir8 system (flagged
+  follow-up, same as CS503). Verified in Playwright: `pxSw4` returns valid, distinct chip[2]/putt[2] frames
+  for all 4 directions (none equal to a swing frame); a direct `hvSwingMarkup(g, chipPlot/puttPlot)` returns
+  the SW4 `hvsw ch`/`hvsw pt` golfer with the correct cup-facing; the full swing is unbroken (4 frames,
+  impact===address); a practice round plays clean (pixel course + tracer render); 0 page errors; and the
+  standalone sprite grid (`scratchpad/chipputt4.png`) confirms the chip/putt bodies are visually identical to
+  the perfected swing body across all 4 directions. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
