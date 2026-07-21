@@ -11756,6 +11756,35 @@ allows Google Fonts, or self-host Anton.*
     `emit_dir8_l.py`. To ship: regenerate → `python3 scratchpad/dir8blefty2.py && python3
     scratchpad/emit_dir8_l.py`, splice into the two `PXG_DIR8_L*` consts, deploy with CS490/CS491.
 
+- **CS499 — TourTracer golfer now actually SWINGS (owner: "the golfer is standing still and the club is
+  moving a little bit... I want it to really look like the characters are swinging the club like a real golf
+  swing. Too stagnant, or the animation is moving too fast that I can't see it").** Root cause (confirmed in
+  the sprite generator): the dir8 swing poses shared a byte-identical body AND byte-identical arms across
+  every frame - only the club LINE moved. So the figure literally stood still while a stick rotated a few
+  degrees. Two fixes, in the sprite art + the animation timing:
+  1. **The ARMS move now, + a 4th frame.** Rewrote the pose generator (`scratchpad/swingfix.py`) keeping the
+     exact per-direction `body()` verbatim (so hats/patterns/colors stay aligned), but the arms are drawn as
+     a shoulder->hand band whose HAND repositions per phase, and the full swing is a real 4-beat arc:
+     **address** (hands low, club to the ball) -> **top of backswing** (hands high & back, club over the
+     trail shoulder) -> **impact** (hands back low, club down through the ball - the beat that was missing)
+     -> **finish** (hands high & forward, club wrapped over the lead shoulder). Chip arms move too. Applied
+     to all 5 authored facings (righty `PXG_DIR8`) + the lefty set (`PXG_DIR8_L`, mirrored/flip-swept per the
+     CS493 rules); `pxDir8().full` is now `[A,B,D,C]` and `clsBase` full = `[sw0,sw1,sw2,sw3]`. (Since CS494
+     the golfer only ever selects E/W side-on, so the E-facing swing is what players see; the others are
+     improved for parity.)
+  2. **Retimed so you can SEE it.** The old 1000ms / 3-frame anim held the finish for over half its length.
+     New 1150ms 4-frame keyframes: address held briefly -> a real held top-of-backswing (the wind-up reads)
+     -> a quick downswing snap to impact -> the finish held. `hvKick` swingMs 390->640 so the ball launches
+     at the swing's impact frame (chip 290->300). Reduced-motion still hides the golfer; the holed-beat still
+     holds the finish frame statically.
+  Verified in Playwright: `pxDir8` returns 4 distinct full-swing frames righty AND lefty; the live CSS
+  timeline sampled at 120/420/700/980ms shows the four poses sequence in order (address -> top -> impact ->
+  finish) with the arms tracing the whole arc; an in-context tee shot on Pebble renders the swinging golfer
+  with the ball launching on the tracer and zero page errors. Sprite consts regenerated via
+  `scratchpad/swingfix.py` + `scratchpad/emit_swingfix.py` (splices both `PXG_DIR8`/`PXG_DIR8_L` in place).
+  Tunable: the per-phase hand positions in `swingfix.py`'s `draw_swing`, the `hvsw[A/B/D/C]` keyframe
+  timing, `swingMs`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
