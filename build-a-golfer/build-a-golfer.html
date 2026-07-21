@@ -1184,22 +1184,25 @@ window.GA_ID='G-L29P5MRWKE';
   /* CS499: a real, legible 4-frame swing - the ARMS move now, not just the club. address (sw0) ->
      top of backswing (sw1) -> impact (sw2) -> finish (sw3), paced so the wind-up reads and the
      downswing snaps through. The ball launches at impact (hvKick swingMs). */
-  .hvswing .sw0{animation:hvswA 1150ms linear forwards}
-  .hvswing .sw1{animation:hvswB 1150ms linear forwards}
-  .hvswing .sw2{animation:hvswD 1150ms linear forwards}
-  .hvswing .sw3{animation:hvswC 1150ms linear forwards}
-  @keyframes hvswA{0%,15%{opacity:1}24%,100%{opacity:0}}                    /* address */
-  @keyframes hvswB{0%,20%{opacity:0}27%,46%{opacity:1}54%,100%{opacity:0}}  /* top (held - the wind-up) */
-  @keyframes hvswD{0%,50%{opacity:0}56%,63%{opacity:1}70%,100%{opacity:0}}  /* impact (quick) */
-  @keyframes hvswC{0%,62%{opacity:0}70%,100%{opacity:1}}                    /* finish (held) */
+  /* CS511 (owner): smooth the frame transitions (no flicker) while keeping the same swing SPEED. Each frame
+     fades OUT exactly as the next fades IN over the SAME interval (complementary), so total opacity stays 1
+     at every instant - no dip/blank flash - and ease-in-out softens each crossfade. Durations unchanged. */
+  .hvswing .sw0{animation:hvswA 1150ms ease-in-out forwards}
+  .hvswing .sw1{animation:hvswB 1150ms ease-in-out forwards}
+  .hvswing .sw2{animation:hvswD 1150ms ease-in-out forwards}
+  .hvswing .sw3{animation:hvswC 1150ms ease-in-out forwards}
+  @keyframes hvswA{0%,18%{opacity:1}30%,100%{opacity:0}}                    /* address -> */
+  @keyframes hvswB{0%,18%{opacity:0}30%,45%{opacity:1}55%,100%{opacity:0}}  /* top (held - the wind-up) */
+  @keyframes hvswD{0%,45%{opacity:0}55%,62%{opacity:1}72%,100%{opacity:0}}  /* impact */
+  @keyframes hvswC{0%,62%{opacity:0}72%,100%{opacity:1}}                    /* finish (held) */
   /* CS508: chip reuses the full-swing sw0..sw3 animation (its frames = [A, small-top, A, C]).
-     Putt is a 3-frame stroke: address -> take back -> follow through (held). */
-  .hvsw-putt .pt0{animation:hvswPT0 640ms linear forwards}
-  .hvsw-putt .pt1{animation:hvswPT1 640ms linear forwards}
-  .hvsw-putt .pt2{animation:hvswPT2 640ms linear forwards}
-  @keyframes hvswPT0{0%,18%{opacity:1}30%,100%{opacity:0}}                    /* address (held briefly) */
-  @keyframes hvswPT1{0%,25%{opacity:0}34%,50%{opacity:1}60%,100%{opacity:0}}  /* take back */
-  @keyframes hvswPT2{0%,55%{opacity:0}66%,100%{opacity:1}}                    /* follow through (held) */
+     Putt is a 3-frame stroke: address -> take back -> follow through (held). CS511: complementary + eased. */
+  .hvsw-putt .pt0{animation:hvswPT0 640ms ease-in-out forwards}
+  .hvsw-putt .pt1{animation:hvswPT1 640ms ease-in-out forwards}
+  .hvsw-putt .pt2{animation:hvswPT2 640ms ease-in-out forwards}
+  @keyframes hvswPT0{0%,20%{opacity:1}32%,100%{opacity:0}}                    /* address -> */
+  @keyframes hvswPT1{0%,20%{opacity:0}32%,50%{opacity:1}62%,100%{opacity:0}}  /* take back */
+  @keyframes hvswPT2{0%,50%{opacity:0}62%,100%{opacity:1}}                    /* follow through (held) */
   /* CS355c: the shot-number "pin" above the golfer's head (the golfer covers the resting marker); held */
   .hvswnum{opacity:0; animation:hvswNum 1000ms ease forwards}
   @keyframes hvswNum{0%{opacity:0;transform:translateY(2px)}10%,100%{opacity:1;transform:translateY(0)}}

@@ -12062,6 +12062,21 @@ allows Google Fonts, or self-host Anton.*
   /golf. Tunable: the `.rsc` legend/gutter styling + the gutter width in `scoreCardEl`, the Moment header
   meta in `scrDailyRound`.
 
+- **CS511 — smoother TourTracer swing (no frame flicker), same swing speed (owner: "I don't like how the
+  golfer flashes between animation frames. Can we smooth it out but keep the swing speed the same").** The
+  swing/chip/putt play as stacked sprite frames cross-faded by opacity keyframes. The old timings had DIPS —
+  brief windows where one pose had faded out before the next faded in (e.g. address fading out 15-24% while
+  the top only faded in 20-27%), so the golfer momentarily dimmed against the course = the flicker. Fixed by
+  making every crossfade COMPLEMENTARY: each frame fades OUT over the exact same interval the next fades IN,
+  so the total opacity stays 1 at every instant (a frame is always fully covering), and switched the timing
+  from `linear` to `ease-in-out` so each crossfade eases softly. Durations are unchanged — full swing 1150ms,
+  putt 640ms — so the swing SPEED is identical; only the blending is smoothed. Applies to the full swing, the
+  chip (which reuses the swing animation), and the 3-frame putt. Verified in Playwright by stepping each
+  animation's `currentTime` across its full timeline and summing the stacked frames' computed opacity: the
+  minimum sum is exactly 1.000 for the swing, chip, and putt (previously it dipped below 1 at the
+  transitions), 0 page errors. CSS-only. Deployed to /golf. Tunable: the `hvsw*` keyframe hold/crossfade
+  percentages + the ease.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
