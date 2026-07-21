@@ -18214,15 +18214,37 @@ function pxTerrainURL(g, seedN, B, opts){
   const gcx=g.gcx,gcy=g.L,grx=g.greenR[0],gry=g.greenR[1];
   const gIrr=g.greenIrr||0.14, gp1=hvHash(seed,201,1)*6.283, gp2=hvHash(seed,202,1)*6.283, gp3=hvHash(seed,203,1)*6.283;
   const gMod=(x,y)=>{const a=Math.atan2((y-gcy)/gry,(x-gcx)/grx);return 1+gIrr*(Math.sin(a*3+gp1)*0.55+Math.sin(a*2+gp2)*0.34+Math.sin(a*5+gp3)*0.22);};
+  // CS512 (owner): ponds, creeks and bunkers get ORGANIC, natural outlines instead of plain ellipses/circles/
+  // straight bands - multi-frequency angular perturbation + value-noise (like the green), so they read as
+  // part of the landscape. All in course-space (resolution-independent → identical on the base + zoom tiles).
+  const wPh=[hvHash(seed,210,1)*6.283,hvHash(seed,211,1)*6.283,hvHash(seed,212,1)*6.283];
+  const wMod=(x,y)=>{const w=g.water,a=Math.atan2((y-w.y)/w.ry,(x-w.x)/w.rx);
+    return 1+0.30*(Math.sin(a*3+wPh[0])*0.5+Math.sin(a*2+wPh[1])*0.34+Math.sin(a*5+wPh[2])*0.24+(vnoise(x*0.34+40,y*0.34+9)-0.5)*0.44);};
+  // each bunker: its own rotated, elongated (kidney) outline with scalloped edges
+  const bMod=g.bunkers.map((bk,i)=>({p0:hvHash(seed,220+i,1)*6.283,p1:hvHash(seed,230+i,1)*6.283,p2:hvHash(seed,240+i,1)*6.283,
+    asp:0.6+hvHash(seed,250+i,1)*0.85, rot:hvHash(seed,260+i,1)*3.1416}));
+  // creek: a MEANDERING centerline + varying width (not a straight horizontal band)
+  const ckA=hvHash(seed,270,1)*6.283, ckB=hvHash(seed,271,1)*6.283, ckW=hvHash(seed,272,1);
+  const creekMid=(x)=> g.creek.y + Math.sin(x*0.055+ckA)*4.6 + Math.sin(x*0.15+ckB)*2.1 + (vnoise(x*0.3+90,4)-0.5)*3;
+  const creekHalf=(x)=> Math.max(1.4, 2.4 + Math.sin(x*0.11+ckB)*0.9 + (vnoise(x*0.4+12,7)-0.5)*1.5 + ckW*0.5);
   const XY=new Float32Array(GW*GH*2);
   for(let cy=0;cy<GH;cy++){const vy=cam[1]+(cy+0.5)/GH*cam[3],y=g.span*(HV_H-34-vy)/(HV_H-78);
     const beyond=(y<0||y>g.span),tf=g.t(Math.max(0,Math.min(g.span,y)));
     for(let cx=0;cx<GW;cx++){const vx=cam[0]+(cx+0.5)/GW*cam[2],x=(vx-HV_W/2)/(g.sx*tf);
       XY[(cy*GW+cx)*2]=x;XY[(cy*GW+cx)*2+1]=y;
       const gd=(x-gcx)*(x-gcx)/(grx*grx)+(y-gcy)*(y-gcy)/(gry*gry);const gm=gMod(x,y),gm2=gm*gm;
-      let inWater=false;if(g.water){const w=g.water;if((x-w.x)*(x-w.x)/(w.rx*w.rx)+(y-w.y)*(y-w.y)/(w.ry*w.ry)<=1)inWater=true;}
-      if(g.creek&&Math.abs(y-g.creek.y)<3.2)inWater=true;
-      let inSand=false;for(const bk of g.bunkers){if(Math.hypot(x-bk.x,y-bk.y)<bk.r){inSand=true;break;}}
+      let inWater=false;
+      if(g.water){const w=g.water,dd=(x-w.x)*(x-w.x)/(w.rx*w.rx)+(y-w.y)*(y-w.y)/(w.ry*w.ry);
+        if(dd<=2.6){const m=wMod(x,y);if(dd<=m*m)inWater=true;}}                              // organic pond outline
+      if(!inWater&&g.creek&&Math.abs(y-g.creek.y)<13){if(Math.abs(y-creekMid(x))<creekHalf(x))inWater=true;}   // meandering creek
+      let inSand=false;
+      for(let bi=0;bi<g.bunkers.length;bi++){const bk=g.bunkers[bi],dx=x-bk.x,dy=y-bk.y;
+        if(dx*dx+dy*dy>bk.r*bk.r*5.3)continue;                                                 // cheap bbox skip
+        const bm=bMod[bi],ca=Math.cos(bm.rot),sa=Math.sin(bm.rot),rx=dx*ca+dy*sa,ry=(-dx*sa+dy*ca)/bm.asp;
+        const rr=Math.hypot(rx,ry),ang=Math.atan2(ry,rx);
+        const m=1+0.30*(Math.sin(ang*3+bm.p0)*0.5+Math.sin(ang*2+bm.p1)*0.36+Math.sin(ang*5+bm.p2)*0.26+(vnoise(x*0.4+bi*13,y*0.4)-0.5)*0.44);
+        if(rr<bk.r*m){inSand=true;break;}                                                      // kidney/scalloped bunker
+      }
       const inFw=(!beyond&&y>5&&y<g.L+3&&Math.abs(x-g.cx(y))<g.fww(y)),inTee=(y>=0&&y<7&&Math.abs(x)<8.5);
       let id=beyond?DE:RO;
       if(gd<=gm2)id=GR;else if(gd<=gm2*1.32)id=FR;else if(inWater)id=WA;else if(inSand)id=SA;else if(inFw)id=FW;else if(inTee)id=TE;
