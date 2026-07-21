@@ -930,6 +930,26 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* daily challenge scorecard */
   .dcard{display:grid; grid-template-columns:repeat(9,1fr); gap:4px}
+  /* CS502: shared realistic scorecard (Hole / Par / player rows with OUT-IN-TOT totals). TOT = total strokes. */
+  .rsc{max-width:600px; margin:0 auto; display:flex; flex-direction:column; gap:9px}
+  .rsc-block{display:grid; background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(4,16,10,.28)); border:1px solid var(--panelb); border-radius:12px; overflow:hidden; box-shadow:0 8px 22px -16px rgba(0,0,0,.7)}
+  .rsc-lab{padding:5px 8px; font:800 9px/1.1 var(--body); letter-spacing:.05em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; background:rgba(0,0,0,.2); border-right:1px solid rgba(255,255,255,.07); border-bottom:1px solid rgba(255,255,255,.045)}
+  .rsc-c{padding:6px 0; text-align:center; font:700 11.5px/1 var(--mono); color:#cfe0d6; border-left:1px solid rgba(255,255,255,.035); border-bottom:1px solid rgba(255,255,255,.045)}
+  .rsc-hd{font-weight:800; color:#9db3a6; background:rgba(0,0,0,.18)}
+  .rsc-par{color:#7d968a; font-weight:600; font-size:10.5px}
+  .rsc-sub{background:rgba(255,255,255,.05); font-weight:800}
+  .rsc-tot{background:rgba(241,208,74,.1)}
+  .rsc-hd.rsc-sub{color:var(--gold)}
+  .rsc-pl.rsc-lab{color:var(--oncard); font-weight:800; letter-spacing:0; text-transform:none; font-size:10.5px}
+  .rsc-pl.rsc-lab.mine,.rsc-pl.rsc-lab.win{color:var(--gold)}
+  .rsc-pl.rsc-lab.mine{box-shadow:inset 3px 0 0 var(--gold)}
+  .rsc-dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; flex:0 0 auto}
+  .rsc-c.winrow,.rsc-lab.winrow{background:linear-gradient(0deg,rgba(241,208,74,.09),rgba(241,208,74,.09)),rgba(0,0,0,.12)}
+  .rsc-c.cur{background:rgba(241,208,74,.18); box-shadow:inset 0 0 0 1px var(--gold)}
+  .rsc-c.sel{background:rgba(79,224,193,.18); box-shadow:inset 0 0 0 1px var(--teal)}
+  .rsc-c.tapc{cursor:pointer}
+  .rsc-c.tapc:hover{background:rgba(79,224,193,.13)}
+  .rsc-dot0{color:var(--muted); opacity:.55}
   .dcell{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.24)); border:1px solid var(--panelb); border-radius:8px; padding:6px 0 5px; text-align:center; box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
   .dcell.cur{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset, 0 0 12px -4px var(--gold)}
   .dcell.sel{border-color:var(--teal); box-shadow:0 0 0 1px var(--teal) inset}
@@ -16915,6 +16935,48 @@ function dScoreCol(toPar){ return toPar<0?'#35d6a0':toPar===0?'var(--oncard)':to
 // real-scorecard notation: birdie circled, eagle double-circled, bogey boxed, double+ double-boxed, par plain
 function dMarkClass(toPar){ return toPar<=-2?'smk dcircle':toPar===-1?'smk circle':toPar===1?'smk box':toPar>=2?'smk dbox':'smk'; }
 function dCellScore(pl){ return `<span class="${dMarkClass(pl.toPar)}">${pl.par+pl.toPar}</span>`; }
+// CS502: one shared realistic scorecard used everywhere - HOLE + PAR rows and per-player strokes with
+// OUT / IN / TOT totals. The TOT column is TOTAL STROKES (par + to-par), not the score to par. 18 holes
+// split into a front-9 (OUT) block and a back-9 (IN, then TOT) block; <=9 holes is one block ending in TOT.
+// rows: [{label|labelHTML, color, mine, win, strokes:[n|null per hole], tp:[n|null per hole]}]. A null
+// stroke shows "·" (not yet played). opts.tap(i) makes played holes tappable; opts.cur / opts.sel highlight.
+function scoreCardEl(opts){
+  const H=opts.holes||18, pars=opts.pars||[], rows=opts.rows||[], tap=opts.tap;
+  const cur=(opts.cur==null?-1:opts.cur), sel=(opts.sel==null?-1:opts.sel);
+  const sum=(arr,a,b)=>{ let s=0,any=false; for(let k=a;k<b;k++) if(arr[k]!=null){s+=arr[k];any=true;} return any?s:''; };
+  const blocks = H>9 ? [{a:0,b:9,sub:'OUT'},{a:9,b:H,sub:'IN',tot:true}] : [{a:0,b:H,sub:'TOT'}];
+  const root=$(`<div class="rsc"></div>`);
+  blocks.forEach(bl=>{
+    const n=bl.b-bl.a, cols=`44px repeat(${n},1fr) 32px${bl.tot?' 34px':''}`;
+    const g=$(`<div class="rsc-block" style="grid-template-columns:${cols}"></div>`);
+    const cell=(cls,html,attr)=>g.appendChild($(`<div class="${cls}" ${attr||''}>${html}</div>`));
+    cell('rsc-lab rsc-hd','Hole');
+    for(let k=bl.a;k<bl.b;k++) cell('rsc-c rsc-hd', (k+1));
+    cell('rsc-c rsc-hd rsc-sub', bl.sub);
+    if(bl.tot) cell('rsc-c rsc-hd rsc-sub rsc-tot','TOT');
+    cell('rsc-lab rsc-par','Par');
+    for(let k=bl.a;k<bl.b;k++) cell('rsc-c rsc-par', pars[k]!=null?pars[k]:'-');
+    cell('rsc-c rsc-par rsc-sub', sum(pars,bl.a,bl.b));
+    if(bl.tot) cell('rsc-c rsc-par rsc-sub rsc-tot', sum(pars,0,H));
+    rows.forEach(r=>{
+      const rc=(r.win||r.mine)?'winrow':'';
+      const lab=r.labelHTML || `<span class="rsc-dot" style="background:${r.color||'#fff'}"></span>${esc(r.label||'')}`;
+      cell(`rsc-lab rsc-pl ${r.mine?'mine':''} ${r.win?'win':''} ${rc}`, lab);
+      for(let k=bl.a;k<bl.b;k++){
+        const s=r.strokes[k];
+        const tp=(r.tp&&r.tp[k]!=null)?r.tp[k]:(s!=null&&pars[k]!=null?s-pars[k]:null);
+        const played=s!=null;
+        const inner=played?`<span style="color:${dScoreCol(tp)}">${scMark(s,tp)}</span>`:`<span class="rsc-dot0">·</span>`;
+        cell(`rsc-c rsc-pl ${k===cur?'cur':''} ${k===sel?'sel':''} ${(tap&&played)?'tapc':''} ${rc}`, inner, (tap?`data-hole="${k}"`:''));
+      }
+      cell(`rsc-c rsc-pl rsc-sub ${rc}`, sum(r.strokes,bl.a,bl.b));
+      if(bl.tot) cell(`rsc-c rsc-pl rsc-sub rsc-tot ${rc}`, sum(r.strokes,0,H));
+    });
+    root.appendChild(g);
+  });
+  if(tap) root.addEventListener('click', e=>{ const t=e.target.closest('[data-hole]'); if(t) tap(+t.getAttribute('data-hole')); });
+  return root;
+}
 function dResultLong(par,toPar){ return toPar<=-3?'Albatross':toPar===-2?'Eagle':toPar===-1?'Birdie':toPar===0?'Par':toPar===1?'Bogey':toPar===2?'Double Bogey':'Triple Bogey+'; }
 function dFeet(ft){ let f=Math.floor(ft),inch=Math.round((ft-f)*12); if(inch>=12){f++;inch=0;} return f+' ft '+inch+' in.'; }
 function dPick(rng,a){ return a[Math.floor(rng()*a.length)]; }
@@ -19962,11 +20024,9 @@ function scrSpotlightResult(){
   }
   const holes=(S.dailyHoles&&S.dailyHoles.length===18)?S.dailyHoles:(r.holes&&r.holes.length===18?r.holes:null);
   if(holes){
-    const grid=$(`<div style="max-width:600px;margin:14px auto 0"></div>`);
-    [[0,9,'OUT'],[9,18,'IN']].forEach(([a,b,lab])=>{ const row=$(`<div class="dcard"></div>`);
-      for(let k=a;k<b;k++){ const pl=holes[k]; row.appendChild($(`<div class="dcell done"><div class="dn">${k+1}</div><div class="ds" style="color:${dScoreCol(pl.toPar)}">${dCellScore(pl)}</div></div>`)); }
-      grid.appendChild($(`<div class="small muted center" style="letter-spacing:.12em;margin-top:6px">${lab}</div>`)); grid.appendChild(row); });
-    add(grid);
+    const grid=scoreCardEl({holes:18, pars:holes.map(h=>h.par),   // CS502: realistic Hole/Par/OUT-IN-TOT card
+      rows:[{label:(S.name||'You'), color:'#4f9df0', mine:true, strokes:holes.map(h=>h.par+h.toPar), tp:holes.map(h=>h.toPar)}]});
+    grid.style.margin='14px auto 0'; add(grid);
   }
   const shr=$(`<button class="btn goldfill" style="max-width:520px;margin:14px auto 0">↗ Share your result<span class="sub">Brag about the special event</span></button>`);
   shr.onclick=()=>{ track('spotlight_shared'); shareText(spotlightShareText(rec&&rec.best!=null?{course:r.course,total:rec.best,won:wonEvent}:r,sp)); }; add(shr);
@@ -20660,13 +20720,14 @@ function scrDailyRound(){
   if(!S.momentPO){
     const wrap=$(`<div class="dcardwrap"></div>`);
     wrap.appendChild($(`<div class="dcardhd"><span class="t">Scorecard · thru ${through}</span><span class="h">${(played.length>1&&!reviewing)?'Tap a hole to rewatch':''}</span></div>`));
-    const strip=$(`<div class="dcard"></div>`);
-    for(let k=0;k<18;k++){ const pl=played[k], isReveal=(k===lastIdx&&revealing), cur=(k===i&&!done&&!revealing);
-      const showScore=pl&&!isReveal;   // the in-flight hole shows no score until the ball drops
-      const cell=$(`<div class="dcell ${(cur||isReveal)?'cur':''} ${showScore?'done':''} ${(showScore&&k===vh&&played.length>1)?'sel':''}"><div class="dn">${k+1}</div><div class="ds" style="color:${showScore?dScoreCol(pl.toPar):'var(--muted)'}">${showScore?dCellScore(pl):'·'}</div></div>`);
-      if(pl){ cell.style.cursor='pointer'; cell.setAttribute('role','button'); cell.setAttribute('aria-label',`Rewatch hole ${k+1}`); cell.onclick=()=>{ if(S.dailyViewHole===k) dailyReviewClose(); else dailyReviewOpen(k); }; }
-      strip.appendChild(cell); }
-    wrap.appendChild(strip);
+    // CS502: realistic scorecard (Hole / Par / You rows + OUT-IN-TOT totals; TOT = total strokes).
+    const scPars=c.holes.map(h=>h[0]), scStk=[], scTp=[];
+    for(let k=0;k<18;k++){ const pl=played[k], isReveal=(k===lastIdx&&revealing), show=pl&&!isReveal;
+      scStk[k]=show?(pl.par+pl.toPar):null; scTp[k]=show?pl.toPar:null; }
+    wrap.appendChild(scoreCardEl({holes:18, pars:scPars,
+      rows:[{label:(S.name||'You'), color:'#4f9df0', mine:true, strokes:scStk, tp:scTp}],
+      cur:(done||revealing)?-1:i, sel:(played.length>1)?vh:-1,
+      tap:(k)=>{ if(played[k]){ if(S.dailyViewHole===k) dailyReviewClose(); else dailyReviewOpen(k); } }}));
     add(wrap);
   }
   // The tracer window renders only when there's a decision to watch or a hole to rewatch (in QUICK play
@@ -20837,17 +20898,12 @@ function scrDailyResult(){
     // tappable per-hole shot review is only possible on the fresh finish (S.dailyHoles carries each
     // hole's shots); a re-opened stored result has par/toPar cells only, so they aren't clickable.
     const canReview=holes.some(h=>h&&h.shots&&h.shots.length);
-    const grid=$(`<div style="max-width:600px;margin:14px auto 0"></div>`);
-    if(canReview) grid.appendChild($(`<div class="small center" style="margin:0 0 2px;color:var(--gold);font-weight:700">Tap a hole to rewatch its shots</div>`));
-    [[0,9,'OUT'],[9,18,'IN']].forEach(([a,b,lab])=>{
-      const row=$(`<div class="dcard"></div>`);
-      for(let k=a;k<b;k++){ const pl=holes[k];
-        const cell=$(`<div class="dcell done"><div class="dn">${k+1}</div><div class="ds" style="color:${dScoreCol(pl.toPar)}">${dCellScore(pl)}</div></div>`);
-        if(pl&&pl.shots&&pl.shots.length){ cell.style.cursor='pointer'; cell.setAttribute('role','button'); cell.setAttribute('aria-label',`Rewatch hole ${k+1} shots`);
-          cell.onclick=()=>{ S.dailyHoleView=k; S.dailyHoleShot=null; S.overlay='holeshots'; render(); }; }
-        row.appendChild(cell); }
-      grid.appendChild($(`<div class="small muted center" style="letter-spacing:.12em;margin-top:6px">${lab}</div>`)); grid.appendChild(row); });
-    add(grid);
+    const wrapg=$(`<div style="max-width:600px;margin:14px auto 0"></div>`);
+    if(canReview) wrapg.appendChild($(`<div class="small center" style="margin:0 0 6px;color:var(--gold);font-weight:700">Tap a hole to rewatch its shots</div>`));
+    wrapg.appendChild(scoreCardEl({holes:18, pars:holes.map(h=>h.par),   // CS502: realistic Hole/Par/OUT-IN-TOT card
+      rows:[{label:(S.name||'You'), color:'#4f9df0', mine:true, strokes:holes.map(h=>h.par+h.toPar), tp:holes.map(h=>h.toPar)}],
+      tap:canReview?((k)=>{ if(holes[k]&&holes[k].shots&&holes[k].shots.length){ S.dailyHoleView=k; S.dailyHoleShot=null; S.overlay='holeshots'; render(); } }):null}));
+    add(wrapg);
   }
   // CS483n: Share (blue) + the primary action (red) sit SIDE BY SIDE in one row (owner)
   const shareR=best||r;
@@ -23985,47 +24041,17 @@ function h2hResultCard(){
   const canReplay=!!(S.h2h.playHoles||units[0].holeScore);   // holes are rewatchable when the shot data exists (or can be built)
   // CS462: the sticky name column MUST be fully opaque - a .97-alpha fill let the hole cells bleed through
   // it when the card was scrolled horizontally (garbled overlap). Solid fill + higher z-index + a clean edge.
-  const cw=25, nameW=98, totW=42, bg='#0a2014';   // opaque solid (no alpha)
-  const card=$(`<div style="max-width:560px;margin:0 auto"></div>`);
+  const card=$(`<div style="max-width:600px;margin:0 auto"></div>`);
   if(canReplay) card.appendChild($(`<div class="small center" style="margin:0 0 8px;color:#7fd8bf;font-weight:700;letter-spacing:.02em">Tap any hole to rewatch it ▶</div>`));
-  const wrap=$(`<div class="h2hscore" style="overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid rgba(255,255,255,.09);border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(0,0,0,.16));box-shadow:0 12px 34px -16px rgba(0,0,0,.7)"></div>`);
-  const tbl=$(`<div style="display:inline-block;min-width:100%"></div>`);
-  const nameCell=(html,extra)=>`<div style="width:${nameW}px;flex:0 0 auto;padding:8px 10px;position:sticky;left:0;z-index:3;background:${bg};border-right:1px solid rgba(255,255,255,.09);${extra||''}">${html}</div>`;
-  const holeCell=(i,inner,extra)=>`<div class="scHole" ${canReplay?`data-h2hhole="${i}"`:''} style="width:${cw}px;flex:0 0 auto;text-align:center;${canReplay?'cursor:pointer;':''}${extra||''}">${inner}</div>`;
-  const mk=(cells,cls)=>{ const r=$(`<div class="${cls||''}" style="display:flex;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.055)"></div>`); cells.forEach(c=>r.appendChild($(c))); return r; };
-  // header: HOLE | 1..N (clickable) | TOT
-  const hdr=[nameCell(`<span style="font:800 10.5px/1 var(--body);text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">Hole</span>`)];
-  for(let i=0;i<holes;i++) hdr.push(holeCell(i,`<span style="display:block;padding:8px 0 7px;font:800 11px/1 var(--mono);color:#cfe0d6">${i+1}</span>`));
-  hdr.push(`<div style="width:${totW}px;flex:0 0 auto;text-align:center;padding:8px 0;font:800 11px/1 var(--body);color:var(--gold)">TOT</div>`);
-  tbl.appendChild(mk(hdr,'scHdr'));
-  // par row
-  let parTot=0; const par=[nameCell(`<span style="font:700 10px/1 var(--body);color:var(--muted)">Par</span>`)];
-  for(let i=0;i<holes;i++){ const p=course.holes[i][0]; parTot+=p; par.push(holeCell(i,`<span style="display:block;padding:5px 0;font:600 10.5px/1 var(--mono);color:#7d968a">${p}</span>`)); }
-  par.push(`<div style="width:${totW}px;flex:0 0 auto;text-align:center;padding:5px 0;font:700 10.5px/1 var(--mono);color:#7d968a">${parTot}</div>`);
-  tbl.appendChild(mk(par));
-  // one row per unit
-  units.forEach((u,ui)=>{ const col=(S.h2h.unitCols&&S.h2h.unitCols[ui])||'#fff', mine=u.members.some(p=>p.user_id===h2hUid());
+  const pars=[]; for(let i=0;i<holes;i++) pars.push(course.holes[i][0]);
+  const rows=units.map((u,ui)=>{
+    const col=(S.h2h.unitCols&&S.h2h.unitCols[ui])||'#fff', mine=u.members.some(p=>p.user_id===h2hUid());
     const isWin=winId!=null && u.id===winId;
     const nm=u.kind==='team'?`Team ${(u.id|0)+1}`:esc(u.label);
-    const rowBg=isWin?'linear-gradient(0deg,rgba(241,208,74,.14),rgba(241,208,74,.14)),'+bg:bg;   // CS462: gold tint OVER an opaque base (never see-through)
-    const cells=[nameCell(`${isWin?'<span class="ic" style="color:var(--gold);margin-right:4px;vertical-align:-2px">'+ic('trophy')+'</span>':''}<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:6px;vertical-align:1px"></span><span style="font:800 11px/1.1 var(--body);color:${mine||isWin?'var(--gold)':'var(--oncard)'}">${nm}</span>`, `background:${rowBg};${mine?'box-shadow:inset 3px 0 0 var(--gold)':''}`)];
-    for(let i=0;i<holes;i++){ const tp=u.scores[i], s=course.holes[i][0]+tp;
-      cells.push(holeCell(i,`<span style="display:block;padding:7px 0;font:700 12px/1 var(--mono);color:${dScoreCol(tp)}">${scMark(s,tp)}</span>`, isWin?'background:rgba(241,208,74,.05)':'')); }
-    cells.push(`<div style="width:${totW}px;flex:0 0 auto;text-align:center;padding:7px 0;font:800 12px/1 var(--mono);color:${h2hTpColor(u.total)};background:${isWin?'rgba(241,208,74,.05)':'transparent'}">${h2hTpTxt(u.total)}</div>`);
-    tbl.appendChild(mk(cells));
+    const labelHTML=`${isWin?'<span class="ic" style="color:var(--gold);margin-right:4px;vertical-align:-2px">'+ic('trophy')+'</span>':''}<span class="rsc-dot" style="background:${col}"></span>${nm}`;
+    return { labelHTML, mine, win:isWin, strokes:u.scores.map((tp,i)=>course.holes[i][0]+tp), tp:u.scores.slice() };
   });
-  wrap.appendChild(tbl);
-  if(canReplay){
-    // delegated: tap any hole cell/column → rewatch that hole on the TOURTRACE tracer
-    wrap.addEventListener('click', e=>{ const t=e.target.closest('[data-h2hhole]'); if(!t) return; const n=+t.getAttribute('data-h2hhole'); if(n>=0) h2hReplayHole(n); });
-    // hover the whole column (desktop nicety; mobile just taps)
-    let _hi=null;
-    wrap.addEventListener('mouseover', e=>{ const t=e.target.closest('[data-h2hhole]'); const n=t?t.getAttribute('data-h2hhole'):null; if(n===_hi) return;
-      wrap.querySelectorAll('.scHole.colhi').forEach(x=>x.classList.remove('colhi'));
-      if(n!=null) wrap.querySelectorAll('[data-h2hhole="'+n+'"]').forEach(x=>x.classList.add('colhi')); _hi=n; });
-    wrap.addEventListener('mouseleave', ()=>{ wrap.querySelectorAll('.scHole.colhi').forEach(x=>x.classList.remove('colhi')); _hi=null; });
-  }
-  card.appendChild(wrap);
+  card.appendChild(scoreCardEl({holes, pars, rows, tap:canReplay?h2hReplayHole:null}));
   return card;
 }
 function scrH2HResult(){
