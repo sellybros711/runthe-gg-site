@@ -11886,6 +11886,56 @@ allows Google Fonts, or self-host Anton.*
   The standing/menu golfer is a separate system and unaffected. Tunable: the `PXG_SW4` poses (regen via
   `swing4.py`), `PXG_SW4_ANCH`, the `sw4For` snap thresholds.
 
+- **CS504 — leaderboard integrity: idempotent season submission + Legend Circuit in career stats +
+  profile avatars in every row + de-cluttered sub (owner: "make sure the leaderboard is working
+  flawlessly. I don't know how users are playing more than 42 seasons. The legend circuit should be
+  included in career stats. Today's earning leaderboard is matching all time. Add the profile image to the
+  left of the username and golfer name, remove the extra stats to the right of the archetype").** Owner
+  screenshot showed a Career board with "Nael · 117 szn" — impossible (a career maxes at 30 tour + 12
+  circuit = 42).
+  1. **Root cause of the >42 seasons: duplicate rows.** `runtour_submit_season` did a plain INSERT with NO
+     dedup. The client's durable submission queue (`bag_pending_seasons`, `flushPendingSeasons`) re-flushes
+     on many triggers (new season, sign-in, app init, `online` event) with no lock, so the SAME
+     (user_id, career_id, year) could be inserted more than once — and the career board's `count(*)`
+     inflated a 30-year career into 117 "seasons" (and its wins/majors along with it). **Fixed in
+     `supabase/60_runtour_board_dedup_circuit.sql`** (owner-run): a partial UNIQUE index on
+     `(user_id, career_id, year)` (where user_id not null and career_id <> '') + `runtour_submit_season`
+     rewritten to `INSERT … ON CONFLICT (user_id, career_id, year) … DO UPDATE` — so a re-submit UPDATES the
+     one row instead of adding a duplicate. **Submission is now idempotent.** The migration also collapses
+     existing duplicate rows (keeps the newest per user+career+year) so already-inflated careers correct
+     themselves immediately. (Distinct careers are safe: `reset()` drops `careerSeed`, so each new career
+     gets a fresh random seed → distinct `career_id` → never merged.) Old 9/10-arg overloads (from 22/51)
+     are DROPPED so a single 12-arg function remains and every named-arg client call resolves
+     unambiguously; the no-OVR-cap behavior from 51 is preserved.
+  2. **Legend Circuit now included in career stats.** Circuit seasons never called `sbSubmitSeason`
+     (CS76 scoped them out), so they were missing from the board. Now a finished circuit season posts under
+     the SAME `career_id` as the tour career (`String(S.careerSeed)`); `S.year` climbs continuously (31-42
+     in the circuit) so `(career_id, year)` never collides with a tour year, and the idempotent upsert
+     dedupes. Result: a career groups all 30 tour + up to 12 circuit seasons into one entry — its seasons
+     count (≤42), wins, majors and earnings all include the circuit.
+  3. **Today = All-time fixed.** The Today/This-week/All-Time window scoping (`p_since`, migration 58)
+     wasn't applied, so the client fell back to the all-time board and cached it under the Today key. The
+     date-scoped `runtour_season_board`/`runtour_career_board` (identical to 58) are (re)defined in migration
+     60, so applying THIS one migration makes the windows work (a season/career is filtered by
+     `created_at >= p_since`).
+  4. **Profile avatar + cleaner rows (client).** Every leaderboard row now shows the player's pixel golfer
+     (`pxAvatarChip(r.look||DEFLOOK,30)`) to the LEFT of the username + golfer name (guests / legacy null-look
+     rows → the default golfer). The redundant stat tail after the archetype (`· N szn · N wins · $earnings`
+     on the career board, `· OVR · Yr · $earnings` on the season board) is removed — the sub is now just
+     `golfer name · archetype`, and the right-hand column already shows the sorted stat.
+  Validated migration 60 end-to-end on a local Postgres (6 tests): submitting the same career+year 3× →
+  exactly 1 row with the latest values (the 117-fix); a 30-tour + 12-circuit + 5-dup-resubmit career → 42
+  seasons / 144 wins / 42 majors (circuit included, no dupes); a raw pre-existing duplicate cleaned to 1;
+  Today window excludes a 2-day-old row while all-time includes it; guest + short named-arg calls resolve to
+  the single function (no ambiguity); idempotent re-run. Client verified in Playwright: career + season
+  boards render each row with a profile avatar and a `golfer · archetype` sub (no stat tail), the podium
+  shows customized golfers, a legacy null-skills/null-look row degrades gracefully (default golfer, no
+  archetype), the page boots clean; 0 page errors throughout. **ACTION: run
+  `supabase/60_runtour_board_dedup_circuit.sql`** (it de-dupes existing rows + makes submission idempotent +
+  fixes the Today window — supersedes the submit path in 51 and the scoped boards in 58). Client deployed to
+  /golf; the avatars/clean rows work immediately, the season-count correction + circuit inclusion take
+  effect once 60 is applied and new/updated seasons post.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
