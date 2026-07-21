@@ -1266,6 +1266,19 @@ window.GA_ID='G-L29P5MRWKE';
   .hvctrl-cap{text-align:center;margin-top:9px;font:800 9.5px/1.3 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#a9c3b2}
   .hvctrl-cap .sk{color:var(--gold);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
   @media (prefers-reduced-motion:reduce){ .hvctrl-side .ci,.hvctrl-play .cb{transition:none} }
+  /* CS513: on mobile, PIN the round controls to the bottom of the viewport so the player never scrolls to
+     reach Play/Pause/Next - the tracer window is the game, and it's the focus. Same fixed-not-transformed
+     pattern as .cupctrl (a transform anchors it to the document on iOS); reserve bottom padding via
+     #app.has-roundbar so it never covers the scorecard, and hide the compact footer (links live in the ≡ menu). */
+  @media(max-width:700px){
+    .hvctrl.fixed{position:fixed; left:0; right:0; bottom:0; z-index:22; max-width:none; margin:0; border-radius:0;
+      border:0; border-top:1px solid rgba(241,208,74,.28);
+      padding:9px 12px calc(8px + env(safe-area-inset-bottom,0px));
+      background:#06200f; box-shadow:0 -12px 26px -12px rgba(0,0,0,.85)}
+    .hvctrl.fixed > *{max-width:540px; margin-left:auto; margin-right:auto}
+    #app.has-roundbar{padding-bottom:calc(148px + env(safe-area-inset-bottom,0px))}
+    #app.has-roundbar .foot{display:none}
+  }
   .hvdesc{left:8px;right:8px;bottom:8px;background:rgba(8,17,26,.74);border:1px solid rgba(255,255,255,.16);border-radius:10px;
     padding:7px 11px;font:600 11.5px/1.4 var(--body);color:#f2f7f2;text-align:center;animation:hvdin .28s ease}
   @keyframes hvdin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
@@ -5912,6 +5925,7 @@ function render(){
   _rendering=true;
   try{
   app.classList.remove('has-cupbar');   // CS298: cleared each render; only the team-cup reveal re-adds it (reserves space for the fixed control bar)
+  app.classList.remove('has-roundbar'); // CS513: cleared each render; scrDailyRound re-adds it when the fixed round-control bar is shown
   const savedY=window.scrollY;
   const prevOv=app.querySelector('.ov'); const savedOvY=prevOv?prevOv.scrollTop:0;   // keep overlay scroll across async re-renders
   if(S.screen!=='dailyround') clearDailyTimer();   // stop daily auto-advance if we left the round
@@ -20733,20 +20747,8 @@ function scrDailyRound(){
   // for an approach call). Only the non-decision status/controls render inline here.
   // Mulligan offer (bogey+): a prominent prompt at the top, above the tracer.
   if(S.dailyMullOffer!=null){ const mo=dMullOfferNode(); if(mo) add(mo); }
-  if(prov && !prov.await){
-    add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Off the tee…</div>`));
-    add($(`<div style="height:6px"></div>`));
-  } else if(previewNext && !teeSig){
-    // non-decision, between holes: the tracer shows the upcoming hole; here are the play controls
-    if(S.dailyAuto){
-      add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Playing your round…</div>`));
-      const pause=$(`<button class="btn ghost" style="max-width:520px;margin:12px auto 0">⏸ Pause</button>`); pause.onclick=dailyPause; add(pause);
-    } else {
-      const b=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Play hole ${i+1} ▸</button>`); b.onclick=()=>playDailyHole(); add(b);
-      const res=$(`<button class="btn blue" style="max-width:520px;margin:10px auto 0">▶ Resume auto-play</button>`); res.onclick=dailyResume; add(res);
-    }
-    add($(`<div style="height:6px"></div>`));
-  }
+  // (CS513: the inline "Playing your round / Pause / Play hole N" status buttons are gone - the fixed bottom
+  //  control bar below now handles play/pause/next, so nothing pushes the window down between holes.)
   const vh=(S.dailyViewHole!=null && S.dailyViewHole<played.length)?S.dailyViewHole:played.length-1;   // which hole's shot log is shown
   // draws the tracer window + floating HUD (hole chip, YOU-vs-pro board, one shot description). Shared
   // by the normal reveal AND the par-4/5 approach-decision drive (S.dailyProv).
@@ -20844,10 +20846,11 @@ function scrDailyRound(){
   let decPending=null;
   if(prov && prov.await) decPending={sc:prov.scenario, pick:(agg)=>dailyResolveApproach(agg), sub:`Your drive found ${dLieName(prov.d0.shot.lie)} · ${prov.d0.dist} yds to the green`};
   else if(teeSig){ const teeSc=dScenario(S.dailyCourse,i,total,dTourAvg(c)); decPending={sc:teeSc, pick:(agg)=>playDailyHole(agg, teeSc.phase)}; }
-  // CS475 (owner): the scorecard strip now sits ABOVE the tracer window in every round mode (daily / Moment
-  // / Spotlight / Legend) - more effective on mobile, where the tall tracer used to push the scorecard below
-  // the fold. Built here and added before the window; the old below-the-window copy is gone. The sudden-death
-  // playoff plays one extra hole at a time (overlay resolves it), so the 18-cell strip is skipped there.
+  // CS513 (owner): the tracer WINDOW is the hero - it sits right under the header (the game is the focus),
+  // and the 18-cell scorecard strip renders BELOW it as a secondary reference (the window's floating
+  // scoreboard already shows live standings during play). Built here, added after the window + decision.
+  // The sudden-death playoff plays one extra hole at a time (overlay resolves it), so the strip is skipped.
+  let scoreCardNode=null;
   if(!S.momentPO){
     const wrap=$(`<div class="dcardwrap"></div>`);
     wrap.appendChild($(`<div class="dcardhd"><span class="t">Scorecard · thru ${through}</span><span class="h">${(played.length>1&&!reviewing)?'Tap a hole to rewatch':''}</span></div>`));
@@ -20859,7 +20862,7 @@ function scrDailyRound(){
       rows:[{label:(S.name||'You'), color:'#4f9df0', mine:true, strokes:scStk, tp:scTp}],
       cur:(done||revealing)?-1:i, sel:(played.length>1)?vh:-1,
       tap:(k)=>{ if(played[k]){ if(S.dailyViewHole===k) dailyReviewClose(); else dailyReviewOpen(k); } }}));
-    add(wrap);
+    scoreCardNode=wrap;
   }
   // The tracer window renders only when there's a decision to watch or a hole to rewatch (in QUICK play
   // routine holes show no tracer at all - just the scorecard reveal). In full mode showTracer is always true.
@@ -20897,7 +20900,8 @@ function scrDailyRound(){
   }
   // on-course decision cards, docked directly under the course view (the tap-targets are ON the window)
   if(decPending) add(dDecisionBar(decPending.sc, decPending.pick, decPending.sub));
-  // (CS475: the scorecard strip moved ABOVE the tracer window - see the block before `if(showTracer)`.)
+  // CS513: the scorecard strip renders BELOW the window (built above; secondary reference).
+  if(scoreCardNode) add(scoreCardNode);
   add($(`<div style="height:10px"></div>`));
   // CS366: the 5-button control bar (Speed · Last hole · PLAY/PAUSE · Next hole · Sim to end). The mulligan
   // (streak reward) is now offered automatically via a bogey+ prompt at the top (dMullOfferNode), so the old
@@ -20907,7 +20911,12 @@ function scrDailyRound(){
   else if(done && S.dailyAuto){ add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Heading to the clubhouse…</div>`)); }
   else if(done){ const fin=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">See your round ▸</button>`); fin.onclick=finishDailyRound; add(fin); }
   else if(decPending){ /* an on-course decision is up: the tap-targets + cards ARE the action, no play controls */ }
-  else { add(dRoundControls()); }
+  else {
+    // CS513: pin the control bar to a fixed bottom bar on mobile so the player never scrolls to reach it.
+    // The bottom tab nav is already hidden during dailyround (NAV_HIDE), so the space is free; has-roundbar
+    // reserves scroll padding so the fixed bar never covers the scorecard.
+    const cb=dRoundControls(); cb.classList.add('fixed'); add(cb); app.classList.add('has-roundbar');
+  }
 }
 function scrDailyResult(){
   if(S.special) return scrSpotlightResult();

@@ -12103,6 +12103,41 @@ allows Google Fonts, or self-host Anton.*
   Deployed to /golf. Tunable: the modulation amplitudes (0.30 pond / 0.30 bunker), the bunker aspect range,
   and the creek meander/width sines in `pxTerrainURL`.
 
+- **CS513 — round screen: TourTracer window is the hero + controls pinned to a fixed bottom bar (owner
+  IMG_8576: "I still fear the user will be turned away from having to scroll down to get to the controls,
+  and that also makes it hard to focus on the game itself. How can we enhance this page as a whole to
+  incorporate all of the important elements on one clear page?").** The `scrDailyRound` layout (Daily /
+  career Moments / Monthly Spotlight / Legend rounds) stacked header → scorecard (CS475, above the window) →
+  the tall TourTracer window → controls at the very bottom, so on a phone the controls sat below the fold
+  (~836px of content on an 844px screen) and the window competed with the scorecard for the top of the
+  screen. Reorganized so everything important fits one screen with the game as the focus:
+  1. **Controls pinned to a FIXED bottom bar on mobile** (`dRoundControls()` gets a `.hvctrl.fixed` class):
+     `position:fixed;bottom:0`, full-width, opaque bg + top border + safe-area padding, mirroring the proven
+     `.cupctrl` pattern (CS298) with NO transform so it can't drift on iOS (CS472). The bottom tab nav is
+     already hidden on `dailyround` (NAV_HIDE), so the space is free; a new `#app.has-roundbar` reserves
+     ~148px bottom scroll padding (cleared each render, re-added by scrDailyRound in the play branch) so the
+     bar never covers the scorecard, and `#app.has-roundbar .foot{display:none}` hides the compact footer
+     (its links live in the ≡ menu). On desktop the bar stays in-flow (the fixed rule is inside
+     `@media(max-width:700px)`), so wide screens are unchanged. The bar shows ONLY in the normal-play branch
+     (not during a decision, mulligan offer, playoff, or `done` — those keep their own affordances).
+  2. **The window is the hero** — it now renders right under the condensed header. The 18-cell scorecard
+     strip moved from ABOVE the window (CS475) to BELOW it (built into `scoreCardNode`, added after the
+     window + any decision bar) as a secondary reference — the window's own floating scoreboard already
+     shows live standings during play, so the full card is glanceable below, not blocking the game.
+  3. **Removed the now-redundant inline play-status** ("▶ Playing your round… / ⏸ Pause / Play hole N ▸ /
+     ▶ Resume auto-play") — the fixed control bar's center Play/Pause + Next-hole buttons cover play, pause,
+     and hole-by-hole stepping, so nothing pushes the window down between holes (paused hole-by-hole = tap
+     Next hole; resume = tap Play).
+  Verified in Playwright at 390×844 (practice mode) across states: the fixed bar is `position:fixed` pinned
+  to the viewport bottom (bottom===innerHeight) with the 148px reserve; in full mode the window sits at
+  y120→609 as the hero with **0px overlap** of the bar (top 730) and the scorecard renders below it (DOM
+  order window→scorecard); the compact footer is hidden; the redundant inline play-status text is gone; a
+  decision state correctly shows the window + on-course tap-targets + decision card with NO fixed bar (the
+  decision is the action); the pre-first-hole + quick-mode states render cleanly; and desktop (1200 wide)
+  keeps the control bar `position:static` (in-flow) with no forced reserve. Title boots clean; **0 page
+  errors** across every state. Deployed to /golf. Tunable: the `#app.has-roundbar` reserve (148px), the
+  `.hvctrl.fixed` styling.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
