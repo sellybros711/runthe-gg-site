@@ -12077,6 +12077,32 @@ allows Google Fonts, or self-host Anton.*
   transitions), 0 page errors. CSS-only. Deployed to /golf. Tunable: the `hvsw*` keyframe hold/crossfade
   percentages + the ease.
 
+- **CS512 — organic, natural hazard shapes in the pixel course (owner: "the bunkers, bodies of water
+  (non ocean), and rivers are way too geometric… they need to take much more organic and unique shapes, as
+  they do in real life").** In the pixel renderer (`pxTerrainURL`) the GREEN already had an organic
+  multi-sine outline (`gMod`), but the other hazards were classified with plain geometric primitives — the
+  pond was a clean ellipse (`(x-cx)²/rx² + (y-cy)²/ry² ≤ 1`), bunkers were plain circles (`hypot < r`), and
+  the creek was a straight horizontal band (`|y − creekY| < 3.2`) — so they read as placed shapes, not
+  landscape. Gave each the same organic treatment (all in course-space, so the shape is identical on the
+  base tile and the zoom detail tile, and resolution-independent):
+  - **Ponds:** a multi-frequency angular perturbation + value-noise on the boundary radius (`wMod`), so the
+    outline has natural lobes and inlets instead of a smooth ellipse. Depth shading + edge highlight follow
+    the new outline.
+  - **Bunkers:** each bunker gets its own seeded rotation + aspect ratio (0.6–1.45, so it's ELONGATED/
+    kidney-shaped, not round) plus scalloped angular modulation + noise — irregular, unique sand shapes that
+    hug the greens/fairway. A cheap bounding-radius pre-check keeps the per-cell cost near the bunkers only.
+  - **Creek/river:** replaced the straight band with a MEANDERING centerline (`creekMid` — two sine
+    frequencies + noise) and a VARYING width (`creekHalf`), so it snakes across the hole like a real stream;
+    the reed/bank pixels already follow the water edge, so they meander with it.
+  Rendering-only — the sim, hole geometry (`hvGeom` pond/bunker/creek placement), and the ball-in-hazard
+  logic are unchanged (the modulation is a rasterization detail). The OCEAN (coastal/links) is deliberately
+  untouched (owner: "non ocean"); its wavy shoreline was already organic. Verified in Playwright: rendered
+  the pixel terrain across many courses — the pond reads as an irregular lobed body, the creek as a
+  meandering river with reed banks, and bunkers as irregular kidney patches (screenshots of full holes +
+  zoomed green close-ups on Oakmont/Whistling/Shinnecock/Pinehurst/Sawgrass confirm it); 0 page errors.
+  Deployed to /golf. Tunable: the modulation amplitudes (0.30 pond / 0.30 bunker), the bunker aspect range,
+  and the creek meander/width sines in `pxTerrainURL`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
