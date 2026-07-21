@@ -7254,8 +7254,17 @@ function autoSignInPending(){
   }catch(e){}
   return false;
 }
+function h2hLinkPending(){
+  // Arrived via an invite link (?h2h=CODE / #h2h=CODE)? h2hCheckLink stashes it and cleans the URL,
+  // so check BOTH: the stashed flag (after cleanup) AND the live URL (first paint, before cleanup).
+  try{ if(localStorage.getItem('rtt_h2h_pending')) return true; }catch(e){}
+  try{ if(new URL(location.href).searchParams.get('h2h')) return true; }catch(e){}
+  try{ if(/[#&?]h2h=/.test(location.hash||'')) return true; }catch(e){}
+  return false;
+}
 function isNewPlayer(){
   try{
+    if(h2hLinkPending()) return false;    // an h2h invite always goes straight to the match, never the intro
     if(sbSignedIn()) return false;        // signed-in players are never "new here"
     if(autoSignInPending()) return false; // an auto sign-in is resolving, don't flash the intro
     if(careerSaveInfo()) return false;                                  // has a career to continue
@@ -24104,9 +24113,11 @@ try{ bootRestore(); }catch(e){}
 // before it reloads a tab under memory pressure), so even a mid-hole reload resumes at the last hole.
 try{ window.addEventListener('pagehide',()=>{ try{ saveDailyLive(); }catch(e){} }); }catch(e){}
 try{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'){ try{ saveDailyLive(); }catch(e){} } }); }catch(e){}
+// Arrived via an invite link (?h2h=CODE)? stash it + head to the match BEFORE the first paint, so an
+// h2h link goes straight to h2h (never a title/onboard flash) and the intro guard sees the pending join.
+try{ h2hCheckLink(); }catch(e){}
 render();
 try{ setInterval(tickCountdowns, 1000); }catch(e){}   // live "next daily course in …" countdowns
-try{ h2hCheckLink(); }catch(e){}   // arrived via an invite link (?h2h=CODE)? stash it + join (prompting sign-in)
 </script>
 </body>
 </html>
