@@ -1807,6 +1807,8 @@ const ICONS={
   cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/><path d="M3 4h2l2.2 11.2a1.5 1.5 0 0 0 1.5 1.2h8.1a1.5 1.5 0 0 0 1.5-1.2L21 8H6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>'
 };
 const PXICONS={
+"skip":["..................","..................","..................","..................","..m....m.....mm...","..mm...mm....mm...","..mmm..mmm...mm...","..mmmm.mmmm..mm...","..mmmmmmmmmm.mm...","..mmmmmmmmmm.mm...","..mmmm.mmmm..mm...","..mmm..mmm...mm...","..mm...mm....mm...","..m....m.....mm...","..................","..................","..................",".................."],
+"clock":["..................","........mm........","........mm........",".....mmmmmmmm.....","....mm......mm....","...mm........mm...","..mm..........mm..","..m............m..","..m.....m......m..","..m.....m......m..","..m.....mmmm...m..","..m............m..","..mm..........mm..","...mm........mm...","....mm......mm....",".....mmmmmmmm.....","..................",".................."],
 "arrowLeft":["..................","..................","..................","..................",".......mm.........","......mmm.........",".....mmm..........","....mmm...........","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","....mmm...........",".....mmm..........","......mmm.........",".......mm.........","..................","..................","..................",".................."],
 "arrowUR":["..................","..................","..................","..................","......mmmmmmm.....",".....mmmmmmmmm....","..........mmmm....",".........mmmmm....","........mmm.mm....",".......mmm..mm....","......mmm...mm....",".....mmm....mm....","....mmm.....m.....",".....m............","..................","..................","..................",".................."],
 "arrowUp":["..................","..................","..................","........mm........",".......mmmm.......","......mmmmmm......",".....mmmmmmmm.....","....mmm.mm.mmm....","....mm..mm..mm....","........mm........","........mm........","........mm........","........mm........","........mm........","........mm........","........mm........","..................",".................."],
@@ -1915,6 +1917,7 @@ const EMOJI_MAP={
   '📖':'book','📜':'scroll','♟':'pawn','☁':'cloud','🎒':'bag','🟢':'circleGreen','🏺':'jug','✂':'scissors',
   '🗓':'calendar','🏛':'building','🐍':'snake','⚙':'gear','🏌':'golfer','🎰':'slot','🔁':'repeat','🧱':'brick',
   '🏠':'home','👤':'user','😤':'grit','🌱':'sprout','☼':'sun','⚑':'pennant','⚖':'scales',
+  '⏭':'skip','⏱':'clock','🛍':'cart',
   '⬆':'arrowUp','↗':'arrowUR','↩':'arrowLeft',
   '💬':'chat','🐞':'bug','💡':'bulb','🔊':'sound','📳':'haptic'
 };
@@ -6002,8 +6005,8 @@ const NAV_H2H_SCR=['h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwa
 function bottomNav(){
   const tabs=[
     {id:'home',   ico:'home',   label:'Home',        go:()=>{ S.overlay=null; S.screen='title'; render(); }},
+    {id:'daily',   ico:'calendar', label:'Daily',  go:()=>{ S.overlay=null; startDailyChallenge(); }},
     {id:'career', ico:'flag',   label:'Career',      go:()=>{ S.overlay=null; const cs=careerSaveInfo(); if(cs){ if(cs.ended && typeof viewEndedCareer==='function') viewEndedCareer(); else resumeCareer(); } else { reset(); S.mode='easy'; S.screen='setup'; render(); } }},
-    {id:'daily',   ico:'target', label:'Daily',    go:()=>{ S.overlay=null; startDailyChallenge(); }},
     {id:'profile', ico:'user',   label:'Profile',  go:()=>{ S.overlay='record'; render(); }},   // CS455: Trophy Room = your profile
     {id:'online',  ico:'globe',  label:'Online',   go:()=>{ S.overlay=null; openH2H(); }},
     {id:'shop',    ico:'cart',   label:'Pro Shop', go:()=>{ S.overlay='shop'; render(); }},     // CS455: was Leaderboard
@@ -14999,7 +15002,7 @@ function scrTeamCup(){
     ctrl.appendChild(skip);
   } else if(!allDone){
     const next=flat[matchN];
-    const b=$(`<button class="btn red">Next match ▸<span class="sub">Day ${next.sess.day} · ${esc(next.sess.title)} · match ${next.mi+1}</span></button>`);
+    const b=$(`<button class="btn goldfill">Next match ▸<span class="sub">Day ${next.sess.day} · ${esc(next.sess.title)} · match ${next.mi+1}</span></button>`);
     b.onclick=()=>{ clearTimeout(seasonTimer); S.teamMatchN=matchN+1; render(); };
     ctrl.appendChild(b);
     const row=$(`<div class="mini" style="margin-top:10px"></div>`);
@@ -15344,27 +15347,25 @@ function scrSeason(){
       const fin=$(`<button class="btn goldfill">Season Results ▸<span class="sub">Your year in review</span></button>`);
       fin.onclick=()=>{clearTimeout(seasonTimer); S.screen='summary'; render();}; ctrl.appendChild(fin);
     } else {
-      const nx=$(`<button class="btn red">Next Event ▸<span class="sub">${esc(playerEvtName(S.schedule[S.evtIndex+1]))}</span></button>`);
+      const nx=$(`<button class="btn goldfill">Next Event ▸<span class="sub">${esc(playerEvtName(S.schedule[S.evtIndex+1]))}</span></button>`);
       nx.onclick=()=>{clearTimeout(seasonTimer); advanceEvent(); render();}; ctrl.appendChild(nx);
     }
   } else {
     ctrl.appendChild($(`<button class="btn" disabled style="cursor:default;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.18));color:var(--oncard);opacity:.78">Playing out the tournament…<span class="sub">${ce.roundsDone>=4?'Final round':'Round '+Math.max(1,Math.min(ce.roundsDone,4))+' of 4'}</span></button>`));
   }
-  const row=$(`<div class="mini" style="margin-top:10px"></div>`);
-  const auto=$(`<button class="btn ${S.autoSim?'teal':'gold'}">Auto Sim · ${S.autoSim?'On':'Off'}</button>`);
-  auto.onclick=()=>{S.autoSim=!S.autoSim; LS.set('bag_autosim',S.autoSim); track('autosim_toggle',{on:S.autoSim}); render();};
-  const skipWarn=(!S.daily && !S.circuitMode && SHOP_ENABLED && sbSignedIn() && !(S.season&&S.season.skipped));
-  const skip=$(`<button class="btn ghost">Skip to End ⏭${skipWarn?'<span class="sub">Earns no coins, play the rounds to earn</span>':''}</button>`);
-  skip.onclick=skipToEnd;
-  row.appendChild(auto); row.appendChild(skip); ctrl.appendChild(row);
-  // pace control: default slow ("Chill") so the sim reads; cycle up to Fast for a quick sim
-  const paceBtn=$(`<button class="btn ghost" style="margin-top:10px;font-size:13px">⏱ Pace · ${paceMs().lbl}<span class="sub">How fast each round plays out</span></button>`);
-  paceBtn.onclick=()=>{ const ord=['normal','fast','chill']; S.simPace=ord[(ord.indexOf(S.simPace)+1)%3]||'normal'; LS.set('bag_pace',S.simPace); track('sim_pace',{pace:S.simPace}); render(); };
-  ctrl.appendChild(paceBtn);
-  if(!S.daily){   // career: let the player stop mid-season and resume exactly here
-    const se=$(`<button class="btn ghost" style="margin-top:10px;font-size:13px">Save &amp; Exit<span class="sub">Stop now, resume this season from the home screen</span></button>`);
-    se.onclick=saveMidSeasonAndExit; ctrl.appendChild(se);
-  }
+  // CS497: compact secondary controls - one tidy row of small pixel-icon buttons (was 3-4 stacked full-width blocks)
+  const cbBase='display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.055);color:var(--oncard);cursor:pointer;font:800 11px/1 var(--body);letter-spacing:.02em';
+  const cbOn=';border-color:rgba(22,181,166,.6);background:rgba(22,181,166,.17);color:#7fe9db';
+  const mkc=(icon,label,fn,active,title)=>{ const b=$(`<button type="button" aria-label="${title||label}" title="${title||''}" style="${cbBase}${active?cbOn:''}"><span style="font-size:18px;line-height:1;display:flex" aria-hidden="true">${ic(icon)}</span><span style="white-space:nowrap">${label}</span></button>`); b.onclick=fn; return b; };
+  const bar=$(`<div style="display:grid;grid-template-columns:repeat(${S.daily?3:4},1fr);gap:8px;margin-top:10px"></div>`);
+  bar.appendChild(mkc('repeat', S.autoSim?'Auto On':'Auto Off', ()=>{S.autoSim=!S.autoSim; LS.set('bag_autosim',S.autoSim); track('autosim_toggle',{on:S.autoSim}); render();}, S.autoSim, 'Auto-advance events'));
+  bar.appendChild(mkc('skip','Skip', skipToEnd, false, 'Skip to end of season'));
+  bar.appendChild(mkc('clock', paceMs().lbl, ()=>{ const ord=['normal','fast','chill']; S.simPace=ord[(ord.indexOf(S.simPace)+1)%3]||'normal'; LS.set('bag_pace',S.simPace); track('sim_pace',{pace:S.simPace}); render(); }, false, 'How fast rounds play'));
+  if(!S.daily) bar.appendChild(mkc('home','Exit', saveMidSeasonAndExit, false, 'Save & exit to home'));
+  ctrl.appendChild(bar);
+  // keep the coin-forfeit note (compact one-liner) so skipping still warns
+  if(!S.daily && !S.circuitMode && SHOP_ENABLED && sbSignedIn() && !(S.season&&S.season.skipped))
+    ctrl.appendChild($(`<div class="small muted center" style="margin-top:6px;font-size:11px">Skipping to the end earns no coins, play the rounds to earn.</div>`));
   add(ctrl);   // controls span full width below both columns (stay at the bottom on mobile)
 
   // CS241: secondary season context, MINIMIZED and BELOW the live tournament + controls. During the sim
