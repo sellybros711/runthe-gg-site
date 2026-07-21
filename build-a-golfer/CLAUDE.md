@@ -11820,6 +11820,34 @@ allows Google Fonts, or self-host Anton.*
   with it (still seated on the head), while the lefty+cowboy shows no offset/misalignment; zero page errors.
   Tunable: `PXG_HEAD_TURN` (game) + `HEAD_DX/HEAD_DY` (`swingfix2.py`).
 
+- **CS502 — realistic scorecard everywhere: final score = TOTAL STROKES, plus Hole/Par rows + OUT/IN/TOT
+  totals (owner, with a H2H result scorecard reference IMG_8562: "the final score on the right of the
+  scorecard should say the total strokes and not the score to par. and the score at the top can remain as
+  the strokes to par, and I want to bring This style scorecard into tourtracer and implement the hole, par,
+  and out/in totals, into the scorecard everywhere so it's a nice realistic scorecard").** The four scorecard
+  render sites were bespoke `.dcard`-based strips that only showed to-par per hole with no HOLE/Par reference
+  rows and, on the right, the SCORE-TO-PAR (e.g. +3) rather than total strokes. Unified them into ONE shared
+  component and made the right-hand total the real strokes figure:
+  • **`scoreCardEl(opts)`** (`opts:{holes, pars[], rows[{label|labelHTML, color, mine, win, strokes[], tp[]}],
+    cur, sel, tap}`) + `.rsc*` CSS: a proper golf scorecard as a CSS grid — a **Hole** row (1..N), a **Par**
+    row, then one row per player/unit, with an **OUT** column after 9 + an **IN**/**TOT** column for 18-hole
+    cards (a single TOT column for ≤9 holes). Per-hole cells show the strokes with the existing circle/box
+    notation (`scMark`) colored by to-par (`dScoreCol`); the OUT/IN/TOT cells sum the **total strokes**
+    (`par + toPar`), never the to-par. Optional `tap` makes played-hole cells clickable (data-hole delegation)
+    for the daily hole-review + H2H hole-rewatch flows; `cur`/`sel` ring the current/reviewed hole.
+  • **Rewired all four sites** to `scoreCardEl`: `h2hResultCard` (H2H post-match — TOT now the real strokes,
+    e.g. 38/36 on the reference card, par TOT 35, tap→`h2hReplayHole`), `scrDailyRound` (the live daily/Moment/
+    Spotlight/Legend scorecard strip, tap→hole review), `scrDailyResult` (18-hole OUT/IN/TOT result card), and
+    `scrSpotlightResult` (18-hole single-player). The header "strokes to par" running score up top is unchanged
+    per the ask; only the right-hand column changed to strokes and the Hole/Par + OUT/IN/TOT structure was
+    added.
+  Verified in Playwright directly against the reference data: a 9-hole card with pars [4,5,3,4,4,4,4,4,3]
+  (par TOT 35) and two players scoring [4,4,3,5,4,4,4,4,6]→**38** and [4,5,3,4,5,4,4,4,3]→**36** produces
+  exactly those TOT cells (total strokes, NOT +3/+1); an 18-hole single-player card renders two OUT/IN blocks
+  with OUT 36 / IN 36 / TOT 72; the game boots clean with all four render-site functions present and **zero
+  page errors** across the direct-component + integration renders. Deployed to /golf. Tunable: the `.rsc*`
+  styling + the block-splitting (`H>9` → OUT/IN/TOT) in `scoreCardEl`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
