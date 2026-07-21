@@ -391,15 +391,17 @@ window.GA_ID='G-L29P5MRWKE';
   @media (max-width:440px){ .nav-btn{padding:9px 12px;font-size:13px;} }
   /* Mobile: move the wordmark up into the top bar and drop the oversized hero banner so games surface sooner */
   @media (max-width:640px){
-    .nav-brand .app-icon, .nav-brand .wm{display:none;}
-    .nav-wordmark{display:block;}
-    /* wordmark now lives in the top bar; drop the whole hero so the page opens on PLAY NOW + the games */
+    /* signed out: compact R mark only (the two account buttons need the room); wordmark shows in the hero-less page via the games */
+    .nav-brand .app-icon{display:block;}
+    .nav-brand .wm{display:none;}
+    .nav-wordmark{display:none;}
+    /* drop the oversized hero so the page opens on PLAY NOW + the games */
     .brand.hero{display:none;}
     .games-head{margin-top:14px;}
-    /* signed in: no sign-up buttons, so the wordmark spans the whole banner and the account collapses to its avatar, floated over the top-right corner */
-    /* signed in: a larger wordmark, but sized by HEIGHT only so its aspect ratio is always kept (never stretched) */
+    /* signed in: only an avatar on the right, so the full Runthe.GG wordmark rides the bar (height-sized so it never stretches) */
     .nav.signed-in .nav-in{padding-top:8px;padding-bottom:8px;}
-    .nav.signed-in .nav-wordmark{height:48px;width:auto;max-width:100%;}
+    .nav.signed-in .nav-brand .app-icon{display:none;}
+    .nav.signed-in .nav-wordmark{display:block;height:40px;width:auto;max-width:100%;}
     .nav.signed-in .nav-chip .nm{display:none;}
     .nav.signed-in .nav-chip{padding:5px;}
     /* RunThePitch on phones: title → description → animated phones → Play now. The widget chips are a desktop-only
@@ -507,7 +509,7 @@ window.GA_ID='G-L29P5MRWKE';
       <a class="nav-brand" href="/" aria-label="RunThe.GG home">
         <img class="app-icon" src="/assets/runthegames-icon_64.png?v=5" alt="" width="30" height="30" />
         <span class="wm">RunThe<span class="gg">.GG</span></span>
-        <img class="nav-wordmark" src="/assets/runthegames-wordmark.png?v=2" alt="Run The Games" width="2172" height="724" />
+        <img class="nav-wordmark" src="/assets/wm-runthegg.png?v=1" alt="Runthe.GG" width="1200" height="171" />
       </a>
       <div class="nav-acct" id="nav-acct" aria-live="polite">
         <button class="nav-btn ghost" type="button" data-open="signin">Sign in</button>
@@ -518,7 +520,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   <div class="wrap">
     <header class="brand hero">
-      <h1 style="margin:0;"><img class="wordmark" src="/assets/runthegames-wordmark.png?v=2" alt="Run The Games — free online sports simulation games" width="2172" height="724" /></h1>
+      <h1 style="margin:0;"><img class="wordmark" src="/assets/wm-stacked.png?v=1" alt="Run The Games — free online sports simulation games" width="1200" height="431" /></h1>
       <p class="tag">Free, data-driven sports games you play <b>right in your browser</b>. Pick one and jump in — no downloading necessary.</p>
       <div class="hero-status"><span class="dot"></span><b>2&nbsp;games live</b> · more on the way</div>
     </header>
