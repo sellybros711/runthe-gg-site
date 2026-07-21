@@ -12144,6 +12144,22 @@ allows Google Fonts, or self-host Anton.*
   unused). Verified in Playwright that even a fresh player who never dismissed it never sees the card, the
   round plays normally, 0 page errors. Deployed to /golf.
 
+- **CS515 — putt: the ball now rolls WITH the follow-through, not after the camera settles (owner: "the
+  putting animation goes before the ball moves. I think the ball should move at the same time the finish
+  animation triggers").** The golfer's putt animation (`.hvsw-putt`, 3 frames over 640ms — address /
+  take-back / follow-through, the through-swing triggering at ~50% = ~320ms) starts at render, but the BALL
+  was held for `max(waitMs, puttStroke)` where `waitMs≈600ms` = the green close-up camera-arrival wait — so
+  the golfer completed the stroke and *then*, ~280ms later, the ball rolled. Synced the ball's roll-start to
+  the follow-through: `puttStroke` 260→**320ms** (the through-swing trigger) and the roll gate decoupled from
+  the camera wait when the golfer is drawn (`ep = el - (HV_SWING ? puttStroke : waitMs)`). The camera wait is
+  no longer needed to keep a short putt visible — the roll has a 650ms floor, so even a tap-in reaches the cup
+  (~320+650 ≈ 970ms) well after the green close-up camera settles (~460ms), never before you can see it. The
+  no-golfer path (reduced-motion / H2H multi-ball) keeps the old camera-wait. Verified in Playwright at 1×:
+  the putt ball first moves at **~369ms** after the putt golfer appears (measurement overhead over the 320ms
+  code target) — was ~600ms — i.e. as the putter sweeps through; the putt still holes out and the round
+  advances; 0 page errors across a long run with many putts. Deployed to /golf. Tunable: `puttStroke` (320)
+  vs the `hvswPT*` follow-through timing.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

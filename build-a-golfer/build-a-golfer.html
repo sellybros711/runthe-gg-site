@@ -18946,7 +18946,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
   const isFly=(p.k==='tee'||p.k==='app'||p.k==='adv'||p.k==='chip');
   // CS355: hold the ball at address while the golfer swings; it leaves at impact (chip is a quicker stroke)
   const swingMs=!HV_SWING?0 : ((p.k==='chip'||p.k==='tee'||p.k==='app'||p.k==='adv')?640 : (p.k==='putt'?360:0));   // CS508: chip now uses the full-swing anim -> ball leaves at impact (~56% of 1150ms); putt leaves as the putter sweeps through
-  const puttStroke=(HV_SWING && (p.k==='putt'||p.k==='hole'))?260:0;   // the golfer's putt stroke before the ball rolls
+  const puttStroke=(HV_SWING && (p.k==='putt'||p.k==='hole'))?320:0;   // CS515: hold the ball until the golfer's follow-through TRIGGERS (~50% of the 640ms putt anim), so the ball leaves as the putter sweeps through
   const flyMs=isFly?hvFlightMs(p.dist):0;
   const groundMs=isFly?(p.dist>40?520:340):0;
   const rollMs=(p.k==='putt'||p.k==='hole')?Math.max(650,Math.min(1900,700+Math.min(70,p.dist*3||8)*13)):0;
@@ -19015,7 +19015,11 @@ function hvKick(key, g, p, pPrev, reduce, opts){
       if(t>=1){ ball.setAttribute('opacity','1'); setFinal(); _hvA.raf=0; return; }
     } else {   // putt / hole-out: wait for the camera, then a pure roll with decel, then the drop
       if(rollEl&&rollLen==null){ rollLen=rollEl.getTotalLength(); rollEl.style.strokeDasharray=rollLen; rollEl.style.strokeDashoffset=rollLen; }
-      const ep=el-Math.max(waitMs, puttStroke);   // wait for the camera AND the golfer's putt stroke
+      // CS515 (owner): the ball rolls at the golfer's follow-through, NOT after the camera settles. When the
+      // golfer is drawn (HV_SWING), start at puttStroke (~the follow-through trigger) so ball + putter move
+      // together; without a golfer, keep the old camera-wait. The roll has a 650ms floor, so even a tap-in
+      // reaches the cup well after the green close-up camera has arrived - it's never in before you see it.
+      const ep=el-(HV_SWING?puttStroke:waitMs);
       if(ep<0){ ball.setAttribute('cx',A[0].toFixed(1)); ball.setAttribute('cy',A[1].toFixed(1)); _hvA.raf=requestAnimationFrame(frame); return; }
       const t=Math.min(1,ep/rollMs), te=1-Math.pow(1-t,2.4);
       let x,y;
