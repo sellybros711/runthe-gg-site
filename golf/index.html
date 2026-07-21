@@ -930,11 +930,19 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* daily challenge scorecard */
   .dcard{display:grid; grid-template-columns:repeat(9,1fr); gap:4px}
-  /* CS502: shared realistic scorecard (Hole / Par / player rows with OUT-IN-TOT totals). TOT = total strokes. */
-  .rsc{max-width:600px; margin:0 auto; display:flex; flex-direction:column; gap:9px}
+  /* CS502: shared realistic scorecard (Hole / Par / player rows with OUT-IN-TOT totals). TOT = total strokes.
+     CS510 (owner): each name is written ONCE in a compact legend above the grids; the grids use a thin
+     dot-only gutter (no repeated name, far less visual weight) and tighter rows -> condensed vertically. */
+  .rsc{max-width:600px; margin:0 auto; display:flex; flex-direction:column; gap:6px}
+  .rsc-leg{display:flex; flex-wrap:wrap; align-items:center; gap:5px 14px; padding:0 3px 1px}
+  .rsc-legi{display:inline-flex; align-items:center; font:800 11px/1 var(--body); letter-spacing:.01em; color:var(--oncard)}
+  .rsc-legi.mine,.rsc-legi.win{color:var(--gold)}
+  .rsc-legw{display:inline-flex; color:var(--gold); margin-left:4px}
   .rsc-block{display:grid; background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(4,16,10,.28)); border:1px solid var(--panelb); border-radius:12px; overflow:hidden; box-shadow:0 8px 22px -16px rgba(0,0,0,.7)}
-  .rsc-lab{padding:5px 8px; font:800 9px/1.1 var(--body); letter-spacing:.05em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; background:rgba(0,0,0,.2); border-right:1px solid rgba(255,255,255,.07); border-bottom:1px solid rgba(255,255,255,.045)}
-  .rsc-c{padding:6px 0; text-align:center; font:700 11.5px/1 var(--mono); color:#cfe0d6; border-left:1px solid rgba(255,255,255,.035); border-bottom:1px solid rgba(255,255,255,.045)}
+  .rsc-lab{padding:4px 6px; font:800 9px/1.1 var(--body); letter-spacing:.04em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; background:rgba(0,0,0,.2); border-right:1px solid rgba(255,255,255,.07); border-bottom:1px solid rgba(255,255,255,.045)}
+  .rsc-gut{justify-content:center; padding:4px 0}
+  .rsc-gut .rsc-dot{margin-right:0}
+  .rsc-c{padding:4px 0; text-align:center; font:700 11.5px/1 var(--mono); color:#cfe0d6; border-left:1px solid rgba(255,255,255,.035); border-bottom:1px solid rgba(255,255,255,.045)}
   .rsc-hd{font-weight:800; color:#9db3a6; background:rgba(0,0,0,.18)}
   .rsc-par{color:#7d968a; font-weight:600; font-size:10.5px}
   .rsc-sub{background:rgba(255,255,255,.05); font-weight:800}
@@ -970,7 +978,8 @@ window.GA_ID='G-L29P5MRWKE';
   .bcasthd::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--bacc,#e0a83b)}
   .bcasthd .bc-name{flex:1; min-width:0; font-family:var(--display); font-style:italic; font-size:18px; line-height:1.05;
     color:var(--cream,#F4E3C9); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:.01em}
-  .bcasthd .bc-meta{flex:0 0 auto; font:800 10px/1 var(--body); letter-spacing:.09em; text-transform:uppercase; color:var(--bacc,#e0a83b)}
+  .bcasthd .bc-meta{flex:0 0 auto; font:800 10px/1 var(--body); letter-spacing:.09em; text-transform:uppercase; color:var(--bacc,#e0a83b); text-align:right}
+  .bcasthd .bc-ph{font-family:var(--body); font-style:normal; font-weight:700; font-size:.6em; letter-spacing:.05em; text-transform:uppercase; opacity:.82; white-space:nowrap}
   .dcardwrap{max-width:600px; margin:9px auto 0; background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(4,16,10,.3));
     border:1px solid var(--panelb); border-radius:14px; padding:10px 12px 11px; box-shadow:0 8px 22px -14px rgba(0,0,0,.7)}
   .dcardhd{display:flex; align-items:baseline; justify-content:space-between; margin:0 2px 8px}
@@ -17028,22 +17037,30 @@ function scoreCardEl(opts){
   const sum=(arr,a,b)=>{ let s=0,any=false; for(let k=a;k<b;k++) if(arr[k]!=null){s+=arr[k];any=true;} return any?s:''; };
   const blocks = H>9 ? [{a:0,b:9,sub:'OUT'},{a:9,b:H,sub:'IN',tot:true}] : [{a:0,b:H,sub:'TOT'}];
   const root=$(`<div class="rsc"></div>`);
+  // CS510 (owner): write each name ONCE in a compact legend row; the grids below use a thin dot-only gutter.
+  if(rows.length){
+    const leg=$(`<div class="rsc-leg"></div>`);
+    rows.forEach(r=>{
+      const nm=r.legend||r.label||(r.labelHTML?r.labelHTML.replace(/<[^>]*>/g,'').trim():'');
+      leg.appendChild($(`<span class="rsc-legi ${r.mine?'mine':''} ${r.win?'win':''}"><span class="rsc-dot" style="background:${r.color||'#fff'}"></span>${esc(nm)}${r.win?`<span class="rsc-legw">${ic('trophy')}</span>`:''}</span>`));
+    });
+    root.appendChild(leg);
+  }
   blocks.forEach(bl=>{
-    const n=bl.b-bl.a, cols=`44px repeat(${n},1fr) 32px${bl.tot?' 34px':''}`;
+    const n=bl.b-bl.a, cols=`27px repeat(${n},1fr) 30px${bl.tot?' 32px':''}`;   // thin dot-only gutter
     const g=$(`<div class="rsc-block" style="grid-template-columns:${cols}"></div>`);
     const cell=(cls,html,attr)=>g.appendChild($(`<div class="${cls}" ${attr||''}>${html}</div>`));
-    cell('rsc-lab rsc-hd','Hole');
+    cell('rsc-lab rsc-hd rsc-gut','#');
     for(let k=bl.a;k<bl.b;k++) cell('rsc-c rsc-hd', (k+1));
     cell('rsc-c rsc-hd rsc-sub', bl.sub);
     if(bl.tot) cell('rsc-c rsc-hd rsc-sub rsc-tot','TOT');
-    cell('rsc-lab rsc-par','Par');
+    cell('rsc-lab rsc-par rsc-gut','PAR');
     for(let k=bl.a;k<bl.b;k++) cell('rsc-c rsc-par', pars[k]!=null?pars[k]:'-');
     cell('rsc-c rsc-par rsc-sub', sum(pars,bl.a,bl.b));
     if(bl.tot) cell('rsc-c rsc-par rsc-sub rsc-tot', sum(pars,0,H));
     rows.forEach(r=>{
       const rc=(r.win||r.mine)?'winrow':'';
-      const lab=r.labelHTML || `<span class="rsc-dot" style="background:${r.color||'#fff'}"></span>${esc(r.label||'')}`;
-      cell(`rsc-lab rsc-pl ${r.mine?'mine':''} ${r.win?'win':''} ${rc}`, lab);
+      cell(`rsc-lab rsc-pl rsc-gut ${r.mine?'mine':''} ${r.win?'win':''} ${rc}`, `<span class="rsc-dot" style="background:${r.color||'#fff'}"></span>`);
       for(let k=bl.a;k<bl.b;k++){
         const s=r.strokes[k];
         const tp=(r.tp&&r.tp[k]!=null)?r.tp[k]:(s!=null&&pars[k]!=null?s-pars[k]:null);
@@ -20632,8 +20649,13 @@ function scrDailyRound(){
   add($(`<div class="droundglow" style="--gl:${hvThemeAccent(S.dailyCourse)}"></div>`));   // CS248: subtle themed glow behind the whole round
   if(S.moment){   // career-mode Moment: this round IS the tournament's final round
     const po=S.momentPO, grd=S.moment.grudge&&S.moment.rivalName;
-    add($(`<div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">${grd?'⚔ GRUDGE · You vs '+esc(S.moment.rivalName):'🔥 '+esc(S.moment.evtName||'The Moment')} · ${po?'Sudden-Death Playoff':'Final Round'}</span></div>`));
-    add($(`<p class="lede center" style="margin:5px 0 0">📍 ${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)}${grd?` · ${esc(S.moment.evtName)}`:''}${po?` · Playoff hole ${po.round+1}`:''}</p>`));
+    // CS510 (owner): the two stacked header lines (red tag + venue) are now ONE horizontal broadcast bar
+    // (like the Daily), so it fits mobile without stacking. Name = event/grudge (the headline); meta = the
+    // phase + conditions (the venue is fictional flavor, shown on the preview/course art, so it's dropped
+    // from the in-round header to keep everything on one line).
+    const mTitle=grd?`⚔ You vs ${esc(S.moment.rivalName)}`:esc(S.moment.evtName||'The Moment');
+    const mPhase=po?`Playoff hole ${po.round+1}`:'Final Round';
+    add($(`<div class="bcasthd" style="--bacc:#ff6b5e"><span class="bc-name" style="color:#ff8f7e">${mTitle}</span><span class="bc-meta">${mPhase} · ${dCondLabel(S.dailyCond)}</span></div>`));
     if(!boardPresent && !reviewing && !po){
       add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
       add($(`<div class="center small" style="margin:0 0 4px;color:var(--gold);font-weight:700">${esc(S.moment.evtName)} · ${momentPosTxt(S.moment.info).replace(/<[^>]*>/g,'')} at the start of the day</div>`));
