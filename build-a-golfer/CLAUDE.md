@@ -11936,6 +11936,17 @@ allows Google Fonts, or self-host Anton.*
   /golf; the avatars/clean rows work immediately, the season-count correction + circuit inclusion take
   effect once 60 is applied and new/updated seasons post.
 
+- **CS505 — top 3 shown ONLY on the podium, not repeated in the ranked list (owner: "We don't need to
+  show the top 3 twice. We only need to show them on the podium on all leaderboards").** Both podium boards
+  rendered the top 3 on the podium AND again as the first rows of the list. Now, whenever a podium shows
+  (default best-first view, ≥3 rows), the ranked list below starts at **#4** — `rows.slice(3)` on the
+  season/career board (`overlayLeaderboard`) and `srows.slice(3)` on the Play 18/weekly board
+  (`overlayLeaderboardDaily`), for both signed-in and guest views. Also added the pixel profile avatar to
+  the Play 18/weekly rows (they were the one board still without it), matching CS504's "all leaderboards"
+  avatar intent. The Streaks board has no podium (flat list), so it's unaffected. Verified in Playwright:
+  career board podium = top 3, list = #4-6 (no overlap); Play 18 podium = top 3 by score, list = the rest
+  with avatars; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
