@@ -6455,9 +6455,10 @@ function overlayLeaderboard(screen){
     view=vDesc; dirRows=(vDesc && vDesc.ok)?vDesc.rows:[];
   }
   const youName=(c.hof[0]&&c.hof[0].name)||S.name||'You';
-  const lbRowHTML=(pos,name,sub,valHTML,you,rep)=>`<div class="lb ${you?'you':''}" style="grid-template-columns:34px 1fr auto">
+  const lbRowHTML=(pos,name,sub,valHTML,you,rep,look)=>`<div class="lb ${you?'you':''}" style="grid-template-columns:26px 32px 1fr auto">
       <span class="pos">${pos===1?'🏆':pos}</span>
-      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}${rep?` <span style="color:var(--muted);font-size:10px">·</span> <span class="${repClass(rep)}">${esc(rep)}</span>`:''}</div>${sub?`<div class="small muted" style="font-size:10.5px">${esc(sub)}</div>`:''}</span>
+      ${pxAvatarChip(look||S.look||DEFLOOK,30)}
+      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}${rep?` <span style="color:var(--muted);font-size:10px">·</span> <span class="${repClass(rep)}">${esc(rep)}</span>`:''}</div>${sub?`<div class="small muted" style="font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sub)}</div>`:''}</span>
       <span class="mny" style="white-space:nowrap">${valHTML}</span></div>`;
   const lbRep=r=>{ const rp=(r&&r.rep_pts!=null)?repTierName(r.rep_pts):null; return (rp&&rp!=='Amateur')?rp:null; };   // raw tier name; repClass picks the effect
   const globalOk = view && view.ok;
@@ -6490,11 +6491,10 @@ function overlayLeaderboard(screen){
     const rowFn=r=>{
       const you=sbUser&&r.user_id===sbUser.id, v=lbStatVal(r,tab,sort), id=lbCanon(r);
       const arch=(r.skills && CATS.every(c=>typeof r.skills[c.k]==='number')) ? archetype(r.skills) : null;
-      const golferPart=r.golfer_name ? r.golfer_name+(arch?' · '+arch.name:'')+' · ' : '';
-      const sub = tab==='season'
-        ? golferPart+'OVR '+r.ovr+(r.year?' · Yr '+r.year:'')+(sort!=='earnings'?' · '+fmt(r.season_earnings):'')
-        : golferPart+r.seasons+' szn · '+(r.wins||0)+' win'+((r.wins||0)===1?'':'s')+(sort!=='earnings'?' · '+fmt(r.career_earnings):'');
-      return lbRowHTML(r.rank,id.name,sub,v,you,lbRep({rep_pts:id.rep}));
+      // CS504 (owner): the sub is just the golfer name + archetype — the redundant stat tail (szn/wins/$)
+      // that used to trail the archetype is removed; the right-hand column already shows the sorted stat.
+      const sub = r.golfer_name ? r.golfer_name+(arch?' · '+arch.name:'') : (arch?arch.name:'');
+      return lbRowHTML(r.rank,id.name,sub,v,you,lbRep({rep_pts:id.rep}),r.look);
     };
     const rows=globalRows;   // already ordered by the server (top N desc, or true bottom N asc)
     // CS268: top-3 podium (only on the default best-first view, not the low→high "bottom of the DB" view)
@@ -16028,6 +16028,15 @@ function scrSummary(){
       cc.skillSeasons=cc.skillSeasons||[];
       cc.skillSeasons.push({year:S.year||1,skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))});
       track('circuit_season_finished',{ovr,net:Math.round(ec.net),wins:t.wins,majors:t.majors,year:S.year||1});
+      // CS504 (owner: "The Legend Circuit should be included in career stats"): post circuit seasons to the
+      // public board under the SAME career_id as the tour career (String(S.careerSeed)), so they group into
+      // that career — its seasons count (up to 30 tour + 12 circuit = 42), wins, majors and earnings all
+      // include the circuit. S.year climbs continuously (31-42 in the circuit), so (career_id, year) never
+      // collides with a tour year; migration 60's idempotent upsert dedupes re-submits.
+      sbSubmitSeason({golfer:me.name,ovr,year:S.year||1,earnings:t.money,net:netTotal,wins:t.wins,majors:t.majors,
+        careerId:(S.careerSeed!=null?String(S.careerSeed):null), followers:Math.round((careerStory().followers)||0),
+        look:lookForBoard(),
+        skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))});
     }
     // forfeit the coins this SKIPPED season would have earned from the derived milestone pool (see snapshot)
     if(!S.daily && S.season && S.season.skipped && sbSignedIn()){
