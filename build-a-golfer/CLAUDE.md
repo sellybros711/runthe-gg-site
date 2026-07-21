@@ -11806,6 +11806,20 @@ allows Google Fonts, or self-host Anton.*
   address->coil->impact->finish, novelty hats align across the swing, zero page errors. Tunable: the
   per-phase torso/legs/arm geometry in `swingfix2.py` (`torso_E`/`legs_E`/`arms_club_E`).
 
+- **CS501 — head + headwear turn toward the target at follow-through (owner: "at follow through, the
+  golfer's head and headwear could rotate towards the direction the ball was in").** CS500 kept the head
+  fixed (to keep hats aligned); the owner wants it to look UP the target line at the finish. So the FINISH
+  (C) frame now shifts the head/cap/hair pixels up + toward the target (`swingfix2.py` `shift_head`,
+  `HEAD_DX=2,HEAD_DY=-1`, with a skin neck-bridge so it doesn't float), and the game shifts the novelty-hat
+  overlay by the same amount at the C pose so cap/cowboy/crown/etc all follow the head
+  (`PXG_HEAD_TURN=[2,-1]` + a `poseKey==='C'` offset in `pxDir8Canvas`; dx flips for the mirrored W facing).
+  Gated to righty (`!lefty`) since only the righty E frame turns the head - the lefty keeps its fixed head,
+  so its hats are correctly NOT offset. Address/top/impact are unchanged (head stays down over the ball);
+  only the finish looks up the line, so during the impact->finish crossfade the head visibly comes up.
+  Verified in Playwright: at finish the head turns up-toward-target and a cowboy hat + a crown both move
+  with it (still seated on the head), while the lefty+cowboy shows no offset/misalignment; zero page errors.
+  Tunable: `PXG_HEAD_TURN` (game) + `HEAD_DX/HEAD_DY` (`swingfix2.py`).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

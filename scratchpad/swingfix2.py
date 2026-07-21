@@ -104,8 +104,24 @@ def arms_club_E(f,ph):
     elif ph=='C':      # club wrapped over the lead shoulder behind the head
         hx,hy=CX+3,9; seg(f,sx,sy-1,hx,hy,'s'); f[9][min(W-1,CX+3)]='x'
         seg(f,hx,hy,CX+1,5,'l',wide=False); seg(f,CX+1,5,CX-3,6,'l',wide=False)
+# CS501: at FINISH the head + headwear turn UP toward the target (ball flight). Only the head/cap/hair
+# pixels move; the game shifts the novelty-hat overlay by the same (HEAD_DX,HEAD_DY) so it follows.
+HEAD_DX, HEAD_DY = 2, -1    # up (dy) + toward the target/right (dx) for E; the game mirrors dx for W
+HEADCHARS=set('cbwhi')     # cap (c/b/w) + hair (h/i)
+def shift_head(f):
+    pts=[(x,y,f[y][x]) for y in range(H) for x in range(W) if f[y][x] in HEADCHARS]
+    for (x,y,ch) in pts: f[y][x]='.'          # lift the old head off
+    for (x,y,ch) in pts:
+        nx,ny=x+HEAD_DX,y+HEAD_DY
+        if 0<=nx<W and 0<=ny<H: f[ny][nx]=ch  # set it down, turned toward the target
+    # bridge the neck so the raised head doesn't float off the shoulders
+    for yy in (9,10,11):
+        for xx in (CX-1,CX):
+            if f[yy][xx]=='.': f[yy][xx]='s'
 def frame_E(ph):
-    f=blank(); body(f,'E'); torso_E(f,ph); legs_E(f,ph); arms_club_E(f,ph); return rows(f)
+    f=blank(); body(f,'E'); torso_E(f,ph); legs_E(f,ph); arms_club_E(f,ph)
+    if ph=='C': shift_head(f)
+    return rows(f)
 def frame_E_chip(ph):
     f=blank(); body(f,'E'); torso_E(f,'B' if ph=='CH0' else 'A'); sx,sy=CX+1,12
     if ph=='CH0':
