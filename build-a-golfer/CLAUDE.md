@@ -11967,6 +11967,31 @@ allows Google Fonts, or self-host Anton.*
   standalone sprite grid (`scratchpad/chipputt4.png`) confirms the chip/putt bodies are visually identical to
   the perfected swing body across all 4 directions. Deployed to /golf.
 
+- **CS507 — chip/putt finish faces the hitting direction + W-aim address hides the arms/club (owner, with
+  IMG_8571 circling the chip/putt preview: "Apply the same logic for the follow-throughs / finish position
+  as we did for the driver. The golfer's face should look at the direction they are hitting in at the
+  finish. And for the W aim address, we shouldn't see the arms and club. In the top of the W aim swing we
+  should see the club back to the right").** Refined the CS506 chip/putt frames (the second, motion frame is
+  the finish) so they mirror the full-swing finish-head logic and fix the W (back-to-camera) aim:
+  1. **Finish faces the hitting direction** (same as the full swing's driver/approach finish): the chip/putt
+     FINISH frame turns the head toward the target per direction — **N** (up the hole) shows the back of the
+     head looking up (`head_side 'back'`), **E** (right) looks right (`head_front 'right'`), **S** (toward
+     camera) faces the camera (`head_side 'cam'` composited over the mirrored side body), **W** (left) looks
+     left (`head_back 'left'`). The address frame keeps the head down over the ball.
+  2. **W aim address hides the arms & club** (owner: at address the back-to-camera golfer's arms/club are in
+     front of the body, so they shouldn't be visible) — the W chip/putt ADDRESS frame draws NO arms or club
+     (`arms_cp_back` no-ops on frame 0), and the **W motion/top frame shows the club back up-to-the-right**
+     over the trail shoulder (`arms_back 'C'`), matching how the W full swing reads.
+  Authored in `scratchpad/swing4.py` (`cp_head`/`cp_body`/`arms_cp_back` + per-view `frame_chip`/`frame_putt`,
+  reusing the swing's head/torso/legs helpers so the chip/putt body stays identical to the perfected swing),
+  regenerated `PXG_SW4` (cA/cB/pA/pB per direction) and spliced into the game; `pxSw4`/`hvSwingMarkup` are
+  unchanged (righty full+chip+putt via SW4; lefty still on pxDir8 — flagged follow-up). Verified in
+  Playwright: all 4 directions return valid `full[4]`/`chip[2]`/`putt[2]` data-URL frames with the full swing
+  intact (impact===address), and the W address frames (chip cA + putt pA) contain NO club/arm pixels while
+  the W motion frames (cB/pB) DO — confirming both W fixes; a boot + round render clean with 0 JS page
+  errors (only sandbox-blocked external fonts/Supabase/ads). Deployed to /golf. Tunable: the `cp_head`
+  finish-head mapping + `arms_cp_back` in `scratchpad/swing4.py`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

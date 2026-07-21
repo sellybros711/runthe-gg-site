@@ -164,10 +164,20 @@ ANCH={'N':[18,17],'E':[11,21],'S':[W-1-18,17],'W':[10,18]}
 # pose) so the golfer looks identical to the driving/approach swing, just with a
 # small chip / putt motion. 2 frames each (the game loops ch0/ch1, pt0/pt1).
 # ============================================================================
-def body_addr(dirK, f):   # the address-pose body (no arms) for a direction
-    if dirK=='N': head_side(f,'down'); torso_side(f,'A'); legs_addr(f)
-    elif dirK=='E': head_front(f,'down'); torso_front(f,'A'); legs_front(f)
-    elif dirK=='W': head_back(f,None); torso_back(f,'A'); legs_front(f)
+# CS507: head per FRAME - frame 0 (address) looks DOWN at the ball; frame 1 (finish)
+# turns the face toward the HITTING DIRECTION, exactly like the driver finish:
+#   N (up)    -> back of the head (looking up-the-hole, away from camera)
+#   E (right) -> face looks right at the target
+#   S (toward)-> face turned to the camera (handled in frame_S: cam head)
+#   W (left)  -> face looks left at the target
+def cp_head(dirK, i, f):
+    if dirK in ('N','S'): head_side(f, 'down' if i==0 else 'back')   # S overrides with 'cam' below
+    elif dirK=='E': head_front(f, 'down' if i==0 else 'right')
+    elif dirK=='W': head_back(f, None if i==0 else 'left')
+def cp_body(dirK, f):     # torso + legs of the address stance (no head, no arms)
+    if dirK in ('N','S'): torso_side(f,'A'); legs_addr(f)
+    elif dirK=='E': torso_front(f,'A'); legs_front(f)
+    elif dirK=='W': torso_back(f,'A'); legs_front(f)
 
 # --- SIDE view (N): golfer left of ball, club reaches down-right to the ball ---
 def arms_chip_side(f,i):
@@ -199,31 +209,36 @@ def arms_putt_front(f,i):
     box(f,FCX-1,FCX+1,17,18,'s'); f[18][FCX]='x'
     ty=21 if i==0 else 20
     seg(f,FCX,18,FCX,ty,'l',wide=False); clubhead(f,FCX+1,ty)
-# --- BACK view (W): back to camera, short club poking down to the ball below ---
-def arms_chip_back(f,i):
-    box(f,FCX-1,FCX+1,15,17,'s'); f[16][FCX]='x'                # a hint of hands low-centre
-    if i==0:
-        seg(f,FCX,17,FCX,19,'l',wide=False); clubhead(f,FCX+1,19)
-    else:
-        seg(f,FCX,16,FCX+2,13,'l',wide=False); clubhead(f,FCX+3,12)
-def arms_putt_back(f,i):
-    box(f,FCX-1,FCX+1,15,17,'s'); f[16][FCX]='x'
-    ty=19 if i==0 else 18
-    seg(f,FCX,17,FCX,ty,'l',wide=False); clubhead(f,FCX+1,ty)
+# --- BACK view (W): owner wants the address to HIDE the arms & club (like the driver W
+# address), and the motion frame to show the CLUB BACK-RIGHT with the face turned LEFT
+# (like the driver W finish). frame 0 = nothing; frame 1 = reuse the driver W finish arms.
+def arms_cp_back(f,i):
+    if i==0: return                     # address: arms & club hidden in front of the body
+    arms_back(f,'C')                    # motion: raised arms + club up-top-right (driver W finish)
 
-def _side_cp(kind,i):   # build a SIDE (N) chip/putt frame
-    f=blank(); body_addr('N',f)
+def _side_cp(kind,i):   # SIDE (N) chip/putt frame: address body + head, arms per frame
+    f=blank(); cp_head('N',i,f); cp_body('N',f)
     (arms_chip_side if kind=='chip' else arms_putt_side)(f,i); return rows(f)
+def _S_cp(kind,i):      # S = mirror of N; the finish gets a CAMERA-facing head drawn on top
+    if i==0: return mirror(_side_cp(kind,0))
+    f=blank(); cp_body('N',f)
+    (arms_chip_side if kind=='chip' else arms_putt_side)(f,1)
+    g=[list(r) for r in mirror(rows(f))]              # golfer flipped to the right side
+    hf=blank(); head_side(hf,'cam')                   # camera-facing head (NOT mirrored)
+    for y in range(H):
+        for x in range(W):
+            if hf[y][x]!='.': g[y][x]=hf[y][x]
+    return [''.join(r) for r in g]
 def frame_chip(dirK,i):
     if dirK=='N': return _side_cp('chip',i)
-    if dirK=='S': return mirror(_side_cp('chip',i))
-    f=blank(); body_addr(dirK,f)
-    (arms_chip_front if dirK=='E' else arms_chip_back)(f,i); return rows(f)
+    if dirK=='S': return _S_cp('chip',i)
+    f=blank(); cp_head(dirK,i,f); cp_body(dirK,f)
+    (arms_chip_front if dirK=='E' else arms_cp_back)(f,i); return rows(f)
 def frame_putt(dirK,i):
     if dirK=='N': return _side_cp('putt',i)
-    if dirK=='S': return mirror(_side_cp('putt',i))
-    f=blank(); body_addr(dirK,f)
-    (arms_putt_front if dirK=='E' else arms_putt_back)(f,i); return rows(f)
+    if dirK=='S': return _S_cp('putt',i)
+    f=blank(); cp_head(dirK,i,f); cp_body(dirK,f)
+    (arms_putt_front if dirK=='E' else arms_cp_back)(f,i); return rows(f)
 
 PAL={'c':'#20304f','b':'#16223a','w':'#3a4c6b','h':'#3b2a1d','i':'#2a1d13',
      't':'#1f8f7e','d':'#166b5e','v':'#33a894','p':'#2a3350','q':'#1c2338',
