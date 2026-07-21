@@ -1809,6 +1809,8 @@ const ICONS={
   cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/><path d="M3 4h2l2.2 11.2a1.5 1.5 0 0 0 1.5 1.2h8.1a1.5 1.5 0 0 0 1.5-1.2L21 8H6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>'
 };
 const PXICONS={
+"skip":["..................","..................","..................","..................","..m....m.....mm...","..mm...mm....mm...","..mmm..mmm...mm...","..mmmm.mmmm..mm...","..mmmmmmmmmm.mm...","..mmmmmmmmmm.mm...","..mmmm.mmmm..mm...","..mmm..mmm...mm...","..mm...mm....mm...","..m....m.....mm...","..................","..................","..................",".................."],
+"clock":["..................","........mm........","........mm........",".....mmmmmmmm.....","....mm......mm....","...mm........mm...","..mm..........mm..","..m............m..","..m.....m......m..","..m.....m......m..","..m.....mmmm...m..","..m............m..","..mm..........mm..","...mm........mm...","....mm......mm....",".....mmmmmmmm.....","..................",".................."],
 "arrowLeft":["..................","..................","..................","..................",".......mm.........","......mmm.........",".....mmm..........","....mmm...........","...mmmmmmmmmmmm...","...mmmmmmmmmmmm...","....mmm...........",".....mmm..........","......mmm.........",".......mm.........","..................","..................","..................",".................."],
 "arrowUR":["..................","..................","..................","..................","......mmmmmmm.....",".....mmmmmmmmm....","..........mmmm....",".........mmmmm....","........mmm.mm....",".......mmm..mm....","......mmm...mm....",".....mmm....mm....","....mmm.....m.....",".....m............","..................","..................","..................",".................."],
 "arrowUp":["..................","..................","..................","........mm........",".......mmmm.......","......mmmmmm......",".....mmmmmmmm.....","....mmm.mm.mmm....","....mm..mm..mm....","........mm........","........mm........","........mm........","........mm........","........mm........","........mm........","........mm........","..................",".................."],
@@ -1917,6 +1919,7 @@ const EMOJI_MAP={
   '📖':'book','📜':'scroll','♟':'pawn','☁':'cloud','🎒':'bag','🟢':'circleGreen','🏺':'jug','✂':'scissors',
   '🗓':'calendar','🏛':'building','🐍':'snake','⚙':'gear','🏌':'golfer','🎰':'slot','🔁':'repeat','🧱':'brick',
   '🏠':'home','👤':'user','😤':'grit','🌱':'sprout','☼':'sun','⚑':'pennant','⚖':'scales',
+  '⏭':'skip','⏱':'clock','🛍':'cart',
   '⬆':'arrowUp','↗':'arrowUR','↩':'arrowLeft',
   '💬':'chat','🐞':'bug','💡':'bulb','🔊':'sound','📳':'haptic'
 };
@@ -6005,7 +6008,7 @@ function bottomNav(){
   const tabs=[
     {id:'home',   ico:'home',   label:'Home',        go:()=>{ S.overlay=null; S.screen='title'; render(); }},
     {id:'career', ico:'flag',   label:'Career',      go:()=>{ S.overlay=null; const cs=careerSaveInfo(); if(cs){ if(cs.ended && typeof viewEndedCareer==='function') viewEndedCareer(); else resumeCareer(); } else { reset(); S.mode='easy'; S.screen='setup'; render(); } }},
-    {id:'daily',   ico:'target', label:'Daily',    go:()=>{ S.overlay=null; startDailyChallenge(); }},
+    {id:'daily',   ico:'calendar', label:'Daily',  go:()=>{ S.overlay=null; startDailyChallenge(); }},
     {id:'profile', ico:'user',   label:'Profile',  go:()=>{ S.overlay='record'; render(); }},   // CS455: Trophy Room = your profile
     {id:'online',  ico:'globe',  label:'Online',   go:()=>{ S.overlay=null; openH2H(); }},
     {id:'shop',    ico:'cart',   label:'Pro Shop', go:()=>{ S.overlay='shop'; render(); }},     // CS455: was Leaderboard
@@ -15001,7 +15004,7 @@ function scrTeamCup(){
     ctrl.appendChild(skip);
   } else if(!allDone){
     const next=flat[matchN];
-    const b=$(`<button class="btn red">Next match ▸<span class="sub">Day ${next.sess.day} · ${esc(next.sess.title)} · match ${next.mi+1}</span></button>`);
+    const b=$(`<button class="btn goldfill">Next match ▸<span class="sub">Day ${next.sess.day} · ${esc(next.sess.title)} · match ${next.mi+1}</span></button>`);
     b.onclick=()=>{ clearTimeout(seasonTimer); S.teamMatchN=matchN+1; render(); };
     ctrl.appendChild(b);
     const row=$(`<div class="mini" style="margin-top:10px"></div>`);
@@ -15346,7 +15349,7 @@ function scrSeason(){
       const fin=$(`<button class="btn goldfill">Season Results ▸<span class="sub">Your year in review</span></button>`);
       fin.onclick=()=>{clearTimeout(seasonTimer); S.screen='summary'; render();}; ctrl.appendChild(fin);
     } else {
-      const nx=$(`<button class="btn red">Next Event ▸<span class="sub">${esc(playerEvtName(S.schedule[S.evtIndex+1]))}</span></button>`);
+      const nx=$(`<button class="btn goldfill">Next Event ▸<span class="sub">${esc(playerEvtName(S.schedule[S.evtIndex+1]))}</span></button>`);
       nx.onclick=()=>{clearTimeout(seasonTimer); advanceEvent(); render();}; ctrl.appendChild(nx);
     }
   } else {
