@@ -12034,6 +12034,34 @@ allows Google Fonts, or self-host Anton.*
   club) and the follow-through differs (the extended low club); the frame data confirms pA/pB have no club
   pixels while pC does; boot + 0 page errors. Deployed to /golf.
 
+- **CS510 — round scorecard condensed + name written once + Moment header on one line (owner, from a
+  Moment-round screenshot).** Three asks on the live round screen:
+  1. **Scorecard condensed + each name written ONCE + less visual weight.** The shared `scoreCardEl` (CS502)
+     put the player's name in the sticky label column of BOTH the front-9 and back-9 blocks, and on a phone a
+     long name (e.g. "Lion Trees") wrapped to two lines in the 44px column — so it appeared twice and
+     dominated the card. Redesigned: each row's name now renders ONCE in a compact `.rsc-leg` legend row
+     above the grids (a small dot + name, gold if it's you/the winner), and the two grid blocks use a thin
+     27px **dot-only gutter** (`# / PAR / ●`) with no repeated name. Tightened the row padding (`.rsc-c`
+     6→4px) and the block gap (9→6px). Net: the player rows are single-line instead of two-line-wrapped, the
+     name is a light caption instead of a bold wrapped label, and the whole card is shorter (~156px for an
+     18-hole single-player card). Works for every caller: the round/daily-result/spotlight pass a plain
+     `label`; H2H passes `labelHTML` (dot + name + trophy) and the legend derives the plain name by stripping
+     tags — verified the H2H legend lists each unit once and the name never repeats in the grid.
+  2. **The two stacked header lines → ONE horizontal bar.** A career Moment's header was a red tag pill
+     ("THE STADIUM CLASSIC · FINAL ROUND") stacked over a venue/conditions line ("Cypress Marsh · Windy") —
+     ~120px of vertical space. Now it's a single `.bcasthd` broadcast bar (the same horizontal treatment the
+     Daily already uses), red-accented: the event name (grudge → "You vs {rival}") is the headline on the
+     left, and "Final Round · {conditions}" (or "Playoff hole N · …") the meta on the right. ~39px tall, fits
+     mobile on one line; a very long grudge name ellipsizes gracefully while the phase + conditions stay
+     intact. The fictional venue is dropped from the in-round header (it's shown on the preview + legible in
+     the course art), keeping everything on one line.
+  Presentation-only (no sim/state change). Verified in Playwright: the single-player card shows the name once
+  in the legend (0 occurrences in the grid) at ~156px; the H2H card lists both names once in the legend with
+  no grid repeats; the Moment header renders as one ~39px bar with the event name + phase·conditions, fitting
+  a 390px phone; 0 page errors. Screenshots confirm the condensed scorecard + single-line header. Deployed to
+  /golf. Tunable: the `.rsc` legend/gutter styling + the gutter width in `scoreCardEl`, the Moment header
+  meta in `scrDailyRound`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
