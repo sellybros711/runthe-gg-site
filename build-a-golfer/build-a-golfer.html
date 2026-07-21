@@ -1449,6 +1449,11 @@ window.GA_ID='G-L29P5MRWKE';
   .cb-stat .v{font-family:var(--mono); font-weight:800; font-size:19px; margin-top:5px; color:var(--oncard); white-space:nowrap}
   @media(max-width:540px){ .cb-stats{justify-content:space-between; gap:8px} .cb-stat{min-width:0} }
   .cb-meters{flex-basis:100%; width:100%; margin-top:6px; padding-top:11px; border-top:1px solid rgba(255,255,255,.09)}
+  /* CS498 (owner): Confidence & Respect are collapsed by default, tap the row to expand. */
+  .cb-mtoggle{display:flex; align-items:center; justify-content:space-between; width:100%; gap:8px; background:none; border:0; padding:2px 0; cursor:pointer; color:var(--oncard); font:800 10px/1 var(--body); letter-spacing:.09em; text-transform:uppercase; -webkit-tap-highlight-color:transparent}
+  .cb-mtoggle .lab{color:var(--muted)}
+  .cb-mchev{color:var(--gold); font-size:11px; line-height:1}
+  .cb-mbody{margin-top:9px}
   .seasonrail{display:flex; gap:7px; overflow-x:auto; overflow-y:hidden; padding:1px 0 9px; margin-bottom:10px; -webkit-overflow-scrolling:touch; scrollbar-width:none}
   .seasonrail::-webkit-scrollbar{display:none}
   /* CS356x: season-summary UNDERLINE tabs - reads unmistakably as tabs (baseline + active underline),
@@ -15202,9 +15207,17 @@ function scrSeason(){
   const showMeters=!S.daily && !S.circuitMode && S.career;
   const rspVal=showMeters?repRespect():0;
   const fansVal=showMeters?Math.round(careerStory().followers||0):0;   // CS434: live Fans counter (moves up/down each event)
+  // CS498 (owner): Confidence & Respect start collapsed; tap the toggle to expand.
+  const metersOpen=!!S._metersOpen;
   const metersHTML=showMeters?`<div class="cb-meters">
-      <div class="cb-conf">${confMeterHTML(conf)}</div>
-      <div class="cb-resp" style="margin-top:9px">${respMeterHTML(rspVal)}</div>
+      <button type="button" class="cb-mtoggle" aria-expanded="${metersOpen}">
+        <span class="lab">Confidence &amp; Respect</span>
+        <span class="cb-mchev">${metersOpen?'▾ Hide':'▸ Show'}</span>
+      </button>
+      ${metersOpen?`<div class="cb-mbody">
+        <div class="cb-conf">${confMeterHTML(conf)}</div>
+        <div class="cb-resp" style="margin-top:9px">${respMeterHTML(rspVal)}</div>
+      </div>`:''}
     </div>`:'';
   // CS476 (owner): Fans + Net now read in WHITE with a persistent green/red up/down arrow showing which way
   // the last event moved them (fans also gets 2 decimals). The direction persists across the many mid-round
@@ -15228,6 +15241,7 @@ function scrSeason(){
     ${metersHTML}
   </div>`);
   add(_bnr);
+  { const mt=_bnr.querySelector('.cb-mtoggle'); if(mt) mt.onclick=()=>{ S._metersOpen=!S._metersOpen; render(); }; }   // CS498: tap-to-expand Confidence & Respect
   { const fx=activeFxNode(); if(fx) add(fx); }   // CS325: active injuries / coaching boosts from your decisions
   // CS284: the Net figure COUNTS UP/DOWN to its new value when it changes (event to event) instead of
   // snapping suddenly. Fires only when the net actually changed from what was last shown (i.e. right after
@@ -15277,7 +15291,9 @@ function scrSeason(){
   if(ce.roundsDone>=2 && !ce.evt.noCut){ const madeSet=ce.players.filter(o=>o.made); if(madeSet.length) cutLine=Math.max(...madeSet.map(o=>o.total)); }
   const board=$(`<div class="board ${evt.major?'major':''}"></div>`);
   const flag=!!evt.olympics;   // show country flags on the Olympic leaderboard
-  const top=ordered.slice(0,12); const youOut=!top.includes(meLive);
+  // CS498 (owner): shorter leaderboard on mobile (5) than desktop (10) so it fits without a long scroll.
+  const topN=matchMedia('(max-width:700px)').matches?5:10;
+  const top=ordered.slice(0,topN); const youOut=!top.includes(meLive);
   top.forEach((o,i)=>{
     // drop a dashed "CUT +N" line between the last player inside the cut and the first outside it
     if(cutLine!=null && !ce.done && i>0 && top[i-1].total<=cutLine+1e-9 && o.total>cutLine+1e-9){
