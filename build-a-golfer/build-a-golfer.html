@@ -6007,8 +6007,8 @@ const NAV_H2H_SCR=['h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwa
 function bottomNav(){
   const tabs=[
     {id:'home',   ico:'home',   label:'Home',        go:()=>{ S.overlay=null; S.screen='title'; render(); }},
-    {id:'career', ico:'flag',   label:'Career',      go:()=>{ S.overlay=null; const cs=careerSaveInfo(); if(cs){ if(cs.ended && typeof viewEndedCareer==='function') viewEndedCareer(); else resumeCareer(); } else { reset(); S.mode='easy'; S.screen='setup'; render(); } }},
     {id:'daily',   ico:'calendar', label:'Daily',  go:()=>{ S.overlay=null; startDailyChallenge(); }},
+    {id:'career', ico:'flag',   label:'Career',      go:()=>{ S.overlay=null; const cs=careerSaveInfo(); if(cs){ if(cs.ended && typeof viewEndedCareer==='function') viewEndedCareer(); else resumeCareer(); } else { reset(); S.mode='easy'; S.screen='setup'; render(); } }},
     {id:'profile', ico:'user',   label:'Profile',  go:()=>{ S.overlay='record'; render(); }},   // CS455: Trophy Room = your profile
     {id:'online',  ico:'globe',  label:'Online',   go:()=>{ S.overlay=null; openH2H(); }},
     {id:'shop',    ico:'cart',   label:'Pro Shop', go:()=>{ S.overlay='shop'; render(); }},     // CS455: was Leaderboard
