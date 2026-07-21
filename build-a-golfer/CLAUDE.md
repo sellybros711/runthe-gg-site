@@ -11785,6 +11785,27 @@ allows Google Fonts, or self-host Anton.*
   Tunable: the per-phase hand positions in `swingfix.py`'s `draw_swing`, the `hvsw[A/B/D/C]` keyframe
   timing, `swingMs`.
 
+- **CS500 — the swing golfer's BODY now turns (real mechanics), same side-on view (owner, with a
+  down-the-line reference: "his body turns while swinging... he is bringing the club back toward the
+  camera. This logic should be applied"; then "keep the same style and perspective, just apply these swing
+  mechanics").** CS499 moved the arms but the body stayed square. Rebuilt the E-facing (side-on) full swing
+  (`scratchpad/swingfix2.py`) so the body rotates through the swing while KEEPING THE HEAD FIXED (rows 0-10
+  byte-identical to today, so the baked cap + novelty-hat overlays stay aligned on every frame - verified a
+  cowboy hat sits identically across all 4 poses). Per phase: **address** square, club to the ball;
+  **top** the torso coils (spine rotates into view), weight loads onto the back leg, the club goes up over
+  the trail shoulder and hooks back toward the camera; **impact** unwinds square, hips opening, club at the
+  ball; **finish** the chest rotates to face the target, the BACK (left) heel comes up on the toe with the
+  lead leg as the post, and the club wraps over the lead shoulder - a clear "he finished the swing" pose.
+  Since CS494 only ever selects E (up-hole) and its W mirror (down-hole), this rotating E is exactly what
+  players see. Scope call: the CS493 lefty geometry is hand-tuned and doesn't cleanly accept body rotation
+  without risking a wrong-handed render, so RIGHTY gets the rotating swing (the reference golfer is righty)
+  and LEFTY keeps the CS499 moving-arm swing (still correct-handed); lefty body-rotation is a follow-up. No
+  JS/CSS/timing change - reuses the CS499 4-frame `[A,B,D,C]` wiring; only `PXG_DIR8`'s E frames changed
+  (re-spliced via `scratchpad/emit_swingfix2.py`, which merges CS499 N/NE/SE/S with the rotating E; leaves
+  `PXG_DIR8_L` untouched). Verified in Playwright: 4 distinct rotating frames, the live timeline sequences
+  address->coil->impact->finish, novelty hats align across the swing, zero page errors. Tunable: the
+  per-phase torso/legs/arm geometry in `swingfix2.py` (`torso_E`/`legs_E`/`arms_club_E`).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
