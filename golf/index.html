@@ -7242,8 +7242,29 @@ function scheduleFitHero(){
 // CS473 — first-run onboarding. The #1 piece of feedback is "too many buttons/text, don't know what to do."
 // For a brand-new player the home collapses to ONE focused path (build → play one round), the rest of the
 // menu hidden until they've played once or tapped "explore". Additive: anyone with any history never sees it.
+function autoSignInPending(){
+  // A remembered Supabase session restores asynchronously after load, and an OAuth return is
+  // mid-flight - during that window sbSignedIn() is briefly false. Treat both as "about to be
+  // signed in" so the first-run intro never flashes over an auto sign-in.
+  try{
+    if(S.authPending) return true;
+    if(localStorage.getItem(RTT_AUTH_KEY)) return true;
+  }catch(e){}
+  return false;
+}
+function h2hLinkPending(){
+  // Arrived via an invite link (?h2h=CODE / #h2h=CODE)? h2hCheckLink stashes it and cleans the URL,
+  // so check BOTH: the stashed flag (after cleanup) AND the live URL (first paint, before cleanup).
+  try{ if(localStorage.getItem('rtt_h2h_pending')) return true; }catch(e){}
+  try{ if(new URL(location.href).searchParams.get('h2h')) return true; }catch(e){}
+  try{ if(/[#&?]h2h=/.test(location.hash||'')) return true; }catch(e){}
+  return false;
+}
 function isNewPlayer(){
   try{
+    if(h2hLinkPending()) return false;    // an h2h invite always goes straight to the match, never the intro
+    if(sbSignedIn()) return false;        // signed-in players are never "new here"
+    if(autoSignInPending()) return false; // an auto sign-in is resolving, don't flash the intro
     if(careerSaveInfo()) return false;                                  // has a career to continue
     if(resumeInfo()) return false;                                       // has a half-built golfer
     const c=(typeof career==='function')?career():null; if(c && c.builds>0) return false;
@@ -7252,29 +7273,31 @@ function isNewPlayer(){
   }catch(e){ return false; }
 }
 function onboardStyleOnce(){ if(document.getElementById('obcss')) return; const st=document.createElement('style'); st.id='obcss';
-  st.textContent='.onboard{background:linear-gradient(165deg,rgba(22,181,166,.16),rgba(6,18,12,.6));border:1.5px solid rgba(22,181,166,.4);border-radius:18px;padding:16px 15px 15px;box-shadow:0 10px 30px -14px rgba(0,0,0,.7)}'
-   +'.ob-tag{font:800 11px/1 var(--body);letter-spacing:.14em;color:#6fe0cf;text-align:center;margin-bottom:12px}'
-   +'.ob-steps{display:flex;flex-direction:column;gap:9px;margin-bottom:14px}'
-   +'.ob-step{display:flex;align-items:flex-start;gap:11px}'
-   +'.ob-n{flex:0 0 auto;width:24px;height:24px;border-radius:999px;background:var(--gold);color:#12321f;font:900 13px/24px var(--body);text-align:center;box-shadow:0 2px 8px -2px rgba(0,0,0,.5)}'
-   +'.ob-step b{display:block;color:var(--oncard);font:800 15px/1.2 var(--body)}'
-   +'.ob-step span{display:block;color:var(--muted);font:600 12.5px/1.35 var(--body);margin-top:2px}'
-   +'.ob-skip{display:block;margin:11px auto 0;background:none;border:0;color:var(--muted);font:700 13px var(--body);cursor:pointer;text-decoration:underline;text-underline-offset:3px}'
+  st.textContent='.onboard{background:linear-gradient(165deg,rgba(22,181,166,.14),rgba(6,18,12,.55));border:1.5px solid rgba(22,181,166,.36);border-radius:20px;padding:24px 20px 20px;box-shadow:0 14px 34px -16px rgba(0,0,0,.75)}'
+   +'.ob-tag{font:800 11px/1 var(--body);letter-spacing:.2em;color:#6fe0cf;text-align:center;margin-bottom:6px}'
+   +'.ob-title{text-align:center;color:var(--oncard);font-family:var(--display);font-size:clamp(25px,7.5vw,34px);line-height:1;letter-spacing:.5px;margin:0 0 20px}'
+   +'.ob-steps{display:flex;flex-direction:column;gap:13px;margin:0 auto 22px;max-width:270px}'
+   +'.ob-step{display:flex;align-items:center;gap:14px}'
+   +'.ob-n{flex:0 0 auto;width:26px;height:26px;border-radius:999px;background:var(--gold-grad);color:#0e2a18;font:900 15px/26px var(--body);text-align:center;box-shadow:0 3px 10px -3px rgba(0,0,0,.55)}'
+   +'.ob-step b{color:var(--oncard);font:800 18px/1.15 var(--body)}'
+   +'.ob-cta{margin:0}'
+   +'.ob-skip{display:block;margin:14px auto 0;background:none;border:0;color:var(--muted);font:700 13px var(--body);cursor:pointer;text-decoration:underline;text-underline-offset:3px}'
    +'.ob-skip:active{transform:translateY(1px)}';
   document.head.appendChild(st); }
 function onboardPanel(){
   onboardStyleOnce();
   const box=$(`<div class="onboard"></div>`);
-  box.appendChild($(`<div class="ob-tag">NEW HERE? IT'S 3 SIMPLE STEPS</div>`));
+  box.appendChild($(`<div class="ob-tag">NEW HERE?</div>`));
+  box.appendChild($(`<h2 class="ob-title">3 Simple Steps</h2>`));
   const steps=$(`<div class="ob-steps">
-    <div class="ob-step"><span class="ob-n">1</span><div><b>Build a golfer</b><span>Spin the wheel and draft one skill from each pro.</span></div></div>
-    <div class="ob-step"><span class="ob-n">2</span><div><b>Play a round</b><span>Watch your golfer take on a real course, shot by shot.</span></div></div>
-    <div class="ob-step"><span class="ob-n">3</span><div><b>Beat the pro</b><span>Finish under the tour average to win the day.</span></div></div></div>`);
+    <div class="ob-step"><span class="ob-n">1</span><b>Draft Legends</b></div>
+    <div class="ob-step"><span class="ob-n">2</span><b>Build a golfer</b></div>
+    <div class="ob-step"><span class="ob-n">3</span><b>Play 18 holes</b></div></div>`);
   box.appendChild(steps);
-  const cta=$(`<button class="btn goldfill" style="margin:0">▶ Play your first round<span class="sub">Build your golfer, then play — about 3 minutes</span></button>`);
+  const cta=$(`<button class="btn goldfill ob-cta">▶ Play Your First Round</button>`);
   cta.onclick=()=>{ try{ track('onboard_start'); }catch(e){} startDailyChallenge(); };
   box.appendChild(cta);
-  const skip=$(`<button class="ob-skip" type="button">Skip — explore the full menu ▸</button>`);
+  const skip=$(`<button class="ob-skip" type="button">Skip, explore the full menu ▸</button>`);
   skip.onclick=()=>{ LS.set('bag_onboard_done',true); try{ track('onboard_skip'); }catch(e){} render(); };
   box.appendChild(skip);
   return box;
@@ -7292,9 +7315,12 @@ function scrTitle(){
   // (Anton loads async / may fall back, so measure & scale rather than trust a fixed clamp).
   scheduleFitHero();
   w.appendChild($(`<div class="herorule" aria-hidden="true"><span></span><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.6" fill="none" stroke="#F1D04A" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1.5" fill="#F1D04A"/></svg><span></span></div>`));
+  // CS473: brand-new player (guest, no history, no auto sign-in) → a focused first-run path.
+  const firstRun = isNewPlayer() && !LS.get('bag_onboard_done',false);
   // CS287: the "30-Year Career Simulation" badge is replaced by the How to Play button in this spot (owner)
   // CS303: a "Daily Quests" button sits beside it (owner: no auto-pop-up - open the challenges panel here)
-  { const hw=$(`<div class="center" style="margin:10px 0 12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"></div>`);
+  // Skip this row on the first-run screen so the intro panel stands alone, uncluttered (owner).
+  if(!firstRun){ const hw=$(`<div class="center" style="margin:10px 0 12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"></div>`);
     const hb=$(`<button type="button" class="howtop" aria-label="How to Play">📖 How to Play</button>`);
     hb.onclick=openRules; hw.appendChild(hb);
     // CS375: badge the button with how many daily quests are still to do (signed-in only) so the
@@ -7311,7 +7337,7 @@ function scrTitle(){
   const ri=resumeInfo();
   const cs=careerSaveInfo();
   // CS473: brand-new player → the focused first-run path instead of the full menu (until they play or skip).
-  if(isNewPlayer() && !LS.get('bag_onboard_done',false)){
+  if(firstRun){
     stack.appendChild(onboardPanel());
     w.appendChild(stack);
     w.appendChild($(`<div class="small muted center" style="margin-top:14px;line-height:1.6;opacity:.7">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`));
@@ -23670,8 +23696,8 @@ function scrH2HDraft(){
   // actions
   const actions=$(`<div class="osactions"></div>`);
   if(filled>=8){
-    const decMode=h2hHasDecisions(S.h2h.mode);   // CS437: 1v1/FFA go to the "make your calls" phase first
-    const sub=$(`<button class="btn goldfill"${S.h2h.submitting?' disabled':''}>${S.h2h.submitting?'Submitting…':(decMode?'Lock in & make your calls ▸':'Lock in my golfer ▸')}<span class="sub">OVR ${h2hOvr()} · ${decMode?'set your strategy':'ready to play'}</span></button>`);
+    const decMode=h2hHasDecisions(S.h2h.mode);   // CS495: 1v1/FFA pick a single game plan before the reveal
+    const sub=$(`<button class="btn goldfill"${S.h2h.submitting?' disabled':''}>${S.h2h.submitting?'Submitting…':(decMode?'Set your game plan ▸':'Lock in my golfer ▸')}<span class="sub">OVR ${h2hOvr()} · ${decMode?'pick your strategy':'ready to play'}</span></button>`);
     sub.onclick=(decMode?h2hStartPlay:h2hSubmitDraft); actions.appendChild(sub);
   } else if(spun){
     if(S.h2h.reSpins>0){ const re=$(`<button class="btn gold">Re-spin · ${S.h2h.reSpins} left<span class="sub">Pass on ${esc(g.name)} for a new golfer</span></button>`); re.onclick=h2hReSpin; actions.appendChild(re); }
@@ -23682,38 +23708,35 @@ function scrH2HDraft(){
   }
   add(actions);
 }
-// CS437: the quick "make your calls" phase (1v1 + FFA). You set Attack/Safe on each signature hole, blind,
-// before the head-to-head reveal. Your calls affect YOUR score in the watch, so bold calls that pay off win.
+// CS495: ONE quick strategic game plan (1v1 + FFA) instead of blind hole-by-hole calls. You pick how
+// aggressively to play the round, blind, before the reveal - a single golf-knowledge-free choice that rides
+// in the transmitted look (look._dec) and shapes YOUR score on every signature hole. A bold plan that pays
+// off can win the match, a safe plan protects your score. Fast, and no future-hole guessing.
 function scrH2HPlay(){
-  const cards=S.h2h.decCards||[], idx=S.h2h.decIdx||0, card=cards[idx];
-  add(h2hTag(`Your game plan · call ${Math.min(idx+1,cards.length)} of ${cards.length}`, true));
-  if(!card){ add($(`<p class="lede center" style="margin-top:24px">Locking in your calls…</p>`)); return; }
-  const key=h2hCourseKey(S.h2h.seed), course=DAILY_COURSES[key], h=course.holes[card.i], par=h[0], yards=h[1];
-  const sc=card.sc, od=card.odds, agg=sc.opts.find(o=>o.agg)||sc.opts[0], safe=sc.opts.find(o=>!o.agg)||sc.opts[1];
-  add($(`<h1 class="center" style="font-size:23px;margin:6px 0 2px">Set Your Strategy</h1>`));
-  add($(`<p class="lede center" style="margin:0 0 12px">Your opponent is making the same calls, blind. A bold call that pays off can win the match — but it can cost you.</p>`));
-  // progress pips (which calls are made)
-  const pips=cards.map((c,ci)=>`<span class="pip ${ci<idx?'on':''}${ci===idx?' cur':''}"></span>`).join('');
-  add($(`<div class="center" style="margin:0 0 12px"><span class="pips">${pips}</span></div>`));
-  // the hole + scenario
-  add($(`<div class="scout" style="max-width:540px;margin:0 auto 14px;border-color:#eab308;background:rgba(234,179,8,.06)">
-    <div class="small" style="color:#eab308;font-weight:800;letter-spacing:.06em;text-transform:uppercase">Hole ${card.i+1} · Par ${par} · ${yards}y · ${esc(sc.tag)}</div>
-    <p style="margin:8px 0 0;font-size:15px">${esc(sc.prompt)}</p></div>`));
-  // two calls: aggressive (red) vs safe (teal), each with its risk/reward odds
-  const wrap=$(`<div style="max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:10px"></div>`);
-  const oddsSub = od ? `${esc(od.stat.name)} ${od.val} · <b style="color:#35d6a0">${od.aggGood}%</b> ${esc(od.goodWord)} · <b style="color:#ff8f7e">${od.aggRisk}%</b> ${esc(od.riskWord)}` : esc(agg.s||'');
-  const aggB=$(`<button class="btn" style="background:linear-gradient(180deg,#e0533b,#b83824);border:1px solid #ff8f7e;text-align:left;padding:14px 16px">
-    <span style="display:block;font-weight:800;font-size:16px">⚡ ${esc(agg.l)}</span>
-    <span class="sub" style="opacity:.95;text-transform:none;letter-spacing:0;font-weight:600">${oddsSub}</span></button>`);
-  aggB.onclick=()=>h2hPickDec(true);
-  const safeSub = od ? `Steady play · <b style="color:#35d6a0">${od.safeGood}%</b> ${esc(od.goodWord)} · protect par` : esc(safe.s||'');
-  const safeB=$(`<button class="btn" style="background:linear-gradient(180deg,#0f8f86,#0b6f68);border:1px solid #35d6a0;text-align:left;padding:14px 16px">
-    <span style="display:block;font-weight:800;font-size:16px">🛡 ${esc(safe.l)}</span>
-    <span class="sub" style="opacity:.95;text-transform:none;letter-spacing:0;font-weight:600">${safeSub}</span></button>`);
-  safeB.onclick=()=>h2hPickDec(false);
-  wrap.appendChild(aggB); wrap.appendChild(safeB);
+  add(h2hTag('Your game plan', true));
+  add($(`<h1 class="center" style="font-size:24px;margin:8px 0 6px">Pick your game plan</h1>`));
+  add($(`<p class="lede center" style="max-width:460px;margin:0 auto 4px">How do you want to play this match? Your opponent is choosing too, blind.</p>`));
+  add($(`<p class="small muted center" style="margin:0 0 18px">Going for it can win it, or cost you. Play it safe to protect your score.</p>`));
+  const wrap=$(`<div style="max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:11px"></div>`);
+  [['attack','⚡','Go for it','Attack every chance. High risk, high reward.','linear-gradient(180deg,#e0533b,#b83824)','#ff8f7e'],
+   ['bal','⚖','Balanced','A measured mix of safe and bold.','linear-gradient(180deg,#2a5c8a,#1d3f61)','#7fb2e6'],
+   ['safe','🛡','Play it safe','Steady, low-risk golf. Protect your score.','linear-gradient(180deg,#0f8f86,#0b6f68)','#35d6a0']]
+  .forEach(o=>{
+    const b=$(`<button class="btn" style="background:${o[4]};border:1px solid ${o[5]};text-align:left;padding:15px 16px">
+      <span style="display:block;font-weight:800;font-size:17px">${o[1]} ${o[2]}</span>
+      <span class="sub" style="opacity:.95;text-transform:none;letter-spacing:0;font-weight:600">${o[3]}</span></button>`);
+    b.onclick=()=>h2hPickPlan(o[0]);
+    wrap.appendChild(b);
+  });
   add(wrap);
-  add($(`<p class="small muted center" style="margin:14px 0 0">Make all ${cards.length} calls to lock in your golfer.</p>`));
+  add($(`<p class="small muted center" style="margin:16px 0 0">This sets your strategy for the whole round.</p>`));
+}
+// apply the chosen plan to every signature hole (true=attack / false=safe / null=balanced), then submit.
+function h2hPickPlan(plan){
+  const val = plan==='attack' ? true : plan==='safe' ? false : null;
+  S.h2h.myDec={}; (S.h2h.decCards||[]).forEach(c=>{ S.h2h.myDec[c.i]=val; });
+  try{ track('h2h_plan',{mode:S.h2h.mode, plan}); }catch(e){}
+  h2hSubmitDraft();
 }
 function h2hSum(scores,n){ let t=0; for(let i=0;i<Math.min(n,scores.length);i++) t+=scores[i]; return t; }
 // which units' ball is IN THE CUP at this reveal step of a hole (a unit is done when ALL its shots for
@@ -23852,7 +23875,7 @@ function scrH2HWatch(){
       // hole info + scoreboard stay in FIXED corners all round (owner: they must not flip between holes)
       shell.appendChild($(`<div class="hvob hvhole">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
       const curW=h.order[Math.max(0,Math.min(S.h2h.wStep||1,h.order.length)-1)], stW=curW?h.shots[curW.u][curW.i]:null;
-      const bd=$(`<div class="hvob hvboard${(stW&&stW.d)?'':' nodesc'}"><div class="hvbcap">THRU ${played} · ${holes} HOLES</div></div>`);
+      const bd=$(`<div class="hvob hvboard${(stW&&stW.d)?'':' nodesc'}"><div class="hvbcap">HOLE ${h.n} · PAR ${h.par} · THRU ${played}/${holes}</div></div>`);
       // the scoreboard updates the MOMENT a ball drops, not when the hole advances (owner) - add the
       // current hole's score for any unit whose ball is already in the cup at this reveal step.
       const holed=h2hHoledUnits(h, S.h2h.wStep);
@@ -24085,9 +24108,11 @@ try{ bootRestore(); }catch(e){}
 // before it reloads a tab under memory pressure), so even a mid-hole reload resumes at the last hole.
 try{ window.addEventListener('pagehide',()=>{ try{ saveDailyLive(); }catch(e){} }); }catch(e){}
 try{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'){ try{ saveDailyLive(); }catch(e){} } }); }catch(e){}
+// Arrived via an invite link (?h2h=CODE)? stash it + head to the match BEFORE the first paint, so an
+// h2h link goes straight to h2h (never a title/onboard flash) and the intro guard sees the pending join.
+try{ h2hCheckLink(); }catch(e){}
 render();
 try{ setInterval(tickCountdowns, 1000); }catch(e){}   // live "next daily course in …" countdowns
-try{ h2hCheckLink(); }catch(e){}   // arrived via an invite link (?h2h=CODE)? stash it + join (prompting sign-in)
 </script>
 </body>
 </html>
