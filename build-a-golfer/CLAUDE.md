@@ -12023,6 +12023,17 @@ allows Google Fonts, or self-host Anton.*
   all four directions. Deployed to /golf. Tunable: `frame_chip_top` / the per-view `arms_putt_*` in
   `scratchpad/swing4.py`, the `hvswPT*` keyframes + `swingMs`.
 
+- **CS509 — W-aim putt: hide the arms/putter at address + take back, show the club extended low-forward on
+  the follow-through (owner: "I don't want to see the arms or [putter] in the w aim putts. In the follow
+  through I want to see the club extended in front slightly above the ground").** The CS508 W (back-to-camera,
+  hitting-left) putt showed a small putter poking down on all three frames. Now `arms_putt_back` draws NOTHING
+  on the address + take-back frames (arms & putter hidden in front of the body, matching the W swing address),
+  and only the follow-through shows the club — extended out in front toward the target (viewer-left), low just
+  above the ground. Sprite-only change to `scratchpad/swing4.py` (`arms_putt_back`); regenerated `PXG_SW4` +
+  spliced. Verified in Playwright: the W putt address and take-back frames are identical (back-turned body, no
+  club) and the follow-through differs (the extended low club); the frame data confirms pA/pB have no club
+  pixels while pC does; boot + 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

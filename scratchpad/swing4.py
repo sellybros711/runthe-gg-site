@@ -221,10 +221,10 @@ def arms_putt_front(f,i):        # FRONT (E): ball below; head swings viewer-lef
     if i==0:   seg(f,FCX,18,FCX,20,'l',wide=False); clubhead(f,FCX+1,21)
     elif i==1: seg(f,FCX,18,FCX-1,20,'l',wide=False); clubhead(f,FCX-1,21)
     else:      seg(f,FCX,18,FCX+1,20,'l',wide=False); clubhead(f,FCX+2,21)
-def arms_putt_back(f,i):         # BACK (W): a short putter pokes down to the ball (visible, unlike the swing)
-    if i==0:   seg(f,FCX,15,FCX-1,17,'l',wide=False); clubhead(f,FCX-1,18)
-    elif i==1: seg(f,FCX,15,FCX+1,17,'l',wide=False); clubhead(f,FCX+1,18)   # take back = viewer-right
-    else:      seg(f,FCX,15,FCX-2,17,'l',wide=False); clubhead(f,FCX-2,18)   # follow = viewer-left (target)
+def arms_putt_back(f,i):         # BACK (W, hitting LEFT): owner - HIDE the arms & putter at address + take back
+    if i<2: return               # (in front of the body); only the FOLLOW-THROUGH shows the club...
+    # ...extended out in front toward the target (viewer-left), LOW (slightly above the ground).
+    seg(f,FCX-1,17,FCX-4,18,'l',wide=False); clubhead(f,FCX-5,18)
 
 def frame_putt(dirK, i):
     finish=(i==2)
