@@ -10636,6 +10636,58 @@ function dir8For(vx, vy){
   const idx=((Math.round(th/45)%8)+8)%8;
   return ['E','SE','S','SW','W','NW','N','NE'][idx];
 }
+const PXG_SW4={N:{A:["........................","........ccc.............",".....bbbbbbcc...........",".....bbbbbbccc..........",".....cccwccccc..........","....ccccccccccc.........",".....ccccccccbb.........",".....hhhcccssu..........",".....hhhcccsss..........",".....hhhcccsxx..........","......ddtttttvv.........","......ddtttssvv.........","......ddttttssv.........","......ddtttttss.........","......ddtttttvss........","......ddtttttvvls.......","......ddttttttt.lll.....",".......qpp.ppq...ll.....",".......qpp.ppq...GG.....",".......qpp.ppq..........",".......qpp.ppq..........",".......qpp.ppq..........",".......ooo.ooo..........","........................","........................","........................"],B:["........................","........ccc.............",".....bbbbbbcc...........",".....bbbbbbccc..........",".....cccwccccc..........","....cccccccccccl.ll.....",".....ccccccccbl.lll.....",".....hhhcccssul..GG.....",".....hhhcccssl..........",".....hhhcccsls..........","......dddtttss..........","......dddtdssv..........","......dddtddvv..........","......dddtddvv..........","......dddtddvv..........","......dddtddvv..........","......dddtddtt..........",".......qpp.ppq..........",".......qpp.ppq..........",".......qpp.ppq..........",".......qpp.ppq..........",".......qpp.ppq..........",".......ooo.ooo..........","........................","........................","........................"],C:["........................","........ccc.............",".....bbbbbbcc...........","...llbbbbbbccc..........","...llcccwccccc..........","...GGcccccccccc.........",".....lcccccccc..........",".....clccccccc..........","......lhhhhhhh..........","......hlhhhhhh..........","......dxtttttvv.........","......ddtttttvv.........","......ddtttttvv.........","......ddtttttvv.........","......ddtttttvv.........","......ddtttttvv.........","......ddttttttt.........",".......qpp.ppq..........",".......qpp.ppq..........",".......qpp.ppq..........",".......qpp.ooo..........",".......qpp..............",".......ooo..............","........................","........................","........................"]},E:{A:["..........ccc...........","........ccccccc.........",".......bbbbbbbbb........",".......bbbwbbbbb........","......ccccccccccc.......",".......ccccccccc........",".......ccccccccc........","........cusssuc.........",".........sssss..........",".........sxsxs..........","......ddtttttttvv.......","......ddtttttttvv.......",".......sttttttts........",".......tstttttst........",".......tstttttst........",".......ttstttstt........",".......ttstttstt........","........qpssspq.........","........qpslspq.........","........qpplppq.........","........qppllpq.........","........qppllpq.........","........oooGGoo.........","........................","........................","........................"],B:["..........ccc...........","........ccccccc.........",".......bbbbbbbbb........",".......bbbwbbbbb........",".....llcccccccccc.......",".....llccccccccc........",".....GGccccccccc........",".......lcusssuc.........","........lsssss..........",".........lxsxs..........","......ddttlstttvv.......","......ddttttsstvv.......",".......tttttddss........",".......tttttddtt........",".......tttttddtt........",".......tttttddtt........",".......ttttttttt........","........qpp.ppq.........","........qpp.ppq.........","........qpp.ppq.........","........qpp.ppq.........","........qpp.ppq.........","........ooo.ooo.........","........................","........................","........................"],C:["..........ccc...........","........ccccccc.........",".......bbbbbbbbb........",".......bbbwbbbbb........","......cccccccccccll.....",".......ccccccccc.ll.....",".......ccccccccclGG.....","........hhhcssu.l.......","........hhhcsxsl........",".............sl.........","......ddtssssttvv.......","......dssttttttvv.......",".......ttttttttt........",".......ttttttttt........",".......ttttttttt........",".......ttttttttt........",".......ttttttttt........","........qpp.ppq.........","........qpp.ppq.........","........qpp.ppq.........","........qpp.ppq.........","........qpp.ppq.........","........ooo.ooo.........","........................","........................","........................"]},S:{A:["........................",".............ccc........","...........ccbbbbbb.....","..........cccbbbbbb.....","..........cccccwccc.....",".........ccccccccccc....",".........bbcccccccc.....","..........ussccchhh.....","..........sssccchhh.....","..........xxsccchhh.....",".........vvtttttdd......",".........vvsstttdd......",".........vssttttdd......",".........sstttttdd......","........ssvtttttdd......",".......slvvtttttdd......",".....lll.tttttttdd......",".....ll...qpp.ppq.......",".....GG...qpp.ppq.......","..........qpp.ppq.......","..........qpp.ppq.......","..........qpp.ppq.......","..........ooo.ooo.......","........................","........................","........................"],B:["........................",".............ccc........","...........ccbbbbbb.....","..........cccbbbbbb.....","..........cccccwccc.....",".....ll.lccccccccccc....",".....lll.lbcccccccc.....",".....GG..lussccchhh.....","..........lssccchhh.....","..........slsccchhh.....","..........sstttddd......","..........vssdtddd......","..........vvddtddd......","..........vvddtddd......","..........vvddtddd......","..........vvddtddd......","..........ttddtddd......","..........qpp.ppq.......","..........qpp.ppq.......","..........qpp.ppq.......","..........qpp.ppq.......","..........qpp.ppq.......","..........ooo.ooo.......","........................","........................","........................"],C:["........ccc.............",".....bbbbbbbb...........",".....bbbbbbbbc..........",".....ccccwcccc.....ll...","....ccccccccccc....ll...",".....ccccccccc.....GG...",".....cccusssuc....l.....","......ccsssss....l......","........sxsxs....l......","................l.......",".........vvtttttxd......",".........vvtttttdd......",".........vvtttttdd......",".........vvtttttdd......",".........vvtttttdd......",".........vvtttttdd......",".........tttttttdd......","..........qpp.ppq.......","..........qpp.ppq.......","..........qpp.ppq.......","..........ooo.ppq.......","..............ppq.......","..............ooo.......","........................","........................","........................"]},W:{A:["..........ccc...........","........ccccccc.........",".......bbbbbbbbb........",".......bbbbbwbbb........","......ccccccccccc.......",".......ccccccccc........",".......ccccccccc........","........ccccccc.........","........hhhhhhh.........","........hhhhhhh.........","......ttttddttttt.......","......ttttddttttt.......",".......tttddtttt........",".......tttddtttt........",".......tttddtttt........",".......tttddtttt........",".......tttddtttt........","........qpp.ppq.........","........qpp.ppq.........","........qpp.ppq.........","........qpp.ppq.........","........qpp.ppq.........","........ooo.ooo.........","........................","........................","........................"],B:["..........ccc...........","........ccccccc.........",".......bbbbbbbbb........",".......bbbbbwbbb........","......ccccccccccll......",".......cccccccccll......",".......cccccccccGG......","........cccccccl........","........hhhhhhhl........","........hhhhhhl.........","......ttttddttltt.......","......ttddddttttt.......",".......tddddtttt........",".......tddddtttt........",".......tddddtttt........",".......tddddtttt........",".......tttddtttt........","........qpp.ppq.........","........qpp.ppq.........","........qpp.ppq.........","........qpp.ppq.........","........qpp.ppq.........","........ooo.ooo.........","........................","........................","........................"],C:["..........ccc...........","........ccccccc.........",".......bbbbbbbbb........",".......bbbbbwbbb........","......ccccccccccll......",".......cccccccccll......",".......sscccccccGG......",".......usccccccl........",".......sshhhhhl.........",".............l..........","......ttttdsltttt.......","......tttssdttttt.......",".......sstddtttt........",".......tttddtttt........",".......tttddtttt........",".......tttddtttt........",".......tttddtttt........","........qpp.ppq.........","........qpp.ppq.........","........qpp.ppq.........","........qpp.ppq.........","........qpp.ppq.........","........ooo.ooo.........","........................","........................","........................"]}};
+const PXG_SW4_ANCH={N:[18,17],E:[11,21],S:[5,17],W:[10,18]};
+// CS502-anim: NEW 4-direction righty SWING (address/top/impact=address/finish). Owner-authored poses per aim
+// (N=up back-turn finish, E=right front view, S=down face-to-camera finish, W=left back view). Recolours from
+// the look + shirt patterns like pxDir8Canvas; the cap is baked (recoloured to the hat colour). Novelty-hat
+// OVERLAYS are not yet authored for these poses, so a novelty hat falls back to the baked cap on the full
+// swing only (chip/putt/lefty keep the pxDir8 system). 24x26 grid.
+function pxSw4Canvas(look, dir, poseKey){
+  look=look||S.look||DEFLOOK; const av=avLook(look);
+  const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===(look.pants||'stone')))||{a:'#c7bfa8'}).a;
+  const capOn=look.cap!==false, noCap=!capOn;
+  const pat=(look.shirtPat&&PXPAT_BY[look.shirtPat])?look.shirtPat:'';
+  const BODY=PXG_SW4[dir]&&PXG_SW4[dir][poseKey]; if(!BODY) return null;
+  const key='SW4'+dir+poseKey+'|'+av.key+'|cap'+(capOn?'1':'0')+'|pn'+(look.pants||'stone')+'|pt'+pat;
+  let cached=_pxCanvas.get(key); if(cached) return cached;
+  const P={ l:PXG_FIX.l, G:PXG_FIX.G, H:PXG_FIX.H, u:'#101a30',
+    s:av.skinHex, j:pxShade(av.skinHex,-26), x:pxShade(av.skinHex,20),
+    t:av.shirtHex, d:pxShade(av.shirtHex,-26), v:pxShade(av.shirtHex,34),
+    p:pantsHex, q:pxShade(pantsHex,-22), o:av.shoesHex,
+    h:av.hairHex, i:pxShade(av.hairHex,-26),
+    c:noCap?av.hairHex:av.hatHex, b:noCap?pxShade(av.hairHex,-26):pxShade(av.hatHex,-24), w:noCap?av.hairHex:pxShade(av.hatHex,26) };
+  const px=7, cv=document.createElement('canvas'); cv.width=PXG_DIR8_W*px; cv.height=PXG_DIR8_H*px;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='rgba(0,0,0,.20)'; ctx.beginPath(); ctx.ellipse(11*px,22*px,6*px,2*px,0,0,7); ctx.fill();
+  for(let y=0;y<BODY.length;y++){ const row=BODY[y];
+    for(let X=0;X<row.length;X++){ const ch=row[X]; if(ch==='.'||ch===' ')continue; const col=P[ch]; if(!col)continue;
+      ctx.fillStyle=col; ctx.fillRect(X*px,y*px,px,px); } }
+  if(pat){ const pd=PXPAT_BY[pat];
+    if(pd.fixed){ const cols=pd.cols||[];
+      for(let y=0;y<BODY.length;y++){ const row=BODY[y]; for(let X=0;X<row.length;X++){ const ch=row[X];
+        if(ch!=='t'&&ch!=='d'&&ch!=='v')continue; let col=cols[pd.f(X,y)|0]||cols[0]; if(!col)continue;
+        if(ch==='d') col=pxShade(col,-20); else if(ch==='v') col=pxShade(col,16);
+        ctx.fillStyle=col; ctx.fillRect(X*px,y*px,px,px); } }
+    } else {
+      const light=pxLum(av.shirtHex)>0.55, a1=pxShade(av.shirtHex, light?-52:46), a2=pxShade(av.shirtHex, light?-90:82);
+      for(let y=0;y<BODY.length;y++){ const row=BODY[y]; for(let X=0;X<row.length;X++){ const ch=row[X];
+        if(ch!=='t'&&ch!=='d'&&ch!=='v')continue; const a=pd.f(X,y); if(!a)continue;
+        let col=(a===2)?a2:a1; if(ch==='d') col=pxShade(col,-16); else if(ch==='v') col=pxShade(col,14);
+        ctx.fillStyle=col; ctx.fillRect(X*px,y*px,px,px); } }
+    } }
+  _pxCanvas.set(key,cv); return cv;
+}
+function pxSw4(look, dir){
+  const url=(k)=>{ const cv=pxSw4Canvas(look,dir,k); if(!cv) return '';
+    let u=_pxURL.get(cv); if(!u){ u=cv.toDataURL('image/png'); _pxURL.set(cv,u); } return u; };
+  const a=url('A'); return { full:[a, url('B'), a, url('C')], dir };   // 4 frames: address, top, address(impact), finish
+}
+// snap a screen-space aim vector to one of 4 facings: N=up, S=down, E=right, W=left
+function sw4For(vx, vy){
+  if(Math.abs(vx) > Math.abs(vy)) return vx>0?'E':'W';
+  return vy>0?'S':'N';
+}
 function pxGolferURL(look){
   const cv=pxGolferCanvas(look);
   let u=_pxURL.get(cv); if(u) return u;
@@ -10767,9 +10819,20 @@ function hvSwingMarkup(g,p,look){
   // the hole) it's the OPPOSITE shoulder - righty W, lefty E (owner: "putts and chips down at the hole should
   // be the opposite shoulder"). The ball stays at the shot origin A so it flies perpendicular to the stance,
   // like a real golfer addressing it. (Supersedes CS490's dir8For "face the shot" selection.)
-  const down = vy > 0;   // shot travels DOWN-screen = toward the camera
-  const dir = look.lefty ? (down?'E':'W') : (down?'W':'E');
-  let set; try{ set=pxDir8(look,dir); }catch(e){ return ''; }
+  // CS502-anim: the FULL swing (righty) uses the new 4-direction poses snapped to the shot's aim; chip/putt
+  // and lefty keep the pxDir8 system. N=up S=down E=right W=left.
+  const useSw4 = (kind==='full' && !look.lefty);
+  let set, dir, anch;
+  if(useSw4){
+    dir = sw4For(vx, vy);
+    try{ set=pxSw4(look,dir); }catch(e){ return ''; }
+    anch = PXG_SW4_ANCH[dir] || [12,18];
+  } else {
+    const down = vy > 0;   // shot travels DOWN-screen = toward the camera
+    dir = look.lefty ? (down?'E':'W') : (down?'W':'E');
+    try{ set=pxDir8(look,dir); }catch(e){ return ''; }
+    anch = dir8Anchor(dir, kind, !!look.lefty);
+  }
   const frames=set[kind]||set.full; if(!frames||!frames[0]) return '';
   const clsBase = kind==='full'?['sw0','sw1','sw2','sw3'] : (kind==='chip'?['ch0','ch1'] : ['pt0','pt1']);
   const cam=hvCamFor2(g,p);
@@ -10777,7 +10840,6 @@ function hvSwingMarkup(g,p,look){
   // putt plays under the tight green close-up → size to that frame; full/chip use a fixed small size.
   const GH = kind==='putt' ? Math.max(13, Math.min(21, cam[3]*0.16)) : 22;
   const GW=GH*W/H;
-  const anch=dir8Anchor(dir, kind, !!look.lefty);   // CS493: lefty anchor (ball on the golfer's left)
   const x0=A[0]-GW*(anch[0]/W), y0=A[1]-GH*(anch[1]/H);   // place the ball-anchor at the shot origin A; NO rotation
   const img=(u,cls)=>`<image class="hvsw ${cls}" href="${u}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/>`;
   // Holed beat: the stroke is over - hold the finish frame statically so a re-render can't re-fire the swing.
@@ -10809,8 +10871,9 @@ function hvAddressGolfer(hole, holeIdx, courseKey, look){
   if(!HV_SWING) return '';
   const shots=(hole&&hole.shots)||[]; if(!shots.length || !shots[0].k) return '';
   look=look||S.look||DEFLOOK;
-  const dir=look.lefty?'W':'E';   // CS494: side-on stance, trail shoulder to camera (matches hvSwingMarkup)
-  let set; try{ set=pxDir8(look,dir); }catch(e){ return ''; }
+  const useSw4=!look.lefty;   // CS502-anim: righty uses the new N (up-the-hole) address; lefty keeps pxDir8
+  const dir=useSw4?'N':'W';
+  let set; try{ set=useSw4?pxSw4(look,dir):pxDir8(look,dir); }catch(e){ return ''; }
   if(!set) return '';
   const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
   let g, plots;
@@ -10821,7 +10884,7 @@ function hvAddressGolfer(hole, holeIdx, courseKey, look){
   const addr=set.full&&set.full[0];            // address frame (frame 0 of the full swing)
   if(!addr) return '';
   const W=PXG_DIR8_W, H=PXG_DIR8_H;
-  const GH=22, GW=GH*W/H, anch=dir8Anchor('N','full', !!look.lefty);   // CS493: lefty anchor
+  const GH=22, GW=GH*W/H, anch=(useSw4?(PXG_SW4_ANCH.N||[12,18]):dir8Anchor('N','full', !!look.lefty));
   const x0=A[0]-GW*(anch[0]/W), y0=A[1]-GH*(anch[1]/H);   // stands over the ball facing up the hole (no rotation)
   return `<g class="hvswing hvsw-full"><image class="hvsw hvsw-static" href="${addr}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/></g>`;
 }

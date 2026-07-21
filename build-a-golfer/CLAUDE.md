@@ -11848,6 +11848,44 @@ allows Google Fonts, or self-host Anton.*
   page errors** across the direct-component + integration renders. Deployed to /golf. Tunable: the `.rsc*`
   styling + the block-splitting (`H>9` → OUT/IN/TOT) in `scoreCardEl`.
 
+- **CS503 — TourTracer swing golfer rebuilt as a 4-frame swing in 4 aim directions (righty).** Owner iterated
+  the righty swing pose-by-pose (superseding the CS499-501 single-side-on E swing): "we only need 3 [authored]
+  frames — address, top of backswing, hitting ball (same as address), follow-through — nail these in all 4
+  directions the golfer can aim." Each direction plays a **4-frame** loop `[A,B,A,C]` (address does frames 1 &
+  3 = impact), so only 3 poses are authored per direction. The four aim directions use the physically-correct
+  facing for a right-hander (all owner-approved via rendered contact sheets):
+  • **N (up the hole / away)** — golfer LEFT of the ball, looks DOWN-RIGHT at it; on the finish the body turns
+    to face the hole (BACK to camera, same 3/4 stance) with the club over the LEFT shoulder, only the top
+    showing.
+  • **E (right)** — FRONT view facing the camera, ball below; the finish turns the head to look RIGHT (target).
+  • **S (down / toward camera)** — golfer RIGHT of the ball, looks DOWN-LEFT; the finish turns the face to the
+    camera (3/4).
+  • **W (left)** — BACK view (back to camera). Address/impact hide the arms & club (in front of the body); the
+    top shows just the club poking up top-right; the finish raises the arms + club (top-right) with the head
+    looking LEFT.
+  The **club** is now a thin silver shaft (`l`) + a thicker `clubhead()` block at the tip (not a single line).
+  • **Sprites**: authored in `scratchpad/swing4.py` (24×26 grid, same char palette as the dir8 golfer) →
+    `swing4.json` → `emit_swing4.py` → `PXG_SW4` (righty, N/E/S/W each A/B/C) + `PXG_SW4_ANCH` (per-direction
+    ball anchor). The single-direction north lives in `scratchpad/swingN.py`.
+  • **Wiring**: new `pxSw4Canvas`/`pxSw4` (recolour from the look + shirt patterns, baked cap recoloured to the
+    hat colour; its own palette maps the eye char `u`→dark so it doesn't hit the old renderer's `u`→white),
+    `sw4For(vx,vy)` snaps a shot's aim to N/E/S/W (up/right/down/left). `hvSwingMarkup` routes the **righty
+    FULL swing** to the new system (snap by aim, anchor from `PXG_SW4_ANCH`, frames `[A,B,A,C]`); **chip/putt
+    and lefty stay on the existing `pxDir8` system** untouched. `hvAddressGolfer` (the over-the-ball approach
+    golfer) uses the new N address for righty.
+  • **Verified in Playwright**: snap correct (up→N/right→E/down→S/left→W); each direction yields 4 valid frames
+    with impact===address; recolours to the player's look (in-game zoom + a live practice round both confirm);
+    a full practice round plays to `dailyresult` with **zero page errors**; regression — lefty full, righty
+    chip, righty putt all still render, and a novelty hat on the new swing recolours (baked-cap fallback)
+    without error.
+  KNOWN LIMITATIONS (flagged, follow-ups): (1) **lefty** keeps the old CS499-era swing — the new poses are
+  righty-only ("tweak the righty animations first"); a lefty `PXG_SW4_L` is next. (2) **novelty hats**
+  (cowboy/wizard/crown/…) aren't authored as overlays for the 4 new poses, so on the new full swing a novelty
+  hat falls back to the baked cap (recoloured); chip/putt still show novelty hats, so a player wearing one
+  sees the hat on chip/putt but the plain cap on the full swing until per-direction hat overlays are authored.
+  The standing/menu golfer is a separate system and unaffected. Tunable: the `PXG_SW4` poses (regen via
+  `swing4.py`), `PXG_SW4_ANCH`, the `sw4For` snap thresholds.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
