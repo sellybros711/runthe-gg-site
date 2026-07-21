@@ -160,85 +160,88 @@ FRAMES={'N':frame_N,'E':frame_E,'S':frame_S,'W':frame_W}
 ANCH={'N':[18,17],'E':[11,21],'S':[W-1-18,17],'W':[10,18]}
 
 # ============================================================================
-# CS506: CHIP + PUTT reuse the EXACT swing BODY (head+torso+legs of the address
-# pose) so the golfer looks identical to the driving/approach swing, just with a
-# small chip / putt motion. 2 frames each (the game loops ch0/ch1, pt0/pt1).
-# ============================================================================
-# CS507: head per FRAME - frame 0 (address) looks DOWN at the ball; frame 1 (finish)
-# turns the face toward the HITTING DIRECTION, exactly like the driver finish:
-#   N (up)    -> back of the head (looking up-the-hole, away from camera)
+# CS508: CHIP = the EXACT approach swing [A, B, A, C], only the TOP (frame B) is a
+# SMALLER backswing (owner: "chipping should be the exact same as the approach to
+# avoid complications, we can simply adjust the top of swing so it's not as big").
+# So the chip reuses the full A (address) and C (finish) frames verbatim and only
+# needs a reduced-top frame `chipB` (same B body/coil, a shorter club takeaway).
+# PUTT = 3 simple frames in every direction (owner): address, take back, follow
+# through. Address body (same stance), a small putter stroke; on the follow-through
+# the face turns toward the HITTING DIRECTION (like the swing finish):
+#   N (up)    -> back of the head (looking up the hole)
 #   E (right) -> face looks right at the target
-#   S (toward)-> face turned to the camera (handled in frame_S: cam head)
+#   S (toward)-> face turned to the camera (cam head)
 #   W (left)  -> face looks left at the target
-def cp_head(dirK, i, f):
-    if dirK in ('N','S'): head_side(f, 'down' if i==0 else 'back')   # S overrides with 'cam' below
-    elif dirK=='E': head_front(f, 'down' if i==0 else 'right')
-    elif dirK=='W': head_back(f, None if i==0 else 'left')
-def cp_body(dirK, f):     # torso + legs of the address stance (no head, no arms)
+# ============================================================================
+
+# --- CHIP top: a SMALL backswing per view (club lifts only partway, never over the
+#     shoulder). Drawn over the full-swing B body (coil), so it reads as the approach. ---
+def arms_chip_small_side(f):     # SIDE (N): club lifts back to ~2 o'clock off the ball
+    seg(f,CX+1,11,CX+4,12,'s'); f[12][min(W-1,CX+4)]='x'
+    seg(f,CX+4,12,CX+6,9,'l',wide=False); clubhead(f,CX+7,8)
+def arms_chip_small_front(f):    # FRONT (E): golfer above ball; club lifts up-left a little
+    seg(f,FCX-4,12,FCX-1,15,'s',wide=False); seg(f,FCX+4,12,FCX+1,15,'s',wide=False)
+    box(f,FCX-1,FCX+1,15,16,'s'); f[16][FCX]='x'
+    seg(f,FCX,15,FCX-2,12,'l',wide=False); clubhead(f,FCX-2,10)
+def arms_chip_small_back(f):     # BACK (W): only the club pokes back-right a little
+    seg(f,FCX+2,12,FCX+3,9,'l',wide=False); clubhead(f,FCX+4,8)
+
+def frame_chip_top(dirK):        # the reduced "top of swing" for the chip
+    f=blank()
+    if dirK in ('N','S'):
+        head_side(f,'down'); torso_side(f,'B'); legs_side(f,'B'); arms_chip_small_side(f)
+        return mirror(rows(f)) if dirK=='S' else rows(f)
+    if dirK=='E':
+        head_front(f,'down'); torso_front(f,'B'); legs_front(f); arms_chip_small_front(f); return rows(f)
+    head_back(f,None); torso_back(f,'B'); legs_front(f); arms_chip_small_back(f); return rows(f)   # W
+
+# --- PUTT: address stance body + a small putter stroke. i: 0 address, 1 take back, 2 follow through ---
+def cp_head(dirK, finish, f):
+    if dirK in ('N','S'): head_side(f, 'back' if finish else 'down')   # S overridden with 'cam' below
+    elif dirK=='E': head_front(f, 'right' if finish else 'down')
+    elif dirK=='W': head_back(f, 'left' if finish else None)
+def cp_body(dirK, f):            # torso + legs of the address stance (no head, no arms)
     if dirK in ('N','S'): torso_side(f,'A'); legs_addr(f)
     elif dirK=='E': torso_front(f,'A'); legs_front(f)
     elif dirK=='W': torso_back(f,'A'); legs_front(f)
 
-# --- SIDE view (N): golfer left of ball, club reaches down-right to the ball ---
-def arms_chip_side(f,i):
-    sx,sy=CX+1,11
-    if i==0:   # address = same low club as the full-swing address
-        hx,hy=CX+5,15; seg(f,sx,sy,hx,hy,'s'); f[15][min(W-1,CX+5)]='x'
-        seg(f,hx,hy,CX+7,16,'l',wide=False); clubhead(f,CX+8,16)
-    else:      # small follow: hands forward, club to ~1 o'clock (NOT over the shoulder)
-        hx,hy=CX+4,12; seg(f,sx,sy,hx,hy,'s'); f[12][min(W-1,CX+4)]='x'
-        seg(f,hx,hy,CX+6,9,'l',wide=False); clubhead(f,CX+7,8)
-def arms_putt_side(f,i):
-    sx,sy=CX+1,12
-    hx,hy=CX+5,15
-    seg(f,sx,sy,hx,hy,'s'); f[15][min(W-1,CX+5)]='x'
-    ty=18 if i==0 else 17   # putter near-vertical to the ball; a tiny stroke forward
-    seg(f,hx,hy,CX+7,ty,'l',wide=False); clubhead(f,CX+8,ty)
-# --- FRONT view (E): golfer above ball, club straight down to the ball below ---
-def arms_chip_front(f,i):
-    ls,rs=FCX-4,FCX+4
+def arms_putt_side(f,i):         # SIDE (N): ball down-right; head drops back on the take-back, pushes up-forward on the follow
     if i==0:
-        seg(f,ls,12,FCX-1,17,'s',wide=False); seg(f,rs,12,FCX+1,17,'s',wide=False)
-        box(f,FCX-1,FCX+1,17,18,'s'); f[18][FCX]='x'; seg(f,FCX,18,FCX,20,'l',wide=False); clubhead(f,FCX+1,20)
-    else:      # small follow toward the target (viewer-right)
-        seg(f,ls,12,FCX,16,'s',wide=False); seg(f,rs,12,FCX+2,15,'s',wide=False)
-        box(f,FCX,FCX+2,15,16,'s'); f[16][FCX+1]='x'; seg(f,FCX+2,15,FCX+4,12,'l',wide=False); clubhead(f,FCX+5,11)
-def arms_putt_front(f,i):
-    ls,rs=FCX-4,FCX+4
-    seg(f,ls,12,FCX-1,17,'s',wide=False); seg(f,rs,12,FCX+1,17,'s',wide=False)
+        seg(f,CX+1,12,CX+5,15,'s'); f[15][min(W-1,CX+5)]='x'
+        seg(f,CX+5,15,CX+7,17,'l',wide=False); clubhead(f,CX+8,17)
+    elif i==1:
+        seg(f,CX+1,12,CX+4,15,'s'); f[15][min(W-1,CX+4)]='x'
+        seg(f,CX+4,15,CX+6,18,'l',wide=False); clubhead(f,CX+7,19)
+    else:
+        seg(f,CX+1,12,CX+5,14,'s'); f[14][min(W-1,CX+5)]='x'
+        seg(f,CX+5,14,CX+8,15,'l',wide=False); clubhead(f,CX+9,16)
+def arms_putt_front(f,i):        # FRONT (E): ball below; head swings viewer-left (back) then viewer-right (through=target)
+    seg(f,FCX-4,12,FCX-1,17,'s',wide=False); seg(f,FCX+4,12,FCX+1,17,'s',wide=False)
     box(f,FCX-1,FCX+1,17,18,'s'); f[18][FCX]='x'
-    ty=21 if i==0 else 20
-    seg(f,FCX,18,FCX,ty,'l',wide=False); clubhead(f,FCX+1,ty)
-# --- BACK view (W): owner wants the address to HIDE the arms & club (like the driver W
-# address), and the motion frame to show the CLUB BACK-RIGHT with the face turned LEFT
-# (like the driver W finish). frame 0 = nothing; frame 1 = reuse the driver W finish arms.
-def arms_cp_back(f,i):
-    if i==0: return                     # address: arms & club hidden in front of the body
-    arms_back(f,'C')                    # motion: raised arms + club up-top-right (driver W finish)
+    if i==0:   seg(f,FCX,18,FCX,20,'l',wide=False); clubhead(f,FCX+1,21)
+    elif i==1: seg(f,FCX,18,FCX-1,20,'l',wide=False); clubhead(f,FCX-1,21)
+    else:      seg(f,FCX,18,FCX+1,20,'l',wide=False); clubhead(f,FCX+2,21)
+def arms_putt_back(f,i):         # BACK (W): a short putter pokes down to the ball (visible, unlike the swing)
+    if i==0:   seg(f,FCX,15,FCX-1,17,'l',wide=False); clubhead(f,FCX-1,18)
+    elif i==1: seg(f,FCX,15,FCX+1,17,'l',wide=False); clubhead(f,FCX+1,18)   # take back = viewer-right
+    else:      seg(f,FCX,15,FCX-2,17,'l',wide=False); clubhead(f,FCX-2,18)   # follow = viewer-left (target)
 
-def _side_cp(kind,i):   # SIDE (N) chip/putt frame: address body + head, arms per frame
-    f=blank(); cp_head('N',i,f); cp_body('N',f)
-    (arms_chip_side if kind=='chip' else arms_putt_side)(f,i); return rows(f)
-def _S_cp(kind,i):      # S = mirror of N; the finish gets a CAMERA-facing head drawn on top
-    if i==0: return mirror(_side_cp(kind,0))
-    f=blank(); cp_body('N',f)
-    (arms_chip_side if kind=='chip' else arms_putt_side)(f,1)
-    g=[list(r) for r in mirror(rows(f))]              # golfer flipped to the right side
-    hf=blank(); head_side(hf,'cam')                   # camera-facing head (NOT mirrored)
-    for y in range(H):
-        for x in range(W):
-            if hf[y][x]!='.': g[y][x]=hf[y][x]
-    return [''.join(r) for r in g]
-def frame_chip(dirK,i):
-    if dirK=='N': return _side_cp('chip',i)
-    if dirK=='S': return _S_cp('chip',i)
-    f=blank(); cp_head(dirK,i,f); cp_body(dirK,f)
-    (arms_chip_front if dirK=='E' else arms_cp_back)(f,i); return rows(f)
-def frame_putt(dirK,i):
-    if dirK=='N': return _side_cp('putt',i)
-    if dirK=='S': return _S_cp('putt',i)
-    f=blank(); cp_head(dirK,i,f); cp_body(dirK,f)
-    (arms_putt_front if dirK=='E' else arms_cp_back)(f,i); return rows(f)
+def frame_putt(dirK, i):
+    finish=(i==2)
+    if dirK=='N':
+        f=blank(); cp_head('N',finish,f); cp_body('N',f); arms_putt_side(f,i); return rows(f)
+    if dirK=='S':
+        if not finish: return mirror(frame_putt('N',i))
+        f=blank(); cp_body('N',f); arms_putt_side(f,2)          # mirror N's finish body/arms...
+        g=[list(r) for r in mirror(rows(f))]
+        hf=blank(); head_side(hf,'cam')                         # ...then a CAMERA-facing head on top (NOT mirrored)
+        for y in range(H):
+            for x in range(W):
+                if hf[y][x]!='.': g[y][x]=hf[y][x]
+        return [''.join(r) for r in g]
+    if dirK=='E':
+        f=blank(); cp_head('E',finish,f); cp_body('E',f); arms_putt_front(f,i); return rows(f)
+    f=blank(); cp_head('W',finish,f); cp_body('W',f); arms_putt_back(f,i); return rows(f)   # W
 
 PAL={'c':'#20304f','b':'#16223a','w':'#3a4c6b','h':'#3b2a1d','i':'#2a1d13',
      't':'#1f8f7e','d':'#166b5e','v':'#33a894','p':'#2a3350','q':'#1c2338',
@@ -262,16 +265,16 @@ if __name__=='__main__':
     for ri,d in enumerate(dirs):
         fr={ph:FRAMES[d](ph) for ph in ['A','B','C']}
         out[d]={ph:fr[ph] for ph in ['A','B','C']}
-        out[d]['cA']=frame_chip(d,0); out[d]['cB']=frame_chip(d,1)
-        out[d]['pA']=frame_putt(d,0); out[d]['pB']=frame_putt(d,1)
+        out[d]['chipB']=frame_chip_top(d)                                   # CS508: chip = [A, chipB, A, C]
+        out[d]['pA']=frame_putt(d,0); out[d]['pB']=frame_putt(d,1); out[d]['pC']=frame_putt(d,2)  # 3-frame putt
         dr.text((6,10+ri*(H*sc+34)+H*sc//2),dirlab[d],fill=(245,240,200,255))
         for ci,(ph,lab) in enumerate(seq):
             if ri==0: dr.text((110+ci*(W*sc+8),4),lab,fill=(235,235,235,255))
             grid.alpha_composite(render(fr[ph],sc),(110+ci*(W*sc+8),18+ri*(H*sc+34)))
     grid.save('scratchpad/swing4.png'); print('4-dir ok')
-    # separate preview for chip + putt (address/motion per direction)
-    cseq=[('cA','chip 1'),('cB','chip 2'),('pA','putt 1'),('pB','putt 2')]
-    cg=Image.new('RGBA',(W*sc*4+130,(H*sc+34)*4+20),(70,116,68,255)); cd=ImageDraw.Draw(cg)
+    # separate preview: chip [A, chipB, A, C] + putt [pA, pB, pC]
+    cseq=[('A','chip addr'),('chipB','chip top'),('C','chip fin'),('pA','putt addr'),('pB','putt back'),('pC','putt thru')]
+    cg=Image.new('RGBA',(W*sc*len(cseq)+130,(H*sc+34)*4+20),(70,116,68,255)); cd=ImageDraw.Draw(cg)
     for ri,d in enumerate(dirs):
         cd.text((6,10+ri*(H*sc+34)+H*sc//2),dirlab[d],fill=(245,240,200,255))
         for ci,(ph,lab) in enumerate(cseq):

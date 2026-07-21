@@ -11992,6 +11992,37 @@ allows Google Fonts, or self-host Anton.*
   errors (only sandbox-blocked external fonts/Supabase/ads). Deployed to /golf. Tunable: the `cp_head`
   finish-head mapping + `arms_cp_back` in `scratchpad/swing4.py`.
 
+- **CS508 — chip = the approach swing with a smaller top; putt = 3 simple frames (address/take back/follow
+  through) in every direction (owner: "Chipping should be the exact same as the approach to avoid
+  complications, we can simply adjust the top of swing so it's not as big of a swing. Putting needs to be 3
+  simple frames in all directions, address, take back, and follow through").** Reworked the CS506/507 2-frame
+  chip/putt into the owner's structure:
+  1. **Chip = the EXACT approach swing `[A, B, A, C]`, only the TOP is a smaller backswing.** The chip now
+     reuses the full swing's address (A) and finish (C) frames verbatim and adds one new `chipB` (the same
+     coiled B body, but a short club takeaway instead of over-the-shoulder). So a chip is visually identical
+     to the driving/approach swing — address → small top → impact → finish — with the CS507 finish still
+     facing the hitting direction (it's the same C frame). It even reuses the full-swing CSS animation
+     (`sw0..sw3`, 1150ms), so the motion + the ball-launch-at-impact timing match the approach (chip
+     `swingMs` 300→640).
+  2. **Putt = 3 frames per direction: address, take back, follow through.** The putter starts at the ball,
+     takes back (head drops/away from the target), then sweeps through toward the hole; on the follow-through
+     the face turns toward the hitting direction (N back-of-head / E right / S camera / W left, matching the
+     swing/chip finish). The back-view (W) putt now shows a visible putter poking down to the ball (the swing
+     W hides the arms, but a putt must show the stroke — the new instruction supersedes the CS507 W rule for
+     putts). New 3-phase CSS (`pt0/pt1/pt2`, 640ms); putt ball launches as the putter sweeps through
+     (`swingMs` 0→360).
+  Authored in `scratchpad/swing4.py` (`frame_chip_top` + a 3-frame `frame_putt` with per-view small-stroke
+  arms; `cp_head` refactored to a `finish` flag), regenerated `PXG_SW4` (keys now `A,B,C,chipB,pA,pB,pC`)
+  and spliced into the game; `pxSw4` returns `chip:[A, chipB, A, C]` and `putt:[pA, pB, pC]`, `clsBase`
+  gives the chip the `sw0..sw3` classes and the putt `pt0..pt2`. Verified in Playwright: all 4 directions
+  return `full[4]`/`chip[4]`/`putt[3]` data-URL frames, the chip reuses the full A+C, its top differs from
+  the full (big) top, and its impact === address; and — in a real hole via `hvSwingMarkup` — a chip renders
+  4 images with the `sw0-sw3` classes (reusing the approach animation) while a putt renders 3 images with
+  `pt0/pt1/pt2`, with 0 JS page errors; the standalone `scratchpad/chipputt4.png` confirms the chip reads as
+  the approach with a smaller top and the putt reads as a clean address→take-back→follow-through stroke in
+  all four directions. Deployed to /golf. Tunable: `frame_chip_top` / the per-view `arms_putt_*` in
+  `scratchpad/swing4.py`, the `hvswPT*` keyframes + `swingMs`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
