@@ -53,7 +53,7 @@
 <style>
   :root{
     --bg:#0a1626; --bg2:#0e2036; --card:#122a44; --cardb:#1e3d5c;
-    --ink:#eaf1f8; --mut:#93a7bd; --gold:#EF4E50; --teal:#35C4CD; --line:rgba(255,255,255,.08);
+    --ink:#eaf1f8; --mut:#93a7bd; --gold:#F85858; --teal:#66D3DE; --green:#6EE84E; --line:rgba(255,255,255,.08);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
@@ -62,7 +62,7 @@
     color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased;
     background:
       radial-gradient(1100px 520px at 50% -8%, rgba(53,196,205,.16), transparent 60%),
-      radial-gradient(900px 460px at 88% 4%, rgba(239,78,80,.12), transparent 55%),
+      radial-gradient(900px 460px at 88% 4%, rgba(248,88,88,.12), transparent 55%),
       linear-gradient(180deg,#0b1a2c 0%, var(--bg) 46%, #081120 100%);
     background-attachment:fixed;
   }
@@ -73,25 +73,25 @@
   /* soft animated glow behind the wordmark so the hero reads as designed, not just a logo dropped on a gradient */
   .brand:before{content:"";position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);
     width:min(600px,92%);height:230px;z-index:-1;pointer-events:none;
-    background:radial-gradient(closest-side, rgba(53,196,205,.22), rgba(239,78,80,.11) 52%, transparent 72%);
+    background:radial-gradient(closest-side, rgba(53,196,205,.22), rgba(248,88,88,.11) 52%, transparent 72%);
     filter:blur(8px);animation:heroGlow 7s ease-in-out infinite;}
   @keyframes heroGlow{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1);}
     50%{opacity:1;transform:translate(-50%,-50%) scale(1.05);}}
   .wordmark{display:block;width:100%;max-width:600px;height:auto;margin:0 auto;
     filter:drop-shadow(0 6px 30px rgba(0,0,0,.45));}
   .rule{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px auto 0;max-width:260px;color:var(--gold);}
-  .rule .ln{height:2px;flex:1;background:linear-gradient(90deg,transparent,rgba(239,78,80,.6));}
-  .rule .ln.r{background:linear-gradient(270deg,transparent,rgba(239,78,80,.6));}
+  .rule .ln{height:2px;flex:1;background:linear-gradient(90deg,transparent,rgba(248,88,88,.6));}
+  .rule .ln.r{background:linear-gradient(270deg,transparent,rgba(248,88,88,.6));}
   .tag{text-align:center;color:var(--ink);font-weight:700;margin:16px auto 0;max-width:460px;line-height:1.45;font-size:16px;}
   .tag b{color:var(--teal);}
   /* live status pill: tells a first-time visitor what the site is at a glance */
   .hero-status{display:inline-flex;align-items:center;gap:9px;margin:13px auto 2px;
     padding:7px 15px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.01em;
     color:#cfe0f0;background:rgba(255,255,255,.04);border:1px solid var(--line);}
-  .hero-status .dot{width:8px;height:8px;border-radius:50%;background:#3ce8b8;flex:0 0 auto;
-    box-shadow:0 0 0 0 rgba(60,232,184,.6);animation:livePulse 2.4s ease-out infinite;}
+  .hero-status .dot{width:8px;height:8px;border-radius:50%;background:#6EE84E;flex:0 0 auto;
+    box-shadow:0 0 0 0 rgba(110,232,78,.6);animation:livePulse 2.4s ease-out infinite;}
   .hero-status b{color:var(--ink);}
-  @keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(60,232,184,.5);}70%{box-shadow:0 0 0 8px rgba(60,232,184,0);}100%{box-shadow:0 0 0 0 rgba(60,232,184,0);}}
+  @keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(110,232,78,.5);}70%{box-shadow:0 0 0 8px rgba(110,232,78,0);}100%{box-shadow:0 0 0 0 rgba(110,232,78,0);}}
 
   /* ---- section label ---- */
   .seclab{display:flex;align-items:center;gap:10px;margin:30px 2px 12px;
@@ -177,13 +177,13 @@
      display:block is required: this <span> holds block-level (flex) children, and
      leaving it inline makes the browser split the box and paint stray border slivers. */
   .online-strip{display:block;margin:13px 17px 0;padding:11px 13px;border-radius:13px;
-    background:rgba(60,232,184,.08);border:1px solid rgba(60,232,184,.28);}
+    background:rgba(110,232,78,.08);border:1px solid rgba(110,232,78,.28);}
   .online-strip .ol-hd{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:900;
     letter-spacing:.1em;text-transform:uppercase;color:#7ff0d0;}
-  .online-strip .ol-dot{width:8px;height:8px;border-radius:50%;background:#3ce8b8;flex:0 0 auto;
-    box-shadow:0 0 0 0 rgba(60,232,184,.6);animation:livePulse 2.4s ease-out infinite;}
+  .online-strip .ol-dot{width:8px;height:8px;border-radius:50%;background:#6EE84E;flex:0 0 auto;
+    box-shadow:0 0 0 0 rgba(110,232,78,.6);animation:livePulse 2.4s ease-out infinite;}
   .online-strip .ol-modes{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;}
-  .online-strip .ol-mode{flex:1 1 150px;min-width:0;background:rgba(6,20,26,.4);border:1px solid rgba(60,232,184,.2);
+  .online-strip .ol-mode{flex:1 1 150px;min-width:0;background:rgba(6,20,26,.4);border:1px solid rgba(110,232,78,.2);
     border-radius:10px;padding:8px 11px;}
   .online-strip .ol-mode .m-nm{display:block;font-weight:900;font-size:13px;color:#eafff8;}
   .online-strip .ol-mode .m-sub{display:block;font-size:11px;color:#9fd9c9;margin-top:2px;font-weight:700;letter-spacing:.02em;}
@@ -234,13 +234,13 @@
   .acct{margin:20px 0 4px;border-radius:18px;padding:18px 18px 17px;position:relative;overflow:hidden;
     background:
       radial-gradient(420px 200px at 12% -30%, rgba(53,196,205,.18), transparent 70%),
-      radial-gradient(420px 200px at 100% 130%, rgba(239,78,80,.16), transparent 70%),
+      radial-gradient(420px 200px at 100% 130%, rgba(248,88,88,.16), transparent 70%),
       linear-gradient(180deg,#12233b,#0e1d31);
     border:1px solid var(--cardb);}
   /* "optional / free" tag makes it unmistakable that an account is a bonus, not a wall */
   .acct .a-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;
-    letter-spacing:.07em;text-transform:uppercase;color:#8ff0cf;
-    background:rgba(53,214,160,.12);border:1px solid rgba(53,214,160,.34);padding:4px 10px;border-radius:999px;margin:0 0 10px;}
+    letter-spacing:.07em;text-transform:uppercase;color:#a8f090;
+    background:rgba(110,232,78,.12);border:1px solid rgba(110,232,78,.34);padding:4px 10px;border-radius:999px;margin:0 0 10px;}
   .acct .a-hd{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.01em;
     text-transform:uppercase;font-size:clamp(21px,6vw,27px);line-height:1;margin:0;}
   .acct .a-hd .g{color:var(--gold);} .acct .a-hd .t{color:var(--teal);}
@@ -256,7 +256,7 @@
     border-radius:12px;padding:12px 18px;text-decoration:none;display:inline-flex;align-items:center;
     justify-content:center;gap:8px;transition:transform .1s ease,filter .1s ease,background .1s ease;line-height:1;}
   .btn:active{transform:translateY(1px);}
-  .btn.gold{background:linear-gradient(180deg,#FF5F60,#E7433F);color:#fff;box-shadow:0 8px 22px -12px rgba(239,78,80,.9);}
+  .btn.gold{background:linear-gradient(180deg,#FF6B6B,#F04A44);color:#fff;box-shadow:0 8px 22px -12px rgba(248,88,88,.9);}
   .btn.gold:hover{filter:brightness(1.05);}
   .btn.ghost{background:rgba(255,255,255,.06);color:var(--ink);border:1px solid var(--cardb);}
   .btn.ghost:hover{border-color:var(--gold);}
@@ -302,7 +302,7 @@
   .sheet .swap a{color:var(--gold);font-weight:800;text-decoration:none;cursor:pointer;}
   .sheet .err{background:rgba(225,74,51,.12);border:1px solid rgba(225,74,51,.4);color:#ffb4a6;
     font-size:12.5px;line-height:1.45;border-radius:10px;padding:9px 11px;margin-top:12px;}
-  .sheet .note{background:rgba(53,214,160,.1);border:1px solid rgba(53,214,160,.35);color:#8ff0cf;
+  .sheet .note{background:rgba(110,232,78,.1);border:1px solid rgba(110,232,78,.35);color:#a8f090;
     font-size:12.5px;line-height:1.45;border-radius:10px;padding:9px 11px;margin-top:12px;}
   .sheet .fine{color:#6f829a;font-size:11px;line-height:1.5;margin-top:14px;text-align:center;}
   .sheet .fine a{color:#9db2c8;}
@@ -380,7 +380,7 @@ window.GA_ID='G-L29P5MRWKE';
     transition:filter .12s ease,border-color .12s ease;}
   .nav-btn.ghost{background:rgba(255,255,255,.06);color:var(--ink);border:1px solid var(--cardb);}
   .nav-btn.ghost:hover{border-color:var(--teal);}
-  .nav-btn.solid{background:linear-gradient(180deg,#FF5F60,#E7433F);color:#fff;box-shadow:0 6px 18px -10px rgba(239,78,80,.9);}
+  .nav-btn.solid{background:linear-gradient(180deg,#FF6B6B,#F04A44);color:#fff;box-shadow:0 6px 18px -10px rgba(248,88,88,.9);}
   .nav-btn.solid:hover{filter:brightness(1.06);}
   .nav-chip{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.05);border:1px solid var(--cardb);
     border-radius:999px;padding:4px 13px 4px 4px;color:var(--ink);text-decoration:none;font-weight:800;font-size:13.5px;}
@@ -428,8 +428,8 @@ window.GA_ID='G-L29P5MRWKE';
   .games-head h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.03em;
     font-size:21px;line-height:1;margin:0;display:flex;align-items:center;gap:10px;color:var(--ink);}
   .games-head h2:before{content:"";width:11px;height:11px;border-radius:3px;background:var(--gold);flex:0 0 auto;}
-  .games-head .note{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8ff0cf;flex:0 0 auto;
-    margin-left:auto;background:rgba(60,232,184,.1);border:1px solid rgba(60,232,184,.28);padding:5px 12px;border-radius:999px;}
+  .games-head .note{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#a8f090;flex:0 0 auto;
+    margin-left:auto;background:rgba(110,232,78,.1);border:1px solid rgba(110,232,78,.28);padding:5px 12px;border-radius:999px;}
 
   /* ---- featured game blocks: lead with real gameplay screenshots ---- */
   .games{display:block;}
