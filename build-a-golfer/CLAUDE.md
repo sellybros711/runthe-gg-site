@@ -12138,6 +12138,12 @@ allows Google Fonts, or self-host Anton.*
   errors** across every state. Deployed to /golf. Tunable: the `#app.has-roundbar` reserve (148px), the
   `.hvctrl.fixed` styling.
 
+- **CS514 — removed the "New to golf?" primer card (owner: "it's bothersome when it comes up").** The
+  round screen's one-time golf-scoring primer (`dLegend()` — score-vs-par / circle-box notation) is gone:
+  neutralized its only call site in `scrDailyRound` so it never renders (the function is left defined but
+  unused). Verified in Playwright that even a fresh player who never dismissed it never sees the card, the
+  round plays normally, 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
