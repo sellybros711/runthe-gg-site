@@ -36,6 +36,9 @@ a{color:inherit; text-decoration:none;}
 .icon-btn{background:transparent; border:0; padding:5px; font-size:20px; color:var(--cream); flex:0 0 auto;}
 .spacer{flex:1;}
 .acct{font-size:12px; font-weight:700; color:var(--cream-dim); border:2px solid var(--line2); border-radius:999px; padding:6px 12px;}
+.streakchip{font-size:12px; font-weight:800; color:#ff9a4d; border:2px solid rgba(255,122,61,.35); background:rgba(255,122,61,.08); border-radius:999px; padding:6px 11px;}
+.streakchip b{color:var(--gold-bright);}
+.done-badge{font-size:9px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:#0a1420; background:var(--green); border-radius:999px; padding:3px 8px; margin-left:2px;}
 
 /* hero */
 .hero{text-align:center; padding:6px 6px 22px;}
@@ -92,6 +95,7 @@ a{color:inherit; text-decoration:none;}
   <div class="topbar">
     <a class="icon-btn" href="/" aria-label="RunThe.GG home">‹</a>
     <div class="spacer"></div>
+    <span class="streakchip" id="streakChip" hidden>🔥 <b id="streakN">0</b> day streak</span>
     <span class="acct">Free · one account plays all</span>
   </div>
 
@@ -112,7 +116,7 @@ a{color:inherit; text-decoration:none;}
 
   <div class="cards">
 
-    <a class="card live" href="/grid/crossword/">
+    <a class="card live" href="/grid/crossword/" data-game="crossword">
       <div class="top">
         <span class="crest">
           <svg class="motif-cw" viewBox="0 0 32 32" aria-hidden="true" shape-rendering="crispEdges">
@@ -128,7 +132,7 @@ a{color:inherit; text-decoration:none;}
           </svg>
         </span>
         <div class="h">
-          <div class="nm">Daily Crossword <span class="badge new">New</span></div>
+          <div class="nm">Daily Crossword <span class="badge new">New</span><span class="done-badge" data-done="crossword" hidden>✓ Done today</span></div>
           <p class="desc">A new sports crossword every day. Fill the grid, beat the clock, keep your streak alive.</p>
         </div>
       </div>
@@ -138,7 +142,7 @@ a{color:inherit; text-decoration:none;}
       </div>
     </a>
 
-    <a class="card soon" href="/grid/match/" aria-disabled="true">
+    <a class="card soon" href="/grid/match/" aria-disabled="true" data-game="match">
       <div class="top">
         <span class="crest">
           <svg class="motif-mg" viewBox="0 0 32 32" aria-hidden="true" shape-rendering="crispEdges">
@@ -149,7 +153,7 @@ a{color:inherit; text-decoration:none;}
           </svg>
         </span>
         <div class="h">
-          <div class="nm">Daily Matching <span class="badge soon">Classic</span></div>
+          <div class="nm">Daily Matching <span class="badge soon">Classic</span><span class="done-badge" data-done="match" hidden>✓ Done today</span></div>
           <p class="desc">The original RunTheGrid game — match the daily board against the clock.</p>
         </div>
       </div>
@@ -168,5 +172,22 @@ a{color:inherit; text-decoration:none;}
 
   <div class="foott">Part of <a href="/">RunThe.GG</a> · a new grid game every day</div>
 </div>
+
+<script src="/grid/rtg.js"></script>
+<script>
+// Reflect the shared RunTheGrid state on the chooser: one streak, and which
+// games are already done today. Both games write here via /grid/rtg.js.
+(function(){
+  if(!window.RTG) return;
+  var streak = RTG.getStreak();
+  if(streak > 0){
+    document.getElementById('streakN').textContent = streak;
+    document.getElementById('streakChip').hidden = false;
+  }
+  document.querySelectorAll('[data-done]').forEach(function(el){
+    if(RTG.playedToday(el.getAttribute('data-done'))) el.hidden = false;
+  });
+})();
+</script>
 </body>
 </html>

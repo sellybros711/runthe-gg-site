@@ -233,6 +233,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   </div>
 </div>
 
+<script src="/grid/rtg.js"></script>
 <script src="puzzles.js"></script>
 <script>
 (function(){
@@ -241,7 +242,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   if(!P){ document.getElementById('board').textContent = 'No puzzle for today.'; return; }
 
   var N = P.size;
-  var SAVE_KEY = 'rtg:cw:v1';
 
   // ---- build the model: cells[r][c] = {block, num, ans, val, dir map} -------
   var cells = [];
@@ -462,9 +462,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   });
 
   // ---- win check + persistence ---------------------------------------------
-  function load(){ try{ return JSON.parse(localStorage.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
-  function save(s){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(s)); }catch(e){} }
-
+  // Streak + stats live in the shared RunTheGrid store (/grid/rtg.js) so the
+  // Crossword and Match games share one streak and one account.
   function checkSolved(){
     if(done) return;
     for(var r=0;r<N;r++) for(var c=0;c<N;c++){ var cell=cells[r][c]; if(cell.block) continue; if(cell.val!==cell.ans) return; }
@@ -476,33 +475,21 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     elapsed = startedAt ? (performance.now()-startedAt)/1000 : 0;
     document.getElementById('timerN').textContent = fmt(elapsed);
 
-    // streak logic: consecutive calendar days completed
-    var s=load(); var today=P.id;
-    var yesterday = shiftDay(today,-1);
-    var already = s.lastDone===today;
-    if(!already){
-      s.streak = (s.lastDone===yesterday) ? (s.streak||0)+1 : 1;
-      s.lastDone = today;
-      s.best = Math.min(s.best||1e9, Math.round(elapsed));
-      s.bestStreak = Math.max(s.bestStreak||0, s.streak);
-      save(s);
-    }
-    document.getElementById('streakN').textContent = s.streak;
+    // report the completed daily to the shared RunTheGrid store (one streak
+    // across all hub games); it advances the streak at most once per day.
+    var st = (window.RTG ? RTG.recordPlay('crossword', { win:true, timeSec: Math.round(elapsed) }) : { streak:0 });
+    var best = (window.RTG ? RTG.gameStats('crossword').bestTime : null);
+    document.getElementById('streakN').textContent = st.streak;
 
     // fill modal
     document.getElementById('mTime').textContent = fmt(elapsed);
-    document.getElementById('mStreak').textContent = s.streak;
-    document.getElementById('mBest').textContent = fmt(s.best||elapsed);
+    document.getElementById('mStreak').textContent = st.streak;
+    document.getElementById('mBest').textContent = fmt(best==null?elapsed:best);
     document.getElementById('mShareGrid').textContent = buildShareGrid();
     document.getElementById('yourRk').textContent = '4';
     document.getElementById('yourTm').textContent = fmt(elapsed);
     render();
     setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); }, 350);
-  }
-
-  function shiftDay(iso, delta){
-    var d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+delta);
-    return d.toISOString().slice(0,10);
   }
 
   // emoji share grid — 🟨 revealed, 🟩 solved cleanly, ⬛ black
@@ -528,7 +515,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   // ---- boot -----------------------------------------------------------------
   document.getElementById('dateSeg').innerHTML = fmtDate(P.date)+' <small>Daily</small>';
   document.getElementById('sizeSeg').textContent = N+' × '+N;
-  var saved=load(); document.getElementById('streakN').textContent = saved.streak||0;
+  document.getElementById('streakN').textContent = (window.RTG ? RTG.getStreak() : 0);
   function fmtDate(iso){ try{ return new Date(iso+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'}); }catch(e){ return iso; } }
 
   buildLists();
