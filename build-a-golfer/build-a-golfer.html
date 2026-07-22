@@ -12075,7 +12075,7 @@ function startSeason(majorsOnly){
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false; S._impactShown=false;   // unlocked during THIS season (shown on the summary)
   S._bannerNet=null; S._bannerFans=null; S._bannerNetDir=0; S._bannerFansDir=0; S._confBar=null; S._respBar=null;   // CS284/285/434/476: reset the banner count-up + arrow-direction + meter-glide baselines so a new season's first render doesn't animate/arrow from prior values
   S._railIdx=null; S._railScroll=null;                   // CS285: reset the season-rail smooth-scroll tracking so a new season snaps to center (no glide from last season's schedule position)
-  if(S.career && S.career.story){ S.career.story.seasonCount=0; }   // reset the per-season storyline cap (CS225)
+  if(S.career && S.career.story){ S.career.story.seasonCount=0; S.career.story._beatsYr=0; S.career.story.lastBeat=-99; }   // reset the per-season storyline cap (CS225) + the DECISIONS-this-year counter + the stale cross-season gap tracker (lastBeat stored an ABSOLUTE evtIndex from LAST season, which blocked this season's early beats)
   S.season.stops=0; S.season.momentsShown=0; S.season.grudgeShown=0; S.season.sideMoney=0; S.season._lastStopEvt=-99;   // interruption budget + grudge cap (CS295) + off-course money (CS325) + no-back-to-back tracker (CS327)
   { const st=careerStory(); st.dilSeason=0; st._lastDom=null; }   // CS325: reset per-season dilemma cap
   if(!S.daily && !S.circuitMode && S.career){   // CS226 momentum: carry confidence over with gentle reversion; snapshot followers for the season delta
@@ -13056,7 +13056,7 @@ function maybeStoryline(ce){
   // CS376: the guaranteed beat lands at a per-season jittered mid/late-season point (set in the season loop),
   // so it's not always at the same ~40% mark every year. Falls back to 55% if unset.
   const gthr = (S.season && S.season._guarEv!=null) ? S.season._guarEv : Math.floor(evN*0.55);
-  const guarantee = (story.seasonCount||0)===0 && S.evtIndex >= gthr;
+  const guarantee = (story._beatsYr||0)===0 && S.evtIndex >= gthr;   // no presser OR dilemma yet this year
   if(!guarantee){
     if(seasonStopLeft() <= 0) return null;                            // shared season interruption budget spent
     if(S.evtIndex - (story.lastBeat==null?-99:story.lastBeat) < STORY_GAP) return null;
@@ -13229,7 +13229,7 @@ function pressBuzzHTML(bz){
 function showStoryline(sb){
   const {beat, ctx}=sb, story=careerStory();
   if(S.season) S.season.stops=(S.season.stops||0)+1;   // count against the shared interruption budget
-  story.lastBeat=S.evtIndex; story.seasonCount=(story.seasonCount||0)+1; story.seenEvt[beat.id]=S.evtIndex;
+  story.lastBeat=S.evtIndex; story.seasonCount=(story.seasonCount||0)+1; story._beatsYr=(story._beatsYr||0)+1; story.seenEvt[beat.id]=S.evtIndex;
   const T=(v)=>typeof v==='function'?v(ctx):v;
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const pressish=/PRESS|RIVAL|STORY|MAJOR|SPONSOR/.test(String(T(beat.tag)).toUpperCase());
@@ -13366,6 +13366,7 @@ function showDilemma(sb){
   story._lastDom=beat.dom;
   if(sb.arcRef){ const a=careerArcs(), i=a.indexOf(sb.arcRef); if(i>=0) a.splice(i,1); }   // CS326: consume the fired follow-up
   else { story.seenDil=story.seenDil||{}; story.seenDil[beat.id]=S.evtIndex; story.dilSeason=(story.dilSeason||0)+1; }
+  story._beatsYr=(story._beatsYr||0)+1;   // ANY decision beat (presser, dilemma, arc) satisfies the year's guarantee
   const T=(v)=>typeof v==='function'?v(ctx):v;
   document.querySelectorAll('.momentov,.storyov,.dilemmaov').forEach(n=>n.remove());
   const ov=$(`<div class="dilemmaov" style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;
@@ -13755,6 +13756,24 @@ function maybeSponsorMoment(){
   try{ saveCareer(offseasonResumeExtra()); }catch(e){}   // persist the seen-flag so a refresh won't replay it
   sponsorOfferPopup(offers);
 }
+// A quick pro & con of taking a sponsor offer, so the decision is informed at a glance (owner).
+function sponsorProCon(offer){
+  const nti=sponsorTierInfo(offer.tier), signing=sponsorSigningBonus(offer.brand);
+  const occupied=SPONSOR_SLOTS.some(sl=>sponsorOf(sl));   // do you already carry a deal that a switch would replace?
+  if(offer.upgrade) return {pro:`Bigger weekly bonuses + a ${fmtShort(signing)} signing bonus, ${nti.name} pays more than your current deal.`,
+    con:`Tougher season goals to hit, and replacing a slot resets that brand's loyalty to Lv 1.`};
+  if(offer.poach) return {pro:`A ${fmtShort(signing)} signing bonus to jump to a fresh ${nti.name} brand.`,
+    con:`You'd start over at Lv 1 loyalty on that slot, losing the bonus you'd built up.`};
+  if(!occupied) return {pro:`Your first sponsor paycheck plus a ${fmtShort(signing)} signing bonus, pure upside.`,
+    con:`You commit to their season goals, miss them and the deal grows slower.`};
+  return {pro:`A second sponsor income (hat + shirt) and a ${fmtShort(signing)} signing bonus.`,
+    con:`One more set of season goals to deliver on.`};
+}
+function sponsorProConHTML(offer){ const pc=sponsorProCon(offer);
+  return `<div style="margin-top:9px;display:grid;gap:4px">
+    <div style="display:flex;gap:7px;align-items:flex-start"><span style="color:#4fd39a;font-weight:800;flex:0 0 auto;font-size:12px">✓ Pro</span><span class="small" style="color:#cfe0d8;line-height:1.3">${esc(pc.pro)}</span></div>
+    <div style="display:flex;gap:7px;align-items:flex-start"><span style="color:#f0864a;font-weight:800;flex:0 0 auto;font-size:12px">✗ Con</span><span class="small" style="color:#cfe0d8;line-height:1.3">${esc(pc.con)}</span></div></div>`;
+}
 function sponsorOfferPopup(offers){
   if(!offers||!offers.length) return;
   document.querySelectorAll('.momentov').forEach(n=>n.remove());
@@ -13777,7 +13796,7 @@ function sponsorOfferPopup(offers){
       <p class="lede" style="margin:8px 0 4px;color:#e8f0e8">${sub}</p>
       <p class="small" style="margin:0 0 16px;color:#9fb3a8">Choose which slot to wear their logo, or decide later.</p>
       <div class="soffers" style="display:grid;gap:11px;text-align:left"></div>
-      <button class="btn ghost solater" style="margin-top:12px">Decide later ▸<span class="sub">Review it on the off-season screen</span></button>
+      <button class="btn ghost solater" style="margin-top:12px">Decide later ▸<span class="sub">The offer stays on the alert banner until you choose</span></button>
     </div></div>`);
   const box=ov.querySelector('.soffers');
   offers.forEach(offer=>{
@@ -13792,6 +13811,7 @@ function sponsorOfferPopup(offers){
           <span class="small" style="display:block;color:#9fb3a8">${esc(nti.name)} · ${esc(ntr.label)}</span></span>
         <span class="mono small" style="flex:0 0 auto;color:#ffd45e;font-weight:800;text-align:right;line-height:1.2">+${fmtShort(signing)}<span style="display:block;color:#8fa7b3;font-weight:600">signing</span></span></div>
       ${bi.tag?`<div class="small" style="color:${bi.color};font-style:italic;margin-top:7px">“${esc(bi.tag)}”</div>`:''}
+      ${sponsorProConHTML(offer)}
       <div style="display:flex;gap:8px;margin-top:11px" class="offer-actions"></div></div>`);
     const acts=card.querySelector('.offer-actions');
     SPONSOR_SLOTS.forEach(slot=>{
@@ -14053,6 +14073,7 @@ function sponsorDecisionNode(){
           <span class="small" style="display:block;color:#9fb3a8">${esc(nti.name)} · ${esc(ntr.label)}</span></span>
         <span class="mono small" style="flex:0 0 auto;color:#ffd45e;font-weight:800;text-align:right;line-height:1.2">+${fmtShort(signing)}<span style="display:block;color:#8fa7b3;font-weight:600">signing</span></span></div>
       ${bi.tag?`<div class="small" style="color:${bi.color};font-style:italic;margin-top:7px">“${esc(bi.tag)}”</div>`:''}
+      ${sponsorProConHTML(offer)}
       <div style="display:flex;gap:8px;margin-top:11px" class="offer-actions"></div>
       <button class="btn ghost offer-pass" style="width:100%;margin-top:8px;padding:8px;font-size:11.5px;text-transform:none;line-height:1.2"><b>Not now</b> <span style="opacity:.8;font-weight:600">· keep my current sponsors</span></button></div>`);
     const acts=card.querySelector('.offer-actions');
@@ -15825,19 +15846,26 @@ function scrSeason(){
     const lastStop=(S.season&&S.season._lastStopEvt!=null)?S.season._lastStopEvt:-99;
     // CS376: nothing in the opening stretch (STORY_MIN_EVENT); the one guaranteed beat lands at a jittered
     // mid/late point so it reads as an integrated moment, not a ~week-2 block that repeats every season.
-    if(seasonStopLeft()>0 && (S.evtIndex-lastStop)>=2 && S.evtIndex>=STORY_MIN_EVENT){
-      const mark=()=>{ ce._interrupted=true; S.season._lastStopEvt=S.evtIndex; clearTimeout(seasonTimer); };
-      const dil = maybeDilemma(ce);   // includes any due follow-up arc (priority)
-      if(dil && dil.isArc){ mark(); showDilemma(dil); return; }   // an owed follow-up payoff always lands
+    // OWNER FIX (min 1 decision/year): the outer budget + no-back-to-back gates used to ALSO block the
+    // guaranteed beat - a couple of Moments could spend the whole budget and the year ended with ZERO
+    // pressers/dilemmas. A DUE guarantee now bypasses those gates (it retries every event until it lands).
+    if(S.evtIndex>=STORY_MIN_EVENT){
+      const story=careerStory();
       const evN=(S.schedule&&S.schedule.length)||18, prog=S.evtIndex/evN;
       if(S.season._guarEv==null) S.season._guarEv=Math.floor(evN*(0.42+Math.random()*0.34));   // 42%-76%, varies per season
-      const guaranteeDue = (careerStory().seasonCount||0)===0 && S.evtIndex>=S.season._guarEv;
-      const early = Math.random() < (prog<0.5?0.07:0.14);   // occasional earlier beat; most seasons wait for the guaranteed one
-      if(guaranteeDue || early){
-        if(dil && Math.random()<0.5){ mark(); showDilemma(dil); return; }
-        const sb=maybeStoryline(ce);   // enforces the once-a-season guarantee (jittered) itself
-        if(sb){ mark(); showStoryline(sb); return; }
-        if(dil){ mark(); showDilemma(dil); return; }   // no storyline available → the dilemma
+      const guaranteeDue = (story._beatsYr||0)===0 && S.evtIndex>=S.season._guarEv;
+      const gatesOpen = seasonStopLeft()>0 && (S.evtIndex-lastStop)>=2;
+      if(gatesOpen || guaranteeDue){
+        const mark=()=>{ ce._interrupted=true; S.season._lastStopEvt=S.evtIndex; clearTimeout(seasonTimer); };
+        const dil = maybeDilemma(ce);   // includes any due follow-up arc (priority)
+        if(dil && dil.isArc && gatesOpen){ mark(); showDilemma(dil); return; }   // an owed follow-up payoff always lands
+        const early = gatesOpen && Math.random() < (prog<0.5?0.07:0.14);   // occasional earlier beat; most seasons wait for the guaranteed one
+        if(guaranteeDue || early){
+          if(dil && Math.random()<0.5){ mark(); showDilemma(dil); return; }
+          const sb=maybeStoryline(ce);   // enforces the once-a-season guarantee (jittered) itself
+          if(sb){ mark(); showStoryline(sb); return; }
+          if(dil){ mark(); showDilemma(dil); return; }   // no storyline available → the dilemma
+        }
       }
     }
   }
@@ -16025,47 +16053,107 @@ function shareCard(cv,text,name,suffix){
    Derives a LEAD headline + a few supporting notes from this season's actual events
    (finishes, wins, majors, money rank) and the career context. Pure read of S.season/S.career. */
 function seasonHeadlines(x){
+  // OWNER REVAMP: real STORYLINES, not stats rephrased. Every result row stores the event's full
+  // leaderboard + everyone's four rounds, so each highlight is mined from what actually happened -
+  // who you beat, by how much, playoffs, Sunday charges, wire-to-wire runs, blown 54-hole leads,
+  // the mid-season slump and the week it ended - with real names and real events.
   const {t,moneyRank,N,ec}=x, year=x.year, results=(S.season&&S.season.results)||[];
-  const fin=results.map(r=>{ const me=r.order&&r.order.find(o=>o.p&&o.p.you); if(!me)return null;
-    const pos=(me.pos==='CUT')?99:me.pos; return {name:r.evt.name,major:!!r.evt.major,pos,money:me.money||0}; }).filter(Boolean);
-  const wins=fin.filter(f=>f.pos===1), majorWins=wins.filter(f=>f.major);
-  const seconds=fin.filter(f=>f.pos===2).length, top5=fin.filter(f=>f.pos<=5).length, top10=fin.filter(f=>f.pos<=10).length;
-  const playedN=fin.length, missed=fin.filter(f=>f.pos===99).length, made=playedN-missed;
-  const bestFin=fin.reduce((m,f)=>Math.min(m,f.pos),99);
-  const bigPay=fin.slice().sort((a,b)=>b.money-a.money)[0];
-  const distinctMajors=new Set(majorWins.map(f=>f.name)).size;
   const c=S.career||{}, seasons=(c.seasons||[]);
   const cwBefore=(c.wins||0)-t.wins, cmBefore=(c.majors||0)-t.majors;
-  const prev=seasons.length>=2?seasons[seasons.length-2]:null;   // this season is already pushed
+  const F=[];
+  results.forEach(r=>{ try{
+    const me=r.order&&r.order.find(o=>o.p&&o.p.you); if(!me) return;
+    const pos=(me.pos==='CUT')?99:(typeof me.pos==='number'?me.pos:99);
+    const f={name:r.evt.name, major:!!r.evt.major, big:!!r.evt.big, pos, money:me.money||0};
+    const R=(me.rounds||[]).slice(0,4), full=R.length>=4&&R.every(v=>v!=null);
+    const cum=(o,k)=>{ let sum=0; for(let i=0;i<=k;i++){ if(o.rounds&&o.rounds[i]!=null) sum+=o.rounds[i]; else return null; } return sum; };
+    const lead=(k)=>{ let b=Infinity; r.order.forEach(o=>{ const v=cum(o,k); if(v!=null&&v<b)b=v; }); return b; };
+    if(full) f.sun=R[3];
+    if(pos===1){
+      const ru=r.order.find(o=>o!==me&&typeof o.pos==='number');
+      f.runner=ru&&ru.p?ru.p.name:null; f.margin=ru?Math.max(0,Math.round(ru.score-me.score)):0;
+      f.po=!!(r.playoff&&r.playoff.you&&r.playoff.youWon);
+      if(full){ f.wire=[0,1,2].every(k=>cum(me,k)<=lead(k)+1e-9); f.cb=(cum(me,2)-lead(2))>=4; }
+    } else {
+      const champ=r.order.find(o=>o.pos===1 && o.p && !o.p.you) || r.order.find(o=>o.pos===1);   // the event winner, never the player
+      f.winner=(champ&&champ.p&&!champ.p.you)?champ.p.name:null;
+      if(pos===2){ f.behind=Math.max(0,Math.round(me.score-(r.order[0]?r.order[0].score:me.score))); f.poLoss=!!(r.playoff&&r.playoff.you&&!r.playoff.youWon); }
+      if(pos!==99&&full&&cum(me,2)<=lead(2)+1e-9) f.blew54=true;   // held/shared the 54-hole lead, lost it Sunday
+    }
+    F.push(f);
+  }catch(e){} });
+  const wins=F.filter(f=>f.pos===1), majorWins=wins.filter(f=>f.major);
+  const seconds=F.filter(f=>f.pos===2), top10=F.filter(f=>f.pos<=10).length;
+  const playedN=F.length, missed=F.filter(f=>f.pos===99).length, made=playedN-missed;
+  const bestFin=F.reduce((m,f)=>Math.min(m,f.pos),99);
+  const distinctMajors=new Set(majorWins.map(f=>f.name)).size;
   const fp=n=>n===99?'a missed cut':ord(n);
-  // ---- LEAD ----
+  const winTale=f=>{ if(!f) return '';
+    if(f.po) return `in a playoff over ${f.runner||'the field'}`;
+    if(f.cb) return `with a Sunday charge from four back${f.sun!=null&&f.sun<=-5?`, closing in ${Math.abs(f.sun)} under`:''}`;
+    if(f.wire) return 'leading wire to wire';
+    if(f.margin>=5) return `by a runaway ${f.margin}`;
+    if(f.margin>=2) return `by ${f.margin} over ${f.runner||'the field'}`;
+    return `by a single shot over ${f.runner||'the field'}`; };
+  const drama=f=>(f.major?4:0)+(f.big?1:0)+(f.po?2:0)+(f.cb?2:0)+(f.wire?1:0)+(f.margin>=5?1:0);
+  const bigWin=wins.slice().sort((a,b)=>drama(b)-drama(a)||b.money-a.money)[0];
+  const usedEvts=new Set();
+  // ---- LEAD: the season's defining story, with the specifics of HOW it happened ----
   let lead;
-  if(distinctMajors>=4) lead={icon:'👑',head:'GRAND SLAM SEASON',sub:'All four majors in a single year, a season for the history books.'};
-  else if(moneyRank===1 && t.wins>=1) lead={icon:'🏆',head:'TOUR CHAMPION',sub:`Topped the money list at ${fmt(t.money)}, the undisputed player of the year.`};
-  else if(t.majors>=2) lead={icon:'⛳',head:`${t.majors}-MAJOR YEAR`,sub:`A multi-major season, ${majorWins.map(f=>f.name).join(' & ')}.`};
-  else if(t.majors===1){ const m=majorWins[0]||{name:'a major'}; lead={icon:'⛳',head:cmBefore===0?'MAIDEN MAJOR':'MAJOR CHAMPION',sub:`${cmBefore===0?'First career major':'Another major'}, captured ${m.name}.`}; }
-  else if(t.wins>=3) lead={icon:'🔥',head:`${t.wins}-WIN SEASON`,sub:`A dominant year with ${t.wins} titles${moneyRank<=3?` and a top-${moneyRank} money finish`:''}.`};
-  else if(t.wins>=1){ const big=wins.slice().sort((a,b)=>b.money-a.money)[0]||{name:'the tour'}; lead={icon:'🏆',head:cwBefore===0?'BREAKTHROUGH WIN':(t.wins===1?'WINNER':`${t.wins} WINS`),sub:`${cwBefore===0?'First career title':'Back in the winner’s circle'} at ${big.name}.`}; }
-  else if(seconds>=1||top5>=1) lead={icon:'🎯',head:'KNOCKING ON THE DOOR',sub:`${seconds?`${seconds} runner-up${seconds>1?'s':''}`:`${top5} top-5${top5>1?'s':''}`} but no win yet, the breakthrough is close.`};
-  else lead={icon:'📈',head:year===1?'ROOKIE SEASON':'GRINDING SEASON',sub:bestFin===99?'Missed the cut in every start, back to the range to rebuild.':`Best finish ${fp(bestFin)}, building toward the breakthrough.`};
-  // ---- supporting notes ----
-  const notes=[];
-  if(moneyRank===1 && lead.head!=='TOUR CHAMPION') notes.push({icon:'📋',text:'Led the tour in earnings, money-list champion.'});
-  else if(moneyRank>=2 && moneyRank<=5) notes.push({icon:'📋',text:`Finished #${moneyRank} of ${N} on the money list (${fmt(t.money)}).`});
-  if(playedN>0 && missed===0) notes.push({icon:'🛡',text:`Made every cut, ${made} for ${made} on the season.`});
-  if(top10>=8) notes.push({icon:'🎯',text:`${top10} top-10 finishes, Mr. Consistency.`});
-  if(seconds>=2 && t.wins===0) notes.push({icon:'😤',text:`${seconds} runner-up finishes, so close, so often.`});
-  if(majorWins.length && t.majors===1 && lead.head!=='MAIDEN MAJOR' && lead.head!=='MAJOR CHAMPION') notes.push({icon:'⛳',text:`Won a major: ${majorWins[0].name}.`});
-  if(bigPay && bigPay.money>0 && t.wins===0) notes.push({icon:'💰',text:`Biggest week: ${fmt(bigPay.money)} for ${fp(bigPay.pos)} at ${bigPay.name}.`});
-  if(prev && prev.rank && moneyRank && (prev.rank-moneyRank)>=3) notes.push({icon:'⬆️',text:`Climbed from #${prev.rank} to #${moneyRank} on the money list.`});
-  if(ec.net>0 && seasons.length>1){ const bestPrevNet=Math.max(0,...seasons.slice(0,-1).map(s=>s.net||0)); if(ec.net>bestPrevNet) notes.push({icon:'💎',text:`Career-best profit: ${fmtSigned(ec.net)}.`}); }
-  if(year===1 && lead.head!=='ROOKIE SEASON') notes.push({icon:'🌱',text:'Rookie season in the books.'});
-  // rivalry, surfaced near the top so it survives the 4-note cap
+  if(distinctMajors>=4){ const last=majorWins[majorWins.length-1]; usedEvts.add(last.name);
+    lead={icon:'👑',head:'GRAND SLAM SEASON',sub:`All four majors in one year, sealed at ${last.name} ${winTale(last)}.`}; }
+  else if(t.majors>=2){ majorWins.slice(0,2).forEach(m=>usedEvts.add(m.name));
+    lead={icon:'⛳',head:`${t.majors}-MAJOR YEAR`,sub:majorWins.slice(0,2).map(m=>`${m.name} ${winTale(m)}`).join(', then ')+'.'}; }
+  else if(t.majors===1){ const m=majorWins[0]; usedEvts.add(m.name);
+    lead={icon:'⛳',head:cmBefore===0?'MAIDEN MAJOR':'MAJOR CHAMPION',sub:`${cmBefore===0?'Your first major':'Career major no. '+(cmBefore+1)}, won at ${m.name} ${winTale(m)}.`}; }
+  else if(moneyRank===1 && t.wins>=1){ usedEvts.add(bigWin.name);
+    lead={icon:'🏆',head:'TOUR CHAMPION',sub:`Money-list no. 1 at ${fmt(t.money)}, built on ${t.wins} win${t.wins>1?'s':''}, the biggest at ${bigWin.name} ${winTale(bigWin)}.`}; }
+  else if(t.wins>=1){ usedEvts.add(bigWin.name);
+    lead={icon:'🏆',head:cwBefore===0?'BREAKTHROUGH WIN':(t.wins>=3?`${t.wins}-WIN SEASON`:(t.wins===2?'TWO-WIN SEASON':'WINNER')),
+      sub:`${cwBefore===0?'Your first tour title':'The headline week'} came at ${bigWin.name}, won ${winTale(bigWin)}.`}; }
+  else if(seconds.length){ const s2=seconds.slice().sort((a,b)=>(b.major?1:0)-(a.major?1:0)||(b.poLoss?1:0)-(a.poLoss?1:0))[0]; usedEvts.add(s2.name);
+    lead={icon:'🎯',head:'SO CLOSE',sub:s2.poLoss?`Lost a playoff to ${s2.winner||'the winner'} at ${s2.name}, the title that got away.`:`Runner-up at ${s2.name}, ${s2.winner||'the winner'} held you off${s2.behind?` by ${s2.behind}`:''}.`}; }
+  else if(bestFin<=10){ const b=F.find(f=>f.pos===bestFin);
+    lead={icon:'📈',head:'IN THE HUNT',sub:`${top10} top-10${top10>1?'s':''} without a trophy, the closest a ${fp(bestFin)} at ${b?b.name:'the tour'}. The win is coming.`}; }
+  else lead={icon:'📈',head:year===1?'ROOKIE SEASON':'GRINDING SEASON',
+    sub:bestFin===99?`${playedN} starts and no weekend played, a year to rebuild from.`:`Best week a ${fp(bestFin)} at ${(F.find(f=>f.pos===bestFin)||{}).name||'the tour'}. Back to work.`};
+  // ---- supporting storylines, scored by drama; skip whatever the lead already told ----
+  const cand=[];
+  wins.filter(w=>!usedEvts.has(w.name)).forEach(w=>{
+    if(w.po) cand.push({s:9,icon:'🏆',text:`Won ${w.name} in sudden death, ${w.runner||'the runner-up'} the man beaten on the extra hole${w.major?', at a major no less':''}.`});
+    else if(w.cb) cand.push({s:9,icon:'🔥',text:`Stormed from four back on Sunday to steal ${w.name}${w.sun!=null&&w.sun<=-4?`, closing in ${Math.abs(w.sun)} under`:''}.`});
+    else if(w.wire) cand.push({s:8,icon:'🏆',text:`Led ${w.name} from Thursday to Sunday, never headed, wire to wire.`});
+    else if(w.margin>=4) cand.push({s:8,icon:'🏆',text:`Blew the doors off ${w.name}, a ${w.margin}-shot rout of ${w.runner||'the field'}.`});
+    else cand.push({s:6,icon:'🏆',text:`Also won ${w.name}, ${winTale(w)}.`});
+  });
+  seconds.filter(f=>!usedEvts.has(f.name)).forEach(f=>{
+    if(f.poLoss) cand.push({s:8,icon:'😤',text:`Lost a playoff to ${f.winner||'the winner'} at ${f.name}. That one stings all winter.`});
+    else if(f.major) cand.push({s:8,icon:'😤',text:`Runner-up at ${f.name}, ${f.winner||'the winner'} denied you the major${f.behind?` by ${f.behind}`:''}.`});
+  });
+  if(t.wins===0 && seconds.length>=2) cand.push({s:6,icon:'😤',text:`${seconds.length} runner-up finishes and no trophy, so close so often.`});
+  const blown=F.find(f=>f.blew54&&!usedEvts.has(f.name));
+  if(blown) cand.push({s:7,icon:'😤',text:`Slept on the 54-hole lead at ${blown.name} and couldn't close, ${fp(blown.pos)} by Sunday night${blown.winner?`, ${blown.winner} took it`:''}.`});
+  { let run=0,best=0,endI=-1; F.forEach((f,i)=>{ if(f.pos===99){ run++; if(run>best){best=run;endI=i;} } else run=0; });
+    if(best>=3){ const nxt=F.slice(endI+1).find(f=>f.pos<=10);
+      cand.push({s:7,icon:'📋',text:`A ${best}-week stretch of missed cuts mid-season${nxt?`, before the turnaround, a ${fp(nxt.pos)} at ${nxt.name}`:', a slump that never quite let go'}.`}); } }
+  { const bs=F.filter(f=>f.sun!=null&&f.pos!==99&&!usedEvts.has(f.name)).sort((a,b)=>a.sun-b.sun)[0];
+    if(bs&&bs.sun<=-7) cand.push({s:6,icon:'🔥',text:`Your Sunday ${Math.abs(bs.sun)}-under at ${bs.name} was the round of the year.`}); }
+  if(playedN>=10 && missed===0) cand.push({s:5,icon:'🛡',text:`Never missed a weekend, ${made} cuts made from ${made} starts.`});
   const rr=S.rivalOutcome;
-  if(rr&&rr.status==='h2h') notes.unshift(rr.beat
-    ?{icon:'⚔️',text:`Won the rivalry series vs ${rr.name}, ${rr.meAhead}–${rr.rvAhead}.`}
-    :{icon:'⚔️',text:`${rr.name} took the rivalry series ${rr.rvAhead}–${rr.meAhead}. Get them next year.`});
-  return {lead,notes:notes.slice(0,2),year};   // CS483: cap to 2 supporting notes (mobile fit)
+  if(rr&&rr.status==='h2h') cand.push(rr.beat
+    ?{s:8,icon:'⚔️',text:`Owned the rivalry, took the season series off ${rr.name} ${rr.meAhead}–${rr.rvAhead}.`}
+    :{s:8,icon:'⚔️',text:`${rr.name} took the season series ${rr.rvAhead}–${rr.meAhead}. Unfinished business.`});
+  if(S.season&&S.season.cupYouWon) cand.push({s:9,icon:'👑',text:`Capped it all as Tour Cup champion, the season-long race won at the finale.`});
+  { const md=S.season&&S.season.olympicMyMedal;
+    if(typeof md==='string'&&/gold|silver|bronze/i.test(md)) cand.push({s:8,icon:md.toLowerCase()==='gold'?'🥇':(md.toLowerCase()==='silver'?'🥈':'🥉'),text:`Stood on the podium at the Games, ${md.toLowerCase()} for ${(S.look&&S.look.country)||'your country'}.`}); }
+  { const prev=seasons.length>=2?seasons[seasons.length-2]:null;
+    if(prev&&prev.rank&&moneyRank&&(prev.rank-moneyRank)>=5) cand.push({s:5,icon:'📈',text:`Climbed the money list from no. ${prev.rank} to no. ${moneyRank}.`}); }
+  if(t.wins===0){ const bp=F.slice().sort((a,b)=>b.money-a.money)[0];
+    if(bp&&bp.money>0&&bp.pos<=5&&!usedEvts.has(bp.name)) cand.push({s:4,icon:'💰',text:`Biggest payday: ${fmt(bp.money)} for ${fp(bp.pos)} at ${bp.name}.`}); }
+  if(ec.net>0 && seasons.length>1){ const bestPrevNet=Math.max(0,...seasons.slice(0,-1).map(x2=>x2.net||0));
+    if(ec.net>bestPrevNet) cand.push({s:4,icon:'💎',text:`A career-best year at the bank, ${fmtSigned(ec.net)} in profit.`}); }
+  cand.sort((a,b)=>b.s-a.s);
+  return {lead, notes:cand.slice(0,3).map(({icon,text})=>({icon,text})), year};
 }
 function headlinesHTML(h){
   const notes=h.notes.map(n=>`<div style="display:flex;gap:8px;align-items:flex-start;margin-top:5px"><span style="font-size:13px;line-height:1.2;flex:0 0 auto">${n.icon}</span><span class="small" style="color:var(--oncard);line-height:1.3;text-align:left">${n.text}</span></div>`).join('');
@@ -16109,6 +16197,19 @@ function seasonImpactNode(m, cst, moveTxt, moveCol, firstYr, points, gross, net)
   return wrap;
 }
 function scrSummary(){
+  // OWNER GUARANTEE (min 1 decision/year): if a whole season passed with ZERO pressers/dilemmas (skipped
+  // to the end, or every in-season window was blocked), fire the year's press conference right here on the
+  // results page. Once per season (S.season._backstopBeat); answering it bumps story._beatsYr so a
+  // re-render / resume never double-fires. Synthetic "new season" event context = the year-in-review angle.
+  if(!S.daily && !S.circuitMode && S.career && S.season && !S.season._backstopBeat && (careerStory()._beatsYr||0)===0){
+    S.season._backstopBeat=true;
+    setTimeout(()=>{ try{
+      if(S.screen!=='summary' || (careerStory()._beatsYr||0)>0) return;
+      if(document.querySelector('.storyov,.momentov')) return;
+      const sb=maybeStoryline({evt:{name:'new season', major:false, big:false}});   // the guarantee path bypasses budget/gap gates
+      if(sb) showStoryline(sb);
+    }catch(e){} }, 900);
+  }
   const me=S.season.me, t=S.season.totals[me.name];
   const byMoney=Object.entries(S.season.totals).map(([n,v])=>({n,...v})).sort((a,b)=>b.money-a.money);
   const byPoints=[...byMoney].sort((a,b)=>b.points-a.points);
@@ -17081,6 +17182,26 @@ function scrOffseason(){
 
   add(scrHero(S.circuitMode?'Legend Circuit':'Off-Season', S.circuitMode?('Off-Season · Yr '+yr+' · train your golfer'):('Year '+S.year+' · train your golfer')));
 
+  // SPONSOR OFFER ALERT (owner: offers were getting lost - no alert, and if you never opened the Sponsors
+  // tab the offer sat undecided forever). A persistent, unmissable banner at the very top of the off-season
+  // whenever a deal is on the table, tappable to open the decision popup (which now shows a quick pro/con).
+  { const offers=(!S.daily && !S.circuitMode && S.career)?(S.career.sponsorOffers||[]):[];
+    if(offers.length){
+      const o0=offers[0], nti=sponsorTierInfo(o0.tier);
+      const kind=o0.upgrade?'A bigger brand wants to step up your deal':o0.poach?'A rival brand wants to poach you':(SPONSOR_SLOTS.some(sl=>sponsorOf(sl))?'A brand wants your open slot':'Your first sponsor wants to sign you');
+      const alert=$(`<button class="offer-alert" style="width:100%;max-width:520px;margin:2px auto 12px;display:flex;align-items:center;gap:11px;text-align:left;
+          background:linear-gradient(180deg,rgba(241,208,74,.16),rgba(241,208,74,.06));border:1.5px solid rgba(241,208,74,.55);border-radius:14px;padding:11px 13px;cursor:pointer">
+        ${brandLogoSVG(o0.brand,38)}
+        <span style="flex:1;min-width:0">
+          <span style="display:block;font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">🤝 Sponsor offer${offers.length>1?' ×'+offers.length:''} · decide now</span>
+          <span style="display:block;font-weight:800;font-size:14px;color:var(--oncard);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(o0.brand)} · ${esc(nti.name)}</span>
+          <span class="small" style="display:block;color:#cfe0d8;margin-top:1px">${esc(kind)}</span></span>
+        <span style="flex:0 0 auto;color:var(--gold);font-weight:800;font-size:18px">▸</span></button>`);
+      alert.onclick=()=>sponsorOfferPopup(offers);
+      add(alert);
+    }
+  }
+
   // owner CS483c/d: avatar + username stacked in the left column, on the SAME LINE as the rating chart.
   const rankName=repTier().tier.name;
   const heroRow=$(`<div class="oshero-row"></div>`);
@@ -17184,6 +17305,7 @@ function scrOffseason(){
 
   // CS483b (owner): the "Your Rival" panel is removed from the off-season - the rivalry lives on the
   // season-summary Reputation tab + the in-season head-to-head. This screen is just for re-rolling attributes.
+  try{ maybeSponsorMoment(); }catch(e){}   // owner: alert the player of a sponsor offer the moment they enter the off-season (banner above keeps it reachable after "Decide later")
 }
 /* ---------- season recap ---------- */
 function scrRecap(){
