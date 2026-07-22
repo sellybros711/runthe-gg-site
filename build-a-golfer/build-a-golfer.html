@@ -21929,7 +21929,8 @@ function packPool(){ const pool=[];
       if(itemDropLocked(cat,o.id)) return;   // DROPS: a themed drop out of its window isn't in the pack pool
       var base=cosmeticPriceBase(cat,o.id); if(base<=0) return;
       pool.push({kind:'cos',cat:cat,id:o.id,key:pk+':'+o.id,name:o.name||cosTitle(o.id),rarity:packRarityOf(base)}); }); });
-  ACCESSORIES.forEach(function(it){ if(it.rarity==='exclusive') return; pool.push({kind:'acc',id:it.id,key:it.id,name:it.name,rarity:it.rarity}); });
+  // legacy per-slot ACCESSORIES (glove/driver/putter/ball/charm) are no longer equippable or boost-bearing
+  // (CS378) and render generic icons — keep them OUT of the pack pool so every pull is a real pixel item.
   BAG_CLUBS.forEach(function(c){ pool.push({kind:'bag',club:c.k,tier:1,key:bagKey(c.k,1),name:c.tiers[0].n,rarity:packRarityOf(BAG_TIER_PRICE[0])}); });
   return pool;
 }
@@ -22045,6 +22046,7 @@ function packItemLook(e){ var look=Object.assign({},S.look||DEFLOOK);
   return look; }
 function packItemVisual(e){
   if(e.kind==='cos') return packCosThumb(e,168);
+  if(e.kind==='bag') return packThumbWrap(pxBagThumb(e.club,e.tier||1),150);
   var icon='gear', rc=PACK_RCOL[e.rarity]||'#b8c4bd';
   if(e.kind==='acc'){ var it=accById(e.id); icon=(ACC_SLOT_BY[it&&it.slot]||{icon:'gear'}).icon; }
   else if(e.kind==='bag'){ icon=(BAG_BY[e.club]||{ic:'driver'}).ic; }
@@ -22126,16 +22128,17 @@ function packItemBoostTxt(e){ var b=null;
   return b?shopBoostTxt(b):''; }
 // the ITEM itself (not the golfer wearing it): look up the cosmetic's catalog entry for its col/pattern,
 // then render the shared item-only thumbnail sized into the card.
+function packThumbWrap(inner,sz){ return '<span class="packthumb" style="width:'+sz+'px;height:'+sz+'px">'+inner+'</span>'; }
 function packCosThumb(e,sz){
   var o=null; try{ o=(cosmeticItems(e.cat)||[]).find(function(x){return x.id===e.id;}); }catch(_){}
   o=o||{id:e.id};
-  return '<span class="packthumb" style="width:'+sz+'px;height:'+sz+'px">'+cosThumbHTML(e.cat,o)+'</span>';
+  return packThumbWrap(cosThumbHTML(e.cat,o),sz);
 }
 function packCardVisual(e){
   if(e.kind==='cos') return packCosThumb(e,86);
+  if(e.kind==='bag') return packThumbWrap(pxBagThumb(e.club,e.tier||1),86);   // boost club: its unique pixel head sprite
   var icon='gear', rc=PACK_RCOL[e.rarity]||'#b8c4bd';
   if(e.kind==='acc'){ var it=accById(e.id); icon=(ACC_SLOT_BY[it&&it.slot]||{icon:'gear'}).icon; }
-  else if(e.kind==='bag'){ icon=(BAG_BY[e.club]||{ic:'driver'}).ic; }
   return '<span style="width:50px;height:50px;color:'+rc+';margin:16px 0">'+ic(icon,{size:'50px'})+'</span>';
 }
 function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=document.createElement('style'); st.id='packcss';

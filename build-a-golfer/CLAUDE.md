@@ -12681,6 +12681,22 @@ allows Google Fonts, or self-host Anton.*
   thumbnails, 0 page errors. Screenshot confirms the item-only wheel. Deployed to /golf. Store/closet
   preview UNCHANGED (as the owner wanted).
 
+- **No more generic-icon items in packs — every pull is a designed pixel item (owner: "a bunch of clubs and
+  balls have generic icons. Everything should be designed... look like a cool pixelated accessory or item").**
+  Two sources of the generic vector icons: (1) the **dead legacy per-slot `ACCESSORIES` catalog**
+  (glove/driver/putter/ball/charm) was still pushed into `packPool` even though CS378 removed it from the
+  shop + zeroed its boosts — so players could pull unequippable junk that rendered a flat slot icon;
+  **removed it from the pack pool** (existing owned entries are harmless/inert). (2) The **`bag` boost clubs**
+  (Driver/Woods/Irons/Wedges/Putter) rendered `ic('driver')` in `packCardVisual`/`packItemVisual` despite
+  having the real per-tier pixel head sprite (`pxBagThumb`, already used on the shop Bag tab); both now render
+  `pxBagThumb(e.club, e.tier)` in a `.packthumb` wrapper. Net: the whole 188-item pool (183 cosmetics + 5
+  boost clubs) is pixel sprites — cos via `cosThumbHTML`, bag via `pxBagThumb` — with 0 generic icons. Cos
+  clubs (pxClubThumb) + balls (pxBallThumb) already had sprites and were verified real (no "None"
+  placeholders). Verified in Playwright: iterated the LIVE pack pool — 0 generic-icon renders, 0 "None"
+  placeholders, ACCESSORIES gone, every cos club (6) + ball (10) a real sprite, and every one of the 54
+  wheel cells an item-only pixel sprite; 0 page errors. Screenshot confirms a wheel of clean pixel items
+  (Top Hat / Halo / Cardigan / Shield). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
