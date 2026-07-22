@@ -3420,6 +3420,17 @@ function maybeChallengesPopup(){
   ov.onclick=(e)=>{ if(e.target===ov) ov.remove(); };
   document.body.appendChild(ov);
 }
+// The PROFILE look/name (bag_look/bag_name, CS99: one identity, cloud-synced) is the source of truth for
+// what your golfer wears - a resume/ceremony must NEVER restore the stale look SNAPSHOT a career/draft
+// save happens to carry. That snapshot is written at save time, so it lags any Closet customization done
+// since; restoring it displayed the OLD outfit after a refresh, and the next saveLook()/saveCareer() then
+// persisted the old outfit back over the new one (the "my outfit keeps resetting" bug). The snapshot is
+// kept in the save only as a fallback for a fresh device where bag_look doesn't exist yet.
+function profileLook(snap){ return Object.assign({},DEFLOOK,LS.get('bag_look', snap||{})); }
+function profileName(snap){ return LS.get('bag_name', snap||'') || snap || ''; }
+// Snap the LIVE identity back to the profile (used when leaving a Legend round, whose token look/name
+// replaced S.look/S.name for the duration of that round).
+function restoreProfileIdentity(){ try{ S.look=profileLook(S.look); S.name=profileName(S.name); }catch(e){} }
 /* ---------- resume an in-progress free-play golfer across a refresh ---------- */
 function saveResume(){ if(S.daily||!(S.screen==='draft'||S.screen==='build'))return;
   LS.set('bag_resume',{slots:S.slots,revealed:[...S.revealed],reSpins:S.reSpins,name:S.name,look:S.look,mode:S.mode,year:S.year}); }
@@ -3427,8 +3438,8 @@ function clearResume(){ LS.set('bag_resume',null); }
 function resumeInfo(){const r=LS.get('bag_resume',null); if(!r||!r.slots)return null;
   const n=Object.values(r.slots).filter(Boolean).length; return n>0?{n,r}:null; }
 function restoreResume(){const info=resumeInfo(); if(!info)return; const r=info.r; reset();
-  S.slots=r.slots; S.revealed=new Set(r.revealed||[]); S.reSpins=(r.reSpins==null?2:r.reSpins); S.name=r.name||'';
-  S.look=Object.assign({},DEFLOOK,r.look||{}); S.mode=r.mode||'easy'; S.year=r.year||1;
+  S.slots=r.slots; S.revealed=new Set(r.revealed||[]); S.reSpins=(r.reSpins==null?2:r.reSpins); S.name=profileName(r.name);
+  S.look=profileLook(r.look); S.mode=r.mode||'easy'; S.year=r.year||1;
   S.daily=false; S.drawRng=Math.random; S.current=null;
   S.screen=(info.n>=8)?'build':'draft'; track('resume',{n:info.n}); render(); }
 /* ---------- Career Mode: persist a multi-season franchise to resume later ----------
@@ -3503,7 +3514,7 @@ function resumeCareer(){ const r=careerSaveInfo(); if(!r || r.ended) return;   /
   S.career=normalizeCareerNames(r.career); S.fieldRoster=r.fieldRoster||null; S.slots=r.slots||S.slots;
   S.careerSeed=(r.careerSeed!=null?r.careerSeed:null); S.world=r.world||null;
   S.circuitMode=r.circuitMode||false; S.circuitStartYear=(r.circuitStartYear!=null?r.circuitStartYear:null); S.circuitCareer=normalizeCareerNames(r.circuitCareer||null);
-  S.name=r.name||''; S.look=Object.assign({},DEFLOOK,r.look||{}); S.year=r.year||1; S.daily=false;
+  S.name=profileName(r.name); S.look=profileLook(r.look); S.year=r.year||1; S.daily=false;
   if(r.resumeScreen==='summary' && r.snap && r.snap.season){   // resume ONTO the season results page
     ensureWorld(); RNG=Math.random;
     const sn=r.snap;
@@ -3533,7 +3544,7 @@ function resumeCareer(){ const r=careerSaveInfo(); if(!r || r.ended) return;   /
 // A retired/ended career (endCareer()) is kept addressable so an accidental refresh mid-ceremony
 // doesn't lose it, but it must never be played on from here, just redisplay the same ceremony screen.
 function viewEndedCareer(){ const r=careerSaveInfo(); if(!r || !r.ended) return; reset(); S.careerRank=null; S._careerRankLoading=null;
-  S.career=normalizeCareerNames(r.career); S.name=r.name||''; S.look=Object.assign({},DEFLOOK,r.look||{}); S.year=r.year||1;
+  S.career=normalizeCareerNames(r.career); S.name=profileName(r.name); S.look=profileLook(r.look); S.year=r.year||1;
   S.slots=r.slots||S.slots; S.daily=false; S.careerOver=true;
   if(r.circuitEnded){   // Legend Circuit finale reviewed instead of the regular 30-year ceremony
     S.circuitCareer=normalizeCareerNames(r.circuitCareer||null); S.circuitEnd=r.circuitEnd||null; S.freshLegendToken=r.freshLegendToken||null;
@@ -7682,6 +7693,7 @@ function onboardPanel(){
   return box;
 }
 function scrTitle(){
+  if(!S.daily) restoreProfileIdentity();   // self-heal: a Legend round swaps S.look/S.name to the legend's frozen identity; any path back to the title must show (and never later persist) anything but the PROFILE look
   reconcileDailyAttempts();   // self-heal "attempts left" against the server before it's even displayed below
   // CS363: pixel-art dusk-course backdrop (matches the game's pixel theme) instead of the old smooth vector scene
   let sceneHtml=''; try{ sceneHtml=titleSceneHTML(); }catch(e){}
@@ -19849,6 +19861,7 @@ function dRoundControls(){
   return bar;
 }
 function beginDailyRound(){
+  restoreProfileIdentity();   // a prior Legend round may have left the legend's identity on S.look/S.name - a NORMAL round is always your own golfer (buildPlayer below reads S.look for gear/caddie)
   const p=buildPlayer(); S.dailySkills={}; CATS.forEach(c=>S.dailySkills[c.k]=p[c.k]);
   S.dailyOvr=Math.round(p.skill); S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyMullSeen=[]; S.dailyMullOffer=null; S.dailySpeed=LS.get('bag_daily_speed',1); S.dailyResult=null; S._dailyResub=false; clearDailyLive();
@@ -20008,6 +20021,7 @@ function resumeDailyLive(){
     S.dailyRevealN=S.dailyHoles.length?(S.dailyHoles[S.dailyHoles.length-1].shots||[]).length:null;
     S.dailyHolePause=false; S.dailySinking=false; S.dailyProv=null; S.dailyViewHole=null; S.dailyQuickStatic=false;
     S.dailyResult=null; S._dailyResub=false; S.overlay=null; S.screen='dailyround';
+    if(S.dailyLegend){ if(S.dailyLegend.name) S.name=S.dailyLegend.name; if(S.dailyLegend.look) S.look=Object.assign({},S.dailyLegend.look); }   // a resumed LEGEND round keeps the legend's identity for the round (the title/normal-round paths restore the profile after)
     track('daily_resumed',{course:d.course,thru:S.dailyHoles.length});
     return true;
   }catch(e){ clearDailyLive(); return false; }
@@ -23177,13 +23191,22 @@ let _cloudPushT=null, _cloudSyncing=false;
 function cloudPush(){
   if(!sb || !sbSignedIn()) return;
   clearTimeout(_cloudPushT);
-  _cloudPushT=setTimeout(async()=>{
-    try{
-      const {error}=await sb.rpc('runtour_cloud_save_push',{p_data:cloudBundle(), p_client_ts:Date.now()});
-      if(error) console.warn('[RunTheTour] cloud save push failed:', error.message);
-    }catch(e){ console.warn('[RunTheTour] cloud save push failed:', e); }
-  }, 1200);
+  _cloudPushT=setTimeout(()=>{ _cloudPushT=null; cloudPushNow(); }, 1200);
 }
+async function cloudPushNow(){
+  if(!sb || !sbSignedIn()) return;
+  try{
+    const {error}=await sb.rpc('runtour_cloud_save_push',{p_data:cloudBundle(), p_client_ts:Date.now()});
+    if(error) console.warn('[RunTheTour] cloud save push failed:', error.message);
+  }catch(e){ console.warn('[RunTheTour] cloud save push failed:', e); }
+}
+// Flush a PENDING debounced push the moment the page is being left/hidden - a player who customizes
+// their golfer and immediately closes the tab must not lose the cloud copy to the 1.2s debounce (the
+// LOCAL save is always instant; this covers the cross-device copy). Fire-and-forget: at hidden/pagehide
+// the request usually completes, and if it doesn't, the next app open pushes the same local state anyway.
+function cloudFlushPending(){ if(_cloudPushT==null) return; clearTimeout(_cloudPushT); _cloudPushT=null; cloudPushNow(); }
+addEventListener('pagehide', cloudFlushPending);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') cloudFlushPending(); });
 // pulls the server's copy on sign-in and merges it into local state (see the merge functions above),
 // then pushes the merged result back up so every device converges to the same combined state. Fails
 // open on any error, local state simply stands unchanged until the next successful pull.
