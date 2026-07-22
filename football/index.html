@@ -305,13 +305,87 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .toast-mini.show{opacity:1;}
 .foot{text-align:center; font-size:16px; color:var(--cream-dim); padding:8px 0 4px;}
 .foot a{color:var(--gold);}
+
+/* ===================== HOME / SPLASH (stadium concept) ===================== */
+#splashScreen{ margin:-10px -12px 0; }                 /* full-bleed inside .wrap */
+.stadium{ position:relative; overflow:hidden; min-height:100dvh; padding:0 16px 0; isolation:isolate;
+  display:flex; flex-direction:column;
+  background:
+    radial-gradient(120% 55% at 14% 6%, rgba(150,180,220,.20), transparent 42%),
+    radial-gradient(120% 55% at 86% 6%, rgba(150,180,220,.20), transparent 42%),
+    linear-gradient(180deg,#0a1522 0%,#0d2033 46%,#0a1826 100%);}
+/* stadium light towers */
+.lights{ position:absolute; top:10px; width:70px; height:82px; z-index:1;
+  filter:drop-shadow(0 0 20px rgba(185,205,240,.55));}
+.lights.left{ left:2px; } .lights.right{ right:2px; }
+.lights svg{ width:100%; height:100%; display:block; }
+/* crowd texture band behind the sign */
+.crowd{ position:absolute; top:96px; left:0; right:0; height:380px; z-index:0; opacity:.55;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.22) 0 3px, transparent 3px 8px),
+    repeating-linear-gradient(90deg, rgba(210,170,90,.06) 0 3px, transparent 3px 26px);
+  -webkit-mask:linear-gradient(180deg,transparent,#000 26%,#000 74%,transparent);
+          mask:linear-gradient(180deg,transparent,#000 26%,#000 74%,transparent);}
+.home-top{ position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; padding:16px 2px 4px;}
+.gear{ width:46px;height:46px;border-radius:11px; background:rgba(9,18,30,.65); border:2px solid rgba(200,212,235,.25);
+  color:#e7ecf4; font-size:22px; box-shadow:0 3px 0 rgba(0,0,0,.35);}
+.coins-pill{ display:flex; align-items:center; gap:8px; background:rgba(9,18,30,.65); border:2px solid rgba(200,212,235,.25);
+  border-radius:12px; padding:9px 14px; font-family:var(--pix); font-size:13px; color:#ffd764; box-shadow:0 3px 0 rgba(0,0,0,.35);}
+.football{ position:relative; z-index:4; width:104px; margin:8px auto -18px;}
+.football svg{ width:100%; display:block; filter:drop-shadow(0 5px 0 rgba(0,0,0,.4));}
+/* the scoreboard sign */
+.dd-sign{ position:relative; z-index:3; max-width:372px; margin:0 auto; padding:26px 18px 20px; text-align:center;
+  background:#0b1f30; border:3px solid #040b13; border-radius:16px;
+  box-shadow: inset 0 0 0 2px #17364f, inset 0 3px 0 rgba(255,255,255,.06), 0 7px 0 rgba(0,0,0,.5);}
+.sign-title{ font-family:var(--pix); font-size:33px; color:#efe6cf; letter-spacing:2px; line-height:1;
+  text-shadow:0 4px 0 #0a4a86, 0 6px 0 rgba(0,0,0,.55);}
+.sign-title .star{ color:#f2b21c; font-size:19px; vertical-align:middle; text-shadow:0 3px 0 rgba(0,0,0,.5);}
+.sign-underline{ height:5px; width:66%; margin:14px auto 16px; background:#f2b21c; box-shadow:0 3px 0 rgba(0,0,0,.4);}
+.sign-l1{ font-family:var(--pix); font-size:21px; color:#efe6cf; letter-spacing:1px; text-shadow:0 3px 0 rgba(0,0,0,.55);}
+.sign-l2{ font-family:var(--pix); font-size:21px; color:#f2b21c; letter-spacing:1px; margin-top:13px; text-shadow:0 3px 0 rgba(0,0,0,.55);}
+.sign-ribbon{ position:relative; z-index:3; max-width:330px; margin:13px auto 0; text-align:center;
+  font-family:var(--pix); font-size:8px; letter-spacing:1px; color:#9fb0c4; line-height:1.4;
+  background:#0a1826; border:2px solid #17364f; border-radius:9px; padding:10px 10px;}
+.goal-block{ position:relative; z-index:3; text-align:center; margin:20px 0 15px;}
+.goal-h{ font-family:var(--pix); font-size:10px; color:#f2b21c; letter-spacing:2px;}
+.goal-v{ font-family:var(--pix); font-size:15px; color:#efe6cf; margin-top:10px;}
+.play-now{ position:relative; z-index:3; display:flex; align-items:center; justify-content:center; gap:10px;
+  width:100%; max-width:344px; margin:0 auto; font-family:var(--pix); font-size:22px; color:#2a1e00; letter-spacing:1px;
+  padding:19px 20px; background:linear-gradient(180deg,#ffd457,#f0a91e); border:3px solid #7a4d08; border-radius:13px;
+  box-shadow: inset 0 3px 0 rgba(255,255,255,.55), inset 0 -5px 0 rgba(120,70,0,.35), 0 6px 0 #6a4206, 0 9px 12px rgba(0,0,0,.4);}
+.play-now:active{ transform:translateY(3px); box-shadow: inset 0 3px 0 rgba(255,255,255,.55), 0 3px 0 #6a4206;}
+.play-now .arw{ font-size:16px;}
+.howto-link{ display:block; margin:16px auto 2px; background:transparent; border:0; font-family:var(--pix);
+  font-size:11px; color:#8fa0b5; letter-spacing:1px;}
+/* field strip */
+.field-strip{ position:relative; z-index:2; height:150px; margin:auto -16px 0; overflow:hidden;
+  border-top:3px solid rgba(255,255,255,.55);
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.16) 0 3px, transparent 3px 46px),
+    linear-gradient(180deg,#2f7d3f,#215f30);}
+.field-strip .fifty{ position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+  font-family:var(--pix); font-size:40px; color:rgba(240,236,214,.85); letter-spacing:3px;
+  text-shadow:0 3px 0 rgba(0,0,0,.3);}
+.field-strip .gp{ position:absolute; left:50%; top:8px; transform:translateX(-50%); width:64px;}
+.field-strip .gp svg{ width:100%; display:block; filter:drop-shadow(0 3px 0 rgba(0,0,0,.35));}
+.field-strip .hash{ position:absolute; height:3px; width:10px; background:rgba(255,255,255,.4);}
+/* bottom nav */
+.home-nav{ position:relative; z-index:3; display:grid; grid-template-columns:repeat(3,1fr); gap:6px;
+  margin:0 -16px; padding:16px 8px calc(14px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,#0a1826,#081320);}
+.nav-i{ background:transparent; border:0; display:flex; flex-direction:column; align-items:center; gap:9px; color:#cdd6e2; padding:6px 2px;}
+.nav-i .ic{ font-size:26px; line-height:1;}
+.nav-i .lb{ font-family:var(--pix); font-size:8px; line-height:1.6; letter-spacing:.5px;}
+.nav-i .lb b{ color:#f2b21c;}
+.nav-i:active{ transform:translateY(1px);}
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <!-- TOP BAR -->
-  <div class="topbar">
+  <div class="topbar" id="appTop">
     <button class="icon-btn" id="menuBtn" aria-label="Menu">☰</button>
     <div class="avatar">🏈</div>
     <div class="brand pix"><span class="b1">RUN THE</span> <span class="b2">DRIVE</span></div>
@@ -321,7 +395,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   </div>
 
   <!-- INFO ROW -->
-  <div class="card inforow">
+  <div class="card inforow" id="appInfo">
     <span class="seg" id="driveNo">DRIVE #1</span>
     <span class="sep"></span>
     <span class="seg sunny" id="wx">☀ SUNNY</span>
@@ -329,42 +403,75 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <span class="seg chal">DAILY CHALLENGE</span>
   </div>
 
-  <!-- ===================== SCREEN 1 · SPLASH ===================== -->
+  <!-- ===================== SCREEN 1 · SPLASH (stadium) ===================== -->
   <div id="splashScreen">
-    <div class="hero-field" aria-hidden="true">
-      <div class="ez"></div>
-      <!-- static line of scrimmage -->
-      <span class="hchip off" style="left:20%;top:36%"></span>
-      <span class="hchip off" style="left:20%;top:44%"></span>
-      <span class="hchip off" style="left:20%;top:52%"></span>
-      <span class="hchip off" style="left:20%;top:60%"></span>
-      <span class="hchip off" style="left:20%;top:68%"></span>
-      <span class="hchip off" style="left:14%;top:55%"></span><!-- QB -->
-      <span class="hchip off" style="left:13%;top:67%"></span><!-- RB -->
-      <span class="hchip def" style="left:26%;top:40%"></span>
-      <span class="hchip def" style="left:26%;top:50%"></span>
-      <span class="hchip def" style="left:26%;top:60%"></span>
-      <span class="hchip def" style="left:33%;top:66%"></span>
-      <span class="hchip def" style="left:60%;top:70%"></span>
-      <!-- animated: WR streak, trailing DB, ball -->
-      <span class="hchip off h-wr" style="left:24%;top:30%"></span>
-      <span class="hchip def h-def2" style="left:20%;top:25%"></span>
-      <div class="h-ball"></div>
-      <div class="h-td">TOUCHDOWN!</div>
-      <div class="scrim"></div>
-    </div>
+    <div class="stadium">
+      <div class="lights left" aria-hidden="true">
+        <svg viewBox="0 0 74 86" shape-rendering="crispEdges"><rect x="34" y="30" width="5" height="56" fill="#1d2c3e"/>
+          <rect x="8" y="4" width="58" height="26" rx="3" fill="#26384d"/>
+          <g fill="#fdf6d8"><rect x="12" y="8" width="8" height="7"/><rect x="24" y="8" width="8" height="7"/><rect x="36" y="8" width="8" height="7"/><rect x="48" y="8" width="8" height="7"/>
+          <rect x="12" y="19" width="8" height="7"/><rect x="24" y="19" width="8" height="7"/><rect x="36" y="19" width="8" height="7"/><rect x="48" y="19" width="8" height="7"/></g></svg>
+      </div>
+      <div class="lights right" aria-hidden="true">
+        <svg viewBox="0 0 74 86" shape-rendering="crispEdges"><rect x="35" y="30" width="5" height="56" fill="#1d2c3e"/>
+          <rect x="8" y="4" width="58" height="26" rx="3" fill="#26384d"/>
+          <g fill="#fdf6d8"><rect x="18" y="8" width="8" height="7"/><rect x="30" y="8" width="8" height="7"/><rect x="42" y="8" width="8" height="7"/><rect x="54" y="8" width="8" height="7"/>
+          <rect x="18" y="19" width="8" height="7"/><rect x="30" y="19" width="8" height="7"/><rect x="42" y="19" width="8" height="7"/><rect x="54" y="19" width="8" height="7"/></g></svg>
+      </div>
+      <div class="crowd" aria-hidden="true"></div>
 
-    <div class="daily-title">
-      <div class="dt">DAILY DRIVE</div>
-      <div class="ds">One drive. One shot at the end zone.</div>
-    </div>
+      <div class="home-top">
+        <button class="gear" id="gearBtn" aria-label="Menu">⚙</button>
+        <div class="coins-pill">🪙 <b id="coinsHome">0</b></div>
+      </div>
 
-    <div class="splash-meta">
-      <span class="m" id="splashChallenge">🏆 SCORE A <b>TOUCHDOWN</b></span>
-      <span class="m" id="splashStreak">🔥 STREAK <b>0</b></span>
-    </div>
+      <div class="football" aria-hidden="true">
+        <svg viewBox="0 0 48 30" shape-rendering="geometricPrecision">
+          <ellipse cx="24" cy="15" rx="21" ry="12" fill="#8a4a20" stroke="#3a1e0c" stroke-width="2.5"/>
+          <path d="M6 15 C10 8 12 8 12 8 L12 22 C12 22 10 22 6 15 Z" fill="#efe6cf"/>
+          <path d="M42 15 C38 8 36 8 36 8 L36 22 C36 22 38 22 42 15 Z" fill="#efe6cf"/>
+          <ellipse cx="19" cy="11" rx="7" ry="3" fill="#a5602e" opacity=".8"/>
+          <rect x="22" y="9" width="4" height="12" rx="1" fill="#efe6cf"/>
+          <g fill="#efe6cf"><rect x="19" y="11" width="10" height="1.6"/><rect x="19" y="14.5" width="10" height="1.6"/><rect x="19" y="18" width="10" height="1.6"/></g>
+        </svg>
+      </div>
 
-    <button class="cta" id="toMatchup">▶ START THE DRIVE</button>
+      <div class="dd-sign">
+        <div class="sign-title"><span class="star">★</span> DAILY&nbsp;DRIVE <span class="star">★</span></div>
+        <div class="sign-underline"></div>
+        <div class="sign-l1">ONE A DAY.</div>
+        <div class="sign-l2">MAKE IT COUNT.</div>
+      </div>
+
+      <div class="sign-ribbon">1 DRIVE · 1 CHANCE · ENDLESS HIGHLIGHTS</div>
+
+      <div class="goal-block">
+        <div class="goal-h">★ TODAY’S GOAL ★</div>
+        <div class="goal-v" id="goalV">SCORE A TOUCHDOWN</div>
+      </div>
+
+      <button class="play-now" id="toMatchup">PLAY NOW <span class="arw">▶</span></button>
+      <button class="howto-link" id="howtoLink">HOW TO PLAY ›</button>
+
+      <div class="field-strip" aria-hidden="true">
+        <div class="gp">
+          <svg viewBox="0 0 60 70" shape-rendering="crispEdges">
+            <rect x="27" y="30" width="6" height="38" fill="#e6b32a"/>
+            <rect x="14" y="26" width="32" height="5" fill="#e6b32a"/>
+            <rect x="14" y="4" width="5" height="24" fill="#e6b32a"/>
+            <rect x="41" y="4" width="5" height="24" fill="#e6b32a"/>
+            <rect x="24" y="66" width="12" height="4" fill="#c1503f"/>
+          </svg>
+        </div>
+        <div class="fifty">50</div>
+      </div>
+
+      <div class="home-nav">
+        <button class="nav-i" id="navLeaderboard"><span class="ic">🏆</span><span class="lb">DAILY<br>LEADERBOARD</span></button>
+        <button class="nav-i" id="navStreak"><span class="ic">📅</span><span class="lb">STREAK<br><b id="navStreakN">0 DAYS</b></span></button>
+        <button class="nav-i" id="navShare"><span class="ic">📤</span><span class="lb">SHARE<br>YOUR DRIVE</span></button>
+      </div>
+    </div>
   </div>
 
   <!-- ===================== SCREEN 2 · MATCHUP ===================== -->
@@ -420,7 +527,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <div class="card log" id="log"><div class="empty">The drive starts here. Make your first call.</div></div>
   </div>
 
-  <div class="foot">A <a href="/">RunThe.GG</a> game · every number measured from real football</div>
+  <div class="foot" id="appFoot">A <a href="/">RunThe.GG</a> game · every number measured from real football</div>
 </div>
 
 <div id="modalMount"></div>
@@ -879,7 +986,13 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
 
   /* ---------- chips + mini toast ---------- */
-  function refreshChips(){ el('streakN').textContent=STORE.streak; el('coinsN').textContent=STORE.coins.toLocaleString(); }
+  function refreshChips(){
+    el('streakN').textContent=STORE.streak; el('coinsN').textContent=STORE.coins.toLocaleString();
+    const ch=el('coinsHome'); if(ch) ch.textContent=STORE.coins.toLocaleString();
+    const ns=el('navStreakN'); if(ns) ns.textContent=STORE.streak+(STORE.streak===1?' DAY':' DAYS');
+  }
+  // Show/hide the shared app chrome (top bar, info row, footer). Off on the splash.
+  function setChrome(on){ ['appTop','appInfo','appFoot'].forEach(id=>{ const e=el(id); if(e) e.classList.toggle('hidden', !on); }); }
   let miniT; function mini(msg){ const m=el('mini'); m.textContent=msg; m.classList.add('show');
     clearTimeout(miniT); miniT=setTimeout(()=>m.classList.remove('show'),1600); }
 
@@ -890,6 +1003,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     el('splashScreen').classList.add('hidden');
     el('matchupScreen').classList.add('hidden');
     el('gameScreen').classList.remove('hidden');
+    setChrome(true);
     // scout peek content
     renderScoutFull(dateStr, el('scoutPeekCard'));
     const s=drive.state();
@@ -960,13 +1074,16 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     el('matchupScreen').classList.add('hidden');
     el('gameScreen').classList.add('hidden');
     el('splashScreen').classList.remove('hidden');
-    el('splashStreak').innerHTML = '🔥 STREAK <b>'+STORE.streak+'</b>';
+    setChrome(false);
+    refreshChips();
+    const gv=el('goalV'); if(gv) gv.textContent = (STORE.history[DATE]==='TOUCHDOWN') ? '✅ TOUCHDOWN — DONE!' : 'SCORE A TOUCHDOWN';
     window.scrollTo(0,0);
   }
   function showMatchup(){
     el('splashScreen').classList.add('hidden');
     el('gameScreen').classList.add('hidden');
     el('matchupScreen').classList.remove('hidden');
+    setChrome(true);
     renderOpponent(DATE);
     renderSchemes();
     // reflect whether today's daily is already done
@@ -978,15 +1095,23 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
 
   /* ---------- boot ---------- */
+  function shareInvite(){
+    const text = `RunTheDrive — one football drive a day. One shot at the end zone.\nPlay: runthe.gg/football`;
+    if(navigator.share){ navigator.share({title:'RunTheDrive', text}).catch(()=>{}); }
+    else { navigator.clipboard && navigator.clipboard.writeText(text).then(()=>mini('Invite copied!')).catch(()=>mini('Copy failed')); }
+  }
   function boot(){
     buildFieldStatics();
-    document.querySelectorAll('.hero-field .hchip').forEach(c=>{ c.innerHTML=MAN_SVG; });
     refreshChips();
     renderInfo(DATE);
-    if(STORE.history[DATE]==='TOUCHDOWN') el('splashChallenge').innerHTML = '✅ <b>TOUCHDOWN</b> — WON TODAY';
 
     el('toMatchup').onclick=showMatchup;
     el('matchBack').onclick=showSplash;
+    el('gearBtn').onclick=openMenu;
+    el('howtoLink').onclick=showHowto;
+    el('navLeaderboard').onclick=showStats;
+    el('navStreak').onclick=showStats;
+    el('navShare').onclick=shareInvite;
     el('startBtn').onclick=()=>{
       if(STORE.history[DATE]!==undefined){ mini('Daily already played — here’s a practice drive'); startPractice(); return; }
       beginDrive(DATE, false, 0);
