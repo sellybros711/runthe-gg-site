@@ -125,6 +125,27 @@
   .game.golf .sport-motif{right:-14px;bottom:-24px;width:min(52%,255px);opacity:.5;}
   .game.soccer .sport-motif{right:-26px;top:50%;transform:translateY(-48%);width:min(42%,205px);opacity:.42;}
   .game:hover .sport-motif{opacity:.62;transition:opacity .18s ease;}
+  /* golf motif: the ball chips onto the green, rolls in, then a new ball comes in — looped */
+  .feat.golf .sport-motif .gball{transform-box:fill-box;transform-origin:center;
+    animation:golfChip 6s ease-in-out infinite;}
+  @keyframes golfChip{
+    0%{transform:translate(24px,-124px) scale(.7);opacity:0;}      /* new ball incoming (chipped) */
+    3%{opacity:1;}
+    9%{transform:translate(18px,-96px) scale(.8);}
+    15%{transform:translate(9px,-46px) scale(.9);}
+    20%{transform:translate(0,0) scale(1);}                        /* lands on the green */
+    23%{transform:translate(-4px,-13px) scale(1);}                 /* bounce */
+    27%{transform:translate(-8px,0) scale(1);}
+    30%{transform:translate(-9px,-4px) scale(1);}
+    33%{transform:translate(-10px,0) scale(1);}                    /* settles */
+    46%{transform:translate(-10px,0) scale(1);}                    /* rests a beat */
+    60%{transform:translate(-44px,0) scale(1);}                    /* rolls to the hole lip */
+    64%{transform:translate(-44px,1px) scale(.92);}
+    68%{transform:translate(-44px,4px) scale(.32);opacity:.9;}
+    71%{transform:translate(-44px,6px) scale(0);opacity:0;}        /* drops in */
+    84%{transform:translate(24px,-124px) scale(.7);opacity:0;}     /* reset off-screen */
+    100%{transform:translate(24px,-124px) scale(.7);opacity:0;}
+  }
 
   .g-head{display:flex;align-items:center;gap:16px;padding:18px 17px 0;}
   .crest{flex:0 0 auto;width:76px;height:76px;position:relative;}
@@ -217,7 +238,7 @@
   .teaser .t-sub a:hover{text-decoration:underline;}
 
   @media (prefers-reduced-motion: reduce){
-    .brand:before, .hero-status .dot, .online-strip .ol-dot{animation:none;}
+    .brand:before, .hero-status .dot, .online-strip .ol-dot, .sport-motif .gball{animation:none;}
     .game, .play, .play .arw{transition:none;}
   }
 
@@ -524,7 +545,7 @@ window.GA_ID='G-L29P5MRWKE';
             <ellipse cx="102" cy="150" rx="7" ry="2.6" fill="#0a2418" stroke="#EBA61F" stroke-width="1.4"/>
             <path d="M102 150 V50" stroke="#f0e0b8" stroke-width="2.4" stroke-linecap="round"/>
             <path d="M102 52 L150 65 L102 78 Z" fill="#EBA61F"/>
-            <circle cx="146" cy="150" r="6" fill="#f4ecd9"/>
+            <circle class="gball" cx="146" cy="150" r="6" fill="#f4ecd9"/>
           </svg>
         </span>
         <div class="feat-in">
