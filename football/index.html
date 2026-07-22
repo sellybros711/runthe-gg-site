@@ -254,15 +254,18 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .opp .name .em{font-size:26px;}
 .opp .name .who{font-family:var(--pix); font-size:14px; color:var(--gold-bright);}
 .opp .name .k{font-family:var(--term); font-size:15px; color:var(--cream-dim); margin-top:3px;}
-.opp .dstats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:2px 0 14px;}
-.opp .ds{background:var(--panel2); border:1px solid var(--line); border-radius:11px; padding:11px 6px 9px; text-align:center;}
-.opp .ds .dl{font-family:var(--pix); font-size:8px; color:var(--cream-dim); letter-spacing:.5px;}
-.opp .ds .dbig{font-size:20px; line-height:1; margin:7px 0 5px;}
-.opp .ds .dbar{height:6px; background:var(--line); border-radius:3px; margin:9px 5px 6px; overflow:hidden;}
-.opp .ds .dbar i{display:block; height:100%; background:var(--gold); border-radius:3px;}
-.opp .ds .dv{font-family:var(--pix); font-size:11px; color:var(--cream);}
-.opp .ds .dv.p-HIGH{color:#ff7a3d;} .opp .ds .dv.p-MEDIUM{color:var(--gold-bright);} .opp .ds .dv.p-LOW{color:var(--green);}
-.opp .ds .dh{font-size:13px; color:var(--cream-dim); margin-top:5px; line-height:1.2;}
+.opp .dfront-wrap{position:relative; margin:4px 0 12px; border:1px solid var(--line); border-radius:12px; overflow:hidden;
+  background:linear-gradient(180deg,#2f7d3f,#245f31);}
+.opp .dfront-tag{position:absolute; top:8px; left:10px; font-family:var(--pix); font-size:8px; letter-spacing:.5px;
+  color:rgba(255,255,255,.8); background:rgba(10,20,32,.55); padding:4px 7px; border-radius:6px;}
+.opp .dfront{display:block; width:100%; height:auto; padding:6px 4px;}
+.opp .dcaps{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:0 0 14px;}
+.opp .dcap{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:9px 6px; text-align:center;
+  display:flex; flex-direction:column; gap:4px;}
+.opp .dcap .dcl{font-family:var(--pix); font-size:7px; color:var(--cream-dim); letter-spacing:.5px;}
+.opp .dcap .dcv{font-family:var(--pix); font-size:11px; color:var(--cream);}
+.opp .dcap .dcv.p-HIGH{color:#ff7a3d;} .opp .dcap .dcv.p-MEDIUM{color:var(--gold-bright);} .opp .dcap .dcv.p-LOW{color:var(--green);}
+.opp .dcap .dch{font-size:12px; color:var(--cream-dim); line-height:1.2;}
 .opp .plain{font-size:20px; line-height:1.35; margin-bottom:12px;}
 .opp .attack{display:flex; gap:10px; background:var(--panel2); border:1px solid var(--line); border-radius:9px;
   padding:11px 12px; margin-bottom:12px;}
@@ -655,6 +658,30 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       attack:'Beat the rush with the quick game first, then take your shot: a gambler leaves the back door wide open.' },
   };
 
+  // Drawn-up defensive front for the matchup card (X's & O's, no emoji).
+  function dCross(x,y,c){ return `<path d="M${x-3.2},${y-3.2}L${x+3.2},${y+3.2}M${x+3.2},${y-3.2}L${x-3.2},${y+3.2}" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/>`; }
+  function dArrow(x1,y1,x2,y2,c){ const a=Math.atan2(y2-y1,x2-x1);
+    const hx=x2-5*Math.cos(a), hy=y2-5*Math.sin(a), s=2.6;
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="2" stroke-linecap="round"/>`
+      + `<polygon points="${x2},${y2} ${hx-s*Math.sin(a)},${hy+s*Math.cos(a)} ${hx+s*Math.sin(a)},${hy-s*Math.cos(a)}" fill="${c}"/>`; }
+  function defenseDiagram(rep){
+    const box = rep.box.level==='HEAVY'?8 : rep.box.level==='LIGHT'?6 : 7;
+    const deep = rep.coverage==='ZONE'?3 : 2;
+    const gold='#f4c93a', nav='#c3d2e8', red='#ff7a3d';
+    let s = `<svg viewBox="0 0 120 70" class="dfront" preserveAspectRatio="xMidYMid meet" aria-hidden="true">`;
+    s += `<line x1="4" y1="44" x2="116" y2="44" stroke="rgba(255,255,255,.35)" stroke-width="1.4"/>`;  // LOS
+    // your offense (gold O-line + QB) below the LOS
+    [30,44,58,72,86].forEach(x=> s += `<circle cx="${x}" cy="53" r="3.4" fill="none" stroke="${gold}" stroke-width="2.2"/>`);
+    s += `<circle cx="58" cy="64" r="3.6" fill="${gold}"/>`;
+    // box defenders just above the LOS
+    const bx0 = 60 - ((box-1)*12)/2; for(let i=0;i<box;i++) s += dCross(bx0+i*12, 35, nav);
+    // deep safeties
+    const dx0 = 60 - ((deep-1)*26)/2; for(let i=0;i<deep;i++) s += dCross(dx0+i*26, 12, nav);
+    // blitz arrows by pressure
+    if(rep.pressure.level==='HIGH'){ s += dArrow(46,38,52,46,red)+dArrow(72,38,66,46,red); }
+    else if(rep.pressure.level==='MEDIUM'){ s += dArrow(59,38,59,46,red); }
+    return s + `</svg>`;
+  }
   // Screen 2: full opponent breakdown — newbie summary + how to attack + deep intel.
   function renderOpponent(dateStr){
     const day = GEN.generateDailyDrive(dateStr);
@@ -666,10 +693,14 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     el('oppCard').innerHTML =
       `<div class="name"><span class="em">${g.emoji}</span><div><div class="who">${rep.style.toUpperCase()} DEFENSE</div>`
       + `<div class="k">Today’s opponent · one drive to beat them</div></div></div>`
-      + `<div class="dstats">`
-      +   `<div class="ds"><div class="dl">PRESSURE</div><div class="dbar"><i style="width:${rep.pressure.pct}%"></i></div><div class="dv p-${rep.pressure.level}">${rep.pressure.level}</div><div class="dh">~${rep.blitzCount} blitzes</div></div>`
-      +   `<div class="ds"><div class="dl">BOX</div><div class="dbig">${rep.box.level==='HEAVY'?'🟥':rep.box.level==='LIGHT'?'🟩':'🟨'}</div><div class="dv">${rep.box.level}</div><div class="dh">${rep.box.hint}</div></div>`
-      +   `<div class="ds"><div class="dl">COVERAGE</div><div class="dbig">${rep.coverage==='MAN'?'👤':rep.coverage==='ZONE'?'🗺️':'🔀'}</div><div class="dv">${rep.coverageLabel}</div><div class="dh">${covHint}</div></div>`
+      + `<div class="dfront-wrap">`
+      +   `<div class="dfront-tag">HOW THEY LINE UP</div>`
+      +   defenseDiagram(rep)
+      + `</div>`
+      + `<div class="dcaps">`
+      +   `<div class="dcap"><span class="dcl">PRESSURE</span><span class="dcv p-${rep.pressure.level}">${rep.pressure.level}</span><span class="dch">~${rep.blitzCount} blitzes</span></div>`
+      +   `<div class="dcap"><span class="dcl">BOX</span><span class="dcv">${rep.box.level}</span><span class="dch">${rep.box.hint}</span></div>`
+      +   `<div class="dcap"><span class="dcl">COVERAGE</span><span class="dcv">${rep.coverageLabel}</span><span class="dch">${covHint}</span></div>`
       + `</div>`
       + `<div class="plain">${g.plain}</div>`
       + `<div class="attack"><span class="lbl">HOW TO<br>ATTACK</span><span class="tx">${g.attack}</span></div>`
