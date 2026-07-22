@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>RunTheDrive — Daily Football Drive</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#0c3324" />
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="description" content="One drive. One touchdown to chase. Read the defense, call the plays, and keep your streak alive in RunTheDrive — a daily football game on RunThe.GG." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230c3324'/%3E%3Ctext x='16' y='24' font-size='19' text-anchor='middle'%3E%F0%9F%8F%88%3C/text%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230c3324'/%3E%3Ctext x='16' y='24' font-size='19' text-anchor='middle'%3E%F0%9F%8F%88%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#092018; --bg2:#0c3324; --panel:#0f3a29; --panel2:#0b2c20;
+  --line:rgba(244,227,201,.14); --line2:rgba(244,227,201,.28);
+  --cream:#f4e3c9; --cream-dim:#bcae95; --gold:#eba61f; --gold-bright:#ffcf4d;
+  --grass:#2f7d3f; --grass2:#286f37; --grass-line:rgba(244,227,201,.55);
+  --endzone:#7a1f22; --endzone2:#611619;
+  --green:#7bd67e; --red:#e0705c; --amber:#f0c060; --blue:#69b0d0;
+  --pix:'Press Start 2P', monospace;
+  --term:'VT323', ui-monospace, monospace;
+  --shadow:0 3px 0 rgba(0,0,0,.35);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(1100px 520px at 50% -10%, rgba(235,166,31,.10), transparent 60%),
+    linear-gradient(180deg,#0b2a1f,var(--bg) 70%);
+  color:var(--cream); font-family:var(--term); font-size:20px; line-height:1.15;
+  min-height:100dvh; -webkit-font-smoothing:none; image-rendering:pixelated;
+  display:flex; justify-content:center;
+}
+.wrap{width:100%; max-width:480px; padding:10px 12px 40px; position:relative;}
+.pix{font-family:var(--pix);}
+button{font-family:inherit; color:inherit; cursor:pointer;}
+.hidden{display:none !important;}
+
+/* ---------- top bar ---------- */
+.topbar{display:flex; align-items:center; gap:10px; padding:6px 4px 12px;}
+.icon-btn{background:transparent; border:0; padding:6px; font-size:26px; line-height:1; color:var(--cream);}
+.avatar{width:52px; height:52px; border-radius:8px; background:var(--panel);
+  border:2px solid var(--line2); display:grid; place-items:center; font-size:30px; box-shadow:var(--shadow);}
+.brand{font-family:var(--pix); font-size:19px; letter-spacing:1px; margin-left:2px;}
+.brand .b1{color:var(--cream);} .brand .b2{color:var(--gold);}
+.stat-chip{display:flex; align-items:center; gap:7px; background:var(--panel);
+  border:2px solid var(--line2); border-radius:10px; padding:7px 11px; box-shadow:var(--shadow);}
+.stat-chip .n{font-family:var(--pix); font-size:14px;}
+.stat-chip .l{font-family:var(--pix); font-size:8px; color:var(--cream-dim); letter-spacing:1px;}
+.stat-chip.streak .n{color:#ff7a3d;} .stat-chip.coins .n{color:var(--gold-bright);}
+.spacer{flex:1;}
+
+/* ---------- info + challenge ---------- */
+.card{background:var(--panel); border:2px solid var(--line2); border-radius:12px; box-shadow:var(--shadow);}
+.inforow{display:flex; align-items:center; justify-content:space-between; padding:11px 14px; margin-bottom:10px; gap:8px;}
+.inforow .seg{font-family:var(--pix); font-size:10px; letter-spacing:.5px; color:var(--cream);}
+.inforow .sep{width:2px; height:20px; background:var(--line2);}
+.inforow .chal{color:var(--gold);}
+.inforow .sunny{color:var(--gold-bright);}
+
+.banner{padding:15px 12px; margin-bottom:10px; text-align:center;}
+.banner .row{display:flex; align-items:center; justify-content:center; gap:14px;}
+.banner .trophy{font-size:30px;}
+.banner h1{font-family:var(--pix); font-size:19px; margin:0; letter-spacing:1px;}
+.banner .sub{font-family:var(--term); font-size:20px; color:var(--cream-dim); margin-top:6px;}
+
+.statusbar{display:flex; align-items:stretch; padding:0; margin-bottom:10px; overflow:hidden;}
+.statusbar>div{flex:1; padding:12px 6px; text-align:center;}
+.statusbar .mid{border-left:2px solid var(--line2); border-right:2px solid var(--line2);}
+.statusbar .big{font-family:var(--pix); font-size:13px;}
+.statusbar .lab{font-family:var(--pix); font-size:8px; color:var(--cream-dim); margin-top:6px; letter-spacing:1px;}
+.dots{display:flex; align-items:center; justify-content:center; gap:8px; height:16px;}
+.dots i{width:9px; height:9px; border-radius:50%; background:var(--line2); display:block;}
+.dots i.on{background:var(--gold);}
+.dots i.now{background:var(--gold-bright); box-shadow:0 0 0 3px rgba(235,166,31,.25);}
+
+/* ---------- field ---------- */
+.field-wrap{position:relative; border:2px solid var(--line2); border-radius:12px; overflow:hidden;
+  margin-bottom:12px; box-shadow:var(--shadow); background:var(--grass);}
+.field{position:relative; width:100%; aspect-ratio:5/4;
+  background:
+    repeating-linear-gradient(90deg, var(--grass) 0 9%, var(--grass2) 9% 10%),
+    linear-gradient(180deg,#348545,#2a7439);
+}
+.endzone{position:absolute; top:0; right:0; bottom:0; width:11%;
+  background:repeating-linear-gradient(180deg,var(--endzone) 0 6px,var(--endzone2) 6px 12px);
+  border-left:3px solid #fff; display:grid; place-items:center;}
+.endzone span{font-family:var(--pix); font-size:11px; color:#f4d9c9; letter-spacing:2px;
+  writing-mode:vertical-rl; text-orientation:upright; opacity:.92;}
+.yard-num{position:absolute; top:8%; font-family:var(--pix); font-size:10px; color:var(--grass-line);
+  transform:translateX(-50%);}
+.yard-num.bot{top:auto; bottom:8%;}
+.hash{position:absolute; width:2px; height:7px; background:var(--grass-line);}
+.los{position:absolute; top:0; bottom:0; width:2px; background:rgba(255,255,255,.85);}
+.firstdown{position:absolute; top:0; bottom:0; width:3px; background:var(--gold); box-shadow:0 0 6px rgba(235,166,31,.8);}
+.ball{position:absolute; width:0;height:0; border-top:7px solid transparent; border-bottom:7px solid transparent;
+  border-left:12px solid var(--gold-bright); transform:translate(-2px,-50%); transition:left .45s ease, top .45s ease; z-index:5;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.5));}
+.chip{position:absolute; width:14px; height:14px; border-radius:3px; transform:translate(-50%,-50%);
+  transition:left .4s ease, top .4s ease; box-shadow:0 2px 0 rgba(0,0,0,.35); z-index:3;}
+.chip.off{background:#f4c93a; border:2px solid #7a5a12;}
+.chip.def{background:#2b3a52; border:2px solid #dfe6f0;}
+.chip.qb{background:#ffe08a; border:2px solid #7a5a12; width:15px; height:15px;}
+.side-tag{position:absolute; left:6px; top:50%; transform:translateY(-50%);
+  font-family:var(--pix); font-size:8px; color:var(--grass-line); writing-mode:vertical-rl;}
+.field-badge{position:absolute; left:8px; top:8px; z-index:6; display:flex; gap:6px; flex-wrap:wrap; max-width:70%;}
+.pill{font-family:var(--pix); font-size:8px; letter-spacing:.5px; padding:5px 7px; border-radius:6px;
+  background:rgba(9,32,24,.82); border:1px solid var(--line2); color:var(--cream);}
+.pill.hot{color:#ff9a5b; border-color:rgba(255,120,60,.5);}
+.pill.box{color:var(--gold-bright);}
+
+/* play result toast over field */
+.toast{position:absolute; inset:0; display:grid; place-items:center; z-index:8; pointer-events:none;
+  opacity:0;}
+.toast.show{animation:pop 1.15s ease forwards;}
+.toast .card2{background:rgba(9,32,24,.92); border:2px solid var(--line2); border-radius:12px;
+  padding:16px 22px; text-align:center; box-shadow:0 6px 0 rgba(0,0,0,.4);}
+.toast .r{font-family:var(--pix); font-size:20px;}
+.toast .y{font-family:var(--pix); font-size:13px; margin-top:8px;}
+.toast .g{font-family:var(--pix); font-size:10px; margin-top:8px; color:var(--cream-dim);}
+@keyframes pop{0%{opacity:0;transform:scale(.8)}12%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(1)}}
+
+/* ---------- call tiles ---------- */
+.calls{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:10px;}
+.tile{background:var(--panel); border:2px solid var(--line2); border-radius:10px; padding:10px 4px 9px;
+  display:flex; flex-direction:column; align-items:center; gap:6px; box-shadow:var(--shadow);
+  transition:transform .06s, background .15s; min-height:96px; justify-content:flex-start;}
+.tile:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.35);}
+.tile .em{font-size:26px; line-height:1;}
+.tile .tt{font-family:var(--pix); font-size:8px; letter-spacing:.5px; text-align:center;}
+.tile .nm{font-family:var(--term); font-size:16px; color:var(--cream-dim); text-align:center; line-height:1;}
+.tile:disabled{opacity:.4;}
+.kick{width:100%; margin-bottom:12px; background:var(--panel2); border:2px solid var(--line2);
+  border-radius:10px; padding:12px; display:flex; align-items:center; justify-content:center; gap:12px; box-shadow:var(--shadow);}
+.kick .tt{font-family:var(--pix); font-size:11px; color:var(--gold-bright);}
+.kick .meta{font-family:var(--term); font-size:18px; color:var(--cream-dim);}
+.kick:disabled{opacity:.45;}
+.kick.ready{border-color:var(--gold); animation:glow 1.4s ease-in-out infinite;}
+@keyframes glow{50%{box-shadow:0 3px 0 rgba(0,0,0,.35),0 0 14px rgba(235,166,31,.45);}}
+
+/* ---------- drive log ---------- */
+.log-head{display:flex; align-items:center; justify-content:space-between; padding:4px 4px 8px;}
+.log-head .t{font-family:var(--pix); font-size:11px; letter-spacing:1px;}
+.log-head .toggle{font-family:var(--pix); font-size:9px; color:var(--cream-dim); background:transparent; border:0;}
+.log{border-top:2px solid var(--line2);}
+.log .row{display:grid; grid-template-columns:26px 78px 62px 1fr 52px; align-items:center;
+  gap:6px; padding:11px 4px; border-bottom:1px solid var(--line); font-family:var(--term); font-size:18px;}
+.log .row .n{color:var(--cream-dim); font-size:15px;}
+.log .row .dd{font-family:var(--pix); font-size:9px;}
+.log .row .sp{color:var(--cream-dim); font-size:16px;}
+.log .row .pl{font-family:var(--pix); font-size:9px;}
+.log .row .pl small{display:block; font-family:var(--term); font-size:15px; color:var(--cream-dim); margin-top:3px; letter-spacing:0;}
+.log .row .yd{text-align:right; font-family:var(--pix); font-size:11px;}
+.log .row .yd.pos{color:var(--green);} .log .row .yd.neg{color:var(--red);} .log .row .yd.to{color:var(--red);}
+.log .empty{padding:18px 6px; text-align:center; color:var(--cream-dim); font-size:18px;}
+
+/* ---------- scouting (start screen) ---------- */
+.scout{padding:14px; margin-bottom:10px;}
+.scout h3{font-family:var(--pix); font-size:11px; margin:0 0 4px; letter-spacing:1px;}
+.scout .style{font-family:var(--pix); font-size:9px; color:var(--gold-bright); margin-bottom:10px;}
+.scout .ln{display:flex; gap:9px; padding:8px 0; border-top:1px solid var(--line); align-items:flex-start;}
+.scout .ln .tag{font-family:var(--pix); font-size:7px; color:var(--bg); background:var(--cream-dim);
+  border-radius:4px; padding:4px 5px; margin-top:2px; white-space:nowrap;}
+.scout .ln .tx{font-size:18px; line-height:1.25;}
+
+/* scheme picker */
+.schemes{display:flex; flex-direction:column; gap:8px; margin-bottom:12px;}
+.scheme{display:flex; flex-direction:column; gap:5px; padding:12px 13px; text-align:left; width:100%;
+  background:var(--panel); border:2px solid var(--line2); border-radius:11px; box-shadow:var(--shadow);}
+.scheme.sel{border-color:var(--gold); background:#124532;}
+.scheme .top{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+.scheme .nm{font-family:var(--pix); font-size:11px;}
+.scheme .tag{font-family:var(--term); font-size:17px; color:var(--cream-dim);}
+.scheme .sw{display:flex; gap:8px; flex-wrap:wrap; font-size:15px;}
+.scheme .sw .s{color:var(--green);} .scheme .sw .w{color:var(--red);}
+
+.cta{width:100%; padding:16px; margin-bottom:14px; background:var(--gold); color:#3a2a00;
+  border:0; border-radius:12px; font-family:var(--pix); font-size:14px; letter-spacing:1px;
+  box-shadow:0 4px 0 #a9750f;}
+.cta:active{transform:translateY(2px); box-shadow:0 2px 0 #a9750f;}
+.cta.ghost{background:transparent; color:var(--cream); border:2px solid var(--line2); box-shadow:var(--shadow);}
+
+/* ---------- modal ---------- */
+.overlay{position:fixed; inset:0; background:rgba(4,14,10,.72); display:grid; place-items:center; z-index:50; padding:18px;}
+.modal{width:100%; max-width:420px; background:var(--panel); border:2px solid var(--line2);
+  border-radius:14px; padding:20px 18px; box-shadow:0 8px 0 rgba(0,0,0,.4); text-align:center;}
+.modal .em{font-size:46px;}
+.modal h2{font-family:var(--pix); font-size:18px; margin:10px 0 4px;}
+.modal .sub{font-size:19px; color:var(--cream-dim); margin-bottom:14px;}
+.modal .gradebar{font-size:22px; letter-spacing:2px; margin:10px 0; word-break:break-all;}
+.modal .statgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0;}
+.modal .statgrid .b{background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:10px 4px;}
+.modal .statgrid .v{font-family:var(--pix); font-size:14px;}
+.modal .statgrid .k{font-family:var(--pix); font-size:7px; color:var(--cream-dim); margin-top:5px;}
+.modal .rewards{font-family:var(--pix); font-size:10px; color:var(--gold-bright); margin:8px 0 14px;}
+.modal button{width:100%; padding:14px; border-radius:11px; font-family:var(--pix); font-size:12px; margin-top:8px;}
+.modal .primary{background:var(--gold); color:#3a2a00; border:0; box-shadow:0 4px 0 #a9750f;}
+.modal .secondary{background:transparent; color:var(--cream); border:2px solid var(--line2);}
+
+/* sheet / menu */
+.sheet{position:fixed; inset:0; z-index:60; display:flex; align-items:flex-end; justify-content:center;
+  background:rgba(4,14,10,.6);}
+.sheet .inner{width:100%; max-width:480px; background:var(--panel); border:2px solid var(--line2);
+  border-radius:16px 16px 0 0; padding:18px; box-shadow:0 -6px 0 rgba(0,0,0,.35);}
+.sheet h3{font-family:var(--pix); font-size:13px; margin:2px 0 14px;}
+.sheet a, .sheet button.mi{display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+  padding:14px 10px; border:0; border-top:1px solid var(--line); background:transparent; color:var(--cream);
+  font-family:var(--term); font-size:20px; text-decoration:none;}
+.sheet .mi .ico{font-size:22px;}
+.toast-mini{position:fixed; left:50%; bottom:26px; transform:translateX(-50%); z-index:80;
+  background:var(--panel2); border:2px solid var(--line2); border-radius:10px; padding:12px 18px;
+  font-family:var(--pix); font-size:10px; box-shadow:var(--shadow); opacity:0; transition:opacity .2s;}
+.toast-mini.show{opacity:1;}
+.foot{text-align:center; font-size:16px; color:var(--cream-dim); padding:8px 0 4px;}
+.foot a{color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <button class="icon-btn" id="menuBtn" aria-label="Menu">☰</button>
+    <div class="avatar">🏈</div>
+    <div class="brand pix"><span class="b1">RUN THE</span> <span class="b2">DRIVE</span></div>
+    <div class="spacer"></div>
+    <div class="stat-chip streak"><span style="font-size:20px">🔥</span><div><div class="n" id="streakN">0</div><div class="l">STREAK</div></div></div>
+    <div class="stat-chip coins"><span style="font-size:18px">🪙</span><div><div class="n" id="coinsN">0</div><div class="l">COINS</div></div></div>
+  </div>
+
+  <!-- INFO ROW -->
+  <div class="card inforow">
+    <span class="seg" id="driveNo">DRIVE #1</span>
+    <span class="sep"></span>
+    <span class="seg sunny" id="wx">☀ SUNNY</span>
+    <span class="sep"></span>
+    <span class="seg chal">DAILY CHALLENGE</span>
+  </div>
+
+  <!-- ===================== START SCREEN ===================== -->
+  <div id="startScreen">
+    <div class="card banner">
+      <div class="row"><span class="trophy">🏆</span><h1>SCORE A TOUCHDOWN</h1><span class="trophy">🏆</span></div>
+      <div class="sub">You have <b>1 drive</b> to win. Read the D, call it right.</div>
+    </div>
+
+    <div class="card scout" id="scoutCard">
+      <h3>📋 SCOUTING REPORT</h3>
+      <div class="style" id="scoutStyle">—</div>
+      <div id="scoutLines"></div>
+    </div>
+
+    <div class="log-head"><span class="t">PICK YOUR PLAYBOOK</span></div>
+    <div class="schemes" id="schemeList"></div>
+
+    <button class="cta" id="startBtn">▶ START THE DRIVE</button>
+  </div>
+
+  <!-- ===================== GAME SCREEN ===================== -->
+  <div id="gameScreen" class="hidden">
+    <!-- STATUS -->
+    <div class="card statusbar">
+      <div><div class="big" id="ddText">1ST &amp; 10</div><div class="lab" id="spotText">BALL ON YOUR 35</div></div>
+      <div class="mid"><div class="dots" id="dots"></div><div class="lab">DRIVE 1 OF 1</div></div>
+      <div><div class="big" id="clockText">5:00</div><div class="lab">CLOCK</div></div>
+    </div>
+
+    <!-- FIELD -->
+    <div class="field-wrap">
+      <div class="field" id="field">
+        <div class="endzone"><span>TOUCHDOWN</span></div>
+        <span class="side-tag" id="sideTag">YOUR 35</span>
+        <div class="field-badge" id="fieldBadge"></div>
+        <div class="los" id="losEl" style="left:35%"></div>
+        <div class="firstdown" id="fdEl" style="left:45%"></div>
+        <div class="ball" id="ballEl" style="left:35%; top:50%"></div>
+        <div class="toast" id="toast"><div class="card2"><div class="r" id="toastR"></div><div class="y" id="toastY"></div><div class="g" id="toastG"></div></div></div>
+      </div>
+    </div>
+
+    <!-- KICK -->
+    <button class="kick" id="kickBtn" disabled>
+      <span class="tt">🦵 KICK FG</span>
+      <span class="meta" id="kickMeta">out of range</span>
+    </button>
+
+    <!-- CALL TILES -->
+    <div class="calls" id="calls"></div>
+
+    <!-- DRIVE LOG -->
+    <div class="log-head">
+      <span class="t">📜 DRIVE LOG</span>
+      <button class="toggle" id="scoutPeek">SCOUT ▾</button>
+    </div>
+    <div class="card scout hidden" id="scoutPeekCard" style="margin-top:8px"></div>
+    <div class="card log" id="log"><div class="empty">The drive starts here. Make your first call.</div></div>
+  </div>
+
+  <div class="foot">A <a href="/">RunThe.GG</a> game · every number measured from real football</div>
+</div>
+
+<div id="modalMount"></div>
+<div id="sheetMount"></div>
+<div class="toast-mini" id="mini"></div>
+
+<script src="drive_generator.js"></script>
+<script src="playbook.js"></script>
+<script src="engine.js"></script>
+<script>
+(function(){
+  'use strict';
+  const GEN = window.RTD_GEN, ENGINE = window.RTD_ENGINE, PB = window.RTD_PLAYBOOK;
+  const $ = s => document.querySelector(s);
+  const el = (id) => document.getElementById(id);
+
+  /* ---------- date + daily identity ---------- */
+  const EPOCH = Date.UTC(2025,0,1);
+  function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+  function driveNumber(dateStr){ const [y,m,dd]=dateStr.split('-').map(Number);
+    return Math.floor((Date.UTC(y,m-1,dd)-EPOCH)/86400000)+1; }
+  function yesterdayStr(dateStr){ const [y,m,dd]=dateStr.split('-').map(Number);
+    const t=new Date(Date.UTC(y,m-1,dd)-86400000); return t.toISOString().slice(0,10); }
+  const DATE = todayStr();
+
+  /* ---------- persistent store ---------- */
+  const KEY='rtd:v1';
+  function load(){ try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(_){return {};} }
+  function save(s){ try{localStorage.setItem(KEY,JSON.stringify(s));}catch(_){}}
+  let STORE = load();
+  STORE.streak = STORE.streak||0; STORE.best = STORE.best||0; STORE.coins = STORE.coins||0;
+  STORE.scheme = STORE.scheme && PB.schemes[STORE.scheme] ? STORE.scheme : 'WEST_COAST';
+  STORE.history = STORE.history||{};
+
+  /* ---------- scheme metadata for the picker ---------- */
+  const SCHEME_ORDER = ['WEST_COAST','SMASH_MOUTH','WIDE_ZONE','AIR_RAID','SPREAD_OPTION','VERTICAL'];
+
+  /* ---------- runtime ---------- */
+  let drive=null, practice=false;
+  const WX_ICON = {Sunny:'☀',Clear:'☀',Cloudy:'☁',Windy:'🌬',Rain:'🌧',Cold:'❄',Snow:'❄',Dome:'🏟'};
+
+  /* ---------- scouting + info render ---------- */
+  function renderInfo(dateStr){
+    el('driveNo').textContent = 'DRIVE #'+driveNumber(dateStr);
+    const day = GEN.generateDailyDrive(dateStr);
+    const wx = day.weather.condition;
+    el('wx').textContent = (WX_ICON[wx]||'☀')+' '+wx.toUpperCase();
+    return day;
+  }
+  function renderScout(dateStr, mount){
+    const day = GEN.generateDailyDrive(dateStr);
+    const rep = GEN.scoutingReport(dateStr, day);
+    let html = `<h3>📋 SCOUTING REPORT</h3><div class="style">DEFENSE: ${rep.style.toUpperCase()}</div>`;
+    for(const l of rep.lines){ html += `<div class="ln"><span class="tag">${l.tag}</span><span class="tx">${l.text}</span></div>`; }
+    mount.innerHTML = html;
+  }
+
+  /* ---------- scheme picker ---------- */
+  function renderSchemes(){
+    const list = el('schemeList'); list.innerHTML='';
+    for(const key of SCHEME_ORDER){
+      const s = PB.schemes[key];
+      const b = document.createElement('button');
+      b.className='scheme'+(key===STORE.scheme?' sel':'');
+      b.innerHTML = `<div class="top"><span class="nm">${s.name}</span></div>
+        <div class="tag">${s.tagline}</div>
+        <div class="sw"><span class="s">▲ ${s.strength}</span></div>
+        <div class="sw"><span class="w">▼ ${s.weakness}</span></div>`;
+      b.onclick=()=>{ STORE.scheme=key; save(STORE); renderSchemes(); };
+      list.appendChild(b);
+    }
+  }
+
+  /* ---------- field rendering ---------- */
+  // playable x: own goal 0% .. LOS scale .. right endzone starts at 89%
+  const F_LEFT=3, F_RIGHT=88;             // % bounds of the 0..100 yardline field
+  function xOf(yard){ return F_LEFT + (yard/100)*(F_RIGHT-F_LEFT); }
+  function buildFieldStatics(){
+    const f = el('field');
+    // yard numbers 10..50..10 and hash marks
+    const marks = document.createDocumentFragment();
+    const nums = [[10,'10'],[20,'20'],[30,'30'],[40,'40'],[50,'50'],[60,'40'],[70,'30'],[80,'20'],[90,'10']];
+    for(const [yd,label] of nums){
+      const a=document.createElement('div'); a.className='yard-num'; a.style.left=xOf(yd)+'%'; a.textContent=label; marks.appendChild(a);
+      const b=document.createElement('div'); b.className='yard-num bot'; b.style.left=xOf(yd)+'%'; b.textContent=label; marks.appendChild(b);
+    }
+    for(let yd=5; yd<100; yd+=5){
+      for(const top of [30,68]){ const h=document.createElement('div'); h.className='hash'; h.style.left=xOf(yd)+'%'; h.style.top=top+'%'; marks.appendChild(h); }
+    }
+    f.insertBefore(marks, el('losEl'));
+  }
+  function clearChips(){ document.querySelectorAll('#field .chip').forEach(c=>c.remove()); }
+  function placeChip(cls, xPct, yPct){ const c=document.createElement('div'); c.className='chip '+cls;
+    c.style.left=xPct+'%'; c.style.top=yPct+'%'; el('field').appendChild(c); return c; }
+  function renderFormation(state, def){
+    clearChips();
+    const bx = xOf(state.yardline);
+    // offense: O-line 5 across just behind LOS, QB + RB behind, 2 WRs wide
+    const olY=[34,42,50,58,66];
+    olY.forEach(y=>placeChip('off', bx-2, y));
+    placeChip('qb', bx-9, 50);
+    placeChip('off', bx-9, 62);          // RB
+    placeChip('off', bx-4, 16);          // WR top
+    placeChip('off', bx-4, 84);          // WR bottom
+    // defense: box defenders near LOS reflect the engine's box count; rest deep
+    const box = def ? def.boxCount : 6;
+    const boxYs = spread(box, 26, 74);
+    boxYs.forEach(y=>placeChip('def', bx+4, y));
+    // secondary: 11 - box, min 2, spread deeper downfield
+    const deep = Math.max(2, 11 - box);
+    const deepYs = spread(deep, 20, 80);
+    deepYs.forEach((y,i)=>placeChip('def', bx + 9 + (i%2)*6, y));
+  }
+  function spread(n, lo, hi){ if(n<=1) return [(lo+hi)/2]; const out=[]; for(let i=0;i<n;i++) out.push(lo+(hi-lo)*i/(n-1)); return out; }
+
+  function renderField(state, def){
+    const bx = xOf(state.yardline);
+    el('losEl').style.left = bx+'%';
+    el('ballEl').style.left = bx+'%';
+    const fdYard = Math.min(100, state.yardline + state.distance);
+    const fdX = state.down>0 ? xOf(fdYard) : bx;
+    el('fdEl').style.left = fdX+'%';
+    el('fdEl').style.display = (fdYard>=100)?'none':'block';
+    // side tag
+    const half = state.yardline<=50 ? 'YOUR '+state.yardline : 'OPP '+(100-state.yardline);
+    el('sideTag').textContent = half;
+    // badges: box + hint of pressure tendency (blitz stays hidden as a number, shown as a vibe)
+    const badge = el('fieldBadge'); badge.innerHTML='';
+    if(def){
+      const p=document.createElement('span'); p.className='pill box'; p.textContent=def.boxCount+' IN THE BOX'; badge.appendChild(p);
+      const cov=document.createElement('span'); cov.className='pill'; cov.textContent=(def.coverage==='MAN'?'MAN?':def.coverage==='ZONE'?'ZONE?':'MIXED'); badge.appendChild(cov);
+    }
+    renderFormation(state, def);
+  }
+
+  /* ---------- status + calls ---------- */
+  function ordinal(n){ return n===1?'1ST':n===2?'2ND':n===3?'3RD':'4TH'; }
+  function renderStatus(state){
+    let dd;
+    if(state.distance>=state.toGoal) dd = ordinal(state.down)+' &amp; GOAL';
+    else dd = ordinal(state.down)+' &amp; '+state.distance;
+    el('ddText').innerHTML = dd;
+    const spot = state.yardline<=50 ? 'BALL ON YOUR '+state.yardline : 'BALL ON OPP '+(100-state.yardline);
+    el('spotText').textContent = spot;
+    const mins=Math.max(0,Math.floor(state.clock/60)), secs=Math.max(0,state.clock%60);
+    el('clockText').textContent = mins+':'+String(secs).padStart(2,'0');
+    // dots
+    const dots=el('dots'); dots.innerHTML='';
+    for(let i=1;i<=7;i++){ const d=document.createElement('i');
+      if(i<state.playNo) d.className='on'; else if(i===state.playNo) d.className='now'; dots.appendChild(d); }
+  }
+  function renderCalls(state){
+    const wrap=el('calls'); wrap.innerHTML='';
+    wrap.style.gridTemplateColumns='repeat('+drive.callSheet.length+',1fr)';
+    for(const t of drive.callSheet){
+      const b=document.createElement('button'); b.className='tile';
+      b.innerHTML=`<span class="em">${t.emoji}</span><span class="tt">${t.title}</span><span class="nm">${t.play.name}</span>`;
+      b.onclick=()=>doSnap(t.id);
+      b.disabled = state.over;
+      wrap.appendChild(b);
+    }
+    // kick
+    const k=el('kickBtn');
+    k.disabled = state.over || !state.fg.inRange;
+    k.classList.toggle('ready', !state.over && state.fg.inRange && (state.down>=4 || state.toGoal<=state.distance));
+    el('kickMeta').textContent = state.fg.inRange ? (state.fg.dist+' yd · '+state.fg.makePct+'%') : 'out of range';
+  }
+
+  /* ---------- drive log ---------- */
+  function ddLabel(row){ const g = row.distance>= (100-row.yardline) ? 'GOAL' : row.distance;
+    return ordinal(row.down)+'&amp;'+g; }
+  function renderLog(state){
+    const box=el('log');
+    if(!state.log.length){ box.innerHTML='<div class="empty">The drive starts here. Make your first call.</div>'; return; }
+    let html='';
+    state.log.slice().reverse().forEach((r,i)=>{
+      const n=state.log.length-i;
+      const spot = r.yardline<=50 ? 'YOUR '+r.yardline : 'OPP '+(100-r.yardline);
+      let yd, cls;
+      if(r.turnover){ yd = r.turnover==='INTERCEPTION'?'INT':r.turnover==='FUMBLE'?'FUM':'TO'; cls='to'; }
+      else if(r.sack){ yd = r.yards+' SACK'; cls='neg'; }
+      else { yd = (r.yards>0?'+':'')+r.yards; cls = r.yards>0?'pos':r.yards<0?'neg':''; }
+      html += `<div class="row"><span class="n">${n}</span>
+        <span class="dd">${ddLabel(r)}</span>
+        <span class="sp">${spot}</span>
+        <span class="pl">${r.title}<small>${r.play}${r.blitz?' · BLITZ':''}</small></span>
+        <span class="yd ${cls}">${yd}</span></div>`;
+    });
+    box.innerHTML=html;
+  }
+
+  /* ---------- play a snap ---------- */
+  let busy=false;
+  function doSnap(tileId){
+    if(busy || !drive) return; busy=true;
+    const before = drive.state();
+    const res = drive.snap(tileId);
+    showToast(res.lastPlay);
+    // animate ball, then render new state
+    renderField(res, res.lastDef);
+    setTimeout(()=>{ afterPlay(res); busy=false; }, 900);
+  }
+  function doKick(){
+    if(busy || !drive) return; busy=true;
+    const res = drive.kickFG();
+    showToast({ result:res.result, kick:true, fg:res.fg });
+    setTimeout(()=>{ afterPlay(res); busy=false; }, 900);
+  }
+  function showToast(play){
+    const t=el('toast'); let r,y,g;
+    if(play.kick){ r = play.result==='FIELD_GOAL'?'IT’S GOOD! 🦵':'NO GOOD 😬'; y=''; g=''; }
+    else if(play.turnover){ r = play.turnover==='INTERCEPTION'?'INTERCEPTED 🎯':play.turnover==='ABORTED_SNAP'?'BOTCHED SNAP 💀':'FUMBLE 🤲'; y='TURNOVER'; g='call: '+play.grade.letter; }
+    else { const b=play.bucket; r = b==='EXPLOSIVE'?'BIG GAIN! 💥':b==='SUCCESS'?'GOOD PLAY ✔':b==='FAILURE'?'STUFFED':play.sack?'SACKED':'BLOWN UP';
+      y=(play.yards>0?'+':'')+play.yards+' YDS'; g='call: '+play.grade.letter; }
+    el('toastR').textContent=r; el('toastY').textContent=y; el('toastG').textContent=g;
+    t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+  }
+  function afterPlay(state){
+    renderStatus(state); renderCalls(state); renderLog(state);
+    if(state.over){ endDrive(state); }
+    else { renderField(state, drive.currentDefense()); }
+  }
+
+  /* ---------- end of drive ---------- */
+  const RESULT_META = {
+    TOUCHDOWN:{em:'🏈',t:'TOUCHDOWN!',win:true,coins:500},
+    FIELD_GOAL:{em:'🦵',t:'FIELD GOAL',win:false,coins:200},
+    MISSED_FG:{em:'😬',t:'MISSED KICK',win:false,coins:40},
+    TURNOVER:{em:'🔄',t:'TURNOVER',win:false,coins:20},
+    TURNOVER_ON_DOWNS:{em:'🛑',t:'STOPPED ON DOWNS',win:false,coins:30},
+    CLOCK:{em:'⏱️',t:'CLOCK EXPIRED',win:false,coins:30},
+    SAFETY:{em:'🙈',t:'SAFETY',win:false,coins:0},
+  };
+  function endDrive(state){
+    const meta = RESULT_META[state.result]||{em:'🏁',t:state.result,win:false,coins:20};
+    let earned = meta.coins;
+    let streakTxt='';
+    if(!practice){
+      // record daily result once
+      if(STORE.history[DATE]===undefined){
+        STORE.history[DATE]=state.result;
+        // streak: win extends, loss resets. gap in days resets first.
+        const y=yesterdayStr(DATE);
+        if(meta.win){
+          STORE.streak = (STORE.lastWinDate===y)? STORE.streak+1 : 1;
+          STORE.lastWinDate = DATE;
+          earned += 100*STORE.streak;
+          streakTxt = '🔥 '+STORE.streak+' day streak';
+        } else {
+          STORE.streak = 0; streakTxt='Streak reset — back at it tomorrow.';
+        }
+        STORE.best=Math.max(STORE.best,STORE.streak);
+        STORE.coins += earned;
+        save(STORE);
+      } else {
+        earned=0; streakTxt = meta.win?('🔥 '+STORE.streak+' day streak'):'';
+      }
+    } else { earned=0; }
+    refreshChips();
+    showResultModal(state, meta, earned, streakTxt);
+  }
+
+  function gradeBar(state){
+    return state.grades.map(g=> g.letter.startsWith('A')?'🟩':g.letter==='B'?'🟨':g.letter==='C'?'🟧':'🟥').join('');
+  }
+  function showResultModal(state, meta, earned, streakTxt){
+    const yds = state.yardline - state.startYard;
+    const mount=el('modalMount');
+    mount.innerHTML = `<div class="overlay"><div class="modal">
+      <div class="em">${meta.em}</div>
+      <h2>${meta.t}</h2>
+      <div class="sub">${state.log.length} plays · ${yds} yard drive</div>
+      <div class="gradebar">${gradeBar(state)||'—'}</div>
+      <div class="statgrid">
+        <div class="b"><div class="v">${state.callGrade}</div><div class="k">CALL GRADE</div></div>
+        <div class="b"><div class="v">${state.log.length}</div><div class="k">PLAYS</div></div>
+        <div class="b"><div class="v">${yds}</div><div class="k">YARDS</div></div>
+      </div>
+      ${earned>0?`<div class="rewards">+${earned} 🪙  ${streakTxt}</div>`:(streakTxt?`<div class="rewards">${streakTxt}</div>`:'')}
+      <button class="primary" id="shareBtn">📣 SHARE RESULT</button>
+      <button class="secondary" id="practiceBtn">🔁 PRACTICE ANOTHER DRIVE</button>
+      ${practice?'<button class="secondary" id="closeBtn">CLOSE</button>':''}
+    </div></div>`;
+    el('shareBtn').onclick=()=>shareResult(state);
+    el('practiceBtn').onclick=()=>{ mount.innerHTML=''; startPractice(); };
+    if(el('closeBtn')) el('closeBtn').onclick=()=>{ mount.innerHTML=''; };
+  }
+  function shareResult(state){
+    const streak = practice? STORE.streak : STORE.streak;
+    const text = ENGINE.shareCard(state, streak);
+    const shareData={ title:'RunTheDrive', text: text+'\n\nPlay at runthe.gg/football' };
+    if(navigator.share){ navigator.share(shareData).catch(()=>{}); }
+    else { navigator.clipboard && navigator.clipboard.writeText(shareData.text).then(()=>mini('Copied to clipboard!')).catch(()=>mini('Copy failed')); }
+  }
+
+  /* ---------- chips + mini toast ---------- */
+  function refreshChips(){ el('streakN').textContent=STORE.streak; el('coinsN').textContent=STORE.coins.toLocaleString(); }
+  let miniT; function mini(msg){ const m=el('mini'); m.textContent=msg; m.classList.add('show');
+    clearTimeout(miniT); miniT=setTimeout(()=>m.classList.remove('show'),1600); }
+
+  /* ---------- start / resume ---------- */
+  function beginDrive(dateStr, isPractice, salt){
+    practice=!!isPractice;
+    drive = ENGINE.createDrive(dateStr, STORE.scheme, {salt: salt||0});
+    el('startScreen').classList.add('hidden');
+    el('gameScreen').classList.remove('hidden');
+    // scout peek content
+    renderScout(dateStr, el('scoutPeekCard'));
+    const s=drive.state();
+    renderStatus(s); renderCalls(s); renderLog(s);
+    renderField(s, drive.currentDefense());
+    window.scrollTo(0,0);
+  }
+  function startPractice(){
+    // random-ish salt derived from history length so it varies; never affects streak/coins
+    const salt = (Object.keys(STORE.history).length*7 + Math.floor(Math.random()*100000))|0;
+    beginDrive(DATE, true, salt);
+  }
+
+  /* ---------- menu sheet ---------- */
+  function openMenu(){
+    const m=el('sheetMount');
+    m.innerHTML=`<div class="sheet"><div class="inner">
+      <h3>RUN THE DRIVE</h3>
+      <button class="mi" id="howto"><span class="ico">❓</span> How to play</button>
+      <button class="mi" id="changeScheme"><span class="ico">📖</span> Change playbook <span style="flex:1"></span><span style="font-family:var(--pix);font-size:9px;color:var(--gold-bright)">${PB.schemes[STORE.scheme].name}</span></button>
+      <button class="mi" id="statsMi"><span class="ico">📊</span> Your record <span style="flex:1"></span><span style="font-family:var(--pix);font-size:9px;color:var(--cream-dim)">best 🔥${STORE.best}</span></button>
+      <button class="mi" id="practiceMi"><span class="ico">🔁</span> Practice drive</button>
+      <a href="/"><span class="ico">🏠</span> More RunThe.GG games</a>
+      <button class="mi" id="closeSheet" style="justify-content:center;color:var(--cream-dim)">Close</button>
+    </div></div>`;
+    const close=()=>m.innerHTML='';
+    m.querySelector('.sheet').onclick=(e)=>{ if(e.target===m.querySelector('.sheet')) close(); };
+    el('closeSheet').onclick=close;
+    el('howto').onclick=()=>{ close(); showHowto(); };
+    el('practiceMi').onclick=()=>{ close(); startPractice(); };
+    el('changeScheme').onclick=()=>{ close(); el('gameScreen').classList.add('hidden'); el('startScreen').classList.remove('hidden'); renderSchemes(); window.scrollTo(0,0); };
+    el('statsMi').onclick=()=>{ close(); showStats(); };
+  }
+  function showHowto(){
+    el('modalMount').innerHTML=`<div class="overlay"><div class="modal" style="text-align:left">
+      <h2 style="text-align:center">HOW TO PLAY</h2>
+      <div class="sub" style="text-align:left;line-height:1.4">
+        One drive a day. Move the ball to the end zone for the win and keep your streak alive.<br><br>
+        • <b>Read the box.</b> The number by the field is how many defenders crowd the line. A heavy box stuffs the run — throw over it. A light box means run lanes.<br><br>
+        • <b>Down &amp; distance matter.</b> Short yardage loves the run and the sneak; 3rd-and-long is a passing down.<br><br>
+        • <b>You’re graded on the CALL, not the luck.</b> A perfect call that gets picked still grades an A — that’s football.<br><br>
+        • <b>The blitz is hidden.</b> The scouting report tells you how often they bring it. Count them — they only have so many.
+      </div>
+      <button class="primary" id="okHow">GOT IT</button>
+    </div></div>`;
+    el('okHow').onclick=()=>el('modalMount').innerHTML='';
+  }
+  function showStats(){
+    const dates=Object.keys(STORE.history); const wins=dates.filter(d=>{const r=STORE.history[d];return r==='TOUCHDOWN';}).length;
+    const scored=dates.filter(d=>['TOUCHDOWN','FIELD_GOAL'].includes(STORE.history[d])).length;
+    el('modalMount').innerHTML=`<div class="overlay"><div class="modal">
+      <div class="em">📊</div><h2>YOUR RECORD</h2>
+      <div class="statgrid">
+        <div class="b"><div class="v">${STORE.streak}</div><div class="k">STREAK</div></div>
+        <div class="b"><div class="v">${STORE.best}</div><div class="k">BEST</div></div>
+        <div class="b"><div class="v">${dates.length}</div><div class="k">DRIVES</div></div>
+        <div class="b"><div class="v">${wins}</div><div class="k">TDS</div></div>
+        <div class="b"><div class="v">${scored}</div><div class="k">SCORES</div></div>
+        <div class="b"><div class="v">${STORE.coins.toLocaleString()}</div><div class="k">COINS</div></div>
+      </div>
+      <button class="primary" id="okStats">CLOSE</button>
+    </div></div>`;
+    el('okStats').onclick=()=>el('modalMount').innerHTML='';
+  }
+
+  /* ---------- boot ---------- */
+  function boot(){
+    buildFieldStatics();
+    refreshChips();
+    renderInfo(DATE);
+    renderScout(DATE, el('scoutCard'));
+    renderSchemes();
+    el('startBtn').onclick=()=>{
+      // already played the daily?
+      if(STORE.history[DATE]!==undefined){
+        // replay the recorded daily deterministically to show the result again is complex;
+        // simplest honest behavior: let them re-watch by re-playing is not possible, so send to practice.
+        mini('Daily already played — here’s a practice drive');
+        startPractice(); return;
+      }
+      beginDrive(DATE, false, 0);
+    };
+    el('kickBtn').onclick=doKick;
+    el('menuBtn').onclick=openMenu;
+    el('scoutPeek').onclick=()=>{ const c=el('scoutPeekCard'); c.classList.toggle('hidden'); };
+    // if daily already completed today, reflect it on the banner
+    if(STORE.history[DATE]!==undefined){
+      const r=STORE.history[DATE]; const won=r==='TOUCHDOWN';
+      el('startBtn').textContent = won? '✅ WON TODAY — PRACTICE AGAIN' : '↻ PLAYED TODAY — PRACTICE AGAIN';
+    }
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
