@@ -12178,6 +12178,14 @@ allows Google Fonts, or self-host Anton.*
   own rows on next sign-in, so real golfers populate over time and null rows show the neutral default until
   then (instead of the viewer's golfer).
 
+- **CS517 — the generic/default golfer's hat is now explicitly white (owner).** `DEFLOOK` already had
+  `polo:'white'` and its cap fell back to the polo color (white), so the default golfer already rendered a
+  white shirt + white cap — but the hat color was implicit (a `L.hat||L.polo` fallback). Added `hat:'white'`
+  to DEFLOOK so the default's white hat is explicit and robust (stays white regardless of the polo). Verified
+  the default resolves shirtHex + hatHex to `#eef0ee` (white); 0 page errors. Deployed to /golf. (This is the
+  golfer the leaderboard now shows for a legacy null-look row after CS516 — so once CS516 loads, the "generic"
+  rows read as a clean white-shirt / white-hat default instead of the viewer's golfer.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
