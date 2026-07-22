@@ -12597,6 +12597,9 @@ allows Google Fonts, or self-host Anton.*
     each player's real peak era (the data_source "(DataGolf)" tag on those is schema-mimicry, not a real
     feed) - truly data-grounded primes would need the owner to pull DataGolf's HISTORICAL skill-ratings
     files per peak season, offered if wanted.
+  - **Follow-up (owner): current pros show a "CURRENT VERSION" subtext** (teal-green `.ck-cur`) in the same
+    identity slot, so every card now declares what it is - CURRENT VERSION / PRIME VERSION / ALL-TIME
+    GREAT. Deployed to /golf (0d5c79d).
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
