@@ -12190,8 +12190,9 @@ allows Google Fonts, or self-host Anton.*
   the Tour!").** The TourTracer shot/hole share (GIF via `hvGifShare`/`hvGifCompose` + the PNG fallback
   `hvShareShot`) captioned the share with a dry "Magnolia Hollow Golf Club · Hole 8 · 3 (−2) on RunTheTour".
   Added a shared `hvShareCaption(hole,c)` that leads with the result you made — "Check out this {Eagle/Birdie/
-  Par/Bogey/Albatross...} I just made on Run The Tour! ⛳" — then the course · hole · score detail line, then
-  the `withSocial` tags (@RunTheGG #golf #RunTheTour). A par-3 ace is called a **Hole-in-One** (not "Eagle").
+  Par/Bogey/Albatross...} I just made on Run The Tour! ⛳" — then a detail line of **course · hole · par ·
+  distance** ("Magnolia Hollow Golf Club · Hole 8 · Par 5 · 568 yds"; owner: par + hole distance rather than
+  the "3 (−2)" score), then the `withSocial` tags (@RunTheGG #golf #RunTheTour). A par-3 ace is a **Hole-in-One**.
   Both the GIF and PNG share paths use it. Verified in Playwright across Eagle / Hole-in-One / Birdie / Par /
   Bogey / Albatross — each renders the right inviting caption; 0 page errors. Deployed to /golf. Tunable: the
   phrasing in `hvShareCaption`.
