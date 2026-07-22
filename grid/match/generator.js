@@ -146,12 +146,21 @@
    * DATA-DRIVEN GENERATOR (§3–§5)
    * ======================================================================= */
 
+  // maps a position's readable singular (from import-corpus) to its plural label;
+  // anything not here falls back to +"s".
   var POS_LABEL = {
     'Quarterback': 'Quarterbacks', 'Running Back': 'Running Backs', 'Wide Receiver': 'Wide Receivers',
-    'Tight End': 'Tight Ends', 'Defensive Back': 'Defensive Backs', 'Defensive Line': 'Defensive Linemen',
-    'Guard': 'Guards', 'Forward': 'Forwards', 'Center': 'Centers',
-    'Pitcher': 'Pitchers', 'Catcher': 'Catchers', 'Shortstop': 'Shortstops', 'First Base': 'First Basemen',
-    'Outfield': 'Outfielders', 'Designated Hitter': 'Designated Hitters'
+    'Tight End': 'Tight Ends', 'Defensive Back': 'Defensive Backs', 'Fullback': 'Fullbacks',
+    'Offensive Lineman': 'Offensive Linemen', 'Defensive Lineman': 'Defensive Linemen',
+    'Linebacker': 'Linebackers', 'Cornerback': 'Cornerbacks', 'Safety': 'Safeties',
+    'Kicker': 'Kickers', 'Punter': 'Punters',
+    'Point Guard': 'Point Guards', 'Shooting Guard': 'Shooting Guards', 'Small Forward': 'Small Forwards',
+    'Power Forward': 'Power Forwards', 'Guard': 'Guards', 'Forward': 'Forwards', 'Center': 'Centers',
+    'Pitcher': 'Pitchers', 'Catcher': 'Catchers', 'Shortstop': 'Shortstops',
+    'First Baseman': 'First Basemen', 'Second Baseman': 'Second Basemen', 'Third Baseman': 'Third Basemen',
+    'Outfielder': 'Outfielders', 'Designated Hitter': 'Designated Hitters',
+    'Left Wing': 'Left Wings', 'Right Wing': 'Right Wings', 'Winger': 'Wingers',
+    'Defenseman': 'Defensemen', 'Goaltender': 'Goaltenders'
   };
   var AWARD_LABEL = {
     'NBA MVP': 'NBA MVP Winners', 'NFL MVP': 'NFL MVP Winners', 'MLB MVP': 'MLB MVP Winners',
