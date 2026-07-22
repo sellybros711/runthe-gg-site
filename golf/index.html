@@ -1712,6 +1712,8 @@ window.GA_ID='G-L29P5MRWKE';
   .sbadge{position:absolute; top:6px; right:6px; width:19px; height:19px; border-radius:50%; background:var(--gold);
     color:#2a1c04; font:900 12px/19px var(--body); text-align:center}
   .srar{position:absolute; top:7px; left:7px; width:8px; height:8px; border-radius:50%}
+  .stile.fav::after{content:'★'; position:absolute; top:4px; right:7px; color:var(--gold); font-size:13px;
+    z-index:3; text-shadow:0 1px 3px rgba(0,0,0,.55)}   /* the slot whose club your golfer shows off */
   .shop-empty{grid-column:1/-1; text-align:center; padding:26px 10px; color:var(--muted)}
 
   /* ---- footer ---- */
@@ -5603,6 +5605,13 @@ function reconcileCoins(silent){ if(!sbSignedIn()) return 0; const s=coinState()
   const earned=Math.max(0, Math.max(0, e-s.baseline-(s.forfeit||0)) + (s.bonus||0));
   if((s.spent||0) > earned){ s.spent=earned; changed=true; }
   const before=Object.keys(s.owned).length; grantMilestoneItems(s); grantUnlockShirts(s); if(Object.keys(s.owned).length!==before) changed=true;
+  // Hybrids retired (owner): refund any owned hybrid bag tiers ONCE (hybRef flag rides mergeCoins - and
+  // bonus is MAX-merged - so a stale device union can never stack a second refund; post-flag, stray keys
+  // are just deleted).
+  let hybHit=false;
+  for(let t=3;t>=1;t--){ const k='bag:hybrid:'+t; if(s.owned[k]){ delete s.owned[k]; hybHit=true;
+    if(!s.hybRef) s.bonus=(s.bonus||0)+bagPrice(t); } }
+  if(hybHit){ if(!s.hybRef) s.hybRef=1; changed=true; }
   if(changed) coinSave(s);
   if(gain>0 && !silent && !_coinsSuppressToast) coinToast(gain);
   return gain;
@@ -5806,7 +5815,6 @@ function cosmeticBoost(){ const o={}; cosmeticBoostRows().forEach(r=>{ for(const
 const BAG_CLUBS=[
   {k:'driver', name:'Driver',        sub:'off the tee',      ic:'driver', tiers:[{n:'Tour Driver',b:{dist:1}},{n:'Pro Speed Driver',b:{dist:2,acc:-1}},{n:'Signature Driver',b:{dist:3,acc:-2}}]},
   {k:'woods',  name:'Fairway Woods', sub:'off the deck',     ic:'driver', tiers:[{n:'Tour Woods',b:{dist:1}},{n:'Pro Woods',b:{dist:1,app:1}},{n:'Signature Woods',b:{app:2,dist:-1}}]},
-  {k:'hybrid', name:'Hybrids',       sub:'long approaches',  ic:'driver', tiers:[{n:'Tour Hybrids',b:{app:1}},{n:'Pro Hybrids',b:{app:2}},{n:'Signature Hybrids',b:{app:2,scr:1}}]},
   {k:'irons',  name:'Irons',         sub:'the scoring clubs',ic:'driver', tiers:[{n:'Tour Irons',b:{app:1}},{n:'Pro Blades',b:{app:3,scr:-2}},{n:'Signature Irons',b:{app:3,acc:1,scr:-2}}]},
   {k:'wedges', name:'Wedges',        sub:'the short game',   ic:'driver', tiers:[{n:'Tour Wedges',b:{sht:1}},{n:'Pro Wedges',b:{sht:2,bnk:1}},{n:'Signature Wedges',b:{sht:3,bnk:2,dist:-1}}]},
   {k:'putter', name:'Putter',        sub:'on the greens',    ic:'putter', tiers:[{n:'Tour Putter',b:{put:1}},{n:'Pro Putter',b:{put:2}},{n:'Signature Putter',b:{put:3,clu:-1}}]}
@@ -5814,28 +5822,36 @@ const BAG_CLUBS=[
 const BAG_TIER_PRICE=[7500,27500,75000];   // Tour / Pro / Signature (bagPrice x2 hike -> 15k/55k/150k; CS464 direct-buy premium, packs are the main path). [0]<9000 keeps tier-1 pool rarity = common.
 const BAG_TIER_LABEL=['Tour','Pro','Signature'];
 // which cosmetic club LOOKS belong under each club group on the store's Clubs page
-const BAG_COS_CLUBS={ driver:['driver','persimmon','excalibur'], woods:['wood'], hybrid:[],
+// (Hybrids retired per owner - the bag is Driver / Fairway Woods / Irons / Wedges / Putter)
+const BAG_COS_CLUBS={ driver:['driver','persimmon','excalibur'], woods:['wood'],
   irons:['iron'], wedges:['wedge'], putter:['putter','blade','wand','hockey','scepter','candycane'] };
 // ---- YOUR BAG: each club look belongs to a bag SLOT; you equip one look per slot (the closet's Clubs
 // menu). look.clubs = {slot:lookId}; look.club stays "the club your standing golfer holds" (last equipped).
 const CLUB_SLOT_OF={ driver:'driver', persimmon:'driver', excalibur:'driver', wood:'woods',
   iron:'irons', wedge:'wedges', putter:'putter', blade:'putter', wand:'putter', hockey:'putter',
   scepter:'putter', candycane:'putter' };
-const BAG_SLOT_STOCK={driver:'driver',woods:'wood',hybrid:null,irons:'iron',wedges:'wedge',putter:'putter'};
+const BAG_SLOT_STOCK={driver:'driver',woods:'wood',irons:'iron',wedges:'wedge',putter:'putter'};
 function bagSlotLooks(){ const L=S.look||{}; let m=L.clubs;
   if(!m||typeof m!=='object'){ m=Object.assign({},BAG_SLOT_STOCK);   // migrate: the held club settles into its slot
     const held=L.club, sl=held&&CLUB_SLOT_OF[held]; if(sl) m[sl]=held; L.clubs=m; }
   return m; }
 function bagSlotLook(slot){ const m=bagSlotLooks(); return m[slot]||BAG_SLOT_STOCK[slot]; }
-function bagEquipLook(slot,id){ if(!S.look) return; const m=bagSlotLooks(); m[slot]=id; S.look.clubs=m; S.look.club=id; saveLook(); }
+// FAVORITE club (owner): any slot can be your favorite - its equipped look is the club your profile
+// golfer shows off (look.club). Equipping a look only moves the shown club when it lands in the
+// favorite's own slot; the star control moves the favorite.
+function bagFavSlot(){ const f=S.look&&S.look.club; return (f&&CLUB_SLOT_OF[f])||'driver'; }
+function bagSetFavorite(slot){ if(!S.look) return; S.look.club=bagSlotLook(slot); saveLook(); }
+function bagEquipLook(slot,id){ if(!S.look) return; const m=bagSlotLooks(); m[slot]=id; S.look.clubs=m;
+  if(bagFavSlot()===slot) S.look.club=id;   // the shown club follows only its favorite slot
+  saveLook(); }
 // each boost tier gets its own finish so every tier club LOOKS unique: Tour = brushed steel,
-// Pro = stealth carbon with an accent (teal on hybrids so woods/hybrids read apart), Signature = gold
-const BAG_SHAPE={driver:'driver',woods:'wood',hybrid:'wood',irons:'iron',wedges:'wedge',putter:'putter'};
+// Pro = stealth carbon with a red accent, Signature = gold
+const BAG_SHAPE={driver:'driver',woods:'wood',irons:'iron',wedges:'wedge',putter:'putter'};
 const BAG_TIER_PAL=[
   {G:'#6f7884',H:'#c7cdd6',F:'#e8ebf0',S:'#f4f7fa',l:'#c9ced6'},
   {G:'#14171c',H:'#e14a33',F:'#3d434d',S:'#e14a33',l:'#9aa2ad'},
   {G:'#8a6a12',H:'#ffe98a',F:'#f2d24a',S:'#fff2c2',l:'#d9c26a'} ];
-const BAG_TIER_ACC={hybrid:'#35d6a0'};
+const BAG_TIER_ACC={};   // per-club accent glints (none currently - hybrids retired)
 const BAG_BY={}; BAG_CLUBS.forEach(c=>BAG_BY[c.k]=c);
 function bagKey(club,tier){ return 'bag:'+club+':'+tier; }
 function bagTierOwned(club){ const own=coinState().owned; for(let t=3;t>=1;t--){ if(own[bagKey(club,t)]) return t; } return 0; }
@@ -7843,10 +7859,10 @@ function pxClubThumb(id){ const map=PXG_CLUBS[id]||PXG_CLUBS.driver; const pal=P
   for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ const c=(pal&&pal[row[x]])||P[row[x]]; if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
   return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
 // boost-tier club thumbnail: the club group's own head shape rendered in that tier's unique finish
-// (Tour steel / Pro carbon+accent / Signature gold; hybrids get a teal Pro accent) - 18 distinct looks.
+// (Tour steel / Pro carbon+red / Signature gold) - 15 distinct looks across the 5 club groups.
 function pxBagThumb(club,tier){ const map=PXG_CLUBS[BAG_SHAPE[club]]||PXG_CLUBS.driver;
   const pal=Object.assign({g:PXG_FIX.g},BAG_TIER_PAL[tier-1]||BAG_TIER_PAL[0]);
-  if(BAG_TIER_ACC[club]){ pal.S=BAG_TIER_ACC[club]; if(tier===2) pal.H=BAG_TIER_ACC[club]; }   // hybrids: teal glint every tier so all 18 tiles are unique
+  if(BAG_TIER_ACC[club]){ pal.S=BAG_TIER_ACC[club]; if(tier===2) pal.H=BAG_TIER_ACC[club]; }   // optional per-club accent glint
   const ox=31,oy=39,W=14,H=18,px=5; const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
   for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
   return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
@@ -7909,13 +7925,14 @@ function bagMenuNode(){
   if(!sel){
     wrap.appendChild($(`<div class="small muted" style="margin-bottom:8px">Your bag · tap a club slot to open it.</div>`));
     const grid=$(`<div class="sgrid"></div>`);
+    const favSlot=bagFavSlot();
     grid.innerHTML=BAG_CLUBS.map(c=>{
       const lookId=bagSlotLook(c.k);
       const lookO=lookId?(cosmeticItems('club')||[]).find(o=>o.id===lookId):null;
       const t=bagActiveTier(c.k), own=bagTierOwned(c.k);
       const thumb=lookId?pxClubThumb(lookId):pxBagThumb(c.k,Math.max(1,own||1));
       const tierTxt=t>0?`<span style="color:#41dea6">${esc(c.tiers[t-1].n)}</span>`:`<span style="opacity:.65">Stock${own>0?' (boost off)':' · no boost'}</span>`;
-      return shopTile({thumb,name:c.name,noFoot:true,
+      return shopTile({thumb,name:c.name,noFoot:true,cls:favSlot===c.k?'fav':'',
         sub:`${lookO?esc(lookO.name):'—'} · ${tierTxt} <span style="color:var(--gold)">▸</span>`,
         data:`data-bagslot="${c.k}"`});
     }).join('');
@@ -7928,6 +7945,13 @@ function bagMenuNode(){
   back.onclick=()=>{ S.bagSlot=null; render(); };
   wrap.appendChild(back);
   wrap.appendChild($(`<div style="font:800 14px/1.3 var(--body);margin-bottom:8px"><span style="color:var(--gold)">${esc(c.name)}</span> <span class="muted" style="font-weight:600">· ${esc(c.sub)}</span></div>`));
+  // FAVORITE: this slot's equipped look is the club your profile golfer shows off
+  {
+    const fav=bagFavSlot()===sel;
+    const favBtn=$(`<button class="btn ${fav?'goldsel':'ghost'}" style="margin:0 0 10px;padding:10px 12px;font-size:14px">${fav?'★ Favorite club':'☆ Make favorite'}<span class="sub">${fav?"Shown in your golfer's hands on your profile":"Your profile golfer will hold this club"}</span></button>`);
+    favBtn.onclick=()=>{ if(!fav){ bagSetFavorite(sel); toast('★ Your golfer now shows off the '+c.name.toLowerCase()); } render(); };
+    wrap.appendChild(favBtn);
+  }
   // PERFORMANCE: pick which owned upgrade is ACTIVE (or run Stock to dodge a tradeoff) - build any boost
   // engine you want. Tiles: Stock + every tier you own; the active one wears the gold ✓.
   if(own>0){
@@ -11496,14 +11520,23 @@ function accBoostSummaryNode(){
   }
   const total=order.reduce((a,k)=>a+b[k],0);
   let raw=0; clubs.concat(worn).forEach(r=>{ for(const k in r.b) raw+=r.b[k]; });
-  node.appendChild($(`<div class="small" style="margin-bottom:6px"><b style="color:var(--gold)">Active boosts</b> · <b style="color:${total>=0?'#41dea6':'#e2554e'}">${total>=0?'+':''}${total}</b> total${raw>total?' <span class="muted">(capped at +'+ACC_TOTAL_CAP+' · pick your engine)</span>':''}, applied in Career · Daily &amp; ranked online stay neutral</div>`));
-  const rowTxt=r=>`<b style="color:var(--oncard)">${esc(r.name)}</b> ${shopBoostTxt(r.b)}`;
-  if(clubs.length) node.appendChild($(`<div class="small" style="margin:3px 0;line-height:1.6"><span style="color:var(--gold);font-weight:800;letter-spacing:.04em">CLUBS</span> · ${clubs.map(rowTxt).join(' <span class="muted">·</span> ')}</div>`));
-  if(worn.length) node.appendChild($(`<div class="small" style="margin:3px 0;line-height:1.6"><span style="color:var(--gold);font-weight:800;letter-spacing:.04em">APPAREL</span> · ${worn.map(rowTxt).join(' <span class="muted">·</span> ')}</div>`));
+  // compact summary (owner: "way too much reading"): one line + the per-skill chips; the per-item
+  // breakdown lives behind a details expander.
+  node.appendChild($(`<div class="small" style="margin-bottom:6px"><b style="color:var(--gold)">Active boosts</b> · <b style="color:${total>=0?'#41dea6':'#e2554e'}">${total>=0?'+':''}${total}</b> total <span class="muted">·${raw>total?' capped at +'+ACC_TOTAL_CAP+' ·':''} Career only</span></div>`));
   if(order.length){
-    const chips=$(`<div class="boostchips" style="margin-top:5px"></div>`);
+    const chips=$(`<div class="boostchips" style="margin-top:2px"></div>`);
     order.forEach(k=>{ const v=b[k]; chips.appendChild($(`<span class="boostchip" style="${v<0?'color:#e2554e;border-color:rgba(226,85,78,.4)':''}">${v>=0?'+':''}${v} ${esc(CATS.find(c=>c.k===k).short)}</span>`)); });
     node.appendChild(chips);
+  }
+  if(clubs.length||worn.length){
+    const det=$(`<details style="margin-top:7px"><summary class="small" style="cursor:pointer;color:var(--gold);font-weight:700;list-style:none">What's boosting you ▾</summary></details>`);
+    det.open=!!S.boostDetOpen; det.addEventListener('toggle',()=>{ S.boostDetOpen=det.open; });
+    const inner=$(`<div style="padding-top:4px"></div>`);
+    const rowTxt=r=>`<b style="color:var(--oncard)">${esc(r.name)}</b> ${shopBoostTxt(r.b)}`;
+    if(clubs.length) inner.appendChild($(`<div class="small" style="margin:3px 0;line-height:1.6"><span style="color:var(--gold);font-weight:800;letter-spacing:.04em">CLUBS</span> · ${clubs.map(rowTxt).join(' <span class="muted">·</span> ')}</div>`));
+    if(worn.length) inner.appendChild($(`<div class="small" style="margin:3px 0;line-height:1.6"><span style="color:var(--gold);font-weight:800;letter-spacing:.04em">APPAREL</span> · ${worn.map(rowTxt).join(' <span class="muted">·</span> ')}</div>`));
+    inner.appendChild($(`<div class="small muted" style="margin-top:3px">Boosts apply in Career · the Daily &amp; ranked online stay neutral.</div>`));
+    det.appendChild(inner); node.appendChild(det);
   }
   return node;
 }
@@ -22994,7 +23027,7 @@ function mergeCoins(local, server){ const d={spent:0,seen:0,owned:{}};
   if(le!==se){ return Object.assign({}, le>se?l:s); }
   return {epoch:le, baseline:Math.max(l.baseline||0,s.baseline||0), spent:Math.max(l.spent||0,s.spent||0),
     forfeit:Math.max(l.forfeit||0,s.forfeit||0), bonus:Math.max(l.bonus||0,s.bonus||0), seen:Math.max(l.seen||0,s.seen||0),
-    grantV:Math.max(l.grantV||0,s.grantV||0), owned:Object.assign({}, l.owned||{}, s.owned||{})}; }   // CS459: carry the one-time coin-grant flag across devices
+    grantV:Math.max(l.grantV||0,s.grantV||0), hybRef:Math.max(l.hybRef||0,s.hybRef||0), owned:Object.assign({}, l.owned||{}, s.owned||{})}; }   // CS459: carry the one-time coin-grant flag across devices; hybRef = one-time hybrid-retirement refund flag
 // XP: monotonic - xp/mulliEarned/mulliSpent all merge by MAX (grow-only, correct cross-device).
 function mergeXp(local, server){
   const l=(local&&typeof local==='object')?local:{}, s=(server&&typeof server==='object')?server:{};
