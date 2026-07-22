@@ -833,6 +833,7 @@ window.GA_ID='G-L29P5MRWKE';
      and works on any avatar img (the wrapped .pximg and the bare .pxfigsm). --fxc = per-effect glow color. */
   .pxfig .pximg[class*="fx-"], .pxfigsm[class*="fx-"], img.fxa[class*="fx-"]{ animation:fxGlow 2.4s ease-in-out infinite; }
   .fx-gold{ --fxc:#f1d04a } .fx-frost{ --fxc:#9fdcff; animation-duration:3.2s } .fx-void{ --fxc:#8a54d0; animation-duration:2.8s }
+  .fx-emerald{ --fxc:#35d6a0; animation-duration:3s } .fx-crimson{ --fxc:#ff5a4d; animation-duration:2.6s } .fx-sapphire{ --fxc:#4aa3ff; animation-duration:3.1s }
   .fx-prism{ animation:fxPrism 3s linear infinite } .fx-inferno{ --fxc:#ff5a1e; animation:fxFlick 1.1s steps(6,end) infinite } .fx-electric{ --fxc:#35e0ff; animation:fxCrackle .9s ease-in-out infinite }
   @keyframes fxGlow{ 0%,100%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 2px var(--fxc))} 50%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 9px var(--fxc)) drop-shadow(0 0 4px var(--fxc))} }
   @keyframes fxPrism{ 0%,100%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 9px #ff4d6d) drop-shadow(0 0 4px #ff4d6d)} 33%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 9px #4dff9b) drop-shadow(0 0 4px #4dff9b)} 66%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 9px #4d9dff) drop-shadow(0 0 4px #4d9dff)} }
@@ -1689,6 +1690,18 @@ window.GA_ID='G-L29P5MRWKE';
   .stile.own{border-color:#3fbf7a; background:rgba(63,191,122,.13)}   /* owned = green (store shows what you own) */
   .stile.own.noeq{cursor:default}
   .stile.lock{opacity:.94}
+  /* rarity flourish (look pass): epic = a soft violet sheen, legendary = an animated gold-foil sweep + glow,
+     so the top of the catalog reads premium right on the tile. Overlays never block taps (pointer-events:none). */
+  .stile.r-epic{border-color:rgba(176,107,224,.55); box-shadow:0 0 14px -6px rgba(176,107,224,.55)}
+  .stile.r-legendary{border-color:rgba(241,208,74,.65); box-shadow:0 0 16px -5px rgba(241,208,74,.6)}
+  .stile.r-legendary::after{content:''; position:absolute; inset:0; border-radius:12px; pointer-events:none;
+    background:linear-gradient(115deg,transparent 32%,rgba(255,244,190,.28) 46%,rgba(255,255,255,.16) 50%,transparent 62%);
+    background-size:280% 100%; animation:foilSweep 3.4s ease-in-out infinite}
+  .stile.r-epic::after{content:''; position:absolute; inset:0; border-radius:12px; pointer-events:none;
+    background:linear-gradient(115deg,transparent 36%,rgba(214,170,255,.16) 50%,transparent 64%);
+    background-size:280% 100%; animation:foilSweep 4.6s ease-in-out infinite}
+  @keyframes foilSweep{ 0%{background-position:120% 0} 55%{background-position:-60% 0} 100%{background-position:-60% 0} }
+  @media (prefers-reduced-motion:reduce){ .stile.r-legendary::after,.stile.r-epic::after{animation:none; background:none} }
   .sthumb{width:48px; height:48px; border-radius:11px; display:flex; align-items:center; justify-content:center;
     background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.12); overflow:hidden; flex:0 0 auto}
   .sthumb.color{border-width:2px}
@@ -2133,6 +2146,13 @@ const COSMETIC_SHIRTS=[
   {id:'hogangrey',  m:'#6b7682', s:'#545d67', name:'Heritage Gray',     req:m=>m.majors>=3,       reqText:'Win 3 major championships, Hogan grey'},
   {id:'bronze',     m:'#b5763a', s:'#92602e', name:'Bronze',         req:m=>m.wins>=3,         reqText:'Win 3 tournaments'},
   {id:'linkssky',   m:'#38a8d8', s:'#2c87ad', name:'Links Sky',      req:()=>repAtLeast('Star'), reqText:'Reach Tour Rep: Star'},
+  // Shelf-fill premium colors (economy pass): pure Pro Shop buys (req always true, no achievement gate),
+  // priced up the rarity ladder via `base` so shirts + hats finally have a rare/epic/legendary chase.
+  {id:'royalblue',  m:'#2b4fd8', s:'#2340ad', name:'Royal Blue',     base:12000, req:()=>true, reqText:'Pro Shop'},
+  {id:'seafoam',    m:'#57d6b2', s:'#43b494', name:'Seafoam',        base:12000, req:()=>true, reqText:'Pro Shop'},
+  {id:'crimsonvel', m:'#8e1f3a', s:'#701731', name:'Crimson Velvet', base:16000, req:()=>true, reqText:'Pro Shop'},
+  {id:'midnight',   m:'#101a33', s:'#0a1224', name:'Midnight',       base:16000, req:()=>true, reqText:'Pro Shop'},
+  {id:'champagne',  m:'#f3e3c0', s:'#dbc79c', name:'Champagne',      base:30000, req:()=>true, reqText:'Pro Shop'},
   // Legend gear: EARNED, never bought (earn:true -> price 0, auto-granted when the req is met). The hardest
   // grinds in the game, so they carry the biggest boosts. Two ride the new season-leader counters.
   {id:'puttwiz',    m:'#6b3fa0', s:'#4e2d78', name:"Putting Wizard's Robe", earn:true, req:m=>(m.puttLeaderSeasons||0)>=250, reqText:'Lead the Tour in putting for 250 seasons'},
@@ -5097,6 +5117,11 @@ const PANTS=[
   {id:'khaki',a:'#b39a68', b:'#9c854f'},
   {id:'red',  a:'#b3413a', b:'#8f322d'},
   {id:'green',a:'#3f6b45', b:'#315538'},
+  // shelf-fill premium colors (rare/epic/legendary via the price map below)
+  {id:'royal',a:'#2b4fd8', b:'#2340ad'},
+  {id:'wine', a:'#7a2440', b:'#611c33'},
+  {id:'gold', a:'#d4af37', b:'#b4922c'},
+  {id:'royalpurple',a:'#5d2ea6', b:'#4a2487'},
 ];
 const SHOES=[
   {id:'white',a:'#eef0ee'},
@@ -5105,6 +5130,11 @@ const SHOES=[
   {id:'grey', a:'#9aa0a8'},
   {id:'red',  a:'#c23b34'},
   {id:'tan',  a:'#c6b189'},
+  // shelf-fill premium colors (rare/epic/legendary via the price map below)
+  {id:'pink', a:'#e05a92'},
+  {id:'orange',a:'#d8721f'},
+  {id:'gold', a:'#d4af37'},
+  {id:'crimson',a:'#a01830'},
 ];
 function shoeCol(id){ return (SHOES.find(x=>x.id===id)||SHOES[0]).a; }
 // hair shades, dark → light, each tuned to read distinctly on the painted sideburns/fringe
@@ -5323,7 +5353,11 @@ const SHOP_ENABLED=true;   // CS186: re-enabled with a rebalanced economy (0-coi
 const COIN_START=300;                       // welcome coins (baked into the reset baseline, so post-reset everyone starts at 0)
 const COIN_RATE=0.6;                         // Pro Shop relaunch: earned coins (above the welcome start) run ~40% slower, so the good gear is a real grind
 const COIN_EPOCH=2;                          // bump to re-baseline every account's spendable coins to 0 at the new rate (owned gear/cosmetics are PRESERVED across the bump)
-const ACC_SKILL_CAP=10, ACC_TOTAL_CAP=80;    // Pro Shop relaunch: +10 hard cap on any single stat (from all gear combined). No total governor to start (80 = effectively off).
+// Economy coherence pass: gear is a meaningful EDGE, never a second draft. Live boosts come from worn
+// cosmetics + the golf bag (~+18 gross max today, with real tradeoffs); these caps are the safety governor
+// so future item additions can never stack into a wallet win: any single stat +6 max, whole loadout +28 max
+// (the trim loop in accBoost shaves the largest boosts first when a cap binds).
+const ACC_SKILL_CAP=6, ACC_TOTAL_CAP=28;
 const ACC_BOOST_SCALE=1;                      // full-strength catalog boosts (owner: bring the boosts back)
 // CS408 — ONE coherent direct-buy price ladder by RARITY, applied to every pack-poolable item (cosmetics +
 // accessories), so a "rare" costs the same whether it's a hat or a driver. CS464: direct-buy is a STEEP
@@ -5332,8 +5366,14 @@ const ACC_BOOST_SCALE=1;                      // full-strength catalog boosts (o
 // These are the final coin prices (no separate hike - PACKS_ENABLED is permanent). Clubs cost a touch more.
 const RARITY_PRICE={common:15000, rare:45000, epic:110000, legendary:275000};
 function itemRarityPrice(rar,isClub){ return Math.round((RARITY_PRICE[rar]||RARITY_PRICE.common)*(isClub?1.2:1)); }
+// POWER carries a premium over PRESTIGE: an item's price scales with its stat boost (+15% of the rarity base
+// per boost point), so a +6-boost legendary costs ~1.9x a purely-cosmetic legendary. Cosmetics keep the flat
+// rarity ladder (style stays reachable); boost gear is the long grind. Rounded to 500s for clean display.
+const BOOST_PREMIUM=0.15;
+function boostPoints(it){ const b=accItemBoost(it); let n=0; for(const k in b) n+=b[k]; return n; }
 function accPrice(it){ if(!it||it.rarity==='exclusive') return 0;
-  return itemRarityPrice(it.rarity, it.slot==='driver'||it.slot==='putter'); }
+  const base=itemRarityPrice(it.rarity, it.slot==='driver'||it.slot==='putter');
+  return Math.round(base*(1+BOOST_PREMIUM*boostPoints(it))/500)*500; }
 // display + gameplay boost for an item, scaled down from the catalog value (min +1 on any listed skill)
 function accItemBoost(it){ const o={}; if(it&&it.boost) for(const k in it.boost) o[k]=Math.max(1,Math.floor(it.boost[k]*ACC_BOOST_SCALE)); return o; }
 const ACC_RARITY={ common:{c:'#b8c4bd',label:'Common'}, rare:{c:'#4aa3ff',label:'Rare'},
@@ -5564,7 +5604,11 @@ const PXFX=[
   {id:'inferno',  name:'Inferno',     hist:'Playing with fire',         price:30000, col:'#ff5a1e', tracer:{g:'rgba(255,90,30,.6)',    c:'#ffd8a0'}},
   {id:'electric', name:'Electric',    hist:'Live wire',                 price:18000, col:'#35e0ff', tracer:{g:'rgba(53,224,255,.6)',   c:'#eaffff'}},
   {id:'frost',    name:'Frost',       hist:'Ice cold under pressure',   price:18000, col:'#9fdcff', tracer:{g:'rgba(159,220,255,.55)', c:'#f0fbff'}},
-  {id:'void',     name:'Void',        hist:'Embrace the dark',          price:18000, col:'#8a54d0', tracer:{g:'rgba(138,84,208,.55)',  c:'#e3d6ff'}} ];
+  {id:'void',     name:'Void',        hist:'Embrace the dark',          price:18000, col:'#8a54d0', tracer:{g:'rgba(138,84,208,.55)',  c:'#e3d6ff'}},
+  // entry-tier auras (economy pass: effects finally have an affordable first rung)
+  {id:'emerald',  name:'Emerald Aura', hist:'Fresh off the fairway',    price:12000, col:'#35d6a0', tracer:{g:'rgba(53,214,160,.55)',  c:'#d9fff0'}},
+  {id:'crimson',  name:'Crimson Aura', hist:'Sunday charge energy',     price:12000, col:'#ff5a4d', tracer:{g:'rgba(255,90,77,.55)',   c:'#ffe0dc'}},
+  {id:'sapphire', name:'Sapphire Aura',hist:'Cool as the deep blue',    price:12000, col:'#4aa3ff', tracer:{g:'rgba(74,163,255,.55)',  c:'#e0efff'}} ];
 const PXFX_BY={}; PXFX.forEach(function(f){ PXFX_BY[f.id]=f; });
 function fxOf(look){ var id=(look&&look.fx)||'none'; return (id&&id!=='none'&&PXFX_BY[id])?PXFX_BY[id]:null; }
 function pxFxClass(look){ var f=fxOf(look); return f?(' fx-'+f.id):''; }
@@ -5603,12 +5647,11 @@ function cosKey(cat,id){ return cosPk(cat)+':'+id; }
 // path. priceHike()==1 while PACKS_ENABLED is false, so live prices are unchanged today. Pack RARITY
 // is computed from the BASE (pre-hike) price via *Base(), so the tiers never shift when the hike flips.
 function cosmeticPriceBase(cat,id){
-  if(cat==='shirt'){ const cs=COSMETIC_SHIRTS.find(s=>s.id===id); return cs?(cs.earn?0:12000):4000; }   // basic 4k, special/lore 12k, Legend (earn) 0
-
+  if(cat==='shirt'){ const cs=COSMETIC_SHIRTS.find(s=>s.id===id); return cs?(cs.earn?0:(cs.base||12000)):4000; }   // basic 4k, special/lore 12k, premium colors carry their own base (epic/legendary), Legend (earn) 0
   if(cat==='pat')   return (typeof PXPAT_BY!=='undefined'&&PXPAT_BY[id])?PXPAT_BY[id].price:0;
-  if(cat==='hat')   return 4000;
-  if(cat==='pants') return 4000;
-  if(cat==='shoes') return 4000;
+  if(cat==='hat'){ const cs=COSMETIC_SHIRTS.find(s=>s.id===id); return cs?(cs.earn?0:(cs.base||12000)):4000; }   // hat colors share the shirt color list + ladder
+  if(cat==='pants') return {royal:12000,wine:12000,gold:16000,royalpurple:30000}[id]||4000;
+  if(cat==='shoes') return {pink:12000,orange:12000,gold:16000,crimson:30000}[id]||4000;
   if(cat==='hw'){ if(id==='cap'||id==='visor'||id==='none') return 0; return {bucket:11000,flat:11000,headband:6000,cowboy:14000,tophat:16000,party:9000,propeller:12000,wizard:20000,crown:30000,beanie:8000,fedora:15000,sombrero:13000,halo:40000,viking:22000,chef:10000,beret:9000,headphones:18000,flatbrim:11000,santa:12000,safari:13000,tweed:16000,straw:16000,laurel:30000,backwards:12000,pirate:20000,grad:13000}[id]||12000; }   // CS411 tweed/straw = epic · CS418 laurel legendary
   if(cat==='ew'){ if(id==='none') return 0; return {shades:10000,heart:9000,star:12000,threed:8000,monocle:15000,aviators:12000,round:9000,goggles:11000,eyepatch:10000,visorband:8000,prismshades:30000}[id]||10000; }   // CS418 prism shades legendary
   if(cat==='fx'){ if(id==='none') return 0; return (PXFX_BY[id]?PXFX_BY[id].price:0); }   // CS410: effect auras (epic/legendary)
@@ -5621,7 +5664,12 @@ function cosmeticPriceBase(cat,id){
 }
 // CS408: cosmeticPriceBase still SELECTS the rarity (via packRarityOf, so pool rarities never shift); the
 // actual coin price comes from the shared RARITY_PRICE ladder. Free/earned items (base<=0) stay free.
-function cosmeticPrice(cat,id){ const base=cosmeticPriceBase(cat,id); if(base<=0) return 0; return itemRarityPrice(packRarityOf(base),false); }
+// Economy pass: a boost-carrying cosmetic (headwear/eyewear gear boosts) pays the SAME +15%/point premium as
+// accPrice - priced on its NET positive boost (a downside offsets), so the Halo (+7 net) costs ~1.9x a
+// purely-cosmetic legendary color while style stays on the flat ladder.
+function cosmeticPrice(cat,id){ const base=cosmeticPriceBase(cat,id); if(base<=0) return 0;
+  let pts=0; try{ const bb=cosBoost(cat,id); if(bb){ for(const k in bb) pts+=bb[k]; } }catch(e){} pts=Math.max(0,pts);
+  return Math.round(itemRarityPrice(packRarityOf(base),false)*(1+BOOST_PREMIUM*pts)/500)*500; }
 function cosOwned(cat,id){ const k=cosKey(cat,id); return !!FREE_COSMETICS[k] || !!coinState().owned[k]; }
 // CS422: "NEW" tracking — an item is NEW if it's been acquired (in coinState.owned, i.e. bought/pulled/earned)
 // but not yet VIEWED in the customizer. `bag_seenitems` is local (a badge, not critical data); it's seeded on
@@ -5735,7 +5783,8 @@ function cosmeticItems(cat){
   if(cat==='cleats') return [{id:'none',name:'None',cleats:1},{id:'saddle',name:'Saddle Shoes',cleats:1,hist:'Classic two-tone clubhouse style'},{id:'sunday',name:'Sunday Kicks',cleats:1,hist:'Fresh sneakers for the final round'},{id:'neon',name:'Neon Trainers',cleats:1,hist:'Loud on the fairway'},{id:'golden',name:'Golden Spikes',cleats:1,hist:'Walk the walk'},{id:'rocket',name:'Rocket Cleats',cleats:1,hist:'Blast off the tee box'}];   // CS414
   return [];
 }
-function cosTitle(id){ if(id==='grey') return 'Gray'; return String(id).charAt(0).toUpperCase()+String(id).slice(1); }
+function cosTitle(id){ const M={grey:'Gray', royal:'Royal Blue', wine:'Wine', royalpurple:'Royal Purple', crimson:'Crimson', gold:'Gold', pink:'Pink', orange:'Orange'};
+  if(M[id]) return M[id]; return String(id).charAt(0).toUpperCase()+String(id).slice(1); }
 // grandfather a returning player's currently-worn look so the shop launch doesn't strip it (once, on sign-in)
 function grandfatherLook(){ if(!sbSignedIn()||!S.look) return; const s=coinState(); let ch=false;
   const own=(cat,id)=>{ if(id==null) return; const k=cosKey(cat,id); if(!FREE_COSMETICS[k]&&!s.owned[k]){ s.owned[k]=1; ch=true; } };
@@ -6229,7 +6278,7 @@ function scrRules(){
 
   perkSection('🎴 Packs','var(--gold)','Open packs, spin the wheel',null,[
     ['🟢','Three tiers','Base, Tour and Champion packs, each pricier with better odds at rare and legendary items. The drop-rate odds for every rarity are published right on the pack screen.'],
-    ['🎡','Wheel-spin reveal','Opening a pack spins a wheel that lands on your item. Duplicates are refunded as coins.'],
+    ['🎡','Wheel-spin reveal','Opening a pack spins a wheel that lands on your item. Duplicates refund coins AND earn shards — collect enough shards of a rarity to redeem ANY item of that rarity in the shop.'],
     ['🎁','Lots of free packs','Your first pack is on us, weekly challenges and daily streaks hand out free packs, invite a friend and you both get one, and a 5-pack bundle saves you a pack\'s worth of coins.'],
     ['🛡️','No bad-luck streaks','Pity timers guarantee an epic-or-better and a legendary within a set number of opens, and they hit sooner on the higher tiers.'],
   ]);
@@ -10429,6 +10478,10 @@ const PXPAT=[
  {id:'waves',      name:'Waves',             price:14000, hist:'Seaside links',            f:(x,y)=> ((y+Math.round(Math.sin(x*0.7)*2))%5<2)?1:0 },
  {id:'leopard',    name:'Leopard Print',     price:18000, hist:'Wild on the fairway',      fixed:true, cols:['#d1a049','#8a5a22','#241305'], f:(x,y)=>{ const cs=4.2; const row=Math.floor(y/cs); const ox=(row%2)*(cs/2); const gx=Math.floor((x+ox)/cs), gy=row; if((gx*7+gy*11)%5===0) return 0; const cxp=gx*cs-ox+cs/2, cyp=gy*cs+cs/2; const d=Math.hypot((x-cxp)*1.05,(y-cyp))+Math.sin((x+y)*1.7)*0.35; return d<1.05?2:(d<1.95?1:0); } },
  {id:'confetti',   name:'Confetti',          price:15000, hist:'Champion celebration',     f:(x,y)=> { const t=(x*11+y*7)%13; return t<1?2:(t<3?1:0); } },
+ // --- shelf-fill LEGENDARY/epic fixed patterns (economy pass: patterns finally get a real top-end chase) ---
+ {id:'galaxy',     name:'Galaxy',            price:30000, hist:'Wear the night sky',       fixed:true, cols:['#101a33','#26315e','#7a8fe0','#f0f4ff'], f:(x,y)=>{ const h=((x*73856093)^(y*19349663))>>>0; const st=h%97; if(st<2) return 3; if(st<5) return 2; const n=Math.sin(x*0.42+y*0.31)+Math.sin((x-y)*0.23); return n>0.9?1:0; } },
+ {id:'moneyprint', name:'Money Print',       price:30000, hist:'Dressed like the purse',   fixed:true, cols:['#2f6b3f','#245430','#cfe3bd'], f:(x,y)=>{ const bx=x%11, by=y%7; if(by===0||bx===0) return 1; const dx=bx-5.5, dy=by-3.5; return (Math.hypot(dx*0.8,dy)<1.6)?2:0; } },
+ {id:'stormbolt',  name:'Storm Bolt',        price:18000, hist:'Struck by lightning',      fixed:true, cols:['#343b4a','#232837','#f1d04a'], f:(x,y)=>{ const p=(x+((y*3)%7)-Math.floor(y/3)*2+56)%14; if(p<1.6) return 2; const n=Math.sin(x*0.5)+Math.cos(y*0.4); return n>0.8?1:0; } },
  // --- catalog expansion: more distinct procedural patterns ---
  {id:'vstripe',    name:'Vertical Stripe',   price:9000,  hist:'Bold vertical bands',      f:(x,y)=> (Math.floor(x/3)%2===0)?1:0 },
  {id:'chevron',    name:'Chevron',           price:13000, hist:'Sharp zig chevrons',       f:(x,y)=> (Math.abs(((x+y)%8)-4)<1 || Math.abs(((x-y+40)%8)-4)<1)?1:0 },
@@ -21330,7 +21383,7 @@ function shopTile(o){
   else if(o.state==='eq') foot=`<span class="sfoot eqf">Equipped</span>`;
   else if(o.state==='own') foot=`<span class="sfoot own">Owned</span>`;
   else foot=`<span class="sfoot price${o.afford?'':' no'}"><span style="width:12px;height:12px">${ic('coin',{size:'12px'})}</span>${coinFmt(o.price||0)}</span>`;
-  return `<button class="stile ${o.state}${o.cls?' '+o.cls:''}" ${o.data||''}>`
+  return `<button class="stile ${o.state}${o.cls?' '+o.cls:''}${(o.rar==='epic'||o.rar==='legendary')?' r-'+o.rar:''}" ${o.data||''}>`
     +(o.rarColor?`<span class="srar" style="background:${o.rarColor}"></span>`:'')
     +(o.isNew?`<span style="position:absolute;top:4px;left:4px;background:#e2554e;color:#fff;font:800 8px/1 var(--body);letter-spacing:.05em;padding:2px 4px;border-radius:4px;z-index:3;box-shadow:0 1px 3px rgba(0,0,0,.4)">NEW</span>`:'')
     +(o.state==='eq'?`<span class="sbadge">✓</span>`:'')
@@ -21339,21 +21392,48 @@ function shopTile(o){
     +(o.sub?`<span class="sfoot" style="color:#8fe0c4;font-size:9.5px">${o.sub}</span>`:'')
     +foot+`</button>`;
 }
+// the rarity of the previewed item (drives the shard-redeem path; bag clubs are a tier ladder, no redeem)
+function shopPreviewRarity(pv){ try{
+    if(pv.kind==='cos') return packRarityOf(cosmeticPriceBase(pv.cat,pv.id));
+    if(pv.kind==='acc'){ const it=ACC_BY_ID[pv.id]; return (it&&SHARD_COST[it.rarity])?it.rarity:null; }
+  }catch(e){} return null; }
+// redeem the previewed item with dupe shards instead of coins (the deterministic pity path)
+function shopRedeemShards(){ const pv=S.shopPreview; if(!pv||!sbSignedIn()) return;
+  const r=shopPreviewRarity(pv); if(!r) return;
+  if(!shardSpend(r,SHARD_COST[r])){ toast('Not enough shards'); return; }
+  const s=coinState();
+  if(pv.kind==='cos'){ s.owned[cosKey(pv.cat,pv.id)]=1; coinSave(s); try{ cosEquip(pv.cat,pv.id); }catch(e){} }
+  else { s.owned[pv.id]=1; coinSave(s); try{ accEquip(pv.id); }catch(e){} }
+  S.shopPreview=null; toast('◆ Redeemed with shards & equipped!'); try{ track('shard_redeem',{rarity:r}); }catch(e){} render(); }
 // the preview+confirm card for a pending shop purchase (shared by the Pro Shop + the setup screen).
 function shopPreviewNode(){ const pv=S.shopPreview; if(!pv) return $(`<span></span>`);
   const bal=coinBalance(), afford=bal>=pv.price, after=Math.max(0,bal-pv.price);
+  const rar=shopPreviewRarity(pv), shN=rar?shardBal(rar):0, shNeed=rar?SHARD_COST[rar]:0, canShard=rar&&shN>=shNeed;
+  // look pass: the confirm card doubles as the item DETAIL view - rarity chip + lore line + boost chips
+  let lore='', boostTxt='';
+  try{ if(pv.kind==='cos'){ const it=(cosmeticItems(pv.cat)||[]).find(x=>x.id===pv.id); lore=(it&&it.hist)||'';
+      const bt=cosBoost(pv.cat,pv.id); boostTxt=bt?shopBoostTxt(bt):''; }
+    else if(pv.kind==='acc'){ const it=ACC_BY_ID[pv.id]; lore=(it&&it.desc)||''; const bt=it?accItemBoost(it):null; boostTxt=bt?shopBoostTxt(bt):''; } }catch(e){}
+  const rarChip=rar?`<span style="display:inline-block;margin-top:6px;padding:3px 11px;border-radius:999px;border:1px solid ${ACC_RARITY[rar].c};color:${ACC_RARITY[rar].c};font:800 10.5px/1 var(--body);letter-spacing:.14em;text-transform:uppercase">${ACC_RARITY[rar].label}</span>`:'';
   const card=$(`<div style="max-width:520px;margin:14px auto 0;padding:18px 16px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(241,208,74,.14),rgba(241,208,74,.03));text-align:center">
     <div style="font:800 11px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">Confirm purchase</div>
     <div style="font-family:var(--display);font-size:22px;color:var(--oncard);margin-top:6px">${esc(pv.name)}</div>
+    ${rarChip}
+    ${lore?`<div class="small" style="margin-top:6px;color:#bcd3c6;font-style:italic">“${esc(lore)}”</div>`:''}
+    ${boostTxt?`<div class="small" style="margin-top:5px;color:#8fe0c4;font-weight:800">${boostTxt}</div>`:''}
     <div style="display:inline-flex;align-items:center;gap:6px;margin-top:7px;font-weight:800;font-size:19px;color:var(--gold)"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(pv.price)}</div>
     <div class="small muted" style="margin-top:5px">Balance ${coinFmt(bal)} &rarr; <b style="color:${afford?'#35d6a0':'#e2554e'}">${coinFmt(after)}</b> after</div>
     <div class="small" style="margin-top:8px;color:#8fe0c4">Previewing on your golfer above &mdash; nothing is spent until you buy.</div>
+    ${rar&&shN>0?`<div class="small" style="margin-top:7px;color:${ACC_RARITY[rar].c}">◆ You have ${shN}/${shNeed} ${ACC_RARITY[rar].label} shards${canShard?'':' — dupes from packs earn more'}</div>`:''}
     <div style="display:flex;gap:10px;margin-top:14px">
       <button class="btn ghost" id="pv-cancel" style="flex:1;margin:0">Cancel</button>
       <button class="btn goldfill" id="pv-buy" style="flex:1;margin:0" ${afford?'':'disabled'}>${afford?'Buy':'Not enough coins'}</button>
-    </div></div>`);
+    </div>
+    ${canShard?`<button class="btn teal" id="pv-shard" style="margin-top:10px">◆ Redeem with ${shNeed} ${ACC_RARITY[rar].label} shards<span class="sub">No coins spent — shards come from duplicate pack pulls</span></button>`:''}
+    </div>`);
   card.querySelector('#pv-cancel').onclick=()=>{ S.shopPreview=null; render(); };
   const buyb=card.querySelector('#pv-buy'); if(buyb&&afford) buyb.onclick=shopConfirmBuy;
+  const shb=card.querySelector('#pv-shard'); if(shb) shb.onclick=shopRedeemShards;
   return card;
 }
 // CS356g: crop a pixel-golfer data-URL to a band (24 sprite rows, starting at startRow) filling a box.
@@ -21391,14 +21471,15 @@ function cosTileHTML(cat,o){
     return shopTile({thumb,name:o.name,state:'lock',noFoot:true,sub,data:`data-tile data-kind="cos-req" data-req="${esc(csE.reqText)}"`});
   }
   const bsub=bt?shopBoostTxt(bt):undefined;
+  const rar=(function(){ try{ const b=cosmeticPriceBase(cat,o.id); return b>0?packRarityOf(b):null; }catch(e){ return null; } })();   // look pass: epic/legendary tiles get the foil flourish
   if(inShopStore()){   // STORE: buy only. Owned → green "Owned", not clickable. Locked → preview + buy.
-    if(owned) return shopTile({thumb,name:o.name,state:'own',sub:bsub,cls:'noeq'});
-    return shopTile({thumb,name:o.name,state:'lock',price,afford:coinBalance()>=price,sub:bsub,isNew:cosIsNew(cat,o.id),
+    if(owned) return shopTile({thumb,name:o.name,state:'own',sub:bsub,cls:'noeq',rar});
+    return shopTile({thumb,name:o.name,state:'lock',price,afford:coinBalance()>=price,sub:bsub,isNew:cosIsNew(cat,o.id),rar,
       data:`data-tile data-kind="cos" data-cat="${cat}" data-id="${esc(o.id)}"`});
   }
   // LOCKER (setup): equip only. Equipped → gold, owned → green; tap to equip.
   const state = equipped?'eq':(owned?'own':'lock');
-  return shopTile({thumb,name:o.name,state,price,afford:coinBalance()>=price,sub:bsub,isNew:cosIsNew(cat,o.id),
+  return shopTile({thumb,name:o.name,state,price,afford:coinBalance()>=price,sub:bsub,isNew:cosIsNew(cat,o.id),rar,
     data:`data-tile data-kind="cos" data-cat="${cat}" data-id="${esc(o.id)}"`});
 }
 function accTileHTML(it){
@@ -21410,7 +21491,7 @@ function accTileHTML(it){
   if(equipped){ state='eq'; data=`data-tile data-kind="acc-uneq" data-slot="${it.slot}"`; }
   else if(owned){ state='own'; data=`data-tile data-kind="acc-eq" data-id="${it.id}"`; }
   else { state='lock'; data=excl?`data-tile`:`data-tile data-kind="acc-buy" data-id="${it.id}"`; }
-  return shopTile({thumb,name:it.name,sub:boost,state,price:excl?0:price,afford:coinBalance()>=price,rarColor:r.c,data});
+  return shopTile({thumb,name:it.name,sub:boost,state,price:excl?0:price,afford:coinBalance()>=price,rarColor:r.c,rar:it.rarity,data});
 }
 function shopTileClick(b){
   const kind=b.getAttribute('data-kind'); if(!kind) return;
@@ -21558,6 +21639,19 @@ function packSave(p){ LS.set(acctKey('bag_packs'),p); if(typeof cloudPush==='fun
 // earned/spent counters so a cloud merge (max/max) can never resurrect a spent credit. credits = earned - spent.
 // CS407: credits are now per-TIER (base / tour / champ), so a streak reward can grant a specific-tier pack.
 function packCreditFields(tier){ return tier==='tour'?['tourEarned','tourSpent']:tier==='champ'?['champEarned','champSpent']:['packEarned','packSpent']; }
+/* ---- DUPE SHARDS (pack endgame): every duplicate pull grants 1 shard of its rarity ON TOP of the coin
+   refund. Collect SHARD_COST[r] shards of a rarity and redeem them for ANY item of that rarity (the redeem
+   button lives on the shop confirm card) - a deterministic pity path, so packs never go dead once a player
+   owns most of a tier. Monotonic earned/spent counters (cloud max-merge safe, same pattern as pack credits). ---- */
+const SHARD_COST={common:3, rare:3, epic:4, legendary:5};
+function shardBal(r){ const p=packState(); return Math.max(0,(p['shardE_'+r]||0)-(p['shardS_'+r]||0)); }
+function shardEarn(r,n){ if(!SHARD_COST[r]) return; const p=packState(); p['shardE_'+r]=(p['shardE_'+r]||0)+(n||1); packSave(p); }
+function shardSpend(r,n){ if(!SHARD_COST[r]) return false; const p=packState();
+  if(Math.max(0,(p['shardE_'+r]||0)-(p['shardS_'+r]||0))<(n||1)) return false;
+  p['shardS_'+r]=(p['shardS_'+r]||0)+(n||1); packSave(p); return true; }
+function shardSummaryHTML(){ const parts=PACK_RANK.map(r=>{ const b=shardBal(r); if(!b) return '';
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;border:1px solid ${ACC_RARITY[r].c}66;color:${ACC_RARITY[r].c};font-weight:800;font-size:11.5px">◆ ${b}/${SHARD_COST[r]} ${ACC_RARITY[r].label}</span>`; }).filter(Boolean);
+  return parts.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0 2px">${parts.join('')}</div>`:''; }
 function packCredits(tier){ var f=packCreditFields(tier||'base'), p=packState(); return Math.max(0,(p[f[0]]||0)-(p[f[1]]||0)); }
 function grantFreePack(n,opts){ opts=opts||{}; n=n||1; if(!packsOn()||!sbSignedIn()||!(n>0)) return 0;
   var f=packCreditFields(opts.tier||'base'), p=packState(); p[f[0]]=(p[f[0]]||0)+n; packSave(p);
@@ -21592,7 +21686,7 @@ function openPack(){
   var item=pickPackItem(rar); if(!item){ packSave(p); return {err:'empty'}; }
   packSave(p);
   var dupe=packOwns(item), refund=0;
-  if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); }
+  if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); try{shardEarn(item.rarity,1);}catch(e){} }
   else packGrant(item);
   try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind}); }catch(e){}
   return {item:item, rarity:item.rarity, dupe:dupe, refund:refund};
@@ -21615,7 +21709,7 @@ function rollPackWin(tier){
   var item=pickPackItem(rar); if(!item){ packSave(p); return {err:'empty'}; }
   packSave(p);
   var dupe=packOwns(item), refund=0;
-  if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); }
+  if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); try{shardEarn(item.rarity,1);}catch(e){} }
   else packGrant(item);
   try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind,via:'wheel',pack:pt.id}); }catch(e){}
   if(S.packBundle){ S.packBundle.done=(S.packBundle.done||0)+1; (S.packBundle.results=S.packBundle.results||[]).push({item:item,dupe:dupe,refund:refund}); }
@@ -21679,7 +21773,7 @@ function pickPackCard(idx){
   else { p.sinceEpic++; p.sinceLeg++; }
   packSave(p);
   var dupe=packOwns(item), refund=0;
-  if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); }
+  if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); try{shardEarn(item.rarity,1);}catch(e){} }
   else packGrant(item);
   try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind}); }catch(e){}
   d.chosen=idx; d.dupe=dupe; d.refund=refund;
@@ -21819,7 +21913,7 @@ function overlayPackWheel(app){
       return;
     }
     var item=win.item;
-    footer.appendChild($('<div style="font:800 15px var(--body);color:'+(win.dupe?'#ffd45e':'#35d6a0')+'">'+(win.dupe?('Duplicate · +'+coinFmt(win.refund)+' coins'):('LANDED: '+esc(item.name)+'!'))+'</div>'));
+    footer.appendChild($('<div style="font:800 15px var(--body);color:'+(win.dupe?'#ffd45e':'#35d6a0')+'">'+(win.dupe?('Duplicate · +'+coinFmt(win.refund)+' coins · ◆ +1 '+win.rarity+' shard ('+shardBal(win.rarity)+'/'+SHARD_COST[win.rarity]+')'):('LANDED: '+esc(item.name)+'!'))+'</div>'));
     var btns=$('<div class="packbtns"></div>');
     if((item.kind==='cos'||item.kind==='acc') && !win.dupe){ var eb=$('<button class="btn goldfill">Equip</button>'); eb.onclick=function(){ packEquip(item); toast('Equipped!'); }; btns.appendChild(eb); }
     if(S.packBundle && (S.packBundle.done||0) < S.packBundle.total){
@@ -22000,7 +22094,7 @@ function packShopNode(){
     PACK_TIER_ORDER.forEach(function(id){ var pt=packType(id); var v=(pt.odds.find(function(o){return o[0]===r;})||[0,0])[1]; tbl+='<div style="text-align:center;color:'+rc+'">'+Math.round(v*100)+'%</div>'; });
   });
   tbl+='</div>';
-  odds.innerHTML=tbl+'<div class="small muted" style="text-align:center;margin-top:10px;line-height:1.5">Every pull is a fresh random roll from the full locker. A duplicate refunds coins ('+PACK_RANK.map(function(r){return coinFmt(PACK_DUPE_REFUND[r]);}).join(' / ')+' by rarity).</div>';
+  odds.innerHTML=tbl+'<div class="small muted" style="text-align:center;margin-top:10px;line-height:1.5">Every pull is a fresh random roll from the full locker. A duplicate refunds coins ('+PACK_RANK.map(function(r){return coinFmt(PACK_DUPE_REFUND[r]);}).join(' / ')+' by rarity) <b style="color:#8fe0c4">plus 1 shard of its rarity</b> — collect '+PACK_RANK.map(function(r){return SHARD_COST[r];}).join('/')+' shards (by rarity) and redeem them in the shop for ANY item of that rarity.</div>'+shardSummaryHTML();
   wrap.appendChild(odds);
   return wrap;
 }
@@ -22736,11 +22830,14 @@ function mergePacks(local, server){
   const s=(server&&typeof server==='object')?server:{opened:0,sinceEpic:0,sinceLeg:0,freeUsed:false};
   const base=((l.opened||0)>=(s.opened||0))?l:s;
   // CS400: pack credits use monotonic earned/spent counters, so max/max can never resurrect a spent credit.
-  return Object.assign({}, base, {opened:Math.max(l.opened||0,s.opened||0), freeUsed:!!(l.freeUsed||s.freeUsed),
+  const merged=Object.assign({}, base, {opened:Math.max(l.opened||0,s.opened||0), freeUsed:!!(l.freeUsed||s.freeUsed),
     packEarned:Math.max(l.packEarned||0,s.packEarned||0), packSpent:Math.max(l.packSpent||0,s.packSpent||0),
     tourEarned:Math.max(l.tourEarned||0,s.tourEarned||0), tourSpent:Math.max(l.tourSpent||0,s.tourSpent||0),
     champEarned:Math.max(l.champEarned||0,s.champEarned||0), champSpent:Math.max(l.champSpent||0,s.champSpent||0),
     welcomePack:!!(l.welcomePack||s.welcomePack)});
+  // dupe shards: monotonic earned/spent per rarity, max-merged so a spent shard can never resurrect
+  ['common','rare','epic','legendary'].forEach(r=>{ ['shardE_'+r,'shardS_'+r].forEach(k=>{ merged[k]=Math.max(l[k]||0,s[k]||0); }); });
+  return merged;
 }
 // grow-only merge of the course-mastery map: per course keep the LOWEST score, the BEST grade, and the
 // higher play/beat counts, so a merge can only ever restore or improve, never lose, a course's mastery.
