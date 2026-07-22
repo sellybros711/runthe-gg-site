@@ -172,7 +172,9 @@
     }
     const isPass = !['RUN','QB_SNEAK'].includes(a);
     const sack = bucket === 'DISASTER' && isPass && yards < 0 && !turnover;
-    return { bucket, yards, turnover, sack, effectiveSuccessPct: +sr.toFixed(1) };
+    // A pass that falls incomplete (no gain, not a sack) stops the game clock.
+    const incomplete = isPass && bucket === 'FAILURE' && yards <= 0 && !turnover && !sack;
+    return { bucket, yards, turnover, sack, incomplete, effectiveSuccessPct: +sr.toFixed(1) };
   }
 
   /* ---------- 5. GRADE THE CALL, NOT THE OUTCOME ---------------------------
@@ -269,12 +271,17 @@
     // ordinary thing). This is realism AND the surgical anti-spam fix the
     // handoff wanted instead of leaning on the global difficulty knob.
     const tiles = [
-      { id: 'RUN',   title: 'RUN',         emoji: '🏃', play: run,    cap: Infinity },
-      { id: 'SHORT', title: 'SHORT PASS',  emoji: '🎯', play: shortP, cap: Infinity },
-      { id: 'DEEP',  title: 'DEEP SHOT',   emoji: '🏈', play: deep,   cap: 3 },
-      { id: 'PA',    title: 'PLAY ACTION', emoji: '🎭', play: pa,     cap: 3 },
-      { id: 'SNEAK', title: 'QB SNEAK',    emoji: '💪', play: sneak,  cap: 2 },
+      { id: 'RUN',   emoji: '🏃', play: run,    cap: Infinity },
+      { id: 'SHORT', emoji: '🎯', play: shortP, cap: Infinity },
+      { id: 'DEEP',  emoji: '🏈', play: deep,   cap: 3 },
+      { id: 'PA',    emoji: '🎭', play: pa,     cap: 3 },
+      { id: 'SNEAK', emoji: '💪', play: sneak,  cap: 2 },
     ].filter(t => t.play);
+    // Title each tile by the play's REAL archetype so the label never lies about
+    // what it does (e.g. a scheme with no true deep ball shows MID PASS, not DEEP).
+    const TITLE = { RUN:'RUN', QB_SNEAK:'QB SNEAK', QUICK:'QUICK PASS', SCREEN:'SCREEN',
+                    INTERMEDIATE:'MID PASS', DEEP:'DEEP SHOT', PLAY_ACTION:'PLAY ACTION' };
+    tiles.forEach(t => { t.title = TITLE[t.play.archetype] || t.play.archetype; });
     // de-dupe: if two tiles resolved to the same play, keep the first
     const seen = new Set(); const out = [];
     for (const t of tiles) { const k = t.play.name + '|' + t.play.signature;
@@ -353,7 +360,7 @@
       grades.push(grade);
 
       const out = resolvePlay(chosen, def, sit, rng, gp.qualityModifier);
-      clock -= RULES.secPerPlay[isRun ? 'run' : 'pass'];
+      if(!out.incomplete) clock -= RULES.secPerPlay[isRun ? 'run' : 'pass'];   // incompletions stop the clock
 
       const wasDown = down, wasDist = distance, wasYard = yardline;
       const entry = { playNo, down: wasDown, distance: wasDist, yardline: wasYard,
