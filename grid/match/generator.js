@@ -184,12 +184,18 @@
       if (ent.dp === 1) add('pick1', 'No. 1 Overall Picks', 'career', ent);
       if (ent.col) add('col:' + ent.col, 'Played College at ' + ent.col, 'career', ent);
       if (ent.b) add('born:' + ent.b, 'Born in ' + ent.b, 'career', ent);
-      if (ent.pos) add('pos:' + ent.pos, POS_LABEL[ent.pos] || (ent.pos + 's'), 'career', ent);
+      // position codes collide across sports (NBA "C" vs NHL "C") — key by sport
+      if (ent.pos) add('pos:' + ent.sport + ':' + ent.pos, POS_LABEL[ent.pos] || (ent.pos + 's'), 'career', ent);
+      (ent.decade || []).forEach(function (dec) { add('decade:' + dec, 'Played in the ' + dec + 's', 'career', ent); });
+      if (ent.nat) add('nat:' + ent.nat, ent.nat + ' Athletes', 'career', ent);
+      if (ent.hof) add('hof', 'Hall of Famers', 'achievement', ent);
       (ent.aw || []).forEach(function (a) { add('award:' + a, AWARD_LABEL[a] || a, 'achievement', ent); });
       (ent.ml || []).forEach(function (m) { add('mile:' + m, m, 'statistical', ent); });
       var w = deriveWordplay(ent.name);
+      (ent.na || []).forEach(function (c) { add('namealso:' + c, 'Name Is Also a ' + c.charAt(0).toUpperCase() + c.slice(1), 'wordplay', ent); });
       add('surname:' + w.surname, 'Surname: ' + w.surname, 'wordplay', ent);
-      add('initials:' + w.initials, 'Initials: ' + w.initials, 'wordplay', ent);
+      // initials categories are omitted on purpose — "these 5 share initials" isn't
+      // a deducible group, and they crowd out better wordplay.
       if (w.allit) add('allit', 'Alliterative Names', 'wordplay', ent);
     });
     Object.keys(cats).forEach(function (k) {
@@ -212,14 +218,24 @@
 
   function subset(a, b) { var s = {}; b.forEach(function (x) { s[x] = 1; }); return a.every(function (x) { return s[x]; }); }
 
-  // pick 5 categories: >=3 families (<=2 each), >=2 distinct lead sports, no nesting,
-  // limited pairwise overlap so lanes stay distinguishable.
+  // pick 5 categories: >=2 families (<=3 each), >=2 distinct lead sports, no nesting,
+  // limited pairwise overlap so lanes stay distinguishable. Family spread is >=2
+  // (not >=3) because a corpus can be career+wordplay heavy until awards/stats are
+  // filled in; a family cap of 3 keeps a board from being all one family.
+  // career carries the board while achievement/statistical are empty (no awards
+  // yet); wordplay is capped so it's flavor, not a crutch. MIN_FAMILIES rises
+  // back to 2–3 automatically once awards/milestones fill those families in.
+  var FAM_CAP = { wordplay: 2 }, DEFAULT_FAM_CAP = 5, MIN_FAMILIES = 1;
+  var BIG3 = { NFL: 1, NBA: 1, MLB: 1 };
   function pickCategories(cats, rng) {
-    for (var attempt = 0; attempt < 400; attempt++) {
-      var order = shuffle(cats, rng), chosen = [], fams = {};
+    for (var attempt = 0; attempt < 200; attempt++) {
+      var order = shuffle(cats, rng), chosen = [], fams = {}, names = {}, niche = 0;
       for (var i = 0; i < order.length && chosen.length < 5; i++) {
         var c = order[i];
-        if ((fams[c.family] || 0) >= 2) continue;
+        if ((fams[c.family] || 0) >= (FAM_CAP[c.family] || DEFAULT_FAM_CAP)) continue;
+        if (names[c.name]) continue;                                  // no two lanes with the same label
+        var isNiche = c.sport !== 'multi' && !BIG3[c.sport];
+        if (isNiche && niche >= 1) continue;                          // keep boards NFL/NBA/MLB-forward
         var bad = chosen.some(function (o) {
           if (subset(o.members, c.members) || subset(c.members, o.members)) return true; // nesting
           var os = {}; o.members.forEach(function (x) { os[x] = 1; });
@@ -227,10 +243,11 @@
           return overlap > 3; // near-duplicate lanes
         });
         if (bad) continue;
-        chosen.push(c); fams[c.family] = (fams[c.family] || 0) + 1;
+        chosen.push(c); fams[c.family] = (fams[c.family] || 0) + 1; names[c.name] = 1;
+        if (isNiche) niche++;
       }
       if (chosen.length < 5) continue;
-      if (Object.keys(fams).length < 3) continue;
+      if (Object.keys(fams).length < MIN_FAMILIES) continue;
       var lead = {}; chosen.forEach(function (c) { if (c.sport !== 'multi') lead[c.sport] = 1; });
       if (Object.keys(lead).length < 2) continue;
       return chosen;
@@ -238,19 +255,24 @@
     return null;
   }
 
-  // choose 5 disjoint entities per category (an SDR), preferring recognizable names
+  // choose 5 disjoint entities per category (an SDR), preferring recognizable names.
+  // A step budget aborts pathological backtracking (big overlapping pools) so
+  // buildFromDB can just resample instead of hanging.
   function assignBoard(chosen, rng, entMap) {
     var cats = chosen.slice().sort(function (a, b) { return a.members.length - b.members.length; });
-    var used = {}, sol = {};
+    var used = {}, sol = {}, budget = 40000;
     function fame(id) { return (entMap[id] || {}).f || 3; }
     function pick(i) {
       if (i === cats.length) return true;
       var c = cats[i];
       var avail = shuffle(c.members.filter(function (id) { return !used[id]; }), rng);
       avail.sort(function (x, y) { return fame(y) - fame(x); });
+      // cap the branching: only the top slice of each pool is ever tried
+      if (avail.length > 14) avail = avail.slice(0, 14);
       return choose(c, avail, 0, [], i);
     }
     function choose(c, avail, start, acc, i) {
+      if (--budget < 0) return false;
       if (acc.length === 5) {
         sol[c.id] = acc.slice();
         if (pick(i + 1)) return true;
@@ -261,6 +283,7 @@
         acc.push(id); used[id] = 1;
         if (choose(c, avail, k + 1, acc, i)) return true;
         acc.pop(); delete used[id];
+        if (budget < 0) return false;
       }
       return false;
     }
