@@ -5841,8 +5841,17 @@ const BAG_BY={}; BAG_CLUBS.forEach(c=>BAG_BY[c.k]=c);
 function bagKey(club,tier){ return 'bag:'+club+':'+tier; }
 function bagTierOwned(club){ const own=coinState().owned; for(let t=3;t>=1;t--){ if(own[bagKey(club,t)]) return t; } return 0; }
 function bagPrice(tier){ return Math.round((BAG_TIER_PRICE[tier-1]||0)*priceHike()); }
+// the ACTIVE tier per club is the player's CHOICE (owner: build any boost engine you want) - run any
+// owned tier, or Stock (0, no boost) to dodge a tradeoff. Stored on look.bagTiers (cloud-synced with the
+// rest of identity); undefined = your best owned tier (the old default), and a synced choice above what
+// this device owns clamps down safely.
+function bagActiveTier(club){ const own=bagTierOwned(club); if(own<=0) return 0;
+  const m=(S.look&&S.look.bagTiers)||{}; const v=m[club];
+  if(v===undefined||v===null) return own;
+  return Math.max(0, Math.min(own, v|0)); }
+function bagSetActiveTier(club,tier){ if(!S.look) return; const m=S.look.bagTiers||(S.look.bagTiers={}); m[club]=tier|0; saveLook(); }
 function bagBoostRows(){ const rows=[]; if(!SHOP_ENABLED) return rows;
-  BAG_CLUBS.forEach(c=>{ const t=bagTierOwned(c.k); if(t>0) rows.push({club:c.k,name:c.tiers[t-1].n,b:c.tiers[t-1].b}); }); return rows; }
+  BAG_CLUBS.forEach(c=>{ const t=bagActiveTier(c.k); if(t>0) rows.push({club:c.k,name:c.tiers[t-1].n,b:c.tiers[t-1].b}); }); return rows; }
 function bagBoost(){ const o={}; bagBoostRows().forEach(r=>{ for(const k in r.b) o[k]=(o[k]||0)+r.b[k]; }); return o; }
 function bagBuy(club,tier){ const c=BAG_BY[club]; tier=+tier; if(!c||tier<1||tier>3) return {ok:false,msg:'Unknown club'};
   if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy clubs'};
@@ -5854,7 +5863,7 @@ function bagBuy(club,tier){ const c=BAG_BY[club]; tier=+tier; if(!c||tier<1||tie
   return {ok:true};
 }
 function bagTileHTML(club,tier){ const c=BAG_BY[club]; const ti=c.tiers[tier-1]; const own=bagTierOwned(club);
-  const active=(own===tier), owned=(own>=tier), price=bagPrice(tier), needPrev=(tier>1&&own<tier-1);
+  const active=(bagActiveTier(club)===tier), owned=(own>=tier), price=bagPrice(tier), needPrev=(tier>1&&own<tier-1);   // active = the tier the player CHOSE to run
   const thumb=pxBagThumb(club,tier);   // each tier club has its own unique pixel look
   let state,data;
   if(active){ state='eq'; data=''; }
@@ -7904,9 +7913,9 @@ function bagMenuNode(){
     grid.innerHTML=BAG_CLUBS.map(c=>{
       const lookId=bagSlotLook(c.k);
       const lookO=lookId?(cosmeticItems('club')||[]).find(o=>o.id===lookId):null;
-      const t=bagTierOwned(c.k);
-      const thumb=lookId?pxClubThumb(lookId):pxBagThumb(c.k,Math.max(1,t));
-      const tierTxt=t>0?`<span style="color:#41dea6">${esc(c.tiers[t-1].n)}</span>`:`<span style="opacity:.65">Stock · no boost</span>`;
+      const t=bagActiveTier(c.k), own=bagTierOwned(c.k);
+      const thumb=lookId?pxClubThumb(lookId):pxBagThumb(c.k,Math.max(1,own||1));
+      const tierTxt=t>0?`<span style="color:#41dea6">${esc(c.tiers[t-1].n)}</span>`:`<span style="opacity:.65">Stock${own>0?' (boost off)':' · no boost'}</span>`;
       return shopTile({thumb,name:c.name,noFoot:true,
         sub:`${lookO?esc(lookO.name):'—'} · ${tierTxt} <span style="color:var(--gold)">▸</span>`,
         data:`data-bagslot="${c.k}"`});
@@ -7915,14 +7924,26 @@ function bagMenuNode(){
     grid.querySelectorAll('[data-bagslot]').forEach(x=>x.onclick=()=>{ S.bagSlot=x.getAttribute('data-bagslot'); render(); });
     return wrap;
   }
-  const c=BAG_BY[sel], t=bagTierOwned(sel);
+  const c=BAG_BY[sel], own=bagTierOwned(sel), act=bagActiveTier(sel);
   const back=$(`<button class="btn ghost" style="margin:2px 0 10px">‹ All club slots</button>`);
   back.onclick=()=>{ S.bagSlot=null; render(); };
   wrap.appendChild(back);
   wrap.appendChild($(`<div style="font:800 14px/1.3 var(--body);margin-bottom:8px"><span style="color:var(--gold)">${esc(c.name)}</span> <span class="muted" style="font-weight:600">· ${esc(c.sub)}</span></div>`));
-  wrap.appendChild($(`<div class="scout" style="margin:0 0 12px">${t>0
-    ? `<b style="color:#41dea6">${esc(c.tiers[t-1].n)}</b> <span class="small">· ${shopBoostTxt(c.tiers[t-1].b)} · your best owned upgrade, always active in Career</span>`
-    : `<b>Stock ${esc(c.name)}</b> <span class="small muted">· no boost yet, upgrades in the Pro Shop add stats</span>`}</div>`));
+  // PERFORMANCE: pick which owned upgrade is ACTIVE (or run Stock to dodge a tradeoff) - build any boost
+  // engine you want. Tiles: Stock + every tier you own; the active one wears the gold ✓.
+  if(own>0){
+    wrap.appendChild($(`<div class="small muted" style="margin:2px 0 6px;text-transform:uppercase;letter-spacing:.07em;font-size:10.5px">Performance · choose your active upgrade</div>`));
+    const pgrid=$(`<div class="sgrid"></div>`);
+    let pt=[shopTile({thumb:pxBagThumb(sel,1),name:'Stock',noFoot:true,state:act===0?'eq':'own',
+      sub:'<span style="opacity:.75">No boost · no tradeoffs</span>',data:`data-bagtier="0"`})];
+    for(let ti=1;ti<=own;ti++){ pt.push(shopTile({thumb:pxBagThumb(sel,ti),name:c.tiers[ti-1].n,noFoot:true,state:act===ti?'eq':'own',
+      sub:shopBoostTxt(c.tiers[ti-1].b),data:`data-bagtier="${ti}"`})); }
+    pgrid.innerHTML=pt.join('');
+    wrap.appendChild(pgrid);
+    pgrid.querySelectorAll('[data-bagtier]').forEach(x=>x.onclick=()=>{ bagSetActiveTier(sel, +x.getAttribute('data-bagtier')); render(); });
+  } else {
+    wrap.appendChild($(`<div class="scout" style="margin:0 0 12px"><b>Stock ${esc(c.name)}</b> <span class="small muted">· no boost yet, upgrades in the Pro Shop add stats</span></div>`));
+  }
   const looks=(BAG_COS_CLUBS[sel]||[]).map(id=>(cosmeticItems('club')||[]).find(o=>o.id===id)).filter(o=>o&&cosOwned('club',o.id));
   if(looks.length){
     wrap.appendChild($(`<div class="small muted" style="margin:2px 0 6px;text-transform:uppercase;letter-spacing:.07em;font-size:10.5px">Equip a look · your golfer holds it</div>`));
