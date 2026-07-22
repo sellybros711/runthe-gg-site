@@ -608,9 +608,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js"></script>
-<script src="playbook.js"></script>
-<script src="engine.js"></script>
+<script src="drive_generator.js?v=20260722b"></script>
+<script src="playbook.js?v=20260722b"></script>
+<script src="engine.js?v=20260722b"></script>
 <script>
 (function(){
   'use strict';
@@ -1312,7 +1312,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     el('gameScreen').classList.add('hidden');
     el('matchupScreen').classList.remove('hidden');
     setChrome(true);
-    renderOpponent(DATE);
+    try { renderOpponent(DATE); }
+    catch(e){ console.error('renderOpponent failed', e);
+      el('oppCard').innerHTML = '<div class="name"><span class="em">🛡️</span><div><div class="who">TODAY’S DEFENSE</div><div class="k">Scouting unavailable — read the box and play the down.</div></div></div>'; }
     renderSchemes();
     // reflect whether today's daily is already done
     const played = STORE.history[DATE]!==undefined;
