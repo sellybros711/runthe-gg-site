@@ -236,8 +236,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   transform:translate(-50%,-100%) rotateX(-36deg); transform-origin:50% 100%; z-index:7;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.6));}
 .h-td{position:absolute; left:50%; top:40%; transform:translate(-50%,-50%) scale(.82); font-family:var(--pix);
-  font-size:21px; color:#ffcf4d; opacity:0; z-index:9; letter-spacing:1px;
-  text-shadow:0 0 12px rgba(255,180,40,.6), 0 3px 0 rgba(0,0,0,.7);
+  font-size:18px; color:#ffcf4d; opacity:0; z-index:9; letter-spacing:1px; white-space:nowrap;
+  text-shadow:0 2px 0 rgba(0,0,0,.75), 0 0 10px rgba(0,0,0,.5);
   transition:opacity .22s ease, transform .22s ease;}
 .h-td.show{opacity:1; transform:translate(-50%,-50%) scale(1.08);}
 @media (prefers-reduced-motion: reduce){ .h-td{opacity:1;} }
@@ -1362,51 +1362,138 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       d.style.fontSize=fs+'px'; d.textContent=n; frag.appendChild(d); } }
     plane.appendChild(frag);
 
-    // formation routes (plane %: y=100 near camera, y=0 far goal; offense drives UP)
-    const movers=[]; const add=(cls,r)=>{ const c=document.createElement('span'); c.className='hchip '+cls;
-      c.innerHTML=MAN_SVG; plane.appendChild(c); movers.push({el:c,r}); return c; };
-    // Everything stays in frame (y 11%..64%). LOS ~52%. Offense drives UP toward the goal.
-    // O-LINE — step up to meet the rush and HOLD the block (little shove at the line).
-    [39,45,51,57,63].forEach((x,i)=> add('off',[{t:0,x,y:55},{t:.12,x,y:52},{t:.3,x:x+(i%2?0.6:-0.6),y:52.5},{t:.6,x,y:52},{t:1,x,y:52.5}]));
-    // QB — snap, short drop, throw, subtle step-up. Never leaves the screen.
-    add('off qb',[{t:0,x:51,y:60},{t:.12,x:51,y:63},{t:.34,x:51,y:63},{t:.44,x:52,y:62},{t:1,x:52,y:62}]);
-    // RB — stays in to help on the blitz (pass protection), then leaks out a touch.
-    add('off',[{t:0,x:44,y:63},{t:.2,x:46,y:59},{t:.5,x:45,y:58},{t:1,x:46,y:58}]);
-    // WR-L — go route up the field, kept safely on screen.
-    add('off',[{t:0,x:24,y:52},{t:.5,x:20,y:30},{t:1,x:18,y:13}]);
-    // TE — seam/drag.
-    add('off',[{t:0,x:63,y:53},{t:.5,x:56,y:38},{t:1,x:50,y:28}]);
-    // WR-R — the TD receiver: stem, break to the post, into the end zone.
-    const wrRoute=[{t:0,x:76,y:52},{t:.34,x:72,y:36},{t:.5,x:68,y:28},{t:.72,x:58,y:12},{t:1,x:58,y:12}];
-    add('off',wrRoute);
-    // D-LINE — BLITZ: fire off the ball into the O-line and get held up at the line.
-    add('def',[{t:0,x:43,y:47},{t:.14,x:44,y:50},{t:.34,x:44,y:51.5},{t:1,x:44,y:51.5}]);
-    add('def',[{t:0,x:51,y:47},{t:.14,x:51,y:50},{t:.34,x:51,y:51.5},{t:1,x:51,y:51.5}]);
-    add('def',[{t:0,x:59,y:47},{t:.14,x:58,y:50},{t:.34,x:58,y:51.5},{t:1,x:58,y:51.5}]);
-    // EDGE BLITZERS — loop around the tackles and pressure the QB (stop just short so he stays in view).
-    add('def',[{t:0,x:36,y:48},{t:.2,x:42,y:53},{t:.4,x:46,y:57},{t:1,x:47,y:58}]);
-    add('def',[{t:0,x:66,y:48},{t:.2,x:60,y:53},{t:.42,x:56,y:57},{t:1,x:56,y:58}]);
-    // LB — one shows blitz up the middle, one drops to carry the TE.
-    add('def',[{t:0,x:47,y:42},{t:.24,x:49,y:51},{t:.4,x:50,y:56},{t:1,x:50,y:57}]);
-    add('def',[{t:0,x:57,y:42},{t:.5,x:54,y:36},{t:1,x:51,y:27}]);
-    // CB / CB / S — cover the two WRs and the deep post, trailing the play.
-    add('def',[{t:0,x:27,y:38},{t:.5,x:22,y:30},{t:1,x:19,y:15}]);
-    add('def',[{t:0,x:79,y:38},{t:.4,x:74,y:32},{t:.72,x:60,y:13},{t:1,x:60,y:13}]);
-    add('def',[{t:0,x:50,y:24},{t:.5,x:54,y:19},{t:.72,x:56,y:12},{t:1,x:56,y:12}]);
+    // ---- a rotation of plays the attract loop cycles through (routes + outcome vary) ----
+    // plane %: y=100 near camera, y=0 far goal; offense drives UP. Everyone stays in frame (y 11..64).
+    const M=(c,...r)=>({c,r});
+    const OLpass=()=>[39,45,51,57,63].map((x,i)=>M('off',{t:0,x,y:55},{t:.12,x,y:52},{t:.3,x:x+(i%2?.6:-.6),y:52.5},{t:.6,x,y:52},{t:1,x,y:52.5}));
+    const OLrun=(sh)=>[39,45,51,57,63].map((x,i)=>M('off',{t:0,x,y:55},{t:.14,x,y:52},{t:.5,x:x+sh*.5,y:48},{t:1,x:x+sh,y:46}));
+    const DLhold=()=>[[43,44],[51,51],[59,58]].map(([a,b])=>M('def',{t:0,x:a,y:47},{t:.14,x:b,y:50},{t:.34,x:b,y:51.5},{t:1,x:b,y:51.5}));
+    const DLrun=()=>[43,51,59].map(x=>M('def',{t:0,x,y:47},{t:.2,x,y:50},{t:.5,x,y:52.5},{t:1,x,y:53.5}));
+    const edge=()=>[M('def',{t:0,x:36,y:48},{t:.2,x:42,y:53},{t:.4,x:46,y:57},{t:1,x:47,y:58}),
+                    M('def',{t:0,x:66,y:48},{t:.2,x:60,y:53},{t:.42,x:56,y:57},{t:1,x:56,y:58})];
+    const flight=(x0,y0,x1,y1,t0,t1)=>t=>t<t0?{x:x0,y:y0}:t<t1?{x:lerp(x0,x1,(t-t0)/(t1-t0)),y:lerp(y0,y1,(t-t0)/(t1-t0))}:null;
+    const along=(rt,hideFrom,hideTo)=>t=>{const p=sampleRoute(rt,t);return{x:p.x,y:p.y,hide:hideFrom!=null&&t>hideFrom&&t<hideTo};};
 
-    const ball=document.createElement('div'); ball.className='h-ball'; plane.appendChild(ball);
+    const PLAYS=(()=>{
+      // -- 1) FOUR VERTS → deep post TD --
+      const wrPost=[{t:0,x:76,y:52},{t:.34,x:72,y:36},{t:.5,x:68,y:28},{t:.72,x:58,y:12},{t:1,x:58,y:12}];
+      const p1={off:[...OLpass(),
+        M('off qb',{t:0,x:51,y:60},{t:.12,x:51,y:63},{t:.34,x:51,y:63},{t:.44,x:52,y:62},{t:1,x:52,y:62}),
+        M('off',{t:0,x:45,y:63},{t:.2,x:46,y:59},{t:1,x:46,y:58}),
+        M('off',{t:0,x:24,y:52},{t:.5,x:20,y:30},{t:1,x:18,y:13}),
+        M('off',{t:0,x:63,y:53},{t:.5,x:56,y:38},{t:1,x:50,y:28}),
+        M('off',...wrPost)],
+        def:[...DLhold(),...edge(),
+        M('def',{t:0,x:47,y:42},{t:.24,x:49,y:51},{t:.4,x:50,y:57},{t:1,x:50,y:57}),
+        M('def',{t:0,x:57,y:42},{t:.5,x:54,y:36},{t:1,x:51,y:27}),
+        M('def',{t:0,x:27,y:38},{t:.5,x:22,y:30},{t:1,x:19,y:15}),
+        M('def',{t:0,x:79,y:38},{t:.4,x:74,y:32},{t:.72,x:60,y:13},{t:1,x:60,y:13}),
+        M('def',{t:0,x:50,y:24},{t:.5,x:54,y:19},{t:.72,x:56,y:12},{t:1,x:56,y:12})],
+        ball:t=>flight(51,62,68,28,.34,.5)(t)||along(wrPost)(t),
+        res:{at:.72,until:.9,text:'TOUCHDOWN!',color:'#ffcf4d'}};
+
+      // -- 2) INSIDE ZONE → big gain (no TD) --
+      const rbIn=[{t:0,x:46,y:63},{t:.12,x:49,y:60},{t:.3,x:48,y:52},{t:.5,x:51,y:42},{t:.72,x:50,y:30},{t:.86,x:50,y:26},{t:1,x:50,y:26}];
+      const p2={off:[...OLrun(0),
+        M('off qb',{t:0,x:51,y:60},{t:.1,x:49,y:61},{t:.18,x:47,y:61},{t:1,x:47,y:61}),
+        M('off',...rbIn),
+        M('off',{t:0,x:24,y:52},{t:.5,x:22,y:34},{t:1,x:20,y:20}),
+        M('off',{t:0,x:63,y:53},{t:.5,x:58,y:40},{t:1,x:55,y:26})],
+        def:[...DLrun(),
+        M('def',{t:0,x:47,y:44},{t:.4,x:49,y:40},{t:.7,x:50,y:30},{t:1,x:50,y:26}),
+        M('def',{t:0,x:57,y:44},{t:.4,x:54,y:40},{t:1,x:52,y:30}),
+        M('def',{t:0,x:27,y:38},{t:.6,x:24,y:28},{t:1,x:22,y:20}),
+        M('def',{t:0,x:79,y:38},{t:.6,x:70,y:30},{t:1,x:56,y:26}),
+        M('def',{t:0,x:50,y:24},{t:.7,x:50,y:26},{t:1,x:50,y:26})],
+        ball:along(rbIn,.22,.95),
+        res:{at:.8,until:.95,text:'BIG GAIN +19',color:'#7bd67e'}};
+
+      // -- 3) BUBBLE SCREEN → short gain --
+      const wrScr=[{t:0,x:26,y:54},{t:.24,x:26,y:58},{t:.5,x:24,y:44},{t:.72,x:22,y:34},{t:.9,x:20,y:30},{t:1,x:20,y:30}];
+      const p3={off:[...OLpass(),
+        M('off qb',{t:0,x:51,y:60},{t:.1,x:52,y:62},{t:.2,x:53,y:62},{t:1,x:53,y:62}),
+        M('off',{t:0,x:45,y:63},{t:.3,x:40,y:58},{t:1,x:34,y:52}),
+        M('off',...wrScr),
+        M('off',{t:0,x:70,y:53},{t:.5,x:64,y:44},{t:1,x:60,y:34})],
+        def:[...DLhold(),
+        M('def',{t:0,x:47,y:44},{t:.5,x:44,y:40},{t:1,x:38,y:34}),
+        M('def',{t:0,x:30,y:40},{t:.4,x:28,y:44},{t:.7,x:26,y:40},{t:1,x:24,y:34}),
+        M('def',{t:0,x:60,y:40},{t:.5,x:56,y:36},{t:1,x:50,y:32}),
+        M('def',{t:0,x:79,y:38},{t:.6,x:72,y:32},{t:1,x:64,y:30}),
+        M('def',{t:0,x:50,y:24},{t:.5,x:44,y:24},{t:1,x:36,y:28})],
+        ball:t=>flight(51,61,26,58,.1,.24)(t)||along(wrScr,.4,.95)(t),
+        res:{at:.82,until:.95,text:'+11',color:'#7bd67e'}};
+
+      // -- 4) SWEEP → TD around the edge --
+      const rbSw=[{t:0,x:45,y:63},{t:.14,x:50,y:62},{t:.3,x:58,y:58},{t:.5,x:66,y:44},{t:.72,x:66,y:20},{t:.86,x:64,y:12},{t:1,x:64,y:12}];
+      const p4={off:[...OLrun(4),
+        M('off qb',{t:0,x:51,y:60},{t:.1,x:52,y:61},{t:.2,x:54,y:62},{t:1,x:54,y:62}),
+        M('off',...rbSw),
+        M('off',{t:0,x:76,y:52},{t:.4,x:74,y:34},{t:1,x:70,y:16}),
+        M('off',{t:0,x:24,y:52},{t:.5,x:30,y:40},{t:1,x:40,y:26})],
+        def:[...DLrun(),
+        M('def',{t:0,x:47,y:44},{t:.4,x:54,y:40},{t:.7,x:62,y:30},{t:1,x:66,y:20}),
+        M('def',{t:0,x:57,y:44},{t:.5,x:62,y:38},{t:1,x:66,y:26}),
+        M('def',{t:0,x:79,y:40},{t:.4,x:76,y:34},{t:.72,x:70,y:18},{t:1,x:68,y:14}),
+        M('def',{t:0,x:50,y:24},{t:.5,x:58,y:20},{t:1,x:66,y:16}),
+        M('def',{t:0,x:27,y:40},{t:.6,x:34,y:34},{t:1,x:44,y:26})],
+        ball:along(rbSw,.24,.95),
+        res:{at:.74,until:.9,text:'TOUCHDOWN!',color:'#ffcf4d'}};
+
+      // -- 5) SLANT → first down --
+      const wrSl=[{t:0,x:70,y:52},{t:.3,x:62,y:42},{t:.5,x:56,y:38},{t:.72,x:52,y:33},{t:.9,x:51,y:31},{t:1,x:51,y:31}];
+      const p5={off:[...OLpass(),
+        M('off qb',{t:0,x:51,y:60},{t:.12,x:51,y:62},{t:.24,x:51,y:62},{t:1,x:52,y:62}),
+        M('off',{t:0,x:45,y:63},{t:.2,x:46,y:59},{t:1,x:46,y:58}),
+        M('off',{t:0,x:24,y:52},{t:.5,x:22,y:36},{t:1,x:20,y:24}),
+        M('off',{t:0,x:63,y:53},{t:.5,x:56,y:44},{t:1,x:52,y:36}),
+        M('off',...wrSl)],
+        def:[...DLhold(),
+        M('def',{t:0,x:47,y:44},{t:.4,x:50,y:40},{t:.7,x:52,y:36},{t:1,x:53,y:32}),
+        M('def',{t:0,x:57,y:44},{t:.5,x:54,y:38},{t:1,x:52,y:34}),
+        M('def',{t:0,x:27,y:38},{t:.5,x:24,y:34},{t:1,x:22,y:26}),
+        M('def',{t:0,x:75,y:40},{t:.4,x:66,y:36},{t:.7,x:58,y:34},{t:1,x:54,y:32}),
+        M('def',{t:0,x:50,y:24},{t:.6,x:52,y:28},{t:1,x:52,y:32})],
+        ball:t=>flight(51,61,60,40,.16,.3)(t)||along(wrSl)(t),
+        res:{at:.8,until:.95,text:'FIRST DOWN',color:'#7bd67e'}};
+
+      // -- 6) DEEP SHOT → incomplete --
+      const wrGo=[{t:0,x:78,y:52},{t:.4,x:74,y:34},{t:.7,x:70,y:18},{t:1,x:68,y:14}];
+      const p6={off:[...OLpass(),
+        M('off qb',{t:0,x:51,y:60},{t:.16,x:51,y:64},{t:.4,x:51,y:64},{t:.5,x:52,y:63},{t:1,x:52,y:63}),
+        M('off',{t:0,x:45,y:63},{t:.2,x:46,y:59},{t:1,x:46,y:58}),
+        M('off',{t:0,x:22,y:52},{t:.5,x:20,y:32},{t:1,x:18,y:16}),
+        M('off',...wrGo),
+        M('off',{t:0,x:63,y:53},{t:.5,x:58,y:44},{t:1,x:54,y:38})],
+        def:[...DLhold(),...edge(),
+        M('def',{t:0,x:47,y:42},{t:.4,x:49,y:52},{t:1,x:50,y:56}),
+        M('def',{t:0,x:27,y:38},{t:.5,x:22,y:30},{t:1,x:19,y:16}),
+        M('def',{t:0,x:75,y:40},{t:.4,x:72,y:32},{t:.7,x:69,y:18},{t:1,x:67,y:14}),
+        M('def',{t:0,x:50,y:26},{t:.5,x:58,y:22},{t:1,x:66,y:16})],
+        ball:t=>flight(51,63,70,18,.4,.62)(t)||{x:70,y:18,hide:true},
+        res:{at:.62,until:.82,text:'INCOMPLETE',color:'#cbd3df'}};
+
+      return [p1,p2,p3,p4,p5,p6];
+    })();
+
     const td=document.querySelector('.field-strip .h-td');
-    const LOOP=5600; let start=null;
+    let live=[], ball=null;
+    function build(play){
+      plane.querySelectorAll('.hchip,.h-ball').forEach(n=>n.remove());
+      live=[]; [...play.off,...play.def].forEach(m=>{ const c=document.createElement('span');
+        c.className='hchip '+m.c; c.innerHTML=MAN_SVG; plane.appendChild(c); live.push({el:c,r:m.r}); });
+      ball=document.createElement('div'); ball.className='h-ball'; plane.appendChild(ball);
+      if(td){ td.classList.remove('show'); if(play.res){ td.textContent=play.res.text; td.style.color=play.res.color; } }
+    }
+    const LOOP=5600; let start=null, cyc=-1, play=null;
     function frame(ts){
       if(start==null) start=ts;
+      const c=Math.floor((ts-start)/LOOP);
+      if(c!==cyc){ cyc=c; play=PLAYS[c%PLAYS.length]; build(play); }
       const t=((ts-start)%LOOP)/LOOP;
-      for(const m of movers){ const p=sampleRoute(m.r,t); m.el.style.left=p.x+'%'; m.el.style.top=p.y+'%'; }
-      let bx,by;
-      if(t<.34){ bx=51; by=62; }                                   // in the QB's hands through the drop
-      else if(t<.5){ const k=(t-.34)/.16; bx=lerp(51,72,k); by=lerp(62,28,k); }  // pass in flight to WR-R
-      else { const p=sampleRoute(wrRoute,t); bx=p.x; by=p.y; }      // tucked and running
-      ball.style.left=bx+'%'; ball.style.top=by+'%';
-      if(td){ td.classList.toggle('show', t>.72 && t<.9); }
+      for(const m of live){ const p=sampleRoute(m.r,t); m.el.style.left=p.x+'%'; m.el.style.top=p.y+'%'; }
+      const bp=play.ball(t); if(bp){ ball.style.left=bp.x+'%'; ball.style.top=bp.y+'%'; ball.style.opacity=bp.hide?'0':'1'; }
+      if(td&&play.res){ td.classList.toggle('show', t>play.res.at && t<play.res.until); }
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
