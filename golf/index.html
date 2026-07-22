@@ -5399,12 +5399,11 @@ const COIN_START=300;                       // welcome coins (baked into the res
 const COIN_RATE=0.6;                         // Pro Shop relaunch: earned coins (above the welcome start) run ~40% slower, so the good gear is a real grind
 const COIN_EPOCH=2;                          // bump to re-baseline every account's spendable coins to 0 at the new rate (owned gear/cosmetics are PRESERVED across the bump)
 // Economy coherence pass: gear is a meaningful EDGE, never a second draft. Live boosts come from worn
-// cosmetics + the golf bag; the catalog holds ~+23 of optimized gear, so the TOTAL cap deliberately BINDS:
-// any single stat +5 max, whole active loadout +12 max. A maxed player picks WHICH +12 to run (the loadout
-// is a real strategy - putting engine vs bomber kit vs clean spread) and a fully-geared account gains
-// ~+1.5 OVR, a felt edge rather than an auto-doubling of wins on every career. (The trim loop in accBoost
-// shaves the largest boosts first when a cap binds; the closet summary shows "(capped)".)
-const ACC_SKILL_CAP=5, ACC_TOTAL_CAP=12;
+// cosmetics + the golf bag; the catalog holds ~+23 of optimized gear, so the TOTAL cap still BINDS at the
+// top end: any single stat +5 max, whole active loadout +20 max (owner call - a strong, earned edge; a
+// fully-geared account gains ~+2.4 OVR). A maxed player still picks WHICH +20 to run. (The trim loop in
+// accBoost shaves the largest boosts first when a cap binds; the closet summary shows "(capped)".)
+const ACC_SKILL_CAP=5, ACC_TOTAL_CAP=20;
 const ACC_BOOST_SCALE=1;                      // full-strength catalog boosts (owner: bring the boosts back)
 // CS408 — ONE coherent direct-buy price ladder by RARITY, applied to every pack-poolable item (cosmetics +
 // accessories), so a "rare" costs the same whether it's a hat or a driver. CS464: direct-buy is a STEEP
