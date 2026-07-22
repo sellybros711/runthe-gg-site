@@ -5,185 +5,255 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>RunTheGrid — Daily Sports Puzzles | RunThe.GG</title>
 <meta name="robots" content="noindex, nofollow" />
-<meta name="theme-color" content="#0a1626" />
-<meta name="description" content="RunTheGrid is a daily set of quick sports brain-games on RunThe.GG — a Daily Match and a Daily Crossword. One a day, keep your streak alive." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230a1626'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2335C4CD'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23EBA61F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5A'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A98CF5'/%3E%3C/svg%3E" />
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a1626'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2335C4CD'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23EBA61F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5A'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A98CF5'/%3E%3C/svg%3E" />
+<meta name="theme-color" content="#0a1420" />
+<meta name="description" content="RunTheGrid — a daily set of quick sports brain-games on RunThe.GG. A Daily Match and a Daily Crossword every day. Beat the clock, keep your streak." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230a1420'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2313C08A'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23EBA61F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F0654F'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%238B6DF0'/%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a1420'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2313C08A'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23EBA61F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F0654F'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%238B6DF0'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
 <style>
   :root{
-    --bg:#0a1626; --card:#122a44; --cardb:#1e3d5c; --card2:#0d1f34;
-    --ink:#eaf1f8; --mut:#93a7bd; --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.16);
-    --red:#F85858; --teal:#66D3DE; --green:#6EE84E; --gold:#EBA61F; --violet:#A98CF5;
-    --hero:'Anton', Impact, sans-serif;
-    --body:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --bg:#0a1420; --bg2:#0c1a2a; --panel:#101f30; --panel2:#0b1826; --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+    --ink:#eef3fb; --mut:#8ea3ba; --dim:#6f829a;
+    --green:#13C08A; --green-bri:#22d69c; --violet:#8B6DF0; --violet-bri:#a68cff;
+    --gold:#EBA61F; --red:#F0654F;
+    --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;}
-  body{
-    font-family:var(--body); color:var(--ink); min-height:100dvh; -webkit-font-smoothing:antialiased;
-    background:
-      radial-gradient(1000px 480px at 50% -8%, rgba(169,140,245,.18), transparent 60%),
-      radial-gradient(820px 420px at 90% 2%, rgba(53,196,205,.12), transparent 55%),
-      linear-gradient(180deg,#0b1a2c 0%, var(--bg) 46%, #081120 100%);
-    background-attachment:fixed; display:flex; justify-content:center;
-  }
-  .wrap{width:100%; max-width:560px; padding:calc(16px + env(safe-area-inset-top,0)) 16px 46px; position:relative;}
-  a{color:inherit;}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{font-family:var(--f); color:var(--ink); background:var(--bg); min-height:100dvh; -webkit-font-smoothing:antialiased;}
+  a{color:inherit; text-decoration:none;}
 
-  /* ---- nav ---- */
-  .nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:22px;}
-  .nav .back{color:var(--mut); text-decoration:none; font-size:12.5px; font-weight:800; letter-spacing:.03em; display:inline-flex; gap:6px; align-items:center;}
-  .nav .back:hover{color:var(--ink);}
-  .nav .acct{display:flex; gap:8px;}
-  .nav .pill{display:flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--cardb);
-    border-radius:8px; padding:6px 10px; font-weight:900; font-size:13px;}
-  .nav .pill.coins{color:#f3dca0;}
+  /* ---- stadium backdrop (all CSS/SVG, no external images) ---- */
+  .stage{position:relative; overflow:hidden; min-height:100dvh; padding-bottom:78px;}
+  .bg{position:fixed; inset:0; z-index:-2; background:
+     radial-gradient(120% 60% at 50% -6%, rgba(255,255,255,.10), transparent 42%),
+     radial-gradient(60% 34% at 50% 60%, rgba(19,192,138,.16), transparent 70%),
+     linear-gradient(180deg,#0c1b2b 0%, var(--bg) 40%, #070f19 100%);}
+  /* turf band behind the hero */
+  .bg:after{content:""; position:absolute; left:0; right:0; top:32%; height:220px;
+     background:repeating-linear-gradient(90deg, rgba(19,192,138,.05) 0 40px, rgba(19,192,138,.09) 40px 80px);
+     -webkit-mask:linear-gradient(180deg, transparent, #000 30%, #000 60%, transparent); mask:linear-gradient(180deg, transparent, #000 30%, #000 60%, transparent); opacity:.7;}
+  .lights{position:fixed; top:0; left:0; right:0; height:120px; z-index:-1; pointer-events:none; display:flex; justify-content:space-around; opacity:.5;}
+  .lights i{width:2px; height:70px; background:linear-gradient(180deg, rgba(255,255,255,.5), transparent); filter:blur(1px);}
+  .playbook{position:fixed; top:70px; right:-20px; width:230px; z-index:-1; opacity:.14; pointer-events:none;}
 
-  /* ---- masthead ---- */
-  .hero{text-align:center; margin-bottom:6px; position:relative;}
-  .hero .kick{font-size:11px; font-weight:900; letter-spacing:.24em; text-transform:uppercase; color:var(--teal); margin-bottom:8px;}
-  .hero h1{font-family:var(--hero); font-weight:400; font-size:clamp(46px,15vw,72px); line-height:.92; letter-spacing:.01em; margin:0;
-    filter:drop-shadow(0 6px 26px rgba(0,0,0,.45));}
-  .hero h1 .a{color:var(--ink);} .hero h1 .b{color:var(--violet);}
-  .hero .logo{display:flex; justify-content:center; gap:6px; margin:0 0 14px;}
-  .hero .logo i{width:16px; height:16px; border-radius:3px;}
-  .hero .tag{color:var(--ink); font-weight:700; max-width:400px; margin:14px auto 0; line-height:1.5; font-size:15px;}
-  .hero .tag b{color:var(--teal);}
-  .datep{display:inline-flex; align-items:center; gap:8px; margin:16px auto 2px; padding:7px 15px; border-radius:6px;
-    font-size:12px; font-weight:800; letter-spacing:.02em; color:#cfe0f0; background:rgba(255,255,255,.04); border:1px solid var(--line);}
-  .datep .dot{width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 0 0 rgba(110,232,78,.6); animation:pulse 2.4s ease-out infinite;}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(110,232,78,.5);}70%{box-shadow:0 0 0 8px rgba(110,232,78,0);}100%{box-shadow:0 0 0 0 rgba(110,232,78,0);}}
+  .wrap{width:100%; max-width:680px; margin:0 auto; padding:calc(14px + env(safe-area-inset-top,0)) 16px 40px; position:relative;}
 
-  .seclab{display:flex; align-items:center; gap:10px; margin:28px 2px 12px; font-weight:900; letter-spacing:.16em;
-    text-transform:uppercase; font-size:11.5px; color:var(--mut);}
-  .seclab:before{content:""; width:9px; height:9px; border-radius:2px; background:var(--violet); flex:0 0 auto;}
+  /* ---- top bar ---- */
+  .top{display:flex; align-items:center; justify-content:space-between; margin-bottom:26px;}
+  .top .gg{font-weight:900; font-style:italic; font-size:19px; letter-spacing:-.01em;}
+  .top .gg .d{color:var(--green);}
+  .coins{display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line2); border-radius:999px; padding:7px 13px; font-weight:800; font-size:14px; color:var(--ink); background:rgba(255,255,255,.03);}
+  .coins svg{opacity:.85;}
+
+  /* ---- hero ---- */
+  .hero{text-align:center; margin-bottom:22px;}
+  .kick{font-weight:800; letter-spacing:.28em; text-transform:uppercase; font-size:12.5px; color:var(--green); margin-bottom:4px;}
+  .wm{font-weight:900; font-style:italic; font-size:clamp(40px,13vw,88px); line-height:.9; letter-spacing:-.03em; margin:0;
+      white-space:nowrap; text-shadow:0 10px 40px rgba(0,0,0,.5);}
+  .wm .a{color:var(--ink);} .wm .b{color:var(--green); text-shadow:0 0 34px rgba(19,192,138,.45);}
+  .dots{display:flex; align-items:center; justify-content:center; gap:0; margin:14px 0 0;}
+  .dots i{width:15px; height:15px; border-radius:4px; position:relative;}
+  .dots i+i{margin-left:26px;}
+  .dots i+i:before{content:""; position:absolute; right:100%; top:50%; width:26px; height:2px; transform:translateY(-50%); background:rgba(255,255,255,.18);}
+  .tag{color:var(--ink); font-weight:600; font-size:16px; line-height:1.5; max-width:440px; margin:16px auto 0;}
+  .tag b{color:var(--green); font-weight:800;}
+  .datep{display:inline-flex; align-items:center; gap:9px; margin-top:18px; padding:9px 17px; border-radius:10px;
+      font-size:13px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:#d7e5f2; background:rgba(255,255,255,.045); border:1px solid var(--line);}
+  .datep svg{color:var(--green);}
+
+  /* ---- section label ---- */
+  .seclab{display:flex; align-items:center; gap:9px; margin:26px 4px 14px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; font-size:12.5px; color:#cfe0f0;}
+  .seclab svg{color:var(--green);}
 
   /* ---- puzzle cards ---- */
-  .games{display:flex; flex-direction:column; gap:14px;}
-  .pz{position:relative; display:flex; gap:15px; align-items:center; text-decoration:none; color:inherit; overflow:hidden;
-    border-radius:13px; border:1px solid var(--cardb); background:linear-gradient(150deg,var(--card),var(--card2)); padding:16px 16px;
-    transition:transform .16s ease, border-color .16s ease, box-shadow .16s ease;}
-  .pz.live:hover{transform:translateY(-3px); border-color:var(--violet); box-shadow:0 20px 44px -22px rgba(0,0,0,.85);}
-  .pz.soon{border-style:dashed; opacity:.9;}
-  .pz .ico{flex:0 0 auto; width:64px; height:64px; border-radius:12px; background:#0a1a2e; border:1px solid var(--line2);
-    display:grid; place-items:center; box-shadow:inset 0 0 24px rgba(0,0,0,.35);}
-  .pz .ico svg{width:42px; height:42px;}
-  .pz .meta{min-width:0; flex:1;}
-  .pz .row1{display:flex; align-items:center; gap:9px; flex-wrap:wrap;}
-  .pz .nm{font-family:var(--hero); font-weight:400; font-size:23px; line-height:1; letter-spacing:.01em;}
-  .pz .badge{font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; padding:4px 8px; border-radius:5px; line-height:1;}
-  .pz .badge.new{color:#160a2e; background:linear-gradient(180deg,#C4AEF9,#9E7FEC);}
-  .pz .badge.soon{color:#9db2c8; background:rgba(255,255,255,.06); border:1px solid var(--line);}
-  .pz .sub{color:#b9c9db; font-size:13px; line-height:1.45; margin-top:6px;}
-  .pz .foot{display:flex; align-items:center; gap:12px; margin-top:10px; font-size:11.5px; font-weight:800; color:var(--mut);}
-  .pz .foot .s{display:inline-flex; align-items:center; gap:5px;}
-  .pz .foot .s b{color:#ffb9a0;}
-  .pz .go{flex:0 0 auto; align-self:center; font-weight:900; font-size:13px; color:var(--violet); display:inline-flex; align-items:center; gap:6px;}
-  .pz.live:hover .go .arw{transform:translateX(4px);}
-  .pz .go .arw{transition:transform .16s ease;}
-  @media (max-width:440px){ .pz .go span:not(.arw){display:none;} }
+  .cards{display:flex; flex-direction:column; gap:16px;}
+  .pz{position:relative; display:flex; align-items:stretch; gap:18px; padding:20px; border-radius:18px; overflow:hidden;
+      border:1px solid var(--line2); transition:transform .16s ease, box-shadow .16s ease, border-color .16s;}
+  .pz:hover{transform:translateY(-3px);}
+  .pz.match{background:linear-gradient(120deg, rgba(19,192,138,.16), rgba(11,24,38,.6) 62%); border-color:rgba(19,192,138,.4);}
+  .pz.match:hover{box-shadow:0 24px 50px -26px rgba(19,192,138,.6); border-color:rgba(19,192,138,.7);}
+  .pz.cross{background:linear-gradient(120deg, rgba(139,109,240,.18), rgba(11,24,38,.6) 62%); border-color:rgba(139,109,240,.4);}
+  .pz.cross:hover{box-shadow:0 24px 50px -26px rgba(139,109,240,.6); border-color:rgba(139,109,240,.7);}
+  .pz .ico{flex:0 0 auto; width:84px; height:84px; border-radius:16px; background:#0a1622; border:1px solid var(--line2);
+      display:grid; place-items:center; box-shadow:inset 0 0 30px rgba(0,0,0,.4); align-self:center;}
+  .pz .ico svg{width:56px; height:56px;}
+  .pz .meta{min-width:0; flex:1; display:flex; flex-direction:column; justify-content:center;}
+  .pz .row1{display:flex; align-items:center; gap:11px; flex-wrap:wrap;}
+  .pz .nm{font-weight:900; font-style:italic; font-size:29px; line-height:1; letter-spacing:-.01em;}
+  .pz .badge{font-size:11px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; padding:4px 9px; border-radius:6px; line-height:1;}
+  .pz.match .badge{color:#04231a; background:var(--green);}
+  .pz.cross .badge{color:#160a2e; background:var(--violet-bri);}
+  .pz .desc{color:#c4d3e3; font-size:14.5px; line-height:1.5; margin:9px 0 0; max-width:360px;}
+  .pz .chips{display:flex; align-items:center; gap:14px; margin-top:13px; flex-wrap:wrap;}
+  .pz .chip{display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#b8c8da;}
+  .pz .chip .dot{color:var(--dim);}
+  .pz .play{flex:0 0 auto; align-self:stretch; min-width:118px; border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+      font-weight:900; font-style:italic; font-size:17px; letter-spacing:.02em; transition:filter .12s, transform .12s;}
+  .pz.match .play{background:linear-gradient(180deg, rgba(19,192,138,.9), rgba(14,140,102,.85)); color:#04231a; box-shadow:0 12px 26px -14px rgba(19,192,138,.9);}
+  .pz.cross .play{background:linear-gradient(180deg, rgba(139,109,240,.9), rgba(110,84,214,.85)); color:#160a2e; box-shadow:0 12px 26px -14px rgba(139,109,240,.9);}
+  .pz:hover .play{filter:brightness(1.06);}
+  .pz .play .arw{font-size:20px; transition:transform .16s;}
+  .pz:hover .play .arw{transform:translateX(4px);}
+  @media (max-width:560px){
+    .pz{flex-wrap:wrap; gap:14px;}
+    .pz .ico{width:60px; height:60px;} .pz .ico svg{width:40px;height:40px;}
+    .pz .nm{font-size:24px;} .pz .desc{max-width:none;}
+    .pz .play{width:100%; flex-direction:row; align-self:auto; min-height:52px;}
+  }
 
-  .note{margin-top:20px; background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:9px; padding:13px 15px;
-    color:var(--mut); font-size:13px; line-height:1.55; text-align:center;}
-  .note b{color:var(--ink);}
-  .foot{margin-top:26px; text-align:center; color:#6f829a; font-size:12.5px; line-height:1.8;}
-  .foot a{color:#9db2c8; text-decoration:none; font-weight:700;} .foot a:hover{color:var(--ink);}
-  .foot .sep{margin:0 7px; color:#3c4c60;}
-  @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} }
+  /* ---- streak panel ---- */
+  .streak{display:flex; align-items:center; gap:18px; margin-top:16px; padding:18px 20px; border-radius:16px;
+      background:linear-gradient(120deg, rgba(240,101,79,.08), rgba(11,24,38,.5)); border:1px solid var(--line);}
+  .streak .flame{flex:0 0 auto; font-size:34px; line-height:1;}
+  .streak .lead{min-width:0; flex:1;}
+  .streak .lead h3{margin:0 0 4px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; font-size:14px; color:var(--green);}
+  .streak .lead p{margin:0; color:var(--mut); font-size:13px; line-height:1.45;}
+  .streak .stat{flex:0 0 auto; text-align:center; padding:0 4px;}
+  .streak .stat .n{font-weight:900; font-style:italic; font-size:30px; line-height:1;}
+  .streak .stat .l{font-size:10px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:5px;}
+  .streak .stat .cap{display:block; font-size:9.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); margin-bottom:4px;}
+  .streak .trophy{flex:0 0 auto; width:46px; height:46px; border-radius:12px; display:grid; place-items:center; border:1px solid rgba(19,192,138,.35); background:rgba(19,192,138,.08); color:var(--green); font-size:22px;}
+  @media (max-width:520px){ .streak .lead p{display:none;} .streak{gap:12px; padding:15px;} .streak .stat .n{font-size:24px;} }
+
+  /* ---- account bar ---- */
+  .acct{display:flex; align-items:center; gap:15px; margin-top:16px; padding:16px 18px; border-radius:14px; background:rgba(255,255,255,.03); border:1px solid var(--line);}
+  .acct .pic{flex:0 0 auto; width:40px; height:40px; border-radius:10px; display:grid; place-items:center; border:1px solid var(--line2); color:var(--mut);}
+  .acct .txt{min-width:0; flex:1; color:var(--mut); font-size:13.5px; line-height:1.5;}
+  .acct .txt b{color:var(--ink);}
+  .acct .btn{flex:0 0 auto; font-weight:900; font-size:13px; letter-spacing:.02em; padding:12px 18px; border-radius:10px; border:0; cursor:pointer;
+      background:linear-gradient(180deg,var(--green-bri),var(--green)); color:#04231a; box-shadow:0 10px 24px -14px rgba(19,192,138,.9);}
+  @media (max-width:520px){ .acct{flex-wrap:wrap;} .acct .btn{width:100%;} }
+
+  /* ---- bottom nav ---- */
+  .nav{position:fixed; left:0; right:0; bottom:0; z-index:20; display:flex; justify-content:space-around; align-items:center;
+      padding:8px 6px calc(8px + env(safe-area-inset-bottom,0)); background:rgba(8,15,25,.92); backdrop-filter:blur(10px); border-top:1px solid var(--line);}
+  .nav a{display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--dim); font-size:9.5px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; padding:4px 8px; flex:1; text-align:center;}
+  .nav a svg{width:21px; height:21px;}
+  .nav a.on{color:var(--green);}
+  .nav a.soon{opacity:.55;}
+
+  .foot{text-align:center; color:var(--dim); font-size:12.5px; margin-top:26px;}
+  .foot .soc{display:flex; justify-content:center; gap:16px; margin:10px 0;}
+  .foot .soc a{color:var(--mut);} .foot .soc a:hover{color:var(--green);}
+  .foot .h{color:var(--green); font-weight:800;}
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important;} }
 </style>
 </head>
 <body>
+<div class="stage">
+  <div class="bg"></div>
+  <div class="lights"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <svg class="playbook" viewBox="0 0 200 200" fill="none" stroke="#ffffff" stroke-width="2" aria-hidden="true">
+    <path d="M30 160 L70 120 L110 150 L150 90"/><circle cx="30" cy="160" r="5"/>
+    <path d="M150 90 l-12 4 M150 90 l4 12"/>
+    <path d="M60 60 L100 60"/><path d="M80 45 L80 75"/>
+    <path d="M120 40 L160 40 M120 40 l10 -7 M120 40 l10 7"/>
+    <circle cx="55" cy="110" r="4"/><circle cx="95" cy="100" r="4"/>
+  </svg>
+
   <div class="wrap">
-    <div class="nav">
-      <a class="back" href="/">← RunThe.GG</a>
-      <div class="acct">
-        <span class="pill coins">🪙 <span id="coinVal">0</span></span>
-      </div>
+    <div class="top">
+      <span class="gg">RUNTHE<span class="d">.GG</span></span>
+      <span class="coins"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 0 5"/></svg><span id="coinVal">0</span></span>
     </div>
 
     <header class="hero">
-      <div class="logo" aria-hidden="true">
-        <i style="background:#35C4CD"></i><i style="background:#EBA61F"></i><i style="background:#F06A5A"></i><i style="background:#A98CF5"></i>
-      </div>
       <div class="kick">Daily Sports Puzzles</div>
-      <h1><span class="a">Run</span><span class="a">The</span><span class="b">Grid</span></h1>
-      <p class="tag">Quick daily brain-games for sports fans. <b>One of each a day</b> — beat the clock, keep the streak.</p>
-      <div class="datep"><span class="dot"></span><span id="datep">Today</span></div>
+      <h1 class="wm"><span class="a">RunThe</span><span class="b">Grid</span></h1>
+      <div class="dots" aria-hidden="true">
+        <i style="background:#8B6DF0"></i><i style="background:#13C08A"></i><i style="background:#EBA61F"></i><i style="background:#F0654F"></i><i style="background:#F0654F"></i>
+      </div>
+      <p class="tag">Quick daily brain games for sports fans.<br><b>One of each day</b> — beat the clock, keep the streak.</p>
+      <div class="datep"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg><span id="datep">Today</span></div>
     </header>
 
-    <div class="seclab">Today's puzzles</div>
-    <main class="games">
-      <a class="pz live" href="/grid/match/">
+    <div class="seclab"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> Today's Puzzles</div>
+
+    <main class="cards">
+      <a class="pz match" href="/grid/match/">
         <span class="ico" aria-hidden="true">
-          <svg viewBox="0 0 42 42" fill="none">
-            <rect x="2" y="2" width="11" height="11" rx="2" fill="#35C4CD"/>
-            <rect x="15.5" y="2" width="11" height="11" rx="2" fill="#EBA61F"/>
-            <rect x="29" y="2" width="11" height="11" rx="2" fill="#6EE84E"/>
-            <rect x="2" y="15.5" width="11" height="11" rx="2" fill="#F06A5A"/>
-            <rect x="15.5" y="15.5" width="11" height="11" rx="2" fill="#A98CF5"/>
-            <rect x="29" y="15.5" width="11" height="11" rx="2" fill="#35C4CD"/>
-            <rect x="2" y="29" width="11" height="11" rx="2" fill="#EBA61F"/>
-            <rect x="15.5" y="29" width="11" height="11" rx="2" fill="#6EE84E"/>
-            <rect x="29" y="29" width="11" height="11" rx="2" fill="#F06A5A"/>
-          </svg>
+          <svg viewBox="0 0 56 56"><g>
+            <rect x="2" y="2" width="15" height="15" rx="3" fill="#13C08A"/><rect x="20.5" y="2" width="15" height="15" rx="3" fill="#EBA61F"/><rect x="39" y="2" width="15" height="15" rx="3" fill="#F0654F"/>
+            <rect x="2" y="20.5" width="15" height="15" rx="3" fill="#F0654F"/><rect x="20.5" y="20.5" width="15" height="15" rx="3" fill="#8B6DF0"/><rect x="39" y="20.5" width="15" height="15" rx="3" fill="#13C08A"/>
+            <rect x="2" y="39" width="15" height="15" rx="3" fill="#EBA61F"/><rect x="20.5" y="39" width="15" height="15" rx="3" fill="#13C08A"/><rect x="39" y="39" width="15" height="15" rx="3" fill="#F0654F"/>
+          </g></svg>
         </span>
         <span class="meta">
-          <span class="row1"><span class="nm">Daily Match</span><span class="badge new">New</span></span>
-          <span class="sub">Sort 25 sports names into five hidden categories. Traps everywhere — one wrong lane costs you.</span>
-          <span class="foot">
-            <span class="s">🏈 NFL · 🏀 NBA · ⚾ MLB</span>
-            <span class="s" id="matchStreak" style="display:none">🔥 <b><span id="matchStreakVal">0</span></b> streak</span>
-          </span>
+          <span class="row1"><span class="nm">Daily Match</span><span class="badge">New</span></span>
+          <span class="desc">Sort 25 sports names into five hidden categories. Traps everywhere — one wrong lane costs you.</span>
+          <span class="chips"><span class="chip">🏈 NFL</span><span class="dot">·</span><span class="chip">🏀 NBA</span><span class="dot">·</span><span class="chip">⚾ MLB</span></span>
         </span>
-        <span class="go"><span>Play</span> <span class="arw">→</span></span>
+        <span class="play">PLAY <span class="arw">→</span></span>
       </a>
 
-      <a class="pz live" href="/grid/crossword/">
+      <a class="pz cross" href="/grid/crossword/">
         <span class="ico" aria-hidden="true">
-          <svg viewBox="0 0 42 42" fill="none">
-            <rect x="3" y="3" width="36" height="36" rx="3" stroke="#3a506b" stroke-width="2"/>
-            <rect x="3" y="3" width="9" height="9" fill="#EBA61F"/>
-            <rect x="21" y="3" width="9" height="9" fill="#eef3fb"/>
-            <rect x="12" y="12" width="9" height="9" fill="#eef3fb"/>
-            <rect x="30" y="12" width="9" height="9" fill="#35C4CD"/>
-            <rect x="3" y="21" width="9" height="9" fill="#35C4CD"/>
-            <rect x="21" y="30" width="9" height="9" fill="#EBA61F"/>
-            <text x="15.5" y="10.5" font-family="Anton, sans-serif" font-size="7" fill="#0a1626">1</text>
-            <text x="6.5" y="19.5" font-family="Anton, sans-serif" font-size="7" fill="#0a1626">2</text>
+          <svg viewBox="0 0 56 56">
+            <rect x="3" y="3" width="50" height="50" rx="4" fill="none" stroke="#3a506b" stroke-width="2"/>
+            <rect x="4" y="4" width="12" height="12" fill="#eef3fb"/><rect x="28" y="4" width="12" height="12" fill="#8B6DF0"/>
+            <rect x="16" y="16" width="12" height="12" fill="#8B6DF0"/><rect x="40" y="16" width="12" height="12" fill="#eef3fb"/>
+            <rect x="4" y="28" width="12" height="12" fill="#8B6DF0"/><rect x="28" y="28" width="12" height="12" fill="#eef3fb"/>
+            <rect x="16" y="40" width="12" height="12" fill="#eef3fb"/><rect x="40" y="40" width="12" height="12" fill="#8B6DF0"/>
           </svg>
         </span>
         <span class="meta">
-          <span class="row1"><span class="nm">Daily Crossword</span><span class="badge new">New</span></span>
-          <span class="sub">A sports-themed mini crossword, fresh every day. Same streak, same wallet — a second way to start your morning.</span>
-          <span class="foot"><span class="s">🏟️ Players · teams · terms</span></span>
+          <span class="row1"><span class="nm">Daily Crossword</span><span class="badge">New</span></span>
+          <span class="desc">A sports-themed mini crossword, fresh every day. Same streak, same wallet — a second way to start your morning.</span>
+          <span class="chips"><span class="chip">👥 Players</span><span class="dot">·</span><span class="chip">🛡️ Teams</span><span class="dot">·</span><span class="chip">📖 Terms</span></span>
         </span>
-        <span class="go"><span>Play</span> <span class="arw">→</span></span>
+        <span class="play">PLAY <span class="arw">→</span></span>
       </a>
     </main>
 
-    <div class="note">Play as a guest, or sign in with your <b>RunThe.GG account</b> — your streak, coins and rank carry across every game.</div>
+    <section class="streak">
+      <span class="flame">🔥</span>
+      <div class="lead"><h3>Keep the Streak</h3><p>Play daily to build your streak, earn coins, and climb the ranks.</p></div>
+      <div class="stat"><span class="cap">Current</span><div class="n" id="curStreak">0</div><div class="l">Days</div></div>
+      <div class="stat"><span class="cap">Best</span><div class="n" id="bestStreak">0</div><div class="l">Days</div></div>
+      <span class="trophy">🏆</span>
+    </section>
+
+    <section class="acct">
+      <span class="pic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
+      <span class="txt">Play as a guest, or sign in with your <b>RunThe.GG account</b> to save your streak, coins and rank across every game.</span>
+      <a class="btn" href="/">Sign in / Sign up</a>
+    </section>
 
     <div class="foot">
-      <a href="/">RunThe.GG</a><span class="sep">·</span><a href="/grid/match/">Daily Match</a><span class="sep">·</span><a href="/grid/crossword/">Daily Crossword</a><span class="sep">·</span><a href="https://x.com/RunTheGG" target="_blank" rel="noopener">@RunTheGG</a>
+      <div class="soc">
+        <a href="https://tiktok.com/@runthegg" target="_blank" rel="noopener" aria-label="TikTok"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3c.3 2 1.5 3.6 3.5 4v3c-1.4 0-2.7-.4-3.8-1.1V15a5.5 5.5 0 1 1-5.5-5.5c.3 0 .6 0 .9.1v3a2.5 2.5 0 1 0 1.8 2.4V3z"/></svg></a>
+        <a href="https://instagram.com/runthegg" target="_blank" rel="noopener" aria-label="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
+        <a href="https://x.com/RunTheGG" target="_blank" rel="noopener" aria-label="X"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3h3l-7 8 8 10h-6l-5-6-5 6H3l8-9L3 3h6l4 5z"/></svg></a>
+      </div>
+      <span class="h">RunThe.GG</span> · @RunTheGG
     </div>
   </div>
 
-  <script>
-  (function () {
-    var d = new Date();
-    document.getElementById('datep').textContent = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-    try {
-      document.getElementById('coinVal').textContent = parseInt(localStorage.getItem('runthegrid_coins') || '0', 10) || 0;
-      var st = parseInt(localStorage.getItem('grid_match_streak') || '0', 10) || 0;
-      if (st > 0) {
-        document.getElementById('matchStreak').style.display = '';
-        document.getElementById('matchStreakVal').textContent = st;
-      }
-    } catch (e) {}
-  })();
-  </script>
+  <nav class="nav">
+    <a class="on" href="/grid/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</a>
+    <a href="/grid/match/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Daily Match</a>
+    <a href="/grid/crossword/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 3v18M3 9h18"/></svg>Crossword</a>
+    <a class="soon" href="#" title="Coming soon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Leaderboard</a>
+    <a class="soon" href="#" title="Coming soon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile</a>
+  </nav>
+</div>
+
+<script>
+(function () {
+  var d = new Date();
+  document.getElementById('datep').textContent = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  try {
+    document.getElementById('coinVal').textContent = parseInt(localStorage.getItem('runthegrid_coins') || '0', 10) || 0;
+    var cur = parseInt(localStorage.getItem('grid_match_streak') || '0', 10) || 0;
+    var best = parseInt(localStorage.getItem('grid_best_streak') || '0', 10) || 0;
+    if (cur > best) { best = cur; localStorage.setItem('grid_best_streak', String(best)); }
+    document.getElementById('curStreak').textContent = cur;
+    document.getElementById('bestStreak').textContent = best;
+  } catch (e) {}
+})();
+</script>
 </body>
 </html>
