@@ -12359,6 +12359,46 @@ allows Google Fonts, or self-host Anton.*
      (Adding 3 achievements auto-rescales the Tour Rep tiers, consistent with prior expansions — nobody loses
      anything; the rank name recomputes.) Deployed to /golf.
 
+- **ECONOMY + ITEMS PASS — boost-premium pricing, dupe shards, shelf-fill items, rarity foil look (owner:
+  "enhance the look of all our accessories, patterns, clubs, etc. and enhance our coin system, pack system,
+  and the way all of the prices and boosts relate/balance out/make sense with the prices. Let's brainstorm
+  adding more items"; then "Continue from where you left off" → proceed with the recommended package).**
+  Grounded in a live audit first (pool 184 items, category rarity gaps — hats/pants/shoes ALL common, fx had
+  no entry tier — full-catalog value ~11M coins vs ~2.5-3k/day earn rate, pack EV ratios incl. the
+  Champion-pack dupes-only endgame for completionists). Four stages, all verified in Playwright before
+  shipping:
+  1. **Boost-premium pricing + tighter caps.** Power now costs more than prestige: `BOOST_PREMIUM=0.15` —
+     `accPrice(it)` = rarity base × (1 + 0.15 × the item's total boost points), and `cosmeticPrice(cat,id)`
+     applies the same premium when the cosmetic's NET boost (`cosBoost`) is positive, both rounded to 500s.
+     So the live boost carriers cost real money (Halo 564,000 vs a plain legendary 275,000; a +1 shirt color
+     51,500 vs a plain 45,000). Caps corrected to the LIVE system's scale (`ACC_SKILL_CAP=6`,
+     `ACC_TOTAL_CAP=28` — a safety governor over `accBoost()` = worn cosmetics + bag only, whose real max is
+     ~+18-20 gross with tradeoffs; the old 10/80 caps were sized to the dead legacy ACCESSORIES catalog).
+  2. **Dupe shards (fixes the pack endgame).** Every pack duplicate now ALSO earns 1 shard of its rarity
+     (all 3 dupe sites), tracked as monotonic `shardE_/shardS_` counters in `packState` (cross-device
+     max-merge in `mergePacks`). `SHARD_COST={common:3, rare:3, epic:4, legendary:5}` — the shop confirm
+     card gains a teal "Redeem with shards" button (`shopRedeemShards`, grants + equips with no coins) when
+     you hold enough of that item's rarity; the wheel dupe reveal shows "· ◆ +1 <rarity> shard (X/N)"; odds
+     panel + how-to updated. A completionist's Champion packs now bank toward chosen items instead of being
+     pure refund.
+  3. **New items (pool 184 → 208), filling the audited shelf gaps:** 5 premium shirt+hat colors (royalblue/
+     seafoam 12k, crimsonvel/midnight 16k, champagne 30k — shirt & hat share the list), 4 pants (royal/wine
+     16k-, gold 16k, royalpurple 30k), 4 shoes (pink/orange, gold, crimson), 3 fixed patterns (galaxy +
+     moneyprint legendary, stormbolt epic), and 3 rare entry-tier auras (emerald/crimson/sapphire 12k, each
+     with its own tracer color + fx CSS). Hat/pants/shoes/fx now all span common→legendary.
+  4. **Rarity foil look pass:** epic/legendary shop tiles get tinted borders + glow + an animated foilSweep
+     sheen (`.stile.r-epic/.r-legendary`, reduced-motion safe); the confirm/detail card is enriched with a
+     rarity chip, an italic lore line, the item's boost text, and your shard balance.
+  Verified end-to-end (3 Playwright suites, 0 page errors): premium pricing binds on both paths, live max
+  loadout +20 total / +6 single (caps honored), shard earn/spend/refuse/merge + redeem grants+equips with
+  coins untouched, all new shelves + patterns + auras render (pool 208), foil tiles + detail card render, a
+  real pack open → wheel, a real 45k buy, a dupe → +1 shard. Committed e59ec72; deployed to /golf (cba82d9;
+  main was clean — no parallel-workstream clobber this time). Tunables: `BOOST_PREMIUM`, the caps,
+  `SHARD_COST`, `PACK_DUPE_REFUND`, the new items' base prices. NOT built (brainstorm follow-ups awaiting
+  owner picks): weekly Featured Pack, category packs, hole-out celebrations/ball trails/tee cosmetics, H2H
+  emotes/nameplates, a "Legendary Drop 2" themed collection, outerwear/legwear art expansion (needs sprite
+  art), higher-detail sprite redraws for clubs/balls/cleats.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
