@@ -389,10 +389,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   background:
     repeating-linear-gradient(90deg, rgba(255,255,255,.16) 0 3px, transparent 3px 46px),
     linear-gradient(180deg,#2f7d3f,#215f30);}
-.field-strip .fifty{ position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
-  font-family:var(--pix); font-size:40px; color:rgba(240,236,214,.85); letter-spacing:3px;
-  text-shadow:0 3px 0 rgba(0,0,0,.3);}
-.field-strip .gp{ position:absolute; left:50%; top:8px; transform:translateX(-50%); width:64px;}
+.field-strip .fs-ez{ position:absolute; top:0; right:0; bottom:0; width:14%; z-index:1;
+  background:repeating-linear-gradient(180deg,var(--endzone) 0 7px,var(--endzone2) 7px 14px); border-left:3px solid #fff;}
+.field-strip .gp{ position:absolute; left:93%; top:12px; transform:translateX(-50%); width:44px; z-index:2;}
 .field-strip .gp svg{ width:100%; display:block; filter:drop-shadow(0 3px 0 rgba(0,0,0,.35));}
 .field-strip .hash{ position:absolute; height:3px; width:10px; background:rgba(255,255,255,.4);}
 /* bottom nav */
@@ -472,6 +471,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       <button class="howto-link" id="howtoLink">HOW TO PLAY ›</button>
 
       <div class="field-strip" aria-hidden="true">
+        <div class="fs-ez"></div>
         <div class="gp">
           <svg viewBox="0 0 60 70" shape-rendering="crispEdges">
             <rect x="27" y="30" width="6" height="38" fill="#e6b32a"/>
@@ -481,7 +481,19 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
             <rect x="24" y="66" width="12" height="4" fill="#c1503f"/>
           </svg>
         </div>
-        <div class="fifty">50</div>
+        <!-- looping play: deep-shot touchdown -->
+        <span class="hchip off" style="left:16%;top:34%"></span>
+        <span class="hchip off" style="left:16%;top:50%"></span>
+        <span class="hchip off" style="left:16%;top:66%"></span>
+        <span class="hchip off" style="left:11%;top:52%"></span>
+        <span class="hchip off" style="left:10%;top:66%"></span>
+        <span class="hchip def" style="left:22%;top:40%"></span>
+        <span class="hchip def" style="left:22%;top:58%"></span>
+        <span class="hchip def" style="left:30%;top:64%"></span>
+        <span class="hchip off h-wr" style="left:20%;top:30%"></span>
+        <span class="hchip def h-def2" style="left:16%;top:25%"></span>
+        <div class="h-ball"></div>
+        <div class="h-td">TOUCHDOWN!</div>
       </div>
 
       <div class="home-nav">
@@ -1194,6 +1206,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     else { navigator.clipboard && navigator.clipboard.writeText(text).then(()=>mini('Invite copied!')).catch(()=>mini('Copy failed')); }
   }
   function boot(){
+    document.querySelectorAll('.field-strip .hchip').forEach(c=>{ c.innerHTML=MAN_SVG; });
     refreshChips();
     renderInfo(DATE);
 
