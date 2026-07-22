@@ -182,25 +182,30 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .log .row .yd.pos{color:var(--green);} .log .row .yd.neg{color:var(--red);} .log .row .yd.to{color:var(--red);}
 .log .empty{padding:18px 6px; text-align:center; color:var(--cream-dim); font-size:18px;}
 
-/* ---------- scouting (start screen) ---------- */
-.scout{padding:14px; margin-bottom:10px;}
-.scout h3{font-family:var(--pix); font-size:11px; margin:0 0 4px; letter-spacing:1px;}
-.scout .style{font-family:var(--pix); font-size:9px; color:var(--gold-bright); margin-bottom:10px;}
-.scout .ln{display:flex; gap:9px; padding:8px 0; border-top:1px solid var(--line); align-items:flex-start;}
+/* ---------- scouting (compact, collapsible) ---------- */
+.scoutbar{display:flex; align-items:center; gap:10px; width:100%; padding:12px 14px; margin-bottom:10px;
+  background:var(--panel); border:2px solid var(--line2); border-radius:12px; box-shadow:var(--shadow); text-align:left;}
+.scoutbar .sh{font-family:var(--pix); font-size:9px; color:var(--cream-dim); letter-spacing:1px;}
+.scoutbar .sstyle{font-family:var(--pix); font-size:10px; color:var(--gold-bright);}
+.scoutbar .chev{margin-left:auto; font-family:var(--pix); font-size:10px; color:var(--cream-dim);}
+.scout{padding:4px 14px 12px; margin-bottom:10px;}
+.scout .ln{display:flex; gap:9px; padding:9px 0; border-top:1px solid var(--line); align-items:flex-start;}
 .scout .ln .tag{font-family:var(--pix); font-size:7px; color:var(--bg); background:var(--cream-dim);
   border-radius:4px; padding:4px 5px; margin-top:2px; white-space:nowrap;}
-.scout .ln .tx{font-size:18px; line-height:1.25;}
+.scout .ln .tx{font-size:18px; line-height:1.28;}
 
-/* scheme picker */
-.schemes{display:flex; flex-direction:column; gap:8px; margin-bottom:12px;}
-.scheme{display:flex; flex-direction:column; gap:5px; padding:12px 13px; text-align:left; width:100%;
+/* scheme picker — compact 2-col grid, details only for the selected scheme */
+.schemes-head{display:flex; align-items:baseline; justify-content:space-between; padding:2px 4px 8px;}
+.schemes-head .t{font-family:var(--pix); font-size:11px; letter-spacing:1px;}
+.schemes-head .hint{font-family:var(--term); font-size:15px; color:var(--cream-dim);}
+.schemes{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;}
+.scheme{display:flex; flex-direction:column; gap:3px; padding:11px 12px; text-align:left; width:100%;
   background:var(--panel); border:2px solid var(--line2); border-radius:11px; box-shadow:var(--shadow);}
 .scheme.sel{border-color:var(--gold); background:#124532;}
-.scheme .top{display:flex; align-items:center; justify-content:space-between; gap:8px;}
-.scheme .nm{font-family:var(--pix); font-size:11px;}
-.scheme .tag{font-family:var(--term); font-size:17px; color:var(--cream-dim);}
-.scheme .sw{display:flex; gap:8px; flex-wrap:wrap; font-size:15px;}
-.scheme .sw .s{color:var(--green);} .scheme .sw .w{color:var(--red);}
+.scheme .nm{font-family:var(--pix); font-size:10px;}
+.scheme .id{font-family:var(--term); font-size:16px; color:var(--cream-dim); line-height:1.05;}
+.scheme-detail{display:flex; gap:14px; flex-wrap:wrap; padding:2px 6px 12px; font-size:16px;}
+.scheme-detail .s{color:var(--green);} .scheme-detail .w{color:var(--red);}
 
 .cta{width:100%; padding:16px; margin-bottom:14px; background:var(--gold); color:#3a2a00;
   border:0; border-radius:12px; font-family:var(--pix); font-size:14px; letter-spacing:1px;
@@ -269,17 +274,17 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   <div id="startScreen">
     <div class="card banner">
       <div class="row"><span class="trophy">🏆</span><h1>SCORE A TOUCHDOWN</h1><span class="trophy">🏆</span></div>
-      <div class="sub">You have <b>1 drive</b> to win. Read the D, call it right.</div>
+      <div class="sub">One drive to win it.</div>
     </div>
 
-    <div class="card scout" id="scoutCard">
-      <h3>📋 SCOUTING REPORT</h3>
-      <div class="style" id="scoutStyle">—</div>
-      <div id="scoutLines"></div>
-    </div>
+    <button class="scoutbar" id="scoutBar">
+      <span class="sh">📋 SCOUT</span><span class="sstyle" id="scoutStyle">—</span><span class="chev" id="scoutChev">▾</span>
+    </button>
+    <div class="card scout hidden" id="scoutCard"></div>
 
-    <div class="log-head"><span class="t">PICK YOUR PLAYBOOK</span></div>
+    <div class="schemes-head"><span class="t">PLAYBOOK</span><span class="hint">tap to pick</span></div>
     <div class="schemes" id="schemeList"></div>
+    <div class="scheme-detail" id="schemeDetail"></div>
 
     <button class="cta" id="startBtn">▶ START THE DRIVE</button>
   </div>
@@ -361,6 +366,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   /* ---------- scheme metadata for the picker ---------- */
   const SCHEME_ORDER = ['WEST_COAST','SMASH_MOUTH','WIDE_ZONE','AIR_RAID','SPREAD_OPTION','VERTICAL'];
+  // Short identities so the picker scans in a glance; full prose lives in the data.
+  const SCHEME_META = {
+    WEST_COAST:   {id:'Safe · high floor',  s:'Fewest mistakes',    w:'Few big plays'},
+    SMASH_MOUTH:  {id:'Power run game',      s:'Owns short yardage', w:'Slow, loaded boxes'},
+    WIDE_ZONE:    {id:'Zone runs + boots',   s:'Best deep boots',    w:'Needs the run'},
+    AIR_RAID:     {id:'Tempo · quick game',  s:'Light boxes, fast',  w:'Risky deep shots'},
+    SPREAD_OPTION:{id:'QB runs · tempo',     s:'Run + tempo',        w:'RPOs run soft'},
+    VERTICAL:     {id:'Deep shots · risky',  s:'Most explosive',     w:'Boom or bust'},
+  };
 
   /* ---------- runtime ---------- */
   let drive=null, practice=false;
@@ -374,28 +388,35 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     el('wx').textContent = (WX_ICON[wx]||'☀')+' '+wx.toUpperCase();
     return day;
   }
-  function renderScout(dateStr, mount){
+  // Full scouting lines — used inside the (collapsed) home card and the in-game peek.
+  function renderScoutFull(dateStr, mount){
     const day = GEN.generateDailyDrive(dateStr);
     const rep = GEN.scoutingReport(dateStr, day);
-    let html = `<h3>📋 SCOUTING REPORT</h3><div class="style">DEFENSE: ${rep.style.toUpperCase()}</div>`;
+    let html = `<div class="ln"><span class="tag">D</span><span class="tx"><b>${rep.style}</b> — ${rep.note}</span></div>`;
     for(const l of rep.lines){ html += `<div class="ln"><span class="tag">${l.tag}</span><span class="tx">${l.text}</span></div>`; }
     mount.innerHTML = html;
   }
+  // Home screen: set the one-line scout bar and prime the collapsed detail.
+  function renderScout(dateStr){
+    const day = GEN.generateDailyDrive(dateStr);
+    const rep = GEN.scoutingReport(dateStr, day);
+    el('scoutStyle').textContent = rep.style + ' D';
+    renderScoutFull(dateStr, el('scoutCard'));
+  }
 
-  /* ---------- scheme picker ---------- */
+  /* ---------- scheme picker (compact) ---------- */
   function renderSchemes(){
     const list = el('schemeList'); list.innerHTML='';
     for(const key of SCHEME_ORDER){
-      const s = PB.schemes[key];
+      const s = PB.schemes[key], m = SCHEME_META[key];
       const b = document.createElement('button');
       b.className='scheme'+(key===STORE.scheme?' sel':'');
-      b.innerHTML = `<div class="top"><span class="nm">${s.name}</span></div>
-        <div class="tag">${s.tagline}</div>
-        <div class="sw"><span class="s">▲ ${s.strength}</span></div>
-        <div class="sw"><span class="w">▼ ${s.weakness}</span></div>`;
+      b.innerHTML = `<span class="nm">${s.name}</span><span class="id">${m.id}</span>`;
       b.onclick=()=>{ STORE.scheme=key; save(STORE); renderSchemes(); };
       list.appendChild(b);
     }
+    const m = SCHEME_META[STORE.scheme];
+    el('schemeDetail').innerHTML = `<span class="s">▲ ${m.s}</span><span class="w">▼ ${m.w}</span>`;
   }
 
   /* ---------- field rendering ---------- */
@@ -732,7 +753,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     el('startScreen').classList.add('hidden');
     el('gameScreen').classList.remove('hidden');
     // scout peek content
-    renderScout(dateStr, el('scoutPeekCard'));
+    renderScoutFull(dateStr, el('scoutPeekCard'));
     const s=drive.state();
     renderStatus(s); renderCalls(s); renderLog(s);
     renderField(s, drive.currentDefense());
@@ -801,7 +822,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     buildFieldStatics();
     refreshChips();
     renderInfo(DATE);
-    renderScout(DATE, el('scoutCard'));
+    renderScout(DATE);
     renderSchemes();
     el('startBtn').onclick=()=>{
       // already played the daily?
@@ -816,6 +837,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     el('kickBtn').onclick=doKick;
     el('menuBtn').onclick=openMenu;
     el('scoutPeek').onclick=()=>{ const c=el('scoutPeekCard'); c.classList.toggle('hidden'); };
+    el('scoutBar').onclick=()=>{ const c=el('scoutCard'); c.classList.toggle('hidden');
+      el('scoutChev').textContent = c.classList.contains('hidden')?'▾':'▴'; };
     // if daily already completed today, reflect it on the banner
     if(STORE.history[DATE]!==undefined){
       const r=STORE.history[DATE]; const won=r==='TOUCHDOWN';
