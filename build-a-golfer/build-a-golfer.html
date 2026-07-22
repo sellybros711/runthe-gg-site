@@ -7001,6 +7001,7 @@ function overlayMenu(screen){
   acct.appendChild(menuRow(signedIn?'👤':'🔑',signedIn?(sbUsername||'Your account'):'Sign in',signedIn?(sbEmail()||'Signed in'):'Save your career & post to the leaderboards',go(()=>{ if(signedIn){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} })));
   acct.appendChild(menuRow('🎁','Invite a Friend','Share your link — you BOTH get a free pack',()=>{ S.overlay=null; render(); referralShare(); }));
   acct.appendChild(menuRow('↺','Reset','Retire your current golfer & start over',go(()=>{S.overlay='confirmReset';})));
+  if(signedIn) acct.appendChild(menuRow('↩','Sign Out','End your session on this device',()=>{ S.overlay=null; sbSignOut().then(()=>{ S.screen='title'; render(); toast('Signed out'); }); }));
   ov.appendChild(acct);
   // CS252: Settings - sound + haptics toggles (device-local, default on)
   const settings=$(`<div style="margin-bottom:16px"></div>`);
@@ -19352,7 +19353,7 @@ function scrDailyPreview(){
   add($(`<div class="small" style="text-align:center;color:var(--muted);font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin:14px 0 6px">How do you want to watch?</div>`));
   const wm=LS.get('bag_daily_mode','quick')==='full'?'full':'quick';
   const wdial=$(`<div style="display:flex;gap:8px;max-width:520px;margin:0 auto"></div>`);
-  [['quick','⚡ Quick Play','~2 min · watch the key holes'],['full','🎬 Full Round','watch every shot']].forEach(([k,lab,sub])=>{
+  [['quick','Quick Play','~2 min · watch the key holes'],['full','Full Round','watch every shot']].forEach(([k,lab,sub])=>{
     const on=wm===k; const btn=$(`<button class="btn ${on?'goldsel':'ghost'}" style="flex:1;font-size:13px">${lab}<span class="sub" style="font-size:9.5px">${sub}</span></button>`);
     btn.onclick=()=>{ LS.set('bag_daily_mode',k); render(); }; wdial.appendChild(btn); });
   add(wdial);

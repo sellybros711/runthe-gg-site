@@ -12256,6 +12256,15 @@ allows Google Fonts, or self-host Anton.*
   "🏆 WON -10", rounds, full leaderboard with money). Deployed to /golf. Tunable: which stats are clickable
   (the `sort` arg on bigTile/sTile), the popup content in `overlayTournament`.
 
+- **CS520 — three owner tweaks (screenshots).** (1) Removed the ⚡ / 🎬 emojis from the daily "How do you
+  want to watch?" buttons — now plain "Quick Play" / "Full Round". (2) Added a **Sign Out** row to the ≡
+  menu's Account section (shown only when signed in; `sbSignOut()` → title + "Signed out" toast) — there was
+  no sign-out on that page. (3) Confidence & Respect on the career banner: already collapse behind a
+  tap-to-expand toggle (CS498, `S._metersOpen` default false) — confirmed live after today's deploy, so the
+  meters no longer eat the top of the screen; the owner's screenshot predated the deploy. Verified in
+  Playwright: watch buttons emoji-free, Sign Out present in the signed-in menu (absent for guests), 0 page
+  errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
