@@ -12224,6 +12224,38 @@ allows Google Fonts, or self-host Anton.*
   The soccer/hub `drafts` board (older World-Cup REST path) wasn't changed here — the Nano upgrade + lighter
   golf boards free up the shared instance; a similar defer-jsonb pass on `drafts` is available if it stays slow.
 
+- **CS519 — all share text rebranded "RunTheTour: Daily Golf Game", simple + challenging, no @/#.** The
+  `withSocial` no-op (committed earlier) strips the @handle/#hashtags from native shares; this rewrote every
+  result-share caption to lead with the brand, dare the recipient, and carry the runthe.gg/golf link: the
+  daily ("Can you beat my score?"), major-win ("Think you can do better?"), season ("Think you can build
+  better?"), shot/`hvShareCaption` ("Think you can top it?"), spotlight, career-end + circuit-end ("Think you
+  can build a better legend?"), plus the h2h + referral invites. No @/# leaks (the `#5` in the season share
+  is a rank number, not a hashtag). Verified 0 page errors + the daily caption renders. Deployed to /golf.
+
+- **CS519b — season results page: centered stats + clickable stat→leaderboard + clickable won-tournament→detail
+  popup (owner).** Three asks on `scrSummary`'s Overview:
+  1. **Centered stat text.** The stat-hero tiles (`.tile`, default left-aligned) are now `text-align:center`,
+     so the Net profit / Earnings money row + the 3×2 grid (Wins / Majors / Top 10's / Cuts / Money List /
+     Tour Rank) read centered like the rest of the page.
+  2. **Clickable stats → the respective leaderboard.** Tiles that map to a public board sort (Net profit→net,
+     Earnings→earnings, Wins→wins, Majors→majors, Money List→earnings) are now buttons (pointer + a small ↗ +
+     keyboard/`role=button`) that open `overlayLeaderboard` on the **Season** tab ranked by that stat
+     (all-time, high→low). Top 10's / Cuts / Tour Rank have no board equivalent and stay static. Wired after
+     build via `data-lb` → sets `S.lbTab/S.lbSort/S.lbDir/S.lbWindow` + `S.overlay='leaderboard'`.
+  3. **Clickable won-tournaments → tournament detail popup.** Each "Tournaments Won" trophy card
+     (`.wontile`, +↗ + "tap for details") stores its `S.season.results` index and opens a new
+     **`overlayTournament`** — a `.ov` popup that reuses the recap-event composition: gold title, event
+     type + purse, `📍 venue · location` (`eventCourse`), your result (🏆 WON / place + to-par) with your
+     Thu/Fri/Sat/Sun rounds (`roundsRow`), the full final leaderboard (top 12 + you via `lbRow`, your row
+     highlighted), the winner/gap line, playoff note, and a Close button. Registered in the overlay dispatch;
+     `S.tourEvt` carries the index.
+  Verified in Playwright by driving a real dominant-build season to the summary (5 wins / 20 events, 0 page
+  errors): all 8 tiles centered, 5 clickable, tapping Wins opens the Season board sorted by wins, and tapping
+  a won-tournament opens the detail popup with the leaderboard + rounds + Close. Screenshots confirm the
+  centered Overview (↗ on clickable stats, "tap for details" on trophies) and the rich tournament popup (venue,
+  "🏆 WON -10", rounds, full leaderboard with money). Deployed to /golf. Tunable: which stats are clickable
+  (the `sort` arg on bigTile/sTile), the popup content in `overlayTournament`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

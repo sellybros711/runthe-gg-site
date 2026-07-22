@@ -1598,6 +1598,13 @@ window.GA_ID='G-L29P5MRWKE';
   .tile .k{font:800 11.5px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
   .tile .v{font-family:var(--mono); font-weight:800; font-size:23px; margin-top:6px; color:var(--gold)}
   .tile .v.cream{color:var(--oncard)}
+  /* CS519b: clickable summary stat tiles (open the respective leaderboard) */
+  .lbt[data-lb]{transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease}
+  .lbt[data-lb]:hover,.lbt[data-lb]:focus-visible{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.28);border-color:rgba(241,208,74,.5);outline:none}
+  .lbgo{position:absolute;top:5px;right:7px;font-size:10px;line-height:1;color:var(--gold);opacity:.6}
+  .wontile{cursor:pointer;transition:transform .12s ease, box-shadow .12s ease}
+  .wontile:hover,.wontile:focus-visible{transform:translateY(-2px);outline:none}
+  .wontile .wgo{position:absolute;top:8px;right:10px;font-size:11px;color:var(--gold);opacity:.6}
   .share{background:#0a2740; border:1px dashed var(--line); border-radius:11px; padding:12px 14px; font-family:var(--mono); font-size:12px; color:#d2e1ea; white-space:pre-wrap; margin-top:6px}
 
   /* ---- overlay (rules / leaderboard / records / account) ---- */
@@ -5963,6 +5970,7 @@ function render(){
     if(S.overlay==='record') overlayRecord(app);
     if(S.overlay==='account') overlayAccount(app);
     if(S.overlay==='leaderboard') overlayLeaderboard(app);
+    if(S.overlay==='tournament') overlayTournament(app);
     if(S.overlay==='dailydone') overlayDailyDone(app);
     if(S.overlay==='holeshots') overlayHoleShots(app);
     if(S.overlay==='courserecords') overlayCourseRecords(app);
@@ -6435,6 +6443,44 @@ function lbStatVal(r,tab,sort){   // the right-hand value column for the chosen 
     }
     default: return `<span style="color:var(--gold)">${fmt(tab==='career'?r.career_earnings:r.season_earnings)}</span>`;
   }
+}
+// CS519b (owner): tournament detail popup — opened by tapping a won-tournament card on the season
+// summary. Reuses the recap-event composition (venue, your result + rounds, final leaderboard, playoff).
+function overlayTournament(screen){
+  const results=(S.season&&S.season.results)||[];
+  const r=results[S.tourEvt];
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Tournament detail"></div>`);
+  if(!r || !r.order){
+    ov.appendChild($(`<p class="lede center" style="margin-top:20px">Tournament details aren't available.</p>`));
+  } else {
+    const {evt,order,playoff}=r;
+    const me=order.find(o=>o.p&&o.p.you);
+    const typeLbl=evt.major?'<span class="major">Major</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
+    const venue=eventCourse(evt);
+    ov.appendChild($(`<h3 class="center" style="margin:2px 0 3px;color:${evt.major?'var(--gold)':'var(--oncard)'}">${esc(evt.name)}</h3>`));
+    ov.appendChild($(`<div class="center kx" style="margin:0 0 3px">${typeLbl} · ${fmt(evt.purse)} purse</div>`));
+    if(venue) ov.appendChild($(`<div class="center small muted" style="margin:0 0 12px;text-transform:none;letter-spacing:0">📍 ${esc(venue.v)} · ${esc(venue.loc)}</div>`));
+    if(me){
+      const result=(me.pos===1?'🏆 WON':(me.pos==='CUT'?'Missed cut':(me.tied?'T':'')+me.pos));
+      ov.appendChild($(`<div class="center" style="margin:0 0 8px"><span style="font:800 18px/1 var(--body);color:var(--gold)">${result}</span>${me.pos!=='CUT'?` <span class="mono" style="color:var(--oncard)">${par(me.score)}</span>`:''}</div>`));
+      ov.appendChild(roundsRow(me));
+    }
+    const board=$(`<div class="board ${evt.major?'major':''}" style="margin-top:12px"></div>`);
+    const top=order.slice(0,12);
+    top.forEach(o=>board.appendChild(lbRow(o)));
+    if(me && top.indexOf(me)<0){ board.appendChild($(`<div class="sep"></div>`)); board.appendChild(lbRow(me)); }
+    ov.appendChild(board);
+    const win=order[0];
+    if(me && me.pos!==1 && win){
+      const gap=(me.pos!=='CUT')?(me.score-win.score):null;
+      ov.appendChild($(`<div class="small muted center" style="margin-top:8px">Won by <b style="color:var(--gold)">${esc(win.p.name)}</b> at ${par(win.score)}${gap!=null?` · you were ${gap} back`:''}</div>`));
+    }
+    if(playoff) ov.appendChild($(`<div class="small center" style="margin-top:8px;color:var(--gold)">⛳ ${playoff.holes}-hole playoff: ${esc(playoff.players.join(', '))}, won by <b>${esc(playoff.winner)}</b></div>`));
+  }
+  const close=$(`<button class="btn red" style="margin-top:16px">Close</button>`);
+  close.onclick=()=>{ S.overlay=null; render(); };
+  ov.appendChild(close);
+  screen.appendChild(ov);
 }
 function overlayLeaderboard(screen){
   const c=career();
@@ -16233,19 +16279,29 @@ function scrSummary(){
   // from Overview (it lived only on the Earnings tab) - is surfaced right up top next to Earnings. A money
   // row (net profit + earnings) sits over a 4-stat grid (Wins / Majors / Top 10's / Tour Rank). Built here,
   // placed FIRST in the reorder below (stats → wins → highlights → event results).
-  const bigTile=(k,v,col,sub)=>`<div class="tile" style="padding:11px 8px"><div class="k">${k}</div>
+  // CS519b (owner): stat text is CENTERED, and the stats that map to a public board are CLICKABLE - tapping
+  // one opens that leaderboard (Season tab, ranked by that stat). A `sort` arg marks a tile clickable
+  // (pointer + a small ↗); tiles with no board equivalent (Top 10's / Cuts / Tour Rank) stay static.
+  const clk=sort=>sort?` data-lb="${sort}" role="button" tabindex="0" aria-label="View the leaderboard" style="cursor:pointer"`:'';
+  const goHint=sort=>sort?'<span class="lbgo" aria-hidden="true">↗</span>':'';
+  const bigTile=(k,v,col,sub,sort)=>`<div class="tile lbt" style="padding:11px 8px;text-align:center;position:relative"${clk(sort)}>${goHint(sort)}<div class="k">${k}</div>
       <div class="v" style="font-size:23px;white-space:nowrap;color:${col}">${v}</div>
       ${sub?`<div class="small muted" style="font-size:9px;margin-top:2px">${sub}</div>`:''}</div>`;
-  const sTile=(k,v)=>`<div class="tile" style="padding:9px 5px"><div class="k">${k}</div><div class="v" style="font-size:18px;white-space:nowrap">${v}</div></div>`;
+  const sTile=(k,v,sort)=>`<div class="tile lbt" style="padding:9px 5px;text-align:center;position:relative"${clk(sort)}>${goHint(sort)}<div class="k">${k}</div><div class="v" style="font-size:18px;white-space:nowrap">${v}</div></div>`;
   const statHero=$(`<div style="margin:0 0 12px"></div>`);
-  // money row: net profit (green/red) + earnings, both prominent
+  // money row: net profit (green/red) + earnings, both prominent + tap → the board ranked by that stat
   statHero.appendChild($(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin:0 0 8px;gap:8px">
-      ${bigTile('Net profit', fmtSigned(netTotal), netCol0, contractBonus>0?('incl. +'+fmt(contractBonus)+' sponsor'):('after −'+fmt(ec.costs)+' costs'))}
-      ${bigTile('Earnings', fmt(t.money), 'var(--oncard)', 'prize money won')}</div>`));
+      ${bigTile('Net profit', fmtSigned(netTotal), netCol0, contractBonus>0?('incl. +'+fmt(contractBonus)+' sponsor'):('after −'+fmt(ec.costs)+' costs'), 'net')}
+      ${bigTile('Earnings', fmt(t.money), 'var(--oncard)', 'prize money won', 'earnings')}</div>`));
   // CS483s2 (owner): a balanced 3×2 stat grid incl. Cuts made (was a lopsided single row of 4)
   statHero.appendChild($(`<div class="tiles" style="grid-template-columns:repeat(3,1fr);margin:0;gap:8px">
-      ${sTile('Wins',t.wins+'')}${sTile('Majors',t.majors+'')}${sTile("Top 10's",t.top10+'')}
-      ${sTile('Cuts Made',t.made+'/'+t.played)}${sTile('Money List',ord(moneyRank))}${sTile('Tour Rank',fedexRank+' / '+N)}</div>`));
+      ${sTile('Wins',t.wins+'','wins')}${sTile('Majors',t.majors+'','majors')}${sTile("Top 10's",t.top10+'')}
+      ${sTile('Cuts Made',t.made+'/'+t.played)}${sTile('Money List',ord(moneyRank),'earnings')}${sTile('Tour Rank',fedexRank+' / '+N)}</div>`));
+  // wire the clickable stat tiles → the Season leaderboard ranked by that stat (all-time, high→low)
+  if(!S.daily) statHero.querySelectorAll('[data-lb]').forEach(el=>{
+    const open=()=>{ S.lbTab='season'; S.lbSort=el.dataset.lb; S.lbDir='desc'; S.lbWindow='all'; S.overlay='leaderboard'; try{track('summary_stat_board',{sort:el.dataset.lb});}catch(e){} render(); };
+    el.onclick=open; el.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(); } };
+  });
   __cur=stC;
   // ---- Stats (CS214): real measured scoring + a full derived tour-stat profile.
   // CS483 (owner mobile pass): a Season|Career toggle so only ONE stat sheet shows at a time (each ~350px
@@ -16268,7 +16324,7 @@ function scrSummary(){
   // CS477 (owner): Tournaments Won builds into the RIGHT column, side by side with Highlights (row assembled below).
   __cur=tourCol;
   { const wonThisSeason=[];
-    (S.season.results||[]).forEach(r=>{ const meR=r.order&&r.order.find(o=>o.p&&o.p.you); if(meR&&meR.pos===1) wonThisSeason.push({name:r.evt.name,major:!!r.evt.major}); });
+    (S.season.results||[]).forEach((r,i)=>{ const meR=r.order&&r.order.find(o=>o.p&&o.p.you); if(meR&&meR.pos===1) wonThisSeason.push({name:r.evt.name,major:!!r.evt.major,idx:i}); });
     if(wonThisSeason.length){
       // Prominent trophy showcase (owner: "make it much more apparent, bigger") - a titled section with
       // per-tournament trophy cards; majors get their custom trophy + gold treatment.
@@ -16276,16 +16332,22 @@ function scrSummary(){
       add($(`<div class="center small muted" style="margin:0 0 11px">${wonThisSeason.length} title${wonThisSeason.length>1?'s':''} this season</div>`));
       const wrap=$(`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:11px;max-width:600px;margin:0 auto 6px"></div>`);
       wonThisSeason.forEach(w=>{ const maj=w.major, th=maj?majorTheme(w.name):null;
-        wrap.appendChild($(`<div style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:15px;
+        // CS519b (owner): each won-tournament card is tappable → the tournament detail popup (final
+        // leaderboard, your rounds, winner). idx points into S.season.results.
+        const card=$(`<div class="wontile" data-tev="${w.idx}" role="button" tabindex="0" aria-label="${esc(w.name)} details" style="position:relative;display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:15px;
           border:1.5px solid ${maj?'var(--gold)':'rgba(241,208,74,.32)'};
           background:${maj?'linear-gradient(135deg,rgba(241,208,74,.20),rgba(241,208,74,.05))':'rgba(255,255,255,.035)'};
           box-shadow:${maj?'0 6px 22px rgba(241,208,74,.16)':'0 2px 10px rgba(0,0,0,.18)'}">
+          <span class="wgo" aria-hidden="true">↗</span>
           <div style="flex:0 0 auto;width:40px;height:46px">${maj?th.svg():winTrophySVG()}</div>
           <div style="min-width:0">
             <div style="font:800 16px/1.15 var(--body);color:${maj?'var(--gold)':'var(--oncard)'};overflow:hidden;text-overflow:ellipsis">${esc(w.name)}</div>
-            ${maj?'<div style="font:800 9.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-top:5px">Major Championship</div>'
-                 :'<div class="small muted" style="margin-top:4px">Tour victory</div>'}
-          </div></div>`));
+            ${maj?'<div style="font:800 9.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-top:5px">Major Championship · tap for details</div>'
+                 :'<div class="small muted" style="margin-top:4px">Tour victory · tap for details</div>'}
+          </div></div>`);
+        const open=()=>{ S.tourEvt=w.idx; S.overlay='tournament'; try{track('summary_tournament_detail',{});}catch(e){} render(); };
+        card.onclick=open; card.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(); } };
+        wrap.appendChild(card);
       });
       add(wrap);
     }
