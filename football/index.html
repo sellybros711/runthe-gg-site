@@ -113,9 +113,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   border-left:12px solid var(--gold-bright); transform:translate(-2px,-50%); transition:left .45s ease, top .45s ease; z-index:5;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.5));}
 /* pixel players (little men) — the sprite is inline SVG coloured by CSS vars */
-.chip{position:absolute; width:15px; height:19px; transform:translate(-50%,-60%); z-index:3;
+.chip{position:absolute; width:12px; height:16px; transform:translate(-50%,-60%); z-index:3;
   transition:left .4s ease, top .4s ease; filter:drop-shadow(0 2px 0 rgba(0,0,0,.35));}
-.chip.qb{width:17px; height:21px; z-index:4;}
+.chip.qb{width:13px; height:17px; z-index:4;}
 .manart{width:100%; height:100%; display:block; transform-origin:center; transform:scaleX(1);}
 /* facing: flip the sprite to run the other way (composes with the bob 'translate') */
 .chip.faceL .manart, .hchip.faceL .manart, .anim-carrier.faceL .manart{ transform:scaleX(-1); }
@@ -154,7 +154,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.6)); will-change:left,top,transform;}
 .anim-ball.spin{animation:ballspin .5s linear infinite;}
 @keyframes ballspin{to{transform:translate(-50%,-50%) rotate(360deg);}}
-.anim-carrier{position:absolute; width:16px;height:20px; z-index:8; transform:translate(-50%,-60%);
+.anim-carrier{position:absolute; width:13px;height:17px; z-index:8; transform:translate(-50%,-60%);
   filter:drop-shadow(0 2px 0 rgba(0,0,0,.4)); will-change:left,top;}
 .burst{position:absolute; z-index:10; transform:translate(-50%,-50%); font-family:var(--pix); font-size:16px;
   color:#fff; opacity:0; text-shadow:0 2px 0 rgba(0,0,0,.6);}
@@ -668,9 +668,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   // playable x: own goal 0% .. LOS scale .. right endzone starts at 89%
   /* Zoomed, scrolling camera: only VIEW yards are visible at once, and the view
      follows the ball downfield — so a long drive feels like real distance. */
-  const F_LEFT=1.5, F_RIGHT=98.5, VIEW=46;
+  const F_LEFT=1.5, F_RIGHT=98.5, VIEW=34;   // fewer yards visible = a first down looks like a longer haul
   let camLeft=25;
-  function setCamera(ballYard){ camLeft = Math.max(-10, Math.min(112-VIEW, ballYard - VIEW*0.36)); }
+  function setCamera(ballYard){ camLeft = Math.max(-8, Math.min(112-VIEW, ballYard - VIEW*0.34)); }
   function xOf(yard){ return F_LEFT + ((yard-camLeft)/VIEW)*(F_RIGHT-F_LEFT); }
   function onScreen(x){ return x>=F_LEFT-1 && x<=F_RIGHT+1; }
   function drawEZ(S,y0,y1,side){ let x0=xOf(y0), x1=xOf(y1); if(x1<F_LEFT||x0>F_RIGHT) return;
