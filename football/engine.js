@@ -453,7 +453,33 @@
          + `Day streak: ${streakDays}`;
   }
 
+  /* ---------- SCOUTING: what works / what doesn't vs today's defense ---------
+     Weight the measured DEF_MOD matchup table by how often the day's defense
+     shows each look (blitz rate + box tendency). The result is a per-play-type
+     rating: positive = this call is favored today, negative = the defense takes
+     it away. This is what turns the hidden gameplan into real advice.          */
+  function columnProbs(gp) {
+    const blitz = Math.max(0, Math.min(0.6, gp.blitzRate != null ? gp.blitzRate : 0.24));
+    const bb = gp.boxBias || 0;
+    let light = 0.30 - bb * 0.22, heavy = 0.24 + bb * 0.28;
+    light = Math.max(0.05, Math.min(0.6, light));
+    heavy = Math.max(0.05, Math.min(0.6, heavy));
+    let base = Math.max(0.1, 1 - light - heavy);
+    const s = light + heavy + base; light /= s; heavy /= s; base /= s;
+    const nb = 1 - blitz;
+    const hbShare = Math.max(0.2, Math.min(0.8, 0.45 + bb * 0.3));
+    return { LIGHT_BOX: nb*light, BASE_7: nb*base, HEAVY_BOX: nb*heavy,
+             BLITZ_LIGHT_BOX: blitz*(1-hbShare), HEAVY_BLITZ: blitz*hbShare };
+  }
+  function matchupRatings(gp) {
+    const P = columnProbs(gp); const out = {};
+    for (const arch in DEF_MOD) { let e = 0;
+      for (const col in P) e += P[col] * (DEF_MOD[arch][col] || 0);
+      out[arch] = +e.toFixed(2); }
+    return out;
+  }
+
   return { createDrive, runDrive, resolvePlay, gradeCall, expectedValue, shareCard,
            buildCallSheet, situationalMod, fgMakeProb, setDifficulty, getDifficulty,
-           DEF_MOD, RULES, SNEAK_PLAY };
+           matchupRatings, DEF_MOD, RULES, SNEAK_PLAY };
 }));
