@@ -252,8 +252,17 @@
       lines.push({ tag: 'COVERAGE', text: 'Zone-heavy secondary. Find the soft spot underneath and let it develop.' });
     }
 
+    // Compact, scannable gauges for the matchup screen.
+    const pressure = budget.count <= 1 ? { level:'LOW',  pct:22 }
+                   : budget.count <= 3 ? { level:'MEDIUM', pct:58 }
+                   :                     { level:'HIGH', pct:92 };
+    const box = gp.boxBias >= 0.4 ? { level:'HEAVY', hint:'stacks the line' }
+              : gp.boxBias <= -0.3 ? { level:'LIGHT', hint:'thin front, deep shell' }
+              :                      { level:'BALANCED', hint:'reacts to personnel' };
+    const coverageLabel = gp.coverage === 'MAN' ? 'MAN' : gp.coverage === 'ZONE' ? 'ZONE' : 'MIXED';
     return { styleKey: gp.styleKey, style: gp.styleName, note: gp.styleNote,
-             coverage: gp.coverage, blitzCount: budget.count, lines };
+             coverage: gp.coverage, coverageLabel, blitzCount: budget.count,
+             pressure, box, lines };
   }
 
   return {

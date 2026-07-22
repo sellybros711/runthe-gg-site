@@ -15,9 +15,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 <style>
 :root{
-  --bg:#092018; --bg2:#0c3324; --panel:#0f3a29; --panel2:#0b2c20;
-  --line:rgba(244,227,201,.14); --line2:rgba(244,227,201,.28);
-  --cream:#f4e3c9; --cream-dim:#bcae95; --gold:#eba61f; --gold-bright:#ffcf4d;
+  --bg:#0a1420; --bg2:#0e2134; --panel:#12273c; --panel2:#0d1d2e;
+  --line:rgba(210,224,244,.12); --line2:rgba(210,224,244,.24);
+  --cream:#eef3fb; --cream-dim:#9fb1c8; --gold:#f2b21c; --gold-bright:#ffcf4d;
   --grass:#2f7d3f; --grass2:#286f37; --grass-line:rgba(244,227,201,.55);
   --endzone:#7a1f22; --endzone2:#611619;
   --green:#7bd67e; --red:#e0705c; --amber:#f0c060; --blue:#69b0d0;
@@ -30,8 +30,8 @@
 html,body{margin:0;padding:0;}
 body{
   background:
-    radial-gradient(1100px 520px at 50% -10%, rgba(235,166,31,.10), transparent 60%),
-    linear-gradient(180deg,#0b2a1f,var(--bg) 70%);
+    radial-gradient(1100px 520px at 50% -10%, rgba(242,178,28,.10), transparent 60%),
+    linear-gradient(180deg,#0d1d30,var(--bg) 70%);
   color:var(--cream); font-family:var(--term); font-size:16px; line-height:1.45; font-weight:500;
   min-height:100dvh; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
   display:flex; justify-content:center;
@@ -133,7 +133,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   font-family:var(--pix); font-size:8px; color:var(--grass-line); writing-mode:vertical-rl;}
 .field-badge{position:absolute; left:8px; top:8px; z-index:6; display:flex; gap:6px; flex-wrap:wrap; max-width:70%;}
 .pill{font-family:var(--pix); font-size:8px; letter-spacing:.5px; padding:5px 7px; border-radius:6px;
-  background:rgba(9,32,24,.82); border:1px solid var(--line2); color:var(--cream);}
+  background:rgba(10,20,32,.82); border:1px solid var(--line2); color:var(--cream);}
 .pill.hot{color:#ff9a5b; border-color:rgba(255,120,60,.5);}
 .pill.box{color:var(--gold-bright);}
 
@@ -141,7 +141,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .toast{position:absolute; inset:0; display:grid; place-items:center; z-index:8; pointer-events:none;
   opacity:0;}
 .toast.show{animation:pop 1.15s ease forwards;}
-.toast .card2{background:rgba(9,32,24,.92); border:2px solid var(--line2); border-radius:12px;
+.toast .card2{background:rgba(10,20,32,.92); border:2px solid var(--line2); border-radius:12px;
   padding:16px 22px; text-align:center; box-shadow:0 6px 0 rgba(0,0,0,.4);}
 .toast .r{font-family:var(--pix); font-size:20px;}
 .toast .y{font-family:var(--pix); font-size:13px; margin-top:8px;}
@@ -166,7 +166,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .field.shake{animation:shake .35s ease;}
 @keyframes shake{0%,100%{transform:translate(0,0)}25%{transform:translate(-3px,1px)}50%{transform:translate(3px,-1px)}75%{transform:translate(-2px,1px)}}
 .tile .rem{position:absolute; top:5px; right:6px; font-family:var(--pix); font-size:7px; color:var(--gold-bright);
-  background:rgba(9,32,24,.7); border-radius:4px; padding:2px 4px;}
+  background:rgba(10,20,32,.7); border-radius:4px; padding:2px 4px;}
 .tile{position:relative;}
 .tile.keyed{border-color:rgba(224,112,92,.6);}
 .tile .keytag{position:absolute; bottom:4px; left:0; right:0; font-family:var(--pix); font-size:6px; color:var(--red); letter-spacing:.5px;}
@@ -215,7 +215,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     linear-gradient(180deg,#348545,#2a7439);}
 .hero-field .ez{position:absolute; top:0;right:0;bottom:0;width:12%;
   background:repeating-linear-gradient(180deg,var(--endzone) 0 6px,var(--endzone2) 6px 12px); border-left:3px solid #fff;}
-.hero-field .scrim{position:absolute; inset:0; background:linear-gradient(180deg,transparent 55%,rgba(9,32,24,.35));}
+.hero-field .scrim{position:absolute; inset:0; background:linear-gradient(180deg,transparent 55%,rgba(10,20,32,.35));}
 .hchip{position:absolute; width:13px;height:16px; transform:translate(-50%,-60%);
   filter:drop-shadow(0 1px 0 rgba(0,0,0,.4));}
 .h-ball{position:absolute; width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;
@@ -254,6 +254,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .opp .name .em{font-size:26px;}
 .opp .name .who{font-family:var(--pix); font-size:14px; color:var(--gold-bright);}
 .opp .name .k{font-family:var(--term); font-size:15px; color:var(--cream-dim); margin-top:3px;}
+.opp .dstats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:2px 0 14px;}
+.opp .ds{background:var(--panel2); border:1px solid var(--line); border-radius:11px; padding:11px 6px 9px; text-align:center;}
+.opp .ds .dl{font-family:var(--pix); font-size:8px; color:var(--cream-dim); letter-spacing:.5px;}
+.opp .ds .dbig{font-size:20px; line-height:1; margin:7px 0 5px;}
+.opp .ds .dbar{height:6px; background:var(--line); border-radius:3px; margin:9px 5px 6px; overflow:hidden;}
+.opp .ds .dbar i{display:block; height:100%; background:var(--gold); border-radius:3px;}
+.opp .ds .dv{font-family:var(--pix); font-size:11px; color:var(--cream);}
+.opp .ds .dv.p-HIGH{color:#ff7a3d;} .opp .ds .dv.p-MEDIUM{color:var(--gold-bright);} .opp .ds .dv.p-LOW{color:var(--green);}
+.opp .ds .dh{font-size:13px; color:var(--cream-dim); margin-top:5px; line-height:1.2;}
 .opp .plain{font-size:20px; line-height:1.35; margin-bottom:12px;}
 .opp .attack{display:flex; gap:10px; background:var(--panel2); border:1px solid var(--line); border-radius:9px;
   padding:11px 12px; margin-bottom:12px;}
@@ -282,10 +291,13 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .schemes{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;}
 .scheme{display:flex; flex-direction:column; gap:3px; padding:11px 12px; text-align:left; width:100%;
   background:var(--panel); border:2px solid var(--line2); border-radius:11px; box-shadow:var(--shadow);}
-.scheme.sel{border-color:var(--gold); background:#124532;}
+.scheme.sel{border-color:var(--gold); background:#16324e;}
 .scheme .nm{font-family:var(--pix); font-size:10px;}
 .scheme .id{font-family:var(--term); font-size:16px; color:var(--cream-dim); line-height:1.05;}
-.scheme-detail{display:flex; gap:14px; flex-wrap:wrap; padding:2px 6px 12px; font-size:16px;}
+.scheme .sw{display:flex; flex-direction:column; gap:2px; margin-top:6px; padding-top:6px; border-top:1px solid var(--line); font-size:13px; line-height:1.25;}
+.scheme .sw .s{color:var(--green);} .scheme .sw .w{color:var(--red);}
+.scheme-detail{padding:4px 6px 12px; font-size:15px; color:var(--cream-dim);}
+.scheme-detail b{color:var(--gold-bright);}
 .scheme-detail .s{color:var(--green);} .scheme-detail .w{color:var(--red);}
 
 .cta{width:100%; padding:16px; margin-bottom:14px; background:var(--gold); color:#3a2a00;
@@ -384,7 +396,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .howto-link{ display:block; margin:16px auto 2px; background:transparent; border:0; font-family:var(--pix);
   font-size:11px; color:#8fa0b5; letter-spacing:1px;}
 /* field strip */
-.field-strip{ position:relative; z-index:2; height:150px; margin:auto -16px 0; overflow:hidden;
+.field-strip{ position:relative; z-index:2; flex:1 1 auto; min-height:210px; max-height:340px; margin:16px -16px 0; overflow:hidden;
   border-top:3px solid rgba(255,255,255,.55);
   background:
     repeating-linear-gradient(90deg, rgba(255,255,255,.16) 0 3px, transparent 3px 46px),
@@ -649,9 +661,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     const g = DEF_GUIDE[rep.styleKey] || {emoji:'🛡️', plain:rep.note, attack:'Read the box and play the down and distance.'};
     let deep = '';
     for(const l of rep.lines){ deep += `<div class="ln"><span class="tag">${l.tag}</span><span class="tx">${l.text}</span></div>`; }
+    const covHint = rep.coverage==='MAN' ? 'motion & rubs beat it' : rep.coverage==='ZONE' ? 'find the soft spot' : 'shows both';
     el('oppCard').innerHTML =
       `<div class="name"><span class="em">${g.emoji}</span><div><div class="who">${rep.style.toUpperCase()} DEFENSE</div>`
-      + `<div class="k">${rep.coverage==='MAN'?'Man-coverage lean':rep.coverage==='ZONE'?'Zone-coverage lean':'Mixed coverage'} · blitzes ~${rep.blitzCount} this drive</div></div></div>`
+      + `<div class="k">Today’s opponent · one drive to beat them</div></div></div>`
+      + `<div class="dstats">`
+      +   `<div class="ds"><div class="dl">PRESSURE</div><div class="dbar"><i style="width:${rep.pressure.pct}%"></i></div><div class="dv p-${rep.pressure.level}">${rep.pressure.level}</div><div class="dh">~${rep.blitzCount} blitzes</div></div>`
+      +   `<div class="ds"><div class="dl">BOX</div><div class="dbig">${rep.box.level==='HEAVY'?'🟥':rep.box.level==='LIGHT'?'🟩':'🟨'}</div><div class="dv">${rep.box.level}</div><div class="dh">${rep.box.hint}</div></div>`
+      +   `<div class="ds"><div class="dl">COVERAGE</div><div class="dbig">${rep.coverage==='MAN'?'👤':rep.coverage==='ZONE'?'🗺️':'🔀'}</div><div class="dv">${rep.coverageLabel}</div><div class="dh">${covHint}</div></div>`
+      + `</div>`
       + `<div class="plain">${g.plain}</div>`
       + `<div class="attack"><span class="lbl">HOW TO<br>ATTACK</span><span class="tx">${g.attack}</span></div>`
       + `<button class="deep-toggle" id="deepToggle">📋 FULL SCOUTING REPORT ▾</button>`
@@ -668,12 +686,13 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       const s = PB.schemes[key], m = SCHEME_META[key];
       const b = document.createElement('button');
       b.className='scheme'+(key===STORE.scheme?' sel':'');
-      b.innerHTML = `<span class="nm">${s.name}</span><span class="id">${m.id}</span>`;
+      b.innerHTML = `<span class="nm">${s.name}</span><span class="id">${m.id}</span>`
+        + `<span class="sw"><span class="s">▲ ${m.s}</span><span class="w">▼ ${m.w}</span></span>`;
       b.onclick=()=>{ STORE.scheme=key; save(STORE); renderSchemes(); };
       list.appendChild(b);
     }
     const m = SCHEME_META[STORE.scheme];
-    el('schemeDetail').innerHTML = `<span class="s">▲ ${m.s}</span><span class="w">▼ ${m.w}</span>`;
+    el('schemeDetail').innerHTML = `<b>${PB.schemes[STORE.scheme].name}</b> selected — you’ll call this playbook all drive`;
   }
 
   /* ---------- field rendering ---------- */
