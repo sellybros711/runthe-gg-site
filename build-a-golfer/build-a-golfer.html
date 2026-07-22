@@ -5561,7 +5561,7 @@ function addBonusCoins(n, opts){ opts=opts||{}; n=Math.round(n||0); if(!sbSigned
 // EXACTLY ONCE, on any device, and never anyone else. To grant again later: bump COIN_GRANT_V and set the
 // amounts. Runs after cloudPull on sign-in (so grantV/bonus are the synced values). NOTE: a future
 // COIN_EPOCH re-baseline zeroes bonus; re-grant then by bumping COIN_GRANT_V.
-const COIN_GRANT_V=1;
+const COIN_GRANT_V=2;   // bump to re-grant: v2 adds another 1,000,000 to CSel8 + RunnyJ (each version credits once, synced)
 const COIN_GRANTS={ 'csel8':1000000, 'runnyj':1000000 };
 function maybeCoinGrant(){ try{
   if(!sbSignedIn()) return; const uname=(sbUsername||'').toLowerCase(); if(!uname) return;
