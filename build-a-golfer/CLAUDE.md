@@ -12265,6 +12265,42 @@ allows Google Fonts, or self-host Anton.*
   Playwright: watch buttons emoji-free, Sign Out present in the signed-in menu (absent for guests), 0 page
   errors. Deployed to /golf.
 
+- **PRIME CARDS — 25 "Prime" 2K-style peak cards + all-time-legend re-rates + roll-5/10/25 achievements
+  (owner: "make sure the legends like Jack Nicklaus and Arnold Palmer (among others) are properly rated with
+  this change as well… I think it's okay the way it is because user will not see the real overall just the
+  attributes. I like it. deploy it. Also, make rewards for rolling 5, 10, and all 25 cards in the achievements
+  section").** Two owner-approved pieces, deployed together to /golf.
+  1. **25 Prime cards + legend re-rates (committed earlier this session, deployed now).** Added 25 new
+     draft-wheel roster entries "Prime <Name>" — 2K-style PEAK versions of modern stars (each ~+3 over the
+     player's proposed peak), topped by a singular **Prime Tiger Woods at 99 across all skills**. Legendary
+     (7): Prime Tiger 99, Prime DJ/Koepka/Spieth 96, Prime Phil/Day 95, Prime Bubba 93. Epic (18): Stenson/
+     Garcia/Cam Smith 93, Donald/Westwood/Kaymer/Oosthuizen 92, Harrington/Molinari/Casey/Zalatoris 91,
+     Poulter/Simpson 90, McDowell/Horschel/Zach 89, Willett/Schwartzel 88. Base cards untouched; Primes are
+     **draft-only** (never in the season field). The field-leak trap (fld derived from data_source, career
+     world filtered by AGE not tier — a young Prime would double up the base player) is closed via a `prime`
+     flag set in the GOLFERS map (`g.prime → g.fld=0`, so Primes stay out of `FIELDPOOL`) + a `!g.prime`
+     filter in `seedWorld`'s living-world `active` set. Also re-rated ~20 broken/too-low all-time legends so
+     the greats sit at/above the new Primes: Jack Nicklaus 86→97 (data_source→reputation, app 76→96), Ben
+     Hogan 88→96, Tom Watson 86→94, Sam Snead 87→93, Bobby Jones 88→93, **Arnold Palmer 78→92** (fixed the
+     broken 58s → dist95/put97/clu96 etc.), Gary Player/Byron Nelson/Seve/Faldo/Norman 87→92, Trevino/Hagen/
+     Sarazen 87→91, Vijay 86→91, Ernie Els 87→90, Payne Stewart 85→87, Nick Price 83→86, Floyd/Miller 83→85.
+     Apex: Prime Tiger 99 > Nicklaus 97 > {Hogan / Prime DJ·Koepka·Spieth} 96. Legend re-rates are low-risk
+     (legends are draft-pool only, `fld:false`, so raising overalls doesn't touch season-sim difficulty).
+     Owner approved the apex structure as-is ("user will not see the real overall just the attributes").
+  2. **Roll-5/10/25 achievements (this change).** 3 new "The Draft" achievements — **Prime Time** (roll 5
+     different Primes, 50pts), **Prime Collector** (10, 90pts), **Prime Everything** (all 25, 200pts). Distinct
+     Primes rolled on the draft wheel are tracked in a dedicated account-scoped, cloud-synced `bag_primes` store
+     (a name→1 map with a grow-only UNION merge, `mergePrimes`, added to the CS82 cloud bundle) — independent
+     of the per-draft `S.revealed` set, so it accumulates across drafts + devices. Recorded via
+     `recordPrimePull(land.name)` (signed-in only, matching the rest of the achievement system) from BOTH the
+     career/daily/off-season `reveal()` finish closure AND the H2H draft `h2hReveal()` finish, whenever
+     `land.prime`; `primesPulled` metric added to `achMetrics()`. Verified in Playwright end-to-end: 362 total
+     achievements / 0 dup ids; the metric reflects the store; `get()` crosses at 5/10/25; 4 pulls → locked, a
+     dup pull doesn't advance, the 5th distinct → dr_prime5 unlocks, all 25 → dr_prime10 + dr_prime25;
+     `mergePrimes` unions two devices' maps; 25 Primes drawable in RPOOL / 0 in FIELDPOOL; 0 page errors.
+     (Adding 3 achievements auto-rescales the Tour Rep tiers, consistent with prior expansions — nobody loses
+     anything; the rank name recomputes.) Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
