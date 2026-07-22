@@ -239,12 +239,13 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="entities.js"></script>
   <script src="data.js"></script>
   <script src="generator.js"></script>
   <script>
   (function () {
     'use strict';
-    var BANK = window.GRID_BANK, Gen = window.GridGen;
+    var BANK = window.GRID_BANK, ENT = window.GRID_ENTITIES, Gen = window.GridGen;
     var LS = window.localStorage;
 
     // ---- today's date (local) ----
@@ -281,7 +282,8 @@
     var laneById = {};                 // catId -> lane meta (color etc.)
 
     function buildDay() {
-      day = Gen.generateDaily(DATE, BANK);
+      // data-driven board from the tagged DB, with the authored bank as fallback
+      day = Gen.daily(DATE, { entities: ENT, bank: BANK });
       byId = {}; day.tiles.forEach(function (t) { byId[t.id] = t; });
       solById = {};
       Object.keys(day.solution).forEach(function (cid) {
@@ -574,7 +576,7 @@
         var b = document.createElement('div'); b.className = 'b';
         b.style.background = laneById[laneCat[idx]].color; strip.appendChild(b);
       });
-      document.getElementById('resModal').hidden = false;
+      document.getElementById('resultModal').hidden = false;
       window._lastResult = r;
     }
     function shareText(r) {
@@ -645,7 +647,7 @@
       else if (navigator.clipboard) { navigator.clipboard.writeText(txt).then(function () { toast('Result copied'); }); }
       else { toast('Copy not supported'); }
     });
-    function closeModal() { document.getElementById('resModal').hidden = true; }
+    function closeModal() { document.getElementById('resultModal').hidden = true; }
     document.getElementById('resClose').addEventListener('click', closeModal);
     document.getElementById('resDone').addEventListener('click', closeModal);
 
