@@ -90,22 +90,25 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 /* ---------- field ---------- */
 .field-wrap{position:relative; border:2px solid var(--line2); border-radius:12px; overflow:hidden;
   margin-bottom:12px; box-shadow:var(--shadow); background:var(--grass);}
-.field{position:relative; width:100%; aspect-ratio:5/4;
-  background:
-    repeating-linear-gradient(90deg, var(--grass) 0 9%, var(--grass2) 9% 10%),
-    linear-gradient(180deg,#348545,#2a7439);
-}
-.endzone{position:absolute; top:0; right:0; bottom:0; width:11%;
-  background:repeating-linear-gradient(180deg,var(--endzone) 0 6px,var(--endzone2) 6px 12px);
-  border-left:3px solid #fff; display:grid; place-items:center;}
-.endzone span{font-family:var(--pix); font-size:11px; color:#f4d9c9; letter-spacing:2px;
+.field{position:relative; width:100%; aspect-ratio:4/5; overflow:hidden;
+  background:linear-gradient(180deg,#3c8b4d,#2a6d38);}
+#fieldStatics{position:absolute; inset:0; z-index:0;}
+.mow{position:absolute; top:0; bottom:0; background:rgba(255,255,255,.05);}
+.mow.b{background:rgba(0,0,0,.06);}
+.yl{position:absolute; top:0; bottom:0; width:2px; margin-left:-1px; background:rgba(255,255,255,.42);}
+.yl.major{width:3px; margin-left:-1.5px; background:rgba(255,255,255,.66);}
+.yl.goal{width:5px; margin-left:-2.5px; background:#fff;}
+.ynum{position:absolute; font-family:var(--pix); font-weight:800; font-size:16px; letter-spacing:1px;
+  color:rgba(255,255,255,.72); transform:translateX(-50%);}
+.ynum.top{top:6%;} .ynum.bot{bottom:6%;}
+.fhash{position:absolute; width:2px; height:7px; margin-left:-1px; background:rgba(255,255,255,.32);}
+.ez{position:absolute; top:0; bottom:0; overflow:hidden; display:grid; place-items:center; z-index:1;}
+.ez.opp{background:repeating-linear-gradient(180deg,var(--endzone) 0 7px,var(--endzone2) 7px 14px); border-left:4px solid #fff;}
+.ez.own{background:repeating-linear-gradient(180deg,#20486b 0 7px,#183a58 7px 14px); border-right:4px solid #fff;}
+.ez span{font-family:var(--pix); font-weight:800; font-size:13px; color:#f6ddca; letter-spacing:2px;
   writing-mode:vertical-rl; text-orientation:upright; opacity:.92;}
-.yard-num{position:absolute; top:8%; font-family:var(--pix); font-size:10px; color:var(--grass-line);
-  transform:translateX(-50%);}
-.yard-num.bot{top:auto; bottom:8%;}
-.hash{position:absolute; width:2px; height:7px; background:var(--grass-line);}
-.los{position:absolute; top:0; bottom:0; width:2px; background:rgba(255,255,255,.85);}
-.firstdown{position:absolute; top:0; bottom:0; width:3px; background:var(--gold); box-shadow:0 0 6px rgba(235,166,31,.8);}
+.los{position:absolute; top:0; bottom:0; width:2px; background:rgba(255,255,255,.9); z-index:2;}
+.firstdown{position:absolute; top:0; bottom:0; width:3px; background:var(--gold); box-shadow:0 0 6px rgba(235,166,31,.8); z-index:2;}
 .ball{position:absolute; width:0;height:0; border-top:7px solid transparent; border-bottom:7px solid transparent;
   border-left:12px solid var(--gold-bright); transform:translate(-2px,-50%); transition:left .45s ease, top .45s ease; z-index:5;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.5));}
@@ -514,7 +517,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <!-- FIELD -->
     <div class="field-wrap">
       <div class="field" id="field">
-        <div class="endzone"><span>TOUCHDOWN</span></div>
+        <div id="fieldStatics"></div>
         <span class="side-tag" id="sideTag">YOUR 35</span>
         <div class="field-badge" id="fieldBadge"></div>
         <div class="los" id="losEl" style="left:35%"></div>
@@ -663,21 +666,31 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   /* ---------- field rendering ---------- */
   // playable x: own goal 0% .. LOS scale .. right endzone starts at 89%
-  const F_LEFT=3, F_RIGHT=88;             // % bounds of the 0..100 yardline field
-  function xOf(yard){ return F_LEFT + (yard/100)*(F_RIGHT-F_LEFT); }
-  function buildFieldStatics(){
-    const f = el('field');
-    // yard numbers 10..50..10 and hash marks
-    const marks = document.createDocumentFragment();
-    const nums = [[10,'10'],[20,'20'],[30,'30'],[40,'40'],[50,'50'],[60,'40'],[70,'30'],[80,'20'],[90,'10']];
-    for(const [yd,label] of nums){
-      const a=document.createElement('div'); a.className='yard-num'; a.style.left=xOf(yd)+'%'; a.textContent=label; marks.appendChild(a);
-      const b=document.createElement('div'); b.className='yard-num bot'; b.style.left=xOf(yd)+'%'; b.textContent=label; marks.appendChild(b);
-    }
-    for(let yd=5; yd<100; yd+=5){
-      for(const top of [30,68]){ const h=document.createElement('div'); h.className='hash'; h.style.left=xOf(yd)+'%'; h.style.top=top+'%'; marks.appendChild(h); }
-    }
-    f.insertBefore(marks, el('losEl'));
+  /* Zoomed, scrolling camera: only VIEW yards are visible at once, and the view
+     follows the ball downfield — so a long drive feels like real distance. */
+  const F_LEFT=1.5, F_RIGHT=98.5, VIEW=46;
+  let camLeft=25;
+  function setCamera(ballYard){ camLeft = Math.max(-10, Math.min(112-VIEW, ballYard - VIEW*0.36)); }
+  function xOf(yard){ return F_LEFT + ((yard-camLeft)/VIEW)*(F_RIGHT-F_LEFT); }
+  function onScreen(x){ return x>=F_LEFT-1 && x<=F_RIGHT+1; }
+  function drawEZ(S,y0,y1,side){ let x0=xOf(y0), x1=xOf(y1); if(x1<F_LEFT||x0>F_RIGHT) return;
+    const l=Math.max(F_LEFT,x0), r=Math.min(F_RIGHT,x1);
+    const ez=document.createElement('div'); ez.className='ez '+side; ez.style.left=l+'%'; ez.style.width=(r-l)+'%';
+    if(side==='opp'){ const s=document.createElement('span'); s.textContent='TOUCHDOWN'; ez.appendChild(s); }
+    S.appendChild(ez); }
+  function drawFieldStatics(){
+    const S=el('fieldStatics'); if(!S) return; S.innerHTML='';
+    const add=(cls,left,width,top)=>{ const d=document.createElement('div'); d.className=cls;
+      d.style.left=left+'%'; if(width!=null) d.style.width=width+'%'; if(top!=null) d.style.top=top+'%';
+      S.appendChild(d); return d; };
+    for(let y=-10; y<115; y+=5){ let x0=xOf(y), x1=xOf(y+5); if(x1<F_LEFT||x0>F_RIGHT) continue;
+      x0=Math.max(F_LEFT,x0); x1=Math.min(F_RIGHT,x1); add('mow'+((Math.round(y/5)&1)?' b':''), x0, x1-x0); }
+    drawEZ(S, 100, 110, 'opp'); drawEZ(S, -10, 0, 'own');
+    for(let y=0; y<=100; y+=5){ const x=xOf(y); if(x<F_LEFT-2||x>F_RIGHT+2) continue;
+      add('yl'+(y%10===0?' major':'')+((y===0||y===100)?' goal':''), x);
+      if(y%10===0 && y>0 && y<100){ const n=(y<=50?y:100-y); add('ynum top', x).textContent=n; add('ynum bot', x).textContent=n; } }
+    for(let y=1; y<100; y++){ if(y%5===0) continue; const x=xOf(y); if(!onScreen(x)) continue;
+      add('fhash', x, null, 34); add('fhash', x, null, 62); }
   }
   // Little pixel man: helmet, jersey with shoulders/arms, split legs. Every fill
   // reads a CSS var so one sprite serves both teams (and the QB) by palette.
@@ -718,6 +731,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   function spread(n, lo, hi){ if(n<=1) return [(lo+hi)/2]; const out=[]; for(let i=0;i<n;i++) out.push(lo+(hi-lo)*i/(n-1)); return out; }
 
   function renderField(state, def){
+    setCamera(state.yardline);          // follow the ball
+    drawFieldStatics();                 // redraw the (scrolled) field art
     const bx = xOf(state.yardline);
     el('losEl').style.left = bx+'%';
     el('ballEl').style.left = bx+'%';
@@ -881,7 +896,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     const F = FORM;
     const bx = xOf(before.yardline);
     const endYard = play.turnover ? before.yardline : Math.max(1, Math.min(100, before.yardline + play.yards));
-    const endX = xOf(endYard);
+    const endX = Math.min(xOf(endYard), F_RIGHT-4);   // keep the play on-screen (breakaway to the edge)
     const isRun = ['RUN','QB_SNEAK'].includes(play.archetype);
     const ball = fx('anim-ball', bx-2, 50);
     if(!F || !F.qb){ move(ball, endX, 50, 500); await sleep(560); outcomeBurst(play, after, endX); await sleep(500); clearFx(); return; }
@@ -925,7 +940,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       const AIR = { QUICK:5, SCREEN:-1, INTERMEDIATE:14, DEEP:26, PLAY_ACTION:15 };
       const air = AIR[play.archetype] != null ? AIR[play.archetype] : 9;
       const catchYard = Math.max(before.yardline-2, Math.min(99, before.yardline + air));
-      const catchX = xOf(catchYard);
+      const catchX = Math.min(xOf(catchYard), F_RIGHT-4);
       const wr = targetY<50 ? F.wrTop : F.wrBot;
       const otherWr = targetY<50 ? F.wrBot : F.wrTop;
       step(wr, catchX, targetY, 640, 'linear');                                    // primary route
@@ -1179,7 +1194,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     else { navigator.clipboard && navigator.clipboard.writeText(text).then(()=>mini('Invite copied!')).catch(()=>mini('Copy failed')); }
   }
   function boot(){
-    buildFieldStatics();
     refreshChips();
     renderInfo(DATE);
 
