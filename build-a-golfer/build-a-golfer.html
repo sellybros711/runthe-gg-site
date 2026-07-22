@@ -2431,7 +2431,11 @@ const ACH=[].concat(
   [{id:'dr_leg', cat:'The Draft',name:"Legend's Touch",     desc:'Draft a skill from a Legendary golfer.', goal:1,pts:35, get:m=>m.legendaryDrafted},
    {id:'dr_99',  cat:'The Draft',name:'Perfect Attribute',  desc:'Carry a 99-rated skill into a season.',  goal:1,pts:60, get:m=>m.maxSkill99},
    {id:'dr_spec',cat:'The Draft',name:'Specialist',         desc:'Carry a 95+ rated skill.',               goal:1,pts:35, get:m=>m.maxSingle95},
-   {id:'dr_team',cat:'The Draft',name:'Dream Team',         desc:'Build a bag with 8 skills from 8 different golfers.',goal:1,pts:50,get:m=>m.allEight}],
+   {id:'dr_team',cat:'The Draft',name:'Dream Team',         desc:'Build a bag with 8 skills from 8 different golfers.',goal:1,pts:50,get:m=>m.allEight},
+   // Prime cards: 2K-style peak versions of modern stars, pulled on the draft wheel. Track distinct Primes rolled.
+   {id:'dr_prime5', cat:'The Draft',name:'Prime Time',      desc:'Roll 5 different Prime cards on the draft wheel.',  goal:5, pts:50, get:m=>m.primesPulled},
+   {id:'dr_prime10',cat:'The Draft',name:'Prime Collector', desc:'Roll 10 different Prime cards on the draft wheel.', goal:10,pts:90, get:m=>m.primesPulled},
+   {id:'dr_prime25',cat:'The Draft',name:'Prime Everything',desc:'Roll all 25 Prime cards on the draft wheel.',       goal:25,pts:200,get:m=>m.primesPulled}],
   // ================= EXPANSION 2: every game mode has feats to chase =================
   // ---- Online (1v1 / Best Ball / Scramble / Free-for-All) ----
   [{id:'h2h_play',cat:'Online',name:'Online Debut',      desc:'Play your first online match.',              goal:1,pts:15, get:m=>m.h2hMatches},
@@ -2676,7 +2680,9 @@ function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const 
     questDaysDone:f.questDaysDone||0, weeklyDone:f.weeklyDone||0,
     momentsPlayed:f.momentsPlayed||0, momentGrudgeWins:f.momentGrudgeWins||0,
     maxFans:f.maxFans||0, maxRespect:f.maxRespect||0, repComplete:f.repComplete||0,
-    brandAmbassadors:f.brandAmbassadors||0, bothSponsors:f.bothSponsors||0 }); }
+    brandAmbassadors:f.brandAmbassadors||0, bothSponsors:f.bothSponsors||0,
+    // distinct Prime cards rolled on the draft wheel (own account-scoped store, cloud-synced)
+    primesPulled:(function(){try{return primesPulledCount();}catch(e){return 0;}})() }); }
 // per-round daily feats (eagles, bogey-free, low rounds, course records, courses seen) → achievement flags
 function captureDailyFeats(holes,total,courseKey,isRec){ const st=achState(), f=st.flags;
   let eag=0,alb=0,ace=0,bf=true; (holes||[]).forEach(h=>{ if(h.toPar<=-2)eag++; if(h.toPar<=-3)alb++; if(h.par===3&&(h.par+h.toPar)===1)ace++; if(h.toPar>0)bf=false; });
@@ -2739,6 +2745,14 @@ function recordAchEvent(ev){ if(!sbSignedIn()) return; const s=achState(); const
   if(ev.max) for(const k in ev.max) f[k]=Math.max(f[k]||0, ev.max[k]);
   if(ev.set) for(const k in ev.set) f[k]=ev.set[k];
   LS.set(acctKey('bag_ach'),s); }
+// Distinct Prime cards rolled on the draft wheel. Own account-scoped store (a name→1 map, cloud-synced via
+// mergePrimes) so it survives across devices + drafts, independent of the per-draft S.revealed set. Signed-in
+// only, matching the rest of the achievement system (a guest can't earn achievements anyway).
+function primeState(){ const p=LS.get(acctKey('bag_primes'),{})||{}; return (typeof p==='object')?p:{}; }
+function primesPulledCount(){ return Object.keys(primeState()).length; }
+function recordPrimePull(name){ if(!sbSignedIn()||!name) return; const p=primeState();
+  if(p[name]) return; p[name]=1; LS.set(acctKey('bag_primes'),p);
+  try{ evaluateAch(); }catch(e){} cloudPush(); }
 // check every achievement against current metrics; persist + return the newly-completed ones.
 // Also detects a Tour Rep PROMOTION (crossing into a higher rank) and stashes it on S.freshRep.
 function evaluateAch(){ if(!sbSignedIn()) return [];
@@ -11727,7 +11741,7 @@ function reveal(){
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const land=drawGolfer(S.drawRng, RPOOL, S.revealed);   // rarity-weighted bucket pull
   if(!land){S.spinning=false;render();return;}
-  const finish=()=>{S.current=land;S.spinning=false;render();rarityFlash(land);offPersistSpin();};
+  const finish=()=>{S.current=land;S.spinning=false;render();rarityFlash(land);if(land.prime)recordPrimePull(land.name);offPersistSpin();};
   if(reduce || !reel){ finish(); return; }
   slotSpin(reel, land.name, finish);   // CS341: a real slot-reel spin (vertical scroll + decelerate), not a text shuffle
 }
@@ -22686,7 +22700,14 @@ function cloudBundle(){
     coins: LS.get(acctKey('bag_coins'), null),                   // CS183 currency: {spent,seen,owned} (earned is derived)
     packs: LS.get(acctKey('bag_packs'), null),                   // pack pity counters + first-pack-free flag
     login: LS.get(acctKey('bag_login'), null),                   // CS461: daily-login bonus loop {day, n}
+    primes: LS.get(acctKey('bag_primes'), null),                 // distinct Prime cards rolled on the draft wheel (name→1 map)
   };
+}
+// distinct Prime cards rolled: UNION the name→1 maps (grow-only), so a Prime rolled on any device stays counted.
+function mergePrimes(local, server){
+  const out=(local&&typeof local==='object')?Object.assign({},local):{};
+  if(server&&typeof server==='object') for(const k in server) if(server[k]) out[k]=1;
+  return out;
 }
 // daily-login loop: the more-recent claim day wins (so a device that already claimed today won't re-pop);
 // same day → keep the higher loop position.
@@ -22893,6 +22914,7 @@ async function cloudPull(){
     LS.set(acctKey('bag_coins'), mergeCoins(coinState(), server.coins));   // CS183 coins/gear cross-device
     if(server.packs) LS.set(acctKey('bag_packs'), mergePacks(packState(), server.packs));   // pack pity + first-pack-free cross-device
     { const ml=mergeLogin(LS.get(acctKey('bag_login'),null), server.login); if(ml&&(ml.day||ml.n)) LS.set(acctKey('bag_login'), ml); }   // CS461: daily-login loop cross-device
+    { const mp=mergePrimes(LS.get(acctKey('bag_primes'),null), server.primes); if(mp&&Object.keys(mp).length) LS.set(acctKey('bag_primes'), mp); }   // distinct Prime pulls cross-device
     reconcileCoins(true);   // self-heal earned total + grant milestone gear silently after a cross-device merge
     cloudPush();
     render();
@@ -23610,7 +23632,7 @@ function h2hReveal(){
   const reel=app.querySelector('.osreel .name')||app.querySelector('.reel .name');   // CS342: online draft uses the .osreel wheel
   const land=drawGolfer(S.h2h.rng,RPOOL,S.h2h.revealed);
   if(!land){ S.h2h.spinning=false; render(); return; }
-  const finish=()=>{ S.h2h.current=land; S.h2h.spinning=false; render(); };
+  const finish=()=>{ S.h2h.current=land; S.h2h.spinning=false; render(); if(land.prime)recordPrimePull(land.name); };
   if(matchMedia('(prefers-reduced-motion:reduce)').matches || !reel){ finish(); return; }
   slotSpin(reel, land.name, finish);   // CS342: the same slot-machine reel as the career/off-season draft
 }
