@@ -12517,6 +12517,43 @@ allows Google Fonts, or self-host Anton.*
   the insurance; needs on-device confirmation from the owner. The guaranteed-structural fallback if it EVER
   recurs remains the app-shell refactor (fixed #app + inner scroll region). Deployed to /golf (041596d).
 
+- **OUTFIT NO LONGER RESETS ON REFRESH — profile look wins on every resume + cloud flush on close (owner:
+  "the outfit that I put on is not saving to my profile when I hard refresh the game. It keeps resetting to
+  my previous outfit. It should always save until it is changed and should auto save if somebody closes the
+  page while customizing").** The Closet was saving fine (every equip goes through `saveLook()` → an
+  immediate `bag_look` write) — the bug was that TWO code paths later OVERWROTE the live profile identity
+  with a stale snapshot:
+  1. **The resume paths (the main one).** The career save (and the draft-resume blob) stores a copy of
+     `look`/`name` from save time. A hard refresh auto-resumes the career (`bootRestore` →
+     `resumeCareer`), which did `S.look = save.look` — reverting the displayed outfit to whatever it was
+     when the career last saved; the next `saveLook()`/`saveCareer()` then persisted the OLD look back over
+     the new one. Fixed with `profileLook(snap)`/`profileName(snap)` (live `bag_look`/`bag_name`, snapshot
+     only as a fresh-device fallback where the key doesn't exist yet) used by all three restore sites —
+     `resumeCareer`, `viewEndedCareer`, and `restoreResume`. The save's snapshot is still written (harmless,
+     and the fallback needs it) but never wins over the profile.
+  2. **Legend Token rounds.** `beginDailyRoundWithLegend` swaps `S.look`/`S.name` to the legend's frozen
+     identity for the round, and several exits (Return home, the bottom-nav Home tab, starting a normal
+     round) never swapped back — so customizing after a Legend play could persist the legend's old-career
+     look as the profile. New `restoreProfileIdentity()` self-heals at the two chokepoints every such path
+     funnels through: the top of `scrTitle` (gated `!S.daily`) and the top of `beginDailyRound` (before
+     `buildPlayer`, which reads look for gear/caddie). A RESUMED live legend round re-applies the legend
+     identity (`resumeDailyLive`) so the round itself stays consistent.
+  3. **Auto-save on close.** The LOCAL save was always instant, but the cross-device cloud push is
+     debounced 1.2s — closing the tab right after customizing lost the cloud copy until the next open. The
+     debounce is now flushed immediately on `pagehide` + `visibilitychange→hidden` (`cloudFlushPending` →
+     a refactored `cloudPushNow`; fires ONLY when a push is genuinely pending, so tab-switches with nothing
+     to save do nothing). Fire-and-forget — if the request dies with the tab, the next open pushes the same
+     local state anyway (LWW by `_ts` protects it either way).
+  Verified in Playwright (12/12): the exact repro — a career save holding an OLD look + a newly-customized
+  `bag_look` → `resumeCareer` keeps the NEW outfit + name and leaves `bag_look` untouched, and a
+  customization AFTER the resume saves the live look (nothing stale ever writes back); the fresh-device
+  fallback still uses the snapshot; a Closet change survives a hard page reload; the Legend-round exits
+  (title + a normal round start) restore the profile identity; the pending cloud push flushes exactly once
+  on page-hide and never fires with nothing pending; full regression + prior suites green, 0 page errors.
+  Deployed to /golf (fea97dc). NOTE for owner: your account self-heals on the next load — re-equip the
+  outfit once in the Closet and it now sticks through any refresh (iOS may need a full close-and-reopen of
+  the app/tab to pick up the new code first).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
