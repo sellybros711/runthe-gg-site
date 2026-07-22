@@ -12197,6 +12197,33 @@ allows Google Fonts, or self-host Anton.*
   Bogey / Albatross — each renders the right inviting caption; 0 page errors. Deployed to /golf. Tunable: the
   phrasing in `hvShareCaption`.
 
+- **OUTAGE (2026-07-22) — site-wide sign-in + leaderboards down, then leaderboard perf fix.** Owner reported
+  no sign-in / no leaderboard on the landing page AND every game. Diagnosed as a SHARED backend outage (not
+  game code): config intact + anon key valid + identical across hub/soccer/golf; the landing board (raw REST
+  to `drafts`) and golf boards (`runtour_*` via supabase-js) both dead → the only common factor is the
+  Supabase project itself. Owner's dashboard confirmed **STATUS: Unhealthy** on the free **Nano** compute, with
+  banners "Project is depleting its Disk IO Budget" + "Project low on resources." Root cause: the 256 MB Nano
+  ran out of Disk IO burst budget → disk throttled to 5 MB/s → leaderboard queries too slow to return →
+  spinner-forever (auth is light so it recovered; the heavy board queries choke). Fix path (owner chose "do
+  both"): (1) owner **Restart** cleared the Unhealthy state + is upgrading to Pro → free **Micro** compute
+  (double memory) for headroom; (2) **`supabase/61_runtour_board_perf.sql`** (owner-run) makes the boards
+  stop burning Disk IO. The `runtour_season_board` / `runtour_career_board` RPCs (from 60) pulled the big
+  `skills`+`look` **jsonb** (TOAST) for the WHOLE `runtour_scores` table into the ranking sort before LIMIT,
+  so every board open did a full-table TOAST read + a wide disk-spilling sort. 61 ranks on the cheap SCALAR
+  columns only, LIMITs to the N returned rows, THEN joins back for jsonb (season: PK join; career: a lateral
+  for the latest season-in-window per returned career) — so the sort row-width drops **342 → 96** (fits the
+  tiny work_mem, no disk spill) and jsonb TOAST reads drop from **all rows → N rows**. Plus a `created_at`
+  index for the Today/This-week windows. Validated on a local Postgres (1,215-row seed, fat jsonb): output is
+  **byte-for-byte identical** to 60 across every sort × both directions (top-N AND the CS95 bottom-N asc view)
+  × all windows (11/11 IDENTICAL — the compare harness caught two of my own bugs mid-build: my first cut
+  broke the asc bottom-N view and picked the wrong latest-season inside a date window; both fixed + re-verified),
+  and `EXPLAIN (analyze,buffers)` confirms the sort is now over scalar rows with jsonb fetched for only the N
+  returned rows. Signatures/return shapes unchanged → **no client change needed**; safe + idempotent; self-
+  contained (only redefines the two board RPCs + adds one index), applies whether or not 60 is applied. **ACTION:
+  run `supabase/61_runtour_board_perf.sql`** in the SQL editor (after the Micro upgrade), then reload runthe.gg.
+  The soccer/hub `drafts` board (older World-Cup REST path) wasn't changed here — the Nano upgrade + lighter
+  golf boards free up the shared instance; a similar defer-jsonb pass on `drafts` is available if it stays slow.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
