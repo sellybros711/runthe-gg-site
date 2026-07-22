@@ -21802,8 +21802,19 @@ const PACK_TYPES={
   champ: {id:'champ', name:'Champion Pack',  short:'Champion', price:45000,
           odds:[['common',0.10],['rare',0.35],['epic',0.38],['legendary',0.17]],
           pityEpic:4, pityLeg:12, col:'#F1D04A', accent:'#fff0b4', glow:'rgba(241,208,74,.52)'},
+  // SEASONAL pack — only offered while its drop is live. Tour-like base odds, but a chunk of the rolls are
+  // biased toward that drop's items (dropBias). Coins-only (no free credits), priced below Tour (3rd highest).
+  summer:{id:'summer', name:'Summer Smash Pack', short:'Summer', price:18000, seasonal:true,
+          dropId:'summer', dropBias:0.40,
+          odds:[['common',0.30],['rare',0.40],['epic',0.22],['legendary',0.08]],
+          pityEpic:6, pityLeg:24, col:'#ff9d3a', accent:'#ffd39a', glow:'rgba(255,157,58,.48)'},
 };
 const PACK_TIER_ORDER=['base','tour','champ'];
+// tiers to actually offer/display right now: the permanent ladder + any live seasonal packs (price-sorted).
+function packTierLive(id){ var pt=packType(id); if(!pt.seasonal) return true; var d=(typeof dropById==='function')&&dropById(pt.dropId); return !!(d && (!d.window || dropLive(d))); }
+function packTierList(){ var list=PACK_TIER_ORDER.slice();
+  Object.keys(PACK_TYPES).forEach(function(id){ if(PACK_TIER_ORDER.indexOf(id)<0 && packTierLive(id)) list.push(id); });
+  return list.sort(function(a,b){ return packType(a).price-packType(b).price; }); }
 function packType(id){ return PACK_TYPES[id]||PACK_TYPES.base; }
 function packPrice(id){ return Math.round(packType(id).price); }
 function packBundlePriceFor(id){ return packPrice(id)*PACK_BUNDLE_PAY; }
@@ -21811,7 +21822,8 @@ function packBundlePriceFor(id){ return packPrice(id)*PACK_BUNDLE_PAY; }
 const PACK_PAL_OVR={
   base:{},
   tour:{ E:'#6a34a8', e:'#4a2380', D:'#2e1458', L:'#9a63d6', S:'#c3a2e8' },                              // purple body, gold crest kept
-  champ:{ E:'#caa233', e:'#9c7a22', D:'#665012', L:'#efd76a', S:'#fbe7a8', G:'#fff4cf', g:'#e6c866', H:'#ffffff' }  // rich gold body + pale-gold crest/band
+  champ:{ E:'#caa233', e:'#9c7a22', D:'#665012', L:'#efd76a', S:'#fbe7a8', G:'#fff4cf', g:'#e6c866', H:'#ffffff' },  // rich gold body + pale-gold crest/band
+  summer:{ E:'#e8792a', e:'#c25f18', D:'#8a3f0e', L:'#ffb15a', S:'#ffe0b0' }                                       // warm sunset-orange body
 };
 const PXPACK=[
 "gggggggggggggggggggggggggggggg",
@@ -21968,8 +21980,18 @@ function maybeWelcomePack(){ if(!packsOn()||!sbSignedIn()) return; if(packState(
 // First pack is free (owner onboarding): a signed-in player's very first open costs no coins.
 function packIsFree(){ return packsOn() && sbSignedIn() && !packState().freeUsed; }
 function rollPackRarity(odds){ odds=odds||PACK_ODDS; var r=Math.random(),a=0; for(var i=0;i<odds.length;i++){ a+=odds[i][1]; if(r<a) return odds[i][0]; } return 'common'; }
-function pickPackItem(rar){ var pool=packPool();
-  for(var ri=PACK_RANK.indexOf(rar); ri>=0; ri--){ var tier=pool.filter(function(e){return e.rarity===PACK_RANK[ri];}); if(tier.length) return tier[Math.floor(Math.random()*tier.length)]; }
+// a seasonal pack biases a fraction of its rolls toward its drop's items: {'cat|id':1, ..., _chance:0.4}.
+function packBiasSet(tier){ var pt=packType(tier); if(!pt.dropId||!pt.dropBias) return null;
+  var d=(typeof dropById==='function')&&dropById(pt.dropId); if(!d || (d.window && !dropLive(d))) return null;
+  var s={_chance:pt.dropBias}; d.items.forEach(function(ci){ s[ci[0]+'|'+ci[1]]=1; }); return s; }
+// bias: a Set-like {'cat|id':1, _chance} — with prob _chance, pick from the biased items of the rolled rarity.
+function pickPackItem(rar, bias){ var pool=packPool();
+  for(var ri=PACK_RANK.indexOf(rar); ri>=0; ri--){ var tier=pool.filter(function(e){return e.rarity===PACK_RANK[ri];});
+    if(!tier.length) continue;
+    if(bias && bias._chance && Math.random()<bias._chance){
+      var bt=tier.filter(function(e){ return e.kind==='cos' && bias[e.cat+'|'+e.id]; });
+      if(bt.length) return bt[Math.floor(Math.random()*bt.length)]; }
+    return tier[Math.floor(Math.random()*tier.length)]; }
   return pool.length?pool[Math.floor(Math.random()*pool.length)]:null; }
 function packAffordable(tier){ return coinBalance()>=packPrice(tier); }
 function packErr(e){ return e==='coins'?'Not enough coins':e==='signin'?'Sign in to open packs':'Could not open pack'; }
@@ -21994,6 +22016,7 @@ function openPack(){
   try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind}); }catch(e){}
   return {item:item, rarity:item.rarity, dupe:dupe, refund:refund};
 }
+
 // CS404 — WHEEL SPIN: a single pity-aware roll decides the winner (identical odds to the old pick-1-of-3
 // distribution, since a picked card == one roll). The coin charge lives upstream in startPackDeal, so this
 // is a pure roll+grant (a free/prepaid pack just skips the charge). Commits pity + grant immediately.
@@ -22009,7 +22032,7 @@ function rollPackWin(tier){
   if(rar==='legendary'){ p.sinceLeg=0; p.sinceEpic=0; }
   else if(rar==='epic'){ p.sinceEpic=0; p.sinceLeg++; }
   else { p.sinceEpic++; p.sinceLeg++; }
-  var item=pickPackItem(rar); if(!item){ packSave(p); return {err:'empty'}; }
+  var item=pickPackItem(rar, packBiasSet(tier)); if(!item){ packSave(p); return {err:'empty'}; }   // seasonal: bias toward the drop's items
   packSave(p);
   var dupe=packOwns(item), refund=0;
   if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); try{shardEarn(item.rarity,1);}catch(e){} }
@@ -22021,10 +22044,10 @@ function rollPackWin(tier){
 // build the CS:GO-case-style horizontal reel: filler items (random rarity, cosmetic only) with the real
 // winner slotted at a fixed near-end index so the strip decelerates onto it.
 function buildWheelReel(winItem, tier){
-  var pt=packType(tier), TOTAL=54, WIN=48, reel=[];
+  var pt=packType(tier), TOTAL=54, WIN=48, reel=[], bias=packBiasSet(tier);
   for(var i=0;i<TOTAL;i++){
     if(i===WIN){ reel.push(winItem); continue; }
-    var it=pickPackItem(rollPackRarity(pt.odds));               // fillers reflect the tier's odds
+    var it=pickPackItem(rollPackRarity(pt.odds), bias);         // fillers reflect the tier's odds (+ seasonal bias)
     reel.push(it||winItem);
   }
   return {reel:reel, winIdx:WIN};
@@ -22091,10 +22114,11 @@ function startPackDeal(opts){ opts=opts||{};
   if(!packsOn()){ toast(packErr('off')); return; }
   if(!sbSignedIn()){ toast(packErr('signin')); return; }
   var tier=opts.bundle?((S.packBundle&&S.packBundle.pack)||'base'):(opts.pack||'base'); var pt=packType(tier);
+  if(pt.seasonal && !packTierLive(tier)){ toast(pt.name+' is out of season'); return; }   // seasonal pack only while its drop is live
   var free=false;
   if(!opts.bundle){                                    // a bundle sub-open is prepaid: never free/credit
     var freeFirst=(tier==='base') && (opts.free||packIsFree());  // the one-time first-pack-free is base only
-    var freeCredit=!freeFirst && packCredits(tier)>0;            // CS407: an earned free-pack credit for THIS tier
+    var freeCredit=!freeFirst && !pt.seasonal && packCredits(tier)>0;   // CS407: earned free-pack credit (never on seasonal — coins only)
     free=freeFirst||freeCredit;
     if(!free){ if(coinBalance()<pt.price){ toast(packErr('coins')); return; } var s=coinState(); s.spent+=pt.price; coinSave(s); }
     else { var p=packState(); if(freeFirst){ p.freeUsed=true; } else { var f=packCreditFields(tier); p[f[1]]=(p[f[1]]||0)+1; } packSave(p); }
@@ -22244,7 +22268,7 @@ function overlayPackWheel(app){
       var d2=$('<div class="packbtns"></div>'); var done2=$('<button class="btn ghost">Done</button>'); done2.onclick=function(){ S.packWheel=null; S.packBundle=null; S.overlay='shop'; S.shopSec='packs'; render(); }; d2.appendChild(done2); footer.appendChild(d2);
       return;
     }
-    var isBase=(pt.id==='base'), cr=packCredits(pt.id);
+    var isBase=(pt.id==='base'), cr=pt.seasonal?0:packCredits(pt.id);
     var freeNext=(isBase&&packIsFree())||cr>0, can=freeNext||packAffordable(pt.id);
     var againLabel=freeNext?('Open a FREE '+esc(pt.short)+' pack'+(cr>0?' · '+cr+' left':'')):('Open another '+esc(pt.short)+' · '+coinFmt(pt.price));
     var again=$('<button class="btn '+(can?'teal':'ghost')+'"'+(can?'':' disabled')+'>'+againLabel+'</button>'); again.onclick=function(){ startPackDeal({pack:pt.id}); };
@@ -22373,18 +22397,22 @@ function packShopNode(){
     wrap.appendChild($('<div style="max-width:380px;margin:8px auto 0;text-align:center;font:800 12.5px var(--body);color:var(--gold)">'
       +(free?'🎁 Your first pack is on us — open the Base pack free!':('🎁 '+credits+' free pack'+(credits>1?'s':'')+' ready — open a Base pack, from your challenges &amp; streak!'))+'</div>'));
   }
-  // CS406 — three tier cards (base / tour / champion), escalating odds + price
-  PACK_TIER_ORDER.forEach(function(id){
+  // CS406 — tier cards (base / tour / champion) + any live seasonal pack, escalating odds + price
+  var tiers=packTierList();
+  tiers.forEach(function(id){
     var pt=packType(id);
     var epicPlus=pt.odds.reduce(function(a,o){ return a+((o[0]==='epic'||o[0]==='legendary')?o[1]:0); },0);
     var legPct=(pt.odds.find(function(o){return o[0]==='legendary';})||[0,0])[1];
-    var isBase=(id==='base'), cr=packCredits(id), freeThis=(isBase&&free)||cr>0, afford=freeThis||bal>=pt.price;
+    var isBase=(id==='base'), cr=pt.seasonal?0:packCredits(id), freeThis=(isBase&&free)||cr>0, afford=freeThis||bal>=pt.price;
+    var seasonD=pt.seasonal?dropById(pt.dropId):null;
     var card=$('<div style="max-width:380px;margin:12px auto 0;padding:12px;border-radius:16px;background:linear-gradient(165deg,'+pt.col+'1c,#0c1f16);border:2px solid '+pt.col+';box-shadow:0 0 22px '+pt.glow+'"></div>');
     card.appendChild($('<div style="display:flex;gap:12px;align-items:center">'
       +'<div style="flex:0 0 auto;filter:drop-shadow(0 0 12px '+pt.glow+')">'+pxPackImg(80,id)+'</div>'
       +'<div style="flex:1;min-width:0">'
+        +(pt.seasonal?'<div style="font:800 9px var(--body);letter-spacing:.12em;text-transform:uppercase;color:'+pt.col+'">☀ Limited time'+(seasonD&&seasonD.window?' · ends '+_DROP_MON[seasonD.window[1][0]-1]+' '+seasonD.window[1][1]:'')+'</div>':'')
         +'<div style="font-family:var(--display);font-size:20px;color:'+pt.col+'">'+esc(pt.name)+'</div>'
         +'<div class="small" style="color:#cfe6d8;margin-top:3px">Epic+ <b style="color:'+PACK_RCOL.epic+'">'+Math.round(epicPlus*100)+'%</b> · Legendary <b style="color:'+PACK_RCOL.legendary+'">'+Math.round(legPct*100)+'%</b></div>'
+        +(pt.seasonal&&seasonD?'<div style="font:800 10.5px var(--body);color:'+pt.col+';margin-top:3px">✦ Boosted odds for the '+seasonD.items.length+' '+esc(seasonD.name)+' items</div>':'')
         +'<div class="small muted" style="margin-top:2px">Guaranteed Epic+ in '+Math.max(0,pt.pityEpic-p.sinceEpic)+' · Legendary in '+Math.max(0,pt.pityLeg-p.sinceLeg)+'</div>'
         +(cr>0?'<div style="font:800 10.5px var(--body);color:var(--gold);margin-top:3px">🎁 '+cr+' free '+(cr>1?'packs':'pack')+' ready</div>':'')
       +'</div></div>'));
@@ -22398,14 +22426,14 @@ function packShopNode(){
     card.appendChild(bBtn);
     wrap.appendChild(card);
   });
-  // drop-rate comparison table (all 3 tiers)
+  // drop-rate comparison table (all live tiers)
   var odds=$('<div class="packodds" style="max-width:380px"></div>');
   var tbl='<div class="small muted" style="text-transform:uppercase;letter-spacing:.12em;margin:18px 0 6px;text-align:center">Drop rates by tier</div>'
-    +'<div style="display:grid;grid-template-columns:1.05fr repeat(3,1fr);gap:3px 6px;font:700 11px var(--body);align-items:center">'
-    +'<div></div>'+PACK_TIER_ORDER.map(function(id){var pt=packType(id);return '<div style="text-align:center;color:'+pt.col+';font-weight:800">'+esc(pt.short)+'</div>';}).join('');
+    +'<div style="display:grid;grid-template-columns:1.05fr repeat('+tiers.length+',1fr);gap:3px 6px;font:700 10.5px var(--body);align-items:center">'
+    +'<div></div>'+tiers.map(function(id){var pt=packType(id);return '<div style="text-align:center;color:'+pt.col+';font-weight:800">'+esc(pt.short)+'</div>';}).join('');
   PACK_RANK.forEach(function(r){ var rc=PACK_RCOL[r];
     tbl+='<div style="color:'+rc+';font-weight:800">'+PACK_RLABEL[r]+'</div>';
-    PACK_TIER_ORDER.forEach(function(id){ var pt=packType(id); var v=(pt.odds.find(function(o){return o[0]===r;})||[0,0])[1]; tbl+='<div style="text-align:center;color:'+rc+'">'+Math.round(v*100)+'%</div>'; });
+    tiers.forEach(function(id){ var pt=packType(id); var v=(pt.odds.find(function(o){return o[0]===r;})||[0,0])[1]; tbl+='<div style="text-align:center;color:'+rc+'">'+Math.round(v*100)+'%</div>'; });
   });
   tbl+='</div>';
   odds.innerHTML=tbl+'<div class="small muted" style="text-align:center;margin-top:10px;line-height:1.5">Every pull is a fresh random roll from the full locker. A duplicate refunds coins ('+PACK_RANK.map(function(r){return coinFmt(PACK_DUPE_REFUND[r]);}).join(' / ')+' by rarity) <b style="color:#8fe0c4">plus 1 shard of its rarity</b> — collect '+PACK_RANK.map(function(r){return SHARD_COST[r];}).join('/')+' shards (by rarity) and redeem them in the shop for ANY item of that rarity.</div>'+shardSummaryHTML();

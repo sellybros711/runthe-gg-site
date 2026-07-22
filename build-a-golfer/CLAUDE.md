@@ -12697,6 +12697,30 @@ allows Google Fonts, or self-host Anton.*
   wheel cells an item-only pixel sprite; 0 page errors. Screenshot confirms a wheel of clean pixel items
   (Top Hat / Halo / Cardigan / Shield). Deployed to /golf.
 
+- **4th pack: the seasonal SUMMER SMASH PACK — Tour-level odds with boosted Summer Smash item rates (owner:
+  "add a 4th pack that is a seasonal pack... Summer Smash... boosted odds for those 7 items... priced the 3rd
+  highest... similar odds to the middle pack but slightly boosted odds for the summer smash items").** Added
+  `summer` to `PACK_TYPES`: **18,000 coins** (3rd highest of the 4 — Champion 45k > Tour 22k > **Summer 18k**
+  > Base 8k), **Tour's exact rarity odds** (30/40/22/8, the middle pack) + Tour's pity (Epic+ in 6 /
+  Legendary in 24), and a **40% item bias** (`dropBias`) toward its drop's 7 items (`dropId:'summer'`), so a
+  Summer Smash pack pulls those 7 items ~28% of the time vs ~4% from a Tour pack (Monte-Carlo verified). The
+  bias rides the roll: new `packBiasSet(tier)` → `{'cat|id':1, _chance}` (only while the drop is live), and
+  `pickPackItem(rar, bias)` — with prob `_chance`, if there's a biased item of the rolled rarity it picks
+  from those, else the normal uniform pull; wired into `rollPackWin` (the winner) + `buildWheelReel` (fillers,
+  so the reel reads summery). Seasonal packs are **coins-only** (no first-pack-free / earned credits — gated
+  `!pt.seasonal`) and only **offered/openable while the drop's window is live** (`packTierLive` +
+  `startPackDeal` guard); a new `packTierList()` (permanent ladder + any live seasonal packs, price-sorted)
+  drives the shop cards + the drop-rate table so the Summer card auto-appears Jul 1–Aug 31 and vanishes
+  after (same window as the Summer Smash drop). Orange-themed throughout: `PACK_PAL_OVR.summer` recolors the
+  pack art, the wheel title/pointer/glow are orange, and the shop card shows a "☀ Limited time · ends Aug 31"
+  badge + "✦ Boosted odds for the 7 Summer Smash items". Because it's driven by the `DROPS` registry + a
+  `dropId`/`dropBias`/`seasonal` config, dropping in the Oct/Dec/Feb seasonal packs later is just another
+  `PACK_TYPES` entry. Verified in Playwright (clock pinned to a summer date): tier list price-sorted with
+  summer 3rd-highest; odds == Tour; 40% bias over 7 items; summer-item pull rate 27.9% (pack) vs 4.3% (Tour);
+  Tour has no bias; coins-only (a base free credit does NOT open it free — charged 18,000); the shop shows 4
+  tier cards + the boosted/limited-time messaging; 0 page errors. Screenshots confirm the orange shop card +
+  themed wheel. Deployed to /golf. Tunable: `PACK_TYPES.summer` price/odds/pity/`dropBias`, `PACK_PAL_OVR.summer`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
