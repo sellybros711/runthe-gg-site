@@ -21365,10 +21365,7 @@ function cosTileHTML(cat,o){
   const rar=(function(){ try{ const b=cosmeticPriceBase(cat,o.id); return b>0?packRarityOf(b):null; }catch(e){ return null; } })();   // look pass: epic/legendary tiles get the foil flourish
   if(inShopStore()){   // STORE: buy only. Owned → green "Owned", not clickable. Locked → preview + buy.
     if(owned) return shopTile({thumb,name:o.name,state:'own',sub:bsub,cls:'noeq',rar});
-    const dl=itemDropLocked(cat,o.id);   // DROPS: themed item out of its window - shown, not buyable
-    if(dl) return shopTile({thumb,name:o.name,state:'lock',noFoot:true,rar,cls:'dropoff',
-      sub:`<span style="color:${dl.accent}">⏳ ${esc(dropReturnsLabel(dl))}</span>`,
-      data:`data-tile data-kind="drop-locked" data-drop="${dl.id}"`});
+    if(itemDropLocked(cat,o.id)) return '';   // DROPS: an unreleased/out-of-window themed item is HIDDEN from the store
     if(cosPackOnly(cat,o.id)){   // PACK EXCLUSIVE: no coin price - packs or shards only (tap for details)
       const prar=packRarityOf(cosmeticPriceBase(cat,o.id))||'common', sh=shardBal(prar), need=SHARD_COST[prar];
       return shopTile({thumb,name:o.name,state:'lock',noFoot:true,rar,isNew:cosIsNew(cat,o.id),
@@ -21562,6 +21559,9 @@ function dropLive(d){ if(!d||!d.window) return true; const now=new Date(), m=now
 function itemDrop(cat,id){ const did=DROP_BY_ITEM[cat+'|'+id]; return did?dropById(did):null; }
 // a themed-drop item OUT of its window: not buyable / not in packs (owned = keep + equip forever)
 function itemDropLocked(cat,id){ const d=itemDrop(cat,id); return (d&&!dropLive(d))?d:null; }
+// a drop is PUBLIC only while it's live (or has no window). Future/rotated-out drops are fully hidden
+// from the store until their window opens - owned pieces stay visible/equippable via the closet + My Items.
+function dropVisible(d){ return !d.window || dropLive(d); }
 const _DROP_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function dropWindowLabel(d){ if(!d.window) return 'Always available';
   return _DROP_MON[d.window[0][0]-1]+' '+d.window[0][1]+' – '+_DROP_MON[d.window[1][0]-1]+' '+d.window[1][1]; }
@@ -22116,7 +22116,8 @@ function overlayShop(screen){
   // ===== DROPS section: collection banners -> per-drop item grid =====
   if(sec==='drops'){
     const dwrap=$(`<div></div>`);
-    const sel=S.shopDrop?dropById(S.shopDrop):null;
+    let sel=S.shopDrop?dropById(S.shopDrop):null;
+    if(sel && !dropVisible(sel)){ S.shopDrop=null; sel=null; }   // a hidden (unreleased) drop can't be opened
     if(sel){
       const live=dropLive(sel), pr=dropProgress(sel), done=pr.own>=pr.tot;
       const hd=$(`<div class="dropbanner sel" style="--dacc:${sel.accent}">
@@ -22137,7 +22138,7 @@ function overlayShop(screen){
       dwrap.querySelectorAll('[data-tile]').forEach(x=>x.onclick=()=>shopTileClick(x));
     } else {
       dwrap.appendChild($(`<p class="lede" style="margin:0 0 10px;font-size:13px">Collections to chase and show off. Themed drops go live around real-world moments, then rotate out until next year.</p>`));
-      DROPS.forEach(d=>{
+      DROPS.filter(dropVisible).forEach(d=>{
         const live=dropLive(d), pr=dropProgress(d), done=pr.own>=pr.tot;
         const bn=$(`<button class="dropbanner ${live?'':'off'}" style="--dacc:${d.accent}">
           <div class="drop-kick">${esc(d.kicker)}</div>
