@@ -12700,8 +12700,10 @@ allows Google Fonts, or self-host Anton.*
 - **4th pack: the seasonal SUMMER SMASH PACK — Tour-level odds with boosted Summer Smash item rates (owner:
   "add a 4th pack that is a seasonal pack... Summer Smash... boosted odds for those 7 items... priced the 3rd
   highest... similar odds to the middle pack but slightly boosted odds for the summer smash items").** Added
-  `summer` to `PACK_TYPES`: **18,000 coins** (3rd highest of the 4 — Champion 45k > Tour 22k > **Summer 18k**
-  > Base 8k), **Tour's exact rarity odds** (30/40/22/8, the middle pack) + Tour's pity (Epic+ in 6 /
+  `summer` to `PACK_TYPES`: **30,000 coins** (owner revised from 18k → now 2nd highest: Champion 45k >
+  **Summer 30k** > Tour 22k > Base 8k) with an **animated pulsing orange border glow** (`.packcard-glow`
+  keyframe, reduced-motion → a static strong glow) to make the limited-time card stand out, **Tour's exact
+  rarity odds** (30/40/22/8, the middle pack) + Tour's pity (Epic+ in 6 /
   Legendary in 24), and a **40% item bias** (`dropBias`) toward its drop's 7 items (`dropId:'summer'`), so a
   Summer Smash pack pulls those 7 items ~28% of the time vs ~4% from a Tour pack (Monte-Carlo verified). The
   bias rides the roll: new `packBiasSet(tier)` → `{'cat|id':1, _chance}` (only while the drop is live), and
