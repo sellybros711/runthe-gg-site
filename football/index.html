@@ -319,11 +319,19 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .scheme .nm{font-family:var(--pix); font-size:10px; color:var(--acc,var(--cream)); display:flex; align-items:center; gap:7px;}
 .scheme .nm .ic{font-size:15px; line-height:1; filter:saturate(1.1);}
 .scheme .id{font-family:var(--term); font-size:16px; color:var(--cream-dim); line-height:1.05;}
-.scheme .sw{display:flex; flex-direction:column; gap:2px; margin-top:6px; padding-top:6px; border-top:1px solid var(--line); font-size:13px; line-height:1.25;}
-.scheme .sw .s{color:var(--green);} .scheme .sw .w{color:var(--red);}
-.scheme-detail{padding:4px 6px 12px; font-size:15px; color:var(--cream-dim);}
-.scheme-detail b{color:var(--gold-bright);}
-.scheme-detail .s{color:var(--green);} .scheme-detail .w{color:var(--red);}
+/* reveal panel — formation art + pros/cons, shown for the tapped playbook only */
+.scheme-detail{padding:8px 2px 4px;}
+.sd-card{display:flex; gap:14px; align-items:center; padding:14px; border-radius:14px; border:2px solid var(--acc);
+  background:linear-gradient(180deg, color-mix(in srgb, var(--acc) 15%, var(--panel)), var(--panel)); box-shadow:var(--shadow);}
+.sd-art{flex:0 0 42%; color:var(--acc);}
+.sd-art svg{width:100%; height:auto; display:block; filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));}
+.sd-body{flex:1 1 auto; min-width:0;}
+.sd-nm{font-family:var(--pix); font-size:13px; color:var(--acc); line-height:1.15;}
+.sd-id{font-family:var(--term); font-size:17px; color:var(--cream-dim); margin:5px 0 9px;}
+.sd-sw{display:flex; flex-direction:column; gap:5px; padding-top:9px; border-top:1px solid var(--line); font-size:15px; line-height:1.2;}
+.sd-sw .s{color:var(--green);} .sd-sw .w{color:var(--red);}
+.sd-foot{text-align:center; font-size:15px; color:var(--cream-dim); padding:12px 4px 2px;}
+.sd-foot b{color:var(--gold-bright);}
 
 .cta{width:100%; padding:16px; margin-bottom:14px; background:var(--gold); color:#3a2a00;
   border:0; border-radius:12px; font-family:var(--pix); font-size:14px; letter-spacing:1px;
@@ -658,6 +666,36 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     SPREAD_OPTION:{acc:'#2fb9b0', ic:'⚡'},
     VERTICAL:     {acc:'#eb8a2a', ic:'💣'},
   };
+  // Schematic play-art shown ONLY after a playbook is tapped (routes in the scheme's accent).
+  function schemeSVG(id, formation, routes){
+    const rp = routes.map(r=>`<path d="${r.d}"${r.dash?' stroke-dasharray="5 4"':''} marker-end="url(#${id})"/>`).join('');
+    return `<svg viewBox="0 0 168 92" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">`
+      + `<defs><marker id="${id}" markerWidth="5.5" markerHeight="5.5" refX="2.8" refY="2.75" orient="auto">`
+      + `<path d="M0 0 L5.5 2.75 L0 5.5 Z" fill="currentColor" stroke="none"/></marker></defs>`
+      + formation + rp + `</svg>`;
+  }
+  const OL_ROW = `<g fill="currentColor" stroke="none" opacity=".5"><circle cx="60" cy="60" r="3.4"/><circle cx="72" cy="60" r="3.4"/><circle cx="84" cy="60" r="3.4"/><circle cx="96" cy="60" r="3.4"/><circle cx="108" cy="60" r="3.4"/></g>`;
+  const QB_DOT = (x,y)=>`<circle cx="${x}" cy="${y}" r="4.6" fill="currentColor" stroke="none"/>`;
+  const SCHEME_ART = {
+    // West Coast — dropback timing: out, curl, drag (short, high-percentage).
+    WEST_COAST: schemeSVG('a-wc', OL_ROW+QB_DOT(84,78), [
+      {d:'M120 60 L120 42 L142 42'}, {d:'M48 60 L48 34 L42 38'}, {d:'M72 60 L72 48 L104 48', dash:true}]),
+    // Smash Mouth — power run: downhill back behind a pulling guard.
+    SMASH_MOUTH: schemeSVG('a-sm', OL_ROW+QB_DOT(84,74)+`<circle cx="84" cy="86" r="4.6" fill="currentColor" stroke="none"/>`, [
+      {d:'M84 86 L84 16'}, {d:'M96 60 L82 54 L80 40', dash:true}]),
+    // Wide Zone — stretch the run, QB boots back the other way.
+    WIDE_ZONE: schemeSVG('a-wz', OL_ROW+QB_DOT(84,78), [
+      {d:'M84 84 Q122 72 124 28'}, {d:'M84 78 L64 72 L62 46', dash:true}]),
+    // Air Raid — 4 wide, quick game: slants + a seam.
+    AIR_RAID: schemeSVG('a-ar', `<g fill="currentColor" stroke="none" opacity=".5"><circle cx="40" cy="60" r="3.2"/><circle cx="62" cy="60" r="3.2"/><circle cx="84" cy="60" r="3.2"/><circle cx="106" cy="60" r="3.2"/><circle cx="128" cy="60" r="3.2"/></g>`+QB_DOT(84,78), [
+      {d:'M40 60 L56 44'}, {d:'M128 60 L112 44'}, {d:'M62 60 L74 40'}, {d:'M84 60 L84 30'}]),
+    // Spread Option — QB read with a pitch relationship.
+    SPREAD_OPTION: schemeSVG('a-so', OL_ROW+`<rect x="80" y="74" width="9" height="9" fill="currentColor" stroke="none"/><circle cx="66" cy="80" r="4.4" fill="currentColor" stroke="none"/>`, [
+      {d:'M84 74 L84 34'}, {d:'M89 78 L114 68 L124 50', dash:true}]),
+    // Vertical — take the top off: three go routes.
+    VERTICAL: schemeSVG('a-vt', OL_ROW+QB_DOT(84,78), [
+      {d:'M60 60 L60 16'}, {d:'M84 60 L84 12'}, {d:'M108 60 L108 16'}]),
+  };
 
   /* ---------- runtime ---------- */
   let drive=null, practice=false;
@@ -785,13 +823,21 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       const b = document.createElement('button');
       b.className='scheme'+(key===STORE.scheme?' sel':'');
       b.style.setProperty('--acc', sk.acc);
-      b.innerHTML = `<span class="nm"><span class="ic">${sk.ic}</span>${s.name}</span><span class="id">${m.id}</span>`
-        + `<span class="sw"><span class="s">▲ ${m.s}</span><span class="w">▼ ${m.w}</span></span>`;
+      // Cards carry NO play info — just identity. Details reveal below on tap.
+      b.innerHTML = `<span class="nm"><span class="ic">${sk.ic}</span>${s.name}</span><span class="id">${m.id}</span>`;
       b.onclick=()=>{ STORE.scheme=key; save(STORE); renderSchemes(); };
       list.appendChild(b);
     }
-    const m = SCHEME_META[STORE.scheme];
-    el('schemeDetail').innerHTML = `<b>${PB.schemes[STORE.scheme].name}</b> selected — you’ll call this playbook all drive`;
+    const key = STORE.scheme, m = SCHEME_META[key], sk = SCHEME_SKIN[key]||{acc:'var(--gold)',ic:'🏈'};
+    el('schemeDetail').innerHTML =
+      `<div class="sd-card" style="--acc:${sk.acc}">`
+      + `<div class="sd-art">${SCHEME_ART[key]||''}</div>`
+      + `<div class="sd-body">`
+      +   `<div class="sd-nm">${PB.schemes[key].name}</div>`
+      +   `<div class="sd-id">${m.id}</div>`
+      +   `<div class="sd-sw"><span class="s">▲ ${m.s}</span><span class="w">▼ ${m.w}</span></div>`
+      + `</div></div>`
+      + `<div class="sd-foot"><b>${PB.schemes[key].name}</b> selected — you’ll call this playbook all drive</div>`;
   }
 
   /* ---------- field rendering ---------- */
