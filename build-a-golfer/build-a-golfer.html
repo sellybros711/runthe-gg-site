@@ -485,8 +485,11 @@ window.GA_ID='G-L29P5MRWKE';
   .botnav-in{display:flex; width:100%; max-width:600px; margin:0 auto}
   .botnav button{flex:1; min-width:0; background:none; border:0; cursor:pointer; color:#9fb3a8; display:flex;
     flex-direction:column; align-items:center; gap:3px; padding:7px 2px 6px; font:800 9px/1 var(--body);
-    letter-spacing:.03em; text-transform:uppercase}
+    letter-spacing:.03em; text-transform:uppercase; position:relative}
   .botnav button .ic{width:22px; height:22px}
+  /* unclaimed-reward indicator: a red dot at the top-right of a nav tab's icon (free pack → Pro Shop, new items → Profile) */
+  .botnav button .navdot{position:absolute; top:4px; left:50%; transform:translateX(6px); width:9px; height:9px;
+    border-radius:50%; background:#e2554e; border:1.5px solid #04160b; box-shadow:0 0 5px rgba(226,85,78,.9)}
   .botnav button span{max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   /* CS439: hide by sliding OFF-SCREEN (+ visibility/pointer-events) instead of display:none. display:none
      removes the fixed layer, and re-showing it re-lays-out the fixed element, which iOS can mis-paint mid-
@@ -5896,7 +5899,7 @@ function header(){
   menu.onclick=()=>{ S.overlay='menu'; render(); };
   left.appendChild(menu);
   const profNew=signedIn && (typeof cosNewTotal==='function') && cosNewTotal()>0;   // CS422: unviewed new items → dot on the profile pill
-  const pl=$(`<button class="bnprofile${signedIn?' pin':''}" aria-label="${signedIn?'Your profile':'Sign in'}" style="position:relative">${pxAvatarChip(S.look,26)}<span class="bnname">${signedIn?esc(sbUsername||'Player'):'Sign in'}</span>${profNew?'<span style="position:absolute;top:-2px;right:-2px;width:11px;height:11px;border-radius:50%;background:#e2554e;border:2px solid #0b1a12;box-shadow:0 0 5px rgba(226,85,78,.9)"></span>':''}</button>`);
+  const pl=$(`<button class="bnprofile${signedIn?' pin':''}" aria-label="${signedIn?'Your profile':'Sign in'}" style="position:relative">${pxAvatarChip(S.look,26)}<span class="bnname">${signedIn?esc(sbUsername||'Player'):'Sign in'}</span>${profNew?'<span style="position:absolute;top:-2px;left:-2px;width:11px;height:11px;border-radius:50%;background:#e2554e;border:2px solid #0b1a12;box-shadow:0 0 5px rgba(226,85,78,.9)"></span>':''}</button>`);
   // CS484 (owner): tapping the banner profile IMAGE opens your CLOSET (dress your golfer); the bottom-nav
   // Profile tab opens your overall Profile. Non-destructive: remembers the current screen/overlay to return to.
   pl.onclick=()=>{ if(sbSignedIn()){ if(S.screen==='setup'){ render(); return; }   // already customizing
@@ -6140,8 +6143,17 @@ function navActiveTab(){
 }
 function navSetActive(nav){
   const active=navActiveTab();
-  nav.querySelectorAll('[data-nav]').forEach(b=>{ const on=b.getAttribute('data-nav')===active;
-    b.classList.toggle('on', on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+  // unclaimed-reward dots (refreshed every render, so they clear the moment the reward is claimed):
+  // a free pack lights the Pro Shop tab, unviewed new items light the Profile tab.
+  const si=sbSignedIn();
+  const nFree = si ? (((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')):0)) : 0;
+  const newN = (typeof cosNewTotal==='function') ? cosNewTotal() : 0;
+  nav.querySelectorAll('[data-nav]').forEach(b=>{ const id=b.getAttribute('data-nav'), on=id===active;
+    b.classList.toggle('on', on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
+    const want=(id==='shop' && nFree>0) || (id==='profile' && newN>0);
+    let dot=b.querySelector('.navdot');
+    if(want && !dot){ dot=document.createElement('span'); dot.className='navdot'; b.appendChild(dot); }
+    else if(!want && dot){ dot.remove(); } });
 }
 function openRules(){ if(S.screen==='rules')return; S.rulesReturn=S.screen; S.overlay=null; S.screen='rules'; render(); }
 function scrRules(){
