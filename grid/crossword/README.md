@@ -4,68 +4,76 @@ A daily sports crossword. One puzzle a day, fill the grid, beat the clock, keep
 your streak alive. Lives at `runthe.gg/grid/crossword/`.
 
 `RunTheGrid` is the **hub** for grid games — this Daily Crossword is one game
-inside it; the Daily Matching Game is its sibling (`/grid/match/`, separate). The
-hub landing at `/grid/` is still to be built.
+inside it; the Daily Matching Game is its sibling (`/grid/match/`). The hub
+landing is at `/grid/`.
 
-## Status: design prototype
+## What's here
 
-This is a **working front-end prototype**, not the production game. It is fully
-playable today against a single hand-verified sample puzzle so the design, feel,
-and UX can be reviewed in the browser. What's real vs. stubbed:
-
-| Real | Stubbed for the prototype |
-|---|---|
-| Grid render, cell/word selection, across↔down toggle | Single sample puzzle (not a live daily) |
-| Keyboard input (on-screen + physical), arrows, Tab between clues | No sports data pipeline yet (see below) |
-| Timer, Check, Reveal, win detection | Leaderboard is a static teaser (no Supabase) |
-| Streak logic + best time (`localStorage`, key `rtg:cw:v1`) | No accounts / online sync |
-| Completion modal + emoji share grid | Share posts text only, no share-image/OG |
-
-## Files
+A working front end **plus** a working generation pipeline for one launch sport
+(baseball). The puzzles in `puzzles.js` are produced by the pipeline from a real
+dataset — every clue is generated from a data row, not hand-written.
 
 | File | Role |
 |---|---|
-| `index.html` | The whole game UI (self-contained: inline styles + logic). Renders any `{rows, entries}` puzzle, of any size. |
-| `puzzles.js` | The daily puzzle data (`window.RTG_PUZZLES`). One machine-verified 5×5 sample with sports-flavored clues. |
-| `scripts/fill.mjs` | Proof-of-concept crossword **fill engine** (GDD §6): backtracking word-fill over black-square templates, sports terms preferred, picks the sportiest valid fill. `node scripts/fill.mjs` prints a grid + the JSON that becomes a `puzzles.js` entry. |
+| `index.html` | The whole game UI (self-contained). Renders any `{rows, entries}` puzzle of any size; on-screen + physical keyboard, across↔down, Check/Reveal, timer, streak (`localStorage` key `rtg:cw:v1`), win modal + emoji share, leaderboard teaser. |
+| `puzzles.js` | **Generated** daily puzzles (`window.RTG_PUZZLES`). Do not hand-edit — re-run the generator. The UI serves today's puzzle by date, falling back to the first. |
+| `data/baseball.json` | Curated Track-A baseball dataset (GDD §3/§5): players, teams, stats, venues, glossary — well-established facts only. |
+| `data/fill.json` | Common crossword **fill** words with fixed clues (Track-B style, GDD §2), used only to resolve crossings the themed bank can't reach. |
+| `scripts/generate.mjs` | **The pipeline.** extraction (§5) → template clues (§4) → backtracking fill (§6) → difficulty (§7) → writes `puzzles.js`. Deterministic per date. |
+| `scripts/find_templates.mjs` | Dev tool: searches black-square templates the current bank can actually fill. |
+
+## Regenerate the puzzles
+
+```
+cd grid/crossword
+node scripts/generate.mjs 7      # writes puzzles.js with 7 daily puzzles
+```
+
+Each daily puzzle is seeded from its date, so a given day always regenerates the
+same grid + clues (reproducible). The clue for a repeated answer rotates by date
+via the template library — e.g. `OTT` is clued "Hall of Famer Mel ___" one day,
+"Giants great Mel ___" the next — which is the no-repeat mechanism (GDD §6) in
+miniature.
 
 ## View it locally
 
-It's static — no build step:
+Static, no build step:
 
 ```
-cd grid/crossword && python3 -m http.server 8000
-# open http://localhost:8000/
+cd grid/crossword && python3 -m http.server 8000   # http://localhost:8000/
 ```
 
-Or open `index.html` directly (fonts need a network; everything else works offline).
+## What's proven vs. what scales with data
 
-## Design language
+**Proven end to end (this is the valuable part):** dataset → answer extraction
+with category + difficulty metadata → template-driven clue generation → a
+backtracking fill that produces a *machine-verified valid* grid (every across and
+down run is a real bank word) → difficulty scoring → a `puzzles.js` the UI serves
+unchanged. Add another sport by dropping in another `data/<sport>.json` and its
+templates; nothing else changes.
 
-Matches the rest of RunThe.GG (same tokens as `/football/`): dark-navy
-background, cream text, gold accent (`--gold:#f2b21c`), `Press Start 2P` for the
-`RunTheGrid` wordmark only, `Rubik` for everything else. The grid uses a gold
-selected cell, a blue active-word highlight, and NYT-style corner numbering.
+**Limited by the demo dataset's size — not by the design:** the sample grids skew
+toward common fill and don't vary much day to day, because the curated demo bank
+is small (~130 baseball answers + ~350 fill words). Crossword construction is
+dictionary-bound: a dense, theme-heavy 5×5 needs a large answer pool. The
+production system inherits **thousands** of answers per sport from the real
+datasets (Lahman, nba_api, nflverse), at which point the same fill engine yields
+theme-dense, varied daily grids and the fill list becomes a small minority. The
+generator is written to scale straight into that — it just needs the bigger bank.
 
-## From prototype → live daily game
+## From here → full launch (GDD build sequence §8)
 
-Mirrors the GDD build sequence (§8) and how RunTheDrive/RunThePitch shipped:
-
-1. **Pick launch sports + data sources** — Baseball (Lahman), Basketball
-   (nba_api/Kaggle), Football (nflverse, already owned). *Design is code-ready
-   once this is chosen.*
-2. **Extraction pipeline** → a cleaned answer word-list (3–8 letters) with
-   category / length / fame-signal metadata (GDD §5). Feeds the fill engine.
-3. **Template library** (GDD §4) — sentence-shell clues per category; the
-   template × data-row combinations give the no-repeat pool (GDD §6).
-4. **Grow the fill engine** in `scripts/fill.mjs` from POC to production: real
-   dictionary/answer bank, 5×5 / 7×7 / 8×8 templates, difficulty→size coupling
-   (GDD §7), and a daily deterministic seed so everyone gets the same grid.
-5. **Generate dailies** — emit one `puzzles.js`-shaped record per day (or fetch
-   from an endpoint); the UI already renders any size/shape unchanged.
-6. **Static Track B glossary** (equipment/terms) — small, one-time (GDD §2/§8).
-7. **Leaderboard + accounts** — wire the teaser to Supabase (same project as
+1. **Baseball to full scale** — swap the curated `baseball.json` for the Lahman
+   extraction (players × season-years), which supplies the large answer pool the
+   fill engine needs for rich daily grids.
+2. **Basketball + Football** — `data/basketball.json`, `data/football.json` +
+   their template sets (nflverse already owned).
+3. **Grid sizes 7×7 / 8×8** and difficulty→size coupling (GDD §7); the UI already
+   renders any size.
+4. **No-repeat store** — persist used (answer, template, date) combos over a
+   60–90 day window (GDD §6).
+5. **Leaderboard + accounts** — wire the teaser to Supabase (same project as
    soccer/golf): one combined daily board ranked by completion time (GDD §1).
-8. **Ship into the site** — build the `/grid/` hub, add a game card to the
-   homepage, add routes to `sitemap.xml`, add `manifest.webmanifest` + icons.
-9. **Layer in the seven limited sports** as curated Track A-lite lists.
+6. **Ship into the site** — homepage game card, `sitemap.xml`,
+   `manifest.webmanifest` + icons.
+7. **Seven limited sports** as curated Track A-lite lists (GDD §8).
