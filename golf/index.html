@@ -20036,9 +20036,16 @@ function hvGifCompose(img,g,plots,hole,c,D){
   const bytes=gifBuild(W,H,pal,frames);
   const blob=new Blob([bytes],{type:'image/gif'}), fname=`runthetour-hole${hole.n}.gif`;
   const file=new File([blob],fname,{type:'image/gif'});
-  const txt=withSocial(`${dShort(c.v)} · Hole ${hole.n} · ${hole.par+hole.toPar} (${dtp(hole.toPar)}) on RunTheTour`);
+  const txt=hvShareCaption(hole,c);
   if(navigator.canShare&&navigator.canShare({files:[file]})){ navigator.share({files:[file],title:'RunTheTour',text:txt}).catch(e=>{ if(!(e&&e.name==='AbortError')) toast('Saved your shot GIF'); }); }
   else { const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); toast('Saved your shot GIF'); }
+}
+// CS518 (owner): an inviting share caption that leads with the result you made (Eagle/Birdie/Par...),
+// e.g. "Check out this Eagle I just made on Run The Tour!" - then the course/hole/score + social tags.
+function hvShareCaption(hole, c){
+  const ace = hole.par===3 && (hole.par+hole.toPar)===1;   // a par-3 in one is a Hole-in-One, not an "Eagle"
+  const res = ace ? 'Hole-in-One' : dResultLong(hole.par, hole.toPar);
+  return withSocial(`Check out this ${res} I just made on Run The Tour! ⛳\n${dShort(c.v)} · Hole ${hole.n} · ${hole.par+hole.toPar} (${dtp(hole.toPar)})`);
 }
 function hvShareShot(holeIdx){
   const hole=S.dailyHoles[holeIdx], c=DAILY_COURSES[S.dailyCourse]; if(!hole||!c) return;
@@ -20060,7 +20067,7 @@ function hvShareShot(holeIdx){
     ctx.fillText('RunTheTour · runthe.gg/golf', W-Math.round(barH*0.22), imgH+barH*0.54); ctx.textAlign='left';
     cv.toBlob(b=>{ if(!b){ toast("Couldn't build the image"); return; }
       const fname=`runthetour-hole${hole.n}.png`, file=new File([b],fname,{type:'image/png'});
-      if(navigator.canShare&&navigator.canShare({files:[file]})) navigator.share({files:[file], title:'RunTheTour', text:withSocial(`${dShort(c.v)} · Hole ${hole.n} · ${hole.par+hole.toPar} (${dtp(hole.toPar)})`)}).catch(()=>{});
+      if(navigator.canShare&&navigator.canShare({files:[file]})) navigator.share({files:[file], title:'RunTheTour', text:hvShareCaption(hole,c)}).catch(()=>{});
       else { const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=fname; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); toast('Saved the shot image'); }
     },'image/png');
   };
