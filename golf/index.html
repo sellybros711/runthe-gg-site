@@ -1659,11 +1659,6 @@ window.GA_ID='G-L29P5MRWKE';
      tiny in a big empty area. */
   .shop-preview{display:flex; justify-content:center; align-items:flex-end; height:190px; margin:2px 0 2px}
   .shop-preview .avatarfig{height:190px; width:150px}
-  /* item-only preview (owner): the selected item shown large + clean, NOT worn on the golfer */
-  .preview-item{align-self:center; display:flex; align-items:center; justify-content:center; height:100%; width:100%}
-  .preview-item .sthumb{width:auto; height:78%; max-height:150px; aspect-ratio:1/1; border:0 !important; background:transparent !important; padding:0}
-  .preview-item .sthumb img{width:100%; height:100%; object-fit:contain; image-rendering:pixelated}
-  .preview-swatch{width:min(140px,64%); aspect-ratio:1/1; border-radius:22px; border:1px solid rgba(255,255,255,.12); display:block}
   /* IMG_8306: setup screen reuses the shop tab layout - non-sticky within its bordered box, shorter preview */
   /* CS453: pin the golfer preview so it stays visible while scrolling the customization options.
      Sits just under the sticky app banner (~50px + safe area), opaque bg so tiles scroll cleanly beneath. */
@@ -8088,7 +8083,7 @@ function scrSetup(){
   const segHTML = SECTIONS.map(s=>`<button class="${s[0]===sec[0]?'on':''}" data-ssec="${s[0]}">${esc(s[1])}${secNew(s)&&s[0]!==sec[0]?NDOT:''}</button>`).join('');
   const chipHTML = sec[2].map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-scat="${c[0]}">${esc(c[1])}${(c[0]!==cat && cosCatNew(c[0])>0)?NDOT:''}</button>`).join('');
   // PINNED header: golfer + section tabs + the section's category chips (all one clean stack; only tiles scroll)
-  const sticky=$(`<div class="shop-sticky closet-sticky"><div class="shop-preview">${previewItemBigHTML()||avatarShowHTML()}</div><div class="segrow closet-seg">${segHTML}</div>${sec[2].length>1?`<div class="catrow catwrap closet-cats">${chipHTML}</div>`:''}</div>`);
+  const sticky=$(`<div class="shop-sticky closet-sticky"><div class="shop-preview">${avatarShowHTML()}</div><div class="segrow closet-seg">${segHTML}</div>${sec[2].length>1?`<div class="catrow catwrap closet-cats">${chipHTML}</div>`:''}</div>`);
   wrap.appendChild(sticky);
 
   // ---- scrolling content: the item tiles for the current category ----
@@ -21608,32 +21603,6 @@ function shopTile(o){
     +foot+`</button>`;
 }
 // the rarity of the previewed item (drives the shard-redeem path; bag clubs are a tier ladder, no redeem)
-// OWNER: when a specific ITEM is being previewed, the preview area shows JUST THAT ITEM (big), not the
-// golfer wearing it. Returns '' when nothing is selected (→ the dressing-room golfer stays).
-function previewItemBigHTML(){
-  const pv=(inShopCtx()?S.shopPreview:null); if(!pv) return '';
-  let inner='';
-  try{
-    if(pv.kind==='acc'){ const it=ACC_BY_ID[pv.id], sl=it?ACC_SLOT_BY[it.slot]:null, r=it?ACC_RARITY[it.rarity]:null;
-      inner=`<span style="color:${r?r.c:'var(--gold)'};display:inline-flex">${ic((sl&&sl.icon)||'gear',{size:'128px'})}</span>`;
-    } else {   // cosmetic
-      const c=pv.cat, id=pv.id;
-      if(c==='fx'){ const o=(cosmeticItems('fx')||[]).find(x=>x.id===id), col=o&&o.col;
-        inner=`<span class="preview-swatch" style="background:${col?'radial-gradient(circle,'+col+',#0c1f16 72%)':'#12251b'}${col?';box-shadow:0 0 26px 4px '+col:''}"></span>`; }
-      else if(c==='club') inner=pxClubThumb(id);
-      else if(c==='ball') inner=pxBallThumb(id);
-      else if(c==='cleats') inner=pxCleatsThumb(id);
-      else if(c==='pat') inner=pxPatThumb(id);
-      else if(c==='hw'||c==='ew'||c==='top'||c==='leg') inner=pxItemThumb(c,id);
-      else {   // shirt / hat / trousers / shoes = a colour: show a big clean swatch
-        const o=(cosmeticItems(c)||[]).find(x=>x.id===id);
-        const bg=(o&&o.pat!==undefined)?patSwatchBg(id):((o&&o.col)||'#54736a');
-        inner=`<span class="preview-swatch" style="background:${bg}"></span>`; }
-    }
-  }catch(e){ return ''; }
-  if(!inner) return '';
-  return `<div class="preview-item">${inner}</div>`;
-}
 function shopPreviewRarity(pv){ try{
     if(pv.kind==='cos') return packRarityOf(cosmeticPriceBase(pv.cat,pv.id));
     if(pv.kind==='acc'){ const it=ACC_BY_ID[pv.id]; return (it&&SHARD_COST[it.rarity])?it.rarity:null; }
@@ -21666,7 +21635,7 @@ function shopPreviewNode(){ const pv=S.shopPreview; if(!pv) return $(`<span></sp
       ${boostTxt2?`<div class="small" style="margin-top:5px;color:#8fe0c4;font-weight:800">${boostTxt2}</div>`:''}
       <div class="small" style="margin-top:9px;color:#bcd3c6">This one can't be bought with coins - <b>pull it from packs</b>, or trade in shards for it.</div>
       <div class="small" style="margin-top:7px;color:${rar?ACC_RARITY[rar].c:'#bcd3c6'}">◆ Your ${rar?ACC_RARITY[rar].label:''} shards: <b>${shN}/${shNeed}</b> · duplicates from packs & challenge rewards earn more</div>
-      <div class="small" style="margin-top:5px;color:#8fe0c4">Shown above &mdash; the item itself.</div>
+      <div class="small" style="margin-top:5px;color:#8fe0c4">Previewing on your golfer above.</div>
       <div style="display:flex;gap:10px;margin-top:14px">
         <button class="btn ghost" id="pv-cancel" style="flex:1;margin:0">Close</button>
         <button class="btn goldfill" id="pv-packs" style="flex:1;margin:0">🎁 Open Packs ▸</button>
@@ -21692,7 +21661,7 @@ function shopPreviewNode(){ const pv=S.shopPreview; if(!pv) return $(`<span></sp
     ${boostTxt?`<div class="small" style="margin-top:5px;color:#8fe0c4;font-weight:800">${boostTxt}</div>`:''}
     <div style="display:inline-flex;align-items:center;gap:6px;margin-top:7px;font-weight:800;font-size:19px;color:var(--gold)"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(pv.price)}</div>
     <div class="small muted" style="margin-top:5px">Balance ${coinFmt(bal)} &rarr; <b style="color:${afford?'#35d6a0':'#e2554e'}">${coinFmt(after)}</b> after</div>
-    <div class="small" style="margin-top:8px;color:#8fe0c4">Shown above &mdash; nothing is spent until you buy.</div>
+    <div class="small" style="margin-top:8px;color:#8fe0c4">Previewing on your golfer above &mdash; nothing is spent until you buy.</div>
     ${rar&&shN>0?`<div class="small" style="margin-top:7px;color:${ACC_RARITY[rar].c}">◆ You have ${shN}/${shNeed} ${ACC_RARITY[rar].label} shards${canShard?'':' — dupes from packs earn more'}</div>`:''}
     <div style="display:flex;gap:10px;margin-top:14px">
       <button class="btn ghost" id="pv-cancel" style="flex:1;margin:0">Cancel</button>
@@ -21721,9 +21690,10 @@ function pxCosThumb(cat,id){ const base=Object.assign({},S.look||DEFLOOK);
   const url=pxGolferURL(base), start=(cat==='pat'||cat==='top')?20:(cat==='leg')?40:3;   // pat/top → torso band, leg → legs, hw/ew → head band
   return `<span class="sthumb px" style="overflow:hidden;background:#0c1f16;padding:0">${pxCropImg(url,start,48)}</span>`;
 }
-function cosTileHTML(cat,o){
-  const owned=cosOwned(cat,o.id), price=cosmeticPrice(cat,o.id), equipped=cosIsEquipped(cat,o.id);
-  const thumb = (cat==='fx')
+// a clean picture of just the ITEM (no golfer): fx→glow swatch, club/ball/cleats/pattern→sprite thumb,
+// hw/ew/top/leg→item sprite, shirt/hat/pants/shoes colors→a swatch. Shared by the shop tiles AND the pack reveal.
+function cosThumbHTML(cat,o){
+  return (cat==='fx')
      ? `<span class="sthumb color" style="background:${o.col?'radial-gradient(circle,'+o.col+',#0c1f16 72%)':'#12251b'}${o.col?';box-shadow:0 0 10px 1px '+o.col:''}"></span>`
      : (cat==='club') ? pxClubThumb(o.id)
      : (cat==='ball') ? pxBallThumb(o.id)
@@ -21732,7 +21702,11 @@ function cosTileHTML(cat,o){
      : (cat==='hw'||cat==='ew'||cat==='top'||cat==='leg') ? pxItemThumb(cat,o.id)
      : (o.pat!==undefined
         ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
-        : `<span class="sthumb color" style="background:${o.col}"></span>`);
+        : `<span class="sthumb color" style="background:${o.col||'#54736a'}"></span>`);
+}
+function cosTileHTML(cat,o){
+  const owned=cosOwned(cat,o.id), price=cosmeticPrice(cat,o.id), equipped=cosIsEquipped(cat,o.id);
+  const thumb = cosThumbHTML(cat,o);
   const bt=cosBoost(cat,o.id);
   const csE=(cat==='shirt'||cat==='hat')?COSMETIC_SHIRTS.find(x=>x.id===o.id&&x.earn):null;   // earned colorways lock on the hat tab too (never a 0-coin buy)
   if(csE && !owned){   // EARNED Legend gear not yet unlocked: show the requirement, not a buy
@@ -22068,7 +22042,7 @@ function packItemLook(e){ var look=Object.assign({},S.look||DEFLOOK);
   else if(e.cat==='cleats') look.cleats=e.id;
   return look; }
 function packItemVisual(e){
-  if(e.kind==='cos'){ return '<img src="'+pxGolferURL(packItemLook(e))+'" style="height:210px;image-rendering:pixelated">'; }
+  if(e.kind==='cos') return packCosThumb(e,168);
   var icon='gear', rc=PACK_RCOL[e.rarity]||'#b8c4bd';
   if(e.kind==='acc'){ var it=accById(e.id); icon=(ACC_SLOT_BY[it&&it.slot]||{icon:'gear'}).icon; }
   else if(e.kind==='bag'){ icon=(BAG_BY[e.club]||{ic:'driver'}).ic; }
@@ -22148,8 +22122,15 @@ function packItemBoostTxt(e){ var b=null;
   else if(e.kind==='acc'){ var it=accById(e.id); b=it&&accItemBoost(it); }
   else if(e.kind==='bag'){ var c=BAG_BY[e.club]; b=c&&c.tiers[0].b; }
   return b?shopBoostTxt(b):''; }
+// the ITEM itself (not the golfer wearing it): look up the cosmetic's catalog entry for its col/pattern,
+// then render the shared item-only thumbnail sized into the card.
+function packCosThumb(e,sz){
+  var o=null; try{ o=(cosmeticItems(e.cat)||[]).find(function(x){return x.id===e.id;}); }catch(_){}
+  o=o||{id:e.id};
+  return '<span class="packthumb" style="width:'+sz+'px;height:'+sz+'px">'+cosThumbHTML(e.cat,o)+'</span>';
+}
 function packCardVisual(e){
-  if(e.kind==='cos'){ var fxc=(e.cat==='fx')?(' fxa fx-'+e.id):''; return '<img class="pximg'+fxc+'" src="'+pxGolferURL(packItemLook(e))+'" style="height:94px;image-rendering:pixelated;margin:2px 0">'; }
+  if(e.kind==='cos') return packCosThumb(e,86);
   var icon='gear', rc=PACK_RCOL[e.rarity]||'#b8c4bd';
   if(e.kind==='acc'){ var it=accById(e.id); icon=(ACC_SLOT_BY[it&&it.slot]||{icon:'gear'}).icon; }
   else if(e.kind==='bag'){ icon=(BAG_BY[e.club]||{ic:'driver'}).ic; }
@@ -22173,6 +22154,8 @@ function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=
    +'.pcard.dim{opacity:.42;transition:opacity .45s ease .15s}'
    +'.pcard-tier{font:800 9px var(--body);letter-spacing:.1em;text-transform:uppercase}'
    +'.pcard-cat{font:800 7.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:#9fb6a8;margin-top:2px}'
+   +'.packthumb{display:flex;align-items:center;justify-content:center;flex:0 0 auto;margin:2px 0}'
+   +'.packthumb .sthumb{width:100%!important;height:100%!important;border-radius:10px}'
    +'.pcard-name{font:700 11px var(--body);color:#fff;text-align:center;line-height:1.1;padding:0 2px}'
    +'.pcard-boost{font:700 8px var(--body);color:#8fe0c4;text-align:center;line-height:1.15;padding:0 1px}'
    +'.packfoot{margin-top:22px;min-height:78px;display:flex;flex-direction:column;align-items:center;gap:12px}'
@@ -22459,7 +22442,7 @@ function overlayShop(screen){
       <div style="display:flex;align-items:center;gap:8px">
         <span class="coinpill"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(coinBalance())}</span>
         <button class="btn ghost x2" style="width:auto;padding:7px 11px;font-size:14px">✕</button></div></div>
-    <div class="shop-preview">${previewItemBigHTML()||avatarFullHTML()}</div>
+    <div class="shop-preview">${avatarFullHTML()}</div>
     <button class="shop-closetcta" data-closet><span style="font-size:18px;flex:0 0 auto">🚪</span><span><b>Customize your golfer in your closet</b><br><span class="small" style="opacity:.85">Equip everything you own — colors, patterns, gear &amp; effects</span></span><span style="margin-left:auto">▸</span></button>
     <button class="shop-refcta" data-refshare><span style="width:18px;height:18px;flex:0 0 auto">${ic('coins',{size:'18px'})}</span><span><b>Invite a friend, get a free pack</b><br><span class="small" style="opacity:.85">They sign up with your link, you both score a pack</span></span><span style="margin-left:auto">↗</span></button>
     <div class="segrow">
