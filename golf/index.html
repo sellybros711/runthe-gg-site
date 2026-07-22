@@ -5789,13 +5789,16 @@ const COS_BOOST={
   'sp:tartan':{acc:1}, 'sp:houndstooth':{app:1}, 'sp:chevron':{dist:1}, 'sp:colorblock':{dist:1}
 };
 function cosBoost(cat,id){ return COS_BOOST[cosKey(cat,id)]||null; }
-// sum the boosts from the cosmetics you currently WEAR (and own). Fed into accBoost() (Career only).
-function cosmeticBoost(){ const o={}; const L=S.look||{};
-  const add=(cat,id)=>{ if(!id||id==='none') return; if(!cosOwned(cat,id)) return; const b=cosBoost(cat,id); if(b) for(const k in b) o[k]=(o[k]||0)+b[k]; };
-  if(L.cap) add('hw', L.hatStyle||'cap');   // headwear boost only counts while a hat is actually worn
-  add('ew', L.eyewear); add('pat', L.shirtPat);   // colors never boost (owner), so shirt color isn't read
-  return o;
+// the WORN, OWNED, boost-carrying cosmetics right now - the single source of truth the boost math AND the
+// on-screen "active boosts" breakdown both read, so the display can never drift from what's applied.
+function cosmeticBoostRows(){ const rows=[]; const L=S.look||{};
+  const push=(cat,id)=>{ if(!id||id==='none') return; if(!cosOwned(cat,id)) return; const b=cosBoost(cat,id); if(!b) return;
+    const o=(cosmeticItems(cat)||[]).find(x=>x.id===id); rows.push({cat,id,name:(o&&o.name)||id,b}); };
+  if(L.cap) push('hw', L.hatStyle||'cap');   // headwear boost only counts while a hat is actually worn
+  push('ew', L.eyewear); push('pat', L.shirtPat);   // colors never boost (owner), so shirt color isn't read
+  return rows;
 }
+function cosmeticBoost(){ const o={}; cosmeticBoostRows().forEach(r=>{ for(const k in r.b) o[k]=(o[k]||0)+r.b[k]; }); return o; }
 // ---- Golf Bag: buy a better version of every club for slight, stacking boosts. Tiers upgrade in order
 // (Stock free -> Tour -> Pro -> Signature); the ACTIVE boost per club is your highest owned tier. Owned in the
 // same coin store (keys bag:<club>:<tier>), so it cloud-syncs with everything else. Career-only via accBoost. ----
@@ -5812,6 +5815,18 @@ const BAG_TIER_LABEL=['Tour','Pro','Signature'];
 // which cosmetic club LOOKS belong under each club group on the store's Clubs page
 const BAG_COS_CLUBS={ driver:['driver','persimmon','excalibur'], woods:['wood'], hybrid:[],
   irons:['iron'], wedges:['wedge'], putter:['putter','blade','wand','hockey','scepter','candycane'] };
+// ---- YOUR BAG: each club look belongs to a bag SLOT; you equip one look per slot (the closet's Clubs
+// menu). look.clubs = {slot:lookId}; look.club stays "the club your standing golfer holds" (last equipped).
+const CLUB_SLOT_OF={ driver:'driver', persimmon:'driver', excalibur:'driver', wood:'woods',
+  iron:'irons', wedge:'wedges', putter:'putter', blade:'putter', wand:'putter', hockey:'putter',
+  scepter:'putter', candycane:'putter' };
+const BAG_SLOT_STOCK={driver:'driver',woods:'wood',hybrid:null,irons:'iron',wedges:'wedge',putter:'putter'};
+function bagSlotLooks(){ const L=S.look||{}; let m=L.clubs;
+  if(!m||typeof m!=='object'){ m=Object.assign({},BAG_SLOT_STOCK);   // migrate: the held club settles into its slot
+    const held=L.club, sl=held&&CLUB_SLOT_OF[held]; if(sl) m[sl]=held; L.clubs=m; }
+  return m; }
+function bagSlotLook(slot){ const m=bagSlotLooks(); return m[slot]||BAG_SLOT_STOCK[slot]; }
+function bagEquipLook(slot,id){ if(!S.look) return; const m=bagSlotLooks(); m[slot]=id; S.look.clubs=m; S.look.club=id; saveLook(); }
 // each boost tier gets its own finish so every tier club LOOKS unique: Tour = brushed steel,
 // Pro = stealth carbon with an accent (teal on hybrids so woods/hybrids read apart), Signature = gold
 const BAG_SHAPE={driver:'driver',woods:'wood',hybrid:'wood',irons:'iron',wedges:'wedge',putter:'putter'};
@@ -5824,7 +5839,9 @@ const BAG_BY={}; BAG_CLUBS.forEach(c=>BAG_BY[c.k]=c);
 function bagKey(club,tier){ return 'bag:'+club+':'+tier; }
 function bagTierOwned(club){ const own=coinState().owned; for(let t=3;t>=1;t--){ if(own[bagKey(club,t)]) return t; } return 0; }
 function bagPrice(tier){ return Math.round((BAG_TIER_PRICE[tier-1]||0)*priceHike()); }
-function bagBoost(){ if(!SHOP_ENABLED) return {}; const o={}; BAG_CLUBS.forEach(c=>{ const t=bagTierOwned(c.k); if(t>0){ const b=c.tiers[t-1].b; for(const k in b) o[k]=(o[k]||0)+b[k]; } }); return o; }
+function bagBoostRows(){ const rows=[]; if(!SHOP_ENABLED) return rows;
+  BAG_CLUBS.forEach(c=>{ const t=bagTierOwned(c.k); if(t>0) rows.push({club:c.k,name:c.tiers[t-1].n,b:c.tiers[t-1].b}); }); return rows; }
+function bagBoost(){ const o={}; bagBoostRows().forEach(r=>{ for(const k in r.b) o[k]=(o[k]||0)+r.b[k]; }); return o; }
 function bagBuy(club,tier){ const c=BAG_BY[club]; tier=+tier; if(!c||tier<1||tier>3) return {ok:false,msg:'Unknown club'};
   if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy clubs'};
   if(bagTierOwned(club)>=tier) return {ok:false,msg:'Already owned'};
@@ -7874,6 +7891,53 @@ function pxPatThumb(id){
     ctx.fillStyle=c; ctx.fillRect(i*px,j*px,px,px); } }
   return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`;
 }
+// ---- the closet's CLUBS menu = YOUR BAG: 6 club slots; tap a slot to see its active boost upgrade and
+// equip any of the looks you own for that slot (equipping also puts the club in your golfer's hands). ----
+function bagMenuNode(){
+  const wrap=$(`<div style="margin-top:12px"></div>`);
+  const sel=(S.bagSlot && BAG_BY[S.bagSlot])?S.bagSlot:null;
+  if(!sel){
+    wrap.appendChild($(`<div class="small muted" style="margin-bottom:8px">Your bag · tap a club slot to open it.</div>`));
+    const grid=$(`<div class="sgrid"></div>`);
+    grid.innerHTML=BAG_CLUBS.map(c=>{
+      const lookId=bagSlotLook(c.k);
+      const lookO=lookId?(cosmeticItems('club')||[]).find(o=>o.id===lookId):null;
+      const t=bagTierOwned(c.k);
+      const thumb=lookId?pxClubThumb(lookId):pxBagThumb(c.k,Math.max(1,t));
+      const tierTxt=t>0?`<span style="color:#41dea6">${esc(c.tiers[t-1].n)}</span>`:`<span style="opacity:.65">Stock · no boost</span>`;
+      return shopTile({thumb,name:c.name,noFoot:true,
+        sub:`${lookO?esc(lookO.name):'—'} · ${tierTxt} <span style="color:var(--gold)">▸</span>`,
+        data:`data-bagslot="${c.k}"`});
+    }).join('');
+    wrap.appendChild(grid);
+    grid.querySelectorAll('[data-bagslot]').forEach(x=>x.onclick=()=>{ S.bagSlot=x.getAttribute('data-bagslot'); render(); });
+    return wrap;
+  }
+  const c=BAG_BY[sel], t=bagTierOwned(sel);
+  const back=$(`<button class="btn ghost" style="margin:2px 0 10px">‹ All club slots</button>`);
+  back.onclick=()=>{ S.bagSlot=null; render(); };
+  wrap.appendChild(back);
+  wrap.appendChild($(`<div style="font:800 14px/1.3 var(--body);margin-bottom:8px"><span style="color:var(--gold)">${esc(c.name)}</span> <span class="muted" style="font-weight:600">· ${esc(c.sub)}</span></div>`));
+  wrap.appendChild($(`<div class="scout" style="margin:0 0 12px">${t>0
+    ? `<b style="color:#41dea6">${esc(c.tiers[t-1].n)}</b> <span class="small">· ${shopBoostTxt(c.tiers[t-1].b)} · your best owned upgrade, always active in Career</span>`
+    : `<b>Stock ${esc(c.name)}</b> <span class="small muted">· no boost yet, upgrades in the Pro Shop add stats</span>`}</div>`));
+  const looks=(BAG_COS_CLUBS[sel]||[]).map(id=>(cosmeticItems('club')||[]).find(o=>o.id===id)).filter(o=>o&&cosOwned('club',o.id));
+  if(looks.length){
+    wrap.appendChild($(`<div class="small muted" style="margin:2px 0 6px;text-transform:uppercase;letter-spacing:.07em;font-size:10.5px">Equip a look · your golfer holds it</div>`));
+    const grid=$(`<div class="sgrid"></div>`);
+    grid.innerHTML=looks.map(o=>cosTileHTML('club',o)).join('');
+    wrap.appendChild(grid);
+    grid.querySelectorAll('[data-tile]').forEach(x=>x.onclick=()=>shopTileClick(x));
+  } else {
+    wrap.appendChild($(`<div class="shop-empty">No alternate looks for this slot yet${(BAG_COS_CLUBS[sel]||[]).length>1?' — pull one from packs':''}.</div>`));
+  }
+  if(SHOP_ENABLED){
+    const more=$(`<button class="setup-shopbtn" style="margin-top:11px">${ic('cart',{size:'16px'})}<span>Upgrades &amp; more looks in the Pro Shop</span> <span class="ssb-go">▸</span></button>`);
+    more.onclick=()=>{ S.shopPreview=null; S.overlay='shop'; S.shopSec='bag'; render(); };
+    wrap.appendChild(more);
+  }
+  return wrap;
+}
 function scrSetup(){
   const guest=!sbSignedIn();
   const editing=!!S.setupEdit;   // CS356c: editing the profile golfer from the Trophy Room (not starting a career)
@@ -7886,8 +7950,8 @@ function scrSetup(){
   // + that section's category chips are PINNED with the golfer (so switching is scroll-free), and only the
   // ITEM TILES scroll beneath — never the chrome. Buying stays in the Pro Shop; here you equip what you own.
   const LOOKCATS=[['skin','Skin'],['hair','Hair'],['style','Style'],['hand','Hand']];
-  const APPAREL=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];
-  const GEAR=[['hw','Headwear'],['ew','Eyewear'],['club','Clubs'],['ball','Balls'],['cleats','Cleats']];
+  const APPAREL=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['hw','Headwear'],['ew','Eyewear'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];   // headwear + eyewear are apparel (owner)
+  const GEAR=[['club','Clubs'],['ball','Balls'],['cleats','Cleats']];
   const EFFECTS=[['fx','Aura']];
   const SECTIONS = guest
     ? [['look','Appearance',LOOKCATS]]
@@ -7916,6 +7980,10 @@ function scrSetup(){
     inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name); saveLook();}; nrow.appendChild(inp); form.appendChild(nrow);
     const crow=$(`<div class="setrow"><div class="setlab">Country</div></div>`); crow.appendChild(countryRow()); form.appendChild(crow);
     wrap.appendChild(form);
+  } else if(cat==='club' && !guest){
+    // YOUR BAG: 6 club slots — tap one to open its boost status + the looks you can equip in it
+    wrap.appendChild(bagMenuNode());
+    markCatSeen('club');
   } else {
     const grid=$(`<div class="sgrid"></div>`);
     let tiles;
@@ -7941,13 +8009,13 @@ function scrSetup(){
   }
   // section + category handlers (cancel any pending preview when navigating). A section tap jumps to its
   // first category; the chips + sections live in the pinned `sticky`.
-  sticky.querySelectorAll('[data-ssec]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; const k=x.getAttribute('data-ssec'); const s2=SECTIONS.find(z=>z[0]===k); if(s2){ S.setupSection=k; S.setupCat=s2[2][0][0]; } render(); });
-  sticky.querySelectorAll('[data-scat]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.setupCat=x.getAttribute('data-scat'); render(); });
+  sticky.querySelectorAll('[data-ssec]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.bagSlot=null; const k=x.getAttribute('data-ssec'); const s2=SECTIONS.find(z=>z[0]===k); if(s2){ S.setupSection=k; S.setupCat=s2[2][0][0]; } render(); });
+  sticky.querySelectorAll('[data-scat]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.bagSlot=null; S.setupCat=x.getAttribute('data-scat'); render(); });
 
   // CS484: live equipped-gear boosts + the Pro Shop / Packs button now sit BELOW the tiles (utility, not the
   // primary action) so the tiles stay right under the pinned nav — much less scrolling to reach them.
   if(!guest && SHOP_ENABLED){
-    const under=$(`<div class="setup-under" style="margin-top:14px"></div>`);
+    const under=$(`<div class="setup-under" style="margin:14px 0 96px"></div>`);   // bottom margin clears the fixed Back/Done action bar
     try{ under.appendChild(accBoostSummaryNode()); }catch(e){}
     const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')):0);
     const newN=(typeof cosNewTotal==='function')?cosNewTotal():0;
@@ -10970,7 +11038,7 @@ function inShopCtx(){ return S.overlay==='shop' || S.screen==='setup'; }
 // The LOCKER (setup / edit-your-golfer screen) is equip-only: it shows only what you own, tap to equip. This split
 // keeps the two from bleeding into each other (owner: store = buy, locker = dress).
 function inShopStore(){ return S.overlay==='shop'; }
-function cosShopSec(cat){ if(cat==='fx') return 'effects'; if(cat==='club') return 'bag'; if(cat==='hw'||cat==='ew'||cat==='ball'||cat==='cleats') return 'accessories'; return 'apparel'; }
+function cosShopSec(cat){ if(cat==='fx') return 'effects'; if(cat==='club') return 'bag'; if(cat==='ball'||cat==='cleats') return 'accessories'; return 'apparel'; }   // hw/ew are apparel (owner)
 function pxCurLook(){ return (inShopCtx() && typeof shopEffLook==='function')?shopEffLook():S.look; }
 function avatarHTML(){ return pxAvatarHTML(pxCurLook()); }
 
@@ -11394,17 +11462,28 @@ function accSelectRow(slot){
 // CS344: live summary of the total stat boost your equipped accessories give (the CLAMPED effective boost
 // that buildPlayer bakes into your career/daily golfer), so you know what's boosted before you draft.
 function accBoostSummaryNode(){
+  // grouped ACTIVE-boost breakdown. The rows come from the SAME functions accBoost() sums
+  // (bagBoostRows / cosmeticBoostRows), so what's shown here is exactly what the career golfer gets.
   const b=accBoost(); const order=CATS.map(c=>c.k).filter(k=>b[k]);
   const node=$(`<div class="accboost"></div>`);
-  if(!order.length){
+  const clubs=(typeof bagBoostRows==='function')?bagBoostRows():[];
+  const worn=(typeof cosmeticBoostRows==='function')?cosmeticBoostRows():[];
+  if(!order.length && !clubs.length && !worn.length){
     node.appendChild($(`<div class="small muted">No stat boost equipped yet, gear up to boost your golfer.</div>`));
     return node;
   }
   const total=order.reduce((a,k)=>a+b[k],0);
-  node.appendChild($(`<div class="small" style="margin-bottom:6px"><b style="color:var(--gold)">Equipment boost</b> · <b style="color:${total>=0?'#41dea6':'#e2554e'}">${total>=0?'+':''}${total}</b> total, applied in Career (Daily &amp; ranked play stay neutral)</div>`));
-  const chips=$(`<div class="boostchips"></div>`);
-  order.forEach(k=>{ const v=b[k]; chips.appendChild($(`<span class="boostchip" style="${v<0?'color:#e2554e;border-color:rgba(226,85,78,.4)':''}">${v>=0?'+':''}${v} ${esc(CATS.find(c=>c.k===k).short)}</span>`)); });
-  node.appendChild(chips); return node;
+  let raw=0; clubs.concat(worn).forEach(r=>{ for(const k in r.b) raw+=r.b[k]; });
+  node.appendChild($(`<div class="small" style="margin-bottom:6px"><b style="color:var(--gold)">Active boosts</b> · <b style="color:${total>=0?'#41dea6':'#e2554e'}">${total>=0?'+':''}${total}</b> total${raw>total?' <span class="muted">(capped)</span>':''}, applied in Career · Daily &amp; ranked online stay neutral</div>`));
+  const rowTxt=r=>`<b style="color:var(--oncard)">${esc(r.name)}</b> ${shopBoostTxt(r.b)}`;
+  if(clubs.length) node.appendChild($(`<div class="small" style="margin:3px 0;line-height:1.6"><span style="color:var(--gold);font-weight:800;letter-spacing:.04em">CLUBS</span> · ${clubs.map(rowTxt).join(' <span class="muted">·</span> ')}</div>`));
+  if(worn.length) node.appendChild($(`<div class="small" style="margin:3px 0;line-height:1.6"><span style="color:var(--gold);font-weight:800;letter-spacing:.04em">APPAREL</span> · ${worn.map(rowTxt).join(' <span class="muted">·</span> ')}</div>`));
+  if(order.length){
+    const chips=$(`<div class="boostchips" style="margin-top:5px"></div>`);
+    order.forEach(k=>{ const v=b[k]; chips.appendChild($(`<span class="boostchip" style="${v<0?'color:#e2554e;border-color:rgba(226,85,78,.4)':''}">${v>=0?'+':''}${v} ${esc(CATS.find(c=>c.k===k).short)}</span>`)); });
+    node.appendChild(chips);
+  }
+  return node;
 }
 // CS345: accessories are fixed-color art (unlike the recolorable shirt/trousers/shoes/basic-cap), so make
 // that clear rather than pretend a color picker exists for them.
@@ -21190,6 +21269,7 @@ function shopCard(it){ const r=ACC_RARITY[it.rarity]||ACC_RARITY.common, owned=a
 function cosEquip(cat,id){ if(!S.look) return; const c=COS_CATS.find(x=>x.k===cat); if(!c) return;
   if(cat==='hw'){ if(id==='none'){ S.look.cap=false; } else { S.look.cap=true; S.look.hatStyle=id; } saveLook(); return; }   // CS356g headwear = hat shape
   if(cat==='ew'){ S.look.eyewear=(id==='none'?'':id); saveLook(); return; }
+  if(cat==='club'){ bagEquipLook(CLUB_SLOT_OF[id]||'putter', id); return; }   // a club look equips into its BAG SLOT (and your golfer holds it)
   S.look[c.lookKey]=id; if(cat==='hat') S.look.cap=true; saveLook(); }
 // CS356g: is a headwear/eyewear/pattern id the currently-equipped one? (special because hw drives cap+hatStyle)
 function cosIsEquipped(cat,id){
@@ -21201,6 +21281,7 @@ function cosIsEquipped(cat,id){
   if(cat==='leg') return (S.look.leg||'none')===id;
   if(cat==='ball') return (S.look.ball||'none')===id;
   if(cat==='cleats') return (S.look.cleats||'none')===id;
+  if(cat==='club'){ const sl=CLUB_SLOT_OF[id]; return sl?bagSlotLook(sl)===id:(S.look.club===id); }   // equipped = the look of ITS bag slot
   if(cat==='hat') return (S.look.hat||S.look.polo)===id;
   const c=COS_CATS.find(x=>x.k===cat); return c?S.look[c.lookKey]===id:false;
 }
@@ -22083,8 +22164,8 @@ function overlayShop(screen){
   // CS356g: the pixel golfer renders shirt/hat/pants/shoe COLORS, shirt PATTERNS, and headwear/eyewear
   // ACCESSORIES - so the shop sells all of those (Apparel = colors + pattern, Accessories = headwear/eyewear).
   let sec=S.shopSec; if(sec==='packs'&&!packsOn()) sec='apparel'; if(sec!=='accessories'&&sec!=='effects'&&sec!=='owned'&&sec!=='bag'&&sec!=='packs'&&sec!=='drops') sec='apparel';
-  const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];
-  const ACCS=[['hw','Headwear'],['ew','Eyewear'],['ball','Balls'],['cleats','Cleats']];   // clubs (looks) live on the Clubs tab with the boost tiers
+  const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['hw','Headwear'],['ew','Eyewear'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];   // headwear + eyewear are apparel (owner)
+  const ACCS=[['ball','Balls'],['cleats','Cleats']];   // clubs (looks) live on the Clubs tab with the boost tiers
   const FXCATS=[['fx','Aura']];
   const cats = sec==='apparel'?APP : sec==='accessories'?ACCS : sec==='effects'?FXCATS : null;
   // CS422: NEW-item badges — a red dot on a section tab / category chip that holds an acquired-but-unviewed item.
