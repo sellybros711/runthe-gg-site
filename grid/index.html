@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>RunTheGrid — Daily Sports Puzzles | RunThe.GG</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#0a1626" />
+<meta name="description" content="RunTheGrid is a daily set of quick sports brain-games on RunThe.GG — a Daily Match and a Daily Crossword. One a day, keep your streak alive." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230a1626'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2335C4CD'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23EBA61F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5A'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A98CF5'/%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a1626'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2335C4CD'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23EBA61F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5A'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A98CF5'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a1626; --card:#122a44; --cardb:#1e3d5c; --card2:#0d1f34;
+    --ink:#eaf1f8; --mut:#93a7bd; --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.16);
+    --red:#F85858; --teal:#66D3DE; --green:#6EE84E; --gold:#EBA61F; --violet:#A98CF5;
+    --hero:'Anton', Impact, sans-serif;
+    --body:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--body); color:var(--ink); min-height:100dvh; -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1000px 480px at 50% -8%, rgba(169,140,245,.18), transparent 60%),
+      radial-gradient(820px 420px at 90% 2%, rgba(53,196,205,.12), transparent 55%),
+      linear-gradient(180deg,#0b1a2c 0%, var(--bg) 46%, #081120 100%);
+    background-attachment:fixed; display:flex; justify-content:center;
+  }
+  .wrap{width:100%; max-width:560px; padding:calc(16px + env(safe-area-inset-top,0)) 16px 46px; position:relative;}
+  a{color:inherit;}
+
+  /* ---- nav ---- */
+  .nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:22px;}
+  .nav .back{color:var(--mut); text-decoration:none; font-size:12.5px; font-weight:800; letter-spacing:.03em; display:inline-flex; gap:6px; align-items:center;}
+  .nav .back:hover{color:var(--ink);}
+  .nav .acct{display:flex; gap:8px;}
+  .nav .pill{display:flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--cardb);
+    border-radius:8px; padding:6px 10px; font-weight:900; font-size:13px;}
+  .nav .pill.coins{color:#f3dca0;}
+
+  /* ---- masthead ---- */
+  .hero{text-align:center; margin-bottom:6px; position:relative;}
+  .hero .kick{font-size:11px; font-weight:900; letter-spacing:.24em; text-transform:uppercase; color:var(--teal); margin-bottom:8px;}
+  .hero h1{font-family:var(--hero); font-weight:400; font-size:clamp(46px,15vw,72px); line-height:.92; letter-spacing:.01em; margin:0;
+    filter:drop-shadow(0 6px 26px rgba(0,0,0,.45));}
+  .hero h1 .a{color:var(--ink);} .hero h1 .b{color:var(--violet);}
+  .hero .logo{display:flex; justify-content:center; gap:6px; margin:0 0 14px;}
+  .hero .logo i{width:16px; height:16px; border-radius:3px;}
+  .hero .tag{color:var(--ink); font-weight:700; max-width:400px; margin:14px auto 0; line-height:1.5; font-size:15px;}
+  .hero .tag b{color:var(--teal);}
+  .datep{display:inline-flex; align-items:center; gap:8px; margin:16px auto 2px; padding:7px 15px; border-radius:6px;
+    font-size:12px; font-weight:800; letter-spacing:.02em; color:#cfe0f0; background:rgba(255,255,255,.04); border:1px solid var(--line);}
+  .datep .dot{width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 0 0 rgba(110,232,78,.6); animation:pulse 2.4s ease-out infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(110,232,78,.5);}70%{box-shadow:0 0 0 8px rgba(110,232,78,0);}100%{box-shadow:0 0 0 0 rgba(110,232,78,0);}}
+
+  .seclab{display:flex; align-items:center; gap:10px; margin:28px 2px 12px; font-weight:900; letter-spacing:.16em;
+    text-transform:uppercase; font-size:11.5px; color:var(--mut);}
+  .seclab:before{content:""; width:9px; height:9px; border-radius:2px; background:var(--violet); flex:0 0 auto;}
+
+  /* ---- puzzle cards ---- */
+  .games{display:flex; flex-direction:column; gap:14px;}
+  .pz{position:relative; display:flex; gap:15px; align-items:center; text-decoration:none; color:inherit; overflow:hidden;
+    border-radius:13px; border:1px solid var(--cardb); background:linear-gradient(150deg,var(--card),var(--card2)); padding:16px 16px;
+    transition:transform .16s ease, border-color .16s ease, box-shadow .16s ease;}
+  .pz.live:hover{transform:translateY(-3px); border-color:var(--violet); box-shadow:0 20px 44px -22px rgba(0,0,0,.85);}
+  .pz.soon{border-style:dashed; opacity:.9;}
+  .pz .ico{flex:0 0 auto; width:64px; height:64px; border-radius:12px; background:#0a1a2e; border:1px solid var(--line2);
+    display:grid; place-items:center; box-shadow:inset 0 0 24px rgba(0,0,0,.35);}
+  .pz .ico svg{width:42px; height:42px;}
+  .pz .meta{min-width:0; flex:1;}
+  .pz .row1{display:flex; align-items:center; gap:9px; flex-wrap:wrap;}
+  .pz .nm{font-family:var(--hero); font-weight:400; font-size:23px; line-height:1; letter-spacing:.01em;}
+  .pz .badge{font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; padding:4px 8px; border-radius:5px; line-height:1;}
+  .pz .badge.new{color:#160a2e; background:linear-gradient(180deg,#C4AEF9,#9E7FEC);}
+  .pz .badge.soon{color:#9db2c8; background:rgba(255,255,255,.06); border:1px solid var(--line);}
+  .pz .sub{color:#b9c9db; font-size:13px; line-height:1.45; margin-top:6px;}
+  .pz .foot{display:flex; align-items:center; gap:12px; margin-top:10px; font-size:11.5px; font-weight:800; color:var(--mut);}
+  .pz .foot .s{display:inline-flex; align-items:center; gap:5px;}
+  .pz .foot .s b{color:#ffb9a0;}
+  .pz .go{flex:0 0 auto; align-self:center; font-weight:900; font-size:13px; color:var(--violet); display:inline-flex; align-items:center; gap:6px;}
+  .pz.live:hover .go .arw{transform:translateX(4px);}
+  .pz .go .arw{transition:transform .16s ease;}
+  @media (max-width:440px){ .pz .go span:not(.arw){display:none;} }
+
+  .note{margin-top:20px; background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:9px; padding:13px 15px;
+    color:var(--mut); font-size:13px; line-height:1.55; text-align:center;}
+  .note b{color:var(--ink);}
+  .foot{margin-top:26px; text-align:center; color:#6f829a; font-size:12.5px; line-height:1.8;}
+  .foot a{color:#9db2c8; text-decoration:none; font-weight:700;} .foot a:hover{color:var(--ink);}
+  .foot .sep{margin:0 7px; color:#3c4c60;}
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="nav">
+      <a class="back" href="/">← RunThe.GG</a>
+      <div class="acct">
+        <span class="pill coins">🪙 <span id="coinVal">0</span></span>
+      </div>
+    </div>
+
+    <header class="hero">
+      <div class="logo" aria-hidden="true">
+        <i style="background:#35C4CD"></i><i style="background:#EBA61F"></i><i style="background:#F06A5A"></i><i style="background:#A98CF5"></i>
+      </div>
+      <div class="kick">Daily Sports Puzzles</div>
+      <h1><span class="a">Run</span><span class="a">The</span><span class="b">Grid</span></h1>
+      <p class="tag">Quick daily brain-games for sports fans. <b>One of each a day</b> — beat the clock, keep the streak.</p>
+      <div class="datep"><span class="dot"></span><span id="datep">Today</span></div>
+    </header>
+
+    <div class="seclab">Today's puzzles</div>
+    <main class="games">
+      <a class="pz live" href="/grid/matching/">
+        <span class="ico" aria-hidden="true">
+          <svg viewBox="0 0 42 42" fill="none">
+            <rect x="2" y="2" width="11" height="11" rx="2" fill="#35C4CD"/>
+            <rect x="15.5" y="2" width="11" height="11" rx="2" fill="#EBA61F"/>
+            <rect x="29" y="2" width="11" height="11" rx="2" fill="#6EE84E"/>
+            <rect x="2" y="15.5" width="11" height="11" rx="2" fill="#F06A5A"/>
+            <rect x="15.5" y="15.5" width="11" height="11" rx="2" fill="#A98CF5"/>
+            <rect x="29" y="15.5" width="11" height="11" rx="2" fill="#35C4CD"/>
+            <rect x="2" y="29" width="11" height="11" rx="2" fill="#EBA61F"/>
+            <rect x="15.5" y="29" width="11" height="11" rx="2" fill="#6EE84E"/>
+            <rect x="29" y="29" width="11" height="11" rx="2" fill="#F06A5A"/>
+          </svg>
+        </span>
+        <span class="meta">
+          <span class="row1"><span class="nm">Daily Match</span><span class="badge new">New</span></span>
+          <span class="sub">Sort 25 sports names into five hidden categories. Traps everywhere — one wrong lane costs you.</span>
+          <span class="foot">
+            <span class="s">🏈 NFL · 🏀 NBA · ⚾ MLB</span>
+            <span class="s" id="matchStreak" style="display:none">🔥 <b><span id="matchStreakVal">0</span></b> streak</span>
+          </span>
+        </span>
+        <span class="go"><span>Play</span> <span class="arw">→</span></span>
+      </a>
+
+      <div class="pz soon">
+        <span class="ico" aria-hidden="true">
+          <svg viewBox="0 0 42 42" fill="none">
+            <rect x="3" y="3" width="36" height="36" rx="3" stroke="#3a506b" stroke-width="2"/>
+            <rect x="3" y="3" width="9" height="9" fill="#2a3f57"/>
+            <rect x="21" y="3" width="9" height="9" fill="#2a3f57"/>
+            <rect x="12" y="12" width="9" height="9" fill="#2a3f57"/>
+            <rect x="30" y="12" width="9" height="9" fill="#2a3f57"/>
+            <rect x="3" y="21" width="9" height="9" fill="#2a3f57"/>
+            <rect x="21" y="30" width="9" height="9" fill="#2a3f57"/>
+            <text x="15.5" y="10.5" font-family="Anton, sans-serif" font-size="7" fill="#93a7bd">1</text>
+            <text x="6.5" y="19.5" font-family="Anton, sans-serif" font-size="7" fill="#93a7bd">2</text>
+          </svg>
+        </span>
+        <span class="meta">
+          <span class="row1"><span class="nm">Daily Crossword</span><span class="badge soon">Soon</span></span>
+          <span class="sub">A sports-themed mini crossword, fresh every day. Same streak, same wallet — a second way to start your morning.</span>
+          <span class="foot"><span class="s">In development</span></span>
+        </span>
+        <span class="go"><span class="arw">🔒</span></span>
+      </div>
+    </main>
+
+    <div class="note">Play as a guest, or sign in with your <b>RunThe.GG account</b> — your streak, coins and rank carry across every game.</div>
+
+    <div class="foot">
+      <a href="/">RunThe.GG</a><span class="sep">·</span><a href="/grid/matching/">Daily Match</a><span class="sep">·</span><a href="https://x.com/RunTheGG" target="_blank" rel="noopener">@RunTheGG</a>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    var d = new Date();
+    document.getElementById('datep').textContent = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    try {
+      document.getElementById('coinVal').textContent = parseInt(localStorage.getItem('runthegrid_coins') || '0', 10) || 0;
+      var st = parseInt(localStorage.getItem('grid_match_streak') || '0', 10) || 0;
+      if (st > 0) {
+        document.getElementById('matchStreak').style.display = '';
+        document.getElementById('matchStreakVal').textContent = st;
+      }
+    } catch (e) {}
+  })();
+  </script>
+</body>
+</html>
