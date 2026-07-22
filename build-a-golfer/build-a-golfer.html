@@ -3186,7 +3186,7 @@ function dailyShareText(r){ const c=DAILY_COURSES[r.course]; const holes=r.holes
   const emo=t=> t<=-2?'🟦':t===-1?'🟩':t===0?'⬜':t===1?'🟨':'🟥';   // eagle+ blue · birdie green · par white · bogey yellow · dbl+ red
   let grid=''; holes.forEach((h,i)=>{ grid+=emo(h.toPar); if(i===8)grid+='\n'; });
   const av=r.avg!=null?r.avg:dTourAvg(c), won=r.total<av, st=streakDisplay();
-  return `⛳ RunTheTour Daily · ${dShort(c.v)}\n${dTot(r.total, c.par)} on par ${c.par}${won?' · beat the pro ✓':''}${st>0?` · 🔥${st}`:''}\n${grid}\nThink you can beat it? https://runthe.gg/golf`; }
+  return `RunTheTour: Daily Golf Game\n${dShort(c.v)} · ${dTot(r.total, c.par)}${won?' · beat the pro ✓':''}${st>0?` · 🔥${st}`:''}\n${grid}\nCan you beat my score? https://runthe.gg/golf`; }
 /* ---------- #5 Course Mastery Passport + #4 weekly meta-goals (the Daily's collection/goal layer,
    a solo progression the H2H ladder doesn't have). Per-account, cloud-synced grow-only. ---------- */
 function courseMastery(){ const m=LS.get(acctKey('bag_coursemastery'),{}); return (m&&typeof m==='object')?m:{}; }
@@ -14496,7 +14496,7 @@ function drawMajorWinCard(cv, info){
 function shareMajorWin(evt,o){
   const me=S.season.me; const cv=document.createElement('canvas');
   drawMajorWinCard(cv,{name:me.name, ovr:Math.round(me.skill), evt:evt.name, score:par(o&&o.score!=null?o.score:0), year:S.year||1, accent:majorTheme(evt.name).accent});
-  const cap=`🏆 MAJOR CHAMPION, ${me.name}\nWon ${evt.name}${o&&o.score!=null?` at ${par(o.score)}`:''}\nRunTheTour · build your golfer → https://runthe.gg/golf`;
+  const cap=`${me.name} just won ${evt.name}${o&&o.score!=null?` at ${par(o.score)}`:''} 🏆\nRunTheTour: Daily Golf Game — build a golfer, chase majors.\nThink you can do better? https://runthe.gg/golf`;
   track('major_win_shared',{event:evt.name}); shareCard(cv,cap,me.name,'major-win');
 }
 let _celebStop=null;
@@ -16480,7 +16480,7 @@ function scrSummary(){
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
   const finTxt=(t.wins>0?`${t.wins} win${t.wins>1?'s':''}`:`best ${bestTxt(t.best)}`);
   const headLine=HL?`${HL.lead.icon} ${HL.lead.head}, `:'';
-  const share=`⛳ RUNTHETOUR, ${me.name} (OVR ${ovr})\n${headLine}Year ${S.year||1}: ${fmt(t.money)} earned · #${moneyRank} of ${N}${wreath}\n${t.wins}W · ${t.majors} major${t.majors===1?'':'s'} · ${finTxt}\nThink you can build better? → https://runthe.gg/golf`;
+  const share=`RunTheTour: Daily Golf Game — ${me.name} (OVR ${ovr})\n${headLine}Year ${S.year||1}: ${fmt(t.money)} earned · #${moneyRank} of ${N}${wreath}\n${t.wins}W · ${t.majors} major${t.majors===1?'':'s'} · ${finTxt}\nThink you can build better? https://runthe.gg/golf`;
   right.appendChild($(`<h2 style="margin:2px 0 2px">Share your season</h2>`));
   right.appendChild($(`<p class="small muted" style="margin:0 0 8px">Post your card and dare a friend to beat your number.</p>`));
   const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
@@ -20049,7 +20049,7 @@ function hvGifCompose(img,g,plots,hole,c,D){
 function hvShareCaption(hole, c){
   const ace = hole.par===3 && (hole.par+hole.toPar)===1;   // a par-3 in one is a Hole-in-One, not an "Eagle"
   const res = ace ? 'Hole-in-One' : dResultLong(hole.par, hole.toPar);
-  return withSocial(`Check out this ${res} I just made on Run The Tour! ⛳\n${dShort(c.v)} · Hole ${hole.n} · Par ${hole.par} · ${hole.yards} yds`);
+  return withSocial(`Check out this ${res} I just made on RunTheTour: Daily Golf Game! ⛳\n${dShort(c.v)} · Hole ${hole.n} · Par ${hole.par} · ${hole.yards} yds\nThink you can top it? https://runthe.gg/golf`);
 }
 function hvShareShot(holeIdx){
   const hole=S.dailyHoles[holeIdx], c=DAILY_COURSES[S.dailyCourse]; if(!hole||!c) return;
@@ -20131,7 +20131,7 @@ function finishSpotlightRound(){
   S.screen='dailyresult'; render();
 }
 function spotlightShareText(r,sp){ const c=DAILY_COURSES[r.course];
-  return `⭐ RunTheTour ${sp.month} Spotlight, ${dShort(c.v)}\n${dTot(r.total, c.par)} on par ${c.par}${r.won?' · beat the pro ✓':''}\nA special 1-day event. Can you beat it? https://runthe.gg/golf`; }
+  return `RunTheTour: Daily Golf Game — ${sp.month} Spotlight\n${dShort(c.v)} · ${dTot(r.total, c.par)}${r.won?' · beat the pro ✓':''}\nCan you beat it? https://runthe.gg/golf`; }
 function scrSpotlightResult(){
   const sp=S.spotCfg||monthlySpotlight(todayKey()), mk=sp.mk;
   const _spDay=sp.liveDayKey;
@@ -22209,7 +22209,7 @@ function scrCareerEnd(){
     add(seasonRepNode(achPoints()-gained, S.careerFreshAch));
   }
   if(S.freshRep){ add($(repUpHTML(S.freshRep))); }
-  const share=`RUNTHETOUR CAREER, ${S.name||'Your Golfer'}\n${e.years} seasons on tour · net worth ${fmtSigned(c.net)}\n${c.wins}W · ${c.majors} majors · ${fmt(c.money)} earned\nhttps://runthe.gg/golf`;
+  const share=`RunTheTour: Daily Golf Game — ${S.name||'Your Golfer'}'s career\n${e.years} seasons · ${c.wins} wins · ${c.majors} majors · net worth ${fmtSigned(c.net)}\nThink you can build a better legend? https://runthe.gg/golf`;
   const row=$(`<div class="mini" style="margin-top:10px;max-width:520px;margin-left:auto;margin-right:auto"></div>`);
   const sh=$(`<button class="btn gold">↗ Share Career</button>`);
   sh.onclick=()=>{track('career_end_shared',{years:e.years}); shareCard(cv,share,S.name,'career');};
@@ -22328,7 +22328,7 @@ function scrCircuitEnd(){
   // CS483t (owner): where the tour career ranks on the global career board - Today / This week / All-time.
   { const rc=careerRankCard(); if(rc) add(rc);
     else if(sbSignedIn() && S._careerRankLoading!=='circuit'){ S._careerRankLoading='circuit'; loadCareerRank(career.net); } }
-  const share=`RUNTHETOUR LEGEND CIRCUIT, ${S.name||'Your Golfer'}\n${e.years} seasons on the Legend Circuit · net worth ${fmtSigned(c.net)}\n${c.wins}W · ${c.majors} majors · ${fmt(c.money)} earned\nhttps://runthe.gg/golf`;
+  const share=`RunTheTour: Daily Golf Game — ${S.name||'Your Golfer'} on the Legend Circuit\n${e.years} seasons · ${c.wins} wins · ${c.majors} majors · net worth ${fmtSigned(c.net)}\nThink you can build a better legend? https://runthe.gg/golf`;
   const careerVals=CATS.map(x=> S.slots[x.k]? S.slots[x.k].value : REPLACEMENT);
   const cv=document.createElement('canvas'); cv.style.cssText='width:100%;max-width:300px;display:block;margin:16px auto 4px;border-radius:14px;border:1px solid var(--line)';
   drawCareerCard(cv,{name:S.name||'Your Golfer',ovr:Math.round(buildPlayer().skill),years:e.years,money:c.money,net:c.net,wins:c.wins,majors:c.majors,cRank:0,cN:0},careerVals);
@@ -23248,8 +23248,8 @@ function h2hAskNotify(){ try{ if('Notification' in window && Notification.permis
 function h2hShareLink(){ return location.origin + location.pathname + '?h2h=' + encodeURIComponent(S.h2h.code||''); }
 function h2hInvite(){
   if(!S.h2h||!S.h2h.code) return;
-  const url=h2hShareLink(), text=`Join my Run The Tour match, tap to play me. Code ${S.h2h.code}`;
-  if(navigator.share){ navigator.share({title:'Run The Tour', text, url}).then(()=>{},()=>{}); }
+  const url=h2hShareLink(), text=`Think you can beat me? Join my RunTheTour: Daily Golf Game match. Code ${S.h2h.code}`;
+  if(navigator.share){ navigator.share({title:'RunTheTour: Daily Golf Game', text, url}).then(()=>{},()=>{}); }
   else { try{ navigator.clipboard.writeText(url); toast('Invite link copied'); }catch(e){ toast(url); } }
   track('h2h_invite');
 }
@@ -23263,8 +23263,8 @@ function referralLink(){ const code=referralCode(); if(!code) return '';
 function referralShare(){
   if(!sbSignedIn()){ toast('Sign in to get your invite link'); S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); return; }
   if(!sbUsername){ toast('Set a username first to get your invite link'); S.overlay='account'; S.acctMode='username'; render(); return; }
-  const url=referralLink(), text='Play Run The Tour golf with me — build a golfer, chase majors, become the G.O.A.T. Sign up with my link and we each get a free pack! '+url;
-  if(navigator.share){ navigator.share({title:'Run The Tour', text, url}).then(()=>{},()=>{}); }
+  const url=referralLink(), text='Play RunTheTour: Daily Golf Game with me — build a golfer, chase majors, become the G.O.A.T. Sign up with my link and we each get a free pack! '+url;
+  if(navigator.share){ navigator.share({title:'RunTheTour: Daily Golf Game', text, url}).then(()=>{},()=>{}); }
   else { try{ navigator.clipboard.writeText(text); toast('Invite link copied — send it to a friend!'); }catch(e){ toast(url); } }
   track('referral_share');
 }
