@@ -12265,6 +12265,39 @@ allows Google Fonts, or self-host Anton.*
   Playwright: watch buttons emoji-free, Sign Out present in the signed-in menu (absent for guests), 0 page
   errors. Deployed to /golf.
 
+- **H2H Quick Match → draft-FIRST flow (fixes stuck matchmaking + the contradictory "opponent found"
+  popup) (owner: "I have been searching for a h2h match for a while with no match. It also says finding
+  opponent but there was a pop up when the draft started that said opponent found. You should draft your
+  golfer and then get matched up with someone. It should reveal the course you are going to play, show you a
+  stat comparison, and then you start the match").** The old Quick Match was match-FIRST: it showed
+  "FINDING AN OPPONENT…", fired the server `h2h_quick` RPC, polled for a real human, AND armed a bot-fill
+  timer — a server-dependent lobby that hung (tiny player base) and raced a "match ready" banner against the
+  still-spinning "finding" screen (the contradiction the owner saw). Rebuilt to the exact flow the owner
+  described:
+  - **`h2hQuick()` now goes STRAIGHT to the draft**, bot-backed and fully local (`bots:true, matchId:null`,
+    a pre-drafted `_botPool` of `cap-1` opponents). No server call, no lobby poll, no bot timer → the hang
+    and the popup race are gone by construction. You build your golfer immediately instead of staring at a
+    spinner.
+  - **After you submit your draft**, the bot branch of `h2hSubmitDraft` pulls the AI opponent(s) into the
+    roster (assigning slots + random 2/2 teams for foursomes), shows a brief "Finding an opponent… / Matching
+    you into a 1v1 · 18-hole match" beat (new `S.h2h.matching` state in `scrH2HLobby`), then `h2hEnterPreview`.
+  - **The matchup preview** (`scrH2HPreview`, already existed) now leads with a prominent **course-reveal
+    chip** (📍 course · location · conditions) above the **Tale of the Tape** stat comparison (golfers, OVR,
+    all 8 skills) and the **Start the round** button — i.e. reveal course → stat comparison → start, exactly
+    as asked.
+  - Private **"Play with friends"** code matches (real humans, host can Open-to-anyone / Start-vs-AI) are
+    UNCHANGED — that's the real-human path. Only Quick Match changed. The old match-first bot chain
+    (`h2hArmBotFill`/`h2hConvertToBots`/`h2hStartBotMatch`/`h2hTrickleBot`/`h2hBotLobbyFull`) is now unused
+    (left defined). Quick Match button copy updated ("Build your golfer, then get matched up instantly").
+    Bot matches still record the human's W/L to the leaderboard as before (unchanged watch→resolve→record).
+  - Verified in Playwright across 1v1 / Free-for-All / Best Ball: tapping Quick Match lands DIRECTLY on the
+    draft (screen `h2hdraft`, `matchId` null, no hang), submitting pulls the opponent(s) in (2/4 players,
+    teams assigned for 2v2), the matching beat → preview reveals the course + tale of the tape + Start, the
+    opponent is revealed, 0 page errors; screenshot confirms the preview (course chip → OVR/skill comparison
+    → Start the round). Deployed to /golf. NOTE: real-human Quick-Match matchmaking is intentionally dropped
+    for now (the tiny player base made it hang); it can be layered back on top of this draft-first flow once
+    there's a live base — the private code flow already covers friends who want to play each other.
+
 - **Unclaimed-reward indicators — red dots for free packs + new items (owner).** Little red circles so
   players know they have unclaimed rewards, which clear the moment the reward is claimed:
   - **Free pack → red dot on the Pro Shop bottom-nav tab** (nFree = first-pack-free + per-tier pack credits > 0).
