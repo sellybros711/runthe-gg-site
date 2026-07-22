@@ -245,12 +245,30 @@
       lines.push({ tag: 'FRONT', text: 'A by-the-numbers front. It reacts to your personnel more than it dictates.' });
     }
 
-    // Coverage flavor (cosmetic — no coverage data in the resolver, so kept soft).
+    // Coverage read — always printed, with a concrete how-to-beat-it.
     if (gp.coverage === 'MAN') {
-      lines.push({ tag: 'COVERAGE', text: 'Leans man coverage. Motion and rubs can spring a receiver free.' });
+      lines.push({ tag: 'COVERAGE', text: 'Leans man-to-man across the board. Motion, stacks and rub routes can spring a receiver free — and when they turn to run with routes, a QB scramble finds grass.' });
     } else if (gp.coverage === 'ZONE') {
-      lines.push({ tag: 'COVERAGE', text: 'Zone-heavy secondary. Find the soft spot underneath and let it develop.' });
+      lines.push({ tag: 'COVERAGE', text: 'Zone-heavy secondary that keeps everything in front. Find the soft spot between defenders, work the underneath, and let crossers settle into the open window.' });
+    } else {
+      lines.push({ tag: 'COVERAGE', text: 'Mixes man-to-man and zone snap to snap. Read the safety leverage after the snap — two-high means take the underneath, one-high means the shot is there.' });
     }
+
+    // Down & distance — a true tell straight from how the front reacts.
+    lines.push({ tag: 'DOWN & DIST', text: 'Short-yardage downs they crowd the line to stuff the run; on 3rd-and-long they bail an extra defender into coverage. Let the down and distance pick your play.' });
+
+    // The edge — the single highest-percentage way to attack this front today.
+    let edge;
+    if (budget.count >= 4) {
+      edge = 'They sell out to pressure, so protection is thin behind the rush. Get the ball out on rhythm and their aggression becomes your explosive play.';
+    } else if (gp.boxBias >= 0.4) {
+      edge = 'The box is stacked to stop the run, which leaves the back end light. The numbers say take a measured shot over the top before they thin it out.';
+    } else if (gp.boxBias <= -0.3) {
+      edge = 'Extra hats are dropping deep and the front is light. The run lanes are free yards early — pound it until they walk a safety down, then it opens up.';
+    } else {
+      edge = 'No glaring weakness — this is a stay-on-schedule day. Win early downs, keep it short, and don’t force a low-percentage throw into a crowd.';
+    }
+    lines.push({ tag: 'EDGE', text: edge });
 
     // Compact, scannable gauges for the matchup screen.
     const pressure = budget.count <= 1 ? { level:'LOW',  pct:22 }
