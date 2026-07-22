@@ -748,6 +748,9 @@ window.GA_ID='G-L29P5MRWKE';
   .osreel .reeltag{position:absolute; top:6px; font:800 8.5px/1 var(--body); letter-spacing:.2em; color:var(--muted)}
   .osreel .name{font-family:var(--display); font-weight:400; font-size:22px; text-transform:uppercase; letter-spacing:.02em; color:var(--oncard); padding:0 12px; text-align:center}
   .osreel:not(.landed):not(.spinning) .name{font-size:18px; color:#e9f1eb; letter-spacing:.04em}   /* CS341: idle text more apparent */
+  .cardkind{font:800 10px/1 var(--body); letter-spacing:.16em; margin-top:4px}
+  .cardkind.ck-prime{color:var(--gold)}
+  .cardkind.ck-great{color:#e8dfc8}
   .osreel .sub{position:absolute; bottom:7px; font:800 8px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); padding:0 8px; text-align:center}
   .osreel.rar-rare{border-color:#4f9fd0} .osreel.rar-rare .reeltag{color:#82c1e8}
   .osreel.rar-epic{border-color:#a679e0; box-shadow:0 0 12px rgba(166,121,224,.25) inset} .osreel.rar-epic .reeltag{color:#c7a6f2}
@@ -2494,7 +2497,7 @@ const ACH=[].concat(
    // Prime cards: 2K-style peak versions of modern stars, pulled on the draft wheel. Track distinct Primes rolled.
    {id:'dr_prime5', cat:'The Draft',name:'Prime Time',      desc:'Roll 5 different Prime cards on the draft wheel.',  goal:5, pts:50, get:m=>m.primesPulled},
    {id:'dr_prime10',cat:'The Draft',name:'Prime Collector', desc:'Roll 10 different Prime cards on the draft wheel.', goal:10,pts:90, get:m=>m.primesPulled},
-   {id:'dr_prime25',cat:'The Draft',name:'Prime Everything',desc:'Roll all 25 Prime cards on the draft wheel.',       goal:25,pts:200,get:m=>m.primesPulled}],
+   {id:'dr_prime25',cat:'The Draft',name:'Prime Everything',desc:'Roll every Prime card on the draft wheel (all 27).',  goal:27,pts:200,get:m=>m.primesPulled}],
   // ================= EXPANSION 2: every game mode has feats to chase =================
   // ---- Online (1v1 / Best Ball / Scramble / Free-for-All) ----
   [{id:'h2h_play',cat:'Online',name:'Online Debut',      desc:'Play your first online match.',              goal:1,pts:15, get:m=>m.h2hMatches},
@@ -2808,7 +2811,7 @@ function recordAchEvent(ev){ if(!sbSignedIn()) return; const s=achState(); const
 // mergePrimes) so it survives across devices + drafts, independent of the per-draft S.revealed set. Signed-in
 // only, matching the rest of the achievement system (a guest can't earn achievements anyway).
 function primeState(){ const p=LS.get(acctKey('bag_primes'),{})||{}; return (typeof p==='object')?p:{}; }
-function primesPulledCount(){ return Object.keys(primeState()).length; }
+function primesPulledCount(){ try{ const p=primeState(); return GOLFERS.filter(g=>g.prime && p[g.name]).length; }catch(e){ return Object.keys(primeState()).length; } }
 function recordPrimePull(name){ if(!sbSignedIn()||!name) return; const p=primeState();
   if(p[name]) return; p[name]=1; LS.set(acctKey('bag_primes'),p);
   try{ evaluateAch(); }catch(e){} cloudPush(); }
@@ -3566,9 +3569,13 @@ const CATS=[
 ];
 // [name, era, dist,acc,app,sht,scr,bnk,put,clu]
 const ROSTER=[
-  {"name":"Tiger Woods","era":"leg","tier":"legend","rarity":"Legendary","nation":"USA","country":"United States","born":1975,"majors":15,"archetype":"Ballstriker","signature":"Approach","data_source":"historical peak 2009 (DataGolf)","arc_age":34,"potential":95,"overall":95,"pot_band":{"exp":95,"lo":95,"hi":95,"boom":0.0,"bust":0.0},"dist":88,"acc":88,"app":99,"sht":96,"scr":96,"bnk":94,"put":95,"clu":98,"note":"GOAT, 15 majors"},
   {"name":"Prime Tiger Woods","era":"leg","tier":"legend","rarity":"Legendary","nation":"USA","country":"United States","born":1975,"majors":15,"archetype":"Ballstriker","signature":"Approach","data_source":"historical peak 2000 (DataGolf)","arc_age":30,"potential":99,"overall":99,"pot_band":{"exp":99,"lo":99,"hi":99,"boom":0.0,"bust":0.0},"dist":99,"acc":99,"app":99,"sht":99,"scr":99,"bnk":99,"put":99,"clu":99,"note":"Prime - the greatest peak ever, 99 across"},
   {"name":"Prime Phil Mickelson","era":"leg","tier":"legend","rarity":"Legendary","nation":"USA","country":"United States","born":1970,"majors":6,"archetype":"Short-Game Artist","signature":"Short Game","data_source":"historical peak 2006 (DataGolf)","arc_age":34,"potential":95,"overall":95,"pot_band":{"exp":95,"lo":95,"hi":95,"boom":0.0,"bust":0.0},"dist":95,"acc":85,"app":95,"sht":99,"scr":96,"bnk":96,"put":96,"clu":97,"note":"Prime - 6 majors, the flop-shot wizard"},
+  {"name":"Prime Justin Rose","era":"leg","tier":"legend","rarity":"Legendary","nation":"ENG","country":"England","born":1980,"majors":1,"archetype":"Ballstriker","signature":"Approach","data_source":"historical peak 2018 (DataGolf)","arc_age":38,"potential":92,"overall":92,"pot_band":{"exp":92,"lo":92,"hi":92,"boom":0.0,"bust":0.0},"dist":88,"acc":92,"app":96,"sht":90,"scr":89,"bnk":88,"put":92,"clu":94,"note":"Prime - 2018 World No.1, iron surgeon"},
+  {"name":"Prime Adam Scott","era":"leg","tier":"legend","rarity":"Legendary","nation":"AUS","country":"Australia","born":1980,"majors":1,"archetype":"Ballstriker","signature":"Approach","data_source":"historical peak 2014 (DataGolf)","arc_age":33,"potential":91,"overall":91,"pot_band":{"exp":91,"lo":91,"hi":91,"boom":0.0,"bust":0.0},"dist":93,"acc":91,"app":98,"sht":90,"scr":88,"bnk":88,"put":85,"clu":92,"note":"Prime - 2014 World No.1, the textbook swing"},
+  {"name":"Prime Rickie Fowler","era":"leg","tier":"legend","rarity":"Epic","nation":"USA","country":"United States","born":1988,"majors":0,"archetype":"Putter","signature":"Putting","data_source":"historical peak 2016 (DataGolf)","arc_age":27,"potential":91,"overall":91,"pot_band":{"exp":91,"lo":91,"hi":91,"boom":0.0,"bust":0.0},"dist":89,"acc":88,"app":91,"sht":93,"scr":92,"bnk":90,"put":91,"clu":91,"note":"Prime - 2015 Players champ, big-stage regular"},
+  {"name":"Prime Tony Finau","era":"leg","tier":"legend","rarity":"Epic","nation":"USA","country":"United States","born":1989,"majors":0,"archetype":"Bomber","signature":"Driving Distance","data_source":"historical peak 2022 (DataGolf)","arc_age":32,"potential":89,"overall":89,"pot_band":{"exp":89,"lo":89,"hi":89,"boom":0.0,"bust":0.0},"dist":97,"acc":84,"app":92,"sht":88,"scr":87,"bnk":86,"put":87,"clu":88,"note":"Prime - 3 wins in a year, effortless power"},
+  {"name":"Prime Gary Woodland","era":"leg","tier":"legend","rarity":"Epic","nation":"USA","country":"United States","born":1984,"majors":1,"archetype":"Bomber","signature":"Driving Distance","data_source":"historical peak 2019 (DataGolf)","arc_age":35,"potential":89,"overall":89,"pot_band":{"exp":89,"lo":89,"hi":89,"boom":0.0,"bust":0.0},"dist":95,"acc":85,"app":91,"sht":85,"scr":84,"bnk":84,"put":87,"clu":92,"note":"Prime - 2019 US Open champ, raw speed"},
   {"name":"Prime Luke Donald","era":"leg","tier":"legend","rarity":"Epic","nation":"ENG","country":"England","born":1977,"majors":0,"archetype":"Short-Game Artist","signature":"Short Game","data_source":"historical peak 2011 (DataGolf)","arc_age":33,"potential":92,"overall":92,"pot_band":{"exp":92,"lo":92,"hi":92,"boom":0.0,"bust":0.0},"dist":72,"acc":90,"app":90,"sht":99,"scr":96,"bnk":95,"put":96,"clu":92,"note":"Prime - 2011 World #1, short-game maestro"},
   {"name":"Prime Henrik Stenson","era":"leg","tier":"legend","rarity":"Epic","nation":"SWE","country":"Sweden","born":1976,"majors":1,"archetype":"Marksman","signature":"Driving Accuracy","data_source":"historical peak 2016 (DataGolf)","arc_age":40,"potential":93,"overall":93,"pot_band":{"exp":93,"lo":93,"hi":93,"boom":0.0,"bust":0.0},"dist":84,"acc":97,"app":97,"sht":88,"scr":86,"bnk":86,"put":84,"clu":92,"note":"Prime - 2016 Open, 20-under iron clinic"},
   {"name":"Prime Padraig Harrington","era":"leg","tier":"legend","rarity":"Epic","nation":"IRL","country":"Ireland","born":1971,"majors":3,"archetype":"Closer","signature":"Composure","data_source":"historical peak 2008 (DataGolf)","arc_age":36,"potential":91,"overall":91,"pot_band":{"exp":91,"lo":91,"hi":91,"boom":0.0,"bust":0.0},"dist":85,"acc":86,"app":89,"sht":94,"scr":92,"bnk":92,"put":90,"clu":98,"note":"Prime - back-to-back majors, pure grit"},
@@ -3579,14 +3586,11 @@ const ROSTER=[
   {"name":"Prime Bubba Watson","era":"leg","tier":"legend","rarity":"Legendary","nation":"USA","country":"United States","born":1978,"majors":2,"archetype":"Bomber","signature":"Driving Distance","data_source":"historical peak 2014 (DataGolf)","arc_age":35,"potential":93,"overall":93,"pot_band":{"exp":93,"lo":93,"hi":93,"boom":0.0,"bust":0.0},"dist":99,"acc":86,"app":92,"sht":92,"scr":90,"bnk":89,"put":88,"clu":92,"note":"Prime - 2x Masters, bends it both ways"},
   {"name":"Prime Dustin Johnson","era":"leg","tier":"legend","rarity":"Legendary","nation":"USA","country":"United States","born":1984,"majors":2,"archetype":"Bomber","signature":"Driving Distance","data_source":"historical peak 2020 (DataGolf)","arc_age":32,"potential":96,"overall":96,"pot_band":{"exp":96,"lo":96,"hi":96,"boom":0.0,"bust":0.0},"dist":99,"acc":86,"app":95,"sht":92,"scr":93,"bnk":92,"put":96,"clu":95,"note":"Prime - World #1, effortless power"},
   {"name":"Prime Brooks Koepka","era":"leg","tier":"legend","rarity":"Legendary","nation":"USA","country":"United States","born":1990,"majors":5,"archetype":"Closer","signature":"Composure","data_source":"historical peak 2019 (DataGolf)","arc_age":29,"potential":96,"overall":96,"pot_band":{"exp":96,"lo":96,"hi":96,"boom":0.0,"bust":0.0},"dist":96,"acc":86,"app":95,"sht":90,"scr":90,"bnk":90,"put":90,"clu":99,"note":"Prime - 5 majors, the big-game hunter"},
-  {"name":"Prime Jordan Spieth","era":"leg","tier":"legend","rarity":"Legendary","nation":"USA","country":"United States","born":1993,"majors":3,"archetype":"Putter","signature":"Putting","data_source":"historical peak 2015 (DataGolf)","arc_age":22,"potential":96,"overall":96,"pot_band":{"exp":96,"lo":96,"hi":96,"boom":0.0,"bust":0.0},"dist":90,"acc":88,"app":95,"sht":97,"scr":96,"bnk":93,"put":99,"clu":95,"note":"Prime - 2015 wonder year, putter wizard"},
   {"name":"Prime Jason Day","era":"leg","tier":"legend","rarity":"Legendary","nation":"AUS","country":"Australia","born":1987,"majors":1,"archetype":"Short-Game Artist","signature":"Short Game","data_source":"historical peak 2016 (DataGolf)","arc_age":28,"potential":95,"overall":95,"pot_band":{"exp":95,"lo":95,"hi":95,"boom":0.0,"bust":0.0},"dist":92,"acc":88,"app":93,"sht":96,"scr":95,"bnk":95,"put":96,"clu":93,"note":"Prime - World #1, complete all-around game"},
   {"name":"Prime Sergio Garcia","era":"leg","tier":"legend","rarity":"Epic","nation":"ESP","country":"Spain","born":1980,"majors":1,"archetype":"Marksman","signature":"Driving Accuracy","data_source":"historical peak 2017 (DataGolf)","arc_age":37,"potential":93,"overall":93,"pot_band":{"exp":93,"lo":93,"hi":93,"boom":0.0,"bust":0.0},"dist":88,"acc":93,"app":98,"sht":90,"scr":89,"bnk":90,"put":84,"clu":90,"note":"Prime - 2017 Masters, the iron artist"},
-  {"name":"Prime Cameron Smith","era":"leg","tier":"legend","rarity":"Epic","nation":"AUS","country":"Australia","born":1993,"majors":1,"archetype":"Short-Game Artist","signature":"Short Game","data_source":"historical peak 2022 (DataGolf)","arc_age":29,"potential":93,"overall":93,"pot_band":{"exp":93,"lo":93,"hi":93,"boom":0.0,"bust":0.0},"dist":86,"acc":80,"app":88,"sht":98,"scr":96,"bnk":96,"put":98,"clu":92,"note":"Prime - 2022 Open, magic short game"},
   {"name":"Prime Louis Oosthuizen","era":"leg","tier":"legend","rarity":"Epic","nation":"RSA","country":"South Africa","born":1982,"majors":1,"archetype":"Marksman","signature":"Driving Accuracy","data_source":"historical peak 2010 (DataGolf)","arc_age":28,"potential":92,"overall":92,"pot_band":{"exp":92,"lo":92,"hi":92,"boom":0.0,"bust":0.0},"dist":84,"acc":96,"app":93,"sht":90,"scr":90,"bnk":89,"put":90,"clu":86,"note":"Prime - 2010 Open, the perfect swing"},
   {"name":"Prime Francesco Molinari","era":"leg","tier":"legend","rarity":"Epic","nation":"ITA","country":"Italy","born":1982,"majors":1,"archetype":"Marksman","signature":"Driving Accuracy","data_source":"historical peak 2018 (DataGolf)","arc_age":36,"potential":91,"overall":91,"pot_band":{"exp":91,"lo":91,"hi":91,"boom":0.0,"bust":0.0},"dist":82,"acc":96,"app":95,"sht":88,"scr":87,"bnk":88,"put":84,"clu":94,"note":"Prime - 2018 Open, Ryder perfect 5-0"},
   {"name":"Prime Paul Casey","era":"leg","tier":"legend","rarity":"Epic","nation":"ENG","country":"England","born":1977,"majors":0,"archetype":"Ballstriker","signature":"Approach","data_source":"historical peak 2019 (DataGolf)","arc_age":32,"potential":91,"overall":91,"pot_band":{"exp":91,"lo":91,"hi":91,"boom":0.0,"bust":0.0},"dist":88,"acc":90,"app":96,"sht":88,"scr":86,"bnk":87,"put":84,"clu":88,"note":"Prime - top-3 in the world, big ballstriker"},
-  {"name":"Prime Will Zalatoris","era":"leg","tier":"legend","rarity":"Epic","nation":"USA","country":"United States","born":1996,"majors":0,"archetype":"Ballstriker","signature":"Approach","data_source":"historical peak 2022 (DataGolf)","arc_age":26,"potential":91,"overall":91,"pot_band":{"exp":91,"lo":91,"hi":91,"boom":0.0,"bust":0.0},"dist":88,"acc":88,"app":98,"sht":88,"scr":87,"bnk":87,"put":82,"clu":88,"note":"Prime - elite irons, relentless contender"},
   {"name":"Prime Webb Simpson","era":"leg","tier":"legend","rarity":"Epic","nation":"USA","country":"United States","born":1985,"majors":1,"archetype":"Short-Game Artist","signature":"Short Game","data_source":"historical peak 2012 (DataGolf)","arc_age":27,"potential":90,"overall":90,"pot_band":{"exp":90,"lo":90,"hi":90,"boom":0.0,"bust":0.0},"dist":82,"acc":85,"app":86,"sht":93,"scr":91,"bnk":91,"put":92,"clu":86,"note":"Prime - 2012 US Open + Players champ"},
   {"name":"Prime Billy Horschel","era":"leg","tier":"legend","rarity":"Epic","nation":"USA","country":"United States","born":1986,"majors":0,"archetype":"Putter","signature":"Putting","data_source":"historical peak 2014 (DataGolf)","arc_age":28,"potential":89,"overall":89,"pot_band":{"exp":89,"lo":89,"hi":89,"boom":0.0,"bust":0.0},"dist":84,"acc":86,"app":88,"sht":88,"scr":87,"bnk":86,"put":93,"clu":88,"note":"Prime - 2014 FedEx Cup champion"},
   {"name":"Prime Zach Johnson","era":"leg","tier":"legend","rarity":"Epic","nation":"USA","country":"United States","born":1976,"majors":2,"archetype":"Marksman","signature":"Driving Accuracy","data_source":"historical peak 2015 (DataGolf)","arc_age":39,"potential":89,"overall":89,"pot_band":{"exp":89,"lo":89,"hi":89,"boom":0.0,"bust":0.0},"dist":70,"acc":96,"app":86,"sht":91,"scr":90,"bnk":89,"put":92,"clu":92,"note":"Prime - 2 majors, wedge & putting master"},
@@ -3836,6 +3840,10 @@ const ROSTER=[
 ];
 const GOLFERS=ROSTER.map(g=>{
   g.skill=CATS.reduce((s,c)=>s+g[c.k]*c.w,0);
+  // TIER REVAMP (owner): a card's tier IS its quality - derived from the overall right here, never
+  // hand-assigned - so a gold tag can never sit on a weak card (the old reputation buckets had current
+  // Phil at 73 overall wearing LEGENDARY). Bands tuned to the roster: Legendary ~top 6% (16 cards).
+  g.rarity = g.skill>=90.5?'Legendary' : g.skill>=85?'Epic' : g.skill>=79?'Rare' : 'Common';
   g.prime=/^Prime /.test(g.name)?1:0;   // "Prime X" 2K-style peak cards: draft-wheel only, never in any field
   if(g.prime) g.fld=0;                   // keep Primes out of FIELDPOOL (no double-up vs the base player)
   else if(g.fld==null) g.fld=/^(current|historical)/.test(g.data_source||'')?1:0;   // SG-rated players make the arcade field
@@ -3846,6 +3854,23 @@ const GOLFERS=ROSTER.map(g=>{
 const PULL_RATES=[['Legendary',0.05],['Epic',0.25],['Rare',0.35],['Common',0.35]]; // rarest first; sum 1.0
 function buildPool(golfers){const p={Common:[],Rare:[],Epic:[],Legendary:[]}; golfers.forEach(g=>p[g.rarity].push(g)); return p;}
 const RPOOL=buildPool(GOLFERS);
+// ---- Card identity (tier revamp): the colored tier tag = card QUALITY (derived above); WHO the card is
+// lives in a small subtext under the name instead of a "Prime" name prefix / the ambiguous "Legend" word.
+// "Prime X" keeps its INTERNAL name (saves, dedup, the Prime-collector achievements all key on it) - only
+// the DISPLAY strips the prefix.
+const _CARD_BASE_NAMES=new Set(GOLFERS.filter(g=>!g.prime).map(g=>g.name));
+function cardDispName(n){ return String(n||'').replace(/^Prime /,''); }
+function cardKind(g){
+  if(g.prime) return _CARD_BASE_NAMES.has(cardDispName(g.name))?'prime':'great';   // a Prime with no current card = a retired all-time great (Tiger)
+  if(g.era==='leg' && !/^current/.test(g.data_source||'')) return 'great';         // retired greats (Nicklaus, Hogan, Palmer...)
+  return 'current';   // today's pros - incl. aging vets like current Phil (their PRIME card is separate)
+}
+function cardKindHTML(g){
+  const k=cardKind(g);
+  if(k==='prime'){ const y=((g.data_source||'').match(/(19|20)\d\d/)||[])[0]; return `<div class="cardkind ck-prime">PRIME VERSION${y?' · '+y:''}</div>`; }
+  if(k==='great') return `<div class="cardkind ck-great">ALL-TIME GREAT</div>`;
+  return '';
+}
 function rollBucket(rng){const r=rng(); let acc=0; for(const[b,p]of PULL_RATES){acc+=p; if(r<acc)return b;} return 'Common';}
 function drawGolfer(rng,pool,revealed){
   for(let i=0;i<8;i++){const b=rollBucket(rng); const avail=pool[b].filter(g=>!revealed.has(g.name));
@@ -6398,7 +6423,7 @@ function scrRules(){
       <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="color:#c7a6f2;font-weight:800">◆ Epic</span><span class="mny mono">25%</span></div>
       <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="color:#82c1e8;font-weight:800">◇ Rare</span><span class="mny mono">35%</span></div>
       <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="font-weight:800">Common</span><span class="mny mono">35%</span></div></div>`));
-  add($(`<p class="small muted center" style="max-width:560px;margin:0 auto 22px;line-height:1.45">Rarer golfers tend to have higher peak skills, but take the best rating for an open slot, whoever lands.</p>`));
+  add($(`<p class="small muted center" style="max-width:560px;margin:0 auto 22px;line-height:1.45">A card's tier is earned by its overall rating - the gold ★ Legendary tier is reserved for the game's highest-rated cards, and aging stars have a separate PRIME VERSION card rated at their peak. Take the best rating for an open slot, whoever lands.</p>`));
 
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge</span></div>`));
   add($(`<h2 class="center" style="margin:10px 0 4px">One round. One famous course.</h2>`));
@@ -11804,11 +11829,11 @@ function scrDraft(){
   const idlePrev=(!spun && !S.spinning);
   add($(`<div class="osreel ${S.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
     ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:(idlePrev?`<div class="reeltag">PREVIEW · THE POOL</div>`:'')}
-    <div class="name${idlePrev?' preview':''}">${S.spinning?'…':(spun?esc(g.name):(idlePrev?reelPreviewHTML():'…'))}</div>
-    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.spinning?'':(idlePrev?'Spin the wheel below':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`));
+    <div class="name${idlePrev?' preview':''}">${S.spinning?'…':(spun?(esc(cardDispName(g.name))+cardKindHTML(g)):(idlePrev?reelPreviewHTML():'…'))}</div>
+    <div class="sub">${spun?esc([g.nation,g.note].filter(Boolean).join(' · ')):(S.spinning?'':(idlePrev?'Spin the wheel below':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`));
 
   // hint
-  if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(g.name)}</b>'s attribute into your bag</div>`));
+  if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(cardDispName(g.name))}</b>'s attribute into your bag</div>`));
   else if(!S.spinning && filled<8) add($(`<div class="small center osgridhint muted">Spin the wheel, then tap a slot to draft an attribute</div>`));
 
   // THE unified grid: 8 slot tiles. Filled → your pick; open + golfer shown → draft option; open + idle → placeholder.
@@ -11816,8 +11841,8 @@ function scrDraft(){
   CATS.forEach(cat=>{
     const f=S.slots[cat.k];
     if(f){
-      grid.appendChild($(`<div class="attr static dfilled" aria-label="${cat.short} locked in from ${esc(f.golfer)}, rated ${f.value}">
-        <span class="dcol"><span class="lab">${cat.short}</span><span class="dwho">${esc(f.golfer)}</span></span><span class="val">${f.value}</span><span class="dlock" aria-hidden="true">✓</span></div>`));
+      grid.appendChild($(`<div class="attr static dfilled" aria-label="${cat.short} locked in from ${esc(cardDispName(f.golfer))}, rated ${f.value}">
+        <span class="dcol"><span class="lab">${cat.short}</span><span class="dwho">${esc(cardDispName(f.golfer))}</span></span><span class="val">${f.value}</span><span class="dlock" aria-hidden="true">✓</span></div>`));
       return;
     }
     if(spun){
@@ -11855,7 +11880,7 @@ function reelPreviewHTML(){
   for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
   const names=arr.slice(0,20);
   const rows=names.map(g=>{ const col=g.rarity==='Legendary'?'#f1d04a':g.rarity==='Epic'?'#c7a6f2':g.rarity==='Rare'?'#82c1e8':'#dfe9e0';
-    return `<div class="slotrow" style="color:${col}">${esc(g.name)}</div>`; }).join('');
+    return `<div class="slotrow" style="color:${col}">${esc(cardDispName(g.name))}</div>`; }).join('');
   return `<div class="previewstrip" style="animation-duration:${(names.length*0.9).toFixed(1)}s">${rows}${rows}</div>`;
 }
 function reveal(){
@@ -11876,7 +11901,7 @@ function slotSpin(el, finalName, done){
   // up so it's above the viewport, then animate DOWN to translateY(0), decelerating to a stop on the winner.
   const rows=[finalName]; for(let i=0;i<24;i++) rows.push(GOLFERS[Math.floor(Math.random()*GOLFERS.length)].name);
   el.classList.add('slotting');
-  el.innerHTML=`<div class="slotstrip">${rows.map(nm=>`<div class="slotrow" style="height:${H}px;line-height:${H}px">${esc(nm)}</div>`).join('')}</div>`;
+  el.innerHTML=`<div class="slotstrip">${rows.map(nm=>`<div class="slotrow" style="height:${H}px;line-height:${H}px">${esc(cardDispName(nm))}</div>`).join('')}</div>`;
   const strip=el.querySelector('.slotstrip'), startY=-(rows.length-1)*H;
   strip.style.transform=`translateY(${startY}px)`;
   let fired=false; const fin=()=>{ if(fired) return; fired=true; done(); };
@@ -11891,8 +11916,8 @@ function slotSpin(el, finalName, done){
 // resumes on the SAME golfer - you must take it or spend a re-spin, never get a free re-roll by navigating away.
 function offPersistSpin(){ if(S.offseason && S.screen==='offseason' && S.current && !S.spinning){ try{ saveCareer(offseasonResumeExtra()); }catch(e){} } }
 function rarityFlash(g){
-  if(g.rarity==='Legendary'){ toast('★ '+g.name+', LEGENDARY!'); chime(); track('legendary_pulled',{name:g.name}); }
-  else if(g.rarity==='Epic') toast('◆ '+g.name+', Epic');
+  if(g.rarity==='Legendary'){ toast('★ '+cardDispName(g.name)+', LEGENDARY!'); chime(); track('legendary_pulled',{name:g.name}); }
+  else if(g.rarity==='Epic') toast('◆ '+cardDispName(g.name)+', Epic');
 }
 function spin_(){ if(S.current||golfersLeft()<=0)return;
   if(S.daily && !S.special && !S.dailyLegend) claimDailyAttempt();          // first wheel spin = the attempt is now committed
@@ -11992,7 +12017,7 @@ function scrBuild(){
       : d<0 ? `<span class="v" style="color:#E14A33" title="${esc(cad?cad.name:'Caddie')} tradeoff">${bv}<span style="font-size:12px"> ▼</span></span>`
       : `<span class="v">${bv}</span>`;
     card.appendChild($(`<div class="slot ${f?'':'empty'}">
-      <span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'no spin, journeyman'}</span>
+      <span class="lab">${cat.short}</span><span class="who">${f?cardDispName(f.golfer):'no spin, journeyman'}</span>
       ${vHTML}</div>`));});
   right.appendChild(card);
   right.appendChild($(`<div style="height:16px"></div>`));
@@ -17093,8 +17118,8 @@ function scrOffseason(){
     const rar=spun?g.rarity:null, RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
     add($(`<div class="osreel ${S.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
       ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:''}
-      <div class="name">${S.spinning?'…':esc(g.name)}</div>
-      <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current'].filter(Boolean).join(' · ')):''}</div></div>`));
+      <div class="name">${S.spinning?'…':(esc(cardDispName(g.name))+cardKindHTML(g))}</div>
+      <div class="sub">${spun?esc([g.nation].filter(Boolean).join(' · ')):''}</div></div>`));
   }
 
   // owner CS483d: idle → a simple "Your Skills" label (the instruction card above already explains the
@@ -24364,11 +24389,11 @@ function scrH2HDraft(){
   const idlePrev=(!spun && !S.h2h.spinning);
   add($(`<div class="osreel ${S.h2h.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
     ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:(idlePrev?`<div class="reeltag">PREVIEW · THE POOL</div>`:'')}
-    <div class="name${idlePrev?' preview':''}">${S.h2h.spinning?'…':(spun?esc(g.name):(idlePrev?reelPreviewHTML():'…'))}</div>
-    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.h2h.spinning?'':(idlePrev?'Spin the wheel below':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`));
+    <div class="name${idlePrev?' preview':''}">${S.h2h.spinning?'…':(spun?(esc(cardDispName(g.name))+cardKindHTML(g)):(idlePrev?reelPreviewHTML():'…'))}</div>
+    <div class="sub">${spun?esc([g.nation,g.note].filter(Boolean).join(' · ')):(S.h2h.spinning?'':(idlePrev?'Spin the wheel below':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`));
 
   // hint
-  if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(g.name)}</b>'s attribute into your bag</div>`));
+  if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(cardDispName(g.name))}</b>'s attribute into your bag</div>`));
   else if(!S.h2h.spinning && filled<8) add($(`<div class="small center osgridhint muted">Spin the wheel, then tap a slot to draft an attribute</div>`));
 
   // THE unified grid: 8 slot tiles. Filled → your pick; open + golfer shown → draft option; open + idle → placeholder.
@@ -24376,8 +24401,8 @@ function scrH2HDraft(){
   CATS.forEach(cat=>{
     const f=S.h2h.slots[cat.k];
     if(f){
-      grid.appendChild($(`<div class="attr static dfilled" aria-label="${cat.short} locked in from ${esc(f.golfer)}, rated ${f.value}">
-        <span class="dcol"><span class="lab">${cat.short}</span><span class="dwho">${esc(f.golfer)}</span></span><span class="val">${f.value}</span><span class="dlock" aria-hidden="true">✓</span></div>`));
+      grid.appendChild($(`<div class="attr static dfilled" aria-label="${cat.short} locked in from ${esc(cardDispName(f.golfer))}, rated ${f.value}">
+        <span class="dcol"><span class="lab">${cat.short}</span><span class="dwho">${esc(cardDispName(f.golfer))}</span></span><span class="val">${f.value}</span><span class="dlock" aria-hidden="true">✓</span></div>`));
       return;
     }
     if(spun){
