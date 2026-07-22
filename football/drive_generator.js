@@ -255,7 +255,8 @@
       lines.push({ tag: 'COVERAGE', text: 'Zone-heavy secondary. Find the soft spot underneath and let it develop.' });
     }
 
-    return { style: gp.styleName, note: gp.styleNote, blitzCount: budget.count, lines };
+    return { styleKey: gp.styleKey, style: gp.styleName, note: gp.styleNote,
+             coverage: gp.coverage, blitzCount: budget.count, lines };
   }
 
   return {

@@ -182,6 +182,64 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .log .row .yd.pos{color:var(--green);} .log .row .yd.neg{color:var(--red);} .log .row .yd.to{color:var(--red);}
 .log .empty{padding:18px 6px; text-align:center; color:var(--cream-dim); font-size:18px;}
 
+/* ---------- splash: looping pixel play ---------- */
+.hero-field{position:relative; width:100%; aspect-ratio:16/8; border:2px solid var(--line2); border-radius:12px;
+  overflow:hidden; margin-bottom:14px; box-shadow:var(--shadow);
+  background:
+    repeating-linear-gradient(90deg, var(--grass) 0 10.5%, var(--grass2) 10.5% 11%),
+    linear-gradient(180deg,#348545,#2a7439);}
+.hero-field .ez{position:absolute; top:0;right:0;bottom:0;width:12%;
+  background:repeating-linear-gradient(180deg,var(--endzone) 0 6px,var(--endzone2) 6px 12px); border-left:3px solid #fff;}
+.hero-field .scrim{position:absolute; inset:0; background:linear-gradient(180deg,transparent 55%,rgba(9,32,24,.35));}
+.hchip{position:absolute; width:12px;height:12px;border-radius:3px; transform:translate(-50%,-50%);
+  box-shadow:0 2px 0 rgba(0,0,0,.35); image-rendering:pixelated;}
+.hchip.off{background:#f4c93a;border:2px solid #7a5a12;}
+.hchip.def{background:#2b3a52;border:2px solid #dfe6f0;}
+.h-ball{position:absolute; width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;
+  border-left:10px solid #6b3d16; transform:translate(-50%,-50%); z-index:6; filter:drop-shadow(0 1px 1px rgba(0,0,0,.6));
+  animation:hball 4.8s linear infinite;}
+.h-wr{z-index:5; animation:hwr 4.8s linear infinite;}
+.h-def2{z-index:4; animation:hdef 4.8s linear infinite;}
+.h-td{position:absolute; right:2.5%; top:16%; font-family:var(--pix); font-size:11px; color:#ffcf4d; opacity:0; z-index:7;
+  text-shadow:0 2px 0 rgba(0,0,0,.5); animation:htd 4.8s linear infinite;}
+@keyframes hball{0%,9%{left:20%;top:52%;opacity:1}15%{left:17%;top:52%}19%{left:19%;top:50%}
+  34%{left:52%;top:22%}48%{left:78%;top:40%}64%{left:92%;top:40%}70%{left:92%;top:40%;opacity:1}
+  75%{opacity:0}98%{left:92%;opacity:0}99%{left:20%;top:52%;opacity:0}100%{opacity:1}}
+@keyframes hwr{0%{left:24%;top:30%}48%{left:78%;top:40%}64%{left:92%;top:40%}72%{left:94%;top:40%}
+  98%{left:94%;top:40%}99%{left:24%;top:30%}100%{left:24%;top:30%}}
+@keyframes hdef{0%{left:20%;top:25%}48%{left:71%;top:37%}64%{left:85%;top:40%}98%{left:85%;top:40%}
+  99%{left:20%;top:25%}100%{left:20%;top:25%}}
+@keyframes htd{0%,61%{opacity:0;transform:translateY(2px) scale(.8)}67%{opacity:1;transform:translateY(-4px) scale(1.12)}
+  81%{opacity:1;transform:translateY(-4px) scale(1)}87%{opacity:0}100%{opacity:0}}
+@media (prefers-reduced-motion: reduce){ .h-ball,.h-wr,.h-def2,.h-td{animation:none;} .h-td{opacity:1;} }
+
+.daily-title{text-align:center; margin:2px 0 4px;}
+.daily-title .dt{font-family:var(--pix); font-size:30px; letter-spacing:2px; color:var(--gold);
+  text-shadow:0 3px 0 rgba(0,0,0,.4); line-height:1.1;}
+.daily-title .ds{font-family:var(--term); font-size:20px; color:var(--cream-dim); margin-top:8px;}
+.splash-meta{display:flex; justify-content:center; gap:10px; margin:12px 0 16px; flex-wrap:wrap;}
+.splash-meta .m{font-family:var(--pix); font-size:8px; letter-spacing:.5px; color:var(--cream-dim);
+  background:var(--panel); border:1px solid var(--line2); border-radius:8px; padding:8px 10px;}
+.splash-meta .m b{color:var(--gold-bright);}
+
+/* ---------- matchup: opponent breakdown ---------- */
+.section-h{font-family:var(--pix); font-size:11px; letter-spacing:1px; padding:6px 4px 10px; display:flex;
+  align-items:center; gap:8px;}
+.section-h .back{font-family:var(--pix); font-size:9px; color:var(--cream-dim); background:transparent; border:0; padding:6px 8px; margin-left:auto;}
+.opp{padding:15px 15px 6px; margin-bottom:10px;}
+.opp .name{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+.opp .name .em{font-size:26px;}
+.opp .name .who{font-family:var(--pix); font-size:14px; color:var(--gold-bright);}
+.opp .name .k{font-family:var(--term); font-size:15px; color:var(--cream-dim); margin-top:3px;}
+.opp .plain{font-size:20px; line-height:1.35; margin-bottom:12px;}
+.opp .attack{display:flex; gap:10px; background:var(--panel2); border:1px solid var(--line); border-radius:9px;
+  padding:11px 12px; margin-bottom:12px;}
+.opp .attack .lbl{font-family:var(--pix); font-size:8px; color:var(--green); white-space:nowrap; margin-top:3px;}
+.opp .attack .tx{font-size:18px; line-height:1.3;}
+.opp .deep-toggle{font-family:var(--pix); font-size:9px; color:var(--cream-dim); background:transparent; border:0;
+  border-top:1px solid var(--line); width:100%; text-align:left; padding:12px 2px 6px;}
+.opp .deep{padding-top:2px;}
+
 /* ---------- scouting (compact, collapsible) ---------- */
 .scoutbar{display:flex; align-items:center; gap:10px; width:100%; padding:12px 14px; margin-bottom:10px;
   background:var(--panel); border:2px solid var(--line2); border-radius:12px; box-shadow:var(--shadow); text-align:left;}
@@ -270,23 +328,55 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <span class="seg chal">DAILY CHALLENGE</span>
   </div>
 
-  <!-- ===================== START SCREEN ===================== -->
-  <div id="startScreen">
-    <div class="card banner">
-      <div class="row"><span class="trophy">🏆</span><h1>SCORE A TOUCHDOWN</h1><span class="trophy">🏆</span></div>
-      <div class="sub">One drive to win it.</div>
+  <!-- ===================== SCREEN 1 · SPLASH ===================== -->
+  <div id="splashScreen">
+    <div class="hero-field" aria-hidden="true">
+      <div class="ez"></div>
+      <!-- static line of scrimmage -->
+      <span class="hchip off" style="left:20%;top:36%"></span>
+      <span class="hchip off" style="left:20%;top:44%"></span>
+      <span class="hchip off" style="left:20%;top:52%"></span>
+      <span class="hchip off" style="left:20%;top:60%"></span>
+      <span class="hchip off" style="left:20%;top:68%"></span>
+      <span class="hchip off" style="left:14%;top:55%"></span><!-- QB -->
+      <span class="hchip off" style="left:13%;top:67%"></span><!-- RB -->
+      <span class="hchip def" style="left:26%;top:40%"></span>
+      <span class="hchip def" style="left:26%;top:50%"></span>
+      <span class="hchip def" style="left:26%;top:60%"></span>
+      <span class="hchip def" style="left:33%;top:66%"></span>
+      <span class="hchip def" style="left:60%;top:70%"></span>
+      <!-- animated: WR streak, trailing DB, ball -->
+      <span class="hchip off h-wr" style="left:24%;top:30%"></span>
+      <span class="hchip def h-def2" style="left:20%;top:25%"></span>
+      <div class="h-ball"></div>
+      <div class="h-td">TOUCHDOWN!</div>
+      <div class="scrim"></div>
     </div>
 
-    <button class="scoutbar" id="scoutBar">
-      <span class="sh">📋 SCOUT</span><span class="sstyle" id="scoutStyle">—</span><span class="chev" id="scoutChev">▾</span>
-    </button>
-    <div class="card scout hidden" id="scoutCard"></div>
+    <div class="daily-title">
+      <div class="dt">DAILY DRIVE</div>
+      <div class="ds">One drive. One shot at the end zone.</div>
+    </div>
 
-    <div class="schemes-head"><span class="t">PLAYBOOK</span><span class="hint">tap to pick</span></div>
+    <div class="splash-meta">
+      <span class="m" id="splashChallenge">🏆 SCORE A <b>TOUCHDOWN</b></span>
+      <span class="m" id="splashStreak">🔥 STREAK <b>0</b></span>
+    </div>
+
+    <button class="cta" id="toMatchup">▶ START THE DRIVE</button>
+  </div>
+
+  <!-- ===================== SCREEN 2 · MATCHUP ===================== -->
+  <div id="matchupScreen" class="hidden">
+    <div class="section-h">🎯 TODAY’S MATCHUP <button class="back" id="matchBack">‹ BACK</button></div>
+
+    <div class="card opp" id="oppCard"></div>
+
+    <div class="schemes-head"><span class="t">YOUR PLAYBOOK</span><span class="hint">tap to pick</span></div>
     <div class="schemes" id="schemeList"></div>
     <div class="scheme-detail" id="schemeDetail"></div>
 
-    <button class="cta" id="startBtn">▶ START THE DRIVE</button>
+    <button class="cta" id="startBtn">🏈 TAKE THE FIELD</button>
   </div>
 
   <!-- ===================== GAME SCREEN ===================== -->
@@ -396,12 +486,44 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     for(const l of rep.lines){ html += `<div class="ln"><span class="tag">${l.tag}</span><span class="tx">${l.text}</span></div>`; }
     mount.innerHTML = html;
   }
-  // Home screen: set the one-line scout bar and prime the collapsed detail.
-  function renderScout(dateStr){
+  /* Plain-English guide to each defensive personality: a one-liner a newcomer
+     gets instantly, plus how to attack it. The generated intel lines below add
+     the depth for people who want it. Keyed by the generator's styleKey. */
+  const DEF_GUIDE = {
+    BEND_DONT_BREAK: { emoji:'🛡️',
+      plain:'A patient, careful defense. They sit back, keep everything in front of them, and rarely gamble — they’d rather make you drive the length of the field than give up one big play.',
+      attack:'Take what they give you. Short passes and runs move the chains all day. Stay patient and don’t force a deep shot into coverage.' },
+    BALANCED: { emoji:'⚖️',
+      plain:'A straight-up defense with no glaring weakness. They react to what you line up in rather than dictating to you, so nothing is off the table.',
+      attack:'Play the situation: run it on short yardage, throw it on long. Mix your calls so they can’t sit on anything.' },
+    STACK_THE_BOX: { emoji:'🧱',
+      plain:'They crowd extra defenders near the line to smother the run and dare you to beat them through the air.',
+      attack:'Throw over the top. Play-action and deep shots punish a loaded box — when everyone’s crashing the run, the space is downfield.' },
+    PRESSURE: { emoji:'🔥',
+      plain:'They send extra rushers to get after the quarterback. Hold the ball too long and you’re getting sacked.',
+      attack:'Get it out fast — quick passes and screens beat the blitz. Once they’ve overcommitted, a well-timed deep shot can go the distance.' },
+    ZERO_HESITATION: { emoji:'🎲',
+      plain:'All-out aggressive and blitz-happy. They gamble for big stops, which means huge losses for you — or huge gains when you beat them.',
+      attack:'Beat the rush with the quick game first, then take your shot: a gambler leaves the back door wide open.' },
+  };
+
+  // Screen 2: full opponent breakdown — newbie summary + how to attack + deep intel.
+  function renderOpponent(dateStr){
     const day = GEN.generateDailyDrive(dateStr);
     const rep = GEN.scoutingReport(dateStr, day);
-    el('scoutStyle').textContent = rep.style + ' D';
-    renderScoutFull(dateStr, el('scoutCard'));
+    const g = DEF_GUIDE[rep.styleKey] || {emoji:'🛡️', plain:rep.note, attack:'Read the box and play the down and distance.'};
+    let deep = '';
+    for(const l of rep.lines){ deep += `<div class="ln"><span class="tag">${l.tag}</span><span class="tx">${l.text}</span></div>`; }
+    el('oppCard').innerHTML =
+      `<div class="name"><span class="em">${g.emoji}</span><div><div class="who">${rep.style.toUpperCase()} DEFENSE</div>`
+      + `<div class="k">${rep.coverage==='MAN'?'Man-coverage lean':rep.coverage==='ZONE'?'Zone-coverage lean':'Mixed coverage'} · blitzes ~${rep.blitzCount} this drive</div></div></div>`
+      + `<div class="plain">${g.plain}</div>`
+      + `<div class="attack"><span class="lbl">HOW TO<br>ATTACK</span><span class="tx">${g.attack}</span></div>`
+      + `<button class="deep-toggle" id="deepToggle">📋 FULL SCOUTING REPORT ▾</button>`
+      + `<div class="deep hidden" id="deepReport">${deep}</div>`;
+    const dt = el('deepToggle');
+    dt.onclick=()=>{ const d=el('deepReport'); d.classList.toggle('hidden');
+      dt.textContent = '📋 FULL SCOUTING REPORT ' + (d.classList.contains('hidden')?'▾':'▴'); };
   }
 
   /* ---------- scheme picker (compact) ---------- */
@@ -750,7 +872,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   function beginDrive(dateStr, isPractice, salt){
     practice=!!isPractice;
     drive = ENGINE.createDrive(dateStr, STORE.scheme, {salt: salt||0});
-    el('startScreen').classList.add('hidden');
+    el('splashScreen').classList.add('hidden');
+    el('matchupScreen').classList.add('hidden');
     el('gameScreen').classList.remove('hidden');
     // scout peek content
     renderScoutFull(dateStr, el('scoutPeekCard'));
@@ -782,7 +905,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     el('closeSheet').onclick=close;
     el('howto').onclick=()=>{ close(); showHowto(); };
     el('practiceMi').onclick=()=>{ close(); startPractice(); };
-    el('changeScheme').onclick=()=>{ close(); el('gameScreen').classList.add('hidden'); el('startScreen').classList.remove('hidden'); renderSchemes(); window.scrollTo(0,0); };
+    el('changeScheme').onclick=()=>{ close(); el('gameScreen').classList.add('hidden'); el('splashScreen').classList.add('hidden'); el('matchupScreen').classList.remove('hidden'); renderOpponent(DATE); renderSchemes(); window.scrollTo(0,0); };
     el('statsMi').onclick=()=>{ close(); showStats(); };
   }
   function showHowto(){
@@ -817,33 +940,46 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     el('okStats').onclick=()=>el('modalMount').innerHTML='';
   }
 
+  /* ---------- screen flow ---------- */
+  function showSplash(){
+    el('matchupScreen').classList.add('hidden');
+    el('gameScreen').classList.add('hidden');
+    el('splashScreen').classList.remove('hidden');
+    el('splashStreak').innerHTML = '🔥 STREAK <b>'+STORE.streak+'</b>';
+    window.scrollTo(0,0);
+  }
+  function showMatchup(){
+    el('splashScreen').classList.add('hidden');
+    el('gameScreen').classList.add('hidden');
+    el('matchupScreen').classList.remove('hidden');
+    renderOpponent(DATE);
+    renderSchemes();
+    // reflect whether today's daily is already done
+    const played = STORE.history[DATE]!==undefined;
+    el('startBtn').textContent = played
+      ? (STORE.history[DATE]==='TOUCHDOWN' ? '✅ WON TODAY — PRACTICE A DRIVE' : '🔁 PLAYED TODAY — PRACTICE A DRIVE')
+      : '🏈 TAKE THE FIELD';
+    window.scrollTo(0,0);
+  }
+
   /* ---------- boot ---------- */
   function boot(){
     buildFieldStatics();
     refreshChips();
     renderInfo(DATE);
-    renderScout(DATE);
-    renderSchemes();
+    if(STORE.history[DATE]==='TOUCHDOWN') el('splashChallenge').innerHTML = '✅ <b>TOUCHDOWN</b> — WON TODAY';
+
+    el('toMatchup').onclick=showMatchup;
+    el('matchBack').onclick=showSplash;
     el('startBtn').onclick=()=>{
-      // already played the daily?
-      if(STORE.history[DATE]!==undefined){
-        // replay the recorded daily deterministically to show the result again is complex;
-        // simplest honest behavior: let them re-watch by re-playing is not possible, so send to practice.
-        mini('Daily already played — here’s a practice drive');
-        startPractice(); return;
-      }
+      if(STORE.history[DATE]!==undefined){ mini('Daily already played — here’s a practice drive'); startPractice(); return; }
       beginDrive(DATE, false, 0);
     };
     el('kickBtn').onclick=doKick;
     el('menuBtn').onclick=openMenu;
     el('scoutPeek').onclick=()=>{ const c=el('scoutPeekCard'); c.classList.toggle('hidden'); };
-    el('scoutBar').onclick=()=>{ const c=el('scoutCard'); c.classList.toggle('hidden');
-      el('scoutChev').textContent = c.classList.contains('hidden')?'▾':'▴'; };
-    // if daily already completed today, reflect it on the banner
-    if(STORE.history[DATE]!==undefined){
-      const r=STORE.history[DATE]; const won=r==='TOUCHDOWN';
-      el('startBtn').textContent = won? '✅ WON TODAY — PRACTICE AGAIN' : '↻ PLAYED TODAY — PRACTICE AGAIN';
-    }
+
+    showSplash();
   }
   boot();
 })();
