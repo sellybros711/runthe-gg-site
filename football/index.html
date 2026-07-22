@@ -267,18 +267,24 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .opp .name .em{font-size:26px;}
 .opp .name .who{font-family:var(--pix); font-size:14px; color:var(--gold-bright);}
 .opp .name .k{font-family:var(--term); font-size:15px; color:var(--cream-dim); margin-top:3px;}
-.opp .dfront-wrap{position:relative; margin:4px 0 12px; border:1px solid var(--line); border-radius:12px; overflow:hidden;
-  background:linear-gradient(180deg,#2f7d3f,#245f31);}
-.opp .dfront-tag{position:absolute; top:8px; left:10px; font-family:var(--pix); font-size:8px; letter-spacing:.5px;
-  color:rgba(255,255,255,.8); background:rgba(10,20,32,.55); padding:4px 7px; border-radius:6px;}
-.opp .dfront{display:block; width:100%; height:auto; padding:6px 4px;}
-.opp .dcaps{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:0 0 14px;}
+.opp .dcaps{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0 14px;}
 .opp .dcap{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:9px 6px; text-align:center;
   display:flex; flex-direction:column; gap:4px;}
 .opp .dcap .dcl{font-family:var(--pix); font-size:7px; color:var(--cream-dim); letter-spacing:.5px;}
 .opp .dcap .dcv{font-family:var(--pix); font-size:11px; color:var(--cream);}
 .opp .dcap .dcv.p-HIGH{color:#ff7a3d;} .opp .dcap .dcv.p-MEDIUM{color:var(--gold-bright);} .opp .dcap .dcv.p-LOW{color:var(--green);}
 .opp .dcap .dch{font-size:12px; color:var(--cream-dim); line-height:1.2;}
+/* attack plan: what works / what doesn't vs today's D */
+.opp .aplan{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;}
+.opp .ap-col{border:1px solid var(--line); border-radius:12px; padding:10px 11px; background:var(--panel2);}
+.opp .ap-col.good{border-color:rgba(123,214,126,.35);}
+.opp .ap-col.bad{border-color:rgba(224,112,92,.35);}
+.opp .ap-h{font-family:var(--pix); font-size:9px; letter-spacing:.5px; margin-bottom:8px;}
+.opp .ap-col.good .ap-h{color:var(--green);} .opp .ap-col.bad .ap-h{color:var(--red);}
+.opp .ap-row{padding:7px 0; border-top:1px solid var(--line);}
+.opp .ap-row:first-of-type{border-top:0;}
+.opp .ap-t{display:block; font-family:var(--pix); font-size:9px; color:var(--cream); margin-bottom:3px;}
+.opp .ap-r{display:block; font-size:14px; color:var(--cream-dim); line-height:1.25;}
 .opp .plain{font-size:20px; line-height:1.35; margin-bottom:12px;}
 .opp .attack{display:flex; gap:10px; background:var(--panel2); border:1px solid var(--line); border-radius:9px;
   padding:11px 12px; margin-bottom:12px;}
@@ -287,6 +293,11 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .opp .deep-toggle{font-family:var(--pix); font-size:9px; color:var(--cream-dim); background:transparent; border:0;
   border-top:1px solid var(--line); width:100%; text-align:left; padding:12px 2px 6px;}
 .opp .deep{padding-top:2px;}
+.opp .deep .ln{display:flex; gap:10px; padding:10px 0; border-top:1px solid var(--line); align-items:flex-start;}
+.opp .deep .ln:first-child{border-top:0;}
+.opp .deep .ln .tag{flex:none; font-family:var(--pix); font-size:7px; color:var(--bg); background:var(--gold);
+  border-radius:4px; padding:4px 6px; margin-top:2px; white-space:nowrap; letter-spacing:.5px;}
+.opp .deep .ln .tx{font-size:16px; line-height:1.32; color:var(--cream-dim);}
 
 /* ---------- scouting (compact, collapsible) ---------- */
 .scoutbar{display:flex; align-items:center; gap:10px; width:100%; padding:12px 14px; margin-bottom:10px;
@@ -707,26 +718,53 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     let deep = '';
     for(const l of rep.lines){ deep += `<div class="ln"><span class="tag">${l.tag}</span><span class="tx">${l.text}</span></div>`; }
     const covHint = rep.coverage==='MAN' ? 'motion & rubs beat it' : rep.coverage==='ZONE' ? 'find the soft spot' : 'shows both';
+
+    // ---- ATTACK PLAN: rank play types vs today's defense, say why ----
+    const gp = day._hiddenGameplan;
+    const ratings = ENGINE.matchupRatings(gp);
+    const headline = gp.blitzRate>=0.32 ? 'PRESSURE'
+                   : gp.boxBias>=0.35 ? 'HEAVY_BOX'
+                   : gp.boxBias<=-0.25 ? 'LIGHT_BOX' : 'BALANCED';
+    const ranked = Object.keys(ratings).sort((a,b)=>ratings[b]-ratings[a]);
+    const good = ranked.slice(0,2), bad = ranked.slice(-2).reverse();
+    const html = (arr,cls)=> arr.map(a=>`<div class="ap-row"><span class="ap-t">${ARCH_LABEL[a]||a}</span><span class="ap-r">${playReason(a,headline)}</span></div>`).join('');
+
     el('oppCard').innerHTML =
       `<div class="name"><span class="em">${g.emoji}</span><div><div class="who">${rep.style.toUpperCase()} DEFENSE</div>`
-      + `<div class="k">Today’s opponent · one drive to beat them</div></div></div>`
-      + `<div class="dfront-wrap">`
-      +   `<div class="dfront-tag">HOW THEY LINE UP</div>`
-      +   defenseDiagram(rep)
-      + `</div>`
+      + `<div class="k">${g.plain}</div></div></div>`
       + `<div class="dcaps">`
       +   `<div class="dcap"><span class="dcl">PRESSURE</span><span class="dcv p-${rep.pressure.level}">${rep.pressure.level}</span><span class="dch">~${rep.blitzCount} blitzes</span></div>`
       +   `<div class="dcap"><span class="dcl">BOX</span><span class="dcv">${rep.box.level}</span><span class="dch">${rep.box.hint}</span></div>`
       +   `<div class="dcap"><span class="dcl">COVERAGE</span><span class="dcv">${rep.coverageLabel}</span><span class="dch">${covHint}</span></div>`
       + `</div>`
-      + `<div class="plain">${g.plain}</div>`
-      + `<div class="attack"><span class="lbl">HOW TO<br>ATTACK</span><span class="tx">${g.attack}</span></div>`
+      + `<div class="aplan">`
+      +   `<div class="ap-col good"><div class="ap-h">✓ THIS WILL WORK</div>${html(good,'good')}</div>`
+      +   `<div class="ap-col bad"><div class="ap-h">✕ DON’T BOTHER</div>${html(bad,'bad')}</div>`
+      + `</div>`
       + `<button class="deep-toggle" id="deepToggle">📋 FULL SCOUTING REPORT ▾</button>`
       + `<div class="deep hidden" id="deepReport">${deep}</div>`;
     const dt = el('deepToggle');
     dt.onclick=()=>{ const d=el('deepReport'); d.classList.toggle('hidden');
       dt.textContent = '📋 FULL SCOUTING REPORT ' + (d.classList.contains('hidden')?'▾':'▴'); };
   }
+  const ARCH_LABEL = { RUN:'Run the ball', QB_SNEAK:'QB sneak', QUICK:'Quick passes',
+    SCREEN:'Screens', INTERMEDIATE:'Medium passes', PLAY_ACTION:'Play-action', DEEP:'Deep shots' };
+  // Why a play type works / fails, tied to the defense's headline trait.
+  const REASONS = {
+    PRESSURE: { RUN:'blitz sells out — run into the space', QB_SNEAK:'quick hitter before they get home',
+      QUICK:'out of your hand before the rush', SCREEN:'turn their aggression against them',
+      INTERMEDIATE:'no time to develop vs the rush', PLAY_ACTION:'too slow — they’re not biting',
+      DEEP:'you’ll be sacked before it opens' },
+    HEAVY_BOX: { PLAY_ACTION:'they crash the run — fake freezes them', DEEP:'thin secondary behind the box',
+      INTERMEDIATE:'space over the middle', QUICK:'quick throws off the loaded box',
+      QB_SNEAK:'still finds a crease', RUN:'a stacked box stuffs it', SCREEN:'no room to set it up' },
+    LIGHT_BOX: { RUN:'light box — lanes everywhere', QB_SNEAK:'walk-in short yardage',
+      PLAY_ACTION:'run action still holds them', INTERMEDIATE:'take the underneath',
+      QUICK:'they’re sitting on it', DEEP:'extra bodies deep take the shot away', SCREEN:'not enough to fool' },
+    BALANCED: { RUN:'take what’s there on the ground', QUICK:'reliable underneath', QB_SNEAK:'short-yardage money',
+      INTERMEDIATE:'work the middle', PLAY_ACTION:'good changeup', DEEP:'low-percentage today', SCREEN:'situational' },
+  };
+  function playReason(arch, headline){ return (REASONS[headline]||REASONS.BALANCED)[arch] || REASONS.BALANCED[arch] || ''; }
 
   /* ---------- scheme picker (compact) ---------- */
   function renderSchemes(){
