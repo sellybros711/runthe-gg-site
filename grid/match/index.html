@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>Daily Match — RunTheGrid | Sports Matching Puzzle</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#0a1626" />
+<meta name="description" content="One 5x5 grid. Five hidden categories. Sort 25 names into their lanes before you run out of guesses — a daily sports matching puzzle on RunThe.GG." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230a1626'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2335C4CD'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23EBA61F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5A'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A98CF5'/%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a1626'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2335C4CD'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23EBA61F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5A'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A98CF5'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a1626; --bg2:#0e2036; --card:#122a44; --cardb:#1e3d5c; --card2:#0d1f34;
+    --ink:#eaf1f8; --mut:#93a7bd; --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.16);
+    --red:#F85858; --teal:#66D3DE; --green:#6EE84E; --gold:#EBA61F; --violet:#A98CF5;
+    --hero:'Anton', Impact, sans-serif;
+    --body:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--body); color:var(--ink); min-height:100dvh; -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1000px 480px at 50% -8%, rgba(169,140,245,.16), transparent 60%),
+      radial-gradient(820px 420px at 90% 2%, rgba(53,196,205,.12), transparent 55%),
+      linear-gradient(180deg,#0b1a2c 0%, var(--bg) 46%, #081120 100%);
+    background-attachment:fixed; display:flex; justify-content:center;
+  }
+  .wrap{width:100%; max-width:560px; padding:calc(12px + env(safe-area-inset-top,0)) 14px 40px; position:relative;}
+  button{font-family:inherit; color:inherit; cursor:pointer;}
+  .hidden{display:none !important;}
+
+  /* ---- top bar ---- */
+  .top{display:flex; align-items:center; gap:10px; padding:2px 2px 12px;}
+  .home{color:var(--mut); text-decoration:none; font-size:22px; line-height:1; flex:0 0 auto; padding:4px;}
+  .brand{min-width:0; flex:1; line-height:1;}
+  .brand .suite{display:block; font-size:10.5px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--violet); margin-bottom:2px;}
+  .brand .suite a{color:inherit; text-decoration:none;}
+  .brand .game{font-family:var(--hero); font-weight:400; letter-spacing:.02em; font-size:25px; color:var(--ink);}
+  .stat{display:flex; align-items:center; gap:6px; background:var(--card); flex:0 0 auto;
+    border:1px solid var(--cardb); border-radius:8px; padding:6px 9px; font-weight:900; font-size:13px;}
+  .stat .ic{font-size:14px; line-height:1;}
+  .stat.coins{color:#f3dca0;} .stat.streak{color:#ffb9a0;}
+
+  /* ---- sub-header: date + mode toggle ---- */
+  .subhead{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;}
+  .datep{font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);}
+  .modes{display:inline-flex; background:var(--card2); border:1px solid var(--cardb); border-radius:9px; padding:3px; gap:2px;}
+  .modes button{border:0; background:transparent; color:var(--mut); font-weight:900; font-size:12px; letter-spacing:.04em;
+    padding:7px 14px; border-radius:7px; text-transform:uppercase; transition:background .15s, color .15s;}
+  .modes button.on{background:var(--violet); color:#1a1030;}
+  .modes button:disabled{opacity:.5; cursor:default;}
+
+  /* ---- HUD: timer + mistakes ---- */
+  .hud{display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background:var(--card); border:1px solid var(--cardb); border-radius:10px; padding:11px 14px; margin-bottom:12px;}
+  .timer{font-family:var(--hero); font-weight:400; font-size:30px; letter-spacing:.03em; line-height:1; color:var(--ink);}
+  .timer .pen{font-family:var(--body); font-size:12px; font-weight:800; color:var(--red); margin-left:7px; vertical-align:middle;}
+  .miss{display:flex; align-items:center; gap:9px;}
+  .miss .lab{font-size:10px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut);}
+  .dots{display:flex; gap:5px;}
+  .dot{width:12px; height:12px; border-radius:50%; background:rgba(255,255,255,.12); border:1px solid var(--line2); transition:background .2s, transform .2s;}
+  .dot.used{background:var(--red); border-color:var(--red); box-shadow:0 0 10px -1px rgba(248,88,88,.7);}
+  .dot.pop{transform:scale(1.35);}
+
+  /* ---- lanes ---- */
+  .board{display:flex; flex-direction:column; gap:9px; margin-bottom:16px;}
+  .lane{border:1px solid var(--cardb); border-radius:11px; background:linear-gradient(180deg,var(--card),var(--card2));
+    padding:9px 10px; transition:border-color .2s, box-shadow .2s, background .3s;}
+  .lane.drop{border-color:var(--violet); box-shadow:0 0 0 2px rgba(169,140,245,.28) inset;}
+  .lane.locked{background:linear-gradient(180deg, color-mix(in srgb, var(--lc) 22%, var(--card2)), var(--card2)); border-color:var(--lc);}
+  .lane.bad{animation:shake .4s;}
+  @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(4px);}}
+  .lane-head{display:flex; align-items:center; gap:8px; margin-bottom:8px; min-height:18px;}
+  .lane-chip{width:12px; height:12px; border-radius:3px; background:var(--lc); flex:0 0 auto; box-shadow:0 0 8px -1px var(--lc);}
+  .lane-name{font-weight:900; font-size:13.5px; letter-spacing:.01em; color:var(--ink); min-width:0;}
+  .lane-sport{font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);
+    border:1px solid var(--line); border-radius:5px; padding:2px 6px; margin-left:auto; flex:0 0 auto;}
+  .lane-hidden .lane-name{color:var(--mut); font-style:italic; font-weight:700;}
+  .lane-check{margin-left:auto; color:var(--lc); font-weight:900; font-size:13px; display:none;}
+  .lane.locked .lane-check{display:inline;} .lane.locked .lane-sport{display:none;}
+  .slots{display:grid; grid-template-columns:repeat(5,1fr); gap:6px;}
+  .slot{min-height:46px; border-radius:8px; border:1px dashed var(--line2); background:rgba(255,255,255,.02);
+    display:flex; align-items:center; justify-content:center; padding:3px; text-align:center; position:relative; overflow:hidden;}
+  .slot.filled{border-style:solid; border-color:transparent;}
+
+  /* ---- tiles ---- */
+  .tile{width:100%; height:100%; min-height:40px; min-width:0; border-radius:7px; border:1px solid var(--cardb);
+    background:linear-gradient(180deg,#173352,#102540); color:var(--ink); font-weight:800; font-size:11px; line-height:1.15;
+    display:flex; align-items:center; justify-content:center; padding:4px 3px; text-align:center; cursor:grab;
+    overflow:hidden; overflow-wrap:anywhere; hyphens:auto;
+    user-select:none; transition:transform .12s, box-shadow .12s, border-color .12s; touch-action:none;}
+  .tile:active{cursor:grabbing;}
+  .tile.sel{border-color:var(--violet); box-shadow:0 0 0 2px rgba(169,140,245,.5), 0 6px 16px -8px rgba(0,0,0,.7); transform:translateY(-1px);}
+  .tile.locked{background:var(--lc); color:#0c1826; border-color:transparent; cursor:default;
+    text-shadow:0 1px 0 rgba(255,255,255,.25); font-weight:900;}
+  .tile.ghost{opacity:.28;}
+  .tile.solvefill{background:rgba(255,255,255,.08); color:var(--mut); border-style:dashed; cursor:default;}
+  .tile .sub{display:block; font-size:8.5px; font-weight:800; letter-spacing:.05em; opacity:.7; text-transform:uppercase; margin-top:2px;}
+
+  /* ---- pool ---- */
+  .pool-h{display:flex; align-items:center; gap:8px; margin:4px 2px 9px; font-size:11px; font-weight:900;
+    letter-spacing:.12em; text-transform:uppercase; color:var(--mut);}
+  .pool-h .n{color:var(--violet);}
+  .pool-h:before{content:""; width:8px; height:8px; border-radius:2px; background:var(--violet);}
+  .pool{display:grid; grid-template-columns:repeat(5,1fr); gap:7px; min-height:46px;}
+  .pool .tile{min-height:48px;}
+  .pool.drop{outline:2px dashed var(--violet); outline-offset:4px; border-radius:10px;}
+  .pool .tile.spotlight{border-color:var(--gold); box-shadow:0 0 0 2px rgba(235,166,31,.55); animation:spot 1.2s ease 3;}
+  @keyframes spot{0%,100%{box-shadow:0 0 0 2px rgba(235,166,31,.2);}50%{box-shadow:0 0 0 3px rgba(235,166,31,.8);}}
+
+  /* ---- controls ---- */
+  .controls{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
+  .btn{appearance:none; border:1px solid var(--cardb); background:rgba(255,255,255,.05); color:var(--ink);
+    font-weight:800; font-size:13px; border-radius:8px; padding:11px 14px; display:inline-flex; align-items:center;
+    gap:7px; justify-content:center; transition:filter .12s, border-color .12s, transform .08s;}
+  .btn:active{transform:translateY(1px);}
+  .btn .cost{font-size:11px; font-weight:900; color:#f3dca0;}
+  .btn.wide{flex:1;}
+  .btn:disabled{opacity:.45; cursor:default;}
+  .hintbar{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .hintbar .btn{flex:1 1 130px;}
+
+  .howto{margin-top:16px; background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:9px; padding:13px 15px;}
+  .howto h3{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:15px; margin:0 0 8px; color:var(--ink);}
+  .howto ol{margin:0; padding-left:18px; color:var(--mut); font-size:13px; line-height:1.6;}
+  .howto b{color:#cfe0f0;}
+
+  /* ---- result modal ---- */
+  .modal{position:fixed; inset:0; z-index:60; display:flex; align-items:flex-start; justify-content:center;
+    padding:max(24px,env(safe-area-inset-top)) 16px 24px; overflow:auto; background:rgba(4,10,18,.74); backdrop-filter:blur(5px);}
+  .modal[hidden]{display:none;}
+  .sheet{width:100%; max-width:400px; background:linear-gradient(180deg,#132741,#0e1c30); border:1px solid var(--cardb);
+    border-radius:13px; padding:22px 20px 22px; position:relative; box-shadow:0 30px 80px -20px rgba(0,0,0,.8); margin:auto 0;}
+  .sheet .x{position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--line);
+    background:rgba(255,255,255,.05); color:var(--ink); font-size:15px; line-height:1;}
+  .rgrade{text-align:center; margin:2px 0 6px;}
+  .rgrade .lbl{font-size:11px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--mut);}
+  .rgrade .g{font-family:var(--hero); font-weight:400; font-size:74px; line-height:.9; letter-spacing:.02em; margin-top:2px;}
+  .rgrade .verdict{font-weight:900; font-size:15px; margin-top:2px;}
+  .rstats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:16px 0 4px;}
+  .rstat{background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:9px; padding:11px 6px; text-align:center;}
+  .rstat .v{font-family:var(--hero); font-weight:400; font-size:24px; line-height:1;}
+  .rstat .l{font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); margin-top:5px;}
+  .strip{display:flex; justify-content:center; gap:6px; margin:16px 0 4px;}
+  .strip .b{width:34px; height:12px; border-radius:3px;}
+  .strip-cap{text-align:center; font-size:10.5px; color:var(--mut); font-weight:700; letter-spacing:.04em; margin-top:6px;}
+  .coinline{text-align:center; margin:15px 0 4px; font-weight:900; font-size:14px; color:#f3dca0;}
+  .rcta{display:flex; gap:9px; margin-top:16px;}
+  .rcta .btn{flex:1; padding:13px;}
+  .btn.primary{background:linear-gradient(180deg,#B79BF7,#8E6EE6); color:#160a2e; border-color:transparent;
+    box-shadow:0 8px 22px -12px rgba(169,140,245,.9);}
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0;
+    background:#0c1c30; border:1px solid var(--cardb); color:var(--ink); font-weight:800; font-size:13px;
+    padding:11px 16px; border-radius:9px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.7);}
+  .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  @media (max-width:400px){
+    .tile{font-size:10px;} .brand{font-size:22px;} .rgrade .g{font-size:62px;}
+  }
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important;} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <a class="home" href="/grid/" aria-label="RunTheGrid puzzles">←</a>
+      <div class="brand"><span class="suite"><a href="/grid/">RunTheGrid</a></span><span class="game">Daily Match</span></div>
+      <div class="stat streak" id="streakStat"><span class="ic">🔥</span><span id="streakVal">0</span></div>
+      <div class="stat coins" id="coinStat"><span class="ic">🪙</span><span id="coinVal">0</span></div>
+    </div>
+
+    <div class="subhead">
+      <span class="datep" id="datep">—</span>
+      <div class="modes" role="tablist" aria-label="Difficulty">
+        <button id="mEasy" class="on" type="button">Easy</button>
+        <button id="mHard" type="button">Hard</button>
+      </div>
+    </div>
+
+    <div class="hud">
+      <div class="timer" id="timer">0:00<span class="pen" id="pen"></span></div>
+      <div class="miss">
+        <span class="lab">Misses</span>
+        <div class="dots" id="dots"></div>
+      </div>
+    </div>
+
+    <div class="board" id="board"></div>
+
+    <div class="pool-h">Pool · <span class="n" id="poolCount">25</span> left</div>
+    <div class="pool" id="pool"></div>
+
+    <div class="hintbar" id="hintbar">
+      <button class="btn" id="hintSpot" type="button">🔦 Spotlight <span class="cost">40</span></button>
+      <button class="btn" id="hintDecode" type="button">🗝️ Decode <span class="cost">120</span></button>
+    </div>
+    <div class="controls">
+      <button class="btn wide" id="btnClear" type="button">↺ Reset pool</button>
+    </div>
+
+    <div class="howto" id="howto">
+      <h3>How to play</h3>
+      <ol>
+        <li><b>Sort all 25 names</b> into five lanes of five — each lane is one hidden category (a team, a number, a surname, a feat).</li>
+        <li>Tap a name, then tap a lane to place it. A lane <b>only checks when it's full</b> — stage your guesses freely.</li>
+        <li><b>Right</b> → the lane locks and its category is revealed. <b>Wrong</b> → a miss, +5s, and those five bounce back.</li>
+        <li>Five misses allowed. Fastest clean board wins the day. <b>Hard mode</b> hides every header.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="modal" id="resultModal" hidden>
+    <div class="sheet">
+      <button class="x" id="resClose" type="button" aria-label="Close">✕</button>
+      <div class="rgrade">
+        <div class="lbl">Draft Grade — <span id="resMode">Easy</span></div>
+        <div class="g" id="resGrade">A</div>
+        <div class="verdict" id="resVerdict">Solid board.</div>
+      </div>
+      <div class="rstats">
+        <div class="rstat"><div class="v" id="resTime">0:00</div><div class="l">Time</div></div>
+        <div class="rstat"><div class="v" id="resMiss">0</div><div class="l">Misses</div></div>
+        <div class="rstat"><div class="v" id="resStreak">1</div><div class="l">Streak</div></div>
+      </div>
+      <div class="strip" id="resStrip"></div>
+      <div class="strip-cap">Solve order — no answers leaked</div>
+      <div class="coinline" id="resCoins">+0 coins</div>
+      <div class="rcta">
+        <button class="btn primary" id="resShare" type="button">Share result</button>
+        <button class="btn" id="resDone" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="entities.js"></script>
+  <script src="data.js"></script>
+  <script src="generator.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    var BANK = window.GRID_BANK, ENT = window.GRID_ENTITIES, Gen = window.GridGen;
+    var LS = window.localStorage;
+
+    // ---- today's date (local) ----
+    function todayStr() {
+      var d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    var DATE = todayStr();
+
+    // ---- wallet / streak ----
+    // Coins are the RunTheGrid suite wallet (shared with the future Daily Crossword);
+    // streak is per-game (this Daily Match). Prototype uses localStorage; the real
+    // build reads the shared RunThe.GG account wallet.
+    function walletGet() { return parseInt(LS.getItem('runthegrid_coins') || '0', 10) || 0; }
+    function walletSet(v) { LS.setItem('runthegrid_coins', String(Math.max(0, v))); renderWallet(); }
+    function streakGet() { return parseInt(LS.getItem('grid_match_streak') || '0', 10) || 0; }
+    function renderWallet() {
+      document.getElementById('coinVal').textContent = walletGet();
+      document.getElementById('streakVal').textContent = streakGet();
+    }
+
+    // ---- state ----
+    var mode = 'easy';                 // 'easy' | 'hard'
+    var day = null;                    // generated board for DATE
+    var byId = {};                     // tileId -> tile
+    var solById = {};                  // tileId -> catId (truth)
+    var place = {};                    // tileId -> laneIndex | null
+    var laneCat = {};                  // laneIndex -> catId (easy: fixed; hard: filled on solve)
+    var locked = {};                   // laneIndex -> true
+    var solveOrder = [];               // laneIndex in order solved
+    var mistakes = 0, penalty = 0, started = false, startTs = 0, tick = null;
+    var selected = null, done = false, decodedLane = null;
+
+    var laneById = {};                 // catId -> lane meta (color etc.)
+
+    function buildDay() {
+      // data-driven board from the tagged DB, with the authored bank as fallback
+      day = Gen.daily(DATE, { entities: ENT, bank: BANK });
+      byId = {}; day.tiles.forEach(function (t) { byId[t.id] = t; });
+      solById = {};
+      Object.keys(day.solution).forEach(function (cid) {
+        day.solution[cid].forEach(function (tid) { solById[tid] = cid; });
+      });
+      laneById = {}; day.lanes.forEach(function (l) { laneById[l.id] = l; });
+      document.getElementById('datep').textContent = new Date(DATE + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · Board';
+    }
+
+    // ---- persistence of today's result so a refresh doesn't replay ----
+    function resultKey() { return 'grid_match_result_' + DATE + '_' + mode; }
+    function savedResult() { try { return JSON.parse(LS.getItem(resultKey())); } catch (e) { return null; } }
+
+    // ---- reset play state (used on mode switch / new attempt) ----
+    function resetState() {
+      place = {}; laneCat = {}; locked = {}; solveOrder = [];
+      mistakes = 0; penalty = 0; started = false; startTs = 0; selected = null; done = false; decodedLane = null;
+      if (tick) { clearInterval(tick); tick = null; }
+      day.tiles.forEach(function (t) { place[t.id] = null; });
+      if (mode === 'easy') { day.lanes.forEach(function (l, i) { laneCat[i] = l.id; }); }
+    }
+
+    // ---- render ----
+    var boardEl = document.getElementById('board'), poolEl = document.getElementById('pool');
+
+    function tileEl(tid, opts) {
+      opts = opts || {};
+      var t = byId[tid];
+      var el = document.createElement('div');
+      el.className = 'tile' + (opts.locked ? ' locked' : '') + (selected === tid ? ' sel' : '');
+      el.dataset.tid = tid;
+      var sub = t.sport && t.sport !== 'multi' ? '<span class="sub">' + t.sport + '</span>' : '';
+      el.innerHTML = escapeHtml(t.name) + (opts.locked ? sub : '');
+      if (opts.color) el.style.cssText = '--lc:' + opts.color;
+      if (!opts.locked) {
+        el.setAttribute('draggable', 'true');
+        el.addEventListener('dragstart', function (e) { e.dataTransfer.setData('text/plain', tid); selected = tid; });
+      }
+      el.addEventListener('click', function (e) { e.stopPropagation(); onTileClick(tid); });
+      return el;
+    }
+
+    function render() {
+      // lanes
+      boardEl.innerHTML = '';
+      for (var i = 0; i < 5; i++) {
+        var lane = document.createElement('div');
+        lane.className = 'lane';
+        lane.dataset.idx = i;
+        var isLocked = !!locked[i];
+        var cat = laneCat[i] != null ? laneById[laneCat[i]] : null;
+
+        var showHeader = (mode === 'easy') || isLocked || (decodedLane === i);
+        var color = cat ? cat.color : '#4a6178';
+        lane.style.setProperty('--lc', color);
+        if (isLocked) lane.classList.add('locked');
+
+        var head = document.createElement('div');
+        head.className = 'lane-head';
+        if (showHeader && cat) {
+          head.innerHTML = '<span class="lane-chip"></span><span class="lane-name">' + escapeHtml(cat.name) + '</span>' +
+            '<span class="lane-sport">' + (cat.sport === 'multi' ? 'Multi-sport' : cat.sport) + '</span>' +
+            '<span class="lane-check">✓ Locked</span>';
+        } else {
+          lane.classList.add('lane-hidden');
+          head.innerHTML = '<span class="lane-chip" style="background:#3a506b;box-shadow:none"></span>' +
+            '<span class="lane-name">Lane ' + (i + 1) + ' — category hidden</span>';
+        }
+        lane.appendChild(head);
+
+        var slots = document.createElement('div');
+        slots.className = 'slots';
+        var inLane = tilesInLane(i);
+        for (var s = 0; s < 5; s++) {
+          var slot = document.createElement('div');
+          slot.className = 'slot';
+          if (inLane[s] != null) {
+            slot.classList.add('filled');
+            slot.appendChild(tileEl(inLane[s], { locked: isLocked, color: color }));
+          }
+          slots.appendChild(slot);
+        }
+        lane.appendChild(slots);
+
+        if (!isLocked) attachDrop(lane, i);
+        boardEl.appendChild(lane);
+      }
+
+      // pool
+      poolEl.innerHTML = '';
+      var poolTiles = day.tiles.filter(function (t) { return place[t.id] == null; });
+      poolTiles.forEach(function (t) { poolEl.appendChild(tileEl(t.id, {})); });
+      document.getElementById('poolCount').textContent = poolTiles.length;
+      attachPoolDrop();
+      renderDots();
+    }
+
+    function tilesInLane(i) {
+      var arr = day.tiles.filter(function (t) { return place[t.id] === i; }).map(function (t) { return t.id; });
+      while (arr.length < 5) arr.push(null);
+      return arr;
+    }
+
+    function renderDots() {
+      var d = document.getElementById('dots'); d.innerHTML = '';
+      for (var i = 0; i < 5; i++) {
+        var dot = document.createElement('div');
+        dot.className = 'dot' + (i < mistakes ? ' used' : '');
+        d.appendChild(dot);
+      }
+    }
+
+    // ---- interaction ----
+    function onTileClick(tid) {
+      if (done) return;
+      var laneIdx = place[tid];
+      if (laneIdx != null && locked[laneIdx]) return;         // can't move locked tiles
+      if (laneIdx != null) { place[tid] = null; selected = null; startIfNeeded(); render(); return; } // tap placed tile -> pool
+      selected = (selected === tid) ? null : tid;             // toggle selection in pool
+      render();
+    }
+
+    function placeInLane(tid, laneIdx) {
+      if (done || locked[laneIdx]) return;
+      if (tilesInLane(laneIdx).filter(function (x) { return x != null; }).length >= 5) { toast('Lane is full'); return; }
+      startIfNeeded();
+      place[tid] = laneIdx; selected = null;
+      render();
+      if (tilesInLane(laneIdx).filter(function (x) { return x != null; }).length === 5) validate(laneIdx);
+    }
+
+    function attachDrop(laneEl, idx) {
+      laneEl.addEventListener('click', function () { if (selected != null) placeInLane(selected, idx); });
+      laneEl.addEventListener('dragover', function (e) { e.preventDefault(); laneEl.classList.add('drop'); });
+      laneEl.addEventListener('dragleave', function () { laneEl.classList.remove('drop'); });
+      laneEl.addEventListener('drop', function (e) {
+        e.preventDefault(); laneEl.classList.remove('drop');
+        var tid = e.dataTransfer.getData('text/plain'); if (tid) placeInLane(tid, idx);
+      });
+    }
+    function attachPoolDrop() {
+      poolEl.addEventListener('dragover', function (e) { e.preventDefault(); poolEl.classList.add('drop'); });
+      poolEl.addEventListener('dragleave', function () { poolEl.classList.remove('drop'); });
+      poolEl.addEventListener('drop', function (e) {
+        e.preventDefault(); poolEl.classList.remove('drop');
+        var tid = e.dataTransfer.getData('text/plain');
+        if (tid && place[tid] != null && !locked[place[tid]]) { place[tid] = null; render(); }
+      });
+    }
+
+    // ---- timer ----
+    function startIfNeeded() {
+      if (started || done) return;
+      started = true; startTs = Date.now();
+      tick = setInterval(updateTimer, 250);
+      updateTimer();
+    }
+    function elapsedSec() { return started ? (Date.now() - startTs) / 1000 + penalty : 0; }
+    function fmt(sec) { sec = Math.max(0, Math.floor(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
+    function updateTimer() {
+      document.getElementById('timer').firstChild.textContent = fmt(elapsedSec());
+      document.getElementById('pen').textContent = penalty ? '+' + penalty + 's' : '';
+    }
+
+    // ---- validation (design doc §2) ----
+    function validate(laneIdx) {
+      var ids = day.tiles.filter(function (t) { return place[t.id] === laneIdx; }).map(function (t) { return t.id; }).sort();
+      var matchCat = null;
+
+      if (mode === 'easy') {
+        var target = laneCat[laneIdx];
+        if (setsEqual(ids, day.solution[target].slice().sort())) matchCat = target;
+      } else {
+        // hard: the group defines itself — does it match any not-yet-used category exactly?
+        for (var cid in day.solution) {
+          if (usedCat(cid)) continue;
+          if (setsEqual(ids, day.solution[cid].slice().sort())) { matchCat = cid; break; }
+        }
+      }
+
+      if (matchCat) {
+        locked[laneIdx] = true; laneCat[laneIdx] = matchCat; solveOrder.push(laneIdx);
+        render();
+        if (solveOrder.length === 5) finish(true);
+      } else {
+        mistakes++; penalty += 5;
+        var laneEl = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"]');
+        if (laneEl) { laneEl.classList.add('bad'); setTimeout(function () { laneEl.classList.remove('bad'); }, 420); }
+        var dotEls = document.getElementById('dots').children;
+        if (dotEls[mistakes - 1]) { dotEls[mistakes - 1].classList.add('pop'); }
+        toast('Not a group — five bounce back (+5s)');
+        // bounce the five back to the pool
+        setTimeout(function () {
+          day.tiles.forEach(function (t) { if (place[t.id] === laneIdx) place[t.id] = null; });
+          if (mistakes >= 6) finish(false); else render();
+        }, 430);
+        updateTimer();
+      }
+    }
+    function usedCat(cid) { for (var k in laneCat) { if (locked[k] && laneCat[k] === cid) return true; } return false; }
+
+    // ---- finish (win or 6th-miss fail) ----
+    function finish(won) {
+      if (done) return;
+      done = true; if (tick) { clearInterval(tick); tick = null; }
+      var finalTime = elapsedSec();
+
+      if (!won) autoSolveReveal();
+
+      // streak: completion-based (win or lose), one per calendar day
+      var last = LS.getItem('grid_match_lastplayed');
+      var s = streakGet();
+      if (last !== DATE) {
+        var y = new Date(DATE + 'T00:00:00'); y.setDate(y.getDate() - 1);
+        var ystr = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
+        s = (last === ystr) ? s + 1 : 1;
+        LS.setItem('grid_match_streak', String(s));
+        LS.setItem('grid_match_lastplayed', DATE);
+      }
+
+      var par = mode === 'hard' ? day.par.hard : day.par.easy;
+      var grade = gradeFor(won, finalTime, par, mistakes);
+      var coins = coinsFor(won, finalTime, par, mistakes, mode);
+      walletSet(walletGet() + coins);
+
+      LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, order: solveOrder.slice() }));
+      renderWallet();
+      setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, streak: s }); }, won ? 350 : 1100);
+    }
+
+    function autoSolveReveal() {
+      // fill every unlocked lane with its correct answer, greyed (draft-grade reveal)
+      var used = {}; for (var k in laneCat) { if (locked[k]) used[laneCat[k]] = true; }
+      var remainingCats = day.lanes.map(function (l) { return l.id; }).filter(function (c) { return !used[c]; });
+      var li = 0;
+      for (var i = 0; i < 5; i++) {
+        if (locked[i]) continue;
+        var cid = remainingCats[li++]; laneCat[i] = cid; locked[i] = 'auto';
+        day.solution[cid].forEach(function (tid) { place[tid] = i; });
+      }
+      renderSolved();
+    }
+    function renderSolved() {
+      // re-render with auto lanes shown greyed
+      render();
+      boardEl.querySelectorAll('.lane').forEach(function (laneEl) {
+        var idx = +laneEl.dataset.idx;
+        if (locked[idx] === 'auto') {
+          laneEl.querySelectorAll('.tile').forEach(function (tl) { tl.classList.remove('locked'); tl.classList.add('solvefill'); });
+          var chk = laneEl.querySelector('.lane-check'); if (chk) chk.textContent = '— answer';
+        }
+      });
+    }
+
+    // ---- grade & coins (design doc §7, §8) ----
+    function gradeFor(won, time, par, m) {
+      if (!won) return 'F';
+      if (time <= 0.6 * par && m === 0) return 'A+';
+      if (time <= 0.8 * par && m <= 1) return 'A';
+      if (time <= 1.0 * par && m <= 2) return 'B';
+      if (time <= 1.4 * par && m <= 3) return 'C';
+      return 'D';
+    }
+    function coinsFor(won, time, par, m, md) {
+      var mult = md === 'hard' ? 2 : 1;
+      if (!won) return 10 * mult;
+      var speed = Math.max(0.5, Math.min(2.0, par / Math.max(1, time)));
+      var mfac = 1 - m * 0.10;
+      var c = Math.round(100 * speed * mfac * mult);
+      return Math.max(c, 20 * mult);
+    }
+    var VERDICTS = { 'A+': 'First-round lock.', 'A': 'Franchise pick.', 'B': 'Solid starter.', 'C': 'Made the roster.', 'D': 'Practice squad.', 'F': 'Cut in camp.' };
+
+    // ---- result modal ----
+    function colorEmoji(hex) {
+      return { '#35C4CD': '🟦', '#6EE84E': '🟩', '#EBA61F': '🟨', '#F06A5A': '🟥', '#A98CF5': '🟪' }[hex] || '⬛';
+    }
+    function showResult(r) {
+      document.getElementById('resMode').textContent = mode === 'hard' ? 'Hard' : 'Easy';
+      document.getElementById('resGrade').textContent = r.grade;
+      var col = { 'A+': '#6EE84E', 'A': '#6EE84E', 'B': '#66D3DE', 'C': '#EBA61F', 'D': '#EBA61F', 'F': '#F85858' }[r.grade];
+      document.getElementById('resGrade').style.color = col;
+      document.getElementById('resVerdict').textContent = VERDICTS[r.grade] || '';
+      document.getElementById('resTime').textContent = fmt(r.time);
+      document.getElementById('resMiss').textContent = r.mistakes;
+      document.getElementById('resStreak').textContent = r.streak;
+      document.getElementById('resCoins').textContent = '+' + r.coins + ' coins';
+      var strip = document.getElementById('resStrip'); strip.innerHTML = '';
+      solveOrder.forEach(function (idx) {
+        var b = document.createElement('div'); b.className = 'b';
+        b.style.background = laneById[laneCat[idx]].color; strip.appendChild(b);
+      });
+      document.getElementById('resultModal').hidden = false;
+      window._lastResult = r;
+    }
+    function shareText(r) {
+      var strip = solveOrder.map(function (idx) { return colorEmoji(laneById[laneCat[idx]].color); }).join('');
+      var dstr = new Date(DATE + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      return '🟦 RunTheGrid — ' + dstr + '\n   ' + (mode === 'hard' ? 'HARD' : 'EASY') + ' MODE\n\n' +
+        '   GRADE:  ' + r.grade + '\n   TIME:   ' + fmt(r.time) + '\n   MISSES: ' + r.mistakes + '\n   STREAK: ' + r.streak + ' 🔥\n' +
+        (strip ? '   ' + strip + '\n' : '') + '\n   runthe.gg/grid';
+    }
+
+    // ---- hints (design doc §7) ----
+    function spend(cost) {
+      if (walletGet() < cost) { toast('Not enough coins'); return false; }
+      walletSet(walletGet() - cost); penalty += 10; updateTimer(); return true;
+    }
+    document.getElementById('hintSpot').addEventListener('click', function () {
+      if (done) return;
+      var poolCats = {};
+      day.tiles.forEach(function (t) { if (place[t.id] == null && !usedCat(solById[t.id])) { (poolCats[solById[t.id]] = poolCats[solById[t.id]] || []).push(t.id); } });
+      var full = Object.keys(poolCats).filter(function (c) { return poolCats[c].length === 5; });
+      if (!full.length) { toast('No full group left in the pool'); return; }
+      if (!spend(40)) return;
+      startIfNeeded();
+      var pick = full[Math.floor(Math.random() * full.length)];
+      poolCats[pick].forEach(function (tid) {
+        var el = poolEl.querySelector('.tile[data-tid="' + tid + '"]'); if (el) el.classList.add('spotlight');
+      });
+      toast('Five that belong together are glowing');
+    });
+    document.getElementById('hintDecode').addEventListener('click', function () {
+      if (done) return;
+      if (mode !== 'hard') { toast('Decode reveals a header — Hard mode only'); return; }
+      var hidden = []; for (var i = 0; i < 5; i++) { if (!locked[i] && decodedLane !== i) hidden.push(i); }
+      // reveal the hardest still-hidden lane's category name against an empty lane
+      if (!hidden.length) { toast('Nothing left to decode'); return; }
+      if (!spend(120)) return;
+      startIfNeeded();
+      // pick a category not yet solved, show it on an empty lane slot as a hint banner
+      var usedC = {}; for (var k in laneCat) { if (locked[k]) usedC[laneCat[k]] = true; }
+      var openCat = day.lanes.filter(function (l) { return !usedC[l.id]; }).sort(function (a, b) { return b.difficulty - a.difficulty; })[0];
+      decodedLane = hidden[0]; laneCat[decodedLane] = openCat.id;
+      render();
+      toast('Header revealed: ' + openCat.name);
+    });
+
+    document.getElementById('btnClear').addEventListener('click', function () {
+      if (done) return;
+      day.tiles.forEach(function (t) { if (place[t.id] != null && !locked[place[t.id]]) place[t.id] = null; });
+      selected = null; render();
+    });
+
+    // ---- mode switch ----
+    function setMode(m) {
+      if (m === mode) return;
+      mode = m;
+      document.getElementById('mEasy').classList.toggle('on', m === 'easy');
+      document.getElementById('mHard').classList.toggle('on', m === 'hard');
+      document.getElementById('hintDecode').style.display = (m === 'hard') ? '' : 'none';
+      boot();
+    }
+    document.getElementById('mEasy').addEventListener('click', function () { setMode('easy'); });
+    document.getElementById('mHard').addEventListener('click', function () { setMode('hard'); });
+
+    // ---- result modal buttons ----
+    document.getElementById('resShare').addEventListener('click', function () {
+      var txt = shareText(window._lastResult || {});
+      if (navigator.share) { navigator.share({ text: txt }).catch(function () {}); }
+      else if (navigator.clipboard) { navigator.clipboard.writeText(txt).then(function () { toast('Result copied'); }); }
+      else { toast('Copy not supported'); }
+    });
+    function closeModal() { document.getElementById('resultModal').hidden = true; }
+    document.getElementById('resClose').addEventListener('click', closeModal);
+    document.getElementById('resDone').addEventListener('click', closeModal);
+
+    // ---- boot a board for the current mode ----
+    function boot() {
+      resetState();
+      var saved = savedResult();
+      render(); updateTimer();
+      if (saved) {
+        // already played this mode today: show the board solved + result
+        replaySaved(saved);
+      }
+    }
+    function replaySaved(saved) {
+      // reconstruct a completed board view from the truth, then show the result card
+      done = true;
+      day.lanes.forEach(function (l, i) {
+        laneCat[i] = l.id; locked[i] = true;
+        day.solution[l.id].forEach(function (tid) { place[tid] = i; });
+      });
+      solveOrder = (saved.order && saved.order.length) ? saved.order : day.lanes.map(function (_, i) { return i; });
+      mistakes = saved.mistakes; penalty = 0;
+      render();
+      if (!saved.won) {
+        boardEl.querySelectorAll('.lane').forEach(function (laneEl) {
+          laneEl.querySelectorAll('.tile').forEach(function (tl) { tl.classList.remove('locked'); tl.classList.add('solvefill'); });
+        });
+      }
+      document.getElementById('timer').firstChild.textContent = fmt(saved.time);
+      showResult({ won: saved.won, time: saved.time, mistakes: saved.mistakes, grade: saved.grade, coins: 0, streak: streakGet() });
+      document.getElementById('resCoins').textContent = 'Played today · come back tomorrow';
+    }
+
+    // ---- utils ----
+    function setsEqual(a, b) { if (a.length !== b.length) return false; for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false; return true; }
+    function escapeHtml(s) { return String(s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+    var toastT = null;
+    function toast(msg) {
+      var el = document.getElementById('toast'); el.textContent = msg; el.classList.add('on');
+      if (toastT) clearTimeout(toastT); toastT = setTimeout(function () { el.classList.remove('on'); }, 1800);
+    }
+
+    // ---- go ----
+    document.getElementById('hintDecode').style.display = 'none';
+    buildDay();
+    renderWallet();
+    boot();
+  })();
+  </script>
+</body>
+</html>
