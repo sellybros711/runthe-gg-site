@@ -9,12 +9,24 @@ import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
 const __dir = dirname(fileURLToPath(import.meta.url));
 const D = JSON.parse(readFileSync(resolve(__dir, "../data/baseball.json"), "utf8"));
-const F = JSON.parse(readFileSync(resolve(__dir, "../data/fill.json"), "utf8"));
+function parseCSV(text) {
+  const rows = []; let row = [], field = "", inQ = false;
+  for (let i = 0; i < text.length; i++) { const c = text[i];
+    if (inQ) { if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else inQ = false; } else field += c; }
+    else if (c === '"') inQ = true;
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; if (field !== "" || row.length) { row.push(field); rows.push(row); row = []; field = ""; } }
+    else field += c; }
+  if (field !== "" || row.length) { row.push(field); rows.push(row); }
+  const h = rows.shift().map((x) => x.trim());
+  return rows.map((r) => Object.fromEntries(h.map((x, i) => [x, (r[i] ?? "").trim()])));
+}
+const PLAYERS = parseCSV(readFileSync(resolve(__dir, "../data/baseball.csv"), "utf8"));
 
 const bank = new Map();
 const addW = (a, theme) => { a = a.toUpperCase().replace(/[^A-Z]/g, ""); if (a.length < 3 || a.length > 8 || bank.has(a)) return; bank.set(a, { answer: a, len: a.length, theme }); };
-[...D.players, ...D.teams, ...D.stats, ...D.venues, ...D.glossary].forEach((x) => addW(x.answer, true));
-F.words.forEach((w) => addW(w.answer, false));
+[...PLAYERS, ...(D.teams || []), ...(D.stats || []), ...(D.venues || []), ...(D.glossary || [])].forEach((x) => addW(x.answer, true));
+(D.fill || []).forEach((w) => addW(w.answer, false));
 const byLen = {}; for (const e of bank.values()) (byLen[e.len] ||= []).push(e);
 
 const N = 5;

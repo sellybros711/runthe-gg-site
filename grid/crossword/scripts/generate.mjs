@@ -17,8 +17,31 @@ import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
-const DATA = JSON.parse(readFileSync(resolve(__dir, "../data/baseball.json"), "utf8"));
-const FILL = JSON.parse(readFileSync(resolve(__dir, "../data/fill.json"), "utf8"));
+
+// Data contract (see README): the large, growable PLAYER table is a CSV; the
+// smaller structured lookups + common fill are one JSON. Both are drop-in — a
+// bigger CSV/JSON from the data pipeline plugs in with no code changes.
+const DATA = JSON.parse(readFileSync(resolve(__dir, "../data/baseball.json"), "utf8")); // teams, stats, venues, glossary, fill
+
+// Minimal RFC4180-ish CSV parser (handles quoted fields, embedded commas, "" escapes).
+function parseCSV(text) {
+  const rows = []; let row = [], field = "", inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else inQ = false; }
+      else field += c;
+    } else if (c === '"') inQ = true;
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; if (field !== "" || row.length) { row.push(field); rows.push(row); row = []; field = ""; } }
+    else field += c;
+  }
+  if (field !== "" || row.length) { row.push(field); rows.push(row); }
+  const header = rows.shift().map((h) => h.trim());
+  return rows.map((r) => Object.fromEntries(header.map((h, i) => [h, (r[i] ?? "").trim()])));
+}
+const PLAYERS = parseCSV(readFileSync(resolve(__dir, "../data/baseball.csv"), "utf8"))
+  .map((p) => ({ ...p, hof: p.hof === "1" || p.hof.toLowerCase() === "true" }));
 
 // ---- seeded RNG (mulberry32) so generation is reproducible -----------------
 function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -63,15 +86,14 @@ const T = {
   ],
 };
 
-DATA.players.forEach((p) =>
-  add(p.answer, "player", p.hof ? 3 : (["ROSE", "BONDS", "PUJOLS", "TROUT", "OHTANI"].includes(p.answer) ? 3 : 4),
-    (r) => pick(p.hof ? T.player : T.playerNonHof, r)(p)));
-DATA.teams.forEach((t) => add(t.answer, "team", 2, (r) => pick(T.team, r)(t)));
-DATA.stats.forEach((s) => add(s.answer, "stat", 2, (r) => pick(T.stat, r)(s)));
-DATA.venues.forEach((v) => add(v.answer, "venue", 3, (r) => pick(T.venue, r)(v)));
-DATA.glossary.forEach((g) => add(g.answer, "glossary", 2, () => g.clue));
+PLAYERS.forEach((p) =>
+  add(p.answer, "player", p.hof ? 3 : 4, (r) => pick(p.hof ? T.player : T.playerNonHof, r)(p)));
+(DATA.teams || []).forEach((t) => add(t.answer, "team", 2, (r) => pick(T.team, r)(t)));
+(DATA.stats || []).forEach((s) => add(s.answer, "stat", 2, (r) => pick(T.stat, r)(s)));
+(DATA.venues || []).forEach((v) => add(v.answer, "venue", 3, (r) => pick(T.venue, r)(v)));
+(DATA.glossary || []).forEach((g) => add(g.answer, "glossary", 2, () => g.clue));
 // common fill words (added last so they never displace a baseball answer)
-FILL.words.forEach((w) => add(w.answer, "fill", 3, () => w.clue));
+(DATA.fill || []).forEach((w) => add(w.answer, "fill", 3, () => w.clue));
 
 const byLen = {};
 for (const e of bank.values()) (byLen[e.len] ||= []).push(e);

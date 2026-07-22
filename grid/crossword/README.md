@@ -17,9 +17,10 @@ dataset — every clue is generated from a data row, not hand-written.
 |---|---|
 | `index.html` | The whole game UI (self-contained). Renders any `{rows, entries}` puzzle of any size; on-screen + physical keyboard, across↔down, Check/Reveal, timer, streak (`localStorage` key `rtg:cw:v1`), win modal + emoji share, leaderboard teaser. |
 | `puzzles.js` | **Generated** daily puzzles (`window.RTG_PUZZLES`). Do not hand-edit — re-run the generator. The UI serves today's puzzle by date, falling back to the first. |
-| `data/baseball.json` | Curated Track-A baseball dataset (GDD §3/§5): players, teams, stats, venues, glossary — well-established facts only. |
-| `data/fill.json` | Common crossword **fill** words with fixed clues (Track-B style, GDD §2), used only to resolve crossings the themed bank can't reach. |
-| `scripts/generate.mjs` | **The pipeline.** extraction (§5) → template clues (§4) → backtracking fill (§6) → difficulty (§7) → writes `puzzles.js`. Deterministic per date. |
+| `data/baseball.csv` | **Players** — the big, growable answer table (one row each). Built by the data pipeline / externally. |
+| `data/baseball.json` | **Teams, stats, venues, glossary, and common fill** words. Built externally alongside the CSV. |
+| `data/DATA_CONTRACT.md` | The exact schema for those two files — hand this to whoever/whatever builds the data. |
+| `scripts/generate.mjs` | **The pipeline.** load CSV+JSON → extraction (§5) → template clues (§4) → backtracking fill (§6) → difficulty (§7) → writes `puzzles.js`. Deterministic per date. |
 | `scripts/find_templates.mjs` | Dev tool: searches black-square templates the current bank can actually fill. |
 
 ## Regenerate the puzzles
