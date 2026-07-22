@@ -12186,6 +12186,16 @@ allows Google Fonts, or self-host Anton.*
   golfer the leaderboard now shows for a legacy null-look row after CS516 — so once CS516 loads, the "generic"
   rows read as a clean white-shirt / white-hat default instead of the viewer's golfer.)
 
+- **CS518 — more inviting shot-share caption (owner: "Check out this Eagle/Birdie/Par I just made on Run
+  the Tour!").** The TourTracer shot/hole share (GIF via `hvGifShare`/`hvGifCompose` + the PNG fallback
+  `hvShareShot`) captioned the share with a dry "Magnolia Hollow Golf Club · Hole 8 · 3 (−2) on RunTheTour".
+  Added a shared `hvShareCaption(hole,c)` that leads with the result you made — "Check out this {Eagle/Birdie/
+  Par/Bogey/Albatross...} I just made on Run The Tour! ⛳" — then the course · hole · score detail line, then
+  the `withSocial` tags (@RunTheGG #golf #RunTheTour). A par-3 ace is called a **Hole-in-One** (not "Eagle").
+  Both the GIF and PNG share paths use it. Verified in Playwright across Eagle / Hole-in-One / Birdie / Par /
+  Bogey / Albatross — each renders the right inviting caption; 0 page errors. Deployed to /golf. Tunable: the
+  phrasing in `hvShareCaption`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
