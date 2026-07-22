@@ -83,12 +83,9 @@
   function generateDailyDrive(dateStr) {
     const rng = mulberry32(fnv1a(dateStr + '|day'));
 
-    // Starting field position. Real drives cluster around the mid-20s (touchback
-    // era), with a long tail either way. Own-yard basis: 100 = opponent goal.
-    const ownYard = weighted(rng, [
-      [10, 3], [15, 6], [20, 12], [22, 10], [25, 26], [28, 14],
-      [30, 12], [35, 8], [40, 5], [45, 3], [50, 1],
-    ]);
+    // Every drive starts at the offense's own 25 — a touchback — so it's the same
+    // 75-yard challenge for everyone. Own-yard basis: 100 = opponent goal.
+    const ownYard = 25;
 
     const condition = weighted(rng, WEATHER);
 
