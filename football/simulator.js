@@ -25,10 +25,11 @@ function skilled(s, sheet, box, gp) {
       // out of FG range on 4th & long -> go for it (nothing to lose)
     }
   }
-  // pick best EV tile
+  // pick best drive-EV tile, accounting for the defense keying on tendencies
+  const sit = { down:s.down, distance:s.distance, yardline:s.yardline, tendency:s.tendency };
   let best = sheet[0], bestEv = -1e9;
   for (const t of sheet) {
-    const ev = ENGINE.expectedValue(t.play, visible, { down:s.down, distance:s.distance, yardline:s.yardline }, gp.qualityModifier);
+    const ev = ENGINE.expectedValue(t.play, visible, sit, gp.qualityModifier);
     if (ev > bestEv) { bestEv = ev; best = t; }
   }
   return best.id;
@@ -62,6 +63,16 @@ function simulate(policy, N) {
            avgYards:(yards/N).toFixed(1), avgGrade:(grade/N).toFixed(1) };
 }
 
+function simulateScheme(policy, scheme, N) {
+  let td=0, score=0;
+  for (let i = 0; i < N; i++) {
+    const s = ENGINE.runDrive(fromEpoch(i*7+3), scheme, policy);
+    if (s.result === 'TOUCHDOWN') td++;
+    if (s.result === 'TOUCHDOWN' || s.result === 'FIELD_GOAL') score++;
+  }
+  return { td: 100*td/N, score: 100*score/N };
+}
+
 const N = Number(process.env.N || 6000);
 console.log(`DIFFICULTY=${ENGINE.getDifficulty()}  N=${N} drives/policy  (schemes rotated)\n`);
 console.log('policy     TD%   FG%  FG+  TO%  DOWNS%  CLOCK%  SAFE%  plays  yds  grade');
@@ -75,3 +86,16 @@ for (const [name, pol] of [['skilled',skilled],['spammer',spammer],['average',av
     r.pct('CLOCK').padStart(6), r.pct('SAFETY').padStart(6),
     r.avgPlays.padStart(6), r.avgYards.padStart(5), r.avgGrade.padStart(6));
 }
+
+// Per-scheme balance sweep: a skilled player picks each playbook. If one scheme
+// dominates, the box-draw counterweight isn't doing its job.
+const M = Math.round(N/2);
+console.log(`\nscheme balance (skilled, ${M} drives each):`);
+console.log('scheme          TD%   score%');
+const rows = SCHEMES.map(sc => ({ sc, ...simulateScheme(skilled, sc, M) }))
+  .sort((a,b) => b.td - a.td);
+for (const r of rows) {
+  console.log(PLAYBOOK.schemes[r.sc].name.padEnd(15), r.td.toFixed(1).padStart(5), r.score.toFixed(1).padStart(8));
+}
+const spread = rows[0].td - rows[rows.length-1].td;
+console.log(`TD% spread across schemes: ${spread.toFixed(1)} pts (tighter = better balanced)`);

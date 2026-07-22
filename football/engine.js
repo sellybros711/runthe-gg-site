@@ -45,27 +45,70 @@
     BASE_7: 0.0, LIGHT_BOX: +0.6, HEAVY_BOX: +1.8, BLITZ_LIGHT_BOX: +5.2, HEAVY_BLITZ: +8.4,
   };
 
-  /* ---------- 2. SITUATIONAL MODIFIERS -------------------------------------
-     Measured success rate by down x distance, expressed as a delta from that
-     archetype's overall average. Source: 262,841 scrimmage plays.           */
-  function situationalMod(archetype, down, distance) {
+  /* ---------- 2. SITUATIONAL MODEL -----------------------------------------
+     Each play carries its own measured success-by-distance curve, so a play's
+     situational strength is DATA, not an archetype guess. Outside Zone converts
+     64.3% at 1-2 yards but 41.0% at 10+; a QB Sneak is elite at the sticks and
+     hopeless on 3rd-and-10 — and the numbers say exactly that per play. We use
+     that curve directly, then layer a small residual DOWN term for the extra
+     squeeze of a later down that pure distance doesn't capture (the defense
+     knows you have to throw, the pocket shrinks). Source: 262,841 plays.      */
+  function distBucket(d){ return d <= 2 ? '1-2' : d <= 6 ? '3-6' : d <= 9 ? '7-9' : '10+'; }
+
+  // How much better/worse this exact play is at this distance vs its own average.
+  function specialization(play, distance) {
+    const sbd = play.success_by_distance;
+    if (!sbd) return 0;
+    const v = sbd[distBucket(distance)];
+    if (v == null) return 0;
+    return v - play.success_pct;
+  }
+  // Residual down pressure NOT already living in the distance curve.
+  function downPressureMod(archetype, down, distance) {
     const isRun = archetype === 'RUN' || archetype === 'QB_SNEAK';
-    const short = distance <= 2, med = distance <= 6, long = distance >= 10;
     let m = 0;
     if (down >= 3) {
-      if (short)      m += isRun ? +27.7 : +7.7;    // 3rd-and-short belongs to the run
-      else if (med)   m += isRun ? +9.5  : -0.6;
-      else if (long)  m += isRun ? -19.6 : -16.4;   // nobody escapes 3rd-and-long
-      else            m += isRun ? -6.0  : -9.7;
+      if (distance >= 10)      m += isRun ? -6.5 : -8.5;   // desperate down & long
+      else if (distance >= 7)  m += isRun ? -3.5 : -4.5;
+      // 3rd/4th & short is already rewarded by the play's own distance curve
     } else if (down === 2) {
-      if (short)      m += isRun ? +14.2 : +7.5;
-      else if (med)   m += isRun ? +7.5  : +5.5;
-      else if (long)  m += isRun ? -12.4 : -3.4;
-    } else {
-      if (short)      m += isRun ? +9.6  : +1.0;
-      else if (long)  m += isRun ? -5.4  : +2.8;
+      if (distance >= 10)      m += -2.5;
     }
     return m;
+  }
+  // Kept as a thin compatibility shim (archetype-level, used nowhere critical).
+  function situationalMod(archetype, down, distance) {
+    return downPressureMod(archetype, down, distance);
+  }
+
+  /* Predictability. Lean on one kind of call and the defense keys on it — they
+     jump the route, fit the run, tee off. Real football, and the reason a good
+     drive mixes looks. `sit.tendency[archetype]` is a negative success delta the
+     drive computes from your recent calls; the grader sees the same map, so it
+     rewards the call the defense ISN'T sitting on. This is what keeps spamming
+     one button measurably worse than reading the game. */
+  const TENDENCY_PENALTY = -8;   // per repeat of an archetype within the last 3 calls
+  function tendencyMap(recentArchetypes) {
+    const last = recentArchetypes.slice(-3);
+    const counts = {};
+    for (const a of last) counts[a] = (counts[a] || 0) + 1;
+    const out = {};
+    for (const a in counts) out[a] = TENDENCY_PENALTY * counts[a];
+    return out;
+  }
+
+  // The single source of truth for a play's effective success%, shared by the
+  // resolver AND the grader so a call can never be graded on different math than
+  // it's resolved on. Box lives in def.column; qualityMod is the day's matchup
+  // edge; sit.tendency is the defense keying on what you keep calling.
+  function successRate(play, def, sit, qualityMod) {
+    const a = play.archetype;
+    return play.success_pct
+         + (DEF_MOD[a]?.[def.column] ?? 0)
+         + specialization(play, sit.distance)
+         + downPressureMod(a, sit.down, sit.distance)
+         + (sit.tendency ? (sit.tendency[a] || 0) : 0)
+         + (qualityMod || 0) * 100 + DIFFICULTY;
   }
 
   /* ---------- 3. YARDAGE DISTRIBUTIONS ------------------------------------- */
@@ -94,10 +137,7 @@
   /* ---------- 4. RESOLVE ONE PLAY ------------------------------------------ */
   function resolvePlay(play, def, sit, rng, qualityMod) {
     const a = play.archetype;
-    let sr = play.success_pct
-           + (DEF_MOD[a]?.[def.column] ?? 0)
-           + situationalMod(a, sit.down, sit.distance)
-           + (qualityMod || 0) * 100 + DIFFICULTY;
+    let sr = successRate(play, def, sit, qualityMod);
     let ex = play.explosive_pct;
     let ds = play.disaster_pct + (DEF_DISASTER[def.column] ?? 0);
 
@@ -142,10 +182,7 @@
      grades well. That is the whole point. EV is DRIVE-aware, not play-aware:
      it rewards moving the chains plus yardage, penalises turnover risk.       */
   function bucketProbs(play, def, sit, qualityMod) {
-    const a = play.archetype;
-    let sr = Math.max(3, Math.min(94,
-        play.success_pct + (DEF_MOD[a]?.[def.column] ?? 0)
-        + situationalMod(a, sit.down, sit.distance) + (qualityMod||0)*100 + DIFFICULTY));
+    let sr = Math.max(3, Math.min(94, successRate(play, def, sit, qualityMod)));
     let ex = Math.max(0.5, Math.min(sr - 1, play.explosive_pct));
     let ds = Math.max(0.5, Math.min(60, play.disaster_pct + (DEF_DISASTER[def.column] ?? 0)));
     const succ = Math.max(0.5, sr - ex);
@@ -194,7 +231,7 @@
      well above the real 23.5% TD rate. This single constant scales success
      rates so a SKILLED player lands on the target TD rate. Solved by
      simulation (see simulator.js), not guessed. Raise it to make it easier. */
-  let DIFFICULTY = Number((typeof process !== 'undefined' && process.env && process.env.RTD_DIFFICULTY) ?? -24.0);
+  let DIFFICULTY = Number((typeof process !== 'undefined' && process.env && process.env.RTD_DIFFICULTY) ?? -3.0);
   function setDifficulty(v){ DIFFICULTY = v; }
   function getDifficulty(){ return DIFFICULTY; }
 
@@ -226,12 +263,17 @@
     const deep = pickBest(P, p => p.archetype === 'DEEP') || pickBest(P, p => p.archetype === 'INTERMEDIATE');
     const pa   = pickBest(P, p => p.archetype === 'PLAY_ACTION') || pickBest(P, p => p.archetype === 'INTERMEDIATE' && p !== deep);
     const sneak = pickBest(P, p => p.archetype === 'QB_SNEAK') || SNEAK_PLAY;
+    // Usage caps: a premium call loses its edge if you lean on it every snap —
+    // defenses adjust, and you can't run play-action without ever running. Caps
+    // are per drive; RUN and the quick game are unlimited (you can always do the
+    // ordinary thing). This is realism AND the surgical anti-spam fix the
+    // handoff wanted instead of leaning on the global difficulty knob.
     const tiles = [
-      { id: 'RUN',   title: 'RUN',         emoji: '🏃', play: run },
-      { id: 'SHORT', title: 'SHORT PASS',  emoji: '🎯', play: shortP },
-      { id: 'DEEP',  title: 'DEEP SHOT',   emoji: '🏈', play: deep },
-      { id: 'PA',    title: 'PLAY ACTION', emoji: '🎭', play: pa },
-      { id: 'SNEAK', title: 'QB SNEAK',    emoji: '💪', play: sneak },
+      { id: 'RUN',   title: 'RUN',         emoji: '🏃', play: run,    cap: Infinity },
+      { id: 'SHORT', title: 'SHORT PASS',  emoji: '🎯', play: shortP, cap: Infinity },
+      { id: 'DEEP',  title: 'DEEP SHOT',   emoji: '🏈', play: deep,   cap: 3 },
+      { id: 'PA',    title: 'PLAY ACTION', emoji: '🎭', play: pa,     cap: 3 },
+      { id: 'SNEAK', title: 'QB SNEAK',    emoji: '💪', play: sneak,  cap: 2 },
     ].filter(t => t.play);
     // de-dupe: if two tiles resolved to the same play, keep the first
     const seen = new Set(); const out = [];
@@ -245,18 +287,25 @@
     const day = generateDailyDrive(dateStr);
     const gp  = day._hiddenGameplan;
     const budget = buildBlitzSlots(dateStr, gp);
+    const scheme = PLAYBOOK.schemes[schemeKey];
+    const schemeBoxDraw = scheme.box_draw;
     const callSheet = buildCallSheet(schemeKey);
-    const gradePlaybook = callSheet.map(t => t.play);
+    const used = {};                                  // tileId -> times called
+    callSheet.forEach(t => { used[t.id] = 0; });
     const rng = mulberry32(fnv1a(`${dateStr}|drive|${opts.salt||0}`));
 
     let yardline = day.field.ownYard, down = 1, distance = 10;
     let clock = RULES.gameClockSec, playNo = 1;
     let over = false, result = null, toType = null;
-    const log = [], grades = [];
+    const log = [], grades = [], recent = [];   // recent[] = archetypes called
+
+    const remaining = (t) => t.cap === Infinity ? Infinity : Math.max(0, t.cap - used[t.id]);
+    const availableTiles = () => callSheet.filter(t => remaining(t) > 0);
 
     // Deterministic pre-snap defensive read for the CURRENT down (no play seen).
+    // The defense knows what scheme it's facing, so scheme box-draw feeds in.
     function currentDefense() {
-      return defensiveCall(dateStr, gp, playNo, down, distance, 1, budget.slots);
+      return defensiveCall(dateStr, gp, playNo, down, distance, 1, budget.slots, schemeBoxDraw);
     }
     function fgInfo() {
       const dist = (100 - yardline) + 17;
@@ -271,6 +320,8 @@
         grades: grades.slice(), log: log.slice(),
         callGrade: grades.length ? +(grades.reduce((s,g)=>s+g.percentile,0)/grades.length).toFixed(1) : 0,
         fg: fgInfo(),
+        calls: callSheet.map(t => ({ id: t.id, remaining: remaining(t), cap: t.cap })),
+        tendency: tendencyMap(recent),
       }, extra || {});
     }
     function finish(res, to) {
@@ -281,16 +332,24 @@
     function snap(tileId) {
       if (over) return snapshot();
       if (clock <= 0 || playNo > 14) return finish('CLOCK');
-      const tile = callSheet.find(t => t.id === tileId) || callSheet[0];
+      let tile = callSheet.find(t => t.id === tileId) || callSheet[0];
+      if (remaining(tile) <= 0) {                 // exhausted call: ignore, don't burn a down
+        return snapshot({ denied: tile.id });
+      }
+      used[tile.id]++;
       const chosen = tile.play;
       const def = currentDefense();
-      const sit = { down, distance, yardline, clock };
+      const sit = { down, distance, yardline, clock, tendency: tendencyMap(recent) };
       const isRun = ['RUN','QB_SNEAK'].includes(chosen.archetype);
 
-      // Grade against only what the player could see (box count, not the blitz).
+      // Grade against only what the player could see (box count, not the blitz)
+      // and only the calls still AVAILABLE this snap — grading you against a play
+      // you'd used up would be dishonest.
       const visible = { column: def.boxCount >= 8 ? 'HEAVY_BOX'
                               : def.boxCount <= 6 ? 'LIGHT_BOX' : 'BASE_7' };
-      const grade = gradeCall(chosen, gradePlaybook, visible, sit, gp.qualityModifier);
+      const optionPlays = availableTiles().map(t => t.play);
+      if (!optionPlays.some(p => p === chosen)) optionPlays.push(chosen);
+      const grade = gradeCall(chosen, optionPlays, visible, sit, gp.qualityModifier);
       grades.push(grade);
 
       const out = resolvePlay(chosen, def, sit, rng, gp.qualityModifier);
@@ -301,6 +360,7 @@
                       play: chosen.name, title: tile.title, archetype: chosen.archetype,
                       box: def.boxCount, blitz: def.isBlitz, grade, ...out };
       log.push(entry);
+      recent.push(chosen.archetype);
 
       const res = { lastPlay: entry, lastDef: def };
 
@@ -332,6 +392,7 @@
       snap, kickFG,
       state: () => snapshot(),
       currentDefense, callSheet, day, gp,
+      remaining, availableTiles,
       startYard: day.field.ownYard,
     };
   }
@@ -340,13 +401,20 @@
   function runDrive(dateStr, schemeKey, policy, opts = {}) {
     const d = createDrive(dateStr, schemeKey, opts);
     let s = d.state();
-    while (!s.over) {
-      // policy sees the situation, the visible defense, and the call sheet.
+    let guard = 0;
+    while (!s.over && guard++ < 40) {
+      // policy sees the situation, the visible defense, and only the calls still
+      // available (usage caps applied), so it never picks an exhausted play.
       const def = d.currentDefense();
       const visibleBox = def.boxCount;
-      const action = policy(s, d.callSheet, visibleBox, d.gp);
+      const avail = d.callSheet.filter(t => {
+        const c = s.calls.find(x => x.id === t.id); return !c || c.remaining > 0;
+      });
+      const action = policy(s, avail, visibleBox, d.gp);
       if (action === 'KICK') { s = d.kickFG(); break; }
-      s = d.snap(action);
+      const next = d.snap(action);
+      if (next.denied) { s = d.snap((avail[0] || d.callSheet[0]).id); } // fallback, never stall
+      else s = next;
     }
     return s;
   }

@@ -35,9 +35,13 @@ node simulator.js                 # current default
 RTD_DIFFICULTY=-20 node simulator.js   # sweep to re-tune
 ```
 
-At the shipped `DIFFICULTY = -24`: skilled ≈ 34.9% TD / 48.8% score, a
-quick-pass spammer ≈ 20% TD, and a situation-blind bot ≈ 9% TD. Change the
-constant, re-run the simulator, read the new rate — that's the whole loop.
+At the shipped `DIFFICULTY = -3`: skilled ≈ 34.6% TD / 49.9% score, while a
+quick-pass spammer drops to ≈ 20% TD with a ~71 call grade — because the
+defense keys on tendencies, usage caps limit premium calls, and each play's
+success is driven by its own measured success-by-distance curve. Change the
+constant, re-run the simulator, read the new rate — that's the whole loop. The
+simulator also prints a **per-scheme balance sweep** so you can see no single
+playbook dominates.
 
 ## Contracts that must not break
 

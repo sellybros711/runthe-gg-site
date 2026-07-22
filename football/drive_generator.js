@@ -174,11 +174,18 @@
        - 3rd/4th-and-long   -> lighter box, extra defensive backs
      Blitz is decided purely by the pre-allocated budget for this snap.        */
 
-  function defensiveCall(dateStr, gp, playNumber, down, distance, backfieldCount, blitzSlots) {
+  function defensiveCall(dateStr, gp, playNumber, down, distance, backfieldCount, blitzSlots, schemeBoxDraw) {
     const rng = mulberry32(fnv1a(`${dateStr}|def|${playNumber}`));
 
     // Base box grows with the backfield the defense sees.
     let box = 5.4 + (backfieldCount >= 2 ? 1.4 : 0.6);
+
+    // The scheme's own tendency to draw hats: a smash-mouth, two-back look
+    // invites a loaded box; a spread, empty look thins it out. Measured per
+    // scheme as box_draw (league-ish baseline 6.2). This is what makes the run
+    // game honest — heavy schemes earn their short-yardage edge against 8 in the
+    // box, spread schemes run into lighter fronts.
+    if (typeof schemeBoxDraw === 'number') box += (schemeBoxDraw - 6.2) * 0.7;
 
     // Situational adjustment.
     if (distance <= 2)       box += 0.9;              // short yardage: sell out vs the run
