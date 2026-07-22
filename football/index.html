@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230c3324'/%3E%3Ctext x='16' y='24' font-size='19' text-anchor='middle'%3E%F0%9F%8F%88%3C/text%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 <style>
 :root{
   --bg:#092018; --bg2:#0c3324; --panel:#0f3a29; --panel2:#0b2c20;
@@ -21,8 +21,9 @@
   --grass:#2f7d3f; --grass2:#286f37; --grass-line:rgba(244,227,201,.55);
   --endzone:#7a1f22; --endzone2:#611619;
   --green:#7bd67e; --red:#e0705c; --amber:#f0c060; --blue:#69b0d0;
-  --pix:'Press Start 2P', monospace;
-  --term:'VT323', ui-monospace, monospace;
+  --hero:'Press Start 2P', monospace;                 /* pixel — logo only */
+  --pix:'Rubik', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;   /* headings/labels */
+  --term:'Rubik', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;  /* body */
   --shadow:0 3px 0 rgba(0,0,0,.35);
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
@@ -31,26 +32,34 @@ body{
   background:
     radial-gradient(1100px 520px at 50% -10%, rgba(235,166,31,.10), transparent 60%),
     linear-gradient(180deg,#0b2a1f,var(--bg) 70%);
-  color:var(--cream); font-family:var(--term); font-size:20px; line-height:1.15;
-  min-height:100dvh; -webkit-font-smoothing:none; image-rendering:pixelated;
+  color:var(--cream); font-family:var(--term); font-size:16px; line-height:1.45; font-weight:500;
+  min-height:100dvh; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
   display:flex; justify-content:center;
 }
 .wrap{width:100%; max-width:480px; padding:10px 12px 40px; position:relative;}
 .pix{font-family:var(--pix);}
+/* Rubik reads far better than the old pixel body font; give headings/labels weight
+   and hierarchy. The pixel font is kept only for the DAILY DRIVE logo (--hero). */
+.brand,.stat-chip .n,.inforow .seg,.banner h1,.statusbar .big,.pill,.tile .tt,.kick .tt,
+.log-head .t,.log .row .dd,.log .row .yd,.section-h,.opp .name .who,.opp .attack .lbl,
+.schemes-head .t,.scheme .nm,.cta,.modal h2,.modal .statgrid .v,.modal button,.sheet h3,
+.goal-h,.goal-v,.sign-l1,.sign-l2,.coins-pill,.play-now,.field-strip .fifty,.nav-i .lb,
+.toast .r,.burst,.h-td,.stat-chip .l,.statusbar .lab{ font-weight:800; letter-spacing:.3px; }
+.sign-title{ font-family:var(--hero); }
+/* pixel-crisp only for the sprite/emblem SVGs, not text */
+.manart,.football svg,.lights svg,.field-strip .gp svg{ image-rendering:pixelated; }
 button{font-family:inherit; color:inherit; cursor:pointer;}
 .hidden{display:none !important;}
 
 /* ---------- top bar ---------- */
-.topbar{display:flex; align-items:center; gap:10px; padding:6px 4px 12px;}
-.icon-btn{background:transparent; border:0; padding:6px; font-size:26px; line-height:1; color:var(--cream);}
-.avatar{width:52px; height:52px; border-radius:8px; background:var(--panel);
-  border:2px solid var(--line2); display:grid; place-items:center; font-size:30px; box-shadow:var(--shadow);}
-.brand{font-family:var(--pix); font-size:19px; letter-spacing:1px; margin-left:2px;}
-.brand .b1{color:var(--cream);} .brand .b2{color:var(--gold);}
-.stat-chip{display:flex; align-items:center; gap:7px; background:var(--panel);
-  border:2px solid var(--line2); border-radius:10px; padding:7px 11px; box-shadow:var(--shadow);}
-.stat-chip .n{font-family:var(--pix); font-size:14px;}
-.stat-chip .l{font-family:var(--pix); font-size:8px; color:var(--cream-dim); letter-spacing:1px;}
+.topbar{display:flex; align-items:center; gap:6px; padding:8px 2px 12px;}
+.icon-btn{background:transparent; border:0; padding:5px; font-size:22px; line-height:1; color:var(--cream); flex:0 0 auto;}
+.brand{font-family:var(--pix); font-size:12px; letter-spacing:1px; margin-left:2px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.brand .b2{color:var(--gold);}
+.stat-chip{display:flex; align-items:center; gap:6px; background:var(--panel); flex:0 0 auto;
+  border:2px solid var(--line2); border-radius:10px; padding:6px 9px; box-shadow:var(--shadow);}
+.stat-chip .n{font-family:var(--pix); font-size:12px;}
+.stat-chip .l{font-family:var(--pix); font-size:7px; color:var(--cream-dim); letter-spacing:.5px;}
 .stat-chip.streak .n{color:#ff7a3d;} .stat-chip.coins .n{color:var(--gold-bright);}
 .spacer{flex:1;}
 
@@ -166,8 +175,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   transition:transform .06s, background .15s; min-height:96px; justify-content:flex-start;}
 .tile:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.35);}
 .tile .em{font-size:26px; line-height:1;}
-.tile .tt{font-family:var(--pix); font-size:8px; letter-spacing:.5px; text-align:center;}
-.tile .nm{font-family:var(--term); font-size:16px; color:var(--cream-dim); text-align:center; line-height:1;}
+.tile .diag{width:42px; height:34px; display:block; margin:0 auto 1px;}
+.tile .diag svg{width:100%; height:100%; display:block;}
+.tile .tt{font-family:var(--pix); font-size:9px; letter-spacing:.3px; text-align:center;}
+.tile .nm{font-family:var(--term); font-size:14px; font-weight:600; color:var(--cream-dim); text-align:center; line-height:1.05;}
 .tile:disabled{opacity:.4;}
 .kick{width:100%; margin-bottom:12px; background:var(--panel2); border:2px solid var(--line2);
   border-radius:10px; padding:12px; display:flex; align-items:center; justify-content:center; gap:12px; box-shadow:var(--shadow);}
@@ -297,12 +308,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .modal .primary{background:var(--gold); color:#3a2a00; border:0; box-shadow:0 4px 0 #a9750f;}
 .modal .secondary{background:transparent; color:var(--cream); border:2px solid var(--line2);}
 
-/* sheet / menu */
-.sheet{position:fixed; inset:0; z-index:60; display:flex; align-items:flex-end; justify-content:center;
-  background:rgba(4,14,10,.6);}
-.sheet .inner{width:100%; max-width:480px; background:var(--panel); border:2px solid var(--line2);
-  border-radius:16px 16px 0 0; padding:18px; box-shadow:0 -6px 0 rgba(0,0,0,.35);}
-.sheet h3{font-family:var(--pix); font-size:13px; margin:2px 0 14px;}
+/* menu (centered modal) */
+.sheet{position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center;
+  background:rgba(4,14,10,.72); padding:18px;}
+.sheet .inner{width:100%; max-width:400px; background:var(--panel); border:2px solid var(--line2);
+  border-radius:16px; padding:18px 18px 8px; box-shadow:0 10px 0 rgba(0,0,0,.4);}
+.sheet h3{font-family:var(--pix); font-size:15px; margin:2px 0 14px; text-align:center;}
 .sheet a, .sheet button.mi{display:flex; align-items:center; gap:12px; width:100%; text-align:left;
   padding:14px 10px; border:0; border-top:1px solid var(--line); background:transparent; color:var(--cream);
   font-family:var(--term); font-size:20px; text-decoration:none;}
@@ -315,7 +326,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .foot a{color:var(--gold);}
 
 /* ===================== HOME / SPLASH (stadium concept) ===================== */
-#splashScreen{ margin:-10px -12px 0; }                 /* full-bleed inside .wrap */
+/* Break out of the centered .wrap column so the stadium is the WHOLE screen. */
+#splashScreen{ position:relative; width:100vw; left:calc(-50vw + 50%); margin-top:-10px; }
 .stadium{ position:relative; overflow:hidden; min-height:100dvh; padding:0 16px 0; isolation:isolate;
   display:flex; flex-direction:column;
   background:
@@ -394,9 +406,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   <!-- TOP BAR -->
   <div class="topbar" id="appTop">
+    <button class="icon-btn" id="homeBtn" aria-label="Home">🏠</button>
     <button class="icon-btn" id="menuBtn" aria-label="Menu">☰</button>
-    <div class="avatar">🏈</div>
-    <div class="brand pix"><span class="b1">RUN THE</span> <span class="b2">DRIVE</span></div>
+    <div class="brand pix"><span class="b2">DAILY DRIVE</span></div>
     <div class="spacer"></div>
     <div class="stat-chip streak"><span style="font-size:20px">🔥</span><div><div class="n" id="streakN">0</div><div class="l">STREAK</div></div></div>
     <div class="stat-chip coins"><span style="font-size:18px">🪙</span><div><div class="n" id="coinsN">0</div><div class="l">COINS</div></div></div>
@@ -405,8 +417,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   <!-- INFO ROW -->
   <div class="card inforow" id="appInfo">
     <span class="seg" id="driveNo">DRIVE #1</span>
-    <span class="sep"></span>
-    <span class="seg sunny" id="wx">☀ SUNNY</span>
     <span class="sep"></span>
     <span class="seg chal">DAILY CHALLENGE</span>
   </div>
@@ -589,10 +599,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   /* ---------- scouting + info render ---------- */
   function renderInfo(dateStr){
     el('driveNo').textContent = 'DRIVE #'+driveNumber(dateStr);
-    const day = GEN.generateDailyDrive(dateStr);
-    const wx = day.weather.condition;
-    el('wx').textContent = (WX_ICON[wx]||'☀')+' '+wx.toUpperCase();
-    return day;
+    return GEN.generateDailyDrive(dateStr);
   }
   // Full scouting lines — used inside the (collapsed) home card and the in-game peek.
   function renderScoutFull(dateStr, mount){
@@ -749,6 +756,31 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     for(let i=1;i<=7;i++){ const d=document.createElement('i');
       if(i<state.playNo) d.className='on'; else if(i===state.playNo) d.className='now'; dots.appendChild(d); }
   }
+  // Mini play-diagram (X's & O's) per play type — drawn up like a playbook card.
+  function routeSVG(arch){
+    const R = {
+      RUN:         {route:'M20,28 L20,7',            head:[20,7,'U']},
+      QB_SNEAK:    {route:'M20,28 L20,19',           head:[20,19,'U']},
+      QUICK:       {route:'M30,28 L30,18 L36,18',    head:[36,18,'R']},
+      SCREEN:      {route:'M20,28 L11,26 L6,30',     head:[6,30,'L']},
+      INTERMEDIATE:{route:'M30,28 L30,13 L37,13',    head:[37,13,'R']},
+      DEEP:        {route:'M30,28 L30,5',            head:[30,5,'U']},
+      PLAY_ACTION: {route:'M20,28 L20,9',            head:[20,9,'U'], fake:'M20,28 L13,32'},
+    };
+    const r = R[arch] || R.RUN;
+    const [hx,hy,hd] = r.head;
+    const head = hd==='U' ? `${hx-3},${hy+4} ${hx+3},${hy+4} ${hx},${hy}`
+               : hd==='R' ? `${hx-4},${hy-3} ${hx-4},${hy+3} ${hx},${hy}`
+               :            `${hx+4},${hy-3} ${hx+4},${hy+3} ${hx},${hy}`;
+    const g='#f2b21c', ln='rgba(244,227,201,.55)';
+    return `<svg viewBox="0 0 42 34" aria-hidden="true">`
+      +`<line x1="6" y1="24" x2="36" y2="24" stroke="${ln}" stroke-width="1.4"/>`
+      +`<g fill="none" stroke="${ln}" stroke-width="1.5"><circle cx="12" cy="24" r="2.1"/><circle cx="20" cy="24" r="2.1"/><circle cx="28" cy="24" r="2.1"/></g>`
+      + (r.fake?`<path d="${r.fake}" stroke="${ln}" stroke-width="1.6" fill="none" stroke-dasharray="2 2"/>`:'')
+      +`<circle cx="20" cy="30" r="2.6" fill="${g}"/>`
+      +`<path d="${r.route}" stroke="${g}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+      +`<polygon points="${head}" fill="${g}"/></svg>`;
+  }
   function renderCalls(state){
     const wrap=el('calls'); wrap.innerHTML='';
     wrap.style.gridTemplateColumns='repeat('+drive.callSheet.length+',1fr)';
@@ -761,7 +793,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       const b=document.createElement('button'); b.className='tile'+(keyed&&!gone?' keyed':'');
       const remBadge = (info.cap!==Infinity && info.cap!=null) ? `<span class="rem">${Math.max(0,info.remaining)}</span>` : '';
       const keyTag = (keyed&&!gone) ? `<span class="keytag">KEYED</span>` : '';
-      b.innerHTML=`${remBadge}<span class="em">${t.emoji}</span><span class="tt">${t.title}</span><span class="nm">${t.play.name}</span>${keyTag}`;
+      b.innerHTML=`${remBadge}<span class="diag">${routeSVG(t.play.archetype)}</span><span class="tt">${t.title}</span><span class="nm">${t.play.name}</span>${keyTag}`;
       b.onclick=()=>doSnap(t.id);
       b.disabled = state.over || gone;
       wrap.appendChild(b);
@@ -891,7 +923,11 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       step(qb, dropX, 50, 230, 'ease-out'); step(ball, dropX, 50, 230);
       F.ol.forEach(o=>{ const p=pos(o); step(o, bx-2, p.y, 230, 'ease-out'); });
       const targetY = play.archetype==='SCREEN' ? 74 : (endYard % 2 ? 24 : 76);   // deterministic-ish side
-      const catchYard = Math.min(100, before.yardline + Math.max(4, Math.round((play.yards||8)*(play.bucket==='EXPLOSIVE'?0.5:0.72))));
+      // Throw depth comes from the PLAY (its archetype), not the result — so a deep
+      // shot flies deep even when it falls incomplete, and a screen stays behind the line.
+      const AIR = { QUICK:5, SCREEN:-1, INTERMEDIATE:14, DEEP:26, PLAY_ACTION:15 };
+      const air = AIR[play.archetype] != null ? AIR[play.archetype] : 9;
+      const catchYard = Math.max(before.yardline-2, Math.min(99, before.yardline + air));
       const catchX = xOf(catchYard);
       const wr = targetY<50 ? F.wrTop : F.wrBot;
       const otherWr = targetY<50 ? F.wrBot : F.wrTop;
@@ -911,17 +947,18 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
         if(rusher) step(rusher, dropX+1, 50, 250, 'ease-in');
         await sleep(230); shake(); qb.classList.add('down'); ball.style.opacity='0';
         burst('SACKED', dropX, 52, '#e0705c'); flash('rgba(224,112,92,.4)'); await sleep(560);
-      } else if(play.bucket==='FAILURE'){
+      } else if(play.incomplete){
         ball.classList.add('spin'); step(ball, catchX, targetY, 450, 'ease-out'); await sleep(440);
         step(ball, catchX, targetY+12, 190); ball.style.opacity='0';
-        burst('INCOMPLETE', catchX, targetY, '#bcae95'); await sleep(500);
+        burst('INCOMPLETE ⏱️', catchX, targetY, '#bcae95'); await sleep(500);
       } else {
         ball.classList.add('spin'); step(ball, catchX, targetY, 430, 'ease-out'); await sleep(420);
         ball.classList.remove('spin'); ball.style.opacity='0';
         const runY = targetY<50?44:56;
-        step(wr, endX, runY, 360, 'ease-out');                                     // catch & run
-        if(cover) step(cover, endX, runY, 380, 'ease-out');
-        const help = nearest(F.db.concat(F.dl), endX, 50, 1)[0]; if(help) step(help, endX, 50, 380);
+        const runX = Math.max(endX, catchX);                                       // never run backwards
+        step(wr, runX, runY, 360, 'ease-out');                                     // catch & run
+        if(cover) step(cover, runX, runY, 380, 'ease-out');
+        const help = nearest(F.db.concat(F.dl), runX, 50, 1)[0]; if(help) step(help, runX, 50, 380);
         await sleep(350);
         if(after.result!=='TOUCHDOWN'){ wr.classList.add('down'); if(cover) cover.classList.add('down'); }
         shakeIfBig(play); outcomeBurst(play, after, endX, runY); await sleep(520);
@@ -1066,19 +1103,19 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     const m=el('sheetMount');
     m.innerHTML=`<div class="sheet"><div class="inner">
       <h3>RUN THE DRIVE</h3>
+      <button class="mi" id="homeMi"><span class="ico">🏠</span> Home</button>
       <button class="mi" id="howto"><span class="ico">❓</span> How to play</button>
-      <button class="mi" id="changeScheme"><span class="ico">📖</span> Change playbook <span style="flex:1"></span><span style="font-family:var(--pix);font-size:9px;color:var(--gold-bright)">${PB.schemes[STORE.scheme].name}</span></button>
-      <button class="mi" id="statsMi"><span class="ico">📊</span> Your record <span style="flex:1"></span><span style="font-family:var(--pix);font-size:9px;color:var(--cream-dim)">best 🔥${STORE.best}</span></button>
+      <button class="mi" id="statsMi"><span class="ico">📊</span> Your record <span style="flex:1"></span><span style="color:var(--cream-dim);font-size:15px">best 🔥${STORE.best}</span></button>
       <button class="mi" id="practiceMi"><span class="ico">🔁</span> Practice drive</button>
-      <a href="/"><span class="ico">🏠</span> More RunThe.GG games</a>
+      <a href="/"><span class="ico">🎮</span> More RunThe.GG games</a>
       <button class="mi" id="closeSheet" style="justify-content:center;color:var(--cream-dim)">Close</button>
     </div></div>`;
     const close=()=>m.innerHTML='';
     m.querySelector('.sheet').onclick=(e)=>{ if(e.target===m.querySelector('.sheet')) close(); };
     el('closeSheet').onclick=close;
+    el('homeMi').onclick=()=>{ close(); showSplash(); };
     el('howto').onclick=()=>{ close(); showHowto(); };
     el('practiceMi').onclick=()=>{ close(); startPractice(); };
-    el('changeScheme').onclick=()=>{ close(); el('gameScreen').classList.add('hidden'); el('splashScreen').classList.add('hidden'); el('matchupScreen').classList.remove('hidden'); renderOpponent(DATE); renderSchemes(); window.scrollTo(0,0); };
     el('statsMi').onclick=()=>{ close(); showStats(); };
   }
   function showHowto(){
@@ -1162,6 +1199,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     };
     el('kickBtn').onclick=doKick;
     el('menuBtn').onclick=openMenu;
+    el('homeBtn').onclick=showSplash;
     el('scoutPeek').onclick=()=>{ const c=el('scoutPeekCard'); c.classList.toggle('hidden'); };
 
     showSplash();
