@@ -12590,6 +12590,13 @@ allows Google Fonts, or self-host Anton.*
   cards; full regression green, 0 page errors. Screenshots of all three card types sent to the owner.
   Deployed to /golf (e7a99b8). Tunable: the band cutoffs in the GOLFERS map, the `.cardkind` styling, the
   new primes' ratings.
+  - **Follow-up (owner): the prime subtext shows NO peak year** - just "PRIME VERSION" (the card is the
+    peak version of the player as a whole, not one singled-out season). `cardKindHTML` no longer parses the
+    year from data_source. Deployed to /golf (9d1de4b). NOTE (told the owner): the CURRENT 136 player cards
+    are genuinely DataGolf-rated (the 2026-06-22 feed); the PRIME + retired-great cards are HAND-rated from
+    each player's real peak era (the data_source "(DataGolf)" tag on those is schema-mimicry, not a real
+    feed) - truly data-grounded primes would need the owner to pull DataGolf's HISTORICAL skill-ratings
+    files per peak season, offered if wanted.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
