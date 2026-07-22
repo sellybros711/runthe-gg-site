@@ -127,24 +127,22 @@
   .game:hover .sport-motif{opacity:.62;transition:opacity .18s ease;}
   /* golf motif: the ball chips onto the green, rolls in, then a new ball comes in — looped */
   .feat.golf .sport-motif .gball{transform-box:fill-box;transform-origin:center;
-    animation:golfChip 6s ease-in-out infinite;}
+    animation:golfChip 6s linear infinite;}
   @keyframes golfChip{
-    0%{transform:translate(24px,-124px) scale(.7);opacity:0;}      /* new ball incoming (chipped) */
-    3%{opacity:1;}
-    9%{transform:translate(18px,-96px) scale(.8);}
-    15%{transform:translate(9px,-46px) scale(.9);}
-    20%{transform:translate(0,0) scale(1);}                        /* lands on the green */
-    23%{transform:translate(-4px,-13px) scale(1);}                 /* bounce */
-    27%{transform:translate(-8px,0) scale(1);}
-    30%{transform:translate(-9px,-4px) scale(1);}
-    33%{transform:translate(-10px,0) scale(1);}                    /* settles */
-    46%{transform:translate(-10px,0) scale(1);}                    /* rests a beat */
-    60%{transform:translate(-44px,0) scale(1);}                    /* rolls to the hole lip */
-    64%{transform:translate(-44px,1px) scale(.92);}
-    68%{transform:translate(-44px,4px) scale(.32);opacity:.9;}
-    71%{transform:translate(-44px,6px) scale(0);opacity:0;}        /* drops in */
-    84%{transform:translate(24px,-124px) scale(.7);opacity:0;}     /* reset off-screen */
-    100%{transform:translate(24px,-124px) scale(.7);opacity:0;}
+    /* falls in from above the frame (clipped off-screen), accelerating like gravity */
+    0%{transform:translate(48px,-215px);animation-timing-function:cubic-bezier(.5,0,.9,.42);}
+    17%{transform:translate(0,0);animation-timing-function:cubic-bezier(.22,0,.35,1);}   /* lands on the green */
+    22%{transform:translate(-3px,-15px);animation-timing-function:cubic-bezier(.5,0,.9,.5);}   /* bounce */
+    28%{transform:translate(-6px,0);animation-timing-function:cubic-bezier(.25,0,.4,1);}
+    32%{transform:translate(-8px,-5px);animation-timing-function:cubic-bezier(.5,0,.9,.5);}
+    36%{transform:translate(-9px,0);}                              /* settled */
+    48%{transform:translate(-9px,0);animation-timing-function:cubic-bezier(.45,0,.6,1);}   /* rests a beat */
+    60%{transform:translate(-44px,0);animation-timing-function:ease-in;}   /* rolls to the hole lip */
+    66%{transform:translate(-44px,4px) scale(.55);}
+    70%{transform:translate(-44px,8px) scale(0);opacity:1;}        /* drops in */
+    70.5%{opacity:0;}                                              /* hide, then reset off-screen */
+    71%{transform:translate(48px,-215px);opacity:0;}
+    100%{transform:translate(48px,-215px);opacity:0;}
   }
 
   .g-head{display:flex;align-items:center;gap:16px;padding:18px 17px 0;}
