@@ -12265,6 +12265,31 @@ allows Google Fonts, or self-host Anton.*
   Playwright: watch buttons emoji-free, Sign Out present in the signed-in menu (absent for guests), 0 page
   errors. Deployed to /golf.
 
+- **Unclaimed-reward indicators — red dots for free packs + new items (owner).** Little red circles so
+  players know they have unclaimed rewards, which clear the moment the reward is claimed:
+  - **Free pack → red dot on the Pro Shop bottom-nav tab** (nFree = first-pack-free + per-tier pack credits > 0).
+  - **New items → red dot on the Profile bottom-nav tab AND the top-LEFT corner of the profile picture**
+    (the top-banner profile pill's avatar; the existing CS422 pill dot was moved from top-right to top-left
+    to sit on the avatar, matching the owner's ask). Both key off `cosNewTotal() > 0`.
+  - The bottom nav is mounted once (CS430), so the dots refresh in `navSetActive()` on every render — they
+    appear when a reward is pending and disappear the render after it's claimed (packs opened → nFree 0;
+    items viewed in the shop → cosNewTotal 0). New `.navdot` CSS (top-right of a tab's icon); `.botnav
+    button` made `position:relative`. Signed-in only (guests can't earn packs/items). Verified in Playwright:
+    with a free pack + an unviewed item, dots render on Pro Shop tab + Profile tab + the profile-picture
+    top-left corner (other tabs clean); after claiming (packs spent + items marked seen) all three clear;
+    0 page errors. Screenshot confirmed placement. Deployed to /golf.
+  - **NOTE (cross-workstream collision):** while deploying, found that the deployed `golf/index.html` had
+    been accidentally reverted to a pre-Prime state by commit `205f388` (#53, "Retint shared landing icons")
+    — a landing/RunTheDrive-workstream commit that regenerated `golf/index.html` from a STALE `build-a-golfer.html`
+    snapshot predating the Prime cards, stripping the Prime cards + legend re-rates + roll achievements from
+    the live game (its real intent was the landing-page icon retint, not golf). Confirmed via diff that main's
+    `golf/index.html` differed from the source-of-truth `build-a-golfer.html` ONLY by the absence of that
+    Prime work (no legitimate third-party golf change to preserve — the retint touched the landing page), so
+    re-deploying from `build-a-golfer.html` cleanly RESTORED the Prime work AND added the new indicators. If
+    the landing/RunTheDrive sessions keep regenerating `golf/index.html` from an old source, they'll clobber
+    golf again — they should either rebase on latest `main` before regenerating golf, or not touch
+    `golf/index.html` at all (it's regenerated only from `build-a-golfer.html`, this repo's source of truth).
+
 - **PRIME CARDS — 25 "Prime" 2K-style peak cards + all-time-legend re-rates + roll-5/10/25 achievements
   (owner: "make sure the legends like Jack Nicklaus and Arnold Palmer (among others) are properly rated with
   this change as well… I think it's okay the way it is because user will not see the real overall just the
