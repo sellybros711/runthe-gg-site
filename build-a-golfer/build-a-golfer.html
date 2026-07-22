@@ -753,6 +753,7 @@ window.GA_ID='G-L29P5MRWKE';
   .cardkind{font:800 10px/1 var(--body); letter-spacing:.16em; margin-top:4px}
   .cardkind.ck-prime{color:var(--gold)}
   .cardkind.ck-great{color:#e8dfc8}
+  .cardkind.ck-cur{color:#8fd0b5}
   .osreel .sub{position:absolute; bottom:7px; font:800 8px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); padding:0 8px; text-align:center}
   .osreel.rar-rare{border-color:#4f9fd0} .osreel.rar-rare .reeltag{color:#82c1e8}
   .osreel.rar-epic{border-color:#a679e0; box-shadow:0 0 12px rgba(166,121,224,.25) inset} .osreel.rar-epic .reeltag{color:#c7a6f2}
@@ -3871,7 +3872,7 @@ function cardKindHTML(g){
   const k=cardKind(g);
   if(k==='prime') return `<div class="cardkind ck-prime">PRIME VERSION</div>`;   // no peak YEAR shown (owner): it's the peak version of the player as a whole, not one singled-out season
   if(k==='great') return `<div class="cardkind ck-great">ALL-TIME GREAT</div>`;
-  return '';
+  return `<div class="cardkind ck-cur">CURRENT VERSION</div>`;   // today's pros say so too (owner), so a low-rated aging star clearly reads as "this is him NOW"
 }
 function rollBucket(rng){const r=rng(); let acc=0; for(const[b,p]of PULL_RATES){acc+=p; if(r<acc)return b;} return 'Common';}
 function drawGolfer(rng,pool,revealed){
