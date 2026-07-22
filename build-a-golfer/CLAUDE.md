@@ -12399,6 +12399,59 @@ allows Google Fonts, or self-host Anton.*
   emotes/nameplates, a "Legendary Drop 2" themed collection, outerwear/legwear art expansion (needs sprite
   art), higher-detail sprite redraws for clubs/balls/cleats.
 
+- **HAIR OVERHAUL + ITEM DETAIL PASS + DROPS SYSTEM (owner: "We can do another 'drop'... themed drops
+  surrounding real life pop culture events. Things that people would want to collect and show off. On top of
+  enhancing the look of the store, I want to physically do another pass on the items themselves and make them
+  look more realistic and add detail when possible. The items should also fit onto the golfers perfectly, and
+  the hats should impact the hair so it's not just pasted on top of the character. I also want to enhance the
+  hairstyles, make them more visually different from one another. And add more hair colors and styles").**
+  Three coordinated stages, each Playwright-verified before shipping (commit 69ee7a2, deployed b4af774):
+  1. **Hair overhaul.** `HAIRSTYLES` 5 → **11** (short/swoop/curly/long/buzz all REDRAWN for distinctness +
+     new **afro, mohawk, mullet, ponytail, top knot, spiky**), `HAIRS` colors 7 → **17** (+jet black,
+     chestnut, copper, strawberry, white + vivid crimson/pink/blue/purple/green dyes; `cosTitle` labels
+     added). **Hats now genuinely impact the hair:** every style has an authored `PXG_HAIR_HAT` UNDER-HAT
+     variant, and `pxGolferCanvas` paints it (instead of the old flat row-12 clip) whenever a closed-crown
+     hat is worn - sideburns/fringe tips poke out under a cap, curls puff at the sides, an afro bulges out
+     both sides, a ponytail/mullet flows out the back, and mohawk/top-knot/spiky tuck fully; OPEN hats
+     (visor/crown/laurel/halo/headband/headphones/beret + the new antlers) keep the full hair, so a mohawk
+     pokes through a visor. All generated from `scratchpad/hair_gen.py` (regen + re-splice to tweak).
+  2. **Item detail + fit pass.** New renderer-level `paintShaded` in `pxGolferCanvas`: every worn item
+     (all hats, eyewear incl. the CS419 auto-centering, outerwear, legwear, cleats) gets a computed
+     top-edge rim light + under-edge shadow (±15-16 pxShade), so all ~50 overlay items read as lit 3D
+     objects instead of flat pasted pixels - one pass, no re-authoring. Full matrices (28 hats, 14 eyewear,
+     outerwear/legwear/cleats) verified fitting correctly on the golfer with the new hair system.
+  3. **DROPS system + 25 new items.** New `DROPS` registry (id/name/kicker/accent/blurb/items/optional
+     annual `window`) + helpers (`dropLive` w/ wrap-around windows, `itemDropLocked`, `dropProgress`,
+     `liveThemedDrop`). Six collections:
+     - **Legendary Drop 1** (retro-tagged existing 30 items: auras, fixed prints, heritage, vintage
+       equipment) - always available.
+     - **Legendary Drop 2 · Mythic** (always): Phoenix Aura L, Molten Gold pat L, Dragon Scale pat E,
+       Knight's Helm L, Gilded Shades E, Obsidian Ball E, Royal Scepter Putter L, Phantom Cleats L.
+     - **Summer Smash** (Jul 1-Aug 31, LIVE at ship): Pineapple Print E, Sunset Fade R, Aloha (existing),
+       Sun Floppy Hat R, Beach Shades R, Flamingo Ball R, Heatwave aura E.
+     - **Spooky Season** (Oct): Witch Hat E, Skeleton Ribs E, Pumpkin Patch R, Ghost Ball R, Ecto aura E,
+       Vampire Cape L.
+     - **Winter Classic** (Dec): Elf Hat R, Antlers E (open-top), Santa (existing, now seasonal), Holiday
+       Sweater E, Snowball R, Candy Cane Putter E.
+     - **The Big Game** (Jan 25-Feb 15): Football Helmet E, Gridiron pat R, Pigskin ball E, Eye Black R,
+       Stadium Lights aura E.
+     All genericized (no real-event trademarks). **Gating:** an out-of-window themed item is not buyable
+     (`cosBuy` + shard-redeem refuse w/ "Returns Oct 1"), not in `packPool`, and its store tile shows a
+     dimmed "⏳ Returns ..." state - owned pieces stay equippable forever (the collectible FOMO loop).
+     **Store:** a new **Drops** tab in the Pro Shop segrow (live-drop pulsing dot) → accent-gradient
+     collection banners (kicker, LIVE NOW/Returns window, X/N progress bar, ✓ COMPLETE badge) → per-drop
+     item grids reusing the normal tile/preview/buy flow. Pack pool 208 → 221 in-window at ship.
+     Sprites via `scratchpad/drops_gen.py` (hats/eyewear/clubs/cape from shapes + existing-map transforms,
+     balls = shared base + palettes, patterns = f(x,y) code, auras = PXFX+CSS); system via `drops_sys.py`.
+  Verified end-to-end: registry integrity (0 missing/free items, Drop 2 = 5L/3E), window logic (summer
+  live Jul 22, others correctly out), buy-gating (witch refused/floppy+knight ok), pack-pool
+  inclusion/exclusion, all 20 new-item renders + thumbs, the Drops tab UI (6 banners, LIVE dot, spooky's
+  6 tiles all "Returns", summer's 7 priced), hair matrix (11 styles × hats × 17 colors), and a full
+  practice daily round + all shop sections regress with 0 page errors. Tunables: `DROPS` windows/items,
+  the `paintShaded` ±16/-15 depths, `PXG_HAIR/_HAT` maps. NOTE: the tiny in-course swing golfer keeps its
+  established scope (hairSTYLE differences + novelty hats don't render at 24px; colors do). Future drops:
+  add a `DROPS` entry + items - the gating/UI is fully data-driven.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
