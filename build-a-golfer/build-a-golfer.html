@@ -5813,6 +5813,17 @@ const BAG_CLUBS=[
 ];
 const BAG_TIER_PRICE=[7500,27500,75000];   // Tour / Pro / Signature (bagPrice x2 hike -> 15k/55k/150k; CS464 direct-buy premium, packs are the main path). [0]<9000 keeps tier-1 pool rarity = common.
 const BAG_TIER_LABEL=['Tour','Pro','Signature'];
+// which cosmetic club LOOKS belong under each club group on the store's Clubs page
+const BAG_COS_CLUBS={ driver:['driver','persimmon','excalibur'], woods:['wood'], hybrid:[],
+  irons:['iron'], wedges:['wedge'], putter:['putter','blade','wand','hockey','scepter','candycane'] };
+// each boost tier gets its own finish so every tier club LOOKS unique: Tour = brushed steel,
+// Pro = stealth carbon with an accent (teal on hybrids so woods/hybrids read apart), Signature = gold
+const BAG_SHAPE={driver:'driver',woods:'wood',hybrid:'wood',irons:'iron',wedges:'wedge',putter:'putter'};
+const BAG_TIER_PAL=[
+  {G:'#6f7884',H:'#c7cdd6',F:'#e8ebf0',S:'#f4f7fa',l:'#c9ced6'},
+  {G:'#14171c',H:'#e14a33',F:'#3d434d',S:'#e14a33',l:'#9aa2ad'},
+  {G:'#8a6a12',H:'#ffe98a',F:'#f2d24a',S:'#fff2c2',l:'#d9c26a'} ];
+const BAG_TIER_ACC={hybrid:'#35d6a0'};
 const BAG_BY={}; BAG_CLUBS.forEach(c=>BAG_BY[c.k]=c);
 function bagKey(club,tier){ return 'bag:'+club+':'+tier; }
 function bagTierOwned(club){ const own=coinState().owned; for(let t=3;t>=1;t--){ if(own[bagKey(club,t)]) return t; } return 0; }
@@ -5829,7 +5840,7 @@ function bagBuy(club,tier){ const c=BAG_BY[club]; tier=+tier; if(!c||tier<1||tie
 }
 function bagTileHTML(club,tier){ const c=BAG_BY[club]; const ti=c.tiers[tier-1]; const own=bagTierOwned(club);
   const active=(own===tier), owned=(own>=tier), price=bagPrice(tier), needPrev=(tier>1&&own<tier-1);
-  const thumb=`<span class="sthumb" style="color:var(--gold)"><span style="width:30px;height:30px">${ic(c.ic||'driver',{size:'30px'})}</span></span>`;
+  const thumb=pxBagThumb(club,tier);   // each tier club has its own unique pixel look
   let state,data;
   if(active){ state='eq'; data=''; }
   else if(owned){ state='own'; data=''; }
@@ -7807,6 +7818,14 @@ const CLUB_OPTS=[['driver','Driver'],['wood','3-Wood'],['iron','Iron'],['wedge',
 function pxClubThumb(id){ const map=PXG_CLUBS[id]||PXG_CLUBS.driver; const pal=PXG_CLUB_PAL[id]; const P={l:PXG_FIX.l,g:PXG_FIX.g,G:PXG_FIX.G,H:PXG_FIX.H,F:PXG_FIX.F,S:'#e8ebf0'};
   const ox=31,oy=39,W=14,H=18,px=5; const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
   for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ const c=(pal&&pal[row[x]])||P[row[x]]; if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
+  return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
+// boost-tier club thumbnail: the club group's own head shape rendered in that tier's unique finish
+// (Tour steel / Pro carbon+accent / Signature gold; hybrids get a teal Pro accent) - 18 distinct looks.
+function pxBagThumb(club,tier){ const map=PXG_CLUBS[BAG_SHAPE[club]]||PXG_CLUBS.driver;
+  const pal=Object.assign({g:PXG_FIX.g},BAG_TIER_PAL[tier-1]||BAG_TIER_PAL[0]);
+  if(BAG_TIER_ACC[club]){ pal.S=BAG_TIER_ACC[club]; if(tier===2) pal.H=BAG_TIER_ACC[club]; }   // hybrids: teal glint every tier so all 18 tiles are unique
+  const ox=31,oy=39,W=14,H=18,px=5; const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
+  for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
   return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
 // CS414: ball thumbnail (a zoomed crop of the teed-ball sprite; 'none' → an empty-outline placeholder)
 function pxBallThumb(id){ const map=PXG_BALL[id], pal=PXG_BALL_PAL[id];
@@ -10955,7 +10974,7 @@ function inShopCtx(){ return S.overlay==='shop' || S.screen==='setup'; }
 // The LOCKER (setup / edit-your-golfer screen) is equip-only: it shows only what you own, tap to equip. This split
 // keeps the two from bleeding into each other (owner: store = buy, locker = dress).
 function inShopStore(){ return S.overlay==='shop'; }
-function cosShopSec(cat){ if(cat==='fx') return 'effects'; if(cat==='hw'||cat==='ew'||cat==='club'||cat==='ball'||cat==='cleats') return 'accessories'; return 'apparel'; }
+function cosShopSec(cat){ if(cat==='fx') return 'effects'; if(cat==='club') return 'bag'; if(cat==='hw'||cat==='ew'||cat==='ball'||cat==='cleats') return 'accessories'; return 'apparel'; }
 function pxCurLook(){ return (inShopCtx() && typeof shopEffLook==='function')?shopEffLook():S.look; }
 function avatarHTML(){ return pxAvatarHTML(pxCurLook()); }
 
@@ -22069,7 +22088,7 @@ function overlayShop(screen){
   // ACCESSORIES - so the shop sells all of those (Apparel = colors + pattern, Accessories = headwear/eyewear).
   let sec=S.shopSec; if(sec==='packs'&&!packsOn()) sec='apparel'; if(sec!=='accessories'&&sec!=='effects'&&sec!=='owned'&&sec!=='bag'&&sec!=='packs'&&sec!=='drops') sec='apparel';
   const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];
-  const ACCS=[['hw','Headwear'],['ew','Eyewear'],['club','Clubs'],['ball','Balls'],['cleats','Cleats']];   // CS414: vintage/legendary clubs + balls + cleats
+  const ACCS=[['hw','Headwear'],['ew','Eyewear'],['ball','Balls'],['cleats','Cleats']];   // clubs (looks) live on the Clubs tab with the boost tiers
   const FXCATS=[['fx','Aura']];
   const cats = sec==='apparel'?APP : sec==='accessories'?ACCS : sec==='effects'?FXCATS : null;
   // CS422: NEW-item badges — a red dot on a section tab / category chip that holds an acquired-but-unviewed item.
@@ -22089,7 +22108,7 @@ function overlayShop(screen){
     <div class="segrow">
       ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
       <button data-sec="drops" class="${sec==='drops'?'on':''}">Drops${(function(){const ld=liveThemedDrop();return ld?'<span class="droplivedot" style="background:'+ld.accent+'"></span>':'';})()}</button>
-      <button data-sec="bag" class="${sec==='bag'?'on':''}">Clubs</button>
+      <button data-sec="bag" class="${sec==='bag'?'on':''}">Clubs${(sec!=='bag'&&cosCatNew('club')>0)?NDOT:''}</button>
       <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel${secDot('apparel')}</button>
       <button data-sec="accessories" class="${sec==='accessories'?'on':''}">Accessories${secDot('accessories')}</button>
       <button data-sec="effects" class="${sec==='effects'?'on':''}">Effects${secDot('effects')}</button>
@@ -22165,7 +22184,15 @@ function overlayShop(screen){
   try{ ov.appendChild(accBoostSummaryNode()); }catch(e){}   // live "equipment boost" summary from your worn gear
   const grid=$(`<div class="sgrid"></div>`); const tiles=[];
   if(sec==='apparel'||sec==='accessories'||sec==='effects'){ cosmeticItems(cat).forEach(o=>tiles.push(cosTileHTML(cat,o))); }
-  else if(sec==='bag'){ BAG_CLUBS.forEach(c=>{ tiles.push(`<div class="bag-hdr" style="grid-column:1/-1;margin:8px 0 -2px;font:800 12px/1 var(--body);letter-spacing:.03em"><span style="color:var(--gold)">${esc(c.name)}</span> <span class="muted" style="font-weight:600">· ${esc(c.sub)}</span></div>`); c.tiers.forEach((ti,i)=>tiles.push(bagTileHTML(c.k,i+1))); }); }
+  else if(sec==='bag'){   // CLUBS: each club group = its 3 boost tiers + the cosmetic club LOOKS that belong to it
+    const cc=cosmeticItems('club')||[];
+    const miniLbl=(txt,col)=>`<div style="grid-column:1/-1;margin:3px 0 -4px;font:700 10.5px/1 var(--body);letter-spacing:.07em;text-transform:uppercase;color:${col}">${txt}</div>`;
+    BAG_CLUBS.forEach(c=>{ tiles.push(`<div class="bag-hdr" style="grid-column:1/-1;margin:8px 0 -2px;font:800 12px/1 var(--body);letter-spacing:.03em"><span style="color:var(--gold)">${esc(c.name)}</span> <span class="muted" style="font-weight:600">· ${esc(c.sub)}</span></div>`);
+      tiles.push(miniLbl('Performance · stat boosts','#c9a520'));
+      c.tiers.forEach((ti,i)=>tiles.push(bagTileHTML(c.k,i+1)));
+      const looks=(BAG_COS_CLUBS[c.k]||[]).map(id=>cc.find(o=>o.id===id)).filter(Boolean).map(o=>cosTileHTML('club',o)).filter(h=>h);
+      if(looks.length){ tiles.push(miniLbl('Style · swing looks','#7fd3b0')); tiles.push(...looks); }
+    }); }
   else {  // My Items: everything you've unlocked (colors, patterns, headwear, eyewear, clubs) beyond the free basics
     COS_CATS.forEach(c=>{ cosmeticItems(c.k).forEach(o=>{ if(cosOwned(c.k,o.id)&&!FREE_COSMETICS[cosKey(c.k,o.id)]) tiles.push(cosTileHTML(c.k,o)); }); });
     BAG_CLUBS.forEach(c=>{ const t=bagTierOwned(c.k); if(t>0) tiles.push(bagTileHTML(c.k,t)); });
@@ -22188,6 +22215,7 @@ function overlayShop(screen){
   ov.appendChild(grid);
   // CS422: viewing a category (or My Items) clears its NEW badges on the next render
   if(sec==='apparel'||sec==='accessories'||sec==='effects'){ markCatSeen(cat); }
+  else if(sec==='bag'){ markCatSeen('club'); }
   else if(sec==='owned'){ COS_CATS.forEach(c=>markCatSeen(c.k)); }
   ov.appendChild($(`<div class="small muted center" style="margin-top:14px">Tap a locked item to preview it on your golfer, then confirm to buy. <span style="color:#7fd3b0">Items you own are marked green</span> — equip them in your Closet.</div>`));
   ov.appendChild($(`<button class="btn red" style="margin-top:10px">Done</button>`));
