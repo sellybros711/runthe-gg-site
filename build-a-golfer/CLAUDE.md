@@ -12498,3 +12498,31 @@ Single self-contained file — just open `build-a-golfer.html` in a browser, or
 serve the folder with any static server (e.g. `python3 -m http.server`) and open
 it. No build step, no dependencies. Google Fonts (Anton/Barlow) need network; if
 blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hosting.
+
+- **CLUBS MENU POLISH — compact Active Boosts, favorite club, hybrids retired (owner IMG_8612: "The
+  active boost section is way too much reading. You should be able to make any club your favorite club
+  which makes it appear as your golfers shown club in the profile. Can we enhance this section and also I
+  want to limit the clubs to just driver, fairway woods, iron, wedge, and putter").** Three parts:
+  1. **Compact boost summary** (`accBoostSummaryNode`): one line ("Active boosts · +N total · capped at
+     +20 · Career only") + the per-skill chips stay visible; the per-item CLUBS/APPAREL breakdown + the
+     "Daily & ranked stay neutral" note move behind a native `<details>` "What's boosting you" expander
+     (open state persisted on `S.boostDetOpen` so re-renders don't snap it shut). Display + math still
+     share the same rows (bagBoostRows/cosmeticBoostRows), so they can't drift.
+  2. **Favorite club** (`bagFavSlot`/`bagSetFavorite`): any bag slot can be starred as the favorite - its
+     equipped look is the club the profile golfer shows off (`look.club`, cloud-synced with identity).
+     `bagEquipLook` now only moves the shown club when the equip lands in the favorite's own slot (no more
+     stealing the held club by equipping a wedge look). UI: a gold ★ marker on the favorite slot's card
+     (`.stile.fav::after`) + a "★ Favorite club / ☆ Make favorite" button in the slot detail. Default
+     favorite = the driver slot (matches DEFLOOK).
+  3. **Hybrids retired**: `BAG_CLUBS`/`BAG_COS_CLUBS`/`BAG_SLOT_STOCK`/`BAG_SHAPE` are now Driver /
+     Fairway Woods / Irons / Wedges / Putter only. `reconcileCoins` refunds any owned hybrid bag tiers
+     ONCE as bonus coins (a `hybRef` flag rides `mergeCoins` - and bonus is MAX-merged - so a stale
+     device union can never stack a second refund; post-flag stray keys are just deleted). Orphan hybrid
+     entries cleaned (`BAG_TIER_ACC` emptied); old saves' `look.clubs.hybrid`/`bagTiers.hybrid` keys are
+     inert.
+  Verified in Playwright: 5-slot bag; refund fires once (70,000 for owned tiers 1+2) with hybRef set,
+  stray keys later delete with NO second refund, mergeCoins carries hybRef; the favorite flow (equip in a
+  non-favorite slot never steals the held club, equip in the favorite slot follows, ★ moves it, the UI
+  button + tile marker work); the compact summary renders chips + a closed-by-default expander whose open
+  state persists. Full regression (title→setup→draft→build→round→result + shop sections) + the pack-only
+  economy suite both green, 0 page errors. Deployed to /golf (ac2ecea).
