@@ -230,10 +230,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   background:repeating-linear-gradient(180deg,var(--endzone) 0 6px,var(--endzone2) 6px 12px); border-left:3px solid #fff;}
 .hero-field .scrim{position:absolute; inset:0; background:linear-gradient(180deg,transparent 55%,rgba(10,20,32,.35));}
 /* attract-mode billboard sprites — stand up out of the raked field, perspective auto-scales depth */
-.hchip{position:absolute; width:15px; height:26px; transform:translate(-50%,-100%) rotateX(-62deg);
-  transform-origin:50% 100%; filter:drop-shadow(0 2px 2px rgba(0,0,0,.45)); will-change:left,top;}
-.h-ball{position:absolute; width:11px; height:8px; background:#7c451a; border:1px solid #43230d; border-radius:50%/62%;
-  transform:translate(-50%,-100%) rotateX(-62deg); transform-origin:50% 100%; z-index:7;
+.hchip{position:absolute; width:26px; height:46px; transform:translate(-50%,-100%) rotateX(-36deg);
+  transform-origin:50% 100%; filter:drop-shadow(0 3px 3px rgba(0,0,0,.5)); will-change:left,top;}
+.h-ball{position:absolute; width:16px; height:11px; background:#7c451a; border:1px solid #43230d; border-radius:50%/62%;
+  transform:translate(-50%,-100%) rotateX(-36deg); transform-origin:50% 100%; z-index:7;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.6));}
 .h-td{position:absolute; left:50%; top:40%; transform:translate(-50%,-50%) scale(.82); font-family:var(--pix);
   font-size:21px; color:#ffcf4d; opacity:0; z-index:9; letter-spacing:1px;
@@ -422,9 +422,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   font-size:11px; color:#8fa0b5; letter-spacing:1px;}
 /* field strip — broadcast-angle attract field that recedes to a centered goalpost */
 .field-strip{ position:relative; z-index:2; flex:1 1 auto; min-height:238px; margin:14px -16px 0;
-  overflow:hidden; border-top:3px solid rgba(255,255,255,.5); perspective:560px; perspective-origin:50% 42%;
-  background:linear-gradient(180deg,#0a1826 0%, #103524 34%, #0b2819 100%);}
-.field-strip .fs-stands{ position:absolute; left:0; right:0; top:0; height:50%; z-index:0; pointer-events:none;
+  overflow:hidden; border-top:3px solid rgba(255,255,255,.5); perspective:820px; perspective-origin:50% 22%;
+  background:linear-gradient(180deg,#0a1826 0%, #0e2f20 20%, #0b2819 100%);}
+.field-strip .fs-stands{ position:absolute; left:0; right:0; top:0; height:26%; z-index:0; pointer-events:none;
   background:
     radial-gradient(88% 90% at 50% 100%, rgba(150,200,255,.16), transparent 70%),
     radial-gradient(34% 60% at 50% 96%, rgba(255,240,190,.16), transparent 72%),
@@ -433,8 +433,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     linear-gradient(180deg,#0a1826 0%, #0c2318 72%, #103018 100%);
   -webkit-mask:linear-gradient(180deg,#000 62%,transparent);
           mask:linear-gradient(180deg,#000 62%,transparent);}
-.field-strip .fs-plane{ position:absolute; left:-45%; right:-45%; top:-4%; bottom:-36%; transform-style:preserve-3d;
-  transform:rotateX(62deg); transform-origin:50% 100%;
+.field-strip .fs-plane{ position:absolute; left:-45%; right:-45%; top:-4%; bottom:-30%; transform-style:preserve-3d;
+  transform:rotateX(36deg); transform-origin:50% 100%;
   background:repeating-linear-gradient(0deg, #2f7d42 0 30px, #2a7440 30px 60px);
   box-shadow:inset 0 0 130px 34px rgba(4,14,8,.6);}
 .field-strip .fs-yl{ position:absolute; left:0; right:0; height:3px; background:rgba(255,255,255,.5);}
@@ -442,8 +442,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   background:repeating-linear-gradient(90deg,#1e5c33 0 12px,#1a5230 12px 24px); border-bottom:3px solid #fff;}
 .field-strip .fs-num{ position:absolute; transform:translate(-50%,-50%); font-family:var(--pix); font-weight:800;
   color:rgba(238,243,251,.72); text-shadow:0 2px 0 rgba(0,0,0,.4); letter-spacing:1px; line-height:1;}
-.field-strip .fs-goal{ position:absolute; left:50%; top:9%; width:62px; z-index:3;
-  transform:translate(-50%,-100%) rotateX(-62deg); transform-origin:50% 100%;}
+.field-strip .fs-goal{ position:absolute; left:50%; top:10%; width:74px; z-index:3;
+  transform:translate(-50%,-100%) rotateX(-36deg); transform-origin:50% 100%;}
 .field-strip .fs-goal svg{ width:100%; display:block; filter:drop-shadow(0 3px 0 rgba(0,0,0,.4));}
 /* bottom nav */
 .home-nav{ position:relative; z-index:3; display:grid; grid-template-columns:repeat(3,1fr); gap:6px;
@@ -981,7 +981,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   /* ---------- play a snap (animated) ---------- */
   let busy=false;
-  const sleep = ms => new Promise(r=>setTimeout(r,ms));
+  const PACE = 1.6;   // global slow-mo on the play-out — bump to make snaps play out slower
+  const sleep = ms => new Promise(r=>setTimeout(r, ms*PACE));
   function disableCalls(v){ document.querySelectorAll('#calls .tile').forEach(b=>b.disabled=v); el('kickBtn').disabled = v || el('kickBtn').disabled; }
 
   async function doSnap(tileId){
@@ -1006,7 +1007,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     e.style.left=xPct+'%'; e.style.top=(yPct==null?50:yPct)+'%';
     if(cls.indexOf('anim-carrier')>=0) e.innerHTML=MAN_SVG; else if(extra) e.textContent=extra;
     el('pitch').appendChild(e); return e; }
-  function move(e, xPct, yPct, ms){ if(ms!=null) e.style.transition=`left ${ms}ms cubic-bezier(.4,.05,.4,1), top ${ms}ms cubic-bezier(.4,.05,.4,1)`;
+  function move(e, xPct, yPct, ms){ if(ms!=null){ ms*=PACE; e.style.transition=`left ${ms}ms cubic-bezier(.4,.05,.4,1), top ${ms}ms cubic-bezier(.4,.05,.4,1)`; }
     // force reflow so the transition takes
     void e.offsetWidth; e.style.left=xPct+'%'; if(yPct!=null) e.style.top=yPct+'%'; }
   function clearFx(){ document.querySelectorAll('#field .anim-ball,#field .anim-carrier,#field .burst,#field .flash').forEach(n=>n.remove()); clearRoute(); }
@@ -1024,7 +1025,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   /* movement helpers that animate the REAL formation players */
   function pos(el){ return { x:parseFloat(el.style.left)||0, y:parseFloat(el.style.top)||0 }; }
-  function step(el, x, y, ms, ease){ if(!el) return; const cx=pos(el).x;
+  function step(el, x, y, ms, ease){ if(!el) return; const cx=pos(el).x; ms*=PACE;
     if(x>cx+0.4) el.classList.remove('faceL'); else if(x<cx-0.4) el.classList.add('faceL');
     el.classList.add('moving');
     el.style.transition=`left ${ms}ms ${ease||'ease-in-out'}, top ${ms}ms ${ease||'ease-in-out'}`;
