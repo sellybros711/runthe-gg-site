@@ -229,25 +229,18 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .hero-field .ez{position:absolute; top:0;right:0;bottom:0;width:12%;
   background:repeating-linear-gradient(180deg,var(--endzone) 0 6px,var(--endzone2) 6px 12px); border-left:3px solid #fff;}
 .hero-field .scrim{position:absolute; inset:0; background:linear-gradient(180deg,transparent 55%,rgba(10,20,32,.35));}
-.hchip{position:absolute; width:13px;height:16px; transform:translate(-50%,-60%);
-  filter:drop-shadow(0 1px 0 rgba(0,0,0,.4));}
-.h-ball{position:absolute; width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;
-  border-left:10px solid #6b3d16; transform:translate(-50%,-50%); z-index:6; filter:drop-shadow(0 1px 1px rgba(0,0,0,.6));
-  animation:hball 4.8s linear infinite;}
-.h-wr{z-index:5; animation:hwr 4.8s linear infinite;}
-.h-def2{z-index:4; animation:hdef 4.8s linear infinite;}
-.h-td{position:absolute; right:2.5%; top:16%; font-family:var(--pix); font-size:11px; color:#ffcf4d; opacity:0; z-index:7;
-  text-shadow:0 2px 0 rgba(0,0,0,.5); animation:htd 4.8s linear infinite;}
-@keyframes hball{0%,9%{left:20%;top:52%;opacity:1}15%{left:17%;top:52%}19%{left:19%;top:50%}
-  34%{left:52%;top:22%}48%{left:78%;top:40%}64%{left:92%;top:40%}70%{left:92%;top:40%;opacity:1}
-  75%{opacity:0}98%{left:92%;opacity:0}99%{left:20%;top:52%;opacity:0}100%{opacity:1}}
-@keyframes hwr{0%{left:24%;top:30%}48%{left:78%;top:40%}64%{left:92%;top:40%}72%{left:94%;top:40%}
-  98%{left:94%;top:40%}99%{left:24%;top:30%}100%{left:24%;top:30%}}
-@keyframes hdef{0%{left:20%;top:25%}48%{left:71%;top:37%}64%{left:85%;top:40%}98%{left:85%;top:40%}
-  99%{left:20%;top:25%}100%{left:20%;top:25%}}
-@keyframes htd{0%,61%{opacity:0;transform:translateY(2px) scale(.8)}67%{opacity:1;transform:translateY(-4px) scale(1.12)}
-  81%{opacity:1;transform:translateY(-4px) scale(1)}87%{opacity:0}100%{opacity:0}}
-@media (prefers-reduced-motion: reduce){ .h-ball,.h-wr,.h-def2,.h-td{animation:none;} .h-td{opacity:1;} }
+/* attract-mode billboard sprites — stand up out of the raked field, perspective auto-scales depth */
+.hchip{position:absolute; width:15px; height:26px; transform:translate(-50%,-100%) rotateX(-62deg);
+  transform-origin:50% 100%; filter:drop-shadow(0 2px 2px rgba(0,0,0,.45)); will-change:left,top;}
+.h-ball{position:absolute; width:11px; height:8px; background:#7c451a; border:1px solid #43230d; border-radius:50%/62%;
+  transform:translate(-50%,-100%) rotateX(-62deg); transform-origin:50% 100%; z-index:7;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.6));}
+.h-td{position:absolute; left:50%; top:40%; transform:translate(-50%,-50%) scale(.82); font-family:var(--pix);
+  font-size:21px; color:#ffcf4d; opacity:0; z-index:9; letter-spacing:1px;
+  text-shadow:0 0 12px rgba(255,180,40,.6), 0 3px 0 rgba(0,0,0,.7);
+  transition:opacity .22s ease, transform .22s ease;}
+.h-td.show{opacity:1; transform:translate(-50%,-50%) scale(1.08);}
+@media (prefers-reduced-motion: reduce){ .h-td{opacity:1;} }
 
 .daily-title{text-align:center; margin:2px 0 4px;}
 .daily-title .dt{font-family:var(--pix); font-size:30px; letter-spacing:2px; color:var(--gold);
@@ -422,18 +415,31 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .play-now .arw{ font-size:16px;}
 .howto-link{ display:block; margin:16px auto 2px; background:transparent; border:0; font-family:var(--pix);
   font-size:11px; color:#8fa0b5; letter-spacing:1px;}
-/* field strip */
-.field-strip{ position:relative; z-index:2; flex:1 1 auto; min-height:210px; max-height:340px; margin:16px -16px 0; overflow:hidden;
-  border-top:3px solid rgba(255,255,255,.55);
-  background:linear-gradient(180deg,#348a48,#256b37);}
-.field-strip .fs-ez{ position:absolute; top:0; right:0; bottom:0; width:14%; z-index:1;
-  background:repeating-linear-gradient(180deg,var(--endzone) 0 7px,var(--endzone2) 7px 14px); border-left:3px solid #fff;}
-.field-strip .fs-yl{ position:absolute; top:0; bottom:0; width:2px; margin-left:-1px; background:rgba(255,255,255,.4);}
-.field-strip .fs-num{ position:absolute; transform:translateX(-50%); font-family:var(--pix); font-weight:800;
-  font-size:15px; color:rgba(255,255,255,.6); letter-spacing:1px;}
-.field-strip .fs-num.top{ top:9%; } .field-strip .fs-num.bot{ bottom:9%; }
-.field-strip .gp{ position:absolute; left:94%; top:50%; transform:translate(-50%,-50%); width:38px; z-index:2;}
-.field-strip .gp svg{ width:100%; display:block; filter:drop-shadow(0 3px 0 rgba(0,0,0,.35));}
+/* field strip — broadcast-angle attract field that recedes to a centered goalpost */
+.field-strip{ position:relative; z-index:2; flex:1 1 auto; min-height:238px; margin:14px -16px 0;
+  overflow:hidden; border-top:3px solid rgba(255,255,255,.5); perspective:560px; perspective-origin:50% 42%;
+  background:linear-gradient(180deg,#0a1826 0%, #103524 34%, #0b2819 100%);}
+.field-strip .fs-stands{ position:absolute; left:0; right:0; top:0; height:50%; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(88% 90% at 50% 100%, rgba(150,200,255,.16), transparent 70%),
+    radial-gradient(34% 60% at 50% 96%, rgba(255,240,190,.16), transparent 72%),
+    repeating-linear-gradient(90deg, rgba(240,205,130,.05) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 6px),
+    linear-gradient(180deg,#0a1826 0%, #0c2318 72%, #103018 100%);
+  -webkit-mask:linear-gradient(180deg,#000 62%,transparent);
+          mask:linear-gradient(180deg,#000 62%,transparent);}
+.field-strip .fs-plane{ position:absolute; left:-45%; right:-45%; top:-4%; bottom:-36%; transform-style:preserve-3d;
+  transform:rotateX(62deg); transform-origin:50% 100%;
+  background:repeating-linear-gradient(0deg, #2f7d42 0 30px, #2a7440 30px 60px);
+  box-shadow:inset 0 0 130px 34px rgba(4,14,8,.6);}
+.field-strip .fs-yl{ position:absolute; left:0; right:0; height:3px; background:rgba(255,255,255,.5);}
+.field-strip .fs-ezf{ position:absolute; left:0; right:0; top:0; height:9%;
+  background:repeating-linear-gradient(90deg,#1e5c33 0 12px,#1a5230 12px 24px); border-bottom:3px solid #fff;}
+.field-strip .fs-num{ position:absolute; transform:translate(-50%,-50%); font-family:var(--pix); font-weight:800;
+  color:rgba(238,243,251,.72); text-shadow:0 2px 0 rgba(0,0,0,.4); letter-spacing:1px; line-height:1;}
+.field-strip .fs-goal{ position:absolute; left:50%; top:9%; width:62px; z-index:3;
+  transform:translate(-50%,-100%) rotateX(-62deg); transform-origin:50% 100%;}
+.field-strip .fs-goal svg{ width:100%; display:block; filter:drop-shadow(0 3px 0 rgba(0,0,0,.4));}
 /* bottom nav */
 .home-nav{ position:relative; z-index:3; display:grid; grid-template-columns:repeat(3,1fr); gap:6px;
   margin:0 -16px; padding:16px 8px calc(14px + env(safe-area-inset-bottom));
@@ -511,28 +517,19 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       <button class="howto-link" id="howtoLink">HOW TO PLAY ›</button>
 
       <div class="field-strip" aria-hidden="true">
-        <div class="fs-ez"></div>
-        <div class="gp">
-          <svg viewBox="0 0 60 70" shape-rendering="crispEdges">
-            <rect x="27" y="30" width="6" height="38" fill="#e6b32a"/>
-            <rect x="14" y="26" width="32" height="5" fill="#e6b32a"/>
-            <rect x="14" y="4" width="5" height="24" fill="#e6b32a"/>
-            <rect x="41" y="4" width="5" height="24" fill="#e6b32a"/>
-            <rect x="24" y="66" width="12" height="4" fill="#c1503f"/>
-          </svg>
+        <div class="fs-stands"></div>
+        <div class="fs-plane" id="fsPlane">
+          <div class="fs-ezf"></div>
+          <div class="fs-goal">
+            <svg viewBox="0 0 60 74" shape-rendering="crispEdges">
+              <rect x="27" y="34" width="6" height="40" fill="#e6b32a"/>
+              <rect x="12" y="30" width="36" height="5" fill="#e6b32a"/>
+              <rect x="12" y="4" width="5" height="27" fill="#e6b32a"/>
+              <rect x="43" y="4" width="5" height="27" fill="#e6b32a"/>
+            </svg>
+          </div>
+          <!-- yard lines, numbers, players + ball injected by buildAttract() -->
         </div>
-        <!-- looping play: deep-shot touchdown -->
-        <span class="hchip off" style="left:16%;top:34%"></span>
-        <span class="hchip off" style="left:16%;top:50%"></span>
-        <span class="hchip off" style="left:16%;top:66%"></span>
-        <span class="hchip off" style="left:11%;top:52%"></span>
-        <span class="hchip off" style="left:10%;top:66%"></span>
-        <span class="hchip def" style="left:22%;top:40%"></span>
-        <span class="hchip def" style="left:22%;top:58%"></span>
-        <span class="hchip def" style="left:30%;top:64%"></span>
-        <span class="hchip off h-wr" style="left:20%;top:30%"></span>
-        <span class="hchip def h-def2" style="left:16%;top:25%"></span>
-        <div class="h-ball"></div>
         <div class="h-td">TOUCHDOWN!</div>
       </div>
 
@@ -1330,19 +1327,65 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     if(navigator.share){ navigator.share({title:'RunTheDrive', text}).catch(()=>{}); }
     else { navigator.clipboard && navigator.clipboard.writeText(text).then(()=>mini('Invite copied!')).catch(()=>mini('Copy failed')); }
   }
-  function numberHomeField(){
-    const fs = document.querySelector('.field-strip'); if(!fs) return;
-    const anchor = fs.querySelector('.fs-ez');   // keep lines/numbers behind the endzone
-    const nums = [[8,'40'],[20,'50'],[32,'40'],[44,'30'],[56,'20'],[68,'10']];
+  /* ---- Home attract loop: a full formation drives downfield for a TD on the broadcast field ---- */
+  function lerp(a,b,t){ return a+(b-a)*t; }
+  function sampleRoute(r,t){
+    if(t<=r[0].t) return r[0];
+    for(let i=1;i<r.length;i++){ if(t<=r[i].t){ const a=r[i-1],b=r[i],k=(t-a.t)/((b.t-a.t)||1);
+      return {x:lerp(a.x,b.x,k), y:lerp(a.y,b.y,k)}; } }
+    return r[r.length-1];
+  }
+  function buildAttract(){
+    const plane = el('fsPlane'); if(!plane) return;
+    // painted yard lines + numbers (children of the raked plane, so they recede)
+    const rows = [[86,'50',22],[72,'40',18],[58,'30',15],[44,'20',13],[30,'10',11]];
     const frag = document.createDocumentFragment();
-    for(let x=6; x<=80; x+=6){ const l=document.createElement('div'); l.className='fs-yl'; l.style.left=x+'%'; frag.appendChild(l); }
-    for(const [x,n] of nums){ for(const pos of ['top','bot']){
-      const d=document.createElement('div'); d.className='fs-num '+pos; d.style.left=x+'%'; d.textContent=n; frag.appendChild(d); } }
-    fs.insertBefore(frag, anchor || fs.firstChild);
+    for(const [y] of rows){ const l=document.createElement('div'); l.className='fs-yl'; l.style.top=y+'%'; frag.appendChild(l); }
+    for(const [y,n,fs] of rows){ for(const x of [33,67]){
+      const d=document.createElement('div'); d.className='fs-num'; d.style.top=y+'%'; d.style.left=x+'%';
+      d.style.fontSize=fs+'px'; d.textContent=n; frag.appendChild(d); } }
+    plane.appendChild(frag);
+
+    // formation routes (plane %: y=100 near camera, y=0 far goal; offense drives UP)
+    const movers=[]; const add=(cls,r)=>{ const c=document.createElement('span'); c.className='hchip '+cls;
+      c.innerHTML=MAN_SVG; plane.appendChild(c); movers.push({el:c,r}); return c; };
+    // O-line — hold the block, drift up a touch
+    [40,46,52,58,64].forEach(x=> add('off',[{t:0,x,y:74},{t:.34,x,y:72},{t:.72,x,y:66},{t:1,x,y:66}]));
+    add('off qb',[{t:0,x:52,y:80},{t:.12,x:52,y:85},{t:.34,x:52,y:85},{t:1,x:52,y:84}]);       // QB snap + drop
+    add('off',[{t:0,x:46,y:86},{t:.4,x:42,y:80},{t:1,x:38,y:74}]);                                // RB check-release
+    add('off',[{t:0,x:20,y:72},{t:.5,x:16,y:36},{t:1,x:13,y:10}]);                                // WR-L clearout
+    add('off',[{t:0,x:66,y:72},{t:.5,x:56,y:52},{t:1,x:50,y:40}]);                                // TE drag
+    const wrRoute=[{t:0,x:80,y:72},{t:.34,x:74,y:48},{t:.5,x:70,y:40},{t:.72,x:56,y:7},{t:1,x:56,y:7}];
+    add('off',wrRoute);                                                                           // WR-R — the TD catch
+    // defense — rush + coverage that trails the play
+    add('def',[{t:0,x:42,y:66},{t:.5,x:46,y:60},{t:1,x:52,y:54}]);
+    add('def',[{t:0,x:52,y:66},{t:.5,x:54,y:60},{t:1,x:56,y:52}]);
+    add('def',[{t:0,x:62,y:66},{t:.5,x:60,y:62},{t:1,x:58,y:56}]);
+    add('def',[{t:0,x:44,y:58},{t:.5,x:50,y:54},{t:1,x:54,y:46}]);
+    add('def',[{t:0,x:60,y:58},{t:.5,x:56,y:52},{t:1,x:56,y:44}]);
+    add('def',[{t:0,x:20,y:54},{t:.5,x:17,y:36},{t:1,x:14,y:12}]);                                // CB on WR-L
+    add('def',[{t:0,x:80,y:54},{t:.4,x:75,y:46},{t:.72,x:61,y:11},{t:1,x:61,y:11}]);              // CB trailing WR-R
+    add('def',[{t:0,x:50,y:32},{t:.5,x:54,y:22},{t:.72,x:59,y:10},{t:1,x:59,y:10}]);              // safety over the top
+
+    const ball=document.createElement('div'); ball.className='h-ball'; plane.appendChild(ball);
+    const td=document.querySelector('.field-strip .h-td');
+    const LOOP=5600; let start=null;
+    function frame(ts){
+      if(start==null) start=ts;
+      const t=((ts-start)%LOOP)/LOOP;
+      for(const m of movers){ const p=sampleRoute(m.r,t); m.el.style.left=p.x+'%'; m.el.style.top=p.y+'%'; }
+      let bx,by;
+      if(t<.34){ bx=52; by=84; }                                   // in QB's hands
+      else if(t<.5){ const k=(t-.34)/.16; bx=lerp(52,70,k); by=lerp(84,40,k); }  // pass in flight
+      else { const p=sampleRoute(wrRoute,t); bx=p.x; by=p.y; }      // tucked by WR-R
+      ball.style.left=bx+'%'; ball.style.top=by+'%';
+      if(td){ td.classList.toggle('show', t>.72 && t<.9); }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
   }
   function boot(){
-    document.querySelectorAll('.field-strip .hchip').forEach(c=>{ c.innerHTML=MAN_SVG; });
-    numberHomeField();
+    buildAttract();
     refreshChips();
     renderInfo(DATE);
 
