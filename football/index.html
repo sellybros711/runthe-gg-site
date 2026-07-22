@@ -126,9 +126,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .chip.down.faceL .manart{ transform:scaleX(-1) rotate(78deg); }
 @media (prefers-reduced-motion: reduce){ .chip.moving .manart,.anim-carrier.moving .manart{ animation:none; } }
 /* team palettes drive the sprite's fill vars */
-.chip.off,.hchip.off,.anim-carrier{ --jersey:#f4c93a; --helmet:#8a6a1a; --pants:#efe2b0; --skin:#e7b48a; --sock:#3a2c0a; }
-.chip.def,.hchip.def,.anim-carrier.def{ --jersey:#33425e; --helmet:#e2e8f2; --pants:#243248; --skin:#cdb59a; --sock:#141d2e; }
-.chip.qb{ --jersey:#ffe08a; }
+.chip.off,.hchip.off,.anim-carrier{ --jersey:#f4c93a; --helmet:#8a6a1a; --pants:#efe2b0; --skin:#e7b48a; --sock:#2a2008; --stripe:#fff6dc; --num:#5a3f08; }
+.chip.def,.hchip.def,.anim-carrier.def{ --jersey:#33425e; --helmet:#e2e8f2; --pants:#26344c; --skin:#cdb59a; --sock:#141d2e; --stripe:#2b3a52; --num:#dfe6f2; }
+.chip.qb{ --jersey:#ffe08a; --num:#5a3f08; }
 .side-tag{position:absolute; left:6px; top:50%; transform:translateY(-50%);
   font-family:var(--pix); font-size:8px; color:var(--grass-line); writing-mode:vertical-rl;}
 .field-badge{position:absolute; left:8px; top:8px; z-index:6; display:flex; gap:6px; flex-wrap:wrap; max-width:70%;}
@@ -398,14 +398,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 /* field strip */
 .field-strip{ position:relative; z-index:2; flex:1 1 auto; min-height:210px; max-height:340px; margin:16px -16px 0; overflow:hidden;
   border-top:3px solid rgba(255,255,255,.55);
-  background:
-    repeating-linear-gradient(90deg, rgba(255,255,255,.16) 0 3px, transparent 3px 46px),
-    linear-gradient(180deg,#2f7d3f,#215f30);}
+  background:linear-gradient(180deg,#348a48,#256b37);}
 .field-strip .fs-ez{ position:absolute; top:0; right:0; bottom:0; width:14%; z-index:1;
   background:repeating-linear-gradient(180deg,var(--endzone) 0 7px,var(--endzone2) 7px 14px); border-left:3px solid #fff;}
-.field-strip .gp{ position:absolute; left:93%; top:12px; transform:translateX(-50%); width:44px; z-index:2;}
+.field-strip .fs-yl{ position:absolute; top:0; bottom:0; width:2px; margin-left:-1px; background:rgba(255,255,255,.4);}
+.field-strip .fs-num{ position:absolute; transform:translateX(-50%); font-family:var(--pix); font-weight:800;
+  font-size:15px; color:rgba(255,255,255,.6); letter-spacing:1px;}
+.field-strip .fs-num.top{ top:9%; } .field-strip .fs-num.bot{ bottom:9%; }
+.field-strip .gp{ position:absolute; left:94%; top:50%; transform:translate(-50%,-50%); width:38px; z-index:2;}
 .field-strip .gp svg{ width:100%; display:block; filter:drop-shadow(0 3px 0 rgba(0,0,0,.35));}
-.field-strip .hash{ position:absolute; height:3px; width:10px; background:rgba(255,255,255,.4);}
 /* bottom nav */
 .home-nav{ position:relative; z-index:3; display:grid; grid-template-columns:repeat(3,1fr); gap:6px;
   margin:0 -16px; padding:16px 8px calc(14px + env(safe-area-inset-bottom));
@@ -725,16 +726,19 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
   // Little pixel man: helmet, jersey with shoulders/arms, split legs. Every fill
   // reads a CSS var so one sprite serves both teams (and the QB) by palette.
-  const MAN_SVG = `<svg class="manart" viewBox="0 0 8 12" shape-rendering="crispEdges" aria-hidden="true">`
-    + `<rect x="2" y="0" width="4" height="3" fill="var(--helmet)"/>`
-    + `<rect x="3" y="2" width="2" height="1" fill="var(--skin,#e7b48a)"/>`
-    + `<rect x="1" y="3" width="6" height="4" fill="var(--jersey)"/>`
-    + `<rect x="0" y="4" width="1" height="3" fill="var(--jersey)"/>`
-    + `<rect x="7" y="4" width="1" height="3" fill="var(--jersey)"/>`
-    + `<rect x="1" y="7" width="2" height="3" fill="var(--pants)"/>`
-    + `<rect x="5" y="7" width="2" height="3" fill="var(--pants)"/>`
-    + `<rect x="1" y="10" width="2" height="2" fill="var(--sock,#222)"/>`
-    + `<rect x="5" y="10" width="2" height="2" fill="var(--sock,#222)"/>`
+  const MAN_SVG = `<svg class="manart" viewBox="0 0 10 14" shape-rendering="crispEdges" aria-hidden="true">`
+    + `<rect x="2" y="0" width="6" height="3" fill="var(--helmet)"/>`         // helmet
+    + `<rect x="4" y="0" width="2" height="3" fill="var(--stripe,#fff)"/>`    // helmet stripe
+    + `<rect x="3" y="3" width="4" height="1" fill="var(--skin,#e7b48a)"/>`   // facemask/face
+    + `<rect x="1" y="4" width="8" height="2" fill="var(--jersey)"/>`         // shoulder pads
+    + `<rect x="0" y="5" width="1" height="3" fill="var(--jersey)"/>`         // left arm
+    + `<rect x="9" y="5" width="1" height="3" fill="var(--jersey)"/>`         // right arm
+    + `<rect x="2" y="6" width="6" height="3" fill="var(--jersey)"/>`         // torso
+    + `<rect x="4" y="6" width="2" height="2" fill="var(--num,#fff)"/>`       // jersey number
+    + `<rect x="2" y="9" width="2" height="3" fill="var(--pants)"/>`          // left leg
+    + `<rect x="6" y="9" width="2" height="3" fill="var(--pants)"/>`          // right leg
+    + `<rect x="2" y="12" width="2" height="2" fill="var(--sock,#222)"/>`     // left cleat
+    + `<rect x="6" y="12" width="2" height="2" fill="var(--sock,#222)"/>`     // right cleat
     + `</svg>`;
   function clearChips(){ document.querySelectorAll('#field .chip').forEach(c=>c.remove()); }
   function placeChip(cls, xPct, yPct){ const c=document.createElement('div'); c.className='chip '+cls;
@@ -1224,8 +1228,19 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     if(navigator.share){ navigator.share({title:'RunTheDrive', text}).catch(()=>{}); }
     else { navigator.clipboard && navigator.clipboard.writeText(text).then(()=>mini('Invite copied!')).catch(()=>mini('Copy failed')); }
   }
+  function numberHomeField(){
+    const fs = document.querySelector('.field-strip'); if(!fs) return;
+    const anchor = fs.querySelector('.fs-ez');   // keep lines/numbers behind the endzone
+    const nums = [[8,'40'],[20,'50'],[32,'40'],[44,'30'],[56,'20'],[68,'10']];
+    const frag = document.createDocumentFragment();
+    for(let x=6; x<=80; x+=6){ const l=document.createElement('div'); l.className='fs-yl'; l.style.left=x+'%'; frag.appendChild(l); }
+    for(const [x,n] of nums){ for(const pos of ['top','bot']){
+      const d=document.createElement('div'); d.className='fs-num '+pos; d.style.left=x+'%'; d.textContent=n; frag.appendChild(d); } }
+    fs.insertBefore(frag, anchor || fs.firstChild);
+  }
   function boot(){
     document.querySelectorAll('.field-strip .hchip').forEach(c=>{ c.innerHTML=MAN_SVG; });
+    numberHomeField();
     refreshChips();
     renderInfo(DATE);
 
