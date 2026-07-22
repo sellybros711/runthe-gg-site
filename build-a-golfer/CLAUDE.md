@@ -12452,6 +12452,18 @@ allows Google Fonts, or self-host Anton.*
   established scope (hairSTYLE differences + novelty hats don't render at 24px; colors do). Future drops:
   add a `DROPS` entry + items - the gating/UI is fully data-driven.
 
+- **SUMMER SMASH promoted (owner: "I want to do the summer drop").** The drop was already live; added the
+  PROMOTION so players see it: a pulsing accent "Summer Smash is LIVE - Collect all 7 - you have N - ends
+  Aug 31" banner on the HOME screen (above the nav tiles) and a "Summer Smash items are in packs NOW" banner
+  on the Pro Shop Packs page, both routing to the Drops tab -> the summer collection. Fully data-driven off
+  `liveThemedDrop()`, so the same banners auto-promote Spooky Season in October, Winter Classic in December,
+  The Big Game in Jan/Feb, and hide out of window - zero upkeep. Verified (routes correct, guest + signed-in,
+  0 errors); deployed ecbb4eb. PENDING OWNER DECISION (asked my opinion, awaiting the call): making all
+  unique accessories/patterns/etc PACK + SHARD ONLY (no direct buy), with the Golf Bag clubs staying
+  direct-buy as the deterministic "buy an upgrade now" path. My recommendation was YES with that split
+  (power = buyable, style = the chase) + surfacing shard-redeem as the targeted path on every tile; see the
+  session notes.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
