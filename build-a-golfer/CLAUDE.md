@@ -12160,6 +12160,24 @@ allows Google Fonts, or self-host Anton.*
   advances; 0 page errors across a long run with many putts. Deployed to /golf. Tunable: `puttStroke` (320)
   vs the `hvswPT*` follow-through timing.
 
+- **CS516 — leaderboard: fix legacy rows showing the VIEWER's own golfer (the "same crowned golfer for a
+  lot of users" bug) (owner IMG_8578).** The ranked-list rows on the season/career board (`lbRowHTML` at
+  ~6487) and the Play 18 / weekly board (~6655) fell back to `look||S.look||DEFLOOK` — so any row whose
+  stored `look` is null (every season posted before CS393's `look` column / not yet touched by the
+  migration-54 backfill, i.e. most rows) rendered `S.look`, the SIGNED-IN VIEWER's OWN current golfer. So
+  thomas10, LegendGoat, Pland, Bettye all showed CSel8's crowned golfer, while CSel8's own row (which HAS a
+  stored look) showed a different one — matching the screenshot exactly. The two podiums already used
+  `r.look||DEFLOOK` (correct), which is why the top-3 showed distinct golfers. Fixed both list-row builders
+  to use each row's OWN stored look, defaulting a null-look row to the neutral **DEFLOOK** (never the
+  viewer's), while the viewer's OWN rows show their LIVE `S.look`
+  (`you ? (S.look||DEFLOOK) : (r.look||DEFLOOK)`). Verified in Playwright with a distinctive viewer look (a
+  crown) + mixed board rows (null-look, real-look, and a would-be own row): the list rows render DEFLOOK or
+  the row's real look and **never the viewer's crown** (`anyListLeaksViewer:false`), the real look shows on
+  its row + the podium, and 0 page errors. Deployed to /golf. NOTE: this fixes the DISPLAY — the underlying
+  cause is that legacy rows have `look:null`; migration 54's backfill stamps a user's real golfer onto their
+  own rows on next sign-in, so real golfers populate over time and null rows show the neutral default until
+  then (instead of the viewer's golfer).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

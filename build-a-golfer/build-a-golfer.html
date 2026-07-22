@@ -6521,7 +6521,11 @@ function overlayLeaderboard(screen){
       // CS504 (owner): the sub is just the golfer name + archetype — the redundant stat tail (szn/wins/$)
       // that used to trail the archetype is removed; the right-hand column already shows the sorted stat.
       const sub = r.golfer_name ? r.golfer_name+(arch?' · '+arch.name:'') : (arch?arch.name:'');
-      return lbRowHTML(r.rank,id.name,sub,v,you,lbRep({rep_pts:id.rep}),r.look);
+      // CS516 (owner): a global row shows ITS OWN stored golfer (or the neutral default for a legacy
+      // null-look row) - NEVER fall back to S.look, which leaked the VIEWER's own golfer onto every
+      // not-yet-backfilled row (owner: "showing the same golfer with a crown for a lot of users"). The
+      // viewer's own rows show their LIVE current look.
+      return lbRowHTML(r.rank,id.name,sub,v,you,lbRep({rep_pts:id.rep}),you?(S.look||DEFLOOK):(r.look||DEFLOOK));
     };
     const rows=globalRows;   // already ordered by the server (top N desc, or true bottom N asc)
     // CS268: top-3 podium (only on the default best-first view, not the low→high "bottom of the DB" view)
@@ -6652,7 +6656,7 @@ function overlayLeaderboardDaily(screen, tab){
     : `${r.golfer_name?esc(r.golfer_name)+' · ':''}OVR ${r.ovr}${r.won?' · <span style="color:var(--gold)">beat the pro</span>':''}`;
   const rowHTML=r=>`<div class="lb ${you(r)?'you':''}" style="grid-template-columns:26px 32px 1fr auto">
       <span class="pos">${r.rank===1?'🏆':r.rank}</span>
-      ${pxAvatarChip(r.look||S.look||DEFLOOK,30)}
+      ${pxAvatarChip(you(r)?(S.look||DEFLOOK):(r.look||DEFLOOK),30)}
       <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.display_name)}</div><div class="small muted" style="font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sub(r)}</div></span>
       <span class="mny" style="white-space:nowrap">${val(r)}</span></div>`;
   let podium='';
