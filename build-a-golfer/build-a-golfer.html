@@ -494,8 +494,12 @@ window.GA_ID='G-L29P5MRWKE';
   /* CS439: hide by sliding OFF-SCREEN (+ visibility/pointer-events) instead of display:none. display:none
      removes the fixed layer, and re-showing it re-lays-out the fixed element, which iOS can mis-paint mid-
      scroll (the recurring "nav drifts into the middle"). Keeping the layer stable avoids that; pointer-
-     events:none means a hidden nav can never eat taps even if it were painted. */
-  .botnav.navhide{transform:translate3d(0,130%,0); -webkit-transform:translate3d(0,130%,0); visibility:hidden; pointer-events:none}
+     events:none means a hidden nav can never eat taps even if it were painted.
+     CS516-nav: the hide offset is now a BOTTOM offset, NOT a transform - once a position:fixed element has
+     ever carried a transform, iOS Safari can permanently anchor it to the DOCUMENT (it rides up with the
+     scroll until a hard refresh - the recurring "bottom banner moves with the screen"). CS472 removed the
+     transform from the shown state; this removes the last one so NO state ever transforms the fixed bar. */
+  .botnav.navhide{bottom:-140px; visibility:hidden; pointer-events:none}
   .botnav button.on{color:var(--gold)}
   .botnav button:active{transform:translateY(1px)}
   .botnav button:focus-visible{outline:2px solid var(--gold); outline-offset:-3px; border-radius:8px}
@@ -6261,7 +6265,7 @@ function render(){
   // handlers read live state so the persisted node is never stale.
   try{
     let nav=document.getElementById('rttnav');
-    if(!nav){ nav=bottomNav(); document.body.appendChild(nav); }
+    if(!nav){ nav=bottomNav(); document.body.appendChild(nav); navWatchdog(nav); }
     nav.classList.toggle('navhide', !showNav);
     if(showNav) navSetActive(nav);
   }catch(e){ console.error('[RunTheTour] bottomNav failed:', e); }
@@ -6303,6 +6307,34 @@ function bottomNav(){
     inner.appendChild(b);
   });
   return nav;
+}
+// CS516-nav: self-healing watchdog for the recurring iOS bug where the position:fixed bar stops tracking
+// the viewport and rides up with the scroll (previously only a hard refresh reset it). With every
+// transform now stripped from the bar this shouldn't recur - but iOS has mis-painted fixed elements for
+// several unrelated reasons across CS306/329/430/439/472, so instead of trusting the root cause is gone,
+// we WATCH the shown bar's real on-screen position while the page scrolls and, if it sits away from the
+// viewport bottom on two consecutive checks, force a re-anchor (detach the layer for one frame - the same
+// thing the user's hard refresh was doing, automatically and invisibly).
+let _navBadN=0, _navPingRAF=null, _navSettleT=null;
+function navReanchor(nav){
+  _navBadN=0;
+  nav.style.display='none'; void nav.offsetHeight; nav.style.display='';
+}
+function navWatchdog(nav){
+  const check=()=>{ _navPingRAF=null;
+    try{
+      if(!nav.isConnected || nav.classList.contains('navhide')){ _navBadN=0; return; }
+      const vv=window.visualViewport;
+      if(vv && vv.scale && Math.abs(vv.scale-1)>0.05){ _navBadN=0; return; }   // pinch-zoomed: rects lie, skip
+      const drift=Math.abs(nav.getBoundingClientRect().bottom - window.innerHeight);
+      if(drift>30){ if(++_navBadN>=2) navReanchor(nav); }
+      else _navBadN=0;
+    }catch(e){}
+  };
+  const ping=()=>{ if(_navPingRAF==null) _navPingRAF=requestAnimationFrame(check);
+    clearTimeout(_navSettleT); _navSettleT=setTimeout(check, 240); };   // late check catches post-momentum stuck state
+  addEventListener('scroll', ping, {passive:true});
+  addEventListener('touchmove', ping, {passive:true});
 }
 // which tab is active for the current screen/overlay (a non-leaderboard overlay → none highlighted)
 function navActiveTab(){
