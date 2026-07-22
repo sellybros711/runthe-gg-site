@@ -5593,7 +5593,7 @@ function coinShort(n){ n=Math.round(n||0);
   return (n/1e9).toFixed(2).replace(/\.?0+$/,'')+'B'; }
 function grantMilestoneItems(s){ const m=achMetrics(); MILESTONE_ITEMS.forEach(mi=>{ try{ if(!s.owned[mi.id] && mi.when(m)) s.owned[mi.id]=1; }catch(e){} }); }
 // Legend gear (earn:true special shirts) is auto-granted to owned once its hard req is met, so it's a true unlock.
-function grantUnlockShirts(s){ const m=badgeMetrics(); COSMETIC_SHIRTS.forEach(cs=>{ if(!cs.earn) return; const k='sh:'+cs.id; try{ if(!s.owned[k] && cs.req(m)) s.owned[k]=1; }catch(e){} }); }
+function grantUnlockShirts(s){ const m=badgeMetrics(); COSMETIC_SHIRTS.forEach(cs=>{ if(!cs.earn) return; try{ if(cs.req(m)){ if(!s.owned['sh:'+cs.id]) s.owned['sh:'+cs.id]=1; if(!s.owned['ht:'+cs.id]) s.owned['ht:'+cs.id]=1; } }catch(e){} }); }   // an earned colorway unlocks for shirt AND hat
 // reconcile: self-heal earned total, grant milestone gear, toast newly-earned coins. Runs on load +
 // after evaluateAch / finishes. Signed-in only (coins are an account feature).
 function reconcileCoins(silent){ if(!sbSignedIn()) return 0; const s=coinState(); const e=coinsEarnedRaw(); let gain=0, changed=false;
@@ -5706,11 +5706,11 @@ function cosKey(cat,id){ return cosPk(cat)+':'+id; }
 // path. priceHike()==1 while PACKS_ENABLED is false, so live prices are unchanged today. Pack RARITY
 // is computed from the BASE (pre-hike) price via *Base(), so the tiers never shift when the hike flips.
 function cosmeticPriceBase(cat,id){
-  if(cat==='shirt'){ const cs=COSMETIC_SHIRTS.find(s=>s.id===id); return cs?(cs.earn?0:(cs.base||12000)):4000; }   // basic 4k, special/lore 12k, premium colors carry their own base (epic/legendary), Legend (earn) 0
+  if(cat==='shirt'){ const cs=COSMETIC_SHIRTS.find(s=>s.id===id); return (cs&&cs.earn)?0:4000; }   // ALL colors one flat price (owner); earned colorways free (achievement-unlocked)
   if(cat==='pat')   return (typeof PXPAT_BY!=='undefined'&&PXPAT_BY[id])?PXPAT_BY[id].price:0;
-  if(cat==='hat'){ const cs=COSMETIC_SHIRTS.find(s=>s.id===id); return cs?(cs.earn?0:(cs.base||12000)):4000; }   // hat colors share the shirt color list + ladder
-  if(cat==='pants') return {royal:12000,wine:12000,gold:16000,royalpurple:30000}[id]||4000;
-  if(cat==='shoes') return {pink:12000,orange:12000,gold:16000,crimson:30000}[id]||4000;
+  if(cat==='hat'){ const cs=COSMETIC_SHIRTS.find(s=>s.id===id); return (cs&&cs.earn)?0:4000; }   // hat colors share the shirt color list, same flat price
+  if(cat==='pants') return 4000;   // ALL colors one flat price (owner)
+  if(cat==='shoes') return 4000;
   if(cat==='hw'){ if(id==='cap'||id==='visor'||id==='none') return 0; return {witch:20000,elf:12000,antlers:18000,football:18000,floppy:12000,knight:30000,bucket:11000,flat:11000,headband:6000,cowboy:14000,tophat:16000,party:9000,propeller:12000,wizard:20000,crown:30000,beanie:8000,fedora:15000,sombrero:13000,halo:40000,viking:22000,chef:10000,beret:9000,headphones:18000,flatbrim:11000,santa:12000,safari:13000,tweed:16000,straw:16000,laurel:30000,backwards:12000,pirate:20000,grad:13000}[id]||12000; }   // CS411 tweed/straw = epic · CS418 laurel legendary
   if(cat==='ew'){ if(id==='none') return 0; return {goldshades:16000,beach:12000,eyeblack:9000,shades:10000,heart:9000,star:12000,threed:8000,monocle:15000,aviators:12000,round:9000,goggles:11000,eyepatch:10000,visorband:8000,prismshades:30000}[id]||10000; }   // CS418 prism shades legendary
   if(cat==='fx'){ if(id==='none') return 0; return (PXFX_BY[id]?PXFX_BY[id].price:0); }   // CS410: effect auras (epic/legendary)
@@ -5757,6 +5757,7 @@ function cosBuy(cat,id){
   if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy'};
   if(cosOwned(cat,id)) return {ok:false,msg:'Already owned'};
   if(cosPackOnly(cat,id)) return {ok:false,msg:'Pack exclusive - pull it from packs or redeem shards'};
+  if(cosmeticPriceBase(cat,id)<=0) return {ok:false,msg:'That one is earned, not bought'};   // earned colorways can never be a 0-coin buy
   const _dl=(typeof itemDropLocked==='function')?itemDropLocked(cat,id):null;
   if(_dl) return {ok:false,msg:_dl.name+' is out of season · '+dropReturnsLabel(_dl)};
   const price=cosmeticPrice(cat,id), s=coinState();
@@ -5784,10 +5785,7 @@ const COS_BOOST={
   'ew:shades':{clu:3,app:-1},
   'ew:heart':{clu:2,scr:1}, 'ew:star':{clu:3,app:1,acc:-1}, 'ew:threed':{app:3,dist:-1}, 'ew:monocle':{app:2,clu:2,dist:-1},
   'ew:aviators':{clu:2,app:1}, 'ew:round':{app:2,clu:1}, 'ew:goggles':{acc:2,dist:1,put:-1}, 'ew:eyepatch':{clu:3,acc:-1}, 'ew:visorband':{app:2,acc:1},
-  // EARNED / lore-unlocked shirt colorways: +1 only (COSMETIC_SHIRTS)
-  'sh:red':{clu:1}, 'sh:mastersgrn':{app:1}, 'sh:orange':{scr:1}, 'sh:pink':{clu:1},
-  'sh:hogangrey':{acc:1}, 'sh:bronze':{app:1}, 'sh:linkssky':{acc:1},
-  'sh:puttwiz':{put:1}, 'sh:fairwaygen':{acc:1}, 'sh:ironbyron':{app:1}, 'sh:no1gold':{clu:1}, 'sh:goatonyx':{clu:1},
+  // COLORS never carry boosts (owner) - colorways incl. the earned ones are purely cosmetic.
   // lore-unlocked heritage patterns: +1 only
   'sp:pinstripe':{app:1}, 'sp:polka':{clu:1}, 'sp:gingham':{scr:1}, 'sp:argyle':{app:1},
   'sp:tartan':{acc:1}, 'sp:houndstooth':{app:1}, 'sp:chevron':{dist:1}, 'sp:colorblock':{dist:1}
@@ -5797,7 +5795,7 @@ function cosBoost(cat,id){ return COS_BOOST[cosKey(cat,id)]||null; }
 function cosmeticBoost(){ const o={}; const L=S.look||{};
   const add=(cat,id)=>{ if(!id||id==='none') return; if(!cosOwned(cat,id)) return; const b=cosBoost(cat,id); if(b) for(const k in b) o[k]=(o[k]||0)+b[k]; };
   if(L.cap) add('hw', L.hatStyle||'cap');   // headwear boost only counts while a hat is actually worn
-  add('ew', L.eyewear); add('pat', L.shirtPat); add('shirt', L.polo);
+  add('ew', L.eyewear); add('pat', L.shirtPat);   // colors never boost (owner), so shirt color isn't read
   return o;
 }
 // ---- Golf Bag: buy a better version of every club for slight, stacking boosts. Tiers upgrade in order
@@ -21377,7 +21375,7 @@ function cosTileHTML(cat,o){
         ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
         : `<span class="sthumb color" style="background:${o.col}"></span>`);
   const bt=cosBoost(cat,o.id);
-  const csE=(cat==='shirt')?COSMETIC_SHIRTS.find(x=>x.id===o.id&&x.earn):null;
+  const csE=(cat==='shirt'||cat==='hat')?COSMETIC_SHIRTS.find(x=>x.id===o.id&&x.earn):null;   // earned colorways lock on the hat tab too (never a 0-coin buy)
   if(csE && !owned){   // EARNED Legend gear not yet unlocked: show the requirement, not a buy
     const sub=(bt?shopBoostTxt(bt)+' · ':'')+`<span style="color:#c9a520">🔒 ${esc(csE.reqText)}</span>`;
     return shopTile({thumb,name:o.name,state:'lock',noFoot:true,sub,data:`data-tile data-kind="cos-req" data-req="${esc(csE.reqText)}"`});
