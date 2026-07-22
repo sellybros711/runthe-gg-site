@@ -12488,6 +12488,35 @@ allows Google Fonts, or self-host Anton.*
   copy, and the full regression (title→setup→draft→build→round→result + all shop sections) — 0 page errors
   throughout. Tunables: the `cosPackOnly` category set, `SHARD_COST`, the faucet amounts/days.
 
+- **BOTTOM NAV DRIFT, ROUND 6 — last transform removed + a self-healing scroll watchdog (owner: "the
+  bottom banner doesn't stay at the bottom randomly. When I scroll it moves with the screen and I have to
+  hard refresh to reset it").** The recurring iOS fixed-position bug (CS306/329/430/439/472). CS472 removed
+  the transform from the SHOWN bar, but the hidden state (`.navhide`) still carried
+  `translate3d(0,130%,0)` — and once a `position:fixed` element has EVER had a transform, iOS Safari can
+  permanently anchor it to the DOCUMENT (it then rides up with the scroll until a hard refresh, exactly the
+  report). Two-part fix:
+  1. **No state ever transforms the bar.** `.navhide` now hides via a plain `bottom:-140px` offset (keeping
+     the CS439 rationale — never `display:none` on the normal hide path — plus `visibility:hidden` +
+     `pointer-events:none`). The shown state was already transform-free, so the fixed bar is now transform-
+     free in every state, removing the last known trigger.
+  2. **Self-healing watchdog** (`navWatchdog`, installed once at the nav's mount-once site): a passive,
+     rAF-throttled scroll/touchmove listener (plus a 240ms post-scroll settle check that catches the
+     post-momentum stuck state) measures the SHOWN bar's real `getBoundingClientRect().bottom` against
+     `window.innerHeight`; if it's >30px off on two consecutive checks, `navReanchor` detaches the fixed
+     layer for one frame (`display:none` → reflow → restore) — automating exactly what the owner's hard
+     refresh was doing. Guards: skips when the bar is hidden or the page is pinch-zoomed (visualViewport
+     scale, where rects lie), try/catch so it can never break scrolling. Since this bug has come back under
+     several different root causes, the watchdog means even an unknown future trigger self-corrects in under
+     a second instead of requiring a refresh.
+  Verified in Playwright: shown = fixed/bottom:0/`transform:none`; hidden = bottom −140px + no transform +
+  visibility/pointer-events off; hide/show across screens intact, exactly one nav node; a SIMULATED drift
+  (faked rect mid-screen + scroll events) triggers the re-anchor within 2 checks while a healthy bar and a
+  hidden bar never trigger it; display restored after heal; full regression (title→setup→draft→build→round→
+  result + shop sections) + the pack-only economy suite green, 0 page errors. NOTE: real iOS drift can't be
+  reproduced in headless Chromium — the transform removal is the documented-correct fix and the watchdog is
+  the insurance; needs on-device confirmation from the owner. The guaranteed-structural fallback if it EVER
+  recurs remains the app-shell refactor (fixed #app + inner scroll region). Deployed to /golf (041596d).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
