@@ -3133,8 +3133,10 @@ function bumpDailyStats(won){ const t=todayKey(); const st=dailyStats();
   LS.set(acctKey('bag_dailystats'),st); cloudPush(); return st; }
 function dailyWinPct(){ const st=dailyStats(); return st.played?Math.round(100*st.beat/st.played):0; }
 // every X/Twitter (and cross-app) share from the game carries the same handle + hashtags
-const SOCIAL_TAG='@RunTheGG #golf #RunTheTour';
-function withSocial(t){ if(!t) return SOCIAL_TAG; return t.indexOf(SOCIAL_TAG)>=0 ? t : (t+'\n\n'+SOCIAL_TAG); }
+const SOCIAL_TAG='@RunTheGG #golf #RunTheTour';   // kept for a possible dedicated "Post to X" button; NOT appended to native shares
+// CS519 (owner): share text is clean - no @handle / #hashtags. The native share sheet can't target X, so
+// tags would just spam a friend getting the text in Messages; the owner wants simple, challenging captions.
+function withSocial(t){ return t||''; }
 async function shareText(text){ text=withSocial(text); recordAchEvent({set:{shared:1}}); evaluateAch(); try{questDaily('share');}catch(e){}
   try{ if(navigator.share){ await navigator.share({text}); return; } }catch(e){ if(e&&e.name==='AbortError')return; }
   try{ await navigator.clipboard.writeText(text); toast('Copied! Paste it anywhere'); }catch(_){ toast('Could not copy'); } }
