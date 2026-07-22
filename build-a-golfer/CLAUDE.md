@@ -12458,11 +12458,35 @@ allows Google Fonts, or self-host Anton.*
   on the Pro Shop Packs page, both routing to the Drops tab -> the summer collection. Fully data-driven off
   `liveThemedDrop()`, so the same banners auto-promote Spooky Season in October, Winter Classic in December,
   The Big Game in Jan/Feb, and hide out of window - zero upkeep. Verified (routes correct, guest + signed-in,
-  0 errors); deployed ecbb4eb. PENDING OWNER DECISION (asked my opinion, awaiting the call): making all
-  unique accessories/patterns/etc PACK + SHARD ONLY (no direct buy), with the Golf Bag clubs staying
-  direct-buy as the deterministic "buy an upgrade now" path. My recommendation was YES with that split
-  (power = buyable, style = the chase) + surfacing shard-redeem as the targeted path on every tile; see the
-  session notes.
+  0 errors); deployed ecbb4eb. The pack-only economy question raised here was DECIDED + built next entry.
+
+- **PACK-ONLY ECONOMY (owner decided all 3 design calls: (1) boost-carrying cosmetics CAN be pack-only —
+  "Makes people want to open packs and collect shards to get those top items"; (2) shards stay
+  duplicates-only from packs BUT are also given out as challenge/streak/login REWARDS; (3) colors and basic
+  patterns stay purchasable).** The split: power = buyable, style = the chase.
+  • **`cosPackOnly(cat,id)`** — the single gate. FALSE (still direct-buy): free items, shirt/hat/trouser/
+    shoe COLORS, and non-fixed (basic tonal) patterns — plus the Golf Bag boost clubs (a separate system,
+    untouched). TRUE (pack/shard only): all headwear, eyewear, effects/auras, outerwear, legwear, special
+    clubs, balls, cleats, and FIXED-palette patterns (tie-dye/animal prints/camo/galaxy/etc). ~26 hw + all
+    ew/fx/club/ball/cleats tiles now show "🎁 Packs · ◆ N/M" (shard progress toward that rarity) instead of
+    a price; `cosBuy` + the legacy `accBuy` refuse with "Pack exclusive - pull it from packs or redeem
+    shards"; shard redemption (`shopRedeemShards`) still works and remains the deterministic path.
+  • **Pack Exclusive preview card**: tapping a pack-only tile opens a rarity-bordered card (lore, boosts,
+    your shard balance vs the cost) with "🎁 Open Packs ▸" + a shard-redeem button (disabled until you have
+    enough) — no Buy button. Previews on your golfer as usual.
+  • **Shard faucets (per owner call #2)**: finishing ALL daily quests → +1 RARE shard; each weekly
+    challenge completion → +1 EPIC shard; the 7-Day Rewards advent gains shard drops (day 2 → +2 common,
+    day 5 → +2 rare, layered onto the existing coin days); the Daily Login Bonus calendar gains day 3 →
+    +1 common and day 5 → +1 rare. LEGENDARY shards stay duplicates-only (the top chase). All flow through
+    the monotonic `shardEarn` counters (cloud max-merged), reward copy + advent/login cells show the shards.
+  • **How to Play** Pro Shop/Packs sections rewritten for the model (buy the basics / Pack Exclusives /
+    shards pick your target / earn shards by playing).
+  Verified in Playwright: classification matrix (colors + argyle false; fixed pats, hw/ew/fx/club/ball true;
+  free items false), buy gating (color + basic pattern still purchase, crown/aura/acc refused), shard redeem
+  still grants + equips, every faucet pays the right shard (daily-quest all-done +1 rare, weekly +1 epic,
+  streak week day2/day5, login day3/day5), the store tiles/preview card/priced-colors UI, the How to Play
+  copy, and the full regression (title→setup→draft→build→round→result + all shop sections) — 0 page errors
+  throughout. Tunables: the `cosPackOnly` category set, `SHARD_COST`, the faucet amounts/days.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,

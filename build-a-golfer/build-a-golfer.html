@@ -3063,7 +3063,9 @@ function streakWeekReward(){ if(!sbSignedIn()) return null;
   else if(kind==='basepack'||kind==='pack'){ out.tier='base'; if(typeof grantFreePack==='function') grantFreePack(1,{silent:true,tier:'base'}); }
   else if(kind==='tourpack'){ out.tier='tour'; if(typeof grantFreePack==='function') grantFreePack(1,{silent:true,tier:'tour'}); }
   else if(kind==='champpack'){ out.tier='champ'; if(typeof grantFreePack==='function') grantFreePack(1,{silent:true,tier:'champ'}); }
-  else { out.amt=streakDayCoins(n); if(typeof addBonusCoins==='function') addBonusCoins(out.amt,{silent:true}); }
+  else { out.amt=streakDayCoins(n); if(typeof addBonusCoins==='function') addBonusCoins(out.amt,{silent:true});
+    if(n===2){ try{ shardEarn('common',2); out.shards={r:'common',n:2}; }catch(e){} }         // pack-only economy: shard faucets
+    if(n===5){ try{ shardEarn('rare',2); out.shards={r:'rare',n:2}; }catch(e){} } }
   if(w.done.indexOf(n)<0) w.done.push(n);
   LS.set(acctKey('bag_streakweek'),w); if(typeof cloudPush==='function') cloudPush();
   return out; }
@@ -3086,7 +3088,8 @@ function streakAdventNode(){ if(!sbSignedIn()) return null;
     if(kind==='champpack') return pxPackImg(19,'champ')+'<div style="font:800 8px var(--body);color:'+packType('champ').col+';margin-top:1px">Champ</div>';
     if(kind==='tourpack') return pxPackImg(19,'tour')+'<div style="font:800 8px var(--body);color:'+packType('tour').col+';margin-top:1px">Tour</div>';
     if(kind==='basepack'||kind==='pack') return pxPackImg(19,'base')+'<div style="font:800 8px var(--body);color:'+packType('base').col+';margin-top:1px">Pack</div>';
-    return '<div style="font:800 12px var(--body);color:#ffd45e">'+streakDayCoins(d)+'</div><div style="font:800 7px var(--body);color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;margin-top:1px">coins</div>'; };
+    const shardNote=(d===2)?'<div style="font:800 7px var(--body);color:#9fdcff;margin-top:1px">+◆2 shards</div>':(d===5)?'<div style="font:800 7px var(--body);color:#4aa3ff;margin-top:1px">+◆2 rare</div>':'';
+    return '<div style="font:800 12px var(--body);color:#ffd45e">'+streakDayCoins(d)+'</div><div style="font:800 7px var(--body);color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;margin-top:1px">coins</div>'+shardNote; };
   let cells='';
   for(let d=1;d<=7;d++){ const kind=STREAK_WEEK_TRACK[d], got=d<=claimed, today=(d===next);
     const bg=got?'rgba(53,214,160,.14)':(today?'rgba(241,208,74,.18)':'rgba(255,255,255,.04)');
@@ -3115,17 +3118,18 @@ function loginState(){ let s=LS.get(acctKey('bag_login'),null); if(!s||typeof s!
 function loginSave(s){ LS.set(acctKey('bag_login'),s); if(typeof cloudPush==='function') cloudPush(); }
 function loginReward(n){ n=Math.max(1,Math.min(7,n||1)); const kind=LOGIN_TRACK[n]||'coins'; const o={day:n,kind:kind};
   if(kind==='basepack') o.tier='base'; else if(kind==='tourpack') o.tier='tour'; else if(kind==='champpack') o.tier='champ';
-  else if(kind==='coins') o.amt=(LOGIN_COIN_DAY[n]||300); return o; }
+  else if(kind==='coins'){ o.amt=(LOGIN_COIN_DAY[n]||300); if(n===3) o.shards={r:'common',n:1}; if(n===5) o.shards={r:'rare',n:1}; } return o; }
 function grantLoginReward(o){ if(!o) return;
   if(o.kind==='mulligan'){ if(typeof addMulliSpin==='function') addMulliSpin(1); }
   else if(o.tier){ if(typeof grantFreePack==='function') grantFreePack(1,{silent:true,tier:o.tier}); }
-  else if(o.amt){ if(typeof addBonusCoins==='function') addBonusCoins(o.amt,{silent:true}); } }
+  else if(o.amt){ if(typeof addBonusCoins==='function') addBonusCoins(o.amt,{silent:true}); }
+  if(o.shards){ try{ shardEarn(o.shards.r,o.shards.n); }catch(e){} } }
 function loginRewLabel(o){ if(!o) return '';
   if(o.kind==='mulligan') return 'a Mulli-Spin';
   if(o.kind==='basepack') return 'a Base Pack';
   if(o.kind==='tourpack') return 'a Tour Pack';
   if(o.kind==='champpack') return 'a Champion Pack';
-  return '+'+coinFmt(o.amt||0)+' coins'; }
+  return '+'+coinFmt(o.amt||0)+' coins'+(o.shards?(' & ◆'+o.shards.n+' '+o.shards.r+' shard'+(o.shards.n>1?'s':'')):''); }
 // Fires from the sbApply post-cloudPull chain (covers a fresh sign-in AND app-open while already signed in),
 // so the popup shows the first time an account is seen each day. Grants on detect (idempotent via `day`),
 // then opens the celebratory popup.
@@ -3141,7 +3145,8 @@ function loginSlotInner(d){ const kind=LOGIN_TRACK[d];
   if(kind==='mulligan') return '<div style="height:16px;display:flex;align-items:center;justify-content:center;color:#8fd0ff">'+ic('repeat',{size:'15px'})+'</div><div style="font:800 8px var(--body);color:#8fd0ff;margin-top:1px">Mulli</div>';
   if(kind==='tourpack') return pxPackImg(19,'tour')+'<div style="font:800 8px var(--body);color:'+packType('tour').col+';margin-top:1px">Tour</div>';
   if(kind==='basepack') return pxPackImg(19,'base')+'<div style="font:800 8px var(--body);color:'+packType('base').col+';margin-top:1px">Pack</div>';
-  return '<div style="font:800 12px var(--body);color:#ffd45e">'+(LOGIN_COIN_DAY[d]||300)+'</div><div style="font:800 7px var(--body);color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;margin-top:1px">coins</div>'; }
+  const shardNote=(d===3)?'<div style="font:800 7px var(--body);color:#9fdcff;margin-top:1px">+◆1 shard</div>':(d===5)?'<div style="font:800 7px var(--body);color:#4aa3ff;margin-top:1px">+◆1 rare</div>':'';
+  return '<div style="font:800 12px var(--body);color:#ffd45e">'+(LOGIN_COIN_DAY[d]||300)+'</div><div style="font:800 7px var(--body);color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;margin-top:1px">coins</div>'+shardNote; }
 function overlayLogin(screen){
   const rew=S.loginReward||loginReward(loginState().n||1), n=rew.day;
   let cells='';
@@ -3325,7 +3330,7 @@ function dailyQuests(){ const t=todayKey(); let q=LS.get(acctKey('bag_dailyquest
 function dailyQuestsAllDone(q){ q=q||dailyQuests(); return DAILY_QUEST_DEFS.every(d=>q[d.k]); }
 function questDaily(type){ if(!sbSignedIn()) return; const q=dailyQuests(); q[type]=1;
   let leveled=null;
-  if(dailyQuestsAllDone(q) && !q.xpDone){ q.xpDone=1; LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); leveled=addXp(DAILY_QUEST_XP); S.questDailyJustDone=true; try{ recordAchEvent({inc:{questDaysDone:1}}); evaluateAch(); }catch(e){} track('daily_quests_done'); }
+  if(dailyQuestsAllDone(q) && !q.xpDone){ q.xpDone=1; LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); leveled=addXp(DAILY_QUEST_XP); try{ shardEarn('rare',1); }catch(e){} S.questDailyJustDone=true; try{ recordAchEvent({inc:{questDaysDone:1}}); evaluateAch(); }catch(e){} track('daily_quests_done'); }
   else { LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); }
   return leveled; }
 // ---- Weekly challenges (rotate weekly, cross-mode, harder; each done → XP + a mulli-spin) ----
@@ -3355,7 +3360,7 @@ function weekChalDoneCount(w){ w=w||weekChal(); return weeklySet().filter(c=>w.d
 function questWeekly(metric,n){ if(!sbSignedIn()||!(n>0)) return; const w=weekChal(); w.prog[metric]=(w.prog[metric]||0)+n;
   const newly=[]; weeklySet().forEach(c=>{ if(!w.done[c.id] && (w.prog[c.metric]||0)>=c.target){ w.done[c.id]=1; newly.push(c); } });
   LS.set(acctKey('bag_weeklychal'),w); if(typeof cloudPush==='function')cloudPush();
-  newly.forEach(c=>{ addXp(WEEKLY_CHAL_XP); if(typeof grantFreePack==='function') grantFreePack(1,{silent:true}); track('weekly_chal_done',{id:c.id}); });   // CS400: each weekly challenge → a free pack
+  newly.forEach(c=>{ addXp(WEEKLY_CHAL_XP); if(typeof grantFreePack==='function') grantFreePack(1,{silent:true}); try{ shardEarn('epic',1); }catch(e){} track('weekly_chal_done',{id:c.id}); });   // CS400: each weekly → a free pack · pack-only economy: +◆1 epic shard
   if(newly.length){ try{ recordAchEvent({inc:{weeklyDone:newly.length}}); evaluateAch(); }catch(e){} }
   if(newly.length) S.questWeeklyJustDone=(S.questWeeklyJustDone||[]).concat(newly);
   return newly; }
@@ -3382,11 +3387,11 @@ function challengesNode(){
   el.appendChild($(repTierBarHTML(ms)));
   const dq=DAILY_QUEST_DEFS.map(d=>`<div class="wg-row${q[d.k]?' done':''}"><span>${q[d.k]?'✓ ':'○ '}${d.label} <span class="small muted" style="letter-spacing:0;text-transform:none">· ${d.hint}</span></span><span class="wg-v">${q[d.k]?'done':''}</span></div>`).join('');
   const dqDone=dailyQuestsAllDone(q);
-  el.appendChild($(`<div class="wg-panel${dqDone?' done':''}"><div class="wg-hd"><span>Daily Quests</span>${dqDone?'<span style="color:#35d6a0">+'+DAILY_QUEST_XP+' Rep ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all '+DAILY_QUEST_DEFS.length+' → +'+DAILY_QUEST_XP+' Rep</span>'}</div>${dq}</div>`));
+  el.appendChild($(`<div class="wg-panel${dqDone?' done':''}"><div class="wg-hd"><span>Daily Quests</span>${dqDone?'<span style="color:#35d6a0">+'+DAILY_QUEST_XP+' Rep ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all '+DAILY_QUEST_DEFS.length+' → +'+DAILY_QUEST_XP+' Rep & ◆1 rare shard</span>'}</div>${dq}</div>`));
   const wr=set.map(c=>{ const v=Math.min(w.prog[c.metric]||0,c.target), ok=!!w.done[c.id];
     return `<div class="wg-row${ok?' done':''}"><span>${ok?'✓ ':''}${c.label}</span><span class="wg-v" style="${ok?'':'color:var(--muted)'}">${v}/${c.target}</span></div>`; }).join('');
   const wDone=weekChalDoneCount(w), wTot=set.length;
-  el.appendChild($(`<div class="wg-panel${wDone>=wTot?' done':''}"><div class="wg-hd"><span>Weekly Challenges</span><span class="small muted" style="letter-spacing:0;text-transform:none">${wDone}/${wTot} · each → +${WEEKLY_CHAL_XP} Rep &amp; 🎁 free pack</span></div>${wr}</div>`));
+  el.appendChild($(`<div class="wg-panel${wDone>=wTot?' done':''}"><div class="wg-hd"><span>Weekly Challenges</span><span class="small muted" style="letter-spacing:0;text-transform:none">${wDone}/${wTot} · each → +${WEEKLY_CHAL_XP} Rep · 🎁 pack · ◆1 epic shard</span></div>${wr}</div>`));
   return el;
 }
 // CS290: a once-a-day "here's your challenges board" pop-up for signed-in players when they enter the game.
@@ -5611,6 +5616,7 @@ function accEquipped(slot){ const id=accEquipMap()[slot]; return (id&&accOwned(i
 function accEquip(id){ const it=accById(id); if(!it||!accOwned(id)) return; S.look.acc=Object.assign({},accEquipMap()); S.look.acc[it.slot]=id; saveLook(); }
 function accUnequip(slot){ if(!S.look) return; const m=Object.assign({},accEquipMap()); delete m[slot]; S.look.acc=m; saveLook(); }
 function accBuy(id){ const it=accById(id); if(!it) return {ok:false,msg:'Unknown item'};
+  return {ok:false,msg:'Pack exclusive - pull it from packs or redeem shards'};   // pack-only economy: gear is never coin-bought
   if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy gear'};
   if(accOwned(id)) return {ok:false,msg:'Already owned'};
   if(it.rarity==='exclusive') return {ok:false,msg:'Earned, not bought'};
@@ -5736,9 +5742,21 @@ function cosCatNew(cat){ let n=0; try{ (cosmeticItems(cat)||[]).forEach(o=>{ if(
 function markCatSeen(cat){ if(!sbSignedIn()) return; const own=coinState().owned||{}; try{ (cosmeticItems(cat)||[]).forEach(o=>{ const k=cosKey(cat,o.id); if(own[k]) markItemSeen(k); }); }catch(e){} }
 function anyNewCos(cats){ if(!sbSignedIn()) return false; return (cats||COS_CATS.map(c=>c.k)).some(c=>cosCatNew(c)>0); }
 function cosNewTotal(){ if(!sbSignedIn()) return 0; let n=0; COS_CATS.forEach(c=>{ n+=cosCatNew(c.k); }); return n; }
+// PACK-ONLY economy (owner): the UNIQUE items - headwear, eyewear, effects, outerwear, legwear, special
+// clubs, balls, cleats, and every FIXED (locked-color) pattern - can't be bought with coins. They come from
+// PACKS (the pull) or the SHARD EXCHANGE (the deterministic pity path; shards come from duplicate pulls +
+// challenge/streak rewards). Colors + basic tonal patterns stay purchasable, and the Golf Bag boost clubs
+// stay direct-buy: power is buyable, style is the chase.
+function cosPackOnly(cat,id){
+  if(cosmeticPriceBase(cat,id)<=0) return false;                                   // free/earned items
+  if(cat==='shirt'||cat==='hat'||cat==='pants'||cat==='shoes') return false;       // colors purchasable
+  if(cat==='pat'){ const pd=PXPAT_BY[id]; return !!(pd&&pd.fixed); }               // basic patterns purchasable
+  return true;                                                                     // hw/ew/fx/top/leg/club/ball/cleats
+}
 function cosBuy(cat,id){
   if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy'};
   if(cosOwned(cat,id)) return {ok:false,msg:'Already owned'};
+  if(cosPackOnly(cat,id)) return {ok:false,msg:'Pack exclusive - pull it from packs or redeem shards'};
   const _dl=(typeof itemDropLocked==='function')?itemDropLocked(cat,id):null;
   if(_dl) return {ok:false,msg:_dl.name+' is out of season · '+dropReturnsLabel(_dl)};
   const price=cosmeticPrice(cat,id), s=coinState();
@@ -6326,15 +6344,17 @@ function scrRules(){
     ['🛍️','Spend at the Pro Shop','Use coins on cosmetics or packs. Tap the coins pill at the top right any time to jump straight to the packs.'],
   ]);
 
-  perkSection('🛍️ Pro Shop','var(--gold)','Gear up your golfer','Two ways to collect: buy exactly what you want, or open packs for a surprise.',[
-    ['🎯','Buy direct','Pick any item and pay its coin price, the premium way to get exactly the piece you want.'],
-    ['🎴','Or open packs','Packs cost fewer coins per item but give a random cosmetic, the value way to build your collection over time.'],
+  perkSection('🛍️ Pro Shop','var(--gold)','Gear up your golfer','Colors and clubs are yours to buy. The unique gear is a chase — pull it from packs or redeem shards.',[
+    ['🎨','Buy the basics','Shirt, hat, trouser and shoe colors, simple patterns and your Golf Bag club upgrades are always direct-buy with coins.'],
+    ['🎁','Pack Exclusives','Unique headwear, eyewear, special patterns, glow effects, clubs, balls and more can\'t be bought with coins — they come from packs or shard redemption. That\'s the collection everyone shows off.'],
+    ['◆','Shards pick your target','Collect shards of a rarity, then redeem ANY pack-exclusive item of that rarity straight from its shop tile — the guaranteed path to the exact piece you want.'],
     ['✨','Never miss new gear','A red dot and a "NEW" ribbon flag anything you\'ve unlocked but not looked at yet, so your latest gear is easy to find.'],
   ]);
 
   perkSection('🎴 Packs','var(--gold)','Open packs, spin the wheel',null,[
     ['🟢','Three tiers','Base, Tour and Champion packs, each pricier with better odds at rare and legendary items. The drop-rate odds for every rarity are published right on the pack screen.'],
-    ['🎡','Wheel-spin reveal','Opening a pack spins a wheel that lands on your item. Duplicates refund coins AND earn shards — collect enough shards of a rarity to redeem ANY item of that rarity in the shop.'],
+    ['🎡','Wheel-spin reveal','Opening a pack spins a wheel that lands on your item. Duplicates refund coins AND earn shards.'],
+    ['◆','Earn shards by playing','Duplicates earn shards, and so do challenges: finish all your daily quests for a rare shard, each weekly challenge pays an epic shard, and the 7-Day Rewards and login calendars drop shards along the way. Legendary shards come only from legendary duplicates.'],
     ['🎁','Lots of free packs','Your first pack is on us, weekly challenges and daily streaks hand out free packs, invite a friend and you both get one, and a 5-pack bundle saves you a pack\'s worth of coins.'],
     ['🛡️','No bad-luck streaks','Pity timers guarantee an epic-or-better and a legendary within a set number of opens, and they hit sooner on the higher tiers.'],
   ]);
@@ -20273,7 +20293,7 @@ function finishDailyRound(){
     const dcoins=decisionPayoutCoins(S.dailyHoles, 1.0);   // CS436: coins for bold calls that paid off
     // CS401: the Sunday-to-Sunday streak-week reward track (once per new day)
     const wr = (_ds && _ds._newDay) ? streakWeekReward() : null; S.streakWeekReward=wr;
-    const wkNote = !wr ? '' : wr.kind==='coins' ? (' · 🔥 week day '+wr.day+': +'+wr.amt+' coins')
+    const wkNote = !wr ? '' : wr.kind==='coins' ? (' · 🔥 week day '+wr.day+': +'+wr.amt+' coins'+(wr.shards?(' & ◆'+wr.shards.n+' '+wr.shards.r+' shard'+(wr.shards.n>1?'s':'')):''))
       : wr.kind==='mulligan' ? (' · 🔥 week day '+wr.day+': +1 Mulli-Spin')
       : (' · 🔥 week day '+wr.day+': FREE '+packType(wr.tier||'base').short+' Pack!');
     awardPlayCoins(COIN_DAILY + (won?COIN_DAILY_BEAT:0) + margin + dcoins, (won?'you beat the pro!':'daily complete')+(dcoins>0?' · +'+coinFmt(dcoins)+' bold calls':'')+' · +'+_xp+' Tour Rep'+wkNote); // ~1000-2000 coins + bold-call bonus + week bonus
@@ -21255,6 +21275,33 @@ function shopRedeemShards(){ const pv=S.shopPreview; if(!pv||!sbSignedIn()) retu
 function shopPreviewNode(){ const pv=S.shopPreview; if(!pv) return $(`<span></span>`);
   const bal=coinBalance(), afford=bal>=pv.price, after=Math.max(0,bal-pv.price);
   const rar=shopPreviewRarity(pv), shN=rar?shardBal(rar):0, shNeed=rar?SHARD_COST[rar]:0, canShard=rar&&shN>=shNeed;
+  const packOnly=(pv.kind==='acc') || (pv.kind==='cos' && typeof cosPackOnly==='function' && cosPackOnly(pv.cat,pv.id));
+  if(packOnly){   // PACK EXCLUSIVE detail card: no coin buy - open packs, or redeem with shards
+    let lore2='', boostTxt2='';
+    try{ if(pv.kind==='cos'){ const it=(cosmeticItems(pv.cat)||[]).find(x=>x.id===pv.id); lore2=(it&&it.hist)||'';
+        const bt=cosBoost(pv.cat,pv.id); boostTxt2=bt?shopBoostTxt(bt):''; }
+      else { const it=ACC_BY_ID[pv.id]; lore2=(it&&it.desc)||''; const bt=it?accItemBoost(it):null; boostTxt2=bt?shopBoostTxt(bt):''; } }catch(e){}
+    const rarChip2=rar?`<span style="display:inline-block;margin-top:6px;padding:3px 11px;border-radius:999px;border:1px solid ${ACC_RARITY[rar].c};color:${ACC_RARITY[rar].c};font:800 10.5px/1 var(--body);letter-spacing:.14em;text-transform:uppercase">${ACC_RARITY[rar].label}</span>`:'';
+    const card2=$(`<div style="max-width:520px;margin:14px auto 0;padding:18px 16px;border-radius:16px;border:2px solid ${rar?ACC_RARITY[rar].c:'var(--gold)'};background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02));text-align:center">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:${rar?ACC_RARITY[rar].c:'var(--gold)'}">🎁 Pack Exclusive</div>
+      <div style="font-family:var(--display);font-size:22px;color:var(--oncard);margin-top:6px">${esc(pv.name)}</div>
+      ${rarChip2}
+      ${lore2?`<div class="small" style="margin-top:6px;color:#bcd3c6;font-style:italic">“${esc(lore2)}”</div>`:''}
+      ${boostTxt2?`<div class="small" style="margin-top:5px;color:#8fe0c4;font-weight:800">${boostTxt2}</div>`:''}
+      <div class="small" style="margin-top:9px;color:#bcd3c6">This one can't be bought with coins - <b>pull it from packs</b>, or trade in shards for it.</div>
+      <div class="small" style="margin-top:7px;color:${rar?ACC_RARITY[rar].c:'#bcd3c6'}">◆ Your ${rar?ACC_RARITY[rar].label:''} shards: <b>${shN}/${shNeed}</b> · duplicates from packs & challenge rewards earn more</div>
+      <div class="small" style="margin-top:5px;color:#8fe0c4">Previewing on your golfer above.</div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn ghost" id="pv-cancel" style="flex:1;margin:0">Close</button>
+        <button class="btn goldfill" id="pv-packs" style="flex:1;margin:0">🎁 Open Packs ▸</button>
+      </div>
+      <button class="btn teal" id="pv-shard" style="margin-top:10px" ${canShard?'':'disabled'}>◆ Redeem with ${shNeed} ${rar?ACC_RARITY[rar].label:''} shards${canShard?'':' · not enough yet'}<span class="sub">${canShard?'No coins spent - yours instantly':'Duplicates in packs + daily/weekly rewards earn shards'}</span></button>
+      </div>`);
+    card2.querySelector('#pv-cancel').onclick=()=>{ S.shopPreview=null; render(); };
+    card2.querySelector('#pv-packs').onclick=()=>{ S.shopPreview=null; S.overlay='shop'; S.shopSec='packs'; S.shopDrop=null; render(); };
+    const shb2=card2.querySelector('#pv-shard'); if(shb2&&canShard) shb2.onclick=shopRedeemShards;
+    return card2;
+  }
   // look pass: the confirm card doubles as the item DETAIL view - rarity chip + lore line + boost chips
   let lore='', boostTxt='';
   try{ if(pv.kind==='cos'){ const it=(cosmeticItems(pv.cat)||[]).find(x=>x.id===pv.id); lore=(it&&it.hist)||'';
@@ -21324,6 +21371,12 @@ function cosTileHTML(cat,o){
     if(dl) return shopTile({thumb,name:o.name,state:'lock',noFoot:true,rar,cls:'dropoff',
       sub:`<span style="color:${dl.accent}">⏳ ${esc(dropReturnsLabel(dl))}</span>`,
       data:`data-tile data-kind="drop-locked" data-drop="${dl.id}"`});
+    if(cosPackOnly(cat,o.id)){   // PACK EXCLUSIVE: no coin price - packs or shards only (tap for details)
+      const prar=packRarityOf(cosmeticPriceBase(cat,o.id))||'common', sh=shardBal(prar), need=SHARD_COST[prar];
+      return shopTile({thumb,name:o.name,state:'lock',noFoot:true,rar,isNew:cosIsNew(cat,o.id),
+        sub:(bsub?bsub+' · ':'')+`<span style="color:${ACC_RARITY[prar].c}">🎁 Packs · ◆ ${sh}/${need}</span>`,
+        data:`data-tile data-kind="cos" data-cat="${cat}" data-id="${esc(o.id)}"`});
+    }
     return shopTile({thumb,name:o.name,state:'lock',price,afford:coinBalance()>=price,sub:bsub,isNew:cosIsNew(cat,o.id),rar,
       data:`data-tile data-kind="cos" data-cat="${cat}" data-id="${esc(o.id)}"`});
   }
