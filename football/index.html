@@ -185,16 +185,21 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .tile .keytag{position:absolute; bottom:4px; left:0; right:0; font-family:var(--pix); font-size:6px; color:var(--red); letter-spacing:.5px;}
 
 /* ---------- call tiles ---------- */
-.calls{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:10px;}
-.tile{background:var(--panel); border:2px solid var(--line2); border-radius:10px; padding:10px 4px 9px;
-  display:flex; flex-direction:column; align-items:center; gap:6px; box-shadow:var(--shadow);
-  transition:transform .06s, background .15s; min-height:96px; justify-content:flex-start;}
+.calls{display:flex; gap:8px; margin-bottom:10px; overflow-x:auto; overflow-y:hidden; padding:2px 2px 6px;
+  scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch;}
+.calls::-webkit-scrollbar{height:5px;}
+.calls::-webkit-scrollbar-thumb{background:var(--line2); border-radius:3px;}
+.tile{flex:0 0 84px; scroll-snap-align:start; background:var(--panel); border:2px solid var(--line2); border-radius:10px;
+  padding:10px 5px 9px; display:flex; flex-direction:column; align-items:center; gap:5px; box-shadow:var(--shadow);
+  transition:transform .06s, background .15s; min-height:112px; justify-content:flex-start;}
 .tile:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.35);}
 .tile .em{font-size:26px; line-height:1;}
 .tile .diag{width:42px; height:34px; display:block; margin:0 auto 1px;}
 .tile .diag svg{width:100%; height:100%; display:block;}
 .tile .tt{font-family:var(--pix); font-size:9px; letter-spacing:.3px; text-align:center;}
 .tile .nm{font-family:var(--term); font-size:14px; font-weight:600; color:var(--cream-dim); text-align:center; line-height:1.05;}
+.tile .fm{font-family:var(--pix); font-size:6px; letter-spacing:.3px; color:var(--gold-bright); opacity:.85; text-align:center;
+  margin-top:auto; padding-top:3px;}
 .tile:disabled{opacity:.4;}
 .kick{width:100%; margin-bottom:12px; background:var(--panel2); border:2px solid var(--line2);
   border-radius:10px; padding:12px; display:flex; align-items:center; justify-content:center; gap:12px; box-shadow:var(--shadow);}
@@ -618,9 +623,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js?v=20260722c"></script>
-<script src="playbook.js?v=20260722c"></script>
-<script src="engine.js?v=20260722c"></script>
+<script src="drive_generator.js?v=20260722d"></script>
+<script src="playbook.js?v=20260722d"></script>
+<script src="engine.js?v=20260722d"></script>
 <script>
 (function(){
   'use strict';
@@ -980,7 +985,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
   function renderCalls(state){
     const wrap=el('calls'); wrap.innerHTML='';
-    wrap.style.gridTemplateColumns='repeat('+drive.callSheet.length+',1fr)';
     const callInfo = {}; (state.calls||[]).forEach(c=>callInfo[c.id]=c);
     const tend = state.tendency||{};
     for(const t of drive.callSheet){
@@ -990,7 +994,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       const b=document.createElement('button'); b.className='tile'+(keyed&&!gone?' keyed':'');
       const remBadge = (info.cap!==Infinity && info.cap!=null) ? `<span class="rem">${Math.max(0,info.remaining)}</span>` : '';
       const keyTag = (keyed&&!gone) ? `<span class="keytag">KEYED</span>` : '';
-      b.innerHTML=`${remBadge}<span class="diag">${routeSVG(t.play.archetype)}</span><span class="tt">${t.title}</span><span class="nm">${t.play.name}</span>${keyTag}`;
+      b.innerHTML=`${remBadge}<span class="diag">${routeSVG(t.play.archetype)}</span><span class="tt">${t.title}</span><span class="nm">${t.play.name}</span><span class="fm">${t.play.formation||''}</span>${keyTag}`;
       b.onclick=()=>doSnap(t.id);
       b.disabled = state.over || gone;
       wrap.appendChild(b);

@@ -260,10 +260,12 @@
   function buildCallSheet(schemeKey) {
     const scheme = PLAYBOOK.schemes[schemeKey];
     const P = scheme.plays;
-    const run  = pickBest(P, p => p.archetype === 'RUN');
-    const shortP = pickBest(P, p => p.archetype === 'QUICK') || pickBest(P, p => p.archetype === 'SCREEN');
-    const deep = pickBest(P, p => p.archetype === 'DEEP') || pickBest(P, p => p.archetype === 'INTERMEDIATE');
-    const pa   = pickBest(P, p => p.archetype === 'PLAY_ACTION') || pickBest(P, p => p.archetype === 'INTERMEDIATE' && p !== deep);
+    // Every scheme carries 12 real plays; surface a deep, varied call sheet (not just
+    // one per bucket) so the player has genuine choices. Sorted best-EPA first within
+    // each archetype, so the strongest option leads and the extras add variety.
+    const byArch = a => P.filter(p => p.archetype === a).sort((x,y) => y.epa - x.epa);
+    const runs = byArch('RUN'), quicks = byArch('QUICK'), screens = byArch('SCREEN'),
+          mids = byArch('INTERMEDIATE'), deeps = byArch('DEEP'), pas = byArch('PLAY_ACTION');
     const sneak = pickBest(P, p => p.archetype === 'QB_SNEAK') || SNEAK_PLAY;
     // Usage caps: a premium call loses its edge if you lean on it every snap —
     // defenses adjust, and you can't run play-action without ever running. Caps
@@ -271,11 +273,15 @@
     // ordinary thing). This is realism AND the surgical anti-spam fix the
     // handoff wanted instead of leaning on the global difficulty knob.
     const tiles = [
-      { id: 'RUN',   emoji: '🏃', play: run,    cap: Infinity },
-      { id: 'SHORT', emoji: '🎯', play: shortP, cap: Infinity },
-      { id: 'DEEP',  emoji: '🏈', play: deep,   cap: 3 },
-      { id: 'PA',    emoji: '🎭', play: pa,     cap: 3 },
-      { id: 'SNEAK', emoji: '💪', play: sneak,  cap: 2 },
+      { id: 'RUN',    emoji: '🏃', play: runs[0],                 cap: Infinity },
+      { id: 'RUN2',   emoji: '🏉', play: runs[1],                 cap: Infinity },
+      { id: 'SHORT',  emoji: '🎯', play: quicks[0],               cap: Infinity },
+      { id: 'SHORT2', emoji: '🎯', play: quicks[1],               cap: Infinity },
+      { id: 'SCREEN', emoji: '🧱', play: screens[0] || quicks[2], cap: 3 },
+      { id: 'MID',    emoji: '🎣', play: mids[0],                 cap: Infinity },
+      { id: 'DEEP',   emoji: '🏈', play: deeps[0] || mids[1],     cap: 3 },
+      { id: 'PA',     emoji: '🎭', play: pas[0] || mids[2],       cap: 3 },
+      { id: 'SNEAK',  emoji: '💪', play: sneak,                   cap: 2 },
     ].filter(t => t.play);
     // Title each tile by the play's REAL archetype so the label never lies about
     // what it does (e.g. a scheme with no true deep ball shows MID PASS, not DEEP).
