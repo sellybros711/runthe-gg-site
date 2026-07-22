@@ -309,10 +309,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .schemes-head .t{font-family:var(--pix); font-size:11px; letter-spacing:1px;}
 .schemes-head .hint{font-family:var(--term); font-size:15px; color:var(--cream-dim);}
 .schemes{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;}
-.scheme{display:flex; flex-direction:column; gap:3px; padding:11px 12px; text-align:left; width:100%;
-  background:var(--panel); border:2px solid var(--line2); border-radius:11px; box-shadow:var(--shadow);}
-.scheme.sel{border-color:var(--gold); background:#16324e;}
-.scheme .nm{font-family:var(--pix); font-size:10px;}
+.scheme{position:relative; display:flex; flex-direction:column; gap:3px; padding:11px 12px 11px 15px; text-align:left; width:100%;
+  background:var(--panel); border:2px solid var(--line2); border-left:5px solid var(--acc,var(--line2)); border-radius:11px;
+  box-shadow:var(--shadow); overflow:hidden;}
+.scheme::before{content:''; position:absolute; inset:0; pointer-events:none; opacity:.5;
+  background:radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--acc,transparent) 22%, transparent), transparent 60%);}
+.scheme.sel{border-color:var(--gold); border-left-color:var(--acc,var(--gold)); background:#16324e;}
+.scheme.sel::before{opacity:.9;}
+.scheme .nm{font-family:var(--pix); font-size:10px; color:var(--acc,var(--cream)); display:flex; align-items:center; gap:7px;}
+.scheme .nm .ic{font-size:15px; line-height:1; filter:saturate(1.1);}
 .scheme .id{font-family:var(--term); font-size:16px; color:var(--cream-dim); line-height:1.05;}
 .scheme .sw{display:flex; flex-direction:column; gap:2px; margin-top:6px; padding-top:6px; border-top:1px solid var(--line); font-size:13px; line-height:1.25;}
 .scheme .sw .s{color:var(--green);} .scheme .sw .w{color:var(--red);}
@@ -605,9 +610,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js?v=20260722b"></script>
-<script src="playbook.js?v=20260722b"></script>
-<script src="engine.js?v=20260722b"></script>
+<script src="drive_generator.js?v=20260722c"></script>
+<script src="playbook.js?v=20260722c"></script>
+<script src="engine.js?v=20260722c"></script>
 <script>
 (function(){
   'use strict';
@@ -643,6 +648,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     AIR_RAID:     {id:'Tempo · quick game',  s:'Light boxes, fast',  w:'Risky deep shots'},
     SPREAD_OPTION:{id:'QB runs · tempo',     s:'Run + tempo',        w:'RPOs run soft'},
     VERTICAL:     {id:'Deep shots · risky',  s:'Most explosive',     w:'Boom or bust'},
+  };
+  // Each playbook gets its own identity — accent colour + icon — so the picker reads at a glance.
+  const SCHEME_SKIN = {
+    WEST_COAST:   {acc:'#4a97e0', ic:'🎯'},
+    SMASH_MOUTH:  {acc:'#d1553f', ic:'🔨'},
+    WIDE_ZONE:    {acc:'#3fb56a', ic:'🏃'},
+    AIR_RAID:     {acc:'#a877e6', ic:'🚀'},
+    SPREAD_OPTION:{acc:'#2fb9b0', ic:'⚡'},
+    VERTICAL:     {acc:'#eb8a2a', ic:'💣'},
   };
 
   /* ---------- runtime ---------- */
@@ -714,7 +728,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     const g = DEF_GUIDE[rep.styleKey] || {emoji:'🛡️', plain:rep.note, attack:'Read the box and play the down and distance.'};
     let deep = '';
     for(const l of rep.lines){ deep += `<div class="ln"><span class="tag">${l.tag}</span><span class="tx">${l.text}</span></div>`; }
-    const covHint = rep.coverage==='MAN' ? 'motion & rubs beat it' : rep.coverage==='ZONE' ? 'find the soft spot' : 'shows both';
+    const covHint = rep.coverage==='MAN' ? 'motion & rubs beat it' : rep.coverage==='ZONE' ? 'find the soft spot' : 'man-to-man & zone';
 
     // ---- ATTACK PLAN: rank play types vs today's defense, say why ----
     const gp = day._hiddenGameplan;
@@ -735,8 +749,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       +   `<div class="dcap"><span class="dcl">COVERAGE</span><span class="dcv">${rep.coverageLabel}</span><span class="dch">${covHint}</span></div>`
       + `</div>`
       + `<div class="aplan">`
-      +   `<div class="ap-col good"><div class="ap-h">✓ THIS WILL WORK</div>${html(good,'good')}</div>`
-      +   `<div class="ap-col bad"><div class="ap-h">✕ DON’T BOTHER</div>${html(bad,'bad')}</div>`
+      +   `<div class="ap-col good"><div class="ap-h">✓ PLAY SHEET</div>${html(good,'good')}</div>`
+      +   `<div class="ap-col bad"><div class="ap-h">✕ DO NOT RUN</div>${html(bad,'bad')}</div>`
       + `</div>`
       + `<button class="deep-toggle" id="deepToggle">📋 FULL SCOUTING REPORT ▾</button>`
       + `<div class="deep hidden" id="deepReport">${deep}</div>`;
@@ -767,10 +781,11 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   function renderSchemes(){
     const list = el('schemeList'); list.innerHTML='';
     for(const key of SCHEME_ORDER){
-      const s = PB.schemes[key], m = SCHEME_META[key];
+      const s = PB.schemes[key], m = SCHEME_META[key], sk = SCHEME_SKIN[key]||{acc:'var(--line2)',ic:'🏈'};
       const b = document.createElement('button');
       b.className='scheme'+(key===STORE.scheme?' sel':'');
-      b.innerHTML = `<span class="nm">${s.name}</span><span class="id">${m.id}</span>`
+      b.style.setProperty('--acc', sk.acc);
+      b.innerHTML = `<span class="nm"><span class="ic">${sk.ic}</span>${s.name}</span><span class="id">${m.id}</span>`
         + `<span class="sw"><span class="s">▲ ${m.s}</span><span class="w">▼ ${m.w}</span></span>`;
       b.onclick=()=>{ STORE.scheme=key; save(STORE); renderSchemes(); };
       list.appendChild(b);
