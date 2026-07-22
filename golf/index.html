@@ -22087,10 +22087,10 @@ function overlayShop(screen){
     <div class="segrow">
       ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
       <button data-sec="drops" class="${sec==='drops'?'on':''}">Drops${(function(){const ld=liveThemedDrop();return ld?'<span class="droplivedot" style="background:'+ld.accent+'"></span>':'';})()}</button>
+      <button data-sec="bag" class="${sec==='bag'?'on':''}">Clubs</button>
       <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel${secDot('apparel')}</button>
       <button data-sec="accessories" class="${sec==='accessories'?'on':''}">Accessories${secDot('accessories')}</button>
       <button data-sec="effects" class="${sec==='effects'?'on':''}">Effects${secDot('effects')}</button>
-      <button data-sec="bag" class="${sec==='bag'?'on':''}">Bag</button>
       <button data-sec="owned" class="${sec==='owned'?'on':''}">My Items</button></div>
     ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-cat="${c[0]}">${esc(c[1])}${(c[0]!==cat && cosCatNew(c[0])>0)?NDOT:''}</button>`).join('')}</div>`:''}
   </div>`);
