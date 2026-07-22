@@ -12659,7 +12659,27 @@ allows Google Fonts, or self-host Anton.*
   (14 checks): nothing-selected → golfer in both store + closet; item-selected → item-only preview (no
   `.avatarfig`) in both; every category (pattern/club/ball/cleats/eyewear/outerwear/legwear/colour/effect)
   renders an item-only preview; pack-economy + full regression green, 0 page errors. Screenshot confirms the
-  Bucket Hat shown large + alone. Deployed to /golf (50d00fe).
+  Bucket Hat shown large + alone. Deployed to /golf (50d00fe). **REVERTED + superseded — see next entry.**
+
+- **REVERTED the store/closet preview change; the real ask was the PACK REVEAL CARDS (owner: "That is not
+  what I was saying at all. The golfer preview there [store/closet] was working perfectly before. I was
+  talking solely about the item cards themselves").** The previous entry misread IMG_8624 — the screenshot
+  is the pack-opening WHEEL reveal ("PACK 5 OF 5 · YOU GOT IT!"), where each card rendered the full pixel
+  golfer WEARING the item (a hat/shirt/pattern on the golfer) instead of the item alone. Fixes: (1)
+  `git revert 46e989e` (→ c3b6ba0) restored the store/closet dressing-room GOLFER preview, which the owner
+  liked and never wanted changed (removed `previewItemBigHTML`, "Previewing on your golfer above" copy back).
+  (2) The actual target — `packCardVisual(e)` (and the dead `packItemVisual`) — rendered
+  `pxGolferURL(packItemLook(e))` (the golfer wearing the item); rewrote the cos branch to show the ITEM
+  ALONE via a shared `cosThumbHTML(cat,o)` (factored out of `cosTileHTML`, the store-tile item-only renderer:
+  fx→glow swatch, club/ball/cleats/pattern→sprite thumb, hw/ew/top/leg→item sprite, shirt/hat/trousers/shoe
+  colors→a swatch) inside a new sized `.packthumb` wrapper (86px on the wheel card, 168px on the large
+  visual). `packCosThumb(e,sz)` looks up the cosmetic's catalog entry for its col/pattern. acc/bag pack
+  items keep their tier icon (already item-only). Verified in Playwright: 0 cosmetic pack cards render the
+  golfer (item-only across all 13 cos categories on both the card + large visual), the live 54-cell pack
+  wheel shows item-only cells (pink color swatch / graphite driver / Triangles pattern / bag icon — no
+  golfer), the store dressing-room golfer preview is intact while browsing, shop tiles still render their
+  thumbnails, 0 page errors. Screenshot confirms the item-only wheel. Deployed to /golf. Store/closet
+  preview UNCHANGED (as the owner wanted).
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,

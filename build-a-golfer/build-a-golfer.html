@@ -21692,9 +21692,10 @@ function pxCosThumb(cat,id){ const base=Object.assign({},S.look||DEFLOOK);
   const url=pxGolferURL(base), start=(cat==='pat'||cat==='top')?20:(cat==='leg')?40:3;   // pat/top → torso band, leg → legs, hw/ew → head band
   return `<span class="sthumb px" style="overflow:hidden;background:#0c1f16;padding:0">${pxCropImg(url,start,48)}</span>`;
 }
-function cosTileHTML(cat,o){
-  const owned=cosOwned(cat,o.id), price=cosmeticPrice(cat,o.id), equipped=cosIsEquipped(cat,o.id);
-  const thumb = (cat==='fx')
+// a clean picture of just the ITEM (no golfer): fx→glow swatch, club/ball/cleats/pattern→sprite thumb,
+// hw/ew/top/leg→item sprite, shirt/hat/pants/shoes colors→a swatch. Shared by the shop tiles AND the pack reveal.
+function cosThumbHTML(cat,o){
+  return (cat==='fx')
      ? `<span class="sthumb color" style="background:${o.col?'radial-gradient(circle,'+o.col+',#0c1f16 72%)':'#12251b'}${o.col?';box-shadow:0 0 10px 1px '+o.col:''}"></span>`
      : (cat==='club') ? pxClubThumb(o.id)
      : (cat==='ball') ? pxBallThumb(o.id)
@@ -21703,7 +21704,11 @@ function cosTileHTML(cat,o){
      : (cat==='hw'||cat==='ew'||cat==='top'||cat==='leg') ? pxItemThumb(cat,o.id)
      : (o.pat!==undefined
         ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
-        : `<span class="sthumb color" style="background:${o.col}"></span>`);
+        : `<span class="sthumb color" style="background:${o.col||'#54736a'}"></span>`);
+}
+function cosTileHTML(cat,o){
+  const owned=cosOwned(cat,o.id), price=cosmeticPrice(cat,o.id), equipped=cosIsEquipped(cat,o.id);
+  const thumb = cosThumbHTML(cat,o);
   const bt=cosBoost(cat,o.id);
   const csE=(cat==='shirt'||cat==='hat')?COSMETIC_SHIRTS.find(x=>x.id===o.id&&x.earn):null;   // earned colorways lock on the hat tab too (never a 0-coin buy)
   if(csE && !owned){   // EARNED Legend gear not yet unlocked: show the requirement, not a buy
@@ -22039,7 +22044,7 @@ function packItemLook(e){ var look=Object.assign({},S.look||DEFLOOK);
   else if(e.cat==='cleats') look.cleats=e.id;
   return look; }
 function packItemVisual(e){
-  if(e.kind==='cos'){ return '<img src="'+pxGolferURL(packItemLook(e))+'" style="height:210px;image-rendering:pixelated">'; }
+  if(e.kind==='cos') return packCosThumb(e,168);
   var icon='gear', rc=PACK_RCOL[e.rarity]||'#b8c4bd';
   if(e.kind==='acc'){ var it=accById(e.id); icon=(ACC_SLOT_BY[it&&it.slot]||{icon:'gear'}).icon; }
   else if(e.kind==='bag'){ icon=(BAG_BY[e.club]||{ic:'driver'}).ic; }
@@ -22119,8 +22124,15 @@ function packItemBoostTxt(e){ var b=null;
   else if(e.kind==='acc'){ var it=accById(e.id); b=it&&accItemBoost(it); }
   else if(e.kind==='bag'){ var c=BAG_BY[e.club]; b=c&&c.tiers[0].b; }
   return b?shopBoostTxt(b):''; }
+// the ITEM itself (not the golfer wearing it): look up the cosmetic's catalog entry for its col/pattern,
+// then render the shared item-only thumbnail sized into the card.
+function packCosThumb(e,sz){
+  var o=null; try{ o=(cosmeticItems(e.cat)||[]).find(function(x){return x.id===e.id;}); }catch(_){}
+  o=o||{id:e.id};
+  return '<span class="packthumb" style="width:'+sz+'px;height:'+sz+'px">'+cosThumbHTML(e.cat,o)+'</span>';
+}
 function packCardVisual(e){
-  if(e.kind==='cos'){ var fxc=(e.cat==='fx')?(' fxa fx-'+e.id):''; return '<img class="pximg'+fxc+'" src="'+pxGolferURL(packItemLook(e))+'" style="height:94px;image-rendering:pixelated;margin:2px 0">'; }
+  if(e.kind==='cos') return packCosThumb(e,86);
   var icon='gear', rc=PACK_RCOL[e.rarity]||'#b8c4bd';
   if(e.kind==='acc'){ var it=accById(e.id); icon=(ACC_SLOT_BY[it&&it.slot]||{icon:'gear'}).icon; }
   else if(e.kind==='bag'){ icon=(BAG_BY[e.club]||{ic:'driver'}).ic; }
@@ -22144,6 +22156,8 @@ function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=
    +'.pcard.dim{opacity:.42;transition:opacity .45s ease .15s}'
    +'.pcard-tier{font:800 9px var(--body);letter-spacing:.1em;text-transform:uppercase}'
    +'.pcard-cat{font:800 7.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:#9fb6a8;margin-top:2px}'
+   +'.packthumb{display:flex;align-items:center;justify-content:center;flex:0 0 auto;margin:2px 0}'
+   +'.packthumb .sthumb{width:100%!important;height:100%!important;border-radius:10px}'
    +'.pcard-name{font:700 11px var(--body);color:#fff;text-align:center;line-height:1.1;padding:0 2px}'
    +'.pcard-boost{font:700 8px var(--body);color:#8fe0c4;text-align:center;line-height:1.15;padding:0 1px}'
    +'.packfoot{margin-top:22px;min-height:78px;display:flex;flex-direction:column;align-items:center;gap:12px}'
