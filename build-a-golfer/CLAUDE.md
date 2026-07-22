@@ -12601,6 +12601,49 @@ allows Google Fonts, or self-host Anton.*
     identity slot, so every card now declares what it is - CURRENT VERSION / PRIME VERSION / ALL-TIME
     GREAT. Deployed to /golf (0d5c79d).
 
+- **REAL SEASON STORYLINES + a guaranteed decision every year + a sponsor-offer alert (owner IMG_8620: the
+  highlights are "just stats rephrased into sentences," should be "real storylines... specific to things you
+  did"; a min 1 decision/year, "gone a bunch of years without getting one"; and, mid-turn: sponsor offers
+  "get totally lost... no alert... sit with the same offer and no decision made forever... alert + prompt +
+  a quick pro and con").** Three parts:
+  1. **`seasonHeadlines` rebuilt as a storyline engine.** Each finished event already stores its FULL
+     leaderboard + everyone's four rounds, so highlights are now MINED from what actually happened, not the
+     season stat line: the lead + up-to-3 supporting notes are real narratives with real names/events -
+     playoff wins over the named runner-up ("won ... in sudden death, Rory Vale the man beaten"), wire-to-
+     wire runs, Sunday charges from four back (with the closing round), blown 54-hole leads ("slept on the
+     lead at X and couldn't close"), runner-up/major heartbreaks, the mid-season missed-cut slump AND the
+     week it ended, the Tour Cup / Games-medal moment, and the rivalry series. A `drama` score ranks the
+     supporting notes so the most compelling ones show; each references a distinct event. (Winner lookup
+     hardened to never resolve to the player on a thin leaderboard.)
+  2. **Minimum one interview/decision per season.** Root cause of the zero-decision years: (a) the guarantee
+     keyed on `seasonCount` (pressers only), so a dilemma didn't satisfy it AND vice-versa; (b) `story.lastBeat`
+     stored an ABSOLUTE evtIndex from LAST season and was never reset, so early beats in a new year were
+     blocked by the cross-season gap check; (c) the outer interruption-budget + no-back-to-back gates also
+     blocked the guaranteed beat, so a couple of Moments could spend the whole budget and the year ended with
+     zero pressers/dilemmas. Fixes: a new `story._beatsYr` counts ANY decision beat (presser, dilemma, arc)
+     and is reset each season alongside `lastBeat=-99` + `seasonCount=0`; the guarantee now checks `_beatsYr`
+     and, when DUE (past the per-season jittered ~42-76% mark with zero beats), BYPASSES the budget + gap
+     gates and retries every event until it lands; and a **season-end backstop** on the summary fires the
+     year's press conference if a whole season somehow still passed with none (once per season, suppressed if
+     a beat already happened, re-render/resume-safe).
+  3. **Sponsor-offer alert (mid-turn ask).** The offer (computed at season end) was only reachable on the
+     summary Sponsors tab - no alert, and if you never opened that tab it sat undecided. Now: a persistent
+     gold **alert banner** sits at the top of the off-season whenever a deal is on the table (brand + tier +
+     why it came, tappable to decide), the decision **popup auto-fires** once on entering the off-season
+     (`maybeSponsorMoment` re-armed - CS480 had removed the call), and both the popup and the Sponsors-tab
+     card now show a quick **✓ Pro / ✗ Con** for the move (`sponsorProCon`: signing bonus / bigger rewards
+     vs tougher goals + loyalty reset, etc.). "Decide later" keeps the offer on the banner instead of
+     stranding it.
+  Verified in Playwright: 18-check storyline suite (playoff-win/wire-to-wire/slump/blown-lead/grand-slam/
+  heartbreak/grinder leads + notes, all with real names; the guarantee fires with the budget fully spent;
+  the backstop fires at zero beats + is suppressed otherwise; the new-season reset clears the stale
+  lastBeat/_beatsYr) and a 13-check sponsor suite (banner present + popup auto-fires + Pro/Con shown;
+  decide-later keeps the banner + no spammy re-pop; tapping re-opens; signing clears it; no offer → no
+  banner). Full regression green, 0 page errors. Deployed to /golf (d6b7241). Tunable: the `FAN_LADDER`-
+  style drama weights + note copy in `seasonHeadlines`, the guarantee jitter (`_guarEv` 42-76%), the
+  sponsor Pro/Con copy. (The 4 "FAIL" lines in the older tier suite are stale fixtures expecting the
+  pre-follow-up "PRIME VERSION · year" / no-current-subtext behaviour, not regressions.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
