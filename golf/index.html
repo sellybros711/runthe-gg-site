@@ -20045,7 +20045,7 @@ function hvGifCompose(img,g,plots,hole,c,D){
 function hvShareCaption(hole, c){
   const ace = hole.par===3 && (hole.par+hole.toPar)===1;   // a par-3 in one is a Hole-in-One, not an "Eagle"
   const res = ace ? 'Hole-in-One' : dResultLong(hole.par, hole.toPar);
-  return withSocial(`Check out this ${res} I just made on Run The Tour! ⛳\n${dShort(c.v)} · Hole ${hole.n} · ${hole.par+hole.toPar} (${dtp(hole.toPar)})`);
+  return withSocial(`Check out this ${res} I just made on Run The Tour! ⛳\n${dShort(c.v)} · Hole ${hole.n} · Par ${hole.par} · ${hole.yards} yds`);
 }
 function hvShareShot(holeIdx){
   const hole=S.dailyHoles[holeIdx], c=DAILY_COURSES[S.dailyCourse]; if(!hole||!c) return;
