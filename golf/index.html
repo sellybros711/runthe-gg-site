@@ -21802,7 +21802,7 @@ const PACK_TYPES={
           pityEpic:4, pityLeg:12, col:'#F1D04A', accent:'#fff0b4', glow:'rgba(241,208,74,.52)'},
   // SEASONAL pack — only offered while its drop is live. Tour-like base odds, but a chunk of the rolls are
   // biased toward that drop's items (dropBias). Coins-only (no free credits), priced below Tour (3rd highest).
-  summer:{id:'summer', name:'Summer Smash Pack', short:'Summer', price:18000, seasonal:true,
+  summer:{id:'summer', name:'Summer Smash Pack', short:'Summer', price:30000, seasonal:true,
           dropId:'summer', dropBias:0.40,
           odds:[['common',0.30],['rare',0.40],['epic',0.22],['legendary',0.08]],
           pityEpic:6, pityLeg:24, col:'#ff9d3a', accent:'#ffd39a', glow:'rgba(255,157,58,.48)'},
@@ -22181,6 +22181,9 @@ function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=
    +'.pcard.dim{opacity:.42;transition:opacity .45s ease .15s}'
    +'.pcard-tier{font:800 9px var(--body);letter-spacing:.1em;text-transform:uppercase}'
    +'.pcard-cat{font:800 7.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:#9fb6a8;margin-top:2px}'
+   +'.packcard-glow{animation:pkGlowPulse 1.9s ease-in-out infinite}'
+   +'@keyframes pkGlowPulse{0%,100%{box-shadow:0 0 12px var(--pkg,rgba(255,157,58,.5))}50%{box-shadow:0 0 30px var(--pkg,rgba(255,157,58,.5)),0 0 52px var(--pkg,rgba(255,157,58,.5))}}'
+   +'@media(prefers-reduced-motion:reduce){.packcard-glow{animation:none;box-shadow:0 0 28px var(--pkg,rgba(255,157,58,.5))}}'
    +'.packthumb{display:flex;align-items:center;justify-content:center;flex:0 0 auto;margin:2px 0}'
    +'.packthumb .sthumb{width:100%!important;height:100%!important;border-radius:10px}'
    +'.pcard-name{font:700 11px var(--body);color:#fff;text-align:center;line-height:1.1;padding:0 2px}'
@@ -22403,7 +22406,8 @@ function packShopNode(){
     var legPct=(pt.odds.find(function(o){return o[0]==='legendary';})||[0,0])[1];
     var isBase=(id==='base'), cr=pt.seasonal?0:packCredits(id), freeThis=(isBase&&free)||cr>0, afford=freeThis||bal>=pt.price;
     var seasonD=pt.seasonal?dropById(pt.dropId):null;
-    var card=$('<div style="max-width:380px;margin:12px auto 0;padding:12px;border-radius:16px;background:linear-gradient(165deg,'+pt.col+'1c,#0c1f16);border:2px solid '+pt.col+';box-shadow:0 0 22px '+pt.glow+'"></div>');
+    var glowSh=pt.seasonal?'':'box-shadow:0 0 22px '+pt.glow+';';   // seasonal card gets an animated pulsing glow instead
+    var card=$('<div class="'+(pt.seasonal?'packcard-glow':'')+'" style="--pkg:'+pt.glow+';max-width:380px;margin:12px auto 0;padding:12px;border-radius:16px;background:linear-gradient(165deg,'+pt.col+'1c,#0c1f16);border:2px solid '+pt.col+';'+glowSh+'"></div>');
     card.appendChild($('<div style="display:flex;gap:12px;align-items:center">'
       +'<div style="flex:0 0 auto;filter:drop-shadow(0 0 12px '+pt.glow+')">'+pxPackImg(80,id)+'</div>'
       +'<div style="flex:1;min-width:0">'
