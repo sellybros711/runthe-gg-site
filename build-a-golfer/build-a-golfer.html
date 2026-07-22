@@ -23587,14 +23587,19 @@ async function h2hJoin(code){
     S.h2h.matchId=data; S.h2h.code=code; S.h2h.status='lobby'; track('h2h_join'); h2hGoLobby();
   }catch(e){ h2hErr(e); }
 }
-async function h2hQuick(){
-  S.h2h.searching=true; S.screen='h2hlobby'; S.h2h.quick=true; render();
-  try{ const {data,error}=await sb.rpc('h2h_quick',{p_mode:S.h2h.mode,p_holes:S.h2h.holes}); if(error) throw error;
-    S.h2h.matchId=data; S.h2h.status='lobby'; track('h2h_quick',{holes:S.h2h.holes});
-    if(H2H_BOTS_ENABLED){   // keep "finding an opponent…" up; poll for a real human, else fill with AI
-      S.h2h.searching=true; S.screen='h2hlobby'; render(); h2hEnsurePoll(); h2hArmBotFill();
-    } else { S.h2h.searching=false; h2hGoLobby(); }
-  }catch(e){ S.h2h.searching=false; render(); h2hErr(e); }
+// Draft-FIRST Quick Match (owner): you build your golfer immediately, THEN get matched with an opponent,
+// then the course + tale-of-the-tape reveal, then start. Quick Match is bot-backed so it ALWAYS resolves
+// instantly (no server-dependent lobby that can hang / race a "found" popup against the spinner) — real-human
+// play is the private "Play with friends" code flow. The AI opponent(s) join right after you submit (below).
+function h2hQuick(){
+  const mode=S.h2h.mode, cap=h2hCap(mode);
+  const me={user_id:h2hUid(), username:(sbUsername||'You'), bot:false, submitted:false, draft:null, slot:0, team:null};
+  Object.assign(S.h2h,{quick:true, bots:true, matchId:null, seed:Math.floor(Math.random()*2147482000),
+    players:[me], mySlot:0, myTeam:null, myWheel:Math.floor(Math.random()*2147482000),
+    status:'drafting', searching:false, matching:false, previewed:false, watching:false, drafting:false,
+    submitted:false, _botPool:h2hMakeBots(cap-1)});
+  track('h2h_quick',{holes:S.h2h.holes, mode});
+  h2hBeginDraft();   // straight to the draft — your opponent is found while you build
 }
 function h2hGoLobby(){ S.screen='h2hlobby'; render(); h2hEnsurePoll(); }
 
@@ -23656,11 +23661,19 @@ function h2hTake(k){ if(!S.h2h.current) return; S.h2h.slots[k]={golfer:S.h2h.cur
 }
 async function h2hSubmitDraft(){
   if(h2hFilled()<8){ toast('Fill all 8 skills first'); return; }
-  if(S.h2h.bots){   // AI-filled match: submit locally, then a short "waiting" beat before the matchup
+  if(S.h2h.bots){   // Quick Match / AI-backed: submit locally, "find" the opponent(s), then the matchup
     const meP=S.h2h.players.find(p=>p.slot===0);
     meP.draft={skills:h2hSkills(), look:h2hMyLook()}; meP.submitted=true; S.h2h.submitted=true;
-    track('h2h_draft_submit',{ovr:h2hOvr(),bots:true}); S.screen='h2hlobby'; render();
-    setTimeout(()=>{ if(S.h2h&&S.h2h.bots&&!S.h2h.previewed&&!S.h2h.watching){ S.h2h.players.forEach(p=>p.submitted=true); h2hEnterPreview(); } }, 1300+Math.random()*1100);
+    // draft-FIRST: bring the AI opponent(s) into the match NOW (they were "found" while you drafted, so a
+    // draft-first Quick Match has no bots in the roster yet — pull them from the pool + assign slots/teams).
+    const cap=h2hCap(S.h2h.mode);
+    if(S.h2h._botPool && S.h2h.players.length<cap){
+      while(S.h2h.players.length<cap && S.h2h._botPool.length){ const bot=S.h2h._botPool.shift(); bot.slot=S.h2h.players.length; bot.submitted=true; S.h2h.players.push(bot); }
+      if(h2hMode(S.h2h.mode).teams){ const order=h2hShuffle(S.h2h.players.map(p=>p.slot)); order.forEach((sl,i)=>{ S.h2h.players[sl].team=i<2?0:1; }); S.h2h.myTeam=(S.h2h.players.find(p=>p.slot===0)||{}).team; }
+    }
+    track('h2h_draft_submit',{ovr:h2hOvr(),bots:true});
+    S.h2h.matching=true; S.screen='h2hlobby'; render();   // "finding your opponent…" beat, then the reveal
+    setTimeout(()=>{ if(S.h2h&&S.h2h.bots&&!S.h2h.previewed&&!S.h2h.watching){ S.h2h.matching=false; S.h2h.players.forEach(p=>p.submitted=true); h2hEnterPreview(); } }, 1500+Math.random()*1200);
     return;
   }
   S.h2h.submitting=true; render();
@@ -23920,7 +23933,7 @@ function scrH2HHome(){
   add(bwrap);
   add($(`<div style="height:8px"></div>`));
   const stack=$(`<div class="stack" style="max-width:420px;margin:0 auto"></div>`);
-  const q=$(`<button class="btn goldfill">Quick Match<span class="sub">${m.cap>2?`Get grouped with the next ${m.cap} players online`:'Get paired with the next player online'} · random course</span></button>`); q.onclick=h2hQuick; stack.appendChild(q);
+  const q=$(`<button class="btn goldfill">Quick Match<span class="sub">Build your golfer, then get matched ${m.cap>2?`vs ${m.cap-1} more`:'up'} instantly · random course</span></button>`); q.onclick=h2hQuick; stack.appendChild(q);
   const cr=$(`<button class="btn teal">Play with friends<span class="sub">Private match${S.h2h.courseKey?' · '+esc(dShort(DAILY_COURSES[S.h2h.courseKey].v)):' · random course'} · share the code</span></button>`); cr.onclick=()=>h2hCreate(false); stack.appendChild(cr);
   // join by code
   const jwrap=$(`<div style="margin-top:8px;display:flex;gap:8px">
@@ -23942,6 +23955,14 @@ function scrH2HLobby(){
   const submitted=S.h2h.submitted, m=h2hMode(S.h2h.mode), cap=m.cap;
   const players=S.h2h.players||[], n=players.length, need=cap-n;
   h2hBack('','‹ Leave match', h2hLeave);
+  // post-draft "getting matched up" beat (draft-first Quick Match): you've built your golfer, now we find
+  // your opponent, then the course + tale-of-the-tape reveal.
+  if(S.h2h.matching){
+    add($(`<div class="center" style="padding:34px 0 6px"><span class="authspin" style="width:26px;height:26px"></span>
+      <h1 class="center" style="font-size:24px;margin:18px 0 4px">Finding ${cap>2?'players':'an opponent'}…</h1>
+      <p class="lede center">Matching you into a ${esc(m.label)} · ${S.h2h.holes}-hole match.</p></div>`));
+    return;
+  }
   if(S.h2h.searching){
     add($(`<div class="center" style="padding:34px 0 6px"><span class="authspin" style="width:26px;height:26px"></span>
       <h1 class="center" style="font-size:24px;margin:18px 0 4px">Finding ${cap>2?'players':'an opponent'}…</h1>
@@ -24123,8 +24144,10 @@ function scrH2HPreview(){
   const course=S.h2h.course, units=S.h2h.units, n=units.length;
   h2hBack('','‹ Leave match', h2hLeave);
   add(h2hTag(`Matchup · ${esc(m.label)}`));
-  add($(`<h1 class="center" style="font-size:24px;margin:9px 0 2px">Tale of the tape</h1>`));
-  add($(`<p class="lede center" style="max-width:440px;margin:6px auto 4px">${esc(dShort(course.v))} · ${dCondLabel(S.h2h.cond)} · ${S.h2h.holes} holes. ${m.teams?'Best of each skill is highlighted per team.':'Lowest total wins.'}</p>`));
+  // reveal the course you're playing (owner: "reveal the course you are going to play"), then the stat comparison
+  add($(`<div class="center" style="margin:8px 0 2px"><span class="tag" style="color:var(--gold);border-color:var(--gold)">📍 ${esc(dShort(course.v))}${course.loc?' · '+esc(course.loc):''} · ${dCondLabel(S.h2h.cond)}</span></div>`));
+  add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tale of the tape</h1>`));
+  add($(`<p class="lede center" style="max-width:440px;margin:6px auto 4px">${S.h2h.holes} holes · ${m.teams?'best of each skill is highlighted per team.':'lowest total wins.'}</p>`));
   const ovrs=units.map(u=>Math.round(ovrFromSkills(u.dispSkills)));
   const maxOvr=Math.max.apply(null,ovrs);
   const wrap=$(`<div style="overflow-x:auto;margin:12px 0 4px"></div>`);
