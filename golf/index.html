@@ -3867,7 +3867,7 @@ function cardKind(g){
 }
 function cardKindHTML(g){
   const k=cardKind(g);
-  if(k==='prime'){ const y=((g.data_source||'').match(/(19|20)\d\d/)||[])[0]; return `<div class="cardkind ck-prime">PRIME VERSION${y?' · '+y:''}</div>`; }
+  if(k==='prime') return `<div class="cardkind ck-prime">PRIME VERSION</div>`;   // no peak YEAR shown (owner): it's the peak version of the player as a whole, not one singled-out season
   if(k==='great') return `<div class="cardkind ck-great">ALL-TIME GREAT</div>`;
   return '';
 }
