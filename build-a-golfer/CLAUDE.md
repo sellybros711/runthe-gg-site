@@ -12554,6 +12554,43 @@ allows Google Fonts, or self-host Anton.*
   outfit once in the Closet and it now sticks through any refresh (iOS may need a full close-and-reopen of
   the app/tab to pick up the new code first).
 
+- **CARD TIER REVAMP — tier = rating-derived quality, PRIME VERSION / ALL-TIME GREAT identity subtext,
+  primes only for 34+ (owner IMG_8617: current Phil "rated very low but labeled a legend"; discussed the
+  system first via AskUserQuestion, all four picks approved).** The confusion had three overlapping labels:
+  the tier tag (★ LEGENDARY etc., the pull-rate bucket, hand-assigned by REPUTATION in the original
+  roster), the era word ("Legend"/"Current") in the sub line, and "Prime" baked into the card name. Fixes:
+  1. **Tier is now COMPUTED from the card's overall at load** (in the GOLFERS map, before buildPool):
+     Legendary ≥90.5 · Epic ≥85 · Rare ≥79 · Common below (bands picked from the data → 16/78/121/53 of
+     268 cards; Legendary = a real ~6% jackpot tier). A gold tag on a weak card is now impossible —
+     current Phil (73) is Common, Prime Phil (95) Legendary — and future re-rates can never de-sync it.
+     Pull rates (5/25/35/35) unchanged; the daily's seeded wheel sequence shifts once at deploy (harmless).
+  2. **Card identity = a subtext under the name** (`cardKind`/`cardKindHTML` + `.cardkind` CSS): a prime of
+     an active player shows gold "PRIME VERSION · <peak year>" (year parsed from data_source), a retired
+     great (Nicklaus, Hogan… and the merged Tiger) shows cream "ALL-TIME GREAT", a current pro shows
+     nothing. The era word was dropped from the sub line everywhere. **Internal names keep the "Prime "
+     prefix** (saves/S.revealed/bag_primes/achievements all key on it) — only the DISPLAY strips it
+     (`cardDispName`), wired through all 3 reveal sites (career/daily draft, off-season, H2H), the draft
+     hints, the preview wheel + slot-spin strips, the rarity toast, the bag tiles (.dwho ×2), and the
+     build-screen scorecard.
+  3. **Primes restricted to genuinely past-prime players (34+):** removed Prime Spieth (33), Prime Cameron
+     Smith (33), Prime Zalatoris (30). The duplicate 95 "Tiger Woods" (2009) row was deleted — ONE Tiger
+     remains (the 99, internal name "Prime Tiger Woods", displayed "Tiger Woods · ALL-TIME GREAT" since he
+     has no current card). Added 5 NEW primes for clearly-declined 34+ vets (all have current cards in the
+     roster): Prime Justin Rose 92 (2018 World No.1), Prime Adam Scott 91 (2014), Prime Rickie Fowler 91
+     (2016), Prime Tony Finau 89 (2022), Prime Gary Woodland 89 (2019 US Open) — 27 primes total, all
+     `fld:0` (never in the sim field).
+  4. **Achievements:** `primesPulledCount` now INTERSECTS the owned bag_primes map with the live prime set
+     (a removed card no longer counts), and "Prime Everything" goal 25→27 (points unchanged, so no Tour
+     Rep rescale). The How-to-Play pull-odds note explains tiers are earned by rating.
+  Verified in Playwright (33/33): 0 tier/band mismatches across all 268 cards, 0 Legendary under 85, tier
+  populations sane, 27 primes with none under 34, one 99 Tiger, the 5 new vets in-pool + out-of-field; the
+  LIVE reveal card shows "Phil Mickelson" + "PRIME VERSION · 2006" + ★ LEGENDARY for the prime, a plain
+  Common card for current Phil (zero "Legend" text), ALL-TIME GREAT + Legendary for Nicklaus; display names
+  flow through hints/bag/build; buildPool/drawGolfer clean; the achievement intersection ignores removed
+  cards; full regression green, 0 page errors. Screenshots of all three card types sent to the owner.
+  Deployed to /golf (e7a99b8). Tunable: the band cutoffs in the GOLFERS map, the `.cardkind` styling, the
+  new primes' ratings.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
