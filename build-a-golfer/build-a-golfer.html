@@ -1744,6 +1744,17 @@ window.GA_ID='G-L29P5MRWKE';
 .btn.goldfill{font-weight:900; box-shadow:0 9px 22px -8px rgba(154,110,18,.85), inset 0 1px 0 rgba(255,255,255,.55), 0 0 0 1.5px rgba(241,208,74,.55)}
 .segrow button.on, .catchip.on{font-weight:900}
 /* ===== DROPS: collection banners + live dot ===== */
+/* home-screen LIVE DROP promo pill */
+.homedrop{display:flex;align-items:center;gap:10px;width:100%;max-width:470px;margin:14px auto 0;text-align:left;
+  border:1.5px solid var(--dacc);border-radius:13px;padding:10px 14px;cursor:pointer;color:var(--oncard);
+  background:linear-gradient(120deg, color-mix(in srgb, var(--dacc) 18%, #0c1f16), #0c1f16 75%);
+  box-shadow:0 6px 16px rgba(0,0,0,.35), 0 0 14px color-mix(in srgb, var(--dacc) 25%, transparent)}
+.homedrop .hd-dot{flex:0 0 auto;width:9px;height:9px;border-radius:50%;background:var(--dacc);animation:droppulse 1.6s ease-in-out infinite}
+.homedrop .hd-txt{display:flex;flex-direction:column;min-width:0}
+.homedrop .hd-txt b{font:800 14px/1.2 var(--body);color:var(--dacc)}
+.homedrop .hd-txt span{font:600 11.5px/1.35 var(--body);color:var(--muted)}
+.homedrop .hd-go{margin-left:auto;color:var(--dacc);font-size:15px}
+@media (prefers-reduced-motion:reduce){ .homedrop .hd-dot{animation:none} }
 .dropbanner{display:block;width:100%;text-align:left;position:relative;border:1.5px solid var(--dacc);border-radius:14px;
   padding:13px 15px;margin:0 0 10px;cursor:pointer;color:var(--oncard);
   background:linear-gradient(135deg, color-mix(in srgb, var(--dacc) 16%, #0c1f16), #0c1f16 70%);
@@ -7657,6 +7668,16 @@ function scrTitle(){
     stack.appendChild($(`<div class="small center" style="color:var(--muted)">★ Next Monthly Spotlight: <b style="color:var(--gold)">${esc(dShort(DAILY_COURSES[ns.key].v))}</b> · ${fmtDayKey(ns.liveDayKey)}</div>`));
   }
   w.appendChild(stack);
+  // ── LIVE THEMED DROP promo: shows whenever a windowed drop is live (Summer Smash now, Spooky in Oct...),
+  // routes straight to the Pro Shop's Drops tab. Fully data-driven off the DROPS registry. ──
+  try{ const ld=liveThemedDrop();
+    if(ld){ const pr=dropProgress(ld), done=pr.own>=pr.tot;
+      const db=$(`<button class="homedrop" style="--dacc:${ld.accent}">
+        <span class="hd-dot"></span>
+        <span class="hd-txt"><b>${esc(ld.name)} is LIVE</b><span>${done?'✓ Collection complete!':`Collect all ${pr.tot} · you have ${pr.own} · ends ${_DROP_MON[ld.window[1][0]-1]} ${ld.window[1][1]}`}</span></span>
+        <span class="hd-go">▸</span>`);
+      db.onclick=()=>{ track('home_drop_promo',{id:ld.id}); S.overlay='shop'; S.shopSec='drops'; S.shopDrop=ld.id; render(); };
+      w.appendChild(db); } }catch(e){}
   // ── destinations, promoted to prominent nav tiles (Leaderboard / Trophy Room / Pro Shop stand out) ──
   const sec=$(`<div class="home-nav"></div>`);
   const signedIn=sbSignedIn();
@@ -22029,6 +22050,12 @@ function overlayShop(screen){
   sticky.querySelectorAll('[data-closet]').forEach(x=>x.onclick=()=>{ track('shop_open_closet'); S.shopPreview=null; S.overlay=null;
     if(S.screen==='setup'){ render(); return; } S.setupEdit=true; S.setupReturn=null; S.screen='setup'; S.setupCat='shirt'; render(); });
   if(sec==='packs'){
+    try{ const ld=liveThemedDrop();
+      if(ld){ const pb=$(`<button class="homedrop" style="--dacc:${ld.accent};margin:0 0 12px">
+          <span class="hd-dot"></span>
+          <span class="hd-txt"><b>${esc(ld.name)} items are in packs NOW</b><span>Limited window · ends ${_DROP_MON[ld.window[1][0]-1]} ${ld.window[1][1]} · see the collection ▸</span></span>`);
+        pb.onclick=()=>{ S.shopSec='drops'; S.shopDrop=ld.id; render(); };
+        ov.appendChild(pb); } }catch(e){}
     ov.appendChild(packShopNode());
     ov.appendChild($(`<button class="btn red" style="margin-top:14px">Done</button>`));
     sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
