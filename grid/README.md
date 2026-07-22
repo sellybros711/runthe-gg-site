@@ -11,7 +11,7 @@ homepage — same as `/football/` while it's in development.
 ```
 /grid/
   index.html            RunTheGrid hub — lists the day's puzzles
-  matching/             Daily Match (live)
+  match/                 Daily Match (live)
     index.html          the whole game UI, self-contained
     entities.js         tagged entity database — the real content source
     generator.js        seeded RNG + inverted-index generator + uniqueness solver
@@ -25,7 +25,7 @@ homepage — same as `/football/` while it's in development.
 
 | Puzzle | Path | Status |
 |---|---|---|
-| **Daily Match** | `/grid/matching/` | Playable prototype |
+| **Daily Match** | `/grid/match/` | Playable prototype |
 | **Daily Crossword** | `/grid/crossword/` | Planned |
 
 Coins are a shared RunTheGrid wallet (`runthegrid_coins`); each game keeps its
@@ -53,12 +53,12 @@ bank stays inside NFL/NBA/MLB.
 
 | Spec section | Where |
 |---|---|
-| §2 Interaction (validate on lane-fill, bounce-back, modes) | `matching/index.html` — `validate()`, `placeInLane()` |
+| §2 Interaction (validate on lane-fill, bounce-back, modes) | `match/index.html` — `validate()`, `placeInLane()` |
 | §4 Uniqueness solver (exactly ONE assignment) | `generator.js` — `solve()` / `isUnique()` |
 | §5 Trap density (3–6 extra edges) | `generator.js` — `trapEdges()` |
 | §6 Difficulty scoring + lane colours | `generator.js` — `scoreBoard()`, `categoryDifficulty()` |
-| §7 Timer, par, coins, hints | `matching/index.html` — `coinsFor()`, `parTimes()`, hint handlers |
-| §8 Draft-Grade share card | `matching/index.html` — `gradeFor()`, `shareText()` |
+| §7 Timer, par, coins, hints | `match/index.html` — `coinsFor()`, `parTimes()`, hint handlers |
+| §8 Draft-Grade share card | `match/index.html` — `gradeFor()`, `shareText()` |
 | §0/§10 Deterministic daily seed | `generator.js` — `seededRandom()`, `generateDaily()` |
 
 ### The one hard requirement
@@ -120,8 +120,8 @@ whatever `entities.js` exports — no code change needed as the DB grows.
 ### QA
 
 ```
-cd grid/matching && node verify.js            # authored bank
-cd grid/matching && node verify-generator.js  # data-driven generator + variety report
+cd grid/match && node verify.js            # authored bank
+cd grid/match && node verify-generator.js  # data-driven generator + variety report
 ```
 
 Checks (spec §11): every board has exactly one solution, the authored solution

@@ -58,5 +58,5 @@ Return the JSON array only.
 - `notable coach` per league
 
 After each paste-back: `node grid/build-corpus.js` then
-`node grid/matching/verify-generator.js`. Read the warnings — they flag dropped
+`node grid/match/verify-generator.js`. Read the warnings — they flag dropped
 awards and suspicious values to fix at the source.

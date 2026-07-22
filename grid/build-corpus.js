@@ -5,7 +5,7 @@
  *
  * Reads every *.json file in grid/data/ (the drop folder), validates it against
  * the shared schema, dedupes, and compiles the athlete/coach entries into
- * grid/matching/entities.js (what the Daily Match generator loads). Team and
+ * grid/match/entities.js (what the Daily Match generator loads). Team and
  * term entries are validated and counted here too — they're the shared corpus
  * the Daily Crossword will read.
  *
@@ -18,7 +18,7 @@
 'use strict';
 var fs = require('fs'), path = require('path');
 var DATA_DIR = path.join(__dirname, 'data');
-var OUT = path.join(__dirname, 'matching', 'entities.js');
+var OUT = path.join(__dirname, 'match', 'entities.js');
 
 /* ---- controlled vocabularies (categories only group on exact strings) ----- */
 var AWARDS = {
@@ -128,10 +128,10 @@ console.log('  files read: ' + files.join(', '));
 console.log('  athletes/coaches: ' + athletes.length + '   teams: ' + teams.length + '   terms: ' + terms.length + (other.length ? '   other: ' + other.length : ''));
 console.log('  athletes by sport: ' + JSON.stringify(dist(athletes, function (a) { return a.sport; })));
 console.log('  athletes by fame:  ' + JSON.stringify(dist(athletes, function (a) { return a.f || a.fame; })));
-console.log('  -> wrote ' + compactList.length + ' entities to matching/entities.js');
+console.log('  -> wrote ' + compactList.length + ' entities to match/entities.js');
 if (warnings.length) {
   console.log('\n  ' + warnings.length + ' warning(s) (built anyway):');
   warnings.slice(0, 40).forEach(function (m) { console.log('    ! ' + m); });
   if (warnings.length > 40) console.log('    … +' + (warnings.length - 40) + ' more');
 }
-console.log('\nOK. Now run: cd grid/matching && node verify-generator.js\n');
+console.log('\nOK. Now run: cd grid/match && node verify-generator.js\n');

@@ -1,10 +1,14 @@
-# RunTheGrid — shared content corpus
+# RunTheGrid — content corpus (Daily Match)
 
-**This folder is the single source of truth for both games.** Daily Match and the
-Daily Crossword both read from the `*.json` files here. Add data here, rebuild,
-and both games get richer. Nothing else needs to change.
+**This folder feeds Daily Match.** Add JSON here, rebuild, and the game gets
+richer. `match/entities.js` is **generated** from these files — never hand-edit it.
 
-`matching/entities.js` is **generated** from these files — never hand-edit it.
+> The Daily Crossword currently keeps its own data in `grid/crossword/data/`
+> (see its `DATA_CONTRACT.md`). Unifying both games onto one shared corpus here —
+> plus a daily coordinator that stops the two games featuring the same
+> name/team/term on the same day — is a planned follow-up. That's why every entry
+> already carries a **stable, unique id**: it's the join key that unification
+> will use.
 
 ## The loop (do this to add content)
 
@@ -16,7 +20,7 @@ and both games get richer. Nothing else needs to change.
 3. **Build + validate:**
    ```
    node grid/build-corpus.js            # validates, dedupes, writes entities.js
-   node grid/matching/verify-generator.js   # confirms boards still generate + report
+   node grid/match/verify-generator.js   # confirms boards still generate + report
    ```
    The build FAILS on malformed JSON or duplicate ids, and warns (then drops)
    off-vocabulary awards. Well-formed but factually wrong tags still need a human
