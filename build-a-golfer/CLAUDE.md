@@ -12644,6 +12644,23 @@ allows Google Fonts, or self-host Anton.*
   sponsor Pro/Con copy. (The 4 "FAIL" lines in the older tier suite are stale fixtures expecting the
   pre-follow-up "PRIME VERSION · year" / no-current-subtext behaviour, not regressions.)
 
+- **ITEM PREVIEW = the item alone, not worn on the golfer (owner IMG_8624: "the cards for items are your
+  golfer. I want it to be solely the item. This applies to the store and closet... when looking through
+  your items").** The item TILES were already item-only (CS458 `pxItemThumb`/`pxPatThumb`/etc.), but when
+  you TAPPED an item the big dressing-room preview at the top showed your golfer WEARING it ("Previewing on
+  your golfer above" - `shopEffLook()` merged the pending item onto the look). New `previewItemBigHTML()`
+  renders a large, clean image of JUST the selected item in the preview slot whenever `S.shopPreview` is set
+  - headwear/eyewear/outerwear/legwear via `pxItemThumb`, patterns via `pxPatThumb`, clubs/balls/cleats via
+  their thumbs, shirt/hat/trousers/shoe COLOURS + effects as a big swatch, and accessories as their large
+  slot icon - scaled up + de-chromed via a new `.preview-item`/`.preview-swatch` CSS. Wired into both the
+  Pro Shop (`overlayShop`) and the closet (`scrSetup` sticky); with nothing selected the golfer dressing
+  room stays (so you can still see your full golfer when just browsing). Detail-card copy updated
+  ("Shown above - the item itself" / "Shown above - nothing is spent until you buy"). Verified in Playwright
+  (14 checks): nothing-selected → golfer in both store + closet; item-selected → item-only preview (no
+  `.avatarfig`) in both; every category (pattern/club/ball/cleats/eyewear/outerwear/legwear/colour/effect)
+  renders an item-only preview; pack-economy + full regression green, 0 page errors. Screenshot confirms the
+  Bucket Hat shown large + alone. Deployed to /golf (50d00fe).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
