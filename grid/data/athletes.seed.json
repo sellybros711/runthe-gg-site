@@ -1,0 +1,1907 @@
+[
+  {
+    "id": "lebron",
+    "name": "LeBron James",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 5,
+    "teams": [
+      "Cleveland Cavaliers",
+      "Miami Heat",
+      "Los Angeles Lakers"
+    ],
+    "jersey": [
+      23,
+      6
+    ],
+    "draftYear": 2003,
+    "draftPick": 1,
+    "birthPlace": "Ohio",
+    "position": "Forward",
+    "awards": [
+      "NBA MVP",
+      "Finals MVP",
+      "Rookie of the Year",
+      "Scoring Champion"
+    ],
+    "championships": 4,
+    "milestones": [
+      "30,000 Point Club",
+      "40,000 Point Club"
+    ]
+  },
+  {
+    "id": "jordan",
+    "name": "Michael Jordan",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 5,
+    "teams": [
+      "Chicago Bulls",
+      "Washington Wizards"
+    ],
+    "jersey": [
+      23,
+      45
+    ],
+    "draftYear": 1984,
+    "draftPick": 3,
+    "college": "North Carolina",
+    "birthPlace": "New York",
+    "position": "Guard",
+    "awards": [
+      "NBA MVP",
+      "Finals MVP",
+      "Defensive Player of the Year",
+      "Rookie of the Year",
+      "Scoring Champion",
+      "Hall of Fame"
+    ],
+    "championships": 6,
+    "milestones": [
+      "30,000 Point Club"
+    ]
+  },
+  {
+    "id": "kobe",
+    "name": "Kobe Bryant",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 5,
+    "teams": [
+      "Los Angeles Lakers"
+    ],
+    "jersey": [
+      8,
+      24
+    ],
+    "draftYear": 1996,
+    "draftPick": 13,
+    "birthPlace": "Pennsylvania",
+    "position": "Guard",
+    "awards": [
+      "NBA MVP",
+      "Finals MVP",
+      "Scoring Champion",
+      "Hall of Fame"
+    ],
+    "championships": 5,
+    "milestones": [
+      "30,000 Point Club"
+    ]
+  },
+  {
+    "id": "shaq",
+    "name": "Shaquille O'Neal",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 5,
+    "teams": [
+      "Orlando Magic",
+      "Los Angeles Lakers",
+      "Miami Heat",
+      "Phoenix Suns",
+      "Cleveland Cavaliers"
+    ],
+    "jersey": [
+      32,
+      34
+    ],
+    "draftYear": 1992,
+    "draftPick": 1,
+    "college": "LSU",
+    "birthPlace": "New Jersey",
+    "position": "Center",
+    "awards": [
+      "NBA MVP",
+      "Finals MVP",
+      "Rookie of the Year",
+      "Scoring Champion",
+      "Hall of Fame"
+    ],
+    "championships": 4
+  },
+  {
+    "id": "magic",
+    "name": "Magic Johnson",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 5,
+    "teams": [
+      "Los Angeles Lakers"
+    ],
+    "jersey": [
+      32
+    ],
+    "draftYear": 1979,
+    "draftPick": 1,
+    "college": "Michigan State",
+    "birthPlace": "Michigan",
+    "position": "Guard",
+    "awards": [
+      "NBA MVP",
+      "Finals MVP",
+      "Hall of Fame"
+    ],
+    "championships": 5
+  },
+  {
+    "id": "kareem",
+    "name": "Kareem Abdul-Jabbar",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 5,
+    "teams": [
+      "Milwaukee Bucks",
+      "Los Angeles Lakers"
+    ],
+    "jersey": [
+      33
+    ],
+    "draftYear": 1969,
+    "draftPick": 1,
+    "college": "UCLA",
+    "birthPlace": "New York",
+    "position": "Center",
+    "awards": [
+      "NBA MVP",
+      "Finals MVP",
+      "Rookie of the Year",
+      "Scoring Champion",
+      "Hall of Fame"
+    ],
+    "championships": 6,
+    "milestones": [
+      "30,000 Point Club"
+    ]
+  },
+  {
+    "id": "bird",
+    "name": "Larry Bird",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 5,
+    "teams": [
+      "Boston Celtics"
+    ],
+    "jersey": [
+      33
+    ],
+    "draftYear": 1978,
+    "draftPick": 6,
+    "college": "Indiana State",
+    "birthPlace": "Indiana",
+    "position": "Forward",
+    "awards": [
+      "NBA MVP",
+      "Finals MVP",
+      "Rookie of the Year",
+      "Hall of Fame"
+    ],
+    "championships": 3
+  },
+  {
+    "id": "duncan",
+    "name": "Tim Duncan",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 5,
+    "teams": [
+      "San Antonio Spurs"
+    ],
+    "jersey": [
+      21
+    ],
+    "draftYear": 1997,
+    "draftPick": 1,
+    "college": "Wake Forest",
+    "position": "Forward",
+    "awards": [
+      "NBA MVP",
+      "Finals MVP",
+      "Rookie of the Year",
+      "Hall of Fame"
+    ],
+    "championships": 5
+  },
+  {
+    "id": "curry",
+    "name": "Stephen Curry",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 5,
+    "teams": [
+      "Golden State Warriors"
+    ],
+    "jersey": [
+      30
+    ],
+    "draftYear": 2009,
+    "draftPick": 7,
+    "college": "Davidson",
+    "birthPlace": "Ohio",
+    "position": "Guard",
+    "awards": [
+      "NBA MVP",
+      "Finals MVP",
+      "Scoring Champion"
+    ],
+    "championships": 4
+  },
+  {
+    "id": "durant",
+    "name": "Kevin Durant",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 5,
+    "teams": [
+      "Oklahoma City Thunder",
+      "Golden State Warriors",
+      "Brooklyn Nets",
+      "Phoenix Suns"
+    ],
+    "jersey": [
+      35,
+      7
+    ],
+    "draftYear": 2007,
+    "draftPick": 2,
+    "college": "Texas",
+    "birthPlace": "Washington DC",
+    "position": "Forward",
+    "awards": [
+      "NBA MVP",
+      "Finals MVP",
+      "Rookie of the Year",
+      "Scoring Champion"
+    ],
+    "championships": 2
+  },
+  {
+    "id": "iverson",
+    "name": "Allen Iverson",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 4,
+    "teams": [
+      "Philadelphia 76ers"
+    ],
+    "jersey": [
+      3
+    ],
+    "draftYear": 1996,
+    "draftPick": 1,
+    "college": "Georgetown",
+    "birthPlace": "Virginia",
+    "position": "Guard",
+    "awards": [
+      "NBA MVP",
+      "Rookie of the Year",
+      "Scoring Champion",
+      "Hall of Fame"
+    ]
+  },
+  {
+    "id": "wade",
+    "name": "Dwyane Wade",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 4,
+    "teams": [
+      "Miami Heat",
+      "Chicago Bulls"
+    ],
+    "jersey": [
+      3
+    ],
+    "draftYear": 2003,
+    "draftPick": 5,
+    "college": "Marquette",
+    "birthPlace": "Illinois",
+    "position": "Guard",
+    "awards": [
+      "Finals MVP",
+      "Scoring Champion",
+      "Hall of Fame"
+    ],
+    "championships": 3
+  },
+  {
+    "id": "dirk",
+    "name": "Dirk Nowitzki",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 4,
+    "teams": [
+      "Dallas Mavericks"
+    ],
+    "jersey": [
+      41
+    ],
+    "draftYear": 1998,
+    "draftPick": 9,
+    "birthPlace": "Germany",
+    "position": "Forward",
+    "awards": [
+      "NBA MVP",
+      "Finals MVP",
+      "Hall of Fame"
+    ],
+    "championships": 1,
+    "milestones": [
+      "30,000 Point Club"
+    ]
+  },
+  {
+    "id": "barkley",
+    "name": "Charles Barkley",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 4,
+    "teams": [
+      "Philadelphia 76ers",
+      "Phoenix Suns",
+      "Houston Rockets"
+    ],
+    "jersey": [
+      34
+    ],
+    "draftYear": 1984,
+    "draftPick": 5,
+    "college": "Auburn",
+    "birthPlace": "Alabama",
+    "position": "Forward",
+    "awards": [
+      "NBA MVP",
+      "Hall of Fame"
+    ]
+  },
+  {
+    "id": "pippen",
+    "name": "Scottie Pippen",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 4,
+    "teams": [
+      "Chicago Bulls"
+    ],
+    "jersey": [
+      33
+    ],
+    "draftYear": 1987,
+    "draftPick": 5,
+    "college": "Central Arkansas",
+    "birthPlace": "Arkansas",
+    "position": "Forward",
+    "awards": [
+      "Hall of Fame"
+    ],
+    "championships": 6
+  },
+  {
+    "id": "malone",
+    "name": "Karl Malone",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 4,
+    "teams": [
+      "Utah Jazz",
+      "Los Angeles Lakers"
+    ],
+    "jersey": [
+      32
+    ],
+    "draftYear": 1985,
+    "draftPick": 13,
+    "college": "Louisiana Tech",
+    "birthPlace": "Louisiana",
+    "position": "Forward",
+    "awards": [
+      "NBA MVP",
+      "Hall of Fame"
+    ],
+    "milestones": [
+      "30,000 Point Club"
+    ]
+  },
+  {
+    "id": "giannis",
+    "name": "Giannis Antetokounmpo",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 5,
+    "teams": [
+      "Milwaukee Bucks"
+    ],
+    "jersey": [
+      34
+    ],
+    "draftYear": 2013,
+    "draftPick": 15,
+    "birthPlace": "Greece",
+    "position": "Forward",
+    "awards": [
+      "NBA MVP",
+      "Finals MVP",
+      "Defensive Player of the Year"
+    ],
+    "championships": 1
+  },
+  {
+    "id": "jokic",
+    "name": "Nikola Jokic",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 4,
+    "teams": [
+      "Denver Nuggets"
+    ],
+    "jersey": [
+      15
+    ],
+    "draftYear": 2014,
+    "draftPick": 41,
+    "birthPlace": "Serbia",
+    "position": "Center",
+    "awards": [
+      "NBA MVP",
+      "Finals MVP"
+    ],
+    "championships": 1
+  },
+  {
+    "id": "drose",
+    "name": "Derrick Rose",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 4,
+    "teams": [
+      "Chicago Bulls",
+      "New York Knicks"
+    ],
+    "jersey": [
+      1
+    ],
+    "draftYear": 2008,
+    "draftPick": 1,
+    "college": "Memphis",
+    "birthPlace": "Illinois",
+    "position": "Guard",
+    "awards": [
+      "NBA MVP",
+      "Rookie of the Year"
+    ]
+  },
+  {
+    "id": "russell",
+    "name": "Bill Russell",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 4,
+    "teams": [
+      "Boston Celtics"
+    ],
+    "jersey": [
+      6
+    ],
+    "draftYear": 1956,
+    "college": "San Francisco",
+    "birthPlace": "Louisiana",
+    "position": "Center",
+    "awards": [
+      "NBA MVP",
+      "Hall of Fame"
+    ],
+    "championships": 11
+  },
+  {
+    "id": "carmelo",
+    "name": "Carmelo Anthony",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 4,
+    "teams": [
+      "Denver Nuggets",
+      "New York Knicks"
+    ],
+    "jersey": [
+      7,
+      15
+    ],
+    "draftYear": 2003,
+    "draftPick": 3,
+    "college": "Syracuse",
+    "birthPlace": "New York",
+    "position": "Forward",
+    "awards": [
+      "Scoring Champion"
+    ]
+  },
+  {
+    "id": "bosh",
+    "name": "Chris Bosh",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 3,
+    "teams": [
+      "Toronto Raptors",
+      "Miami Heat"
+    ],
+    "jersey": [
+      1
+    ],
+    "draftYear": 2003,
+    "draftPick": 4,
+    "college": "Georgia Tech",
+    "birthPlace": "Texas",
+    "position": "Forward",
+    "awards": [
+      "Hall of Fame"
+    ],
+    "championships": 2
+  },
+  {
+    "id": "rodman",
+    "name": "Dennis Rodman",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 4,
+    "teams": [
+      "Detroit Pistons",
+      "Chicago Bulls",
+      "San Antonio Spurs"
+    ],
+    "jersey": [
+      91,
+      10
+    ],
+    "draftYear": 1986,
+    "draftPick": 27,
+    "birthPlace": "New Jersey",
+    "position": "Forward",
+    "awards": [
+      "Defensive Player of the Year",
+      "Hall of Fame"
+    ],
+    "championships": 5
+  },
+  {
+    "id": "rallen",
+    "name": "Ray Allen",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 3,
+    "teams": [
+      "Milwaukee Bucks",
+      "Boston Celtics",
+      "Miami Heat"
+    ],
+    "jersey": [
+      34,
+      20
+    ],
+    "draftYear": 1996,
+    "draftPick": 5,
+    "college": "Connecticut",
+    "position": "Guard",
+    "awards": [
+      "Hall of Fame"
+    ],
+    "championships": 2
+  },
+  {
+    "id": "nash",
+    "name": "Steve Nash",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 4,
+    "teams": [
+      "Phoenix Suns",
+      "Dallas Mavericks",
+      "Los Angeles Lakers"
+    ],
+    "jersey": [
+      13
+    ],
+    "draftYear": 1996,
+    "draftPick": 15,
+    "college": "Santa Clara",
+    "birthPlace": "South Africa",
+    "position": "Guard",
+    "awards": [
+      "NBA MVP",
+      "Hall of Fame"
+    ]
+  },
+  {
+    "id": "pierce",
+    "name": "Paul Pierce",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 3,
+    "teams": [
+      "Boston Celtics"
+    ],
+    "jersey": [
+      34
+    ],
+    "draftYear": 1998,
+    "draftPick": 10,
+    "college": "Kansas",
+    "birthPlace": "California",
+    "position": "Forward",
+    "awards": [
+      "Finals MVP",
+      "Hall of Fame"
+    ],
+    "championships": 1
+  },
+  {
+    "id": "worthy",
+    "name": "James Worthy",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 3,
+    "teams": [
+      "Los Angeles Lakers"
+    ],
+    "jersey": [
+      42
+    ],
+    "draftYear": 1982,
+    "draftPick": 1,
+    "college": "North Carolina",
+    "birthPlace": "North Carolina",
+    "position": "Forward",
+    "awards": [
+      "Hall of Fame"
+    ],
+    "championships": 3
+  },
+  {
+    "id": "garnett",
+    "name": "Kevin Garnett",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 4,
+    "teams": [
+      "Minnesota Timberwolves",
+      "Boston Celtics"
+    ],
+    "jersey": [
+      21,
+      5
+    ],
+    "draftYear": 1995,
+    "draftPick": 5,
+    "birthPlace": "South Carolina",
+    "position": "Forward",
+    "awards": [
+      "NBA MVP",
+      "Defensive Player of the Year",
+      "Hall of Fame"
+    ],
+    "championships": 1
+  },
+  {
+    "id": "havlicek",
+    "name": "John Havlicek",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 3,
+    "teams": [
+      "Boston Celtics"
+    ],
+    "jersey": [
+      17
+    ],
+    "draftYear": 1962,
+    "draftPick": 7,
+    "college": "Ohio State",
+    "birthPlace": "Ohio",
+    "position": "Forward",
+    "awards": [
+      "Hall of Fame"
+    ],
+    "championships": 8
+  },
+  {
+    "id": "mchale",
+    "name": "Kevin McHale",
+    "type": "athlete",
+    "sport": "NBA",
+    "fame": 3,
+    "teams": [
+      "Boston Celtics"
+    ],
+    "jersey": [
+      32
+    ],
+    "draftYear": 1980,
+    "draftPick": 3,
+    "college": "Minnesota",
+    "birthPlace": "Minnesota",
+    "position": "Forward",
+    "awards": [
+      "Hall of Fame"
+    ],
+    "championships": 3
+  },
+  {
+    "id": "brady",
+    "name": "Tom Brady",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 5,
+    "teams": [
+      "New England Patriots",
+      "Tampa Bay Buccaneers"
+    ],
+    "jersey": [
+      12
+    ],
+    "draftYear": 2000,
+    "draftPick": 199,
+    "college": "Michigan",
+    "birthPlace": "California",
+    "position": "Quarterback",
+    "awards": [
+      "NFL MVP",
+      "Super Bowl MVP"
+    ],
+    "championships": 7
+  },
+  {
+    "id": "pmanning",
+    "name": "Peyton Manning",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 5,
+    "teams": [
+      "Indianapolis Colts",
+      "Denver Broncos"
+    ],
+    "jersey": [
+      18
+    ],
+    "draftYear": 1998,
+    "draftPick": 1,
+    "college": "Tennessee",
+    "birthPlace": "Louisiana",
+    "position": "Quarterback",
+    "awards": [
+      "NFL MVP",
+      "Super Bowl MVP",
+      "Hall of Fame"
+    ],
+    "championships": 2
+  },
+  {
+    "id": "rodgers",
+    "name": "Aaron Rodgers",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 5,
+    "teams": [
+      "Green Bay Packers",
+      "New York Jets"
+    ],
+    "jersey": [
+      12
+    ],
+    "draftYear": 2005,
+    "draftPick": 24,
+    "college": "California",
+    "birthPlace": "California",
+    "position": "Quarterback",
+    "awards": [
+      "NFL MVP",
+      "Super Bowl MVP"
+    ],
+    "championships": 1
+  },
+  {
+    "id": "mahomes",
+    "name": "Patrick Mahomes",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 5,
+    "teams": [
+      "Kansas City Chiefs"
+    ],
+    "jersey": [
+      15
+    ],
+    "draftYear": 2017,
+    "draftPick": 10,
+    "college": "Texas Tech",
+    "birthPlace": "Texas",
+    "position": "Quarterback",
+    "awards": [
+      "NFL MVP",
+      "Super Bowl MVP"
+    ],
+    "championships": 3
+  },
+  {
+    "id": "montana",
+    "name": "Joe Montana",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 5,
+    "teams": [
+      "San Francisco 49ers",
+      "Kansas City Chiefs"
+    ],
+    "jersey": [
+      16
+    ],
+    "draftYear": 1979,
+    "draftPick": 82,
+    "college": "Notre Dame",
+    "birthPlace": "Pennsylvania",
+    "position": "Quarterback",
+    "awards": [
+      "NFL MVP",
+      "Super Bowl MVP",
+      "Hall of Fame"
+    ],
+    "championships": 4
+  },
+  {
+    "id": "favre",
+    "name": "Brett Favre",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 4,
+    "teams": [
+      "Green Bay Packers",
+      "New York Jets",
+      "Minnesota Vikings"
+    ],
+    "jersey": [
+      4
+    ],
+    "draftYear": 1991,
+    "draftPick": 33,
+    "college": "Southern Miss",
+    "birthPlace": "Mississippi",
+    "position": "Quarterback",
+    "awards": [
+      "NFL MVP",
+      "Super Bowl MVP",
+      "Hall of Fame"
+    ],
+    "championships": 1
+  },
+  {
+    "id": "lamar",
+    "name": "Lamar Jackson",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 4,
+    "teams": [
+      "Baltimore Ravens"
+    ],
+    "jersey": [
+      8
+    ],
+    "draftYear": 2018,
+    "draftPick": 32,
+    "college": "Louisville",
+    "birthPlace": "Florida",
+    "position": "Quarterback",
+    "awards": [
+      "NFL MVP"
+    ]
+  },
+  {
+    "id": "allen",
+    "name": "Josh Allen",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 4,
+    "teams": [
+      "Buffalo Bills"
+    ],
+    "jersey": [
+      17
+    ],
+    "draftYear": 2018,
+    "draftPick": 7,
+    "college": "Wyoming",
+    "birthPlace": "California",
+    "position": "Quarterback",
+    "awards": [
+      "NFL MVP"
+    ]
+  },
+  {
+    "id": "emmitt",
+    "name": "Emmitt Smith",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 5,
+    "teams": [
+      "Dallas Cowboys"
+    ],
+    "jersey": [
+      22
+    ],
+    "draftYear": 1990,
+    "draftPick": 17,
+    "college": "Florida",
+    "birthPlace": "Florida",
+    "position": "Running Back",
+    "awards": [
+      "NFL MVP",
+      "Super Bowl MVP",
+      "Hall of Fame"
+    ],
+    "championships": 3,
+    "milestones": [
+      "NFL Rushing King"
+    ]
+  },
+  {
+    "id": "bsanders",
+    "name": "Barry Sanders",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 5,
+    "teams": [
+      "Detroit Lions"
+    ],
+    "jersey": [
+      20
+    ],
+    "draftYear": 1989,
+    "draftPick": 3,
+    "college": "Oklahoma State",
+    "birthPlace": "Kansas",
+    "position": "Running Back",
+    "awards": [
+      "NFL MVP",
+      "Hall of Fame"
+    ],
+    "milestones": [
+      "2,000-Yard Season"
+    ]
+  },
+  {
+    "id": "ap",
+    "name": "Adrian Peterson",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 4,
+    "teams": [
+      "Minnesota Vikings"
+    ],
+    "jersey": [
+      28
+    ],
+    "draftYear": 2007,
+    "draftPick": 7,
+    "college": "Oklahoma",
+    "birthPlace": "Texas",
+    "position": "Running Back",
+    "awards": [
+      "NFL MVP"
+    ],
+    "milestones": [
+      "2,000-Yard Season"
+    ]
+  },
+  {
+    "id": "aikman",
+    "name": "Troy Aikman",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 4,
+    "teams": [
+      "Dallas Cowboys"
+    ],
+    "jersey": [
+      8
+    ],
+    "draftYear": 1989,
+    "draftPick": 1,
+    "college": "UCLA",
+    "birthPlace": "California",
+    "position": "Quarterback",
+    "awards": [
+      "Super Bowl MVP",
+      "Hall of Fame"
+    ],
+    "championships": 3
+  },
+  {
+    "id": "irvin",
+    "name": "Michael Irvin",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 3,
+    "teams": [
+      "Dallas Cowboys"
+    ],
+    "jersey": [
+      88
+    ],
+    "draftYear": 1988,
+    "draftPick": 11,
+    "college": "Miami",
+    "birthPlace": "Florida",
+    "position": "Wide Receiver",
+    "awards": [
+      "Hall of Fame"
+    ],
+    "championships": 3
+  },
+  {
+    "id": "staubach",
+    "name": "Roger Staubach",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 4,
+    "teams": [
+      "Dallas Cowboys"
+    ],
+    "jersey": [
+      12
+    ],
+    "draftYear": 1964,
+    "draftPick": 129,
+    "college": "Navy",
+    "birthPlace": "Ohio",
+    "position": "Quarterback",
+    "awards": [
+      "Super Bowl MVP",
+      "Hall of Fame"
+    ],
+    "championships": 2
+  },
+  {
+    "id": "prescott",
+    "name": "Dak Prescott",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 3,
+    "teams": [
+      "Dallas Cowboys"
+    ],
+    "jersey": [
+      4
+    ],
+    "draftYear": 2016,
+    "draftPick": 135,
+    "college": "Mississippi State",
+    "birthPlace": "Louisiana",
+    "position": "Quarterback",
+    "awards": [
+      "Offensive Rookie of the Year"
+    ]
+  },
+  {
+    "id": "rice",
+    "name": "Jerry Rice",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 5,
+    "teams": [
+      "San Francisco 49ers",
+      "Oakland Raiders"
+    ],
+    "jersey": [
+      80
+    ],
+    "draftYear": 1985,
+    "draftPick": 16,
+    "college": "Mississippi Valley State",
+    "birthPlace": "Mississippi",
+    "position": "Wide Receiver",
+    "awards": [
+      "Super Bowl MVP",
+      "Hall of Fame"
+    ],
+    "championships": 3
+  },
+  {
+    "id": "young",
+    "name": "Steve Young",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 4,
+    "teams": [
+      "San Francisco 49ers",
+      "Tampa Bay Buccaneers"
+    ],
+    "jersey": [
+      8
+    ],
+    "draftYear": 1984,
+    "college": "BYU",
+    "birthPlace": "Utah",
+    "position": "Quarterback",
+    "awards": [
+      "NFL MVP",
+      "Super Bowl MVP",
+      "Hall of Fame"
+    ],
+    "championships": 3
+  },
+  {
+    "id": "lott",
+    "name": "Ronnie Lott",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 3,
+    "teams": [
+      "San Francisco 49ers"
+    ],
+    "jersey": [
+      42
+    ],
+    "draftYear": 1981,
+    "draftPick": 8,
+    "college": "USC",
+    "birthPlace": "New Mexico",
+    "position": "Defensive Back",
+    "awards": [
+      "Hall of Fame"
+    ],
+    "championships": 4
+  },
+  {
+    "id": "gronk",
+    "name": "Rob Gronkowski",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 4,
+    "teams": [
+      "New England Patriots",
+      "Tampa Bay Buccaneers"
+    ],
+    "jersey": [
+      87
+    ],
+    "draftYear": 2010,
+    "draftPick": 42,
+    "college": "Arizona",
+    "birthPlace": "New York",
+    "position": "Tight End",
+    "championships": 4
+  },
+  {
+    "id": "moss",
+    "name": "Randy Moss",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 4,
+    "teams": [
+      "Minnesota Vikings",
+      "New England Patriots",
+      "Oakland Raiders"
+    ],
+    "jersey": [
+      84,
+      81
+    ],
+    "draftYear": 1998,
+    "draftPick": 21,
+    "college": "Marshall",
+    "birthPlace": "West Virginia",
+    "position": "Wide Receiver",
+    "awards": [
+      "Hall of Fame"
+    ]
+  },
+  {
+    "id": "edelman",
+    "name": "Julian Edelman",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 3,
+    "teams": [
+      "New England Patriots"
+    ],
+    "jersey": [
+      11
+    ],
+    "draftYear": 2009,
+    "draftPick": 232,
+    "college": "Kent State",
+    "birthPlace": "California",
+    "position": "Wide Receiver",
+    "awards": [
+      "Super Bowl MVP"
+    ],
+    "championships": 3
+  },
+  {
+    "id": "reggiewhite",
+    "name": "Reggie White",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 4,
+    "teams": [
+      "Philadelphia Eagles",
+      "Green Bay Packers"
+    ],
+    "jersey": [
+      92
+    ],
+    "draftYear": 1984,
+    "college": "Tennessee",
+    "birthPlace": "Tennessee",
+    "position": "Defensive Line",
+    "awards": [
+      "Defensive Player of the Year",
+      "Hall of Fame"
+    ],
+    "championships": 1
+  },
+  {
+    "id": "marino",
+    "name": "Dan Marino",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 4,
+    "teams": [
+      "Miami Dolphins"
+    ],
+    "jersey": [
+      13
+    ],
+    "draftYear": 1983,
+    "draftPick": 27,
+    "college": "Pittsburgh",
+    "birthPlace": "Pennsylvania",
+    "position": "Quarterback",
+    "awards": [
+      "NFL MVP",
+      "Hall of Fame"
+    ]
+  },
+  {
+    "id": "elway",
+    "name": "John Elway",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 4,
+    "teams": [
+      "Denver Broncos"
+    ],
+    "jersey": [
+      7
+    ],
+    "draftYear": 1983,
+    "draftPick": 1,
+    "college": "Stanford",
+    "birthPlace": "Washington",
+    "position": "Quarterback",
+    "awards": [
+      "NFL MVP",
+      "Super Bowl MVP",
+      "Hall of Fame"
+    ],
+    "championships": 2
+  },
+  {
+    "id": "brees",
+    "name": "Drew Brees",
+    "type": "athlete",
+    "sport": "NFL",
+    "fame": 4,
+    "teams": [
+      "New Orleans Saints",
+      "San Diego Chargers"
+    ],
+    "jersey": [
+      9
+    ],
+    "draftYear": 2001,
+    "draftPick": 32,
+    "college": "Purdue",
+    "birthPlace": "Texas",
+    "position": "Quarterback",
+    "awards": [
+      "Super Bowl MVP"
+    ],
+    "championships": 1
+  },
+  {
+    "id": "ruth",
+    "name": "Babe Ruth",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 5,
+    "teams": [
+      "New York Yankees",
+      "Boston Red Sox"
+    ],
+    "jersey": [
+      3
+    ],
+    "birthPlace": "Maryland",
+    "position": "Outfield",
+    "awards": [
+      "MLB MVP",
+      "World Series Champion",
+      "Hall of Fame"
+    ],
+    "championships": 7,
+    "milestones": [
+      "500 Home Run Club"
+    ]
+  },
+  {
+    "id": "aaron",
+    "name": "Hank Aaron",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 5,
+    "teams": [
+      "Milwaukee Braves",
+      "Atlanta Braves"
+    ],
+    "jersey": [
+      44
+    ],
+    "birthPlace": "Alabama",
+    "position": "Outfield",
+    "awards": [
+      "MLB MVP",
+      "World Series Champion",
+      "Hall of Fame"
+    ],
+    "championships": 1,
+    "milestones": [
+      "500 Home Run Club",
+      "3,000 Hit Club"
+    ]
+  },
+  {
+    "id": "bonds",
+    "name": "Barry Bonds",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 5,
+    "teams": [
+      "Pittsburgh Pirates",
+      "San Francisco Giants"
+    ],
+    "jersey": [
+      25
+    ],
+    "draftYear": 1985,
+    "draftPick": 6,
+    "college": "Arizona State",
+    "birthPlace": "California",
+    "position": "Outfield",
+    "awards": [
+      "MLB MVP"
+    ],
+    "milestones": [
+      "500 Home Run Club"
+    ]
+  },
+  {
+    "id": "mays",
+    "name": "Willie Mays",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 5,
+    "teams": [
+      "New York Giants",
+      "San Francisco Giants"
+    ],
+    "jersey": [
+      24
+    ],
+    "birthPlace": "Alabama",
+    "position": "Outfield",
+    "awards": [
+      "MLB MVP",
+      "World Series Champion",
+      "Hall of Fame"
+    ],
+    "championships": 1,
+    "milestones": [
+      "500 Home Run Club",
+      "3,000 Hit Club"
+    ]
+  },
+  {
+    "id": "jeter",
+    "name": "Derek Jeter",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 5,
+    "teams": [
+      "New York Yankees"
+    ],
+    "jersey": [
+      2
+    ],
+    "draftYear": 1992,
+    "draftPick": 6,
+    "birthPlace": "New Jersey",
+    "position": "Shortstop",
+    "awards": [
+      "Rookie of the Year",
+      "World Series Champion",
+      "Hall of Fame"
+    ],
+    "championships": 5,
+    "milestones": [
+      "3,000 Hit Club"
+    ]
+  },
+  {
+    "id": "arod",
+    "name": "Alex Rodriguez",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 4,
+    "teams": [
+      "Seattle Mariners",
+      "Texas Rangers",
+      "New York Yankees"
+    ],
+    "jersey": [
+      13
+    ],
+    "draftYear": 1993,
+    "draftPick": 1,
+    "birthPlace": "New York",
+    "position": "Shortstop",
+    "awards": [
+      "MLB MVP",
+      "World Series Champion"
+    ],
+    "championships": 1,
+    "milestones": [
+      "500 Home Run Club",
+      "3,000 Hit Club"
+    ]
+  },
+  {
+    "id": "griffey",
+    "name": "Ken Griffey Jr.",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 5,
+    "teams": [
+      "Seattle Mariners",
+      "Cincinnati Reds"
+    ],
+    "jersey": [
+      24,
+      30
+    ],
+    "draftYear": 1987,
+    "draftPick": 1,
+    "birthPlace": "Pennsylvania",
+    "position": "Outfield",
+    "awards": [
+      "MLB MVP",
+      "Hall of Fame"
+    ],
+    "milestones": [
+      "500 Home Run Club"
+    ]
+  },
+  {
+    "id": "pujols",
+    "name": "Albert Pujols",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 5,
+    "teams": [
+      "St. Louis Cardinals",
+      "Los Angeles Angels"
+    ],
+    "jersey": [
+      5
+    ],
+    "draftYear": 1999,
+    "draftPick": 402,
+    "birthPlace": "Dominican Republic",
+    "position": "First Base",
+    "awards": [
+      "MLB MVP",
+      "World Series Champion",
+      "Rookie of the Year"
+    ],
+    "championships": 2,
+    "milestones": [
+      "500 Home Run Club",
+      "3,000 Hit Club"
+    ]
+  },
+  {
+    "id": "mantle",
+    "name": "Mickey Mantle",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 5,
+    "teams": [
+      "New York Yankees"
+    ],
+    "jersey": [
+      7
+    ],
+    "birthPlace": "Oklahoma",
+    "position": "Outfield",
+    "awards": [
+      "MLB MVP",
+      "World Series Champion",
+      "Hall of Fame"
+    ],
+    "championships": 7,
+    "milestones": [
+      "500 Home Run Club"
+    ]
+  },
+  {
+    "id": "gehrig",
+    "name": "Lou Gehrig",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 5,
+    "teams": [
+      "New York Yankees"
+    ],
+    "jersey": [
+      4
+    ],
+    "college": "Columbia",
+    "birthPlace": "New York",
+    "position": "First Base",
+    "awards": [
+      "MLB MVP",
+      "World Series Champion",
+      "Hall of Fame"
+    ],
+    "championships": 6
+  },
+  {
+    "id": "dimaggio",
+    "name": "Joe DiMaggio",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 5,
+    "teams": [
+      "New York Yankees"
+    ],
+    "jersey": [
+      5
+    ],
+    "birthPlace": "California",
+    "position": "Outfield",
+    "awards": [
+      "MLB MVP",
+      "World Series Champion",
+      "Hall of Fame"
+    ],
+    "championships": 9
+  },
+  {
+    "id": "rivera",
+    "name": "Mariano Rivera",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 4,
+    "teams": [
+      "New York Yankees"
+    ],
+    "jersey": [
+      42
+    ],
+    "birthPlace": "Panama",
+    "position": "Pitcher",
+    "awards": [
+      "World Series Champion",
+      "Hall of Fame"
+    ],
+    "championships": 5
+  },
+  {
+    "id": "berra",
+    "name": "Yogi Berra",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 4,
+    "teams": [
+      "New York Yankees"
+    ],
+    "jersey": [
+      8
+    ],
+    "birthPlace": "Missouri",
+    "position": "Catcher",
+    "awards": [
+      "MLB MVP",
+      "World Series Champion",
+      "Hall of Fame"
+    ],
+    "championships": 10
+  },
+  {
+    "id": "judge",
+    "name": "Aaron Judge",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 4,
+    "teams": [
+      "New York Yankees"
+    ],
+    "jersey": [
+      99
+    ],
+    "draftYear": 2013,
+    "draftPick": 32,
+    "college": "Fresno State",
+    "birthPlace": "California",
+    "position": "Outfield",
+    "awards": [
+      "MLB MVP",
+      "Rookie of the Year"
+    ]
+  },
+  {
+    "id": "trout",
+    "name": "Mike Trout",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 4,
+    "teams": [
+      "Los Angeles Angels"
+    ],
+    "jersey": [
+      27
+    ],
+    "draftYear": 2009,
+    "draftPick": 25,
+    "birthPlace": "New Jersey",
+    "position": "Outfield",
+    "awards": [
+      "MLB MVP",
+      "Rookie of the Year"
+    ]
+  },
+  {
+    "id": "ohtani",
+    "name": "Shohei Ohtani",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 5,
+    "teams": [
+      "Los Angeles Angels",
+      "Los Angeles Dodgers"
+    ],
+    "jersey": [
+      17
+    ],
+    "birthPlace": "Japan",
+    "position": "Pitcher",
+    "awards": [
+      "MLB MVP",
+      "World Series Champion",
+      "Rookie of the Year"
+    ],
+    "championships": 1
+  },
+  {
+    "id": "sosa",
+    "name": "Sammy Sosa",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 4,
+    "teams": [
+      "Chicago Cubs",
+      "Texas Rangers"
+    ],
+    "jersey": [
+      21
+    ],
+    "birthPlace": "Dominican Republic",
+    "position": "Outfield",
+    "awards": [
+      "MLB MVP"
+    ],
+    "milestones": [
+      "500 Home Run Club"
+    ]
+  },
+  {
+    "id": "thome",
+    "name": "Jim Thome",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 3,
+    "teams": [
+      "Cleveland Indians",
+      "Philadelphia Phillies"
+    ],
+    "jersey": [
+      25
+    ],
+    "draftYear": 1989,
+    "birthPlace": "Illinois",
+    "position": "First Base",
+    "awards": [
+      "Hall of Fame"
+    ],
+    "milestones": [
+      "500 Home Run Club"
+    ]
+  },
+  {
+    "id": "ortiz",
+    "name": "David Ortiz",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 4,
+    "teams": [
+      "Boston Red Sox",
+      "Minnesota Twins"
+    ],
+    "jersey": [
+      34
+    ],
+    "birthPlace": "Dominican Republic",
+    "position": "Designated Hitter",
+    "awards": [
+      "World Series Champion",
+      "Hall of Fame"
+    ],
+    "championships": 3,
+    "milestones": [
+      "500 Home Run Club"
+    ]
+  },
+  {
+    "id": "rjohnson",
+    "name": "Randy Johnson",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 4,
+    "teams": [
+      "Seattle Mariners",
+      "Arizona Diamondbacks"
+    ],
+    "jersey": [
+      51
+    ],
+    "draftYear": 1985,
+    "college": "USC",
+    "birthPlace": "California",
+    "position": "Pitcher",
+    "awards": [
+      "Cy Young",
+      "World Series Champion",
+      "Hall of Fame"
+    ],
+    "championships": 1
+  },
+  {
+    "id": "clemens",
+    "name": "Roger Clemens",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 4,
+    "teams": [
+      "Boston Red Sox",
+      "New York Yankees",
+      "Houston Astros"
+    ],
+    "jersey": [
+      21,
+      22
+    ],
+    "draftYear": 1983,
+    "draftPick": 19,
+    "college": "Texas",
+    "birthPlace": "Ohio",
+    "position": "Pitcher",
+    "awards": [
+      "MLB MVP",
+      "Cy Young",
+      "World Series Champion"
+    ],
+    "championships": 2
+  },
+  {
+    "id": "maddux",
+    "name": "Greg Maddux",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 3,
+    "teams": [
+      "Chicago Cubs",
+      "Atlanta Braves"
+    ],
+    "jersey": [
+      31
+    ],
+    "draftYear": 1984,
+    "birthPlace": "Texas",
+    "position": "Pitcher",
+    "awards": [
+      "Cy Young",
+      "World Series Champion",
+      "Hall of Fame"
+    ],
+    "championships": 1
+  },
+  {
+    "id": "kershaw",
+    "name": "Clayton Kershaw",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 4,
+    "teams": [
+      "Los Angeles Dodgers"
+    ],
+    "jersey": [
+      22
+    ],
+    "draftYear": 2006,
+    "draftPick": 7,
+    "birthPlace": "Texas",
+    "position": "Pitcher",
+    "awards": [
+      "MLB MVP",
+      "Cy Young",
+      "World Series Champion"
+    ],
+    "championships": 1
+  },
+  {
+    "id": "verlander",
+    "name": "Justin Verlander",
+    "type": "athlete",
+    "sport": "MLB",
+    "fame": 3,
+    "teams": [
+      "Detroit Tigers",
+      "Houston Astros"
+    ],
+    "jersey": [
+      35
+    ],
+    "draftYear": 2004,
+    "draftPick": 2,
+    "college": "Old Dominion",
+    "birthPlace": "Virginia",
+    "position": "Pitcher",
+    "awards": [
+      "MLB MVP",
+      "Cy Young",
+      "World Series Champion",
+      "Rookie of the Year"
+    ],
+    "championships": 2
+  }
+]
