@@ -5852,6 +5852,10 @@ const CARDBGS=[
   {id:'heath',        name:'Heather Moor',     hist:'A purple moor in bloom'},
   {id:'sandhills',    name:'The Sandhills',    hist:'Wiregrass and tawny waste'},
   {id:'prairie',      name:'Big Sky',          hist:'Nothing but horizon'},
+  {id:'greenside',    name:'Pin High',         hist:'On the dance floor'},
+  {id:'bunker',       name:'The Beach',        hist:'Toes in the sand'},
+  {id:'island',       name:'The Island',       hist:'Nowhere to bail out'},
+  {id:'aerial',       name:'Bird\u2019s Eye',  hist:'The hole from above'},
   {id:'champion',     name:'Champion’s Dusk', hist:'The evening a major was won'},
   {id:'stadium',      name:'Stadium Lights',   hist:'Under the floodlights'},
   {id:'concordia',    name:'Meridian Bay',     hist:'Medal light over the bay'},
@@ -5871,6 +5875,10 @@ const CARDBG_ART={
  heath:       {sky:['#3a2c50','#8a6f96','#d8a8b8'], band:'trees', bandC:'#241a30', ground:['#5f4a72','#3a2c50'], accents:{c:['#b06fd0','#8a54b0','#d89ae8'],n:22}, fw:'#6f8a3c'},
  sandhills:   {sky:['#4a3a6e','#c88a6a','#f2c08a'], sun:{x:.62,y:.34,r:5,c:'#ffd9a0'}, band:'pines', bandC:'#2a3a1c', ground:['#c2a670','#98784e'], fw:'#7fa040'},
  prairie:     {sky:['#2a4a7e','#e8b060','#f8d890'], sun:{x:.5,y:.42,r:8,c:'#ffe9b0'}, band:'oaks', bandC:'#3a2f14', ground:['#8a9a3c','#5f7028']},
+ greenside:   {view:'green', hy:.40, sky:['#2c4a72','#c08a54','#f0c07a'], sun:{x:.30,y:.26,r:5,c:'#ffdf9c'}, band:'trees', bandC:'#182f10', ground:['#5f9a34','#3a7020'], stripes:1},
+ bunker:      {view:'bunker', hy:.42, sky:['#2f6fb2','#79b8e2','#d8ecf6'], sun:{x:.75,y:.24,r:4,c:'#fff2c8'}, band:'trees', bandC:'#1d3a26', ground:['#4a7c33','#2e5a20']},
+ island:      {view:'island', sky:['#1c3a5e','#3f8ac2','#ffd98c'], sun:{x:.52,y:.30,r:6,c:'#ffe9a0'}, sea:{h:.30,c1:'#3fa8d8',c2:'#125a9e'}, ground:['#3f7a2a','#26541a']},
+ aerial:      {view:'aerial', ground:['#3f7a2c','#25521c'], fw:'#639533', gr:'#a9cc60', tree:'#14350e'},
  champion:    {sky:['#2a1a08','#8a5a14','#f1d04a'], sun:{x:.5,y:.34,r:9,c:'#ffe9a0'}, band:'trees', bandC:'#120c02', ground:['#3f3410','#241c06'], stripes:1, goldflag:1},
  stadium:     {sky:['#060d1c','#0e1c38','#1c2c50'], stars:1, band:'stand', bandC:'#10182a', beams:1, ground:['#2f5c26','#1b3a16'], stripes:1},
  concordia:   {sky:['#1c3a6e','#4a8ac2','#ffd98c'], sun:{x:.5,y:.40,r:6,c:'#ffe9a0'}, sea:{h:.20,c1:'#4fb6ea',c2:'#125a9e'}, band:'trees', bandC:'#1d3a26', ground:['#4a7c33','#2e5a20'], goldflag:1},
@@ -5901,6 +5909,58 @@ function pxCardBgCanvas(id){
       const yv=Math.min(baseY, baseY - amp*(0.45+0.55*Math.sin(i*0.9+salt)+0.3*Math.sin(i*1.7+salt*2.3))*0.6);
       x.lineTo(px,yv); }
     x.lineTo(W,baseY); x.closePath(); x.fill(); x.globalAlpha=1; };
+  // BIRD'S EYE view: the whole hole from above - no sky, a pure top-down course
+  if(A.view==='aerial'){
+    const gg0=x.createLinearGradient(0,0,0,H); gg0.addColorStop(0,A.ground[0]); gg0.addColorStop(1,A.ground[1]);
+    x.fillStyle=gg0; x.fillRect(0,0,W,H);
+    x.fillStyle='rgba(0,0,0,.10)';
+    for(let i=0;i<70;i++){ x.fillRect(Math.floor(hsh(i,50)*W), Math.floor(hsh(i,51)*H), 1,1); }
+    // winding fairway bottom -> top (sampled centerline, wavy width)
+    const ph=hsh(0,52)*6.28, NS=16, L=[], R=[];
+    const midx=t=>W*(0.5+0.20*Math.sin(t*2.9+ph)+0.06*Math.sin(t*6.1+ph*1.7));
+    for(let i=0;i<=NS;i++){ const t=i/NS;
+      const cx0=midx(t), yy=H*(0.90-0.68*t);
+      const hw=(5.0+2.2*Math.sin(t*3.4+ph*0.6)+1.5*hsh(i,53))*(t>0.88?0.72:1);
+      L.push([cx0-hw,yy]); R.push([cx0+hw,yy]); }
+    x.fillStyle=A.fw||'#5f8f30'; x.beginPath(); x.moveTo(L[0][0],L[0][1]);
+    for(let i=1;i<=NS;i++) x.lineTo(L[i][0],L[i][1]);
+    for(let i=NS;i>=0;i--) x.lineTo(R[i][0],R[i][1]);
+    x.closePath(); x.fill();
+    x.fillStyle='rgba(255,255,255,.05)'; x.beginPath(); x.moveTo((L[0][0]+R[0][0])/2-2,L[0][1]);
+    for(let i=1;i<=NS;i++){ const c0=(L[i][0]+R[i][0])/2, hw=(R[i][0]-L[i][0])/2; x.lineTo(c0-hw*0.4,L[i][1]); }
+    for(let i=NS;i>=0;i--){ const c0=(L[i][0]+R[i][0])/2, hw=(R[i][0]-L[i][0])/2; x.lineTo(c0+hw*0.4,L[i][1]); }
+    x.closePath(); x.fill();
+    // tee box at the bottom
+    x.fillStyle='#7fae4a'; blob((L[0][0]+R[0][0])/2,H*0.955,5,2.2,0.18,3); x.fill();
+    // a pond beside the fairway
+    const pside=hsh(1,54)<0.5?-1:1, px0=W*0.5+pside*W*0.30, py0=H*0.45;
+    x.fillStyle='#2e6f9e'; blob(px0,py0,10+hsh(2,55)*4,7,0.28,seed*0.04); x.fill();
+    x.fillStyle='rgba(255,255,255,.16)'; blob(px0-2,py0-2,4,2.4,0.3,seed*0.05); x.fill();
+    // green at the top + fringe + bunkers
+    const gx=(L[NS][0]+R[NS][0])/2, gyy=H*0.145;
+    x.fillStyle='#7fae4a'; blob(gx,gyy,12,8.5,0.17,seed*0.02); x.fill();
+    x.fillStyle=A.gr||'#a9cc60'; blob(gx,gyy,9.5,6.5,0.16,seed*0.03); x.fill();
+    const nb=2+Math.floor(hsh(8,56)*2);
+    for(let i=0;i<nb;i++){ const a=hsh(i,57)*6.28;
+      x.fillStyle='#e8e2c2'; blob(gx+Math.cos(a)*12.5, gyy+Math.sin(a)*9, 3.2+hsh(i,58)*1.8, 2.2+hsh(i,59), 0.32, i*13+seed*0.03); x.fill(); }
+    // trees scattered in the rough, kept off the fairway/pond/green
+    for(let i=0;i<28;i++){ const ty=H*(0.06+hsh(i,60)*0.88);
+      const tt=Math.max(0,Math.min(1,(0.90-ty/H)/0.68));
+      const side=i%2?-1:1, tx1=midx(tt)+side*(12+hsh(i,62)*26);
+      if(tx1<3||tx1>W-3) continue;
+      if(Math.abs(tx1-px0)<14 && Math.abs(ty-py0)<11) continue;
+      if(Math.hypot(tx1-gx,ty-gyy)<16) continue;
+      const r=2.2+hsh(i,63)*2.2;
+      x.fillStyle='rgba(0,0,0,.28)'; blob(tx1+1,ty+1,r,r*0.85,0.3,i*7); x.fill();
+      x.fillStyle=A.tree||'#1e4416'; blob(tx1,ty,r,r*0.85,0.3,i*7); x.fill();
+      x.fillStyle='rgba(255,255,255,.10)'; blob(tx1-r*0.3,ty-r*0.3,r*0.45,r*0.4,0.25,i*7+9); x.fill(); }
+    // the pin from above: a dot + a small pennant
+    x.fillStyle='#e8e2d2'; x.fillRect(Math.round(gx),Math.round(gyy),1,1);
+    x.fillStyle='#e2554e'; x.beginPath(); x.moveTo(gx+1,gyy); x.lineTo(gx+6,gyy+1.5); x.lineTo(gx+1,gyy+3); x.fill();
+    const vg2=x.createRadialGradient(W/2,H*0.45,20,W/2,H*0.55,W*0.95); vg2.addColorStop(0,'rgba(0,0,0,0)'); vg2.addColorStop(1,'rgba(0,0,0,.30)');
+    x.fillStyle=vg2; x.fillRect(0,0,W,H);
+    _cardBgCv[id]=cv; return cv;
+  }
   const hy=Math.round(H*(A.hy||0.52));
   // sky
   const g=x.createLinearGradient(0,0,0,hy); A.sky.forEach((c,i)=>g.addColorStop(i/(A.sky.length-1),c));
@@ -5931,8 +5991,10 @@ function pxCardBgCanvas(id){
       x.lineTo(W,y0+th); x.quadraticCurveTo(W/2,y0+th-4,0,y0+th); x.closePath(); x.fill(); } }
   // DEPTH: hazy rolling hill ridges behind the horizon (wavy, layered)
   const hillC=A.hill||A.bandC||'#173a12';
-  ridge(gy, 11+hsh(0,26)*8, seed*0.013, hillC, 0.22);
-  ridge(gy, 6+hsh(1,26)*5, seed*0.021+3.1, hillC, 0.15);
+  if(A.view!=='island'){
+    ridge(gy, 11+hsh(0,26)*8, seed*0.013, hillC, 0.22);
+    ridge(gy, 6+hsh(1,26)*5, seed*0.021+3.1, hillC, 0.15);
+  }
   // DEPTH: light atmospheric haze at the horizon
   const hz=x.createLinearGradient(0,gy-10,0,gy); hz.addColorStop(0,'rgba(255,255,255,0)'); hz.addColorStop(1,'rgba(255,255,255,.13)');
   x.fillStyle=hz; x.fillRect(0,gy-10,W,10);
@@ -5982,7 +6044,7 @@ function pxCardBgCanvas(id){
   // THE HOLE, seeded per background. The fairway is built from a sampled CENTERLINE with a smooth,
   // GRADUAL width profile (narrow at the horizon, easing wider toward the viewer) and gently wavy
   // edges - no more hard geometric wedge (owner).
-  if(!A.noflag){
+  if(!A.noflag && !A.view){
     const fwC=A.fw||'#6f9e38', grC=A.gr||'#a9cc60';
     const curve=(hsh(3,30)-0.5)*40;
     const topX=W*(0.44+(hsh(4,31)-0.5)*0.16);
@@ -6020,6 +6082,86 @@ function pxCardBgCanvas(id){
     x.fillStyle='#e8e2d2'; x.fillRect(fx0,fy0,1,13);
     x.fillStyle=A.goldflag?'#F1D04A':'#e2554e';
     x.beginPath(); x.moveTo(fx0+1,fy0); x.lineTo(fx0+8,fy0+2); x.lineTo(fx0+1,fy0+5); x.fill();
+  }
+  // PIN HIGH view: standing on the green next to the pin
+  if(A.view==='green'){
+    // fringe collar just below the horizon
+    x.fillStyle='rgba(0,0,0,.18)'; x.beginPath(); x.moveTo(0,gy);
+    for(let i=0;i<=12;i++){ const px=i/12*W; x.lineTo(px, gy+2+Math.sin(i*1.4+seed)*1.3); }
+    x.lineTo(W,gy); x.closePath(); x.fill();
+    // soft contour shading on the putting surface
+    x.fillStyle='rgba(255,255,255,.06)'; blob(W*0.30,gy+(H-gy)*0.42,26,9,0.3,seed*0.07); x.fill();
+    x.fillStyle='rgba(0,0,0,.08)'; blob(W*0.72,gy+(H-gy)*0.66,22,8,0.3,seed*0.09); x.fill();
+    // the CUP
+    const cx1=W*(0.36+hsh(2,70)*0.10), cy1=H*0.76;
+    x.fillStyle='rgba(0,0,0,.30)'; x.beginPath(); x.ellipse(cx1,cy1+0.8,4.6,1.9,0,0,7); x.fill();
+    x.fillStyle='rgba(255,255,255,.22)'; x.beginPath(); x.ellipse(cx1,cy1-0.5,4.3,1.6,0,0,7); x.fill();
+    x.fillStyle='#17240f'; x.beginPath(); x.ellipse(cx1,cy1,4.0,1.5,0,0,7); x.fill();
+    // the PIN: a tall stick from the cup up past the horizon
+    const fy1=H*0.16;
+    x.fillStyle='rgba(0,0,0,.18)'; x.fillRect(Math.round(cx1)+2,Math.round(cy1)-2,1,3);
+    x.fillStyle='#e8e2d2'; x.fillRect(Math.round(cx1),Math.round(fy1),2,Math.round(cy1-fy1));
+    x.fillStyle=A.goldflag?'#F1D04A':'#e2554e';
+    x.beginPath(); x.moveTo(cx1+2,fy1); x.lineTo(cx1+16,fy1+3.5); x.lineTo(cx1+2,fy1+9); x.fill();
+    // a ball sitting a putt away
+    const bx1=W*0.66, by1=H*0.85;
+    x.fillStyle='rgba(0,0,0,.25)'; x.beginPath(); x.ellipse(bx1+0.6,by1+1,2.2,0.9,0,0,7); x.fill();
+    x.fillStyle='#f2f2ea'; x.beginPath(); x.arc(bx1,by1,1.9,0,7); x.fill();
+    x.fillStyle='#ffffff'; x.fillRect(Math.round(bx1)-1,Math.round(by1)-1,1,1);
+  }
+  // THE BEACH view: looking up at the flag from inside the bunker
+  if(A.view==='bunker'){
+    // flag on the green above
+    const fx1=W*(0.46+hsh(2,72)*0.10), fgy=gy+(H-gy)*0.16;
+    x.fillStyle='rgba(255,255,255,.07)'; blob(fx1,fgy+2,16,4.5,0.25,seed*0.06); x.fill();
+    x.fillStyle='#e8e2d2'; x.fillRect(Math.round(fx1),Math.round(fgy-14),2,14);
+    x.fillStyle='#e2554e'; x.beginPath(); x.moveTo(fx1+2,fgy-14); x.lineTo(fx1+11,fgy-11); x.lineTo(fx1+2,fgy-7.5); x.fill();
+    // the SAND: a big foreground bowl with a wavy grass lip
+    const sy=H*0.58;
+    const edge=t=>sy + Math.sin(t*9.5+seed)*2.5 + Math.sin(t*3.7+seed*1.7)*5;
+    const sg2=x.createLinearGradient(0,sy-6,0,H); sg2.addColorStop(0,'#efe3b8'); sg2.addColorStop(1,'#c9b184');
+    x.fillStyle=sg2; x.beginPath(); x.moveTo(0,H); x.lineTo(0,edge(0));
+    for(let i=1;i<=16;i++){ const t=i/16; x.lineTo(t*W, edge(t)); }
+    x.lineTo(W,H); x.closePath(); x.fill();
+    // grass lip hanging over the sand + its shadow
+    x.strokeStyle='#24521a'; x.lineWidth=3; x.beginPath(); x.moveTo(0,edge(0)-1);
+    for(let i=1;i<=16;i++){ const t=i/16; x.lineTo(t*W, edge(t)-1); } x.stroke();
+    x.strokeStyle='rgba(0,0,0,.20)'; x.lineWidth=2; x.beginPath(); x.moveTo(0,edge(0)+2);
+    for(let i=1;i<=16;i++){ const t=i/16; x.lineTo(t*W, edge(t)+2); } x.stroke();
+    // rake lines arcing across the sand
+    x.strokeStyle='rgba(0,0,0,.10)'; x.lineWidth=1;
+    for(let r0=0;r0<4;r0++){ const ry0=sy+11+r0*7; x.beginPath(); x.moveTo(-4,ry0+4); x.quadraticCurveTo(W/2,ry0-5,W+4,ry0+4); x.stroke(); }
+    // speckles + the ball plugged in the sand
+    x.fillStyle='rgba(0,0,0,.10)'; for(let i=0;i<22;i++){ x.fillRect(Math.floor(hsh(i,74)*W), Math.floor(sy+4+hsh(i,75)*(H-sy-6)), 1,1); }
+    const bx1=W*0.40, by1=H*0.84;
+    x.fillStyle='rgba(0,0,0,.22)'; x.beginPath(); x.ellipse(bx1,by1+1.4,3.1,1.2,0,0,7); x.fill();
+    x.fillStyle='#f2f2ea'; x.beginPath(); x.arc(bx1,by1,2.2,0,7); x.fill();
+  }
+  // THE ISLAND view: an island green across the water
+  if(A.view==='island'){
+    const sh2=Math.round(H*A.sea.h), sy0=hy, syb=hy+sh2;
+    // far shoreline: a thin land line + small tree lobes at the top of the water
+    x.fillStyle='#16301e';
+    for(let i=0;i<7;i++){ const tx1=(i+0.5)*W/7+(hsh(i,80)-0.5)*6, r=2+hsh(i,81)*1.6;
+      x.beginPath(); x.arc(tx1,sy0-r*0.6,r,0,7); x.fill(); }
+    x.fillStyle='#1d3a26'; x.fillRect(0,sy0-1,W,2);
+    // the ISLAND: sand ring -> fringe -> putting surface
+    const ix=W*(0.46+hsh(2,82)*0.10), iy=sy0+sh2*0.56;
+    x.fillStyle='rgba(0,0,0,.18)'; blob(ix+1.5,iy+2,17,7.2,0.2,seed*0.05); x.fill();
+    x.fillStyle='#e8dcae'; blob(ix,iy,16.5,6.8,0.2,seed*0.05); x.fill();
+    x.fillStyle='#5f9a34'; blob(ix,iy-0.6,13.5,5.2,0.18,seed*0.06); x.fill();
+    x.fillStyle=A.gr||'#a9cc60'; blob(ix,iy-0.8,10.5,3.9,0.16,seed*0.07); x.fill();
+    x.fillStyle='rgba(255,255,255,.10)'; blob(ix-3,iy-2,4.5,1.8,0.2,seed*0.08); x.fill();
+    // walkway bridge to the near shore
+    x.fillStyle='#8a6f46'; x.fillRect(Math.round(ix+9), Math.round(iy+2), 3, Math.max(2,Math.round(syb-iy+2)));
+    x.fillStyle='rgba(0,0,0,.15)'; x.fillRect(Math.round(ix+9), Math.round(iy+2), 1, Math.max(2,Math.round(syb-iy+2)));
+    // the pin
+    const fy1=iy-14;
+    x.fillStyle='#e8e2d2'; x.fillRect(Math.round(ix),Math.round(fy1),1,13);
+    x.fillStyle='#e2554e'; x.beginPath(); x.moveTo(ix+1,fy1); x.lineTo(ix+8,fy1+2); x.lineTo(ix+1,fy1+5); x.fill();
+    // shimmer reflection under the island
+    x.fillStyle='rgba(255,255,255,.18)';
+    for(let i=0;i<6;i++){ x.fillRect(Math.round(ix-8+hsh(i,84)*16), Math.round(iy+8+i*1.8), 4+Math.floor(hsh(i,85)*5), 1); }
   }
   // pixel GOATS grazing on the course (the G.O.A.T. background)
   if(A.goats){
@@ -6083,6 +6225,10 @@ const CARD_EARN={
  'cb:heath':       {hint:'Beat the pro at a heathland course', req:()=>biomeConquered('heath')},
  'cb:sandhills':   {hint:'Beat the pro at a sandhills course', req:()=>biomeConquered('sandhills')},
  'cb:prairie':     {hint:'Beat the pro at a prairie course', req:()=>biomeConquered('prairie')},
+ 'cb:greenside':   {hint:'Beat the pro 10 times', req:()=>{try{return (dailyStats().beat|0)>=10;}catch(e){return false;}}},
+ 'cb:bunker':      {hint:'Beat the pro at 5 different courses', req:()=>{try{const m=courseMastery(); return Object.keys(m).filter(k=>(m[k].beat|0)>0).length>=5;}catch(e){return false;}}},
+ 'cb:island':      {hint:'Make a hole-in-one in the Daily', req:()=>{try{return (achState().flags.dailyAces|0)>=1;}catch(e){return false;}}},
+ 'cb:aerial':      {hint:'Win 5 tour events', req:()=>{const m=_cardLt(); return !!m&&m.wins>=5;}},
  'cb:goat':        {hint:'Reach the Icon Tour Rep rank', req:()=>{try{return repAtLeast('Icon');}catch(e){return false;}}},
 };
 // ---- cosmetics (colors + patterns) are PURCHASED too (same coin economy, namespaced owned keys) ----
