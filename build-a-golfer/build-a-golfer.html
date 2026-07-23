@@ -10719,13 +10719,18 @@ function pxDir8Canvas(look, dir, poseKey){
   // hat is painted on top from PXG_DIR8_HATS. The default 'cap'/falsy keeps the sprite's own baked cap.
   const hatStyle=(capOn && look.hatStyle && (look.hatStyle==='visor' || PXG_DIR8_HATS[look.hatStyle]) && look.hatStyle!=='cap')?look.hatStyle:'';
   const noCap=!capOn || !!hatStyle;   // bare-hair head when off OR when an overlay hat covers it
+  // CS483v: worn garments recolor their region so the lefty swing golfer matches the profile golfer too.
+  const top=(look.top&&PXG_TOPS[look.top])?look.top:'';
+  const legw=(look.leg&&PXG_LEGS[look.leg])?look.leg:'';
+  const cle=(look.cleats&&PXG_CLEATS[look.cleats])?look.cleats:'';
+  let patOn=(top?'':pat);   // a jacket over the polo hides the pattern
   // CS493: a LEFTY uses the genuine left-handed sprite set (same body/style/size, club+ball on the left).
   const lefty=!!look.lefty; const SET=lefty?PXG_DIR8_L:PXG_DIR8;
   const mir=(dir==='NW'||dir==='W'||dir==='SW');
   const src=mir?({NW:'NE',W:'E',SW:'SE'})[dir]:dir;
   let BODY=SET[src]&&SET[src][poseKey]; if(!BODY) return null;
   if(mir) BODY=BODY.map(r=>r.split('').reverse().join(''));
-  const key='D8'+(lefty?'L':'')+dir+poseKey+'|'+av.key+'|cap'+(capOn?'1':'0')+'|hs'+hatStyle+'|pn'+(look.pants||'stone')+'|pt'+pat;
+  const key='D8'+(lefty?'L':'')+dir+poseKey+'|'+av.key+'|cap'+(capOn?'1':'0')+'|hs'+hatStyle+'|pn'+(look.pants||'stone')+'|pt'+patOn+'|tp'+top+'|lg'+legw+'|cl'+cle;
   let cached=_pxCanvas.get(key); if(cached) return cached;
   const P={ l:PXG_FIX.l, G:PXG_FIX.G, H:PXG_FIX.H, u:'#ffffff',
     s:av.skinHex, j:pxShade(av.skinHex,-26), x:pxShade(av.skinHex,20),
@@ -10733,6 +10738,9 @@ function pxDir8Canvas(look, dir, poseKey){
     p:pantsHex, q:pxShade(pantsHex,-22), o:av.shoesHex,
     h:av.hairHex, i:pxShade(av.hairHex,-26),
     c:noCap?av.hairHex:av.hatHex, b:noCap?pxShade(av.hairHex,-26):pxShade(av.hatHex,-24), w:noCap?av.hairHex:pxShade(av.hatHex,26) };
+  if(top){ const b=(PXG_TOP_PAL[top]||{})['1']||av.shirtHex; P.t=b; P.d=pxShade(b,-26); P.v=pxShade(b,30); }
+  if(legw){ const b=(PXG_LEG_PAL[legw]||{})['1']||pantsHex; P.p=b; P.q=pxShade(b,-24); }
+  if(cle){ const cp=PXG_CLEATS_PAL[cle]||{}; const b=cp.T||cp.R||cp.M||cp.B||av.shoesHex; P.o=b; }
   const px=7, cv=document.createElement('canvas'); cv.width=PXG_DIR8_W*px; cv.height=PXG_DIR8_H*px;
   const ctx=cv.getContext('2d');
   ctx.fillStyle='rgba(0,0,0,.20)'; ctx.beginPath(); ctx.ellipse(11*px,22*px,6*px,2*px,0,0,7); ctx.fill();
@@ -10796,27 +10804,64 @@ const PXG_SW4_ANCH={N:[18,17],E:[11,21],S:[5,17],W:[10,18]};
 // the look + shirt patterns like pxDir8Canvas; the cap is baked (recoloured to the hat colour). Novelty-hat
 // OVERLAYS are not yet authored for these poses, so a novelty hat falls back to the baked cap on the full
 // swing only (chip/putt/lefty keep the pxDir8 system). 24x26 grid.
+// CS483v: STAMP a style hat (novelty/heritage) onto a swing golfer's baked-cap head cluster, nearest-
+// neighbor scaled from the standing hat art (PXG_HATS) - so one hat sprite reuses onto whatever direction
+// /pose the small swing golfer is in. The caller hides the baked cap (paints it as hair) so the hat replaces
+// it. Shared by pxSw4Canvas + pxDir8Canvas (as a fallback for hats the dir8 set doesn't author).
+function pxSwingStampHat(ctx, body, hatStyle, px){
+  const hatMap=hatStyle?PXG_HATS[hatStyle]:null; if(!hatMap) return;
+  const hatPal=PXG_HERITAGE_HAT_PAL[hatStyle]||PXG_NOV;
+  let t=99,b=-1,l=99,r=-1;   // standing hat-art bbox
+  for(let y=0;y<hatMap.length;y++){ const rw=hatMap[y]; for(let x=0;x<rw.length;x++){ const c=rw[x];
+    if(c!=='.'&&c!==' '){ if(y<t)t=y; if(y>b)b=y; if(x<l)l=x; if(x>r)r=x; } } }
+  if(b<0) return;
+  let ct=99,cb=-1,cl=99,cr=-1;   // this frame's head anchor = its baked 'c' cap cluster
+  for(let y=0;y<body.length;y++){ const rw=body[y]; for(let x=0;x<rw.length;x++){ if(rw[x]==='c'){ if(y<ct)ct=y; if(y>cb)cb=y; if(x<cl)cl=x; if(x>cr)cr=x; } } }
+  if(cb<0) return;
+  const headCx=(cl+cr)/2, headW=cr-cl+1, cw=r-l+1, chh=b-t+1;
+  const tw=Math.max(6,Math.round(headW*1.42)), th=Math.max(3,Math.round(chh*tw/cw));
+  const tx0=Math.round(headCx-tw/2+0.5), ty0=(cb+1)-th;   // brim sits at the head brow
+  for(let ty=0;ty<th;ty++)for(let tx=0;tx<tw;tx++){
+    const sx=l+Math.min(cw-1,Math.floor(tx*cw/tw)), sy=t+Math.min(chh-1,Math.floor(ty*chh/th));
+    const ch=hatMap[sy]&&hatMap[sy][sx]; if(!ch||ch==='.'||ch===' ')continue;
+    const col=(hatPal&&hatPal[ch])||PXG_NOV[ch]||PXG_FIX[ch]; if(!col)continue;
+    ctx.fillStyle=col; ctx.fillRect((tx0+tx)*px,(ty0+ty)*px,px,px); }
+}
 function pxSw4Canvas(look, dir, poseKey){
   look=look||S.look||DEFLOOK; const av=avLook(look);
   const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===(look.pants||'stone')))||{a:'#c7bfa8'}).a;
   const capOn=look.cap!==false, noCap=!capOn;
   const pat=(look.shirtPat&&PXPAT_BY[look.shirtPat])?look.shirtPat:'';
+  // CS483v: worn accessories on the swing golfer so it matches the profile golfer - novelty HATS (stamped),
+  // OUTERWEAR / LEGWEAR / CLEATS (region recolor). Effect auras are applied by hvSwingMarkup; shirt patterns
+  // below. A STYLE hat (not the basic cap/visor, which are drawn by the sprite's own 'c') is stamped.
+  const hatStyle=(capOn && look.hatStyle && look.hatStyle!=='visor' && look.hatStyle!=='cap' && (PXG_HATS[look.hatStyle]||PXG_HERITAGE_HAT_PAL[look.hatStyle]))?look.hatStyle:'';
+  const top=(look.top&&PXG_TOPS[look.top])?look.top:'';
+  const legw=(look.leg&&PXG_LEGS[look.leg])?look.leg:'';
+  const cle=(look.cleats&&PXG_CLEATS[look.cleats])?look.cleats:'';
   const BODY=PXG_SW4[dir]&&PXG_SW4[dir][poseKey]; if(!BODY) return null;
-  const key='SW4'+dir+poseKey+'|'+av.key+'|cap'+(capOn?'1':'0')+'|pn'+(look.pants||'stone')+'|pt'+pat;
+  const key='SW4'+dir+poseKey+'|'+av.key+'|cap'+(capOn?'1':'0')+'|pn'+(look.pants||'stone')+'|pt'+pat+'|hw'+hatStyle+'|tp'+top+'|lg'+legw+'|cl'+cle;
   let cached=_pxCanvas.get(key); if(cached) return cached;
+  // a stamped style hat reveals HAIR under it, so the baked cap ('c'/'b'/'w') paints as hair.
+  const capHair=noCap||!!hatStyle;
   const P={ l:PXG_FIX.l, G:PXG_FIX.G, H:PXG_FIX.H, u:'#101a30',
     s:av.skinHex, j:pxShade(av.skinHex,-26), x:pxShade(av.skinHex,20),
     t:av.shirtHex, d:pxShade(av.shirtHex,-26), v:pxShade(av.shirtHex,34),
     p:pantsHex, q:pxShade(pantsHex,-22), o:av.shoesHex,
     h:av.hairHex, i:pxShade(av.hairHex,-26),
-    c:noCap?av.hairHex:av.hatHex, b:noCap?pxShade(av.hairHex,-26):pxShade(av.hatHex,-24), w:noCap?av.hairHex:pxShade(av.hatHex,26) };
+    c:capHair?av.hairHex:av.hatHex, b:capHair?pxShade(av.hairHex,-26):pxShade(av.hatHex,-24), w:capHair?av.hairHex:pxShade(av.hatHex,26) };
+  // CS483v: worn garments recolor their region on the swing sprite so they read as that item.
+  let patOn=pat;
+  if(top){ const b=(PXG_TOP_PAL[top]||{})['1']||av.shirtHex; P.t=b; P.d=pxShade(b,-26); P.v=pxShade(b,30); patOn=''; }   // a jacket over the polo hides the pattern
+  if(legw){ const b=(PXG_LEG_PAL[legw]||{})['1']||pantsHex; P.p=b; P.q=pxShade(b,-24); }
+  if(cle){ const cp=PXG_CLEATS_PAL[cle]||{}; const b=cp.T||cp.R||cp.M||cp.B||av.shoesHex; P.o=b; }
   const px=7, cv=document.createElement('canvas'); cv.width=PXG_DIR8_W*px; cv.height=PXG_DIR8_H*px;
   const ctx=cv.getContext('2d');
   ctx.fillStyle='rgba(0,0,0,.20)'; ctx.beginPath(); ctx.ellipse(11*px,22*px,6*px,2*px,0,0,7); ctx.fill();
   for(let y=0;y<BODY.length;y++){ const row=BODY[y];
     for(let X=0;X<row.length;X++){ const ch=row[X]; if(ch==='.'||ch===' ')continue; const col=P[ch]; if(!col)continue;
       ctx.fillStyle=col; ctx.fillRect(X*px,y*px,px,px); } }
-  if(pat){ const pd=PXPAT_BY[pat];
+  if(patOn){ const pat=patOn; const pd=PXPAT_BY[pat];
     if(pd.fixed){ const cols=pd.cols||[];
       for(let y=0;y<BODY.length;y++){ const row=BODY[y]; for(let X=0;X<row.length;X++){ const ch=row[X];
         if(ch!=='t'&&ch!=='d'&&ch!=='v')continue; let col=cols[pd.f(X,y)|0]||cols[0]; if(!col)continue;
@@ -10829,6 +10874,7 @@ function pxSw4Canvas(look, dir, poseKey){
         let col=(a===2)?a2:a1; if(ch==='d') col=pxShade(col,-16); else if(ch==='v') col=pxShade(col,14);
         ctx.fillStyle=col; ctx.fillRect(X*px,y*px,px,px); } }
     } }
+  if(hatStyle) pxSwingStampHat(ctx, BODY, hatStyle, px);   // CS483v: stamp the novelty/heritage hat on the head
   _pxCanvas.set(key,cv); return cv;
 }
 function pxSw4(look, dir){
