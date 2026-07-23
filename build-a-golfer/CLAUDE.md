@@ -13479,6 +13479,22 @@ allows Google Fonts, or self-host Anton.*
   card-tappable - the records store only carries name+look, not the user_id/skills a card needs; doable
   later by returning holder user_ids from the records RPC if wanted.
 
+- **PLAYER CARDS pass 6 — crisp pixel backdrops + a much bigger golfer (owner IMG_8699: "the background
+  is very blurry and low quality compared to the crisp pixels of the golfer. The golfer is also too small
+  still. We can make it way bigger").** The `.pcbg` img was already `image-rendering:pixelated` - the blur
+  was in the CANVAS CONTENT: at 96x132 the renderer's anti-aliased curves/gradients produce soft-edged
+  pixels that upscale as mush. Fix: a **hard-pixelate pass** (`cardBgQuantize` - snap every pixel's RGB to
+  a coarse step, Q=22, alpha forced opaque) runs at the end of `pxCardBgCanvas` (both the standard path
+  AND the aerial early-return), so soft anti-aliased transitions + smooth gradients become crisp retro
+  BANDING - the pixelated upscale then reads as deliberate pixel art matching the golfer's crisp pixels.
+  Flows into the share-card medallion automatically (it draws the same canvas). And the card-front golfer
+  went **206 -> 280px** (bottom offset 58->56), so the golfer clearly dominates the card (clears the
+  tier/OVR chips + the nameplate at the standard 318x456 card size). Verified in Playwright: all 20
+  backdrops render distinct with clean banding (no ugly vignette rings), the card front shows the big
+  golfer over a crisp backdrop, the full card/board/closet/share suite + an 18-hole practice round still
+  green with 0 page errors. Deployed to /golf. Tunable: the quantize step Q (smaller = subtler banding),
+  the golfer height/bottom in playerCardHTML/.pcgolfer.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
