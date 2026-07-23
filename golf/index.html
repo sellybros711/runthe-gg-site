@@ -14739,6 +14739,12 @@ function scrSeason(){
     _prevScTotal=toNum;
   } else { _lbRects=null; _prevScTotal=Math.round(meLive.total); }
 
+  // OWNER (IMG_8652): the Skip-to-results confirmation PAUSES the sim - while it's open, nothing below
+  // may run (no round timer, no celebrations, no storyline/dilemma beats, no Moment popups), so a pop-up
+  // can never clash with the confirmation. All of it uses one-shot flags that stay unconsumed here, so
+  // choosing "Keep playing" (or Close) just re-renders, this scheduler re-runs, and the sim resumes
+  // automatically - any pending celebration/Moment then fires cleanly on its own.
+  if(S.overlay==='confirmSkip'){ clearTimeout(seasonTimer); return; }
   // if YOU are in a sudden-death playoff, watch it resolve hole-by-hole before anything else
   if(ce.done && ce.playoff && ce.playoff.you && !ce._playoffShown){
     ce._playoffShown=true; clearTimeout(seasonTimer);
