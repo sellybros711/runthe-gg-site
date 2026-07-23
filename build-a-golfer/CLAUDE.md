@@ -12975,6 +12975,29 @@ allows Google Fonts, or self-host Anton.*
   "✓ Equipped" disabled, the message renders once even on re-click, and z-70 is on the toast; 0 page
   errors. Deployed to /golf.
 
+- **CLOSET hero revamp — boost list left, Store/Random/Best buttons right (owner IMG_8661: "show the
+  boosts on the left hand side in a simple vertical list. If a stat is going down it should be red, and up
+  should be green. On the right should be 3 buttons stacked vertically: store, random outfit generator out
+  of your owned items, and best outfit (auto assigns best combination for boosts)").** The pinned closet
+  preview's empty side space (the circled areas) is now used: the golfer sits in a `.closet-hero` flex row
+  with a LEFT column — a "BOOSTS" vertical list of the LIVE applied per-stat deltas straight from
+  `accBoost()` (the exact clamped map the career golfer gets, so it can never drift from the truth), each
+  row green `+2 APP` / red `-1 PUT` in CATS order, "None yet" when empty — and a RIGHT column of 3 stacked
+  buttons: **🛍 Store** (opens the Pro Shop apparel section), **🎰 Random** (`closetRandomOutfit` — equips a
+  random OWNED item in every visual category: shirt/hat color/pattern/headwear/eyewear/trousers/shoes/
+  outerwear/legwear/cleats/aura/club/ball; 'hat' color is rolled before 'hw' so a No-Hat roll isn't
+  overridden), and **✨ Best Fit** (`closetBestOutfit` — for each boost-carrying category [hw/ew/pat/club]
+  equips the owned item with the highest NET boost sum, ties keep your current pick, then toasts the new
+  "+N total"). The list + buttons live in the sticky header, so they stay pinned while the tiles scroll;
+  updates re-render live after Random/Best. Signed-in only (guests keep the plain centered golfer). Applies
+  to both the Closet (edit) and the career-start create flow. Verified in Playwright: the list mirrors
+  accBoost exactly (zero-sum stats omitted), negatives render red (`-1 PUT` #ff7a70) and positives green,
+  Best Fit picked crown/monocle/excalibur (+14 total) over weaker owned options and kept an equipped item
+  on a tie, Random stays 100% within owned items and respects the hat/headwear ordering, Store routes to
+  the shop, guests show no side panels, and the full title→setup→draft→build→round→result + shop-sections
+  regression stays green with 0 page errors. Deployed to /golf. Tunable: the `.closet-hero`/`.closet-abtn`
+  CSS, the Random category list, the Best tie-break.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
