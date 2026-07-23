@@ -110,10 +110,21 @@ for (const e of bank.values()) (byLen[e.len] ||= []).push(e);
 for (const k in byLen) byLen[k].sort((a, b) => a.answer < b.answer ? -1 : 1);
 
 // ---- §6 fill: black-square templates + backtracking ------------------------
+// Several 5x5 black-square patterns, all 180deg-symmetric. The sports-only bank
+// has no 2-letter words, so every ACROSS/DOWN run must be >= 3 letters (a 2-run
+// is instantly unfillable); a lone white cell between blacks is fine (it's just
+// checked by its crossing word). These blockier shapes carry more 3-letter slots
+// and fewer full 5-letter interlocks, so the thin sports bank fills them fast.
+// buildPuzzle prefers a distinct template per day-index so the 7 daily puzzles
+// have 7 different grid shapes, falling back to others if one can't be filled.
 const TEMPLATES = [
-  { size: 5, black: [[0,3],[0,4],[1,4],[3,0],[4,0],[4,1]] },  // staircase
-  { size: 5, black: [[0,0],[0,4],[2,2],[4,0],[4,4]] },        // notched + center
-  { size: 5, black: [[0,4],[1,4],[2,2],[3,0],[4,0]] },        // diagonal-ish
+  { size: 5, black: [[1,1],[1,2],[1,3],[3,1],[3,2],[3,3]] },                  // twin bars
+  { size: 5, black: [[0,1],[0,3],[2,1],[2,3],[4,1],[4,3]] },                  // lattice
+  { size: 5, black: [[1,1],[1,3],[2,1],[2,3],[3,1],[3,3]] },                  // center block
+  { size: 5, black: [[0,0],[0,4],[1,1],[1,3],[3,1],[3,3],[4,0],[4,4]] },      // corners + diamond
+  { size: 5, black: [[1,0],[1,2],[1,4],[3,0],[3,2],[3,4]] },                  // dashed bars
+  { size: 5, black: [[0,0],[1,1],[1,3],[3,1],[3,3],[4,4]] },                  // pinwheel
+  { size: 5, black: [[0,3],[1,1],[2,1],[2,3],[3,3],[4,1]] },                  // staircase spin
 ];
 
 function slotsFor(size, blackSet) {
@@ -198,9 +209,13 @@ function themeScore(slots, grid) {
   return slots.reduce((n, s) => n + (bank.get(cellsOf(s).map(([y, x]) => grid[y][x]).join("")).theme ? 1 : 0), 0);
 }
 
-function buildPuzzle(dateISO) {
+function buildPuzzle(dateISO, preferIdx) {
   const r = rng(hash(dateISO));
-  const order = Array.from({ length: TEMPLATES.length }, (_, i) => i).sort(() => r() - 0.5);
+  // prefer a distinct template per day-index so consecutive puzzles differ, then
+  // fall back to the rest (seeded shuffle) if the bank can't fill the preferred one
+  const rest = Array.from({ length: TEMPLATES.length }, (_, i) => i)
+    .filter((i) => i !== preferIdx).sort(() => r() - 0.5);
+  const order = (preferIdx != null ? [preferIdx] : []).concat(rest);
   let best = null, bestScore = -1;
 
   for (const idx of order) {
@@ -249,7 +264,7 @@ function shiftDay(iso, d) { const dt = new Date(iso + "T00:00:00Z"); dt.setUTCDa
 const puzzles = [];
 for (let i = 0; i < count; i++) {
   const date = shiftDay(START, i);
-  const p = buildPuzzle(date);
+  const p = buildPuzzle(date, i % TEMPLATES.length);
   if (p) puzzles.push(p);
   else console.error("!! could not generate", date);
 }

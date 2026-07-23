@@ -879,1312 +879,1124 @@
   ],
   "fill": [
     {
-      "answer": "ARE",
-      "clue": "\"How ___ you?\""
+      "answer": "ERA",
+      "clue": "Pitcher's run-prevention stat"
     },
     {
-      "answer": "EAR",
-      "clue": "Corn unit"
+      "answer": "RBI",
+      "clue": "Run batted in, in a box score"
     },
     {
-      "answer": "ONE",
-      "clue": "Lowest counting number"
+      "answer": "RUN",
+      "clue": "Tally on the baseball scoreboard"
     },
     {
-      "answer": "OAR",
-      "clue": "Rowboat blade"
+      "answer": "HIT",
+      "clue": "Single, double, or triple"
     },
     {
-      "answer": "ERR",
-      "clue": "Slip up"
+      "answer": "BAT",
+      "clue": "Slugger's stick"
     },
     {
-      "answer": "EAT",
-      "clue": "Have a meal"
+      "answer": "OUT",
+      "clue": "Strike-three result"
     },
     {
-      "answer": "ATE",
-      "clue": "Had lunch"
+      "answer": "TAG",
+      "clue": "Way to record an out"
     },
     {
-      "answer": "TEN",
-      "clue": "Perfect-dive score"
+      "answer": "MVP",
+      "clue": "Season's top player, for short"
     },
     {
-      "answer": "TON",
-      "clue": "2,000 pounds"
+      "answer": "ACE",
+      "clue": "Unreturnable serve"
     },
     {
-      "answer": "ODE",
-      "clue": "Poem of praise"
+      "answer": "PAR",
+      "clue": "Even score on a golf hole"
     },
     {
-      "answer": "AGO",
-      "clue": "In the past"
+      "answer": "TEE",
+      "clue": "Where a golf hole begins"
     },
     {
-      "answer": "ALE",
-      "clue": "Pub pour"
+      "answer": "LOB",
+      "clue": "High, soft tennis shot"
     },
     {
-      "answer": "ICE",
-      "clue": "Rink surface"
+      "answer": "NET",
+      "clue": "Tennis divider, or hoop's mesh"
     },
     {
-      "answer": "AIM",
-      "clue": "Take ___"
+      "answer": "RIM",
+      "clue": "Basket's metal ring"
     },
     {
-      "answer": "ANT",
-      "clue": "Picnic pest"
-    },
-    {
-      "answer": "APE",
-      "clue": "Zoo primate"
-    },
-    {
-      "answer": "ARC",
-      "clue": "Curved path"
-    },
-    {
-      "answer": "ART",
-      "clue": "Museum display"
-    },
-    {
-      "answer": "AWE",
-      "clue": "Sense of wonder"
-    },
-    {
-      "answer": "OWE",
-      "clue": "Be in debt"
-    },
-    {
-      "answer": "OWN",
-      "clue": "Possess"
-    },
-    {
-      "answer": "OAK",
-      "clue": "Sturdy tree"
-    },
-    {
-      "answer": "OLD",
-      "clue": "Not new"
-    },
-    {
-      "answer": "ORE",
-      "clue": "Mined rock"
-    },
-    {
-      "answer": "OUR",
-      "clue": "Belonging to us"
-    },
-    {
-      "answer": "OAT",
-      "clue": "Oatmeal grain"
-    },
-    {
-      "answer": "RAN",
-      "clue": "Took off sprinting"
-    },
-    {
-      "answer": "RAT",
-      "clue": "Sewer rodent"
-    },
-    {
-      "answer": "RAW",
-      "clue": "Uncooked"
-    },
-    {
-      "answer": "RED",
-      "clue": "Stop-sign color"
-    },
-    {
-      "answer": "RIB",
-      "clue": "Chest bone"
-    },
-    {
-      "answer": "RID",
-      "clue": "Get ___ of"
-    },
-    {
-      "answer": "ROT",
-      "clue": "Slowly decay"
-    },
-    {
-      "answer": "ROE",
-      "clue": "Fish eggs"
-    },
-    {
-      "answer": "REV",
-      "clue": "Gun the engine"
-    },
-    {
-      "answer": "SEA",
-      "clue": "Body of salt water"
+      "answer": "BYE",
+      "clue": "First-round pass in a bracket"
     },
     {
       "answer": "SET",
       "clue": "Tennis-match division"
     },
     {
-      "answer": "SKI",
-      "clue": "Hit the slopes"
+      "answer": "REF",
+      "clue": "Whistle-blower on the court"
     },
     {
-      "answer": "SLY",
-      "clue": "Cunning"
+      "answer": "UMP",
+      "clue": "Balls-and-strikes caller"
     },
     {
-      "answer": "SPA",
-      "clue": "Recovery-day resort"
+      "answer": "PIN",
+      "clue": "Wrestling win, or bowling target"
     },
     {
-      "answer": "SUN",
-      "clue": "Star we orbit"
+      "answer": "LAP",
+      "clue": "One circuit of the track"
     },
     {
-      "answer": "SOD",
-      "clue": "Rolled-out turf"
+      "answer": "JAB",
+      "clue": "Quick boxing punch"
     },
     {
-      "answer": "SON",
-      "clue": "Male child"
-    },
-    {
-      "answer": "SIR",
-      "clue": "Knight's title"
-    },
-    {
-      "answer": "SIT",
-      "clue": "Take a seat"
-    },
-    {
-      "answer": "SAT",
-      "clue": "Rested on a bench"
-    },
-    {
-      "answer": "SAW",
-      "clue": "Laid eyes on"
-    },
-    {
-      "answer": "SAD",
-      "clue": "Down in the dumps"
-    },
-    {
-      "answer": "SAG",
-      "clue": "Droop"
-    },
-    {
-      "answer": "TAN",
-      "clue": "Beach-day hue"
-    },
-    {
-      "answer": "TAR",
-      "clue": "Road-paving goo"
-    },
-    {
-      "answer": "TEA",
-      "clue": "Steeped drink"
+      "answer": "WIN",
+      "clue": "Pitcher's credited victory"
     },
     {
       "answer": "TIE",
       "clue": "Deadlocked score"
     },
     {
-      "answer": "TIN",
-      "clue": "Can metal"
+      "answer": "FLY",
+      "clue": "Ball hit high to the outfield"
     },
     {
-      "answer": "TOE",
-      "clue": "Foot digit"
+      "answer": "GYM",
+      "clue": "Where the team practices"
     },
     {
-      "answer": "TOP",
-      "clue": "Spinning toy"
+      "answer": "PAD",
+      "clue": "Goalie's leg protector"
     },
     {
-      "answer": "TAB",
-      "clue": "Bar bill"
+      "answer": "CUP",
+      "clue": "Championship trophy, often"
     },
     {
-      "answer": "TIP",
-      "clue": "Gratuity"
+      "answer": "LIE",
+      "clue": "Golf ball's resting position"
     },
     {
-      "answer": "URN",
-      "clue": "Coffee dispenser"
+      "answer": "ROW",
+      "clue": "Sculling sport"
     },
     {
-      "answer": "USE",
-      "clue": "Put to work"
+      "answer": "PGA",
+      "clue": "Golf tour org."
     },
     {
-      "answer": "VAN",
-      "clue": "Cargo vehicle"
+      "answer": "NBA",
+      "clue": "Pro basketball league"
     },
     {
-      "answer": "VET",
-      "clue": "Animal doctor"
+      "answer": "NFL",
+      "clue": "Pro football league"
     },
     {
-      "answer": "VIA",
-      "clue": "By way of"
+      "answer": "MLB",
+      "clue": "Pro baseball org."
     },
     {
-      "answer": "WIN",
-      "clue": "Come out on top"
+      "answer": "NHL",
+      "clue": "Pro hockey league"
     },
     {
-      "answer": "ETA",
-      "clue": "Arrival-time guess: abbr."
+      "answer": "SKI",
+      "clue": "Downhill racer's gear"
     },
     {
-      "answer": "EON",
-      "clue": "A very long time"
+      "answer": "PRO",
+      "clue": "Not an amateur athlete"
     },
     {
-      "answer": "NAP",
-      "clue": "Quick snooze"
+      "answer": "FAN",
+      "clue": "Team supporter in the stands"
     },
     {
-      "answer": "NOD",
-      "clue": "Yes signal"
+      "answer": "HUT",
+      "clue": "Snap-count call"
     },
     {
-      "answer": "NOR",
-      "clue": "Neither's partner"
+      "answer": "TKO",
+      "clue": "Boxing stoppage, for short"
     },
     {
-      "answer": "NOT",
-      "clue": "Negative word"
+      "answer": "REP",
+      "clue": "Weight-room count"
     },
     {
-      "answer": "DOE",
-      "clue": "Female deer"
+      "answer": "SUB",
+      "clue": "Bench player who checks in"
     },
     {
-      "answer": "DOT",
-      "clue": "Small round mark"
+      "answer": "OAR",
+      "clue": "Rower's tool"
     },
     {
-      "answer": "DON",
-      "clue": "Put on, as a cap"
+      "answer": "MAT",
+      "clue": "Wrestler's surface"
     },
     {
-      "answer": "AREA",
-      "clue": "Zone"
+      "answer": "LEG",
+      "clue": "One relay runner's segment"
     },
     {
-      "answer": "IDEA",
-      "clue": "Bright thought"
+      "answer": "ARM",
+      "clue": "Pitcher's prized asset"
     },
     {
-      "answer": "OPEN",
-      "clue": "Not shut"
+      "answer": "ROY",
+      "clue": "Rookie of the Year, for short"
     },
     {
-      "answer": "EASE",
-      "clue": "Comfort"
+      "answer": "ALI",
+      "clue": "Boxing great Muhammad ___"
     },
     {
-      "answer": "RATE",
-      "clue": "Speed or pace"
+      "answer": "ELI",
+      "clue": "Giants QB Manning"
     },
     {
-      "answer": "TIDE",
-      "clue": "Ocean's rise and fall"
+      "answer": "OTT",
+      "clue": "Giants Hall of Famer Mel ___"
     },
     {
-      "answer": "NEAR",
-      "clue": "Close by"
+      "answer": "ORR",
+      "clue": "Bruins great Bobby ___"
     },
     {
-      "answer": "LANE",
-      "clue": "Bowling path"
+      "answer": "WIE",
+      "clue": "Golfer Michelle ___"
     },
     {
-      "answer": "LINE",
-      "clue": "Ticket queue"
+      "answer": "DUNK",
+      "clue": "Slam through the hoop"
     },
     {
-      "answer": "LOSE",
-      "clue": "Drop the game"
+      "answer": "PUTT",
+      "clue": "Short shot on the green"
     },
     {
-      "answer": "NOSE",
-      "clue": "Face's smeller"
+      "answer": "GOAL",
+      "clue": "Score in hockey or soccer"
     },
     {
-      "answer": "ROSE",
-      "clue": "Thorny bloom"
+      "answer": "PUNT",
+      "clue": "Fourth-down kick"
     },
     {
-      "answer": "ROAD",
-      "clue": "Paved route"
+      "answer": "SACK",
+      "clue": "Take down the quarterback"
     },
     {
-      "answer": "READ",
-      "clue": "Peruse a book"
+      "answer": "BUNT",
+      "clue": "Tap the ball softly"
     },
     {
-      "answer": "DEAL",
-      "clue": "Trade agreement"
+      "answer": "WALK",
+      "clue": "Base on balls"
     },
     {
-      "answer": "DEAR",
-      "clue": "Letter opener"
-    },
-    {
-      "answer": "ONES",
-      "clue": "Singles, in a wallet"
-    },
-    {
-      "answer": "OVAL",
-      "clue": "Running-track shape"
-    },
-    {
-      "answer": "ANTE",
-      "clue": "Poker starter"
-    },
-    {
-      "answer": "ACRE",
-      "clue": "Land measure"
-    },
-    {
-      "answer": "AIDE",
-      "clue": "Assistant"
-    },
-    {
-      "answer": "ALTO",
-      "clue": "Choir voice"
-    },
-    {
-      "answer": "ALSO",
-      "clue": "In addition"
-    },
-    {
-      "answer": "AUTO",
-      "clue": "Car, informally"
-    },
-    {
-      "answer": "ATOM",
-      "clue": "Tiny particle"
-    },
-    {
-      "answer": "AVID",
-      "clue": "Keen, as a fan"
-    },
-    {
-      "answer": "ANEW",
-      "clue": "Once more"
-    },
-    {
-      "answer": "ARID",
-      "clue": "Bone-dry"
-    },
-    {
-      "answer": "CORE",
-      "clue": "Very center"
-    },
-    {
-      "answer": "DASH",
-      "clue": "Short sprint"
-    },
-    {
-      "answer": "DATE",
-      "clue": "Calendar entry"
-    },
-    {
-      "answer": "DINE",
-      "clue": "Have supper"
-    },
-    {
-      "answer": "DOOR",
-      "clue": "Entryway"
-    },
-    {
-      "answer": "DARE",
-      "clue": "Double ___ (challenge)"
-    },
-    {
-      "answer": "DART",
-      "clue": "Pub-board throw"
-    },
-    {
-      "answer": "DAWN",
-      "clue": "Sunrise"
-    },
-    {
-      "answer": "DEAN",
-      "clue": "College official"
-    },
-    {
-      "answer": "DIAL",
-      "clue": "Old phone feature"
-    },
-    {
-      "answer": "DIRT",
-      "clue": "Infield surface"
-    },
-    {
-      "answer": "DENT",
-      "clue": "Fender ding"
-    },
-    {
-      "answer": "DOTE",
-      "clue": "Lavish affection"
-    },
-    {
-      "answer": "EARN",
-      "clue": "Merit"
-    },
-    {
-      "answer": "EDGE",
-      "clue": "Slim advantage"
-    },
-    {
-      "answer": "EVEN",
-      "clue": "Tied up"
-    },
-    {
-      "answer": "EXIT",
-      "clue": "Way out"
-    },
-    {
-      "answer": "EAST",
-      "clue": "Sunrise direction"
-    },
-    {
-      "answer": "EDIT",
-      "clue": "Revise"
-    },
-    {
-      "answer": "EPIC",
-      "clue": "Grand in scale"
-    },
-    {
-      "answer": "FARE",
-      "clue": "Ticket price"
-    },
-    {
-      "answer": "FAST",
-      "clue": "Speedy"
-    },
-    {
-      "answer": "FIRE",
-      "clue": "Blaze"
-    },
-    {
-      "answer": "GATE",
-      "clue": "Stadium entrance"
-    },
-    {
-      "answer": "GEAR",
-      "clue": "Equipment"
-    },
-    {
-      "answer": "IRON",
-      "clue": "Golf club"
-    },
-    {
-      "answer": "ISLE",
-      "clue": "Small island"
-    },
-    {
-      "answer": "ITEM",
-      "clue": "List entry"
-    },
-    {
-      "answer": "IDES",
-      "clue": "\"Beware the ___ of March\""
-    },
-    {
-      "answer": "LAKE",
-      "clue": "Big pond"
-    },
-    {
-      "answer": "LEAP",
-      "clue": "Big jump"
-    },
-    {
-      "answer": "MILE",
-      "clue": "5,280 feet"
-    },
-    {
-      "answer": "NAME",
-      "clue": "Jersey-back word"
-    },
-    {
-      "answer": "NEAT",
-      "clue": "Tidy"
-    },
-    {
-      "answer": "NOTE",
-      "clue": "Short memo"
-    },
-    {
-      "answer": "NEED",
-      "clue": "Must-have"
-    },
-    {
-      "answer": "NEST",
-      "clue": "Bird's home"
-    },
-    {
-      "answer": "NINE",
-      "clue": "Players on a baseball side"
-    },
-    {
-      "answer": "NONE",
-      "clue": "Not any"
-    },
-    {
-      "answer": "NODE",
-      "clue": "Network point"
-    },
-    {
-      "answer": "OMEN",
-      "clue": "Sign of things to come"
-    },
-    {
-      "answer": "OATH",
-      "clue": "Solemn pledge"
-    },
-    {
-      "answer": "OGRE",
-      "clue": "Fairy-tale brute"
-    },
-    {
-      "answer": "ONTO",
-      "clue": "Wise to"
-    },
-    {
-      "answer": "OPAL",
-      "clue": "Iridescent gem"
-    },
-    {
-      "answer": "ORAL",
-      "clue": "Spoken"
-    },
-    {
-      "answer": "OVEN",
-      "clue": "Baking appliance"
-    },
-    {
-      "answer": "ODOR",
-      "clue": "Smell"
-    },
-    {
-      "answer": "PACE",
-      "clue": "Rate of play"
-    },
-    {
-      "answer": "PEAK",
-      "clue": "Mountain top"
-    },
-    {
-      "answer": "RAIL",
-      "clue": "Track piece"
-    },
-    {
-      "answer": "RAIN",
-      "clue": "Rainout cause"
-    },
-    {
-      "answer": "REAL",
-      "clue": "Genuine"
-    },
-    {
-      "answer": "REST",
-      "clue": "Day off"
-    },
-    {
-      "answer": "RIDE",
-      "clue": "Coaster trip"
-    },
-    {
-      "answer": "RISE",
-      "clue": "Go up"
-    },
-    {
-      "answer": "REAR",
-      "clue": "Back end"
-    },
-    {
-      "answer": "REAP",
-      "clue": "Harvest"
-    },
-    {
-      "answer": "REED",
-      "clue": "Marsh plant"
-    },
-    {
-      "answer": "REEL",
-      "clue": "Rod's partner"
-    },
-    {
-      "answer": "REIN",
-      "clue": "Horse strap"
-    },
-    {
-      "answer": "RELY",
-      "clue": "Depend (on)"
-    },
-    {
-      "answer": "REND",
-      "clue": "Tear apart"
-    },
-    {
-      "answer": "RENT",
-      "clue": "Monthly payment"
-    },
-    {
-      "answer": "RICE",
-      "clue": "Sushi base"
-    },
-    {
-      "answer": "RIND",
-      "clue": "Melon skin"
-    },
-    {
-      "answer": "RIOT",
-      "clue": "Wild disturbance"
-    },
-    {
-      "answer": "ROAM",
-      "clue": "Wander"
-    },
-    {
-      "answer": "ROAR",
-      "clue": "Crowd's sound"
-    },
-    {
-      "answer": "ROBE",
-      "clue": "Bathrobe"
-    },
-    {
-      "answer": "RODE",
-      "clue": "Sat astride"
-    },
-    {
-      "answer": "ROLE",
-      "clue": "Bit part"
-    },
-    {
-      "answer": "ROOM",
-      "clue": "Hotel booking"
-    },
-    {
-      "answer": "ROOT",
-      "clue": "Cheer (for)"
-    },
-    {
-      "answer": "ROPE",
-      "clue": "Sharp line drive, in slang"
-    },
-    {
-      "answer": "RUIN",
-      "clue": "Wreck"
-    },
-    {
-      "answer": "RUST",
-      "clue": "Old-metal coating"
-    },
-    {
-      "answer": "SALT",
-      "clue": "Seasoning"
-    },
-    {
-      "answer": "SAND",
-      "clue": "Beach grit"
-    },
-    {
-      "answer": "SANE",
-      "clue": "Level-headed"
+      "answer": "BALK",
+      "clue": "Pitcher's illegal motion"
     },
     {
       "answer": "SAVE",
-      "clue": "Rescue"
+      "clue": "Closer's stat"
     },
     {
-      "answer": "SEAL",
-      "clue": "Zoo barker"
+      "answer": "PASS",
+      "clue": "Throw to a teammate"
     },
     {
-      "answer": "SEAM",
-      "clue": "Baseball's stitched line"
+      "answer": "SHOT",
+      "clue": "Attempt on goal"
     },
     {
-      "answer": "SEAT",
-      "clue": "Grandstand spot"
+      "answer": "RINK",
+      "clue": "Hockey's playing surface"
     },
     {
-      "answer": "SEED",
-      "clue": "Bracket ranking"
+      "answer": "PUCK",
+      "clue": "Hockey disk"
     },
     {
-      "answer": "SEEK",
-      "clue": "Search for"
+      "answer": "MITT",
+      "clue": "Catcher's glove"
     },
     {
-      "answer": "SEEN",
-      "clue": "Spotted"
+      "answer": "BASE",
+      "clue": "First, second, or third"
     },
     {
-      "answer": "SEND",
-      "clue": "Ship off"
+      "answer": "HOME",
+      "clue": "Where the runner scores"
     },
     {
-      "answer": "SENT",
-      "clue": "Dispatched"
+      "answer": "FOUL",
+      "clue": "Ball hit out of play"
     },
     {
-      "answer": "SIDE",
-      "clue": "Team in a match"
+      "answer": "LOVE",
+      "clue": "Zero, in tennis"
     },
     {
-      "answer": "SITE",
-      "clue": "Location"
+      "answer": "IRON",
+      "clue": "Golf club for the fairway"
     },
     {
-      "answer": "SIZE",
-      "clue": "Jersey measure"
+      "answer": "DIVE",
+      "clue": "Goalie's lunging save"
     },
     {
-      "answer": "SLED",
-      "clue": "Snow ride"
+      "answer": "LANE",
+      "clue": "Swimmer's or bowler's path"
     },
     {
-      "answer": "SLOT",
-      "clue": "Lineup spot"
+      "answer": "SPIN",
+      "clue": "English on a tennis ball"
     },
     {
-      "answer": "SNAP",
-      "clue": "Quick photo"
+      "answer": "KICK",
+      "clue": "Soccer basic"
     },
     {
-      "answer": "SODA",
-      "clue": "Fizzy drink"
+      "answer": "GOLF",
+      "clue": "Links sport"
     },
     {
-      "answer": "SOLE",
-      "clue": "Shoe bottom"
+      "answer": "SLAM",
+      "clue": "Emphatic dunk"
     },
     {
-      "answer": "SOLO",
-      "clue": "On one's own"
+      "answer": "DEKE",
+      "clue": "Fake out a defender"
     },
     {
-      "answer": "SOON",
-      "clue": "Before long"
+      "answer": "PLAY",
+      "clue": "Coach's called scheme"
     },
     {
-      "answer": "SORE",
-      "clue": "Achy after a workout"
+      "answer": "BOUT",
+      "clue": "Boxing match"
     },
     {
-      "answer": "SORT",
-      "clue": "Arrange"
+      "answer": "CHIP",
+      "clue": "Short lofted golf shot"
     },
     {
-      "answer": "SPAN",
-      "clue": "Bridge length"
+      "answer": "HOOK",
+      "clue": "Curving boxing punch"
     },
     {
-      "answer": "SPAR",
-      "clue": "Trade practice punches"
+      "answer": "FORE",
+      "clue": "Golfer's warning shout"
     },
     {
-      "answer": "STAR",
-      "clue": "Team's best player"
+      "answer": "LOFT",
+      "clue": "Angle on a golf club face"
     },
     {
-      "answer": "STEM",
-      "clue": "Flower stalk"
+      "answer": "WOOD",
+      "clue": "Driver, in golf"
     },
     {
-      "answer": "STEP",
-      "clue": "Stair unit"
+      "answer": "GRIP",
+      "clue": "How you hold the bat or club"
     },
     {
-      "answer": "STIR",
-      "clue": "Mix with a spoon"
+      "answer": "FADE",
+      "clue": "Left-to-right golf shot"
     },
     {
-      "answer": "STOP",
-      "clue": "Halt"
+      "answer": "CARD",
+      "clue": "Golfer's scoresheet"
     },
     {
-      "answer": "TALE",
-      "clue": "Story"
+      "answer": "PICK",
+      "clue": "Screen set in basketball"
     },
     {
-      "answer": "TAME",
-      "clue": "Domesticated"
+      "answer": "ROLL",
+      "clue": "Pick-and-___"
     },
     {
-      "answer": "TAPE",
-      "clue": "Finish-line stretch"
-    },
-    {
-      "answer": "TART",
-      "clue": "Sharp-tasting"
-    },
-    {
-      "answer": "TEAL",
-      "clue": "Blue-green shade"
-    },
-    {
-      "answer": "TEAR",
-      "clue": "Rip"
-    },
-    {
-      "answer": "TEEN",
-      "clue": "13-to-19-year-old"
-    },
-    {
-      "answer": "TEND",
-      "clue": "Look after"
-    },
-    {
-      "answer": "TENT",
-      "clue": "Camping shelter"
-    },
-    {
-      "answer": "TERN",
-      "clue": "Seabird"
-    },
-    {
-      "answer": "TILE",
-      "clue": "Bathroom square"
-    },
-    {
-      "answer": "TIME",
-      "clue": "Clock reading"
-    },
-    {
-      "answer": "TINE",
-      "clue": "Fork point"
-    },
-    {
-      "answer": "TINT",
-      "clue": "Slight shade"
-    },
-    {
-      "answer": "TIRE",
-      "clue": "Wear out"
-    },
-    {
-      "answer": "TOAD",
-      "clue": "Warty hopper"
-    },
-    {
-      "answer": "TOLD",
-      "clue": "Narrated"
-    },
-    {
-      "answer": "TOLL",
-      "clue": "Highway fee"
-    },
-    {
-      "answer": "TONE",
-      "clue": "Musical pitch"
-    },
-    {
-      "answer": "TOOL",
-      "clue": "Workshop item"
-    },
-    {
-      "answer": "TORE",
-      "clue": "Ripped"
-    },
-    {
-      "answer": "TORN",
-      "clue": "Ripped up"
-    },
-    {
-      "answer": "TOSS",
-      "clue": "Coin flip"
-    },
-    {
-      "answer": "TOTE",
-      "clue": "Carry"
-    },
-    {
-      "answer": "TOUR",
-      "clue": "Road trip"
-    },
-    {
-      "answer": "TREE",
-      "clue": "Outfield-beyond fixture"
-    },
-    {
-      "answer": "TRIM",
-      "clue": "In good shape"
-    },
-    {
-      "answer": "TRIO",
-      "clue": "Threesome"
-    },
-    {
-      "answer": "TRUE",
-      "clue": "On the level"
-    },
-    {
-      "answer": "TUBE",
-      "clue": "Inner ___"
-    },
-    {
-      "answer": "TUNE",
-      "clue": "Ballpark-organ output"
-    },
-    {
-      "answer": "UNIT",
-      "clue": "Single thing"
-    },
-    {
-      "answer": "WAVE",
-      "clue": "Stadium crowd move"
-    },
-    {
-      "answer": "WIND",
-      "clue": "Flag-blowing force"
+      "answer": "POST",
+      "clue": "Low block area in basketball"
     },
     {
       "answer": "ZONE",
-      "clue": "Strike ___"
+      "clue": "Defense that isn't man-to-man"
     },
     {
-      "answer": "ADORE",
-      "clue": "Cherish"
+      "answer": "WING",
+      "clue": "Hockey forward's position"
     },
     {
-      "answer": "AISLE",
-      "clue": "Stadium row divider"
+      "answer": "LINE",
+      "clue": "Hockey's blue ___"
     },
     {
-      "answer": "ALONE",
-      "clue": "By oneself"
+      "answer": "SAFE",
+      "clue": "Not out, at the plate"
     },
     {
-      "answer": "ALTAR",
-      "clue": "Wedding spot"
+      "answer": "MEET",
+      "clue": "Track-and-field competition"
     },
     {
-      "answer": "ANGER",
-      "clue": "Rage"
+      "answer": "DASH",
+      "clue": "Short sprint race"
     },
     {
-      "answer": "ANTES",
-      "clue": "Pot starters"
+      "answer": "SEED",
+      "clue": "Tournament ranking"
     },
     {
-      "answer": "ARENA",
-      "clue": "Big sports venue"
+      "answer": "SEMI",
+      "clue": "Round before the final"
     },
     {
-      "answer": "ARISE",
-      "clue": "Get up"
+      "answer": "CLAY",
+      "clue": "French Open court surface"
     },
     {
-      "answer": "ASIDE",
-      "clue": "Stage whisper"
+      "answer": "RING",
+      "clue": "Boxing venue"
     },
     {
-      "answer": "ASSET",
-      "clue": "Valuable resource"
+      "answer": "ROPE",
+      "clue": "Boxing ring boundary"
     },
     {
-      "answer": "ASTER",
-      "clue": "Daisy-like flower"
+      "answer": "BELT",
+      "clue": "Boxing champion's prize"
     },
     {
-      "answer": "ATONE",
-      "clue": "Make amends"
+      "answer": "MASK",
+      "clue": "Goalie's face protector"
     },
     {
-      "answer": "DANCE",
-      "clue": "Prom activity"
+      "answer": "SWIM",
+      "clue": "Compete in the pool"
     },
     {
-      "answer": "DEALS",
-      "clue": "Deadline trades"
+      "answer": "POOL",
+      "clue": "Swimmer's racing venue"
     },
     {
-      "answer": "DENSE",
-      "clue": "Thick"
+      "answer": "OARS",
+      "clue": "A crew's tools"
     },
     {
-      "answer": "DINER",
-      "clue": "Roadside eatery"
+      "answer": "BOWL",
+      "clue": "Postseason college football game"
     },
     {
-      "answer": "DRONE",
-      "clue": "Flying camera"
+      "answer": "SNAP",
+      "clue": "Start of a football play"
     },
     {
-      "answer": "EAGER",
-      "clue": "Raring to go"
+      "answer": "RUSH",
+      "clue": "Charge at the passer"
     },
     {
-      "answer": "EARNS",
-      "clue": "Brings home"
+      "answer": "YARD",
+      "clue": "Football distance unit"
     },
     {
-      "answer": "EATEN",
-      "clue": "Consumed"
+      "answer": "DOWN",
+      "clue": "First ___, in football"
     },
     {
-      "answer": "ELATE",
-      "clue": "Thrill"
+      "answer": "SPIKE",
+      "clue": "Volleyball smash"
     },
     {
-      "answer": "ENTER",
-      "clue": "Go in"
+      "answer": "VOLLEY",
+      "clue": "Return before the bounce"
     },
     {
-      "answer": "ERASE",
-      "clue": "Rub out"
+      "answer": "SLIDE",
+      "clue": "Baserunner's feet-first move"
     },
     {
-      "answer": "IRATE",
-      "clue": "Steaming mad"
+      "answer": "JETS",
+      "clue": "New York NFL team"
     },
     {
-      "answer": "IRONS",
-      "clue": "Golf-bag clubs"
+      "answer": "NETS",
+      "clue": "Brooklyn NBA team"
     },
     {
-      "answer": "NERVE",
-      "clue": "Gutsy boldness"
+      "answer": "RAMS",
+      "clue": "Los Angeles NFL team"
     },
     {
-      "answer": "NOOSE",
-      "clue": "Lasso loop"
+      "answer": "REDS",
+      "clue": "Cincinnati MLB team"
     },
     {
-      "answer": "NOTES",
-      "clue": "Jotted reminders"
+      "answer": "CUBS",
+      "clue": "Chicago NL team"
     },
     {
-      "answer": "OASIS",
-      "clue": "Desert refuge"
+      "answer": "METS",
+      "clue": "Queens MLB team"
     },
     {
-      "answer": "ONSET",
-      "clue": "Beginning"
+      "answer": "JAZZ",
+      "clue": "Utah NBA team"
     },
     {
-      "answer": "OPENS",
-      "clue": "Unlocks"
+      "answer": "HEAT",
+      "clue": "Miami NBA team"
     },
     {
-      "answer": "ORATE",
-      "clue": "Give a speech"
+      "answer": "SUNS",
+      "clue": "Phoenix NBA team"
     },
     {
-      "answer": "ORDER",
-      "clue": "Batting ___"
+      "answer": "RAYS",
+      "clue": "Tampa Bay MLB team"
     },
     {
-      "answer": "OTTER",
-      "clue": "River swimmer"
+      "answer": "JAYS",
+      "clue": "Toronto's Blue ___"
     },
     {
-      "answer": "RADAR",
-      "clue": "Pitch-speed gun tech"
+      "answer": "PENS",
+      "clue": "Pittsburgh NHL team, informally"
     },
     {
-      "answer": "RADIO",
-      "clue": "Where games are called"
+      "answer": "CAVS",
+      "clue": "Cleveland NBA team, informally"
     },
     {
-      "answer": "RAISE",
-      "clue": "Pay bump"
+      "answer": "MAVS",
+      "clue": "Dallas NBA team, informally"
     },
     {
-      "answer": "RANGE",
-      "clue": "Batting ___ (practice spot)"
+      "answer": "PATS",
+      "clue": "New England NFL team, informally"
     },
     {
-      "answer": "RATIO",
-      "clue": "Proportion"
+      "answer": "BUCS",
+      "clue": "Tampa Bay NFL team, informally"
     },
     {
-      "answer": "REACT",
-      "clue": "Respond"
+      "answer": "NATS",
+      "clue": "Washington MLB team, informally"
     },
     {
-      "answer": "REALM",
-      "clue": "A dynasty's domain"
+      "answer": "COLT",
+      "clue": "Young Indianapolis NFLer?"
     },
     {
-      "answer": "RESIN",
-      "clue": "Pitcher's grip aid, informally"
+      "answer": "RUTH",
+      "clue": "Babe of home-run fame"
     },
     {
-      "answer": "RINSE",
-      "clue": "Wash off"
+      "answer": "MAYS",
+      "clue": "Willie, the 'Say Hey Kid'"
     },
     {
-      "answer": "RISEN",
-      "clue": "Gone up"
+      "answer": "COBB",
+      "clue": "Ty with a .366 average"
     },
     {
-      "answer": "RIVER",
-      "clue": "Flowing waterway"
+      "answer": "HOWE",
+      "clue": "Gordie, 'Mr. Hockey'"
     },
     {
-      "answer": "ROAST",
-      "clue": "Sunday dinner"
+      "answer": "ROSE",
+      "clue": "Pete, the Hit King"
     },
     {
-      "answer": "ROOST",
-      "clue": "Hen's perch"
+      "answer": "RYAN",
+      "clue": "Nolan, strikeout king"
     },
     {
-      "answer": "ROUSE",
-      "clue": "Wake up"
+      "answer": "KOBE",
+      "clue": "Lakers legend Bryant"
     },
     {
-      "answer": "ROUTE",
-      "clue": "Path taken"
+      "answer": "ALOU",
+      "clue": "Baseball's Felipe or Moises"
     },
     {
-      "answer": "SANER",
-      "clue": "More level-headed"
+      "answer": "SOSA",
+      "clue": "Slammin' Sammy of the Cubs"
     },
     {
-      "answer": "SEDAN",
-      "clue": "Four-door car"
+      "answer": "BIRD",
+      "clue": "Celtics legend Larry"
     },
     {
-      "answer": "SIREN",
-      "clue": "Ambulance sound"
+      "answer": "SHAQ",
+      "clue": "O'Neal, on the court"
     },
     {
-      "answer": "SNARE",
-      "clue": "Trap"
+      "answer": "PELE",
+      "clue": "Brazilian soccer icon"
     },
     {
-      "answer": "SNORE",
-      "clue": "Sleeper's sound"
+      "answer": "RICE",
+      "clue": "Jerry ___, NFL receiving great"
     },
     {
-      "answer": "SOLAR",
-      "clue": "Sun-powered"
+      "answer": "MOSS",
+      "clue": "Randy ___, NFL receiver"
     },
     {
-      "answer": "SONAR",
-      "clue": "Sub's locator"
+      "answer": "NASH",
+      "clue": "Steve ___, two-time NBA MVP"
     },
     {
-      "answer": "SPEAR",
-      "clue": "Diving catch, in slang"
+      "answer": "WADE",
+      "clue": "Heat great Dwyane"
     },
     {
-      "answer": "STAGE",
-      "clue": "Performance platform"
+      "answer": "FOXX",
+      "clue": "Jimmie ___, Hall of Fame slugger"
     },
     {
-      "answer": "STAIR",
-      "clue": "Dugout step"
+      "answer": "MACK",
+      "clue": "Connie ___, longtime A's manager"
     },
     {
-      "answer": "STARE",
-      "clue": "Fixed gaze"
+      "answer": "DUKE",
+      "clue": "Blue Devils' school"
     },
     {
-      "answer": "STONE",
-      "clue": "Small rock"
+      "answer": "UCLA",
+      "clue": "Bruins' school"
     },
     {
-      "answer": "STORE",
-      "clue": "Team shop"
+      "answer": "RUNS",
+      "clue": "Tallies on the scoreboard"
     },
     {
-      "answer": "TABLE",
-      "clue": "Standings chart"
+      "answer": "HITS",
+      "clue": "Safe knocks at the plate"
     },
     {
-      "answer": "TASTE",
-      "clue": "Sense on the tongue"
+      "answer": "OUTS",
+      "clue": "Three per half-inning"
     },
     {
-      "answer": "TENOR",
-      "clue": "High male voice"
+      "answer": "PARS",
+      "clue": "Even-score golf holes"
     },
     {
-      "answer": "TENSE",
-      "clue": "Nail-biting, as a game"
+      "answer": "TEES",
+      "clue": "Golf-ball perches"
     },
     {
-      "answer": "TIGER",
-      "clue": "Big striped cat"
+      "answer": "ACES",
+      "clue": "Service winners"
     },
     {
-      "answer": "TRACK",
-      "clue": "Runners' loop"
+      "answer": "REFS",
+      "clue": "Game officials"
     },
     {
-      "answer": "TRADE",
-      "clue": "Swap of players"
+      "answer": "UMPS",
+      "clue": "Baseball officials"
     },
     {
-      "answer": "TRAIN",
-      "clue": "Work out"
+      "answer": "LAPS",
+      "clue": "Track circuits"
     },
     {
-      "answer": "TREAT",
-      "clue": "Ballpark snack"
+      "answer": "DUNKS",
+      "clue": "Emphatic slams"
     },
     {
-      "answer": "TREND",
-      "clue": "Hot streak, of a sort"
+      "answer": "GOALS",
+      "clue": "Hockey tallies"
     },
     {
-      "answer": "UNITE",
-      "clue": "Bring together"
+      "answer": "SAVES",
+      "clue": "Closer's or goalie's stats"
     },
     {
-      "answer": "VALUE",
-      "clue": "Worth"
+      "answer": "SHOTS",
+      "clue": "Attempts on goal"
     },
     {
-      "answer": "WATER",
-      "clue": "Dugout cooler fill"
+      "answer": "WALKS",
+      "clue": "Free passes to first"
+    },
+    {
+      "answer": "BUNTS",
+      "clue": "Sacrifice taps"
+    },
+    {
+      "answer": "FOULS",
+      "clue": "Personal ___, in basketball"
+    },
+    {
+      "answer": "PUTTS",
+      "clue": "Green strokes"
+    },
+    {
+      "answer": "PUNTS",
+      "clue": "Fourth-down kicks"
+    },
+    {
+      "answer": "SACKS",
+      "clue": "Quarterback takedowns"
+    },
+    {
+      "answer": "KICKS",
+      "clue": "Soccer strikes"
+    },
+    {
+      "answer": "SEEDS",
+      "clue": "Bracket rankings"
+    },
+    {
+      "answer": "SEMIS",
+      "clue": "Penultimate rounds"
+    },
+    {
+      "answer": "RINKS",
+      "clue": "Hockey surfaces"
+    },
+    {
+      "answer": "PUCKS",
+      "clue": "Hockey disks"
+    },
+    {
+      "answer": "BASES",
+      "clue": "There are three of them to round"
+    },
+    {
+      "answer": "EAGLE",
+      "clue": "Two under par"
+    },
+    {
+      "answer": "BOGEY",
+      "clue": "One over par"
+    },
+    {
+      "answer": "SERVE",
+      "clue": "Start a tennis point"
+    },
+    {
+      "answer": "DEUCE",
+      "clue": "40-all, in tennis"
+    },
+    {
+      "answer": "COURT",
+      "clue": "Basketball surface"
     },
     {
       "answer": "FIELD",
-      "clue": "Where the game is played"
+      "clue": "Baseball playing area"
+    },
+    {
+      "answer": "ARENA",
+      "clue": "Indoor sports venue"
+    },
+    {
+      "answer": "COACH",
+      "clue": "Sideline leader"
     },
     {
       "answer": "SCORE",
-      "clue": "Game tally"
+      "clue": "Points total"
     },
     {
-      "answer": "SPORT",
-      "clue": "Athletic pursuit"
+      "answer": "BLITZ",
+      "clue": "All-out pass rush"
     },
     {
-      "answer": "TITLE",
-      "clue": "Championship"
+      "answer": "SWISH",
+      "clue": "All-net basket"
+    },
+    {
+      "answer": "DRIVE",
+      "clue": "Long march down the field"
+    },
+    {
+      "answer": "PITCH",
+      "clue": "Hurler's delivery"
+    },
+    {
+      "answer": "CATCH",
+      "clue": "Receiver's grab"
+    },
+    {
+      "answer": "STEAL",
+      "clue": "Swipe of a base"
+    },
+    {
+      "answer": "HOMER",
+      "clue": "Round-tripper"
+    },
+    {
+      "answer": "RALLY",
+      "clue": "Comeback surge"
     },
     {
       "answer": "MEDAL",
-      "clue": "Podium prize"
+      "clue": "Olympic prize"
     },
     {
       "answer": "RELAY",
-      "clue": "Baton race"
+      "clue": "Team track race"
     },
     {
-      "answer": "OCEAN",
-      "clue": "Vast water"
+      "answer": "SKATE",
+      "clue": "Hockey footwear"
+    },
+    {
+      "answer": "CLEAT",
+      "clue": "Spiked sports shoe"
+    },
+    {
+      "answer": "MOUND",
+      "clue": "Where the pitcher stands"
+    },
+    {
+      "answer": "BENCH",
+      "clue": "Where the subs sit"
+    },
+    {
+      "answer": "CURVE",
+      "clue": "Breaking pitch"
     },
     {
       "answer": "ROUND",
-      "clue": "Draft ___ (selection stage)"
+      "clue": "Golf's 18 holes, or a boxing segment"
+    },
+    {
+      "answer": "GREEN",
+      "clue": "Where the putting happens"
+    },
+    {
+      "answer": "ROUGH",
+      "clue": "Long grass off the fairway"
+    },
+    {
+      "answer": "LINKS",
+      "clue": "Golf course"
+    },
+    {
+      "answer": "WEDGE",
+      "clue": "High-lofted golf club"
+    },
+    {
+      "answer": "SMASH",
+      "clue": "Overhead tennis put-away"
+    },
+    {
+      "answer": "MATCH",
+      "clue": "Tennis contest"
+    },
+    {
+      "answer": "FAULT",
+      "clue": "Missed serve"
+    },
+    {
+      "answer": "FINAL",
+      "clue": "Championship game"
+    },
+    {
+      "answer": "TRACK",
+      "clue": "Where sprinters race"
+    },
+    {
+      "answer": "VAULT",
+      "clue": "Pole ___, in track and field"
+    },
+    {
+      "answer": "STICK",
+      "clue": "Hockey or lacrosse tool"
+    },
+    {
+      "answer": "BLADE",
+      "clue": "Skate's runner"
+    },
+    {
+      "answer": "ICING",
+      "clue": "Hockey infraction"
+    },
+    {
+      "answer": "GLOVE",
+      "clue": "Fielder's leather"
+    },
+    {
+      "answer": "BLOCK",
+      "clue": "Reject a shot"
+    },
+    {
+      "answer": "GUARD",
+      "clue": "Backcourt basketball player"
+    },
+    {
+      "answer": "THROW",
+      "clue": "Free ___, in basketball"
+    },
+    {
+      "answer": "SHOOT",
+      "clue": "Take a shot at the basket"
+    },
+    {
+      "answer": "SQUAD",
+      "clue": "A team's roster"
+    },
+    {
+      "answer": "SNEAK",
+      "clue": "Quarterback ___"
+    },
+    {
+      "answer": "YARDS",
+      "clue": "Rushing ___, in football"
+    },
+    {
+      "answer": "SLICE",
+      "clue": "Errant left-to-right golf shot"
+    },
+    {
+      "answer": "DRAFT",
+      "clue": "Where teams pick new players"
+    },
+    {
+      "answer": "TRADE",
+      "clue": "Swap of players between clubs"
+    },
+    {
+      "answer": "SPARE",
+      "clue": "Bowling second-roll clear"
+    },
+    {
+      "answer": "SKEET",
+      "clue": "Clay-target shooting sport"
+    },
+    {
+      "answer": "SCRUM",
+      "clue": "Rugby restart"
+    },
+    {
+      "answer": "BIRDIE",
+      "clue": "One under par"
+    },
+    {
+      "answer": "GOALIE",
+      "clue": "Net-minder"
+    },
+    {
+      "answer": "PUNTER",
+      "clue": "Fourth-down kicker"
+    },
+    {
+      "answer": "INNING",
+      "clue": "Baseball segment"
+    },
+    {
+      "answer": "ASSIST",
+      "clue": "Pass leading to a score"
+    },
+    {
+      "answer": "ROOKIE",
+      "clue": "First-year player"
+    },
+    {
+      "answer": "SINGLE",
+      "clue": "One-base hit"
+    },
+    {
+      "answer": "DOUBLE",
+      "clue": "Two-base hit"
+    },
+    {
+      "answer": "TRIPLE",
+      "clue": "Three-base hit"
+    },
+    {
+      "answer": "HOMERS",
+      "clue": "Round-trippers"
+    },
+    {
+      "answer": "STRIKE",
+      "clue": "Swing and a miss, e.g."
+    },
+    {
+      "answer": "REFEREE",
+      "clue": "Whistle-blower on the field"
+    },
+    {
+      "answer": "DUGOUT",
+      "clue": "Where a team's players sit"
+    },
+    {
+      "answer": "HELMET",
+      "clue": "Batter's head protection"
+    },
+    {
+      "answer": "REBOUND",
+      "clue": "Grab off the glass"
+    },
+    {
+      "answer": "HUDDLE",
+      "clue": "Pre-play team gathering"
+    },
+    {
+      "answer": "TENNIS",
+      "clue": "Racket sport"
+    },
+    {
+      "answer": "SOCCER",
+      "clue": "The world's game"
+    },
+    {
+      "answer": "HOCKEY",
+      "clue": "Sport played on ice"
+    },
+    {
+      "answer": "BOXING",
+      "clue": "The sweet science"
+    },
+    {
+      "answer": "SPRINT",
+      "clue": "All-out short race"
+    },
+    {
+      "answer": "DISCUS",
+      "clue": "Thrown track-and-field object"
+    },
+    {
+      "answer": "RACKET",
+      "clue": "Tennis swatter"
+    },
+    {
+      "answer": "DRIVER",
+      "clue": "Golf club for the tee shot"
+    },
+    {
+      "answer": "PUTTER",
+      "clue": "Club used on the green"
+    },
+    {
+      "answer": "BULLS",
+      "clue": "Chicago NBA team"
+    },
+    {
+      "answer": "BEARS",
+      "clue": "Chicago NFL team"
+    },
+    {
+      "answer": "SPURS",
+      "clue": "San Antonio NBA team"
+    },
+    {
+      "answer": "HAWKS",
+      "clue": "Atlanta NBA team"
+    },
+    {
+      "answer": "KINGS",
+      "clue": "Sacramento NBA or L.A. NHL team"
+    },
+    {
+      "answer": "MAGIC",
+      "clue": "Orlando NBA team"
+    },
+    {
+      "answer": "WINGS",
+      "clue": "Detroit's Red ___"
+    },
+    {
+      "answer": "STARS",
+      "clue": "Dallas NHL team"
+    },
+    {
+      "answer": "DUCKS",
+      "clue": "Anaheim NHL team"
+    },
+    {
+      "answer": "BILLS",
+      "clue": "Buffalo NFL team"
+    },
+    {
+      "answer": "COLTS",
+      "clue": "Indianapolis NFL team"
+    },
+    {
+      "answer": "LIONS",
+      "clue": "Detroit NFL team"
+    },
+    {
+      "answer": "BUCKS",
+      "clue": "Milwaukee NBA team"
+    },
+    {
+      "answer": "TWINS",
+      "clue": "Minnesota MLB team"
+    },
+    {
+      "answer": "JETER",
+      "clue": "Yankees captain Derek"
+    },
+    {
+      "answer": "TROUT",
+      "clue": "Angels star Mike"
+    },
+    {
+      "answer": "JUDGE",
+      "clue": "Yankees slugger Aaron"
+    },
+    {
+      "answer": "AARON",
+      "clue": "Hank, home-run legend"
+    },
+    {
+      "answer": "BRADY",
+      "clue": "Seven-time Super Bowl winner Tom"
+    },
+    {
+      "answer": "FAVRE",
+      "clue": "Packers QB legend Brett"
+    },
+    {
+      "answer": "MESSI",
+      "clue": "Argentine soccer great Lionel"
+    },
+    {
+      "answer": "BERRA",
+      "clue": "Yogi ___, Yankees great"
+    },
+    {
+      "answer": "BANKS",
+      "clue": "Ernie ___, 'Mr. Cub'"
+    },
+    {
+      "answer": "OWENS",
+      "clue": "Jesse ___, Olympic sprint legend"
+    },
+    {
+      "answer": "LEWIS",
+      "clue": "Carl ___, Olympic sprint great"
+    },
+    {
+      "answer": "BONDS",
+      "clue": "Barry, home-run record holder"
     }
   ]
 }
