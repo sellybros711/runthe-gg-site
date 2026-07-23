@@ -12835,6 +12835,15 @@ allows Google Fonts, or self-host Anton.*
   720-combo narration structural invariant still holds (0 diffs vs untagged), a full practice round + shop
   render clean with 0 page errors; node --check clean. Deployed to /golf.
 
+- **Legend Tokens show the date each golfer was created (owner, IMG_8650).** Both mint sites
+  (`mintLegendToken` + `mintCircuitLegendToken`) now stamp `minted: Date.now()` on the token, and
+  `legendMintDate(t)` renders it as "· Created Jul 23, 2026" next to each legend - in the Daily-preview
+  "Your Legend Tokens" section (next to the reason + career length) and the Trophy Room strip. Tokens
+  minted before the stamp existed have no recoverable date and simply render without one (verified: a
+  legacy token shows no date, fresh career + circuit tokens both show theirs). The stamp rides the token
+  object through the cloud union (`mergeLegendTokens` copies whole objects by id - verified minted
+  survives a merge). 0 page errors; node --check clean. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
