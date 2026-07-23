@@ -10818,9 +10818,12 @@ function pxSwingStampHat(ctx, body, hatStyle, px){
   let ct=99,cb=-1,cl=99,cr=-1;   // this frame's head anchor = its baked 'c' cap cluster
   for(let y=0;y<body.length;y++){ const rw=body[y]; for(let x=0;x<rw.length;x++){ if(rw[x]==='c'){ if(y<ct)ct=y; if(y>cb)cb=y; if(x<cl)cl=x; if(x>cr)cr=x; } } }
   if(cb<0) return;
-  const headCx=(cl+cr)/2, headW=cr-cl+1, cw=r-l+1, chh=b-t+1;
-  const tw=Math.max(6,Math.round(headW*1.42)), th=Math.max(3,Math.round(chh*tw/cw));
-  const tx0=Math.round(headCx-tw/2+0.5), ty0=(cb+1)-th;   // brim sits at the head brow
+  const headCx=(cl+cr)/2, headW=cr-cl+1, headH=cb-ct+1, cw=r-l+1, chh=b-t+1;
+  const tw=Math.max(6,Math.round(headW*1.34)), th=Math.max(3,Math.round(chh*tw/cw));
+  // brim rests near the brow (upper head), NOT the jaw - the head cluster spans the whole face, so anchor
+  // the hat's bottom to the upper ~third of it and let it extend UP over the crown.
+  const brimY=ct+Math.round(headH*0.34);
+  const tx0=Math.round(headCx-tw/2+0.5), ty0=brimY-th;
   for(let ty=0;ty<th;ty++)for(let tx=0;tx<tw;tx++){
     const sx=l+Math.min(cw-1,Math.floor(tx*cw/tw)), sy=t+Math.min(chh-1,Math.floor(ty*chh/th));
     const ch=hatMap[sy]&&hatMap[sy][sx]; if(!ch||ch==='.'||ch===' ')continue;
