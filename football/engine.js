@@ -244,6 +244,27 @@
     return band[band.length - 1];
   }
 
+  // WHY IT HAPPENED — decompose the call into the handful of real factors that drove it,
+  // straight from the same terms successRate() uses. Turns "it felt random" into a readable
+  // cause: did you beat the coverage, was the box favorable, did the D key your tendency.
+  function callFactors(play, def, sit, o) {
+    const a = play.archetype, f = [];
+    const box = DEF_MOD[a]?.[def.column] || 0;
+    const cm = coverageMod(play, def);
+    const spec = specialization(play, sit.distance);
+    const tend = sit.tendency ? (sit.tendency[a] || 0) : 0;
+    if (o.turnover === 'INTERCEPTION') f.push(['-', 'Forced it into coverage']);
+    else if (o.turnover === 'FUMBLE' || o.turnover === 'ABORTED_SNAP') f.push(['-', 'Ball came loose']);
+    if (cm >= 5) f.push(['+', o.bucket === 'EXPLOSIVE' ? 'Coverage cracked wide open' : def.isBlitz ? 'Beat the blitz' : 'Beat the coverage']);
+    else if (cm <= -5) f.push(['-', 'Coverage had the concept covered']);
+    if (o.sack) f.push(['-', 'Pressure got home']);
+    else if (box >= 2) f.push(['+', def.column === 'LIGHT_BOX' ? 'Light box — room to work' : 'Front gave you the edge']);
+    else if (box <= -3) f.push(['-', /BLITZ/.test(def.column) ? 'Extra rushers crashed it' : 'Stacked front stuffed it']);
+    if (tend <= -12) f.push(['-', 'Defense was sitting on it']);
+    if (f.length < 3) { if (spec >= 3) f.push(['+', 'Right down & distance']);
+      else if (spec <= -5) f.push(['-', 'Tough down & distance']); }
+    return f.slice(0, 3);
+  }
   /* ---------- 4. RESOLVE ONE PLAY ------------------------------------------ */
   function resolvePlay(play, def, sit, rng, qualityMod) {
     const a = play.archetype;
@@ -294,7 +315,8 @@
     const sack = bucket === 'DISASTER' && isPass && yards < 0 && !turnover;
     // A pass that falls incomplete (no gain, not a sack) stops the game clock.
     const incomplete = isPass && bucket === 'FAILURE' && yards <= 0 && !turnover && !sack;
-    return { bucket, yards, turnover, sack, incomplete, effectiveSuccessPct: +sr.toFixed(1) };
+    const factors = callFactors(play, def, sit, { bucket, turnover, sack });
+    return { bucket, yards, turnover, sack, incomplete, factors, effectiveSuccessPct: +sr.toFixed(1) };
   }
 
   /* ---------- 5. GRADE THE CALL, NOT THE OUTCOME ---------------------------
