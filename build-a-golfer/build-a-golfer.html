@@ -21859,12 +21859,39 @@ function overlayShop(screen){
 function overlayCourseRecords(screen){
   const today=S.dailyCourse||dailyCourseKey(todayKey());
   const todaySeed=S.dailySeed||todayKey();
-  const tab=S.crTab==='legend'?'legend':'human';
-  if(sb){
+  const tab=(S.crTab==='legend'||S.crTab==='streaks')?S.crTab:'human';
+  if(sb && tab!=='streaks'){
     if(crCache===null) crLoad(); if(dbCache===null||dbCache.day!==todaySeed) dbLoad(todaySeed);
     // Legend boards are only fetched once the player actually opens that tab (most never will)
     if(tab==='legend'){ if(crCacheLegend===null) crLoadLegend(); if(dbCacheLegend===null||dbCacheLegend.day!==todaySeed) dbLoadLegend(todaySeed); }
   }
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Course Records</h3></div>`);
+  // owner: the streaks list lives in its own TAB up top, next to Legend
+  const tabs=$(`<div class="mini" style="margin-bottom:2px"></div>`);
+  const humanTab=$(`<button class="btn ${tab==='human'?'goldsel':'ghost'}" style="font-size:12.5px">Human</button>`);
+  const legendTab=$(`<button class="btn ${tab==='legend'?'goldsel':'ghost'}" style="font-size:12.5px">🏆 Legend</button>`);
+  const streakTab=$(`<button class="btn ${tab==='streaks'?'goldsel':'ghost'}" style="font-size:12.5px">🔥 Streaks</button>`);
+  humanTab.onclick=()=>{S.crTab='human';render();}; legendTab.onclick=()=>{S.crTab='legend';render();}; streakTab.onclick=()=>{S.crTab='streaks';render();};
+  tabs.appendChild(humanTab); tabs.appendChild(legendTab); tabs.appendChild(streakTab);
+  ov.appendChild(tabs);
+  if(tab==='streaks'){
+    // ---- Active Streaks tab (guests included - they post + display as "Guest", 63_) ----
+    if(!streakBoardCache) streakBoardLoad();
+    const _sc=streakBoardCache, _sLoad=!_sc||_sc.loading, _sOk=_sc&&_sc.ok, _sRows=_sOk?_sc.rows.slice(0,20):[];
+    let streakHTML;
+    if(_sLoad) streakHTML='<div class="small muted center" style="padding:12px 8px">Loading streaks…</div>';
+    else if(_sOk&&_sRows.length){ streakHTML='<div class="board">'+_sRows.map((r,i)=>{ const guest=!!r.is_guest, nm=guest?'Guest':(r.username||'Golfer');
+      const you=!guest&&sbUsername&&(r.username||'').toLowerCase()===sbUsername.toLowerCase();
+      return `<div class="lb ${you?'you':''}" style="grid-template-columns:30px 1fr auto"><span class="pos">${i===0?'🏆':(i+1)}</span><span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${guest?';color:var(--muted)':''}">${esc(nm)}</div><div class="small muted" style="font-size:10px">best ${r.longest||r.current} days</div></span><span class="sc" style="color:var(--gold);font-weight:800;white-space:nowrap">🔥 ${r.current}</span></div>`; }).join('')+'</div>'; }
+    else if(_sOk) streakHTML='<div class="small muted center" style="padding:12px 8px">No active streaks yet, start one today.</div>';
+    else streakHTML='<div class="small muted center" style="padding:12px 8px">Streak board is unavailable right now.</div>';
+    ov.appendChild($(`<div><h2 style="margin:12px 0 8px">Active streaks</h2>
+      <p class="lede" style="margin:0 0 10px;font-size:12.5px">Longest active daily-play streaks, guests included. Play the Daily today to keep yours alive.</p></div>`));
+    const stWrap=$(`<div></div>`); stWrap.innerHTML=emojifyIcons(streakHTML); ov.appendChild(stWrap);
+    if(!sbSignedIn()) ov.appendChild($(`<p class="small muted center" style="margin:10px 0 0">Your streak posts as "Guest". Sign in to put your name on it.</p>`));
+  } else {
   const boardCache = tab==='legend' ? dbCacheLegend : dbCache;
   const recs = tab==='legend' ? courseRecordsLegend() : courseRecords();   // local store, merged with global by crLoad
   const crc = tab==='legend' ? crCacheLegend : crCache;
@@ -21878,10 +21905,16 @@ function overlayCourseRecords(screen){
       let podHTML='';
       if(boardCache.rows.length>=3){ const rws=boardCache.rows, pod=[rws[1],rws[0],rws[2]], cls=['p2','p1','p3'], med=['🥈','🥇','🥉'];
         podHTML='<div class="lbpodium">'+pod.map((r,di)=>`<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML((sbUser&&r.user_id===sbUser.id)?(S.look||DEFLOOK):(r.look||DEFLOOK), di===1?74:56)}</div><div class="nm">${esc(r.display_name)}</div><div class="vl">${dTot(r.to_par,(DAILY_COURSES[today]||{}).par)}</div><div class="rk">OVR ${r.ovr}</div></div>`).join('')+'</div>'; }
-      boardHTML=podHTML+`<div class="board">`+boardCache.rows.slice(podHTML?3:0,20).map(r=>`<div class="lb ${(sbUser&&r.user_id===sbUser.id)?'you':''}" style="grid-template-columns:30px 1fr auto">
+      // owner: the profile picture left of the name + the archetype right of the overall (skills via 66_)
+      boardHTML=podHTML+`<div class="board">`+boardCache.rows.slice(podHTML?3:0,20).map(r=>{
+        const you=(sbUser&&r.user_id===sbUser.id);
+        const fullSk=(r.skills && CATS.every(c=>typeof r.skills[c.k]==='number'));
+        const arch=fullSk?archetype(r.skills):null;
+        return `<div class="lb ${you?'you':''}" style="grid-template-columns:30px 34px 1fr auto">
         <span class="pos">${r.rank===1?'🏆':r.rank}</span>
-        <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.display_name)}</div><div class="small muted" style="font-size:10px">OVR ${r.ovr}${r.won?' · <span style="color:#35d6a0">beat the pro</span>':''}</div></span>
-        <span class="sc" style="color:var(--gold);font-weight:800;text-align:right;white-space:nowrap">${dTot(r.to_par, (DAILY_COURSES[today]||{}).par)}</span></div>`).join('')+`</div>`;
+        <span style="display:flex;align-items:center">${pxAvatarChip(you?(S.look||DEFLOOK):(r.look||DEFLOOK),30)}</span>
+        <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.display_name)}</div><div class="small muted" style="font-size:10px">OVR ${r.ovr}${arch?' · '+esc(arch.name):''}${r.won?' · <span style="color:#35d6a0">beat the pro</span>':''}</div></span>
+        <span class="sc" style="color:var(--gold);font-weight:800;text-align:right;white-space:nowrap">${dTot(r.to_par, (DAILY_COURSES[today]||{}).par)}</span></div>`; }).join('')+`</div>`;
     } else if(boardCache.ok){ boardHTML=`<div class="small muted center" style="padding:14px 8px">${tab==='legend'?'No legend rounds posted yet today.':'No rounds posted yet today, be the first.'}</div>`; }
     else { boardHTML='<div class="small muted center" style="padding:10px 8px">Today’s online board is unavailable right now.</div>'; }
   } else { boardHTML='<div class="small muted center" style="padding:10px 8px">Sign in on RunThe.GG to see the global daily board.</div>'; }
@@ -21890,15 +21923,6 @@ function overlayCourseRecords(screen){
     return `<div class="lb ${isToday?'you':''}" style="grid-template-columns:1fr auto">
       <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(dShort(c.v))}${isToday?' · <span style="color:var(--gold)">today</span>':''}</div><div class="small muted" style="font-size:10.5px">Par ${c.par} · ${esc(c.loc)}</div></span>
       <span style="text-align:right">${rec?`<div class="sc" style="color:var(--gold);font-weight:800;white-space:nowrap">${dTot(rec.toPar, c.par)}</div><div class="small muted" style="font-size:10px">${esc(crHolders(rec))}</div>`:'<div class="small muted">unclaimed</div>'}</span></div>`; }).join('');
-  const tabs=$(`<div class="mini" style="margin-bottom:2px"></div>`);
-  const humanTab=$(`<button class="btn ${tab==='human'?'goldsel':'ghost'}" style="font-size:12.5px">Human</button>`);
-  const legendTab=$(`<button class="btn ${tab==='legend'?'goldsel':'ghost'}" style="font-size:12.5px">🏆 Legend</button>`);
-  humanTab.onclick=()=>{S.crTab='human';render();}; legendTab.onclick=()=>{S.crTab='legend';render();};
-  tabs.appendChild(humanTab); tabs.appendChild(legendTab);
-  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
-    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
-    <h3>Course Records</h3></div>`);
-  ov.appendChild(tabs);
   if(tab==='legend') ov.appendChild($(`<p class="small muted center" style="margin:8px 0 0">The Career Golfers board, free rounds played as your created career (Legend) golfers, kept separate from everyday drafted golfers.</p>`));
   ov.appendChild($(`<div><h2 style="margin:12px 0 8px">Today · ${esc(dShort(DAILY_COURSES[today].v))}</h2>
     <p class="lede" style="margin:0 0 8px;font-size:12.5px">${tab==='legend'?'The global leaderboard for legend-token rounds at today’s course.':'The global leaderboard for today’s course. Lowest round wins the day.'}</p></div>`));
@@ -21906,19 +21930,7 @@ function overlayCourseRecords(screen){
   ov.appendChild($(`<div><h2 style="margin:16px 0 8px">All-time ${tab==='legend'?'legend ':''}course records${online?'':' <span class="small muted" style="font-weight:400">(local)</span>'}</h2>
     <p class="lede" style="margin:0 0 10px;font-size:12.5px">The lowest round ever posted at each course. Beat one to put your name on it.</p></div>`));
   const recWrap=$(`<div class="board"></div>`); recWrap.innerHTML=emojifyIcons(rows); ov.appendChild(recWrap);
-  // owner: an Active Streaks list on this page too - guests included (they post + display as "Guest", 63_)
-  if(!streakBoardCache) streakBoardLoad();
-  const _sc=streakBoardCache, _sLoad=!_sc||_sc.loading, _sOk=_sc&&_sc.ok, _sRows=_sOk?_sc.rows.slice(0,10):[];
-  let streakHTML;
-  if(_sLoad) streakHTML='<div class="small muted center" style="padding:12px 8px">Loading streaks…</div>';
-  else if(_sOk&&_sRows.length){ streakHTML='<div class="board">'+_sRows.map((r,i)=>{ const guest=!!r.is_guest, nm=guest?'Guest':(r.username||'Golfer');
-    const you=!guest&&sbUsername&&(r.username||'').toLowerCase()===sbUsername.toLowerCase();
-    return `<div class="lb ${you?'you':''}" style="grid-template-columns:30px 1fr auto"><span class="pos">${i===0?'🏆':(i+1)}</span><span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${guest?';color:var(--muted)':''}">${esc(nm)}</div><div class="small muted" style="font-size:10px">best ${r.longest||r.current} days</div></span><span class="sc" style="color:var(--gold);font-weight:800;white-space:nowrap">🔥 ${r.current}</span></div>`; }).join('')+'</div>'; }
-  else if(_sOk) streakHTML='<div class="small muted center" style="padding:12px 8px">No active streaks yet, start one today.</div>';
-  else streakHTML='<div class="small muted center" style="padding:12px 8px">Streak board is unavailable right now.</div>';
-  ov.appendChild($(`<div><h2 style="margin:16px 0 8px">Active streaks</h2>
-    <p class="lede" style="margin:0 0 10px;font-size:12.5px">Longest active daily-play streaks, guests included. Play the Daily today to keep yours alive.</p></div>`));
-  const stWrap=$(`<div></div>`); stWrap.innerHTML=emojifyIcons(streakHTML); ov.appendChild(stWrap);
+  }
   ov.appendChild($(`<div style="height:12px"></div>`));
   ov.appendChild($(`<button class="btn red">Close</button>`));
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};

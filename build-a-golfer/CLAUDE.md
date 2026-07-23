@@ -13206,6 +13206,36 @@ allows Google Fonts, or self-host Anton.*
   10,000, an earned colorway stays 0, patterns/headwear unchanged, color pack-rarity still common, and
   buying an unowned color deducts exactly 10,000 + grants it; 0 page errors. Deployed to /golf.
 
+- **Course Records: Streaks TAB + profile pictures & archetypes on the today's-board rows (owner IMG_8686:
+  "I still don't see the streaks tab at the top next to legend. Also I want the users profile picture to be
+  to the left of their name, as well as their archetype to the right of their overall").** Two changes to
+  `overlayCourseRecords`:
+  1. **Streaks is now a TAB** in the top tab row — Human · 🏆 Legend · 🔥 Streaks (`S.crTab='streaks'`).
+     The Active Streaks list (top 20, guests included + muted as "Guest", your row highlighted, a
+     sign-in-to-claim-your-name note for guests) renders as that tab's whole content; the previous
+     Active-Streaks SECTION at the bottom of the Human/Legend tabs is removed (it lives only in the tab
+     now). The streaks tab skips the today-board/records fetches (its own `streakBoardLoad` still
+     refreshes the overlay on load).
+  2. **Today's-board rows**: each row now shows the player's pixel-avatar chip (`pxAvatarChip`, 30px) to
+     the LEFT of the username (grid `30px 34px 1fr auto`; your own row shows your live `S.look`, others
+     their stored at-submit look, legacy null-look → the default golfer), and the sub line reads
+     `OVR N · {archetype}` — the archetype derived from the row's stored 8-skill build, omitted cleanly
+     for legacy rows without skills. The `won` "beat the pro" tag stays after it. Applies to both the
+     Human and Legend boards (same code path); the top-3 podium is unchanged.
+  **New migration `supabase/66_runtour_daily_board_skills.sql` (owner-run, after 53):** the archetype
+  needs the build, which `runtour_daily_scores.skills` has stored since 24 but `runtour_daily_board`
+  never returned — appends `skills jsonb` to the board's return shape (drop + recreate; deployed clients
+  read fields by name, so it's harmless; day-scoped ≤200 rows, so the extra jsonb is cheap — no relation
+  to the 61 TOAST concern). Validated on local Postgres (24→30→45→53→66 chain applies clean; per-row
+  skills returned, legacy nulls null, legend rows split correctly, idempotent re-run). Client fails open:
+  pre-migration the rows just show the chip + OVR with no archetype.
+  Verified in Playwright: 3 tabs render; the human board shows the podium (3 figures) with the list
+  starting at #4, every row with a chip + `OVR 85 · Grip It and Rip It` subs, the legacy row "OVR 84"
+  with no archetype, own-row chip === the live-look render and other rows === their stored look; the
+  Streaks tab renders the list (guest muted, you highlighted) with no Today/All-time sections and the
+  tab selected; tab switching round-trips; 0 page errors. **ACTION: run
+  `supabase/66_runtour_daily_board_skills.sql`.** Deployed client to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
