@@ -13139,11 +13139,11 @@ allows Google Fonts, or self-host Anton.*
   visibly replays the hole shot-by-shot then auto-advances; mulligan applied + consumed in both, 0 page
   errors. Deployed to /golf.
 
-- **2026-07-23: owner ran migrations 60, 61, 62, 63 successfully.** All four are LIVE: 60 (board dedup +
+- **2026-07-23: owner ran migrations 60, 61, 62, 63, 64 successfully.** All four are LIVE: 60 (board dedup +
   idempotent season submit + circuit-in-career + windowed boards), 61 (board perf - scalar rank + top-N
   jsonb), 62 (Single Season board excludes Legend Circuit years + Fans = per-season gain), 63 (guest
-  streaks - guests post + appear as "Guest" on the Active Streaks boards). No outstanding runtour
-  migrations at this point.
+  streaks - guests post + appear as "Guest" on the Active Streaks boards), 64 (career Fans board hides
+  0-fan legacy careers). No outstanding runtour migrations at this point.
 
 - **Leaderboard: OVR sort removed (OVR now on every row's sub line) + the career Fans board hides 0-fan
   legacy careers (owner).** Two asks:
