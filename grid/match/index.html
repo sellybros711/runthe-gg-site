@@ -235,10 +235,10 @@
     <div class="howto" id="howto">
       <h3>How to play</h3>
       <ol>
-        <li><b>Sort all 20 names</b> into five groups of four — every category is <b>hidden</b> (a team, a number, a surname, a feat).</li>
-        <li>Drag or tap names into a lane. A lane <b>only checks when it has four</b> — lay them out and rearrange freely.</li>
-        <li><b>Right</b> → the lane locks and its category is revealed. <b>Wrong</b> → you lose a guess (and if you were <b>one away</b>, we'll tell you).</li>
-        <li>Stuck? <b>Reveal a group</b>'s name for the cost of one guess. Four wrong guesses ends the board.</li>
+        <li><b>Sort all 20 names</b> into five groups of four — each group is a team, a jersey number, a surname, or a feat.</li>
+        <li>We reveal <b>one group's name free</b> to get you started. Drag or tap names into a group; it <b>only checks when it has four</b>, so rearrange freely.</li>
+        <li><b>Right</b> → the group locks and its category shows. <b>Wrong</b> → you lose a guess (and if you were <b>one away</b>, we'll say so).</li>
+        <li>Stuck? <b>Reveal a group</b> for one guess. You get <b>six</b> wrong guesses before the board ends.</li>
       </ol>
     </div>
   </div>
@@ -278,7 +278,7 @@
     var LS = window.localStorage;
     var GROUP = Gen.GROUP_SIZE || 4;   // tiles per category
     var CATS = 5;                       // categories per board
-    var MISTAKE_LIMIT = 4;             // wrong guesses (a hint spends one); the 4th ends the board
+    var MISTAKE_LIMIT = 6;             // wrong guesses (a hint spends one); the 6th ends the board
 
     // ---- today's date (local) ----
     function todayStr() {
@@ -330,7 +330,7 @@
 
     function buildDay() {
       // data-driven board from the tagged DB (5 groups of four, categories hidden)
-      day = Gen.daily(boardSeed(), { entities: ENT });
+      day = Gen.daily(boardSeed(), { entities: ENT, opts: { avgFame: 3.2, anchors: 3 } });
       byId = {}; day.tiles.forEach(function (t) { byId[t.id] = t; });
       solById = {};
       Object.keys(day.solution).forEach(function (cid) {
@@ -352,6 +352,8 @@
       mistakes = 0; penalty = 0; started = false; startTs = 0; selected = null; done = false; revealedCats = {};
       if (tick) { clearInterval(tick); tick = null; }
       day.tiles.forEach(function (t) { place[t.id] = null; });
+      // free foothold: reveal the easiest group's name to start (no guess cost)
+      if (day.lanes && day.lanes[0]) revealedCats[day.lanes[0].id] = true;
     }
 
     // ---- render ----
@@ -398,7 +400,8 @@
         } else {
           lane.classList.add('lane-hidden');
           head.innerHTML = '<span class="lane-chip" style="background:#3a506b;box-shadow:none"></span>' +
-            '<span class="lane-name">Lane ' + (i + 1) + ' — category hidden</span>';
+            '<span class="lane-name" style="color:var(--mut)">Group ' + (i + 1) + '</span>' +
+            '<span class="lane-sport">4 names</span>';
         }
         lane.appendChild(head);
 

@@ -279,8 +279,8 @@
       var c = cats[i];
       var avail = shuffle(c.members.filter(function (id) { return !used[id]; }), rng);
       avail.sort(function (x, y) { return fame(y) - fame(x); });
-      // cap the branching: only the top slice of each pool is ever tried
-      if (avail.length > 14) avail = avail.slice(0, 14);
+      // cap the branching to the most recognizable names in each pool (easier board)
+      if (avail.length > 10) avail = avail.slice(0, 10);
       return choose(c, avail, 0, [], i);
     }
     function choose(c, avail, start, acc, i) {
@@ -333,8 +333,9 @@
       var board = makeBoard(chosen, sol, entMap);
       var r = solve(board); if (r.count !== 1) continue;
       var traps = trapEdges(board);
-      if (traps >= 3 && traps <= 6) return finalizeBoard(board, rng, dateStr);
-      if (!best || Math.abs(traps - 4) < Math.abs(best.traps - 4)) best = { board: board, traps: traps };
+      // fewer overlaps = easier; aim for a light 1-3 traps instead of 3-6
+      if (traps >= 1 && traps <= 3) return finalizeBoard(board, rng, dateStr);
+      if (!best || Math.abs(traps - 2) < Math.abs(best.traps - 2)) best = { board: board, traps: traps };
     }
     return best ? finalizeBoard(best.board, rng, dateStr) : null;
   }
