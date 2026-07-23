@@ -38831,7 +38831,9 @@
    "championships": [],
    "milestones": [],
    "college": [],
-   "name_is_also": [],
+   "name_is_also": [
+    "place"
+   ],
    "alliterative_name": [
     false
    ],
@@ -69355,7 +69357,8 @@
     "soc_cruzeiro"
    ],
    "jersey_number": [
-    9
+    9,
+    99
    ],
    "hall_of_fame": [
     true
@@ -69589,7 +69592,7 @@
     2
    ],
    "nationality": [
-    "England"
+    "United Kingdom"
    ],
    "has_nickname": [
     false
@@ -70549,7 +70552,7 @@
     2
    ],
    "nationality": [
-    "Northern Ireland"
+    "United Kingdom"
    ],
    "has_nickname": [
     false
@@ -115242,7 +115245,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "England"
+    "United Kingdom"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115553,7 +115556,8 @@
    ],
    "jersey_number": [
     9,
-    10
+    10,
+    18
    ],
    "hall_of_fame": [
     false
@@ -115571,7 +115575,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "England"
+    "United Kingdom"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -116171,7 +116175,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "England"
+    "United Kingdom"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -116236,7 +116240,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "England"
+    "United Kingdom"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -116303,7 +116307,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "England"
+    "United Kingdom"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -116570,7 +116574,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "England"
+    "United Kingdom"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -116633,7 +116637,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "England"
+    "United Kingdom"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -118235,7 +118239,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "Great Britain"
+    "United Kingdom"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -125011,7 +125015,8 @@
     "nfl_giants"
    ],
    "jersey_number": [
-    3
+    3,
+    5
    ],
    "hall_of_fame": [
     false
@@ -131285,7 +131290,9 @@
    "nationality": [
     "United States"
    ],
-   "name_is_also": [],
+   "name_is_also": [
+    "place"
+   ],
    "alliterative_name": [
     false
    ],

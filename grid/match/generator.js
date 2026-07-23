@@ -325,7 +325,10 @@
   // never be a wrong answer even when the Dodgers aren't a lane today.
   // (Broad facts — decade, nationality, HOF — are exempt or boards would be
   // impossible; nobody groups four names as "played in the 2010s" first.)
-  var GUARDED_FAMILIES = { team: 1, jersey: 1, surname: 1, namealso: 1, col: 1, draft: 1, pick1: 1, award: 1, mile: 1, pos: 1, born: 1, allit: 1 };
+  var GUARDED_FAMILIES = { team: 1, jersey: 1, surname: 1, namealso: 1, col: 1, draft: 1, pick1: 1, award: 1, mile: 1, pos: 1, born: 1, allit: 1, nat: 1 };
+  // nationalities so large that most boards hold 4+ (only USA); guarding them
+  // would reject nearly everything, so they're exempt from the off-board check.
+  var NAT_EXEMPT_MIN = 120;
   function guardFamily(id) { var i = id.indexOf(':'); return i === -1 ? id : id.slice(0, i); }
   function offBoardFoursome(board, allCats, entMap) {
     var onBoard = {}; board.categories.forEach(function (c) { onBoard[c.id] = 1; });
@@ -334,6 +337,7 @@
     for (var i = 0; i < keys.length; i++) {
       var c = allCats[keys[i]];
       if (onBoard[c.id] || !GUARDED_FAMILIES[guardFamily(c.id)]) continue;
+      if (guardFamily(c.id) === 'nat' && c.members.length > NAT_EXEMPT_MIN) continue;
       var n = 0, m = c.members;
       for (var k = 0; k < m.length; k++) { if (tileSet[m[k]]) { n++; if (n >= 4) return c; } }
     }
