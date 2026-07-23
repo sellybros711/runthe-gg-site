@@ -197,7 +197,7 @@
       if (ent.col) add('col:' + ent.col, 'Played College at ' + ent.col, 'career', ent);
       if (ent.b) add('born:' + ent.b, 'Born in ' + ent.b, 'career', ent);
       // position codes collide across sports (NBA "C" vs NHL "C") — key by sport
-      if (ent.pos) add('pos:' + ent.sport + ':' + ent.pos, POS_LABEL[ent.pos] || (ent.pos + 's'), 'career', ent);
+      if (ent.pos) add('pos:' + ent.sport + ':' + ent.pos, ent.sport + ' ' + (POS_LABEL[ent.pos] || (ent.pos + 's')), 'career', ent);
       (ent.decade || []).forEach(function (dec) { add('decade:' + dec, 'Played in the ' + dec + 's', 'career', ent); });
       if (ent.nat) add('nat:' + ent.nat, ent.nat + ' Athletes', 'career', ent);
       if (ent.hof) add('hof', 'Hall of Famers', 'achievement', ent);
@@ -327,7 +327,7 @@
   // impossible; nobody groups four names as "played in the 2010s" first.)
   var GUARDED_FAMILIES = { team: 1, jersey: 1, surname: 1, namealso: 1, col: 1, draft: 1, pick1: 1, award: 1, mile: 1, pos: 1, born: 1, allit: 1 };
   function guardFamily(id) { var i = id.indexOf(':'); return i === -1 ? id : id.slice(0, i); }
-  function offBoardFoursome(board, allCats) {
+  function offBoardFoursome(board, allCats, entMap) {
     var onBoard = {}; board.categories.forEach(function (c) { onBoard[c.id] = 1; });
     var tileSet = {}; board.tiles.forEach(function (t) { tileSet[t.id] = 1; });
     var keys = Object.keys(allCats);
@@ -336,6 +336,25 @@
       if (onBoard[c.id] || !GUARDED_FAMILIES[guardFamily(c.id)]) continue;
       var n = 0, m = c.members;
       for (var k = 0; k < m.length; k++) { if (tileSet[m[k]]) { n++; if (n >= 4) return c; } }
+    }
+    // cross-league position FAMILY: a fan groups by the position word, so
+    // Small/Power/Forward all read as "forwards" (and NBA/WNBA/NHL alike).
+    // Count board tiles by that family word; a position lane owns its four,
+    // any 4+ beyond is a factually-valid "all four are forwards" group.
+    function posFamily(pos) { var w = String(pos).trim().split(/\s+/); return w[w.length - 1]; }
+    var laneFam = {};
+    board.categories.forEach(function (c) {
+      var cid = String(c.id);
+      if (cid.indexOf('pos:') === 0) { var e0 = entMap && entMap[(board.solution[cid] || [])[0]]; if (e0 && e0.pos) laneFam[posFamily(e0.pos)] = 1; }
+    });
+    var byFam = {};
+    board.tiles.forEach(function (t) {
+      var e = entMap && entMap[t.id]; if (!e || !e.pos) return;
+      var f = posFamily(e.pos); byFam[f] = (byFam[f] || 0) + 1;
+    });
+    for (var fam in byFam) {
+      var allowed = laneFam[fam] ? 4 : 3;
+      if (byFam[fam] > allowed) return { id: 'posfam:' + fam, name: fam + 's' };
     }
     return null;
   }
@@ -358,7 +377,7 @@
       // FAIRNESS RULE 1: zero traps — no name on the board outside a group's
       // four may also satisfy that group (per the DB). A factually valid
       // grouping must never be rejected. Ambiguity is a bug, not a feature.
-      var offb = traps === 0 ? offBoardFoursome(board, allCats) : true;
+      var offb = traps === 0 ? offBoardFoursome(board, allCats, entMap) : true;
       if (traps === 0 && !offb) return finalizeBoard(board, rng, dateStr);
       var score = traps * 100 + (offb ? 1 : 0);
       if (!best || score < best.score) best = { board: board, score: score };
