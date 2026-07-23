@@ -13122,6 +13122,23 @@ allows Google Fonts, or self-host Anton.*
   confirms the layout matches the other boards. **ACTION: run `supabase/63_runtour_guest_streaks.sql`** -
   until then guests simply don't post (fail-open) and the board behaves as today. Deployed client to /golf.
 
+- **Mulligan reroll no longer "freezes" in Quick Play (owner: "When you reroll a hole in the daily
+  challenge it freezes until you click next hole. It should automatically resim the previous hole and then
+  continue to simulate").** Root cause: in QUICK mode (the default watch mode) a routine hole has NO
+  tracer view (CS387 - only decision holes get the shot-by-shot window), but `dailyMulligan` ALWAYS
+  replayed the re-rolled hole shot-by-shot (CS483o). So after "Yes, re-roll" the replay ran INVISIBLY -
+  the reveal timers silently ticked through every shot's animation time (~10-15s) with nothing on screen
+  changing (the hole's scorecard cell even blanked back to "·" while "revealing") - reading as a total
+  freeze until the player forced it with Next hole. Fix: `dailyMulligan` now branches on
+  `dailyHoleFull(last)` - a quick-mode ROUTINE hole mirrors the normal quick-hole flow (commit the
+  re-rolled score immediately, hole sfx, show the "Hole N · RESULT" beat, `scheduleDailyAdvance()` -> the
+  round continues simulating automatically), while FULL mode and decision holes keep the visible
+  shot-by-shot replay whose completion path already advances. Verified in Playwright driving real practice
+  rounds in both modes with a weak build: quick - a bogey on a routine hole offers the mulligan, accepting
+  commits + shows the result beat + auto-advances to the next hole with zero clicks; full - accepting
+  visibly replays the hole shot-by-shot then auto-advances; mulligan applied + consumed in both, 0 page
+  errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
