@@ -55,13 +55,19 @@
      knows you have to throw, the pocket shrinks). Source: 262,841 plays.      */
   function distBucket(d){ return d <= 2 ? '1-2' : d <= 6 ? '3-6' : d <= 9 ? '7-9' : '10+'; }
 
-  // How much better/worse this exact play is at this distance vs its own average.
+  // How much better/worse this play is at THIS distance vs its own across-distance
+  // average — i.e. the SHAPE of its distance curve only. (The absolute level lives in
+  // play.success_pct; success_by_distance is keyed to the pass air-band, not the play,
+  // so subtracting success_pct here would double-count the level and gut high-success
+  // plays. Centering on the curve's own mean keeps only the distance dependence.)
   function specialization(play, distance) {
     const sbd = play.success_by_distance;
     if (!sbd) return 0;
     const v = sbd[distBucket(distance)];
     if (v == null) return 0;
-    return v - play.success_pct;
+    const vals = Object.keys(sbd).map(k => sbd[k]);
+    const mean = vals.reduce((s, x) => s + x, 0) / vals.length;
+    return v - mean;
   }
   // Residual down pressure NOT already living in the distance curve.
   function downPressureMod(archetype, down, distance) {
@@ -142,7 +148,11 @@
     let ds = play.disaster_pct + (DEF_DISASTER[def.column] ?? 0);
 
     sr = Math.max(3, Math.min(94, sr));
-    ex = Math.max(0.5, Math.min(sr - 1, ex));
+    // Explosive is a SUBSET of success — scale it with the effective success rate so a
+    // matchup that lowers success also lowers the big-play chance (instead of the old
+    // min(sr-1) clamp, which let explosive cannibalize the whole success band).
+    ex = play.explosive_pct * (sr / Math.max(1, play.success_pct));
+    ex = Math.max(0.5, Math.min(sr * 0.9, ex));
     ds = Math.max(0.5, Math.min(60, ds));
     const succ = Math.max(0.5, sr - ex);
     const fail = Math.max(0.5, 100 - ex - succ - ds);
