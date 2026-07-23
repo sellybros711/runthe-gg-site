@@ -132,15 +132,23 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   border-left:12px solid var(--gold-bright); transform:translate(-2px,-50%); transition:left .45s ease, top .45s ease; z-index:5;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.5));}
 /* broadcast markers — telestration discs that lie on the tilted field (not standing sprites) */
-.chip{position:absolute; width:20px; height:20px; transform:translate(-50%,-50%); z-index:3;
+.chip{position:absolute; width:26px; height:26px; transform:translate(-50%,-50%); z-index:3;
   transition:left .4s ease, top .4s ease; filter:drop-shadow(0 2px 2px rgba(0,0,0,.55));}
-.chip.qb{width:23px; height:23px; z-index:4;}
+.chip.qb{width:30px; height:30px; z-index:4;}
+.chip.def{ width:23px; height:23px; }                 /* defenders read a touch smaller so your offense pops */
 .manart{width:100%; height:100%; display:block;}
+/* the ball-carrier is unmistakable: bigger, a gold pulse ring, on top of everyone */
+.chip.carrier{ z-index:9; }
+.chip.carrier .manart{ filter:drop-shadow(0 0 5px rgba(255,207,77,.95)); }
+.chip.carrier::after{ content:''; position:absolute; inset:-5px; border-radius:50%;
+  border:2px solid #ffcf4d; box-shadow:0 0 10px rgba(255,207,77,.6); animation:carrierPulse 1s ease-in-out infinite; }
+@keyframes carrierPulse{ 50%{ box-shadow:0 0 17px rgba(255,207,77,.95); border-color:#fff; } }
 /* motion pulse while moving; tackled = shrink + dim */
 .chip.moving .manart, .anim-carrier.moving .manart{ animation:runbob .22s ease-in-out infinite alternate; }
 @keyframes runbob{ from{ transform:scale(1); } to{ transform:scale(1.08); } }
 .chip.down{ z-index:2; filter:drop-shadow(0 1px 1px rgba(0,0,0,.4)); }
 .chip.down .manart{ transform:scale(.78); opacity:.5; }
+.chip.down.carrier::after{ display:none; }
 @keyframes qbThrow{ 0%{transform:translate(-50%,-50%) scale(1);} 42%{transform:translate(-50%,-50%) scale(1.28);} 100%{transform:translate(-50%,-50%) scale(1);} }
 .chip.qbthrow{ animation:qbThrow .34s ease-out; }
 @media (prefers-reduced-motion: reduce){ .chip.moving .manart,.anim-carrier.moving .manart,.chip.qbthrow{ animation:none; } }
@@ -228,11 +236,13 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 @keyframes pop{0%{opacity:0;transform:scale(.8)}12%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(1)}}
 
 /* ---------- play-out animation ---------- */
-.anim-ball{position:absolute; width:0;height:0; border-top:6px solid transparent; border-bottom:6px solid transparent;
-  border-left:11px solid #6b3d16; z-index:9; transform:translate(-50%,-50%) rotate(0deg);
-  filter:drop-shadow(0 1px 1px rgba(0,0,0,.6)); will-change:left,top,transform;}
-.anim-ball.spin{animation:ballspin .5s linear infinite;}
-@keyframes ballspin{to{transform:translate(-50%,-50%) rotate(360deg);}}
+.anim-ball{position:absolute; width:17px; height:11px; background:radial-gradient(circle at 40% 38%, #b3702f, #6b3d16);
+  border:1.6px solid #ffe9c2; border-radius:50% / 46%; z-index:12; transform:translate(-50%,-50%) rotate(-18deg);
+  box-shadow:0 0 9px rgba(255,207,77,.6), 0 1px 2px rgba(0,0,0,.6); will-change:left,top,transform;}
+.anim-ball::after{ content:''; position:absolute; left:50%; top:50%; width:8px; height:1.4px; background:#ffe9c2;
+  transform:translate(-50%,-50%); border-radius:1px; opacity:.9;}     /* laces */
+.anim-ball.spin{animation:ballspin .45s linear infinite;}
+@keyframes ballspin{to{transform:translate(-50%,-50%) rotate(342deg);}}
 .anim-carrier{position:absolute; width:15px;height:27px; z-index:8; transform:translate(-50%,-100%) rotateX(-20deg); transform-origin:50% 100%;
   filter:drop-shadow(0 3px 2px rgba(0,0,0,.5)); will-change:left,top;}
 .burst{position:absolute; z-index:10; transform:translate(-50%,-50%); font-family:var(--pix); font-size:16px;
@@ -752,9 +762,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js?v=20260723h"></script>
-<script src="playbook.js?v=20260723h"></script>
-<script src="engine.js?v=20260723h"></script>
+<script src="drive_generator.js?v=20260723i"></script>
+<script src="playbook.js?v=20260723i"></script>
+<script src="engine.js?v=20260723i"></script>
 <script>
 (function(){
   'use strict';
@@ -1554,6 +1564,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
         step(ball, rp.x, rp.y, 110); await sleep(110);        // real handoff to the back
       }
       const carrier = qbKeep ? qb : rb;
+      carrier.classList.add('carrier');                       // spotlight the ball-carrier
       ball.style.opacity='0';                                 // tuck it away
       const cp=pos(carrier);
       drawRoute([[cp.x,cp.y],[endX,50]]);                     // run lane
@@ -1610,15 +1621,19 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       if(cover) step(cover, catchX-1, targetY+(targetY<50?-3:3), ROUTE_MS, 'linear');   // DB shadows the primary
       const rusher = nearest(F.dl, dropX, 50, 1)[0];
       drawRoute([[dropX,50],[(dropX+catchX)/2,(50+targetY)/2],[catchX,targetY]]);   // pass path to the primary
-      await sleep(300);   // let the routes develop before the throw
+      // Timing: deeper throws hang longer, and the QB releases so the ball ARRIVES as the
+      // receiver hits his break (ball and man meet) instead of on a fixed delay.
+      const airMs = Math.round(200 + catchDepth*14);
+      const developMs = Math.max(140, ROUTE_MS - airMs);
+      await sleep(developMs);   // let the route develop, then throw on time
       // QB throwing motion — cock back and release. The ball leaves at the top of the snap-forward.
       const doThrow = async ()=>{ if(qb){ qb.classList.remove('faceL'); qb.classList.add('qbthrow');
         setTimeout(()=>qb&&qb.classList.remove('qbthrow'), 360); } await sleep(120); };
 
       if(play.turnover==='INTERCEPTION'){
         await doThrow();
-        ball.classList.add('spin'); step(ball, catchX, targetY, 450, 'ease-in'); await sleep(420);
-        if(cover){ step(cover, catchX, targetY, 110); }                            // DB jumps it
+        ball.classList.add('spin'); step(ball, catchX, targetY, airMs, 'ease-in'); await sleep(airMs);
+        if(cover){ step(cover, catchX, targetY, 110); cover.classList.add('carrier'); }   // DB jumps it
         burst('INTERCEPTED', catchX, targetY, '#e0705c'); flash('rgba(224,112,92,.5)'); shake();
         ball.style.opacity='0'; await sleep(600);
       } else if(play.sack || play.bucket==='DISASTER'){
@@ -1627,13 +1642,14 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
         burst('SACKED', dropX, 52, '#e0705c'); flash('rgba(224,112,92,.4)'); await sleep(560);
       } else if(play.incomplete){
         await doThrow();
-        ball.classList.add('spin'); step(ball, catchX, targetY, 450, 'ease-out'); await sleep(440);
+        ball.classList.add('spin'); step(ball, catchX, targetY, airMs, 'ease-out'); await sleep(airMs);
         step(ball, catchX, targetY+12, 190); ball.style.opacity='0';
         burst('INCOMPLETE', catchX, targetY, '#bcae95'); await sleep(500);
       } else {
         await doThrow();
-        ball.classList.add('spin'); step(ball, catchX, targetY, 430, 'ease-out'); await sleep(420);
+        ball.classList.add('spin'); step(ball, catchX, targetY, airMs, 'ease-out'); await sleep(airMs);
         ball.classList.remove('spin'); ball.style.opacity='0';
+        wr.classList.add('carrier');                                               // the catch: spotlight the ball-carrier
         // CATCH & RUN — the receiver tucks it and keeps moving; the D pursues (yards after catch).
         const runY = targetY<50 ? 47 : 53;
         const runX = Math.max(endX, catchX+4);                                     // keep churning downfield
