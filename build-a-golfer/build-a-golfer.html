@@ -6257,6 +6257,7 @@ function render(){
     if(S.overlay==='careerwall') overlayCareerwall(app);
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
     if(S.overlay==='confirmRetire') overlayConfirmRetire(app);
+    if(S.overlay==='confirmSkip') overlayConfirmSkip(app);
     if(S.overlay==='challenges') overlayChallenges(app);
     if(S.overlay==='login') overlayLogin(app);
     if(S.overlay==='about') overlayAbout(app);
@@ -7194,6 +7195,19 @@ function overlayConfirmRetire(screen){
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.cancel').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{ S.overlay=null; circuit?endCircuit():endCareer('chose'); };
+  screen.appendChild(ov);
+}
+// OWNER: confirm before Skip-to-end - make it clear the player forfeits earning more rewards this season.
+function overlayConfirmSkip(screen){
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Skip to the season results?</h3>
+    <p class="lede">This jumps straight to your season results. Any remaining events - including the team cup and the Summer Games - are simulated for you and still count toward your career, but you'll <b>forfeit earning coins for the rest of the season</b> (you only earn by playing the rounds).</p>
+    <button class="btn red">Skip to results ▸</button>
+    <button class="btn ghost cancel" style="margin-top:10px">Keep playing</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.cancel').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{ S.overlay=null; skipToEnd(); };
   screen.appendChild(ov);
 }
 // CS261: Challenges overlay - Player Level, daily quests, weekly challenges (reached from the ≡ menu)
@@ -13507,7 +13521,14 @@ function skipToEnd(){
     while(S.curEvt && !S.curEvt.done) simNextRound();
     while(S.evtIndex < S.schedule.length-1){ S.evtIndex++; S.curEvt=null;
       const evt=S.schedule[S.evtIndex];
-      if(evt.teamcup){ render(); return; }   // stop at the team cup so you still play it out
+      // OWNER: sim STRAIGHT THROUGH the team cup (Atlantic/Nations Cup) instead of stopping before it -
+      // UNLESS you're offered the captaincy, which needs interactive team-selection + pairing picks.
+      // The Games (evt.olympics) is a stroke-play event, so it's already simmed through via beginEvent below.
+      if(evt.teamcup){
+        if(captainEligible()){ render(); return; }   // captain → play it out (make your picks)
+        S.curTeam=simTeamEvent(); S.curTeam._idx=S.evtIndex; finalizeTeamCup();   // no stroke-play sim
+        continue;
+      }
       if(evt.playoff && !S.daily && !S.season.eliminated){ const mr=pointsRank(S.season.me.name); if(mr>evt.cap) S.season.eliminated={stage:evt.stage,rank:mr,event:evt.name,cap:evt.cap}; }
       beginEvent(); while(!S.curEvt.done) simNextRound(); }
     S.screen='summary'; render();
@@ -14638,7 +14659,7 @@ function scrSeason(){
   const mkc=(icon,label,fn,active,title)=>{ const b=$(`<button type="button" aria-label="${title||label}" title="${title||''}" style="${cbBase}${active?cbOn:''}"><span style="font-size:18px;line-height:1;display:flex" aria-hidden="true">${ic(icon)}</span><span style="white-space:nowrap">${label}</span></button>`); b.onclick=fn; return b; };
   const bar=$(`<div style="display:grid;grid-template-columns:repeat(${S.daily?3:4},1fr);gap:8px;margin-top:10px"></div>`);
   bar.appendChild(mkc('repeat', S.autoSim?'Auto On':'Auto Off', ()=>{S.autoSim=!S.autoSim; LS.set('bag_autosim',S.autoSim); track('autosim_toggle',{on:S.autoSim}); render();}, S.autoSim, 'Auto-advance events'));
-  bar.appendChild(mkc('skip','Skip', skipToEnd, false, 'Skip to end of season'));
+  bar.appendChild(mkc('skip','Skip', ()=>{ S.overlay='confirmSkip'; render(); }, false, 'Skip to the end of the season'));
   bar.appendChild(mkc('clock', paceMs().lbl, ()=>{ const ord=['normal','fast','chill']; S.simPace=ord[(ord.indexOf(S.simPace)+1)%3]||'normal'; LS.set('bag_pace',S.simPace); track('sim_pace',{pace:S.simPace}); render(); }, false, 'How fast rounds play'));
   if(!S.daily) bar.appendChild(mkc('home','Exit', saveMidSeasonAndExit, false, 'Save & exit to home'));
   ctrl.appendChild(bar);
@@ -15070,7 +15091,9 @@ function scrSummary(){
   // to the end, or every in-season window was blocked), fire the year's press conference right here on the
   // results page. Once per season (S.season._backstopBeat); answering it bumps story._beatsYr so a
   // re-render / resume never double-fires. Synthetic "new season" event context = the year-in-review angle.
-  if(!S.daily && !S.circuitMode && S.career && S.season && !S.season._backstopBeat && (careerStory()._beatsYr||0)===0){
+  // OWNER: if the player SIMMED to the end (Skip button sets S.season.skipped), there should be NO decision
+  // to make on the results page - the backstop press-conference is suppressed for a skipped season.
+  if(!S.daily && !S.circuitMode && S.career && S.season && !S.season.skipped && !S.season._backstopBeat && (careerStory()._beatsYr||0)===0){
     S.season._backstopBeat=true;
     setTimeout(()=>{ try{
       if(S.screen!=='summary' || (careerStory()._beatsYr||0)>0) return;
