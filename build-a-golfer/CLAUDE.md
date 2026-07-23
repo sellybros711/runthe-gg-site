@@ -12998,6 +12998,18 @@ allows Google Fonts, or self-host Anton.*
   regression stays green with 0 page errors. Deployed to /golf. Tunable: the `.closet-hero`/`.closet-abtn`
   CSS, the Random category list, the Best tie-break.
 
+- **Sponsor-offer popup shows your CURRENT deals (owner, on the "A brand wants your name" screen: "on
+  this page you should see what you already have as well").** The full-screen sponsor moment
+  (`sponsorOfferPopup`) showed only the offering brand + Replace-on-Hat/Shirt buttons; the current deals
+  were reduced to a one-line "Everpeak · loyalty resets" button sub. Now a **"WHAT YOU HAVE NOW"** section
+  renders above **"THE OFFER"** — the existing `slotStatusCardHTML` cards for both slots (brand logo +
+  name + tier + contract year + the loyalty meter / ★ Brand Ambassador + reward bonus, or a dashed "Open
+  slot" card), so the stay-or-switch call is fully informed on one screen. `ensureSponsors()` is guarded
+  at the popup top so the slot reads are always safe. Verified in Playwright: both-slots-filled (the
+  screenshot's poach case) renders Everpeak Yr 7 ★ Ambassador +24% and Vanguard One Lv 3 +12% above the
+  Ascend-style offer card; a first-ever deal shows two "Open slot" cards; Decide-later still dismisses;
+  0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
