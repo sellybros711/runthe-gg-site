@@ -333,9 +333,13 @@
       var board = makeBoard(chosen, sol, entMap);
       var r = solve(board); if (r.count !== 1) continue;
       var traps = trapEdges(board);
-      // fewer overlaps = easier; aim for a light 1-3 traps instead of 3-6
-      if (traps >= 1 && traps <= 3) return finalizeBoard(board, rng, dateStr);
-      if (!best || Math.abs(traps - 2) < Math.abs(best.traps - 2)) best = { board: board, traps: traps };
+      // FAIRNESS RULE: require ZERO traps — no name on the board outside a
+      // group's four may also satisfy that group (per the DB). A factually
+      // valid grouping must never be rejected ("all four played for the
+      // Dodgers" can't be wrong). Data gaps aside, ambiguity is now a bug,
+      // not a feature; boards with overlap edges only ship as a last resort.
+      if (traps === 0) return finalizeBoard(board, rng, dateStr);
+      if (!best || traps < best.traps) best = { board: board, traps: traps };
     }
     return best ? finalizeBoard(best.board, rng, dateStr) : null;
   }
