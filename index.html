@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Games — Free Online Sports Simulation Games | RunThe.GG</title>
 <meta name="title" content="Run The Games: Data Driven Simulations" />
-<meta name="description" content="Run The Games on RunThe.GG: free, data driven sports simulations you play right in your browser. Build a World Cup squad in RunThePitch or live a 30 year golf career in RunTheTour. One free account, no download." />
+<meta name="description" content="Run The Games on RunThe.GG: free, data driven sports simulations you play right in your browser. Build a World Cup squad in RunThePitch or live a 42 year golf career in RunTheTour. One free account, no download." />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
-<meta name="theme-color" content="#06182e" />
+<meta name="theme-color" content="#0d1b2e" />
 <link rel="canonical" href="https://runthe.gg/" />
 
 <!-- Favicons: RunThe.GG mark (text-free crop of the emblem, crisp at tab size) -->
@@ -25,7 +25,7 @@
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:url" content="https://runthe.gg/" />
 <meta property="og:title" content="Run The Games: Data Driven Simulations" />
-<meta property="og:description" content="Free, data driven sports simulations you play right in your browser. Build a World Cup squad in RunThePitch or live a 30 year golf career in RunTheTour. One free account, no download." />
+<meta property="og:description" content="Free, data driven sports simulations you play right in your browser. Build a World Cup squad in RunThePitch or live a 42 year golf career in RunTheTour. One free account, no download." />
 <meta property="og:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png?v=3" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:site" content="@RunTheGG" />
@@ -40,7 +40,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
 
 <!-- Google AdSense (site-wide publisher tag; Auto ads decide placement) -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
@@ -51,8 +51,8 @@
 
 <style>
   :root{
-    --bg:#0a1626; --bg2:#0e2036; --card:#122a44; --cardb:#1e3d5c;
-    --ink:#eaf1f8; --mut:#93a7bd; --gold:#F85858; --teal:#66D3DE; --green:#6EE84E; --line:rgba(255,255,255,.08);
+    --bg:#0d1b2e; --bg2:#102439; --card:#152e4a; --cardb:#234669;
+    --ink:#eaf1f8; --mut:#9bb0c6; --gold:#6EE84E; --teal:#66D3DE; --green:#6EE84E; --line:rgba(255,255,255,.1);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
@@ -61,8 +61,8 @@
     color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased;
     background:
       radial-gradient(1100px 520px at 50% -8%, rgba(53,196,205,.16), transparent 60%),
-      radial-gradient(900px 460px at 88% 4%, rgba(248,88,88,.12), transparent 55%),
-      linear-gradient(180deg,#0b1a2c 0%, var(--bg) 46%, #081120 100%);
+      radial-gradient(900px 460px at 88% 4%, rgba(110,232,78,.10), transparent 55%),
+      linear-gradient(180deg,#0e2036 0%, var(--bg) 46%, #0b1626 100%);
     background-attachment:fixed;
   }
   .wrap{max-width:640px;margin:0 auto;padding:calc(30px + env(safe-area-inset-top,0px)) 18px 46px;}
@@ -72,15 +72,15 @@
   /* soft animated glow behind the wordmark so the hero reads as designed, not just a logo dropped on a gradient */
   .brand:before{content:"";position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);
     width:min(600px,92%);height:230px;z-index:-1;pointer-events:none;
-    background:radial-gradient(closest-side, rgba(53,196,205,.22), rgba(248,88,88,.11) 52%, transparent 72%);
+    background:radial-gradient(closest-side, rgba(53,196,205,.22), rgba(110,232,78,.12) 52%, transparent 72%);
     filter:blur(8px);animation:heroGlow 7s ease-in-out infinite;}
   @keyframes heroGlow{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1);}
     50%{opacity:1;transform:translate(-50%,-50%) scale(1.05);}}
   .wordmark{display:block;width:100%;max-width:600px;height:auto;margin:0 auto;
     filter:drop-shadow(0 6px 30px rgba(0,0,0,.45));}
   .rule{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px auto 0;max-width:260px;color:var(--gold);}
-  .rule .ln{height:2px;flex:1;background:linear-gradient(90deg,transparent,rgba(248,88,88,.6));}
-  .rule .ln.r{background:linear-gradient(270deg,transparent,rgba(248,88,88,.6));}
+  .rule .ln{height:2px;flex:1;background:linear-gradient(90deg,transparent,rgba(110,232,78,.6));}
+  .rule .ln.r{background:linear-gradient(270deg,transparent,rgba(110,232,78,.6));}
   .tag{text-align:center;color:var(--ink);font-weight:700;margin:16px auto 0;max-width:460px;line-height:1.45;font-size:16px;}
   .tag b{color:var(--teal);}
   /* live status pill: tells a first-time visitor what the site is at a glance */
@@ -162,9 +162,9 @@
   .g-desc{display:block;color:#b9c9db;font-size:13.5px;line-height:1.5;padding:11px 17px 0;}
   .badge-new,.badge-mode{font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;
     padding:2px 0 2px 8px;flex:0 0 auto;line-height:1.15;background:none;border:0;}
-  /* NEW: the one filled call-out — raised red block (keeps it louder than the bar labels) */
-  .badge-new{color:#2b0a0a;background:#F85858;border-radius:2px;padding:4px 8px;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 2px 0 #c33f3c;}
+  /* NEW: the one filled call-out — raised pixel-green block (keeps it louder than the bar labels) */
+  .badge-new{color:#06230c;background:var(--green);border-radius:2px;padding:4px 8px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 2px 0 #3fa32e;}
   /* mode labels: thin accent bar so they read as info, not a call-out */
   .badge-mode{color:#9fb2c6;border-left:2px solid var(--line);}
   .game.golf .badge-mode{color:#e6c98a;border-left-color:rgba(235,166,31,.65);}
@@ -254,16 +254,18 @@
   .acct{margin:20px 0 4px;border-radius:9px;padding:18px 18px 17px;position:relative;overflow:hidden;
     background:
       radial-gradient(420px 200px at 12% -30%, rgba(53,196,205,.18), transparent 70%),
-      radial-gradient(420px 200px at 100% 130%, rgba(248,88,88,.16), transparent 70%),
-      linear-gradient(180deg,#12233b,#0e1d31);
+      radial-gradient(420px 200px at 100% 130%, rgba(110,232,78,.14), transparent 70%),
+      linear-gradient(180deg,#193453,#132842);
     border:1px solid var(--cardb);}
   /* "optional / free" tag makes it unmistakable that an account is a bonus, not a wall */
   .acct .a-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;
     letter-spacing:.09em;text-transform:uppercase;color:#8fe07a;
     border-left:3px solid var(--green);padding:2px 0 2px 9px;margin:0 0 13px;}
-  .acct .a-hd{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.01em;
-    text-transform:uppercase;font-size:clamp(21px,6vw,27px);line-height:1;margin:0;}
-  .acct .a-hd .g{color:var(--gold);} .acct .a-hd .t{color:var(--teal);}
+  /* headline set in the same pixel type as the wordmark: "One account." white, "Every game." green */
+  .acct .a-hd{font-family:'Press Start 2P','Anton',Impact,sans-serif;font-weight:400;letter-spacing:0;
+    text-transform:uppercase;font-size:clamp(13px,3.6vw,18px);line-height:1.5;margin:0;
+    text-shadow:0 3px 0 rgba(0,0,0,.35);}
+  .acct .a-hd .g{color:var(--green);} .acct .a-hd .t{color:var(--ink);}
   .acct .a-sub{color:var(--mut);font-size:13.5px;line-height:1.5;margin:8px 0 0;max-width:460px;}
   .acct .a-sub b{color:var(--ink);}
   .acct .perks{display:flex;flex-wrap:wrap;gap:18px;margin:14px 0 0;}
@@ -280,7 +282,8 @@
     border-radius:7px;padding:12px 18px;text-decoration:none;display:inline-flex;align-items:center;
     justify-content:center;gap:8px;transition:transform .1s ease,filter .1s ease,background .1s ease;line-height:1;}
   .btn:active{transform:translateY(1px);}
-  .btn.gold{background:linear-gradient(180deg,#FF6B6B,#F04A44);color:#fff;box-shadow:0 8px 22px -12px rgba(248,88,88,.9);}
+  .btn.gold{background:linear-gradient(180deg,#84F262,#4EC335);color:#06230c;
+    box-shadow:0 2px 0 #2f8a22, 0 10px 22px -12px rgba(110,232,78,.7);}
   .btn.gold:hover{filter:brightness(1.05);}
   .btn.ghost{background:rgba(255,255,255,.06);color:var(--ink);border:1px solid var(--cardb);}
   .btn.ghost:hover{border-color:var(--gold);}
@@ -304,7 +307,7 @@
     padding:max(28px,env(safe-area-inset-top)) 16px 28px;overflow:auto;
     background:rgba(4,10,18,.72);backdrop-filter:blur(4px);}
   .modal[hidden]{display:none;}
-  .sheet{width:100%;max-width:400px;background:linear-gradient(180deg,#132741,#0e1c30);
+  .sheet{width:100%;max-width:400px;background:linear-gradient(180deg,#17304e,#122540);
     border:1px solid var(--cardb);border-radius:10px;padding:20px 20px 22px;position:relative;
     box-shadow:0 30px 80px -20px rgba(0,0,0,.8);margin:auto 0;}
   .sheet h2{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.02em;text-transform:uppercase;
@@ -313,7 +316,7 @@
   .sheet .x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);
     background:rgba(255,255,255,.05);color:var(--ink);font-size:15px;cursor:pointer;line-height:1;}
   .sheet input[type=text],.sheet input[type=email],.sheet input[type=password]{
-    width:100%;background:#0a1626;border:1px solid var(--cardb);border-radius:6px;color:var(--ink);
+    width:100%;background:#0d1b2e;border:1px solid var(--cardb);border-radius:6px;color:var(--ink);
     font-family:inherit;font-size:15px;padding:12px 13px;margin-top:9px;outline:none;}
   .sheet input:focus{border-color:var(--gold);}
   .sheet .or{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:11px;font-weight:800;
@@ -333,19 +336,23 @@
 
   /* ---- content sections (about / how it works / faq) ---- */
   .content{margin:30px 0 0;}
-  .content h3{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.02em;text-transform:uppercase;
-    font-size:19px;margin:26px 0 10px;color:var(--ink);}
+  /* section headings in the wordmark's pixel type, with a pixel-square tick */
+  .content h3{font-family:'Press Start 2P','Anton',Impact,sans-serif;font-weight:400;letter-spacing:0;text-transform:uppercase;
+    font-size:12.5px;line-height:1.7;margin:28px 0 12px;color:var(--ink);display:flex;align-items:baseline;gap:10px;}
+  .content h3:before{content:"";width:9px;height:9px;background:var(--green);flex:0 0 auto;align-self:center;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.4);}
   .content h3:first-child{margin-top:6px;}
   .content p{color:var(--mut);font-size:14px;line-height:1.65;margin:0 0 12px;}
   .content p b{color:#cfe0f0;}
   .steps{display:grid;gap:10px;margin:0 0 6px;}
-  .step{display:flex;gap:12px;align-items:flex-start;background:rgba(255,255,255,.03);
+  .step{display:flex;gap:13px;align-items:flex-start;background:rgba(255,255,255,.05);
     border:1px solid var(--line);border-radius:7px;padding:12px 14px;}
-  .step .n{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:var(--gold);color:#fff;
-    font-weight:900;font-size:13px;display:flex;align-items:center;justify-content:center;}
+  .step .n{flex:0 0 auto;width:26px;height:26px;border-radius:3px;background:var(--green);color:#06230c;
+    font-family:'Press Start 2P',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 2px 0 #3fa32e;}
   .step .tx{font-size:13.5px;line-height:1.5;color:var(--mut);}
   .step .tx b{color:var(--ink);font-weight:800;}
-  .faq details{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:7px;
+  .faq details{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:7px;
     padding:0 14px;margin:0 0 9px;overflow:hidden;}
   .faq summary{cursor:pointer;list-style:none;padding:13px 0;font-weight:800;font-size:14px;color:var(--ink);
     display:flex;justify-content:space-between;align-items:center;gap:10px;}
@@ -400,7 +407,7 @@ window.GA_ID='G-L29P5MRWKE';
     transition:filter .12s ease,border-color .12s ease;}
   .nav-btn.ghost{background:rgba(255,255,255,.06);color:var(--ink);border:1px solid var(--cardb);}
   .nav-btn.ghost:hover{border-color:var(--teal);}
-  .nav-btn.solid{background:linear-gradient(180deg,#FF6B6B,#F04A44);color:#fff;box-shadow:0 6px 18px -10px rgba(248,88,88,.9);}
+  .nav-btn.solid{background:linear-gradient(180deg,#84F262,#4EC335);color:#06230c;box-shadow:0 6px 18px -10px rgba(110,232,78,.8);}
   .nav-btn.solid:hover{filter:brightness(1.06);}
   .nav-chip{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.05);border:1px solid var(--cardb);
     border-radius:6px;padding:4px 13px 4px 4px;color:var(--ink);text-decoration:none;font-weight:800;font-size:13.5px;}
@@ -438,9 +445,10 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* ---- games section header ---- */
   .games-head{max-width:var(--maxw);margin:22px auto 12px;display:flex;align-items:center;justify-content:flex-start;gap:12px 14px;flex-wrap:wrap;}
-  .games-head h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.03em;
-    font-size:21px;line-height:1;margin:0;display:flex;align-items:center;gap:10px;color:var(--ink);}
-  .games-head h2:before{content:"";width:11px;height:11px;border-radius:3px;background:var(--gold);flex:0 0 auto;}
+  .games-head h2{font-family:'Press Start 2P','Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:0;
+    font-size:15px;line-height:1.4;margin:0;display:flex;align-items:center;gap:11px;color:var(--ink);}
+  .games-head h2:before{content:"";width:11px;height:11px;border-radius:2px;background:var(--green);flex:0 0 auto;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.4);}
   .games-head .note{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#8fe07a;flex:0 0 auto;
     margin-left:auto;border-left:3px solid var(--green);padding:3px 0 3px 9px;background:none;}
 
@@ -622,7 +630,7 @@ window.GA_ID='G-L29P5MRWKE';
     <section id="acct" class="acct" aria-live="polite">
       <div class="a-tag">✓ Free &amp; optional</div>
       <h2 class="a-hd">One <span class="t">account.</span> Every <span class="g">game.</span></h2>
-      <p class="a-sub"><b>No account needed to play</b> — every game above is free, right now. Want to keep your progress? Create a free account to save your stats and earn rewards that follow you into every RunThe.GG game.</p>
+      <p class="a-sub"><b>No account needed to play</b> — everything above is free, right now. An account is just for keeping score: it saves your progress and carries your trophies, streaks and leaderboard rank into every game on the site.</p>
       <div class="perks">
         <span class="perk"><i class="pico pico-trophy" aria-hidden="true"></i> <b>Trophies</b> <span class="amp">&amp;</span> <span class="tl">badges</span></span>
         <span class="perk"><i class="pico pico-chart" aria-hidden="true"></i> Leaderboard rank</span>
@@ -637,20 +645,20 @@ window.GA_ID='G-L29P5MRWKE';
 
     <section class="content">
       <h3>What is RunThe.GG?</h3>
-      <p>RunThe.GG is a free collection of quick, browser-based sports games you can play the moment the page loads. There is nothing to download and nothing to install. Pick a game, jump straight in, and play in seconds on your phone, tablet or computer. Make one free account and your trophies, streaks, saves and leaderboard rank follow you across every game on the site.</p>
+      <p>RunThe.GG is a collection of quick, data-driven sports sims that run right in your browser. Nothing to download, nothing to install and no sign-up wall — pick a game and you're playing in seconds on your phone, tablet or computer. Make one free account if you like, and your trophies, streaks, saves and leaderboard rank follow you from game to game.</p>
 
       <h3>How it works</h3>
       <div class="steps">
-        <div class="step"><span class="n">1</span><span class="tx"><b>Choose a game.</b> Start with RunThePitch or RunTheTour above. New sports games are added over time.</span></div>
-        <div class="step"><span class="n">2</span><span class="tx"><b>Play instantly.</b> Everything runs in your browser. No app store, no install, no waiting around.</span></div>
-        <div class="step"><span class="n">3</span><span class="tx"><b>Earn rewards.</b> Sign in once to save your progress and climb the global leaderboards across every game.</span></div>
+        <div class="step"><span class="n">1</span><span class="tx"><b>Pick a game.</b> RunTheTour and RunThePitch are live above, and new sports join the lineup over time.</span></div>
+        <div class="step"><span class="n">2</span><span class="tx"><b>Play on the spot.</b> It all runs in your browser — no app store, no install, no waiting around.</span></div>
+        <div class="step"><span class="n">3</span><span class="tx"><b>Keep score.</b> Sign in once and your progress, streaks and leaderboard rank travel with you across every game.</span></div>
       </div>
 
       <h3>The games</h3>
-      <p><b>RunThePitch</b> is a World Cup squad builder. Spin a nation and a year, draft a legendary player each round, assemble your dream squad, then simulate your run through the tournament and see how far your side goes.</p>
-      <p><b>RunTheTour</b> is a 30-year golf career simulation. Draft one signature skill from the greats, build your golfer, then play season after season chasing majors, team titles and glory as your player rises, peaks and retires.</p>
+      <p><b>RunTheTour</b> is our golf sim. Play 18 at a brand-new course every day, take a rival on head-to-head or in a Scramble, or start a 42-year Career Mode and chase majors as your golfer rises, peaks and finally hangs up the clubs.</p>
+      <p><b>RunThePitch</b> is a World Cup squad builder. Spin a nation and a year, draft a legend each round, then simulate the tournament and find out how deep your dream squad can run.</p>
 
-      <h3>Frequently asked questions</h3>
+      <h3>FAQ</h3>
       <div class="faq">
         <details><summary>Is there an app?</summary><p>There is no app to download. RunThe.GG runs right in your browser. If you would like it to open like an app from your Home Screen, you can <a href="#" id="faq-install">add it to your Home Screen</a> in a couple of taps, no App Store required.</p></details>
         <details><summary>Is RunThe.GG free to play?</summary><p>Yes. Every game on RunThe.GG is completely free. We keep the site free by showing ads, and we never charge you to play.</p></details>
@@ -864,7 +872,7 @@ window.GA_ID='G-L29P5MRWKE';
       el.innerHTML=
         '<div class="a-tag">✓ Free &amp; optional</div>'+
         '<h2 class="a-hd">One <span class="t">account.</span> Every <span class="g">game.</span></h2>'+
-        '<p class="a-sub"><b>No account needed to play</b> — every game above is free, right now. Want to keep your progress? Create a free account to save your stats and earn rewards that follow you into every RunThe.GG game.</p>'+
+        '<p class="a-sub"><b>No account needed to play</b> — everything above is free, right now. An account is just for keeping score: it saves your progress and carries your trophies, streaks and leaderboard rank into every game on the site.</p>'+
         '<div class="perks"><span class="perk"><i class="pico pico-trophy" aria-hidden="true"></i> <b>Trophies</b> <span class="amp">&amp;</span> <span class="tl">badges</span></span><span class="perk"><i class="pico pico-chart" aria-hidden="true"></i> Leaderboard rank</span><span class="perk"><i class="pico pico-flame" aria-hidden="true"></i> Daily streaks</span><span class="perk"><i class="pico pico-cloud" aria-hidden="true"></i> Saves across devices</span></div>'+
         '<div class="a-cta"><button class="btn gold flex1" id="acct-signup">Create free account</button><button class="btn ghost flexa" id="acct-signin">Sign in</button></div>';
       $('acct-signup').onclick=function(){ openModal('signup'); };
