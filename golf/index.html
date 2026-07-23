@@ -6199,8 +6199,18 @@ function pxCardBgCanvas(id){
 // coarse color step, so the canvas's anti-aliased soft edges + smooth gradients become crisp retro
 // banding and the pixelated upscale reads as deliberate pixel art.
 function cardBgQuantize(x,W,H){ try{
-  const im=x.getImageData(0,0,W,H), d=im.data, Q=22;
-  for(let i=0;i<d.length;i+=4){ d[i]=Math.min(255,Math.round(d[i]/Q)*Q); d[i+1]=Math.min(255,Math.round(d[i+1]/Q)*Q); d[i+2]=Math.min(255,Math.round(d[i+2]/Q)*Q); d[i+3]=255; }
+  // ordered BAYER dithering (owner: plain quantizing banded the skies hard): the quantize threshold
+  // varies per pixel on a 4x4 matrix, so gradient bands break into fine interleaved pixel checkers -
+  // smooth-reading skies, still perfectly crisp pixels (same technique as the pixel course renderer).
+  // K scales the dither amplitude: 1 = full (checker everywhere), lower = dithering only in the
+  // transition strip around each tone boundary with clean color between (the classic retro-sky look)
+  const im=x.getImageData(0,0,W,H), d=im.data, Q=20, K=0.55;
+  const B=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+  for(let y=0;y<H;y++) for(let xx=0;xx<W;xx++){ const i=(y*W+xx)*4, t=0.5+((B[(y%4)*4+(xx%4)]+0.5)/16-0.5)*K;
+    d[i]  =Math.min(255,Math.floor(d[i]  /Q+t)*Q);
+    d[i+1]=Math.min(255,Math.floor(d[i+1]/Q+t)*Q);
+    d[i+2]=Math.min(255,Math.floor(d[i+2]/Q+t)*Q);
+    d[i+3]=255; }
   x.putImageData(im,0,0);
 }catch(e){} }
 function pxCardBgURL(id){ if(!_cardBgURL[id]){ try{ _cardBgURL[id]=pxCardBgCanvas(id).toDataURL(); }catch(e){ _cardBgURL[id]=''; } } return _cardBgURL[id]; }
