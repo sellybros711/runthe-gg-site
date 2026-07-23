@@ -13492,8 +13492,14 @@ allows Google Fonts, or self-host Anton.*
   tier/OVR chips + the nameplate at the standard 318x456 card size). Verified in Playwright: all 20
   backdrops render distinct with clean banding (no ugly vignette rings), the card front shows the big
   golfer over a crisp backdrop, the full card/board/closet/share suite + an 18-hole practice round still
-  green with 0 page errors. Deployed to /golf. Tunable: the quantize step Q (smaller = subtler banding),
-  the golfer height/bottom in playerCardHTML/.pcgolfer.
+  green with 0 page errors. Deployed to /golf.
+  - **Follow-up (owner: "the banding is really strong in the sky on all backgrounds"):** the plain
+    quantize became **ordered BAYER dithering with a scaled amplitude** - a 4x4 threshold matrix breaks
+    each tone boundary into fine interleaved pixel checkers, and the amplitude scale K=0.55 confines the
+    dithering to a thin transition strip around each boundary with clean color between (full amplitude
+    carpeted the whole sky in checkers - iterated once). Skies now read as smooth gradients with subtle
+    retro dither strips, still perfectly crisp pixels. Tunable: Q (20, tone step), K (0.55, dither
+    coverage) in `cardBgQuantize`; the golfer height/bottom in playerCardHTML/.pcgolfer.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
