@@ -6765,7 +6765,7 @@ function overlayAccount(screen){
 // leaderboard sort categories per tab: [key, label]. A player can top many different boards.
 const LB_SORTS={   // Tour Rep is no longer a sort category, the rep rank shows next to each name instead
   // ...the derived stat sorts (sg/ttg/putts/hcp) are computed client-side from each row's stored skills
-  season:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['ovr','OVR'],['fans','Fans'],['sg','Strokes Gained'],['ttg','Tee to Green'],['putts','Avg Putts'],['hcp','Handicap']],
+  season:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['fans','Fans'],['sg','Strokes Gained'],['ttg','Tee to Green'],['putts','Avg Putts'],['hcp','Handicap']],   // OVR sort removed (owner) - the OVR now shows on every row's sub line instead
   career:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['seasons','Seasons'],['fans','Fans'],['sg','Strokes Gained'],['ttg','Tee to Green'],['putts','Avg Putts'],['hcp','Handicap']],
 };
 // CS214: these aren't DB columns - they're derived from each row's `skills` jsonb (golferStats) and ranked
@@ -6886,7 +6886,12 @@ function overlayLeaderboard(screen){
       <span class="mny" style="white-space:nowrap">${valHTML}</span></div>`;
   const lbRep=r=>{ const rp=(r&&r.rep_pts!=null)?repTierName(r.rep_pts):null; return (rp&&rp!=='Amateur')?rp:null; };   // raw tier name; repClass picks the effect
   const globalOk = view && view.ok;
-  const globalRows = globalOk ? dirRows : [];   // dirRows is already in display order (top N, or true bottom N)
+  const globalRows0 = globalOk ? dirRows : [];   // dirRows is already in display order (top N, or true bottom N)
+  // Owner: careers posted BEFORE the fans system exist with 0 fans - they don't belong on the career
+  // Fans board (this one category only; they stay everywhere else). Migration 64 also excludes them
+  // server-side (so ranks + the Low-High view are right); this client filter covers the interim desc view.
+  const globalRows = (tab==='career' && sort==='fans' && dir!=='asc')
+    ? globalRows0.filter(r=>(r.followers||0)>0) : globalRows0;
   // Same player can appear many times (every season & career is its own row), and each row froze the
   // username + rep tier AT SUBMIT TIME - so old rows show a stale name/lower tier. Normalize every instance
   // of an account to its MOST-UPDATED identity: rep points only ever accrue, so the row with a user's
@@ -6914,10 +6919,14 @@ function overlayLeaderboard(screen){
   } else if(globalOk && globalRows.length){
     const rowFn=r=>{
       const you=sbUser&&r.user_id===sbUser.id, v=lbStatVal(r,tab,sort), id=lbCanon(r);
-      const arch=(r.skills && CATS.every(c=>typeof r.skills[c.k]==='number')) ? archetype(r.skills) : null;
+      const fullSk=(r.skills && CATS.every(c=>typeof r.skills[c.k]==='number'));
+      const arch=fullSk ? archetype(r.skills) : null;
       // CS504 (owner): the sub is just the golfer name + archetype — the redundant stat tail (szn/wins/$)
       // that used to trail the archetype is removed; the right-hand column already shows the sorted stat.
-      const sub = r.golfer_name ? r.golfer_name+(arch?' · '+arch.name:'') : (arch?arch.name:'');
+      // Owner: OVR is no longer a sort category - it shows here, right of the archetype, on every row
+      // (season rows carry ovr; career rows derive it from the stored skills; legacy rows just omit it).
+      const rowOvr = (tab==='season') ? (r.ovr!=null?r.ovr:null) : (fullSk?Math.round(ovrFromSkills(r.skills)):null);
+      const sub = [r.golfer_name||null, arch?arch.name:null, rowOvr!=null?('OVR '+rowOvr):null].filter(Boolean).join(' · ');
       // CS516 (owner): a global row shows ITS OWN stored golfer (or the neutral default for a legacy
       // null-look row) - NEVER fall back to S.look, which leaked the VIEWER's own golfer onto every
       // not-yet-backfilled row (owner: "showing the same golfer with a crown for a lot of users"). The

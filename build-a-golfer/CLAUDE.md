@@ -13145,6 +13145,28 @@ allows Google Fonts, or self-host Anton.*
   streaks - guests post + appear as "Guest" on the Active Streaks boards). No outstanding runtour
   migrations at this point.
 
+- **Leaderboard: OVR sort removed (OVR now on every row's sub line) + the career Fans board hides 0-fan
+  legacy careers (owner).** Two asks:
+  1. **OVR is no longer a sortable category** on the Single Season board (`LB_SORTS`; a persisted
+     `S.lbSort='ovr'` falls back to Earnings via the existing `lbSortValid` guard). Instead every
+     season/career list row's sub line now reads `golfer · archetype · OVR N` - season rows use the stored
+     `r.ovr`, career rows DERIVE it client-side from the row's stored skills (`Math.round(ovrFromSkills)`,
+     the same jsonb the archetype already reads), and a legacy null-skills row just omits what it can't
+     compute (a season row still shows its OVR). The podium cards stay compact (name/value/golfer) - the
+     OVR lives on the list rows where the archetype is.
+  2. **The career FANS category hides pre-fans legacy careers** (0/null followers, from before the fans
+     system) - "only removed from this singular category, not everywhere." Server-side in
+     **`supabase/64_runtour_career_fans_nonzero.sql`** (owner-run): redefines `runtour_career_board` (61's
+     body) with one conditional `having (p_sort <> 'fans' or max(coalesce(followers,0)) > 0)` - so on the
+     Fans sort ranks stay contiguous and the Low-High view shows the genuinely lowest REAL fan counts,
+     while every other sort (earnings/wins/majors/seasons/rep + the default) still lists every career.
+     A client-side interim filter (desc view only) covers the gap until 64 is applied. Validated on local
+     Postgres (fans desc + asc exclude null/zero-follower careers, earnings + default include them,
+     idempotent re-run); client verified in Playwright (no OVR chip, season sub "G3 · Grip It and Rip It ·
+     OVR 85" + null-skills "G4 · OVR 84", career sub with derived OVR 84 matching ovrFromSkills, fans board
+     filters LegacyZero/LegacyNull while the earnings board keeps them, the persisted-ovr fallback, 0 page
+     errors). **ACTION: run `supabase/64_runtour_career_fans_nonzero.sql`.** Deployed client to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
