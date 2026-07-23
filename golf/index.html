@@ -21891,23 +21891,26 @@ function overlayShop(screen){
 function overlayCourseRecords(screen){
   const today=S.dailyCourse||dailyCourseKey(todayKey());
   const todaySeed=S.dailySeed||todayKey();
-  const tab=(S.crTab==='legend'||S.crTab==='streaks')?S.crTab:'human';
-  if(sb && tab!=='streaks'){
-    if(crCache===null) crLoad(); if(dbCache===null||dbCache.day!==todaySeed) dbLoad(todaySeed);
+  const tab=(S.crTab==='legend'||S.crTab==='streaks'||S.crTab==='all')?S.crTab:'human';
+  if(sb){
+    if(tab==='human'){ if(crCache===null) crLoad(); if(dbCache===null||dbCache.day!==todaySeed) dbLoad(todaySeed); }
+    else if(tab==='all'){ if(crCache===null) crLoad(); }
     // Legend boards are only fetched once the player actually opens that tab (most never will)
-    if(tab==='legend'){ if(crCacheLegend===null) crLoadLegend(); if(dbCacheLegend===null||dbCacheLegend.day!==todaySeed) dbLoadLegend(todaySeed); }
+    else if(tab==='legend'){ if(crCacheLegend===null) crLoadLegend(); if(dbCacheLegend===null||dbCacheLegend.day!==todaySeed) dbLoadLegend(todaySeed); }
   }
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Course Records</h3></div>`);
-  // owner: the streaks list lives in its own TAB up top, next to Legend
-  const tabs=$(`<div class="mini" style="margin-bottom:2px"></div>`);
-  const humanTab=$(`<button class="btn ${tab==='human'?'goldsel':'ghost'}" style="font-size:12.5px">Human</button>`);
-  const legendTab=$(`<button class="btn ${tab==='legend'?'goldsel':'ghost'}" style="font-size:12.5px">🏆 Legend</button>`);
-  const streakTab=$(`<button class="btn ${tab==='streaks'?'goldsel':'ghost'}" style="font-size:12.5px">🔥 Streaks</button>`);
-  humanTab.onclick=()=>{S.crTab='human';render();}; legendTab.onclick=()=>{S.crTab='legend';render();}; streakTab.onclick=()=>{S.crTab='streaks';render();};
-  tabs.appendChild(humanTab); tabs.appendChild(legendTab); tabs.appendChild(streakTab);
+  const tabs=$(`<div class="mini" style="margin-bottom:2px;flex-wrap:wrap"></div>`);
+  const mkTab=(id,lab)=>{ const b=$(`<button class="btn ${tab===id?'goldsel':'ghost'}" style="font-size:12.5px">${lab}</button>`);
+    b.onclick=()=>{S.crTab=id;render();}; tabs.appendChild(b); return b; };
+  mkTab('human','Human'); mkTab('legend','🏆 Legend'); mkTab('streaks','🔥 Streaks'); mkTab('all','⛳ All Courses');
   ov.appendChild(tabs);
+  // all-time records list for a bucket (every course + its record + holders)
+  const recsListHTML=(recs)=>DAILY_KEYS.map(k=>{ const c=DAILY_COURSES[k], rec=recs[k], isToday=(k===today);
+    return `<div class="lb ${isToday?'you':''}" style="grid-template-columns:1fr auto">
+      <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(dShort(c.v))}${isToday?' · <span style="color:var(--gold)">today</span>':''}</div><div class="small muted" style="font-size:10.5px">Par ${c.par} · ${esc(c.loc)}</div></span>
+      <span style="text-align:right">${rec?`<div class="sc" style="color:var(--gold);font-weight:800;white-space:nowrap">${dTot(rec.toPar, c.par)}</div><div class="small muted" style="font-size:10px">${esc(crHolders(rec))}</div>`:'<div class="small muted">unclaimed</div>'}</span></div>`; }).join('');
   if(tab==='streaks'){
     // ---- Active Streaks tab (guests included - they post + display as "Guest", 63_) ----
     if(!streakBoardCache) streakBoardLoad();
@@ -21923,11 +21926,14 @@ function overlayCourseRecords(screen){
       <p class="lede" style="margin:0 0 10px;font-size:12.5px">Longest active daily-play streaks, guests included. Play the Daily today to keep yours alive.</p></div>`));
     const stWrap=$(`<div></div>`); stWrap.innerHTML=emojifyIcons(streakHTML); ov.appendChild(stWrap);
     if(!sbSignedIn()) ov.appendChild($(`<p class="small muted center" style="margin:10px 0 0">Your streak posts as "Guest". Sign in to put your name on it.</p>`));
+  } else if(tab==='all'){
+    // ---- ALL COURSES tab: every course + its all-time record (owner) ----
+    const online=!!(crCache&&crCache.ok);
+    ov.appendChild($(`<div><h2 style="margin:12px 0 8px">All courses${online?'':' <span class="small muted" style="font-weight:400">(local)</span>'}</h2>
+      <p class="lede" style="margin:0 0 10px;font-size:12.5px">Every course in the rotation and its all-time record. Beat one to put your name on it.</p></div>`));
+    const recWrap=$(`<div class="board"></div>`); recWrap.innerHTML=emojifyIcons(recsListHTML(courseRecords())); ov.appendChild(recWrap);
   } else {
   const boardCache = tab==='legend' ? dbCacheLegend : dbCache;
-  const recs = tab==='legend' ? courseRecordsLegend() : courseRecords();   // local store, merged with global by crLoad
-  const crc = tab==='legend' ? crCacheLegend : crCache;
-  const online=!!(crc&&crc.ok);
   // today's global board
   let boardHTML='';
   if(sb){
@@ -21937,8 +21943,8 @@ function overlayCourseRecords(screen){
       let podHTML='';
       if(boardCache.rows.length>=3){ const rws=boardCache.rows, pod=[rws[1],rws[0],rws[2]], cls=['p2','p1','p3'], med=['🥈','🥇','🥉'];
         podHTML='<div class="lbpodium">'+pod.map((r,di)=>`<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML((sbUser&&r.user_id===sbUser.id)?(S.look||DEFLOOK):(r.look||DEFLOOK), di===1?74:56)}</div><div class="nm">${esc(r.display_name)}</div><div class="vl">${dTot(r.to_par,(DAILY_COURSES[today]||{}).par)}</div><div class="rk">OVR ${r.ovr}</div></div>`).join('')+'</div>'; }
-      // owner: the profile picture left of the name + the archetype right of the overall (skills via 66_)
-      boardHTML=podHTML+`<div class="board">`+boardCache.rows.slice(podHTML?3:0,20).map(r=>{
+      // owner: EVERY posted entry shows (no display cap); avatar left of the name, archetype right of the OVR
+      boardHTML=podHTML+`<div class="board">`+boardCache.rows.slice(podHTML?3:0).map(r=>{
         const you=(sbUser&&r.user_id===sbUser.id);
         const fullSk=(r.skills && CATS.every(c=>typeof r.skills[c.k]==='number'));
         const arch=fullSk?archetype(r.skills):null;
@@ -21950,18 +21956,19 @@ function overlayCourseRecords(screen){
     } else if(boardCache.ok){ boardHTML=`<div class="small muted center" style="padding:14px 8px">${tab==='legend'?'No legend rounds posted yet today.':'No rounds posted yet today, be the first.'}</div>`; }
     else { boardHTML='<div class="small muted center" style="padding:10px 8px">Today’s online board is unavailable right now.</div>'; }
   } else { boardHTML='<div class="small muted center" style="padding:10px 8px">Sign in on RunThe.GG to see the global daily board.</div>'; }
-  // all-time course records
-  const rows=DAILY_KEYS.map(k=>{ const c=DAILY_COURSES[k], rec=recs[k], isToday=(k===today);
-    return `<div class="lb ${isToday?'you':''}" style="grid-template-columns:1fr auto">
-      <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(dShort(c.v))}${isToday?' · <span style="color:var(--gold)">today</span>':''}</div><div class="small muted" style="font-size:10.5px">Par ${c.par} · ${esc(c.loc)}</div></span>
-      <span style="text-align:right">${rec?`<div class="sc" style="color:var(--gold);font-weight:800;white-space:nowrap">${dTot(rec.toPar, c.par)}</div><div class="small muted" style="font-size:10px">${esc(crHolders(rec))}</div>`:'<div class="small muted">unclaimed</div>'}</span></div>`; }).join('');
   if(tab==='legend') ov.appendChild($(`<p class="small muted center" style="margin:8px 0 0">The Career Golfers board, free rounds played as your created career (Legend) golfers, kept separate from everyday drafted golfers.</p>`));
   ov.appendChild($(`<div><h2 style="margin:12px 0 8px">Today · ${esc(dShort(DAILY_COURSES[today].v))}</h2>
     <p class="lede" style="margin:0 0 8px;font-size:12.5px">${tab==='legend'?'The global leaderboard for legend-token rounds at today’s course.':'The global leaderboard for today’s course. Lowest round wins the day.'}</p></div>`));
   const boardWrap=$(`<div></div>`); boardWrap.innerHTML=emojifyIcons(boardHTML); ov.appendChild(boardWrap);
-  ov.appendChild($(`<div><h2 style="margin:16px 0 8px">All-time ${tab==='legend'?'legend ':''}course records${online?'':' <span class="small muted" style="font-weight:400">(local)</span>'}</h2>
-    <p class="lede" style="margin:0 0 10px;font-size:12.5px">The lowest round ever posted at each course. Beat one to put your name on it.</p></div>`));
-  const recWrap=$(`<div class="board"></div>`); recWrap.innerHTML=emojifyIcons(rows); ov.appendChild(recWrap);
+  if(tab==='legend'){
+    // the legend tier keeps its own all-time records here (the ALL COURSES tab holds the human records)
+    const online=!!(crCacheLegend&&crCacheLegend.ok);
+    ov.appendChild($(`<div><h2 style="margin:16px 0 8px">All-time legend course records${online?'':' <span class="small muted" style="font-weight:400">(local)</span>'}</h2>
+      <p class="lede" style="margin:0 0 10px;font-size:12.5px">The lowest legend round ever posted at each course.</p></div>`));
+    const recWrap=$(`<div class="board"></div>`); recWrap.innerHTML=emojifyIcons(recsListHTML(courseRecordsLegend())); ov.appendChild(recWrap);
+  } else {
+    ov.appendChild($(`<p class="small muted center" style="margin:14px 0 0">Looking for every course's record? See the <b style="color:var(--gold)">⛳ All Courses</b> tab above.</p>`));
+  }
   }
   ov.appendChild($(`<div style="height:12px"></div>`));
   ov.appendChild($(`<button class="btn red">Close</button>`));
@@ -22842,7 +22849,7 @@ async function lbDailyLoad(day){
   if(lbDailyCache[day] && lbDailyCache[day].loading) return;
   if(!sb){ lbDailyCache[day]={rows:[],ok:false}; render(); return; }
   lbDailyCache[day]={loading:true};
-  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:100});
+  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:200});
     lbDailyCache[day]={rows:(data||[]),ok:!error};
   }catch(e){ lbDailyCache[day]={rows:[],ok:false}; }
   render();
@@ -22853,7 +22860,7 @@ async function lbWeekLoad(from,to){
   if(lbWeekCache[k] && lbWeekCache[k].loading) return;
   if(!sb){ lbWeekCache[k]={rows:[],ok:false}; render(); return; }
   lbWeekCache[k]={loading:true};
-  try{ const {data,error}=await sb.rpc('runtour_daily_week_board',{p_from:from,p_to:to,p_limit:100});
+  try{ const {data,error}=await sb.rpc('runtour_daily_week_board',{p_from:from,p_to:to,p_limit:200});
     lbWeekCache[k]={rows:(data||[]),ok:!error};
   }catch(e){ lbWeekCache[k]={rows:[],ok:false}; }
   render();
@@ -23035,14 +23042,14 @@ async function crLoadLegend(){
 }
 async function dbLoad(day){
   if(!sb){ dbCache={day,rows:[],ok:false}; render(); return; }
-  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:50});
+  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:200});
     dbCache={day,rows:(data||[]),ok:!error};
   }catch(e){ dbCache={day,rows:[],ok:false}; }
   render();
 }
 async function dbLoadLegend(day){
   if(!sb){ dbCacheLegend={day,rows:[],ok:false}; render(); return; }
-  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:50,p_legend:true});
+  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:200,p_legend:true});
     dbCacheLegend={day,rows:(data||[]),ok:!error};
   }catch(e){ dbCacheLegend={day,rows:[],ok:false}; }
   render();
@@ -23059,7 +23066,7 @@ async function crLoadSpot(){
 }
 async function dbLoadSpot(day){
   if(!sb){ dbCacheSpot={day,rows:[],ok:false}; render(); return; }
-  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:50,p_spotlight:true});
+  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:200,p_spotlight:true});
     dbCacheSpot={day,rows:(data||[]),ok:!error};
   }catch(e){ dbCacheSpot={day,rows:[],ok:false}; }
   render();
