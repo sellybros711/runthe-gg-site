@@ -13411,6 +13411,23 @@ allows Google Fonts, or self-host Anton.*
   practice round all still green with 0 page errors; screenshots confirm the depth layers, per-background
   hole shapes, the goats, and the golfer-dominant card front. Deployed to /golf.
 
+- **PLAYER CARDS pass 3 — organic geometry (owner: "add much more gradual width change into the fairways.
+  And landscapes. Although there's depth and it looks great, a lot of the elements are very geometrical
+  still which looks unrealistic").** Rewrote `pxCardBgCanvas`'s drawing around two organic helpers:
+  `blob(cx,cy,rx,ry,irr,salt)` (a seeded 10-point perturbed ellipse smoothed with quadratic curves, the
+  same philosophy as the hole view's hvBlobD) and `ridge(baseY,amp,salt)` (a wavy hill fill).
+  • **Gradual fairways**: the fairway is now built from a sampled centerline (14 segments) with an EASED
+    width profile - `hw = (5.5 + 31*t^1.6) * (1 + 0.09*sin(...))` - so it starts as a narrow ribbon at the
+    green and widens smoothly + organically toward the viewer, with each edge wandering independently
+    (no more straight-sided wedge). A lighter center ribbon follows the same curve.
+  • **De-geometried landscape**: greens, green highlights, bunkers, clouds, dunes and oak canopies are all
+    irregular blobs; deciduous trees are clustered multi-arc canopies; pines and mountain peaks get
+    jittered asymmetric silhouettes; hills are wavy ridges instead of ellipses; the rough's top edge and
+    the sea line undulate; the mow stripes are curved perspective arcs instead of straight bands.
+  Verified in Playwright: 16 distinct backdrops render, the full card/board/closet/share suite + a
+  complete practice round all still green with 0 page errors; the contact sheet confirms gradual organic
+  fairways and natural-reading terrain on every backdrop. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
