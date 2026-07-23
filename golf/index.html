@@ -3430,7 +3430,10 @@ function maybeChallengesPopup(){
 // since; restoring it displayed the OLD outfit after a refresh, and the next saveLook()/saveCareer() then
 // persisted the old outfit back over the new one (the "my outfit keeps resetting" bug). The snapshot is
 // kept in the save only as a fallback for a fresh device where bag_look doesn't exist yet.
-function profileLook(snap){ return Object.assign({},DEFLOOK,LS.get('bag_look', snap||{})); }
+// Retired single-type club items (the old free woods/irons/wedges/putters) fold into the Starter set.
+const CLUB_LEGACY={wood:1,iron:1,wedge:1,putter:1};
+function normClub(id){ return CLUB_LEGACY[id]?'driver':(id||'driver'); }
+function profileLook(snap){ const L=Object.assign({},DEFLOOK,LS.get('bag_look', snap||{})); L.club=normClub(L.club); return L; }
 function profileName(snap){ return LS.get('bag_name', snap||'') || snap || ''; }
 // Snap the LIVE identity back to the profile (used when leaving a Legend round, whose token look/name
 // replaced S.look/S.name for the duration of that round).
@@ -5318,7 +5321,7 @@ function caddieFeePct(){ const cad=equippedCaddie(); return (cad && cad.power.fe
 let S={};
 function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);_radarPrev=null;S={screen:'title',mode:'easy',revealed:new Set(),drawRng:Math.random,reSpins:2,
   slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get('bag_name',''),
-  look:Object.assign({},DEFLOOK,LS.get('bag_look',{})),year:1,career:null,
+  look:(function(){ const L=Object.assign({},DEFLOOK,LS.get('bag_look',{})); L.club=normClub(L.club); return L; })(),year:1,career:null,
   schedule:[],evtIndex:0,season:null,curEvt:null,fieldRoster:null,overlay:null,seasonPaused:false,recorded:false,recapEvent:null,
   autoSim:LS.get('bag_autosim',true),simRate:LS.get('bag_speed',1),daily:false,dailySeed:null,dailyStored:false};}
 reset();
@@ -5750,7 +5753,7 @@ const FREE_COSMETICS={
   'ht:teal':1,'ht:navy':1,'ht:gold':1,'ht:white':1,'ht:purple':1,'ht:black':1,
   'sp:none':1,'hp:none':1,'pt:stone':1,'so:white':1,
   'hw:none':1,'hw:cap':1,'hw:visor':1,'ew:none':1,'fx:none':1,'tp:none':1,'lg:none':1,
-  'cl:driver':1,'cl:wood':1,'cl:iron':1,'cl:wedge':1,'cl:putter':1,'bl:none':1,'ct:none':1};   // CS356g: base hats + no-shades are free; bucket/flat/shades are shop unlocks · CS414: the 5 stock clubs + "no ball" + "no cleats" stay free
+  'cl:driver':1,'bl:none':1,'ct:none':1};   // CS356g: base hats + no-shades are free; bucket/flat/shades are shop unlocks · sets: the Starter set + "no ball" + "no cleats" stay free
 const COS_CATS=[ {k:'shirt',pk:'sh',lookKey:'polo',name:'Shirt color'}, {k:'pat',pk:'sp',lookKey:'shirtPat',name:'Shirt pattern'},
   {k:'hat',pk:'ht',lookKey:'hat',name:'Hat color'}, {k:'pants',pk:'pt',lookKey:'pants',name:'Trousers'}, {k:'shoes',pk:'so',lookKey:'shoes',name:'Shoe color'},
   {k:'hw',pk:'hw',lookKey:'hatStyle',name:'Headwear'}, {k:'ew',pk:'ew',lookKey:'eyewear',name:'Eyewear'}, {k:'fx',pk:'fx',lookKey:'fx',name:'Effect'},
@@ -5848,7 +5851,7 @@ const COS_BOOST={
   'sp:pinstripe':{app:1}, 'sp:polka':{clu:1}, 'sp:gingham':{scr:1}, 'sp:argyle':{app:1},
   'sp:tartan':{acc:1}, 'sp:houndstooth':{app:1}, 'sp:chevron':{dist:1}, 'sp:colorblock':{dist:1},
   // the equipped club gives its own boost — the best clubs have the best boosts, spread across every stat
-  'cl:driver':{dist:1}, 'cl:wood':{app:1}, 'cl:iron':{app:1}, 'cl:wedge':{sht:1}, 'cl:putter':{put:1},
+  'cl:driver':{dist:1},
   'cl:steeldriver':{dist:3}, 'cl:finderdriver':{acc:3}, 'cl:speeddriver':{dist:4,acc:-1}, 'cl:tourwood':{dist:2,app:1},
   'cl:forgediron':{app:3}, 'cl:bladeirons':{app:4,scr:-1}, 'cl:milledwedge':{sht:2,bnk:1}, 'cl:sandwedge':{bnk:3},
   'cl:lobwedge':{sht:3,scr:1,dist:-1}, 'cl:mallet':{put:3}, 'cl:scoringiron':{app:3,scr:1},
@@ -5927,7 +5930,7 @@ function bagSetActiveTier(club,tier){ if(!S.look) return; const m=S.look.bagTier
 // one club, one list: the boost comes from the SINGLE equipped club (look.club). Kept as bagBoostRows so
 // accBoost()'s cosmetic+club sum and the "CLUBS" breakdown group both keep working unchanged.
 function bagBoostRows(){ const rows=[]; if(!SHOP_ENABLED) return rows;
-  const id=(S.look&&S.look.club)||'driver'; const b=cosBoost('club',id);
+  const id=normClub((S.look&&S.look.club)||'driver'); const b=cosBoost('club',id);
   if(b){ const c=CLUBS_BY[id]; rows.push({club:id,name:(c&&c.name)||id,b}); } return rows; }
 function bagBoost(){ const o={}; bagBoostRows().forEach(r=>{ for(const k in r.b) o[k]=(o[k]||0)+r.b[k]; }); return o; }
 function bagBuy(club,tier){ const c=BAG_BY[club]; tier=+tier; if(!c||tier<1||tier>3) return {ok:false,msg:'Unknown club'};
@@ -7934,7 +7937,6 @@ function setupLookTiles(cat){
   else if(cat==='hand'){ const lefty=!!S.look.lefty; const L=(t)=>`<span class="sthumb" style="font:800 22px var(--pixel);color:var(--gold)">${t}</span>`;
     tiles.push(shopTile({thumb:L('R'),name:'Right handed',state:!lefty?'eq':'own',noFoot:true,data:`data-appset="hand" data-id="right"`}));
     tiles.push(shopTile({thumb:L('L'),name:'Left handed',state:lefty?'eq':'own',noFoot:true,data:`data-appset="hand" data-id="left"`})); }
-  else if(cat==='club'){ const cur=S.look.club||'driver'; CLUB_OPTS.forEach(([id,lab])=>tiles.push(shopTile({thumb:pxClubThumb(id),name:lab,state:cur===id?'eq':'own',noFoot:true,data:`data-appset="club" data-id="${id}"`}))); }
   return tiles;
 }
 // CS427: skin tone chooser — a continuous light→dark slider (replaces the discrete swatches). Live-updates
@@ -7954,7 +7956,6 @@ function skinSliderNode(){
   box.appendChild($(`<div class="small muted" style="margin-top:10px;line-height:1.4">Drag to pick your skin tone.</div>`));
   return box;
 }
-const CLUB_OPTS=[['driver','Starter Clubs'],['wood','Fairway Woods'],['iron','Everyday Irons'],['wedge','Scoring Wedges'],['putter','Classic Putters']];
 // CS370: a small thumbnail of a favorite-club option (the club overlay cropped to its bounding box)
 function pxClubThumb(id){ const map=PXG_CLUBS[id]||PXG_CLUBS.driver; const pal=PXG_CLUB_PAL[id]; const P={l:PXG_FIX.l,g:PXG_FIX.g,G:PXG_FIX.G,H:PXG_FIX.H,F:PXG_FIX.F,S:'#e8ebf0'};
   const ox=31,oy=39,W=14,H=18,px=5; const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
@@ -8398,24 +8399,20 @@ const CLUB_RECOLOR={steeldriver:'driver',finderdriver:'driver',speeddriver:'driv
 Object.keys(CLUB_RECOLOR).forEach(function(id){ PXG_CLUBS[id]=PXG_CLUBS[CLUB_RECOLOR[id]]; });
 Object.assign(PXG_CLUB_PAL, {steeldriver:{"H":"#c7cdd6","F":"#e8ebf0","S":"#f4f7fa","G":"#6f7884"},finderdriver:{"H":"#39b56b","F":"#bff0d0","S":"#5ad08a","G":"#14663a"},speeddriver:{"H":"#e14a33","F":"#3d434d","S":"#e14a33","G":"#14171c","l":"#9aa2ad"},tourwood:{"H":"#e6c34a","F":"#fff0b0","S":"#ffe98a","G":"#8a6a12"},forgediron:{"H":"#b7bdc6","F":"#dfe4ea","S":"#eef1f5","G":"#5a626c"},bladeirons:{"H":"#20242c","F":"#e14a33","S":"#3a3f48","G":"#12151a"},milledwedge:{"H":"#cfd3da","F":"#f0f3f7","S":"#e2e6ec","G":"#7a828c"},sandwedge:{"H":"#d9c58a","F":"#f4ecd0","S":"#e8dcb0","G":"#8a7638"},lobwedge:{"H":"#20242c","F":"#e14a33","S":"#3a3f48","G":"#12151a"},mallet:{"H":"#cfd3da","F":"#f0f3f7","S":"#e2e6ec","G":"#7a828c"},scoringiron:{"H":"#c7cdd6","F":"#e8ebf0","S":"#f4f7fa","G":"#6f7884"},onyxdriver:{"H":"#2a2d34","F":"#4a4d54","S":"#5a5d64","G":"#14161b"},emeraldirons:{"H":"#2fae6a","F":"#7de0a8","S":"#40c884","G":"#0e5a34"},frostdriver:{"H":"#a8e0ec","F":"#e6faff","S":"#c8eef8","G":"#4a7a8a"},rubywedge:{"H":"#e0455a","F":"#ff8a9a","S":"#ff5a70","G":"#7a1826"},sapphireputter:{"H":"#3a7bd6","F":"#8ab4f0","S":"#5a9bf0","G":"#182a5a"},voidputter:{"H":"#6a4a9a","F":"#a888d8","S":"#8060b8","G":"#2a1a4a"},rosewood:{"H":"#e8b0a0","F":"#ffd8c8","S":"#f0c4b4","G":"#8a5a4a"},scramblewedge:{"H":"#e6c34a","F":"#fff0b0","S":"#ffe98a","G":"#8a6a12"},golden:{"H":"#e6b93c","F":"#ffe98a","S":"#fff4c4","G":"#a87b10"},platinum:{"H":"#dfe4ea","F":"#ffffff","S":"#f4f7fa","G":"#9aa4b2"},diamond:{"H":"#bfeaf5","F":"#ffffff","S":"#e6fbff","G":"#6fa8c0"},glizzy:{"D":"#c05a2e","E":"#8f3d1c","B":"#e8b060","C":"#b5803a","M":"#f0cc30"},poolnoodle:{"N":"#38cce6","n":"#1f93aa","W":"#c8f4fc","O":"#0e5462"}});
 const CLUBS=[
- {id:'driver',name:'Starter Clubs',rar:'common',kind:'free',b:{dist:1},hist:'Your first full set'},
- {id:'wood',name:'Fairway Woods',rar:'common',kind:'free',b:{app:1},hist:'Reliable off the deck'},
- {id:'iron',name:'Everyday Irons',rar:'common',kind:'free',b:{app:1},hist:'Your everyday scoring set'},
- {id:'wedge',name:'Scoring Wedges',rar:'common',kind:'free',b:{sht:1},hist:'Get it close'},
- {id:'putter',name:'Classic Putters',rar:'common',kind:'free',b:{put:1},hist:'Roll it true'},
+ {id:'driver',name:'Starter Clubs',rar:'common',kind:'free',b:{dist:1},hist:'Your first full matched set, free forever'},
  {id:'steeldriver',name:'Titanium Clubs',tag:'Titanium',rar:'rare',kind:'store',b:{dist:3},hist:'Aerospace-grade, driver to putter'},
  {id:'finderdriver',name:'Fairway Finder Clubs',rar:'rare',kind:'store',b:{acc:3},hist:'Draws it back to the short grass'},
  {id:'speeddriver',name:'Speed Clubs',tag:'Speed',rar:'epic',kind:'store',b:{dist:4,acc:-1},hist:'All the speed, less forgiveness'},
- {id:'tourwood',name:'Tour Woods',rar:'rare',kind:'store',b:{dist:2,app:1},hist:'A little pop, a lot of control'},
- {id:'forgediron',name:'Forged Irons',rar:'rare',kind:'store',b:{app:3},hist:'Buttery forged blades'},
- {id:'bladeirons',name:'Blade Irons',rar:'epic',kind:'store',b:{app:4,scr:-1},hist:'Pure ball-striking, zero mercy'},
- {id:'milledwedge',name:'Milled Wedges',rar:'rare',kind:'store',b:{sht:2,bnk:1},hist:'CNC-milled grooves that bite'},
- {id:'sandwedge',name:'Sand Wedges',rar:'rare',kind:'store',b:{bnk:3},hist:'Splashes out of anything'},
- {id:'lobwedge',name:'Lob Wedges',rar:'epic',kind:'store',b:{sht:3,scr:1,dist:-1},hist:'High, soft, stops on a dime'},
- {id:'mallet',name:'Mallet Putters',rar:'rare',kind:'store',b:{put:3},hist:'Forgiving high-MOI mallets'},
- {id:'scoringiron',name:'Scoring Irons',rar:'epic',kind:'store',b:{app:3,scr:1},hist:'Flag-hunting from the fairway'},
+ {id:'tourwood',name:'Tour Clubs',tag:'Tour',rar:'rare',kind:'store',b:{dist:2,app:1},hist:'The full tour-issue set, pop and control'},
+ {id:'forgediron',name:'Forged Clubs',tag:'Forged',rar:'rare',kind:'store',b:{app:3},hist:'A buttery forged set, driver to putter'},
+ {id:'bladeirons',name:'Blade Clubs',tag:'Blade',rar:'epic',kind:'store',b:{app:4,scr:-1},hist:'Pure ball-striking, zero mercy'},
+ {id:'milledwedge',name:'Milled Clubs',tag:'Milled',rar:'rare',kind:'store',b:{sht:2,bnk:1},hist:'A CNC-milled set, grooves that bite'},
+ {id:'sandwedge',name:'Sandstorm Clubs',tag:'Sandstorm',rar:'rare',kind:'store',b:{bnk:3},hist:'Splashes out of anything'},
+ {id:'lobwedge',name:'Soft Touch Clubs',tag:'Soft Touch',rar:'epic',kind:'store',b:{sht:3,scr:1,dist:-1},hist:'High, soft, stops on a dime'},
+ {id:'mallet',name:'Pure Roll Clubs',tag:'Pure Roll',rar:'rare',kind:'store',b:{put:3},hist:'A forgiving high-MOI set, pure roll'},
+ {id:'scoringiron',name:'Scoring Clubs',tag:'Scoring',rar:'epic',kind:'store',b:{app:3,scr:1},hist:'Flag-hunting from everywhere'},
  {id:'persimmon',name:'Wooden Clubs',tag:'Wooden',rar:'epic',kind:'pack',b:{dist:3,acc:1},hist:'Hand-turned persimmon & hickory, the classic set'},
- {id:'blade',name:'Heritage Blades',rar:'epic',kind:'pack',b:{put:3},hist:'Milled carbon-steel classics'},
+ {id:'blade',name:'Heritage Clubs',tag:'Heritage',rar:'epic',kind:'pack',b:{put:3},hist:'Milled carbon-steel classics'},
  {id:'excalibur',name:'Excalibur Clubs',tag:'Excalibur',rar:'legendary',kind:'pack',b:{dist:5,acc:1},hist:'The sword in the fairway'},
  {id:'wand',name:'Wizard Clubs',tag:'Wizard',rar:'legendary',kind:'pack',b:{put:5},hist:'Wands and staffs, sink everything like magic'},
  {id:'hockey',name:'Hockey Clubs',tag:'Hockey',rar:'legendary',kind:'pack',b:{put:4,scr:1},hist:'A bag full of hockey sticks, trouble all week'},
@@ -9455,7 +9452,7 @@ function pxGolferCanvas(look,opts){
   const hatStyle=(look.hatStyle==='visor')?'visor':((look.hatStyle&&PXG_HATS[look.hatStyle])?look.hatStyle:'cap');
   const pat=(look.shirtPat&&PXPAT_BY[look.shirtPat])?look.shirtPat:'';
   const shades=(look.eyewear&&PXG_EYEWEAR[look.eyewear])?look.eyewear:'';
-  const club=(look.club&&PXG_CLUBS[look.club])?look.club:'driver';
+  const club=(function(){ const c=normClub(look.club); return PXG_CLUBS[c]?c:'driver'; })();
   const top=(look.top&&PXG_TOPS[look.top])?look.top:'';    // CS411: heritage outerwear (cardigan/blazer)
   const legw=(look.leg&&PXG_LEGS[look.leg])?look.leg:'';   // CS411: heritage legwear (plus-fours)
   const ball=(look.ball&&PXG_BALL[look.ball])?look.ball:'';   // CS414: teed ball beside the golfer
@@ -21501,7 +21498,7 @@ function overlayShop(screen){
     const grp=(txt,col)=>`<div style="grid-column:1/-1;margin:8px 0 -2px;font:800 12px/1 var(--body);letter-spacing:.03em;color:${col}">${txt}</div>`;
     const byKind={free:[],store:[],pack:[]};
     cc.forEach(o=>{ const k=(CLUBS_BY[o.id]&&CLUBS_BY[o.id].kind)||'pack'; (byKind[k]||byKind.pack).push(o); });
-    if(byKind.free.length){ tiles.push(grp('Your starter clubs','#9fb0a6')); byKind.free.forEach(o=>tiles.push(cosTileHTML('club',o))); }
+    if(byKind.free.length){ tiles.push(grp('Your starter set','#9fb0a6')); byKind.free.forEach(o=>tiles.push(cosTileHTML('club',o))); }
     if(byKind.store.length){ tiles.push(grp('Buy in the shop','var(--gold)')); byKind.store.forEach(o=>tiles.push(cosTileHTML('club',o))); }
     if(byKind.pack.length){ tiles.push(grp('Pull from packs','#b69bff')); byKind.pack.forEach(o=>tiles.push(cosTileHTML('club',o))); }
   }
