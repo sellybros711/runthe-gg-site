@@ -15971,6 +15971,10 @@ function legendTokens(){ return LS.get(acctKey('bag_legend_tokens'),[]); }
 // get each golfer once. `legendTokensUnused()` = the still-playable tokens; `hasFreeLegends()` = you own
 // at least one unspent Legend today.
 function legendTokensUnused(){ return legendTokens().filter(t=>!t.used); }
+// The date this golfer was created (the token's mint stamp). Tokens minted before the stamp existed
+// have no recoverable date, so they render without one.
+function legendMintDate(t){ try{ if(!t||!t.minted) return '';
+  return new Date(t.minted).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return ''; } }
 function hasFreeLegends(){ return sbSignedIn() && legendTokensUnused().length>0; }
 // Trophy Room strip, shows unused tokens (spend them from the Daily Challenge preview screen) and,
 // once at least one has been earned, a small lifetime tally. Renders nothing for a player who's never
@@ -15979,7 +15983,7 @@ function legendTokensHTML(){
   const all=legendTokens(); if(!all.length) return '';
   const ready=all.filter(t=>!t.used);
   const rows=all.slice(0,4).map(t=>`<div class="lb" style="grid-template-columns:1fr auto${t.used?';opacity:.5':''}">
-    <span class="pl" style="min-width:0"><div style="font-weight:700">${esc(t.name)} · OVR ${t.ovr}</div><div class="small muted" style="font-size:10.5px">${esc(t.reason)}</div></span>
+    <span class="pl" style="min-width:0"><div style="font-weight:700">${esc(t.name)} · OVR ${t.ovr}</div><div class="small muted" style="font-size:10.5px">${esc(t.reason)}${legendMintDate(t)?` · Created ${esc(legendMintDate(t))}`:''}</div></span>
     <span class="small" style="color:${t.used?'var(--muted)':'#35d6a0'};font-weight:800;align-self:center">${t.used?'Used':'1 free play'}</span></div>`).join('');
   return `<div style="margin-bottom:14px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="display:flex;align-items:center">${ic('legendtoken',{size:'18px'})}</span><b style="color:var(--legend);font-size:13.5px">Your Legend Tokens</b><span class="small muted">${ready.length} ready · ${all.length} earned</span></div>
@@ -15997,6 +16001,7 @@ function mintLegendToken(){
     ovr: S.career.peakOvr, skills: S.career.peakSkills, look: S.career.peakLook,
     peakYear: S.career.peakYear, years: S.career.seasons.length,
     reason: legendQualifyReason(S.career) || 'Retired legend', used: false,
+    minted: Date.now(),   // when this golfer was created (retired into a token), shown next to the legend
   };
   const tokens=legendTokens(); tokens.push(token); LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush();
   track('legend_token_earned',{ovr:token.ovr,reason:token.reason,years:token.years});
@@ -16051,6 +16056,7 @@ function mintCircuitLegendToken(){
     look: (src&&src.peakLook)||(S.look?JSON.parse(JSON.stringify(S.look)):null),
     peakYear: (src&&src.peakYear)||S.year||1, years: (S.circuitCareer&&S.circuitCareer.seasons)?S.circuitCareer.seasons.length:0,
     reason: 'Completed the Legend Circuit', used: false,
+    minted: Date.now(),   // when this golfer was created (retired into a token), shown next to the legend
   };
   const tokens=legendTokens(); tokens.push(token); LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush();
   track('legend_token_earned',{ovr:token.ovr,reason:token.reason,years:token.years,circuit:true});
@@ -18626,7 +18632,8 @@ function legendPlaySection(){
   wrap.appendChild($(`<div class="small muted" style="margin-bottom:7px">Play today's course as one of your retired career golfers (their peak build). One free play each, no daily attempt used.</div>`));
   toks.forEach(tok=>{
     const row=$(`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(182,155,255,.18)"></div>`);
-    row.appendChild($(`<div style="min-width:0"><div style="font-weight:800;color:var(--oncard)">${esc(tok.name)} · OVR ${tok.ovr}</div><div class="small muted" style="margin-top:1px">${esc(tok.reason)} · ${tok.years}-year career</div></div>`));
+    const md=legendMintDate(tok);
+    row.appendChild($(`<div style="min-width:0"><div style="font-weight:800;color:var(--oncard)">${esc(tok.name)} · OVR ${tok.ovr}</div><div class="small muted" style="margin-top:1px">${esc(tok.reason)} · ${tok.years}-year career${md?` · Created ${esc(md)}`:''}</div></div>`));
     const use=$(`<button class="btn legend" style="width:auto;flex:0 0 auto;padding:9px 14px;font-size:12.5px">Use token ▸</button>`);
     use.onclick=()=>{ track('legend_token_used',{ovr:tok.ovr,free:true}); beginDailyRoundWithLegend(tok); }; row.appendChild(use);
     wrap.appendChild(row);
