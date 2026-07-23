@@ -12761,3 +12761,36 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   button + tile marker work); the compact summary renders chips + a closed-by-default expander whose open
   state persists. Full regression (title→setup→draft→build→round→result + shop sections) + the pack-only
   economy suite both green, 0 page errors. Deployed to /golf (ac2ecea).
+
+- **ONE CLUB, ONE LIST — unified 31-club catalog, single equipped club, bag retired (owner: two-screenshot
+  batch, ask #3 + #5).** The owner found the club menu confusing (5-slot bag × performance tiers × separate
+  cosmetic looks) and asked: "simplify... one club, one list, special clubs take the place of the normal
+  clubs when equipped... a ton of clubs from packs... store clubs still buyable/equippable... combine
+  everything and add more" + "re-analyze all item boosts and redistribute so the best items have the best
+  boosts, trickling down, balanced across all stats so players don't all use the same items." Collapsed the
+  whole dual system into ONE list where each club is a single item that (a) your golfer holds and (b) gives
+  its boost — you equip ONE club at a time.
+  - **New `CLUBS` catalog (31):** 5 free stock (driver/wood/iron/wedge/putter, +1 to their fitting stat),
+    11 buyable STORE clubs (rare/epic, e.g. Tour Steel Driver dist+3, Forged Irons app+3, Sand Wedge bnk+3,
+    Mallet Putter put+3), 15 PACK-exclusive clubs (epic/legendary, e.g. Excalibur dist+5/acc+1, Magic Wand
+    put+5, Emerald Irons app+5, Scrambler Wedge scr+4). Boosts are spread across ALL 8 stats with the best
+    clubs the strongest per stat (dist Excalibur+5 · acc Finder+3 · app Emerald+5 · sht Lob+3 · scr
+    Scrambler+4 · bnk Sand+3 · put Wand+5 · clu Candy Cane+1) so builds diversify. 19 recolor variants reuse
+    a base sprite tinted by a per-id `PXG_CLUB_PAL` finish; the 12 existing sprites (persimmon/blade/
+    excalibur/wand/hockey/scepter/candycane/…) are kept.
+  - **Single equipped club:** `look.club` is THE one equipped club (held + boosts). `cosEquip('club',id)` →
+    `S.look.club=id`; `cosIsEquipped` → `S.look.club===id`. The equipped club's boost flows via
+    `bagBoostRows()` (repurposed to read the one club) → `accBoost()`, career-only (Daily/ranked stay
+    neutral) — verified driver +1, Excalibur +5 dist/+1 acc in career, 0 boost in daily.
+  - **Store buyable, pack exclusive:** `cosmeticPriceBase('club')` prices store+pack clubs by rarity via the
+    selector→packRarityOf→RARITY_PRICE ladder; `cosPackOnly('club')` is true only for `kind:'pack'` clubs, so
+    store clubs are coin-buyable + equippable and pack clubs come from packs/shards. Every non-free club flows
+    into the pack pool automatically (seasonal ones like the Candy Cane Putter window-locked out of season).
+  - **Retired the golf-bag tier system:** `packPool` no longer pushes bag tiers; My Items drops the bag push;
+    a one-time `bagRef` refund (mirroring `hybRef`, carried in `mergeCoins`) refunds any owned `bag:*` tiers
+    as bonus coins. Rebuilt the closet Clubs menu (`bagMenuNode`) as ONE grid of owned clubs (tap to equip)
+    and the store Clubs section as a unified list grouped Starter / Buy in the shop / Pull from packs.
+  - Verified in Playwright: 31 clubs, all sprites render, equip + career boost + daily-neutral, pack pool
+    clean (0 bag-kind), store/closet/My-Items/create/title all render, pack cards show club boosts, 0 page
+    errors. Committed to the feature branch; NOT yet deployed to /golf (awaiting owner go-ahead per the
+    deploy guardrail). Tunable: the `CLUBS` catalog + `CLUB_SEL` selector; boosts in `COS_BOOST` (`cl:` keys).
