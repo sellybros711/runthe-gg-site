@@ -260,29 +260,19 @@
   function buildCallSheet(schemeKey) {
     const scheme = PLAYBOOK.schemes[schemeKey];
     const P = scheme.plays;
-    // Every scheme carries 12 real plays; surface a deep, varied call sheet (not just
-    // one per bucket) so the player has genuine choices. Sorted best-EPA first within
-    // each archetype, so the strongest option leads and the extras add variety.
-    const byArch = a => P.filter(p => p.archetype === a).sort((x,y) => y.epa - x.epa);
-    const runs = byArch('RUN'), quicks = byArch('QUICK'), screens = byArch('SCREEN'),
-          mids = byArch('INTERMEDIATE'), deeps = byArch('DEEP'), pas = byArch('PLAY_ACTION');
-    const sneak = pickBest(P, p => p.archetype === 'QB_SNEAK') || SNEAK_PLAY;
+    // Surface the FULL 12-play scheme as the call sheet — every play is a real,
+    // tappable option. Group by play type (run → short → intermediate → shots) and
+    // lead each group with its best-EPA option so the sheet reads left-to-right.
+    const ORDER = { RUN:0, QB_SNEAK:1, QUICK:2, SCREEN:3, INTERMEDIATE:4, PLAY_ACTION:5, DEEP:6 };
     // Usage caps: a premium call loses its edge if you lean on it every snap —
-    // defenses adjust, and you can't run play-action without ever running. Caps
-    // are per drive; RUN and the quick game are unlimited (you can always do the
-    // ordinary thing). This is realism AND the surgical anti-spam fix the
-    // handoff wanted instead of leaning on the global difficulty knob.
-    const tiles = [
-      { id: 'RUN',    emoji: '🏃', play: runs[0],                 cap: Infinity },
-      { id: 'RUN2',   emoji: '🏉', play: runs[1],                 cap: Infinity },
-      { id: 'SHORT',  emoji: '🎯', play: quicks[0],               cap: Infinity },
-      { id: 'SHORT2', emoji: '🎯', play: quicks[1],               cap: Infinity },
-      { id: 'SCREEN', emoji: '🧱', play: screens[0] || quicks[2], cap: 3 },
-      { id: 'MID',    emoji: '🎣', play: mids[0],                 cap: Infinity },
-      { id: 'DEEP',   emoji: '🏈', play: deeps[0] || mids[1],     cap: 3 },
-      { id: 'PA',     emoji: '🎭', play: pas[0] || mids[2],       cap: 3 },
-      { id: 'SNEAK',  emoji: '💪', play: sneak,                   cap: 2 },
-    ].filter(t => t.play);
+    // defenses adjust, and you can't run play-action without ever running. Caps are
+    // per drive and per TILE; RUN / quick / intermediate are unlimited (you can always
+    // do the ordinary thing). Anti-spam still bites across same-type plays via the
+    // tendency penalty, so multiple deep tiles don't become a deep-ball loophole.
+    const CAP = { DEEP:3, PLAY_ACTION:3, SCREEN:3, QB_SNEAK:2 };
+    const tiles = P.slice()
+      .sort((a,b) => ((ORDER[a.archetype]!=null?ORDER[a.archetype]:9) - (ORDER[b.archetype]!=null?ORDER[b.archetype]:9)) || b.epa - a.epa)
+      .map((play, i) => ({ id: 'p'+i, play, cap: CAP[play.archetype] || Infinity }));
     // Title each tile by the play's REAL archetype so the label never lies about
     // what it does (e.g. a scheme with no true deep ball shows MID PASS, not DEEP).
     const TITLE = { RUN:'RUN', QB_SNEAK:'QB SNEAK', QUICK:'QUICK PASS', SCREEN:'SCREEN',
