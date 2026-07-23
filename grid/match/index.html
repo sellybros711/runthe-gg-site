@@ -185,10 +185,10 @@
     display:flex; align-items:center; justify-content:center; padding:3px; text-align:center; position:relative; overflow:hidden; transition:border-color .15s, background .15s;}
   .slot:not(.filled)::after{content:"+"; color:var(--line2); font-size:20px; font-weight:800; line-height:1;}
   .slot.filled{border-style:solid; border-color:transparent; background:transparent; padding:0;}
-  .checkWrap{flex:0 0 auto; display:flex; justify-content:flex-end;}
-  .checkbtn{appearance:none; border:0; background:var(--teal); color:#071426; font-weight:900; font-size:13px;
-    letter-spacing:.03em; border-radius:var(--r-sm); padding:10px 18px; min-height:44px; box-shadow:var(--shadow);
-    display:inline-flex; align-items:center; gap:7px; transition:filter .12s, transform .08s;}
+  .lane-head .checkbtn{flex-basis:100%;}
+  .checkbtn{appearance:none; border:0; background:var(--teal); color:#071426; font-weight:900; font-size:12.5px;
+    letter-spacing:.03em; border-radius:var(--r-sm); padding:9px 12px; min-height:40px; box-shadow:var(--shadow);
+    display:inline-flex; align-items:center; justify-content:center; gap:7px; transition:filter .12s, transform .08s;}
   .checkbtn:hover{filter:brightness(1.07);}
   .checkbtn:active{transform:translateY(1px);}
   .checkbtn:disabled{background:var(--card2); color:var(--mut); cursor:default; filter:none;}
@@ -336,7 +336,6 @@
     .mstatus .mprog b{color:var(--tealT);}
     .lane{display:block;}
     .lane-head{margin-bottom:8px;}
-    .checkWrap{margin-top:10px;}
     .lane-note{margin-top:9px;}
     .slots{grid-template-columns:repeat(2,1fr);}
     .slot{min-height:48px;}
@@ -696,10 +695,9 @@
         }
         lane.appendChild(slots);
 
-        // explicit submit: a full, unlocked group shows a Check button
+        // explicit submit: a full, unlocked group grows a Check button right
+        // in its header block (where the group name sits)
         if (!isLocked && laneFillCount(i) === GROUP && !done) {
-          var wrap = document.createElement('div');
-          wrap.className = 'checkWrap';
           var cb = document.createElement('button');
           cb.className = 'checkbtn';
           cb.type = 'button';
@@ -709,8 +707,7 @@
           cb.textContent = repeat ? 'Change a name to re-check' : 'Check group';
           cb.setAttribute('aria-label', 'Check group ' + (i + 1));
           (function (idx) { cb.addEventListener('click', function (e) { e.stopPropagation(); validate(idx); }); })(i);
-          wrap.appendChild(cb);
-          lane.appendChild(wrap);
+          head.appendChild(cb);
         }
 
         if (!isLocked) {
