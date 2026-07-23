@@ -251,6 +251,20 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .tile .keytag{position:absolute; bottom:4px; left:0; right:0; font-family:var(--pix); font-size:6px; color:var(--red); letter-spacing:.5px;}
 
 /* ---------- call tiles ---------- */
+.calls-hint{display:flex; align-items:center; justify-content:space-between; padding:2px 4px 6px;
+  font-family:var(--pix); font-size:8px; letter-spacing:.5px; color:var(--cream-dim);}
+.calls-hint .ch-more{color:var(--gold-bright);}
+.calls-wrap{position:relative;}
+.calls-wrap::before,.calls-wrap::after{content:''; position:absolute; top:0; bottom:6px; width:30px; z-index:3; pointer-events:none; transition:opacity .2s;}
+.calls-wrap::before{left:0; background:linear-gradient(90deg, var(--bg), transparent);}
+.calls-wrap::after{right:0; background:linear-gradient(270deg, var(--bg), transparent);}
+.calls-wrap.at-start::before{opacity:0;} .calls-wrap.at-end::after{opacity:0;}
+.calls-arrow{position:absolute; top:calc(50% - 8px); transform:translateY(-50%); z-index:4; width:28px; height:56px;
+  display:flex; align-items:center; justify-content:center; font-family:var(--pix); font-size:20px; color:var(--gold-bright);
+  background:linear-gradient(90deg, rgba(10,20,32,.92), rgba(10,20,32,0)); border:0; border-radius:9px; padding:0;}
+.calls-arrow.right{right:0; background:linear-gradient(270deg, rgba(10,20,32,.92), rgba(10,20,32,0));}
+.calls-arrow.left{left:0;}
+.calls-wrap.at-start .calls-arrow.left, .calls-wrap.at-end .calls-arrow.right{opacity:0; pointer-events:none;}
 .calls{display:flex; gap:8px; margin-bottom:10px; overflow-x:auto; overflow-y:hidden; padding:2px 2px 6px;
   scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch;}
 .calls::-webkit-scrollbar{height:5px;}
@@ -674,7 +688,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     </button>
 
     <!-- CALL TILES -->
-    <div class="calls" id="calls"></div>
+    <div class="calls-hint"><span>YOUR PLAYBOOK</span><span class="ch-more" id="callsMore">◂ swipe · 12 plays ▸</span></div>
+    <div class="calls-wrap">
+      <button class="calls-arrow left" id="callsL" aria-label="Scroll left">‹</button>
+      <div class="calls" id="calls"></div>
+      <button class="calls-arrow right" id="callsR" aria-label="Scroll right">›</button>
+    </div>
 
     <!-- DRIVE LOG -->
     <div class="log-head">
@@ -1145,7 +1164,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     k.disabled = state.over || !state.fg.inRange;
     k.classList.toggle('ready', !state.over && state.fg.inRange && (state.down>=4 || state.toGoal<=state.distance));
     el('kickMeta').textContent = state.fg.inRange ? (state.fg.dist+' yd · '+state.fg.makePct+'%') : 'out of range';
+    const cm=el('callsMore'); if(cm) cm.textContent='◂ swipe · '+drive.callSheet.length+' plays ▸';
+    updateCallsScroll();
   }
+  function updateCallsScroll(){ const c=el('calls'), w=c&&c.closest('.calls-wrap'); if(!c||!w) return;
+    const atStart=c.scrollLeft<=4, atEnd=c.scrollLeft>=c.scrollWidth-c.clientWidth-4;
+    w.classList.toggle('at-start',atStart); w.classList.toggle('at-end',atEnd); }
 
   /* ---------- drive log ---------- */
   function ddLabel(row){ const g = row.distance>= (100-row.yardline) ? 'GOAL' : row.distance;
@@ -1227,6 +1251,23 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   function converge(list,x,y,ms,fan){ list.filter(Boolean).forEach((el,i)=>{ const off=(i-(list.length-1)/2)*(fan||2);
     step(el, x, Math.max(14,Math.min(86,y+off)), ms, 'ease-in'); }); }
   function shakeIfBig(play){ if(play.bucket==='EXPLOSIVE'||play.bucket==='DISASTER') shake(); }
+  // Broadcast camera: gently drift the tilted pitch so the ball-carrier stays framed while
+  // he runs (bounded to the pitch's oversize so an edge is never exposed), then settle back.
+  let _followRAF=0;
+  function follow(chip, ms){
+    const pitch=el('pitch'), field=el('field'); if(!pitch||!field||!chip) return;
+    cancelAnimationFrame(_followRAF); const start=performance.now(); let tx=0;
+    const frame=(now)=>{ const fr=field.getBoundingClientRect();
+      const maxPan=fr.width*0.10; const cr=chip.getBoundingClientRect();
+      const chipX=cr.left+cr.width/2-fr.left, want=fr.width*0.5;
+      tx += (want-chipX)*0.05; tx=Math.max(-maxPan,Math.min(maxPan,tx));
+      pitch.style.transform=`translateX(${tx.toFixed(1)}px) rotateX(20deg)`;
+      if(now-start<ms) _followRAF=requestAnimationFrame(frame); };
+    _followRAF=requestAnimationFrame(frame);
+  }
+  function unfollow(){ cancelAnimationFrame(_followRAF); const pitch=el('pitch');
+    if(pitch){ pitch.style.transition='transform .4s ease'; pitch.style.transform='rotateX(20deg)';
+      setTimeout(()=>{ if(pitch) pitch.style.transition=''; }, 420); } }
 
   async function playOut(before, after, play){
     clearFx();
@@ -1246,17 +1287,29 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     await sleep(180);
 
     if(isRun){
+      // Who carries it? QB keeps on sneaks, QB-runs, and reads/options; otherwise the RB.
+      const nm = play.play || '';
+      const qbKeep = play.archetype==='QB_SNEAK' || /\bQB\b/.test(nm) || /Read|Veer|Option|Keeper|Scramble/i.test(nm);
+      const isRead = /Read|Veer|Option/i.test(nm);
       const rb=F.rb, rp=pos(rb);
-      step(ball, rp.x, rp.y, 110); await sleep(110);        // handoff
-      ball.style.opacity='0';                                // tuck it away
-      drawRoute([[bx,52],[endX,50]]);                        // run lane
-      const midX=(bx+endX)/2;
-      step(rb, midX, 46, 300, 'ease-out');
-      converge(F.dl, midX+2, 46, 320, 3);                    // front seven pursues
+      if(isRead){
+        step(rb, qp.x-3, qp.y+1, 120); step(ball, qp.x, qp.y, 100); await sleep(150);  // mesh point
+        step(rb, bx+7, rp.y+2, 360, 'ease-out');                                        // RB rides the fake dive...
+        // ...QB reads it and KEEPS the ball.
+      } else if(!qbKeep){
+        step(ball, rp.x, rp.y, 110); await sleep(110);        // real handoff to the back
+      }
+      const carrier = qbKeep ? qb : rb;
+      ball.style.opacity='0';                                 // tuck it away
+      const cp=pos(carrier);
+      drawRoute([[cp.x,cp.y],[endX,50]]);                     // run lane
+      const midX=(cp.x+endX)/2;
+      step(carrier, midX, 47, 300, 'ease-out');
+      converge(F.dl, midX+2, 47, 320, 3);                     // front seven pursues
       await sleep(260);
-      step(rb, endX, 50, 300, 'ease-out');
+      step(carrier, endX, 50, 320, 'ease-out');
       const tacklers = nearest(F.dl.concat(F.db), endX, 50, play.bucket==='EXPLOSIVE'?1:3);
-      converge(tacklers, endX, 50, 300, 2);                  // gang tackle
+      converge(tacklers, endX, 50, 300, 2);                   // gang tackle
       await sleep(270);
       if(play.turnover){
         shake(); ball.style.opacity='1'; ball.classList.add('spin');
@@ -1264,7 +1317,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
         burst(play.turnover==='ABORTED_SNAP'?'BOTCHED':'FUMBLE', endX, 36, '#e0705c'); flash('rgba(224,112,92,.5)');
         await sleep(560);
       } else {
-        if(after.result!=='TOUCHDOWN'){ rb.classList.add('down'); tacklers.forEach(t=>t.classList.add('down')); }
+        if(after.result!=='TOUCHDOWN'){ carrier.classList.add('down'); tacklers.forEach(t=>t.classList.add('down')); }
         shakeIfBig(play); outcomeBurst(play, after, endX); await sleep(520);
       }
     } else {
@@ -1311,17 +1364,23 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
         await doThrow();
         ball.classList.add('spin'); step(ball, catchX, targetY, 430, 'ease-out'); await sleep(420);
         ball.classList.remove('spin'); ball.style.opacity='0';
-        const runY = targetY<50?44:56;
-        const runX = Math.max(endX, catchX);                                       // never run backwards
-        step(wr, runX, runY, 360, 'ease-out');                                     // catch & run
-        if(cover) step(cover, runX, runY, 380, 'ease-out');
-        const help = nearest(F.db.concat(F.dl), runX, 50, 1)[0]; if(help) step(help, runX, 50, 380);
-        await sleep(350);
-        if(after.result!=='TOUCHDOWN'){ wr.classList.add('down'); if(cover) cover.classList.add('down'); }
-        shakeIfBig(play); outcomeBurst(play, after, endX, runY); await sleep(520);
+        // CATCH & RUN — the receiver tucks it and keeps moving; the D pursues (yards after catch).
+        const runY = targetY<50 ? 47 : 53;
+        const runX = Math.max(endX, catchX+4);                                     // keep churning downfield
+        const yac = Math.max(340, Math.min(760, (runX-catchX)*26));                // farther = longer run
+        step(wr, runX, runY, yac, 'ease-out');
+        follow(wr, yac);                                                           // camera drifts with the runner
+        const chasers = nearest(F.db.concat(F.dl), catchX, targetY, 2);
+        chasers.forEach((d,i)=> step(d, runX-1, 50+(i?4:-4), yac+70, 'ease-out')); // defenders give chase
+        await sleep(yac*0.68);
+        const tacklers = nearest(F.db.concat(F.dl), runX, runY, after.result==='TOUCHDOWN'?0:2);
+        converge(tacklers, runX, runY, 240, 2);
+        await sleep(300);
+        if(after.result!=='TOUCHDOWN'){ wr.classList.add('down'); tacklers.forEach(t=>t.classList.add('down')); }
+        shakeIfBig(play); outcomeBurst(play, after, endX, runY); await sleep(460);
       }
     }
-    stopAll(); clearFx();
+    unfollow(); stopAll(); clearFx();
   }
   function outcomeBurst(play, after, xPct, yPct){
     const y = yPct==null?50:yPct;
@@ -1810,6 +1869,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     el('matchBack').onclick=showSplash;
     el('gearBtn').onclick=openMenu;
     el('howtoLink').onclick=showHowto;
+    const cc=el('calls'), cl=el('callsL'), cr=el('callsR');
+    if(cc){ cc.addEventListener('scroll', updateCallsScroll);
+      if(cl) cl.onclick=()=>cc.scrollBy({left:-cc.clientWidth*0.72, behavior:'smooth'});
+      if(cr) cr.onclick=()=>cc.scrollBy({left: cc.clientWidth*0.72, behavior:'smooth'}); }
     el('navLeaderboard').onclick=showLeaderboard;
     el('navStreak').onclick=showStats;
     el('navShare').onclick=()=>{ const rec=STORE.results[DATE]; if(rec) doShare(rec.card); else shareInvite(); };
