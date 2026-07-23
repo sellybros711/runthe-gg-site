@@ -18716,17 +18716,22 @@ function scrDailyPreview(){
   const recNum = rec?`<span class="mono mintgrad dtnum">${dTot(rec.toPar, c.par)}</span>`
     :`<span class="dtnum mintgrad" style="font-size:18px">${sbSignedIn()?'Unclaimed':'Sign in'}</span>`;
   const recSub = rec?`by ${esc(crHolders(rec))}`:(sbSignedIn()?'be the first':'to post a score');
-  add($(`<div class="dtcard">
+  // the record half of the card is TAPPABLE (owner): opens the same Course Records overlay as the bottom button
+  const dtc=$(`<div class="dtcard">
     <div class="dtgrid">
       <div class="dtlab" style="color:#e2c25e">Target · beat the tour avg</div>
       <div class="dtdiv"></div>
-      <div class="dtlab" style="color:#63d9bb">Course record</div>
+      <div class="dtlab dtrec" style="color:#63d9bb" data-crlink role="button" tabindex="0" aria-label="Open course records">Course record ▸</div>
       <div class="mono goldgrad dtnum">${(c.par+av).toFixed(1)} (${dAvgTxt(av)})</div>
-      <div>${recNum}</div>
+      <div class="dtrec" data-crlink>${recNum}</div>
       <div class="dtsub">par ${c.par}</div>
-      <div class="dtsub">${recSub}</div>
+      <div class="dtsub dtrec" data-crlink>${recSub}</div>
     </div>
-    <div class="dtnote">What real tour pros average here. Post a lower round to win the day.</div></div>`));
+    <div class="dtnote">What real tour pros average here. Post a lower round to win the day.</div></div>`);
+  dtc.querySelectorAll('[data-crlink]').forEach(x=>{ x.style.cursor='pointer';
+    x.onclick=()=>{ track('preview_record_tap'); S.overlay='courserecords'; render(); };
+    x.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); x.onclick(); } }; });
+  add(dtc);
   // CS257: streak calendar in the Beat-the-Pro flow. (CS302: quests/weekly/rep panel removed from here -
   // it lives in the ≡ Challenges overlay; the owner wanted the Beat-the-Pro page decluttered.)
   if(!S.special && !PRACTICE && sbSignedIn()){
