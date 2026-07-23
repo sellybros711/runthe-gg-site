@@ -12928,6 +12928,24 @@ allows Google Fonts, or self-host Anton.*
   Tunable: `WIND`/`DUR`/the tension threshold in `runSpinAnim`, the `.prcard`/`.prburst` CSS, the DROPS
   item lists.
 
+- **IDLE BREATHING ANIMATION shipped; A1/A2 shading rejected (owner: "I don't like a1 or a2. Let's stay
+  with original. And let's try out the idle animation!").** The standing golfer now has a gentle 2-frame
+  breathing idle everywhere the big avatar shows (setup/closet preview, shop dressing room, build hero,
+  profile, resume card, podium/H2H figures): the head/torso/arms settle 1 sprite pixel while the legs +
+  ground shadow stay planted, at the 700ms cadence from the approved mockup GIF. Implementation:
+  `pxGolferIdleURL(look)` composites the breathe frame from the CACHED base canvas in two slices (rows
+  0-41 shifted down 1px over the planted lower body), so it inherits every accessory/pattern/hat/aura for
+  free and costs one draw per look (WeakMap-cached per canvas). `pxAvatarHTML` + `pxFigureHTML` imgs carry
+  `class="pxidle" data-breathe="<frame2>"`; ONE global 700ms ticker swaps every `.pxidle` img's src in
+  sync (all golfers on screen breathe together). The tiny header chip (`pxAvatarChip`) stays static;
+  reduced-motion never animates (and snaps back to the base frame if the pref flips mid-cycle). The
+  hue-shift/rim-light shading mockups (A1/A2) were REJECTED - the original palette stays; the mockup
+  scripts remain in scratchpad only. Verified in Playwright: base vs breathe frames differ with the
+  correct composition, a live preview alternates between exactly 2 srcs every ~700ms, reduced-motion
+  holds the base frame, chip static, and the full round + drops regressions stay green with 0 page
+  errors. Committed to the branch, NOT deployed (rides with the pending art-batch review). Tunable: the
+  700ms cadence, `PX_IDLE_SPLIT` (42).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

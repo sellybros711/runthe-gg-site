@@ -9895,13 +9895,42 @@ function pxGolferURL(look){
   let u=_pxURL.get(cv); if(u) return u;
   u=cv.toDataURL('image/png'); _pxURL.set(cv,u); return u;
 }
-function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg${pxFxClass(look)}" src="${pxGolferURL(look)}" alt="Your golfer"></div>`; }
+// idle breathing (owner-approved mockup B): a gentle 2-frame bob - the head/torso/arms settle 1 sprite
+// pixel while the legs stay planted. The breathe frame is COMPOSITED from the cached base canvas (two
+// slices), so it inherits every accessory/pattern/hat/aura for free; a global ticker swaps img.src on
+// every .pxidle img in sync (700ms, the cadence from the approved GIF). Reduced-motion shows the base only.
+const _pxIdle=new WeakMap();   // base canvas -> breathe-frame data URL
+const PX_IDLE_SPLIT=42;        // sprite row where the bob stops (legs + ground shadow stay planted)
+function pxGolferIdleURL(look){
+  const cv=pxGolferCanvas(look);
+  let u=_pxIdle.get(cv); if(u) return u;
+  const px=7, cut=PX_IDLE_SPLIT*px;
+  const c2=document.createElement('canvas'); c2.width=cv.width; c2.height=cv.height;
+  const ctx=c2.getContext('2d');
+  ctx.drawImage(cv, 0,cut, cv.width,cv.height-cut, 0,cut, cv.width,cv.height-cut);   // legs + shadow
+  ctx.drawImage(cv, 0,0, cv.width,cut, 0,px, cv.width,cut);                          // torso settles 1px
+  u=c2.toDataURL('image/png'); _pxIdle.set(cv,u); return u;
+}
+function pxIdleAttr(look){ try{ return ' data-breathe="'+pxGolferIdleURL(look)+'"'; }catch(e){ return ''; } }
+function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg pxidle${pxFxClass(look)}" src="${pxGolferURL(look)}"${pxIdleAttr(look)} alt="Your golfer"></div>`; }
 // CS356f: tiny head-and-shoulders chip of the pixel golfer, for the profile pill etc.
 // crops the 44x56 sprite to the head+shoulders band (rows ~4-26) and centers it in an sz x sz box.
 function pxAvatarChip(look,sz){ sz=sz||22; const pr=sz/22, w=Math.round(44*pr), mt=Math.round(-4*pr), ml=Math.round(-(w-sz)/2);
   return `<span class="pxchip" style="width:${sz}px;height:${sz}px" aria-hidden="true"><img src="${pxGolferURL(look||S.look||DEFLOOK)}" alt="" style="width:${w}px;margin-top:${mt}px;margin-left:${ml}px"></span>`; }
 // the FULL standing pixel golfer at a given height (not the head-crop chip) - for the resume card etc.
-function pxFigureHTML(look,h){ h=h||60; look=look||S.look||DEFLOOK; return `<img class="pxfigsm${pxFxClass(look)}" src="${pxGolferURL(look)}" alt="Your golfer" style="height:${h}px;width:auto;image-rendering:pixelated;display:block;flex:0 0 auto">`; }
+function pxFigureHTML(look,h){ h=h||60; look=look||S.look||DEFLOOK; return `<img class="pxfigsm pxidle${pxFxClass(look)}" src="${pxGolferURL(look)}"${pxIdleAttr(look)} alt="Your golfer" style="height:${h}px;width:auto;image-rendering:pixelated;display:block;flex:0 0 auto">`; }
+// the global idle ticker: swap every .pxidle img between its base + breathe frames, all in sync.
+(function(){ let flip=false;
+  setInterval(function(){ try{
+    const reduce=(typeof matchMedia==='function')&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const imgs=document.querySelectorAll('img.pxidle'); if(!imgs.length) return;
+    if(reduce){ imgs.forEach(function(im){ if(im.dataset.base&&im.src!==im.dataset.base) im.src=im.dataset.base; }); return; }
+    flip=!flip;
+    imgs.forEach(function(im){ const b=im.getAttribute('data-breathe'); if(!b) return;
+      if(!im.dataset.base) im.dataset.base=im.src;
+      im.src=flip?b:im.dataset.base; });
+  }catch(e){} }, 700);
+})();
 /* CS355 (POC): side-view mini golfer swing for TourTracer - 3 frames (address/top/through),
    palette-swapped from the created look, mirror-flipped by shot direction. */
 const HV_SWING=true;          // POC flag - flip off to disable the swinging golfer everywhere
