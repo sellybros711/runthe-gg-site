@@ -580,16 +580,36 @@
                      FUMBLE:'Put it on the ground today',
                      ABORTED_SNAP:'Botched the snap today' };
 
-  function shareCard(state, streakDays) {
+  function shareCard(state, streakDays, opts) {
+    opts = opts || {};
     const yardsGained = state.yardline - state.startYard;
     const head = state.toType ? TO_CARDS[state.toType]
                : (CARDS[state.result] || (() => state.result))({ ...state, yardsGained });
     const bar = state.grades.map(g => g.letter.replace('+','').replace('-','')).join(' ');
-    const flex = state.result === 'TOUCHDOWN' && state.startYard <= 25
-               ? '  ← from deep in his own end' : '';
-    return `RunTheDrive ${state.date}\n${head}${flex}\n${bar}\n`
-         + `${state.log.length} plays · ${yardsGained} yds · call grade ${state.callGrade}\n`
-         + `Day streak: ${streakDays}`;
+    // Drive path — the ball's yard-line at each snap (standard football numbering: own side
+    // counts up to 50, opp side counts back down), ending in the result. This IS the story.
+    const toNum = yl => yl <= 50 ? yl : 100 - yl;
+    const endTok = state.result === 'TOUCHDOWN' ? 'TD'
+                 : state.result === 'FIELD_GOAL' ? 'FG'
+                 : state.result === 'MISSED_FG' ? 'no good'
+                 : state.toType === 'INTERCEPTION' ? 'INT'
+                 : state.toType ? 'lost it'
+                 : state.result === 'TURNOVER_ON_DOWNS' ? 'on downs'
+                 : state.result === 'SAFETY' ? 'safety'
+                 : String(toNum(state.yardline));
+    let nums = state.log.map(r => toNum(r.yardline)).filter((v, i, a) => i === 0 || v !== a[i - 1]);
+    let pathArr = nums.concat(endTok);
+    if (pathArr.length > 9) pathArr = [...pathArr.slice(0, 4), '…', ...pathArr.slice(-4)];
+    const path = pathArr.join(' › ');
+    const used = Math.max(0, RULES.gameClockSec - (state.clock || 0));
+    const mmss = Math.floor(used / 60) + ':' + String(used % 60).padStart(2, '0');
+    const rankBits = [];
+    if (opts.pct != null) rankBits.push('Top ' + Math.max(1, 100 - Math.round(opts.pct)) + '% today');
+    if (streakDays) rankBits.push(streakDays + '-day streak');
+    return `RunTheDrive · ${state.date}\n${head}\n\n${path}\n${bar}\n`
+         + `${state.log.length} plays · ${yardsGained} yds · ${mmss} used · grade ${state.callGrade}\n`
+         + (rankBits.length ? rankBits.join(' · ') + '\n' : '')
+         + `runthe.gg/football`;
   }
 
   /* ---------- SCOUTING: what works / what doesn't vs today's defense ---------
