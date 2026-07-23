@@ -1,0 +1,1394 @@
+{
+ "nba_kobe-bryant": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "NBA MVP",
+    "Finals MVP"
+   ]
+  },
+  "note": "Won 2008 NBA MVP; awards was missing it."
+ },
+ "nba_wilt-chamberlain": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "NBA MVP",
+    "Finals MVP"
+   ]
+  },
+  "note": "1972 Finals MVP was missing."
+ },
+ "nba_kevin-durant": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "milestones": [
+    "30,000 Point Club"
+   ]
+  },
+  "note": "Durant passed 30,000 career points in Feb 2025 (8th member)."
+ },
+ "nba_dwyane-wade": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "Finals MVP"
+   ]
+  },
+  "note": "2006 Finals MVP was missing."
+ },
+ "nba_shai-gilgeous-alexander": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Canada"
+   ],
+   "awards": [
+    "NBA MVP",
+    "Finals MVP"
+   ]
+  },
+  "note": "SGA is Canadian (Toronto); won 2025 NBA MVP and 2025 Finals MVP with OKC."
+ },
+ "nba_jaylen-brown": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "Finals MVP"
+   ]
+  },
+  "note": "2024 Finals MVP."
+ },
+ "nba_oscar-robertson": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "NBA MVP"
+   ]
+  },
+  "note": "1964 NBA MVP."
+ },
+ "nba_jerry-west": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "Finals MVP"
+   ]
+  },
+  "note": "1969 Finals MVP (only from losing team)."
+ },
+ "nba_bob-cousy": {
+  "teams_add": [
+   "nba_kings"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "NBA MVP"
+   ]
+  },
+  "note": "1957 NBA MVP; 7-game comeback with Cincinnati Royals (Kings franchise) in 1969-70."
+ },
+ "nba_bill-walton": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "NBA MVP",
+    "Finals MVP"
+   ],
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "1978 MVP, 1977 Finals MVP; No. 1 overall pick 1974."
+ },
+ "nba_moses-malone": {
+  "teams_add": [
+   "nba_bucks",
+   "nba_spurs",
+   "nba_clippers"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "NBA MVP",
+    "Finals MVP"
+   ]
+  },
+  "note": "1983 Finals MVP missing. Late stints: Bucks 1991-93, Spurs 1994-95; 2 games for Buffalo Braves (Clippers franchise) in 1976."
+ },
+ "nba_julius-erving": {
+  "teams_add": [],
+  "teams_remove": [
+   "nba_nets"
+  ],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "NBA MVP"
+   ]
+  },
+  "note": "1981 NBA MVP missing. His Nets years (1973-76) were ABA only; entire NBA career was with the 76ers."
+ },
+ "nba_isiah-thomas": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "Finals MVP"
+   ]
+  },
+  "note": "1990 Finals MVP."
+ },
+ "nba_james-worthy": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "Finals MVP"
+   ],
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "1988 Finals MVP; No. 1 overall pick 1982."
+ },
+ "nba_willis-reed": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "NBA MVP",
+    "Finals MVP"
+   ]
+  },
+  "note": "1970 MVP; 1970 and 1973 Finals MVP."
+ },
+ "nba_wes-unseld": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "NBA MVP",
+    "Finals MVP"
+   ]
+  },
+  "note": "1969 MVP (as rookie); 1978 Finals MVP."
+ },
+ "nba_john-havlicek": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "Finals MVP"
+   ]
+  },
+  "note": "1974 Finals MVP."
+ },
+ "nba_dave-cowens": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "NBA MVP"
+   ]
+  },
+  "note": "1973 NBA MVP."
+ },
+ "nba_rick-barry": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "Finals MVP"
+   ]
+  },
+  "note": "1975 Finals MVP."
+ },
+ "nba_bob-mcadoo": {
+  "teams_add": [
+   "nba_nets"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "NBA MVP"
+   ]
+  },
+  "note": "1975 NBA MVP; brief New Jersey Nets stint in 1980-81."
+ },
+ "nba_dennis-johnson": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "Finals MVP"
+   ]
+  },
+  "note": "1979 Finals MVP with Seattle."
+ },
+ "nba_chauncey-billups": {
+  "teams_add": [
+   "nba_raptors",
+   "nba_timberwolves"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "Finals MVP"
+   ]
+  },
+  "note": "2004 Finals MVP; early-career stints with Toronto (1998) and Minnesota (2000-02). Never appeared for Orlando despite trade."
+ },
+ "nba_tony-parker": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "Finals MVP"
+   ]
+  },
+  "note": "2007 Finals MVP."
+ },
+ "nba_paul-pierce": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "Finals MVP"
+   ]
+  },
+  "note": "2008 Finals MVP."
+ },
+ "nba_andre-iguodala": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "awards": [
+    "Finals MVP"
+   ]
+  },
+  "note": "2015 Finals MVP."
+ },
+ "nba_patrick-ewing": {
+  "teams_add": [
+   "nba_thunder"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Played 2000-01 for Seattle SuperSonics (Thunder franchise)."
+ },
+ "nba_gary-payton": {
+  "teams_add": [
+   "nba_bucks"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Traded to Milwaukee Feb 2003, played 28 games."
+ },
+ "nba_allen-iverson": {
+  "teams_add": [
+   "nba_grizzlies"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Played 3 games for Memphis in Nov 2009."
+ },
+ "nba_dominique-wilkins": {
+  "teams_add": [
+   "nba_spurs",
+   "nba_magic"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Spurs 1996-97; Magic 1999 late-career stint."
+ },
+ "nba_joe-johnson": {
+  "teams_add": [
+   "nba_rockets"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "decades_active": [
+    2000,
+    2010,
+    2020
+   ]
+  },
+  "note": "Played 23 games for Houston in 2018 after Kings buyout; one-game Celtics return Dec 2021 adds 2020s decade."
+ },
+ "nba_baron-davis": {
+  "teams_add": [
+   "nba_pelicans"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Played for New Orleans Hornets 2002-05, which is the Pelicans franchise; his 1999-2002 Charlotte years stay with nba_hornets."
+ },
+ "nba_juwan-howard": {
+  "teams_add": [
+   "nba_magic",
+   "nba_timberwolves",
+   "nba_trailblazers",
+   "nba_hornets"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Orlando 2003-04, Minnesota 2007-08, Charlotte Bobcats (Hornets franchise) 2009, Portland 2009-10."
+ },
+ "nba_jr-smith": {
+  "teams_add": [
+   "nba_pelicans"
+  ],
+  "teams_remove": [
+   "nba_hornets"
+  ],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Drafted/played for New Orleans Hornets 2004-06 = Pelicans franchise; never played for the Charlotte franchise."
+ },
+ "nba_tyson-chandler": {
+  "teams_add": [
+   "nba_pelicans"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "New Orleans Hornets 2006-09 = Pelicans franchise. nba_hornets stays valid via his 2009-10 Charlotte Bobcats season."
+ },
+ "nba_danilo-gallinari": {
+  "teams_add": [
+   "nba_wizards",
+   "nba_pistons",
+   "nba_bucks"
+  ],
+  "teams_remove": [
+   "nba_celtics"
+  ],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Italy"
+   ]
+  },
+  "note": "Never played a game for Boston (ACL tear summer 2022, traded June 2023). Played for Washington and Detroit in 2023-24, then Milwaukee after buyout. Italian."
+ },
+ "nba_deandre-jordan": {
+  "teams_add": [
+   "nba_76ers"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Played for Philadelphia in spring 2022 after Lakers release."
+ },
+ "nba_kevin-martin": {
+  "teams_add": [],
+  "teams_remove": [
+   "nba_bucks"
+  ],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Never played for Milwaukee. Career: Kings, Rockets, Thunder, Timberwolves, Spurs."
+ },
+ "nba_danny-granger": {
+  "teams_add": [],
+  "teams_remove": [
+   "nba_pistons"
+  ],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Never played for Detroit. Career: Pacers, Clippers, Heat (76ers/Suns trades without appearances)."
+ },
+ "nba_greg-monroe": {
+  "teams_add": [
+   "nba_76ers",
+   "nba_timberwolves",
+   "nba_wizards"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Finished 2018-19 with Philadelphia; 2021-22 comeback stints with Minnesota (Dec 2021) and Washington."
+ },
+ "nba_matt-barnes": {
+  "teams_add": [
+   "nba_76ers",
+   "nba_knicks"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Brief mid-2000s stints with New York and Philadelphia (2004-06) before Warriors breakout."
+ },
+ "nba_malcolm-brogdon": {
+  "teams_add": [
+   "nba_wizards"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Played for Washington in 2024-25."
+ },
+ "nba_jonas-valanciunas": {
+  "teams_add": [
+   "nba_nuggets"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Lithuania"
+   ]
+  },
+  "note": "Traded to Denver in 2025 offseason, playing there 2025-26. Lithuanian."
+ },
+ "nba_tim-hardaway-jr": {
+  "teams_add": [
+   "nba_nuggets"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Signed with Denver for 2025-26."
+ },
+ "nba_montrezl-harrell": {
+  "teams_add": [
+   "nba_wizards"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Played for Washington in 2021-22 (Westbrook trade)."
+ },
+ "nba_marcus-morris": {
+  "teams_add": [
+   "nba_cavaliers"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Finished 2023-24 with Cleveland after 76ers/Spurs trade and release."
+ },
+ "nba_markieff-morris": {
+  "teams_add": [
+   "nba_pistons"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Played for Detroit in 2019-20 before buyout and Lakers title run."
+ },
+ "nba_dennis-schroder": {
+  "teams_add": [
+   "nba_warriors"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Germany"
+   ]
+  },
+  "note": "Played for Golden State Dec 2024-Feb 2025 between Nets and Pistons stints. German."
+ },
+ "nba_chris-mullin": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "decades_active": [
+    1980,
+    1990,
+    2000
+   ]
+  },
+  "note": "Final season 2000-01 with Golden State adds the 2000s."
+ },
+ "nba_adrian-dantley": {
+  "teams_add": [
+   "nba_clippers"
+  ],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "decades_active": [
+    1970,
+    1980,
+    1990
+   ]
+  },
+  "note": "Won ROY with Buffalo Braves 1976-77 (Clippers franchise); 10-game Bucks stint in 1990-91 adds the 1990s."
+ },
+ "nba_sidney-moncrief": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "decades_active": [
+    1970,
+    1980,
+    1990
+   ]
+  },
+  "note": "1990-91 comeback season with Atlanta adds the 1990s."
+ },
+ "nba_vince-carter": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "decades_active": [
+    1990,
+    2000,
+    2010,
+    2020
+   ]
+  },
+  "note": "Famous four-decade player; final games with Atlanta came in early 2020."
+ },
+ "nba_jason-williams": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "decades_active": [
+    1990,
+    2000,
+    2010
+   ]
+  },
+  "note": "Played 2009-10 (Magic) and 2010-11 (Grizzlies), adding the 2010s."
+ },
+ "nba_kyle-korver": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "decades_active": [
+    2000,
+    2010,
+    2020
+   ]
+  },
+  "note": "Final season 2019-20 with Milwaukee included 2020 games (incl. bubble)."
+ },
+ "nba_ricky-rubio": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Spain"
+   ],
+   "decades_active": [
+    2010,
+    2020
+   ]
+  },
+  "note": "NBA debut was Dec 2011 (stayed in Spain until then) - no 2000s appearances. Spanish."
+ },
+ "nba_blake-griffin": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "decades_active": [
+    2010,
+    2020
+   ],
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No. 1 pick 2009 but missed entire 2009-10 season (knee); NBA debut Oct 2010, so no 2000s appearances."
+ },
+ "nba_zion-williamson": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "decades_active": [
+    2020
+   ]
+  },
+  "note": "NBA debut was Jan 22, 2020 (injured first half of rookie season) - no 2010s appearances."
+ },
+ "nba_byron-scott": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "decades_active": [
+    1980,
+    1990
+   ]
+  },
+  "note": "Retired in 1997 - no 2000s appearances."
+ },
+ "nba_aj-dybantsa": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "decades_active": []
+  },
+  "note": "College prospect (2026 draft class); no NBA regular-season appearances yet, so decades_active should be empty."
+ },
+ "nba_darryn-peterson": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "decades_active": []
+  },
+  "note": "College prospect (2026 draft class); no NBA regular-season appearances yet, so decades_active should be empty."
+ },
+ "nba_cameron-boozer": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "decades_active": []
+  },
+  "note": "College prospect (2026 draft class); no NBA regular-season appearances yet, so decades_active should be empty."
+ },
+ "nba_caleb-wilson": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "decades_active": []
+  },
+  "note": "College prospect (2026 draft class); no NBA regular-season appearances yet, so decades_active should be empty."
+ },
+ "nba_domantas-sabonis": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Lithuania"
+   ]
+  },
+  "note": "Lithuanian (plays for Lithuania; son of Arvydas)."
+ },
+ "nba_pau-gasol": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Spain"
+   ]
+  },
+  "note": "Spanish."
+ },
+ "nba_marc-gasol": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Spain"
+   ]
+  },
+  "note": "Spanish."
+ },
+ "nba_al-horford": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ]
+  },
+  "note": "Dominican."
+ },
+ "nba_kristaps-porzingis": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Latvia"
+   ]
+  },
+  "note": "Latvian."
+ },
+ "nba_nikola-vucevic": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Montenegro"
+   ]
+  },
+  "note": "Montenegrin (plays for Montenegro national team)."
+ },
+ "nba_alperen-sengun": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Turkey"
+   ]
+  },
+  "note": "Turkish."
+ },
+ "nba_franz-wagner": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Germany"
+   ]
+  },
+  "note": "German."
+ },
+ "nba_rj-barrett": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Canada"
+   ]
+  },
+  "note": "Canadian."
+ },
+ "nba_og-anunoby": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "United Kingdom"
+   ]
+  },
+  "note": "Born in London; listed as British."
+ },
+ "nba_jamal-murray": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Canada"
+   ]
+  },
+  "note": "Canadian (Kitchener, Ontario)."
+ },
+ "nba_pascal-siakam": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Cameroon"
+   ]
+  },
+  "note": "Cameroonian."
+ },
+ "nba_dyson-daniels": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Australia"
+   ]
+  },
+  "note": "Australian."
+ },
+ "nba_zach-edey": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Canada"
+   ]
+  },
+  "note": "Canadian (Toronto)."
+ },
+ "nba_serge-ibaka": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Congo"
+   ]
+  },
+  "note": "From Republic of the Congo (Brazzaville); also holds Spanish citizenship. Matches DB's 'Congo' usage for Mutombo."
+ },
+ "nba_steven-adams": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "New Zealand"
+   ]
+  },
+  "note": "New Zealander."
+ },
+ "nba_goran-dragic": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Slovenia"
+   ]
+  },
+  "note": "Slovenian."
+ },
+ "nba_buddy-hield": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Bahamas"
+   ]
+  },
+  "note": "Bahamian."
+ },
+ "nba_rui-hachimura": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Japan"
+   ]
+  },
+  "note": "Japanese."
+ },
+ "nba_jusuf-nurkic": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Bosnia and Herzegovina"
+   ]
+  },
+  "note": "Bosnian."
+ },
+ "nba_patty-mills": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Australia"
+   ]
+  },
+  "note": "Australian."
+ },
+ "nba_bojan-bogdanovic": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Croatia"
+   ]
+  },
+  "note": "Croatian."
+ },
+ "nba_bogdan-bogdanovic": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Serbia"
+   ]
+  },
+  "note": "Serbian."
+ },
+ "nba_kelly-olynyk": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Canada"
+   ]
+  },
+  "note": "Canadian."
+ },
+ "nba_nene": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Brazil"
+   ]
+  },
+  "note": "Brazilian."
+ },
+ "nba_luol-deng": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "United Kingdom"
+   ]
+  },
+  "note": "British citizen who played for Great Britain; born in what is now South Sudan (South Sudanese heritage)."
+ },
+ "nba_detlef-schrempf": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Germany"
+   ]
+  },
+  "note": "German."
+ },
+ "nba_nikola-jovic": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Serbia"
+   ]
+  },
+  "note": "Serbian."
+ },
+ "nba_andrew-wiggins": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Canada"
+   ],
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "Canadian; No. 1 overall pick 2014."
+ },
+ "nba_deandre-ayton": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "Bahamas"
+   ],
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "Bahamian; No. 1 overall pick 2018."
+ },
+ "nba_zaccharie-risacher": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "nationality": [
+    "France"
+   ],
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "French; No. 1 overall pick 2024."
+ },
+ "nba_vlade-divac": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "hall_of_fame": [
+    true
+   ],
+   "nationality": [
+    "Serbia"
+   ]
+  },
+  "note": "Inducted into Naismith HOF in 2019. Serbian."
+ },
+ "nba_toni-kukoc": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "hall_of_fame": [
+    true
+   ],
+   "nationality": [
+    "Croatia"
+   ]
+  },
+  "note": "Inducted into Naismith HOF in 2021. Croatian."
+ },
+ "nba_arvydas-sabonis": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "hall_of_fame": [
+    true
+   ],
+   "nationality": [
+    "Lithuania"
+   ]
+  },
+  "note": "Inducted into Naismith HOF in 2011. Lithuanian."
+ },
+ "nba_michael-cooper": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "hall_of_fame": [
+    true
+   ]
+  },
+  "note": "Inducted into Naismith HOF in 2024."
+ },
+ "nba_kyrie-irving": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No. 1 overall pick 2011."
+ },
+ "nba_victor-wembanyama": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No. 1 overall pick 2023."
+ },
+ "nba_anthony-edwards": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No. 1 overall pick 2020."
+ },
+ "nba_cade-cunningham": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No. 1 overall pick 2021."
+ },
+ "nba_paolo-banchero": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No. 1 overall pick 2022."
+ },
+ "nba_cooper-flagg": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No. 1 overall pick 2025."
+ },
+ "nba_yao-ming": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No. 1 overall pick 2002."
+ },
+ "nba_chris-webber": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No. 1 overall pick 1993 (by Orlando, traded to Golden State)."
+ },
+ "nba_elton-brand": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No. 1 overall pick 1999."
+ },
+ "nba_kenyon-martin": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No. 1 overall pick 2000."
+ },
+ "nba_larry-johnson": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No. 1 overall pick 1991."
+ },
+ "nba_elvin-hayes": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No. 1 overall pick 1968."
+ },
+ "nba_bob-lanier": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No. 1 overall pick 1970."
+ },
+ "nba_elgin-baylor": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No. 1 overall pick 1958."
+ },
+ "nba_amare-stoudemire": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [
+   32
+  ],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Wore 32 for his early Suns years (ROY season) before switching to 1; both prominent."
+ },
+ "nba_aaron-gordon": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [
+   0
+  ],
+  "jersey_remove": [
+   32
+  ],
+  "set": {},
+  "note": "Never wore 32. Wore 00 (stored as 0) with Orlando and initially Denver, then 50 with the Nuggets."
+ }
+}

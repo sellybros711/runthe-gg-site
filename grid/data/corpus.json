@@ -36217,7 +36217,8 @@
    "draft_year": [],
    "draft_position": [],
    "awards": [
-    "NBA MVP"
+    "NBA MVP",
+    "Finals MVP"
    ],
    "championships": [],
    "milestones": [
@@ -36441,6 +36442,7 @@
    "draft_year": [],
    "draft_position": [],
    "awards": [
+    "NBA MVP",
     "Finals MVP"
    ],
    "championships": [],
@@ -36665,7 +36667,9 @@
     "Finals MVP"
    ],
    "championships": [],
-   "milestones": [],
+   "milestones": [
+    "30,000 Point Club"
+   ],
    "college": [],
    "name_is_also": [],
    "alliterative_name": [
@@ -36937,7 +36941,8 @@
    ],
    "teams": [
     "nba_knicks",
-    "nba_magic"
+    "nba_magic",
+    "nba_thunder"
    ],
    "jersey_number": [
     33
@@ -37138,7 +37143,8 @@
     "nba_thunder",
     "nba_lakers",
     "nba_celtics",
-    "nba_heat"
+    "nba_heat",
+    "nba_bucks"
    ],
    "jersey_number": [
     20
@@ -37207,7 +37213,8 @@
    "teams": [
     "nba_76ers",
     "nba_nuggets",
-    "nba_pistons"
+    "nba_pistons",
+    "nba_grizzlies"
    ],
    "jersey_number": [
     3
@@ -37573,7 +37580,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -38814,7 +38823,9 @@
     "KI"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -39264,7 +39275,6 @@
     "PF"
    ],
    "decades_active": [
-    2010,
     2020
    ],
    "teams": [
@@ -39348,7 +39358,9 @@
     "VW"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -39414,7 +39426,9 @@
     "AE"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -39612,7 +39626,10 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NBA MVP",
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -39628,7 +39645,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Canada"
    ],
    "has_nickname": [
     false
@@ -39761,7 +39778,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Lithuania"
    ],
    "has_nickname": [
     false
@@ -39873,7 +39890,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -40211,7 +40230,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NBA MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -40277,7 +40298,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -40341,7 +40364,9 @@
     "EB"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -40390,7 +40415,8 @@
     1960
    ],
    "teams": [
-    "nba_celtics"
+    "nba_celtics",
+    "nba_kings"
    ],
    "jersey_number": [
     14
@@ -40406,7 +40432,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NBA MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -40471,8 +40499,13 @@
     "BW"
    ],
    "draft_year": [],
-   "draft_position": [],
-   "awards": [],
+   "draft_position": [
+    1
+   ],
+   "awards": [
+    "NBA MVP",
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -40526,7 +40559,10 @@
     "nba_rockets",
     "nba_76ers",
     "nba_wizards",
-    "nba_hawks"
+    "nba_hawks",
+    "nba_bucks",
+    "nba_spurs",
+    "nba_clippers"
    ],
    "jersey_number": [
     2
@@ -40543,7 +40579,8 @@
    "draft_year": [],
    "draft_position": [],
    "awards": [
-    "NBA MVP"
+    "NBA MVP",
+    "Finals MVP"
    ],
    "championships": [],
    "milestones": [],
@@ -40594,8 +40631,7 @@
     1980
    ],
    "teams": [
-    "nba_76ers",
-    "nba_nets"
+    "nba_76ers"
    ],
    "jersey_number": [
     6
@@ -40611,7 +40647,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NBA MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -40678,7 +40716,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -40730,7 +40770,9 @@
    "teams": [
     "nba_hawks",
     "nba_clippers",
-    "nba_celtics"
+    "nba_celtics",
+    "nba_spurs",
+    "nba_magic"
    ],
    "jersey_number": [
     21
@@ -40923,7 +40965,8 @@
    ],
    "decades_active": [
     1980,
-    1990
+    1990,
+    2000
    ],
    "teams": [
     "nba_warriors",
@@ -41006,8 +41049,12 @@
     "JW"
    ],
    "draft_year": [],
-   "draft_position": [],
-   "awards": [],
+   "draft_position": [
+    1
+   ],
+   "awards": [
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -41465,7 +41512,8 @@
    "decades_active": [
     1990,
     2000,
-    2010
+    2010,
+    2020
    ],
    "teams": [
     "nba_raptors",
@@ -41632,7 +41680,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -41756,7 +41806,9 @@
     "nba_nuggets",
     "nba_pistons",
     "nba_knicks",
-    "nba_clippers"
+    "nba_clippers",
+    "nba_raptors",
+    "nba_timberwolves"
    ],
    "jersey_number": [
     1
@@ -41772,7 +41824,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -41901,7 +41955,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -41989,7 +42045,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Spain"
    ],
    "has_nickname": [
     false
@@ -42036,7 +42092,9 @@
     "YM"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -42091,7 +42149,8 @@
     "nba_heat"
    ],
    "jersey_number": [
-    1
+    1,
+    32
    ],
    "hall_of_fame": [
     false
@@ -42243,7 +42302,9 @@
     "CW"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -42561,7 +42622,8 @@
    ],
    "decades_active": [
     2000,
-    2010
+    2010,
+    2020
    ],
    "teams": [
     "nba_celtics",
@@ -42569,7 +42631,8 @@
     "nba_hawks",
     "nba_nets",
     "nba_heat",
-    "nba_jazz"
+    "nba_jazz",
+    "nba_rockets"
    ],
    "jersey_number": [
     2
@@ -42640,7 +42703,8 @@
     "nba_warriors",
     "nba_clippers",
     "nba_cavaliers",
-    "nba_knicks"
+    "nba_knicks",
+    "nba_pelicans"
    ],
    "jersey_number": [
     1
@@ -42726,7 +42790,9 @@
     "EB"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -42932,7 +42998,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -43017,7 +43085,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "has_nickname": [
     false
@@ -43086,7 +43154,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Spain"
    ],
    "has_nickname": [
     false
@@ -43760,7 +43828,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Latvia"
    ],
    "has_nickname": [
     false
@@ -43872,7 +43940,10 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NBA MVP",
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -44077,7 +44148,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NBA MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -44141,7 +44214,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -44206,7 +44281,10 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NBA MVP",
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -44271,7 +44349,9 @@
     "EH"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -44340,7 +44420,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -44540,7 +44622,9 @@
     "BL"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -44594,7 +44678,8 @@
     "nba_celtics",
     "nba_pistons",
     "nba_lakers",
-    "nba_76ers"
+    "nba_76ers",
+    "nba_nets"
    ],
    "jersey_number": [
     11
@@ -44610,7 +44695,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NBA MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -44927,7 +45014,8 @@
    ],
    "decades_active": [
     1970,
-    1980
+    1980,
+    1990
    ],
    "teams": [
     "nba_pacers",
@@ -44935,7 +45023,8 @@
     "nba_jazz",
     "nba_pistons",
     "nba_mavericks",
-    "nba_bucks"
+    "nba_bucks",
+    "nba_clippers"
    ],
    "jersey_number": [
     4
@@ -45069,7 +45158,8 @@
    ],
    "decades_active": [
     1970,
-    1980
+    1980,
+    1990
    ],
    "teams": [
     "nba_bucks",
@@ -45156,7 +45246,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Finals MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -45573,7 +45665,9 @@
     "LJ"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -45702,7 +45796,11 @@
     "nba_mavericks",
     "nba_nuggets",
     "nba_rockets",
-    "nba_heat"
+    "nba_heat",
+    "nba_magic",
+    "nba_timberwolves",
+    "nba_trailblazers",
+    "nba_hornets"
    ],
    "jersey_number": [
     5
@@ -46527,7 +46625,8 @@
    ],
    "decades_active": [
     1990,
-    2000
+    2000,
+    2010
    ],
    "teams": [
     "nba_kings",
@@ -46769,7 +46868,7 @@
     2
    ],
    "nationality": [
-    "Serbia"
+    "Montenegro"
    ],
    "has_nickname": [
     false
@@ -46798,7 +46897,8 @@
    ],
    "decades_active": [
     2000,
-    2010
+    2010,
+    2020
    ],
    "teams": [
     "nba_76ers",
@@ -47014,7 +47114,7 @@
     12
    ],
    "hall_of_fame": [
-    true
+    false
    ],
    "surname": [
     "Brady"
@@ -47238,6 +47338,7 @@
     1
    ],
    "awards": [
+    "NFL MVP",
     "Super Bowl MVP"
    ],
    "championships": [],
@@ -47284,8 +47385,7 @@
    ],
    "decades_active": [
     1980,
-    1990,
-    2000
+    1990
    ],
    "teams": [
     "nfl_dolphins"
@@ -47357,7 +47457,8 @@
    "teams": [
     "nfl_packers",
     "nfl_jets",
-    "nfl_vikings"
+    "nfl_vikings",
+    "nfl_falcons"
    ],
    "jersey_number": [
     4
@@ -47496,8 +47597,7 @@
    ],
    "decades_active": [
     1970,
-    1980,
-    1990
+    1980
    ],
    "teams": [
     "nfl_bears"
@@ -47516,7 +47616,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NFL MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -47723,7 +47825,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NFL MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -47791,7 +47895,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NFL MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -48007,7 +48113,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Super Bowl MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -48746,7 +48854,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Super Bowl MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -49140,7 +49250,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NFL MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -49205,7 +49317,10 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NFL MVP",
+    "Super Bowl MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -49272,6 +49387,7 @@
     1
    ],
    "awards": [
+    "NFL MVP",
     "Super Bowl MVP"
    ],
    "championships": [],
@@ -49318,8 +49434,7 @@
    ],
    "decades_active": [
     1960,
-    1970,
-    1980
+    1970
    ],
    "teams": [
     "nfl_cowboys"
@@ -49338,7 +49453,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Super Bowl MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -49383,8 +49500,7 @@
    ],
    "decades_active": [
     1960,
-    1970,
-    1980
+    1970
    ],
    "teams": [
     "nfl_vikings",
@@ -49404,7 +49520,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NFL MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -50426,7 +50544,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NFL MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -50476,8 +50596,7 @@
    ],
    "decades_active": [
     1960,
-    1970,
-    1980
+    1970
    ],
    "teams": [
     "nfl_bills",
@@ -50497,7 +50616,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NFL MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -50562,7 +50683,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Super Bowl MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -50609,7 +50732,8 @@
    ],
    "decades_active": [
     1980,
-    1990
+    1990,
+    2000
    ],
    "teams": [
     "nfl_bills",
@@ -50629,7 +50753,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NFL MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -50829,7 +50955,10 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NFL MVP",
+    "Super Bowl MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -50875,8 +51004,7 @@
     "RB"
    ],
    "decades_active": [
-    2000,
-    2010
+    2000
    ],
    "teams": [
     "nfl_seahawks",
@@ -50896,7 +51024,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NFL MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -51755,8 +51885,7 @@
    ],
    "decades_active": [
     1970,
-    1980,
-    1990
+    1980
    ],
    "teams": [
     "nfl_seahawks"
@@ -52441,7 +52570,7 @@
     87
    ],
    "hall_of_fame": [
-    true
+    false
    ],
    "surname": [
     "Gronkowski"
@@ -52965,7 +53094,7 @@
     99
    ],
    "hall_of_fame": [
-    true
+    false
    ],
    "surname": [
     "Watt"
@@ -53353,7 +53482,8 @@
    "teams": [
     "nfl_broncos",
     "nfl_rams",
-    "nfl_bills"
+    "nfl_bills",
+    "nfl_commanders"
    ],
    "jersey_number": [
     58
@@ -53549,8 +53679,7 @@
    ],
    "decades_active": [
     1990,
-    2000,
-    2010
+    2000
    ],
    "teams": [
     "nfl_chargers",
@@ -53946,8 +54075,7 @@
    "teams": [
     "nfl_49ers",
     "nfl_raiders",
-    "nfl_jets",
-    "nfl_chiefs"
+    "nfl_jets"
    ],
    "jersey_number": [
     42
@@ -55050,7 +55178,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Denmark"
    ],
    "has_nickname": [
     false
@@ -55694,7 +55822,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NFL MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -55896,7 +56026,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Super Bowl MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -56223,7 +56355,7 @@
     93
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Freeney"
@@ -56912,7 +57044,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -56980,9 +57114,13 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
-   "milestones": [],
+   "milestones": [
+    "500 Home Run Club"
+   ],
    "college": [],
    "name_is_also": [],
    "alliterative_name": [
@@ -57050,7 +57188,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -57257,7 +57397,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [
     "3,000 Hit Club"
@@ -57381,7 +57523,9 @@
    ],
    "teams": [
     "mlb_guardians",
-    "mlb_redsox"
+    "mlb_redsox",
+    "mlb_stlcardinals",
+    "mlb_braves"
    ],
    "jersey_number": [],
    "hall_of_fame": [
@@ -57532,7 +57676,9 @@
    "draft_position": [],
    "awards": [],
    "championships": [],
-   "milestones": [],
+   "milestones": [
+    "3,000 Hit Club"
+   ],
    "college": [],
    "name_is_also": [],
    "alliterative_name": [
@@ -57667,7 +57813,8 @@
    "draft_year": [],
    "draft_position": [],
    "awards": [
-    "Cy Young"
+    "Cy Young",
+    "MLB MVP"
    ],
    "championships": [],
    "milestones": [],
@@ -57734,7 +57881,8 @@
    "draft_year": [],
    "draft_position": [],
    "awards": [
-    "Cy Young"
+    "Cy Young",
+    "MLB MVP"
    ],
    "championships": [],
    "milestones": [],
@@ -57877,7 +58025,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [
     "3,000 Hit Club"
@@ -58015,7 +58165,9 @@
    "initials": [
     "KG"
    ],
-   "draft_year": [],
+   "draft_year": [
+    1987
+   ],
    "draft_position": [
     1
    ],
@@ -58282,7 +58434,8 @@
     "mlb_astros",
     "mlb_diamondbacks",
     "mlb_yankees",
-    "mlb_sfgiants"
+    "mlb_sfgiants",
+    "mlb_nationals"
    ],
    "jersey_number": [
     51
@@ -58994,7 +59147,9 @@
    "initials": [
     "BH"
    ],
-   "draft_year": [],
+   "draft_year": [
+    2010
+   ],
    "draft_position": [
     1
    ],
@@ -59132,7 +59287,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -59264,7 +59421,8 @@
    "draft_year": [],
    "draft_position": [],
    "awards": [
-    "Cy Young"
+    "Cy Young",
+    "MLB MVP"
    ],
    "championships": [],
    "milestones": [],
@@ -59390,7 +59548,8 @@
    "teams": [
     "mlb_tigers",
     "mlb_astros",
-    "mlb_mets"
+    "mlb_mets",
+    "mlb_sfgiants"
    ],
    "jersey_number": [
     35
@@ -59407,7 +59566,8 @@
    "draft_year": [],
    "draft_position": [],
    "awards": [
-    "Cy Young"
+    "Cy Young",
+    "MLB MVP"
    ],
    "championships": [],
    "milestones": [],
@@ -59538,7 +59698,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -59732,7 +59894,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -59783,7 +59947,7 @@
    "teams": [
     "mlb_reds",
     "mlb_phillies",
-    "mlb_expos"
+    "mlb_nationals"
    ],
    "jersey_number": [
     14
@@ -59799,7 +59963,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [
     "3,000 Hit Club"
@@ -59850,8 +60016,7 @@
    ],
    "decades_active": [
     1970,
-    1980,
-    1990
+    1980
    ],
    "teams": [
     "mlb_phillies"
@@ -59870,7 +60035,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [
     "500 Home Run Club"
@@ -60011,7 +60178,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [
     "500 Home Run Club"
@@ -60089,9 +60258,13 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
-   "milestones": [],
+   "milestones": [
+    "3,000 Hit Club"
+   ],
    "college": [],
    "name_is_also": [],
    "alliterative_name": [
@@ -60156,9 +60329,13 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
-   "milestones": [],
+   "milestones": [
+    "3,000 Hit Club"
+   ],
    "college": [],
    "name_is_also": [],
    "alliterative_name": [
@@ -60435,7 +60612,9 @@
    "draft_position": [],
    "awards": [],
    "championships": [],
-   "milestones": [],
+   "milestones": [
+    "500 Home Run Club"
+   ],
    "college": [],
    "name_is_also": [],
    "alliterative_name": [
@@ -60565,7 +60744,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -60632,9 +60813,13 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
-   "milestones": [],
+   "milestones": [
+    "3,000 Hit Club"
+   ],
    "college": [],
    "name_is_also": [],
    "alliterative_name": [
@@ -60697,7 +60882,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -60769,7 +60956,8 @@
    "awards": [],
    "championships": [],
    "milestones": [
-    "500 Home Run Club"
+    "500 Home Run Club",
+    "3,000 Hit Club"
    ],
    "college": [],
    "name_is_also": [],
@@ -60842,7 +61030,9 @@
    "draft_position": [],
    "awards": [],
    "championships": [],
-   "milestones": [],
+   "milestones": [
+    "3,000 Hit Club"
+   ],
    "college": [],
    "name_is_also": [],
    "alliterative_name": [
@@ -60970,7 +61160,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -61106,7 +61298,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [
     "500 Home Run Club"
@@ -61124,7 +61318,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "has_nickname": [
     false
@@ -61174,9 +61368,13 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
-   "milestones": [],
+   "milestones": [
+    "500 Home Run Club"
+   ],
    "college": [],
    "name_is_also": [],
    "alliterative_name": [
@@ -61247,7 +61445,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -61310,11 +61510,15 @@
    "initials": [
     "CJ"
    ],
-   "draft_year": [],
+   "draft_year": [
+    1990
+   ],
    "draft_position": [
     1
    ],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -61380,7 +61584,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -61447,7 +61653,9 @@
    "draft_position": [],
    "awards": [],
    "championships": [],
-   "milestones": [],
+   "milestones": [
+    "3,000 Hit Club"
+   ],
    "college": [],
    "name_is_also": [],
    "alliterative_name": [
@@ -61512,7 +61720,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -61578,7 +61788,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -61713,7 +61925,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -61926,7 +62140,9 @@
    "initials": [
     "AR"
    ],
-   "draft_year": [],
+   "draft_year": [
+    1993
+   ],
    "draft_position": [
     1
    ],
@@ -62008,7 +62224,8 @@
    ],
    "championships": [],
    "milestones": [
-    "3,000 Hit Club"
+    "3,000 Hit Club",
+    "500 Home Run Club"
    ],
    "college": [],
    "name_is_also": [],
@@ -62142,7 +62359,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -62204,11 +62423,15 @@
    "initials": [
     "JM"
    ],
-   "draft_year": [],
+   "draft_year": [
+    2001
+   ],
    "draft_position": [
     1
    ],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -62278,7 +62501,9 @@
    "draft_position": [],
    "awards": [],
    "championships": [],
-   "milestones": [],
+   "milestones": [
+    "3,000 Hit Club"
+   ],
    "college": [],
    "name_is_also": [],
    "alliterative_name": [
@@ -62292,7 +62517,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "has_nickname": [
     false
@@ -62340,7 +62565,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -62356,7 +62583,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Venezuela"
    ],
    "has_nickname": [
     false
@@ -62406,7 +62633,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -62610,9 +62839,15 @@
    "initials": [
     "GC"
    ],
-   "draft_year": [],
-   "draft_position": [],
-   "awards": [],
+   "draft_year": [
+    2011
+   ],
+   "draft_position": [
+    1
+   ],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -62679,7 +62914,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -62825,7 +63062,7 @@
     2
    ],
    "nationality": [
-    "Venezuela"
+    "Puerto Rico"
    ],
    "has_nickname": [
     false
@@ -63215,7 +63452,7 @@
     4
    ],
    "nationality": [
-    "Venezuela"
+    "Dominican Republic"
    ],
    "has_nickname": [
     false
@@ -63260,9 +63497,15 @@
    "initials": [
     "PS"
    ],
-   "draft_year": [],
-   "draft_position": [],
-   "awards": [],
+   "draft_year": [
+    2023
+   ],
+   "draft_position": [
+    1
+   ],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -63370,12 +63613,13 @@
    ],
    "decades_active": [
     1940,
-    1950
+    1950,
+    1960
    ],
    "teams": [
     "mlb_guardians",
     "mlb_orioles",
-    "mlb_royals"
+    "mlb_athletics"
    ],
    "jersey_number": [],
    "hall_of_fame": [
@@ -63628,7 +63872,8 @@
    ],
    "teams": [
     "mlb_guardians",
-    "mlb_whitesox"
+    "mlb_whitesox",
+    "mlb_tigers"
    ],
    "jersey_number": [
     14
@@ -63776,7 +64021,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -63827,10 +64074,10 @@
    "teams": [
     "mlb_stlcardinals",
     "mlb_phillies",
-    "mlb_giants",
     "mlb_whitesox",
     "mlb_guardians",
-    "mlb_twins"
+    "mlb_twins",
+    "mlb_sfgiants"
    ],
    "jersey_number": [
     32
@@ -63913,7 +64160,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -63980,7 +64229,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -64052,7 +64303,10 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young",
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -64103,7 +64357,13 @@
    "teams": [
     "mlb_whitesox",
     "mlb_yankees",
-    "mlb_padres"
+    "mlb_padres",
+    "mlb_pirates",
+    "mlb_cubs",
+    "mlb_sfgiants",
+    "mlb_rangers",
+    "mlb_athletics",
+    "mlb_mariners"
    ],
    "jersey_number": [
     54
@@ -64191,7 +64451,10 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young",
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -64260,7 +64523,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -64328,7 +64593,9 @@
    "draft_position": [],
    "awards": [],
    "championships": [],
-   "milestones": [],
+   "milestones": [
+    "3,000 Hit Club"
+   ],
    "college": [],
    "name_is_also": [],
    "alliterative_name": [
@@ -64395,7 +64662,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -64447,9 +64716,9 @@
    ],
    "teams": [
     "mlb_reds",
-    "mlb_expos",
     "mlb_redsox",
-    "mlb_phillies"
+    "mlb_phillies",
+    "mlb_nationals"
    ],
    "jersey_number": [
     24
@@ -64483,7 +64752,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Cuba"
    ],
    "has_nickname": [
     false
@@ -64743,7 +65012,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -64881,7 +65152,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -65087,7 +65360,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -65310,7 +65585,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Curacao"
    ],
    "has_nickname": [
     false
@@ -65415,7 +65690,6 @@
    ],
    "teams": [
     "mlb_guardians",
-    "mlb_expos",
     "mlb_whitesox",
     "mlb_angels",
     "mlb_redsox",
@@ -65424,7 +65698,8 @@
     "mlb_mets",
     "mlb_braves",
     "mlb_twins",
-    "mlb_rangers"
+    "mlb_rangers",
+    "mlb_nationals"
    ],
    "jersey_number": [
     40
@@ -65440,7 +65715,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -65556,8 +65833,7 @@
    ],
    "decades_active": [
     1960,
-    1970,
-    1980
+    1970
    ],
    "teams": [
     "nhl_bruins",
@@ -65629,7 +65905,7 @@
    ],
    "teams": [
     "nhl_redwings",
-    "nhl_winnipegjets"
+    "nhl_hartford-whalers"
    ],
    "jersey_number": [
     9
@@ -66545,7 +66821,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Canada"
    ],
    "has_nickname": [
     false
@@ -66647,7 +66923,8 @@
     2020
    ],
    "teams": [
-    "nhl_blackhawks"
+    "nhl_blackhawks",
+    "nhl_winnipegjets"
    ],
    "jersey_number": [
     19
@@ -67372,7 +67649,7 @@
    "teams": [
     "nhl_canadiens",
     "nhl_nyrangers",
-    "nhl_nordiques"
+    "nhl_quebec-nordiques"
    ],
    "jersey_number": [
     10
@@ -67437,7 +67714,6 @@
     "G"
    ],
    "decades_active": [
-    1940,
     1950,
     1960,
     1970
@@ -67509,11 +67785,13 @@
    "decades_active": [
     1950,
     1960,
-    1970
+    1970,
+    1980
    ],
    "teams": [
     "nhl_blackhawks",
-    "nhl_winnipegjets"
+    "nhl_winnipegjets",
+    "nhl_hartford-whalers"
    ],
    "jersey_number": [
     9
@@ -67617,7 +67895,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Canada"
    ],
    "has_nickname": [
     false
@@ -67683,7 +67961,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Canada"
    ],
    "has_nickname": [
     false
@@ -67787,7 +68065,7 @@
     "nhl_blues",
     "nhl_stars",
     "nhl_redwings",
-    "nhl_coyotes"
+    "nhl_phoenix-coyotes"
    ],
    "jersey_number": [
     16
@@ -67821,7 +68099,7 @@
     2
    ],
    "nationality": [
-    "Canada"
+    "United States"
    ],
    "has_nickname": [
     false
@@ -67956,7 +68234,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Sweden"
    ],
    "has_nickname": [
     false
@@ -67993,7 +68271,7 @@
     "nhl_canadiens",
     "nhl_blackhawks",
     "nhl_redwings",
-    "nhl_flames"
+    "nhl_atlanta-thrashers"
    ],
    "jersey_number": [
     7,
@@ -68129,8 +68407,7 @@
     "nhl_islanders",
     "nhl_senators",
     "nhl_bruins",
-    "nhl_capitals",
-    "nhl_islanders"
+    "nhl_capitals"
    ],
    "jersey_number": [
     33
@@ -68264,11 +68541,11 @@
    "teams": [
     "nhl_oilers",
     "nhl_devils",
-    "nhl_coyotes",
     "nhl_sabres",
     "nhl_bruins",
     "nhl_blackhawks",
-    "nhl_hurricanes"
+    "nhl_hurricanes",
+    "nhl_arizona-coyotes"
    ],
    "jersey_number": [
     71
@@ -68460,7 +68737,10 @@
     1960,
     1970
    ],
-   "teams": [],
+   "teams": [
+    "club_santos",
+    "soc_new-york-cosmos"
+   ],
    "jersey_number": [
     10
    ],
@@ -68522,7 +68802,13 @@
     1980,
     1990
    ],
-   "teams": [],
+   "teams": [
+    "club_boca-juniors",
+    "club_barcelona",
+    "club_napoli",
+    "club_sevilla",
+    "soc_argentinos-juniors"
+   ],
    "jersey_number": [
     10
    ],
@@ -68584,7 +68870,11 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_barcelona",
+    "club_psg",
+    "club_inter-miami"
+   ],
    "jersey_number": [
     10,
     30
@@ -68647,7 +68937,13 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_sporting-cp",
+    "club_man-united",
+    "club_real-madrid",
+    "club_juventus",
+    "soc_al-nassr"
+   ],
    "jersey_number": [
     7
    ],
@@ -68710,7 +69006,11 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_monaco",
+    "club_psg",
+    "club_real-madrid"
+   ],
    "jersey_number": [
     7,
     9
@@ -68772,7 +69072,11 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_borussia-dortmund",
+    "club_man-city",
+    "soc_red-bull-salzburg"
+   ],
    "jersey_number": [
     9
    ],
@@ -68834,7 +69138,12 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_santos",
+    "club_barcelona",
+    "club_psg",
+    "soc_al-hilal"
+   ],
    "jersey_number": [
     10,
     11
@@ -68897,10 +69206,15 @@
     1990,
     2000
    ],
-   "teams": [],
+   "teams": [
+    "club_juventus",
+    "club_real-madrid",
+    "soc_bordeaux"
+   ],
    "jersey_number": [
     5,
-    10
+    10,
+    21
    ],
    "hall_of_fame": [
     true
@@ -68960,9 +69274,16 @@
     2000,
     2010
    ],
-   "teams": [],
+   "teams": [
+    "club_psg",
+    "club_barcelona",
+    "club_ac-milan",
+    "club_flamengo",
+    "soc_gremio"
+   ],
    "jersey_number": [
-    10
+    10,
+    80
    ],
    "hall_of_fame": [
     true
@@ -69019,9 +69340,18 @@
    ],
    "decades_active": [
     1990,
-    2000
+    2000,
+    2010
    ],
-   "teams": [],
+   "teams": [
+    "club_psv",
+    "club_barcelona",
+    "club_inter-milan",
+    "club_real-madrid",
+    "club_ac-milan",
+    "club_corinthians",
+    "soc_cruzeiro"
+   ],
    "jersey_number": [
     9
    ],
@@ -69085,7 +69415,11 @@
     1970,
     1980
    ],
-   "teams": [],
+   "teams": [
+    "club_ajax",
+    "club_barcelona",
+    "club_feyenoord"
+   ],
    "jersey_number": [
     14
    ],
@@ -69147,7 +69481,11 @@
     1970,
     1980
    ],
-   "teams": [],
+   "teams": [
+    "club_bayern-munich",
+    "soc_new-york-cosmos",
+    "soc_hamburger-sv"
+   ],
    "jersey_number": [
     5
    ],
@@ -69178,7 +69516,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Germany"
    ],
    "has_nickname": [
     false
@@ -69209,7 +69547,13 @@
     2000,
     2010
    ],
-   "teams": [],
+   "teams": [
+    "club_man-united",
+    "club_real-madrid",
+    "club_la-galaxy",
+    "club_ac-milan",
+    "club_psg"
+   ],
    "jersey_number": [
     7,
     23
@@ -69274,7 +69618,13 @@
     2000,
     2010
    ],
-   "teams": [],
+   "teams": [
+    "club_monaco",
+    "club_juventus",
+    "club_arsenal",
+    "club_barcelona",
+    "club_ny-red-bulls"
+   ],
    "jersey_number": [
     14
    ],
@@ -69338,7 +69688,9 @@
     1990,
     2000
    ],
-   "teams": [],
+   "teams": [
+    "soc_washington-freedom"
+   ],
    "jersey_number": [
     9
    ],
@@ -69461,7 +69813,9 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "soc_ol-reign"
+   ],
    "jersey_number": [
     15
    ],
@@ -69522,7 +69876,11 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "soc_portland-thorns",
+    "soc_orlando-pride",
+    "soc_san-diego-wave"
+   ],
    "jersey_number": [
     13
    ],
@@ -69585,7 +69943,11 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_borussia-dortmund",
+    "club_chelsea",
+    "club_ac-milan"
+   ],
    "jersey_number": [
     10
    ],
@@ -69646,7 +70008,11 @@
     2000,
     2010
    ],
-   "teams": [],
+   "teams": [
+    "club_la-galaxy",
+    "club_bayer-leverkusen",
+    "soc_san-jose-earthquakes"
+   ],
    "jersey_number": [
     10
    ],
@@ -70421,7 +70787,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Sweden"
    ],
    "has_nickname": [
     false
@@ -70966,7 +71332,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Sweden"
    ],
    "has_nickname": [
     false
@@ -71724,7 +72090,8 @@
    "decades_active": [
     1990,
     2000,
-    2010
+    2010,
+    2020
    ],
    "teams": [],
    "jersey_number": [],
@@ -72159,7 +72526,8 @@
    "decades_active": [
     1980,
     1990,
-    2000
+    2000,
+    2010
    ],
    "teams": [],
    "jersey_number": [],
@@ -72417,7 +72785,7 @@
    "teams": [],
    "jersey_number": [],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Nurmagomedov"
@@ -72503,7 +72871,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Brazil"
    ],
    "nicknames": [
     "The Spider"
@@ -72565,7 +72933,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Canada"
    ],
    "has_nickname": [
     false
@@ -72657,7 +73025,7 @@
    "teams": [],
    "jersey_number": [],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Nunes"
@@ -72683,7 +73051,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Brazil"
    ],
    "has_nickname": [
     false
@@ -74320,7 +74688,7 @@
     3
    ],
    "nationality": [
-    "United States"
+    "France"
    ],
    "has_nickname": [
     false
@@ -74626,7 +74994,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "Ireland"
    ],
    "has_nickname": [
     false
@@ -74785,7 +75153,8 @@
     1950,
     1960,
     1970,
-    1980
+    1980,
+    1990
    ],
    "teams": [],
    "jersey_number": [
@@ -75260,7 +75629,7 @@
     2
    ],
    "nationality": [
-    "United States"
+    "United Kingdom"
    ],
    "has_nickname": [
     false
@@ -75412,7 +75781,8 @@
     1950,
     1960,
     1970,
-    1980
+    1980,
+    1990
    ],
    "teams": [],
    "jersey_number": [],
@@ -94092,7 +94462,9 @@
     "PB"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -94222,7 +94594,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Turkey"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -94284,7 +94656,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Germany"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -94342,7 +94714,9 @@
     "CC"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -94794,7 +95168,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Canada"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -94858,7 +95232,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "United Kingdom"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -95050,13 +95424,15 @@
     "DA"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Bahamas"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -95119,7 +95495,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Canada"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -95233,8 +95609,8 @@
     "nba_nuggets"
    ],
    "jersey_number": [
-    32,
-    50
+    50,
+    0
    ],
    "hall_of_fame": [
     false
@@ -95318,7 +95694,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Cameroon"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -95700,7 +96076,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Australia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -96012,13 +96388,15 @@
     "ZR"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "France"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -96080,7 +96458,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Canada"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -96198,7 +96576,9 @@
     "CF"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -96241,9 +96621,7 @@
    "primary_position": [
     "SF"
    ],
-   "decades_active": [
-    2020
-   ],
+   "decades_active": [],
    "teams": [],
    "jersey_number": [],
    "hall_of_fame": [
@@ -96299,9 +96677,7 @@
    "primary_position": [
     "PG"
    ],
-   "decades_active": [
-    2020
-   ],
+   "decades_active": [],
    "teams": [],
    "jersey_number": [],
    "hall_of_fame": [
@@ -96359,9 +96735,7 @@
    "primary_position": [
     "PF"
    ],
-   "decades_active": [
-    2020
-   ],
+   "decades_active": [],
    "teams": [],
    "jersey_number": [],
    "hall_of_fame": [
@@ -96419,9 +96793,7 @@
    "primary_position": [
     "PF"
    ],
-   "decades_active": [
-    2020
-   ],
+   "decades_active": [],
    "teams": [],
    "jersey_number": [],
    "hall_of_fame": [
@@ -96510,7 +96882,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Congo"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -96576,7 +96948,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "New Zealand"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -96646,7 +97018,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Slovenia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -96684,7 +97056,6 @@
     "PG"
    ],
    "decades_active": [
-    2000,
     2010,
     2020
    ],
@@ -96713,7 +97084,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Spain"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -96780,7 +97151,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Bahamas"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -96825,7 +97196,8 @@
     "nba_bucks",
     "nba_pacers",
     "nba_celtics",
-    "nba_trailblazers"
+    "nba_trailblazers",
+    "nba_wizards"
    ],
    "jersey_number": [
     13
@@ -97432,7 +97804,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Japan"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -97561,7 +97933,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Bosnia and Herzegovina"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -97702,7 +98074,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Australia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -97902,7 +98274,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Croatia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -99174,7 +99546,8 @@
     "nfl_packers"
    ],
    "jersey_number": [
-    8
+    8,
+    28
    ],
    "hall_of_fame": [
     false
@@ -100005,7 +100378,8 @@
     "nfl_jets"
    ],
    "jersey_number": [
-    17
+    17,
+    5
    ],
    "hall_of_fame": [
     false
@@ -101653,7 +102027,7 @@
     73
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Thomas"
@@ -101781,7 +102155,8 @@
     "nfl_texans"
    ],
    "jersey_number": [
-    55
+    55,
+    99
    ],
    "hall_of_fame": [
     false
@@ -102100,7 +102475,8 @@
     2020
    ],
    "teams": [
-    "nfl_jets"
+    "nfl_jets",
+    "nfl_cowboys"
    ],
    "jersey_number": [
     95
@@ -102235,7 +102611,8 @@
    ],
    "jersey_number": [
     0,
-    18
+    18,
+    58
    ],
    "hall_of_fame": [
     false
@@ -102615,7 +102992,8 @@
     2020
    ],
    "teams": [
-    "nfl_jets"
+    "nfl_jets",
+    "nfl_colts"
    ],
    "jersey_number": [
     1
@@ -103081,7 +103459,8 @@
     "nfl_broncos",
     "nfl_jets",
     "nfl_browns",
-    "nfl_bengals"
+    "nfl_bengals",
+    "nfl_colts"
    ],
    "jersey_number": [
     5,
@@ -103098,7 +103477,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Super Bowl MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -103295,7 +103676,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "NFL MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -103339,7 +103722,8 @@
    ],
    "decades_active": [
     2000,
-    2010
+    2010,
+    2020
    ],
    "teams": [
     "nfl_eagles",
@@ -103738,7 +104122,8 @@
     "nfl_steelers",
     "nfl_jets",
     "nfl_chiefs",
-    "nfl_ravens"
+    "nfl_ravens",
+    "nfl_buccaneers"
    ],
    "jersey_number": [
     26
@@ -104072,7 +104457,7 @@
     80
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Johnson"
@@ -104135,7 +104520,8 @@
     "nfl_dolphins",
     "nfl_bears",
     "nfl_jets",
-    "nfl_giants"
+    "nfl_giants",
+    "nfl_seahawks"
    ],
    "jersey_number": [
     15
@@ -104200,7 +104586,9 @@
    "teams": [
     "nfl_dolphins",
     "nfl_patriots",
-    "nfl_broncos"
+    "nfl_broncos",
+    "nfl_chargers",
+    "nfl_rams"
    ],
    "jersey_number": [
     83
@@ -104280,7 +104668,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Super Bowl MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -104400,7 +104790,7 @@
     80
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Bruce"
@@ -104590,7 +104980,6 @@
    ],
    "teams": [
     "nfl_cowboys",
-    "nfl_saints",
     "nfl_ravens"
    ],
    "jersey_number": [
@@ -104653,7 +105042,8 @@
    ],
    "decades_active": [
     2000,
-    2010
+    2010,
+    2020
    ],
    "teams": [
     "nfl_cowboys",
@@ -105255,7 +105645,8 @@
     "nfl_chiefs",
     "nfl_colts",
     "nfl_ravens",
-    "nfl_steelers"
+    "nfl_steelers",
+    "nfl_panthers"
    ],
    "jersey_number": [
     50
@@ -105797,7 +106188,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -105926,7 +106317,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Aruba"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -106123,7 +106514,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -106186,7 +106577,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Cuba"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -106316,7 +106707,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -106373,8 +106764,12 @@
    "initials": [
     "AR"
    ],
-   "draft_year": [],
-   "draft_position": [],
+   "draft_year": [
+    2019
+   ],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -106627,7 +107022,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -106885,7 +107282,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -106997,7 +107394,8 @@
     "mlb_dodgers"
    ],
    "jersey_number": [
-    7
+    7,
+    4
    ],
    "hall_of_fame": [
     false
@@ -107077,7 +107475,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -107124,7 +107524,8 @@
     2020
    ],
    "teams": [
-    "mlb_guardians"
+    "mlb_guardians",
+    "mlb_rangers"
    ],
    "jersey_number": [
     48
@@ -107145,7 +107546,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -107209,7 +107610,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Puerto Rico"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -107589,14 +107990,18 @@
    "initials": [
     "CC"
    ],
-   "draft_year": [],
-   "draft_position": [],
+   "draft_year": [
+    2012
+   ],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Puerto Rico"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -107655,7 +108060,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -107922,7 +108329,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Curacao"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -108048,7 +108455,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -108113,7 +108520,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -108177,7 +108586,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -108309,7 +108720,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -108382,7 +108795,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Puerto Rico"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -108445,7 +108858,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Venezuela"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -108575,7 +108988,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Puerto Rico"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -108637,7 +109050,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Cuba"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -108763,7 +109176,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -108892,7 +109307,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -108959,7 +109376,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -109084,7 +109503,7 @@
     34
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Halladay"
@@ -109094,7 +109513,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -109158,12 +109579,14 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Venezuela"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -109224,7 +109647,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -109321,7 +109746,7 @@
   "sport_weight": 1
  },
  {
-  "id": "mlb_buster-posey-dup",
+  "id": "mlb_brandon-crawford",
   "display_name": "Brandon Crawford",
   "entity_type": "player",
   "sport": "MLB",
@@ -109337,7 +109762,7 @@
    ],
    "teams": [
     "mlb_sfgiants",
-    "mlb_cardinals"
+    "mlb_stlcardinals"
    ],
    "jersey_number": [
     35
@@ -109418,7 +109843,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -109825,7 +110252,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Puerto Rico"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -109888,7 +110315,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Puerto Rico"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -110019,7 +110446,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -110085,7 +110512,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Puerto Rico"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -110209,7 +110636,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -110273,12 +110702,14 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Canada"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -110539,7 +110970,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -110606,7 +111039,9 @@
    "initials": [
     "AG"
    ],
-   "draft_year": [],
+   "draft_year": [
+    2000
+   ],
    "draft_position": [
     1
    ],
@@ -110675,9 +111110,15 @@
    "initials": [
     "JH"
    ],
-   "draft_year": [],
-   "draft_position": [],
-   "awards": [],
+   "draft_year": [
+    1999
+   ],
+   "draft_position": [
+    1
+   ],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -110750,7 +111191,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Japan"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -110813,7 +111254,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Japan"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -111011,7 +111452,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Canada"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -111074,7 +111515,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Sweden"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -111137,7 +111578,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Czechia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -111199,7 +111640,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Russia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -111237,7 +111678,6 @@
     "G"
    ],
    "decades_active": [
-    2010,
     2020
    ],
    "teams": [
@@ -111262,7 +111702,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Russia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -111388,7 +111828,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Russia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -111451,7 +111891,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Russia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -111515,7 +111955,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Sweden"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -111578,7 +112018,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Canada"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -111641,7 +112081,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Finland"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -111898,7 +112338,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Sweden"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -112024,7 +112464,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Germany"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -112154,7 +112594,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Switzerland"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -112280,7 +112720,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Finland"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -112344,7 +112784,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Canada"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -112410,7 +112850,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Denmark"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -112778,7 +113218,7 @@
     10
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Bird"
@@ -112844,7 +113284,7 @@
     23
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Moore"
@@ -112975,7 +113415,7 @@
     9
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Leslie"
@@ -113029,14 +113469,19 @@
    ],
    "decades_active": [
     1990,
-    2000
+    2000,
+    2010
    ],
-   "teams": [],
+   "teams": [
+    "wnba_houston-comets",
+    "wnba_storm",
+    "wnba_tulsa-shock"
+   ],
    "jersey_number": [
     22
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Swoopes"
@@ -113092,12 +113537,14 @@
     1990,
     2000
    ],
-   "teams": [],
+   "teams": [
+    "wnba_houston-comets"
+   ],
    "jersey_number": [
     14
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Cooper"
@@ -113156,12 +113603,16 @@
     2000,
     2010
    ],
-   "teams": [],
+   "teams": [
+    "wnba_houston-comets",
+    "wnba_sparks",
+    "wnba_storm"
+   ],
    "jersey_number": [
     7
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Thompson"
@@ -113686,7 +114137,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Bahamas"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -113992,7 +114443,8 @@
    ],
    "teams": [
     "wnba_sky",
-    "wnba_mercury"
+    "wnba_mercury",
+    "wnba_mystics"
    ],
    "jersey_number": [
     2
@@ -114076,7 +114528,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Germany"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -114401,7 +114853,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Canada"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -114636,7 +115088,8 @@
     2020
    ],
    "teams": [
-    "wnba_fire"
+    "wnba_fire",
+    "wnba_fever"
    ],
    "jersey_number": [
     21
@@ -114699,7 +115152,8 @@
     2020
    ],
    "teams": [
-    "wnba_fire"
+    "wnba_fire",
+    "wnba_wings"
    ],
    "jersey_number": [
     10
@@ -114758,11 +115212,17 @@
     "MF"
    ],
    "decades_active": [
+    2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_borussia-dortmund",
+    "club_real-madrid",
+    "soc_birmingham-city"
+   ],
    "jersey_number": [
-    5
+    5,
+    22
    ],
    "hall_of_fame": [
     false
@@ -114780,7 +115240,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "England"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -114821,9 +115281,13 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_flamengo",
+    "club_real-madrid"
+   ],
    "jersey_number": [
-    7
+    7,
+    20
    ],
    "hall_of_fame": [
     false
@@ -114841,7 +115305,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Brazil"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -114882,7 +115346,12 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_liverpool",
+    "club_as-roma",
+    "club_chelsea",
+    "soc_basel"
+   ],
    "jersey_number": [
     11
    ],
@@ -114902,7 +115371,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Egypt"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -114943,7 +115412,14 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_man-city",
+    "club_chelsea",
+    "club_werder-bremen",
+    "club_napoli",
+    "soc_vfl-wolfsburg",
+    "soc_genk"
+   ],
    "jersey_number": [
     17
    ],
@@ -114963,7 +115439,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Belgium"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115004,7 +115480,11 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_celtic",
+    "club_liverpool",
+    "soc_southampton"
+   ],
    "jersey_number": [
     4
    ],
@@ -115024,7 +115504,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Netherlands"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115065,9 +115545,13 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_tottenham",
+    "club_bayern-munich"
+   ],
    "jersey_number": [
-    9
+    9,
+    10
    ],
    "hall_of_fame": [
     false
@@ -115085,7 +115569,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "England"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115129,7 +115613,12 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_borussia-dortmund",
+    "club_bayern-munich",
+    "club_barcelona",
+    "soc_lech-poznan"
+   ],
    "jersey_number": [
     9
    ],
@@ -115149,7 +115638,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Poland"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115191,7 +115680,12 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_tottenham",
+    "club_real-madrid",
+    "club_ac-milan",
+    "soc_dinamo-zagreb"
+   ],
    "jersey_number": [
     10
    ],
@@ -115211,7 +115705,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Croatia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115253,9 +115747,15 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_sevilla",
+    "club_real-madrid",
+    "club_psg",
+    "soc_cf-monterrey"
+   ],
    "jersey_number": [
-    4
+    4,
+    15
    ],
    "hall_of_fame": [
     false
@@ -115273,7 +115773,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Spain"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115312,11 +115812,16 @@
    ],
    "decades_active": [
     2000,
-    2010
+    2010,
+    2020
    ],
-   "teams": [],
+   "teams": [
+    "club_barcelona",
+    "soc_vissel-kobe"
+   ],
    "jersey_number": [
-    8
+    8,
+    6
    ],
    "hall_of_fame": [
     false
@@ -115334,7 +115839,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Spain"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115376,9 +115881,13 @@
     2000,
     2010
    ],
-   "teams": [],
+   "teams": [
+    "club_barcelona",
+    "soc_al-sadd"
+   ],
    "jersey_number": [
-    6
+    6,
+    8
    ],
    "hall_of_fame": [
     false
@@ -115396,7 +115905,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Spain"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115438,7 +115947,10 @@
     2000,
     2010
    ],
-   "teams": [],
+   "teams": [
+    "club_real-madrid",
+    "club_porto"
+   ],
    "jersey_number": [
     1
    ],
@@ -115458,7 +115970,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Spain"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115501,7 +116013,11 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_juventus",
+    "club_psg",
+    "soc_parma"
+   ],
    "jersey_number": [
     1
    ],
@@ -115521,7 +116037,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Italy"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115563,7 +116079,10 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_schalke",
+    "club_bayern-munich"
+   ],
    "jersey_number": [
     1
    ],
@@ -115583,7 +116102,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Germany"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115610,7 +116129,7 @@
   "sport_weight": 0.25
  },
  {
-  "id": "soccer_thierry-henry-dup",
+  "id": "soccer_wayne-rooney",
   "display_name": "Wayne Rooney",
   "entity_type": "player",
   "sport": "Soccer",
@@ -115622,9 +116141,15 @@
    ],
    "decades_active": [
     2000,
-    2010
+    2010,
+    2020
    ],
-   "teams": [],
+   "teams": [
+    "club_everton",
+    "club_man-united",
+    "club_dc-united",
+    "soc_derby-county"
+   ],
    "jersey_number": [
     10
    ],
@@ -115644,7 +116169,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "England"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115686,7 +116211,10 @@
     2000,
     2010
    ],
-   "teams": [],
+   "teams": [
+    "club_liverpool",
+    "club_la-galaxy"
+   ],
    "jersey_number": [
     8
    ],
@@ -115706,7 +116234,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "England"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115748,7 +116276,12 @@
     2000,
     2010
    ],
-   "teams": [],
+   "teams": [
+    "club_west-ham",
+    "club_chelsea",
+    "club_man-city",
+    "club_nycfc"
+   ],
    "jersey_number": [
     8
    ],
@@ -115768,7 +116301,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "England"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115810,7 +116343,11 @@
     2000,
     2010
    ],
-   "teams": [],
+   "teams": [
+    "club_marseille",
+    "club_chelsea",
+    "soc_galatasaray"
+   ],
    "jersey_number": [
     11
    ],
@@ -115830,7 +116367,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Ivory Coast"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115872,7 +116409,13 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_ajax",
+    "club_liverpool",
+    "club_barcelona",
+    "club_atletico-madrid",
+    "club_inter-miami"
+   ],
    "jersey_number": [
     9
    ],
@@ -115892,7 +116435,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Uruguay"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115936,9 +116479,15 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_atletico-madrid",
+    "club_man-city",
+    "club_barcelona",
+    "soc_independiente"
+   ],
    "jersey_number": [
-    10
+    10,
+    16
    ],
    "hall_of_fame": [
     false
@@ -115956,7 +116505,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Argentina"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -115997,7 +116546,9 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_arsenal"
+   ],
    "jersey_number": [
     7
    ],
@@ -116017,7 +116568,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "England"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -116058,7 +116609,9 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_man-city"
+   ],
    "jersey_number": [
     47
    ],
@@ -116078,7 +116631,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "England"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -116118,9 +116671,12 @@
    "decades_active": [
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_barcelona"
+   ],
    "jersey_number": [
-    19
+    19,
+    10
    ],
    "hall_of_fame": [
     false
@@ -116138,7 +116694,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Spain"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -116179,7 +116735,10 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_schalke",
+    "club_juventus"
+   ],
    "jersey_number": [
     8
    ],
@@ -116240,7 +116799,12 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_ny-red-bulls",
+    "club_rb-leipzig",
+    "club_leeds",
+    "club_bournemouth"
+   ],
    "jersey_number": [
     4
    ],
@@ -116303,7 +116867,10 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_borussia-dortmund",
+    "club_borussia-monchengladbach"
+   ],
    "jersey_number": [
     7
    ],
@@ -116363,7 +116930,9 @@
    "decades_active": [
     2020
    ],
-   "teams": [],
+   "teams": [
+    "soc_portland-thorns"
+   ],
    "jersey_number": [
     11
    ],
@@ -116425,7 +116994,9 @@
    "decades_active": [
     2020
    ],
-   "teams": [],
+   "teams": [
+    "soc_washington-spirit"
+   ],
    "jersey_number": [
     2
    ],
@@ -116488,7 +117059,9 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "soc_chicago-red-stars"
+   ],
    "jersey_number": [
     9
    ],
@@ -116548,7 +117121,10 @@
    "decades_active": [
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_chelsea",
+    "soc_san-diego-wave"
+   ],
    "jersey_number": [
     4
    ],
@@ -116609,9 +117185,12 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_barcelona"
+   ],
    "jersey_number": [
-    6
+    6,
+    14
    ],
    "hall_of_fame": [
     false
@@ -116629,7 +117208,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Spain"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -116670,7 +117249,9 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_barcelona"
+   ],
    "jersey_number": [
     11
    ],
@@ -116690,7 +117271,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Spain"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -116731,7 +117312,11 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_chelsea",
+    "soc_chicago-red-stars",
+    "soc_perth-glory"
+   ],
    "jersey_number": [
     20
    ],
@@ -116751,7 +117336,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Australia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -116794,7 +117379,9 @@
     2010,
     2020
    ],
-   "teams": [],
+   "teams": [
+    "club_lyon"
+   ],
    "jersey_number": [
     14
    ],
@@ -116814,7 +117401,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Norway"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -116991,7 +117578,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Norway"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -117050,7 +117637,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Spain"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -117276,7 +117863,7 @@
    "teams": [],
    "jersey_number": [],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Ko"
@@ -117291,7 +117878,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "New Zealand"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -117350,7 +117937,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Italy"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -117409,7 +117996,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Russia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -117468,7 +118055,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Germany"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -117527,7 +118114,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Poland"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -117586,7 +118173,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Belarus"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -117646,7 +118233,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Great Britain"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -117708,7 +118295,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Switzerland"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -117767,7 +118354,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Brazil"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -117887,7 +118474,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Brazil"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -118006,7 +118593,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Kyrgyzstan"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -118066,7 +118653,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "United Kingdom"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -118125,7 +118712,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "United Kingdom"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -118544,7 +119131,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "France"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -118766,7 +119353,9 @@
     2020
    ],
    "teams": [],
-   "jersey_number": [],
+   "jersey_number": [
+    16
+   ],
    "hall_of_fame": [
     false
    ],
@@ -118783,7 +119372,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Monaco"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -118825,7 +119414,9 @@
     2020
    ],
    "teams": [],
-   "jersey_number": [],
+   "jersey_number": [
+    4
+   ],
    "hall_of_fame": [
     false
    ],
@@ -118842,7 +119433,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "United Kingdom"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -118883,7 +119474,9 @@
     2020
    ],
    "teams": [],
-   "jersey_number": [],
+   "jersey_number": [
+    81
+   ],
    "hall_of_fame": [
     false
    ],
@@ -118900,7 +119493,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Australia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -118942,7 +119535,9 @@
     2020
    ],
    "teams": [],
-   "jersey_number": [],
+   "jersey_number": [
+    9
+   ],
    "hall_of_fame": [
     false
    ],
@@ -119006,7 +119601,9 @@
     2020
    ],
    "teams": [],
-   "jersey_number": [],
+   "jersey_number": [
+    22
+   ],
    "hall_of_fame": [
     false
    ],
@@ -119066,7 +119663,9 @@
     2020
    ],
    "teams": [],
-   "jersey_number": [],
+   "jersey_number": [
+    11
+   ],
    "hall_of_fame": [
     false
    ],
@@ -119382,7 +119981,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Australia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -119713,13 +120312,15 @@
     "AW"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Canada"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -120164,7 +120765,8 @@
     "nba_grizzlies",
     "nba_pelicans",
     "nba_wizards",
-    "nba_kings"
+    "nba_kings",
+    "nba_nuggets"
    ],
    "jersey_number": [
     17
@@ -120185,7 +120787,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Lithuania"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -120237,7 +120839,7 @@
     21
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Divac"
@@ -120252,7 +120854,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Serbia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -120303,7 +120905,7 @@
     7
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Kukoc"
@@ -120318,7 +120920,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Croatia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -120366,7 +120968,7 @@
     11
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Sabonis"
@@ -120381,7 +120983,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Lithuania"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -120450,7 +121052,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Germany"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -120971,7 +121573,7 @@
     21
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Cooper"
@@ -121027,8 +121629,7 @@
    ],
    "decades_active": [
     1980,
-    1990,
-    2000
+    1990
    ],
    "teams": [
     "nba_lakers",
@@ -121256,7 +121857,9 @@
     "KM"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -121590,7 +122193,9 @@
     "nba_lakers",
     "nba_clippers",
     "nba_grizzlies",
-    "nba_kings"
+    "nba_kings",
+    "nba_76ers",
+    "nba_knicks"
    ],
    "jersey_number": [
     9,
@@ -121864,11 +122469,11 @@
     2020
    ],
    "teams": [
-    "nba_hornets",
     "nba_nuggets",
     "nba_knicks",
     "nba_cavaliers",
-    "nba_lakers"
+    "nba_lakers",
+    "nba_pelicans"
    ],
    "jersey_number": [
     5,
@@ -122081,7 +122686,9 @@
     "nba_clippers",
     "nba_thunder",
     "nba_hawks",
-    "nba_celtics"
+    "nba_wizards",
+    "nba_pistons",
+    "nba_bucks"
    ],
    "jersey_number": [
     8
@@ -122102,7 +122709,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Italy"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -122353,7 +122960,8 @@
     "nba_mavericks",
     "nba_nets",
     "nba_lakers",
-    "nba_nuggets"
+    "nba_nuggets",
+    "nba_76ers"
    ],
    "jersey_number": [
     6
@@ -122416,7 +123024,6 @@
     "PF"
    ],
    "decades_active": [
-    2000,
     2010,
     2020
    ],
@@ -122440,7 +123047,9 @@
     "BG"
    ],
    "draft_year": [],
-   "draft_position": [],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -122497,7 +123106,8 @@
     "nba_knicks",
     "nba_suns",
     "nba_lakers",
-    "nba_rockets"
+    "nba_rockets",
+    "nba_pelicans"
    ],
    "jersey_number": [
     6
@@ -122564,7 +123174,6 @@
    "teams": [
     "nba_kings",
     "nba_rockets",
-    "nba_bucks",
     "nba_thunder",
     "nba_timberwolves",
     "nba_spurs"
@@ -122705,8 +123314,7 @@
    "teams": [
     "nba_pacers",
     "nba_clippers",
-    "nba_heat",
-    "nba_pistons"
+    "nba_heat"
    ],
    "jersey_number": [
     33
@@ -122860,7 +123468,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "United Kingdom"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -122995,7 +123603,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Brazil"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -123110,7 +123718,10 @@
     "nba_bucks",
     "nba_suns",
     "nba_celtics",
-    "nba_raptors"
+    "nba_raptors",
+    "nba_76ers",
+    "nba_timberwolves",
+    "nba_wizards"
    ],
    "jersey_number": [
     10,
@@ -123264,7 +123875,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Serbia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -123401,7 +124012,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Canada"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -123446,7 +124057,8 @@
     "nba_knicks",
     "nba_hawks",
     "nba_mavericks",
-    "nba_pistons"
+    "nba_pistons",
+    "nba_nuggets"
    ],
    "jersey_number": [
     10
@@ -123515,7 +124127,8 @@
     "nba_clippers",
     "nba_lakers",
     "nba_hornets",
-    "nba_76ers"
+    "nba_76ers",
+    "nba_wizards"
    ],
    "jersey_number": [
     5
@@ -123660,7 +124273,8 @@
     "nba_celtics",
     "nba_knicks",
     "nba_clippers",
-    "nba_76ers"
+    "nba_76ers",
+    "nba_cavaliers"
    ],
    "jersey_number": [
     13,
@@ -123733,7 +124347,8 @@
     "nba_lakers",
     "nba_heat",
     "nba_nets",
-    "nba_mavericks"
+    "nba_mavericks",
+    "nba_pistons"
    ],
    "jersey_number": [
     8,
@@ -123877,7 +124492,8 @@
     "nba_raptors",
     "nba_nets",
     "nba_pistons",
-    "nba_kings"
+    "nba_kings",
+    "nba_warriors"
    ],
    "jersey_number": [
     17
@@ -123898,7 +124514,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Germany"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -123960,7 +124576,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Serbia"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -124578,7 +125194,8 @@
     "QB"
    ],
    "decades_active": [
-    2010
+    2010,
+    2020
    ],
    "teams": [
     "nfl_commanders",
@@ -124992,7 +125609,7 @@
     32
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "James"
@@ -125112,7 +125729,8 @@
    ],
    "decades_active": [
     1990,
-    2000
+    2000,
+    2010
    ],
    "teams": [
     "nfl_jaguars",
@@ -125569,8 +126187,7 @@
    ],
    "decades_active": [
     1990,
-    2000,
-    2010
+    2000
    ],
    "teams": [
     "nfl_seahawks",
@@ -126115,7 +126732,8 @@
    ],
    "jersey_number": [
     19,
-    2
+    2,
+    89
    ],
    "hall_of_fame": [
     false
@@ -126388,7 +127006,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Super Bowl MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -126902,7 +127522,6 @@
    "teams": [
     "nfl_broncos",
     "nfl_texans",
-    "nfl_patriots",
     "nfl_jets"
    ],
    "jersey_number": [
@@ -126970,7 +127589,6 @@
    "teams": [
     "nfl_eagles",
     "nfl_cardinals",
-    "nfl_lions",
     "nfl_commanders"
    ],
    "jersey_number": [
@@ -127627,7 +128245,7 @@
     93
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Seymour"
@@ -127691,7 +128309,7 @@
     94
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Ware"
@@ -127757,7 +128375,7 @@
     69
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Allen"
@@ -128009,8 +128627,7 @@
    "teams": [
     "nfl_giants",
     "nfl_buccaneers",
-    "nfl_ravens",
-    "nfl_dolphins"
+    "nfl_ravens"
    ],
    "jersey_number": [
     90
@@ -128080,7 +128697,7 @@
     54
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Thomas"
@@ -128212,7 +128829,7 @@
     47
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Lynch"
@@ -128334,8 +128951,7 @@
    ],
    "decades_active": [
     1980,
-    1990,
-    2000
+    1990
    ],
    "teams": [
     "nfl_broncos",
@@ -128345,7 +128961,7 @@
     27
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Atwater"
@@ -128476,7 +129092,7 @@
     24
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Law"
@@ -128887,7 +129503,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Poland"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -129000,7 +129616,6 @@
     "nfl_steelers"
    ],
    "jersey_number": [
-    84,
     84
    ],
    "hall_of_fame": [
@@ -129074,7 +129689,7 @@
     29
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "McGriff"
@@ -129152,7 +129767,10 @@
    "draft_position": [],
    "awards": [],
    "championships": [],
-   "milestones": [],
+   "milestones": [
+    "500 Home Run Club",
+    "3,000 Hit Club"
+   ],
    "college": [],
    "nationality": [
     "United States"
@@ -129224,7 +129842,9 @@
    "draft_position": [],
    "awards": [],
    "championships": [],
-   "milestones": [],
+   "milestones": [
+    "500 Home Run Club"
+   ],
    "college": [],
    "nationality": [
     "United States"
@@ -129365,7 +129985,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Venezuela"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -129570,7 +130190,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -129759,7 +130379,7 @@
     35
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Mussina"
@@ -129838,7 +130458,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -129905,7 +130527,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -129962,7 +130586,7 @@
     47
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Morris"
@@ -130042,7 +130666,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -130110,7 +130736,9 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "Cy Young"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
@@ -130168,7 +130796,7 @@
     13
    ],
    "hall_of_fame": [
-    false
+    true
    ],
    "surname": [
     "Wagner"
@@ -130252,7 +130880,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Venezuela"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -130458,7 +131086,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Cuba"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -130524,7 +131152,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Curacao"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -130717,7 +131345,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Venezuela"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -130783,7 +131411,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Venezuela"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -130968,8 +131596,12 @@
    "initials": [
     "ST"
    ],
-   "draft_year": [],
-   "draft_position": [],
+   "draft_year": [
+    2020
+   ],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -131099,7 +131731,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Venezuela"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -131278,8 +131910,12 @@
    "initials": [
     "JH"
    ],
-   "draft_year": [],
-   "draft_position": [],
+   "draft_year": [
+    2022
+   ],
+   "draft_position": [
+    1
+   ],
    "awards": [],
    "championships": [],
    "milestones": [],
@@ -131475,7 +132111,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Bahamas"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -131729,7 +132365,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "South Korea"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -131793,7 +132429,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Japan"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -131855,7 +132491,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Japan"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -132234,7 +132870,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Venezuela"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -132363,7 +132999,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -132426,7 +133062,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Venezuela"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -132490,7 +133126,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -132752,7 +133388,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Mexico"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -132953,7 +133589,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -133146,7 +133782,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -133272,12 +133908,14 @@
    ],
    "draft_year": [],
    "draft_position": [],
-   "awards": [],
+   "awards": [
+    "MLB MVP"
+   ],
    "championships": [],
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Cuba"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -133327,8 +133965,7 @@
     "mlb_mariners",
     "mlb_pirates",
     "mlb_brewers",
-    "mlb_twins",
-    "mlb_guardians"
+    "mlb_twins"
    ],
    "jersey_number": [
     41
@@ -133349,7 +133986,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Dominican Republic"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -133554,7 +134191,7 @@
    "milestones": [],
    "college": [],
    "nationality": [
-    "United States"
+    "Venezuela"
    ],
    "name_is_also": [],
    "alliterative_name": [
@@ -133649,5 +134286,473 @@
   "last_used": null,
   "cooldown_until": null,
   "sport_weight": 1
+ },
+ {
+  "id": "wnba_houston-comets",
+  "entity_type": "team",
+  "display_name": "Houston Comets",
+  "sport": "WNBA",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Houston Comets"
+   ]
+  }
+ },
+ {
+  "id": "wnba_tulsa-shock",
+  "entity_type": "team",
+  "display_name": "Tulsa Shock",
+  "sport": "WNBA",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Tulsa Shock"
+   ]
+  }
+ },
+ {
+  "id": "nhl_hartford-whalers",
+  "entity_type": "team",
+  "display_name": "Hartford Whalers",
+  "sport": "NHL",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Hartford Whalers"
+   ]
+  }
+ },
+ {
+  "id": "nhl_quebec-nordiques",
+  "entity_type": "team",
+  "display_name": "Quebec Nordiques",
+  "sport": "NHL",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Quebec Nordiques"
+   ]
+  }
+ },
+ {
+  "id": "nhl_phoenix-coyotes",
+  "entity_type": "team",
+  "display_name": "Phoenix Coyotes",
+  "sport": "NHL",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Phoenix Coyotes"
+   ]
+  }
+ },
+ {
+  "id": "nhl_atlanta-thrashers",
+  "entity_type": "team",
+  "display_name": "Atlanta Thrashers",
+  "sport": "NHL",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Atlanta Thrashers"
+   ]
+  }
+ },
+ {
+  "id": "nhl_arizona-coyotes",
+  "entity_type": "team",
+  "display_name": "Arizona Coyotes",
+  "sport": "NHL",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Arizona Coyotes"
+   ]
+  }
+ },
+ {
+  "id": "soc_new-york-cosmos",
+  "entity_type": "team",
+  "display_name": "New York Cosmos",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "New York Cosmos"
+   ]
+  }
+ },
+ {
+  "id": "soc_argentinos-juniors",
+  "entity_type": "team",
+  "display_name": "Argentinos Juniors",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Argentinos Juniors"
+   ]
+  }
+ },
+ {
+  "id": "soc_al-nassr",
+  "entity_type": "team",
+  "display_name": "Al-Nassr",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Al-Nassr"
+   ]
+  }
+ },
+ {
+  "id": "soc_red-bull-salzburg",
+  "entity_type": "team",
+  "display_name": "Red Bull Salzburg",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Red Bull Salzburg"
+   ]
+  }
+ },
+ {
+  "id": "soc_al-hilal",
+  "entity_type": "team",
+  "display_name": "Al-Hilal",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Al-Hilal"
+   ]
+  }
+ },
+ {
+  "id": "soc_bordeaux",
+  "entity_type": "team",
+  "display_name": "Bordeaux",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Bordeaux"
+   ]
+  }
+ },
+ {
+  "id": "soc_gremio",
+  "entity_type": "team",
+  "display_name": "Gremio",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Gremio"
+   ]
+  }
+ },
+ {
+  "id": "soc_cruzeiro",
+  "entity_type": "team",
+  "display_name": "Cruzeiro",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Cruzeiro"
+   ]
+  }
+ },
+ {
+  "id": "soc_hamburger-sv",
+  "entity_type": "team",
+  "display_name": "Hamburger SV",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Hamburger SV"
+   ]
+  }
+ },
+ {
+  "id": "soc_washington-freedom",
+  "entity_type": "team",
+  "display_name": "Washington Freedom",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Washington Freedom"
+   ]
+  }
+ },
+ {
+  "id": "soc_ol-reign",
+  "entity_type": "team",
+  "display_name": "OL Reign",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "OL Reign"
+   ]
+  }
+ },
+ {
+  "id": "soc_portland-thorns",
+  "entity_type": "team",
+  "display_name": "Portland Thorns",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Portland Thorns"
+   ]
+  }
+ },
+ {
+  "id": "soc_orlando-pride",
+  "entity_type": "team",
+  "display_name": "Orlando Pride",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Orlando Pride"
+   ]
+  }
+ },
+ {
+  "id": "soc_san-diego-wave",
+  "entity_type": "team",
+  "display_name": "San Diego Wave",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "San Diego Wave"
+   ]
+  }
+ },
+ {
+  "id": "soc_san-jose-earthquakes",
+  "entity_type": "team",
+  "display_name": "San Jose Earthquakes",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "San Jose Earthquakes"
+   ]
+  }
+ },
+ {
+  "id": "soc_birmingham-city",
+  "entity_type": "team",
+  "display_name": "Birmingham City",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Birmingham City"
+   ]
+  }
+ },
+ {
+  "id": "soc_basel",
+  "entity_type": "team",
+  "display_name": "Basel",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Basel"
+   ]
+  }
+ },
+ {
+  "id": "soc_vfl-wolfsburg",
+  "entity_type": "team",
+  "display_name": "VfL Wolfsburg",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "VfL Wolfsburg"
+   ]
+  }
+ },
+ {
+  "id": "soc_genk",
+  "entity_type": "team",
+  "display_name": "Genk",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Genk"
+   ]
+  }
+ },
+ {
+  "id": "soc_southampton",
+  "entity_type": "team",
+  "display_name": "Southampton",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Southampton"
+   ]
+  }
+ },
+ {
+  "id": "soc_lech-poznan",
+  "entity_type": "team",
+  "display_name": "Lech Poznan",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Lech Poznan"
+   ]
+  }
+ },
+ {
+  "id": "soc_dinamo-zagreb",
+  "entity_type": "team",
+  "display_name": "Dinamo Zagreb",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Dinamo Zagreb"
+   ]
+  }
+ },
+ {
+  "id": "soc_cf-monterrey",
+  "entity_type": "team",
+  "display_name": "CF Monterrey",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "CF Monterrey"
+   ]
+  }
+ },
+ {
+  "id": "soc_vissel-kobe",
+  "entity_type": "team",
+  "display_name": "Vissel Kobe",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Vissel Kobe"
+   ]
+  }
+ },
+ {
+  "id": "soc_al-sadd",
+  "entity_type": "team",
+  "display_name": "Al Sadd",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Al Sadd"
+   ]
+  }
+ },
+ {
+  "id": "soc_parma",
+  "entity_type": "team",
+  "display_name": "Parma",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Parma"
+   ]
+  }
+ },
+ {
+  "id": "soc_derby-county",
+  "entity_type": "team",
+  "display_name": "Derby County",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Derby County"
+   ]
+  }
+ },
+ {
+  "id": "soc_galatasaray",
+  "entity_type": "team",
+  "display_name": "Galatasaray",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Galatasaray"
+   ]
+  }
+ },
+ {
+  "id": "soc_independiente",
+  "entity_type": "team",
+  "display_name": "Independiente",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Independiente"
+   ]
+  }
+ },
+ {
+  "id": "soc_washington-spirit",
+  "entity_type": "team",
+  "display_name": "Washington Spirit",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Washington Spirit"
+   ]
+  }
+ },
+ {
+  "id": "soc_chicago-red-stars",
+  "entity_type": "team",
+  "display_name": "Chicago Red Stars",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Chicago Red Stars"
+   ]
+  }
+ },
+ {
+  "id": "soc_perth-glory",
+  "entity_type": "team",
+  "display_name": "Perth Glory",
+  "sport": "Soccer",
+  "fame_tier": 2,
+  "attributes": {
+   "nickname": [
+    "Perth Glory"
+   ]
+  }
  }
 ]

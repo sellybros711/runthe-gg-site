@@ -1,0 +1,143 @@
+{
+ "ufc_anderson-silva": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"nationality": ["Brazil"]},
+  "note": "Anderson Silva is Brazilian (born Sao Paulo), not American."
+ },
+ "ufc_georges-st-pierre": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"nationality": ["Canada"]},
+  "note": "Georges St-Pierre is Canadian (Saint-Isidore, Quebec), not American."
+ },
+ "ufc_amanda-nunes": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"nationality": ["Brazil"], "hall_of_fame": [true]},
+  "note": "Nunes is Brazilian (born Salvador, Bahia), not American. Inducted into the UFC Hall of Fame in 2025."
+ },
+ "ufc_khabib-nurmagomedov": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"hall_of_fame": [true]},
+  "note": "Khabib was inducted into the UFC Hall of Fame in June 2022; data had false."
+ },
+ "ufc_alex-pereira": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"nationality": ["Brazil"]},
+  "note": "Alex Pereira is Brazilian (Sao Bernardo do Campo), not American."
+ },
+ "ufc_charles-oliveira": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"nationality": ["Brazil"]},
+  "note": "Charles Oliveira is Brazilian (Guaruja, Sao Paulo), not American."
+ },
+ "ufc_valentina-shevchenko": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"nationality": ["Kyrgyzstan"]},
+  "note": "Shevchenko is Kyrgyzstani (born Frunze/Bishkek) and fights under the Kyrgyzstan flag (also holds Peruvian citizenship); not American."
+ },
+ "boxing_tyson-fury": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"nationality": ["United Kingdom"]},
+  "note": "Tyson Fury is British (Manchester, England), not American."
+ },
+ "boxing_anthony-joshua": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"nationality": ["United Kingdom"]},
+  "note": "Anthony Joshua is British (Watford, England), not American."
+ },
+ "boxing_manny-pacquiao": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"decades_active": [1990, 2000, 2010, 2020]},
+  "note": "Pacquiao fought in the 2020s (world title fight vs Yordenis Ugas, Aug 2021; returned again vs Mario Barrios, July 2025). 2020 decade was missing."
+ },
+ "boxing_evander-holyfield": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"decades_active": [1980, 1990, 2000, 2010]},
+  "note": "Holyfield's pro career ran 1984-2011; he had pro bouts in 2010 (Frans Botha) and 2011 (Brian Nielsen). 2010 decade was missing."
+ },
+ "olympics_leon-marchand": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"nationality": ["France"]},
+  "note": "Leon Marchand is French (Toulouse); he swept 4 individual golds for France at Paris 2024. Not American."
+ },
+ "prowrestling_andre-the-giant": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"nationality": ["France"]},
+  "note": "Andre the Giant (Andre Rene Roussimoff) was French (born Coulommiers, France), not American."
+ },
+ "prowrestling_becky-lynch": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"nationality": ["Ireland"]},
+  "note": "Becky Lynch (Rebecca Quin) is Irish (Dublin), not American."
+ },
+ "prowrestling_rhea-ripley": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"nationality": ["Australia"]},
+  "note": "Rhea Ripley (Demi Bennett) is Australian (Adelaide), not American."
+ },
+ "wnba_sue-bird": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"hall_of_fame": [true]},
+  "note": "Sue Bird was inducted into the Naismith Basketball Hall of Fame, Class of 2025 (enshrined Sept 2025)."
+ },
+ "wnba_maya-moore": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"hall_of_fame": [true]},
+  "note": "Maya Moore was inducted into the Naismith Basketball Hall of Fame, Class of 2025 (enshrined Sept 2025)."
+ },
+ "wnba_lisa-leslie": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"hall_of_fame": [true]},
+  "note": "Lisa Leslie was inducted into the Naismith Basketball Hall of Fame in 2015 (and Women's Basketball HOF 2015). Data had false."
+ },
+ "wnba_sheryl-swoopes": {
+  "teams_add": ["Houston Comets", "wnba_storm", "Tulsa Shock"],
+  "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"hall_of_fame": [true], "decades_active": [1990, 2000, 2010]},
+  "note": "Teams array was empty. Swoopes played for the Houston Comets (1997-2007, 4 titles), Seattle Storm (2008), and Tulsa Shock (2011). 'Houston Comets' and 'Tulsa Shock' have no id in team-ids.json (defunct franchises) - flagged as full-name strings. Naismith HOF Class of 2016 (data had false). 2010s decade missing (played 2011)."
+ },
+ "wnba_cynthia-cooper": {
+  "teams_add": ["Houston Comets"],
+  "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"hall_of_fame": [true]},
+  "note": "Teams array was empty. Cooper played her entire WNBA career with the Houston Comets (1997-2000, 2003; 4 titles, 2 MVPs). 'Houston Comets' has no id in team-ids.json (defunct) - flagged as full-name string. Naismith HOF Class of 2010 (data had false)."
+ },
+ "wnba_tina-thompson": {
+  "teams_add": ["Houston Comets", "wnba_sparks", "wnba_storm"],
+  "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"hall_of_fame": [true]},
+  "note": "Teams array was empty. Thompson played for the Houston Comets (1997-2008), Los Angeles Sparks (2009-2011), and Seattle Storm (2012-2013). 'Houston Comets' has no id in team-ids.json (defunct) - flagged as full-name string. Naismith HOF Class of 2018 (data had false)."
+ },
+ "wnba_jonquel-jones": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"nationality": ["Bahamas"]},
+  "note": "Jonquel Jones is Bahamian (Freeport, Bahamas), not American."
+ },
+ "wnba_satou-sabally": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"nationality": ["Germany"]},
+  "note": "Satou Sabally is German (raised in Berlin, plays for the German national team), not American."
+ },
+ "wnba_bridget-carleton": {
+  "teams_add": [], "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {"nationality": ["Canada"]},
+  "note": "Bridget Carleton is Canadian (Chatham, Ontario; Canadian national team), not American."
+ },
+ "wnba_kahleah-copper": {
+  "teams_add": ["wnba_mystics"],
+  "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {},
+  "note": "Copper was drafted 7th overall by the Washington Mystics in 2016 and played her rookie season there before being traded to Chicago in the Elena Delle Donne deal. Mystics missing from teams."
+ },
+ "wnba_emily-engstler": {
+  "teams_add": ["wnba_fever"],
+  "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {},
+  "note": "Engstler was drafted 4th overall by the Indiana Fever in 2022 and played her rookie season there. Fever missing from teams."
+ },
+ "wnba_megan-gustafson": {
+  "teams_add": ["wnba_wings"],
+  "teams_remove": [], "jersey_add": [], "jersey_remove": [],
+  "set": {},
+  "note": "Gustafson was drafted by the Dallas Wings in 2019 and played there 2019-2021. Wings missing from teams."
+ }
+}

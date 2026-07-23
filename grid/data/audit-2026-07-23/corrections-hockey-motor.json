@@ -1,0 +1,314 @@
+{
+ "nhl_bobby-orr": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"decades_active": [1960, 1970]},
+  "note": "Orr's final NHL games were in November 1978 (Blackhawks); he did not play in the 1980s. Remove 1980. Bruins + Blackhawks teams are correct."
+ },
+ "nhl_gordie-howe": {
+  "teams_add": ["Hartford Whalers"],
+  "teams_remove": ["nhl_winnipegjets"],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Howe never played for any Winnipeg franchise; his WHA years were Houston Aeros/New England Whalers and his NHL return (1979-80) was with the Hartford Whalers. 'Hartford Whalers' id missing from team-ids.json; the Whalers franchise continues as nhl_hurricanes if the DB uses franchise mapping."
+ },
+ "nhl_ray-bourque": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Canada"]},
+  "note": "Bourque is Canadian (born Montreal, Quebec), not American."
+ },
+ "nhl_jonathan-toews": {
+  "teams_add": ["nhl_winnipegjets"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Toews signed with the Winnipeg Jets in June 2025 for the 2025-26 season after his Blackhawks career. Missing late-career stint."
+ },
+ "nhl_guy-lafleur": {
+  "teams_add": ["Quebec Nordiques"],
+  "teams_remove": ["nhl_nordiques"],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "The stint (1989-1991) is factually correct, but 'nhl_nordiques' is not a valid id in team-ids.json. Using full name string per convention; if the DB maps Nordiques to their successor franchise (as done for Sakic), the id would be nhl_avalanche."
+ },
+ "nhl_terry-sawchuk": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"decades_active": [1950, 1960, 1970]},
+  "note": "Sawchuk's NHL debut was January 1950 (1949-50 season) - he played no games in the calendar 1940s. Remove 1940. His five teams as listed are correct."
+ },
+ "nhl_bobby-hull": {
+  "teams_add": ["Hartford Whalers"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"decades_active": [1950, 1960, 1970, 1980]},
+  "note": "Hull finished his career with 9 NHL games for the Hartford Whalers in early 1980 (alongside Gordie Howe), so add Hartford Whalers (id missing from team-ids.json; franchise = nhl_hurricanes) and add the 1980s decade. Winnipeg Jets (1979-80 NHL) is correct."
+ },
+ "nhl_phil-esposito": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Canada"]},
+  "note": "Esposito is Canadian (born Sault Ste. Marie, Ontario), not American."
+ },
+ "nhl_stan-mikita": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Canada"]},
+  "note": "Mikita was born in Czechoslovakia (present-day Slovakia) but emigrated to Canada as a child and is listed as Canadian in hockey records - not American."
+ },
+ "nhl_brett-hull": {
+  "teams_add": ["Phoenix Coyotes"],
+  "teams_remove": ["nhl_coyotes"],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["United States"]},
+  "note": "Brett Hull is listed as American (dual citizen born in Canada; represented Team USA throughout his career), not Canadian. The 2005 Phoenix stint (5 games) is real, but 'nhl_coyotes' is not a valid id in team-ids.json - flagging with full name string."
+ },
+ "nhl_peter-forsberg": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Sweden"]},
+  "note": "Forsberg is Swedish, not American."
+ },
+ "nhl_chris-chelios": {
+  "teams_add": ["Atlanta Thrashers"],
+  "teams_remove": ["nhl_flames"],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Chelios never played for Calgary. His final NHL stint (7 games, 2009-10) was with the Atlanta Thrashers. 'Atlanta Thrashers' id missing from team-ids.json; the Thrashers franchise is the current Winnipeg Jets (nhl_winnipegjets) if franchise mapping is used."
+ },
+ "nhl_zdeno-chara": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"teams": ["nhl_islanders", "nhl_senators", "nhl_bruins", "nhl_capitals"]},
+  "note": "nhl_islanders appears twice in the teams array (he did have two Islanders stints, 1997-2001 and 2021-22, but the id is duplicated). Dedupe to a single entry; the four franchises listed are correct."
+ },
+ "nhl_taylor-hall": {
+  "teams_add": ["Arizona Coyotes"],
+  "teams_remove": ["nhl_coyotes"],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "The Arizona stint (2019-2021) is real, but 'nhl_coyotes' is not a valid id in team-ids.json (Coyotes are not listed; Utah Mammoth is a separate entry). Flagging with full name string. All seven franchises are otherwise correct including Carolina (Jan 2025 trade)."
+ },
+ "nascar_richard-petty": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"decades_active": [1950, 1960, 1970, 1980, 1990]},
+  "note": "Petty raced full-time through his 1992 Fan Appreciation Tour farewell season - the 1990s decade is missing."
+ },
+ "indycar_aj-foyt": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"decades_active": [1950, 1960, 1970, 1980, 1990]},
+  "note": "Foyt raced in the Indy 500 in 1991 and 1992 and retired during qualifying in May 1993 - the 1990s decade is missing."
+ },
+ "f1_lewis-hamilton": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["United Kingdom"]},
+  "note": "Hamilton is British (born Stevenage, England), not American."
+ },
+ "nhl_mitch-marner": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Canada"]},
+  "note": "Marner is Canadian (Markham, Ontario), not American. Vegas stint (June 2025 sign-and-trade) is correct."
+ },
+ "nhl_william-nylander": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Sweden"]},
+  "note": "Nylander is Swedish (born in Calgary but a Swedish national who represents Sweden), not American."
+ },
+ "nhl_david-pastrnak": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Czechia"]},
+  "note": "Pastrnak is Czech, not American."
+ },
+ "nhl_kirill-kaprizov": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Russia"]},
+  "note": "Kaprizov is Russian, not American."
+ },
+ "nhl_igor-shesterkin": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Russia"], "decades_active": [2020]},
+  "note": "Shesterkin is Russian, not American. His NHL debut was January 7, 2020, so he was not active in the calendar 2010s - decades_active should be [2020] only."
+ },
+ "nhl_andrei-vasilevskiy": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Russia"]},
+  "note": "Vasilevskiy is Russian, not American."
+ },
+ "nhl_nikita-kucherov": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Russia"]},
+  "note": "Kucherov is Russian, not American."
+ },
+ "nhl_victor-hedman": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Sweden"]},
+  "note": "Hedman is Swedish, not American. Decades including 2000 is correct (debut October 2009)."
+ },
+ "nhl_brayden-point": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Canada"]},
+  "note": "Point is Canadian (Calgary, Alberta), not American."
+ },
+ "nhl_aleksander-barkov": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Finland"]},
+  "note": "Barkov is Finnish, not American."
+ },
+ "nhl_elias-pettersson": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Sweden"]},
+  "note": "Pettersson is Swedish, not American."
+ },
+ "nhl_tim-stutzle": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Germany"]},
+  "note": "Stutzle is German, not American."
+ },
+ "nhl_roman-josi": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Switzerland"]},
+  "note": "Josi is Swiss (Bern), not American."
+ },
+ "nhl_sebastian-aho": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Finland"]},
+  "note": "Aho is Finnish, not American."
+ },
+ "nhl_jack-adams-carter-hart": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Canada"]},
+  "note": "Carter Hart is Canadian (Sherwood Park, Alberta), not American. Also flag: the id itself ('nhl_jack-adams-carter-hart') looks malformed."
+ },
+ "nhl_nikolaj-ehlers": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Denmark"]},
+  "note": "Ehlers is Danish, not American. Carolina stint (July 2025 free-agent signing) is correct."
+ },
+ "f1_charles-leclerc": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [16],
+  "jersey_remove": [],
+  "set": {"nationality": ["Monaco"]},
+  "note": "Leclerc is Monegasque, not American. Permanent car number 16 missing (other current F1 drivers in the file have their numbers)."
+ },
+ "f1_lando-norris": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [4],
+  "jersey_remove": [],
+  "set": {"nationality": ["United Kingdom"]},
+  "note": "Norris is British, not American. Permanent car number 4 missing."
+ },
+ "f1_oscar-piastri": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [81],
+  "jersey_remove": [],
+  "set": {"nationality": ["Australia"]},
+  "note": "Piastri is Australian, not American. Permanent car number 81 missing."
+ },
+ "nascar_chase-elliott": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [9],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Car number missing: Elliott has driven the No. 9 Hendrick Chevrolet since 2018 (other NASCAR entries in the file carry car numbers)."
+ },
+ "nascar_joey-logano": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [22],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Car number missing: Logano has driven the No. 22 Penske Ford since 2013 (all three of his Cup titles)."
+ },
+ "nascar_denny-hamlin": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [11],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Car number missing: Hamlin has driven the No. 11 Joe Gibbs Toyota for his entire Cup career."
+ }
+}

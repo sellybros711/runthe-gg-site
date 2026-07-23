@@ -1,0 +1,1281 @@
+{
+ "mlb_cy-young": {
+  "teams_add": [
+   "mlb_stlcardinals",
+   "mlb_braves"
+  ],
+  "note": "Played for St. Louis Perfectos/Cardinals 1899-1900 and Boston Rustlers/Braves 1911; Cleveland Spiders (1890-98) defunct with no modern franchise"
+ },
+ "mlb_honus-wagner": {
+  "set": {
+   "milestones": [
+    "3,000 Hit Club"
+   ]
+  },
+  "note": "3,420 career hits"
+ },
+ "mlb_ted-williams": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ],
+   "milestones": [
+    "500 Home Run Club"
+   ]
+  },
+  "note": "2x AL MVP (1946,1949), 521 HR"
+ },
+ "mlb_lou-gehrig": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2x AL MVP (1927,1936)"
+ },
+ "mlb_stan-musial": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "3x NL MVP (1943,1946,1948)"
+ },
+ "mlb_jackie-robinson": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "1949 NL MVP"
+ },
+ "mlb_sandy-koufax": {
+  "set": {
+   "awards": [
+    "Cy Young",
+    "MLB MVP"
+   ]
+  },
+  "note": "1963 NL MVP in addition to 3 Cy Youngs"
+ },
+ "mlb_bob-gibson": {
+  "set": {
+   "awards": [
+    "Cy Young",
+    "MLB MVP"
+   ]
+  },
+  "note": "1968 NL MVP in addition to Cy Youngs"
+ },
+ "mlb_ken-griffey-jr": {
+  "set": {
+   "draft_year": [
+    1987
+   ]
+  },
+  "note": "No.1 overall pick 1987; draft_year missing while draft_position=1"
+ },
+ "mlb_randy-johnson": {
+  "teams_add": [
+   "mlb_nationals"
+  ],
+  "note": "Debuted with Montreal Expos 1988-89 (Expos franchise = Nationals)"
+ },
+ "mlb_bryce-harper": {
+  "set": {
+   "draft_year": [
+    2010
+   ]
+  },
+  "note": "No.1 overall pick 2010; draft_year missing while draft_position=1"
+ },
+ "mlb_justin-verlander": {
+  "teams_add": [
+   "mlb_sfgiants"
+  ],
+  "set": {
+   "awards": [
+    "Cy Young",
+    "MLB MVP"
+   ]
+  },
+  "note": "Pitched for SF Giants in 2025 regular season; also 2011 AL MVP"
+ },
+ "mlb_clayton-kershaw": {
+  "set": {
+   "awards": [
+    "Cy Young",
+    "MLB MVP"
+   ]
+  },
+  "note": "2014 NL MVP in addition to 3 Cy Youngs"
+ },
+ "mlb_johnny-bench": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2x NL MVP (1970,1972)"
+ },
+ "mlb_pete-rose": {
+  "teams_remove": [
+   "mlb_expos"
+  ],
+  "teams_add": [
+   "mlb_nationals"
+  ],
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "mlb_expos is not a valid id; Expos franchise = mlb_nationals (Rose played Montreal 1984); 1973 NL MVP"
+ },
+ "mlb_mike-schmidt": {
+  "set": {
+   "decades_active": [
+    1970,
+    1980
+   ],
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "Retired May 1989, never played in 1990s; 3x NL MVP"
+ },
+ "mlb_reggie-jackson": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "1973 AL MVP"
+ },
+ "mlb_george-brett": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ],
+   "milestones": [
+    "3,000 Hit Club"
+   ]
+  },
+  "note": "1980 AL MVP; 3,154 career hits"
+ },
+ "mlb_harmon-killebrew": {
+  "set": {
+   "milestones": [
+    "500 Home Run Club"
+   ]
+  },
+  "note": "573 career HR"
+ },
+ "mlb_whitey-ford": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "1961 Cy Young"
+ },
+ "mlb_carl-yastrzemski": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ],
+   "milestones": [
+    "3,000 Hit Club"
+   ]
+  },
+  "note": "1967 AL MVP; 3,419 hits"
+ },
+ "mlb_eddie-murray": {
+  "set": {
+   "milestones": [
+    "500 Home Run Club",
+    "3,000 Hit Club"
+   ]
+  },
+  "note": "3,255 hits also puts him in 3,000 Hit Club"
+ },
+ "mlb_dave-winfield": {
+  "set": {
+   "milestones": [
+    "3,000 Hit Club"
+   ]
+  },
+  "note": "3,110 career hits"
+ },
+ "mlb_don-mattingly": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "1985 AL MVP"
+ },
+ "mlb_sammy-sosa": {
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ],
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "Born San Pedro de Macoris, DR; 1998 NL MVP"
+ },
+ "mlb_frank-thomas": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ],
+   "milestones": [
+    "500 Home Run Club"
+   ]
+  },
+  "note": "2x AL MVP (1993,1994); 521 HR"
+ },
+ "mlb_ken-caminiti": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "1996 NL MVP"
+ },
+ "mlb_chipper-jones": {
+  "set": {
+   "draft_year": [
+    1990
+   ],
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "No.1 overall 1990; 1999 NL MVP"
+ },
+ "mlb_jeff-bagwell": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "1994 NL MVP"
+ },
+ "mlb_craig-biggio": {
+  "set": {
+   "milestones": [
+    "3,000 Hit Club"
+   ]
+  },
+  "note": "3,060 career hits"
+ },
+ "mlb_john-smoltz": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "1996 NL Cy Young"
+ },
+ "mlb_tom-glavine": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "2x NL Cy Young (1991,1998)"
+ },
+ "mlb_vladimir-guerrero": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2004 AL MVP"
+ },
+ "mlb_alex-rodriguez": {
+  "set": {
+   "draft_year": [
+    1993
+   ]
+  },
+  "note": "No.1 overall pick 1993; draft_year missing while draft_position=1"
+ },
+ "mlb_joe-mauer": {
+  "set": {
+   "draft_year": [
+    2001
+   ],
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "No.1 overall 2001; 2009 AL MVP"
+ },
+ "mlb_adrian-beltre": {
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ],
+   "milestones": [
+    "3,000 Hit Club"
+   ]
+  },
+  "note": "Born Santo Domingo, DR; 3,166 hits"
+ },
+ "mlb_felix-hernandez": {
+  "set": {
+   "nationality": [
+    "Venezuela"
+   ],
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "Born Valencia, Venezuela; 2010 AL Cy Young"
+ },
+ "mlb_cc-sabathia": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "2007 AL Cy Young"
+ },
+ "mlb_gerrit-cole": {
+  "set": {
+   "draft_year": [
+    2011
+   ],
+   "draft_position": [
+    1
+   ],
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "No.1 overall 2011 (Pirates); 2023 AL Cy Young"
+ },
+ "mlb_paul-goldschmidt": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2022 NL MVP"
+ },
+ "mlb_francisco-lindor": {
+  "set": {
+   "nationality": [
+    "Puerto Rico"
+   ]
+  },
+  "note": "Born Caguas, Puerto Rico, not Venezuela"
+ },
+ "mlb_elly-de-la-cruz": {
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ]
+  },
+  "note": "Born Sabana Grande de Boya, DR, not Venezuela"
+ },
+ "mlb_paul-skenes": {
+  "set": {
+   "draft_year": [
+    2023
+   ],
+   "draft_position": [
+    1
+   ],
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "No.1 overall 2023; 2025 NL Cy Young (unanimous)"
+ },
+ "mlb_satchel-paige": {
+  "teams_remove": [
+   "mlb_royals"
+  ],
+  "teams_add": [
+   "mlb_athletics"
+  ],
+  "set": {
+   "decades_active": [
+    1940,
+    1950,
+    1960
+   ]
+  },
+  "note": "1965 one-game stint was with Kansas City Athletics (Athletics franchise), not Royals; that game adds 1960s"
+ },
+ "mlb_larry-doby": {
+  "teams_add": [
+   "mlb_tigers"
+  ],
+  "note": "Played for Detroit Tigers in 1959"
+ },
+ "mlb_warren-spahn": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "1957 Cy Young"
+ },
+ "mlb_steve-carlton": {
+  "teams_remove": [
+   "mlb_giants"
+  ],
+  "teams_add": [
+   "mlb_sfgiants"
+  ],
+  "note": "mlb_giants is not a valid id; SF Giants stint (1986) is mlb_sfgiants"
+ },
+ "mlb_jim-palmer": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "3x AL Cy Young (1973,1975,1976)"
+ },
+ "mlb_catfish-hunter": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "1974 AL Cy Young"
+ },
+ "mlb_rollie-fingers": {
+  "set": {
+   "awards": [
+    "Cy Young",
+    "MLB MVP"
+   ]
+  },
+  "note": "1981 AL Cy Young and MVP"
+ },
+ "mlb_goose-gossage": {
+  "teams_add": [
+   "mlb_pirates",
+   "mlb_cubs",
+   "mlb_sfgiants",
+   "mlb_rangers",
+   "mlb_athletics",
+   "mlb_mariners"
+  ],
+  "note": "Missing stints: Pirates 1977, Cubs 1988, Giants 1989, Rangers 1991, A's 1992-93, Mariners 1994"
+ },
+ "mlb_dennis-eckersley": {
+  "set": {
+   "awards": [
+    "Cy Young",
+    "MLB MVP"
+   ]
+  },
+  "note": "1992 AL Cy Young and MVP"
+ },
+ "mlb_bruce-sutter": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "1979 NL Cy Young"
+ },
+ "mlb_lou-brock": {
+  "set": {
+   "milestones": [
+    "3,000 Hit Club"
+   ]
+  },
+  "note": "3,023 career hits"
+ },
+ "mlb_joe-morgan": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2x NL MVP (1975,1976)"
+ },
+ "mlb_tony-perez": {
+  "teams_remove": [
+   "mlb_expos"
+  ],
+  "teams_add": [
+   "mlb_nationals"
+  ],
+  "set": {
+   "nationality": [
+    "Cuba"
+   ]
+  },
+  "note": "mlb_expos invalid id (Expos = mlb_nationals); born Ciego de Avila, Cuba"
+ },
+ "mlb_ivan-rodriguez": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "1999 AL MVP"
+ },
+ "mlb_barry-larkin": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "1995 NL MVP"
+ },
+ "mlb_larry-walker": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "1997 NL MVP"
+ },
+ "mlb_andruw-jones": {
+  "set": {
+   "nationality": [
+    "Curacao"
+   ]
+  },
+  "note": "Born Willemstad, Curacao, not United States"
+ },
+ "mlb_bartolo-colon": {
+  "teams_remove": [
+   "mlb_expos"
+  ],
+  "teams_add": [
+   "mlb_nationals"
+  ],
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "mlb_expos invalid id (Expos = mlb_nationals, played Montreal 2002); 2005 AL Cy Young"
+ },
+ "mlb_fernando-tatis-jr": {
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ]
+  },
+  "note": "Born San Pedro de Macoris, DR"
+ },
+ "mlb_xander-bogaerts": {
+  "set": {
+   "nationality": [
+    "Aruba"
+   ]
+  },
+  "note": "Born Oranjestad, Aruba"
+ },
+ "mlb_rafael-devers": {
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ]
+  },
+  "note": "Born Sanchez, DR"
+ },
+ "mlb_yordan-alvarez": {
+  "set": {
+   "nationality": [
+    "Cuba"
+   ]
+  },
+  "note": "Born Las Tunas, Cuba"
+ },
+ "mlb_julio-rodriguez": {
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ]
+  },
+  "note": "Born Loma de Cabrera, DR"
+ },
+ "mlb_framber-valdez": {
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ]
+  },
+  "note": "Born Palenque, DR"
+ },
+ "mlb_emmanuel-clase": {
+  "teams_add": [
+   "mlb_rangers"
+  ],
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ]
+  },
+  "note": "Debuted with Texas Rangers 2019 before Kluber trade; born Rio San Juan, DR"
+ },
+ "mlb_edwin-diaz": {
+  "set": {
+   "nationality": [
+    "Puerto Rico"
+   ]
+  },
+  "note": "Born Naguabo, Puerto Rico"
+ },
+ "mlb_carlos-correa": {
+  "set": {
+   "nationality": [
+    "Puerto Rico"
+   ],
+   "draft_year": [
+    2012
+   ],
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "Born Ponce, Puerto Rico; No.1 overall pick 2012"
+ },
+ "mlb_freddie-freeman": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2020 NL MVP"
+ },
+ "mlb_ozzie-albies": {
+  "set": {
+   "nationality": [
+    "Curacao"
+   ]
+  },
+  "note": "Born Willemstad, Curacao"
+ },
+ "mlb_oneil-cruz": {
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ]
+  },
+  "note": "Born Nizao, DR"
+ },
+ "mlb_andrew-mccutchen": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2013 NL MVP"
+ },
+ "mlb_giancarlo-stanton": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2017 NL MVP"
+ },
+ "mlb_kris-bryant": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2016 NL MVP"
+ },
+ "mlb_javier-baez": {
+  "set": {
+   "nationality": [
+    "Puerto Rico"
+   ]
+  },
+  "note": "Born Bayamon, Puerto Rico"
+ },
+ "mlb_salvador-perez": {
+  "set": {
+   "nationality": [
+    "Venezuela"
+   ]
+  },
+  "note": "Born Valencia, Venezuela"
+ },
+ "mlb_yadier-molina": {
+  "set": {
+   "nationality": [
+    "Puerto Rico"
+   ]
+  },
+  "note": "Born Bayamon, Puerto Rico"
+ },
+ "mlb_luis-robert-jr": {
+  "set": {
+   "nationality": [
+    "Cuba"
+   ]
+  },
+  "note": "Born Guantanamo, Cuba"
+ },
+ "mlb_josh-donaldson": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2015 AL MVP"
+ },
+ "mlb_ryan-howard": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2006 NL MVP"
+ },
+ "mlb_jimmy-rollins": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2007 NL MVP"
+ },
+ "mlb_roy-halladay": {
+  "set": {
+   "hall_of_fame": [
+    true
+   ],
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "Inducted to Baseball HOF 2019; 2x Cy Young (2003,2010)"
+ },
+ "mlb_johan-santana": {
+  "set": {
+   "nationality": [
+    "Venezuela"
+   ],
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "Born Tovar, Venezuela; 2x AL Cy Young (2004,2006)"
+ },
+ "mlb_tim-lincecum": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "2x NL Cy Young (2008,2009)"
+ },
+ "mlb_buster-posey-dup": {
+  "teams_remove": [
+   "mlb_cardinals"
+  ],
+  "teams_add": [
+   "mlb_stlcardinals"
+  ],
+  "note": "Record is actually Brandon Crawford under a mislabeled id; mlb_cardinals invalid, his 2024 Cardinals stint is mlb_stlcardinals"
+ },
+ "mlb_dustin-pedroia": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2008 AL MVP"
+ },
+ "mlb_jorge-posada": {
+  "set": {
+   "nationality": [
+    "Puerto Rico"
+   ]
+  },
+  "note": "Born Santurce, Puerto Rico"
+ },
+ "mlb_bernie-williams": {
+  "set": {
+   "nationality": [
+    "Puerto Rico"
+   ]
+  },
+  "note": "Born San Juan, Puerto Rico"
+ },
+ "mlb_jose-reyes": {
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ]
+  },
+  "note": "Born Villa Gonzalez, DR"
+ },
+ "mlb_carlos-delgado": {
+  "set": {
+   "nationality": [
+    "Puerto Rico"
+   ]
+  },
+  "note": "Born Aguadilla, Puerto Rico"
+ },
+ "mlb_ryan-braun": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2011 NL MVP"
+ },
+ "mlb_joey-votto": {
+  "set": {
+   "nationality": [
+    "Canada"
+   ],
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "Born Toronto, Canada; 2010 NL MVP"
+ },
+ "mlb_adrian-gonzalez": {
+  "set": {
+   "draft_year": [
+    2000
+   ]
+  },
+  "note": "No.1 overall pick 2000; draft_year missing while draft_position=1"
+ },
+ "mlb_josh-hamilton": {
+  "set": {
+   "draft_year": [
+    1999
+   ],
+   "draft_position": [
+    1
+   ],
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "No.1 overall 1999; 2010 AL MVP"
+ },
+ "mlb_yu-darvish": {
+  "set": {
+   "nationality": [
+    "Japan"
+   ]
+  },
+  "note": "Born Habikino, Japan"
+ },
+ "mlb_masahiro-tanaka": {
+  "set": {
+   "nationality": [
+    "Japan"
+   ]
+  },
+  "note": "Born Itami, Japan"
+ },
+ "mlb_fred-mcgriff": {
+  "set": {
+   "hall_of_fame": [
+    true
+   ]
+  },
+  "note": "Inducted to Baseball HOF 2023 (Contemporary Era, unanimous)"
+ },
+ "mlb_rafael-palmeiro": {
+  "set": {
+   "milestones": [
+    "500 Home Run Club",
+    "3,000 Hit Club"
+   ]
+  },
+  "note": "569 HR and 3,020 hits - both clubs missing"
+ },
+ "mlb_gary-sheffield": {
+  "set": {
+   "milestones": [
+    "500 Home Run Club"
+   ]
+  },
+  "note": "509 career HR"
+ },
+ "mlb_bobby-abreu": {
+  "set": {
+   "nationality": [
+    "Venezuela"
+   ]
+  },
+  "note": "Born Maracay, Venezuela"
+ },
+ "mlb_aramis-ramirez": {
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ]
+  },
+  "note": "Born Santo Domingo, DR"
+ },
+ "mlb_mike-mussina": {
+  "set": {
+   "hall_of_fame": [
+    true
+   ]
+  },
+  "note": "Inducted to Baseball HOF 2019"
+ },
+ "mlb_david-cone": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "1994 AL Cy Young"
+ },
+ "mlb_orel-hershiser": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "1988 NL Cy Young"
+ },
+ "mlb_jack-morris": {
+  "set": {
+   "hall_of_fame": [
+    true
+   ]
+  },
+  "note": "Inducted to Baseball HOF 2018 (Modern Era)"
+ },
+ "mlb_dwight-gooden": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "1985 NL Cy Young"
+ },
+ "mlb_bret-saberhagen": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "2x AL Cy Young (1985,1989)"
+ },
+ "mlb_billy-wagner": {
+  "set": {
+   "hall_of_fame": [
+    true
+   ]
+  },
+  "note": "Elected to Baseball HOF January 2025, inducted July 2025"
+ },
+ "mlb_francisco-rodriguez": {
+  "set": {
+   "nationality": [
+    "Venezuela"
+   ]
+  },
+  "note": "Born Caracas, Venezuela"
+ },
+ "mlb_aroldis-chapman": {
+  "set": {
+   "nationality": [
+    "Cuba"
+   ]
+  },
+  "note": "Born Holguin, Cuba"
+ },
+ "mlb_kenley-jansen": {
+  "set": {
+   "nationality": [
+    "Curacao"
+   ]
+  },
+  "note": "Born Willemstad, Curacao"
+ },
+ "mlb_william-contreras": {
+  "set": {
+   "nationality": [
+    "Venezuela"
+   ]
+  },
+  "note": "Born Puerto Cabello, Venezuela"
+ },
+ "mlb_willson-contreras": {
+  "set": {
+   "nationality": [
+    "Venezuela"
+   ]
+  },
+  "note": "Born Puerto Cabello, Venezuela"
+ },
+ "mlb_spencer-torkelson": {
+  "set": {
+   "draft_year": [
+    2020
+   ],
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No.1 overall pick 2020"
+ },
+ "mlb_jackson-chourio": {
+  "set": {
+   "nationality": [
+    "Venezuela"
+   ]
+  },
+  "note": "Born Maracaibo, Venezuela"
+ },
+ "mlb_jackson-holliday": {
+  "set": {
+   "draft_year": [
+    2022
+   ],
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No.1 overall pick 2022"
+ },
+ "mlb_adley-rutschman": {
+  "set": {
+   "draft_year": [
+    2019
+   ],
+   "draft_position": [
+    1
+   ]
+  },
+  "note": "No.1 overall pick 2019"
+ },
+ "mlb_jazz-chisholm-jr": {
+  "set": {
+   "nationality": [
+    "Bahamas"
+   ]
+  },
+  "note": "Born Nassau, Bahamas"
+ },
+ "mlb_jung-hoo-lee": {
+  "set": {
+   "nationality": [
+    "South Korea"
+   ]
+  },
+  "note": "South Korean (KBO star; born in Nagoya while father played in Japan)"
+ },
+ "mlb_shota-imanaga": {
+  "set": {
+   "nationality": [
+    "Japan"
+   ]
+  },
+  "note": "Japanese (NPB, Yokohama BayStars)"
+ },
+ "mlb_roki-sasaki": {
+  "set": {
+   "nationality": [
+    "Japan"
+   ]
+  },
+  "note": "Japanese (NPB, Chiba Lotte)"
+ },
+ "mlb_pablo-lopez": {
+  "set": {
+   "nationality": [
+    "Venezuela"
+   ]
+  },
+  "note": "Born Cabimas, Venezuela"
+ },
+ "mlb_freddy-peralta": {
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ]
+  },
+  "note": "Born Moca, DR"
+ },
+ "mlb_ranger-suarez": {
+  "set": {
+   "nationality": [
+    "Venezuela"
+   ]
+  },
+  "note": "Born Pie de Cuesta, Venezuela"
+ },
+ "mlb_cristopher-sanchez": {
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ]
+  },
+  "note": "Dominican"
+ },
+ "mlb_andres-munoz": {
+  "set": {
+   "nationality": [
+    "Mexico"
+   ]
+  },
+  "note": "Born Los Mochis, Mexico"
+ },
+ "mlb_luis-castillo": {
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ]
+  },
+  "note": "Born Bani, DR"
+ },
+ "mlb_eloy-jimenez": {
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ]
+  },
+  "note": "Born Santo Domingo, DR"
+ },
+ "mlb_jose-abreu": {
+  "set": {
+   "nationality": [
+    "Cuba"
+   ],
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "Born Cienfuegos, Cuba; 2020 AL MVP"
+ },
+ "mlb_carlos-santana": {
+  "set": {
+   "nationality": [
+    "Dominican Republic"
+   ],
+   "teams": [
+    "mlb_guardians",
+    "mlb_phillies",
+    "mlb_royals",
+    "mlb_mariners",
+    "mlb_pirates",
+    "mlb_brewers",
+    "mlb_twins"
+   ]
+  },
+  "note": "Born Santo Domingo, DR; teams list had mlb_guardians duplicated - deduped"
+ },
+ "mlb_elvis-andrus": {
+  "set": {
+   "nationality": [
+    "Venezuela"
+   ]
+  },
+  "note": "Born Maracay, Venezuela"
+ },
+ "mlb_miguel-cabrera": {
+  "set": {
+   "milestones": [
+    "3,000 Hit Club",
+    "500 Home Run Club"
+   ]
+  },
+  "note": "511 career HR - 500 HR Club missing"
+ },
+ "mlb_cliff-lee": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "2008 AL Cy Young"
+ },
+ "mlb_chris-sale": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "2024 NL Cy Young"
+ },
+ "mlb_tarik-skubal": {
+  "set": {
+   "awards": [
+    "Cy Young"
+   ]
+  },
+  "note": "AL Cy Young 2024 and 2025"
+ },
+ "mlb_christian-yelich": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2018 NL MVP"
+ },
+ "mlb_buster-posey": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2012 NL MVP"
+ },
+ "mlb_ronald-acuna-jr": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2023 NL MVP"
+ },
+ "mlb_cal-ripken-jr": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "2x AL MVP (1983,1991)"
+ },
+ "mlb_rickey-henderson": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ],
+   "milestones": [
+    "3,000 Hit Club"
+   ]
+  },
+  "note": "1990 AL MVP; 3,055 hits"
+ },
+ "mlb_willie-stargell": {
+  "set": {
+   "awards": [
+    "MLB MVP"
+   ]
+  },
+  "note": "1979 NL co-MVP"
+ },
+ "mlb_blake-snell": {
+  "jersey_add": [
+   4
+  ],
+  "note": "Wore 4 with Rays (2018 Cy Young) and Padres for 6+ seasons before 7 with SF/LAD"
+ }
+}
