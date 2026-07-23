@@ -12892,6 +12892,42 @@ allows Google Fonts, or self-host Anton.*
   golfer-enhancement mockups) before anything ships. NEXT: the pixel-golfer depth/shading + idle-animation
   mockups (A+B).
 
+- **PACK OPENING v2 — suspense spin + a designed reveal card + seasonal item reassignment (owner: "make
+  the pack opening animation longer and more suspenseful · enhance the ui/ux of the page after an item is
+  pulled, it feels very basic · if any current items belong to a hidden season, add it to that season and
+  hide it, e.g. Phantom Cleats in Spooky Season").** Three parts, all in `overlayPackWheel` + the DROPS
+  registry; committed to the branch, NOT deployed (rides with the pending art-batch review).
+  1. **Longer, suspenseful spin.** A slot-machine WIND-UP (the reel pulls back 380ms before ripping
+     forward), the main rip stretched 4.9s → **8.2s** with a flatter-tailed bezier (`.09,.74,.10,1`) so the
+     final crawl is long and agonizing, 22 decelerating pointer ticks re-sampled to the new curve, and a
+     **tension phase** over the last ~45%: the wheel border breathes in the pack's color (`pwtens`
+     keyframe on a `--pw` var) + a heartbeat buzz. The wind-up's own transitionend is guarded (elapsed-time
+     check) so it can't fire an early land; the CS463 resume/safety-net/reduced-motion paths all preserved.
+  2. **Designed reveal.** On landing the wheel collapses to a 92px slit (`.pwdone`) and a proper REVEAL
+     CARD pops in (`prpop` overshoot): a rarity RIBBON (Common/Rare/Epic/Legendary in the rarity color),
+     the item's big 132px art (`packItemVisual`), the name in the display font, a category · pack meta
+     line, the item's lore quote, a boost line (green ▲ or "Cosmetic · pure style"), and for a dupe two
+     styled chips (+coins refund · ◆ +1 shard with progress). Epic/legendary get a radial `prburst` +
+     bigger glow (confetti unchanged); a foil sheen sweeps the card. Buttons (Equip gold / Next-or-Open
+     teal / Done ghost) + the bundle 5-chip summary keep their logic. Reduced-motion: static card, no
+     burst/sheen/tension. **Also fixed a latent bug**: `packItemBoostTxt` returned shopBoostTxt's HTML
+     spans while every call site esc()'d it, so boosted items showed raw `<span>` markup in wheel cells -
+     it now emits plain text ("+5 DRV · +1 ACC").
+  3. **Seasonal reassignment (hide-until-the-season, per the established drops gating: out-of-window =
+     hidden from the store + out of packs; owned pieces stay equippable):** **Phantom Cleats** moved from
+     Legendary Drop 2 → **Spooky Season** (owner's example; drop2 now 7 items, spooky 7), and four wintry
+     strays into **Winter Classic** (now 10): **Frost Ball** ("Cold-blooded on the greens"), **Ski
+     Goggles** ("Downhill focus"), **Knit Beanie** ("Cold-morning warmup"), **Frost Clubs** ("Cold, crisp,
+     and long").
+  Verified in Playwright: all five items resolve to their new drops, are drop-locked in July and out of
+  `packPool` (pool count drops accordingly), buys refused; a real spin runs 8.2s with the tension glow
+  engaging mid-crawl and lands on the winner; the reveal card renders for a rare (ribbon/name/meta/lore/
+  boost), a **legendary** (gold ribbon + burst + Champion-pack meta, screenshot-confirmed), and a **dupe**
+  (refund + shard chips); a full 5-pack bundle advances Next-pack through all 5 reveal cards to the
+  summary; regress_drop (full round + shop sections) green; node --check clean; 0 page errors everywhere.
+  Tunable: `WIND`/`DUR`/the tension threshold in `runSpinAnim`, the `.prcard`/`.prburst` CSS, the DROPS
+  item lists.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

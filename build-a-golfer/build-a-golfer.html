@@ -20886,16 +20886,16 @@ const DROPS=[
  {id:'drop2', name:'Legendary Drop 2 · Mythic', kicker:'Forged For Legends', accent:'#c060ff',
   blurb:'Phoenix fire, molten gold and knight’s steel. The rarest set in the shop, built to be shown off.',
   items:[['fx','phoenix'],['pat','moltengold'],['pat','dragonscale'],['hw','knight'],['ew','goldshades'],
-   ['ball','obsidian'],['club','scepter'],['cleats','phantom']]},
+   ['ball','obsidian'],['club','scepter']]},
  {id:'summer', name:'Summer Smash', kicker:'Poolside Season', accent:'#ff9d3a', window:[[7,1],[8,31]],
   blurb:'Sun’s out. Floppy hats, sunset fades and beach shades, live for the hottest stretch of the year.',
   items:[['pat','pineapple'],['pat','sunset'],['pat','aloha'],['hw','floppy'],['ew','beach'],['ball','flamingo'],['fx','heatwave'],['club','poolnoodle']]},
  {id:'spooky', name:'Spooky Season', kicker:'October Only', accent:'#e07a1f', window:[[10,1],[10,31]],
   blurb:'Witch hats, skeleton ribs and a cape with a taste for blood. Returns every October.',
-  items:[['hw','witch'],['pat','skeleton'],['pat','pumpkinpatch'],['ball','ghost'],['fx','ecto'],['top','cape']]},
+  items:[['hw','witch'],['pat','skeleton'],['pat','pumpkinpatch'],['ball','ghost'],['fx','ecto'],['top','cape'],['cleats','phantom']]},
  {id:'winter', name:'Winter Classic', kicker:'Holiday Collection', accent:'#9fdcff', window:[[12,1],[12,31]],
   blurb:'Elf hats, holiday knits and a candy-cane putter. The season’s most festive set, every December.',
-  items:[['hw','elf'],['hw','antlers'],['hw','santa'],['pat','uglysweater'],['ball','snowball'],['club','candycane']]},
+  items:[['hw','elf'],['hw','antlers'],['hw','santa'],['hw','beanie'],['ew','goggles'],['pat','uglysweater'],['ball','snowball'],['ball','frost'],['club','candycane'],['club','frostdriver']]},
  {id:'biggame', name:'The Big Game', kicker:'Championship Sunday', accent:'#8fce5a', window:[[1,25],[2,15]],
   blurb:'Helmets on. Gridiron leather, eye black and stadium lights for the biggest Sunday in sports.',
   items:[['hw','football'],['pat','gridiron'],['ball','pigskin'],['ew','eyeblack'],['fx','stadium']]} ];
@@ -21168,7 +21168,9 @@ function packItemBoostTxt(e){ var b=null;
   if(e.kind==='cos') b=cosBoost(e.cat,e.id);
   else if(e.kind==='acc'){ var it=accById(e.id); b=it&&accItemBoost(it); }
   else if(e.kind==='bag'){ var c=BAG_BY[e.club]; b=c&&c.tiers[0].b; }
-  return b?shopBoostTxt(b):''; }
+  if(!b) return '';
+  // PLAIN text (no HTML) - every call site esc()s this into the wheel cells / reveal card
+  return Object.keys(b).map(function(k){ var v=b[k]; return (v>=0?'+':'')+v+' '+(RSHORT[k]||k); }).join(' · '); }
 // the ITEM itself (not the golfer wearing it): look up the cosmetic's catalog entry for its col/pattern,
 // then render the shared item-only thumbnail sized into the card.
 function packThumbWrap(inner,sz){ return '<span class="packthumb" style="width:'+sz+'px;height:'+sz+'px">'+inner+'</span>'; }
@@ -21220,6 +21222,28 @@ function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=
    +'.pcard.win{animation:packwin .5s ease .55s}'
    // CS404 wheel spin (CS:GO-case-style horizontal reel)
    +'.pwheel{position:relative;width:100%;max-width:430px;height:172px;margin:6px auto 0;overflow:hidden;border-radius:16px;background:linear-gradient(180deg,#0c1f16,#081410);border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 0 30px rgba(0,0,0,.5)}'
+   +'.pwheel{transition:height .5s ease,opacity .5s ease}'
+   +'.pwheel.pwdone{height:92px;opacity:.5}'
+   +'.pwheel.pwtension{animation:pwtens 1.05s ease-in-out infinite}'
+   +'@keyframes pwtens{0%,100%{box-shadow:inset 0 0 30px rgba(0,0,0,.5),0 0 16px var(--pw,#F1D04A)}50%{box-shadow:inset 0 0 30px rgba(0,0,0,.5),0 0 46px var(--pw,#F1D04A)}}'
+   +'.prwrap{position:relative;display:flex;flex-direction:column;align-items:center;margin-top:6px}'
+   +'.prburst{position:absolute;top:50%;left:50%;width:10px;height:10px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,var(--rc) 0%,transparent 68%);opacity:.9;animation:prburst 1.15s ease-out .1s both;pointer-events:none;z-index:0}'
+   +'@keyframes prburst{0%{width:10px;height:10px;opacity:.95}100%{width:560px;height:560px;opacity:0}}'
+   +'.prcard{position:relative;z-index:1;width:min(320px,88vw);border-radius:18px;padding:16px 14px 13px;background:linear-gradient(170deg,#12291c,#0a1a12);border:2px solid var(--rc);box-shadow:0 0 26px -6px var(--rc),0 14px 34px rgba(0,0,0,.5);animation:prpop .55s cubic-bezier(.2,1.5,.4,1) .12s backwards}'
+   +'.prcard.prbig{box-shadow:0 0 46px -2px var(--rc),0 14px 34px rgba(0,0,0,.5)}'
+   +'.prcard:after{content:"";position:absolute;inset:0;border-radius:16px;pointer-events:none;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.13) 50%,transparent 60%);background-size:260% 100%;animation:foilSweep 3.8s ease-in-out .7s infinite}'
+   +'@keyframes prpop{0%{transform:scale(.55);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}'
+   +'.prribbon{position:absolute;top:-11px;left:50%;transform:translateX(-50%);color:#08130d;font:800 10.5px var(--body);letter-spacing:.14em;text-transform:uppercase;padding:4px 14px;border-radius:999px;box-shadow:0 3px 10px rgba(0,0,0,.4);white-space:nowrap}'
+   +'.prvis{display:flex;justify-content:center;margin:6px 0 2px}'
+   +'.prvis .packthumb{width:132px!important;height:132px!important}'
+   +'.prname{font-family:var(--display);font-size:24px;color:var(--oncard);line-height:1.05;margin-top:6px}'
+   +'.prmeta{font:800 10.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:#8fae9d;margin-top:3px}'
+   +'.prlore{font:italic 600 12.5px var(--body);color:#b9cec2;margin-top:6px}'
+   +'.prboost{font:800 12.5px var(--body);color:#41dea6;margin-top:7px}'
+   +'.prboost.none{color:#7f978b}'
+   +'.prdupe{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:8px}'
+   +'.prchip{font:800 11px var(--body);padding:3px 10px;border-radius:999px;border:1px solid}'
+   +'@media (prefers-reduced-motion:reduce){.prcard{animation:none}.prcard:after{animation:none;background:none}.prburst{display:none}.pwheel.pwtension{animation:none}}'
    +'.pwheel:before,.pwheel:after{content:"";position:absolute;top:0;bottom:0;width:56px;z-index:3;pointer-events:none}'
    +'.pwheel:before{left:0;background:linear-gradient(90deg,#081410,rgba(8,20,16,0))}'
    +'.pwheel:after{right:0;background:linear-gradient(270deg,#081410,rgba(8,20,16,0))}'
@@ -21256,7 +21280,7 @@ function overlayPackWheel(app){
     xb.onclick=function(){ S.packWheel=null; S.packBundle=null; S.overlay='shop'; S.shopSec='packs'; render(); };
     ov.appendChild(xb);
   }
-  var wheel=$('<div class="pwheel" style="border-color:'+pt.col+';box-shadow:inset 0 0 30px rgba(0,0,0,.5),0 0 22px '+pt.glow+'"></div>');
+  var wheel=$('<div class="pwheel" style="--pw:'+pt.col+';border-color:'+pt.col+';box-shadow:inset 0 0 30px rgba(0,0,0,.5),0 0 22px '+pt.glow+'"></div>');
   var strip=$('<div class="pwstrip"></div>');
   var CW=104, GAP=8, PITCH=CW+GAP;
   w.reel.forEach(function(it,i){ var rc=PACK_RCOL[it.rarity]||'#b8c4bd';
@@ -21276,9 +21300,23 @@ function overlayPackWheel(app){
       else footer.appendChild($('<div class="small muted">Good luck...</div>'));
       return;
     }
-    var item=win.item;
-    footer.appendChild($('<div style="font:800 15px var(--body);color:'+(win.dupe?'#ffd45e':'#35d6a0')+'">'+(win.dupe?('Duplicate · +'+coinFmt(win.refund)+' coins · ◆ +1 '+win.rarity+' shard ('+shardBal(win.rarity)+'/'+SHARD_COST[win.rarity]+')'):('LANDED: '+esc(item.name)+'!'))+'</div>'));
-    { var lb=packItemBoostTxt(item); footer.appendChild($('<div style="font:800 12px var(--body);margin-top:1px;color:'+(lb?'#41dea6':'#7f978b')+'">'+(lb?('Boost · '+esc(lb)):'Cosmetic · no boost')+'</div>')); }
+    var item=win.item, rc=PACK_RCOL[win.rarity]||'#b8c4bd';
+    // designed reveal card: rarity ribbon + big item art + name + lore + boost (+ dupe chips)
+    var lore='', catName='';
+    try{ if(item.kind==='cos'){ var co=(cosmeticItems(item.cat)||[]).find(function(x){return x.id===item.id;}); lore=(co&&co.hist)||'';
+      catName=(COS_CATS.find(function(c){return c.k===item.cat;})||{}).name||''; } }catch(e){}
+    var lb=packItemBoostTxt(item);
+    footer.appendChild($('<div class="prwrap">'
+      +(big?'<div class="prburst" style="--rc:'+rc+'"></div>':'')
+      +'<div class="prcard'+(big?' prbig':'')+'" style="--rc:'+rc+'">'
+        +'<div class="prribbon" style="background:'+rc+'">'+PACK_RLABEL[win.rarity]+'</div>'
+        +'<div class="prvis">'+packItemVisual(item)+'</div>'
+        +'<div class="prname">'+esc(item.name)+'</div>'
+        +(catName?'<div class="prmeta">'+esc(catName)+(pt.id!=='base'?' · '+esc(pt.name):'')+'</div>':'')
+        +(lore?'<div class="prlore">\u201c'+esc(lore)+'\u201d</div>':'')
+        +'<div class="prboost'+(lb?'':' none')+'">'+(lb?('\u25b2 '+esc(lb)):'Cosmetic · pure style')+'</div>'
+        +(win.dupe?('<div class="prdupe"><span class="prchip" style="color:#ffd45e;border-color:#ffd45e">Duplicate · +'+coinFmt(win.refund)+' coins</span><span class="prchip" style="color:'+rc+';border-color:'+rc+'">\u25c6 +1 '+win.rarity+' shard · '+shardBal(win.rarity)+'/'+SHARD_COST[win.rarity]+'</span></div>'):'')
+      +'</div></div>'));
     var btns=$('<div class="packbtns"></div>');
     if((item.kind==='cos'||item.kind==='acc') && !win.dupe){ var eb=$('<button class="btn goldfill">Equip</button>'); eb.onclick=function(){ packEquip(item); toast('Equipped!'); }; btns.appendChild(eb); }
     if(S.packBundle && (S.packBundle.done||0) < S.packBundle.total){
@@ -21307,6 +21345,7 @@ function overlayPackWheel(app){
   function land(){
     if(ov && ov.isConnected===false) return;   // CS463: a stale (re-rendered-away) instance must not touch detached DOM / append confetti to the live app
     w.done=true; title.innerHTML=titleTxt();
+    try{ wheel.classList.remove('pwtension'); wheel.classList.add('pwdone'); }catch(e){}
     var winCell=strip.children[w.winIdx];
     if(winCell) winCell.classList.add('pwlit');
     try{ if(typeof sfx==='function') sfx(big?'win':'hole'); }catch(e){}
@@ -21321,20 +21360,30 @@ function overlayPackWheel(app){
     var vw=wheel.clientWidth||360;
     var jitter=Math.round((Math.random()*2-1)*(CW*0.28));   // land slightly off dead-center, still under the pointer
     if(reduce){ strip.style.transform='translateX('+finalX(vw,jitter)+'px)'; land(); return; }
-    // start scrolled a bit into the reel so there's runway, then decelerate onto the winner
+    // start scrolled a bit into the reel so there's runway
     strip.style.transition='none';
-    strip.style.transform='translateX('+(vw/2 - (6*PITCH + CW/2))+'px)';
+    var startX=vw/2 - (6*PITCH + CW/2);
+    strip.style.transform='translateX('+startX+'px)';
     strip.getBoundingClientRect();   // force reflow so the start position applies before the transition
-    var DUR=4900;
+    // suspense build: a slot-machine WIND-UP (the reel pulls back), then a long rip with a slow final
+    // crawl (flat-tailed bezier), decelerating ticks, and a breathing tension glow over the last stretch
+    var WIND=380, DUR=8200;
     requestAnimationFrame(function(){ requestAnimationFrame(function(){
-      strip.style.transition='transform '+DUR+'ms cubic-bezier(.12,.62,.16,1)';
-      strip.style.transform='translateX('+finalX(vw,jitter)+'px)';
+      strip.style.transition='transform '+WIND+'ms cubic-bezier(.35,.6,.45,1)';
+      strip.style.transform='translateX('+(startX+64)+'px)';
     }); });
+    var landed=false, t0=Date.now();
+    function onEnd(){ if(landed) return; if(Date.now()-t0 < WIND+DUR*0.8) return;   // ignore the wind-up's own transitionend
+      landed=true; try{ wheel.classList.remove('pwtension'); }catch(e){} land(); }
+    setTimeout(function(){
+      strip.style.transition='transform '+DUR+'ms cubic-bezier(.09,.74,.10,1)';
+      strip.style.transform='translateX('+finalX(vw,jitter)+'px)';
+      strip.addEventListener('transitionend', onEnd);
+    }, WIND+30);
     // decelerating tick as cells cross the pointer (times sampled off the ease curve)
-    try{ for(var t=1;t<=16;t++){ var p=t/16; var ease=1-Math.pow(1-p,3.1); setTimeout(function(){ try{ if(sfxOn()){ var ac=_sfxCtx(); if(ac) _tone(ac,1200,ac.currentTime,0.03,0.05,'square'); } }catch(_){} }, Math.round(ease*DUR)); } }catch(e){}
-    var landed=false; function onEnd(){ if(landed) return; landed=true; land(); }
-    strip.addEventListener('transitionend', onEnd, {once:true});
-    setTimeout(onEnd, DUR+260);   // safety net
+    try{ for(var t=1;t<=22;t++){ var p=t/22; var ease=1-Math.pow(1-p,3.5); setTimeout(function(){ try{ if(sfxOn()){ var ac=_sfxCtx(); if(ac) _tone(ac,1200,ac.currentTime,0.03,0.05,'square'); } }catch(_){} }, WIND+30+Math.round(ease*DUR)); } }catch(e){}
+    setTimeout(function(){ if(landed) return; try{ wheel.classList.add('pwtension'); if(typeof buzz==='function') buzz([18,90,18]); }catch(e){} }, WIND+Math.round(DUR*0.55));
+    setTimeout(onEnd, WIND+DUR+420);   // safety net
   }
   function spin(){
     if(w.spun) return; w.spun=true; title.innerHTML=titleTxt(); renderFoot();
