@@ -13529,6 +13529,33 @@ allows Google Fonts, or self-host Anton.*
   first attempt; the full card/board/closet/share suite + an 18-hole practice round still green with 0 page
   errors. Deployed client to /golf.
 
+- **PLAYER CARDS pass 7 — realistic standard-hole geometry: green is the hero, fairway ENDS at it, off-center
+  focal elements, crisper (owner, on the pass2 backdrop sheet: "Green side, bunker, island, and endless
+  summer all look really really good... a lot of depth and realistic perspective... Can we try to do more of
+  them like those? I do not like how a majority of them have a fairway going beyond the green, it doesn't
+  look realistic. Finally, ensure that if there is a main element of the backdrop (e.g. the island) it
+  shouldn't be center where it will be blocked by the golfer. The photos are overall too hazy/grainy for me
+  still. They should be crisp").** Redesigned the STANDARD down-the-fairway scene in `pxCardBgCanvas` (the
+  `!A.view` block used by every backdrop without a custom camera) to mirror the greenside/bunker/island
+  quality the owner liked:
+  • **Green is the hero, OFF-CENTER.** The green is placed to one side (`side = coin flip`, `gx = W*0.5 +
+    side*W*(0.26..0.31)`) and low in the frame, so the main focal element never sits behind the golfer's
+    centered body. An approach apron blends into it and the flag plants on it.
+  • **The fairway TERMINATES at the green** (no ribbon running past it). The sampled centerline now runs FROM
+    the green's front edge (`greenFront`) DOWN to a near-viewer point, widening organically toward the
+    viewer, so the fairway leads the eye to the green and stops there — realistic, matching the good ones.
+  • **Off-center island** (`view:'island'`): the island green moved from center-ish to `W*0.5 ± iSide*W*0.24`
+    so it clears the golfer.
+  • **Crisper / less hazy**: the foggy white horizon haze band was REMOVED, the distant ridge alpha lowered
+    (0.22/0.15 → 0.13/0.08), and the CS-era Bayer dither amplitude reduced (K 0.55 → 0.42) — so skies + terrain
+    read as clean crisp pixels instead of grainy fog, while keeping the subtle boundary dithering that avoids
+    hard banding.
+  Verified in Playwright: the full player-card suite (data/economy, earn reqs, board tap→card→flip→lifetime
+  RPC, Play 18 tap, profile self card, closet, share card, regression) passes with `pageErrors: []`, and the
+  18-hole practice-daily regression completes clean (`{screen:'dailyresult', holes:18}`); a rendered
+  card-front strip confirms the off-center green clears the golfer's body and the fairway ends at the green.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
