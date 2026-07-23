@@ -36,6 +36,9 @@ const GLOSS_CAP = parseInt(process.env.GLOSS_CAP || "150", 10);
 const CORPUS = JSON.parse(readFileSync(p("../../data/corpus.json"), "utf8"));
 const BASE_JSON = JSON.parse(readFileSync(p("../data/baseball.json"), "utf8"));
 const BASE_CSV = readFileSync(p("../data/baseball.csv"), "utf8");
+// Sports-only fill: replaces the generic common-word fill so EVERY answer is
+// sports-related. Edit data/sports-fill.json to add more short sports words.
+const SPORTS_FILL = JSON.parse(readFileSync(p("../data/sports-fill.json"), "utf8")).fill;
 
 // ---- helpers ---------------------------------------------------------------
 const letters = (s) => (s || "").toUpperCase().replace(/[^A-Z]/g, "");
@@ -191,7 +194,7 @@ const outJson = {
   stats: BASE_JSON.stats || [],
   venues: BASE_JSON.venues || [],
   glossary: [...(BASE_JSON.glossary || []), ...glossary],
-  fill: BASE_JSON.fill || [],
+  fill: SPORTS_FILL,   // sports-only fill (no generic common words)
 };
 writeFileSync(p("../data/corpus.crossword.json"), JSON.stringify(outJson, null, 2) + "\n");
 

@@ -13,96 +13,56 @@ window.RTG_PUZZLES = {
     "date": "2026-07-22",
     "size": 5,
     "rows": [
-      "ERA##",
-      "REND#",
-      "RATIO",
-      "#DENT",
-      "##SET"
+      "BERRA",
+      "A###A",
+      "STARR",
+      "E###O",
+      "SABAN"
     ],
-    "theme": 2,
+    "theme": 5,
     "entries": [
       {
         "num": 1,
         "dir": "A",
         "r": 0,
         "c": 0,
-        "answer": "ERA",
-        "clue": "Box-score abbr. for earned run average"
+        "answer": "BERRA",
+        "clue": "Yogi ___, a catcher famous for his malaprops"
       },
       {
         "num": 1,
         "dir": "D",
         "r": 0,
         "c": 0,
-        "answer": "ERR",
-        "clue": "Slip up"
+        "answer": "BASES",
+        "clue": "There are three of them to round"
       },
       {
         "num": 2,
         "dir": "D",
         "r": 0,
-        "c": 1,
-        "answer": "READ",
-        "clue": "Peruse a book"
+        "c": 4,
+        "answer": "AARON",
+        "clue": "Hank ___, the longtime home run king with 755"
       },
       {
         "num": 3,
-        "dir": "D",
-        "r": 0,
-        "c": 2,
-        "answer": "ANTES",
-        "clue": "Pot starters"
+        "dir": "A",
+        "r": 2,
+        "c": 0,
+        "answer": "STARR",
+        "clue": "Packers great Bart ___"
       },
       {
         "num": 4,
         "dir": "A",
-        "r": 1,
-        "c": 0,
-        "answer": "REND",
-        "clue": "Tear apart"
-      },
-      {
-        "num": 5,
-        "dir": "D",
-        "r": 1,
-        "c": 3,
-        "answer": "DINE",
-        "clue": "Have supper"
-      },
-      {
-        "num": 6,
-        "dir": "A",
-        "r": 2,
-        "c": 0,
-        "answer": "RATIO",
-        "clue": "Proportion"
-      },
-      {
-        "num": 7,
-        "dir": "D",
-        "r": 2,
-        "c": 4,
-        "answer": "OTT",
-        "clue": "Giants great Mel ___"
-      },
-      {
-        "num": 8,
-        "dir": "A",
-        "r": 3,
-        "c": 1,
-        "answer": "DENT",
-        "clue": "Fender ding"
-      },
-      {
-        "num": 9,
-        "dir": "A",
         "r": 4,
-        "c": 2,
-        "answer": "SET",
-        "clue": "Tennis-match division"
+        "c": 0,
+        "answer": "SABAN",
+        "clue": "NCAA coach Nick ___"
       }
     ],
-    "difficulty": 2.9,
+    "difficulty": 2.6,
     "sport": "baseball"
   },
   {
@@ -110,96 +70,56 @@ window.RTG_PUZZLES = {
     "date": "2026-07-23",
     "size": 5,
     "rows": [
-      "ERA##",
-      "RENT#",
-      "RATIO",
-      "#DENT",
-      "##SET"
+      "T#W#T",
+      "OLAVE",
+      "R#L#X",
+      "RUSSA",
+      "E#H#S"
     ],
-    "theme": 2,
+    "theme": 5,
     "entries": [
-      {
-        "num": 1,
-        "dir": "A",
-        "r": 0,
-        "c": 0,
-        "answer": "ERA",
-        "clue": "Box-score abbr. for earned run average"
-      },
       {
         "num": 1,
         "dir": "D",
         "r": 0,
         "c": 0,
-        "answer": "ERR",
-        "clue": "Slip up"
+        "answer": "TORRE",
+        "clue": "MLB coach Joe ___"
       },
       {
         "num": 2,
         "dir": "D",
         "r": 0,
-        "c": 1,
-        "answer": "READ",
-        "clue": "Peruse a book"
+        "c": 2,
+        "answer": "WALSH",
+        "clue": "NFL coach Bill ___"
       },
       {
         "num": 3,
         "dir": "D",
         "r": 0,
-        "c": 2,
-        "answer": "ANTES",
-        "clue": "Pot starters"
+        "c": 4,
+        "answer": "TEXAS",
+        "clue": "SEC school, the Longhorns"
       },
       {
         "num": 4,
         "dir": "A",
         "r": 1,
         "c": 0,
-        "answer": "RENT",
-        "clue": "Monthly payment"
+        "answer": "OLAVE",
+        "clue": "Chris ___, a 2020s star"
       },
       {
         "num": 5,
-        "dir": "D",
-        "r": 1,
-        "c": 3,
-        "answer": "TINE",
-        "clue": "Fork point"
-      },
-      {
-        "num": 6,
-        "dir": "A",
-        "r": 2,
-        "c": 0,
-        "answer": "RATIO",
-        "clue": "Proportion"
-      },
-      {
-        "num": 7,
-        "dir": "D",
-        "r": 2,
-        "c": 4,
-        "answer": "OTT",
-        "clue": "Mel ___, a 500-home-run outfielder"
-      },
-      {
-        "num": 8,
         "dir": "A",
         "r": 3,
-        "c": 1,
-        "answer": "DENT",
-        "clue": "Fender ding"
-      },
-      {
-        "num": 9,
-        "dir": "A",
-        "r": 4,
-        "c": 2,
-        "answer": "SET",
-        "clue": "Tennis-match division"
+        "c": 0,
+        "answer": "RUSSA",
+        "clue": "MLB coach Tony La ___"
       }
     ],
-    "difficulty": 2.9,
+    "difficulty": 2.4,
     "sport": "baseball"
   },
   {
@@ -207,96 +127,56 @@ window.RTG_PUZZLES = {
     "date": "2026-07-24",
     "size": 5,
     "rows": [
-      "ERA##",
-      "RENT#",
-      "RATIO",
-      "#DENT",
-      "##SET"
+      "SUGGS",
+      "T#A#H",
+      "A#T#U",
+      "R#E#L",
+      "RUSSA"
     ],
-    "theme": 2,
+    "theme": 5,
     "entries": [
       {
         "num": 1,
         "dir": "A",
         "r": 0,
         "c": 0,
-        "answer": "ERA",
-        "clue": "Stat-line shorthand: earned run average"
+        "answer": "SUGGS",
+        "clue": "Terrell ___, a 2000s star"
       },
       {
         "num": 1,
         "dir": "D",
         "r": 0,
         "c": 0,
-        "answer": "ERR",
-        "clue": "Slip up"
+        "answer": "STARR",
+        "clue": "Hall of Famer Bart ___"
       },
       {
         "num": 2,
         "dir": "D",
         "r": 0,
-        "c": 1,
-        "answer": "READ",
-        "clue": "Peruse a book"
+        "c": 2,
+        "answer": "GATES",
+        "clue": "Antonio ___, a 2000s star"
       },
       {
         "num": 3,
         "dir": "D",
         "r": 0,
-        "c": 2,
-        "answer": "ANTES",
-        "clue": "Pot starters"
+        "c": 4,
+        "answer": "SHULA",
+        "clue": "NFL coach Don ___"
       },
       {
         "num": 4,
         "dir": "A",
-        "r": 1,
-        "c": 0,
-        "answer": "RENT",
-        "clue": "Monthly payment"
-      },
-      {
-        "num": 5,
-        "dir": "D",
-        "r": 1,
-        "c": 3,
-        "answer": "TINE",
-        "clue": "Fork point"
-      },
-      {
-        "num": 6,
-        "dir": "A",
-        "r": 2,
-        "c": 0,
-        "answer": "RATIO",
-        "clue": "Proportion"
-      },
-      {
-        "num": 7,
-        "dir": "D",
-        "r": 2,
-        "c": 4,
-        "answer": "OTT",
-        "clue": "Hall of Famer Mel ___"
-      },
-      {
-        "num": 8,
-        "dir": "A",
-        "r": 3,
-        "c": 1,
-        "answer": "DENT",
-        "clue": "Fender ding"
-      },
-      {
-        "num": 9,
-        "dir": "A",
         "r": 4,
-        "c": 2,
-        "answer": "SET",
-        "clue": "Tennis-match division"
+        "c": 0,
+        "answer": "RUSSA",
+        "clue": "MLB coach Tony La ___"
       }
     ],
-    "difficulty": 2.9,
+    "difficulty": 2.8,
     "sport": "baseball"
   },
   {
@@ -304,96 +184,64 @@ window.RTG_PUZZLES = {
     "date": "2026-07-25",
     "size": 5,
     "rows": [
-      "ERA##",
-      "REND#",
-      "RATIO",
-      "#DENT",
-      "##SET"
+      "#ERA#",
+      "H#I#L",
+      "BULLS",
+      "P#E#U",
+      "#BYU#"
     ],
-    "theme": 2,
+    "theme": 6,
     "entries": [
       {
         "num": 1,
         "dir": "A",
         "r": 0,
-        "c": 0,
+        "c": 1,
         "answer": "ERA",
-        "clue": "Box-score abbr. for earned run average"
-      },
-      {
-        "num": 1,
-        "dir": "D",
-        "r": 0,
-        "c": 0,
-        "answer": "ERR",
-        "clue": "Slip up"
+        "clue": "Stat-line shorthand: earned run average"
       },
       {
         "num": 2,
         "dir": "D",
         "r": 0,
-        "c": 1,
-        "answer": "READ",
-        "clue": "Peruse a book"
+        "c": 2,
+        "answer": "RILEY",
+        "clue": "NBA coach Pat ___"
       },
       {
         "num": 3,
         "dir": "D",
-        "r": 0,
-        "c": 2,
-        "answer": "ANTES",
-        "clue": "Pot starters"
+        "r": 1,
+        "c": 0,
+        "answer": "HBP",
+        "clue": "Box-score abbr. for hit by pitch"
       },
       {
         "num": 4,
-        "dir": "A",
+        "dir": "D",
         "r": 1,
-        "c": 0,
-        "answer": "REND",
-        "clue": "Tear apart"
+        "c": 4,
+        "answer": "LSU",
+        "clue": "SEC school, the Tigers"
       },
       {
         "num": 5,
-        "dir": "D",
-        "r": 1,
-        "c": 3,
-        "answer": "DINE",
-        "clue": "Have supper"
+        "dir": "A",
+        "r": 2,
+        "c": 0,
+        "answer": "BULLS",
+        "clue": "Chicago's NBA team"
       },
       {
         "num": 6,
         "dir": "A",
-        "r": 2,
-        "c": 0,
-        "answer": "RATIO",
-        "clue": "Proportion"
-      },
-      {
-        "num": 7,
-        "dir": "D",
-        "r": 2,
-        "c": 4,
-        "answer": "OTT",
-        "clue": "Hall of Famer Mel ___"
-      },
-      {
-        "num": 8,
-        "dir": "A",
-        "r": 3,
-        "c": 1,
-        "answer": "DENT",
-        "clue": "Fender ding"
-      },
-      {
-        "num": 9,
-        "dir": "A",
         "r": 4,
-        "c": 2,
-        "answer": "SET",
-        "clue": "Tennis-match division"
+        "c": 1,
+        "answer": "BYU",
+        "clue": "Big 12 school, the Cougars"
       }
     ],
-    "difficulty": 2.9,
+    "difficulty": 2,
     "sport": "baseball"
   },
   {
@@ -401,96 +249,56 @@ window.RTG_PUZZLES = {
     "date": "2026-07-26",
     "size": 5,
     "rows": [
-      "ERA##",
-      "RENT#",
-      "RATIO",
-      "#DENT",
-      "##SET"
+      "SPURS",
+      "#L#U#",
+      "WALSH",
+      "#T#S#",
+      "TEXAS"
     ],
-    "theme": 2,
+    "theme": 5,
     "entries": [
       {
         "num": 1,
         "dir": "A",
         "r": 0,
         "c": 0,
-        "answer": "ERA",
-        "clue": "Stat-line shorthand: earned run average"
-      },
-      {
-        "num": 1,
-        "dir": "D",
-        "r": 0,
-        "c": 0,
-        "answer": "ERR",
-        "clue": "Slip up"
+        "answer": "SPURS",
+        "clue": "San Antonio's NBA team"
       },
       {
         "num": 2,
         "dir": "D",
         "r": 0,
         "c": 1,
-        "answer": "READ",
-        "clue": "Peruse a book"
+        "answer": "PLATE",
+        "clue": "Home ___ (where runs score)"
       },
       {
         "num": 3,
         "dir": "D",
         "r": 0,
-        "c": 2,
-        "answer": "ANTES",
-        "clue": "Pot starters"
+        "c": 3,
+        "answer": "RUSSA",
+        "clue": "MLB coach Tony La ___"
       },
       {
         "num": 4,
         "dir": "A",
-        "r": 1,
+        "r": 2,
         "c": 0,
-        "answer": "RENT",
-        "clue": "Monthly payment"
+        "answer": "WALSH",
+        "clue": "NFL coach Bill ___"
       },
       {
         "num": 5,
-        "dir": "D",
-        "r": 1,
-        "c": 3,
-        "answer": "TINE",
-        "clue": "Fork point"
-      },
-      {
-        "num": 6,
-        "dir": "A",
-        "r": 2,
-        "c": 0,
-        "answer": "RATIO",
-        "clue": "Proportion"
-      },
-      {
-        "num": 7,
-        "dir": "D",
-        "r": 2,
-        "c": 4,
-        "answer": "OTT",
-        "clue": "Hall of Famer Mel ___"
-      },
-      {
-        "num": 8,
-        "dir": "A",
-        "r": 3,
-        "c": 1,
-        "answer": "DENT",
-        "clue": "Fender ding"
-      },
-      {
-        "num": 9,
         "dir": "A",
         "r": 4,
-        "c": 2,
-        "answer": "SET",
-        "clue": "Tennis-match division"
+        "c": 0,
+        "answer": "TEXAS",
+        "clue": "SEC school, the Longhorns"
       }
     ],
-    "difficulty": 2.9,
+    "difficulty": 2,
     "sport": "baseball"
   },
   {
@@ -498,96 +306,64 @@ window.RTG_PUZZLES = {
     "date": "2026-07-27",
     "size": 5,
     "rows": [
-      "ERA##",
-      "RENT#",
-      "RATIO",
-      "#DENT",
-      "##SET"
+      "#REID",
+      "S#L#A",
+      "LEWIS",
+      "A#A#H",
+      "MAYE#"
     ],
-    "theme": 2,
+    "theme": 5,
     "entries": [
       {
         "num": 1,
         "dir": "A",
         "r": 0,
-        "c": 0,
-        "answer": "ERA",
-        "clue": "Stat-line shorthand: earned run average"
-      },
-      {
-        "num": 1,
-        "dir": "D",
-        "r": 0,
-        "c": 0,
-        "answer": "ERR",
-        "clue": "Slip up"
+        "c": 1,
+        "answer": "REID",
+        "clue": "NFL coach Andy ___"
       },
       {
         "num": 2,
         "dir": "D",
         "r": 0,
-        "c": 1,
-        "answer": "READ",
-        "clue": "Peruse a book"
+        "c": 2,
+        "answer": "ELWAY",
+        "clue": "Hall of Famer John ___"
       },
       {
         "num": 3,
         "dir": "D",
         "r": 0,
-        "c": 2,
-        "answer": "ANTES",
-        "clue": "Pot starters"
+        "c": 4,
+        "answer": "DASH",
+        "clue": "Short sprint race"
       },
       {
         "num": 4,
-        "dir": "A",
+        "dir": "D",
         "r": 1,
         "c": 0,
-        "answer": "RENT",
-        "clue": "Monthly payment"
+        "answer": "SLAM",
+        "clue": "Grand ___ (bases-loaded homer)"
       },
       {
         "num": 5,
-        "dir": "D",
-        "r": 1,
-        "c": 3,
-        "answer": "TINE",
-        "clue": "Fork point"
+        "dir": "A",
+        "r": 2,
+        "c": 0,
+        "answer": "LEWIS",
+        "clue": "Ravens great Ray ___"
       },
       {
         "num": 6,
         "dir": "A",
-        "r": 2,
-        "c": 0,
-        "answer": "RATIO",
-        "clue": "Proportion"
-      },
-      {
-        "num": 7,
-        "dir": "D",
-        "r": 2,
-        "c": 4,
-        "answer": "OTT",
-        "clue": "Mel ___, a 500-home-run outfielder"
-      },
-      {
-        "num": 8,
-        "dir": "A",
-        "r": 3,
-        "c": 1,
-        "answer": "DENT",
-        "clue": "Fender ding"
-      },
-      {
-        "num": 9,
-        "dir": "A",
         "r": 4,
-        "c": 2,
-        "answer": "SET",
-        "clue": "Tennis-match division"
+        "c": 0,
+        "answer": "MAYE",
+        "clue": "Patriots star Drake ___"
       }
     ],
-    "difficulty": 2.9,
+    "difficulty": 2.83,
     "sport": "baseball"
   },
   {
@@ -595,96 +371,72 @@ window.RTG_PUZZLES = {
     "date": "2026-07-28",
     "size": 5,
     "rows": [
-      "ERA##",
-      "REND#",
-      "RATIO",
-      "#DENT",
-      "##SET"
+      "ERS#K",
+      "U#WAR",
+      "R#I#A",
+      "OPS#F",
+      "S#HIT"
     ],
-    "theme": 2,
+    "theme": 6,
     "entries": [
       {
         "num": 1,
         "dir": "A",
         "r": 0,
         "c": 0,
-        "answer": "ERA",
-        "clue": "Stat-line shorthand: earned run average"
+        "answer": "ERS",
+        "clue": "San Francisco's NFL team"
       },
       {
         "num": 1,
         "dir": "D",
         "r": 0,
         "c": 0,
-        "answer": "ERR",
-        "clue": "Slip up"
+        "answer": "EUROS",
+        "clue": "Soccer trophy"
       },
       {
         "num": 2,
         "dir": "D",
         "r": 0,
-        "c": 1,
-        "answer": "READ",
-        "clue": "Peruse a book"
+        "c": 2,
+        "answer": "SWISH",
+        "clue": "All-net basket"
       },
       {
         "num": 3,
         "dir": "D",
         "r": 0,
-        "c": 2,
-        "answer": "ANTES",
-        "clue": "Pot starters"
+        "c": 4,
+        "answer": "KRAFT",
+        "clue": "Patriots owner Robert ___"
       },
       {
         "num": 4,
         "dir": "A",
         "r": 1,
-        "c": 0,
-        "answer": "REND",
-        "clue": "Tear apart"
+        "c": 2,
+        "answer": "WAR",
+        "clue": "Box-score abbr. for wins above replacement"
       },
       {
         "num": 5,
-        "dir": "D",
-        "r": 1,
-        "c": 3,
-        "answer": "DINE",
-        "clue": "Have supper"
+        "dir": "A",
+        "r": 3,
+        "c": 0,
+        "answer": "OPS",
+        "clue": "Stat-line shorthand: on-base plus slugging"
       },
       {
         "num": 6,
         "dir": "A",
-        "r": 2,
-        "c": 0,
-        "answer": "RATIO",
-        "clue": "Proportion"
-      },
-      {
-        "num": 7,
-        "dir": "D",
-        "r": 2,
-        "c": 4,
-        "answer": "OTT",
-        "clue": "Mel ___, a 500-home-run outfielder"
-      },
-      {
-        "num": 8,
-        "dir": "A",
-        "r": 3,
-        "c": 1,
-        "answer": "DENT",
-        "clue": "Fender ding"
-      },
-      {
-        "num": 9,
-        "dir": "A",
         "r": 4,
         "c": 2,
-        "answer": "SET",
-        "clue": "Tennis-match division"
+        "answer": "HIT",
+        "clue": "Single, double, or triple"
       }
     ],
-    "difficulty": 2.9,
+    "difficulty": 2.14,
     "sport": "baseball"
   }
 ],
