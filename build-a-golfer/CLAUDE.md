@@ -13167,6 +13167,36 @@ allows Google Fonts, or self-host Anton.*
      filters LegacyZero/LegacyNull while the earnings board keeps them, the persisted-ovr fallback, 0 page
      errors). **ACTION: run `supabase/64_runtour_career_fans_nonzero.sql`.** Deployed client to /golf.
 
+- **Leaderboard avatars: LIVE profile golfer on row chips, frozen in-career golfer on the podium (owner:
+  "A lot of users profile pictures are still generic. Can you confirm these are legit? These profile
+  pictures should update anytime somebody updates their character, but the top 3 full body characters
+  should show what that career golfer was wearing in that career").** Confirmed the generics ARE legit:
+  a row's avatar is the `look` stored ON the row at submit time (52/53), so anything posted before those
+  migrations is null -> the neutral default golfer; migration 54's backfill stamps a user's current golfer
+  onto their own old rows but only fires on that user's NEXT sign-in with the current client - users who
+  haven't returned stay generic (self-healing as they come back), and guest rows are the default by design.
+  Then built the owner's spec - the two avatar surfaces now mean different things:
+  - **Row chips = the player's CURRENT golfer.** New `supabase/65_runtour_live_profile_look.sql`
+    (owner-run): a lightweight `runtour_profile_look` table (~200-byte render-only look per user, NOT the
+    huge cloud blob - joining that would recreate the TOAST problem 61 fixed) + an authenticated
+    `runtour_set_look(p_look)` upsert (8KB junk guard, null-uid no-op), and both boards are redefined
+    (season = 62's body, career = 64's body) with a `cur_look` column appended, left-joined for the
+    returned top-N rows only. Client: `pushProfileLook()` (debounced 1.5s, fail-open) fires from every
+    `saveLook()` (any Closet change) AND on sign-in after cloudPull - so changing your character updates
+    your picture on every board within seconds, and every existing user's chip goes live the first time
+    they open the game (no posting needed). `rowFn` chips read `cur_look || look || DEFLOOK` (own rows
+    still show the live S.look).
+  - **Podium figures = frozen at-submit** (`r.look`, what that career/season golfer actually wore), with a
+    `cur_look` fallback only for legacy null-look rows (better than generic).
+  Validated 65 on local Postgres (frozen-vs-live split on both boards, junk-size rejection, upsert,
+  anon/null-uid no-op + no direct table access, named-arg board calls resolve, idempotent - the drop+create
+  return-type change is safe since clients read fields by name). Client verified in Playwright (full
+  data-URL comparison: chip === the live look render and !== frozen, legacy chip === default, podium ===
+  frozen and !== live; a saveLook burst collapses to ONE debounced runtour_set_look call with the right
+  payload; guests never push; 0 page errors). **ACTION: run
+  `supabase/65_runtour_live_profile_look.sql`** - until then chips just keep showing the frozen/default
+  look (fail-open). Deployed client to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

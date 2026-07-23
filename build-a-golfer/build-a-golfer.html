@@ -2086,7 +2086,7 @@ function saveCareerLifetime(c){ LS.set(acctKey('bag_career'),c); if(typeof cloud
 // equipped title). Stamped with a last-edited time so the cloud sync can pick the most-recently-customized
 // version across devices (last-write-wins), then pushed to the account. Central setter so every look change
 // stays timestamped + synced; call this instead of LS.set('bag_look', ...) directly.
-function saveLook(){ try{ S.look._ts=Date.now(); }catch(e){} LS.set('bag_look', S.look); if(typeof cloudPush==='function') cloudPush(); }
+function saveLook(){ try{ S.look._ts=Date.now(); }catch(e){} LS.set('bag_look', S.look); if(typeof cloudPush==='function') cloudPush(); if(typeof pushProfileLook==='function') pushProfileLook(); }   // 65_: board avatars track your current golfer
 // one-time: adopt this browser's pre-existing (unscoped) lifetime stats into the signed-in account's own
 // slot, the first time that slot is empty, mirrors migrateLegacyCareerSave()'s approach for career saves.
 // Never deletes the unscoped copy (a signed-out guest on this same browser should still see it).
@@ -6931,7 +6931,9 @@ function overlayLeaderboard(screen){
       // null-look row) - NEVER fall back to S.look, which leaked the VIEWER's own golfer onto every
       // not-yet-backfilled row (owner: "showing the same golfer with a crown for a lot of users"). The
       // viewer's own rows show their LIVE current look.
-      return lbRowHTML(r.rank,id.name,sub,v,you,lbRep({rep_pts:id.rep}),you?(S.look||DEFLOOK):(r.look||DEFLOOK));
+      // 65_ (owner): the small row avatar tracks the player's CURRENT golfer (cur_look, updated whenever
+      // they change their character); the frozen at-submit look stays on the podium figures below.
+      return lbRowHTML(r.rank,id.name,sub,v,you,lbRep({rep_pts:id.rep}),you?(S.look||DEFLOOK):(r.cur_look||r.look||DEFLOOK));
     };
     const rows=globalRows;   // already ordered by the server (top N desc, or true bottom N asc)
     // CS268: top-3 podium (only on the default best-first view, not the low→high "bottom of the DB" view)
@@ -6942,7 +6944,7 @@ function overlayLeaderboard(screen){
       // CS393: each podium finisher shows off their customized golfer (r.look, from the board RPC; default
       // golfer for legacy rows with no look, or before migration 52 is applied).
       podiumHTML='<div class="lbpodium">'+pod.map((r,di)=>{ const id=lbCanon(r), v=lbStatVal(r,tab,sort);
-        return `<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(r.look||DEFLOOK, di===1?74:56)}</div><div class="nm">${esc(id.name)}</div><div class="vl">${v}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`; }).join('')+'</div>';
+        return `<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(r.look||r.cur_look||DEFLOOK, di===1?74:56)}</div><div class="nm">${esc(id.name)}</div><div class="vl">${v}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`; }).join('')+'</div>';
     }
     // CS505 (owner): the top 3 live ONLY on the podium — the ranked list below starts at #4 whenever a
     // podium is shown, so nobody appears twice.
@@ -22298,7 +22300,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461)
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461)
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -22722,6 +22724,18 @@ const PENDING_SEASONS_KEY='bag_pending_seasons';
 function lookForBoard(look){ const L=look||S.look||DEFLOOK; const o={};
   ['skin','skinTone','hair','hairStyle','polo','pants','shoes','cap','hatStyle','hat','shirtPat','hatPat','eyewear','club','top','leg','fx','ball','cleats','lefty','gender'].forEach(k=>{ if(L[k]!==undefined) o[k]=L[k]; });
   return o; }
+// 65_: keep the server's copy of your CURRENT golfer fresh - the leaderboards' small row avatars read
+// it (cur_look), so changing your character in the Closet updates your picture on every board within
+// seconds. Debounced (a closet session fires many saveLook calls); fail-open pre-migration.
+let _plTimer=null;
+function pushProfileLook(){ try{
+  if(!sb || !sbSignedIn()) return;
+  if(_plTimer) clearTimeout(_plTimer);
+  _plTimer=setTimeout(()=>{ _plTimer=null; try{
+    if(!sb || !sbSignedIn()) return;
+    sb.rpc('runtour_set_look',{p_look:lookForBoard()}).then(()=>{}).catch(()=>{});
+  }catch(e){} }, 1500);
+}catch(e){} }
 // CS395: one-time retro-fill on first sign-in after the look migration — stamp the player's CURRENT profile
 // golfer onto all their existing (pre-migration, null-look) season + daily rows, so old scores show their
 // real golfer instead of the generic placeholder. Server-side scoped to auth.uid() + look-is-null only, and
