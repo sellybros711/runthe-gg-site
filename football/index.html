@@ -623,9 +623,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js?v=20260722d"></script>
-<script src="playbook.js?v=20260722d"></script>
-<script src="engine.js?v=20260722d"></script>
+<script src="drive_generator.js?v=20260722e"></script>
+<script src="playbook.js?v=20260722e"></script>
+<script src="engine.js?v=20260722e"></script>
 <script>
 (function(){
   'use strict';
@@ -959,28 +959,42 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       if(i<state.playNo) d.className='on'; else if(i===state.playNo) d.className='now'; dots.appendChild(d); }
   }
   // Mini play-diagram (X's & O's) per play type — drawn up like a playbook card.
-  function routeSVG(arch){
-    const R = {
-      RUN:         {route:'M20,28 L20,7',            head:[20,7,'U']},
-      QB_SNEAK:    {route:'M20,28 L20,19',           head:[20,19,'U']},
-      QUICK:       {route:'M30,28 L30,18 L36,18',    head:[36,18,'R']},
-      SCREEN:      {route:'M20,28 L11,26 L6,30',     head:[6,30,'L']},
-      INTERMEDIATE:{route:'M30,28 L30,13 L37,13',    head:[37,13,'R']},
-      DEEP:        {route:'M30,28 L30,5',            head:[30,5,'U']},
-      PLAY_ACTION: {route:'M20,28 L20,9',            head:[20,9,'U'], fake:'M20,28 L13,32'},
-    };
-    const r = R[arch] || R.RUN;
-    const [hx,hy,hd] = r.head;
+  // Draw the play's ACTUAL route from its signature ("<depth>|<direction>"): the depth
+  // band sets how far the route goes, the direction sets which way it breaks. So a
+  // "20+|middle" reads as a go route and a "5-9|right" reads as an out — art that
+  // matches the play, not just its archetype.
+  function routeSVG(play){
+    const arch = play.archetype;
+    const parts = String(play.signature||'').split('|');
+    const dir = parts[1] || 'middle';
+    const band = parts[0] || '';
+    const g='#f2b21c', ln='rgba(244,227,201,.55)';
+    const TOP = {'0-4':19,'5-9':14,'10-19':8,'20+':3};
+    const dy = TOP[band]!=null ? TOP[band] : (arch==='DEEP'?3 : arch==='INTERMEDIATE'?8 : arch==='SCREEN'?22 : 14);
+    const bx=21, by=30; let d='', hx=bx, hy=dy, hd='U', fake='';
+    if(arch==='RUN'){
+      const gx = dir==='left'?14 : dir==='right'?28 : 21;
+      d=`M${bx} ${by} L${bx} 22 L${gx} 8`; hx=gx; hy=8; hd='U';
+    } else if(arch==='QB_SNEAK'){
+      d=`M${bx} ${by} L${bx} 21`; hy=21;
+    } else if(arch==='SCREEN'){
+      const sx = dir==='right'?31 : dir==='left'?11 : 21;
+      d=`M${bx} ${by} L${sx} 28 L${sx} 21`; hx=sx; hy=21;
+    } else {                                   // pass: stem up to depth, break to direction
+      if(dir==='middle'){ d=`M${bx} ${by} L${bx} ${dy}`; }
+      else { const ex = dir==='left'?Math.max(6,bx-13):Math.min(36,bx+13);
+        d=`M${bx} ${by} L${bx} ${dy+3} L${ex} ${dy}`; hx=ex; hd = dir==='left'?'L':'R'; }
+      if(arch==='PLAY_ACTION') fake=`M${bx} ${by} L${bx-8} 33`;
+    }
     const head = hd==='U' ? `${hx-3},${hy+4} ${hx+3},${hy+4} ${hx},${hy}`
                : hd==='R' ? `${hx-4},${hy-3} ${hx-4},${hy+3} ${hx},${hy}`
                :            `${hx+4},${hy-3} ${hx+4},${hy+3} ${hx},${hy}`;
-    const g='#f2b21c', ln='rgba(244,227,201,.55)';
     return `<svg viewBox="0 0 42 34" aria-hidden="true">`
       +`<line x1="6" y1="24" x2="36" y2="24" stroke="${ln}" stroke-width="1.4"/>`
       +`<g fill="none" stroke="${ln}" stroke-width="1.5"><circle cx="12" cy="24" r="2.1"/><circle cx="20" cy="24" r="2.1"/><circle cx="28" cy="24" r="2.1"/></g>`
-      + (r.fake?`<path d="${r.fake}" stroke="${ln}" stroke-width="1.6" fill="none" stroke-dasharray="2 2"/>`:'')
-      +`<circle cx="20" cy="30" r="2.6" fill="${g}"/>`
-      +`<path d="${r.route}" stroke="${g}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+      + (fake?`<path d="${fake}" stroke="${ln}" stroke-width="1.6" fill="none" stroke-dasharray="2 2"/>`:'')
+      +`<circle cx="${bx}" cy="30" r="2.6" fill="${g}"/>`
+      +`<path d="${d}" stroke="${g}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
       +`<polygon points="${head}" fill="${g}"/></svg>`;
   }
   function renderCalls(state){
@@ -994,7 +1008,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       const b=document.createElement('button'); b.className='tile'+(keyed&&!gone?' keyed':'');
       const remBadge = (info.cap!==Infinity && info.cap!=null) ? `<span class="rem">${Math.max(0,info.remaining)}</span>` : '';
       const keyTag = (keyed&&!gone) ? `<span class="keytag">KEYED</span>` : '';
-      b.innerHTML=`${remBadge}<span class="diag">${routeSVG(t.play.archetype)}</span><span class="tt">${t.title}</span><span class="nm">${t.play.name}</span><span class="fm">${t.play.formation||''}</span>${keyTag}`;
+      b.innerHTML=`${remBadge}<span class="diag">${routeSVG(t.play)}</span><span class="tt">${t.title}</span><span class="nm">${t.play.name}</span><span class="fm">${t.play.formation||''}</span>${keyTag}`;
       b.onclick=()=>doSnap(t.id);
       b.disabled = state.over || gone;
       wrap.appendChild(b);
