@@ -1802,6 +1802,13 @@ window.GA_ID='G-L29P5MRWKE';
 .dropbanner .drop-bar{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden}
 .dropbanner .drop-bar i{display:block;height:100%;border-radius:3px;background:var(--dacc)}
 .dropbanner .drop-go{position:absolute;right:13px;top:14px;color:var(--dacc);font-size:15px}
+/* a COMPLETED collection with an unclaimed reward: the banner goes gold + glows, tap = CLAIM (owner) */
+.dropbanner.claim{border-color:#F1D04A;background:linear-gradient(135deg,rgba(241,208,74,.20),#0c1f16 70%);animation:dropClaimGlow 1.5s ease-in-out infinite}
+.dropbanner.claim .drop-kick,.dropbanner.claim .drop-progress,.dropbanner.claim .drop-go{color:#F1D04A}
+.dropbanner.claim .drop-bar i{background:#F1D04A}
+@keyframes dropClaimGlow{0%,100%{box-shadow:0 0 10px rgba(241,208,74,.35),0 6px 18px rgba(0,0,0,.35)}50%{box-shadow:0 0 30px rgba(241,208,74,.8),0 6px 18px rgba(0,0,0,.35)}}
+.drop-claimpill{display:inline-flex;align-items:center;gap:5px;font:800 11.5px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:#08130d;background:var(--gold-grad-d,#F1D04A);border:0;border-radius:999px;padding:7px 14px;cursor:pointer;box-shadow:0 0 16px rgba(241,208,74,.65);animation:droppulse 1.5s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){ .dropbanner.claim{animation:none;box-shadow:0 0 22px rgba(241,208,74,.55)} .drop-claimpill{animation:none} }
 .droplivedot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:4px;vertical-align:middle;animation:droppulse 1.6s ease-in-out infinite}
 .stile.dropoff{opacity:.7;filter:saturate(.6)}
 @keyframes droppulse{0%,100%{opacity:1}50%{opacity:.35}}
@@ -7872,7 +7879,7 @@ function scrTitle(){
     if(ld){ const pr=dropProgress(ld), done=pr.own>=pr.tot;
       const db=$(`<button class="homedrop" style="--dacc:${ld.accent}">
         <span class="hd-dot"></span>
-        <span class="hd-txt"><b>${esc(ld.name)} is LIVE</b><span>${done?'✓ Collection complete!':`Collect all ${pr.tot} · you have ${pr.own} · ends ${_DROP_MON[ld.window[1][0]-1]} ${ld.window[1][1]}`}</span></span>
+        <span class="hd-txt"><b>${esc(ld.name)} is LIVE</b><span>${(typeof dropClaimable==='function'&&dropClaimable(ld))?'🏆 COMPLETE · tap to CLAIM your reward!':done?'✓ Collection complete!':`Collect all ${pr.tot} · you have ${pr.own} · ends ${_DROP_MON[ld.window[1][0]-1]} ${ld.window[1][1]}`}</span></span>
         <span class="hd-go">▸</span>`);
       db.onclick=()=>{ track('home_drop_promo',{id:ld.id}); S.overlay='shop'; S.shopSec='drops'; S.shopDrop=ld.id; render(); };
       w.appendChild(db); } }catch(e){}
@@ -21019,14 +21026,23 @@ const DROP_REWARDS={ summer:{cat:'top', id:'duckfloatie', name:'Rubber Ducky Flo
 function dropReward(d){ return d?(DROP_REWARDS[d.id]||null):null; }
 function rewardDrop(cat,id){ for(const k in DROP_REWARDS){ const r=DROP_REWARDS[k]; if(r.cat===cat&&r.id===id) return dropById(k); } return null; }
 function cosRewardOnly(cat,id){ for(const k in DROP_REWARDS){ const r=DROP_REWARDS[k]; if(r.cat===cat&&r.id===id) return true; } return false; }
+// a collection is CLAIMABLE when you own every piece but haven't claimed the reward yet. The reward is
+// granted ONLY by the player tapping CLAIM (the banner goes gold + glows), no delayed auto-celebration.
+function dropClaimable(d){ if(!sbSignedIn()||!d) return false; const r=dropReward(d); if(!r||cosOwned(r.cat,r.id)) return false;
+  const pr=dropProgress(d); return pr.own>=pr.tot; }
+function anyDropClaimable(){ try{ for(const k in DROP_REWARDS){ if(dropClaimable(dropById(k))) return true; } }catch(e){} return false; }
+function claimDropReward(did){ const d=dropById(did), r=dropReward(d); if(!dropClaimable(d)) return;
+  const s=coinState(); s.owned[cosKey(r.cat,r.id)]=1; coinSave(s);
+  try{ markItemSeen&&markItemSeen(cosKey(r.cat,r.id)); }catch(e){}
+  track('drop_reward_claimed',{drop:did,id:r.id});
+  celebrateDropReward(d,r); }
 function checkDropRewards(){ if(!sbSignedIn()) return; try{
-  for(const did in DROP_REWARDS){ const r=DROP_REWARDS[did], d=dropById(did); if(!d||!r) continue;
-    if(cosOwned(r.cat,r.id)) continue;
-    const pr=dropProgress(d); if(pr.own<pr.tot) continue;
-    const s=coinState(); s.owned[cosKey(r.cat,r.id)]=1; coinSave(s);
-    try{ markItemSeen&&markItemSeen(cosKey(r.cat,r.id)); }catch(e){}
-    track('drop_reward_earned',{drop:did,id:r.id});
-    celebrateDropReward(d,r);
+  for(const did in DROP_REWARDS){ const d=dropById(did); if(!dropClaimable(d)) continue;
+    const seen=LS.get(acctKey('bag_dropnotice'),{})||{}; if(seen[did]) continue;
+    seen[did]=1; LS.set(acctKey('bag_dropnotice'),seen);
+    try{ sfx&&sfx('win'); }catch(e){}
+    track('drop_reward_ready',{drop:did});
+    toast('\ud83c\udfc6 '+d.name+' collection COMPLETE! Claim your reward in the Pro Shop Drops tab.', 3600);
   } }catch(e){} }
 function celebrateDropReward(d,r){
   if(document.getElementById('dropreward-ov')) return;
@@ -21672,7 +21688,7 @@ function overlayShop(screen){
     <button class="shop-refcta" data-refshare><span style="width:18px;height:18px;flex:0 0 auto">${ic('coins',{size:'18px'})}</span><span><b>Invite a friend, get a free pack</b><br><span class="small" style="opacity:.85">They sign up with your link, you both score a pack</span></span><span style="margin-left:auto">↗</span></button>
     <div class="segrow">
       ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
-      <button data-sec="drops" class="${sec==='drops'?'on':''}">Drops${(function(){const ld=liveThemedDrop();return ld?'<span class="droplivedot" style="background:'+ld.accent+'"></span>':'';})()}</button>
+      <button data-sec="drops" class="${sec==='drops'?'on':''}">Drops${(function(){if(typeof anyDropClaimable==='function'&&anyDropClaimable())return '<span class="droplivedot" style="background:#F1D04A;box-shadow:0 0 8px #F1D04A"></span>'; const ld=liveThemedDrop();return ld?'<span class="droplivedot" style="background:'+ld.accent+'"></span>':'';})()}</button>
       <button data-sec="bag" class="${sec==='bag'?'on':''}">Clubs${(sec!=='bag'&&cosCatNew('club')>0)?NDOT:''}</button>
       <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel${secDot('apparel')}</button>
       <button data-sec="accessories" class="${sec==='accessories'?'on':''}">Accessories${secDot('accessories')}</button>
@@ -21705,13 +21721,13 @@ function overlayShop(screen){
     let sel=S.shopDrop?dropById(S.shopDrop):null;
     if(sel && !dropVisible(sel)){ S.shopDrop=null; sel=null; }   // a hidden (unreleased) drop can't be opened
     if(sel){
-      const live=dropLive(sel), pr=dropProgress(sel), done=pr.own>=pr.tot;
-      const hd=$(`<div class="dropbanner sel" style="--dacc:${sel.accent}">
+      const live=dropLive(sel), pr=dropProgress(sel), done=pr.own>=pr.tot, claimable=dropClaimable(sel);
+      const hd=$(`<div class="dropbanner sel${claimable?' claim':''}" style="--dacc:${sel.accent}">
         <div class="drop-kick">${esc(sel.kicker)}</div>
         <div class="drop-name">${esc(sel.name)}</div>
         <div class="drop-meta">${sel.window?(live?`<span class="droplive">● LIVE NOW</span> · ends ${_DROP_MON[sel.window[1][0]-1]} ${sel.window[1][1]}`:`⏳ ${esc(dropReturnsLabel(sel))}`):'Always available'}</div>
         <div class="drop-blurb">${esc(sel.blurb)}</div>
-        <div class="drop-progress"><div class="drop-bar"><i style="width:${Math.round(pr.own/pr.tot*100)}%"></i></div><span>${done?'✓ COLLECTION COMPLETE':pr.own+' / '+pr.tot+' collected'}</span></div>
+        <div class="drop-progress"><div class="drop-bar"><i style="width:${Math.round(pr.own/pr.tot*100)}%"></i></div><span>${claimable?'🏆 COMPLETE · reward ready':done?'✓ COLLECTION COMPLETE':pr.own+' / '+pr.tot+' collected'}</span></div>
       </div>`);
       dwrap.appendChild(hd);
       const rw=dropReward(sel);
@@ -21720,7 +21736,10 @@ function overlayShop(screen){
           <div style="width:52px;height:64px;flex:0 0 auto">${pxItemThumb(rw.cat,rw.id)}</div>
           <div style="min-width:0;text-align:left"><div style="font:800 10px/1 var(--body);letter-spacing:.14em;color:#F1D04A">COLLECTION REWARD</div>
           <div style="font-family:var(--display);font-size:17px;color:var(--oncard);margin:3px 0 2px">${esc(rw.name)}</div>
-          <div class="small ${rOwned?'':'muted'}" style="${rOwned?'color:#35d6a0;font-weight:800':''}">${rOwned?'✓ EARNED — it\u2019s yours forever':'Own all '+sel.items.length+' items to earn it · can\u2019t be bought or pulled'}</div></div></div>`);
+          ${claimable?'<button class="drop-claimpill" data-claim style="margin-top:3px">🏆 CLAIM ▸</button>'
+            :`<div class="small ${rOwned?'':'muted'}" style="${rOwned?'color:#35d6a0;font-weight:800':''}">${rOwned?'✓ EARNED · it\u2019s yours forever':'Own all '+sel.items.length+' items to earn it · can\u2019t be bought or pulled'}</div>`}</div></div>`);
+        if(claimable){ const cb=rt.querySelector('[data-claim]'); if(cb){ cb.onclick=()=>claimDropReward(sel.id); }
+          rt.style.boxShadow='0 0 20px rgba(241,208,74,.5)'; }
         dwrap.appendChild(rt); }
       const back=$(`<button class="btn ghost" style="margin:8px 0 10px">‹ All drops</button>`);
       back.onclick=()=>{ S.shopDrop=null; render(); };
@@ -21733,15 +21752,16 @@ function overlayShop(screen){
     } else {
       dwrap.appendChild($(`<p class="lede" style="margin:0 0 10px;font-size:13px">Collections to chase and show off. Themed drops go live around real-world moments, then rotate out until next year.</p>`));
       DROPS.filter(dropVisible).forEach(d=>{
-        const live=dropLive(d), pr=dropProgress(d), done=pr.own>=pr.tot;
-        const bn=$(`<button class="dropbanner ${live?'':'off'}" style="--dacc:${d.accent}">
+        const live=dropLive(d), pr=dropProgress(d), done=pr.own>=pr.tot, claimable=dropClaimable(d);
+        const bn=$(`<button class="dropbanner ${claimable?'claim':(live?'':'off')}" style="--dacc:${d.accent}">
           <div class="drop-kick">${esc(d.kicker)}</div>
           <div class="drop-name">${esc(d.name)}</div>
           <div class="drop-meta">${d.window?(live?`<span class="droplive">● LIVE NOW</span> · ends ${_DROP_MON[d.window[1][0]-1]} ${d.window[1][1]}`:`⏳ ${esc(dropReturnsLabel(d))} · ${esc(dropWindowLabel(d))}`):'Always available'}</div>
-          <div class="drop-progress"><div class="drop-bar"><i style="width:${Math.round(pr.own/pr.tot*100)}%"></i></div><span>${done?'✓ COMPLETE':pr.own+' / '+pr.tot}</span></div>
+          <div class="drop-progress"><div class="drop-bar"><i style="width:${Math.round(pr.own/pr.tot*100)}%"></i></div><span>${claimable?'🏆 COMPLETE':done?'✓ COMPLETE':pr.own+' / '+pr.tot}</span></div>
+          ${claimable?'<div style="margin-top:9px"><span class="drop-claimpill">🏆 CLAIM ▸</span></div>':''}
           <span class="drop-go">▸</span>
         </button>`);
-        bn.onclick=()=>{ S.shopDrop=d.id; render(); };
+        bn.onclick=()=>{ if(claimable){ claimDropReward(d.id); return; } S.shopDrop=d.id; render(); };
         dwrap.appendChild(bn);
       });
     }

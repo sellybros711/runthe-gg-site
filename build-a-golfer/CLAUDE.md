@@ -13023,6 +13023,32 @@ allows Google Fonts, or self-host Anton.*
   border), The Memphis Championship renders `sc-playoff` (teal rgba(15,168,136,.72)), 0 page errors; a
   side-by-side render confirms all three read distinctly. Deployed to /golf.
 
+- **Collection rewards are now manually CLAIMED from a golden glowing banner (owner: "it took a while
+  for the collection reward to come up. The collection reward bubble should turn golden and start glowing
+  when you complete it and it should say CLAIM so the user can manually trigger the animation").** Root
+  cause of the delay: `checkDropRewards` auto-granted + auto-celebrated, but it only ran from
+  `reconcileCoins` (load/finish passes) and `packGrant` — so completing the collection via a direct BUY or
+  shard redeem didn't fire it until some later pass. Redesigned to a derived, manual-claim model:
+  • **`dropClaimable(d)`** = signed-in && every piece owned && the reward not yet claimed (pure state, so
+    it's instant + cross-device correct); `anyDropClaimable()`; **`claimDropReward(did)`** grants the
+    reward + fires the existing `celebrateDropReward` set-piece — ONLY on the player's tap.
+  • **The bubble goes gold + glows + says CLAIM**: the all-drops list banner gets `.dropbanner.claim`
+    (gold border, gold-tinted fill, a pulsing `dropClaimGlow` box-shadow, gold progress bar/kicker,
+    reduced-motion static) with a pulsing gold **🏆 CLAIM ▸** pill — tapping the banner triggers the
+    claim animation directly. The selected-drop view mirrors it (gold banner, "🏆 COMPLETE · reward
+    ready", and the reward tile's status becomes a **🏆 CLAIM ▸** button + glow). After claiming, both
+    revert to the normal "✓ COMPLETE"/"✓ EARNED" states.
+  • **Discoverability**: the Pro Shop **Drops tab dot turns gold** (overriding the live-drop accent dot)
+    while a claim is waiting, and the home-screen drop promo reads "🏆 COMPLETE · tap to CLAIM your
+    reward!". `checkDropRewards` now only NOTIFIES — a one-time-per-drop toast ("collection COMPLETE!
+    Claim your reward in the Pro Shop Drops tab", guarded by `bag_dropnotice`) instead of auto-granting.
+  • Also fixed a pre-existing em dash in the reward tile copy ("EARNED — " → "EARNED · ").
+  Players whose reward already auto-granted (like the owner's Floatie) are unaffected (owned = not
+  claimable). Verified in Playwright end-to-end: complete-the-set → claimable + one-shot toast; the list
+  banner renders `dropbanner claim` (gold border, dropClaimGlow anim, CLAIM pill) + the gold tab dot; the
+  selected view shows the CLAIM button; tapping it fires the celebration + grants the Floatie; afterwards
+  every surface normalizes; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
