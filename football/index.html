@@ -134,20 +134,22 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 /* broadcast markers — telestration discs that lie on the tilted field (not standing sprites) */
 .chip{position:absolute; width:26px; height:26px; transform:translate(-50%,-50%); z-index:3;
   transition:left .4s ease, top .4s ease; filter:drop-shadow(0 2px 2px rgba(0,0,0,.55));}
-.chip.qb{width:30px; height:30px; z-index:4;}
-.chip.def{ width:23px; height:23px; }                 /* defenders read a touch smaller so your offense pops */
-.manart{width:100%; height:100%; display:block;}
-/* the ball-carrier is unmistakable: bigger, a gold pulse ring, on top of everyone */
+.chip.qb{width:31px; height:31px; z-index:4;}
+.chip.def{ width:24px; height:24px; }                 /* defenders read a touch smaller so your offense pops */
+/* the pixel player sprite — taller than the chip's footprint, standing at the chip's point */
+.manart{position:absolute; left:50%; top:50%; transform:translate(-50%,-52%); width:158%; height:auto;
+  display:block; image-rendering:pixelated;}
+/* the ball-carrier is unmistakable: a gold pulse ring, on top of everyone */
 .chip.carrier{ z-index:9; }
 .chip.carrier .manart{ filter:drop-shadow(0 0 5px rgba(255,207,77,.95)); }
-.chip.carrier::after{ content:''; position:absolute; inset:-5px; border-radius:50%;
+.chip.carrier::after{ content:''; position:absolute; inset:-6px; border-radius:50%;
   border:2px solid #ffcf4d; box-shadow:0 0 10px rgba(255,207,77,.6); animation:carrierPulse 1s ease-in-out infinite; }
 @keyframes carrierPulse{ 50%{ box-shadow:0 0 17px rgba(255,207,77,.95); border-color:#fff; } }
 /* motion pulse while moving; tackled = shrink + dim */
 .chip.moving .manart, .anim-carrier.moving .manart{ animation:runbob .22s ease-in-out infinite alternate; }
-@keyframes runbob{ from{ transform:scale(1); } to{ transform:scale(1.08); } }
+@keyframes runbob{ from{ transform:translate(-50%,-52%) scale(1); } to{ transform:translate(-50%,-52%) scale(1.06); } }
 .chip.down{ z-index:2; filter:drop-shadow(0 1px 1px rgba(0,0,0,.4)); }
-.chip.down .manart{ transform:scale(.78); opacity:.5; }
+.chip.down .manart{ transform:translate(-50%,-52%) scale(.82) rotate(-4deg); opacity:.5; }
 .chip.down.carrier::after{ display:none; }
 @keyframes qbThrow{ 0%{transform:translate(-50%,-50%) scale(1);} 42%{transform:translate(-50%,-50%) scale(1.28);} 100%{transform:translate(-50%,-50%) scale(1);} }
 .chip.qbthrow{ animation:qbThrow .34s ease-out; }
@@ -762,9 +764,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js?v=20260723i"></script>
-<script src="playbook.js?v=20260723i"></script>
-<script src="engine.js?v=20260723i"></script>
+<script src="drive_generator.js?v=20260723j"></script>
+<script src="playbook.js?v=20260723j"></script>
+<script src="engine.js?v=20260723j"></script>
 <script>
 (function(){
   'use strict';
@@ -1123,19 +1125,82 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     for(let y=1; y<100; y++){ if(y%5===0) continue; const x=xOf(y); if(!onScreen(x)) continue;
       add('fhash', x, null, 34); add('fhash', x, null, 62); }
   }
-  // Little pixel man: helmet, jersey with shoulders/arms, split legs. Every fill
-  // reads a CSS var so one sprite serves both teams (and the QB) by palette.
-  // Broadcast telestration marker — a coach's-film disc, not a pixel sprite. Colored by
-  // the same CSS vars (--jersey fill, --stripe ring, --num center) so offense/defense/QB
-  // read at a glance. This is the identity that sets RunTheDrive apart from pixel games.
-  const MAN_SVG = `<svg class="manart" viewBox="0 0 24 24" aria-hidden="true">`
-    + `<circle cx="12" cy="12" r="10.2" fill="var(--jersey)" stroke="var(--stripe,#fff)" stroke-width="2.4"/>`
-    + `<circle cx="12" cy="12" r="4.4" fill="var(--num,#fff)" opacity=".72"/>`
-    + `</svg>`;
+  /* ---- PIXEL FOOTBALL PLAYER — code-drawn in the RunTheTour golfer style: a rounded helmet
+     with a facemask, broad shoulder pads, a numbered jersey, striped pants + cleats, rendered
+     with a clean 1px outline and 3-tone rim shading. Built once, tinted per team, cached as a
+     crisp pixel PNG that every chip shares. ---- */
+  const PXW=40, PXH=52, PXCX=20;
+  function fbShade(hex,amt){ hex=(hex||'#888888').replace('#',''); if(hex.length<6)hex='888888';
+    let r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);
+    const f=amt/100; if(amt>=0){r+=(255-r)*f;g+=(255-g)*f;b+=(255-b)*f;}else{r+=r*f;g+=g*f;b+=b*f;}
+    const C=v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0'); return '#'+C(r)+C(g)+C(b); }
+  function fbBuildGrid(){
+    const g=Array.from({length:PXH},()=>Array(PXW).fill('.')), CX=PXCX;
+    const set=(x,y,ch)=>{ if(x>=0&&x<PXW&&y>=0&&y<PXH) g[y][x]=ch; };
+    const rect=(x0,y0,x1,y1,ch)=>{ for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)set(x,y,ch); };
+    const disc=(cx,cy,rx,ry,ch,y0,y1)=>{ for(let y=Math.max(0,y0);y<=y1;y++)for(let x=0;x<PXW;x++){ const dx=(x-cx)/rx,dy=(y-cy)/ry; if(dx*dx+dy*dy<=1) set(x,y,ch); } };
+    // legs + pants
+    rect(13,37,18,47,'p'); rect(21,37,26,47,'p'); rect(15,45,18,48,'p'); rect(21,45,24,48,'p');
+    for(let y=37;y<=46;y++){ set(13,y,'S'); set(26,y,'S'); }
+    rect(12,48,19,50,'o'); rect(20,48,27,50,'o'); rect(12,50,19,51,'z'); rect(20,50,27,51,'z');
+    // torso + belt
+    rect(13,27,26,38,'t'); rect(14,38,25,38,'d'); set(13,37,'t'); set(26,37,'t');
+    // shoulder pads (wide, boxy, high)
+    rect(6,21,33,26,'t'); rect(7,20,32,20,'t'); set(6,20,'t'); set(33,20,'t'); rect(6,26,33,27,'t');
+    for(let x=7;x<=32;x++) set(x,22,'v'); set(15,21,'d'); set(24,21,'d'); rect(17,20,22,21,'d');
+    // short sleeves + skin forearms + fists
+    rect(6,23,10,28,'t'); rect(29,23,33,28,'t'); rect(7,28,10,29,'v'); rect(29,28,32,29,'v');
+    rect(7,29,10,37,'s'); rect(29,29,32,37,'s'); rect(7,37,10,39,'s'); rect(29,37,32,39,'s');
+    // neck
+    rect(18,19,21,21,'s');
+    // helmet shell framing the face
+    rect(13,7,27,18,'c'); rect(16,5,24,5,'c'); rect(14,6,26,6,'c'); set(13,18,'.'); set(27,18,'.');
+    rect(16,12,24,19,'s'); set(16,12,'c'); set(24,12,'c'); rect(16,17,23,19,'s');
+    set(14,14,'k'); set(26,14,'k');
+    for(let y=6;y<=11;y++){ set(CX-1,y,'L'); set(CX,y,'L'); }
+    // facemask
+    for(let x=15;x<=25;x++){ set(x,14,'f'); set(x,17,'f'); }
+    for(const x of [16,20,24]){ set(x,14,'f'); set(x,15,'f'); set(x,16,'f'); set(x,17,'f'); }
+    // number "8"
+    const NUM=["111","1.1","111","1.1","111"], nx=CX-1, ny=29;
+    for(let j=0;j<NUM.length;j++)for(let i=0;i<3;i++){ if(NUM[j][i]==='1') set(nx+i,ny+j,'N'); }
+    // rim-light shading (light upper-left): base -> hi (up-left open) / shadow (down-right open)
+    const HI={t:'v',p:'m',s:'x',c:'w'}, SH={t:'d',p:'q',s:'j',c:'b'};
+    const solid=(x,y)=> x>=0&&x<PXW&&y>=0&&y<PXH && g[y][x]!=='.' && g[y][x]!=='k';
+    const g2=g.map(r=>r.slice());
+    for(let y=0;y<PXH;y++)for(let x=0;x<PXW;x++){ const ch=g[y][x];
+      if(HI[ch]){ if(!solid(x-1,y)&&!solid(x,y-1)) g2[y][x]=HI[ch]; else if(!solid(x+1,y)||!solid(x,y+1)) g2[y][x]=SH[ch]; } }
+    // 1px outline
+    const g3=g2.map(r=>r.slice());
+    for(let y=0;y<PXH;y++)for(let x=0;x<PXW;x++){ if(g2[y][x]!=='.')continue;
+      let t=false; for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx2=x+dx,ny2=y+dy;
+        if(nx2>=0&&nx2<PXW&&ny2>=0&&ny2<PXH&&g2[ny2][nx2]!=='.'&&g2[ny2][nx2]!=='k'){t=true;break;} } if(t) g3[y][x]='k'; }
+    return g3;
+  }
+  const FB_GRID = fbBuildGrid();
+  function fbPalette(t){ const J=t.jersey,HL=t.helmet,PA=t.pants,SK=t.skin;
+    return { k:'#141018', c:HL, b:fbShade(HL,-26), w:fbShade(HL,30), L:t.stripe,
+      f:'#aeb4bd', s:SK, j:fbShade(SK,-26), x:fbShade(SK,22),
+      t:J, d:fbShade(J,-24), v:fbShade(J,30), N:t.num,
+      p:PA, q:fbShade(PA,-22), m:fbShade(PA,16), S:t.stripe, o:'#20242c', z:'#0d0f14' }; }
+  const FB_LOOK = {
+    off:{jersey:'#eaa81f',helmet:'#1d2b52',pants:'#eef1f6',stripe:'#ffffff',num:'#1d2b52',skin:'#c8996b'},
+    def:{jersey:'#24365f',helmet:'#c9d3e6',pants:'#c7cdd8',stripe:'#eaa81f',num:'#eaa81f',skin:'#a9744c'},
+    qb: {jersey:'#f6c948',helmet:'#22326a',pants:'#eef1f6',stripe:'#ffffff',num:'#22326a',skin:'#c8996b'},
+  };
+  const FB_IMG = {};
+  function fbSprite(kind){ if(FB_IMG[kind]) return FB_IMG[kind];
+    const P=fbPalette(FB_LOOK[kind]||FB_LOOK.off), sc=3, cv=document.createElement('canvas'); cv.width=PXW*sc; cv.height=PXH*sc;
+    const ctx=cv.getContext('2d');
+    for(let y=0;y<PXH;y++)for(let x=0;x<PXW;x++){ const ch=FB_GRID[y][x]; if(ch==='.')continue; const col=P[ch]; if(!col)continue;
+      ctx.fillStyle=col; ctx.fillRect(x*sc,y*sc,sc,sc); }
+    return (FB_IMG[kind]=cv.toDataURL('image/png')); }
+  function manHTML(cls){ const kind = /\bqb\b/.test(cls)?'qb' : /\bdef\b/.test(cls)?'def' : 'off';
+    return `<img class="manart" src="${fbSprite(kind)}" alt="" draggable="false">`; }
+  const MAN_SVG = manHTML('off');   // back-compat for any legacy caller
   function clearChips(){ document.querySelectorAll('#field .chip').forEach(c=>c.remove()); }
   function placeChip(cls, xPct, yPct){ const c=document.createElement('div'); c.className='chip '+cls;
-    if(/\bdef\b/.test(cls)) c.classList.add('faceL');    // defenders face the offense
-    c.style.left=xPct+'%'; c.style.top=yPct+'%'; c.innerHTML=MAN_SVG; el('pitch').appendChild(c); return c; }
+    c.style.left=xPct+'%'; c.style.top=yPct+'%'; c.innerHTML=manHTML(cls); el('pitch').appendChild(c); return c; }
   let FORM=null;                          // live references to the players on the field
   function renderFormation(state, def){
     clearChips();
@@ -2129,7 +2194,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     function build(play){
       plane.querySelectorAll('.hchip,.h-ball').forEach(n=>n.remove());
       live=[]; [...play.off,...play.def].forEach(m=>{ const c=document.createElement('span');
-        c.className='hchip '+m.c; c.innerHTML=MAN_SVG; plane.appendChild(c); live.push({el:c,r:m.r}); });
+        c.className='hchip '+m.c; c.innerHTML=manHTML(m.c); plane.appendChild(c); live.push({el:c,r:m.r}); });
       ball=document.createElement('div'); ball.className='h-ball'; plane.appendChild(ball);
       if(td){ td.classList.remove('show'); if(play.res){ td.textContent=play.res.text; td.style.color=play.res.color; } }
     }
