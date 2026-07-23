@@ -13049,6 +13049,16 @@ allows Google Fonts, or self-host Anton.*
   selected view shows the CLAIM button; tapping it fires the celebration + grants the Floatie; afterwards
   every surface normalizes; 0 page errors. Deployed to /golf.
 
+- **Play 18 preview: the Course Record half of the target card is now tappable (owner IMG_8666: "You
+  should be able to click on the green course record in the middle of the screen to pull up the course
+  records as well as the button on the bottom").** The split target/record card's (`.dtcard`, CS483j)
+  record-side cells — the "Course record" label (now "Course record ▸" for affordance), the mint score,
+  and the "by {holder}" sub — carry `data-crlink` (pointer cursor, `role=button` + Enter/Space keyboard
+  support) and open the same `courserecords` overlay as the bottom Course Records button. The
+  target-average half stays non-interactive. Verified in Playwright: 3 tappable cells render on the
+  preview, tapping the score and pressing Enter on the label both open the overlay, 0 page errors;
+  screenshot confirms the ▸ affordance. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
