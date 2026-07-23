@@ -94,6 +94,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .cell.sel.good .ch,.cell.sel.bad .ch{color:var(--ink);}
 .cell.revealed .ch{color:#b07d0a;}
 .cell.sel.revealed .ch{color:var(--ink);}
+/* micro-animation: a pulse wave across a word as you finish filling it */
+.cell.wordpop{ z-index:3; animation:cellPop .5s cubic-bezier(.34,1.56,.64,1) var(--d,0ms); }
+@keyframes cellPop{0%{transform:scale(1);}45%{transform:scale(1.13);}100%{transform:scale(1);}}
+@media (prefers-reduced-motion: reduce){ .cell.wordpop{animation:none;} .confetti{display:none;} }
 
 /* ---------- active clue ---------- */
 .cluebar{display:flex; align-items:stretch; gap:0; margin-bottom:12px;
@@ -470,10 +474,32 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     var cell=cells[sel.r][sel.c]; if(cell.block) return;
     if(cell.revealed) { advance(); return; }
     ensureStarted();
+    var tr=sel.r, tc=sel.c;
     cell.val = ch.toUpperCase(); cell.checked=false;
     advance();
     render();
+    maybeWordFill(tr,tc);
     checkSolved();
+  }
+  // micro-animation: pulse a word's cells the moment it becomes fully filled
+  // (fill only — not correctness — so the no-autocheck design is preserved)
+  var filledEntries={};
+  function entryFilled(e){ return entryCells(e).every(function(p){ return cells[p[0]][p[1]].val!==''; }); }
+  function maybeWordFill(r,c){
+    ['A','D'].forEach(function(dir){
+      var e=ownerOf(r,c,dir); if(!e) return;
+      var key=dir+e.num;
+      if(entryFilled(e)){ if(!filledEntries[key]){ filledEntries[key]=true; pulseEntry(e); } }
+      else { filledEntries[key]=false; }
+    });
+  }
+  function pulseEntry(e){
+    entryCells(e).forEach(function(p,i){
+      var el=cells[p[0]][p[1]].el; if(!el) return;
+      el.style.setProperty('--d',(i*45)+'ms');
+      el.classList.remove('wordpop'); void el.offsetWidth; el.classList.add('wordpop');
+      (function(elem){ setTimeout(function(){ elem.classList.remove('wordpop'); }, 560+i*45); })(el);
+    });
   }
   function backspace(){
     if(done) return;

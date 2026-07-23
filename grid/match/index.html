@@ -234,6 +234,16 @@
   .distrow .c{width:18px; text-align:left; color:var(--mut); font-weight:800; flex:0 0 auto;}
   .empty-stats{text-align:center; color:var(--mut); font-size:13px; font-weight:600; padding:10px 0 2px; line-height:1.5;}
 
+  /* ---- micro-animations: place + lock ---- */
+  .tile.settle{ animation:tileSettle .2s ease; }
+  @keyframes tileSettle{0%{transform:scale(.86);}100%{transform:scale(1);}}
+  .tile.pop-in{ animation:tilePop .44s cubic-bezier(.34,1.56,.64,1) both; animation-delay:var(--d,0ms); }
+  @keyframes tilePop{0%{transform:scale(.5);opacity:.3;}62%{transform:scale(1.13);}100%{transform:scale(1);opacity:1;}}
+  .lane.justlocked{ animation:laneGlow .6s ease; }
+  @keyframes laneGlow{0%{box-shadow:0 0 0 0 rgba(255,255,255,0);}35%{box-shadow:0 0 0 3px color-mix(in srgb, var(--lc) 55%, transparent);}100%{box-shadow:0 0 0 0 rgba(255,255,255,0);}}
+  .lane.justlocked .lane-head{ animation:headIn .42s ease .04s both; }
+  @keyframes headIn{0%{opacity:0; transform:translateY(-5px);}100%{opacity:1; transform:translateY(0);}}
+
   @media (max-width:400px){
     .tile{font-size:10px;} .brand{font-size:22px;} .rgrade .g{font-size:62px;}
     .statgrid .rstat .v{font-size:20px;}
@@ -562,7 +572,19 @@
       startIfNeeded();
       place[tid] = laneIdx; selected = null;
       render();
+      var pe = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"] .tile[data-tid="' + tid + '"]');
+      if (pe) pe.classList.add('settle');
       if (tilesInLane(laneIdx).filter(function (x) { return x != null; }).length === GROUP) validate(laneIdx);
+    }
+    // staggered pop as a group locks, plus a lane glow + header reveal
+    function playLockAnim(idx) {
+      var laneEl = boardEl.querySelector('.lane[data-idx="' + idx + '"]');
+      if (!laneEl) return;
+      laneEl.classList.add('justlocked');
+      laneEl.querySelectorAll('.tile.locked').forEach(function (t, i) {
+        t.style.setProperty('--d', (i * 70) + 'ms'); t.classList.add('pop-in');
+      });
+      setTimeout(function () { laneEl.classList.remove('justlocked'); }, 900);
     }
 
     function attachDrop(laneEl, idx) {
@@ -610,6 +632,7 @@
       if (matchCat) {
         locked[laneIdx] = true; laneCat[laneIdx] = matchCat; solveOrder.push(laneIdx);
         render();
+        playLockAnim(laneIdx);
         if (solveOrder.length === CATS) finish(true);
       } else {
         registerMiss(laneIdx, ids);
