@@ -17,9 +17,10 @@
   --line:rgba(210,224,244,.12); --line2:rgba(210,224,244,.24);
   --cream:#eef3fb; --cream-dim:#9fb1c8; --gold:#f2b21c; --gold-bright:#ffcf4d;
   --green:#7bd67e; --red:#e0705c; --amber:#f0c060; --blue:#69b0d0;
-  --cell:#101f31; --cell-line:rgba(210,224,244,.18);
-  --sel:#f2b21c;                 /* selected cell */
-  --word:#274b6e;               /* cells in the active word */
+  --cell:#ffffff; --cell-line:rgba(10,20,32,.16);   /* fillable cells are white */
+  --grid-line:#2b3a4d;          /* dark lines between white cells */
+  --sel:#ffd34d;                 /* selected cell */
+  --word:#bfe0ff;               /* cells in the active word (light blue) */
   --ink:#0a1420;                /* letters on lit cells */
   --hero:'Press Start 2P', monospace;
   --pix:'Rubik', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -66,23 +67,23 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
 /* ---------- grid ---------- */
 .board-wrap{position:relative; margin-bottom:12px;}
-.board{display:grid; gap:3px; width:100%; aspect-ratio:1/1;
-  background:var(--line2); border:3px solid var(--line2); border-radius:12px; padding:3px;
+.board{display:grid; gap:2px; width:100%; aspect-ratio:1/1;
+  background:var(--grid-line); border:2px solid var(--grid-line); border-radius:8px; padding:2px;
   box-shadow:var(--shadow); overflow:hidden;}
-.cell{position:relative; background:var(--cell); border-radius:3px; display:flex; align-items:center; justify-content:center;
+.cell{position:relative; background:var(--cell); border-radius:2px; display:flex; align-items:center; justify-content:center;
   font-family:var(--pix); font-weight:800; user-select:none; cursor:pointer; text-transform:uppercase;
-  color:var(--cream); transition:background .06s ease;}
-.cell.block{background:#081321; cursor:default; box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);}
-.cell .num{position:absolute; top:2px; left:3px; font-size:9px; font-weight:800; color:var(--cream-dim); line-height:1;}
-.cell .ch{font-size:min(6.4vw,30px); line-height:1;}
+  color:var(--ink); transition:background .06s ease;}
+.cell.block{background:#0b1522; cursor:default;}
+.cell .num{position:absolute; top:2px; left:3px; font-size:9px; font-weight:800; color:rgba(10,20,32,.5); line-height:1;}
+.cell .ch{font-size:min(6.4vw,30px); line-height:1; color:var(--ink);}
 .cell.inword{background:var(--word);}
-.cell.inword .num{color:#cfe0f5;}
+.cell.inword .num{color:rgba(10,20,32,.5);}
 .cell.sel{background:var(--sel); color:var(--ink);}
 .cell.sel .num{color:rgba(10,20,32,.7);}
-.cell.good .ch{color:var(--green);}
-.cell.bad .ch{color:var(--red);}
+.cell.good .ch{color:#1f8b39;}
+.cell.bad .ch{color:#d23a22;}
 .cell.sel.good .ch,.cell.sel.bad .ch{color:var(--ink);}
-.cell.revealed .ch{color:var(--gold-bright);}
+.cell.revealed .ch{color:#b07d0a;}
 .cell.sel.revealed .ch{color:var(--ink);}
 
 /* ---------- active clue ---------- */
