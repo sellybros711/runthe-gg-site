@@ -1067,22 +1067,59 @@ window.GA_ID='G-L29P5MRWKE';
 <script>
 /* Gameplay preview clips: muted + playsinline autoplay (works inline on iOS
    Safari). Pause when scrolled out of view to save battery/CPU, and honour
-   reduced-motion (leaving the poster frame showing). */
+   reduced-motion (leaving the poster frame showing).
+
+   iOS Safari sometimes tears down a looping video's decoder (app/tab switch,
+   back-swipe bfcache restore, memory pressure). The element is then stuck on
+   its last frame, drawn WITHOUT object-fit scaling — it looks zoomed-in and
+   frozen. load() rebuilds the decoder and restores correct rendering, so:
+   - a watchdog reloads any visible clip whose clock has stopped mid-"play"
+   - returning to the page nudges every visible clip back into playback */
 (function(){
   "use strict";
   var clips=[].slice.call(document.querySelectorAll('.phone video.clip'));
   if(!clips.length) return;
   var reduce=false; try{ reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   if(reduce){ clips.forEach(function(v){ try{ v.removeAttribute('autoplay'); v.pause(); }catch(e){} }); return; }
-  if(!('IntersectionObserver' in window)) return;
-  var io=new IntersectionObserver(function(ents){
-    ents.forEach(function(en){
-      var v=en.target;
-      if(en.isIntersecting){ var p=v.play(); if(p&&p.catch) p.catch(function(){}); }
-      else { try{ v.pause(); }catch(e){} }
+
+  function tryPlay(v){ var p=v.play(); if(p&&p.catch) p.catch(function(){}); }
+  function recover(v){ try{ v.load(); }catch(e){} tryPlay(v); }
+
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(ents){
+      ents.forEach(function(en){
+        var v=en.target; v.__inview=en.isIntersecting;
+        if(en.isIntersecting){ tryPlay(v); }
+        else { try{ v.pause(); }catch(e){} }
+      });
+    },{threshold:.35});
+    clips.forEach(function(v){ io.observe(v); });
+  } else {
+    clips.forEach(function(v){ v.__inview=true; });
+  }
+
+  // Watchdog: a visible clip that says it's playing but whose currentTime has
+  // not moved since the last check is stuck — rebuild it. Cheap (two reads/4s).
+  setInterval(function(){
+    if(document.visibilityState==='hidden') return;
+    clips.forEach(function(v){
+      if(!v.__inview) return;
+      if(v.paused){ tryPlay(v); return; }
+      if(v.readyState>=2 && !v.seeking && v.currentTime===v.__lastT){ recover(v); }
+      v.__lastT=v.currentTime;
     });
-  },{threshold:.35});
-  clips.forEach(function(v){ io.observe(v); });
+  },4000);
+
+  // Coming back to the page is exactly when iOS drops the decoders.
+  function resumeAll(){ clips.forEach(function(v){ if(v.__inview && v.paused) tryPlay(v); }); }
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') resumeAll(); });
+  window.addEventListener('pageshow',function(e){
+    if(e.persisted){ clips.forEach(function(v){ if(v.__inview) recover(v); }); }  // bfcache restore: frames are stale, rebuild
+    else resumeAll();
+  });
+
+  // Low Power Mode blocks autoplay outright — start the clips on first touch.
+  window.addEventListener('touchstart',function(){ resumeAll(); },{once:true,passive:true});
 })();
 </script>
 </body>
