@@ -6780,7 +6780,7 @@ function lbStatVal(r,tab,sort){   // the right-hand value column for the chosen 
     case 'majors': return `<span style="color:var(--gold)">${r.majors||0} maj</span>`;
     case 'ovr': return `<span style="color:var(--gold)">OVR ${r.ovr||'-'}</span>`;
     case 'seasons': return `<span style="color:var(--gold)">${r.seasons||0} szn</span>`;
-    case 'fans': return `<span style="color:#ff9d3a;font-weight:800">${fmtFollowers(r.followers||0)} fans</span>`;   // CS281
+    case 'fans': return `<span style="color:#ff9d3a;font-weight:800">${tab==='season'?'+':''}${fmtFollowers(r.followers||0)} fans</span>`;   // CS281 · season rows = fans GAINED that season (62_), career = total
     case 'rep': { const rp=r.rep_pts!=null?repTierName(r.rep_pts):null; return `<span style="color:var(--gold);font-size:12px">${esc(rp||'-')}</span>`; }
     case 'sg': case 'ttg': case 'hcp': case 'putts': {   // CS214 derived-from-skills stat columns
       if(!r.skills || !CATS.every(cc=>typeof r.skills[cc.k]==='number')) return `<span class="muted">–</span>`;
@@ -6991,7 +6991,7 @@ function overlayLeaderboard(screen){
     <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:6px;flex-wrap:wrap">${sortChips}</div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 0 8px">
       <div style="min-width:0"><h2 style="margin:0 0 2px">${tab==='season'?'Single Season':'Career'} · ${esc(lbl)}${win==='today'?' · Today':win==='week'?' · This week':''}</h2>
-        <div class="small muted" style="margin:0">${derivedDef?`Posted ${tab==='season'?'seasons':'careers'} ranked by ${esc(lbl.toLowerCase())} (derived from each golfer's ratings)`:`${tab==='season'?'Every posted season':'Every career sim'} ranked by ${esc(lbl.toLowerCase())}${dir==='asc'?' · the lowest in the database':''}`}${win==='today'?' · posted today':win==='week'?' · posted this week':''}</div></div>
+        <div class="small muted" style="margin:0">${derivedDef?`Posted ${tab==='season'?'seasons':'careers'} ranked by ${esc(lbl.toLowerCase())} (derived from each golfer's ratings)`:`${tab==='season'?'Every posted season':'Every career sim'} ranked by ${tab==='season'&&sort==='fans'?'fans gained that season':esc(lbl.toLowerCase())}${dir==='asc'?' · the lowest in the database':''}`}${win==='today'?' · posted today':win==='week'?' · posted this week':''}</div></div>
       <button class="btn ghost lbdir" style="width:auto;flex:0 0 auto;padding:7px 10px;font-size:11px;white-space:nowrap" title="${dir==='desc'?'Showing best first, tap to flip':'Showing worst first, tap to flip'}">${dir==='desc'?'▼ High–Low':'▲ Low–High'}</button>
     </div>
     <div class="board">${board}</div>

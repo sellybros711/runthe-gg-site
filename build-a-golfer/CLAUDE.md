@@ -13059,6 +13059,37 @@ allows Google Fonts, or self-host Anton.*
   preview, tapping the score and pressing Enter on the label both open the overlay, 0 page errors;
   screenshot confirms the ▸ affordance. Deployed to /golf.
 
+- **SINGLE SEASON board fixed: no Legend Circuit "impossible" seasons + Fans = fans GAINED that season
+  (owner, from the "15 wins / 7 majors, is he hacking?" report + "for single season fans, it should be
+  your fans gained in that season, not your total fans at the end of the season").** Investigation first:
+  the suspicious rows were NOT hacking or corruption — they're legitimate **Legend Circuit** seasons.
+  Since CS504 a finished circuit season posts to the board under the same career_id (years 31-42) so the
+  CAREER board can aggregate it, but a circuit year plays up to ~18 events with up to 8 "majors" (5
+  circuit majors + up to 3 past-champion guest majors, all `major:true`) against a weak retired-alumni
+  field — so on the SINGLE SEASON board it reads as an impossible tour year. And the Fans sort ranked the
+  career's RUNNING TOTAL at each season's end (the client submits `careerStory().followers` with every
+  season), so a year-29 row always dwarfed a year-2 row. Both fixed server-side in
+  **`supabase/62_runtour_season_board_circuit_fans.sql`** (owner-run), which redefines ONLY
+  `runtour_season_board` (same signature + return shape as 61, so no client dependency):
+  1. **Circuit exclusion**: `where coalesce(year,1) <= 30` — a tour career caps at 30 years
+     (CAREER_MAX_YEARS), so year ≤ 30 cleanly keeps tour seasons and drops circuit seasons from THIS board.
+     The CAREER board is untouched (still aggregates tour + circuit per CS504, still shows total fans).
+  2. **Fans = per-season GAIN, derived from data we already store**: `fol_gain = greatest(0, followers −
+     lag(followers) over (partition by user_id, career_id order by year, id))` — each season's gain is its
+     running total minus the same career's previous posted season's total. Fixes every legacy row
+     retroactively, needs NO client submit change; a fan-LOSING season floors at 0, and a career's first
+     posted season's gain = its total (all fans since debut). The lag runs over the FULL history (the
+     p_since window filter applies after), so a Today/This-week row's gain is still measured against its
+     own previous season. The fans sort ranks + returns `fol_gain` as the `followers` column.
+  Validated end-to-end on a local Postgres (61→62): circuit rows (year 31+) excluded from the season board;
+  the fans column = gains incl. the loss-floor + guest-0 cases; windowed (Today) gains still computed
+  against full history; the career board unchanged (circuit still aggregated, followers = max total);
+  idempotent. Client polish (deployed): `lbStatVal`'s fans cell shows the season board's value as a gain
+  ("**+43K fans**", career keeps the plain "1.2M fans") and the season fans-sort subtitle reads "ranked by
+  fans gained that season" — verified in Playwright (season + career tabs, 0 page errors). **ACTION: run
+  `supabase/62_runtour_season_board_circuit_fans.sql`** (after 61) — the board changes are server-side and
+  take effect only once it's applied; until then the boards behave as today.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
