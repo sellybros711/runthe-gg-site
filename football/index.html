@@ -738,9 +738,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js?v=20260723e"></script>
-<script src="playbook.js?v=20260723e"></script>
-<script src="engine.js?v=20260723e"></script>
+<script src="drive_generator.js?v=20260723f"></script>
+<script src="playbook.js?v=20260723f"></script>
+<script src="engine.js?v=20260723f"></script>
 <script>
 (function(){
   'use strict';
@@ -1631,7 +1631,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
           yards:state.yardline-state.startYard, reached:state.yardline, callGrade:state.callGrade,
           gradeLetters:state.grades.map(g=>g.letter), pct, star, streak:STORE.streak,
           scoreStreak:STORE.scoreStreak, scored,
-          card:ENGINE.shareCard(state, STORE.streak) };
+          card:ENGINE.shareCard(state, STORE.streak, {pct}) };
         save(STORE);
       } else {
         earned=0; streakTxt = (STORE.streak||0)+' day streak';
@@ -1688,7 +1688,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     if(navigator.share){ navigator.share(shareData).catch(()=>{}); }
     else { navigator.clipboard && navigator.clipboard.writeText(shareData.text).then(()=>mini('Copied to clipboard!')).catch(()=>mini('Copy failed')); }
   }
-  function shareResult(state){ doShare(ENGINE.shareCard(state, STORE.streak)); }
+  function shareResult(state){ doShare(ENGINE.shareCard(state, STORE.streak, {pct:percentile(DATE, driveScore(state))})); }
   // Re-open today's finished drive as a recap (from the home "SEE RESULT" button).
   function gbarFromLetters(letters){ return letters.map(l=>{ const c=l[0]==='A'?'a':l==='B'?'b':l==='C'?'c':'d'; return `<span class="gsq ${c}"></span>`; }).join(''); }
   function showResultRecap(dateStr){
