@@ -13317,6 +13317,31 @@ allows Google Fonts, or self-host Anton.*
   thumbs with the new tee; functionally ewCount 25, all in catalog/pool with correct rarities, thumbs +
   equip render, all 13 tees 4/2/1; 0 page errors. Deployed to /golf.
 
+- **AURA ENHANCEMENT: particles + shimmer, tiered by rarity (owner: "give the auras more of an effect that
+  isn't just glow? Like some could have a shimmer or like sparkles").** The effect layer (CS410) was
+  drop-shadow glow only. Now tiered so rarity reads at a glance: **rare** auras (emerald/crimson/sapphire)
+  stay glow-only, **epic** auras add PARTICLES, **legendary** auras add particles + a SHIMMER (a
+  brightness/saturation sheen pulsing on the sprite itself, baked into fxShim/fxPrism/fxFlick keyframes).
+  Per-effect particle identities (`PXFX_PARTS` + `pxFxParts()` -> a `.fxparts` overlay of 6-8 tiny animated
+  glyphs at FIXED positions/delays, no rng): gold/prism rising ✦ sparkles (prism cycles rainbow colors),
+  inferno/phoenix rising embers, electric blinking ϟ zaps, frost falling ❅ flakes, void drifting dark motes,
+  heatwave rising heat sparks, ecto drifting green wisps, stadium blinking white camera flashes. Glyphs
+  chosen OUTSIDE the emoji->icon map (✦✧❅ϟ●) so emojifyIcons never converts them. Wired into
+  `pxAvatarHTML` (overlay inside the .pxfig wrapper) and `pxFigureHTML` (the bare img gets a `.pxfxwrap`
+  span ONLY when particles exist - the img keeps its classes/styles so every .pxfigsm selector/caller still
+  works), so the sparkles show everywhere the golfer renders (closet/shop preview, profile, podium, H2H
+  columns, resume card, record bubble). Reduced-motion hides particles (static glow stays). Particle
+  font-size scales with the figure (h*0.16, 14px on the big avatar).
+  **Also fixed a latent pre-existing bug this exposed:** the per-effect animation overrides
+  (.fx-prism/.fx-inferno/.fx-electric, + the new fxShim on gold/phoenix) were LOSING to the base
+  `[class*="fx-"]{animation:fxGlow}` rule on specificity ((0,1,0) vs (0,2,0)) - so prism/inferno/electric
+  had silently rendered the generic glow pulse since CS410. Fixed with double-class selectors
+  (`.fx-prism.fx-prism{...}`), verified every effect now computes its own animation (fxShim/fxPrism/
+  fxFlick/fxCrackle). Verified in Playwright: 13 auras render, particle counts per tier (rares 0, epics +
+  legendaries 6-8), particle animations run, reduced-motion hides them, 0 page errors; the contact sheet
+  shows each aura's distinct particle identity. Deployed to /golf. Tunable: `PXFX_PARTS` (glyph/colors/
+  count/speed per effect), the fxp* keyframes, the shimmer strength in fxShim.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
