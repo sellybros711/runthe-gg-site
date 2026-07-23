@@ -345,8 +345,11 @@
   }
 
   /* ---------- 6. RULES + GLOBAL DIFFICULTY --------------------------------- */
-  const RULES = { downs:4, timeouts:2, gameClockSec:300, playClockSec:40,
-                  fgMaxYards:58, secPerPlay:{run:38, pass:32} };
+  // A 2:00 drive clock (a two-minute-drill feel). secPerPlay is scaled to match so the same
+  // ~8 plays still fit before time expires (a 2:00 clock at the old ~35s/play would cut the
+  // drive to ~3 snaps). Incompletions still stop the clock (see resolvePlay).
+  const RULES = { downs:4, timeouts:2, gameClockSec:120, playClockSec:40,
+                  fgMaxYards:58, secPerPlay:{run:15, pass:13} };
 
   /* RunTheDrive has no punt — every 4th down is a conversion attempt or a kick,
      where real offenses punt on 42.6% of drives. That alone inflates scoring
