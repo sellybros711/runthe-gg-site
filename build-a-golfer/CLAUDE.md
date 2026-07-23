@@ -12844,6 +12844,20 @@ allows Google Fonts, or self-host Anton.*
   object through the cloud union (`mergeLegendTokens` copies whole objects by id - verified minted
   survives a merge). 0 page errors; node --check clean. Deployed to /golf.
 
+- **Skip-to-results confirm now PAUSES the sim (owner IMG_8652: a Moment popup fired on top of the
+  confirmation).** Root cause: opening the confirm overlay re-renders `scrSeason` underneath it, and its
+  scheduler tail kept running - it could re-arm the round timer, advance rounds behind the dialog, and
+  fire a celebration / storyline / dilemma / Moment popup that stacked over the confirmation (the exact
+  screenshot). Fix: one gate at the top of scrSeason's scheduler tail - `if(S.overlay==='confirmSkip'){
+  clearTimeout(seasonTimer); return; }` - placed before the playoff/podium/win celebrations, the
+  storyline/dilemma beats, the Moment/marquee triggers, and the timer re-arm, so NOTHING fires while the
+  confirmation is open. Everything below uses one-shot flags that stay unconsumed, so choosing "Keep
+  playing" (or Close) just re-renders and the sim resumes automatically - a pending Moment then fires
+  cleanly on its own. Verified in Playwright on a real career season rigged to a Saturday-night contention
+  major (a Moment genuinely due): confirm open -> no Moment popup, `_momentAsked` unconsumed, and 2.6s
+  later zero rounds advanced; "Keep playing" -> the sim resumes and the Moment fires; "Skip to results"
+  still reaches the summary; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
