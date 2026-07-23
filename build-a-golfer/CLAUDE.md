@@ -13455,6 +13455,30 @@ allows Google Fonts, or self-host Anton.*
   with 0 page errors. Deployed to /golf. Tunable: the four `CARD_EARN` thresholds, the view compositions in
   `pxCardBgCanvas`.
 
+- **PLAYER CARDS pass 5 — cards open from the Course Records page + closing a card returns you where you
+  were (owner: "I am unable to click on player cards on the course records page within the daily
+  challenge. Can we make them clickable there as well"; owner also confirmed migration 68 ran
+  successfully).** Two changes:
+  • **Course Records taps**: `overlayCourseRecords`' today's-board list rows AND its top-3 podium (on both
+    the Human and Legend tabs, which share the code path) now register with the player-card tap registry
+    (`pcReg(..., 'daily')` + `data-pc` + role/tabindex/cursor + Enter/Space keyboard support, mirroring the
+    Play 18 board's wiring) and a `[data-pc]` handler block wires them at the overlay tail; `_pcRows` is
+    reset when the overlay rebuilds. Each row is registered with `course_key` defaulted to today's course
+    so the card back's Score line shows total strokes (e.g. "68 (-2)") even if a row lacks the field.
+  • **Close returns to the origin overlay** (a general fix this surfaced): closing a player card used to
+    set `S.overlay=null`, dropping you to the underlying screen - from deep inside the daily's Course
+    Records page that meant losing your place. Both open sites (`openPlayerCardRow` + `openPlayerCardSelf`)
+    now stash `S.cardReturn=S.overlay`, and the card's close restores it - so closing a card reopens the
+    leaderboard / Course Records / Profile you tapped from (unchanged when opened from a plain screen like
+    the Closet, where cardReturn is null).
+  Verified in Playwright: 3 podium + 3 list rows tappable on the records board, tapping opens the card
+  (TAP TO FLIP -> back shows Lifetime via the now-live migration-68 RPC + Today's Round with total
+  strokes), closing returns to Course Records from both a row card and a podium card; the full
+  card/board/closet/share suite + an 18-hole practice round still green with 0 page errors. Deployed to
+  /golf. NOTE: the all-time record HOLDER rows (All Courses tab + the daily-result record bubble) are not
+  card-tappable - the records store only carries name+look, not the user_id/skills a card needs; doable
+  later by returning holder user_ids from the records RPC if wanted.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
