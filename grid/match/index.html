@@ -190,10 +190,53 @@
   .popup.on{opacity:1; transform:translate(-50%,-50%) scale(1);}
   .popup .sub{display:block; font-size:12.5px; font-weight:700; color:#b6c3d2; margin-top:4px;}
 
+  /* ---- dopamine: confetti ---- */
+  .confetti{position:fixed; inset:0; pointer-events:none; z-index:100; overflow:hidden;}
+  .confetti i{position:absolute; top:-16px; width:9px; height:14px; border-radius:2px; opacity:.96;
+    will-change:transform; animation:cfall linear forwards;}
+  @keyframes cfall{0%{transform:translateY(-20px) rotate(0);}100%{transform:translateY(106vh) rotate(680deg);}}
+
+  /* ---- dopamine: flawless ribbon ---- */
+  .flawless{display:none; text-align:center; margin:0 0 4px;}
+  .flawless.on{display:block; animation:flpop .5s ease;}
+  .flawless .rib{display:inline-flex; align-items:center; gap:7px; font-weight:900; font-size:11.5px;
+    letter-spacing:.15em; text-transform:uppercase; color:#fff;
+    background:linear-gradient(90deg,var(--coral),var(--gold)); padding:6px 15px; border-radius:999px;
+    box-shadow:0 8px 22px -10px rgba(255,90,60,.85);}
+  @keyframes flpop{0%{transform:scale(.6); opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1); opacity:1;}}
+
+  /* ---- dopamine: live countdown ---- */
+  .countdown{text-align:center; margin:13px 0 2px; font-size:12px; font-weight:800; color:var(--mut);}
+  .countdown b{color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:.01em;}
+
+  /* ---- dopamine: streak milestone banner in the result card ---- */
+  .milestone{display:none; text-align:center; margin:14px 0 2px; font-weight:900; font-size:13.5px; color:var(--coral);}
+  .milestone.on{display:block; animation:flpop .5s ease;}
+
+  /* stat chips are tappable -> open stats */
+  .stat.tap{cursor:pointer;} .stat.tap:active{transform:translateY(1px);}
+
+  /* ---- stats modal ---- */
+  .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase;
+    font-size:22px; text-align:center; margin:2px 0 2px; color:var(--ink);}
+  .sheet .sub-h{text-align:center; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); margin-bottom:14px;}
+  .statgrid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:4px 0 2px;}
+  .statgrid .rstat .v{font-size:23px;}
+  .perfline{text-align:center; margin:14px 0 2px; font-weight:900; font-size:13px; color:#B8801A;}
+  .dist{margin:16px 0 2px;}
+  .dist h4{font-size:11px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:0 0 11px;}
+  .distrow{display:flex; align-items:center; gap:9px; margin-bottom:7px; font-size:12px; font-weight:900;}
+  .distrow .k{width:24px; color:var(--ink); flex:0 0 auto; text-align:right;}
+  .distbar{flex:1; height:17px; background:var(--card2); border:1px solid var(--line); border-radius:5px; overflow:hidden;}
+  .distbar span{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--coral),var(--gold)); border-radius:4px; transition:width .55s ease;}
+  .distrow .c{width:18px; text-align:left; color:var(--mut); font-weight:800; flex:0 0 auto;}
+  .empty-stats{text-align:center; color:var(--mut); font-size:13px; font-weight:600; padding:10px 0 2px; line-height:1.5;}
+
   @media (max-width:400px){
     .tile{font-size:10px;} .brand{font-size:22px;} .rgrade .g{font-size:62px;}
+    .statgrid .rstat .v{font-size:20px;}
   }
-  @media (prefers-reduced-motion: reduce){ *{animation:none !important;} }
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important;} .confetti{display:none;} }
 </style>
 </head>
 <body>
@@ -201,7 +244,7 @@
     <div class="top">
       <a class="home" href="/grid/" aria-label="RunTheGrid puzzles">←</a>
       <div class="brand"><span class="suite"><a href="/grid/">RunTheGrid</a></span><span class="game">Daily Match</span></div>
-      <div class="stat streak" id="streakStat"><span class="ic">🔥</span><span id="streakVal">0</span></div>
+      <div class="stat streak tap" id="streakStat" role="button" tabindex="0" title="Your stats"><span class="ic">🔥</span><span id="streakVal">0</span></div>
       <div class="stat coins" id="coinStat"><span class="ic">🪙</span><span id="coinVal">0</span></div>
     </div>
 
@@ -246,6 +289,7 @@
   <div class="modal" id="resultModal" hidden>
     <div class="sheet">
       <button class="x" id="resClose" type="button" aria-label="Close">✕</button>
+      <div class="flawless" id="resFlawless"><span class="rib">⭐ Flawless — zero misses</span></div>
       <div class="rgrade">
         <div class="lbl">Draft Grade</div>
         <div class="g" id="resGrade">A</div>
@@ -258,10 +302,37 @@
       </div>
       <div class="strip" id="resStrip"></div>
       <div class="strip-cap">Solve order — no answers leaked</div>
+      <div class="milestone" id="resMilestone"></div>
       <div class="coinline" id="resCoins">+0 coins</div>
+      <div class="countdown" id="resCountdown"></div>
       <div class="rcta">
-        <button class="btn primary" id="resShare" type="button">Share result</button>
+        <button class="btn primary" id="resShare" type="button">Share</button>
+        <button class="btn" id="resStats" type="button">📊 Stats</button>
         <button class="btn" id="resDone" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="statsModal" hidden>
+    <div class="sheet">
+      <button class="x" id="stClose" type="button" aria-label="Close">✕</button>
+      <h2>Your Stats</h2>
+      <div class="sub-h">RunTheGrid · Daily Match</div>
+      <div class="statgrid">
+        <div class="rstat"><div class="v" id="stPlayed">0</div><div class="l">Played</div></div>
+        <div class="rstat"><div class="v" id="stWin">0%</div><div class="l">Win</div></div>
+        <div class="rstat"><div class="v" id="stStreak">0</div><div class="l">Streak</div></div>
+        <div class="rstat"><div class="v" id="stBest">0</div><div class="l">Best</div></div>
+      </div>
+      <div class="perfline" id="stPerf">⭐ 0 flawless solves</div>
+      <div class="dist" id="stDistWrap">
+        <h4>Grade distribution</h4>
+        <div id="stDist"></div>
+      </div>
+      <div class="empty-stats" id="stEmpty" hidden>Play today's board to start your streak.<br>Your grades and win rate show up here.</div>
+      <div class="countdown" id="stCountdown"></div>
+      <div class="rcta">
+        <button class="btn primary" id="stDone" type="button">Back to board</button>
       </div>
     </div>
   </div>
@@ -310,6 +381,19 @@
     function walletGet() { return parseInt(LS.getItem('runthegrid_coins') || '0', 10) || 0; }
     function walletSet(v) { LS.setItem('runthegrid_coins', String(Math.max(0, v))); renderWallet(); }
     function streakGet() { return parseInt(LS.getItem('grid_match_streak') || '0', 10) || 0; }
+
+    // ---- lifetime stats (played / wins / flawless / best streak / grade histogram) ----
+    var GRADE_KEYS = ['A+', 'A', 'B', 'C', 'D', 'F'];
+    function statsGet() {
+      var s = null;
+      try { s = JSON.parse(LS.getItem('grid_match_stats')); } catch (e) { s = null; }
+      if (!s || typeof s !== 'object') s = {};
+      s.played = s.played | 0; s.wins = s.wins | 0; s.perfects = s.perfects | 0; s.best = s.best | 0;
+      if (!s.grades || typeof s.grades !== 'object') s.grades = {};
+      if (s.best < streakGet()) s.best = streakGet();  // keep best in sync with a running streak
+      return s;
+    }
+    function statsSet(s) { LS.setItem('grid_match_stats', JSON.stringify(s)); }
     function renderWallet() {
       document.getElementById('coinVal').textContent = walletGet();
       document.getElementById('streakVal').textContent = streakGet();
@@ -573,27 +657,37 @@
 
       // tester plays are ephemeral: no streak, no coins, no once-a-day lock
       if (TESTER) {
-        setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: 0, streak: streakGet(), tester: true }); }, won ? 350 : 1100);
+        setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: 0, streak: streakGet(), tester: true, celebrate: true }); }, won ? 350 : 1100);
         return;
       }
 
       // streak: completion-based (win or lose), one per calendar day
       var last = LS.getItem('grid_match_lastplayed');
       var s = streakGet();
-      if (last !== DATE) {
+      var freshDay = (last !== DATE);
+      if (freshDay) {
         var y = new Date(DATE + 'T00:00:00'); y.setDate(y.getDate() - 1);
         var ystr = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
         s = (last === ystr) ? s + 1 : 1;
         LS.setItem('grid_match_streak', String(s));
         LS.setItem('grid_match_lastplayed', DATE);
+
+        // lifetime stats (once per calendar day, same guard as the streak)
+        var st = statsGet();
+        st.played++; if (won) st.wins++; if (won && mistakes === 0) st.perfects++;
+        st.grades[grade] = (st.grades[grade] | 0) + 1;
+        if (s > st.best) st.best = s;
+        statsSet(st);
+        LS.setItem('grid_best_streak', String(st.best));
       }
+      var milestone = freshDay && won ? streakMilestone(s) : '';
 
       var coins = coinsFor(won, finalTime, par, mistakes);
       walletSet(walletGet() + coins);
 
       LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, order: solveOrder.slice() }));
       renderWallet();
-      setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, streak: s }); }, won ? 350 : 1100);
+      setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, streak: s, celebrate: true, milestone: milestone }); }, won ? 350 : 1100);
     }
 
     function autoSolveReveal() {
@@ -658,8 +752,20 @@
         var b = document.createElement('div'); b.className = 'b';
         b.style.background = laneById[laneCat[idx]].color; strip.appendChild(b);
       });
+      // flawless ribbon (win with zero misses)
+      document.getElementById('resFlawless').classList.toggle('on', !!r.won && r.mistakes === 0);
+      // streak milestone banner
+      var ms = document.getElementById('resMilestone');
+      if (r.milestone) { ms.textContent = r.milestone; ms.classList.add('on'); } else { ms.textContent = ''; ms.classList.remove('on'); }
+      // live countdown to tomorrow's board (real plays only)
+      if (r.tester) { document.getElementById('resCountdown').innerHTML = ''; }
+      else { startCountdown('resCountdown'); }
       document.getElementById('resultModal').hidden = false;
       window._lastResult = r;
+      // celebration: confetti on a fresh win (denser + gold-heavy when flawless / milestone)
+      if (r.celebrate && r.won) {
+        confetti(r.mistakes === 0 ? 130 : 80, r.mistakes === 0 || !!r.milestone);
+      }
     }
     function shareText(r) {
       var strip = solveOrder.map(function (idx) { return colorEmoji(laneById[laneCat[idx]].color); }).join('');
@@ -714,12 +820,25 @@
       else if (navigator.clipboard) { navigator.clipboard.writeText(txt).then(function () { toast('Result copied'); }); }
       else { toast('Copy not supported'); }
     });
-    function closeModal() { document.getElementById('resultModal').hidden = true; }
+    function bothModalsClosed() {
+      return document.getElementById('resultModal').hidden && document.getElementById('statsModal').hidden;
+    }
+    function closeModal() { document.getElementById('resultModal').hidden = true; if (bothModalsClosed()) stopCountdown(); }
     document.getElementById('resClose').addEventListener('click', closeModal);
     document.getElementById('resDone').addEventListener('click', function () {
       closeModal();
       if (TESTER) newBoard();
     });
+    document.getElementById('resStats').addEventListener('click', openStats);
+
+    // ---- stats modal buttons + streak-chip entry point ----
+    function closeStatsAndSettle() { closeStats(); if (bothModalsClosed()) stopCountdown(); }
+    document.getElementById('stClose').addEventListener('click', closeStatsAndSettle);
+    document.getElementById('stDone').addEventListener('click', closeStatsAndSettle);
+    document.getElementById('statsModal').addEventListener('click', function (e) { if (e.target === this) closeStatsAndSettle(); });
+    var streakChip = document.getElementById('streakStat');
+    streakChip.addEventListener('click', openStats);
+    streakChip.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openStats(); } });
 
     // ---- tester: load a fresh board ----
     function newBoard() {
@@ -757,6 +876,89 @@
       showResult({ won: saved.won, time: saved.time, mistakes: saved.mistakes, grade: saved.grade, coins: 0, streak: streakGet() });
       document.getElementById('resCoins').textContent = 'Played today · come back tomorrow';
     }
+
+    // ---- dopamine: confetti burst ----
+    var CONFETTI_COLORS = ['#FF5A3C', '#35C4CD', '#EBA61F', '#A98CF5', '#6EE84E', '#F0654F'];
+    var GOLD_COLORS = ['#EBA61F', '#F5A623', '#FF5A3C', '#FFD24D', '#FFB74D'];
+    function confetti(count, goldHeavy) {
+      try { if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (e) {}
+      var pal = goldHeavy ? GOLD_COLORS : CONFETTI_COLORS;
+      var wrap = document.createElement('div'); wrap.className = 'confetti';
+      for (var i = 0; i < count; i++) {
+        var p = document.createElement('i');
+        p.style.left = (Math.random() * 100) + '%';
+        p.style.background = pal[i % pal.length];
+        var dur = 2.2 + Math.random() * 1.7;
+        p.style.animationDuration = dur.toFixed(2) + 's';
+        p.style.animationDelay = (Math.random() * 0.45).toFixed(2) + 's';
+        if (Math.random() < 0.45) { p.style.width = '8px'; p.style.height = '8px'; p.style.borderRadius = '50%'; }
+        wrap.appendChild(p);
+      }
+      document.body.appendChild(wrap);
+      setTimeout(function () { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 4600);
+    }
+
+    // ---- dopamine: streak milestones ----
+    function streakMilestone(s) {
+      var map = { 3: '🔥 3-day streak — you\'re rolling!', 5: '🔥 5 in a row!', 7: '🔥 One-week streak!',
+        14: '🔥 Two weeks strong!', 30: '🏆 30-day streak — elite!', 50: '🏆 50 days. Unreal.', 100: '👑 100-day streak!' };
+      return map[s] || '';
+    }
+
+    // ---- dopamine: live countdown to tomorrow's board (local midnight) ----
+    var cdTick = null;
+    function msToTomorrow() {
+      var now = new Date();
+      var t = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+      return t - now;
+    }
+    function fmtCountdown(ms) {
+      var s = Math.max(0, Math.floor(ms / 1000));
+      var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+      return h + 'h ' + String(m).padStart(2, '0') + 'm ' + String(ss).padStart(2, '0') + 's';
+    }
+    var cdTargets = [];
+    function startCountdown(elId) {
+      if (cdTargets.indexOf(elId) === -1) cdTargets.push(elId);
+      function upd() {
+        var html = '⏱ Next board in <b>' + fmtCountdown(msToTomorrow()) + '</b>';
+        cdTargets.forEach(function (id) { var el = document.getElementById(id); if (el && el.offsetParent !== null) el.innerHTML = html; });
+      }
+      upd(); if (cdTick) clearInterval(cdTick); cdTick = setInterval(upd, 1000);
+    }
+    function stopCountdown() { if (cdTick) { clearInterval(cdTick); cdTick = null; } }
+
+    // ---- dopamine: stats modal ----
+    function openStats() {
+      var st = statsGet();
+      var winPct = st.played ? Math.round(st.wins / st.played * 100) : 0;
+      document.getElementById('stPlayed').textContent = st.played;
+      document.getElementById('stWin').textContent = winPct + '%';
+      document.getElementById('stStreak').textContent = streakGet();
+      document.getElementById('stBest').textContent = st.best;
+      document.getElementById('stPerf').textContent = '⭐ ' + st.perfects + ' flawless solve' + (st.perfects === 1 ? '' : 's');
+      var hasData = st.played > 0;
+      document.getElementById('stEmpty').hidden = hasData;
+      document.getElementById('stDistWrap').style.display = hasData ? '' : 'none';
+      document.getElementById('stPerf').style.display = hasData ? '' : 'none';
+      if (hasData) renderDist(st);
+      startCountdown('stCountdown');
+      document.getElementById('statsModal').hidden = false;
+    }
+    function renderDist(st) {
+      var max = 1;
+      GRADE_KEYS.forEach(function (g) { if ((st.grades[g] | 0) > max) max = st.grades[g] | 0; });
+      var wrap = document.getElementById('stDist'); wrap.innerHTML = '';
+      GRADE_KEYS.forEach(function (g) {
+        var n = st.grades[g] | 0;
+        var row = document.createElement('div'); row.className = 'distrow';
+        row.innerHTML = '<span class="k">' + g + '</span><div class="distbar"><span></span></div><span class="c">' + n + '</span>';
+        wrap.appendChild(row);
+        var bar = row.querySelector('.distbar span');
+        setTimeout(function () { bar.style.width = Math.round(n / max * 100) + '%'; }, 40);
+      });
+    }
+    function closeStats() { document.getElementById('statsModal').hidden = true; }
 
     // ---- utils ----
     function setsEqual(a, b) { if (a.length !== b.length) return false; for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false; return true; }
