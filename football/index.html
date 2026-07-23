@@ -674,7 +674,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <div class="card statusbar">
       <div><div class="big" id="ddText">1ST &amp; 10</div><div class="lab" id="spotText">BALL ON YOUR 35</div></div>
       <div class="mid"><div class="dots" id="dots"></div><div class="lab">DRIVE 1 OF 1</div></div>
-      <div><div class="big" id="clockText">5:00</div><div class="lab">CLOCK</div></div>
+      <div><div class="big" id="clockText">2:00</div><div class="lab">CLOCK</div></div>
     </div>
 
     <!-- FIELD -->
@@ -724,9 +724,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js?v=20260723b"></script>
-<script src="playbook.js?v=20260723b"></script>
-<script src="engine.js?v=20260723b"></script>
+<script src="drive_generator.js?v=20260723c"></script>
+<script src="playbook.js?v=20260723c"></script>
+<script src="engine.js?v=20260723c"></script>
 <script>
 (function(){
   'use strict';
@@ -1296,7 +1296,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   /* ---------- play a snap (animated) ---------- */
   let busy=false;
-  const PACE = 1.6;   // global slow-mo on the play-out — bump to make snaps play out slower
+  const PACE = 2.3;   // global slow-mo on the play-out (~0.7x speed) — bump to make snaps play out slower
   const sleep = ms => new Promise(r=>setTimeout(r, ms*PACE));
   function disableCalls(v){ document.querySelectorAll('#calls .tile').forEach(b=>b.disabled=v); el('kickBtn').disabled = v || el('kickBtn').disabled; }
 
