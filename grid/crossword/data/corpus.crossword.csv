@@ -39,7 +39,7 @@ YOUNT,Robin,Brewers,a two-time AL MVP,1
 CAREW,Rod,Twins,a seven-time batting champ,1
 THOMAS,Frank,White Sox,'The Big Hurt',1
 SOTO,Juan,Padres,a young slugging outfielder,0
-Brady,Tom,Patriots,a 2000s star,1
+Brady,Tom,Patriots,a 2000s star,0
 Montana,Joe,49ers,a 1970s star,1
 Manning,Peyton,Colts,a 1990s star,1
 Elway,John,Broncos,a 1980s star,1
@@ -100,7 +100,7 @@ Chase,Ja'Marr,Bengals,a 2020s star,0
 Gonzalez,Tony,Chiefs,a 1990s star,1
 Sharpe,Shannon,Broncos,a 1990s star,1
 Strahan,Michael,Giants,a 1990s star,1
-Watt,J.J.,Texans,a 2010s star,1
+Watt,J.J.,Texans,a 2010s star,0
 Garrett,Myles,Browns,a 2010s star,0
 Parsons,Micah,Cowboys,a 2020s star,0
 Miller,Von,Broncos,a 2010s star,0

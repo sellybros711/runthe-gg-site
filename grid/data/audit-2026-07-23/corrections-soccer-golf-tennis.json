@@ -1,0 +1,522 @@
+{
+ "soccer_pele": {
+  "teams_add": ["club_santos", "New York Cosmos"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty. New York Cosmos (1975-1977) has no team id in team-ids.json."
+ },
+ "soccer_diego-maradona": {
+  "teams_add": ["club_boca-juniors", "club_barcelona", "club_napoli", "club_sevilla", "Argentinos Juniors"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty. Argentinos Juniors (1976-1981) has no team id."
+ },
+ "soccer_lionel-messi": {
+  "teams_add": ["club_barcelona", "club_psg", "club_inter-miami"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty."
+ },
+ "soccer_cristiano-ronaldo": {
+  "teams_add": ["club_sporting-cp", "club_man-united", "club_real-madrid", "club_juventus", "Al-Nassr"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty. Al-Nassr (2023-present) has no team id."
+ },
+ "soccer_kylian-mbappe": {
+  "teams_add": ["club_monaco", "club_psg", "club_real-madrid"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty. Also wore 10 for France and now 10 at Real Madrid, but 7/9 are fine as prominent numbers."
+ },
+ "soccer_erling-haaland": {
+  "teams_add": ["club_borussia-dortmund", "club_man-city", "Red Bull Salzburg"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty. Red Bull Salzburg (2019-2020) has no team id."
+ },
+ "soccer_neymar": {
+  "teams_add": ["club_santos", "club_barcelona", "club_psg", "Al-Hilal"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty. Al-Hilal (2023-2025) has no team id."
+ },
+ "soccer_zinedine-zidane": {
+  "teams_add": ["club_juventus", "club_real-madrid", "Bordeaux"],
+  "teams_remove": [],
+  "jersey_add": [21],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty. Bordeaux (1992-1996, also Cannes earlier) has no team id. Wore 21 at Juventus for five seasons."
+ },
+ "soccer_ronaldinho": {
+  "teams_add": ["club_psg", "club_barcelona", "club_ac-milan", "club_flamengo", "Gremio"],
+  "teams_remove": [],
+  "jersey_add": [80],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty. Gremio (1998-2001) has no team id. Wore 80 at AC Milan."
+ },
+ "soccer_ronaldo-nazario": {
+  "teams_add": ["club_psv", "club_barcelona", "club_inter-milan", "club_real-madrid", "club_ac-milan", "club_corinthians", "Cruzeiro"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"decades_active": [1990, 2000, 2010]},
+  "note": "Teams were empty. Cruzeiro (1993-1994) has no team id. Played for Corinthians until Feb 2011, so 2010s should be included."
+ },
+ "soccer_johan-cruyff": {
+  "teams_add": ["club_ajax", "club_barcelona", "club_feyenoord"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty. Also played NASL (LA Aztecs, Washington Diplomats), no ids."
+ },
+ "soccer_franz-beckenbauer": {
+  "teams_add": ["club_bayern-munich", "New York Cosmos", "Hamburger SV"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Germany"]},
+  "note": "Nationality was wrongly 'United States' - Beckenbauer is German (West Germany captain, 1974 World Cup). Teams were empty; Cosmos and Hamburger SV have no team ids."
+ },
+ "soccer_david-beckham": {
+  "teams_add": ["club_man-united", "club_real-madrid", "club_la-galaxy", "club_ac-milan", "club_psg"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty. AC Milan stints were loans (2009, 2010)."
+ },
+ "soccer_thierry-henry": {
+  "teams_add": ["club_monaco", "club_juventus", "club_arsenal", "club_barcelona", "club_ny-red-bulls"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty."
+ },
+ "soccer_mia-hamm": {
+  "teams_add": ["Washington Freedom"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Only pro club (WUSA 2001-2003); no team id exists."
+ },
+ "soccer_megan-rapinoe": {
+  "teams_add": ["OL Reign"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Seattle Reign/OL Reign (2013-2023) was her signature club; no NWSL team ids exist."
+ },
+ "soccer_alex-morgan": {
+  "teams_add": ["Portland Thorns", "Orlando Pride", "San Diego Wave"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "No NWSL team ids exist; flagged as full names."
+ },
+ "soccer_christian-pulisic": {
+  "teams_add": ["club_borussia-dortmund", "club_chelsea", "club_ac-milan"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty."
+ },
+ "soccer_landon-donovan": {
+  "teams_add": ["club_la-galaxy", "club_bayer-leverkusen", "San Jose Earthquakes"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty. San Jose Earthquakes (2001-2004) has no team id. Also brief Everton loans."
+ },
+ "golf_annika-sorenstam": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Sweden"]},
+  "note": "Nationality was wrongly 'United States' - Sorenstam is Swedish."
+ },
+ "golf_lydia-ko": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["New Zealand"], "hall_of_fame": [true]},
+  "note": "Nationality was wrongly 'United States' - Ko is a New Zealander (born South Korea). She qualified for the LPGA Hall of Fame after her 2024 Paris Olympic gold."
+ },
+ "golf_viktor-hovland": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Norway"]},
+  "note": "Nationality was wrongly 'United States' - Hovland is Norwegian."
+ },
+ "golf_jon-rahm": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Spain"]},
+  "note": "Nationality was wrongly 'United States' - Rahm is Spanish."
+ },
+ "tennis_bjorn-borg": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Sweden"]},
+  "note": "Nationality was wrongly 'United States' - Borg is Swedish."
+ },
+ "tennis_jannik-sinner": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Italy"]},
+  "note": "Nationality was wrongly 'United States' - Sinner is Italian."
+ },
+ "tennis_daniil-medvedev": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Russia"]},
+  "note": "Nationality was wrongly 'United States' - Medvedev is Russian."
+ },
+ "tennis_alexander-zverev": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Germany"]},
+  "note": "Nationality was wrongly 'United States' - Zverev is German."
+ },
+ "tennis_iga-swiatek": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Poland"]},
+  "note": "Nationality was wrongly 'United States' - Swiatek is Polish."
+ },
+ "tennis_aryna-sabalenka": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Belarus"]},
+  "note": "Nationality was wrongly 'United States' - Sabalenka is Belarusian."
+ },
+ "tennis_andy-murray": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Great Britain"]},
+  "note": "Nationality was wrongly 'United States' - Murray is Scottish and represented Great Britain. Use 'Scotland' instead if the dataset prefers home nations (it uses 'England' for soccer players)."
+ },
+ "tennis_stan-wawrinka": {
+  "teams_add": [],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Switzerland"]},
+  "note": "Nationality was wrongly 'United States' - Wawrinka is Swiss."
+ },
+ "soccer_jude-bellingham": {
+  "teams_add": ["club_borussia-dortmund", "club_real-madrid", "Birmingham City"],
+  "teams_remove": [],
+  "jersey_add": [22],
+  "jersey_remove": [],
+  "set": {"nationality": ["England"], "decades_active": [2010, 2020]},
+  "note": "Nationality was wrongly 'United States' - Bellingham is English. Teams were empty; Birmingham City has no team id (they retired his 22). Wore 22 at Birmingham and Dortmund; debuted professionally in Aug 2019, so 2010s applies."
+ },
+ "soccer_vinicius-junior": {
+  "teams_add": ["club_flamengo", "club_real-madrid"],
+  "teams_remove": [],
+  "jersey_add": [20],
+  "jersey_remove": [],
+  "set": {"nationality": ["Brazil"]},
+  "note": "Nationality was wrongly 'United States' - Vinicius is Brazilian. Wore 20 at Real Madrid 2018-2023 (including 2022 UCL final winner) before taking 7."
+ },
+ "soccer_mohamed-salah": {
+  "teams_add": ["club_liverpool", "club_as-roma", "club_chelsea", "Basel"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Egypt"]},
+  "note": "Nationality was wrongly 'United States' - Salah is Egyptian. Teams were empty; FC Basel has no team id. Also a Fiorentina loan half-season (2015)."
+ },
+ "soccer_kevin-de-bruyne": {
+  "teams_add": ["club_man-city", "club_chelsea", "club_werder-bremen", "club_napoli", "VfL Wolfsburg", "Genk"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Belgium"]},
+  "note": "Nationality was wrongly 'United States' - De Bruyne is Belgian. Teams were empty. Werder Bremen was a 2012-13 loan; Wolfsburg (2014-2015) and Genk (2008-2012) have no team ids; joined Napoli in 2025."
+ },
+ "soccer_virgil-van-dijk": {
+  "teams_add": ["club_celtic", "club_liverpool", "Southampton"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Netherlands"]},
+  "note": "Nationality was wrongly 'United States' - Van Dijk is Dutch. Teams were empty; Southampton (and earlier Groningen) have no team ids."
+ },
+ "soccer_harry-kane": {
+  "teams_add": ["club_tottenham", "club_bayern-munich"],
+  "teams_remove": [],
+  "jersey_add": [10],
+  "jersey_remove": [],
+  "set": {"nationality": ["England"]},
+  "note": "Nationality was wrongly 'United States' - Kane is English. Teams were empty. Wore 10 at Tottenham for most of his career (9 at Bayern and for England)."
+ },
+ "soccer_robert-lewandowski": {
+  "teams_add": ["club_borussia-dortmund", "club_bayern-munich", "club_barcelona", "Lech Poznan"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Poland"]},
+  "note": "Nationality was wrongly 'United States' - Lewandowski is Polish. Teams were empty; Lech Poznan has no team id."
+ },
+ "soccer_luka-modric": {
+  "teams_add": ["club_tottenham", "club_real-madrid", "club_ac-milan", "Dinamo Zagreb"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Croatia"]},
+  "note": "Nationality was wrongly 'United States' - Modric is Croatian. Teams were empty; Dinamo Zagreb has no team id; joined AC Milan in 2025."
+ },
+ "soccer_sergio-ramos": {
+  "teams_add": ["club_sevilla", "club_real-madrid", "club_psg", "CF Monterrey"],
+  "teams_remove": [],
+  "jersey_add": [15],
+  "jersey_remove": [],
+  "set": {"nationality": ["Spain"]},
+  "note": "Nationality was wrongly 'United States' - Ramos is Spanish. Teams were empty; Monterrey (2025) has no team id. Wore 15 for Spain (iconic) alongside 4 at club level."
+ },
+ "soccer_andres-iniesta": {
+  "teams_add": ["club_barcelona", "Vissel Kobe"],
+  "teams_remove": [],
+  "jersey_add": [6],
+  "jersey_remove": [],
+  "set": {"nationality": ["Spain"], "decades_active": [2000, 2010, 2020]},
+  "note": "Nationality was wrongly 'United States' - Iniesta is Spanish. Teams were empty; Vissel Kobe (2018-2023, then Emirates Club until 2024) has no team id, so 2020s applies. Wore 6 for Spain (8 at Barcelona)."
+ },
+ "soccer_xavi": {
+  "teams_add": ["club_barcelona", "Al Sadd"],
+  "teams_remove": [],
+  "jersey_add": [8],
+  "jersey_remove": [],
+  "set": {"nationality": ["Spain"]},
+  "note": "Nationality was wrongly 'United States' - Xavi is Spanish. Teams were empty; Al Sadd (2015-2019) has no team id. Wore 8 for Spain (6 at Barcelona)."
+ },
+ "soccer_iker-casillas": {
+  "teams_add": ["club_real-madrid", "club_porto"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Spain"]},
+  "note": "Nationality was wrongly 'United States' - Casillas is Spanish. Teams were empty."
+ },
+ "soccer_gianluigi-buffon": {
+  "teams_add": ["club_juventus", "club_psg", "Parma"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Italy"]},
+  "note": "Nationality was wrongly 'United States' - Buffon is Italian. Teams were empty; Parma (1995-2001 and 2021-2023) has no team id."
+ },
+ "soccer_manuel-neuer": {
+  "teams_add": ["club_schalke", "club_bayern-munich"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Germany"]},
+  "note": "Nationality was wrongly 'United States' - Neuer is German. Teams were empty."
+ },
+ "soccer_thierry-henry-dup": {
+  "teams_add": ["club_everton", "club_man-united", "club_dc-united", "Derby County"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["England"], "decades_active": [2000, 2010, 2020]},
+  "note": "DATA INTEGRITY: id says 'thierry-henry-dup' but the record is Wayne Rooney - the id should be renamed (e.g. soccer_wayne-rooney) or deduped. Nationality was wrongly 'United States' - Rooney is English. Teams were empty; Derby County (player-coach, played until Jan 2021, hence 2020s) has no team id."
+ },
+ "soccer_steven-gerrard": {
+  "teams_add": ["club_liverpool", "club_la-galaxy"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["England"]},
+  "note": "Nationality was wrongly 'United States' - Gerrard is English. Teams were empty."
+ },
+ "soccer_frank-lampard": {
+  "teams_add": ["club_west-ham", "club_chelsea", "club_man-city", "club_nycfc"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["England"]},
+  "note": "Nationality was wrongly 'United States' - Lampard is English. Teams were empty."
+ },
+ "soccer_didier-drogba": {
+  "teams_add": ["club_marseille", "club_chelsea", "Galatasaray"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Ivory Coast"]},
+  "note": "Nationality was wrongly 'United States' - Drogba is Ivorian. Teams were empty; Galatasaray (2013-2014) and Montreal Impact (2015-2016) have no team ids."
+ },
+ "soccer_luis-suarez": {
+  "teams_add": ["club_ajax", "club_liverpool", "club_barcelona", "club_atletico-madrid", "club_inter-miami"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Uruguay"]},
+  "note": "Nationality was wrongly 'United States' - Suarez is Uruguayan. Teams were empty; also Nacional and Groningen early (no team ids)."
+ },
+ "soccer_sergio-aguero": {
+  "teams_add": ["club_atletico-madrid", "club_man-city", "club_barcelona", "Independiente"],
+  "teams_remove": [],
+  "jersey_add": [16],
+  "jersey_remove": [],
+  "set": {"nationality": ["Argentina"]},
+  "note": "Nationality was wrongly 'United States' - Aguero is Argentine. Teams were empty; Independiente has no team id. Wore 16 at Man City 2011-2015 (the '93:20' title goal) before switching to 10."
+ },
+ "soccer_bukayo-saka": {
+  "teams_add": ["club_arsenal"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["England"]},
+  "note": "Nationality was wrongly 'United States' - Saka is English. Teams were empty."
+ },
+ "soccer_phil-foden": {
+  "teams_add": ["club_man-city"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["England"]},
+  "note": "Nationality was wrongly 'United States' - Foden is English. Teams were empty."
+ },
+ "soccer_lamine-yamal": {
+  "teams_add": ["club_barcelona"],
+  "teams_remove": [],
+  "jersey_add": [10],
+  "jersey_remove": [],
+  "set": {"nationality": ["Spain"]},
+  "note": "Nationality was wrongly 'United States' - Yamal is Spanish. Teams were empty. Took the Barcelona 10 shirt in 2025 (wore 19 before)."
+ },
+ "soccer_weston-mckennie": {
+  "teams_add": ["club_schalke", "club_juventus"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty (nationality US is correct). Also a Leeds loan half-season in 2023."
+ },
+ "soccer_tyler-adams": {
+  "teams_add": ["club_ny-red-bulls", "club_rb-leipzig", "club_leeds", "club_bournemouth"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty (nationality US is correct)."
+ },
+ "soccer_gio-reyna": {
+  "teams_add": ["club_borussia-dortmund", "club_borussia-monchengladbach"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty (nationality US is correct). Joined Borussia Monchengladbach in 2025; also a Nottingham Forest loan in 2024."
+ },
+ "soccer_sophia-smith": {
+  "teams_add": ["Portland Thorns"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty (nationality US is correct). Portland Thorns has no team id (club_portland-timbers is the men's team)."
+ },
+ "soccer_trinity-rodman": {
+  "teams_add": ["Washington Spirit"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty (nationality US is correct). Washington Spirit has no team id."
+ },
+ "soccer_mallory-swanson": {
+  "teams_add": ["Chicago Red Stars"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty (nationality US is correct). Chicago Red Stars (now Chicago Stars FC) has no team id; also Washington Spirit earlier."
+ },
+ "soccer_naomi-girma": {
+  "teams_add": ["club_chelsea", "San Diego Wave"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {},
+  "note": "Teams were empty (nationality US is correct). Joined Chelsea Women in Jan 2025; San Diego Wave has no team id."
+ },
+ "soccer_aitana-bonmati": {
+  "teams_add": ["club_barcelona"],
+  "teams_remove": [],
+  "jersey_add": [14],
+  "jersey_remove": [],
+  "set": {"nationality": ["Spain"]},
+  "note": "Nationality was wrongly 'United States' - Bonmati is Spanish. Teams were empty. Wears 14 at Barcelona (6 for Spain)."
+ },
+ "soccer_alexia-putellas": {
+  "teams_add": ["club_barcelona"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Spain"]},
+  "note": "Nationality was wrongly 'United States' - Putellas is Spanish. Teams were empty; also Levante early (no team id)."
+ },
+ "soccer_sam-kerr": {
+  "teams_add": ["club_chelsea", "Chicago Red Stars", "Perth Glory"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Australia"]},
+  "note": "Nationality was wrongly 'United States' - Kerr is Australian. Teams were empty; Chicago Red Stars and Perth Glory have no team ids."
+ },
+ "soccer_ada-hegerberg": {
+  "teams_add": ["club_lyon"],
+  "teams_remove": [],
+  "jersey_add": [],
+  "jersey_remove": [],
+  "set": {"nationality": ["Norway"]},
+  "note": "Nationality was wrongly 'United States' - Hegerberg is Norwegian. Teams were empty. Olympique Lyonnais (women) since 2014; first women's Ballon d'Or winner (2018)."
+ }
+}

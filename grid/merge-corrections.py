@@ -60,9 +60,7 @@ for path in sorted(glob.glob(os.path.join(AUDIT_DIR,'corrections-*.json'))):
         for n in fx.get('jersey_remove') or []:
             if n in js: js.remove(n); stats['jersey_remove'] += 1
         for k, v in (fx.get('set') or {}).items():
-            cur = a.get(k)
-            a[k] = [v] if isinstance(cur, list) or cur is None else v
-            if isinstance(a[k], list) and not isinstance(v, list): pass
+            a[k] = v if isinstance(v, list) else [v]   # corpus attrs are arrays
             stats['set'] += 1
 
 stats['new_teams'] = sum(1 for e in corpus if e.get('entity_type')=='team') - teams_before
