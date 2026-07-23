@@ -12946,6 +12946,20 @@ allows Google Fonts, or self-host Anton.*
   errors. Committed to the branch, NOT deployed (rides with the pending art-batch review). Tunable: the
   700ms cadence, `PX_IDLE_SPLIT` (42).
 
+- **5-PACK BUNDLE buttons made prominent (owner: "The 5 pack bundle buttons need to stand out much
+  more").** The bundle button on each Pro Shop pack-tier card was a thin one-line `btn ghost` outline
+  that disappeared under the big solid Open button. Replaced with a designed `.pkbundle` button, accented
+  to its tier via a `--pkc` CSS var (green Base / purple Tour / orange Summer / gold Champion): a
+  tier-colored border + soft glow + inset highlight over a dark gradient, a slow foil sheen sweep
+  (reduced-motion safe), a 🎁 "5-PACK BUNDLE" title in the tier color with a "Best value · 5 packs for
+  the price of 4" sub, and a right-side stack of the price (coin icon + `coinFmt`) over a green
+  "SAVE {one pack's price}" pill. Disabled (can't afford) = dimmed, no glow/sheen. Wiring unchanged
+  (`startPackBundle(id)`, `baff` gating). Verified in Playwright: all 4 tier cards (incl. the live
+  seasonal Summer pack) render the new button with the correct tier border/price/save amounts + the coin
+  svg, clicking opens the prepaid 5-pack wheel (`packBundle total 5`), a broke account shows all 4
+  disabled at half opacity, and the club_regress + regress_drop suites stay green with 0 page errors.
+  Deployed to /golf. Tunable: the `.pkbundle` CSS in `packStyleOnce`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
