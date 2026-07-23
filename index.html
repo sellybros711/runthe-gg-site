@@ -84,9 +84,9 @@
   .tag{text-align:center;color:var(--ink);font-weight:700;margin:16px auto 0;max-width:460px;line-height:1.45;font-size:16px;}
   .tag b{color:var(--teal);}
   /* live status pill: tells a first-time visitor what the site is at a glance */
-  .hero-status{display:inline-flex;align-items:center;gap:9px;margin:13px auto 2px;
-    padding:7px 15px;border-radius:6px;font-size:12px;font-weight:800;letter-spacing:.01em;
-    color:#cfe0f0;background:rgba(255,255,255,.04);border:1px solid var(--line);}
+  .hero-status{display:inline-flex;align-items:center;gap:9px;margin:16px auto 2px;
+    padding:2px;font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    color:#cfe0f0;}
   .hero-status .dot{width:8px;height:8px;border-radius:50%;background:#6EE84E;flex:0 0 auto;
     box-shadow:0 0 0 0 rgba(110,232,78,.6);animation:livePulse 2.4s ease-out infinite;}
   .hero-status b{color:var(--ink);}
@@ -160,20 +160,20 @@
   .game.golf .g-title .nm .g{color:#F2C14E;}
   .game.soccer .g-title .nm .g{color:var(--teal);}
   .g-desc{display:block;color:#b9c9db;font-size:13.5px;line-height:1.5;padding:11px 17px 0;}
-  .badge-new,.badge-mode{font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;
-    padding:4px 9px;border-radius:6px;flex:0 0 auto;line-height:1;}
-  .badge-new{color:#04241f;background:linear-gradient(180deg,#F2C14E,#E7A21C);box-shadow:0 2px 8px -2px rgba(235,166,31,.7);}
-  /* mode pills (Solo / H2H): outline style so they read as info, not a call-out */
-  .badge-mode{background:rgba(255,255,255,.05);border:1px solid var(--line);color:#cfe0f0;}
-  .game.golf .badge-mode{color:#f3dca0;background:rgba(235,166,31,.12);border-color:rgba(235,166,31,.34);}
-  .game.soccer .badge-mode{color:#bfe9df;background:rgba(53,196,205,.12);border-color:rgba(53,196,205,.34);}
+  .badge-new,.badge-mode{font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;
+    padding:2px 0 2px 8px;flex:0 0 auto;line-height:1.15;background:none;border:0;}
+  .badge-new{color:#F85858;border-left:3px solid #F85858;}
+  /* mode labels: thin accent bar so they read as info, not a call-out */
+  .badge-mode{color:#9fb2c6;border-left:2px solid var(--line);}
+  .game.golf .badge-mode{color:#e6c98a;border-left-color:rgba(235,166,31,.65);}
+  .game.soccer .badge-mode{color:#a7ddd6;border-left-color:rgba(102,211,222,.6);}
   /* keep the Solo + H2H pair together so they wrap to the next line as a unit */
-  .g-title .nm .modes{display:inline-flex;gap:9px;flex:0 0 auto;}
+  .g-title .nm .modes{display:inline-flex;gap:14px;flex:0 0 auto;}
 
-  .g-chips{display:flex;gap:7px;flex-wrap:wrap;padding:12px 17px 0;}
-  .chip{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;letter-spacing:.05em;
-    line-height:1;text-transform:uppercase;
-    color:#bfe9df;background:rgba(53,196,205,.13);border:1px solid rgba(53,196,205,.3);padding:5px 10px;border-radius:6px;}
+  .g-chips{display:flex;gap:16px;flex-wrap:wrap;padding:12px 17px 0;}
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;letter-spacing:.06em;
+    line-height:1.15;text-transform:uppercase;
+    color:#cfe7ea;background:none;border:0;border-left:3px solid rgba(102,211,222,.7);padding:3px 0 3px 9px;}
   .chip .ico{width:13px;height:13px;flex:0 0 auto;display:block;shape-rendering:crispEdges;image-rendering:pixelated;}
 
   /* ---- custom pixel-art icons (replace stock emoji) ---- */
@@ -189,7 +189,7 @@
   .pico-phone{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' shape-rendering='crispEdges'><rect x='3' y='1' width='6' height='1' fill='%2366D3DE'/><rect x='3' y='10' width='6' height='1' fill='%2366D3DE'/><rect x='3' y='1' width='1' height='10' fill='%2366D3DE'/><rect x='8' y='1' width='1' height='10' fill='%2366D3DE'/><rect x='4' y='2' width='4' height='8' fill='%230a1626'/><rect x='5' y='9' width='2' height='1' fill='%23cfe0f0'/></svg>")}
   .pico-android{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' shape-rendering='crispEdges'><rect x='4' y='2' width='1' height='2' fill='%2366D3DE'/><rect x='7' y='2' width='1' height='2' fill='%2366D3DE'/><rect x='3' y='4' width='6' height='1' fill='%2366D3DE'/><rect x='3' y='5' width='6' height='3' fill='%2366D3DE'/><rect x='4' y='8' width='4' height='1' fill='%2366D3DE'/><rect x='4' y='6' width='1' height='1' fill='%230a1626'/><rect x='7' y='6' width='1' height='1' fill='%230a1626'/></svg>")}
   .pico-laptop{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' shape-rendering='crispEdges'><rect x='3' y='2' width='6' height='1' fill='%2366D3DE'/><rect x='3' y='2' width='1' height='5' fill='%2366D3DE'/><rect x='8' y='2' width='1' height='5' fill='%2366D3DE'/><rect x='3' y='6' width='6' height='1' fill='%2366D3DE'/><rect x='4' y='3' width='4' height='3' fill='%230a1626'/><rect x='2' y='8' width='8' height='1' fill='%2366D3DE'/><rect x='1' y='9' width='10' height='1' fill='%2366D3DE'/></svg>")}
-  .game.golf .chip{color:#f3dca0;background:rgba(235,166,31,.13);border-color:rgba(235,166,31,.32);}
+  .game.golf .chip{color:#e6c98a;border-left-color:rgba(235,166,31,.65);}
 
   /* RunThePitch online promo strip — puts the multiplayer modes front and centre.
      display:block is required: this <span> holds block-level (flex) children, and
@@ -257,16 +257,20 @@
     border:1px solid var(--cardb);}
   /* "optional / free" tag makes it unmistakable that an account is a bonus, not a wall */
   .acct .a-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;
-    letter-spacing:.07em;text-transform:uppercase;color:#a8f090;
-    background:rgba(110,232,78,.12);border:1px solid rgba(110,232,78,.34);padding:4px 10px;border-radius:6px;margin:0 0 10px;}
+    letter-spacing:.09em;text-transform:uppercase;color:#8fe07a;
+    border-left:3px solid var(--green);padding:2px 0 2px 9px;margin:0 0 13px;}
   .acct .a-hd{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.01em;
     text-transform:uppercase;font-size:clamp(21px,6vw,27px);line-height:1;margin:0;}
   .acct .a-hd .g{color:var(--gold);} .acct .a-hd .t{color:var(--teal);}
   .acct .a-sub{color:var(--mut);font-size:13.5px;line-height:1.5;margin:8px 0 0;max-width:460px;}
   .acct .a-sub b{color:var(--ink);}
-  .acct .perks{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0;}
-  .acct .perk{font-size:11px;font-weight:800;letter-spacing:.03em;color:#cfe0f0;
-    background:rgba(255,255,255,.05);border:1px solid var(--line);padding:4px 9px;border-radius:6px;}
+  .acct .perks{display:flex;flex-wrap:wrap;gap:18px;margin:14px 0 0;}
+  .acct .perk{font-size:11px;font-weight:800;letter-spacing:.04em;color:#dbe6f2;display:inline-flex;align-items:center;gap:6px;
+    border-left:3px solid rgba(255,255,255,.25);padding:3px 0 3px 9px;}
+  .acct .perks .perk:nth-child(1){border-left-color:var(--green);}
+  .acct .perks .perk:nth-child(2){border-left-color:#66D3DE;}
+  .acct .perks .perk:nth-child(3){border-left-color:#F85858;}
+  .acct .perks .perk:nth-child(4){border-left-color:#66D3DE;}
   .acct .perk b{color:var(--gold);font-weight:800;}
   .acct .perk .amp{color:#fff;} .acct .perk .tl{color:var(--teal);}
   .acct .a-cta{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0 0;}
@@ -435,8 +439,8 @@ window.GA_ID='G-L29P5MRWKE';
   .games-head h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.03em;
     font-size:21px;line-height:1;margin:0;display:flex;align-items:center;gap:10px;color:var(--ink);}
   .games-head h2:before{content:"";width:11px;height:11px;border-radius:3px;background:var(--gold);flex:0 0 auto;}
-  .games-head .note{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#a8f090;flex:0 0 auto;
-    margin-left:auto;background:rgba(110,232,78,.1);border:1px solid rgba(110,232,78,.28);padding:5px 12px;border-radius:6px;}
+  .games-head .note{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#8fe07a;flex:0 0 auto;
+    margin-left:auto;border-left:3px solid var(--green);padding:3px 0 3px 9px;background:none;}
 
   /* ---- featured game blocks: lead with real gameplay screenshots ---- */
   .games{display:block;}
@@ -481,11 +485,11 @@ window.GA_ID='G-L29P5MRWKE';
   .feat.golf .g-title .nm .g{color:#F2C14E;}
   .feat.golf .crest img{border-radius:8px;border:1px solid rgba(235,166,31,.3);}
   .feat.golf .crest:before{background:radial-gradient(circle, rgba(235,166,31,.22), transparent 66%);}
-  .feat.golf .chip{color:#f3dca0;background:rgba(235,166,31,.13);border-color:rgba(235,166,31,.32);}
-  .feat.golf .badge-mode{color:#f3dca0;background:rgba(235,166,31,.12);border-color:rgba(235,166,31,.34);}
+  .feat.golf .chip{color:#e6c98a;border-left-color:rgba(235,166,31,.65);}
+  .feat.golf .badge-mode{color:#e6c98a;border-left-color:rgba(235,166,31,.65);}
   .feat.golf .play{background:linear-gradient(180deg,#EEB23E,#D9931A);color:#1b1204;box-shadow:0 8px 20px -12px rgba(235,166,31,.9);}
   .feat.soccer .g-title .nm .g{color:var(--teal);}
-  .feat.soccer .badge-mode{color:#bfe9df;background:rgba(53,196,205,.12);border-color:rgba(53,196,205,.34);}
+  .feat.soccer .badge-mode{color:#a7ddd6;border-left-color:rgba(102,211,222,.6);}
   .feat.soccer .play{background:linear-gradient(180deg,#33D3B8,#17A891);color:#04231d;box-shadow:0 8px 20px -12px rgba(53,196,205,.9);}
   .play:hover{filter:brightness(1.06);} .play:hover .arw{transform:translateX(4px);}
 
