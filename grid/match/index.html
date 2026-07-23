@@ -159,6 +159,26 @@
     padding:11px 16px; border-radius:9px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.7);}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
 
+  /* hidden-categories tag in the sub-header */
+  .hidden-tag{font-size:11px; font-weight:900; letter-spacing:.04em; text-transform:uppercase; color:var(--mut);
+    background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:7px; padding:6px 11px;}
+
+  /* revealed-group chips (from the hint) */
+  .revealed{display:flex; flex-wrap:wrap; gap:7px; margin:0 0 12px;}
+  .revealed:empty{display:none;}
+  .revealed .rc{display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:800; color:var(--ink);
+    background:rgba(255,255,255,.05); border:1px solid var(--lc); border-radius:8px; padding:6px 10px;}
+  .revealed .rc .d{width:9px; height:9px; border-radius:2px; background:var(--lc); flex:0 0 auto;}
+  .revealed .rc .k{font-size:9px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut);}
+
+  /* one-away popup */
+  .popup{position:fixed; left:50%; top:36%; transform:translate(-50%,-50%) scale(.88); opacity:0; z-index:90; text-align:center;
+    background:linear-gradient(180deg,#173352,#0e2137); border:1px solid var(--cardb); color:var(--ink);
+    font-weight:900; font-size:17px; padding:15px 24px; border-radius:13px; box-shadow:0 24px 60px -20px rgba(0,0,0,.85);
+    pointer-events:none; transition:opacity .18s ease, transform .18s ease;}
+  .popup.on{opacity:1; transform:translate(-50%,-50%) scale(1);}
+  .popup .sub{display:block; font-size:12.5px; font-weight:700; color:var(--mut); margin-top:4px;}
+
   @media (max-width:400px){
     .tile{font-size:10px;} .brand{font-size:22px;} .rgrade .g{font-size:62px;}
   }
@@ -176,40 +196,35 @@
 
     <div class="subhead">
       <span class="datep" id="datep">—</span>
-      <div class="modes" role="tablist" aria-label="Difficulty">
-        <button id="mEasy" class="on" type="button">Easy</button>
-        <button id="mHard" type="button">Hard</button>
-      </div>
+      <span class="hidden-tag">🕶️ Categories hidden</span>
     </div>
 
     <div class="hud">
       <div class="timer" id="timer">0:00<span class="pen" id="pen"></span></div>
       <div class="miss">
-        <span class="lab">Misses</span>
+        <span class="lab">Guesses left</span>
         <div class="dots" id="dots"></div>
       </div>
     </div>
 
+    <div class="revealed" id="revealed"></div>
     <div class="board" id="board"></div>
 
-    <div class="pool-h">Pool · <span class="n" id="poolCount">25</span> left</div>
+    <div class="pool-h">Pool · <span class="n" id="poolCount">20</span> left</div>
     <div class="pool" id="pool"></div>
 
-    <div class="hintbar" id="hintbar">
-      <button class="btn" id="hintSpot" type="button">🔦 Spotlight <span class="cost">40</span></button>
-      <button class="btn" id="hintDecode" type="button">🗝️ Decode <span class="cost">120</span></button>
-    </div>
     <div class="controls">
-      <button class="btn wide" id="btnClear" type="button">↺ Reset pool</button>
+      <button class="btn" id="btnHint" type="button">💡 Reveal a group <span class="cost">−1 guess</span></button>
+      <button class="btn" id="btnClear" type="button">↺ Reset pool</button>
     </div>
 
     <div class="howto" id="howto">
       <h3>How to play</h3>
       <ol>
-        <li><b>Sort all 25 names</b> into five lanes of five — each lane is one hidden category (a team, a number, a surname, a feat).</li>
-        <li>Tap a name, then tap a lane to place it. A lane <b>only checks when it's full</b> — stage your guesses freely.</li>
-        <li><b>Right</b> → the lane locks and its category is revealed. <b>Wrong</b> → a miss, +5s, and those five bounce back.</li>
-        <li>Five misses allowed. Fastest clean board wins the day. <b>Hard mode</b> hides every header.</li>
+        <li><b>Sort all 20 names</b> into five groups of four — every category is <b>hidden</b> (a team, a number, a surname, a feat).</li>
+        <li>Drag or tap names into a lane. A lane <b>only checks when it has four</b> — lay them out and rearrange freely.</li>
+        <li><b>Right</b> → the lane locks and its category is revealed. <b>Wrong</b> → you lose a guess (and if you were <b>one away</b>, we'll tell you).</li>
+        <li>Stuck? <b>Reveal a group</b>'s name for the cost of one guess. Four wrong guesses ends the board.</li>
       </ol>
     </div>
   </div>
@@ -218,7 +233,7 @@
     <div class="sheet">
       <button class="x" id="resClose" type="button" aria-label="Close">✕</button>
       <div class="rgrade">
-        <div class="lbl">Draft Grade — <span id="resMode">Easy</span></div>
+        <div class="lbl">Draft Grade</div>
         <div class="g" id="resGrade">A</div>
         <div class="verdict" id="resVerdict">Solid board.</div>
       </div>
@@ -238,15 +253,18 @@
   </div>
 
   <div class="toast" id="toast"></div>
+  <div class="popup" id="popup"></div>
 
   <script src="entities.js"></script>
-  <script src="data.js"></script>
   <script src="generator.js"></script>
   <script>
   (function () {
     'use strict';
-    var BANK = window.GRID_BANK, ENT = window.GRID_ENTITIES, Gen = window.GridGen;
+    var ENT = window.GRID_ENTITIES, Gen = window.GridGen;
     var LS = window.localStorage;
+    var GROUP = Gen.GROUP_SIZE || 4;   // tiles per category
+    var CATS = 5;                       // categories per board
+    var MISTAKE_LIMIT = 4;             // wrong guesses (a hint spends one); the 4th ends the board
 
     // ---- today's date (local) ----
     function todayStr() {
@@ -268,7 +286,6 @@
     }
 
     // ---- state ----
-    var mode = 'easy';                 // 'easy' | 'hard'
     var day = null;                    // generated board for DATE
     var byId = {};                     // tileId -> tile
     var solById = {};                  // tileId -> catId (truth)
@@ -277,13 +294,13 @@
     var locked = {};                   // laneIndex -> true
     var solveOrder = [];               // laneIndex in order solved
     var mistakes = 0, penalty = 0, started = false, startTs = 0, tick = null;
-    var selected = null, done = false, decodedLane = null;
+    var selected = null, done = false, revealedCats = {};   // revealedCats: catId -> true (from hints)
 
     var laneById = {};                 // catId -> lane meta (color etc.)
 
     function buildDay() {
-      // data-driven board from the tagged DB, with the authored bank as fallback
-      day = Gen.daily(DATE, { entities: ENT, bank: BANK });
+      // data-driven board from the tagged DB (5 groups of four, categories hidden)
+      day = Gen.daily(DATE, { entities: ENT });
       byId = {}; day.tiles.forEach(function (t) { byId[t.id] = t; });
       solById = {};
       Object.keys(day.solution).forEach(function (cid) {
@@ -294,16 +311,15 @@
     }
 
     // ---- persistence of today's result so a refresh doesn't replay ----
-    function resultKey() { return 'grid_match_result_' + DATE + '_' + mode; }
+    function resultKey() { return 'grid_match_result_' + DATE; }
     function savedResult() { try { return JSON.parse(LS.getItem(resultKey())); } catch (e) { return null; } }
 
-    // ---- reset play state (used on mode switch / new attempt) ----
+    // ---- reset play state ----
     function resetState() {
       place = {}; laneCat = {}; locked = {}; solveOrder = [];
-      mistakes = 0; penalty = 0; started = false; startTs = 0; selected = null; done = false; decodedLane = null;
+      mistakes = 0; penalty = 0; started = false; startTs = 0; selected = null; done = false; revealedCats = {};
       if (tick) { clearInterval(tick); tick = null; }
       day.tiles.forEach(function (t) { place[t.id] = null; });
-      if (mode === 'easy') { day.lanes.forEach(function (l, i) { laneCat[i] = l.id; }); }
     }
 
     // ---- render ----
@@ -336,7 +352,7 @@
         var isLocked = !!locked[i];
         var cat = laneCat[i] != null ? laneById[laneCat[i]] : null;
 
-        var showHeader = (mode === 'easy') || isLocked || (decodedLane === i);
+        var showHeader = isLocked;   // categories stay hidden until a lane is solved
         var color = cat ? cat.color : '#4a6178';
         lane.style.setProperty('--lc', color);
         if (isLocked) lane.classList.add('locked');
@@ -357,7 +373,7 @@
         var slots = document.createElement('div');
         slots.className = 'slots';
         var inLane = tilesInLane(i);
-        for (var s = 0; s < 5; s++) {
+        for (var s = 0; s < GROUP; s++) {
           var slot = document.createElement('div');
           slot.className = 'slot';
           if (inLane[s] != null) {
@@ -379,21 +395,34 @@
       document.getElementById('poolCount').textContent = poolTiles.length;
       attachPoolDrop();
       renderDots();
+      renderRevealed();
+      updateHintBtn();
     }
 
     function tilesInLane(i) {
       var arr = day.tiles.filter(function (t) { return place[t.id] === i; }).map(function (t) { return t.id; });
-      while (arr.length < 5) arr.push(null);
+      while (arr.length < GROUP) arr.push(null);
       return arr;
     }
 
     function renderDots() {
       var d = document.getElementById('dots'); d.innerHTML = '';
-      for (var i = 0; i < 5; i++) {
+      for (var i = 0; i < MISTAKE_LIMIT; i++) {
         var dot = document.createElement('div');
         dot.className = 'dot' + (i < mistakes ? ' used' : '');
         d.appendChild(dot);
       }
+    }
+
+    // revealed groups (from the hint) shown as chips; drop any already solved
+    function renderRevealed() {
+      var el = document.getElementById('revealed'); el.innerHTML = '';
+      day.lanes.forEach(function (l) {
+        if (!revealedCats[l.id] || usedCat(l.id)) return;
+        var c = document.createElement('span'); c.className = 'rc'; c.style.setProperty('--lc', l.color);
+        c.innerHTML = '<span class="d"></span><span class="k">Group</span> ' + escapeHtml(l.name);
+        el.appendChild(c);
+      });
     }
 
     // ---- interaction ----
@@ -408,11 +437,11 @@
 
     function placeInLane(tid, laneIdx) {
       if (done || locked[laneIdx]) return;
-      if (tilesInLane(laneIdx).filter(function (x) { return x != null; }).length >= 5) { toast('Lane is full'); return; }
+      if (tilesInLane(laneIdx).filter(function (x) { return x != null; }).length >= GROUP) { toast('Lane is full'); return; }
       startIfNeeded();
       place[tid] = laneIdx; selected = null;
       render();
-      if (tilesInLane(laneIdx).filter(function (x) { return x != null; }).length === 5) validate(laneIdx);
+      if (tilesInLane(laneIdx).filter(function (x) { return x != null; }).length === GROUP) validate(laneIdx);
     }
 
     function attachDrop(laneEl, idx) {
@@ -448,40 +477,51 @@
       document.getElementById('pen').textContent = penalty ? '+' + penalty + 's' : '';
     }
 
-    // ---- validation (design doc §2) ----
+    // ---- validation: the group defines itself (categories are hidden) ----
     function validate(laneIdx) {
       var ids = day.tiles.filter(function (t) { return place[t.id] === laneIdx; }).map(function (t) { return t.id; }).sort();
       var matchCat = null;
-
-      if (mode === 'easy') {
-        var target = laneCat[laneIdx];
-        if (setsEqual(ids, day.solution[target].slice().sort())) matchCat = target;
-      } else {
-        // hard: the group defines itself — does it match any not-yet-used category exactly?
-        for (var cid in day.solution) {
-          if (usedCat(cid)) continue;
-          if (setsEqual(ids, day.solution[cid].slice().sort())) { matchCat = cid; break; }
-        }
+      for (var cid in day.solution) {
+        if (usedCat(cid)) continue;
+        if (setsEqual(ids, day.solution[cid].slice().sort())) { matchCat = cid; break; }
       }
 
       if (matchCat) {
         locked[laneIdx] = true; laneCat[laneIdx] = matchCat; solveOrder.push(laneIdx);
         render();
-        if (solveOrder.length === 5) finish(true);
+        if (solveOrder.length === CATS) finish(true);
       } else {
-        mistakes++; penalty += 5;
-        var laneEl = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"]');
-        if (laneEl) { laneEl.classList.add('bad'); setTimeout(function () { laneEl.classList.remove('bad'); }, 420); }
-        var dotEls = document.getElementById('dots').children;
-        if (dotEls[mistakes - 1]) { dotEls[mistakes - 1].classList.add('pop'); }
-        toast('Not a group — five bounce back (+5s)');
-        // bounce the five back to the pool
-        setTimeout(function () {
-          day.tiles.forEach(function (t) { if (place[t.id] === laneIdx) place[t.id] = null; });
-          if (mistakes >= 6) finish(false); else render();
-        }, 430);
-        updateTimer();
+        registerMiss(laneIdx, ids);
       }
+    }
+
+    // how close was this group? "one away" = 3 of the 4 share a single unsolved category
+    function oneAway(ids) {
+      var best = 0;
+      for (var cid in day.solution) {
+        if (usedCat(cid)) continue;
+        var sol = day.solution[cid];
+        var n = ids.filter(function (id) { return sol.indexOf(id) !== -1; }).length;
+        if (n > best) best = n;
+      }
+      return best === GROUP - 1;
+    }
+
+    function registerMiss(laneIdx, ids) {
+      mistakes++; penalty += 5;
+      var close = oneAway(ids);
+      var laneEl = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"]');
+      if (laneEl) { laneEl.classList.add('bad'); setTimeout(function () { laneEl.classList.remove('bad'); }, 420); }
+      var dotEls = document.getElementById('dots').children;
+      if (dotEls[mistakes - 1]) { dotEls[mistakes - 1].classList.add('pop'); }
+      if (close) popup('So close!', 'One away — 3 of those 4 belong together.');
+      else toast('Not a group — they bounce back (−1 guess)');
+      updateTimer();
+      // bounce the tiles back to the pool
+      setTimeout(function () {
+        day.tiles.forEach(function (t) { if (place[t.id] === laneIdx) place[t.id] = null; });
+        if (mistakes >= MISTAKE_LIMIT) finish(false); else render();
+      }, 470);
     }
     function usedCat(cid) { for (var k in laneCat) { if (locked[k] && laneCat[k] === cid) return true; } return false; }
 
@@ -504,9 +544,9 @@
         LS.setItem('grid_match_lastplayed', DATE);
       }
 
-      var par = mode === 'hard' ? day.par.hard : day.par.easy;
+      var par = day.par.hard;
       var grade = gradeFor(won, finalTime, par, mistakes);
-      var coins = coinsFor(won, finalTime, par, mistakes, mode);
+      var coins = coinsFor(won, finalTime, par, mistakes);
       walletSet(walletGet() + coins);
 
       LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, order: solveOrder.slice() }));
@@ -547,8 +587,8 @@
       if (time <= 1.4 * par && m <= 3) return 'C';
       return 'D';
     }
-    function coinsFor(won, time, par, m, md) {
-      var mult = md === 'hard' ? 2 : 1;
+    function coinsFor(won, time, par, m) {
+      var mult = 1;
       if (!won) return 10 * mult;
       var speed = Math.max(0.5, Math.min(2.0, par / Math.max(1, time)));
       var mfac = 1 - m * 0.10;
@@ -562,7 +602,6 @@
       return { '#35C4CD': '🟦', '#6EE84E': '🟩', '#EBA61F': '🟨', '#F06A5A': '🟥', '#A98CF5': '🟪' }[hex] || '⬛';
     }
     function showResult(r) {
-      document.getElementById('resMode').textContent = mode === 'hard' ? 'Hard' : 'Easy';
       document.getElementById('resGrade').textContent = r.grade;
       var col = { 'A+': '#6EE84E', 'A': '#6EE84E', 'B': '#66D3DE', 'C': '#EBA61F', 'D': '#EBA61F', 'F': '#F85858' }[r.grade];
       document.getElementById('resGrade').style.color = col;
@@ -582,45 +621,33 @@
     function shareText(r) {
       var strip = solveOrder.map(function (idx) { return colorEmoji(laneById[laneCat[idx]].color); }).join('');
       var dstr = new Date(DATE + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-      return '🟦 RunTheGrid — ' + dstr + '\n   ' + (mode === 'hard' ? 'HARD' : 'EASY') + ' MODE\n\n' +
+      return '🟩 RunTheGrid — Daily Match — ' + dstr + '\n\n' +
         '   GRADE:  ' + r.grade + '\n   TIME:   ' + fmt(r.time) + '\n   MISSES: ' + r.mistakes + '\n   STREAK: ' + r.streak + ' 🔥\n' +
         (strip ? '   ' + strip + '\n' : '') + '\n   runthe.gg/grid';
     }
 
-    // ---- hints (design doc §7) ----
-    function spend(cost) {
-      if (walletGet() < cost) { toast('Not enough coins'); return false; }
-      walletSet(walletGet() - cost); penalty += 10; updateTimer(); return true;
-    }
-    document.getElementById('hintSpot').addEventListener('click', function () {
+    // ---- hint: reveal one group's name for the cost of a guess ----
+    var hintBtn = document.getElementById('btnHint');
+    hintBtn.addEventListener('click', function () {
       if (done) return;
-      var poolCats = {};
-      day.tiles.forEach(function (t) { if (place[t.id] == null && !usedCat(solById[t.id])) { (poolCats[solById[t.id]] = poolCats[solById[t.id]] || []).push(t.id); } });
-      var full = Object.keys(poolCats).filter(function (c) { return poolCats[c].length === 5; });
-      if (!full.length) { toast('No full group left in the pool'); return; }
-      if (!spend(40)) return;
+      if (MISTAKE_LIMIT - mistakes <= 1) { toast('Not enough guesses left to spend on a hint'); return; }
+      var open = day.lanes.filter(function (l) { return !usedCat(l.id) && !revealedCats[l.id]; })
+        .sort(function (a, b) { return b.difficulty - a.difficulty; });
+      if (!open.length) { toast('Every group is already revealed'); return; }
       startIfNeeded();
-      var pick = full[Math.floor(Math.random() * full.length)];
-      poolCats[pick].forEach(function (tid) {
-        var el = poolEl.querySelector('.tile[data-tid="' + tid + '"]'); if (el) el.classList.add('spotlight');
-      });
-      toast('Five that belong together are glowing');
-    });
-    document.getElementById('hintDecode').addEventListener('click', function () {
-      if (done) return;
-      if (mode !== 'hard') { toast('Decode reveals a header — Hard mode only'); return; }
-      var hidden = []; for (var i = 0; i < 5; i++) { if (!locked[i] && decodedLane !== i) hidden.push(i); }
-      // reveal the hardest still-hidden lane's category name against an empty lane
-      if (!hidden.length) { toast('Nothing left to decode'); return; }
-      if (!spend(120)) return;
-      startIfNeeded();
-      // pick a category not yet solved, show it on an empty lane slot as a hint banner
-      var usedC = {}; for (var k in laneCat) { if (locked[k]) usedC[laneCat[k]] = true; }
-      var openCat = day.lanes.filter(function (l) { return !usedC[l.id]; }).sort(function (a, b) { return b.difficulty - a.difficulty; })[0];
-      decodedLane = hidden[0]; laneCat[decodedLane] = openCat.id;
+      var pick = open[0];
+      revealedCats[pick.id] = true;
+      mistakes++;                       // a hint costs one guess
+      var dotEls = document.getElementById('dots').children;
+      if (dotEls[mistakes - 1]) dotEls[mistakes - 1].classList.add('pop');
       render();
-      toast('Header revealed: ' + openCat.name);
+      popup('Group revealed', pick.name);
+      updateHintBtn();
     });
+    function updateHintBtn() {
+      var left = MISTAKE_LIMIT - mistakes;
+      hintBtn.disabled = done || left <= 1;
+    }
 
     document.getElementById('btnClear').addEventListener('click', function () {
       if (done) return;
@@ -628,17 +655,14 @@
       selected = null; render();
     });
 
-    // ---- mode switch ----
-    function setMode(m) {
-      if (m === mode) return;
-      mode = m;
-      document.getElementById('mEasy').classList.toggle('on', m === 'easy');
-      document.getElementById('mHard').classList.toggle('on', m === 'hard');
-      document.getElementById('hintDecode').style.display = (m === 'hard') ? '' : 'none';
-      boot();
+    // ---- centered popup (one-away / hint) ----
+    var popupT = null;
+    function popup(title, sub) {
+      var el = document.getElementById('popup');
+      el.innerHTML = escapeHtml(title) + (sub ? '<span class="sub">' + escapeHtml(sub) + '</span>' : '');
+      el.classList.add('on');
+      if (popupT) clearTimeout(popupT); popupT = setTimeout(function () { el.classList.remove('on'); }, 1600);
     }
-    document.getElementById('mEasy').addEventListener('click', function () { setMode('easy'); });
-    document.getElementById('mHard').addEventListener('click', function () { setMode('hard'); });
 
     // ---- result modal buttons ----
     document.getElementById('resShare').addEventListener('click', function () {
@@ -691,7 +715,6 @@
     }
 
     // ---- go ----
-    document.getElementById('hintDecode').style.display = 'none';
     buildDay();
     renderWallet();
     boot();
