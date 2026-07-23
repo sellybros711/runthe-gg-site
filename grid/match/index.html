@@ -5,7 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
 <title>Daily Match — RunTheGrid | Sports Matching Puzzle</title>
 <meta name="robots" content="noindex, nofollow" />
-<meta name="theme-color" content="#071426" />
+<meta name="theme-color" content="#071426" id="themeMeta" />
+<script>
+/* theme boot: runs before first paint. Manual choice persists in
+   runthegrid_theme (shared across the suite); otherwise follow the system. */
+(function(){
+  var t; try{ t = localStorage.getItem('runthegrid_theme'); }catch(e){}
+  if(t !== 'light' && t !== 'dark'){
+    t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 <meta name="description" content="Sort 20 sports names into five hidden groups of four before you run out of guesses — a daily sports matching puzzle on RunThe.GG." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2337C5D5'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2337C5D5'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
@@ -13,22 +24,40 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
 <style>
-  /* ---------------- design tokens ---------------- */
+  /* ---------------- design tokens (dark default + light override) ---------------- */
   :root{
     --bg:#071426;            /* page background */
     --card:#10233A;          /* main card surface */
     --card2:#162B44;         /* raised surface */
+    --card3:#1A3350;         /* selected-tile surface */
+    --dropbg:#12283F;        /* lane drag-over surface */
+    --slotbg:rgba(244,247,251,.02);
     --ink:#F4F7FB;           /* primary text */
     --mut:#A9B8CB;           /* secondary text */
     --line:rgba(244,247,251,.08);
     --line2:rgba(244,247,251,.15);
     --teal:#37C5D5; --violet:#A982F3; --gold:#F2B632; --coral:#F06A5F;
     --green:#48D17A; --red:#FF625F;
+    /* text-safe accent variants (meet contrast on the current surface) */
+    --tealT:#37C5D5; --goldT:#F2B632; --coralT:#F06A5F; --redT:#FF625F;
+    --banner-ink:#FFDFA3;
+    /* inverse chrome (toast / popup) */
+    --inv-bg:#F4F7FB; --inv-ink:#071426; --inv-mut:#3d4c5e;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --r-lg:14px; --r-md:10px; --r-sm:8px;
     --sp-1:12px; --sp-2:16px; --sp-3:24px;
     --hero:'Anton', Impact, sans-serif;
     --body:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+  :root[data-theme="light"]{
+    --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
+    --dropbg:#E8F1FA; --slotbg:rgba(13,27,44,.03);
+    --ink:#0D1B2C; --mut:#51637A;
+    --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
+    --tealT:#0E7C89; --goldT:#A87508; --coralT:#D8452F; --redT:#C4372C;
+    --banner-ink:#7A4E00;
+    --inv-bg:#0D1B2C; --inv-ink:#F4F7FB; --inv-mut:#B6C3D2;
+    --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
   /* touch-action:manipulation disables mobile double-tap-to-zoom on fast taps
      (tiles keep touch-action:none below for dragging; that still wins). */
@@ -49,7 +78,7 @@
   .home{color:var(--mut); text-decoration:none; font-size:20px; line-height:1; padding:8px 6px; border-radius:var(--r-sm); flex:0 0 auto;}
   .home:hover{color:var(--ink);}
   .brand{min-width:0; flex:1;}
-  .brand .suite{display:block; font-size:10.5px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--coral); margin-bottom:1px;}
+  .brand .suite{display:block; font-size:10.5px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--coralT); margin-bottom:1px;}
   .brand .suite a{color:inherit; text-decoration:none;}
   .titleRow{display:flex; align-items:center; gap:9px;}
   .brand .game{font-family:var(--hero); font-weight:400; letter-spacing:.02em; font-size:24px; color:var(--ink); line-height:1.05;}
@@ -61,8 +90,15 @@
   .stat{display:flex; align-items:center; gap:7px; background:var(--card); flex:0 0 auto;
     border:1px solid var(--line2); border-radius:var(--r-sm); padding:8px 11px; font-weight:900; font-size:13px; box-shadow:var(--shadow);}
   .stat svg{flex:0 0 auto;}
-  .stat.coins{color:var(--gold);} .stat.streak{color:var(--coral);}
+  .stat.coins{color:var(--goldT);} .stat.streak{color:var(--coralT);}
   .stat.tap{cursor:pointer;} .stat.tap:active{transform:translateY(1px);}
+  .themeBtn{width:38px; height:38px; border-radius:var(--r-sm); border:1px solid var(--line2); background:var(--card);
+    color:var(--mut); display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; box-shadow:var(--shadow);}
+  .themeBtn:hover{color:var(--ink); border-color:var(--teal);}
+  /* show the icon of the theme you'd switch TO */
+  .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
+  :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
+  :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
 
   /* ---------------- app shell ---------------- */
   .app{max-width:1160px; margin:0 auto; padding:var(--sp-3) 20px 48px;
@@ -71,7 +107,7 @@
   .side{position:sticky; top:var(--sp-2); display:flex; flex-direction:column; gap:var(--sp-2); align-self:start;}
 
   .tester-banner{margin:0 0 var(--sp-2); padding:10px 14px; border-radius:var(--r-md); font-size:12.5px; font-weight:700; line-height:1.4;
-    color:#FFDFA3; background:rgba(242,182,50,.10); border:1px solid rgba(242,182,50,.35);}
+    color:var(--banner-ink); background:rgba(242,182,50,.12); border:1px solid rgba(242,182,50,.38);}
   .tester-banner[hidden]{display:none;}
   .tester-banner b{font-weight:900; color:var(--gold);}
 
@@ -90,7 +126,7 @@
   .dot.used{background:var(--red); border-color:var(--red);}
   .dot.pop{transform:scale(1.3);}
   .progress{margin-top:14px; font-size:12px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut);}
-  .progress b{color:var(--teal); font-weight:900;}
+  .progress b{color:var(--tealT); font-weight:900;}
 
   /* ---------------- sidebar: actions ---------------- */
   .actionsCard{padding:14px; display:flex; flex-direction:column; gap:10px;}
@@ -134,7 +170,7 @@
   .board{display:flex; flex-direction:column; gap:var(--sp-1); margin-bottom:var(--sp-3);}
   .lane{border:1px solid var(--line); border-left:4px solid var(--lc); border-radius:var(--r-md); background:var(--card);
     box-shadow:var(--shadow); padding:10px 12px 12px; transition:border-color .2s, background .3s;}
-  .lane.drop{border-color:var(--teal); background:#12283F;}
+  .lane.drop{border-color:var(--teal); background:var(--dropbg);}
   .lane.drop .slot:not(.filled){border-color:var(--teal); background:rgba(55,197,213,.07);}
   .lane.locked{background:linear-gradient(180deg, color-mix(in srgb, var(--lc) 14%, var(--card)), var(--card)); border-color:color-mix(in srgb, var(--lc) 55%, transparent);}
   .lane.bad{animation:shake .4s; border-color:var(--red);}
@@ -148,7 +184,7 @@
   .lane-check{margin-left:auto; color:var(--lc); font-weight:900; font-size:12.5px; display:none;}
   .lane.locked .lane-check{display:inline;} .lane.locked .lane-sport{display:none;}
   .slots{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
-  .slot{min-height:56px; border-radius:var(--r-sm); border:1.5px dashed var(--line2); background:rgba(244,247,251,.02);
+  .slot{min-height:56px; border-radius:var(--r-sm); border:1.5px dashed var(--line2); background:var(--slotbg);
     display:flex; align-items:center; justify-content:center; padding:3px; text-align:center; position:relative; overflow:hidden; transition:border-color .15s, background .15s;}
   .slot:not(.filled)::after{content:"+"; color:var(--line2); font-size:20px; font-weight:800; line-height:1;}
   .slot.filled{border-style:solid; border-color:transparent; background:transparent; padding:0;}
@@ -160,8 +196,8 @@
   .checkbtn:active{transform:translateY(1px);}
   .checkbtn:disabled{background:var(--card2); color:var(--mut); cursor:default; filter:none;}
   .lane-note{margin-top:9px; font-size:12.5px; font-weight:800; border-radius:var(--r-sm); padding:8px 12px; line-height:1.35;}
-  .lane-note.close{background:rgba(242,182,50,.12); color:var(--gold); border:1px solid rgba(242,182,50,.35);}
-  .lane-note.miss{background:rgba(255,98,95,.10); color:var(--red); border:1px solid rgba(255,98,95,.35);}
+  .lane-note.close{background:rgba(242,182,50,.12); color:var(--goldT); border:1px solid rgba(242,182,50,.35);}
+  .lane-note.miss{background:rgba(255,98,95,.10); color:var(--redT); border:1px solid rgba(255,98,95,.35);}
 
   /* ---------------- tiles ---------------- */
   .tile{width:100%; height:100%; min-height:52px; min-width:0; border-radius:var(--r-sm); border:1px solid var(--line2);
@@ -172,7 +208,7 @@
   .tile .tn{display:block; width:100%;}
   .tile:hover{border-color:rgba(55,197,213,.55);}
   .tile:active{cursor:grabbing;}
-  .tile.sel{border-color:var(--teal); box-shadow:0 0 0 2px rgba(55,197,213,.45), 0 6px 14px -8px rgba(0,0,0,.6); transform:translateY(-2px); background:#1A3350;}
+  .tile.sel{border-color:var(--teal); box-shadow:0 0 0 2px rgba(55,197,213,.45), 0 6px 14px -8px rgba(0,0,0,.6); transform:translateY(-2px); background:var(--card3);}
   .tile.locked{background:var(--lc); color:#071426; border-color:transparent; cursor:default; font-weight:900; box-shadow:none;}
   .tile.ghost{opacity:.28;}
   .tile.solvefill{background:transparent; color:var(--mut); border-style:dashed; cursor:default; box-shadow:none;}
@@ -183,7 +219,7 @@
   /* ---------------- pool ---------------- */
   .pool-h{display:flex; align-items:baseline; gap:10px; margin:0 2px 10px;}
   .pool-h .t{font-family:var(--hero); font-weight:400; letter-spacing:.04em; text-transform:uppercase; font-size:16px; color:var(--ink);}
-  .pool-h .n{font-size:11.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--teal);}
+  .pool-h .n{font-size:11.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--tealT);}
   .pool{display:grid; grid-template-columns:repeat(5,1fr); gap:9px; min-height:52px;}
   .pool .tile{min-height:60px;}
   .pool.drop{outline:2px dashed var(--teal); outline-offset:4px; border-radius:var(--r-md);}
@@ -207,7 +243,7 @@
   .strip{display:flex; justify-content:center; gap:6px; margin:16px 0 4px;}
   .strip .b{width:34px; height:12px; border-radius:3px;}
   .strip-cap{text-align:center; font-size:10.5px; color:var(--mut); font-weight:700; letter-spacing:.04em; margin-top:6px;}
-  .coinline{text-align:center; margin:15px 0 4px; font-weight:900; font-size:14px; color:var(--gold);}
+  .coinline{text-align:center; margin:15px 0 4px; font-weight:900; font-size:14px; color:var(--goldT);}
   .rcta{display:flex; gap:9px; margin-top:16px;}
   .rcta .btn{flex:1; padding:13px;}
   .btn{appearance:none; border:1px solid var(--line2); background:var(--card2); color:var(--ink);
@@ -218,17 +254,17 @@
   .btn.primary{background:var(--coral); color:#071426; border-color:transparent;}
   .btn.primary:hover{filter:brightness(1.05);}
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0;
-    background:#F4F7FB; color:#071426; font-weight:800; font-size:13px;
+    background:var(--inv-bg); color:var(--inv-ink); font-weight:800; font-size:13px;
     padding:11px 16px; border-radius:var(--r-md); z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.8);}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
 
   /* centered popup (hint reveal) */
   .popup{position:fixed; left:50%; top:36%; transform:translate(-50%,-50%) scale(.88); opacity:0; z-index:90; text-align:center;
-    background:#F4F7FB; color:#071426;
+    background:var(--inv-bg); color:var(--inv-ink);
     font-weight:900; font-size:17px; padding:15px 24px; border-radius:13px; box-shadow:0 24px 60px -20px rgba(0,0,0,.7);
     pointer-events:none; transition:opacity .18s ease, transform .18s ease;}
   .popup.on{opacity:1; transform:translate(-50%,-50%) scale(1);}
-  .popup .sub{display:block; font-size:12.5px; font-weight:700; color:#3d4c5e; margin-top:4px;}
+  .popup .sub{display:block; font-size:12.5px; font-weight:700; color:var(--inv-mut); margin-top:4px;}
 
   /* ---------------- dopamine: confetti ---------------- */
   .confetti{position:fixed; inset:0; pointer-events:none; z-index:100; overflow:hidden;}
@@ -247,7 +283,7 @@
   /* ---------------- dopamine: countdown + milestone ---------------- */
   .countdown{text-align:center; margin:13px 0 2px; font-size:12px; font-weight:800; color:var(--mut);}
   .countdown b{color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:.01em;}
-  .milestone{display:none; text-align:center; margin:14px 0 2px; font-weight:900; font-size:13.5px; color:var(--coral);}
+  .milestone{display:none; text-align:center; margin:14px 0 2px; font-weight:900; font-size:13.5px; color:var(--coralT);}
   .milestone.on{display:block; animation:flpop .5s ease;}
 
   /* ---------------- stats modal ---------------- */
@@ -256,7 +292,7 @@
   .sheet .sub-h{text-align:center; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); margin-bottom:14px;}
   .statgrid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:4px 0 2px;}
   .statgrid .rstat .v{font-size:23px;}
-  .perfline{text-align:center; margin:14px 0 2px; font-weight:900; font-size:13px; color:var(--gold);}
+  .perfline{text-align:center; margin:14px 0 2px; font-weight:900; font-size:13px; color:var(--goldT);}
   .dist{margin:16px 0 2px;}
   .dist h4{font-size:11px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:0 0 11px;}
   .distrow{display:flex; align-items:center; gap:9px; margin-bottom:7px; font-size:12px; font-weight:900;}
@@ -296,7 +332,7 @@
     .mstatus .mdots .dots{margin-top:4px;}
     .mstatus .dot{width:12px; height:12px;}
     .mstatus .mprog{font-size:11px; font-weight:900; color:var(--mut); letter-spacing:.06em; text-transform:uppercase;}
-    .mstatus .mprog b{color:var(--teal);}
+    .mstatus .mprog b{color:var(--tealT);}
     .slots{grid-template-columns:repeat(2,1fr);}
     .slot{min-height:48px;}
     .pool{grid-template-columns:repeat(2,1fr);}
@@ -321,6 +357,10 @@
         </div>
         <div class="explain">Sort 20 sports names into five hidden groups of four.</div>
       </div>
+      <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
+        <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+      </button>
       <div class="stat streak tap" id="streakStat" role="button" tabindex="0" title="Your stats" aria-label="Open your stats">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9zM12.5 19c-1.8 0-3.2-1.4-3.2-3.2 0-1.5 1-2.5 2-3.5.7-.7 1.4-1.5 1.8-2.4 1.5 1.3 2.7 3.5 2.7 5.9 0 1.8-1.5 3.2-3.3 3.2z"/></svg>
         <span id="streakVal">0</span>
@@ -809,8 +849,49 @@
         render();
         playLockAnim(laneIdx);
         if (solveOrder.length === CATS) finish(true);
+      } else if (allFitSomeLane(ids)) {
+        // FAIRNESS: the four genuinely share an unsolved category per the DB
+        // (should be impossible on zero-trap boards; covers any residue).
+        // Never punish a factually correct grouping — free bounce + honesty.
+        freeMiss(laneIdx, ids, allFitSomeLane(ids));
       } else {
         registerMiss(laneIdx, ids);
+      }
+    }
+
+    // does this exact four fully satisfy some unsolved lane's category per the
+    // DB (tiles carry their `fits` list)? Returns that lane meta or null.
+    function allFitSomeLane(ids) {
+      var tiles = ids.map(function (id) { return byId[id]; });
+      for (var i = 0; i < day.lanes.length; i++) {
+        var l = day.lanes[i];
+        if (usedCat(l.id)) continue;
+        var all = tiles.every(function (t) {
+          var f = null;
+          day.tiles.some(function (bt) { if (bt.id === t.id) { f = bt.fits; return true; } return false; });
+          return f && f.indexOf(l.id) !== -1;
+        });
+        if (all) return l;
+      }
+      return null;
+    }
+    // a factually-valid four that isn't this board's split: no guess charged
+    function freeMiss(laneIdx, ids, lane) {
+      lastMissIds[laneIdx] = ids.join(',');
+      var laneEl = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"]');
+      if (laneEl) {
+        laneEl.classList.add('bad');
+        setTimeout(function () { laneEl.classList.remove('bad'); }, 420);
+        var note = document.createElement('div');
+        note.className = 'lane-note close';
+        note.setAttribute('role', 'status');
+        note.textContent = revealedCats[lane.id]
+          ? ('True — all four fit "' + lane.name + '." But this board needs one of them in a different group. No guess used.')
+          : 'Those four do share something real — but this board needs one of them in a different group. No guess used.';
+        laneEl.appendChild(note);
+        setTimeout(function () { if (note.parentNode) note.parentNode.removeChild(note); }, 3400);
+        var cb = laneEl.querySelector('.checkbtn');
+        if (cb) { cb.disabled = true; cb.textContent = 'Change a name to re-check'; }
       }
     }
 
@@ -951,7 +1032,10 @@
     }
     function showResult(r) {
       document.getElementById('resGrade').textContent = r.grade;
-      var col = { 'A+': '#48D17A', 'A': '#48D17A', 'B': '#37C5D5', 'C': '#F2B632', 'D': '#F2B632', 'F': '#FF625F' }[r.grade];
+      var lightUI = document.documentElement.getAttribute('data-theme') === 'light';
+      var col = (lightUI
+        ? { 'A+': '#17A34A', 'A': '#17A34A', 'B': '#0E7C89', 'C': '#A87508', 'D': '#A87508', 'F': '#C4372C' }
+        : { 'A+': '#48D17A', 'A': '#48D17A', 'B': '#37C5D5', 'C': '#F2B632', 'D': '#F2B632', 'F': '#FF625F' })[r.grade];
       document.getElementById('resGrade').style.color = col;
       document.getElementById('resVerdict').textContent = VERDICTS[r.grade] || '';
       document.getElementById('resTime').textContent = fmt(r.time);
@@ -1192,6 +1276,20 @@
         return;
       }
       newBoard();
+    });
+
+    // ---- theme toggle (shared suite preference: runthegrid_theme) ----
+    function applyThemeMeta() {
+      var t = document.documentElement.getAttribute('data-theme');
+      var m = document.getElementById('themeMeta');
+      if (m) m.setAttribute('content', t === 'light' ? '#EEF2F7' : '#071426');
+    }
+    applyThemeMeta();
+    document.getElementById('themeBtn').addEventListener('click', function () {
+      var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      try { LS.setItem('runthegrid_theme', next); } catch (e) {}
+      applyThemeMeta();
     });
 
     // ---- how to play: collapsed after first visit + help icon ----

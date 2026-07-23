@@ -5,7 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
 <title>RunTheGrid — Daily Sports Crossword</title>
 <meta name="robots" content="noindex, nofollow" />
-<meta name="theme-color" content="#f7f5f2" />
+<meta name="theme-color" content="#071426" id="themeMeta" />
+<script>
+/* theme boot: manual choice persists in runthegrid_theme (shared across the
+   suite); otherwise follow the system. Runs before first paint. */
+(function(){
+  var t; try{ t = localStorage.getItem('runthegrid_theme'); }catch(e){}
+  if(t !== 'light' && t !== 'dark'){
+    t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 <meta name="description" content="One sports crossword a day. Fill the grid, beat the clock, keep your streak alive — a daily crossword inside RunTheGrid on RunThe.GG." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ffffff'/%3E%3Crect x='7' y='7' width='6' height='6' fill='%23F5A623'/%3E%3Crect x='14' y='7' width='6' height='6' fill='%23182430'/%3E%3Crect x='7' y='14' width='6' height='6' fill='%23182430'/%3E%3Crect x='21' y='14' width='4' height='4' fill='%23FF5A3C'/%3E%3Crect x='14' y='14' width='6' height='6' fill='%23F5A623'/%3E%3Crect x='7' y='21' width='6' height='6' fill='%23FF5A3C'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -13,14 +24,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 <style>
 :root{
-  --bg:#f7f5f2; --card:#ffffff; --panel:#ffffff; --panel2:#faf8f5;
-  --line:rgba(24,36,48,.10); --line2:rgba(24,36,48,.16);
-  --ink:#182430; --mut:#5c6b7a; --dim:#8b98a6;
-  --coral:#FF5A3C; --coral-d:#ec4325; --gold:#F5A623; --violet:#7C5CF0;
-  --green:#1f8b39; --red:#d23a22; --amber:#F5A623; --blue:#2F6BFF;
+  /* dark navy system (matches the Daily Match redesign) */
+  --bg:#071426; --card:#10233A; --panel:#10233A; --panel2:#162B44;
+  --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
+  --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
+  --coral:#F06A5F; --coral-d:#D8452F; --gold:#F2B632; --violet:#A982F3;
+  --green:#48D17A; --red:#FF625F; --amber:#F2B632; --blue:#2F6BFF;
+  /* text-safe accent variants (meet contrast on the current surface) */
+  --coralT:#F06A5F; --goldT:#F2B632; --redT:#FF625F;
+  /* inverse chrome (toast) */
+  --inv-bg:#F4F7FB; --inv-ink:#071426;
   /* text aliases (kept for existing rules) */
-  --cream:#182430; --cream-dim:#5c6b7a; --gold-bright:#FF5A3C;
-  /* ---- crossword grid cells: KEEP light/white ---- */
+  --cream:#F4F7FB; --cream-dim:#A9B8CB; --gold-bright:#F06A5F;
+  /* ---- crossword grid cells: constant in BOTH themes (paper-white grid) ---- */
   --cell:#ffffff; --cell-line:rgba(10,20,32,.16);   /* fillable cells are white */
   --grid-line:#2b3a4d;          /* dark lines between white cells */
   --sel:#ffd34d;                 /* selected cell */
@@ -29,7 +45,16 @@
   --pix:'Rubik', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --term:'Rubik', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --brandf:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --shadow:0 14px 34px -20px rgba(24,36,48,.4);
+  --shadow:0 6px 18px -10px rgba(0,0,0,.55);
+}
+:root[data-theme="light"]{
+  --bg:#EEF2F7; --card:#FFFFFF; --panel:#FFFFFF; --panel2:#F1F5FA;
+  --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
+  --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
+  --coralT:#D8452F; --goldT:#A87508; --redT:#C4372C;
+  --inv-bg:#0D1B2C; --inv-ink:#F4F7FB;
+  --cream:#0D1B2C; --cream-dim:#51637A; --gold-bright:#D8452F;
+  --shadow:0 6px 18px -12px rgba(13,27,44,.25);
 }
 /* touch-action:manipulation kills the mobile double-tap-to-zoom gesture (which
    fires constantly when tapping keys/cells fast) while keeping single taps,
@@ -37,11 +62,7 @@
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
 html,body{margin:0; padding:0;}
 body{
-  background:
-    radial-gradient(70% 40% at 8% -6%, rgba(255,90,60,.10), transparent 60%),
-    radial-gradient(60% 40% at 100% 0%, rgba(124,92,240,.10), transparent 60%),
-    linear-gradient(180deg,#faf8f5,#f2f0ec);
-  background-attachment:fixed;
+  background:var(--bg);
   color:var(--ink); font-family:var(--term); font-size:16px; line-height:1.45; font-weight:500;
   min-height:100dvh; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
   display:flex; justify-content:center;
@@ -55,15 +76,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
 .icon-btn{background:transparent; border:0; padding:5px; font-size:22px; line-height:1; color:var(--ink); text-decoration:none; flex:0 0 auto;}
 .brand{font-family:var(--brandf); font-size:17px; font-style:italic; letter-spacing:-.01em; font-weight:900; color:var(--ink); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-.brand .b2{color:var(--coral);}
+.brand .b2{color:var(--coralT);}
 .brand .sub{display:block; font-family:var(--pix); font-size:8px; font-style:normal; letter-spacing:2px; color:var(--mut); margin-top:3px; font-weight:800;}
 .spacer{flex:1;}
 .chip{display:flex; flex-direction:column; align-items:center; gap:1px; background:var(--card); flex:0 0 auto;
   border:1px solid var(--line2); border-radius:10px; padding:5px 10px; box-shadow:var(--shadow); min-width:54px;}
 .chip .n{font-family:var(--pix); font-size:13px; font-weight:800; color:var(--ink);}
 .chip .l{font-family:var(--pix); font-size:7px; color:var(--mut); letter-spacing:.5px; font-weight:700;}
-.chip.streak .n{color:var(--coral);}
-.chip.timer .n{color:var(--coral); font-variant-numeric:tabular-nums;}
+.chip.streak .n{color:var(--coralT);}
+.chip.timer .n{color:var(--coralT); font-variant-numeric:tabular-nums;}
 
 /* ---------- info bar ---------- */
 .inforow{display:flex; align-items:center; justify-content:space-between; gap:8px;
@@ -72,7 +93,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .inforow .seg{font-family:var(--pix); font-size:10px; letter-spacing:.4px; font-weight:800; color:var(--ink);}
 .inforow .seg small{color:var(--mut); font-weight:700;}
 .inforow .sep{width:1px; height:18px; background:var(--line2);}
-.inforow .size{color:var(--coral);}
+.inforow .size{color:var(--coralT);}
 
 /* ---------- grid ---------- */
 .board-wrap{position:relative; margin-bottom:12px;}
@@ -102,7 +123,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 @keyframes boardShake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(4px);}}
 /* toast (sits above the sticky keyboard) */
 .cw-toast{position:fixed; left:50%; bottom:90px; transform:translateX(-50%) translateY(16px); opacity:0;
-  background:#182430; color:#fff; font-weight:700; font-size:13px; line-height:1.35; padding:11px 16px; border-radius:11px;
+  background:var(--inv-bg); color:var(--inv-ink); font-weight:700; font-size:13px; line-height:1.35; padding:11px 16px; border-radius:11px;
   z-index:70; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.6); max-width:86%; text-align:center;}
 .cw-toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
 @media (prefers-reduced-motion: reduce){ .cell.wordpop{animation:none;} .board.shake{animation:none;} .confetti{display:none;} }
@@ -112,9 +133,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   background:var(--card); border:1px solid var(--line2); border-radius:12px; overflow:hidden; box-shadow:var(--shadow);}
 .cluebar .arw{flex:0 0 auto; background:var(--panel2); border:0; color:var(--ink); font-size:18px; width:40px;
   display:flex; align-items:center; justify-content:center;}
-.cluebar .arw:active{background:#ece9e3;}
+.cluebar .arw:active{background:var(--line2);}
 .cluebar .body{flex:1; min-width:0; padding:9px 12px; display:flex; flex-direction:column; justify-content:center;}
-.cluebar .tag{font-family:var(--pix); font-size:8px; letter-spacing:1px; font-weight:800; color:var(--coral); text-transform:uppercase;}
+.cluebar .tag{font-family:var(--pix); font-size:8px; letter-spacing:1px; font-weight:800; color:var(--coralT); text-transform:uppercase;}
 .cluebar .txt{font-size:15px; font-weight:600; line-height:1.3; color:var(--ink);}
 
 /* ---------- controls ---------- */
@@ -122,12 +143,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .controls button{flex:1; background:var(--card); border:1px solid var(--line2); border-radius:10px;
   padding:10px 4px; font-size:12px; font-weight:800; color:var(--ink); box-shadow:var(--shadow);
   display:flex; align-items:center; justify-content:center; gap:6px;}
-.controls button:active{transform:translateY(1px); box-shadow:0 2px 8px -4px rgba(24,36,48,.4); border-color:var(--coral); color:var(--coral);}
+.controls button:active{transform:translateY(1px); box-shadow:0 2px 8px -4px rgba(24,36,48,.4); border-color:var(--coralT); color:var(--coralT);}
 .controls button .em{font-size:14px;}
 
 /* ---------- clue lists ---------- */
 .lists{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;}
-.list h3{font-family:var(--pix); font-size:11px; letter-spacing:1px; font-weight:800; color:var(--coral);
+.list h3{font-family:var(--pix); font-size:11px; letter-spacing:1px; font-weight:800; color:var(--coralT);
   margin:0 0 6px; text-transform:uppercase;}
 .list ol{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px;}
 .list li{display:flex; gap:7px; padding:6px 8px; border-radius:8px; font-size:13px; line-height:1.25; cursor:pointer; color:var(--ink);}
@@ -138,17 +159,17 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
 /* ---------- on-screen keyboard ---------- */
 .kbd{position:sticky; bottom:0; padding:8px 0 4px; margin:0 -2px;
-  background:linear-gradient(180deg,transparent, #f2f0ec 22%);}
+  background:linear-gradient(180deg,transparent, var(--bg) 22%);}
 .krow{display:flex; justify-content:center; gap:5px; margin-bottom:6px;}
 .key{flex:1 1 0; max-width:34px; height:44px; background:var(--card); border:1px solid var(--line2);
   border-radius:8px; font-family:var(--pix); font-weight:800; font-size:15px; color:var(--ink);
-  display:flex; align-items:center; justify-content:center; box-shadow:0 2px 0 rgba(24,36,48,.14);}
-.key:active{transform:translateY(1px); box-shadow:none; background:#f2f0ec;}
+  display:flex; align-items:center; justify-content:center; box-shadow:0 2px 0 rgba(0,0,0,.3);}
+.key:active{transform:translateY(1px); box-shadow:none; background:var(--panel2);}
 .key.wide{flex:1.6 1 0; max-width:58px; font-size:11px; color:var(--mut);}
-.key.del{color:var(--red);}
+.key.del{color:var(--redT);}
 
 /* ---------- modal ---------- */
-.scrim{position:fixed; inset:0; background:rgba(24,36,48,.45); backdrop-filter:blur(3px);
+.scrim{position:fixed; inset:0; background:rgba(3,9,18,.66); backdrop-filter:blur(3px);
   display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;}
 .modal{width:100%; max-width:360px; background:var(--card); border:1px solid var(--line2); border-radius:16px;
   box-shadow:0 24px 60px -18px rgba(24,36,48,.5); padding:22px 20px; text-align:center;}
@@ -156,12 +177,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .modal h2{font-family:var(--pix); font-size:19px; font-weight:800; letter-spacing:.5px; margin:8px 0 2px; color:var(--ink);}
 .modal p{color:var(--mut); font-size:14px; margin:0 0 16px;}
 .statgrid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:18px;}
-.statgrid .box{background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:12px 4px;}
-.statgrid .v{font-family:var(--pix); font-size:18px; font-weight:800; color:var(--coral);}
+.statgrid .box{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:12px 4px;}
+.statgrid .v{font-family:var(--pix); font-size:18px; font-weight:800; color:var(--coralT);}
 .statgrid .k{font-size:9px; letter-spacing:1px; color:var(--mut); text-transform:uppercase; margin-top:4px; font-weight:700;}
 .modal .btn{width:100%; border:0; border-radius:12px; padding:13px; font-family:var(--pix); font-weight:800; font-size:14px;
   letter-spacing:.5px; margin-top:8px; box-shadow:var(--shadow); color:var(--ink);}
-.modal .btn.gold{background:var(--coral); color:#fff; box-shadow:0 12px 24px -14px var(--coral);}
+.modal .btn.gold{background:var(--coral); color:#071426; box-shadow:0 12px 24px -14px var(--coral);}
 .modal .btn.ghost{background:var(--card); border:1px solid var(--line2); color:var(--ink); box-shadow:none;}
 .share-grid{font-family:monospace; font-size:22px; line-height:1.05; letter-spacing:2px; margin:2px 0 16px;}
 
@@ -173,17 +194,23 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .flawless{display:none; margin:0 0 8px;}
 .flawless.on{display:block; animation:flpop .5s ease;}
 .flawless .rib{display:inline-flex; align-items:center; gap:7px; font-family:var(--pix); font-weight:800; font-size:10.5px;
-  letter-spacing:1.2px; text-transform:uppercase; color:#fff; background:linear-gradient(90deg,var(--coral),var(--gold));
-  padding:6px 14px; border-radius:999px; box-shadow:0 8px 22px -10px rgba(255,90,60,.85);}
+  letter-spacing:1.2px; text-transform:uppercase; color:#071426; background:linear-gradient(90deg,var(--coral),var(--gold));
+  padding:6px 14px; border-radius:999px;}
 @keyframes flpop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
 /* streak milestone banner */
-.milestone{display:none; margin:2px 0 14px; font-family:var(--pix); font-weight:800; font-size:12.5px; color:var(--coral);}
+.milestone{display:none; margin:2px 0 14px; font-family:var(--pix); font-weight:800; font-size:12.5px; color:var(--coralT);}
 .milestone.on{display:block; animation:flpop .5s ease;}
 /* live countdown */
 .countdown{margin:0 0 14px; font-size:12px; font-weight:700; color:var(--mut);}
 .countdown b{color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:.02em;}
 /* streak chip is tappable -> stats */
 .chip.tap{cursor:pointer;} .chip.tap:active{transform:translateY(1px);}
+.themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card);
+  color:var(--mut); display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; box-shadow:var(--shadow); padding:0;}
+.themeBtn:hover{color:var(--ink);}
+.themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
+:root[data-theme="light"] .themeBtn .ic-moon{display:block;}
+:root[data-theme="light"] .themeBtn .ic-sun{display:none;}
 /* stats modal specifics */
 .modal .subttl{font-family:var(--pix); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut); margin:-2px 0 15px; font-weight:800;}
 .statgrid.four{grid-template-columns:repeat(4,1fr); gap:8px;}
@@ -195,19 +222,19 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
 /* ---------- leaderboard teaser ---------- */
 .lb{background:var(--card); border:1px solid var(--line2); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); margin-bottom:14px;}
-.lb h3{font-family:var(--pix); font-size:11px; letter-spacing:1px; font-weight:800; color:var(--coral); margin:0 0 8px; text-transform:uppercase;}
+.lb h3{font-family:var(--pix); font-size:11px; letter-spacing:1px; font-weight:800; color:var(--coralT); margin:0 0 8px; text-transform:uppercase;}
 .lb .row{display:flex; align-items:center; gap:10px; padding:5px 0; font-size:13px; border-top:1px solid var(--line); color:var(--ink);}
 .lb .row:first-of-type{border-top:0;}
 .lb .rk{font-family:var(--pix); font-weight:800; color:var(--mut); width:20px;}
 .lb .who{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-.lb .tm{font-variant-numeric:tabular-nums; color:var(--coral); font-weight:700;}
-.lb .row.you{color:var(--coral);} .lb .row.you .rk,.lb .row.you .tm{color:var(--coral);}
+.lb .tm{font-variant-numeric:tabular-nums; color:var(--coralT); font-weight:700;}
+.lb .row.you{color:var(--coralT);} .lb .row.you .rk,.lb .row.you .tm{color:var(--coralT);}
 .lb .note{font-size:11px; color:var(--mut); margin-top:8px;}
 
 .foot{text-align:center; color:var(--mut); font-size:11px; padding:8px 0 2px;}
-.foot a{color:var(--coral);}
+.foot a{color:var(--coralT);}
 .pill{display:inline-block; font-size:9px; font-weight:800; letter-spacing:1px; text-transform:uppercase;
-  color:var(--coral); border:1px solid rgba(255,90,60,.4); border-radius:999px; padding:2px 8px; margin-left:6px;}
+  color:var(--coralT); border:1px solid var(--coralT); border-radius:999px; padding:2px 8px; margin-left:6px;}
 </style>
 </head>
 <body>
@@ -217,6 +244,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <a class="icon-btn" href="/grid/" aria-label="Back to RunTheGrid">‹</a>
     <div class="brand">Run<span class="b2">The</span>Grid<span class="sub">DAILY CROSSWORD</span></div>
     <div class="spacer"></div>
+    <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
+      <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+    </button>
     <div class="chip streak tap" id="streakChip" role="button" tabindex="0" title="Your stats"><span class="n" id="streakN">0</span><span class="l">STREAK</span></div>
     <div class="chip timer"><span class="n" id="timerN">0:00</span><span class="l">TIME</span></div>
   </div>
@@ -243,9 +274,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   </div>
 
   <div class="controls">
-    <button id="btnDir"><span class="em">🔁</span> Across</button>
+    <button id="btnDir"><svg class="em" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 8h11l-3.5-3.5M17 16H6l3.5 3.5"/></svg> Across</button>
     <button id="btnCheck"><span class="em">✓</span> Check</button>
-    <button id="btnReveal"><span class="em">💡</span> Reveal</button>
+    <button id="btnReveal"><svg class="em" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M1.5 12s3.8-7 10.5-7 10.5 7 10.5 7-3.8 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></svg> Reveal</button>
   </div>
 
   <div class="lists">
@@ -272,7 +303,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
 <div class="scrim hidden" id="scrim">
   <div class="modal">
-    <div class="flawless" id="mFlawless"><span class="rib">⭐ Flawless — no reveals</span></div>
+    <div class="flawless" id="mFlawless"><span class="rib"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg> Flawless — no reveals</span></div>
     <div class="trophy" id="mTrophy">🏆</div>
     <h2 id="mTitle">Solved!</h2>
     <p id="mSub">Nice grid. Your streak lives another day.</p>
@@ -285,7 +316,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <div class="milestone" id="mMilestone"></div>
     <div class="countdown" id="mCountdown"></div>
     <button class="btn gold" id="mShare">Share result</button>
-    <button class="btn ghost" id="mStats">📊 Stats</button>
+    <button class="btn ghost" id="mStats">Stats</button>
     <button class="btn ghost" id="mClose">Close</button>
   </div>
 </div>
@@ -333,11 +364,11 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     var cur = (PZI >= 0 ? PZI : 0);
     var wrap = document.querySelector('.wrap') || document.body;
     var ban = document.createElement('div');
-    ban.style.cssText = 'margin:0 0 12px;padding:9px 13px;border-radius:9px;font-size:12.5px;font-weight:700;color:#7a3a00;background:#FFF3E0;border:1px solid #FFD9A8;display:flex;gap:10px;align-items:center;flex-wrap:wrap;';
-    ban.innerHTML = '🧪 <b>Tester mode</b> — puzzle ' + (cur+1) + ' of ' + (LIST.length||1) + '.';
+    ban.style.cssText = 'margin:0 0 12px;padding:9px 13px;border-radius:9px;font-size:12.5px;font-weight:700;color:var(--goldT);background:rgba(242,182,50,.12);border:1px solid rgba(242,182,50,.38);display:flex;gap:10px;align-items:center;flex-wrap:wrap;';
+    ban.innerHTML = '<b>Tester mode</b> — puzzle ' + (cur+1) + ' of ' + (LIST.length||1) + '.';
     var btn = document.createElement('button');
-    btn.textContent = '🔁 New puzzle';
-    btn.style.cssText = 'margin-left:auto;font:inherit;font-weight:800;cursor:pointer;border:1px solid #FFD9A8;background:#fff;color:#8a4300;border-radius:8px;padding:6px 12px;';
+    btn.textContent = 'New puzzle';
+    btn.style.cssText = 'margin-left:auto;font:inherit;font-weight:800;cursor:pointer;border:1px solid rgba(242,182,50,.5);background:var(--card);color:var(--goldT);border-radius:8px;padding:6px 12px;';
     btn.onclick = function(){ location.search = '?test=1&pz=' + (((cur+1)%(LIST.length||1))); };
     ban.appendChild(btn);
     wrap.insertBefore(ban, wrap.firstChild);
@@ -432,7 +463,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       document.getElementById('clueTag').textContent = act.num + ' ' + (act.dir==='A'?'ACROSS':'DOWN');
       document.getElementById('clueTxt').textContent = act.clue;
     }
-    document.getElementById('btnDir').innerHTML = '<span class="em">🔁</span> ' + (sel.dir==='A'?'Across':'Down');
+    document.getElementById('btnDir').innerHTML = '<svg class="em" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M7 8h11l-3.5-3.5M17 16H6l3.5 3.5"/></svg> ' + (sel.dir==='A'?'Across':'Down');
     // clue lists active/done
     renderListState();
     // fill %
@@ -853,6 +884,23 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   var streakChip=document.getElementById('streakChip');
   streakChip.addEventListener('click', openStats);
   streakChip.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openStats(); } });
+
+  // ---- theme toggle (shared suite preference: runthegrid_theme) -------------
+  (function(){
+    function applyThemeMeta(){
+      var t = document.documentElement.getAttribute('data-theme');
+      var m = document.getElementById('themeMeta');
+      if(m) m.setAttribute('content', t === 'light' ? '#EEF2F7' : '#071426');
+    }
+    applyThemeMeta();
+    var tb = document.getElementById('themeBtn');
+    if(tb) tb.addEventListener('click', function(){
+      var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      try{ localStorage.setItem('runthegrid_theme', next); }catch(e){}
+      applyThemeMeta();
+    });
+  })();
 
   // ---- boot -----------------------------------------------------------------
   document.getElementById('dateSeg').innerHTML = fmtDate(P.date)+' <small>Daily</small>';
