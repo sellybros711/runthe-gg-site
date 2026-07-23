@@ -41,6 +41,7 @@
     /* text-safe accent variants (meet contrast on the current surface) */
     --tealT:#37C5D5; --goldT:#F2B632; --coralT:#F06A5F; --redT:#FF625F;
     --banner-ink:#FFDFA3;
+    --lane-neutral:#3A506B;       /* unsolved, unrevealed lane accent */
     /* inverse chrome (toast / popup) */
     --inv-bg:#F4F7FB; --inv-ink:#071426; --inv-mut:#3d4c5e;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
@@ -56,6 +57,7 @@
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
     --tealT:#0E7C89; --goldT:#A87508; --coralT:#D8452F; --redT:#C4372C;
     --banner-ink:#7A4E00;
+    --lane-neutral:#C4D0DE;
     --inv-bg:#0D1B2C; --inv-ink:#F4F7FB; --inv-mut:#B6C3D2;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
@@ -155,16 +157,9 @@
   .howto li{margin-bottom:7px;}
   .howto b{color:var(--ink);}
 
-  /* ---------------- revealed / free category ---------------- */
-  .revealed{display:flex; flex-direction:column; gap:10px; margin:0 0 var(--sp-2);}
-  .revealed:empty{display:none;}
-  .freecat{display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line);
-    border-left:4px solid var(--lc); border-radius:var(--r-md); padding:11px 14px; box-shadow:var(--shadow);}
-  .freecat .sq{flex:0 0 auto; display:grid; grid-template-columns:8px 8px; grid-template-rows:8px 8px; gap:3px;}
-  .freecat .sq i{background:var(--lc); border-radius:2px; opacity:.9;}
-  .freecat .fk{font-size:9.5px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--mut); display:block;}
-  .freecat .fn{font-weight:900; font-size:15px; color:var(--ink); line-height:1.2;}
-  .freecat .fhint{margin-left:auto; font-size:11px; color:var(--mut); font-weight:700; text-align:right; max-width:150px;}
+  /* revealed-category label pill shown on a lane header */
+  .lane-pill{font-size:9px; font-weight:900; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--lc); border:1px solid var(--lc); border-radius:999px; padding:2px 8px; flex:0 0 auto;}
 
   /* ---------------- group boards ---------------- */
   .board{display:flex; flex-direction:column; gap:var(--sp-1); margin-bottom:var(--sp-3);}
@@ -337,7 +332,6 @@
     .slot{min-height:48px;}
     .pool{grid-template-columns:repeat(2,1fr);}
     .pool .tile{min-height:56px; font-size:13px;}
-    .freecat .fhint{display:none;}
     .rgrade .g{font-size:62px;}
     .statgrid .rstat .v{font-size:20px;}
   }
@@ -389,7 +383,6 @@
         <div class="mprog" id="progressM"><b>0</b> / 5 solved</div>
       </div>
 
-      <div class="revealed" id="revealed"></div>
       <div class="board" id="board" role="list" aria-label="Five group boards"></div>
 
       <div class="pool-h">
@@ -629,6 +622,12 @@
     }
 
     function render() {
+      // revealed-but-unsolved categories label lanes from the top down (the
+      // free one lands on Group 1). Labels are display-only: any valid four
+      // still locks in any lane, so a label may move if its lane solves as
+      // something else.
+      var revealedQueue = day.lanes.filter(function (l) { return revealedCats[l.id] && !usedCat(l.id); });
+      var revPtr = 0;
       // lanes
       boardEl.innerHTML = '';
       for (var i = 0; i < 5; i++) {
@@ -639,17 +638,23 @@
         var isLocked = !!locked[i];
         var cat = laneCat[i] != null ? laneById[laneCat[i]] : null;
 
-        var showHeader = isLocked;   // categories stay hidden until a lane is solved
-        var color = cat ? cat.color : PALETTE[i];
+        // colour only when something is KNOWN about the lane: solved, or
+        // carrying a revealed-category label. Otherwise stay neutral.
+        var revLabel = (!isLocked && revPtr < revealedQueue.length) ? revealedQueue[revPtr++] : null;
+        var color = isLocked && cat ? cat.color : (revLabel ? revLabel.color : 'var(--lane-neutral)');
         lane.style.setProperty('--lc', color);
         if (isLocked) lane.classList.add('locked');
 
         var head = document.createElement('div');
         head.className = 'lane-head';
-        if (showHeader && cat) {
+        if (isLocked && cat) {
           head.innerHTML = '<span class="lane-chip"></span><span class="lane-name">' + escapeHtml(cat.name) + '</span>' +
             '<span class="lane-sport">' + (cat.sport === 'multi' ? 'Multi-sport' : cat.sport) + '</span>' +
             '<span class="lane-check">✓ Locked</span>';
+        } else if (revLabel) {
+          head.innerHTML = '<span class="lane-chip"></span><span class="lane-name">' + escapeHtml(revLabel.name) + '</span>' +
+            '<span class="lane-pill">' + (day.lanes[0] && revLabel.id === day.lanes[0].id ? 'Free' : 'Revealed') + '</span>' +
+            '<span class="lane-sport">' + laneFillCount(i) + ' / 4 players</span>';
         } else {
           lane.classList.add('lane-hidden');
           head.innerHTML = '<span class="lane-chip"></span>' +
@@ -713,7 +718,6 @@
       document.getElementById('poolCount').textContent = poolTiles.length;
       attachPoolDrop();
       renderDots();
-      renderRevealed();
       updateHintBtn();
       updateProgress();
     }
@@ -750,21 +754,6 @@
       if (p) p.innerHTML = '<b>' + n + '</b> / ' + CATS + ' groups solved';
       var m = document.getElementById('progressM');
       if (m) m.innerHTML = '<b>' + n + '</b> / ' + CATS + ' solved';
-    }
-
-    // revealed categories (free foothold + hints) shown as featured clue cards
-    function renderRevealed() {
-      var el = document.getElementById('revealed'); el.innerHTML = '';
-      var freeId = day.lanes[0] ? day.lanes[0].id : null;
-      day.lanes.forEach(function (l) {
-        if (!revealedCats[l.id] || usedCat(l.id)) return;
-        var c = document.createElement('div'); c.className = 'freecat'; c.style.setProperty('--lc', l.color);
-        var kind = (l.id === freeId) ? 'Free category' : 'Revealed category';
-        c.innerHTML = '<span class="sq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>' +
-          '<span><span class="fk">' + kind + '</span><span class="fn">' + escapeHtml(l.name) + '</span></span>' +
-          '<span class="fhint">Its four names are still in play</span>';
-        el.appendChild(c);
-      });
     }
 
     // ---- interaction ----
