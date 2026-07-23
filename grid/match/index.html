@@ -21,7 +21,9 @@
     --hero:'Anton', Impact, sans-serif;
     --body:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  /* touch-action:manipulation disables mobile double-tap-to-zoom on fast taps
+     (tiles keep touch-action:none below for dragging; that still wins). */
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
   html,body{margin:0;padding:0;}
   body{
     font-family:var(--body); color:var(--ink); min-height:100dvh; -webkit-font-smoothing:antialiased;
