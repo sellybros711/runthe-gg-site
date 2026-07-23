@@ -21289,7 +21289,17 @@ function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=
    +'.pwcell.pwwin{box-shadow:0 0 0 2px currentColor,0 0 22px currentColor}'
    +'@keyframes pwwinpop{0%{transform:scale(1)}45%{transform:scale(1.09)}100%{transform:scale(1)}}'
    +'.pwcell.pwlit{animation:pwwinpop .55s ease}'
-   +'@media(prefers-reduced-motion:reduce){.pcard-inner,.pcard.win,.pwstrip,.pwcell.pwlit{transition:none!important;animation:none!important}}';
+   // CS-bundle — prominent tier-accented 5-Pack Bundle button
+   +'.pkbundle{width:100%;margin:8px 0 0;padding:10px 12px;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;position:relative;overflow:hidden;color:#eaf3ec;background:linear-gradient(115deg,rgba(255,255,255,.07),rgba(0,0,0,.24));border:1.6px solid var(--pkc,var(--gold));box-shadow:0 0 16px -5px var(--pkc,var(--gold)),inset 0 1px 0 rgba(255,255,255,.08)}'
+   +'.pkbundle:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.11) 50%,transparent 58%);background-size:240% 100%;animation:foilSweep 4.6s ease-in-out 1.2s infinite}'
+   +'.pkb-title{display:flex;align-items:center;gap:6px;font:800 13.5px var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--pkc,var(--gold))}'
+   +'.pkb-sub{display:block;font:700 10px var(--body);color:#a9c2b3;margin-top:2px}'
+   +'.pkb-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:0 0 auto}'
+   +'.pkb-price{display:flex;align-items:center;gap:5px;font:800 14.5px var(--body);color:#fff}'
+   +'.pkb-save{font:800 9.5px var(--body);letter-spacing:.08em;padding:2px 8px;border-radius:999px;background:rgba(65,222,166,.14);border:1px solid rgba(65,222,166,.55);color:#41dea6;text-transform:uppercase;white-space:nowrap}'
+   +'.pkbundle:disabled{opacity:.5;cursor:default;box-shadow:none}'
+   +'.pkbundle:disabled:after{display:none}'
+   +'@media(prefers-reduced-motion:reduce){.pkbundle:after{animation:none;background:none}.pcard-inner,.pcard.win,.pwstrip,.pwcell.pwlit{transition:none!important;animation:none!important}}';
   document.head.appendChild(st); }
 // CS404 — the pack-opening WHEEL SPIN (replaces the 3-card pick). One item is already decided (rollPackWin,
 // odds unchanged); the reel scrolls and decelerates onto it under a center pointer, then reveals it.
@@ -21527,7 +21537,11 @@ function packShopNode(){
     openBtn.onclick=function(){ startPackDeal({pack:id}); };
     card.appendChild(openBtn);
     var bprice=packBundlePriceFor(id), baff=bal>=bprice;
-    var bBtn=$('<button class="btn ghost" style="width:100%;margin:6px 0 0;font-size:12.5px"'+(baff?'':' disabled')+'>'+PACK_BUNDLE_N+'-Pack Bundle · '+coinFmt(bprice)+' (save '+coinFmt(pt.price)+')</button>');
+    var bBtn=$('<button class="pkbundle" style="--pkc:'+pt.col+'"'+(baff?'':' disabled')+'>'
+      +'<span class="pkb-left"><span class="pkb-title">\ud83c\udf81 '+PACK_BUNDLE_N+'-Pack Bundle</span>'
+      +'<span class="pkb-sub">Best value \u00b7 '+PACK_BUNDLE_N+' packs for the price of '+PACK_BUNDLE_PAY+'</span></span>'
+      +'<span class="pkb-right"><span class="pkb-price"><span style="width:15px;height:15px;display:inline-flex">'+ic('coin',{size:'15px'})+'</span>'+coinFmt(bprice)+'</span>'
+      +'<span class="pkb-save">Save '+coinFmt(pt.price)+'</span></span></button>');
     bBtn.onclick=function(){ startPackBundle(id); };
     card.appendChild(bBtn);
     wrap.appendChild(card);
