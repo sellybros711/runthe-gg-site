@@ -7342,6 +7342,7 @@ function openPlayerCardRow(reg){ if(!reg) return; const r=reg.r||{};
     sec:{label:secLab,rows}, uid:(!you&&r.user_id)?r.user_id:null, guest:!r.user_id, self:you };
   if(you){ try{ S.cardView.lt=_selfLifetime(); }catch(e){} }
   else if(r.user_id) loadPlayerCardStats(r.user_id);
+  S.cardReturn=(S.overlay&&S.overlay!=='playercard')?S.overlay:null;   // close returns to the board you tapped from
   S.overlay='playercard'; render();
   track('player_card_open',{kind:reg.kind,self:you});
 }
@@ -7362,6 +7363,7 @@ function openPlayerCardSelf(){
   S.cardView={ name:sbUsername||S.name||'Your Golfer', look:S.look||DEFLOOK, rep:rp,
     ovr, arch:archN, golfer:S.name||null, sec:rows.length?{label:'This Career',rows}:null,
     uid:null, guest:false, self:true, lt:_selfLifetime() };
+  S.cardReturn=(S.overlay&&S.overlay!=='playercard')?S.overlay:null;
   S.overlay='playercard'; render();
   track('player_card_open',{kind:'self',self:true});
 }
@@ -7451,7 +7453,7 @@ function overlayPlayerCard(app){
   </div>`);
   const card=ov.querySelector('.pcard3d');
   card.onclick=(e)=>{ e.stopPropagation(); S.cardFlipped=!S.cardFlipped; card.classList.toggle('flipped',S.cardFlipped); };
-  const close=()=>{ S.overlay=null; S.cardView=null; render(); };
+  const close=()=>{ S.overlay=S.cardReturn||null; S.cardReturn=null; S.cardView=null; render(); };
   ov.querySelector('.pcx').onclick=close;
   ov.addEventListener('click',(e)=>{ if(e.target===ov) close(); });
   app.appendChild(ov);
@@ -22560,6 +22562,7 @@ function overlayCourseRecords(screen){
   const today=S.dailyCourse||dailyCourseKey(todayKey());
   const todaySeed=S.dailySeed||todayKey();
   const tab=(S.crTab==='legend'||S.crTab==='streaks'||S.crTab==='all')?S.crTab:'human';
+  _pcRows.length=0;   // player-card tap registry rebuilds with this overlay (owner: cards open here too)
   if(sb){
     if(tab==='human'){ if(crCache===null) crLoad(); if(dbCache===null||dbCache.day!==todaySeed) dbLoad(todaySeed); }
     else if(tab==='all'){ if(crCache===null) crLoad(); }
@@ -22610,13 +22613,15 @@ function overlayCourseRecords(screen){
       // owner: a top-3 podium like the other leaderboards; the ranked list then starts at #4 (CS505)
       let podHTML='';
       if(boardCache.rows.length>=3){ const rws=boardCache.rows, pod=[rws[1],rws[0],rws[2]], cls=['p2','p1','p3'], med=['🥈','🥇','🥉'];
-        podHTML='<div class="lbpodium">'+pod.map((r,di)=>`<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML((sbUser&&r.user_id===sbUser.id)?(S.look||DEFLOOK):(r.look||DEFLOOK), di===1?74:56)}</div><div class="nm">${esc(r.display_name)}</div><div class="vl">${dTot(r.to_par,(DAILY_COURSES[today]||{}).par)}</div><div class="rk">OVR ${r.ovr}</div></div>`).join('')+'</div>'; }
+        podHTML='<div class="lbpodium">'+pod.map((r,di)=>{ const pc=pcReg(Object.assign({course_key:today},r), r.display_name, 'daily');
+        return `<div class="lbpod ${cls[di]}" data-pc="${pc}" role="button" tabindex="0" style="cursor:pointer" aria-label="View ${esc(r.display_name)}’s player card"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML((sbUser&&r.user_id===sbUser.id)?(S.look||DEFLOOK):(r.look||DEFLOOK), di===1?74:56)}</div><div class="nm">${esc(r.display_name)}</div><div class="vl">${dTot(r.to_par,(DAILY_COURSES[today]||{}).par)}</div><div class="rk">OVR ${r.ovr}</div></div>`; }).join('')+'</div>'; }
       // owner: EVERY posted entry shows (no display cap); avatar left of the name, archetype right of the OVR
       boardHTML=podHTML+`<div class="board">`+boardCache.rows.slice(podHTML?3:0).map(r=>{
         const you=(sbUser&&r.user_id===sbUser.id);
         const fullSk=(r.skills && CATS.every(c=>typeof r.skills[c.k]==='number'));
         const arch=fullSk?archetype(r.skills):null;
-        return `<div class="lb ${you?'you':''}" style="grid-template-columns:30px 34px 1fr auto">
+        const pc=pcReg(Object.assign({course_key:today},r), r.display_name, 'daily');
+        return `<div class="lb ${you?'you':''}" data-pc="${pc}" role="button" tabindex="0" aria-label="View ${esc(r.display_name)}’s player card" style="grid-template-columns:30px 34px 1fr auto;cursor:pointer">
         <span class="pos">${r.rank===1?'🏆':r.rank}</span>
         <span style="display:flex;align-items:center">${pxAvatarChip(you?(S.look||DEFLOOK):(r.look||DEFLOOK),30)}</span>
         <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.display_name)}</div><div class="small muted" style="font-size:10px">OVR ${r.ovr}${arch?' · '+esc(arch.name):''}${r.won?' · <span style="color:#35d6a0">beat the pro</span>':''}</div></span>
@@ -22640,6 +22645,8 @@ function overlayCourseRecords(screen){
   }
   ov.appendChild($(`<div style="height:12px"></div>`));
   ov.appendChild($(`<button class="btn red">Close</button>`));
+  ov.querySelectorAll('[data-pc]').forEach(el=>{ const go=()=>openPlayerCardRow(_pcRows[+el.getAttribute('data-pc')]);
+    el.onclick=go; el.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } }; });
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
   screen.appendChild(ov);
