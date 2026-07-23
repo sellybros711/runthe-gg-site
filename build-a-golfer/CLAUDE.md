@@ -13197,6 +13197,15 @@ allows Google Fonts, or self-host Anton.*
   `supabase/65_runtour_live_profile_look.sql`** - until then chips just keep showing the frozen/default
   look (fail-open). Deployed client to /golf.
 
+- **Colors now cost 10,000 coins (was 15,000) (owner: "I want players to be able to get new colors
+  easier").** New `COLOR_PRICE=10000` const; `cosmeticPrice` prices the four COLOR categories
+  (shirt/hat/trousers/shoes) off it instead of the common-rarity ladder (`RARITY_PRICE.common` 15,000 -
+  which is untouched, so every other common item keeps its price). The boost premium still applies on top
+  for any boost-carrying color, free/earned colors stay free, and pack rarity is still selected from the
+  BASE price, so nothing shifts in the pack pool. Verified in Playwright: all four color cats price at
+  10,000, an earned colorway stays 0, patterns/headwear unchanged, color pack-rarity still common, and
+  buying an unowned color deducts exactly 10,000 + grants it; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

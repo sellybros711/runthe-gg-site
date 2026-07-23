@@ -5488,6 +5488,7 @@ const ACC_BOOST_SCALE=1;                      // full-strength catalog boosts (o
 // could yield its tier) - PACKS are the main way to earn items. Pack tiers (8k/22k/45k) are unchanged.
 // These are the final coin prices (no separate hike - PACKS_ENABLED is permanent). Clubs cost a touch more.
 const RARITY_PRICE={common:15000, rare:45000, epic:110000, legendary:275000};
+const COLOR_PRICE=10000;   // owner: COLORS (shirt/hat/trousers/shoes) are cheaper than the common ladder so new colors stay easy to grab
 function itemRarityPrice(rar,isClub){ return Math.round((RARITY_PRICE[rar]||RARITY_PRICE.common)*(isClub?1.2:1)); }
 // POWER carries a premium over PRESTIGE: an item's price scales with its stat boost (+15% of the rarity base
 // per boost point), so a +6-boost legendary costs ~1.9x a purely-cosmetic legendary. Cosmetics keep the flat
@@ -5817,7 +5818,10 @@ function cosmeticPriceBase(cat,id){
 // purely-cosmetic legendary color while style stays on the flat ladder.
 function cosmeticPrice(cat,id){ const base=cosmeticPriceBase(cat,id); if(base<=0) return 0;
   let pts=0; try{ const bb=cosBoost(cat,id); if(bb){ for(const k in bb) pts+=bb[k]; } }catch(e){} pts=Math.max(0,pts);
-  return Math.round(itemRarityPrice(packRarityOf(base),false)*(1+BOOST_PREMIUM*pts)/500)*500; }
+  // owner: plain COLORS price at COLOR_PRICE (10k) instead of the common ladder (15k) - pack rarity is
+  // still selected from the BASE price, so nothing shifts in the pack pool.
+  const ladder=(cat==='shirt'||cat==='hat'||cat==='pants'||cat==='shoes')?COLOR_PRICE:itemRarityPrice(packRarityOf(base),false);
+  return Math.round(ladder*(1+BOOST_PREMIUM*pts)/500)*500; }
 function cosOwned(cat,id){ const k=cosKey(cat,id); return !!FREE_COSMETICS[k] || !!coinState().owned[k]; }
 // CS422: "NEW" tracking — an item is NEW if it's been acquired (in coinState.owned, i.e. bought/pulled/earned)
 // but not yet VIEWED in the customizer. `bag_seenitems` is local (a badge, not critical data); it's seeded on
