@@ -82,7 +82,7 @@
   .brand{min-width:0; flex:1;}
   .brand .suite{display:block; font-size:10.5px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--coralT); margin-bottom:1px;}
   .brand .suite a{color:inherit; text-decoration:none;}
-  .titleRow{display:flex; align-items:center; gap:9px;}
+  .titleRow{display:flex; align-items:center; gap:9px; flex-wrap:wrap; row-gap:2px;}
   .brand .game{font-family:var(--hero); font-weight:400; letter-spacing:.02em; font-size:24px; color:var(--ink); line-height:1.05;}
   .datep{font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
   .explain{font-size:12.5px; color:var(--mut); font-weight:600; margin-top:2px;}
@@ -162,40 +162,42 @@
     color:var(--lc); border:1px solid var(--lc); border-radius:999px; padding:2px 8px; flex:0 0 auto;}
 
   /* ---------------- group boards ---------------- */
-  .board{display:flex; flex-direction:column; gap:var(--sp-1); margin-bottom:var(--sp-3);}
-  .lane{border:1px solid var(--line); border-left:4px solid var(--lc); border-radius:var(--r-md); background:var(--card);
-    box-shadow:var(--shadow); padding:10px 12px 12px; transition:border-color .2s, background .3s;}
+  .board{display:flex; flex-direction:column; gap:10px; margin-bottom:var(--sp-3);}
+  /* compact "rack" rows: header block left, four slim slots right */
+  .lane{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px;
+    border:1px solid var(--line); border-left:4px solid var(--lc); border-radius:var(--r-md); background:var(--card);
+    box-shadow:var(--shadow); padding:9px 12px; transition:border-color .2s, background .3s;}
   .lane.drop{border-color:var(--teal); background:var(--dropbg);}
   .lane.drop .slot:not(.filled){border-color:var(--teal); background:rgba(55,197,213,.07);}
   .lane.locked{background:linear-gradient(180deg, color-mix(in srgb, var(--lc) 14%, var(--card)), var(--card)); border-color:color-mix(in srgb, var(--lc) 55%, transparent);}
   .lane.bad{animation:shake .4s; border-color:var(--red);}
   @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(4px);}}
-  .lane-head{display:flex; align-items:center; gap:8px; margin-bottom:8px; min-height:20px;}
+  .lane-head{flex:0 0 168px; display:flex; align-items:center; flex-wrap:wrap; gap:4px 8px; min-height:20px; min-width:0;}
   .lane-chip{width:11px; height:11px; border-radius:3px; background:var(--lc); flex:0 0 auto;}
   .lane-name{font-weight:900; font-size:13.5px; letter-spacing:.01em; color:var(--ink); min-width:0;}
   .lane-hidden .lane-name{color:var(--mut); font-weight:800;}
-  .lane-sport{font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);
-    border:1px solid var(--line2); border-radius:5px; padding:2px 7px; margin-left:auto; flex:0 0 auto;}
+  .lane-sport{font-size:9.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);
+    border:1px solid var(--line2); border-radius:5px; padding:2px 7px; flex:0 0 auto;}
   .lane-check{margin-left:auto; color:var(--lc); font-weight:900; font-size:12.5px; display:none;}
   .lane.locked .lane-check{display:inline;} .lane.locked .lane-sport{display:none;}
-  .slots{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
-  .slot{min-height:56px; border-radius:var(--r-sm); border:1.5px dashed var(--line2); background:var(--slotbg);
+  .slots{flex:1 1 320px; display:grid; grid-template-columns:repeat(4,1fr); gap:7px;}
+  .slot{min-height:44px; border-radius:var(--r-sm); border:1.5px dashed var(--line2); background:var(--slotbg);
     display:flex; align-items:center; justify-content:center; padding:3px; text-align:center; position:relative; overflow:hidden; transition:border-color .15s, background .15s;}
   .slot:not(.filled)::after{content:"+"; color:var(--line2); font-size:20px; font-weight:800; line-height:1;}
   .slot.filled{border-style:solid; border-color:transparent; background:transparent; padding:0;}
-  .checkWrap{margin-top:10px; display:flex; justify-content:flex-end;}
+  .checkWrap{flex:0 0 auto; display:flex; justify-content:flex-end;}
   .checkbtn{appearance:none; border:0; background:var(--teal); color:#071426; font-weight:900; font-size:13px;
     letter-spacing:.03em; border-radius:var(--r-sm); padding:10px 18px; min-height:44px; box-shadow:var(--shadow);
     display:inline-flex; align-items:center; gap:7px; transition:filter .12s, transform .08s;}
   .checkbtn:hover{filter:brightness(1.07);}
   .checkbtn:active{transform:translateY(1px);}
   .checkbtn:disabled{background:var(--card2); color:var(--mut); cursor:default; filter:none;}
-  .lane-note{margin-top:9px; font-size:12.5px; font-weight:800; border-radius:var(--r-sm); padding:8px 12px; line-height:1.35;}
+  .lane-note{flex-basis:100%; margin-top:2px; font-size:12.5px; font-weight:800; border-radius:var(--r-sm); padding:8px 12px; line-height:1.35;}
   .lane-note.close{background:rgba(242,182,50,.12); color:var(--goldT); border:1px solid rgba(242,182,50,.35);}
   .lane-note.miss{background:rgba(255,98,95,.10); color:var(--redT); border:1px solid rgba(255,98,95,.35);}
 
   /* ---------------- tiles ---------------- */
-  .tile{width:100%; height:100%; min-height:52px; min-width:0; border-radius:var(--r-sm); border:1px solid var(--line2);
+  .tile{width:100%; height:100%; min-height:44px; min-width:0; border-radius:var(--r-sm); border:1px solid var(--line2);
     background:var(--card2); color:var(--ink); font-weight:800; font-size:12px; line-height:1.18;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:6px 5px; text-align:center; cursor:grab;
     overflow:hidden; overflow-wrap:anywhere; hyphens:auto; box-shadow:0 2px 5px -3px rgba(0,0,0,.5);
@@ -215,8 +217,9 @@
   .pool-h{display:flex; align-items:baseline; gap:10px; margin:0 2px 10px;}
   .pool-h .t{font-family:var(--hero); font-weight:400; letter-spacing:.04em; text-transform:uppercase; font-size:16px; color:var(--ink);}
   .pool-h .n{font-size:11.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--tealT);}
-  .pool{display:grid; grid-template-columns:repeat(5,1fr); gap:9px; min-height:52px;}
-  .pool .tile{min-height:60px;}
+  .pool{display:grid; grid-template-columns:repeat(5,1fr); gap:9px; min-height:52px; margin-bottom:var(--sp-3);}
+  .pool .tile{min-height:62px; font-size:12.5px;}
+  .groups-h .n{color:var(--mut); text-transform:none; letter-spacing:.02em; font-weight:700;}
   .pool.drop{outline:2px dashed var(--teal); outline-offset:4px; border-radius:var(--r-md);}
 
   /* ---------------- modals ---------------- */
@@ -331,6 +334,10 @@
     .mstatus .dot{width:12px; height:12px;}
     .mstatus .mprog{font-size:11px; font-weight:900; color:var(--mut); letter-spacing:.06em; text-transform:uppercase;}
     .mstatus .mprog b{color:var(--tealT);}
+    .lane{display:block;}
+    .lane-head{margin-bottom:8px;}
+    .checkWrap{margin-top:10px;}
+    .lane-note{margin-top:9px;}
     .slots{grid-template-columns:repeat(2,1fr);}
     .slot{min-height:48px;}
     .pool{grid-template-columns:repeat(2,1fr);}
@@ -386,13 +393,17 @@
         <div class="mprog" id="progressM"><b>0</b> / 5 solved</div>
       </div>
 
-      <div class="board" id="board" role="list" aria-label="Five group boards"></div>
-
       <div class="pool-h">
-        <span class="t">Player pool</span>
-        <span class="n"><span id="poolCount">20</span> remaining</span>
+        <span class="t">Today's 20</span>
+        <span class="n"><span id="poolCount">20</span> left to place</span>
       </div>
       <div class="pool" id="pool" role="list" aria-label="Unplaced names"></div>
+
+      <div class="pool-h groups-h">
+        <span class="t">Build your groups</span>
+        <span class="n">drag or tap a name, then a rack</span>
+      </div>
+      <div class="board" id="board" role="list" aria-label="Five group racks"></div>
     </main>
 
     <aside class="side" aria-label="Game status and controls">
@@ -425,7 +436,7 @@
         <summary>How to play <span class="chev" aria-hidden="true">▼</span></summary>
         <ol>
           <li><b>Sort all 20 names</b> into five groups of four. Each group shares a team, a jersey number, a surname, or a feat.</li>
-          <li>One group's name is <b>revealed free</b>. Drag a name into a group, or tap a name then tap a group.</li>
+          <li>Your 20 names sit up top. One group's name is <b>revealed free</b>. Drag a name onto a rack, or tap a name then tap a rack.</li>
           <li>When a group has four names, hit <b>Check group</b>. Right locks it in; wrong costs a guess.</li>
           <li>Stuck? <b>Reveal a group</b> for one guess. Six wrong guesses ends the board.</li>
         </ol>
