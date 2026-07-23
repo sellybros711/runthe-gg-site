@@ -72,7 +72,7 @@ function add(answer, category, difficulty, make) {
 
 const T = {
   player: [
-    (p) => `Hall of Famer ${p.first} ___`,
+    (p) => `${p.team} Hall of Famer ${p.first} ___`,
     (p) => `${p.first} ___, ${p.note}`,
     (p) => `${p.team} great ${p.first} ___`,
   ],

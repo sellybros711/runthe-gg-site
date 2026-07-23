@@ -66,7 +66,8 @@ for (const e of CORPUS) {
 const nickFor = (id) => {
   if (teamNick.has(id)) return teamNick.get(id);
   const tail = String(id || "").split("_").slice(1).join(" ");
-  return tail.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).trim();
+  const nice = tail.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).trim();
+  return nice.length <= 3 ? nice.toUpperCase() : nice;   // LSU, UCLA-style initialisms
 };
 
 // first name = display_name with the surname stripped off the end.
@@ -81,7 +82,10 @@ const firstName = (display, surname) => {
 const playerNote = (a) => {
   const nick = first(a.nicknames);
   if (nick) return `nicknamed "${nick}"`;
-  const dec = (a.decades_active || []).filter((x) => typeof x === "number").sort((x, y) => x - y)[0];
+  // use the CAREER-DEFINING decade (middle of the span), not the debut decade:
+  // Michael Irvin debuted in 1988 but was a 1990s star, not "a 1980s star".
+  const decs = (a.decades_active || []).filter((x) => typeof x === "number").sort((x, y) => x - y);
+  const dec = decs[Math.floor(decs.length / 2)];
   return dec ? `a ${dec}s star` : "a star of the sport";
 };
 
@@ -144,7 +148,11 @@ for (const e of CORPUS) {
     pushCand(e.display_name, clue, "college", e.fame_tier);
   } else if (t === "coach") {
     const surname = first(A.surname);
-    if (surname) pushCand(surname, `${e.sport} coach ${firstName(e.display_name, surname)} ___`, "coach", e.fame_tier);
+    // baseball has managers, not coaches; name the team when we know it so
+    // clues can't fit two people (e.g. NBA coaches Steve Kerr AND Steve Nash)
+    const role = e.sport === "MLB" ? "manager" : "coach";
+    const cteam = nickFor(first(A.teams));
+    if (surname) pushCand(surname, `${cteam ? cteam + " " : e.sport + " "}${role} ${firstName(e.display_name, surname)} ___`, "coach", e.fame_tier);
   } else if (t === "owner") {
     const surname = first(A.surname);
     if (surname) { const team = nickFor(first(A.teams)); pushCand(surname, team ? `${team} owner ${firstName(e.display_name, surname)} ___` : `Sports owner ${firstName(e.display_name, surname)} ___`, "owner", e.fame_tier); }
