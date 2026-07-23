@@ -7341,7 +7341,7 @@ function openPlayerCardRow(reg){ if(!reg) return; const r=reg.r||{};
   const ovr=r.ovr!=null?r.ovr:(fullSk?Math.round(ovrFromSkills(r.skills)):null);
   const arch=fullSk?archetype(r.skills):null;
   const neg=v=>({v:fmtSigned(v||0),c:(v||0)>=0?'#35d6a0':'#E14A33'});
-  const rows=[];
+  const rows=[]; let scard=null;
   if(reg.kind==='career'){
     rows.push(['Seasons',r.seasons!=null?r.seasons:'-'],['Wins',r.wins||0],['Majors',r.majors||0],
       ['Earnings',fmtShort(r.career_earnings||0)],['Net',neg(r.career_net)]);
@@ -7352,14 +7352,21 @@ function openPlayerCardRow(reg){ if(!reg) return; const r=reg.r||{};
   } else {
     const par=(DAILY_COURSES[r.course_key]||{}).par;
     if(r.total_to_par!=null){ rows.push(['This week',dtp(r.total_to_par)],['Days played',r.days_played||1],['Best round',dtp(r.best_to_par)]); }
-    else { rows.push(['Score',dTot(r.to_par,par)],['Beat the pro',r.won?'Yes ✓':'No']); }
+    else {
+      rows.push(['Score',dTot(r.to_par,par)],['Beat the pro',r.won?'Yes ✓':'No']);
+      // owner: the daily card back shows the hole-by-hole SCORECARD. Others' holes come from the board
+      // (r.holes, once migration 69 is applied); your own come from the local daily result immediately.
+      let hls=(Array.isArray(r.holes)&&r.holes.length)?r.holes:null;
+      if(!hls && you){ const db=dailyBest(); if(db && db.course===r.course_key && Array.isArray(db.holes) && db.holes.length) hls=db.holes; }
+      if(hls) scard=hls;
+    }
   }
   const secLab = reg.kind==='career'?'This Career':reg.kind==='season'?'This Season':(r.total_to_par!=null?'This Week':"Today's Round");
   S.cardFlipped=false;
   S.cardView={ name:reg.name||r.display_name||'Player', look,
     rep:(r.rep_pts!=null?repTierName(r.rep_pts):null),
     ovr, arch:arch?arch.name:null, golfer:r.golfer_name||null,
-    sec:{label:secLab,rows}, uid:(!you&&r.user_id)?r.user_id:null, guest:!r.user_id, self:you };
+    sec:{label:secLab,rows}, scorecard:scard, uid:(!you&&r.user_id)?r.user_id:null, guest:!r.user_id, self:you };
   if(you){ try{ S.cardView.lt=_selfLifetime(); }catch(e){} }
   else if(r.user_id) loadPlayerCardStats(r.user_id);
   S.cardReturn=(S.overlay&&S.overlay!=='playercard')?S.overlay:null;   // close returns to the board you tapped from
@@ -7422,11 +7429,32 @@ function pcStyleOnce(){ if(document.getElementById('pcardcss')) return; const st
 '.pcb-sec{font:800 9.5px var(--body);letter-spacing:.14em;color:var(--gold);margin:8px 0 3px;text-transform:uppercase;border-bottom:1px solid rgba(244,227,201,.16);padding-bottom:3px}',
 '.pcb-row{display:flex;justify-content:space-between;align-items:baseline;padding:2.5px 0;font:600 12.5px var(--body);color:var(--muted)}',
 '.pcb-row b{color:var(--oncard);font-weight:800;font-size:13px}',
+'.pcsc{margin:5px 0 2px}',
+'.pcsc-blk{margin-bottom:3px}',
+'.pcsc-row{display:grid;grid-template-columns:repeat(10,1fr);gap:1px;align-items:center}',
+'.pcsc-row>span{text-align:center;font:700 8px var(--body);padding:1px 0;line-height:1.15}',
+'.pcsc-hd>span{color:var(--muted);font-weight:800}',
+'.pcsc-par>span{color:var(--muted);font-weight:700}',
+'.pcsc-sc>span{font-weight:800;font-size:9.5px}',
+'.pcsc-row>span:last-child{color:var(--gold);font-weight:800}',
 '.pchint{margin-top:14px;font:800 11px var(--body);letter-spacing:.24em;color:var(--gold);animation:pchintPulse 1.6s ease-in-out infinite}',
 '@keyframes pchintPulse{0%,100%{opacity:.45}50%{opacity:1}}',
 '@media (prefers-reduced-motion:reduce){.pcwrap{animation:none}.pcard-inner{transition:none}.pchint{animation:none}.pcf-high .pcard-face,.pcf-goat .pcard-face{animation:none}}'
   ].join('\n');
   document.head.appendChild(st);
+}
+function pcScorecardHTML(holes){
+  if(!holes||!holes.length) return '';
+  const col=tp=>tp<=-2?'#35d6a0':tp===-1?'#7fe3b0':tp===0?'var(--oncard)':tp===1?'#e9a23b':'#E14A33';
+  const block=(from,to,lab)=>{ let hh='',pp='',ss='',ps=0,cs=0;
+    for(let i=from;i<to;i++){ const hle=holes[i];
+      if(!hle){ hh+='<span></span>'; pp+='<span></span>'; ss+='<span></span>'; continue; }
+      const par=hle.par||4, tp=hle.toPar||0, sc=par+tp; ps+=par; cs+=sc;
+      hh+=`<span>${i+1}</span>`; pp+=`<span>${par}</span>`; ss+=`<span style="color:${col(tp)}">${sc}</span>`; }
+    return `<div class="pcsc-blk"><div class="pcsc-row pcsc-hd">${hh}<span>${lab}</span></div><div class="pcsc-row pcsc-par">${pp}<span>${ps}</span></div><div class="pcsc-row pcsc-sc">${ss}<span>${cs}</span></div></div>`; };
+  const n=holes.length;
+  const body = n<=9 ? block(0,n,'TOT') : block(0,9,'OUT')+block(9,Math.min(18,n),'IN');
+  return `<div class="pcsc">${body}</div>`;
 }
 function playerCardHTML(cv){
   const fr=cardFrameFor(cv.rep||'Amateur');
@@ -7457,7 +7485,7 @@ function playerCardHTML(cv){
           <div class="pcb-h">${esc(cv.name)}</div>
           <div class="pcb-sub">Player Card${cv.rep?' · '+esc(cv.rep):''}</div>
           <div class="pcb-sec">Lifetime</div>${ltRows}
-          ${cv.sec?`<div class="pcb-sec">${esc(cv.sec.label)}</div>${secRows}`:''}
+          ${cv.sec?`<div class="pcb-sec">${esc(cv.sec.label)}</div>${secRows}${cv.scorecard?pcScorecardHTML(cv.scorecard):''}`:''}
           ${(cv.arch||cv.ovr!=null)?`<div style="margin-top:auto;text-align:center;font:700 10.5px var(--body);color:var(--muted);padding-top:8px">${cv.ovr!=null?'OVR <b style="color:var(--gold)">'+cv.ovr+'</b>':''}${cv.arch?(cv.ovr!=null?' · ':'')+esc(cv.arch):''}</div>`:''}
         </div>
       </div>
@@ -15839,7 +15867,7 @@ function seasonHeadlines(x){
     const R=(me.rounds||[]).slice(0,4), full=R.length>=4&&R.every(v=>v!=null);
     const cum=(o,k)=>{ let sum=0; for(let i=0;i<=k;i++){ if(o.rounds&&o.rounds[i]!=null) sum+=o.rounds[i]; else return null; } return sum; };
     const lead=(k)=>{ let b=Infinity; r.order.forEach(o=>{ const v=cum(o,k); if(v!=null&&v<b)b=v; }); return b; };
-    if(full) f.sun=R[3];
+    if(full) f.sun=Math.round(R[3]);   // final-round to-par is a raw sim float; round it (owner: '4.5921... under')
     if(pos===1){
       const ru=r.order.find(o=>o!==me&&typeof o.pos==='number');
       f.runner=ru&&ru.p?ru.p.name:null; f.margin=ru?Math.max(0,Math.round(ru.score-me.score)):0;
@@ -23657,14 +23685,23 @@ async function sbSubmitDaily(b){
   if(b.isLegend) args.p_is_legend=true;
   if(b.isSpotlight) args.p_is_spotlight=true;
   const withLook=Object.assign({p_look:lookForBoard()}, args);   // CS393: golfer look → daily board podium
+  // owner: store the hole-by-hole so other players' cards show a scorecard. Its own graceful layer (tried
+  // first, above p_look) so a pre-migration-69 DB simply falls back to p_look without losing the look.
+  const withHoles=Object.assign({p_holes:(Array.isArray(b.holes)&&b.holes.length)?b.holes:null}, withLook);
   const clearCaches=()=>{ crCache=null; dbCache=null; crCacheLegend=null; dbCacheLegend=null; crCacheSpot=null; dbCacheSpot=null; lbDailyCache={}; lbWeekCache={}; };
   try{
     // supabase-js resolves (doesn't throw) on a Postgres error, so the {error} MUST be checked explicitly,
     // otherwise a rejected submission looks identical to a success and the round is silently never posted.
-    const {error}=await sb.rpc('runtour_submit_daily', withLook);
+    const {error}=await sb.rpc('runtour_submit_daily', withHoles);
     if(error) throw error;
     clearCaches();
   }catch(e){
+    // retry WITHOUT p_holes (pre-migration-69 DB) but keep p_look
+    try{
+      const {error:eh}=await sb.rpc('runtour_submit_daily', withLook);
+      if(eh) throw eh;
+      clearCaches(); return;
+    }catch(eh){}
     console.error('[RunTheTour] daily submit failed:', (e&&e.message)||e, b);
     // retry WITHOUT p_look (pre-migration-53 DB, but keeps the legend/spotlight flags)
     try{
