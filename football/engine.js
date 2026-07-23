@@ -424,24 +424,22 @@
 
   /* ---------- 10. SHARE CARD ---------------------------------------------- */
   const CARDS = {
-    TOUCHDOWN:        d => `🏈 TOUCHDOWN — a ${d.yardsGained}-yard drive`,
-    FIELD_GOAL:       () => `🦵 I kicked a field goal today`,
-    MISSED_FG:        () => `😬 Doinked it — no points`,
-    TURNOVER_ON_DOWNS:() => `🛑 Got stuffed on 4th down`,
-    CLOCK:            () => `⏱️ Ran out of clock`,
-    SAFETY:           () => `🙈 I took a safety today`,
+    TOUCHDOWN:        d => `TOUCHDOWN — a ${d.yardsGained}-yard drive`,
+    FIELD_GOAL:       () => `Kicked a field goal today`,
+    MISSED_FG:        () => `Doinked it — no points`,
+    TURNOVER_ON_DOWNS:() => `Got stuffed on 4th down`,
+    CLOCK:            () => `Ran out of clock`,
+    SAFETY:           () => `Took a safety today`,
   };
-  const TO_CARDS = { INTERCEPTION:'🎯 I threw a pick today',
-                     FUMBLE:'🤲 I put it on the ground today',
-                     ABORTED_SNAP:'💀 Botched the snap today' };
+  const TO_CARDS = { INTERCEPTION:'Threw a pick today',
+                     FUMBLE:'Put it on the ground today',
+                     ABORTED_SNAP:'Botched the snap today' };
 
   function shareCard(state, streakDays) {
     const yardsGained = state.yardline - state.startYard;
     const head = state.toType ? TO_CARDS[state.toType]
                : (CARDS[state.result] || (() => state.result))({ ...state, yardsGained });
-    const bar = state.grades.map(g =>
-        g.letter.startsWith('A') ? '🟩' : g.letter === 'B' ? '🟨'
-      : g.letter === 'C' ? '🟧' : '🟥').join('');
+    const bar = state.grades.map(g => g.letter.replace('+','').replace('-','')).join(' ');
     const flex = state.result === 'TOUCHDOWN' && state.startYard <= 25
                ? '  ← from deep in his own end' : '';
     return `RunTheDrive ${state.date}\n${head}${flex}\n${bar}\n`
