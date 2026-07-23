@@ -5856,6 +5856,7 @@ const CARDBGS=[
   {id:'stadium',      name:'Stadium Lights',   hist:'Under the floodlights'},
   {id:'concordia',    name:'Meridian Bay',     hist:'Medal light over the bay'},
   {id:'endlesssummer',name:'Endless Summer',   hist:'Poolside-season exclusive'},
+ {id:'goat',         name:'The G.O.A.T. Pasture', hist:'Only the greatest graze here'},
 ];
 // pixel-scene config per background (hand-authored palettes so each reads distinct)
 const CARDBG_ART={
@@ -5874,6 +5875,7 @@ const CARDBG_ART={
  stadium:     {sky:['#060d1c','#0e1c38','#1c2c50'], stars:1, band:'stand', bandC:'#10182a', beams:1, ground:['#2f5c26','#1b3a16'], stripes:1},
  concordia:   {sky:['#1c3a6e','#4a8ac2','#ffd98c'], sun:{x:.5,y:.40,r:6,c:'#ffe9a0'}, sea:{h:.20,c1:'#4fb6ea',c2:'#125a9e'}, band:'trees', bandC:'#1d3a26', ground:['#4a7c33','#2e5a20'], goldflag:1},
  endlesssummer:{sky:['#5a2a6e','#e05a6e','#ff9d3a'], sun:{x:.5,y:.46,r:9,c:'#ffd98c'}, sea:{h:.18,c1:'#ff9d6a',c2:'#8a3a7e'}, band:'palms', bandC:'#241430', ground:['#e8c890','#c2985e'], noflag:1},
+ goat:        {sky:['#28483c','#7aa86a','#f1d04a'], sun:{x:.74,y:.36,r:6,c:'#ffe9a0'}, band:'trees', bandC:'#14300f', ground:['#4a7a2a','#2c5518'], stripes:1, goats:1, goldflag:1},
 };
 const _cardBgCv={}, _cardBgURL={};
 function pxCardBgCanvas(id){
@@ -5881,12 +5883,18 @@ function pxCardBgCanvas(id){
   const A=CARDBG_ART[id]||CARDBG_ART.club;
   const W=96,H=132,cv=document.createElement('canvas'); cv.width=W; cv.height=H;
   const x=cv.getContext('2d');
-  const seed=(String(id).charCodeAt(0)||7)*131;
+  const seed=(String(id).charCodeAt(0)||7)*131+(String(id).length*17);
   const hsh=(a,b)=>{ let v=(a*374761393+b*668265263+seed)|0; v=((v^(v>>13))*1274126177)|0; return (((v^(v>>16))>>>0)%1000)/1000; };
   const hy=Math.round(H*(A.hy||0.52));
+  // sky
   const g=x.createLinearGradient(0,0,0,hy); A.sky.forEach((c,i)=>g.addColorStop(i/(A.sky.length-1),c));
   x.fillStyle=g; x.fillRect(0,0,W,hy);
   if(A.stars){ for(let i=0;i<26;i++){ x.fillStyle='rgba(255,255,255,'+(0.3+hsh(i,3)*0.5).toFixed(2)+')'; x.fillRect(Math.floor(hsh(i,1)*W),Math.floor(hsh(i,2)*hy*0.8),1,1); } }
+  // soft pixel clouds (daytime skies only)
+  if(!A.stars){ const nc=2+Math.floor(hsh(0,20)*2);
+    for(let i=0;i<nc;i++){ const cx0=Math.floor(hsh(i,21)*W*0.9), cy0=4+Math.floor(hsh(i,22)*hy*0.5), cw=10+Math.floor(hsh(i,23)*14);
+      x.fillStyle='rgba(255,255,255,'+(0.10+hsh(i,24)*0.10).toFixed(2)+')';
+      x.fillRect(cx0,cy0,cw,2); x.fillRect(cx0+2,cy0-2,Math.max(3,cw-5),2); x.fillRect(cx0+3,cy0+2,Math.max(2,cw-7),2); } }
   if(A.sun){ const s=A.sun; const rg=x.createRadialGradient(s.x*W,s.y*H,1,s.x*W,s.y*H,s.r*3.2); rg.addColorStop(0,s.c); rg.addColorStop(1,'rgba(255,200,80,0)');
     x.fillStyle=rg; x.fillRect(0,0,W,hy); x.fillStyle=s.c; x.beginPath(); x.arc(s.x*W,s.y*H,s.r,0,7); x.fill(); }
   let gy=hy;
@@ -5894,20 +5902,31 @@ function pxCardBgCanvas(id){
     x.fillStyle=sg; x.fillRect(0,hy,W,sh);
     x.fillStyle='rgba(255,255,255,.5)'; for(let i=0;i<8;i++){ x.fillRect(Math.floor(hsh(i,4)*W), hy+2+Math.floor(hsh(i,5)*Math.max(1,sh-4)), 3+Math.floor(hsh(i,6)*4), 1); }
     gy=hy+sh; }
+  // ground
   const gg=x.createLinearGradient(0,gy,0,H); gg.addColorStop(0,A.ground[0]); gg.addColorStop(1,A.ground[1]);
   x.fillStyle=gg; x.fillRect(0,gy,W,H-gy);
-  if(A.stripes){ const bh=Math.max(5,Math.round((H-gy)/8)); x.fillStyle='rgba(255,255,255,.055)'; for(let i=0;i<8;i+=2) x.fillRect(0,gy+i*bh,W,bh); }
-  const band=(type,c,c2)=>{ if(!type) return; c2=c2||c;
-    if(type==='peaks'){ for(let i=0;i<4;i++){ const px0=-8+i*28+hsh(i,7)*10, pw=34+hsh(i,8)*14, ph=16+hsh(i,9)*12;
-        x.fillStyle=c; x.beginPath(); x.moveTo(px0,gy); x.lineTo(px0+pw/2,gy-ph); x.lineTo(px0+pw,gy); x.fill();
-        x.fillStyle=c2; x.beginPath(); x.moveTo(px0+pw/2,gy-ph); x.lineTo(px0+pw/2+5,gy-ph+6); x.lineTo(px0+pw/2-5,gy-ph+6); x.fill(); } return; }
-    if(type==='dunes'){ for(let i=0;i<4;i++){ x.fillStyle=i%2?c:c2; x.beginPath(); x.ellipse(12+i*26+hsh(i,7)*8, gy, 20, 6+hsh(i,8)*4, 0, Math.PI, 0); x.fill(); } return; }
-    if(type==='stand'){ x.fillStyle=c; x.fillRect(4,gy-14,W-8,14); x.fillStyle='rgba(255,255,255,.10)';
-      for(let i=0;i<12;i++){ x.fillRect(7+i*7,gy-11,4,2); x.fillRect(7+i*7,gy-6,4,2); }
-      x.fillStyle='#0a0f1c'; x.fillRect(10,gy-30,2,16); x.fillRect(W-12,gy-30,2,16);
-      x.fillStyle='#fff2c0'; x.fillRect(7,gy-33,8,3); x.fillRect(W-15,gy-33,8,3); return; }
+  if(A.stripes){ const bh=Math.max(5,Math.round((H-gy)/8)); x.fillStyle='rgba(255,255,255,.05)'; for(let i=0;i<8;i+=2) x.fillRect(0,gy+i*bh,W,bh); }
+  // DEPTH: hazy distant hills behind the horizon line
+  const hillC=A.hill||A.bandC||'#173a12';
+  for(let i=0;i<2;i++){ x.globalAlpha=0.26-i*0.08; x.fillStyle=hillC;
+    x.beginPath(); x.ellipse(Math.floor(hsh(i,25)*W), gy, 40+hsh(i,26)*22, 9+hsh(i,27)*7, 0, Math.PI, 0); x.fill(); }
+  x.globalAlpha=1;
+  // DEPTH: light atmospheric haze at the horizon
+  const hz=x.createLinearGradient(0,gy-10,0,gy); hz.addColorStop(0,'rgba(255,255,255,0)'); hz.addColorStop(1,'rgba(255,255,255,.13)');
+  x.fillStyle=hz; x.fillRect(0,gy-10,W,10);
+  // horizon silhouettes. dy shifts the anchor line, k scales sizes, salt varies positions per pass.
+  const band=(type,c,c2,dy,k,salt)=>{ if(!type) return; c2=c2||c; dy=dy||0; k=k||1; salt=salt||0;
+    const by=gy+dy;
+    if(type==='peaks'){ for(let i=0;i<4;i++){ const px0=-8+i*28+hsh(i+salt,7)*10, pw=(34+hsh(i+salt,8)*14)*k, ph=(16+hsh(i+salt,9)*12)*k;
+        x.fillStyle=c; x.beginPath(); x.moveTo(px0,by); x.lineTo(px0+pw/2,by-ph); x.lineTo(px0+pw,by); x.fill();
+        x.fillStyle=c2; x.beginPath(); x.moveTo(px0+pw/2,by-ph); x.lineTo(px0+pw/2+5*k,by-ph+6*k); x.lineTo(px0+pw/2-5*k,by-ph+6*k); x.fill(); } return; }
+    if(type==='dunes'){ for(let i=0;i<4;i++){ x.fillStyle=i%2?c:c2; x.beginPath(); x.ellipse(12+i*26+hsh(i+salt,7)*8, by, 20*k, (6+hsh(i+salt,8)*4)*k, 0, Math.PI, 0); x.fill(); } return; }
+    if(type==='stand'){ x.fillStyle=c; x.fillRect(4,by-14,W-8,14); x.fillStyle='rgba(255,255,255,.10)';
+      for(let i=0;i<12;i++){ x.fillRect(7+i*7,by-11,4,2); x.fillRect(7+i*7,by-6,4,2); }
+      x.fillStyle='#0a0f1c'; x.fillRect(10,by-30,2,16); x.fillRect(W-12,by-30,2,16);
+      x.fillStyle='#fff2c0'; x.fillRect(7,by-33,8,3); x.fillRect(W-15,by-33,8,3); return; }
     if(type==='palms'){ const px=[0.12,0.86,0.44];
-      for(let i=0;i<3;i++){ const tx0=Math.floor(px[i]*W+(hsh(i,7)-0.5)*6), base=gy+3+Math.floor(hsh(i,13)*7), ph=15+hsh(i,8)*6;
+      for(let i=0;i<3;i++){ const tx0=Math.floor(px[i]*W+(hsh(i+salt,7)-0.5)*6), base=by+3+Math.floor(hsh(i+salt,13)*7), ph=(15+hsh(i+salt,8)*6)*k;
         x.strokeStyle=c; x.lineWidth=2;
         x.beginPath(); x.moveTo(tx0,base); x.quadraticCurveTo(tx0+2,base-ph*0.6,tx0+4,base-ph); x.stroke();
         const tpx=tx0+4, tpy=base-ph; x.lineWidth=1.5;
@@ -5915,27 +5934,70 @@ function pxCardBgCanvas(id){
           x.beginPath(); x.moveTo(tpx,tpy); x.quadraticCurveTo(tpx+dx*0.7,tpy-4,tpx+dx*1.5,tpy+2+Math.abs(dx)*0.35); x.stroke(); }
       } return; }
     const n= type==='oaks'?5 : type==='cacti'?6 : 9;
-    for(let i=0;i<n;i++){ const tx0=Math.floor((i+0.5)*W/n + (hsh(i,7)-0.5)*8);
-      if(type==='pines'){ const th=9+hsh(i,8)*8; x.fillStyle=c; x.beginPath(); x.moveTo(tx0-4,gy); x.lineTo(tx0,gy-th); x.lineTo(tx0+4,gy); x.fill(); }
-      else if(type==='cacti'){ if(hsh(i,9)<0.55){ const chh=8+hsh(i,10)*5; x.fillStyle=c; x.fillRect(tx0,gy-chh,2,chh); x.fillRect(tx0-3,gy-chh+2,2,3); x.fillRect(tx0-3,gy-chh+4,5,2); } }
-      else if(type==='oaks'){ x.fillStyle=c; x.beginPath(); x.ellipse(tx0,gy-5,9,4.5,0,0,7); x.fill(); x.fillRect(tx0-1,gy-3,2,3); }
-      else { const r=3.5+hsh(i,8)*3; x.fillStyle=c; x.beginPath(); x.arc(tx0,gy-r,r,0,7); x.fill(); }
+    for(let i=0;i<n;i++){ const tx0=Math.floor((i+0.5)*W/n + (hsh(i+salt,7)-0.5)*8);
+      if(type==='pines'){ const th=(9+hsh(i+salt,8)*8)*k; x.fillStyle=c; x.beginPath(); x.moveTo(tx0-4*k,by); x.lineTo(tx0,by-th); x.lineTo(tx0+4*k,by); x.fill(); }
+      else if(type==='cacti'){ if(hsh(i+salt,9)<0.55){ const chh=(8+hsh(i+salt,10)*5)*k; x.fillStyle=c; x.fillRect(tx0,by-chh,2,chh); x.fillRect(tx0-3,by-chh+2,2,3); x.fillRect(tx0-3,by-chh+4,5,2); } }
+      else if(type==='oaks'){ x.fillStyle=c; x.beginPath(); x.ellipse(tx0,by-5*k,9*k,4.5*k,0,0,7); x.fill(); x.fillRect(tx0-1,by-3,2,3);
+        x.fillStyle='rgba(255,255,255,.08)'; x.beginPath(); x.ellipse(tx0-2*k,by-6*k,4*k,2*k,0,0,7); x.fill(); }
+      else { const r=(3.5+hsh(i+salt,8)*3)*k; x.fillStyle=c; x.beginPath(); x.arc(tx0,by-r,r,0,7); x.fill();
+        x.fillStyle='rgba(255,255,255,.08)'; x.beginPath(); x.arc(tx0-r*0.35,by-r*1.3,r*0.45,0,7); x.fill(); }
     } };
-  band(A.band2,A.band2C,A.band2C2);
-  band(A.band,A.bandC,A.bandC2);
+  // far pass (lighter, smaller, behind) -> near pass. stands/palms/dunes stay single-layer.
+  band(A.band2,A.band2C,A.band2C2,0,1,0);
+  if(A.band && A.band!=='stand' && A.band!=='palms' && A.band!=='dunes'){ x.globalAlpha=0.4; band(A.band,A.bandC,A.bandC2,-2,0.62,50); x.globalAlpha=1; }
+  band(A.band,A.bandC,A.bandC2,0,1,0);
+  // THE HOLE, seeded per background: dogleg direction/strength, green spot, bunker count, flag side all vary
   if(!A.noflag){
     const fwC=A.fw||'#6f9e38', grC=A.gr||'#a9cc60';
-    x.fillStyle=fwC; x.beginPath(); x.moveTo(W*0.40,gy); x.lineTo(W*0.60,gy); x.lineTo(W*0.88,H); x.lineTo(W*0.10,H); x.fill();
-    const gx=W*0.52, gyy=gy+(H-gy)*0.22;
-    x.fillStyle=grC; x.beginPath(); x.ellipse(gx,gyy,12,4.5,0,0,7); x.fill();
-    x.fillStyle='#e8e2c2'; x.beginPath(); x.ellipse(gx-13,gyy+3,4,1.8,0,0,7); x.fill();
-    const fx0=gx+4, fy0=gyy-13;
+    const curve=(hsh(3,30)-0.5)*44;
+    const topX=W*(0.42+(hsh(4,31)-0.5)*0.18);
+    const midY=(gy+H)/2;
+    x.fillStyle=fwC; x.beginPath();
+    x.moveTo(topX-9,gy);
+    x.quadraticCurveTo(W*0.5+curve*0.5, midY, W*0.15+curve, H);
+    x.lineTo(W*0.87+curve, H);
+    x.quadraticCurveTo(W*0.5+curve*0.5+20, midY, topX+9, gy);
+    x.closePath(); x.fill();
+    x.fillStyle='rgba(255,255,255,.05)'; x.beginPath();
+    x.moveTo(topX-3,gy); x.quadraticCurveTo(W*0.5+curve*0.5,midY,W*0.36+curve,H);
+    x.lineTo(W*0.6+curve,H); x.quadraticCurveTo(W*0.5+curve*0.5+9,midY,topX+3,gy); x.closePath(); x.fill();
+    const gx=W*(0.34+hsh(5,32)*0.32), gyy=gy+(H-gy)*(0.15+hsh(6,33)*0.16);
+    x.fillStyle=grC; x.beginPath(); x.ellipse(gx,gyy,11+hsh(7,34)*4,4+hsh(7,35)*1.6,0,0,7); x.fill();
+    x.fillStyle='rgba(255,255,255,.10)'; x.beginPath(); x.ellipse(gx-2,gyy-1,6,2,0,0,7); x.fill();
+    const nb=1+Math.floor(hsh(8,36)*3);
+    for(let i=0;i<nb;i++){ const a=hsh(i,37)*6.28;
+      x.fillStyle='#e8e2c2'; x.beginPath(); x.ellipse(gx+Math.cos(a)*(13+hsh(i,38)*4), gyy+2+Math.abs(Math.sin(a))*4, 3+hsh(i,39)*2.5, 1.5+hsh(i,40), 0,0,7); x.fill(); }
+    const fx0=Math.round(gx+(hsh(9,41)-0.5)*10), fy0=gyy-13;
     x.fillStyle='#e8e2d2'; x.fillRect(fx0,fy0,1,13);
     x.fillStyle=A.goldflag?'#F1D04A':'#e2554e';
     x.beginPath(); x.moveTo(fx0+1,fy0); x.lineTo(fx0+8,fy0+2); x.lineTo(fx0+1,fy0+5); x.fill();
   }
+  // pixel GOATS grazing on the course (the G.O.A.T. background)
+  if(A.goats){
+    const goat=(gx0,gy0,s,c)=>{ gx0=Math.round(gx0); gy0=Math.round(gy0);
+      x.fillStyle=c;
+      x.fillRect(gx0,gy0,Math.round(6*s),Math.round(3*s));                       // body
+      x.fillRect(gx0+Math.round(5*s),gy0-Math.round(3*s),Math.round(2*s),Math.round(4*s)); // neck + head up
+      x.fillRect(gx0+Math.round(6*s),gy0-Math.round(2*s),Math.round(2*s),Math.round(1*s)); // muzzle
+      x.fillRect(gx0,gy0+Math.round(3*s),Math.max(1,Math.round(s)),Math.round(2*s));       // legs
+      x.fillRect(gx0+Math.round(2*s),gy0+Math.round(3*s),Math.max(1,Math.round(s)),Math.round(2*s));
+      x.fillRect(gx0+Math.round(4*s),gy0+Math.round(3*s),Math.max(1,Math.round(s)),Math.round(2*s));
+      x.fillRect(gx0-Math.max(1,Math.round(s*0.7)),gy0,Math.max(1,Math.round(s*0.7)),Math.max(1,Math.round(s))); // tail
+      x.fillStyle='#3a2c1a';
+      x.fillRect(gx0+Math.round(5*s),gy0-Math.round(4*s),Math.max(1,Math.round(s*0.8)),Math.max(1,Math.round(s)));   // horns
+      x.fillRect(gx0+Math.round(6.4*s),gy0-Math.round(4*s),Math.max(1,Math.round(s*0.8)),Math.max(1,Math.round(s)));
+      x.fillRect(gx0+Math.round(6.4*s),gy0-Math.round(0.6*s),Math.max(1,Math.round(s*0.7)),Math.max(1,Math.round(s))); // beard
+    };
+    goat(W*0.16, gy+(H-gy)*0.40, 1.2, '#f2ede0');
+    goat(W*0.68, gy+(H-gy)*0.26, 1.0, '#cbb58e');
+    goat(W*0.40, gy+(H-gy)*0.58, 1.7, '#f2ede0');
+    goat(W*0.78, gy+(H-gy)*0.52, 1.3, '#6b5744');
+  }
   if(A.accents){ for(let i=0;i<A.accents.n;i++){ x.fillStyle=A.accents.c[i%A.accents.c.length]; x.fillRect(Math.floor(hsh(i,11)*W), gy+1+Math.floor(hsh(i,12)*8), 2,2); } }
   if(A.beams){ x.fillStyle='rgba(255,242,192,.10)'; [[11,gy-31],[W-11,gy-31]].forEach(p=>{ x.beginPath(); x.moveTo(p[0],p[1]); x.lineTo(p[0]-18,0); x.lineTo(p[0]+18,0); x.closePath(); x.fill(); }); }
+  // DEPTH: dark foreground rough tufts at the bottom edge
+  x.fillStyle='rgba(0,0,0,.20)';
+  for(let i=0;i<9;i++){ const bx0=Math.floor(hsh(i,45)*W), bh=2+Math.floor(hsh(i,46)*3); x.fillRect(bx0,H-bh,2,bh); }
   const vg=x.createRadialGradient(W/2,H*0.45,20,W/2,H*0.55,W*0.95); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.30)');
   x.fillStyle=vg; x.fillRect(0,0,W,H);
   _cardBgCv[id]=cv; return cv;
@@ -5972,6 +6034,7 @@ const CARD_EARN={
  'cb:heath':       {hint:'Beat the pro at a heathland course', req:()=>biomeConquered('heath')},
  'cb:sandhills':   {hint:'Beat the pro at a sandhills course', req:()=>biomeConquered('sandhills')},
  'cb:prairie':     {hint:'Beat the pro at a prairie course', req:()=>biomeConquered('prairie')},
+ 'cb:goat':        {hint:'Reach the Icon Tour Rep rank', req:()=>{try{return repAtLeast('Icon');}catch(e){return false;}}},
 };
 // ---- cosmetics (colors + patterns) are PURCHASED too (same coin economy, namespaced owned keys) ----
 // keys: sh:<shirt>  sp:<pattern>  ht:<hat color>  pt:<pants>  so:<shoes>  fx:<effect>. Free defaults below.
@@ -7132,7 +7195,7 @@ function pcStyleOnce(){ if(document.getElementById('pcardcss')) return; const st
 '.pcovr{position:absolute;top:8px;right:9px;text-align:center;background:rgba(4,12,8,.62);border:1.5px solid var(--gold);border-radius:12px;padding:4px 9px 3px}',
 '.pcovr b{display:block;font:800 21px var(--display);color:var(--gold);line-height:1}',
 '.pcovr span{font:800 8px var(--body);letter-spacing:.14em;color:var(--muted)}',
-'.pcgolfer{position:absolute;left:0;right:0;bottom:62px;display:flex;justify-content:center;pointer-events:none}',
+'.pcgolfer{position:absolute;left:0;right:0;bottom:58px;display:flex;justify-content:center;pointer-events:none}',
 '.pcplate{position:absolute;left:9px;right:9px;bottom:9px;border-radius:11px;padding:8px 10px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.4)}',
 '.pcpn{font:700 17px var(--display);letter-spacing:.03em;text-transform:uppercase;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
 '.pcps{font:700 10px var(--body);opacity:.82;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
@@ -7168,7 +7231,7 @@ function playerCardHTML(cv){
         <div class="pcscrim"></div>
         ${cv.rep?`<div class="pctier">${esc(cv.rep)}</div>`:''}
         ${cv.ovr!=null?`<div class="pcovr"><b>${cv.ovr}</b><span>OVR</span></div>`:''}
-        <div class="pcgolfer">${pxFigureHTML(cv.look,158)}</div>
+        <div class="pcgolfer">${pxFigureHTML(cv.look,206)}</div>
         <div class="pcplate" style="${plateCss(plate)}"><div class="pcpn">${esc(cv.name)}</div>${sub?`<div class="pcps">${esc(sub)}</div>`:''}</div>
       </div>
       <div class="pcard-face pcard-back">

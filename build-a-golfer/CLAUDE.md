@@ -13392,6 +13392,25 @@ allows Google Fonts, or self-host Anton.*
     Tunable: `PLATES`/`PLATE_STYLE`, `CARDBGS`/`CARDBG_ART`, `CARD_EARN` reqs, the frame bands in
     `cardFrameFor`, the card CSS in `pcStyleOnce`.
 
+- **PLAYER CARDS pass 2 (owner: "add a little more depth to these landscapes... variation to the holes so
+  it's not always the exact same... a goat background that has some pixel goats on the golf course. The
+  golfer is too small on the front of the card").** All in the `pxCardBgCanvas` renderer + the card CSS:
+  • **Depth**: hazy distant hill layers behind the horizon, a horizon haze band, a FAR lighter/smaller tree
+    row behind the main silhouettes, soft pixel clouds in daytime skies, two-tone highlighted canopies, and
+    dark foreground rough tufts at the bottom edge.
+  • **Hole variation (seeded per background)**: the fairway is now a CURVED dogleg (direction + strength
+    seeded), the green position + size vary, 1-3 bunkers scatter around the green, and the flag's spot on
+    the green varies - so every backdrop shows a genuinely different hole instead of the identical straight
+    center ribbon.
+  • **The G.O.A.T. Pasture** (`cardbg:'goat'`): a golden-hour course with 4 pixel GOATS grazing (white/tan/
+    dark, head-up + horns + beard), gold flag; earned by reaching the **Icon** Tour Rep rank (tunable in
+    CARD_EARN). CARDBGS is now 16.
+  • **Bigger golfer**: the card-front figure 158->206px (bottom offset 62->58) so the golfer is unmistakably
+    the main focus of the card.
+  Verified in Playwright: 16 distinct backdrops render, the full card/board/closet/share suite + a complete
+  practice round all still green with 0 page errors; screenshots confirm the depth layers, per-background
+  hole shapes, the goats, and the golfer-dominant card front. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
