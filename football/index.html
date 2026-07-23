@@ -301,11 +301,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   background:repeating-linear-gradient(180deg,var(--endzone) 0 6px,var(--endzone2) 6px 12px); border-left:3px solid #fff;}
 .hero-field .scrim{position:absolute; inset:0; background:linear-gradient(180deg,transparent 55%,rgba(10,20,32,.35));}
 /* attract-mode billboard sprites — stand up out of the raked field, perspective auto-scales depth */
-.hchip{position:absolute; width:26px; height:46px; transform:translate(-50%,-100%) rotateX(-36deg);
-  transform-origin:50% 100%; filter:drop-shadow(0 3px 3px rgba(0,0,0,.5)); will-change:left,top;}
-.h-ball{position:absolute; width:16px; height:11px; background:#7c451a; border:1px solid #43230d; border-radius:50%/62%;
-  transform:translate(-50%,-100%) rotateX(-36deg); transform-origin:50% 100%; z-index:7;
-  filter:drop-shadow(0 1px 1px rgba(0,0,0,.6));}
+.hchip{position:absolute; width:26px; height:26px; transform:translate(-50%,-50%);
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.55)); will-change:left,top;}
+.h-ball{position:absolute; width:15px; height:10px; background:#c9a24a; border:1.5px solid #7a5a12; border-radius:50%/62%;
+  transform:translate(-50%,-50%); z-index:7; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));}
 .h-td{position:absolute; left:50%; top:40%; transform:translate(-50%,-50%) scale(.82); font-family:var(--pix);
   font-size:18px; color:#ffcf4d; opacity:0; z-index:9; letter-spacing:1px; white-space:nowrap;
   text-shadow:0 2px 0 rgba(0,0,0,.75), 0 0 10px rgba(0,0,0,.5);
@@ -517,11 +516,11 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
           mask:linear-gradient(180deg,#000 62%,transparent);}
 .field-strip .fs-plane{ position:absolute; left:-45%; right:-45%; top:-4%; bottom:-30%; transform-style:preserve-3d;
   transform:rotateX(36deg); transform-origin:50% 100%;
-  background:repeating-linear-gradient(0deg, #2f7d42 0 30px, #2a7440 30px 60px);
-  box-shadow:inset 0 0 130px 34px rgba(4,14,8,.6);}
-.field-strip .fs-yl{ position:absolute; left:0; right:0; height:3px; background:rgba(255,255,255,.5);}
+  background:repeating-linear-gradient(0deg, #163a2c 0 30px, #123227 30px 60px);
+  box-shadow:inset 0 0 130px 40px rgba(4,12,20,.66);}
+.field-strip .fs-yl{ position:absolute; left:0; right:0; height:3px; background:rgba(238,243,251,.45);}
 .field-strip .fs-ezf{ position:absolute; left:0; right:0; top:0; height:9%;
-  background:repeating-linear-gradient(90deg,#1e5c33 0 12px,#1a5230 12px 24px); border-bottom:3px solid #fff;}
+  background:repeating-linear-gradient(90deg,#152a45 0 12px,#112238 12px 24px); border-bottom:3px solid rgba(238,243,251,.7);}
 .field-strip .fs-num{ position:absolute; transform:translate(-50%,-50%); font-family:var(--pix); font-weight:800;
   color:rgba(238,243,251,.72); text-shadow:0 2px 0 rgba(0,0,0,.4); letter-spacing:1px; line-height:1;}
 .field-strip .fs-goal{ position:absolute; left:50%; top:10%; width:74px; z-index:3;
