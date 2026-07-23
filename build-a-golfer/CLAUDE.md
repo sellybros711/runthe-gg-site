@@ -13501,6 +13501,34 @@ allows Google Fonts, or self-host Anton.*
     retro dither strips, still perfectly crisp pixels. Tunable: Q (20, tone step), K (0.55, dither
     coverage) in `cardBgQuantize`; the golfer height/bottom in playerCardHTML/.pcgolfer.
 
+- **Two owner fixes: season-highlight float + daily card scorecard (owner IMG_8706/8707).**
+  1. **Float leak in the Season Highlights Dispatch** ("Stormed from four back on Sunday to steal Tour
+     Championship, closing in **4.592156287598909** under"). In `seasonHeadlines`, `f.sun` was set to the raw
+     final-round to-par (`R[3]`), a gaussian sim FLOAT, and both `winTale` + the candidate note interpolated
+     `Math.abs(f.sun)` unrounded. Fixed at the source: `f.sun=Math.round(R[3])` - the "closing in N under"
+     note now reads a clean integer everywhere it appears.
+  2. **The daily player-card back now shows the hole-by-hole SCORECARD** (owner: "on the back of the users
+     player card on the daily challenge it should show their scorecard"). New `pcScorecardHTML(holes)` +
+     `.pcsc*` CSS render a compact scorecard on the card back (Hole / Par / Score rows, front-9 + back-9
+     with OUT/IN/TOT totals, scores colored by to-par) below the Score + Beat-the-pro summary.
+     `openPlayerCardRow`'s daily branch attaches `cv.scorecard` when hole data is available: for YOUR OWN
+     card it reads the local `dailyBest().holes` immediately (no migration needed - fixes the owner's
+     screenshot now); for OTHER players it reads `r.holes` from the board (once migration 69 is applied).
+     `sbSubmitDaily` gained a `withHoles` layer that passes `p_holes` first and gracefully falls back to the
+     existing `p_look`/`args`/`base` chain, so a pre-migration DB never regresses (it just drops the holes).
+  - **Backend `supabase/69_runtour_daily_holes.sql` (owner-run, after 66):** adds a compact `holes` jsonb
+    (`[{par,toPar}, ...]`) to `runtour_daily_scores`, threads an optional `p_holes` through
+    `runtour_submit_daily` (appended param, so old callers still resolve), and returns `holes` from
+    `runtour_daily_board`. Day-scoped (<=200 rows), so the extra jsonb is a tiny read. Validated on a local
+    Postgres: 12-arg submit stores holes, the old 11-arg call still resolves, the board returns the holes
+    column, idempotent re-run. **ACTION: run `supabase/69_runtour_daily_holes.sql`** - until then, YOUR OWN
+    daily card shows the scorecard (from local) and other players' cards fall back to the Score/Beat-the-pro
+    summary.
+  Verified in Playwright: the float rounds to an integer; a daily card (other player w/ r.holes) flips to a
+  2-block OUT/IN scorecard with correct totals + colored scores; a real daily submit passes p_holes on the
+  first attempt; the full card/board/closet/share suite + an 18-hole practice round still green with 0 page
+  errors. Deployed client to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
