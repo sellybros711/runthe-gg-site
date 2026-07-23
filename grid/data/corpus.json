@@ -36645,7 +36645,8 @@
     "nba_thunder",
     "nba_warriors",
     "nba_nets",
-    "nba_suns"
+    "nba_suns",
+    "nba_supersonics"
    ],
    "jersey_number": [
     35,
@@ -36942,7 +36943,7 @@
    "teams": [
     "nba_knicks",
     "nba_magic",
-    "nba_thunder"
+    "nba_supersonics"
    ],
    "jersey_number": [
     33
@@ -37140,11 +37141,11 @@
     2000
    ],
    "teams": [
-    "nba_thunder",
     "nba_lakers",
     "nba_celtics",
     "nba_heat",
-    "nba_bucks"
+    "nba_bucks",
+    "nba_supersonics"
    ],
    "jersey_number": [
     20
@@ -41589,9 +41590,9 @@
    ],
    "teams": [
     "nba_bucks",
-    "nba_thunder",
     "nba_celtics",
-    "nba_heat"
+    "nba_heat",
+    "nba_supersonics"
    ],
    "jersey_number": [
     20,
@@ -42351,10 +42352,10 @@
     2000
    ],
    "teams": [
-    "nba_thunder",
     "nba_cavaliers",
     "nba_trailblazers",
-    "nba_magic"
+    "nba_magic",
+    "nba_supersonics"
    ],
    "jersey_number": [
     40
@@ -44879,11 +44880,11 @@
     1980
    ],
    "teams": [
-    "nba_thunder",
     "nba_knicks",
     "nba_jazz",
     "nba_lakers",
-    "nba_wizards"
+    "nba_wizards",
+    "nba_supersonics"
    ],
    "jersey_number": [
     24
@@ -45226,9 +45227,9 @@
     1990
    ],
    "teams": [
-    "nba_thunder",
     "nba_suns",
-    "nba_celtics"
+    "nba_celtics",
+    "nba_supersonics"
    ],
    "jersey_number": [
     3
@@ -49710,10 +49711,10 @@
     2000
    ],
    "teams": [
-    "nfl_titans",
     "nfl_vikings",
     "nfl_seahawks",
-    "nfl_chiefs"
+    "nfl_chiefs",
+    "nfl_oilers"
    ],
    "jersey_number": [
     1
@@ -50525,8 +50526,8 @@
     1980
    ],
    "teams": [
-    "nfl_titans",
-    "nfl_saints"
+    "nfl_saints",
+    "nfl_oilers"
    ],
    "jersey_number": [
     34
@@ -54941,7 +54942,8 @@
     2000
    ],
    "teams": [
-    "nfl_titans"
+    "nfl_titans",
+    "nfl_oilers"
    ],
    "jersey_number": [
     74
@@ -56807,7 +56809,7 @@
    "teams": [
     "mlb_redsox",
     "mlb_yankees",
-    "mlb_braves"
+    "mlb_bostonbraves"
    ],
    "jersey_number": [
     3
@@ -56880,7 +56882,8 @@
    ],
    "teams": [
     "mlb_braves",
-    "mlb_brewers"
+    "mlb_brewers",
+    "mlb_milwaukeebraves"
    ],
    "jersey_number": [
     44
@@ -57523,7 +57526,7 @@
     "mlb_guardians",
     "mlb_redsox",
     "mlb_stlcardinals",
-    "mlb_braves"
+    "mlb_bostonbraves"
    ],
    "jersey_number": [],
    "hall_of_fame": [
@@ -58433,7 +58436,7 @@
     "mlb_diamondbacks",
     "mlb_yankees",
     "mlb_sfgiants",
-    "mlb_nationals"
+    "mlb_expos"
    ],
    "jersey_number": [
     51
@@ -58575,10 +58578,10 @@
    ],
    "teams": [
     "mlb_dodgers",
-    "mlb_nationals",
     "mlb_redsox",
     "mlb_mets",
-    "mlb_phillies"
+    "mlb_phillies",
+    "mlb_expos"
    ],
    "jersey_number": [
     45
@@ -59945,7 +59948,7 @@
    "teams": [
     "mlb_reds",
     "mlb_phillies",
-    "mlb_nationals"
+    "mlb_expos"
    ],
    "jersey_number": [
     14
@@ -61904,10 +61907,10 @@
     2010
    ],
    "teams": [
-    "mlb_nationals",
     "mlb_angels",
     "mlb_rangers",
-    "mlb_orioles"
+    "mlb_orioles",
+    "mlb_expos"
    ],
    "jersey_number": [
     27
@@ -64001,9 +64004,10 @@
     1960
    ],
    "teams": [
-    "mlb_braves",
     "mlb_mets",
-    "mlb_sfgiants"
+    "mlb_sfgiants",
+    "mlb_bostonbraves",
+    "mlb_milwaukeebraves"
    ],
    "jersey_number": [
     21
@@ -64716,7 +64720,7 @@
     "mlb_reds",
     "mlb_redsox",
     "mlb_phillies",
-    "mlb_nationals"
+    "mlb_expos"
    ],
    "jersey_number": [
     24
@@ -64851,10 +64855,10 @@
     1990
    ],
    "teams": [
-    "mlb_nationals",
     "mlb_mets",
     "mlb_sfgiants",
-    "mlb_dodgers"
+    "mlb_dodgers",
+    "mlb_expos"
    ],
    "jersey_number": [
     8
@@ -65340,9 +65344,9 @@
     2000
    ],
    "teams": [
-    "mlb_nationals",
     "mlb_rockies",
-    "mlb_stlcardinals"
+    "mlb_stlcardinals",
+    "mlb_expos"
    ],
    "jersey_number": [
     33
@@ -65697,7 +65701,7 @@
     "mlb_braves",
     "mlb_twins",
     "mlb_rangers",
-    "mlb_nationals"
+    "mlb_expos"
    ],
    "jersey_number": [
     40
@@ -103657,7 +103661,8 @@
    ],
    "teams": [
     "nfl_titans",
-    "nfl_ravens"
+    "nfl_ravens",
+    "nfl_oilers"
    ],
    "jersey_number": [
     9
@@ -120091,7 +120096,6 @@
    "teams": [
     "nba_hornets",
     "nba_celtics",
-    "nba_thunder",
     "nba_knicks"
    ],
    "jersey_number": [
@@ -121027,8 +121031,8 @@
    "teams": [
     "nba_mavericks",
     "nba_pacers",
-    "nba_thunder",
-    "nba_trailblazers"
+    "nba_trailblazers",
+    "nba_supersonics"
    ],
    "jersey_number": [
     11
@@ -121363,7 +121367,7 @@
     "nba_bulls",
     "nba_magic",
     "nba_lakers",
-    "nba_thunder"
+    "nba_supersonics"
    ],
    "jersey_number": [
     54
@@ -134749,6 +134753,66 @@
   "attributes": {
    "nickname": [
     "Perth Glory"
+   ]
+  }
+ },
+ {
+  "id": "nba_supersonics",
+  "entity_type": "team",
+  "display_name": "Seattle SuperSonics",
+  "sport": "NBA",
+  "fame_tier": 3,
+  "attributes": {
+   "nickname": [
+    "SuperSonics"
+   ]
+  }
+ },
+ {
+  "id": "mlb_expos",
+  "entity_type": "team",
+  "display_name": "Montreal Expos",
+  "sport": "MLB",
+  "fame_tier": 3,
+  "attributes": {
+   "nickname": [
+    "Expos"
+   ]
+  }
+ },
+ {
+  "id": "nfl_oilers",
+  "entity_type": "team",
+  "display_name": "Houston Oilers",
+  "sport": "NFL",
+  "fame_tier": 3,
+  "attributes": {
+   "nickname": [
+    "Oilers"
+   ]
+  }
+ },
+ {
+  "id": "mlb_bostonbraves",
+  "entity_type": "team",
+  "display_name": "Boston Braves",
+  "sport": "MLB",
+  "fame_tier": 3,
+  "attributes": {
+   "nickname": [
+    "Braves"
+   ]
+  }
+ },
+ {
+  "id": "mlb_milwaukeebraves",
+  "entity_type": "team",
+  "display_name": "Milwaukee Braves",
+  "sport": "MLB",
+  "fame_tier": 3,
+  "attributes": {
+   "nickname": [
+    "Braves"
    ]
   }
  }
