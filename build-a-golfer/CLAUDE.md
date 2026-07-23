@@ -13342,6 +13342,56 @@ allows Google Fonts, or self-host Anton.*
   shows each aura's distinct particle identity. Deployed to /golf. Tunable: `PXFX_PARTS` (glyph/colors/
   count/speed per effect), the fxp* keyframes, the shimmer strength in fxShim.
 
+- **PLAYER CARDS v1 (owner-designed): flip cards on every leaderboard, earned nameplates + pixel
+  backdrops, Tour Rep frames, TAP TO FLIP (owner answered the design questions: Option B surfaces ·
+  earned-only + seasonal pack pulls · shareable · rep-tier frame; plus "the card should come up full screen
+  with a clean animation when you click somebody's profile on the leaderboard... TAP TO FLIP... the back
+  shows lifetime stats and the most important stats from that specific career").**
+  • **Two new cosmetic categories** — `plate` (Nameplate, 7) + `cardbg` (Card Background, 15) — riding the
+    full COS_CATS/cosOwned/cosEquip/pack plumbing. Free defaults (Classic plate + Clubhouse bg);
+    **EARNED-ONLY** unlocks via a new `CARD_EARN` map (never buyable — `cosBuy` refuses): plates for a first
+    win / major / Grand Slam / World No.1 / Tour Cup; backgrounds for a major (Champion's Dusk), Tour Cup
+    (Stadium Lights), a Games medal (Meridian Bay), and one per BIOME (10) earned by beating the pro at a
+    course of that biome (`biomeConquered` reads the Course Passport + HV_COURSE_BIOME — cross-device via
+    the synced stats). **Seasonal pack pulls**: Sunsplash plate + Endless Summer bg (epic, 18k selector)
+    added to the Summer Smash drop + the pack pool (pack-exclusive, window-gated like the rest).
+  • **Pixel card backdrops** (`pxCardBgCanvas/URL` + `CARDBG_ART`): a 96×132 parametric pixel scene per bg —
+    sky gradient/sun/stars, sea band, horizon silhouettes (trees/pines/dunes/peaks/foreground palms/cacti/
+    oaks/grandstand+floodlights), fairway ribbon + green + flag, biome accents (azaleas/heather/gorse),
+    vignette — 15 distinct scenes, cached. (Palms took 3 passes: horizon rows read as a pier; final = 3 tall
+    foreground palms with curved trunks + arcing fronds.)
+  • **The flip card** (`playerCardHTML` + `overlayPlayerCard`, `S.overlay='playercard'`): a full-screen
+    spotlight view — entrance animation (rise/scale/rotate, once per open), the CARD (front: backdrop + rep-
+    tier chip + gold OVR badge + the player's full pixel golfer w/ auras + the nameplate with name +
+    golfer·archetype sub) over a pulsing **TAP TO FLIP** hint; tapping runs a 3D rotateY flip (CSS
+    preserve-3d, no re-render) to the BACK: LIFETIME stats (Seasons/Wins/Majors/Earnings/Best OVR/Fans) +
+    the tapped row's section (This Career / This Season / Today's Round / This Week). **Frame = Tour Rep
+    tier**: border + glow color from `repTierColor`, banded (low plain · mid glow · high animated pulse ·
+    Icon/G.O.A.T. animated rainbow border). Reduced-motion: no animations, instant flip. Close ✕ / tap
+    backdrop.
+  • **Every leaderboard is wired**: season + career rows AND podium (`pcReg` registry + `data-pc`,
+    keyboard-accessible) and the Play 18/weekly board rows + podium → tap opens that player's card (their
+    stored look incl. their equipped plate/bg — `lookForBoard` now carries `plate`/`cardbg`, so boards +
+    `runtour_set_look` transmit them). Lifetime stats for OTHER players come from **migration 68**
+    (`supabase/68_runtour_player_card.sql`, owner-run): `runtour_player_card(p_user)` = a scalar aggregate
+    over runtour_scores (careers/seasons/wins/majors/earnings/best net/best OVR/max fans/max rep) —
+    validated on local Postgres (multi-career/single/none/null + idempotent); client fails open ("Lifetime
+    stats unavailable") pre-migration. Your own card uses your live local lifetime.
+  • **Surfaces (Option B)**: the boards (above), a **★ Player Card** button on the Profile header
+    (`openPlayerCardSelf`), a **Card** section in the Closet (Nameplate + Background equip tiles — locked
+    earned items show HOW to earn them, + a "Preview my Player Card" button), and the **share card**
+    (`drawPlayerCard`): the equipped backdrop now fills the portrait medallion and the equipped nameplate
+    colors a bar behind the name.
+  • Verified in Playwright: 15 distinct backdrops render; free/locked/earned/pack states + pack pool +
+    buy-refusal correct; earn reqs flip on a conquered pine course + lifetime wins/majors; board rows +
+    podiums tappable on career AND Play 18 tabs → the card renders (bg/tier/OVR/golfer/plate) → flips →
+    the mocked lifetime RPC populates the back (no re-animation, flip preserved); profile self-card;
+    closet equip round-trips into bag_look + lookForBoard; share card draws with plate+bg; a full practice
+    daily round completes to the result — 0 page errors throughout. **ACTION: run
+    `supabase/68_runtour_player_card.sql`** (until then other players' cards just omit lifetime stats).
+    Tunable: `PLATES`/`PLATE_STYLE`, `CARDBGS`/`CARDBG_ART`, `CARD_EARN` reqs, the frame bands in
+    `cardFrameFor`, the card CSS in `pcStyleOnce`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

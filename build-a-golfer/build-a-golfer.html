@@ -5818,6 +5818,161 @@ const PXBALL=[
   {id:'pigskin',  name:'Pigskin',       hist:'Built for the big game',   price:16000, col:'#7a4a22', tracer:{g:'rgba(122,74,34,.5)',  c:'#d8b48a'}} ];
 const PXBALL_BY={}; PXBALL.forEach(function(o){ PXBALL_BY[o.id]=o; });
 function ballOf(look){ var id=(look&&look.ball)||'none'; return (id&&id!=='none'&&PXBALL_BY[id])?PXBALL_BY[id]:null; }
+/* ==== PLAYER CARDS (owner): a collectible flip card of your golfer. Customize the NAMEPLATE + CARD
+   BACKGROUND (earned-only starter set + seasonal pack pulls); the frame follows your Tour Rep tier.
+   Tapping a profile on any leaderboard opens the card full screen (TAP TO FLIP -> lifetime stats). ==== */
+const PLATES=[
+  {id:'classic',     name:'Classic Plate',     hist:'Where every career starts'},
+  {id:'goldengraved',name:'Gold Engraved',     hist:'A winner’s name, set in gold'},
+  {id:'major',       name:'Major Champion',    hist:'Forever a major champion'},
+  {id:'slam',        name:'Grand Slam Laurel', hist:'All four majors, one career'},
+  {id:'no1',         name:'World No.1',        hist:'Top of the world ranking'},
+  {id:'tourcup',     name:'Tour Cup',          hist:'The season-long crown'},
+  {id:'sunsplash',   name:'Sunsplash',         hist:'Poolside-season exclusive'},
+];
+const PLATE_STYLE={
+  classic:     {c1:'#0e2a1c',c2:'#123f2c',tx:'#F4E3C9',bd:'rgba(244,227,201,.35)'},
+  goldengraved:{c1:'#f6e7a6',c2:'#c9a520',tx:'#1c2a15',bd:'#8a6d14'},
+  major:       {c1:'#6e1f2e',c2:'#471119',tx:'#f6e7a6',bd:'#c9a520'},
+  slam:        {c1:'#2a230b',c2:'#141003',tx:'#F1D04A',bd:'#F1D04A',laurel:1},
+  no1:         {c1:'#12233f',c2:'#0a1526',tx:'#dbe6f5',bd:'#9fb9dd'},
+  tourcup:     {c1:'#0a3a35',c2:'#06211e',tx:'#7df0e2',bd:'#16b5a6'},
+  sunsplash:   {c1:'#ff9d3a',c2:'#e2554e',tx:'#2a1204',bd:'#ffd9a0'},
+};
+function plateCss(id){ const p=PLATE_STYLE[id]||PLATE_STYLE.classic; return 'background:linear-gradient(180deg,'+p.c1+','+p.c2+');border:1px solid '+p.bd+';color:'+p.tx; }
+const CARDBGS=[
+  {id:'club',         name:'The Clubhouse',    hist:'Home turf'},
+  {id:'parkland',     name:'Parkland Gold',    hist:'Golden hour through the trees'},
+  {id:'pine',         name:'Pine Cathedral',   hist:'Azaleas under the pines'},
+  {id:'links',        name:'Auld Links',       hist:'Dunes, gorse and grey light'},
+  {id:'coastal',      name:'Cliffside Pacific',hist:'Golf on the edge of the sea'},
+  {id:'desert',       name:'Desert Dusk',      hist:'Saguaros against the sunset'},
+  {id:'tropical',     name:'Island Winds',     hist:'Palms and trade winds'},
+  {id:'alpine',       name:'High Country',     hist:'Thin air, granite peaks'},
+  {id:'heath',        name:'Heather Moor',     hist:'A purple moor in bloom'},
+  {id:'sandhills',    name:'The Sandhills',    hist:'Wiregrass and tawny waste'},
+  {id:'prairie',      name:'Big Sky',          hist:'Nothing but horizon'},
+  {id:'champion',     name:'Champion’s Dusk', hist:'The evening a major was won'},
+  {id:'stadium',      name:'Stadium Lights',   hist:'Under the floodlights'},
+  {id:'concordia',    name:'Meridian Bay',     hist:'Medal light over the bay'},
+  {id:'endlesssummer',name:'Endless Summer',   hist:'Poolside-season exclusive'},
+];
+// pixel-scene config per background (hand-authored palettes so each reads distinct)
+const CARDBG_ART={
+ club:        {sky:['#1c3a5e','#7fb0d8','#f2c98c'], sun:{x:.78,y:.40,r:5,c:'#ffd98c'}, band:'trees', bandC:'#14300f', ground:['#3f6d26','#27511a'], stripes:1},
+ parkland:    {sky:['#2c4a72','#b58a54','#f0b46a'], sun:{x:.28,y:.38,r:6,c:'#ffdf9c'}, band:'trees', bandC:'#182f10', ground:['#4a7a2a','#2c5518'], stripes:1},
+ pine:        {sky:['#26456a','#93b8a8','#e8d9a0'], band:'pines', bandC:'#0f2c14', ground:['#2f6020','#1b4212'], stripes:1, accents:{c:['#ff9ecb','#ffffff','#ef6fa6'],n:16}},
+ links:       {sky:['#5a6f86','#a8a58e','#e5c684'], sun:{x:.72,y:.34,r:5,c:'#f5e2ae'}, sea:{h:.06,c1:'#5f7d92',c2:'#3d5a6e'}, band:'dunes', bandC:'#8a7d4e', bandC2:'#a9976a', ground:['#7d8f46','#5a7034'], accents:{c:['#e8c93f','#c9a520'],n:10}},
+ coastal:     {sky:['#2f6fb2','#79b8e2','#d8ecf6'], sun:{x:.22,y:.28,r:4,c:'#fff2c8'}, sea:{h:.17,c1:'#4fb6ea',c2:'#1663b4'}, band:'trees', bandC:'#1d3a26', ground:['#4a7c33','#2e5a20']},
+ desert:      {sky:['#4a2a5e','#c85a3a','#f5a04c'], sun:{x:.70,y:.36,r:7,c:'#ffca7a'}, band:'cacti', bandC:'#2a1c22', ground:['#b98a52','#8a5f38'], fw:'#6f9339'},
+ tropical:    {sky:['#1a7ac2','#3fc4d8','#bfeef2'], sun:{x:.80,y:.24,r:5,c:'#fff6cf'}, sea:{h:.12,c1:'#35c8c0',c2:'#0f7ab0'}, band:'palms', bandC:'#123a20', ground:['#3f8a2e','#25601c']},
+ alpine:      {sky:['#1e3a5c','#6f9cc2','#cfe2ee'], band2:'peaks', band2C:'#5f6d7d', band2C2:'#e8eef4', band:'pines', bandC:'#1c3a22', ground:['#3a6a34','#224a20']},
+ heath:       {sky:['#3a2c50','#8a6f96','#d8a8b8'], band:'trees', bandC:'#241a30', ground:['#5f4a72','#3a2c50'], accents:{c:['#b06fd0','#8a54b0','#d89ae8'],n:22}, fw:'#6f8a3c'},
+ sandhills:   {sky:['#4a3a6e','#c88a6a','#f2c08a'], sun:{x:.62,y:.34,r:5,c:'#ffd9a0'}, band:'pines', bandC:'#2a3a1c', ground:['#c2a670','#98784e'], fw:'#7fa040'},
+ prairie:     {sky:['#2a4a7e','#e8b060','#f8d890'], sun:{x:.5,y:.42,r:8,c:'#ffe9b0'}, band:'oaks', bandC:'#3a2f14', ground:['#8a9a3c','#5f7028']},
+ champion:    {sky:['#2a1a08','#8a5a14','#f1d04a'], sun:{x:.5,y:.34,r:9,c:'#ffe9a0'}, band:'trees', bandC:'#120c02', ground:['#3f3410','#241c06'], stripes:1, goldflag:1},
+ stadium:     {sky:['#060d1c','#0e1c38','#1c2c50'], stars:1, band:'stand', bandC:'#10182a', beams:1, ground:['#2f5c26','#1b3a16'], stripes:1},
+ concordia:   {sky:['#1c3a6e','#4a8ac2','#ffd98c'], sun:{x:.5,y:.40,r:6,c:'#ffe9a0'}, sea:{h:.20,c1:'#4fb6ea',c2:'#125a9e'}, band:'trees', bandC:'#1d3a26', ground:['#4a7c33','#2e5a20'], goldflag:1},
+ endlesssummer:{sky:['#5a2a6e','#e05a6e','#ff9d3a'], sun:{x:.5,y:.46,r:9,c:'#ffd98c'}, sea:{h:.18,c1:'#ff9d6a',c2:'#8a3a7e'}, band:'palms', bandC:'#241430', ground:['#e8c890','#c2985e'], noflag:1},
+};
+const _cardBgCv={}, _cardBgURL={};
+function pxCardBgCanvas(id){
+  if(_cardBgCv[id]) return _cardBgCv[id];
+  const A=CARDBG_ART[id]||CARDBG_ART.club;
+  const W=96,H=132,cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const x=cv.getContext('2d');
+  const seed=(String(id).charCodeAt(0)||7)*131;
+  const hsh=(a,b)=>{ let v=(a*374761393+b*668265263+seed)|0; v=((v^(v>>13))*1274126177)|0; return (((v^(v>>16))>>>0)%1000)/1000; };
+  const hy=Math.round(H*(A.hy||0.52));
+  const g=x.createLinearGradient(0,0,0,hy); A.sky.forEach((c,i)=>g.addColorStop(i/(A.sky.length-1),c));
+  x.fillStyle=g; x.fillRect(0,0,W,hy);
+  if(A.stars){ for(let i=0;i<26;i++){ x.fillStyle='rgba(255,255,255,'+(0.3+hsh(i,3)*0.5).toFixed(2)+')'; x.fillRect(Math.floor(hsh(i,1)*W),Math.floor(hsh(i,2)*hy*0.8),1,1); } }
+  if(A.sun){ const s=A.sun; const rg=x.createRadialGradient(s.x*W,s.y*H,1,s.x*W,s.y*H,s.r*3.2); rg.addColorStop(0,s.c); rg.addColorStop(1,'rgba(255,200,80,0)');
+    x.fillStyle=rg; x.fillRect(0,0,W,hy); x.fillStyle=s.c; x.beginPath(); x.arc(s.x*W,s.y*H,s.r,0,7); x.fill(); }
+  let gy=hy;
+  if(A.sea){ const sh=Math.round(H*A.sea.h); const sg=x.createLinearGradient(0,hy,0,hy+sh); sg.addColorStop(0,A.sea.c1); sg.addColorStop(1,A.sea.c2);
+    x.fillStyle=sg; x.fillRect(0,hy,W,sh);
+    x.fillStyle='rgba(255,255,255,.5)'; for(let i=0;i<8;i++){ x.fillRect(Math.floor(hsh(i,4)*W), hy+2+Math.floor(hsh(i,5)*Math.max(1,sh-4)), 3+Math.floor(hsh(i,6)*4), 1); }
+    gy=hy+sh; }
+  const gg=x.createLinearGradient(0,gy,0,H); gg.addColorStop(0,A.ground[0]); gg.addColorStop(1,A.ground[1]);
+  x.fillStyle=gg; x.fillRect(0,gy,W,H-gy);
+  if(A.stripes){ const bh=Math.max(5,Math.round((H-gy)/8)); x.fillStyle='rgba(255,255,255,.055)'; for(let i=0;i<8;i+=2) x.fillRect(0,gy+i*bh,W,bh); }
+  const band=(type,c,c2)=>{ if(!type) return; c2=c2||c;
+    if(type==='peaks'){ for(let i=0;i<4;i++){ const px0=-8+i*28+hsh(i,7)*10, pw=34+hsh(i,8)*14, ph=16+hsh(i,9)*12;
+        x.fillStyle=c; x.beginPath(); x.moveTo(px0,gy); x.lineTo(px0+pw/2,gy-ph); x.lineTo(px0+pw,gy); x.fill();
+        x.fillStyle=c2; x.beginPath(); x.moveTo(px0+pw/2,gy-ph); x.lineTo(px0+pw/2+5,gy-ph+6); x.lineTo(px0+pw/2-5,gy-ph+6); x.fill(); } return; }
+    if(type==='dunes'){ for(let i=0;i<4;i++){ x.fillStyle=i%2?c:c2; x.beginPath(); x.ellipse(12+i*26+hsh(i,7)*8, gy, 20, 6+hsh(i,8)*4, 0, Math.PI, 0); x.fill(); } return; }
+    if(type==='stand'){ x.fillStyle=c; x.fillRect(4,gy-14,W-8,14); x.fillStyle='rgba(255,255,255,.10)';
+      for(let i=0;i<12;i++){ x.fillRect(7+i*7,gy-11,4,2); x.fillRect(7+i*7,gy-6,4,2); }
+      x.fillStyle='#0a0f1c'; x.fillRect(10,gy-30,2,16); x.fillRect(W-12,gy-30,2,16);
+      x.fillStyle='#fff2c0'; x.fillRect(7,gy-33,8,3); x.fillRect(W-15,gy-33,8,3); return; }
+    if(type==='palms'){ const px=[0.12,0.86,0.44];
+      for(let i=0;i<3;i++){ const tx0=Math.floor(px[i]*W+(hsh(i,7)-0.5)*6), base=gy+3+Math.floor(hsh(i,13)*7), ph=15+hsh(i,8)*6;
+        x.strokeStyle=c; x.lineWidth=2;
+        x.beginPath(); x.moveTo(tx0,base); x.quadraticCurveTo(tx0+2,base-ph*0.6,tx0+4,base-ph); x.stroke();
+        const tpx=tx0+4, tpy=base-ph; x.lineWidth=1.5;
+        for(let f=0;f<5;f++){ const dx=(f-2)*4.2||1.6;
+          x.beginPath(); x.moveTo(tpx,tpy); x.quadraticCurveTo(tpx+dx*0.7,tpy-4,tpx+dx*1.5,tpy+2+Math.abs(dx)*0.35); x.stroke(); }
+      } return; }
+    const n= type==='oaks'?5 : type==='cacti'?6 : 9;
+    for(let i=0;i<n;i++){ const tx0=Math.floor((i+0.5)*W/n + (hsh(i,7)-0.5)*8);
+      if(type==='pines'){ const th=9+hsh(i,8)*8; x.fillStyle=c; x.beginPath(); x.moveTo(tx0-4,gy); x.lineTo(tx0,gy-th); x.lineTo(tx0+4,gy); x.fill(); }
+      else if(type==='cacti'){ if(hsh(i,9)<0.55){ const chh=8+hsh(i,10)*5; x.fillStyle=c; x.fillRect(tx0,gy-chh,2,chh); x.fillRect(tx0-3,gy-chh+2,2,3); x.fillRect(tx0-3,gy-chh+4,5,2); } }
+      else if(type==='oaks'){ x.fillStyle=c; x.beginPath(); x.ellipse(tx0,gy-5,9,4.5,0,0,7); x.fill(); x.fillRect(tx0-1,gy-3,2,3); }
+      else { const r=3.5+hsh(i,8)*3; x.fillStyle=c; x.beginPath(); x.arc(tx0,gy-r,r,0,7); x.fill(); }
+    } };
+  band(A.band2,A.band2C,A.band2C2);
+  band(A.band,A.bandC,A.bandC2);
+  if(!A.noflag){
+    const fwC=A.fw||'#6f9e38', grC=A.gr||'#a9cc60';
+    x.fillStyle=fwC; x.beginPath(); x.moveTo(W*0.40,gy); x.lineTo(W*0.60,gy); x.lineTo(W*0.88,H); x.lineTo(W*0.10,H); x.fill();
+    const gx=W*0.52, gyy=gy+(H-gy)*0.22;
+    x.fillStyle=grC; x.beginPath(); x.ellipse(gx,gyy,12,4.5,0,0,7); x.fill();
+    x.fillStyle='#e8e2c2'; x.beginPath(); x.ellipse(gx-13,gyy+3,4,1.8,0,0,7); x.fill();
+    const fx0=gx+4, fy0=gyy-13;
+    x.fillStyle='#e8e2d2'; x.fillRect(fx0,fy0,1,13);
+    x.fillStyle=A.goldflag?'#F1D04A':'#e2554e';
+    x.beginPath(); x.moveTo(fx0+1,fy0); x.lineTo(fx0+8,fy0+2); x.lineTo(fx0+1,fy0+5); x.fill();
+  }
+  if(A.accents){ for(let i=0;i<A.accents.n;i++){ x.fillStyle=A.accents.c[i%A.accents.c.length]; x.fillRect(Math.floor(hsh(i,11)*W), gy+1+Math.floor(hsh(i,12)*8), 2,2); } }
+  if(A.beams){ x.fillStyle='rgba(255,242,192,.10)'; [[11,gy-31],[W-11,gy-31]].forEach(p=>{ x.beginPath(); x.moveTo(p[0],p[1]); x.lineTo(p[0]-18,0); x.lineTo(p[0]+18,0); x.closePath(); x.fill(); }); }
+  const vg=x.createRadialGradient(W/2,H*0.45,20,W/2,H*0.55,W*0.95); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.30)');
+  x.fillStyle=vg; x.fillRect(0,0,W,H);
+  _cardBgCv[id]=cv; return cv;
+}
+function pxCardBgURL(id){ if(!_cardBgURL[id]){ try{ _cardBgURL[id]=pxCardBgCanvas(id).toDataURL(); }catch(e){ _cardBgURL[id]=''; } } return _cardBgURL[id]; }
+// frame band from the Tour Rep tier (low = plain, mid = glow, high = animated, GOAT = prismatic)
+function cardFrameFor(repName){
+  const nm=(repName||'').replace(/^🐐\s*/,'');
+  const i=(typeof repRankIndex==='function')?repRankIndex(nm):-1;
+  const c=(typeof repTierColor==='function')?repTierColor(nm):'#8aa0a8';
+  return {c, cls: i>=18?'pcf-goat' : i>=14?'pcf-high' : i>=8?'pcf-mid' : 'pcf-low'};
+}
+// EARNED-ONLY unlocks (owner): plates + backgrounds are earned by playing, never bought. The two
+// seasonal Summer Smash pieces are the only pack pulls. Reqs read the synced lifetime stats +
+// Course Passport, so unlocks are cross-device consistent.
+function biomeConquered(b){ try{ const m=courseMastery(); return DAILY_KEYS.some(k=>((HV_COURSE_BIOME[k]||'parkland')===b) && m[k] && (m[k].beat|0)>0); }catch(e){ return false; } }
+function _cardLt(){ try{ return badgeMetrics(career()); }catch(e){ return null; } }
+const CARD_EARN={
+ 'np:goldengraved':{hint:'Win a tour event', req:()=>{const m=_cardLt(); return !!m&&m.wins>=1;}},
+ 'np:major':       {hint:'Win a major championship', req:()=>{const m=_cardLt(); return !!m&&m.majors>=1;}},
+ 'np:slam':        {hint:'Complete the career Grand Slam', req:()=>{const m=_cardLt(); return !!m&&(m.careerSlams>=1||m.distinctMajors>=4);}},
+ 'np:no1':         {hint:'Finish a season World No.1', req:()=>{const m=_cardLt(); return !!m&&m.no1Seasons>=1;}},
+ 'np:tourcup':     {hint:'Win the Tour Cup', req:()=>{const m=_cardLt(); return !!m&&m.fedexCups>=1;}},
+ 'cb:champion':    {hint:'Win a major championship', req:()=>{const m=_cardLt(); return !!m&&m.majors>=1;}},
+ 'cb:stadium':     {hint:'Win the Tour Cup', req:()=>{const m=_cardLt(); return !!m&&m.fedexCups>=1;}},
+ 'cb:concordia':   {hint:'Win a Games medal', req:()=>{const m=_cardLt(); return !!m&&((m.olyGold||0)+(m.olySilver||0)+(m.olyBronze||0))>=1;}},
+ 'cb:parkland':    {hint:'Beat the pro at a parkland course', req:()=>biomeConquered('parkland')},
+ 'cb:pine':        {hint:'Beat the pro at a pine course', req:()=>biomeConquered('pine')},
+ 'cb:links':       {hint:'Beat the pro at a links course', req:()=>biomeConquered('links')},
+ 'cb:coastal':     {hint:'Beat the pro at a coastal course', req:()=>biomeConquered('coastal')},
+ 'cb:desert':      {hint:'Beat the pro at a desert course', req:()=>biomeConquered('desert')},
+ 'cb:tropical':    {hint:'Beat the pro at a tropical course', req:()=>biomeConquered('tropical')},
+ 'cb:alpine':      {hint:'Beat the pro at an alpine course', req:()=>biomeConquered('alpine')},
+ 'cb:heath':       {hint:'Beat the pro at a heathland course', req:()=>biomeConquered('heath')},
+ 'cb:sandhills':   {hint:'Beat the pro at a sandhills course', req:()=>biomeConquered('sandhills')},
+ 'cb:prairie':     {hint:'Beat the pro at a prairie course', req:()=>biomeConquered('prairie')},
+};
 // ---- cosmetics (colors + patterns) are PURCHASED too (same coin economy, namespaced owned keys) ----
 // keys: sh:<shirt>  sp:<pattern>  ht:<hat color>  pt:<pants>  so:<shoes>  fx:<effect>. Free defaults below.
 // CS353: the 6 BASIC shirt/hat colors are FREE (so the retro creator always offers a shirt + hat color pick);
@@ -5827,13 +5982,15 @@ const FREE_COSMETICS={
   'ht:teal':1,'ht:navy':1,'ht:gold':1,'ht:white':1,'ht:purple':1,'ht:black':1,
   'sp:none':1,'hp:none':1,'pt:stone':1,'so:white':1,
   'hw:none':1,'hw:cap':1,'hw:visor':1,'ew:none':1,'fx:none':1,'tp:none':1,'lg:none':1,
-  'cl:driver':1,'bl:none':1,'ct:none':1};   // CS356g: base hats + no-shades are free; bucket/flat/shades are shop unlocks · sets: the Starter set + "no ball" + "no cleats" stay free
+  'cl:driver':1,'bl:none':1,'ct:none':1,
+  'np:classic':1,'cb:club':1};   // player-card defaults: the Classic plate + Clubhouse background are free   // CS356g: base hats + no-shades are free; bucket/flat/shades are shop unlocks · sets: the Starter set + "no ball" + "no cleats" stay free
 const COS_CATS=[ {k:'shirt',pk:'sh',lookKey:'polo',name:'Shirt color'}, {k:'pat',pk:'sp',lookKey:'shirtPat',name:'Shirt pattern'},
   {k:'hat',pk:'ht',lookKey:'hat',name:'Hat color'}, {k:'pants',pk:'pt',lookKey:'pants',name:'Trousers'}, {k:'shoes',pk:'so',lookKey:'shoes',name:'Shoe color'},
   {k:'hw',pk:'hw',lookKey:'hatStyle',name:'Headwear'}, {k:'ew',pk:'ew',lookKey:'eyewear',name:'Eyewear'}, {k:'fx',pk:'fx',lookKey:'fx',name:'Effect'},
   {k:'top',pk:'tp',lookKey:'top',name:'Outerwear'}, {k:'leg',pk:'lg',lookKey:'leg',name:'Legwear'},
   {k:'club',pk:'cl',lookKey:'club',name:'Clubs'},   // CS414: favorite club is now a cosmetic (basics free, vintage/legendary paid)
-  {k:'ball',pk:'bl',lookKey:'ball',name:'Balls'}, {k:'cleats',pk:'ct',lookKey:'cleats',name:'Cleats'} ];
+  {k:'ball',pk:'bl',lookKey:'ball',name:'Balls'}, {k:'cleats',pk:'ct',lookKey:'cleats',name:'Cleats'},
+  {k:'plate',pk:'np',lookKey:'plate',name:'Nameplate'}, {k:'cardbg',pk:'cb',lookKey:'cardbg',name:'Card Background'} ];   // player-card cosmetics
 function cosPk(cat){ const c=COS_CATS.find(x=>x.k===cat); return c?c.pk:cat; }
 function cosKey(cat,id){ return cosPk(cat)+':'+id; }
 // PACK-SYSTEM: direct-buy prices go up (x PACK_HIKE) the day packs launch, so packs are the value
@@ -5853,6 +6010,8 @@ function cosmeticPriceBase(cat,id){
   if(cat==='club'){ const c=CLUBS_BY[id]; if(!c||c.kind==='free') return 0; return CLUB_SEL[c.rar]||0; }   // stock free; store+pack priced by rarity (selector → packRarityOf → RARITY_PRICE)
   if(cat==='ball'){ if(id==='none') return 0; return (PXBALL_BY[id]?PXBALL_BY[id].price:0); }   // CS414: featherie epic, comet legendary
   if(cat==='cleats'){ return {rocket:30000,golden:20000,sunday:13000,neon:12000,saddle:6000,phantom:30000}[id]||0; }   // CS414: Rocket Cleats legendary
+  if(cat==='plate')  return id==='sunsplash'?18000:0;       // player cards: only the seasonal piece is priced (epic, pack pull); the rest are EARNED
+  if(cat==='cardbg') return id==='endlesssummer'?18000:0;
   return 0;
 }
 // CS408: cosmeticPriceBase still SELECTS the rarity (via packRarityOf, so pool rarities never shift); the
@@ -5866,7 +6025,9 @@ function cosmeticPrice(cat,id){ const base=cosmeticPriceBase(cat,id); if(base<=0
   // still selected from the BASE price, so nothing shifts in the pack pool.
   const ladder=(cat==='shirt'||cat==='hat'||cat==='pants'||cat==='shoes')?COLOR_PRICE:itemRarityPrice(packRarityOf(base),false);
   return Math.round(ladder*(1+BOOST_PREMIUM*pts)/500)*500; }
-function cosOwned(cat,id){ const k=cosKey(cat,id); return !!FREE_COSMETICS[k] || !!coinState().owned[k]; }
+function cosOwned(cat,id){ const k=cosKey(cat,id); if(FREE_COSMETICS[k] || coinState().owned[k]) return true;
+  const e=(typeof CARD_EARN!=='undefined')&&CARD_EARN[k]; return !!(e && e.req());   // earned player-card unlocks (derived, cross-device via synced stats)
+}
 // CS422: "NEW" tracking — an item is NEW if it's been acquired (in coinState.owned, i.e. bought/pulled/earned)
 // but not yet VIEWED in the customizer. `bag_seenitems` is local (a badge, not critical data); it's seeded on
 // first run with everything currently owned so existing gear never shows as new — only future acquisitions do.
@@ -6044,6 +6205,8 @@ function cosmeticItems(cat){
   if(cat==='club')  return CLUBS.map(function(c){ return {id:c.id,name:c.name,club:1,hist:c.hist||'',rar:c.rar}; });   // one club, one list
   if(cat==='ball')  return [{id:'none',name:'None',ball:1}].concat(PXBALL.map(function(o){ return {id:o.id,name:o.name,ball:1,hist:o.hist,col:o.col}; }));   // CS414
   if(cat==='cleats') return [{id:'none',name:'None',cleats:1},{id:'saddle',name:'Saddle Shoes',cleats:1,hist:'Classic two-tone clubhouse style'},{id:'sunday',name:'Sunday Kicks',cleats:1,hist:'Fresh sneakers for the final round'},{id:'neon',name:'Neon Trainers',cleats:1,hist:'Loud on the fairway'},{id:'golden',name:'Golden Spikes',cleats:1,hist:'Walk the walk'},{id:'rocket',name:'Rocket Cleats',cleats:1,hist:'Blast off the tee box'},{id:'phantom',name:'Phantom Cleats',cleats:1,hist:'Silent steps, loud scores'}];   // CS414
+  if(cat==='plate')  return PLATES.map(o=>({id:o.id,name:o.name,plate:1,hist:o.hist}));
+  if(cat==='cardbg') return CARDBGS.map(o=>({id:o.id,name:o.name,cardbg:1,hist:o.hist}));
   return [];
 }
 function cosTitle(id){ const M={grey:'Gray', royal:'Royal Blue', wine:'Wine', royalpurple:'Royal Purple', crimson:'Crimson', gold:'Gold', pink:'Pink', orange:'Orange',
@@ -6331,6 +6494,7 @@ function render(){
     if(S.overlay==='dailydone') overlayDailyDone(app);
     if(S.overlay==='holeshots') overlayHoleShots(app);
     if(S.overlay==='courserecords') overlayCourseRecords(app);
+    if(S.overlay==='playercard') overlayPlayerCard(app);
     if(S.overlay==='passport') overlayPassport(app);
     if(S.overlay==='shop') overlayShop(app);
     if(S.overlay==='packreveal') overlayPackReveal(app);
@@ -6697,13 +6861,14 @@ function overlayRecord(screen){
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Profile</h3>
-    <div class="profhdr" style="display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 12px"><button type="button" class="profav" aria-label="Open your Closet to dress your golfer" style="background:none;border:0;padding:0;margin:0;cursor:pointer;display:block;position:relative">${avatarHTML()}</button><button type="button" class="profav-hint" style="background:rgba(22,181,166,.14);border:1px solid #16b5a6;color:#4fe0d0;font:700 9.5px/1 var(--pixel);letter-spacing:.03em;text-transform:uppercase;padding:5px 9px;border-radius:999px;cursor:pointer;margin-top:2px">✎ Open Closet</button><div style="font-family:var(--serif);font-weight:700;font-size:18px;color:var(--oncard);margin-top:3px">${esc(sbUsername||S.name||'Your Golfer')}</div><div class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(equippedTitle())}</div>${rankName?`<div class="small muted" style="margin-top:0">${(sbSignedIn()&&sbUsername)?'RunThe.GG member · ':''}Tour Rep <b style="color:var(--gold)">${esc(rankName)}</b></div>`:''}</div>
+    <div class="profhdr" style="display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 12px"><button type="button" class="profav" aria-label="Open your Closet to dress your golfer" style="background:none;border:0;padding:0;margin:0;cursor:pointer;display:block;position:relative">${avatarHTML()}</button><button type="button" class="profav-hint" style="background:rgba(22,181,166,.14);border:1px solid #16b5a6;color:#4fe0d0;font:700 9.5px/1 var(--pixel);letter-spacing:.03em;text-transform:uppercase;padding:5px 9px;border-radius:999px;cursor:pointer;margin-top:2px">✎ Open Closet</button><button type="button" class="profcard-btn" style="background:rgba(241,208,74,.12);border:1px solid var(--gold);color:var(--gold);font:700 9.5px/1 var(--pixel);letter-spacing:.03em;text-transform:uppercase;padding:5px 9px;border-radius:999px;cursor:pointer;margin-top:2px">★ Player Card</button><div style="font-family:var(--serif);font-weight:700;font-size:18px;color:var(--oncard);margin-top:3px">${esc(sbUsername||S.name||'Your Golfer')}</div><div class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(equippedTitle())}</div>${rankName?`<div class="small muted" style="margin-top:0">${(sbSignedIn()&&sbUsername)?'RunThe.GG member · ':''}Tour Rep <b style="color:var(--gold)">${esc(rankName)}</b></div>`:''}</div>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">${acctCard}</div>
     <div class="segrow proftabs" style="margin:0 0 14px"><button class="${tab==='stats'?'on':''}" data-ptab="stats">Stats</button><button class="${tab==='trophies'?'on':''}" data-ptab="trophies">Trophies</button><button class="${tab==='ach'?'on':''}" data-ptab="ach">Achievements</button></div>
     ${body}
     <div style="height:14px"></div>
     <button class="btn red">Close</button></div>`);
   ov.querySelectorAll('.proftabs [data-ptab]').forEach(bb=>{ bb.onclick=()=>{ S.profileTab=bb.getAttribute('data-ptab'); render(); }; });
+  { const pcb=ov.querySelector('.profcard-btn'); if(pcb) pcb.onclick=()=>openPlayerCardSelf(); }
   const wire=(id,fn)=>{ const bb=ov.querySelector(id); if(bb) bb.onclick=fn; };
   wire('#rec-signin',()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();});
   wire('#rec-signup',()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();});
@@ -6879,8 +7044,163 @@ function overlayTournament(screen){
   ov.appendChild(close);
   screen.appendChild(ov);
 }
+/* ==== PLAYER CARD overlay (owner): tap a profile on any leaderboard -> their card full screen,
+   "TAP TO FLIP" -> the back shows lifetime stats + the most important stats from that career. ==== */
+const _pcRows=[];
+function pcReg(row,name,kind){ _pcRows.push({r:row,name:name,kind:kind}); return _pcRows.length-1; }
+let _pcStats={};
+function loadPlayerCardStats(uid){ if(!uid||!sb||_pcStats[uid]) return; _pcStats[uid]={loading:true};
+  try{ sb.rpc('runtour_player_card',{p_user:uid}).then(res=>{
+      const d=res&&res.data, e=res&&res.error, row=Array.isArray(d)?d[0]:d;
+      _pcStats[uid]=(e||!row)?{ok:false}:Object.assign({ok:true},row);
+      if(S.overlay==='playercard') render();
+    }).catch(()=>{ _pcStats[uid]={ok:false}; if(S.overlay==='playercard') render(); });
+  }catch(e){ _pcStats[uid]={ok:false}; } }
+function openPlayerCardRow(reg){ if(!reg) return; const r=reg.r||{};
+  const you=!!(sbUser&&r.user_id&&r.user_id===sbUser.id);
+  const look=you?(S.look||DEFLOOK):(r.cur_look||r.look||DEFLOOK);
+  const fullSk=(r.skills && CATS.every(c=>typeof r.skills[c.k]==='number'));
+  const ovr=r.ovr!=null?r.ovr:(fullSk?Math.round(ovrFromSkills(r.skills)):null);
+  const arch=fullSk?archetype(r.skills):null;
+  const neg=v=>({v:fmtSigned(v||0),c:(v||0)>=0?'#35d6a0':'#E14A33'});
+  const rows=[];
+  if(reg.kind==='career'){
+    rows.push(['Seasons',r.seasons!=null?r.seasons:'-'],['Wins',r.wins||0],['Majors',r.majors||0],
+      ['Earnings',fmtShort(r.career_earnings||0)],['Net',neg(r.career_net)]);
+    if((r.followers||0)>0) rows.push(['Fans',fmtFollowers(r.followers)]);
+  } else if(reg.kind==='season'){
+    rows.push(['Year','Yr '+(r.year||1)],['Wins',r.wins!=null?r.wins:'-'],['Majors',r.majors!=null?r.majors:'-'],
+      ['Earnings',fmtShort(r.season_earnings||0)],['Net',neg(r.season_net)]);
+  } else {
+    const par=(DAILY_COURSES[r.course_key]||{}).par;
+    if(r.total_to_par!=null){ rows.push(['This week',dtp(r.total_to_par)],['Days played',r.days_played||1],['Best round',dtp(r.best_to_par)]); }
+    else { rows.push(['Score',dTot(r.to_par,par)],['Beat the pro',r.won?'Yes ✓':'No']); }
+  }
+  const secLab = reg.kind==='career'?'This Career':reg.kind==='season'?'This Season':(r.total_to_par!=null?'This Week':"Today's Round");
+  S.cardFlipped=false;
+  S.cardView={ name:reg.name||r.display_name||'Player', look,
+    rep:(r.rep_pts!=null?repTierName(r.rep_pts):null),
+    ovr, arch:arch?arch.name:null, golfer:r.golfer_name||null,
+    sec:{label:secLab,rows}, uid:(!you&&r.user_id)?r.user_id:null, guest:!r.user_id, self:you };
+  if(you){ try{ S.cardView.lt=_selfLifetime(); }catch(e){} }
+  else if(r.user_id) loadPlayerCardStats(r.user_id);
+  S.overlay='playercard'; render();
+  track('player_card_open',{kind:reg.kind,self:you});
+}
+function _selfLifetime(){ const c=career(); let m=null; try{ m=badgeMetrics(c); }catch(e){}
+  if(!m) return null;
+  let fans=0; try{ fans=(careerStory().followers)||0; }catch(e){}
+  return {ok:true,careers:m.careers,seasons:m.seasons,wins:m.wins,majors:m.majors,earnings:m.earnings,best_ovr:c.bestOvr||0,followers:fans}; }
+function openPlayerCardSelf(){
+  const c=career();
+  let skills=null, ovr=null, archN=null;
+  try{ if(S.slots && CATS.every(cc=>S.slots[cc.k])){ const p=buildPlayer(); skills={}; CATS.forEach(cc=>skills[cc.k]=p[cc.k]); ovr=Math.round(p.skill); const a=archetype(skills); archN=a?a.name:null; } }catch(e){}
+  if(ovr==null) ovr=c.bestOvr||null;
+  const rows=[];
+  if(S.career){ const net=S.career.net||0;
+    rows.push(['Year','Yr '+(S.year||1)],['Wins',S.career.wins||0],['Majors',S.career.majors||0],['Net',{v:fmtSigned(net),c:net>=0?'#35d6a0':'#E14A33'}]); }
+  let rp=null; try{ rp=repTier().tier.name; }catch(e){}
+  S.cardFlipped=false;
+  S.cardView={ name:sbUsername||S.name||'Your Golfer', look:S.look||DEFLOOK, rep:rp,
+    ovr, arch:archN, golfer:S.name||null, sec:rows.length?{label:'This Career',rows}:null,
+    uid:null, guest:false, self:true, lt:_selfLifetime() };
+  S.overlay='playercard'; render();
+  track('player_card_open',{kind:'self',self:true});
+}
+function hexRgba(hx,a){ try{ const v=parseInt(String(hx).slice(1),16); return 'rgba('+((v>>16)&255)+','+((v>>8)&255)+','+(v&255)+','+a+')'; }catch(e){ return 'rgba(138,160,168,'+a+')'; } }
+function pcStyleOnce(){ if(document.getElementById('pcardcss')) return; const st=document.createElement('style'); st.id='pcardcss';
+  st.textContent=[
+'.pcov{position:fixed;inset:0;z-index:56;background:radial-gradient(circle at 50% 34%,rgba(18,50,31,.94),rgba(4,12,8,.97) 76%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 14px}',
+'.pcx{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:14px;z-index:57;background:rgba(0,0,0,.4);border:1px solid rgba(244,227,201,.35);color:var(--oncard);font:800 14px var(--body);padding:8px 12px;border-radius:10px;cursor:pointer}',
+'.pcwrap{display:flex;flex-direction:column;align-items:center;animation:pcIn .55s cubic-bezier(.18,.9,.24,1.08) both}',
+'.pcwrap.noanim{animation:none}',
+'@keyframes pcIn{0%{opacity:0;transform:translateY(46px) scale(.62) rotateY(-14deg)}100%{opacity:1;transform:none}}',
+'.pcard3d{width:min(80vw,318px);aspect-ratio:53/76;perspective:1100px;cursor:pointer;-webkit-tap-highlight-color:transparent}',
+'.pcard-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .62s cubic-bezier(.22,.75,.26,1)}',
+'.pcard3d.flipped .pcard-inner{transform:rotateY(180deg)}',
+'.pcard-face{position:absolute;inset:0;border-radius:16px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:3px solid var(--pcf,#8aa0a8);background:#0a1c12;box-shadow:0 14px 40px rgba(0,0,0,.55)}',
+'.pcard-back{transform:rotateY(180deg)}',
+'.pcf-mid .pcard-face{box-shadow:0 14px 40px rgba(0,0,0,.55),0 0 18px var(--pcfg)}',
+'.pcf-high .pcard-face{animation:pcGlow 2.6s ease-in-out infinite}',
+'.pcf-goat .pcard-face{animation:pcGlow 2.6s ease-in-out infinite,pcRainbow 6s linear infinite}',
+'@keyframes pcGlow{0%,100%{box-shadow:0 14px 40px rgba(0,0,0,.55),0 0 16px var(--pcfg)}50%{box-shadow:0 14px 40px rgba(0,0,0,.55),0 0 32px var(--pcfg)}}',
+'@keyframes pcRainbow{0%,100%{border-color:#ff5a5a}25%{border-color:#ffd34d}50%{border-color:#4dff9b}75%{border-color:#4d9dff}}',
+'.pcbg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}',
+'.pcbg.dim{opacity:.20;filter:saturate(.7) brightness(.7)}',
+'.pcscrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,0) 30%,rgba(0,0,0,0) 55%,rgba(4,12,8,.62) 88%)}',
+'.pctier{position:absolute;top:9px;left:9px;font:800 9.5px var(--body);letter-spacing:.1em;text-transform:uppercase;padding:4px 8px;border-radius:999px;background:rgba(4,12,8,.62);border:1px solid var(--pcf);color:var(--pcf)}',
+'.pcovr{position:absolute;top:8px;right:9px;text-align:center;background:rgba(4,12,8,.62);border:1.5px solid var(--gold);border-radius:12px;padding:4px 9px 3px}',
+'.pcovr b{display:block;font:800 21px var(--display);color:var(--gold);line-height:1}',
+'.pcovr span{font:800 8px var(--body);letter-spacing:.14em;color:var(--muted)}',
+'.pcgolfer{position:absolute;left:0;right:0;bottom:62px;display:flex;justify-content:center;pointer-events:none}',
+'.pcplate{position:absolute;left:9px;right:9px;bottom:9px;border-radius:11px;padding:8px 10px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.4)}',
+'.pcpn{font:700 17px var(--display);letter-spacing:.03em;text-transform:uppercase;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+'.pcps{font:700 10px var(--body);opacity:.82;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+'.pcback-in{position:absolute;inset:0;padding:16px 15px;display:flex;flex-direction:column}',
+'.pcb-h{font:700 19px var(--display);color:var(--oncard);text-transform:uppercase;text-align:center;line-height:1.1}',
+'.pcb-sub{font:800 9px var(--body);letter-spacing:.16em;color:var(--pcf);text-align:center;margin:2px 0 6px;text-transform:uppercase}',
+'.pcb-sec{font:800 9.5px var(--body);letter-spacing:.14em;color:var(--gold);margin:8px 0 3px;text-transform:uppercase;border-bottom:1px solid rgba(244,227,201,.16);padding-bottom:3px}',
+'.pcb-row{display:flex;justify-content:space-between;align-items:baseline;padding:2.5px 0;font:600 12.5px var(--body);color:var(--muted)}',
+'.pcb-row b{color:var(--oncard);font-weight:800;font-size:13px}',
+'.pchint{margin-top:14px;font:800 11px var(--body);letter-spacing:.24em;color:var(--gold);animation:pchintPulse 1.6s ease-in-out infinite}',
+'@keyframes pchintPulse{0%,100%{opacity:.45}50%{opacity:1}}',
+'@media (prefers-reduced-motion:reduce){.pcwrap{animation:none}.pcard-inner{transition:none}.pchint{animation:none}.pcf-high .pcard-face,.pcf-goat .pcard-face{animation:none}}'
+  ].join('\n');
+  document.head.appendChild(st);
+}
+function playerCardHTML(cv){
+  const fr=cardFrameFor(cv.rep||'Amateur');
+  const plate=(cv.look&&cv.look.plate)||'classic', bg=(cv.look&&cv.look.cardbg)||'club';
+  const sub=[cv.golfer&&cv.golfer!==cv.name?cv.golfer:null, cv.arch].filter(Boolean).join(' · ');
+  const lt = cv.self ? cv.lt : (cv.uid?_pcStats[cv.uid]:null);
+  const ltRows = cv.guest ? `<div class="pcb-row"><span>Guest player</span><b>-</b></div>`
+    : (!lt || lt.loading) ? `<div class="pcb-row"><span class="muted">Loading lifetime stats…</span><b></b></div>`
+    : !lt.ok ? `<div class="pcb-row"><span class="muted">Lifetime stats unavailable</span><b></b></div>`
+    : [['Seasons',lt.seasons||0],['Wins',lt.wins||0],['Majors',lt.majors||0],['Earnings',fmtShort(lt.earnings||0)],
+       ['Best OVR',lt.best_ovr||'-'],['Fans',(lt.followers||0)>0?fmtFollowers(lt.followers):'-']]
+      .map(x=>`<div class="pcb-row"><span>${x[0]}</span><b>${x[1]}</b></div>`).join('');
+  const secRows = cv.sec ? cv.sec.rows.map(x=>{ const v=x[1], o=(v&&typeof v==='object')?v:{v:v};
+      return `<div class="pcb-row"><span>${x[0]}</span><b${o.c?` style="color:${o.c}"`:''}>${o.v}</b></div>`; }).join('') : '';
+  return `<div class="pcard3d ${S.cardFlipped?'flipped':''} ${fr.cls}" style="--pcf:${fr.c};--pcfg:${hexRgba(fr.c,.42)}" role="button" aria-label="Tap to flip the card">
+    <div class="pcard-inner">
+      <div class="pcard-face pcard-front">
+        <img class="pcbg" src="${pxCardBgURL(bg)}" alt="">
+        <div class="pcscrim"></div>
+        ${cv.rep?`<div class="pctier">${esc(cv.rep)}</div>`:''}
+        ${cv.ovr!=null?`<div class="pcovr"><b>${cv.ovr}</b><span>OVR</span></div>`:''}
+        <div class="pcgolfer">${pxFigureHTML(cv.look,158)}</div>
+        <div class="pcplate" style="${plateCss(plate)}"><div class="pcpn">${esc(cv.name)}</div>${sub?`<div class="pcps">${esc(sub)}</div>`:''}</div>
+      </div>
+      <div class="pcard-face pcard-back">
+        <img class="pcbg dim" src="${pxCardBgURL(bg)}" alt="">
+        <div class="pcback-in">
+          <div class="pcb-h">${esc(cv.name)}</div>
+          <div class="pcb-sub">Player Card${cv.rep?' · '+esc(cv.rep):''}</div>
+          <div class="pcb-sec">Lifetime</div>${ltRows}
+          ${cv.sec?`<div class="pcb-sec">${esc(cv.sec.label)}</div>${secRows}`:''}
+          ${(cv.arch||cv.ovr!=null)?`<div style="margin-top:auto;text-align:center;font:700 10.5px var(--body);color:var(--muted);padding-top:8px">${cv.ovr!=null?'OVR <b style="color:var(--gold)">'+cv.ovr+'</b>':''}${cv.arch?(cv.ovr!=null?' · ':'')+esc(cv.arch):''}</div>`:''}
+        </div>
+      </div>
+    </div></div>`;
+}
+function overlayPlayerCard(app){
+  pcStyleOnce();
+  const cv=S.cardView; if(!cv){ S.overlay=null; return; }
+  const shown=cv._shown; cv._shown=true;   // entrance animation only on the first render (async stat loads re-render)
+  const ov=$(`<div class="pcov" role="dialog" aria-modal="true" aria-label="Player card">
+    <button class="pcx" aria-label="Close">✕</button>
+    <div class="pcwrap ${shown?'noanim':''}">${playerCardHTML(cv)}<div class="pchint">TAP TO FLIP</div></div>
+  </div>`);
+  const card=ov.querySelector('.pcard3d');
+  card.onclick=(e)=>{ e.stopPropagation(); S.cardFlipped=!S.cardFlipped; card.classList.toggle('flipped',S.cardFlipped); };
+  const close=()=>{ S.overlay=null; S.cardView=null; render(); };
+  ov.querySelector('.pcx').onclick=close;
+  ov.addEventListener('click',(e)=>{ if(e.target===ov) close(); });
+  app.appendChild(ov);
+}
 function overlayLeaderboard(screen){
   const c=career();
+  _pcRows.length=0;   // player-card tap registry rebuilds with the board
   const tab=S.lbTab||'season';
   if(tab==='daily'||tab==='weekly'){ overlayLeaderboardDaily(screen, tab); return; }   // CS393: separate board
   if(tab==='streaks'){ overlayStreakBoard(screen); return; }   // CS401: active daily-streak leaderboard
@@ -6927,7 +7247,7 @@ function overlayLeaderboard(screen){
     view=vDesc; dirRows=(vDesc && vDesc.ok)?vDesc.rows:[];
   }
   const youName=(c.hof[0]&&c.hof[0].name)||S.name||'You';
-  const lbRowHTML=(pos,name,sub,valHTML,you,rep,look)=>`<div class="lb ${you?'you':''}" style="grid-template-columns:26px 32px 1fr auto">
+  const lbRowHTML=(pos,name,sub,valHTML,you,rep,look,pc)=>`<div class="lb ${you?'you':''}" ${pc!=null?`data-pc="${pc}" role="button" tabindex="0" aria-label="View ${esc(name)}’s player card"`:''} style="grid-template-columns:26px 32px 1fr auto${pc!=null?';cursor:pointer':''}">
       <span class="pos">${pos===1?'🏆':pos}</span>
       ${pxAvatarChip(look||S.look||DEFLOOK,30)}
       <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}${rep?` <span style="color:var(--muted);font-size:10px">·</span> <span class="${repClass(rep)}">${esc(rep)}</span>`:''}</div>${sub?`<div class="small muted" style="font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sub)}</div>`:''}</span>
@@ -6981,7 +7301,8 @@ function overlayLeaderboard(screen){
       // viewer's own rows show their LIVE current look.
       // 65_ (owner): the small row avatar tracks the player's CURRENT golfer (cur_look, updated whenever
       // they change their character); the frozen at-submit look stays on the podium figures below.
-      return lbRowHTML(r.rank,id.name,sub,v,you,lbRep({rep_pts:id.rep}),you?(S.look||DEFLOOK):(r.cur_look||r.look||DEFLOOK));
+      const pc=pcReg(Object.assign({},r,{rep_pts:(id.rep!=null?id.rep:r.rep_pts)}), id.name, tab==='career'?'career':'season');
+      return lbRowHTML(r.rank,id.name,sub,v,you,lbRep({rep_pts:id.rep}),you?(S.look||DEFLOOK):(r.cur_look||r.look||DEFLOOK),pc);
     };
     const rows=globalRows;   // already ordered by the server (top N desc, or true bottom N asc)
     // CS268: top-3 podium (only on the default best-first view, not the low→high "bottom of the DB" view)
@@ -6992,7 +7313,8 @@ function overlayLeaderboard(screen){
       // CS393: each podium finisher shows off their customized golfer (r.look, from the board RPC; default
       // golfer for legacy rows with no look, or before migration 52 is applied).
       podiumHTML='<div class="lbpodium">'+pod.map((r,di)=>{ const id=lbCanon(r), v=lbStatVal(r,tab,sort);
-        return `<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(r.look||r.cur_look||DEFLOOK, di===1?74:56)}</div><div class="nm">${esc(id.name)}</div><div class="vl">${v}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`; }).join('')+'</div>';
+        const pc=pcReg(Object.assign({},r,{rep_pts:(id.rep!=null?id.rep:r.rep_pts)}), id.name, tab==='career'?'career':'season');
+        return `<div class="lbpod ${cls[di]}" data-pc="${pc}" role="button" tabindex="0" style="cursor:pointer" aria-label="View ${esc(id.name)}’s player card"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(r.look||r.cur_look||DEFLOOK, di===1?74:56)}</div><div class="nm">${esc(id.name)}</div><div class="vl">${v}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`; }).join('')+'</div>';
     }
     // CS505 (owner): the top 3 live ONLY on the podium — the ranked list below starts at #4 whenever a
     // podium is shown, so nobody appears twice.
@@ -7062,6 +7384,8 @@ function overlayLeaderboard(screen){
   ov.querySelectorAll('.lbwin').forEach(b=>b.onclick=()=>{S.lbWindow=b.dataset.win;render();});   // CS417 Today/This week/All-Time
   ov.querySelectorAll('.lbsort').forEach(b=>b.onclick=()=>{S.lbSort=b.dataset.sort;S.lbDir='desc';render();});   // reset to high→low on new category
   ov.querySelectorAll('.lbdir').forEach(b=>b.onclick=()=>{S.lbDir=(S.lbDir==='asc'?'desc':'asc');render();});
+  ov.querySelectorAll('[data-pc]').forEach(el=>{ const go=()=>openPlayerCardRow(_pcRows[+el.getAttribute('data-pc')]);
+    el.onclick=go; el.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } }; });
   const lbSign=ov.querySelector('#lb-signin'); if(lbSign) lbSign.onclick=()=>{S.overlay='account';S.acctMode=sbSignedIn()?'username':'signin';S.acctErr='';render();};
   const lkIn=ov.querySelector('#lb-lock-in'); if(lkIn) lkIn.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
   const lkUp=ov.querySelector('#lb-lock-up'); if(lkUp) lkUp.onclick=()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();};
@@ -7073,6 +7397,7 @@ function overlayLeaderboard(screen){
 // season/career board logic above is untouched.
 function overlayLeaderboardDaily(screen, tab){
   const weekly=(tab==='weekly');
+  _pcRows.length=0;   // player-card tap registry rebuilds with the board
   const day=todayKey(), wr=weekDayRange();
   let cache;
   if(weekly){ const k=wr.from+'-'+wr.to; if(!lbWeekCache[k]) lbWeekLoad(wr.from, wr.to); cache=lbWeekCache[k]; }
@@ -7110,15 +7435,17 @@ function overlayLeaderboardDaily(screen, tab){
   const sub=r=>weekly
     ? `${r.golfer_name?esc(r.golfer_name)+' · ':''}${r.days_played} day${r.days_played===1?'':'s'} · best ${dtp(r.best_to_par)}`
     : `${r.golfer_name?esc(r.golfer_name)+' · ':''}OVR ${r.ovr}${r.won?' · <span style="color:var(--gold)">beat the pro</span>':''}`;
-  const rowHTML=r=>`<div class="lb ${you(r)?'you':''}" style="grid-template-columns:26px 32px 1fr auto">
+  const rowHTML=r=>{ const pc=pcReg(r, r.display_name, 'daily');
+    return `<div class="lb ${you(r)?'you':''}" data-pc="${pc}" role="button" tabindex="0" aria-label="View ${esc(r.display_name)}’s player card" style="grid-template-columns:26px 32px 1fr auto;cursor:pointer">
       <span class="pos">${r.rank===1?'🏆':r.rank}</span>
       ${pxAvatarChip(you(r)?(S.look||DEFLOOK):(r.look||DEFLOOK),30)}
       <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.display_name)}</div><div class="small muted" style="font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sub(r)}</div></span>
-      <span class="mny" style="white-space:nowrap">${val(r)}</span></div>`;
+      <span class="mny" style="white-space:nowrap">${val(r)}</span></div>`; };
   let podium='';
   if(srows.length>=3){
     const pod=[srows[1],srows[0],srows[2]], cls=['p2','p1','p3'], med=['🥈','🥇','🥉'];
-    podium='<div class="lbpodium">'+pod.map((r,di)=>`<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(r.look||DEFLOOK, di===1?74:56)}</div><div class="nm">${esc(r.display_name)}</div><div class="vl">${weekly?scoreWk(r):p18val(r)}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`).join('')+'</div>';
+    podium='<div class="lbpodium">'+pod.map((r,di)=>{ const pc=pcReg(r, r.display_name, 'daily');
+      return `<div class="lbpod ${cls[di]}" data-pc="${pc}" role="button" tabindex="0" style="cursor:pointer" aria-label="View ${esc(r.display_name)}’s player card"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(r.look||DEFLOOK, di===1?74:56)}</div><div class="nm">${esc(r.display_name)}</div><div class="vl">${weekly?scoreWk(r):p18val(r)}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`; }).join('')+'</div>';
   }
   const guestBoardCTA = !sbSignedIn() ? `<div class="lockcta" style="text-align:center;padding:18px 12px;margin-top:10px">
       <div style="font-size:22px;line-height:1">🔒</div>
@@ -7171,6 +7498,8 @@ function overlayLeaderboardDaily(screen, tab){
   ov.querySelectorAll('.p18sort').forEach(b=>b.onclick=()=>{S.p18Sort=b.dataset.sort;S.p18Dir='best';render();});   // CS417 Play 18 sort
   { const p18d=ov.querySelector('.p18dir'); if(p18d) p18d.onclick=()=>{S.p18Dir=(S.p18Dir==='worst'?'best':'worst');render();}; }
   { const p18r=ov.querySelector('.p18recs'); if(p18r) p18r.onclick=()=>{S.overlay='courserecords';render();}; }
+  ov.querySelectorAll('[data-pc]').forEach(el=>{ const go=()=>openPlayerCardRow(_pcRows[+el.getAttribute('data-pc')]);
+    el.onclick=go; el.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } }; });
   const lbSign=ov.querySelector('#lb-signin'); if(lbSign) lbSign.onclick=()=>{S.overlay='account';S.acctMode=sbSignedIn()?'username':'signin';S.acctErr='';render();};
   const lkIn=ov.querySelector('#lb-lock-in'); if(lkIn) lkIn.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
   const lkUp=ov.querySelector('#lb-lock-up'); if(lkUp) lkUp.onclick=()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();};
@@ -8190,7 +8519,7 @@ function scrSetup(){
   const EFFECTS=[['fx','Aura']];
   const SECTIONS = guest
     ? [['look','Appearance',LOOKCATS]]
-    : [['look','Look',LOOKCATS],['apparel','Apparel',APPAREL],['gear','Gear',GEAR],['fx','Effects',EFFECTS],['profile','Profile',[['details','Name & Country']]]];
+    : [['look','Look',LOOKCATS],['apparel','Apparel',APPAREL],['gear','Gear',GEAR],['fx','Effects',EFFECTS],['card','Card',[['plate','Nameplate'],['cardbg','Background']]],['profile','Profile',[['details','Name & Country']]]];
   const cats = SECTIONS.reduce((a,s)=>a.concat(s[2]),[]);
   let cat=S.setupCat; if(!cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.setupCat=cat;
   const sec = SECTIONS.find(s=>s[2].some(c=>c[0]===cat)) || SECTIONS[0];   // the section holding the current category
@@ -8237,18 +8566,23 @@ function scrSetup(){
     let tiles;
     if(isLook){ tiles=setupLookTiles(cat); }
     else {   // LOCKER: show only the items you OWN in this category — tap to equip. No buying here.
-      tiles=cosmeticItems(cat).filter(o=>cosOwned(cat,o.id)).map(o=>cosTileHTML(cat,o));
+      tiles=cosmeticItems(cat).filter(o=>cosOwned(cat,o.id) || ((cat==='plate'||cat==='cardbg') && CARD_EARN[cosKey(cat,o.id)])).map(o=>cosTileHTML(cat,o));   // card cosmetics also show LOCKED earned items with how to earn them
     }
     const catLabel=(cats.find(c=>c[0]===cat)||[,cat])[1];
     grid.innerHTML=tiles.length?tiles.join('')
       :`<div class="shop-empty">You don't own any ${esc(String(catLabel).toLowerCase())} yet — grab some in the Pro Shop.</div>`;
     wrap.appendChild(grid);
+    if((cat==='plate'||cat==='cardbg') && !guest){
+      const pv=$(`<button class="setup-shopbtn" style="margin-top:11px"><span>★ Preview my Player Card</span> <span class="ssb-go">▸</span></button>`);
+      pv.onclick=()=>openPlayerCardSelf(); wrap.appendChild(pv);
+      wrap.appendChild($(`<div class="small muted" style="margin-top:8px">Nameplates &amp; backgrounds are EARNED by playing (locked tiles show how). Seasonal ones drop from packs while their event is live.</div>`));
+    }
     grid.querySelectorAll('[data-appset]').forEach(x=>x.onclick=()=>{ const k=x.getAttribute('data-appset'), id=x.getAttribute('data-id');
       if(k==='skin')S.look.skin=id; else if(k==='hair')S.look.hair=id; else if(k==='style')S.look.hairStyle=id; else if(k==='hand')S.look.lefty=(id==='left'); else if(k==='club')S.look.club=id;
       saveLook(); render(); });
     grid.querySelectorAll('[data-tile]').forEach(x=>x.onclick=()=>shopTileClick(x));
     // a link to the STORE for anything you don't own in this category (buying lives in the Pro Shop, not here)
-    if(!isLook && !guest && SHOP_ENABLED && cosmeticItems(cat).some(o=>!cosOwned(cat,o.id))){
+    if(!isLook && !guest && SHOP_ENABLED && cat!=='plate' && cat!=='cardbg' && cosmeticItems(cat).some(o=>!cosOwned(cat,o.id))){
       const more=$(`<button class="setup-shopbtn" style="margin-top:11px">${ic('cart',{size:'16px'})}<span>Get more ${esc(String(catLabel).toLowerCase())} in the Pro Shop</span> <span class="ssb-go">▸</span></button>`);
       more.onclick=()=>{ S.shopPreview=null; S.overlay='shop'; S.shopSec=cosShopSec(cat); S.shopCat=cat; render(); };
       wrap.appendChild(more);
@@ -15131,6 +15465,9 @@ function drawPlayerCard(ctx,W,H,o){
   ctx.beginPath(); ctx.arc(W/2,portCy,portR,0,7); ctx.fillStyle='#0c2c1c'; ctx.fill(); ctx.restore();
   // crop the sprite to head + shoulders (rows ~2..34 of 56), clipped to the circle → no lower body
   ctx.save(); ctx.beginPath(); ctx.arc(W/2,portCy,portR-2,0,7); ctx.clip();
+  // player-card cosmetic: the equipped card BACKGROUND fills the medallion behind the golfer
+  try{ const cbg=(o.look&&o.look.cardbg)||'club'; if(cbg!=='club'){ const bcv=pxCardBgCanvas(cbg);
+    ctx.imageSmoothingEnabled=false; ctx.drawImage(bcv, W/2-portR, portCy-portR, portR*2, portR*2*(bcv.height/bcv.width)); } }catch(e){}
   ctx.imageSmoothingEnabled=false;
   const gsc=glf.height/PXG_H, sr0=2, srH=32, dw=portR*2.55, dh=dw*(srH/PXG_W), dx=W/2-dw/2, dy=(portCy-portR)-dh*0.03;
   ctx.drawImage(glf, 0, Math.round(sr0*gsc), glf.width, Math.round(srH*gsc), dx, dy, dw, dh);
@@ -15149,7 +15486,15 @@ function drawPlayerCard(ctx,W,H,o){
   // name (auto-fit, serif)
   let nm=(o.name||'Your Golfer').toUpperCase(), ns=34;
   do{ ctx.font='700 '+ns+'px Cinzel, Georgia, serif'; if(ctx.measureText(nm).width<=W-90)break; ns-=2; }while(ns>16);
-  ctx.fillStyle=CREAM; ctx.fillText(nm, W/2, heroBottom+58);
+  // player-card cosmetic: the equipped NAMEPLATE colors a bar behind the name
+  const _ps=(o.look&&o.look.plate&&o.look.plate!=='classic'&&typeof PLATE_STYLE!=='undefined')?PLATE_STYLE[o.look.plate]:null;
+  if(_ps){ const pw=Math.min(W-90,ctx.measureText(nm).width+56), py=heroBottom+26;
+    const pg=ctx.createLinearGradient(0,py,0,py+44); pg.addColorStop(0,_ps.c1); pg.addColorStop(1,_ps.c2);
+    ctx.fillStyle=pg; cardRoundRect(ctx,W/2-pw/2,py,pw,44,10); ctx.fill();
+    ctx.strokeStyle=_ps.bd; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle=_ps.tx; }
+  else ctx.fillStyle=CREAM;
+  ctx.fillText(nm, W/2, heroBottom+58);
   // NET hero number
   ctx.fillStyle=o.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 30px Impact,system-ui,sans-serif';
   ctx.fillText(fmtSigned(o.net), W/2, heroBottom+98);
@@ -20736,6 +21081,8 @@ function cosIsEquipped(cat,id){
   if(cat==='ball') return (S.look.ball||'none')===id;
   if(cat==='cleats') return (S.look.cleats||'none')===id;
   if(cat==='club') return (S.look.club||'driver')===id;   // the single equipped club
+  if(cat==='plate')  return (S.look.plate||'classic')===id;
+  if(cat==='cardbg') return (S.look.cardbg||'club')===id;
   if(cat==='hat') return (S.look.hat||S.look.polo)===id;
   const c=COS_CATS.find(x=>x.k===cat); return c?S.look[c.lookKey]===id:false;
 }
@@ -20905,6 +21252,8 @@ function cosThumbHTML(cat,o){
      : (cat==='cleats') ? pxCleatsThumb(o.id)
      : (cat==='pat') ? pxPatThumb(o.id)
      : (cat==='hw'||cat==='ew'||cat==='top'||cat==='leg') ? pxItemThumb(cat,o.id)
+     : (cat==='cardbg') ? `<span class="sthumb" style="padding:0;overflow:hidden"><img src="${pxCardBgURL(o.id)}" alt="" style="width:100%;height:100%;object-fit:cover;image-rendering:pixelated"></span>`
+     : (cat==='plate') ? `<span class="sthumb color" style="${plateCss(o.id)};display:flex;align-items:center;justify-content:center"><span style="font-weight:900;font-size:8.5px;letter-spacing:.06em">NAME</span></span>`
      : (o.pat!==undefined
         ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
         : `<span class="sthumb color" style="background:${o.col||'#54736a'}"></span>`);
@@ -20917,6 +21266,11 @@ function cosTileHTML(cat,o){
   if(csE && !owned){   // EARNED Legend gear not yet unlocked: show the requirement, not a buy
     const sub=(bt?shopBoostTxt(bt)+' · ':'')+`<span style="color:#c9a520">🔒 ${esc(csE.reqText)}</span>`;
     return shopTile({thumb,name:o.name,state:'lock',noFoot:true,sub,data:`data-tile data-kind="cos-req" data-req="${esc(csE.reqText)}"`});
+  }
+  const cardE=(typeof CARD_EARN!=='undefined')&&CARD_EARN[cosKey(cat,o.id)];
+  if(cardE && !owned){   // earned player-card plate/background: show HOW to earn it, never a buy
+    const sub=`<span style="color:#c9a520">🔒 ${esc(cardE.hint)}</span>`;
+    return shopTile({thumb,name:o.name,state:'lock',noFoot:true,sub,data:`data-tile data-kind="cos-req" data-req="${esc(cardE.hint)}"`});
   }
   if(cosRewardOnly(cat,o.id) && !owned){   // COLLECTION REWARD: never buyable/pullable — show the chase
     const rd=rewardDrop(cat,o.id), pr=rd?dropProgress(rd):null;
@@ -21118,7 +21472,7 @@ const DROPS=[
    ['ball','obsidian'],['club','scepter']]},
  {id:'summer', name:'Summer Smash', kicker:'Poolside Season', accent:'#ff9d3a', window:[[7,1],[8,31]],
   blurb:'Sun’s out. Floppy hats, sunset fades and beach shades, live for the hottest stretch of the year.',
-  items:[['pat','pineapple'],['pat','sunset'],['pat','aloha'],['hw','floppy'],['ew','beach'],['ball','flamingo'],['fx','heatwave'],['club','poolnoodle']]},
+  items:[['pat','pineapple'],['pat','sunset'],['pat','aloha'],['hw','floppy'],['ew','beach'],['ball','flamingo'],['fx','heatwave'],['club','poolnoodle'],['plate','sunsplash'],['cardbg','endlesssummer']]},
  {id:'spooky', name:'Spooky Season', kicker:'October Only', accent:'#e07a1f', window:[[10,1],[10,31]],
   blurb:'Witch hats, skeleton ribs and a cape with a taste for blood. Returns every October.',
   items:[['hw','witch'],['pat','skeleton'],['pat','pumpkinpatch'],['ball','ghost'],['fx','ecto'],['top','cape'],['cleats','phantom']]},
@@ -21193,7 +21547,7 @@ function celebrateDropReward(d,r){
   document.body.appendChild(ov);
 }
 function packPool(){ const pool=[];
-  [['shirt','sh'],['hat','ht'],['pat','sp'],['pants','pt'],['shoes','so'],['hw','hw'],['ew','ew'],['fx','fx'],['top','tp'],['leg','lg'],['club','cl'],['ball','bl'],['cleats','ct']].forEach(function(cp){ var cat=cp[0],pk=cp[1];
+  [['shirt','sh'],['hat','ht'],['pat','sp'],['pants','pt'],['shoes','so'],['hw','hw'],['ew','ew'],['fx','fx'],['top','tp'],['leg','lg'],['club','cl'],['ball','bl'],['cleats','ct'],['plate','np'],['cardbg','cb']].forEach(function(cp){ var cat=cp[0],pk=cp[1];
     (cosmeticItems(cat)||[]).forEach(function(o){ if(o.id==='none') return;
       if((cat==='shirt'||cat==='hat') && COSMETIC_SHIRTS.find(function(x){return x.id===o.id&&x.earn;})) return;
       if(itemDropLocked(cat,o.id)) return;   // DROPS: a themed drop out of its window isn't in the pack pool
@@ -22833,7 +23187,7 @@ const PENDING_SEASONS_KEY='bag_pending_seasons';
 // CS393: a minimal golfer-appearance snapshot for the public boards - only the keys the pixel figure reads
 // (drops _ts/acc/caddie/country/title, which don't affect the rendered golfer). Keeps the payload tiny.
 function lookForBoard(look){ const L=look||S.look||DEFLOOK; const o={};
-  ['skin','skinTone','hair','hairStyle','polo','pants','shoes','cap','hatStyle','hat','shirtPat','hatPat','eyewear','club','top','leg','fx','ball','cleats','lefty','gender'].forEach(k=>{ if(L[k]!==undefined) o[k]=L[k]; });
+  ['skin','skinTone','hair','hairStyle','polo','pants','shoes','cap','hatStyle','hat','shirtPat','hatPat','eyewear','club','top','leg','fx','ball','cleats','lefty','gender','plate','cardbg'].forEach(k=>{ if(L[k]!==undefined) o[k]=L[k]; });
   return o; }
 // 65_: keep the server's copy of your CURRENT golfer fresh - the leaderboards' small row avatars read
 // it (cur_look), so changing your character in the Closet updates your picture on every board within
