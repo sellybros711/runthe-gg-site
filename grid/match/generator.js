@@ -19,6 +19,9 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
+  // board shape: 5 categories x GROUP_SIZE tiles each
+  var GROUP_SIZE = 4;
+
   /* ---- deterministic RNG (identical puzzle per date, dry-runnable) --------- */
   function xmur3(str) {
     var h = 1779033703 ^ str.length;
@@ -50,7 +53,7 @@
   /* ---- uniqueness solver (§4): count complete assignments, abort at 2 ------ */
   function solve(board) {
     var catIds = board.categories.map(function (c) { return c.id; });
-    var cap = {}; catIds.forEach(function (id) { cap[id] = 5; });
+    var cap = {}; catIds.forEach(function (id) { cap[id] = GROUP_SIZE; });
     var tiles = board.tiles.map(function (t) {
       return { id: t.id, fits: t.fits.filter(function (f) { return cap.hasOwnProperty(f); }) };
     });
@@ -282,7 +285,7 @@
     }
     function choose(c, avail, start, acc, i) {
       if (--budget < 0) return false;
-      if (acc.length === 5) {
+      if (acc.length === GROUP_SIZE) {
         sol[c.id] = acc.slice();
         if (pick(i + 1)) return true;
         delete sol[c.id]; return false;
@@ -336,18 +339,23 @@
     return best ? finalizeBoard(best.board, rng, dateStr) : null;
   }
 
-  // top-level: prefer the generator, fall back to the authored bank
+  // top-level: build from the entity DB; loosen constraints once if a given day
+  // is stubborn. (The authored bank is 5-per-group and no longer shape-compatible,
+  // so it's only used if explicitly passed AND the DB path yields nothing.)
   function daily(dateStr, sources) {
     sources = sources || {};
     if (sources.entities) {
       var d = buildFromDB(dateStr, sources.entities, sources.opts);
       if (d) return d;
+      d = buildFromDB(dateStr, sources.entities, { anchors: 1, avgFame: 2.0 });
+      if (d) return d;
     }
-    return generateDaily(dateStr, sources.bank || []);
+    if (sources.bank && sources.bank.length) return generateDaily(dateStr, sources.bank);
+    return null;
   }
 
   return {
-    seededRandom: seededRandom, shuffle: shuffle,
+    GROUP_SIZE: GROUP_SIZE, seededRandom: seededRandom, shuffle: shuffle,
     solve: solve, isUnique: isUnique, trapEdges: trapEdges,
     scoreBoard: scoreBoard, categoryDifficulty: categoryDifficulty, parTimes: parTimes,
     finalizeBoard: finalizeBoard, generateDaily: generateDaily,
