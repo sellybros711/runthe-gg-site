@@ -12810,6 +12810,7 @@ function sponsorProConHTML(offer){ const pc=sponsorProCon(offer);
 }
 function sponsorOfferPopup(offers){
   if(!offers||!offers.length) return;
+  try{ ensureSponsors(); }catch(e){}
   document.querySelectorAll('.momentov').forEach(n=>n.remove());
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const first=firstEverSponsor();
@@ -12828,7 +12829,10 @@ function sponsorOfferPopup(offers){
       <div style="font:800 12px/1 var(--body);letter-spacing:.26em;color:${accent};text-transform:uppercase">${kicker}</div>
       <h1 style="margin:8px 0 2px;font-size:27px;line-height:1.08;color:#fff">${headline}</h1>
       <p class="lede" style="margin:8px 0 4px;color:#e8f0e8">${sub}</p>
-      <p class="small" style="margin:0 0 16px;color:#9fb3a8">Choose which slot to wear their logo, or decide later.</p>
+      <p class="small" style="margin:0 0 14px;color:#9fb3a8">Choose which slot to wear their logo, or decide later.</p>
+      <div style="font:800 10px/1 var(--body);letter-spacing:.2em;color:#8fa7b3;text-transform:uppercase;text-align:left;margin:0 0 7px">What you have now</div>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;text-align:left;margin-bottom:13px">${SPONSOR_SLOTS.map(s=>slotStatusCardHTML(s)).join('')}</div>
+      <div style="font:800 10px/1 var(--body);letter-spacing:.2em;color:#ffd45e;text-transform:uppercase;text-align:left;margin:0 0 7px">The offer</div>
       <div class="soffers" style="display:grid;gap:11px;text-align:left"></div>
       <button class="btn ghost solater" style="margin-top:12px">Decide later ▸<span class="sub">The offer stays on the alert banner until you choose</span></button>
     </div></div>`);
