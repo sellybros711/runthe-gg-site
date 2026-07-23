@@ -153,6 +153,34 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .modal .btn.ghost{background:var(--card); border:1px solid var(--line2); color:var(--ink); box-shadow:none;}
 .share-grid{font-family:monospace; font-size:22px; line-height:1.05; letter-spacing:2px; margin:2px 0 16px;}
 
+/* ---------- dopamine: confetti ---------- */
+.confetti{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden;}
+.confetti i{position:absolute; top:-16px; width:9px; height:14px; border-radius:2px; opacity:.96; will-change:transform; animation:cfall linear forwards;}
+@keyframes cfall{0%{transform:translateY(-20px) rotate(0);}100%{transform:translateY(106vh) rotate(680deg);}}
+/* flawless ribbon (solved with no reveals) */
+.flawless{display:none; margin:0 0 8px;}
+.flawless.on{display:block; animation:flpop .5s ease;}
+.flawless .rib{display:inline-flex; align-items:center; gap:7px; font-family:var(--pix); font-weight:800; font-size:10.5px;
+  letter-spacing:1.2px; text-transform:uppercase; color:#fff; background:linear-gradient(90deg,var(--coral),var(--gold));
+  padding:6px 14px; border-radius:999px; box-shadow:0 8px 22px -10px rgba(255,90,60,.85);}
+@keyframes flpop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
+/* streak milestone banner */
+.milestone{display:none; margin:2px 0 14px; font-family:var(--pix); font-weight:800; font-size:12.5px; color:var(--coral);}
+.milestone.on{display:block; animation:flpop .5s ease;}
+/* live countdown */
+.countdown{margin:0 0 14px; font-size:12px; font-weight:700; color:var(--mut);}
+.countdown b{color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:.02em;}
+/* streak chip is tappable -> stats */
+.chip.tap{cursor:pointer;} .chip.tap:active{transform:translateY(1px);}
+/* stats modal specifics */
+.modal .subttl{font-family:var(--pix); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut); margin:-2px 0 15px; font-weight:800;}
+.statgrid.four{grid-template-columns:repeat(4,1fr); gap:8px;}
+.statgrid.four .v{font-size:16px;}
+.timeline{display:flex; justify-content:center; gap:20px; margin:2px 0 6px; font-size:13px; font-weight:800; color:var(--ink);}
+.timeline .mut{color:var(--mut); font-weight:700; font-size:9px; letter-spacing:1px; text-transform:uppercase; display:block; margin-top:3px;}
+.timeline .cell{text-align:center;}
+.empty-stats{color:var(--mut); font-size:13px; line-height:1.5; padding:4px 0 10px;}
+
 /* ---------- leaderboard teaser ---------- */
 .lb{background:var(--card); border:1px solid var(--line2); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); margin-bottom:14px;}
 .lb h3{font-family:var(--pix); font-size:11px; letter-spacing:1px; font-weight:800; color:var(--coral); margin:0 0 8px; text-transform:uppercase;}
@@ -177,7 +205,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <a class="icon-btn" href="/grid/" aria-label="Back to RunTheGrid">‹</a>
     <div class="brand">Run<span class="b2">The</span>Grid<span class="sub">DAILY CROSSWORD</span></div>
     <div class="spacer"></div>
-    <div class="chip streak"><span class="n" id="streakN">0</span><span class="l">STREAK</span></div>
+    <div class="chip streak tap" id="streakChip" role="button" tabindex="0" title="Your stats"><span class="n" id="streakN">0</span><span class="l">STREAK</span></div>
     <div class="chip timer"><span class="n" id="timerN">0:00</span><span class="l">TIME</span></div>
   </div>
 
@@ -230,6 +258,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
 <div class="scrim hidden" id="scrim">
   <div class="modal">
+    <div class="flawless" id="mFlawless"><span class="rib">⭐ Flawless — no reveals</span></div>
     <div class="trophy" id="mTrophy">🏆</div>
     <h2 id="mTitle">Solved!</h2>
     <p id="mSub">Nice grid. Your streak lives another day.</p>
@@ -239,8 +268,28 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       <div class="box"><div class="v" id="mBest">1</div><div class="k">Best</div></div>
     </div>
     <div class="share-grid" id="mShareGrid"></div>
+    <div class="milestone" id="mMilestone"></div>
+    <div class="countdown" id="mCountdown"></div>
     <button class="btn gold" id="mShare">Share result</button>
+    <button class="btn ghost" id="mStats">📊 Stats</button>
     <button class="btn ghost" id="mClose">Close</button>
+  </div>
+</div>
+
+<div class="scrim hidden" id="statsScrim">
+  <div class="modal">
+    <h2>Your Stats</h2>
+    <div class="subttl">RunTheGrid · Daily Crossword</div>
+    <div class="statgrid four">
+      <div class="box"><div class="v" id="stSolves">0</div><div class="k">Solves</div></div>
+      <div class="box"><div class="v" id="stStreak">0</div><div class="k">Streak</div></div>
+      <div class="box"><div class="v" id="stBestStreak">0</div><div class="k">Best</div></div>
+      <div class="box"><div class="v" id="stFlawless">0</div><div class="k">Flawless</div></div>
+    </div>
+    <div class="timeline" id="stTimeline"></div>
+    <div class="empty-stats hidden" id="stEmpty">Solve today's crossword to start your streak.<br>Your times and flawless count show up here.</div>
+    <div class="countdown" id="stCountdown"></div>
+    <button class="btn gold" id="stClose">Back to puzzle</button>
   </div>
 </div>
 
@@ -516,28 +565,45 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     elapsed = startedAt ? (performance.now()-startedAt)/1000 : 0;
     document.getElementById('timerN').textContent = fmt(elapsed);
 
+    // flawless = solved without using Reveal on any cell
+    var flawless=true;
+    for(var fr=0;fr<N;fr++) for(var fc=0;fc<N;fc++){ if(!cells[fr][fc].block && cells[fr][fc].revealed) flawless=false; }
+
     // streak logic: consecutive calendar days completed
     var s=load(); var today=P.id;
     var yesterday = shiftDay(today,-1);
     var already = s.lastDone===today;
+    var milestone='';
     if(!already && !TESTER){
       s.streak = (s.lastDone===yesterday) ? (s.streak||0)+1 : 1;
       s.lastDone = today;
       s.best = Math.min(s.best||1e9, Math.round(elapsed));
       s.bestStreak = Math.max(s.bestStreak||0, s.streak);
+      // lifetime stats
+      s.solves = (s.solves||0)+1;
+      s.timeSum = (s.timeSum||0)+Math.round(elapsed);
+      if(flawless) s.perfects=(s.perfects||0)+1;
       save(s);
+      milestone = streakMilestone(s.streak);
     }
-    document.getElementById('streakN').textContent = s.streak;
+    document.getElementById('streakN').textContent = s.streak||0;
 
     // fill modal
     document.getElementById('mTime').textContent = fmt(elapsed);
-    document.getElementById('mStreak').textContent = s.streak;
+    document.getElementById('mStreak').textContent = s.streak||1;
     document.getElementById('mBest').textContent = fmt(s.best||elapsed);
     document.getElementById('mShareGrid').textContent = buildShareGrid();
     document.getElementById('yourRk').textContent = '4';
     document.getElementById('yourTm').textContent = fmt(elapsed);
+    document.getElementById('mFlawless').classList.toggle('on', flawless);
+    var mm=document.getElementById('mMilestone');
+    if(milestone){ mm.textContent=milestone; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); }
+    if(!TESTER) startCountdown('mCountdown'); else document.getElementById('mCountdown').textContent='';
     render();
-    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); }, 350);
+    setTimeout(function(){
+      document.getElementById('scrim').classList.remove('hidden');
+      confetti(flawless?130:80, flawless || !!milestone);
+    }, 350);
   }
 
   function shiftDay(iso, delta){
@@ -556,7 +622,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     return out.join('\n');
   }
 
-  document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); });
+  document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); if(bothClosed()) stopCountdown(); });
   document.getElementById('mShare').addEventListener('click', function(){
     var txt = 'RunTheGrid — Daily Crossword '+P.date+'\n'+N+'×'+N+' in '+fmt(elapsed)+'\n\n'+buildShareGrid()+'\n\nrunthe.gg/grid/crossword';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
@@ -564,6 +630,75 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     else { flashShare(); }
   });
   function flashShare(){ var b=document.getElementById('mShare'); var t=b.textContent; b.textContent='Copied to clipboard ✓'; setTimeout(function(){ b.textContent=t; }, 1400); }
+
+  // ---- dopamine: confetti burst --------------------------------------------
+  var CONFETTI_COLORS=['#FF5A3C','#F5A623','#2F6BFF','#7C5CF0','#1f8b39','#d23a22'];
+  var GOLD_COLORS=['#F5A623','#FFC24D','#FF5A3C','#FFD24D','#FFB74D'];
+  function confetti(count, goldHeavy){
+    try{ if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
+    var pal=goldHeavy?GOLD_COLORS:CONFETTI_COLORS;
+    var wrap=document.createElement('div'); wrap.className='confetti';
+    for(var i=0;i<count;i++){
+      var p=document.createElement('i');
+      p.style.left=(Math.random()*100)+'%';
+      p.style.background=pal[i%pal.length];
+      p.style.animationDuration=(2.2+Math.random()*1.7).toFixed(2)+'s';
+      p.style.animationDelay=(Math.random()*0.45).toFixed(2)+'s';
+      if(Math.random()<0.45){ p.style.width='8px'; p.style.height='8px'; p.style.borderRadius='50%'; }
+      wrap.appendChild(p);
+    }
+    document.body.appendChild(wrap);
+    setTimeout(function(){ if(wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 4600);
+  }
+
+  // ---- dopamine: streak milestones -----------------------------------------
+  function streakMilestone(n){
+    var map={3:'🔥 3-day streak — rolling!',5:'🔥 5 in a row!',7:'🔥 One-week streak!',
+      14:'🔥 Two weeks strong!',30:'🏆 30-day streak — elite!',50:'🏆 50 days. Unreal.',100:'👑 100-day streak!'};
+    return map[n]||'';
+  }
+
+  // ---- dopamine: live countdown to tomorrow's puzzle (local midnight) -------
+  var cdTick=null, cdTargets=[];
+  function msToTomorrow(){ var now=new Date(); var t=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,0,0); return t-now; }
+  function fmtCountdown(ms){ var s=Math.max(0,Math.floor(ms/1000)); var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;
+    return h+'h '+String(m).padStart(2,'0')+'m '+String(ss).padStart(2,'0')+'s'; }
+  function startCountdown(id){
+    if(cdTargets.indexOf(id)===-1) cdTargets.push(id);
+    function upd(){ var html='⏱ Next crossword in <b>'+fmtCountdown(msToTomorrow())+'</b>';
+      cdTargets.forEach(function(t){ var el=document.getElementById(t); if(el && el.offsetParent!==null) el.innerHTML=html; }); }
+    upd(); if(cdTick) clearInterval(cdTick); cdTick=setInterval(upd,1000);
+  }
+  function stopCountdown(){ if(cdTick){ clearInterval(cdTick); cdTick=null; } }
+
+  // ---- dopamine: stats modal ------------------------------------------------
+  function bothClosed(){ return document.getElementById('scrim').classList.contains('hidden') && document.getElementById('statsScrim').classList.contains('hidden'); }
+  function openStats(){
+    var s=load(); var solves=s.solves||0;
+    document.getElementById('stSolves').textContent = solves;
+    document.getElementById('stStreak').textContent = s.streak||0;
+    document.getElementById('stBestStreak').textContent = s.bestStreak||0;
+    document.getElementById('stFlawless').textContent = s.perfects||0;
+    var tl=document.getElementById('stTimeline');
+    if(solves>0){
+      var best=(s.best && s.best<1e9)?fmt(s.best):'—';
+      var avg=s.timeSum?fmt(Math.round(s.timeSum/solves)):'—';
+      tl.innerHTML='<div class="cell">⚡ '+best+'<span class="mut">Best time</span></div>'+
+                   '<div class="cell">⌀ '+avg+'<span class="mut">Avg time</span></div>';
+      tl.classList.remove('hidden'); document.getElementById('stEmpty').classList.add('hidden');
+    } else {
+      tl.classList.add('hidden'); document.getElementById('stEmpty').classList.remove('hidden');
+    }
+    startCountdown('stCountdown');
+    document.getElementById('statsScrim').classList.remove('hidden');
+  }
+  function closeStats(){ document.getElementById('statsScrim').classList.add('hidden'); if(bothClosed()) stopCountdown(); }
+  document.getElementById('mStats').addEventListener('click', openStats);
+  document.getElementById('stClose').addEventListener('click', closeStats);
+  document.getElementById('statsScrim').addEventListener('click', function(e){ if(e.target===this) closeStats(); });
+  var streakChip=document.getElementById('streakChip');
+  streakChip.addEventListener('click', openStats);
+  streakChip.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openStats(); } });
 
   // ---- boot -----------------------------------------------------------------
   document.getElementById('dateSeg').innerHTML = fmtDate(P.date)+' <small>Daily</small>';
