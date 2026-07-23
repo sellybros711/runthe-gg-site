@@ -752,9 +752,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js?v=20260723g"></script>
-<script src="playbook.js?v=20260723g"></script>
-<script src="engine.js?v=20260723g"></script>
+<script src="drive_generator.js?v=20260723h"></script>
+<script src="playbook.js?v=20260723h"></script>
+<script src="engine.js?v=20260723h"></script>
 <script>
 (function(){
   'use strict';
@@ -1135,8 +1135,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     [34,42,50,58,66].forEach(y=>F.ol.push(placeChip('off', bx-2, y)));
     F.qb    = placeChip('off qb', bx-9, 50);
     F.rb    = placeChip('off', bx-9, 62);
-    F.wrTop = placeChip('off', bx-4, 16);
-    F.wrBot = placeChip('off', bx-4, 84);
+    // Four eligible receivers so a concept has bodies to run every route (X & Z outside,
+    // two slots inside). runRoute() moves these along the actual called route.
+    F.recv = {
+      X:  placeChip('off', bx-4, 13),
+      SL: placeChip('off', bx-6, 35),
+      SR: placeChip('off', bx-6, 65),
+      Z:  placeChip('off', bx-4, 87),
+    };
+    F.wrTop = F.recv.X; F.wrBot = F.recv.Z;   // back-comp aliases
     // defense: box defenders near LOS reflect the engine's box count; rest deep
     const box = def ? def.boxCount : 6;
     spread(box, 26, 74).forEach(y=>F.dl.push(placeChip('def', bx+4, y)));
@@ -1484,6 +1491,38 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     if(pitch){ pitch.style.transition='transform .4s ease'; pitch.style.transform='rotateX(20deg)';
       setTimeout(()=>{ if(pitch) pitch.style.transition=''; }, 420); } }
 
+  // Route shapes in FIELD terms: each returns waypoints [[depthYards, yPct], ...] from the
+  // receiver's start. Downfield = +x via xOf(yard+depth); lateral breaks via latMove (toward
+  // the sideline for +, toward the middle for -). These mirror the tile diagram's concepts so
+  // what you saw on the call sheet is what the receivers actually run.
+  function latMove(y, d){ const side = y<50?-1:1; return Math.max(8, Math.min(92, y + d*side)); }
+  const ROUTE_FIELD = {
+    go:      y=>[[22,y]],
+    seam:    y=>[[19, latMove(y,-4)]],
+    post:    y=>[[12,y],[21, latMove(y,-16)]],
+    corner:  y=>[[12,y],[19, latMove(y,13)]],
+    dig:     y=>[[10,y],[11, latMove(y,-22)]],
+    out:     y=>[[8,y],[9, latMove(y,15)]],
+    curl:    y=>[[11,y],[9, latMove(y,3)]],
+    hitch:   y=>[[6,y],[5, y]],
+    slant:   y=>[[7, latMove(y,-16)]],
+    flat:    y=>[[2, latMove(y,16)]],
+    wheel:   y=>[[2, latMove(y,10)],[22, latMove(y,10)]],
+    comeback:y=>[[16,y],[13, latMove(y,5)]],
+    dragR:   y=>[[5, 60]],
+    dragL:   y=>[[5, 40]],
+    crossL:  y=>[[9, 32]],
+    check:   y=>[[1, y]],
+    angle:   y=>[[2, latMove(y,6)],[8, latMove(y,-10)]],
+  };
+  // Send one receiver down its route (fire-and-forget; the main flow controls the throw).
+  function runRoute(chip, wps, yard, totalMs){
+    if(!chip || !wps) return;
+    const seg = totalMs/wps.length;
+    wps.forEach((wp,i)=>{ const x=Math.min(xOf(yard+wp[0]), F_RIGHT-4), y=wp[1];
+      setTimeout(()=>step(chip, x, y, seg, 'linear'), i*seg*PACE); });
+  }
+
   async function playOut(before, after, play){
     clearFx();
     const F = FORM;
@@ -1536,26 +1575,42 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
         shakeIfBig(play); outcomeBurst(play, after, endX); await sleep(520);
       }
     } else {
-      // ---- PASS: dropback, pass-set, routes + coverage, rush ----
+      // ---- PASS: dropback, EVERY receiver runs the real concept, QB throws to the primary ----
       const dropX = bx-13;
       step(qb, dropX, 50, 230, 'ease-out'); step(ball, dropX, 50, 230);
       F.ol.forEach(o=>{ const p=pos(o); step(o, bx-2, p.y, 230, 'ease-out'); });
-      const targetY = play.archetype==='SCREEN' ? 74 : (endYard % 2 ? 24 : 76);   // deterministic-ish side
-      // Throw depth comes from the PLAY (its archetype), not the result — so a deep
-      // shot flies deep even when it falls incomplete, and a screen stays behind the line.
-      const AIR = { QUICK:5, SCREEN:-1, INTERMEDIATE:14, DEEP:26, PLAY_ACTION:15 };
-      const air = AIR[play.archetype] != null ? AIR[play.archetype] : 9;
-      const catchYard = Math.max(before.yardline-2, Math.min(99, before.yardline + air));
+
+      // What concept did we call, and which routes make it up?
+      const concept = (ENGINE.CONCEPT && ENGINE.CONCEPT[play.play]) || 'SEAM';
+      const routeSet = (VISC[concept] || VISC.SEAM).slice().sort((a,b)=>a[0]-b[0]);
+      const wrOrder = [F.recv.X, F.recv.SL, F.recv.SR, F.recv.Z].filter(Boolean);
+      let wi=0; const assigns=[];
+      for(const e of routeSet){ const sx=e[0], rname=e[1], prim=e[2];
+        const rec = (sx===_RB) ? F.rb : (wrOrder[wi++] || F.rb);
+        assigns.push({ rec, rname, prim }); }
+      const primary = assigns.find(a=>a.prim) || assigns[0] || {rec:F.recv.X, rname:'seam'};
+      const ROUTE_MS = 700;
+      // primary catch geometry: on a completion the ball is caught no deeper than the gain, so
+      // the primary's route is capped there (it's exactly at the ball when it arrives).
+      const pWps0 = (ROUTE_FIELD[primary.rname]||ROUTE_FIELD.go)(pos(primary.rec).y);
+      const pLast = pWps0[pWps0.length-1];
+      const routeDepth = pLast[0], targetY = pLast[1];
+      const catchDepth = (play.turnover || play.incomplete) ? routeDepth
+                       : Math.max(1, Math.min(routeDepth, play.yards));
+      const catchYard = Math.max(before.yardline-2, Math.min(99, before.yardline + catchDepth));
       const catchX = Math.min(xOf(catchYard), F_RIGHT-4);
-      const wr = targetY<50 ? F.wrTop : F.wrBot;
-      const otherWr = targetY<50 ? F.wrBot : F.wrTop;
-      step(wr, catchX, targetY, 640, 'linear');                                    // primary route
-      step(otherWr, xOf(Math.min(100, before.yardline+12)), targetY<50?70:30, 640, 'linear');
+      // fire every receiver down its real route (primary capped at the catch depth)
+      for(const a of assigns){
+        let wps = (ROUTE_FIELD[a.rname]||ROUTE_FIELD.go)(pos(a.rec).y);
+        if(a===primary) wps = wps.map(w => w[0]>catchDepth ? [catchDepth, w[1]] : w);
+        runRoute(a.rec, wps, before.yardline, ROUTE_MS);
+      }
+      const wr = primary.rec;
       const cover = nearest(F.db, catchX, targetY, 1)[0];
-      if(cover) step(cover, catchX-1, targetY+(targetY<50?-3:3), 660, 'linear');    // DB shadows
+      if(cover) step(cover, catchX-1, targetY+(targetY<50?-3:3), ROUTE_MS, 'linear');   // DB shadows the primary
       const rusher = nearest(F.dl, dropX, 50, 1)[0];
-      drawRoute([[dropX,50],[(dropX+catchX)/2,(50+targetY)/2],[catchX,targetY]]);   // pass path
-      await sleep(240);
+      drawRoute([[dropX,50],[(dropX+catchX)/2,(50+targetY)/2],[catchX,targetY]]);   // pass path to the primary
+      await sleep(300);   // let the routes develop before the throw
       // QB throwing motion — cock back and release. The ball leaves at the top of the snap-forward.
       const doThrow = async ()=>{ if(qb){ qb.classList.remove('faceL'); qb.classList.add('qbthrow');
         setTimeout(()=>qb&&qb.classList.remove('qbthrow'), 360); } await sleep(120); };
