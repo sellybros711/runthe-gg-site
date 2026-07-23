@@ -99,10 +99,15 @@
     BOOT:    {ONE_HIGH:+6,  TWO_HIGH:-2,  PRESS:+8,  OFF:+5,  SOFT:-3,  BLITZ:-10},
     SCREEN:  {ONE_HIGH:-3,  TWO_HIGH:-6,  PRESS:-3,  OFF:+2,  SOFT:-4,  BLITZ:+15},
   };
-  // Per-scheme parity edge (success delta) — compresses the schemes toward viable TD rates
-  // so no playbook is strictly easy-mode. Reflects identity: the grind-it-out schemes get a
-  // nudge up, the all-explosive ones a nudge down (they still score more, just not runaway).
-  const SCHEME_EDGE = { WEST_COAST:+6, SMASH_MOUTH:+7, WIDE_ZONE:-7, AIR_RAID:-2, SPREAD_OPTION:+5, VERTICAL:-12 };
+  // Per-scheme parity edge (success delta). Football reality: scheme is a STYLE, not a
+  // difficulty setting — West Coast, Air Raid, the Coryell vertical game and the wide-zone
+  // run game have all won at the highest level. So these edges compress every playbook to a
+  // similar SCORING mean for a skilled reader (~40% TD, ~2pt spread in sim), while the plays'
+  // own explosive/turnover rates keep each scheme's VARIANCE identity: the vertical and
+  // air-raid books boom-and-bust (more explosives, more empty drives), West Coast and the
+  // RPO spread grind steadier. Tuned against a coverage-reading bot at DIFFICULTY -9.
+  let SCHEME_EDGE = { WEST_COAST:+3, SMASH_MOUTH:+4, WIDE_ZONE:-6, AIR_RAID:+5, SPREAD_OPTION:+3, VERTICAL:-6 };
+  try { if (typeof process !== 'undefined' && process.env && process.env.RTD_EDGE) SCHEME_EDGE = JSON.parse(process.env.RTD_EDGE); } catch (_) {}
   function conceptOf(play){ return CONCEPT[play.name] || null; }
   const COVER_SCALE = envNum('RTD_COVER', 1.5);   // how hard the concept↔coverage matchup swings the play
   // Which route concepts each pass archetype tends to carry — lets the scouting
@@ -348,7 +353,7 @@
      well above the real 23.5% TD rate. This single constant scales success
      rates so a SKILLED player lands on the target TD rate. Solved by
      simulation (see simulator.js), not guessed. Raise it to make it easier. */
-  let DIFFICULTY = envNum('RTD_DIFFICULTY', -3.0);
+  let DIFFICULTY = envNum('RTD_DIFFICULTY', -9.0);   // tuned so a skilled coverage-reader tops out ~40% TD (challenging), careless play is punished hard
   function setDifficulty(v){ DIFFICULTY = v; }
   function getDifficulty(){ return DIFFICULTY; }
 
