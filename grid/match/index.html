@@ -500,8 +500,8 @@
 
   <!-- cache-busted: bump ?v= whenever entities/generator change, or stale
        browser caches will pair fresh HTML with old boards/engine -->
-  <script src="entities.js?v=8"></script>
-  <script src="generator.js?v=8"></script>
+  <script src="entities.js?v=9"></script>
+  <script src="generator.js?v=9"></script>
   <script>
   (function () {
     'use strict';
@@ -928,7 +928,8 @@
       if (es[0].col && es.every(function (e) { return e.col === es[0].col; })) return 'played college ball at ' + es[0].col;
       if (es[0].dy && es.every(function (e) { return e.dy === es[0].dy; })) return 'are from the ' + es[0].dy + ' draft class';
       if (es.every(function (e) { return e.dp === 1; })) return 'went No. 1 overall';
-      if (es[0].pos && es.every(function (e) { return e.sport === es[0].sport && e.pos === es[0].pos; })) return 'play the same position';
+      function _fam(pos){ var w=String(pos).trim().split(/\s+/); return w[w.length-1]; }
+      if (es[0].pos && es.every(function (e) { return e.pos && _fam(e.pos) === _fam(es[0].pos); })) return 'are all ' + _fam(es[0].pos).toLowerCase() + 's';
       return null;
     }
 
