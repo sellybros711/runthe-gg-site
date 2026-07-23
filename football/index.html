@@ -301,6 +301,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .log .row .sp{color:var(--cream-dim); font-size:16px;}
 .log .row .pl{font-family:var(--pix); font-size:9px;}
 .log .row .pl small{display:block; font-family:var(--term); font-size:15px; color:var(--cream-dim); margin-top:3px; letter-spacing:0;}
+.log .row .why{display:flex; flex-wrap:wrap; gap:4px; margin-top:5px;}
+.log .row .wf{font-family:var(--pix); font-size:7px; letter-spacing:.3px; padding:2px 5px; border-radius:5px; line-height:1.35;}
+.log .row .wf.pos{color:#bff0c0; background:rgba(123,214,126,.12); border:1px solid rgba(123,214,126,.32);}
+.log .row .wf.neg{color:#f3b7a9; background:rgba(224,112,92,.12); border:1px solid rgba(224,112,92,.32);}
 .log .row .yd{text-align:right; font-family:var(--pix); font-size:11px;}
 .log .row .yd.pos{color:var(--green);} .log .row .yd.neg{color:var(--red);} .log .row .yd.to{color:var(--red);}
 .log .empty{padding:18px 6px; text-align:center; color:var(--cream-dim); font-size:18px;}
@@ -724,9 +728,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js?v=20260723c"></script>
-<script src="playbook.js?v=20260723c"></script>
-<script src="engine.js?v=20260723c"></script>
+<script src="drive_generator.js?v=20260723d"></script>
+<script src="playbook.js?v=20260723d"></script>
+<script src="engine.js?v=20260723d"></script>
 <script>
 (function(){
   'use strict';
@@ -1285,10 +1289,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       if(r.turnover){ yd = r.turnover==='INTERCEPTION'?'INT':r.turnover==='FUMBLE'?'FUM':'TO'; cls='to'; }
       else if(r.sack){ yd = r.yards+' SACK'; cls='neg'; }
       else { yd = (r.yards>0?'+':'')+r.yards; cls = r.yards>0?'pos':r.yards<0?'neg':''; }
+      const why = (r.factors && r.factors.length)
+        ? `<span class="why">${r.factors.map(([s,t])=>`<span class="wf ${s==='+'?'pos':'neg'}">${s==='+'?'▲':'▼'} ${t}</span>`).join('')}</span>` : '';
       html += `<div class="row"><span class="n">${n}</span>
         <span class="dd">${ddLabel(r)}</span>
         <span class="sp">${spot}</span>
-        <span class="pl">${r.title}<small>${r.play}${r.blitz?' · BLITZ':''}</small></span>
+        <span class="pl">${r.title}<small>${r.play}${r.blitz?' · BLITZ':''}</small>${why}</span>
         <span class="yd ${cls}">${yd}</span></div>`;
     });
     box.innerHTML=html;
