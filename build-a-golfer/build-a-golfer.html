@@ -1124,6 +1124,13 @@ window.GA_ID='G-L29P5MRWKE';
   /* live tournament scorecard */
   .scorecard{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.20)); border:1px solid var(--panelb);
     border-radius:16px; padding:14px 14px 16px; box-shadow:0 14px 32px -20px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.05)}
+  /* the scorecard box stands out on the big weeks (owner): gold for a MAJOR, teal for the PLAYOFFS */
+  .scorecard.sc-major{border:1.6px solid rgba(241,208,74,.72); background:linear-gradient(180deg,rgba(241,208,74,.13),rgba(0,0,0,.24));
+    box-shadow:0 0 26px -6px rgba(241,208,74,.45), 0 14px 32px -20px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.08)}
+  .scorecard.sc-major .sc-name{color:var(--gold)}
+  .scorecard.sc-playoff{border:1.6px solid rgba(15,168,136,.72); background:linear-gradient(180deg,rgba(15,168,136,.13),rgba(0,0,0,.24));
+    box-shadow:0 0 24px -6px rgba(15,168,136,.42), 0 14px 32px -20px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.07)}
+  .scorecard.sc-playoff .sc-name{color:#4fd6bd}
   .sc-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; gap:10px}
   .sc-name{font-family:var(--display); font-size:22px; color:var(--oncard); text-transform:uppercase; letter-spacing:.02em; line-height:1}
   .sc-pos{font-family:var(--mono); font-weight:800; font-size:27px; line-height:1}
@@ -14780,7 +14787,7 @@ function scrSeason(){
   const isWin=(finPos===1);
   const myPosTxt=myCut?'CUT':(finPos==='CUT'?'CUT':(finTied?'T'+finPos:ord(finPos)));
   const venue=eventCourse(evt);
-  right.appendChild($(`<div class="scorecard">
+  right.appendChild($(`<div class="scorecard${(evt.major||evt.guestMajor)?' sc-major':(evt.playoff?' sc-playoff':'')}">
     <div class="sc-head">
       <div><div class="sc-name">${evt.name}</div><div class="small muted" style="margin-top:2px">${typeLbl} · ${fmt(evt.purse)} purse</div>${venue?`<div class="small muted" style="margin-top:1px">📍 ${esc(venue.v)} · ${esc(venue.loc)}</div>`:''}</div>
       <div style="text-align:right"><div class="sc-pos" style="color:${myCut?'#e07a5f':(isWin?'var(--gold)':'var(--oncard)')}">${myPosTxt}</div>

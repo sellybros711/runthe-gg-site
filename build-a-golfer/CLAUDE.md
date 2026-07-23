@@ -13010,6 +13010,19 @@ allows Google Fonts, or self-host Anton.*
   Ascend-style offer card; a first-ever deal shows two "Open slot" cards; Decide-later still dismisses;
   0 page errors. Deployed to /golf.
 
+- **Live-season scorecard box changes color on the big weeks (owner, on the tournament scorecard: "this
+  box should change colors for a major and for the playoffs to make it stand out").** The `.scorecard`
+  panel on the live season screen (event name · purse · venue · THU-SUN round cells · finish line) was the
+  same neutral panel every week. Now it carries a per-week variant matching the game's established accent
+  language (`.major` gold / `.sig` teal): **`.sc-major`** (any `evt.major` or a circuit `guestMajor`) = a
+  gold border + warm gold-tinted gradient + soft gold glow with the event name in gold; **`.sc-playoff`**
+  (`evt.playoff` — St. Jude/Memphis, Crossroads, and the Cup Finale, plus the Legends Cup playoff weeks) =
+  the same treatment in teal. Regular/signature weeks keep the neutral panel. One class ternary on the
+  scorecard markup + two CSS variants. Verified in Playwright on a real career season: a regular event
+  computes the plain border, The Magnolia Invitational renders `sc-major` (gold rgba(241,208,74,.72)
+  border), The Memphis Championship renders `sc-playoff` (teal rgba(15,168,136,.72)), 0 page errors; a
+  side-by-side render confirms all three read distinctly. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
