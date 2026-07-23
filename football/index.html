@@ -456,13 +456,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     radial-gradient(120% 55% at 14% 6%, rgba(150,180,220,.20), transparent 42%),
     radial-gradient(120% 55% at 86% 6%, rgba(150,180,220,.20), transparent 42%),
     linear-gradient(180deg,#0a1522 0%,#0d2033 46%,#0a1826 100%);}
-/* stadium light towers */
-.lights{ position:absolute; top:4px; width:64px; height:88px; z-index:1;}
-.lights.left{ left:-2px; } .lights.right{ right:-2px; }
-.lights svg{ width:100%; height:100%; display:block; filter:drop-shadow(0 0 9px rgba(255,240,200,.5));}
-.lights::before{ content:''; position:absolute; top:-14px; left:50%; transform:translateX(-50%);
-  width:150px; height:120px; z-index:-1; pointer-events:none;
-  background:radial-gradient(closest-side, rgba(200,220,255,.20), transparent 72%);}
+/* stadium light banks — compact fixtures tucked into the top corners, sitting
+   ABOVE the gear/coins buttons (which are pushed down in .home-top) so nothing
+   overlaps. */
+.lights{ position:absolute; top:8px; width:60px; height:34px; z-index:1;}
+.lights.left{ left:8px; } .lights.right{ right:8px; }
+.lights svg{ width:100%; height:100%; display:block; filter:drop-shadow(0 0 8px rgba(255,238,196,.6));}
+.lights::before{ content:''; position:absolute; top:-12px; left:50%; transform:translateX(-50%);
+  width:132px; height:104px; z-index:-1; pointer-events:none;
+  background:radial-gradient(closest-side, rgba(200,220,255,.18), transparent 72%);}
 /* crowd texture band behind the sign */
 .crowd{ position:absolute; top:96px; left:0; right:0; height:380px; z-index:0; opacity:.55;
   background:
@@ -471,7 +473,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     repeating-linear-gradient(90deg, rgba(210,170,90,.06) 0 3px, transparent 3px 26px);
   -webkit-mask:linear-gradient(180deg,transparent,#000 26%,#000 74%,transparent);
           mask:linear-gradient(180deg,transparent,#000 26%,#000 74%,transparent);}
-.home-top{ position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; padding:calc(18px + env(safe-area-inset-top)) 2px 2px;}
+.home-top{ position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; padding:calc(50px + env(safe-area-inset-top)) 2px 2px;}
 .gear{ width:46px;height:46px;border-radius:11px; background:rgba(9,18,30,.65); border:2px solid rgba(200,212,235,.25);
   color:#e7ecf4; font-size:22px; box-shadow:0 3px 0 rgba(0,0,0,.35);}
 .coins-pill{ display:flex; align-items:center; gap:8px; background:rgba(9,18,30,.65); border:2px solid rgba(200,212,235,.25);
@@ -565,16 +567,18 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   <div id="splashScreen">
     <div class="stadium">
       <div class="lights left" aria-hidden="true">
-        <svg viewBox="0 0 72 96"><rect x="33" y="32" width="6" height="64" rx="2" fill="#223147" opacity=".55"/>
-          <rect x="4" y="6" width="64" height="28" rx="7" fill="#16233a" stroke="#2c4160" stroke-width="2"/>
-          <g fill="#fff2c8"><circle cx="15" cy="15" r="4.2"/><circle cx="29" cy="15" r="4.2"/><circle cx="43" cy="15" r="4.2"/><circle cx="57" cy="15" r="4.2"/>
-          <circle cx="15" cy="26" r="4.2"/><circle cx="29" cy="26" r="4.2"/><circle cx="43" cy="26" r="4.2"/><circle cx="57" cy="26" r="4.2"/></g></svg>
+        <svg viewBox="0 0 72 34" shape-rendering="geometricPrecision">
+          <rect x="31" y="26" width="10" height="7" rx="2" fill="#223147"/>
+          <rect x="3" y="3" width="66" height="24" rx="6" fill="#16233a" stroke="#2c4160" stroke-width="2"/>
+          <g fill="#fff4d0"><circle cx="14" cy="11" r="4"/><circle cx="28" cy="11" r="4"/><circle cx="44" cy="11" r="4"/><circle cx="58" cy="11" r="4"/>
+          <circle cx="14" cy="20" r="4"/><circle cx="28" cy="20" r="4"/><circle cx="44" cy="20" r="4"/><circle cx="58" cy="20" r="4"/></g></svg>
       </div>
       <div class="lights right" aria-hidden="true">
-        <svg viewBox="0 0 72 96"><rect x="33" y="32" width="6" height="64" rx="2" fill="#223147" opacity=".55"/>
-          <rect x="4" y="6" width="64" height="28" rx="7" fill="#16233a" stroke="#2c4160" stroke-width="2"/>
-          <g fill="#fff2c8"><circle cx="15" cy="15" r="4.2"/><circle cx="29" cy="15" r="4.2"/><circle cx="43" cy="15" r="4.2"/><circle cx="57" cy="15" r="4.2"/>
-          <circle cx="15" cy="26" r="4.2"/><circle cx="29" cy="26" r="4.2"/><circle cx="43" cy="26" r="4.2"/><circle cx="57" cy="26" r="4.2"/></g></svg>
+        <svg viewBox="0 0 72 34" shape-rendering="geometricPrecision">
+          <rect x="31" y="26" width="10" height="7" rx="2" fill="#223147"/>
+          <rect x="3" y="3" width="66" height="24" rx="6" fill="#16233a" stroke="#2c4160" stroke-width="2"/>
+          <g fill="#fff4d0"><circle cx="14" cy="11" r="4"/><circle cx="28" cy="11" r="4"/><circle cx="44" cy="11" r="4"/><circle cx="58" cy="11" r="4"/>
+          <circle cx="14" cy="20" r="4"/><circle cx="28" cy="20" r="4"/><circle cx="44" cy="20" r="4"/><circle cx="58" cy="20" r="4"/></g></svg>
       </div>
       <div class="crowd" aria-hidden="true"></div>
 
