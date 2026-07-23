@@ -13521,9 +13521,9 @@ allows Google Fonts, or self-host Anton.*
     `runtour_submit_daily` (appended param, so old callers still resolve), and returns `holes` from
     `runtour_daily_board`. Day-scoped (<=200 rows), so the extra jsonb is a tiny read. Validated on a local
     Postgres: 12-arg submit stores holes, the old 11-arg call still resolves, the board returns the holes
-    column, idempotent re-run. **ACTION: run `supabase/69_runtour_daily_holes.sql`** - until then, YOUR OWN
-    daily card shows the scorecard (from local) and other players' cards fall back to the Score/Beat-the-pro
-    summary.
+    column, idempotent re-run. **Owner ran `supabase/69_runtour_daily_holes.sql` (2026-07-23) - LIVE**;
+    other players' daily cards now carry + show the hole-by-hole scorecard. (Before it was applied, only
+    YOUR OWN daily card showed the scorecard from local; others fell back to the Score/Beat-the-pro summary.)
   Verified in Playwright: the float rounds to an integer; a daily card (other player w/ r.holes) flips to a
   2-block OUT/IN scorecard with correct totals + colored scores; a real daily submit passes p_holes on the
   first attempt; the full card/board/closet/share suite + an 18-hole practice round still green with 0 page
