@@ -41172,9 +41172,7 @@
     "nba_hornets",
     "nba_bulls"
    ],
-   "jersey_number": [
-    0
-   ],
+   "jersey_number": [],
    "hall_of_fame": [
     true
    ],
@@ -73139,8 +73137,7 @@
     "TRACK"
    ],
    "decades_active": [
-    1930,
-    1940
+    1930
    ],
    "teams": [],
    "jersey_number": [],

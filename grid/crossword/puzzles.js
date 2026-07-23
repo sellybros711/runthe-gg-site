@@ -27,7 +27,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 0,
         "answer": "BERRA",
-        "clue": "Hall of Famer Yogi ___"
+        "clue": "Yankees Hall of Famer Yogi ___"
       },
       {
         "num": 1,
@@ -51,7 +51,7 @@ window.RTG_PUZZLES = {
         "r": 2,
         "c": 0,
         "answer": "STARR",
-        "clue": "Hall of Famer Bart ___"
+        "clue": "Packers Hall of Famer Bart ___"
       },
       {
         "num": 4,
@@ -59,7 +59,7 @@ window.RTG_PUZZLES = {
         "r": 4,
         "c": 0,
         "answer": "SABAN",
-        "clue": "NCAA coach Nick ___"
+        "clue": "LSU coach Nick ___"
       }
     ],
     "difficulty": 2.6,
@@ -100,7 +100,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 4,
         "answer": "RILEY",
-        "clue": "NBA coach Pat ___"
+        "clue": "Lakers coach Pat ___"
       },
       {
         "num": 4,
@@ -116,7 +116,7 @@ window.RTG_PUZZLES = {
         "r": 3,
         "c": 0,
         "answer": "TORRE",
-        "clue": "MLB coach Joe ___"
+        "clue": "Yankees manager Joe ___"
       }
     ],
     "difficulty": 2.4,
@@ -141,7 +141,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 0,
         "answer": "WHITE",
-        "clue": "Hall of Famer Reggie ___"
+        "clue": "Eagles Hall of Famer Reggie ___"
       },
       {
         "num": 1,
@@ -149,7 +149,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 0,
         "answer": "WALSH",
-        "clue": "NFL coach Bill ___"
+        "clue": "49ers coach Bill ___"
       },
       {
         "num": 2,
@@ -157,7 +157,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 2,
         "answer": "IRVIN",
-        "clue": "Michael ___, a 1980s star"
+        "clue": "Michael ___, a 1990s star"
       },
       {
         "num": 3,
@@ -165,7 +165,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 4,
         "answer": "ELWAY",
-        "clue": "Hall of Famer John ___"
+        "clue": "Broncos Hall of Famer John ___"
       },
       {
         "num": 4,
@@ -230,7 +230,7 @@ window.RTG_PUZZLES = {
         "r": 2,
         "c": 0,
         "answer": "YOUNT",
-        "clue": "Hall of Famer Robin ___"
+        "clue": "Brewers Hall of Famer Robin ___"
       },
       {
         "num": 6,
@@ -279,7 +279,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 3,
         "answer": "RUSSA",
-        "clue": "MLB coach Tony La ___"
+        "clue": "White Sox manager Tony La ___"
       },
       {
         "num": 4,
@@ -287,7 +287,7 @@ window.RTG_PUZZLES = {
         "r": 2,
         "c": 0,
         "answer": "WALSH",
-        "clue": "NFL coach Bill ___"
+        "clue": "49ers coach Bill ___"
       },
       {
         "num": 5,
@@ -328,7 +328,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 2,
         "answer": "LEWIS",
-        "clue": "Hall of Famer Ray ___"
+        "clue": "Ravens Hall of Famer Ray ___"
       },
       {
         "num": 3,
@@ -336,7 +336,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 4,
         "answer": "MAYS",
-        "clue": "Hall of Famer Willie ___"
+        "clue": "Giants Hall of Famer Willie ___"
       },
       {
         "num": 4,
@@ -344,7 +344,7 @@ window.RTG_PUZZLES = {
         "r": 1,
         "c": 0,
         "answer": "KERR",
-        "clue": "NBA coach Steve ___"
+        "clue": "Warriors coach Steve ___"
       },
       {
         "num": 5,
