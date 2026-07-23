@@ -385,6 +385,10 @@
       "clue": "NFL coach Don ___"
     },
     {
+      "answer": "DAVIS",
+      "clue": "Raiders owner Al ___"
+    },
+    {
       "answer": "SPURS",
       "clue": "San Antonio's NBA team"
     },
@@ -837,6 +841,10 @@
       "clue": "WCC school, the Bulldogs"
     },
     {
+      "answer": "MACK",
+      "clue": "MLB coach Connie ___"
+    },
+    {
       "answer": "MADRID",
       "clue": "Madrid's La Liga team"
     },
@@ -867,14 +875,6 @@
     {
       "answer": "RUSSA",
       "clue": "MLB coach Tony La ___"
-    },
-    {
-      "answer": "MILAN",
-      "clue": "Milan's Serie A team"
-    },
-    {
-      "answer": "WHIP",
-      "clue": "MLB stat"
     }
   ],
   "fill": [

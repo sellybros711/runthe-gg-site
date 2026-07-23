@@ -27,7 +27,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 0,
         "answer": "BERRA",
-        "clue": "Yogi ___, a catcher famous for his malaprops"
+        "clue": "Hall of Famer Yogi ___"
       },
       {
         "num": 1,
@@ -51,7 +51,7 @@ window.RTG_PUZZLES = {
         "r": 2,
         "c": 0,
         "answer": "STARR",
-        "clue": "Packers great Bart ___"
+        "clue": "Hall of Famer Bart ___"
       },
       {
         "num": 4,
@@ -70,11 +70,11 @@ window.RTG_PUZZLES = {
     "date": "2026-07-23",
     "size": 5,
     "rows": [
-      "T#W#T",
-      "OLAVE",
-      "R#L#X",
-      "RUSSA",
-      "E#H#S"
+      "S#F#R",
+      "MIAMI",
+      "I#V#L",
+      "TORRE",
+      "H#E#Y"
     ],
     "theme": 5,
     "entries": [
@@ -83,40 +83,40 @@ window.RTG_PUZZLES = {
         "dir": "D",
         "r": 0,
         "c": 0,
-        "answer": "TORRE",
-        "clue": "MLB coach Joe ___"
+        "answer": "SMITH",
+        "clue": "Cowboys great Emmitt ___"
       },
       {
         "num": 2,
         "dir": "D",
         "r": 0,
         "c": 2,
-        "answer": "WALSH",
-        "clue": "NFL coach Bill ___"
+        "answer": "FAVRE",
+        "clue": "Packers great Brett ___"
       },
       {
         "num": 3,
         "dir": "D",
         "r": 0,
         "c": 4,
-        "answer": "TEXAS",
-        "clue": "SEC school, the Longhorns"
+        "answer": "RILEY",
+        "clue": "NBA coach Pat ___"
       },
       {
         "num": 4,
         "dir": "A",
         "r": 1,
         "c": 0,
-        "answer": "OLAVE",
-        "clue": "Chris ___, a 2020s star"
+        "answer": "MIAMI",
+        "clue": "ACC school, the Hurricanes"
       },
       {
         "num": 5,
         "dir": "A",
         "r": 3,
         "c": 0,
-        "answer": "RUSSA",
-        "clue": "MLB coach Tony La ___"
+        "answer": "TORRE",
+        "clue": "MLB coach Joe ___"
       }
     ],
     "difficulty": 2.4,
@@ -127,11 +127,11 @@ window.RTG_PUZZLES = {
     "date": "2026-07-24",
     "size": 5,
     "rows": [
-      "SUGGS",
-      "T#A#H",
-      "A#T#U",
-      "R#E#L",
-      "RUSSA"
+      "WHITE",
+      "A#R#L",
+      "L#V#W",
+      "S#I#A",
+      "HENRY"
     ],
     "theme": 5,
     "entries": [
@@ -140,43 +140,43 @@ window.RTG_PUZZLES = {
         "dir": "A",
         "r": 0,
         "c": 0,
-        "answer": "SUGGS",
-        "clue": "Terrell ___, a 2000s star"
+        "answer": "WHITE",
+        "clue": "Hall of Famer Reggie ___"
       },
       {
         "num": 1,
         "dir": "D",
         "r": 0,
         "c": 0,
-        "answer": "STARR",
-        "clue": "Hall of Famer Bart ___"
+        "answer": "WALSH",
+        "clue": "NFL coach Bill ___"
       },
       {
         "num": 2,
         "dir": "D",
         "r": 0,
         "c": 2,
-        "answer": "GATES",
-        "clue": "Antonio ___, a 2000s star"
+        "answer": "IRVIN",
+        "clue": "Michael ___, a 1980s star"
       },
       {
         "num": 3,
         "dir": "D",
         "r": 0,
         "c": 4,
-        "answer": "SHULA",
-        "clue": "NFL coach Don ___"
+        "answer": "ELWAY",
+        "clue": "Hall of Famer John ___"
       },
       {
         "num": 4,
         "dir": "A",
         "r": 4,
         "c": 0,
-        "answer": "RUSSA",
-        "clue": "MLB coach Tony La ___"
+        "answer": "HENRY",
+        "clue": "Derrick ___, nicknamed \"King Henry\""
       }
     ],
-    "difficulty": 2.8,
+    "difficulty": 3,
     "sport": "baseball"
   },
   {
@@ -184,11 +184,11 @@ window.RTG_PUZZLES = {
     "date": "2026-07-25",
     "size": 5,
     "rows": [
-      "#ERA#",
-      "H#I#L",
-      "BULLS",
-      "P#E#U",
-      "#BYU#"
+      "#USC#",
+      "B#P#O",
+      "YOUNT",
+      "U#R#T",
+      "#LSU#"
     ],
     "theme": 6,
     "entries": [
@@ -197,51 +197,51 @@ window.RTG_PUZZLES = {
         "dir": "A",
         "r": 0,
         "c": 1,
-        "answer": "ERA",
-        "clue": "Stat-line shorthand: earned run average"
+        "answer": "USC",
+        "clue": "Big Ten school, the Trojans"
       },
       {
         "num": 2,
         "dir": "D",
         "r": 0,
         "c": 2,
-        "answer": "RILEY",
-        "clue": "NBA coach Pat ___"
+        "answer": "SPURS",
+        "clue": "San Antonio's NBA team"
       },
       {
         "num": 3,
         "dir": "D",
         "r": 1,
         "c": 0,
-        "answer": "HBP",
-        "clue": "Box-score abbr. for hit by pitch"
+        "answer": "BYU",
+        "clue": "Big 12 school, the Cougars"
       },
       {
         "num": 4,
         "dir": "D",
         "r": 1,
         "c": 4,
-        "answer": "LSU",
-        "clue": "SEC school, the Tigers"
+        "answer": "OTT",
+        "clue": "Mel ___, a 500-home-run outfielder"
       },
       {
         "num": 5,
         "dir": "A",
         "r": 2,
         "c": 0,
-        "answer": "BULLS",
-        "clue": "Chicago's NBA team"
+        "answer": "YOUNT",
+        "clue": "Hall of Famer Robin ___"
       },
       {
         "num": 6,
         "dir": "A",
         "r": 4,
         "c": 1,
-        "answer": "BYU",
-        "clue": "Big 12 school, the Cougars"
+        "answer": "LSU",
+        "clue": "SEC school, the Tigers"
       }
     ],
-    "difficulty": 2,
+    "difficulty": 2.33,
     "sport": "baseball"
   },
   {
@@ -306,61 +306,61 @@ window.RTG_PUZZLES = {
     "date": "2026-07-27",
     "size": 5,
     "rows": [
-      "#REID",
-      "S#L#A",
-      "LEWIS",
-      "A#A#H",
-      "MAYE#"
+      "#SLAM",
+      "K#E#A",
+      "ELWAY",
+      "R#I#S",
+      "ROSE#"
     ],
-    "theme": 5,
+    "theme": 6,
     "entries": [
       {
         "num": 1,
         "dir": "A",
         "r": 0,
         "c": 1,
-        "answer": "REID",
-        "clue": "NFL coach Andy ___"
+        "answer": "SLAM",
+        "clue": "Grand ___ (bases-loaded homer)"
       },
       {
         "num": 2,
         "dir": "D",
         "r": 0,
         "c": 2,
-        "answer": "ELWAY",
-        "clue": "Hall of Famer John ___"
+        "answer": "LEWIS",
+        "clue": "Hall of Famer Ray ___"
       },
       {
         "num": 3,
         "dir": "D",
         "r": 0,
         "c": 4,
-        "answer": "DASH",
-        "clue": "Short sprint race"
+        "answer": "MAYS",
+        "clue": "Hall of Famer Willie ___"
       },
       {
         "num": 4,
         "dir": "D",
         "r": 1,
         "c": 0,
-        "answer": "SLAM",
-        "clue": "Grand ___ (bases-loaded homer)"
+        "answer": "KERR",
+        "clue": "NBA coach Steve ___"
       },
       {
         "num": 5,
         "dir": "A",
         "r": 2,
         "c": 0,
-        "answer": "LEWIS",
-        "clue": "Ravens great Ray ___"
+        "answer": "ELWAY",
+        "clue": "Broncos great John ___"
       },
       {
         "num": 6,
         "dir": "A",
         "r": 4,
         "c": 0,
-        "answer": "MAYE",
-        "clue": "Patriots star Drake ___"
+        "answer": "ROSE",
+        "clue": "Reds star Pete ___"
       }
     ],
     "difficulty": 2.83,
@@ -371,11 +371,11 @@ window.RTG_PUZZLES = {
     "date": "2026-07-28",
     "size": 5,
     "rows": [
-      "ERS#K",
-      "U#WAR",
-      "R#I#A",
-      "OPS#F",
-      "S#HIT"
+      "BAT#B",
+      "E#WAR",
+      "A#I#E",
+      "RUN#T",
+      "S#SET"
     ],
     "theme": 6,
     "entries": [
@@ -384,32 +384,32 @@ window.RTG_PUZZLES = {
         "dir": "A",
         "r": 0,
         "c": 0,
-        "answer": "ERS",
-        "clue": "San Francisco's NFL team"
+        "answer": "BAT",
+        "clue": "Louisville Slugger, e.g."
       },
       {
         "num": 1,
         "dir": "D",
         "r": 0,
         "c": 0,
-        "answer": "EUROS",
-        "clue": "Soccer trophy"
+        "answer": "BEARS",
+        "clue": "Chicago's NFL team"
       },
       {
         "num": 2,
         "dir": "D",
         "r": 0,
         "c": 2,
-        "answer": "SWISH",
-        "clue": "All-net basket"
+        "answer": "TWINS",
+        "clue": "Minnesota's AL team"
       },
       {
         "num": 3,
         "dir": "D",
         "r": 0,
         "c": 4,
-        "answer": "KRAFT",
-        "clue": "Patriots owner Robert ___"
+        "answer": "BRETT",
+        "clue": "Royals great George ___"
       },
       {
         "num": 4,
@@ -417,26 +417,26 @@ window.RTG_PUZZLES = {
         "r": 1,
         "c": 2,
         "answer": "WAR",
-        "clue": "Box-score abbr. for wins above replacement"
+        "clue": "Stat-line shorthand: wins above replacement"
       },
       {
         "num": 5,
         "dir": "A",
         "r": 3,
         "c": 0,
-        "answer": "OPS",
-        "clue": "Stat-line shorthand: on-base plus slugging"
+        "answer": "RUN",
+        "clue": "It scores when you cross the plate"
       },
       {
         "num": 6,
         "dir": "A",
         "r": 4,
         "c": 2,
-        "answer": "HIT",
-        "clue": "Single, double, or triple"
+        "answer": "SET",
+        "clue": "Tennis-match division"
       }
     ],
-    "difficulty": 2.14,
+    "difficulty": 2.29,
     "sport": "baseball"
   }
 ],
