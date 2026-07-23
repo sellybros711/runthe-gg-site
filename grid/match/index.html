@@ -486,8 +486,8 @@
 
   <!-- cache-busted: bump ?v= whenever entities/generator change, or stale
        browser caches will pair fresh HTML with old boards/engine -->
-  <script src="entities.js?v=3"></script>
-  <script src="generator.js?v=3"></script>
+  <script src="entities.js?v=4"></script>
+  <script src="generator.js?v=4"></script>
   <script>
   (function () {
     'use strict';
@@ -840,13 +840,23 @@
         render();
         playLockAnim(laneIdx);
         if (solveOrder.length === CATS) finish(true);
-      } else if (allFitSomeLane(ids)) {
-        // FAIRNESS: the four genuinely share an unsolved category per the DB
-        // (should be impossible on zero-trap boards; covers any residue).
-        // Never punish a factually correct grouping — free bounce + honesty.
-        freeMiss(laneIdx, ids, allFitSomeLane(ids));
       } else {
-        registerMiss(laneIdx, ids);
+        // FAIRNESS: never punish a factually correct grouping. Two nets:
+        // (1) the four fully satisfy an unsolved BOARD category;
+        // (2) the four share a salient OFF-BOARD fact (team/jersey/surname/
+        //     college/draft/position) per the raw DB.
+        // Both should be impossible on guarded boards; they cover data gaps.
+        var lane = allFitSomeLane(ids);
+        var fact = lane ? null : sharedFactLabel(ids);
+        if (lane) {
+          freeMiss(laneIdx, ids, revealedCats[lane.id]
+            ? ('True — all four fit "' + lane.name + '." But this board needs one of them in a different group. No guess used.')
+            : 'Those four do share something real — but this board needs one of them in a different group. No guess used.');
+        } else if (fact) {
+          freeMiss(laneIdx, ids, 'True — all four ' + fact + '. But that isn\'t one of today\'s five groups. No guess used.');
+        } else {
+          registerMiss(laneIdx, ids);
+        }
       }
     }
 
@@ -867,7 +877,7 @@
       return null;
     }
     // a factually-valid four that isn't this board's split: no guess charged
-    function freeMiss(laneIdx, ids, lane) {
+    function freeMiss(laneIdx, ids, message) {
       lastMissIds[laneIdx] = ids.join(',');
       var laneEl = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"]');
       if (laneEl) {
@@ -876,14 +886,38 @@
         var note = document.createElement('div');
         note.className = 'lane-note close';
         note.setAttribute('role', 'status');
-        note.textContent = revealedCats[lane.id]
-          ? ('True — all four fit "' + lane.name + '." But this board needs one of them in a different group. No guess used.')
-          : 'Those four do share something real — but this board needs one of them in a different group. No guess used.';
+        note.textContent = message;
         laneEl.appendChild(note);
         setTimeout(function () { if (note.parentNode) note.parentNode.removeChild(note); }, 3400);
         var cb = laneEl.querySelector('.checkbtn');
         if (cb) { cb.disabled = true; cb.textContent = 'Change a name to re-check'; }
       }
+    }
+
+    // off-board shared fact across the four, from RAW entity data (window.GRID_ENTITIES)
+    var ENT_BY_ID = {}; ENT.forEach(function (e) { ENT_BY_ID[e.id] = e; });
+    function sharedFactLabel(ids) {
+      var es = ids.map(function (id) { return ENT_BY_ID[id]; });
+      if (es.length !== GROUP || es.some(function (e) { return !e; })) return null;
+      function inter(get) {
+        var acc = null;
+        es.forEach(function (e) {
+          var set = {}; (get(e) || []).forEach(function (x) { set[x] = 1; });
+          if (acc === null) { acc = set; return; }
+          var next = {}; Object.keys(acc).forEach(function (k) { if (set[k]) next[k] = 1; });
+          acc = next;
+        });
+        return Object.keys(acc || {});
+      }
+      var t = inter(function (e) { return e.t; });   if (t.length) return 'played for the ' + t[0];
+      var j = inter(function (e) { return e.j; });   if (j.length) return 'wore No. ' + j[0];
+      var sn = es.map(function (e) { return (Gen.deriveWordplay ? Gen.deriveWordplay(e.name).surname : e.name.split(' ').pop()); });
+      if (sn[0] && sn.every(function (x) { return x === sn[0]; })) return 'share the surname ' + sn[0];
+      if (es[0].col && es.every(function (e) { return e.col === es[0].col; })) return 'played college ball at ' + es[0].col;
+      if (es[0].dy && es.every(function (e) { return e.dy === es[0].dy; })) return 'are from the ' + es[0].dy + ' draft class';
+      if (es.every(function (e) { return e.dp === 1; })) return 'went No. 1 overall';
+      if (es[0].pos && es.every(function (e) { return e.sport === es[0].sport && e.pos === es[0].pos; })) return 'play the same position';
+      return null;
     }
 
     // how close was this group? "one away" = 3 of the 4 share a single unsolved category

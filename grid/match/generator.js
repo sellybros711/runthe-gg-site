@@ -319,27 +319,49 @@
     };
   }
 
+  // FAIRNESS GUARD 2: categories salient enough that players will group by
+  // them. A board must not contain 4+ tiles sharing one of these unless it IS
+  // one of the board's five groups — "all four played for the Dodgers" must
+  // never be a wrong answer even when the Dodgers aren't a lane today.
+  // (Broad facts — decade, nationality, HOF — are exempt or boards would be
+  // impossible; nobody groups four names as "played in the 2010s" first.)
+  var GUARDED_FAMILIES = { team: 1, jersey: 1, surname: 1, namealso: 1, col: 1, draft: 1, pick1: 1, award: 1, mile: 1, pos: 1, born: 1, allit: 1 };
+  function guardFamily(id) { var i = id.indexOf(':'); return i === -1 ? id : id.slice(0, i); }
+  function offBoardFoursome(board, allCats) {
+    var onBoard = {}; board.categories.forEach(function (c) { onBoard[c.id] = 1; });
+    var tileSet = {}; board.tiles.forEach(function (t) { tileSet[t.id] = 1; });
+    var keys = Object.keys(allCats);
+    for (var i = 0; i < keys.length; i++) {
+      var c = allCats[keys[i]];
+      if (onBoard[c.id] || !GUARDED_FAMILIES[guardFamily(c.id)]) continue;
+      var n = 0, m = c.members;
+      for (var k = 0; k < m.length; k++) { if (tileSet[m[k]]) { n++; if (n >= 4) return c; } }
+    }
+    return null;
+  }
+
   // full data-driven build for a date; null if it can't satisfy constraints
   function buildFromDB(dateStr, entities, opts) {
     opts = opts || {};
     var rng = seededRandom('db-' + dateStr);
     var entMap = {}; entities.forEach(function (e) { entMap[e.id] = e; });
-    var cats = viable(enumerate(entities), opts);
+    var allCats = enumerate(entities);
+    var cats = viable(allCats, opts);
     if (cats.length < 5) return null;
     var best = null;
-    for (var attempt = 0; attempt < 120; attempt++) {
+    for (var attempt = 0; attempt < 200; attempt++) {
       var chosen = pickCategories(cats, rng); if (!chosen) continue;
       var sol = assignBoard(chosen, rng, entMap); if (!sol) continue;
       var board = makeBoard(chosen, sol, entMap);
       var r = solve(board); if (r.count !== 1) continue;
       var traps = trapEdges(board);
-      // FAIRNESS RULE: require ZERO traps — no name on the board outside a
-      // group's four may also satisfy that group (per the DB). A factually
-      // valid grouping must never be rejected ("all four played for the
-      // Dodgers" can't be wrong). Data gaps aside, ambiguity is now a bug,
-      // not a feature; boards with overlap edges only ship as a last resort.
-      if (traps === 0) return finalizeBoard(board, rng, dateStr);
-      if (!best || traps < best.traps) best = { board: board, traps: traps };
+      // FAIRNESS RULE 1: zero traps — no name on the board outside a group's
+      // four may also satisfy that group (per the DB). A factually valid
+      // grouping must never be rejected. Ambiguity is a bug, not a feature.
+      var offb = traps === 0 ? offBoardFoursome(board, allCats) : true;
+      if (traps === 0 && !offb) return finalizeBoard(board, rng, dateStr);
+      var score = traps * 100 + (offb ? 1 : 0);
+      if (!best || score < best.score) best = { board: board, score: score };
     }
     return best ? finalizeBoard(best.board, rng, dateStr) : null;
   }
