@@ -13236,6 +13236,35 @@ allows Google Fonts, or self-host Anton.*
   tab selected; tab switching round-trips; 0 page errors. **ACTION: run
   `supabase/66_runtour_daily_board_skills.sql`.** Deployed client to /golf.
 
+- **Daily result: course record redesigned into a side-by-side bubble with the record holder's FULL golfer
+  (owner IMG_8687: "redesign this tiny course record bubble... on the same line as your best score but in
+  its own bubble on the right. Maybe we can display the course record golfers full golfer here as well to
+  make it more of something worth playing for").** On `scrDailyResult`, the old small "Best today 70 (E) ·
+  logged to the leaderboard" text line + the tiny bottom "Course record: 64 (-6) by X · you were 6 back"
+  scout card are replaced by ONE two-bubble row right under the hero card: **left bubble = YOUR BEST TODAY**
+  (big gold score + "Attempt X of N · logged to the leaderboard" / sign-in note / "new best!"), **right
+  bubble = COURSE RECORD** — the record holder's full standing pixel golfer (`pxFigureHTML`, 48px, idle
+  breathing) next to the score + "by {holders}" + a status line ("you were N back" / "match it to share it"
+  / a gold "🏆 that's you!" with a gold border when YOU hold it — your live look shown). No record →
+  "Unclaimed · be the first" (guests: "Sign in to post a score"). Practice rounds show "This round ·
+  practice / nothing logged" on the left. The big gold "New Course Record" celebration card for a fresh
+  record is unchanged (it renders below the row).
+  **The holder's look plumbing:** new migration **`supabase/67_runtour_course_records_look.sql`**
+  (owner-run, after 49+53) appends `look jsonb` to `runtour_course_records`' return (drop + recreate; the
+  record IS a daily-score row, which has stored `look` since 53 — cheap, one grouped row-set per course).
+  Client: `buildCourseRecs` captures the earliest holder's look (tie rows fill a missing one),
+  `adoptCourseRecs` carries it into the local store (fills a missing local look on an equal score),
+  `recordCourseScore` stamps YOUR `lookForBoard()` snapshot when you set/join a record locally, and the
+  cloud `mergeCourseRecords` copies whole record objects so the look syncs cross-device for free.
+  Fail-open: pre-migration (or legacy records with no look) the bubble shows the default golfer.
+  Validated 67 on local Postgres (24→30→45→53→66→67 chain: tied co-holders each row with their own look,
+  null-look legacy rows null, legend bucket separate + carries look, idempotent). Verified in Playwright
+  across all states: other-holds-record (side-by-side bubbles, holder's exact look rendered — full data-URL
+  compare, "by Bwein10", "you were 6 back", old scout line gone), you-hold-it ("that's you!" + gold border +
+  YOUR live look + celebration card intact), unclaimed, guest, and practice; 0 page errors. Screenshot
+  confirms the layout. **ACTION: run `supabase/67_runtour_course_records_look.sql`** (after 66). Deployed
+  client to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

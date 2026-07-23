@@ -4391,27 +4391,29 @@ function crHolders(rec){ if(!rec) return ''; const ns=(rec.names&&rec.names.leng
 function recordCourseScore(courseKey,toPar,ovr,name,isLegend,isSpotlight){
   const key=isSpotlight?'bag_courserecords_spotlight':(isLegend?'bag_courserecords_legend':'bag_courserecords');
   const r=isSpotlight?courseRecordsSpot():(isLegend?courseRecordsLegend():courseRecords()); const cur=r[courseKey]; name=name||'You';
-  if(!cur || toPar<cur.toPar){ r[courseKey]={toPar,ovr,name,names:[name],mine:true,date:todayKey()}; LS.set(key,r);
+  if(!cur || toPar<cur.toPar){ r[courseKey]={toPar,ovr,name,names:[name],mine:true,date:todayKey(),look:(typeof lookForBoard==='function'?lookForBoard():null)}; LS.set(key,r);
     if(typeof cloudPush==='function') cloudPush(); return 'record'; }   // sole new record - sync to the account
   if(toPar===cur.toPar){   // TIE - join the record as a co-holder rather than being told you missed
     cur.names=(cur.names&&cur.names.length?cur.names.slice():[cur.name]).filter(Boolean);
     if(!cur.names.includes(name)) cur.names.push(name);
+    if(!cur.look && typeof lookForBoard==='function') cur.look=lookForBoard();   // earliest holder's golfer stays when known
     cur.mine=true; LS.set(key,r); if(typeof cloudPush==='function') cloudPush(); return 'tie'; }
   return false; }
 // Group the server's course-record rows (may be MANY per course when tied) into one record per course
 // with every tied holder's name. Works whether the RPC returns one row/course (pre-migration) or all ties.
 function buildCourseRecs(data){ const recs={};
   (data||[]).forEach(r=>{ const k=r.course_key, ex=recs[k];
-    if(!ex || r.to_par<ex.toPar){ recs[k]={toPar:r.to_par,name:r.display_name,names:[r.display_name],ovr:r.ovr,day:r.day,mine:!!(sbUser&&r.user_id===sbUser.id),global:true}; }
-    else if(r.to_par===ex.toPar){ if(!ex.names.includes(r.display_name)) ex.names.push(r.display_name); if(sbUser&&r.user_id===sbUser.id) ex.mine=true; } });
+    if(!ex || r.to_par<ex.toPar){ recs[k]={toPar:r.to_par,name:r.display_name,names:[r.display_name],ovr:r.ovr,day:r.day,look:r.look||null,mine:!!(sbUser&&r.user_id===sbUser.id),global:true}; }
+    else if(r.to_par===ex.toPar){ if(!ex.names.includes(r.display_name)) ex.names.push(r.display_name); if(!ex.look&&r.look) ex.look=r.look; if(sbUser&&r.user_id===sbUser.id) ex.mine=true; } });
   return recs; }
 // adopt the global grouped records into the local store: a lower score replaces; an EQUAL score unions the
 // tied names in (so the all-time list shows every co-holder everywhere, not just the device's own).
 function adoptCourseRecs(recs, cur, lsKey){ let changed=false;
   for(const k in recs){ const g=recs[k], lo=cur[k];
-    if(!lo || g.toPar<lo.toPar){ cur[k]={toPar:g.toPar,ovr:g.ovr,name:g.name,names:g.names.slice(),mine:g.mine,date:g.day,global:true}; changed=true; }
+    if(!lo || g.toPar<lo.toPar){ cur[k]={toPar:g.toPar,ovr:g.ovr,name:g.name,names:g.names.slice(),look:g.look||null,mine:g.mine,date:g.day,global:true}; changed=true; }
     else if(g.toPar===lo.toPar){ const ln=(lo.names&&lo.names.length?lo.names.slice():[lo.name]).filter(Boolean); let add=false;
       g.names.forEach(n=>{ if(!ln.includes(n)){ ln.push(n); add=true; } });
+      if(!lo.look&&g.look){ lo.look=g.look; add=true; }
       if(add || (g.mine&&!lo.mine)){ lo.names=ln; lo.mine=lo.mine||g.mine; changed=true; } } }
   if(changed) LS.set(lsKey,cur); }
 
@@ -20499,11 +20501,43 @@ function scrDailyResult(){
     const gained=S.dailyFreshAch.reduce((s,a)=>s+(a.pts||0),0);
     add(seasonRepNode(achPoints()-gained, S.dailyFreshAch));
   }
-  // attempts + best-of-day (the best is what's logged to the leaderboard)
-  const bestTxt = best?`Best today <b style="color:var(--gold)">${dTot(best.total, best.par!=null?best.par:c.par)}</b>`:'';
+  // owner (IMG_8687): your best + the course record side by side, each its own bubble; the record
+  // bubble shows the holder's full golfer so the record is something worth playing for (look via 67_).
+  const rec=courseRecords()[r.course];
   const newBest = justPlayed && S.dailyImproved && attempts>1;
-  if(practice) add($(`<div class="small muted center" style="margin:0 0 10px">Practice round · no attempt used, nothing logged to the leaderboard</div>`));
-  else add($(`<div class="small muted center" style="margin:0 0 10px">${justPlayed?`Attempt ${S.dailyAttemptNo||attempts} of ${dailyMaxAttempts()} · `:''}${bestTxt}${newBest?' · <span style="color:#35d6a0;font-weight:800">new personal best!</span>':''}<br>${sbSignedIn()?'Your best of the day is logged to the leaderboard.':'Sign in to log your best to the leaderboard.'}</div>`));
+  {
+    const isMineRec = !!r.record || !!(rec&&rec.mine);
+    const recLook = isMineRec ? (S.look||DEFLOOK) : ((rec&&rec.look)||null);
+    const leftKick = practice ? 'This round · practice' : 'Your best today';
+    const leftScore = practice ? dTot(total, c.par) : (best?dTot(best.total, best.par!=null?best.par:c.par):dTot(total, c.par));
+    const leftSub = practice ? 'No attempt used · nothing logged'
+      : `${justPlayed?`Attempt ${S.dailyAttemptNo||attempts} of ${dailyMaxAttempts()}`:''}${justPlayed?' · ':''}${sbSignedIn()?'logged to the leaderboard':'sign in to log it'}${newBest?' · <span style="color:#35d6a0;font-weight:800">new best!</span>':''}`;
+    let recInner;
+    if(rec){
+      const back = (!isMineRec && rec.toPar<total) ? `you were ${total-rec.toPar} back` : '';
+      const stat = isMineRec ? `<span style="color:var(--gold);font-weight:800">🏆 that's you!</span>` : (back || 'match it to share it');
+      recInner=`<div style="display:flex;align-items:center;justify-content:center;gap:9px;margin-top:5px">
+        <div style="flex:0 0 auto">${pxFigureHTML(recLook||DEFLOOK,48)}</div>
+        <div style="text-align:left;min-width:0">
+          <div style="font-family:var(--display);font-size:23px;line-height:1;color:var(--gold)">${dTot(rec.toPar, c.par)}</div>
+          <div class="small muted" style="font-size:10.5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:112px">by ${esc(crHolders(rec))}</div>
+        </div></div>
+      <div class="small" style="font-size:10.5px;margin-top:5px;color:#dfeae2">${stat}</div>`;
+    } else {
+      recInner=`<div style="font-family:var(--display);font-size:22px;color:var(--muted);margin-top:10px">-</div>
+      <div class="small muted" style="font-size:10.5px;margin-top:5px">${sbSignedIn()?'Unclaimed · be the first':'Sign in to post a score'}</div>`;
+    }
+    add($(`<div style="display:flex;gap:8px;max-width:520px;margin:0 auto 10px;align-items:stretch">
+      <div class="scout" style="flex:1;margin:0;text-align:center;display:flex;flex-direction:column;justify-content:center">
+        <div style="font:800 10px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">${leftKick}</div>
+        <div style="font-family:var(--display);font-size:27px;line-height:1;color:var(--gold);margin-top:7px">${leftScore}</div>
+        <div class="small muted" style="font-size:10.5px;margin-top:5px">${leftSub}</div>
+      </div>
+      <div class="scout" style="flex:1;margin:0;text-align:center;border-color:${isMineRec?'var(--gold)':'rgba(241,208,74,.45)'}">
+        <div style="font:800 10px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">Course record</div>
+        ${recInner}
+      </div></div>`));
+  }
   // percentile vs today's global board (when enough rounds posted)
   if(!practice && dbCache && dbCache.ok && dbCache.day===_ds2 && dbCache.rows.length>=5){
     const mine=best?best.total:total, beat=dbCache.rows.filter(x=>x.to_par>mine).length, pct=Math.round(100*beat/dbCache.rows.length);
@@ -20528,7 +20562,6 @@ function scrDailyResult(){
       ${(justPlayed&&!wonDay&&left>0)?`<div class="small center" style="margin-top:6px;color:#e9a23b;font-weight:700">Beat the pro in one of your ${left} remaining attempt${left>1?'s':''} to add a win to your record.</div>`:''}</div>`)); } }
   // CS302: quests/weekly/rep panel removed from the Beat-the-Pro result too, it lives in the ≡ Challenges
   // overlay. (Quests/challenges are still CREDITED on finish; only their on-page display was removed here.)
-  const rec=courseRecords()[r.course];
   if(r.record){
     // CS307: a tie co-holds the record (nobody excluded); adapt the copy to "shared" and list every holder.
     const shared=(r.record==='tie'), co=(rec&&crHolders(rec))||'You';
@@ -20543,7 +20576,6 @@ function scrDailyResult(){
       <div style="font-family:var(--display);font-size:26px;color:var(--oncard);margin-top:6px;line-height:1">${dTot(total, c.par)}</div>
       <div class="small" style="margin-top:5px;color:#dfeae2">${shared?`You share the record at <b>${esc(dShort(c.v))}</b> with ${esc(co)}`:`You hold the record at <b>${esc(dShort(c.v))}</b>`}</div></div>`));
   }
-  else if(rec) add($(`<div class="scout" style="max-width:520px;margin:0 auto;text-align:center">Course record: <b style="color:var(--gold)">${dTot(rec.toPar, c.par)}</b> by ${esc(crHolders(rec))}${rec.toPar<total?` · you were ${total-rec.toPar} back`:''}</div>`));
   const holes=(S.dailyHoles&&S.dailyHoles.length===18)?S.dailyHoles:(r.holes&&r.holes.length===18?r.holes:null);
   if(holes){
     // tappable per-hole shot review is only possible on the fresh finish (S.dailyHoles carries each
