@@ -4181,7 +4181,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_redsox",
@@ -4245,7 +4245,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_yankees",
@@ -4314,7 +4314,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_rays",
@@ -4380,7 +4380,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_bluejays",
@@ -4444,7 +4444,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_whitesox",
@@ -4510,7 +4510,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_guardians",
@@ -4578,7 +4578,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_tigers",
@@ -4642,7 +4642,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_royals",
@@ -4706,7 +4706,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_twins",
@@ -4774,7 +4774,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_athletics",
@@ -4845,7 +4845,7 @@
     "cooldown_until": null,
     "needs_refresh": true,
     "note": "No city in team name while in West Sacramento; Las Vegas move planned for 2028",
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_astros",
@@ -4913,7 +4913,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_angels",
@@ -4980,7 +4980,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_mariners",
@@ -5044,7 +5044,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_rangers",
@@ -5112,7 +5112,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_braves",
@@ -5181,7 +5181,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_marlins",
@@ -5247,7 +5247,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_mets",
@@ -5313,7 +5313,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_phillies",
@@ -5377,7 +5377,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_nationals",
@@ -5447,7 +5447,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_cubs",
@@ -5511,7 +5511,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_reds",
@@ -5575,7 +5575,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_brewers",
@@ -5643,7 +5643,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_pirates",
@@ -5707,7 +5707,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_stlcardinals",
@@ -5771,7 +5771,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_diamondbacks",
@@ -5835,7 +5835,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_rockies",
@@ -5899,7 +5899,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_dodgers",
@@ -5967,7 +5967,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_padres",
@@ -6031,7 +6031,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_sfgiants",
@@ -6099,7 +6099,7 @@
     "last_used": null,
     "cooldown_until": null,
     "needs_refresh": false,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "nhl_bruins",
@@ -15712,7 +15712,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_silver-slugger",
@@ -15748,7 +15748,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_gold-glove",
@@ -15784,7 +15784,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_platinum-glove",
@@ -15818,7 +15818,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_hank-aaron-award",
@@ -15852,7 +15852,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_roberto-clemente-award",
@@ -15886,7 +15886,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_manager-of-the-year",
@@ -15920,7 +15920,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_comeback-player-of-the-year",
@@ -15954,7 +15954,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_triple-crown",
@@ -15988,7 +15988,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_rolaids-relief-award",
@@ -16022,7 +16022,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_world-series-mvp",
@@ -16056,7 +16056,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_home-run-derby",
@@ -16090,7 +16090,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_nfl_heisman-trophy",
@@ -17518,7 +17518,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_warren-giles-trophy",
@@ -17552,7 +17552,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_william-harridge-trophy",
@@ -17586,7 +17586,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_nfl_vince-lombardi-trophy",
@@ -19532,7 +19532,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_catcher",
@@ -19566,7 +19566,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_first-baseman",
@@ -19600,7 +19600,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_second-baseman",
@@ -19634,7 +19634,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_third-baseman",
@@ -19668,7 +19668,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_shortstop",
@@ -19702,7 +19702,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_left-fielder",
@@ -19736,7 +19736,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_center-fielder",
@@ -19770,7 +19770,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_right-fielder",
@@ -19804,7 +19804,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_designated-hitter",
@@ -19838,7 +19838,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_closer",
@@ -19872,7 +19872,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_setup-man",
@@ -19906,7 +19906,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_starting-pitcher",
@@ -19940,7 +19940,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_relief-pitcher",
@@ -19974,7 +19974,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_utility-player",
@@ -20008,7 +20008,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_pinch-hitter",
@@ -20042,7 +20042,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_pinch-runner",
@@ -20076,7 +20076,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_nhl_goaltender",
@@ -21300,7 +21300,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_on-base-percentage",
@@ -21334,7 +21334,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_slugging-percentage",
@@ -21368,7 +21368,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_ops",
@@ -21402,7 +21402,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_earned-run-average",
@@ -21436,7 +21436,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_whip",
@@ -21470,7 +21470,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_strikeouts",
@@ -21504,7 +21504,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_walks",
@@ -21538,7 +21538,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_runs-batted-in",
@@ -21572,7 +21572,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_stolen-bases",
@@ -21606,7 +21606,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_home-runs",
@@ -21640,7 +21640,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_hits",
@@ -21674,7 +21674,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_doubles",
@@ -21708,7 +21708,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_triples",
@@ -21742,7 +21742,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_saves",
@@ -21776,7 +21776,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_complete-game",
@@ -21810,7 +21810,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_shutout",
@@ -21844,7 +21844,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_quality-start",
@@ -21878,7 +21878,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_war",
@@ -21912,7 +21912,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_sacrifice-fly",
@@ -21946,7 +21946,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_grand-slam",
@@ -21980,7 +21980,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_no-hitter",
@@ -22014,7 +22014,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_perfect-game",
@@ -22048,7 +22048,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_cycle",
@@ -22082,7 +22082,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_balk",
@@ -22116,7 +22116,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_error",
@@ -22150,7 +22150,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_double-play",
@@ -22184,7 +22184,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_triple-play",
@@ -22218,7 +22218,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_nfl_passing-yards",
@@ -25858,7 +25858,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_fastball",
@@ -25892,7 +25892,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_slider",
@@ -25926,7 +25926,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_changeup",
@@ -25960,7 +25960,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_knuckleball",
@@ -25994,7 +25994,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_cutter",
@@ -26028,7 +26028,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_sinker",
@@ -26062,7 +26062,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_splitter",
@@ -26096,7 +26096,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_four-seam",
@@ -26130,7 +26130,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_two-seam",
@@ -26164,7 +26164,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_bunt",
@@ -26198,7 +26198,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_squeeze-play",
@@ -26232,7 +26232,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_hit-and-run",
@@ -26266,7 +26266,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_stolen-base",
@@ -26300,7 +26300,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_pickoff",
@@ -26334,7 +26334,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_infield-fly",
@@ -26368,7 +26368,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_strike-zone",
@@ -26402,7 +26402,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_full-count",
@@ -26436,7 +26436,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_bases-loaded",
@@ -26470,7 +26470,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_walk-off",
@@ -26504,7 +26504,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_bullpen",
@@ -26538,7 +26538,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_dugout",
@@ -26572,7 +26572,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_on-deck-circle",
@@ -26606,7 +26606,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_seventh-inning-stretch",
@@ -26640,7 +26640,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_platoon",
@@ -26674,7 +26674,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_can-of-corn",
@@ -26708,7 +26708,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_texas-leaguer",
@@ -26742,7 +26742,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_mlb_around-the-horn",
@@ -26776,7 +26776,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "term_nhl_power-play",
@@ -35769,9 +35769,14 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP",
+        "Finals MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "30,000 Point Club"
+      ],
       "college": [],
       "name_is_also": [
         "place"
@@ -35845,10 +35850,17 @@
         "LJ"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "NBA MVP",
+        "Finals MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "30,000 Point Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -35917,10 +35929,17 @@
         "KA"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "NBA MVP",
+        "Finals MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "30,000 Point Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -35982,8 +36001,13 @@
         "MJ"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "NBA MVP",
+        "Finals MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -36050,7 +36074,10 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP",
+        "Finals MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -36118,7 +36145,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -36187,9 +36216,13 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "30,000 Point Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -36255,8 +36288,13 @@
         "TD"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "NBA MVP",
+        "Finals MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -36326,8 +36364,13 @@
         "SO"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "NBA MVP",
+        "Finals MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -36397,9 +36440,13 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Finals MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "30,000 Point Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -36467,8 +36514,13 @@
         "HO"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "NBA MVP",
+        "Finals MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -36533,7 +36585,10 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP",
+        "Finals MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -36605,7 +36660,10 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP",
+        "Finals MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -36671,9 +36729,13 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "30,000 Point Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -36743,7 +36805,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -36813,8 +36877,12 @@
         "DR"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "NBA MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -36884,7 +36952,9 @@
         "PE"
       ],
       "draft_year": [],
-      "draft_position": [],
+      "draft_position": [
+        1
+      ],
       "awards": [],
       "championships": [],
       "milestones": [],
@@ -37152,8 +37222,12 @@
         "AI"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "NBA MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -37223,7 +37297,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -37359,7 +37435,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -37424,9 +37502,14 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP",
+        "Finals MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "30,000 Point Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -37696,7 +37779,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -37766,7 +37851,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -37909,7 +37996,9 @@
         "DH"
       ],
       "draft_year": [],
-      "draft_position": [],
+      "draft_position": [
+        1
+      ],
       "awards": [],
       "championships": [],
       "milestones": [],
@@ -37980,8 +38069,12 @@
         "DR"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "NBA MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -38114,7 +38207,10 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP",
+        "Finals MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -38181,7 +38277,10 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP",
+        "Finals MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -38248,7 +38347,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -38575,7 +38676,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Finals MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -38913,7 +39016,9 @@
         "AD"
       ],
       "draft_year": [],
-      "draft_position": [],
+      "draft_position": [
+        1
+      ],
       "awards": [],
       "championships": [],
       "milestones": [],
@@ -38980,7 +39085,9 @@
         "KT"
       ],
       "draft_year": [],
-      "draft_position": [],
+      "draft_position": [
+        1
+      ],
       "awards": [],
       "championships": [],
       "milestones": [],
@@ -39176,7 +39283,9 @@
         "ZW"
       ],
       "draft_year": [],
-      "draft_position": [],
+      "draft_position": [
+        1
+      ],
       "awards": [],
       "championships": [],
       "milestones": [],
@@ -40433,7 +40542,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NBA MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -46913,7 +47024,10 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP",
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -46979,7 +47093,10 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP",
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -47046,8 +47163,13 @@
         "PM"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "NFL MVP",
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -47112,8 +47234,12 @@
         "JE"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -47178,7 +47304,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -47245,7 +47373,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -47312,7 +47442,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -47454,7 +47586,10 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP",
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -47520,7 +47655,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -47940,7 +48077,10 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP",
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -48004,7 +48144,10 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP",
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -48070,7 +48213,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -48198,8 +48343,12 @@
         "EM"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -48334,7 +48483,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -48400,7 +48551,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -48464,7 +48617,9 @@
         "JB"
       ],
       "draft_year": [],
-      "draft_position": [],
+      "draft_position": [
+        1
+      ],
       "awards": [],
       "championships": [],
       "milestones": [],
@@ -48721,7 +48876,9 @@
         "MS"
       ],
       "draft_year": [],
-      "draft_position": [],
+      "draft_position": [
+        1
+      ],
       "awards": [],
       "championships": [],
       "milestones": [],
@@ -49112,8 +49269,12 @@
         "TB"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -49309,7 +49470,10 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP",
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -49377,8 +49541,12 @@
         "TA"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -49512,7 +49680,10 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP",
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -49712,8 +49883,12 @@
         "CN"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "NFL MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -49911,7 +50086,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -49976,7 +50153,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -50047,7 +50226,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -52137,7 +52318,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -53187,7 +53370,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -56511,7 +56696,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -56544,7 +56731,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_hank-aaron",
@@ -56580,9 +56767,14 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club",
+        "3,000 Hit Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -56613,7 +56805,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_willie-mays",
@@ -56649,9 +56841,14 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club",
+        "3,000 Hit Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -56682,7 +56879,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jackie-robinson",
@@ -56748,7 +56945,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_ted-williams",
@@ -56820,7 +57017,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_lou-gehrig",
@@ -56887,7 +57084,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_joe-dimaggio",
@@ -56922,7 +57119,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -56956,7 +57155,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_mickey-mantle",
@@ -56990,9 +57189,13 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -57020,7 +57223,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_stan-musial",
@@ -57057,7 +57260,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "3,000 Hit Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -57088,7 +57293,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_ty-cobb",
@@ -57124,7 +57329,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "3,000 Hit Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -57155,7 +57362,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_cy-young",
@@ -57223,7 +57430,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_walter-johnson",
@@ -57291,7 +57498,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_honus-wagner",
@@ -57359,7 +57566,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_roberto-clemente",
@@ -57396,7 +57603,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "3,000 Hit Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -57424,7 +57633,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_sandy-koufax",
@@ -57458,7 +57667,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Cy Young"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -57488,7 +57699,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_bob-gibson",
@@ -57523,7 +57734,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Cy Young"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -57555,7 +57768,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_nolan-ryan",
@@ -57630,7 +57843,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_cal-ripken-jr",
@@ -57667,7 +57880,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "3,000 Hit Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -57698,7 +57913,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_tony-gwynn",
@@ -57735,7 +57950,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "3,000 Hit Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -57763,7 +57980,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_ken-griffey-jr",
@@ -57800,10 +58017,16 @@
         "KG"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -57834,7 +58057,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_barry-bonds",
@@ -57871,9 +58094,13 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -57901,7 +58128,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_derek-jeter",
@@ -57938,7 +58165,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "3,000 Hit Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -57966,7 +58195,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_mariano-rivera",
@@ -58031,7 +58260,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_randy-johnson",
@@ -58070,7 +58299,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Cy Young"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -58105,7 +58336,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_greg-maddux",
@@ -58143,7 +58374,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Cy Young"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -58173,7 +58406,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_pedro-martinez",
@@ -58211,7 +58444,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Cy Young"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -58243,7 +58478,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_roger-clemens",
@@ -58282,7 +58517,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Cy Young"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -58312,7 +58549,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_albert-pujols",
@@ -58349,9 +58586,14 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club",
+        "3,000 Hit Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -58379,7 +58621,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_ichiro-suzuki",
@@ -58417,7 +58659,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "3,000 Hit Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -58445,7 +58689,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_mike-trout",
@@ -58479,7 +58723,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -58509,7 +58755,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_shohei-ohtani",
@@ -58544,7 +58790,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -58577,7 +58825,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_aaron-judge",
@@ -58611,7 +58859,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -58644,7 +58894,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_mookie-betts",
@@ -58679,7 +58929,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -58709,7 +58961,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_bryce-harper",
@@ -58744,8 +58996,12 @@
         "BH"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -58775,7 +59031,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_juan-soto",
@@ -58842,7 +59098,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_freddie-freeman",
@@ -58907,7 +59163,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jose-altuve",
@@ -58941,7 +59197,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -58971,7 +59229,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_clayton-kershaw",
@@ -59006,7 +59264,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Cy Young"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -59036,7 +59296,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_max-scherzer",
@@ -59078,7 +59338,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Cy Young"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -59108,7 +59370,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_justin-verlander",
@@ -59146,7 +59408,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Cy Young"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -59176,7 +59440,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_vladimir-guerrero-jr",
@@ -59242,7 +59506,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_ronald-acuna-jr",
@@ -59306,7 +59570,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_yoshinobu-yamamoto",
@@ -59369,7 +59633,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_will-smith-catcher",
@@ -59435,7 +59699,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_johnny-bench",
@@ -59500,7 +59764,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_pete-rose",
@@ -59539,7 +59803,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "3,000 Hit Club"
+      ],
       "college": [],
       "name_is_also": [
         "color"
@@ -59571,7 +59837,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_mike-schmidt",
@@ -59608,7 +59874,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -59636,7 +59904,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_tom-seaver",
@@ -59674,7 +59942,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Cy Young"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -59704,7 +59974,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_reggie-jackson",
@@ -59745,7 +60015,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -59775,7 +60047,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_rickey-henderson",
@@ -59851,7 +60123,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_george-brett",
@@ -59916,7 +60188,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_wade-boggs",
@@ -59954,7 +60226,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "3,000 Hit Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -59982,7 +60256,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_ozzie-smith",
@@ -60050,7 +60324,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_frank-robinson",
@@ -60089,9 +60363,13 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -60121,7 +60399,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_harmon-killebrew",
@@ -60187,7 +60465,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_yogi-berra",
@@ -60223,7 +60501,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -60253,7 +60533,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_whitey-ford",
@@ -60319,7 +60599,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_carl-yastrzemski",
@@ -60384,7 +60664,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_willie-stargell",
@@ -60449,7 +60729,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_eddie-murray",
@@ -60490,7 +60770,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -60520,7 +60802,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_dave-winfield",
@@ -60592,7 +60874,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_kirby-puckett",
@@ -60656,7 +60938,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_don-mattingly",
@@ -60720,7 +61002,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_mark-mcgwire",
@@ -60758,7 +61040,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -60786,7 +61070,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_sammy-sosa",
@@ -60826,7 +61110,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -60854,7 +61140,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_frank-thomas",
@@ -60925,7 +61211,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_ken-caminiti",
@@ -60993,7 +61279,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_chipper-jones",
@@ -61027,7 +61313,9 @@
         "CJ"
       ],
       "draft_year": [],
-      "draft_position": [],
+      "draft_position": [
+        1
+      ],
       "awards": [],
       "championships": [],
       "milestones": [],
@@ -61060,7 +61348,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jeff-bagwell",
@@ -61124,7 +61412,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_craig-biggio",
@@ -61189,7 +61477,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_john-smoltz",
@@ -61256,7 +61544,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_tom-glavine",
@@ -61322,7 +61610,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_trevor-hoffman",
@@ -61389,7 +61677,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_vladimir-guerrero",
@@ -61459,7 +61747,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_manny-ramirez",
@@ -61501,7 +61789,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -61531,7 +61821,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_david-ortiz",
@@ -61569,7 +61859,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -61600,7 +61892,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_alex-rodriguez",
@@ -61637,10 +61929,17 @@
         "AR"
       ],
       "draft_year": [],
-      "draft_position": [],
-      "awards": [],
+      "draft_position": [
+        1
+      ],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club",
+        "3,000 Hit Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -61670,7 +61969,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_miguel-cabrera",
@@ -61706,9 +62005,13 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "3,000 Hit Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -61736,7 +62039,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_robinson-cano",
@@ -61806,7 +62109,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_buster-posey",
@@ -61871,7 +62174,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_joe-mauer",
@@ -61904,7 +62207,9 @@
         "JM"
       ],
       "draft_year": [],
-      "draft_position": [],
+      "draft_position": [
+        1
+      ],
       "awards": [],
       "championships": [],
       "milestones": [],
@@ -61935,7 +62240,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_adrian-beltre",
@@ -62003,7 +62308,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_felix-hernandez",
@@ -62067,7 +62372,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_cc-sabathia",
@@ -62133,7 +62438,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_zack-greinke",
@@ -62174,7 +62479,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Cy Young"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -62204,7 +62511,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jacob-degrom",
@@ -62239,7 +62546,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Cy Young"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -62269,7 +62578,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_gerrit-cole",
@@ -62335,7 +62644,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_paul-goldschmidt",
@@ -62402,7 +62711,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_nolan-arenado",
@@ -62467,7 +62776,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_francisco-lindor",
@@ -62532,7 +62841,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_corey-seager",
@@ -62597,7 +62906,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jose-ramirez",
@@ -62663,7 +62972,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_kyle-schwarber",
@@ -62730,7 +63039,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_pete-alonso",
@@ -62794,7 +63103,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_bobby-witt-jr",
@@ -62857,7 +63166,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_elly-de-la-cruz",
@@ -62922,7 +63231,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_paul-skenes",
@@ -62985,7 +63294,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jackson-merrill",
@@ -63048,7 +63357,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_satchel-paige",
@@ -63112,7 +63421,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_josh-gibson",
@@ -63174,7 +63483,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_cool-papa-bell",
@@ -63239,7 +63548,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_buck-oneil",
@@ -63302,7 +63611,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_larry-doby",
@@ -63367,7 +63676,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_bob-feller",
@@ -63432,7 +63741,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_warren-spahn",
@@ -63499,7 +63808,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_steve-carlton",
@@ -63539,7 +63848,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Cy Young"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -63569,7 +63880,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jim-palmer",
@@ -63636,7 +63947,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_catfish-hunter",
@@ -63706,7 +64017,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_rollie-fingers",
@@ -63773,7 +64084,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_goose-gossage",
@@ -63843,7 +64154,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_dennis-eckersley",
@@ -63915,7 +64226,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_bruce-sutter",
@@ -63981,7 +64292,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_lou-brock",
@@ -64047,7 +64358,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_joe-morgan",
@@ -64118,7 +64429,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_tony-perez",
@@ -64188,7 +64499,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_carlton-fisk",
@@ -64256,7 +64567,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_gary-carter",
@@ -64326,7 +64637,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_mike-piazza",
@@ -64394,7 +64705,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_ivan-rodriguez",
@@ -64466,7 +64777,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_roberto-alomar",
@@ -64537,7 +64848,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_barry-larkin",
@@ -64602,7 +64913,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_edgar-martinez",
@@ -64669,7 +64980,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jim-thome",
@@ -64711,7 +65022,9 @@
       "draft_position": [],
       "awards": [],
       "championships": [],
-      "milestones": [],
+      "milestones": [
+        "500 Home Run Club"
+      ],
       "college": [],
       "name_is_also": [],
       "alliterative_name": [
@@ -64739,7 +65052,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_larry-walker",
@@ -64808,7 +65121,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_scott-rolen",
@@ -64877,7 +65190,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_todd-helton",
@@ -64942,7 +65255,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_andruw-jones",
@@ -65013,7 +65326,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_carlos-beltran",
@@ -65084,7 +65397,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_bartolo-colon",
@@ -65159,7 +65472,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "nhl_wayne-gretzky",
@@ -77356,7 +77669,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_connie-mack",
@@ -77402,7 +77715,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_joe-torre",
@@ -77450,7 +77763,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_tony-la-russa",
@@ -77496,7 +77809,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_bobby-cox",
@@ -77543,7 +77856,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_sparky-anderson",
@@ -77590,7 +77903,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_earl-weaver",
@@ -77634,7 +77947,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_tommy-lasorda",
@@ -77678,7 +77991,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_whitey-herzog",
@@ -77723,7 +78036,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_bruce-bochy",
@@ -77769,7 +78082,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_terry-francona",
@@ -77815,7 +78128,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_joe-maddon",
@@ -77861,7 +78174,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_dave-roberts",
@@ -77905,7 +78218,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_aaron-boone",
@@ -77949,7 +78262,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_dusty-baker",
@@ -77997,7 +78310,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_buck-showalter",
@@ -78047,7 +78360,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_mark-kotsay",
@@ -78091,7 +78404,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_john-schneider-mlb",
@@ -78135,7 +78448,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "coach_scotty-bowman",
@@ -97649,7 +97962,9 @@
         "TL"
       ],
       "draft_year": [],
-      "draft_position": [],
+      "draft_position": [
+        1
+      ],
       "awards": [],
       "championships": [],
       "milestones": [],
@@ -98415,7 +98730,9 @@
         "BY"
       ],
       "draft_year": [],
-      "draft_position": [],
+      "draft_position": [
+        1
+      ],
       "awards": [],
       "championships": [],
       "milestones": [],
@@ -102710,7 +103027,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "NFL MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -105504,7 +105823,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_manny-machado",
@@ -105569,7 +105888,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_xander-bogaerts",
@@ -105633,7 +105952,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_trea-turner",
@@ -105700,7 +106019,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_marcus-semien",
@@ -105766,7 +106085,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_rafael-devers",
@@ -105830,7 +106149,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_yordan-alvarez",
@@ -105895,7 +106214,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_kyle-tucker",
@@ -105961,7 +106280,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_julio-rodriguez",
@@ -106025,7 +106344,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_adley-rutschman",
@@ -106087,7 +106406,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_gunnar-henderson",
@@ -106151,7 +106470,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_corbin-carroll",
@@ -106215,7 +106534,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_spencer-strider",
@@ -106277,7 +106596,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_tarik-skubal",
@@ -106339,7 +106658,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_zack-wheeler",
@@ -106403,7 +106722,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_aaron-nola",
@@ -106466,7 +106785,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_logan-webb",
@@ -106529,7 +106848,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_framber-valdez",
@@ -106592,7 +106911,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_dylan-cease",
@@ -106656,7 +106975,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_blake-snell",
@@ -106693,7 +107012,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Cy Young"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -106722,7 +107043,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_chris-sale",
@@ -106787,7 +107108,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_emmanuel-clase",
@@ -106850,7 +107171,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_edwin-diaz",
@@ -106914,7 +107235,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_josh-hader",
@@ -106979,7 +107300,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_devin-williams",
@@ -107045,7 +107366,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_bo-bichette",
@@ -107108,7 +107429,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_george-springer",
@@ -107172,7 +107493,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_alex-bregman",
@@ -107236,7 +107557,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_carlos-correa",
@@ -107301,7 +107622,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_christian-yelich",
@@ -107365,7 +107686,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_cody-bellinger",
@@ -107402,7 +107723,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "MLB MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -107431,7 +107754,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_matt-olson",
@@ -107495,7 +107818,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_austin-riley",
@@ -107562,7 +107885,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_ozzie-albies",
@@ -107625,7 +107948,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_michael-harris-ii",
@@ -107689,7 +108012,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_oneil-cruz",
@@ -107753,7 +108076,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_andrew-mccutchen",
@@ -107821,7 +108144,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_giancarlo-stanton",
@@ -107885,7 +108208,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_anthony-rizzo",
@@ -107951,7 +108274,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_kris-bryant",
@@ -108019,7 +108342,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_javier-baez",
@@ -108085,7 +108408,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_salvador-perez",
@@ -108150,7 +108473,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jt-realmuto",
@@ -108214,7 +108537,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_yadier-molina",
@@ -108278,7 +108601,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_luis-robert-jr",
@@ -108340,7 +108663,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_byron-buxton",
@@ -108403,7 +108726,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_josh-donaldson",
@@ -108471,7 +108794,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_chase-utley",
@@ -108537,7 +108860,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_ryan-howard",
@@ -108602,7 +108925,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jimmy-rollins",
@@ -108669,7 +108992,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_cole-hamels",
@@ -108736,7 +109059,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_roy-halladay",
@@ -108802,7 +109125,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_johan-santana",
@@ -108868,7 +109191,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_tim-lincecum",
@@ -108932,7 +109255,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_madison-bumgarner",
@@ -108997,7 +109320,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_buster-posey-dup",
@@ -109063,7 +109386,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_dustin-pedroia",
@@ -109126,7 +109449,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jon-lester",
@@ -109195,7 +109518,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_curt-schilling",
@@ -109263,7 +109586,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_johnny-damon",
@@ -109333,7 +109656,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_mark-teixeira",
@@ -109399,7 +109722,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_andy-pettitte",
@@ -109464,7 +109787,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jorge-posada",
@@ -109528,7 +109851,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_bernie-williams",
@@ -109593,7 +109916,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_david-wright",
@@ -109656,7 +109979,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jose-reyes",
@@ -109722,7 +110045,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_carlos-delgado",
@@ -109788,7 +110111,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_prince-fielder",
@@ -109853,7 +110176,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_ryan-braun",
@@ -109917,7 +110240,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_joey-votto",
@@ -109981,7 +110304,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_adam-wainwright",
@@ -110045,7 +110368,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_matt-holliday",
@@ -110113,7 +110436,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_lance-berkman",
@@ -110180,7 +110503,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_cliff-lee",
@@ -110249,7 +110572,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_adrian-gonzalez",
@@ -110286,7 +110609,9 @@
         "AG"
       ],
       "draft_year": [],
-      "draft_position": [],
+      "draft_position": [
+        1
+      ],
       "awards": [],
       "championships": [],
       "milestones": [],
@@ -110318,7 +110643,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_josh-hamilton",
@@ -110385,7 +110710,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_yu-darvish",
@@ -110451,7 +110776,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_masahiro-tanaka",
@@ -110514,7 +110839,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jose-canseco",
@@ -110584,7 +110909,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "nhl_jack-eichel",
@@ -124346,7 +124671,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -125933,7 +126260,9 @@
       ],
       "draft_year": [],
       "draft_position": [],
-      "awards": [],
+      "awards": [
+        "Super Bowl MVP"
+      ],
       "championships": [],
       "milestones": [],
       "college": [],
@@ -128786,7 +129115,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_rafael-palmeiro",
@@ -128852,7 +129181,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_gary-sheffield",
@@ -128924,7 +129253,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jim-edmonds",
@@ -128993,7 +129322,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_bobby-abreu",
@@ -129064,7 +129393,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_luis-gonzalez",
@@ -129135,7 +129464,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_paul-konerko",
@@ -129201,7 +129530,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_aramis-ramirez",
@@ -129269,7 +129598,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_torii-hunter",
@@ -129337,7 +129666,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_shawn-green",
@@ -129407,7 +129736,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_mike-mussina",
@@ -129471,7 +129800,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_david-cone",
@@ -129540,7 +129869,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_orel-hershiser",
@@ -129607,7 +129936,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jack-morris",
@@ -129676,7 +130005,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_dwight-gooden",
@@ -129744,7 +130073,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_bret-saberhagen",
@@ -129812,7 +130141,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_billy-wagner",
@@ -129882,7 +130211,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_francisco-rodriguez",
@@ -129951,7 +130280,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jonathan-papelbon",
@@ -130016,7 +130345,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_craig-kimbrel",
@@ -130086,7 +130415,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_aroldis-chapman",
@@ -130155,7 +130484,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_kenley-jansen",
@@ -130221,7 +130550,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_joe-nathan",
@@ -130289,7 +130618,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_cal-raleigh",
@@ -130351,7 +130680,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_william-contreras",
@@ -130416,7 +130745,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_willson-contreras",
@@ -130482,7 +130811,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_sean-murphy",
@@ -130546,7 +130875,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_riley-greene",
@@ -130610,7 +130939,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_spencer-torkelson",
@@ -130672,7 +131001,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_wyatt-langford",
@@ -130734,7 +131063,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jackson-chourio",
@@ -130796,7 +131125,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_james-wood",
@@ -130858,7 +131187,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_dylan-crews",
@@ -130920,7 +131249,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jackson-holliday",
@@ -130984,7 +131313,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_colton-cowser",
@@ -131046,7 +131375,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_anthony-volpe",
@@ -131108,7 +131437,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jazz-chisholm-jr",
@@ -131172,7 +131501,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_brent-rooker",
@@ -131238,7 +131567,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_nick-kurtz",
@@ -131300,7 +131629,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jacob-wilson",
@@ -131364,7 +131693,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jung-hoo-lee",
@@ -131428,7 +131757,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_shota-imanaga",
@@ -131490,7 +131819,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_roki-sasaki",
@@ -131552,7 +131881,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_garrett-crochet",
@@ -131615,7 +131944,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_hunter-greene",
@@ -131679,7 +132008,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_george-kirby",
@@ -131741,7 +132070,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_logan-gilbert",
@@ -131803,7 +132132,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_grayson-rodriguez",
@@ -131867,7 +132196,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_pablo-lopez",
@@ -131933,7 +132262,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_joe-ryan",
@@ -131997,7 +132326,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_freddy-peralta",
@@ -132060,7 +132389,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_ranger-suarez",
@@ -132125,7 +132454,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_cristopher-sanchez",
@@ -132187,7 +132516,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jesus-luzardo",
@@ -132252,7 +132581,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_michael-king",
@@ -132320,7 +132649,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_mason-miller",
@@ -132385,7 +132714,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_andres-munoz",
@@ -132451,7 +132780,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_ryan-helsley",
@@ -132515,7 +132844,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_sonny-gray",
@@ -132586,7 +132915,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_luis-castillo",
@@ -132650,7 +132979,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_ke-bryan-hayes",
@@ -132715,7 +133044,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_bryan-reynolds",
@@ -132778,7 +133107,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_eloy-jimenez",
@@ -132843,7 +133172,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_tim-anderson",
@@ -132910,7 +133239,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_jose-abreu",
@@ -132976,7 +133305,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_carlos-santana",
@@ -133048,7 +133377,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_michael-young",
@@ -133117,7 +133446,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_ian-kinsler",
@@ -133185,7 +133514,7 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_elvis-andrus",
@@ -133251,7 +133580,7 @@
     "needs_refresh": true,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   },
   {
     "id": "mlb_curtis-granderson",
@@ -133321,6 +133650,6 @@
     "needs_refresh": false,
     "last_used": null,
     "cooldown_until": null,
-    "sport_weight": 1.0
+    "sport_weight": 1
   }
 ]

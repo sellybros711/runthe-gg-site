@@ -1,0 +1,20 @@
+{
+  "_note": "Hand-authored achievement/stat memberships for confident, well-known winners, merged into corpus.json by grid/merge-supplement.mjs (matches on display_name). Lights up achievement/statistical categories in Daily Match that the base corpus left empty. Facts are limited to household-name winners to keep risk low; expand via an authoritative import later.",
+  "awards": {
+    "NBA MVP": ["LeBron James","Michael Jordan","Kareem Abdul-Jabbar","Magic Johnson","Larry Bird","Stephen Curry","Kevin Durant","Nikola Jokic","Giannis Antetokounmpo","Joel Embiid","Tim Duncan","Shaquille O'Neal","Allen Iverson","Steve Nash","Dirk Nowitzki","Derrick Rose","Russell Westbrook","James Harden","Charles Barkley","Karl Malone","Kevin Garnett","Hakeem Olajuwon","David Robinson","Moses Malone","Wilt Chamberlain","Bill Russell"],
+    "Finals MVP": ["Michael Jordan","LeBron James","Kobe Bryant","Shaquille O'Neal","Tim Duncan","Magic Johnson","Larry Bird","Kevin Durant","Stephen Curry","Giannis Antetokounmpo","Kawhi Leonard","Dirk Nowitzki","Nikola Jokic","Kareem Abdul-Jabbar","Hakeem Olajuwon"],
+    "NFL MVP": ["Patrick Mahomes","Aaron Rodgers","Tom Brady","Peyton Manning","Brett Favre","Lamar Jackson","Josh Allen","Adrian Peterson","Barry Sanders","Emmitt Smith","Marshall Faulk","Kurt Warner","Steve Young","Dan Marino","Joe Montana","Cam Newton","Matt Ryan","LaDainian Tomlinson"],
+    "Super Bowl MVP": ["Tom Brady","Joe Montana","Patrick Mahomes","Eli Manning","Peyton Manning","Aaron Rodgers","Drew Brees","Terry Bradshaw","Joe Namath","Kurt Warner","Steve Young","Troy Aikman","John Elway","Emmitt Smith","Von Miller","Julian Edelman","Cooper Kupp","Nick Foles","Jerry Rice"],
+    "MLB MVP": ["Barry Bonds","Mike Trout","Albert Pujols","Alex Rodriguez","Aaron Judge","Shohei Ohtani","Ken Griffey Jr.","Mickey Mantle","Willie Mays","Hank Aaron","Frank Robinson","Joe DiMaggio","Yogi Berra","Miguel Cabrera","Bryce Harper","Mookie Betts","Jose Altuve","Cody Bellinger"],
+    "Cy Young": ["Randy Johnson","Roger Clemens","Greg Maddux","Clayton Kershaw","Justin Verlander","Pedro Martinez","Max Scherzer","Jacob deGrom","Tom Seaver","Sandy Koufax","Steve Carlton","Bob Gibson","Corey Kluber","Zack Greinke","Blake Snell","Shane Bieber"]
+  },
+  "milestones": {
+    "500 Home Run Club": ["Barry Bonds","Hank Aaron","Babe Ruth","Willie Mays","Alex Rodriguez","Ken Griffey Jr.","Albert Pujols","Sammy Sosa","David Ortiz","Jim Thome","Mickey Mantle","Frank Robinson","Reggie Jackson","Mark McGwire","Manny Ramirez","Mike Schmidt","Eddie Murray"],
+    "3,000 Hit Club": ["Derek Jeter","Albert Pujols","Alex Rodriguez","Ichiro Suzuki","Ty Cobb","Hank Aaron","Willie Mays","Pete Rose","Miguel Cabrera","Stan Musial","Cal Ripken Jr.","Tony Gwynn","Wade Boggs","Rod Carew","Roberto Clemente"],
+    "30,000 Point Club": ["Kareem Abdul-Jabbar","Karl Malone","LeBron James","Kobe Bryant","Michael Jordan","Dirk Nowitzki","Wilt Chamberlain"]
+  },
+  "firstOverallPick": {
+    "_desc": "No. 1 overall draft picks (cross-sport category)",
+    "names": ["LeBron James","Shaquille O'Neal","Magic Johnson","Kareem Abdul-Jabbar","Tim Duncan","Allen Iverson","Dwight Howard","Derrick Rose","John Wall","Karl-Anthony Towns","Zion Williamson","Anthony Davis","David Robinson","Hakeem Olajuwon","Patrick Ewing","Peyton Manning","Eli Manning","John Elway","Terry Bradshaw","Troy Aikman","Cam Newton","Andrew Luck","Matthew Stafford","Joe Burrow","Trevor Lawrence","Bryce Young","Alex Rodriguez","Ken Griffey Jr.","Bryce Harper","Chipper Jones","Joe Mauer","Adrian Gonzalez"]
+  }
+}
