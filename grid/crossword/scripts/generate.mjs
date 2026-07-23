@@ -12,16 +12,25 @@
 // regenerates the same grid + clues. Output matches the shape puzzles.js already
 // feeds the UI, so nothing on the front end changes.
 
-import { readFileSync, writeFileSync, mkdirSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 
+// Data source: the baseball hand data by default, or the SHARED-CORPUS superset
+// (a strict extension of the baseball files) once scripts/build-from-corpus.mjs
+// has produced it. Auto-detected; force baseball with DATASET=baseball.
+const corpusJson = resolve(__dir, "../data/corpus.crossword.json");
+const corpusCsv = resolve(__dir, "../data/corpus.crossword.csv");
+const useCorpus = process.env.DATASET !== "baseball" && existsSync(corpusJson) && existsSync(corpusCsv);
+const DATA_JSON = useCorpus ? corpusJson : resolve(__dir, "../data/baseball.json");
+const DATA_CSV = useCorpus ? corpusCsv : resolve(__dir, "../data/baseball.csv");
+
 // Data contract (see README): the large, growable PLAYER table is a CSV; the
 // smaller structured lookups + common fill are one JSON. Both are drop-in — a
 // bigger CSV/JSON from the data pipeline plugs in with no code changes.
-const DATA = JSON.parse(readFileSync(resolve(__dir, "../data/baseball.json"), "utf8")); // teams, stats, venues, glossary, fill
+const DATA = JSON.parse(readFileSync(DATA_JSON, "utf8")); // teams, stats, venues, glossary, fill
 
 // Minimal RFC4180-ish CSV parser (handles quoted fields, embedded commas, "" escapes).
 function parseCSV(text) {
@@ -40,7 +49,7 @@ function parseCSV(text) {
   const header = rows.shift().map((h) => h.trim());
   return rows.map((r) => Object.fromEntries(header.map((h, i) => [h, (r[i] ?? "").trim()])));
 }
-const PLAYERS = parseCSV(readFileSync(resolve(__dir, "../data/baseball.csv"), "utf8"))
+const PLAYERS = parseCSV(readFileSync(DATA_CSV, "utf8"))
   .map((p) => ({ ...p, hof: p.hof === "1" || p.hof.toLowerCase() === "true" }));
 
 // ---- seeded RNG (mulberry32) so generation is reproducible -----------------

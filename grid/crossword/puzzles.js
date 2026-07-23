@@ -14,6 +14,103 @@ window.RTG_PUZZLES = {
     "size": 5,
     "rows": [
       "ERA##",
+      "REND#",
+      "RATIO",
+      "#DENT",
+      "##SET"
+    ],
+    "theme": 2,
+    "entries": [
+      {
+        "num": 1,
+        "dir": "A",
+        "r": 0,
+        "c": 0,
+        "answer": "ERA",
+        "clue": "Box-score abbr. for earned run average"
+      },
+      {
+        "num": 1,
+        "dir": "D",
+        "r": 0,
+        "c": 0,
+        "answer": "ERR",
+        "clue": "Slip up"
+      },
+      {
+        "num": 2,
+        "dir": "D",
+        "r": 0,
+        "c": 1,
+        "answer": "READ",
+        "clue": "Peruse a book"
+      },
+      {
+        "num": 3,
+        "dir": "D",
+        "r": 0,
+        "c": 2,
+        "answer": "ANTES",
+        "clue": "Pot starters"
+      },
+      {
+        "num": 4,
+        "dir": "A",
+        "r": 1,
+        "c": 0,
+        "answer": "REND",
+        "clue": "Tear apart"
+      },
+      {
+        "num": 5,
+        "dir": "D",
+        "r": 1,
+        "c": 3,
+        "answer": "DINE",
+        "clue": "Have supper"
+      },
+      {
+        "num": 6,
+        "dir": "A",
+        "r": 2,
+        "c": 0,
+        "answer": "RATIO",
+        "clue": "Proportion"
+      },
+      {
+        "num": 7,
+        "dir": "D",
+        "r": 2,
+        "c": 4,
+        "answer": "OTT",
+        "clue": "Giants great Mel ___"
+      },
+      {
+        "num": 8,
+        "dir": "A",
+        "r": 3,
+        "c": 1,
+        "answer": "DENT",
+        "clue": "Fender ding"
+      },
+      {
+        "num": 9,
+        "dir": "A",
+        "r": 4,
+        "c": 2,
+        "answer": "SET",
+        "clue": "Tennis-match division"
+      }
+    ],
+    "difficulty": 2.9,
+    "sport": "baseball"
+  },
+  {
+    "id": "2026-07-23",
+    "date": "2026-07-23",
+    "size": 5,
+    "rows": [
+      "ERA##",
       "RENT#",
       "RATIO",
       "#DENT",
@@ -28,6 +125,103 @@ window.RTG_PUZZLES = {
         "c": 0,
         "answer": "ERA",
         "clue": "Box-score abbr. for earned run average"
+      },
+      {
+        "num": 1,
+        "dir": "D",
+        "r": 0,
+        "c": 0,
+        "answer": "ERR",
+        "clue": "Slip up"
+      },
+      {
+        "num": 2,
+        "dir": "D",
+        "r": 0,
+        "c": 1,
+        "answer": "READ",
+        "clue": "Peruse a book"
+      },
+      {
+        "num": 3,
+        "dir": "D",
+        "r": 0,
+        "c": 2,
+        "answer": "ANTES",
+        "clue": "Pot starters"
+      },
+      {
+        "num": 4,
+        "dir": "A",
+        "r": 1,
+        "c": 0,
+        "answer": "RENT",
+        "clue": "Monthly payment"
+      },
+      {
+        "num": 5,
+        "dir": "D",
+        "r": 1,
+        "c": 3,
+        "answer": "TINE",
+        "clue": "Fork point"
+      },
+      {
+        "num": 6,
+        "dir": "A",
+        "r": 2,
+        "c": 0,
+        "answer": "RATIO",
+        "clue": "Proportion"
+      },
+      {
+        "num": 7,
+        "dir": "D",
+        "r": 2,
+        "c": 4,
+        "answer": "OTT",
+        "clue": "Mel ___, a 500-home-run outfielder"
+      },
+      {
+        "num": 8,
+        "dir": "A",
+        "r": 3,
+        "c": 1,
+        "answer": "DENT",
+        "clue": "Fender ding"
+      },
+      {
+        "num": 9,
+        "dir": "A",
+        "r": 4,
+        "c": 2,
+        "answer": "SET",
+        "clue": "Tennis-match division"
+      }
+    ],
+    "difficulty": 2.9,
+    "sport": "baseball"
+  },
+  {
+    "id": "2026-07-24",
+    "date": "2026-07-24",
+    "size": 5,
+    "rows": [
+      "ERA##",
+      "RENT#",
+      "RATIO",
+      "#DENT",
+      "##SET"
+    ],
+    "theme": 2,
+    "entries": [
+      {
+        "num": 1,
+        "dir": "A",
+        "r": 0,
+        "c": 0,
+        "answer": "ERA",
+        "clue": "Stat-line shorthand: earned run average"
       },
       {
         "num": 1,
@@ -106,200 +300,6 @@ window.RTG_PUZZLES = {
     "sport": "baseball"
   },
   {
-    "id": "2026-07-23",
-    "date": "2026-07-23",
-    "size": 5,
-    "rows": [
-      "ERA##",
-      "RENT#",
-      "RATIO",
-      "#DENT",
-      "##SET"
-    ],
-    "theme": 2,
-    "entries": [
-      {
-        "num": 1,
-        "dir": "A",
-        "r": 0,
-        "c": 0,
-        "answer": "ERA",
-        "clue": "Stat-line shorthand: earned run average"
-      },
-      {
-        "num": 1,
-        "dir": "D",
-        "r": 0,
-        "c": 0,
-        "answer": "ERR",
-        "clue": "Slip up"
-      },
-      {
-        "num": 2,
-        "dir": "D",
-        "r": 0,
-        "c": 1,
-        "answer": "READ",
-        "clue": "Peruse a book"
-      },
-      {
-        "num": 3,
-        "dir": "D",
-        "r": 0,
-        "c": 2,
-        "answer": "ANTES",
-        "clue": "Pot starters"
-      },
-      {
-        "num": 4,
-        "dir": "A",
-        "r": 1,
-        "c": 0,
-        "answer": "RENT",
-        "clue": "Monthly payment"
-      },
-      {
-        "num": 5,
-        "dir": "D",
-        "r": 1,
-        "c": 3,
-        "answer": "TINE",
-        "clue": "Fork point"
-      },
-      {
-        "num": 6,
-        "dir": "A",
-        "r": 2,
-        "c": 0,
-        "answer": "RATIO",
-        "clue": "Proportion"
-      },
-      {
-        "num": 7,
-        "dir": "D",
-        "r": 2,
-        "c": 4,
-        "answer": "OTT",
-        "clue": "Giants great Mel ___"
-      },
-      {
-        "num": 8,
-        "dir": "A",
-        "r": 3,
-        "c": 1,
-        "answer": "DENT",
-        "clue": "Fender ding"
-      },
-      {
-        "num": 9,
-        "dir": "A",
-        "r": 4,
-        "c": 2,
-        "answer": "SET",
-        "clue": "Tennis-match division"
-      }
-    ],
-    "difficulty": 2.9,
-    "sport": "baseball"
-  },
-  {
-    "id": "2026-07-24",
-    "date": "2026-07-24",
-    "size": 5,
-    "rows": [
-      "ERA##",
-      "RENT#",
-      "RATIO",
-      "#DENT",
-      "##SET"
-    ],
-    "theme": 2,
-    "entries": [
-      {
-        "num": 1,
-        "dir": "A",
-        "r": 0,
-        "c": 0,
-        "answer": "ERA",
-        "clue": "Box-score abbr. for earned run average"
-      },
-      {
-        "num": 1,
-        "dir": "D",
-        "r": 0,
-        "c": 0,
-        "answer": "ERR",
-        "clue": "Slip up"
-      },
-      {
-        "num": 2,
-        "dir": "D",
-        "r": 0,
-        "c": 1,
-        "answer": "READ",
-        "clue": "Peruse a book"
-      },
-      {
-        "num": 3,
-        "dir": "D",
-        "r": 0,
-        "c": 2,
-        "answer": "ANTES",
-        "clue": "Pot starters"
-      },
-      {
-        "num": 4,
-        "dir": "A",
-        "r": 1,
-        "c": 0,
-        "answer": "RENT",
-        "clue": "Monthly payment"
-      },
-      {
-        "num": 5,
-        "dir": "D",
-        "r": 1,
-        "c": 3,
-        "answer": "TINE",
-        "clue": "Fork point"
-      },
-      {
-        "num": 6,
-        "dir": "A",
-        "r": 2,
-        "c": 0,
-        "answer": "RATIO",
-        "clue": "Proportion"
-      },
-      {
-        "num": 7,
-        "dir": "D",
-        "r": 2,
-        "c": 4,
-        "answer": "OTT",
-        "clue": "Mel ___, a 500-home-run outfielder"
-      },
-      {
-        "num": 8,
-        "dir": "A",
-        "r": 3,
-        "c": 1,
-        "answer": "DENT",
-        "clue": "Fender ding"
-      },
-      {
-        "num": 9,
-        "dir": "A",
-        "r": 4,
-        "c": 2,
-        "answer": "SET",
-        "clue": "Tennis-match division"
-      }
-    ],
-    "difficulty": 2.9,
-    "sport": "baseball"
-  },
-  {
     "id": "2026-07-25",
     "date": "2026-07-25",
     "size": 5,
@@ -318,7 +318,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 0,
         "answer": "ERA",
-        "clue": "Stat-line shorthand: earned run average"
+        "clue": "Box-score abbr. for earned run average"
       },
       {
         "num": 1,
@@ -374,7 +374,7 @@ window.RTG_PUZZLES = {
         "r": 2,
         "c": 4,
         "answer": "OTT",
-        "clue": "Giants great Mel ___"
+        "clue": "Hall of Famer Mel ___"
       },
       {
         "num": 8,
@@ -402,9 +402,9 @@ window.RTG_PUZZLES = {
     "size": 5,
     "rows": [
       "ERA##",
-      "REND#",
+      "RENT#",
       "RATIO",
-      "#RENT",
+      "#DENT",
       "##SET"
     ],
     "theme": 2,
@@ -415,7 +415,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 0,
         "answer": "ERA",
-        "clue": "Box-score abbr. for earned run average"
+        "clue": "Stat-line shorthand: earned run average"
       },
       {
         "num": 1,
@@ -430,8 +430,8 @@ window.RTG_PUZZLES = {
         "dir": "D",
         "r": 0,
         "c": 1,
-        "answer": "REAR",
-        "clue": "Back end"
+        "answer": "READ",
+        "clue": "Peruse a book"
       },
       {
         "num": 3,
@@ -446,16 +446,113 @@ window.RTG_PUZZLES = {
         "dir": "A",
         "r": 1,
         "c": 0,
-        "answer": "REND",
-        "clue": "Tear apart"
+        "answer": "RENT",
+        "clue": "Monthly payment"
       },
       {
         "num": 5,
         "dir": "D",
         "r": 1,
         "c": 3,
-        "answer": "DINE",
-        "clue": "Have supper"
+        "answer": "TINE",
+        "clue": "Fork point"
+      },
+      {
+        "num": 6,
+        "dir": "A",
+        "r": 2,
+        "c": 0,
+        "answer": "RATIO",
+        "clue": "Proportion"
+      },
+      {
+        "num": 7,
+        "dir": "D",
+        "r": 2,
+        "c": 4,
+        "answer": "OTT",
+        "clue": "Hall of Famer Mel ___"
+      },
+      {
+        "num": 8,
+        "dir": "A",
+        "r": 3,
+        "c": 1,
+        "answer": "DENT",
+        "clue": "Fender ding"
+      },
+      {
+        "num": 9,
+        "dir": "A",
+        "r": 4,
+        "c": 2,
+        "answer": "SET",
+        "clue": "Tennis-match division"
+      }
+    ],
+    "difficulty": 2.9,
+    "sport": "baseball"
+  },
+  {
+    "id": "2026-07-27",
+    "date": "2026-07-27",
+    "size": 5,
+    "rows": [
+      "ERA##",
+      "RENT#",
+      "RATIO",
+      "#DENT",
+      "##SET"
+    ],
+    "theme": 2,
+    "entries": [
+      {
+        "num": 1,
+        "dir": "A",
+        "r": 0,
+        "c": 0,
+        "answer": "ERA",
+        "clue": "Stat-line shorthand: earned run average"
+      },
+      {
+        "num": 1,
+        "dir": "D",
+        "r": 0,
+        "c": 0,
+        "answer": "ERR",
+        "clue": "Slip up"
+      },
+      {
+        "num": 2,
+        "dir": "D",
+        "r": 0,
+        "c": 1,
+        "answer": "READ",
+        "clue": "Peruse a book"
+      },
+      {
+        "num": 3,
+        "dir": "D",
+        "r": 0,
+        "c": 2,
+        "answer": "ANTES",
+        "clue": "Pot starters"
+      },
+      {
+        "num": 4,
+        "dir": "A",
+        "r": 1,
+        "c": 0,
+        "answer": "RENT",
+        "clue": "Monthly payment"
+      },
+      {
+        "num": 5,
+        "dir": "D",
+        "r": 1,
+        "c": 3,
+        "answer": "TINE",
+        "clue": "Fork point"
       },
       {
         "num": 6,
@@ -478,105 +575,8 @@ window.RTG_PUZZLES = {
         "dir": "A",
         "r": 3,
         "c": 1,
-        "answer": "RENT",
-        "clue": "Monthly payment"
-      },
-      {
-        "num": 9,
-        "dir": "A",
-        "r": 4,
-        "c": 2,
-        "answer": "SET",
-        "clue": "Tennis-match division"
-      }
-    ],
-    "difficulty": 2.9,
-    "sport": "baseball"
-  },
-  {
-    "id": "2026-07-27",
-    "date": "2026-07-27",
-    "size": 5,
-    "rows": [
-      "ERA##",
-      "REND#",
-      "RATIO",
-      "#RENT",
-      "##SET"
-    ],
-    "theme": 2,
-    "entries": [
-      {
-        "num": 1,
-        "dir": "A",
-        "r": 0,
-        "c": 0,
-        "answer": "ERA",
-        "clue": "Box-score abbr. for earned run average"
-      },
-      {
-        "num": 1,
-        "dir": "D",
-        "r": 0,
-        "c": 0,
-        "answer": "ERR",
-        "clue": "Slip up"
-      },
-      {
-        "num": 2,
-        "dir": "D",
-        "r": 0,
-        "c": 1,
-        "answer": "REAR",
-        "clue": "Back end"
-      },
-      {
-        "num": 3,
-        "dir": "D",
-        "r": 0,
-        "c": 2,
-        "answer": "ANTES",
-        "clue": "Pot starters"
-      },
-      {
-        "num": 4,
-        "dir": "A",
-        "r": 1,
-        "c": 0,
-        "answer": "REND",
-        "clue": "Tear apart"
-      },
-      {
-        "num": 5,
-        "dir": "D",
-        "r": 1,
-        "c": 3,
-        "answer": "DINE",
-        "clue": "Have supper"
-      },
-      {
-        "num": 6,
-        "dir": "A",
-        "r": 2,
-        "c": 0,
-        "answer": "RATIO",
-        "clue": "Proportion"
-      },
-      {
-        "num": 7,
-        "dir": "D",
-        "r": 2,
-        "c": 4,
-        "answer": "OTT",
-        "clue": "Giants great Mel ___"
-      },
-      {
-        "num": 8,
-        "dir": "A",
-        "r": 3,
-        "c": 1,
-        "answer": "RENT",
-        "clue": "Monthly payment"
+        "answer": "DENT",
+        "clue": "Fender ding"
       },
       {
         "num": 9,
@@ -609,7 +609,7 @@ window.RTG_PUZZLES = {
         "r": 0,
         "c": 0,
         "answer": "ERA",
-        "clue": "Box-score abbr. for earned run average"
+        "clue": "Stat-line shorthand: earned run average"
       },
       {
         "num": 1,
@@ -665,7 +665,7 @@ window.RTG_PUZZLES = {
         "r": 2,
         "c": 4,
         "answer": "OTT",
-        "clue": "Giants great Mel ___"
+        "clue": "Mel ___, a 500-home-run outfielder"
       },
       {
         "num": 8,
