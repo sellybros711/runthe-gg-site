@@ -18,8 +18,8 @@
   --bg:#0a1420; --bg2:#0e2134; --panel:#12273c; --panel2:#0d1d2e;
   --line:rgba(210,224,244,.12); --line2:rgba(210,224,244,.24);
   --cream:#eef3fb; --cream-dim:#9fb1c8; --gold:#f2b21c; --gold-bright:#ffcf4d;
-  --grass:#2f7d3f; --grass2:#286f37; --grass-line:rgba(244,227,201,.55);
-  --endzone:#7a1f22; --endzone2:#611619;
+  --grass:#173a2c; --grass2:#123227; --grass-line:rgba(238,243,251,.5);
+  --endzone:#1a2b47; --endzone2:#142138;
   --green:#7bd67e; --red:#e0705c; --amber:#f0c060; --blue:#69b0d0;
   --hero:'Press Start 2P', monospace;                 /* pixel — logo only */
   --pix:'Rubik', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;   /* headings/labels */
@@ -103,9 +103,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 /* broadcast angle: tilt the whole pitch back so the field recedes like a TV camera */
 #pitch{position:absolute; inset:-4% -4% -2%; transform-style:preserve-3d;
   transform:rotateX(20deg); transform-origin:50% 68%;
-  background:linear-gradient(180deg,#3c8b4d,#2a6d38); z-index:1;}
+  background:linear-gradient(180deg,#1c4636,#0f2a20); z-index:1;}
 #fieldStatics{position:absolute; inset:0; z-index:0;}
 #routeOverlay{position:absolute; inset:0; z-index:6; pointer-events:none;}
+/* broadcast vignette + faint scan sheen over the whole field */
+.field::after{content:''; position:absolute; inset:0; z-index:7; pointer-events:none;
+  background:radial-gradient(120% 80% at 50% 42%, transparent 55%, rgba(4,12,20,.5));
+  box-shadow:inset 0 0 42px 8px rgba(4,12,20,.45);}
+.field::before{content:''; position:absolute; inset:0; z-index:7; pointer-events:none; opacity:.5;
+  background:repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px);}
 .mow{position:absolute; top:0; bottom:0; background:rgba(255,255,255,.05);}
 .mow.b{background:rgba(0,0,0,.06);}
 .yl{position:absolute; top:0; bottom:0; width:2px; margin-left:-1px; background:rgba(255,255,255,.42);}
@@ -125,28 +131,19 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .ball{position:absolute; width:0;height:0; border-top:7px solid transparent; border-bottom:7px solid transparent;
   border-left:12px solid var(--gold-bright); transform:translate(-2px,-50%); transition:left .45s ease, top .45s ease; z-index:5;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.5));}
-/* pixel players (little men) — the sprite is inline SVG coloured by CSS vars */
-.chip{position:absolute; width:15px; height:27px; transform:translate(-50%,-100%) rotateX(-20deg); transform-origin:50% 100%; z-index:3;
-  transition:left .4s ease, top .4s ease; filter:drop-shadow(0 3px 2px rgba(0,0,0,.5));}
-.chip.qb{width:16px; height:29px; z-index:4;}
-.manart{width:100%; height:100%; display:block; transform-origin:center; transform:scaleX(1);}
-/* facing: flip the sprite to run the other way (composes with the bob 'translate') */
-.chip.faceL .manart, .hchip.faceL .manart, .anim-carrier.faceL .manart{ transform:scaleX(-1); }
-/* run cycle: a quick vertical bob while a player is in motion (reads as running) */
-.chip.moving .manart, .anim-carrier.moving .manart{ animation:runbob .16s steps(2) infinite alternate; }
-@keyframes runbob{ from{ translate:0 0; } to{ translate:0 -2px; } }
-.chip.down .manart{ transform:scaleX(1) rotate(78deg); opacity:.85; }   /* tackled / on the ground */
-.chip.down.faceL .manart{ transform:scaleX(-1) rotate(78deg); }
-@media (prefers-reduced-motion: reduce){ .chip.moving .manart,.anim-carrier.moving .manart{ animation:none; } }
-/* QB throwing motion: plant, cock back, snap forward on release (composes with the billboard) */
-@keyframes qbThrow{
-  0%  { transform:translate(-50%,-100%) rotateX(-20deg) rotate(0) translateY(0); }
-  28% { transform:translate(-48%,-100%) rotateX(-20deg) rotate(-13deg) translateY(1px); }
-  52% { transform:translate(-54%,-103%) rotateX(-20deg) rotate(11deg) translateY(-1px); }
-  100%{ transform:translate(-50%,-100%) rotateX(-20deg) rotate(0) translateY(0); }
-}
+/* broadcast markers — telestration discs that lie on the tilted field (not standing sprites) */
+.chip{position:absolute; width:20px; height:20px; transform:translate(-50%,-50%); z-index:3;
+  transition:left .4s ease, top .4s ease; filter:drop-shadow(0 2px 2px rgba(0,0,0,.55));}
+.chip.qb{width:23px; height:23px; z-index:4;}
+.manart{width:100%; height:100%; display:block;}
+/* motion pulse while moving; tackled = shrink + dim */
+.chip.moving .manart, .anim-carrier.moving .manart{ animation:runbob .22s ease-in-out infinite alternate; }
+@keyframes runbob{ from{ transform:scale(1); } to{ transform:scale(1.08); } }
+.chip.down{ z-index:2; filter:drop-shadow(0 1px 1px rgba(0,0,0,.4)); }
+.chip.down .manart{ transform:scale(.78); opacity:.5; }
+@keyframes qbThrow{ 0%{transform:translate(-50%,-50%) scale(1);} 42%{transform:translate(-50%,-50%) scale(1.28);} 100%{transform:translate(-50%,-50%) scale(1);} }
 .chip.qbthrow{ animation:qbThrow .34s ease-out; }
-@media (prefers-reduced-motion: reduce){ .chip.qbthrow{ animation:none; } }
+@media (prefers-reduced-motion: reduce){ .chip.moving .manart,.anim-carrier.moving .manart,.chip.qbthrow{ animation:none; } }
 /* ---------- custom glyph icons (replace all stock emojis) ---------- */
 .gi{width:1em; height:1em; display:inline-block; vertical-align:-.14em; flex:none;}
 .stat-chip .gi{width:20px; height:20px; vertical-align:middle;}
@@ -208,9 +205,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 @keyframes conf{0%{opacity:1; transform:translate(-50%,-50%) translateY(0) rotate(0);}
   100%{opacity:0; transform:translate(-50%,-50%) translate(var(--dx,0),-26px) rotate(140deg);}}
 /* team palettes drive the sprite's fill vars */
-.chip.off,.hchip.off,.anim-carrier{ --jersey:#f4c93a; --helmet:#8a6a1a; --pants:#efe2b0; --skin:#e7b48a; --sock:#2a2008; --stripe:#fff6dc; --num:#5a3f08; }
-.chip.def,.hchip.def,.anim-carrier.def{ --jersey:#33425e; --helmet:#e2e8f2; --pants:#26344c; --skin:#cdb59a; --sock:#141d2e; --stripe:#2b3a52; --num:#dfe6f2; }
-.chip.qb{ --jersey:#ffe08a; --num:#5a3f08; }
+.chip.off,.hchip.off,.anim-carrier{ --jersey:#f2b21c; --stripe:#fff2cc; --num:#3a2a00; }
+.chip.def,.hchip.def,.anim-carrier.def{ --jersey:#2a3d63; --stripe:#8fa7d0; --num:#e6edf8; }
+.chip.qb{ --jersey:#ffd24a; --stripe:#ffffff; --num:#3a2a00; }
 .side-tag{position:absolute; left:6px; top:50%; transform:translateY(-50%);
   font-family:var(--pix); font-size:8px; color:var(--grass-line); writing-mode:vertical-rl;}
 .field-badge{position:absolute; left:8px; top:8px; z-index:6; display:flex; gap:6px; flex-wrap:wrap; max-width:70%;}
@@ -1019,25 +1016,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
   // Little pixel man: helmet, jersey with shoulders/arms, split legs. Every fill
   // reads a CSS var so one sprite serves both teams (and the QB) by palette.
-  const MAN_SVG = `<svg class="manart" viewBox="0 0 12 22" shape-rendering="crispEdges" aria-hidden="true">`
-    + `<rect x="3" y="0" width="6" height="4" fill="var(--helmet)"/>`          // helmet
-    + `<rect x="5" y="0" width="2" height="4" fill="var(--stripe,#fff)"/>`     // helmet stripe
-    + `<rect x="4" y="3" width="4" height="1" fill="var(--skin,#e7b48a)"/>`    // facemask
-    + `<rect x="5" y="4" width="2" height="1" fill="var(--skin,#e7b48a)"/>`    // neck
-    + `<rect x="1" y="5" width="10" height="3" fill="var(--jersey)"/>`         // shoulder pads
-    + `<rect x="0" y="6" width="1" height="4" fill="var(--jersey)"/>`          // left arm
-    + `<rect x="11" y="6" width="1" height="4" fill="var(--jersey)"/>`         // right arm
-    + `<rect x="0" y="10" width="1" height="1" fill="var(--skin,#e7b48a)"/>`   // left hand
-    + `<rect x="11" y="10" width="1" height="1" fill="var(--skin,#e7b48a)"/>`  // right hand
-    + `<rect x="2" y="8" width="8" height="4" fill="var(--jersey)"/>`          // torso
-    + `<rect x="5" y="8" width="2" height="3" fill="var(--num,#fff)"/>`        // jersey number
-    + `<rect x="2" y="12" width="8" height="1" fill="var(--pants)"/>`          // belt
-    + `<rect x="3" y="13" width="2" height="5" fill="var(--pants)"/>`          // left leg
-    + `<rect x="7" y="13" width="2" height="5" fill="var(--pants)"/>`          // right leg
-    + `<rect x="3" y="18" width="2" height="2" fill="var(--sock,#222)"/>`      // left sock
-    + `<rect x="7" y="18" width="2" height="2" fill="var(--sock,#222)"/>`      // right sock
-    + `<rect x="2" y="20" width="3" height="2" fill="#141414"/>`               // left cleat
-    + `<rect x="7" y="20" width="3" height="2" fill="#141414"/>`               // right cleat
+  // Broadcast telestration marker — a coach's-film disc, not a pixel sprite. Colored by
+  // the same CSS vars (--jersey fill, --stripe ring, --num center) so offense/defense/QB
+  // read at a glance. This is the identity that sets RunTheDrive apart from pixel games.
+  const MAN_SVG = `<svg class="manart" viewBox="0 0 24 24" aria-hidden="true">`
+    + `<circle cx="12" cy="12" r="10.2" fill="var(--jersey)" stroke="var(--stripe,#fff)" stroke-width="2.4"/>`
+    + `<circle cx="12" cy="12" r="4.4" fill="var(--num,#fff)" opacity=".72"/>`
     + `</svg>`;
   function clearChips(){ document.querySelectorAll('#field .chip').forEach(c=>c.remove()); }
   function placeChip(cls, xPct, yPct){ const c=document.createElement('div'); c.className='chip '+cls;
