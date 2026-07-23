@@ -5,19 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
 <title>Daily Match — RunTheGrid | Sports Matching Puzzle</title>
 <meta name="robots" content="noindex, nofollow" />
-<meta name="theme-color" content="#f7f5f2" />
-<meta name="description" content="One 5x5 grid. Five hidden categories. Sort 25 names into their lanes before you run out of guesses — a daily sports matching puzzle on RunThe.GG." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230a1626'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2335C4CD'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23EBA61F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5A'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A98CF5'/%3E%3C/svg%3E" />
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a1626'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2335C4CD'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23EBA61F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5A'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A98CF5'/%3E%3C/svg%3E" />
+<meta name="theme-color" content="#071426" />
+<meta name="description" content="Sort 20 sports names into five hidden groups of four before you run out of guesses — a daily sports matching puzzle on RunThe.GG." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2337C5D5'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2337C5D5'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
 <style>
+  /* ---------------- design tokens ---------------- */
   :root{
-    --bg:#f7f5f2; --bg2:#eef0f3; --card:#ffffff; --cardb:rgba(24,36,48,.14); --card2:#f2f3f5;
-    --ink:#182430; --mut:#5c6b7a; --line:rgba(24,36,48,.10); --line2:rgba(24,36,48,.16);
-    --red:#F0654F; --coral:#FF5A3C; --teal:#35C4CD; --green:#6EE84E; --gold:#EBA61F; --violet:#A98CF5;
-    --shadow:0 12px 30px -20px rgba(24,36,48,.4);
+    --bg:#071426;            /* page background */
+    --card:#10233A;          /* main card surface */
+    --card2:#162B44;         /* raised surface */
+    --ink:#F4F7FB;           /* primary text */
+    --mut:#A9B8CB;           /* secondary text */
+    --line:rgba(244,247,251,.08);
+    --line2:rgba(244,247,251,.15);
+    --teal:#37C5D5; --violet:#A982F3; --gold:#F2B632; --coral:#F06A5F;
+    --green:#48D17A; --red:#FF625F;
+    --shadow:0 6px 18px -10px rgba(0,0,0,.55);
+    --r-lg:14px; --r-md:10px; --r-sm:8px;
+    --sp-1:12px; --sp-2:16px; --sp-3:24px;
     --hero:'Anton', Impact, sans-serif;
     --body:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   }
@@ -26,205 +35,228 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
   html,body{margin:0;padding:0;}
   body{
-    font-family:var(--body); color:var(--ink); min-height:100dvh; -webkit-font-smoothing:antialiased;
-    background:
-      radial-gradient(70% 40% at 8% -6%, rgba(255,90,60,.08), transparent 60%),
-      radial-gradient(60% 40% at 100% 0%, rgba(124,92,240,.08), transparent 60%),
-      linear-gradient(180deg,#faf8f5,#f2f0ec);
-    background-attachment:fixed; display:flex; justify-content:center;
+    font-family:var(--body); color:var(--ink); min-height:100dvh;
+    -webkit-font-smoothing:antialiased; background:var(--bg);
   }
-  .wrap{width:100%; max-width:560px; padding:calc(12px + env(safe-area-inset-top,0)) 14px 40px; position:relative;}
   button{font-family:inherit; color:inherit; cursor:pointer;}
   .hidden{display:none !important;}
+  :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
+  .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;}
 
-  /* ---- top bar ---- */
-  .top{display:flex; align-items:center; gap:10px; padding:2px 2px 12px;}
-  .home{color:var(--mut); text-decoration:none; font-size:22px; line-height:1; flex:0 0 auto; padding:4px;}
-  .brand{min-width:0; flex:1; line-height:1;}
-  .brand .suite{display:block; font-size:10.5px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--coral); margin-bottom:2px;}
+  /* ---------------- header ---------------- */
+  .siteHead{border-bottom:1px solid var(--line); background:var(--bg); padding-top:env(safe-area-inset-top,0);}
+  .headIn{max-width:1160px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; gap:14px;}
+  .home{color:var(--mut); text-decoration:none; font-size:20px; line-height:1; padding:8px 6px; border-radius:var(--r-sm); flex:0 0 auto;}
+  .home:hover{color:var(--ink);}
+  .brand{min-width:0; flex:1;}
+  .brand .suite{display:block; font-size:10.5px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--coral); margin-bottom:1px;}
   .brand .suite a{color:inherit; text-decoration:none;}
-  .brand .game{font-family:var(--hero); font-weight:400; letter-spacing:.02em; font-size:25px; color:var(--ink);}
-  .stat{display:flex; align-items:center; gap:6px; background:var(--card); flex:0 0 auto;
-    border:1px solid var(--cardb); border-radius:8px; padding:6px 9px; font-weight:900; font-size:13px; box-shadow:var(--shadow);}
-  .stat .ic{font-size:14px; line-height:1;}
-  .stat.coins{color:#B8801A;} .stat.streak{color:var(--coral);}
+  .titleRow{display:flex; align-items:center; gap:9px;}
+  .brand .game{font-family:var(--hero); font-weight:400; letter-spacing:.02em; font-size:24px; color:var(--ink); line-height:1.05;}
+  .datep{font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
+  .explain{font-size:12.5px; color:var(--mut); font-weight:600; margin-top:2px;}
+  .helpBtn{width:22px; height:22px; border-radius:50%; border:1px solid var(--line2); background:var(--card2);
+    color:var(--mut); font-size:12px; font-weight:900; line-height:1; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .helpBtn:hover{color:var(--ink); border-color:var(--teal);}
+  .stat{display:flex; align-items:center; gap:7px; background:var(--card); flex:0 0 auto;
+    border:1px solid var(--line2); border-radius:var(--r-sm); padding:8px 11px; font-weight:900; font-size:13px; box-shadow:var(--shadow);}
+  .stat svg{flex:0 0 auto;}
+  .stat.coins{color:var(--gold);} .stat.streak{color:var(--coral);}
+  .stat.tap{cursor:pointer;} .stat.tap:active{transform:translateY(1px);}
 
-  /* ---- sub-header: date + mode toggle ---- */
-  .subhead{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;}
-  .datep{font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);}
-  .modes{display:inline-flex; background:var(--card2); border:1px solid var(--cardb); border-radius:9px; padding:3px; gap:2px;}
-  .modes button{border:0; background:transparent; color:var(--mut); font-weight:900; font-size:12px; letter-spacing:.04em;
-    padding:7px 14px; border-radius:7px; text-transform:uppercase; transition:background .15s, color .15s;}
-  .modes button.on{background:var(--violet); color:#1a1030;}
-  .modes button:disabled{opacity:.5; cursor:default;}
+  /* ---------------- app shell ---------------- */
+  .app{max-width:1160px; margin:0 auto; padding:var(--sp-3) 20px 48px;
+    display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:var(--sp-3); align-items:start;}
+  .gameCol{min-width:0;}
+  .side{position:sticky; top:var(--sp-2); display:flex; flex-direction:column; gap:var(--sp-2); align-self:start;}
 
-  /* ---- HUD: timer + mistakes ---- */
-  .hud{display:flex; align-items:center; justify-content:space-between; gap:12px;
-    background:var(--card); border:1px solid var(--cardb); border-radius:10px; padding:11px 14px; margin-bottom:12px; box-shadow:var(--shadow);}
-  .timer{font-family:var(--hero); font-weight:400; font-size:30px; letter-spacing:.03em; line-height:1; color:var(--ink);}
-  .timer .pen{font-family:var(--body); font-size:12px; font-weight:800; color:var(--red); margin-left:7px; vertical-align:middle;}
-  .miss{display:flex; align-items:center; gap:9px;}
-  .miss .lab{font-size:10px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut);}
-  .dots{display:flex; gap:5px;}
-  .dot{width:12px; height:12px; border-radius:50%; background:rgba(24,36,48,.12); border:1px solid var(--line2); transition:background .2s, transform .2s;}
-  .dot.used{background:var(--red); border-color:var(--red); box-shadow:0 0 10px -1px rgba(240,101,79,.6);}
-  .dot.pop{transform:scale(1.35);}
+  .tester-banner{margin:0 0 var(--sp-2); padding:10px 14px; border-radius:var(--r-md); font-size:12.5px; font-weight:700; line-height:1.4;
+    color:#FFDFA3; background:rgba(242,182,50,.10); border:1px solid rgba(242,182,50,.35);}
+  .tester-banner[hidden]{display:none;}
+  .tester-banner b{font-weight:900; color:var(--gold);}
 
-  /* ---- lanes ---- */
-  .board{display:flex; flex-direction:column; gap:9px; margin-bottom:16px;}
-  .lane{border:1px solid var(--cardb); border-radius:11px; background:#fff; box-shadow:var(--shadow);
-    padding:9px 10px; transition:border-color .2s, box-shadow .2s, background .3s;}
-  .lane.drop{border-color:var(--coral); box-shadow:0 0 0 2px rgba(255,90,60,.28) inset;}
-  .lane.locked{background:linear-gradient(180deg, color-mix(in srgb, var(--lc) 22%, var(--card2)), var(--card2)); border-color:var(--lc);}
-  .lane.bad{animation:shake .4s;}
-  @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(4px);}}
-  .lane-head{display:flex; align-items:center; gap:8px; margin-bottom:8px; min-height:18px;}
-  .lane-chip{width:12px; height:12px; border-radius:3px; background:var(--lc); flex:0 0 auto; box-shadow:0 0 8px -1px var(--lc);}
-  .lane-name{font-weight:900; font-size:13.5px; letter-spacing:.01em; color:var(--ink); min-width:0;}
-  .lane-sport{font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);
-    border:1px solid var(--line); border-radius:5px; padding:2px 6px; margin-left:auto; flex:0 0 auto;}
-  .lane-hidden .lane-name{color:var(--mut); font-style:italic; font-weight:700;}
-  .lane-check{margin-left:auto; color:var(--lc); font-weight:900; font-size:13px; display:none;}
-  .lane.locked .lane-check{display:inline;} .lane.locked .lane-sport{display:none;}
-  .slots{display:grid; grid-template-columns:repeat(5,1fr); gap:6px;}
-  .slot{min-height:46px; border-radius:8px; border:1px dashed var(--line2); background:rgba(24,36,48,.03);
-    display:flex; align-items:center; justify-content:center; padding:3px; text-align:center; position:relative; overflow:hidden;}
-  .slot.filled{border-style:solid; border-color:transparent;}
+  /* ---------------- mobile sticky status strip ---------------- */
+  .mstatus{display:none;}
 
-  /* ---- tiles ---- */
-  .tile{width:100%; height:100%; min-height:44px; min-width:0; border-radius:9px; border:1px solid var(--cardb);
-    background:#fff; color:var(--ink); font-weight:800; font-size:11px; line-height:1.14;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:5px 4px; text-align:center; cursor:grab;
-    overflow:hidden; overflow-wrap:anywhere; hyphens:auto; box-shadow:0 2px 6px -3px rgba(24,36,48,.35);
-    user-select:none; transition:transform .12s, box-shadow .12s, border-color .12s; touch-action:none;}
-  .tile .tn{display:block; width:100%;}
-  .tile:active{cursor:grabbing;}
-  .tile.sel{border-color:var(--coral); box-shadow:0 0 0 2px rgba(255,90,60,.45), 0 6px 16px -8px rgba(24,36,48,.4); transform:translateY(-1px);}
-  /* solved tile: name over a small sport pill on the group colour */
-  .tile.locked{background:var(--lc); color:#0f1d29; border-color:transparent; cursor:default; font-weight:900; box-shadow:none;}
-  .tile.locked .tn{text-shadow:0 1px 0 rgba(255,255,255,.28);}
-  .tile.ghost{opacity:.28;}
-  .tile.solvefill{background:rgba(24,36,48,.05); color:var(--mut); border-style:dashed; cursor:default; box-shadow:none;}
-  .tile .sub{display:inline-block; font-size:8px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; line-height:1;
-    padding:2px 6px; border-radius:999px; white-space:nowrap; background:rgba(15,29,41,.16); color:rgba(15,29,41,.72);}
+  /* ---------------- sidebar: status card ---------------- */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--shadow);}
+  .statusCard{padding:16px 18px;}
+  .sLabel{font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--mut);}
+  .bigTime{font-family:var(--hero); font-weight:400; font-size:44px; letter-spacing:.03em; line-height:1; color:var(--ink); margin:4px 0 2px;}
+  .bigTime .pen{font-family:var(--body); font-size:12px; font-weight:800; color:var(--red); margin-left:8px; vertical-align:middle;}
+  .statusRow{margin-top:14px;}
+  .dots{display:flex; gap:6px; margin-top:6px;}
+  .dot{width:14px; height:14px; border-radius:50%; background:var(--card2); border:1.5px solid var(--line2); transition:background .2s, transform .2s, border-color .2s;}
+  .dot.used{background:var(--red); border-color:var(--red);}
+  .dot.pop{transform:scale(1.3);}
+  .progress{margin-top:14px; font-size:12px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut);}
+  .progress b{color:var(--teal); font-weight:900;}
 
-  /* ---- pool ---- */
-  .pool-h{display:flex; align-items:center; gap:8px; margin:4px 2px 9px; font-size:11px; font-weight:900;
-    letter-spacing:.12em; text-transform:uppercase; color:var(--mut);}
-  .pool-h .n{color:var(--coral);}
-  .pool-h:before{content:""; width:8px; height:8px; border-radius:2px; background:var(--coral);}
-  .pool{display:grid; grid-template-columns:repeat(5,1fr); gap:7px; min-height:46px;}
-  .pool .tile{min-height:48px;}
-  .pool.drop{outline:2px dashed var(--coral); outline-offset:4px; border-radius:10px;}
-  .pool .tile.spotlight{border-color:var(--gold); box-shadow:0 0 0 2px rgba(235,166,31,.55); animation:spot 1.2s ease 3;}
-  @keyframes spot{0%,100%{box-shadow:0 0 0 2px rgba(235,166,31,.2);}50%{box-shadow:0 0 0 3px rgba(235,166,31,.8);}}
+  /* ---------------- sidebar: actions ---------------- */
+  .actionsCard{padding:14px; display:flex; flex-direction:column; gap:10px;}
+  .abtn{appearance:none; border:1px solid var(--line2); background:var(--card2); color:var(--ink);
+    font-weight:800; font-size:13.5px; border-radius:var(--r-md); padding:12px 14px; min-height:44px;
+    display:flex; align-items:center; gap:9px; justify-content:center; transition:filter .12s, border-color .12s, transform .08s, background .15s;}
+  .abtn:active{transform:translateY(1px);}
+  .abtn:disabled{opacity:.45; cursor:default;}
+  .abtn svg{flex:0 0 auto;}
+  .abtn .cost{font-size:11px; font-weight:900; color:rgba(7,20,38,.65);}
+  .abtn.gold{background:var(--gold); color:#071426; border-color:transparent;}
+  .abtn.gold:hover{filter:brightness(1.06);}
+  .abtn.gold:disabled{filter:none;}
+  .abtn.ghost:hover{border-color:var(--teal);}
+  .abtn.arm{background:var(--red); color:#071426; border-color:transparent;}
+  .abtn.arm .cost{color:rgba(7,20,38,.7);}
 
-  /* ---- controls ---- */
-  .controls{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
-  .btn{appearance:none; border:1px solid var(--cardb); background:#fff; color:var(--ink);
-    font-weight:800; font-size:13px; border-radius:8px; padding:11px 14px; display:inline-flex; align-items:center;
-    gap:7px; justify-content:center; box-shadow:var(--shadow); flex:1;
-    transition:filter .12s, border-color .12s, transform .08s;}
-  .btn:active{transform:translateY(1px);}
-  .btn:hover{border-color:var(--coral);}
-  .btn .cost{font-size:11px; font-weight:900; color:var(--red);}
-  .btn.wide{flex:1;}
-  .btn:disabled{opacity:.45; cursor:default;}
-  .hintbar{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
-  .hintbar .btn{flex:1 1 130px;}
-
-  .howto{margin-top:16px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:13px 15px; box-shadow:var(--shadow);}
-  .howto h3{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:15px; margin:0 0 8px; color:var(--ink);}
-  .howto ol{margin:0; padding-left:18px; color:var(--mut); font-size:13px; line-height:1.6;}
+  /* ---------------- sidebar: how to play ---------------- */
+  .howto{padding:0; overflow:hidden;}
+  .howto summary{list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px; font-family:var(--hero); font-weight:400; letter-spacing:.03em; text-transform:uppercase; font-size:14px; color:var(--ink); min-height:44px;}
+  .howto summary::-webkit-details-marker{display:none;}
+  .howto summary .chev{color:var(--mut); transition:transform .2s; font-size:12px;}
+  .howto[open] summary .chev{transform:rotate(180deg);}
+  .howto ol{margin:0; padding:0 18px 16px 34px; color:var(--mut); font-size:13px; line-height:1.55;}
+  .howto li{margin-bottom:7px;}
   .howto b{color:var(--ink);}
 
-  /* ---- result modal ---- */
+  /* ---------------- revealed / free category ---------------- */
+  .revealed{display:flex; flex-direction:column; gap:10px; margin:0 0 var(--sp-2);}
+  .revealed:empty{display:none;}
+  .freecat{display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line);
+    border-left:4px solid var(--lc); border-radius:var(--r-md); padding:11px 14px; box-shadow:var(--shadow);}
+  .freecat .sq{flex:0 0 auto; display:grid; grid-template-columns:8px 8px; grid-template-rows:8px 8px; gap:3px;}
+  .freecat .sq i{background:var(--lc); border-radius:2px; opacity:.9;}
+  .freecat .fk{font-size:9.5px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--mut); display:block;}
+  .freecat .fn{font-weight:900; font-size:15px; color:var(--ink); line-height:1.2;}
+  .freecat .fhint{margin-left:auto; font-size:11px; color:var(--mut); font-weight:700; text-align:right; max-width:150px;}
+
+  /* ---------------- group boards ---------------- */
+  .board{display:flex; flex-direction:column; gap:var(--sp-1); margin-bottom:var(--sp-3);}
+  .lane{border:1px solid var(--line); border-left:4px solid var(--lc); border-radius:var(--r-md); background:var(--card);
+    box-shadow:var(--shadow); padding:10px 12px 12px; transition:border-color .2s, background .3s;}
+  .lane.drop{border-color:var(--teal); background:#12283F;}
+  .lane.drop .slot:not(.filled){border-color:var(--teal); background:rgba(55,197,213,.07);}
+  .lane.locked{background:linear-gradient(180deg, color-mix(in srgb, var(--lc) 14%, var(--card)), var(--card)); border-color:color-mix(in srgb, var(--lc) 55%, transparent);}
+  .lane.bad{animation:shake .4s; border-color:var(--red);}
+  @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(4px);}}
+  .lane-head{display:flex; align-items:center; gap:8px; margin-bottom:8px; min-height:20px;}
+  .lane-chip{width:11px; height:11px; border-radius:3px; background:var(--lc); flex:0 0 auto;}
+  .lane-name{font-weight:900; font-size:13.5px; letter-spacing:.01em; color:var(--ink); min-width:0;}
+  .lane-hidden .lane-name{color:var(--mut); font-weight:800;}
+  .lane-sport{font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);
+    border:1px solid var(--line2); border-radius:5px; padding:2px 7px; margin-left:auto; flex:0 0 auto;}
+  .lane-check{margin-left:auto; color:var(--lc); font-weight:900; font-size:12.5px; display:none;}
+  .lane.locked .lane-check{display:inline;} .lane.locked .lane-sport{display:none;}
+  .slots{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+  .slot{min-height:56px; border-radius:var(--r-sm); border:1.5px dashed var(--line2); background:rgba(244,247,251,.02);
+    display:flex; align-items:center; justify-content:center; padding:3px; text-align:center; position:relative; overflow:hidden; transition:border-color .15s, background .15s;}
+  .slot:not(.filled)::after{content:"+"; color:var(--line2); font-size:20px; font-weight:800; line-height:1;}
+  .slot.filled{border-style:solid; border-color:transparent; background:transparent; padding:0;}
+  .checkWrap{margin-top:10px; display:flex; justify-content:flex-end;}
+  .checkbtn{appearance:none; border:0; background:var(--teal); color:#071426; font-weight:900; font-size:13px;
+    letter-spacing:.03em; border-radius:var(--r-sm); padding:10px 18px; min-height:44px; box-shadow:var(--shadow);
+    display:inline-flex; align-items:center; gap:7px; transition:filter .12s, transform .08s;}
+  .checkbtn:hover{filter:brightness(1.07);}
+  .checkbtn:active{transform:translateY(1px);}
+  .checkbtn:disabled{background:var(--card2); color:var(--mut); cursor:default; filter:none;}
+  .lane-note{margin-top:9px; font-size:12.5px; font-weight:800; border-radius:var(--r-sm); padding:8px 12px; line-height:1.35;}
+  .lane-note.close{background:rgba(242,182,50,.12); color:var(--gold); border:1px solid rgba(242,182,50,.35);}
+  .lane-note.miss{background:rgba(255,98,95,.10); color:var(--red); border:1px solid rgba(255,98,95,.35);}
+
+  /* ---------------- tiles ---------------- */
+  .tile{width:100%; height:100%; min-height:52px; min-width:0; border-radius:var(--r-sm); border:1px solid var(--line2);
+    background:var(--card2); color:var(--ink); font-weight:800; font-size:12px; line-height:1.18;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:6px 5px; text-align:center; cursor:grab;
+    overflow:hidden; overflow-wrap:anywhere; hyphens:auto; box-shadow:0 2px 5px -3px rgba(0,0,0,.5);
+    user-select:none; transition:transform .12s, box-shadow .12s, border-color .12s, background .15s; touch-action:none;}
+  .tile .tn{display:block; width:100%;}
+  .tile:hover{border-color:rgba(55,197,213,.55);}
+  .tile:active{cursor:grabbing;}
+  .tile.sel{border-color:var(--teal); box-shadow:0 0 0 2px rgba(55,197,213,.45), 0 6px 14px -8px rgba(0,0,0,.6); transform:translateY(-2px); background:#1A3350;}
+  .tile.locked{background:var(--lc); color:#071426; border-color:transparent; cursor:default; font-weight:900; box-shadow:none;}
+  .tile.ghost{opacity:.28;}
+  .tile.solvefill{background:transparent; color:var(--mut); border-style:dashed; cursor:default; box-shadow:none;}
+  .tile .sub{display:inline-block; font-size:8px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; line-height:1;
+    padding:2px 6px; border-radius:999px; white-space:nowrap; background:rgba(7,20,38,.24); color:rgba(7,20,38,.85);}
+  .tile.solvefill .sub{background:rgba(244,247,251,.08); color:var(--mut);}
+
+  /* ---------------- pool ---------------- */
+  .pool-h{display:flex; align-items:baseline; gap:10px; margin:0 2px 10px;}
+  .pool-h .t{font-family:var(--hero); font-weight:400; letter-spacing:.04em; text-transform:uppercase; font-size:16px; color:var(--ink);}
+  .pool-h .n{font-size:11.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--teal);}
+  .pool{display:grid; grid-template-columns:repeat(5,1fr); gap:9px; min-height:52px;}
+  .pool .tile{min-height:60px;}
+  .pool.drop{outline:2px dashed var(--teal); outline-offset:4px; border-radius:var(--r-md);}
+
+  /* ---------------- modals ---------------- */
   .modal{position:fixed; inset:0; z-index:60; display:flex; align-items:flex-start; justify-content:center;
-    padding:max(24px,env(safe-area-inset-top)) 16px 24px; overflow:auto; background:rgba(24,36,48,.5); backdrop-filter:blur(5px);}
+    padding:max(24px,env(safe-area-inset-top)) 16px 24px; overflow:auto; background:rgba(3,9,18,.66); backdrop-filter:blur(5px);}
   .modal[hidden]{display:none;}
-  .sheet{width:100%; max-width:400px; background:#fff; border:1px solid var(--cardb);
-    border-radius:13px; padding:22px 20px 22px; position:relative; box-shadow:0 30px 80px -20px rgba(24,36,48,.5); margin:auto 0;}
-  .sheet .x{position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--line);
-    background:rgba(24,36,48,.05); color:var(--ink); font-size:15px; line-height:1;}
+  .sheet{width:100%; max-width:400px; background:var(--card); border:1px solid var(--line2);
+    border-radius:16px; padding:22px 20px; position:relative; box-shadow:0 30px 80px -20px rgba(0,0,0,.7); margin:auto 0;}
+  .sheet .x{position:absolute; top:12px; right:12px; width:36px; height:36px; border-radius:50%; border:1px solid var(--line2);
+    background:var(--card2); color:var(--ink); font-size:15px; line-height:1;}
   .rgrade{text-align:center; margin:2px 0 6px;}
   .rgrade .lbl{font-size:11px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--mut);}
   .rgrade .g{font-family:var(--hero); font-weight:400; font-size:74px; line-height:.9; letter-spacing:.02em; margin-top:2px;}
-  .rgrade .verdict{font-weight:900; font-size:15px; margin-top:2px;}
+  .rgrade .verdict{font-weight:900; font-size:15px; margin-top:2px; color:var(--ink);}
   .rstats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:16px 0 4px;}
-  .rstat{background:var(--bg); border:1px solid var(--line); border-radius:9px; padding:11px 6px; text-align:center;}
-  .rstat .v{font-family:var(--hero); font-weight:400; font-size:24px; line-height:1;}
+  .rstat{background:var(--card2); border:1px solid var(--line); border-radius:var(--r-md); padding:11px 6px; text-align:center;}
+  .rstat .v{font-family:var(--hero); font-weight:400; font-size:24px; line-height:1; color:var(--ink);}
   .rstat .l{font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); margin-top:5px;}
   .strip{display:flex; justify-content:center; gap:6px; margin:16px 0 4px;}
   .strip .b{width:34px; height:12px; border-radius:3px;}
   .strip-cap{text-align:center; font-size:10.5px; color:var(--mut); font-weight:700; letter-spacing:.04em; margin-top:6px;}
-  .coinline{text-align:center; margin:15px 0 4px; font-weight:900; font-size:14px; color:#B8801A;}
+  .coinline{text-align:center; margin:15px 0 4px; font-weight:900; font-size:14px; color:var(--gold);}
   .rcta{display:flex; gap:9px; margin-top:16px;}
   .rcta .btn{flex:1; padding:13px;}
-  .btn.primary{background:var(--coral); color:#fff; border-color:transparent;
-    box-shadow:0 8px 22px -12px rgba(255,90,60,.9);}
+  .btn{appearance:none; border:1px solid var(--line2); background:var(--card2); color:var(--ink);
+    font-weight:800; font-size:13px; border-radius:var(--r-md); padding:11px 14px; min-height:44px; display:inline-flex; align-items:center;
+    gap:7px; justify-content:center; transition:filter .12s, border-color .12s, transform .08s;}
+  .btn:active{transform:translateY(1px);}
+  .btn:hover{border-color:var(--teal);}
+  .btn.primary{background:var(--coral); color:#071426; border-color:transparent;}
   .btn.primary:hover{filter:brightness(1.05);}
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0;
-    background:#182430; border:1px solid #182430; color:#fff; font-weight:800; font-size:13px;
-    padding:11px 16px; border-radius:9px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.7);}
+    background:#F4F7FB; color:#071426; font-weight:800; font-size:13px;
+    padding:11px 16px; border-radius:var(--r-md); z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.8);}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
 
-  /* hidden-categories tag in the sub-header */
-  .hidden-tag{font-size:11px; font-weight:900; letter-spacing:.04em; text-transform:uppercase; color:var(--mut);
-    background:#fff; border:1px solid var(--line); border-radius:7px; padding:6px 11px; box-shadow:var(--shadow);}
-  .tester-banner{margin-bottom:12px; padding:9px 13px; border-radius:9px; font-size:12.5px; font-weight:700; line-height:1.4;
-    color:#7a3a00; background:#FFF3E0; border:1px solid #FFD9A8;}
-  .tester-banner[hidden]{display:none;}
-  .tester-banner b{font-weight:900; color:#8a4300;}
-
-  /* revealed-group chips (from the hint) */
-  .revealed{display:flex; flex-wrap:wrap; gap:7px; margin:0 0 12px;}
-  .revealed:empty{display:none;}
-  .revealed .rc{display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:800; color:var(--ink);
-    background:#fff; border:1px solid var(--lc); border-radius:8px; padding:6px 10px; box-shadow:var(--shadow);}
-  .revealed .rc .d{width:9px; height:9px; border-radius:2px; background:var(--lc); flex:0 0 auto;}
-  .revealed .rc .k{font-size:9px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut);}
-
-  /* one-away popup */
+  /* centered popup (hint reveal) */
   .popup{position:fixed; left:50%; top:36%; transform:translate(-50%,-50%) scale(.88); opacity:0; z-index:90; text-align:center;
-    background:#182430; border:1px solid #182430; color:#fff;
-    font-weight:900; font-size:17px; padding:15px 24px; border-radius:13px; box-shadow:0 24px 60px -20px rgba(24,36,48,.6);
+    background:#F4F7FB; color:#071426;
+    font-weight:900; font-size:17px; padding:15px 24px; border-radius:13px; box-shadow:0 24px 60px -20px rgba(0,0,0,.7);
     pointer-events:none; transition:opacity .18s ease, transform .18s ease;}
   .popup.on{opacity:1; transform:translate(-50%,-50%) scale(1);}
-  .popup .sub{display:block; font-size:12.5px; font-weight:700; color:#b6c3d2; margin-top:4px;}
+  .popup .sub{display:block; font-size:12.5px; font-weight:700; color:#3d4c5e; margin-top:4px;}
 
-  /* ---- dopamine: confetti ---- */
+  /* ---------------- dopamine: confetti ---------------- */
   .confetti{position:fixed; inset:0; pointer-events:none; z-index:100; overflow:hidden;}
   .confetti i{position:absolute; top:-16px; width:9px; height:14px; border-radius:2px; opacity:.96;
     will-change:transform; animation:cfall linear forwards;}
   @keyframes cfall{0%{transform:translateY(-20px) rotate(0);}100%{transform:translateY(106vh) rotate(680deg);}}
 
-  /* ---- dopamine: flawless ribbon ---- */
+  /* ---------------- dopamine: flawless ribbon ---------------- */
   .flawless{display:none; text-align:center; margin:0 0 4px;}
   .flawless.on{display:block; animation:flpop .5s ease;}
   .flawless .rib{display:inline-flex; align-items:center; gap:7px; font-weight:900; font-size:11.5px;
-    letter-spacing:.15em; text-transform:uppercase; color:#fff;
-    background:linear-gradient(90deg,var(--coral),var(--gold)); padding:6px 15px; border-radius:999px;
-    box-shadow:0 8px 22px -10px rgba(255,90,60,.85);}
+    letter-spacing:.15em; text-transform:uppercase; color:#071426;
+    background:linear-gradient(90deg,var(--coral),var(--gold)); padding:7px 15px; border-radius:999px;}
   @keyframes flpop{0%{transform:scale(.6); opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1); opacity:1;}}
 
-  /* ---- dopamine: live countdown ---- */
+  /* ---------------- dopamine: countdown + milestone ---------------- */
   .countdown{text-align:center; margin:13px 0 2px; font-size:12px; font-weight:800; color:var(--mut);}
   .countdown b{color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:.01em;}
-
-  /* ---- dopamine: streak milestone banner in the result card ---- */
   .milestone{display:none; text-align:center; margin:14px 0 2px; font-weight:900; font-size:13.5px; color:var(--coral);}
   .milestone.on{display:block; animation:flpop .5s ease;}
 
-  /* stat chips are tappable -> open stats */
-  .stat.tap{cursor:pointer;} .stat.tap:active{transform:translateY(1px);}
-
-  /* ---- stats modal ---- */
+  /* ---------------- stats modal ---------------- */
   .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase;
     font-size:22px; text-align:center; margin:2px 0 2px; color:var(--ink);}
   .sheet .sub-h{text-align:center; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); margin-bottom:14px;}
   .statgrid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:4px 0 2px;}
   .statgrid .rstat .v{font-size:23px;}
-  .perfline{text-align:center; margin:14px 0 2px; font-weight:900; font-size:13px; color:#B8801A;}
+  .perfline{text-align:center; margin:14px 0 2px; font-weight:900; font-size:13px; color:var(--gold);}
   .dist{margin:16px 0 2px;}
   .dist h4{font-size:11px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:0 0 11px;}
   .distrow{display:flex; align-items:center; gap:9px; margin-bottom:7px; font-size:12px; font-weight:900;}
@@ -234,7 +266,7 @@
   .distrow .c{width:18px; text-align:left; color:var(--mut); font-weight:800; flex:0 0 auto;}
   .empty-stats{text-align:center; color:var(--mut); font-size:13px; font-weight:600; padding:10px 0 2px; line-height:1.5;}
 
-  /* ---- micro-animations: place + lock ---- */
+  /* ---------------- micro-animations: place + lock ---------------- */
   .tile.settle{ animation:tileSettle .2s ease; }
   @keyframes tileSettle{0%{transform:scale(.86);}100%{transform:scale(1);}}
   .tile.pop-in{ animation:tilePop .44s cubic-bezier(.34,1.56,.64,1) both; animation-delay:var(--d,0ms); }
@@ -244,64 +276,131 @@
   .lane.justlocked .lane-head{ animation:headIn .42s ease .04s both; }
   @keyframes headIn{0%{opacity:0; transform:translateY(-5px);}100%{opacity:1; transform:translateY(0);}}
 
-  @media (max-width:400px){
-    .tile{font-size:10px;} .brand{font-size:22px;} .rgrade .g{font-size:62px;}
+  /* ---------------- responsive ---------------- */
+  @media (max-width:1000px){
+    .app{grid-template-columns:minmax(0,1fr) 280px; gap:var(--sp-2);}
+    .pool{grid-template-columns:repeat(4,1fr);}
+  }
+  @media (max-width:760px){
+    .app{display:block; padding:var(--sp-2) 14px 40px;}
+    .headIn{padding:10px 14px; gap:10px;}
+    .brand .game{font-size:21px;}
+    .explain{display:none;}
+    .side{position:static; margin-top:var(--sp-3);}
+    .statusCard{display:none;}
+    .mstatus{display:flex; align-items:center; justify-content:space-between; gap:12px;
+      position:sticky; top:0; z-index:30; background:var(--bg); border-bottom:1px solid var(--line);
+      margin:0 -14px var(--sp-2); padding:9px 14px;}
+    .mstatus .mtime{font-family:var(--hero); font-weight:400; font-size:24px; letter-spacing:.03em; color:var(--ink);}
+    .mstatus .mlab{font-size:9px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); display:block;}
+    .mstatus .mdots .dots{margin-top:4px;}
+    .mstatus .dot{width:12px; height:12px;}
+    .mstatus .mprog{font-size:11px; font-weight:900; color:var(--mut); letter-spacing:.06em; text-transform:uppercase;}
+    .mstatus .mprog b{color:var(--teal);}
+    .slots{grid-template-columns:repeat(2,1fr);}
+    .slot{min-height:48px;}
+    .pool{grid-template-columns:repeat(2,1fr);}
+    .pool .tile{min-height:56px; font-size:13px;}
+    .freecat .fhint{display:none;}
+    .rgrade .g{font-size:62px;}
     .statgrid .rstat .v{font-size:20px;}
   }
   @media (prefers-reduced-motion: reduce){ *{animation:none !important;} .confetti{display:none;} }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
-      <a class="home" href="/grid/" aria-label="RunTheGrid puzzles">←</a>
-      <div class="brand"><span class="suite"><a href="/grid/">RunTheGrid</a></span><span class="game">Daily Match</span></div>
-      <div class="stat streak tap" id="streakStat" role="button" tabindex="0" title="Your stats"><span class="ic">🔥</span><span id="streakVal">0</span></div>
-      <div class="stat coins" id="coinStat"><span class="ic">🪙</span><span id="coinVal">0</span></div>
-    </div>
-
-    <div class="subhead">
-      <span class="datep" id="datep">—</span>
-      <span class="hidden-tag">🕶️ Categories hidden</span>
-    </div>
-
-    <div class="tester-banner" id="testerBanner" hidden>🧪 <b>Tester mode</b> — unlimited plays. Hit <b>New board</b> for a fresh puzzle.</div>
-
-    <div class="hud">
-      <div class="timer" id="timer">0:00<span class="pen" id="pen"></span></div>
-      <div class="miss">
-        <span class="lab">Guesses left</span>
-        <div class="dots" id="dots"></div>
+  <header class="siteHead">
+    <div class="headIn">
+      <a class="home" href="/grid/" aria-label="Back to RunTheGrid puzzles">←</a>
+      <div class="brand">
+        <span class="suite"><a href="/grid/">RunTheGrid</a></span>
+        <div class="titleRow">
+          <span class="game">Daily Match</span>
+          <button class="helpBtn" id="helpBtn" type="button" aria-label="How to play">?</button>
+          <span class="datep" id="datep">—</span>
+        </div>
+        <div class="explain">Sort 20 sports names into five hidden groups of four.</div>
+      </div>
+      <div class="stat streak tap" id="streakStat" role="button" tabindex="0" title="Your stats" aria-label="Open your stats">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9zM12.5 19c-1.8 0-3.2-1.4-3.2-3.2 0-1.5 1-2.5 2-3.5.7-.7 1.4-1.5 1.8-2.4 1.5 1.3 2.7 3.5 2.7 5.9 0 1.8-1.5 3.2-3.3 3.2z"/></svg>
+        <span id="streakVal">0</span>
+      </div>
+      <div class="stat coins" id="coinStat" aria-label="Coins">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
+        <span id="coinVal">0</span>
       </div>
     </div>
+  </header>
 
-    <div class="revealed" id="revealed"></div>
-    <div class="board" id="board"></div>
+  <div class="app">
+    <main class="gameCol">
+      <div class="tester-banner" id="testerBanner" hidden><b>Tester mode</b> — unlimited plays. Use <b>New board</b> in the sidebar for a fresh puzzle.</div>
 
-    <div class="pool-h">Pool · <span class="n" id="poolCount">20</span> left</div>
-    <div class="pool" id="pool"></div>
+      <!-- compact sticky status (mobile only) -->
+      <div class="mstatus" aria-hidden="false">
+        <div>
+          <span class="mlab">Time</span>
+          <span class="mtime" id="timerM">0:00</span>
+        </div>
+        <div class="mdots">
+          <span class="mlab">Guesses left</span>
+          <div class="dots" id="dotsM"></div>
+        </div>
+        <div class="mprog" id="progressM"><b>0</b> / 5 solved</div>
+      </div>
 
-    <div class="controls">
-      <button class="btn" id="btnHint" type="button">💡 Reveal a group <span class="cost">−1 guess</span></button>
-      <button class="btn" id="btnClear" type="button">↺ Reset pool</button>
-      <button class="btn" id="btnNew" type="button" style="display:none">🔁 New board</button>
-    </div>
+      <div class="revealed" id="revealed"></div>
+      <div class="board" id="board" role="list" aria-label="Five group boards"></div>
 
-    <div class="howto" id="howto">
-      <h3>How to play</h3>
-      <ol>
-        <li><b>Sort all 20 names</b> into five groups of four — each group is a team, a jersey number, a surname, or a feat.</li>
-        <li>We reveal <b>one group's name free</b> to get you started. Drag or tap names into a group; it <b>only checks when it has four</b>, so rearrange freely.</li>
-        <li><b>Right</b> → the group locks and its category shows. <b>Wrong</b> → you lose a guess (and if you were <b>one away</b>, we'll say so).</li>
-        <li>Stuck? <b>Reveal a group</b> for one guess. You get <b>six</b> wrong guesses before the board ends.</li>
-      </ol>
-    </div>
+      <div class="pool-h">
+        <span class="t">Player pool</span>
+        <span class="n"><span id="poolCount">20</span> remaining</span>
+      </div>
+      <div class="pool" id="pool" role="list" aria-label="Unplaced names"></div>
+    </main>
+
+    <aside class="side" aria-label="Game status and controls">
+      <div class="card statusCard">
+        <span class="sLabel">Time</span>
+        <div class="bigTime"><span id="timerVal">0:00</span><span class="pen" id="pen"></span></div>
+        <div class="statusRow">
+          <span class="sLabel">Guesses left</span>
+          <div class="dots" id="dots"></div>
+        </div>
+        <div class="progress" id="progress"><b>0</b> / 5 groups solved</div>
+      </div>
+
+      <div class="card actionsCard">
+        <button class="abtn gold" id="btnHint" type="button">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M1.5 12s3.8-7 10.5-7 10.5 7 10.5 7-3.8 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span id="hintLabel">Reveal a group</span> <span class="cost" id="hintCost">costs 1 guess</span>
+        </button>
+        <button class="abtn ghost" id="btnClear" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+          Reset pool
+        </button>
+        <button class="abtn ghost" id="btnNew" type="button" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+          <span id="newLabel">New board</span>
+        </button>
+      </div>
+
+      <details class="card howto" id="howto">
+        <summary>How to play <span class="chev" aria-hidden="true">▼</span></summary>
+        <ol>
+          <li><b>Sort all 20 names</b> into five groups of four. Each group shares a team, a jersey number, a surname, or a feat.</li>
+          <li>One group's name is <b>revealed free</b>. Drag a name into a group, or tap a name then tap a group.</li>
+          <li>When a group has four names, hit <b>Check group</b>. Right locks it in; wrong costs a guess.</li>
+          <li>Stuck? <b>Reveal a group</b> for one guess. Six wrong guesses ends the board.</li>
+        </ol>
+      </details>
+    </aside>
   </div>
 
   <div class="modal" id="resultModal" hidden>
     <div class="sheet">
       <button class="x" id="resClose" type="button" aria-label="Close">✕</button>
-      <div class="flawless" id="resFlawless"><span class="rib">⭐ Flawless — zero misses</span></div>
+      <div class="flawless" id="resFlawless"><span class="rib"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg> Flawless — zero misses</span></div>
       <div class="rgrade">
         <div class="lbl">Draft Grade</div>
         <div class="g" id="resGrade">A</div>
@@ -319,7 +418,7 @@
       <div class="countdown" id="resCountdown"></div>
       <div class="rcta">
         <button class="btn primary" id="resShare" type="button">Share</button>
-        <button class="btn" id="resStats" type="button">📊 Stats</button>
+        <button class="btn" id="resStats" type="button">Stats</button>
         <button class="btn" id="resDone" type="button">Done</button>
       </div>
     </div>
@@ -336,7 +435,7 @@
         <div class="rstat"><div class="v" id="stStreak">0</div><div class="l">Streak</div></div>
         <div class="rstat"><div class="v" id="stBest">0</div><div class="l">Best</div></div>
       </div>
-      <div class="perfline" id="stPerf">⭐ 0 flawless solves</div>
+      <div class="perfline" id="stPerf">0 flawless solves</div>
       <div class="dist" id="stDistWrap">
         <h4>Grade distribution</h4>
         <div id="stDist"></div>
@@ -349,8 +448,8 @@
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
-  <div class="popup" id="popup"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="popup" id="popup" aria-live="polite"></div>
 
   <script src="entities.js"></script>
   <script src="generator.js"></script>
@@ -362,6 +461,9 @@
     var GROUP = Gen.GROUP_SIZE || 4;   // tiles per category
     var CATS = 5;                       // categories per board
     var MISTAKE_LIMIT = 6;             // wrong guesses (a hint spends one); the 6th ends the board
+
+    // group accent palette by lane order: teal, gold, coral, purple, blue
+    var PALETTE = ['#37C5D5', '#F2B632', '#F06A5F', '#A982F3', '#2F6BFF'];
 
     // ---- today's date (local) ----
     function todayStr() {
@@ -387,7 +489,7 @@
     function boardSeed() { return TESTER ? (DATE + '#' + boardNo) : DATE; }
 
     // ---- wallet / streak ----
-    // Coins are the RunTheGrid suite wallet (shared with the future Daily Crossword);
+    // Coins are the RunTheGrid suite wallet (shared with the Daily Crossword);
     // streak is per-game (this Daily Match). Prototype uses localStorage; the real
     // build reads the shared RunThe.GG account wallet.
     function walletGet() { return parseInt(LS.getItem('runthegrid_coins') || '0', 10) || 0; }
@@ -416,11 +518,12 @@
     var byId = {};                     // tileId -> tile
     var solById = {};                  // tileId -> catId (truth)
     var place = {};                    // tileId -> laneIndex | null
-    var laneCat = {};                  // laneIndex -> catId (easy: fixed; hard: filled on solve)
+    var laneCat = {};                  // laneIndex -> catId (filled on solve)
     var locked = {};                   // laneIndex -> true
     var solveOrder = [];               // laneIndex in order solved
     var mistakes = 0, penalty = 0, started = false, startTs = 0, tick = null;
     var selected = null, done = false, revealedCats = {};   // revealedCats: catId -> true (from hints)
+    var lastMissIds = {};              // laneIndex -> 'id,id,id,id' of the last wrong check (disables re-checking the same four)
 
     var laneById = {};                 // catId -> lane meta (color etc.)
 
@@ -432,10 +535,12 @@
       Object.keys(day.solution).forEach(function (cid) {
         day.solution[cid].forEach(function (tid) { solById[tid] = cid; });
       });
+      // presentational: recolor lanes to the brand accent sequence (teal/gold/coral/purple/blue)
+      day.lanes.forEach(function (l, i) { l.color = PALETTE[i % PALETTE.length]; });
       laneById = {}; day.lanes.forEach(function (l) { laneById[l.id] = l; });
       document.getElementById('datep').textContent = TESTER
-        ? ('🧪 Tester · board ' + (boardNo + 1))
-        : (new Date(DATE + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · Board');
+        ? ('Tester · board ' + (boardNo + 1))
+        : (new Date(DATE + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
     }
 
     // ---- persistence of today's result so a refresh doesn't replay ----
@@ -444,7 +549,7 @@
 
     // ---- reset play state ----
     function resetState() {
-      place = {}; laneCat = {}; locked = {}; solveOrder = [];
+      place = {}; laneCat = {}; locked = {}; solveOrder = []; lastMissIds = {};
       mistakes = 0; penalty = 0; started = false; startTs = 0; selected = null; done = false; revealedCats = {};
       if (tick) { clearInterval(tick); tick = null; }
       day.tiles.forEach(function (t) { place[t.id] = null; });
@@ -466,10 +571,21 @@
       if (opts.color) el.style.cssText = '--lc:' + opts.color;
       if (!opts.locked) {
         el.setAttribute('draggable', 'true');
+        el.setAttribute('role', 'button');
+        el.setAttribute('tabindex', '0');
+        el.setAttribute('aria-pressed', selected === tid ? 'true' : 'false');
+        el.setAttribute('aria-label', t.name + (selected === tid ? ', selected' : ''));
         el.addEventListener('dragstart', function (e) { e.dataTransfer.setData('text/plain', tid); selected = tid; });
+        el.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTileClick(tid); }
+        });
       }
       el.addEventListener('click', function (e) { e.stopPropagation(); onTileClick(tid); });
       return el;
+    }
+
+    function laneFillCount(i) {
+      return tilesInLane(i).filter(function (x) { return x != null; }).length;
     }
 
     function render() {
@@ -479,11 +595,12 @@
         var lane = document.createElement('div');
         lane.className = 'lane';
         lane.dataset.idx = i;
+        lane.setAttribute('role', 'listitem');
         var isLocked = !!locked[i];
         var cat = laneCat[i] != null ? laneById[laneCat[i]] : null;
 
         var showHeader = isLocked;   // categories stay hidden until a lane is solved
-        var color = cat ? cat.color : '#4a6178';
+        var color = cat ? cat.color : PALETTE[i];
         lane.style.setProperty('--lc', color);
         if (isLocked) lane.classList.add('locked');
 
@@ -495,9 +612,9 @@
             '<span class="lane-check">✓ Locked</span>';
         } else {
           lane.classList.add('lane-hidden');
-          head.innerHTML = '<span class="lane-chip" style="background:#3a506b;box-shadow:none"></span>' +
-            '<span class="lane-name" style="color:var(--mut)">Group ' + (i + 1) + '</span>' +
-            '<span class="lane-sport">4 names</span>';
+          head.innerHTML = '<span class="lane-chip"></span>' +
+            '<span class="lane-name">Group ' + (i + 1) + '</span>' +
+            '<span class="lane-sport">' + laneFillCount(i) + ' / 4 players</span>';
         }
         lane.appendChild(head);
 
@@ -510,12 +627,42 @@
           if (inLane[s] != null) {
             slot.classList.add('filled');
             slot.appendChild(tileEl(inLane[s], { locked: isLocked, color: color }));
+          } else {
+            slot.setAttribute('aria-label', 'Empty slot in group ' + (i + 1));
           }
           slots.appendChild(slot);
         }
         lane.appendChild(slots);
 
-        if (!isLocked) attachDrop(lane, i);
+        // explicit submit: a full, unlocked group shows a Check button
+        if (!isLocked && laneFillCount(i) === GROUP && !done) {
+          var wrap = document.createElement('div');
+          wrap.className = 'checkWrap';
+          var cb = document.createElement('button');
+          cb.className = 'checkbtn';
+          cb.type = 'button';
+          var curIds = tilesInLane(i).filter(Boolean).sort().join(',');
+          var repeat = lastMissIds[i] === curIds;
+          cb.disabled = repeat;
+          cb.textContent = repeat ? 'Change a name to re-check' : 'Check group';
+          cb.setAttribute('aria-label', 'Check group ' + (i + 1));
+          (function (idx) { cb.addEventListener('click', function (e) { e.stopPropagation(); validate(idx); }); })(i);
+          wrap.appendChild(cb);
+          lane.appendChild(wrap);
+        }
+
+        if (!isLocked) {
+          attachDrop(lane, i);
+          lane.setAttribute('tabindex', '0');
+          lane.setAttribute('aria-label', 'Group ' + (i + 1) + ', ' + laneFillCount(i) + ' of 4 filled' + (selected ? '. Press Enter to place selected name' : ''));
+          (function (idx) {
+            lane.addEventListener('keydown', function (e) {
+              if ((e.key === 'Enter' || e.key === ' ') && selected != null) { e.preventDefault(); placeInLane(selected, idx); }
+            });
+          })(i);
+        } else {
+          lane.setAttribute('aria-label', 'Group ' + (i + 1) + (cat ? ', solved: ' + cat.name : ', solved'));
+        }
         boardEl.appendChild(lane);
       }
 
@@ -528,6 +675,7 @@
       renderDots();
       renderRevealed();
       updateHintBtn();
+      updateProgress();
     }
 
     function tilesInLane(i) {
@@ -536,22 +684,45 @@
       return arr;
     }
 
+    // guesses render into BOTH the sidebar card and the mobile strip
+    function dotContainers() {
+      return [document.getElementById('dots'), document.getElementById('dotsM')].filter(Boolean);
+    }
     function renderDots() {
-      var d = document.getElementById('dots'); d.innerHTML = '';
-      for (var i = 0; i < MISTAKE_LIMIT; i++) {
-        var dot = document.createElement('div');
-        dot.className = 'dot' + (i < mistakes ? ' used' : '');
-        d.appendChild(dot);
-      }
+      var left = MISTAKE_LIMIT - mistakes;
+      dotContainers().forEach(function (d) {
+        d.innerHTML = '';
+        d.setAttribute('role', 'img');
+        d.setAttribute('aria-label', left + ' of ' + MISTAKE_LIMIT + ' guesses left');
+        for (var i = 0; i < MISTAKE_LIMIT; i++) {
+          var dot = document.createElement('div');
+          dot.className = 'dot' + (i < mistakes ? ' used' : '');
+          d.appendChild(dot);
+        }
+      });
+    }
+    function popDot(n) {
+      dotContainers().forEach(function (d) { if (d.children[n]) d.children[n].classList.add('pop'); });
+    }
+    function updateProgress() {
+      var n = solveOrder.length;
+      var p = document.getElementById('progress');
+      if (p) p.innerHTML = '<b>' + n + '</b> / ' + CATS + ' groups solved';
+      var m = document.getElementById('progressM');
+      if (m) m.innerHTML = '<b>' + n + '</b> / ' + CATS + ' solved';
     }
 
-    // revealed groups (from the hint) shown as chips; drop any already solved
+    // revealed categories (free foothold + hints) shown as featured clue cards
     function renderRevealed() {
       var el = document.getElementById('revealed'); el.innerHTML = '';
+      var freeId = day.lanes[0] ? day.lanes[0].id : null;
       day.lanes.forEach(function (l) {
         if (!revealedCats[l.id] || usedCat(l.id)) return;
-        var c = document.createElement('span'); c.className = 'rc'; c.style.setProperty('--lc', l.color);
-        c.innerHTML = '<span class="d"></span><span class="k">Group</span> ' + escapeHtml(l.name);
+        var c = document.createElement('div'); c.className = 'freecat'; c.style.setProperty('--lc', l.color);
+        var kind = (l.id === freeId) ? 'Free category' : 'Revealed category';
+        c.innerHTML = '<span class="sq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>' +
+          '<span><span class="fk">' + kind + '</span><span class="fn">' + escapeHtml(l.name) + '</span></span>' +
+          '<span class="fhint">Its four names are still in play</span>';
         el.appendChild(c);
       });
     }
@@ -568,13 +739,12 @@
 
     function placeInLane(tid, laneIdx) {
       if (done || locked[laneIdx]) return;
-      if (tilesInLane(laneIdx).filter(function (x) { return x != null; }).length >= GROUP) { toast('Lane is full'); return; }
+      if (laneFillCount(laneIdx) >= GROUP && place[tid] !== laneIdx) { toast('That group is full'); return; }
       startIfNeeded();
       place[tid] = laneIdx; selected = null;
       render();
       var pe = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"] .tile[data-tid="' + tid + '"]');
       if (pe) pe.classList.add('settle');
-      if (tilesInLane(laneIdx).filter(function (x) { return x != null; }).length === GROUP) validate(laneIdx);
     }
     // staggered pop as a group locks, plus a lane glow + header reveal
     function playLockAnim(idx) {
@@ -615,8 +785,12 @@
     }
     function elapsedSec() { return started ? (Date.now() - startTs) / 1000 + penalty : 0; }
     function fmt(sec) { sec = Math.max(0, Math.floor(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
+    function setTimerText(s) {
+      document.getElementById('timerVal').textContent = s;
+      var m = document.getElementById('timerM'); if (m) m.textContent = s;
+    }
     function updateTimer() {
-      document.getElementById('timer').firstChild.textContent = fmt(elapsedSec());
+      setTimerText(fmt(elapsedSec()));
       document.getElementById('pen').textContent = penalty ? '+' + penalty + 's' : '';
     }
 
@@ -631,6 +805,7 @@
 
       if (matchCat) {
         locked[laneIdx] = true; laneCat[laneIdx] = matchCat; solveOrder.push(laneIdx);
+        delete lastMissIds[laneIdx];
         render();
         playLockAnim(laneIdx);
         if (solveOrder.length === CATS) finish(true);
@@ -654,18 +829,30 @@
     function registerMiss(laneIdx, ids) {
       mistakes++; penalty += 5;
       var close = oneAway(ids);
+      lastMissIds[laneIdx] = ids.join(',');       // block re-checking the identical four
       var laneEl = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"]');
-      if (laneEl) { laneEl.classList.add('bad'); setTimeout(function () { laneEl.classList.remove('bad'); }, 420); }
-      var dotEls = document.getElementById('dots').children;
-      if (dotEls[mistakes - 1]) { dotEls[mistakes - 1].classList.add('pop'); }
-      if (close) popup('So close!', 'One away — 3 of those 4 belong together.');
-      else toast('Not a group — they bounce back (−1 guess)');
+      if (laneEl) {
+        laneEl.classList.add('bad');
+        setTimeout(function () { laneEl.classList.remove('bad'); }, 420);
+        // inline feedback directly beneath the group (not just a distant toast)
+        var note = document.createElement('div');
+        note.className = 'lane-note ' + (close ? 'close' : 'miss');
+        note.setAttribute('role', 'status');
+        note.textContent = close
+          ? 'One away — 3 of these 4 belong together.'
+          : 'Not a group. Swap a name and try again. (−1 guess)';
+        laneEl.appendChild(note);
+        setTimeout(function () { if (note.parentNode) note.parentNode.removeChild(note); }, 2800);
+        // disable this lane's check button until the four change
+        var cb = laneEl.querySelector('.checkbtn');
+        if (cb) { cb.disabled = true; cb.textContent = 'Change a name to re-check'; }
+      }
+      popDot(mistakes - 1);
+      renderDots();
+      popDot(mistakes - 1);
       updateTimer();
-      // bounce the tiles back to the pool
-      setTimeout(function () {
-        day.tiles.forEach(function (t) { if (place[t.id] === laneIdx) place[t.id] = null; });
-        if (mistakes >= MISTAKE_LIMIT) finish(false); else render();
-      }, 470);
+      updateHintBtn();
+      if (mistakes >= MISTAKE_LIMIT) { setTimeout(function () { finish(false); }, 650); }
     }
     function usedCat(cid) { for (var k in laneCat) { if (locked[k] && laneCat[k] === cid) return true; } return false; }
 
@@ -760,17 +947,17 @@
 
     // ---- result modal ----
     function colorEmoji(hex) {
-      return { '#35C4CD': '🟦', '#6EE84E': '🟩', '#EBA61F': '🟨', '#F06A5A': '🟥', '#A98CF5': '🟪' }[hex] || '⬛';
+      return { '#37C5D5': '🟩', '#F2B632': '🟨', '#F06A5F': '🟥', '#A982F3': '🟪', '#2F6BFF': '🟦' }[hex] || '⬛';
     }
     function showResult(r) {
       document.getElementById('resGrade').textContent = r.grade;
-      var col = { 'A+': '#17A34A', 'A': '#17A34A', 'B': '#1596AC', 'C': '#B8801A', 'D': '#B8801A', 'F': '#E0432A' }[r.grade];
+      var col = { 'A+': '#48D17A', 'A': '#48D17A', 'B': '#37C5D5', 'C': '#F2B632', 'D': '#F2B632', 'F': '#FF625F' }[r.grade];
       document.getElementById('resGrade').style.color = col;
       document.getElementById('resVerdict').textContent = VERDICTS[r.grade] || '';
       document.getElementById('resTime').textContent = fmt(r.time);
       document.getElementById('resMiss').textContent = r.mistakes;
       document.getElementById('resStreak').textContent = r.streak;
-      document.getElementById('resCoins').textContent = r.tester ? '🧪 Tester — not counted' : ('+' + r.coins + ' coins');
+      document.getElementById('resCoins').textContent = r.tester ? 'Tester — not counted' : ('+' + r.coins + ' coins');
       document.getElementById('resDone').textContent = r.tester ? 'Next board →' : 'Done';
       var strip = document.getElementById('resStrip'); strip.innerHTML = '';
       solveOrder.forEach(function (idx) {
@@ -900,9 +1087,16 @@
       else { toast('Copy not supported'); }
     }
 
-    // ---- hint: reveal one group's name for the cost of a guess ----
+    // ---- hint: reveal one group's name for the cost of a guess (with confirm) ----
     var hintBtn = document.getElementById('btnHint');
-    hintBtn.addEventListener('click', function () {
+    var hintArmed = false, hintArmT = null;
+    function disarmHint() {
+      hintArmed = false; if (hintArmT) { clearTimeout(hintArmT); hintArmT = null; }
+      hintBtn.classList.remove('arm');
+      document.getElementById('hintLabel').textContent = 'Reveal a group';
+      document.getElementById('hintCost').textContent = 'costs 1 guess';
+    }
+    function doHint() {
       if (done) return;
       if (MISTAKE_LIMIT - mistakes <= 1) { toast('Not enough guesses left to spend on a hint'); return; }
       var open = day.lanes.filter(function (l) { return !usedCat(l.id) && !revealedCats[l.id]; })
@@ -912,15 +1106,28 @@
       var pick = open[0];
       revealedCats[pick.id] = true;
       mistakes++;                       // a hint costs one guess
-      var dotEls = document.getElementById('dots').children;
-      if (dotEls[mistakes - 1]) dotEls[mistakes - 1].classList.add('pop');
       render();
+      popDot(mistakes - 1);
       popup('Group revealed', pick.name);
       updateHintBtn();
+    }
+    hintBtn.addEventListener('click', function () {
+      if (done) return;
+      if (!hintArmed) {
+        hintArmed = true;
+        hintBtn.classList.add('arm');
+        document.getElementById('hintLabel').textContent = 'Confirm reveal?';
+        document.getElementById('hintCost').textContent = 'uses 1 guess';
+        hintArmT = setTimeout(disarmHint, 4000);
+        return;
+      }
+      disarmHint();
+      doHint();
     });
     function updateHintBtn() {
       var left = MISTAKE_LIMIT - mistakes;
       hintBtn.disabled = done || left <= 1;
+      if (hintBtn.disabled) disarmHint();
     }
 
     document.getElementById('btnClear').addEventListener('click', function () {
@@ -929,7 +1136,7 @@
       selected = null; render();
     });
 
-    // ---- centered popup (one-away / hint) ----
+    // ---- centered popup (hint reveal) ----
     var popupT = null;
     function popup(title, sub) {
       var el = document.getElementById('popup');
@@ -960,13 +1167,42 @@
     streakChip.addEventListener('click', openStats);
     streakChip.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openStats(); } });
 
-    // ---- tester: load a fresh board ----
+    // ---- tester: load a fresh board (with confirm — it abandons the current board) ----
+    var newBtn = document.getElementById('btnNew');
+    var newArmed = false, newArmT = null;
+    function disarmNew() {
+      newArmed = false; if (newArmT) { clearTimeout(newArmT); newArmT = null; }
+      newBtn.classList.remove('arm');
+      document.getElementById('newLabel').textContent = 'New board';
+    }
     function newBoard() {
+      disarmNew();
       boardNo++;
       buildDay();
       boot();
     }
-    document.getElementById('btnNew').addEventListener('click', function () { if (TESTER) newBoard(); });
+    newBtn.addEventListener('click', function () {
+      if (!TESTER) return;
+      if (done) { newBoard(); return; }                 // finished board: no confirm needed
+      if (!newArmed) {
+        newArmed = true;
+        newBtn.classList.add('arm');
+        document.getElementById('newLabel').textContent = 'Abandon this board?';
+        newArmT = setTimeout(disarmNew, 4000);
+        return;
+      }
+      newBoard();
+    });
+
+    // ---- how to play: collapsed after first visit + help icon ----
+    var howtoEl = document.getElementById('howto');
+    try {
+      if (!LS.getItem('grid_match_seen')) { howtoEl.open = true; LS.setItem('grid_match_seen', '1'); }
+    } catch (e) { howtoEl.open = true; }
+    document.getElementById('helpBtn').addEventListener('click', function () {
+      howtoEl.open = true;
+      howtoEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
 
     // ---- boot a board ----
     function boot() {
@@ -992,14 +1228,14 @@
           laneEl.querySelectorAll('.tile').forEach(function (tl) { tl.classList.remove('locked'); tl.classList.add('solvefill'); });
         });
       }
-      document.getElementById('timer').firstChild.textContent = fmt(saved.time);
+      setTimerText(fmt(saved.time));
       showResult({ won: saved.won, time: saved.time, mistakes: saved.mistakes, grade: saved.grade, coins: 0, streak: streakGet() });
       document.getElementById('resCoins').textContent = 'Played today · come back tomorrow';
     }
 
     // ---- dopamine: confetti burst ----
-    var CONFETTI_COLORS = ['#FF5A3C', '#35C4CD', '#EBA61F', '#A98CF5', '#6EE84E', '#F0654F'];
-    var GOLD_COLORS = ['#EBA61F', '#F5A623', '#FF5A3C', '#FFD24D', '#FFB74D'];
+    var CONFETTI_COLORS = ['#F06A5F', '#37C5D5', '#F2B632', '#A982F3', '#48D17A', '#2F6BFF'];
+    var GOLD_COLORS = ['#F2B632', '#F5A623', '#F06A5F', '#FFD24D', '#FFB74D'];
     function confetti(count, goldHeavy) {
       try { if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (e) {}
       var pal = goldHeavy ? GOLD_COLORS : CONFETTI_COLORS;
@@ -1041,7 +1277,7 @@
     function startCountdown(elId) {
       if (cdTargets.indexOf(elId) === -1) cdTargets.push(elId);
       function upd() {
-        var html = '⏱ Next board in <b>' + fmtCountdown(msToTomorrow()) + '</b>';
+        var html = 'Next board in <b>' + fmtCountdown(msToTomorrow()) + '</b>';
         cdTargets.forEach(function (id) { var el = document.getElementById(id); if (el && el.offsetParent !== null) el.innerHTML = html; });
       }
       upd(); if (cdTick) clearInterval(cdTick); cdTick = setInterval(upd, 1000);
@@ -1056,7 +1292,7 @@
       document.getElementById('stWin').textContent = winPct + '%';
       document.getElementById('stStreak').textContent = streakGet();
       document.getElementById('stBest').textContent = st.best;
-      document.getElementById('stPerf').textContent = '⭐ ' + st.perfects + ' flawless solve' + (st.perfects === 1 ? '' : 's');
+      document.getElementById('stPerf').textContent = st.perfects + ' flawless solve' + (st.perfects === 1 ? '' : 's');
       var hasData = st.played > 0;
       document.getElementById('stEmpty').hidden = hasData;
       document.getElementById('stDistWrap').style.display = hasData ? '' : 'none';
