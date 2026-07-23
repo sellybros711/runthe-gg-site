@@ -5993,12 +5993,10 @@ function pxCardBgCanvas(id){
   // DEPTH: hazy rolling hill ridges behind the horizon (wavy, layered)
   const hillC=A.hill||A.bandC||'#173a12';
   if(A.view!=='island'){
-    ridge(gy, 11+hsh(0,26)*8, seed*0.013, hillC, 0.22);
-    ridge(gy, 6+hsh(1,26)*5, seed*0.021+3.1, hillC, 0.15);
+    ridge(gy, 11+hsh(0,26)*8, seed*0.013, hillC, 0.13);
+    ridge(gy, 6+hsh(1,26)*5, seed*0.021+3.1, hillC, 0.08);
   }
-  // DEPTH: light atmospheric haze at the horizon
-  const hz=x.createLinearGradient(0,gy-10,0,gy); hz.addColorStop(0,'rgba(255,255,255,0)'); hz.addColorStop(1,'rgba(255,255,255,.13)');
-  x.fillStyle=hz; x.fillRect(0,gy-10,W,10);
+  // (owner: too hazy - the foggy white horizon band is gone; crisper now)
   // horizon silhouettes. dy shifts the anchor line, k scales sizes, salt varies positions per pass.
   const band=(type,c,c2,dy,k,salt)=>{ if(!type) return; c2=c2||c; dy=dy||0; k=k||1; salt=salt||0;
     const by=gy+dy;
@@ -6047,40 +6045,47 @@ function pxCardBgCanvas(id){
   // edges - no more hard geometric wedge (owner).
   if(!A.noflag && !A.view){
     const fwC=A.fw||'#6f9e38', grC=A.gr||'#a9cc60';
-    const curve=(hsh(3,30)-0.5)*40;
-    const topX=W*(0.44+(hsh(4,31)-0.5)*0.16);
-    const botX=W*0.5+curve*0.9;
+    // The GREEN is the hero (owner likes the green-forward backdrops). Sit it OFF-CENTER so the centred
+    // golfer never covers it, near the horizon, and TERMINATE the fairway AT the green - a hole ends at
+    // the green, no ribbon running past it into the distance (owner).
+    const side=hsh(5,32)<0.5?-1:1;
+    const gx=W*0.5 + side*W*(0.26+hsh(5,50)*0.05);              // ~0.26-0.31 off-centre each way
+    const gyy=gy+(H-gy)*(0.15+hsh(6,33)*0.10);                  // near the horizon, above the golfer
+    const grx=13+hsh(7,34)*4, gry=6+hsh(7,35)*2.4;              // bigger, the focal element
+    const greenFront=gyy+gry*0.7;
     const ph1=hsh(4,42)*6.28, ph2=hsh(5,43)*6.28;
+    const botX=W*0.5+(hsh(3,30)-0.5)*12;                        // fairway meets the viewer near centre
+    // approach fairway: from the green's front (narrow) widening down to the viewer, drifting to centre
     const NSEG=14, L=[], R=[];
     for(let i=0;i<=NSEG;i++){ const t=i/NSEG;
-      const cx0=topX+(botX-topX)*t + curve*Math.sin(t*Math.PI)*0.5;                  // dogleg drift
-      const yy=gy+(H-gy)*t;
-      const hw=(5.5+31*Math.pow(t,1.6)) * (1+0.09*Math.sin(t*5.2+ph1));             // eased width + soft wobble
-      const eL=1+0.07*Math.sin(t*7.1+ph2), eR=1+0.07*Math.sin(t*6.3+ph2*1.6);       // each edge wanders on its own
+      const cx0=gx+(botX-gx)*Math.pow(t,0.82) + side*8*Math.sin(t*Math.PI)*0.5;
+      const yy=greenFront+(H-greenFront)*t;
+      const hw=(grx*0.6 + (30-grx*0.6)*Math.pow(t,1.5)) * (1+0.08*Math.sin(t*5.2+ph1));
+      const eL=1+0.07*Math.sin(t*7.1+ph2), eR=1+0.07*Math.sin(t*6.3+ph2*1.6);
       L.push([cx0-hw*eL,yy]); R.push([cx0+hw*eR,yy]); }
     x.fillStyle=fwC; x.beginPath(); x.moveTo(L[0][0],L[0][1]);
     for(let i=1;i<=NSEG;i++) x.lineTo(L[i][0],L[i][1]);
     for(let i=NSEG;i>=0;i--) x.lineTo(R[i][0],R[i][1]);
     x.closePath(); x.fill();
-    // soft lighter center ribbon along the same centerline
+    // soft lighter centre ribbon
     x.fillStyle='rgba(255,255,255,.05)'; x.beginPath();
     x.moveTo((L[0][0]+R[0][0])/2-1,L[0][1]);
     for(let i=1;i<=NSEG;i++){ const c0=(L[i][0]+R[i][0])/2, hw=(R[i][0]-L[i][0])/2; x.lineTo(c0-hw*0.34,L[i][1]); }
     for(let i=NSEG;i>=0;i--){ const c0=(L[i][0]+R[i][0])/2, hw=(R[i][0]-L[i][0])/2; x.lineTo(c0+hw*0.34,L[i][1]); }
     x.closePath(); x.fill();
-    // green: an organic blob, not an ellipse
-    const gx=W*(0.34+hsh(5,32)*0.32), gyy=gy+(H-gy)*(0.15+hsh(6,33)*0.16);
-    const grx=11+hsh(7,34)*4, gry=4.2+hsh(7,35)*1.6;
-    x.fillStyle=grC; blob(gx,gyy,grx,gry,0.16,seed*0.03); x.fill();
-    x.fillStyle='rgba(255,255,255,.10)'; blob(gx-2,gyy-1,grx*0.5,gry*0.45,0.2,seed*0.05+2); x.fill();
-    // bunkers: irregular kidney blobs scattered around the green
+    // approach apron ties the fairway into the front of the green
+    x.fillStyle=fwC; blob(gx,greenFront+1.5,grx*0.82,gry*0.5,0.22,seed*0.04); x.fill();
+    // the GREEN + a soft highlight
+    x.fillStyle=grC; blob(gx,gyy,grx,gry,0.14,seed*0.03); x.fill();
+    x.fillStyle='rgba(255,255,255,.10)'; blob(gx-grx*0.22,gyy-1,grx*0.5,gry*0.42,0.2,seed*0.05+2); x.fill();
+    // bunkers hug the green (kept on the side away from the fairway approach)
     const nb=1+Math.floor(hsh(8,36)*3);
-    for(let i=0;i<nb;i++){ const a=hsh(i,37)*6.28;
+    for(let i=0;i<nb;i++){ const a=(hsh(i,37)*1.6-0.8)*side + (side<0?0:Math.PI);   // arc around the far side
       x.fillStyle='#e8e2c2';
-      blob(gx+Math.cos(a)*(13+hsh(i,38)*4), gyy+2+Math.abs(Math.sin(a))*4, 3.2+hsh(i,39)*2.6, 1.6+hsh(i,40), 0.3, i*11+seed*0.02); x.fill(); }
-    // flag on the green, seeded side
-    const fx0=Math.round(gx+(hsh(9,41)-0.5)*10), fy0=gyy-13;
-    x.fillStyle='#e8e2d2'; x.fillRect(fx0,fy0,1,13);
+      blob(gx+Math.cos(a)*(grx+2+hsh(i,38)*3), gyy+Math.sin(a)*(gry+1), 3+hsh(i,39)*2.4, 1.7+hsh(i,40), 0.3, i*11+seed*0.02); x.fill(); }
+    // flagstick + flag
+    const fx0=Math.round(gx+(hsh(9,41)-0.5)*grx*0.9), fy0=gyy-15;
+    x.fillStyle='#e8e2d2'; x.fillRect(fx0,fy0,1,15);
     x.fillStyle=A.goldflag?'#F1D04A':'#e2554e';
     x.beginPath(); x.moveTo(fx0+1,fy0); x.lineTo(fx0+8,fy0+2); x.lineTo(fx0+1,fy0+5); x.fill();
   }
@@ -6146,8 +6151,9 @@ function pxCardBgCanvas(id){
     for(let i=0;i<7;i++){ const tx1=(i+0.5)*W/7+(hsh(i,80)-0.5)*6, r=2+hsh(i,81)*1.6;
       x.beginPath(); x.arc(tx1,sy0-r*0.6,r,0,7); x.fill(); }
     x.fillStyle='#1d3a26'; x.fillRect(0,sy0-1,W,2);
-    // the ISLAND: sand ring -> fringe -> putting surface
-    const ix=W*(0.46+hsh(2,82)*0.10), iy=sy0+sh2*0.56;
+    // the ISLAND: sand ring -> fringe -> putting surface (OFF-CENTRE so the golfer never covers it)
+    const iSide=hsh(2,82)<0.5?-1:1;
+    const ix=W*0.5 + iSide*W*0.24, iy=sy0+sh2*0.56;
     x.fillStyle='rgba(0,0,0,.18)'; blob(ix+1.5,iy+2,17,7.2,0.2,seed*0.05); x.fill();
     x.fillStyle='#e8dcae'; blob(ix,iy,16.5,6.8,0.2,seed*0.05); x.fill();
     x.fillStyle='#5f9a34'; blob(ix,iy-0.6,13.5,5.2,0.18,seed*0.06); x.fill();
@@ -6204,7 +6210,7 @@ function cardBgQuantize(x,W,H){ try{
   // smooth-reading skies, still perfectly crisp pixels (same technique as the pixel course renderer).
   // K scales the dither amplitude: 1 = full (checker everywhere), lower = dithering only in the
   // transition strip around each tone boundary with clean color between (the classic retro-sky look)
-  const im=x.getImageData(0,0,W,H), d=im.data, Q=20, K=0.55;
+  const im=x.getImageData(0,0,W,H), d=im.data, Q=20, K=0.42;
   const B=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
   for(let y=0;y<H;y++) for(let xx=0;xx<W;xx++){ const i=(y*W+xx)*4, t=0.5+((B[(y%4)*4+(xx%4)]+0.5)/16-0.5)*K;
     d[i]  =Math.min(255,Math.floor(d[i]  /Q+t)*Q);
