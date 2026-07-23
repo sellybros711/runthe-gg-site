@@ -1,12 +1,14 @@
 -- ============================================================================
 -- 20_reload_wc_players_2026.sql  —  Reload the server ratings after the 2026
---                                   World Cup data swap (latest matchday update)
+--                                   World Cup data swap (tournament COMPLETE)
 -- ============================================================================
 -- WHY: submit_draft() recomputes every leaderboard score from wc_players. The
--- client now ships recalibrated 2026 ratings (data/players_all.json, DATA_VERSION
--- 0.0.38). If the server table still holds the OLD ratings, new submissions get
--- scored against stale numbers and the leaderboard drifts from what players see.
--- Reloading wc_players from the freshly generated CSV keeps server == client.
+-- client now ships the final post-tournament 2026 ratings (data/players_all.json,
+-- DATA_VERSION 0.0.40) — Spain champions, semifinals/third-place/final applied,
+-- awards recorded, plus the July 12 USA-2010 historical corrections. If the
+-- server table still holds the OLD ratings, new submissions get scored against
+-- stale numbers and the leaderboard drifts from what players see. Reloading
+-- wc_players from the freshly generated CSV keeps server == client.
 --
 -- The row COUNT is unchanged (9,976) — only wc_overall / is_captain / award
 -- values move — so this is a clean truncate-and-reimport, no schema change.
