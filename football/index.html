@@ -438,26 +438,28 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     repeating-linear-gradient(90deg, rgba(210,170,90,.06) 0 3px, transparent 3px 26px);
   -webkit-mask:linear-gradient(180deg,transparent,#000 26%,#000 74%,transparent);
           mask:linear-gradient(180deg,transparent,#000 26%,#000 74%,transparent);}
-.home-top{ position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; padding:40px 2px 4px;}
+.home-top{ position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; padding:calc(18px + env(safe-area-inset-top)) 2px 2px;}
 .gear{ width:46px;height:46px;border-radius:11px; background:rgba(9,18,30,.65); border:2px solid rgba(200,212,235,.25);
   color:#e7ecf4; font-size:22px; box-shadow:0 3px 0 rgba(0,0,0,.35);}
 .coins-pill{ display:flex; align-items:center; gap:8px; background:rgba(9,18,30,.65); border:2px solid rgba(200,212,235,.25);
   border-radius:12px; padding:9px 14px; font-family:var(--pix); font-size:13px; color:#ffd764; box-shadow:0 3px 0 rgba(0,0,0,.35);}
-.football{ position:relative; z-index:4; width:104px; margin:8px auto -18px;}
+.football{ position:relative; z-index:4; width:98px; margin:2px auto -16px;}
 .football svg{ width:100%; display:block; filter:drop-shadow(0 5px 0 rgba(0,0,0,.4));}
 /* the scoreboard sign */
-.dd-sign{ position:relative; z-index:3; max-width:372px; margin:0 auto; padding:26px 18px 20px; text-align:center;
-  background:#0b1f30; border:3px solid #040b13; border-radius:16px;
-  box-shadow: inset 0 0 0 2px #17364f, inset 0 3px 0 rgba(255,255,255,.06), 0 7px 0 rgba(0,0,0,.5);}
-.sign-title{ font-family:var(--pix); font-size:33px; color:#efe6cf; letter-spacing:2px; line-height:1;
-  text-shadow:0 4px 0 #0a4a86, 0 6px 0 rgba(0,0,0,.55);}
-.sign-title .star{ color:#f2b21c; font-size:19px; vertical-align:middle; text-shadow:0 3px 0 rgba(0,0,0,.5);}
-.sign-underline{ height:5px; width:66%; margin:14px auto 16px; background:#f2b21c; box-shadow:0 3px 0 rgba(0,0,0,.4);}
-.sign-l1{ font-family:var(--pix); font-size:21px; color:#efe6cf; letter-spacing:1px; text-shadow:0 3px 0 rgba(0,0,0,.55);}
-.sign-l2{ font-family:var(--pix); font-size:21px; color:#f2b21c; letter-spacing:1px; margin-top:13px; text-shadow:0 3px 0 rgba(0,0,0,.55);}
-.sign-ribbon{ position:relative; z-index:3; max-width:330px; margin:13px auto 0; text-align:center;
-  font-family:var(--pix); font-size:8px; letter-spacing:1px; color:#9fb0c4; line-height:1.4;
-  background:#0a1826; border:2px solid #17364f; border-radius:9px; padding:10px 10px;}
+.dd-sign{ position:relative; z-index:3; max-width:376px; margin:0 auto; padding:24px 20px 18px; text-align:center;
+  background:linear-gradient(180deg,#0d2337,#0a1c2c); border:3px solid #040b13; border-radius:16px;
+  box-shadow: inset 0 0 0 2px #1b3d59, inset 0 3px 0 rgba(255,255,255,.07), 0 7px 0 rgba(0,0,0,.5);}
+.sign-title{ font-family:var(--pix); font-size:34px; color:#f4ecdb; letter-spacing:2px; line-height:1;
+  text-shadow:0 4px 0 #0a5a9e, 0 6px 0 rgba(0,0,0,.55);}
+.sign-title .star{ color:#f2b21c; font-size:17px; vertical-align:middle; margin:0 2px; text-shadow:0 3px 0 rgba(0,0,0,.5);}
+.sign-underline{ height:4px; width:52%; margin:14px auto 15px; border-radius:2px;
+  background:linear-gradient(90deg,transparent,#f2b21c 22%,#ffcf4d 50%,#f2b21c 78%,transparent); box-shadow:0 2px 0 rgba(0,0,0,.35);}
+.sign-l1{ font-family:var(--pix); font-size:17px; color:#b7c4d6; letter-spacing:2px; text-shadow:0 2px 0 rgba(0,0,0,.5);}
+.sign-l2{ font-family:var(--pix); font-size:22px; color:#ffc42e; letter-spacing:1px; margin-top:11px;
+  text-shadow:0 3px 0 rgba(0,0,0,.55), 0 0 16px rgba(242,178,28,.28);}
+.sign-ribbon{ position:relative; z-index:3; max-width:340px; margin:14px auto 0; text-align:center;
+  font-family:var(--pix); font-size:8px; letter-spacing:2px; color:#7d90a6; line-height:1.4;
+  background:transparent; border:0; padding:0;}
 .goal-block{ position:relative; z-index:3; text-align:center; margin:20px 0 15px;}
 .goal-h{ font-family:var(--pix); font-size:10px; color:#f2b21c; letter-spacing:2px;}
 .goal-v{ font-family:var(--pix); font-size:15px; color:#efe6cf; margin-top:10px;}
@@ -467,13 +469,14 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   box-shadow: inset 0 3px 0 rgba(255,255,255,.55), inset 0 -5px 0 rgba(120,70,0,.35), 0 6px 0 #6a4206, 0 9px 12px rgba(0,0,0,.4);}
 .play-now:active{ transform:translateY(3px); box-shadow: inset 0 3px 0 rgba(255,255,255,.55), 0 3px 0 #6a4206;}
 .play-now .arw{ font-size:16px;}
-.howto-link{ display:block; margin:16px auto 2px; background:transparent; border:0; font-family:var(--pix);
+.play-now{ margin-top:16px; }
+.howto-link{ display:block; margin:12px auto 2px; background:transparent; border:0; font-family:var(--pix);
   font-size:11px; color:#8fa0b5; letter-spacing:1px;}
 /* field strip — broadcast-angle attract field that recedes to a centered goalpost */
-.field-strip{ position:relative; z-index:2; flex:1 1 auto; min-height:238px; margin:14px -16px 0;
-  overflow:hidden; border-top:3px solid rgba(255,255,255,.5); perspective:820px; perspective-origin:50% 22%;
-  background:linear-gradient(180deg,#0a1826 0%, #0e2f20 20%, #0b2819 100%);}
-.field-strip .fs-stands{ position:absolute; left:0; right:0; top:0; height:26%; z-index:0; pointer-events:none;
+.field-strip{ position:relative; z-index:2; flex:1 1 auto; min-height:238px; margin:9px -16px 0;
+  overflow:hidden; border-top:3px solid rgba(255,255,255,.5); perspective:820px; perspective-origin:50% 18%;
+  background:linear-gradient(180deg,#0a1826 0%, #0e2f20 16%, #0b2819 100%);}
+.field-strip .fs-stands{ position:absolute; left:0; right:0; top:0; height:20%; z-index:0; pointer-events:none;
   background:
     radial-gradient(88% 90% at 50% 100%, rgba(150,200,255,.16), transparent 70%),
     radial-gradient(34% 60% at 50% 96%, rgba(255,240,190,.16), transparent 72%),
