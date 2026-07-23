@@ -132,12 +132,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   border-left:12px solid var(--gold-bright); transform:translate(-2px,-50%); transition:left .45s ease, top .45s ease; z-index:5;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.5));}
 /* broadcast markers — telestration discs that lie on the tilted field (not standing sprites) */
-.chip{position:absolute; width:26px; height:26px; transform:translate(-50%,-50%); z-index:3;
+.chip{position:absolute; width:21px; height:21px; transform:translate(-50%,-50%); z-index:3;
   transition:left .4s ease, top .4s ease; filter:drop-shadow(0 2px 2px rgba(0,0,0,.55));}
-.chip.qb{width:31px; height:31px; z-index:4;}
-.chip.def{ width:24px; height:24px; }                 /* defenders read a touch smaller so your offense pops */
+.chip.qb{width:24px; height:24px; z-index:4;}
+.chip.def{ width:20px; height:20px; }                 /* defenders read a touch smaller so your offense pops */
+/* linemen are a faded background scrum so the ball, carrier + skill players read clearly */
+.chip.trench{ width:17px; height:17px; opacity:.42; z-index:2; }
+.chip.trench.carrier{ opacity:1; z-index:9; }         /* unless one of them has the ball */
 /* the pixel player sprite — taller than the chip's footprint, standing at the chip's point */
-.manart{position:absolute; left:50%; top:50%; transform:translate(-50%,-52%); width:158%; height:auto;
+.manart{position:absolute; left:50%; top:50%; transform:translate(-50%,-52%); width:118%; height:auto;
   display:block; image-rendering:pixelated;}
 /* the ball-carrier is unmistakable: a gold pulse ring, on top of everyone */
 .chip.carrier{ z-index:9; }
@@ -764,9 +767,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js?v=20260723j"></script>
-<script src="playbook.js?v=20260723j"></script>
-<script src="engine.js?v=20260723j"></script>
+<script src="drive_generator.js?v=20260723k"></script>
+<script src="playbook.js?v=20260723k"></script>
+<script src="engine.js?v=20260723k"></script>
 <script>
 (function(){
   'use strict';
@@ -1206,8 +1209,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     clearChips();
     const bx = xOf(state.yardline);
     const F = { ol:[], dl:[], db:[] };
-    // offense: O-line 5 across just behind LOS, QB + RB behind, 2 WRs wide
-    [34,42,50,58,66].forEach(y=>F.ol.push(placeChip('off', bx-2, y)));
+    // offense: O-line 5 across just behind LOS (faded trench), QB + RB behind, 4 WRs
+    [34,42,50,58,66].forEach(y=>F.ol.push(placeChip('off trench', bx-2, y)));
     F.qb    = placeChip('off qb', bx-9, 50);
     F.rb    = placeChip('off', bx-9, 62);
     // Four eligible receivers so a concept has bodies to run every route (X & Z outside,
@@ -1221,7 +1224,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     F.wrTop = F.recv.X; F.wrBot = F.recv.Z;   // back-comp aliases
     // defense: box defenders near LOS reflect the engine's box count; rest deep
     const box = def ? def.boxCount : 6;
-    spread(box, 26, 74).forEach(y=>F.dl.push(placeChip('def', bx+4, y)));
+    spread(box, 26, 74).forEach(y=>F.dl.push(placeChip('def trench', bx+4, y)));
     const deep = Math.max(2, 11 - box);
     spread(deep, 20, 80).forEach((y,i)=>F.db.push(placeChip('def', bx + 9 + (i%2)*6, y)));
     F.bx = bx;
