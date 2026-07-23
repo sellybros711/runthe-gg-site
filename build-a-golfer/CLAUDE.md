@@ -12723,6 +12723,48 @@ allows Google Fonts, or self-host Anton.*
   tier cards + the boosted/limited-time messaging; 0 page errors. Screenshots confirm the orange shop card +
   themed wheel. Deployed to /golf. Tunable: `PACK_TYPES.summer` price/odds/pity/`dropBias`, `PACK_PAL_OVR.summer`.
 
+- **HAT REVAMP — realistic cap/visor/backwards, cone hats perched on the hair, shape-TRUE TourTracer hats
+  (owner: "The hats that have round rims like the sun hat look great. The normal hat, backwards hat, visor,
+  etc don't look realistic enough. The triangle hats like the party hat and Santa hat are too low on the
+  head, they should be on top of the head/hair. The 3/4 golfer hats do not look great other than the ones
+  with the round rims. The shape of the hat needs to reflect in the tour tracer... brim represented
+  accurately... pointed hat... The crow[n] still reads extremely flat").** Three coordinated fixes,
+  authored in `scratchpad/hat_gen.py` (generator -> hat_maps.json -> `hat_splice.py`), render-only:
+  1. **Standing golfer redraws (44x56 `PXG_CAP`/`PXG_VISOR`/`PXG_HATS.backwards`).** The cap is now a
+     STRUCTURED ball cap: fitted dome hugging the head (rows 5-11), top button, curved panel seams, a lit
+     front panel, and a thin 2-row protruding BILL ending ABOVE the eyes (the old 3-row full-width
+     elliptical brim sat at rows 13-15 = over the eyes, reading as a blob/blindfold). The visor is an
+     open-top forehead band (rows 9-11, hair showing above/through) + a protruding bill; the backwards cap
+     got the real snap-strap OPENING at the front (forehead showing through the gap, strap across it) + the
+     backward bill peeking at both sides. Round-brim hats (floppy/sombrero/cowboy/bucket/straw...) untouched
+     - the owner likes them.
+  2. **Cone hats raised to PERCH on top of the head/hair.** party/santa/witch/wizard/elf added to
+     `PXG_HAT_OPEN` (full hair paints under them, no more brow-clamped clip) and their art raised: party
+     rebuilt as a small perched cone (base rows 7-8, streamer tuft), santa/witch/wizard/elf shifted up 3
+     rows with cleaned tips (santa's drooping pompom rebuilt as a connected 2x2 block). The hats now sit on
+     the hair with the fringe/sides showing around them, instead of pulled down to the eyes.
+  3. **TourTracer (SW4) stamping rewritten - the hat's true shape now shows in the sim.** The old
+     `pxSwingStampHat` squashed every hat into a fixed flat box above the brow (all hats = pancakes, the
+     crown "reads extremely flat"). New stamp: ONE uniform scale k = swing-head-width / standing-head-width
+     on BOTH axes, anchored by mapping the standing art's own head reference (centre col 22, brow row 12)
+     onto each frame's baked-cap head cluster - so a wide brim stays proportionally wide, a cone stays tall
+     and pointed, and a perched hat keeps its seat height, on every pose/direction (incl. the CS501
+     turned-head finish, since the anchor follows the per-frame cluster). Plus a rim-light/under-shadow
+     pass (like the standing `paintShaded`) so crowns read domed and brim undersides shade. New
+     `SW4_HR=10` headroom rows on the SW4 canvas (`pxSw4Canvas` height + a ctx.translate; `hvSwingMarkup` +
+     `hvAddressGolfer` scale H/anchor/GH so the body renders at the exact same size/anchor and only the box
+     grows upward) so tall hats (witch/tophat/party) aren't clipped. A `capPal` fallback recolours the
+     c/b/w "your-colour" hats (bucket/flat) which previously VANISHED on the swing golfer, and a VISOR now
+     stamps its real open-top shape (hair crown + band + bill in the player's hat colour) instead of
+     falling back to a full baked cap (cache key gains a 'v' variant).
+  Verified in Playwright against the live file: a 26-hat x 4-pose contact sheet (E/N address, E finish, E
+  putt) - every hat reads its true shape on the swing golfer with hair under the perched ones; in-context
+  tee shots on the pixel course (witch + gold visor); and a full practice daily round (party hat, draft ->
+  build -> round -> result) with ZERO page errors; `node --check` clean. Lefty (pxDir8) keeps its authored
+  per-direction hat overlays (unchanged, still the flagged legacy follow-up). Committed to the feature
+  branch; NOT deployed to /golf (awaiting owner approval per the guardrail). Tunable: the stamp's
+  `SHW`(16)/brow factor(0.42)/`SW4_HR`, the new maps via `scratchpad/hat_gen.py`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
