@@ -97,7 +97,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 /* micro-animation: a pulse wave across a word as you finish filling it */
 .cell.wordpop{ z-index:3; animation:cellPop .5s cubic-bezier(.34,1.56,.64,1) var(--d,0ms); }
 @keyframes cellPop{0%{transform:scale(1);}45%{transform:scale(1.13);}100%{transform:scale(1);}}
-@media (prefers-reduced-motion: reduce){ .cell.wordpop{animation:none;} .confetti{display:none;} }
+/* grid shake when the board is full but not correct */
+.board.shake{ animation:boardShake .46s ease; }
+@keyframes boardShake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(4px);}}
+/* toast (sits above the sticky keyboard) */
+.cw-toast{position:fixed; left:50%; bottom:90px; transform:translateX(-50%) translateY(16px); opacity:0;
+  background:#182430; color:#fff; font-weight:700; font-size:13px; line-height:1.35; padding:11px 16px; border-radius:11px;
+  z-index:70; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.6); max-width:86%; text-align:center;}
+.cw-toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
+@media (prefers-reduced-motion: reduce){ .cell.wordpop{animation:none;} .board.shake{animation:none;} .confetti{display:none;} }
 
 /* ---------- active clue ---------- */
 .cluebar{display:flex; align-items:stretch; gap:0; margin-bottom:12px;
@@ -259,6 +267,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   <!-- on-screen keyboard (mobile); physical keyboard also works -->
   <div class="kbd" id="kbd"></div>
 </div>
+
+<div class="cw-toast" id="cwToast"></div>
 
 <div class="scrim hidden" id="scrim">
   <div class="modal">
@@ -506,6 +516,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     var cell=cells[sel.r][sel.c];
     if(cell.val){ cell.val=''; cell.checked=false; }
     else { retreat(); cells[sel.r][sel.c].val=''; cells[sel.r][sel.c].checked=false; }
+    announcedFull=false;   // grid no longer full — allow a fresh announce on refill
     render();
   }
   function advance(){
@@ -580,10 +591,27 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   function load(){ try{ return JSON.parse(localStorage.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
   function save(s){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(s)); }catch(e){} }
 
+  var announcedFull=false;
+  function gridFull(){ for(var r=0;r<N;r++) for(var c=0;c<N;c++){ if(!cells[r][c].block && cells[r][c].val==='') return false; } return true; }
+  function wrongCount(){ var w=0; for(var r=0;r<N;r++) for(var c=0;c<N;c++){ var cell=cells[r][c]; if(!cell.block && cell.val!==cell.ans) w++; } return w; }
   function checkSolved(){
     if(done) return;
-    for(var r=0;r<N;r++) for(var c=0;c<N;c++){ var cell=cells[r][c]; if(cell.block) continue; if(cell.val!==cell.ans) return; }
-    finish();
+    if(!gridFull()){ announcedFull=false; return; }   // still blanks — nothing to announce yet
+    if(wrongCount()===0){ finish(); return; }          // full + all correct -> win
+    if(!announcedFull){                                // full but wrong -> tell them once
+      announcedFull=true;
+      var w=wrongCount();
+      var boardEl=document.getElementById('board');
+      boardEl.classList.remove('shake'); void boardEl.offsetWidth; boardEl.classList.add('shake');
+      setTimeout(function(){ boardEl.classList.remove('shake'); }, 500);
+      toast('Almost — '+w+' square'+(w===1?' is':'s are')+' off. Tap Check to spot them.');
+    }
+  }
+  var cwToastT=null;
+  function toast(msg){
+    var el=document.getElementById('cwToast'); if(!el) return;
+    el.textContent=msg; el.classList.add('on');
+    if(cwToastT) clearTimeout(cwToastT); cwToastT=setTimeout(function(){ el.classList.remove('on'); }, 2800);
   }
 
   function finish(){
