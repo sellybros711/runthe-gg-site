@@ -169,6 +169,10 @@
   /* hidden-categories tag in the sub-header */
   .hidden-tag{font-size:11px; font-weight:900; letter-spacing:.04em; text-transform:uppercase; color:var(--mut);
     background:#fff; border:1px solid var(--line); border-radius:7px; padding:6px 11px; box-shadow:var(--shadow);}
+  .tester-banner{margin-bottom:12px; padding:9px 13px; border-radius:9px; font-size:12.5px; font-weight:700; line-height:1.4;
+    color:#7a3a00; background:#FFF3E0; border:1px solid #FFD9A8;}
+  .tester-banner[hidden]{display:none;}
+  .tester-banner b{font-weight:900; color:#8a4300;}
 
   /* revealed-group chips (from the hint) */
   .revealed{display:flex; flex-wrap:wrap; gap:7px; margin:0 0 12px;}
@@ -206,6 +210,8 @@
       <span class="hidden-tag">🕶️ Categories hidden</span>
     </div>
 
+    <div class="tester-banner" id="testerBanner" hidden>🧪 <b>Tester mode</b> — unlimited plays. Hit <b>New board</b> for a fresh puzzle.</div>
+
     <div class="hud">
       <div class="timer" id="timer">0:00<span class="pen" id="pen"></span></div>
       <div class="miss">
@@ -223,6 +229,7 @@
     <div class="controls">
       <button class="btn" id="btnHint" type="button">💡 Reveal a group <span class="cost">−1 guess</span></button>
       <button class="btn" id="btnClear" type="button">↺ Reset pool</button>
+      <button class="btn" id="btnNew" type="button" style="display:none">🔁 New board</button>
     </div>
 
     <div class="howto" id="howto">
@@ -280,6 +287,22 @@
     }
     var DATE = todayStr();
 
+    // ---- tester mode: unlimited plays + fresh boards (for RunnyJ / CSel8) ----
+    // Enable with ?test=1 (persists); disable with ?test=0. Site is hidden, so
+    // only people with the link get it. Tester plays don't touch streak/coins.
+    var TESTER = (function () {
+      try {
+        var q = new URLSearchParams(location.search);
+        if (q.has('test') || q.has('tester')) {
+          var on = (q.get('test') || q.get('tester') || '1') !== '0';
+          LS.setItem('grid_tester', on ? '1' : '');
+        }
+        return LS.getItem('grid_tester') === '1';
+      } catch (e) { return false; }
+    })();
+    var boardNo = 0;                                   // which tester board we're on
+    function boardSeed() { return TESTER ? (DATE + '#' + boardNo) : DATE; }
+
     // ---- wallet / streak ----
     // Coins are the RunTheGrid suite wallet (shared with the future Daily Crossword);
     // streak is per-game (this Daily Match). Prototype uses localStorage; the real
@@ -307,14 +330,16 @@
 
     function buildDay() {
       // data-driven board from the tagged DB (5 groups of four, categories hidden)
-      day = Gen.daily(DATE, { entities: ENT });
+      day = Gen.daily(boardSeed(), { entities: ENT });
       byId = {}; day.tiles.forEach(function (t) { byId[t.id] = t; });
       solById = {};
       Object.keys(day.solution).forEach(function (cid) {
         day.solution[cid].forEach(function (tid) { solById[tid] = cid; });
       });
       laneById = {}; day.lanes.forEach(function (l) { laneById[l.id] = l; });
-      document.getElementById('datep').textContent = new Date(DATE + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · Board';
+      document.getElementById('datep').textContent = TESTER
+        ? ('🧪 Tester · board ' + (boardNo + 1))
+        : (new Date(DATE + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · Board');
     }
 
     // ---- persistence of today's result so a refresh doesn't replay ----
@@ -540,6 +565,15 @@
 
       if (!won) autoSolveReveal();
 
+      var par = day.par.hard;
+      var grade = gradeFor(won, finalTime, par, mistakes);
+
+      // tester plays are ephemeral: no streak, no coins, no once-a-day lock
+      if (TESTER) {
+        setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: 0, streak: streakGet(), tester: true }); }, won ? 350 : 1100);
+        return;
+      }
+
       // streak: completion-based (win or lose), one per calendar day
       var last = LS.getItem('grid_match_lastplayed');
       var s = streakGet();
@@ -551,8 +585,6 @@
         LS.setItem('grid_match_lastplayed', DATE);
       }
 
-      var par = day.par.hard;
-      var grade = gradeFor(won, finalTime, par, mistakes);
       var coins = coinsFor(won, finalTime, par, mistakes);
       walletSet(walletGet() + coins);
 
@@ -616,7 +648,8 @@
       document.getElementById('resTime').textContent = fmt(r.time);
       document.getElementById('resMiss').textContent = r.mistakes;
       document.getElementById('resStreak').textContent = r.streak;
-      document.getElementById('resCoins').textContent = '+' + r.coins + ' coins';
+      document.getElementById('resCoins').textContent = r.tester ? '🧪 Tester — not counted' : ('+' + r.coins + ' coins');
+      document.getElementById('resDone').textContent = r.tester ? 'Next board →' : 'Done';
       var strip = document.getElementById('resStrip'); strip.innerHTML = '';
       solveOrder.forEach(function (idx) {
         var b = document.createElement('div'); b.className = 'b';
@@ -680,16 +713,26 @@
     });
     function closeModal() { document.getElementById('resultModal').hidden = true; }
     document.getElementById('resClose').addEventListener('click', closeModal);
-    document.getElementById('resDone').addEventListener('click', closeModal);
+    document.getElementById('resDone').addEventListener('click', function () {
+      closeModal();
+      if (TESTER) newBoard();
+    });
 
-    // ---- boot a board for the current mode ----
+    // ---- tester: load a fresh board ----
+    function newBoard() {
+      boardNo++;
+      buildDay();
+      boot();
+    }
+    document.getElementById('btnNew').addEventListener('click', function () { if (TESTER) newBoard(); });
+
+    // ---- boot a board ----
     function boot() {
       resetState();
-      var saved = savedResult();
       render(); updateTimer();
-      if (saved) {
-        // already played this mode today: show the board solved + result
-        replaySaved(saved);
+      if (!TESTER) {                       // once-a-day lock only outside tester mode
+        var saved = savedResult();
+        if (saved) replaySaved(saved);
       }
     }
     function replaySaved(saved) {
@@ -722,6 +765,10 @@
     }
 
     // ---- go ----
+    if (TESTER) {
+      document.getElementById('testerBanner').hidden = false;
+      document.getElementById('btnNew').style.display = '';
+    }
     buildDay();
     renderWallet();
     boot();
