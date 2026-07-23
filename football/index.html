@@ -138,6 +138,42 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .chip.down .manart{ transform:scaleX(1) rotate(78deg); opacity:.85; }   /* tackled / on the ground */
 .chip.down.faceL .manart{ transform:scaleX(-1) rotate(78deg); }
 @media (prefers-reduced-motion: reduce){ .chip.moving .manart,.anim-carrier.moving .manart{ animation:none; } }
+/* QB throwing motion: plant, cock back, snap forward on release (composes with the billboard) */
+@keyframes qbThrow{
+  0%  { transform:translate(-50%,-100%) rotateX(-20deg) rotate(0) translateY(0); }
+  28% { transform:translate(-48%,-100%) rotateX(-20deg) rotate(-13deg) translateY(1px); }
+  52% { transform:translate(-54%,-103%) rotateX(-20deg) rotate(11deg) translateY(-1px); }
+  100%{ transform:translate(-50%,-100%) rotateX(-20deg) rotate(0) translateY(0); }
+}
+.chip.qbthrow{ animation:qbThrow .34s ease-out; }
+@media (prefers-reduced-motion: reduce){ .chip.qbthrow{ animation:none; } }
+/* ---------- custom glyph icons (replace all stock emojis) ---------- */
+.gi{width:1em; height:1em; display:inline-block; vertical-align:-.14em; flex:none;}
+.stat-chip .gi{width:20px; height:20px; vertical-align:middle;}
+.stat-chip.streak .gi{color:#ff8a3d;}
+.stat-chip.coins .gi{color:#ffd25a;}
+.coins-pill .gi{width:20px; height:20px; color:#ffd25a; vertical-align:-.3em;}
+.icon-btn .gi{width:22px; height:22px; color:#e7ecf4;}
+.gear .gi{width:22px; height:22px; color:#e7ecf4;}
+.nav-i .ic{display:inline-flex;} .nav-i .ic .gi{width:27px; height:27px;}
+.section-h .gi{width:15px; height:15px; color:var(--gold); vertical-align:-.13em;}
+.kick .tt .gi{width:14px; height:14px; color:var(--gold); vertical-align:-.16em;}
+.log-head .t .gi{width:13px; height:13px; vertical-align:-.14em;}
+.cta .gi{width:17px; height:17px; vertical-align:-.2em;}
+.opp .name .em{display:inline-flex; align-items:center;} .opp .name .em .gi{width:28px; height:28px;}
+.deep-toggle .gi{width:12px; height:12px; vertical-align:-.12em;}
+.scheme .nm .ic .gi{width:15px; height:15px;}
+.sd-nm .ic{display:none;}
+.modal .em{display:flex; justify-content:center;} .modal .em .gi{width:48px; height:48px;}
+.modal .rewards .gi{width:14px; height:14px; color:#ffd25a; vertical-align:-.16em;}
+.sheet .mi .ico .gi, .sheet a .ico .gi{width:22px; height:22px;}
+.gradebar .gsq{display:inline-block; width:15px; height:15px; border-radius:3px; margin:1px;}
+.gsq.a{background:#7bd67e;} .gsq.b{background:#e8c34a;} .gsq.c{background:#e88a2e;} .gsq.d{background:#e0705c;}
+.confetti{position:absolute; width:7px; height:7px; border-radius:1px; z-index:8; opacity:0; pointer-events:none;
+  transform:translate(-50%,-50%);}
+.confetti.show{animation:conf .92s ease-out forwards;}
+@keyframes conf{0%{opacity:1; transform:translate(-50%,-50%) translateY(0) rotate(0);}
+  100%{opacity:0; transform:translate(-50%,-50%) translate(var(--dx,0),-26px) rotate(140deg);}}
 /* team palettes drive the sprite's fill vars */
 .chip.off,.hchip.off,.anim-carrier{ --jersey:#f4c93a; --helmet:#8a6a1a; --pants:#efe2b0; --skin:#e7b48a; --sock:#2a2008; --stripe:#fff6dc; --num:#5a3f08; }
 .chip.def,.hchip.def,.anim-carrier.def{ --jersey:#33425e; --helmet:#e2e8f2; --pants:#26344c; --skin:#cdb59a; --sock:#141d2e; --stripe:#2b3a52; --num:#dfe6f2; }
@@ -474,12 +510,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   <!-- TOP BAR -->
   <div class="topbar" id="appTop">
-    <button class="icon-btn" id="homeBtn" aria-label="Home">🏠</button>
-    <button class="icon-btn" id="menuBtn" aria-label="Menu">☰</button>
+    <button class="icon-btn" id="homeBtn" aria-label="Home"></button>
+    <button class="icon-btn" id="menuBtn" aria-label="Menu"></button>
     <div class="brand pix"><span class="b2">DAILY DRIVE</span></div>
     <div class="spacer"></div>
-    <div class="stat-chip streak"><span style="font-size:20px">🔥</span><div><div class="n" id="streakN">0</div><div class="l">STREAK</div></div></div>
-    <div class="stat-chip coins"><span style="font-size:18px">🪙</span><div><div class="n" id="coinsN">0</div><div class="l">COINS</div></div></div>
+    <div class="stat-chip streak"><span class="ci" id="streakIco"></span><div><div class="n" id="streakN">0</div><div class="l">STREAK</div></div></div>
+    <div class="stat-chip coins"><span class="ci" id="coinsIco"></span><div><div class="n" id="coinsN">0</div><div class="l">COINS</div></div></div>
   </div>
 
   <!-- INFO ROW -->
@@ -507,8 +543,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       <div class="crowd" aria-hidden="true"></div>
 
       <div class="home-top">
-        <button class="gear" id="gearBtn" aria-label="Menu">⚙</button>
-        <div class="coins-pill">🪙 <b id="coinsHome">0</b></div>
+        <button class="gear" id="gearBtn" aria-label="Menu"></button>
+        <div class="coins-pill"><span class="ci" id="coinsHomeIco"></span> <b id="coinsHome">0</b></div>
       </div>
 
       <div class="football" aria-hidden="true">
@@ -552,16 +588,16 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       </div>
 
       <div class="home-nav">
-        <button class="nav-i" id="navLeaderboard"><span class="ic">🏆</span><span class="lb">DAILY<br>LEADERBOARD</span></button>
-        <button class="nav-i" id="navStreak"><span class="ic">📅</span><span class="lb">STREAK<br><b id="navStreakN">0 DAYS</b></span></button>
-        <button class="nav-i" id="navShare"><span class="ic">📤</span><span class="lb">SHARE<br>YOUR DRIVE</span></button>
+        <button class="nav-i" id="navLeaderboard"><span class="ic"></span><span class="lb">DAILY<br>LEADERBOARD</span></button>
+        <button class="nav-i" id="navStreak"><span class="ic"></span><span class="lb">STREAK<br><b id="navStreakN">0 DAYS</b></span></button>
+        <button class="nav-i" id="navShare"><span class="ic"></span><span class="lb">SHARE<br>YOUR DRIVE</span></button>
       </div>
     </div>
   </div>
 
   <!-- ===================== SCREEN 2 · MATCHUP ===================== -->
   <div id="matchupScreen" class="hidden">
-    <div class="section-h">🎯 TODAY’S MATCHUP <button class="back" id="matchBack">‹ BACK</button></div>
+    <div class="section-h"><span id="matchupIco"></span> TODAY’S MATCHUP <button class="back" id="matchBack">‹ BACK</button></div>
 
     <div class="card opp" id="oppCard"></div>
 
@@ -569,7 +605,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <div class="schemes" id="schemeList"></div>
     <div class="scheme-detail" id="schemeDetail"></div>
 
-    <button class="cta" id="startBtn">🏈 TAKE THE FIELD</button>
+    <button class="cta" id="startBtn">TAKE THE FIELD</button>
   </div>
 
   <!-- ===================== GAME SCREEN ===================== -->
@@ -600,7 +636,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
     <!-- KICK -->
     <button class="kick" id="kickBtn" disabled>
-      <span class="tt">🦵 KICK FG</span>
+      <span class="tt"><span id="kickIco"></span> KICK FG</span>
       <span class="meta" id="kickMeta">out of range</span>
     </button>
 
@@ -609,7 +645,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
     <!-- DRIVE LOG -->
     <div class="log-head">
-      <span class="t">📜 DRIVE LOG</span>
+      <span class="t"><span id="logIco"></span> DRIVE LOG</span>
       <button class="toggle" id="scoutPeek">SCOUT ▾</button>
     </div>
     <div class="card scout hidden" id="scoutPeekCard" style="margin-top:8px"></div>
@@ -623,9 +659,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js?v=20260722e"></script>
-<script src="playbook.js?v=20260722e"></script>
-<script src="engine.js?v=20260722e"></script>
+<script src="drive_generator.js?v=20260722f"></script>
+<script src="playbook.js?v=20260722f"></script>
+<script src="engine.js?v=20260722f"></script>
 <script>
 (function(){
   'use strict';
@@ -662,14 +698,49 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     SPREAD_OPTION:{id:'QB runs · tempo',     s:'Run + tempo',        w:'RPOs run soft'},
     VERTICAL:     {id:'Deep shots · risky',  s:'Most explosive',     w:'Boom or bust'},
   };
-  // Each playbook gets its own identity — accent colour + icon — so the picker reads at a glance.
+  /* ---------- custom icon set (no stock emojis anywhere) ---------- */
+  const _svg = (b,vb='0 0 24 24')=>`<svg class="gi" viewBox="${vb}" aria-hidden="true">${b}</svg>`;
+  const IC = {
+    home:  _svg('<path fill="currentColor" d="M12 3 2.5 11.5H5V21h4.5v-6h5v6H19v-9.5h2.5z"/>'),
+    menu:  _svg('<g fill="currentColor"><rect x="3" y="5" width="18" height="2.6" rx="1"/><rect x="3" y="10.7" width="18" height="2.6" rx="1"/><rect x="3" y="16.4" width="18" height="2.6" rx="1"/></g>'),
+    gear:  _svg('<path fill="currentColor" d="M12 8.6a3.4 3.4 0 100 6.8 3.4 3.4 0 000-6.8zM20.4 12l1.9 1.5-1.7 3-2.3-.8a7 7 0 01-1.3.8L16.6 20h-3.4l-.4-2.5a7 7 0 01-1.3-.8l-2.3.8-1.7-3L9.6 12 7.5 10.5l1.7-3 2.3.8a7 7 0 011.3-.8L13.2 4h3.4l.4 2.5a7 7 0 011.3.8l2.3-.8 1.7 3z"/>'),
+    flame: _svg('<path fill="currentColor" d="M13.6 2c.9 3.7-1.9 5.2-1.9 7.9 0 1.3 1.1 2.1 1.1 2.1s1.6-1.1 1.6-2.9c1.8 1.6 3 3.7 3 5.9A5.4 5.4 0 116.6 13.4c0-2.7 1.8-4.6 2.9-6.2.9 1.9 2 2.1 2.8 1 1-1.5.4-4.4-.7-6.2z"/>'),
+    coin:  _svg('<circle cx="12" cy="12" r="9.3" fill="currentColor"/><path d="M12 6.4l1.7 3.4 3.8.3-2.9 2.5.9 3.7L12 18l-3.4 2 .9-3.7-2.9-2.5 3.8-.3z" fill="#0a1420"/>'),
+    trophy:_svg('<path fill="currentColor" d="M6 4h12v3.2A4.2 4.2 0 0113 11.3V14h2.4v2H8.6v-2H11v-2.7A4.2 4.2 0 016 7.2zM3.6 5H5.5v2.2A2.2 2.2 0 013.6 5zm14.9 0h1.9A2.2 2.2 0 0118.5 7.2zM7.4 17.4h9.2V21H7.4z"/>'),
+    calendar:_svg('<rect x="3.5" y="5" width="17" height="15.5" rx="2.4" fill="currentColor"/><path d="M3.5 9.6h17" stroke="#0a1420" stroke-width="1.7"/><g fill="#0a1420"><rect x="6.4" y="12" width="2.6" height="2.6"/><rect x="10.7" y="12" width="2.6" height="2.6"/><rect x="15" y="12" width="2.6" height="2.6"/><rect x="6.4" y="16" width="2.6" height="2.6"/><rect x="10.7" y="16" width="2.6" height="2.6"/></g><rect x="6.8" y="2.8" width="2.4" height="4.2" rx="1.2" fill="currentColor"/><rect x="14.8" y="2.8" width="2.4" height="4.2" rx="1.2" fill="currentColor"/>'),
+    share: _svg('<path fill="currentColor" d="M12 2.6l4.4 4.4h-3.1v8.4h-2.6V7H7.6z"/><path fill="currentColor" d="M4.6 10.8h2.6v8.6h9.6v-8.6h2.6V22H4.6z"/>'),
+    target:_svg('<g fill="none" stroke="currentColor" stroke-width="2.1"><circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="3.6"/></g>'),
+    clipboard:_svg('<rect x="5" y="4.2" width="14" height="16.8" rx="2.2" fill="currentColor"/><rect x="9" y="2.8" width="6" height="3.4" rx="1.3" fill="currentColor" stroke="#0a1420" stroke-width="1.1"/><g stroke="#0a1420" stroke-width="1.5" stroke-linecap="round"><path d="M8.2 10.4h7.6M8.2 13.8h7.6M8.2 17.2h5"/></g>'),
+    chart: _svg('<g fill="currentColor"><rect x="3.6" y="12.5" width="4" height="7.5" rx="1"/><rect x="10" y="7" width="4" height="13" rx="1"/><rect x="16.4" y="10" width="4" height="10" rx="1"/></g>'),
+    ball:  _svg('<ellipse cx="12" cy="12" rx="9" ry="6" fill="#8a4a20" stroke="#3a1e0c" stroke-width="1.7"/><g stroke="#efe6cf" stroke-width="1.4" stroke-linecap="round"><path d="M8.5 12h7M11 10v4M13 10v4"/></g>'),
+    shield:_svg('<path fill="currentColor" d="M12 2.6l7.4 2.6v5.2c0 5.3-3.2 8.6-7.4 10.6-4.2-2-7.4-5.3-7.4-10.6V5.2z"/>'),
+    goal:  _svg('<g fill="currentColor"><rect x="11" y="10" width="2" height="11"/><rect x="5.5" y="8.4" width="13" height="2"/><rect x="5.5" y="3" width="2" height="6"/><rect x="16.5" y="3" width="2" height="6"/></g>'),
+    help:  _svg('<circle cx="12" cy="12" r="9.2" fill="currentColor"/><path d="M9.4 9.4a2.6 2.6 0 015 .9c0 1.7-2.4 1.9-2.4 3.6M12 16.6v.05" fill="none" stroke="#0a1420" stroke-width="2" stroke-linecap="round"/>'),
+    games: _svg('<rect x="2.5" y="7" width="19" height="10.5" rx="3.4" fill="currentColor"/><g fill="#0a1420"><rect x="6" y="11" width="2" height="2.4"/><rect x="4" y="13" width="2" height="2.4" transform="rotate(0)"/><circle cx="16.5" cy="11.6" r="1.3"/><circle cx="18.6" cy="13.4" r="1.3"/></g>'),
+    replay:_svg('<path fill="currentColor" d="M12 5V2.2L7.6 6 12 9.8V7a5 5 0 11-4.9 6H4.9A7 7 0 1012 5z"/>'),
+    scales:_svg('<g fill="currentColor"><rect x="11.2" y="4" width="1.6" height="15"/><rect x="7" y="18.4" width="10" height="1.8" rx=".9"/><path d="M6 6h12" stroke="currentColor" stroke-width="1.6"/><path d="M6 6l-3 5.5h6zM18 6l-3 5.5h6z" fill="none" stroke="currentColor" stroke-width="1.5"/></g>'),
+    box:   _svg('<g fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"/><path d="M4.5 9.5h15M4.5 14.5h15M9.5 4.5v15M14.5 4.5v15"/></g>'),
+    dice:  _svg('<rect x="4" y="4" width="16" height="16" rx="3.2" fill="currentColor"/><g fill="#0a1420"><circle cx="8.4" cy="8.4" r="1.5"/><circle cx="15.6" cy="8.4" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="8.4" cy="15.6" r="1.5"/><circle cx="15.6" cy="15.6" r="1.5"/></g>'),
+    turnover:_svg('<g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9a6 6 0 0110-2"/><path d="M18 15a6 6 0 01-10 2"/></g><path fill="currentColor" d="M16 3.5l1 4.2-4.2-1zM8 20.5l-1-4.2 4.2 1z"/>'),
+    stop:  _svg('<rect x="5" y="5" width="14" height="14" rx="2.4" fill="currentColor"/>'),
+    clock: _svg('<circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5.2l3.4 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'),
+    flag:  _svg('<g fill="currentColor"><rect x="5" y="3" width="1.8" height="18" rx=".9"/><path d="M6.8 4h11l-2.4 3.4L17.8 11H6.8z"/></g>'),
+    // weather
+    wx_sun:_svg('<circle cx="12" cy="12" r="4.4" fill="currentColor"/><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.2 5.2l1.9 1.9M16.9 16.9l1.9 1.9M18.8 5.2l-1.9 1.9M7.1 16.9l-1.9 1.9"/></g>'),
+    wx_cloud:_svg('<path fill="currentColor" d="M7 18a4 4 0 01-.5-8A5.5 5.5 0 0117 11.2 3.6 3.6 0 0117 18z"/>'),
+    wx_rain:_svg('<path fill="currentColor" d="M7 15a4 4 0 01-.5-8A5.5 5.5 0 0117 8.2 3.6 3.6 0 0117 15z"/><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8.5 17.5l-1 3M12 17.5l-1 3M15.5 17.5l-1 3"/></g>'),
+    wx_snow:_svg('<path fill="currentColor" d="M7 15a4 4 0 01-.5-8A5.5 5.5 0 0117 8.2 3.6 3.6 0 0117 15z"/><g fill="currentColor"><circle cx="8.5" cy="19" r="1.1"/><circle cx="12" cy="20" r="1.1"/><circle cx="15.5" cy="19" r="1.1"/></g>'),
+    wx_wind:_svg('<g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 9h11a2.5 2.5 0 10-2.5-2.5"/><path d="M3 13h15a2.5 2.5 0 11-2.5 2.5"/><path d="M3 17h8"/></g>'),
+    wx_dome:_svg('<path fill="currentColor" d="M3.5 13a8.5 8.5 0 0117 0z"/><rect x="3" y="13" width="18" height="6.5" rx="1.5" fill="currentColor"/><path d="M6 13v6M9 13v6M12 13v6M15 13v6M18 13v6" stroke="#0a1420" stroke-width="1.2"/>'),
+  };
+  // Each playbook gets its own identity — accent colour + a route glyph (no emoji).
   const SCHEME_SKIN = {
-    WEST_COAST:   {acc:'#4a97e0', ic:'🎯'},
-    SMASH_MOUTH:  {acc:'#d1553f', ic:'🔨'},
-    WIDE_ZONE:    {acc:'#3fb56a', ic:'🏃'},
-    AIR_RAID:     {acc:'#a877e6', ic:'🚀'},
-    SPREAD_OPTION:{acc:'#2fb9b0', ic:'⚡'},
-    VERTICAL:     {acc:'#eb8a2a', ic:'💣'},
+    WEST_COAST:   {acc:'#4a97e0', ic:_svg('<g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 20V9l5 4"/><path d="M11 13l6-6"/></g>')},
+    SMASH_MOUTH:  {acc:'#d1553f', ic:_svg('<g fill="currentColor"><rect x="10" y="4" width="4" height="12"/><path d="M6 14l6 6 6-6z"/></g>')},
+    WIDE_ZONE:    {acc:'#3fb56a', ic:_svg('<g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15h13l-3-3M16 15l-3 3"/><path d="M4 9c4-3 8 3 12 0"/></g>')},
+    AIR_RAID:     {acc:'#a877e6', ic:_svg('<g fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 20V6l-3 3M8 6l3 3"/><path d="M16 20V6l-3 3M16 6l3 3"/></g>')},
+    SPREAD_OPTION:{acc:'#2fb9b0', ic:_svg('<g fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6"/><path d="M12 14l-6-6 2-.5M12 14l6-6-2-.5"/></g>')},
+    VERTICAL:     {acc:'#eb8a2a', ic:_svg('<g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V5l-4 4M12 5l4 4"/></g>')},
   };
   // Schematic play-art shown ONLY after a playbook is tapped (routes in the scheme's accent).
   function schemeSVG(id, formation, routes){
@@ -704,7 +775,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   /* ---------- runtime ---------- */
   let drive=null, practice=false;
-  const WX_ICON = {Sunny:'☀',Clear:'☀',Cloudy:'☁',Windy:'🌬',Rain:'🌧',Cold:'❄',Snow:'❄',Dome:'🏟'};
+  const WX_ICON = {Sunny:IC.wx_sun,Clear:IC.wx_sun,Cloudy:IC.wx_cloud,Windy:IC.wx_wind,Rain:IC.wx_rain,Cold:IC.wx_snow,Snow:IC.wx_snow,Dome:IC.wx_dome};
 
   /* ---------- scouting + info render ---------- */
   function renderInfo(dateStr){
@@ -723,21 +794,21 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
      gets instantly, plus how to attack it. The generated intel lines below add
      the depth for people who want it. Keyed by the generator's styleKey. */
   const DEF_GUIDE = {
-    BEND_DONT_BREAK: { emoji:'🛡️',
-      plain:'A patient, careful defense. They sit back, keep everything in front of them, and rarely gamble — they’d rather make you drive the length of the field than give up one big play.',
-      attack:'Take what they give you. Short passes and runs move the chains all day. Stay patient and don’t force a deep shot into coverage.' },
-    BALANCED: { emoji:'⚖️',
-      plain:'A straight-up defense with no glaring weakness. They react to what you line up in rather than dictating to you, so nothing is off the table.',
-      attack:'Play the situation: run it on short yardage, throw it on long. Mix your calls so they can’t sit on anything.' },
-    STACK_THE_BOX: { emoji:'🧱',
-      plain:'They crowd extra defenders near the line to smother the run and dare you to beat them through the air.',
-      attack:'Throw over the top. Play-action and deep shots punish a loaded box — when everyone’s crashing the run, the space is downfield.' },
-    PRESSURE: { emoji:'🔥',
-      plain:'They send extra rushers to get after the quarterback. Hold the ball too long and you’re getting sacked.',
-      attack:'Get it out fast — quick passes and screens beat the blitz. Once they’ve overcommitted, a well-timed deep shot can go the distance.' },
-    ZERO_HESITATION: { emoji:'🎲',
-      plain:'All-out aggressive and blitz-happy. They gamble for big stops, which means huge losses for you — or huge gains when you beat them.',
-      attack:'Beat the rush with the quick game first, then take your shot: a gambler leaves the back door wide open.' },
+    BEND_DONT_BREAK: { emoji:IC.shield,
+      plain:'A patient, conservative unit. They drop into deep zones, keep every route in front of them, and almost never gamble — they’ll happily trade five yards a play to avoid giving up the one shot that beats them.',
+      attack:'Take what they give you. Underneath throws and steady runs move the chains all day. Stay patient and don’t force a low-percentage ball into a crowded deep zone.' },
+    BALANCED: { emoji:IC.scales,
+      plain:'A disciplined, assignment-sound defense. They don’t tip pressure or sell out to any one thing — they align to your formation, stay in their gaps, and make you win the down-to-down chess match. There’s no single hole to exploit, so you have to out-execute them.',
+      attack:'Play the down and distance honestly: run on short yardage, throw on long, and keep your calls varied so they never get a bead on your tendencies.' },
+    STACK_THE_BOX: { emoji:IC.box,
+      plain:'A run-stuffing front that walks extra defenders down near the line of scrimmage. They’re daring you to throw over the top — and leaving their secondary short-handed to do it.',
+      attack:'Make them pay for loading the box. Play-action holds the linebackers while your shots go over a thin back end — when everyone crashes the run, the grass is downfield.' },
+    PRESSURE: { emoji:IC.flame,
+      plain:'An attacking front that brings extra rushers to speed up your clock. Hold the ball a beat too long and the sack — or the strip — is coming.',
+      attack:'Beat the rush before it beats you: quick game and screens get it out of your hand fast. Once they’ve overcommitted up front, a well-timed shot can take the top off.' },
+    ZERO_HESITATION: { emoji:IC.dice,
+      plain:'An all-out, high-variance defense that blitzes early and often, chasing negative plays. They’ll blow up a drive with a sack or a stuff — but when you beat the pressure, there’s wide-open field behind it.',
+      attack:'Handle the heat with the quick game first, then take your shot: an all-out blitz leaves the back door standing wide open.' },
   };
 
   // Drawn-up defensive front for the matchup card (X's & O's, no emoji).
@@ -768,7 +839,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   function renderOpponent(dateStr){
     const day = GEN.generateDailyDrive(dateStr);
     const rep = GEN.scoutingReport(dateStr, day);
-    const g = DEF_GUIDE[rep.styleKey] || {emoji:'🛡️', plain:rep.note, attack:'Read the box and play the down and distance.'};
+    const g = DEF_GUIDE[rep.styleKey] || {emoji:IC.shield, plain:rep.note, attack:'Read the box and play the down and distance.'};
     let deep = '';
     for(const l of rep.lines){ deep += `<div class="ln"><span class="tag">${l.tag}</span><span class="tx">${l.text}</span></div>`; }
     const covHint = rep.coverage==='MAN' ? 'motion & rubs beat it' : rep.coverage==='ZONE' ? 'find the soft spot' : 'man-to-man & zone';
@@ -795,11 +866,11 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       +   `<div class="ap-col good"><div class="ap-h">✓ PLAY SHEET</div>${html(good,'good')}</div>`
       +   `<div class="ap-col bad"><div class="ap-h">✕ DO NOT RUN</div>${html(bad,'bad')}</div>`
       + `</div>`
-      + `<button class="deep-toggle" id="deepToggle">📋 FULL SCOUTING REPORT ▾</button>`
+      + `<button class="deep-toggle" id="deepToggle">${IC.clipboard} FULL SCOUTING REPORT ▾</button>`
       + `<div class="deep hidden" id="deepReport">${deep}</div>`;
     const dt = el('deepToggle');
     dt.onclick=()=>{ const d=el('deepReport'); d.classList.toggle('hidden');
-      dt.textContent = '📋 FULL SCOUTING REPORT ' + (d.classList.contains('hidden')?'▾':'▴'); };
+      dt.innerHTML = IC.clipboard + ' FULL SCOUTING REPORT ' + (d.classList.contains('hidden')?'▾':'▴'); };
   }
   const ARCH_LABEL = { RUN:'Run the ball', QB_SNEAK:'QB sneak', QUICK:'Quick passes',
     SCREEN:'Screens', INTERMEDIATE:'Medium passes', PLAY_ACTION:'Play-action', DEEP:'Deep shots' };
@@ -824,7 +895,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   function renderSchemes(){
     const list = el('schemeList'); list.innerHTML='';
     for(const key of SCHEME_ORDER){
-      const s = PB.schemes[key], m = SCHEME_META[key], sk = SCHEME_SKIN[key]||{acc:'var(--line2)',ic:'🏈'};
+      const s = PB.schemes[key], m = SCHEME_META[key], sk = SCHEME_SKIN[key]||{acc:'var(--line2)',ic:IC.ball};
       const b = document.createElement('button');
       b.className='scheme'+(key===STORE.scheme?' sel':'');
       b.style.setProperty('--acc', sk.acc);
@@ -833,7 +904,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       b.onclick=()=>{ STORE.scheme=key; save(STORE); renderSchemes(); };
       list.appendChild(b);
     }
-    const key = STORE.scheme, m = SCHEME_META[key], sk = SCHEME_SKIN[key]||{acc:'var(--gold)',ic:'🏈'};
+    const key = STORE.scheme, m = SCHEME_META[key], sk = SCHEME_SKIN[key]||{acc:'var(--gold)',ic:IC.ball};
     el('schemeDetail').innerHTML =
       `<div class="sd-card" style="--acc:${sk.acc}">`
       + `<div class="sd-art">${SCHEME_ART[key]||''}</div>`
@@ -1134,7 +1205,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       if(play.turnover){
         shake(); ball.style.opacity='1'; ball.classList.add('spin');
         step(ball, endX+1, 36, 260); await sleep(240);
-        burst(play.turnover==='ABORTED_SNAP'?'BOTCHED 💀':'FUMBLE 🤲', endX, 36, '#e0705c'); flash('rgba(224,112,92,.5)');
+        burst(play.turnover==='ABORTED_SNAP'?'BOTCHED':'FUMBLE', endX, 36, '#e0705c'); flash('rgba(224,112,92,.5)');
         await sleep(560);
       } else {
         if(after.result!=='TOUCHDOWN'){ rb.classList.add('down'); tacklers.forEach(t=>t.classList.add('down')); }
@@ -1161,21 +1232,27 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       const rusher = nearest(F.dl, dropX, 50, 1)[0];
       drawRoute([[dropX,50],[(dropX+catchX)/2,(50+targetY)/2],[catchX,targetY]]);   // pass path
       await sleep(240);
+      // QB throwing motion — cock back and release. The ball leaves at the top of the snap-forward.
+      const doThrow = async ()=>{ if(qb){ qb.classList.remove('faceL'); qb.classList.add('qbthrow');
+        setTimeout(()=>qb&&qb.classList.remove('qbthrow'), 360); } await sleep(120); };
 
       if(play.turnover==='INTERCEPTION'){
+        await doThrow();
         ball.classList.add('spin'); step(ball, catchX, targetY, 450, 'ease-in'); await sleep(420);
         if(cover){ step(cover, catchX, targetY, 110); }                            // DB jumps it
-        burst('INTERCEPTED 🎯', catchX, targetY, '#e0705c'); flash('rgba(224,112,92,.5)'); shake();
+        burst('INTERCEPTED', catchX, targetY, '#e0705c'); flash('rgba(224,112,92,.5)'); shake();
         ball.style.opacity='0'; await sleep(600);
       } else if(play.sack || play.bucket==='DISASTER'){
         if(rusher) step(rusher, dropX+1, 50, 250, 'ease-in');
         await sleep(230); shake(); qb.classList.add('down'); ball.style.opacity='0';
         burst('SACKED', dropX, 52, '#e0705c'); flash('rgba(224,112,92,.4)'); await sleep(560);
       } else if(play.incomplete){
+        await doThrow();
         ball.classList.add('spin'); step(ball, catchX, targetY, 450, 'ease-out'); await sleep(440);
         step(ball, catchX, targetY+12, 190); ball.style.opacity='0';
-        burst('INCOMPLETE ⏱️', catchX, targetY, '#bcae95'); await sleep(500);
+        burst('INCOMPLETE', catchX, targetY, '#bcae95'); await sleep(500);
       } else {
+        await doThrow();
         ball.classList.add('spin'); step(ball, catchX, targetY, 430, 'ease-out'); await sleep(420);
         ball.classList.remove('spin'); ball.style.opacity='0';
         const runY = targetY<50?44:56;
@@ -1192,13 +1269,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
   function outcomeBurst(play, after, xPct, yPct){
     const y = yPct==null?50:yPct;
-    if(after && after.result==='TOUCHDOWN'){ burst('TOUCHDOWN! 🏈', Math.min(xPct,90), y, '#ffcf4d'); flash('rgba(235,166,31,.55)'); confettiish(); }
-    else if(play.bucket==='EXPLOSIVE'){ burst('BIG GAIN! 💥 +'+play.yards, xPct, y, '#7bd67e'); flash('rgba(123,214,126,.4)'); }
-    else if(play.bucket==='SUCCESS'){ burst('+'+play.yards+' ✔', xPct, y, '#7bd67e'); }
+    if(after && after.result==='TOUCHDOWN'){ burst('TOUCHDOWN!', Math.min(xPct,90), y, '#ffcf4d'); flash('rgba(235,166,31,.55)'); confettiish(); }
+    else if(play.bucket==='EXPLOSIVE'){ burst('BIG GAIN! +'+play.yards, xPct, y, '#7bd67e'); flash('rgba(123,214,126,.4)'); }
+    else if(play.bucket==='SUCCESS'){ burst('+'+play.yards, xPct, y, '#7bd67e'); }
     else { burst((play.yards>0?'+':'')+play.yards, xPct, y, '#bcae95'); }
   }
-  function confettiish(){ for(let i=0;i<8;i++){ const c=fx('burst', 84+ (Math.random()*8-4), 30+Math.random()*40, ['🎉','🟩','🏈'][i%3]);
-      c.style.fontSize='14px'; c.classList.add('show'); setTimeout(()=>c.remove(),900); } }
+  function confettiish(){ const cols=['#7bd67e','#f2b21c','#4a97e0','#eef3fb'];
+    for(let i=0;i<10;i++){ const c=fx('confetti', 82+(Math.random()*12-6), 22+Math.random()*48);
+      c.style.background=cols[i%cols.length]; c.style.setProperty('--dx',(Math.random()*16-8)+'px');
+      c.classList.add('show'); setTimeout(()=>c.remove(),950); } }
 
   async function kickOut(before, res){
     clearFx();
@@ -1207,8 +1286,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     // kick arcs toward the uprights (right)
     const made = res.result==='FIELD_GOAL';
     move(ball, 92, made?18:8, 620); ball.classList.add('spin'); await sleep(650);
-    if(made){ burst('IT’S GOOD! 🦵', 88, 20, '#7bd67e'); flash('rgba(123,214,126,.4)'); }
-    else { burst('NO GOOD 😬', 88, 12, '#e0705c'); shake(); }
+    if(made){ burst('IT’S GOOD!', 88, 20, '#7bd67e'); flash('rgba(123,214,126,.4)'); }
+    else { burst('NO GOOD', 88, 12, '#e0705c'); shake(); }
     await sleep(700); clearFx();
   }
 
@@ -1220,16 +1299,16 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   /* ---------- end of drive ---------- */
   const RESULT_META = {
-    TOUCHDOWN:{em:'🏈',t:'TOUCHDOWN!',win:true,coins:500},
-    FIELD_GOAL:{em:'🦵',t:'FIELD GOAL',win:false,coins:200},
-    MISSED_FG:{em:'😬',t:'MISSED KICK',win:false,coins:40},
-    TURNOVER:{em:'🔄',t:'TURNOVER',win:false,coins:20},
-    TURNOVER_ON_DOWNS:{em:'🛑',t:'STOPPED ON DOWNS',win:false,coins:30},
-    CLOCK:{em:'⏱️',t:'CLOCK EXPIRED',win:false,coins:30},
-    SAFETY:{em:'🙈',t:'SAFETY',win:false,coins:0},
+    TOUCHDOWN:{em:IC.ball,t:'TOUCHDOWN!',win:true,coins:500},
+    FIELD_GOAL:{em:IC.goal,t:'FIELD GOAL',win:false,coins:200},
+    MISSED_FG:{em:IC.goal,t:'MISSED KICK',win:false,coins:40},
+    TURNOVER:{em:IC.turnover,t:'TURNOVER',win:false,coins:20},
+    TURNOVER_ON_DOWNS:{em:IC.stop,t:'STOPPED ON DOWNS',win:false,coins:30},
+    CLOCK:{em:IC.clock,t:'CLOCK EXPIRED',win:false,coins:30},
+    SAFETY:{em:IC.shield,t:'SAFETY',win:false,coins:0},
   };
   function endDrive(state){
-    const meta = RESULT_META[state.result]||{em:'🏁',t:state.result,win:false,coins:20};
+    const meta = RESULT_META[state.result]||{em:IC.flag,t:state.result,win:false,coins:20};
     let earned = meta.coins;
     let streakTxt='';
     if(!practice){
@@ -1242,7 +1321,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
           STORE.streak = (STORE.lastWinDate===y)? STORE.streak+1 : 1;
           STORE.lastWinDate = DATE;
           earned += 100*STORE.streak;
-          streakTxt = '🔥 '+STORE.streak+' day streak';
+          streakTxt = STORE.streak+' day streak';
         } else {
           STORE.streak = 0; streakTxt='Streak reset — back at it tomorrow.';
         }
@@ -1250,7 +1329,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
         STORE.coins += earned;
         save(STORE);
       } else {
-        earned=0; streakTxt = meta.win?('🔥 '+STORE.streak+' day streak'):'';
+        earned=0; streakTxt = meta.win?(STORE.streak+' day streak'):'';
       }
     } else { earned=0; }
     refreshChips();
@@ -1258,7 +1337,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
 
   function gradeBar(state){
-    return state.grades.map(g=> g.letter.startsWith('A')?'🟩':g.letter==='B'?'🟨':g.letter==='C'?'🟧':'🟥').join('');
+    return state.grades.map(g=>{ const c = g.letter.startsWith('A')?'a':g.letter==='B'?'b':g.letter==='C'?'c':'d';
+      return `<span class="gsq ${c}"></span>`; }).join('');
   }
   function showResultModal(state, meta, earned, streakTxt){
     const yds = state.yardline - state.startYard;
@@ -1273,9 +1353,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
         <div class="b"><div class="v">${state.log.length}</div><div class="k">PLAYS</div></div>
         <div class="b"><div class="v">${yds}</div><div class="k">YARDS</div></div>
       </div>
-      ${earned>0?`<div class="rewards">+${earned} 🪙  ${streakTxt}</div>`:(streakTxt?`<div class="rewards">${streakTxt}</div>`:'')}
-      <button class="primary" id="shareBtn">📣 SHARE RESULT</button>
-      <button class="secondary" id="practiceBtn">🔁 PRACTICE ANOTHER DRIVE</button>
+      ${earned>0?`<div class="rewards">+${earned} ${IC.coin}  ${streakTxt}</div>`:(streakTxt?`<div class="rewards">${streakTxt}</div>`:'')}
+      <button class="primary" id="shareBtn">SHARE RESULT</button>
+      <button class="secondary" id="practiceBtn">PRACTICE ANOTHER DRIVE</button>
       ${practice?'<button class="secondary" id="closeBtn">CLOSE</button>':''}
     </div></div>`;
     el('shareBtn').onclick=()=>shareResult(state);
@@ -1327,11 +1407,11 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     const m=el('sheetMount');
     m.innerHTML=`<div class="sheet"><div class="inner">
       <h3>RUN THE DRIVE</h3>
-      <button class="mi" id="homeMi"><span class="ico">🏠</span> Home</button>
-      <button class="mi" id="howto"><span class="ico">❓</span> How to play</button>
-      <button class="mi" id="statsMi"><span class="ico">📊</span> Your record <span style="flex:1"></span><span style="color:var(--cream-dim);font-size:15px">best 🔥${STORE.best}</span></button>
-      <button class="mi" id="practiceMi"><span class="ico">🔁</span> Practice drive</button>
-      <a href="/"><span class="ico">🎮</span> More RunThe.GG games</a>
+      <button class="mi" id="homeMi"><span class="ico">${IC.home}</span> Home</button>
+      <button class="mi" id="howto"><span class="ico">${IC.help}</span> How to play</button>
+      <button class="mi" id="statsMi"><span class="ico">${IC.chart}</span> Your record <span style="flex:1"></span><span style="color:var(--cream-dim);font-size:15px">best ${STORE.best}</span></button>
+      <button class="mi" id="practiceMi"><span class="ico">${IC.replay}</span> Practice drive</button>
+      <a href="/"><span class="ico">${IC.games}</span> More RunThe.GG games</a>
       <button class="mi" id="closeSheet" style="justify-content:center;color:var(--cream-dim)">Close</button>
     </div></div>`;
     const close=()=>m.innerHTML='';
@@ -1360,7 +1440,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     const dates=Object.keys(STORE.history); const wins=dates.filter(d=>{const r=STORE.history[d];return r==='TOUCHDOWN';}).length;
     const scored=dates.filter(d=>['TOUCHDOWN','FIELD_GOAL'].includes(STORE.history[d])).length;
     el('modalMount').innerHTML=`<div class="overlay"><div class="modal">
-      <div class="em">📊</div><h2>YOUR RECORD</h2>
+      <div class="em">${IC.chart}</div><h2>YOUR RECORD</h2>
       <div class="statgrid">
         <div class="b"><div class="v">${STORE.streak}</div><div class="k">STREAK</div></div>
         <div class="b"><div class="v">${STORE.best}</div><div class="k">BEST</div></div>
@@ -1381,7 +1461,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     el('splashScreen').classList.remove('hidden');
     setChrome(false);
     refreshChips();
-    const gv=el('goalV'); if(gv) gv.textContent = (STORE.history[DATE]==='TOUCHDOWN') ? '✅ TOUCHDOWN — DONE!' : 'SCORE A TOUCHDOWN';
+    const gv=el('goalV'); if(gv) gv.textContent = (STORE.history[DATE]==='TOUCHDOWN') ? 'TOUCHDOWN — DONE!' : 'SCORE A TOUCHDOWN';
     window.scrollTo(0,0);
   }
   function showMatchup(){
@@ -1391,13 +1471,13 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     setChrome(true);
     try { renderOpponent(DATE); }
     catch(e){ console.error('renderOpponent failed', e);
-      el('oppCard').innerHTML = '<div class="name"><span class="em">🛡️</span><div><div class="who">TODAY’S DEFENSE</div><div class="k">Scouting unavailable — read the box and play the down.</div></div></div>'; }
+      el('oppCard').innerHTML = '<div class="name"><span class="em">'+IC.shield+'</span><div><div class="who">TODAY’S DEFENSE</div><div class="k">Scouting unavailable — read the box and play the down.</div></div></div>'; }
     renderSchemes();
     // reflect whether today's daily is already done
     const played = STORE.history[DATE]!==undefined;
     el('startBtn').textContent = played
-      ? (STORE.history[DATE]==='TOUCHDOWN' ? '✅ WON TODAY — PRACTICE A DRIVE' : '🔁 PLAYED TODAY — PRACTICE A DRIVE')
-      : '🏈 TAKE THE FIELD';
+      ? (STORE.history[DATE]==='TOUCHDOWN' ? 'WON TODAY — PRACTICE A DRIVE' : 'PLAYED TODAY — PRACTICE A DRIVE')
+      : 'TAKE THE FIELD';
     window.scrollTo(0,0);
   }
 
@@ -1563,6 +1643,13 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     requestAnimationFrame(frame);
   }
   function boot(){
+    // paint the custom glyph icons into their placeholders (no stock emojis)
+    const setIco=(id,svg)=>{ const e=el(id); if(e) e.innerHTML=svg; };
+    setIco('homeBtn',IC.home); setIco('menuBtn',IC.menu); setIco('gearBtn',IC.gear);
+    setIco('streakIco',IC.flame); setIco('coinsIco',IC.coin); setIco('coinsHomeIco',IC.coin);
+    setIco('matchupIco',IC.target); setIco('kickIco',IC.goal); setIco('logIco',IC.clipboard);
+    const navIcs=[['navLeaderboard',IC.trophy],['navStreak',IC.calendar],['navShare',IC.share]];
+    navIcs.forEach(([id,svg])=>{ const e=el(id); const ic=e&&e.querySelector('.ic'); if(ic) ic.innerHTML=svg; });
     buildAttract();
     refreshChips();
     renderInfo(DATE);
