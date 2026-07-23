@@ -1673,6 +1673,21 @@ window.GA_ID='G-L29P5MRWKE';
      smaller golfer + tucked nav keep the pinned header lean so the item tiles sit right under it. */
   .closet-sticky .shop-preview{height:164px !important; margin:0 !important}
   .closet-sticky .shop-preview .avatarfig{height:164px !important; width:132px !important}
+  /* closet hero: boosts (left) + quick actions (right) flanking the golfer (owner) */
+  .closet-hero{display:flex; align-items:center; justify-content:center; gap:8px}
+  .closet-hero .closet-side{flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:5px; justify-content:center}
+  .closet-boosts{align-items:flex-start; padding-left:4px}
+  .cb-hd{font:800 9.5px var(--body); letter-spacing:.12em; color:#8fae9d; text-transform:uppercase; margin-bottom:1px}
+  .cb-row{font:800 12.5px var(--body); letter-spacing:.03em; line-height:1.3}
+  .cb-up{color:#41dea6} .cb-dn{color:#ff7a70}
+  .cb-none{font:700 11px var(--body); color:#7f978b}
+  .closet-acts{padding-right:2px}
+  .closet-abtn{display:flex; align-items:center; justify-content:center; gap:6px; width:100%; padding:9px 6px;
+    border-radius:10px; border:1px solid rgba(255,255,255,.18); background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.2));
+    color:#dfeae2; font:800 11.5px var(--body); letter-spacing:.02em; cursor:pointer}
+  .closet-abtn svg{width:13px; height:13px}
+  .closet-abtn.ca-store{border-color:rgba(241,208,74,.55); color:var(--gold)}
+  .closet-abtn.ca-best{border-color:rgba(65,222,166,.55); color:#41dea6}
   .closet-seg{margin:2px 0 0}
   .closet-seg button{font-size:11px; padding:8px 3px; letter-spacing:0}
   .closet-cats{padding:7px 2px 1px !important; margin-bottom:0 !important}
@@ -8050,6 +8065,33 @@ function bagMenuNode(){
   }
   return wrap;
 }
+// ---- closet hero (owner): live boost list + Store / Random outfit / Best outfit quick actions ----
+function closetBoostListHTML(){
+  let rows='';
+  try{ const b=accBoost(); CATS.forEach(c=>{ const v=b[c.k]; if(!v) return;
+    rows+='<div class="cb-row '+(v>0?'cb-up':'cb-dn')+'">'+(v>0?'+':'')+v+' '+(RSHORT[c.k]||c.k)+'</div>'; }); }catch(e){}
+  return '<div class="cb-hd">Boosts</div>'+(rows||'<div class="cb-none">None yet</div>');
+}
+// random outfit from OWNED items only ('hat' color before 'hw' so a No-Hat roll isn't overridden by the color pick)
+function closetRandomOutfit(){
+  ['shirt','hat','pat','hw','ew','pants','shoes','top','leg','cleats','fx','club','ball'].forEach(cat=>{ try{
+    const own=(cosmeticItems(cat)||[]).filter(o=>cosOwned(cat,o.id)); if(!own.length) return;
+    cosEquip(cat, own[Math.floor(Math.random()*own.length)].id);
+  }catch(e){} });
+  track('closet_random'); render(); toast('\ud83c\udfb0 Outfit randomized!');
+}
+// best outfit: per boost-carrying category, equip the owned item with the highest NET boost (ties keep your pick)
+function closetBestOutfit(){
+  ['hw','ew','pat','club'].forEach(cat=>{ try{
+    const own=(cosmeticItems(cat)||[]).filter(o=>cosOwned(cat,o.id)); if(!own.length) return;
+    let best=null, bs=-1e9;
+    own.forEach(o=>{ const b=cosBoost(cat,o.id)||{}; let s=0; for(const k in b) s+=b[k];
+      if(s>bs || (s===bs && cosIsEquipped(cat,o.id))){ bs=s; best=o; } });
+    if(best && !cosIsEquipped(cat,best.id)) cosEquip(cat,best.id);
+  }catch(e){} });
+  track('closet_best'); render();
+  try{ toast('\u2728 Best boosts equipped \u00b7 +'+accBoostTotal()+' total'); }catch(e){ toast('Best boosts equipped'); }
+}
 function scrSetup(){
   const guest=!sbSignedIn();
   const editing=!!S.setupEdit;   // CS356c: editing the profile golfer from the Trophy Room (not starting a career)
@@ -8079,7 +8121,20 @@ function scrSetup(){
   const segHTML = SECTIONS.map(s=>`<button class="${s[0]===sec[0]?'on':''}" data-ssec="${s[0]}">${esc(s[1])}${secNew(s)&&s[0]!==sec[0]?NDOT:''}</button>`).join('');
   const chipHTML = sec[2].map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-scat="${c[0]}">${esc(c[1])}${(c[0]!==cat && cosCatNew(c[0])>0)?NDOT:''}</button>`).join('');
   // PINNED header: golfer + section tabs + the section's category chips (all one clean stack; only tiles scroll)
-  const sticky=$(`<div class="shop-sticky closet-sticky"><div class="shop-preview">${avatarShowHTML()}</div><div class="segrow closet-seg">${segHTML}</div>${sec[2].length>1?`<div class="catrow catwrap closet-cats">${chipHTML}</div>`:''}</div>`);
+  const hero = guest || !SHOP_ENABLED
+    ? `<div class="closet-hero"><div class="shop-preview">${avatarShowHTML()}</div></div>`
+    : `<div class="closet-hero">
+        <div class="closet-side closet-boosts">${closetBoostListHTML()}</div>
+        <div class="shop-preview">${avatarShowHTML()}</div>
+        <div class="closet-side closet-acts">
+          <button class="closet-abtn ca-store" data-cact="store">\ud83d\udecd Store</button>
+          <button class="closet-abtn" data-cact="random">\ud83c\udfb0 Random</button>
+          <button class="closet-abtn ca-best" data-cact="best">\u2728 Best Fit</button>
+        </div></div>`;
+  const sticky=$(`<div class="shop-sticky closet-sticky">${hero}<div class="segrow closet-seg">${segHTML}</div>${sec[2].length>1?`<div class="catrow catwrap closet-cats">${chipHTML}</div>`:''}</div>`);
+  sticky.querySelectorAll('[data-cact]').forEach(x=>x.onclick=()=>{ const k=x.getAttribute('data-cact');
+    if(k==='store'){ track('closet_store'); S.shopPreview=null; S.overlay='shop'; S.shopSec='apparel'; render(); }
+    else if(k==='random') closetRandomOutfit(); else closetBestOutfit(); });
   wrap.appendChild(sticky);
 
   // ---- scrolling content: the item tiles for the current category ----
