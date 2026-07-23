@@ -167,8 +167,41 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .modal .em{display:flex; justify-content:center;} .modal .em .gi{width:48px; height:48px;}
 .modal .rewards .gi{width:14px; height:14px; color:#ffd25a; vertical-align:-.16em;}
 .sheet .mi .ico .gi, .sheet a .ico .gi{width:22px; height:22px;}
-.gradebar .gsq{display:inline-block; width:15px; height:15px; border-radius:3px; margin:1px;}
+.gradebar .gsq{display:inline-block; width:16px; height:16px; border-radius:3px; margin:1.5px;}
 .gsq.a{background:#7bd67e;} .gsq.b{background:#e8c34a;} .gsq.c{background:#e88a2e;} .gsq.d{background:#e0705c;}
+.gsq.flip{animation:gflip .42s ease both;}
+@keyframes gflip{0%{transform:rotateX(-90deg) scale(.7); opacity:0;} 55%{opacity:1;} 100%{transform:rotateX(0) scale(1); opacity:1;}}
+/* result: percentile hero + drive of the day */
+.pctwrap{margin:8px 0 12px;}
+.pctbar{height:11px; border-radius:6px; background:var(--panel2); border:1px solid var(--line); overflow:hidden;}
+.pctfill{height:100%; border-radius:6px; background:linear-gradient(90deg,#2f8f52,#7bd67e); transition:width .9s cubic-bezier(.2,.85,.25,1);}
+.pcttxt{font-size:16px; color:var(--cream-dim); margin-top:8px;}
+.pcttxt b{color:var(--gold-bright); font-family:var(--pix); font-size:15px;}
+.drivestar{display:flex; flex-direction:column; gap:3px; text-align:left; margin:2px 0 12px; padding:11px 13px;
+  background:var(--panel2); border:1px solid var(--line); border-left:4px solid var(--gold); border-radius:11px;}
+.drivestar .dl{font-family:var(--pix); font-size:8px; color:var(--gold-bright); letter-spacing:.5px; display:flex; align-items:center; gap:6px;}
+.drivestar .dl .gi{width:12px; height:12px;}
+.drivestar .dt{font-size:16px; color:var(--cream); margin-top:2px;}
+.drivestar .dv{font-size:14px; color:var(--cream-dim);}
+/* home today-state + countdown */
+.home-status{position:relative; z-index:3; max-width:344px; margin:14px auto 0;}
+.hs-goal{text-align:center; font-family:var(--pix); font-size:9px; letter-spacing:1px; color:#8fa0b5;}
+.hs-goal b{color:var(--gold-bright);}
+.hs-done{display:flex; flex-direction:column; gap:7px; align-items:center; background:rgba(9,18,30,.6);
+  border:2px solid rgba(200,212,235,.18); border-radius:12px; padding:10px 14px;}
+.hs-row{display:flex; align-items:center; gap:9px;}
+.hs-ic{display:inline-flex;} .hs-ic .gi{width:20px; height:20px;}
+.hs-ic.win{color:#7bd67e;} .hs-ic.loss{color:#8fa0b5;}
+.hs-txt{font-family:var(--term); font-size:16px; color:var(--cream-dim);} .hs-txt b{color:var(--cream);}
+.hs-cd{font-family:var(--pix); font-size:8px; letter-spacing:1px; color:#7d90a6;} .hs-cd b{color:var(--gold-bright); font-size:11px;}
+/* leaderboard */
+.lb-pct{font-family:var(--pix); font-size:30px; color:var(--gold); text-shadow:0 3px 0 rgba(0,0,0,.4); margin:4px 0 6px;}
+.lb-sub{font-size:16px; color:var(--cream-dim); margin-bottom:12px;} .lb-sub b{color:var(--gold-bright);}
+.lb-hist{display:flex; align-items:flex-end; justify-content:center; gap:4px; height:82px; padding:0 6px;}
+.lb-bar{flex:1 1 0; max-width:26px; background:var(--line2); border-radius:3px 3px 0 0; min-height:6px;}
+.lb-bar.me{background:linear-gradient(180deg,#ffd457,#f0a91e); box-shadow:0 0 10px rgba(242,178,28,.5);}
+.lb-axis{display:flex; justify-content:space-between; font-family:var(--pix); font-size:6.5px; color:var(--cream-dim); padding:7px 2px 0; letter-spacing:.5px;}
+@media (prefers-reduced-motion: reduce){ .gsq.flip{animation:none;} .pctfill{transition:none;} }
 .confetti{position:absolute; width:7px; height:7px; border-radius:1px; z-index:8; opacity:0; pointer-events:none;
   transform:translate(-50%,-50%);}
 .confetti.show{animation:conf .92s ease-out forwards;}
@@ -570,6 +603,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
       <div class="sign-ribbon">1 DRIVE · 1 CHANCE · ENDLESS HIGHLIGHTS</div>
 
+      <div class="home-status" id="homeStatus"></div>
       <button class="play-now" id="toMatchup">PLAY NOW <span class="arw">▶</span></button>
       <button class="howto-link" id="howtoLink">HOW TO PLAY ›</button>
 
@@ -689,6 +723,42 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   STORE.streak = STORE.streak||0; STORE.best = STORE.best||0; STORE.coins = STORE.coins||0;
   STORE.scheme = STORE.scheme && PB.schemes[STORE.scheme] ? STORE.scheme : 'WEST_COAST';
   STORE.history = STORE.history||{};
+  STORE.results = STORE.results||{};   // rich per-day result for recap / share / percentile
+
+  /* ---------- daily percentile: a deterministic simulated "field" of drivers ----------
+     The engine is fully deterministic per date, so we can rank a player against a
+     synthetic field of 60 bots (a spread of skill) computed the same for everyone. */
+  function _fnv1a(str){ let h=0x811c9dc5; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,0x01000193);} return h>>>0; }
+  function _mul32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  function driveScore(s){ const reached=Math.max(0,Math.min(100,s.yardline));
+    const bonus = s.result==='TOUCHDOWN'?45 : s.result==='FIELD_GOAL'?20 : /TURNOVER|SAFETY/.test(s.result)?-6:0;
+    return reached + bonus + (s.callGrade||0)*0.15; }
+  function botPolicy(seedStr, skill){ const rng=_mul32(_fnv1a(seedStr)); let recent=[];
+    return (s, avail, box)=>{ if(s.plays===0) recent=[];
+      if(s.down===4 && s.fg.inRange && s.distance>4 && s.toGoal>10) return 'KICK';
+      const col=box>=8?'HEAVY_BOX':box<=6?'LIGHT_BOX':'BASE_7'; const bk=s.distance<=2?'1-2':s.distance<=6?'3-6':s.distance<=9?'7-9':'10+';
+      let pick;
+      if(rng()<skill){ let best=avail[0],bv=-1e9;
+        for(const t of avail){ const p=t.play,a=p.archetype; let ev=p.success_pct+((ENGINE.DEF_MOD[a]&&ENGINE.DEF_MOD[a][col])||0);
+          if(p.success_by_distance){ const vs=Object.keys(p.success_by_distance).map(k=>p.success_by_distance[k]); const mn=vs.reduce((x,y)=>x+y,0)/vs.length; ev+=p.success_by_distance[bk]-mn; }
+          const isRun=a==='RUN'||a==='QB_SNEAK'; if(s.down>=3){ if(s.distance>=10)ev+=isRun?-6.5:-8.5; else if(s.distance>=7)ev+=isRun?-3.5:-4.5; }
+          ev+=(p.avg_yards||5)*0.35 + recent.filter(x=>x===a).length*-8; if(ev>bv){bv=ev;best=t;} }
+        pick=best;
+      } else { pick=avail[Math.floor(rng()*avail.length)]; }
+      recent.push(pick.play.archetype); if(recent.length>3)recent.shift(); return pick.id; }; }
+  const _fieldCache={};
+  function dailyField(dateStr){ if(_fieldCache[dateStr]) return _fieldCache[dateStr];
+    const scores=[]; const N=60;
+    for(let i=0;i<N;i++){ const sc=SCHEME_ORDER[i%SCHEME_ORDER.length]; const skill=0.15+0.8*(i/(N-1));
+      try{ const s=ENGINE.runDrive(dateStr, sc, botPolicy(dateStr+'|bot|'+i, skill)); scores.push(driveScore(s)); }catch(_){} }
+    scores.sort((a,b)=>a-b); return _fieldCache[dateStr]=scores; }
+  function percentile(dateStr, myScore){ const f=dailyField(dateStr); if(!f.length) return 50;
+    let below=0; for(const x of f) if(x<=myScore) below++; return Math.max(1,Math.min(99,Math.round(100*below/f.length))); }
+
+  /* ---------- next-drive countdown (resets at local midnight) ---------- */
+  function msToReset(){ const n=new Date(); return new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n; }
+  function fmtHMS(ms){ ms=Math.max(0,ms); const h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000),s=Math.floor(ms%60000/1000);
+    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
 
   /* ---------- scheme metadata for the picker ---------- */
   const SCHEME_ORDER = ['WEST_COAST','SMASH_MOUTH','WIDE_ZONE','AIR_RAID','SPREAD_OPTION','VERTICAL'];
@@ -1310,67 +1380,163 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     CLOCK:{em:IC.clock,t:'CLOCK EXPIRED',win:false,coins:30},
     SAFETY:{em:IC.shield,t:'SAFETY',win:false,coins:0},
   };
+  // The best-graded positive play of the drive — the highlight to celebrate/share.
+  function bestPlay(state){ let b=null; for(const r of state.log){ if(!r.grade||r.turnover||r.sack) continue;
+      if(!b || r.grade.percentile>b.grade.percentile) b=r; }
+    // only celebrate a genuinely strong call (A/B) and a positive gain — otherwise no highlight
+    if(!b || !/^[AB]/.test(b.grade.letter) || b.yards<=0) return null;
+    return {name:b.play, title:b.title, yards:b.yards, down:b.down, distance:b.distance, letter:b.grade.letter}; }
   function endDrive(state){
     const meta = RESULT_META[state.result]||{em:IC.flag,t:state.result,win:false,coins:20};
-    let earned = meta.coins;
-    let streakTxt='';
+    let earned = meta.coins, streakTxt='';
+    const score = driveScore(state), pct = percentile(DATE, score), star = bestPlay(state);
     if(!practice){
       // record daily result once
       if(STORE.history[DATE]===undefined){
         STORE.history[DATE]=state.result;
-        // streak: win extends, loss resets. gap in days resets first.
         const y=yesterdayStr(DATE);
         if(meta.win){
           STORE.streak = (STORE.lastWinDate===y)? STORE.streak+1 : 1;
-          STORE.lastWinDate = DATE;
-          earned += 100*STORE.streak;
+          STORE.lastWinDate = DATE; earned += 100*STORE.streak;
           streakTxt = STORE.streak+' day streak';
         } else {
-          STORE.streak = 0; streakTxt='Streak reset — back at it tomorrow.';
+          STORE.streak = 0; streakTxt='';
         }
         STORE.best=Math.max(STORE.best,STORE.streak);
         STORE.coins += earned;
+        STORE.results[DATE] = { result:state.result, toType:state.toType, plays:state.log.length,
+          yards:state.yardline-state.startYard, reached:state.yardline, callGrade:state.callGrade,
+          gradeLetters:state.grades.map(g=>g.letter), pct, star, streak:STORE.streak,
+          card:ENGINE.shareCard(state, STORE.streak) };
         save(STORE);
       } else {
         earned=0; streakTxt = meta.win?(STORE.streak+' day streak'):'';
       }
     } else { earned=0; }
     refreshChips();
-    showResultModal(state, meta, earned, streakTxt);
+    showResultModal(state, meta, earned, streakTxt, pct, star);
   }
 
   function gradeBar(state){
     return state.grades.map(g=>{ const c = g.letter.startsWith('A')?'a':g.letter==='B'?'b':g.letter==='C'?'c':'d';
       return `<span class="gsq ${c}"></span>`; }).join('');
   }
-  function showResultModal(state, meta, earned, streakTxt){
+  function showResultModal(state, meta, earned, streakTxt, pct, star){
     const yds = state.yardline - state.startYard;
     const mount=el('modalMount');
+    const spot = state.yardline>=100 ? 'the END ZONE'
+               : state.yardline<=50 ? ('your '+state.yardline)
+               : ('the OPP '+(100-state.yardline));
+    const starHTML = star ? `<div class="drivestar"><span class="dl">${IC.trophy} DRIVE OF THE DAY</span>`
+      + `<span class="dt">${star.title} · ${star.name}</span>`
+      + `<span class="dv">${star.yards>0?'+':''}${star.yards} yds on ${ordinal(star.down)} &amp; ${star.distance} → grade ${star.letter}</span></div>` : '';
     mount.innerHTML = `<div class="overlay"><div class="modal">
       <div class="em">${meta.em}</div>
       <h2>${meta.t}</h2>
-      <div class="sub">${state.log.length} plays · ${yds} yard drive</div>
+      <div class="sub">${state.log.length} plays · reached ${spot}</div>
       <div class="gradebar">${gradeBar(state)||'—'}</div>
+      <div class="pctwrap"><div class="pctbar"><div class="pctfill" id="pctFill" style="width:0%"></div></div>
+        <div class="pcttxt">Better than <b id="pctNum">0%</b> of today’s drives</div></div>
       <div class="statgrid">
         <div class="b"><div class="v">${state.callGrade}</div><div class="k">CALL GRADE</div></div>
-        <div class="b"><div class="v">${state.log.length}</div><div class="k">PLAYS</div></div>
         <div class="b"><div class="v">${yds}</div><div class="k">YARDS</div></div>
+        <div class="b"><div class="v">${STORE.streak}</div><div class="k">STREAK</div></div>
       </div>
-      ${earned>0?`<div class="rewards">+${earned} ${IC.coin}  ${streakTxt}</div>`:(streakTxt?`<div class="rewards">${streakTxt}</div>`:'')}
+      ${starHTML}
+      ${earned>0?`<div class="rewards">+${earned} ${IC.coin}${streakTxt?'  ·  '+streakTxt:''}</div>`:(streakTxt?`<div class="rewards">${streakTxt}</div>`:'')}
       <button class="primary" id="shareBtn">SHARE RESULT</button>
       <button class="secondary" id="practiceBtn">PRACTICE ANOTHER DRIVE</button>
       ${practice?'<button class="secondary" id="closeBtn">CLOSE</button>':''}
     </div></div>`;
+    // Wordle-style dopamine: flip the grade squares in one at a time
+    mount.querySelectorAll('.gsq').forEach((sq,i)=>{ sq.style.animationDelay=(i*85)+'ms'; sq.classList.add('flip'); });
+    // then fill + count up the percentile
+    const delay = state.grades.length*85 + 220;
+    setTimeout(()=>{ const f=el('pctFill'); if(f) f.style.width=pct+'%';
+      let cur=0; const t=setInterval(()=>{ cur+=Math.max(1,Math.ceil(pct/22)); if(cur>=pct){cur=pct;clearInterval(t);}
+        const n=el('pctNum'); if(n) n.textContent=cur+'%'; else clearInterval(t); }, 26); }, delay);
     el('shareBtn').onclick=()=>shareResult(state);
     el('practiceBtn').onclick=()=>{ mount.innerHTML=''; startPractice(); };
     if(el('closeBtn')) el('closeBtn').onclick=()=>{ mount.innerHTML=''; };
   }
-  function shareResult(state){
-    const streak = practice? STORE.streak : STORE.streak;
-    const text = ENGINE.shareCard(state, streak);
+  function doShare(text){
     const shareData={ title:'RunTheDrive', text: text+'\n\nPlay at runthe.gg/football' };
     if(navigator.share){ navigator.share(shareData).catch(()=>{}); }
     else { navigator.clipboard && navigator.clipboard.writeText(shareData.text).then(()=>mini('Copied to clipboard!')).catch(()=>mini('Copy failed')); }
+  }
+  function shareResult(state){ doShare(ENGINE.shareCard(state, STORE.streak)); }
+  // Re-open today's finished drive as a recap (from the home "SEE RESULT" button).
+  function gbarFromLetters(letters){ return letters.map(l=>{ const c=l[0]==='A'?'a':l==='B'?'b':l==='C'?'c':'d'; return `<span class="gsq ${c}"></span>`; }).join(''); }
+  function showResultRecap(dateStr){
+    const rec=STORE.results[dateStr]; if(!rec){ showMatchup(); return; }
+    const meta=RESULT_META[rec.result]||{em:IC.flag,t:rec.result};
+    const spot = rec.reached>=100?'the END ZONE': rec.reached<=50?('your '+rec.reached):('the OPP '+(100-rec.reached));
+    const star=rec.star; const starHTML = star ? `<div class="drivestar"><span class="dl">${IC.trophy} DRIVE OF THE DAY</span>`
+      +`<span class="dt">${star.title} · ${star.name}</span><span class="dv">${star.yards>0?'+':''}${star.yards} yds on ${ordinal(star.down)} &amp; ${star.distance} → grade ${star.letter}</span></div>` : '';
+    const mount=el('modalMount');
+    mount.innerHTML=`<div class="overlay"><div class="modal">
+      <div class="em">${meta.em}</div><h2>${meta.t}</h2>
+      <div class="sub">${rec.plays} plays · reached ${spot}</div>
+      <div class="gradebar">${gbarFromLetters(rec.gradeLetters)||'—'}</div>
+      <div class="pctwrap"><div class="pctbar"><div class="pctfill" style="width:${rec.pct}%"></div></div>
+        <div class="pcttxt">Better than <b>${rec.pct}%</b> of today’s drives</div></div>
+      <div class="statgrid">
+        <div class="b"><div class="v">${rec.callGrade}</div><div class="k">CALL GRADE</div></div>
+        <div class="b"><div class="v">${rec.yards}</div><div class="k">YARDS</div></div>
+        <div class="b"><div class="v">${STORE.streak}</div><div class="k">STREAK</div></div>
+      </div>${starHTML}
+      <button class="primary" id="rShare">SHARE RESULT</button>
+      <button class="secondary" id="rPractice">PRACTICE A DRIVE</button>
+      <button class="secondary" id="rClose">CLOSE</button>
+    </div></div>`;
+    el('rShare').onclick=()=>doShare(rec.card);
+    el('rPractice').onclick=()=>{ mount.innerHTML=''; startPractice(); };
+    el('rClose').onclick=()=>{ mount.innerHTML=''; };
+  }
+  // Home "today" state + live countdown to the next drive.
+  let _cdTimer=null;
+  function renderHomeStatus(){
+    const box=el('homeStatus'), btn=el('toMatchup'); if(!box||!btn) return;
+    const rec=STORE.results[DATE];
+    if(rec){
+      const good = rec.result==='TOUCHDOWN'||rec.result==='FIELD_GOAL';
+      const label = (RESULT_META[rec.result]||{}).t || rec.result;
+      box.innerHTML = `<div class="hs-done"><div class="hs-row"><span class="hs-ic ${good?'win':'loss'}">${good?IC.ball:IC.shield}</span>`
+        +`<span class="hs-txt">TODAY: <b>${label}</b> · beat ${rec.pct}%</span></div>`
+        +`<div class="hs-cd">NEXT DRIVE IN <b id="cdVal">${fmtHMS(msToReset())}</b></div></div>`;
+      btn.innerHTML='SEE TODAY’S RESULT'; btn.onclick=()=>showResultRecap(DATE);
+      clearInterval(_cdTimer); _cdTimer=setInterval(()=>{ const v=el('cdVal'); if(!v){clearInterval(_cdTimer);return;}
+        const ms=msToReset(); if(ms<=1000){ clearInterval(_cdTimer); location.reload(); return; } v.textContent=fmtHMS(ms); },1000);
+    } else {
+      box.innerHTML = `<div class="hs-goal">TODAY’S CHALLENGE · <b>DRIVE #${driveNumber(DATE)}</b></div>`;
+      btn.innerHTML='PLAY NOW <span class="arw">▶</span>'; btn.onclick=showMatchup;
+      clearInterval(_cdTimer);
+    }
+  }
+  // Real "leaderboard": rank the player against today's deterministic field of 60 drivers.
+  function showLeaderboard(){
+    const rec=STORE.results[DATE]; const field=dailyField(DATE);
+    const lo=Math.min(...field), hi=Math.max(...field), span=Math.max(1,hi-lo);
+    const bins=new Array(10).fill(0); field.forEach(v=>{ const i=Math.min(9,Math.floor((v-lo)/span*10)); bins[i]++; });
+    const maxb=Math.max(...bins,1);
+    let myBin=-1; if(rec){ const my=lo + (rec.pct/100)*span; myBin=Math.min(9,Math.floor((my-lo)/span*10)); }
+    const bars=bins.map((c,i)=>`<div class="lb-bar ${i===myBin?'me':''}" style="height:${Math.round(8+92*c/maxb)}%"></div>`).join('');
+    const head = rec
+      ? `<div class="lb-pct">TOP ${100-rec.pct}%</div><div class="lb-sub">You beat <b>${rec.pct}%</b> of today’s ${field.length} drivers</div>`
+      : `<div class="lb-sub">Play today’s drive to see where you rank among <b>${field.length}</b> drivers.</div>`;
+    el('modalMount').innerHTML=`<div class="overlay"><div class="modal">
+      <div class="em">${IC.trophy}</div><h2>DAILY LEADERBOARD</h2>
+      ${head}
+      <div class="lb-hist">${bars}</div>
+      <div class="lb-axis"><span>stuffed</span><span>drove it</span><span>TOUCHDOWN</span></div>
+      <div class="statgrid" style="margin-top:14px">
+        <div class="b"><div class="v">${STORE.streak}</div><div class="k">STREAK</div></div>
+        <div class="b"><div class="v">${STORE.best}</div><div class="k">BEST</div></div>
+        <div class="b"><div class="v">${Object.keys(STORE.history).length}</div><div class="k">DRIVES</div></div>
+      </div>
+      <button class="primary" id="lbClose">${rec?'CLOSE':'PLAY TODAY’S DRIVE'}</button>
+    </div></div>`;
+    el('lbClose').onclick=()=>{ el('modalMount').innerHTML=''; if(!rec) showMatchup(); };
   }
 
   /* ---------- chips + mini toast ---------- */
@@ -1464,7 +1630,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     el('splashScreen').classList.remove('hidden');
     setChrome(false);
     refreshChips();
-    const gv=el('goalV'); if(gv) gv.textContent = (STORE.history[DATE]==='TOUCHDOWN') ? 'TOUCHDOWN — DONE!' : 'SCORE A TOUCHDOWN';
+    renderHomeStatus();
     window.scrollTo(0,0);
   }
   function showMatchup(){
@@ -1661,9 +1827,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     el('matchBack').onclick=showSplash;
     el('gearBtn').onclick=openMenu;
     el('howtoLink').onclick=showHowto;
-    el('navLeaderboard').onclick=showStats;
+    el('navLeaderboard').onclick=showLeaderboard;
     el('navStreak').onclick=showStats;
-    el('navShare').onclick=shareInvite;
+    el('navShare').onclick=()=>{ const rec=STORE.results[DATE]; if(rec) doShare(rec.card); else shareInvite(); };
     el('startBtn').onclick=()=>{
       if(STORE.history[DATE]!==undefined){ mini('Daily already played — here’s a practice drive'); startPractice(); return; }
       beginDrive(DATE, false, 0);
