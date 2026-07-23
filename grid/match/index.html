@@ -777,6 +777,106 @@
         (strip ? '   ' + strip + '\n' : '') + '\n   runthe.gg/grid';
     }
 
+    // ---- visual share card: render the result to a PNG (canvas) -------------
+    var GRADE_COL = { 'A+': '#17A34A', 'A': '#17A34A', 'B': '#1596AC', 'C': '#B8801A', 'D': '#B8801A', 'F': '#E0432A' };
+    function drawMatchCard(r) {
+      var W = 1080, H = 1350, cv = document.createElement('canvas');
+      cv.width = W; cv.height = H; var g = cv.getContext('2d');
+      function rr(x, y, w, h, rad) { g.beginPath(); g.moveTo(x + rad, y); g.arcTo(x + w, y, x + w, y + h, rad); g.arcTo(x + w, y + h, x, y + h, rad); g.arcTo(x, y + h, x, y, rad); g.arcTo(x, y, x + w, y, rad); g.closePath(); }
+      function ls(v) { try { g.letterSpacing = v; } catch (e) {} }
+      // background + corner glows
+      var bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#faf8f5'); bg.addColorStop(1, '#f2f0ec');
+      g.fillStyle = bg; g.fillRect(0, 0, W, H);
+      var gl = g.createRadialGradient(130, 70, 0, 130, 70, 560); gl.addColorStop(0, 'rgba(255,90,60,.13)'); gl.addColorStop(1, 'rgba(255,90,60,0)'); g.fillStyle = gl; g.fillRect(0, 0, W, H);
+      var gl2 = g.createRadialGradient(W - 90, 50, 0, W - 90, 50, 560); gl2.addColorStop(0, 'rgba(124,92,240,.13)'); gl2.addColorStop(1, 'rgba(124,92,240,0)'); g.fillStyle = gl2; g.fillRect(0, 0, W, H);
+
+      g.textBaseline = 'alphabetic';
+      // wordmark: RunThe (ink) + Grid (coral), centered
+      g.font = '900 italic 66px Archivo, sans-serif'; ls('0px');
+      var t1 = 'RunThe', t2 = 'Grid', w1 = g.measureText(t1).width, w2 = g.measureText(t2).width, sx = W / 2 - (w1 + w2) / 2;
+      g.textAlign = 'left';
+      g.fillStyle = '#182430'; g.fillText(t1, sx, 132);
+      g.fillStyle = '#FF5A3C'; g.fillText(t2, sx + w1, 132);
+      g.textAlign = 'center';
+      g.font = '800 30px Archivo, sans-serif'; ls('6px'); g.fillStyle = '#FF5A3C'; g.fillText('DAILY MATCH', W / 2, 184); ls('0px');
+      g.font = '700 34px Archivo, sans-serif'; g.fillStyle = '#5c6b7a'; g.fillText(r.dateStr, W / 2, 248);
+
+      // white card panel
+      g.fillStyle = '#ffffff'; rr(70, 300, W - 140, 770, 44); g.fill();
+      g.strokeStyle = 'rgba(24,36,48,.10)'; g.lineWidth = 2; rr(70, 300, W - 140, 770, 44); g.stroke();
+
+      var cy = 372;
+      if (r.won && r.mistakes === 0) {
+        var rw = 460, rh = 66, rx = W / 2 - rw / 2;
+        var rg = g.createLinearGradient(rx, 0, rx + rw, 0); rg.addColorStop(0, '#FF5A3C'); rg.addColorStop(1, '#EBA61F');
+        g.fillStyle = rg; rr(rx, cy, rw, rh, 33); g.fill();
+        g.fillStyle = '#fff'; g.font = '900 27px Archivo, sans-serif'; ls('3px'); g.fillText('⭐ FLAWLESS', W / 2, cy + 43); ls('0px');
+        cy += 112;
+      } else { cy += 26; }
+
+      g.font = '900 26px Archivo, sans-serif'; ls('5px'); g.fillStyle = '#5c6b7a'; g.fillText(r.won ? 'DRAFT GRADE' : 'FINAL', W / 2, cy); ls('0px');
+      g.font = '400 300px Anton, Impact, sans-serif'; g.fillStyle = GRADE_COL[r.grade] || '#182430';
+      g.fillText(r.grade, W / 2, cy + 250);
+      g.font = '800 42px Archivo, sans-serif'; g.fillStyle = '#182430'; g.fillText(r.verdict, W / 2, cy + 330);
+
+      // stat pills
+      var pills = [['TIME', r.timeStr], ['MISSES', String(r.mistakes)], ['STREAK', String(r.streak)]];
+      var pw = 252, ph = 146, gap = 28, tot = pw * 3 + gap * 2, px0 = W / 2 - tot / 2, py = cy + 410;
+      pills.forEach(function (p, i) {
+        var px = px0 + i * (pw + gap);
+        g.fillStyle = '#faf8f5'; rr(px, py, pw, ph, 26); g.fill();
+        g.strokeStyle = 'rgba(24,36,48,.10)'; g.lineWidth = 2; rr(px, py, pw, ph, 26); g.stroke();
+        g.fillStyle = '#182430'; g.font = '400 66px Anton, Impact, sans-serif'; g.fillText(p[1], px + pw / 2, py + 84);
+        g.fillStyle = '#5c6b7a'; g.font = '900 22px Archivo, sans-serif'; ls('3px'); g.fillText(p[0], px + pw / 2, py + 122); ls('0px');
+      });
+
+      // solve-order colour strip
+      if (r.strip && r.strip.length) {
+        var bw = 92, bh = 28, bgap = 16, tw2 = r.strip.length * bw + (r.strip.length - 1) * bgap, bx0 = W / 2 - tw2 / 2, by = py + ph + 52;
+        r.strip.forEach(function (col, i) { g.fillStyle = col; rr(bx0 + i * (bw + bgap), by, bw, bh, 10); g.fill(); });
+      }
+
+      g.fillStyle = '#FF5A3C'; g.font = '900 36px Archivo, sans-serif'; ls('1px'); g.fillText('runthe.gg/grid', W / 2, H - 72); ls('0px');
+      return cv;
+    }
+    function cvToBlob(cv) { return new Promise(function (res) { cv.toBlob(function (b) { res(b); }, 'image/png'); }); }
+    function shareResultImage() {
+      var r = window._lastResult || {};
+      var card = {
+        won: r.won, grade: r.grade, verdict: VERDICTS[r.grade] || '', timeStr: fmt(r.time),
+        mistakes: r.mistakes, streak: r.streak,
+        dateStr: new Date(DATE + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+        strip: solveOrder.map(function (idx) { return laneById[laneCat[idx]].color; })
+      };
+      var txt = shareText(r);
+      function go() {
+        var cv;
+        try { cv = drawMatchCard(card); } catch (e) { cv = null; }
+        if (!cv) { textShareFallback(txt); return; }
+        cvToBlob(cv).then(function (blob) {
+          if (!blob) { textShareFallback(txt); return; }
+          var file = new File([blob], 'runthegrid-match.png', { type: 'image/png' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({ files: [file], text: txt, title: 'RunTheGrid — Daily Match' })
+              .catch(function (e) { if (e && e.name === 'AbortError') return; downloadBlob(blob, txt); });
+          } else { downloadBlob(blob, txt); }
+        });
+      }
+      if (document.fonts && document.fonts.ready && document.fonts.ready.then) { document.fonts.ready.then(go, go); } else { go(); }
+    }
+    function downloadBlob(blob, txt) {
+      var url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = 'runthegrid-match.png'; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+      if (txt && navigator.clipboard) navigator.clipboard.writeText(txt).catch(function () {});
+      toast('Result image saved');
+    }
+    function textShareFallback(txt) {
+      if (navigator.share) { navigator.share({ text: txt }).catch(function () {}); }
+      else if (navigator.clipboard) { navigator.clipboard.writeText(txt).then(function () { toast('Result copied'); }); }
+      else { toast('Copy not supported'); }
+    }
+
     // ---- hint: reveal one group's name for the cost of a guess ----
     var hintBtn = document.getElementById('btnHint');
     hintBtn.addEventListener('click', function () {
@@ -816,12 +916,7 @@
     }
 
     // ---- result modal buttons ----
-    document.getElementById('resShare').addEventListener('click', function () {
-      var txt = shareText(window._lastResult || {});
-      if (navigator.share) { navigator.share({ text: txt }).catch(function () {}); }
-      else if (navigator.clipboard) { navigator.clipboard.writeText(txt).then(function () { toast('Result copied'); }); }
-      else { toast('Copy not supported'); }
-    });
+    document.getElementById('resShare').addEventListener('click', shareResultImage);
     function bothModalsClosed() {
       return document.getElementById('resultModal').hidden && document.getElementById('statsModal').hidden;
     }
