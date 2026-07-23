@@ -275,6 +275,9 @@
     background:linear-gradient(90deg,var(--coral),var(--gold)); padding:7px 15px; border-radius:999px;}
   @keyframes flpop{0%{transform:scale(.6); opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1); opacity:1;}}
 
+  .reportline{text-align:center; margin:8px 0 0; font-size:11px;}
+  .reportline a{color:var(--mut); text-decoration:underline; text-underline-offset:2px;}
+  .reportline a:hover{color:var(--ink);}
   /* ---------------- dopamine: countdown + milestone ---------------- */
   .countdown{text-align:center; margin:13px 0 2px; font-size:12px; font-weight:800; color:var(--mut);}
   .countdown b{color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:.01em;}
@@ -449,6 +452,7 @@
       <div class="milestone" id="resMilestone"></div>
       <div class="coinline" id="resCoins">+0 coins</div>
       <div class="countdown" id="resCountdown"></div>
+      <div class="reportline"><a href="mailto:sellybros711@gmail.com?subject=RunTheGrid%20data%20error">Spot a data error? Tell us</a></div>
       <div class="rcta">
         <button class="btn primary" id="resShare" type="button">Share</button>
         <button class="btn" id="resStats" type="button">Stats</button>
@@ -486,8 +490,8 @@
 
   <!-- cache-busted: bump ?v= whenever entities/generator change, or stale
        browser caches will pair fresh HTML with old boards/engine -->
-  <script src="entities.js?v=7"></script>
-  <script src="generator.js?v=7"></script>
+  <script src="entities.js?v=8"></script>
+  <script src="generator.js?v=8"></script>
   <script>
   (function () {
     'use strict';

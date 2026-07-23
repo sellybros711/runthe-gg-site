@@ -134815,5 +134815,17 @@
     "Braves"
    ]
   }
+ },
+ {
+  "id": "nhl_panthers",
+  "entity_type": "team",
+  "display_name": "Florida Panthers",
+  "sport": "NHL",
+  "fame_tier": 3,
+  "attributes": {
+   "nickname": [
+    "Panthers"
+   ]
+  }
  }
 ]
