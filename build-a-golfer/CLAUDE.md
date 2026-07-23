@@ -13428,6 +13428,33 @@ allows Google Fonts, or self-host Anton.*
   complete practice round all still green with 0 page errors; the contact sheet confirms gradual organic
   fairways and natural-reading terrain on every backdrop. Deployed to /golf.
 
+- **PLAYER CARDS pass 4 — new camera VIEWS (owner: "add some that are different views, there could be one
+  on the green next to the pin, and other variations of backdrops").** Four new earned backdrops (CARDBGS
+  16 -> 20), each a different perspective via a new `view` field in CARDBG_ART that swaps the renderer's
+  standard down-the-fairway scene for a custom composition (the shared sky/sea/ground/silhouette/vignette
+  infrastructure is reused; the standard hole block is gated off with `!A.view`):
+  • **Pin High** (`view:'green'`) - standing ON the green next to the pin at golden hour: the putting
+    surface fills the frame with contour shading + curved mow arcs, a readable cup, a tall pin crossing the
+    horizon with a big flag, and a ball sitting a putt away. Earn: beat the pro 10 times.
+  • **The Beach** (`view:'bunker'`) - looking up at the flag from inside a greenside bunker: a big sand
+    foreground with a wavy overhanging grass lip + lip shadow, arcing rake lines, speckles, and a plugged
+    ball; the flag waits on the green above. Earn: beat the pro at 5 different courses.
+  • **The Island** (`view:'island'`) - an island green across the water: sand ring -> fringe -> green with
+    the pin, a walkway bridge to the near shore, shimmer reflections, and a far tree-lined shoreline (the
+    hill ridges are skipped for this view so the water reads clean). Earn: make a hole-in-one in the Daily.
+  • **Bird's Eye** (`view:'aerial'`) - the whole hole from above (an early-return branch, no sky): a
+    winding sampled-centerline fairway from tee to green through lighter rough, dark canopy tree walls on
+    both sides, a pond, the green + fringe + scattered bunkers up top, and the pin as a dot + pennant.
+    Earn: win 5 tour events. (Iterated twice: the first cut's fairway was too wide + the trees vanished
+    into the dark rough - narrowed/tapered the fairway, separated the green, doubled the trees, lightened
+    the rough.)
+  All are EARNED-ONLY via CARD_EARN (reqs read the synced dailyStats / courseMastery / achState aces /
+  lifetime wins, so unlocks are cross-device); they flow into the closet/card/share surfaces automatically.
+  Verified in Playwright: 20 distinct backdrops render, all four new earn reqs flip false->true when their
+  stat is met (hints correct), the full card/board/closet/share suite + an 18-hole practice round all green
+  with 0 page errors. Deployed to /golf. Tunable: the four `CARD_EARN` thresholds, the view compositions in
+  `pxCardBgCanvas`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
