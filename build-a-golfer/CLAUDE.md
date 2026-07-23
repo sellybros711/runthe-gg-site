@@ -13294,6 +13294,29 @@ allows Google Fonts, or self-host Anton.*
   Legend keeps its records list; Streaks regresses clean; dbLoad/dbLoadLegend fire with p_limit 200; 0 page
   errors. Deployed to /golf.
 
+- **Art pass: real golf TEE under every ball + 10 new eyewear styles (owner: "the tee looks way too
+  square... The eyewear should have a lot more styles").** Two data-only sprite changes (no engine/economy
+  logic touched):
+  1. **Tee redesign.** The teed-ball sprite beside the standing golfer drew the tee as a 2x2 square block.
+     A Python transform rebuilt the tee region of ALL 13 `PXG_BALL` maps (the whole const is regenerated
+     since several balls share identical base rows): a flared 4-wide CUP under the ball -> a 2-wide stem ->
+     a 1-wide tapered point, centered under each ball's actual bottom row (so comet/pigskin variants stay
+     aligned), with `paintShaded`'s automatic rim light/shadow giving it depth. Verified every map now has
+     exactly the 4/2/1 tee rows; zoomed renders confirm it reads as a real tee.
+  2. **Eyewear 15 -> 25 styles** (`PXG_EW_*` maps authored in `scratchpad/eyewear_gen.py`, lenses symmetric
+     about the face center so the CS419 auto-centering yields dx=0; colors from the shared P+PXG_NOV char
+     palette): **Wayfarers** (rare 10k), **Sport Wraps** (neon wraparound, rare 12k), **Cat-Eye Glasses**
+     (rare 10k), **Half-Rim Readers** (common 8k), **Rose-Tinted Glasses** (rare 9k), **Brass Goggles**
+     (steampunk, epic 18k), **Cyber Visor** (glowing magenta band, epic 20k), **Patriot Shades**
+     (red/white/blue, epic 16k), **Disguise Glasses** (groucho brows+nose novelty, epic 16k), **Diamond
+     Shades** (ice frame + blue lens, legendary 30k). Wired via the existing plumbing only: PXG_EYEWEAR
+     registry + the ew catalog + the ew price map (rarity via packRarityOf) - so the shop Accessories tab,
+     item-only thumbs, pack pool (all 10 present at their rarities, pack-exclusive per cosPackOnly), NEW
+     badges, closet equip, and the swing golfer all pick them up automatically.
+  Verified in Playwright: contact sheet of all 10 on the golfer (each distinct, seated on the eyes) + ball
+  thumbs with the new tee; functionally ewCount 25, all in catalog/pool with correct rarities, thumbs +
+  equip render, all 13 tees 4/2/1; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
