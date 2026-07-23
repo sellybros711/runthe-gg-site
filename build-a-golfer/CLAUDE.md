@@ -12960,6 +12960,21 @@ allows Google Fonts, or self-host Anton.*
   disabled at half opacity, and the club_regress + regress_drop suites stay green with 0 page errors.
   Deployed to /golf. Tunable: the `.pkbundle` CSS in `packStyleOnce`.
 
+- **Pack-reveal Equip now clearly confirms (owner: "when you equip an item after pulling it in a pack it
+  needs to tell you that it is equipped with a little message. Right now it just flashes the item again").**
+  Two real bugs behind the "no message + flash": the old handler DID fire `toast('Equipped!')`, but the
+  toast (z-index 45) rendered BEHIND the pack overlay (`.packov` z-index 60) so it was never visible; and
+  `packEquip()` called a full `render()`, which rebuilt the wheel overlay and replayed the reveal card's
+  `prpop` pop-in animation = the item "flashing again." Fixed in `renderFoot`'s Equip handler: it now
+  equips DIRECTLY (`cosEquip`/`accEquip`, both save) with NO re-render, flips the button in place to a
+  disabled "✓ Equipped", and inserts a green `.preq` confirmation line under the reveal card ("✓ Equipped!
+  {name} is now on your golfer", small pop-in, reduced-motion static, guarded so a re-click can't duplicate
+  it). Also bumped the generic `toast()` z-index 45→70 so no toast can ever hide behind the pack overlay
+  (or any other high-z surface) again. Verified in Playwright: a real pack open → Equip equips the item
+  (`cosIsEquipped` true), the SAME `.prcard` DOM node survives (no re-render/flash), the button reads
+  "✓ Equipped" disabled, the message renders once even on re-click, and z-70 is on the toast; 0 page
+  errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
