@@ -5959,6 +5959,7 @@ function pxCardBgCanvas(id){
     x.fillStyle='#e2554e'; x.beginPath(); x.moveTo(gx+1,gyy); x.lineTo(gx+6,gyy+1.5); x.lineTo(gx+1,gyy+3); x.fill();
     const vg2=x.createRadialGradient(W/2,H*0.45,20,W/2,H*0.55,W*0.95); vg2.addColorStop(0,'rgba(0,0,0,0)'); vg2.addColorStop(1,'rgba(0,0,0,.30)');
     x.fillStyle=vg2; x.fillRect(0,0,W,H);
+    cardBgQuantize(x,W,H);
     _cardBgCv[id]=cv; return cv;
   }
   const hy=Math.round(H*(A.hy||0.52));
@@ -6191,8 +6192,17 @@ function pxCardBgCanvas(id){
   for(let i=0;i<9;i++){ const bx0=Math.floor(hsh(i,45)*W), bh=2+Math.floor(hsh(i,46)*3); x.fillRect(bx0,H-bh,2,bh); }
   const vg=x.createRadialGradient(W/2,H*0.45,20,W/2,H*0.55,W*0.95); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.30)');
   x.fillStyle=vg; x.fillRect(0,0,W,H);
+  cardBgQuantize(x,W,H);
   _cardBgCv[id]=cv; return cv;
 }
+// HARD-PIXELATE (owner: the upscaled bg read blurry next to the crisp golfer): snap every pixel to a
+// coarse color step, so the canvas's anti-aliased soft edges + smooth gradients become crisp retro
+// banding and the pixelated upscale reads as deliberate pixel art.
+function cardBgQuantize(x,W,H){ try{
+  const im=x.getImageData(0,0,W,H), d=im.data, Q=22;
+  for(let i=0;i<d.length;i+=4){ d[i]=Math.min(255,Math.round(d[i]/Q)*Q); d[i+1]=Math.min(255,Math.round(d[i+1]/Q)*Q); d[i+2]=Math.min(255,Math.round(d[i+2]/Q)*Q); d[i+3]=255; }
+  x.putImageData(im,0,0);
+}catch(e){} }
 function pxCardBgURL(id){ if(!_cardBgURL[id]){ try{ _cardBgURL[id]=pxCardBgCanvas(id).toDataURL(); }catch(e){ _cardBgURL[id]=''; } } return _cardBgURL[id]; }
 // frame band from the Tour Rep tier (low = plain, mid = glow, high = animated, GOAT = prismatic)
 function cardFrameFor(repName){
@@ -7392,7 +7402,7 @@ function pcStyleOnce(){ if(document.getElementById('pcardcss')) return; const st
 '.pcovr{position:absolute;top:8px;right:9px;text-align:center;background:rgba(4,12,8,.62);border:1.5px solid var(--gold);border-radius:12px;padding:4px 9px 3px}',
 '.pcovr b{display:block;font:800 21px var(--display);color:var(--gold);line-height:1}',
 '.pcovr span{font:800 8px var(--body);letter-spacing:.14em;color:var(--muted)}',
-'.pcgolfer{position:absolute;left:0;right:0;bottom:58px;display:flex;justify-content:center;pointer-events:none}',
+'.pcgolfer{position:absolute;left:0;right:0;bottom:56px;display:flex;justify-content:center;pointer-events:none}',
 '.pcplate{position:absolute;left:9px;right:9px;bottom:9px;border-radius:11px;padding:8px 10px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.4)}',
 '.pcpn{font:700 17px var(--display);letter-spacing:.03em;text-transform:uppercase;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
 '.pcps{font:700 10px var(--body);opacity:.82;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
@@ -7428,7 +7438,7 @@ function playerCardHTML(cv){
         <div class="pcscrim"></div>
         ${cv.rep?`<div class="pctier">${esc(cv.rep)}</div>`:''}
         ${cv.ovr!=null?`<div class="pcovr"><b>${cv.ovr}</b><span>OVR</span></div>`:''}
-        <div class="pcgolfer">${pxFigureHTML(cv.look,206)}</div>
+        <div class="pcgolfer">${pxFigureHTML(cv.look,280)}</div>
         <div class="pcplate" style="${plateCss(plate)}"><div class="pcpn">${esc(cv.name)}</div>${sub?`<div class="pcps">${esc(sub)}</div>`:''}</div>
       </div>
       <div class="pcard-face pcard-back">
