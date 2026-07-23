@@ -237,8 +237,37 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <script>
 (function(){
   "use strict";
-  var P = (window.RTG_PUZZLES && window.RTG_PUZZLES.daily) || null;
+
+  // ---- tester mode: unlimited plays across all puzzles (for RunnyJ / CSel8) --
+  // Enable with ?test=1 (persists); ?test=0 to disable. Site is hidden, so only
+  // people with the link get it. New puzzle cycles the generated bank.
+  var QS = new URLSearchParams(location.search);
+  var TESTER = false;
+  try {
+    if (QS.has('test') || QS.has('tester')) {
+      TESTER = (QS.get('test') || QS.get('tester') || '1') !== '0';
+      localStorage.setItem('grid_tester', TESTER ? '1' : '');
+    } else { TESTER = localStorage.getItem('grid_tester') === '1'; }
+  } catch(e){}
+  var LIST = (window.RTG_PUZZLES && window.RTG_PUZZLES.puzzles) || [];
+  var PZI = parseInt(QS.get('pz') || '-1', 10);
+  var P = (TESTER && PZI >= 0 && LIST[PZI]) ? LIST[PZI]
+        : ((window.RTG_PUZZLES && window.RTG_PUZZLES.daily) || null);
   if(!P){ document.getElementById('board').textContent = 'No puzzle for today.'; return; }
+
+  if (TESTER) {
+    var cur = (PZI >= 0 ? PZI : 0);
+    var wrap = document.querySelector('.wrap') || document.body;
+    var ban = document.createElement('div');
+    ban.style.cssText = 'margin:0 0 12px;padding:9px 13px;border-radius:9px;font-size:12.5px;font-weight:700;color:#7a3a00;background:#FFF3E0;border:1px solid #FFD9A8;display:flex;gap:10px;align-items:center;flex-wrap:wrap;';
+    ban.innerHTML = '🧪 <b>Tester mode</b> — puzzle ' + (cur+1) + ' of ' + (LIST.length||1) + '.';
+    var btn = document.createElement('button');
+    btn.textContent = '🔁 New puzzle';
+    btn.style.cssText = 'margin-left:auto;font:inherit;font-weight:800;cursor:pointer;border:1px solid #FFD9A8;background:#fff;color:#8a4300;border-radius:8px;padding:6px 12px;';
+    btn.onclick = function(){ location.search = '?test=1&pz=' + (((cur+1)%(LIST.length||1))); };
+    ban.appendChild(btn);
+    wrap.insertBefore(ban, wrap.firstChild);
+  }
 
   var N = P.size;
   var SAVE_KEY = 'rtg:cw:v1';
@@ -480,7 +509,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     var s=load(); var today=P.id;
     var yesterday = shiftDay(today,-1);
     var already = s.lastDone===today;
-    if(!already){
+    if(!already && !TESTER){
       s.streak = (s.lastDone===yesterday) ? (s.streak||0)+1 : 1;
       s.lastDone = today;
       s.best = Math.min(s.best||1e9, Math.round(elapsed));
