@@ -204,7 +204,24 @@
     if (isBlitz) column = boxCount <= 6 ? 'BLITZ_LIGHT_BOX' : 'HEAVY_BLITZ';
     else         column = boxCount >= 8 ? 'HEAVY_BOX' : boxCount <= 6 ? 'LIGHT_BOX' : 'BASE_7';
 
-    return { column, boxCount, isBlitz, coverage: gp.coverage };
+    // Per-snap COVERAGE SHELL behind the front — this is what makes calling the right
+    // route concept matter. Derived from the day's coverage tendency + the situation, with
+    // snap-to-snap variance (so you play the percentages, not a certainty). Shells:
+    //   PRESS/OFF = man (tight/soft) · ONE_HIGH/TWO_HIGH/SOFT = zone (Cover1-3 / 2-4 / soft)
+    const shell = coverageShell(rng, gp.coverage, down, distance, isBlitz);
+
+    return { column, boxCount, isBlitz, coverage: gp.coverage, shell };
+  }
+  function coverageShell(rng, cov, down, distance, isBlitz) {
+    const obviousPass = distance >= 8 || down >= 3;
+    const shortYardage = distance <= 3;
+    if (isBlitz) return cov === 'ZONE' ? 'SOFT' : 'PRESS';          // pressure pairs with man or soft zone
+    if (cov === 'MAN')  return (shortYardage || rng() < 0.5) ? 'PRESS' : 'OFF';
+    if (cov === 'ZONE') return obviousPass ? (rng() < 0.6 ? 'TWO_HIGH' : 'SOFT')
+                                           : (rng() < 0.6 ? 'ONE_HIGH' : 'TWO_HIGH');
+    const r = rng();                                                // MIXED
+    return obviousPass ? (r < 0.34 ? 'TWO_HIGH' : r < 0.58 ? 'SOFT' : r < 0.8 ? 'OFF' : 'PRESS')
+                       : (r < 0.3 ? 'ONE_HIGH' : r < 0.55 ? 'PRESS' : r < 0.78 ? 'TWO_HIGH' : 'OFF');
   }
 
   /* ---------- 4. SCOUTING REPORT ------------------------------------------
