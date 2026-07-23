@@ -281,6 +281,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .tile .fm{font-family:var(--pix); font-size:6px; letter-spacing:.3px; color:var(--gold-bright); opacity:.85; text-align:center;
   margin-top:auto; padding-top:3px;}
 .tile:disabled{opacity:.4;}
+.tile.pick{border-color:var(--gold); box-shadow:0 3px 0 rgba(0,0,0,.35), 0 0 0 1px var(--gold) inset;}
+.tile .pickdot{position:absolute; top:-6px; left:50%; transform:translateX(-50%); font-family:var(--pix); font-size:6px;
+  color:#1a1205; background:var(--gold); padding:2px 5px; border-radius:6px; letter-spacing:.3px; white-space:nowrap;}
+.coachpick{width:100%; margin:2px 0 12px; background:var(--panel2); border:1px solid rgba(235,166,31,.35);
+  border-radius:10px; padding:9px 12px; display:flex; align-items:baseline; gap:8px; text-align:left; cursor:pointer;}
+.coachpick .cp-lbl{font-family:var(--pix); font-size:8px; color:var(--gold-bright); letter-spacing:.4px; white-space:nowrap;}
+.coachpick .cp-nm{font-family:var(--pix); font-size:8px; color:var(--cream);}
+.coachpick .cp-why{font-family:var(--term); font-size:15px; color:var(--cream-dim); line-height:1.25;}
+.coachpick:disabled{display:none;}
 .kick{width:100%; margin-bottom:12px; background:var(--panel2); border:2px solid var(--line2);
   border-radius:10px; padding:12px; display:flex; align-items:center; justify-content:center; gap:12px; box-shadow:var(--shadow);}
 .kick .tt{font-family:var(--pix); font-size:11px; color:var(--gold-bright);}
@@ -711,6 +720,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       <div class="calls" id="calls"></div>
       <button class="calls-arrow right" id="callsR" aria-label="Scroll right">›</button>
     </div>
+    <button class="coachpick" id="coachPick" aria-label="Jump to the coach's suggested play"></button>
 
     <!-- DRIVE LOG -->
     <div class="log-head">
@@ -728,9 +738,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js?v=20260723d"></script>
-<script src="playbook.js?v=20260723d"></script>
-<script src="engine.js?v=20260723d"></script>
+<script src="drive_generator.js?v=20260723e"></script>
+<script src="playbook.js?v=20260723e"></script>
+<script src="engine.js?v=20260723e"></script>
 <script>
 (function(){
   'use strict';
@@ -1247,21 +1257,81 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     }
     return s + `</svg>`;
   }
+  // Plain-English, casual-friendly one-liner for what a play is trying to do.
+  const CONCEPT_PURPOSE = {
+    VERTS:'Four deep routes — stretch the top off and take a shot', POSTS:'Deep posts attacking the middle',
+    CROSS:'A deep crosser that beats man and zone', MESH:'Short crossers that rub off man coverage',
+    STICK:'Quick spacing throw — easy yards at the sticks', SNAG:'Three-level spacing, a reliable first-down look',
+    HILO:'High-low a defender so someone comes open', SMASH:'Hitch under, corner over — beats two-deep safeties',
+    FLOOD:'Three routes to one side — floods a zone', DAGGER:'Clear it out up top to open the dig underneath',
+    SLANT:'Quick slant — beats press man and the blitz', SEAM:'Attacks the seam between the safeties',
+    HITCH:'Quick hitch — soft completion vs off coverage', COMEBACK:'Comeback at the sticks vs off coverage',
+    FADE:'Back-shoulder fade — a jump ball outside', ANGLE:'Back on an angle out of the backfield',
+    WHEEL:'Post clears out, the wheel runs up the sideline', LEAK:'Leak a man out the back off play-action',
+    BOOT:'Roll the QB out — throw on the move or take off', SCREEN:'Let them rush, then throw the screen behind it',
+  };
+  function playPurpose(play){
+    const c = ENGINE.CONCEPT && ENGINE.CONCEPT[play.name];
+    if(c && CONCEPT_PURPOSE[c]) return CONCEPT_PURPOSE[c];
+    const n = play.name||'';
+    if(play.archetype==='QB_SNEAK') return 'The surest yard in football';
+    if(play.archetype==='SCREEN') return 'Let them rush, then throw the screen behind it';
+    if(play.archetype==='RUN'){
+      if(/Read|Option|Veer/i.test(n)) return 'Option run — the QB reads the end: keep or give';
+      if(/Power|Counter|Iso|Duo|Wham/i.test(n)) return 'Downhill gap run behind pulling blockers';
+      if(/Outside|Wide|Toss|Sweep|Jet|Stretch|Speed/i.test(n)) return 'Get to the edge and turn upfield';
+      if(/Draw/i.test(n)) return 'Draw — bait the rush, then run through it';
+      return 'A dependable run between the tackles';
+    }
+    return 'Move the chains';
+  }
+  // Coach's Pick — the single best-EV call given the VISIBLE box + the coverage TENDENCY
+  // (not the hidden per-snap shell), skipping used-up plays. It's honest advice, not a cheat:
+  // the actual shell varies, and leaning on it gets your tendency keyed, so experts still deviate.
+  function coachPick(state){
+    if(!drive) return null;
+    const def = drive.currentDefense(), gp = drive.gp, box = def.boxCount;
+    const mix = ENGINE.shellMix(gp);
+    const sit = { down:state.down, distance:state.distance, yardline:state.yardline, tendency:state.tendency, scheme:STORE.scheme };
+    const callInfo={}; (state.calls||[]).forEach(c=>callInfo[c.id]=c);
+    let best=null, bev=-1e9;
+    for(const t of drive.callSheet){
+      const info=callInfo[t.id]; if(info && info.remaining<=0) continue;
+      let ev=0,tot=0;
+      for(const sh in mix){ const d={ column: box>=8?'HEAVY_BOX':box<=6?'LIGHT_BOX':'BASE_7', shell:sh, isBlitz:sh==='BLITZ' };
+        ev += mix[sh]*ENGINE.expectedValue(t.play, d, sit, gp.qualityModifier); tot+=mix[sh]; }
+      ev/=tot; if(ev>bev){ bev=ev; best=t; }
+    }
+    return best;
+  }
   function renderCalls(state){
     const wrap=el('calls'); wrap.innerHTML='';
     const callInfo = {}; (state.calls||[]).forEach(c=>callInfo[c.id]=c);
     const tend = state.tendency||{};
+    const pick = state.over ? null : coachPick(state);
+    const tileEls = {};
     for(const t of drive.callSheet){
       const info = callInfo[t.id] || {remaining:Infinity, cap:Infinity};
       const gone = info.remaining<=0;
       const keyed = (tend[t.play.archetype]||0) <= -16;    // defense sitting on it (2+ recent)
-      const b=document.createElement('button'); b.className='tile'+(keyed&&!gone?' keyed':'');
+      const isPick = pick && t.id===pick.id && !gone;
+      const b=document.createElement('button'); b.className='tile'+(keyed&&!gone?' keyed':'')+(isPick?' pick':'');
       const remBadge = (info.cap!==Infinity && info.cap!=null) ? `<span class="rem">${Math.max(0,info.remaining)}</span>` : '';
       const keyTag = (keyed&&!gone) ? `<span class="keytag">KEYED</span>` : '';
-      b.innerHTML=`${remBadge}<span class="diag">${routeSVG(t.play)}</span><span class="tt">${t.title}</span><span class="nm">${t.play.name}</span><span class="fm">${t.play.formation||''}</span>${keyTag}`;
+      const pickDot = isPick ? `<span class="pickdot">◆ PICK</span>` : '';
+      b.innerHTML=`${remBadge}${pickDot}<span class="diag">${routeSVG(t.play)}</span><span class="tt">${t.title}</span><span class="nm">${t.play.name}</span><span class="fm">${t.play.formation||''}</span>${keyTag}`;
       b.onclick=()=>doSnap(t.id);
       b.disabled = state.over || gone;
-      wrap.appendChild(b);
+      wrap.appendChild(b); tileEls[t.id]=b;
+    }
+    // Coach's Pick strip — names the suggested play + plain-English purpose; tap to scroll to it.
+    const cp=el('coachPick');
+    if(cp){
+      if(pick && !state.over){
+        cp.innerHTML = `<span class="cp-lbl">◆ COACH'S PICK</span><span class="cp-nm">${pick.play.name}</span><span class="cp-why">${playPurpose(pick.play)}</span>`;
+        cp.disabled=false;
+        cp.onclick=()=>{ const b=tileEls[pick.id]; if(b) b.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'}); };
+      } else { cp.disabled=true; }
     }
     // kick
     const k=el('kickBtn');
@@ -1543,22 +1613,28 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       if(STORE.history[DATE]===undefined){
         STORE.history[DATE]=state.result;
         const y=yesterdayStr(DATE);
-        if(meta.win){
-          STORE.streak = (STORE.lastWinDate===y)? STORE.streak+1 : 1;
-          STORE.lastWinDate = DATE; earned += 100*STORE.streak;
-          streakTxt = STORE.streak+' day streak';
-        } else {
-          STORE.streak = 0; streakTxt='';
-        }
-        STORE.best=Math.max(STORE.best,STORE.streak);
+        // FORGIVING play-streak: it grows every day you show up and only breaks if you miss
+        // a day — a sensible call that got unlucky never nukes a long streak. Scoring is
+        // tracked separately so the achievement of putting points on the board still counts.
+        STORE.streak = (STORE.lastPlayDate===y) ? (STORE.streak||0)+1 : 1;
+        STORE.lastPlayDate = DATE;
+        STORE.best = Math.max(STORE.best, STORE.streak);
+        streakTxt = STORE.streak+' day streak';
+        const scored = state.result==='TOUCHDOWN' || state.result==='FIELD_GOAL';
+        if(scored){ STORE.scoreStreak = (STORE.lastScoreDate===y) ? (STORE.scoreStreak||0)+1 : 1;
+          STORE.lastScoreDate = DATE; STORE.scores = (STORE.scores||0)+1; }
+        else { STORE.scoreStreak = 0; }
+        // coins: result base + a capped play-streak bonus (keep showing up) + a scoring bonus
+        earned = meta.coins + Math.min(STORE.streak,10)*20 + (scored?150:0);
         STORE.coins += earned;
         STORE.results[DATE] = { result:state.result, toType:state.toType, plays:state.log.length,
           yards:state.yardline-state.startYard, reached:state.yardline, callGrade:state.callGrade,
           gradeLetters:state.grades.map(g=>g.letter), pct, star, streak:STORE.streak,
+          scoreStreak:STORE.scoreStreak, scored,
           card:ENGINE.shareCard(state, STORE.streak) };
         save(STORE);
       } else {
-        earned=0; streakTxt = meta.win?(STORE.streak+' day streak'):'';
+        earned=0; streakTxt = (STORE.streak||0)+' day streak';
       }
     } else { earned=0; }
     refreshChips();
