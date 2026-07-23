@@ -484,8 +484,10 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="popup" id="popup" aria-live="polite"></div>
 
-  <script src="entities.js"></script>
-  <script src="generator.js"></script>
+  <!-- cache-busted: bump ?v= whenever entities/generator change, or stale
+       browser caches will pair fresh HTML with old boards/engine -->
+  <script src="entities.js?v=3"></script>
+  <script src="generator.js?v=3"></script>
   <script>
   (function () {
     'use strict';
