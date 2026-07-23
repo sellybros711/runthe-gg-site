@@ -12858,6 +12858,40 @@ allows Google Fonts, or self-host Anton.*
   later zero rounds advanced; "Keep playing" -> the sim resumes and the Moment fires; "Skip to results"
   still reaches the summary; 0 page errors. Deployed to /golf.
 
+- **ART REDRAW PASS 1 — hats that read, visible thumbs everywhere, distinct club thumbs, a real cape
+  (owner: "do another pass on all accessories and gear and redraw any item that doesn't read properly, both
+  on its own and on the golfer and in tourtrace... depth but still pixelated"; full-list approval).** Driven
+  by a contact-sheet audit (scratchpad/art_audit.mjs renders thumb + standing + SW4 tracer per item).
+  1. **Five hats redrawn** (worst offenders, authored in scratchpad/hats_redraw.py -> hats2_splice.py):
+     **pirate** = a charcoal tricorn with gold-trimmed upturned tips + a clean white skull (was a black
+     blob), **grad** = a mortarboard with a lit top edge + gold button + hanging tassel, **witch** = a
+     deep-purple cone (new PXG_NOV 'Y' #4a3568) with a gold band + cream buckle + wide brim (was all
+     near-black), **propeller** = a real colored-panel beanie dome + white band + hub-connected red/blue
+     rotor blades, **laurel** = a bold gold champion's wreath. All verified on the standing golfer AND the
+     SW4 tracer stamp (shape-true, incl. the turned-head finish).
+  2. **The invisible-thumb class fixed at the root**: the `.sthumb` product-tile background was
+     rgba(0,0,0,.22) on a dark tile, so DARK art (shooter shades, eye patch, eye black, ski goggles, the
+     driver-family club heads, obsidian/eight-ball/ghost balls) rendered invisible. Now a lighter
+     sage gradient (#47614f->#31473a), fixing every dark item at once. Plus `pxItemThumb`'s palette was
+     missing the PXG_FIX chars ('g' gold etc.), so the monocle + round glasses thumbs painted NOTHING -
+     added them. Small art tweak: white glint pixels on the shades/monocle/round lenses.
+  3. **Club thumbs auto-zoom onto each set's head** (`pxClubThumb`): bbox of everything except the generic
+     shaft char, so a stock set's thumb is its distinctive head shape at full tile size, while decorated
+     clubs (Excalibur/Wizard/Hockey/Glizzy/Pool Noodle) keep their full art. All 32 sets now read distinct
+     (were "the same white stick").
+  4. **Vampire cape redrawn** (scratchpad/cape_redraw.py): was a near-black torso recolor that read as a
+     dark shirt. Now a real cape - high collar points beside the head, shoulder caps, red-lined drapes
+     hanging OUTSIDE the arms down past the belt with a jagged hem + gold clasp - and the player's own
+     shirt stays visible in front (a cape is open). Palette gains a gold '5'.
+  Verified in Playwright: hats before/after + in-file render (standing + SW4), the real shop tiles
+  (eyewear/clubs/balls/headwear) all read on the new tile bg, cape on black + teal polos, club_regress
+  fully green (36-set catalog, tags, a complete practice round -> result), node --check clean, 0 page
+  errors everywhere. (practice_test's failure is a stale fixture - it greps the pre-CS250 title-button
+  copy and predates the CS473 onboarding panel; the practice card renders correctly.) Committed to the
+  feature branch; **NOT deployed** - the owner wants to see the whole art batch (floatie + redraws +
+  golfer-enhancement mockups) before anything ships. NEXT: the pixel-golfer depth/shading + idle-animation
+  mockups (A+B).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
