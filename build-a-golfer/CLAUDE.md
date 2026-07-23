@@ -12765,6 +12765,51 @@ allows Google Fonts, or self-host Anton.*
   branch; NOT deployed to /golf (awaiting owner approval per the guardrail). Tunable: the stamp's
   `SHW`(16)/brow factor(0.42)/`SW4_HR`, the new maps via `scratchpad/hat_gen.py`.
 
+- **CLUB SETS — clubs are now plural SETS (owner's design): one selectable "Clubs" item = an implied full
+  matched bag, one display club per set + Glizzy / Pool Noodle / Golden / Platinum / Diamond + set-name
+  shot narration.** After rejecting the "one club, one list" framing, the owner designed this with us:
+  "name each item plural 'clubs' as an implied set... you just select one for your golfer and we only need
+  to design one club per set as the display club" - e.g. Wizard/Titanium/Golden/Platinum/Diamond/Wooden
+  Clubs, plus Pool Noodle Clubs (their pick over Heatwave for summer) and Glizzy Clubs ("a normal club
+  shaft and then a hot dog on a bun with mustard as the club head").
+  1. **Catalog renamed to sets - item IDS UNCHANGED, so zero migration.** All 31 existing clubs became
+     plural set names (Tour Steel Driver -> Titanium Clubs, Magic Wand Putter -> Wizard Clubs, Persimmon
+     Driver -> Wooden Clubs, Hockey Stick Putter -> Hockey Clubs, Royal Scepter -> Royal Clubs, Onyx/
+     Emerald/Frost/Ruby/Sapphire/Void/Rose Gold/Scrambler Clubs, the store lines as plural product sets -
+     Forged Irons / Sand Wedges / Mallet Putters - and the free five as Starter Clubs / Fairway Woods /
+     Everyday Irons / Scoring Wedges / Classic Putters). Owned items + `look.club` resolve exactly as
+     before; only name/hist strings changed.
+  2. **5 new sets (36 total).** Legendary pack: **Golden Clubs** {dist2,app2,put2}, **Platinum Clubs**
+     {acc2,app2,put2}, **Diamond Clubs** {+1 across 6 stats, "flawless across the whole bag"} - all driver-
+     sprite recolors via CLUB_RECOLOR + new PXG_CLUB_PAL finishes - and **Glizzy Clubs** {sht2,scr1,clu2}
+     with a NEW authored sprite per the owner's spec (normal shaft, hot dog on a bun with a mustard zigzag
+     as the head). Epic pack + **Summer Smash seasonal**: **Pool Noodle Clubs** {scr2,clu2} - a whole
+     wiggly cyan foam-noodle club with a tube-hole tip - added to the summer DROPS items (in packs + the
+     Summer pack's boosted odds now, gone Sep 1, returns next summer; same gating as Candy Cane Clubs in
+     December). All flow through the existing economy automatically (CLUB_SEL rarity selector -> price
+     ladder, pack pool, shards, pack-only gating for pack kinds, store sets still direct-buy).
+  3. **Your set shows on every shot in the sim** - the inventive payoff of the set framing. New `tag`
+     field per set + `clubSetTag(look)`; `dShotSeq` prefixes club names with the equipped set's tag
+     ("**Glizzy driver** 292 yds to the left rough", "**Wizard 7-iron** from 168 yds", "**Wizard sand
+     wedge** to right green"), incl. the neutral-drive line, tee/approach/advance/water lines and
+     greenside chips. Wired at every call site: daily/Moment/Spotlight/Legend holes (+ mulligan +
+     approach-decision resolve, via S.look), H2H watch (each unit's own transmitted look via
+     `h2hUnitClubTag` - both clients derive the same text), the H2H playoff reveal, and the career playoff
+     (your ball only). Free starter sets have no tag (clean default). TEXT-ONLY: the rng stream is
+     untouched - verified 720 par/score/seed combos produce byte-identical shot structure (k/lie/toY)
+     with and without a tag.
+  4. **Copy:** the closet Clubs menu + How-to-Play explain the set concept ("every set is a full matched
+     bag... its name shows on your shots"); CLUB_OPTS free-club labels renamed to the set names.
+  Verified in Playwright: 36 sets with correct names/tags/rarities/prices (Glizzy legendary pack-only
+  35k-selector, Pool Noodle epic in-pool while summer is live, Candy Cane correctly out, Titanium store-
+  buyable); boosts flow career-only as before; sprites render on the golfer + as store thumbs (screenshot
+  of all 5 new sets approved-quality); a full practice round narrates 38 tagged shot lines and completes
+  with the shop/closet rendering set names; 0 page errors throughout; node --check clean. Committed to the
+  feature branch; NOT deployed (owner: everything else "good to go for now" - deploy decision pending the
+  club-system settling; Set Mastery + Demo Days remain optional owner-approved-direction add-ons, not
+  built). Tunable: per-set b/tags in CLUBS, the new PXG_CLUB_PAL finishes, the Glizzy/Pool Noodle sprites
+  in scratchpad/club_splice.py.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
