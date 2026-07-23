@@ -12810,6 +12810,31 @@ allows Google Fonts, or self-host Anton.*
   built). Tunable: per-set b/tags in CLUBS, the new PXG_CLUB_PAL finishes, the Glizzy/Pool Noodle sprites
   in scratchpad/club_splice.py.
 
+- **SETS ONLY — removed every club that isn't a full set (owner: "Let's remove all clubs that aren't a
+  full set of clubs. No more drivers woods irons wedges or putters").** The catalog is now exclusively
+  full "___ Clubs" sets (32 items):
+  1. **Removed the 4 free single-type items** (ids wood/iron/wedge/putter — Fairway Woods / Everyday Irons /
+     Scoring Wedges / Classic Putters). They were free, so nothing owned is lost; **Starter Clubs** (id
+     'driver') remains the one free full set. Their FREE_COSMETICS + COS_BOOST entries removed too.
+  2. **Renamed the 9 paid type-named items into full sets — IDS UNCHANGED, so owned purchases survive with
+     zero refunds** (boosts/rarity/prices identical, each gains a narration tag): Tour Woods → **Tour
+     Clubs**, Forged Irons → **Forged Clubs**, Blade Irons → **Blade Clubs**, Milled Wedges → **Milled
+     Clubs**, Sand Wedges → **Sandstorm Clubs**, Lob Wedges → **Soft Touch Clubs**, Mallet Putters →
+     **Pure Roll Clubs**, Scoring Irons → **Scoring Clubs**, Heritage Blades → **Heritage Clubs**.
+  3. **Sprites kept**: the wood/iron/wedge/putter base sprites stay in PXG_CLUBS (CLUB_RECOLOR aliases
+     depend on them as base art) — only the catalog entries are gone.
+  4. **Migration**: `normClub()` (CLUB_LEGACY map) folds a stale `look.club` of wood/iron/wedge/putter into
+     'driver' at every read point — profileLook/restoreProfileIdentity, the S boot init, bagBoostRows, and
+     the pxGolferCanvas render fallback (needed because the sprites still exist, so the old
+     sprite-existence fallback wouldn't catch them). A legit renamed id (e.g. sandwedge) is never touched.
+  5. **Dead picker removed**: the unreachable CLUB_OPTS free-club tile branch in setupLookTiles is gone;
+     the shop's free group label reads "Your starter set".
+  Verified in Playwright: 32 sets, every name ends in "Clubs", no type-named items anywhere in the shop or
+  closet (old names 0 hits), renamed sets keep their boosts/prices/pack-only flags + narrate their tags
+  ("Sandstorm sand wedge…"), stale look.club values migrate to driver while real set ids persist, the
+  720-combo narration structural invariant still holds (0 diffs vs untagged), a full practice round + shop
+  render clean with 0 page errors; node --check clean. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
