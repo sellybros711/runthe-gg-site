@@ -274,7 +274,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   transition:transform .06s, background .15s; min-height:112px; justify-content:flex-start;}
 .tile:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.35);}
 .tile .em{font-size:26px; line-height:1;}
-.tile .diag{width:42px; height:34px; display:block; margin:0 auto 1px;}
+.tile .diag{width:58px; height:45px; display:block; margin:0 auto 2px;}
 .tile .diag svg{width:100%; height:100%; display:block;}
 .tile .tt{font-family:var(--pix); font-size:9px; letter-spacing:.3px; text-align:center;}
 .tile .nm{font-family:var(--term); font-size:14px; font-weight:600; color:var(--cream-dim); text-align:center; line-height:1.05;}
@@ -351,6 +351,19 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .opp .dcap .dcv{font-family:var(--pix); font-size:11px; color:var(--cream);}
 .opp .dcap .dcv.p-HIGH{color:#ff7a3d;} .opp .dcap .dcv.p-MEDIUM{color:var(--gold-bright);} .opp .dcap .dcv.p-LOW{color:var(--green);}
 .opp .dcap .dch{font-size:12px; color:var(--cream-dim); line-height:1.2;}
+/* coverage read: the shells they play + which route concepts punish them */
+.opp .covread{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:11px 12px; margin:0 0 12px;}
+.opp .covread .cr-h{font-family:var(--pix); font-size:9px; letter-spacing:.5px; color:var(--gold-bright); margin-bottom:6px; display:flex; align-items:center; gap:6px;}
+.opp .covread .cr-h svg{width:13px; height:13px;}
+.opp .covread .cr-shells{font-size:14px; color:var(--cream-dim); line-height:1.35; margin-bottom:9px;}
+.opp .covread .cr-shells b{color:var(--cream); font-weight:600;}
+.opp .covread .cr-row{display:flex; align-items:center; gap:7px; margin-top:7px; flex-wrap:wrap;}
+.opp .covread .cr-lbl{font-family:var(--pix); font-size:7px; letter-spacing:.5px; white-space:nowrap; min-width:52px;}
+.opp .covread .cr-row.beat .cr-lbl{color:var(--green);}
+.opp .covread .cr-row.avoid .cr-lbl{color:var(--red);}
+.opp .covread .ccp{font-family:var(--pix); font-size:8px; padding:4px 7px; border-radius:7px; border:1px solid var(--line); background:var(--panel);}
+.opp .covread .cr-row.beat .ccp{color:#bff0c0; border-color:rgba(123,214,126,.4);}
+.opp .covread .cr-row.avoid .ccp{color:#f3b7a9; border-color:rgba(224,112,92,.4);}
 /* attack plan: what works / what doesn't vs today's D */
 .opp .aplan{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;}
 .opp .ap-col{border:1px solid var(--line); border-radius:12px; padding:10px 11px; background:var(--panel2);}
@@ -711,9 +724,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js?v=20260722g"></script>
-<script src="playbook.js?v=20260722g"></script>
-<script src="engine.js?v=20260722g"></script>
+<script src="drive_generator.js?v=20260723a"></script>
+<script src="playbook.js?v=20260723a"></script>
+<script src="engine.js?v=20260723a"></script>
 <script>
 (function(){
   'use strict';
@@ -950,6 +963,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       +   `<div class="dcap"><span class="dcl">BOX</span><span class="dcv">${rep.box.level}</span><span class="dch">${rep.box.hint}</span></div>`
       +   `<div class="dcap"><span class="dcl">COVERAGE</span><span class="dcv">${rep.coverageLabel}</span><span class="dch">${covHint}</span></div>`
       + `</div>`
+      + coverageReadHTML(rep, gp)
       + `<div class="aplan">`
       +   `<div class="ap-col good"><div class="ap-h">✓ PLAY SHEET</div>${html(good,'good')}</div>`
       +   `<div class="ap-col bad"><div class="ap-h">✕ DO NOT RUN</div>${html(bad,'bad')}</div>`
@@ -978,6 +992,45 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       INTERMEDIATE:'work the middle', PLAY_ACTION:'good changeup', DEEP:'low-percentage today', SCREEN:'situational' },
   };
   function playReason(arch, headline){ return (REASONS[headline]||REASONS.BALANCED)[arch] || REASONS.BALANCED[arch] || ''; }
+
+  // ---- COVERAGE READ: turn the concept↔coverage engine table into an actionable tip ----
+  // Human labels for each route concept (matches what the play-design tiles draw).
+  const CONCEPT_LABEL = { VERTS:'Verticals', POSTS:'Double post', CROSS:'Deep cross', MESH:'Mesh',
+    STICK:'Stick', SNAG:'Snag', HILO:'Curl-flat', SMASH:'Smash', FLOOD:'Flood / Sail', DAGGER:'Dagger',
+    SLANT:'Slants', SEAM:'Seams', HITCH:'Hitches', COMEBACK:'Comebacks', FADE:'Back-shoulder',
+    ANGLE:'RB angle', WHEEL:'Post-wheel', LEAK:'Y-leak', BOOT:'Bootleg', SCREEN:'Screens' };
+  // Plain-English description of the shells they'll show.
+  function shellSummary(rep){
+    const bz = rep.pressure.level;
+    if(rep.coverage==='MAN'){
+      return `Man across the board — mostly <b>press</b> at the line${bz==='HIGH'?', and they blitz off it a lot':bz==='MEDIUM'?', with the odd blitz':''}. Beat the man across from you.`;
+    }
+    if(rep.coverage==='ZONE'){
+      return `Zone behind the front — <b>two-high</b> on passing downs, <b>single-high</b> early${bz==='HIGH'?'. Blitzes leave soft zone behind':''}. Find the window between defenders.`;
+    }
+    return `Mixes man &amp; zone snap to snap — <b>press</b>, <b>off</b>, and <b>two-high</b> all show up${bz==='HIGH'?', and they bring heat':''}. Read the safeties after the snap.`;
+  }
+  // Rank concepts by weighted COVER_MOD across the day's expected shell mix — the SAME
+  // shellMix the engine uses to rate archetypes, so the two attack panels never disagree.
+  function conceptRead(gp){
+    const CM = ENGINE.COVER_MOD || {}; const mix = ENGINE.shellMix(gp);
+    const scored = Object.keys(CM).map(c=>{
+      let v=0; for(const sh in mix) v += (CM[c][sh]||0)*mix[sh];
+      return { c, v };
+    }).sort((a,b)=>b.v-a.v);
+    const beat = scored.filter(x=>x.v>1.5).slice(0,4).map(x=>CONCEPT_LABEL[x.c]||x.c);
+    const avoid = scored.filter(x=>x.v<-1.5).slice(-3).reverse().map(x=>CONCEPT_LABEL[x.c]||x.c);
+    return { beat: beat.length?beat:[CONCEPT_LABEL[scored[0].c]], avoid };
+  }
+  function coverageReadHTML(rep, gp){
+    const r = conceptRead(gp);
+    const chips = arr => arr.map(l=>`<span class="ccp">${l}</span>`).join('');
+    let h = `<div class="covread"><div class="cr-h">${IC.target} COVERAGE READ</div>`
+      + `<div class="cr-shells">${shellSummary(rep)}</div>`
+      + `<div class="cr-row beat"><span class="cr-lbl">ROUTES THAT WIN</span>${chips(r.beat)}</div>`;
+    if(r.avoid.length) h += `<div class="cr-row avoid"><span class="cr-lbl">ROUTES THAT DIE</span>${chips(r.avoid)}</div>`;
+    return h + `</div>`;
+  }
 
   /* ---------- scheme picker (compact) ---------- */
   function renderSchemes(){
@@ -1104,44 +1157,91 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     for(let i=1;i<=7;i++){ const d=document.createElement('i');
       if(i<state.playNo) d.className='on'; else if(i===state.playNo) d.className='now'; dots.appendChild(d); }
   }
-  // Mini play-diagram (X's & O's) per play type — drawn up like a playbook card.
-  // Draw the play's ACTUAL route from its signature ("<depth>|<direction>"): the depth
-  // band sets how far the route goes, the direction sets which way it breaks. So a
-  // "20+|middle" reads as a go route and a "5-9|right" reads as an out — art that
-  // matches the play, not just its archetype.
+  // A real playbook card per play: the concept's ACTUAL route combination (Four Verts draws
+  // four verticals; Smash draws hitch+corner; Mesh draws the crossers), plus the formation.
+  const _LOS=35, _TOP=4, _X=8,_SL=21,_C=32,_SR=43,_Z=56,_RB=26;
+  const RTV = {
+    go:   x=>`M${x} ${_LOS}L${x} ${_TOP}`,
+    seam: x=>`M${x} ${_LOS}L${x} ${_TOP+2}`,
+    post: x=>`M${x} ${_LOS}L${x} 16L${x<_C?x+9:x-9} ${_TOP}`,
+    corner:x=>`M${x} ${_LOS}L${x} 16L${x<_C?x-8:x+8} ${_TOP+1}`,
+    dig:  x=>`M${x} ${_LOS}L${x} 18L${x<_C?x+13:x-13} 18`,
+    out:  x=>`M${x} ${_LOS}L${x} 22L${x<_C?x-9:x+9} 22`,
+    curl: x=>`M${x} ${_LOS}L${x} 20L${x<_C?x-3:x+3} 23`,
+    hitch:x=>`M${x} ${_LOS}L${x} 28L${x<_C?x-2:x+2} 30`,
+    slant:x=>`M${x} ${_LOS}L${x<_C?x+9:x-9} 27`,
+    flat: x=>`M${x} ${_LOS}L${x} 33L${x<_C?x-10:x+10} 32`,
+    wheel:x=>`M${x} ${_LOS}L${x<_C?x-5:x+5} 32L${x<_C?x-5:x+5} 6`,
+    comeback:x=>`M${x} ${_LOS}L${x} 12L${x<_C?x-4:x+4} 16`,
+    dragR:x=>`M${x} ${_LOS}L${x} 31L${Math.min(60,x+24)} 30`,
+    dragL:x=>`M${x} ${_LOS}L${x} 31L${Math.max(4,x-24)} 30`,
+    crossL:x=>`M${x} ${_LOS}L${x} 25L${Math.max(4,x-22)} 20`,
+    check:x=>`M${x} ${_LOS}L${x} 39L${x<_C?x+7:x-7} 39`,
+    angle:x=>`M${x} ${_LOS}L${x<_C?x-4:x+4} 39L${x<_C?x+8:x-8} 30`,
+  };
+  const VISC = {
+    VERTS:[[_X,'go',1],[_SL,'seam'],[_SR,'seam'],[_Z,'go']],
+    POSTS:[[_X,'post',1],[_Z,'post'],[_SL,'seam']],
+    CROSS:[[_SR,'crossL',1],[_X,'go'],[_Z,'comeback']],
+    MESH:[[_SL,'dragR',1],[_SR,'dragL',1],[_X,'hitch'],[_RB,'check']],
+    STICK:[[_SL,'hitch',1],[_RB,'flat'],[_Z,'go']],
+    SNAG:[[_SL,'slant',1],[_RB,'flat'],[_Z,'corner']],
+    HILO:[[_Z,'curl',1],[_RB,'flat'],[_X,'curl']],
+    SMASH:[[_Z,'hitch'],[_SR,'corner',1]],
+    FLOOD:[[_Z,'corner',1],[_SR,'out'],[_RB,'flat']],
+    DAGGER:[[_SL,'seam'],[_X,'dig',1],[_Z,'comeback']],
+    SLANT:[[_X,'slant',1],[_Z,'slant'],[_RB,'flat']],
+    SEAM:[[_SL,'seam',1],[_SR,'seam'],[_X,'hitch']],
+    HITCH:[[_X,'hitch',1],[_Z,'hitch'],[_SL,'hitch']],
+    COMEBACK:[[_Z,'comeback',1],[_X,'go'],[_SL,'hitch']],
+    FADE:[[_Z,'go',1],[_X,'go'],[_SL,'seam']],
+    ANGLE:[[_RB,'angle',1],[_X,'go'],[_Z,'go']],
+    WHEEL:[[_SL,'post',1],[_Z,'wheel'],[_X,'go']],
+    LEAK:[[_SR,'flat',1],[_Z,'comeback'],[_X,'go']],
+    BOOT:[[_SR,'dragR',1],[_Z,'comeback'],[_RB,'flat']],
+  };
+  let _pid=0;
   function routeSVG(play){
+    const g='#f2b21c', pr='#ffcf4d', ln='rgba(238,243,251,.5)';
+    const mid='pa'+(_pid++);
+    const gun = play.formation==='Shotgun';
+    let s = `<svg viewBox="0 0 64 50" aria-hidden="true">`
+      + `<defs><marker id="${mid}" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><path d="M0 0L4 2L0 4Z" fill="${pr}"/></marker></defs>`
+      + `<line x1="4" y1="${_LOS}" x2="60" y2="${_LOS}" stroke="${ln}" stroke-width="1" stroke-dasharray="2 2"/>`
+      + [24,28,32,36,40].map(x=>`<circle cx="${x}" cy="${_LOS+1.5}" r="1.5" fill="${ln}"/>`).join('');
     const arch = play.archetype;
-    const parts = String(play.signature||'').split('|');
-    const dir = parts[1] || 'middle';
-    const band = parts[0] || '';
-    const g='#f2b21c', ln='rgba(244,227,201,.55)';
-    const TOP = {'0-4':19,'5-9':14,'10-19':8,'20+':3};
-    const dy = TOP[band]!=null ? TOP[band] : (arch==='DEEP'?3 : arch==='INTERMEDIATE'?8 : arch==='SCREEN'?22 : 14);
-    const bx=21, by=30; let d='', hx=bx, hy=dy, hd='U', fake='';
-    if(arch==='RUN'){
-      const gx = dir==='left'?14 : dir==='right'?28 : 21;
-      d=`M${bx} ${by} L${bx} 22 L${gx} 8`; hx=gx; hy=8; hd='U';
-    } else if(arch==='QB_SNEAK'){
-      d=`M${bx} ${by} L${bx} 21`; hy=21;
+    const nm = play.name||'';
+    if(arch==='RUN' || arch==='QB_SNEAK'){
+      const qbKeep = arch==='QB_SNEAK' || /\bQB\b/.test(nm) || /Read|Veer|Option/i.test(nm);
+      const gap = /Power|Counter|Iso|Duo|Wham/i.test(nm);
+      const outside = /Outside|Wide|Toss|Sweep|Jet|Speed|Stretch/i.test(nm);
+      const sx = qbKeep?32:_RB, sy = qbKeep?(gun?44:40):44;
+      const tx = arch==='QB_SNEAK'?32 : outside?46 : gap?30 : 34, ty = arch==='QB_SNEAK'?26 : 8;
+      s += `<circle cx="${sx}" cy="${sy}" r="2.2" fill="${g}"/>`;
+      s += `<path d="M${sx} ${sy}L${sx} 31L${tx} ${ty}" fill="none" stroke="${pr}" stroke-width="2.4" stroke-linejoin="round" marker-end="url(#${mid})"/>`;
+      if(gap) s += `<path d="M40 34Q31 31 27 27" fill="none" stroke="${g}" stroke-width="1.4" stroke-dasharray="1.5 2"/>`;   // puller
+      if(/Read|Veer|Option/i.test(nm)) s += `<path d="M32 44L24 44" fill="none" stroke="${g}" stroke-width="1.3" stroke-dasharray="1.5 2" marker-end="url(#${mid})"/><circle cx="22" cy="44" r="1.6" fill="${ln}"/>`;
+      if(!qbKeep) s += `<circle cx="32" cy="${gun?44:40}" r="1.6" fill="${ln}"/>`;
     } else if(arch==='SCREEN'){
-      const sx = dir==='right'?31 : dir==='left'?11 : 21;
-      d=`M${bx} ${by} L${sx} 28 L${sx} 21`; hx=sx; hy=21;
-    } else {                                   // pass: stem up to depth, break to direction
-      if(dir==='middle'){ d=`M${bx} ${by} L${bx} ${dy}`; }
-      else { const ex = dir==='left'?Math.max(6,bx-13):Math.min(36,bx+13);
-        d=`M${bx} ${by} L${bx} ${dy+3} L${ex} ${dy}`; hx=ex; hd = dir==='left'?'L':'R'; }
-      if(arch==='PLAY_ACTION') fake=`M${bx} ${by} L${bx-8} 33`;
+      const left = /left|Bubble|Slide/i.test(String(play.signature)+nm) && !/right/i.test(String(play.signature));
+      const wx = left?_X+3:_Z-3, dir=left?-1:1;
+      s += `<circle cx="32" cy="${gun?44:40}" r="2" fill="${g}"/>`;
+      s += `<circle cx="${wx}" cy="${_LOS}" r="1.8" fill="${pr}"/>`;
+      s += `<path d="M32 ${gun?44:40}L${wx} ${_LOS+2}" fill="none" stroke="${g}" stroke-width="1.3" stroke-dasharray="2 2"/>`;
+      s += `<path d="M${wx} ${_LOS}L${wx} 40L${wx+dir*11} 39" fill="none" stroke="${pr}" stroke-width="2.2" stroke-linejoin="round" marker-end="url(#${mid})"/>`;
+      // release blockers
+      s += `<path d="M28 ${_LOS+1}L${wx+dir*6} 40" fill="none" stroke="${ln}" stroke-width="1.2" stroke-dasharray="1.5 2"/>`;
+    } else {
+      const concept = (ENGINE.CONCEPT && ENGINE.CONCEPT[nm]) || 'SEAM';
+      const routes = VISC[concept] || VISC.SEAM;
+      s += `<circle cx="32" cy="${gun?44:40}" r="2" fill="${g}"/>`;                 // QB
+      s += `<circle cx="26" cy="44" r="1.6" fill="${ln}"/>`;                        // RB
+      if(/PA|Boot|Waggle|Naked|Play Pass/i.test(nm)) s += `<path d="M32 ${gun?44:40}L26 43" fill="none" stroke="${ln}" stroke-width="1.3" stroke-dasharray="1.5 2"/>`;  // fake
+      for(const [x,r,p] of routes){ const d=(RTV[r]||RTV.seam)(x); const col=p?pr:g;
+        s += `<circle cx="${x}" cy="${_LOS}" r="1.8" fill="${col}"/>`;
+        s += `<path d="${d}" fill="none" stroke="${col}" stroke-width="${p?2:1.4}" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#${mid})"/>`; }
     }
-    const head = hd==='U' ? `${hx-3},${hy+4} ${hx+3},${hy+4} ${hx},${hy}`
-               : hd==='R' ? `${hx-4},${hy-3} ${hx-4},${hy+3} ${hx},${hy}`
-               :            `${hx+4},${hy-3} ${hx+4},${hy+3} ${hx},${hy}`;
-    return `<svg viewBox="0 0 42 34" aria-hidden="true">`
-      +`<line x1="6" y1="24" x2="36" y2="24" stroke="${ln}" stroke-width="1.4"/>`
-      +`<g fill="none" stroke="${ln}" stroke-width="1.5"><circle cx="12" cy="24" r="2.1"/><circle cx="20" cy="24" r="2.1"/><circle cx="28" cy="24" r="2.1"/></g>`
-      + (fake?`<path d="${fake}" stroke="${ln}" stroke-width="1.6" fill="none" stroke-dasharray="2 2"/>`:'')
-      +`<circle cx="${bx}" cy="30" r="2.6" fill="${g}"/>`
-      +`<path d="${d}" stroke="${g}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
-      +`<polygon points="${head}" fill="${g}"/></svg>`;
+    return s + `</svg>`;
   }
   function renderCalls(state){
     const wrap=el('calls'); wrap.innerHTML='';

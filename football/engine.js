@@ -26,6 +26,15 @@
 }(typeof self !== 'undefined' ? self : this, function (GEN, PLAYBOOK) {
   'use strict';
   const { fnv1a, mulberry32, generateDailyDrive, defensiveCall, buildBlitzSlots } = GEN;
+  // Read a numeric tuning knob from the environment when running under Node (sims/tests);
+  // fall back to the default in the browser. NOTE: `&&`-chained env reads return `false` in
+  // the browser (process is undefined), and `false ?? d` is `false` → Number(false) = 0 — a
+  // silent zeroing bug. This helper defaults correctly whenever the var isn't a real value.
+  function envNum(key, dflt){
+    if (typeof process !== 'undefined' && process.env && process.env[key] != null && process.env[key] !== '')
+      return Number(process.env[key]);
+    return dflt;
+  }
 
   /* ---------- 1. DEFENSIVE COLUMN MODIFIERS -------------------------------
      Measured success-rate deltas vs the BASE_7 column, by offensive archetype.
@@ -44,6 +53,94 @@
   const DEF_DISASTER = {
     BASE_7: 0.0, LIGHT_BOX: +0.6, HEAVY_BOX: +1.8, BLITZ_LIGHT_BOX: +5.2, HEAVY_BLITZ: +8.4,
   };
+
+  /* ---------- CONCEPT vs COVERAGE ------------------------------------------
+     Every pass play is a real CONCEPT, and each concept beats some coverage
+     shells and dies to others — the football rock-paper-scissors that makes
+     reading the defense matter. The defense shows a shell per snap (PRESS/OFF
+     man, ONE_HIGH/TWO_HIGH/SOFT zone, or a BLITZ); calling the concept that
+     beats today's shell is where a skilled player separates from a guesser.   */
+  const CONCEPT = {
+    'Four Verts':'VERTS','Switch Verts':'VERTS','Go Ball':'VERTS','Max Protect Shot':'VERTS',
+    'Double Post':'POSTS','Shot Post':'POSTS','Play Pass Post':'POSTS','PA Deep Shot':'POSTS','Yankee':'POSTS',
+    'Y-Cross':'CROSS','Deep Cross':'CROSS','Deep Over':'CROSS',
+    'Mesh':'MESH','Shallow Cross':'MESH','Drive':'MESH','Drift':'MESH',
+    'Stick':'STICK','Snag':'SNAG','Curl-Flat':'HILO',
+    'Flat-Corner':'SMASH','Sail':'FLOOD','Boot Flood':'FLOOD','Naked Flood':'FLOOD',
+    'Dagger':'DAGGER','Dig':'DAGGER','Post-Dig':'DAGGER',
+    'Slant-Flat':'SLANT','Quick Slant':'SLANT','Glance RPO':'SLANT','PA Glance':'SLANT',
+    'Pop Pass':'SEAM','Hitch-Seam':'SEAM','PA Seam':'SEAM',
+    'Hitch':'HITCH','Deep Comeback':'COMEBACK','Back Shoulder':'FADE','Texas (RB Angle)':'ANGLE',
+    'Six (Post-Wheel)':'WHEEL','Y-Leak':'LEAK',
+    'Waggle':'BOOT','Naked Boot':'BOOT','Boot Over':'BOOT',
+    'Bubble Screen':'SCREEN','Bubble RPO':'SCREEN','Tunnel Screen':'SCREEN','Jet Screen':'SCREEN',
+    'Halfback Screen':'SCREEN','Slide Screen':'SCREEN',
+  };
+  // success delta by shell (+ beats it). dp = a big-play concept (explosive scales up on a good matchup).
+  const COVER_MOD = {
+    VERTS:   {ONE_HIGH:+12, TWO_HIGH:-11, PRESS:+4,  OFF:-3,  SOFT:-5,  BLITZ:-8,  dp:1},
+    POSTS:   {ONE_HIGH:+11, TWO_HIGH:-9,  PRESS:+3,  OFF:-1,  SOFT:-4,  BLITZ:-9,  dp:1},
+    CROSS:   {ONE_HIGH:+5,  TWO_HIGH:+8,  PRESS:+7,  OFF:+2,  SOFT:+2,  BLITZ:-3,  dp:1},
+    MESH:    {ONE_HIGH:0,   TWO_HIGH:-2,  PRESS:+12, OFF:+8,  SOFT:-2,  BLITZ:+3},
+    STICK:   {ONE_HIGH:+6,  TWO_HIGH:+2,  PRESS:-4,  OFF:+2,  SOFT:+8,  BLITZ:+2},
+    SNAG:    {ONE_HIGH:+4,  TWO_HIGH:+5,  PRESS:-3,  OFF:+3,  SOFT:+9,  BLITZ:+2},
+    HILO:    {ONE_HIGH:+5,  TWO_HIGH:+2,  PRESS:-4,  OFF:+3,  SOFT:+8,  BLITZ:0},
+    SMASH:   {ONE_HIGH:-6,  TWO_HIGH:+12, PRESS:+2,  OFF:+4,  SOFT:+3,  BLITZ:-4,  dp:1},
+    FLOOD:   {ONE_HIGH:+4,  TWO_HIGH:+8,  PRESS:-6,  OFF:-2,  SOFT:+9,  BLITZ:-4,  dp:1},
+    DAGGER:  {ONE_HIGH:+5,  TWO_HIGH:+7,  PRESS:-2,  OFF:+4,  SOFT:+6,  BLITZ:-4,  dp:1},
+    SLANT:   {ONE_HIGH:+3,  TWO_HIGH:+3,  PRESS:+10, OFF:-4,  SOFT:-2,  BLITZ:+12},
+    SEAM:    {ONE_HIGH:+8,  TWO_HIGH:-4,  PRESS:+4,  OFF:+2,  SOFT:+2,  BLITZ:+2,  dp:1},
+    HITCH:   {ONE_HIGH:+2,  TWO_HIGH:+4,  PRESS:-8,  OFF:+10, SOFT:+8,  BLITZ:+2},
+    COMEBACK:{ONE_HIGH:+2,  TWO_HIGH:+5,  PRESS:-6,  OFF:+9,  SOFT:+6,  BLITZ:-6},
+    FADE:    {ONE_HIGH:+2,  TWO_HIGH:+3,  PRESS:+8,  OFF:-2,  SOFT:-2,  BLITZ:-4,  dp:1},
+    ANGLE:   {ONE_HIGH:0,   TWO_HIGH:0,   PRESS:+8,  OFF:+2,  SOFT:+1,  BLITZ:+4},
+    WHEEL:   {ONE_HIGH:+3,  TWO_HIGH:+3,  PRESS:+8,  OFF:0,   SOFT:0,   BLITZ:-4,  dp:1},
+    LEAK:    {ONE_HIGH:+3,  TWO_HIGH:+6,  PRESS:+2,  OFF:+3,  SOFT:+4,  BLITZ:-2},
+    BOOT:    {ONE_HIGH:+6,  TWO_HIGH:-2,  PRESS:+8,  OFF:+5,  SOFT:-3,  BLITZ:-10},
+    SCREEN:  {ONE_HIGH:-3,  TWO_HIGH:-6,  PRESS:-3,  OFF:+2,  SOFT:-4,  BLITZ:+15},
+  };
+  // Per-scheme parity edge (success delta) — compresses the schemes toward viable TD rates
+  // so no playbook is strictly easy-mode. Reflects identity: the grind-it-out schemes get a
+  // nudge up, the all-explosive ones a nudge down (they still score more, just not runaway).
+  const SCHEME_EDGE = { WEST_COAST:+6, SMASH_MOUTH:+7, WIDE_ZONE:-7, AIR_RAID:-2, SPREAD_OPTION:+5, VERTICAL:-12 };
+  function conceptOf(play){ return CONCEPT[play.name] || null; }
+  const COVER_SCALE = envNum('RTD_COVER', 1.5);   // how hard the concept↔coverage matchup swings the play
+  // Which route concepts each pass archetype tends to carry — lets the scouting
+  // rating account for the concept↔coverage matchup (not just the box), so the
+  // matchup screen's advice matches what the resolver actually does at the snap.
+  const ARCH_CONCEPTS = {
+    QUICK:        ['SLANT','STICK','SNAG','HITCH','MESH','HILO'],
+    INTERMEDIATE: ['CROSS','DAGGER','SMASH','FLOOD','COMEBACK','LEAK','SEAM'],
+    PLAY_ACTION:  ['POSTS','BOOT','SEAM','SLANT'],
+    DEEP:         ['VERTS','POSTS','FADE','WHEEL'],
+    SCREEN:       ['SCREEN'],
+  };
+  // Expected mix of coverage shells for the day (mirrors drive_generator.coverageShell,
+  // averaged over the down/distance the drive will actually see).
+  function shellMix(gp){
+    const blitz = Math.max(0, Math.min(0.6, gp.blitzRate != null ? gp.blitzRate : 0.24));
+    const cov = gp.coverage;
+    let base;
+    if (cov === 'MAN')       base = { PRESS:0.55, OFF:0.45 };
+    else if (cov === 'ZONE') base = { ONE_HIGH:0.34, TWO_HIGH:0.42, SOFT:0.24 };
+    else                     base = { ONE_HIGH:0.18, PRESS:0.22, TWO_HIGH:0.24, OFF:0.18, SOFT:0.18 };
+    const mix = {}; for (const k in base) mix[k] = base[k] * (1 - blitz);
+    mix.BLITZ = (mix.BLITZ || 0) + blitz;
+    return mix;
+  }
+  function archCoverageMod(arch, gp){
+    const cs = ARCH_CONCEPTS[arch]; if (!cs) return 0;        // runs/sneak: box handles it, no shell term
+    const mix = shellMix(gp); let total = 0, n = 0;
+    for (const c of cs){ const m = COVER_MOD[c]; if (!m) continue;
+      let v = 0; for (const sh in mix) v += (m[sh] || 0) * mix[sh]; total += v; n++; }
+    return n ? (total / n) * COVER_SCALE : 0;
+  }
+  function coverageMod(play, def){
+    const c = conceptOf(play); if (!c) return 0;              // runs: shell doesn't apply (box handles it)
+    const m = COVER_MOD[c]; if (!m) return 0;
+    const key = def.isBlitz ? 'BLITZ' : (def.shell || 'ONE_HIGH');
+    return (m[key] || 0) * COVER_SCALE;
+  }
 
   /* ---------- 2. SITUATIONAL MODEL -----------------------------------------
      Each play carries its own measured success-by-distance curve, so a play's
@@ -111,6 +208,8 @@
     const a = play.archetype;
     return play.success_pct
          + (DEF_MOD[a]?.[def.column] ?? 0)
+         + coverageMod(play, def)                      // did the concept beat today's coverage shell?
+         + (sit.scheme ? (SCHEME_EDGE[sit.scheme] || 0) : 0)   // per-scheme parity edge
          + specialization(play, sit.distance)
          + downPressureMod(a, sit.down, sit.distance)
          + (sit.tendency ? (sit.tendency[a] || 0) : 0)
@@ -151,8 +250,14 @@
     // Explosive is a SUBSET of success — scale it with the effective success rate so a
     // matchup that lowers success also lowers the big-play chance (instead of the old
     // min(sr-1) clamp, which let explosive cannibalize the whole success band).
-    ex = play.explosive_pct * (sr / Math.max(1, play.success_pct));
-    ex = Math.max(0.5, Math.min(sr * 0.9, ex));
+    // Gentler than a raw proportion: explosive tracks success but doesn't run away when
+    // success is high (which was over-rewarding the all-deep schemes).
+    ex = play.explosive_pct * (0.45 + 0.55 * (sr / Math.max(1, play.success_pct)));
+    // A big-play concept that wins its coverage matchup breaks more explosives (verticals
+    // vs single-high, smash vs two-high, screens vs the blitz).
+    const cc = COVER_MOD[conceptOf(play)];
+    if (cc && cc.dp) { const cm = coverageMod(play, def); if (cm > 0) ex *= 1 + Math.min(0.3, cm / 80); }
+    ex = Math.max(0.5, Math.min(sr * 0.62, ex));
     ds = Math.max(0.5, Math.min(60, ds));
     const succ = Math.max(0.5, sr - ex);
     const fail = Math.max(0.5, 100 - ex - succ - ds);
@@ -243,7 +348,7 @@
      well above the real 23.5% TD rate. This single constant scales success
      rates so a SKILLED player lands on the target TD rate. Solved by
      simulation (see simulator.js), not guessed. Raise it to make it easier. */
-  let DIFFICULTY = Number((typeof process !== 'undefined' && process.env && process.env.RTD_DIFFICULTY) ?? -3.0);
+  let DIFFICULTY = envNum('RTD_DIFFICULTY', -3.0);
   function setDifficulty(v){ DIFFICULTY = v; }
   function getDifficulty(){ return DIFFICULTY; }
 
@@ -352,7 +457,7 @@
       used[tile.id]++;
       const chosen = tile.play;
       const def = currentDefense();
-      const sit = { down, distance, yardline, clock, tendency: tendencyMap(recent) };
+      const sit = { down, distance, yardline, clock, tendency: tendencyMap(recent), scheme: schemeKey };
       const isRun = ['RUN','QB_SNEAK'].includes(chosen.archetype);
 
       // Grade against only what the player could see (box count, not the blitz)
@@ -479,11 +584,12 @@
     const P = columnProbs(gp); const out = {};
     for (const arch in DEF_MOD) { let e = 0;
       for (const col in P) e += P[col] * (DEF_MOD[arch][col] || 0);
+      e += archCoverageMod(arch, gp);        // account for the concept↔coverage matchup, like the resolver does
       out[arch] = +e.toFixed(2); }
     return out;
   }
 
   return { createDrive, runDrive, resolvePlay, gradeCall, expectedValue, shareCard,
            buildCallSheet, situationalMod, fgMakeProb, setDifficulty, getDifficulty,
-           matchupRatings, DEF_MOD, RULES, SNEAK_PLAY };
+           matchupRatings, DEF_MOD, RULES, SNEAK_PLAY, CONCEPT, COVER_MOD, shellMix };
 }));
