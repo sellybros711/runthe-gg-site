@@ -13265,6 +13265,14 @@ allows Google Fonts, or self-host Anton.*
   confirms the layout. **ACTION: run `supabase/67_runtour_course_records_look.sql`** (after 66). Deployed
   client to /golf.
 
+- **2026-07-23: owner ran migrations 65, 66, 67 successfully.** All three are LIVE: 65 (live profile look -
+  `runtour_profile_look` + `runtour_set_look`; leaderboard row avatars now track each player's CURRENT
+  golfer via `cur_look`, updating within seconds of a Closet change / on their next sign-in), 66 (the daily
+  board returns `skills` - archetypes now show right of the OVR on the Course Records today's-board rows),
+  67 (course records return each holder's `look` - the daily-result record bubble now shows the record
+  holder's real golfer; records set before 53's look column still show the default golfer until that
+  holder posts a new low round). No outstanding runtour migrations at this point.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
