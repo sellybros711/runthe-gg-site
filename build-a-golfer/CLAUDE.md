@@ -13273,6 +13273,27 @@ allows Google Fonts, or self-host Anton.*
   holder's real golfer; records set before 53's look column still show the default golfer until that
   holder posts a new low round). No outstanding runtour migrations at this point.
 
+- **Course Records: EVERY entry now shows on today's board (missing-4 fix) + a new ALL COURSES tab (owner:
+  "The play 18 leaderboard... has 24 entries, but... course records has 20 entries. Every entry must be
+  logged this is important... put all of the courses and their course records on its own tab called ALL
+  COURSES").** Root cause of the missing entries: the Course Records today's board rendered
+  `boardCache.rows.slice(podHTML?3:0,20)` - a hardcoded 20-row DISPLAY cap (3 podium + 17 list), while the
+  Play 18 leaderboard tab showed everything it fetched. Fixed: the cap is removed (`slice(podHTML?3:0)` -
+  every posted row renders), and every daily-board fetch was bumped to the server max
+  (`p_limit:200` on dbLoad / dbLoadLegend / dbLoadSpot / the Play 18 tab's 100 / the weekly board's 100) so
+  no entry is ever dropped at the fetch either as the player count grows. (The server RPC clamps at 200 -
+  a limit bump migration is only needed if a single day ever exceeds 200 posts.)
+  **ALL COURSES tab:** the Course Records overlay's tab row is now Human · 🏆 Legend · 🔥 Streaks ·
+  **⛳ All Courses**. The all-time 39-course records list moved OFF the Human tab into the All Courses tab
+  (every course + par/location + its record + all tied holders, today's course highlighted, unclaimed
+  dimmed); the Human tab is now just today's full board with a small "see the ⛳ All Courses tab" pointer.
+  The Legend tab keeps its own all-time legend records section (that tier stays self-contained); Streaks
+  unchanged. Per-tab data loading (human -> crLoad+dbLoad, all -> crLoad, legend -> legend pair, streaks ->
+  streak board). Verified in Playwright: 24 seeded entries -> podium 3 + list 21 = all 24 shown (last row
+  P24); the All Courses tab renders all 39 courses with the record + unclaimed states and no today-board;
+  Legend keeps its records list; Streaks regresses clean; dbLoad/dbLoadLegend fire with p_limit 200; 0 page
+  errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
