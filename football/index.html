@@ -254,6 +254,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .calls-hint{display:flex; align-items:center; justify-content:space-between; padding:2px 4px 6px;
   font-family:var(--pix); font-size:8px; letter-spacing:.5px; color:var(--cream-dim);}
 .calls-hint .ch-more{color:var(--gold-bright);}
+.tempo{display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin:2px 0 8px;}
+.tempo .tmp{background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:7px 4px;
+  display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; transition:border-color .15s, background .15s;}
+.tempo .tmp b{font-family:var(--pix); font-size:8px; letter-spacing:.3px; color:var(--cream);}
+.tempo .tmp small{font-family:var(--term); font-size:12px; color:var(--cream-dim); line-height:1;}
+.tempo .tmp.sel{border-color:var(--gold); background:rgba(235,166,31,.1);}
+.tempo .tmp.sel b{color:var(--gold-bright);}
+.tempo .tmp.to.armed{border-color:var(--gold); background:rgba(235,166,31,.16); animation:glow 1.4s ease-in-out infinite;}
+.tempo .tmp:disabled{opacity:.4; cursor:default;}
 .calls-wrap{position:relative;}
 .calls-wrap::before,.calls-wrap::after{content:''; position:absolute; top:0; bottom:6px; width:30px; z-index:3; pointer-events:none; transition:opacity .2s;}
 .calls-wrap::before{left:0; background:linear-gradient(90deg, var(--bg), transparent);}
@@ -715,6 +724,11 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
     <!-- CALL TILES -->
     <div class="calls-hint"><span>YOUR PLAYBOOK</span><span class="ch-more" id="callsMore">◂ swipe · 12 plays ▸</span></div>
+    <div class="tempo" id="tempoBar">
+      <button class="tmp" data-t="HUDDLE" id="tHuddle"><b>HUDDLE</b><small>full playbook</small></button>
+      <button class="tmp" data-t="HURRY" id="tHurry"><b>HURRY-UP</b><small>fast · no shots</small></button>
+      <button class="tmp to" data-t="TIMEOUT" id="tTimeout"><b>TIMEOUT</b><small><span id="toN">2</span> left</small></button>
+    </div>
     <div class="calls-wrap">
       <button class="calls-arrow left" id="callsL" aria-label="Scroll left">‹</button>
       <div class="calls" id="calls"></div>
@@ -738,9 +752,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js?v=20260723f"></script>
-<script src="playbook.js?v=20260723f"></script>
-<script src="engine.js?v=20260723f"></script>
+<script src="drive_generator.js?v=20260723g"></script>
+<script src="playbook.js?v=20260723g"></script>
+<script src="engine.js?v=20260723g"></script>
 <script>
 (function(){
   'use strict';
@@ -1297,12 +1311,30 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     let best=null, bev=-1e9;
     for(const t of drive.callSheet){
       const info=callInfo[t.id]; if(info && info.remaining<=0) continue;
+      if(tempo==='HURRY' && (t.play.archetype==='DEEP'||t.play.archetype==='PLAY_ACTION')) continue;  // can't be called in hurry-up
       let ev=0,tot=0;
       for(const sh in mix){ const d={ column: box>=8?'HEAVY_BOX':box<=6?'LIGHT_BOX':'BASE_7', shell:sh, isBlitz:sh==='BLITZ' };
         ev += mix[sh]*ENGINE.expectedValue(t.play, d, sit, gp.qualityModifier); tot+=mix[sh]; }
       ev/=tot; if(ev>bev){ bev=ev; best=t; }
     }
     return best;
+  }
+  function renderTempo(state){
+    const st = state || (drive && drive.state());
+    const to = st ? st.timeouts : 2;
+    const tn=el('toN'); if(tn) tn.textContent = to;
+    if(tempo==='TIMEOUT' && to<=0) tempo='HUDDLE';
+    const h=el('tHuddle'), u=el('tHurry'), t=el('tTimeout');
+    if(h) h.classList.toggle('sel', tempo==='HUDDLE');
+    if(u) u.classList.toggle('sel', tempo==='HURRY');
+    if(t){ t.classList.toggle('armed', tempo==='TIMEOUT'); t.disabled = to<=0 || (st && st.over); }
+  }
+  function setTempo(t){
+    if(busy || !drive) return;
+    const st = drive.state();
+    if(t==='TIMEOUT'){ if(st.timeouts<=0) return; tempo = (tempo==='TIMEOUT') ? 'HUDDLE' : 'TIMEOUT'; }
+    else tempo = t;
+    renderCalls(drive.state());   // re-render (hurry disables shots, coach pick shifts)
   }
   function renderCalls(state){
     const wrap=el('calls'); wrap.innerHTML='';
@@ -1314,16 +1346,18 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       const info = callInfo[t.id] || {remaining:Infinity, cap:Infinity};
       const gone = info.remaining<=0;
       const keyed = (tend[t.play.archetype]||0) <= -16;    // defense sitting on it (2+ recent)
-      const isPick = pick && t.id===pick.id && !gone;
+      const noShot = tempo==='HURRY' && (t.play.archetype==='DEEP'||t.play.archetype==='PLAY_ACTION');
+      const isPick = pick && t.id===pick.id && !gone && !noShot;
       const b=document.createElement('button'); b.className='tile'+(keyed&&!gone?' keyed':'')+(isPick?' pick':'');
       const remBadge = (info.cap!==Infinity && info.cap!=null) ? `<span class="rem">${Math.max(0,info.remaining)}</span>` : '';
       const keyTag = (keyed&&!gone) ? `<span class="keytag">KEYED</span>` : '';
       const pickDot = isPick ? `<span class="pickdot">◆ PICK</span>` : '';
       b.innerHTML=`${remBadge}${pickDot}<span class="diag">${routeSVG(t.play)}</span><span class="tt">${t.title}</span><span class="nm">${t.play.name}</span><span class="fm">${t.play.formation||''}</span>${keyTag}`;
       b.onclick=()=>doSnap(t.id);
-      b.disabled = state.over || gone;
+      b.disabled = state.over || gone || noShot;
       wrap.appendChild(b); tileEls[t.id]=b;
     }
+    renderTempo(state);
     // Coach's Pick strip — names the suggested play + plain-English purpose; tap to scroll to it.
     const cp=el('coachPick');
     if(cp){
@@ -1372,6 +1406,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   /* ---------- play a snap (animated) ---------- */
   let busy=false;
+  let tempo='HUDDLE';   // HUDDLE (default) · HURRY (quick game, fast clock, D in base) · TIMEOUT (one-shot)
   const PACE = 2.3;   // global slow-mo on the play-out (~0.7x speed) — bump to make snaps play out slower
   const sleep = ms => new Promise(r=>setTimeout(r, ms*PACE));
   function disableCalls(v){ document.querySelectorAll('#calls .tile').forEach(b=>b.disabled=v); el('kickBtn').disabled = v || el('kickBtn').disabled; }
@@ -1379,8 +1414,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   async function doSnap(tileId){
     if(busy || !drive) return;
     const before = drive.state();
-    const res = drive.snap(tileId);
-    if(res.denied){ mini('Used up — the D is sitting on it now'); return; }
+    const res = drive.snap(tileId, tempo);
+    if(res.denied){
+      mini(res.deniedReason==='no-shots-hurry' ? 'No time for a deep shot in hurry-up' : 'Used up — the D is sitting on it now');
+      return;
+    }
+    if(tempo==='TIMEOUT') tempo='HUDDLE';         // a timeout is a one-shot; back to huddle
     busy=true; disableCalls(true);
     await playOut(before, res, res.lastPlay);
     afterPlay(res); busy=false;
@@ -1777,6 +1816,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   /* ---------- start / resume ---------- */
   function beginDrive(dateStr, isPractice, salt){
     practice=!!isPractice;
+    tempo='HUDDLE';                               // every drive starts in the huddle
     drive = ENGINE.createDrive(dateStr, STORE.scheme, {salt: salt||0});
     el('splashScreen').classList.add('hidden');
     el('matchupScreen').classList.add('hidden');
@@ -2063,6 +2103,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       beginDrive(DATE, false, 0);
     };
     el('kickBtn').onclick=doKick;
+    el('tHuddle').onclick=()=>setTempo('HUDDLE');
+    el('tHurry').onclick=()=>setTempo('HURRY');
+    el('tTimeout').onclick=()=>setTempo('TIMEOUT');
     el('menuBtn').onclick=openMenu;
     el('homeBtn').onclick=showSplash;
     el('scoutPeek').onclick=()=>{ const c=el('scoutPeekCard'); c.classList.toggle('hidden'); };

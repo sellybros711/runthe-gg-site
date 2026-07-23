@@ -218,6 +218,7 @@
          + specialization(play, sit.distance)
          + downPressureMod(a, sit.down, sit.distance)
          + (sit.tendency ? (sit.tendency[a] || 0) : 0)
+         + (sit.tempoMod || 0)                          // rushed (hurry-up) execution hit
          + (qualityMod || 0) * 100 + DIFFICULTY;
   }
 
@@ -444,6 +445,7 @@
 
     let yardline = day.field.ownYard, down = 1, distance = 10;
     let clock = RULES.gameClockSec, playNo = 1;
+    let timeouts = RULES.timeouts;
     let over = false, result = null, toType = null;
     const log = [], grades = [], recent = [];   // recent[] = archetypes called
 
@@ -461,7 +463,7 @@
     }
     function snapshot(extra) {
       return Object.assign({
-        date: dateStr, scheme: schemeKey, yardline, down, distance, clock, playNo,
+        date: dateStr, scheme: schemeKey, yardline, down, distance, clock, playNo, timeouts,
         toGoal: 100 - yardline, over, result, toType,
         startYard: day.field.ownYard, plays: log.length,
         weather: day.weather.condition, field: day.field,
@@ -477,18 +479,34 @@
       return snapshot({ justFinished: true });
     }
 
-    function snap(tileId) {
+    function snap(tileId, tempo) {
       if (over) return snapshot();
       if (clock <= 0 || playNo > 14) return finish('CLOCK');
       let tile = callSheet.find(t => t.id === tileId) || callSheet[0];
       if (remaining(tile) <= 0) {                 // exhausted call: ignore, don't burn a down
         return snapshot({ denied: tile.id });
       }
+      // TEMPO: HUDDLE (default, unchanged) · HURRY (quick game only, fast clock, D caught in
+      // base — no blitz + lighter box, but rushed execution) · TIMEOUT (free clock + shake the
+      // D off your tendency, limited resource). HUDDLE == prior behavior, so bots/sims are
+      // untouched by construction.
+      if (tempo === 'TIMEOUT' && timeouts <= 0) tempo = 'HUDDLE';
+      const isRun = ['RUN','QB_SNEAK'].includes(tile.play.archetype);
+      // hurry-up can't take slow-developing shots
+      if (tempo === 'HURRY' && (tile.play.archetype === 'DEEP' || tile.play.archetype === 'PLAY_ACTION')) {
+        return snapshot({ denied: tile.id, deniedReason: 'no-shots-hurry' });
+      }
       used[tile.id]++;
+      if (tempo === 'TIMEOUT') { timeouts = Math.max(0, timeouts - 1); recent.length = 0; }  // reset the keying
       const chosen = tile.play;
-      const def = currentDefense();
-      const sit = { down, distance, yardline, clock, tendency: tendencyMap(recent), scheme: schemeKey };
-      const isRun = ['RUN','QB_SNEAK'].includes(chosen.archetype);
+      let def = currentDefense();
+      if (tempo === 'HURRY') {                     // defense stuck in base personnel
+        const bc = Math.max(5, def.boxCount - 1);
+        def = Object.assign({}, def, { isBlitz: false, boxCount: bc,
+          column: bc >= 8 ? 'HEAVY_BOX' : bc <= 6 ? 'LIGHT_BOX' : 'BASE_7' });
+      }
+      const sit = { down, distance, yardline, clock, tendency: tendencyMap(recent), scheme: schemeKey,
+                    tempoMod: tempo === 'HURRY' ? -4 : 0 };
 
       // Grade against only what the player could see (box count, not the blitz)
       // and only the calls still AVAILABLE this snap — grading you against a play
@@ -501,12 +519,16 @@
       grades.push(grade);
 
       const out = resolvePlay(chosen, def, sit, rng, gp.qualityModifier);
-      if(!out.incomplete) clock -= RULES.secPerPlay[isRun ? 'run' : 'pass'];   // incompletions stop the clock
+      // clock burn: hurry-up snaps fast (~40%), a timeout stops the clock, an incompletion stops it
+      let burn = RULES.secPerPlay[isRun ? 'run' : 'pass'];
+      if (tempo === 'HURRY') burn = Math.round(burn * 0.4);
+      if (tempo === 'TIMEOUT') burn = 0;
+      if(!out.incomplete) clock -= burn;
 
       const wasDown = down, wasDist = distance, wasYard = yardline;
       const entry = { playNo, down: wasDown, distance: wasDist, yardline: wasYard,
                       play: chosen.name, title: tile.title, archetype: chosen.archetype,
-                      box: def.boxCount, blitz: def.isBlitz, grade, ...out };
+                      box: def.boxCount, blitz: def.isBlitz, tempo: tempo || 'HUDDLE', grade, ...out };
       log.push(entry);
       recent.push(chosen.archetype);
 
