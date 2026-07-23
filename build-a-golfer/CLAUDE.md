@@ -13090,6 +13090,38 @@ allows Google Fonts, or self-host Anton.*
   `supabase/62_runtour_season_board_circuit_fans.sql`** (after 61) — the board changes are server-side and
   take effect only once it's applied; until then the boards behave as today.
 
+- **COURSE RECORDS page: top-3 podium + an Active Streaks list, guests included (owner IMG_8678: "The
+  course record page should have a podium like the other leaderboards, and there should be an active
+  streaks list. For active streaks we can include guests too").** Two additions to `overlayCourseRecords`
+  plus guest support on the streak board:
+  1. **Podium.** Today's board now opens with the same `.lbpodium` top-3 treatment as the other
+     leaderboards - #1 centered/elevated with each player's pixel golfer (`r.look||DEFLOOK`, your own row
+     shows your live look), name, score (`dTot`) and OVR - and per CS505 the ranked list below starts at
+     **#4** so nobody appears twice. Applies to both the Human and Legend tabs (same code path).
+  2. **Active Streaks section** (after the all-time records): the top 10 longest ACTIVE daily-play streaks
+     (🔥 current + "best N days"), fed by the existing `runtour_streak_board` cache
+     (`streakBoardLoad`'s refresh triggers now include the courserecords overlay).
+  3. **Guests count on the streak board - `supabase/63_runtour_guest_streaks.sql` (owner-run, after 55).**
+     Guests have no auth uid, so they get their own `runtour_guest_streaks` table keyed by a persistent
+     random DEVICE id (`rtt_guest_id` in localStorage - no identity ever leaves the device), an
+     anon-callable `runtour_streak_submit_guest` (clamped to 3650 - 10 years of daily play - vs the
+     signed-in 100k), and `runtour_streak_board` is redefined to UNION signed-in + guest streaks with an
+     `is_guest` flag. Guest rows are ANONYMIZED server-side - they always display as **"Guest"** (muted),
+     same posture as guest season posting; the return-shape change is drop-in for deployed clients (extra
+     column ignored). Client: `sbSubmitStreak` now posts for guests too (fail-open pre-migration), and the
+     call moved OUT of the signed-in gate in `finishDailyRound` so a guest's streak posts on every daily
+     completion (zero-streak guests never post; practice/legend rounds still don't touch streaks). The
+     Streaks leaderboard tab shows guests too, with its sign-in CTA reframed as "Your streak posts as
+     'Guest' - sign in to put your name on it." Known + accepted: a guest who signs in can appear twice
+     for up to ~2 days until their guest row ages out.
+  Validated migration 63 on local Postgres (union + ordering, guest clamp 999999→3650, longest-only-grows,
+  the ~2-day activity window drops a stale guest, null-guest no-op, anon can call guest-submit + board but
+  can't read either table, idempotent re-run). Verified in Playwright: the podium renders the top 3 with
+  golfers + the list starts at #4, the Active Streaks section renders signed-in + muted Guest rows, the
+  guest submit uses one stable device id across calls and skips at streak 0, 0 page errors; screenshot
+  confirms the layout matches the other boards. **ACTION: run `supabase/63_runtour_guest_streaks.sql`** -
+  until then guests simply don't post (fail-open) and the board behaves as today. Deployed client to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

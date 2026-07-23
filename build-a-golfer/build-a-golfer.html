@@ -7125,21 +7125,21 @@ function streakBoardLoad(){
   streakBoardCache={loading:true,ok:false,rows:[]};
   sb.rpc('runtour_streak_board',{p_limit:100}).then(({data,error})=>{
     streakBoardCache = error ? {loading:false,ok:false,rows:[]} : {loading:false,ok:true,rows:(data||[])};
-    if(S.overlay==='leaderboard' && (S.lbTab==='streaks')) render();
-  }).catch(()=>{ streakBoardCache={loading:false,ok:false,rows:[]}; if(S.overlay==='leaderboard'&&S.lbTab==='streaks') render(); });
+    if((S.overlay==='leaderboard' && (S.lbTab==='streaks')) || S.overlay==='courserecords') render();
+  }).catch(()=>{ streakBoardCache={loading:false,ok:false,rows:[]}; if((S.overlay==='leaderboard'&&S.lbTab==='streaks')||S.overlay==='courserecords') render(); });
 }
 function overlayStreakBoard(screen){
   if(!streakBoardCache) streakBoardLoad();
   const c=streakBoardCache, loading=!c||c.loading, ok=c&&c.ok, rows=ok?c.rows:[];
   const meName=(sbUsername||'').toLowerCase();
-  const you=r=>meName && (r.username||'').toLowerCase()===meName;
+  const you=r=>!r.is_guest && meName && (r.username||'').toLowerCase()===meName;
   const rowHTML=(r,i)=>`<div class="lb ${you(r)?'you':''}" style="grid-template-columns:34px 1fr auto">
       <span class="pos">${i===0?'🏆':(i+1)}</span>
-      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.username||'Golfer')}</div><div class="small muted" style="font-size:10.5px">best ${r.longest||r.current} days</div></span>
+      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap${r.is_guest?';color:var(--muted)':''}">${esc(r.is_guest?'Guest':(r.username||'Golfer'))}</div><div class="small muted" style="font-size:10.5px">best ${r.longest||r.current} days</div></span>
       <span class="mny" style="white-space:nowrap"><b style="color:var(--gold)">🔥 ${r.current}</b></span></div>`;
   const guestCTA = !sbSignedIn() ? `<div class="lockcta" style="text-align:center;padding:18px 12px;margin-top:10px">
-      <div style="font-size:22px;line-height:1">🔒</div><b style="color:var(--gold);display:block;margin-top:5px">Sign in to join the streak race</b>
-      <div class="small muted" style="margin:3px auto 11px;max-width:320px">Play the Daily Challenge with an account, and your streak appears here.</div>
+      <div style="font-size:22px;line-height:1">🔒</div><b style="color:var(--gold);display:block;margin-top:5px">Your streak posts as "Guest"</b>
+      <div class="small muted" style="margin:3px auto 11px;max-width:320px">Guests count on the board too. Sign in to put your name on your streak.</div>
       <div style="display:flex;gap:8px;justify-content:center"><button class="btn gold" id="lb-lock-up" style="width:auto;padding:9px 14px;font-size:12px">Create account</button><button class="btn ghost" id="lb-lock-in" style="width:auto;padding:9px 14px;font-size:12px">Sign in</button></div></div>` : '';
   let board;
   if(loading){ board=Array.from({length:8},()=>`<div class="lb lbskel" style="grid-template-columns:34px 1fr auto"><span class="pos"><span class="skb" style="width:16px;height:16px;border-radius:50%"></span></span><span class="pl"><span class="skb" style="width:52%;height:12px"></span><span class="skb" style="width:34%;height:9px;margin-top:5px"></span></span><span class="mny"><span class="skb" style="width:56px;height:13px"></span></span></div>`).join(''); }
@@ -7149,7 +7149,7 @@ function overlayStreakBoard(screen){
   const cur=streakDisplay();
   const banner = sbSignedIn()
     ? `<div><b style="color:var(--gold)">🔥 Your streak: ${cur} day${cur===1?'':'s'}</b><div class="small muted" style="margin-top:2px">Play the Daily every day to climb the streak board. Streaks stay active for ~2 days.</div></div>`
-    : `<div><b style="color:var(--gold)">Active streak leaderboard</b><div class="small muted" style="margin-top:2px">Sign in and play the Daily to appear here.</div></div><button class="btn gold" id="lb-signin" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap">Sign in</button>`;
+    : `<div><b style="color:var(--gold)">Active streak leaderboard</b><div class="small muted" style="margin-top:2px">Guests appear as "Guest". Sign in to claim your name.</div></div><button class="btn gold" id="lb-signin" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap">Sign in</button>`;
   const seg=(id,lab)=>`<button class="btn ${id==='streaks'?'gold':'ghost'} lbtab" data-tab="${id}" style="font-size:12px;padding:8px 12px;width:auto">${lab}</button>`;
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Streak leaderboard">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
@@ -7169,9 +7169,17 @@ function overlayStreakBoard(screen){
   screen.appendChild(ov);
 }
 // submit the caller's current + longest streak to the board (fail-open). Called on each new daily day + sign-in.
-function sbSubmitStreak(){ if(!sb||!sbSignedIn()) return;
+// 63_: guests post too - anonymized as "Guest" on the board, keyed by a persistent random device id (no
+// identity leaves the device; the server never accepts a name from a guest).
+function guestStreakId(){ let id=null; try{ id=localStorage.getItem('rtt_guest_id'); }catch(e){}
+  if(!id){ try{ id=(crypto&&crypto.randomUUID)?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==='x'?r:(r&3|8);return v.toString(16);}); localStorage.setItem('rtt_guest_id',id); }catch(e){} }
+  return id; }
+function sbSubmitStreak(){ if(!sb) return;
   try{ const ds=LS.get(acctKey('bag_streak'),null)||{}; const cur=streakDisplay(), lon=Math.max(ds.longest||0,cur);
-    sb.rpc('runtour_streak_submit',{p_current:cur,p_longest:lon}).then(({error})=>{ if(!error) streakBoardCache=null; }).catch(()=>{}); }catch(e){}
+    if(sbSignedIn()){ sb.rpc('runtour_streak_submit',{p_current:cur,p_longest:lon}).then(({error})=>{ if(!error) streakBoardCache=null; }).catch(()=>{}); }
+    else { if(cur<=0) return; const gid=guestStreakId(); if(!gid) return;
+      sb.rpc('runtour_streak_submit_guest',{p_guest:gid,p_current:cur,p_longest:lon}).then(({error})=>{ if(!error) streakBoardCache=null; }).catch(()=>{}); }   // pre-63 servers just error -> fail open
+  }catch(e){}
 }
 function overlayConfirmReset(screen){
   // Reset used to only clear the in-progress DRAFT (bag_resume), never the actual saved career
@@ -19723,8 +19731,8 @@ function finishDailyRound(){
       : wr.kind==='mulligan' ? (' · 🔥 week day '+wr.day+': +1 Mulli-Spin')
       : (' · 🔥 week day '+wr.day+': FREE '+packType(wr.tier||'base').short+' Pack!');
     awardPlayCoins(COIN_DAILY + (won?COIN_DAILY_BEAT:0) + margin + dcoins, (won?'you beat the pro!':'daily complete')+(dcoins>0?' · +'+coinFmt(dcoins)+' bold calls':'')+' · +'+_xp+' Tour Rep'+wkNote); // ~1000-2000 coins + bold-call bonus + week bonus
-    try{ sbSubmitStreak(); }catch(e){}   // CS401: post the updated streak to the active-streak leaderboard
   }
+  try{ sbSubmitStreak(); }catch(e){}   // CS401/63: post the streak - signed-in by account, guests as "Guest"
   // log this attempt; the LOWEST score of the day is the one that counts (leaderboard / course record).
   // The attempt was already CLAIMED at the first wheel spin (claimDailyAttempt), so read that count -
   // do NOT +1 here (that double-counted a claimed attempt). Fallback to 1 if somehow unclaimed.
@@ -21840,7 +21848,11 @@ function overlayCourseRecords(screen){
   if(sb){
     if(boardCache===null||boardCache.day!==todaySeed){ boardHTML='<div class="small muted center" style="padding:14px 8px">Loading today’s board…</div>'; }
     else if(boardCache.ok && boardCache.rows.length){
-      boardHTML=`<div class="board">`+boardCache.rows.slice(0,20).map(r=>`<div class="lb ${(sbUser&&r.user_id===sbUser.id)?'you':''}" style="grid-template-columns:30px 1fr auto">
+      // owner: a top-3 podium like the other leaderboards; the ranked list then starts at #4 (CS505)
+      let podHTML='';
+      if(boardCache.rows.length>=3){ const rws=boardCache.rows, pod=[rws[1],rws[0],rws[2]], cls=['p2','p1','p3'], med=['🥈','🥇','🥉'];
+        podHTML='<div class="lbpodium">'+pod.map((r,di)=>`<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML((sbUser&&r.user_id===sbUser.id)?(S.look||DEFLOOK):(r.look||DEFLOOK), di===1?74:56)}</div><div class="nm">${esc(r.display_name)}</div><div class="vl">${dTot(r.to_par,(DAILY_COURSES[today]||{}).par)}</div><div class="rk">OVR ${r.ovr}</div></div>`).join('')+'</div>'; }
+      boardHTML=podHTML+`<div class="board">`+boardCache.rows.slice(podHTML?3:0,20).map(r=>`<div class="lb ${(sbUser&&r.user_id===sbUser.id)?'you':''}" style="grid-template-columns:30px 1fr auto">
         <span class="pos">${r.rank===1?'🏆':r.rank}</span>
         <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.display_name)}</div><div class="small muted" style="font-size:10px">OVR ${r.ovr}${r.won?' · <span style="color:#35d6a0">beat the pro</span>':''}</div></span>
         <span class="sc" style="color:var(--gold);font-weight:800;text-align:right;white-space:nowrap">${dTot(r.to_par, (DAILY_COURSES[today]||{}).par)}</span></div>`).join('')+`</div>`;
@@ -21868,6 +21880,19 @@ function overlayCourseRecords(screen){
   ov.appendChild($(`<div><h2 style="margin:16px 0 8px">All-time ${tab==='legend'?'legend ':''}course records${online?'':' <span class="small muted" style="font-weight:400">(local)</span>'}</h2>
     <p class="lede" style="margin:0 0 10px;font-size:12.5px">The lowest round ever posted at each course. Beat one to put your name on it.</p></div>`));
   const recWrap=$(`<div class="board"></div>`); recWrap.innerHTML=emojifyIcons(rows); ov.appendChild(recWrap);
+  // owner: an Active Streaks list on this page too - guests included (they post + display as "Guest", 63_)
+  if(!streakBoardCache) streakBoardLoad();
+  const _sc=streakBoardCache, _sLoad=!_sc||_sc.loading, _sOk=_sc&&_sc.ok, _sRows=_sOk?_sc.rows.slice(0,10):[];
+  let streakHTML;
+  if(_sLoad) streakHTML='<div class="small muted center" style="padding:12px 8px">Loading streaks…</div>';
+  else if(_sOk&&_sRows.length){ streakHTML='<div class="board">'+_sRows.map((r,i)=>{ const guest=!!r.is_guest, nm=guest?'Guest':(r.username||'Golfer');
+    const you=!guest&&sbUsername&&(r.username||'').toLowerCase()===sbUsername.toLowerCase();
+    return `<div class="lb ${you?'you':''}" style="grid-template-columns:30px 1fr auto"><span class="pos">${i===0?'🏆':(i+1)}</span><span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap${guest?';color:var(--muted)':''}">${esc(nm)}</div><div class="small muted" style="font-size:10px">best ${r.longest||r.current} days</div></span><span class="sc" style="color:var(--gold);font-weight:800;white-space:nowrap">🔥 ${r.current}</span></div>`; }).join('')+'</div>'; }
+  else if(_sOk) streakHTML='<div class="small muted center" style="padding:12px 8px">No active streaks yet, start one today.</div>';
+  else streakHTML='<div class="small muted center" style="padding:12px 8px">Streak board is unavailable right now.</div>';
+  ov.appendChild($(`<div><h2 style="margin:16px 0 8px">Active streaks</h2>
+    <p class="lede" style="margin:0 0 10px;font-size:12.5px">Longest active daily-play streaks, guests included. Play the Daily today to keep yours alive.</p></div>`));
+  const stWrap=$(`<div></div>`); stWrap.innerHTML=emojifyIcons(streakHTML); ov.appendChild(stWrap);
   ov.appendChild($(`<div style="height:12px"></div>`));
   ov.appendChild($(`<button class="btn red">Close</button>`));
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
