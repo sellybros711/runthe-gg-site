@@ -13690,6 +13690,31 @@ allows Google Fonts, or self-host Anton.*
   relied on (computed 'visible'), the flip settles to front 0 / back 1, and after a re-render the front is
   still opacity 1; 0 page errors. Deployed to /golf.
 
+- **Cycling course-record golfer: no layout shift + holder name under the figure (owner IMG_8736: "when
+  the golfer with the glow comes up in the rotation, all the elements on the page shift a tiny bit. Let's
+  fix this. We can also put the users name under the golfer as it's cycling through"; note 1 — "I see
+  runnyj on the course record bubble but he is not on the leaderboard" — is EXPLAINED, not a bug).** The
+  daily-result "Course record" bubble cycles through each tied holder's golfer (`crCycleFigureHTML`, ~2.2s).
+  Root cause of the shift: `pxFigureHTML` returns a bare `.pxfigsm` img for a plain golfer but wraps a
+  GLOWING (aura fx) golfer in a `.pxfxwrap` inline-block span (particles + drop-shadow), and `.crfig` was
+  an UNSTYLED inline `<span>` — so swapping to a glowing holder changed the box (block↔inline-block) and
+  reflowed everything a hair. Fix: `crCycleFigureHTML` now renders a FIXED-size `.crfigbox` (width ≈
+  0.86·h, height = h, `overflow:visible` so the glow/particles spill without affecting layout) that the
+  ticker updates in place, so the golfer swap never changes the container's box. Also added the requested
+  cycling NAME: the function now takes a `names[]` parallel to `looks[]` and renders a `.crcap` caption
+  under the golfer that cycles in sync with the figure (the ticker updates `.crfigbox` innerHTML + `.crcap`
+  textContent together). The daily-result call site passes `rec.names`, drops the now-redundant "by X, Y,
+  Z" text (the cycling caption shows each holder), and shows a subtle "N-way tie" when multiple. **Note 1
+  is expected behavior**: the "Course record" is the ALL-TIME best for that course (`runtour_course_records`
+  — RunnyJ set it on a prior day, possibly co-holding a tie), while the Course Records "today's board"
+  (`runtour_daily_board`) lists only players who played TODAY — so an all-time record holder from a
+  previous day correctly isn't on today's board (told the owner). Verified in Playwright: a plain golfer is
+  unwrapped / a `fx:'gold'` golfer is `.pxfxwrap`-wrapped, yet swapping between them inside `.crfig` keeps
+  the bounding box stable (w 41 / h 61 across all three swaps, `boxStable:true`); the caption renders the
+  first holder ("RunnyJ") and the ticker cycles it; a full daily-result render with a 3-holder record shows
+  the fixed figure box + cycling name + "3-way tie" + "66 (-6)", 0 page errors; `node --check` clean.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
