@@ -7444,10 +7444,14 @@ function pcStyleOnce(){ if(document.getElementById('pcardcss')) return; const st
 '.pcard3d{width:min(80vw,318px);aspect-ratio:53/76;perspective:1100px;cursor:pointer;-webkit-tap-highlight-color:transparent}',
 '.pcard-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transition:transform .62s cubic-bezier(.22,.75,.26,1)}',
 '.pcard3d.flipped .pcard-inner{transform:rotateY(180deg)}',
-'.pcard-face{position:absolute;inset:0;border-radius:16px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:3px solid var(--pcf,#8aa0a8);background:#0a1c12;box-shadow:0 14px 40px rgba(0,0,0,.55)}',
-/* explicit per-face transforms keep each face in a stable 3D layer (harden vs iOS backface culling) */
-'.pcard-front{transform:rotateY(0deg);-webkit-transform:rotateY(0deg)}',
-'.pcard-back{transform:rotateY(180deg);-webkit-transform:rotateY(180deg)}',
+/* Do NOT use backface-visibility to hide faces: on iOS it intermittently culls the FRONT face → blank card.
+   Instead swap face visibility with opacity at the flip midpoint, so the front is ALWAYS opacity:1 when not
+   flipped and can never be blanked. */
+'.pcard-face{position:absolute;inset:0;border-radius:16px;overflow:hidden;border:3px solid var(--pcf,#8aa0a8);background:#0a1c12;box-shadow:0 14px 40px rgba(0,0,0,.55);transition:opacity 0s linear .31s}',
+'.pcard-front{transform:rotateY(0deg);-webkit-transform:rotateY(0deg);opacity:1}',
+'.pcard-back{transform:rotateY(180deg);-webkit-transform:rotateY(180deg);opacity:0}',
+'.pcard3d.flipped .pcard-front{opacity:0}',
+'.pcard3d.flipped .pcard-back{opacity:1}',
 '.pcf-mid .pcard-face{box-shadow:0 14px 40px rgba(0,0,0,.55),0 0 18px var(--pcfg)}',
 '.pcf-high .pcard-face{animation:pcGlow 2.6s ease-in-out infinite}',
 '.pcf-goat .pcard-face{animation:pcGlow 2.6s ease-in-out infinite,pcRainbow 6s linear infinite}',
@@ -7480,7 +7484,7 @@ function pcStyleOnce(){ if(document.getElementById('pcardcss')) return; const st
 '.pcsc-row>span:last-child{color:var(--gold);font-weight:800}',
 '.pchint{margin-top:14px;font:800 11px var(--body);letter-spacing:.24em;color:var(--gold);animation:pchintPulse 1.6s ease-in-out infinite}',
 '@keyframes pchintPulse{0%,100%{opacity:.45}50%{opacity:1}}',
-'@media (prefers-reduced-motion:reduce){.pcwrap{animation:none}.pcard-inner{transition:none}.pchint{animation:none}.pcf-high .pcard-face,.pcf-goat .pcard-face{animation:none}}'
+'@media (prefers-reduced-motion:reduce){.pcwrap{animation:none}.pcard-inner{transition:none}.pcard-face{transition:none}.pchint{animation:none}.pcf-high .pcard-face,.pcf-goat .pcard-face{animation:none}}'
   ].join('\n');
   document.head.appendChild(st);
 }
@@ -22196,11 +22200,12 @@ function packItemCategory(e){
   if(e.kind==='acc'){ var it=accById(e.id); return (ACC_SLOT_BY[it&&it.slot]||{name:'Gear'}).name; }
   return {shirt:'Shirt Color',hat:'Hat Color',pat:'Pattern',pants:'Trousers',shoes:'Shoes',hw:'Headwear',ew:'Eyewear',fx:'Effect Aura',top:'Outerwear',leg:'Legwear'}[e.cat]||'Item';
 }
-function packItemBoostTxt(e){ var b=null;
+function packItemBoostObj(e){ var b=null;
   if(e.kind==='cos') b=cosBoost(e.cat,e.id);
   else if(e.kind==='acc'){ var it=accById(e.id); b=it&&accItemBoost(it); }
   else if(e.kind==='bag'){ var c=BAG_BY[e.club]; b=c&&c.tiers[0].b; }
-  if(!b) return '';
+  return (b&&Object.keys(b).length)?b:null; }
+function packItemBoostTxt(e){ var b=packItemBoostObj(e); if(!b) return '';
   // PLAIN text (no HTML) - every call site esc()s this into the wheel cells / reveal card
   return Object.keys(b).map(function(k){ var v=b[k]; return (v>=0?'+':'')+v+' '+(RSHORT[k]||k); }).join(' · '); }
 // the ITEM itself (not the golfer wearing it): look up the cosmetic's catalog entry for its col/pattern,
@@ -22348,7 +22353,7 @@ function overlayPackWheel(app){
     var lore='', catName='';
     try{ if(item.kind==='cos'){ var co=(cosmeticItems(item.cat)||[]).find(function(x){return x.id===item.id;}); lore=(co&&co.hist)||'';
       catName=(COS_CATS.find(function(c){return c.k===item.cat;})||{}).name||''; } }catch(e){}
-    var lb=packItemBoostTxt(item);
+    var bObj=packItemBoostObj(item);   // per-stat coloring: green for a boost, red for a downgrade
     footer.appendChild($('<div class="prwrap">'
       +(big?'<div class="prburst" style="--rc:'+rc+'"></div>':'')
       +'<div class="prcard'+(big?' prbig':'')+'" style="--rc:'+rc+'">'
@@ -22357,7 +22362,7 @@ function overlayPackWheel(app){
         +'<div class="prname">'+esc(item.name)+'</div>'
         +(catName?'<div class="prmeta">'+esc(catName)+(pt.id!=='base'?' · '+esc(pt.name):'')+'</div>':'')
         +(lore?'<div class="prlore">\u201c'+esc(lore)+'\u201d</div>':'')
-        +'<div class="prboost'+(lb?'':' none')+'">'+(lb?('\u25b2 '+esc(lb)):'Cosmetic · pure style')+'</div>'
+        +'<div class="prboost'+(bObj?'':' none')+'">'+(bObj?shopBoostTxt(bObj):'Cosmetic · pure style')+'</div>'
         +(win.dupe?('<div class="prdupe"><span class="prchip" style="color:#ffd45e;border-color:#ffd45e">Duplicate · +'+coinFmt(win.refund)+' coins</span><span class="prchip" style="color:'+rc+';border-color:'+rc+'">\u25c6 +1 '+win.rarity+' shard · '+shardBal(win.rarity)+'/'+SHARD_COST[win.rarity]+'</span></div>'):'')
       +'</div></div>'));
     var btns=$('<div class="packbtns"></div>');
