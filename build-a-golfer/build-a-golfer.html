@@ -7354,12 +7354,21 @@ function overlayTournament(screen){
 const _pcRows=[];
 function pcReg(row,name,kind){ _pcRows.push({r:row,name:name,kind:kind}); return _pcRows.length-1; }
 let _pcStats={};
+// Patch ONLY the back-face content in place when async lifetime stats resolve. A full render() would rebuild
+// the 3D flip card DOM, which on iOS can re-trigger the backface-culling blank. Updating the back's innerHTML
+// leaves the live 3D card element untouched.
+function refreshPlayerCardBack(){ const cv=S.cardView; if(S.overlay!=='playercard'||!cv){ return; }
+  const backIn=document.querySelector('.pcov .pcard-back .pcback-in');
+  if(!backIn){ render(); return; }
+  try{ const tmp=document.createElement('div'); tmp.innerHTML=playerCardHTML(cv);
+    const nb=tmp.querySelector('.pcard-back .pcback-in'); if(nb) backIn.innerHTML=nb.innerHTML; else render(); }
+  catch(e){ render(); } }
 function loadPlayerCardStats(uid){ if(!uid||!sb||_pcStats[uid]) return; _pcStats[uid]={loading:true};
   try{ sb.rpc('runtour_player_card',{p_user:uid}).then(res=>{
       const d=res&&res.data, e=res&&res.error, row=Array.isArray(d)?d[0]:d;
       _pcStats[uid]=(e||!row)?{ok:false}:Object.assign({ok:true},row);
-      if(S.overlay==='playercard') render();
-    }).catch(()=>{ _pcStats[uid]={ok:false}; if(S.overlay==='playercard') render(); });
+      refreshPlayerCardBack();
+    }).catch(()=>{ _pcStats[uid]={ok:false}; refreshPlayerCardBack(); });
   }catch(e){ _pcStats[uid]={ok:false}; } }
 function openPlayerCardRow(reg){ if(!reg) return; const r=reg.r||{};
   const you=!!(sbUser&&r.user_id&&r.user_id===sbUser.id);
@@ -7426,14 +7435,19 @@ function pcStyleOnce(){ if(document.getElementById('pcardcss')) return; const st
   st.textContent=[
 '.pcov{position:fixed;inset:0;z-index:56;background:radial-gradient(circle at 50% 34%,rgba(18,50,31,.94),rgba(4,12,8,.97) 76%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 14px}',
 '.pcx{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:14px;z-index:57;background:rgba(0,0,0,.4);border:1px solid rgba(244,227,201,.35);color:var(--oncard);font:800 14px var(--body);padding:8px 12px;border-radius:10px;cursor:pointer}',
-'.pcwrap{display:flex;flex-direction:column;align-items:center;animation:pcIn .55s cubic-bezier(.18,.9,.24,1.08) both}',
+/* entrance animation must NOT rotateY: this wrap is an ANCESTOR of the preserve-3d card, and an
+   ancestor rotateY intermittently makes iOS/WebKit cull the front face (backface-visibility) → blank card
+   while the sibling hint still shows. Keep it a plain fade/scale so the 3D face stays visible. */
+'.pcwrap{display:flex;flex-direction:column;align-items:center;animation:pcIn .5s cubic-bezier(.18,.9,.24,1.08) both}',
 '.pcwrap.noanim{animation:none}',
-'@keyframes pcIn{0%{opacity:0;transform:translateY(46px) scale(.62) rotateY(-14deg)}100%{opacity:1;transform:none}}',
+'@keyframes pcIn{0%{opacity:0;transform:translateY(32px) scale(.82)}100%{opacity:1;transform:none}}',
 '.pcard3d{width:min(80vw,318px);aspect-ratio:53/76;perspective:1100px;cursor:pointer;-webkit-tap-highlight-color:transparent}',
-'.pcard-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .62s cubic-bezier(.22,.75,.26,1)}',
+'.pcard-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transition:transform .62s cubic-bezier(.22,.75,.26,1)}',
 '.pcard3d.flipped .pcard-inner{transform:rotateY(180deg)}',
 '.pcard-face{position:absolute;inset:0;border-radius:16px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:3px solid var(--pcf,#8aa0a8);background:#0a1c12;box-shadow:0 14px 40px rgba(0,0,0,.55)}',
-'.pcard-back{transform:rotateY(180deg)}',
+/* explicit per-face transforms keep each face in a stable 3D layer (harden vs iOS backface culling) */
+'.pcard-front{transform:rotateY(0deg);-webkit-transform:rotateY(0deg)}',
+'.pcard-back{transform:rotateY(180deg);-webkit-transform:rotateY(180deg)}',
 '.pcf-mid .pcard-face{box-shadow:0 14px 40px rgba(0,0,0,.55),0 0 18px var(--pcfg)}',
 '.pcf-high .pcard-face{animation:pcGlow 2.6s ease-in-out infinite}',
 '.pcf-goat .pcard-face{animation:pcGlow 2.6s ease-in-out infinite,pcRainbow 6s linear infinite}',
@@ -8131,12 +8145,37 @@ function openFeedback(cat){ fbReset(cat); render(); }
 function loadPendingFeedback(){ const a=LS.get('bag_pending_feedback',[]); return Array.isArray(a)?a:[]; }
 function savePendingFeedback(a){ LS.set('bag_pending_feedback', a.slice(-50)); }
 function queueFeedback(p){ const q=loadPendingFeedback(); q.push(p); savePendingFeedback(q); }
+// Every feedback submission is FORWARDED to the owner's inbox via a no-backend relay (FormSubmit), so it
+// arrives as an email regardless of whether the Supabase feedback table exists. It runs in the player's
+// browser (not gated by any server), and email is the delivery guarantee (queued + retried until it lands).
+// The Supabase RPC is kept as a searchable archive when the table is configured. (One-time owner step:
+// click the FormSubmit activation link that arrives with the very first submission.)
+const FEEDBACK_EMAIL_URL='https://formsubmit.co/ajax/sellybros711@gmail.com';
+async function emailFeedback(p){
+  try{
+    const ctx=p.context||{};
+    const r=await fetch(FEEDBACK_EMAIL_URL,{ method:'POST', mode:'cors',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({
+        _subject:'RunTheTour '+(p.category||'feedback')+' from a player',
+        _template:'table', _captcha:'false',
+        Category:p.category||'other',
+        Message:p.message||'',
+        'Reply email':p.email||'(not provided)',
+        Screen:ctx.screen||'', Mode:ctx.mode||'', Year:(ctx.year!=null?String(ctx.year):''),
+        'Signed in':ctx.signedIn?'yes':'no', Device:ctx.ua||'' }) });
+    return !!(r&&r.ok);
+  }catch(e){ return false; }
+}
 async function flushFeedback(){
-  if(!sb) return; const q=loadPendingFeedback(); if(!q.length) return;
+  const q=loadPendingFeedback(); if(!q.length) return;
   const keep=[];
   for(const p of q){
-    try{ const {error}=await sb.rpc('runtour_feedback_submit',{p_category:p.category,p_message:p.message,p_email:p.email,p_context:p.context}); if(error) throw error; }
-    catch(e){ keep.push(p); }   // still unreachable / migration not applied yet → keep for next time
+    let mailed=p.mailed, stored=p.stored;
+    if(!mailed) mailed=await emailFeedback(p);                 // retry the email (never re-send once it landed)
+    if(!stored && sb){ try{ const {error}=await sb.rpc('runtour_feedback_submit',{p_category:p.category,p_message:p.message,p_email:p.email,p_context:p.context}); stored=!error; }catch(e){} }
+    p.mailed=mailed; p.stored=stored;
+    if(!mailed || (sb && !stored)) keep.push(p);               // keep until the email lands (+ archived if a DB exists)
   }
   savePendingFeedback(keep);
 }
@@ -8148,11 +8187,13 @@ async function submitFeedback(){
     context:{ screen:S.screen, mode:(S.circuitMode?'circuit':(S.daily?'daily':'career')), year:(S.year||null),
       signedIn:sbSignedIn(), ua:((navigator.userAgent||'').slice(0,300)) } };
   S.fbBusy=true; S.fbErr=''; render();
-  let ok=false;
-  if(sb){ try{ const {error}=await sb.rpc('runtour_feedback_submit',{p_category:payload.category,p_message:payload.message,p_email:payload.email,p_context:payload.context}); ok=!error; }catch(e){} }
-  if(!ok) queueFeedback(payload);   // durable: flushes when the server is reachable (never lost)
+  let stored=false, mailed=false;
+  try{ mailed=await emailFeedback(payload); }catch(e){}                 // forward to the owner's inbox
+  if(sb){ try{ const {error}=await sb.rpc('runtour_feedback_submit',{p_category:payload.category,p_message:payload.message,p_email:payload.email,p_context:payload.context}); stored=!error; }catch(e){} }
+  payload.mailed=mailed; payload.stored=stored;
+  if(!mailed || (sb && !stored)) queueFeedback(payload);       // durable: retries the email (+ archive) until delivered
   S.fbBusy=false; S.fbSent=true; S.fbText='';
-  try{ track('feedback_sent',{category:payload.category, queued:!ok}); }catch(e){}
+  try{ track('feedback_sent',{category:payload.category, mailed:mailed, stored:stored}); }catch(e){}
   render();
 }
 function overlayFeedback(screen){

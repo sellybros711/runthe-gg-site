@@ -13631,6 +13631,42 @@ allows Google Fonts, or self-host Anton.*
   are now 38px tall and a real touchscreen tap switches tabs; a full 18-hole practice round + the
   collection-reward suite regress clean with `pageErrors: []`; `node --check` clean. Deployed to /golf.
 
+- **Feedback form now emails every submission to sellybros711@gmail.com (owner: "make sure that any feedback
+  form from this game gets forwarded to sellybros711@gmail.com").** The in-game Send Feedback form (CS245)
+  only posted to the Supabase `runtour_feedback` table (which had to be read in the dashboard, and only if
+  migration 47 was applied). Added a client-side email relay (FormSubmit.co `/ajax/` endpoint) so every
+  submission is forwarded to the owner's inbox — it runs in the player's browser (no backend, no API key, not
+  gated by any server) and works whether or not the DB table exists. Email is the guaranteed-delivery target:
+  `submitFeedback` fires it alongside the Supabase RPC, and a submission is kept in the durable
+  `bag_pending_feedback` queue (retried on init / sign-in / `online`) until the email lands (the Supabase RPC
+  stays as a searchable archive when configured). No duplicate emails — `flushFeedback` only re-sends when a
+  queued item's `mailed` flag is still false. The email includes the category, message, the player's optional
+  reply address, and the screen/mode/year/signed-in/device context. Verified in Playwright with a stubbed
+  fetch: a submission POSTs the right payload to the relay (delivered → not queued when the DB is absent), an
+  offline submission is queued and then delivered on flush with no re-send, all context fields present, 0 page
+  errors. NOTE (couldn't do it from here — the sandbox proxy blocks formsubmit.co): the very first submission
+  triggers a one-time FormSubmit activation email to sellybros711@gmail.com; **click that activation link once**
+  to enable delivery (that first message is held and delivered after you confirm). The owner's email was
+  already public in the source (the Privacy/Terms mailto links), so no new exposure. Deployed to /golf.
+
+- **Fixed: player card front sometimes rendered blank when opened (owner IMG_8723: "the front preview of a
+  player's card is not showing up when clicked on sometimes. Also happens to my own preview in my closet").**
+  The card overlay opened (dim backdrop + "TAP TO FLIP" hint visible) but the card face itself was invisible —
+  intermittent, on both leaderboard taps and the closet self-preview. Root cause: the entrance animation
+  (`pcIn` on `.pcwrap`) animated `rotateY(-14deg)`, and `.pcwrap` is an ANCESTOR of the `preserve-3d` flip
+  card whose faces use `backface-visibility:hidden`. On iOS/WebKit an ancestor `rotateY` participates in the
+  nested 3D space and intermittently makes the browser cull the FRONT face (treat it as facing away) →
+  blank card while the sibling hint still shows. Fixes: (1) the entrance animation is now a plain fade/scale
+  (no rotateY), so it no longer pollutes the card's 3D context; (2) each face gets an explicit
+  `transform:rotateY(0deg)`/`rotateY(180deg)` (+ `-webkit-`) to keep it in a stable 3D layer, and
+  `-webkit-transform-style:preserve-3d` was added; (3) when a leaderboard card's lifetime stats resolve
+  asynchronously, the back face is now patched in place (`refreshPlayerCardBack`) instead of a full `render()`
+  — the live 3D card element is never recreated, removing another chance for iOS to re-cull it. Verified in
+  Playwright: the front face renders (256×367, backdrop img + golfer present) and flips; after a re-render /
+  after stats resolve the SAME `.pcard3d` element persists with the front still visible and the back updated
+  in place (Loading… → real stats); screenshot confirms a fully-rendered card (tier chip, golfer on the
+  backdrop, nameplate); 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
