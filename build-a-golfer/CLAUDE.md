@@ -13667,6 +13667,29 @@ allows Google Fonts, or self-host Anton.*
   in place (Loading… → real stats); screenshot confirms a fully-rendered card (tier chip, golfer on the
   backdrop, nameplate); 0 page errors. Deployed to /golf.
 
+- **Pack reveal: downgraded stats now show RED (owner IMG_8718: "▲ +3 DRV -2 PUT" all green — "downgraded
+  stats should be red not green").** The pack-reveal card rendered the whole boost line as one green string
+  with a single ▲ prefix (`packItemBoostTxt` returns plain text; `.prboost` is green), so an item like the
+  Propeller Beanie (+3 DRV / **−2 PUT**) showed the downgrade in green. Split the boost into a per-stat
+  colored line: added `packItemBoostObj(e)` (the boost object) and the reveal card now uses `shopBoostTxt`
+  (green for a boost, red `#e2554e` for a downgrade — the same coloring the shop/closet already use), and
+  dropped the misleading leading ▲ (each stat carries its own sign). Verified: `shopBoostTxt({dist:3,put:-2})`
+  → "+3 DRV" green / "−2 PUT" red, and the Propeller Beanie resolves to `{dist:3,put:-2}`. (The build-screen
+  scorecard already colored `d<0` red ▼, unchanged.)
+
+- **Player card front STILL blanked intermittently — now fixed for real (owner IMG_8723: "the front doesn't
+  show up sometimes, the back works fine").** The previous fix (removing the entrance-animation's ancestor
+  rotateY) wasn't enough — iOS/WebKit still intermittently culled the `backface-visibility:hidden` FRONT
+  face. Definitive fix: stop using `backface-visibility` to hide the faces (that's what blanks the front) and
+  instead swap face visibility with **opacity at the flip midpoint** — `.pcard-front` is now `opacity:1`
+  whenever the card isn't flipped (and `.pcard-back` `opacity:0`), with a `transition:opacity 0s linear .31s`
+  that flips them at the ~90° edge-on point; the `.flipped` class swaps the opacities. So the front is
+  ALWAYS opacity:1 when facing you and can never be culled, while the flip still works (front→0/back→1 after
+  it settles). Reduced-motion swaps instantly. Verified in Playwright: front opacity 1 / back 0 unflipped,
+  front renders 256×367 (screenshot confirms the golfer on the backdrop), backface-visibility no longer
+  relied on (computed 'visible'), the flip settles to front 0 / back 1, and after a re-render the front is
+  still opacity 1; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
