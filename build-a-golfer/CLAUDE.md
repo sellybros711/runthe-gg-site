@@ -13579,6 +13579,38 @@ allows Google Fonts, or self-host Anton.*
   (offset 0); the full player-card suite (data/economy, earn reqs, board tap→card→flip→lifetime, Play 18,
   profile, closet, share) + regression all pass with `pageErrors: []`. Deployed to /golf.
 
+- **Expanded collection rewards — Summer Smash & Mythic drops now pay 100k coins + backdrops (owner: "expand
+  the reward for completing the summer smash collection. Move the summer backdrop to the collection rewards,
+  and reward 100k coins. Add the 100k coin reward to the mythical collection as well. Expand on that collection
+  and make a backdrop for it that's part of the reward").** The `DROP_REWARDS` model was rebuilt from a single
+  reward item per drop into `{coins, items:[{cat,id,name}]}` bundles:
+  • **Summer Smash** — the `endlesssummer` cardbg moved OUT of the 10 collectible items INTO the reward, so the
+    collection is now 9 buyable/pullable items and completing it grants the **Endless Summer Backdrop + the
+    Rubber Ducky Floatie + 100,000 coins**.
+  • **Mythic (Legendary Drop 2)** — expanded from 7 → **9 items** (added the new `celestial` Celestial Aura +
+    `runes` Ancient Runes fixed pattern), and completing it grants a NEW **The Mythic Vault** player-card
+    backdrop (a violet mythical-peaks pixel scene, `CARDBGS`/`CARDBG_ART`) **+ 100,000 coins**.
+  • **New collectibles**: `celestial` aura (PXFX + PXFX_PARTS ✦ sparkles + `.fx-celestial` shimmer CSS, epic
+    30k) and `runes` fixed pattern (PXPAT, gold/violet rune glyphs on navy, epic 30k) — both flow into the
+    Mythic collection + the pack pool at their rarity automatically.
+  • **Reward-only gating**: the two reward backdrops are `cosRewardOnly` (never buyable — cardbg price is 0 so
+    they're already out of the pack pool + shard redeem; `cosBuy` refuses), stay equippable once earned, and
+    show as locked chase tiles in the Closet's cardbg picker.
+  • **Multi-item claim**: `claimDropReward` grants every `r.items[]` + `r.coins` (via `addBonusCoins`, silent),
+    records a synced `drc:<drop>` flag so the coins can't be re-claimed, and fires the redesigned
+    `celebrateDropReward` set-piece (golfer wearing the first body-wearable reward item + a thumbnail row of ALL
+    reward items + the coins row). A player who ALREADY completed a collection before the reward was expanded
+    sees CLAIM once for the upgrade. New `rewardThumbHTML(cat,id)` renders each reward item alone (cardbg → its
+    pixel backdrop img, top → its sprite) on both the celebration and the store Drops-tab reward panel.
+  Verified in Playwright: summer=9/drop2=9 items, endlesssummer gone from summer collectibles; summer reward =
+  duckfloatie + endlesssummer + 100k, drop2 reward = mythicvault + 100k; endlesssummer/mythicvault reward-only
+  (price 0, not in packPool, not buyable); celestial FX + runes pattern render distinctly (screenshot) + the
+  mythicvault backdrop renders as a distinct violet scene; owning a full set → CLAIM grants the items + exactly
+  100k coins ONCE (reclaim = 0), for BOTH drops; the store Drops-tab reward panel shows the item thumbnails +
+  coins row + glowing CLAIM button; a full 18-hole practice round completes with `pageErrors: []`; node --check
+  clean. Deployed to /golf. Tunable: `DROP_REWARDS` (coins + items per drop), the DROPS item lists, the new
+  celestial/runes prices.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
