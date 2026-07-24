@@ -186,6 +186,10 @@
   .slot:not(.filled)::after{content:"+"; color:var(--line2); font-size:20px; font-weight:800; line-height:1;}
   .slot.filled{border-style:solid; border-color:transparent; background:transparent; padding:0;}
   .lane-head .checkbtn{flex-basis:100%;}
+  .clearbtn{appearance:none; border:1px solid var(--line2); background:transparent; color:var(--mut);
+    font-weight:800; font-size:10.5px; letter-spacing:.04em; text-transform:uppercase; border-radius:6px;
+    padding:4px 9px; min-height:26px; transition:color .12s, border-color .12s;}
+  .clearbtn:hover{color:var(--coralT); border-color:var(--coralT);}
   .checkbtn{appearance:none; border:0; background:var(--teal); color:#071426; font-weight:900; font-size:12.5px;
     letter-spacing:.03em; border-radius:var(--r-sm); padding:9px 12px; min-height:40px; box-shadow:var(--shadow);
     display:inline-flex; align-items:center; justify-content:center; gap:7px; transition:filter .12s, transform .08s;}
@@ -423,7 +427,7 @@
         </button>
         <button class="abtn ghost" id="btnClear" type="button">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
-          Reset pool
+          Clear board
         </button>
         <button class="abtn ghost" id="btnNew" type="button" style="display:none">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
@@ -500,8 +504,8 @@
 
   <!-- cache-busted: bump ?v= whenever entities/generator change, or stale
        browser caches will pair fresh HTML with old boards/engine -->
-  <script src="entities.js?v=10"></script>
-  <script src="generator.js?v=10"></script>
+  <script src="entities.js?v=11"></script>
+  <script src="generator.js?v=11"></script>
   <script>
   (function () {
     'use strict';
@@ -708,6 +712,22 @@
           cb.setAttribute('aria-label', 'Check group ' + (i + 1));
           (function (idx) { cb.addEventListener('click', function (e) { e.stopPropagation(); validate(idx); }); })(i);
           head.appendChild(cb);
+        }
+        // per-rack Clear: dump this rack's names back to the pool in one tap
+        if (!isLocked && laneFillCount(i) > 0 && !done) {
+          var clr = document.createElement('button');
+          clr.className = 'clearbtn';
+          clr.type = 'button';
+          clr.textContent = 'Clear';
+          clr.setAttribute('aria-label', 'Clear group ' + (i + 1));
+          (function (idx) {
+            clr.addEventListener('click', function (e) {
+              e.stopPropagation();
+              day.tiles.forEach(function (t) { if (place[t.id] === idx) place[t.id] = null; });
+              delete lastMissIds[idx]; selected = null; render();
+            });
+          })(i);
+          head.appendChild(clr);
         }
 
         if (!isLocked) {
@@ -1137,23 +1157,35 @@
       g.fillStyle = '#ffffff'; rr(70, 300, W - 140, 770, 44); g.fill();
       g.strokeStyle = 'rgba(24,36,48,.10)'; g.lineWidth = 2; rr(70, 300, W - 140, 770, 44); g.stroke();
 
-      var cy = 372;
+      var cy = 384;
       if (r.won && r.mistakes === 0) {
         var rw = 460, rh = 66, rx = W / 2 - rw / 2;
         var rg = g.createLinearGradient(rx, 0, rx + rw, 0); rg.addColorStop(0, '#FF5A3C'); rg.addColorStop(1, '#EBA61F');
         g.fillStyle = rg; rr(rx, cy, rw, rh, 33); g.fill();
         g.fillStyle = '#fff'; g.font = '900 27px Archivo, sans-serif'; ls('3px'); g.fillText('⭐ FLAWLESS', W / 2, cy + 43); ls('0px');
-        cy += 112;
-      } else { cy += 26; }
+        cy += 96;
+      } else { cy += 20; }
 
-      g.font = '900 26px Archivo, sans-serif'; ls('5px'); g.fillStyle = '#5c6b7a'; g.fillText(r.won ? 'DRAFT GRADE' : 'FINAL', W / 2, cy); ls('0px');
-      g.font = '400 300px Anton, Impact, sans-serif'; g.fillStyle = GRADE_COL[r.grade] || '#182430';
-      g.fillText(r.grade, W / 2, cy + 250);
-      g.font = '800 42px Archivo, sans-serif'; g.fillStyle = '#182430'; g.fillText(r.verdict, W / 2, cy + 330);
+      // HERO: you finished. (grade removed — the accomplishment + the solve
+      // order are the story now.)
+      var heroWord = r.won ? 'SOLVED' : 'FINAL';
+      var heroCol = r.won ? '#17A34A' : '#5c6b7a';
+      g.font = '400 172px Anton, Impact, sans-serif'; g.fillStyle = heroCol;
+      g.fillText(heroWord, W / 2, cy + 130);
 
-      // stat pills
+      // THE STORY: solve-order colour strip, big and centered
+      var sy = cy + 198;
+      if (r.strip && r.strip.length) {
+        g.font = '900 22px Archivo, sans-serif'; ls('4px'); g.fillStyle = '#5c6b7a'; g.fillText('THE ORDER YOU CRACKED THEM', W / 2, sy); ls('0px');
+        var bw = 132, bh = 52, bgap = 18, tw2 = r.strip.length * bw + (r.strip.length - 1) * bgap, bx0 = W / 2 - tw2 / 2, by = sy + 34;
+        r.strip.forEach(function (col, i) {
+          g.fillStyle = col; rr(bx0 + i * (bw + bgap), by, bw, bh, 14); g.fill();
+        });
+      }
+
+      // stat pills: TIME / MISSES / STREAK
       var pills = [['TIME', r.timeStr], ['MISSES', String(r.mistakes)], ['STREAK', String(r.streak)]];
-      var pw = 252, ph = 146, gap = 28, tot = pw * 3 + gap * 2, px0 = W / 2 - tot / 2, py = cy + 410;
+      var pw = 252, ph = 146, gap = 28, tot = pw * 3 + gap * 2, px0 = W / 2 - tot / 2, py = sy + 150;
       pills.forEach(function (p, i) {
         var px = px0 + i * (pw + gap);
         g.fillStyle = '#faf8f5'; rr(px, py, pw, ph, 26); g.fill();
@@ -1161,12 +1193,6 @@
         g.fillStyle = '#182430'; g.font = '400 66px Anton, Impact, sans-serif'; g.fillText(p[1], px + pw / 2, py + 84);
         g.fillStyle = '#5c6b7a'; g.font = '900 22px Archivo, sans-serif'; ls('3px'); g.fillText(p[0], px + pw / 2, py + 122); ls('0px');
       });
-
-      // solve-order colour strip
-      if (r.strip && r.strip.length) {
-        var bw = 92, bh = 28, bgap = 16, tw2 = r.strip.length * bw + (r.strip.length - 1) * bgap, bx0 = W / 2 - tw2 / 2, by = py + ph + 52;
-        r.strip.forEach(function (col, i) { g.fillStyle = col; rr(bx0 + i * (bw + bgap), by, bw, bh, 10); g.fill(); });
-      }
 
       g.fillStyle = '#FF5A3C'; g.font = '900 36px Archivo, sans-serif'; ls('1px'); g.fillText('runthe.gg/grid', W / 2, H - 72); ls('0px');
       return cv;
