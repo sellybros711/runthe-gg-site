@@ -13556,6 +13556,29 @@ allows Google Fonts, or self-host Anton.*
   card-front strip confirms the off-center green clears the golfer's body and the fairway ends at the green.
   Deployed to /golf.
 
+- **Daily result + player-card polish (owner IMG_8713/8714).** Five tweaks:
+  1. **"Your best today" + "Course record" bubbles are now clickable** → open the Course Records page
+     (`data-crlink`, role=button, keyboard Enter/Space; a "Tap either card for all course records ▸" hint
+     under the pair; the record kicker reads "Course record ▸").
+  2. **Tied course records cycle through every holder's golfer.** The record now carries a `looks[]` array
+     parallel to `names[]` (threaded through `buildCourseRecs`/`adoptCourseRecs`/`recordCourseScore`), and
+     the record bubble's figure slowly rotates through each tied holder's golfer (~2.2s, a global
+     registry-backed ticker `crCycleFigureHTML`, reduced-motion static) while the names stay listed as text
+     ("by Bwein10, Tubbz") — instead of cramming everyone into one block.
+  3. **Removed the big score bubble at the top** — the giant `.dhero` score card is replaced by a slim
+     `.dresult-head` (eyebrow + course + par/OVR/conditions + the beat-the-pro verdict); the score itself is
+     no longer duplicated (it lives in the "Your best today" bubble below).
+  4. **The hole-by-hole scorecard moved ABOVE the streak / 7-Day Rewards / daily-record block** (the
+     streak+rewards+record panels are deferred into a `renderMeta()` called after the scorecard).
+  5. **Player-card OVR badge centered** — `.pcovr` is now `display:flex;flex-direction:column;align-items:
+     center` with a `-.14em` margin-right compensating the "OVR" letter-spacing, so the number sits dead
+     center in its bubble (was left-shifted).
+  Verified in Playwright: the daily result renders the slim header (no `.dh-score`), 2 clickable bubbles +
+  the cycling record figure, the scorecard above the streak (453 vs 614) / daily record (653); a real
+  practice round renders with no NaN and 0 page errors; the OVR badge number-center === badge-center
+  (offset 0); the full player-card suite (data/economy, earn reqs, board tap→card→flip→lifetime, Play 18,
+  profile, closet, share) + regression all pass with `pageErrors: []`. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
