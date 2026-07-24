@@ -13611,6 +13611,26 @@ allows Google Fonts, or self-host Anton.*
   clean. Deployed to /golf. Tunable: `DROP_REWARDS` (coins + items per drop), the DROPS item lists, the new
   celestial/runes prices.
 
+- **Mobile scroll-stuck + hard-to-tap buttons fixed (owner: "scrolling gets stuck on mobile, and on the
+  leaderboard the tab buttons are hard to press and sometimes you have to click above the button").** Root
+  cause of BOTH symptoms was the global pull-to-refresh `touchmove` guard (blocks a downward swipe at the top
+  of the page so a stray drag can't reload + wipe a round). It ran on EVERY touchmove and only checked
+  `window.scrollY<=0` — but when an overlay is open the body is locked (`body.ovopen{overflow:hidden}`), so
+  `scrollY` is ALWAYS 0 → `atTop` always true → the guard called `preventDefault()` on any downward drag
+  inside an overlay. On iOS that (a) blocked the overlay's own scroll (the "stuck scrolling"), and (b)
+  cancelled a tap whose finger drifted a hair (the "have to click above the button" on the leaderboard tabs).
+  Fix: the guard now bails immediately when an overlay is open (overlays carry `overscroll-behavior:contain`,
+  which already blocks pull-to-refresh, so the JS guard isn't needed there) and when the touch is inside any
+  vertically-scrollable ancestor (let that element handle its own scroll/tap). The main-page top-of-page
+  pull-to-refresh block is unchanged. Also added `touch-action:manipulation` + `-webkit-tap-highlight-color:
+  transparent` to every `.btn` (removes the ~300ms tap delay + gesture ambiguity) and a 38px `min-height` on
+  the small segmented chips (leaderboard tabs / windows / sorts, were ~32px — below the 44px comfortable-tap
+  guideline). Verified in Playwright with a mobile touch context: with an overlay open the guard's
+  `preventDefault` is skipped (dispatched touchmove → `defaultPrevented:false`) while the main-page top-drag
+  still blocks it (`true`); the overlay is scrollable (`overscroll-behavior:contain`); the leaderboard tabs
+  are now 38px tall and a real touchscreen tap switches tabs; a full 18-hole practice round + the
+  collection-reward suite regress clean with `pageErrors: []`; `node --check` clean. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

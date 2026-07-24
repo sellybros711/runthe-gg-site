@@ -314,7 +314,10 @@ window.GA_ID='G-L29P5MRWKE';
   .btn{appearance:none; cursor:pointer; display:block; width:100%; text-align:center;
     font-family:var(--display); font-weight:400; letter-spacing:.03em; text-transform:uppercase;
     font-size:21px; border-radius:14px; padding:15px 16px; border:0; color:#fff;
+    touch-action:manipulation; -webkit-tap-highlight-color:transparent;
     transition:transform .04s ease, filter .15s ease}
+  /* small segmented chips (leaderboard tabs / windows / sorts) get a comfortable min tap height */
+  .lbtab,.lbwin,.lbsort,.lbdir,.segrow button,.catchip{min-height:38px}
   .btn .sub{display:block; font-family:var(--body); font-weight:800; font-size:10.5px; letter-spacing:.12em; opacity:.9; margin-top:6px}
   .btn.red{background:linear-gradient(180deg,#ef5b45,var(--red2)); box-shadow:0 8px 20px -8px rgba(184,55,31,.75), inset 0 1px 0 rgba(255,255,255,.22)}
   .btn.red:active{transform:translateY(2px)}
@@ -1853,6 +1856,15 @@ let _touchY=0;
 document.addEventListener('touchstart',e=>{ if(e.touches.length===1) _touchY=e.touches[0].clientY; },{passive:true});
 document.addEventListener('touchmove',e=>{
   if(e.touches.length!==1) return;   // pinch-zoom / multi-touch: never interfere
+  // NEVER interfere while an overlay is open: the body is locked (scrollY always 0) so the old top-of-page
+  // check was always true, which (a) blocked the overlay's own scroll and (b) cancelled taps whose finger
+  // drifted a hair (the "have to click above the button" bug). Overlays carry overscroll-behavior:contain,
+  // which already blocks pull-to-refresh, so the JS guard isn't needed there.
+  if(document.body.classList.contains('ovopen')) return;
+  // If the gesture is inside a scrollable element, let that element handle it (don't cancel its scroll/tap).
+  for(let n=e.target; n && n!==document.body; n=n.parentElement){
+    if(n.scrollHeight-n.clientHeight>2){ const oy=getComputedStyle(n).overflowY; if(oy==='auto'||oy==='scroll') return; }
+  }
   const atTop=(window.scrollY||document.documentElement.scrollTop||0)<=0;
   if(atTop && e.touches[0].clientY>_touchY && e.cancelable) e.preventDefault();
 },{passive:false});
