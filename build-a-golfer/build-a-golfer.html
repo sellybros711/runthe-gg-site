@@ -7440,23 +7440,19 @@ function pcStyleOnce(){ if(document.getElementById('pcardcss')) return; const st
   st.textContent=[
 '.pcov{position:fixed;inset:0;z-index:56;background:radial-gradient(circle at 50% 34%,rgba(18,50,31,.94),rgba(4,12,8,.97) 76%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 14px}',
 '.pcx{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:14px;z-index:57;background:rgba(0,0,0,.4);border:1px solid rgba(244,227,201,.35);color:var(--oncard);font:800 14px var(--body);padding:8px 12px;border-radius:10px;cursor:pointer}',
-/* entrance animation must NOT rotateY: this wrap is an ANCESTOR of the preserve-3d card, and an
-   ancestor rotateY intermittently makes iOS/WebKit cull the front face (backface-visibility) → blank card
-   while the sibling hint still shows. Keep it a plain fade/scale so the 3D face stays visible. */
-'.pcwrap{display:flex;flex-direction:column;align-items:center;animation:pcIn .5s cubic-bezier(.18,.9,.24,1.08) both}',
+/* the entrance must NOT put a TRANSFORM on any ancestor of the preserve-3d card: an ancestor transform
+   (translate/scale/rotate) flattens the 3D context on iOS/WebKit and intermittently culls the front face →
+   blank card. So the entrance is opacity-ONLY (a clean fade); the flip itself is a real rotateY. */
+'.pcwrap{display:flex;flex-direction:column;align-items:center;animation:pcIn .42s ease both}',
 '.pcwrap.noanim{animation:none}',
-'@keyframes pcIn{0%{opacity:0;transform:translateY(32px) scale(.82)}100%{opacity:1;transform:none}}',
+'@keyframes pcIn{0%{opacity:0}100%{opacity:1}}',
 '.pcard3d{width:min(80vw,318px);aspect-ratio:53/76;perspective:1100px;cursor:pointer;-webkit-tap-highlight-color:transparent}',
 '.pcard-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transition:transform .62s cubic-bezier(.22,.75,.26,1)}',
 '.pcard3d.flipped .pcard-inner{transform:rotateY(180deg)}',
-/* Do NOT use backface-visibility to hide faces: on iOS it intermittently culls the FRONT face → blank card.
-   Instead swap face visibility with opacity at the flip midpoint, so the front is ALWAYS opacity:1 when not
-   flipped and can never be blanked. */
-'.pcard-face{position:absolute;inset:0;border-radius:16px;overflow:hidden;border:3px solid var(--pcf,#8aa0a8);background:#0a1c12;box-shadow:0 14px 40px rgba(0,0,0,.55);transition:opacity 0s linear .31s}',
-'.pcard-front{transform:rotateY(0deg);-webkit-transform:rotateY(0deg);opacity:1}',
-'.pcard-back{transform:rotateY(180deg);-webkit-transform:rotateY(180deg);opacity:0}',
-'.pcard3d.flipped .pcard-front{opacity:0}',
-'.pcard3d.flipped .pcard-back{opacity:1}',
+/* a REAL 3D flip: each face is hidden when it faces away (backface-visibility), so the two faces are never
+   coplanar/z-fighting (that was the blank-front + flip-flash bug) and only the face pointing at you shows. */
+'.pcard-face{position:absolute;inset:0;border-radius:16px;overflow:hidden;border:3px solid var(--pcf,#8aa0a8);background:#0a1c12;box-shadow:0 14px 40px rgba(0,0,0,.55);-webkit-backface-visibility:hidden;backface-visibility:hidden;transform:rotateY(0deg);-webkit-transform:rotateY(0deg)}',
+'.pcard-back{transform:rotateY(180deg);-webkit-transform:rotateY(180deg)}',
 '.pcf-mid .pcard-face{box-shadow:0 14px 40px rgba(0,0,0,.55),0 0 18px var(--pcfg)}',
 '.pcf-high .pcard-face{animation:pcGlow 2.6s ease-in-out infinite}',
 '.pcf-goat .pcard-face{animation:pcGlow 2.6s ease-in-out infinite,pcRainbow 6s linear infinite}',
@@ -7489,7 +7485,7 @@ function pcStyleOnce(){ if(document.getElementById('pcardcss')) return; const st
 '.pcsc-row>span:last-child{color:var(--gold);font-weight:800}',
 '.pchint{margin-top:14px;font:800 11px var(--body);letter-spacing:.24em;color:var(--gold);animation:pchintPulse 1.6s ease-in-out infinite}',
 '@keyframes pchintPulse{0%,100%{opacity:.45}50%{opacity:1}}',
-'@media (prefers-reduced-motion:reduce){.pcwrap{animation:none}.pcard-inner{transition:none}.pcard-face{transition:none}.pchint{animation:none}.pcf-high .pcard-face,.pcf-goat .pcard-face{animation:none}}'
+'@media (prefers-reduced-motion:reduce){.pcwrap{animation:none}.pcard-inner{transition:none}.pchint{animation:none}.pcf-high .pcard-face,.pcf-goat .pcard-face{animation:none}}'
   ].join('\n');
   document.head.appendChild(st);
 }

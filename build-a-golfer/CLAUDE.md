@@ -13715,6 +13715,30 @@ allows Google Fonts, or self-host Anton.*
   the fixed figure box + cycling name + "3-way tie" + "66 (-6)", 0 page errors; `node --check` clean.
   Deployed to /golf.
 
+- **Player card: REAL 3D flip that never blanks the front + no flip-flash (owner: "on the main
+  leaderboard I still can't see the front side of a card when I tap it; and when you flip it flashes the
+  front for a second - I want it to really flip like a real card with no glitches").** The previous
+  opacity-swap fix wasn't enough: it removed `backface-visibility`, so the two faces were COPLANAR at z=0
+  (front `rotateY(0)`, back `rotateY(180)`, both at translateZ 0) and z-FOUGHT - on iOS the back (opacity:0)
+  could win the coplanar tie and blank the front, and during a flip the front flashed because the opacity
+  swap (delayed .31s) lagged the .62s rotation. Root-caused the ORIGINAL blank (why backface-visibility had
+  been removed) to an ANCESTOR TRANSFORM: the `.pcwrap` entrance animated `translateY/scale`, and an
+  ancestor transform flattens the preserve-3d context on iOS/WebKit and intermittently culls the front face.
+  Definitive fix - the by-the-book 3D flip + a transform-free ancestor chain: (1) restored
+  `backface-visibility:hidden` (+`-webkit-`) on both faces so each face is only painted when it faces the
+  camera (no coplanar z-fight, no flash - `.pcard-inner` rotating `rotateY(0)->180` is the whole flip); (2)
+  made the entrance OPACITY-ONLY (`@keyframes pcIn{0%{opacity:0}100%{opacity:1}}`, was `translateY+scale`),
+  so NO ancestor of the perspective element ever carries a transform - eliminating the iOS front-cull at its
+  root. Removed the opacity-swap rules + the `.pcard-face` opacity transition. Verified in Playwright: the
+  front renders at full size (318x456) with the golfer + backdrop + nameplate + OVR + tier, `opacity:1`, and
+  `backface-visibility:hidden` on both faces; front transform = identity / back = `rotateY(180)` matrix; a
+  tap flips `.pcard-inner` and it SETTLES to the `rotateY(180deg)` matrix3d (a genuine 3D rotation, not an
+  opacity fade); crucially, walking every ancestor of `.pcard3d` up to `<body>` shows ZERO transforms at
+  rest; the entrance keyframe is opacity-only and no opacity-swap rules remain; 0 page errors. Screenshots
+  confirm the front (golfer card) and, after the flip, the back (lifetime stats) both render fully. `node
+  --check` clean. Deployed to /golf. (The separate pack-reveal wheel cards use their own `.pcard` CSS at a
+  different site - untouched.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
