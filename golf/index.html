@@ -873,6 +873,11 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes fxFlick{ 0%,100%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 4px #ff5a1e) brightness(1)} 40%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 11px #ff8a1e) drop-shadow(0 0 5px #ff2e00) brightness(1.15) saturate(1.2)} 70%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 6px #ffb020) brightness(1.05)} }
   @keyframes fxCrackle{ 0%,100%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 3px #35e0ff)} 45%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 10px #35e0ff) drop-shadow(0 0 5px #b0f6ff)} 55%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 3px #35e0ff)} }
   @media (prefers-reduced-motion:reduce){ .pxfig .pximg[class*="fx-"], .pxfigsm[class*="fx-"], img.fxa[class*="fx-"]{ animation:none!important; filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 6px var(--fxc,#f1d04a))!important } .fxp{ display:none!important } }
+  /* cycling course-record figure: a FIXED-size box so swapping a plain golfer for a glowing one (which is
+     wrapped in .pxfxwrap) never reflows the surrounding layout. Glow/particles spill via overflow:visible. */
+  .crfig{ display:inline-flex; flex-direction:column; align-items:center; justify-content:flex-end; overflow:visible; vertical-align:bottom }
+  .crfigbox{ display:flex; align-items:flex-end; justify-content:center; overflow:visible; flex:0 0 auto }
+  .crcap{ font:800 9px/1.1 var(--body); letter-spacing:.02em; color:var(--gold); margin-top:3px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center }
   /* CS353: retro pixel-game character creator */
   .retro-creator{max-width:472px; margin:0 auto; padding:15px 15px 16px; border:2px solid var(--gold); border-radius:12px;
     background:linear-gradient(180deg,rgba(9,26,18,.72),rgba(6,18,12,.72));
@@ -10797,20 +10802,27 @@ function pxFigureHTML(look,h){ h=h||60; look=look||S.look||DEFLOOK;
   }catch(e){} }, 700);
 })();
 // A cycling golfer figure: when multiple players tie for a course record, slowly rotate through each
-// tied holder's golfer (names stay listed as text). Looks live in a registry so the DOM attr stays light.
+// tied holder's golfer AND show that holder's name under the figure, cycling in sync. The figure sits in a
+// FIXED-size box so a glowing (aura) golfer can't reflow the layout. Looks/names live in a registry.
 let _crCycleN=0, _crCycleReg={};
-function crCycleFigureHTML(looks, sz){ sz=sz||48;
+function crCycleFigureHTML(looks, sz, names){ sz=sz||48;
   const list=(looks&&looks.length?looks:[null]).map(l=>l||DEFLOOK);
-  if(list.length<2) return `<span class="crfig">${pxFigureHTML(list[0],sz)}</span>`;
-  const id=++_crCycleN; _crCycleReg[id]={looks:list,sz};
-  return `<span class="crfig crcycle" data-crc="${id}" data-idx="0" title="${list.length} record holders">${pxFigureHTML(list[0],sz)}</span>`; }
+  const nm=(names&&names.length)?names:null;
+  const boxW=Math.round(sz*0.86), boxH=sz;   // pixel golfer is ~44x56, so width ~0.79*h; a hair of slack
+  const cap=nm?`<div class="crcap" style="max-width:${boxW+16}px">${esc(nm[0]||'')}</div>`:'';
+  const fig=(inner)=>`<span class="crfigbox" style="width:${boxW}px;height:${boxH}px">${inner}</span>${cap}`;
+  if(list.length<2) return `<span class="crfig">${fig(pxFigureHTML(list[0],sz))}</span>`;
+  const id=++_crCycleN; _crCycleReg[id]={looks:list,sz,names:nm};
+  return `<span class="crfig crcycle" data-crc="${id}" data-idx="0" title="${list.length} record holders">${fig(pxFigureHTML(list[0],sz))}</span>`; }
 (function(){ setInterval(function(){ try{
   const els=document.querySelectorAll('.crcycle[data-crc]');
   if(!els.length){ _crCycleReg={}; _crCycleN=0; return; }   // left the screen → free the registry
   if((typeof matchMedia==='function')&&matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   els.forEach(function(el){ const reg=_crCycleReg[el.getAttribute('data-crc')]; if(!reg||reg.looks.length<2) return;
     let i=(parseInt(el.getAttribute('data-idx'),10)||0)+1; if(i>=reg.looks.length) i=0;
-    el.setAttribute('data-idx',i); el.innerHTML=pxFigureHTML(reg.looks[i],reg.sz); });
+    el.setAttribute('data-idx',i);
+    const box=el.querySelector('.crfigbox'); if(box) box.innerHTML=pxFigureHTML(reg.looks[i],reg.sz);
+    const cap=el.querySelector('.crcap'); if(cap&&reg.names) cap.textContent=reg.names[i]||''; });
 }catch(e){} }, 2200); })();
 /* CS355 (POC): side-view mini golfer swing for TourTracer - 3 frames (address/top/through),
    palette-swapped from the created look, mirror-flipped by shot direction. */
@@ -21310,6 +21322,9 @@ function scrDailyResult(){
     // (names stay listed as text). One holder → a single figure.
     const recLooks = (rec&&rec.looks&&rec.looks.length) ? rec.looks.map(l=>l||DEFLOOK)
       : [ (isMineRec?(S.look||DEFLOOK):((rec&&rec.look)||DEFLOOK)) ];
+    // holder names parallel to recLooks - shown (cycling) under the golfer figure
+    const recNames = (rec&&rec.names&&rec.names.length) ? rec.names.slice()
+      : (rec ? [rec.name||(isMineRec?'You':'—')] : []);
     const leftKick = practice ? 'This round · practice' : 'Your best today';
     const leftScore = practice ? dTot(total, c.par) : (best?dTot(best.total, best.par!=null?best.par:c.par):dTot(total, c.par));
     const leftSub = practice ? 'No attempt used · nothing logged'
@@ -21318,11 +21333,12 @@ function scrDailyResult(){
     if(rec){
       const back = (!isMineRec && rec.toPar<total) ? `you were ${total-rec.toPar} back` : '';
       const stat = isMineRec ? `<span style="color:var(--gold);font-weight:800">🏆 that's you!</span>` : (back || 'match it to share it');
-      recInner=`<div style="display:flex;align-items:center;justify-content:center;gap:9px;margin-top:5px">
-        <div style="flex:0 0 auto">${crCycleFigureHTML(recLooks,48)}</div>
-        <div style="text-align:left;min-width:0">
+      const nTie=recNames.length;
+      recInner=`<div style="display:flex;align-items:flex-end;justify-content:center;gap:9px;margin-top:5px">
+        <div style="flex:0 0 auto">${crCycleFigureHTML(recLooks,48,recNames)}</div>
+        <div style="text-align:left;min-width:0;padding-bottom:12px">
           <div style="font-family:var(--display);font-size:23px;line-height:1;color:var(--gold)">${dTot(rec.toPar, c.par)}</div>
-          <div class="small muted" style="font-size:10.5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:112px">by ${esc(crHolders(rec))}</div>
+          ${nTie>1?`<div class="small muted" style="font-size:10px;margin-top:3px">${nTie}-way tie</div>`:''}
         </div></div>
       <div class="small" style="font-size:10.5px;margin-top:5px;color:#dfeae2">${stat}</div>`;
     } else {
