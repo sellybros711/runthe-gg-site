@@ -553,9 +553,22 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .sign-l1{ font-family:var(--pix); font-size:13px; color:#9bacc2; letter-spacing:3px;}
 .sign-l2{ font-family:var(--pix); font-size:23px; color:#ffc836; letter-spacing:1px; margin-top:9px;
   text-shadow:0 0 20px rgba(242,178,28,.4);}
-.sign-ribbon{ position:relative; z-index:3; max-width:340px; margin:15px auto 0; text-align:center;
-  font-family:var(--pix); font-size:8px; letter-spacing:2.5px; color:#8595ac; line-height:1.4;
-  background:transparent; border:0; padding:0; opacity:.85;}
+/* rotating stat ticker (fades between lines) */
+.home-ticker{ position:relative; z-index:3; max-width:340px; margin:15px auto 0; text-align:center; min-height:13px;
+  font-family:var(--pix); font-size:8px; letter-spacing:2.5px; color:#8fa2ba; line-height:1.5;
+  opacity:0; transition:opacity .35s ease;}
+.home-ticker.show{ opacity:.9; }
+/* today's-defense teaser — the hook that makes you want to tap in */
+.home-matchup{ position:relative; z-index:3; max-width:352px; margin:14px auto 0; padding:13px 16px; text-align:center;
+  background:linear-gradient(180deg, rgba(20,40,62,.55), rgba(11,24,38,.6));
+  border:1px solid rgba(122,162,208,.22); border-radius:15px; box-shadow:0 7px 20px rgba(0,0,0,.28);}
+.home-matchup.hidden{ display:none; }
+.hm-lbl{ font-family:var(--pix); font-size:8px; letter-spacing:1.5px; color:#8fa0b5;
+  display:flex; align-items:center; justify-content:center; gap:6px;}
+.hm-lbl .gi,.hm-lbl svg{ width:13px; height:13px; color:#f2b21c;}
+.hm-name{ font-family:var(--pix); font-size:15px; color:#ffd257; letter-spacing:1px; margin-top:7px;
+  text-shadow:0 0 16px rgba(242,178,28,.3);}
+.hm-hook{ font-family:var(--term); font-size:15px; color:var(--cream-dim); line-height:1.32; margin-top:6px;}
 .goal-block{ position:relative; z-index:3; text-align:center; margin:20px 0 15px;}
 .goal-h{ font-family:var(--pix); font-size:10px; color:#f2b21c; letter-spacing:2px;}
 .goal-v{ font-family:var(--pix); font-size:15px; color:#efe6cf; margin-top:10px;}
@@ -660,12 +673,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       <div class="dd-sign">
         <div class="sign-title"><span class="star">★</span> DAILY&nbsp;DRIVE <span class="star">★</span></div>
         <div class="sign-underline"></div>
-        <div class="sign-l1">ONE A DAY.</div>
+        <div class="sign-l1">ONE DRIVE.</div>
         <div class="sign-l2">MAKE IT COUNT.</div>
       </div>
 
-      <div class="sign-ribbon">1 DRIVE · 1 CHANCE · ENDLESS HIGHLIGHTS</div>
-
+      <div class="home-ticker" id="homeTicker"></div>
+      <div class="home-matchup hidden" id="homeMatchup"></div>
       <div class="home-status" id="homeStatus"></div>
       <button class="play-now" id="toMatchup">PLAY NOW <span class="arw">▶</span></button>
       <button class="howto-link" id="howtoLink">HOW TO PLAY ›</button>
@@ -770,9 +783,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <div id="sheetMount"></div>
 <div class="toast-mini" id="mini"></div>
 
-<script src="drive_generator.js?v=20260723l"></script>
-<script src="playbook.js?v=20260723l"></script>
-<script src="engine.js?v=20260723l"></script>
+<script src="drive_generator.js?v=20260723m"></script>
+<script src="playbook.js?v=20260723m"></script>
+<script src="engine.js?v=20260723m"></script>
 <script>
 (function(){
   'use strict';
@@ -1899,7 +1912,41 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     el('rClose').onclick=()=>{ mount.innerHTML=''; };
   }
   // Home "today" state + live countdown to the next drive.
-  let _cdTimer=null;
+  let _cdTimer=null, _tickTimer=null;
+  // Today's-defense teaser on the home screen — a hook that previews who you're facing
+  // (name + one punchy tell) without spoiling the full scouting report. Hidden once played.
+  function renderHomeTeaser(){
+    const box=el('homeMatchup'); if(!box) return;
+    if(STORE.results[DATE]){ box.classList.add('hidden'); box.innerHTML=''; return; }
+    try{
+      const day=GEN.generateDailyDrive(DATE), rep=GEN.scoutingReport(DATE, day);
+      let hook;
+      if(rep.pressure.level==='HIGH')      hook='They bring the heat — get the ball out fast.';
+      else if(rep.box.level==='HEAVY')     hook='Stacking the box — take your shot over the top.';
+      else if(rep.box.level==='LIGHT')     hook='Light front — the run lanes are open early.';
+      else if(rep.coverage==='MAN')        hook='Man coverage — beat your guy with crossers and rubs.';
+      else if(rep.coverage==='ZONE')       hook='Zone behind it — settle into the soft spot underneath.';
+      else                                 hook='No glaring weakness — win the down and distance.';
+      box.innerHTML = `<div class="hm-lbl">${IC.shield} TODAY’S DEFENSE</div>`
+        +`<div class="hm-name">${(rep.style||'').toUpperCase()} DEFENSE</div>`
+        +`<div class="hm-hook">${hook}</div>`;
+      box.classList.remove('hidden');
+    }catch(e){ box.classList.add('hidden'); }
+  }
+  // Subtle rotating stat ticker under the sign.
+  function startTicker(){
+    const box=el('homeTicker'); if(!box) return;
+    let n=60; try{ n=dailyField(DATE).length; }catch(e){}
+    const lines=['READ THE DEFENSE · CALL THE PLAYS'];
+    lines.push(n+' DRIVERS ON TODAY’S BOARD');
+    if(STORE.streak>0) lines.push('YOU’RE ON A '+STORE.streak+'-DAY STREAK');
+    lines.push('ONE DRIVE · NO DO-OVERS');
+    let i=0; box.textContent=lines[0]; box.classList.add('show');
+    clearInterval(_tickTimer);
+    if(lines.length>1) _tickTimer=setInterval(()=>{ box.classList.remove('show');
+      setTimeout(()=>{ i=(i+1)%lines.length; box.textContent=lines[i]; box.classList.add('show'); }, 350); }, 3800);
+  }
+  function stopTicker(){ clearInterval(_tickTimer); }
   function renderHomeStatus(){
     const box=el('homeStatus'), btn=el('toMatchup'); if(!box||!btn) return;
     const rec=STORE.results[DATE];
@@ -1958,6 +2005,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   /* ---------- start / resume ---------- */
   function beginDrive(dateStr, isPractice, salt){
     practice=!!isPractice;
+    stopTicker();
     tempo='HUDDLE';                               // every drive starts in the huddle
     drive = ENGINE.createDrive(dateStr, STORE.scheme, {salt: salt||0});
     el('splashScreen').classList.add('hidden');
@@ -2037,9 +2085,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     setChrome(false);
     refreshChips();
     renderHomeStatus();
+    renderHomeTeaser();
+    startTicker();
     window.scrollTo(0,0);
   }
   function showMatchup(){
+    stopTicker();
     el('splashScreen').classList.add('hidden');
     el('gameScreen').classList.add('hidden');
     el('matchupScreen').classList.remove('hidden');
