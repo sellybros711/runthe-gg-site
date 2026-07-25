@@ -381,7 +381,33 @@ points-per-dollar is always best at the cheap end; `playtest.js` uses that polic
 and finishes with $40M unspent. The draft screen keeps remaining budget at the top
 and warns when you are about to walk into the last slot with money to burn.
 
-## The post-run reveal
+## The results page
+
+Answers four questions in order, because the first build answered them in no
+order at all: it opened with the record, then dropped twenty un-collapsed game
+rows, then a wall of comparison numbers, and never showed the roster you drafted.
+
+1. **What was my record.** The big number, plus the regular season and the
+   playoffs split out so a 15-4 line adds up in your head, plus the seed.
+2. **How did the team play.** Points a game, points allowed, difference and
+   longest win streak, taken from the scores you were actually shown rather than
+   from fantasy totals. Under that, one line for the squad: FPPG, chemistry,
+   money spent, team shape.
+3. **Who was on it.** The field with its chemistry lines, then a row per spot with
+   the season, team, real stat line, FPPG and price.
+4. **How close to perfect.** One percentage with a bar, then the spot-by-spot
+   reveal below it. The old page opened with six comparison rows and left you to
+   add them up.
+
+The schedule is last and shut, in a dropdown, because it is the part you go
+looking for rather than the part you need.
+
+Every grid list on the site now uses `minmax(0,1fr)` and `min-width:0` on its
+rows. A grid item's default minimum width is its content, so a long stat line
+made the whole page scroll sideways: 71px on the results page and 129px on the
+draft screen, which had been shipping that way.
+
+### The post-run reveal
 
 Shows the full six-spot lineup, every spot, with your pick above the best pick and
 the gap between them, plus both totals. An earlier version listed only the spots
@@ -394,8 +420,18 @@ the spot a player fills closes that spot for everyone after him. A DP over (draw
 spot, money) across all 64 spot combinations solves them together, so it can tell
 you to take the quarterback off a team you took a receiver from and re-spend the
 difference somewhere else. A hill climb then re-checks the answer with chemistry
-included, since chemistry depends on the whole roster and cannot be folded into
-the DP. Solves in about 20ms.
+and roster shape included, since both depend on the whole roster at once and
+cannot be folded into the DP. Solves in about 20ms.
+
+**The objective has to be exactly what the season rewards.** When the structure
+multiplier was added, the optimizer was still scoring points times chemistry, so
+"best" left shape out and could hand back a lineup that genuinely wins fewer
+games than the one you drafted. One test run read YOURS 15-2, BEST 14-3, which is
+nonsense on its face. Two fixes: shape is in the objective, and the hill climb
+also starts from **your own lineup** and keeps whichever start ends higher, since
+a climb that only swaps within a spot can otherwise settle below you. Verified
+over 50 mixed drafts at 600 replays each: zero cases where the best team scored
+below yours, zero shares above 100%, zero inverted records.
 
 It then reports **how each team would actually have done**, not just a points
 total. Both your team and the best team are replayed many times against your real
@@ -404,16 +440,20 @@ the season ends each way:
 
 |  | Yours | Best |
 |---|---|---|
-| Points a game | 27 | 72 |
-| Money spent | $47.2M | $99.4M |
-| Typical record | 4-13 | 15-2 |
-| Makes the playoffs | 0% | 97% |
-| Wins the title | 0% | 21% |
-| Goes 20-0 | 0% | 1.8% |
+| Typical record | 3-14 | 15-2 |
+| Money spent | $37.6M | $98.6M |
+| Makes the playoffs | 0% | 100% |
+| Wins the title | 0% | 33% |
 
 Many replays rather than one, because a single season is mostly luck: a strong
 team misses the playoffs often enough that one sample would mislead. Both
 projections take about 30ms.
+
+The table used to carry seven rows including a points total. The points row was
+cut because it clashed: the stats block above reports raw squad FPPG, while the
+optimizer's figure is after chemistry and shape, so the same label showed two
+different numbers on one page. The ratio between them is already the headline
+percentage, so the row was spent on money instead, which nothing else compares.
 
 A spot can show a **negative** delta, and that is the optimizer working rather
 than a bug. Taking a cheaper, worse quarterback to free $8M for a much bigger

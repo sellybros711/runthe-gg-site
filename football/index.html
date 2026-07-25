@@ -100,6 +100,8 @@
   /* the field */
   .field{position:relative;width:100%;aspect-ratio:1/0.52;border-radius:14px;overflow:hidden;
     background:var(--grad-field);border:1px solid var(--line)}
+  /* The results page is long, so its copy of the field is a little flatter. */
+  .field.short{aspect-ratio:1/0.46}
   .field .lines{position:absolute;inset:0;
     background:repeating-linear-gradient(0deg,transparent 0 9.6%,rgba(255,255,255,.07) 9.6% calc(9.6% + 1px))}
   .field .hash{position:absolute;inset:0;
@@ -193,8 +195,8 @@
   .tab .n{font-size:10.5px;opacity:.75}
   .tab.on{color:#fff;border-color:transparent}
   .tab:active{transform:scale(.97)}
-  .opts{display:grid;gap:8px;margin-top:10px}
-  .opt{display:flex;align-items:center;gap:11px;padding:11px;border-radius:12px;width:100%;
+  .opts{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:10px}
+  .opt{display:flex;align-items:center;gap:11px;padding:11px;border-radius:12px;width:100%;min-width:0;
     background:var(--panel);border:1px solid var(--line);text-align:left;transition:all .12s ease}
   .opt:active{transform:scale(.985)}
   .opt.hot{border-color:rgba(74,222,128,.5);box-shadow:0 0 0 1px rgba(74,222,128,.25)}
@@ -244,8 +246,9 @@
   .tick{height:22px;border-radius:3px;background:rgba(255,255,255,.08);flex:1 1 0;min-width:0}
   .tick.w{background:linear-gradient(135deg,#4ade80,#15803d)} .tick.l{background:var(--grad-red)}
   .tick.p{outline:1px solid rgba(255,255,255,.45);outline-offset:1px}
-  .glist{display:grid;gap:5px;margin-top:12px;max-height:320px;overflow-y:auto}
-  .g{display:flex;align-items:center;gap:9px;font-size:13px;padding:8px 10px;border-radius:9px;
+  .glist{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:12px;
+    max-height:320px;overflow-y:auto}
+  .g{display:flex;align-items:center;gap:9px;min-width:0;font-size:13px;padding:8px 10px;border-radius:9px;
     background:var(--panel);border:1px solid var(--line);overflow:hidden}
   .g.new{animation:slide .3s ease both}
   @keyframes slide{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
@@ -280,7 +283,7 @@
   .cmp .up.down{color:#fbbf24}
   .cmp .was{color:var(--dim)}
   .vs-tbl{margin-top:13px;border:1px solid var(--line);border-radius:11px;overflow:hidden}
-  .vs-row{display:grid;grid-template-columns:1fr 74px 74px;align-items:center;
+  .vs-row{display:grid;grid-template-columns:minmax(0,1fr) 74px 74px;align-items:center;
     padding:9px 11px;font-size:12.5px;border-top:1px solid var(--line)}
   .vs-row:first-child{border-top:none;background:rgba(255,255,255,.04)}
   .vs-row .h{font-family:'Anton',Impact,sans-serif;font-size:10px;letter-spacing:.1em;color:var(--dim-2);
@@ -297,7 +300,7 @@
   .cnote .m{flex:0 0 16px;height:16px;border-radius:4px;display:grid;place-items:center;margin-top:2px;
     font-family:'Anton',Impact,sans-serif;font-size:11px;color:#fff}
   .cnote.good .m{background:#15803d} .cnote.bad .m{background:var(--red-2)}
-  .meters{display:grid;gap:7px;margin-top:11px}
+  .meters{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;margin-top:11px}
   .meter{display:flex;align-items:center;gap:9px;font-size:11.5px}
   .meter .lbl{flex:0 0 96px;color:var(--dim)}
   .meter .track{flex:1;height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;position:relative}
@@ -326,6 +329,54 @@
   .st .v{font-family:'Anton',Impact,sans-serif;font-size:22px;line-height:1.05}
   .st .k{font-size:10px;color:var(--dim-2);font-family:'Anton',Impact,sans-serif;letter-spacing:.09em;
     text-transform:uppercase;margin-top:3px}
+
+  /* Regular season and playoffs, split out, so a 15-5 line adds up in your head. */
+  .splits{display:flex;margin-top:16px;border-top:1px solid var(--line);padding-top:13px}
+  .splits div{flex:1;padding:0 4px}
+  .splits div+div{border-left:1px solid var(--line)}
+  .splits b{display:block;font-family:'Anton',Impact,sans-serif;font-size:19px;line-height:1;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .splits span{display:block;font-family:'Anton',Impact,sans-serif;font-size:9px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim-2);margin-top:4px}
+
+  /* season stats */
+  .stat4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px}
+  .stat4 .st{padding:11px 4px}
+  .stat4 .st .v{font-size:20px}
+  .stat4 .st .v.up{color:#4ade80} .stat4 .st .v.dn{color:#f87171}
+  .stat4 .st .k{font-size:9px;letter-spacing:.06em}
+  .squadline{margin-top:11px;padding-top:10px;border-top:1px solid var(--line);
+    font-size:12px;color:var(--dim);display:flex;flex-wrap:wrap;gap:4px 12px}
+  .squadline b{font-family:'Anton',Impact,sans-serif;font-size:13.5px;color:var(--ink);
+    letter-spacing:.02em;margin-right:4px}
+
+  /* the lineup you built, on the results page */
+  /* minmax(0,1fr) and min-width:0, or the long stat line makes each row wider
+     than the screen: a grid item's default min-width is its content. */
+  .rost{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:11px}
+  .rrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;min-width:0;
+    background:rgba(255,255,255,.03);border:1px solid var(--line)}
+  .rrow .tag{flex:0 0 40px;text-align:center;font-family:'Anton',Impact,sans-serif;font-size:9.5px;
+    letter-spacing:.05em;color:#fff;padding:4px 0;border-radius:6px}
+  .rrow .nm{flex:1;min-width:0}
+  .rrow .nm b{display:block;font-size:13.5px;font-weight:800;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis}
+  .rrow .nm span{display:block;font-size:11px;color:var(--dim-2);white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;margin-top:1px}
+  .rrow .num{flex:0 0 auto;text-align:right}
+  .rrow .num b{display:block;font-family:'Anton',Impact,sans-serif;font-size:15px;line-height:1.1}
+  .rrow .num span{display:block;font-size:10.5px;color:var(--dim-2)}
+
+  /* how close to perfect */
+  .pgauge{display:flex;align-items:center;gap:14px;margin:4px 0 13px}
+  .pgauge .pv{font-family:'Anton',Impact,sans-serif;font-size:50px;line-height:.85;flex:0 0 auto}
+  .pgauge .pr{flex:1;min-width:0}
+  .pgauge .ptrack{height:9px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+  .pgauge .ptrack i{display:block;height:100%;border-radius:99px}
+  .pgauge .pl{font-size:12px;color:var(--dim);margin-top:7px;line-height:1.35}
+  .pgood{color:#4ade80} .pmid{color:#fbbf24} .pbad{color:#f87171}
+  .swaps{margin-top:4px}
+  .caveat{color:var(--dim-2);font-size:11px;margin:11px 0 0;line-height:1.4}
   .load{text-align:center;padding:80px 20px}
   .dots{display:flex;gap:6px;justify-content:center;margin-bottom:16px}
   .dots i{width:9px;height:9px;border-radius:50%;background:var(--blue);animation:bounce 1s infinite}
@@ -458,6 +509,7 @@
   </div>
 
   <div class="screen" id="s-over">
+    <!-- 1. Record and how the season ended. -->
     <div class="verdict" id="o-card">
       <div class="hero-rec">
         <div class="eyebrow" id="o-eyebrow">Final record</div>
@@ -465,22 +517,36 @@
         <div class="hero-sub" id="o-title">Season over</div>
         <p class="hero-note" id="o-sub"></p>
       </div>
-      <div class="stat3">
-        <div class="st"><div class="v" id="o-fppg">0</div><div class="k">Total FPPG</div></div>
-        <div class="st"><div class="v" id="o-salary">$0M</div><div class="k">Salary used</div></div>
-        <div class="st"><div class="v" id="o-perfect">0%</div><div class="k">Of a perfect draft</div></div>
-      </div>
+      <div class="splits" id="o-splits"></div>
     </div>
+
+    <!-- 2. What the team actually did on the field. -->
     <div class="panel" style="margin-top:12px">
-      <div class="eyebrow">Every game</div>
-      <div class="glist" id="o-list" style="max-height:none;margin-top:9px"></div>
+      <div class="eyebrow">Season stats</div>
+      <div class="stat4" id="o-stats"></div>
+      <div class="squadline" id="o-squadline"></div>
     </div>
+
+    <!-- 3. The squad you built. -->
     <div class="panel" style="margin-top:11px">
-      <div class="eyebrow">The best team your spins could have made</div>
-      <p class="dim" style="font-size:12px;margin:5px 0 4px">Same six teams, same $100M, chemistry counted.
-      A spot can go down if spending less there buys more somewhere else.</p>
+      <div class="eyebrow">Your lineup</div>
+      <div class="field short" id="field3"></div>
+      <div class="rost" id="o-rost"></div>
+    </div>
+
+    <!-- 4. How close it came to the best those same six teams allowed. -->
+    <div class="panel" style="margin-top:11px">
+      <div class="eyebrow">How close to perfect</div>
       <div id="o-miss"></div>
     </div>
+
+    <!-- 5. The schedule, last and shut. -->
+    <details class="drop" style="margin-top:11px">
+      <summary><span class="eyebrow">Schedule<span class="dim" id="o-gcount"></span></span>
+        <span class="caret">v</span></summary>
+      <div class="body"><div class="glist" id="o-list" style="max-height:none"></div></div>
+    </details>
+
     <div style="margin-top:15px"><button class="btn" id="b-share">Copy result</button></div>
     <div style="margin-top:9px"><button class="btn ghost" id="b-again">Run it again</button></div>
   </div>
@@ -498,6 +564,13 @@ const E=window.PS_ENGINE, R=window.PS_RUN;
 const $=(id)=>document.getElementById(id);
 const COL={QB:'--qb',RB:'--rb',WR:'--wr',TE:'--te',FLEX:'--flex'};
 const M=(v)=>'$'+v.toFixed(1)+'M';
+/* Surname for the field chips. Taking the last word printed Henry Ruggs III as
+   "III" and Robert Griffin III as "III" too, which named nobody. */
+const SUFFIX=/^(jr|sr|ii|iii|iv|v)\.?$/i;
+const lastName=(name)=>{
+  const parts=String(name).trim().split(/\s+/).filter(w=>!SUFFIX.test(w));
+  return parts[parts.length-1]||name;
+};
 const pc=(v)=>(v>=0?'+':'')+(v*100).toFixed(1)+'%';
 const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -644,7 +717,7 @@ function drawField(el,live){
     const disc=c.querySelector('.disc');
     disc.textContent=p?p.position:E.SLOTS[i];
     disc.style.background=p?'linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.45))':'';
-    c.querySelector('.who').textContent=p?p.name.split(' ').slice(-1)[0]:'';
+    c.querySelector('.who').textContent=p?lastName(p.name):'';
     c.querySelector('.yr').textContent=p?p.season:'';
   });
 
@@ -953,7 +1026,7 @@ function tally(){
 }
 function pushGame(r,el){
   el.insertAdjacentHTML('afterbegin','<div class="g new'+(r.playoff?' po':'')+'">'+
-    '<span class="wk">'+(r.playoff?'PO':'WK '+r.week)+'</span>'+
+    '<span class="wk">'+(r.playoff?(ROUND_TAG[r.round]||'PO'):'WK '+r.week)+'</span>'+
     '<span class="res '+(r.won?'w':'l')+'">'+(r.won?'W':'L')+'</span>'+
     '<span class="opp">'+esc(r.opponent)+'</span>'+
     '<span class="sc">'+r.shownYou+'-'+r.shownThem+'</span></div>');
@@ -1014,76 +1087,152 @@ function paintSeed(){
 $('b-po').onclick=()=>{R.startPlayoffs(run);paintNext();show('s-season');runSim();};
 $('b-po-skip').onclick=()=>{R.startPlayoffs(run);show('s-season');fastForward();};
 
-/* ---------- result ---------- */
+/* ---------- result ----------
+   Reads top to bottom as the answer to four questions in order: what was my
+   record, how did the team play, who was on it, and how close was that to the
+   best I could have drafted. The schedule is last and shut, because it is the
+   part you go looking for rather than the part you need. */
+
+/* Short tags for the playoff rounds, so the schedule does not print four
+   identical PO rows. */
+const ROUND_TAG={'Wild Card':'WC','Divisional':'DIV','Conference Championship':'CONF','Super Bowl':'SB'};
+
 function paintOver(){
   const o=run.outcome,s=run.season,c=$('o-card');
   c.className='verdict';
   $('o-rec').textContent=o.record;
   $('o-rec').className='big'+(o.perfect?' gold':(o.titleWon?' win':''));
   if(o.perfect){c.classList.add('gold');
-    $('o-eyebrow').textContent='Final record'; $('o-title').textContent='Perfect season';
+    $('o-title').textContent='Perfect season';
     $('o-sub').textContent='Seventeen straight, then three more. No real team has ever done it.';
   }else if(o.titleWon){c.classList.add('win');
-    $('o-eyebrow').textContent='Final record'; $('o-title').textContent='Champions';
+    $('o-title').textContent='Champions';
     $('o-sub').textContent='You won the title. The undefeated run is still out there.';
   }else if(o.eliminatedIn){c.classList.add('out');
-    $('o-eyebrow').textContent='Final record'; $('o-title').textContent='Out in the '+o.eliminatedIn;
-    $('o-sub').textContent='You finished '+o.regularRecord+' in the regular season. '+
-      (o.undefeatedRegular?'Undefeated right up to the playoffs.':'One loss ends it once you are there.');
+    $('o-title').textContent='Out in the '+o.eliminatedIn;
+    $('o-sub').textContent=o.undefeatedRegular?'Undefeated right up to the playoffs.'
+      :'One loss ends it once you are there.';
   }else{c.classList.add('out');
-    $('o-eyebrow').textContent='Final record'; $('o-title').textContent='Missed the playoffs';
-    $('o-sub').textContent='You needed '+E.CONSTANTS.PLAYOFF_WINS+' wins to get in and finished with '+o.wins+'.';
+    $('o-title').textContent='Missed the playoffs';
+    $('o-sub').textContent='It takes '+E.CONSTANTS.PLAYOFF_WINS+' wins to get in.';
   }
-  $('o-list').innerHTML=''; s.results.forEach(r=>pushGame(r,$('o-list')));
-  const best=R.bestPossibleSquad(run,DATA,CTX);
+
+  /* A 15-5 line only makes sense once you can see it was 13-4 and then 2-1. */
+  const po=s.results.filter(r=>r.playoff);
+  const reg=s.results.filter(r=>!r.playoff);
+  const won=(arr)=>arr.filter(r=>r.won).length;
+  const split=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
+  $('o-splits').innerHTML=split(won(reg)+'-'+(reg.length-won(reg)),'Regular season')+
+    (po.length?split(won(po)+'-'+(po.length-won(po)),'Playoffs'):'')+
+    split(o.seedLabel.replace(/^Missed.*/,'None'),'Playoff seed');
+
+  /* Real team stats off the scores you were shown, not fantasy totals. Points
+     for and against say more about the season than a points-scored figure on
+     its own, and the streak is the number people actually brag about. */
+  const pts=(arr,f)=>arr.reduce((t,r)=>t+f(r),0)/Math.max(1,arr.length);
+  const forPG=pts(s.results,r=>r.shownYou??r.yourScore);
+  const agPG=pts(s.results,r=>r.shownThem??r.oppScore);
+  const diff=forPG-agPG;
+  let streak=0,bestStreak=0;
+  s.results.forEach(r=>{ streak=r.won?streak+1:0; if(streak>bestStreak)bestStreak=streak; });
+  const tile=(v,k,cls)=>'<div class="st"><div class="v'+(cls?' '+cls:'')+'">'+v+'</div><div class="k">'+k+'</div></div>';
+  $('o-stats').innerHTML=
+    tile(forPG.toFixed(1),'Points a game')+
+    tile(agPG.toFixed(1),'Points allowed')+
+    tile((diff>=0?'+':'')+diff.toFixed(1),'Difference',diff>=0?'up':'dn')+
+    tile(bestStreak,'Longest streak');
+
   const spendUsed=run.roster.reduce((t,p)=>t+p.price_musd,0)+run.respinsUsed*E.CONSTANTS.RESPIN_COST_MUSD;
-  $('o-fppg').textContent=run.roster.reduce((t,p)=>t+p.ppr_ppg_mean,0).toFixed(0);
-  $('o-salary').textContent=M(spendUsed);
-  // How close the draft came to the strongest team those six teams allowed.
-  $('o-perfect').textContent=best
-    ? Math.round(100*Math.min(1,best.yourProjected/best.bestProjected))+'%' : '-';
+  const fppg=run.roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
+  const st=E.rosterStructure(run.roster);
+  $('o-squadline').innerHTML=
+    '<span><b>'+fppg.toFixed(0)+'</b>squad FPPG</span>'+
+    '<span><b>'+pc(run.season.chemistry-1)+'</b>chemistry</span>'+
+    '<span><b>'+M(spendUsed)+'</b>of '+M(E.CONSTANTS.CAP_MUSD)+'</span>'+
+    '<span><b>x'+st.multiplier.toFixed(2)+'</b>team shape</span>';
+
+  /* The lineup, which the old results page never showed at all. */
+  drawField($('field3'),false);
+  const bySlot=new Array(E.SLOTS.length).fill(null);
+  run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
+  $('o-rost').innerHTML=E.SLOTS.map((slot,i)=>{
+    const p=bySlot[i]; if(!p) return '';
+    const col='var('+COL[slot]+')';
+    return '<div class="rrow"><span class="tag" style="background:linear-gradient(160deg,'+col+
+      ',rgba(0,0,0,.45))">'+slot+'</span>'+
+      '<span class="nm"><b>'+esc(p.name)+'</b><span>'+p.season+' '+esc(E.nickname(p.franchise))+
+        (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</span></span>'+
+      '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
+  }).join('');
+
+  const best=R.bestPossibleSquad(run,DATA,CTX);
   if(!best){ $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>'; }
   else{
-    /* Every spot, always, so it names who replaces whom. Showing one player with a
-       number next to it never explained what to do differently. */
-    const rows=best.lineup.map((r,i)=>{
-      const col='var('+COL[E.SLOTS[i]==='FLEX'?'FLEX':E.SLOTS[i]]+')';
-      const nm=(p)=>p?esc(p.name)+' <span class="dim">'+p.season+', '+M(p.price_musd)+'</span>':'-';
-      if(r.same){
-        return '<div class="cmp"><span class="sp" style="background:linear-gradient(160deg,'+col+',rgba(0,0,0,.45))">'+
-          r.slot+'</span><span class="side"><b>'+nm(r.had)+'</b></span>'+
-          '<span class="up kept">KEPT</span></div>';
-      }
-      return '<div class="cmp"><span class="sp" style="background:linear-gradient(160deg,'+col+',rgba(0,0,0,.45))">'+
-        r.slot+'</span><span class="side">'+
-        '<div class="was"><span class="lbl">YOU</span>'+nm(r.had)+'</div>'+
-        '<div><span class="lbl">BEST</span><b>'+nm(r.could)+'</b></div></span>'+
-        '<span class="up'+(r.delta<0?' down':'')+'">'+(r.delta>0?'+':'')+r.delta.toFixed(1)+'</span></div>';
-    }).join('');
-    /* How each team would actually have done over the same 17 opponents. A points
-       total on its own never answered the real question, which is what record it
-       would have posted and whether that was good enough. */
-    const mine=R.projectSeason(run.roster,best.yourChemistry,run,DATA,LEAGUE);
-    const theirs=R.projectSeason(best.squad,best.chemistry,run,DATA,LEAGUE);
-    const P=(v)=>(v*100).toFixed(v>0&&v<0.1?1:0)+'%';
-    const vs=(k,a,c,hi)=>'<div class="vs-row'+(hi?' hi':'')+'"><span class="k">'+k+'</span>'+
-      '<span class="a">'+a+'</span><span class="c">'+c+'</span></div>';
-    $('o-miss').innerHTML=rows+
-      '<div class="vs-tbl">'+
-        '<div class="vs-row"><span class="k"></span><span class="h">YOURS</span><span class="h b">BEST</span></div>'+
-        vs('Points a game',best.yourProjected.toFixed(0),best.bestProjected.toFixed(0))+
-        vs('Money spent',M(best.yourSpend),M(best.spend))+
-        vs('Chemistry',pc(best.yourChemistry-1),pc(best.chemistry-1))+
-        vs('Typical record',mine.typicalRecord,theirs.typicalRecord,true)+
-        vs('Makes the playoffs',P(mine.playoffRate),P(theirs.playoffRate))+
-        vs('Wins the title',P(mine.titleRate),P(theirs.titleRate))+
-        vs('Goes 20-0',P(mine.perfectRate),P(theirs.perfectRate))+
-      '</div>'+
-      '<p class="dim" style="font-size:11.5px;margin:10px 0 0">Records come from replaying both teams '+
-      'against your actual 17 opponents many times, since one season is mostly luck. This keeps your six '+
-      'teams fixed: picking differently would also have changed which teams the wheel showed you next.</p>';
+    const share=Math.round(100*Math.min(1,best.yourProjected/best.bestProjected));
+    const kept=best.lineup.filter(r=>r.same).length;
+    const band=share>=90?'pgood':(share>=70?'pmid':'pbad');
+    const fill=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
+    /* The two numbers can disagree, and often do: a 92% team with zero matching
+       picks means you found different players worth nearly as much. Saying "0 of
+       6 spots right" under a 92% score without that read badly. */
+    const spots=kept===6?'You picked the best available player at every spot.'
+      :kept?'You had '+kept+' of the 6 spots exactly right.'
+      :'You matched none of the best picks, so the gap is all in the players, not the shape.';
+    /* One number, then what it means. The old page opened with six comparison
+       rows and made you add them up yourself. */
+    $('o-miss').innerHTML=
+      '<div class="pgauge"><div class="pv '+band+'">'+share+'%</div><div class="pr">'+
+        '<div class="ptrack"><i style="width:'+share+'%;background:'+fill+'"></i></div>'+
+        '<div class="pl">Of the strongest team your six spins allowed. '+spots+'</div>'+
+      '</div></div>'+
+      '<p class="caveat" style="margin:0 0 2px">Spot by spot, against the best your same six teams '+
+      'and same '+M(E.CONSTANTS.CAP_MUSD)+' allowed. A spot can go down on purpose when spending less '+
+      'there buys more somewhere else.</p>'+
+      swapRows(best)+comparison(best)+
+      '<p class="caveat">Both records come from replaying the two teams against your actual 17 opponents '+
+      'many times, because one season is mostly luck. Your six teams stay fixed: a different pick would '+
+      'also have changed what the wheel showed you next.</p>';
   }
+
+  const list=$('o-list');
+  list.innerHTML=''; s.results.forEach(r=>pushGame(r,list));
+  $('o-gcount').textContent=' \u00b7 '+s.results.length+' games';
   show('s-over');
+}
+
+/* Spot by spot, so it always names who replaces whom rather than showing one
+   player and a number. */
+function swapRows(best){
+  return '<div class="swaps">'+best.lineup.map((r,i)=>{
+    const col='var('+COL[E.SLOTS[i]]+')';
+    const sp='<span class="sp" style="background:linear-gradient(160deg,'+col+',rgba(0,0,0,.45))">'+r.slot+'</span>';
+    const nm=(p)=>p?esc(p.name)+' <span class="dim">'+p.season+', '+M(p.price_musd)+'</span>':'-';
+    if(r.same){
+      return '<div class="cmp">'+sp+'<span class="side"><b>'+nm(r.had)+'</b></span>'+
+        '<span class="up kept">RIGHT PICK</span></div>';
+    }
+    return '<div class="cmp">'+sp+'<span class="side">'+
+      '<div class="was"><span class="lbl">YOU</span>'+nm(r.had)+'</div>'+
+      '<div><span class="lbl">BEST</span><b>'+nm(r.could)+'</b></div></span>'+
+      '<span class="up'+(r.delta<0?' down':'')+'">'+(r.delta>0?'+':'')+r.delta.toFixed(1)+'</span></div>';
+  }).join('')+'</div>';
+}
+
+/* Three rows, not seven. Money and chemistry already have their own place in the
+   stats above, and a title-odds row on a team that missed the playoffs was noise. */
+function comparison(best){
+  const mine=R.projectSeason(run.roster,best.yourChemistry,run,DATA,LEAGUE);
+  const theirs=R.projectSeason(best.squad,best.chemistry,run,DATA,LEAGUE);
+  const P=(v)=>(v*100).toFixed(v>0&&v<0.1?1:0)+'%';
+  const vs=(k,a,c,hi)=>'<div class="vs-row'+(hi?' hi':'')+'"><span class="k">'+k+'</span>'+
+    '<span class="a">'+a+'</span><span class="c">'+c+'</span></div>';
+  return '<div class="vs-tbl">'+
+    '<div class="vs-row"><span class="k"></span><span class="h">YOURS</span><span class="h b">BEST</span></div>'+
+    vs('Typical record',mine.typicalRecord,theirs.typicalRecord,true)+
+    vs('Money spent',M(best.yourSpend),M(best.spend))+
+    vs('Makes the playoffs',P(mine.playoffRate),P(theirs.playoffRate))+
+    vs('Wins the title',P(mine.titleRate),P(theirs.titleRate))+
+  '</div>';
 }
 
 $('b-share').onclick=async()=>{

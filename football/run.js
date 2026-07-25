@@ -664,31 +664,59 @@ function bestPossibleSquad(run, data, ctx) {
 
   // Hill climb with chemistry in the objective. Same-spot substitutions from the
   // same drawn team, keeping the total inside the cap.
+  /*
+   * The objective has to be the SAME thing the season rewards, or "best" is a
+   * lie. Points and chemistry alone left roster shape out, and shape is a real
+   * multiplier in resolveGame, so the optimizer could hand back a lineup that
+   * genuinely wins fewer games than the one you drafted: on one test run the
+   * comparison read YOURS 15-2, BEST 14-3, which is nonsense on its face.
+   *
+   * The DP above still maximizes raw points, since its state cannot express
+   * either multiplier. This is where both get folded back in.
+   */
   const score = (arr) => {
     const spend = arr.reduce((t, p) => t + p.price_musd, 0);
     if (spend > budget + 1e-9) return -1;
-    return arr.reduce((t, p) => t + p.ppr_ppg_mean, 0) * E.resolveChemistry(arr, ctx).multiplier;
+    return arr.reduce((t, p) => t + p.ppr_ppg_mean, 0)
+      * E.resolveChemistry(arr, ctx).multiplier
+      * E.rosterStructure(arr).multiplier;
   };
-  let best = bySlot.slice(), bestScore = score(best);
-  for (let pass = 0; pass < 3; pass++) {
-    let improved = false;
-    for (let s = 0; s < nSlots; s++) {
-      const di = drawOfSlot[s];
-      for (const cand of pool[di]) {
-        if (!fits(cand, s)) continue;
-        if (best.some((p, j) => j !== s && p.player_id === cand.player_id)) continue;
-        const trial = best.slice();
-        trial[s] = cand;
-        const sc = score(trial);
-        if (sc > bestScore + 1e-9) { best = trial; bestScore = sc; improved = true; }
+  const climb = (start, ofSlot) => {
+    let cur = start.slice(), curScore = score(cur);
+    for (let pass = 0; pass < 3; pass++) {
+      let improved = false;
+      for (let s = 0; s < nSlots; s++) {
+        for (const cand of pool[ofSlot[s]]) {
+          if (!fits(cand, s)) continue;
+          if (cur.some((p, j) => j !== s && p.player_id === cand.player_id)) continue;
+          const trial = cur.slice();
+          trial[s] = cand;
+          const sc = score(trial);
+          if (sc > curScore + 1e-9) { cur = trial; curScore = sc; improved = true; }
+        }
       }
+      if (!improved) break;
     }
-    if (!improved) break;
-  }
+    return { arr: cur, score: curScore };
+  };
+
+  const yourBySlot = new Array(nSlots).fill(null);
+  const yourOfSlot = new Array(nSlots).fill(-1);
+  run.roster.forEach((p, i) => { yourBySlot[run.slotIndex[i]] = p; yourOfSlot[run.slotIndex[i]] = i; });
+
+  /*
+   * Climb from the DP optimum AND from the lineup you actually drafted, then keep
+   * whichever ends higher. A hill climb only swaps within a spot, so from the DP
+   * start it can settle in a local optimum that your own lineup beats once shape
+   * is in the objective. Without this second start, "the best you could have
+   * done" was occasionally worse than what you did.
+   */
+  const runs = [climb(bySlot, drawOfSlot)];
+  if (run.roster.length === nSlots) runs.push(climb(yourBySlot, yourOfSlot));
+  const won = runs.reduce((a, b) => (b.score > a.score ? b : a));
+  const best = won.arr, bestScore = won.score;
 
   const chem = E.resolveChemistry(best, ctx);
-  const yourBySlot = new Array(nSlots).fill(null);
-  run.roster.forEach((p, i) => { yourBySlot[run.slotIndex[i]] = p; });
   const yourPts = run.roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
 
   return {
@@ -699,7 +727,11 @@ function bestPossibleSquad(run, data, ctx) {
     spend: best.reduce((t, p) => t + p.price_musd, 0),
     yourSpend: run.roster.reduce((t, p) => t + p.price_musd, 0),
     yourChemistry: run.season.chemistry,
-    yourProjected: yourPts * run.season.chemistry,
+    yourStructure: E.rosterStructure(run.roster).multiplier,
+    bestStructure: E.rosterStructure(best).multiplier,
+    // Both sides measured the same way, so the ratio between them is the honest
+    // answer to "how close was I", and cannot come out above 100%.
+    yourProjected: yourPts * run.season.chemistry * E.rosterStructure(run.roster).multiplier,
     bestProjected: bestScore,
     /* One row per spot, so it always says who replaces whom. */
     lineup: E.SLOTS.map((slot, s) => {
