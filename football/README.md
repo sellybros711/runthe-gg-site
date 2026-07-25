@@ -858,31 +858,64 @@ The first thing anybody saw used to be five numbered rules. That is a manual, no
 invitation, so the rules moved behind a **How to play** button and the screen leads
 with one image, the title, and **Start a run**.
 
-The image is built out of the game's own components, never stock art or a generated
-picture. Three treatments exist and one is chosen with `?home=1|2|3`, so they can be
-compared on a real phone rather than argued about:
+The image is the game running. Three static treatments were built first and shown
+side by side: a broadcast score bug reading 20-0, a half-built formation, and the two
+wheels stopped on a team. The formation and the wheels were the two that survived,
+and putting either one on its own does not work, which is the useful thing that came
+out of comparing them. **The wheels are a mechanic with no stated purpose. The
+formation is a result with no stated cause.** Run in sequence they explain each
+other, which is the entire job of a front page.
 
-| `?home=` | What it shows | Height |
-|---|---|---|
-| 1 | A real broadcast score bug reading `YOU 20 / THEM 0 / FINAL 20-0` | 485px |
-| 2 | A half-built formation: three signed chips, three still empty | 622px |
-| 3 | The two wheels stopped on 2007 New England, in Patriots colors | 565px |
+So the landing screen is a loop, about ten seconds long:
 
-Each one is the actual DOM the game uses later, so none of them can drift out of
-sync with what the game looks like, and none of them promises something the game
-does not do. When one is picked the other two and the `?home` switch get deleted.
+1. The **year** reel spins. 300ms later the **team** reel starts, and lands 450ms
+   after the year does.
+2. The team's housing takes that club's own colors, contrast-checked, exactly as it
+   does in the draft.
+3. The player that draw produced **drops onto the formation**: the disc kicks, the
+   name and year arrive a beat behind it.
+4. Three times over, then it holds the roster in progress and clears.
 
-Hero 3 taught a small lesson worth keeping: the reel strip is offset by
-`translate3d(0,-38px,0)` during a spin, which centers index 2, but the face that
-should be showing is the `.land` at index 1. The static hero has no transform at all,
-and there is now an assertion that the vertically centered face in each reel window
-is the one marked `.land`, because "looks about right" is exactly the kind of thing
-that is off by one row.
+It drives the game's own `reel()` and `dressInTeamColors()`, and the field, the
+chips and the reel housings are the same markup the draft screen uses. There is no
+second implementation of the spin to keep in step with the first.
 
-The **How to play** sheet reads the cap and the re-spin ladder out of
-`E.CONSTANTS`, so it says `$140M` and `$5M, $10M, $15M` and cannot go stale the next
-time those move. The old copy still said "100 million" for two rounds after the cap
-changed, which is how that rule got made.
+**The reels overlap, and that is a departure from the draft.** In the draft the year
+has to settle before there is a list of teams to spin through, so the team reel sits
+dim and blank until it does. On the landing screen that left the whole right-hand
+half of the picture empty for a third of every beat, which reads as a broken render
+rather than a pending one. The order the two results arrive in, which is the part
+that carries the meaning, is unchanged.
+
+Things that are asserted rather than assumed, because each one was wrong at some
+point in a version of this screen:
+
+- **The three signings are a legal roster.** Manning 2004, Henry 2020 and Kelce 2019
+  come to $112.4M of the $140M cap, leaving $27.6M for the other three spots. The
+  static version showed Jackson 2019, Faulk 2000 and Kupp 2021, which is $144M: the
+  front page was advertising a roster the game would refuse. `v35.mjs` parses
+  `HERO_PICKS` out of `index.html` and checks each one against
+  `player_seasons.json`, that the wheel face matches the team-season's display name,
+  that no two picks claim the same spot, and that the total fits the cap.
+- **Every decoy is a club that existed that season.** The team decoys are keyed by
+  season, so nothing puts ST. LOUIS RAMS next to 2019. `v36.mjs` watches 24 seconds
+  of spinning and checks all 92 faces against the season on the other reel.
+- **No chip appears before the team that produced it lands.** Watched frame by frame.
+- **It stops when the screen does.** The loop runs only while `s-intro` is the screen
+  on and the tab is in front, hooked through `show()` and `visibilitychange`, and
+  every `heroStart()` bumps a sequence number so a loop can never stack on top of
+  itself. Four trips away and back still leaves six chips on the field.
+- **`prefers-reduced-motion` gets the end of the sequence held still**, which is the
+  same information without the movement.
+
+### The placeholder was one row too high
+
+The reel's blank state, the dim housing with a `?` in it, printed the `?` one face
+above the band. The strip was offset by `translate3d(0,-38px,0)` against a
+three-face window, which puts item 1 in the top row and leaves the band showing the
+empty item 2. Measured before it was changed: band at 38-76px, the `?` at 1-39px.
+This is the third time the same off-by-one-face error has shown up in this file, so
+both the landing screen and the draft now assert the `?` is inside the band.
 
 ## Accounts and the leaderboard, laid out but not wired
 
@@ -934,8 +967,6 @@ Known gaps worth a look during playtesting:
 - **Sign-in and the leaderboard are shells.** Laid out, labeled as not live, and
   reading sample data. See the section above for the three scale assumptions the
   layout already bakes in.
-- **One of the three landing heroes has to go.** All three ship today behind
-  `?home=`, which is fine for review and not fine for launch.
 - **Awards and Pro Bowl selections are not in.** Waiting on the data as
   `season, player name, team, award`. Team is required: there are 19 name-plus-season
   collisions in the player file, and every unmatched row will be reported rather than
