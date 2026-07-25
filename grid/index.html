@@ -82,6 +82,16 @@
   .cdchip .lbl{font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); font-weight:900;}
   .cdchip .t{font-family:var(--hero); font-weight:400; font-size:19px; letter-spacing:.04em; color:var(--tealT); font-variant-numeric:tabular-nums;}
 
+  /* ---- daily dashboard bar (replaces the landing-style hero) ---- */
+  .daybar{display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:6px;
+    background:var(--card); border:1px solid var(--line); border-left:5px solid var(--coral);
+    border-radius:16px; padding:15px 18px; box-shadow:var(--shadow);}
+  .daybar .db-day{display:block; font-family:var(--hero); font-weight:400; font-size:25px; letter-spacing:.02em; color:var(--ink); line-height:1;}
+  .daybar .db-sub{display:block; font-size:10.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut); margin-top:6px;}
+  .daybar .db-r{flex:0 0 auto; text-align:right;}
+  .daybar .db-lbl{display:block; font-size:9.5px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut);}
+  .daybar .db-cd{display:block; font-family:var(--hero); font-weight:400; font-size:30px; letter-spacing:.03em; color:var(--tealT); font-variant-numeric:tabular-nums; line-height:1; margin-top:4px;}
+
   /* ---- section label + daily progress ---- */
   .seclab{display:flex; align-items:center; gap:10px; margin:26px 4px 14px;}
   .seclab .t{display:flex; align-items:center; gap:9px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; font-size:12.5px; color:var(--ink);}
@@ -97,7 +107,8 @@
   .pz{--c:var(--blue); position:relative; display:flex; align-items:stretch; gap:18px; padding:20px; border-radius:20px; overflow:hidden;
     background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:transform .16s ease, box-shadow .16s ease;}
   .pz:before{content:""; position:absolute; left:0; top:0; bottom:0; width:6px; background:var(--c);}
-  .pz.match{--c:var(--blue);} .pz.cross{--c:var(--violet);}
+  .pz.match{--c:var(--blue); background:linear-gradient(105deg, color-mix(in srgb, var(--blue) 10%, var(--card)) 0%, var(--card) 60%);}
+  .pz.cross{--c:var(--violet); background:linear-gradient(105deg, color-mix(in srgb, var(--violet) 12%, var(--card)) 0%, var(--card) 60%);}
   .pz:hover{transform:translateY(-3px); box-shadow:0 26px 50px -26px rgba(0,0,0,.6);}
   .pz .ico{flex:0 0 auto; width:84px; height:84px; border-radius:18px; display:grid; place-items:center; align-self:center;
     background:color-mix(in srgb, var(--c) 14%, var(--card)); border:1px solid color-mix(in srgb, var(--c) 35%, transparent);}
@@ -189,7 +200,7 @@
 <div class="stage">
   <div class="wrap">
     <div class="top">
-      <span class="gg">RUNTHE<span class="d">.GG</span></span>
+      <span class="gg">RunThe<span class="d">Grid</span></span>
       <span class="topR">
         <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
           <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
@@ -199,17 +210,14 @@
       </span>
     </div>
 
-    <header class="hero">
-      <div class="kick">Daily Sports Puzzles</div>
-      <h1 class="wm"><span class="a">RunThe</span><span class="b">Grid</span></h1>
-      <div class="dots" aria-hidden="true">
-        <i style="--i:0;background:#2F6BFF"></i><i style="--i:1;background:#F06A5F"></i><i style="--i:2;background:#F2B632"></i><i style="--i:3;background:#A982F3"></i><i style="--i:4;background:#F65C9C"></i>
+    <header class="daybar">
+      <div class="db-l">
+        <span class="db-day" id="dateShort">Today</span>
+        <span class="db-sub">Your daily sports puzzles</span>
       </div>
-      <p class="tag">Two quick brain games for sports fans, fresh every day.<br><b>Solve both. Keep the streak alive.</b></p>
-      <div class="cdchip">
-        <span id="dateShort">Today</span>
-        <span class="lbl">Next drop</span>
-        <span class="t" id="cdT">--:--:--</span>
+      <div class="db-r">
+        <span class="db-lbl">Next drop</span>
+        <span class="db-cd" id="cdT">--:--:--</span>
       </div>
     </header>
 
@@ -230,7 +238,6 @@
         <span class="meta">
           <span class="row1"><span class="nm">Daily Match</span><span class="badge">New</span><span class="status" id="stM">Ready</span></span>
           <span class="desc" id="descM">Sort 20 sports names into five hidden groups of four. Every group is airtight. Find them all before six misses.</span>
-          <span class="chips"><span class="chip">NFL</span><span class="chip">·</span><span class="chip">NBA</span><span class="chip">·</span><span class="chip">MLB</span><span class="chip">·</span><span class="chip">+ more</span></span>
         </span>
         <span class="play" id="playM">PLAY <span class="arw">→</span></span>
       </a>
@@ -248,7 +255,6 @@
         <span class="meta">
           <span class="row1"><span class="nm">Daily Crossword</span><span class="badge">New</span><span class="status" id="stC">Ready</span></span>
           <span class="desc">A sports mini crossword, fresh every day. Beat the clock for a flawless solve. Same streak, same wallet.</span>
-          <span class="chips"><span class="chip">Players</span><span class="chip">·</span><span class="chip">Teams</span><span class="chip">·</span><span class="chip">Terms</span></span>
         </span>
         <span class="play" id="playC">PLAY <span class="arw">→</span></span>
       </a>
