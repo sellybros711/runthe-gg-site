@@ -10,8 +10,7 @@
 <meta name="description" content="Spin for six NFL team seasons, sign one player from each, then play a full season and try to go undefeated.">
 <meta name="theme-color" content="#080b14">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="brand/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="brand/icon.svg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111827'/%3E%3Cellipse cx='16' cy='16' rx='10' ry='7' fill='%23dc2626'/%3E%3Cpath d='M11 16h10M16 13v6' stroke='%23f8fafc' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
 <meta property="og:title" content="The Perfect Season | RunThe.GG">
 <meta property="og:description" content="Six spins. Six signings. One shot at going undefeated.">
 <meta property="og:type" content="website">
@@ -177,17 +176,6 @@
   .htitle{text-align:center;margin-bottom:16px}
   /* THE MARK. A zero for the season nobody has had, crossed by the wheel's own lit
      band. Sized off the title rather than fixed, so the two move together. */
-  /* THE MARK, in the header, on every screen.
-
-     A zero for the season nobody has had, crossed by the wheel's own lit band. The
-     full drawing and the reasoning are in brand/mark.svg.
-
-     It went on the landing screen first, at 56px above the title, and came off again
-     because it cost the last button its place: measured, the Leaderboard button ended
-     at 847px against an 844px viewport, and 764px without it. The landing screen
-     already opens with the game itself animating and the title set in the same face,
-     so a third piece of identity there was paying for something it already had. */
-  .logomark{flex:0 0 24px;width:24px;height:24px;margin:0 8px 0 0}
   .htitle .kicker{font-family:var(--fn);font-size:11px;font-weight:600;letter-spacing:.24em;
     text-transform:uppercase;color:var(--red)}
   .htitle h1{font-family:var(--fd);font-size:46px;font-weight:900;line-height:.9;
@@ -858,12 +846,6 @@
 <body>
 <div class="wrap">
   <header>
-    <svg class="logomark hdr" viewBox="0 0 64 64" aria-hidden="true">
-      <path d="M21.5 9h21a10 10 0 0 1 10 10v26a10 10 0 0 1-10 10h-21a10 10 0 0 1-10-10V19a10 10 0 0 1 10-10z"
-            fill="none" stroke="var(--wr)" stroke-width="8"/>
-      <rect x="3" y="25.5" width="58" height="13" rx="5" fill="var(--qb)"/>
-      <rect x="10" y="29.5" width="44" height="5" rx="2.5" fill="#fff"/>
-    </svg>
     <div class="brand">RunThe<i>.GG</i></div>
     <div class="hdr-r">
       <div class="pill" id="hdr">The Perfect Season</div>
@@ -947,7 +929,9 @@
     <div class="lb" id="lb-rows"></div>
     <p class="notlive" id="lb-note" style="display:none"></p>
     <button class="btn ghost sm" id="b-lb-more" style="margin-top:10px">Show more</button>
-    <div style="margin-top:10px"><button class="btn ghost" id="b-board-back">Back</button></div>
+    <div class="hrow" style="margin-top:10px">
+      <button class="btn ghost sm" id="b-board-back">Back</button>
+      <button class="btn ghost sm" id="b-diag">Check the connection</button></div>
   </div>
 
   <div class="screen" id="s-team">
@@ -2910,7 +2894,7 @@ async function paintRanks(){
   if(!any){
     el.innerHTML='<p class="rankfoot" style="margin-top:8px">The leaderboard is not '+
       'reachable right now, so this run has not been counted. Nothing else about your '+
-      'season changes.</p>';
+      'season changes.</p>'+boardWhy();
     return;
   }
   const WINDOWS=run.daily?WINDOWS_DAILY:WINDOWS_FREE;
@@ -2923,6 +2907,26 @@ async function paintRanks(){
       '<span class="rn">#'+w.rank.toLocaleString()+'</span>'+
       '<span class="rof">of '+w.total.toLocaleString()+'</span></div>';
   };
+  /* The board answered, but the run may still not have gone in: reads and writes fail
+     separately, and reads working while writes failing is exactly what an empty board
+     with a healthy row count looks like. Say so rather than showing a rank the run is
+     not part of.
+
+     This sits BELOW the two const declarations above on purpose. It was written above
+     them first, where WINDOWS and cell are still in their temporal dead zone, so it
+     threw a ReferenceError every time it was reached and the catch around paintRanks()
+     quietly painted the generic "not reachable" line instead. The failure looked
+     exactly like the one it was trying to explain. */
+  if(submitted===false){
+    el.innerHTML='<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
+      '<p class="rankfoot">Those are the standings, but <b>this run was not recorded</b>, '+
+      'so it is not among them.</p>'+boardWhy()+
+      '<div class="hrow"><button class="btn ghost sm" id="b-board3">See the leaderboard</button>'+
+      '<button class="btn ghost sm" id="b-diag-x">Check the connection</button></div>';
+    $('b-board3').onclick=openBoard;
+    $('b-diag-x').onclick=runDiagnostics;
+    return;
+  }
   el.innerHTML='<p class="rankwho">'+(run.daily
       ? "Against everyone who played today's daily challenge."
       : 'Against every free run. The daily challenge is scored separately.')+'</p>'+
@@ -2930,6 +2934,69 @@ async function paintRanks(){
     '<p class="rankfoot">'+rankLine(r)+'</p>'+
     '<button class="btn ghost sm" id="b-board3">See the leaderboard</button>';
   $('b-board3').onclick=openBoard;
+}
+
+/* WHAT THE SERVER ACTUALLY SAID.
+   Shown whenever a call failed, because "not reachable" covers three completely
+   different problems with three different fixes, and the message distinguishes them
+   in one line. Also puts the probe one tap away. */
+function boardWhy(){
+  const e=B.lastError;
+  if(!e) return '';
+  return '<p class="notlive" style="margin-top:10px;font-size:11.5px">'+
+    esc(e.where)+' failed: '+esc(String(e.status))+
+    (e.code?' '+esc(e.code):'')+'. '+esc(e.message)+
+    '</p>';
+}
+
+/* Reports whether the database is set up, without writing a row: it sends a run the
+   function is bound to refuse and reads which way it refuses. */
+async function runDiagnostics(){
+  const box=$('sheet-in');
+  box.innerHTML='<div class="eyebrow">Leaderboard</div>'+
+    '<h2 class="display" style="font-size:24px;margin:4px 0 10px">Checking the connection</h2>'+
+    '<div class="rload"><i></i><i></i><i></i><span>Two requests, no data written</span></div>';
+  $('sheet').classList.add('on');
+  const r=await B.probe();
+  const line=(k,v,good)=>'<div class="kv"><span>'+k+'</span><span style="color:'+
+    (good?'#4ade80':'#f87171')+'">'+esc(v)+'</span></div>';
+  let verdict, fix='';
+  if(!r.read||!r.read.ok){
+    verdict='The board cannot be read at all.';
+    fix='The table is not there, or the project is unreachable from this device. Run '+
+      'supabase/50_football_perfect_season.sql.';
+  }else if(r.write&&r.write.healthy){
+    verdict='Everything is wired up correctly.';
+    fix='Reads work and the function refused a deliberately impossible run for the '+
+      'right reason, which is what a healthy setup does.';
+  }else if(r.write&&(r.write.status===404||r.write.code==='PGRST202')){
+    verdict='The table is there but the function is not.';
+    fix='Either the SQL was only partly run, or PostgREST has not picked up the new '+
+      'function yet. Run the whole of supabase/50_football_perfect_season.sql, then '+
+      "run NOTIFY pgrst, 'reload schema'; to make the API notice it.";
+  }else if(r.write&&(r.write.status===401||r.write.status===403)){
+    verdict='The function exists but this key may not call it.';
+    fix='The grant at the bottom of the SQL did not apply. Re-run the last two '+
+      'statements of supabase/50_football_perfect_season.sql.';
+  }else{
+    verdict='The function answered in a way it should not.';
+    fix='The message below is the database\'s own words and says what it objected to.';
+  }
+  box.innerHTML='<div class="eyebrow">Leaderboard</div>'+
+    '<h2 class="display" style="font-size:24px;margin:4px 0 8px">'+esc(verdict)+'</h2>'+
+    '<p class="dim" style="font-size:13px;margin:0 0 10px">'+esc(fix)+'</p>'+
+    line('Reading the board',(r.read?r.read.status:0)+(r.read&&r.read.ok
+      ?' ok, '+(r.read.count===null?'no count':r.read.count+' rows'):' failed'),
+      !!(r.read&&r.read.ok))+
+    line('Calling ps_submit_run',(r.write?r.write.status:0)+' '+
+      (r.write&&r.write.code?r.write.code:''),!!(r.write&&r.write.healthy))+
+    '<p class="dim" style="font-size:11.5px;margin:9px 0 0;word-break:break-word">'+
+      esc((r.write&&r.write.message)||'')+'</p>'+
+    (B.lastError?'<p class="dim" style="font-size:11.5px;margin:7px 0 0;word-break:break-word">'+
+      'Last real failure, '+esc(B.lastError.where)+': '+esc(String(B.lastError.status))+' '+
+      esc(B.lastError.code)+' '+esc(B.lastError.message)+'</p>':'')+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  $('sh-x').onclick=()=>$('sheet').classList.remove('on');
 }
 
 /* One sentence that says what the numbers mean. The percentile is the useful read
@@ -3033,7 +3100,8 @@ async function loadBoard(){
     $('lb-note').style.display='';
     $('lb-note').textContent='The leaderboard is not reachable right now. Your runs are '+
       'still played and still counted once it comes back.';
-    return;
+    $('lb-rows').innerHTML=boardWhy();
+    return;   // the board screen has its own Check the connection button already
   }
   if(total!==null){
     const word=lbIsDaily()?"played today's daily"
@@ -3254,6 +3322,7 @@ $('b-board').onclick=openBoard;
 $('b-board2').onclick=openBoard;
 $('b-board-back').onclick=()=>show(run&&run.outcome?'s-over':'s-intro');
 $('b-lb-more').onclick=()=>{lbShown+=5;paintBoard();};
+$('b-diag').onclick=runDiagnostics;
 $('lb-tabs').addEventListener('click',(e)=>{
   const t=e.target.closest('.tab'); if(!t||t.disabled||t.dataset.lb===lbWin) return;
   lbWin=t.dataset.lb; lbShown=5; loadBoard();

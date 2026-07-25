@@ -61,6 +61,32 @@
 
   let offline = false;
 
+  /* THE LAST THING THAT WENT WRONG, kept rather than thrown away.
+     Every call in here failed soft and silently, which is right for the player and
+     useless for working out why nothing is being recorded: a failed submit looked
+     exactly like a healthy board with nobody on it. PostgREST answers a rejected
+     call with a JSON body carrying a code and a message, and that body is the whole
+     diagnosis, so it is kept and shown. */
+  let lastError = null;
+  async function fail(where, res) {
+    offline = true;
+    let body = null;
+    try { body = await res.json(); } catch (e) { body = null; }
+    lastError = {
+      where,
+      status: res.status,
+      code: (body && body.code) || '',
+      message: (body && (body.message || body.hint)) || res.statusText || 'no message',
+    };
+    return null;
+  }
+  function failThrown(where, e) {
+    offline = true;
+    lastError = { where, status: 0, code: 'network',
+      message: (e && e.message) || 'the request did not complete' };
+    return null;
+  }
+
   /* One decimal place, matching round(p_point_diff, 1) in ps_submit_run(). Declared
      up here because both submit() and scoreOf() need it and submit() is defined
      first. */
@@ -168,10 +194,61 @@
           p_perfect_pct: payload.perfectPct ?? null,
         }),
       });
-      if (!res.ok) { offline = true; return null; }
+      if (!res.ok) return await fail('submit', res);
       const id = await res.json().catch(() => null);
-      return typeof id === 'number' ? id : null;
-    } catch (e) { offline = true; return null; }
+      if (typeof id !== 'number') {
+        lastError = { where: 'submit', status: res.status, code: 'shape',
+          message: 'the call succeeded but did not return a row id' };
+        return null;
+      }
+      lastError = null;
+      return id;
+    } catch (e) { return failThrown('submit', e); }
+  }
+
+  /* ---------------- the probe ----------------
+     Answers "is the database set up" without writing anything, by sending a run the
+     function is guaranteed to refuse: 99 regular wins in a 17 game season. Three
+     outcomes, each of which names its own cause:
+
+       400 with "regular wins must be 0..17"  the function is there and working
+       404 PGRST202                           the SQL has not been run, or PostgREST
+                                              has not reloaded its schema cache
+       401 or 403                             anon cannot execute it, so the grant
+                                              at the bottom of the SQL did not apply
+
+     A read is tested separately, because reads passing while writes fail is exactly
+     the state that looks like an empty board. */
+  async function probe() {
+    const out = { read: null, write: null };
+    try {
+      const res = await timed(base() + TABLE + '?select=id&limit=1',
+        { headers: headers({ Prefer: 'count=exact' }) });
+      out.read = { status: res.status, ok: res.ok, count: countOf(res) };
+      if (!res.ok) out.read.message = ((await res.json().catch(() => ({}))).message) || '';
+    } catch (e) { out.read = { status: 0, ok: false, message: (e && e.message) || 'failed' }; }
+    try {
+      const res = await timed(base() + 'rpc/ps_submit_run', {
+        method: 'POST', headers: headers(),
+        body: JSON.stringify({
+          p_regular_wins: 99, p_playoff_wins: 0, p_point_diff: 0, p_chemistry_pct: 0,
+          p_spend_musd: 0, p_respins: 0, p_franchise: null, p_daily_date: null,
+          p_picks: ['probe:2001', 'probe:2002', 'probe:2003', 'probe:2004',
+                    'probe:2005', 'probe:2006'],
+          p_slots: null, p_seed: null, p_rng_calls: null, p_squad_fppg: null,
+          p_structure_mult: null, p_team_rating: null, p_perfect_pct: null,
+        }),
+      });
+      const body = await res.json().catch(() => null);
+      out.write = { status: res.status, ok: res.ok,
+        code: (body && body.code) || '',
+        message: (body && (body.message || body.hint)) || res.statusText || '' };
+      /* Refused for the reason it should be refused for: everything is wired up. */
+      out.write.healthy = res.status === 400 && /regular wins must be/.test(out.write.message);
+    } catch (e) {
+      out.write = { status: 0, code: 'network', message: (e && e.message) || 'failed' };
+    }
+    return out;
   }
 
   /* ---------------- rank ----------------
@@ -191,19 +268,19 @@
       const q = base() + TABLE + '?select=id&limit=1&score=gt.' + encodeURIComponent(score) +
         scope(opts);
       const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
-      if (!res.ok) { offline = true; return null; }
+      if (!res.ok) return await fail('rank', res);
       const better = countOf(res);
       return better === null ? null : better + 1;
-    } catch (e) { offline = true; return null; }
+    } catch (e) { return failThrown('rank', e); }
   }
 
   async function total(opts) {
     try {
       const q = base() + TABLE + '?select=id&limit=1' + scope(opts);
       const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
-      if (!res.ok) { offline = true; return null; }
+      if (!res.ok) return await fail('total', res);
       return countOf(res);
-    } catch (e) { offline = true; return null; }
+    } catch (e) { return failThrown('total', e); }
   }
 
   /* All three windows at once. A window whose two numbers did not both come back
@@ -251,10 +328,10 @@
         '&limit=' + (limit || 10) + scope(opts);
       if (col !== 'score') q += '&' + col + '=not.is.null';
       const res = await timed(q, { headers: headers() });
-      if (!res.ok) { offline = true; return null; }
+      if (!res.ok) return await fail('board', res);
       const rows = await res.json().catch(() => null);
       return Array.isArray(rows) ? rows : null;
-    } catch (e) { offline = true; return null; }
+    } catch (e) { return failThrown('board', e); }
   }
 
   /* One row by id, so a player who is nowhere near the top page can still be
@@ -290,7 +367,9 @@
   window.PS_BOARD = {
     API_VERSION: 1,
     submit, ranks, rankIn, total, top, byId, scoreOf, cutoffISO, todayUTC, SORTS,
+    probe,
     get offline() { return offline; },
+    get lastError() { return lastError; },
     /* Used by the tests to prove a failed board never breaks the results screen. */
     _forceOffline() { offline = true; },
   };

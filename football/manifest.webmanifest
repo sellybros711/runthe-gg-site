@@ -10,16 +10,16 @@
   "theme_color": "#080b14",
   "icons": [
     {
-      "src": "brand/icon.svg",
-      "sizes": "any",
+      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20192%20192%27%3E%3Crect%20width%3D%27192%27%20height%3D%27192%27%20rx%3D%2734%27%20fill%3D%27%230f3d2e%27/%3E%3Cellipse%20cx%3D%2796%27%20cy%3D%2796%27%20rx%3D%2758%27%20ry%3D%2740%27%20fill%3D%27%23dc2626%27/%3E%3Cpath%20d%3D%27M67%2096h58M96%2074v44%27%20stroke%3D%27%23f8fafc%27%20stroke-width%3D%2710%27%20stroke-linecap%3D%27round%27/%3E%3C/svg%3E",
+      "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "brand/icon-maskable.svg",
-      "sizes": "any",
+      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20512%20512%27%3E%3Crect%20width%3D%27512%27%20height%3D%27512%27%20rx%3D%2792%27%20fill%3D%27%230f3d2e%27/%3E%3Cellipse%20cx%3D%27256%27%20cy%3D%27256%27%20rx%3D%27155%27%20ry%3D%27107%27%20fill%3D%27%23dc2626%27/%3E%3Cpath%20d%3D%27M178%20256h156M256%20197v118%27%20stroke%3D%27%23f8fafc%27%20stroke-width%3D%2726%27%20stroke-linecap%3D%27round%27/%3E%3C/svg%3E",
+      "sizes": "512x512",
       "type": "image/svg+xml",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ]
 }

@@ -451,9 +451,46 @@ share card kept its own hardcoded copy of all five hex values, which meant the f
 palette change would have shipped a card drawing last month's colors. The card now
 resolves them from the stylesheet.
 
+## When nothing is recorded, say why
+
+Reported: an empty board and no rank after finishing a draft. The screenshot was the
+whole diagnosis and the code had thrown it away. It read "0 runs played today" rather
+than the offline notice, which means **reads were working and writes were not**, and
+that is the one failure that looks exactly like a healthy board with nobody on it.
+
+Every call in `board.js` failed soft and silently. They still fail soft, but the
+server's own answer is kept now: PostgREST replies to a rejected call with a code and
+a message, and that body is the diagnosis. A failed submit shows it on the results
+page, under a panel that says plainly that the run was not recorded rather than
+showing a rank the run is not part of.
+
+`probe()` answers "is the database set up" **without writing anything**, by sending a
+run the function is bound to refuse, 99 regular wins in a 17 game season, and reading
+which way it refuses:
+
+| Response | Meaning |
+|---|---|
+| 400, "regular wins must be 0..17" | The function is there and working |
+| 404 `PGRST202` | The SQL was not run, or PostgREST has not reloaded its schema cache |
+| 401 or 403 | anon may not execute it, so the grant did not apply |
+
+`v43.mjs` drives all three against a real Postgres that has been broken on purpose,
+and checks the probe leaves the table empty.
+
+### The bug in the fix
+
+The branch that says "this run was not recorded" read `WINDOWS` and `cell` above their
+own `const` declarations, which is the temporal dead zone, so it threw a
+`ReferenceError` every time it ran and the `catch` around `paintRanks()` painted the
+generic line instead. **The failure looked exactly like the one it was written to
+explain**, and the only reason it did not ship that way is that the test asserted on
+the message text and got the shorter of the two.
+
 ## The mark
 
-`brand/` holds it, and `brand/README.md` explains it. The short version: a zero, because
+**Not in the game yet.** The mark and the lockup live in `brand/` as candidates while
+the options are still being compared; the header, the favicon and the manifest are back
+to what they were. `brand/README.md` explains it. The short version: a zero, because
 a perfect season is 20 and 0 and the zero is the half worth drawing, crossed by the
 wheel's own lit band. Blue zero, red band, out of the same two variables the position
 chips use. No type in it, so it renders at 16px in a browser tab and needs no font.
