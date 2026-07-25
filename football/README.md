@@ -17,6 +17,7 @@ produces sane win rates. It does now — see Calibration below.
 | `engine.js` | Chemistry resolution, schedule generation, per-game resolution. Headless, no deps. Browser: `window.PS_ENGINE`; Node: `require`. |
 | `run.js` | Draft loop and run state: wheel, re-spins, cap accounting, week-by-week advance. Browser: `window.PS_RUN`. |
 | `simulator.js` | Validation harness. Run this after any change to data, pricing, or constants. |
+| `playtest.js` | Plays one full run as readable text — draft, chemistry, schedule, weekly results, outcome card. The stand-in for the UI. |
 | `build/lib.mjs` | Shared build helpers: CSV parsing, cached fetch, franchise normalization. |
 | `build/01-players.mjs` | → `data/player_seasons.{json,csv}` |
 | `build/02-teams.mjs` | → `data/team_seasons.{json,csv}`, `team_season_rosters.json`, `league_context.json` |
@@ -140,6 +141,27 @@ Details are in the header comment of the file named.
    two into a shared module.
 5. **Re-run `simulator.js` after any data or constant change.** Pricing, the
    cap, and the chemistry curve all move the calibration.
+
+## Two things the first playthrough exposed
+
+**Scores are not in football units.** Internally your score averages 73.5 (sd 21)
+and the opponent 43.1 (sd 20.5), because your side is a sum of six PPR outputs
+and theirs is real points × `SCALE`. Real NFL team-games average ~22 points with
+sd ~10, so weekly lines currently read `51.0-22.2`, and one legitimate Gamma tail
+produced `38.5-90.4`. The Gamma sampler is correct — verified against its
+requested moments to three decimals — this is a units mismatch, not a bug.
+
+§7 wants the death card to read *"Lost 27-24 at Indianapolis"*, so Stage 7 needs
+a **display transform**: decide the winner in fantasy space as now, then map both
+scores into a football-plausible pair that preserves the winner and the rough
+margin. A single divisor will not do it, because the mean gap (73.5 vs 43.1) is
+what carries the win probability — scaled down naively, every week reads as a
+blowout.
+
+**Value-hunting is a trap, and the UI has to say so.** The price curve is convex,
+so points-per-dollar is always maximized at the cheap end. `playtest.js`
+deliberately uses that policy and finishes with $40M of $100M unspent and a
+roster of streamers. Unspent budget must be unmissable during the draft.
 
 ## Not built yet
 
