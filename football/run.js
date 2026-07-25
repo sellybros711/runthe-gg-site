@@ -64,14 +64,16 @@ function canRespin(run) {
   return { ok: true };
 }
 
-/** Players on a team-season who can fill this slot and are affordable now. */
-function affordableFrom(run, teamSeasonId, slot, playersByTeamSeason) {
-  const allowed = E.SLOT_ELIGIBILITY[slot];
+/**
+ * Everyone on a team-season you could sign right now: affordable, not already
+ * signed, and able to fill one of your empty spots.
+ */
+function affordableFrom(run, teamSeasonId, playersByTeamSeason) {
   const budget = remaining(run) - reserveFloor(run);
   return (playersByTeamSeason[teamSeasonId] ?? [])
-    .filter((p) => allowed.includes(p.position)
-      && p.price_musd <= budget
-      && !run.usedPlayers.includes(pkey(p)))
+    .filter((p) => p.price_musd <= budget
+      && !run.usedPlayers.includes(pkey(p))
+      && slotForPlayer(run, p) !== null)
     .sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean);
 }
 
@@ -104,6 +106,10 @@ function createRun(opts) {
     phase: PHASES.PICK_FRANCHISE,
     franchise: null,
     roster: [],
+    // Which slot each signed player fills, as an index into E.SLOTS. Kept
+    // alongside roster rather than making roster sparse, so chemistry and cap
+    // maths can keep treating roster as a dense list of who you have.
+    slotIndex: [],
     usedPlayers: [],
     usedTeamSeasons: [],
     draws: [],
@@ -136,7 +142,51 @@ function pickFranchise(run, franchise) {
   return run;
 }
 
-const currentSlot = (run) => E.SLOTS[run.roster.length];
+/*
+ * SPOTS ARE NOT LOCKED TO A SPIN ANY MORE.
+ *
+ * The GDD locked the slot before each spin (§2), reasoning that positional need
+ * should not be random. The cost turned out to be that most spins were not a
+ * decision at all. Measured over all 861 team-seasons:
+ *
+ *   spot   mean options   median   exactly 1
+ *   QB          1.1          1        86%
+ *   TE          2.2          2        14%
+ *   RB          3.0          3         2%
+ *   WR          4.6          5         0%
+ *   FLEX        9.8         10         0%
+ *
+ * A team carries one starting quarterback, so a slot-locked QB spin can never be
+ * a choice. FLEX already proved the fix: because it accepts three positions it
+ * averages nearly ten options. So every spin now offers the whole roster and you
+ * choose which empty spot to fill, which turns a one-option QB spin into a
+ * decision between about eleven players (the median team-season has 11 eligible
+ * skill players).
+ *
+ * The GDD's "unlucky, not unfair" concern still holds, and holds better: you can
+ * always fill something, so a bad draw costs you value rather than stranding you.
+ */
+
+/** Slot indexes still empty, in E.SLOTS order. */
+function openSlots(run) {
+  const taken = new Set(run.slotIndex);
+  return E.SLOTS.map((_, i) => i).filter((i) => !taken.has(i));
+}
+
+/** Which empty slot this player would fill, or null if none can take him. */
+function slotForPlayer(run, player) {
+  const open = openSlots(run);
+  // Prefer a dedicated slot for his own position before spending FLEX on him.
+  const dedicated = open.find((i) => E.SLOTS[i] === player.position);
+  if (dedicated !== undefined) return dedicated;
+  const flex = open.find((i) => E.SLOT_ELIGIBILITY[E.SLOTS[i]].includes(player.position));
+  return flex === undefined ? null : flex;
+}
+
+/** Names of the spots still to fill, for display. */
+function openSlotNames(run) {
+  return openSlots(run).map((i) => E.SLOTS[i]);
+}
 
 /*
  * How often the wheel favours a team-season that could link to the team you
@@ -190,36 +240,45 @@ function connectedTeamSeasons(run, data) {
 function spin(run, data) {
   if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
   const rng = rngFor(run);
-  const slot = currentSlot(run);
 
   const drawn = {};
   for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
-  const canFill = (t) => affordableFrom(run, t.team_season_id, slot, data.playersByTeamSeason).length > 0;
-  const available = data.teamSeasons.filter((t) => (drawn[t.team_season_id] || 0) < MAX_DRAWS_PER_TEAM_SEASON);
+  const canFill = (t) => affordableFrom(run, t.team_season_id, data.playersByTeamSeason).length > 0;
+  const available = data.teamSeasons
+    .filter((t) => (drawn[t.team_season_id] || 0) < MAX_DRAWS_PER_TEAM_SEASON)
+    .filter(canFill);
+  if (!available.length) throw new Error('nothing left you can afford');
 
   let pool = available;
   if (run.roster.length && rng() < CONNECTION_BIAS) {
     const linked = connectedTeamSeasons(run, data);
-    const usable = available.filter((t) => linked.has(t.team_season_id) && canFill(t));
+    const usable = available.filter((t) => linked.has(t.team_season_id));
     if (usable.length) pool = usable;
   }
 
-  const draw = (from) => {
-    for (let guard = 0; guard < 4000; guard++) {
-      const t = from[Math.floor(rng() * from.length)];
-      const options = affordableFrom(run, t.team_season_id, slot, data.playersByTeamSeason);
-      if (!options.length) { run.freeRerolls++; continue; }
-      run.currentDraw = {
-        team_season_id: t.team_season_id, display: t.display, slot, options: options.map(pkey),
-      };
-      return run.currentDraw;
-    }
-    return null;
-  };
+  /*
+   * Two wheels, year first and then the team, so the reveal lands in two beats.
+   * The year is picked from the years actually present in the pool, then the team
+   * from that year's teams in the same pool, which keeps both wheels honest: every
+   * face on either wheel is a result you could really have landed on.
+   */
+  const years = [...new Set(pool.map((t) => t.season))].sort((a, b) => a - b);
+  const season = years[Math.floor(rng() * years.length)];
+  const inYear = pool.filter((t) => t.season === season);
+  const t = inYear[Math.floor(rng() * inYear.length)];
 
-  const got = draw(pool) || (pool !== available ? draw(available) : null);
-  if (!got) throw new Error('no affordable team-season for slot ' + slot);
-  return got;
+  const options = affordableFrom(run, t.team_season_id, data.playersByTeamSeason);
+  run.currentDraw = {
+    season,
+    team_season_id: t.team_season_id,
+    franchise: t.franchise,
+    display: t.display,
+    teamName: t.display.replace(/^\d{4}\s+/, ''),
+    yearOptions: years,
+    teamOptions: inYear.map((x) => x.display.replace(/^\d{4}\s+/, '')),
+    options: options.map(pkey),
+  };
+  return run.currentDraw;
 }
 
 /** Pay the fee and draw again for the same slot. */
@@ -236,16 +295,18 @@ function respin(run, data) {
 function sign(run, player) {
   if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
   if (!run.currentDraw) throw new Error('nothing drawn');
-  if (!run.currentDraw.options.includes(pkey(player))) throw new Error('player not on the drawn team-season');
+  if (!run.currentDraw.options.includes(pkey(player))) throw new Error('player not on this team');
   if (player.price_musd > remaining(run) - reserveFloor(run)) throw new Error('cannot afford');
+  const slot = slotForPlayer(run, player);
+  if (slot === null) throw new Error('no empty spot for a ' + player.position);
 
   run.roster.push(player);
+  run.slotIndex.push(slot);
   run.usedPlayers.push(pkey(player));
   run.usedTeamSeasons.push(run.currentDraw.team_season_id);
-  // Which team-season filled which slot. Needed for the post-run reveal,
-  // "the best possible squad from your six wheel results", which can only
-  // consider, for each slot, the team-season actually drawn for it.
-  run.draws.push({ slot: run.currentDraw.slot, team_season_id: run.currentDraw.team_season_id });
+  // Which team-season filled which spot. Needed for the post-run reveal, which
+  // can only consider the team-seasons the wheel actually gave you.
+  run.draws.push({ slot: E.SLOTS[slot], team_season_id: run.currentDraw.team_season_id });
   run.currentDraw = null;
 
   if (run.roster.length === E.SLOTS.length) run.phase = PHASES.SEASON;
@@ -465,7 +526,7 @@ function bestPossibleSquad(run, data, ctx) {
     missedBy: theirs - yours,
     // Slots where you left real points on the table, worst first.
     misses: squad
-      .map((p, i) => ({ slot: E.SLOTS[i], had: run.roster[i], could: p,
+      .map((p, i) => ({ slot: run.draws[i].slot, had: run.roster[i], could: p,
         delta: p.ppr_ppg_mean - run.roster[i].ppr_ppg_mean }))
       .filter((m) => m.delta > 0.5)
       .sort((a, b2) => b2.delta - a.delta),
@@ -473,10 +534,11 @@ function bestPossibleSquad(run, data, ctx) {
 }
 
 const api = {
-  PHASES, createRun, pickFranchise, currentSlot, spin, respin, sign,
+  PHASES, createRun, pickFranchise, spin, respin, sign,
   startSeason, advanceWeek, startPlayoffs, indexData, bestPossibleSquad,
   previewSigning,
   remaining, reserveFloor, canRespin, slotsLeft, affordableFrom,
+  openSlots, openSlotNames, slotForPlayer,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;

@@ -152,8 +152,21 @@
     background:linear-gradient(180deg,rgba(0,0,0,.6),transparent 40%,transparent 60%,rgba(0,0,0,.6))}
   .reelbox .edge{position:absolute;left:0;right:0;height:2px;background:var(--red);opacity:.5}
   .reelbox .edge.t{top:calc(50% - 26px)} .reelbox .edge.b{bottom:calc(50% - 26px)}
-  .reel-i{height:84px;display:grid;place-items:center;padding:0 14px;text-align:center;
-    font-family:'Anton',Impact,sans-serif;font-size:19px;text-transform:uppercase;letter-spacing:.02em}
+  .reel-i{height:84px;display:grid;place-items:center;padding:0 12px;text-align:center;
+    font-family:'Anton',Impact,sans-serif;font-size:19px;text-transform:uppercase;letter-spacing:.02em;
+    line-height:1.02}
+  .reels{display:grid;grid-template-columns:88px 1fr;gap:8px}
+  .reelbox.year .reel-i{font-size:27px}
+  .reelbox.team .reel-i{font-size:16px}
+  .reelbox.year{border-color:rgba(239,68,68,.4)}
+  .reelbox.team{border-color:rgba(59,130,246,.4)}
+  .reelbox.waiting{opacity:.35}
+  .rlabel{position:absolute;left:7px;top:5px;z-index:2;font-family:'Anton',Impact,sans-serif;
+    font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2)}
+  .slotchip{display:inline-block;font-family:'Anton',Impact,sans-serif;font-size:11px;letter-spacing:.06em;
+    padding:3px 7px;border-radius:6px;margin-right:4px;background:rgba(255,255,255,.07);color:var(--dim)}
+  .grouphead{font-family:'Anton',Impact,sans-serif;font-size:10.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim-2);margin:10px 0 5px}
 
   .opts{display:grid;gap:8px;margin-top:12px}
   .opt{display:flex;align-items:center;gap:11px;padding:11px;border-radius:12px;width:100%;
@@ -282,11 +295,16 @@
     <div class="field" id="field"></div>
 
     <div style="display:flex;align-items:flex-end;justify-content:space-between;margin:14px 0 8px">
-      <div><div class="eyebrow">Now signing</div>
-        <div class="display" style="font-size:22px" id="d-slot">QB</div></div>
+      <div><div class="eyebrow">Spots still open</div>
+        <div class="display" style="font-size:20px" id="d-slot">QB RB WR WR TE FLEX</div></div>
       <div class="pill" id="d-count">Spin 1 of 6</div>
     </div>
-    <div class="reelbox"><span class="edge t"></span><span class="edge b"></span><div id="reel"></div></div>
+    <div class="reels">
+      <div class="reelbox year"><span class="edge t"></span><span class="edge b"></span><div id="reel-y"></div>
+        <span class="rlabel">Year</span></div>
+      <div class="reelbox team"><span class="edge t"></span><span class="edge b"></span><div id="reel-t"></div>
+        <span class="rlabel">Team</span></div>
+    </div>
     <div class="opts" id="opts"></div>
     <div id="d-respin" style="margin-top:10px"></div>
   </div>
@@ -411,24 +429,32 @@ function buildTeams(){
 function drawField(el,live){
   const filled=run?run.roster:[];
   const links=filled.length>1?E.resolveChemistry(filled,CTX).links:[];
-  const at=new Map(filled.map((p,i)=>[p.name,i]));
+  const at=new Map();
+  if(run) run.roster.forEach((p,i)=>at.set(p.name,run.slotIndex[i]));
   const lines=links.filter(l=>at.has(l.a)&&at.has(l.b)).map(l=>{
     const a=SPOT[at.get(l.a)],b=SPOT[at.get(l.b)],good=l.value>0;
     return '<line x1="'+a.x+'%" y1="'+a.y+'%" x2="'+b.x+'%" y2="'+b.y+'%" stroke="'+
       (good?'#4ade80':'#ef4444')+'" stroke-width="'+(good?(1.5+l.value*20).toFixed(1):2)+
       '" stroke-dasharray="5 5" opacity="'+(good?0.75:0.85)+'" style="animation:dash 1s linear infinite"/>';
   }).join('');
+  /* Map each signed player to the spot he actually took. Roster order is signing
+     order, which is no longer the same as slot order now that you pick the spot. */
+  const bySlot=[];
+  if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
+  const openCount=E.SLOTS.length-(run?run.roster.length:0);
   const chips=E.SLOTS.map((slot,i)=>{
-    const p=filled[i],s=SPOT[i],now=live&&i===filled.length;
+    const p=bySlot[i],s=SPOT[i];
+    // No single spot is "on the clock" any more; every empty one is a live choice.
+    const pulse=live&&!p&&openCount===1;
     const bg=p?'background:linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.45))':'';
-    return '<div class="chip '+(p?'filled':'empty')+(now?' now':'')+'" style="left:'+s.x+'%;top:'+s.y+'%" data-i="'+i+'">'+
+    return '<div class="chip '+(p?'filled':'empty')+(pulse?' now':'')+'" style="left:'+s.x+'%;top:'+s.y+'%" data-i="'+i+'">'+
       '<div class="disc" style="'+bg+'">'+(p?p.position:slot)+'</div>'+
       (p?'<div class="who">'+esc(p.name.split(' ').slice(-1)[0])+'</div><div class="yr">'+p.season+'</div>'
-        :'<div class="who dim">'+(now?'On the clock':'Empty')+'</div>')+'</div>';
+        :'<div class="who dim">'+(live?'Open':'Empty')+'</div>')+'</div>';
   }).join('');
   el.innerHTML='<div class="lines"></div><div class="hash"></div><div class="ez t"></div><div class="ez b"></div>'+
     '<svg class="links-svg">'+lines+'</svg>'+chips;
-  el.onclick=(e)=>{const c=e.target.closest('.chip');if(!c)return;const p=filled[+c.dataset.i];if(p)sheet(p);};
+  el.onclick=(e)=>{const c=e.target.closest('.chip');if(!c)return;const p=bySlot[+c.dataset.i];if(p)sheet(p);};
 }
 
 function sheet(p){
@@ -473,33 +499,45 @@ function paintTop(){
   $('d-count').textContent='Spin '+Math.min(6,run.roster.length+1)+' of 6';
 }
 
-function spinReel(target,done){
-  const pool=DATA.teamSeasons,items=[],N=16;
-  for(let i=0;i<N;i++)items.push(pool[Math.floor(Math.random()*pool.length)].display);
-  items.push(target); items.push(pool[0].display);
-  const r=$('reel');
-  r.innerHTML=items.map(t=>'<div class="reel-i">'+esc(t)+'</div>').join('');
-  r.style.transition='none'; r.style.transform='translateY(0)'; void r.offsetHeight;
-  r.style.transition='transform 1500ms cubic-bezier(.1,.7,.15,1)';
-  r.style.transform='translateY(-'+(N*84)+'px)';
+/* One reel: fills with decoys, lands on `target`. */
+function reel(el,faces,target,ms,done){
+  const N=14,items=[];
+  for(let i=0;i<N;i++)items.push(faces[Math.floor(Math.random()*faces.length)]);
+  items.push(target); items.push(faces[0]);
+  el.innerHTML=items.map(t=>'<div class="reel-i">'+esc(t)+'</div>').join('');
+  el.style.transition='none'; el.style.transform='translateY(0)'; void el.offsetHeight;
+  el.style.transition='transform '+ms+'ms cubic-bezier(.1,.7,.15,1)';
+  el.style.transform='translateY(-'+(N*84)+'px)';
   let f=false; const fin=()=>{if(f)return;f=true;done();};
-  r.addEventListener('transitionend',fin,{once:true}); setTimeout(fin,1680);
+  el.addEventListener('transitionend',fin,{once:true}); setTimeout(fin,ms+180);
+}
+
+/* Year lands first, then the team, so the reveal has two beats. */
+function spinBoth(draw,done){
+  const yEl=$('reel-y'), tEl=$('reel-t');
+  const yBox=yEl.parentElement, tBox=tEl.parentElement;
+  tBox.classList.add('waiting');
+  tEl.innerHTML='<div class="reel-i">'+String.fromCharCode(63)+'</div>';
+  const years=draw.yearOptions.map(String);
+  reel(yEl,years,String(draw.season),1250,()=>{
+    yBox.classList.remove('waiting'); tBox.classList.remove('waiting');
+    reel(tEl,draw.teamOptions,draw.teamName,1150,done);
+  });
 }
 
 function nextSpin(){
   paintTop(); drawField($('field'),true);
-  const slot=R.currentSlot(run);
-  $('d-slot').textContent=slot==='FLEX'?'Flex: RB, WR or TE':slot;
+  $('d-slot').innerHTML=R.openSlotNames(run).map(n=>'<span class="slotchip">'+n+'</span>').join('');
   $('opts').innerHTML=''; $('d-respin').innerHTML='';
   const draw=R.spin(run,DATA);
-  spinReel(draw.display,()=>paintOpts(draw));
+  spinBoth(draw,()=>paintOpts(draw));
 }
 
 function paintOpts(draw){
   const opts=draw.options.map(k=>BYKEY.get(k));
   /* Chemistry preview on every option. This is the whole reason chemistry exists:
      you should see what a signing does before you commit, not after. */
-  const rows=opts.slice(0,8).map(p=>{
+  const row=(p)=>{
     const pv=R.previewSigning(run,p,CTX), g=pv.delta;
     const tag=g>0.0005
       ? '<span class="chemtag">'+pc(g)+' from '+esc(pv.newLinks[0]?pv.newLinks[0].label:'a link')+'</span>'
@@ -508,15 +546,25 @@ function paintOpts(draw){
       '<span class="badge" style="background:linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.4))">'+p.position+'</span>'+
       '<span class="who"><b>'+esc(p.name)+'</b><span>'+p.ppr_ppg_mean.toFixed(1)+' a game in '+p.season+'</span>'+tag+'</span>'+
       '<span class="cost"><b>'+M(p.price_musd)+'</b></span></button>';
-  }).join('');
-  $('opts').innerHTML=rows+(opts.length>8?'<p class="dim" style="font-size:12px;text-align:center;margin:2px 0 0">'+(opts.length-8)+' cheaper players not shown</p>':'');
+  };
+  /* Grouped by the spot each player would slot into, because the spot is now your
+     choice rather than the wheel's. Every affordable player is listed. */
+  const groups={};
+  for(const p of opts){
+    const si=R.slotForPlayer(run,p);
+    const name=E.SLOTS[si];
+    (groups[name] ??= []).push(p);
+  }
+  $('opts').innerHTML=R.openSlotNames(run).filter(n=>groups[n]).map(n=>
+    '<div class="grouphead">'+(n==='FLEX'?'Flex spot':n+' spot')+'</div>'+groups[n].map(row).join('')
+  ).join('');
   const chk=R.canRespin(run);
   $('d-respin').innerHTML=chk.ok
     ? '<button class="btn ghost sm" id="b-re">Spin again, '+M(E.CONSTANTS.RESPIN_COST_MUSD)+' off your budget ('+(E.CONSTANTS.MAX_RESPINS-run.respinsUsed)+' left)</button>'
     : '<p class="dim" style="font-size:12px;text-align:center;margin:0">'+(run.respinsUsed>=E.CONSTANTS.MAX_RESPINS?'No spins left':esc(chk.reason))+'</p>';
   const rb=$('b-re');
   if(rb)rb.onclick=()=>{$('opts').innerHTML='';$('d-respin').innerHTML='';
-    const d=R.respin(run,DATA);paintTop();spinReel(d.display,()=>paintOpts(d));};
+    const d=R.respin(run,DATA);paintTop();spinBoth(d,()=>paintOpts(d));};
 }
 
 $('opts').addEventListener('click',e=>{

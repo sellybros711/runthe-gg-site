@@ -33,30 +33,32 @@ const franchise=process.env.PS_TEAM||'BUF';
 R.pickFranchise(run,franchise);
 
 console.log(`\n=== THE PERFECT SEASON, ${daily?'daily '+daily:'seed '+run.seed}, you are ${franchise} ===`);
-console.log(`cap $${E.CONSTANTS.CAP_MUSD}M | re-spin $${E.CONSTANTS.RESPIN_COST_MUSD}M from cap, ${E.CONSTANTS.MAX_RESPINS} max | ${E.CONSTANTS.LIVES} loss allowed\n`);
+console.log(`cap $${E.CONSTANTS.CAP_MUSD}M | re-spin $${E.CONSTANTS.RESPIN_COST_MUSD}M from cap, ${E.CONSTANTS.MAX_RESPINS} max`);
+console.log(`playoffs at ${E.CONSTANTS.PLAYOFF_WINS} wins, first round off at ${E.CONSTANTS.BYE_SEED_WINS}\n`);
 
 let slotNo=0;
 while(run.phase===R.PHASES.DRAFT){
   slotNo++;
-  const slot=R.currentSlot(run);
   const draw=R.spin(run,data);
   const opts=draw.options.map(k=>byKey.get(k));
-  console.log(`SPIN ${slotNo}/6, filling ${slot}   (budget $${R.remaining(run).toFixed(1)}M, must keep $${R.reserveFloor(run)}M for later slots)`);
-  console.log(`  wheel landed on: ${draw.display}`);
-  console.log(`  affordable ${slot} options:`);
-  for(const p of opts.slice(0,4)) console.log(`     $${p.price_musd.toFixed(1).padStart(5)}M  ${p.position} ${p.name.padEnd(22)} ${p.ppr_ppg_mean} ppg (sd ${p.ppr_ppg_sd})`);
-  if(opts.length>4) console.log(`     ... ${opts.length-4} more`);
+  console.log(`SPIN ${slotNo}/6   open spots: ${R.openSlotNames(run).join(' ')}   (budget $${R.remaining(run).toFixed(1)}M, keep $${R.reserveFloor(run)}M back)`);
+  console.log(`  year ${draw.season}  ->  ${draw.teamName}   (${opts.length} players you can sign)`);
+  for(const p of opts.slice(0,5)) console.log(`     $${p.price_musd.toFixed(1).padStart(5)}M  ${p.position.padEnd(3)} -> ${E.SLOTS[R.slotForPlayer(run,p)].padEnd(4)} ${p.name.padEnd(22)} ${p.ppr_ppg_mean} ppg`);
+  if(opts.length>5) console.log(`     ... ${opts.length-5} more`);
   // policy: best points per dollar that still leaves room, i.e. a sensible human
   const budget=R.remaining(run)-R.reserveFloor(run);
   const choice=opts.filter(p=>p.price_musd<=budget)
     .sort((a,b)=>(b.ppr_ppg_mean/Math.max(3,b.price_musd))-(a.ppr_ppg_mean/Math.max(3,a.price_musd)))[0];
+  // Resolve the spot BEFORE signing: afterwards the roster has changed and
+  // slotForPlayer would answer for the next empty spot, not the one he took.
+  const took=E.SLOTS[R.slotForPlayer(run,choice)];
   R.sign(run,choice);
-  console.log(`  -> SIGNED ${choice.name} (${choice.season} ${choice.team_display}) for $${choice.price_musd.toFixed(1)}M\n`);
+  console.log(`  -> SIGNED ${choice.name} into ${took} for $${choice.price_musd.toFixed(1)}M\n`);
 }
 
 const spent=run.roster.reduce((s,p)=>s+p.price_musd,0);
 console.log('FINAL ROSTER');
-run.roster.forEach((p,i)=>console.log(`  ${E.SLOTS[i].padEnd(5)} $${p.price_musd.toFixed(1).padStart(5)}M  ${p.name.padEnd(22)} ${p.season} ${p.team_display}  ${p.ppr_ppg_mean} ppg`));
+run.roster.forEach((p,i)=>console.log(`  ${E.SLOTS[run.slotIndex[i]].padEnd(5)} $${p.price_musd.toFixed(1).padStart(5)}M  ${p.name.padEnd(22)} ${p.season} ${p.team_display}  ${p.ppr_ppg_mean} ppg`));
 console.log(`  spent $${spent.toFixed(1)}M + $${(run.respinsUsed*E.CONSTANTS.RESPIN_COST_MUSD)}M fees = $${(spent+run.respinsUsed*E.CONSTANTS.RESPIN_COST_MUSD).toFixed(1)}M of $100M`);
 
 R.startSeason(run,data,ctx);

@@ -145,6 +145,38 @@ of the time and a good one got the bye 94% of the time, which made both tiers
 meaningless. At 12 and 15 the ladder separates properly, and both are still
 records a real team would post.
 
+## Two wheels, and why spots are not locked to a spin
+
+The wheel is two wheels. The **year** lands first, then the **team** from that
+year. Every face on either wheel is a result you could really have landed on:
+the year comes from the years actually left in the pool, and the team from that
+year's teams in the same pool.
+
+Spots are no longer assigned to a spin. The GDD locked the slot before each spin
+(§2) so positional need would not be random, but the cost was that most spins
+were not a decision at all. Measured across all 861 team-seasons:
+
+| Spot | Mean options | Median | Exactly one |
+|---|---|---|---|
+| QB | 1.1 | 1 | **86%** |
+| TE | 2.2 | 2 | 14% |
+| RB | 3.0 | 3 | 2% |
+| WR | 4.6 | 5 | 0% |
+| FLEX | 9.8 | 10 | 0% |
+
+A team carries one starting quarterback, so a slot-locked QB spin can never be a
+choice. FLEX already showed the fix, since it accepts three positions and
+averages nearly ten options.
+
+So every spin now offers the whole roster and you pick which empty spot to fill.
+Measured in the browser over 18 spins: **median 10 options, up to 18**, against a
+median of 1 at QB before. A signing goes to its own position's spot if that is
+still open, otherwise to FLEX.
+
+The GDD's "unlucky, not unfair" concern still holds, and holds better than it did:
+you can always fill something, so a bad draw costs you value rather than
+stranding you with one player to take.
+
 ## Draft rules as settled
 
 - **The $15M re-spin fee comes out of the $100M cap.** Two re-spins is 30% of

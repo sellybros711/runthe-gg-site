@@ -450,8 +450,11 @@ function draftReport(n) {
       if (spent > E.CONSTANTS.CAP_MUSD + 1e-6) capViolations++;
       if (run.roster.length !== E.SLOTS.length) deadEnds++;
       // slot shape must be respected
+      // Spots are chosen by the player now, so check each signing against the
+      // slot it actually took (run.slotIndex), not its position in the roster.
       const shapeOk = run.roster.every((p, idx) =>
-        E.SLOT_ELIGIBILITY[E.SLOTS[idx]].includes(p.position));
+        E.SLOT_ELIGIBILITY[E.SLOTS[run.slotIndex[idx]]].includes(p.position))
+        && new Set(run.slotIndex).size === run.slotIndex.length;
       // A team-season may now appear twice in a run (that is what makes the
       // Teammates and Battery links reachable at all), but never more than twice.
       const counts = {};
