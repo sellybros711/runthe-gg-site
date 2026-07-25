@@ -929,8 +929,15 @@ Live, against Supabase. Three files:
 | `index.html` | The rank panel on the results screen and the board screen. |
 
 The migration is additive and touches nothing that already exists on this Supabase
-project: no existing table, function, policy or grant is altered, and re-running it
-does nothing.
+project: no existing table, function, policy or grant is altered.
+
+**It is also safe to re-run over its own earlier version.** `create table if not
+exists` does nothing to a table that already exists, so the columns added later come
+in through `alter table add column if not exists`, and the function's signature grew,
+so the previous overload is dropped by exact signature first rather than left beside
+the new one for PostgREST to choose between. Verified both ways: on an empty database,
+and over a table already holding 402 rows, which kept all 402 and ended with exactly
+one `ps_submit_run`.
 
 ### What is trusted, and what is not
 
@@ -953,13 +960,82 @@ is refused, and each is asserted in the test:
 - the same player twice, five picks, a pick that is not `<player_id>:<season>`
 - `Robert' ; drop table ps_runs --` in a pick
 - a slot called KICKER
+- a squad FPPG of 900, a structure multiplier of x9 or x0.01, a rating of 5000 or a
+  negative one, a perfect percentage of 140 or -1
+
+Twenty-six refusals in all, each checked on its own with the table asserted empty
+afterwards. Sending all four of the new fields as null is still accepted, because a
+run whose best-possible search did not solve has nothing to put there.
 
 Anon can read the table and call that one function. It cannot INSERT, UPDATE or
 DELETE, which is also asserted by setting `role anon` and trying all three.
 
+`team_rating`, `squad_fppg`, `structure_mult` and `perfect_pct` are client-reported
+for the same reason wins are: recomputing them needs the per-player prices and
+scoring rates, which live in the browser's copy of `player_seasons.json` and not in
+the database. They are bounded rather than verified, and the bounds are sanity checks
+and not fairness guarantees. For scale, `simulator.js` measures perfect play at 84
+summed FPPG on a 1.017 structure, so about 90.
+
 The remaining hole closes with an edge function that loads `engine.js` and replays
 the season from `(picks, seed, rng_calls)`. Those three columns are stored now,
 unread, so that work does not need a migration later.
+
+### Two axes, and a direction
+
+The board sorts by **record** or by **team rating**, either way up.
+
+`team_rating` is not a new composite invented for a leaderboard. `resolveGame()`
+scores a week as
+
+```
+sum(ppr_ppg_mean) * chemistry * structure * defenseModifier
+```
+
+so dropping the per-opponent term leaves what a roster is worth against an average
+defense. It is the two figures already printed on the results page, multiplied:
+squad FPPG and team shape. `squad_fppg` and `structure_mult` are stored beside it so
+a row can show its own arithmetic, which the detail sheet does.
+
+The two axes disagree often, which is the reason for having both. A run measured at
+76.8 rating that went 10-7 sits above a 71.7 that went 13-6: a better roster that had
+a worse season. Record stays the default, and record is what the rank panel on the
+results page counts against.
+
+Reversing is a real view, not a curiosity. The worst season anybody has played is
+funnier than the best, and low-to-high on rating is the quickest way to see what the
+game does to a cheap roster. Two things follow from that, and both were wrong first:
+
+- **Gold is only for leading a board.** On a reversed board row 1 is the worst run in
+  the window, and gilding it says the opposite of what it is.
+- **Your pinned row only appears on the record board, descending.** Its number is
+  your record rank, the only rank the game computes. Beside a rating board, or a
+  reversed one, it would be a number that does not describe the list under it.
+
+Rows with no `team_rating` are filtered out of the rating board rather than sorted to
+one end of it. Any run recorded before that column existed has a null there, and a
+low-to-high rating board would otherwise open on a page of empty rating cells. Their
+detail sheet says so in words.
+
+Ordering is looked up from a two-entry table in `board.js`, not taken from the
+caller, so nothing can put an arbitrary string into an `order=` parameter.
+
+### Tapping a row
+
+Any row opens a sheet with the six players in their slots, the club whose place the
+player took, and four figures: team rating, how close it came to the best possible
+roster, chemistry and spend. Under it, the rating's own arithmetic in one sentence.
+
+It is built entirely from the row's `picks` and `slots` resolved against this
+browser's copy of `player_seasons.json`, so it needs no extra request. A row whose
+players cannot be resolved says that out loud instead of drawing six blanks, which is
+what it looks like when a browser has older player data than the one that recorded
+the run.
+
+`perfect_pct` is `yourProjected / bestProjected` from `bestPossibleSquad()`, the same
+number the results page gauge shows. It is captured when the results page computes it
+rather than recomputed, because that search is expensive and there is no reason to run
+it twice. It stays null if the search could not be solved.
 
 ### Ranking
 

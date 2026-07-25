@@ -37,7 +37,16 @@
      rows stay small and adding a column to the table does not silently grow every
      board request. */
   const ROW_COLS = 'id,created_at,wins,losses,games,title_won,perfect,made_playoffs,' +
-    'seed_label,point_diff,chemistry_pct,spend_musd,respins,franchise,daily,picks,slots';
+    'seed_label,point_diff,chemistry_pct,spend_musd,respins,franchise,daily,picks,slots,' +
+    'squad_fppg,structure_mult,team_rating,perfect_pct';
+
+  /* The two things a board can be sorted by, and the column each one orders on.
+     Named here rather than taking a column name from the caller, so nothing can
+     put an arbitrary string into an order= parameter. */
+  const SORTS = {
+    record: 'score',
+    rating: 'team_rating',
+  };
 
   let offline = false;
 
@@ -118,6 +127,10 @@
           p_slots: payload.slots || null,
           p_seed: payload.seed || null,
           p_rng_calls: payload.rngCalls || null,
+          p_squad_fppg: payload.squadFppg ?? null,
+          p_structure_mult: payload.structureMult ?? null,
+          p_team_rating: payload.teamRating ?? null,
+          p_perfect_pct: payload.perfectPct ?? null,
         }),
       });
       if (!res.ok) { offline = true; return null; }
@@ -176,11 +189,23 @@
     return out;
   }
 
-  /* ---------------- the board itself ---------------- */
-  async function top(win, limit) {
+  /* ---------------- the board itself ----------------
+     sort is 'record' or 'rating', dir is 'desc' or 'asc'. Both are looked up
+     rather than interpolated, and the tiebreak always runs the same direction:
+     whoever got there first is listed first, whichever way the board is pointed.
+
+     Rows sorted by rating skip the ones with no rating on them. Any run recorded
+     before team_rating existed has a null there, and PostgREST would sort nulls
+     to one end of the list, so a low-to-high rating board would open on a page of
+     rows with an empty rating column. */
+  async function top(win, limit, sort, dir) {
+    const col = SORTS[sort] || SORTS.record;
+    const way = dir === 'asc' ? 'asc' : 'desc';
     try {
-      const q = base() + TABLE + '?select=' + ROW_COLS +
-        '&order=score.desc,created_at.asc&limit=' + (limit || 10) + winFilter(win);
+      let q = base() + TABLE + '?select=' + ROW_COLS +
+        '&order=' + col + '.' + way + ',created_at.asc' +
+        '&limit=' + (limit || 10) + winFilter(win);
+      if (col !== 'score') q += '&' + col + '=not.is.null';
       const res = await timed(q, { headers: headers() });
       if (!res.ok) { offline = true; return null; }
       const rows = await res.json().catch(() => null);
@@ -220,7 +245,7 @@
 
   window.PS_BOARD = {
     API_VERSION: 1,
-    submit, ranks, rankIn, total, top, byId, scoreOf, cutoffISO,
+    submit, ranks, rankIn, total, top, byId, scoreOf, cutoffISO, SORTS,
     get offline() { return offline; },
     /* Used by the tests to prove a failed board never breaks the results screen. */
     _forceOffline() { offline = true; },

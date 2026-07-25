@@ -66,6 +66,19 @@ create table if not exists ps_runs (
   franchise     text,                       -- the club whose place you took
   daily         boolean      not null default false,
 
+  -- The roster's own strength, which is the board's second sort axis.
+  --
+  -- team_rating is not a made-up composite. resolveGame() scores a week as
+  --   sum(ppr_ppg_mean) * chemistry * structure * defenseModifier
+  -- so dropping the per-opponent term leaves the points a roster is expected to
+  -- put up against an average defense. That is what the game already means by
+  -- "squad FPPG" and "team shape" on the results page, multiplied together.
+  squad_fppg     numeric(5,1),   -- summed ppr_ppg_mean, before any multiplier
+  structure_mult numeric(4,3),   -- rosterStructure().multiplier
+  team_rating    numeric(6,2),   -- squad_fppg * chemistry * structure
+  -- yourProjected / bestProjected from bestPossibleSquad(), as a percentage.
+  perfect_pct    smallint,
+
   -- The roster, as "<player_id>:<season>". Rows are rendered from these ids by
   -- the client against its own copy of player_seasons.json, so no player-supplied
   -- text is ever stored or displayed. That is deliberate: a free-text name or
@@ -86,6 +99,14 @@ create table if not exists ps_runs (
     + least(9999, greatest(0, round((point_diff + 40) * 100)::int))
   ) stored
 );
+
+-- For a project where the table was created by an earlier version of this file.
+-- create table if not exists does nothing to an existing table, so the newer
+-- columns have to be added explicitly. Both paths end up identical.
+alter table ps_runs add column if not exists squad_fppg     numeric(5,1);
+alter table ps_runs add column if not exists structure_mult numeric(4,3);
+alter table ps_runs add column if not exists team_rating    numeric(6,2);
+alter table ps_runs add column if not exists perfect_pct    smallint;
 
 comment on table ps_runs is
   'Completed runs of The Perfect Season (/football). Written only by ps_submit_run().';
@@ -121,6 +142,11 @@ create index if not exists ps_runs_created_idx    on ps_runs (created_at desc, s
 -- and falls back to a sequential scan: measured 12ms at 60k rows against 0.9ms
 -- through the index, and the gap only widens.
 create index if not exists ps_runs_score_only_idx on ps_runs (score);
+-- The board's second sort axis. One index serves both directions: Postgres reads
+-- an index backwards as happily as forwards, so there is no ascending twin.
+create index if not exists ps_runs_rating_idx     on ps_runs (team_rating desc, created_at asc);
+create index if not exists ps_runs_created_rating_idx
+  on ps_runs (created_at desc, team_rating desc);
 -- Claiming anonymous runs once accounts exist, and a player's own history.
 create index if not exists ps_runs_user_idx       on ps_runs (user_id, created_at desc);
 
@@ -149,6 +175,11 @@ grant select on ps_runs to anon, authenticated;
 -- changes, change PS_CAP_MUSD below in the same deploy, or legitimate rosters
 -- will start being refused.
 -- ---------------------------------------------------------------------------
+-- The signature gained four arguments. create or replace would leave the older
+-- one in place as an overload, and PostgREST would then have two candidates to
+-- choose between, so the previous version is dropped by its exact signature first.
+drop function if exists ps_submit_run(int,int,numeric,numeric,numeric,int,text,boolean,text[],text[],text,int);
+
 create or replace function ps_submit_run(
   p_regular_wins  int,
   p_playoff_wins  int,
@@ -161,7 +192,11 @@ create or replace function ps_submit_run(
   p_picks         text[]   default null,
   p_slots         text[]   default null,
   p_seed          text     default null,
-  p_rng_calls     int      default null
+  p_rng_calls     int      default null,
+  p_squad_fppg    numeric  default null,
+  p_structure_mult numeric default null,
+  p_team_rating   numeric  default null,
+  p_perfect_pct   int      default null
 ) returns bigint
 language plpgsql
 security definer
@@ -242,6 +277,24 @@ begin
     raise exception 'franchise code looks wrong: %', p_franchise;
   end if;
 
+  -- The rating is client-reported for the same reason wins are: recomputing it
+  -- needs the player prices and per-player scoring rates, which live in the
+  -- browser's copy of player_seasons.json and not in this database. These bounds
+  -- are a sanity check, not a fairness guarantee. For scale, simulator.js measures
+  -- perfect play at 84 summed FPPG and a 1.017 structure, so about 90.
+  if p_squad_fppg is not null and (p_squad_fppg < 0 or p_squad_fppg > 250) then
+    raise exception 'squad FPPG out of range: %', p_squad_fppg;
+  end if;
+  if p_structure_mult is not null and (p_structure_mult < 0.2 or p_structure_mult > 2) then
+    raise exception 'structure multiplier out of range: %', p_structure_mult;
+  end if;
+  if p_team_rating is not null and (p_team_rating < 0 or p_team_rating > 400) then
+    raise exception 'team rating out of range: %', p_team_rating;
+  end if;
+  if p_perfect_pct is not null and (p_perfect_pct < 0 or p_perfect_pct > 100) then
+    raise exception 'perfect percentage out of range: %', p_perfect_pct;
+  end if;
+
   -- ---- the roster has to be six distinct, well-formed player-seasons ----
   if p_picks is null or cardinality(p_picks) <> PS_ROSTER_SIZE then
     raise exception 'a run has % picks, got %', PS_ROSTER_SIZE,
@@ -276,20 +329,23 @@ begin
     user_id, regular_wins, playoff_wins, wins, losses, games,
     title_won, made_playoffs, perfect, seed_label,
     point_diff, chemistry_pct, spend_musd, respins, franchise, daily,
-    picks, slots, seed, rng_calls
+    picks, slots, seed, rng_calls,
+    squad_fppg, structure_mult, team_rating, perfect_pct
   ) values (
     auth.uid(), v_reg, v_po, v_wins, v_losses, v_games,
     v_title, v_made, (v_title and v_losses = 0), v_label,
     round(p_point_diff, 1), round(p_chemistry_pct, 2), round(p_spend_musd, 1),
     coalesce(p_respins, 0), p_franchise, coalesce(p_daily, false),
-    p_picks, p_slots, p_seed, p_rng_calls
+    p_picks, p_slots, p_seed, p_rng_calls,
+    round(p_squad_fppg, 1), round(p_structure_mult, 3), round(p_team_rating, 2),
+    p_perfect_pct
   ) returning id into v_id;
 
   return v_id;
 end $$;
 
-revoke all on function ps_submit_run(int,int,numeric,numeric,numeric,int,text,boolean,text[],text[],text,int) from public;
-grant execute on function ps_submit_run(int,int,numeric,numeric,numeric,int,text,boolean,text[],text[],text,int)
+revoke all on function ps_submit_run(int,int,numeric,numeric,numeric,int,text,boolean,text[],text[],text,int,numeric,numeric,numeric,int) from public;
+grant execute on function ps_submit_run(int,int,numeric,numeric,numeric,int,text,boolean,text[],text[],text,int,numeric,numeric,numeric,int)
   to anon, authenticated;
 
 analyze ps_runs;

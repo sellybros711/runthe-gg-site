@@ -172,6 +172,39 @@
   .rload i:nth-child(3){animation-delay:.3s}
   @keyframes rdot{0%,100%{opacity:.25}50%{opacity:1}}
 
+  /* SORT CONTROLS
+     Two axes and a direction, on one line. The axis is a segmented control because
+     the two are exclusive; the direction is a button because it is a toggle, and a
+     third tab reading "low to high" would have implied it was a third board. */
+  .sortbar{display:flex;align-items:center;gap:8px;margin-top:9px}
+  .seg{display:flex;flex:1;min-width:0;border-radius:10px;overflow:hidden;
+    border:1px solid var(--line-2);background:rgba(255,255,255,.03)}
+  .seg button{flex:1;min-width:0;padding:8px 6px;font-family:var(--fn);font-size:11.5px;
+    font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--dim-2);
+    background:none;border:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .seg button.on{color:#fff;background:linear-gradient(135deg,#3f4c60,rgba(0,0,0,.5))}
+  .dirbtn{flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:8px 10px;
+    border-radius:10px;border:1px solid var(--line-2);background:rgba(255,255,255,.03);
+    font-family:var(--fn);font-size:10.5px;font-weight:600;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--dim)}
+  .dirbtn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round;transition:transform .22s ease}
+  .dirbtn.up svg{transform:rotate(180deg)}
+
+  /* A board row is tappable now, so it has to look it. */
+  .lbr{cursor:pointer}
+  .lbr:active{transform:scale(.995)}
+  .lbr .go{flex:0 0 9px;margin-left:2px;color:var(--dim-2);font-family:var(--fn);
+    font-size:13px;line-height:1}
+
+  /* the run detail sheet */
+  .rdstat{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:12px}
+  .rdstat div{min-width:0;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.035);
+    border:1px solid var(--line)}
+  .rdstat b{display:block;font-family:var(--fn);font-size:17px;font-weight:600;line-height:1.1}
+  .rdstat span{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--dim-2);margin-top:2px}
+
   /* leaderboard */
   .notlive{margin:11px 0 0;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.4;
     color:#d6b45f;background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.28)}
@@ -818,6 +851,16 @@
       <button class="tab on" data-lb="day">Today</button>
       <button class="tab" data-lb="week">This week</button>
       <button class="tab" data-lb="all">All time</button>
+    </div>
+    <div class="sortbar">
+      <div class="seg" id="lb-sort">
+        <button class="on" data-sort="record">Record</button>
+        <button data-sort="rating">Team rating</button>
+      </div>
+      <button class="dirbtn" id="b-lb-dir" aria-label="Reverse the order">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M12 20l-6-6M12 20l6-6"/></svg>
+        <span id="lb-dir-label">High to low</span>
+      </button>
     </div>
     <p class="lbcount" id="lb-count"></p>
     <p class="dim" style="font-size:11.5px;margin:7px 0 0">Every finished season is recorded here
@@ -2140,10 +2183,12 @@ function paintOver(){
       '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
   }).join('');
 
+  lastPerfectShare=null;
   const best=R.bestPossibleSquad(run,DATA,CTX);
   if(!best){ $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>'; }
   else{
     const share=Math.round(100*Math.min(1,best.yourProjected/best.bestProjected));
+    lastPerfectShare=share;
     const kept=best.lineup.filter(r=>r.same).length;
     const band=share>=90?'pgood':(share>=70?'pmid':'pbad');
     const fill=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
@@ -2654,6 +2699,7 @@ function profileSheet(){
 /* One key format for a player-season across the whole system. The database wants
    a colon because the validation regex is easier to read that way, and BYKEY was
    already using a pipe, so the conversion lives here and nowhere else. */
+const poss=(name)=>name+(/s$/i.test(name)?"'":"'s");
 const pickKey=(p)=>p.player_id+':'+p.season;
 const fromPickKey=(k)=>{const i=k.lastIndexOf(':');
   return BYKEY.get(k.slice(0,i)+'|'+k.slice(i+1))||null;};
@@ -2663,6 +2709,13 @@ function runPayload(){
   const o=run.outcome;
   const s=run.season;
   const pts=(f)=>s.results.reduce((t,r)=>t+f(r),0)/Math.max(1,s.results.length);
+  /* The rating is not a new invention. resolveGame() scores a week as
+     sum(ppg) * chemistry * structure * defenseModifier, so dropping the
+     per-opponent term leaves what this roster is worth against an average
+     defense. It is the two numbers already printed on the results page,
+     multiplied. */
+  const fppg=run.roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
+  const mult=E.rosterStructure(run.roster).multiplier;
   return {
     regularWins:o.regularWins,
     playoffWins:o.wins-o.regularWins,
@@ -2676,8 +2729,18 @@ function runPayload(){
     slots:run.roster.map((p,i)=>E.SLOTS[run.slotIndex[i]]),
     seed:String(run.seed),
     rngCalls:run.rngCalls,
+    squadFppg:fppg,
+    structureMult:mult,
+    teamRating:fppg*run.season.chemistry*mult,
+    /* Set by paintOver when it works the best possible squad out, because that is
+       an expensive search and there is no reason to run it twice. Null until then,
+       and null forever if it could not be solved. */
+    perfectPct:lastPerfectShare,
   };
 }
+
+/* The "how close to perfect" percentage, kept so the payload can carry it. */
+let lastPerfectShare=null;
 
 /* Submitted once per run, however many times the results page repaints. */
 let submitted=null;      // the row id, or false once a submit has failed
@@ -2741,8 +2804,25 @@ function rankLine(r){
       :'Your '+run.outcome.record+' came out of '+games+' games.');
 }
 
-/* ---------- the board screen ---------- */
-let lbWin='day', lbShown=5, lbRows=null, lbBusy=false;
+/* ---------- the board screen ----------
+
+   Two sort axes. Record is what ranks you and stays the default, and it is the one
+   the rank panel on the results page counts against. Team rating is the roster
+   itself, which is a different question and often a different order: a well built
+   squad can lose a season it deserved to win, and the two boards side by side is
+   the only place that shows up.
+
+   Reversing the order is a real feature and not a curiosity. The worst season
+   anybody has played is funnier than the best, and a low-to-high rating board is
+   the fastest way to see what the game does to a cheap roster. */
+let lbWin='day', lbSort='record', lbDir='desc', lbShown=5, lbRows=null, lbBusy=false;
+
+/* What the big right-hand figure means for each axis, so the column always says
+   which quantity it is showing rather than leaving it to be guessed. */
+const SORT_META={
+  record:{label:'Record', of:(r)=>diffCell(r.point_diff,r.chemistry_pct,r.spend_musd)},
+  rating:{label:'Team rating', of:(r)=>ratingCell(r)},
+};
 
 function openBoard(){ lbWin=lbWin||'day'; lbShown=5; show('s-board'); loadBoard(); }
 
@@ -2755,9 +2835,13 @@ async function loadBoard(){
   $('b-lb-more').style.display='none';
   [...document.querySelectorAll('#lb-tabs .tab')].forEach(t=>
     t.classList.toggle('on',t.dataset.lb===lbWin));
+  [...document.querySelectorAll('#lb-sort button')].forEach(t=>
+    t.classList.toggle('on',t.dataset.sort===lbSort));
+  $('b-lb-dir').classList.toggle('up',lbDir==='asc');
+  $('lb-dir-label').textContent=lbDir==='asc'?'Low to high':'High to low';
   /* 25 rows in one request, shown 5 at a time. Paging over the network for every
      tap on a five-row list is a lot of round trips for very little. */
-  const [rows,total]=await Promise.all([B.top(lbWin,25),B.total(lbWin)]);
+  const [rows,total]=await Promise.all([B.top(lbWin,25,lbSort,lbDir),B.total(lbWin)]);
   lbBusy=false;
   lbRows=rows;
   if(rows===null){
@@ -2789,6 +2873,87 @@ function paintBoard(){
   $('b-lb-more').style.display=lbShown>=rows.length?'none':'block';
 }
 
+/* Tap a row for the lineup behind it. Delegated, so it keeps working through every
+   repaint without rebinding. */
+$('lb-rows').addEventListener('click',(e)=>{
+  const el=e.target.closest('.lbr'); if(!el) return;
+  if(el.classList.contains('mine')&&!el.dataset.i){ runDetail(null); return; }
+  const row=(lbRows||[])[+el.dataset.i];
+  if(row) runDetail(row);
+});
+
+/* THE RUN DETAIL SHEET
+   Built from the row's own picks and slots, resolved against this browser's copy
+   of the player data. Passing null shows your own run, which is the same view of
+   the same thing and needs no round trip. */
+function runDetail(row){
+  const mine=!row;
+  const picks=mine?runPayload().picks:(row.picks||[]);
+  const slots=mine?runPayload().slots:(row.slots||[]);
+  const men=picks.map((k,i)=>({p:fromPickKey(k),slot:slots[i]||''}));
+  const known=men.filter(m=>m.p);
+  const o=mine?run.outcome:null;
+  const p=mine?runPayload():null;
+
+  const rec=mine?o.record:row.wins+'-'+row.losses;
+  const label=mine?(o.perfect?'Perfect season':o.seedLabel)
+    :(row.perfect?'Perfect season':row.seed_label);
+  const rating=mine?p.teamRating:(row.team_rating===null?null:Number(row.team_rating));
+  const fppg=mine?p.squadFppg:(row.squad_fppg===null?null:Number(row.squad_fppg));
+  const mult=mine?p.structureMult:(row.structure_mult===null?null:Number(row.structure_mult));
+  const chem=mine?p.chemistryPct:Number(row.chemistry_pct);
+  const spend=mine?p.spendMusd:Number(row.spend_musd);
+  const perf=mine?p.perfectPct:(row.perfect_pct===null?null:Number(row.perfect_pct));
+  const club=mine?run.franchise:row.franchise;
+
+  const tile=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
+  const cols=club?E.teamColors(club):null;
+
+  /* An unresolvable id is said out loud rather than drawn as a blank row. It means
+     this browser has older player data than the browser that recorded the run. */
+  const missing=men.length-known.length;
+
+  $('sheet-in').innerHTML=
+    '<div class="eyebrow">'+(mine?'Your run':'Run detail')+'</div>'+
+    '<h2 class="display" style="font-size:30px;margin:3px 0 1px;letter-spacing:.01em">'+
+      esc(rec)+'</h2>'+
+    '<p class="dim" style="font-size:12.5px;margin:0">'+esc(label)+
+      (club?' &middot; took the '+esc(poss(E.nickname(club)))+' place':'')+'</p>'+
+    (known.length?'<div class="rost" style="margin-top:12px">'+known.map(m=>{
+      const col='var('+(COL[m.slot]||'--flex')+')';
+      return '<div class="rrow"><span class="tag" style="background:linear-gradient(160deg,'+
+        col+',rgba(0,0,0,.45))">'+esc(m.slot||m.p.position)+'</span>'+
+        '<span class="nm"><b>'+esc(m.p.name)+'</b><span>'+m.p.season+' '+
+          esc(E.nickname(m.p.franchise))+(m.p.stat_line?' &middot; '+esc(m.p.stat_line):'')+
+        '</span></span>'+
+        '<span class="num"><b>'+m.p.fppg.toFixed(1)+'</b><span>'+M(m.p.price_musd)+
+        '</span></span></div>';
+    }).join('')+'</div>'
+      :'<p class="dim" style="font-size:12.5px;margin:12px 0 0">This run\'s players are not '+
+       'in the player data this browser has.</p>')+
+    (missing&&known.length?'<p class="dim" style="font-size:11.5px;margin:7px 0 0">'+missing+
+      ' of the six could not be looked up here.</p>':'')+
+    '<div class="rdstat">'+
+      tile(rating===null?'--':rating.toFixed(1),'Team rating')+
+      tile(perf===null?'--':perf+'%','Of the best possible')+
+      tile(pc(chem/100),'Chemistry')+
+      tile(M0(spend),'Spent')+
+    '</div>'+
+    (fppg!==null&&mult!==null&&rating!==null
+      ? '<p class="caveat" style="margin:9px 0 0">'+fppg.toFixed(0)+' squad FPPG, '+
+        pc(chem/100)+' chemistry and a x'+mult.toFixed(2)+' team shape, which is '+
+        rating.toFixed(1)+' points a game against an average defense.</p>'
+      : '<p class="caveat" style="margin:9px 0 0">This run was recorded before the game '+
+        'stored a team rating.</p>')+
+    (perf!==null?'<p class="caveat" style="margin:6px 0 0">The perfect figure is this roster '+
+      'against the strongest one those same six draws allowed under the same cap.</p>':'')+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  if(cols) $('sheet-in').style.borderTop='3px solid '+cols.primary;
+  else $('sheet-in').style.borderTop='';
+  $('sheet').classList.add('on');
+  $('sh-x').onclick=()=>{$('sheet').classList.remove('on');$('sheet-in').style.borderTop='';};
+}
+
 /* A row is rendered entirely from numbers and from player ids resolved against
    this browser's own copy of the player data. Nothing a player typed is stored or
    shown anywhere, which is the reason there is no name column yet. */
@@ -2796,13 +2961,16 @@ function boardRow(row,i){
   const who=rosterLine(row.picks);
   const rank=i+1;
   const mine=submitted&&row.id===submitted;
-  return '<div class="lbr'+(rank===1?' gold':'')+(mine?' mine':'')+'">'+
+  /* Gold is for leading a board, so it is wrong on a reversed one: row 1 there is
+     the worst run in the window, and gilding it says the opposite of what it is. */
+  const lead=rank===1&&lbDir==='desc';
+  return '<div class="lbr'+(lead?' gold':'')+(mine?' mine':'')+'" data-i="'+i+'">'+
     '<span class="rk">'+rank+'</span>'+
     '<span class="who"><b>'+esc(row.wins+'-'+row.losses)+' '+
       esc(row.perfect?'perfect season':row.seed_label.toLowerCase())+'</b>'+
       '<span>'+esc(who)+'</span></span>'+
-    '<span class="rec">'+diffCell(row.point_diff,row.chemistry_pct,row.spend_musd)+
-    '</span></div>';
+    '<span class="rec">'+SORT_META[lbSort].of(row)+'</span>'+
+    '<span class="go">&rsaquo;</span></div>';
 }
 
 /* The same right-hand column for every row, the pinned one included. It used to
@@ -2811,6 +2979,15 @@ function boardRow(row,i){
 function diffCell(diff,chemPct,spend){
   return '<b>'+(diff>=0?'+':'')+Number(diff).toFixed(1)+' diff</b>'+
     '<span>'+pc(Number(chemPct)/100)+' chem, '+M0(Number(spend))+'</span>';
+}
+
+/* On the rating board the right column shows the rating, since sorting by a number
+   the row does not print would be unreadable. */
+function ratingCell(row){
+  const r=row.team_rating===null?null:Number(row.team_rating);
+  return '<b>'+(r===null?'--':r.toFixed(1)+' rating')+'</b>'+
+    '<span>'+(row.perfect_pct===null?pc(Number(row.chemistry_pct)/100)+' chem'
+      :row.perfect_pct+'% of the best')+'</span>';
 }
 
 /* The two best players on a board row, by the price the game put on them. Any id
@@ -2828,17 +3005,27 @@ function rosterLine(picks){
    nobody checks twice. */
 function minePinned(rows){
   if(!run||!run.outcome||!myRanks) return '';
+  /* The pinned row's number is your RECORD rank, which is the only rank the game
+     computes. Showing it beside a rating board, or beside a reversed one, would be
+     a number that does not describe the list it sits under. */
+  if(lbSort!=='record'||lbDir!=='desc') return '';
   const w=myRanks[lbWin];
   if(!w) return '';
   if(rows.slice(0,lbShown).some(r=>submitted&&r.id===submitted)) return '';
   const o=run.outcome;
   const p=runPayload();
+  /* Your own row shows the same quantity the board is sorted by, so the column
+     still reads as one column. It has no data-i because it is not in lbRows. */
+  const cell=lbSort==='rating'
+    ? ratingCell({team_rating:p.teamRating,chemistry_pct:p.chemistryPct,
+                  perfect_pct:p.perfectPct})
+    : diffCell(p.pointDiff,p.chemistryPct,p.spendMusd);
   return '<div class="lbr mine"><span class="rk">'+
     (w.rank>999?'#'+w.rank.toLocaleString():w.rank)+'</span>'+
     '<span class="who"><b>'+esc(o.record)+' this run</b><span>'+
       esc(rosterLine(p.picks))+'</span></span>'+
-    '<span class="rec">'+diffCell(p.pointDiff,p.chemistryPct,p.spendMusd)+
-    '</span></div>';
+    '<span class="rec">'+cell+'</span>'+
+    '<span class="go">&rsaquo;</span></div>';
 }
 
 $('b-how').onclick=howToPlay;
@@ -2851,6 +3038,11 @@ $('lb-tabs').addEventListener('click',(e)=>{
   const t=e.target.closest('.tab'); if(!t||t.dataset.lb===lbWin) return;
   lbWin=t.dataset.lb; lbShown=5; loadBoard();
 });
+$('lb-sort').addEventListener('click',(e)=>{
+  const t=e.target.closest('button'); if(!t||t.dataset.sort===lbSort) return;
+  lbSort=t.dataset.sort; lbShown=5; loadBoard();
+});
+$('b-lb-dir').onclick=()=>{ lbDir=lbDir==='asc'?'desc':'asc'; lbShown=5; loadBoard(); };
 
 $('b-again').onclick=()=>{
   clearTimeout(simTimer); clearTimeout(poTimer); cancelAnimationFrame(poRaf); poSkip=null;
