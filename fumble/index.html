@@ -259,7 +259,8 @@ function nearestOfTeam(t,pt,skip){ let b=-1,bd=1e9; for(let i=0;i<PL.length;i++)
 function beginSetup(recv){
   recvTeam=recv; phase='SETUP'; running=true; possession='NONE'; carrier=-1; truck=null; grabbed=-1; latCd=0;
   // landing spot in the receiving team's return area — RANDOM every possession
-  const rz = recv==='BLUE' ? rand(14, TUNE.FIELD_LENGTH*0.40) : rand(TUNE.FIELD_LENGTH*0.60, TUNE.FIELD_LENGTH-14);
+  // start the return closer to the scoring goal line (BLUE drives toward z=high, RED toward z=low)
+  const rz = recv==='BLUE' ? rand(TUNE.FIELD_LENGTH*0.52, TUNE.FIELD_LENGTH*0.70) : rand(TUNE.FIELD_LENGTH*0.30, TUNE.FIELD_LENGTH*0.48);
   landing.set(rand(-TUNE.FIELD_WIDTH*0.32, TUNE.FIELD_WIDTH*0.32), 0, rz);
   landCircle.position.set(landing.x,0.06,landing.z); landCircle.visible=true;
   layoutForSetup(recv);
@@ -471,9 +472,9 @@ function endGame(){ gameOver=true; const win=scoreB>scoreR;
 
 /* ---------------- camera + hud ---------------- */
 function updateCamera(dt){ let tp,ta;
-  if(phase==='SETUP'||phase==='KICK'){                     // aerial bird's-eye over the landing spot
-    tp=new THREE.Vector3(landing.x, 46, landing.z - 16*dirOf(recvTeam));
-    ta=new THREE.Vector3(landing.x, 0, landing.z + 4*dirOf(recvTeam));
+  if(phase==='SETUP'||phase==='KICK'){                     // aerial bird's-eye, centered on the field (x=0) so it never skews
+    tp=new THREE.Vector3(0, 50, landing.z - 22*dirOf(recvTeam));
+    ta=new THREE.Vector3(0, 0, landing.z + 6*dirOf(recvTeam));
     const a=camReady?Math.min(1,4*dt):(camReady=true,1); camP.lerp(tp,a); camA.lerp(ta,a); camera.position.copy(camP); camera.lookAt(camA); return;
   }
   if(possession==='LOOSE'){ const mid=ball.position.clone().add(PL[controlled].position).multiplyScalar(0.5);
