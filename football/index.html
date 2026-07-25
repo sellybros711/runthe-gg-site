@@ -29,7 +29,7 @@
     --grad-panel:linear-gradient(180deg,#182134 0%,#111827 100%);
     --grad-field:linear-gradient(180deg,#0f1830 0%,#0a1122 60%,#0c1526 100%);
     --shadow:0 18px 40px -14px rgba(0,0,0,.85), 0 3px 10px -4px rgba(0,0,0,.6);
-    --qb:#ef4444; --rb:#f59e0b; --wr:#3b82f6; --te:#8b5cf6; --flex:#14b8a6;
+    --qb:#ef4444; --rb:#22c55e; --wr:#3b82f6; --te:#f97316; --flex:#a855f7;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;background:var(--bg);color:var(--ink)}
@@ -98,7 +98,7 @@
   .tm.on{background:var(--grad-blue);border-color:transparent;box-shadow:0 0 0 2px rgba(59,130,246,.35)}
 
   /* the field */
-  .field{position:relative;width:100%;aspect-ratio:1/1.02;border-radius:16px;overflow:hidden;
+  .field{position:relative;width:100%;aspect-ratio:1/0.52;border-radius:14px;overflow:hidden;
     background:var(--grad-field);border:1px solid var(--line)}
   .field .lines{position:absolute;inset:0;
     background:repeating-linear-gradient(0deg,transparent 0 9.6%,rgba(255,255,255,.07) 9.6% calc(9.6% + 1px))}
@@ -120,19 +120,20 @@
   .tierdot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
   .tierdot.big{background:#fbbf24} .tierdot.good{background:#22c55e}
   .tierdot.small{background:#38bdf8} .tierdot.bad{background:#ef4444}
-  .chip{position:absolute;transform:translate(-50%,-50%);width:74px;text-align:center;cursor:pointer}
-  .chip .disc{width:44px;height:44px;margin:0 auto;border-radius:50%;display:grid;place-items:center;
-    font-family:'Anton',Impact,sans-serif;font-size:13px;color:#fff;border:2px solid rgba(255,255,255,.22);
-    box-shadow:0 6px 14px -4px rgba(0,0,0,.8)}
+  .chip{position:absolute;transform:translate(-50%,-50%);width:62px;text-align:center;cursor:pointer}
+  .chip .disc{width:34px;height:34px;margin:0 auto;border-radius:50%;display:grid;place-items:center;
+    font-family:'Anton',Impact,sans-serif;font-size:11px;color:#fff;border:2px solid rgba(255,255,255,.22);
+    box-shadow:0 5px 12px -4px rgba(0,0,0,.8)}
+  .chip.sel .disc{border-color:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.18),0 5px 12px -4px #000}
   .chip.empty .disc{background:rgba(255,255,255,.05);border-style:dashed;color:var(--dim-2)}
   .chip.now .disc{border-color:#fff;animation:pulse 1.6s ease-in-out infinite}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(255,255,255,.14),0 6px 16px -4px #000}
     50%{box-shadow:0 0 0 10px rgba(255,255,255,.04),0 6px 16px -4px #000}}
   .chip.filled .disc{animation:pop .34s cubic-bezier(.2,1.5,.4,1) both}
   @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
-  .chip .who{margin-top:5px;font-size:10.5px;font-weight:800;line-height:1.15;
+  .chip .who{margin-top:3px;font-size:9.5px;font-weight:800;line-height:1.1;
     text-shadow:0 2px 6px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .chip .yr{font-size:9.5px;color:var(--dim);font-weight:700}
+  .chip .yr{font-size:8.5px;color:var(--dim);font-weight:700}
 
   .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 11px;margin:-4px 0 12px;
     background:linear-gradient(180deg,var(--bg) 72%,rgba(8,11,20,0))}
@@ -156,18 +157,18 @@
   .linkrow .v{font-family:'Anton',Impact,sans-serif;font-size:13px;min-width:44px;text-align:right;color:#4ade80}
   .linkrow .v.neg{color:var(--red)}
 
-  .reelbox{height:84px;overflow:hidden;border-radius:12px;position:relative;
+  .reelbox{height:56px;overflow:hidden;border-radius:12px;position:relative;
     background:linear-gradient(180deg,#101a30,#0b1120);border:1px solid var(--line-2)}
   .reelbox:after{content:'';position:absolute;inset:0;pointer-events:none;
     background:linear-gradient(180deg,rgba(0,0,0,.6),transparent 40%,transparent 60%,rgba(0,0,0,.6))}
   .reelbox .edge{position:absolute;left:0;right:0;height:2px;background:var(--red);opacity:.5}
   .reelbox .edge.t{top:calc(50% - 26px)} .reelbox .edge.b{bottom:calc(50% - 26px)}
-  .reel-i{height:84px;display:grid;place-items:center;padding:0 12px;text-align:center;
+  .reel-i{height:56px;display:grid;place-items:center;padding:0 12px;text-align:center;
     font-family:'Anton',Impact,sans-serif;font-size:19px;text-transform:uppercase;letter-spacing:.02em;
     line-height:1.02}
   .reels{display:grid;grid-template-columns:88px 1fr;gap:8px}
-  .reelbox.year .reel-i{font-size:27px}
-  .reelbox.team .reel-i{font-size:16px}
+  .reelbox.year .reel-i{font-size:22px}
+  .reelbox.team .reel-i{font-size:14px}
   .reelbox.year{border-color:rgba(239,68,68,.4)}
   .reelbox.team{border-color:rgba(59,130,246,.4)}
   .reelbox.waiting{opacity:.35}
@@ -178,7 +179,18 @@
   .grouphead{font-family:'Anton',Impact,sans-serif;font-size:10.5px;letter-spacing:.14em;
     text-transform:uppercase;color:var(--dim-2);margin:10px 0 5px}
 
-  .opts{display:grid;gap:8px;margin-top:12px}
+  /* One tab per open spot, colored by position, so the list never needs a heading
+     and you never scroll past your team to find it. */
+  .tabs{display:flex;gap:6px;margin:12px 0 0;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    padding-bottom:2px;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:0 0 auto;padding:9px 13px;border-radius:10px;border:1.5px solid var(--line);
+    background:var(--panel);font-family:'Anton',Impact,sans-serif;font-size:13px;letter-spacing:.05em;
+    color:var(--dim);display:flex;align-items:center;gap:6px;transition:all .12s ease}
+  .tab .n{font-size:10.5px;opacity:.75}
+  .tab.on{color:#fff;border-color:transparent}
+  .tab:active{transform:scale(.97)}
+  .opts{display:grid;gap:8px;margin-top:10px}
   .opt{display:flex;align-items:center;gap:11px;padding:11px;border-radius:12px;width:100%;
     background:var(--panel);border:1px solid var(--line);text-align:left;transition:all .12s ease}
   .opt:active{transform:scale(.985)}
@@ -187,9 +199,21 @@
     font-family:'Anton',Impact,sans-serif;font-size:12px}
   .opt .who{flex:1;min-width:0}
   .opt .who b{display:block;font-size:14.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .opt .who span{display:block;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .opt .who > span{display:block;font-size:11.5px;color:var(--dim);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .opt .who > span span{display:inline}
+  .sep{color:var(--dim-2);padding:0 5px}
   .opt .cost{flex:0 0 auto;text-align:right}
   .opt .cost b{display:block;font-family:'Anton',Impact,sans-serif;font-size:17px}
+  .statline{display:block;font-size:11px;color:var(--dim-2);white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;margin-top:1px}
+  .fppg{font-family:'Anton',Impact,sans-serif;font-size:12.5px;color:var(--ink);letter-spacing:.02em}
+  .badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+  .bdg{font-size:9.5px;font-weight:900;letter-spacing:.03em;padding:2px 6px;border-radius:5px;
+    background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);
+    white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+  .bdg.led{background:rgba(251,191,36,.22);color:#fcd34d}
+  .bdg.mile{background:rgba(56,189,248,.14);color:#7dd3fc;border-color:rgba(56,189,248,.28)}
   .chemtag{display:inline-block;margin-top:3px;font-size:10.5px;font-weight:900;padding:2px 6px;
     border-radius:5px;background:rgba(74,222,128,.16);color:#4ade80;max-width:100%;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -204,7 +228,7 @@
   .scoreline .s.down{color:var(--dim-2)}
   .tally{display:flex;gap:4px;margin-top:13px}
   .tick{height:22px;border-radius:3px;background:rgba(255,255,255,.08);flex:1 1 0;min-width:0}
-  .tick.w{background:var(--grad-blue)} .tick.l{background:var(--grad-red)}
+  .tick.w{background:linear-gradient(135deg,#4ade80,#15803d)} .tick.l{background:var(--grad-red)}
   .tick.p{outline:1px solid rgba(255,255,255,.45);outline-offset:1px}
   .glist{display:grid;gap:5px;margin-top:12px;max-height:320px;overflow-y:auto}
   .g{display:flex;align-items:center;gap:9px;font-size:13px;padding:8px 10px;border-radius:9px;
@@ -214,10 +238,10 @@
   .g .wk{flex:0 0 44px;font-family:'Anton',Impact,sans-serif;font-size:11px;color:var(--dim-2)}
   .g .res{flex:0 0 22px;height:22px;border-radius:6px;display:grid;place-items:center;
     font-family:'Anton',Impact,sans-serif;font-size:12px;color:#fff}
-  .g .res.w{background:var(--blue-2)} .g .res.l{background:var(--red-2)}
+  .g .res.w{background:#15803d} .g .res.l{background:var(--red-2)}
   .g .opp{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
   .g .sc{flex:0 0 58px;text-align:right;font-family:'Anton',Impact,sans-serif;font-size:14px;white-space:nowrap}
-  .g.po{background:linear-gradient(90deg,rgba(59,130,246,.18),var(--panel))}
+  .g.po{background:linear-gradient(90deg,rgba(168,85,247,.20),var(--panel))}
 
   .bigrec{text-align:center;padding:6px 0 12px}
   .bigrec .r{font-family:'Anton',Impact,sans-serif;font-size:62px;line-height:.95}
@@ -295,27 +319,22 @@
     <div class="capwrap">
       <div class="capline">
         <div><div class="eyebrow">Money left</div><div class="amt num" id="c-amt">$100.0M</div></div>
-        <div style="text-align:right"><div class="eyebrow">Chemistry</div>
+        <div style="text-align:right"><div class="eyebrow" id="d-count">Spin 1 of 6</div>
           <div class="chemval num zero" id="c-chem" style="font-size:27px">0.0%</div></div>
       </div>
       <div class="bar"><i id="c-bar" style="width:100%"></i></div>
       <div class="note" id="c-note" style="display:none"></div>
+      <div class="field" id="field" style="margin-top:10px"></div>
+      <div class="legend" id="legend"></div>
     </div>
 
-    <div class="field" id="field"></div>
-    <div class="legend" id="legend"></div>
-
-    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin:14px 0 8px">
-      <div><div class="eyebrow">Spots still open</div>
-        <div class="display" style="font-size:20px" id="d-slot">QB RB WR WR TE FLEX</div></div>
-      <div class="pill" id="d-count">Spin 1 of 6</div>
-    </div>
-    <div class="reels">
+    <div class="reels" style="margin-top:10px">
       <div class="reelbox year"><span class="edge t"></span><span class="edge b"></span><div id="reel-y"></div>
         <span class="rlabel">Year</span></div>
       <div class="reelbox team"><span class="edge t"></span><span class="edge b"></span><div id="reel-t"></div>
         <span class="rlabel">Team</span></div>
     </div>
+    <div class="tabs" id="tabs"></div>
     <div class="opts" id="opts"></div>
     <div id="d-respin" style="margin-top:10px"></div>
   </div>
@@ -407,7 +426,7 @@ const TIER={
   small:{color:'#38bdf8',w:1.8,dash:'3 6', op:0.6, speed:'1s',  name:'Small'},
   bad:  {color:'#ef4444',w:2.6,dash:'2 4', op:0.9, speed:'.8s', name:'Hurts'},
 };
-const SPOT=[{x:50,y:63},{x:50,y:83},{x:12,y:31},{x:88,y:31},{x:72,y:46},{x:28,y:46}];
+const SPOT=[{x:50,y:60},{x:50,y:85},{x:11,y:26},{x:89,y:26},{x:73,y:45},{x:27,y:45}];
 
 let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,pickedTeam=null,simTimer=null,lastChem=1;
 
@@ -472,7 +491,7 @@ function drawField(el,live){
     return '<div class="chip '+(p?'filled':'empty')+(pulse?' now':'')+'" style="left:'+s.x+'%;top:'+s.y+'%" data-i="'+i+'">'+
       '<div class="disc" style="'+bg+'">'+(p?p.position:slot)+'</div>'+
       (p?'<div class="who">'+esc(p.name.split(' ').slice(-1)[0])+'</div><div class="yr">'+p.season+'</div>'
-        :'<div class="who dim">'+(live?'Open':'Empty')+'</div>')+'</div>';
+        :'')+'</div>';
   }).join('');
   el.innerHTML='<div class="lines"></div><div class="hash"></div><div class="ez t"></div><div class="ez b"></div>'+
     '<svg class="links-svg">'+lines+'</svg>'+chips;
@@ -483,7 +502,8 @@ function drawField(el,live){
     legEl.innerHTML=present.length
       ? ['big','good','small','bad'].filter(k=>present.includes(k)).map(k=>
           '<span class="lg '+k+'"><i></i>'+TIER[k].name+'</span>').join('')
-      : '<span class="lg" style="color:var(--dim-2)">No links yet</span>';
+      : '';
+    legEl.style.display=present.length?'flex':'none';
   }
   el.onclick=(e)=>{const c=e.target.closest('.chip');if(!c)return;const p=bySlot[+c.dataset.i];if(p)sheet(p);};
 }
@@ -495,7 +515,10 @@ function sheet(p){
     '<h2 class="display" style="font-size:26px;margin:4px 0 10px">'+esc(p.name)+'</h2>'+
     '<div class="kv"><span class="dim">Spot</span><b>'+p.position+'</b></div>'+
     '<div class="kv"><span class="dim">Cost</span><b>'+M(p.price_musd)+'</b></div>'+
-    '<div class="kv"><span class="dim">Points per game</span><b>'+p.ppr_ppg_mean.toFixed(1)+'</b></div>'+
+    (p.stat_line?'<p style="margin:0 0 10px;font-size:13px;color:var(--dim)">'+esc(p.stat_line)+'</p>':'')+
+    ((p.badges||[]).length?'<div class="badges" style="margin-bottom:10px">'+p.badges.map(t=>
+      '<span class="'+(/^Led the NFL/.test(t)?'bdg led':(/^\d/.test(t)?'bdg':'bdg mile'))+'">'+esc(t)+'</span>').join('')+'</div>':'')+
+    '<div class="kv"><span class="dim">Fantasy points per game</span><b>'+p.fppg.toFixed(1)+' FPPG</b></div>'+
     '<div class="kv"><span class="dim">Swing week to week</span><b>'+p.ppr_ppg_sd.toFixed(1)+'</b></div>'+
     '<div class="kv"><span class="dim">Games that year</span><b>'+p.games_played+'</b></div>'+
     (p.college?'<div class="kv"><span class="dim">College</span><b>'+esc(p.college)+'</b></div>':'')+
@@ -528,10 +551,11 @@ function paintTop(){
   if(left>1&&rem-floor<8){n.style.display='block';n.textContent='Keep at least '+M(floor)+' back or you cannot fill the rest of your team.';}
   else if(left===1&&rem>25){n.style.display='block';n.textContent='You still have '+M(rem)+' left and this is the last spot to spend it on.';}
   else n.style.display='none';
-  $('d-count').textContent='Spin '+Math.min(6,run.roster.length+1)+' of 6';
+  $('d-count').textContent='Chemistry, spin '+Math.min(6,run.roster.length+1)+' of 6';
 }
 
 /* One reel: fills with decoys, lands on `target`. */
+const REEL_H=56;
 function reel(el,faces,target,ms,done){
   const N=14,items=[];
   for(let i=0;i<N;i++)items.push(faces[Math.floor(Math.random()*faces.length)]);
@@ -539,7 +563,7 @@ function reel(el,faces,target,ms,done){
   el.innerHTML=items.map(t=>'<div class="reel-i">'+esc(t)+'</div>').join('');
   el.style.transition='none'; el.style.transform='translateY(0)'; void el.offsetHeight;
   el.style.transition='transform '+ms+'ms cubic-bezier(.1,.7,.15,1)';
-  el.style.transform='translateY(-'+(N*84)+'px)';
+  el.style.transform='translateY(-'+(N*REEL_H)+'px)';
   let f=false; const fin=()=>{if(f)return;f=true;done();};
   el.addEventListener('transitionend',fin,{once:true}); setTimeout(fin,ms+180);
 }
@@ -559,51 +583,83 @@ function spinBoth(draw,done){
 
 function nextSpin(){
   paintTop(); drawField($('field'),true);
-  $('d-slot').innerHTML=R.openSlotNames(run).map(n=>'<span class="slotchip">'+n+'</span>').join('');
-  $('opts').innerHTML=''; $('d-respin').innerHTML='';
+  $('opts').innerHTML=''; $('tabs').innerHTML=''; $('d-respin').innerHTML='';
+  activeTab=null;
   const draw=R.spin(run,DATA);
   spinBoth(draw,()=>paintOpts(draw));
 }
 
-function paintOpts(draw){
-  const opts=draw.options.map(k=>BYKEY.get(k));
-  /* Chemistry preview on every option. This is the whole reason chemistry exists:
-     you should see what a signing does before you commit, not after. */
-  const row=(p)=>{
-    const pv=R.previewSigning(run,p,CTX), g=pv.delta;
-    /* Short reason, colored by the strongest new link, so the draft list stays
-       scannable. The full sentence lives on the squad screen and the player card. */
-    const top=pv.newLinks[0];
-    const tier=top?E.linkTier(top.value):null;
-    const tag=g>0.0005&&top
-      ? '<span class="chemtag" style="background:'+TIER[tier].color+'22;color:'+TIER[tier].color+'">'+
-        pc(g)+' '+esc(top.short||top.label)+'</span>'
-      : (g<-0.0005&&top?'<span class="chemtag" style="background:rgba(239,68,68,.14);color:#fca5a5">'+
-        pc(g)+' '+esc(top.short||top.label)+'</span>':'');
-    return '<button class="opt'+(g>0.0005?' hot':'')+'" data-k="'+p.player_id+'|'+p.season+'">'+
-      '<span class="badge" style="background:linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.4))">'+p.position+'</span>'+
-      '<span class="who"><b>'+esc(p.name)+'</b><span>'+p.ppr_ppg_mean.toFixed(1)+' a game in '+p.season+'</span>'+tag+'</span>'+
-      '<span class="cost"><b>'+M(p.price_musd)+'</b></span></button>';
-  };
-  /* Grouped by the spot each player would slot into, because the spot is now your
-     choice rather than the wheel's. Every affordable player is listed. */
-  const groups={};
-  for(const p of opts){
-    const si=R.slotForPlayer(run,p);
-    const name=E.SLOTS[si];
-    (groups[name] ??= []).push(p);
+let activeTab=null;
+
+/* Rows are grouped by the spot they would fill, but a spot is only listed ONCE
+   even though there are two WR slots. The old build printed an identical "WR SPOT"
+   group twice, which just looked broken. */
+function optionGroups(draw){
+  const groups=new Map();
+  for(const k of draw.options){
+    const p=BYKEY.get(k);
+    const name=E.SLOTS[R.slotForPlayer(run,p)];
+    if(!groups.has(name)) groups.set(name,[]);
+    groups.get(name).push(p);
   }
-  $('opts').innerHTML=R.openSlotNames(run).filter(n=>groups[n]).map(n=>
-    '<div class="grouphead">'+(n==='FLEX'?'Flex spot':n+' spot')+'</div>'+groups[n].map(row).join('')
-  ).join('');
+  return groups;
+}
+
+function optRow(p){
+  const pv=R.previewSigning(run,p,CTX), g=pv.delta;
+  const top=pv.newLinks[0];
+  const tier=top?E.linkTier(top.value):null;
+  const tag=g>0.0005&&top
+    ? '<span class="chemtag" style="background:'+TIER[tier].color+'22;color:'+TIER[tier].color+'">'+
+      pc(g)+' '+esc(top.short||top.label)+'</span>'
+    : (g<-0.0005&&top?'<span class="chemtag" style="background:rgba(239,68,68,.14);color:#fca5a5">'+
+      pc(g)+' '+esc(top.short||top.label)+'</span>':'');
+  const badges=(p.badges||[]).map(t=>{
+    const cls=/^Led the NFL/.test(t)?'bdg led':(/^\d/.test(t)?'bdg':'bdg mile');
+    return '<span class="'+cls+'">'+esc(t)+'</span>';
+  }).join('');
+  return '<button class="opt'+(g>0.0005?' hot':'')+'" data-k="'+p.player_id+'|'+p.season+'">'+
+    '<span class="badge" style="background:linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.4))">'+p.position+'</span>'+
+    '<span class="who"><b>'+esc(p.name)+'</b>'+
+      '<span><span class="fppg">'+p.fppg.toFixed(1)+' FPPG</span>'+
+        (p.stat_line?'<span class="sep">&middot;</span>'+esc(p.stat_line):'')+'</span>'+
+      (badges?'<span class="badges">'+badges+'</span>':'')+tag+'</span>'+
+    '<span class="cost"><b>'+M(p.price_musd)+'</b></span></button>';
+}
+
+function paintOpts(draw){
+  const groups=optionGroups(draw);
+  const names=[...groups.keys()];
+  if(!names.includes(activeTab)) activeTab=names[0];
+  $('tabs').innerHTML=names.map(n=>{
+    const col=COL[n==='FLEX'?'FLEX':n];
+    const on=n===activeTab;
+    return '<button class="tab'+(on?' on':'')+'" data-t="'+n+'"'+
+      (on?' style="background:linear-gradient(135deg,var('+col+'),rgba(0,0,0,.45));"':'')+'>'+
+      (n==='FLEX'?'FLEX':n)+'<span class="n">'+groups.get(n).length+'</span></button>';
+  }).join('');
+  $('opts').innerHTML=(groups.get(activeTab)||[]).map(optRow).join('');
+  // Highlight the spot this tab fills, so the tab and the field agree.
+  const si=E.SLOTS.indexOf(activeTab);
+  document.querySelectorAll('#field .chip').forEach(c=>{
+    c.classList.toggle('sel', !run.slotIndex.includes(+c.dataset.i) && E.SLOTS[+c.dataset.i]===activeTab);
+  });
+
   const chk=R.canRespin(run);
   $('d-respin').innerHTML=chk.ok
     ? '<button class="btn ghost sm" id="b-re">Spin again, '+M(E.CONSTANTS.RESPIN_COST_MUSD)+' off your budget ('+(E.CONSTANTS.MAX_RESPINS-run.respinsUsed)+' left)</button>'
     : '<p class="dim" style="font-size:12px;text-align:center;margin:0">'+(run.respinsUsed>=E.CONSTANTS.MAX_RESPINS?'No spins left':esc(chk.reason))+'</p>';
   const rb=$('b-re');
-  if(rb)rb.onclick=()=>{$('opts').innerHTML='';$('d-respin').innerHTML='';
+  if(rb)rb.onclick=()=>{$('opts').innerHTML='';$('tabs').innerHTML='';$('d-respin').innerHTML='';
     const d=R.respin(run,DATA);paintTop();spinBoth(d,()=>paintOpts(d));};
+  void si;
 }
+
+$('tabs').addEventListener('click',e=>{
+  const t=e.target.closest('.tab'); if(!t)return;
+  activeTab=t.dataset.t;
+  if(run.currentDraw) paintOpts(run.currentDraw);
+});
 
 $('opts').addEventListener('click',e=>{
   const b=e.target.closest('.opt'); if(!b)return;

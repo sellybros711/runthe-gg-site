@@ -431,6 +431,55 @@ function opponentFranchises(franchise, divisions, rng) {
 }
 
 /**
+ * Put the 17 opponents into a week order that looks like a real season.
+ *
+ * The formula produces division rivals as adjacent pairs, which used to land them
+ * in weeks 1 through 6: three teams, home and away, back to back, then nothing but
+ * strangers for eleven weeks. Real schedules spread the six division games out and
+ * usually save one or two for the end.
+ *
+ * Shuffle, then require the two meetings with any repeated opponent to sit at
+ * least MIN_REMATCH_GAP weeks apart, and require at least one division game in the
+ * closing stretch. Falls back to the least bad ordering if the constraints cannot
+ * be met, so a schedule is always produced.
+ */
+const MIN_REMATCH_GAP = 4;
+
+function orderSchedule(games, rng) {
+  const n = games.length;
+  const spacing = (arr) => {
+    const seen = new Map();
+    let worst = Infinity;
+    arr.forEach((g, i) => {
+      if (seen.has(g.team_season_id)) worst = Math.min(worst, i - seen.get(g.team_season_id));
+      seen.set(g.team_season_id, i);
+    });
+    return worst;
+  };
+  // Repeated opponents are exactly the division rivals.
+  const counts = {};
+  for (const g of games) counts[g.team_season_id] = (counts[g.team_season_id] || 0) + 1;
+  const isDivision = (g) => counts[g.team_season_id] > 1;
+
+  let best = null;
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const a = games.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    const gap = spacing(a);
+    const lateDivision = a.slice(n - 4).some(isDivision);
+    const earlyDivisionCount = a.slice(0, 4).filter(isDivision).length;
+    const ok = gap >= MIN_REMATCH_GAP && lateDivision && earlyDivisionCount <= 2;
+    if (ok) return a;
+    const score = Math.min(gap, MIN_REMATCH_GAP) + (lateDivision ? 1 : 0) - earlyDivisionCount * 0.1;
+    if (!best || score > best.score) best = { a, score };
+  }
+  return best.a;
+}
+
+/**
  * Attach a random season to each opponent franchise, then normalize.
  *
  * Franchise choice must never be a difficulty lever, so a schedule is rejected
@@ -461,13 +510,14 @@ function generateSchedule(franchise, data, rng, opts = {}) {
      * correct, a brutal division rival really is two hard games.
      */
     const drawn = new Map();
-    const games = franchises.map((f) => {
+    const unordered = franchises.map((f) => {
       if (!drawn.has(f)) {
         const pool = byFranchise[f];
         drawn.set(f, pool[Math.floor(rng() * pool.length)]);
       }
       return drawn.get(f);
     });
+    const games = orderSchedule(unordered, rng);
     const total = games.reduce((s, g) => s + g.strength_z, 0);
     const elite = games.filter((g) => g.strength_z >= eliteThreshold).length;
     const drift = Math.abs(total - meanScheduleStrength);

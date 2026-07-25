@@ -194,6 +194,39 @@ of the time and a good one got the bye 94% of the time, which made both tiers
 meaningless. At 12 and 15 the ladder separates properly, and both are still
 records a real team would post.
 
+## The draft screen
+
+Your team never leaves the screen. The money bar and a condensed field are one
+sticky block at the top, so the field stays visible while you scroll the player
+list. Below that: the two wheels, then a tab per open spot, then the players.
+
+Tabs are colored by position, and each spot appears **once** with a count, even
+though there are two WR slots. An earlier build printed an identical "WR SPOT"
+group twice, which just read as a bug. Selecting a tab also outlines the matching
+empty spot on the field, so the two always agree.
+
+Position colors: QB red, RB green, WR blue, TE orange, FLEX purple. Wins are
+green, losses red.
+
+## Player rows
+
+Each row leads with fantasy points per game, then the real season line, on one
+line:
+
+```
+Dez Bryant      18.7 FPPG . 90 rec, 1,371 yds, 12 TD      $34.0M
+                [3rd in receiving TDs]
+```
+
+Badges are **derived from that season's real numbers**, never from award ballots.
+nflverse ships no awards feed, so MVP and All-Pro would have to be a hand written
+list, and a wrong award on a shipped player card is worse than no award. What is
+shown instead is checkable against the stat line printed beside it: where the
+player finished in the league that year (`Led the NFL in passing yards`, `3rd in
+receiving TDs`) and round-number milestones a fan recognizes (`2,000 yard season`,
+`100 catches`, `40 TD passes`). Adding real award winners would mean sourcing them
+separately, and it is the one thing here that cannot come from the stats.
+
 ## Two wheels, and why spots are not locked to a spin
 
 The wheel is two wheels. The **year** lands first, then the **team** from that
@@ -244,6 +277,14 @@ stranding you with one player to take.
 - **About half of spins after the first favor a team-season connected to
   somebody already signed** (`CONNECTION_BIAS` in `run.js`), so chemistry is
   something you watch build rather than something you rarely luck into.
+- **Division games are spread across the season.** The NFL formula produces
+  rivals as adjacent pairs, which used to put all six division games in weeks 1
+  through 6 and nothing but strangers after that. The order is now shuffled under
+  constraints: the two meetings with any opponent sit at least 4 weeks apart, at
+  most 2 division games fall in the first four weeks, and at least one lands in
+  the closing stretch. Measured over 400 schedules, division games run 31 to 37%
+  per week through week 14 and rise to 45 to 47% in weeks 16 and 17, which is how
+  real schedules feel. Zero schedules now stack all six early.
 - **Division rivals are drawn once and played twice.** You get a home and away
   game against the *same* team-season, the 2007 Patriots twice, not the 2007 and
   2001 Patriots. Their strength therefore counts twice in normalization, which is

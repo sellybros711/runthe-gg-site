@@ -77,6 +77,92 @@ export const PRICE_K = 1.8;
  */
 export const BASELINE_RANK = 150;
 
+
+/*
+ * Badges are DERIVED from the season's real numbers, never from award ballots.
+ *
+ * nflverse ships no awards feed, so MVP and All-Pro would have to be a hand
+ * written list, and a wrong award on a shipped player card is worse than no
+ * award. Everything here is checkable against the stat line printed beside it:
+ * where the player finished in the league that year, and round-number milestones
+ * a fan would recognize.
+ */
+const HEADLINE = [
+  { key: 'passing_yards',   pos: ['QB'], label: 'passing yards' },
+  { key: 'passing_tds',     pos: ['QB'], label: 'passing TDs' },
+  { key: 'rushing_yards',   pos: ['RB', 'WR', 'QB'], label: 'rushing yards' },
+  { key: 'rushing_tds',     pos: ['RB', 'WR', 'QB'], label: 'rushing TDs' },
+  { key: 'receiving_yards', pos: ['WR', 'TE', 'RB'], label: 'receiving yards' },
+  { key: 'receiving_tds',   pos: ['WR', 'TE', 'RB'], label: 'receiving TDs' },
+  { key: 'receptions',      pos: ['WR', 'TE', 'RB'], label: 'catches' },
+];
+
+const MILESTONES = [
+  { pos: ['QB'], test: (t) => t.passing_yards >= 5000, label: '5,000 yard season' },
+  { pos: ['QB'], test: (t) => t.passing_tds >= 40, label: '40 TD passes' },
+  { pos: ['RB'], test: (t) => t.rushing_yards >= 2000, label: '2,000 yard season' },
+  { pos: ['RB'], test: (t) => t.rushing_yards >= 1500, label: '1,500 yards rushing' },
+  { pos: ['WR', 'TE'], test: (t) => t.receiving_yards >= 1500, label: '1,500 yards receiving' },
+  { pos: ['WR', 'TE', 'RB'], test: (t) => t.receptions >= 100, label: '100 catches' },
+  { pos: ['RB', 'WR', 'TE'], test: (t) => t.rushing_tds + t.receiving_tds >= 15, label: '15 touchdowns' },
+];
+
+const ordinal = (n) => (n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`);
+
+/** League rank of every player-season in each headline stat, within its season. */
+function buildBadges(rows) {
+  const bySeason = {};
+  for (const r of rows) (bySeason[r.season] ??= []).push(r);
+
+  for (const season of Object.keys(bySeason)) {
+    const group = bySeason[season];
+    for (const h of HEADLINE) {
+      const ranked = group
+        .filter((r) => h.pos.includes(r.position) && r.tot[h.key] > 0)
+        .sort((a, b) => b.tot[h.key] - a.tot[h.key]);
+      ranked.forEach((r, i) => {
+        if (i === 0) r._badges.push({ kind: 'led', text: `Led the NFL in ${h.label}` });
+        else if (i < 3) r._badges.push({ kind: 'top', text: `${ordinal(i + 1)} in ${h.label}` });
+      });
+    }
+  }
+  for (const r of rows) {
+    for (const m of MILESTONES) {
+      if (m.pos.includes(r.position) && m.test(r.tot)) r._badges.push({ kind: 'mile', text: m.label });
+    }
+    // Keep it short: the league finishes first, then one milestone.
+    const led = r._badges.filter((x) => x.kind === 'led');
+    const top = r._badges.filter((x) => x.kind === 'top');
+    const mile = r._badges.filter((x) => x.kind === 'mile');
+    r._badges = led.concat(top).slice(0, 2).concat(mile.slice(0, 1)).slice(0, 3);
+  }
+}
+
+/** The stat line shown beside FPPG, shaped by what the player actually did. */
+function statLine(position, t) {
+  const n = (v) => v.toLocaleString('en-US');
+  const parts = [];
+  if (t.attempts >= 50) {
+    parts.push(`${n(t.passing_yards)} pass yds`, `${t.passing_tds} TD`, `${t.passing_interceptions} INT`);
+  }
+  // Skip a rushing line that would read as noise, like a quarterback's -31 yards
+  // from taking knees.
+  const runs = t.rushing_yards > 0
+    && (position === 'RB' ? t.carries > 0 : (t.rushing_yards >= 100 || t.rushing_tds >= 2));
+  if (runs) parts.push(`${n(t.rushing_yards)} rush yds`, `${t.rushing_tds} TD`);
+  if (t.receptions >= 10 || (['WR', 'TE'].includes(position) && t.receptions > 0)) {
+    parts.push(`${t.receptions} rec`, `${n(t.receiving_yards)} yds`, `${t.receiving_tds} TD`);
+  }
+  return parts.join(', ');
+}
+
+/** Raw weekly columns summed into season totals for the player card. */
+const STAT_KEYS = [
+  'completions', 'attempts', 'passing_yards', 'passing_tds', 'passing_interceptions',
+  'carries', 'rushing_yards', 'rushing_tds',
+  'receptions', 'targets', 'receiving_yards', 'receiving_tds',
+];
+
 /** Which drafted slot each position may fill. */
 export const SLOT_ELIGIBILITY = {
   QB: ['QB'], RB: ['RB'], WR: ['WR'], TE: ['TE'], FLEX: ['RB', 'WR', 'TE'],
@@ -104,10 +190,13 @@ async function loadWeekly() {
           season,
           weeks: [],
           teams: {},
+          tot: Object.fromEntries(STAT_KEYS.map((k) => [k, 0])),
         };
         byPlayerSeason.set(key, e);
       }
       e.weeks.push(Number(r.fantasy_points_ppr) || 0);
+      // Season totals, so a player's card can show what he actually did.
+      for (const k of STAT_KEYS) e.tot[k] += Number(r[k]) || 0;
       // A traded player appears under more than one team. Attribute the
       // player-season to whichever team he played the most games for; that team
       // is what the wheel will offer him under.
@@ -157,6 +246,7 @@ async function main() {
         games_played: p.weeks.length,
         ppr_ppg_mean: mean(p.weeks),
         ppr_ppg_sd: stdev(p.weeks),
+        tot: p.tot,
         multi_team: Object.keys(p.teams).length > 1,
       };
     });
@@ -202,6 +292,9 @@ async function main() {
     p.position_percentile = peers.filter((v) => v < p.ppr_ppg_mean).length / Math.max(1, peers.length - 1);
   }
 
+  for (const p of eligible) p._badges = [];
+  buildBadges(eligible);
+
   const rows = eligible
     .sort((a, b) => b.vor - a.vor)
     .map((p) => ({
@@ -218,6 +311,9 @@ async function main() {
       vor: round(p.vor, 2),
       position_percentile: round(p.position_percentile, 4),
       price_musd: round(p.price_musd, 1),
+      fppg: round(p.ppr_ppg_mean, 1),
+      stat_line: statLine(p.position, p.tot),
+      badges: p._badges.map((x) => x.text),
       college: bio.get(p.player_id)?.college ?? null,
       draft_year: bio.get(p.player_id)?.draft_year ?? null,
       draft_round: bio.get(p.player_id)?.draft_round ?? null,
