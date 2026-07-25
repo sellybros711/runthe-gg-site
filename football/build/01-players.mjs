@@ -1,11 +1,11 @@
-/* Stage 1 — player_seasons.
+/* Stage 1, player_seasons.
  *
  *   node football/build/01-players.mjs
  *
  * Produces data/player_seasons.{json,csv}: one row per eligible player-season,
  * with weekly PPR mean/SD and a price.
  *
- * PRICING — value over replacement, not raw percentile.
+ * PRICING, value over replacement, not raw percentile.
  * ----------------------------------------------------
  * The GDD priced on percentile within position-and-season. That decouples price
  * from payoff, because price came from *relative* rank while the sim pays
@@ -16,7 +16,7 @@
  *      $46.7M). Optimal play was always "punt TE to the $3M floor, spend at
  *      RB/QB", and FLEX was never a TE.
  *   2. Cross-era. The best QB of every season priced at the cap maximum
- *      regardless of output — 2001 Jeff Garcia (18.6 ppg) cost the same $48.0M
+ *      regardless of output, 2001 Jeff Garcia (18.6 ppg) cost the same $48.0M
  *      as 2013 Peyton Manning (25.6 ppg). "Never draft from a low-scoring era"
  *      was free money.
  *
@@ -26,7 +26,7 @@
  *      price = BASE + (MAX-BASE) * clamp(VOR / VOR_REF, 0, 1) ^ K
  *
  * Price then depends only on VOR, so equal VOR costs equal money whatever the
- * position or the year — verified in the report this script prints. The GDD's
+ * position or the year, verified in the report this script prints. The GDD's
  * era-fairness intent survives, relocated: replacement level is computed per
  * season, so a high-scoring era raises its own bar, but it does so in absolute
  * points and therefore never decouples price from payoff.
@@ -37,7 +37,7 @@
  * from binding at all.
  *
  * K is 1.8, not the GDD's 3.0. Convexity now sits on VOR, which is already
- * right-skewed, rather than on a uniform percentile. At K=3 the top saturated —
+ * right-skewed, rather than on a uniform percentile. At K=3 the top saturated,
  * VOR 8 and VOR 16 both priced ~$47M, so the best available was always correct.
  * The GDD's "lower k toward 2.4" tuning note does not transfer to this curve.
  */
@@ -67,7 +67,7 @@ export const PRICE_K = 1.8;
  * ~1.5 ppg lower), so FLEX quietly still preferred an RB.
  *
  * A single pooled baseline makes price a function of absolute points above a
- * common reference, so equal price means equal expected points everywhere —
+ * common reference, so equal price means equal expected points everywhere,
  * across positions, across eras, and at FLEX. QBs come out systematically
  * pricier than TEs, which is correct: they score more, and you must field both.
  *
@@ -179,7 +179,7 @@ async function main() {
 
   // Anchor the curve on robust quantiles at BOTH ends. Clamping the bottom at
   // VOR=0 put 72% of the pool at the $3M floor, where points-per-dollar is
-  // effectively infinite — which rebuilt the "one star and five scrubs" exploit
+  // effectively infinite, which rebuilt the "one star and five scrubs" exploit
   // the cap is supposed to prevent. Anchoring on the 1st percentile keeps price
   // discriminating all the way down.
   const vorAsc = eligible.map((p) => p.vor).sort((a, b) => a - b);
@@ -250,12 +250,12 @@ async function main() {
   // The test that matters: at equal PRICE, do you get equal POINTS regardless
   // of position? If yes there is no cross-position arbitrage, and FLEX (which
   // accepts RB/WR/TE) is genuinely open.
-  console.log('\nFLEX neutrality — at equal price, expected ppg by position:');
+  console.log('\nFLEX neutrality, at equal price, expected ppg by position:');
   for (const budget of [5, 10, 20, 35]) {
     const line = POSITIONS.map((pos) => {
       const near = (byPos[pos] ?? [])
         .filter((p) => Math.abs(p.price_musd - budget) <= 1.0);
-      if (!near.length) return `${pos} —`;
+      if (!near.length) return `${pos},`;
       return `${pos} ${mean(near.map((p) => p.ppr_ppg_mean)).toFixed(1)}`;
     }).join('   ');
     console.log(`  ~$${String(budget).padStart(2)}M: ${line}`);
@@ -273,7 +273,7 @@ async function main() {
     taken.add(`${c.player_id}|${c.season}`);
     dream += c.price_musd;
   }
-  console.log(`\nall-best roster costs $${dream.toFixed(0)}M against the $100M cap — ` +
+  console.log(`\nall-best roster costs $${dream.toFixed(0)}M against the $100M cap, ` +
               `${dream > 100 ? 'choices forced' : 'CAP DOES NOT BIND'}`);
 
   console.log('\nmost expensive player-seasons:');
@@ -284,7 +284,7 @@ async function main() {
 
   const atFloor = rows.filter((p) => p.price_musd <= BASE_PRICE + 0.001).length;
   console.log(`\n${atFloor} player-seasons (${(100 * atFloor / rows.length).toFixed(0)}%) sit at the ` +
-              `$${BASE_PRICE}M floor — the streamer/replacement band.`);
+              `$${BASE_PRICE}M floor, the streamer/replacement band.`);
   console.log(`${rows.filter((p) => p.multi_team).length} player-seasons involve a mid-season trade ` +
               `(attributed to the team with most games).`);
 }

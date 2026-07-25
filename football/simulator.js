@@ -1,4 +1,4 @@
-/* The Perfect Season — validation harness.
+/* The Perfect Season, validation harness.
  *
  *   node football/simulator.js              full report
  *   node football/simulator.js --sweep      solve SCALE against the target
@@ -6,7 +6,7 @@
  *   node football/simulator.js --schedule   schedule normalization check
  *   node football/simulator.js --draft      draft-loop invariants (cap, dead ends)
  *
- *   PS_SCALE=2.4 PS_LIVES=0 PS_N=4000 node football/simulator.js   override dials
+ *   PS_SCALE=2.1 PS_N=4000 node football/simulator.js     override the dial
  *
  * Nothing reaches the frontend until this produces sane win rates (GDD §8).
  */
@@ -32,8 +32,7 @@ const ctx = {
 
 const data = E.prepareData(teamSeasons);
 const SCALE = Number(process.env.PS_SCALE ?? E.CONSTANTS.SCALE);
-const LIVES = Number(process.env.PS_LIVES ?? E.CONSTANTS.LIVES);
-const constants = { ...E.CONSTANTS, SCALE, LIVES };
+const constants = { ...E.CONSTANTS, SCALE };
 
 const FRANCHISES = [...new Set(teamSeasons.map((t) => t.franchise))].sort();
 const byPos = {};
@@ -49,7 +48,7 @@ const median = (a) => { const s = [...a].sort((x, y) => x - y); return s[Math.fl
 /*
  * Archetypes are built to a budget, so every one of them is a legal roster under
  * the $100M cap. "Near-optimal" means near-optimal SUBJECT TO the cap, which the
- * GDD's §9 table left ambiguous — six 95th-percentile players would be ~$250M
+ * GDD's §9 table left ambiguous, six 95th-percentile players would be ~$250M
  * and is not a reachable archetype at all.
  */
 function buildToBudget(rng, targetSpendFraction) {
@@ -85,7 +84,7 @@ function buildToBudget(rng, targetSpendFraction) {
   return roster;
 }
 
-/** Random legal picks — the floor archetype. */
+/** Random legal picks, the floor archetype. */
 function buildRandom(rng) {
   const roster = [];
   const used = new Set();
@@ -131,7 +130,7 @@ function buildStacked(rng) {
  * Genuinely cap-optimal roster: maximize summed expected PPG subject to the
  * $100M cap and the slot shape. Solved with a DP over discretized budget rather
  * than a greedy pass, because greedy-by-points-per-dollar is measurably worse
- * and would understate the ceiling — which is the whole point of this archetype.
+ * and would understate the ceiling, which is the whole point of this archetype.
  *
  * "Near-optimal" in the GDD's §9 table has to mean near-optimal SUBJECT TO the
  * cap. Six 95th-percentile players would cost ~$250M and are not a reachable
@@ -166,10 +165,10 @@ const CURVES = E.SLOTS.map((s) => bestCurve(E.SLOT_ELIGIBILITY[s]));
  * per-slot spend caps. Each rung is the cap-optimal roster for a given budget,
  * so the ladder measures skill rather than the harness's own clumsiness:
  *
- *   random      — legal picks, no thought
- *   decent      — optimal play but only ~$75M of the cap used
- *   well-built  — cap-optimal expected points, chemistry ignored
- *   optimal+chem— cap-optimal, then chemistry bought where it is cheap
+ *   random     , legal picks, no thought
+ *   decent     , optimal play but only ~$75M of the cap used
+ *   well-built , cap-optimal expected points, chemistry ignored
+ *   optimal+chemcap-optimal, then chemistry bought where it is cheap
  *
  * An earlier version built "well-built" with a greedy per-slot spend cap and it
  * scored 70.6% against a reachable 84.7%. That gap was the builder being bad,
@@ -228,7 +227,7 @@ let OPTIMAL_CHEM = null;
 function buildOptimalWithChemistry(rng) {
   // Deterministic given the data, so solve once. Recomputing it per run made the
   // harness ~40x slower and made high-N perfect-season rates impractical to
-  // measure — and those rates are the whole calibration target.
+  // measure, and those rates are the whole calibration target.
   if (OPTIMAL_CHEM) return OPTIMAL_CHEM.slice();
   let roster = buildOptimal();
   let bestScore = roster.reduce((s, p) => s + p.ppr_ppg_mean, 0)
@@ -268,33 +267,43 @@ const ARCHETYPES = [
 // ─── runs ────────────────────────────────────────────────────────────────────
 
 function simulate(archetype, n, seed0) {
-  let gamesPlayed = 0, gamesWon = 0, perfect = 0, benchmark = 0, complete = 0;
-  const weeks = [];
-  const chems = [];
-  const spends = [];
+  let regGames = 0, regWon = 0, poGames = 0, poWon = 0;
+  let perfect = 0, title = 0, madePlayoffs = 0, gotBye = 0, undefeatedReg = 0;
+  const regWins = [], chems = [], spends = [];
+  const winHist = new Array(18).fill(0);
   for (let i = 0; i < n; i++) {
     const rng = E.createSeededRNG(seed0 + i * 7919);
     const roster = archetype.build(rng);
     const chem = E.resolveChemistry(roster, ctx);
     const franchise = FRANCHISES[Math.floor(rng() * FRANCHISES.length)];
     const sched = E.generateSchedule(franchise, data, rng);
-    const playoffs = E.generatePlayoffs(data, rng, constants.PLAYOFF_GAMES);
+    const playoffs = E.generatePlayoffs(data, rng);
     const run = E.playRun(roster, chem.multiplier, sched.games, playoffs, leagueContext, rng, constants);
-    gamesPlayed += run.results.length;
-    gamesWon += run.wins;
-    weeks.push(run.weekReached);
+    for (const g of run.results) {
+      if (g.playoff) { poGames++; if (g.won) poWon++; }
+      else { regGames++; if (g.won) regWon++; }
+    }
+    regWins.push(run.regularWins);
+    winHist[run.regularWins]++;
     chems.push(chem.multiplier);
     spends.push(roster.reduce((s, p) => s + p.price_musd, 0));
     if (run.perfect) perfect++;
-    if (run.beatBenchmark) benchmark++;
-    if (run.complete) complete++;
+    if (run.titleWon) title++;
+    if (run.seed.made) madePlayoffs++;
+    if (run.seed.bye) gotBye++;
+    if (run.undefeatedRegular) undefeatedReg++;
   }
   return {
-    perGameWin: gamesWon / gamesPlayed,
+    perGameWin: regWon / regGames,
+    playoffGameWin: poGames ? poWon / poGames : 0,
+    winHist,
     perfectRate: perfect / n,
-    benchmarkRate: benchmark / n,
-    completeRate: complete / n,
-    medianWeek: median(weeks),
+    titleRate: title / n,
+    playoffRate: madePlayoffs / n,
+    byeRate: gotBye / n,
+    undefeatedRegRate: undefeatedReg / n,
+    meanRegWins: mean(regWins),
+    medianRegWins: median(regWins),
     meanChem: mean(chems),
     meanSpend: mean(spends),
   };
@@ -303,9 +312,9 @@ function simulate(archetype, n, seed0) {
 // ─── modes ───────────────────────────────────────────────────────────────────
 
 function reportMain(n) {
-  console.log(`SCALE=${SCALE}  LIVES=${constants.LIVES}  ` +
-    `${constants.REGULAR_SEASON_GAMES}+${constants.PLAYOFF_GAMES} games  N=${n} runs/archetype\n`);
-  console.log('archetype              spend   chem    win%   target      20-0    <=1 loss  medWk');
+  console.log(`SCALE=${SCALE}  ${constants.REGULAR_SEASON_GAMES} games + playoffs  ` +
+    `N=${n} runs/archetype\n`);
+  console.log('archetype              spend   chem    win%   target     record  playoffs  bye   title   20-0');
   let allPass = true;
   for (const a of ARCHETYPES) {
     const r = simulate(a, n, 1234);
@@ -314,15 +323,16 @@ function reportMain(n) {
     console.log(
       `${a.name.padEnd(22)} $${r.meanSpend.toFixed(0).padStart(3)}M  ` +
       `${r.meanChem.toFixed(3)}  ${fmtPct(r.perGameWin).padStart(6)}  ` +
-      (a.target ? `${a.target[0]}-${a.target[1]}  ${pass ? '✓' : '✗'}  ` : `   reference  `) +
-      `${fmtPct(r.perfectRate).padStart(6)}  ${fmtPct(r.benchmarkRate).padStart(7)}   ${String(r.medianWeek).padStart(2)}`,
+      (a.target ? `${a.target[0]}-${a.target[1]} ${pass ? 'ok' : 'MISS'}  ` : `  reference  `) +
+      `${(r.meanRegWins.toFixed(1) + '-' + (17 - r.meanRegWins).toFixed(1)).padStart(9)}  ` +
+      `${fmtPct(r.playoffRate).padStart(6)}  ${fmtPct(r.byeRate).padStart(5)} ` +
+      `${fmtPct(r.titleRate).padStart(6)}  ${fmtPct(r.perfectRate).padStart(6)}`,
     );
   }
-  console.log(`\nwin-rate targets: ${allPass ? 'all within tolerance' : 'MISS — sweep SCALE'}`);
-  console.log('\nNote: median week is a direct consequence of the per-game rate, not an');
-  console.log('independent dial. Under sudden death it is ln(0.5)/ln(p); LIVES=1 roughly');
-  console.log('doubles it. The GDD asked for 3-6% perfect AND a week 7-9 median, which are');
-  console.log('mutually exclusive at LIVES=0.');
+  console.log(`\nwin-rate targets: ${allPass ? 'all within tolerance' : 'MISS, sweep SCALE'}`);
+  console.log('\nEvery run now plays all 17 games, so a record always exists. Playoffs need');
+  console.log(`${E.CONSTANTS.PLAYOFF_WINS} wins, the first-round bye needs ${E.CONSTANTS.BYE_SEED_WINS}. One playoff loss ends the run,`);
+  console.log('so 20-0 means 17-0 plus three wins from the top seed.');
 }
 
 function sweep(n) {
@@ -342,7 +352,7 @@ function sweep(n) {
 }
 
 function chemReport() {
-  console.log('chemistry reachability — how many same-team-season players to hit the cap\n');
+  console.log('chemistry reachability, how many same-team-season players to hit the cap\n');
   const cap = E.CHEMISTRY.MAX;
   console.log(`ceiling ${(cap * 100).toFixed(0)}%, smooth saturation: MAX*(1-exp(-raw/MAX))\n`);
   const V = E.CHEMISTRY.VALUES;
@@ -360,13 +370,13 @@ function chemReport() {
     const now = sat(raw);
     console.log(`     ${nP}      ${String(pairs).padStart(2)}   ${(raw * 100).toFixed(1).padStart(5)}%  ` +
       `${(gdd * 100).toFixed(1).padStart(6)}%${gdd >= cap ? ' CAP' : '    '}   ` +
-      `${(now * 100).toFixed(1).padStart(6)}%      ${nP === 2 ? '   —' : '+' + ((now - prev) * 100).toFixed(2) + '%'}`);
+      `${(now * 100).toFixed(1).padStart(6)}%      ${nP === 2 ? '  ,' : '+' + ((now - prev) * 100).toFixed(2) + '%'}`);
     prev = now;
   }
   console.log('\nThe GDD rule hits the ceiling at THREE players, so slots 4-6 carried no');
   console.log('chemistry incentive and its half-value rule never fired. Saturation keeps');
   console.log('every extra signing worth something, each less than the last.');
-  console.log(`A lone 2% college link still scores ${(sat(0.02) * 100).toFixed(1)}% — small rosters are not punished.`);
+  console.log(`A lone 2% college link still scores ${(sat(0.02) * 100).toFixed(1)}%, small rosters are not punished.`);
 
   const rng = E.createSeededRNG(99);
   const stack = buildStacked(rng);
@@ -378,7 +388,7 @@ function chemReport() {
 }
 
 function scheduleReport(n) {
-  console.log(`schedule normalization — ${n} schedules per franchise\n`);
+  console.log(`schedule normalization, ${n} schedules per franchise\n`);
   const rows = [];
   for (const f of FRANCHISES) {
     const totals = [], elites = [], attempts = [];
@@ -401,8 +411,8 @@ function scheduleReport(n) {
   console.log(`\nspread between easiest and hardest franchise: ${spread.toFixed(2)} z-units` +
     ` over 17 games (${(spread / 17).toFixed(3)} per game)`);
   console.log(spread < 1.0
-    ? 'Franchise choice is not a meaningful difficulty lever. ✓'
-    : 'TOO WIDE — franchise choice would be a difficulty setting. ✗');
+    ? 'Franchise choice is not a meaningful difficulty lever. ok'
+    : 'TOO WIDE, franchise choice would be a difficulty setting. FAIL');
 }
 
 /*
@@ -413,7 +423,7 @@ function scheduleReport(n) {
  */
 function draftReport(n) {
   const data = R.indexData(players, teamSeasons);
-  let respinsTotal = 0, freeRerolls = 0, capViolations = 0, deadEnds = 0, perfectDrafts = 0;
+  let respinsTotal = 0, freeRerolls = 0, capViolations = 0, deadEnds = 0, perfectDrafts = 0, repeatedTs = 0;
   const spends = [];
   const blockedReasons = {};
   for (let i = 0; i < n; i++) {
@@ -442,8 +452,13 @@ function draftReport(n) {
       // slot shape must be respected
       const shapeOk = run.roster.every((p, idx) =>
         E.SLOT_ELIGIBILITY[E.SLOTS[idx]].includes(p.position));
-      const uniqueTs = new Set(run.usedTeamSeasons).size === run.usedTeamSeasons.length;
-      if (shapeOk && uniqueTs) perfectDrafts++;
+      // A team-season may now appear twice in a run (that is what makes the
+      // Teammates and Battery links reachable at all), but never more than twice.
+      const counts = {};
+      for (const id of run.usedTeamSeasons) counts[id] = (counts[id] || 0) + 1;
+      const withinLimit = Object.values(counts).every((c) => c <= 2);
+      if (Object.values(counts).some((c) => c === 2)) repeatedTs++;
+      if (shapeOk && withinLimit) perfectDrafts++;
     } catch (err) {
       deadEnds++;
       blockedReasons['threw: ' + err.message] = (blockedReasons['threw: ' + err.message] || 0) + 1;
@@ -454,9 +469,10 @@ function draftReport(n) {
   console.log(`  re-spins taken         ${respinsTotal} (${(respinsTotal / n).toFixed(2)}/run)`);
   console.log(`  free auto-rerolls      ${freeRerolls} (unaffordable draws, pool not consumed)`);
   console.log(`  mean total committed   $${mean(spends).toFixed(1)}M`);
-  console.log(`  over-cap runs          ${capViolations}  ${capViolations === 0 ? '✓' : '✗'}`);
-  console.log(`  dead-ended runs        ${deadEnds}  ${deadEnds === 0 ? '✓' : '✗'}`);
-  console.log(`  valid slot shape+teams ${perfectDrafts}/${n}  ${perfectDrafts === n ? '✓' : '✗'}`);
+  console.log(`  over-cap runs          ${capViolations}  ${capViolations === 0 ? 'ok' : 'FAIL'}`);
+  console.log(`  dead-ended runs        ${deadEnds}  ${deadEnds === 0 ? 'ok' : 'FAIL'}`);
+  console.log(`  valid slot shape       ${perfectDrafts}/${n}  ${perfectDrafts === n ? 'ok' : 'FAIL'}`);
+  console.log(`  runs reusing a team    ${repeatedTs} (${(100 * repeatedTs / n).toFixed(0)}%, allowed up to twice)`);
   if (Object.keys(blockedReasons).length) {
     console.log('\n  re-spins refused (the block that prevents dead ends):');
     for (const [r, c] of Object.entries(blockedReasons)) console.log(`    ${c.toString().padStart(5)}  ${r}`);
@@ -469,15 +485,15 @@ function draftReport(n) {
   for (const g of s.games) counts[g.team_season_id] = (counts[g.team_season_id] || 0) + 1;
   const twice = Object.entries(counts).filter(([, c]) => c === 2);
   console.log(`\n  division rivals drawn twice as the SAME team-season: ${twice.length} of 3 expected` +
-    ` ${twice.length === 3 ? '✓' : '✗'}`);
+    ` ${twice.length === 3 ? 'ok' : 'FAIL'}`);
   for (const [id, c] of twice) console.log(`    ${data.byTeamSeasonId[id].display} x${c}`);
 
   // Daily determinism
   const a = R.createRun({ daily: '2026-07-25' });
   const b = R.createRun({ daily: '2026-07-25' });
   const c = R.createRun({ daily: '2026-07-26' });
-  console.log(`\n  daily seed stable within a date: ${a.seed === b.seed ? '✓' : '✗'}` +
-    `   differs across dates: ${a.seed !== c.seed ? '✓' : '✗'}`);
+  console.log(`\n  daily seed stable within a date: ${a.seed === b.seed ? 'ok' : 'FAIL'}` +
+    `   differs across dates: ${a.seed !== c.seed ? 'ok' : 'FAIL'}`);
 
   // Resume-safety: rebuilding from (seed, rngCalls) must continue the stream
   const r1 = R.createRun({ seed: 99 });
@@ -486,7 +502,39 @@ function draftReport(n) {
   const snapshot = JSON.parse(JSON.stringify(r1));
   const first = R.spin(r1, data).team_season_id;
   const again = R.spin(snapshot, data).team_season_id;
-  console.log(`  run survives serialize/reload mid-draft: ${first === again ? '✓' : '✗'}`);
+  console.log(`  run survives serialize/reload mid-draft: ${first === again ? 'ok' : 'FAIL'}`);
+}
+
+/*
+ * Regular-season win distribution per archetype, and what each candidate
+ * threshold pair would mean. Thresholds are a game-feel decision, so pick them
+ * from the actual distribution rather than from NFL precedent alone: the draft
+ * pool is all-time players, so win totals run higher than a real league's.
+ */
+function recordReport(n) {
+  console.log(`regular-season win distribution, N=${n} runs/archetype\n`);
+  const rows = ARCHETYPES.map((a) => ({ a, r: simulate(a, n, 31337) }));
+  const label = (i) => String(i).padStart(2);
+  console.log('wins      ' + Array.from({length: 10}, (_, i) => label(i + 8)).join('  '));
+  for (const { a, r } of rows) {
+    const cells = Array.from({length: 10}, (_, i) => {
+      const pc = 100 * r.winHist[i + 8] / n;
+      return (pc >= 0.5 ? pc.toFixed(0) : ' .').padStart(2);
+    });
+    console.log(a.name.slice(0, 9).padEnd(10) + cells.join('  ') + '   (mean ' + r.meanRegWins.toFixed(1) + ')');
+  }
+  console.log('\nshare of runs reaching each threshold:');
+  console.log('threshold   ' + rows.map(({ a }) => a.name.slice(0, 9).padStart(10)).join(''));
+  for (const t of [10, 11, 12, 13, 14, 15]) {
+    const cells = rows.map(({ r }) => {
+      const share = r.winHist.reduce((s, c, w) => s + (w >= t ? c : 0), 0) / n;
+      return fmtPct(share).padStart(10);
+    });
+    console.log((t + '+ wins').padEnd(12) + cells.join(''));
+  }
+  console.log(`\ncurrently: playoffs at ${E.CONSTANTS.PLAYOFF_WINS}+, bye at ${E.CONSTANTS.BYE_SEED_WINS}+`);
+  console.log('playoff-game win rate (top-quartile opponents):');
+  for (const { a, r } of rows) console.log('  ' + a.name.padEnd(22) + fmtPct(r.playoffGameWin));
 }
 
 // ─── main ────────────────────────────────────────────────────────────────────
@@ -497,4 +545,5 @@ if (arg === '--sweep') sweep(Math.max(400, Math.floor(N / 2)));
 else if (arg === '--chem') chemReport();
 else if (arg === '--schedule') scheduleReport(200);
 else if (arg === '--draft') draftReport(Number(process.env.PS_N ?? 3000));
+else if (arg === '--record') recordReport(Number(process.env.PS_N ?? 2000));
 else reportMain(N);

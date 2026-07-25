@@ -1,4 +1,4 @@
-/* Stage 7 prerequisite — display-score calibration.
+/* Stage 7 prerequisite, display-score calibration.
  *
  *   node football/build/04-display.mjs        (run 01 and 02 first)
  *

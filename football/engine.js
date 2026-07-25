@@ -1,4 +1,4 @@
-/* The Perfect Season — game engine.
+/* The Perfect Season, game engine.
  *
  * Headless and dependency-free. Browser: window.PS_ENGINE. Node:
  * require('./engine.js'). Validated by simulator.js; nothing here touches the
@@ -27,16 +27,25 @@
  */
 const CONSTANTS = {
   /*
-   * Solved with `node football/simulator.js --sweep`, N=4000 runs/archetype.
-   * At 1.95 all four of the GDD's §9 win-rate rows land in band:
+   * Solved with `node football/simulator.js --sweep`, N=3000 runs/archetype.
+   * Measured on the regular season only, so the numbers stay comparable to the
+   * GDD's §9 table (playoff opponents are drawn from the top strength quartile
+   * and would drag the average down for exactly the rosters that reach them).
    *
-   *   random affordable   61.8%   (target 0.62-0.68)
-   *   decent, $75M used   76.5%   (target 0.76-0.80)
-   *   well-built          85.4%   (target 0.83-0.86)   2.9% perfect
-   *   optimal + chemistry 89.5%   (target 0.88-0.90)   8.7% perfect
+   *   archetype            win%    §9 target      record    title   20-0
+   *   random affordable   59.2%   0.62-0.68 low  10.1-6.9    1.9%   0.1%
+   *   decent, $75M used   77.2%   0.76-0.80 ok   13.1-3.9    8.8%   0.2%
+   *   well-built          86.4%   0.83-0.86 ok   14.7-2.3   29.0%   2.9%
+   *   optimal + chemistry 90.5%   0.88-0.90 ok   15.4-1.6   45.0%   7.7%
+   *
+   * The reachable spread is slightly wider than §9 assumed, so the bottom rung
+   * lands ~3 points low while the top two sit at the upper edge of their bands.
+   * No single value of SCALE fixes that; it would take narrowing the score
+   * variance. 1.95 is chosen because it puts the perfect-season rate squarely in
+   * the 3-6% §9 asked for, which is the target that actually matters.
    *
    * Re-solve this before trusting any change to pricing, the cap, or the
-   * chemistry curve — all three move these numbers.
+   * chemistry curve. All three move these numbers.
    */
   SCALE: 1.95,
   CAP_MUSD: 100,
@@ -44,33 +53,57 @@ const CONSTANTS = {
   MAX_RESPINS: 2,
   MIN_RESERVE_PER_SLOT_MUSD: 3,
   REGULAR_SEASON_GAMES: 17,
-  PLAYOFF_GAMES: 3,
+
   /*
-   * Losses allowed before the run ends. 1, not 0.
+   * You always play all 17 regular-season games. An earlier build ended the run
+   * on your second loss, which meant most players never saw a final record and
+   * never reached the playoffs at all. Going undefeated is still the goal, but a
+   * season you finish gives you a number to compare and a reason to keep going
+   * after one bad week.
    *
-   * Under sudden death, median games survived is ln(0.5)/ln(p), so the GDD's two
-   * stated goals were mutually exclusive: a 3-6% perfect-season rate implies
-   * p~0.85, which is a median exit in week 4.3 — not the week 7-9 it wanted.
-   * Reaching week 7-9 requires p~0.91, which yields a 14-21% perfect rate.
+   * Where you finish decides what happens next, on wins alone. No tiebreakers,
+   * no standings to read:
    *
-   * One life leaves the 20-0 rate untouched — a perfect run never spends it —
-   * while lengthening the session. Measured at SCALE 1.95, N=4000:
+   *   15 wins or more   top seed, first round off, 3 games to the title
+   *   12 to 14 wins     wild card, 4 games to the title
+   *   11 wins or fewer  season over
    *
-   *                        LIVES=0            LIVES=1
-   *   well-built      2.9% perfect, med wk 5   2.9% perfect, med wk 13
-   *   optimal + chem  8.7% perfect, med wk 7   8.7% perfect, med wk 18
+   * In the playoffs one loss ends it, the way real football works. So a perfect
+   * run is 17-0 plus 3 wins, which is 20-0.
    *
-   * Identical perfect-season rates, very different session lengths. It also
-   * matches the benchmark honestly: the GDD claims "the only way to beat 18-1 is
-   * to lose zero games", but 19-1 is already a better record than 18-1. So a run
-   * has two tiers — 19-1 clears the Patriots, 20-0 is perfect.
-   *
-   * Set to 0 for pure sudden death; nothing else needs to change. That is the
-   * tenser game and closer to the GDD's own §9 median-exit intent (week 7-9);
-   * LIVES=1 trades that for sessions people finish.
+   * The thresholds are set from the measured win distribution (`--record`), not
+   * from NFL precedent. Every player in the pool is an all-time season, so win
+   * totals run high: at the realistic 10-win cutoff even a random roster reached
+   * the playoffs 59% of the time and a good one got the bye 94% of the time,
+   * which made both tiers meaningless. At 12 and 15 the ladder actually
+   * separates: a random roster makes the playoffs 32% of the time and a
+   * cap-optimal one earns the bye 78% of the time. Both are still records a real
+   * team would post.
    */
-  LIVES: 1,
+  BYE_SEED_WINS: 15,
+  PLAYOFF_WINS: 12,
+  PLAYOFF_ROUNDS_WITH_BYE: 3,
+  PLAYOFF_ROUNDS_WILD_CARD: 4,
 };
+
+/** Round names, counting back from the final. */
+const PLAYOFF_ROUND_NAMES = ['Wild Card', 'Divisional', 'Conference Championship', 'Super Bowl'];
+
+/** Where a regular-season record leaves you. Wins only, deliberately. */
+function seedFromRecord(wins) {
+  if (wins >= CONSTANTS.BYE_SEED_WINS) {
+    return { made: true, bye: true, rounds: CONSTANTS.PLAYOFF_ROUNDS_WITH_BYE, label: 'Top seed' };
+  }
+  if (wins >= CONSTANTS.PLAYOFF_WINS) {
+    return { made: true, bye: false, rounds: CONSTANTS.PLAYOFF_ROUNDS_WILD_CARD, label: 'Wild card' };
+  }
+  return { made: false, bye: false, rounds: 0, label: 'Missed the playoffs' };
+}
+
+/** Names for a playoff run of `rounds` games, ending at the Super Bowl. */
+function playoffRoundNames(rounds) {
+  return PLAYOFF_ROUND_NAMES.slice(PLAYOFF_ROUND_NAMES.length - rounds);
+}
 
 const CHEMISTRY = {
   VALUES: {
@@ -95,14 +128,14 @@ const CHEMISTRY = {
    * one battery link is 10% and two teammate links are 10% more, so THREE
    * players from a single team-season already exceed the ceiling and the clamp
    * binds before the half-value rule ever applies. Slots 4-6 then carry no
-   * chemistry incentive whatsoever — the opposite of the stated intent that
+   * chemistry incentive whatsoever, the opposite of the stated intent that
    * chemistry "should tempt you into a cheaper signing".
    *
    * Saturation fixes it without an arbitrary link-count cutoff: each additional
    * link always adds something, always less than the one before, and the total
    * approaches +15% without reaching it. Small rosters are barely affected (a
    * lone 2% college link still scores ~1.9%), while a full six-man stack lands
-   * ~14.3% — worth chasing, never free.
+   * ~14.3%, worth chasing, never free.
    */
   MIN: -0.10,
   MAX: 0.15,
@@ -149,7 +182,7 @@ function normal(rng) {
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rng());
 }
 
-/** Gamma(shape) — Marsaglia-Tsang. */
+/** Gamma(shape), Marsaglia-Tsang. */
 function gammaShape(k, rng) {
   if (k < 1) return gammaShape(1 + k, rng) * Math.pow(rng(), 1 / k);
   const d = k - 1 / 3;
@@ -166,7 +199,7 @@ function gammaShape(k, rng) {
 
 /**
  * Gamma sample matched to (mean, sd). Right-skewed and non-negative, which is
- * why the GDD chose it over a normal — scoring cannot go below zero.
+ * why the GDD chose it over a normal, scoring cannot go below zero.
  *
  * The GDD also said "floored at 0", which is redundant for a Gamma and hints a
  * normal was once intended. Degenerate inputs are handled explicitly here
@@ -193,7 +226,7 @@ function pairLinks(a, b, ctx) {
   const out = [];
   const V = CHEMISTRY.VALUES;
 
-  // Battery — precomputed, and directional (QB -> receiver).
+  // Battery, precomputed, and directional (QB -> receiver).
   const bat = ctx.battery || {};
   for (const [qb, rec] of [[a, b], [b, a]]) {
     const list = bat[key(qb)];
@@ -234,7 +267,7 @@ function pairLinks(a, b, ctx) {
     out.push({ type: 'system', value: V.system, label: `Both played for ${ca}` });
   }
 
-  // Rivalry — opposing sides of a documented, mutual franchise rivalry.
+  // Rivalry, opposing sides of a documented, mutual franchise rivalry.
   const riv = (ctx.curated?.rivalry || []).find(
     (r) => (r.a === a.franchise && r.b === b.franchise) || (r.a === b.franchise && r.b === a.franchise),
   );
@@ -304,8 +337,8 @@ const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
  * Opponent franchises for one 17-game season, per the real NFL formula.
  *
  * The GDD's formula includes "2 same-place finishers in your conference's other
- * two divisions". There are no standings in this game — opponents are random
- * historical team-seasons and no league is simulated — so that rule has no
+ * two divisions". There are no standings in this game, opponents are random
+ * historical team-seasons and no league is simulated, so that rule has no
  * referent. Replaced with a random team from each of those two divisions, which
  * preserves the shape (one game against each) without inventing a table.
  */
@@ -356,12 +389,12 @@ function generateSchedule(franchise, data, rng, opts = {}) {
     /*
      * One season per franchise, reused for both meetings. A division rival is on
      * the schedule twice (home and away) and you face the SAME team-season both
-     * times — you get a home and away game against the 2007 Patriots, not the
+     * times, you get a home and away game against the 2007 Patriots, not the
      * 2007 and 2001 Patriots. Memoizing by franchise also makes any other
      * repeat consistent for free.
      *
      * Consequence for normalization: a rival's strength counts twice, which is
-     * correct — a brutal division rival really is two hard games.
+     * correct, a brutal division rival really is two hard games.
      */
     const drawn = new Map();
     const games = franchises.map((f) => {
@@ -383,7 +416,7 @@ function generateSchedule(franchise, data, rng, opts = {}) {
 }
 
 /** Playoff opponents, weighted toward the strongest quartile. */
-function generatePlayoffs(data, rng, count = CONSTANTS.PLAYOFF_GAMES) {
+function generatePlayoffs(data, rng, count = CONSTANTS.PLAYOFF_ROUNDS_WILD_CARD) {
   const pool = data.topQuartile;
   const out = [];
   const used = new Set();
@@ -492,36 +525,54 @@ function toFootballScore(yourScore, oppScore, won, rng, cal) {
 }
 
 /**
- * Play a full run: 17 regular-season games then 3 playoff games, stopping when
- * losses exceed CONSTANTS.LIVES.
+ * Play a whole run: all 17 regular-season games, then the playoffs if the record
+ * earned them. One playoff loss ends the run.
  */
 function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext, rng, constants = CONSTANTS) {
-  const games = schedule.concat(playoffs);
   const results = [];
   let wins = 0, losses = 0;
-  for (let i = 0; i < games.length; i++) {
-    const opp = games[i];
+
+  const play = (opp, meta) => {
     const leagueAvg = leagueContext[opp.season] ?? 21.5;
     const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants);
-    results.push({
-      week: i + 1,
-      opponent: opp.display,
-      opponent_id: opp.team_season_id,
-      playoff: i >= schedule.length,
-      ...r,
-    });
+    results.push({ opponent: opp.display, opponent_id: opp.team_season_id, ...meta, ...r });
     if (r.won) wins++; else losses++;
-    if (losses > constants.LIVES) break;
+    return r.won;
+  };
+
+  for (let i = 0; i < schedule.length; i++) {
+    play(schedule[i], { week: i + 1, playoff: false, round: null });
   }
-  const complete = results.length === games.length;
+
+  const regularWins = wins;
+  const regularLosses = losses;
+  const seed = seedFromRecord(regularWins);
+
+  let titleWon = false;
+  let exitRound = null;
+  if (seed.made) {
+    const names = playoffRoundNames(seed.rounds);
+    for (let i = 0; i < seed.rounds; i++) {
+      const opp = playoffs[i % playoffs.length];
+      const won = play(opp, { week: schedule.length + i + 1, playoff: true, round: names[i] });
+      if (!won) { exitRound = names[i]; break; }
+      if (i === seed.rounds - 1) titleWon = true;
+    }
+  }
+
   return {
     results,
     wins,
     losses,
-    weekReached: results.length,
-    complete,
-    perfect: complete && losses === 0,
-    beatBenchmark: complete && losses <= 1,   // 19-1 or better clears 18-1
+    regularWins,
+    regularLosses,
+    regularRecord: `${regularWins}-${regularLosses}`,
+    record: `${wins}-${losses}`,
+    seed,
+    titleWon,
+    exitRound,
+    perfect: losses === 0 && titleWon,
+    undefeatedRegular: regularLosses === 0,
   };
 }
 
@@ -552,6 +603,7 @@ const publicAPI = {
   pairLinks, resolveChemistry,
   buildDivisionMap, opponentFranchises, generateSchedule, generatePlayoffs,
   resolveGame, playRun, prepareData, toFootballScore,
+  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

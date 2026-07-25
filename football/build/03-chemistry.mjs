@@ -1,10 +1,10 @@
-/* Stage 2 — chemistry source data.
+/* Stage 2, chemistry source data.
  *
  *   node football/build/03-chemistry.mjs      (run 01 and 02 first)
  *
  * WHAT THIS DOES NOT DO: it does not emit a link adjacency file. The GDD asked
  * for "all links ... as an adjacency file", but the pool is 9,411 eligible
- * player-seasons and the link types are dense — teammates alone is ~660k pairs,
+ * player-seasons and the link types are dense, teammates alone is ~660k pairs,
  * same-franchise ~1.9M, plus college and draft class. That is several million
  * rows and well over 100MB, shipped to a browser on a static site, to answer a
  * question that only ever needs the 15 pairs on one roster.
@@ -15,9 +15,9 @@
  * class are one indexed lookup each over 6 players. Only what cannot be derived
  * from a single row is precomputed here:
  *
- *   battery.json   — needs passer/receiver pairing
- *   coaches.json   — needs the head coach of each team-season
- *   curated.json   — family and rivalry, hand-authored by definition
+ *   battery.json  , needs passer/receiver pairing
+ *   coaches.json  , needs the head coach of each team-season
+ *   curated.json  , family and rivalry, hand-authored by definition
  */
 
 import fs from 'node:fs';
@@ -40,14 +40,14 @@ async function main() {
   // ─── battery ───────────────────────────────────────────────────────────────
   /*
    * The spec defines battery as ">=50 receptions or >=8 receiving TDs FROM THAT
-   * QB", which strictly needs play-by-play passer/receiver pairs — 27 seasons of
+   * QB", which strictly needs play-by-play passer/receiver pairs, 27 seasons of
    * pbp is >1GB. Weekly stats give the same answer for nearly every real case at
    * a fraction of the cost: attribute a receiver's season to his team-season's
    * primary passer, where "primary" means he threw over half the team's attempts.
    *
    * The approximation's blind spot is a genuine split season (an injury or a
    * midseason benching). Requiring a majority of attempts means those
-   * team-seasons produce no battery at all rather than a wrong one — a miss, not
+   * team-seasons produce no battery at all rather than a wrong one, a miss, not
    * a false positive, which is the right way to be wrong here.
    */
   const recv = new Map();   // key -> {rec, recTd, team_season_id, name, pos}
@@ -188,7 +188,7 @@ async function main() {
   console.log(`curated.json  ${curated.family.length} family, ${curated.rivalry.length} rivalry (${kb('curated.json')} KB)`);
 
   const b07 = battery[[...eligibleKeys].find((k) => nameOf.get(k) === 'Tom Brady' && k.endsWith('|2007'))];
-  console.log('\nspot check — 2007 Patriots battery links:');
+  console.log('\nspot check, 2007 Patriots battery links:');
   for (const l of b07 ?? []) console.log(`  ${l.label}`);
 
   const most = Object.entries(battery).sort((a, b) => b[1][0].rec_tds - a[1][0].rec_tds).slice(0, 4);

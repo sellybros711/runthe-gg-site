@@ -1,617 +1,677 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>
-  // Theme before first paint, so a dark-mode user never sees a light flash.
-  (function(){ try{ if(localStorage.getItem('ps-theme')==='dark'){ document.documentElement.classList.add('dark'); } }catch(e){} })();
-</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Unlisted while the game is being tuned: live at the URL, absent from search.
-     Same approach as the RunTheTour/ and pitch/ stubs. Remove this line when the
-     game is ready to be linked from the homepage and added to sitemap.xml. -->
+     Remove when it is ready to be linked from the homepage and the sitemap. -->
 <meta name="robots" content="noindex">
-<title>The Perfect Season — RunThe.GG</title>
-<meta name="description" content="Spin the wheel, sign six players from six random NFL team-seasons, then play a 20-game season and try to do what the 2007 Patriots couldn't: finish it without losing.">
-<meta name="theme-color" content="#0f3d2e">
+<title>The Perfect Season | RunThe.GG</title>
+<meta name="description" content="Spin for six NFL team seasons, sign one player from each, then play a full season and try to go undefeated.">
+<meta name="theme-color" content="#080b14">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f3d2e'/%3E%3Ctext x='16' y='24' font-size='19' text-anchor='middle'%3E%F0%9F%8F%86%3C/text%3E%3C/svg%3E">
-<meta property="og:title" content="The Perfect Season — RunThe.GG">
-<meta property="og:description" content="Six spins, six signings, one 20-game season. Lose once and it's over.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111827'/%3E%3Cellipse cx='16' cy='16' rx='10' ry='7' fill='%23dc2626'/%3E%3Cpath d='M11 16h10M16 13v6' stroke='%23f8fafc' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta property="og:title" content="The Perfect Season | RunThe.GG">
+<meta property="og:description" content="Six spins. Six signings. One shot at going undefeated.">
 <meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#16120F; --paper:#FBF4E6; --white:#fff;
-    --muted:#8a7d70; --muted-2:#5a5048;
-    --green:#0f3d2e; --green-2:#14543f; --gold:#EBA61F; --red:#E5402A;
-    --blue:#2A4B9B; --teal:#138A6B;
-    --ink-rgb:22,18,15;
-    --border-soft:rgba(var(--ink-rgb),.16);
-    --shadow:0 14px 30px -8px rgba(var(--ink-rgb),.30), 0 4px 10px -4px rgba(var(--ink-rgb),.18);
-    --pos-qb:#E5402A; --pos-rb:#138A6B; --pos-wr:#2A4B9B; --pos-te:#8B5CF6; --pos-flex:#5B6470;
-    --card:#fff; --oncard:#16120F;
-  }
-  html.dark{
-    --ink:#F4ECDA; --paper:#0d1512; --white:#16211c;
-    --muted:#93a49c; --muted-2:#b9c9c1;
-    --ink-rgb:244,236,218;
-    --border-soft:rgba(var(--ink-rgb),.18);
-    --card:#16211c; --oncard:#F4ECDA;
-    --shadow:0 14px 30px -8px rgba(0,0,0,.55), 0 4px 10px -4px rgba(0,0,0,.4);
+    --bg:#080b14; --panel:#131a2b; --panel-2:#1a2337;
+    --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.18);
+    --ink:#eef2f9; --dim:#94a3b8; --dim-2:#64748b;
+    --red:#ef4444; --red-2:#b91c1c;
+    --blue:#3b82f6; --blue-2:#1d4ed8;
+    --grad-red:linear-gradient(135deg,#f05252 0%,#b91c1c 100%);
+    --grad-blue:linear-gradient(135deg,#4d8ef7 0%,#1a49c4 100%);
+    --grad-panel:linear-gradient(180deg,#182134 0%,#111827 100%);
+    --grad-field:linear-gradient(180deg,#0f1830 0%,#0a1122 60%,#0c1526 100%);
+    --shadow:0 18px 40px -14px rgba(0,0,0,.85), 0 3px 10px -4px rgba(0,0,0,.6);
+    --qb:#ef4444; --rb:#f59e0b; --wr:#3b82f6; --te:#8b5cf6; --flex:#14b8a6;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  body{margin:0;background:var(--paper);color:var(--ink);
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    font-size:16px;line-height:1.45;overscroll-behavior-y:none;}
-  .wrap{max-width:560px;margin:0 auto;padding:14px 14px 40px;}
-  h1,h2,h3{margin:0;line-height:1.15;letter-spacing:-.01em}
-  .muted{color:var(--muted)}
-  .cap{font-weight:900;text-transform:uppercase;letter-spacing:2px;font-size:10px;color:var(--muted)}
+  html,body{margin:0;background:var(--bg);color:var(--ink)}
+  body{font-family:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    font-size:16px;line-height:1.45;overscroll-behavior-y:none;
+    background-image:radial-gradient(1000px 600px at 50% -8%, rgba(59,130,246,.10), transparent 70%),
+                     radial-gradient(800px 500px at 100% 100%, rgba(239,68,68,.07), transparent 70%);
+    background-attachment:fixed;}
+  .wrap{max-width:600px;margin:0 auto;padding:14px 14px 46px}
+  h1,h2,h3{margin:0;line-height:1.05}
+  .display{font-family:'Anton',Impact,'Arial Narrow',sans-serif;font-weight:400;letter-spacing:.01em;
+    text-transform:uppercase}
+  .num{font-family:'Anton',Impact,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+  .dim{color:var(--dim)}
+  .eyebrow{font-family:'Anton',Impact,sans-serif;text-transform:uppercase;letter-spacing:.16em;
+    font-size:11px;color:var(--dim-2)}
   button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
-  .btn{display:block;width:100%;padding:15px 18px;border-radius:14px;background:var(--green);
-    color:#F4ECDA;font-weight:800;font-size:16px;text-align:center;box-shadow:var(--shadow);
-    transition:transform .08s ease, filter .15s ease}
-  .btn:active{transform:translateY(1px) scale(.995)}
-  .btn:disabled{opacity:.45;cursor:default}
-  .btn.gold{background:var(--gold);color:#16120F}
-  .btn.ghost{background:transparent;color:var(--ink);box-shadow:none;border:1.5px solid var(--border-soft)}
-  .btn.small{padding:11px 14px;font-size:14px;border-radius:11px}
-  .row{display:flex;gap:9px;align-items:center}
-  .card{background:var(--card);color:var(--oncard);border:1.5px solid var(--border-soft);
-    border-radius:16px;padding:14px;box-shadow:var(--shadow)}
-  .screen{display:none;animation:fade .22s ease}
-  .screen.on{display:block}
-  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
-  /* header */
-  header{display:flex;align-items:center;justify-content:space-between;margin:2px 0 14px}
-  .brand{font-weight:900;font-size:15px;letter-spacing:-.02em}
-  .brand span{color:var(--gold)}
-  .iconbtn{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border-soft);
-    display:grid;place-items:center;font-size:15px}
+  .btn{display:block;width:100%;padding:16px 18px;border-radius:12px;background:var(--grad-red);
+    color:#fff;font-family:'Anton',Impact,sans-serif;font-size:19px;text-transform:uppercase;
+    letter-spacing:.05em;text-align:center;box-shadow:var(--shadow);position:relative;overflow:hidden;
+    transition:transform .07s ease,filter .15s ease}
+  .btn:before{content:'';position:absolute;left:0;right:0;top:0;height:40%;
+    background:linear-gradient(180deg,rgba(255,255,255,.22),transparent)}
+  .btn:active{transform:translateY(1px) scale(.995);filter:brightness(1.08)}
+  .btn:disabled{opacity:.4;cursor:default}
+  .btn.blue{background:var(--grad-blue)}
+  .btn.ghost{background:transparent;box-shadow:none;border:1.5px solid var(--line-2);font-size:15px}
+  .btn.ghost:before{display:none}
+  .btn.sm{padding:11px 14px;font-size:14px;border-radius:10px}
 
-  /* intro */
-  .hero{background:var(--green);color:#F4ECDA;border-radius:20px;padding:22px 18px;box-shadow:var(--shadow);
-    background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.045) 0 1px,transparent 1px 44px)}
-  .hero h1{font-size:30px;font-weight:900}
-  .hero p{margin:9px 0 0;font-size:14px;opacity:.9}
-  .rules{margin:14px 0 0;padding:0;list-style:none;display:grid;gap:8px}
-  .rules li{display:flex;gap:10px;font-size:14px;align-items:flex-start}
-  .rules b{color:var(--gold)}
-  .rulenum{flex:0 0 22px;height:22px;border-radius:7px;background:var(--gold);color:#16120F;
-    font-weight:900;font-size:11px;display:grid;place-items:center;margin-top:1px}
+  .panel{background:var(--grad-panel);border:1px solid var(--line);border-radius:16px;padding:15px;
+    box-shadow:var(--shadow)}
+  .screen{display:none}
+  .screen.on{display:block;animation:in .25s ease both}
+  @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-  /* franchise grid */
-  .divgrid{display:grid;gap:12px}
-  .divblock .cap{margin-bottom:6px;display:block}
-  .teams{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
-  .team{padding:11px 4px;border-radius:11px;border:1.5px solid var(--border-soft);background:var(--card);
-    font-weight:900;font-size:13px;text-align:center;transition:all .12s ease}
-  .team:active{transform:scale(.96)}
-  .team.sel{background:var(--green);color:#F4ECDA;border-color:var(--green)}
+  header{display:flex;align-items:center;justify-content:space-between;margin:2px 0 16px}
+  .brand{font-family:'Anton',Impact,sans-serif;font-size:16px;letter-spacing:.06em;text-transform:uppercase}
+  .brand i{color:var(--red);font-style:normal}
+  .pill{font-family:'Anton',Impact,sans-serif;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    padding:5px 10px;border-radius:99px;border:1px solid var(--line-2);color:var(--dim)}
 
-  /* cap bar */
-  .capbar{position:sticky;top:0;z-index:20;background:var(--paper);padding:8px 0 10px;margin:-4px 0 12px}
-  .money{display:flex;align-items:baseline;gap:8px}
-  .money .big{font-size:27px;font-weight:900;letter-spacing:-.02em}
-  .money .big.low{color:var(--red)}
-  .bar{height:8px;border-radius:99px;background:rgba(var(--ink-rgb),.12);overflow:hidden;margin-top:7px}
-  .bar i{display:block;height:100%;background:var(--green);border-radius:99px;transition:width .35s ease}
-  .bar i.low{background:var(--red)}
-  .slotdots{display:flex;gap:5px;margin-top:9px}
-  .dot{flex:1;height:5px;border-radius:99px;background:rgba(var(--ink-rgb),.14)}
-  .dot.done{background:var(--green)}
-  .dot.now{background:var(--gold)}
-  .warn{margin-top:8px;font-size:12px;font-weight:700;color:var(--red)}
+  .titlecard{border-radius:18px;padding:26px 18px 22px;text-align:center;position:relative;overflow:hidden;
+    background:var(--grad-field);border:1px solid var(--line)}
+  .titlecard:before{content:'';position:absolute;inset:0;
+    background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 40px)}
+  .titlecard .kicker{position:relative;font-family:'Anton',Impact,sans-serif;letter-spacing:.22em;
+    font-size:11px;color:var(--red)}
+  .titlecard h1{position:relative;font-family:'Anton',Impact,sans-serif;font-size:44px;line-height:.92;
+    text-transform:uppercase;margin:8px 0 0;
+    background:linear-gradient(180deg,#fff 20%,#8fb4ff 100%);-webkit-background-clip:text;
+    background-clip:text;color:transparent}
+  .titlecard p{position:relative;margin:10px 0 0;color:var(--dim);font-size:14px}
+  .rules{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:9px}
+  .rules li{display:flex;gap:11px;align-items:flex-start;font-size:14.5px}
+  .rules .n{flex:0 0 24px;height:24px;border-radius:7px;background:var(--grad-blue);color:#fff;
+    font-family:'Anton',Impact,sans-serif;font-size:12px;display:grid;place-items:center;margin-top:1px}
+  .rules b{color:#fff}
 
-  /* wheel */
-  .reelbox{height:96px;overflow:hidden;border-radius:14px;border:1.5px solid var(--border-soft);
-    background:var(--green);color:#F4ECDA;position:relative}
-  .reelbox:after{content:"";position:absolute;inset:0;pointer-events:none;
-    background:linear-gradient(180deg,rgba(0,0,0,.35),transparent 38%,transparent 62%,rgba(0,0,0,.35))}
-  .reel{will-change:transform}
-  .reelitem{height:96px;display:grid;place-items:center;text-align:center;padding:0 12px;
-    font-weight:900;font-size:17px;letter-spacing:-.01em}
-  .slotlabel{display:inline-block;padding:4px 10px;border-radius:8px;background:var(--gold);color:#16120F;
-    font-weight:900;font-size:11px;letter-spacing:1.5px;text-transform:uppercase}
+  .divs{display:grid;gap:13px}
+  .teams{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:6px}
+  .tm{padding:12px 3px;border-radius:10px;border:1px solid var(--line);background:var(--panel);
+    font-family:'Anton',Impact,sans-serif;font-size:14px;letter-spacing:.03em;transition:all .12s ease}
+  .tm:active{transform:scale(.95)}
+  .tm.on{background:var(--grad-blue);border-color:transparent;box-shadow:0 0 0 2px rgba(59,130,246,.35)}
 
-  /* player options */
+  /* the field */
+  .field{position:relative;width:100%;aspect-ratio:1/1.02;border-radius:16px;overflow:hidden;
+    background:var(--grad-field);border:1px solid var(--line)}
+  .field .lines{position:absolute;inset:0;
+    background:repeating-linear-gradient(0deg,transparent 0 9.6%,rgba(255,255,255,.07) 9.6% calc(9.6% + 1px))}
+  .field .hash{position:absolute;inset:0;
+    background:repeating-linear-gradient(90deg,transparent 0 24%,rgba(239,68,68,.10) 24% calc(24% + 1px))}
+  .field .ez{position:absolute;left:0;right:0;height:9%}
+  .field .ez.t{top:0;background:linear-gradient(180deg,rgba(59,130,246,.22),rgba(59,130,246,.04))}
+  .field .ez.b{bottom:0;background:linear-gradient(0deg,rgba(239,68,68,.20),rgba(239,68,68,.03))}
+  .links-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+  .links-svg line{stroke-linecap:round}
+  @keyframes dash{to{stroke-dashoffset:-18}}
+  .chip{position:absolute;transform:translate(-50%,-50%);width:74px;text-align:center;cursor:pointer}
+  .chip .disc{width:44px;height:44px;margin:0 auto;border-radius:50%;display:grid;place-items:center;
+    font-family:'Anton',Impact,sans-serif;font-size:13px;color:#fff;border:2px solid rgba(255,255,255,.22);
+    box-shadow:0 6px 14px -4px rgba(0,0,0,.8)}
+  .chip.empty .disc{background:rgba(255,255,255,.05);border-style:dashed;color:var(--dim-2)}
+  .chip.now .disc{border-color:#fff;animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(255,255,255,.14),0 6px 16px -4px #000}
+    50%{box-shadow:0 0 0 10px rgba(255,255,255,.04),0 6px 16px -4px #000}}
+  .chip.filled .disc{animation:pop .34s cubic-bezier(.2,1.5,.4,1) both}
+  @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+  .chip .who{margin-top:5px;font-size:10.5px;font-weight:800;line-height:1.15;
+    text-shadow:0 2px 6px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chip .yr{font-size:9.5px;color:var(--dim);font-weight:700}
+
+  .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 11px;margin:-4px 0 12px;
+    background:linear-gradient(180deg,var(--bg) 72%,rgba(8,11,20,0))}
+  .capline{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+  .capline .amt{font-family:'Anton',Impact,sans-serif;font-size:32px;line-height:1}
+  .capline .amt.low{color:var(--red)}
+  .bar{height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:8px}
+  .bar i{display:block;height:100%;border-radius:99px;background:var(--grad-blue);transition:width .4s ease}
+  .bar i.low{background:var(--grad-red)}
+  .note{margin-top:8px;font-size:12.5px;font-weight:700;color:#fca5a5}
+
+  .chemrow{display:flex;align-items:center;gap:11px;margin-top:11px}
+  .chemval{font-family:'Anton',Impact,sans-serif;line-height:1;min-width:74px}
+  .chemval.pos{color:#4ade80} .chemval.zero{color:var(--dim-2)} .chemval.neg{color:var(--red)}
+  .chembar{flex:1;height:9px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}
+  .chembar i{display:block;height:100%;border-radius:99px;
+    background:linear-gradient(90deg,#22c55e,#4ade80);transition:width .5s cubic-bezier(.2,.9,.2,1)}
+  .bump{animation:bump .62s ease}
+  @keyframes bump{0%{transform:scale(1)}30%{transform:scale(1.24)}100%{transform:scale(1)}}
+  .linkrow{display:flex;gap:9px;align-items:center;font-size:13px;padding:6px 0;border-top:1px solid var(--line)}
+  .linkrow .v{font-family:'Anton',Impact,sans-serif;font-size:13px;min-width:44px;text-align:right;color:#4ade80}
+  .linkrow .v.neg{color:var(--red)}
+
+  .reelbox{height:84px;overflow:hidden;border-radius:12px;position:relative;
+    background:linear-gradient(180deg,#101a30,#0b1120);border:1px solid var(--line-2)}
+  .reelbox:after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(180deg,rgba(0,0,0,.6),transparent 40%,transparent 60%,rgba(0,0,0,.6))}
+  .reelbox .edge{position:absolute;left:0;right:0;height:2px;background:var(--red);opacity:.5}
+  .reelbox .edge.t{top:calc(50% - 26px)} .reelbox .edge.b{bottom:calc(50% - 26px)}
+  .reel-i{height:84px;display:grid;place-items:center;padding:0 14px;text-align:center;
+    font-family:'Anton',Impact,sans-serif;font-size:19px;text-transform:uppercase;letter-spacing:.02em}
+
   .opts{display:grid;gap:8px;margin-top:12px}
-  .opt{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;
-    border:1.5px solid var(--border-soft);background:var(--card);text-align:left;width:100%;
-    transition:all .12s ease}
+  .opt{display:flex;align-items:center;gap:11px;padding:11px;border-radius:12px;width:100%;
+    background:var(--panel);border:1px solid var(--line);text-align:left;transition:all .12s ease}
   .opt:active{transform:scale(.985)}
-  .opt.best{border-color:var(--gold);box-shadow:0 0 0 2px rgba(235,166,31,.22)}
-  .pos{flex:0 0 34px;height:34px;border-radius:9px;display:grid;place-items:center;
-    color:#fff;font-weight:900;font-size:11px}
-  .opt .nm{flex:1 1 auto;min-width:0}
-  .opt .nm b{display:block;font-size:14.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .opt .nm small{display:block;color:var(--muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .price{flex:0 0 auto;font-weight:900;font-size:15px;text-align:right}
-  .price small{display:block;font-weight:700;font-size:10.5px;color:var(--muted)}
+  .opt.hot{border-color:rgba(74,222,128,.5);box-shadow:0 0 0 1px rgba(74,222,128,.25)}
+  .badge{flex:0 0 36px;height:36px;border-radius:9px;display:grid;place-items:center;color:#fff;
+    font-family:'Anton',Impact,sans-serif;font-size:12px}
+  .opt .who{flex:1;min-width:0}
+  .opt .who b{display:block;font-size:14.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .opt .who span{display:block;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .opt .cost{flex:0 0 auto;text-align:right}
+  .opt .cost b{display:block;font-family:'Anton',Impact,sans-serif;font-size:17px}
+  .chemtag{display:inline-block;margin-top:3px;font-size:10.5px;font-weight:900;padding:2px 6px;
+    border-radius:5px;background:rgba(74,222,128,.16);color:#4ade80;max-width:100%;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-  /* roster */
-  .rline{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-soft)}
-  .rline:last-child{border-bottom:none}
-  .rslot{flex:0 0 46px;font-weight:900;font-size:10px;letter-spacing:1px;color:var(--muted)}
-  .rline .nm{flex:1 1 auto;min-width:0}
-  .rline .nm b{display:block;font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .rline .nm small{color:var(--muted);font-size:11px}
+  .gamecard{border-radius:16px;padding:16px;background:var(--grad-field);border:1px solid var(--line);
+    position:relative;overflow:hidden}
+  .gamecard:before{content:'';position:absolute;inset:0;
+    background:repeating-linear-gradient(90deg,rgba(255,255,255,.045) 0 1px,transparent 1px 40px)}
+  .gamecard>*{position:relative}
+  .scoreline{display:flex;align-items:center;justify-content:center;gap:16px;margin:12px 0 2px}
+  .scoreline .s{font-family:'Anton',Impact,sans-serif;font-size:52px;line-height:1}
+  .scoreline .s.down{color:var(--dim-2)}
+  .tally{display:flex;gap:4px;margin-top:13px}
+  .tick{height:22px;border-radius:3px;background:rgba(255,255,255,.08);flex:1 1 0;min-width:0}
+  .tick.w{background:var(--grad-blue)} .tick.l{background:var(--grad-red)}
+  .tick.p{outline:1px solid rgba(255,255,255,.45);outline-offset:1px}
+  .glist{display:grid;gap:5px;margin-top:12px;max-height:320px;overflow-y:auto}
+  .g{display:flex;align-items:center;gap:9px;font-size:13px;padding:8px 10px;border-radius:9px;
+    background:var(--panel);border:1px solid var(--line);overflow:hidden}
+  .g.new{animation:slide .3s ease both}
+  @keyframes slide{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+  .g .wk{flex:0 0 44px;font-family:'Anton',Impact,sans-serif;font-size:11px;color:var(--dim-2)}
+  .g .res{flex:0 0 22px;height:22px;border-radius:6px;display:grid;place-items:center;
+    font-family:'Anton',Impact,sans-serif;font-size:12px;color:#fff}
+  .g .res.w{background:var(--blue-2)} .g .res.l{background:var(--red-2)}
+  .g .opp{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+  .g .sc{flex:0 0 58px;text-align:right;font-family:'Anton',Impact,sans-serif;font-size:14px;white-space:nowrap}
+  .g.po{background:linear-gradient(90deg,rgba(59,130,246,.18),var(--panel))}
 
-  /* chemistry */
-  .chembig{font-size:34px;font-weight:900;letter-spacing:-.02em;color:var(--teal)}
-  .chembig.none{color:var(--muted)}
-  .link{display:flex;gap:8px;align-items:center;font-size:13px;padding:6px 0}
-  .lval{flex:0 0 44px;font-weight:900;font-size:12px;color:var(--teal);text-align:right}
-  .lval.neg{color:var(--red)}
+  .bigrec{text-align:center;padding:6px 0 12px}
+  .bigrec .r{font-family:'Anton',Impact,sans-serif;font-size:62px;line-height:.95}
+  .verdict{border-radius:16px;padding:22px 18px;text-align:center;border:1px solid var(--line);
+    background:var(--grad-panel)}
+  .verdict.gold{background:linear-gradient(160deg,#3b2f0a,#181305);border-color:rgba(245,158,11,.42)}
+  .verdict.win{background:linear-gradient(160deg,#0c2a4d,#0a1526);border-color:rgba(59,130,246,.42)}
+  .verdict.out{background:linear-gradient(160deg,#3a1114,#1a0a0c);border-color:rgba(239,68,68,.34)}
+  .verdict h2{font-family:'Anton',Impact,sans-serif;font-size:31px;text-transform:uppercase;line-height:.98;
+    margin-top:5px}
+  .verdict p{margin:9px 0 0;color:var(--dim);font-size:14px}
+  .miss{display:flex;align-items:center;gap:9px;font-size:13px;padding:9px 0;border-top:1px solid var(--line)}
+  .miss .up{font-family:'Anton',Impact,sans-serif;color:#4ade80;font-size:13px}
 
-  /* season */
-  .scorecard{background:var(--green);color:#F4ECDA;border-radius:18px;padding:16px;box-shadow:var(--shadow);
-    background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.045) 0 1px,transparent 1px 44px)}
-  .vs{font-size:12px;opacity:.85;font-weight:700}
-  .oppname{font-size:19px;font-weight:900;margin-top:3px;letter-spacing:-.01em}
-  .final{display:flex;align-items:center;justify-content:center;gap:14px;margin:14px 0 4px}
-  .final .n{font-size:44px;font-weight:900;letter-spacing:-.03em;line-height:1}
-  .final .n.lose{opacity:.55}
-  .wl{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;
-    font-weight:900;font-size:13px}
-  .wl.w{background:var(--gold);color:#16120F} .wl.l{background:var(--red);color:#fff}
-  .weeks{display:grid;gap:5px;margin-top:12px;max-height:280px;overflow-y:auto}
-  .wrow{display:flex;align-items:center;gap:8px;font-size:13px;padding:7px 10px;border-radius:10px;
-    background:var(--card);border:1.5px solid var(--border-soft);overflow:hidden}
-  .wrow .wk{flex:0 0 46px;font-weight:900;font-size:10px;color:var(--muted);letter-spacing:.4px}
-  .wrow .op{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
-  /* Fixed width and no shrink: the scoreline must never be the thing that gets
-     clipped — an ellipsised score reads as a wrong score. */
-  .wrow .sc{flex:0 0 58px;text-align:right;font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
-  .wrow.po{background:linear-gradient(90deg,rgba(235,166,31,.16),var(--card))}
-  .rec{display:flex;gap:7px;align-items:baseline}
-  .rec .r{font-size:26px;font-weight:900;letter-spacing:-.02em}
-
-  /* outcome */
-  .final-card{border-radius:20px;padding:22px 18px;box-shadow:var(--shadow);text-align:center;
-    background:var(--green);color:#F4ECDA;
-    background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 44px)}
-  .final-card.perfect{background:linear-gradient(160deg,var(--gold),#c8860f);color:#16120F}
-  .final-card.beat{background:linear-gradient(160deg,var(--teal),#0d6b52);color:#F4ECDA}
-  .final-card .icon{font-size:44px;line-height:1}
-  .final-card h2{font-size:25px;font-weight:900;margin-top:8px}
-  .final-card p{margin:8px 0 0;font-size:14px;opacity:.92}
-  .missrow{display:flex;align-items:center;gap:9px;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border-soft)}
-  .missrow:last-child{border-bottom:none}
-  .missrow .arrow{color:var(--muted);flex:0 0 auto}
-  .missrow .up{color:var(--teal);font-weight:900;flex:0 0 auto;font-size:12px}
-
-  .loading{text-align:center;padding:70px 20px}
-  .spinner{width:34px;height:34px;margin:0 auto 14px;border-radius:50%;
-    border:3px solid rgba(var(--ink-rgb),.16);border-top-color:var(--green);animation:spin .8s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(80px);
-    background:var(--ink);color:var(--paper);padding:11px 17px;border-radius:11px;font-weight:700;
-    font-size:14px;opacity:0;transition:all .25s ease;z-index:99;pointer-events:none;max-width:90vw}
+  .load{text-align:center;padding:80px 20px}
+  .dots{display:flex;gap:6px;justify-content:center;margin-bottom:16px}
+  .dots i{width:9px;height:9px;border-radius:50%;background:var(--blue);animation:bounce 1s infinite}
+  .dots i:nth-child(2){animation-delay:.15s;background:#fff}
+  .dots i:nth-child(3){animation-delay:.3s;background:var(--red)}
+  @keyframes bounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-7px);opacity:1}}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(90px);z-index:99;
+    background:var(--panel-2);border:1px solid var(--line-2);padding:12px 18px;border-radius:10px;
+    font-weight:700;font-size:14px;opacity:0;transition:all .25s ease;pointer-events:none}
   .toast.on{transform:translateX(-50%);opacity:1}
-  .sep{height:1px;background:var(--border-soft);margin:14px 0}
+  .sheet{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;z-index:60;
+    align-items:flex-end;justify-content:center;padding:14px}
+  .sheet.on{display:flex}
+  .sheet .inner{width:100%;max-width:560px;background:var(--grad-panel);border:1px solid var(--line-2);
+    border-radius:16px;padding:16px;animation:up .22s ease both;max-height:86vh;overflow-y:auto}
+  @keyframes up{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+  .kv{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px}
+  .hr{height:1px;background:var(--line);margin:14px 0}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="brand">RunThe<span>.GG</span></div>
-    <button class="iconbtn" id="theme" aria-label="Toggle theme">◐</button>
+    <div class="brand">RunThe<i>.GG</i></div>
+    <div class="pill" id="hdr">The Perfect Season</div>
   </header>
 
-  <!-- LOADING -->
   <div class="screen on" id="s-load">
-    <div class="loading"><div class="spinner"></div><div class="muted">Loading 27 seasons…</div></div>
+    <div class="load"><div class="dots"><i></i><i></i><i></i></div>
+      <div class="dim">Loading every season since 1999</div></div>
   </div>
 
-  <!-- INTRO -->
   <div class="screen" id="s-intro">
-    <div class="hero">
-      <h1>The Perfect Season</h1>
-      <p>The 2007 Patriots went 18–1. Beat that.</p>
+    <div class="titlecard">
+      <div class="kicker">1999 to 2025</div>
+      <h1>The Perfect<br>Season</h1>
+      <p>Build a team out of any six seasons in NFL history, then try to win every game.</p>
     </div>
     <ul class="rules">
-      <li><span class="rulenum">1</span><span>A wheel spins to a random NFL team-season. <b>Sign one player from it.</b> Six spins, six slots.</span></li>
-      <li><span class="rulenum">2</span><span>You have <b>$100M</b>. Stars cost up to $48M. Re-spins cost <b>$15M</b> out of that same budget.</span></li>
-      <li><span class="rulenum">3</span><span>Players from the same team, college or draft class build <b>chemistry</b> — up to +15%.</span></li>
-      <li><span class="rulenum">4</span><span>Then play <b>20 games</b>. Lose twice and the run is over.</span></li>
-      <li><span class="rulenum">5</span><span><b>19–1</b> beats the Patriots. <b>20–0</b> is perfect.</span></li>
+      <li><span class="n">1</span><span>Spin the wheel and you get a random team from a random year. <b>Sign one player off it.</b></span></li>
+      <li><span class="n">2</span><span>Six spins fill six spots, and you have <b>100 million</b> to spend.</span></li>
+      <li><span class="n">3</span><span>Players who shared a team, a college, or a draft class build <b>chemistry</b>, which makes your whole team better.</span></li>
+      <li><span class="n">4</span><span>Play all <b>17 games</b>. Win 12 and you make the playoffs. Win 15 and you skip the first round.</span></li>
+      <li><span class="n">5</span><span>One playoff loss ends it. Win everything and you finish <b>20 and 0</b>.</span></li>
     </ul>
-    <div class="sep"></div>
-    <button class="btn" id="go-franchise">Pick your franchise</button>
-    <div class="row" style="margin-top:9px">
-      <button class="btn ghost small" id="go-daily">Today's challenge</button>
-    </div>
-    <p class="muted" style="font-size:11.5px;margin-top:12px">Every number comes from real weekly game logs, 1999–2025. Prices are set by production, not contracts.</p>
+    <div class="hr"></div>
+    <button class="btn" id="b-start">Start a run</button>
+    <div style="margin-top:9px"><button class="btn ghost" id="b-daily">Play today's spins</button></div>
+    <p class="dim" style="font-size:12px;margin-top:14px">Every player is scored from his real week by week stats. Prices come from what he produced, not what he was paid.</p>
   </div>
 
-  <!-- FRANCHISE -->
-  <div class="screen" id="s-franchise">
-    <span class="cap">Step 1 of 3</span>
-    <h2 style="margin:4px 0 3px">Pick your franchise</h2>
-    <p class="muted" style="font-size:13px;margin:0 0 14px">This sets your division and schedule shape. It never makes the run easier or harder.</p>
-    <div class="divgrid" id="divgrid"></div>
-    <div style="margin-top:16px"><button class="btn" id="go-draft" disabled>Start the draft</button></div>
+  <div class="screen" id="s-team">
+    <div class="eyebrow">Step 1 of 3</div>
+    <h2 class="display" style="font-size:27px;margin:5px 0 4px">Pick a team</h2>
+    <p class="dim" style="font-size:13.5px;margin:0 0 15px">This sets your division and who you play. It does not make the run easier or harder.</p>
+    <div class="divs" id="divs"></div>
+    <div style="margin-top:17px"><button class="btn" id="b-draft" disabled>Go to the draft</button></div>
   </div>
 
-  <!-- DRAFT -->
   <div class="screen" id="s-draft">
-    <div class="capbar">
-      <div class="money"><div class="big" id="d-money">$100.0M</div><div class="muted" style="font-size:12px" id="d-sub">to fill 6 slots</div></div>
-      <div class="bar"><i id="d-bar" style="width:100%"></i></div>
-      <div class="slotdots" id="d-dots"></div>
-      <div class="warn" id="d-warn" style="display:none"></div>
+    <div class="capwrap">
+      <div class="capline">
+        <div><div class="eyebrow">Money left</div><div class="amt num" id="c-amt">$100.0M</div></div>
+        <div style="text-align:right"><div class="eyebrow">Chemistry</div>
+          <div class="chemval num zero" id="c-chem" style="font-size:27px">0.0%</div></div>
+      </div>
+      <div class="bar"><i id="c-bar" style="width:100%"></i></div>
+      <div class="note" id="c-note" style="display:none"></div>
     </div>
-    <div style="margin-bottom:8px"><span class="slotlabel" id="d-slot">QB</span></div>
-    <div class="reelbox"><div class="reel" id="d-reel"></div></div>
-    <div id="d-opts" class="opts"></div>
+
+    <div class="field" id="field"></div>
+
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin:14px 0 8px">
+      <div><div class="eyebrow">Now signing</div>
+        <div class="display" style="font-size:22px" id="d-slot">QB</div></div>
+      <div class="pill" id="d-count">Spin 1 of 6</div>
+    </div>
+    <div class="reelbox"><span class="edge t"></span><span class="edge b"></span><div id="reel"></div></div>
+    <div class="opts" id="opts"></div>
     <div id="d-respin" style="margin-top:10px"></div>
   </div>
 
-  <!-- SQUAD / SCHEDULE REVEAL -->
-  <div class="screen" id="s-reveal">
-    <span class="cap">Step 3 of 3</span>
-    <h2 style="margin:4px 0 12px">Your squad</h2>
-    <div class="card" id="r-roster"></div>
-    <div class="card" style="margin-top:11px">
-      <span class="cap">Chemistry</span>
-      <div class="chembig" id="r-chem">+0%</div>
-      <div id="r-links"></div>
+  <div class="screen" id="s-squad">
+    <div class="eyebrow">Step 3 of 3</div>
+    <h2 class="display" style="font-size:27px;margin:5px 0 6px">Your team</h2>
+    <p class="dim" style="font-size:13px;margin:0 0 12px">Tap a player to see his numbers. The lines show who has chemistry with who.</p>
+    <div class="field" id="field2"></div>
+    <div class="panel" style="margin-top:12px">
+      <div class="eyebrow">Chemistry</div>
+      <div class="chemrow"><div class="chemval num" id="q-chem" style="font-size:27px">0.0%</div>
+        <div class="chembar"><i id="q-chembar" style="width:0%"></i></div></div>
+      <div id="q-links" style="margin-top:8px"></div>
     </div>
-    <div class="card" style="margin-top:11px">
-      <span class="cap">Your schedule</span>
-      <div id="r-sched" style="margin-top:7px;font-size:13px"></div>
+    <div class="panel" style="margin-top:11px">
+      <div class="eyebrow">Your schedule</div>
+      <div id="q-sched" style="margin-top:8px"></div>
     </div>
-    <div style="margin-top:14px"><button class="btn gold" id="go-season">Kick off Week 1</button></div>
+    <div style="margin-top:15px"><button class="btn blue" id="b-play">Play the season</button></div>
   </div>
 
-  <!-- SEASON -->
   <div class="screen" id="s-season">
-    <div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:11px">
-      <div class="rec"><div class="r" id="v-rec">0–0</div><div class="muted" style="font-size:12px" id="v-lives"></div></div>
-      <div class="muted" style="font-size:12px" id="v-chem"></div>
-    </div>
-    <div class="scorecard" id="v-card">
-      <div class="vs" id="v-when">Week 1</div>
-      <div class="oppname" id="v-opp">—</div>
-      <div class="final" id="v-final" style="display:none">
-        <div class="n" id="v-you">0</div><div style="opacity:.5;font-weight:900">–</div><div class="n" id="v-them">0</div>
+    <div class="gamecard">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="min-width:0"><div class="eyebrow" id="v-round">Week 1</div>
+          <div class="display" style="font-size:20px;margin-top:3px" id="v-opp">Opponent</div></div>
+        <div style="text-align:right;flex:0 0 auto"><div class="eyebrow">Record</div>
+          <div class="num" style="font-size:26px" id="v-rec">0-0</div></div>
       </div>
+      <div class="scoreline"><div class="s num" id="v-you">0</div>
+        <div class="dim num" style="font-size:22px">-</div><div class="s num" id="v-them">0</div></div>
+      <div class="tally" id="v-tally"></div>
     </div>
-    <div style="margin-top:12px"><button class="btn gold" id="v-next">Play this game</button></div>
-    <div class="weeks" id="v-weeks"></div>
+    <div style="margin-top:12px"><button class="btn blue" id="b-sim">Skip to the end</button></div>
+    <div class="glist" id="v-list"></div>
   </div>
 
-  <!-- OVER -->
+  <div class="screen" id="s-seed">
+    <div class="bigrec"><div class="eyebrow">Final record</div><div class="r num" id="sd-rec">0-0</div></div>
+    <div class="verdict" id="sd-card"><h2 id="sd-title">Playoffs</h2><p id="sd-sub"></p></div>
+    <div style="margin-top:14px"><button class="btn" id="b-po">Start the playoffs</button></div>
+    <div style="margin-top:9px"><button class="btn ghost" id="b-po-skip">Skip to the result</button></div>
+  </div>
+
   <div class="screen" id="s-over">
-    <div class="final-card" id="o-card">
-      <div class="icon" id="o-icon">🏈</div>
-      <h2 id="o-title">Run over</h2>
-      <p id="o-sub">—</p>
+    <div class="verdict" id="o-card">
+      <div class="eyebrow" id="o-eyebrow">Season over</div>
+      <h2 id="o-title">Record</h2>
+      <p id="o-sub"></p>
     </div>
-    <div class="card" style="margin-top:12px">
-      <span class="cap">Season</span>
-      <div class="weeks" id="o-weeks" style="max-height:none;margin-top:8px"></div>
+    <div class="panel" style="margin-top:12px">
+      <div class="eyebrow">Every game</div>
+      <div class="glist" id="o-list" style="max-height:none;margin-top:9px"></div>
     </div>
-    <div class="card" style="margin-top:11px" id="o-reveal-box">
-      <span class="cap">What you left on the table</span>
-      <div id="o-reveal" style="margin-top:7px"></div>
+    <div class="panel" style="margin-top:11px">
+      <div class="eyebrow">The team you could have had</div>
+      <div id="o-miss" style="margin-top:8px"></div>
     </div>
-    <div style="margin-top:14px"><button class="btn gold" id="o-share">Share result</button></div>
-    <div style="margin-top:9px"><button class="btn ghost" id="o-again">New run</button></div>
+    <div style="margin-top:15px"><button class="btn" id="b-share">Copy result</button></div>
+    <div style="margin-top:9px"><button class="btn ghost" id="b-again">Run it again</button></div>
   </div>
 </div>
-<div class="toast" id="toast"></div>
 
-<script src="engine.js?v=1"></script>
-<script src="run.js?v=1"></script>
+<div class="toast" id="toast"></div>
+<div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
+
+<script src="engine.js?v=2"></script>
+<script src="run.js?v=2"></script>
 <script>
 (function(){
 'use strict';
-const E = window.PS_ENGINE, R = window.PS_RUN;
-const $ = (id)=>document.getElementById(id);
-const POSCOL = {QB:'--pos-qb',RB:'--pos-rb',WR:'--pos-wr',TE:'--pos-te',FLEX:'--pos-flex'};
-const money = (v)=>'$'+v.toFixed(1)+'M';
+const E=window.PS_ENGINE, R=window.PS_RUN;
+const $=(id)=>document.getElementById(id);
+const COL={QB:'--qb',RB:'--rb',WR:'--wr',TE:'--te',FLEX:'--flex'};
+const M=(v)=>'$'+v.toFixed(1)+'M';
+const pc=(v)=>(v>=0?'+':'')+(v*100).toFixed(1)+'%';
+const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-let DATA=null, CTX=null, LEAGUE=null, CAL=null, BYKEY=null, run=null, selected=null;
+/* Where each spot sits on the field, in E.SLOTS order: QB, RB, WR, WR, TE, FLEX.
+   Spread out so nothing overlaps on a narrow phone. */
+const SPOT=[{x:50,y:63},{x:50,y:83},{x:12,y:31},{x:88,y:31},{x:72,y:46},{x:28,y:46}];
 
-function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on')); $(id).classList.add('on'); window.scrollTo({top:0,behavior:'auto'}); }
-function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2200); }
+let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,pickedTeam=null,simTimer=null,lastChem=1;
 
-$('theme').addEventListener('click',()=>{
-  const dark=document.documentElement.classList.toggle('dark');
-  try{ localStorage.setItem('ps-theme', dark?'dark':'light'); }catch(e){}
-});
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');window.scrollTo({top:0});}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2300);}
 
-// ─── load ────────────────────────────────────────────────────────────────────
 async function boot(){
   try{
-    const j = (f)=>fetch(f+'?v=1').then(r=>{ if(!r.ok) throw new Error(f+' '+r.status); return r.json(); });
-    const [players, teams, rosters, battery, coaches, curated, league, cal] = await Promise.all([
-      j('data/player_seasons.json'), j('data/team_seasons.json'), j('data/team_season_rosters.json'),
-      j('data/battery.json'), j('data/coaches.json'), j('data/curated.json'),
-      j('data/league_context.json'), j('data/display_calibration.json')
-    ]);
-    DATA = R.indexData(players, teams);
-    CTX = {battery, coaches, curated};
-    LEAGUE = league.league_avg_pts_allowed_by_season;
-    CAL = cal;
-    BYKEY = new Map(players.map(p=>[p.player_id+'|'+p.season, p]));
-    void rosters;
-    buildFranchiseGrid();
-    show('s-intro');
-  }catch(err){
-    $('s-load').innerHTML = '<div class="loading"><h3>Couldn\'t load the data</h3><p class="muted" style="font-size:13px">'+
-      String(err.message)+'<br><br>The JSON files must sit in <b>football/data/</b> next to this page.</p></div>';
+    const j=(f)=>fetch(f+'?v=2').then(r=>{if(!r.ok)throw new Error(f);return r.json();});
+    const [pl,tm,bat,co,cu,lg,cal]=await Promise.all([
+      j('data/player_seasons.json'),j('data/team_seasons.json'),j('data/battery.json'),
+      j('data/coaches.json'),j('data/curated.json'),j('data/league_context.json'),
+      j('data/display_calibration.json')]);
+    DATA=R.indexData(pl,tm); CTX={battery:bat,coaches:co,curated:cu};
+    LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
+    BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
+    buildTeams(); show('s-intro');
+  }catch(e){
+    $('s-load').innerHTML='<div class="load"><h3 class="display">Could not load the data</h3>'+
+      '<p class="dim" style="font-size:13px">'+esc(e.message)+'</p></div>';
   }
 }
 
-// ─── franchise ───────────────────────────────────────────────────────────────
-function buildFranchiseGrid(){
-  const divs={};
-  for(const t of DATA.teamSeasons){ (divs[t.division] ??= new Set()).add(t.franchise); }
+function buildTeams(){
+  const d={};
+  for(const t of DATA.teamSeasons)(d[t.division] ??= new Set()).add(t.franchise);
   const order=['AFC East','AFC North','AFC South','AFC West','NFC East','NFC North','NFC South','NFC West'];
-  $('divgrid').innerHTML = order.map(d=>
-    '<div class="divblock"><span class="cap">'+d+'</span><div class="teams">'+
-    [...divs[d]].sort().map(f=>'<button class="team" data-f="'+f+'">'+f+'</button>').join('')+
-    '</div></div>').join('');
-  $('divgrid').addEventListener('click',(e)=>{
-    const b=e.target.closest('.team'); if(!b) return;
-    document.querySelectorAll('.team').forEach(x=>x.classList.remove('sel'));
-    b.classList.add('sel'); selected=b.dataset.f; $('go-draft').disabled=false;
+  $('divs').innerHTML=order.map(k=>'<div><div class="eyebrow">'+k+'</div><div class="teams">'+
+    [...d[k]].sort().map(f=>'<button class="tm" data-f="'+f+'">'+f+'</button>').join('')+'</div></div>').join('');
+  $('divs').addEventListener('click',e=>{
+    const b=e.target.closest('.tm'); if(!b)return;
+    document.querySelectorAll('.tm').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); pickedTeam=b.dataset.f; $('b-draft').disabled=false;
   });
 }
 
-$('go-franchise').addEventListener('click',()=>{ run=R.createRun({}); show('s-franchise'); });
-$('go-daily').addEventListener('click',()=>{
-  const d=new Date().toISOString().slice(0,10);
-  run=R.createRun({daily:d});
-  toast('Daily challenge — same wheel for everyone today');
-  show('s-franchise');
-});
-$('go-draft').addEventListener('click',()=>{
-  R.pickFranchise(run, selected);
-  show('s-draft'); nextSpin();
-});
-
-// ─── draft ───────────────────────────────────────────────────────────────────
-function paintCap(){
-  const rem=R.remaining(run), left=R.slotsLeft(run), floor=R.reserveFloor(run);
-  const low = rem <= floor + 6;
-  $('d-money').textContent = money(rem);
-  $('d-money').classList.toggle('low', low);
-  $('d-sub').textContent = left>0 ? ('to fill '+left+' more slot'+(left===1?'':'s')) : 'all slots filled';
-  const pct = Math.max(0, Math.min(100, rem/E.CONSTANTS.CAP_MUSD*100));
-  $('d-bar').style.width = pct+'%';
-  $('d-bar').classList.toggle('low', low);
-  $('d-dots').innerHTML = E.SLOTS.map((s,i)=>
-    '<div class="dot '+(i<run.roster.length?'done':(i===run.roster.length?'now':''))+'"></div>').join('');
-  // Unspent money is the trap: value-hunting underspends badly, so say so.
-  const w=$('d-warn');
-  if(left>0 && floor>0 && rem-floor < 8){
-    w.style.display='block'; w.textContent='Keep at least '+money(floor)+' for your remaining slots.';
-  } else if(left===1 && rem>25){
-    w.style.display='block'; w.textContent='You still have '+money(rem)+' unspent — spend it here or waste it.';
-  } else { w.style.display='none'; }
+/* ---------- the field ----------
+   Six spots, plus a line for every chemistry link between two signed players.
+   The lines are the point: you watch the team knit together as you draft. */
+function drawField(el,live){
+  const filled=run?run.roster:[];
+  const links=filled.length>1?E.resolveChemistry(filled,CTX).links:[];
+  const at=new Map(filled.map((p,i)=>[p.name,i]));
+  const lines=links.filter(l=>at.has(l.a)&&at.has(l.b)).map(l=>{
+    const a=SPOT[at.get(l.a)],b=SPOT[at.get(l.b)],good=l.value>0;
+    return '<line x1="'+a.x+'%" y1="'+a.y+'%" x2="'+b.x+'%" y2="'+b.y+'%" stroke="'+
+      (good?'#4ade80':'#ef4444')+'" stroke-width="'+(good?(1.5+l.value*20).toFixed(1):2)+
+      '" stroke-dasharray="5 5" opacity="'+(good?0.75:0.85)+'" style="animation:dash 1s linear infinite"/>';
+  }).join('');
+  const chips=E.SLOTS.map((slot,i)=>{
+    const p=filled[i],s=SPOT[i],now=live&&i===filled.length;
+    const bg=p?'background:linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.45))':'';
+    return '<div class="chip '+(p?'filled':'empty')+(now?' now':'')+'" style="left:'+s.x+'%;top:'+s.y+'%" data-i="'+i+'">'+
+      '<div class="disc" style="'+bg+'">'+(p?p.position:slot)+'</div>'+
+      (p?'<div class="who">'+esc(p.name.split(' ').slice(-1)[0])+'</div><div class="yr">'+p.season+'</div>'
+        :'<div class="who dim">'+(now?'On the clock':'Empty')+'</div>')+'</div>';
+  }).join('');
+  el.innerHTML='<div class="lines"></div><div class="hash"></div><div class="ez t"></div><div class="ez b"></div>'+
+    '<svg class="links-svg">'+lines+'</svg>'+chips;
+  el.onclick=(e)=>{const c=e.target.closest('.chip');if(!c)return;const p=filled[+c.dataset.i];if(p)sheet(p);};
 }
 
-function reelSpin(target, done){
-  const pool = DATA.teamSeasons;
-  const items=[]; const DECOYS=18;
-  for(let i=0;i<DECOYS;i++) items.push(pool[Math.floor(Math.random()*pool.length)].display);
-  items.push(target);
-  items.push(pool[0].display);
-  const reel=$('d-reel');
-  reel.innerHTML = items.map(n=>'<div class="reelitem">'+n+'</div>').join('');
-  reel.style.transition='none'; reel.style.transform='translateY(0)';
-  void reel.offsetHeight;
-  reel.style.transition='transform 1750ms cubic-bezier(.11,.66,.16,1)';
-  reel.style.transform='translateY(-'+(DECOYS*96)+'px)';
-  let fired=false; const fin=()=>{ if(fired)return; fired=true; done(); };
-  reel.addEventListener('transitionend',fin,{once:true});
-  setTimeout(fin,1950);
+function sheet(p){
+  const links=run.roster.length>1
+    ? E.resolveChemistry(run.roster,CTX).links.filter(l=>l.a===p.name||l.b===p.name) : [];
+  $('sheet-in').innerHTML='<div class="eyebrow">'+p.season+' '+esc(p.team_display)+'</div>'+
+    '<h2 class="display" style="font-size:26px;margin:4px 0 10px">'+esc(p.name)+'</h2>'+
+    '<div class="kv"><span class="dim">Spot</span><b>'+p.position+'</b></div>'+
+    '<div class="kv"><span class="dim">Cost</span><b>'+M(p.price_musd)+'</b></div>'+
+    '<div class="kv"><span class="dim">Points per game</span><b>'+p.ppr_ppg_mean.toFixed(1)+'</b></div>'+
+    '<div class="kv"><span class="dim">Swing week to week</span><b>'+p.ppr_ppg_sd.toFixed(1)+'</b></div>'+
+    '<div class="kv"><span class="dim">Games that year</span><b>'+p.games_played+'</b></div>'+
+    (p.college?'<div class="kv"><span class="dim">College</span><b>'+esc(p.college)+'</b></div>':'')+
+    (links.length?'<div class="eyebrow" style="margin-top:13px">Chemistry</div>'+links.map(l=>
+      '<div class="linkrow"><span class="v'+(l.value<0?' neg':'')+'">'+pc(l.value)+'</span><span>'+esc(l.label)+'</span></div>').join(''):'')+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  $('sheet').classList.add('on');
+  $('sh-x').onclick=()=>$('sheet').classList.remove('on');
+}
+$('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))$('sheet').classList.remove('on');});
+
+$('b-start').onclick=()=>{run=R.createRun({});show('s-team');};
+$('b-daily').onclick=()=>{run=R.createRun({daily:new Date().toISOString().slice(0,10)});
+  toast('Everyone gets the same six spins today');show('s-team');};
+$('b-draft').onclick=()=>{R.pickFranchise(run,pickedTeam);$('hdr').textContent=pickedTeam;show('s-draft');nextSpin();};
+
+/* ---------- draft ---------- */
+function paintTop(){
+  const rem=R.remaining(run),floor=R.reserveFloor(run),left=R.slotsLeft(run),low=rem<=floor+6;
+  $('c-amt').textContent=M(rem); $('c-amt').classList.toggle('low',low);
+  const b=$('c-bar'); b.style.width=Math.max(0,Math.min(100,rem/E.CONSTANTS.CAP_MUSD*100))+'%';
+  b.classList.toggle('low',low);
+  const chem=run.roster.length>1?E.resolveChemistry(run.roster,CTX).multiplier:1;
+  const el=$('c-chem'); el.textContent=((chem-1)*100).toFixed(1)+'%';
+  el.className='chemval num '+(chem>1.0005?'pos':(chem<0.9995?'neg':'zero'));
+  if(Math.abs(chem-lastChem)>0.0005){el.classList.add('bump');setTimeout(()=>el.classList.remove('bump'),640);}
+  lastChem=chem;
+  const n=$('c-note');
+  if(left>1&&rem-floor<8){n.style.display='block';n.textContent='Keep at least '+M(floor)+' back or you cannot fill the rest of your team.';}
+  else if(left===1&&rem>25){n.style.display='block';n.textContent='You still have '+M(rem)+' left and this is the last spot to spend it on.';}
+  else n.style.display='none';
+  $('d-count').textContent='Spin '+Math.min(6,run.roster.length+1)+' of 6';
+}
+
+function spinReel(target,done){
+  const pool=DATA.teamSeasons,items=[],N=16;
+  for(let i=0;i<N;i++)items.push(pool[Math.floor(Math.random()*pool.length)].display);
+  items.push(target); items.push(pool[0].display);
+  const r=$('reel');
+  r.innerHTML=items.map(t=>'<div class="reel-i">'+esc(t)+'</div>').join('');
+  r.style.transition='none'; r.style.transform='translateY(0)'; void r.offsetHeight;
+  r.style.transition='transform 1500ms cubic-bezier(.1,.7,.15,1)';
+  r.style.transform='translateY(-'+(N*84)+'px)';
+  let f=false; const fin=()=>{if(f)return;f=true;done();};
+  r.addEventListener('transitionend',fin,{once:true}); setTimeout(fin,1680);
 }
 
 function nextSpin(){
-  paintCap();
+  paintTop(); drawField($('field'),true);
   const slot=R.currentSlot(run);
-  $('d-slot').textContent = slot==='FLEX' ? 'FLEX — RB / WR / TE' : slot;
-  $('d-opts').innerHTML=''; $('d-respin').innerHTML='';
-  const draw=R.spin(run, DATA);
-  reelSpin(draw.display, ()=>paintOptions(draw));
+  $('d-slot').textContent=slot==='FLEX'?'Flex: RB, WR or TE':slot;
+  $('opts').innerHTML=''; $('d-respin').innerHTML='';
+  const draw=R.spin(run,DATA);
+  spinReel(draw.display,()=>paintOpts(draw));
 }
 
-function paintOptions(draw){
-  const opts = draw.options.map(k=>BYKEY.get(k));
-  const bestPpg = Math.max.apply(null, opts.map(p=>p.ppr_ppg_mean));
-  $('d-opts').innerHTML = opts.slice(0,8).map(p=>{
-    const isBest = p.ppr_ppg_mean===bestPpg;
-    return '<button class="opt'+(isBest?' best':'')+'" data-k="'+p.player_id+'|'+p.season+'">'+
-      '<span class="pos" style="background:var('+POSCOL[p.position]+')">'+p.position+'</span>'+
-      '<span class="nm"><b>'+p.name+'</b><small>'+p.season+' '+p.team_display+' · '+p.ppr_ppg_mean.toFixed(1)+' ppg ± '+p.ppr_ppg_sd.toFixed(1)+'</small></span>'+
-      '<span class="price">'+money(p.price_musd)+'<small>'+(p.price_musd>=40?'generational':p.price_musd>=25?'elite':p.price_musd>=12?'starter':'value')+'</small></span>'+
-    '</button>';
-  }).join('') + (opts.length>8 ? '<p class="muted" style="font-size:12px;text-align:center;margin:2px 0 0">'+(opts.length-8)+' cheaper options not shown</p>' : '');
-
-  const chk=R.canRespin(run);
-  $('d-respin').innerHTML = chk.ok
-    ? '<button class="btn ghost small" id="btn-respin">Re-spin — '+money(E.CONSTANTS.RESPIN_COST_MUSD)+' from your cap ('+(E.CONSTANTS.MAX_RESPINS-run.respinsUsed)+' left)</button>'
-    : '<p class="muted" style="font-size:12px;text-align:center;margin:0">'+
-      (run.respinsUsed>=E.CONSTANTS.MAX_RESPINS?'No re-spins left':chk.reason)+'</p>';
-  const rb=$('btn-respin');
-  if(rb) rb.addEventListener('click',()=>{
-    $('d-opts').innerHTML=''; $('d-respin').innerHTML='';
-    const d2=R.respin(run, DATA);
-    paintCap();
-    reelSpin(d2.display, ()=>paintOptions(d2));
-  });
-}
-
-$('d-opts').addEventListener('click',(e)=>{
-  const b=e.target.closest('.opt'); if(!b) return;
-  const p=BYKEY.get(b.dataset.k);
-  try{ R.sign(run,p); }catch(err){ toast(err.message); return; }
-  if(run.phase===R.PHASES.SEASON){ paintReveal(); } else { nextSpin(); }
-});
-
-// ─── reveal ──────────────────────────────────────────────────────────────────
-function paintReveal(){
-  R.startSeason(run, DATA, CTX);
-  const spent = run.roster.reduce((s,p)=>s+p.price_musd,0);
-  const fees = run.respinsUsed*E.CONSTANTS.RESPIN_COST_MUSD;
-  $('r-roster').innerHTML = run.roster.map((p,i)=>
-    '<div class="rline"><span class="rslot">'+E.SLOTS[i]+'</span>'+
-    '<span class="pos" style="background:var('+POSCOL[p.position]+');flex:0 0 28px;height:28px;font-size:10px">'+p.position+'</span>'+
-    '<span class="nm"><b>'+p.name+'</b><small>'+p.season+' '+p.team_display+' · '+p.ppr_ppg_mean.toFixed(1)+' ppg</small></span>'+
-    '<span class="price" style="font-size:13.5px">'+money(p.price_musd)+'</span></div>').join('')
-    + '<div class="sep"></div><div class="row" style="justify-content:space-between;font-size:12.5px">'
-    + '<span class="muted">'+money(spent)+' on players'+(fees?' + '+money(fees)+' in re-spins':'')+'</span>'
-    + '<b>'+money(spent+fees)+' of $100M</b></div>';
-
-  const mult=run.season.chemistry, pct=(mult-1)*100;
-  $('r-chem').textContent = (pct>=0?'+':'')+pct.toFixed(1)+'%';
-  $('r-chem').classList.toggle('none', Math.abs(pct)<0.05);
-  const links=run.season.chemistryLinks;
-  $('r-links').innerHTML = links.length
-    ? links.map(l=>'<div class="link"><span class="lval'+(l.value<0?' neg':'')+'">'+(l.value>0?'+':'')+(l.value*100).toFixed(0)+'%</span><span>'+l.label+'</span></div>').join('')
-    : '<p class="muted" style="font-size:13px;margin:4px 0 0">Six strangers. No shared teams, colleges or draft classes.</p>';
-
-  const ids=run.schedule;
-  $('r-sched').innerHTML = ids.map((id,i)=>{
-    const t=DATA.byTeamSeasonId[id];
-    return '<div class="row" style="justify-content:space-between;padding:3px 0"><span class="muted" style="font-size:11px;flex:0 0 46px">Wk '+(i+1)+'</span><span style="flex:1;font-weight:600">'+t.display+'</span><span class="muted" style="font-size:11px">'+t.record+'</span></div>';
-  }).join('') + '<div class="sep"></div><span class="cap">Playoffs</span>' + run.playoffs.map(id=>{
-    const t=DATA.byTeamSeasonId[id];
-    return '<div class="row" style="justify-content:space-between;padding:3px 0"><span style="flex:1;font-weight:600">'+t.display+'</span><span class="muted" style="font-size:11px">'+t.record+'</span></div>';
+function paintOpts(draw){
+  const opts=draw.options.map(k=>BYKEY.get(k));
+  /* Chemistry preview on every option. This is the whole reason chemistry exists:
+     you should see what a signing does before you commit, not after. */
+  const rows=opts.slice(0,8).map(p=>{
+    const pv=R.previewSigning(run,p,CTX), g=pv.delta;
+    const tag=g>0.0005
+      ? '<span class="chemtag">'+pc(g)+' from '+esc(pv.newLinks[0]?pv.newLinks[0].label:'a link')+'</span>'
+      : (g<-0.0005?'<span class="chemtag" style="background:rgba(239,68,68,.16);color:#fca5a5">'+pc(g)+' chemistry</span>':'');
+    return '<button class="opt'+(g>0.0005?' hot':'')+'" data-k="'+p.player_id+'|'+p.season+'">'+
+      '<span class="badge" style="background:linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.4))">'+p.position+'</span>'+
+      '<span class="who"><b>'+esc(p.name)+'</b><span>'+p.ppr_ppg_mean.toFixed(1)+' a game in '+p.season+'</span>'+tag+'</span>'+
+      '<span class="cost"><b>'+M(p.price_musd)+'</b></span></button>';
   }).join('');
-  show('s-reveal');
+  $('opts').innerHTML=rows+(opts.length>8?'<p class="dim" style="font-size:12px;text-align:center;margin:2px 0 0">'+(opts.length-8)+' cheaper players not shown</p>':'');
+  const chk=R.canRespin(run);
+  $('d-respin').innerHTML=chk.ok
+    ? '<button class="btn ghost sm" id="b-re">Spin again, '+M(E.CONSTANTS.RESPIN_COST_MUSD)+' off your budget ('+(E.CONSTANTS.MAX_RESPINS-run.respinsUsed)+' left)</button>'
+    : '<p class="dim" style="font-size:12px;text-align:center;margin:0">'+(run.respinsUsed>=E.CONSTANTS.MAX_RESPINS?'No spins left':esc(chk.reason))+'</p>';
+  const rb=$('b-re');
+  if(rb)rb.onclick=()=>{$('opts').innerHTML='';$('d-respin').innerHTML='';
+    const d=R.respin(run,DATA);paintTop();spinReel(d.display,()=>paintOpts(d));};
 }
 
-$('go-season').addEventListener('click',()=>{ paintSeason(); show('s-season'); });
-
-// ─── season ──────────────────────────────────────────────────────────────────
-function paintSeason(){
-  const s=run.season;
-  const ids=run.schedule.concat(run.playoffs);
-  $('v-rec').textContent = s.wins+'–'+s.losses;
-  const livesLeft = E.CONSTANTS.LIVES - s.losses;
-  $('v-lives').textContent = s.losses>E.CONSTANTS.LIVES ? '' :
-    (livesLeft>0 ? '· '+livesLeft+' loss to spare' : '· next loss ends it');
-  $('v-chem').textContent = 'chemistry ×'+s.chemistry.toFixed(3);
-
-  if(s.week < ids.length){
-    const opp=DATA.byTeamSeasonId[ids[s.week]];
-    const isPo = s.week >= run.schedule.length;
-    $('v-when').textContent = isPo
-      ? ['Divisional','Conference Championship','Super Bowl'][s.week-run.schedule.length]
-      : 'Week '+(s.week+1);
-    $('v-opp').textContent = opp.display;
-    $('v-final').style.display='none';
-    $('v-next').textContent = 'Play this game';
-    $('v-next').disabled=false;
-  }
-  paintWeeks($('v-weeks'), s.results);
-}
-
-function paintWeeks(el, results){
-  el.innerHTML = results.slice().reverse().map(r=>
-    '<div class="wrow'+(r.playoff?' po':'')+'">'+
-    '<span class="wk">'+(r.playoff?'PLAYOFF':'WEEK '+r.week)+'</span>'+
-    '<span class="wl '+(r.won?'w':'l')+'">'+(r.won?'W':'L')+'</span>'+
-    '<span class="op">'+r.opponent+'</span>'+
-    '<span class="sc">'+r.shownYou+'–'+r.shownThem+'</span></div>').join('');
-}
-
-$('v-next').addEventListener('click',()=>{
-  const btn=$('v-next'); btn.disabled=true;
-  const r=R.advanceWeek(run, DATA, LEAGUE, CAL);
-  $('v-you').textContent=r.shownYou; $('v-them').textContent=r.shownThem;
-  $('v-you').classList.toggle('lose', !r.won); $('v-them').classList.toggle('lose', r.won);
-  $('v-final').style.display='flex';
-  const s=run.season;
-  $('v-rec').textContent = s.wins+'–'+s.losses;
-  paintWeeks($('v-weeks'), s.results);
-
-  setTimeout(()=>{
-    if(run.phase===R.PHASES.OVER){ paintOver(); show('s-over'); return; }
-    btn.textContent='Next game';
-    btn.disabled=false;
-    paintSeason();
-  }, 1150);
+$('opts').addEventListener('click',e=>{
+  const b=e.target.closest('.opt'); if(!b)return;
+  const p=BYKEY.get(b.dataset.k);
+  try{R.sign(run,p);}catch(err){toast(err.message);return;}
+  if(run.phase===R.PHASES.SEASON)paintSquad(); else nextSpin();
 });
 
-// ─── over ────────────────────────────────────────────────────────────────────
+/* ---------- squad ---------- */
+function paintSquad(){
+  R.startSeason(run,DATA,CTX);
+  drawField($('field2'),false);
+  const p=run.season.chemistry-1, el=$('q-chem');
+  el.textContent=pc(p);
+  el.className='chemval num '+(p>0.0005?'pos':(p<-0.0005?'neg':'zero'));
+  $('q-chembar').style.width=Math.max(0,Math.min(100,p/E.CHEMISTRY.MAX*100))+'%';
+  const links=run.season.chemistryLinks;
+  $('q-links').innerHTML=links.length
+    ? links.map(l=>'<div class="linkrow"><span class="v'+(l.value<0?' neg':'')+'">'+pc(l.value)+'</span><span>'+esc(l.label)+'</span></div>').join('')
+    : '<p class="dim" style="font-size:13px;margin:6px 0 0">Nobody here ever played together, so there is no chemistry this run.</p>';
+  $('q-sched').innerHTML=run.schedule.map((id,i)=>{
+    const t=DATA.byTeamSeasonId[id];
+    return '<div style="display:flex;gap:9px;padding:4px 0;font-size:13px"><span class="dim" style="flex:0 0 46px">Wk '+(i+1)+'</span>'+
+      '<span style="flex:1;min-width:0;font-weight:600">'+esc(t.display)+'</span><span class="dim">'+t.record+'</span></div>';
+  }).join('');
+  show('s-squad');
+}
+$('b-play').onclick=()=>startSeason();
+
+/* ---------- season, revealed game by game ---------- */
+function tally(){
+  const s=run.season, total=17+(run.playoffSeed?run.playoffSeed.rounds:0), cells=[];
+  for(let i=0;i<Math.max(total,s.results.length);i++){
+    const r=s.results[i];
+    cells.push('<span class="tick'+(r?(r.won?' w':' l'):'')+(r&&r.playoff?' p':'')+'"></span>');
+  }
+  $('v-tally').innerHTML=cells.join('');
+}
+function pushGame(r,el){
+  el.insertAdjacentHTML('afterbegin','<div class="g new'+(r.playoff?' po':'')+'">'+
+    '<span class="wk">'+(r.playoff?'PO':'WK '+r.week)+'</span>'+
+    '<span class="res '+(r.won?'w':'l')+'">'+(r.won?'W':'L')+'</span>'+
+    '<span class="opp">'+esc(r.opponent)+'</span>'+
+    '<span class="sc">'+r.shownYou+'-'+r.shownThem+'</span></div>');
+}
+function paintNext(){
+  const s=run.season;
+  if(run.phase===R.PHASES.SEASON){
+    const o=DATA.byTeamSeasonId[run.schedule[s.week]];
+    $('v-round').textContent='Week '+(s.week+1); $('v-opp').textContent=o?o.display:'';
+  }else if(run.phase===R.PHASES.PLAYOFFS){
+    const o=DATA.byTeamSeasonId[run.playoffs[s.playoffRound%run.playoffs.length]];
+    $('v-round').textContent=run.playoffSeed.roundNames[s.playoffRound]||'Playoffs';
+    $('v-opp').textContent=o?o.display:'';
+  }
+  $('v-rec').textContent=s.wins+'-'+s.losses;
+}
+function startSeason(){
+  $('v-list').innerHTML=''; tally(); paintNext();
+  $('v-you').textContent='0'; $('v-them').textContent='0';
+  show('s-season'); runSim();
+}
+function runSim(){
+  const step=()=>{
+    if(run.phase!==R.PHASES.SEASON&&run.phase!==R.PHASES.PLAYOFFS){after();return;}
+    const r=R.advanceWeek(run,DATA,LEAGUE,CAL);
+    $('v-you').textContent=r.shownYou; $('v-them').textContent=r.shownThem;
+    $('v-you').classList.toggle('down',!r.won); $('v-them').classList.toggle('down',r.won);
+    pushGame(r,$('v-list')); tally(); paintNext();
+    simTimer=setTimeout(step,540);
+  };
+  simTimer=setTimeout(step,340);
+}
+function fastForward(){
+  clearTimeout(simTimer);
+  while(run.phase===R.PHASES.SEASON||run.phase===R.PHASES.PLAYOFFS){
+    pushGame(R.advanceWeek(run,DATA,LEAGUE,CAL),$('v-list'));
+  }
+  tally(); after();
+}
+$('b-sim').onclick=()=>fastForward();
+function after(){
+  clearTimeout(simTimer);
+  if(run.phase===R.PHASES.SEEDING)paintSeed();
+  else if(run.phase===R.PHASES.OVER)paintOver();
+}
+
+/* ---------- seeding ---------- */
+function paintSeed(){
+  const sd=run.playoffSeed;
+  $('sd-rec').textContent=sd.regularRecord;
+  const c=$('sd-card'); c.className='verdict '+(sd.bye?'gold':'win');
+  $('sd-title').textContent=sd.bye?'Top seed':'Wild card';
+  $('sd-sub').textContent=sd.bye
+    ? 'You skip the first round. Three more wins takes the title.'
+    : 'You are in. Four more wins takes the title.';
+  show('s-seed');
+}
+$('b-po').onclick=()=>{R.startPlayoffs(run);paintNext();show('s-season');runSim();};
+$('b-po-skip').onclick=()=>{R.startPlayoffs(run);show('s-season');fastForward();};
+
+/* ---------- result ---------- */
 function paintOver(){
-  const o=run.outcome, s=run.season;
-  const card=$('o-card'); card.className='final-card';
-  const last=s.results[s.results.length-1];
-  if(o.perfect){
-    card.classList.add('perfect'); $('o-icon').textContent='🏆';
-    $('o-title').textContent='20–0. Perfect.';
-    $('o-sub').textContent="You did what the 2007 Patriots couldn't.";
-  } else if(o.beatBenchmark){
-    card.classList.add('beat'); $('o-icon').textContent='🥈';
-    $('o-title').textContent=o.record+'. You beat the Patriots.';
-    $('o-sub').textContent='Better than 18–1 — but not perfect.';
-  } else {
-    /*
-     * "Perfect through Week N" is only true if the run had no EARLIER loss. With
-     * a life in hand the first loss can come long before the last game, so the
-     * headline has to check rather than assume the final game was the only one
-     * lost — this card is the shareable artifact and must not overstate the run.
-     */
-    $('o-icon').textContent='🏈';
-    const firstLoss = s.results.find(r=>!r.won);
-    const cleanUntilEnd = firstLoss && firstLoss.week === o.weekReached;
-    if(cleanUntilEnd){
-      $('o-title').innerHTML='Perfect through<br>Week '+Math.max(0,o.weekReached-1);
-      $('o-sub').textContent='Lost '+last.shownYou+'–'+last.shownThem+' to the '+last.opponent+'.';
-    } else {
-      $('o-title').innerHTML='Knocked out in<br>Week '+o.weekReached;
-      $('o-sub').textContent='Finished '+o.record.replace('-','–')+'. Second loss was '+
-        last.shownYou+'–'+last.shownThem+' to the '+last.opponent+'.';
-    }
+  const o=run.outcome,s=run.season,c=$('o-card');
+  c.className='verdict';
+  if(o.perfect){c.classList.add('gold');
+    $('o-eyebrow').textContent='20 and 0'; $('o-title').textContent='Perfect';
+    $('o-sub').textContent='Seventeen straight, then three more. No real team has ever done it.';
+  }else if(o.titleWon){c.classList.add('win');
+    $('o-eyebrow').textContent=o.record; $('o-title').textContent='Champions';
+    $('o-sub').textContent='You won the title. The undefeated run is still out there.';
+  }else if(o.eliminatedIn){c.classList.add('out');
+    $('o-eyebrow').textContent=o.record; $('o-title').textContent='Out in the '+o.eliminatedIn;
+    $('o-sub').textContent='You finished '+o.regularRecord+' in the regular season. '+
+      (o.undefeatedRegular?'Undefeated right up to the playoffs.':'One loss ends it once you are there.');
+  }else{c.classList.add('out');
+    $('o-eyebrow').textContent=o.record; $('o-title').textContent='No playoffs';
+    $('o-sub').textContent='You needed '+E.CONSTANTS.PLAYOFF_WINS+' wins to get in and finished with '+o.wins+'.';
   }
-  paintWeeks($('o-weeks'), s.results);
-
-  const best=R.bestPossibleSquad(run, DATA, CTX);
-  if(!best || !best.misses.length){
-    $('o-reveal').innerHTML='<p class="muted" style="font-size:13px;margin:0">You took the best available at every slot. Nothing left behind.</p>';
-  } else {
-    $('o-reveal').innerHTML = best.misses.slice(0,4).map(m=>
-      '<div class="missrow"><span class="rslot" style="flex:0 0 42px">'+m.slot+'</span>'+
-      '<span style="flex:1;min-width:0"><b style="font-weight:800">'+m.could.name+'</b> '+
-      '<span class="muted">'+m.could.season+' · '+money(m.could.price_musd)+'</span></span>'+
-      '<span class="up">+'+m.delta.toFixed(1)+' ppg</span></div>').join('')
-      + '<p class="muted" style="font-size:12px;margin:9px 0 0">The best squad your six spins allowed projected '+
-        best.bestProjected.toFixed(0)+' fantasy points a game. Yours projected '+best.yourProjected.toFixed(0)+'.</p>';
+  $('o-list').innerHTML=''; s.results.forEach(r=>pushGame(r,$('o-list')));
+  const best=R.bestPossibleSquad(run,DATA,CTX);
+  if(!best||!best.misses.length){
+    $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">You took the best player available every time. Nothing left behind.</p>';
+  }else{
+    $('o-miss').innerHTML=best.misses.slice(0,4).map(m=>
+      '<div class="miss"><span class="eyebrow" style="flex:0 0 40px">'+m.slot+'</span>'+
+      '<span style="flex:1;min-width:0"><b>'+esc(m.could.name)+'</b> <span class="dim">'+m.could.season+', '+M(m.could.price_musd)+'</span></span>'+
+      '<span class="up">+'+m.delta.toFixed(1)+'</span></div>').join('')+
+      '<p class="dim" style="font-size:12px;margin:10px 0 0">The best team your six spins allowed was worth about '+
+      best.bestProjected.toFixed(0)+' points a game. Yours was worth '+best.yourProjected.toFixed(0)+'.</p>';
   }
+  show('s-over');
 }
 
-$('o-share').addEventListener('click',async ()=>{
-  const o=run.outcome, s=run.season;
-  const grid=s.results.map(r=>r.won?'🟩':'🟥').join('');
-  const firstLoss = s.results.find(r=>!r.won);
-  const cleanUntilEnd = firstLoss && firstLoss.week === o.weekReached;
-  const head = o.perfect ? 'THE PERFECT SEASON — 20-0 🏆'
-    : o.beatBenchmark ? 'Beat the Patriots — '+o.record+' 🥈'
-    : cleanUntilEnd ? 'Perfect through Week '+Math.max(0,o.weekReached-1)
-    : 'Out in Week '+o.weekReached+' — '+o.record;
-  const text = head+'\n'+grid+'\n'+run.roster.map(p=>p.name).join(', ')+
-    '\nchemistry ×'+s.chemistry.toFixed(2)+'\n\nrunthe.gg/football';
+$('b-share').onclick=async()=>{
+  const o=run.outcome,s=run.season;
+  const grid=s.results.map(r=>r.won?'W':'L').join('');
+  const head=o.perfect?'The Perfect Season. 20-0.'
+    :o.titleWon?'Champions. '+o.record+'.'
+    :o.eliminatedIn?'Out in the '+o.eliminatedIn+'. '+o.record+'.'
+    :'Missed the playoffs. '+o.record+'.';
+  const txt=head+'\n'+grid+'\n'+run.roster.map(p=>p.name).join(', ')+
+    '\nChemistry '+pc(s.chemistry-1)+'\n\nrunthe.gg/football';
   try{
-    if(navigator.share){ await navigator.share({title:'The Perfect Season', text}); }
-    else { await navigator.clipboard.writeText(text); toast('Result copied'); }
-  }catch(e){ try{ await navigator.clipboard.writeText(text); toast('Result copied'); }catch(_){ toast('Could not share'); } }
-});
-
-$('o-again').addEventListener('click',()=>{
-  run=null; selected=null;
-  document.querySelectorAll('.team').forEach(x=>x.classList.remove('sel'));
-  $('go-draft').disabled=true;
+    if(navigator.share)await navigator.share({title:'The Perfect Season',text:txt});
+    else{await navigator.clipboard.writeText(txt);toast('Copied');}
+  }catch(e){try{await navigator.clipboard.writeText(txt);toast('Copied');}catch(_){toast('Could not copy');}}
+};
+$('b-again').onclick=()=>{
+  clearTimeout(simTimer); run=null; pickedTeam=null; lastChem=1;
+  document.querySelectorAll('.tm').forEach(x=>x.classList.remove('on'));
+  $('b-draft').disabled=true; $('hdr').textContent='The Perfect Season';
   show('s-intro');
-});
+};
 
 boot();
 })();

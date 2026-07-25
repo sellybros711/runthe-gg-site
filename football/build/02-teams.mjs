@@ -1,10 +1,10 @@
-/* Stage 3 — team_seasons (the opponent table).
+/* Stage 3, team_seasons (the opponent table).
  *
  *   node football/build/02-teams.mjs        (run 01-players.mjs first)
  *
  * Produces data/team_seasons.{json,csv}: one row per drawable team-season, with
- * the two distributions the sim needs from an opponent — their weekly scoring
- * and their weekly defense — plus a within-season strength z-score used by
+ * the two distributions the sim needs from an opponent, their weekly scoring
+ * and their weekly defense, plus a within-season strength z-score used by
  * schedule normalization, and the per-slot eligible player lists the wheel needs
  * to avoid dead spins.
  *
@@ -132,11 +132,11 @@ async function main() {
   const expect = FRANCHISES.length * SEASONS.length;
   const houstonMissing = SEASONS.filter((s) => s < 2002).length; // HOU did not exist
   console.log(`expected ${expect} - ${houstonMissing} (Houston pre-2002) = ${expect - houstonMissing}` +
-              ` -> got ${rows.length} ${rows.length === expect - houstonMissing ? '✓' : '✗ INVESTIGATE'}`);
+              ` -> got ${rows.length} ${rows.length === expect - houstonMissing ? 'ok' : 'FAIL INVESTIGATE'}`);
 
   const per = SEASONS.map((s) => rows.filter((r) => r.season === s).length);
   const odd = SEASONS.filter((s, i) => per[i] !== (s < 2002 ? 31 : 32));
-  console.log(`teams per season: ${odd.length ? 'unexpected in ' + odd.join(',') : '31 pre-2002, 32 from 2002 ✓'}`);
+  console.log(`teams per season: ${odd.length ? 'unexpected in ' + odd.join(',') : '31 pre-2002, 32 from 2002 ok'}`);
 
   console.log('\nstrongest team-seasons by point differential:');
   for (const r of [...rows].sort((a, b) => b.strength_z - a.strength_z).slice(0, 5)) {
@@ -169,7 +169,7 @@ async function main() {
   fs.writeFileSync(path.join(DATA_DIR, 'league_context.json'),
     JSON.stringify({ league_avg_pts_allowed_by_season: leagueAllowed }, null, 2));
   console.log(`\nleague average points allowed: ${leagueAllowed[1999]} (1999) -> ${leagueAllowed[2025]} (2025)`);
-  console.log('wrote league_context.json — per-season, not one global constant, so');
+  console.log('wrote league_context.json, per-season, not one global constant, so');
   console.log('1999-era and 2020s opponents are not systematically mispriced.');
 }
 

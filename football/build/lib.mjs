@@ -1,11 +1,11 @@
-/* The Perfect Season — shared build helpers.
+/* The Perfect Season, shared build helpers.
  *
  * Every build script fetches from nflverse-data releases into a local cache
  * (build/.cache, gitignored) so a rebuild is reproducible and offline-repeatable.
  *
  * NOTE ON CSV PARSING: do not replace parseCSV with line.split(','). nflverse
- * ships quoted fields that contain commas — headshot_url holds
- * ".../upload/f_auto,q_auto/..." — and a naive split silently shifts every
+ * ships quoted fields that contain commas, headshot_url holds
+ * ".../upload/f_auto,q_auto/...", and a naive split silently shifts every
  * column after it, producing plausible-looking but wrong numbers rather than
  * an error. This bit us once already.
  */
@@ -47,8 +47,8 @@ export const MIN_GAMES = 8;
  *   - Jacksonville appears as both JAC and JAX, overlapping in 2001-2002.
  *
  * A naive (team, season) join silently loses these franchises for large spans,
- * which would show up as missing team-seasons — dead wheel entries and absent
- * opponents — rather than as an error. Everything is normalized to franchise_id
+ * which would show up as missing team-seasons, dead wheel entries and absent
+ * opponents, rather than as an error. Everything is normalized to franchise_id
  * on ingest, and display names come from (franchise, season), never from the
  * code in the data.
  */
@@ -102,7 +102,7 @@ for (const f of FRANCHISES) for (const c of f.codes) CODE_TO_FRANCHISE.set(c, f.
 /** Canonical franchise id for any abbreviation either source might emit. */
 export function franchiseId(code) {
   const id = CODE_TO_FRANCHISE.get(code);
-  if (!id) throw new Error(`unmapped team code "${code}" — add it to FRANCHISES`);
+  if (!id) throw new Error(`unmapped team code "${code}", add it to FRANCHISES`);
   return id;
 }
 

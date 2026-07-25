@@ -1,4 +1,4 @@
-/* The Perfect Season — draft loop and run state.
+/* The Perfect Season, draft loop and run state.
  *
  * Headless and dependency-free. Browser: window.PS_RUN. Node: require.
  *
@@ -15,13 +15,20 @@ const E = (typeof require !== 'undefined')
   ? require('./engine.js')
   : window.PS_ENGINE;
 
-const PHASES = { PICK_FRANCHISE: 'pick_franchise', DRAFT: 'draft', SEASON: 'season', OVER: 'over' };
+const PHASES = {
+  PICK_FRANCHISE: 'pick_franchise',
+  DRAFT: 'draft',
+  SEASON: 'season',      // the 17 regular-season games
+  SEEDING: 'seeding',    // record is final, showing where it left you
+  PLAYOFFS: 'playoffs',  // one loss ends it
+  OVER: 'over',
+};
 
 const pkey = (p) => `${p.player_id}|${p.season}`;
 
 /**
  * Money still available. The re-spin fee comes out of the cap, so the budget
- * shrinks as you fish for a better team-season — a re-spin costs you a tier of
+ * shrinks as you fish for a better team-season, a re-spin costs you a tier of
  * player somewhere else, which is the point.
  */
 function remaining(run) {
@@ -37,7 +44,7 @@ const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
  * The floor the UI warns about: you must keep at least $3M per slot you have
  * not filled yet, or you cannot legally finish the draft.
  *
- * §5 wants this as a passive warning on signings — bankrupting yourself into
+ * §5 wants this as a passive warning on signings, bankrupting yourself into
  * five minimum-salary scrubs is a lesson the game is allowed to teach. It is a
  * hard block on RE-SPINS only, because a re-spin that makes the draft
  * unfinishable is not a lesson, it is a dead end.
@@ -68,6 +75,24 @@ function affordableFrom(run, teamSeasonId, slot, playersByTeamSeason) {
     .sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean);
 }
 
+/**
+ * What signing this player would do to your chemistry, right now.
+ *
+ * Used to show the effect on every option BEFORE you commit, which is the whole
+ * point of chemistry: it should pull you toward a cheaper signing you can see the
+ * reason for, not reward you after the fact.
+ */
+function previewSigning(run, player, ctx) {
+  const before = E.resolveChemistry(run.roster, ctx);
+  const after = E.resolveChemistry(run.roster.concat([player]), ctx);
+  const seen = new Set(before.links.map((l) => l.a + '|' + l.b + '|' + l.type));
+  return {
+    multiplier: after.multiplier,
+    delta: after.multiplier - before.multiplier,
+    newLinks: after.links.filter((l) => !seen.has(l.a + '|' + l.b + '|' + l.type)),
+  };
+}
+
 function createRun(opts) {
   const daily = opts.daily ?? null;
   const seed = daily ? E.hashSeed(`perfect-season|${daily}`) : (opts.seed ?? E.hashSeed(String(Math.random())));
@@ -88,6 +113,8 @@ function createRun(opts) {
     schedule: null,
     playoffs: null,
     season: null,
+    playoffSeed: null,
+    outcome: null,
   };
 }
 
@@ -111,31 +138,88 @@ function pickFranchise(run, franchise) {
 
 const currentSlot = (run) => E.SLOTS[run.roster.length];
 
+/*
+ * How often the wheel favours a team-season that could link to the team you
+ * already have, and how many times one team-season can come up in a run.
+ *
+ * Both exist because chemistry as specified could almost never happen. Measured
+ * over 400 drafts by a player deliberately maximising it on every single pick,
+ * the result was +2% every time, and college was the ONLY link type that ever
+ * fired. Two reasons:
+ *
+ *   1. Six uniform draws out of 861 team-seasons rarely share a franchise, a
+ *      college or a draft class, and draft_year is null for undrafted players,
+ *      which removes that link for them entirely.
+ *   2. §5 says a team-season may never repeat in a run, but Battery (+10%) and
+ *      Teammates (+5%), the two largest links in §6, both need two players from
+ *      the SAME team-season. Those rules contradict each other, so the biggest
+ *      chemistry in the game was unreachable by construction.
+ *
+ * A team-season can now come up twice, which makes Battery and Teammates
+ * reachable while still stopping a run from being six players off one roster.
+ * And about half of the spins after the first prefer a team-season connected to
+ * somebody already signed, so chemistry is something you watch build rather than
+ * something you occasionally luck into.
+ */
+const CONNECTION_BIAS = 0.5;
+const MAX_DRAWS_PER_TEAM_SEASON = 2;
+
+/** Team-seasons that could produce a link with the current roster. */
+function connectedTeamSeasons(run, data) {
+  const out = new Set();
+  const pull = (set) => { if (set) for (const id of set) out.add(id); };
+  for (const p of run.roster) {
+    out.add(p.team_season_id);                 // teammates and battery
+    pull(data.tsByFranchise[p.franchise]);     // same franchise, another year
+    pull(data.tsByCollege[p.college]);
+    pull(data.tsByDraftYear[p.draft_year]);
+  }
+  return out;
+}
+
 /**
  * Draw a team-season for the current slot.
  *
- * Uniform over the eligible pool — no weighting toward famous teams, per §5.
- * Two filters, both required to avoid dead ends:
- *   - the team-season must have an eligible player at THIS slot (13 team-seasons
- *     in the pool have a slot with nobody qualifying);
- *   - it must have one you can currently afford. If not, the draw is free and
- *     re-rolls automatically, and the burned team-season is NOT consumed —
- *     a free re-roll should not quietly shrink the pool you can still see.
+ * Two filters stop dead ends, and both are required: the team-season must have
+ * an eligible player at THIS slot (13 team-seasons in the pool have a slot
+ * nobody qualifies for), and it must have one you can currently afford. If not,
+ * the draw is free and re-rolls automatically, and the burned team-season is not
+ * counted against its draw limit. A free re-roll should not quietly shrink the
+ * pool you can still see.
  */
 function spin(run, data) {
   if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
   const rng = rngFor(run);
   const slot = currentSlot(run);
-  const pool = data.teamSeasons.filter((t) => !run.usedTeamSeasons.includes(t.team_season_id));
 
-  for (let guard = 0; guard < 5000; guard++) {
-    const t = pool[Math.floor(rng() * pool.length)];
-    const options = affordableFrom(run, t.team_season_id, slot, data.playersByTeamSeason);
-    if (!options.length) { run.freeRerolls++; continue; }
-    run.currentDraw = { team_season_id: t.team_season_id, display: t.display, slot, options: options.map(pkey) };
-    return run.currentDraw;
+  const drawn = {};
+  for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
+  const canFill = (t) => affordableFrom(run, t.team_season_id, slot, data.playersByTeamSeason).length > 0;
+  const available = data.teamSeasons.filter((t) => (drawn[t.team_season_id] || 0) < MAX_DRAWS_PER_TEAM_SEASON);
+
+  let pool = available;
+  if (run.roster.length && rng() < CONNECTION_BIAS) {
+    const linked = connectedTeamSeasons(run, data);
+    const usable = available.filter((t) => linked.has(t.team_season_id) && canFill(t));
+    if (usable.length) pool = usable;
   }
-  throw new Error('no affordable team-season for slot ' + slot);
+
+  const draw = (from) => {
+    for (let guard = 0; guard < 4000; guard++) {
+      const t = from[Math.floor(rng() * from.length)];
+      const options = affordableFrom(run, t.team_season_id, slot, data.playersByTeamSeason);
+      if (!options.length) { run.freeRerolls++; continue; }
+      run.currentDraw = {
+        team_season_id: t.team_season_id, display: t.display, slot, options: options.map(pkey),
+      };
+      return run.currentDraw;
+    }
+    return null;
+  };
+
+  const got = draw(pool) || (pool !== available ? draw(available) : null);
+  if (!got) throw new Error('no affordable team-season for slot ' + slot);
+  return got;
 }
 
 /** Pay the fee and draw again for the same slot. */
@@ -143,7 +227,7 @@ function respin(run, data) {
   const check = canRespin(run);
   if (!check.ok) throw new Error(`cannot re-spin: ${check.reason}`);
   run.respinsUsed++;
-  // The drawn team-season is consumed — you saw it and rejected it.
+  // The drawn team-season is consumed, you saw it and rejected it.
   if (run.currentDraw) run.usedTeamSeasons.push(run.currentDraw.team_season_id);
   run.currentDraw = null;
   return spin(run, data);
@@ -158,8 +242,8 @@ function sign(run, player) {
   run.roster.push(player);
   run.usedPlayers.push(pkey(player));
   run.usedTeamSeasons.push(run.currentDraw.team_season_id);
-  // Which team-season filled which slot. Needed for the post-run reveal —
-  // "the best possible squad from your six wheel results" — which can only
+  // Which team-season filled which slot. Needed for the post-run reveal,
+  // "the best possible squad from your six wheel results", which can only
   // consider, for each slot, the team-season actually drawn for it.
   run.draws.push({ slot: run.currentDraw.slot, team_season_id: run.currentDraw.team_season_id });
   run.currentDraw = null;
@@ -180,61 +264,112 @@ function startSeason(run, data, ctx) {
     chemistry: chem.multiplier,
     chemistryLinks: chem.links,
     week: 0,
+    playoffRound: 0,
     wins: 0,
     losses: 0,
+    regularWins: null,
+    regularLosses: null,
     results: [],
   };
   return run;
 }
 
 /**
- * Advance exactly one week. The season is played one game at a time (§7).
+ * Play the next game and return its result.
  *
- * `displayCal` is optional; when supplied, each result also carries a
- * football-looking scoreline for display. The internal fantasy-space numbers are
- * kept alongside it so the sim stays auditable — the transform is presentation
- * only and never decides anything.
+ * Covers the regular season and the playoffs. All 17 regular-season games are
+ * always played, so a record always exists; between the two the run pauses on
+ * SEEDING so the player can see where their record left them before anything
+ * else happens.
+ *
+ * `displayCal` is optional; with it, each result also carries a football-looking
+ * scoreline. The internal fantasy-space numbers stay on the result so the sim
+ * remains auditable. The transform is presentation only and decides nothing.
  */
 function advanceWeek(run, data, leagueContext, displayCal) {
-  if (run.phase !== PHASES.SEASON) throw new Error('season not active');
   const s = run.season;
-  const ids = run.schedule.concat(run.playoffs);
-  const oppId = ids[s.week];
+  if (run.phase !== PHASES.SEASON && run.phase !== PHASES.PLAYOFFS) {
+    throw new Error('no game to play in phase ' + run.phase);
+  }
+
+  const playoff = run.phase === PHASES.PLAYOFFS;
+  const oppId = playoff
+    ? run.playoffs[s.playoffRound % run.playoffs.length]
+    : run.schedule[s.week];
   const opp = data.byTeamSeasonId[oppId];
   const rng = rngFor(run);
-  const leagueAvg = leagueContext[opp.season] ?? 21.5;
-  const r = E.resolveGame(run.roster, s.chemistry, opp, leagueAvg, rng);
+  const r = E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 21.5, rng);
+  const shown = displayCal ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal) : null;
 
-  s.week++;
+  const roundName = playoff ? run.playoffSeed.roundNames[s.playoffRound] : null;
   if (r.won) s.wins++; else s.losses++;
-  const shown = displayCal
-    ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal)
-    : null;
-  s.results.push({
-    week: s.week,
+  const result = {
+    week: playoff ? null : s.week + 1,
+    round: roundName,
+    playoff,
     opponent: opp.display,
     opponent_id: oppId,
-    playoff: s.week > run.schedule.length,
     won: r.won,
     yourScore: Math.round(r.yourScore * 10) / 10,
     oppScore: Math.round(r.oppScore * 10) / 10,
     shownYou: shown ? shown.you : null,
     shownThem: shown ? shown.them : null,
-  });
+  };
+  s.results.push(result);
 
-  const outOfLives = s.losses > E.CONSTANTS.LIVES;
-  const finished = s.week >= ids.length;
-  if (outOfLives || finished) {
-    run.phase = PHASES.OVER;
-    run.outcome = {
-      perfect: finished && s.losses === 0,
-      beatBenchmark: finished && s.losses <= 1,
-      weekReached: s.week,
-      record: `${s.wins}-${s.losses}`,
-      eliminated: outOfLives,
-    };
+  if (playoff) {
+    s.playoffRound++;
+    if (!r.won) {
+      finish(run, { eliminatedIn: roundName });
+    } else if (s.playoffRound >= run.playoffSeed.rounds) {
+      finish(run, { titleWon: true });
+    }
+  } else {
+    s.week++;
+    if (s.week >= run.schedule.length) {
+      // Record is final. Work out the seed and pause so it can be shown.
+      const seed = E.seedFromRecord(s.wins);
+      run.playoffSeed = {
+        ...seed,
+        roundNames: seed.made ? E.playoffRoundNames(seed.rounds) : [],
+        regularRecord: s.wins + '-' + s.losses,
+      };
+      s.regularWins = s.wins;
+      s.regularLosses = s.losses;
+      run.phase = PHASES.SEEDING;
+      if (!seed.made) finish(run, { missedPlayoffs: true });
+    }
   }
-  return s.results[s.results.length - 1];
+  return result;
+}
+
+/** Leave SEEDING and start the playoffs. */
+function startPlayoffs(run) {
+  if (run.phase !== PHASES.SEEDING) throw new Error('not at seeding');
+  if (!run.playoffSeed.made) throw new Error('did not make the playoffs');
+  run.season.playoffRound = 0;
+  run.phase = PHASES.PLAYOFFS;
+  return run;
+}
+
+function finish(run, how) {
+  const s = run.season;
+  run.phase = PHASES.OVER;
+  run.outcome = {
+    record: s.wins + '-' + s.losses,
+    regularRecord: (s.regularWins ?? s.wins) + '-' + (s.regularLosses ?? s.losses),
+    regularWins: s.regularWins ?? s.wins,
+    wins: s.wins,
+    losses: s.losses,
+    madePlayoffs: !!run.playoffSeed && run.playoffSeed.made,
+    seedLabel: run.playoffSeed ? run.playoffSeed.label : 'Missed the playoffs',
+    titleWon: !!how.titleWon,
+    eliminatedIn: how.eliminatedIn || null,
+    missedPlayoffs: !!how.missedPlayoffs,
+    undefeatedRegular: (s.regularLosses ?? s.losses) === 0,
+    perfect: !!how.titleWon && s.losses === 0,
+  };
+  return run;
 }
 
 /** Index the data once; every function above takes this. */
@@ -246,8 +381,23 @@ function indexData(players, teamSeasons) {
   }
   const byTeamSeasonId = {};
   for (const t of teamSeasons) byTeamSeasonId[t.team_season_id] = t;
+
+  /*
+   * Reverse indexes for the connection bias below: which team-seasons contain a
+   * player who could link to somebody, by franchise, college and draft class.
+   */
+  const tsByFranchise = {}, tsByCollege = {}, tsByDraftYear = {};
+  const add = (map, k, v) => { if (k === null || k === undefined || k === '') return;
+    (map[k] ??= new Set()).add(v); };
+  for (const p of players) {
+    if (!p.team_season_id) continue;
+    add(tsByFranchise, p.franchise, p.team_season_id);
+    add(tsByCollege, p.college, p.team_season_id);
+    add(tsByDraftYear, p.draft_year, p.team_season_id);
+  }
   return {
     players, teamSeasons, playersByTeamSeason, byTeamSeasonId,
+    tsByFranchise, tsByCollege, tsByDraftYear,
     prepared: E.prepareData(teamSeasons),
   };
 }
@@ -258,7 +408,7 @@ function indexData(players, teamSeasons) {
  *
  * Constrained the way the draft is: slot i may only use the team-season drawn at
  * spin i, and the whole thing must fit the cap after re-spin fees. Solved as a
- * DP over discretized budget — the same shape as the optimizer in simulator.js.
+ * DP over discretized budget, the same shape as the optimizer in simulator.js.
  *
  * Maximizes raw points rather than points x chemistry: chemistry is not separable
  * across slots, so a joint optimum would need a much heavier search for a screen
@@ -324,7 +474,8 @@ function bestPossibleSquad(run, data, ctx) {
 
 const api = {
   PHASES, createRun, pickFranchise, currentSlot, spin, respin, sign,
-  startSeason, advanceWeek, indexData, bestPossibleSquad,
+  startSeason, advanceWeek, startPlayoffs, indexData, bestPossibleSquad,
+  previewSigning,
   remaining, reserveFloor, canRespin, slotsLeft, affordableFrom,
 };
 
