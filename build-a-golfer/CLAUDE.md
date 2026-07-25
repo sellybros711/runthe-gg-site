@@ -13739,6 +13739,34 @@ allows Google Fonts, or self-host Anton.*
   --check` clean. Deployed to /golf. (The separate pack-reveal wheel cards use their own `.pcard` CSS at a
   different site - untouched.)
 
+- **THE SAHARA — fantasy all-sand waste course + new `sahara` biome (POC, committed to the feature branch,
+  NOT deployed).** A proof-of-concept for a wholly-invented course type: 18 green-ribbon holes cut through an
+  endless dune sea (`fantasy:true`, `ver:false`, par 72 / 7,420y). Three pieces, all reusable:
+  1. **`sahara` biome** (`HV_BIOMES` + `HV_COURSE_BIOME['The Sahara']`): a golden desert floor everywhere
+     (gravel-speckled sand), rolling dunes, palms + scrub + rock outcrops, the fairway/green a thin irrigated
+     green ribbon; `bunkerScale:1.4`, `backdrop:'mountains'`. Reuses the existing desert-ground + palm/dune/
+     scrub/rock plant renderers (pixel + SVG paths) — no new plant code needed.
+  2. **A creative SAND VOCABULARY in `hvGeom`, usable by ANY course** (via `HV_SIG_EXTRA`/`DSIG_HAZ` features):
+     `waste` (a huge organic sandy waste beside the fairway), `sandring` (green ringed by deep sand — the
+     volcano/Redan look), `sandcarry` (a forced carry over a wide waste off the tee), PLUS an `st.waste`
+     course-wide flag (`HV_COURSE_STYLE['The Sahara']:{...,waste:1}`) that scatters fairway + heavy greenside
+     sand on every hole. All go through a new `addBunk` helper → the existing bunker renderer, so they draw in
+     both the pixel + SVG hole views for free (verified across a normal course: no regression).
+  3. **Data + calibration.** Complete valid entry (holes sum to par 72 / 7,420y), a bunker-artist `fit`
+     (bnk 1.40 / scr 1.35 / sht 1.25 / acc 1.15) and `avg:2.3` (a genuinely hard sand test). `cdiff:0.16`
+     Monte-Carlo calibrated CONSISTENT with the existing courses: an OVR-80 flat build averages breezy **2.23**
+     (dBreezy −0.07, better than most peers) / distribution **2.55** (dDist +0.25, in line with Kapalua's
+     +0.22). It's a REAL skill test — OVR 72→92 spans **+4.92 → +0.55**, "beat the pro" 24%→75%, and a **sand
+     specialist scores ~0.86 strokes better than a flat build** (44%→56% beat-rate), proving the fit weights.
+  Currently IN the daily rotation (`DAILY_KEYS` 39→40; only Concordia/Games is excluded). Verified in
+  Playwright: full end-to-end daily round on The Sahara (setup → tracer + go-for-it decision → result, 18
+  holes) with **0 page errors**; the hole view renders the golden dunes + waste bunkers + sand-ringed greens
+  + palms in-game; a normal Augusta round still plays clean (`node --check` clean). NOT deployed to /golf —
+  it's a fantasy POC that adds a course to the live daily rotation, so it awaits the owner's go-ahead on (a)
+  whether to ship a fantasy course and (b) whether it belongs in the daily rotation vs a separate mode.
+  Screenshots (`/tmp/sahara.png` hole grid, `/tmp/sahara_round.png` in-game). Tunable: the Sahara `avg`/
+  `cdiff`/`fit`, the sand-vocabulary hazard sizes in `hvGeom`, the `sahara` biome palette.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
