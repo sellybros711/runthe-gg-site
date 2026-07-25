@@ -138,6 +138,30 @@ function buildBadges(rows) {
   }
 }
 
+/*
+ * Points per game split by HOW they were earned: throwing, running, catching.
+ *
+ * The sim needs this to reason about the shape of a roster rather than just its
+ * total. Standard PPR weights are applied to the season totals and then scaled so
+ * the three parts add up to the player's real fantasy_points_ppr, which absorbs
+ * the small pieces this ignores (two point conversions, fumbles, return scores).
+ */
+function modeSplit(t, games, actualPpg) {
+  const pass = 0.04 * t.passing_yards + 4 * t.passing_tds - 2 * t.passing_interceptions;
+  const rush = 0.1 * t.rushing_yards + 6 * t.rushing_tds;
+  const rec = 0.1 * t.receiving_yards + 6 * t.receiving_tds + 1 * t.receptions;
+  const raw = pass + rush + rec;
+  const perGame = (v) => (games > 0 ? v / games : 0);
+  if (raw <= 0) return { pass_ppg: 0, rush_ppg: 0, rec_ppg: 0 };
+  // Scale so the parts reconcile with the real per-game figure.
+  const k = actualPpg / perGame(raw);
+  return {
+    pass_ppg: round(perGame(pass) * k, 2),
+    rush_ppg: round(perGame(rush) * k, 2),
+    rec_ppg: round(perGame(rec) * k, 2),
+  };
+}
+
 /** The stat line shown beside FPPG, shaped by what the player actually did. */
 function statLine(position, t) {
   const n = (v) => v.toLocaleString('en-US');
@@ -312,6 +336,7 @@ async function main() {
       position_percentile: round(p.position_percentile, 4),
       price_musd: round(p.price_musd, 1),
       fppg: round(p.ppr_ppg_mean, 1),
+      ...modeSplit(p.tot, p.games_played, p.ppr_ppg_mean),
       stat_line: statLine(p.position, p.tot),
       badges: p._badges.map((x) => x.text),
       college: bio.get(p.player_id)?.college ?? null,

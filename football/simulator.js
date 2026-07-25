@@ -5,6 +5,7 @@
  *   node football/simulator.js --chem       chemistry reachability
  *   node football/simulator.js --schedule   schedule normalization check
  *   node football/simulator.js --draft      draft-loop invariants (cap, dead ends)
+ *   node football/simulator.js --policies   REAL play policies through the wheel
  *
  *   PS_SCALE=2.1 PS_N=4000 node football/simulator.js     override the dial
  *
@@ -370,7 +371,7 @@ function chemReport() {
     const now = sat(raw);
     console.log(`     ${nP}      ${String(pairs).padStart(2)}   ${(raw * 100).toFixed(1).padStart(5)}%  ` +
       `${(gdd * 100).toFixed(1).padStart(6)}%${gdd >= cap ? ' CAP' : '    '}   ` +
-      `${(now * 100).toFixed(1).padStart(6)}%      ${nP === 2 ? '  ,' : '+' + ((now - prev) * 100).toFixed(2) + '%'}`);
+      `${(now * 100).toFixed(1).padStart(6)}%      ${nP === 2 ? '' : '+' + ((now - prev) * 100).toFixed(2) + '%'}`);
     prev = now;
   }
   console.log('\nThe GDD rule hits the ceiling at THREE players, so slots 4-6 carried no');
@@ -540,6 +541,81 @@ function recordReport(n) {
   for (const { a, r } of rows) console.log('  ' + a.name.padEnd(22) + fmtPct(r.playoffGameWin));
 }
 
+
+/*
+ * Real play policies, driven through the actual wheel.
+ *
+ * This is the mode that matters for balance, and the archetype table above is not.
+ * Archetypes build rosters out of the whole player pool, which stopped describing
+ * the game the moment a spin began offering a whole team to choose from. Measured
+ * that way the game looked correctly tuned while somebody tapping the top row of a
+ * best-first list was quietly winning 13 games having decided nothing.
+ *
+ * Anything that changes pricing, the cap, chemistry or the structure model should
+ * be re-checked here, not just against the archetypes.
+ */
+function policyReport(n) {
+  const R = require('./run.js');
+  const rosters = require('./data/team_season_rosters.json');
+  void rosters;
+  const rdata = R.indexData(players, teamSeasons);
+  const byk = new Map(players.map((p) => [p.player_id + '|' + p.season, p]));
+  const POLICIES = {
+    'cheapest every time': (o) => o[o.length - 1],
+    'best points per dollar': (o) => o.slice().sort((a, b) =>
+      (b.ppr_ppg_mean / Math.max(3, b.price_musd)) - (a.ppr_ppg_mean / Math.max(3, a.price_musd)))[0],
+    'random tap': (o, rng) => o[Math.floor(rng() * o.length)],
+    'taps the top row': (o) => o[0],
+    'perfect play (DP)': (o) => o[0],
+  };
+
+  const run1 = (policy, seed) => {
+    const run = R.createRun({ seed });
+    const rng = E.createSeededRNG(seed ^ 0x5f5f);
+    R.pickFranchise(run, FRANCHISES[Math.floor(rng() * FRANCHISES.length)]);
+    while (run.phase === R.PHASES.DRAFT) {
+      const d = R.spin(run, rdata);
+      const opts = d.options.map((k) => byk.get(k));
+      const budget = R.remaining(run) - R.reserveFloor(run);
+      const legal = opts.filter((p) => p.price_musd <= budget);
+      R.sign(run, POLICIES[policy](legal, rng) || legal[0]);
+    }
+    R.startSeason(run, rdata, ctx);
+    let roster = run.roster, chem = run.season.chemistry;
+    if (policy === 'perfect play (DP)') {
+      const best = R.bestPossibleSquad(run, rdata, ctx);
+      if (best) { roster = best.squad; chem = best.chemistry; }
+    }
+    const proj = R.projectSeason(roster, chem, run, rdata, leagueContext, 120);
+    return {
+      proj, chem,
+      spend: roster.reduce((s, p) => s + p.price_musd, 0),
+      fppg: roster.reduce((s, p) => s + p.ppr_ppg_mean, 0),
+      structure: E.rosterStructure(roster).multiplier,
+    };
+  };
+
+  console.log(`real play policies through the wheel, ${n} runs each\n`);
+  console.log('policy                   spend  FPPG  chem  struct  record  playoffs  title   20-0');
+  for (const name of Object.keys(POLICIES)) {
+    const rs = [];
+    for (let i = 0; i < n; i++) rs.push(run1(name, 20000 + i * 7919));
+    const m = (f) => mean(rs.map(f));
+    const w = rs.map((r) => r.proj.typicalWins).sort((a, b) => a - b);
+    console.log(name.padEnd(24)
+      + ('$' + m((r) => r.spend).toFixed(0) + 'M').padStart(6)
+      + m((r) => r.fppg).toFixed(0).padStart(6)
+      + (((m((r) => r.chem) - 1) * 100).toFixed(1) + '%').padStart(6)
+      + m((r) => r.structure).toFixed(3).padStart(8)
+      + (w[Math.floor(n / 2)] + '-' + (17 - w[Math.floor(n / 2)])).padStart(8)
+      + (fmtPct(m((r) => r.proj.playoffRate))).padStart(10)
+      + (fmtPct(m((r) => r.proj.titleRate))).padStart(7)
+      + (fmtPct(m((r) => r.proj.perfectRate))).padStart(7));
+  }
+  console.log('\nCareless play should finish around 12-5 with a coin flip at the playoffs.');
+  console.log('Perfect play should win 14 and take the title about one run in five.');
+}
+
 // ─── main ────────────────────────────────────────────────────────────────────
 
 const arg = process.argv[2];
@@ -549,4 +625,5 @@ else if (arg === '--chem') chemReport();
 else if (arg === '--schedule') scheduleReport(200);
 else if (arg === '--draft') draftReport(Number(process.env.PS_N ?? 3000));
 else if (arg === '--record') recordReport(Number(process.env.PS_N ?? 2000));
+else if (arg === '--policies') policyReport(Number(process.env.PS_N ?? 40));
 else reportMain(N);

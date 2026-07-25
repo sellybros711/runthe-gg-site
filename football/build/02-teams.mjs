@@ -48,7 +48,7 @@ async function main() {
     if (g.game_type !== 'REG') continue;
     const season = Number(g.season);
     if (!SEASONS.includes(season)) continue;
-    // Unplayed or cancelled games have blank scores. 2022 legitimately has 271
+    // Unplayed or canceled games have blank scores. 2022 legitimately has 271
     // regular-season results rather than 272 (Bills-Bengals was abandoned).
     if (g.away_score === '' || g.home_score === '') continue;
     const away = Number(g.away_score);

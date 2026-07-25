@@ -277,6 +277,41 @@
   .vs-row .c{color:#4ade80}
   .vs-row.hi{background:rgba(74,222,128,.06)}
 
+  /* coach panel */
+  .verdictline{font-family:'Anton',Impact,sans-serif;font-size:20px;line-height:1.1;margin:4px 0 10px}
+  .cnote{display:flex;gap:9px;font-size:13px;padding:7px 0;border-top:1px solid var(--line);line-height:1.35}
+  .cnote .m{flex:0 0 16px;height:16px;border-radius:4px;display:grid;place-items:center;margin-top:2px;
+    font-family:'Anton',Impact,sans-serif;font-size:11px;color:#fff}
+  .cnote.good .m{background:#15803d} .cnote.bad .m{background:var(--red-2)}
+  .meters{display:grid;gap:7px;margin-top:11px}
+  .meter{display:flex;align-items:center;gap:9px;font-size:11.5px}
+  .meter .lbl{flex:0 0 96px;color:var(--dim)}
+  .meter .track{flex:1;height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;position:relative}
+  .meter .track i{position:absolute;top:0;bottom:0;border-radius:99px}
+  .meter .val{flex:0 0 42px;text-align:right;font-family:'Anton',Impact,sans-serif;font-size:12px}
+  /* collapsible schedule */
+  details.drop{border:1px solid var(--line);border-radius:12px;background:var(--grad-panel);overflow:hidden}
+  details.drop>summary{list-style:none;cursor:pointer;padding:13px 15px;display:flex;
+    align-items:center;justify-content:space-between}
+  details.drop>summary::-webkit-details-marker{display:none}
+  details.drop>summary .caret{transition:transform .2s ease;color:var(--dim)}
+  details.drop[open]>summary .caret{transform:rotate(180deg)}
+  details.drop .body{padding:0 15px 14px}
+  /* results hero */
+  .hero-rec{text-align:center;padding:6px 0 2px}
+  .hero-rec .big{font-family:'Anton',Impact,sans-serif;font-size:88px;line-height:.86;letter-spacing:-.02em}
+  .hero-rec .big.gold{background:linear-gradient(180deg,#fde68a,#d97706);-webkit-background-clip:text;
+    background-clip:text;color:transparent}
+  .hero-rec .big.win{background:linear-gradient(180deg,#bfdbfe,#2563eb);-webkit-background-clip:text;
+    background-clip:text;color:transparent}
+  .hero-sub{font-family:'Anton',Impact,sans-serif;font-size:15px;letter-spacing:.06em;
+    text-transform:uppercase;margin-top:4px}
+  .hero-note{color:var(--dim);font-size:13px;margin:7px 0 0}
+  .stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px}
+  .st{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:11px;padding:10px 8px;text-align:center}
+  .st .v{font-family:'Anton',Impact,sans-serif;font-size:22px;line-height:1.05}
+  .st .k{font-size:10px;color:var(--dim-2);font-family:'Anton',Impact,sans-serif;letter-spacing:.09em;
+    text-transform:uppercase;margin-top:3px}
   .load{text-align:center;padding:80px 20px}
   .dots{display:flex;gap:6px;justify-content:center;margin-bottom:16px}
   .dots i{width:9px;height:9px;border-radius:50%;background:var(--blue);animation:bounce 1s infinite}
@@ -373,9 +408,15 @@
       <div id="q-links" style="margin-top:8px"></div>
     </div>
     <div class="panel" style="margin-top:11px">
-      <div class="eyebrow">Your schedule</div>
-      <div id="q-sched" style="margin-top:8px"></div>
+      <div class="eyebrow">Coach's take</div>
+      <div class="verdictline" id="q-verdict"></div>
+      <div class="meters" id="q-meters"></div>
+      <div id="q-notes" style="margin-top:11px"></div>
     </div>
+    <details class="drop" style="margin-top:11px">
+      <summary><span class="eyebrow">Your schedule</span><span class="caret">v</span></summary>
+      <div class="body"><div id="q-sched"></div></div>
+    </details>
     <div style="margin-top:15px"><button class="btn blue" id="b-play">Play the season</button></div>
   </div>
 
@@ -404,9 +445,17 @@
 
   <div class="screen" id="s-over">
     <div class="verdict" id="o-card">
-      <div class="eyebrow" id="o-eyebrow">Season over</div>
-      <h2 id="o-title">Record</h2>
-      <p id="o-sub"></p>
+      <div class="hero-rec">
+        <div class="eyebrow" id="o-eyebrow">Final record</div>
+        <div class="big" id="o-rec">0-0</div>
+        <div class="hero-sub" id="o-title">Season over</div>
+        <p class="hero-note" id="o-sub"></p>
+      </div>
+      <div class="stat3">
+        <div class="st"><div class="v" id="o-fppg">0</div><div class="k">Total FPPG</div></div>
+        <div class="st"><div class="v" id="o-salary">$0M</div><div class="k">Salary used</div></div>
+        <div class="st"><div class="v" id="o-perfect">0%</div><div class="k">Of a perfect draft</div></div>
+      </div>
     </div>
     <div class="panel" style="margin-top:12px">
       <div class="eyebrow">Every game</div>
@@ -804,6 +853,28 @@ function paintSquad(){
     ? links.map(l=>'<div class="linkrow"><span class="tierdot '+E.linkTier(l.value)+'"></span>'+
         '<span class="v'+(l.value<0?' neg':'')+'">'+pc(l.value)+'</span><span>'+esc(l.label)+'</span></div>').join('')
     : '<p class="dim" style="font-size:13px;margin:6px 0 0">Nobody here ever played together, so there is no chemistry this run.</p>';
+  /* Coach's take. Every line ties to one of the meters underneath it, so the
+     structure multiplier explains itself instead of being a hidden number. */
+  const spend=run.roster.reduce((t,p)=>t+p.price_musd,0)+run.respinsUsed*E.CONSTANTS.RESPIN_COST_MUSD;
+  const cr=E.coachReport(run.roster,run.season.chemistry,spend);
+  $('q-verdict').textContent=cr.verdict;
+  const st=cr.structure;
+  const meter=(lbl,val,ideal,fmt,good)=>{
+    const pct=Math.max(2,Math.min(100,val*100));
+    const col=good?'#22c55e':(val<ideal?'#ef4444':'#f97316');
+    return '<div class="meter"><span class="lbl">'+lbl+'</span>'+
+      '<span class="track"><i style="left:0;width:'+pct+'%;background:'+col+'"></i></span>'+
+      '<span class="val" style="color:'+col+'">'+fmt+'</span></div>';
+  };
+  $('q-meters').innerHTML=
+    meter('Passing game',Math.min(1,st.qbSupport/1.15),0.85,st.qbSupport>=1.0?'Strong':(st.qbSupport>=0.9?'OK':'Weak'),st.qbSupport>=1.0)+
+    meter('Run and pass',st.balance,0.95,(st.rushShare*100).toFixed(0)+'% run',st.balance>=0.99)+
+    meter('Spread around',st.concentration,0.97,(st.topShare*100).toFixed(0)+'% one man',st.concentration>=0.99)+
+    meter('Team shape',Math.min(1,st.multiplier/1.15),0.85,'x'+st.multiplier.toFixed(2),st.multiplier>=1.0);
+  $('q-notes').innerHTML=
+    cr.strengths.map(t=>'<div class="cnote good"><span class="m">+</span><span>'+esc(t)+'</span></div>').join('')+
+    cr.weaknesses.map(t=>'<div class="cnote bad"><span class="m">-</span><span>'+esc(t)+'</span></div>').join('');
+
   $('q-sched').innerHTML=run.schedule.map((id,i)=>{
     const t=DATA.byTeamSeasonId[id];
     return '<div style="display:flex;gap:9px;padding:4px 0;font-size:13px"><span class="dim" style="flex:0 0 46px">Wk '+(i+1)+'</span>'+
@@ -889,22 +960,30 @@ $('b-po-skip').onclick=()=>{R.startPlayoffs(run);show('s-season');fastForward();
 function paintOver(){
   const o=run.outcome,s=run.season,c=$('o-card');
   c.className='verdict';
+  $('o-rec').textContent=o.record;
+  $('o-rec').className='big'+(o.perfect?' gold':(o.titleWon?' win':''));
   if(o.perfect){c.classList.add('gold');
-    $('o-eyebrow').textContent='20 and 0'; $('o-title').textContent='Perfect';
+    $('o-eyebrow').textContent='Final record'; $('o-title').textContent='Perfect season';
     $('o-sub').textContent='Seventeen straight, then three more. No real team has ever done it.';
   }else if(o.titleWon){c.classList.add('win');
-    $('o-eyebrow').textContent=o.record; $('o-title').textContent='Champions';
+    $('o-eyebrow').textContent='Final record'; $('o-title').textContent='Champions';
     $('o-sub').textContent='You won the title. The undefeated run is still out there.';
   }else if(o.eliminatedIn){c.classList.add('out');
-    $('o-eyebrow').textContent=o.record; $('o-title').textContent='Out in the '+o.eliminatedIn;
+    $('o-eyebrow').textContent='Final record'; $('o-title').textContent='Out in the '+o.eliminatedIn;
     $('o-sub').textContent='You finished '+o.regularRecord+' in the regular season. '+
       (o.undefeatedRegular?'Undefeated right up to the playoffs.':'One loss ends it once you are there.');
   }else{c.classList.add('out');
-    $('o-eyebrow').textContent=o.record; $('o-title').textContent='No playoffs';
+    $('o-eyebrow').textContent='Final record'; $('o-title').textContent='Missed the playoffs';
     $('o-sub').textContent='You needed '+E.CONSTANTS.PLAYOFF_WINS+' wins to get in and finished with '+o.wins+'.';
   }
   $('o-list').innerHTML=''; s.results.forEach(r=>pushGame(r,$('o-list')));
   const best=R.bestPossibleSquad(run,DATA,CTX);
+  const spendUsed=run.roster.reduce((t,p)=>t+p.price_musd,0)+run.respinsUsed*E.CONSTANTS.RESPIN_COST_MUSD;
+  $('o-fppg').textContent=run.roster.reduce((t,p)=>t+p.ppr_ppg_mean,0).toFixed(0);
+  $('o-salary').textContent=M(spendUsed);
+  // How close the draft came to the strongest team those six teams allowed.
+  $('o-perfect').textContent=best
+    ? Math.round(100*Math.min(1,best.yourProjected/best.bestProjected))+'%' : '-';
   if(!best){ $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>'; }
   else{
     /* Every spot, always, so it names who replaces whom. Showing one player with a

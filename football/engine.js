@@ -27,27 +27,38 @@
  */
 const CONSTANTS = {
   /*
-   * Solved with `node football/simulator.js --sweep`, N=3000 runs/archetype.
-   * Measured on the regular season only, so the numbers stay comparable to the
-   * GDD's §9 table (playoff opponents are drawn from the top strength quartile
-   * and would drag the average down for exactly the rosters that reach them).
+   * Solved against REAL PLAY POLICIES through the actual wheel
+   * (`node football/simulator.js --policies`), not against synthetic rosters.
    *
-   *   archetype            win%    §9 target      record    title   20-0
-   *   random affordable   59.2%   0.62-0.68 low  10.1-6.9    1.9%   0.1%
-   *   decent, $75M used   77.2%   0.76-0.80 ok   13.1-3.9    8.8%   0.2%
-   *   well-built          86.4%   0.83-0.86 ok   14.7-2.3   29.0%   2.9%
-   *   optimal + chemistry 90.5%   0.88-0.90 ok   15.4-1.6   45.0%   7.7%
+   * That distinction is the whole reason this needed re-solving. The archetypes in
+   * §9 build rosters out of the entire 9,411-player pool, which stopped describing
+   * the game once a spin started offering a whole team to choose from. Measured
+   * properly, somebody tapping the top row of a best-first sorted list was winning
+   * 13 games having made no decisions at all.
    *
-   * The reachable spread is slightly wider than §9 assumed, so the bottom rung
-   * lands ~3 points low while the top two sit at the upper edge of their bands.
-   * No single value of SCALE fixes that; it would take narrowing the score
-   * variance. 1.95 is chosen because it puts the perfect-season rate squarely in
-   * the 3-6% §9 asked for, which is the target that actually matters.
+   * At 1.90, over 40 runs per policy:
    *
-   * Re-solve this before trusting any change to pricing, the cap, or the
-   * chemistry curve. All three move these numbers.
+   *   policy                spend  FPPG  record  playoffs  title   20-0
+   *   cheapest every time    $40M    21    2-15        0%     0%    0%
+   *   best points per dollar $59M    44     9-8       15%     0%    0%
+   *   random tap             $76M    49    10-7       28%     2%  0.1%
+   *   taps the top row      $100M    57    12-5       50%     4%  0.2%
+   *   perfect play (DP)      $99M    68    14-3       93%    18%  1.1%
+   *
+   * So careless play now finishes 12-5 with a coin-flip at the playoffs, while
+   * perfect play wins 14 and takes the title about one run in five. Two wins and
+   * forty points of playoff odds separate them, which is the room skill needs.
+   *
+   * This deliberately does NOT hit §9's 3-6% perfect-season target. The owner
+   * played it and found it too easy, and 20-0 reads better as near-mythical with
+   * the title as the reachable goal. Lowering SCALE to 1.70 would restore a 3.5%
+   * perfect rate but also hand careless play a 66% playoff rate, which is the
+   * problem this was fixing.
+   *
+   * Re-solve before trusting any change to pricing, the cap, chemistry, or the
+   * structure model. All four move these numbers.
    */
-  SCALE: 1.95,
+  SCALE: 1.90,
   CAP_MUSD: 100,
   RESPIN_COST_MUSD: 15,
   MAX_RESPINS: 2,
@@ -114,7 +125,6 @@ const CHEMISTRY = {
     college: 0.02,
     draft_class: 0.02,
     system: 0.02,
-    rivalry: -0.03,
     target_conflict: -0.04,
   },
   /*
@@ -180,6 +190,146 @@ const LINK_TIERS = [
   { min: -Infinity, key: 'bad', label: 'Hurts' },
 ];
 const linkTier = (value) => LINK_TIERS.find((t) => value >= t.min).key;
+
+/*
+ * ROSTER STRUCTURE
+ *
+ * Summing six fantasy totals is not a football team. It made elite receivers with
+ * a broken quarterback score exactly as well as a balanced offense, so the shape
+ * of a roster was invisible and the only thing that mattered was raw points. That
+ * is why a thoughtless draft could still win 13 games.
+ *
+ * Three things now shape the squad score, each measured from the real numbers
+ * rather than invented:
+ *
+ *   1. Quarterback support. Catching points depend on somebody throwing. The
+ *      median starting quarterback in this pool throws for 11.9 points a game, so
+ *      that is the reference; a weak arm discounts the whole receiving corps and a
+ *      great one lifts it. This is the big one, and it means letting the
+ *      quarterback slide until the money is gone has a real cost.
+ *   2. Balance. Measured across 27 seasons, a real league earns 25% of its
+ *      non-passing fantasy points on the ground. A roster far from that is
+ *      one-dimensional and easier to defend.
+ *   3. Concentration. Leaning on one man is fragile, because defenses key on him.
+ *
+ * All three multiply the squad score, never individual output, so they cannot
+ * cascade through the sim.
+ */
+const STRUCTURE = {
+  QB_BASELINE_PASS_PPG: 11.9,   // median starting QB, measured
+  QB_SUPPORT_FLOOR: 0.72,
+  QB_SUPPORT_CEIL: 1.15,
+  IDEAL_RUSH_SHARE: 0.25,       // measured league average
+  RUSH_SHARE_TOLERANCE: 0.12,
+  BALANCE_WEIGHT: 0.9,
+  IDEAL_TOP_SHARE: 0.28,
+  CONCENTRATION_WEIGHT: 0.55,
+  MIN: 0.65,
+  MAX: 1.15,
+};
+
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+/**
+ * Read a roster's shape. Returns the multiplier plus the parts that produced it,
+ * so the coach breakdown can explain itself instead of showing a bare number.
+ */
+function rosterStructure(roster) {
+  const S = STRUCTURE;
+  const sum = (f) => roster.reduce((t, p) => t + (f(p) || 0), 0);
+  const total = sum((p) => p.ppr_ppg_mean);
+  if (!total) {
+    return { multiplier: 1, qbSupport: 1, balance: 1, concentration: 1, rushShare: 0, topShare: 0, qbPass: 0 };
+  }
+
+  const qb = roster.find((p) => p.position === 'QB');
+  const qbPass = qb ? (qb.pass_ppg || 0) : 0;
+  const qbSupport = clamp(
+    0.55 + 0.45 * (qbPass / S.QB_BASELINE_PASS_PPG),
+    S.QB_SUPPORT_FLOOR, S.QB_SUPPORT_CEIL,
+  );
+
+  const rush = sum((p) => p.rush_ppg);
+  const rec = sum((p) => p.rec_ppg);
+  const ground = rush + rec;
+  const rushShare = ground > 0 ? rush / ground : 0;
+  const balance = 1 - S.BALANCE_WEIGHT
+    * Math.max(0, Math.abs(rushShare - S.IDEAL_RUSH_SHARE) - S.RUSH_SHARE_TOLERANCE);
+
+  const topShare = Math.max(...roster.map((p) => p.ppr_ppg_mean)) / total;
+  const concentration = 1 - S.CONCENTRATION_WEIGHT * Math.max(0, topShare - S.IDEAL_TOP_SHARE);
+
+  // Quarterback support applies to catching points only, so it is folded in as a
+  // change to the effective total rather than a flat multiplier.
+  const effective = sum((p) => p.pass_ppg) + rush + rec * qbSupport;
+  const multiplier = clamp((effective / total) * balance * concentration, S.MIN, S.MAX);
+
+  return { multiplier, qbSupport, balance, concentration, rushShare, topShare, qbPass, total };
+}
+
+/**
+ * A coach's read on the roster, in plain words.
+ *
+ * Every line is tied to a number the player can check on the same screen, so this
+ * explains the structure multiplier rather than decorating it.
+ */
+function coachReport(roster, chemistryMultiplier, spend) {
+  const st = rosterStructure(roster);
+  const strengths = [];
+  const weaknesses = [];
+  const total = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+  const star = roster.slice().sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
+  const qb = roster.find((p) => p.position === 'QB');
+  const chem = (chemistryMultiplier - 1) * 100;
+  const last = (n) => n.split(' ').slice(-1)[0];
+
+  // Quarterback
+  if (st.qbSupport >= 1.06) {
+    strengths.push(`${qb ? last(qb.name) : 'Your quarterback'} throws well enough to lift everyone he targets.`);
+  } else if (st.qbSupport <= 0.86) {
+    weaknesses.push(`${qb ? last(qb.name) : 'Your quarterback'} cannot get the ball to these receivers. It holds the whole passing game back.`);
+  } else if (st.qbSupport <= 0.95) {
+    weaknesses.push('Your quarterback is ordinary, so your receivers will not see their best numbers.');
+  }
+
+  // Balance
+  if (st.rushShare < 0.13) {
+    weaknesses.push('There is no running game here. Teams can sit back and defend the pass all day.');
+  } else if (st.rushShare > 0.45) {
+    weaknesses.push('You run it too often to scare anybody deep.');
+  } else {
+    strengths.push('You can run it and throw it, so defenses have to respect both.');
+  }
+
+  // Concentration
+  if (st.topShare >= 0.36) {
+    weaknesses.push(`Everything runs through ${last(star.name)}. Take him away and this offense stops.`);
+  } else if (st.topShare <= 0.26) {
+    strengths.push('The scoring is spread around, so no single defender can take you apart.');
+  }
+
+  // Chemistry
+  if (chem >= 8) strengths.push('These players know each other, and it shows.');
+  else if (chem < 1) weaknesses.push('Six strangers. Nobody here has played a down together.');
+
+  // Money
+  const unspent = CONSTANTS.CAP_MUSD - spend;
+  if (unspent >= 20) weaknesses.push(`You left $${unspent.toFixed(0)}M on the table. That was a better player you did not sign.`);
+  else if (unspent <= 3) strengths.push('You used the whole budget.');
+
+  // Boom or bust
+  const swing = roster.reduce((t, p) => t + p.ppr_ppg_sd, 0) / Math.max(1, total);
+  if (swing > 0.52) weaknesses.push('This group is streaky. Big weeks, and some very quiet ones.');
+  else if (swing < 0.38) strengths.push('Steady week to week, which matters when one loss can end you.');
+
+  let verdict;
+  if (st.multiplier >= 1.03 && total >= 60) verdict = 'A real contender.';
+  else if (st.multiplier >= 0.96 && total >= 50) verdict = 'Good enough to win a lot of games.';
+  else if (total >= 40) verdict = 'Middle of the pack. It will need some luck.';
+  else verdict = 'This is not a playoff team.';
+
+  return { structure: st, strengths, weaknesses, verdict, totalFppg: total, swing };
+}
 
 const SLOTS = ['QB', 'RB', 'WR', 'WR', 'TE', 'FLEX'];
 const SLOT_ELIGIBILITY = {
@@ -324,17 +474,13 @@ function pairLinks(a, b, ctx) {
     });
   }
 
-  // Rivalry, opposing sides of a documented, mutual franchise rivalry.
-  const riv = (ctx.curated?.rivalry || []).find(
-    (r) => (r.a === a.franchise && r.b === b.franchise) || (r.a === b.franchise && r.b === a.franchise),
-  );
-  if (riv) {
-    out.push({
-      type: 'rivalry', value: V.rivalry,
-      label: `Old rivals: ${nickname(riv.a)} and ${nickname(riv.b)}`,
-      short: 'Rivals',
-    });
-  }
+  /*
+   * Rivalry used to subtract 3% for players from opposing sides of a documented
+   * rivalry. Cut: it punished you for something that is not a flaw in the roster,
+   * two good players from rival teams are not worse at football together, and it
+   * was the one link that made a signing feel arbitrarily bad. The curated list
+   * stays in the data in case it is ever wanted for flavor text.
+   */
 
   if (CHEMISTRY.TARGET_CONFLICT_ENABLED
       && a.position === 'WR' && b.position === 'WR'
@@ -562,8 +708,10 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
   let raw = 0;
   for (const p of roster) raw += sampleGamma(p.ppr_ppg_mean, p.ppr_ppg_sd, rng);
 
+  // Structure is read from the roster itself, so no caller can forget to apply it.
+  const structure = rosterStructure(roster).multiplier;
   const defenseModifier = opponent.pts_allowed_mean / leagueAvgAllowed;
-  const yourScore = raw * chemistryMultiplier * defenseModifier;
+  const yourScore = raw * chemistryMultiplier * structure * defenseModifier;
 
   const oppScore = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng) * constants.SCALE;
 
@@ -718,7 +866,7 @@ const publicAPI = {
   buildDivisionMap, opponentFranchises, generateSchedule, generatePlayoffs,
   resolveGame, playRun, prepareData, toFootballScore,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
-  NICKNAMES, nickname, LINK_TIERS, linkTier,
+  NICKNAMES, nickname, LINK_TIERS, linkTier, rosterStructure, STRUCTURE, coachReport,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
