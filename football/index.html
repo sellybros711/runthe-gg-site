@@ -138,6 +138,14 @@
     box-shadow:0 0 0 2px rgba(255,255,255,.22),0 6px 16px -8px #000;
     animation:tmpick .34s cubic-bezier(.2,1.4,.4,1) both}
   .tm.on:after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--c2)}
+  /* Who you will play twice, named as soon as you pick. */
+  .rivals{max-height:0;overflow:hidden;opacity:0;border-radius:12px;
+    background:var(--grad-panel);border:1px solid var(--line);
+    border-left:3px solid var(--c1,var(--line-2));
+    transition:max-height .3s ease,opacity .3s ease,margin .3s ease,padding .3s ease}
+  .rivals.on{max-height:130px;opacity:1;margin-top:13px;padding:11px 13px}
+  .rivals p{margin:0;font-size:13px;color:var(--dim)}
+  .rivals p b{color:var(--ink);font-weight:700}
   @keyframes tmpick{from{transform:scale(.88)}to{transform:scale(1)}}
 
   /* the field */
@@ -145,6 +153,14 @@
     background:var(--grad-field);border:1px solid var(--line)}
   /* The results page is long, so its copy of the field is a little flatter. */
   .field.short{aspect-ratio:1/0.46}
+  /* Your club, very faintly, on every field once you have chosen one. --tc1 is set
+     on :root when the draft starts, so this is a no-op until then. */
+  .field:before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(115% 78% at 50% -12%,var(--tc1,transparent),transparent 60%),
+               radial-gradient(90% 60% at 50% 112%,var(--tc2,transparent),transparent 62%);
+    opacity:.30}
+  .field .ez.t{background:linear-gradient(180deg,var(--tc1,rgba(59,130,246,.22)),transparent)}
+  .field .ez.b{background:linear-gradient(0deg,var(--tc2,rgba(239,68,68,.20)),transparent)}
   .field .lines{position:absolute;inset:0;
     background:repeating-linear-gradient(0deg,transparent 0 9.6%,rgba(255,255,255,.07) 9.6% calc(9.6% + 1px))}
   .field .hash{position:absolute;inset:0;
@@ -251,7 +267,7 @@
   /* Over a club color the same vignette would read as dirt, so it thins out. */
   .reelbox.clubbed:after{background:linear-gradient(180deg,rgba(0,0,0,.72) 2%,rgba(0,0,0,.10) 34%,
     rgba(0,0,0,.10) 66%,rgba(0,0,0,.72) 98%)}
-  .reelbox .strip{position:absolute;left:0;right:0;top:0;will-change:transform,filter}
+  .reelbox .strip{position:absolute;left:0;right:0;top:0;z-index:1;will-change:transform,filter}
   .reelbox .wash{display:none}
   .reelbox.clubbed .wash{display:block}
   .reelbox .band{position:absolute;left:5px;right:5px;top:50%;height:38px;margin-top:-19px;z-index:3;
@@ -314,7 +330,7 @@
   .reelbox.clubbed .band,.reelbox.clubbed.done .band{border-color:var(--c2);border-width:1.5px;
     background:rgba(255,255,255,.13)}
   .reelbox.clubbed .wash{position:absolute;left:5px;right:5px;top:50%;height:38px;margin-top:-19px;
-    border-radius:9px;z-index:1;background:var(--c1);opacity:0;pointer-events:none;
+    border-radius:9px;z-index:0;background:var(--c1);opacity:0;pointer-events:none;
     animation:clubwash .5s ease-out}
   @keyframes clubwash{
     0%{opacity:0;transform:scale(.86)}
@@ -599,9 +615,14 @@
 
   <div class="screen" id="s-team">
     <div class="eyebrow">Step 1 of 3</div>
-    <h2 class="display" style="font-size:27px;margin:5px 0 4px">Pick a team</h2>
-    <p class="dim" style="font-size:13.5px;margin:0 0 15px">This sets your division and who you play. It does not make the run easier or harder.</p>
+    <h2 class="display" style="font-size:27px;margin:5px 0 4px">Your favorite team</h2>
+    <p class="dim" style="font-size:13.5px;margin:0 0 4px">You are not drafting for them, you are taking their place in the league.
+    That fixes your division, and you play your three rivals twice each, so six of
+    your seventeen games are decided right here.</p>
+    <p class="dim" style="font-size:12.5px;margin:0 0 15px">Every division is about
+    as hard as the next, so pick the one you actually care about.</p>
     <div class="divs" id="divs"></div>
+    <div class="rivals" id="rivals"></div>
     <div style="margin-top:17px"><button class="btn" id="b-draft" disabled>Go to the draft</button></div>
   </div>
 
@@ -724,7 +745,7 @@
       <div class="body"><div class="glist" id="o-list" style="max-height:none"></div></div>
     </details>
 
-    <div style="margin-top:15px"><button class="btn" id="b-share">Copy result</button></div>
+    <div style="margin-top:15px"><button class="btn" id="b-share">Share your season</button></div>
     <div style="margin-top:9px"><button class="btn ghost" id="b-again">Run it again</button></div>
   </div>
 </div>
@@ -905,7 +926,21 @@ function buildTeams(){
     b.style.setProperty('--c2',tc.secondary);
     b.style.setProperty('--on',tc.on);
     b.classList.add('on'); pickedTeam=b.dataset.f; $('b-draft').disabled=false;
+    showRivals(b.dataset.f,tc);
   });
+}
+
+/* Naming the three teams you will play twice turns "pick a team" from decoration
+   into a consequence you can see before you commit to it. */
+function showRivals(franchise,tc){
+  const el=$('rivals'); if(!el) return;
+  const divs=E.buildDivisionMap(DATA.teamSeasons);
+  const mine=Object.keys(divs).find(d=>divs[d].includes(franchise));
+  const rivals=(divs[mine]||[]).filter(f=>f!==franchise);
+  el.style.setProperty('--c1',tc.primary);
+  el.innerHTML='<div class="eyebrow" style="margin:0 0 6px">'+esc(mine)+'</div>'+
+    '<p>Twice each: <b>'+rivals.map(f=>esc(E.nickname(f))).join(', ')+'</b></p>';
+  el.classList.add('on');
 }
 
 /* ---------- the field ----------
@@ -1131,7 +1166,16 @@ $('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))$('sheet').clas
 $('b-start').onclick=()=>{run=R.createRun({});show('s-team');};
 $('b-daily').onclick=()=>{run=R.createRun({daily:new Date().toISOString().slice(0,10)});
   toast('Everyone gets the same six spins today');show('s-team');};
-$('b-draft').onclick=()=>{R.pickFranchise(run,pickedTeam);$('hdr').textContent=pickedTeam;show('s-draft');nextSpin();};
+$('b-draft').onclick=()=>{
+  R.pickFranchise(run,pickedTeam);
+  $('hdr').textContent=pickedTeam;
+  /* A wash of the club's colors on every field from here on. Kept deliberately
+     faint: it should make the run feel like yours, not repaint the game. */
+  const tc=E.teamColors(pickedTeam);
+  document.documentElement.style.setProperty('--tc1',tc.primary);
+  document.documentElement.style.setProperty('--tc2',tc.secondary);
+  show('s-draft'); nextSpin();
+};
 
 /* ---------- draft ---------- */
 function paintTop(){
@@ -1723,24 +1767,195 @@ function comparison(best){
   '</div>';
 }
 
+/* ---------- sharing ----------
+   Two lines and a link. The old text pasted a 17-character LLLWLL grid and the
+   whole roster, which nobody reads, and the bare "runthe.gg/football" did not
+   become a tappable link in most apps. The scheme is what makes it one. */
+const SHARE_URL='https://runthe.gg/football';
+
+function shareLines(){
+  const o=run.outcome;
+  const what=o.perfect?'Perfect season.'
+    :o.titleWon?'Champions.'
+    :o.eliminatedIn?'Out in the '+o.eliminatedIn+'.'
+    :'Missed the playoffs.';
+  return {head:'The Perfect Season: '+o.record+'. '+what,
+    text:'The Perfect Season: '+o.record+'. '+what+'\n'+SHARE_URL};
+}
+
+/*
+ * The share card, drawn to a canvas at 1080x1350.
+ *
+ * Portrait 4:5 because that is what survives being posted anywhere: it is the tall
+ * limit on most feeds and still readable as a thumbnail in a message. Everything on
+ * it is sized off one unit so the layout holds whether it is rendered at 1080 or
+ * scaled down to 300 in a chat bubble.
+ */
+/*
+ * Every vertical position is a named constant rather than an accumulator, because
+ * the first version added up as it went and the footer landed on top of the stats
+ * row: "RUNTHE.GG/FOOTBALL" printed straight through "+2.7% CHEMISTRY". With the
+ * anchors written down, a six-row card always lands the same and the gaps between
+ * blocks can be read off without running it.
+ */
+const CARD={
+  W:1080, H:1350, PAD:76,
+  TITLE:92, TAG:132,          // what the game is, for whoever has not played it
+  /* The record is 250px, and Big Shoulders has a cap height near 0.73 of that, so
+     its glyphs reach 182px above their own baseline. At 320 that put them straight
+     through the tagline at 132. Everything below moved down with it. */
+  REC:350, VERDICT:412,       // the record, and how the season ended
+  RULE1:456,
+  ROWS:518, ROW:100,          // six players, last baseline 1018
+  RULE2:1088,
+  STAT:1178, STAT_LABEL:1220, // chemistry and spend
+  FOOT:1296, KEEL:10,
+};
+
+function drawShareCard(){
+  const c=document.createElement('canvas');
+  c.width=CARD.W; c.height=CARD.H;
+  const x=c.getContext('2d');
+  const o=run.outcome, tc=E.teamColors(run.franchise);
+  const PAD=CARD.PAD;
+  const mid=CARD.W/2;
+
+  // Ground: near-black with one wash of the club's color, so two people who played
+  // the same record still get cards that look like their own team.
+  x.fillStyle='#070b13'; x.fillRect(0,0,CARD.W,CARD.H);
+  const g=x.createRadialGradient(mid,-160,40,mid,-160,CARD.W*1.15);
+  g.addColorStop(0,tc.primary); g.addColorStop(1,'rgba(7,11,19,0)');
+  x.globalAlpha=0.30; x.fillStyle=g; x.fillRect(0,0,CARD.W,CARD.H*0.62); x.globalAlpha=1;
+  // The club's secondary as a keel line along the very bottom.
+  x.fillStyle=tc.secondary; x.fillRect(0,CARD.H-CARD.KEEL,CARD.W,CARD.KEEL);
+
+  const D=(w,sz)=>{ x.font=w+' '+sz+"px 'Big Shoulders Display','Anton',Impact,sans-serif"; };
+  const N=(w,sz)=>{ x.font=w+' '+sz+"px 'Oswald','Anton',sans-serif"; };
+  const B=(w,sz)=>{ x.font=w+' '+sz+"px 'Chivo',system-ui,sans-serif"; };
+  const centered=(t,y)=>x.fillText(t,mid-x.measureText(t).width/2,y);
+
+  // Header, plus one line telling a stranger what they are looking at.
+  N('600',30); x.fillStyle='rgba(255,255,255,.55)';
+  x.letterSpacing='6px';
+  centered('THE PERFECT SEASON',CARD.TITLE);
+  x.letterSpacing='0px';
+  B('400',25); x.fillStyle='rgba(255,255,255,.42)';
+  centered('Six spins. Six signings. One shot at 20-0.',CARD.TAG);
+
+  // The record, which is the whole point of the card.
+  const tone=o.perfect?'#fcd34d':(o.titleWon?'#93c5fd':'#ffffff');
+  D('900',250); x.fillStyle=tone;
+  centered(o.record,CARD.REC);
+
+  D('800',52); x.fillStyle='rgba(255,255,255,.92)';
+  const what=(o.perfect?'PERFECT SEASON'
+    :o.titleWon?'CHAMPIONS'
+    :o.eliminatedIn?'OUT IN THE '+o.eliminatedIn.toUpperCase()
+    :'MISSED THE PLAYOFFS');
+  centered(what,CARD.VERDICT);
+
+  x.fillStyle='rgba(255,255,255,.14)'; x.fillRect(PAD,CARD.RULE1,CARD.W-PAD*2,2);
+
+  /* The six players. Position chip, name, then the year and club on the right, so
+     the eye can run down either column on its own. */
+  const bySlot=new Array(E.SLOTS.length).fill(null);
+  run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
+  const COLS={QB:'#ef4444',RB:'#22c55e',WR:'#3b82f6',TE:'#f97316',FLEX:'#a855f7'};
+  let y=CARD.ROWS;
+  const ROW=CARD.ROW;
+  E.SLOTS.forEach((slot,i)=>{
+    const p=bySlot[i]; if(!p) return;
+    // chip
+    const cw=88,ch=52;
+    x.fillStyle=COLS[p.position]||'#64748b';
+    roundRect(x,PAD,y-38,cw,ch,12); x.fill();
+    N('700',26); x.fillStyle='#ffffff';
+    x.fillText(p.position,PAD+cw/2-x.measureText(p.position).width/2,y-2);
+    // name, shrunk only if it would collide with the right column
+    const right=CARD.W-PAD;
+    N('500',24); x.fillStyle='rgba(255,255,255,.5)';
+    const meta=p.season+' '+E.nickname(p.franchise);
+    const mw=x.measureText(meta).width;
+    x.fillText(meta,right-mw,y-4);
+    let size=46;
+    D('800',size);
+    const room=right-mw-28-(PAD+cw+22);
+    while(x.measureText(p.name).width>room&&size>26){ size-=2; D('800',size); }
+    x.fillStyle='#ffffff';
+    x.fillText(p.name,PAD+cw+22,y+2);
+    y+=ROW;
+  });
+
+  x.fillStyle='rgba(255,255,255,.14)'; x.fillRect(PAD,CARD.RULE2,CARD.W-PAD*2,2);
+
+  // Two figures that say something about the build, not just the result.
+  const spend=run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed);
+  const chem=(run.season.chemistry-1)*100;
+  const stat=(label,val,cx,color)=>{
+    D('900',70); x.fillStyle=color;
+    x.fillText(val,cx-x.measureText(val).width/2,CARD.STAT);
+    N('500',23); x.fillStyle='rgba(255,255,255,.5)';
+    x.letterSpacing='4px';
+    x.fillText(label,cx-x.measureText(label).width/2,CARD.STAT_LABEL);
+    x.letterSpacing='0px';
+  };
+  stat('CHEMISTRY',(chem>=0?'+':'')+chem.toFixed(1)+'%',CARD.W*0.30,
+    chem>0.05?'#4ade80':'#e2e8f0');
+  stat('SPENT','$'+spend.toFixed(0)+'M',CARD.W*0.70,'#e2e8f0');
+
+  // Footer
+  N('600',34); x.fillStyle='rgba(255,255,255,.85)';
+  x.letterSpacing='3px';
+  centered('RUNTHE.GG/FOOTBALL',CARD.FOOT);
+  x.letterSpacing='0px';
+  return c;
+}
+
+function roundRect(x,l,t,w,h,r){
+  x.beginPath();
+  x.moveTo(l+r,t); x.arcTo(l+w,t,l+w,t+h,r); x.arcTo(l+w,t+h,l,t+h,r);
+  x.arcTo(l,t+h,l,t,r); x.arcTo(l,t,l+w,t,r); x.closePath();
+}
+
+const canvasBlob=(c)=>new Promise((res)=>c.toBlob(res,'image/png'));
+
 $('b-share').onclick=async()=>{
-  const o=run.outcome,s=run.season;
-  const grid=s.results.map(r=>r.won?'W':'L').join('');
-  const head=o.perfect?'The Perfect Season. 20-0.'
-    :o.titleWon?'Champions. '+o.record+'.'
-    :o.eliminatedIn?'Out in the '+o.eliminatedIn+'. '+o.record+'.'
-    :'Missed the playoffs. '+o.record+'.';
-  const txt=head+'\n'+grid+'\n'+run.roster.map(p=>p.name).join(', ')+
-    '\nChemistry '+pc(s.chemistry-1)+'\n\nrunthe.gg/football';
+  const {head,text}=shareLines();
+  let file=null;
   try{
-    if(navigator.share)await navigator.share({title:'The Perfect Season',text:txt});
-    else{await navigator.clipboard.writeText(txt);toast('Copied');}
-  }catch(e){try{await navigator.clipboard.writeText(txt);toast('Copied');}catch(_){toast('Could not copy');}}
+    // The fonts have to be in before anything is measured, or the card lays itself
+    // out against a fallback and every column lands in the wrong place.
+    if(document.fonts&&document.fonts.ready) await document.fonts.ready;
+    const blob=await canvasBlob(drawShareCard());
+    if(blob) file=new File([blob],'perfect-season.png',{type:'image/png'});
+  }catch(e){ file=null; }
+
+  try{
+    if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({title:head,text,files:[file]});
+      return;
+    }
+    if(navigator.share){ await navigator.share({title:head,text}); return; }
+    throw new Error('no share');
+  }catch(e){
+    if(e&&e.name==='AbortError') return;   // they closed the sheet, not a failure
+    // No share sheet: put the text on the clipboard and hand over the image.
+    try{ await navigator.clipboard.writeText(text); toast('Copied'); }
+    catch(_){ toast('Could not copy'); }
+    if(file){
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(file); a.download='perfect-season.png';
+      a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    }
+  }
 };
 $('b-again').onclick=()=>{
   clearTimeout(simTimer); run=null; pickedTeam=null; lastChem=1;
   document.querySelectorAll('.tm').forEach(x=>{x.classList.remove('on');x.removeAttribute('style');});
   $('b-draft').disabled=true; $('hdr').textContent='The Perfect Season';
+  $('rivals').classList.remove('on'); $('rivals').innerHTML='';
+  document.documentElement.style.removeProperty('--tc1');
+  document.documentElement.style.removeProperty('--tc2');
   show('s-intro');
 };
 

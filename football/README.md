@@ -718,6 +718,60 @@ The honest limit, stated in the UI rather than glossed over: it holds your six
 drawn **teams** fixed. It cannot know what the wheel would have shown after a
 different pick, because the wheel reacts to who you have already signed.
 
+## Sharing
+
+Two lines and a link:
+
+```
+The Perfect Season: 12-6. Out in the Wild Card.
+https://runthe.gg/football
+```
+
+The old text pasted a 17-character `LLLWLLLLLWLLWWWWL` grid and the whole roster,
+which nobody reads, and the bare `runthe.gg/football` did not become a tappable link
+in most apps. The scheme is what makes it one.
+
+Everything else moved to a **card drawn on a canvas** at 1080x1350, attached to the
+share sheet as a PNG when `navigator.canShare({files})` allows it, and offered as a
+download when it does not. Portrait 4:5 because that is what survives being posted
+anywhere: the tall limit on most feeds, still readable as a thumbnail in a message.
+
+On it: the record at 250px, how the season ended, the six players with position
+chips and the year and club they came from, chemistry, spend, and one line saying
+what the game is for whoever has not played it. The background is washed with the
+club's primary and keeled with its secondary, so two people who posted the same
+record still get cards that look like their own team.
+
+**Every vertical position is a named constant in `CARD`, not an accumulator.** The
+first version added up as it went and the footer printed straight through the stats
+row. With the anchors written down, a six-row card always lands the same. Two
+measured facts are baked into them: the record is 250px type and Big Shoulders has a
+cap height near 0.73 of that, so its glyphs reach 182px above their own baseline,
+which is what put them through the tagline at first.
+
+The share test scans the rendered PNG for rows containing ink and asserts the blocks
+are separated. Its first version used a brightness threshold tuned to the white text
+and silently ignored the 55%-white title and 42%-white tagline, which were the pair
+actually colliding, so the threshold is deliberately low.
+
+## Picking a favorite team
+
+The feedback was that choosing a team looked pointless. It is not, but nothing on
+screen said what it did, so the screen now says it: you are taking that club's place
+in the league, which fixes your division, and you play your three rivals twice each,
+so six of your seventeen games are settled there. Picking one names the three
+teams underneath, which turns it from decoration into a consequence you can see
+before you commit.
+
+It also says every division is about as hard as the next, because `--schedule`
+measures the spread between the easiest and hardest franchise at 0.012 z-units per
+game. Overselling it would be a lie a player could feel.
+
+From then on the club's colors wash faintly across every field, top and bottom end
+zones included. Deliberately faint: it should make the run feel like yours, not
+repaint the game. A club whose primary is already close to the page's navy, like
+Buffalo, will barely show, which is why the secondary is in there too.
+
 ## Not built yet
 
 Everything in the GDD's build sequence is done. The page is **not linked from the
