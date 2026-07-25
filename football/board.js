@@ -48,6 +48,17 @@
     rating: 'team_rating',
   };
 
+  /* THE TIEBREAK REVERSES WITH THE SORT, and that is a performance decision as much
+     as a design one. Every index here is (mode, <axis> desc, created_at asc), and
+     Postgres can read an index backwards only when EVERY sort key reverses together:
+     `score asc, created_at asc` is a backward scan plus an Incremental Sort, while
+     `score asc, created_at desc` is a clean backward scan. Measured 0.234ms against
+     0.060ms at 2M rows, which is why there is no ascending twin of any index.
+
+     It reads correctly too: on a worst-first board, ties going to the most recent run
+     is the natural way round. */
+  const ORDER_TIEBREAK = { desc: 'asc', asc: 'desc' };
+
   let offline = false;
 
   /* One decimal place, matching round(p_point_diff, 1) in ps_submit_run(). Declared
@@ -96,10 +107,34 @@
     return d.toISOString();
   }
 
-  const winFilter = (win) => {
-    const cut = cutoffISO(win);
-    return cut ? '&created_at=gte.' + encodeURIComponent(cut) : '';
-  };
+  /* Today's puzzle, as the date the game builds its daily seed from. */
+  const todayUTC = () => new Date().toISOString().slice(0, 10);
+
+  /* ---------------- free play and the daily are two competitions ----------------
+     Not one board with a flag on it. Everybody who plays a given day's daily gets
+     the same six draws, so those runs are comparable with each other in a way no
+     two free runs are, and a free player can re-roll until the wheel is kind. Mixed
+     together, the free board is unfair in one direction and the daily board is
+     meaningless in the other.
+
+     mode is 'free' or 'daily'. For the daily, `puzzle` narrows to one day's board by
+     its own date: created_at is the wrong thing to window it on, because a run
+     started at 23:58 and submitted at 00:03 was still that day's puzzle.
+
+     Passing puzzle:'today' means today's board. Passing nothing means every daily
+     run ever, which is what the all-time daily numbers rank against. */
+  function scope(opts) {
+    opts = opts || {};
+    const daily = opts.mode === 'daily';
+    let f = '&daily=is.' + (daily ? 'true' : 'false');
+    if (daily && opts.puzzle) {
+      f += '&daily_date=eq.' + (opts.puzzle === 'today' ? todayUTC() : opts.puzzle);
+      return f;                       // the date IS the window
+    }
+    const cut = cutoffISO(opts.win || 'all');
+    if (cut) f += '&created_at=gte.' + encodeURIComponent(cut);
+    return f;
+  }
 
   /* ---------------- submit ----------------
      Sends only what the server cannot derive. wins, losses, games, the seed label
@@ -122,7 +157,7 @@
           p_spend_musd: payload.spendMusd,
           p_respins: payload.respins || 0,
           p_franchise: payload.franchise || null,
-          p_daily: !!payload.daily,
+          p_daily_date: payload.dailyDate || null,
           p_picks: payload.picks,
           p_slots: payload.slots || null,
           p_seed: payload.seed || null,
@@ -151,10 +186,10 @@
      him, which reads as the board being wrong.
 
      One request per number, six in parallel. Each is an index-only count. */
-  async function rankIn(win, score) {
+  async function rankIn(opts, score) {
     try {
       const q = base() + TABLE + '?select=id&limit=1&score=gt.' + encodeURIComponent(score) +
-        winFilter(win);
+        scope(opts);
       const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
       if (!res.ok) { offline = true; return null; }
       const better = countOf(res);
@@ -162,9 +197,9 @@
     } catch (e) { offline = true; return null; }
   }
 
-  async function total(win) {
+  async function total(opts) {
     try {
-      const q = base() + TABLE + '?select=id&limit=1' + winFilter(win);
+      const q = base() + TABLE + '?select=id&limit=1' + scope(opts);
       const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
       if (!res.ok) { offline = true; return null; }
       return countOf(res);
@@ -177,14 +212,23 @@
      board does it: the two counts are separate queries, so a run inserted a moment
      ago can be missing from the total while already counted in the rank, which
      would render an impossible "#41 of 40". */
-  async function ranks(score) {
-    const wins = ['day', 'week', 'all'];
-    const got = await Promise.all(wins.map((w) =>
-      Promise.all([rankIn(w, score), total(w)])));
+  async function ranks(score, mode) {
+    /* A run is ranked against its own kind. For a daily run "today" is that day's
+       puzzle rather than a clock window, so the number under it is the field that
+       played the same six draws. */
+    const scopes = mode === 'daily'
+      ? [['day', { mode: 'daily', puzzle: 'today' }],
+         ['week', { mode: 'daily', win: 'week' }],
+         ['all', { mode: 'daily', win: 'all' }]]
+      : [['day', { mode: 'free', win: 'day' }],
+         ['week', { mode: 'free', win: 'week' }],
+         ['all', { mode: 'free', win: 'all' }]];
+    const got = await Promise.all(scopes.map(([, o]) =>
+      Promise.all([rankIn(o, score), total(o)])));
     const out = {};
-    wins.forEach((w, i) => {
+    scopes.forEach(([k], i) => {
       const [rank, tot] = got[i];
-      out[w] = (rank === null || tot === null) ? null : { rank, total: Math.max(tot, rank) };
+      out[k] = (rank === null || tot === null) ? null : { rank, total: Math.max(tot, rank) };
     });
     return out;
   }
@@ -198,13 +242,13 @@
      before team_rating existed has a null there, and PostgREST would sort nulls
      to one end of the list, so a low-to-high rating board would open on a page of
      rows with an empty rating column. */
-  async function top(win, limit, sort, dir) {
+  async function top(opts, limit, sort, dir) {
     const col = SORTS[sort] || SORTS.record;
     const way = dir === 'asc' ? 'asc' : 'desc';
     try {
       let q = base() + TABLE + '?select=' + ROW_COLS +
-        '&order=' + col + '.' + way + ',created_at.asc' +
-        '&limit=' + (limit || 10) + winFilter(win);
+        '&order=' + col + '.' + way + ',created_at.' + ORDER_TIEBREAK[way] +
+        '&limit=' + (limit || 10) + scope(opts);
       if (col !== 'score') q += '&' + col + '=not.is.null';
       const res = await timed(q, { headers: headers() });
       if (!res.ok) { offline = true; return null; }
@@ -245,7 +289,7 @@
 
   window.PS_BOARD = {
     API_VERSION: 1,
-    submit, ranks, rankIn, total, top, byId, scoreOf, cutoffISO, SORTS,
+    submit, ranks, rankIn, total, top, byId, scoreOf, cutoffISO, todayUTC, SORTS,
     get offline() { return offline; },
     /* Used by the tests to prove a failed board never breaks the results screen. */
     _forceOffline() { offline = true; },

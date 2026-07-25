@@ -64,7 +64,19 @@ create table if not exists ps_runs (
   spend_musd    numeric(5,1) not null,
   respins       smallint     not null default 0,
   franchise     text,                       -- the club whose place you took
+
+  -- THE DAILY CHALLENGE IS A SEPARATE COMPETITION, not a flag on this one.
+  -- Everybody who plays a given day's daily gets the same six draws, so those runs
+  -- are comparable with each other in a way no two free runs are. Mixing them would
+  -- make the free board unfair in one direction (a free player can re-roll until the
+  -- wheel is kind) and the daily board meaningless in the other.
+  --
+  -- daily_date, not just the boolean, because created_at is the wrong thing to
+  -- window a daily board on. The puzzle is identified by its UTC date, and a run
+  -- started at 23:58 and submitted at 00:03 was still that day's puzzle. Windowing
+  -- on created_at would file it under the next day's board.
   daily         boolean      not null default false,
+  daily_date    date,
 
   -- The roster's own strength, which is the board's second sort axis.
   --
@@ -107,6 +119,12 @@ alter table ps_runs add column if not exists squad_fppg     numeric(5,1);
 alter table ps_runs add column if not exists structure_mult numeric(4,3);
 alter table ps_runs add column if not exists team_rating    numeric(6,2);
 alter table ps_runs add column if not exists perfect_pct    smallint;
+alter table ps_runs add column if not exists daily_date     date;
+
+-- Rows recorded before daily_date existed: a daily run's puzzle was the UTC date it
+-- was played on, which is the best that can be recovered, and free runs stay null.
+update ps_runs set daily_date = (created_at at time zone 'utc')::date
+ where daily and daily_date is null;
 
 comment on table ps_runs is
   'Completed runs of The Perfect Season (/football). Written only by ps_submit_run().';
@@ -133,22 +151,66 @@ comment on table ps_runs is
 -- million rows. If this ever passes about 10 million runs (a ~270ms results
 -- screen) the fix is a summary table of counts by score, not another index.
 -- ---------------------------------------------------------------------------
--- Board list, all time and per window: ordered fetch straight off the index.
-create index if not exists ps_runs_score_idx      on ps_runs (score desc, created_at asc);
--- Today and this week: filter on created_at, then rank or list within it.
-create index if not exists ps_runs_created_idx    on ps_runs (created_at desc, score desc);
--- score ON ITS OWN, which is what keeps the two all-time counts index-only.
--- Without it Postgres has no covering path for count(*) or for count(score > n)
--- and falls back to a sequential scan: measured 12ms at 60k rows against 0.9ms
--- through the index, and the gap only widens.
-create index if not exists ps_runs_score_only_idx on ps_runs (score);
--- The board's second sort axis. One index serves both directions: Postgres reads
--- an index backwards as happily as forwards, so there is no ascending twin.
-create index if not exists ps_runs_rating_idx     on ps_runs (team_rating desc, created_at asc);
-create index if not exists ps_runs_created_rating_idx
-  on ps_runs (created_at desc, team_rating desc);
+-- EVERY board query now carries a mode, free play or daily, so the mode leads every
+-- index. A leading equality column followed by the sort column is what lets Postgres
+-- satisfy the filter and the order from one index scan.
+--
+-- One index per (axis, does it need a time window) and no more. Each leads with
+-- `daily`, so the same index serves free play and the daily board.
+--
+-- THERE IS NO ASCENDING TWIN, and that only works because the client reverses the
+-- TIEBREAK along with the sort key. Postgres reads an index backwards as happily as
+-- forwards, but only when every sort key reverses together: `score asc, created_at
+-- asc` against a (score desc, created_at asc) index is a backward scan plus an
+-- Incremental Sort, while `score asc, created_at desc` is a clean backward scan.
+-- Measured 0.234ms against 0.060ms at 2M rows. See ORDER_TIEBREAK in board.js.
+create index if not exists ps_runs_mode_score_idx
+  on ps_runs (daily, score desc, created_at asc);
+create index if not exists ps_runs_mode_created_idx
+  on ps_runs (daily, created_at desc, score desc);
+-- The rating axis is deliberately NOT windowed for free play, so it needs no
+-- created_at companion. See the note under the daily indexes.
+create index if not exists ps_runs_mode_rating_idx
+  on ps_runs (daily, team_rating desc, created_at asc);
+-- The daily board is one puzzle, so the date IS the window: an equality, not a
+-- range, which is why both axes are a plain index scan here.
+create index if not exists ps_runs_daily_score_idx
+  on ps_runs (daily_date, score desc, created_at asc);
+create index if not exists ps_runs_daily_rating_idx
+  on ps_runs (daily_date, team_rating desc, created_at asc);
+
+-- WHY THE FREE RATING BOARD IS ALL-TIME ONLY
+--
+-- Ordering by team_rating over a created_at RANGE is the one query shape here that
+-- no index can satisfy without a gamble. Postgres either walks the rating index in
+-- order and throws away everything outside the window, or fetches the window and
+-- sorts it, and it has to guess which is cheaper from a row estimate. When it
+-- guesses wrong on a sparse window the cost is brutal: measured at 2M rows, a
+-- window containing NO qualifying rows walked all 1.5M index entries to return
+-- nothing, in 125ms.
+--
+-- So the client does not ask that question. The free rating board is all time, which
+-- is the natural framing anyway ("the best roster anybody has built" is not a
+-- daily question), and every rating query becomes an unwindowed index scan: 0.24ms
+-- descending, 0.14ms ascending. The daily rating board keeps its window because
+-- daily_date is an equality and lands in the index alongside the sort.
 -- Claiming anonymous runs once accounts exist, and a player's own history.
 create index if not exists ps_runs_user_idx       on ps_runs (user_id, created_at desc);
+
+-- Indexes earlier versions of this file created, now superseded. The first five do
+-- not lead with a mode, so none of them can serve a query that filters by one. The
+-- last two were the same three columns under names that claimed to be free-play only
+-- when they serve both modes. Dropped rather than left behind: every index still
+-- costs write time on every insert.
+drop index if exists ps_runs_score_idx;
+drop index if exists ps_runs_created_idx;
+drop index if exists ps_runs_score_only_idx;
+drop index if exists ps_runs_rating_idx;
+drop index if exists ps_runs_created_rating_idx;
+drop index if exists ps_runs_free_score_idx;
+drop index if exists ps_runs_free_created_idx;
+drop index if exists ps_runs_free_rating_idx;
+drop index if exists ps_runs_free_created_rating_idx;
 
 -- ---------------------------------------------------------------------------
 -- RLS: everyone reads, nobody writes directly. The RPC is the only writer.
@@ -179,6 +241,7 @@ grant select on ps_runs to anon, authenticated;
 -- one in place as an overload, and PostgREST would then have two candidates to
 -- choose between, so the previous version is dropped by its exact signature first.
 drop function if exists ps_submit_run(int,int,numeric,numeric,numeric,int,text,boolean,text[],text[],text,int);
+drop function if exists ps_submit_run(int,int,numeric,numeric,numeric,int,text,boolean,text[],text[],text,int,numeric,numeric,numeric,int);
 
 create or replace function ps_submit_run(
   p_regular_wins  int,
@@ -188,7 +251,10 @@ create or replace function ps_submit_run(
   p_spend_musd    numeric,
   p_respins       int      default 0,
   p_franchise     text     default null,
-  p_daily         boolean  default false,
+  -- The daily puzzle's own date as 'YYYY-MM-DD', or null for a free run. This
+  -- replaced a p_daily boolean: two arguments saying the same thing is two chances
+  -- for a client to disagree with itself, and the date carries strictly more.
+  p_daily_date    text     default null,
   p_picks         text[]   default null,
   p_slots         text[]   default null,
   p_seed          text     default null,
@@ -225,7 +291,27 @@ declare
   v_label   text;
   v_dupe    bigint;
   v_id      bigint;
+  v_ddate   date;
+  v_daily   boolean;
 begin
+  -- ---- free run or daily, decided here and not sent twice ----
+  if p_daily_date is null or p_daily_date = '' then
+    v_ddate := null; v_daily := false;
+  else
+    if p_daily_date !~ '^[12][0-9]{3}-[01][0-9]-[0-3][0-9]$' then
+      raise exception 'daily date must be YYYY-MM-DD, got %', p_daily_date;
+    end if;
+    v_ddate := p_daily_date::date;
+    v_daily := true;
+    -- A day either side of now, for clients whose clock or timezone is off and for
+    -- a run that was in progress across midnight UTC. Any wider and old puzzles
+    -- could be back-filled once their answers are known.
+    if v_ddate < (now() at time zone 'utc')::date - 1
+       or v_ddate > (now() at time zone 'utc')::date + 1 then
+      raise exception 'daily date % is not close enough to today', v_ddate;
+    end if;
+  end if;
+
   -- ---- the record has to be a record this game can produce ----
   if v_reg is null or v_reg < 0 or v_reg > PS_REG_GAMES then
     raise exception 'regular wins must be 0..% , got %', PS_REG_GAMES, v_reg;
@@ -321,6 +407,7 @@ begin
   -- the row that is already there. This is NOT a rate limiter, it is idempotency.
   select id into v_dupe from ps_runs
    where picks = p_picks and regular_wins = v_reg and playoff_wins = v_po
+     and daily = v_daily
      and created_at > now() - interval '1 minute'
    limit 1;
   if v_dupe is not null then return v_dupe; end if;
@@ -328,14 +415,14 @@ begin
   insert into ps_runs (
     user_id, regular_wins, playoff_wins, wins, losses, games,
     title_won, made_playoffs, perfect, seed_label,
-    point_diff, chemistry_pct, spend_musd, respins, franchise, daily,
+    point_diff, chemistry_pct, spend_musd, respins, franchise, daily, daily_date,
     picks, slots, seed, rng_calls,
     squad_fppg, structure_mult, team_rating, perfect_pct
   ) values (
     auth.uid(), v_reg, v_po, v_wins, v_losses, v_games,
     v_title, v_made, (v_title and v_losses = 0), v_label,
     round(p_point_diff, 1), round(p_chemistry_pct, 2), round(p_spend_musd, 1),
-    coalesce(p_respins, 0), p_franchise, coalesce(p_daily, false),
+    coalesce(p_respins, 0), p_franchise, v_daily, v_ddate,
     p_picks, p_slots, p_seed, p_rng_calls,
     round(p_squad_fppg, 1), round(p_structure_mult, 3), round(p_team_rating, 2),
     p_perfect_pct
@@ -344,8 +431,8 @@ begin
   return v_id;
 end $$;
 
-revoke all on function ps_submit_run(int,int,numeric,numeric,numeric,int,text,boolean,text[],text[],text,int,numeric,numeric,numeric,int) from public;
-grant execute on function ps_submit_run(int,int,numeric,numeric,numeric,int,text,boolean,text[],text[],text,int,numeric,numeric,numeric,int)
+revoke all on function ps_submit_run(int,int,numeric,numeric,numeric,int,text,text,text[],text[],text,int,numeric,numeric,numeric,int) from public;
+grant execute on function ps_submit_run(int,int,numeric,numeric,numeric,int,text,text,text[],text[],text,int,numeric,numeric,numeric,int)
   to anon, authenticated;
 
 analyze ps_runs;

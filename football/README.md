@@ -981,6 +981,42 @@ The remaining hole closes with an edge function that loads `engine.js` and repla
 the season from `(picks, seed, rng_calls)`. Those three columns are stored now,
 unread, so that work does not need a migration later.
 
+### The daily challenge is a separate competition
+
+Not a filter on the free board. Everybody who plays a given day's daily gets the same
+six draws, so those runs are comparable with each other in a way no two free runs
+are, and a free player can re-roll the wheel until it is kind. Mixed together the free
+board is unfair in one direction and the daily board is meaningless in the other.
+
+So there is a fourth tab, marked in red because it is a different thing and not a
+fourth time window, and:
+
+- free-play boards carry `daily=is.false`, the daily board carries `daily_date=eq.`
+- a finished run is ranked **against its own kind**. The results panel for a daily run
+  reads Today's daily / This week / All dailies; for a free run, Today / This week /
+  All time
+- your pinned row only appears on your own competition's board
+- coming off a run, the board opens on the board that run is actually on
+
+**It is keyed on `daily_date`, not on `created_at`.** The puzzle is identified by its
+UTC date, and a run started at 23:58 and submitted at 00:03 was still that day's
+puzzle. Windowing a daily board on `created_at` would file that run under the next
+day's board. The date also replaced a `p_daily` boolean in the RPC: two arguments
+saying the same thing is two chances for a client to disagree with itself, and the
+server now decides `daily` from whether a date is there at all.
+
+A daily date must be well formed and within a day either side of today, so old puzzles
+cannot be back-filled once their answers are known. Refused: `'yesterday'`,
+`'2026-7-1'`, a nine-day-old puzzle, one nine days ahead, and SQL in the date field.
+Accepted: today, yesterday (a run still in progress across midnight), and both null
+and empty for a free run.
+
+One thing the daily board makes visible that is worth knowing rather than fixing: two
+runs off the same draws often have the same roster, so the roster line and the team
+rating repeat down the page while the records differ. That is the daily working as
+intended, and it is why **record is the meaningful axis on the daily board** and
+rating is mostly ties there.
+
 ### Two axes, and a direction
 
 The board sorts by **record** or by **team rating**, either way up.
@@ -1004,13 +1040,37 @@ results page counts against.
 
 Reversing is a real view, not a curiosity. The worst season anybody has played is
 funnier than the best, and low-to-high on rating is the quickest way to see what the
-game does to a cheap roster. Two things follow from that, and both were wrong first:
+game does to a cheap roster.
+
+**The tiebreak reverses with the sort, and that is a performance decision.** Every
+index is `(mode, <axis> desc, created_at asc)`, and Postgres reads an index backwards
+only when *every* sort key reverses together: `score asc, created_at asc` is a
+backward scan plus an Incremental Sort node, while `score asc, created_at desc` is a
+clean backward scan. Measured 0.234ms against 0.060ms at 2M rows. That is what makes
+the reversed board free rather than needing an ascending twin of every index. It reads
+correctly too: on a worst-first board, ties going to the most recent run is the
+natural way round.
+
+Two more things follow, and both were wrong first:
 
 - **Gold is only for leading a board.** On a reversed board row 1 is the worst run in
   the window, and gilding it says the opposite of what it is.
 - **Your pinned row only appears on the record board, descending.** Its number is
   your record rank, the only rank the game computes. Beside a rating board, or a
   reversed one, it would be a number that does not describe the list under it.
+
+**The free rating board is all time, and the window tabs go visibly out of play when
+you pick it.** Ordering by rating over a `created_at` range is the one query shape
+here that no index can satisfy without the planner gambling: it either walks the
+rating index in order and discards everything outside the window, or fetches the
+window and sorts it, chosen from a row estimate. When it loses that bet on a sparse
+window the cost is brutal, and it was measured losing it: a window containing no
+qualifying rows walked all 1.5M free index entries to return nothing, in 125ms. So
+the client does not ask the question. All time is the better framing anyway, since the
+best roster anybody has built is not a daily question, and every rating query becomes
+an unwindowed index scan at 0.24ms descending and 0.14ms ascending. The daily rating
+board keeps its window, because a puzzle date is an equality and sits in the index
+next to the sort.
 
 Rows with no `team_rating` are filtered out of the rating board rather than sorted to
 one end of it. Any run recorded before that column existed has a null there, and a
@@ -1066,28 +1126,38 @@ worsens as later players tie you, which reads as the board being broken.
 UTC days, and weeks starting Monday. A "today" that begins at a different moment for
 each player is not one board, and the screen says so out loud.
 
-Measured on a local Postgres 16 with **2,000,006 rows**. Every query is an index-only
-scan, no heap access and no sequential scan:
+Every board query carries a mode now, so the mode leads every index, and the five
+indexes an earlier version of this file created are dropped rather than left to cost
+write time on every insert. Seven remain: three for the record and rating axes with
+and without a time window, two for the daily board, the primary key, and one for
+claiming anonymous runs once accounts exist.
 
-| Query | Time |
-|---|---|
-| Board list, all time | 0.16 ms |
-| Your rank today, worst case | 1.7 ms |
-| Total runs today | 1.2 ms |
-| Your rank this week, worst case | 5.6 ms |
-| Total runs this week | 5.0 ms |
-| Your rank all time, worst case | 49 ms |
-| Total runs all time | 47 ms |
+Measured on a local Postgres 16 with **2,000,402 rows**, a quarter of them daily. Not
+one query falls to a sequential scan:
 
-"Worst case" is a bad run, where nearly every row in the table is better and has to
-be counted, which is the common case rather than the rare one. The two all-time
-numbers grow with the table at about 25ms per million rows; if this ever passes
-roughly 10 million runs the fix is a summary table of counts by score, not another
+| Query | Index | Time |
+|---|---|---|
+| free / all time / record / list | `mode_score` | 0.24 ms |
+| free / all time / record / rank | `mode_score` | 32 ms |
+| free / all time / total | `mode_created` | 37 ms |
+| free / today / record / list | `mode_score` | 4.4 ms |
+| free / today / record / rank | `mode_created` | 0.06 ms |
+| free / today / total | `mode_created` | 0.02 ms |
+| free / week / record / rank | `mode_created` | 6.1 ms |
+| free / all time / rating / list | `mode_rating` | 0.27 ms |
+| free / all time / rating / list, reversed | `mode_rating` | 0.14 ms |
+| daily / today / record / list | `daily_score` | 0.13 ms |
+| daily / today / record / rank | `daily_score` | 0.02 ms |
+| daily / today / total | `daily_score` | 2.2 ms |
+| daily / today / rating / list | `daily_rating` | 0.07 ms |
+| daily / all time / record / rank | `mode_score` | 17 ms |
+| daily / all time / total | `mode_created` | 17 ms |
+
+"Rank" means the worst case, a bad run where nearly every row has to be counted, which
+is the common case and not the rare one. The all-time numbers are the only ones that
+grow with the table rather than the window, at roughly 20ms per million rows. Past
+about 10 million runs the fix is a summary table of counts by score, not another
 index.
-
-The `(score)` index on its own is what keeps those two index-only. Without it
-Postgres has no covering path for `count(*)` and falls back to a sequential scan:
-12ms against 0.9ms at 60k rows, and the gap only widens.
 
 ### Failing soft
 

@@ -161,6 +161,7 @@
   .rcell.top10 .rn{color:#93c5fd}
   .rcell.dead .rn{color:var(--dim-2);font-size:22px}
   .rankfoot{margin:10px 0 0;font-size:12.5px;color:var(--dim);line-height:1.45}
+  .rankwho{margin:7px 0 0;font-size:11.5px;color:var(--dim-2);line-height:1.4}
   .rankpanel .btn.sm{margin-top:10px}
   /* Between the submit and the counts coming back. Nothing moves except the dots,
      so the panel does not change height when the numbers arrive. */
@@ -190,6 +191,14 @@
   .dirbtn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;
     stroke-linecap:round;stroke-linejoin:round;transition:transform .22s ease}
   .dirbtn.up svg{transform:rotate(180deg)}
+
+  /* The daily tab is a different competition, not a fourth time window, so it is
+     marked off with the red the game uses for anything to do with the calendar. */
+  .tab.daily{border-color:rgba(239,68,68,.4)}
+  .tab.daily.on{background:var(--grad-red);border-color:transparent}
+  /* A window tab the current axis cannot answer. Visibly out of play rather than
+     removed, so the row does not reflow when you switch axis. */
+  .tab[disabled]{opacity:.32}
 
   /* A board row is tappable now, so it has to look it. */
   .lbr{cursor:pointer}
@@ -851,6 +860,7 @@
       <button class="tab on" data-lb="day">Today</button>
       <button class="tab" data-lb="week">This week</button>
       <button class="tab" data-lb="all">All time</button>
+      <button class="tab daily" data-lb="daily">Daily</button>
     </div>
     <div class="sortbar">
       <div class="seg" id="lb-sort">
@@ -863,8 +873,7 @@
       </button>
     </div>
     <p class="lbcount" id="lb-count"></p>
-    <p class="dim" style="font-size:11.5px;margin:7px 0 0">Every finished season is recorded here
-    with no name on it. Boards reset at midnight UTC, and the week starts Monday.</p>
+    <p class="dim" id="lb-blurb" style="font-size:11.5px;margin:7px 0 0"></p>
     <div class="lb" id="lb-rows"></div>
     <p class="notlive" id="lb-note" style="display:none"></p>
     <button class="btn ghost sm" id="b-lb-more" style="margin-top:10px">Show more</button>
@@ -2724,7 +2733,9 @@ function runPayload(){
     spendMusd:run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed),
     respins:run.respinsUsed,
     franchise:run.franchise,
-    daily:!!run.daily,
+    /* The puzzle's own date, which is what the daily board is keyed on. Null for a
+       free run, and the server decides `daily` from whether it is there. */
+    dailyDate:run.daily||null,
     picks:run.roster.map(pickKey),
     slots:run.roster.map((p,i)=>E.SLOTS[run.slotIndex[i]]),
     seed:String(run.seed),
@@ -2754,7 +2765,10 @@ async function recordRun(){
   return submitted;
 }
 
-const WINDOWS=[['day','Today'],['week','This week'],['all','All time']];
+/* For a daily run the first column is that day's puzzle rather than a clock window,
+   so it is labelled for what it is. */
+const WINDOWS_FREE=[['day','Today'],['week','This week'],['all','All time']];
+const WINDOWS_DAILY=[["day","Today's daily"],['week','This week'],['all','All dailies']];
 
 /* Submit, then read the rank. In that order so a run is counted in its own
    denominator, and the rank query does not depend on the submit having worked. */
@@ -2763,15 +2777,18 @@ async function paintRanks(){
   el.innerHTML='<div class="rload"><i></i><i></i><i></i><span>Reading the board</span></div>';
   const score=B.scoreOf(run.outcome.wins,runPayload().pointDiff);
   await recordRun();
-  const r=await B.ranks(score);
+  /* Ranked among its own kind. A daily run compared against free runs would be
+     comparing a fixed set of draws against a re-rollable one. */
+  const r=await B.ranks(score,run.daily?'daily':'free');
   myRanks=r;
-  const any=WINDOWS.some(([k])=>r[k]);
+  const any=(run.daily?WINDOWS_DAILY:WINDOWS_FREE).some(([k])=>r[k]);
   if(!any){
     el.innerHTML='<p class="rankfoot" style="margin-top:8px">The leaderboard is not '+
       'reachable right now, so this run has not been counted. Nothing else about your '+
       'season changes.</p>';
     return;
   }
+  const WINDOWS=run.daily?WINDOWS_DAILY:WINDOWS_FREE;
   const cell=([k,label])=>{
     const w=r[k];
     if(!w) return '<div class="rcell dead"><span class="rw">'+label+
@@ -2781,7 +2798,10 @@ async function paintRanks(){
       '<span class="rn">#'+w.rank.toLocaleString()+'</span>'+
       '<span class="rof">of '+w.total.toLocaleString()+'</span></div>';
   };
-  el.innerHTML='<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
+  el.innerHTML='<p class="rankwho">'+(run.daily
+      ? "Against everyone who played today's daily challenge."
+      : 'Against every free run. The daily challenge is scored separately.')+'</p>'+
+    '<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
     '<p class="rankfoot">'+rankLine(r)+'</p>'+
     '<button class="btn ghost sm" id="b-board3">See the leaderboard</button>';
   $('b-board3').onclick=openBoard;
@@ -2815,7 +2835,25 @@ function rankLine(r){
    Reversing the order is a real feature and not a curiosity. The worst season
    anybody has played is funnier than the best, and a low-to-high rating board is
    the fastest way to see what the game does to a cheap roster. */
+/* lbWin is one of day / week / all / daily. "daily" is not a fourth time window: it
+   selects the other competition, whose window is the puzzle's own date. */
 let lbWin='day', lbSort='record', lbDir='desc', lbShown=5, lbRows=null, lbBusy=false;
+
+const lbIsDaily=()=>lbWin==='daily';
+/* What board.js should read for the tab that is showing.
+
+   The free rating board is all time, always. Ordering by rating over a time range is
+   the one query no index can answer without the planner gambling, and when it loses
+   on a sparse window it walks the whole index: measured 125ms at 2M rows to return
+   nothing. All time is also the better framing, since the best roster anybody has
+   built is not a daily question. The daily board keeps its window because a puzzle
+   date is an equality and sits in the index next to the sort. */
+function lbScope(){
+  if(lbIsDaily()) return {mode:'daily',puzzle:'today'};
+  return {mode:'free',win:lbSort==='rating'?'all':lbWin};
+}
+/* Which window tabs mean anything for the axis on show. */
+function lbWindowsLive(){ return !(lbSort==='rating'); }
 
 /* What the big right-hand figure means for each axis, so the column always says
    which quantity it is showing rather than leaving it to be guessed. */
@@ -2824,7 +2862,12 @@ const SORT_META={
   rating:{label:'Team rating', of:(r)=>ratingCell(r)},
 };
 
-function openBoard(){ lbWin=lbWin||'day'; lbShown=5; show('s-board'); loadBoard(); }
+/* Coming off a run, open the board that run is actually on. Landing a daily player
+   on the free board would show them a table they are not in. */
+function openBoard(){
+  if(run&&run.outcome) lbWin=run.daily?'daily':(lbWin==='daily'?'day':lbWin);
+  lbShown=5; show('s-board'); loadBoard();
+}
 
 async function loadBoard(){
   if(lbBusy) return;
@@ -2839,9 +2882,22 @@ async function loadBoard(){
     t.classList.toggle('on',t.dataset.sort===lbSort));
   $('b-lb-dir').classList.toggle('up',lbDir==='asc');
   $('lb-dir-label').textContent=lbDir==='asc'?'Low to high':'High to low';
+  const live=lbWindowsLive();
+  [...document.querySelectorAll('#lb-tabs .tab')].forEach(t=>{
+    t.disabled=!live&&t.dataset.lb!=='daily'&&t.dataset.lb!=='all';
+  });
+  $('lb-blurb').textContent=lbIsDaily()
+    ? "Today's daily challenge. Everybody gets the same six draws, so this board is "+
+      'the only fair comparison in the game. It resets at midnight UTC.'
+    : (lbSort==='rating'
+      ? 'Free runs, ranked all time. Team rating is about the roster, not the '+
+        'season, so it is not split by day.'
+      : 'Free runs only, with no name on them. Daily runs have their own board. '+
+        'Windows reset at midnight UTC and the week starts Monday.');
   /* 25 rows in one request, shown 5 at a time. Paging over the network for every
      tap on a five-row list is a lot of round trips for very little. */
-  const [rows,total]=await Promise.all([B.top(lbWin,25,lbSort,lbDir),B.total(lbWin)]);
+  const sc=lbScope();
+  const [rows,total]=await Promise.all([B.top(sc,25,lbSort,lbDir),B.total(sc)]);
   lbBusy=false;
   lbRows=rows;
   if(rows===null){
@@ -2852,7 +2908,9 @@ async function loadBoard(){
     return;
   }
   if(total!==null){
-    const word=lbWin==='day'?'played today':(lbWin==='week'?'played this week':'played in all');
+    const word=lbIsDaily()?"played today's daily"
+      :(lbSort==='rating'?'played in all'
+        :(lbWin==='day'?'played today':(lbWin==='week'?'played this week':'played in all')));
     $('lb-count').innerHTML='<b>'+total.toLocaleString()+'</b> '+
       (total===1?'run ':'runs ')+word;
   }
@@ -2863,8 +2921,10 @@ function paintBoard(){
   const rows=lbRows||[];
   if(!rows.length){
     $('lb-rows').innerHTML='<div class="lbempty">'+
-      (lbWin==='all'?'No runs recorded yet. Play one and you are first.'
-        :'Nobody has finished a run in this window yet. Play one and you are first.')+
+      (lbIsDaily()?"Nobody has finished today's daily yet. Play it and you are first."
+        :(lbWin==='all'||lbSort==='rating'
+          ?'No runs recorded yet. Play one and you are first.'
+          :'Nobody has finished a run in this window yet. Play one and you are first.'))+
       '</div>';
     $('b-lb-more').style.display='none';
     return;
@@ -3009,7 +3069,10 @@ function minePinned(rows){
      computes. Showing it beside a rating board, or beside a reversed one, would be
      a number that does not describe the list it sits under. */
   if(lbSort!=='record'||lbDir!=='desc') return '';
-  const w=myRanks[lbWin];
+  /* And a run only belongs on its own competition's board. A free run pinned under
+     the daily board, or the other way round, is a row from a different table. */
+  if(lbIsDaily()!==!!run.daily) return '';
+  const w=myRanks[lbIsDaily()?'day':lbWin];
   if(!w) return '';
   if(rows.slice(0,lbShown).some(r=>submitted&&r.id===submitted)) return '';
   const o=run.outcome;
@@ -3035,12 +3098,16 @@ $('b-board2').onclick=openBoard;
 $('b-board-back').onclick=()=>show(run&&run.outcome?'s-over':'s-intro');
 $('b-lb-more').onclick=()=>{lbShown+=5;paintBoard();};
 $('lb-tabs').addEventListener('click',(e)=>{
-  const t=e.target.closest('.tab'); if(!t||t.dataset.lb===lbWin) return;
+  const t=e.target.closest('.tab'); if(!t||t.disabled||t.dataset.lb===lbWin) return;
   lbWin=t.dataset.lb; lbShown=5; loadBoard();
 });
 $('lb-sort').addEventListener('click',(e)=>{
   const t=e.target.closest('button'); if(!t||t.dataset.sort===lbSort) return;
-  lbSort=t.dataset.sort; lbShown=5; loadBoard();
+  lbSort=t.dataset.sort; lbShown=5;
+  /* Switching to the rating axis on a free window that it cannot answer moves the
+     tab to All time rather than showing a board that quietly ignores the tab. */
+  if(lbSort==='rating'&&!lbIsDaily()) lbWin='all';
+  loadBoard();
 });
 $('b-lb-dir').onclick=()=>{ lbDir=lbDir==='asc'?'desc':'asc'; lbShown=5; loadBoard(); };
 
