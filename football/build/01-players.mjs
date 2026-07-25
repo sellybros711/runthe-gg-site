@@ -45,6 +45,7 @@
 import {
   SEASONS, POSITIONS, MIN_GAMES, nflverseCSV, parseCSVObjects,
   mean, stdev, quantileSorted, round, writePair,
+  franchiseId, franchiseName,
 } from './lib.mjs';
 
 // ─── pricing constants ───────────────────────────────────────────────────────
@@ -143,12 +144,15 @@ async function main() {
   const eligible = raw
     .filter((p) => p.weeks.length >= MIN_GAMES)
     .map((p) => {
-      const team = Object.entries(p.teams).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+      const code = Object.entries(p.teams).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+      // Normalize immediately: the raw code is not a reliable key (see lib.mjs).
+      const franchise = code ? franchiseId(code) : null;
       return {
         player_id: p.player_id,
         name: p.name,
         season: p.season,
-        team,
+        franchise,
+        team_season_id: franchise ? `${franchise}-${p.season}` : null,
         position: p.position,
         games_played: p.weeks.length,
         ppr_ppg_mean: mean(p.weeks),
@@ -204,7 +208,9 @@ async function main() {
       player_id: p.player_id,
       name: p.name,
       season: p.season,
-      team: p.team,
+      franchise: p.franchise,
+      team_season_id: p.team_season_id,
+      team_display: p.franchise ? franchiseName(p.franchise, p.season) : null,
       position: p.position,
       games_played: p.games_played,
       ppr_ppg_mean: round(p.ppr_ppg_mean, 2),

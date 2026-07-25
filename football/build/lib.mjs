@@ -32,6 +32,96 @@ export const POSITIONS = ['QB', 'RB', 'WR', 'TE'];
 /** Below this many games the weekly variance estimate is noise. */
 export const MIN_GAMES = 8;
 
+// ─── franchises ──────────────────────────────────────────────────────────────
+
+/*
+ * Never join on a raw team abbreviation. The two upstream sources disagree, and
+ * they disagree inconsistently:
+ *
+ *   - stats_player uses ERA codes for 1999-2002 (OAK, SD, STL) but CURRENT codes
+ *     from 2003 on. LaDainian Tomlinson's 2006 season is coded "LAC" though he
+ *     was a San Diego Charger; Randy Moss's 2005 is "LV" though he was an
+ *     Oakland Raider.
+ *   - games.csv uses era codes throughout (OAK through 2019, SD through 2016,
+ *     STL through 2015).
+ *   - Jacksonville appears as both JAC and JAX, overlapping in 2001-2002.
+ *
+ * A naive (team, season) join silently loses these franchises for large spans,
+ * which would show up as missing team-seasons — dead wheel entries and absent
+ * opponents — rather than as an error. Everything is normalized to franchise_id
+ * on ingest, and display names come from (franchise, season), never from the
+ * code in the data.
+ */
+
+/** @type {{id:string, conf:'AFC'|'NFC', div:string, codes:string[], names:[number,string][]}[]} */
+export const FRANCHISES = [
+  { id: 'BUF', conf: 'AFC', div: 'East',  codes: ['BUF'], names: [[0, 'Buffalo Bills']] },
+  { id: 'MIA', conf: 'AFC', div: 'East',  codes: ['MIA'], names: [[0, 'Miami Dolphins']] },
+  { id: 'NE',  conf: 'AFC', div: 'East',  codes: ['NE'],  names: [[0, 'New England Patriots']] },
+  { id: 'NYJ', conf: 'AFC', div: 'East',  codes: ['NYJ'], names: [[0, 'New York Jets']] },
+  { id: 'BAL', conf: 'AFC', div: 'North', codes: ['BAL'], names: [[0, 'Baltimore Ravens']] },
+  { id: 'CIN', conf: 'AFC', div: 'North', codes: ['CIN'], names: [[0, 'Cincinnati Bengals']] },
+  { id: 'CLE', conf: 'AFC', div: 'North', codes: ['CLE'], names: [[0, 'Cleveland Browns']] },
+  { id: 'PIT', conf: 'AFC', div: 'North', codes: ['PIT'], names: [[0, 'Pittsburgh Steelers']] },
+  // Houston entered the league in 2002; it has 24 drawable seasons, not 27.
+  { id: 'HOU', conf: 'AFC', div: 'South', codes: ['HOU'], names: [[0, 'Houston Texans']] },
+  { id: 'IND', conf: 'AFC', div: 'South', codes: ['IND'], names: [[0, 'Indianapolis Colts']] },
+  { id: 'JAX', conf: 'AFC', div: 'South', codes: ['JAX', 'JAC'], names: [[0, 'Jacksonville Jaguars']] },
+  { id: 'TEN', conf: 'AFC', div: 'South', codes: ['TEN'], names: [[0, 'Tennessee Titans']] },
+  { id: 'DEN', conf: 'AFC', div: 'West',  codes: ['DEN'], names: [[0, 'Denver Broncos']] },
+  { id: 'KC',  conf: 'AFC', div: 'West',  codes: ['KC'],  names: [[0, 'Kansas City Chiefs']] },
+  { id: 'LV',  conf: 'AFC', div: 'West',  codes: ['LV', 'OAK'],
+    names: [[0, 'Oakland Raiders'], [2020, 'Las Vegas Raiders']] },
+  { id: 'LAC', conf: 'AFC', div: 'West',  codes: ['LAC', 'SD'],
+    names: [[0, 'San Diego Chargers'], [2017, 'Los Angeles Chargers']] },
+  { id: 'DAL', conf: 'NFC', div: 'East',  codes: ['DAL'], names: [[0, 'Dallas Cowboys']] },
+  { id: 'NYG', conf: 'NFC', div: 'East',  codes: ['NYG'], names: [[0, 'New York Giants']] },
+  { id: 'PHI', conf: 'NFC', div: 'East',  codes: ['PHI'], names: [[0, 'Philadelphia Eagles']] },
+  { id: 'WAS', conf: 'NFC', div: 'East',  codes: ['WAS', 'WSH'],
+    names: [[0, 'Washington Redskins'], [2020, 'Washington Football Team'], [2022, 'Washington Commanders']] },
+  { id: 'CHI', conf: 'NFC', div: 'North', codes: ['CHI'], names: [[0, 'Chicago Bears']] },
+  { id: 'DET', conf: 'NFC', div: 'North', codes: ['DET'], names: [[0, 'Detroit Lions']] },
+  { id: 'GB',  conf: 'NFC', div: 'North', codes: ['GB'],  names: [[0, 'Green Bay Packers']] },
+  { id: 'MIN', conf: 'NFC', div: 'North', codes: ['MIN'], names: [[0, 'Minnesota Vikings']] },
+  { id: 'ATL', conf: 'NFC', div: 'South', codes: ['ATL'], names: [[0, 'Atlanta Falcons']] },
+  { id: 'CAR', conf: 'NFC', div: 'South', codes: ['CAR'], names: [[0, 'Carolina Panthers']] },
+  { id: 'NO',  conf: 'NFC', div: 'South', codes: ['NO'],  names: [[0, 'New Orleans Saints']] },
+  { id: 'TB',  conf: 'NFC', div: 'South', codes: ['TB'],  names: [[0, 'Tampa Bay Buccaneers']] },
+  { id: 'ARI', conf: 'NFC', div: 'West',  codes: ['ARI'], names: [[0, 'Arizona Cardinals']] },
+  { id: 'LAR', conf: 'NFC', div: 'West',  codes: ['LAR', 'LA', 'STL'],
+    names: [[0, 'St. Louis Rams'], [2016, 'Los Angeles Rams']] },
+  { id: 'SF',  conf: 'NFC', div: 'West',  codes: ['SF'],  names: [[0, 'San Francisco 49ers']] },
+  // Seattle played in the AFC West until the 2002 realignment; the modern
+  // alignment is canonical for division structure per the design.
+  { id: 'SEA', conf: 'NFC', div: 'West',  codes: ['SEA'], names: [[0, 'Seattle Seahawks']] },
+];
+
+const CODE_TO_FRANCHISE = new Map();
+for (const f of FRANCHISES) for (const c of f.codes) CODE_TO_FRANCHISE.set(c, f.id);
+
+/** Canonical franchise id for any abbreviation either source might emit. */
+export function franchiseId(code) {
+  const id = CODE_TO_FRANCHISE.get(code);
+  if (!id) throw new Error(`unmapped team code "${code}" — add it to FRANCHISES`);
+  return id;
+}
+
+export const FRANCHISE_BY_ID = new Map(FRANCHISES.map((f) => [f.id, f]));
+
+/** Era-correct name, e.g. ("LAC", 2006) -> "San Diego Chargers". */
+export function franchiseName(id, season) {
+  const f = FRANCHISE_BY_ID.get(id);
+  if (!f) throw new Error(`unknown franchise "${id}"`);
+  let name = f.names[0][1];
+  for (const [from, n] of f.names) if (season >= from) name = n;
+  return name;
+}
+
+export const divisionKey = (id) => {
+  const f = FRANCHISE_BY_ID.get(id);
+  return `${f.conf} ${f.div}`;
+};
+
 // ─── CSV ─────────────────────────────────────────────────────────────────────
 
 /** Quote-aware CSV parse. Returns an array of string arrays. */
@@ -105,6 +195,24 @@ export async function nflverseCSV(release, asset) {
   fs.writeFileSync(cached, text);
   return text;
 }
+
+/** Any URL, cached under build/.cache by `name`. */
+export async function cachedCSV(url, name) {
+  fs.mkdirSync(CACHE_DIR, { recursive: true });
+  const cached = path.join(CACHE_DIR, name);
+  if (fs.existsSync(cached) && fs.statSync(cached).size > 0) {
+    return fs.readFileSync(cached, 'utf8');
+  }
+  const res = await fetch(url, { redirect: 'follow' });
+  if (!res.ok) throw new Error(`fetch ${name}: HTTP ${res.status}`);
+  const text = await res.text();
+  fs.writeFileSync(cached, text);
+  return text;
+}
+
+/** Game results 1999-present: game_id, season, week, teams, scores. */
+export const GAMES_URL =
+  'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 // ─── stats ───────────────────────────────────────────────────────────────────
 
