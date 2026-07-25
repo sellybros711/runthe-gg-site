@@ -344,6 +344,26 @@ points-per-dollar is always best at the cheap end; `playtest.js` uses that polic
 and finishes with $40M unspent. The draft screen keeps remaining budget at the top
 and warns when you are about to walk into the last slot with money to burn.
 
+## The post-run reveal
+
+Shows the full six-spot lineup, every spot, with your pick above the best pick and
+the gap between them, plus both totals. An earlier version listed only the spots
+where you lost points and named just the replacement, which gave you a number
+without telling you who to drop or what to do differently.
+
+It is a joint optimization rather than six separate comparisons, because the two
+things that make a draft hard are cumulative: money spent early is gone later, and
+the spot a player fills closes that spot for everyone after him. A DP over (draw,
+spot, money) across all 64 spot combinations solves them together, so it can tell
+you to take the quarterback off a team you took a receiver from and re-spend the
+difference somewhere else. A hill climb then re-checks the answer with chemistry
+included, since chemistry depends on the whole roster and cannot be folded into
+the DP. Solves in about 20ms.
+
+The honest limit, stated in the UI rather than glossed over: it holds your six
+drawn **teams** fixed. It cannot know what the wheel would have shown after a
+different pick, because the wheel reacts to who you have already signed.
+
 ## Not built yet
 
 Everything in the GDD's build sequence is done. The page is **not linked from the

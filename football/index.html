@@ -253,8 +253,22 @@
   .verdict h2{font-family:'Anton',Impact,sans-serif;font-size:31px;text-transform:uppercase;line-height:.98;
     margin-top:5px}
   .verdict p{margin:9px 0 0;color:var(--dim);font-size:14px}
-  .miss{display:flex;align-items:center;gap:9px;font-size:13px;padding:9px 0;border-top:1px solid var(--line)}
-  .miss .up{font-family:'Anton',Impact,sans-serif;color:#4ade80;font-size:13px}
+  .cmp{display:flex;gap:9px;padding:9px 0;border-top:1px solid var(--line);align-items:flex-start}
+  .cmp .sp{flex:0 0 42px;font-family:'Anton',Impact,sans-serif;font-size:11px;letter-spacing:.06em;
+    color:#fff;text-align:center;padding:3px 0;border-radius:6px}
+  .cmp .side{flex:1;min-width:0;font-size:12.5px;line-height:1.35}
+  .cmp .side .lbl{color:var(--dim-2);font-size:10px;font-family:'Anton',Impact,sans-serif;
+    letter-spacing:.1em;margin-right:5px}
+  .cmp .side b{font-weight:800}
+  .cmp .up{flex:0 0 auto;font-family:'Anton',Impact,sans-serif;font-size:13px;color:#4ade80}
+  .cmp .up.kept{color:var(--dim-2);font-size:10px;letter-spacing:.08em}
+  .cmp .was{color:var(--dim)}
+  .totals{display:flex;gap:10px;margin-top:12px}
+  .tot{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
+  .tot .k{font-family:'Anton',Impact,sans-serif;font-size:10px;letter-spacing:.12em;color:var(--dim-2)}
+  .tot .v{font-family:'Anton',Impact,sans-serif;font-size:22px;line-height:1.1;margin-top:2px}
+  .tot .s{font-size:11px;color:var(--dim);margin-top:2px}
+  .tot.best{border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.07)}
 
   .load{text-align:center;padding:80px 20px}
   .dots{display:flex;gap:6px;justify-content:center;margin-bottom:16px}
@@ -392,8 +406,9 @@
       <div class="glist" id="o-list" style="max-height:none;margin-top:9px"></div>
     </div>
     <div class="panel" style="margin-top:11px">
-      <div class="eyebrow">The team you could have had</div>
-      <div id="o-miss" style="margin-top:8px"></div>
+      <div class="eyebrow">The best team your spins could have made</div>
+      <p class="dim" style="font-size:12px;margin:5px 0 4px">Same six teams, same $100M, chemistry counted.</p>
+      <div id="o-miss"></div>
     </div>
     <div style="margin-top:15px"><button class="btn" id="b-share">Copy result</button></div>
     <div style="margin-top:9px"><button class="btn ghost" id="b-again">Run it again</button></div>
@@ -782,15 +797,34 @@ function paintOver(){
   }
   $('o-list').innerHTML=''; s.results.forEach(r=>pushGame(r,$('o-list')));
   const best=R.bestPossibleSquad(run,DATA,CTX);
-  if(!best||!best.misses.length){
-    $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">You took the best player available every time. Nothing left behind.</p>';
-  }else{
-    $('o-miss').innerHTML=best.misses.slice(0,4).map(m=>
-      '<div class="miss"><span class="eyebrow" style="flex:0 0 40px">'+m.slot+'</span>'+
-      '<span style="flex:1;min-width:0"><b>'+esc(m.could.name)+'</b> <span class="dim">'+m.could.season+', '+M(m.could.price_musd)+'</span></span>'+
-      '<span class="up">+'+m.delta.toFixed(1)+'</span></div>').join('')+
-      '<p class="dim" style="font-size:12px;margin:10px 0 0">The best team your six spins allowed was worth about '+
-      best.bestProjected.toFixed(0)+' points a game. Yours was worth '+best.yourProjected.toFixed(0)+'.</p>';
+  if(!best){ $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>'; }
+  else{
+    /* Every spot, always, so it names who replaces whom. Showing one player with a
+       number next to it never explained what to do differently. */
+    const rows=best.lineup.map((r,i)=>{
+      const col='var('+COL[E.SLOTS[i]==='FLEX'?'FLEX':E.SLOTS[i]]+')';
+      const nm=(p)=>p?esc(p.name)+' <span class="dim">'+p.season+', '+M(p.price_musd)+'</span>':'-';
+      if(r.same){
+        return '<div class="cmp"><span class="sp" style="background:linear-gradient(160deg,'+col+',rgba(0,0,0,.45))">'+
+          r.slot+'</span><span class="side"><b>'+nm(r.had)+'</b></span>'+
+          '<span class="up kept">KEPT</span></div>';
+      }
+      return '<div class="cmp"><span class="sp" style="background:linear-gradient(160deg,'+col+',rgba(0,0,0,.45))">'+
+        r.slot+'</span><span class="side">'+
+        '<div class="was"><span class="lbl">YOU</span>'+nm(r.had)+'</div>'+
+        '<div><span class="lbl">BEST</span><b>'+nm(r.could)+'</b></div></span>'+
+        '<span class="up">+'+r.delta.toFixed(1)+'</span></div>';
+    }).join('');
+    const line=(k,pts,spend,chem,cls)=>'<div class="tot '+(cls||'')+'"><div class="k">'+k+'</div>'+
+      '<div class="v">'+pts.toFixed(0)+'</div><div class="s">points a game<br>'+M(spend)+' spent, chem '+pc(chem-1)+'</div></div>';
+    $('o-miss').innerHTML=rows+
+      '<div class="totals">'+
+        line('YOUR TEAM',best.yourProjected,best.yourSpend,best.yourChemistry)+
+        line('BEST POSSIBLE',best.bestProjected,best.spend,best.chemistry,'best')+
+      '</div>'+
+      '<p class="dim" style="font-size:11.5px;margin:10px 0 0">This keeps your six teams fixed. Picking '+
+      'differently would also have changed which teams the wheel showed you next, so it is the closest '+
+      'honest comparison rather than a perfect one.</p>';
   }
   show('s-over');
 }

@@ -498,72 +498,152 @@ function indexData(players, teamSeasons) {
 }
 
 /**
- * The reveal (§7): the highest-scoring squad the player COULD have built from
- * the six team-seasons the wheel actually gave them.
+ * The strongest team your six spins could have produced.
  *
- * Constrained the way the draft is: slot i may only use the team-season drawn at
- * spin i, and the whole thing must fit the cap after re-spin fees. Solved as a
- * DP over discretized budget, the same shape as the optimizer in simulator.js.
+ * This is a joint optimization, not six independent comparisons, because the two
+ * things that make a draft hard are both cumulative: money spent early is gone
+ * later, and the spot a player fills closes that spot for everyone after him. So
+ * it solves over (draw, spot, money) together with a DP across all 64 spot
+ * combinations, which means it can tell you to take the quarterback off a team you
+ * took a receiver from, and re-spend the difference somewhere else.
  *
- * Maximizes raw points rather than points x chemistry: chemistry is not separable
- * across slots, so a joint optimum would need a much heavier search for a screen
- * that exists to say "you left this on the table". The chemistry of the resulting
- * squad is reported alongside, so a missed battery is still visible.
+ * Then a hill climb re-checks it with chemistry included, since chemistry depends
+ * on the whole roster at once and cannot be folded into the DP.
+ *
+ * The honest limit: it holds your six drawn TEAMS fixed. It cannot know what the
+ * wheel would have shown after a different pick, because the wheel reacts to who
+ * you have already signed. The UI says so rather than implying otherwise.
  */
 function bestPossibleSquad(run, data, ctx) {
   const BUCKET = 0.5;
   const budget = E.CONSTANTS.CAP_MUSD - run.respinsUsed * E.CONSTANTS.RESPIN_COST_MUSD;
   const NB = Math.round(budget / BUCKET) + 1;
+  const nSlots = E.SLOTS.length;
+  const FULL = (1 << nSlots) - 1;
 
-  const perSlot = run.draws.map((d) => {
-    const allowed = E.SLOT_ELIGIBILITY[d.slot];
-    return (data.playersByTeamSeason[d.team_season_id] ?? [])
-      .filter((p) => allowed.includes(p.position));
-  });
+  // Everyone available from each drawn team, at any position.
+  const pool = run.draws.map((d) => (data.playersByTeamSeason[d.team_season_id] ?? []));
+  if (pool.some((list) => !list.length)) return null;
 
-  // best[i][b] = best ppg for slots i.. with b buckets left
-  let next = new Array(NB).fill(0);
-  const choice = [];
-  for (let i = perSlot.length - 1; i >= 0; i--) {
-    const cur = new Array(NB).fill(-Infinity);
-    const pickAt = new Array(NB).fill(null);
-    for (let b = 0; b < NB; b++) {
-      for (const p of perSlot[i]) {
-        const cost = Math.ceil(p.price_musd / BUCKET);
-        if (cost > b) continue;
-        const val = p.ppr_ppg_mean + next[b - cost];
-        if (val > cur[b]) { cur[b] = val; pickAt[b] = { p, cost }; }
+  const fits = (p, slot) => E.SLOT_ELIGIBILITY[E.SLOTS[slot]].includes(p.position);
+  const popcount = (m) => { let c = 0; while (m) { c += m & 1; m >>= 1; } return c; };
+
+  // dp[mask][b] = best raw points using the first popcount(mask) draws to fill
+  // exactly the spots in mask, having spent b buckets.
+  const NEG = -1e9;
+  const dp = new Float64Array((FULL + 1) * NB).fill(NEG);
+  const from = new Int32Array((FULL + 1) * NB).fill(-1);   // packed: player*8 + slot
+  dp[0] = 0;
+  const masksByCount = Array.from({ length: nSlots + 1 }, () => []);
+  for (let m = 0; m <= FULL; m++) masksByCount[popcount(m)].push(m);
+
+  for (let i = 0; i < nSlots; i++) {
+    for (const mask of masksByCount[i]) {
+      const base = mask * NB;
+      for (let b = 0; b < NB; b++) {
+        const cur = dp[base + b];
+        if (cur <= NEG) continue;
+        const list = pool[i];
+        for (let pi = 0; pi < list.length; pi++) {
+          const p = list[pi];
+          const cost = Math.ceil(p.price_musd / BUCKET);
+          const nb = b + cost;
+          if (nb >= NB) continue;
+          for (let s = 0; s < nSlots; s++) {
+            if (mask & (1 << s)) continue;
+            if (!fits(p, s)) continue;
+            const nm = mask | (1 << s);
+            const idx = nm * NB + nb;
+            const val = cur + p.ppr_ppg_mean;
+            if (val > dp[idx]) { dp[idx] = val; from[idx] = pi * 8 + s; }
+          }
+        }
       }
     }
-    choice[i] = pickAt;
-    next = cur;
   }
 
-  const squad = [];
-  let b = NB - 1;
-  for (let i = 0; i < perSlot.length; i++) {
-    const c = choice[i][b];
-    if (!c) return null;
-    squad.push(c.p);
-    b -= c.cost;
+  let bestB = -1, bestVal = NEG;
+  for (let b = 0; b < NB; b++) {
+    const v = dp[FULL * NB + b];
+    if (v > bestVal) { bestVal = v; bestB = b; }
   }
-  const chem = E.resolveChemistry(squad, ctx);
-  const yours = run.roster.reduce((s, p) => s + p.ppr_ppg_mean, 0) * run.season.chemistry;
-  const theirs = squad.reduce((s, p) => s + p.ppr_ppg_mean, 0) * chem.multiplier;
+  if (bestB < 0) return null;
+
+  // Walk back to recover which draw took which player into which spot.
+  const bySlot = new Array(nSlots).fill(null);
+  let mask = FULL, b = bestB;
+  for (let i = nSlots - 1; i >= 0; i--) {
+    const packed = from[mask * NB + b];
+    if (packed < 0) return null;
+    const pi = Math.floor(packed / 8), s = packed % 8;
+    const p = pool[i][pi];
+    bySlot[s] = p;
+    mask &= ~(1 << s);
+    b -= Math.ceil(p.price_musd / BUCKET);
+  }
+
+  // Hill climb with chemistry in the objective. Same-spot substitutions from the
+  // same drawn team, keeping the total inside the cap.
+  const drawOfSlot = new Array(nSlots).fill(-1);
+  {
+    let m = FULL, bb = bestB;
+    for (let i = nSlots - 1; i >= 0; i--) {
+      const packed = from[m * NB + bb];
+      const pi = Math.floor(packed / 8), s = packed % 8;
+      drawOfSlot[s] = i;
+      m &= ~(1 << s);
+      bb -= Math.ceil(pool[i][pi].price_musd / BUCKET);
+    }
+  }
+  const score = (arr) => {
+    const spend = arr.reduce((t, p) => t + p.price_musd, 0);
+    if (spend > budget + 1e-9) return -1;
+    return arr.reduce((t, p) => t + p.ppr_ppg_mean, 0) * E.resolveChemistry(arr, ctx).multiplier;
+  };
+  let best = bySlot.slice(), bestScore = score(best);
+  for (let pass = 0; pass < 3; pass++) {
+    let improved = false;
+    for (let s = 0; s < nSlots; s++) {
+      const di = drawOfSlot[s];
+      for (const cand of pool[di]) {
+        if (!fits(cand, s)) continue;
+        if (best.some((p, j) => j !== s && p.player_id === cand.player_id && p.season === cand.season)) continue;
+        const trial = best.slice();
+        trial[s] = cand;
+        const sc = score(trial);
+        if (sc > bestScore + 1e-9) { best = trial; bestScore = sc; improved = true; }
+      }
+    }
+    if (!improved) break;
+  }
+
+  const chem = E.resolveChemistry(best, ctx);
+  const yourBySlot = new Array(nSlots).fill(null);
+  run.roster.forEach((p, i) => { yourBySlot[run.slotIndex[i]] = p; });
+  const yourPts = run.roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+
   return {
-    squad,
+    squad: best,
+    bySlot: best,
     chemistry: chem.multiplier,
     chemistryLinks: chem.links,
-    spend: squad.reduce((s, p) => s + p.price_musd, 0),
-    yourProjected: yours,
-    bestProjected: theirs,
-    missedBy: theirs - yours,
-    // Slots where you left real points on the table, worst first.
-    misses: squad
-      .map((p, i) => ({ slot: run.draws[i].slot, had: run.roster[i], could: p,
-        delta: p.ppr_ppg_mean - run.roster[i].ppr_ppg_mean }))
-      .filter((m) => m.delta > 0.5)
-      .sort((a, b2) => b2.delta - a.delta),
+    spend: best.reduce((t, p) => t + p.price_musd, 0),
+    yourSpend: run.roster.reduce((t, p) => t + p.price_musd, 0),
+    yourChemistry: run.season.chemistry,
+    yourProjected: yourPts * run.season.chemistry,
+    bestProjected: bestScore,
+    /* One row per spot, so it always says who replaces whom. */
+    lineup: E.SLOTS.map((slot, s) => {
+      const had = yourBySlot[s], could = best[s];
+      const same = had && could && had.player_id === could.player_id && had.season === could.season;
+      return {
+        slot,
+        had,
+        could,
+        same,
+        delta: had && could ? could.ppr_ppg_mean - had.ppr_ppg_mean : 0,
+      };
+    }),
   };
 }
 
