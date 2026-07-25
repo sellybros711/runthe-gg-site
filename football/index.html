@@ -162,7 +162,12 @@
   /* THE CONNECTION RAIL
      Nodes in a row, arcs hanging below it, so an arc can never cross a player.
      This replaced the chords that used to be drawn across the formation. */
-  .rail{position:relative;margin-top:11px;height:86px}
+  /* Height is set from script: the node row alone until there is something to
+     draw, then the node row plus exactly as deep as the deepest arc. Fixed at 86px
+     it reserved a blank half-screen on the first spin, under six dots that could
+     not be connected to anything yet. */
+  .rail{position:relative;margin-top:11px;height:38px;transition:height .28s ease}
+  .rail.off{height:0;margin-top:0;overflow:hidden;opacity:0}
   .rail.empty .rarcs{opacity:0}
   .rnodes{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));position:relative;z-index:2}
   .rnode{background:none;border:0;padding:0;display:flex;flex-direction:column;align-items:center;
@@ -176,7 +181,7 @@
   .rnode .rnm{font-size:9px;font-weight:700;color:var(--dim);max-width:100%;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 1px}
   .rnode.focus .rnm{color:var(--ink)}
-  /* top must equal RAIL.NODE_BLOCK, height must equal MAX_DEPTH + PAD. */
+  /* top must equal RAIL.NODE_BLOCK; the height is set from script per draw. */
   .rarcs{position:absolute;left:0;right:0;top:38px;width:100%;height:48px;overflow:visible;
     pointer-events:none;transition:opacity .2s ease}
   .railnote{font-size:10.5px;color:var(--dim-2);text-align:center;margin:5px 0 0;min-height:13px}
@@ -243,6 +248,9 @@
   /* Fades the faces above and below the middle one into the housing. */
   .reelbox:after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
     background:linear-gradient(180deg,#05080f 2%,rgba(5,8,15,.15) 33%,rgba(5,8,15,.15) 67%,#05080f 98%)}
+  /* Over a club color the same vignette would read as dirt, so it thins out. */
+  .reelbox.clubbed:after{background:linear-gradient(180deg,rgba(0,0,0,.72) 2%,rgba(0,0,0,.10) 34%,
+    rgba(0,0,0,.10) 66%,rgba(0,0,0,.72) 98%)}
   .reelbox .strip{position:absolute;left:0;right:0;top:0;will-change:transform,filter}
   .reelbox .wash{display:none}
   .reelbox.clubbed .wash{display:block}
@@ -252,8 +260,10 @@
   .reel-i{height:38px;display:grid;place-items:center;padding:0 9px;text-align:center;
     font-family:var(--fd);text-transform:uppercase;letter-spacing:.02em;
     line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .reelbox.year .reel-i{font-size:23px}
-  .reelbox.team .reel-i{font-size:14px}
+  .reelbox.year .reel-i{font-size:23px;font-weight:800}
+  .reelbox.team .reel-i{font-size:14.5px;font-weight:800}
+  /* The face it stopped on carries more weight than the decoys either side. */
+  .reel-i.land{font-weight:900}
   .reelcol{min-width:0}
   .rlabel{display:block;margin:0 0 5px 3px;font-family:var(--fn);
     font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2)}
@@ -275,18 +285,34 @@
     100%{box-shadow:0 0 0 7px rgba(255,255,255,0),0 0 0 0 rgba(255,255,255,0)}}
   @keyframes facehit{0%{transform:scale(1)}40%{transform:scale(1.13)}100%{transform:scale(1)}}
   /* Settled, waiting on your pick. */
-  .reelbox.done{border-color:var(--line-2)}
-  .reelbox.year.done .band{border-color:rgba(239,68,68,.42);background:rgba(239,68,68,.06)}
-  .reelbox.team.done .band{border-color:rgba(59,130,246,.42);background:rgba(59,130,246,.06)}
+  .reelbox.done:not(.clubbed){border-color:var(--line-2)}
+  .reelbox.year.done:not(.clubbed) .band{border-color:rgba(239,68,68,.42);background:rgba(239,68,68,.06)}
+  .reelbox.team.done:not(.clubbed) .band{border-color:rgba(59,130,246,.42);background:rgba(59,130,246,.06)}
 
   /* CLUB COLORS ON THE LANDING
      One quick wash over the band, then the housing holds the drawn club's own two
      colors: primary behind the face, secondary as a keel line, text color picked
      for contrast rather than assumed to be white. */
-  .reelbox.clubbed{border-color:var(--c2)}
-  .reelbox.clubbed .band{border-color:var(--c2);
-    background:linear-gradient(160deg,rgba(255,255,255,.10) 0%,rgba(0,0,0,.30) 130%),var(--c1)}
-  .reelbox.clubbed .reel-i.land{color:var(--on);position:relative;z-index:4}
+  /*
+   * The club color goes on the HOUSING, not on the band.
+   *
+   * Filling the band hid the team name completely. The band is z-index 3 and the
+   * strip carrying the text is z-index auto, and because the strip has
+   * `will-change:transform` it is its own stacking context, so the z-index:4 put on
+   * the landed face could not lift it out past the band. Painting the box behind
+   * everything avoids the whole problem, and filling the whole housing reads
+   * stronger than a colored stripe anyway.
+   */
+  .reelbox.clubbed,.reelbox.clubbed.done{border-color:var(--c2);background:var(--c1)}
+  /* Every face takes the contrast-checked text color, not just the landed one, and
+     the ones either side fade back. On a dark housing the vignette did that job on
+     its own; over a saturated club color it cannot, so the ones either side read
+     as loudly as the result until they are faded explicitly. */
+  .reelbox.clubbed .reel-i{color:var(--on);opacity:.34}
+  .reelbox.clubbed .reel-i.land{opacity:1;font-weight:900;letter-spacing:.03em}
+  /* The band becomes a glaze that lifts the middle face out of the vignette. */
+  .reelbox.clubbed .band,.reelbox.clubbed.done .band{border-color:var(--c2);border-width:1.5px;
+    background:rgba(255,255,255,.13)}
   .reelbox.clubbed .wash{position:absolute;left:5px;right:5px;top:50%;height:38px;margin-top:-19px;
     border-radius:9px;z-index:1;background:var(--c1);opacity:0;pointer-events:none;
     animation:clubwash .5s ease-out}
@@ -1041,7 +1067,19 @@ function drawRail(el,bySlot,links,at){
   // Percent coordinates, so the rail reflows with its panel and needs no resize hook.
   const cx=(i)=>((i+0.5)/n)*100;
   const depth=(span)=>Math.min(RAIL.MAX_DEPTH,RAIL.MIN_DEPTH+(span-1)*RAIL.PER_SPAN);
-  st.svg.setAttribute('viewBox','0 0 100 '+(RAIL.MAX_DEPTH+RAIL.PAD));
+
+  /* Only as tall as the arcs actually drawn, so the rail does not reserve space it
+     is not using. Hidden outright until two players are signed, since one player
+     cannot be connected to anybody. */
+  const deepest=arcs.length?Math.max(...arcs.map(c=>depth(c.b-c.a))):0;
+  const signedNow=bySlot.filter(Boolean).length;
+  /* Inline height beats the .off class rule, so the collapse has to be set here
+     too or the rail keeps its 38px of node row while invisible. */
+  const off=signedNow<2;
+  el.classList.toggle('off',off);
+  el.style.height=off?'0px':(RAIL.NODE_BLOCK+(arcs.length?deepest+RAIL.PAD:0))+'px';
+  st.svg.style.height=(deepest+RAIL.PAD)+'px';
+  st.svg.setAttribute('viewBox','0 0 100 '+(deepest+RAIL.PAD));
   st.svg.innerHTML=arcs.map((c,k)=>{
     const d=depth(c.b-c.a);
     const dim=st.focus!==null&&st.focus!==c.a&&st.focus!==c.b;

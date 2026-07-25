@@ -222,6 +222,13 @@ What stays on the field is a **pip** on each shirt: how many players he connects
 to, in his strongest link's color. You still watch the web form as you draft, you
 just read it somewhere it can breathe.
 
+The rail sizes itself: hidden entirely until two players are signed, since one
+player cannot be connected to anybody, then the node row plus exactly as deep as
+the deepest arc present. Fixed at its maximum it reserved a blank half-screen on
+the first spin, under six dots that could not be joined to anything yet. The
+collapse has to be set inline as well as by class, because the inline height the
+sizing writes would otherwise beat the class rule.
+
 Colors are unchanged and still carry the strength band: **gold and thick** for a
 big link, **green** for a good one, **thin blue** for a small one, **red** for one
 that hurts.
@@ -320,7 +327,24 @@ green, losses red.
 
 The franchise picker fills the chosen bubble with that club's own primary, a keel
 line of its secondary, and a text color picked for contrast. When the team wheel
-lands, its housing washes once and then holds the same three.
+lands, its housing washes once and then **holds** the club's colors: the whole box
+becomes the primary, bordered in the secondary, with the team name at weight 900 in
+the contrast-checked color. Detroit ends up a blue box with thick white type.
+
+Three things had to be right for that to work, and none of them were at first:
+
+- **The colors reverted after half a second.** `.reelbox.team.done .band` is three
+  classes deep and `.reelbox.clubbed .band` is two, and specificity beats source
+  order, so the navy settled-state came back the moment `done` replaced `hit`. The
+  settled rules now stand aside with `:not(.clubbed)`.
+- **Filling the band hid the team name completely.** The band is `z-index:3` and the
+  strip carrying the text is `z-index:auto`, and because the strip has
+  `will-change:transform` it is its own stacking context, so a `z-index` on the
+  landed face cannot lift it out past the band. The club color goes on the housing
+  instead, behind every child, which sidesteps the problem and reads stronger.
+- **The two decoy faces then read as loudly as the winner.** On a dark housing the
+  vignette faded them for free; over a saturated club color it cannot, so they are
+  faded explicitly and the winner alone sits at full opacity and weight 900.
 
 The 64 hex values are hardcoded in `engine.js` rather than fetched: nflverse ships
 a colors table, but a build step and a shipped data file for values that never
