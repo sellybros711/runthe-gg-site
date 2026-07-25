@@ -58,8 +58,8 @@ while(run.phase===R.PHASES.DRAFT){
 
 const spent=run.roster.reduce((s,p)=>s+p.price_musd,0);
 console.log('FINAL ROSTER');
-run.roster.forEach((p,i)=>console.log(`  ${E.SLOTS[run.slotIndex[i]].padEnd(5)} $${p.price_musd.toFixed(1).padStart(5)}M  ${p.name.padEnd(22)} ${p.season} ${p.team_display}  ${p.ppr_ppg_mean} ppg`));
-console.log(`  spent $${spent.toFixed(1)}M + $${E.respinFees(run.respinsUsed)}M fees = $${(spent+E.respinFees(run.respinsUsed)).toFixed(1)}M of $100M`);
+run.roster.forEach((p,i)=>console.log(`  ${E.SLOTS[run.slotIndex[i]].padEnd(5)} $${p.price_musd.toFixed(1).padStart(5)}M  ${p.name.padEnd(22)} ${p.season} ${E.nickname(p.franchise)}  ${p.ppr_ppg_mean} ppg`));
+console.log(`  spent $${spent.toFixed(1)}M + $${E.respinFees(run.respinsUsed)}M fees = $${(spent+E.respinFees(run.respinsUsed)).toFixed(1)}M of $${E.CONSTANTS.CAP_MUSD}M`);
 
 R.startSeason(run,data,ctx);
 const chem=run.season;

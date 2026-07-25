@@ -235,11 +235,16 @@ export function quantileSorted(sorted, q) {
 export const round = (v, dp = 2) => Number(v.toFixed(dp));
 
 /** Write JSON + CSV together so the pair can never drift (RunThePitch pattern). */
-export function writePair(basename, rows, columns) {
+/*
+ * The JSON ships and the CSV does not, so they do not have to carry the same
+ * columns. Pass csvRows to keep working values out of every visitor's download
+ * while still writing them down for anyone reading the data by hand.
+ */
+export function writePair(basename, rows, columns, csvRows, csvColumns) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   const json = path.join(DATA_DIR, `${basename}.json`);
   const csv = path.join(DATA_DIR, `${basename}.csv`);
   fs.writeFileSync(json, JSON.stringify(rows));
-  fs.writeFileSync(csv, toCSV(rows, columns));
+  fs.writeFileSync(csv, toCSV(csvRows ?? rows, csvColumns ?? columns));
   return { json, csv, bytes: fs.statSync(json).size };
 }

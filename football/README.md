@@ -48,6 +48,26 @@ nfldata `games.csv` (scores, head coaches).
 
 Shipped payload is ~3.5MB of JSON, of which chemistry is 224KB.
 
+### The payload trim
+
+`player_seasons.json` carried 23 fields per row and the page read 19 of them. The
+other four (`vor`, `draft_round`, `multi_team`, `team_display`) went out with every
+copy of the game for nobody: 4,240KB down to 3,490KB raw, and 590KB down to 515KB
+over the wire (`gzip` at its default level 6). That is measured, not estimated, and
+it is the single largest thing a first visit downloads, so it matters more once this
+is in front of a lot of people.
+
+`team_display` was the interesting one. Three call sites used it, all of which
+already had the `team_season_id` in hand, so they now read
+`DATA.byTeamSeasonId[id].display` from a file that ships one row per team-season
+instead of one copy per player-season. `position_percentile` stayed even though it
+looks like a build artifact, because the target-conflict chemistry link reads it at
+runtime.
+
+The CSVs keep every working column. `writePair()` takes separate column lists for
+the JSON and the CSV precisely so trimming the shipped file does not blind the next
+person trying to check the pricing by eye in a spreadsheet.
+
 ## The one tuning knob
 
 `SCALE` in `engine.js` converts an opponent's real points into roster-fantasy
@@ -832,11 +852,75 @@ zones included. Deliberately faint: it should make the run feel like yours, not
 repaint the game. A club whose primary is already close to the page's navy, like
 Buffalo, will barely show, which is why the secondary is in there too.
 
+## The landing screen
+
+The first thing anybody saw used to be five numbered rules. That is a manual, not an
+invitation, so the rules moved behind a **How to play** button and the screen leads
+with one image, the title, and **Start a run**.
+
+The image is built out of the game's own components, never stock art or a generated
+picture. Three treatments exist and one is chosen with `?home=1|2|3`, so they can be
+compared on a real phone rather than argued about:
+
+| `?home=` | What it shows | Height |
+|---|---|---|
+| 1 | A real broadcast score bug reading `YOU 20 / THEM 0 / FINAL 20-0` | 485px |
+| 2 | A half-built formation: three signed chips, three still empty | 622px |
+| 3 | The two wheels stopped on 2007 New England, in Patriots colors | 565px |
+
+Each one is the actual DOM the game uses later, so none of them can drift out of
+sync with what the game looks like, and none of them promises something the game
+does not do. When one is picked the other two and the `?home` switch get deleted.
+
+Hero 3 taught a small lesson worth keeping: the reel strip is offset by
+`translate3d(0,-38px,0)` during a spin, which centers index 2, but the face that
+should be showing is the `.land` at index 1. The static hero has no transform at all,
+and there is now an assertion that the vertically centered face in each reel window
+is the one marked `.land`, because "looks about right" is exactly the kind of thing
+that is off by one row.
+
+The **How to play** sheet reads the cap and the re-spin ladder out of
+`E.CONSTANTS`, so it says `$140M` and `$5M, $10M, $15M` and cannot go stale the next
+time those move. The old copy still said "100 million" for two rounds after the cap
+changed, which is how that rule got made.
+
+## Accounts and the leaderboard, laid out but not wired
+
+Both are built as **shells that do nothing and say so**. The reason to build them
+now is that the layout is the expensive thing to change later, not the queries.
+
+The profile sheet has no inputs, no form, and three disabled buttons, and it prints
+in plain text: "Accounts are not live yet. These are here so the shape is settled
+before launch, and they do nothing at the moment." A signed-out shell that looks
+signed-in-able is how you end up with people typing an email into nothing.
+
+The leaderboard shows sample standings behind the same kind of notice. The rows are
+records the engine actually produces at this calibration, and every season cited was
+checked against `player_seasons.json`, because the first draft of this data cited
+Favre 1996 and Freeman 1998 on a page whose own subtitle says 1999 to 2025.
+
+The shape encodes three assumptions about running this at scale, so wiring it up
+later is a query change rather than a redesign:
+
+1. **The board reads a small cached page**, not the table. Today and All time are
+   separate cached lists.
+2. **Your own row is fetched separately and pinned** (`minePinned()`, the blue row).
+   At any real number of players you are not inside the top page, and a board that
+   only shows strangers is a board nobody checks twice.
+3. **Show more pages forward** rather than loading everything.
+
+The leaderboard is reachable from the landing screen and from the results page,
+because the results page is where you would actually want to look.
+
+One styling note that was a real bug: the tabs were distinguished only by text
+color, so `.tab.on` now carries a background. On a phone in daylight the old version
+had no visible selection at all.
+
 ## Not built yet
 
 Everything in the GDD's build sequence is done. The page is **not linked from the
-homepage or `sitemap.xml`** and there is no leaderboard, both deliberately, pending
-review.
+homepage or `sitemap.xml`**, and neither accounts nor the leaderboard are connected
+to anything, all deliberately, pending review.
 
 Known gaps worth a look during playtesting:
 
@@ -847,8 +931,12 @@ Known gaps worth a look during playtesting:
   asserted in `--draft`) but the page does not yet write it to localStorage, so a
   refresh mid-season loses the run. Use the key prefix `rtps:` when adding it,
   `rtd:v1` belongs to RunTheDrive on the same origin.
-- **Share card is text, not an image.** Matches RunTheDrive's approach; a canvas
-  card would need `@napi-rs/canvas` work like `scripts/make-og-*.js`.
-
-The page is not linked from the homepage or `sitemap.xml` yet, deliberately,
-pending review.
+- **Sign-in and the leaderboard are shells.** Laid out, labeled as not live, and
+  reading sample data. See the section above for the three scale assumptions the
+  layout already bakes in.
+- **One of the three landing heroes has to go.** All three ship today behind
+  `?home=`, which is fine for review and not fine for launch.
+- **Awards and Pro Bowl selections are not in.** Waiting on the data as
+  `season, player name, team, award`. Team is required: there are 19 name-plus-season
+  collisions in the player file, and every unmatched row will be reported rather than
+  dropped.

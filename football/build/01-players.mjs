@@ -319,6 +319,18 @@ async function main() {
   for (const p of eligible) p._badges = [];
   buildBadges(eligible);
 
+  /*
+   * EVERY FIELD HERE IS DOWNLOADED BY EVERY VISITOR, so the JSON carries only what
+   * the game reads and the CSV keeps the rest for analysis.
+   *
+   * Measured cost of the four that were dropped, out of a 4,240KB file:
+   *   team_display  308KB   duplicate of team_seasons.json's own `display`
+   *   multi_team    165KB   never read
+   *   draft_round   144KB   never read
+   *   vor            96KB   a build-time working value for pricing
+   *
+   * position_percentile stays, because the target-conflict chemistry link reads it.
+   */
   const rows = eligible
     .sort((a, b) => b.vor - a.vor)
     .map((p) => ({
@@ -327,12 +339,10 @@ async function main() {
       season: p.season,
       franchise: p.franchise,
       team_season_id: p.team_season_id,
-      team_display: p.franchise ? franchiseName(p.franchise, p.season) : null,
       position: p.position,
       games_played: p.games_played,
       ppr_ppg_mean: round(p.ppr_ppg_mean, 2),
       ppr_ppg_sd: round(p.ppr_ppg_sd, 2),
-      vor: round(p.vor, 2),
       position_percentile: round(p.position_percentile, 4),
       price_musd: round(p.price_musd, 1),
       fppg: round(p.ppr_ppg_mean, 1),
@@ -341,12 +351,19 @@ async function main() {
       badges: p._badges.map((x) => x.text),
       college: bio.get(p.player_id)?.college ?? null,
       draft_year: bio.get(p.player_id)?.draft_year ?? null,
-      draft_round: bio.get(p.player_id)?.draft_round ?? null,
-      multi_team: p.multi_team,
     }));
 
-  const cols = Object.keys(rows[0]);
-  const out = writePair('player_seasons', rows, cols);
+  // The CSV is for reading by hand, so it keeps the working columns.
+  const csvRows = rows.map((r, i) => ({
+    ...r,
+    team_display: eligible[i].franchise ? franchiseName(eligible[i].franchise, eligible[i].season) : null,
+    vor: round(eligible[i].vor, 2),
+    draft_round: bio.get(r.player_id)?.draft_round ?? null,
+    multi_team: eligible[i].multi_team,
+  }));
+
+  const out = writePair('player_seasons', rows, Object.keys(rows[0]), csvRows,
+    Object.keys(csvRows[0]));
 
   // ─── report ────────────────────────────────────────────────────────────────
   console.log(`player_seasons: ${rows.length} eligible player-seasons ` +

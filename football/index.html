@@ -106,6 +106,65 @@
   .pill{font-family:var(--fn);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
     padding:5px 10px;border-radius:99px;border:1px solid var(--line-2);color:var(--dim)}
 
+  /* header right side: the run's label, then you */
+  .hdr-r{display:flex;align-items:center;gap:8px;min-width:0}
+  .avatar{flex:0 0 34px;width:34px;height:34px;border-radius:50%;padding:0;
+    background:var(--panel);border:1px solid var(--line-2);display:grid;place-items:center}
+  .avatar svg{width:19px;height:19px;fill:none;stroke:var(--dim);stroke-width:1.7;
+    stroke-linecap:round}
+  .avatar.signed{background:var(--grad-blue);border-color:transparent}
+  .avatar.signed svg{stroke:#fff}
+  .avatar .in{font-family:var(--fn);font-size:12px;font-weight:600;color:#fff;letter-spacing:.04em}
+
+  /* THE HERO
+     Three treatments, one shown at a time. Each is assembled from components the
+     game already uses, so nothing here is decoration that lies about the product. */
+  .hero{margin-bottom:16px}
+  .hopt{display:none}
+  .hopt.on{display:block;animation:optin .4s ease-out both}
+  .hnote{margin:11px 0 0;text-align:center;font-size:12.5px;color:var(--dim-2)}
+  .hero-bug{transform:scale(1.02)}
+  .hero-bug .sc{font-size:30px}
+  .hero-bug .bc .ck{font-size:16px;letter-spacing:.06em}
+  .hero-field{aspect-ratio:1/0.52}
+  .hero-field .chip{transform:translate(-50%,-50%)}
+  .hero-reels{margin-top:0}
+  .htitle{text-align:center;margin-bottom:16px}
+  .htitle .kicker{font-family:var(--fn);font-size:11px;font-weight:600;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--red)}
+  .htitle h1{font-family:var(--fd);font-size:46px;font-weight:900;line-height:.9;
+    letter-spacing:.005em;margin:7px 0 0;text-transform:uppercase}
+  .htitle p{margin:11px auto 0;max-width:23em;font-size:14px;color:var(--dim);line-height:1.45}
+  .hrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+
+  /* leaderboard */
+  .notlive{margin:11px 0 0;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.4;
+    color:#d6b45f;background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.28)}
+  .lb{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:11px}
+  .lbr{display:flex;align-items:center;gap:10px;min-width:0;padding:9px 11px;border-radius:10px;
+    background:rgba(255,255,255,.03);border:1px solid var(--line)}
+  .lbr .rk{flex:0 0 26px;font-family:var(--fn);font-size:14px;font-weight:600;color:var(--dim-2);
+    text-align:right}
+  .lbr .who{flex:1;min-width:0}
+  .lbr .who b{display:block;font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis}
+  .lbr .who span{display:block;font-size:10.5px;color:var(--dim-2);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .lbr .rec{flex:0 0 auto;text-align:right}
+  .lbr .rec b{display:block;font-family:var(--fn);font-size:15px;font-weight:600;line-height:1.1}
+  .lbr .rec span{display:block;font-size:10px;color:var(--dim-2)}
+  .lbr.gold{border-color:rgba(251,191,36,.42);background:rgba(251,191,36,.07)}
+  .lbr.gold .rk{color:#fcd34d}
+  .lbr.mine{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.09)}
+  .lbr.mine .rk{color:#93c5fd}
+
+  /* sign-in shell */
+  .signin{display:grid;gap:8px;margin-top:13px}
+  .signin button{width:100%;padding:13px 14px;border-radius:11px;text-align:center;
+    font-family:var(--fn);font-size:14px;font-weight:600;letter-spacing:.03em;
+    background:var(--panel);border:1px solid var(--line-2);color:var(--dim)}
+  .signin button:disabled{opacity:.55}
+
   .titlecard{border-radius:18px;padding:26px 18px 22px;text-align:center;position:relative;overflow:hidden;
     background:var(--grad-field);border:1px solid var(--line)}
   .titlecard:before{content:'';position:absolute;inset:0;
@@ -351,7 +410,10 @@
     background:var(--panel);font-family:var(--fn);font-size:14px;font-weight:600;letter-spacing:.06em;
     color:var(--dim);display:flex;align-items:center;gap:6px;transition:all .12s ease}
   .tab .n{font-size:11px;opacity:.7}
-  .tab.on{color:#fff;border-color:transparent}
+  /* A default active fill, so a tab set is readable even where no per-tab color is
+     applied. The position tabs set their own inline background and still win. */
+  .tab.on{color:#fff;border-color:transparent;
+    background:linear-gradient(135deg,#3f4c60,rgba(0,0,0,.5))}
   .tab:active{transform:scale(.97)}
   .tab.full{color:var(--dim-2);border-style:dashed;border-color:rgba(255,255,255,.08);
     background:rgba(255,255,255,.015)}
@@ -642,7 +704,13 @@
 <div class="wrap">
   <header>
     <div class="brand">RunThe<i>.GG</i></div>
-    <div class="pill" id="hdr">The Perfect Season</div>
+    <div class="hdr-r">
+      <div class="pill" id="hdr">The Perfect Season</div>
+      <button class="avatar" id="b-profile" aria-label="Your profile">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.6" r="4"/>
+          <path d="M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4"/></svg>
+      </button>
+    </div>
   </header>
 
   <div class="screen on" id="s-load">
@@ -650,23 +718,99 @@
       <div class="dim">Loading every season since 1999</div></div>
   </div>
 
+  <!-- THE LANDING SCREEN
+       The art is built out of the game's own parts, not stock imagery: an actual
+       score bug, an actual formation, actual wheels. Three hero treatments, picked
+       with ?home=1|2|3 so all three can be compared on a real phone before one is
+       chosen. Default is 1. -->
   <div class="screen" id="s-intro">
-    <div class="titlecard">
+    <div class="hero" id="hero">
+
+      <!-- 1. THE SCOREBOARD. The thing you are chasing, stated as a final score. -->
+      <div class="hopt" data-h="1">
+        <div class="bug hero-bug">
+          <div class="bt you lead"><i style="background:#3b82f6"></i><span class="ab">YOU</span><b class="sc">20</b></div>
+          <div class="bt them"><i style="background:#ef4444"></i><span class="ab">THEM</span><b class="sc">0</b></div>
+          <div class="bc"><span class="q">FINAL</span><span class="ck">20-0</span></div>
+        </div>
+        <p class="hnote">No team has ever finished a season this way.</p>
+      </div>
+
+      <!-- 2. THE FORMATION. What you are actually building, half built. -->
+      <div class="hopt" data-h="2">
+        <div class="field hero-field">
+          <div class="lines"></div><div class="hash"></div>
+          <div class="ez t"></div><div class="ez b"></div>
+          <!-- Real seasons that are actually in the pool. The first draft of this
+               used Montana 1989, Sanders 1997 and Rice 1995, all of them before the
+               1999 floor printed directly underneath. -->
+          <div class="chip filled" style="left:50%;top:56%">
+            <div class="disc" style="background:linear-gradient(160deg,var(--qb),rgba(0,0,0,.45))">
+              <span class="dl">QB</span></div><div class="who">Jackson</div><div class="yr">2019</div></div>
+          <div class="chip filled" style="left:34%;top:82%">
+            <div class="disc" style="background:linear-gradient(160deg,var(--rb),rgba(0,0,0,.45))">
+              <span class="dl">RB</span></div><div class="who">Faulk</div><div class="yr">2000</div></div>
+          <div class="chip filled" style="left:10%;top:24%">
+            <div class="disc" style="background:linear-gradient(160deg,var(--wr),rgba(0,0,0,.45))">
+              <span class="dl">WR</span></div><div class="who">Kupp</div><div class="yr">2021</div></div>
+          <div class="chip empty" style="left:90%;top:24%"><div class="disc"><span class="dl">WR</span></div></div>
+          <div class="chip empty" style="left:70%;top:42%"><div class="disc"><span class="dl">TE</span></div></div>
+          <div class="chip empty" style="left:30%;top:42%"><div class="disc"><span class="dl">FLEX</span></div></div>
+        </div>
+        <p class="hnote">Six spots. Six spins. One shot at all of them.</p>
+      </div>
+
+      <!-- 3. THE WHEELS. The mechanic, mid-reveal. -->
+      <div class="hopt" data-h="3">
+        <div class="reels hero-reels">
+          <!-- No transform: with three 38px faces in a 114px window the MIDDLE one is
+               already centered. Offsetting by -38px centered the third instead, which
+               put the wrong team in the band and the wrong year beside it. -->
+          <div class="reelcol"><span class="rlabel">Year</span>
+            <div class="reelbox year done"><div class="strip">
+              <div class="reel-i">2013</div><div class="reel-i land">2007</div><div class="reel-i">1999</div>
+            </div><span class="band"></span></div></div>
+          <div class="reelcol"><span class="rlabel">Team</span>
+            <div class="reelbox team clubbed done" style="--c1:#002244;--c2:#c60c30;--on:#ffffff">
+              <div class="strip">
+                <div class="reel-i">CHICAGO BEARS</div>
+                <div class="reel-i land">NEW ENGLAND PATRIOTS</div>
+                <div class="reel-i">DENVER BRONCOS</div>
+              </div><span class="band"></span></div></div>
+        </div>
+        <p class="hnote">Every team, every season, 1999 to 2025.</p>
+      </div>
+    </div>
+
+    <div class="htitle">
       <div class="kicker">1999 to 2025</div>
       <h1>The Perfect<br>Season</h1>
-      <p>Build a team out of any six seasons in NFL history, then try to win every game.</p>
+      <p>Draft six players out of NFL history, then try to win every game you play.</p>
     </div>
-    <ul class="rules">
-      <li><span class="n">1</span><span>Spin the wheel and you get a random team from a random year. <b>Sign one player off it.</b></span></li>
-      <li><span class="n">2</span><span>Six spins fill six spots, and you have <b>100 million</b> to spend.</span></li>
-      <li><span class="n">3</span><span>Players who shared a team, a college, or a draft class build <b>chemistry</b>, which makes your whole team better.</span></li>
-      <li><span class="n">4</span><span>Play all <b>17 games</b>. Win 12 and you make the playoffs. Win 15 and you skip the first round.</span></li>
-      <li><span class="n">5</span><span>One playoff loss ends it. Win everything and you finish <b>20 and 0</b>.</span></li>
-    </ul>
-    <div class="hr"></div>
+
     <button class="btn" id="b-start">Start a run</button>
-    <div style="margin-top:9px"><button class="btn ghost" id="b-daily">Play today's spins</button></div>
-    <p class="dim" style="font-size:12px;margin-top:14px">Every player is scored from his real week by week stats. Prices come from what he produced, not what he was paid.</p>
+    <div class="hrow">
+      <button class="btn ghost sm" id="b-daily">Today's spins</button>
+      <button class="btn ghost sm" id="b-how">How to play</button>
+    </div>
+    <button class="btn ghost sm" id="b-board" style="margin-top:8px">Leaderboard</button>
+    <p class="dim" style="font-size:12px;margin-top:15px">Every player is scored from his real
+    week by week stats. Prices come from what he produced, not what he was paid.</p>
+  </div>
+
+  <!-- LEADERBOARD. Laid out now, wired up later: the shape assumes a cached top
+       page and a pinned row for you, which is what it will need at scale. -->
+  <div class="screen" id="s-board">
+    <div class="eyebrow">Standings</div>
+    <h2 class="display" style="font-size:27px;margin:5px 0 10px">Leaderboard</h2>
+    <div class="tabs" id="lb-tabs">
+      <button class="tab on" data-lb="today">Today<span class="n">daily</span></button>
+      <button class="tab" data-lb="all">All time</button>
+    </div>
+    <p class="notlive" id="lb-note"></p>
+    <div class="lb" id="lb-rows"></div>
+    <button class="btn ghost sm" id="b-lb-more" style="margin-top:10px">Show more</button>
+    <div style="margin-top:10px"><button class="btn ghost" id="b-board-back">Back</button></div>
   </div>
 
   <div class="screen" id="s-team">
@@ -819,7 +963,8 @@
     </details>
 
     <div style="margin-top:15px"><button class="btn" id="b-share">Share your season</button></div>
-    <div style="margin-top:9px"><button class="btn ghost" id="b-again">Run it again</button></div>
+    <div class="hrow"><button class="btn ghost sm" id="b-again">Run it again</button>
+      <button class="btn ghost sm" id="b-board2">Leaderboard</button></div>
   </div>
 </div>
 
@@ -827,8 +972,8 @@
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=10"></script>
-<script src="run.js?v=10"></script>
+<script src="engine.js?v=11"></script>
+<script src="run.js?v=11"></script>
 <script>
 (function(){
 'use strict';
@@ -845,7 +990,7 @@ const $=(id)=>document.getElementById(id);
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=10;
+const NEED_VERSION=11;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -990,7 +1135,7 @@ function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clear
 
 async function boot(){
   try{
-    const j=(f)=>fetch(f+'?v=2').then(r=>{if(!r.ok)throw new Error(f);return r.json();});
+    const j=(f)=>fetch(f+'?v=3').then(r=>{if(!r.ok)throw new Error(f);return r.json();});
     const [pl,tm,bat,co,cu,lg,cal]=await Promise.all([
       j('data/player_seasons.json'),j('data/team_seasons.json'),j('data/battery.json'),
       j('data/coaches.json'),j('data/curated.json'),j('data/league_context.json'),
@@ -998,7 +1143,7 @@ async function boot(){
     DATA=R.indexData(pl,tm); CTX={battery:bat,coaches:co,curated:cu};
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
-    buildTeams(); show('s-intro');
+    buildTeams(); paintHero(); show('s-intro');
   }catch(e){
     $('s-load').innerHTML='<div class="load"><h3 class="display">Could not load the data</h3>'+
       '<p class="dim" style="font-size:13px">'+esc(e.message)+'</p></div>';
@@ -1237,7 +1382,10 @@ function drawRail(el,bySlot,links,at){
 function sheet(p){
   const links=run.roster.length>1
     ? E.resolveChemistry(run.roster,CTX).links.filter(l=>l.a===p.name||l.b===p.name) : [];
-  $('sheet-in').innerHTML='<div class="eyebrow">'+p.season+' '+esc(p.team_display)+'</div>'+
+  /* team_display used to be copied onto every player row, which cost 308KB of the
+     shipped payload for a string team_seasons.json already has. */
+  const ts=DATA.byTeamSeasonId[p.team_season_id];
+  $('sheet-in').innerHTML='<div class="eyebrow">'+esc(ts?ts.display:p.season+' '+E.nickname(p.franchise))+'</div>'+
     '<h2 class="display" style="font-size:26px;margin:4px 0 10px">'+esc(p.name)+'</h2>'+
     '<div class="kv"><span class="dim">Spot</span><b>'+p.position+'</b></div>'+
     '<div class="kv"><span class="dim">Cost</span><b>'+M(p.price_musd)+'</b></div>'+
@@ -2199,6 +2347,145 @@ $('b-share').onclick=async()=>{
     }
   }
 };
+/* ---------- landing, profile, leaderboard ----------
+
+   None of the account or standings plumbing exists yet, and this deliberately does
+   not pretend otherwise: the sign-in controls are disabled, they collect nothing,
+   and both screens say in plain text that nothing is being recorded. The point of
+   building them now is that the LAYOUT is the thing that is expensive to change
+   later, not the queries.
+
+   What that shape assumes, so wiring it up does not mean redesigning it:
+     - the board reads a small cached page, not the whole table
+     - your own row is fetched separately and pinned, because at any real scale you
+       will not be inside the top page
+     - "show more" pages forward rather than loading everything */
+
+/* Which hero treatment to show. ?home=1|2|3, so all three can be compared on a real
+   phone before one of them is chosen and the other two are deleted. */
+function paintHero(){
+  const want=(new URLSearchParams(location.search).get('home')||'1');
+  const opts=[...document.querySelectorAll('.hopt')];
+  const pick=opts.find(o=>o.dataset.h===want)||opts[0];
+  opts.forEach(o=>o.classList.toggle('on',o===pick));
+}
+
+/* The rules moved off the landing screen and behind a button. Five numbered lines
+   were the first thing anybody saw, which is a manual, not an invitation. */
+function howToPlay(){
+  const cap=M0(E.CONSTANTS.CAP_MUSD);
+  const R1=E.CONSTANTS.RESPIN_LADDER_MUSD.map(M0).join(', then ');
+  $('sheet-in').innerHTML='<div class="eyebrow">How to play</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 12px">Six spins, one season</h2>'+
+    '<ul class="rules" style="margin-top:0">'+
+    '<li><span class="n">1</span><span>A wheel gives you a <b>year</b>, then a <b>team</b> from '+
+      'that year. Sign one player off it.</span></li>'+
+    '<li><span class="n">2</span><span>Six spins fill six spots, and you have <b>'+cap+
+      '</b> to spend. Not spending it is its own mistake.</span></li>'+
+    '<li><span class="n">3</span><span>Do not like the draw? Spin the <b>year</b> or the <b>team</b> '+
+      'again for '+R1+', off your budget.</span></li>'+
+    '<li><span class="n">4</span><span>Players who shared a team, a college or a draft class build '+
+      '<b>chemistry</b>, which lifts the whole roster.</span></li>'+
+    '<li><span class="n">5</span><span>Shape matters as much as talent. A quarterback who cannot '+
+      'throw wastes your receivers, and stars alongside nobody get found out.</span></li>'+
+    '<li><span class="n">6</span><span>Play all <b>17 games</b>. Win 12 and you are in the playoffs, '+
+      'win 15 and you skip a round. One playoff loss ends it.</span></li>'+
+    '</ul>'+
+    '<p class="dim" style="font-size:12.5px;margin:13px 0 0">Win everything and you finish '+
+      '<b>20 and 0</b>. Nobody has ever done it.</p>'+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  $('sheet').classList.add('on');
+  $('sh-x').onclick=()=>$('sheet').classList.remove('on');
+}
+
+/* Signed-out shell. No inputs, nothing submitted, nothing stored: the buttons are
+   disabled on purpose until accounts actually exist. */
+function profileSheet(){
+  $('sheet-in').innerHTML='<div class="eyebrow">Your profile</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 6px">Not signed in</h2>'+
+    '<p class="dim" style="font-size:13.5px;margin:0">A RunThe.GG account will keep your runs, '+
+    'your best record and your place on the leaderboard across devices.</p>'+
+    '<p class="notlive" style="margin-top:12px">Accounts are not live yet. These are here so the '+
+    'shape is settled before launch, and they do nothing at the moment.</p>'+
+    '<div class="signin">'+
+      '<button disabled>Continue with Google</button>'+
+      '<button disabled>Continue with Apple</button>'+
+      '<button disabled>Use an email link</button>'+
+    '</div>'+
+    '<p class="dim" style="font-size:11.5px;margin:12px 0 0">Until then every run is kept on this '+
+    'device only, and nothing about you is sent anywhere.</p>'+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  $('sheet').classList.add('on');
+  $('sh-x').onclick=()=>$('sheet').classList.remove('on');
+}
+
+/* ---------- leaderboard ----------
+   Placeholder standings, labeled as placeholder. The records are the ones the
+   engine actually produces at this calibration, so the column widths and the sort
+   are being designed against realistic values rather than invented ones. */
+const LB_SAMPLE={
+  today:[
+    ['coldrollout','Jackson 2019, Barkley 2018','20-0','+11.2%','$139M'],
+    ['hashmarks','Mahomes 2018, Kelce 2020','19-1','+8.4%','$140M'],
+    ['fourthandshort','Manning 2013, Thomas 2013','18-2','+13.1%','$138M'],
+    ['playactionpat','Brady 2007, Moss 2007','18-2','+10.0%','$140M'],
+    ['thetuckrule','Rodgers 2011, Nelson 2011','17-3','+7.6%','$136M'],
+    ['sixteenandoh','Warner 1999, Faulk 1999','17-3','+9.8%','$139M'],
+    ['zonereadzach','Allen 2020, Diggs 2020','16-4','+6.2%','$140M'],
+    ['gunslinger','Vick 2010, Jackson 2010','16-4','+5.1%','$137M'],
+  ],
+  all:[
+    ['coldrollout','7 perfect seasons','20-0','+11.2%','$139M'],
+    ['hashmarks','5 perfect seasons','20-0','+9.9%','$140M'],
+    ['thetuckrule','4 perfect seasons','20-0','+12.4%','$138M'],
+    ['fourthandshort','3 perfect seasons','20-0','+8.8%','$140M'],
+    ['sixteenandoh','2 perfect seasons','20-0','+10.6%','$139M'],
+    ['playactionpat','1 perfect season','20-0','+7.2%','$140M'],
+    ['zonereadzach','best 19-1','19-1','+6.9%','$140M'],
+    ['gunslinger','best 19-1','19-1','+5.4%','$136M'],
+  ],
+};
+let lbTab='today', lbShown=5;
+
+function paintBoard(){
+  const rows=LB_SAMPLE[lbTab];
+  $('lb-note').textContent=lbTab==='today'
+    ? 'Sample standings. Daily boards reset at midnight UTC once this is live; nothing is being recorded yet.'
+    : 'Sample standings. Nothing is being recorded yet.';
+  const show=rows.slice(0,lbShown);
+  $('lb-rows').innerHTML=show.map((r,i)=>
+    '<div class="lbr'+(i===0?' gold':'')+'"><span class="rk">'+(i+1)+'</span>'+
+    '<span class="who"><b>'+esc(r[0])+'</b><span>'+esc(r[1])+'</span></span>'+
+    '<span class="rec"><b>'+esc(r[2])+'</b><span>'+esc(r[3])+' chem, '+esc(r[4])+'</span></span></div>'
+  ).join('')+minePinned();
+  $('b-lb-more').style.display=lbShown>=rows.length?'none':'block';
+  [...document.querySelectorAll('#lb-tabs .tab')].forEach(t=>
+    t.classList.toggle('on',t.dataset.lb===lbTab));
+}
+
+/* Your own row, pinned. At scale you will not be inside the top page, so this is
+   fetched on its own rather than found in the list. */
+function minePinned(){
+  if(!run||!run.outcome) return '';
+  const o=run.outcome;
+  const chem=pc(run.season.chemistry-1);
+  const spend=M0(run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed));
+  return '<div class="lbr mine"><span class="rk">you</span>'+
+    '<span class="who"><b>This run</b><span>'+esc(o.seedLabel)+'</span></span>'+
+    '<span class="rec"><b>'+esc(o.record)+'</b><span>'+chem+' chem, '+spend+'</span></span></div>';
+}
+
+$('b-how').onclick=howToPlay;
+$('b-profile').onclick=profileSheet;
+$('b-board').onclick=()=>{lbShown=5;paintBoard();show('s-board');};
+$('b-board2').onclick=()=>{lbShown=5;paintBoard();show('s-board');};
+$('b-board-back').onclick=()=>show(run&&run.outcome?'s-over':'s-intro');
+$('b-lb-more').onclick=()=>{lbShown+=5;paintBoard();};
+$('lb-tabs').addEventListener('click',(e)=>{
+  const t=e.target.closest('.tab'); if(!t) return;
+  lbTab=t.dataset.lb; lbShown=5; paintBoard();
+});
+
 $('b-again').onclick=()=>{
   clearTimeout(simTimer); clearTimeout(poTimer); cancelAnimationFrame(poRaf); poSkip=null;
   run=null; pickedTeam=null; lastChem=1;

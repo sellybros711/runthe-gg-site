@@ -48,7 +48,7 @@ const median = (a) => { const s = [...a].sort((x, y) => x - y); return s[Math.fl
 
 /*
  * Archetypes are built to a budget, so every one of them is a legal roster under
- * the $100M cap. "Near-optimal" means near-optimal SUBJECT TO the cap, which the
+ * the cap. "Near-optimal" means near-optimal SUBJECT TO the cap, which the
  * GDD's §9 table left ambiguous, six 95th-percentile players would be ~$250M
  * and is not a reachable archetype at all.
  */
@@ -129,7 +129,7 @@ function buildStacked(rng) {
 
 /*
  * Genuinely cap-optimal roster: maximize summed expected PPG subject to the
- * $100M cap and the slot shape. Solved with a DP over discretized budget rather
+ * cap and the slot shape. Solved with a DP over discretized budget rather
  * than a greedy pass, because greedy-by-points-per-dollar is measurably worse
  * and would understate the ceiling, which is the whole point of this archetype.
  *
@@ -382,7 +382,8 @@ function chemReport() {
   const rng = E.createSeededRNG(99);
   const stack = buildStacked(rng);
   const res = E.resolveChemistry(stack, ctx);
-  console.log(`\nsample stacked roster (${stack[0].team_display}) -> x${res.multiplier.toFixed(3)}`);
+  const stackTs = teamSeasons.find((t) => t.team_season_id === stack[0].team_season_id);
+  console.log(`\nsample stacked roster (${stackTs ? stackTs.display : stack[0].team_season_id}) -> x${res.multiplier.toFixed(3)}`);
   for (const l of res.links.slice(0, 6)) {
     console.log(`   ${l.value > 0 ? '+' : ''}${(l.value * 100).toFixed(0)}%  ${l.type.padEnd(12)} ${l.label}`);
   }
