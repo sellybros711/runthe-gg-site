@@ -159,7 +159,8 @@ const TUNE = {
 };
 const BALL_R = 0.42;
 const TEAM = { BLUE:'#3b82f6', RED:'#e0453f' };   // BLUE = you, RED = cpu
-const goalZ = t => t==='BLUE' ? TUNE.FIELD_LENGTH-TUNE.ENDZONE : TUNE.ENDZONE;   // z a team is driving toward
+const goalZ = t => t==='BLUE' ? TUNE.FIELD_LENGTH-TUNE.ENDZONE : TUNE.ENDZONE;   // deep target the AI drives toward
+const goalLine = t => t==='BLUE' ? TUNE.FIELD_LENGTH-2*TUNE.ENDZONE : 2*TUNE.ENDZONE;  // the FRONT of the end zone — cross it to score
 const dirOf = t => t==='BLUE' ? 1 : -1;
 
 /* ---------------- scene ---------------- */
@@ -183,6 +184,10 @@ field.rotation.x=-Math.PI/2; field.position.set(0,0,TUNE.FIELD_LENGTH/2); field.
 function ez(z,color){ const m=new THREE.Mesh(new THREE.PlaneGeometry(TUNE.FIELD_WIDTH,TUNE.ENDZONE*2),
   new THREE.MeshStandardMaterial({color,roughness:1})); m.rotation.x=-Math.PI/2; m.position.set(0,0.01,z); scene.add(m); }
 ez(TUNE.FIELD_LENGTH-TUNE.ENDZONE,'#12325f'); ez(TUNE.ENDZONE,'#5a2130');   // BLUE scores far, RED scores near
+// bright goal lines at the FRONT of each end zone (cross to score)
+function goalLineMesh(z){ const m=new THREE.Mesh(new THREE.PlaneGeometry(TUNE.FIELD_WIDTH,0.7),
+  new THREE.MeshBasicMaterial({color:'#ffffff'})); m.rotation.x=-Math.PI/2; m.position.set(0,0.04,z); scene.add(m); }
+goalLineMesh(TUNE.FIELD_LENGTH-2*TUNE.ENDZONE); goalLineMesh(2*TUNE.ENDZONE);
 for(let s=-1;s<=1;s+=2){ const w=new THREE.Mesh(new THREE.BoxGeometry(0.3,1.1,TUNE.FIELD_LENGTH),
   new THREE.MeshStandardMaterial({color:'#0c1c14'})); w.position.set(s*TUNE.FIELD_WIDTH/2,0.55,TUNE.FIELD_LENGTH/2); scene.add(w); }
 function goalpost(z){ const mat=new THREE.MeshStandardMaterial({color:'#e6b32a',emissive:'#3a2c00'}); const g=new THREE.Group();
@@ -430,8 +435,16 @@ function applyInput(p,dt){ const u=p.userData;
   let sp = (possession==='BLUE'&&carrier===controlled) ? TUNE.CARRIER_SPEED : TUNE.CHASE_SPEED;
   if(u.boost>0){ sp*=TUNE.TRUCK_BOOST; u.boost-=dt; }
   const mag=Math.hypot(input.x,input.y);
-  if(mag>0.05){ const nx=input.x/mag, nz=input.y/mag; p.position.x+=nx*sp*dt*Math.min(1,mag); p.position.z+=nz*sp*dt*Math.min(1,mag);
-    faceTo(p,Math.atan2(nx,nz),dt); }
+  if(mag>0.05){
+    // CAMERA-RELATIVE: "forward/up" always goes into the screen, "left/right" is screen-relative,
+    // no matter which way the camera is pointing (fixes controls when chasing / camera swung around)
+    const camYaw=Math.atan2(camA.x-camP.x, camA.z-camP.z), cy=Math.cos(camYaw), sy=Math.sin(camYaw);
+    let mx = cy*input.x + sy*input.y;      // right*x + forward*y  (forward=(sy,cy), right=(cy,-sy))
+    let mz = -sy*input.x + cy*input.y;
+    const m=Math.hypot(mx,mz)||1; mx/=m; mz/=m;
+    p.position.x+=mx*sp*dt*Math.min(1,mag); p.position.z+=mz*sp*dt*Math.min(1,mag);
+    faceTo(p,Math.atan2(mx,mz),dt);
+  }
   clampField(p);
   if(possession==='BLUE'&&carrier===controlled) ball.position.copy(p.position).add(new THREE.Vector3(0.5,1.5,0));
 }
@@ -440,8 +453,8 @@ function applyInput(p,dt){ const u=p.userData;
 function checkScore(){
   if(possession==='LOOSE'||carrier<0) return;
   const p=PL[carrier], t=p.userData.team;
-  if(t==='BLUE'&&p.position.z>=TUNE.FIELD_LENGTH-TUNE.ENDZONE) return doScore('BLUE');
-  if(t==='RED'&&p.position.z<=TUNE.ENDZONE) return doScore('RED');
+  if(t==='BLUE'&&p.position.z>=goalLine('BLUE')) return doScore('BLUE');
+  if(t==='RED'&&p.position.z<=goalLine('RED')) return doScore('RED');
 }
 function doScore(t){ if(gameOver)return; flash();
   if(t==='BLUE'){ scoreB++; msg('TOUCHDOWN!','big',1500); } else { scoreR++; msg('CPU SCORES','bad',1500); }
@@ -479,7 +492,7 @@ function hud(){ if(phase!=='PLAY'){ ring.visible=false; return; }
   el.innerHTML = possession==='LOOSE' ? '<b>BALL LOOSE</b> — go get it'
     : possession==='BLUE' ? 'YOU HAVE THE BALL' : 'CPU HAS THE BALL — force it out';
   const d=document.getElementById('dir');
-  if(possession==='BLUE'&&carrier>=0){ const yds=Math.max(0,Math.round(TUNE.FIELD_LENGTH-TUNE.ENDZONE-PL[carrier].position.z)); d.textContent=yds+' yds'; d.style.display='block'; }
+  if(possession==='BLUE'&&carrier>=0){ const yds=Math.max(0,Math.round(goalLine('BLUE')-PL[carrier].position.z)); d.textContent=yds+' yds'; d.style.display='block'; }
   else d.style.display='none';
   ring.visible = controlled>=0 && running; if(controlled>=0){ ring.position.x=PL[controlled].position.x; ring.position.z=PL[controlled].position.z; }
 }
