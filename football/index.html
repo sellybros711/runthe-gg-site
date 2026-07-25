@@ -110,6 +110,16 @@
   .links-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
   .links-svg line{stroke-linecap:round}
   @keyframes dash{to{stroke-dashoffset:-18}}
+  /* One color per strength band so five links do not read as one green tangle. */
+  .legend{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+  .lg{display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;color:var(--dim);
+    padding:4px 8px;border-radius:99px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+  .lg i{width:14px;height:3px;border-radius:2px;display:block}
+  .lg.big i{background:#fbbf24} .lg.good i{background:#22c55e}
+  .lg.small i{background:#38bdf8} .lg.bad i{background:#ef4444}
+  .tierdot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .tierdot.big{background:#fbbf24} .tierdot.good{background:#22c55e}
+  .tierdot.small{background:#38bdf8} .tierdot.bad{background:#ef4444}
   .chip{position:absolute;transform:translate(-50%,-50%);width:74px;text-align:center;cursor:pointer}
   .chip .disc{width:44px;height:44px;margin:0 auto;border-radius:50%;display:grid;place-items:center;
     font-family:'Anton',Impact,sans-serif;font-size:13px;color:#fff;border:2px solid rgba(255,255,255,.22);
@@ -293,6 +303,7 @@
     </div>
 
     <div class="field" id="field"></div>
+    <div class="legend" id="legend"></div>
 
     <div style="display:flex;align-items:flex-end;justify-content:space-between;margin:14px 0 8px">
       <div><div class="eyebrow">Spots still open</div>
@@ -314,6 +325,7 @@
     <h2 class="display" style="font-size:27px;margin:5px 0 6px">Your team</h2>
     <p class="dim" style="font-size:13px;margin:0 0 12px">Tap a player to see his numbers. The lines show who has chemistry with who.</p>
     <div class="field" id="field2"></div>
+    <div class="legend" id="legend2"></div>
     <div class="panel" style="margin-top:12px">
       <div class="eyebrow">Chemistry</div>
       <div class="chemrow"><div class="chemval num" id="q-chem" style="font-size:27px">0.0%</div>
@@ -386,6 +398,15 @@ const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;
 
 /* Where each spot sits on the field, in E.SLOTS order: QB, RB, WR, WR, TE, FLEX.
    Spread out so nothing overlaps on a narrow phone. */
+/* Strength bands, matching E.linkTier. A big link is thick, bright and solid so it
+   reads first; a small one is thin, blue and faint. Color is the primary signal
+   because five same-colored dashes were impossible to tell apart. */
+const TIER={
+  big:  {color:'#fbbf24',w:4.2,dash:'none',op:0.95,speed:'1.6s',name:'Big'},
+  good: {color:'#22c55e',w:3.0,dash:'8 5', op:0.85,speed:'1.2s',name:'Good'},
+  small:{color:'#38bdf8',w:1.8,dash:'3 6', op:0.6, speed:'1s',  name:'Small'},
+  bad:  {color:'#ef4444',w:2.6,dash:'2 4', op:0.9, speed:'.8s', name:'Hurts'},
+};
 const SPOT=[{x:50,y:63},{x:50,y:83},{x:12,y:31},{x:88,y:31},{x:72,y:46},{x:28,y:46}];
 
 let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,pickedTeam=null,simTimer=null,lastChem=1;
@@ -432,10 +453,11 @@ function drawField(el,live){
   const at=new Map();
   if(run) run.roster.forEach((p,i)=>at.set(p.name,run.slotIndex[i]));
   const lines=links.filter(l=>at.has(l.a)&&at.has(l.b)).map(l=>{
-    const a=SPOT[at.get(l.a)],b=SPOT[at.get(l.b)],good=l.value>0;
-    return '<line x1="'+a.x+'%" y1="'+a.y+'%" x2="'+b.x+'%" y2="'+b.y+'%" stroke="'+
-      (good?'#4ade80':'#ef4444')+'" stroke-width="'+(good?(1.5+l.value*20).toFixed(1):2)+
-      '" stroke-dasharray="5 5" opacity="'+(good?0.75:0.85)+'" style="animation:dash 1s linear infinite"/>';
+    const a=SPOT[at.get(l.a)],b=SPOT[at.get(l.b)];
+    const t=TIER[E.linkTier(l.value)];
+    return '<line x1="'+a.x+'%" y1="'+a.y+'%" x2="'+b.x+'%" y2="'+b.y+'%" stroke="'+t.color+
+      '" stroke-width="'+t.w+'" stroke-dasharray="'+t.dash+'" opacity="'+t.op+
+      '" style="animation:dash '+t.speed+' linear infinite"/>';
   }).join('');
   /* Map each signed player to the spot he actually took. Roster order is signing
      order, which is no longer the same as slot order now that you pick the spot. */
@@ -454,6 +476,15 @@ function drawField(el,live){
   }).join('');
   el.innerHTML='<div class="lines"></div><div class="hash"></div><div class="ez t"></div><div class="ez b"></div>'+
     '<svg class="links-svg">'+lines+'</svg>'+chips;
+  // Legend sits under the field, and only lists the bands actually on screen.
+  const legEl=el.nextElementSibling;
+  if(legEl&&legEl.classList.contains('legend')){
+    const present=[...new Set(links.filter(l=>at.has(l.a)&&at.has(l.b)).map(l=>E.linkTier(l.value)))];
+    legEl.innerHTML=present.length
+      ? ['big','good','small','bad'].filter(k=>present.includes(k)).map(k=>
+          '<span class="lg '+k+'"><i></i>'+TIER[k].name+'</span>').join('')
+      : '<span class="lg" style="color:var(--dim-2)">No links yet</span>';
+  }
   el.onclick=(e)=>{const c=e.target.closest('.chip');if(!c)return;const p=bySlot[+c.dataset.i];if(p)sheet(p);};
 }
 
@@ -469,7 +500,8 @@ function sheet(p){
     '<div class="kv"><span class="dim">Games that year</span><b>'+p.games_played+'</b></div>'+
     (p.college?'<div class="kv"><span class="dim">College</span><b>'+esc(p.college)+'</b></div>':'')+
     (links.length?'<div class="eyebrow" style="margin-top:13px">Chemistry</div>'+links.map(l=>
-      '<div class="linkrow"><span class="v'+(l.value<0?' neg':'')+'">'+pc(l.value)+'</span><span>'+esc(l.label)+'</span></div>').join(''):'')+
+      '<div class="linkrow"><span class="tierdot '+E.linkTier(l.value)+'"></span>'+
+      '<span class="v'+(l.value<0?' neg':'')+'">'+pc(l.value)+'</span><span>'+esc(l.label)+'</span></div>').join(''):'')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   $('sheet').classList.add('on');
   $('sh-x').onclick=()=>$('sheet').classList.remove('on');
@@ -539,9 +571,15 @@ function paintOpts(draw){
      you should see what a signing does before you commit, not after. */
   const row=(p)=>{
     const pv=R.previewSigning(run,p,CTX), g=pv.delta;
-    const tag=g>0.0005
-      ? '<span class="chemtag">'+pc(g)+' from '+esc(pv.newLinks[0]?pv.newLinks[0].label:'a link')+'</span>'
-      : (g<-0.0005?'<span class="chemtag" style="background:rgba(239,68,68,.16);color:#fca5a5">'+pc(g)+' chemistry</span>':'');
+    /* Short reason, colored by the strongest new link, so the draft list stays
+       scannable. The full sentence lives on the squad screen and the player card. */
+    const top=pv.newLinks[0];
+    const tier=top?E.linkTier(top.value):null;
+    const tag=g>0.0005&&top
+      ? '<span class="chemtag" style="background:'+TIER[tier].color+'22;color:'+TIER[tier].color+'">'+
+        pc(g)+' '+esc(top.short||top.label)+'</span>'
+      : (g<-0.0005&&top?'<span class="chemtag" style="background:rgba(239,68,68,.14);color:#fca5a5">'+
+        pc(g)+' '+esc(top.short||top.label)+'</span>':'');
     return '<button class="opt'+(g>0.0005?' hot':'')+'" data-k="'+p.player_id+'|'+p.season+'">'+
       '<span class="badge" style="background:linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.4))">'+p.position+'</span>'+
       '<span class="who"><b>'+esc(p.name)+'</b><span>'+p.ppr_ppg_mean.toFixed(1)+' a game in '+p.season+'</span>'+tag+'</span>'+
@@ -584,7 +622,8 @@ function paintSquad(){
   $('q-chembar').style.width=Math.max(0,Math.min(100,p/E.CHEMISTRY.MAX*100))+'%';
   const links=run.season.chemistryLinks;
   $('q-links').innerHTML=links.length
-    ? links.map(l=>'<div class="linkrow"><span class="v'+(l.value<0?' neg':'')+'">'+pc(l.value)+'</span><span>'+esc(l.label)+'</span></div>').join('')
+    ? links.map(l=>'<div class="linkrow"><span class="tierdot '+E.linkTier(l.value)+'"></span>'+
+        '<span class="v'+(l.value<0?' neg':'')+'">'+pc(l.value)+'</span><span>'+esc(l.label)+'</span></div>').join('')
     : '<p class="dim" style="font-size:13px;margin:6px 0 0">Nobody here ever played together, so there is no chemistry this run.</p>';
   $('q-sched').innerHTML=run.schedule.map((id,i)=>{
     const t=DATA.byTeamSeasonId[id];

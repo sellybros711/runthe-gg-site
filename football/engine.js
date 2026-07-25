@@ -151,6 +151,36 @@ const CHEMISTRY = {
   TARGET_CONFLICT_ENABLED: false,
 };
 
+/*
+ * Team nicknames, so a chemistry line can say "Both played for the Lions" instead
+ * of naming a three-letter code. A franchise link joins two different seasons, so
+ * neither player's own era-correct team name is right for the pair; the nickname
+ * is the part that never changed.
+ */
+const NICKNAMES = {
+  ARI: 'Cardinals', ATL: 'Falcons', BAL: 'Ravens', BUF: 'Bills', CAR: 'Panthers',
+  CHI: 'Bears', CIN: 'Bengals', CLE: 'Browns', DAL: 'Cowboys', DEN: 'Broncos',
+  DET: 'Lions', GB: 'Packers', HOU: 'Texans', IND: 'Colts', JAX: 'Jaguars',
+  KC: 'Chiefs', LAC: 'Chargers', LAR: 'Rams', LV: 'Raiders', MIA: 'Dolphins',
+  MIN: 'Vikings', NE: 'Patriots', NO: 'Saints', NYG: 'Giants', NYJ: 'Jets',
+  PHI: 'Eagles', PIT: 'Steelers', SEA: 'Seahawks', SF: '49ers', TB: 'Buccaneers',
+  TEN: 'Titans', WAS: 'Commanders',
+};
+const nickname = (id) => NICKNAMES[id] || id;
+
+/*
+ * How strong a link feels, used to color and weight the lines drawn between
+ * players. Four bands rather than a continuous scale, because the whole point is
+ * that you can tell them apart at a glance.
+ */
+const LINK_TIERS = [
+  { min: 0.08, key: 'big', label: 'Big' },
+  { min: 0.04, key: 'good', label: 'Good' },
+  { min: 0.001, key: 'small', label: 'Small' },
+  { min: -Infinity, key: 'bad', label: 'Hurts' },
+];
+const linkTier = (value) => LINK_TIERS.find((t) => value >= t.min).key;
+
 const SLOTS = ['QB', 'RB', 'WR', 'WR', 'TE', 'FLEX'];
 const SLOT_ELIGIBILITY = {
   QB: ['QB'], RB: ['RB'], WR: ['WR'], TE: ['TE'], FLEX: ['RB', 'WR', 'TE'],
@@ -232,53 +262,87 @@ function pairLinks(a, b, ctx) {
     const list = bat[key(qb)];
     if (list) {
       const hit = list.find((l) => l.receiver === key(rec));
-      if (hit) out.push({ type: 'battery', value: V.battery, label: hit.label });
+      if (hit) out.push({ type: 'battery', value: V.battery, label: hit.label, short: 'Threw to him' });
     }
   }
 
+  /*
+   * Labels are written to be read once and understood, so each one names the
+   * thing the two players actually share. An earlier version said "Both wore SF
+   * [team code] colors", which named a three letter code, used a British
+   * spelling, and told you nothing about what the two players shared.
+   * `short` is the two or three word version for tight spaces in the draft list.
+   */
   if (a.team_season_id && a.team_season_id === b.team_season_id) {
     out.push({
       type: 'teammates', value: V.teammates,
-      label: `${a.team_display} teammates`,
+      label: `Teammates on the ${a.season} ${nickname(a.franchise)}`,
+      short: 'Teammates',
     });
   } else if (a.franchise && a.franchise === b.franchise) {
     out.push({
       type: 'franchise', value: V.franchise,
-      label: `Both wore ${a.franchise} colours`,
+      label: `Both played for the ${nickname(a.franchise)}`,
+      short: `Both ${nickname(a.franchise)}`,
     });
   }
 
   const fam = (ctx.curated?.family || []).find(
     (f) => (f.a === a.name && f.b === b.name) || (f.a === b.name && f.b === a.name),
   );
-  if (fam) out.push({ type: 'family', value: V.family, label: fam.label });
+  if (fam) {
+    out.push({
+      type: 'family', value: V.family,
+      label: fam.kind === 'brothers' ? 'Brothers' : fam.label,
+      short: 'Family',
+    });
+  }
 
   if (a.college && b.college && a.college === b.college) {
-    out.push({ type: 'college', value: V.college, label: `${a.college} alumni` });
+    out.push({
+      type: 'college', value: V.college,
+      label: `Both went to ${a.college}`,
+      short: a.college,
+    });
   }
   if (a.draft_year && a.draft_year === b.draft_year) {
-    out.push({ type: 'draft_class', value: V.draft_class, label: `${a.draft_year} draft class` });
+    out.push({
+      type: 'draft_class', value: V.draft_class,
+      label: `Both drafted in ${a.draft_year}`,
+      short: `${a.draft_year} draft`,
+    });
   }
 
   const coaches = ctx.coaches || {};
   const ca = coaches[a.team_season_id]?.hc;
   const cb = coaches[b.team_season_id]?.hc;
   if (ca && cb && ca === cb) {
-    out.push({ type: 'system', value: V.system, label: `Both played for ${ca}` });
+    out.push({
+      type: 'system', value: V.system,
+      label: `Both coached by ${ca}`,
+      short: ca.split(' ').slice(-1)[0] + ' coached both',
+    });
   }
 
   // Rivalry, opposing sides of a documented, mutual franchise rivalry.
   const riv = (ctx.curated?.rivalry || []).find(
     (r) => (r.a === a.franchise && r.b === b.franchise) || (r.a === b.franchise && r.b === a.franchise),
   );
-  if (riv) out.push({ type: 'rivalry', value: V.rivalry, label: `${riv.label} rivalry` });
+  if (riv) {
+    out.push({
+      type: 'rivalry', value: V.rivalry,
+      label: `Old rivals: ${nickname(riv.a)} and ${nickname(riv.b)}`,
+      short: 'Rivals',
+    });
+  }
 
   if (CHEMISTRY.TARGET_CONFLICT_ENABLED
       && a.position === 'WR' && b.position === 'WR'
       && a.position_percentile >= CHEMISTRY.TARGET_CONFLICT_PERCENTILE
       && b.position_percentile >= CHEMISTRY.TARGET_CONFLICT_PERCENTILE
       && Math.abs(a.season - b.season) <= CHEMISTRY.TARGET_CONFLICT_ERA_YEARS) {
-    out.push({ type: 'target_conflict', value: V.target_conflict, label: 'Two alpha receivers' });
+    out.push({ type: 'target_conflict', value: V.target_conflict,
+      label: 'Two number one receivers competing for the ball', short: 'Both want the ball' });
   }
 
   out.sort((x, y) => y.value - x.value);
@@ -604,6 +668,7 @@ const publicAPI = {
   buildDivisionMap, opponentFranchises, generateSchedule, generatePlayoffs,
   resolveGame, playRun, prepareData, toFootballScore,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
+  NICKNAMES, nickname, LINK_TIERS, linkTier,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

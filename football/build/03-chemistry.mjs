@@ -104,9 +104,11 @@ async function main() {
     if (!eligibleKeys.has(qb.key)) continue;              // QB must be draftable too
     const season = Number(key.split('|')[1]);
     const qbName = nameOf.get(qb.key) ?? '';
+    // Written as a sentence, since this is the strongest link in the game and the
+    // one most worth understanding at a glance.
     const label = e.recTd >= BATTERY_MIN_REC_TDS
-      ? `${qbName.split(' ').pop()} → ${e.name.split(' ').pop()}, ${season}: ${e.recTd} touchdowns`
-      : `${qbName.split(' ').pop()} → ${e.name.split(' ').pop()}, ${season}: ${e.rec} receptions`;
+      ? `${qbName.split(' ').pop()} threw ${e.name.split(' ').pop()} ${e.recTd} touchdowns in ${season}`
+      : `${qbName.split(' ').pop()} threw ${e.name.split(' ').pop()} ${e.rec} catches in ${season}`;
     (battery[qb.key] ??= []).push({ receiver: key, receptions: e.rec, rec_tds: e.recTd, label });
     pairs++;
   }

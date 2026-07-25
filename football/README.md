@@ -103,7 +103,7 @@ Also validated:
 
 ## Chemistry, and why it needed help
 
-Chemistry as specified almost never happened. A player deliberately maximising it
+Chemistry as specified almost never happened. A player deliberately maximizing it
 on every pick still averaged about +2%, against a +15% ceiling, and `college` was
 often the only link that fired. Two causes, one of them a contradiction inside
 the GDD itself:
@@ -115,13 +115,62 @@ the GDD itself:
    Battery (+10%) and Teammates (+5%), both require two players from the *same*
    team-season.
 
-With a team-season allowed twice and half of spins favouring a connected team, a
+With a team-season allowed twice and half of spins favoring a connected team, a
 player chasing chemistry now averages +4.2% (median +4.3%, top decile +7.8%, best
 seen +11.5%) against +2.2% for someone just taking the best player available.
 Every link type fires, Battery included, though Battery stays rare on purpose.
 
-The draft shows the effect of each option before you commit, and the field draws
-a line for every link, so this is all visible while you play.
+### Reading chemistry
+
+Every label names the thing the two players actually share, as a sentence:
+
+| Link | Worth | Reads as |
+|---|---|---|
+| Battery | +10% | Brady threw Moss 23 touchdowns in 2007 |
+| Teammates | +5% | Teammates on the 2007 Patriots |
+| Same team, other year | +3% | Both played for the Lions |
+| Brothers | +3% | Brothers |
+| College | +2% | Both went to Ohio State |
+| Draft class | +2% | Both drafted in 2020 |
+| Same coach | +2% | Both coached by Bill Belichick |
+| Rivals | -3% | Old rivals: Patriots and Jets |
+
+An earlier version phrased the same-team link as "Both wore [code] colors" using
+a British spelling, which named a three letter code and explained nothing. There
+are no British spellings anywhere in this directory.
+
+Lines on the field are colored by strength so several of them do not read as one
+tangle: **gold and thick** for a big link, **green** for a good one, **thin blue**
+for a small one, **red** for one that hurts. A legend under the field lists only
+the bands actually on screen, and each row in the chemistry panel carries a dot in
+its band's color. In the draft list each option shows a short reason in the same
+color, like "+2.7% Both Steelers".
+
+### Getting the strong links to fire at all
+
+Connection tiers had to be separated rather than pooled. A flat "anything
+connected" set is dominated by college and draft-class matches, because there are
+hundreds of those and only a handful of team-seasons you have signed from. Pooled,
+the strongest links stayed as rare as with no bias at all: across six test drafts
+every link came back in the weakest band, so coloring by strength had nothing to
+show. Tiered, with `TIER_TAKE` deciding whether to stop at each tier:
+
+| `CONNECTION_BIAS` | Best-player chemistry | Chasing it | Gap | Drafts with 2+ colors |
+|---|---|---|---|---|
+| 0.20 | 4.3% | 5.6% | 1.3 | 56% |
+| **0.30** | **4.9%** | **6.8%** | **1.8** | **64%** |
+| 0.40 | 6.2% | 7.8% | 1.6 | 70% |
+| 0.50 | 7.8% | 9.1% | 1.3 | 80% |
+
+0.30 gives the widest gap between playing for chemistry and ignoring it, which is
+the number that matters: the mechanic should be a decision, not a gift. Note the
+gap is inherently modest, because franchise, college and draft links attach to the
+*team*, so once the wheel hands you a connected team you get the link whoever you
+sign. Battery is the one link that is genuinely a player-level choice.
+
+Around 64% of runs now see one team-season come up twice, which is the mechanism
+that makes Teammates and Battery possible at all. Two draws per team-season is the
+hard cap.
 
 ## Season structure
 
@@ -192,7 +241,7 @@ stranding you with one player to take.
   would be punishing randomness.
 - **A team-season can come up twice in a run, never more.** This is what makes
   the Battery and Teammates links reachable at all. See the chemistry note below.
-- **About half of spins after the first favour a team-season connected to
+- **About half of spins after the first favor a team-season connected to
   somebody already signed** (`CONNECTION_BIAS` in `run.js`), so chemistry is
   something you watch build rather than something you rarely luck into.
 - **Division rivals are drawn once and played twice.** You get a home and away

@@ -189,11 +189,11 @@ function openSlotNames(run) {
 }
 
 /*
- * How often the wheel favours a team-season that could link to the team you
+ * How often the wheel favors a team-season that could link to the team you
  * already have, and how many times one team-season can come up in a run.
  *
  * Both exist because chemistry as specified could almost never happen. Measured
- * over 400 drafts by a player deliberately maximising it on every single pick,
+ * over 400 drafts by a player deliberately maximizing it on every single pick,
  * the result was +2% every time, and college was the ONLY link type that ever
  * fired. Two reasons:
  *
@@ -211,20 +211,45 @@ function openSlotNames(run) {
  * somebody already signed, so chemistry is something you watch build rather than
  * something you occasionally luck into.
  */
-const CONNECTION_BIAS = 0.5;
-const MAX_DRAWS_PER_TEAM_SEASON = 2;
+/*
+ * Exported so it can be swept from the harness rather than guessed at. The
+ * balance being struck: chemistry has to be reachable, but it must not be
+ * ambient. Franchise, college and draft links attach to the TEAM, so once the
+ * wheel hands you a connected team you get the link whoever you sign. Push the
+ * bias too high and chemistry becomes a gift instead of a decision, which is the
+ * opposite of §6's intent that it should "tempt you into a cheaper signing".
+ */
+const TUNING = {
+  CONNECTION_BIAS: 0.3,
+  TIER_TAKE: 0.6,          // chance of stopping at each tier, strongest first
+  MAX_DRAWS_PER_TEAM_SEASON: 2,
+};
 
-/** Team-seasons that could produce a link with the current roster. */
-function connectedTeamSeasons(run, data) {
-  const out = new Set();
-  const pull = (set) => { if (set) for (const id of set) out.add(id); };
+/*
+ * Connected team-seasons, split by how strong a link they would make.
+ *
+ * These have to be tiered rather than pooled. A flat "anything connected" set is
+ * dominated by college and draft-class matches, because there are hundreds of
+ * those and only a handful of team-seasons you have actually signed from. Pooling
+ * them meant the strongest links stayed as rare as before the bias existed: over
+ * six test drafts every single link came back in the weakest band, so the whole
+ * point of coloring them by strength was invisible.
+ */
+function connectedTiers(run, data) {
+  const same = new Set();      // the exact team-season: teammates, and battery
+  const franchise = new Set(); // same team, another year
+  const loose = new Set();     // same college or draft class
+  const pull = (set, into) => { if (set) for (const id of set) into.add(id); };
   for (const p of run.roster) {
-    out.add(p.team_season_id);                 // teammates and battery
-    pull(data.tsByFranchise[p.franchise]);     // same franchise, another year
-    pull(data.tsByCollege[p.college]);
-    pull(data.tsByDraftYear[p.draft_year]);
+    same.add(p.team_season_id);
+    pull(data.tsByFranchise[p.franchise], franchise);
+    pull(data.tsByCollege[p.college], loose);
+    pull(data.tsByDraftYear[p.draft_year], loose);
   }
-  return out;
+  for (const id of same) franchise.delete(id);
+  for (const id of same) loose.delete(id);
+  for (const id of franchise) loose.delete(id);
+  return [same, franchise, loose];
 }
 
 /**
@@ -245,15 +270,24 @@ function spin(run, data) {
   for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
   const canFill = (t) => affordableFrom(run, t.team_season_id, data.playersByTeamSeason).length > 0;
   const available = data.teamSeasons
-    .filter((t) => (drawn[t.team_season_id] || 0) < MAX_DRAWS_PER_TEAM_SEASON)
+    .filter((t) => (drawn[t.team_season_id] || 0) < TUNING.MAX_DRAWS_PER_TEAM_SEASON)
     .filter(canFill);
   if (!available.length) throw new Error('nothing left you can afford');
 
+  /*
+   * When the bias fires, walk the tiers strongest first and take each one with
+   * TIER_TAKE probability. That gives the big links a real chance without making
+   * a reunion spin the default.
+   */
   let pool = available;
-  if (run.roster.length && rng() < CONNECTION_BIAS) {
-    const linked = connectedTeamSeasons(run, data);
-    const usable = available.filter((t) => linked.has(t.team_season_id));
-    if (usable.length) pool = usable;
+  if (run.roster.length && rng() < TUNING.CONNECTION_BIAS) {
+    for (const tier of connectedTiers(run, data)) {
+      if (!tier.size) continue;
+      const usable = available.filter((t) => tier.has(t.team_season_id));
+      if (!usable.length) continue;
+      if (rng() < TUNING.TIER_TAKE) { pool = usable; break; }
+      pool = usable;   // remember the weakest usable tier as a fallback
+    }
   }
 
   /*
@@ -538,7 +572,7 @@ const api = {
   startSeason, advanceWeek, startPlayoffs, indexData, bestPossibleSquad,
   previewSigning,
   remaining, reserveFloor, canRespin, slotsLeft, affordableFrom,
-  openSlots, openSlotNames, slotForPlayer,
+  openSlots, openSlotNames, slotForPlayer, TUNING,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
