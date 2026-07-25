@@ -127,14 +127,14 @@ const TUNE = {
   TRUCK_BOOST:          1.3, TRUCK_BOOST_MS: 600,
 
   // ---- BALL POP + bounce physics (the make-or-break; a tackle always pops it) ----
-  POP_UP:            11.0,  // vertical pop speed — HIGHER = ball hangs longer / more readable
+  POP_UP:            12.5,  // vertical pop speed — HIGHER = ball hangs longer / more readable
   POP_SPREAD:        2.8,   // horizontal randomness of the initial pop
   RESTITUTION:       0.5,   // bounciness per bounce (0..1)
   BOUNCE_RANDOMNESS: 0.5,   // 0..1 — how wildly it caroms sideways on each bounce
   BOUNCE_FRICTION:   0.8,   // horizontal speed kept through a bounce
   ROLL_FRICTION:     0.97,  // ground-roll damping per frame
-  RECOVER_RADIUS:    1.8,   // how close to a loose ball to scoop it
-  RECOVER_MAX_HEIGHT:1.5,   // ball must be this low to be scooped (can't grab a high pop)
+  RECOVER_RADIUS:    2.1,   // how close to a loose ball to scoop it
+  RECOVER_MAX_HEIGHT:1.6,   // ball must be this low to be scooped (can't grab a high pop)
   GRAVITY:           22,
 
   // ---- LATERAL (pitch backward) ----
@@ -142,16 +142,16 @@ const TUNE = {
   LATERAL_COOLDOWN_S:0.6,
 
   // ---- MOVEMENT (a little slower than v1) ----
-  CARRIER_SPEED:  8.2,
-  CHASE_SPEED:    8.6,      // you, when chasing a carrier or a loose ball
-  MATE_SPEED:     7.8,      // teammate AI (blockers)
-  DEF_SPEED:      8.4,      // defender AI
-  BLOCK_RADIUS:   2.3,      // a blocker within this of a defender engages (slows) them
-  BLOCKED_MULT:   0.3,      // engaged defenders move at this fraction (and can't tackle)
+  CARRIER_SPEED:  8.6,      // a touch faster than the D so good running creates separation
+  CHASE_SPEED:    8.8,      // you, when chasing a carrier or a loose ball
+  MATE_SPEED:     8.2,      // teammate AI (blockers)
+  DEF_SPEED:      8.0,      // defender AI — slower than the carrier so angles + numbers are the threat, not raw speed
+  BLOCK_RADIUS:   2.7,      // a blocker within this of a defender engages (slows) them — opens lanes
+  BLOCKED_MULT:   0.34,     // engaged defenders move at this fraction (and can't tackle)
   TURN_LERP:      10,
 
   // ---- CAMERA ----
-  CAM_DIST: 10.5, CAM_HEIGHT: 5.4, CAM_LOOKAHEAD: 5, CAM_LERP: 5,
+  CAM_DIST: 10.5, CAM_HEIGHT: 5.4, CAM_LOOKAHEAD: 5, CAM_LERP: 5.5,
   LOOSE_CAM_DIST: 17, LOOSE_CAM_HEIGHT: 15, LOOSE_CAM_LERP: 3.4,
 
   // ---- FIELD ----
@@ -208,21 +208,23 @@ ring.rotation.x=-Math.PI/2; ring.position.y=0.05; scene.add(ring);
 const landCircle=new THREE.Mesh(new THREE.RingGeometry(2.2,2.7,40), new THREE.MeshBasicMaterial({color:'#ffcf4d',side:THREE.DoubleSide,transparent:true,opacity:.85}));
 landCircle.rotation.x=-Math.PI/2; landCircle.position.y=0.06; landCircle.visible=false; scene.add(landCircle);
 const LAND_R=2.7;
-// one arrow per BLUE player to show its drawn initial-block assignment during setup
-const blockArrows=PL.map(p=>{ if(p.userData.team!=='BLUE') return null;
-  const a=new THREE.ArrowHelper(new THREE.Vector3(0,0,1),new THREE.Vector3(),1,0x7fd0ff,1.3,0.95);
-  a.visible=false; scene.add(a); return a; });
+// a bold assignment arrow (flat ribbon + arrowhead) per BLUE player, drawn during setup
+function makePathArrow(color){ const g=new THREE.Group();
+  const ribbon=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.1,1), new THREE.MeshBasicMaterial({color,transparent:true,opacity:.92}));
+  const head=new THREE.Mesh(new THREE.ConeGeometry(0.85,1.5,4), new THREE.MeshBasicMaterial({color})); head.rotation.x=Math.PI/2;
+  g.add(ribbon); g.add(head); g.userData={ribbon,head}; g.visible=false; scene.add(g); return g; }
+function setPathArrow(g,fx,fz,tx,tz){ const dx=tx-fx, dz=tz-fz, len=Math.hypot(dx,dz);
+  if(len<0.6){ g.visible=false; return; } g.visible=true; g.position.set(fx,0.2,fz); g.rotation.y=Math.atan2(dx,dz);
+  const body=Math.max(0.1,len-1.4); g.userData.ribbon.scale.set(1,1,body); g.userData.ribbon.position.set(0,0,body/2);
+  g.userData.head.position.set(0,0,len-0.75); }
+const blockArrows=PL.map(p=> p.userData.team==='BLUE' ? makePathArrow(0xffd34d) : null);
 function returnerIdx(){ let b=-1,bd=LAND_R+0.2; for(let i=0;i<PL.length;i++){ if(PL[i].userData.team!=='BLUE')continue;
   const d=Math.hypot(PL[i].position.x-landing.x,PL[i].position.z-landing.z); if(d<bd){bd=d;b=i;} } return b; }
 function updateBlockArrows(){ const rIdx=returnerIdx();
   for(let i=0;i<PL.length;i++){ const a=blockArrows[i]; if(!a)continue;
-    const tgt = (i===drawingIdx)?previewPt : (blockAssign[i]||null);
-    if(tgt && phase==='SETUP' && recvTeam==='BLUE' && i!==rIdx){
-      const from=new THREE.Vector3(PL[i].position.x,0.25,PL[i].position.z);
-      const dir=new THREE.Vector3(tgt.x-from.x,0,tgt.z-from.z), len=dir.length();
-      if(len>0.5){ a.position.copy(from); a.setDirection(dir.normalize()); a.setLength(len,Math.min(1.4,len*0.32),Math.min(0.95,len*0.22)); a.visible=true; }
-      else a.visible=false;
-    } else a.visible=false;
+    const tgt=(i===drawingIdx)?previewPt:(blockAssign[i]||null);
+    if(tgt && phase==='SETUP' && i!==rIdx) setPathArrow(a, PL[i].position.x, PL[i].position.z, tgt.x, tgt.z);
+    else a.visible=false;
   } }
 // ball
 const ball=new THREE.Mesh(new THREE.SphereGeometry(BALL_R,16,12), new THREE.MeshStandardMaterial({color:'#7a4a1c',roughness:.6}));
@@ -262,8 +264,8 @@ function beginSetup(recv){
   setupMode='MOVE'; drawingIdx=-1;
   for(const p of PL){ p.userData.assign=null; p.userData.blockT=0; }
   for(const a of blockArrows) if(a) a.visible=false;
-  const mb=document.getElementById('mode'); mb.style.display = recv==='BLUE'?'block':'none';
-  mb.classList.remove('draw'); mb.textContent='✎ DRAW BLOCKS';
+  const mb=document.getElementById('mode'); mb.style.display='block';
+  mb.classList.remove('draw'); mb.textContent = recv==='BLUE' ? '✎ DRAW BLOCKS' : '✎ DRAW MOVES';
   updateHighlights(); camReady=false; showControls(false);
   document.getElementById('setupHint').style.display='block'; document.getElementById('kick').style.display='block';
   updateKickBtn();
@@ -409,9 +411,15 @@ function updatePlayers(dt){
           else moveToward(p,0,goalZ(u.team),TUNE.MATE_SPEED,dt);
         }
       }
-    } else { // defense: pursue the carrier
-      const sp=u.engaged?TUNE.DEF_SPEED*TUNE.BLOCKED_MULT:TUNE.DEF_SPEED;
-      moveToward(p,PL[carrier].position.x,PL[carrier].position.z,sp,dt);
+    } else { // defense
+      if(u.assign && u.blockT>0){ u.blockT-=dt;                  // run the DRAWN initial move first...
+        if(Math.hypot(p.position.x-u.assign.x,p.position.z-u.assign.z)<1.6) u.blockT=0;
+        else moveToward(p,u.assign.x,u.assign.z,TUNE.DEF_SPEED,dt);
+      }
+      if(!(u.assign && u.blockT>0)){ u.assign=null;              // ...then pursue the carrier
+        const sp=u.engaged?TUNE.DEF_SPEED*TUNE.BLOCKED_MULT:TUNE.DEF_SPEED;
+        moveToward(p,PL[carrier].position.x,PL[carrier].position.z,sp,dt);
+      }
     }
   }
 }
@@ -523,7 +531,7 @@ canvas.addEventListener('pointerdown',e=>{ if(phase!=='SETUP')return; const pt=f
   let b=-1,bd=1e9; for(let i=0;i<PL.length;i++){ if(PL[i].userData.team!=='BLUE')continue;
     const d=Math.hypot(PL[i].position.x-pt.x,PL[i].position.z-pt.z); if(d<bd){bd=d;b=i;} }
   if(b<0||bd>3.5) return;
-  if(setupMode==='DRAW' && recvTeam==='BLUE' && b!==returnerIdx()){ drawingIdx=b; previewPt.set(pt.x,0,pt.z); }
+  if(setupMode==='DRAW' && b!==returnerIdx()){ drawingIdx=b; previewPt.set(pt.x,0,pt.z); }
   else grabbed=b; });
 canvas.addEventListener('pointermove',e=>{ if(phase!=='SETUP')return; const pt=fieldPoint(e); if(!pt)return;
   if(drawingIdx>=0){ previewPt.set(pt.x,0,pt.z); }
@@ -533,7 +541,9 @@ document.getElementById('kick').addEventListener('click',kickoff);
 document.getElementById('mode').addEventListener('click',()=>{ setupMode = setupMode==='MOVE'?'DRAW':'MOVE';
   const m=document.getElementById('mode'); m.classList.toggle('draw',setupMode==='DRAW');
   m.textContent = setupMode==='DRAW'?'✋ MOVE PLAYERS':'✎ DRAW BLOCKS';
-  document.getElementById('setupHint').textContent = setupMode==='DRAW'?'DRAG FROM A BLOCKER TO SET HIS FIRST BLOCK':'DRAG YOUR PLAYERS INTO POSITION'; });
+  document.getElementById('setupHint').textContent = setupMode==='DRAW'
+    ? (recvTeam==='BLUE'?'DRAG FROM A BLOCKER TO SET HIS FIRST BLOCK':'DRAG FROM A DEFENDER TO SET HIS FIRST MOVE')
+    : 'DRAG YOUR PLAYERS INTO POSITION'; });
 
 /* ---------------- boot ---------------- */
 function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); }
