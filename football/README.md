@@ -304,6 +304,33 @@ records a real team would post.
 
 ## The draft screen
 
+### What is left, per spot still to fill
+
+Under the money, not across from it, because it is the same fact read a second way and
+the two belong together. `$23.3M per open spot, 6 left` before a single spin, moving on
+every signing and every re-spin.
+
+Both halves already existed. `remaining()` takes the re-spin fees off the cap, and
+`slotsLeft()` counts the spot being drafted right now as open, which is what makes six
+empty spots read as `$23.3M` rather than `$28M`. It is **derived in `paintTop()` on
+every repaint** rather than tracked and adjusted, so it cannot drift out of step with
+the roster: there is no delta to get wrong.
+
+Two ends of the range say what they are instead of printing an average:
+
+- **One spot left** reads `$70.5M for the last spot`. An average of one is not an
+  average, it is the whole budget.
+- **No spots left** prints nothing. That case cannot be seen anyway, because the sixth
+  signing leaves the draft screen, which `v44.mjs` asserts rather than assumes. The
+  guard is a belt, not the only thing holding it up.
+
+`v44.mjs` plays a whole draft and checks the printed figure against money divided by
+open spots at every step, parsing both off the screen rather than reading the page's own
+variables, so a bug cannot agree with the test by sharing one. It also checks a re-spin
+moves both numbers, since the fee comes off the budget: `$140.0M / $23.3M` becomes
+`$135.0M / $22.5M`.
+
+
 Your team never leaves the screen. The money bar and a condensed field are one
 sticky block at the top, so the field stays visible while you scroll the players.
 Below that: the two wheels, four position tabs, then the players as tiles.

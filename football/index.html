@@ -423,6 +423,12 @@
   .capline{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
   .capline .amt{font-family:var(--fd);font-size:32px;line-height:1}
   .capline .amt.low{color:var(--red)}
+  /* What is left divided by the spots still to fill. Under the money rather than
+     across from it, because it is the same fact read a second way and the two should
+     be read together. */
+  .capline .perslot{font-family:var(--fn);font-size:12px;font-weight:600;color:var(--dim);
+    margin-top:4px;white-space:nowrap}
+  .capline .perslot.low{color:#f87171}
   .bar{height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:8px}
   .bar i{display:block;height:100%;border-radius:99px;background:var(--grad-blue);transition:width .4s ease}
   .bar i.low{background:var(--grad-red)}
@@ -950,7 +956,9 @@
   <div class="screen" id="s-draft">
     <div class="capwrap">
       <div class="capline">
-        <div><div class="eyebrow">Money left</div><div class="amt num" id="c-amt"></div></div>
+        <div><div class="eyebrow">Money left</div>
+          <div class="amt num" id="c-amt"></div>
+          <div class="perslot num" id="c-per"></div></div>
         <div style="text-align:right"><div class="eyebrow" id="d-count">Spin 1 of 6</div>
           <div class="chemval num zero" id="c-chem" style="font-size:27px">0.0%</div></div>
       </div>
@@ -1601,6 +1609,23 @@ $('b-draft').onclick=()=>{
 function paintTop(){
   const rem=R.remaining(run),floor=R.reserveFloor(run),left=R.slotsLeft(run),low=rem<=floor+6;
   $('c-amt').textContent=M(rem); $('c-amt').classList.toggle('low',low);
+  /* WHAT IS LEFT, PER SPOT STILL TO FILL.
+     Both halves already existed: remaining() takes the re-spin fees off the cap, and
+     slotsLeft() counts the current spot as open, which is what makes this read $23.3M
+     across six empty spots before a single spin.
+
+     Recomputed here rather than tracked, so it cannot fall out of step: paintTop()
+     runs on every spin, every signing and every re-spin, and this is derived from the
+     roster each time rather than adjusted by a delta.
+
+     The last spot is not an average of one, it is the whole budget, so it says so.
+     Dividing by zero would be the seventh spot, which does not exist, and the draft
+     screen is gone by then. */
+  const per=$('c-per');
+  if(left<=0) per.textContent='';
+  else if(left===1) per.textContent=M(rem)+' for the last spot';
+  else per.textContent=M(rem/left)+' per open spot, '+left+' left';
+  per.classList.toggle('low',left>0&&rem/Math.max(1,left)<E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD*2);
   const b=$('c-bar'); b.style.width=Math.max(0,Math.min(100,rem/E.CONSTANTS.CAP_MUSD*100))+'%';
   b.classList.toggle('low',low);
   const chem=run.roster.length>1?E.resolveChemistry(run.roster,CTX).multiplier:1;
