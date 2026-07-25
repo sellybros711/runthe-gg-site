@@ -792,7 +792,20 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
   };
 }
 
+/*
+ * Bumped whenever index.html starts relying on something new here. The page
+ * checks it at boot and reloads itself once if the numbers disagree.
+ *
+ * This is not hypothetical. The script tags carried ?v=2 for weeks while this
+ * file kept changing, so iOS Safari served a months-old run.js against a current
+ * index.html. The draw had no `board` on it, the draft screen threw
+ * "draw.board is not iterable" after the wheels landed, and the game sat there
+ * with no players and no way forward.
+ */
+const RUN_API_VERSION = 7;
+
 const api = {
+  API_VERSION: RUN_API_VERSION,
   PHASES, createRun, pickFranchise, spin, respin, sign,
   startSeason, advanceWeek, startPlayoffs, indexData, bestPossibleSquad, projectSeason,
   previewSigning,

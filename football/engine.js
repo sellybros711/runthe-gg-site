@@ -859,7 +859,15 @@ function prepareData(teamSeasons) {
   };
 }
 
+/* Bumped alongside run.js. See the note there.
+ * Name-spaced because engine.js and run.js are plain scripts sharing one global
+ * scope in the browser: two top-level `const API_VERSION` declarations collide
+ * and the second file fails to parse at all. Which is what happened, and the boot
+ * check below reported it correctly. */
+const ENGINE_API_VERSION = 7;
+
 const publicAPI = {
+  API_VERSION: ENGINE_API_VERSION,
   CONSTANTS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
   hashSeed, createSeededRNG, sampleGamma,
   pairLinks, resolveChemistry,

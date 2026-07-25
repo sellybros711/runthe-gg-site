@@ -254,6 +254,54 @@ year. Every face on either wheel is a result you could really have landed on:
 the year comes from the years actually left in the pool, and the team from that
 year's teams in the same pool.
 
+Each reel is a window **three faces tall** with only the middle one lit, so you
+watch results go past rather than one value swapping for another. Motion runs off
+`requestAnimationFrame`, not a CSS transition, for two reasons:
+
+- The blur has to track the strip's real speed frame by frame, which a transition
+  cannot report. It smears at full tilt and is sharp when it stops.
+- The old version handed completion to `transitionend` with a `setTimeout` as a
+  backstop. Owning the clock means the reel always reaches its end and always
+  calls back.
+
+The easing is a long glide with a small overshoot at 82% that settles back onto
+the face, and it is exactly zero at t=1, so the reel cannot stop off-center. No
+two faces in a row may read the same value, and no decoy may sit directly under
+the result: without that the strip looks stuck rather than spinning, and the face
+under the winner reads as a glitch. The live reel glows in its own color, red for
+year and blue for team, the other sits dimmed with a question mark on it, and
+landing flashes the band and kicks the face. There is a 260ms beat between the
+two reels or they read as one long spin.
+
+## Cache busting, and the bug that made it necessary
+
+`engine.js` and `run.js` are versioned in two places that have to agree: the
+`?v=` on the script tags in `index.html`, and `API_VERSION` inside each file,
+checked against `NEED_VERSION` at boot.
+
+This exists because the script tags sat at `?v=2` for weeks while `run.js` kept
+changing. A phone that had played before held a months-old `run.js` behind a
+current `index.html`. The draw had no `board` on it, so the draft screen threw
+`draw.board is not iterable` right after the wheels landed and the game sat there
+with no players and nothing to tap. Nothing on screen said anything was wrong.
+
+Three things now stop that:
+
+1. **Bump the `?v=` on both script tags and `API_VERSION` in both files together,
+   every time either file changes shape.**
+2. On a mismatch the page reloads itself once with a `?fresh=` query to shake the
+   cache, then, if it still disagrees, says it is running an old copy. One retry
+   only, so it can never become a reload loop.
+3. A `window.error` handler puts any unhandled error on screen. A silent throw
+   mid-draft is indistinguishable from the game being broken for no reason, which
+   is how this went unreported for as long as it did.
+
+The two constants are named `ENGINE_API_VERSION` and `RUN_API_VERSION`, not
+`API_VERSION`, because these are plain scripts sharing one global scope in the
+browser: two top-level `const API_VERSION` declarations collide and the second
+file fails to parse entirely. That happened on the first attempt, and the boot
+check above is what reported it.
+
 Spots are no longer assigned to a spin. The GDD locked the slot before each spin
 (§2) so positional need would not be random, but the cost was that most spins
 were not a decision at all. Measured across all 861 team-seasons:
