@@ -438,10 +438,10 @@
       <details class="card howto" id="howto">
         <summary>How to play <span class="chev" aria-hidden="true">▼</span></summary>
         <ol>
-          <li><b>Sort all 20 names</b> into five groups of four. Each group shares a team, a jersey number, a surname, or a feat.</li>
-          <li>Your 20 names sit up top. One group's name is <b>revealed free</b>. Drag a name onto a rack, or tap a name then tap a rack.</li>
-          <li>When a group has four names, hit <b>Check group</b>. Right locks it in; wrong costs a guess.</li>
-          <li>Stuck? <b>Reveal a group</b> for one guess. Six wrong guesses ends the board.</li>
+          <li><b>Find the five hidden groups.</b> Every name shares a team, a jersey number, a surname, or a feat with exactly three others.</li>
+          <li><b>Drag a name onto a rack</b>, or tap the name then the rack. Your first group is revealed free to get you rolling.</li>
+          <li>Filled a rack? <b>Hit Check group.</b> Nail it and it locks in; miss and it costs you a guess.</li>
+          <li>Stuck? <b>Reveal a group</b> for one guess. Six misses and your board's done.</li>
         </ol>
       </details>
     </aside>
@@ -504,8 +504,8 @@
 
   <!-- cache-busted: bump ?v= whenever entities/generator change, or stale
        browser caches will pair fresh HTML with old boards/engine -->
-  <script src="entities.js?v=11"></script>
-  <script src="generator.js?v=11"></script>
+  <script src="entities.js?v=12"></script>
+  <script src="generator.js?v=12"></script>
   <script>
   (function () {
     'use strict';
@@ -871,7 +871,9 @@
         delete lastMissIds[laneIdx];
         render();
         playLockAnim(laneIdx);
-        if (solveOrder.length === CATS) finish(true);
+        // four down -> the fifth is forced. Auto-solve it (no busywork), then win.
+        if (solveOrder.length === CATS - 1) autoSolveLast();
+        else if (solveOrder.length === CATS) finish(true);
       } else {
         // FAIRNESS: never punish a factually correct grouping. Two nets:
         // (1) the four fully satisfy an unsolved BOARD category;
@@ -890,6 +892,24 @@
           registerMiss(laneIdx, ids);
         }
       }
+    }
+
+    // four groups locked -> the last is a gimme; auto-place, lock, and win.
+    function autoSolveLast() {
+      var freeIdx = -1;
+      for (var i = 0; i < CATS; i++) { if (!locked[i]) { freeIdx = i; break; } }
+      var usedCats = {}; for (var k in laneCat) { if (locked[k]) usedCats[laneCat[k]] = 1; }
+      var remId = null; day.lanes.forEach(function (l) { if (!usedCats[l.id]) remId = l.id; });
+      if (freeIdx < 0 || !remId) { finish(true); return; }
+      // clear anything in the free lane, drop in the true four
+      day.tiles.forEach(function (t) { if (place[t.id] === freeIdx) place[t.id] = null; });
+      day.solution[remId].forEach(function (tid) { place[tid] = freeIdx; });
+      locked[freeIdx] = true; laneCat[freeIdx] = remId; solveOrder.push(freeIdx);
+      delete lastMissIds[freeIdx];
+      render();
+      playLockAnim(freeIdx);
+      popup('Last group\'s yours!', laneById[remId] ? laneById[remId].name : '');
+      setTimeout(function () { finish(true); }, 620);
     }
 
     // does this exact four fully satisfy some unsolved lane's category per the
