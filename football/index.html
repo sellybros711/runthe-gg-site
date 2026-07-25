@@ -129,7 +129,7 @@
   .chip.now .disc{border-color:#fff;animation:pulse 1.6s ease-in-out infinite}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(255,255,255,.14),0 6px 16px -4px #000}
     50%{box-shadow:0 0 0 10px rgba(255,255,255,.04),0 6px 16px -4px #000}}
-  .chip.filled .disc{animation:pop .34s cubic-bezier(.2,1.5,.4,1) both}
+  .chip.pop .disc{animation:pop .34s cubic-bezier(.2,1.5,.4,1) both}
   @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
   .chip .who{margin-top:3px;font-size:9.5px;font-weight:800;line-height:1.1;
     text-shadow:0 2px 6px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -449,7 +449,48 @@ const TIER={
   small:{color:'#38bdf8',w:1.8,dash:'3 6', op:0.6, speed:'1s',  name:'Small'},
   bad:  {color:'#ef4444',w:2.6,dash:'2 4', op:0.9, speed:'.8s', name:'Hurts'},
 };
-const SPOT=[{x:50,y:60},{x:50,y:85},{x:11,y:26},{x:89,y:26},{x:73,y:45},{x:27,y:45}];
+/*
+ * The field is laid out by the POSITIONS you actually signed, not by slot order.
+ * Draft a running back into the flex spot and he belongs in the backfield next to
+ * the other one, not out where a slot receiver would stand.
+ *
+ * Two running backs sit either side of the quarterback and still behind him. A
+ * third receiver moves inside as a slot man. A second tight end lines up on the
+ * opposite side.
+ */
+const SPOTS = {
+  QB:   [{x:50,y:56}],
+  RB:   [[{x:50,y:82}], [{x:33,y:82},{x:67,y:82}]],
+  WR:   [[], [{x:50,y:24}], [{x:10,y:24},{x:90,y:24}], [{x:10,y:24},{x:90,y:24},{x:28,y:37}]],
+  TE:   [[], [{x:75,y:42}], [{x:75,y:42},{x:25,y:42}]],
+  FLEX: {x:25,y:42},
+};
+const SPOT_FALLBACK=[{x:50,y:56},{x:50,y:82},{x:10,y:24},{x:90,y:24},{x:75,y:42},{x:25,y:42}];
+
+/** Target coordinate for every slot index, given who is currently signed. */
+function layoutFor(){
+  const n=E.SLOTS.length;
+  const bySlot=new Array(n).fill(null);
+  if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
+  // An empty spot still occupies the shape its own position implies, so the
+  // formation never looks lopsided mid-draft.
+  const eff=E.SLOTS.map((slot,i)=>bySlot[i]?bySlot[i].position:(slot==='FLEX'?'FLEX':slot));
+  const slotsOf=(pos)=>eff.map((e,i)=>e===pos?i:-1).filter(i=>i>=0);
+  const out=new Array(n).fill(null);
+
+  for(const i of slotsOf('QB')) out[i]=SPOTS.QB[0];
+  const place=(pos,table)=>{
+    const list=slotsOf(pos); if(!list.length) return;
+    const row=table[Math.min(list.length,table.length-1)]||table[table.length-1];
+    list.forEach((i,k)=>{ out[i]=row[Math.min(k,row.length-1)]; });
+  };
+  place('RB',[SPOTS.RB[0],SPOTS.RB[0],SPOTS.RB[1]]);
+  place('WR',SPOTS.WR);
+  place('TE',SPOTS.TE);
+  for(const i of slotsOf('FLEX')) out[i]=SPOTS.FLEX;
+  out.forEach((v,i)=>{ if(!v) out[i]=SPOT_FALLBACK[i]; });
+  return out;
+}
 
 let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,pickedTeam=null,simTimer=null,lastChem=1;
 
@@ -489,39 +530,98 @@ function buildTeams(){
 /* ---------- the field ----------
    Six spots, plus a line for every chemistry link between two signed players.
    The lines are the point: you watch the team knit together as you draft. */
+/*
+ * Chips and lines are built once per field and then MOVED, never rebuilt, so a
+ * signing visibly slides the formation into its new shape. Rebuilding the markup
+ * each time is what made this snap instantly with no sense of anything moving.
+ *
+ * Positions and line endpoints are driven from one animation loop rather than a
+ * CSS transition, because SVG line endpoints are attributes and cannot be
+ * transitioned in CSS; running both from the same clock keeps them in step.
+ */
+const MOVE_MS=520;
+const easeOut=(t)=>1-Math.pow(1-t,3);
+
+function fieldState(el){
+  if(el._ps) return el._ps;
+  el.innerHTML='<div class="lines"></div><div class="hash"></div><div class="ez t"></div><div class="ez b"></div>'+
+    '<svg class="links-svg"></svg>'+
+    E.SLOTS.map((slot,i)=>'<div class="chip empty" data-i="'+i+'">'+
+      '<div class="disc">'+slot+'</div><div class="who"></div><div class="yr"></div></div>').join('');
+  el._ps={
+    svg:el.querySelector('.links-svg'),
+    chips:[...el.querySelectorAll('.chip')],
+    coords:SPOT_FALLBACK.map(c=>({...c})),
+    lines:[],
+    raf:0,
+    // A field's first paint has nothing to move FROM, so it snaps into place.
+    // Sliding in from a default formation would just be motion with no meaning.
+    fresh:true,
+  };
+  return el._ps;
+}
+
 function drawField(el,live){
-  const filled=run?run.roster:[];
-  const links=filled.length>1?E.resolveChemistry(filled,CTX).links:[];
+  const st=fieldState(el);
+  const bySlot=new Array(E.SLOTS.length).fill(null);
+  if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
+  const links=(run&&run.roster.length>1)?E.resolveChemistry(run.roster,CTX).links:[];
   const at=new Map();
   if(run) run.roster.forEach((p,i)=>at.set(p.name,run.slotIndex[i]));
-  const lines=links.filter(l=>at.has(l.a)&&at.has(l.b)).map(l=>{
-    const a=SPOT[at.get(l.a)],b=SPOT[at.get(l.b)];
-    const t=TIER[E.linkTier(l.value)];
-    return '<line x1="'+a.x+'%" y1="'+a.y+'%" x2="'+b.x+'%" y2="'+b.y+'%" stroke="'+t.color+
-      '" stroke-width="'+t.w+'" stroke-dasharray="'+t.dash+'" opacity="'+t.op+
-      '" style="animation:dash '+t.speed+' linear infinite"/>';
-  }).join('');
-  /* Map each signed player to the spot he actually took. Roster order is signing
-     order, which is no longer the same as slot order now that you pick the spot. */
-  const bySlot=[];
-  if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
   const openCount=E.SLOTS.length-(run?run.roster.length:0);
-  const chips=E.SLOTS.map((slot,i)=>{
-    const p=bySlot[i],s=SPOT[i];
-    // No single spot is "on the clock" any more; every empty one is a live choice.
-    const pulse=live&&!p&&openCount===1;
-    const bg=p?'background:linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.45))':'';
-    return '<div class="chip '+(p?'filled':'empty')+(pulse?' now':'')+'" style="left:'+s.x+'%;top:'+s.y+'%" data-i="'+i+'">'+
-      '<div class="disc" style="'+bg+'">'+(p?p.position:slot)+'</div>'+
-      (p?'<div class="who">'+esc(p.name.split(' ').slice(-1)[0])+'</div><div class="yr">'+p.season+'</div>'
-        :'')+'</div>';
-  }).join('');
-  el.innerHTML='<div class="lines"></div><div class="hash"></div><div class="ez t"></div><div class="ez b"></div>'+
-    '<svg class="links-svg">'+lines+'</svg>'+chips;
-  // Legend sits under the field, and only lists the bands actually on screen.
+
+  // Contents update immediately; only the movement is animated.
+  st.chips.forEach((c,i)=>{
+    const p=bySlot[i];
+    // Only a chip that just went from empty to filled should pop. Reassigning the
+    // class every redraw would otherwise restart the animation on all six.
+    const wasFilled=c.classList.contains('filled');
+    const justFilled=!!p&&!wasFilled;
+    c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1)?' now':'')+(justFilled?' pop':'');
+    const disc=c.querySelector('.disc');
+    disc.textContent=p?p.position:E.SLOTS[i];
+    disc.style.background=p?'linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.45))':'';
+    c.querySelector('.who').textContent=p?p.name.split(' ').slice(-1)[0]:'';
+    c.querySelector('.yr').textContent=p?p.season:'';
+  });
+
+  st.lines=links.filter(l=>at.has(l.a)&&at.has(l.b)).map(l=>{
+    const t=TIER[E.linkTier(l.value)];
+    return {a:at.get(l.a),b:at.get(l.b),t};
+  });
+  st.svg.innerHTML=st.lines.map(l=>'<line stroke="'+l.t.color+'" stroke-width="'+l.t.w+
+    '" stroke-dasharray="'+l.t.dash+'" opacity="'+l.t.op+
+    '" style="animation:dash '+l.t.speed+' linear infinite"/>').join('');
+  const lineEls=[...st.svg.querySelectorAll('line')];
+
+  const paint=(coords)=>{
+    st.chips.forEach((c,i)=>{ c.style.left=coords[i].x+'%'; c.style.top=coords[i].y+'%'; });
+    lineEls.forEach((le,k)=>{
+      const l=st.lines[k], a=coords[l.a], b=coords[l.b];
+      le.setAttribute('x1',a.x+'%'); le.setAttribute('y1',a.y+'%');
+      le.setAttribute('x2',b.x+'%'); le.setAttribute('y2',b.y+'%');
+    });
+  };
+
+  const from=st.coords.map(c=>({...c}));
+  const to=layoutFor();
+  const moved=to.some((c,i)=>Math.abs(c.x-from[i].x)>0.01||Math.abs(c.y-from[i].y)>0.01);
+  cancelAnimationFrame(st.raf);
+  if(st.fresh||!moved){ st.fresh=false; st.coords=to.map(c=>({...c})); paint(st.coords); }
+  else{
+    const t0=performance.now();
+    const step=(now)=>{
+      const k=Math.min(1,(now-t0)/MOVE_MS), e=easeOut(k);
+      paint(from.map((f,i)=>({x:f.x+(to[i].x-f.x)*e, y:f.y+(to[i].y-f.y)*e})));
+      if(k<1) st.raf=requestAnimationFrame(step);
+      else st.coords=to.map(c=>({...c}));
+    };
+    st.raf=requestAnimationFrame(step);
+  }
+
   const legEl=el.nextElementSibling;
   if(legEl&&legEl.classList.contains('legend')){
-    const present=[...new Set(links.filter(l=>at.has(l.a)&&at.has(l.b)).map(l=>E.linkTier(l.value)))];
+    const present=[...new Set(st.lines.map(l=>Object.keys(TIER).find(k=>TIER[k]===l.t)))];
     legEl.innerHTML=present.length
       ? ['big','good','small','bad'].filter(k=>present.includes(k)).map(k=>
           '<span class="lg '+k+'"><i></i>'+TIER[k].name+'</span>').join('')

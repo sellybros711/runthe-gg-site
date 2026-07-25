@@ -208,6 +208,26 @@ empty spot on the field, so the two always agree.
 Position colors: QB red, RB green, WR blue, TE orange, FLEX purple. Wins are
 green, losses red.
 
+## The field
+
+Laid out by the **positions you signed**, not by slot order. Draft a running back
+into the flex spot and he joins the backfield rather than standing where a slot
+receiver would:
+
+- Two running backs sit either side of the quarterback and still behind him. The
+  first one slides across to make room.
+- A third receiver moves inside as a slot man.
+- A second tight end lines up on the opposite side.
+- An empty spot still holds the shape its own position implies, so the formation
+  never looks lopsided mid-draft.
+
+Chips and lines are built once and then **moved**, never rebuilt, so a signing
+visibly slides the formation into its new shape. Both run off one animation loop
+rather than a CSS transition, because SVG line endpoints are attributes and cannot
+be transitioned in CSS; sharing a clock keeps the lines attached to the chips while
+everything is in motion. A field's first paint snaps into place, since there is
+nothing to move from.
+
 ## Player rows
 
 Each row leads with fantasy points per game, then the real season line, on one
