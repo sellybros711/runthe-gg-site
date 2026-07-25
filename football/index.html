@@ -614,7 +614,7 @@
   .swaps{margin-top:4px}
   .caveat{color:var(--dim-2);font-size:11px;margin:11px 0 0;line-height:1.4}
   /* Unhandled errors get said out loud instead of leaving a dead screen. */
-  .crash{display:none;position:fixed;left:10px;right:10px;bottom:14px;z-index:99;
+  .crash{display:none;position:fixed;left:10px;right:10px;bottom:14px;z-index:99;cursor:pointer;
     padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.4;
     background:linear-gradient(160deg,#4a1216,#24090c);border:1px solid rgba(239,68,68,.5);
     box-shadow:0 12px 30px -10px #000}
@@ -862,13 +862,33 @@ const NEED_VERSION=10;
     ', engine '+(E&&E.API_VERSION)+', run '+(R&&R.API_VERSION));
 })();
 
-/* Anything unhandled says so on screen. A silent throw mid-draft looks identical
-   to the game being broken with no explanation, which is how the cache problem
-   above went unreported for as long as it did. */
+/* An unhandled error in OUR code says so on screen. A silent throw mid-draft looks
+   identical to the game being broken with no explanation, which is how the cache
+   problem above went unreported for as long as it did.
+
+   It has to be our code, though. This banner fired over a perfectly good results
+   screen reading "Something broke: Script error.", which is the browser's sanitized
+   report of an error inside a CROSS-ORIGIN script: a content blocker, an extension,
+   or the injected code that an in-app browser adds when a link is opened from
+   Messages. The spec strips the message, file and line from those on purpose, so
+   there is nothing to act on and nothing to tell anybody. Alarming a player because
+   their messaging app ran its own script is worse than saying nothing.
+
+   Three things get filtered, and everything else still shows:
+     - resource failures (a font or image that would not load), which arrive on this
+       same event with an element as the target and no message at all
+     - opaque cross-origin script errors, recognizable by having no filename
+     - errors whose filename is not on this origin */
 window.addEventListener('error',(ev)=>{
+  if(ev.target&&ev.target!==window) return;
+  const msg=ev.message||'';
+  if(!msg) return;
+  if(/^script error/i.test(msg)&&!ev.filename) return;
+  if(ev.filename&&ev.filename.indexOf(location.origin)!==0) return;
   const el=$('crash'); if(!el||el.style.display==='block') return;
   el.style.display='block';
-  el.textContent='Something broke: '+(ev.message||'unknown')+'. Reload to start again.';
+  el.textContent='Something broke: '+msg+'. Tap to dismiss, or reload to start again.';
+  el.onclick=()=>{el.style.display='none';};
 });
 const COL={QB:'--qb',RB:'--rb',WR:'--wr',TE:'--te',FLEX:'--flex'};
 const M=(v)=>'$'+v.toFixed(1)+'M';

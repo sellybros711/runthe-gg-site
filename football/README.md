@@ -481,9 +481,26 @@ Three things now stop that:
 2. On a mismatch the page reloads itself once with a `?fresh=` query to shake the
    cache, then, if it still disagrees, says it is running an old copy. One retry
    only, so it can never become a reload loop.
-3. A `window.error` handler puts any unhandled error on screen. A silent throw
-   mid-draft is indistinguishable from the game being broken for no reason, which
-   is how this went unreported for as long as it did.
+3. A `window.error` handler puts any unhandled error **from this origin** on
+   screen. A silent throw mid-draft is indistinguishable from the game being broken
+   for no reason, which is how this went unreported for as long as it did.
+
+   That handler needed narrowing. It fired over a perfectly good results screen
+   reading `Something broke: Script error.`, which is the browser's sanitized report
+   of an error inside a cross-origin script: a content blocker, an extension, or the
+   code an in-app browser injects when a link is opened from Messages. The spec
+   strips the message, file and line from those deliberately, so there is nothing to
+   act on and nothing worth telling anybody. Three things are filtered now, and
+   everything else still shows:
+
+   - resource failures (a font or image that would not load), which arrive on the
+     same event with an element as the target and no message at all
+   - opaque cross-origin script errors, recognizable by having no filename
+   - errors whose filename is not on this origin
+
+   The banner is also tappable to dismiss, since it sits over the content. Tested
+   all five cases: the three noise sources stay hidden, a real same-origin error is
+   still reported, and tapping clears it.
 
 The two constants are named `ENGINE_API_VERSION` and `RUN_API_VERSION`, not
 `API_VERSION`, because these are plain scripts sharing one global scope in the
