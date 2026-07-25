@@ -17,6 +17,7 @@ Calibration below, so the UI is built on top of a validated engine.
 | `index.html` | The whole game UI, self-contained. Loads the two modules below plus `data/*.json`. |
 | `engine.js` | Chemistry resolution, schedule generation, per-game resolution, display scores. Headless, no deps. Browser: `window.PS_ENGINE`; Node: `require`. |
 | `run.js` | Draft loop and run state: wheel, re-spins, cap accounting, week-by-week advance. Browser: `window.PS_RUN`. |
+| `board.js` | Leaderboard client: submit a finished run, read rank and totals for today, this week and all time. Browser: `window.PS_BOARD`. Optional, fails soft. |
 | `simulator.js` | Validation harness. Run this after any change to data, pricing, or constants. |
 | `playtest.js` | Plays one full run as readable text, draft, chemistry, schedule, weekly results, outcome card. The stand-in for the UI. |
 | `build/lib.mjs` | Shared build helpers: CSV parsing, cached fetch, franchise normalization. |
@@ -917,43 +918,164 @@ empty item 2. Measured before it was changed: band at 38-76px, the `?` at 1-39px
 This is the third time the same off-by-one-face error has shown up in this file, so
 both the landing screen and the draft now assert the `?` is inside the band.
 
-## Accounts and the leaderboard, laid out but not wired
+## The leaderboard
 
-Both are built as **shells that do nothing and say so**. The reason to build them
-now is that the layout is the expensive thing to change later, not the queries.
+Live, against Supabase. Three files:
 
-The profile sheet has no inputs, no form, and three disabled buttons, and it prints
-in plain text: "Accounts are not live yet. These are here so the shape is settled
-before launch, and they do nothing at the moment." A signed-out shell that looks
-signed-in-able is how you end up with people typing an email into nothing.
+| Where | What |
+|---|---|
+| `supabase/50_football_perfect_season.sql` | The `ps_runs` table, the indexes, RLS, and `ps_submit_run()`. Run once in the SQL editor. |
+| `board.js` | The client. Five request shapes, plain `fetch`, no supabase-js. |
+| `index.html` | The rank panel on the results screen and the board screen. |
 
-The leaderboard shows sample standings behind the same kind of notice. The rows are
-records the engine actually produces at this calibration, and every season cited was
-checked against `player_seasons.json`, because the first draft of this data cited
-Favre 1996 and Freeman 1998 on a page whose own subtitle says 1999 to 2025.
+The migration is additive and touches nothing that already exists on this Supabase
+project: no existing table, function, policy or grant is altered, and re-running it
+does nothing.
 
-The shape encodes three assumptions about running this at scale, so wiring it up
-later is a query change rather than a redesign:
+### What is trusted, and what is not
 
-1. **The board reads a small cached page**, not the table. Today and All time are
-   separate cached lists.
-2. **Your own row is fetched separately and pinned** (`minePinned()`, the blue row).
-   At any real number of players you are not inside the top page, and a board that
-   only shows strangers is a board nobody checks twice.
-3. **Show more pages forward** rather than loading everything.
+The season is simulated in the browser, so the browser is the only thing that knows
+how many games you won. There is no way to recompute that server-side without
+replaying the engine, so **wins are client-reported and a determined person can post
+a season they did not play.** Saying so plainly is better than implying otherwise.
 
-The leaderboard is reachable from the landing screen and from the results page,
-because the results page is where you would actually want to look.
+What `ps_submit_run()` does instead is **own every derived field**. The client sends
+`regular_wins` and `playoff_wins` and nothing else about the result. Games, losses,
+the seed label, `made_playoffs`, `perfect` and the ordering score are all computed in
+the function, from the game's own constants restated there. That makes a class of
+forgery and a class of client bug impossible rather than unlikely. Every one of these
+is refused, and each is asserted in the test:
 
-One styling note that was a real bug: the tabs were distinguished only by text
-color, so `.tab.on` now carries a background. On a phone in daylight the old version
-had no visible selection at all.
+- 18 regular wins, in a 17-game season
+- playoff wins on a record that missed the playoffs
+- five wins in a four-round bracket, or four in a top seed's three
+- a spend over the cap, a differential of 99, nine re-spins
+- the same player twice, five picks, a pick that is not `<player_id>:<season>`
+- `Robert' ; drop table ps_runs --` in a pick
+- a slot called KICKER
+
+Anon can read the table and call that one function. It cannot INSERT, UPDATE or
+DELETE, which is also asserted by setting `role anon` and trying all three.
+
+The remaining hole closes with an edge function that loads `engine.js` and replays
+the season from `(picks, seed, rng_calls)`. Those three columns are stored now,
+unread, so that work does not need a migration later.
+
+### Ranking
+
+One generated integer column:
+
+```sql
+score = wins * 10000 + least(9999, greatest(0, round((point_diff + 40) * 100)))
+```
+
+Wins first, differential as the tiebreak, shifted and clamped so a differential can
+never carry into the wins digit. A 12-win season cannot outrank a 13-win one however
+lopsided the scores were. Rank is then one count: `count(*) where score > mine`, plus
+one.
+
+**`board.js` recomputes that same score, and the rounding in it is the whole reason
+that function exists.** The database stores `round(p_point_diff, 1)` and generates
+the score from the stored value. The first version worked the client-side score out
+from the unrounded differential, which came out one lower than the row that had just
+been inserted, so **the run counted itself among the runs that beat it**: "#2 of 2"
+on a table with one row, and nobody could ever rank first. The test cross-checks the
+client's number against the column Postgres generated on every run.
+
+Ties share a rank. Counting `created_at` into the rank would mean your rank quietly
+worsens as later players tie you, which reads as the board being broken.
+
+### Today, this week, all time
+
+UTC days, and weeks starting Monday. A "today" that begins at a different moment for
+each player is not one board, and the screen says so out loud.
+
+Measured on a local Postgres 16 with **2,000,006 rows**. Every query is an index-only
+scan, no heap access and no sequential scan:
+
+| Query | Time |
+|---|---|
+| Board list, all time | 0.16 ms |
+| Your rank today, worst case | 1.7 ms |
+| Total runs today | 1.2 ms |
+| Your rank this week, worst case | 5.6 ms |
+| Total runs this week | 5.0 ms |
+| Your rank all time, worst case | 49 ms |
+| Total runs all time | 47 ms |
+
+"Worst case" is a bad run, where nearly every row in the table is better and has to
+be counted, which is the common case rather than the rare one. The two all-time
+numbers grow with the table at about 25ms per million rows; if this ever passes
+roughly 10 million runs the fix is a summary table of counts by score, not another
+index.
+
+The `(score)` index on its own is what keeps those two index-only. Without it
+Postgres has no covering path for `count(*)` and falls back to a sequential scan:
+12ms against 0.9ms at 60k rows, and the gap only widens.
+
+### Failing soft
+
+A finished season is the worst possible moment for a network error: the run happened,
+the player is looking at it, and a thrown exception would take the results page down
+with it. So:
+
+- every function in `board.js` resolves to **null** rather than throwing
+- `paintRanks()` is fired without being awaited, after the results page is already
+  painted and on screen
+- `board.js` itself is optional. It is not part of the version gate, and if it is
+  blocked, missing or at the wrong version, `B` falls back to a stub whose every call
+  answers null. That is the same answer the real module gives when the network is
+  down, so there is one code path for "no board" and not two
+- a missing or unparseable `Content-Range` is treated as a failure, never as zero.
+  Reading it as zero would rank everybody first
+
+Asserted by pointing the whole module at a dead port and checking the results page
+still renders its record, four stat tiles, six lineup rows, six field chips, the
+gauge and the full schedule, with no crash banner and the plain sentence "The
+leaderboard is not reachable right now, so this run has not been counted."
+
+### What a row contains, and what it does not
+
+No free text, ever. A row is numbers plus the six picks as `<player_id>:<season>`,
+and the board renders names by resolving those ids against the browser's own copy of
+`player_seasons.json`. With no accounts there is nobody to attach a name to, and a
+player-supplied name or headline column would be an abuse surface for nothing. An id
+this browser cannot resolve is skipped rather than printed raw.
+
+A double submit inside a minute returns the existing row instead of a second one, so
+a retry after a timeout cannot put the same season on the board twice.
+
+### Accounts
+
+Still not live. The sign-in buttons are disabled and collect nothing, and `user_id`
+is nullable so anonymous runs can be claimed later.
+
+The profile sheet used to end with "every run is kept on this device only, and
+nothing about you is sent anywhere". The moment runs started being submitted that
+sentence was false, so it now lists what a finished season records: your record, your
+six players, your chemistry and what you spent, with no name, no account and nothing
+identifying. The board screen says the same thing in one line.
+
+### Still to decide
+
+Daily runs and free runs share one board. Everyone who plays the daily gets the same
+six draws, which makes it a fairer comparison than the open board, so these are
+probably worth splitting. The `daily` column is stored so that is a query change.
+
+### One design fix worth recording
+
+The board rows first showed the point differential at 15px on the right of every row.
+It read as the number the board was sorted by, so an 11-6 at +12.8 sitting under a
+14-6 at +4.0 looked like a sorting bug. The record is the headline on the left
+because the record is what ranks you; the differential is now a detail in matching
+type. The pinned row was worse: it put chemistry in that same column, so the column
+read down the page as a comparison between two different quantities.
 
 ## Not built yet
 
 Everything in the GDD's build sequence is done. The page is **not linked from the
-homepage or `sitemap.xml`**, and neither accounts nor the leaderboard are connected
-to anything, all deliberately, pending review.
+homepage or `sitemap.xml`** and accounts are not connected to anything, both
+deliberately, pending review. The leaderboard is connected.
 
 Known gaps worth a look during playtesting:
 
@@ -964,9 +1086,11 @@ Known gaps worth a look during playtesting:
   asserted in `--draft`) but the page does not yet write it to localStorage, so a
   refresh mid-season loses the run. Use the key prefix `rtps:` when adding it,
   `rtd:v1` belongs to RunTheDrive on the same origin.
-- **Sign-in and the leaderboard are shells.** Laid out, labeled as not live, and
-  reading sample data. See the section above for the three scale assumptions the
-  layout already bakes in.
+- **Sign-in is a shell.** Disabled, collecting nothing, until accounts exist. The
+  leaderboard itself is live and does not need them.
+- **`supabase/50_football_perfect_season.sql` has to be run once** in the SQL editor.
+  Until it is, the board reports itself unreachable, which is handled, but no run is
+  recorded.
 - **Awards and Pro Bowl selections are not in.** Waiting on the data as
   `season, player name, team, award`. Team is required: there are 19 name-plus-season
   collisions in the player file, and every unmatched row will be reported rather than

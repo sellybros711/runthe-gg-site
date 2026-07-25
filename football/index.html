@@ -141,6 +141,37 @@
   .htitle p{margin:11px auto 0;max-width:23em;font-size:14px;color:var(--dim);line-height:1.45}
   .hrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
 
+  /* WHERE THIS RUN RANKS
+     Three windows across, the number big enough to be the point of the panel and
+     the field size under it in small type. The number is what people screenshot,
+     the denominator is what makes it mean anything. */
+  .r3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:9px}
+  .rcell{min-width:0;text-align:center;padding:10px 4px 9px;border-radius:12px;
+    background:rgba(255,255,255,.035);border:1px solid var(--line)}
+  .rcell .rw{display:block;font-family:var(--fn);font-size:9px;letter-spacing:.15em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .rcell .rn{display:block;font-family:var(--fd);font-size:31px;font-weight:900;
+    line-height:1;margin:5px 0 3px;letter-spacing:-.01em}
+  .rcell .rof{display:block;font-size:10px;color:var(--dim-2);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .rcell.top1{border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.08)}
+  .rcell.top1 .rn{background:linear-gradient(180deg,#fde68a,#d97706);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .rcell.top10{border-color:rgba(59,130,246,.45);background:rgba(59,130,246,.08)}
+  .rcell.top10 .rn{color:#93c5fd}
+  .rcell.dead .rn{color:var(--dim-2);font-size:22px}
+  .rankfoot{margin:10px 0 0;font-size:12.5px;color:var(--dim);line-height:1.45}
+  .rankpanel .btn.sm{margin-top:10px}
+  /* Between the submit and the counts coming back. Nothing moves except the dots,
+     so the panel does not change height when the numbers arrive. */
+  .rload{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;
+    color:var(--dim-2);min-height:74px}
+  .rload i{width:7px;height:7px;border-radius:50%;background:var(--dim-2);
+    animation:rdot 1s ease-in-out infinite}
+  .rload i:nth-child(2){animation-delay:.15s}
+  .rload i:nth-child(3){animation-delay:.3s}
+  @keyframes rdot{0%,100%{opacity:.25}50%{opacity:1}}
+
   /* leaderboard */
   .notlive{margin:11px 0 0;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.4;
     color:#d6b45f;background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.28)}
@@ -155,12 +186,26 @@
   .lbr .who span{display:block;font-size:10.5px;color:var(--dim-2);white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis}
   .lbr .rec{flex:0 0 auto;text-align:right}
-  .lbr .rec b{display:block;font-family:var(--fn);font-size:15px;font-weight:600;line-height:1.1}
+  /* Deliberately NOT a big number. The first version set the point differential at
+     15px on the right of every row, which read as the score the board was sorted
+     by: an 11-6 at +12.8 sitting under a 14-6 at +4.0 looked like a sorting bug.
+     The record is the headline on the left because the record is what ranks you,
+     and the differential is a detail in matching type. */
+  .lbr .rec b{display:block;font-family:var(--fn);font-size:12.5px;font-weight:600;
+    line-height:1.15;color:var(--dim)}
   .lbr .rec span{display:block;font-size:10px;color:var(--dim-2)}
   .lbr.gold{border-color:rgba(251,191,36,.42);background:rgba(251,191,36,.07)}
   .lbr.gold .rk{color:#fcd34d}
   .lbr.mine{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.09)}
   .lbr.mine .rk{color:#93c5fd}
+  .lbr .rec b.gold{color:#fcd34d}
+  /* The board is empty rather than broken: a window nobody has played yet. */
+  .lbempty{margin:11px 0 0;padding:16px 12px;border-radius:12px;text-align:center;
+    font-size:13px;color:var(--dim-2);background:rgba(255,255,255,.025);
+    border:1px dashed var(--line-2)}
+  .lbcount{margin:9px 0 0;font-family:var(--fn);font-size:11.5px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .lbcount b{font-size:14px;color:var(--ink)}
 
   /* sign-in shell */
   .signin{display:grid;gap:8px;margin-top:13px}
@@ -770,11 +815,15 @@
     <div class="eyebrow">Standings</div>
     <h2 class="display" style="font-size:27px;margin:5px 0 10px">Leaderboard</h2>
     <div class="tabs" id="lb-tabs">
-      <button class="tab on" data-lb="today">Today<span class="n">daily</span></button>
+      <button class="tab on" data-lb="day">Today</button>
+      <button class="tab" data-lb="week">This week</button>
       <button class="tab" data-lb="all">All time</button>
     </div>
-    <p class="notlive" id="lb-note"></p>
+    <p class="lbcount" id="lb-count"></p>
+    <p class="dim" style="font-size:11.5px;margin:7px 0 0">Every finished season is recorded here
+    with no name on it. Boards reset at midnight UTC, and the week starts Monday.</p>
     <div class="lb" id="lb-rows"></div>
+    <p class="notlive" id="lb-note" style="display:none"></p>
     <button class="btn ghost sm" id="b-lb-more" style="margin-top:10px">Show more</button>
     <div style="margin-top:10px"><button class="btn ghost" id="b-board-back">Back</button></div>
   </div>
@@ -906,7 +955,15 @@
       <div class="squadline" id="o-squadline"></div>
     </div>
 
-    <!-- 3. The squad you built. -->
+    <!-- 3. Where the run stands against everyone else's. Filled in after the
+         season is submitted, and replaced with a plain offline notice if the
+         board cannot be reached. -->
+    <div class="panel rankpanel" id="o-rankpanel" style="margin-top:11px">
+      <div class="eyebrow">Where this run ranks</div>
+      <div id="o-ranks"></div>
+    </div>
+
+    <!-- 4. The squad you built. -->
     <div class="panel" style="margin-top:11px">
       <div class="eyebrow">Your lineup</div>
       <div class="field short" id="field3"></div>
@@ -915,13 +972,13 @@
       <div class="rost" id="o-rost"></div>
     </div>
 
-    <!-- 4. How close it came to the best those same six teams allowed. -->
+    <!-- 5. How close it came to the best those same six teams allowed. -->
     <div class="panel" style="margin-top:11px">
       <div class="eyebrow">How close to perfect</div>
       <div id="o-miss"></div>
     </div>
 
-    <!-- 5. The schedule, last and shut. -->
+    <!-- 6. The schedule, last and shut. -->
     <details class="drop" style="margin-top:11px">
       <summary><span class="eyebrow">Schedule<span class="dim" id="o-gcount"></span></span>
         <span class="caret">v</span></summary>
@@ -940,10 +997,27 @@
 
 <script src="engine.js?v=11"></script>
 <script src="run.js?v=11"></script>
+<script src="board.js?v=1"></script>
 <script>
 (function(){
 'use strict';
 const E=window.PS_ENGINE, R=window.PS_RUN;
+
+/* board.js is OPTIONAL, unlike the engine. A blocked script, an ad blocker that
+   does not like the word "board", or a stale cached copy at the wrong version
+   must cost you a leaderboard and nothing else, so it is not part of the version
+   gate below. It degrades to a stub whose every call answers null, which is the
+   same answer the real module gives when the network is down, so there is exactly
+   one code path for "no board" instead of two. */
+const BOARD_VERSION=1;
+const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
+  API_VERSION:BOARD_VERSION, offline:true,
+  submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
+  rankIn:async()=>null, total:async()=>null, top:async()=>null, byId:async()=>null,
+  scoreOf:(w,d)=>w*10000+Math.min(9999,Math.max(0,
+    Math.round((Math.round(d*10)/10+40)*100))),
+  cutoffISO:()=>null,
+};
 const $=(id)=>document.getElementById(id);
 
 /* ---------- boot check ----------
@@ -2099,6 +2173,13 @@ function paintOver(){
   list.innerHTML=''; s.results.forEach(r=>pushGame(r,list));
   $('o-gcount').textContent=' \u00b7 '+s.results.length+' games';
   show('s-over');
+  /* Deliberately not awaited. The results page is fully painted and on screen
+     before a single byte goes to the network, so a slow or dead board delays
+     nothing and breaks nothing. */
+  paintRanks().catch(()=>{
+    $('o-ranks').innerHTML='<p class="rankfoot" style="margin-top:8px">The leaderboard '+
+      'is not reachable right now, so this run has not been counted.</p>';
+  });
 }
 
 /* Spot by spot, so it always names who replaces whom rather than showing one
@@ -2320,17 +2401,13 @@ $('b-share').onclick=async()=>{
 };
 /* ---------- landing, profile, leaderboard ----------
 
-   None of the account or standings plumbing exists yet, and this deliberately does
-   not pretend otherwise: the sign-in controls are disabled, they collect nothing,
-   and both screens say in plain text that nothing is being recorded. The point of
-   building them now is that the LAYOUT is the thing that is expensive to change
-   later, not the queries.
+   The leaderboard is live. Accounts are not, and the sign-in controls stay disabled
+   until they are, so a run is recorded with no name and no owner on it.
 
-   What that shape assumes, so wiring it up does not mean redesigning it:
-     - the board reads a small cached page, not the whole table
-     - your own row is fetched separately and pinned, because at any real scale you
-       will not be inside the top page
-     - "show more" pages forward rather than loading everything */
+   That combination is worth being explicit about on screen rather than leaving to be
+   inferred, which is why the profile sheet lists what a run does send. It went out
+   in an earlier version saying "nothing about you is sent anywhere", and once runs
+   started being submitted that sentence was simply false. */
 
 /* ---------- THE LANDING ANIMATION ----------
 
@@ -2530,91 +2607,249 @@ function howToPlay(){
 }
 
 /* Signed-out shell. No inputs, nothing submitted, nothing stored: the buttons are
-   disabled on purpose until accounts actually exist. */
+   disabled on purpose until accounts actually exist.
+
+   The list of what a finished run sends is not boilerplate. Runs go to the
+   leaderboard now, and a player looking at a sign-in screen is entitled to know
+   what is already being recorded without one. */
 function profileSheet(){
   $('sheet-in').innerHTML='<div class="eyebrow">Your profile</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 6px">Not signed in</h2>'+
     '<p class="dim" style="font-size:13.5px;margin:0">A RunThe.GG account will keep your runs, '+
     'your best record and your place on the leaderboard across devices.</p>'+
-    '<p class="notlive" style="margin-top:12px">Accounts are not live yet. These are here so the '+
-    'shape is settled before launch, and they do nothing at the moment.</p>'+
+    '<p class="notlive" style="margin-top:12px">Accounts are not live yet, so these buttons do '+
+    'nothing. They are here so the shape is settled before launch.</p>'+
     '<div class="signin">'+
       '<button disabled>Continue with Google</button>'+
       '<button disabled>Continue with Apple</button>'+
       '<button disabled>Use an email link</button>'+
     '</div>'+
-    '<p class="dim" style="font-size:11.5px;margin:12px 0 0">Until then every run is kept on this '+
-    'device only, and nothing about you is sent anywhere.</p>'+
+    '<p class="dim" style="font-size:11.5px;margin:13px 0 0">The leaderboard is live even without '+
+    'an account. When a season ends it records your record, your six players, your chemistry and '+
+    'what you spent. No name, no account, nothing that identifies you or your device.</p>'+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   $('sheet').classList.add('on');
   $('sh-x').onclick=()=>$('sheet').classList.remove('on');
 }
 
-/* ---------- leaderboard ----------
-   Placeholder standings, labeled as placeholder. The records are the ones the
-   engine actually produces at this calibration, so the column widths and the sort
-   are being designed against realistic values rather than invented ones. */
-const LB_SAMPLE={
-  today:[
-    ['coldrollout','Jackson 2019, Barkley 2018','20-0','+11.2%','$139M'],
-    ['hashmarks','Mahomes 2018, Kelce 2020','19-1','+8.4%','$140M'],
-    ['fourthandshort','Manning 2013, Thomas 2013','18-2','+13.1%','$138M'],
-    ['playactionpat','Brady 2007, Moss 2007','18-2','+10.0%','$140M'],
-    ['thetuckrule','Rodgers 2011, Nelson 2011','17-3','+7.6%','$136M'],
-    ['sixteenandoh','Warner 1999, Faulk 1999','17-3','+9.8%','$139M'],
-    ['zonereadzach','Allen 2020, Diggs 2020','16-4','+6.2%','$140M'],
-    ['gunslinger','Vick 2010, Jackson 2010','16-4','+5.1%','$137M'],
-  ],
-  all:[
-    ['coldrollout','7 perfect seasons','20-0','+11.2%','$139M'],
-    ['hashmarks','5 perfect seasons','20-0','+9.9%','$140M'],
-    ['thetuckrule','4 perfect seasons','20-0','+12.4%','$138M'],
-    ['fourthandshort','3 perfect seasons','20-0','+8.8%','$140M'],
-    ['sixteenandoh','2 perfect seasons','20-0','+10.6%','$139M'],
-    ['playactionpat','1 perfect season','20-0','+7.2%','$140M'],
-    ['zonereadzach','best 19-1','19-1','+6.9%','$140M'],
-    ['gunslinger','best 19-1','19-1','+5.4%','$136M'],
-  ],
-};
-let lbTab='today', lbShown=5;
+/* ---------- THE LEADERBOARD ----------
 
-function paintBoard(){
-  const rows=LB_SAMPLE[lbTab];
-  $('lb-note').textContent=lbTab==='today'
-    ? 'Sample standings. Daily boards reset at midnight UTC once this is live; nothing is being recorded yet.'
-    : 'Sample standings. Nothing is being recorded yet.';
-  const show=rows.slice(0,lbShown);
-  $('lb-rows').innerHTML=show.map((r,i)=>
-    '<div class="lbr'+(i===0?' gold':'')+'"><span class="rk">'+(i+1)+'</span>'+
-    '<span class="who"><b>'+esc(r[0])+'</b><span>'+esc(r[1])+'</span></span>'+
-    '<span class="rec"><b>'+esc(r[2])+'</b><span>'+esc(r[3])+' chem, '+esc(r[4])+'</span></span></div>'
-  ).join('')+minePinned();
-  $('b-lb-more').style.display=lbShown>=rows.length?'none':'block';
-  [...document.querySelectorAll('#lb-tabs .tab')].forEach(t=>
-    t.classList.toggle('on',t.dataset.lb===lbTab));
+   Live against Supabase through board.js. Everything in here has to survive the
+   board being unreachable, because a finished season is the one moment where a
+   network error is least acceptable: the run happened, the player is looking at
+   it, and a thrown exception would take the results page down with it.
+
+   So the rule throughout is that a null from board.js is a normal answer, not an
+   error. Every reader below handles it, and nothing awaits the board before
+   painting the parts of the results page that do not depend on it.
+
+   The three windows are UTC days and UTC weeks starting Monday, because a "today"
+   that starts at a different moment for each player is not one board.
+
+   Daily runs and free runs share one board for now. The `daily` column is stored
+   so they can be split later, which is worth doing: everybody who plays the daily
+   gets the same six draws, so that board is a fairer comparison than the open one.
+*/
+
+/* One key format for a player-season across the whole system. The database wants
+   a colon because the validation regex is easier to read that way, and BYKEY was
+   already using a pipe, so the conversion lives here and nowhere else. */
+const pickKey=(p)=>p.player_id+':'+p.season;
+const fromPickKey=(k)=>{const i=k.lastIndexOf(':');
+  return BYKEY.get(k.slice(0,i)+'|'+k.slice(i+1))||null;};
+
+/* Everything the server needs, and nothing it can work out for itself. */
+function runPayload(){
+  const o=run.outcome;
+  const s=run.season;
+  const pts=(f)=>s.results.reduce((t,r)=>t+f(r),0)/Math.max(1,s.results.length);
+  return {
+    regularWins:o.regularWins,
+    playoffWins:o.wins-o.regularWins,
+    pointDiff:pts(r=>r.shownYou??r.yourScore)-pts(r=>r.shownThem??r.oppScore),
+    chemistryPct:(run.season.chemistry-1)*100,
+    spendMusd:run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed),
+    respins:run.respinsUsed,
+    franchise:run.franchise,
+    daily:!!run.daily,
+    picks:run.roster.map(pickKey),
+    slots:run.roster.map((p,i)=>E.SLOTS[run.slotIndex[i]]),
+    seed:String(run.seed),
+    rngCalls:run.rngCalls,
+  };
 }
 
-/* Your own row, pinned. At scale you will not be inside the top page, so this is
-   fetched on its own rather than found in the list. */
-function minePinned(){
-  if(!run||!run.outcome) return '';
+/* Submitted once per run, however many times the results page repaints. */
+let submitted=null;      // the row id, or false once a submit has failed
+let myRanks=null;
+
+async function recordRun(){
+  if(submitted!==null) return submitted;
+  const pay=runPayload();
+  const id=await B.submit(pay);
+  submitted=id===null?false:id;
+  return submitted;
+}
+
+const WINDOWS=[['day','Today'],['week','This week'],['all','All time']];
+
+/* Submit, then read the rank. In that order so a run is counted in its own
+   denominator, and the rank query does not depend on the submit having worked. */
+async function paintRanks(){
+  const el=$('o-ranks');
+  el.innerHTML='<div class="rload"><i></i><i></i><i></i><span>Reading the board</span></div>';
+  const score=B.scoreOf(run.outcome.wins,runPayload().pointDiff);
+  await recordRun();
+  const r=await B.ranks(score);
+  myRanks=r;
+  const any=WINDOWS.some(([k])=>r[k]);
+  if(!any){
+    el.innerHTML='<p class="rankfoot" style="margin-top:8px">The leaderboard is not '+
+      'reachable right now, so this run has not been counted. Nothing else about your '+
+      'season changes.</p>';
+    return;
+  }
+  const cell=([k,label])=>{
+    const w=r[k];
+    if(!w) return '<div class="rcell dead"><span class="rw">'+label+
+      '</span><span class="rn">--</span><span class="rof">not available</span></div>';
+    const cls=w.rank===1?' top1':(w.rank<=10?' top10':'');
+    return '<div class="rcell'+cls+'"><span class="rw">'+label+'</span>'+
+      '<span class="rn">#'+w.rank.toLocaleString()+'</span>'+
+      '<span class="rof">of '+w.total.toLocaleString()+'</span></div>';
+  };
+  el.innerHTML='<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
+    '<p class="rankfoot">'+rankLine(r)+'</p>'+
+    '<button class="btn ghost sm" id="b-board3">See the leaderboard</button>';
+  $('b-board3').onclick=openBoard;
+}
+
+/* One sentence that says what the numbers mean. The percentile is the useful read
+   once you are outside the top few: "#1,203 of 41,882" is a shrug, "better than
+   97% of every run ever played" is not. */
+function rankLine(r){
+  const best=r.day||r.week||r.all;
+  if(!best) return '';
+  if(r.all&&r.all.rank===1) return 'The best run anyone has played. Nobody has beaten it yet.';
+  if(r.day&&r.day.rank===1) return 'Top of the board today.';
+  const w=r.all||r.week||r.day;
+  const label=r.all?'ever played':(r.week?'this week':'today');
+  const beat=w.total>1?Math.round(100*(w.total-w.rank)/(w.total-1)):100;
+  const games=run.outcome.wins+run.outcome.losses;
+  return 'Better than '+beat+'% of every run '+label+'. '+
+    (run.outcome.perfect?'And it is a perfect season, which almost nobody manages.'
+      :'Your '+run.outcome.record+' came out of '+games+' games.');
+}
+
+/* ---------- the board screen ---------- */
+let lbWin='day', lbShown=5, lbRows=null, lbBusy=false;
+
+function openBoard(){ lbWin=lbWin||'day'; lbShown=5; show('s-board'); loadBoard(); }
+
+async function loadBoard(){
+  if(lbBusy) return;
+  lbBusy=true;
+  $('lb-note').style.display='none';
+  $('lb-rows').innerHTML='<div class="rload"><i></i><i></i><i></i><span>Loading the board</span></div>';
+  $('lb-count').textContent='';
+  $('b-lb-more').style.display='none';
+  [...document.querySelectorAll('#lb-tabs .tab')].forEach(t=>
+    t.classList.toggle('on',t.dataset.lb===lbWin));
+  /* 25 rows in one request, shown 5 at a time. Paging over the network for every
+     tap on a five-row list is a lot of round trips for very little. */
+  const [rows,total]=await Promise.all([B.top(lbWin,25),B.total(lbWin)]);
+  lbBusy=false;
+  lbRows=rows;
+  if(rows===null){
+    $('lb-rows').innerHTML='';
+    $('lb-note').style.display='';
+    $('lb-note').textContent='The leaderboard is not reachable right now. Your runs are '+
+      'still played and still counted once it comes back.';
+    return;
+  }
+  if(total!==null){
+    const word=lbWin==='day'?'played today':(lbWin==='week'?'played this week':'played in all');
+    $('lb-count').innerHTML='<b>'+total.toLocaleString()+'</b> '+
+      (total===1?'run ':'runs ')+word;
+  }
+  paintBoard();
+}
+
+function paintBoard(){
+  const rows=lbRows||[];
+  if(!rows.length){
+    $('lb-rows').innerHTML='<div class="lbempty">'+
+      (lbWin==='all'?'No runs recorded yet. Play one and you are first.'
+        :'Nobody has finished a run in this window yet. Play one and you are first.')+
+      '</div>';
+    $('b-lb-more').style.display='none';
+    return;
+  }
+  $('lb-rows').innerHTML=rows.slice(0,lbShown).map(boardRow).join('')+minePinned(rows);
+  $('b-lb-more').style.display=lbShown>=rows.length?'none':'block';
+}
+
+/* A row is rendered entirely from numbers and from player ids resolved against
+   this browser's own copy of the player data. Nothing a player typed is stored or
+   shown anywhere, which is the reason there is no name column yet. */
+function boardRow(row,i){
+  const who=rosterLine(row.picks);
+  const rank=i+1;
+  const mine=submitted&&row.id===submitted;
+  return '<div class="lbr'+(rank===1?' gold':'')+(mine?' mine':'')+'">'+
+    '<span class="rk">'+rank+'</span>'+
+    '<span class="who"><b>'+esc(row.wins+'-'+row.losses)+' '+
+      esc(row.perfect?'perfect season':row.seed_label.toLowerCase())+'</b>'+
+      '<span>'+esc(who)+'</span></span>'+
+    '<span class="rec">'+diffCell(row.point_diff,row.chemistry_pct,row.spend_musd)+
+    '</span></div>';
+}
+
+/* The same right-hand column for every row, the pinned one included. It used to
+   show the differential on the board rows and chemistry on your own row, so the
+   column read down the page as a comparison between two different quantities. */
+function diffCell(diff,chemPct,spend){
+  return '<b>'+(diff>=0?'+':'')+Number(diff).toFixed(1)+' diff</b>'+
+    '<span>'+pc(Number(chemPct)/100)+' chem, '+M0(Number(spend))+'</span>';
+}
+
+/* The two best players on a board row, by the price the game put on them. Any id
+   this browser cannot resolve is skipped rather than printed raw. */
+function rosterLine(picks){
+  if(!Array.isArray(picks)) return '';
+  const men=picks.map(fromPickKey).filter(Boolean)
+    .sort((a,b)=>b.price_musd-a.price_musd).slice(0,2);
+  if(!men.length) return picks.length+' players';
+  return men.map(p=>lastName(p.name)+' '+p.season).join(', ');
+}
+
+/* Your own row, pinned under the list. At any real number of players you are not
+   inside the top page, and a board that only ever shows strangers is a board
+   nobody checks twice. */
+function minePinned(rows){
+  if(!run||!run.outcome||!myRanks) return '';
+  const w=myRanks[lbWin];
+  if(!w) return '';
+  if(rows.slice(0,lbShown).some(r=>submitted&&r.id===submitted)) return '';
   const o=run.outcome;
-  const chem=pc(run.season.chemistry-1);
-  const spend=M0(run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed));
-  return '<div class="lbr mine"><span class="rk">you</span>'+
-    '<span class="who"><b>This run</b><span>'+esc(o.seedLabel)+'</span></span>'+
-    '<span class="rec"><b>'+esc(o.record)+'</b><span>'+chem+' chem, '+spend+'</span></span></div>';
+  const p=runPayload();
+  return '<div class="lbr mine"><span class="rk">'+
+    (w.rank>999?'#'+w.rank.toLocaleString():w.rank)+'</span>'+
+    '<span class="who"><b>'+esc(o.record)+' this run</b><span>'+
+      esc(rosterLine(p.picks))+'</span></span>'+
+    '<span class="rec">'+diffCell(p.pointDiff,p.chemistryPct,p.spendMusd)+
+    '</span></div>';
 }
 
 $('b-how').onclick=howToPlay;
 $('b-profile').onclick=profileSheet;
-$('b-board').onclick=()=>{lbShown=5;paintBoard();show('s-board');};
-$('b-board2').onclick=()=>{lbShown=5;paintBoard();show('s-board');};
+$('b-board').onclick=openBoard;
+$('b-board2').onclick=openBoard;
 $('b-board-back').onclick=()=>show(run&&run.outcome?'s-over':'s-intro');
 $('b-lb-more').onclick=()=>{lbShown+=5;paintBoard();};
 $('lb-tabs').addEventListener('click',(e)=>{
-  const t=e.target.closest('.tab'); if(!t) return;
-  lbTab=t.dataset.lb; lbShown=5; paintBoard();
+  const t=e.target.closest('.tab'); if(!t||t.dataset.lb===lbWin) return;
+  lbWin=t.dataset.lb; lbShown=5; loadBoard();
 });
 
 $('b-again').onclick=()=>{
