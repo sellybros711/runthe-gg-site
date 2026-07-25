@@ -128,7 +128,17 @@
   .tm{padding:12px 3px;border-radius:10px;border:1px solid var(--line);background:var(--panel);
     font-family:var(--fd);font-size:14px;letter-spacing:.03em;transition:all .12s ease}
   .tm:active{transform:scale(.95)}
-  .tm.on{background:var(--grad-blue);border-color:transparent;box-shadow:0 0 0 2px rgba(59,130,246,.35)}
+  /* Picked: the bubble fills with that club's own two colors, its secondary as a
+     keel line, and a text color chosen for contrast rather than assumed white.
+     No color-mix() anywhere: it needs Safari 16.2, and this page has already been
+     bitten once by shipping something an iPhone quietly ignored. Layering black
+     over the club color is the same trick the position chips use. */
+  .tm.on{border-color:transparent;color:var(--on);position:relative;overflow:hidden;
+    background:linear-gradient(160deg,rgba(255,255,255,.10) 0%,rgba(0,0,0,.34) 120%),var(--c1);
+    box-shadow:0 0 0 2px rgba(255,255,255,.22),0 6px 16px -8px #000;
+    animation:tmpick .34s cubic-bezier(.2,1.4,.4,1) both}
+  .tm.on:after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--c2)}
+  @keyframes tmpick{from{transform:scale(.88)}to{transform:scale(1)}}
 
   /* the field */
   .field{position:relative;width:100%;aspect-ratio:1/0.52;border-radius:14px;overflow:hidden;
@@ -142,16 +152,34 @@
   .field .ez{position:absolute;left:0;right:0;height:9%}
   .field .ez.t{top:0;background:linear-gradient(180deg,rgba(59,130,246,.22),rgba(59,130,246,.04))}
   .field .ez.b{bottom:0;background:linear-gradient(0deg,rgba(239,68,68,.20),rgba(239,68,68,.03))}
-  .links-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
-  .links-svg line{stroke-linecap:round}
-  @keyframes dash{to{stroke-dashoffset:-18}}
-  /* One color per strength band so five links do not read as one green tangle. */
-  .legend{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
-  .lg{display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;color:var(--dim);
-    padding:4px 8px;border-radius:99px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
-  .lg i{width:14px;height:3px;border-radius:2px;display:block}
-  .lg.big i{background:#fbbf24} .lg.good i{background:#22c55e}
-  .lg.small i{background:#38bdf8} .lg.bad i{background:#ef4444}
+  /* A count of connections on the chip itself, in the strongest one's color. */
+  .chip .pip{position:absolute;top:-3px;right:-3px;width:15px;height:15px;border-radius:50%;
+    display:none;place-items:center;font-family:var(--fn);font-size:9px;font-weight:600;
+    color:#08101f;border:1.5px solid #0b1220;font-style:normal}
+  .chip .disc{position:relative}
+  .chip .disc .dl{display:block;line-height:1}
+
+  /* THE CONNECTION RAIL
+     Nodes in a row, arcs hanging below it, so an arc can never cross a player.
+     This replaced the chords that used to be drawn across the formation. */
+  .rail{position:relative;margin-top:11px;height:86px}
+  .rail.empty .rarcs{opacity:0}
+  .rnodes{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));position:relative;z-index:2}
+  .rnode{background:none;border:0;padding:0;display:flex;flex-direction:column;align-items:center;
+    gap:3px;min-width:0;opacity:.32;transition:opacity .18s ease}
+  .rnode.on{opacity:1}
+  .rnode .rdot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
+    font-family:var(--fn);font-size:8.5px;font-weight:600;color:#fff;
+    background:rgba(255,255,255,.06);border:1.5px dashed rgba(255,255,255,.2)}
+  .rnode.on .rdot{border-style:solid;border-color:rgba(255,255,255,.28)}
+  .rnode.focus .rdot{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.18)}
+  .rnode .rnm{font-size:9px;font-weight:700;color:var(--dim);max-width:100%;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 1px}
+  .rnode.focus .rnm{color:var(--ink)}
+  /* top must equal RAIL.NODE_BLOCK, height must equal MAX_DEPTH + PAD. */
+  .rarcs{position:absolute;left:0;right:0;top:38px;width:100%;height:48px;overflow:visible;
+    pointer-events:none;transition:opacity .2s ease}
+  .railnote{font-size:10.5px;color:var(--dim-2);text-align:center;margin:5px 0 0;min-height:13px}
   .tierdot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
   .tierdot.big{background:#fbbf24} .tierdot.good{background:#22c55e}
   .tierdot.small{background:#38bdf8} .tierdot.bad{background:#ef4444}
@@ -191,9 +219,17 @@
     background:linear-gradient(90deg,#22c55e,#4ade80);transition:width .5s cubic-bezier(.2,.9,.2,1)}
   .bump{animation:bump .62s ease}
   @keyframes bump{0%{transform:scale(1)}30%{transform:scale(1.24)}100%{transform:scale(1)}}
-  .linkrow{display:flex;gap:9px;align-items:center;font-size:13px;padding:6px 0;border-top:1px solid var(--line)}
-  .linkrow .v{font-family:var(--fn);font-size:13px;min-width:44px;text-align:right;color:#4ade80}
+  .linkrow{display:flex;gap:9px;align-items:flex-start;font-size:13px;padding:7px 0;
+    border-top:1px solid var(--line)}
+  .linkrow .tierdot{margin-top:5px}
+  .linkrow .v{font-family:var(--fn);font-size:14px;min-width:46px;text-align:right;color:#4ade80;
+    flex:0 0 auto}
   .linkrow .v.neg{color:var(--red)}
+  /* Who it is with, then what they share. Two lines, because the pair of names is
+     what you are looking for and the reason is what you read after. */
+  .linkrow .lk{min-width:0;line-height:1.25}
+  .linkrow .lk b{display:block;font-size:13px;font-weight:700}
+  .linkrow .lk i{display:block;font-style:normal;font-size:11.5px;color:var(--dim)}
 
   /* THE WHEELS
      Three faces tall with only the middle one lit, so you can see what is going
@@ -208,6 +244,8 @@
   .reelbox:after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
     background:linear-gradient(180deg,#05080f 2%,rgba(5,8,15,.15) 33%,rgba(5,8,15,.15) 67%,#05080f 98%)}
   .reelbox .strip{position:absolute;left:0;right:0;top:0;will-change:transform,filter}
+  .reelbox .wash{display:none}
+  .reelbox.clubbed .wash{display:block}
   .reelbox .band{position:absolute;left:5px;right:5px;top:50%;height:38px;margin-top:-19px;z-index:3;
     border-radius:9px;border:1px solid rgba(255,255,255,.13);pointer-events:none;
     transition:border-color .2s ease,box-shadow .2s ease,background .2s ease}
@@ -240,6 +278,22 @@
   .reelbox.done{border-color:var(--line-2)}
   .reelbox.year.done .band{border-color:rgba(239,68,68,.42);background:rgba(239,68,68,.06)}
   .reelbox.team.done .band{border-color:rgba(59,130,246,.42);background:rgba(59,130,246,.06)}
+
+  /* CLUB COLORS ON THE LANDING
+     One quick wash over the band, then the housing holds the drawn club's own two
+     colors: primary behind the face, secondary as a keel line, text color picked
+     for contrast rather than assumed to be white. */
+  .reelbox.clubbed{border-color:var(--c2)}
+  .reelbox.clubbed .band{border-color:var(--c2);
+    background:linear-gradient(160deg,rgba(255,255,255,.10) 0%,rgba(0,0,0,.30) 130%),var(--c1)}
+  .reelbox.clubbed .reel-i.land{color:var(--on);position:relative;z-index:4}
+  .reelbox.clubbed .wash{position:absolute;left:5px;right:5px;top:50%;height:38px;margin-top:-19px;
+    border-radius:9px;z-index:1;background:var(--c1);opacity:0;pointer-events:none;
+    animation:clubwash .5s ease-out}
+  @keyframes clubwash{
+    0%{opacity:0;transform:scale(.86)}
+    45%{opacity:.9;transform:scale(1.05)}
+    100%{opacity:0;transform:scale(1)}}
   .slotchip{display:inline-block;font-family:var(--fn);font-size:11px;letter-spacing:.06em;
     padding:3px 7px;border-radius:6px;margin-right:4px;background:rgba(255,255,255,.07);color:var(--dim)}
   .grouphead{font-family:var(--fn);font-size:10.5px;letter-spacing:.14em;
@@ -535,17 +589,18 @@
       <div class="bar"><i id="c-bar" style="width:100%"></i></div>
       <div class="note" id="c-note" style="display:none"></div>
       <div class="field" id="field" style="margin-top:10px"></div>
-      <div class="legend" id="legend"></div>
+      <div class="rail" id="rail1"></div>
+      <p class="railnote"></p>
     </div>
 
     <div class="reels" id="reels">
       <div class="reelcol">
         <span class="rlabel">Year</span>
-        <div class="reelbox year" id="box-y"><div class="strip" id="reel-y"></div><span class="band"></span></div>
+        <div class="reelbox year" id="box-y"><div class="strip" id="reel-y"></div><span class="band"></span><span class="wash"></span></div>
       </div>
       <div class="reelcol">
         <span class="rlabel">Team</span>
-        <div class="reelbox team" id="box-t"><div class="strip" id="reel-t"></div><span class="band"></span></div>
+        <div class="reelbox team" id="box-t"><div class="strip" id="reel-t"></div><span class="band"></span><span class="wash"></span></div>
       </div>
     </div>
     <div class="tabs" id="tabs"></div>
@@ -556,9 +611,10 @@
   <div class="screen" id="s-squad">
     <div class="eyebrow">Step 3 of 3</div>
     <h2 class="display" style="font-size:27px;margin:5px 0 6px">Your team</h2>
-    <p class="dim" style="font-size:13px;margin:0 0 12px">Tap a player to see his numbers. The lines show who has chemistry with who.</p>
+    <p class="dim" style="font-size:13px;margin:0 0 12px">Tap a player for his numbers. The rail under the field arcs between the players who connect, and the number on a shirt is how many he connects to.</p>
     <div class="field" id="field2"></div>
-    <div class="legend" id="legend2"></div>
+    <div class="rail" id="rail2"></div>
+    <p class="railnote"></p>
     <div class="panel" style="margin-top:12px">
       <div class="eyebrow">Chemistry</div>
       <div class="chemrow"><div class="chemval num" id="q-chem" style="font-size:27px">0.0%</div>
@@ -624,6 +680,8 @@
     <div class="panel" style="margin-top:11px">
       <div class="eyebrow">Your lineup</div>
       <div class="field short" id="field3"></div>
+      <div class="rail" id="rail3"></div>
+      <p class="railnote"></p>
       <div class="rost" id="o-rost"></div>
     </div>
 
@@ -649,8 +707,8 @@
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=8"></script>
-<script src="run.js?v=8"></script>
+<script src="engine.js?v=9"></script>
+<script src="run.js?v=9"></script>
 <script>
 (function(){
 'use strict';
@@ -667,7 +725,7 @@ const $=(id)=>document.getElementById(id);
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=8;
+const NEED_VERSION=9;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -704,6 +762,18 @@ const lastName=(name)=>{
   return parts[parts.length-1]||name;
 };
 const pc=(v)=>(v>=0?'+':'')+(v*100).toFixed(1)+'%';
+/* A chemistry link is between two named players, and saying only what they share
+   left you to guess who with. Every label names the other man now. */
+const partnerOf=(l,name)=>l.a===name?l.b:l.a;
+/* One row in a chemistry list. `forName` set means the list belongs to one player,
+   so it reads "with Abdullah"; unset means it is the roster's own list, so it names
+   both ends. */
+function linkRow(l,forName){
+  const who=forName?'with '+esc(partnerOf(l,forName)):esc(l.a)+' and '+esc(l.b);
+  return '<div class="linkrow"><span class="tierdot '+E.linkTier(l.value)+'"></span>'+
+    '<span class="v'+(l.value<0?' neg':'')+'">'+pc(l.value)+'</span>'+
+    '<span class="lk"><b>'+who+'</b><i>'+esc(l.label)+'</i></span></div>';
+}
 const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 /* Where each spot sits on the field, in E.SLOTS order: QB, RB, WR, WR, TE, FLEX.
@@ -803,14 +873,29 @@ function buildTeams(){
     [...d[k]].sort().map(f=>'<button class="tm" data-f="'+f+'">'+f+'</button>').join('')+'</div></div>').join('');
   $('divs').addEventListener('click',e=>{
     const b=e.target.closest('.tm'); if(!b)return;
-    document.querySelectorAll('.tm').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.tm').forEach(x=>{x.classList.remove('on');x.removeAttribute('style');});
+    const tc=E.teamColors(b.dataset.f);
+    b.style.setProperty('--c1',tc.primary);
+    b.style.setProperty('--c2',tc.secondary);
+    b.style.setProperty('--on',tc.on);
     b.classList.add('on'); pickedTeam=b.dataset.f; $('b-draft').disabled=false;
   });
 }
 
 /* ---------- the field ----------
-   Six spots, plus a line for every chemistry link between two signed players.
-   The lines are the point: you watch the team knit together as you draft. */
+   Six spots. Formation only.
+
+   THE LINES CAME OFF THE FIELD. They were chords drawn straight between chips, so
+   at four or five links they crossed each other, ran under discs, and cut through
+   the name labels. Every fix fights the same fact: the players sit where the
+   formation puts them, and the shortest path between two of them goes through
+   whatever is in between.
+
+   Connections moved to their own space, an arc rail under the field, where the
+   nodes sit in a row and the arcs have nothing to collide with (see drawRail).
+   What stays on the field is a pip on each chip: how many connections that player
+   has, in his strongest link's color. You still watch the web form as you draft;
+   you read it somewhere it can breathe. */
 /*
  * Chips and lines are built once per field and then MOVED, never rebuilt, so a
  * signing visibly slides the formation into its new shape. Rebuilding the markup
@@ -826,14 +911,12 @@ const easeOut=(t)=>1-Math.pow(1-t,3);
 function fieldState(el){
   if(el._ps) return el._ps;
   el.innerHTML='<div class="lines"></div><div class="hash"></div><div class="ez t"></div><div class="ez b"></div>'+
-    '<svg class="links-svg"></svg>'+
     E.SLOTS.map((slot,i)=>'<div class="chip empty" data-i="'+i+'">'+
-      '<div class="disc">'+slot+'</div><div class="who"></div><div class="yr"></div></div>').join('');
+      '<div class="disc"><span class="dl">'+slot+'</span><i class="pip"></i></div>'+
+      '<div class="who"></div><div class="yr"></div></div>').join('');
   el._ps={
-    svg:el.querySelector('.links-svg'),
     chips:[...el.querySelectorAll('.chip')],
     coords:SPOT_FALLBACK.map(c=>({...c})),
-    lines:[],
     raf:0,
     // A field's first paint has nothing to move FROM, so it snaps into place.
     // Sliding in from a default formation would just be motion with no meaning.
@@ -860,28 +943,25 @@ function drawField(el,live){
     const justFilled=!!p&&!wasFilled;
     c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1)?' now':'')+(justFilled?' pop':'');
     const disc=c.querySelector('.disc');
-    disc.textContent=p?p.position:E.SLOTS[i];
+    disc.querySelector('.dl').textContent=p?p.position:E.SLOTS[i];
     disc.style.background=p?'linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.45))':'';
     c.querySelector('.who').textContent=p?lastName(p.name):'';
     c.querySelector('.yr').textContent=p?p.season:'';
+    /* How many players he connects to, in his strongest link's color. The web
+       itself lives on the rail; this is the count, so a glance at the formation
+       still says who is tied in and who is on his own. */
+    const mine=p?links.filter(l=>l.a===p.name||l.b===p.name):[];
+    const pip=c.querySelector('.pip');
+    if(mine.length){
+      const best=mine.reduce((x,y)=>(Math.abs(y.value)>Math.abs(x.value)?y:x));
+      pip.textContent=mine.length;
+      pip.style.background=TIER[E.linkTier(best.value)].color;
+      pip.style.display='grid';
+    }else{ pip.style.display='none'; }
   });
-
-  st.lines=links.filter(l=>at.has(l.a)&&at.has(l.b)).map(l=>{
-    const t=TIER[E.linkTier(l.value)];
-    return {a:at.get(l.a),b:at.get(l.b),t};
-  });
-  st.svg.innerHTML=st.lines.map(l=>'<line stroke="'+l.t.color+'" stroke-width="'+l.t.w+
-    '" stroke-dasharray="'+l.t.dash+'" opacity="'+l.t.op+
-    '" style="animation:dash '+l.t.speed+' linear infinite"/>').join('');
-  const lineEls=[...st.svg.querySelectorAll('line')];
 
   const paint=(coords)=>{
     st.chips.forEach((c,i)=>{ c.style.left=coords[i].x+'%'; c.style.top=coords[i].y+'%'; });
-    lineEls.forEach((le,k)=>{
-      const l=st.lines[k], a=coords[l.a], b=coords[l.b];
-      le.setAttribute('x1',a.x+'%'); le.setAttribute('y1',a.y+'%');
-      le.setAttribute('x2',b.x+'%'); le.setAttribute('y2',b.y+'%');
-    });
   };
 
   const from=st.coords.map(c=>({...c}));
@@ -900,16 +980,92 @@ function drawField(el,live){
     st.raf=requestAnimationFrame(step);
   }
 
-  const legEl=el.nextElementSibling;
-  if(legEl&&legEl.classList.contains('legend')){
-    const present=[...new Set(st.lines.map(l=>Object.keys(TIER).find(k=>TIER[k]===l.t)))];
-    legEl.innerHTML=present.length
-      ? ['big','good','small','bad'].filter(k=>present.includes(k)).map(k=>
-          '<span class="lg '+k+'"><i></i>'+TIER[k].name+'</span>').join('')
-      : '';
-    legEl.style.display=present.length?'flex':'none';
-  }
+  // The rail that replaced the lines, if this field has one beside it.
+  const railEl=el.parentElement.querySelector('.rail');
+  if(railEl) drawRail(railEl,bySlot,links,at);
   el.onclick=(e)=>{const c=e.target.closest('.chip');if(!c)return;const p=bySlot[+c.dataset.i];if(p)sheet(p);};
+}
+
+/* ---------- the connection rail ----------
+   An arc diagram. Every spot is a node in one row and every link is an arc hanging
+   below that row, so an arc can never cross a player: the players are all on the
+   line and the arcs are all under it. That is the whole reason it exists.
+
+   Arc depth grows with the span it covers, so a long arc sits outside a short one
+   instead of on top of it. Color is the strength band, the same four as before.
+
+   Tap a node to keep only its arcs. That answers "who is THIS guy tied to", which
+   the old tangle of chords across the formation could not do at all. */
+const RAIL={
+  NODE_BLOCK:38,   // dot 22 + gap 3 + surname 13, must match .rarcs top in CSS
+  MIN_DEPTH:11, PER_SPAN:8, MAX_DEPTH:44, PAD:4,
+};
+
+function railState(el){
+  if(el._rs) return el._rs;
+  el.innerHTML='<svg class="rarcs" preserveAspectRatio="none"></svg>'+
+    '<div class="rnodes">'+E.SLOTS.map((slot,i)=>
+      '<button class="rnode" data-i="'+i+'"><span class="rdot">'+slot+'</span>'+
+      '<span class="rnm"></span></button>').join('')+'</div>';
+  el._rs={ svg:el.querySelector('.rarcs'), nodes:[...el.querySelectorAll('.rnode')],
+    focus:null, redraw:null };
+  el.addEventListener('click',(e)=>{
+    const nd=e.target.closest('.rnode'); if(!nd) return;
+    const i=+nd.dataset.i;
+    const st=el._rs;
+    st.focus=st.focus===i?null:i;
+    if(st.redraw) st.redraw();
+  });
+  return el._rs;
+}
+
+function drawRail(el,bySlot,links,at){
+  const st=railState(el);
+  st.redraw=()=>drawRail(el,bySlot,links,at);
+  const n=E.SLOTS.length;
+
+  st.nodes.forEach((node,i)=>{
+    const p=bySlot[i];
+    node.className='rnode'+(p?' on':'')+(st.focus===i?' focus':'');
+    const dot=node.querySelector('.rdot');
+    dot.textContent=p?p.position:E.SLOTS[i];
+    dot.style.background=p?'linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.45))':'';
+    node.querySelector('.rnm').textContent=p?lastName(p.name):'';
+  });
+
+  const arcs=links.filter(l=>at.has(l.a)&&at.has(l.b)).map(l=>{
+    const a=Math.min(at.get(l.a),at.get(l.b)), b=Math.max(at.get(l.a),at.get(l.b));
+    return {a,b,l,t:TIER[E.linkTier(l.value)]};
+  }).sort((x,y)=>(x.b-x.a)-(y.b-y.a));
+
+  // Percent coordinates, so the rail reflows with its panel and needs no resize hook.
+  const cx=(i)=>((i+0.5)/n)*100;
+  const depth=(span)=>Math.min(RAIL.MAX_DEPTH,RAIL.MIN_DEPTH+(span-1)*RAIL.PER_SPAN);
+  st.svg.setAttribute('viewBox','0 0 100 '+(RAIL.MAX_DEPTH+RAIL.PAD));
+  st.svg.innerHTML=arcs.map((c,k)=>{
+    const d=depth(c.b-c.a);
+    const dim=st.focus!==null&&st.focus!==c.a&&st.focus!==c.b;
+    return '<path d="M '+cx(c.a).toFixed(2)+' 0 Q '+
+      ((cx(c.a)+cx(c.b))/2).toFixed(2)+' '+(d*2)+' '+
+      cx(c.b).toFixed(2)+' 0" fill="none" stroke="'+c.t.color+
+      '" stroke-width="'+(c.t.w*0.5).toFixed(2)+'" stroke-linecap="round"'+
+      ' vector-effect="non-scaling-stroke" opacity="'+(dim?0.1:c.t.op)+'"/>';
+  }).join('');
+
+  el.classList.toggle('empty',!arcs.length);
+  const note=el.parentElement.querySelector('.railnote');
+  if(note){
+    const signed=bySlot.filter(Boolean).length;
+    if(!arcs.length){ note.textContent=signed>1?'No connections yet':''; }
+    else if(st.focus!==null&&bySlot[st.focus]){
+      const mine=arcs.filter(c=>c.a===st.focus||c.b===st.focus).length;
+      const who=lastName(bySlot[st.focus].name);
+      // "Blake, 0 of 1" reads like a score. Say it plainly instead.
+      note.textContent=mine?who+', '+mine+' of '+arcs.length:who+' is not connected to anyone';
+    }else{
+      note.textContent=arcs.length+(arcs.length===1?' connection':' connections')+', tap a player';
+    }
+  }
 }
 
 function sheet(p){
@@ -926,9 +1082,8 @@ function sheet(p){
     '<div class="kv"><span class="dim">Swing week to week</span><b>'+p.ppr_ppg_sd.toFixed(1)+'</b></div>'+
     '<div class="kv"><span class="dim">Games that year</span><b>'+p.games_played+'</b></div>'+
     (p.college?'<div class="kv"><span class="dim">College</span><b>'+esc(p.college)+'</b></div>':'')+
-    (links.length?'<div class="eyebrow" style="margin-top:13px">Chemistry</div>'+links.map(l=>
-      '<div class="linkrow"><span class="tierdot '+E.linkTier(l.value)+'"></span>'+
-      '<span class="v'+(l.value<0?' neg':'')+'">'+pc(l.value)+'</span><span>'+esc(l.label)+'</span></div>').join(''):'')+
+    (links.length?'<div class="eyebrow" style="margin-top:13px">Chemistry</div>'+
+      links.map(l=>linkRow(l,p.name)).join(''):'')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   $('sheet').classList.add('on');
   $('sh-x').onclick=()=>$('sheet').classList.remove('on');
@@ -982,7 +1137,7 @@ function reelEase(t){
   return glide+Math.sin(k*Math.PI)*0.014;
 }
 
-function reel(el,faces,target,ms,done){
+function reel(el,faces,target,ms,done,onLand){
   if(el._raf) cancelAnimationFrame(el._raf);
   const box=el.parentElement;
   /* When the pool leaves exactly one possible result there is nothing to wind
@@ -1023,6 +1178,7 @@ function reel(el,faces,target,ms,done){
     el._raf=0; el.style.filter='none';
     box.classList.remove('spin');
     box.classList.add('hit');
+    if(onLand) onLand(box);
     setTimeout(()=>{box.classList.remove('hit');box.classList.add('done');},500);
     done();
   };
@@ -1034,6 +1190,7 @@ function spinBoth(draw,done){
   const yEl=$('reel-y'), tEl=$('reel-t'), tBox=$('box-t');
   // The team reel sits dim with a question on it until the year is settled.
   tBox.className='reelbox team waiting';
+  tBox.removeAttribute('style');
   tEl.style.filter='none';
   tEl.style.transform='translate3d(0,'+(-REEL_H)+'px,0)';
   tEl.innerHTML=['','?',''].map(t=>'<div class="reel-i">'+t+'</div>').join('');
@@ -1043,8 +1200,21 @@ function spinBoth(draw,done){
   reel(yEl,years,String(draw.season),dur(years)??1150,()=>{
     // A beat between the two, or they read as one long spin.
     setTimeout(()=>reel(tEl,draw.teamOptions,draw.teamName,
-      dur(draw.teamOptions)??1250,done),260);
+      dur(draw.teamOptions)??1250,done,dressInTeamColors(draw.franchise)),260);
   });
+}
+
+/* The moment the team lands, the housing takes that club's colors: one wash across
+   the band, then it holds them while you pick. It is the only place the drawn
+   team's identity can show, since the board underneath is all position colors. */
+function dressInTeamColors(franchise){
+  return (box)=>{
+    const tc=E.teamColors(franchise);
+    box.style.setProperty('--c1',tc.primary);
+    box.style.setProperty('--c2',tc.secondary);
+    box.style.setProperty('--on',tc.on);
+    box.classList.add('clubbed');
+  };
 }
 
 function nextSpin(){
@@ -1072,6 +1242,10 @@ let activeTab=null;
    have, grayed at the bottom with the reason. A position with nowhere left to go
    keeps its tab, grayed and pushed to the right end of the row. */
 const POSITIONS=['QB','RB','WR','TE'];
+/* ALL is the default tab. Making somebody tap through four tabs on every one of
+   six spins just to see what a team has is work, not a decision. It lists the
+   whole squad in position order so the shape of the roster reads at a glance. */
+const ALL='ALL';
 
 /** Can a player of this position go anywhere on the roster right now? */
 function positionOpen(pos){
@@ -1086,17 +1260,23 @@ function destination(p){
 
 function optionGroups(draw){
   const groups=new Map(POSITIONS.map(p=>[p,[]]));
+  const all=[];
   for(const row of draw.board){
     const p=BYKEY.get(row.key);
     if(!groups.has(p.position)) groups.set(p.position,[]);
     groups.get(p.position).push({p,block:row.block});
+    all.push({p,block:row.block});
   }
   // Signable first, then blocked, each half still best-first.
   for(const rows of groups.values()){
     rows.sort((a,b)=>(a.block?1:0)-(b.block?1:0)||b.p.ppr_ppg_mean-a.p.ppr_ppg_mean);
   }
   for(const [k,v] of [...groups]) if(!v.length) groups.delete(k);
-  return groups;
+  // ALL follows the same two rules, then position order.
+  all.sort((a,b)=>(a.block?1:0)-(b.block?1:0)
+    ||POSITIONS.indexOf(a.p.position)-POSITIONS.indexOf(b.p.position)
+    ||b.p.ppr_ppg_mean-a.p.ppr_ppg_mean);
+  return new Map([[ALL,all],...groups]);
 }
 
 const signable=(rows)=>rows.filter(r=>!r.block).length;
@@ -1137,10 +1317,15 @@ function optTile(row){
   const pv=R.previewSigning(run,p,CTX), g=pv.delta;
   const top=pv.newLinks[0];
   const tier=top?E.linkTier(top.value):null;
+  /* Names the man on your roster it connects to, then why. "+1.5% Boise State"
+     stated a fact about nobody in particular. */
+  const mate=top?lastName(partnerOf(top,p.name)):'';
+  const extra=pv.newLinks.length>1?' +'+(pv.newLinks.length-1):'';
   const tag=Math.abs(g)>0.0005&&top
     ? '<span class="chemtag" style="'+(g>0
         ? 'background:'+TIER[tier].color+'22;color:'+TIER[tier].color
-        : 'background:rgba(239,68,68,.14);color:#fca5a5')+'">'+pc(g)+' '+esc(top.short||top.label)+'</span>'
+        : 'background:rgba(239,68,68,.14);color:#fca5a5')+'">'+pc(g)+' '+esc(mate)+
+      ', '+esc(top.short||top.label)+extra+'</span>'
     : '';
   const badge=(p.badges||[])[0];
   const bcls=badge?(/^Led the NFL/.test(badge)?'bdg led':(/^\d/.test(badge)?'bdg':'bdg mile')):'';
@@ -1162,25 +1347,29 @@ function paintOpts(draw){
      drop to the right end of the row and gray out. They are kept rather than
      removed so the row does not reshuffle under your thumb between spins. */
   const names=[...groups.keys()]
-    .sort((a,b)=>(positionOpen(a)?0:1)-(positionOpen(b)?0:1)
+    .sort((a,b)=>(a===ALL?-1:b===ALL?1:0)
+      ||(positionOpen(a)?0:1)-(positionOpen(b)?0:1)
       ||POSITIONS.indexOf(a)-POSITIONS.indexOf(b));
   /* A new board opens on a tab you can sign from, but once you pick a tab it
      stays picked. The first version of this guard also fired on the repaint that
      a tab click triggers, so a full tab bounced straight back to another one. */
-  if(!names.includes(activeTab))
-    activeTab=names.find(n=>signable(groups.get(n)))||names[0];
+  if(!names.includes(activeTab)) activeTab=ALL;
   $('tabs').innerHTML=names.map(n=>{
-    const on=n===activeTab, open=positionOpen(n);
+    const on=n===activeTab, open=n===ALL||positionOpen(n);
     const count=open?signable(groups.get(n)):groups.get(n).length;
-    return '<button class="tab'+(on?' on':'')+(open?'':' full')+'" data-t="'+n+'"'+
-      (on&&open?' style="background:linear-gradient(135deg,var('+COL[n]+'),rgba(0,0,0,.45));"':'')+'>'+
+    const grad=n===ALL?'linear-gradient(135deg,#475569,rgba(0,0,0,.5))'
+      :'linear-gradient(135deg,var('+COL[n]+'),rgba(0,0,0,.45))';
+    return '<button class="tab'+(on?' on':'')+(open?'':' full')+(n===ALL?' all':'')+
+      '" data-t="'+n+'"'+(on&&open?' style="background:'+grad+';"':'')+'>'+
       n+'<span class="n">'+count+'</span></button>';
   }).join('');
   $('opts').innerHTML=(groups.get(activeTab)||[]).map((r,i)=>optTile({...r,i})).join('');
   /* Light up the spot this tab would fill, so the tab and the field agree. The
      tab is a POSITION now, so the spot is wherever a player of it would land,
      which may be FLEX. */
-  const proto=(groups.get(activeTab)||[]).find(r=>!r.block);
+  /* Only a position tab points at one spot. On ALL the list is the whole squad, so
+     nothing is outlined rather than arbitrarily picking whatever sorts first. */
+  const proto=activeTab===ALL?null:(groups.get(activeTab)||[]).find(r=>!r.block);
   const targetIdx=proto?R.slotForPlayer(run,proto.p):null;
   document.querySelectorAll('#field .chip').forEach(c=>{
     // The exact spot, not every spot with that name: there are two WR chips.
@@ -1243,8 +1432,7 @@ function paintSquad(){
   $('q-chembar').style.width=Math.max(0,Math.min(100,p/E.CHEMISTRY.MAX*100))+'%';
   const links=run.season.chemistryLinks;
   $('q-links').innerHTML=links.length
-    ? links.map(l=>'<div class="linkrow"><span class="tierdot '+E.linkTier(l.value)+'"></span>'+
-        '<span class="v'+(l.value<0?' neg':'')+'">'+pc(l.value)+'</span><span>'+esc(l.label)+'</span></div>').join('')
+    ? links.map(l=>linkRow(l)).join('')
     : '<p class="dim" style="font-size:13px;margin:6px 0 0">Nobody here ever played together, so there is no chemistry this run.</p>';
   /* Coach's take. Every line ties to one of the meters underneath it, so the
      structure multiplier explains itself instead of being a hidden number. */
@@ -1513,7 +1701,7 @@ $('b-share').onclick=async()=>{
 };
 $('b-again').onclick=()=>{
   clearTimeout(simTimer); run=null; pickedTeam=null; lastChem=1;
-  document.querySelectorAll('.tm').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.tm').forEach(x=>{x.classList.remove('on');x.removeAttribute('style');});
   $('b-draft').disabled=true; $('hdr').textContent='The Perfect Season';
   show('s-intro');
 };

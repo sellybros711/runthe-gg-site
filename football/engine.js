@@ -30,36 +30,53 @@ const CONSTANTS = {
    * Solved against REAL PLAY POLICIES through the actual wheel
    * (`node football/simulator.js --policies`), not against synthetic rosters.
    *
-   * That distinction is the whole reason this needed re-solving. The archetypes in
+   * That distinction is the whole reason this needs re-solving. The archetypes in
    * §9 build rosters out of the entire 9,411-player pool, which stopped describing
-   * the game once a spin started offering a whole team to choose from. Measured
-   * properly, somebody tapping the top row of a best-first sorted list was winning
-   * 13 games having made no decisions at all.
+   * the game once a spin started offering a whole team to choose from.
    *
-   * At 1.90, over 40 runs per policy:
+   * THE CAP MOVED FROM $100M TO $140M, and SCALE from 1.90 to 2.50 with it.
    *
-   *   policy                spend  FPPG  record  playoffs  title   20-0
-   *   cheapest every time    $40M    21    2-15        0%     0%    0%
-   *   best points per dollar $59M    44     9-8       15%     0%    0%
-   *   random tap             $76M    49    10-7       28%     2%  0.1%
-   *   taps the top row      $100M    57    12-5       50%     4%  0.2%
-   *   perfect play (DP)      $99M    68    14-3       93%    18%  1.1%
+   * At $100M a single $40M player ate a tier off everyone else, so a roster was
+   * one star and five bodies. $140M buys two, measured: careless play now lands
+   * 2.0 players at or above the $27.4M p90 price, against 1.2 before.
    *
-   * So careless play now finishes 12-5 with a coin-flip at the playoffs, while
-   * perfect play wins 14 and takes the title about one run in five. Two wins and
-   * forty points of playoff odds separate them, which is the room skill needs.
+   * The cap could NOT be raised on its own. Measured at $140M with the old
+   * structure model, the gap between tapping the top row and perfect play fell
+   * from 3 wins and 46 points of playoff odds to 1 win and 1 point: once
+   * everything is affordable there is nothing to decide. What restores it is
+   * STRUCTURE.IDEAL_FLOOR_SHARE, so the extra money has to buy a whole offense
+   * rather than stars and empty jerseys. See the note there.
    *
-   * This deliberately does NOT hit §9's 3-6% perfect-season target. The owner
-   * played it and found it too easy, and 20-0 reads better as near-mythical with
-   * the title as the reachable goal. Lowering SCALE to 1.70 would restore a 3.5%
-   * perfect rate but also hand careless play a 66% playoff rate, which is the
-   * problem this was fixing.
+   * At $140M and SCALE 2.65, measured over 150 runs per policy:
+   *
+   *   policy                 spend  FPPG shape  record  playoffs title  20-0
+   *   cheapest every time     $42M    22  0.51    0-17       0%     0%    0%
+   *   best points per dollar  $61M    44  0.92    5-12       1%     0%    0%
+   *   random tap              $81M    51  0.73    4-13       5%     0%    0%
+   *   taps the top row       $136M    79  0.86    12-5      54%     7%  0.3%
+   *   perfect play (DP)      $137M    84  1.02    14-3      89%    16%  0.9%
+   *
+   * Two wins and 35 points of playoff odds between careless and perfect, which is
+   * the room skill had at the old cap. USE 150 RUNS, not 40, to judge any of this:
+   * the spread across drawn team-sets is wide enough that two 40-run samples of the
+   * same settings disagreed by 18 points of playoff odds, which is how a bad
+   * calibration gets locked in.
+   *
+   * Two things worth reading twice. Random tapping fell from 10-7 to 4-13, because
+   * random picks build broken offenses and the model finally says so. And perfect
+   * play buys FEWER expensive players than careless play (1.4 against 2.1 at or
+   * above the p90 price), because the balanced roster is the better one. That is
+   * the decision the bigger budget was supposed to create.
+   *
+   * This deliberately does not chase §9's 3-6% perfect-season target. The owner
+   * played it there and found it too easy; 20-0 reads better as near-mythical with
+   * the title as the reachable goal.
    *
    * Re-solve before trusting any change to pricing, the cap, chemistry, or the
    * structure model. All four move these numbers.
    */
-  SCALE: 1.90,
-  CAP_MUSD: 100,
+  SCALE: 2.65,
+  CAP_MUSD: 140,
   /*
    * Re-spins are two separate levers now, one per wheel, and they get dearer as
    * you lean on them: $5M, then $10M, then $15M, whichever wheel you spin.
@@ -207,6 +224,57 @@ const NICKNAMES = {
 const nickname = (id) => NICKNAMES[id] || id;
 
 /*
+ * Team colors, primary then secondary, for the franchise picker and the wheel.
+ *
+ * Hardcoded rather than fetched. nflverse ships a colors table, but a build step
+ * and a shipped data file for 64 hex values that never change is the wrong trade,
+ * and these are public facts about each club's identity.
+ *
+ * `on` is the text color that survives on top of the primary: dark for the four
+ * clubs whose primary is bright enough that white text on it is unreadable.
+ */
+const TEAM_COLORS = {
+  ARI: ['#97233F', '#000000'], ATL: ['#A71930', '#000000'], BAL: ['#241773', '#9E7C0C'],
+  BUF: ['#00338D', '#C60C30'], CAR: ['#0085CA', '#101820'], CHI: ['#0B162A', '#C83803'],
+  CIN: ['#FB4F14', '#000000'], CLE: ['#311D00', '#FF3C00'], DAL: ['#003594', '#869397'],
+  DEN: ['#FB4F14', '#002244'], DET: ['#0076B6', '#B0B7BC'], GB:  ['#203731', '#FFB612'],
+  HOU: ['#03202F', '#A71930'], IND: ['#002C5F', '#A2AAAD'], JAX: ['#006778', '#D7A22A'],
+  KC:  ['#E31837', '#FFB81C'], LAC: ['#0080C6', '#FFC20E'], LAR: ['#003594', '#FFA300'],
+  LV:  ['#000000', '#A5ACAF'], MIA: ['#008E97', '#FC4C02'], MIN: ['#4F2683', '#FFC62F'],
+  NE:  ['#002244', '#C60C30'], NO:  ['#101820', '#D3BC8D'], NYG: ['#0B2265', '#A71930'],
+  NYJ: ['#125740', '#000000'], PHI: ['#004C54', '#A5ACAF'], PIT: ['#101820', '#FFB612'],
+  SEA: ['#002244', '#69BE28'], SF:  ['#AA0000', '#B3995D'], TB:  ['#D50A0A', '#34302B'],
+  TEN: ['#0C2340', '#4B92DB'], WAS: ['#5A1414', '#FFB612'],
+};
+/*
+ * Which text color to put on a primary, computed rather than listed.
+ *
+ * The first attempt was a hand-written set of "bright" clubs and it was wrong for
+ * six of them: San Francisco's #AA0000 got dark text at 2.42:1, and Kansas City
+ * and Tampa Bay were misjudged the same way. Picking whichever of white or near
+ * black has the higher contrast ratio is always right and needs no maintenance.
+ *
+ * Worst case after this is the Chargers' #0080C6 at 4.37:1, which no text color
+ * can beat: both options land near 4.37. These labels are large and bold, where
+ * 3:1 is the bar, so that passes.
+ */
+function relativeLuminance(hex) {
+  const ch = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255)
+    .map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+}
+function contrast(a, b) {
+  const l1 = Math.max(relativeLuminance(a), relativeLuminance(b));
+  const l2 = Math.min(relativeLuminance(a), relativeLuminance(b));
+  return (l1 + 0.05) / (l2 + 0.05);
+}
+const teamColors = (id) => {
+  const c = TEAM_COLORS[id] || ['#334155', '#64748b'];
+  const on = contrast(c[0], '#ffffff') >= contrast(c[0], '#0b1220') ? '#ffffff' : '#0b1220';
+  return { primary: c[0], secondary: c[1], on };
+};
+
+/*
  * How strong a link feels, used to color and weight the lines drawn between
  * players. Four bands rather than a continuous scale, because the whole point is
  * that you can tell them apart at a glance.
@@ -245,15 +313,37 @@ const linkTier = (value) => LINK_TIERS.find((t) => value >= t.min).key;
  */
 const STRUCTURE = {
   QB_BASELINE_PASS_PPG: 11.9,   // median starting QB, measured
-  QB_SUPPORT_FLOOR: 0.72,
-  QB_SUPPORT_CEIL: 1.15,
+  QB_SUPPORT_FLOOR: 0.62,
+  QB_SUPPORT_CEIL: 1.18,
   IDEAL_RUSH_SHARE: 0.25,       // measured league average
   RUSH_SHARE_TOLERANCE: 0.12,
-  BALANCE_WEIGHT: 0.9,
-  IDEAL_TOP_SHARE: 0.28,
-  CONCENTRATION_WEIGHT: 0.55,
-  MIN: 0.65,
-  MAX: 1.15,
+  BALANCE_WEIGHT: 1.05,
+  IDEAL_TOP_SHARE: 0.24,        // measured median top-man share
+  CONCENTRATION_WEIGHT: 0.70,
+  /*
+   * THE FLOOR TERM, and why the cap could not simply be raised.
+   *
+   * Raising the cap to $140M does give you two or three genuinely good players,
+   * which is what it was asked to do. Measured, it also collapsed the game: the
+   * gap between tapping the top row and perfect play went from 3 wins and 46
+   * points of playoff odds down to 1 win and 1 point, because once everything is
+   * affordable there is nothing left to decide.
+   *
+   * Concentration does not catch three stars and three minimum-salary bodies,
+   * because spreading the points over three men keeps the TOP man's share near
+   * ideal. What gives it away is the floor. Across 848 real team-seasons the two
+   * weakest of a team's six skill players average 64% of the roster average
+   * (median), and even the top decile for top-heaviness sits at 0.50. Stars plus
+   * scrubs comes out at about 0.14.
+   *
+   * So the floor is what a bigger budget has to buy. You can afford the stars
+   * now; you still cannot afford to field nobody alongside them.
+   */
+  IDEAL_FLOOR_SHARE: 0.64,
+  FLOOR_TOLERANCE: 0.14,        // p10 of real teams, so no real shape is punished
+  FLOOR_WEIGHT: 1.30,
+  MIN: 0.50,
+  MAX: 1.18,
 };
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -287,12 +377,27 @@ function rosterStructure(roster) {
   const topShare = Math.max(...roster.map((p) => p.ppr_ppg_mean)) / total;
   const concentration = 1 - S.CONCENTRATION_WEIGHT * Math.max(0, topShare - S.IDEAL_TOP_SHARE);
 
+  /*
+   * What the two weakest men carry, against the roster average. This is the term
+   * that stops a big budget turning into stars and empty jerseys, and it only
+   * bites below what real offenses actually do.
+   */
+  const ppg = roster.map((p) => p.ppr_ppg_mean).sort((x, y) => x - y);
+  const avg = total / roster.length;
+  const floorShare = roster.length >= 2 && avg > 0 ? ((ppg[0] + ppg[1]) / 2) / avg : 1;
+  const floor = 1 - S.FLOOR_WEIGHT
+    * Math.max(0, S.IDEAL_FLOOR_SHARE - floorShare - S.FLOOR_TOLERANCE);
+
   // Quarterback support applies to catching points only, so it is folded in as a
   // change to the effective total rather than a flat multiplier.
   const effective = sum((p) => p.pass_ppg) + rush + rec * qbSupport;
-  const multiplier = clamp((effective / total) * balance * concentration, S.MIN, S.MAX);
+  const multiplier = clamp(
+    (effective / total) * balance * concentration * Math.max(0.3, floor),
+    S.MIN, S.MAX,
+  );
 
-  return { multiplier, qbSupport, balance, concentration, rushShare, topShare, qbPass, total };
+  return { multiplier, qbSupport, balance, concentration, floor, floorShare,
+    rushShare, topShare, qbPass, total };
 }
 
 /**
@@ -892,7 +997,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 8;
+const ENGINE_API_VERSION = 9;
 
 const publicAPI = {
   API_VERSION: ENGINE_API_VERSION,
@@ -903,7 +1008,7 @@ const publicAPI = {
   resolveGame, playRun, prepareData, toFootballScore,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
   respinCost, respinFees,
-  NICKNAMES, nickname, LINK_TIERS, linkTier, rosterStructure, STRUCTURE, coachReport,
+  NICKNAMES, nickname, TEAM_COLORS, teamColors, contrast, LINK_TIERS, linkTier, rosterStructure, STRUCTURE, coachReport,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

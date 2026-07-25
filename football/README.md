@@ -73,19 +73,55 @@ to choose from. Measured properly, somebody tapping the top row of a best-first
 list was winning 13 games having made no decisions at all, which is what "I am
 drafting bad teams that go 15-2" turned out to mean.
 
-At the shipped `SCALE = 1.90`, 40 runs per policy:
+The cap is **$140M** and `SCALE` is **2.65**. Both moved together; see below for
+why neither could move alone.
+
+At those settings, **150 runs per policy**:
 
 | Policy | Spend | FPPG | Shape | Record | Playoffs | Title | 20-0 |
 |---|---|---|---|---|---|---|---|
-| Cheapest every time | $41M | 22 | x0.76 | 2-15 | 0% | 0% | 0% |
-| Best points per dollar | $58M | 42 | x0.93 | 8-9 | 18% | 1% | 0% |
-| Random tap | $75M | 49 | x0.92 | 10-7 | 32% | 3% | 0% |
-| Taps the top row | $99M | 57 | x0.88 | 12-5 | 50% | 5% | 0.2% |
-| Perfect play (DP) | $99M | 68 | x0.96 | 14-3 | 93% | 19% | 1.2% |
+| Cheapest every time | $42M | 22 | x0.51 | 0-17 | 0% | 0% | 0% |
+| Best points per dollar | $61M | 44 | x0.92 | 5-12 | 1% | 0% | 0% |
+| Random tap | $81M | 51 | x0.73 | 4-13 | 5% | 0% | 0% |
+| Taps the top row | $136M | 79 | x0.86 | 12-5 | 54% | 7% | 0.3% |
+| Perfect play (DP) | $137M | 84 | x1.02 | 14-3 | 89% | 16% | 0.9% |
 
 Careless play finishes 12-5 with a coin flip at the playoffs; perfect play wins 14
-and takes the title about one run in five. Two wins and forty points of playoff
-odds separate them, which is the room skill needs.
+and takes the title about one run in six. Two wins and 35 points of playoff odds
+separate them, which is the room skill needs.
+
+**Use 150 runs, not 40.** The spread across drawn team-sets is wide enough that two
+40-run samples of identical settings disagreed by 18 points of playoff odds and by
+0.08 of average team shape. Both looked authoritative. That is exactly how a bad
+calibration gets locked in, so the sample size is part of the method, not a detail.
+
+### Raising the cap, and why it needed the floor term
+
+At $100M a single $40M player ate a tier off everyone else, so a roster was one
+star and five bodies. $140M buys two or three: careless play now lands **2.1
+players at or above the $27.4M p90 price, against 1.2 before**.
+
+The cap could not be raised on its own. Measured at $140M with the old structure
+model, the gap between tapping the top row and perfect play fell from **3 wins and
+46 points of playoff odds to 1 win and 1 point**. Once everything is affordable
+there is nothing left to decide, and a bigger budget on its own deletes the game.
+
+What restores it is `STRUCTURE.IDEAL_FLOOR_SHARE`. Across 848 real team-seasons the
+two weakest of a team's six skill players average **64% of the roster average**
+(median), and even the decile most skewed toward one man sits at 0.50. Three stars
+plus three minimum-salary bodies comes out at **0.14**. So the extra money has to
+buy a whole offense; you can afford the stars now, you still cannot afford to field
+nobody alongside them.
+
+Two results worth reading twice. Random tapping fell from 10-7 to **4-13**, because
+random picks build broken offenses and the model finally says so. And perfect play
+buys **fewer** expensive players than careless play, 1.4 against 2.1, because the
+balanced roster is the better one. That is the decision the bigger budget was
+supposed to create.
+
+One flag: the re-spin ladder is still $5M, $10M, $15M as specified, which against
+$140M is a smaller proportional bite than it was against $100M (3.6% rather than
+5% for the first). Worth revisiting if re-spinning starts to feel free.
 
 This deliberately does **not** hit §9's 3-6% perfect-season target. The owner
 played it at that setting and found it too easy, and 20-0 reads better as
@@ -156,12 +192,39 @@ An earlier version phrased the same-team link as "Both wore [code] colors" using
 a British spelling, which named a three letter code and explained nothing. There
 are no British spellings anywhere in this directory.
 
-Lines on the field are colored by strength so several of them do not read as one
-tangle: **gold and thick** for a big link, **green** for a good one, **thin blue**
-for a small one, **red** for one that hurts. A legend under the field lists only
-the bands actually on screen, and each row in the chemistry panel carries a dot in
-its band's color. In the draft list each option shows a short reason in the same
-color, like "+2.7% Both Steelers".
+Every label also names **who** the link is with, which it did not before. A tile
+in the draft list reads `+7.3% Palmer, Threw to him`; the chemistry panel reads
+`Carson Palmer and Chad Johnson / Palmer threw Johnson 9 touchdowns in 2005`; a
+player's own sheet reads `with Johnson`. Saying only what two players share, as in
+`+1.5% Boise State`, stated a fact about nobody in particular and left you to work
+out which of your six it applied to.
+
+### The connection rail, and why the lines came off the field
+
+Links used to be drawn as chords straight between chips on the field. At four or
+five links they crossed each other, passed under the discs, and cut through the
+name labels. There is no routing fix for that: the players sit where the formation
+puts them, and the shortest path between two of them goes through whatever is in
+between.
+
+So connections got their own space. Under the field is an **arc diagram**: every
+spot is a node in one row, and every link is an arc hanging below that row. An arc
+cannot cross a player, because the players are all on the line and the arcs are all
+under it. Arc depth grows with the span it covers, so a long arc sits outside a
+short one rather than on top of it. Tap a node to keep only its arcs, which answers
+"who is THIS guy tied to" and is a question the old tangle could not answer at all.
+
+The arc band starts below the whole node block (dot, gap, surname) rather than
+level with the dots. Level with the dots, a short arc's apex landed on the surname
+under the next node: 2 of 5 arcs, measured.
+
+What stays on the field is a **pip** on each shirt: how many players he connects
+to, in his strongest link's color. You still watch the web form as you draft, you
+just read it somewhere it can breathe.
+
+Colors are unchanged and still carry the strength band: **gold and thick** for a
+big link, **green** for a good one, **thin blue** for a small one, **red** for one
+that hurts.
 
 ### Getting the strong links to fire at all
 
@@ -217,11 +280,16 @@ Your team never leaves the screen. The money bar and a condensed field are one
 sticky block at the top, so the field stays visible while you scroll the players.
 Below that: the two wheels, four position tabs, then the players as tiles.
 
-### Four tabs, and nothing else
+### Five tabs: ALL, then the four positions
 
-QB, RB, WR, TE. There used to be a FLEX tab and a LOCKED tab too, and both were
-bookkeeping leaking into the UI: FLEX is a spot on the roster, not a position
-anybody plays, and LOCKED was a bin for players who no longer fit anywhere.
+**ALL is the default**, and it lists the whole squad in position order. Making
+somebody tap through four tabs on every one of six spins just to see what a team
+has is work, not a decision.
+
+The four position tabs are QB, RB, WR, TE. There used to be a FLEX tab and a
+LOCKED tab too, and both were bookkeeping leaking into the UI: FLEX is a spot on
+the roster, not a position anybody plays, and LOCKED was a bin for players who no
+longer fit anywhere.
 
 Every player now sits under the position he actually played. FLEX survives as a
 mechanic, not as a tab: signing a running back when the RB spot is taken but FLEX
@@ -247,6 +315,27 @@ the grid.
 
 Position colors: QB red, RB green, WR blue, TE orange, FLEX purple. Wins are
 green, losses red.
+
+### Club colors
+
+The franchise picker fills the chosen bubble with that club's own primary, a keel
+line of its secondary, and a text color picked for contrast. When the team wheel
+lands, its housing washes once and then holds the same three.
+
+The 64 hex values are hardcoded in `engine.js` rather than fetched: nflverse ships
+a colors table, but a build step and a shipped data file for values that never
+change is the wrong trade.
+
+The text color is **computed**, not listed. The first attempt was a hand-written
+set of "bright" clubs and it was wrong for six of them, putting dark text on San
+Francisco's `#AA0000` at 2.42:1. Taking whichever of white or near-black has the
+higher contrast ratio is always right and needs no maintenance. Worst case after
+that is the Chargers' `#0080C6` at 4.37:1, which no text color beats since both
+options land there; these labels are large and bold, where 3:1 is the bar.
+
+No `color-mix()` anywhere in this: it needs Safari 16.2, and this page has already
+been bitten once by shipping something an iPhone quietly ignored. Layering black
+over the club color does the same job everywhere.
 
 ## Type
 
@@ -405,7 +494,7 @@ stranding you with one player to take.
 
 ## Draft rules as settled
 
-- **Re-spins are one lever per wheel, and the fee comes out of the $100M cap.**
+- **Re-spins are one lever per wheel, and the fee comes out of the $140M cap.**
   *New team* keeps the year and lands on a different team in it. *New year* moves
   to a different year and takes whatever team comes up there. Both cost the same,
   so you pick the wheel by what you want to change rather than by what is cheaper.
