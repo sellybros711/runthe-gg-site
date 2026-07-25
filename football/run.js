@@ -81,6 +81,7 @@ function createRun(opts) {
     roster: [],
     usedPlayers: [],
     usedTeamSeasons: [],
+    draws: [],
     respinsUsed: 0,
     freeRerolls: 0,
     currentDraw: null,
@@ -157,6 +158,10 @@ function sign(run, player) {
   run.roster.push(player);
   run.usedPlayers.push(pkey(player));
   run.usedTeamSeasons.push(run.currentDraw.team_season_id);
+  // Which team-season filled which slot. Needed for the post-run reveal —
+  // "the best possible squad from your six wheel results" — which can only
+  // consider, for each slot, the team-season actually drawn for it.
+  run.draws.push({ slot: run.currentDraw.slot, team_season_id: run.currentDraw.team_season_id });
   run.currentDraw = null;
 
   if (run.roster.length === E.SLOTS.length) run.phase = PHASES.SEASON;
@@ -182,8 +187,15 @@ function startSeason(run, data, ctx) {
   return run;
 }
 
-/** Advance exactly one week. The season is played one game at a time (§7). */
-function advanceWeek(run, data, leagueContext) {
+/**
+ * Advance exactly one week. The season is played one game at a time (§7).
+ *
+ * `displayCal` is optional; when supplied, each result also carries a
+ * football-looking scoreline for display. The internal fantasy-space numbers are
+ * kept alongside it so the sim stays auditable — the transform is presentation
+ * only and never decides anything.
+ */
+function advanceWeek(run, data, leagueContext, displayCal) {
   if (run.phase !== PHASES.SEASON) throw new Error('season not active');
   const s = run.season;
   const ids = run.schedule.concat(run.playoffs);
@@ -195,6 +207,9 @@ function advanceWeek(run, data, leagueContext) {
 
   s.week++;
   if (r.won) s.wins++; else s.losses++;
+  const shown = displayCal
+    ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal)
+    : null;
   s.results.push({
     week: s.week,
     opponent: opp.display,
@@ -203,6 +218,8 @@ function advanceWeek(run, data, leagueContext) {
     won: r.won,
     yourScore: Math.round(r.yourScore * 10) / 10,
     oppScore: Math.round(r.oppScore * 10) / 10,
+    shownYou: shown ? shown.you : null,
+    shownThem: shown ? shown.them : null,
   });
 
   const outOfLives = s.losses > E.CONSTANTS.LIVES;
@@ -235,9 +252,79 @@ function indexData(players, teamSeasons) {
   };
 }
 
+/**
+ * The reveal (§7): the highest-scoring squad the player COULD have built from
+ * the six team-seasons the wheel actually gave them.
+ *
+ * Constrained the way the draft is: slot i may only use the team-season drawn at
+ * spin i, and the whole thing must fit the cap after re-spin fees. Solved as a
+ * DP over discretized budget — the same shape as the optimizer in simulator.js.
+ *
+ * Maximizes raw points rather than points x chemistry: chemistry is not separable
+ * across slots, so a joint optimum would need a much heavier search for a screen
+ * that exists to say "you left this on the table". The chemistry of the resulting
+ * squad is reported alongside, so a missed battery is still visible.
+ */
+function bestPossibleSquad(run, data, ctx) {
+  const BUCKET = 0.5;
+  const budget = E.CONSTANTS.CAP_MUSD - run.respinsUsed * E.CONSTANTS.RESPIN_COST_MUSD;
+  const NB = Math.round(budget / BUCKET) + 1;
+
+  const perSlot = run.draws.map((d) => {
+    const allowed = E.SLOT_ELIGIBILITY[d.slot];
+    return (data.playersByTeamSeason[d.team_season_id] ?? [])
+      .filter((p) => allowed.includes(p.position));
+  });
+
+  // best[i][b] = best ppg for slots i.. with b buckets left
+  let next = new Array(NB).fill(0);
+  const choice = [];
+  for (let i = perSlot.length - 1; i >= 0; i--) {
+    const cur = new Array(NB).fill(-Infinity);
+    const pickAt = new Array(NB).fill(null);
+    for (let b = 0; b < NB; b++) {
+      for (const p of perSlot[i]) {
+        const cost = Math.ceil(p.price_musd / BUCKET);
+        if (cost > b) continue;
+        const val = p.ppr_ppg_mean + next[b - cost];
+        if (val > cur[b]) { cur[b] = val; pickAt[b] = { p, cost }; }
+      }
+    }
+    choice[i] = pickAt;
+    next = cur;
+  }
+
+  const squad = [];
+  let b = NB - 1;
+  for (let i = 0; i < perSlot.length; i++) {
+    const c = choice[i][b];
+    if (!c) return null;
+    squad.push(c.p);
+    b -= c.cost;
+  }
+  const chem = E.resolveChemistry(squad, ctx);
+  const yours = run.roster.reduce((s, p) => s + p.ppr_ppg_mean, 0) * run.season.chemistry;
+  const theirs = squad.reduce((s, p) => s + p.ppr_ppg_mean, 0) * chem.multiplier;
+  return {
+    squad,
+    chemistry: chem.multiplier,
+    chemistryLinks: chem.links,
+    spend: squad.reduce((s, p) => s + p.price_musd, 0),
+    yourProjected: yours,
+    bestProjected: theirs,
+    missedBy: theirs - yours,
+    // Slots where you left real points on the table, worst first.
+    misses: squad
+      .map((p, i) => ({ slot: E.SLOTS[i], had: run.roster[i], could: p,
+        delta: p.ppr_ppg_mean - run.roster[i].ppr_ppg_mean }))
+      .filter((m) => m.delta > 0.5)
+      .sort((a, b2) => b2.delta - a.delta),
+  };
+}
+
 const api = {
   PHASES, createRun, pickFranchise, currentSlot, spin, respin, sign,
-  startSeason, advanceWeek, indexData,
+  startSeason, advanceWeek, indexData, bestPossibleSquad,
   remaining, reserveFloor, canRespin, slotsLeft, affordableFrom,
 };
 

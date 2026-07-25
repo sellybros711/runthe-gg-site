@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+  // Theme before first paint, so a dark-mode user never sees a light flash.
+  (function(){ try{ if(localStorage.getItem('ps-theme')==='dark'){ document.documentElement.classList.add('dark'); } }catch(e){} })();
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Perfect Season — RunThe.GG</title>
+<meta name="description" content="Spin the wheel, sign six players from six random NFL team-seasons, then play a 20-game season and try to do what the 2007 Patriots couldn't: finish it without losing.">
+<meta name="theme-color" content="#0f3d2e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f3d2e'/%3E%3Ctext x='16' y='24' font-size='19' text-anchor='middle'%3E%F0%9F%8F%86%3C/text%3E%3C/svg%3E">
+<meta property="og:title" content="The Perfect Season — RunThe.GG">
+<meta property="og:description" content="Six spins, six signings, one 20-game season. Lose once and it's over.">
+<meta property="og:type" content="website">
+<style>
+  :root{
+    --ink:#16120F; --paper:#FBF4E6; --white:#fff;
+    --muted:#8a7d70; --muted-2:#5a5048;
+    --green:#0f3d2e; --green-2:#14543f; --gold:#EBA61F; --red:#E5402A;
+    --blue:#2A4B9B; --teal:#138A6B;
+    --ink-rgb:22,18,15;
+    --border-soft:rgba(var(--ink-rgb),.16);
+    --shadow:0 14px 30px -8px rgba(var(--ink-rgb),.30), 0 4px 10px -4px rgba(var(--ink-rgb),.18);
+    --pos-qb:#E5402A; --pos-rb:#138A6B; --pos-wr:#2A4B9B; --pos-te:#8B5CF6; --pos-flex:#5B6470;
+    --card:#fff; --oncard:#16120F;
+  }
+  html.dark{
+    --ink:#F4ECDA; --paper:#0d1512; --white:#16211c;
+    --muted:#93a49c; --muted-2:#b9c9c1;
+    --ink-rgb:244,236,218;
+    --border-soft:rgba(var(--ink-rgb),.18);
+    --card:#16211c; --oncard:#F4ECDA;
+    --shadow:0 14px 30px -8px rgba(0,0,0,.55), 0 4px 10px -4px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:16px;line-height:1.45;overscroll-behavior-y:none;}
+  .wrap{max-width:560px;margin:0 auto;padding:14px 14px 40px;}
+  h1,h2,h3{margin:0;line-height:1.15;letter-spacing:-.01em}
+  .muted{color:var(--muted)}
+  .cap{font-weight:900;text-transform:uppercase;letter-spacing:2px;font-size:10px;color:var(--muted)}
+  button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+  .btn{display:block;width:100%;padding:15px 18px;border-radius:14px;background:var(--green);
+    color:#F4ECDA;font-weight:800;font-size:16px;text-align:center;box-shadow:var(--shadow);
+    transition:transform .08s ease, filter .15s ease}
+  .btn:active{transform:translateY(1px) scale(.995)}
+  .btn:disabled{opacity:.45;cursor:default}
+  .btn.gold{background:var(--gold);color:#16120F}
+  .btn.ghost{background:transparent;color:var(--ink);box-shadow:none;border:1.5px solid var(--border-soft)}
+  .btn.small{padding:11px 14px;font-size:14px;border-radius:11px}
+  .row{display:flex;gap:9px;align-items:center}
+  .card{background:var(--card);color:var(--oncard);border:1.5px solid var(--border-soft);
+    border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+  .screen{display:none;animation:fade .22s ease}
+  .screen.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* header */
+  header{display:flex;align-items:center;justify-content:space-between;margin:2px 0 14px}
+  .brand{font-weight:900;font-size:15px;letter-spacing:-.02em}
+  .brand span{color:var(--gold)}
+  .iconbtn{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border-soft);
+    display:grid;place-items:center;font-size:15px}
+
+  /* intro */
+  .hero{background:var(--green);color:#F4ECDA;border-radius:20px;padding:22px 18px;box-shadow:var(--shadow);
+    background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.045) 0 1px,transparent 1px 44px)}
+  .hero h1{font-size:30px;font-weight:900}
+  .hero p{margin:9px 0 0;font-size:14px;opacity:.9}
+  .rules{margin:14px 0 0;padding:0;list-style:none;display:grid;gap:8px}
+  .rules li{display:flex;gap:10px;font-size:14px;align-items:flex-start}
+  .rules b{color:var(--gold)}
+  .rulenum{flex:0 0 22px;height:22px;border-radius:7px;background:var(--gold);color:#16120F;
+    font-weight:900;font-size:11px;display:grid;place-items:center;margin-top:1px}
+
+  /* franchise grid */
+  .divgrid{display:grid;gap:12px}
+  .divblock .cap{margin-bottom:6px;display:block}
+  .teams{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+  .team{padding:11px 4px;border-radius:11px;border:1.5px solid var(--border-soft);background:var(--card);
+    font-weight:900;font-size:13px;text-align:center;transition:all .12s ease}
+  .team:active{transform:scale(.96)}
+  .team.sel{background:var(--green);color:#F4ECDA;border-color:var(--green)}
+
+  /* cap bar */
+  .capbar{position:sticky;top:0;z-index:20;background:var(--paper);padding:8px 0 10px;margin:-4px 0 12px}
+  .money{display:flex;align-items:baseline;gap:8px}
+  .money .big{font-size:27px;font-weight:900;letter-spacing:-.02em}
+  .money .big.low{color:var(--red)}
+  .bar{height:8px;border-radius:99px;background:rgba(var(--ink-rgb),.12);overflow:hidden;margin-top:7px}
+  .bar i{display:block;height:100%;background:var(--green);border-radius:99px;transition:width .35s ease}
+  .bar i.low{background:var(--red)}
+  .slotdots{display:flex;gap:5px;margin-top:9px}
+  .dot{flex:1;height:5px;border-radius:99px;background:rgba(var(--ink-rgb),.14)}
+  .dot.done{background:var(--green)}
+  .dot.now{background:var(--gold)}
+  .warn{margin-top:8px;font-size:12px;font-weight:700;color:var(--red)}
+
+  /* wheel */
+  .reelbox{height:96px;overflow:hidden;border-radius:14px;border:1.5px solid var(--border-soft);
+    background:var(--green);color:#F4ECDA;position:relative}
+  .reelbox:after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(180deg,rgba(0,0,0,.35),transparent 38%,transparent 62%,rgba(0,0,0,.35))}
+  .reel{will-change:transform}
+  .reelitem{height:96px;display:grid;place-items:center;text-align:center;padding:0 12px;
+    font-weight:900;font-size:17px;letter-spacing:-.01em}
+  .slotlabel{display:inline-block;padding:4px 10px;border-radius:8px;background:var(--gold);color:#16120F;
+    font-weight:900;font-size:11px;letter-spacing:1.5px;text-transform:uppercase}
+
+  /* player options */
+  .opts{display:grid;gap:8px;margin-top:12px}
+  .opt{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;
+    border:1.5px solid var(--border-soft);background:var(--card);text-align:left;width:100%;
+    transition:all .12s ease}
+  .opt:active{transform:scale(.985)}
+  .opt.best{border-color:var(--gold);box-shadow:0 0 0 2px rgba(235,166,31,.22)}
+  .pos{flex:0 0 34px;height:34px;border-radius:9px;display:grid;place-items:center;
+    color:#fff;font-weight:900;font-size:11px}
+  .opt .nm{flex:1 1 auto;min-width:0}
+  .opt .nm b{display:block;font-size:14.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .opt .nm small{display:block;color:var(--muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .price{flex:0 0 auto;font-weight:900;font-size:15px;text-align:right}
+  .price small{display:block;font-weight:700;font-size:10.5px;color:var(--muted)}
+
+  /* roster */
+  .rline{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-soft)}
+  .rline:last-child{border-bottom:none}
+  .rslot{flex:0 0 46px;font-weight:900;font-size:10px;letter-spacing:1px;color:var(--muted)}
+  .rline .nm{flex:1 1 auto;min-width:0}
+  .rline .nm b{display:block;font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rline .nm small{color:var(--muted);font-size:11px}
+
+  /* chemistry */
+  .chembig{font-size:34px;font-weight:900;letter-spacing:-.02em;color:var(--teal)}
+  .chembig.none{color:var(--muted)}
+  .link{display:flex;gap:8px;align-items:center;font-size:13px;padding:6px 0}
+  .lval{flex:0 0 44px;font-weight:900;font-size:12px;color:var(--teal);text-align:right}
+  .lval.neg{color:var(--red)}
+
+  /* season */
+  .scorecard{background:var(--green);color:#F4ECDA;border-radius:18px;padding:16px;box-shadow:var(--shadow);
+    background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.045) 0 1px,transparent 1px 44px)}
+  .vs{font-size:12px;opacity:.85;font-weight:700}
+  .oppname{font-size:19px;font-weight:900;margin-top:3px;letter-spacing:-.01em}
+  .final{display:flex;align-items:center;justify-content:center;gap:14px;margin:14px 0 4px}
+  .final .n{font-size:44px;font-weight:900;letter-spacing:-.03em;line-height:1}
+  .final .n.lose{opacity:.55}
+  .wl{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;
+    font-weight:900;font-size:13px}
+  .wl.w{background:var(--gold);color:#16120F} .wl.l{background:var(--red);color:#fff}
+  .weeks{display:grid;gap:5px;margin-top:12px;max-height:280px;overflow-y:auto}
+  .wrow{display:flex;align-items:center;gap:8px;font-size:13px;padding:7px 10px;border-radius:10px;
+    background:var(--card);border:1.5px solid var(--border-soft);overflow:hidden}
+  .wrow .wk{flex:0 0 46px;font-weight:900;font-size:10px;color:var(--muted);letter-spacing:.4px}
+  .wrow .op{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+  /* Fixed width and no shrink: the scoreline must never be the thing that gets
+     clipped — an ellipsised score reads as a wrong score. */
+  .wrow .sc{flex:0 0 58px;text-align:right;font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .wrow.po{background:linear-gradient(90deg,rgba(235,166,31,.16),var(--card))}
+  .rec{display:flex;gap:7px;align-items:baseline}
+  .rec .r{font-size:26px;font-weight:900;letter-spacing:-.02em}
+
+  /* outcome */
+  .final-card{border-radius:20px;padding:22px 18px;box-shadow:var(--shadow);text-align:center;
+    background:var(--green);color:#F4ECDA;
+    background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 44px)}
+  .final-card.perfect{background:linear-gradient(160deg,var(--gold),#c8860f);color:#16120F}
+  .final-card.beat{background:linear-gradient(160deg,var(--teal),#0d6b52);color:#F4ECDA}
+  .final-card .icon{font-size:44px;line-height:1}
+  .final-card h2{font-size:25px;font-weight:900;margin-top:8px}
+  .final-card p{margin:8px 0 0;font-size:14px;opacity:.92}
+  .missrow{display:flex;align-items:center;gap:9px;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border-soft)}
+  .missrow:last-child{border-bottom:none}
+  .missrow .arrow{color:var(--muted);flex:0 0 auto}
+  .missrow .up{color:var(--teal);font-weight:900;flex:0 0 auto;font-size:12px}
+
+  .loading{text-align:center;padding:70px 20px}
+  .spinner{width:34px;height:34px;margin:0 auto 14px;border-radius:50%;
+    border:3px solid rgba(var(--ink-rgb),.16);border-top-color:var(--green);animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(80px);
+    background:var(--ink);color:var(--paper);padding:11px 17px;border-radius:11px;font-weight:700;
+    font-size:14px;opacity:0;transition:all .25s ease;z-index:99;pointer-events:none;max-width:90vw}
+  .toast.on{transform:translateX(-50%);opacity:1}
+  .sep{height:1px;background:var(--border-soft);margin:14px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">RunThe<span>.GG</span></div>
+    <button class="iconbtn" id="theme" aria-label="Toggle theme">◐</button>
+  </header>
+
+  <!-- LOADING -->
+  <div class="screen on" id="s-load">
+    <div class="loading"><div class="spinner"></div><div class="muted">Loading 27 seasons…</div></div>
+  </div>
+
+  <!-- INTRO -->
+  <div class="screen" id="s-intro">
+    <div class="hero">
+      <h1>The Perfect Season</h1>
+      <p>The 2007 Patriots went 18–1. Beat that.</p>
+    </div>
+    <ul class="rules">
+      <li><span class="rulenum">1</span><span>A wheel spins to a random NFL team-season. <b>Sign one player from it.</b> Six spins, six slots.</span></li>
+      <li><span class="rulenum">2</span><span>You have <b>$100M</b>. Stars cost up to $48M. Re-spins cost <b>$15M</b> out of that same budget.</span></li>
+      <li><span class="rulenum">3</span><span>Players from the same team, college or draft class build <b>chemistry</b> — up to +15%.</span></li>
+      <li><span class="rulenum">4</span><span>Then play <b>20 games</b>. Lose twice and the run is over.</span></li>
+      <li><span class="rulenum">5</span><span><b>19–1</b> beats the Patriots. <b>20–0</b> is perfect.</span></li>
+    </ul>
+    <div class="sep"></div>
+    <button class="btn" id="go-franchise">Pick your franchise</button>
+    <div class="row" style="margin-top:9px">
+      <button class="btn ghost small" id="go-daily">Today's challenge</button>
+    </div>
+    <p class="muted" style="font-size:11.5px;margin-top:12px">Every number comes from real weekly game logs, 1999–2025. Prices are set by production, not contracts.</p>
+  </div>
+
+  <!-- FRANCHISE -->
+  <div class="screen" id="s-franchise">
+    <span class="cap">Step 1 of 3</span>
+    <h2 style="margin:4px 0 3px">Pick your franchise</h2>
+    <p class="muted" style="font-size:13px;margin:0 0 14px">This sets your division and schedule shape. It never makes the run easier or harder.</p>
+    <div class="divgrid" id="divgrid"></div>
+    <div style="margin-top:16px"><button class="btn" id="go-draft" disabled>Start the draft</button></div>
+  </div>
+
+  <!-- DRAFT -->
+  <div class="screen" id="s-draft">
+    <div class="capbar">
+      <div class="money"><div class="big" id="d-money">$100.0M</div><div class="muted" style="font-size:12px" id="d-sub">to fill 6 slots</div></div>
+      <div class="bar"><i id="d-bar" style="width:100%"></i></div>
+      <div class="slotdots" id="d-dots"></div>
+      <div class="warn" id="d-warn" style="display:none"></div>
+    </div>
+    <div style="margin-bottom:8px"><span class="slotlabel" id="d-slot">QB</span></div>
+    <div class="reelbox"><div class="reel" id="d-reel"></div></div>
+    <div id="d-opts" class="opts"></div>
+    <div id="d-respin" style="margin-top:10px"></div>
+  </div>
+
+  <!-- SQUAD / SCHEDULE REVEAL -->
+  <div class="screen" id="s-reveal">
+    <span class="cap">Step 3 of 3</span>
+    <h2 style="margin:4px 0 12px">Your squad</h2>
+    <div class="card" id="r-roster"></div>
+    <div class="card" style="margin-top:11px">
+      <span class="cap">Chemistry</span>
+      <div class="chembig" id="r-chem">+0%</div>
+      <div id="r-links"></div>
+    </div>
+    <div class="card" style="margin-top:11px">
+      <span class="cap">Your schedule</span>
+      <div id="r-sched" style="margin-top:7px;font-size:13px"></div>
+    </div>
+    <div style="margin-top:14px"><button class="btn gold" id="go-season">Kick off Week 1</button></div>
+  </div>
+
+  <!-- SEASON -->
+  <div class="screen" id="s-season">
+    <div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:11px">
+      <div class="rec"><div class="r" id="v-rec">0–0</div><div class="muted" style="font-size:12px" id="v-lives"></div></div>
+      <div class="muted" style="font-size:12px" id="v-chem"></div>
+    </div>
+    <div class="scorecard" id="v-card">
+      <div class="vs" id="v-when">Week 1</div>
+      <div class="oppname" id="v-opp">—</div>
+      <div class="final" id="v-final" style="display:none">
+        <div class="n" id="v-you">0</div><div style="opacity:.5;font-weight:900">–</div><div class="n" id="v-them">0</div>
+      </div>
+    </div>
+    <div style="margin-top:12px"><button class="btn gold" id="v-next">Play this game</button></div>
+    <div class="weeks" id="v-weeks"></div>
+  </div>
+
+  <!-- OVER -->
+  <div class="screen" id="s-over">
+    <div class="final-card" id="o-card">
+      <div class="icon" id="o-icon">🏈</div>
+      <h2 id="o-title">Run over</h2>
+      <p id="o-sub">—</p>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <span class="cap">Season</span>
+      <div class="weeks" id="o-weeks" style="max-height:none;margin-top:8px"></div>
+    </div>
+    <div class="card" style="margin-top:11px" id="o-reveal-box">
+      <span class="cap">What you left on the table</span>
+      <div id="o-reveal" style="margin-top:7px"></div>
+    </div>
+    <div style="margin-top:14px"><button class="btn gold" id="o-share">Share result</button></div>
+    <div style="margin-top:9px"><button class="btn ghost" id="o-again">New run</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="engine.js?v=1"></script>
+<script src="run.js?v=1"></script>
+<script>
+(function(){
+'use strict';
+const E = window.PS_ENGINE, R = window.PS_RUN;
+const $ = (id)=>document.getElementById(id);
+const POSCOL = {QB:'--pos-qb',RB:'--pos-rb',WR:'--pos-wr',TE:'--pos-te',FLEX:'--pos-flex'};
+const money = (v)=>'$'+v.toFixed(1)+'M';
+
+let DATA=null, CTX=null, LEAGUE=null, CAL=null, BYKEY=null, run=null, selected=null;
+
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on')); $(id).classList.add('on'); window.scrollTo({top:0,behavior:'auto'}); }
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2200); }
+
+$('theme').addEventListener('click',()=>{
+  const dark=document.documentElement.classList.toggle('dark');
+  try{ localStorage.setItem('ps-theme', dark?'dark':'light'); }catch(e){}
+});
+
+// ─── load ────────────────────────────────────────────────────────────────────
+async function boot(){
+  try{
+    const j = (f)=>fetch(f+'?v=1').then(r=>{ if(!r.ok) throw new Error(f+' '+r.status); return r.json(); });
+    const [players, teams, rosters, battery, coaches, curated, league, cal] = await Promise.all([
+      j('data/player_seasons.json'), j('data/team_seasons.json'), j('data/team_season_rosters.json'),
+      j('data/battery.json'), j('data/coaches.json'), j('data/curated.json'),
+      j('data/league_context.json'), j('data/display_calibration.json')
+    ]);
+    DATA = R.indexData(players, teams);
+    CTX = {battery, coaches, curated};
+    LEAGUE = league.league_avg_pts_allowed_by_season;
+    CAL = cal;
+    BYKEY = new Map(players.map(p=>[p.player_id+'|'+p.season, p]));
+    void rosters;
+    buildFranchiseGrid();
+    show('s-intro');
+  }catch(err){
+    $('s-load').innerHTML = '<div class="loading"><h3>Couldn\'t load the data</h3><p class="muted" style="font-size:13px">'+
+      String(err.message)+'<br><br>The JSON files must sit in <b>football/data/</b> next to this page.</p></div>';
+  }
+}
+
+// ─── franchise ───────────────────────────────────────────────────────────────
+function buildFranchiseGrid(){
+  const divs={};
+  for(const t of DATA.teamSeasons){ (divs[t.division] ??= new Set()).add(t.franchise); }
+  const order=['AFC East','AFC North','AFC South','AFC West','NFC East','NFC North','NFC South','NFC West'];
+  $('divgrid').innerHTML = order.map(d=>
+    '<div class="divblock"><span class="cap">'+d+'</span><div class="teams">'+
+    [...divs[d]].sort().map(f=>'<button class="team" data-f="'+f+'">'+f+'</button>').join('')+
+    '</div></div>').join('');
+  $('divgrid').addEventListener('click',(e)=>{
+    const b=e.target.closest('.team'); if(!b) return;
+    document.querySelectorAll('.team').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel'); selected=b.dataset.f; $('go-draft').disabled=false;
+  });
+}
+
+$('go-franchise').addEventListener('click',()=>{ run=R.createRun({}); show('s-franchise'); });
+$('go-daily').addEventListener('click',()=>{
+  const d=new Date().toISOString().slice(0,10);
+  run=R.createRun({daily:d});
+  toast('Daily challenge — same wheel for everyone today');
+  show('s-franchise');
+});
+$('go-draft').addEventListener('click',()=>{
+  R.pickFranchise(run, selected);
+  show('s-draft'); nextSpin();
+});
+
+// ─── draft ───────────────────────────────────────────────────────────────────
+function paintCap(){
+  const rem=R.remaining(run), left=R.slotsLeft(run), floor=R.reserveFloor(run);
+  const low = rem <= floor + 6;
+  $('d-money').textContent = money(rem);
+  $('d-money').classList.toggle('low', low);
+  $('d-sub').textContent = left>0 ? ('to fill '+left+' more slot'+(left===1?'':'s')) : 'all slots filled';
+  const pct = Math.max(0, Math.min(100, rem/E.CONSTANTS.CAP_MUSD*100));
+  $('d-bar').style.width = pct+'%';
+  $('d-bar').classList.toggle('low', low);
+  $('d-dots').innerHTML = E.SLOTS.map((s,i)=>
+    '<div class="dot '+(i<run.roster.length?'done':(i===run.roster.length?'now':''))+'"></div>').join('');
+  // Unspent money is the trap: value-hunting underspends badly, so say so.
+  const w=$('d-warn');
+  if(left>0 && floor>0 && rem-floor < 8){
+    w.style.display='block'; w.textContent='Keep at least '+money(floor)+' for your remaining slots.';
+  } else if(left===1 && rem>25){
+    w.style.display='block'; w.textContent='You still have '+money(rem)+' unspent — spend it here or waste it.';
+  } else { w.style.display='none'; }
+}
+
+function reelSpin(target, done){
+  const pool = DATA.teamSeasons;
+  const items=[]; const DECOYS=18;
+  for(let i=0;i<DECOYS;i++) items.push(pool[Math.floor(Math.random()*pool.length)].display);
+  items.push(target);
+  items.push(pool[0].display);
+  const reel=$('d-reel');
+  reel.innerHTML = items.map(n=>'<div class="reelitem">'+n+'</div>').join('');
+  reel.style.transition='none'; reel.style.transform='translateY(0)';
+  void reel.offsetHeight;
+  reel.style.transition='transform 1750ms cubic-bezier(.11,.66,.16,1)';
+  reel.style.transform='translateY(-'+(DECOYS*96)+'px)';
+  let fired=false; const fin=()=>{ if(fired)return; fired=true; done(); };
+  reel.addEventListener('transitionend',fin,{once:true});
+  setTimeout(fin,1950);
+}
+
+function nextSpin(){
+  paintCap();
+  const slot=R.currentSlot(run);
+  $('d-slot').textContent = slot==='FLEX' ? 'FLEX — RB / WR / TE' : slot;
+  $('d-opts').innerHTML=''; $('d-respin').innerHTML='';
+  const draw=R.spin(run, DATA);
+  reelSpin(draw.display, ()=>paintOptions(draw));
+}
+
+function paintOptions(draw){
+  const opts = draw.options.map(k=>BYKEY.get(k));
+  const bestPpg = Math.max.apply(null, opts.map(p=>p.ppr_ppg_mean));
+  $('d-opts').innerHTML = opts.slice(0,8).map(p=>{
+    const isBest = p.ppr_ppg_mean===bestPpg;
+    return '<button class="opt'+(isBest?' best':'')+'" data-k="'+p.player_id+'|'+p.season+'">'+
+      '<span class="pos" style="background:var('+POSCOL[p.position]+')">'+p.position+'</span>'+
+      '<span class="nm"><b>'+p.name+'</b><small>'+p.season+' '+p.team_display+' · '+p.ppr_ppg_mean.toFixed(1)+' ppg ± '+p.ppr_ppg_sd.toFixed(1)+'</small></span>'+
+      '<span class="price">'+money(p.price_musd)+'<small>'+(p.price_musd>=40?'generational':p.price_musd>=25?'elite':p.price_musd>=12?'starter':'value')+'</small></span>'+
+    '</button>';
+  }).join('') + (opts.length>8 ? '<p class="muted" style="font-size:12px;text-align:center;margin:2px 0 0">'+(opts.length-8)+' cheaper options not shown</p>' : '');
+
+  const chk=R.canRespin(run);
+  $('d-respin').innerHTML = chk.ok
+    ? '<button class="btn ghost small" id="btn-respin">Re-spin — '+money(E.CONSTANTS.RESPIN_COST_MUSD)+' from your cap ('+(E.CONSTANTS.MAX_RESPINS-run.respinsUsed)+' left)</button>'
+    : '<p class="muted" style="font-size:12px;text-align:center;margin:0">'+
+      (run.respinsUsed>=E.CONSTANTS.MAX_RESPINS?'No re-spins left':chk.reason)+'</p>';
+  const rb=$('btn-respin');
+  if(rb) rb.addEventListener('click',()=>{
+    $('d-opts').innerHTML=''; $('d-respin').innerHTML='';
+    const d2=R.respin(run, DATA);
+    paintCap();
+    reelSpin(d2.display, ()=>paintOptions(d2));
+  });
+}
+
+$('d-opts').addEventListener('click',(e)=>{
+  const b=e.target.closest('.opt'); if(!b) return;
+  const p=BYKEY.get(b.dataset.k);
+  try{ R.sign(run,p); }catch(err){ toast(err.message); return; }
+  if(run.phase===R.PHASES.SEASON){ paintReveal(); } else { nextSpin(); }
+});
+
+// ─── reveal ──────────────────────────────────────────────────────────────────
+function paintReveal(){
+  R.startSeason(run, DATA, CTX);
+  const spent = run.roster.reduce((s,p)=>s+p.price_musd,0);
+  const fees = run.respinsUsed*E.CONSTANTS.RESPIN_COST_MUSD;
+  $('r-roster').innerHTML = run.roster.map((p,i)=>
+    '<div class="rline"><span class="rslot">'+E.SLOTS[i]+'</span>'+
+    '<span class="pos" style="background:var('+POSCOL[p.position]+');flex:0 0 28px;height:28px;font-size:10px">'+p.position+'</span>'+
+    '<span class="nm"><b>'+p.name+'</b><small>'+p.season+' '+p.team_display+' · '+p.ppr_ppg_mean.toFixed(1)+' ppg</small></span>'+
+    '<span class="price" style="font-size:13.5px">'+money(p.price_musd)+'</span></div>').join('')
+    + '<div class="sep"></div><div class="row" style="justify-content:space-between;font-size:12.5px">'
+    + '<span class="muted">'+money(spent)+' on players'+(fees?' + '+money(fees)+' in re-spins':'')+'</span>'
+    + '<b>'+money(spent+fees)+' of $100M</b></div>';
+
+  const mult=run.season.chemistry, pct=(mult-1)*100;
+  $('r-chem').textContent = (pct>=0?'+':'')+pct.toFixed(1)+'%';
+  $('r-chem').classList.toggle('none', Math.abs(pct)<0.05);
+  const links=run.season.chemistryLinks;
+  $('r-links').innerHTML = links.length
+    ? links.map(l=>'<div class="link"><span class="lval'+(l.value<0?' neg':'')+'">'+(l.value>0?'+':'')+(l.value*100).toFixed(0)+'%</span><span>'+l.label+'</span></div>').join('')
+    : '<p class="muted" style="font-size:13px;margin:4px 0 0">Six strangers. No shared teams, colleges or draft classes.</p>';
+
+  const ids=run.schedule;
+  $('r-sched').innerHTML = ids.map((id,i)=>{
+    const t=DATA.byTeamSeasonId[id];
+    return '<div class="row" style="justify-content:space-between;padding:3px 0"><span class="muted" style="font-size:11px;flex:0 0 46px">Wk '+(i+1)+'</span><span style="flex:1;font-weight:600">'+t.display+'</span><span class="muted" style="font-size:11px">'+t.record+'</span></div>';
+  }).join('') + '<div class="sep"></div><span class="cap">Playoffs</span>' + run.playoffs.map(id=>{
+    const t=DATA.byTeamSeasonId[id];
+    return '<div class="row" style="justify-content:space-between;padding:3px 0"><span style="flex:1;font-weight:600">'+t.display+'</span><span class="muted" style="font-size:11px">'+t.record+'</span></div>';
+  }).join('');
+  show('s-reveal');
+}
+
+$('go-season').addEventListener('click',()=>{ paintSeason(); show('s-season'); });
+
+// ─── season ──────────────────────────────────────────────────────────────────
+function paintSeason(){
+  const s=run.season;
+  const ids=run.schedule.concat(run.playoffs);
+  $('v-rec').textContent = s.wins+'–'+s.losses;
+  const livesLeft = E.CONSTANTS.LIVES - s.losses;
+  $('v-lives').textContent = s.losses>E.CONSTANTS.LIVES ? '' :
+    (livesLeft>0 ? '· '+livesLeft+' loss to spare' : '· next loss ends it');
+  $('v-chem').textContent = 'chemistry ×'+s.chemistry.toFixed(3);
+
+  if(s.week < ids.length){
+    const opp=DATA.byTeamSeasonId[ids[s.week]];
+    const isPo = s.week >= run.schedule.length;
+    $('v-when').textContent = isPo
+      ? ['Divisional','Conference Championship','Super Bowl'][s.week-run.schedule.length]
+      : 'Week '+(s.week+1);
+    $('v-opp').textContent = opp.display;
+    $('v-final').style.display='none';
+    $('v-next').textContent = 'Play this game';
+    $('v-next').disabled=false;
+  }
+  paintWeeks($('v-weeks'), s.results);
+}
+
+function paintWeeks(el, results){
+  el.innerHTML = results.slice().reverse().map(r=>
+    '<div class="wrow'+(r.playoff?' po':'')+'">'+
+    '<span class="wk">'+(r.playoff?'PLAYOFF':'WEEK '+r.week)+'</span>'+
+    '<span class="wl '+(r.won?'w':'l')+'">'+(r.won?'W':'L')+'</span>'+
+    '<span class="op">'+r.opponent+'</span>'+
+    '<span class="sc">'+r.shownYou+'–'+r.shownThem+'</span></div>').join('');
+}
+
+$('v-next').addEventListener('click',()=>{
+  const btn=$('v-next'); btn.disabled=true;
+  const r=R.advanceWeek(run, DATA, LEAGUE, CAL);
+  $('v-you').textContent=r.shownYou; $('v-them').textContent=r.shownThem;
+  $('v-you').classList.toggle('lose', !r.won); $('v-them').classList.toggle('lose', r.won);
+  $('v-final').style.display='flex';
+  const s=run.season;
+  $('v-rec').textContent = s.wins+'–'+s.losses;
+  paintWeeks($('v-weeks'), s.results);
+
+  setTimeout(()=>{
+    if(run.phase===R.PHASES.OVER){ paintOver(); show('s-over'); return; }
+    btn.textContent='Next game';
+    btn.disabled=false;
+    paintSeason();
+  }, 1150);
+});
+
+// ─── over ────────────────────────────────────────────────────────────────────
+function paintOver(){
+  const o=run.outcome, s=run.season;
+  const card=$('o-card'); card.className='final-card';
+  const last=s.results[s.results.length-1];
+  if(o.perfect){
+    card.classList.add('perfect'); $('o-icon').textContent='🏆';
+    $('o-title').textContent='20–0. Perfect.';
+    $('o-sub').textContent="You did what the 2007 Patriots couldn't.";
+  } else if(o.beatBenchmark){
+    card.classList.add('beat'); $('o-icon').textContent='🥈';
+    $('o-title').textContent=o.record+'. You beat the Patriots.';
+    $('o-sub').textContent='Better than 18–1 — but not perfect.';
+  } else {
+    /*
+     * "Perfect through Week N" is only true if the run had no EARLIER loss. With
+     * a life in hand the first loss can come long before the last game, so the
+     * headline has to check rather than assume the final game was the only one
+     * lost — this card is the shareable artifact and must not overstate the run.
+     */
+    $('o-icon').textContent='🏈';
+    const firstLoss = s.results.find(r=>!r.won);
+    const cleanUntilEnd = firstLoss && firstLoss.week === o.weekReached;
+    if(cleanUntilEnd){
+      $('o-title').innerHTML='Perfect through<br>Week '+Math.max(0,o.weekReached-1);
+      $('o-sub').textContent='Lost '+last.shownYou+'–'+last.shownThem+' to the '+last.opponent+'.';
+    } else {
+      $('o-title').innerHTML='Knocked out in<br>Week '+o.weekReached;
+      $('o-sub').textContent='Finished '+o.record.replace('-','–')+'. Second loss was '+
+        last.shownYou+'–'+last.shownThem+' to the '+last.opponent+'.';
+    }
+  }
+  paintWeeks($('o-weeks'), s.results);
+
+  const best=R.bestPossibleSquad(run, DATA, CTX);
+  if(!best || !best.misses.length){
+    $('o-reveal').innerHTML='<p class="muted" style="font-size:13px;margin:0">You took the best available at every slot. Nothing left behind.</p>';
+  } else {
+    $('o-reveal').innerHTML = best.misses.slice(0,4).map(m=>
+      '<div class="missrow"><span class="rslot" style="flex:0 0 42px">'+m.slot+'</span>'+
+      '<span style="flex:1;min-width:0"><b style="font-weight:800">'+m.could.name+'</b> '+
+      '<span class="muted">'+m.could.season+' · '+money(m.could.price_musd)+'</span></span>'+
+      '<span class="up">+'+m.delta.toFixed(1)+' ppg</span></div>').join('')
+      + '<p class="muted" style="font-size:12px;margin:9px 0 0">The best squad your six spins allowed projected '+
+        best.bestProjected.toFixed(0)+' fantasy points a game. Yours projected '+best.yourProjected.toFixed(0)+'.</p>';
+  }
+}
+
+$('o-share').addEventListener('click',async ()=>{
+  const o=run.outcome, s=run.season;
+  const grid=s.results.map(r=>r.won?'🟩':'🟥').join('');
+  const firstLoss = s.results.find(r=>!r.won);
+  const cleanUntilEnd = firstLoss && firstLoss.week === o.weekReached;
+  const head = o.perfect ? 'THE PERFECT SEASON — 20-0 🏆'
+    : o.beatBenchmark ? 'Beat the Patriots — '+o.record+' 🥈'
+    : cleanUntilEnd ? 'Perfect through Week '+Math.max(0,o.weekReached-1)
+    : 'Out in Week '+o.weekReached+' — '+o.record;
+  const text = head+'\n'+grid+'\n'+run.roster.map(p=>p.name).join(', ')+
+    '\nchemistry ×'+s.chemistry.toFixed(2)+'\n\nrunthe.gg/football';
+  try{
+    if(navigator.share){ await navigator.share({title:'The Perfect Season', text}); }
+    else { await navigator.clipboard.writeText(text); toast('Result copied'); }
+  }catch(e){ try{ await navigator.clipboard.writeText(text); toast('Result copied'); }catch(_){ toast('Could not share'); } }
+});
+
+$('o-again').addEventListener('click',()=>{
+  run=null; selected=null;
+  document.querySelectorAll('.team').forEach(x=>x.classList.remove('sel'));
+  $('go-draft').disabled=true;
+  show('s-intro');
+});
+
+boot();
+})();
+</script>
+</body>
+</html>

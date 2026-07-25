@@ -428,6 +428,69 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
   return { won, yourScore, oppScore, defenseModifier };
 }
 
+// ─── display scores ──────────────────────────────────────────────────────────
+
+/** Fractional percentile of `v` within an ascending quantile table. */
+function percentileIn(table, v) {
+  let lo = 0, hi = table.length - 1;
+  if (v <= table[0]) return 0;
+  if (v >= table[hi]) return 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (table[mid] <= v) lo = mid; else hi = mid;
+  }
+  const span = table[hi] - table[lo];
+  const frac = span > 0 ? (v - table[lo]) / span : 0;
+  return (lo + frac) / (table.length - 1);
+}
+
+/** Value at fractional percentile `p` in an ascending quantile table. */
+function valueAt(table, p) {
+  const x = Math.min(1, Math.max(0, p)) * (table.length - 1);
+  const i = Math.floor(x);
+  const j = Math.min(table.length - 1, i + 1);
+  return table[i] + (table[j] - table[i]) * (x - i);
+}
+
+/**
+ * Turn an internal fantasy-space result into a football-looking scoreline.
+ *
+ * The sim decides the winner; this only decides how the game is *reported*. It
+ * maps the internal margin onto the real distribution of NFL margins (1999-2025,
+ * 6,967 games), draws a real total conditioned on that margin, and splits it.
+ * The winner is always preserved exactly.
+ *
+ * Deliberately not a divisor: your internal mean (~73) sits far above an
+ * opponent's (~43) because that gap is what carries win probability, so scaling
+ * both sides down renders every week as a blowout.
+ */
+function toFootballScore(yourScore, oppScore, won, rng, cal) {
+  const internalMargin = Math.abs(yourScore - oppScore);
+  const pct = percentileIn(cal.internal_margin_q, internalMargin);
+  let margin = Math.round(valueAt(cal.real_margin_q, pct));
+  // The winner is already decided, so a reported tie would contradict the result.
+  if (margin < 1) margin = 1;
+
+  const buckets = cal.margin_buckets;
+  let bi = 0;
+  for (let i = 0; i < buckets.length - 1; i++) {
+    if (margin >= buckets[i] && margin < buckets[i + 1]) { bi = i; break; }
+    if (i === buckets.length - 2) bi = i;
+  }
+  let total = Math.round(valueAt(cal.totals_by_bucket_q[bi], rng()));
+
+  // Total and margin must have the same parity to split into whole scores.
+  if ((total - margin) % 2 !== 0) total += 1;
+  let high = (total + margin) / 2;
+  let low = high - margin;
+  if (low < 0) { low = 0; high = margin; }
+  // 1 is the one unreachable score in football.
+  if (low === 1) low = 2;
+  if (high === 1) high = 2;
+
+  return won ? { you: high, them: low } : { you: low, them: high };
+}
+
 /**
  * Play a full run: 17 regular-season games then 3 playoff games, stopping when
  * losses exceed CONSTANTS.LIVES.
@@ -488,7 +551,7 @@ const publicAPI = {
   hashSeed, createSeededRNG, sampleGamma,
   pairLinks, resolveChemistry,
   buildDivisionMap, opponentFranchises, generateSchedule, generatePlayoffs,
-  resolveGame, playRun, prepareData,
+  resolveGame, playRun, prepareData, toFootballScore,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

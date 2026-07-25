@@ -4,9 +4,9 @@ Spin a wheel, sign six players from six random NFL team-seasons, then play a
 20-game season and try to do what the 2007 Patriots couldn't. Lives at
 `runthe.gg/football/`.
 
-**Status: Stages 1–5 complete (data, engine, harness, draft loop). No UI yet.**
-The GDD's build order says nothing reaches the frontend until the sim harness
-produces sane win rates. It does now — see Calibration below.
+**Status: playable. Stages 1–7 complete.** The GDD's build order says nothing
+reaches the frontend until the sim harness produces sane win rates; it does — see
+Calibration below — so the UI is built on top of a validated engine.
 
 > `/football/` previously hosted RunTheDrive, which moved to `/touchdown/`.
 
@@ -14,7 +14,8 @@ produces sane win rates. It does now — see Calibration below.
 
 | File | Role |
 |---|---|
-| `engine.js` | Chemistry resolution, schedule generation, per-game resolution. Headless, no deps. Browser: `window.PS_ENGINE`; Node: `require`. |
+| `index.html` | The whole game UI, self-contained. Loads the two modules below plus `data/*.json`. |
+| `engine.js` | Chemistry resolution, schedule generation, per-game resolution, display scores. Headless, no deps. Browser: `window.PS_ENGINE`; Node: `require`. |
 | `run.js` | Draft loop and run state: wheel, re-spins, cap accounting, week-by-week advance. Browser: `window.PS_RUN`. |
 | `simulator.js` | Validation harness. Run this after any change to data, pricing, or constants. |
 | `playtest.js` | Plays one full run as readable text — draft, chemistry, schedule, weekly results, outcome card. The stand-in for the UI. |
@@ -22,6 +23,7 @@ produces sane win rates. It does now — see Calibration below.
 | `build/01-players.mjs` | → `data/player_seasons.{json,csv}` |
 | `build/02-teams.mjs` | → `data/team_seasons.{json,csv}`, `team_season_rosters.json`, `league_context.json` |
 | `build/03-chemistry.mjs` | → `data/battery.json`, `coaches.json`, `curated.json` |
+| `build/04-display.mjs` | → `data/display_calibration.json` (football-score transform) |
 
 Rebuild everything:
 
@@ -29,6 +31,7 @@ Rebuild everything:
 node football/build/01-players.mjs
 node football/build/02-teams.mjs
 node football/build/03-chemistry.mjs
+node football/build/04-display.mjs
 node football/simulator.js          # then re-validate
 ```
 
@@ -142,37 +145,44 @@ Details are in the header comment of the file named.
 5. **Re-run `simulator.js` after any data or constant change.** Pricing, the
    cap, and the chemistry curve all move the calibration.
 
-## Two things the first playthrough exposed
+## Display scores
 
-**Scores are not in football units.** Internally your score averages 73.5 (sd 21)
-and the opponent 43.1 (sd 20.5), because your side is a sum of six PPR outputs
-and theirs is real points × `SCALE`. Real NFL team-games average ~22 points with
-sd ~10, so weekly lines currently read `51.0-22.2`, and one legitimate Gamma tail
-produced `38.5-90.4`. The Gamma sampler is correct — verified against its
-requested moments to three decimals — this is a units mismatch, not a bug.
+The sim resolves games in fantasy-point space, where your score averages 73.5 (sd
+21.0) and an opponent's 43.1 (sd 20.5). Those are not football scores, and §7 wants
+the death card to read *"Lost 27-24 at Indianapolis"*.
 
-§7 wants the death card to read *"Lost 27-24 at Indianapolis"*, so Stage 7 needs
-a **display transform**: decide the winner in fantasy space as now, then map both
-scores into a football-plausible pair that preserves the winner and the rough
-margin. A single divisor will not do it, because the mean gap (73.5 vs 43.1) is
-what carries the win probability — scaled down naively, every week reads as a
-blowout.
+`toFootballScore` maps the internal margin onto the **real** distribution of NFL
+margins (6,967 games, 1999-2025), draws a real total conditioned on that margin,
+and splits it. Verified over 60,000 games: **winner preserved in every one**, no
+impossible scores, displayed median margin 7 against a real 8 and mean total 44.4
+against ~43. It is presentation only — the internal numbers are kept on every
+result and nothing downstream reads the displayed pair.
 
-**Value-hunting is a trap, and the UI has to say so.** The price curve is convex,
-so points-per-dollar is always maximized at the cheap end. `playtest.js`
-deliberately uses that policy and finishes with $40M of $100M unspent and a
-roster of streamers. Unspent budget must be unmissable during the draft.
+A single divisor cannot do this. The gap between those two means is what carries
+win probability, so scaling both sides down renders every week a blowout.
+
+**Value-hunting is a trap, and the UI says so.** The price curve is convex, so
+points-per-dollar is always best at the cheap end; `playtest.js` uses that policy
+and finishes with $40M unspent. The draft screen keeps remaining budget at the top
+and warns when you are about to walk into the last slot with money to burn.
 
 ## Not built yet
 
-Stages 6–7: the season UI and the share cards. Stage 5 (wheel, draft loop, run
-state) is in `run.js` and validated headlessly, but has no interface yet.
+Everything in the GDD's build sequence is done. The page is **not linked from the
+homepage or `sitemap.xml`** and there is no leaderboard, both deliberately, pending
+review.
 
-Still open: the post-run reveal — "the best possible squad from your six wheel
-results, including the chemistry you missed". That is a cap-constrained
-assignment problem over the six drawn team-seasons; `simulator.js` already
-contains the DP that solves it for the full pool, so it is a matter of restricting
-the candidate set rather than new machinery.
+Known gaps worth a look during playtesting:
+
+- **Often only one option per spin.** With 8-game eligibility many team-seasons
+  have a single qualifying QB or TE, so some spins present no real choice. The
+  wheel is working as §5 specifies; whether it is *fun* is a feel judgement.
+- **No mid-run persistence.** The run state is built to serialize (that is
+  asserted in `--draft`) but the page does not yet write it to localStorage, so a
+  refresh mid-season loses the run. Use the key prefix `rtps:` when adding it —
+  `rtd:v1` belongs to RunTheDrive on the same origin.
+- **Share card is text, not an image.** Matches RunTheDrive's approach; a canvas
+  card would need `@napi-rs/canvas` work like `scripts/make-og-*.js`.
 
 The page is not linked from the homepage or `sitemap.xml` yet — deliberately,
 pending review.
