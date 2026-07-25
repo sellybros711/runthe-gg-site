@@ -1878,7 +1878,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     if(el('closeBtn')) el('closeBtn').onclick=()=>{ mount.innerHTML=''; };
   }
   function doShare(text){
-    const shareData={ title:'RunTheDrive', text: text+'\n\nPlay at runthe.gg/football' };
+    const shareData={ title:'RunTheDrive', text: text+'\n\nPlay at runthe.gg/touchdown' };
     if(navigator.share){ navigator.share(shareData).catch(()=>{}); }
     else { navigator.clipboard && navigator.clipboard.writeText(shareData.text).then(()=>mini('Copied to clipboard!')).catch(()=>mini('Copy failed')); }
   }
@@ -2109,7 +2109,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   /* ---------- boot ---------- */
   function shareInvite(){
-    const text = `RunTheDrive — one football drive a day. One shot at the end zone.\nPlay: runthe.gg/football`;
+    const text = `RunTheDrive — one football drive a day. One shot at the end zone.\nPlay: runthe.gg/touchdown`;
     if(navigator.share){ navigator.share({title:'RunTheDrive', text}).catch(()=>{}); }
     else { navigator.clipboard && navigator.clipboard.writeText(text).then(()=>mini('Invite copied!')).catch(()=>mini('Copy failed')); }
   }

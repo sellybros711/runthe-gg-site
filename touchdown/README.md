@@ -1,7 +1,7 @@
 # RunTheDrive — daily football drive
 
 One drive a day. Read the defense, call the plays, chase the touchdown, keep
-your streak alive. Lives at `runthe.gg/football/`.
+your streak alive. Lives at `runthe.gg/touchdown/`.
 
 Every number in the game is measured from real football play-by-play and
 charting data (2016–2025) — nothing is hand-waved. A skilled read lands a
