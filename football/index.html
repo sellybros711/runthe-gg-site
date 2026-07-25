@@ -131,9 +131,12 @@
     50%{box-shadow:0 0 0 10px rgba(255,255,255,.04),0 6px 16px -4px #000}}
   .chip.pop .disc{animation:pop .34s cubic-bezier(.2,1.5,.4,1) both}
   @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
-  .chip .who{margin-top:3px;font-size:9.5px;font-weight:800;line-height:1.1;
+  /* Wider than the 62px chip and pulled back into center, so a name like
+     Roethlisberger fits instead of being cut, and 2px of air keeps its
+     descenders off the season below. */
+  .chip .who{width:78px;margin:3px 0 2px -8px;font-size:9.5px;font-weight:800;line-height:1.1;
     text-shadow:0 2px 6px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .chip .yr{font-size:8.5px;color:var(--dim);font-weight:700}
+  .chip .yr{font-size:8.5px;color:var(--dim);font-weight:700;line-height:1.1}
 
   .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 11px;margin:-4px 0 12px;
     background:linear-gradient(180deg,var(--bg) 72%,rgba(8,11,20,0))}
@@ -195,6 +198,17 @@
     background:var(--panel);border:1px solid var(--line);text-align:left;transition:all .12s ease}
   .opt:active{transform:scale(.985)}
   .opt.hot{border-color:rgba(74,222,128,.5);box-shadow:0 0 0 1px rgba(74,222,128,.25)}
+  /* Out of reach, but still on the board so the team never looks half missing. */
+  .opt.off{background:rgba(255,255,255,.015);border-style:dashed;border-color:rgba(255,255,255,.09);
+    cursor:default}
+  .opt.off:active{transform:none}
+  .opt.off .badge{filter:grayscale(1);opacity:.4}
+  .opt.off .who b,.opt.off .cost b{color:var(--dim-2)}
+  .opt.off .who > span,.opt.off .fppg{color:var(--dim-2);opacity:.75}
+  .why{display:inline-block;margin-top:3px;font-size:10.5px;font-weight:800;padding:2px 6px;
+    border-radius:5px;background:rgba(255,255,255,.05);color:var(--dim);max-width:100%;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .why.money{background:rgba(251,191,36,.12);color:#d6b45f}
   .badge{flex:0 0 36px;height:36px;border-radius:9px;display:grid;place-items:center;color:#fff;
     font-family:'Anton',Impact,sans-serif;font-size:12px}
   .opt .who{flex:1;min-width:0}
@@ -765,19 +779,55 @@ let activeTab=null;
 
 /* Rows are grouped by the spot they would fill, but a spot is only listed ONCE
    even though there are two WR slots. The old build printed an identical "WR SPOT"
-   group twice, which just looked broken. */
+   group twice, which just looked broken.
+
+   Players you cannot sign stay on the board rather than vanishing from it, in
+   true points order, so a team's best player is visibly out of reach instead of
+   looking like a hole in the data. The ones whose position has no open spot left
+   have no tab to live under, so they collect in a locked group at the end. */
+const LOCKED='LOCKED';
 function optionGroups(draw){
   const groups=new Map();
-  for(const k of draw.options){
-    const p=BYKEY.get(k);
-    const name=E.SLOTS[R.slotForPlayer(run,p)];
+  for(const s of R.openSlotNames(run)) if(!groups.has(s)) groups.set(s,[]);
+  for(const row of draw.board){
+    const p=BYKEY.get(row.key);
+    const slot=R.slotForPlayer(run,p);
+    const name=slot===null?LOCKED:E.SLOTS[slot];
     if(!groups.has(name)) groups.set(name,[]);
-    groups.get(name).push(p);
+    groups.get(name).push({p,block:row.block});
   }
+  for(const [k,v] of [...groups]) if(!v.length) groups.delete(k);
   return groups;
 }
 
-function optRow(p){
+const signable=(rows)=>rows.filter(r=>!r.block).length;
+
+/* Why a row is grayed out, said plainly. */
+function blockNote(p,block){
+  if(block===R.BLOCK.DRAFTED){
+    const had=run.roster.find(x=>x.player_id===p.player_id);
+    return {text:had&&had.season!==p.season?'You already have his '+had.season+' season':'Already on your roster',cls:'why'};
+  }
+  if(block===R.BLOCK.NO_SPOT){
+    return {text:p.position==='QB'?'Your QB spot is filled':'No spot left for a '+p.position,cls:'why'};
+  }
+  return {text:'You have '+M(Math.max(0,R.remaining(run)-R.reserveFloor(run)))+' left to spend',cls:'why money'};
+}
+
+function lockedRow(p,block){
+  const note=blockNote(p,block);
+  return '<div class="opt off">'+
+    '<span class="badge" style="background:linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.4))">'+p.position+'</span>'+
+    '<span class="who"><b>'+esc(p.name)+'</b>'+
+      '<span><span class="fppg">'+p.fppg.toFixed(1)+' FPPG</span>'+
+        (p.stat_line?'<span class="sep">&middot;</span>'+esc(p.stat_line):'')+'</span>'+
+      '<span class="'+note.cls+'">'+esc(note.text)+'</span></span>'+
+    '<span class="cost"><b>'+M(p.price_musd)+'</b></span></div>';
+}
+
+function optRow(row){
+  const p=row.p;
+  if(row.block) return lockedRow(p,row.block);
   const pv=R.previewSigning(run,p,CTX), g=pv.delta;
   const top=pv.newLinks[0];
   const tier=top?E.linkTier(top.value):null;
@@ -802,13 +852,21 @@ function optRow(p){
 function paintOpts(draw){
   const groups=optionGroups(draw);
   const names=[...groups.keys()];
-  if(!names.includes(activeTab)) activeTab=names[0];
+  /* A new board opens on a tab you can sign from rather than the locked pile,
+     but once you pick a tab it stays picked. Testing the first version of this
+     showed the locked tab bouncing straight back to WR, because the guard also
+     fired on the repaint that a tab click triggers. */
+  if(!names.includes(activeTab))
+    activeTab=names.find(n=>signable(groups.get(n)))||names[0];
   $('tabs').innerHTML=names.map(n=>{
-    const col=COL[n==='FLEX'?'FLEX':n];
+    const col=n===LOCKED?'--dim':COL[n];
     const on=n===activeTab;
+    const rows=groups.get(n);
+    // The count is what you can sign, since that is the size of the decision.
+    const n_=n===LOCKED?rows.length:signable(rows);
     return '<button class="tab'+(on?' on':'')+'" data-t="'+n+'"'+
-      (on?' style="background:linear-gradient(135deg,var('+col+'),rgba(0,0,0,.45));"':'')+'>'+
-      (n==='FLEX'?'FLEX':n)+'<span class="n">'+groups.get(n).length+'</span></button>';
+      (on&&n!==LOCKED?' style="background:linear-gradient(135deg,var('+col+'),rgba(0,0,0,.45));"':'')+'>'+
+      n+'<span class="n">'+n_+'</span></button>';
   }).join('');
   $('opts').innerHTML=(groups.get(activeTab)||[]).map(optRow).join('');
   // Highlight the spot this tab fills, so the tab and the field agree.
@@ -834,7 +892,7 @@ $('tabs').addEventListener('click',e=>{
 });
 
 $('opts').addEventListener('click',e=>{
-  const b=e.target.closest('.opt'); if(!b)return;
+  const b=e.target.closest('.opt'); if(!b||b.classList.contains('off'))return;
   const p=BYKEY.get(b.dataset.k);
   try{R.sign(run,p);}catch(err){toast(err.message);return;}
   if(run.phase===R.PHASES.SEASON)paintSquad(); else nextSpin();

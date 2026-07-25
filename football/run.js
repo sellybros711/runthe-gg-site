@@ -64,17 +64,45 @@ function canRespin(run) {
   return { ok: true };
 }
 
-/**
- * Everyone on a team-season you could sign right now: affordable, not already
- * signed, and able to fill one of your empty spots.
+/*
+ * Why you cannot sign someone, kept as a reason rather than a filter.
+ *
+ * The draft list used to be cut down to what you could sign, so a team's best
+ * player was simply absent and it read as missing data. Every player the team
+ * had is on the board now, and an unavailable one carries the reason.
  */
-function affordableFrom(run, teamSeasonId, playersByTeamSeason) {
-  const budget = remaining(run) - reserveFloor(run);
+const BLOCK = { DRAFTED: 'drafted', NO_SPOT: 'no_spot', PRICE: 'price' };
+
+/**
+ * Why this player is out, or null if you can sign him.
+ *
+ * A PERSON can only be drafted once, not a person-season. Two Tom Bradys in one
+ * huddle is not a roster, and the wheel can offer the same man twice easily:
+ * a team-season can come up twice, and any franchise you already signed from is
+ * favored for later spins, so his other years keep reappearing.
+ *
+ * Order matters. Already drafted is permanent, so it wins over a price you
+ * might still be able to afford after a cheaper signing elsewhere.
+ */
+function blockFor(run, player) {
+  if (run.usedPlayers.includes(player.player_id)) return BLOCK.DRAFTED;
+  if (slotForPlayer(run, player) === null) return BLOCK.NO_SPOT;
+  if (player.price_musd > remaining(run) - reserveFloor(run)) return BLOCK.PRICE;
+  return null;
+}
+
+/** Every player on a team-season, best first, each with the reason he is out. */
+function boardFrom(run, teamSeasonId, playersByTeamSeason) {
   return (playersByTeamSeason[teamSeasonId] ?? [])
-    .filter((p) => p.price_musd <= budget
-      && !run.usedPlayers.includes(pkey(p))
-      && slotForPlayer(run, p) !== null)
-    .sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean);
+    .map((p) => ({ player: p, block: blockFor(run, p) }))
+    .sort((a, b) => b.player.ppr_ppg_mean - a.player.ppr_ppg_mean);
+}
+
+/** Just the ones you could sign right now. */
+function affordableFrom(run, teamSeasonId, playersByTeamSeason) {
+  return boardFrom(run, teamSeasonId, playersByTeamSeason)
+    .filter((r) => r.block === null)
+    .map((r) => r.player);
 }
 
 /**
@@ -110,6 +138,7 @@ function createRun(opts) {
     // alongside roster rather than making roster sparse, so chemistry and cap
     // maths can keep treating roster as a dense list of who you have.
     slotIndex: [],
+    // Player ids, not player-seasons: one man, one spot on the roster.
     usedPlayers: [],
     usedTeamSeasons: [],
     draws: [],
@@ -301,7 +330,7 @@ function spin(run, data) {
   const inYear = pool.filter((t) => t.season === season);
   const t = inYear[Math.floor(rng() * inYear.length)];
 
-  const options = affordableFrom(run, t.team_season_id, data.playersByTeamSeason);
+  const board = boardFrom(run, t.team_season_id, data.playersByTeamSeason);
   run.currentDraw = {
     season,
     team_season_id: t.team_season_id,
@@ -310,7 +339,11 @@ function spin(run, data) {
     teamName: t.display.replace(/^\d{4}\s+/, ''),
     yearOptions: years,
     teamOptions: inYear.map((x) => x.display.replace(/^\d{4}\s+/, '')),
-    options: options.map(pkey),
+    // The full squad for display, and the signable subset for validation. Two
+    // fields on purpose: the board is what you look at, options is what the
+    // game will actually let you do, and sign() only trusts the second one.
+    board: board.map((r) => ({ key: pkey(r.player), block: r.block })),
+    options: board.filter((r) => r.block === null).map((r) => pkey(r.player)),
   };
   return run.currentDraw;
 }
@@ -336,7 +369,7 @@ function sign(run, player) {
 
   run.roster.push(player);
   run.slotIndex.push(slot);
-  run.usedPlayers.push(pkey(player));
+  run.usedPlayers.push(player.player_id);
   run.usedTeamSeasons.push(run.currentDraw.team_season_id);
   // Which team-season filled which spot. Needed for the post-run reveal, which
   // can only consider the team-seasons the wheel actually gave you.
@@ -528,73 +561,109 @@ function bestPossibleSquad(run, data, ctx) {
   const fits = (p, slot) => E.SLOT_ELIGIBILITY[E.SLOTS[slot]].includes(p.position);
   const popcount = (m) => { let c = 0; while (m) { c += m & 1; m >>= 1; } return c; };
 
-  // dp[mask][b] = best raw points using the first popcount(mask) draws to fill
-  // exactly the spots in mask, having spent b buckets.
   const NEG = -1e9;
-  const dp = new Float64Array((FULL + 1) * NB).fill(NEG);
-  const from = new Int32Array((FULL + 1) * NB).fill(-1);   // packed: player*8 + slot
-  dp[0] = 0;
   const masksByCount = Array.from({ length: nSlots + 1 }, () => []);
   for (let m = 0; m <= FULL; m++) masksByCount[popcount(m)].push(m);
 
-  for (let i = 0; i < nSlots; i++) {
-    for (const mask of masksByCount[i]) {
-      const base = mask * NB;
-      for (let b = 0; b < NB; b++) {
-        const cur = dp[base + b];
-        if (cur <= NEG) continue;
-        const list = pool[i];
-        for (let pi = 0; pi < list.length; pi++) {
-          const p = list[pi];
-          const cost = Math.ceil(p.price_musd / BUCKET);
-          const nb = b + cost;
-          if (nb >= NB) continue;
-          for (let s = 0; s < nSlots; s++) {
-            if (mask & (1 << s)) continue;
-            if (!fits(p, s)) continue;
-            const nm = mask | (1 << s);
-            const idx = nm * NB + nb;
-            const val = cur + p.ppr_ppg_mean;
-            if (val > dp[idx]) { dp[idx] = val; from[idx] = pi * 8 + s; }
+  /*
+   * dp[mask][b] = best raw points using the first popcount(mask) draws to fill
+   * exactly the spots in mask, having spent b buckets. `banned` holds, per draw,
+   * the player ids that draw may not use.
+   */
+  function solve(banned) {
+    const lists = pool.map((list, i) => (banned[i].size
+      ? list.filter((p) => !banned[i].has(p.player_id)) : list));
+    if (lists.some((list) => !list.length)) return null;
+    const dp = new Float64Array((FULL + 1) * NB).fill(NEG);
+    const from = new Int32Array((FULL + 1) * NB).fill(-1);   // packed: player*8 + slot
+    dp[0] = 0;
+
+    for (let i = 0; i < nSlots; i++) {
+      for (const mask of masksByCount[i]) {
+        const base = mask * NB;
+        for (let b = 0; b < NB; b++) {
+          const cur = dp[base + b];
+          if (cur <= NEG) continue;
+          const list = lists[i];
+          for (let pi = 0; pi < list.length; pi++) {
+            const p = list[pi];
+            const cost = Math.ceil(p.price_musd / BUCKET);
+            const nb = b + cost;
+            if (nb >= NB) continue;
+            for (let s = 0; s < nSlots; s++) {
+              if (mask & (1 << s)) continue;
+              if (!fits(p, s)) continue;
+              const nm = mask | (1 << s);
+              const idx = nm * NB + nb;
+              const val = cur + p.ppr_ppg_mean;
+              if (val > dp[idx]) { dp[idx] = val; from[idx] = pi * 8 + s; }
+            }
           }
         }
       }
     }
+
+    let bestB = -1, bestVal = NEG;
+    for (let b = 0; b < NB; b++) {
+      const v = dp[FULL * NB + b];
+      if (v > bestVal) { bestVal = v; bestB = b; }
+    }
+    if (bestB < 0) return null;
+
+    // Walk back to recover which draw took which player into which spot.
+    const bySlot = new Array(nSlots).fill(null);
+    const drawOfSlot = new Array(nSlots).fill(-1);
+    let mask = FULL, b = bestB;
+    for (let i = nSlots - 1; i >= 0; i--) {
+      const packed = from[mask * NB + b];
+      if (packed < 0) return null;
+      const pi = Math.floor(packed / 8), s = packed % 8;
+      const p = lists[i][pi];
+      bySlot[s] = p;
+      drawOfSlot[s] = i;
+      mask &= ~(1 << s);
+      b -= Math.ceil(p.price_musd / BUCKET);
+    }
+    return { bySlot, drawOfSlot, value: bestVal };
   }
 
-  let bestB = -1, bestVal = NEG;
-  for (let b = 0; b < NB; b++) {
-    const v = dp[FULL * NB + b];
-    if (v > bestVal) { bestVal = v; bestB = b; }
+  /*
+   * One man, one spot, same rule the draft itself enforces.
+   *
+   * The DP state cannot express it: it remembers how many spots are filled and
+   * how much is spent, never WHO it took, so the same player can come back off
+   * two different drawn teams. Widening the state to carry identity would blow
+   * it up. Instead, when the optimum repeats somebody, re-solve twice with him
+   * banned from one team or the other and keep the better answer. That is exact,
+   * and it almost never recurses, because two of your drawn teams sharing a man
+   * is rare and needs three of them to share him before it goes a level deeper.
+   */
+  const MAX_BANS = 8;
+  function withoutRepeats(banned, depth) {
+    const sol = solve(banned);
+    if (!sol) return null;
+    for (let a = 0; a < nSlots; a++) {
+      for (let c = a + 1; c < nSlots; c++) {
+        if (sol.bySlot[a].player_id !== sol.bySlot[c].player_id) continue;
+        if (depth >= MAX_BANS) return null;
+        const id = sol.bySlot[a].player_id;
+        const branches = [sol.drawOfSlot[a], sol.drawOfSlot[c]]
+          .map((di) => withoutRepeats(
+            banned.map((set, i) => (i === di ? new Set(set).add(id) : set)), depth + 1))
+          .filter(Boolean);
+        if (!branches.length) return null;
+        return branches.reduce((x, y) => (y.value > x.value ? y : x));
+      }
+    }
+    return sol;
   }
-  if (bestB < 0) return null;
 
-  // Walk back to recover which draw took which player into which spot.
-  const bySlot = new Array(nSlots).fill(null);
-  let mask = FULL, b = bestB;
-  for (let i = nSlots - 1; i >= 0; i--) {
-    const packed = from[mask * NB + b];
-    if (packed < 0) return null;
-    const pi = Math.floor(packed / 8), s = packed % 8;
-    const p = pool[i][pi];
-    bySlot[s] = p;
-    mask &= ~(1 << s);
-    b -= Math.ceil(p.price_musd / BUCKET);
-  }
+  const sol = withoutRepeats(pool.map(() => new Set()), 0);
+  if (!sol) return null;
+  const { bySlot, drawOfSlot } = sol;
 
   // Hill climb with chemistry in the objective. Same-spot substitutions from the
   // same drawn team, keeping the total inside the cap.
-  const drawOfSlot = new Array(nSlots).fill(-1);
-  {
-    let m = FULL, bb = bestB;
-    for (let i = nSlots - 1; i >= 0; i--) {
-      const packed = from[m * NB + bb];
-      const pi = Math.floor(packed / 8), s = packed % 8;
-      drawOfSlot[s] = i;
-      m &= ~(1 << s);
-      bb -= Math.ceil(pool[i][pi].price_musd / BUCKET);
-    }
-  }
   const score = (arr) => {
     const spend = arr.reduce((t, p) => t + p.price_musd, 0);
     if (spend > budget + 1e-9) return -1;
@@ -607,7 +676,7 @@ function bestPossibleSquad(run, data, ctx) {
       const di = drawOfSlot[s];
       for (const cand of pool[di]) {
         if (!fits(cand, s)) continue;
-        if (best.some((p, j) => j !== s && p.player_id === cand.player_id && p.season === cand.season)) continue;
+        if (best.some((p, j) => j !== s && p.player_id === cand.player_id)) continue;
         const trial = best.slice();
         trial[s] = cand;
         const sc = score(trial);
@@ -696,6 +765,7 @@ const api = {
   startSeason, advanceWeek, startPlayoffs, indexData, bestPossibleSquad, projectSeason,
   previewSigning,
   remaining, reserveFloor, canRespin, slotsLeft, affordableFrom,
+  boardFrom, blockFor, BLOCK,
   openSlots, openSlotNames, slotForPlayer, TUNING,
 };
 

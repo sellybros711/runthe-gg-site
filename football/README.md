@@ -294,6 +294,23 @@ stranding you with one player to take.
   would be punishing randomness.
 - **A team-season can come up twice in a run, never more.** This is what makes
   the Battery and Teammates links reachable at all. See the chemistry note below.
+- **One man, one spot.** A team-season repeating means his teammates come back
+  around, and any franchise you have signed from is favored for later spins, so
+  his other years keep reappearing too. Measured over 1,800 spins of top-row
+  drafting, the best row on the board was somebody already on the roster 15.5% of
+  the time, so two Tom Bradys in one huddle was not a corner case. Blocked by
+  `player_id`, not by player-season, and `--draft` asserts it over 3,000 runs.
+  Balance did not move: perfect play still wins 14 with a 93% playoff rate, which
+  says duplicates were a realism problem rather than an exploit.
+- **A player you cannot sign is grayed out, not hidden.** The board used to be
+  filtered down to what you could afford and fit, so a team's best player was
+  simply absent and it read as missing data. Every player the team had is listed
+  now, in true points order, with the reason he is out: already on your roster,
+  no spot left for his position, or more than you have left to spend. Roughly 13%
+  of spins have to say "already on your roster" about somebody, and that is
+  exactly the case that used to look like a gap in the list. Players whose
+  position has no open spot left have no tab to sit under, so they collect in a
+  LOCKED tab at the end.
 - **About half of spins after the first favor a team-season connected to
   somebody already signed** (`CONNECTION_BIAS` in `run.js`), so chemistry is
   something you watch build rather than something you rarely luck into.

@@ -425,6 +425,7 @@ function scheduleReport(n) {
 function draftReport(n) {
   const data = R.indexData(players, teamSeasons);
   let respinsTotal = 0, freeRerolls = 0, capViolations = 0, deadEnds = 0, perfectDrafts = 0, repeatedTs = 0;
+  let doubledUp = 0, boardsOfferingADuplicate = 0, spinsSeen = 0;
   const spends = [];
   const blockedReasons = {};
   for (let i = 0; i < n; i++) {
@@ -441,6 +442,11 @@ function draftReport(n) {
           blockedReasons[chk.reason] = (blockedReasons[chk.reason] || 0) + 1;
         }
         const opts = run.currentDraw.options;
+        // The board keeps everyone the team had, including who you cannot sign.
+        // How often it has to say "already on your roster" is worth watching:
+        // that is how often the old build would have let you double up.
+        spinsSeen++;
+        if (run.currentDraw.board.some((r) => r.block === R.BLOCK.DRAFTED)) boardsOfferingADuplicate++;
         const chosen = players.find((p) => opts.includes(`${p.player_id}|${p.season}`));
         R.sign(run, chosen);
       }
@@ -462,6 +468,10 @@ function draftReport(n) {
       for (const id of run.usedTeamSeasons) counts[id] = (counts[id] || 0) + 1;
       const withinLimit = Object.values(counts).every((c) => c <= 2);
       if (Object.values(counts).some((c) => c === 2)) repeatedTs++;
+      // One man, one spot. A team-season can repeat, so his teammates can come
+      // back around, but he cannot.
+      const ids = run.roster.map((p) => p.player_id);
+      if (new Set(ids).size !== ids.length) doubledUp++;
       if (shapeOk && withinLimit) perfectDrafts++;
     } catch (err) {
       deadEnds++;
@@ -477,6 +487,9 @@ function draftReport(n) {
   console.log(`  dead-ended runs        ${deadEnds}  ${deadEnds === 0 ? 'ok' : 'FAIL'}`);
   console.log(`  valid slot shape       ${perfectDrafts}/${n}  ${perfectDrafts === n ? 'ok' : 'FAIL'}`);
   console.log(`  runs reusing a team    ${repeatedTs} (${(100 * repeatedTs / n).toFixed(0)}%, allowed up to twice)`);
+  console.log(`  same person twice      ${doubledUp}  ${doubledUp === 0 ? 'ok' : 'FAIL'}`);
+  console.log(`  boards that had to gray out a man you own   `
+    + `${boardsOfferingADuplicate} of ${spinsSeen} spins (${(100 * boardsOfferingADuplicate / spinsSeen).toFixed(0)}%)`);
   if (Object.keys(blockedReasons).length) {
     console.log('\n  re-spins refused (the block that prevents dead ends):');
     for (const [r, c] of Object.entries(blockedReasons)) console.log(`    ${c.toString().padStart(5)}  ${r}`);
