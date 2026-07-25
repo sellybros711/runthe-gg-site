@@ -173,7 +173,10 @@
   .lane.bad{animation:shake .4s; border-color:var(--red);}
   @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(4px);}}
   .lane-head{flex:0 0 168px; display:flex; align-items:center; flex-wrap:wrap; gap:4px 8px; min-height:20px; min-width:0;}
-  .lane-chip{width:11px; height:11px; border-radius:3px; background:var(--lc); flex:0 0 auto;}
+  .lane-chip{width:19px; height:19px; flex:0 0 auto; color:var(--lc); display:inline-flex; align-items:center; justify-content:center;
+    transition:color .3s;}
+  .lane-chip svg{width:19px; height:19px; display:block;}
+  .lane.locked .lane-chip{filter:drop-shadow(0 1px 2px rgba(0,0,0,.28));}
   .lane-name{font-weight:900; font-size:13.5px; letter-spacing:.01em; color:var(--ink); min-width:0;}
   .lane-hidden .lane-name{color:var(--mut); font-weight:800;}
   .lane-sport{font-size:9.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);
@@ -641,6 +644,27 @@
       return tilesInLane(i).filter(function (x) { return x != null; }).length;
     }
 
+    // A distinct sports ball per rack. The body inherits the lane colour
+    // (currentColor = --lc), so each ball sits neutral, then lights up in its
+    // category colour as the lane is revealed or solved. Seams are drawn in a
+    // translucent dark so they read on any colour.
+    var BALL_SEAM = 'stroke="#071426" stroke-width="1.25" fill="none" opacity=".55"';
+    var BALLS = [
+      // basketball
+      '<circle cx="12" cy="12" r="9" fill="currentColor"/><g ' + BALL_SEAM + '><path d="M12 3v18M3 12h18M5.6 5.6c2.8 2.9 2.8 9.9 0 12.8M18.4 5.6c-2.8 2.9-2.8 9.9 0 12.8"/></g>',
+      // american football
+      '<ellipse cx="12" cy="12" rx="9.2" ry="5.6" fill="currentColor"/><g ' + BALL_SEAM + '><path d="M8 12h8M10 10.2v3.6M12 10v4M14 10.2v3.6M4.6 9.4c-.9 1.6-.9 3.6 0 5.2M19.4 9.4c.9 1.6.9 3.6 0 5.2"/></g>',
+      // soccer ball
+      '<circle cx="12" cy="12" r="9" fill="currentColor"/><path d="M12 9l2.35 1.7-.9 2.76h-2.9L9.65 10.7z" fill="#071426" opacity=".68"/><g fill="#071426" opacity=".5"><circle cx="12" cy="5" r="1.05"/><circle cx="18.66" cy="9.84" r="1.05"/><circle cx="16.1" cy="17.66" r="1.05"/><circle cx="7.89" cy="17.66" r="1.05"/><circle cx="5.34" cy="9.84" r="1.05"/></g>',
+      // baseball
+      '<circle cx="12" cy="12" r="9" fill="currentColor"/><g ' + BALL_SEAM + '><path d="M6.6 4.7c2.6 3 2.6 11.6 0 14.6M17.4 4.7c-2.6 3-2.6 11.6 0 14.6"/></g>',
+      // tennis ball
+      '<circle cx="12" cy="12" r="9" fill="currentColor"/><g ' + BALL_SEAM + '><path d="M4.2 8.2c4.1 1.7 11.5 1.7 15.6 0M4.2 15.8c4.1-1.7 11.5-1.7 15.6 0"/></g>'
+    ];
+    function ballChip(i) {
+      return '<span class="lane-chip"><svg viewBox="0 0 24 24" aria-hidden="true">' + BALLS[i % BALLS.length] + '</svg></span>';
+    }
+
     function render() {
       // revealed-but-unsolved categories label lanes from the top down (the
       // free one lands on Group 1). Labels are display-only: any valid four
@@ -668,16 +692,16 @@
         var head = document.createElement('div');
         head.className = 'lane-head';
         if (isLocked && cat) {
-          head.innerHTML = '<span class="lane-chip"></span><span class="lane-name">' + escapeHtml(cat.name) + '</span>' +
+          head.innerHTML = ballChip(i) + '<span class="lane-name">' + escapeHtml(cat.name) + '</span>' +
             '<span class="lane-sport">' + (cat.sport === 'multi' ? 'Multi-sport' : cat.sport) + '</span>' +
             '<span class="lane-check">✓ Locked</span>';
         } else if (revLabel) {
-          head.innerHTML = '<span class="lane-chip"></span><span class="lane-name">' + escapeHtml(revLabel.name) + '</span>' +
+          head.innerHTML = ballChip(i) + '<span class="lane-name">' + escapeHtml(revLabel.name) + '</span>' +
             '<span class="lane-pill">' + (day.lanes[0] && revLabel.id === day.lanes[0].id ? 'Free' : 'Revealed') + '</span>' +
             '<span class="lane-sport">' + laneFillCount(i) + ' / 4 players</span>';
         } else {
           lane.classList.add('lane-hidden');
-          head.innerHTML = '<span class="lane-chip"></span>' +
+          head.innerHTML = ballChip(i) +
             '<span class="lane-name">Group ' + (i + 1) + '</span>' +
             '<span class="lane-sport">' + laneFillCount(i) + ' / 4 players</span>';
         }
