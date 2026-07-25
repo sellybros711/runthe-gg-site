@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
+     aria-label="The Perfect Season">
+  <title>The Perfect Season</title>
+  <!--
+    The same mark on the game's own panel navy, for anywhere that wants a square:
+    the favicon, a browser tab, a bookmark, a home screen. The bare mark in
+    brand/mark.svg is the one to use when there is already a surface behind it.
+
+    The housing is #0b1220 with a #2c3956 hairline, which is the reel box the draft
+    screen draws, so the icon is a reel with a zero in it.
+  -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#0b1220"/>
+  <rect x="2.75" y="2.75" width="58.5" height="58.5" rx="13.25" fill="none"
+        stroke="#2c3956" stroke-width="1.5"/>
+  <path d="M21.5 12h21a8 8 0 0 1 8 8v24a8 8 0 0 1-8 8h-21a8 8 0 0 1-8-8V20a8 8 0 0 1 8-8z"
+        fill="none" stroke="#0f93ff" stroke-width="6.5"/>
+  <rect x="6" y="26.5" width="52" height="11" rx="4" fill="#ff0a3b"/>
+  <rect x="12" y="30" width="40" height="4" rx="2" fill="#ffffff"/>
+</svg>

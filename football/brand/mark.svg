@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
+     aria-label="The Perfect Season">
+  <title>The Perfect Season</title>
+  <!--
+    THE MARK. Two things, both taken straight off the screen.
+
+    The ZERO is what the game is for: a perfect season is 20 and 0, and the zero is
+    the half worth drawing. It is set as a rounded rectangle rather than a circle for
+    two reasons. It matches Big Shoulders Display, the squared-off condensed face the
+    game sets every record and every reel in. And a ring with a bar across it is the
+    London Underground roundel, which an earlier version of this mark was, exactly.
+
+    The BAND is the wheel: the lit strip that holds whichever year or team the reel
+    stopped on, drawn here the same way the draft screen draws it, an outer bar with
+    a bright face inside. It crosses the zero rather than striking it out, which is
+    why it runs past both edges.
+
+    Blue zero, red band, because those are the two colors the whole game runs on.
+    No type, so this works as a favicon at 16px and needs no font to render.
+  -->
+  <path d="M21.5 9h21a10 10 0 0 1 10 10v26a10 10 0 0 1-10 10h-21a10 10 0 0 1-10-10V19a10 10 0 0 1 10-10z"
+        fill="none" stroke="#0f93ff" stroke-width="8"/>
+  <rect x="3" y="25.5" width="58" height="13" rx="5" fill="#ff0a3b"/>
+  <rect x="10" y="29.5" width="44" height="5" rx="2.5" fill="#ffffff"/>
+</svg>

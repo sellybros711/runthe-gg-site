@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
+     aria-label="The Perfect Season">
+  <title>The Perfect Season</title>
+  <!--
+    THE MASKABLE ICON, which is a different drawing and not the same file scaled.
+
+    Android crops a maskable icon to whatever shape the launcher feels like, and only
+    the middle 80% is guaranteed to survive: a circle of radius 0.4 of the width. So
+    the background runs full bleed with no rounded corners of its own, because the
+    launcher supplies the corners, and the mark is pulled in to sit inside that safe
+    circle. Handing the launcher brand/icon.svg would put its hairline border and the
+    ends of the band outside the crop, and the band is the part that has to survive.
+  -->
+  <rect width="64" height="64" fill="#0b1220"/>
+  <g transform="translate(32 32) scale(0.72) translate(-32 -32)">
+    <path d="M21.5 12h21a8 8 0 0 1 8 8v24a8 8 0 0 1-8 8h-21a8 8 0 0 1-8-8V20a8 8 0 0 1 8-8z"
+          fill="none" stroke="#0f93ff" stroke-width="6.5"/>
+    <rect x="6" y="26.5" width="52" height="11" rx="4" fill="#ff0a3b"/>
+    <rect x="12" y="30" width="40" height="4" rx="2" fill="#ffffff"/>
+  </g>
+</svg>

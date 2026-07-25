@@ -10,7 +10,8 @@
 <meta name="description" content="Spin for six NFL team seasons, sign one player from each, then play a full season and try to go undefeated.">
 <meta name="theme-color" content="#080b14">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111827'/%3E%3Cellipse cx='16' cy='16' rx='10' ry='7' fill='%23dc2626'/%3E%3Cpath d='M11 16h10M16 13v6' stroke='%23f8fafc' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" href="brand/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="brand/icon.svg">
 <meta property="og:title" content="The Perfect Season | RunThe.GG">
 <meta property="og:description" content="Six spins. Six signings. One shot at going undefeated.">
 <meta property="og:type" content="website">
@@ -174,6 +175,19 @@
   /* Between loops the roster clears rather than snapping back to empty. */
   .hero-field.clearing .chip{transition:opacity .32s ease;opacity:0}
   .htitle{text-align:center;margin-bottom:16px}
+  /* THE MARK. A zero for the season nobody has had, crossed by the wheel's own lit
+     band. Sized off the title rather than fixed, so the two move together. */
+  /* THE MARK, in the header, on every screen.
+
+     A zero for the season nobody has had, crossed by the wheel's own lit band. The
+     full drawing and the reasoning are in brand/mark.svg.
+
+     It went on the landing screen first, at 56px above the title, and came off again
+     because it cost the last button its place: measured, the Leaderboard button ended
+     at 847px against an 844px viewport, and 764px without it. The landing screen
+     already opens with the game itself animating and the title set in the same face,
+     so a third piece of identity there was paying for something it already had. */
+  .logomark{flex:0 0 24px;width:24px;height:24px;margin:0 8px 0 0}
   .htitle .kicker{font-family:var(--fn);font-size:11px;font-weight:600;letter-spacing:.24em;
     text-transform:uppercase;color:var(--red)}
   .htitle h1{font-family:var(--fd);font-size:46px;font-weight:900;line-height:.9;
@@ -844,6 +858,12 @@
 <body>
 <div class="wrap">
   <header>
+    <svg class="logomark hdr" viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M21.5 9h21a10 10 0 0 1 10 10v26a10 10 0 0 1-10 10h-21a10 10 0 0 1-10-10V19a10 10 0 0 1 10-10z"
+            fill="none" stroke="var(--wr)" stroke-width="8"/>
+      <rect x="3" y="25.5" width="58" height="13" rx="5" fill="var(--qb)"/>
+      <rect x="10" y="29.5" width="44" height="5" rx="2.5" fill="#fff"/>
+    </svg>
     <div class="brand">RunThe<i>.GG</i></div>
     <div class="hdr-r">
       <div class="pill" id="hdr">The Perfect Season</div>

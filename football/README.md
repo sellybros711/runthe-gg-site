@@ -451,6 +451,22 @@ share card kept its own hardcoded copy of all five hex values, which meant the f
 palette change would have shipped a card drawing last month's colors. The card now
 resolves them from the stylesheet.
 
+## The mark
+
+`brand/` holds it, and `brand/README.md` explains it. The short version: a zero, because
+a perfect season is 20 and 0 and the zero is the half worth drawing, crossed by the
+wheel's own lit band. Blue zero, red band, out of the same two variables the position
+chips use. No type in it, so it renders at 16px in a browser tab and needs no font.
+
+Two things about it are worth knowing here. It is a rounded **rectangle**, not a
+circle, because a ring with a bar across it is the London Underground roundel, which an
+earlier draft of this mark was exactly. And `brand/icon-maskable.svg` is a different
+drawing rather than the same file scaled, because Android guarantees only the middle 80%
+of a maskable icon and the band is the part that has to survive the crop.
+
+It replaced a stock football on a `#0f3d2e` green tile, in the favicon and in both
+manifest icons. That green is not a color anywhere in this game.
+
 ## Type
 
 | Variable | Face | Used for |
