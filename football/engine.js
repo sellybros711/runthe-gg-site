@@ -353,9 +353,23 @@ function generateSchedule(franchise, data, rng, opts = {}) {
   let best = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const franchises = opponentFranchises(franchise, divisions, rng);
+    /*
+     * One season per franchise, reused for both meetings. A division rival is on
+     * the schedule twice (home and away) and you face the SAME team-season both
+     * times — you get a home and away game against the 2007 Patriots, not the
+     * 2007 and 2001 Patriots. Memoizing by franchise also makes any other
+     * repeat consistent for free.
+     *
+     * Consequence for normalization: a rival's strength counts twice, which is
+     * correct — a brutal division rival really is two hard games.
+     */
+    const drawn = new Map();
     const games = franchises.map((f) => {
-      const pool = byFranchise[f];
-      return pool[Math.floor(rng() * pool.length)];
+      if (!drawn.has(f)) {
+        const pool = byFranchise[f];
+        drawn.set(f, pool[Math.floor(rng() * pool.length)]);
+      }
+      return drawn.get(f);
     });
     const total = games.reduce((s, g) => s + g.strength_z, 0);
     const elite = games.filter((g) => g.strength_z >= eliteThreshold).length;

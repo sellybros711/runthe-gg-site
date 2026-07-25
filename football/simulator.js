@@ -4,6 +4,7 @@
  *   node football/simulator.js --sweep      solve SCALE against the target
  *   node football/simulator.js --chem       chemistry reachability
  *   node football/simulator.js --schedule   schedule normalization check
+ *   node football/simulator.js --draft      draft-loop invariants (cap, dead ends)
  *
  *   PS_SCALE=2.4 PS_LIVES=0 PS_N=4000 node football/simulator.js   override dials
  *
@@ -15,6 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const E = require('./engine.js');
+const R = require('./run.js');
 
 const DATA = path.join(__dirname, 'data');
 const load = (f) => JSON.parse(fs.readFileSync(path.join(DATA, f), 'utf8'));
@@ -403,6 +405,90 @@ function scheduleReport(n) {
     : 'TOO WIDE — franchise choice would be a difficulty setting. ✗');
 }
 
+/*
+ * Draft-loop invariants. The re-spin fee comes out of the cap, so the failure
+ * mode to rule out is a run that cannot legally finish: fees plus signings
+ * leaving less than $3M per unfilled slot. Plays full drafts with an aggressive
+ * re-spin policy (always re-spin when allowed) and asserts on every run.
+ */
+function draftReport(n) {
+  const data = R.indexData(players, teamSeasons);
+  let respinsTotal = 0, freeRerolls = 0, capViolations = 0, deadEnds = 0, perfectDrafts = 0;
+  const spends = [];
+  const blockedReasons = {};
+  for (let i = 0; i < n; i++) {
+    const run = R.createRun({ seed: 4242 + i * 7919 });
+    R.pickFranchise(run, FRANCHISES[i % FRANCHISES.length]);
+    try {
+      while (run.phase === R.PHASES.DRAFT) {
+        R.spin(run, data);
+        const chk = R.canRespin(run);
+        if (chk.ok && run.respinsUsed < E.CONSTANTS.MAX_RESPINS) {
+          R.respin(run, data);
+          respinsTotal++;
+        } else if (!chk.ok) {
+          blockedReasons[chk.reason] = (blockedReasons[chk.reason] || 0) + 1;
+        }
+        const opts = run.currentDraw.options;
+        const chosen = players.find((p) => opts.includes(`${p.player_id}|${p.season}`));
+        R.sign(run, chosen);
+      }
+      freeRerolls += run.freeRerolls;
+      const spent = run.roster.reduce((s, p) => s + p.price_musd, 0)
+        + run.respinsUsed * E.CONSTANTS.RESPIN_COST_MUSD;
+      spends.push(spent);
+      if (spent > E.CONSTANTS.CAP_MUSD + 1e-6) capViolations++;
+      if (run.roster.length !== E.SLOTS.length) deadEnds++;
+      // slot shape must be respected
+      const shapeOk = run.roster.every((p, idx) =>
+        E.SLOT_ELIGIBILITY[E.SLOTS[idx]].includes(p.position));
+      const uniqueTs = new Set(run.usedTeamSeasons).size === run.usedTeamSeasons.length;
+      if (shapeOk && uniqueTs) perfectDrafts++;
+    } catch (err) {
+      deadEnds++;
+      blockedReasons['threw: ' + err.message] = (blockedReasons['threw: ' + err.message] || 0) + 1;
+    }
+  }
+  console.log(`draft invariants over ${n} runs (always re-spin when legal)\n`);
+  console.log(`  cap                    $${E.CONSTANTS.CAP_MUSD}M, re-spin $${E.CONSTANTS.RESPIN_COST_MUSD}M from the cap, max ${E.CONSTANTS.MAX_RESPINS}`);
+  console.log(`  re-spins taken         ${respinsTotal} (${(respinsTotal / n).toFixed(2)}/run)`);
+  console.log(`  free auto-rerolls      ${freeRerolls} (unaffordable draws, pool not consumed)`);
+  console.log(`  mean total committed   $${mean(spends).toFixed(1)}M`);
+  console.log(`  over-cap runs          ${capViolations}  ${capViolations === 0 ? '✓' : '✗'}`);
+  console.log(`  dead-ended runs        ${deadEnds}  ${deadEnds === 0 ? '✓' : '✗'}`);
+  console.log(`  valid slot shape+teams ${perfectDrafts}/${n}  ${perfectDrafts === n ? '✓' : '✗'}`);
+  if (Object.keys(blockedReasons).length) {
+    console.log('\n  re-spins refused (the block that prevents dead ends):');
+    for (const [r, c] of Object.entries(blockedReasons)) console.log(`    ${c.toString().padStart(5)}  ${r}`);
+  }
+
+  // Same-season division rivals
+  const rng = E.createSeededRNG(7);
+  const s = E.generateSchedule('BUF', data.prepared, rng);
+  const counts = {};
+  for (const g of s.games) counts[g.team_season_id] = (counts[g.team_season_id] || 0) + 1;
+  const twice = Object.entries(counts).filter(([, c]) => c === 2);
+  console.log(`\n  division rivals drawn twice as the SAME team-season: ${twice.length} of 3 expected` +
+    ` ${twice.length === 3 ? '✓' : '✗'}`);
+  for (const [id, c] of twice) console.log(`    ${data.byTeamSeasonId[id].display} x${c}`);
+
+  // Daily determinism
+  const a = R.createRun({ daily: '2026-07-25' });
+  const b = R.createRun({ daily: '2026-07-25' });
+  const c = R.createRun({ daily: '2026-07-26' });
+  console.log(`\n  daily seed stable within a date: ${a.seed === b.seed ? '✓' : '✗'}` +
+    `   differs across dates: ${a.seed !== c.seed ? '✓' : '✗'}`);
+
+  // Resume-safety: rebuilding from (seed, rngCalls) must continue the stream
+  const r1 = R.createRun({ seed: 99 });
+  R.pickFranchise(r1, 'NE');
+  R.spin(r1, data);
+  const snapshot = JSON.parse(JSON.stringify(r1));
+  const first = R.spin(r1, data).team_season_id;
+  const again = R.spin(snapshot, data).team_season_id;
+  console.log(`  run survives serialize/reload mid-draft: ${first === again ? '✓' : '✗'}`);
+}
+
 // ─── main ────────────────────────────────────────────────────────────────────
 
 const arg = process.argv[2];
@@ -410,4 +496,5 @@ const N = Number(process.env.PS_N ?? 2000);
 if (arg === '--sweep') sweep(Math.max(400, Math.floor(N / 2)));
 else if (arg === '--chem') chemReport();
 else if (arg === '--schedule') scheduleReport(200);
+else if (arg === '--draft') draftReport(Number(process.env.PS_N ?? 3000));
 else reportMain(N);
