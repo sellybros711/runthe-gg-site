@@ -360,6 +360,29 @@ difference somewhere else. A hill climb then re-checks the answer with chemistry
 included, since chemistry depends on the whole roster and cannot be folded into
 the DP. Solves in about 20ms.
 
+It then reports **how each team would actually have done**, not just a points
+total. Both your team and the best team are replayed many times against your real
+17 opponents, and the table shows the record you would usually post plus how often
+the season ends each way:
+
+|  | Yours | Best |
+|---|---|---|
+| Points a game | 27 | 72 |
+| Money spent | $47.2M | $99.4M |
+| Typical record | 4-13 | 15-2 |
+| Makes the playoffs | 0% | 97% |
+| Wins the title | 0% | 21% |
+| Goes 20-0 | 0% | 1.8% |
+
+Many replays rather than one, because a single season is mostly luck: a strong
+team misses the playoffs often enough that one sample would mislead. Both
+projections take about 30ms.
+
+A spot can show a **negative** delta, and that is the optimizer working rather
+than a bug. Taking a cheaper, worse quarterback to free $8M for a much bigger
+gain at receiver is often correct, which is exactly the cascade that made the old
+per-spot comparison meaningless.
+
 The honest limit, stated in the UI rather than glossed over: it holds your six
 drawn **teams** fixed. It cannot know what the wheel would have shown after a
 different pick, because the wheel reacts to who you have already signed.

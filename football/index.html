@@ -262,13 +262,20 @@
   .cmp .side b{font-weight:800}
   .cmp .up{flex:0 0 auto;font-family:'Anton',Impact,sans-serif;font-size:13px;color:#4ade80}
   .cmp .up.kept{color:var(--dim-2);font-size:10px;letter-spacing:.08em}
+  /* A spot can drop on purpose, to free money for a bigger gain elsewhere. */
+  .cmp .up.down{color:#fbbf24}
   .cmp .was{color:var(--dim)}
-  .totals{display:flex;gap:10px;margin-top:12px}
-  .tot{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
-  .tot .k{font-family:'Anton',Impact,sans-serif;font-size:10px;letter-spacing:.12em;color:var(--dim-2)}
-  .tot .v{font-family:'Anton',Impact,sans-serif;font-size:22px;line-height:1.1;margin-top:2px}
-  .tot .s{font-size:11px;color:var(--dim);margin-top:2px}
-  .tot.best{border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.07)}
+  .vs-tbl{margin-top:13px;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .vs-row{display:grid;grid-template-columns:1fr 74px 74px;align-items:center;
+    padding:9px 11px;font-size:12.5px;border-top:1px solid var(--line)}
+  .vs-row:first-child{border-top:none;background:rgba(255,255,255,.04)}
+  .vs-row .h{font-family:'Anton',Impact,sans-serif;font-size:10px;letter-spacing:.1em;color:var(--dim-2);
+    text-align:center}
+  .vs-row .h.b{color:#4ade80}
+  .vs-row .k{color:var(--dim)}
+  .vs-row .a,.vs-row .c{font-family:'Anton',Impact,sans-serif;font-size:15px;text-align:center}
+  .vs-row .c{color:#4ade80}
+  .vs-row.hi{background:rgba(74,222,128,.06)}
 
   .load{text-align:center;padding:80px 20px}
   .dots{display:flex;gap:6px;justify-content:center;margin-bottom:16px}
@@ -407,7 +414,8 @@
     </div>
     <div class="panel" style="margin-top:11px">
       <div class="eyebrow">The best team your spins could have made</div>
-      <p class="dim" style="font-size:12px;margin:5px 0 4px">Same six teams, same $100M, chemistry counted.</p>
+      <p class="dim" style="font-size:12px;margin:5px 0 4px">Same six teams, same $100M, chemistry counted.
+      A spot can go down if spending less there buys more somewhere else.</p>
       <div id="o-miss"></div>
     </div>
     <div style="margin-top:15px"><button class="btn" id="b-share">Copy result</button></div>
@@ -813,18 +821,30 @@ function paintOver(){
         r.slot+'</span><span class="side">'+
         '<div class="was"><span class="lbl">YOU</span>'+nm(r.had)+'</div>'+
         '<div><span class="lbl">BEST</span><b>'+nm(r.could)+'</b></div></span>'+
-        '<span class="up">+'+r.delta.toFixed(1)+'</span></div>';
+        '<span class="up'+(r.delta<0?' down':'')+'">'+(r.delta>0?'+':'')+r.delta.toFixed(1)+'</span></div>';
     }).join('');
-    const line=(k,pts,spend,chem,cls)=>'<div class="tot '+(cls||'')+'"><div class="k">'+k+'</div>'+
-      '<div class="v">'+pts.toFixed(0)+'</div><div class="s">points a game<br>'+M(spend)+' spent, chem '+pc(chem-1)+'</div></div>';
+    /* How each team would actually have done over the same 17 opponents. A points
+       total on its own never answered the real question, which is what record it
+       would have posted and whether that was good enough. */
+    const mine=R.projectSeason(run.roster,best.yourChemistry,run,DATA,LEAGUE);
+    const theirs=R.projectSeason(best.squad,best.chemistry,run,DATA,LEAGUE);
+    const P=(v)=>(v*100).toFixed(v>0&&v<0.1?1:0)+'%';
+    const vs=(k,a,c,hi)=>'<div class="vs-row'+(hi?' hi':'')+'"><span class="k">'+k+'</span>'+
+      '<span class="a">'+a+'</span><span class="c">'+c+'</span></div>';
     $('o-miss').innerHTML=rows+
-      '<div class="totals">'+
-        line('YOUR TEAM',best.yourProjected,best.yourSpend,best.yourChemistry)+
-        line('BEST POSSIBLE',best.bestProjected,best.spend,best.chemistry,'best')+
+      '<div class="vs-tbl">'+
+        '<div class="vs-row"><span class="k"></span><span class="h">YOURS</span><span class="h b">BEST</span></div>'+
+        vs('Points a game',best.yourProjected.toFixed(0),best.bestProjected.toFixed(0))+
+        vs('Money spent',M(best.yourSpend),M(best.spend))+
+        vs('Chemistry',pc(best.yourChemistry-1),pc(best.chemistry-1))+
+        vs('Typical record',mine.typicalRecord,theirs.typicalRecord,true)+
+        vs('Makes the playoffs',P(mine.playoffRate),P(theirs.playoffRate))+
+        vs('Wins the title',P(mine.titleRate),P(theirs.titleRate))+
+        vs('Goes 20-0',P(mine.perfectRate),P(theirs.perfectRate))+
       '</div>'+
-      '<p class="dim" style="font-size:11.5px;margin:10px 0 0">This keeps your six teams fixed. Picking '+
-      'differently would also have changed which teams the wheel showed you next, so it is the closest '+
-      'honest comparison rather than a perfect one.</p>';
+      '<p class="dim" style="font-size:11.5px;margin:10px 0 0">Records come from replaying both teams '+
+      'against your actual 17 opponents many times, since one season is mostly luck. This keeps your six '+
+      'teams fixed: picking differently would also have changed which teams the wheel showed you next.</p>';
   }
   show('s-over');
 }

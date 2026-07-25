@@ -647,9 +647,53 @@ function bestPossibleSquad(run, data, ctx) {
   };
 }
 
+/**
+ * What a given roster would typically do over THIS run's schedule.
+ *
+ * A single replay would be worse than useless here: one season is mostly noise, so
+ * a strong team can miss the playoffs and a weak one can luck into a title. Both
+ * teams are therefore run many times over the same 17 opponents, and what comes
+ * back is the distribution: the record you would usually post, and how often the
+ * season ends each way.
+ *
+ * The RNG is seeded from the run so the numbers are stable if you reload the
+ * results page, and separately from the season you actually played so this does
+ * not just re-report the same luck.
+ */
+function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400) {
+  const schedule = run.schedule.map((id) => data.byTeamSeasonId[id]);
+  const playoffs = run.playoffs.map((id) => data.byTeamSeasonId[id]);
+  const wins = [];
+  let madePlayoffs = 0, titles = 0, perfect = 0, bye = 0;
+
+  for (let i = 0; i < trials; i++) {
+    const rng = E.createSeededRNG(E.hashSeed(`project|${run.seed}|${i}`));
+    const out = E.playRun(roster, chemistry, schedule, playoffs, leagueContext, rng);
+    wins.push(out.regularWins);
+    if (out.seed.made) madePlayoffs++;
+    if (out.seed.bye) bye++;
+    if (out.titleWon) titles++;
+    if (out.perfect) perfect++;
+  }
+  wins.sort((a, b) => a - b);
+  const games = E.CONSTANTS.REGULAR_SEASON_GAMES;
+  const mid = wins[Math.floor(trials / 2)];
+  return {
+    typicalWins: mid,
+    typicalRecord: `${mid}-${games - mid}`,
+    meanWins: wins.reduce((a, b) => a + b, 0) / trials,
+    bestWins: wins[trials - 1],
+    worstWins: wins[0],
+    playoffRate: madePlayoffs / trials,
+    byeRate: bye / trials,
+    titleRate: titles / trials,
+    perfectRate: perfect / trials,
+  };
+}
+
 const api = {
   PHASES, createRun, pickFranchise, spin, respin, sign,
-  startSeason, advanceWeek, startPlayoffs, indexData, bestPossibleSquad,
+  startSeason, advanceWeek, startPlayoffs, indexData, bestPossibleSquad, projectSeason,
   previewSigning,
   remaining, reserveFloor, canRespin, slotsLeft, affordableFrom,
   openSlots, openSlotNames, slotForPlayer, TUNING,
