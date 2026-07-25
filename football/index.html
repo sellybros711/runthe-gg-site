@@ -275,6 +275,9 @@
      and the differential is a detail in matching type. */
   .lbr .rec b{display:block;font-family:var(--fn);font-size:12.5px;font-weight:600;
     line-height:1.15;color:var(--dim)}
+  /* The record is the one figure in this column that ranks you, so it carries the
+     weight the differential does not. */
+  .lbr .rec b.big{font-size:16px;color:var(--ink)}
   .lbr .rec span{display:block;font-size:10px;color:var(--dim-2)}
   .lbr.gold{border-color:rgba(251,191,36,.42);background:rgba(251,191,36,.07)}
   .lbr.gold .rk{color:#fcd34d}
@@ -1560,8 +1563,24 @@ function sheet(p){
 }
 $('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))$('sheet').classList.remove('on');});
 
-$('b-start').onclick=()=>{run=R.createRun({});show('s-team');};
-$('b-daily').onclick=()=>{run=R.createRun({daily:new Date().toISOString().slice(0,10)});
+/* EVERY run starts here.
+   `submitted` and `myRanks` belong to one run, and nothing was clearing them, so
+   recordRun() returned its early "already sent" answer for the second run of a page
+   session and every run after it. Only the first run of a visit was ever recorded,
+   and the results page kept showing the first run's ranks: the reported symptom was
+   a rank panel stuck on "1 of 1" that never moved for a new draft.
+
+   The fix is not a reset call at each entry point, which is exactly what would get
+   missed again. It is one function that every entry point goes through. */
+function newRun(opts){
+  submitted=null;
+  myRanks=null;
+  lastPerfectShare=null;
+  run=R.createRun(opts||{});
+  return run;
+}
+$('b-start').onclick=()=>{newRun({});show('s-team');};
+$('b-daily').onclick=()=>{newRun({daily:new Date().toISOString().slice(0,10)});
   toast('Everyone gets the same six spins today');show('s-team');};
 $('b-draft').onclick=()=>{
   R.pickFranchise(run,pickedTeam);
@@ -2944,7 +2963,10 @@ function lbWindowsLive(){ return !(lbSort==='rating'); }
 /* What the big right-hand figure means for each axis, so the column always says
    which quantity it is showing rather than leaving it to be guessed. */
 const SORT_META={
-  record:{label:'Record', of:(r)=>diffCell(r.point_diff,r.chemistry_pct,r.spend_musd)},
+  /* The right column always shows the quantity the board is sorted by, and with the
+     name now taking the headline that is where the record has to live: it is what
+     ranks you, so it cannot be small grey text in a subtitle. */
+  record:{label:'Record', of:(r)=>recordCell(r)},
   rating:{label:'Team rating', of:(r)=>ratingCell(r)},
 };
 
@@ -3103,19 +3125,41 @@ function runDetail(row){
    this browser's own copy of the player data. Nothing a player typed is stored or
    shown anywhere, which is the reason there is no name column yet. */
 function boardRow(row,i){
-  const who=rosterLine(row.picks);
   const rank=i+1;
   const mine=submitted&&row.id===submitted;
   /* Gold is for leading a board, so it is wrong on a reversed one: row 1 there is
      the worst run in the window, and gilding it says the opposite of what it is. */
   const lead=rank===1&&lbDir==='desc';
+  /* Every row says WHO. With no rows carrying an identity the board read as a list
+     of numbers rather than a list of people, which is what made it look empty of
+     players. Accounts are not live, so everybody is a guest and everybody is
+     Anonymous, and saying so is better than saying nothing. */
   return '<div class="lbr'+(lead?' gold':'')+(mine?' mine':'')+'" data-i="'+i+'">'+
     '<span class="rk">'+rank+'</span>'+
-    '<span class="who"><b>'+esc(row.wins+'-'+row.losses)+' '+
-      esc(row.perfect?'perfect season':row.seed_label.toLowerCase())+'</b>'+
-      '<span>'+esc(who)+'</span></span>'+
+    '<span class="who"><b>'+esc(playerName(row,mine))+'</b>'+
+      '<span>'+esc(rowSub(row))+'</span></span>'+
     '<span class="rec">'+SORT_META[lbSort].of(row)+'</span>'+
     '<span class="go">&rsaquo;</span></div>';
+}
+
+/* Who played it. Nothing on a row carries a name yet: accounts are not live, so
+   user_id is null on every one of them and there is no profile to join to. When
+   there is, the name comes from that profile and not from anything a client sent,
+   for the same reason no other text on these rows does.
+
+   Your own run says so, because "Anonymous" sitting where you know your own row is
+   reads as the board having lost you. */
+function playerName(row,mine){
+  if(mine) return 'You';
+  return (row&&row.display_name)||'Anonymous';
+}
+
+/* The line under the name: what the run did, then who was on it. */
+function rowSub(row){
+  const rec=row.wins+'-'+row.losses+' '+
+    (row.perfect?'perfect season':row.seed_label.toLowerCase());
+  const who=rosterLine(row.picks);
+  return who?rec+' \u00b7 '+who:rec;
 }
 
 /* The same right-hand column for every row, the pinned one included. It used to
@@ -3124,6 +3168,14 @@ function boardRow(row,i){
 function diffCell(diff,chemPct,spend){
   return '<b>'+(diff>=0?'+':'')+Number(diff).toFixed(1)+' diff</b>'+
     '<span>'+pc(Number(chemPct)/100)+' chem, '+M0(Number(spend))+'</span>';
+}
+
+/* The record board's right column: the record, then the differential that breaks
+   ties inside it. */
+function recordCell(row){
+  const d=Number(row.point_diff);
+  return '<b class="big'+(row.perfect?' gold':'')+'">'+esc(row.wins+'-'+row.losses)+'</b>'+
+    '<span>'+(d>=0?'+':'')+d.toFixed(1)+' diff</span>';
 }
 
 /* On the rating board the right column shows the rating, since sorting by a number
@@ -3170,8 +3222,8 @@ function minePinned(rows){
     : diffCell(p.pointDiff,p.chemistryPct,p.spendMusd);
   return '<div class="lbr mine"><span class="rk">'+
     (w.rank>999?'#'+w.rank.toLocaleString():w.rank)+'</span>'+
-    '<span class="who"><b>'+esc(o.record)+' this run</b><span>'+
-      esc(rosterLine(p.picks))+'</span></span>'+
+    '<span class="who"><b>You</b><span>'+
+      esc(o.record+' \u00b7 '+(rosterLine(p.picks)||'this run'))+'</span></span>'+
     '<span class="rec">'+cell+'</span>'+
     '<span class="go">&rsaquo;</span></div>';
 }
@@ -3199,6 +3251,9 @@ $('b-lb-dir').onclick=()=>{ lbDir=lbDir==='asc'?'desc':'asc'; lbShown=5; loadBoa
 $('b-again').onclick=()=>{
   clearTimeout(simTimer); clearTimeout(poTimer); cancelAnimationFrame(poRaf); poSkip=null;
   run=null; pickedTeam=null; lastChem=1;
+  /* Back to no run at all, which means no submitted row and no ranks either. Without
+     this the next run is measured against the last one's numbers. */
+  submitted=null; myRanks=null; lastPerfectShare=null;
   document.querySelectorAll('.tm').forEach(x=>{x.classList.remove('on');x.removeAttribute('style');});
   $('b-draft').disabled=true; $('hdr').textContent='The Perfect Season';
   $('rivals').classList.remove('on'); $('rivals').innerHTML='';

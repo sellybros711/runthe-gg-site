@@ -1268,6 +1268,40 @@ still renders its record, four stat tiles, six lineup rows, six field chips, the
 gauge and the full schedule, with no crash banner and the plain sentence "The
 leaderboard is not reachable right now, so this run has not been counted."
 
+### Only the first run of a visit was ever recorded
+
+A reported bug worth writing down, because the shape of it is the lesson. `submitted`
+and `myRanks` belong to one run, and nothing cleared them between runs, so
+`recordRun()` hit its own "already sent" early return for the second run of a page
+session and every run after it. The symptom was a rank panel stuck on "#1 of 1" that
+never moved for a new draft, and the cause was that the new draft was never submitted
+at all.
+
+The fix is not a reset call at each of the three entry points, which is exactly the
+thing that gets missed a second time. Every run now goes through one `newRun()`, which
+clears the per-run state and then creates the run. `v41.mjs` plays three runs in a
+single page session and checks the table grows 1, 2, 3 and that the panel's numbers
+change between them.
+
+### Who played it
+
+Every board row carries a name. It did not, and a board of records with no identity on
+any row reads as a list of numbers rather than a list of people, which is what made it
+look empty of players.
+
+Accounts are not live, so every row is a guest and every guest reads **Anonymous**.
+Your own row says **You**, because "Anonymous" sitting where you know your own run is
+reads as the board having lost you.
+
+The name takes the row's headline, which moved the record into the right-hand column
+where the rating already lives. That is the correct place for it: the right column
+always shows the quantity the board is sorted by, and on the record board the record is
+what ranks you, so it cannot be small grey text in a subtitle.
+
+Nothing on a row carries a name in the database. `user_id` is null on all of them and
+there is no profile to join to yet. When there is, the name comes from that profile and
+never from anything a client sent, for the same reason no other text on these rows does.
+
 ### What a row contains, and what it does not
 
 No free text, ever. A row is numbers plus the six picks as `<player_id>:<season>`,
