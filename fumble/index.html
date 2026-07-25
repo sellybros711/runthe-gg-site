@@ -48,6 +48,10 @@
     pointer-events:auto; padding:16px 44px; font-size:22px; font-weight:800; letter-spacing:1px; color:#0c2138;
     background:linear-gradient(180deg,#bfe0ff,#4a8ad6); border:none; border-radius:15px; box-shadow:0 6px 20px rgba(74,138,214,.45); z-index:7; }
   #kick:disabled{ filter:grayscale(.6) brightness(.7); box-shadow:none; }
+  #mode{ display:none; position:absolute; right:14px; bottom:calc(32px + env(safe-area-inset-bottom)); pointer-events:auto;
+    padding:12px 16px; font-size:14px; font-weight:800; letter-spacing:.5px; color:#dfeaf6;
+    background:rgba(20,40,62,.85); border:1px solid rgba(122,162,208,.4); border-radius:12px; z-index:7; }
+  #mode.draw{ background:linear-gradient(180deg,#7fd0ff,#3b82f6); color:#082138; border-color:#7fd0ff; }
   #flash{ position:absolute; inset:0; pointer-events:none; opacity:0; z-index:6;
     background:radial-gradient(circle at 50% 52%, rgba(255,255,255,.5), transparent 55%); }
   #flash.go{ animation:fl .22s ease-out; } @keyframes fl{ 0%{opacity:.85;} 100%{opacity:0;} }
@@ -80,6 +84,7 @@
   <button class="abtn" id="pitchBtn">PITCH</button>
   <button class="abtn" id="truckBtn">TRUCK</button>
   <div id="setupHint">DRAG YOUR PLAYERS · KEEP ONE IN THE CIRCLE</div>
+  <button id="mode">✎ DRAW BLOCKS</button>
   <button id="kick">KICK OFF ▸</button>
 </div>
 
@@ -203,6 +208,22 @@ ring.rotation.x=-Math.PI/2; ring.position.y=0.05; scene.add(ring);
 const landCircle=new THREE.Mesh(new THREE.RingGeometry(2.2,2.7,40), new THREE.MeshBasicMaterial({color:'#ffcf4d',side:THREE.DoubleSide,transparent:true,opacity:.85}));
 landCircle.rotation.x=-Math.PI/2; landCircle.position.y=0.06; landCircle.visible=false; scene.add(landCircle);
 const LAND_R=2.7;
+// one arrow per BLUE player to show its drawn initial-block assignment during setup
+const blockArrows=PL.map(p=>{ if(p.userData.team!=='BLUE') return null;
+  const a=new THREE.ArrowHelper(new THREE.Vector3(0,0,1),new THREE.Vector3(),1,0x7fd0ff,1.3,0.95);
+  a.visible=false; scene.add(a); return a; });
+function returnerIdx(){ let b=-1,bd=LAND_R+0.2; for(let i=0;i<PL.length;i++){ if(PL[i].userData.team!=='BLUE')continue;
+  const d=Math.hypot(PL[i].position.x-landing.x,PL[i].position.z-landing.z); if(d<bd){bd=d;b=i;} } return b; }
+function updateBlockArrows(){ const rIdx=returnerIdx();
+  for(let i=0;i<PL.length;i++){ const a=blockArrows[i]; if(!a)continue;
+    const tgt = (i===drawingIdx)?previewPt : (blockAssign[i]||null);
+    if(tgt && phase==='SETUP' && recvTeam==='BLUE' && i!==rIdx){
+      const from=new THREE.Vector3(PL[i].position.x,0.25,PL[i].position.z);
+      const dir=new THREE.Vector3(tgt.x-from.x,0,tgt.z-from.z), len=dir.length();
+      if(len>0.5){ a.position.copy(from); a.setDirection(dir.normalize()); a.setLength(len,Math.min(1.4,len*0.32),Math.min(0.95,len*0.22)); a.visible=true; }
+      else a.visible=false;
+    } else a.visible=false;
+  } }
 // ball
 const ball=new THREE.Mesh(new THREE.SphereGeometry(BALL_R,16,12), new THREE.MeshStandardMaterial({color:'#7a4a1c',roughness:.6}));
 ball.scale.set(1.7,1,1); ball.castShadow=true; scene.add(ball);
@@ -214,6 +235,8 @@ let truck=null, truckCd=0, latCd=0;
 let scoreB=0, scoreR=0, running=false, gameOver=false;
 let phase='PLAY';                 // SETUP (place pieces, aerial) -> KICK (ball drops to the circle) -> PLAY
 let recvTeam='BLUE', kickReceiver=-1, grabbed=-1;
+let setupMode='MOVE', drawingIdx=-1;            // MOVE = drag to reposition · DRAW = drag to draw a blocker's initial block
+const previewPt=new THREE.Vector3(), blockAssign={};   // playerIdx -> {x,z} initial-block target
 const landing=new THREE.Vector3();
 const raycaster=new THREE.Raycaster(), groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
 const rand=(a,b)=>a+Math.random()*(b-a);
@@ -234,6 +257,13 @@ function beginSetup(recv){
   landCircle.position.set(landing.x,0.06,landing.z); landCircle.visible=true;
   layoutForSetup(recv);
   ballVel.set(0,0,0); ballAng.set(0,0,0); ball.position.set(landing.x,15,landing.z);
+  // reset strategy: clear drawn blocks, back to MOVE mode
+  for(const k in blockAssign) delete blockAssign[k];
+  setupMode='MOVE'; drawingIdx=-1;
+  for(const p of PL){ p.userData.assign=null; p.userData.blockT=0; }
+  for(const a of blockArrows) if(a) a.visible=false;
+  const mb=document.getElementById('mode'); mb.style.display = recv==='BLUE'?'block':'none';
+  mb.classList.remove('draw'); mb.textContent='✎ DRAW BLOCKS';
   updateHighlights(); camReady=false; showControls(false);
   document.getElementById('setupHint').style.display='block'; document.getElementById('kick').style.display='block';
   updateKickBtn();
@@ -256,7 +286,11 @@ function showControls(on){ for(const id of ['stick','truckBtn','pitchBtn']) docu
 function kickoff(){ if(!canKick())return; phase='KICK';
   kickReceiver=nearestOfTeam(recvTeam, landing); PL[kickReceiver].position.set(landing.x,0,landing.z);
   ball.position.set(landing.x,15,landing.z); ballVel.set(0,0,0);
+  // lock in the drawn initial-block assignments
+  for(const k in blockAssign){ const i=+k; if(PL[i]&&PL[i].userData.team==='BLUE'&&i!==kickReceiver){ PL[i].userData.assign=blockAssign[i]; PL[i].userData.blockT=2.6; } }
+  for(const a of blockArrows) if(a) a.visible=false;
   landCircle.visible=false; document.getElementById('kick').style.display='none';
+  document.getElementById('mode').style.display='none';
   document.getElementById('setupHint').style.display='none'; showControls(true); grabbed=-1; }
 function updateKick(dt){ ballVel.y-=TUNE.GRAVITY*dt; ball.position.y+=ballVel.y*dt; ball.rotation.x+=6*dt;
   if(ball.position.y<=1.5){ ball.position.y=1.5; possession=recvTeam; carrier=kickReceiver; truckCd=TUNE.TRUCK_COOLDOWN_S;
@@ -364,10 +398,16 @@ function updatePlayers(dt){
         const g=goalZ(u.team); let tx=0; const foeIdx=nearestOfTeam(u.team==='BLUE'?'RED':'BLUE',p.position);
         if(foeIdx>=0){ const f=PL[foeIdx]; if(flat(f,p)<6) tx = p.position.x + (p.position.x-f.position.x); }
         moveToward(p,tx,g,TUNE.CARRIER_SPEED,dt);
-      } else { // blocker: go meet the defender nearest our carrier
-        const dfd=nearestOfTeam(u.team==='BLUE'?'RED':'BLUE',PL[carrier].position);
-        if(dfd>=0) moveToward(p,PL[dfd].position.x,PL[dfd].position.z,TUNE.MATE_SPEED,dt);
-        else moveToward(p,0,goalZ(u.team),TUNE.MATE_SPEED,dt);
+      } else { // blocker
+        if(u.assign && u.blockT>0){ u.blockT-=dt;                 // run the DRAWN initial block first...
+          if(Math.hypot(p.position.x-u.assign.x,p.position.z-u.assign.z)<1.6) u.blockT=0;
+          else moveToward(p,u.assign.x,u.assign.z,TUNE.MATE_SPEED,dt);
+        }
+        if(!(u.assign && u.blockT>0)){ u.assign=null;             // ...then revert to meeting the nearest defender
+          const dfd=nearestOfTeam(u.team==='BLUE'?'RED':'BLUE',PL[carrier].position);
+          if(dfd>=0) moveToward(p,PL[dfd].position.x,PL[dfd].position.z,TUNE.MATE_SPEED,dt);
+          else moveToward(p,0,goalZ(u.team),TUNE.MATE_SPEED,dt);
+        }
       }
     } else { // defense: pursue the carrier
       const sp=u.engaged?TUNE.DEF_SPEED*TUNE.BLOCKED_MULT:TUNE.DEF_SPEED;
@@ -440,7 +480,7 @@ function hud(){ if(phase!=='PLAY'){ ring.visible=false; return; }
 const clock=new THREE.Clock();
 function tick(){ requestAnimationFrame(tick); let dt=clock.getDelta(); if(dt>0.05)dt=0.05;
   if(running){
-    if(phase==='SETUP'){ landCircle.material.opacity=0.55+0.3*Math.abs(Math.sin(clock.getElapsedTime()*3.5)); updateCamera(dt); hud(); }
+    if(phase==='SETUP'){ landCircle.material.opacity=0.55+0.3*Math.abs(Math.sin(clock.getElapsedTime()*3.5)); updateBlockArrows(); updateCamera(dt); hud(); }
     else if(phase==='KICK'){ updateKick(dt); updateCamera(dt); }
     else {
       if(truckCd>0)truckCd-=dt; if(latCd>0)latCd-=dt;
@@ -482,11 +522,18 @@ function fieldPoint(e){ const r=canvas.getBoundingClientRect(); const nx=((e.cli
 canvas.addEventListener('pointerdown',e=>{ if(phase!=='SETUP')return; const pt=fieldPoint(e); if(!pt)return;
   let b=-1,bd=1e9; for(let i=0;i<PL.length;i++){ if(PL[i].userData.team!=='BLUE')continue;
     const d=Math.hypot(PL[i].position.x-pt.x,PL[i].position.z-pt.z); if(d<bd){bd=d;b=i;} }
-  if(b>=0&&bd<3.5) grabbed=b; });
-canvas.addEventListener('pointermove',e=>{ if(phase!=='SETUP'||grabbed<0)return; const pt=fieldPoint(e);
-  if(pt){ PL[grabbed].position.x=pt.x; PL[grabbed].position.z=pt.z; clampField(PL[grabbed]); updateKickBtn(); } });
-addEventListener('pointerup',()=>{ grabbed=-1; });
+  if(b<0||bd>3.5) return;
+  if(setupMode==='DRAW' && recvTeam==='BLUE' && b!==returnerIdx()){ drawingIdx=b; previewPt.set(pt.x,0,pt.z); }
+  else grabbed=b; });
+canvas.addEventListener('pointermove',e=>{ if(phase!=='SETUP')return; const pt=fieldPoint(e); if(!pt)return;
+  if(drawingIdx>=0){ previewPt.set(pt.x,0,pt.z); }
+  else if(grabbed>=0){ PL[grabbed].position.x=pt.x; PL[grabbed].position.z=pt.z; clampField(PL[grabbed]); updateKickBtn(); } });
+addEventListener('pointerup',()=>{ if(drawingIdx>=0){ blockAssign[drawingIdx]={x:previewPt.x,z:previewPt.z}; drawingIdx=-1; } grabbed=-1; });
 document.getElementById('kick').addEventListener('click',kickoff);
+document.getElementById('mode').addEventListener('click',()=>{ setupMode = setupMode==='MOVE'?'DRAW':'MOVE';
+  const m=document.getElementById('mode'); m.classList.toggle('draw',setupMode==='DRAW');
+  m.textContent = setupMode==='DRAW'?'✋ MOVE PLAYERS':'✎ DRAW BLOCKS';
+  document.getElementById('setupHint').textContent = setupMode==='DRAW'?'DRAG FROM A BLOCKER TO SET HIS FIRST BLOCK':'DRAG YOUR PLAYERS INTO POSITION'; });
 
 /* ---------------- boot ---------------- */
 function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); }
