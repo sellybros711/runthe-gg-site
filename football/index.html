@@ -29,7 +29,47 @@
     --grad-panel:linear-gradient(180deg,#182134 0%,#111827 100%);
     --grad-field:linear-gradient(180deg,#0f1830 0%,#0a1122 60%,#0c1526 100%);
     --shadow:0 18px 40px -14px rgba(0,0,0,.85), 0 3px 10px -4px rgba(0,0,0,.6);
-    --qb:#ef4444; --rb:#22c55e; --wr:#3b82f6; --te:#f97316; --flex:#a855f7;
+    /* THE FIVE POSITION COLORS, settled by measurement rather than by eye.
+
+       The complaint was that red read as orange and blue read as purple. That is
+       measurable: on the old set QB/TE sat at deltaE 19.7 and WR/FLEX at 22.9, both
+       under the ~25 where two colors stop being mistakable at a glance. They are
+       now 36.7 and 36.9.
+
+       Brightening was the suggested fix and it does not work on its own, because
+       lightness is not what made them similar: the same five hues turned up still
+       left WR/FLEX at 25.6. The hues had to move. QB toward rose, TE toward gold,
+       WR toward a truer sky blue, FLEX toward magenta.
+
+       BRIGHTNESS AND SEPARATION PULL AGAINST EACH OTHER, and against legibility.
+       Two searches settled it. Requiring every color to be at least as bright as
+       the one it replaces AND its white label to stay legible rejected all 174,960
+       candidates: there is no such set. Maximising brightness per color instead
+       produced pastels (a pink QB) that collapsed the worst pair back to 22.9,
+       because pushing lightness up desaturates toward white and pulls every hue
+       together. So separation is the objective and legibility is the constraint,
+       which is the right way round: separation was the actual complaint.
+
+       Green is untouched on purpose. It was never confusable with anything, and it
+       is the one color with no headroom left: #22c55e already sits exactly on the
+       4.6:1 line its own label needs, so any brighter green breaks it.
+
+       Net effect, all measured on the rendered page by v40.mjs: WR and TE are
+       brighter, QB and FLEX are more saturated at about the same lightness, nothing
+       is duller to look at, and the worst label on the set is 4.6:1, exactly what
+       it was before. */
+    --qb:#ff0a3b; --rb:#22c55e; --wr:#0f93ff; --te:#eb9500; --flex:#ba22f1;
+    /* THE LABEL ON A CHIP STAYS WHITE, and that is a measured result rather than an
+       assumption. Brightening these looked like it must break white text: against
+       the PURE colors, white manages only 1.7:1 on the new green and 2.1:1 on the
+       blue and the gold, so a per-position ink was built and set to near-black on
+       three of the five. Sampling the rendered pixels said the opposite. The chips
+       are a gradient into 45% black, and across a pill that small the gradient
+       carries most of the way: the green renders #259a51 to #1b603b, not #33e66e.
+       Against what is actually there, white measures 7.0:1 to 9.2:1 on all five and
+       the dark ink measured 2.1:1. The per-position ink was deleted. v40.mjs samples
+       those pixels on every run and fails if white ever stops being the better of
+       the two, which is the only way this stays true through the next palette. */
 
     /* THE TYPE
        Anton and Archivo were the default free pairing you see everywhere, which
@@ -324,6 +364,7 @@
     color:#08101f;border:1.5px solid #0b1220;font-style:normal}
   .chip .disc{position:relative}
   .chip .disc .dl{display:block;line-height:1}
+  .chip.filled .disc{color:#fff}
 
   /* THE CONNECTION RAIL
      Nodes in a row, arcs hanging below it, so an arc can never cross a player.
@@ -527,7 +568,8 @@
   .tile.hot{border-color:rgba(74,222,128,.5);box-shadow:0 0 0 1px rgba(74,222,128,.22)}
   .tile .th{display:flex;align-items:center;justify-content:space-between;gap:6px}
   .tile .pos{flex:0 0 auto;min-width:31px;text-align:center;padding:3px 0;border-radius:7px;
-    color:#fff;font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.06em}
+    color:#fff;font-family:var(--fn);font-size:10.5px;font-weight:700;
+    letter-spacing:.06em}
   .tile .pr{font-family:var(--fn);font-size:15px;font-weight:600;letter-spacing:.01em;
     white-space:nowrap}
   /* Two lines then cut, so a long name never pushes one tile taller than its
@@ -660,11 +702,16 @@
     margin-top:5px}
   .verdict p{margin:9px 0 0;color:var(--dim);font-size:14px}
   .cmp{display:flex;gap:9px;padding:9px 0;border-top:1px solid var(--line);align-items:flex-start}
-  .cmp .sp{flex:0 0 42px;font-family:var(--fn);font-size:11px;letter-spacing:.06em;
+  .cmp .sp{color:#fff;flex:0 0 42px;font-family:var(--fn);font-size:11px;letter-spacing:.06em;
     color:#fff;text-align:center;padding:3px 0;border-radius:6px}
   .cmp .side{flex:1;min-width:0;font-size:12.5px;line-height:1.35}
   .cmp .side .lbl{color:var(--dim-2);font-size:10px;font-family:var(--fn);
     letter-spacing:.1em;margin-right:5px}
+  /* BEST is the answer these rows exist to give, so it is the green already used for
+     the BEST column of the table below and for a positive delta. It was the same
+     grey as YOU, which made the two lines look like a list rather than a comparison
+     with a right answer in it. */
+  .cmp .side .lbl.b{color:#4ade80;font-weight:700}
   .cmp .side b{font-weight:800}
   .cmp .up{flex:0 0 auto;font-family:var(--fn);font-size:13px;color:#4ade80}
   .cmp .up.kept{color:var(--dim-2);font-size:10px;letter-spacing:.08em}
@@ -745,7 +792,7 @@
   .rost{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:11px}
   .rrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;min-width:0;
     background:rgba(255,255,255,.03);border:1px solid var(--line)}
-  .rrow .tag{flex:0 0 40px;text-align:center;font-family:var(--fn);font-size:9.5px;
+  .rrow .tag{color:#fff;flex:0 0 40px;text-align:center;font-family:var(--fn);font-size:9.5px;
     letter-spacing:.05em;color:#fff;padding:4px 0;border-radius:6px}
   .rrow .nm{flex:1;min-width:0}
   .rrow .nm b{display:block;font-size:13.5px;font-weight:800;white-space:nowrap;overflow:hidden;
@@ -1128,6 +1175,22 @@ window.addEventListener('error',(ev)=>{
   el.onclick=()=>{el.style.display='none';};
 });
 const COL={QB:'--qb',RB:'--rb',WR:'--wr',TE:'--te',FLEX:'--flex'};
+/* One place that paints a position color. Six call sites used to write this exact
+   gradient string out by hand, in four slightly different forms, which is how a
+   palette change turns into a hunt. */
+function posPaint(pos){
+  return 'background:linear-gradient(160deg,var('+(COL[pos]||'--flex')+'),rgba(0,0,0,.45))';
+}
+/* The same five colors as real hex, for the canvas share card, which cannot use a
+   CSS variable. Resolved from the stylesheet so there is one palette in the file. */
+let posColorCache=null;
+function posColors(){
+  if(posColorCache) return posColorCache;
+  const cs=getComputedStyle(document.documentElement);
+  posColorCache={};
+  for(const [pos,v] of Object.entries(COL)) posColorCache[pos]=cs.getPropertyValue(v).trim();
+  return posColorCache;
+}
 const M=(v)=>'$'+v.toFixed(1)+'M';
 /* Whole millions, for amounts the rules define exactly: $5M, not $5.0M. */
 const M0=(v)=>'$'+Math.round(v)+'M';
@@ -1336,7 +1399,7 @@ function drawField(el,live){
     c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1)?' now':'')+(justFilled?' pop':'');
     const disc=c.querySelector('.disc');
     disc.querySelector('.dl').textContent=p?p.position:E.SLOTS[i];
-    disc.style.background=p?'linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.45))':'';
+    disc.style.cssText=p?posPaint(p.position):'';
     c.querySelector('.who').textContent=p?lastName(p.name):'';
     c.querySelector('.yr').textContent=p?p.season:'';
     /* How many players he connects to, in his strongest link's color. The web
@@ -1421,7 +1484,7 @@ function drawRail(el,bySlot,links,at){
     node.className='rnode'+(p?' on':'')+(st.focus===i?' focus':'');
     const dot=node.querySelector('.rdot');
     dot.textContent=p?p.position:E.SLOTS[i];
-    dot.style.background=p?'linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.45))':'';
+    dot.style.cssText=p?posPaint(p.position):'';
     node.querySelector('.rnm').textContent=p?lastName(p.name):'';
   });
 
@@ -1720,8 +1783,7 @@ const stagger=(i)=>Math.min(220,(i||0)*28);
    line, and twice as many players are on screen at once. */
 function optTile(row){
   const p=row.p, i=row.i;
-  const tint='var('+COL[p.position]+')';
-  const head='<span class="pos" style="background:linear-gradient(150deg,'+tint+',rgba(0,0,0,.5))">'+
+  const head='<span class="pos" style="'+posPaint(p.position)+'">'+
     p.position+'</span><span class="pr">'+M(p.price_musd)+'</span>';
   const who='<span class="nm">'+esc(p.name)+'</span>'+
     '<span class="sn">'+p.season+' '+esc(E.nickname(p.franchise))+'</span>';
@@ -1777,10 +1839,11 @@ function paintOpts(draw){
   $('tabs').innerHTML=names.map(n=>{
     const on=n===activeTab, open=n===ALL||positionOpen(n);
     const count=open?signable(groups.get(n)):groups.get(n).length;
-    const grad=n===ALL?'linear-gradient(135deg,#475569,rgba(0,0,0,.5))'
-      :'linear-gradient(135deg,var('+COL[n]+'),rgba(0,0,0,.45))';
+    const paint=n===ALL
+      ?'background:linear-gradient(135deg,#475569,rgba(0,0,0,.5))'
+      :posPaint(n);
     return '<button class="tab'+(on?' on':'')+(open?'':' full')+(n===ALL?' all':'')+
-      '" data-t="'+n+'"'+(on&&open?' style="background:'+grad+';"':'')+'>'+
+      '" data-t="'+n+'"'+(on&&open?' style="'+paint+'"':'')+'>'+
       n+'<span class="n">'+count+'</span></button>';
   }).join('');
   $('opts').innerHTML=(groups.get(activeTab)||[]).map((r,i)=>optTile({...r,i})).join('');
@@ -2184,9 +2247,7 @@ function paintOver(){
   run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
   $('o-rost').innerHTML=E.SLOTS.map((slot,i)=>{
     const p=bySlot[i]; if(!p) return '';
-    const col='var('+COL[slot]+')';
-    return '<div class="rrow"><span class="tag" style="background:linear-gradient(160deg,'+col+
-      ',rgba(0,0,0,.45))">'+slot+'</span>'+
+    return '<div class="rrow"><span class="tag" style="'+posPaint(slot)+'">'+slot+'</span>'+
       '<span class="nm"><b>'+esc(p.name)+'</b><span>'+p.season+' '+esc(E.nickname(p.franchise))+
         (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</span></span>'+
       '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
@@ -2218,7 +2279,8 @@ function paintOver(){
       'and same '+M(E.CONSTANTS.CAP_MUSD)+' allowed. A spot can go down on purpose when spending less '+
       'there buys more somewhere else.</p>'+
       swapRows(best)+comparison(best)+
-      '<p class="caveat">Both records come from replaying the two teams against your actual 17 opponents '+
+      '<p class="caveat">Points a game includes chemistry and team shape, because that is what '+
+      'the simulation scores with. Both records come from replaying the two teams against your actual 17 opponents '+
       'many times, because one season is mostly luck. Your six teams stay fixed: a different pick would '+
       'also have changed what the wheel showed you next.</p>';
   }
@@ -2240,8 +2302,7 @@ function paintOver(){
    player and a number. */
 function swapRows(best){
   return '<div class="swaps">'+best.lineup.map((r,i)=>{
-    const col='var('+COL[E.SLOTS[i]]+')';
-    const sp='<span class="sp" style="background:linear-gradient(160deg,'+col+',rgba(0,0,0,.45))">'+r.slot+'</span>';
+    const sp='<span class="sp" style="'+posPaint(E.SLOTS[i])+'">'+r.slot+'</span>';
     const nm=(p)=>p?esc(p.name)+' <span class="dim">'+p.season+', '+M(p.price_musd)+'</span>':'-';
     if(r.same){
       return '<div class="cmp">'+sp+'<span class="side"><b>'+nm(r.had)+'</b></span>'+
@@ -2249,21 +2310,46 @@ function swapRows(best){
     }
     return '<div class="cmp">'+sp+'<span class="side">'+
       '<div class="was"><span class="lbl">YOU</span>'+nm(r.had)+'</div>'+
-      '<div><span class="lbl">BEST</span><b>'+nm(r.could)+'</b></div></span>'+
+      '<div><span class="lbl b">BEST</span><b>'+nm(r.could)+'</b></div></span>'+
       '<span class="up'+(r.delta<0?' down':'')+'">'+(r.delta>0?'+':'')+r.delta.toFixed(1)+'</span></div>';
   }).join('')+'</div>';
 }
 
-/* Three rows, not seven. Money and chemistry already have their own place in the
+/* Points a game, which is what the engine actually scores with.
+   resolveGame() works a week out as
+     sum(ppr_ppg_mean) * chemistry * structure * defenseModifier
+   so dropping the per-opponent term leaves what a roster is worth against an
+   average defense. One definition, used by the comparison table below, by the run
+   the leaderboard records, and by the detail sheet. */
+function teamRating(roster,chemistry){
+  const fppg=roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
+  return fppg*chemistry*E.rosterStructure(roster).multiplier;
+}
+
+/* Four rows, not seven. Money and chemistry already have their own place in the
    stats above, and a title-odds row on a team that missed the playoffs was noise. */
 function comparison(best){
   const mine=R.projectSeason(run.roster,best.yourChemistry,run,DATA,LEAGUE);
-  const theirs=R.projectSeason(best.squad,best.chemistry,run,DATA,LEAGUE);
+  /* If the best squad IS your squad, the two columns have to read the same. They did
+     not: resolveGame() draws each player's week in roster order, so the identical six
+     men in a different order simulate slightly differently, and a player who had
+     nailed every pick was shown BEST making the playoffs 84% of the time against his
+     own 83%. Nothing was missed, so nothing should look missed. */
+  const samePlayers=best.lineup.every((r)=>r.same);
+  const theirs=samePlayers?mine
+    :R.projectSeason(best.squad,best.chemistry,run,DATA,LEAGUE);
   const P=(v)=>(v*100).toFixed(v>0&&v<0.1?1:0)+'%';
   const vs=(k,a,c,hi)=>'<div class="vs-row'+(hi?' hi':'')+'"><span class="k">'+k+'</span>'+
     '<span class="a">'+a+'</span><span class="c">'+c+'</span></div>';
+  /* The ceiling, in the row above the record it produces. Deliberately the rating
+     and not the raw summed FPPG: a roster with better chemistry and a better shape
+     can win more games off fewer fantasy points, and a table whose points row
+     disagreed with its record row would look broken. */
+  const mineRating=teamRating(run.roster,best.yourChemistry);
+  const bestRating=teamRating(best.squad,best.chemistry);
   return '<div class="vs-tbl">'+
     '<div class="vs-row"><span class="k"></span><span class="h">YOURS</span><span class="h b">BEST</span></div>'+
+    vs('Fantasy points a game',mineRating.toFixed(1),bestRating.toFixed(1),true)+
     vs('Typical record',mine.typicalRecord,theirs.typicalRecord,true)+
     vs('Money spent',M(best.yourSpend),M(best.spend))+
     vs('Makes the playoffs',P(mine.playoffRate),P(theirs.playoffRate))+
@@ -2364,7 +2450,10 @@ function drawShareCard(){
      the eye can run down either column on its own. */
   const bySlot=new Array(E.SLOTS.length).fill(null);
   run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
-  const COLS={QB:'#ef4444',RB:'#22c55e',WR:'#3b82f6',TE:'#f97316',FLEX:'#a855f7'};
+  /* Read out of the stylesheet rather than written down again. This line used to be
+     a second copy of the palette, and the moment the CSS moved it was a share card
+     drawing last month's colors. */
+  const COLS=posColors();
   let y=CARD.ROWS;
   const ROW=CARD.ROW;
   E.SLOTS.forEach((slot,i)=>{
@@ -2718,11 +2807,6 @@ function runPayload(){
   const o=run.outcome;
   const s=run.season;
   const pts=(f)=>s.results.reduce((t,r)=>t+f(r),0)/Math.max(1,s.results.length);
-  /* The rating is not a new invention. resolveGame() scores a week as
-     sum(ppg) * chemistry * structure * defenseModifier, so dropping the
-     per-opponent term leaves what this roster is worth against an average
-     defense. It is the two numbers already printed on the results page,
-     multiplied. */
   const fppg=run.roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
   const mult=E.rosterStructure(run.roster).multiplier;
   return {
@@ -2742,7 +2826,9 @@ function runPayload(){
     rngCalls:run.rngCalls,
     squadFppg:fppg,
     structureMult:mult,
-    teamRating:fppg*run.season.chemistry*mult,
+    /* Same function the comparison table uses, so the rating on the leaderboard and
+       the rating in the YOURS column can never be two different quantities. */
+    teamRating:teamRating(run.roster,run.season.chemistry),
     /* Set by paintOver when it works the best possible squad out, because that is
        an expensive search and there is no reason to run it twice. Null until then,
        and null forever if it could not be solved. */
@@ -2980,9 +3066,8 @@ function runDetail(row){
     '<p class="dim" style="font-size:12.5px;margin:0">'+esc(label)+
       (club?' &middot; took the '+esc(poss(E.nickname(club)))+' place':'')+'</p>'+
     (known.length?'<div class="rost" style="margin-top:12px">'+known.map(m=>{
-      const col='var('+(COL[m.slot]||'--flex')+')';
-      return '<div class="rrow"><span class="tag" style="background:linear-gradient(160deg,'+
-        col+',rgba(0,0,0,.45))">'+esc(m.slot||m.p.position)+'</span>'+
+      return '<div class="rrow"><span class="tag" style="'+posPaint(m.slot||m.p.position)+
+        '">'+esc(m.slot||m.p.position)+'</span>'+
         '<span class="nm"><b>'+esc(m.p.name)+'</b><span>'+m.p.season+' '+
           esc(E.nickname(m.p.franchise))+(m.p.stat_line?' &middot; '+esc(m.p.stat_line):'')+
         '</span></span>'+

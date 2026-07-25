@@ -382,6 +382,75 @@ No `color-mix()` anywhere in this: it needs Safari 16.2, and this page has alrea
 been bitten once by shipping something an iPhone quietly ignored. Layering black
 over the club color does the same job everywhere.
 
+## The position colors
+
+The complaint was that red read as orange and blue read as purple, and it is
+measurable. On the old set QB/TE sat at **deltaE 19.7** and WR/FLEX at **22.9**, both
+under the roughly 25 where two colors stop being mistakable at a glance. They are now
+**36.7** and **36.9**.
+
+| | Old | New | Label contrast | Luminance | Chroma |
+|---|---|---|---|---|---|
+| QB | `#ef4444` | `#ff0a3b` | 7.4:1 | 0.229 to 0.218 | 76 to 91 |
+| RB | `#22c55e` | `#22c55e` | 4.6:1 | unchanged | unchanged |
+| WR | `#3b82f6` | `#0f93ff` | 6.1:1 | 0.235 to 0.282 | 67 to 63 |
+| TE | `#f97316` | `#eb9500` | 4.8:1 | 0.325 to 0.392 | 82 to 78 |
+| FLEX | `#a855f7` | `#ba22f1` | 8.2:1 | 0.215 to 0.179 | 92 to 109 |
+
+Three things had to be discovered rather than assumed, and each one killed an
+approach that looked obviously right:
+
+**Brightening does not fix similarity.** It was the suggested fix and it moves
+lightness, not hue, which is what made them similar. The same five hues turned up
+still left WR/FLEX at 25.6. The hues had to move: QB toward rose, TE toward gold, WR
+toward a truer sky blue, FLEX toward magenta.
+
+**Brightness and separation pull against each other.** Maximising brightness per
+color subject to legibility produced pastels, including a pink QB, and collapsed the
+worst pair back to 22.9: pushing lightness up desaturates toward white and drags every
+hue together. So separation is the objective and legibility is the constraint, which is
+the right way round, because separation was the actual complaint. Where luminance did
+not go up, chroma did, which is what reads as vivid.
+
+**Requiring both is provably impossible here.** A search demanding every color be at
+least as bright as the one it replaces AND keep its white label legible rejected all
+**174,960** candidates. There is no such set.
+
+Green is untouched on purpose. It was never confusable with anything, and it is the
+one color with no headroom: `#22c55e` sits exactly on the 4.6:1 line its own label
+needs, so any brighter green breaks it.
+
+### The label ink, and a wrong turn worth recording
+
+Brightening looked like it must break the white labels. Against the **pure** colors
+white manages only 1.7:1 on a bright green and 2.1:1 on a bright blue, so a
+per-position ink was built and set to near-black on three of the five.
+
+Sampling the rendered pixels said the opposite. The chips are a gradient into 45%
+black and across a pill that small the gradient carries most of the way: a pure
+`#33e66e` renders as `#269d51` to `#1b5837`. Against what is actually there, white
+measured 7.3:1 to 11.3:1 on all five and the dark ink measured 1.7:1 to 2.6:1. The
+per-position ink was deleted.
+
+The bar is **4.6:1**, because that is exactly what the old palette measured at its
+worst on the same element. An absolute 4.5 is a bar the old set did not meet on all
+five either, so holding only the new one to it would have been a false comparison.
+
+`v40.mjs` samples those pixels on every run and fails if white ever stops being the
+better of the two inks. It also refuses to pass on a sample that landed on the page
+background: the first version screenshotted each tag separately, which scrolls it into
+view first, and a reflow between the scroll and the capture handed back a picture of
+the page for the FLEX tag, reporting a very comfortable 16.3:1 against nothing at all.
+It now takes one full-page capture and reads each tag at its own coordinates.
+
+### One palette, not three
+
+`posPaint()` is the only place a position gradient is written. Six call sites used to
+spell out the same string by hand in four slightly different forms, and the canvas
+share card kept its own hardcoded copy of all five hex values, which meant the first
+palette change would have shipped a card drawing last month's colors. The card now
+resolves them from the stylesheet.
+
 ## Type
 
 | Variable | Face | Used for |
@@ -1158,6 +1227,25 @@ is the common case and not the rare one. The all-time numbers are the only ones 
 grow with the table rather than the window, at roughly 20ms per million rows. Past
 about 10 million runs the fix is a summary table of counts by score, not another
 index.
+
+### The results table
+
+The comparison table gained a **Fantasy points a game** row, which is the ceiling
+sitting directly above the record it produces. It is the rating, not the raw summed
+FPPG: a roster with better chemistry and a better shape can win more games off fewer
+fantasy points, and a table whose points row disagreed with its record row would look
+broken. One function computes it, shared with the run the leaderboard records, so the
+YOURS column and the leaderboard can never be two different quantities.
+
+**BEST is green**, matching the BEST column of that table and a positive delta. It was
+the same grey as YOU, which made the two lines read as a list rather than a comparison
+with a right answer in it.
+
+One inconsistency fixed while there: with an identical roster the BEST column still
+read 84% against your own 83%. `resolveGame()` draws each player's week in roster
+order, so the same six men in a different order simulate slightly differently, and a
+player who had nailed every pick was shown missing something. When every spot matches,
+both columns now use the same projection.
 
 ### Failing soft
 
