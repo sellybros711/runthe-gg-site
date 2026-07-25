@@ -60,6 +60,23 @@
   .btn.ghost{background:transparent;box-shadow:none;border:1.5px solid var(--line-2);font-size:15px}
   .btn.ghost:before{display:none}
   .btn.sm{padding:11px 14px;font-size:14px;border-radius:10px}
+  /* One re-spin button per wheel, priced the same, so the choice is about what
+     you want to change rather than what is cheaper. */
+  .respins{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .respin{display:block;text-align:center;padding:10px 8px;border-radius:11px;min-width:0}
+  .respin b{display:block;font-family:'Anton',Impact,sans-serif;font-size:14px;letter-spacing:.03em;
+    text-transform:uppercase;line-height:1.1}
+  .respin span{display:block;font-size:11px;color:var(--dim);margin-top:3px;line-height:1.25}
+  .respins .respin:first-child{border-color:rgba(239,68,68,.45)}
+  .respins .respin:last-child{border-color:rgba(59,130,246,.45)}
+  .respins .respin:first-child span{color:#f6a5a5}
+  .respins .respin:last-child span{color:#a9c8f8}
+  /* That wheel has nowhere else to land, so it is shown and explained, not hidden. */
+  .respin.off{background:rgba(255,255,255,.02);border:1.5px dashed rgba(255,255,255,.1);
+    color:var(--dim-2)}
+  .respin.off b{color:var(--dim-2)}
+  .respins .respin.off span{color:var(--dim-2)}
+  .respinnote{color:var(--dim-2);font-size:11px;text-align:center;margin:8px 0 0}
 
   .panel{background:var(--grad-panel);border:1px solid var(--line);border-radius:16px;padding:15px;
     box-shadow:var(--shadow)}
@@ -598,8 +615,8 @@
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=7"></script>
-<script src="run.js?v=7"></script>
+<script src="engine.js?v=8"></script>
+<script src="run.js?v=8"></script>
 <script>
 (function(){
 'use strict';
@@ -616,7 +633,7 @@ const $=(id)=>document.getElementById(id);
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=7;
+const NEED_VERSION=8;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -643,6 +660,8 @@ window.addEventListener('error',(ev)=>{
 });
 const COL={QB:'--qb',RB:'--rb',WR:'--wr',TE:'--te',FLEX:'--flex'};
 const M=(v)=>'$'+v.toFixed(1)+'M';
+/* Whole millions, for amounts the rules define exactly: $5M, not $5.0M. */
+const M0=(v)=>'$'+Math.round(v)+'M';
 /* Surname for the field chips. Taking the last word printed Henry Ruggs III as
    "III" and Robert Griffin III as "III" too, which named nobody. */
 const SUFFIX=/^(jr|sr|ii|iii|iv|v)\.?$/i;
@@ -1082,14 +1101,38 @@ function paintOpts(draw){
     c.classList.toggle('sel', !run.slotIndex.includes(+c.dataset.i) && E.SLOTS[+c.dataset.i]===activeTab);
   });
 
-  const chk=R.canRespin(run);
-  $('d-respin').innerHTML=chk.ok
-    ? '<button class="btn ghost sm" id="b-re">Spin again, '+M(E.CONSTANTS.RESPIN_COST_MUSD)+' off your budget ('+(E.CONSTANTS.MAX_RESPINS-run.respinsUsed)+' left)</button>'
-    : '<p class="dim" style="font-size:12px;text-align:center;margin:0">'+(run.respinsUsed>=E.CONSTANTS.MAX_RESPINS?'No spins left':esc(chk.reason))+'</p>';
-  const rb=$('b-re');
-  if(rb)rb.onclick=()=>{$('opts').innerHTML='';$('tabs').innerHTML='';$('d-respin').innerHTML='';
-    const d=R.respin(run,DATA);paintTop();spinBoth(d,()=>paintOpts(d));};
+  paintRespins();
   void si;
+}
+
+/* One button per wheel. Both cost the same, so the choice is about what you want
+   to change: a different team from this year, or a different year entirely. */
+function paintRespins(){
+  const el=$('d-respin');
+  const y=R.canRespin(run,'year',DATA), t=R.canRespin(run,'team',DATA);
+  const left=E.CONSTANTS.MAX_RESPINS-run.respinsUsed;
+  if(!y.ok&&!t.ok){
+    el.innerHTML='<p class="dim" style="font-size:12px;text-align:center;margin:0">'+
+      (left<=0?'No re-spins left':esc(y.reason))+'</p>';
+    return;
+  }
+  const btn=(kind,label,chk)=>chk.ok
+    ? '<button class="btn ghost sm respin" data-kind="'+kind+'"><b>'+label+'</b>'+
+      '<span>'+M0(chk.cost)+'</span></button>'
+    : '<div class="respin off"><b>'+label+'</b><span>'+esc(chk.reason)+'</span></div>';
+  el.innerHTML='<div class="respins">'+
+      btn('year','New year',y)+btn('team','New team',t)+
+    '</div>'+
+    '<p class="respinnote">Comes off your budget. '+
+      (left>1?'Next one costs '+M0(E.respinCost(run.respinsUsed+1))+'. ':'')+
+      left+' left.</p>';
+  el.querySelectorAll('button.respin').forEach(b=>{
+    b.onclick=()=>{
+      $('opts').innerHTML='';$('tabs').innerHTML='';el.innerHTML='';
+      const d=R.respin(run,DATA,b.dataset.kind);
+      paintTop();spinBoth(d,()=>paintOpts(d));
+    };
+  });
 }
 
 $('tabs').addEventListener('click',e=>{
@@ -1120,7 +1163,7 @@ function paintSquad(){
     : '<p class="dim" style="font-size:13px;margin:6px 0 0">Nobody here ever played together, so there is no chemistry this run.</p>';
   /* Coach's take. Every line ties to one of the meters underneath it, so the
      structure multiplier explains itself instead of being a hidden number. */
-  const spend=run.roster.reduce((t,p)=>t+p.price_musd,0)+run.respinsUsed*E.CONSTANTS.RESPIN_COST_MUSD;
+  const spend=run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed);
   const cr=E.coachReport(run.roster,run.season.chemistry,spend);
   $('q-verdict').textContent=cr.verdict;
   const st=cr.structure;
@@ -1276,7 +1319,7 @@ function paintOver(){
     tile((diff>=0?'+':'')+diff.toFixed(1),'Difference',diff>=0?'up':'dn')+
     tile(bestStreak,'Longest streak');
 
-  const spendUsed=run.roster.reduce((t,p)=>t+p.price_musd,0)+run.respinsUsed*E.CONSTANTS.RESPIN_COST_MUSD;
+  const spendUsed=run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed);
   const fppg=run.roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
   const st=E.rosterStructure(run.roster);
   $('o-squadline').innerHTML=

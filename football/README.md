@@ -65,38 +65,52 @@ so league average points allowed is treated as measured data (per season, in
 
 ## Calibration
 
-At the shipped `SCALE = 1.95`, N=4000 runs per archetype:
+**`SCALE` is solved against real play through the actual wheel** (`--policies`),
+not against synthetic rosters. That distinction is the whole reason it had to be
+re-solved. The §9 archetypes build rosters out of the entire 9,411-player pool,
+which stopped describing the game the moment a spin started offering a whole team
+to choose from. Measured properly, somebody tapping the top row of a best-first
+list was winning 13 games having made no decisions at all, which is what "I am
+drafting bad teams that go 15-2" turned out to mean.
 
-| Archetype | Reg win% | GDD §9 | Record | Playoffs | Bye | Title | 20-0 |
+At the shipped `SCALE = 1.90`, 40 runs per policy:
+
+| Policy | Spend | FPPG | Shape | Record | Playoffs | Title | 20-0 |
 |---|---|---|---|---|---|---|---|
-| Random affordable | 59.2% | 0.62-0.68 low | 10.1-6.9 | 35.5% | 4.0% | 1.9% | 0.1% |
-| Decent ($75M used) | 77.2% | 0.76-0.80 ok | 13.1-3.9 | 84.4% | 19.2% | 8.8% | 0.2% |
-| Well-built (no chem) | 86.4% | 0.83-0.86 ok | 14.7-2.3 | 98.8% | 58.1% | 29.0% | 2.9% |
-| Optimal + chemistry | 90.5% | 0.88-0.90 ok | 15.4-1.6 | 99.9% | 78.6% | 45.0% | 7.7% |
-| One-franchise stack | 80.2% | reference | 13.6-3.4 | 87.3% | 35.5% | 16.4% | 1.2% |
+| Cheapest every time | $41M | 22 | x0.76 | 2-15 | 0% | 0% | 0% |
+| Best points per dollar | $58M | 42 | x0.93 | 8-9 | 18% | 1% | 0% |
+| Random tap | $75M | 49 | x0.92 | 10-7 | 32% | 3% | 0% |
+| Taps the top row | $99M | 57 | x0.88 | 12-5 | 50% | 5% | 0.2% |
+| Perfect play (DP) | $99M | 68 | x0.96 | 14-3 | 93% | 19% | 1.2% |
 
-Measured on the regular season only, so the win rate stays comparable to §9
-(playoff opponents come from the top strength quartile and would drag down the
-average for exactly the rosters that reach them). Three of four rows land in
-band; the bottom rung sits about 3 points low because the reachable spread is
-wider than §9 assumed, and no single `SCALE` fixes that. 1.95 is chosen because
-it puts the perfect-season rate squarely in the 3 to 6% §9 asked for. Archetypes are cap-optimal rosters solved
-by DP at a given budget, so the ladder measures player skill rather than the
-harness's own clumsiness, an earlier greedy builder scored 70.6% where 84.7%
-was reachable, which would have mis-tuned `SCALE` by about 0.4.
+Careless play finishes 12-5 with a coin flip at the playoffs; perfect play wins 14
+and takes the title about one run in five. Two wins and forty points of playoff
+odds separate them, which is the room skill needs.
+
+This deliberately does **not** hit §9's 3-6% perfect-season target. The owner
+played it at that setting and found it too easy, and 20-0 reads better as
+near-mythical with the title as the reachable goal. Dropping to 1.70 would restore
+a 3.5% perfect rate and also hand careless play a 66% playoff rate, which is the
+problem this was fixing.
+
+`--record` still prints the older §9 archetype ladder, which is useful for
+comparing rungs of roster quality but no longer describes what a player can
+actually reach through the wheel. Trust `--policies` for difficulty.
 
 Also validated:
 
-- `--schedule`: spread between the easiest and hardest franchise is **0.13
-  z-units across 17 games** (0.008/game), so franchise choice is cosmetic, as
+- `--schedule`: spread between the easiest and hardest franchise is **0.20
+  z-units across 17 games** (0.012/game), so franchise choice is cosmetic, as
   §7 requires.
 - `--chem`: chemistry rises 7.3% → 14.9% from two to six linked players, with
   marginal gains of +3.75/+2.50/+1.07/+0.31 points and no hard cap reached.
-- `--draft`: 1,500 drafts under an always-re-spin, always-buy-the-most-expensive
-  policy. **Zero over-cap runs, zero dead ends**, correct slot shape in every
-  run, and no team-season drawn more than twice. Also checks that the daily seed
-  is stable within a date and that a run serialized mid-draft resumes on the same
-  RNG stream.
+- `--draft`: 3,000 drafts under an always-re-spin, always-buy-the-most-expensive
+  policy. **Zero over-cap runs, zero dead ends**, correct slot shape in every run,
+  no team-season drawn more than twice, and no person drafted twice. It also
+  alternates the two re-spin wheels and asserts that each one moved what it was
+  meant to move and never handed back the team just rejected. Plus: the daily seed
+  is stable within a date, and a run serialized mid-draft resumes on the same RNG
+  stream.
 - `--record`: the regular-season win distribution per archetype, and what each
   candidate playoff threshold would mean. This is how the 12 and 15 cutoffs were
   chosen.
@@ -133,7 +147,10 @@ Every label names the thing the two players actually share, as a sentence:
 | College | +2% | Both went to Ohio State |
 | Draft class | +2% | Both drafted in 2020 |
 | Same coach | +2% | Both coached by Bill Belichick |
-| Rivals | -3% | Old rivals: Patriots and Jets |
+| Target conflict | -4% | Two receivers who shared one quarterback |
+
+There is no rivalry penalty. It existed at -3% and was cut: being punished for a
+pairing you had no way to see coming is not a decision, it is a tax.
 
 An earlier version phrased the same-team link as "Both wore [code] colors" using
 a British spelling, which named a three letter code and explained nothing. There
@@ -329,14 +346,31 @@ stranding you with one player to take.
 
 ## Draft rules as settled
 
-- **The $15M re-spin fee comes out of the $100M cap.** Two re-spins is 30% of
-  your budget, so fishing for chemistry costs you a player tier elsewhere.
+- **Re-spins are one lever per wheel, and the fee comes out of the $100M cap.**
+  *New team* keeps the year and lands on a different team in it. *New year* moves
+  to a different year and takes whatever team comes up there. Both cost the same,
+  so you pick the wheel by what you want to change rather than by what is cheaper.
+- **The price is a ladder: $5M, then $10M, then $15M**, by how many you have taken
+  rather than by which wheel you spin. Three maximum, so the ceiling is $30M, the
+  same as the old two-at-$15M. It used to be one flat $15M for the whole
+  team-season: at that price the first re-spin already cost a tier of player, so
+  nobody touched it and the second one may as well not have existed. Starting at
+  $5M makes the first an easy call and the third something you have to want.
+- **A re-spin cannot hand you back what you just rejected.** A team-season may be
+  drawn twice in a run, so without an explicit exclusion a $5M re-spin could
+  return the same team: 132 times in 3,000 test runs before it was blocked.
+- **Whether a wheel has anywhere else to land is checked before it is offered,
+  with the fee already deducted.** Keeping the year is no use if that year holds
+  only the team you are looking at, and paying $5M can itself push team-seasons out
+  of reach. Checking against the pre-fee budget approved re-spins whose constraint
+  was then impossible to honor, and the wrong wheel moved: 2 in 3,000 runs, rare
+  and still wrong. Both are asserted by `--draft`.
 - A re-spin is **blocked** if it would leave less than $3M per unfilled slot.
   §5 wants the reserve floor to be a passive warning on *signings*, bankrupting
   yourself is a lesson the game may teach, but a re-spin that makes the draft
-  unfinishable is a dead end, not a lesson. With the current numbers ($100M −
-  $30M in fees vs an $18M minimum roster) this block is defensive rather than
-  load-bearing; it matters if the cap or fee is ever retuned.
+  unfinishable is a dead end, not a lesson. With three re-spins now reachable it
+  does real work: `--draft` refuses 6,844 re-spins on this rule across 3,000
+  always-re-spin runs, against 3,864 refused for running out.
 - An **unaffordable draw re-rolls free and does not consume the team-season**.
   Charging you, or shrinking the visible pool, for a draw you could never use
   would be punishing randomness.

@@ -33,7 +33,7 @@ const franchise=process.env.PS_TEAM||'BUF';
 R.pickFranchise(run,franchise);
 
 console.log(`\n=== THE PERFECT SEASON, ${daily?'daily '+daily:'seed '+run.seed}, you are ${franchise} ===`);
-console.log(`cap $${E.CONSTANTS.CAP_MUSD}M | re-spin $${E.CONSTANTS.RESPIN_COST_MUSD}M from cap, ${E.CONSTANTS.MAX_RESPINS} max`);
+console.log(`cap $${E.CONSTANTS.CAP_MUSD}M | re-spins $${E.CONSTANTS.RESPIN_LADDER_MUSD.join('M then $')}M from cap, ${E.CONSTANTS.MAX_RESPINS} max`);
 console.log(`playoffs at ${E.CONSTANTS.PLAYOFF_WINS} wins, first round off at ${E.CONSTANTS.BYE_SEED_WINS}\n`);
 
 let slotNo=0;
@@ -59,7 +59,7 @@ while(run.phase===R.PHASES.DRAFT){
 const spent=run.roster.reduce((s,p)=>s+p.price_musd,0);
 console.log('FINAL ROSTER');
 run.roster.forEach((p,i)=>console.log(`  ${E.SLOTS[run.slotIndex[i]].padEnd(5)} $${p.price_musd.toFixed(1).padStart(5)}M  ${p.name.padEnd(22)} ${p.season} ${p.team_display}  ${p.ppr_ppg_mean} ppg`));
-console.log(`  spent $${spent.toFixed(1)}M + $${(run.respinsUsed*E.CONSTANTS.RESPIN_COST_MUSD)}M fees = $${(spent+run.respinsUsed*E.CONSTANTS.RESPIN_COST_MUSD).toFixed(1)}M of $100M`);
+console.log(`  spent $${spent.toFixed(1)}M + $${E.respinFees(run.respinsUsed)}M fees = $${(spent+E.respinFees(run.respinsUsed)).toFixed(1)}M of $100M`);
 
 R.startSeason(run,data,ctx);
 const chem=run.season;

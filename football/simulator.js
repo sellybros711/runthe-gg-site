@@ -426,6 +426,7 @@ function draftReport(n) {
   const data = R.indexData(players, teamSeasons);
   let respinsTotal = 0, freeRerolls = 0, capViolations = 0, deadEnds = 0, perfectDrafts = 0, repeatedTs = 0;
   let doubledUp = 0, boardsOfferingADuplicate = 0, spinsSeen = 0;
+  let respinFeesCharged = 0, sameResult = 0, wrongWheel = 0;
   const spends = [];
   const blockedReasons = {};
   for (let i = 0; i < n; i++) {
@@ -434,10 +435,18 @@ function draftReport(n) {
     try {
       while (run.phase === R.PHASES.DRAFT) {
         R.spin(run, data);
-        const chk = R.canRespin(run);
+        // Alternate the two wheels so both re-spin paths get exercised, and check
+        // the wheel actually changed what it was supposed to change.
+        const kind = (run.roster.length + i) % 2 ? 'year' : 'team';
+        const chk = R.canRespin(run, kind, data);
         if (chk.ok && run.respinsUsed < E.CONSTANTS.MAX_RESPINS) {
-          R.respin(run, data);
+          const was = run.currentDraw;
+          const now = R.respin(run, data, kind);
           respinsTotal++;
+          respinFeesCharged += chk.cost;
+          if (now.team_season_id === was.team_season_id) sameResult++;
+          if (kind === 'team' && now.season !== was.season) wrongWheel++;
+          if (kind === 'year' && now.season === was.season) wrongWheel++;
         } else if (!chk.ok) {
           blockedReasons[chk.reason] = (blockedReasons[chk.reason] || 0) + 1;
         }
@@ -452,7 +461,7 @@ function draftReport(n) {
       }
       freeRerolls += run.freeRerolls;
       const spent = run.roster.reduce((s, p) => s + p.price_musd, 0)
-        + run.respinsUsed * E.CONSTANTS.RESPIN_COST_MUSD;
+        + E.respinFees(run.respinsUsed);
       spends.push(spent);
       if (spent > E.CONSTANTS.CAP_MUSD + 1e-6) capViolations++;
       if (run.roster.length !== E.SLOTS.length) deadEnds++;
@@ -479,7 +488,7 @@ function draftReport(n) {
     }
   }
   console.log(`draft invariants over ${n} runs (always re-spin when legal)\n`);
-  console.log(`  cap                    $${E.CONSTANTS.CAP_MUSD}M, re-spin $${E.CONSTANTS.RESPIN_COST_MUSD}M from the cap, max ${E.CONSTANTS.MAX_RESPINS}`);
+  console.log(`  cap                    $${E.CONSTANTS.CAP_MUSD}M, re-spins $${E.CONSTANTS.RESPIN_LADDER_MUSD.join('M then $')}M from the cap, max ${E.CONSTANTS.MAX_RESPINS}`);
   console.log(`  re-spins taken         ${respinsTotal} (${(respinsTotal / n).toFixed(2)}/run)`);
   console.log(`  free auto-rerolls      ${freeRerolls} (unaffordable draws, pool not consumed)`);
   console.log(`  mean total committed   $${mean(spends).toFixed(1)}M`);
@@ -488,6 +497,10 @@ function draftReport(n) {
   console.log(`  valid slot shape       ${perfectDrafts}/${n}  ${perfectDrafts === n ? 'ok' : 'FAIL'}`);
   console.log(`  runs reusing a team    ${repeatedTs} (${(100 * repeatedTs / n).toFixed(0)}%, allowed up to twice)`);
   console.log(`  same person twice      ${doubledUp}  ${doubledUp === 0 ? 'ok' : 'FAIL'}`);
+  console.log(`  re-spin fees charged   $${respinFeesCharged}M total, `
+    + `$${(respinFeesCharged / Math.max(1, respinsTotal)).toFixed(1)}M each on average`);
+  console.log(`  re-spin landed on the same team-season   ${sameResult}  ${sameResult === 0 ? 'ok' : 'FAIL'}`);
+  console.log(`  re-spin moved the wrong wheel            ${wrongWheel}  ${wrongWheel === 0 ? 'ok' : 'FAIL'}`);
   console.log(`  boards that had to gray out a man you own   `
     + `${boardsOfferingADuplicate} of ${spinsSeen} spins (${(100 * boardsOfferingADuplicate / spinsSeen).toFixed(0)}%)`);
   if (Object.keys(blockedReasons).length) {

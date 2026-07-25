@@ -33,7 +33,7 @@ const pkey = (p) => `${p.player_id}|${p.season}`;
  */
 function remaining(run) {
   const spent = run.roster.reduce((s, p) => s + p.price_musd, 0);
-  const fees = run.respinsUsed * E.CONSTANTS.RESPIN_COST_MUSD;
+  const fees = E.respinFees(run.respinsUsed);
   return E.CONSTANTS.CAP_MUSD - spent - fees;
 }
 
@@ -53,15 +53,56 @@ function reserveFloor(run) {
   return Math.max(0, slotsLeft(run) - 1) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
 }
 
-function canRespin(run) {
-  if (run.phase !== PHASES.DRAFT) return { ok: false, reason: 'not drafting' };
-  if (run.respinsUsed >= E.CONSTANTS.MAX_RESPINS) return { ok: false, reason: 'no re-spins left' };
-  const after = remaining(run) - E.CONSTANTS.RESPIN_COST_MUSD;
+/**
+ * Whether you can re-spin, and what it would cost.
+ *
+ * `kind` is 'team', 'year', or omitted for "either". Passing a kind also checks
+ * that the wheel has somewhere else to land: keeping the year is no use if that
+ * year holds only the team you are looking at, and there is no point charging for
+ * it.
+ */
+function canRespin(run, kind, data) {
+  const cost = E.respinCost(run.respinsUsed);
+  if (run.phase !== PHASES.DRAFT) return { ok: false, reason: 'not drafting', cost };
+  if (run.respinsUsed >= E.CONSTANTS.MAX_RESPINS) return { ok: false, reason: 'no re-spins left', cost };
+  const after = remaining(run) - cost;
   // Must still be able to fill every remaining slot at the minimum price.
   if (after < slotsLeft(run) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD) {
-    return { ok: false, reason: 'would leave too little to fill your roster' };
+    return { ok: false, reason: 'would leave too little to fill your roster', cost };
   }
-  return { ok: true };
+  const draw = run.currentDraw;
+  if (kind && draw && data) {
+    /*
+     * Judged with the fee ALREADY PAID. Charging $5M can push team-seasons out of
+     * reach, so a check run against the pre-fee budget can approve a re-spin whose
+     * constraint is then impossible to honor, and the wheel moves the wrong one.
+     * Measured at 2 in 3,000 runs before this, which is rare and still wrong.
+     *
+     * The counter is bumped and restored rather than threaded through
+     * drawable -> affordableFrom -> blockFor -> remaining, which all read it.
+     */
+    run.respinsUsed++;
+    let rest;
+    try {
+      // The team you are looking at is spent either way, so ask what is left after it.
+      rest = drawable(run, data).filter((t) => t.team_season_id !== draw.team_season_id);
+    } finally {
+      run.respinsUsed--;
+    }
+    const ok = kind === 'team'
+      ? rest.some((t) => t.season === draw.season)
+      : rest.some((t) => t.season !== draw.season);
+    if (!ok) {
+      return {
+        ok: false,
+        cost,
+        reason: kind === 'team'
+          ? `no other ${draw.season} team you could use`
+          : 'no other year you could use',
+      };
+    }
+  }
+  return { ok: true, cost };
 }
 
 /*
@@ -291,16 +332,45 @@ function connectedTiers(run, data) {
  * counted against its draw limit. A free re-roll should not quietly shrink the
  * pool you can still see.
  */
-function spin(run, data) {
-  if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
-  const rng = rngFor(run);
-
+/**
+ * Everything the wheels could legally land on right now.
+ *
+ * Split out of spin() because the two re-spin kinds have to ask the same question
+ * before they are offered: a team re-spin is only worth $5M if there IS another
+ * team in that year you could use.
+ */
+function drawable(run, data, limit) {
   const drawn = {};
   for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
   const canFill = (t) => affordableFrom(run, t.team_season_id, data.playersByTeamSeason).length > 0;
-  const available = data.teamSeasons
-    .filter((t) => (drawn[t.team_season_id] || 0) < TUNING.MAX_DRAWS_PER_TEAM_SEASON)
+  return data.teamSeasons
+    .filter((t) => (drawn[t.team_season_id] || 0) < (limit ?? TUNING.MAX_DRAWS_PER_TEAM_SEASON))
     .filter(canFill);
+}
+
+/*
+ * `constraint` is how a re-spin re-rolls one wheel and not the other:
+ *   {season: 2014}     keep the year, land on a different team in it
+ *   {notSeason: 2014}  land on a different year, then any team in it
+ * plus `avoid`, the team-season you just paid to get away from. That one matters:
+ * a team-season may be drawn twice in a run, so without it a $5M re-spin could
+ * hand the same team straight back, which happened 132 times in 3,000 test runs.
+ * Omitted for a normal spin.
+ */
+function spin(run, data, constraint) {
+  if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
+  const rng = rngFor(run);
+
+  let available = drawable(run, data);
+  if (constraint) {
+    const narrowed = available.filter((t) => t.team_season_id !== constraint.avoid
+      && (constraint.season != null
+        ? t.season === constraint.season
+        : t.season !== constraint.notSeason));
+    // Only honored when it leaves something. canRespin checks this first, so
+    // falling back here is a backstop rather than an outcome anyone should see.
+    if (narrowed.length) available = narrowed;
+  }
   if (!available.length) throw new Error('nothing left you can afford');
 
   /*
@@ -348,15 +418,28 @@ function spin(run, data) {
   return run.currentDraw;
 }
 
-/** Pay the fee and draw again for the same slot. */
-function respin(run, data) {
-  const check = canRespin(run);
+/**
+ * Pay the fee and re-roll ONE wheel.
+ *
+ * `kind` is 'team' to keep the year and land on a different team in it, or 'year'
+ * to move to a different year and take whatever team comes up there. Both cost
+ * the same, which is the point: you pick the wheel by what you want to change,
+ * not by what is cheaper.
+ */
+function respin(run, data, kind) {
+  const which = kind === 'year' ? 'year' : 'team';
+  const check = canRespin(run, which, data);
   if (!check.ok) throw new Error(`cannot re-spin: ${check.reason}`);
+  const draw = run.currentDraw;
   run.respinsUsed++;
   // The drawn team-season is consumed, you saw it and rejected it.
-  if (run.currentDraw) run.usedTeamSeasons.push(run.currentDraw.team_season_id);
+  if (draw) run.usedTeamSeasons.push(draw.team_season_id);
   run.currentDraw = null;
-  return spin(run, data);
+  const constraint = !draw ? null
+    : (which === 'team'
+      ? { season: draw.season, avoid: draw.team_season_id }
+      : { notSeason: draw.season, avoid: draw.team_season_id });
+  return spin(run, data, constraint);
 }
 
 function sign(run, player) {
@@ -549,7 +632,7 @@ function indexData(players, teamSeasons) {
  */
 function bestPossibleSquad(run, data, ctx) {
   const BUCKET = 0.5;
-  const budget = E.CONSTANTS.CAP_MUSD - run.respinsUsed * E.CONSTANTS.RESPIN_COST_MUSD;
+  const budget = E.CONSTANTS.CAP_MUSD - E.respinFees(run.respinsUsed);
   const NB = Math.round(budget / BUCKET) + 1;
   const nSlots = E.SLOTS.length;
   const FULL = (1 << nSlots) - 1;
@@ -802,7 +885,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 7;
+const RUN_API_VERSION = 8;
 
 const api = {
   API_VERSION: RUN_API_VERSION,

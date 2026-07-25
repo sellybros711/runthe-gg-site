@@ -60,8 +60,18 @@ const CONSTANTS = {
    */
   SCALE: 1.90,
   CAP_MUSD: 100,
-  RESPIN_COST_MUSD: 15,
-  MAX_RESPINS: 2,
+  /*
+   * Re-spins are two separate levers now, one per wheel, and they get dearer as
+   * you lean on them: $5M, then $10M, then $15M, whichever wheel you spin.
+   *
+   * It used to be one flat $15M for the whole team-season, twice. At that price
+   * the first re-spin already cost a tier of player, so nobody touched it and the
+   * ladder never came into play. Starting at $5M makes the first one an easy call
+   * and the third one something you have to want, and the ceiling is unchanged at
+   * $30M if you take all three.
+   */
+  RESPIN_LADDER_MUSD: [5, 10, 15],
+  MAX_RESPINS: 3,
   MIN_RESERVE_PER_SLOT_MUSD: 3,
   REGULAR_SEASON_GAMES: 17,
 
@@ -96,6 +106,24 @@ const CONSTANTS = {
   PLAYOFF_ROUNDS_WITH_BYE: 3,
   PLAYOFF_ROUNDS_WILD_CARD: 4,
 };
+
+/**
+ * What the NEXT re-spin costs, given how many have already been used.
+ *
+ * Priced by how many you have taken, not by which wheel you spin, so the choice
+ * of wheel stays about what you want to change rather than what is cheaper.
+ */
+function respinCost(used) {
+  const L = CONSTANTS.RESPIN_LADDER_MUSD;
+  return L[Math.min(used, L.length - 1)];
+}
+
+/** Everything `used` re-spins have taken out of the cap so far. */
+function respinFees(used) {
+  let total = 0;
+  for (let i = 0; i < used; i++) total += respinCost(i);
+  return total;
+}
 
 /** Round names, counting back from the final. */
 const PLAYOFF_ROUND_NAMES = ['Wild Card', 'Divisional', 'Conference Championship', 'Super Bowl'];
@@ -864,7 +892,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 7;
+const ENGINE_API_VERSION = 8;
 
 const publicAPI = {
   API_VERSION: ENGINE_API_VERSION,
@@ -874,6 +902,7 @@ const publicAPI = {
   buildDivisionMap, opponentFranchises, generateSchedule, generatePlayoffs,
   resolveGame, playRun, prepareData, toFootballScore,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
+  respinCost, respinFees,
   NICKNAMES, nickname, LINK_TIERS, linkTier, rosterStructure, STRUCTURE, coachReport,
 };
 
