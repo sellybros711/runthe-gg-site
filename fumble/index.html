@@ -11,53 +11,59 @@
   html,body{ width:100%; height:100%; overflow:hidden; background:#0a0f16;
     font-family:'Barlow Semi Condensed',system-ui,Segoe UI,Roboto,sans-serif; touch-action:none; }
   #c{ display:block; width:100%; height:100%; }
-  /* ---------- HUD (2D overlay) ---------- */
   #hud{ position:fixed; inset:0; pointer-events:none; z-index:5; }
   .top{ position:absolute; top:calc(10px + env(safe-area-inset-top)); left:0; right:0; display:flex;
-    justify-content:space-between; padding:0 16px; font-weight:800; letter-spacing:.5px; }
+    justify-content:space-between; align-items:flex-start; padding:0 14px; }
   .pill{ background:rgba(8,14,22,.6); border:1px solid rgba(150,175,210,.25); border-radius:11px;
-    padding:7px 13px; color:#e8eef6; font-size:15px; backdrop-filter:blur(3px); }
-  .pill b{ color:#ffcf4d; }
-  #toGoal{ color:#bfe6c6; }
-  /* center state message */
-  #msg{ position:absolute; top:32%; left:0; right:0; text-align:center; font-size:46px; font-weight:800;
+    padding:7px 13px; color:#e8eef6; font-size:15px; font-weight:800; letter-spacing:.5px; backdrop-filter:blur(3px); }
+  #score{ font-size:19px; letter-spacing:1px; }
+  #score .you{ color:#5aa2ff; } #score .cpu{ color:#ff6b5e; } #score .sep{ color:#8fa2b8; margin:0 4px; }
+  #poss{ margin-top:7px; font-size:12px; }
+  #poss b{ color:#ffcf4d; }
+  #msg{ position:absolute; top:30%; left:0; right:0; text-align:center; font-size:44px; font-weight:800;
     letter-spacing:1px; color:#fff; text-shadow:0 3px 0 rgba(0,0,0,.5), 0 0 26px rgba(0,0,0,.4);
-    opacity:0; transition:opacity .18s ease, transform .18s ease; transform:scale(.9); }
+    opacity:0; transition:opacity .16s ease, transform .16s ease; transform:scale(.9); }
   #msg.show{ opacity:1; transform:scale(1); }
-  #msg.good{ color:#8ff0a0; } #msg.bad{ color:#ff8a6b; } #msg.big{ color:#ffd34d; font-size:58px; }
-  /* truck timing ring (center) */
-  #truck{ position:absolute; left:50%; top:56%; transform:translate(-50%,-50%); width:0; height:0;
-    display:none; }
-  #truck .ring{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-    border-radius:50%; border:5px solid #ffcf4d; }
-  #truck .core{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-    width:74px; height:74px; border-radius:50%; border:3px solid rgba(255,255,255,.85);
-    display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:15px;
-    letter-spacing:1px; background:rgba(8,14,22,.35); }
-  /* controls */
-  #stick{ position:absolute; left:22px; bottom:calc(26px + env(safe-area-inset-bottom)); width:132px; height:132px;
+  #msg.good{ color:#8ff0a0; } #msg.bad{ color:#ff8a6b; } #msg.big{ color:#ffd34d; font-size:56px; }
+  #truck{ position:absolute; left:50%; top:54%; transform:translate(-50%,-50%); display:none; }
+  #truck .ring{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); border-radius:50%; border:5px solid #ffcf4d; }
+  #truck .core{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:70px; height:70px; border-radius:50%;
+    border:3px solid rgba(255,255,255,.85); display:flex; align-items:center; justify-content:center; color:#fff;
+    font-weight:800; font-size:14px; letter-spacing:1px; background:rgba(8,14,22,.35); }
+  #stick{ position:absolute; left:20px; bottom:calc(24px + env(safe-area-inset-bottom)); width:130px; height:130px;
     border-radius:50%; background:rgba(8,14,22,.35); border:2px solid rgba(150,175,210,.28); pointer-events:auto; }
-  #stick .nub{ position:absolute; left:50%; top:50%; width:56px; height:56px; margin:-28px 0 0 -28px; border-radius:50%;
+  #stick .nub{ position:absolute; left:50%; top:50%; width:54px; height:54px; margin:-27px 0 0 -27px; border-radius:50%;
     background:rgba(220,232,248,.55); border:2px solid rgba(255,255,255,.6); }
-  #truckBtn{ position:absolute; right:22px; bottom:calc(40px + env(safe-area-inset-bottom)); width:118px; height:118px;
-    border-radius:50%; background:radial-gradient(circle at 40% 35%, #ffe07a, #f0a41c);
-    border:none; box-shadow:0 6px 20px rgba(240,164,28,.4), inset 0 2px 0 rgba(255,255,255,.6);
-    color:#3a2600; font-weight:800; font-size:19px; letter-spacing:1px; pointer-events:auto; }
-  #truckBtn:active{ transform:translateY(2px); }
-  /* impact flash (2D placeholder effect, reused-style from Daily Drive) */
+  .abtn{ position:absolute; border:none; font-weight:800; letter-spacing:1px; pointer-events:auto; color:#20160a; }
+  #truckBtn{ right:20px; bottom:calc(34px + env(safe-area-inset-bottom)); width:112px; height:112px; border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, #ffe07a, #f0a41c); box-shadow:0 6px 20px rgba(240,164,28,.4), inset 0 2px 0 rgba(255,255,255,.6);
+    font-size:18px; }
+  #pitchBtn{ right:142px; bottom:calc(58px + env(safe-area-inset-bottom)); width:82px; height:82px; border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, #bfe0ff, #4a8ad6); box-shadow:0 5px 16px rgba(74,138,214,.4), inset 0 2px 0 rgba(255,255,255,.5);
+    font-size:14px; color:#0c2138; }
+  .abtn:active{ transform:translateY(2px); }
+  #setupHint{ display:none; position:absolute; top:calc(78px + env(safe-area-inset-top)); left:0; right:0; text-align:center;
+    color:#ffe08a; font-size:13px; font-weight:800; letter-spacing:1.5px; text-shadow:0 2px 6px rgba(0,0,0,.6); }
+  #kick{ display:none; position:absolute; left:50%; bottom:calc(30px + env(safe-area-inset-bottom)); transform:translateX(-50%);
+    pointer-events:auto; padding:16px 44px; font-size:22px; font-weight:800; letter-spacing:1px; color:#0c2138;
+    background:linear-gradient(180deg,#bfe0ff,#4a8ad6); border:none; border-radius:15px; box-shadow:0 6px 20px rgba(74,138,214,.45); z-index:7; }
+  #kick:disabled{ filter:grayscale(.6) brightness(.7); box-shadow:none; }
+  #mode{ display:none; position:absolute; right:14px; bottom:calc(32px + env(safe-area-inset-bottom)); pointer-events:auto;
+    padding:12px 16px; font-size:14px; font-weight:800; letter-spacing:.5px; color:#dfeaf6;
+    background:rgba(20,40,62,.85); border:1px solid rgba(122,162,208,.4); border-radius:12px; z-index:7; }
+  #mode.draw{ background:linear-gradient(180deg,#7fd0ff,#3b82f6); color:#082138; border-color:#7fd0ff; }
   #flash{ position:absolute; inset:0; pointer-events:none; opacity:0; z-index:6;
-    background:radial-gradient(circle at 50% 55%, rgba(255,255,255,.55), transparent 55%); }
-  #flash.go{ animation:fl .22s ease-out; }
-  @keyframes fl{ 0%{opacity:.9;} 100%{opacity:0;} }
-  /* start / help */
-  #start{ position:fixed; inset:0; z-index:8; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:16px; text-align:center; background:linear-gradient(180deg,#0a1522,#0c2033); padding:24px; }
-  #start h1{ font-size:64px; font-weight:800; letter-spacing:2px; color:#ffd34d; text-shadow:0 4px 0 rgba(0,0,0,.4); }
-  #start p{ max-width:420px; color:#cdd8e6; font-size:17px; line-height:1.5; }
-  #start .keys{ color:#8fa2b8; font-size:14px; letter-spacing:.5px; }
-  #start button{ margin-top:8px; padding:16px 40px; font-size:22px; font-weight:800; letter-spacing:1px; color:#3a2600;
+    background:radial-gradient(circle at 50% 52%, rgba(255,255,255,.5), transparent 55%); }
+  #flash.go{ animation:fl .22s ease-out; } @keyframes fl{ 0%{opacity:.85;} 100%{opacity:0;} }
+  #start,#over{ position:fixed; inset:0; z-index:8; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:15px; text-align:center; background:linear-gradient(180deg,#0a1522,#0c2033); padding:24px; }
+  #over{ display:none; background:linear-gradient(180deg,rgba(10,21,34,.94),rgba(12,32,51,.96)); }
+  h1{ font-size:60px; font-weight:800; letter-spacing:2px; color:#ffd34d; text-shadow:0 4px 0 rgba(0,0,0,.4); }
+  p{ max-width:440px; color:#cdd8e6; font-size:16px; line-height:1.5; }
+  .keys{ color:#8fa2b8; font-size:13px; letter-spacing:.5px; }
+  .startbtn{ margin-top:6px; padding:15px 40px; font-size:21px; font-weight:800; letter-spacing:1px; color:#3a2600;
     background:linear-gradient(180deg,#ffdf7a,#f4ab1c); border:none; border-radius:15px; box-shadow:0 6px 20px rgba(240,169,28,.4); }
-  .tag{ position:fixed; bottom:6px; left:0; right:0; text-align:center; color:#3f5266; font-size:11px; z-index:8; letter-spacing:1px; }
+  .tag{ position:fixed; bottom:5px; left:0; right:0; text-align:center; color:#3f5266; font-size:10px; z-index:4; letter-spacing:1px; }
 </style>
 </head>
 <body>
@@ -65,378 +71,488 @@
 
 <div id="hud">
   <div class="top">
-    <div class="pill">BALL: <b id="who">YOU</b></div>
-    <div class="pill" id="toGoal">— yds to go</div>
+    <div>
+      <div class="pill" id="score"><span class="you">YOU 0</span><span class="sep">—</span><span class="cpu">0 CPU</span></div>
+      <div class="pill" id="poss">FIRST TO 3</div>
+    </div>
+    <div class="pill" id="dir">→ drive</div>
   </div>
   <div id="msg"></div>
   <div id="truck"><div class="ring"></div><div class="core">TRUCK</div></div>
   <div id="flash"></div>
   <div id="stick"><div class="nub" id="nub"></div></div>
-  <button id="truckBtn">TRUCK</button>
+  <button class="abtn" id="pitchBtn">PITCH</button>
+  <button class="abtn" id="truckBtn">TRUCK</button>
+  <div id="setupHint">DRAG YOUR PLAYERS · KEEP ONE IN THE CIRCLE</div>
+  <button id="mode">✎ DRAW BLOCKS</button>
+  <button id="kick">KICK OFF ▸</button>
 </div>
 
 <div id="start">
   <h1>FUMBLE</h1>
-  <p>Carry the ball and score. There's no going down — <b>truck through contact</b> to stay up, or you'll put it on the ground. A loose ball is live: <b>scramble</b> and recover it. Continuous until someone scores.</p>
-  <p class="keys">Steer: joystick / A&nbsp;D (or ←&nbsp;→) &nbsp;·&nbsp; Truck: TRUCK button / Space &nbsp;·&nbsp; scramble: joystick / WASD</p>
-  <button id="go">START</button>
+  <p>11-on-11, no going down. Take a hit and <b>the ball pops loose</b> — anyone can grab it, and every tackle pops it again. <b>Truck</b> to stay up, <b>pitch backward</b> to a trailing teammate, and score. Play never stops until someone crosses. <b>First to 3 wins.</b></p>
+  <p class="keys">Move: joystick / WASD · Truck: TRUCK / Space · Pitch back: PITCH / Shift · You control the highlighted player.</p>
+  <button class="startbtn" id="go">START</button>
 </div>
-<div class="tag">FUMBLE · prototype v1 · tune the constants at the top of the source</div>
+<div id="over">
+  <h1 id="overTitle">GAME</h1>
+  <p id="overSub"></p>
+  <button class="startbtn" id="again">PLAY AGAIN</button>
+</div>
+<div class="tag">FUMBLE · prototype · tune the constants at the top of the source</div>
 
 <script src="vendor/three.min.js"></script>
 <script>
 /* ============================================================================
-   FUMBLE — behind-the-back continuous football (single-player prototype, v1)
+   FUMBLE — continuous 11-on-11 behind-the-back football (single-player, v2)
    ----------------------------------------------------------------------------
-   FEEL LIVES HERE. Every make-or-break number is a labeled constant below so we
-   can iterate fast. The fumble bounce is the heart of the game — tune it first.
-   Three.js r128 (no OrbitControls, no CapsuleGeometry — box/sphere/cylinder only).
-   No storage APIs; all state in memory.
+   No going down: a tackle POPS THE BALL into the air; anyone recovers it; every
+   tackle pops it again. Truck to stay up, pitch backward to keep a play alive.
+   Play never stops until a team scores. First to WIN_SCORE.
+   You always control the single most-relevant player (carrier / nearest chaser /
+   nearest to the loose ball), shown by the white ring.
+   Three.js r128 (no OrbitControls / CapsuleGeometry). No storage APIs.
+   ---- ALL FEEL LIVES IN THE TUNE BLOCK BELOW. ----
 ============================================================================ */
 const TUNE = {
-  // ---- TRUCK timing check (contact) ----
-  TRUCK_PROMPT_LEAD_MS: 420,   // ring closes for this long BEFORE the hit-window opens (tap too early = fumble)
-  TRUCK_WINDOW_MS:      300,   // width of the success window — WIDER = easier to break tackles
-  CONTACT_COOLDOWN_S:   1.15,  // min seconds between contact prompts (throttles contact frequency)
-  CONTACT_RADIUS:       2.4,   // how close a defender must get to trigger a contact
-  TRUCK_KNOCKBACK:      6.0,   // how far a trucked defender is flung
-  TRUCK_BOOST:          1.35,  // brief carrier speed multiplier after a successful truck
-  TRUCK_BOOST_MS:       650,
+  TEAM_SIZE: 11,          // players per side (blocky bodies are cheap; drop to 7 for a cleaner read)
+  WIN_SCORE: 3,
 
-  // ---- FUMBLE physics (the make-or-break) ----
-  FUMBLE_INITIAL_POP:   7.5,   // upward velocity when the ball comes loose
-  FUMBLE_FORWARD_KICK:  5.0,   // forward velocity imparted (momentum of the hit)
-  FUMBLE_RESTITUTION:   0.55,  // bounciness on each ground bounce (0..1)
-  FUMBLE_BOUNCE_RANDOMNESS: 0.6, // 0..1 — how wildly the ball caroms sideways on a bounce
-  FUMBLE_FRICTION:      0.82,  // horizontal speed kept through a bounce
-  FUMBLE_ROLL_FRICTION: 0.975, // ground-roll damping per frame
-  BALL_REST_SPEED:      0.6,   // below this horizontal speed the ball is considered settling
-  RECOVER_RADIUS:       1.6,   // how close you must get to a loose ball to recover it
-  RECOVER_MAX_HEIGHT:   1.3,   // ball must be at/below this height to be scooped (can't grab a high pop)
+  // ---- TRUCK (skill check to stay up through a hit) ----
+  TRUCK_PROMPT_LEAD_MS: 380,   // ring closes for this long BEFORE the window opens (early tap = tackled)
+  TRUCK_WINDOW_MS:      340,   // width of the success window — WIDER = easier to stay up
+  TACKLE_RADIUS:        2.0,   // how close a tackler must get to start a hit
+  TRUCK_COOLDOWN_S:     1.0,   // grace after a broken tackle before the next hit
+  TRUCK_KNOCKBACK:      6.0,   // how far a trucked tackler is flung
+  TRUCK_BOOST:          1.3, TRUCK_BOOST_MS: 600,
 
-  // ---- movement ----
-  CARRIER_SPEED:        11.0,  // forward run speed while carrying
-  CARRIER_TURN_RATE:    2.5,   // radians/sec steering while carrying
-  SCRAMBLE_SPEED:       9.5,   // free-move speed chasing a loose ball
-  DEFENDER_SPEED:       9.6,   // a touch slower than the carrier — angles + numbers are the threat
-  DEFENDER_COUNT:       6,
+  // ---- BALL POP + bounce physics (the make-or-break; a tackle always pops it) ----
+  POP_UP:            12.5,  // vertical pop speed — HIGHER = ball hangs longer / more readable
+  POP_SPREAD:        2.8,   // horizontal randomness of the initial pop
+  RESTITUTION:       0.5,   // bounciness per bounce (0..1)
+  BOUNCE_RANDOMNESS: 0.5,   // 0..1 — how wildly it caroms sideways on each bounce
+  BOUNCE_FRICTION:   0.8,   // horizontal speed kept through a bounce
+  ROLL_FRICTION:     0.97,  // ground-roll damping per frame
+  RECOVER_RADIUS:    2.1,   // how close to a loose ball to scoop it
+  RECOVER_MAX_HEIGHT:1.6,   // ball must be this low to be scooped (can't grab a high pop)
+  GRAVITY:           22,
 
-  // ---- camera ----
-  CAM_DIST:   9.5,  CAM_HEIGHT: 5.0,  CAM_LOOKAHEAD: 6.0,  CAM_LERP: 6.0,     // behind-the-back chase
-  FUMBLE_CAM_DIST: 15, FUMBLE_CAM_HEIGHT: 13, FUMBLE_CAM_LERP: 4.0,           // the lift when the ball is live
+  // ---- LATERAL (pitch backward) ----
+  LATERAL_RANGE:     15,    // max distance to a trailing teammate you can pitch to
+  LATERAL_COOLDOWN_S:0.6,
 
-  // ---- field / world ----
-  FIELD_LENGTH: 110, FIELD_WIDTH: 46, START_Z: 22, GRAVITY: 22,
+  // ---- MOVEMENT (a little slower than v1) ----
+  CARRIER_SPEED:  8.6,      // a touch faster than the D so good running creates separation
+  CHASE_SPEED:    8.8,      // you, when chasing a carrier or a loose ball
+  MATE_SPEED:     8.2,      // teammate AI (blockers)
+  DEF_SPEED:      8.0,      // defender AI — slower than the carrier so angles + numbers are the threat, not raw speed
+  BLOCK_RADIUS:   2.7,      // a blocker within this of a defender engages (slows) them — opens lanes
+  BLOCKED_MULT:   0.34,     // engaged defenders move at this fraction (and can't tackle)
+  TURN_LERP:      10,
+
+  // ---- CAMERA ----
+  CAM_DIST: 10.5, CAM_HEIGHT: 5.4, CAM_LOOKAHEAD: 5, CAM_LERP: 5.5,
+  LOOSE_CAM_DIST: 17, LOOSE_CAM_HEIGHT: 15, LOOSE_CAM_LERP: 3.4,
+
+  // ---- FIELD ----
+  FIELD_LENGTH: 120, FIELD_WIDTH: 50, ENDZONE: 7,
 };
-const BALL_RADIUS = 0.42;
+const BALL_R = 0.42;
+const TEAM = { BLUE:'#3b82f6', RED:'#e0453f' };   // BLUE = you, RED = cpu
+const goalZ = t => t==='BLUE' ? TUNE.FIELD_LENGTH-TUNE.ENDZONE : TUNE.ENDZONE;   // z a team is driving toward
+const dirOf = t => t==='BLUE' ? 1 : -1;
 
-/* ---------------- Three.js scene ---------------- */
-const canvas = document.getElementById('c');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
-renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
-renderer.shadowMap.enabled = true;
-const scene = new THREE.Scene();
-scene.background = new THREE.Color('#0d2033');
-scene.fog = new THREE.Fog('#0d2033', 60, 150);
-const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 400);
+/* ---------------- scene ---------------- */
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1)); renderer.shadowMap.enabled=true;
+const scene=new THREE.Scene(); scene.background=new THREE.Color('#0d2033'); scene.fog=new THREE.Fog('#0d2033',70,170);
+const camera=new THREE.PerspectiveCamera(58,1,0.1,400);
+scene.add(new THREE.HemisphereLight('#cfe0ff','#1a3524',0.95));
+const sun=new THREE.DirectionalLight('#fff2d6',1.05); sun.position.set(-30,70,30); sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024); Object.assign(sun.shadow.camera,{left:-70,right:70,top:130,bottom:-20}); scene.add(sun);
 
-scene.add(new THREE.HemisphereLight('#cfe0ff', '#1a3524', 0.9));
-const sun = new THREE.DirectionalLight('#fff2d6', 1.05);
-sun.position.set(-30, 60, 20); sun.castShadow = true;
-sun.shadow.mapSize.set(1024,1024); sun.shadow.camera.left=-60; sun.shadow.camera.right=60;
-sun.shadow.camera.top=120; sun.shadow.camera.bottom=-20; scene.add(sun);
+function fieldTex(){ const cv=document.createElement('canvas'); cv.width=256; cv.height=1200; const g=cv.getContext('2d');
+  for(let i=0;i<24;i++){ g.fillStyle=i%2?'#173f2f':'#143726'; g.fillRect(0,i*50,256,50); }
+  g.strokeStyle='rgba(240,246,251,.65)'; g.lineWidth=3;
+  for(let y=0;y<=1200;y+=1200/13){ g.beginPath(); g.moveTo(0,y); g.lineTo(256,y); g.stroke(); }
+  const tx=new THREE.CanvasTexture(cv); tx.anisotropy=4; return tx; }
+const field=new THREE.Mesh(new THREE.PlaneGeometry(TUNE.FIELD_WIDTH,TUNE.FIELD_LENGTH),
+  new THREE.MeshStandardMaterial({map:fieldTex(),roughness:1}));
+field.rotation.x=-Math.PI/2; field.position.set(0,0,TUNE.FIELD_LENGTH/2); field.receiveShadow=true; scene.add(field);
+function ez(z,color){ const m=new THREE.Mesh(new THREE.PlaneGeometry(TUNE.FIELD_WIDTH,TUNE.ENDZONE*2),
+  new THREE.MeshStandardMaterial({color,roughness:1})); m.rotation.x=-Math.PI/2; m.position.set(0,0.01,z); scene.add(m); }
+ez(TUNE.FIELD_LENGTH-TUNE.ENDZONE,'#12325f'); ez(TUNE.ENDZONE,'#5a2130');   // BLUE scores far, RED scores near
+for(let s=-1;s<=1;s+=2){ const w=new THREE.Mesh(new THREE.BoxGeometry(0.3,1.1,TUNE.FIELD_LENGTH),
+  new THREE.MeshStandardMaterial({color:'#0c1c14'})); w.position.set(s*TUNE.FIELD_WIDTH/2,0.55,TUNE.FIELD_LENGTH/2); scene.add(w); }
+function goalpost(z){ const mat=new THREE.MeshStandardMaterial({color:'#e6b32a',emissive:'#3a2c00'}); const g=new THREE.Group();
+  const b=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.14,4,8),mat); b.position.y=2; g.add(b);
+  const c=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,6,8),mat); c.rotation.z=Math.PI/2; c.position.y=4; g.add(c);
+  for(const x of [-3,3]){ const u=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,5,8),mat); u.position.set(x,6.5,0); g.add(u); }
+  g.position.z=z; scene.add(g); }
+goalpost(TUNE.FIELD_LENGTH); goalpost(0);
 
-// ---- field with yard lines (canvas texture) ----
-function fieldTexture(){
-  const cv=document.createElement('canvas'); cv.width=256; cv.height=1024; const g=cv.getContext('2d');
-  g.fillStyle='#153a2c'; g.fillRect(0,0,256,1024);
-  // mow stripes
-  for(let i=0;i<20;i++){ g.fillStyle = i%2? '#173f2f':'#143726'; g.fillRect(0, i*51.2, 256, 51.2); }
-  // yard lines every 10 yards (texture repeats along length)
-  g.strokeStyle='rgba(240,246,251,.7)'; g.lineWidth=3;
-  for(let y=0;y<=1024;y+=1024/11){ g.beginPath(); g.moveTo(0,y); g.lineTo(256,y); g.stroke(); }
-  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.ClampToEdgeWrapping; tx.anisotropy=4; return tx;
-}
-const field = new THREE.Mesh(
-  new THREE.PlaneGeometry(TUNE.FIELD_WIDTH, TUNE.FIELD_LENGTH),
-  new THREE.MeshStandardMaterial({ map:fieldTexture(), roughness:1 }));
-field.rotation.x = -Math.PI/2; field.position.set(0, 0, TUNE.FIELD_LENGTH/2); field.receiveShadow=true;
-scene.add(field);
-// end zones
-function endzone(z, color){ const m=new THREE.Mesh(new THREE.PlaneGeometry(TUNE.FIELD_WIDTH,10),
-  new THREE.MeshStandardMaterial({ color, roughness:1 })); m.rotation.x=-Math.PI/2; m.position.set(0,0.01,z); scene.add(m); }
-endzone(TUNE.FIELD_LENGTH-5, '#1d3a63');  // score end zone
-endzone(5, '#5a2130');
-// sideline walls (subtle) — just visual boundary posts
-for(let s=-1;s<=1;s+=2){ const wall=new THREE.Mesh(new THREE.BoxGeometry(0.3,1.2,TUNE.FIELD_LENGTH),
-  new THREE.MeshStandardMaterial({color:'#0c1c14'})); wall.position.set(s*TUNE.FIELD_WIDTH/2,0.6,TUNE.FIELD_LENGTH/2); scene.add(wall); }
-// goalposts
-function goalpost(z){ const mat=new THREE.MeshStandardMaterial({color:'#e6b32a',emissive:'#3a2c00'});
-  const g=new THREE.Group();
-  const base=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.14,4,8),mat); base.position.y=2; g.add(base);
-  const cross=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,6,8),mat); cross.rotation.z=Math.PI/2; cross.position.y=4; g.add(cross);
-  for(const x of [-3,3]){ const up=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,5,8),mat); up.position.set(x,6.5,0); g.add(up); }
-  g.position.set(0,0,z); scene.add(g); }
-goalpost(TUNE.FIELD_LENGTH);
-
-/* ---------------- entities ---------------- */
-function blockPlayer(color){ const g=new THREE.Group();
-  const body=new THREE.Mesh(new THREE.BoxGeometry(1.3,1.8,0.95), new THREE.MeshStandardMaterial({color,roughness:.85}));
-  body.position.y=1.35; body.castShadow=true; g.add(body);
-  const head=new THREE.Mesh(new THREE.BoxGeometry(0.85,0.8,0.85), new THREE.MeshStandardMaterial({color:'#d8b48a'}));
-  head.position.y=2.55; head.castShadow=true; g.add(head);
+/* ---------------- players ---------------- */
+function makePlayer(color){ const g=new THREE.Group();
+  const bodyMat=new THREE.MeshStandardMaterial({color,roughness:.85});
+  const body=new THREE.Mesh(new THREE.BoxGeometry(1.25,1.7,0.9),bodyMat); body.position.y=1.3; body.castShadow=true; g.add(body);
+  const head=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.75,0.8),new THREE.MeshStandardMaterial({color:'#d8b48a'})); head.position.y=2.45; head.castShadow=true; g.add(head);
+  g.userData={ bodyMat, knock:new THREE.Vector3(), knockT:0, engaged:false, facing:0 };
   return g; }
-
-const player = blockPlayer('#eaa81f'); scene.add(player);   // YOU (gold)
-player.userData = { heading:0, speedBoost:0 };
-
-const defenders = [];
-for(let i=0;i<TUNE.DEFENDER_COUNT;i++){ const d=blockPlayer('#24365f'); scene.add(d);
-  d.userData={ knock:new THREE.Vector3(), knockT:0 }; defenders.push(d); }
-
-// the ball — an oblong (stretched sphere)
-const ball = new THREE.Mesh(new THREE.SphereGeometry(BALL_RADIUS,16,12),
-  new THREE.MeshStandardMaterial({color:'#7a4a1c',roughness:.6}));
+const PL=[];
+for(const team of ['BLUE','RED']) for(let i=0;i<TUNE.TEAM_SIZE;i++){ const p=makePlayer(TEAM[team]); p.userData.team=team; scene.add(p); PL.push(p); }
+// carrier highlight (gold) + controlled ring
+const ring=new THREE.Mesh(new THREE.RingGeometry(1.0,1.35,24), new THREE.MeshBasicMaterial({color:'#ffffff',side:THREE.DoubleSide,transparent:true,opacity:.9}));
+ring.rotation.x=-Math.PI/2; ring.position.y=0.05; scene.add(ring);
+// where the kickoff will land (setup phase) — a big gold circle; one receiver must stand in it
+const landCircle=new THREE.Mesh(new THREE.RingGeometry(2.2,2.7,40), new THREE.MeshBasicMaterial({color:'#ffcf4d',side:THREE.DoubleSide,transparent:true,opacity:.85}));
+landCircle.rotation.x=-Math.PI/2; landCircle.position.y=0.06; landCircle.visible=false; scene.add(landCircle);
+const LAND_R=2.7;
+// a bold assignment arrow (flat ribbon + arrowhead) per BLUE player, drawn during setup
+function makePathArrow(color){ const g=new THREE.Group();
+  const ribbon=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.1,1), new THREE.MeshBasicMaterial({color,transparent:true,opacity:.92}));
+  const head=new THREE.Mesh(new THREE.ConeGeometry(0.85,1.5,4), new THREE.MeshBasicMaterial({color})); head.rotation.x=Math.PI/2;
+  g.add(ribbon); g.add(head); g.userData={ribbon,head}; g.visible=false; scene.add(g); return g; }
+function setPathArrow(g,fx,fz,tx,tz){ const dx=tx-fx, dz=tz-fz, len=Math.hypot(dx,dz);
+  if(len<0.6){ g.visible=false; return; } g.visible=true; g.position.set(fx,0.2,fz); g.rotation.y=Math.atan2(dx,dz);
+  const body=Math.max(0.1,len-1.4); g.userData.ribbon.scale.set(1,1,body); g.userData.ribbon.position.set(0,0,body/2);
+  g.userData.head.position.set(0,0,len-0.75); }
+const blockArrows=PL.map(p=> p.userData.team==='BLUE' ? makePathArrow(0xffd34d) : null);
+function returnerIdx(){ let b=-1,bd=LAND_R+0.2; for(let i=0;i<PL.length;i++){ if(PL[i].userData.team!=='BLUE')continue;
+  const d=Math.hypot(PL[i].position.x-landing.x,PL[i].position.z-landing.z); if(d<bd){bd=d;b=i;} } return b; }
+function updateBlockArrows(){ const rIdx=returnerIdx();
+  for(let i=0;i<PL.length;i++){ const a=blockArrows[i]; if(!a)continue;
+    const tgt=(i===drawingIdx)?previewPt:(blockAssign[i]||null);
+    if(tgt && phase==='SETUP' && i!==rIdx) setPathArrow(a, PL[i].position.x, PL[i].position.z, tgt.x, tgt.z);
+    else a.visible=false;
+  } }
+// ball
+const ball=new THREE.Mesh(new THREE.SphereGeometry(BALL_R,16,12), new THREE.MeshStandardMaterial({color:'#7a4a1c',roughness:.6}));
 ball.scale.set(1.7,1,1); ball.castShadow=true; scene.add(ball);
-const ballVel = new THREE.Vector3(); const ballAng = new THREE.Vector3();
+const ballVel=new THREE.Vector3(), ballAng=new THREE.Vector3();
 
-/* ---------------- game state ---------------- */
-const S = { CARRY:'CARRY', LOOSE:'LOOSE', OVER:'OVER' };
-let state = S.CARRY;
-let truck = null;              // {t, tapped} while a contact prompt is live
-let contactCd = 0;            // cooldown before next contact can trigger
-let carrying = true;           // does the player have the ball
-let camPos = new THREE.Vector3(); let camAim = new THREE.Vector3(); let camReady=false;
-const input = { steerX:0, steerY:0 };   // -1..1
-let running = false;
+/* ---------------- state ---------------- */
+let possession='BLUE', carrier=-1, controlled=-1;
+let truck=null, truckCd=0, latCd=0;
+let scoreB=0, scoreR=0, running=false, gameOver=false;
+let phase='PLAY';                 // SETUP (place pieces, aerial) -> KICK (ball drops to the circle) -> PLAY
+let recvTeam='BLUE', kickReceiver=-1, grabbed=-1;
+let setupMode='MOVE', drawingIdx=-1;            // MOVE = drag to reposition · DRAW = drag to draw a blocker's initial block
+const previewPt=new THREE.Vector3(), blockAssign={};   // playerIdx -> {x,z} initial-block target
+const landing=new THREE.Vector3();
+const raycaster=new THREE.Raycaster(), groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+const rand=(a,b)=>a+Math.random()*(b-a);
+let camP=new THREE.Vector3(), camA=new THREE.Vector3(), camReady=false;
+const input={x:0,y:0};
+const flat=(a,b)=>Math.hypot(a.position.x-b.position.x,a.position.z-b.position.z);
+function fwdVec(f){ return new THREE.Vector3(Math.sin(f),0,Math.cos(f)); }
+function teamPlayers(t){ return PL.filter(p=>p.userData.team===t); }
+function nearestOfTeam(t,pt,skip){ let b=-1,bd=1e9; for(let i=0;i<PL.length;i++){ if(PL[i].userData.team!==t||i===skip)continue;
+  const d=Math.hypot(PL[i].position.x-pt.x,PL[i].position.z-pt.z); if(d<bd){bd=d;b=i;} } return b; }
 
-function forwardVec(heading){ return new THREE.Vector3(Math.sin(heading),0,Math.cos(heading)); }
-
-function resetPossession(atZ){
-  state = S.CARRY; carrying = true; truck=null; contactCd = 0.6;
-  player.userData.heading = 0; player.userData.speedBoost = 0;
-  player.position.set(0,0, atZ);
-  ballVel.set(0,0,0); ballAng.set(0,0,0);
-  // spread defenders ahead
-  for(let i=0;i<defenders.length;i++){ const d=defenders[i];
-    const lane=(i-(defenders.length-1)/2); d.position.set(lane*5.5, 0, atZ + 16 + Math.abs(lane)*3);
-    d.userData.knockT=0; }
+/* ---- SETUP phase: aerial view, drag your pieces, a landing circle that moves each possession ---- */
+function beginSetup(recv){
+  recvTeam=recv; phase='SETUP'; running=true; possession='NONE'; carrier=-1; truck=null; grabbed=-1; latCd=0;
+  // landing spot in the receiving team's return area — RANDOM every possession
+  const rz = recv==='BLUE' ? rand(14, TUNE.FIELD_LENGTH*0.40) : rand(TUNE.FIELD_LENGTH*0.60, TUNE.FIELD_LENGTH-14);
+  landing.set(rand(-TUNE.FIELD_WIDTH*0.32, TUNE.FIELD_WIDTH*0.32), 0, rz);
+  landCircle.position.set(landing.x,0.06,landing.z); landCircle.visible=true;
+  layoutForSetup(recv);
+  ballVel.set(0,0,0); ballAng.set(0,0,0); ball.position.set(landing.x,15,landing.z);
+  // reset strategy: clear drawn blocks, back to MOVE mode
+  for(const k in blockAssign) delete blockAssign[k];
+  setupMode='MOVE'; drawingIdx=-1;
+  for(const p of PL){ p.userData.assign=null; p.userData.blockT=0; }
+  for(const a of blockArrows) if(a) a.visible=false;
+  const mb=document.getElementById('mode'); mb.style.display='block';
+  mb.classList.remove('draw'); mb.textContent = recv==='BLUE' ? '✎ DRAW BLOCKS' : '✎ DRAW MOVES';
+  updateHighlights(); camReady=false; showControls(false);
+  document.getElementById('setupHint').style.display='block'; document.getElementById('kick').style.display='block';
+  updateKickBtn();
 }
+function layoutForSetup(recv){
+  const dir=dirOf(recv), mates=teamPlayers(recv), foes=teamPlayers(recv==='BLUE'?'RED':'BLUE');
+  mates.forEach((p,i)=>{ if(i===0) p.position.set(landing.x,0,landing.z);                    // a default returner in the circle
+    else { const lane=(i-mates.length/2); p.position.set(landing.x+lane*3.0, 0, landing.z + dir*(6+Math.abs(lane)*1.4)); }
+    p.userData.facing=recv==='BLUE'?0:Math.PI; p.userData.knockT=0; });
+  foes.forEach((p,i)=>{ const lane=(i-(foes.length-1)/2); p.position.set(lane*4.4, 0, landing.z + dir*(17+Math.abs(lane)*1.4));
+    p.userData.facing=recv==='BLUE'?Math.PI:0; p.userData.knockT=0; });
+}
+function blueInCircle(){ return teamPlayers('BLUE').some(p=>Math.hypot(p.position.x-landing.x,p.position.z-landing.z)<=LAND_R); }
+function canKick(){ return recvTeam==='RED' || blueInCircle(); }
+function updateKickBtn(){ document.getElementById('kick').disabled=!canKick();
+  document.getElementById('setupHint').textContent = recvTeam==='BLUE'
+    ? (canKick()?'DRAG YOUR PLAYERS · RETURNER IS SET':'DRAG A PLAYER INTO THE GOLD CIRCLE')
+    : 'DRAG YOUR DEFENDERS · CPU RETURNS AT THE CIRCLE'; }
+function showControls(on){ for(const id of ['stick','truckBtn','pitchBtn']) document.getElementById(id).style.display=on?'':'none'; }
+function kickoff(){ if(!canKick())return; phase='KICK';
+  kickReceiver=nearestOfTeam(recvTeam, landing); PL[kickReceiver].position.set(landing.x,0,landing.z);
+  ball.position.set(landing.x,15,landing.z); ballVel.set(0,0,0);
+  // lock in the drawn initial-block assignments
+  for(const k in blockAssign){ const i=+k; if(PL[i]&&PL[i].userData.team==='BLUE'&&i!==kickReceiver){ PL[i].userData.assign=blockAssign[i]; PL[i].userData.blockT=2.6; } }
+  for(const a of blockArrows) if(a) a.visible=false;
+  landCircle.visible=false; document.getElementById('kick').style.display='none';
+  document.getElementById('mode').style.display='none';
+  document.getElementById('setupHint').style.display='none'; showControls(true); grabbed=-1; }
+function updateKick(dt){ ballVel.y-=TUNE.GRAVITY*dt; ball.position.y+=ballVel.y*dt; ball.rotation.x+=6*dt;
+  if(ball.position.y<=1.5){ ball.position.y=1.5; possession=recvTeam; carrier=kickReceiver; truckCd=TUNE.TRUCK_COOLDOWN_S;
+    phase='PLAY'; pickControlled(); updateHighlights(); camReady=false; flash();
+    msg(recvTeam==='BLUE'?'YOUR BALL':'CPU RETURNS', recvTeam==='BLUE'?'good':'bad', 650); } }
+function pickControlled(){
+  if(possession==='LOOSE') controlled=nearestOfTeam('BLUE',ball.position);
+  else if(possession==='BLUE') controlled=carrier;
+  else controlled=nearestOfTeam('BLUE', PL[carrier].position);
+}
+function updateHighlights(){ for(const p of PL){ p.userData.bodyMat.emissive.set('#000000'); }
+  if(carrier>=0){ PL[carrier].userData.bodyMat.emissive.set('#8a6a00'); } }
 
-/* ---------------- contact + truck ---------------- */
-function maybeTriggerContact(dt){
-  if(state!==S.CARRY || truck || contactCd>0) return;
-  // nearest defender in contact range?
-  let near=null, nd=1e9;
-  for(const d of defenders){ const dist=d.position.distanceTo(player.position); if(dist<nd){nd=dist; near=d;} }
-  if(near && nd < TUNE.CONTACT_RADIUS){
-    truck = { t:0, tapped:false };
-    showTruck(true);
+/* ---------------- tackle / truck / pop ---------------- */
+function updateContact(dt){
+  if(possession==='LOOSE'||carrier<0) return;
+  const cP=PL[carrier], foe=possession==='BLUE'?'RED':'BLUE';
+  // nearest non-engaged opponent to the carrier
+  let near=-1,nd=1e9; for(let i=0;i<PL.length;i++){ const p=PL[i]; if(p.userData.team!==foe||p.userData.engaged)continue;
+    const d=flat(p,cP); if(d<nd){nd=d;near=i;} }
+  if(near<0 || nd>TUNE.TACKLE_RADIUS) return;
+  if(possession==='BLUE'){                 // YOU carry -> timing check
+    if(!truck && truckCd<=0){ truck={t:0,tapped:false,foe:near}; showTruck(true); }
+  } else {                                  // CPU carrier tackled by your team -> pop
+    popBall(PL[carrier].position, near);
   }
 }
-function updateTruck(dt){
-  if(!truck) return;
-  truck.t += dt*1000;
-  const lead=TUNE.TRUCK_PROMPT_LEAD_MS, win=TUNE.TRUCK_WINDOW_MS, total=lead+win;
-  // ring visual: shrinks from big to the core size, turns green during the window
-  const ringEl=document.querySelector('#truck .ring');
-  const p = Math.min(1, truck.t/total);
-  const size = 180 - 106*p;   // 180 -> 74 (core)
-  ringEl.style.width=ringEl.style.height=size+'px';
-  const inWin = truck.t>=lead && truck.t<=total;
-  ringEl.style.borderColor = inWin ? '#8ff0a0' : '#ffcf4d';
-  document.querySelector('#truck .core').textContent = inWin ? 'NOW!' : 'TRUCK';
-  if(truck.t>=total && !truck.tapped){ doFumble(); }   // window closed, never tapped -> lost it
-}
-function attemptTruck(){
-  if(!truck || truck.tapped) return;
-  truck.tapped=true;
-  const lead=TUNE.TRUCK_PROMPT_LEAD_MS, total=lead+TUNE.TRUCK_WINDOW_MS;
-  if(truck.t>=lead && truck.t<=total){
-    // SUCCESS — break the tackle
-    flash();
-    let near=null, nd=1e9; for(const d of defenders){ const dist=d.position.distanceTo(player.position); if(dist<nd){nd=dist;near=d;} }
-    if(near){ const away=near.position.clone().sub(player.position).setY(0).normalize().multiplyScalar(TUNE.TRUCK_KNOCKBACK);
-      near.userData.knock.copy(away); near.userData.knockT=0.45; }
-    player.userData.speedBoost = TUNE.TRUCK_BOOST_MS/1000;
-    contactCd = TUNE.CONTACT_COOLDOWN_S;
-    showTruck(false); truck=null;
-    msg('TRUCK!','good',600);
-  } else {
-    // mistimed -> fumble
-    doFumble();
-  }
-}
-function showTruck(on){ document.getElementById('truck').style.display = on?'block':'none'; }
-
-/* ---------------- fumble ---------------- */
-function doFumble(){
-  showTruck(false); truck=null;
-  state = S.LOOSE; carrying=false;
-  flash();
-  msg('FUMBLE!','bad',900);
-  // pop the ball loose with momentum + randomness
-  const fwd = forwardVec(player.userData.heading);
-  ballVel.copy(fwd).multiplyScalar(TUNE.FUMBLE_FORWARD_KICK);
-  ballVel.y = TUNE.FUMBLE_INITIAL_POP;
-  const r = TUNE.FUMBLE_BOUNCE_RANDOMNESS;
-  ballVel.x += (Math.random()*2-1)*r*7; ballVel.z += (Math.random()*2-1)*r*4;
-  ballAng.set((Math.random()*2-1)*10, 0, (Math.random()*2-1)*10);
-  ball.position.copy(player.position).setY(1.4);
-  camReady=false;   // let the camera snap toward the new (lifted) target
+function updateTruck(dt){ if(!truck)return; truck.t+=dt*1000;
+  const lead=TUNE.TRUCK_PROMPT_LEAD_MS, tot=lead+TUNE.TRUCK_WINDOW_MS, p=Math.min(1,truck.t/tot);
+  const ring=document.querySelector('#truck .ring'); const size=176-104*p; ring.style.width=ring.style.height=size+'px';
+  const inWin=truck.t>=lead && truck.t<=tot; ring.style.borderColor=inWin?'#8ff0a0':'#ffcf4d';
+  document.querySelector('#truck .core').textContent=inWin?'NOW!':'TRUCK';
+  if(truck.t>=tot && !truck.tapped) popBall(PL[carrier].position, truck.foe); }
+function attemptTruck(){ if(!truck||truck.tapped)return; truck.tapped=true;
+  const lead=TUNE.TRUCK_PROMPT_LEAD_MS, tot=lead+TUNE.TRUCK_WINDOW_MS;
+  if(truck.t>=lead && truck.t<=tot){ flash();
+    const f=PL[truck.foe]; if(f){ const away=f.position.clone().sub(PL[carrier].position).setY(0).normalize().multiplyScalar(TUNE.TRUCK_KNOCKBACK);
+      f.userData.knock.copy(away); f.userData.knockT=0.45; }
+    PL[carrier].userData.boost=TUNE.TRUCK_BOOST_MS/1000; truckCd=TUNE.TRUCK_COOLDOWN_S; showTruck(false); truck=null; msg('TRUCK!','good',550);
+  } else popBall(PL[carrier].position, truck.foe); }
+function showTruck(on){ document.getElementById('truck').style.display=on?'block':'none'; }
+function popBall(atPos, byIdx){
+  showTruck(false); truck=null; const wasBlue = possession==='BLUE';
+  possession='LOOSE'; carrier=-1; updateHighlights(); flash();
+  msg(wasBlue?'TACKLED!':'BALL OUT!', wasBlue?'bad':'good', 800);
+  ball.position.copy(atPos).setY(1.6);
+  ballVel.set((Math.random()*2-1)*TUNE.POP_SPREAD, TUNE.POP_UP, (Math.random()*2-1)*TUNE.POP_SPREAD);
+  ballAng.set((Math.random()*2-1)*10,0,(Math.random()*2-1)*10);
+  pickControlled(); camReady=false;
 }
 function updateLooseBall(dt){
-  ballVel.y -= TUNE.GRAVITY*dt;
-  ball.position.addScaledVector(ballVel, dt);
-  ball.rotation.x += ballAng.x*dt; ball.rotation.z += ballAng.z*dt;
-  if(ball.position.y <= BALL_RADIUS){
-    ball.position.y = BALL_RADIUS;
-    if(ballVel.y < 0){
-      ballVel.y = -ballVel.y * TUNE.FUMBLE_RESTITUTION;
-      // the carom — a random sideways kick on every bounce (dial with FUMBLE_BOUNCE_RANDOMNESS)
-      const k=TUNE.FUMBLE_BOUNCE_RANDOMNESS;
-      ballVel.x += (Math.random()*2-1)*k*6; ballVel.z += (Math.random()*2-1)*k*6;
-      ballVel.x *= TUNE.FUMBLE_FRICTION; ballVel.z *= TUNE.FUMBLE_FRICTION;
-      ballAng.set((Math.random()*2-1)*9,0,(Math.random()*2-1)*9);
-      flash();
-    }
-    // rolling
-    ballVel.x *= TUNE.FUMBLE_ROLL_FRICTION; ballVel.z *= TUNE.FUMBLE_ROLL_FRICTION;
-  }
-  // keep on the field
+  ballVel.y-=TUNE.GRAVITY*dt; ball.position.addScaledVector(ballVel,dt);
+  ball.rotation.x+=ballAng.x*dt; ball.rotation.z+=ballAng.z*dt;
+  if(ball.position.y<=BALL_R){ ball.position.y=BALL_R;
+    if(ballVel.y<0){ ballVel.y=-ballVel.y*TUNE.RESTITUTION; const k=TUNE.BOUNCE_RANDOMNESS;
+      ballVel.x+=(Math.random()*2-1)*k*6; ballVel.z+=(Math.random()*2-1)*k*6;
+      ballVel.x*=TUNE.BOUNCE_FRICTION; ballVel.z*=TUNE.BOUNCE_FRICTION;
+      ballAng.set((Math.random()*2-1)*9,0,(Math.random()*2-1)*9); flash(); }
+    ballVel.x*=TUNE.ROLL_FRICTION; ballVel.z*=TUNE.ROLL_FRICTION; }
   const hw=TUNE.FIELD_WIDTH/2-1; if(Math.abs(ball.position.x)>hw){ ball.position.x=Math.sign(ball.position.x)*hw; ballVel.x*=-0.5; }
+  ball.position.z=Math.max(1,Math.min(TUNE.FIELD_LENGTH-1,ball.position.z));
+  // recovery
+  if(ball.position.y<=TUNE.RECOVER_MAX_HEIGHT){
+    let best=-1,bd=1e9; for(let i=0;i<PL.length;i++){ const d=Math.hypot(PL[i].position.x-ball.position.x,PL[i].position.z-ball.position.z); if(d<bd){bd=d;best=i;} }
+    if(bd<TUNE.RECOVER_RADIUS && best>=0){ const t=PL[best].userData.team;
+      possession=t; carrier=best; truckCd=TUNE.TRUCK_COOLDOWN_S; pickControlled(); updateHighlights(); camReady=false;
+      msg(t==='BLUE'?'YOU RECOVER!':'CPU BALL', t==='BLUE'?'good':'bad', 750); }
+  }
 }
-function checkRecovery(){
-  if(ball.position.y > TUNE.RECOVER_MAX_HEIGHT) return;  // too high to scoop
-  const flat=(a,b)=>Math.hypot(a.position.x-b.position.x, a.position.z-b.position.z);
-  let best=null, bd=1e9, bIsPlayer=false;
-  const pd=flat(player,ball); if(pd<bd){ bd=pd; best=player; bIsPlayer=true; }
-  for(const d of defenders){ const dd=flat(d,ball); if(dd<bd){ bd=dd; best=d; bIsPlayer=false; } }
-  if(bd < TUNE.RECOVER_RADIUS){
-    if(bIsPlayer){ // YOU recover — resume the run
-      state=S.CARRY; carrying=true; contactCd=TUNE.CONTACT_COOLDOWN_S; camReady=false;
-      player.userData.heading = 0; msg('RECOVERED!','good',800); setWho('YOU');
-    } else { // defense recovers — turnover, reset your possession
-      msg('DEFENSE BALL','bad',1100); setWho('DEF');
-      setTimeout(()=>{ resetPossession(TUNE.START_Z); camReady=false; setWho('YOU'); }, 1100);
-      state=S.OVER;
+
+/* ---------------- lateral ---------------- */
+function attemptLateral(){
+  if(possession!=='BLUE'||carrier<0||latCd>0) return;
+  const cP=PL[carrier].position, dir=dirOf('BLUE');
+  let best=-1,bd=1e9; for(let i=0;i<PL.length;i++){ const p=PL[i]; if(p.userData.team!=='BLUE'||i===carrier)continue;
+    const behind=(p.position.z - cP.z)*dir < 1.0;    // trailing (toward own goal) — a backward pitch
+    if(!behind)continue; const d=flat(p,PL[carrier]); if(d<TUNE.LATERAL_RANGE && d<bd){bd=d;best=i;} }
+  if(best>=0){ carrier=best; controlled=best; latCd=TUNE.LATERAL_COOLDOWN_S; truckCd=0.35; updateHighlights(); flash(); msg('PITCH!','good',500); }
+}
+
+/* ---------------- movement ---------------- */
+function moveToward(p,tx,tz,sp,dt){ let dx=tx-p.position.x, dz=tz-p.position.z; const d=Math.hypot(dx,dz);
+  if(d>0.01){ dx/=d; dz/=d; p.position.x+=dx*sp*dt; p.position.z+=dz*sp*dt; faceTo(p,Math.atan2(dx,dz),dt); } clampField(p); }
+function faceTo(p,yaw,dt){ let a=yaw-p.userData.facing; while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI;
+  p.userData.facing+=a*Math.min(1,TUNE.TURN_LERP*dt); p.rotation.y=p.userData.facing; }
+function clampField(p){ const hw=TUNE.FIELD_WIDTH/2-1; p.position.x=Math.max(-hw,Math.min(hw,p.position.x));
+  p.position.z=Math.max(1,Math.min(TUNE.FIELD_LENGTH-1,p.position.z)); }
+
+function updatePlayers(dt){
+  // engagement: a defender within BLOCK_RADIUS of an enemy blocker (ball-team non-carrier) is engaged
+  for(const p of PL) p.userData.engaged=false;
+  if(possession!=='LOOSE'){ const foe=possession==='BLUE'?'RED':'BLUE';
+    for(let i=0;i<PL.length;i++){ if(PL[i].userData.team!==foe)continue; // defender
+      for(let j=0;j<PL.length;j++){ const b=PL[j]; if(b.userData.team!==possession||j===carrier)continue;
+        if(flat(PL[i],b)<TUNE.BLOCK_RADIUS){ PL[i].userData.engaged=true; break; } } } }
+
+  for(let i=0;i<PL.length;i++){ const p=PL[i], u=p.userData;
+    if(u.knockT>0){ u.knockT-=dt; p.position.addScaledVector(u.knock,dt); clampField(p); continue; }
+    if(i===controlled){ applyInput(p,dt); continue; }
+    if(possession==='LOOSE'){ // race to the ball (nearest 3 of each team sprint, rest jog)
+      const rank=teamRankToBall(p); const sp=(rank<3?TUNE.CHASE_SPEED:TUNE.MATE_SPEED*0.6);
+      moveToward(p,ball.position.x,ball.position.z,sp,dt);
+    } else if(u.team===possession){
+      if(i===carrier){ // AI carrier drives to its goal, veering from the nearest tackler
+        const g=goalZ(u.team); let tx=0; const foeIdx=nearestOfTeam(u.team==='BLUE'?'RED':'BLUE',p.position);
+        if(foeIdx>=0){ const f=PL[foeIdx]; if(flat(f,p)<6) tx = p.position.x + (p.position.x-f.position.x); }
+        moveToward(p,tx,g,TUNE.CARRIER_SPEED,dt);
+      } else { // blocker
+        if(u.assign && u.blockT>0){ u.blockT-=dt;                 // run the DRAWN initial block first...
+          if(Math.hypot(p.position.x-u.assign.x,p.position.z-u.assign.z)<1.6) u.blockT=0;
+          else moveToward(p,u.assign.x,u.assign.z,TUNE.MATE_SPEED,dt);
+        }
+        if(!(u.assign && u.blockT>0)){ u.assign=null;             // ...then revert to meeting the nearest defender
+          const dfd=nearestOfTeam(u.team==='BLUE'?'RED':'BLUE',PL[carrier].position);
+          if(dfd>=0) moveToward(p,PL[dfd].position.x,PL[dfd].position.z,TUNE.MATE_SPEED,dt);
+          else moveToward(p,0,goalZ(u.team),TUNE.MATE_SPEED,dt);
+        }
+      }
+    } else { // defense
+      if(u.assign && u.blockT>0){ u.blockT-=dt;                  // run the DRAWN initial move first...
+        if(Math.hypot(p.position.x-u.assign.x,p.position.z-u.assign.z)<1.6) u.blockT=0;
+        else moveToward(p,u.assign.x,u.assign.z,TUNE.DEF_SPEED,dt);
+      }
+      if(!(u.assign && u.blockT>0)){ u.assign=null;              // ...then pursue the carrier
+        const sp=u.engaged?TUNE.DEF_SPEED*TUNE.BLOCKED_MULT:TUNE.DEF_SPEED;
+        moveToward(p,PL[carrier].position.x,PL[carrier].position.z,sp,dt);
+      }
     }
   }
 }
+function teamRankToBall(p){ const my=Math.hypot(p.position.x-ball.position.x,p.position.z-ball.position.z); let r=0;
+  for(const q of PL){ if(q.userData.team!==p.userData.team||q===p)continue;
+    if(Math.hypot(q.position.x-ball.position.x,q.position.z-ball.position.z)<my) r++; } return r; }
+function applyInput(p,dt){ const u=p.userData;
+  let sp = (possession==='BLUE'&&carrier===controlled) ? TUNE.CARRIER_SPEED : TUNE.CHASE_SPEED;
+  if(u.boost>0){ sp*=TUNE.TRUCK_BOOST; u.boost-=dt; }
+  const mag=Math.hypot(input.x,input.y);
+  if(mag>0.05){ const nx=input.x/mag, nz=input.y/mag; p.position.x+=nx*sp*dt*Math.min(1,mag); p.position.z+=nz*sp*dt*Math.min(1,mag);
+    faceTo(p,Math.atan2(nx,nz),dt); }
+  clampField(p);
+  if(possession==='BLUE'&&carrier===controlled) ball.position.copy(p.position).add(new THREE.Vector3(0.5,1.5,0));
+}
 
-/* ---------------- per-frame ---------------- */
-function updateCarry(dt){
-  const u=player.userData;
-  // steer
-  u.heading -= input.steerX * TUNE.CARRIER_TURN_RATE * dt;
-  u.heading = Math.max(-1.2, Math.min(1.2, u.heading));   // can't fully reverse while carrying
-  let sp = TUNE.CARRIER_SPEED; if(u.speedBoost>0){ sp*=TUNE.TRUCK_BOOST; u.speedBoost-=dt; }
-  const fwd=forwardVec(u.heading); player.position.addScaledVector(fwd, sp*dt);
-  player.rotation.y = u.heading;
-  clampToField(player);
-  // ball tucked
-  ball.position.copy(player.position).add(new THREE.Vector3(0.5,1.5,0)); ball.rotation.set(0,u.heading,0.4);
-  if(player.position.z >= TUNE.FIELD_LENGTH-6){ score(); }
+/* ---------------- score ---------------- */
+function checkScore(){
+  if(possession==='LOOSE'||carrier<0) return;
+  const p=PL[carrier], t=p.userData.team;
+  if(t==='BLUE'&&p.position.z>=TUNE.FIELD_LENGTH-TUNE.ENDZONE) return doScore('BLUE');
+  if(t==='RED'&&p.position.z<=TUNE.ENDZONE) return doScore('RED');
 }
-function updateScramble(dt){
-  // free directional move toward wherever the player steers (steer to the ball)
-  const v=new THREE.Vector3(input.steerX,0,input.steerY);
-  if(v.lengthSq()>0.02){ v.normalize(); player.position.addScaledVector(v, TUNE.SCRAMBLE_SPEED*dt);
-    player.rotation.y = Math.atan2(v.x, v.z); }
-  clampToField(player);
+function doScore(t){ if(gameOver)return; flash();
+  if(t==='BLUE'){ scoreB++; msg('TOUCHDOWN!','big',1500); } else { scoreR++; msg('CPU SCORES','bad',1500); }
+  updateScoreHud();
+  if(scoreB>=TUNE.WIN_SCORE||scoreR>=TUNE.WIN_SCORE){ setTimeout(()=>endGame(),1400); running=false; return; }
+  running=false;
+  setTimeout(()=>beginSetup(t==='BLUE'?'RED':'BLUE'), 1500);   // conceding team receives — new setup phase
 }
-function updateDefenders(dt){
-  const target = (state===S.LOOSE)? ball.position : player.position;
-  for(const d of defenders){
-    if(d.userData.knockT>0){ d.userData.knockT-=dt; d.position.addScaledVector(d.userData.knock, dt); continue; }
-    const dir=target.clone().sub(d.position).setY(0); const dist=dir.length();
-    if(dist>0.001){ dir.normalize(); d.position.addScaledVector(dir, TUNE.DEFENDER_SPEED*dt); d.rotation.y=Math.atan2(dir.x,dir.z); }
-    clampToField(d);
+function endGame(){ gameOver=true; const win=scoreB>scoreR;
+  document.getElementById('overTitle').textContent = win?'YOU WIN':'CPU WINS';
+  document.getElementById('overTitle').style.color = win?'#8ff0a0':'#ff8a6b';
+  document.getElementById('overSub').textContent = 'Final — YOU '+scoreB+' · '+scoreR+' CPU';
+  document.getElementById('over').style.display='flex'; }
+
+/* ---------------- camera + hud ---------------- */
+function updateCamera(dt){ let tp,ta;
+  if(phase==='SETUP'||phase==='KICK'){                     // aerial bird's-eye over the landing spot
+    tp=new THREE.Vector3(landing.x, 46, landing.z - 16*dirOf(recvTeam));
+    ta=new THREE.Vector3(landing.x, 0, landing.z + 4*dirOf(recvTeam));
+    const a=camReady?Math.min(1,4*dt):(camReady=true,1); camP.lerp(tp,a); camA.lerp(ta,a); camera.position.copy(camP); camera.lookAt(camA); return;
   }
+  if(possession==='LOOSE'){ const mid=ball.position.clone().add(PL[controlled].position).multiplyScalar(0.5);
+    tp=new THREE.Vector3(mid.x,TUNE.LOOSE_CAM_HEIGHT,mid.z-TUNE.LOOSE_CAM_DIST); ta=ball.position.clone(); }
+  else { const c=PL[controlled], f=fwdVec(c.userData.facing);
+    tp=c.position.clone().addScaledVector(f,-TUNE.CAM_DIST).add(new THREE.Vector3(0,TUNE.CAM_HEIGHT,0));
+    ta=c.position.clone().addScaledVector(f,TUNE.CAM_LOOKAHEAD).setY(1.4); }
+  const l=possession==='LOOSE'?TUNE.LOOSE_CAM_LERP:TUNE.CAM_LERP;
+  if(!camReady){ camP.copy(tp); camA.copy(ta); camReady=true; } else { const a=Math.min(1,l*dt); camP.lerp(tp,a); camA.lerp(ta,a); }
+  camera.position.copy(camP); camera.lookAt(camA);
 }
-function clampToField(o){ const hw=TUNE.FIELD_WIDTH/2-1; o.position.x=Math.max(-hw,Math.min(hw,o.position.x));
-  o.position.z=Math.max(2, Math.min(TUNE.FIELD_LENGTH-1, o.position.z)); }
-
-function updateCamera(dt){
-  let tgtPos, tgtAim;
-  if(state===S.LOOSE){
-    // LIFT: high + back, framing the loose ball — this camera change is the "ball is live" signal
-    const mid=ball.position.clone().add(player.position).multiplyScalar(0.5);
-    tgtPos = new THREE.Vector3(mid.x, TUNE.FUMBLE_CAM_HEIGHT, mid.z - TUNE.FUMBLE_CAM_DIST);
-    tgtAim = ball.position.clone();
-  } else {
-    const fwd=forwardVec(player.userData.heading);
-    tgtPos = player.position.clone().addScaledVector(fwd, -TUNE.CAM_DIST).add(new THREE.Vector3(0,TUNE.CAM_HEIGHT,0));
-    tgtAim = player.position.clone().addScaledVector(fwd, TUNE.CAM_LOOKAHEAD).setY(1.4);
-  }
-  const lerp = (state===S.LOOSE?TUNE.FUMBLE_CAM_LERP:TUNE.CAM_LERP);
-  if(!camReady){ camPos.copy(tgtPos); camAim.copy(tgtAim); camReady=true; }
-  else { const a=Math.min(1, lerp*dt); camPos.lerp(tgtPos,a); camAim.lerp(tgtAim,a); }
-  camera.position.copy(camPos); camera.lookAt(camAim);
+function updateScoreHud(){ document.querySelector('#score .you').textContent='YOU '+scoreB;
+  document.querySelector('#score .cpu').textContent=scoreR+' CPU'; }
+function hud(){ if(phase!=='PLAY'){ ring.visible=false; return; }
+  const el=document.getElementById('poss');
+  el.innerHTML = possession==='LOOSE' ? '<b>BALL LOOSE</b> — go get it'
+    : possession==='BLUE' ? 'YOU HAVE THE BALL' : 'CPU HAS THE BALL — force it out';
+  const d=document.getElementById('dir');
+  if(possession==='BLUE'&&carrier>=0){ const yds=Math.max(0,Math.round(TUNE.FIELD_LENGTH-TUNE.ENDZONE-PL[carrier].position.z)); d.textContent=yds+' yds'; d.style.display='block'; }
+  else d.style.display='none';
+  ring.visible = controlled>=0 && running; if(controlled>=0){ ring.position.x=PL[controlled].position.x; ring.position.z=PL[controlled].position.z; }
 }
-
-function score(){ state=S.OVER; msg('TOUCHDOWN!','big',1400); flash();
-  setTimeout(()=>{ resetPossession(TUNE.START_Z); camReady=false; }, 1500); }
 
 /* ---------------- loop ---------------- */
-const clock = new THREE.Clock();
-function tick(){
-  requestAnimationFrame(tick);
-  let dt=clock.getDelta(); if(dt>0.05) dt=0.05;   // clamp big frame gaps
+const clock=new THREE.Clock();
+function tick(){ requestAnimationFrame(tick); let dt=clock.getDelta(); if(dt>0.05)dt=0.05;
   if(running){
-    if(contactCd>0) contactCd-=dt;
-    if(state===S.CARRY){ updateCarry(dt); maybeTriggerContact(dt); updateTruck(dt); }
-    else if(state===S.LOOSE){ updateLooseBall(dt); checkRecovery(); }
-    updateDefenders(dt);
-    updateCamera(dt);
-    hud();
+    if(phase==='SETUP'){ landCircle.material.opacity=0.55+0.3*Math.abs(Math.sin(clock.getElapsedTime()*3.5)); updateBlockArrows(); updateCamera(dt); hud(); }
+    else if(phase==='KICK'){ updateKick(dt); updateCamera(dt); }
+    else {
+      if(truckCd>0)truckCd-=dt; if(latCd>0)latCd-=dt;
+      pickControlled(); updatePlayers(dt);
+      if(possession==='LOOSE') updateLooseBall(dt);
+      else { updateContact(dt); updateTruck(dt); checkScore(); }
+      updateCamera(dt); hud();
+    }
   }
-  renderer.render(scene, camera);
+  renderer.render(scene,camera);
 }
 
-/* ---------------- HUD ---------------- */
-let msgT=null;
-function msg(text,cls,ms){ const m=document.getElementById('msg'); m.textContent=text; m.className='show '+(cls||'');
-  clearTimeout(msgT); msgT=setTimeout(()=>m.classList.remove('show'), ms||900); }
-function setWho(w){ document.getElementById('who').textContent=w; }
+/* ---------------- msg / flash ---------------- */
+let msgT; function msg(t,cls,ms){ const m=document.getElementById('msg'); m.textContent=t; m.className='show '+(cls||'');
+  clearTimeout(msgT); msgT=setTimeout(()=>m.classList.remove('show'),ms||800); }
 function flash(){ const f=document.getElementById('flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
-function hud(){ const yds=Math.max(0, Math.round((TUNE.FIELD_LENGTH-5 - player.position.z)));
-  document.getElementById('toGoal').textContent = carrying ? (yds+' yds to go') : 'BALL LOOSE'; }
 
 /* ---------------- input ---------------- */
 const keys={};
 addEventListener('keydown',e=>{ keys[e.code]=true;
-  if(e.code==='Space'){ e.preventDefault(); attemptTruck(); } refreshKeySteer(); });
-addEventListener('keyup',e=>{ keys[e.code]=false; refreshKeySteer(); });
-function refreshKeySteer(){
-  let x=0,y=0;
-  if(keys['ArrowLeft']||keys['KeyA']) x-=1; if(keys['ArrowRight']||keys['KeyD']) x+=1;
-  if(keys['ArrowUp']||keys['KeyW']) y+=1; if(keys['ArrowDown']||keys['KeyS']) y-=1;
-  input.steerX=x; input.steerY=y;
-}
-// touch joystick
-const stick=document.getElementById('stick'), nub=document.getElementById('nub');
-let stickId=null, stickC={x:0,y:0};
-stick.addEventListener('touchstart',e=>{ const t=e.changedTouches[0]; stickId=t.identifier; const r=stick.getBoundingClientRect();
-  stickC={x:r.left+r.width/2, y:r.top+r.height/2}; stickMove(t); e.preventDefault(); },{passive:false});
-stick.addEventListener('touchmove',e=>{ for(const t of e.changedTouches){ if(t.identifier===stickId) stickMove(t); } e.preventDefault(); },{passive:false});
-stick.addEventListener('touchend',e=>{ for(const t of e.changedTouches){ if(t.identifier===stickId){ stickId=null;
-  input.steerX=0; input.steerY=0; nub.style.transform='translate(-50%,-50%)'; } } },{passive:false});
-function stickMove(t){ let dx=t.clientX-stickC.x, dy=t.clientY-stickC.y; const max=52; const d=Math.hypot(dx,dy);
-  if(d>max){ dx=dx/d*max; dy=dy/d*max; } nub.style.transform=`translate(${dx-28}px,${dy-28}px)`;
-  input.steerX=dx/max; input.steerY=-dy/max; }
-// truck button (touch + click)
-const tb=document.getElementById('truckBtn');
-tb.addEventListener('touchstart',e=>{ attemptTruck(); e.preventDefault(); },{passive:false});
-tb.addEventListener('mousedown',e=>{ attemptTruck(); });
+  if(e.code==='Space'){ e.preventDefault(); attemptTruck(); }
+  if(e.code==='ShiftLeft'||e.code==='ShiftRight'){ e.preventDefault(); attemptLateral(); } keySteer(); });
+addEventListener('keyup',e=>{ keys[e.code]=false; keySteer(); });
+function keySteer(){ let x=0,y=0; if(keys['KeyA']||keys['ArrowLeft'])x-=1; if(keys['KeyD']||keys['ArrowRight'])x+=1;
+  if(keys['KeyW']||keys['ArrowUp'])y+=1; if(keys['KeyS']||keys['ArrowDown'])y-=1; input.x=x; input.y=y; }
+const stick=document.getElementById('stick'), nub=document.getElementById('nub'); let sid=null,sc={x:0,y:0};
+stick.addEventListener('touchstart',e=>{ const t=e.changedTouches[0]; sid=t.identifier; const r=stick.getBoundingClientRect();
+  sc={x:r.left+r.width/2,y:r.top+r.height/2}; sMove(t); e.preventDefault(); },{passive:false});
+stick.addEventListener('touchmove',e=>{ for(const t of e.changedTouches) if(t.identifier===sid) sMove(t); e.preventDefault(); },{passive:false});
+stick.addEventListener('touchend',e=>{ for(const t of e.changedTouches) if(t.identifier===sid){ sid=null; input.x=0; input.y=0; nub.style.transform='translate(-50%,-50%)'; } },{passive:false});
+function sMove(t){ let dx=t.clientX-sc.x,dy=t.clientY-sc.y; const max=50,d=Math.hypot(dx,dy); if(d>max){dx=dx/d*max;dy=dy/d*max;}
+  nub.style.transform=`translate(${dx-27}px,${dy-27}px)`; input.x=dx/max; input.y=-dy/max; }
+const tb=document.getElementById('truckBtn'); tb.addEventListener('touchstart',e=>{attemptTruck();e.preventDefault();},{passive:false}); tb.addEventListener('mousedown',()=>attemptTruck());
+const pb=document.getElementById('pitchBtn'); pb.addEventListener('touchstart',e=>{attemptLateral();e.preventDefault();},{passive:false}); pb.addEventListener('mousedown',()=>attemptLateral());
+
+/* ---------------- setup drag (place your pieces on the aerial field) ---------------- */
+function fieldPoint(e){ const r=canvas.getBoundingClientRect(); const nx=((e.clientX-r.left)/r.width)*2-1, ny=-((e.clientY-r.top)/r.height)*2+1;
+  raycaster.setFromCamera({x:nx,y:ny},camera); const hit=new THREE.Vector3(); return raycaster.ray.intersectPlane(groundPlane,hit)?hit:null; }
+canvas.addEventListener('pointerdown',e=>{ if(phase!=='SETUP')return; const pt=fieldPoint(e); if(!pt)return;
+  let b=-1,bd=1e9; for(let i=0;i<PL.length;i++){ if(PL[i].userData.team!=='BLUE')continue;
+    const d=Math.hypot(PL[i].position.x-pt.x,PL[i].position.z-pt.z); if(d<bd){bd=d;b=i;} }
+  if(b<0||bd>3.5) return;
+  if(setupMode==='DRAW' && b!==returnerIdx()){ drawingIdx=b; previewPt.set(pt.x,0,pt.z); }
+  else grabbed=b; });
+canvas.addEventListener('pointermove',e=>{ if(phase!=='SETUP')return; const pt=fieldPoint(e); if(!pt)return;
+  if(drawingIdx>=0){ previewPt.set(pt.x,0,pt.z); }
+  else if(grabbed>=0){ PL[grabbed].position.x=pt.x; PL[grabbed].position.z=pt.z; clampField(PL[grabbed]); updateKickBtn(); } });
+addEventListener('pointerup',()=>{ if(drawingIdx>=0){ blockAssign[drawingIdx]={x:previewPt.x,z:previewPt.z}; drawingIdx=-1; } grabbed=-1; });
+document.getElementById('kick').addEventListener('click',kickoff);
+document.getElementById('mode').addEventListener('click',()=>{ setupMode = setupMode==='MOVE'?'DRAW':'MOVE';
+  const m=document.getElementById('mode'); m.classList.toggle('draw',setupMode==='DRAW');
+  m.textContent = setupMode==='DRAW'?'✋ MOVE PLAYERS':'✎ DRAW BLOCKS';
+  document.getElementById('setupHint').textContent = setupMode==='DRAW'
+    ? (recvTeam==='BLUE'?'DRAG FROM A BLOCKER TO SET HIS FIRST BLOCK':'DRAG FROM A DEFENDER TO SET HIS FIRST MOVE')
+    : 'DRAG YOUR PLAYERS INTO POSITION'; });
 
 /* ---------------- boot ---------------- */
-function resize(){ const w=innerWidth,h=innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); }
 addEventListener('resize',resize); resize();
-document.getElementById('go').addEventListener('click',()=>{
-  document.getElementById('start').style.display='none';
-  resetPossession(TUNE.START_Z); running=true;
-});
+function newGame(){ scoreB=0; scoreR=0; gameOver=false; updateScoreHud();
+  document.getElementById('over').style.display='none'; document.getElementById('start').style.display='none';
+  beginSetup('BLUE'); }
+document.getElementById('go').addEventListener('click',newGame);
+document.getElementById('again').addEventListener('click',newGame);
 tick();
 </script>
 </body>
