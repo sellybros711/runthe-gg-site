@@ -16,7 +16,7 @@
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=Oswald:wght@500;600;700&family=Chivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#080b14; --panel:#131a2b; --panel-2:#1a2337;
@@ -30,10 +30,26 @@
     --grad-field:linear-gradient(180deg,#0f1830 0%,#0a1122 60%,#0c1526 100%);
     --shadow:0 18px 40px -14px rgba(0,0,0,.85), 0 3px 10px -4px rgba(0,0,0,.6);
     --qb:#ef4444; --rb:#22c55e; --wr:#3b82f6; --te:#f97316; --flex:#a855f7;
+
+    /* THE TYPE
+       Anton and Archivo were the default free pairing you see everywhere, which
+       is exactly why they read as generic. Three faces now, each doing one job:
+
+       --fd  Big Shoulders Display. Tall, narrow, athletic. Headlines, records,
+             the reels, anything that should look stencilled onto a scoreboard.
+       --fn  Oswald. Also condensed but with real numerals and a lower x-height,
+             so prices and FPPG stay legible at 11px where --fd goes muddy.
+       --fb  Chivo. A grotesque with some grit in it, for reading text.
+
+       Fallbacks stay in every stack so a blocked font request degrades instead
+       of reflowing into something unrecognizable. */
+    --fd:'Big Shoulders Display','Anton',Impact,'Haettenschweiler',sans-serif;
+    --fn:'Oswald','Anton',Impact,sans-serif;
+    --fb:'Chivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;background:var(--bg);color:var(--ink)}
-  body{font-family:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  body{font-family:var(--fb);
     font-size:16px;line-height:1.45;overscroll-behavior-y:none;
     background-image:radial-gradient(1000px 600px at 50% -8%, rgba(59,130,246,.10), transparent 70%),
                      radial-gradient(800px 500px at 100% 100%, rgba(239,68,68,.07), transparent 70%);
@@ -42,14 +58,14 @@
   h1,h2,h3{margin:0;line-height:1.05}
   .display{font-family:'Anton',Impact,'Arial Narrow',sans-serif;font-weight:400;letter-spacing:.01em;
     text-transform:uppercase}
-  .num{font-family:'Anton',Impact,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+  .num{font-family:var(--fd);font-variant-numeric:tabular-nums;letter-spacing:.02em}
   .dim{color:var(--dim)}
-  .eyebrow{font-family:'Anton',Impact,sans-serif;text-transform:uppercase;letter-spacing:.16em;
+  .eyebrow{font-family:var(--fn);text-transform:uppercase;letter-spacing:.16em;
     font-size:11px;color:var(--dim-2)}
   button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
 
   .btn{display:block;width:100%;padding:16px 18px;border-radius:12px;background:var(--grad-red);
-    color:#fff;font-family:'Anton',Impact,sans-serif;font-size:19px;text-transform:uppercase;
+    color:#fff;font-family:var(--fd);font-size:19px;text-transform:uppercase;
     letter-spacing:.05em;text-align:center;box-shadow:var(--shadow);position:relative;overflow:hidden;
     transition:transform .07s ease,filter .15s ease}
   .btn:before{content:'';position:absolute;left:0;right:0;top:0;height:40%;
@@ -64,7 +80,7 @@
      you want to change rather than what is cheaper. */
   .respins{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .respin{display:block;text-align:center;padding:10px 8px;border-radius:11px;min-width:0}
-  .respin b{display:block;font-family:'Anton',Impact,sans-serif;font-size:14px;letter-spacing:.03em;
+  .respin b{display:block;font-family:var(--fn);font-size:14px;letter-spacing:.03em;
     text-transform:uppercase;line-height:1.1}
   .respin span{display:block;font-size:11px;color:var(--dim);margin-top:3px;line-height:1.25}
   .respins .respin:first-child{border-color:rgba(239,68,68,.45)}
@@ -85,18 +101,18 @@
   @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
   header{display:flex;align-items:center;justify-content:space-between;margin:2px 0 16px}
-  .brand{font-family:'Anton',Impact,sans-serif;font-size:16px;letter-spacing:.06em;text-transform:uppercase}
+  .brand{font-family:var(--fd);font-size:16px;letter-spacing:.06em;text-transform:uppercase}
   .brand i{color:var(--red);font-style:normal}
-  .pill{font-family:'Anton',Impact,sans-serif;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  .pill{font-family:var(--fn);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
     padding:5px 10px;border-radius:99px;border:1px solid var(--line-2);color:var(--dim)}
 
   .titlecard{border-radius:18px;padding:26px 18px 22px;text-align:center;position:relative;overflow:hidden;
     background:var(--grad-field);border:1px solid var(--line)}
   .titlecard:before{content:'';position:absolute;inset:0;
     background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 40px)}
-  .titlecard .kicker{position:relative;font-family:'Anton',Impact,sans-serif;letter-spacing:.22em;
+  .titlecard .kicker{position:relative;font-family:var(--fd);letter-spacing:.22em;
     font-size:11px;color:var(--red)}
-  .titlecard h1{position:relative;font-family:'Anton',Impact,sans-serif;font-size:44px;line-height:.92;
+  .titlecard h1{position:relative;font-family:var(--fd);font-size:44px;line-height:.92;
     text-transform:uppercase;margin:8px 0 0;
     background:linear-gradient(180deg,#fff 20%,#8fb4ff 100%);-webkit-background-clip:text;
     background-clip:text;color:transparent}
@@ -104,13 +120,13 @@
   .rules{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:9px}
   .rules li{display:flex;gap:11px;align-items:flex-start;font-size:14.5px}
   .rules .n{flex:0 0 24px;height:24px;border-radius:7px;background:var(--grad-blue);color:#fff;
-    font-family:'Anton',Impact,sans-serif;font-size:12px;display:grid;place-items:center;margin-top:1px}
+    font-family:var(--fn);font-size:12px;display:grid;place-items:center;margin-top:1px}
   .rules b{color:#fff}
 
   .divs{display:grid;gap:13px}
   .teams{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:6px}
   .tm{padding:12px 3px;border-radius:10px;border:1px solid var(--line);background:var(--panel);
-    font-family:'Anton',Impact,sans-serif;font-size:14px;letter-spacing:.03em;transition:all .12s ease}
+    font-family:var(--fd);font-size:14px;letter-spacing:.03em;transition:all .12s ease}
   .tm:active{transform:scale(.95)}
   .tm.on{background:var(--grad-blue);border-color:transparent;box-shadow:0 0 0 2px rgba(59,130,246,.35)}
 
@@ -141,7 +157,7 @@
   .tierdot.small{background:#38bdf8} .tierdot.bad{background:#ef4444}
   .chip{position:absolute;transform:translate(-50%,-50%);width:62px;text-align:center;cursor:pointer}
   .chip .disc{width:34px;height:34px;margin:0 auto;border-radius:50%;display:grid;place-items:center;
-    font-family:'Anton',Impact,sans-serif;font-size:11px;color:#fff;border:2px solid rgba(255,255,255,.22);
+    font-family:var(--fn);font-size:11px;color:#fff;border:2px solid rgba(255,255,255,.22);
     box-shadow:0 5px 12px -4px rgba(0,0,0,.8)}
   .chip.sel .disc{border-color:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.18),0 5px 12px -4px #000}
   .chip.empty .disc{background:rgba(255,255,255,.05);border-style:dashed;color:var(--dim-2)}
@@ -160,7 +176,7 @@
   .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 11px;margin:-4px 0 12px;
     background:linear-gradient(180deg,var(--bg) 72%,rgba(8,11,20,0))}
   .capline{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
-  .capline .amt{font-family:'Anton',Impact,sans-serif;font-size:32px;line-height:1}
+  .capline .amt{font-family:var(--fd);font-size:32px;line-height:1}
   .capline .amt.low{color:var(--red)}
   .bar{height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:8px}
   .bar i{display:block;height:100%;border-radius:99px;background:var(--grad-blue);transition:width .4s ease}
@@ -168,7 +184,7 @@
   .note{margin-top:8px;font-size:12.5px;font-weight:700;color:#fca5a5}
 
   .chemrow{display:flex;align-items:center;gap:11px;margin-top:11px}
-  .chemval{font-family:'Anton',Impact,sans-serif;line-height:1;min-width:74px}
+  .chemval{font-family:var(--fd);line-height:1;min-width:74px}
   .chemval.pos{color:#4ade80} .chemval.zero{color:var(--dim-2)} .chemval.neg{color:var(--red)}
   .chembar{flex:1;height:9px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}
   .chembar i{display:block;height:100%;border-radius:99px;
@@ -176,7 +192,7 @@
   .bump{animation:bump .62s ease}
   @keyframes bump{0%{transform:scale(1)}30%{transform:scale(1.24)}100%{transform:scale(1)}}
   .linkrow{display:flex;gap:9px;align-items:center;font-size:13px;padding:6px 0;border-top:1px solid var(--line)}
-  .linkrow .v{font-family:'Anton',Impact,sans-serif;font-size:13px;min-width:44px;text-align:right;color:#4ade80}
+  .linkrow .v{font-family:var(--fn);font-size:13px;min-width:44px;text-align:right;color:#4ade80}
   .linkrow .v.neg{color:var(--red)}
 
   /* THE WHEELS
@@ -196,12 +212,12 @@
     border-radius:9px;border:1px solid rgba(255,255,255,.13);pointer-events:none;
     transition:border-color .2s ease,box-shadow .2s ease,background .2s ease}
   .reel-i{height:38px;display:grid;place-items:center;padding:0 9px;text-align:center;
-    font-family:'Anton',Impact,sans-serif;text-transform:uppercase;letter-spacing:.02em;
+    font-family:var(--fd);text-transform:uppercase;letter-spacing:.02em;
     line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .reelbox.year .reel-i{font-size:23px}
   .reelbox.team .reel-i{font-size:14px}
   .reelcol{min-width:0}
-  .rlabel{display:block;margin:0 0 5px 3px;font-family:'Anton',Impact,sans-serif;
+  .rlabel{display:block;margin:0 0 5px 3px;font-family:var(--fn);
     font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2)}
   /* Spinning: the housing glows in its own color so you can see which reel is live. */
   .reelbox.year.spin{border-color:rgba(239,68,68,.55)}
@@ -224,63 +240,81 @@
   .reelbox.done{border-color:var(--line-2)}
   .reelbox.year.done .band{border-color:rgba(239,68,68,.42);background:rgba(239,68,68,.06)}
   .reelbox.team.done .band{border-color:rgba(59,130,246,.42);background:rgba(59,130,246,.06)}
-  .slotchip{display:inline-block;font-family:'Anton',Impact,sans-serif;font-size:11px;letter-spacing:.06em;
+  .slotchip{display:inline-block;font-family:var(--fn);font-size:11px;letter-spacing:.06em;
     padding:3px 7px;border-radius:6px;margin-right:4px;background:rgba(255,255,255,.07);color:var(--dim)}
-  .grouphead{font-family:'Anton',Impact,sans-serif;font-size:10.5px;letter-spacing:.14em;
+  .grouphead{font-family:var(--fn);font-size:10.5px;letter-spacing:.14em;
     text-transform:uppercase;color:var(--dim-2);margin:10px 0 5px}
 
-  /* One tab per open spot, colored by position, so the list never needs a heading
-     and you never scroll past your team to find it. */
+  /* Four tabs, one per position, colored to match the field chips. A position with
+     nowhere left to put anybody keeps its tab but grays out and drops to the right,
+     so the row does not reshuffle under your thumb between spins. */
   .tabs{display:flex;gap:6px;margin:12px 0 0;overflow-x:auto;-webkit-overflow-scrolling:touch;
     padding-bottom:2px;scrollbar-width:none}
   .tabs::-webkit-scrollbar{display:none}
-  .tab{flex:0 0 auto;padding:9px 13px;border-radius:10px;border:1.5px solid var(--line);
-    background:var(--panel);font-family:'Anton',Impact,sans-serif;font-size:13px;letter-spacing:.05em;
+  .tab{flex:0 0 auto;padding:9px 14px;border-radius:10px;border:1.5px solid var(--line);
+    background:var(--panel);font-family:var(--fn);font-size:14px;font-weight:600;letter-spacing:.06em;
     color:var(--dim);display:flex;align-items:center;gap:6px;transition:all .12s ease}
-  .tab .n{font-size:10.5px;opacity:.75}
+  .tab .n{font-size:11px;opacity:.7}
   .tab.on{color:#fff;border-color:transparent}
   .tab:active{transform:scale(.97)}
-  .opts{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:10px}
-  /* The rows arrive as a consequence of the reels landing, so they come in with a
-     short stagger rather than appearing all at once out of nowhere. */
-  @keyframes optin{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
-  .opts .opt{animation:optin .24s ease-out both}
+  .tab.full{color:var(--dim-2);border-style:dashed;border-color:rgba(255,255,255,.08);
+    background:rgba(255,255,255,.015)}
+  .tab.full.on{color:var(--dim);border-style:solid;background:rgba(255,255,255,.05)}
+
+  /* PLAYER TILES
+     Two to a row. A full-width row had the name, the stat line, the points and the
+     price all fighting over one line, which is why everything was clipped with an
+     ellipsis. In a tile each of those gets its own place. */
+  .opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+  /* Tiles arrive as a consequence of the reels landing, so they come in on a short
+     stagger rather than all at once out of nowhere. */
+  @keyframes optin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .opts .tile{animation:optin .24s ease-out both}
   .tabs{animation:optin .22s ease-out both}
-  .opt{display:flex;align-items:center;gap:11px;padding:11px;border-radius:12px;width:100%;min-width:0;
-    background:var(--panel);border:1px solid var(--line);text-align:left;transition:all .12s ease}
-  .opt:active{transform:scale(.985)}
-  .opt.hot{border-color:rgba(74,222,128,.5);box-shadow:0 0 0 1px rgba(74,222,128,.25)}
-  /* Out of reach, but still on the board so the team never looks half missing. */
-  .opt.off{background:rgba(255,255,255,.015);border-style:dashed;border-color:rgba(255,255,255,.09);
-    cursor:default}
-  .opt.off:active{transform:none}
-  .opt.off .badge{filter:grayscale(1);opacity:.4}
-  .opt.off .who b,.opt.off .cost b{color:var(--dim-2)}
-  .opt.off .who > span,.opt.off .fppg{color:var(--dim-2);opacity:.75}
-  .why{display:inline-block;margin-top:3px;font-size:10.5px;font-weight:800;padding:2px 6px;
-    border-radius:5px;background:rgba(255,255,255,.05);color:var(--dim);max-width:100%;
+  .tile{display:flex;flex-direction:column;gap:0;padding:10px;border-radius:13px;min-width:0;
+    background:var(--grad-panel);border:1px solid var(--line);text-align:left;
+    transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease}
+  .tile:active{transform:scale(.975)}
+  .tile.hot{border-color:rgba(74,222,128,.5);box-shadow:0 0 0 1px rgba(74,222,128,.22)}
+  .tile .th{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .tile .pos{flex:0 0 auto;min-width:31px;text-align:center;padding:3px 0;border-radius:7px;
+    color:#fff;font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.06em}
+  .tile .pr{font-family:var(--fn);font-size:15px;font-weight:600;letter-spacing:.01em;
+    white-space:nowrap}
+  /* Two lines then cut, so a long name never pushes one tile taller than its
+     neighbor and breaks the grid. */
+  .tile .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    margin-top:7px;font-family:var(--fd);font-size:19px;font-weight:800;
+    line-height:.98;letter-spacing:.005em}
+  .tile .sn{display:block;margin-top:3px;font-size:10.5px;color:var(--dim-2);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tile .line{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    margin-top:5px;font-size:10.5px;line-height:1.3;color:var(--dim)}
+  .tile .tf{margin-top:auto;padding-top:7px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+  .tile .pts{display:flex;align-items:baseline;gap:4px}
+  .tile .pts b{font-family:var(--fn);font-size:19px;font-weight:600;line-height:1}
+  .tile .pts i{font-style:normal;font-family:var(--fn);font-size:9.5px;letter-spacing:.1em;
+    color:var(--dim-2)}
+  .tile .dest{margin-top:5px;font-family:var(--fn);font-size:9.5px;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--flex)}
+  /* Out of reach, but still on the board so the team never looks half missing. */
+  .tile.off{background:rgba(255,255,255,.015);border-style:dashed;border-color:rgba(255,255,255,.09);
+    cursor:default}
+  .tile.off:active{transform:none}
+  .tile.off .pos{filter:grayscale(1);opacity:.45}
+  .tile.off .nm,.tile.off .pr,.tile.off .pts b{color:var(--dim-2)}
+  .why{display:block;font-size:10px;font-weight:600;padding:3px 6px;border-radius:5px;
+    background:rgba(255,255,255,.05);color:var(--dim);max-width:100%;line-height:1.25}
   .why.money{background:rgba(251,191,36,.12);color:#d6b45f}
-  .badge{flex:0 0 36px;height:36px;border-radius:9px;display:grid;place-items:center;color:#fff;
-    font-family:'Anton',Impact,sans-serif;font-size:12px}
-  .opt .who{flex:1;min-width:0}
-  .opt .who b{display:block;font-size:14.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .opt .who > span{display:block;font-size:11.5px;color:var(--dim);white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis}
-  .opt .who > span span{display:inline}
-  .sep{color:var(--dim-2);padding:0 5px}
-  .opt .cost{flex:0 0 auto;text-align:right}
-  .opt .cost b{display:block;font-family:'Anton',Impact,sans-serif;font-size:17px}
-  .statline{display:block;font-size:11px;color:var(--dim-2);white-space:nowrap;overflow:hidden;
-    text-overflow:ellipsis;margin-top:1px}
-  .fppg{font-family:'Anton',Impact,sans-serif;font-size:12.5px;color:var(--ink);letter-spacing:.02em}
-  .badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
-  .bdg{font-size:9.5px;font-weight:900;letter-spacing:.03em;padding:2px 6px;border-radius:5px;
-    background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);
-    white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+  .badges{display:flex;flex-wrap:wrap;gap:4px}
+  .badges .bdg{margin-top:0}
+  .bdg{display:inline-block;margin-top:5px;font-size:9px;font-weight:700;letter-spacing:.04em;
+    padding:2px 6px;border-radius:5px;background:rgba(251,191,36,.15);color:#fbbf24;
+    border:1px solid rgba(251,191,36,.3);max-width:100%;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap}
   .bdg.led{background:rgba(251,191,36,.22);color:#fcd34d}
   .bdg.mile{background:rgba(56,189,248,.14);color:#7dd3fc;border-color:rgba(56,189,248,.28)}
-  .chemtag{display:inline-block;margin-top:3px;font-size:10.5px;font-weight:900;padding:2px 6px;
+  .chemtag{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 6px;
     border-radius:5px;background:rgba(74,222,128,.16);color:#4ade80;max-width:100%;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
@@ -290,7 +324,7 @@
     background:repeating-linear-gradient(90deg,rgba(255,255,255,.045) 0 1px,transparent 1px 40px)}
   .gamecard>*{position:relative}
   .scoreline{display:flex;align-items:center;justify-content:center;gap:16px;margin:12px 0 2px}
-  .scoreline .s{font-family:'Anton',Impact,sans-serif;font-size:52px;line-height:1}
+  .scoreline .s{font-family:var(--fd);font-size:52px;line-height:1}
   .scoreline .s.down{color:var(--dim-2)}
   .tally{display:flex;gap:4px;margin-top:13px}
   .tick{height:22px;border-radius:3px;background:rgba(255,255,255,.08);flex:1 1 0;min-width:0}
@@ -302,32 +336,32 @@
     background:var(--panel);border:1px solid var(--line);overflow:hidden}
   .g.new{animation:slide .3s ease both}
   @keyframes slide{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
-  .g .wk{flex:0 0 44px;font-family:'Anton',Impact,sans-serif;font-size:11px;color:var(--dim-2)}
+  .g .wk{flex:0 0 44px;font-family:var(--fn);font-size:11px;color:var(--dim-2)}
   .g .res{flex:0 0 22px;height:22px;border-radius:6px;display:grid;place-items:center;
-    font-family:'Anton',Impact,sans-serif;font-size:12px;color:#fff}
+    font-family:var(--fn);font-size:12px;color:#fff}
   .g .res.w{background:#15803d} .g .res.l{background:var(--red-2)}
   .g .opp{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
-  .g .sc{flex:0 0 58px;text-align:right;font-family:'Anton',Impact,sans-serif;font-size:14px;white-space:nowrap}
+  .g .sc{flex:0 0 58px;text-align:right;font-family:var(--fn);font-size:14px;white-space:nowrap}
   .g.po{background:linear-gradient(90deg,rgba(168,85,247,.20),var(--panel))}
 
   .bigrec{text-align:center;padding:6px 0 12px}
-  .bigrec .r{font-family:'Anton',Impact,sans-serif;font-size:62px;line-height:.95}
+  .bigrec .r{font-family:var(--fd);font-size:62px;line-height:.95}
   .verdict{border-radius:16px;padding:22px 18px;text-align:center;border:1px solid var(--line);
     background:var(--grad-panel)}
   .verdict.gold{background:linear-gradient(160deg,#3b2f0a,#181305);border-color:rgba(245,158,11,.42)}
   .verdict.win{background:linear-gradient(160deg,#0c2a4d,#0a1526);border-color:rgba(59,130,246,.42)}
   .verdict.out{background:linear-gradient(160deg,#3a1114,#1a0a0c);border-color:rgba(239,68,68,.34)}
-  .verdict h2{font-family:'Anton',Impact,sans-serif;font-size:31px;text-transform:uppercase;line-height:.98;
+  .verdict h2{font-family:var(--fd);font-size:31px;text-transform:uppercase;line-height:.98;
     margin-top:5px}
   .verdict p{margin:9px 0 0;color:var(--dim);font-size:14px}
   .cmp{display:flex;gap:9px;padding:9px 0;border-top:1px solid var(--line);align-items:flex-start}
-  .cmp .sp{flex:0 0 42px;font-family:'Anton',Impact,sans-serif;font-size:11px;letter-spacing:.06em;
+  .cmp .sp{flex:0 0 42px;font-family:var(--fn);font-size:11px;letter-spacing:.06em;
     color:#fff;text-align:center;padding:3px 0;border-radius:6px}
   .cmp .side{flex:1;min-width:0;font-size:12.5px;line-height:1.35}
-  .cmp .side .lbl{color:var(--dim-2);font-size:10px;font-family:'Anton',Impact,sans-serif;
+  .cmp .side .lbl{color:var(--dim-2);font-size:10px;font-family:var(--fn);
     letter-spacing:.1em;margin-right:5px}
   .cmp .side b{font-weight:800}
-  .cmp .up{flex:0 0 auto;font-family:'Anton',Impact,sans-serif;font-size:13px;color:#4ade80}
+  .cmp .up{flex:0 0 auto;font-family:var(--fn);font-size:13px;color:#4ade80}
   .cmp .up.kept{color:var(--dim-2);font-size:10px;letter-spacing:.08em}
   /* A spot can drop on purpose, to free money for a bigger gain elsewhere. */
   .cmp .up.down{color:#fbbf24}
@@ -336,26 +370,26 @@
   .vs-row{display:grid;grid-template-columns:minmax(0,1fr) 74px 74px;align-items:center;
     padding:9px 11px;font-size:12.5px;border-top:1px solid var(--line)}
   .vs-row:first-child{border-top:none;background:rgba(255,255,255,.04)}
-  .vs-row .h{font-family:'Anton',Impact,sans-serif;font-size:10px;letter-spacing:.1em;color:var(--dim-2);
+  .vs-row .h{font-family:var(--fn);font-size:10px;letter-spacing:.1em;color:var(--dim-2);
     text-align:center}
   .vs-row .h.b{color:#4ade80}
   .vs-row .k{color:var(--dim)}
-  .vs-row .a,.vs-row .c{font-family:'Anton',Impact,sans-serif;font-size:15px;text-align:center}
+  .vs-row .a,.vs-row .c{font-family:var(--fn);font-size:15px;text-align:center}
   .vs-row .c{color:#4ade80}
   .vs-row.hi{background:rgba(74,222,128,.06)}
 
   /* coach panel */
-  .verdictline{font-family:'Anton',Impact,sans-serif;font-size:20px;line-height:1.1;margin:4px 0 10px}
+  .verdictline{font-family:var(--fd);font-size:20px;line-height:1.1;margin:4px 0 10px}
   .cnote{display:flex;gap:9px;font-size:13px;padding:7px 0;border-top:1px solid var(--line);line-height:1.35}
   .cnote .m{flex:0 0 16px;height:16px;border-radius:4px;display:grid;place-items:center;margin-top:2px;
-    font-family:'Anton',Impact,sans-serif;font-size:11px;color:#fff}
+    font-family:var(--fn);font-size:11px;color:#fff}
   .cnote.good .m{background:#15803d} .cnote.bad .m{background:var(--red-2)}
   .meters{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;margin-top:11px}
   .meter{display:flex;align-items:center;gap:9px;font-size:11.5px}
   .meter .lbl{flex:0 0 96px;color:var(--dim)}
   .meter .track{flex:1;height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;position:relative}
   .meter .track i{position:absolute;top:0;bottom:0;border-radius:99px}
-  .meter .val{flex:0 0 42px;text-align:right;font-family:'Anton',Impact,sans-serif;font-size:12px}
+  .meter .val{flex:0 0 42px;text-align:right;font-family:var(--fn);font-size:12px}
   /* collapsible schedule */
   details.drop{border:1px solid var(--line);border-radius:12px;background:var(--grad-panel);overflow:hidden}
   details.drop>summary{list-style:none;cursor:pointer;padding:13px 15px;display:flex;
@@ -366,27 +400,27 @@
   details.drop .body{padding:0 15px 14px}
   /* results hero */
   .hero-rec{text-align:center;padding:6px 0 2px}
-  .hero-rec .big{font-family:'Anton',Impact,sans-serif;font-size:88px;line-height:.86;letter-spacing:-.02em}
+  .hero-rec .big{font-family:var(--fd);font-size:88px;line-height:.86;letter-spacing:-.02em}
   .hero-rec .big.gold{background:linear-gradient(180deg,#fde68a,#d97706);-webkit-background-clip:text;
     background-clip:text;color:transparent}
   .hero-rec .big.win{background:linear-gradient(180deg,#bfdbfe,#2563eb);-webkit-background-clip:text;
     background-clip:text;color:transparent}
-  .hero-sub{font-family:'Anton',Impact,sans-serif;font-size:15px;letter-spacing:.06em;
+  .hero-sub{font-family:var(--fd);font-size:15px;letter-spacing:.06em;
     text-transform:uppercase;margin-top:4px}
   .hero-note{color:var(--dim);font-size:13px;margin:7px 0 0}
   .stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px}
   .st{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:11px;padding:10px 8px;text-align:center}
-  .st .v{font-family:'Anton',Impact,sans-serif;font-size:22px;line-height:1.05}
-  .st .k{font-size:10px;color:var(--dim-2);font-family:'Anton',Impact,sans-serif;letter-spacing:.09em;
+  .st .v{font-family:var(--fd);font-size:22px;line-height:1.05}
+  .st .k{font-size:10px;color:var(--dim-2);font-family:var(--fn);letter-spacing:.09em;
     text-transform:uppercase;margin-top:3px}
 
   /* Regular season and playoffs, split out, so a 15-5 line adds up in your head. */
   .splits{display:flex;margin-top:16px;border-top:1px solid var(--line);padding-top:13px}
   .splits div{flex:1;padding:0 4px}
   .splits div+div{border-left:1px solid var(--line)}
-  .splits b{display:block;font-family:'Anton',Impact,sans-serif;font-size:19px;line-height:1;
+  .splits b{display:block;font-family:var(--fd);font-size:19px;line-height:1;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .splits span{display:block;font-family:'Anton',Impact,sans-serif;font-size:9px;letter-spacing:.1em;
+  .splits span{display:block;font-family:var(--fn);font-size:9px;letter-spacing:.1em;
     text-transform:uppercase;color:var(--dim-2);margin-top:4px}
 
   /* season stats */
@@ -397,7 +431,7 @@
   .stat4 .st .k{font-size:9px;letter-spacing:.06em}
   .squadline{margin-top:11px;padding-top:10px;border-top:1px solid var(--line);
     font-size:12px;color:var(--dim);display:flex;flex-wrap:wrap;gap:4px 12px}
-  .squadline b{font-family:'Anton',Impact,sans-serif;font-size:13.5px;color:var(--ink);
+  .squadline b{font-family:var(--fn);font-size:13.5px;color:var(--ink);
     letter-spacing:.02em;margin-right:4px}
 
   /* the lineup you built, on the results page */
@@ -406,7 +440,7 @@
   .rost{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:11px}
   .rrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;min-width:0;
     background:rgba(255,255,255,.03);border:1px solid var(--line)}
-  .rrow .tag{flex:0 0 40px;text-align:center;font-family:'Anton',Impact,sans-serif;font-size:9.5px;
+  .rrow .tag{flex:0 0 40px;text-align:center;font-family:var(--fn);font-size:9.5px;
     letter-spacing:.05em;color:#fff;padding:4px 0;border-radius:6px}
   .rrow .nm{flex:1;min-width:0}
   .rrow .nm b{display:block;font-size:13.5px;font-weight:800;white-space:nowrap;overflow:hidden;
@@ -414,12 +448,12 @@
   .rrow .nm span{display:block;font-size:11px;color:var(--dim-2);white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis;margin-top:1px}
   .rrow .num{flex:0 0 auto;text-align:right}
-  .rrow .num b{display:block;font-family:'Anton',Impact,sans-serif;font-size:15px;line-height:1.1}
+  .rrow .num b{display:block;font-family:var(--fn);font-size:15px;line-height:1.1}
   .rrow .num span{display:block;font-size:10.5px;color:var(--dim-2)}
 
   /* how close to perfect */
   .pgauge{display:flex;align-items:center;gap:14px;margin:4px 0 13px}
-  .pgauge .pv{font-family:'Anton',Impact,sans-serif;font-size:50px;line-height:.85;flex:0 0 auto}
+  .pgauge .pv{font-family:var(--fd);font-size:50px;line-height:.85;flex:0 0 auto}
   .pgauge .pr{flex:1;min-width:0}
   .pgauge .ptrack{height:9px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
   .pgauge .ptrack i{display:block;height:100%;border-radius:99px}
@@ -691,15 +725,28 @@ const TIER={
  * Two running backs sit either side of the quarterback and still behind him. A
  * third receiver moves inside as a slot man. A second tight end lines up on the
  * opposite side.
+ *
+ * A LONE back is offset rather than centered. Directly behind the quarterback his
+ * disc lands on top of the quarterback's own name and year: the vertical gap is
+ * 26% of a 180px field, about 47px, and a chip's label block runs 41px below its
+ * center. Offsetting him to where the first of a pair would stand removes the
+ * collision entirely and is a formation real teams line up in.
  */
 const SPOTS = {
   QB:   [{x:50,y:56}],
-  RB:   [[{x:50,y:82}], [{x:33,y:82},{x:67,y:82}]],
-  WR:   [[], [{x:50,y:24}], [{x:10,y:24},{x:90,y:24}], [{x:10,y:24},{x:90,y:24},{x:28,y:37}]],
-  TE:   [[], [{x:75,y:42}], [{x:75,y:42},{x:25,y:42}]],
-  FLEX: {x:25,y:42},
+  RB:   [[{x:34,y:82}], [{x:33,y:82},{x:67,y:82}]],
+  WR:   [[], [{x:50,y:24}], [{x:10,y:24},{x:90,y:24}], [{x:10,y:24},{x:90,y:24},{x:30,y:36}]],
+  /*
+   * The inside row sits at 70 and 30, not 75 and 25. A chip's name label is wider
+   * than the chip itself (78px against 62px) so long surnames fit, which left the
+   * outside receivers' labels lapping 2px onto the tight end and flex discs.
+   * Measured, not guessed: a sweep of 49 formations caught it every time. Ten px of
+   * clearance now, and the labels stay wide.
+   */
+  TE:   [[], [{x:70,y:42}], [{x:70,y:42},{x:30,y:42}]],
+  FLEX: {x:30,y:42},
 };
-const SPOT_FALLBACK=[{x:50,y:56},{x:50,y:82},{x:10,y:24},{x:90,y:24},{x:75,y:42},{x:25,y:42}];
+const SPOT_FALLBACK=[{x:50,y:56},{x:34,y:82},{x:10,y:24},{x:90,y:24},{x:70,y:42},{x:30,y:42}];
 
 /** Target coordinate for every slot index, given who is currently signed. */
 function layoutFor(){
@@ -938,12 +985,18 @@ function reelEase(t){
 function reel(el,faces,target,ms,done){
   if(el._raf) cancelAnimationFrame(el._raf);
   const box=el.parentElement;
-  const N=Math.max(12,Math.min(26,faces.length*3));   // how far it winds
+  /* When the pool leaves exactly one possible result there is nothing to wind
+     through, and filling the strip with copies of the answer read as a broken
+     render: three identical MIAMI DOLPHINS stacked in the window. The neighbors go
+     blank instead, which says "this was the only one" without lying about it. */
+  const only=new Set(faces).size<=1;
+  const N=only?2:Math.max(12,Math.min(26,faces.length*3));   // how far it winds
   const pick=()=>faces[Math.floor(Math.random()*faces.length)];
   const items=[];
   /* No two faces in a row may read the same, or the strip looks stuck rather than
      spinning, and a decoy sitting directly under the result reads as a glitch. */
   const nextFace=(avoid)=>{
+    if(only) return '';
     let f=pick();
     for(let g=0;g<12&&faces.length>1&&(f===items[items.length-1]||f===avoid);g++) f=pick();
     return f;
@@ -984,9 +1037,13 @@ function spinBoth(draw,done){
   tEl.style.filter='none';
   tEl.style.transform='translate3d(0,'+(-REEL_H)+'px,0)';
   tEl.innerHTML=['','?',''].map(t=>'<div class="reel-i">'+t+'</div>').join('');
-  reel(yEl,draw.yearOptions.map(String),String(draw.season),1150,()=>{
+  // A wheel with one option gets a short spin, since there is nothing to see.
+  const dur=(faces)=>new Set(faces).size<=1?520:null;
+  const years=draw.yearOptions.map(String);
+  reel(yEl,years,String(draw.season),dur(years)??1150,()=>{
     // A beat between the two, or they read as one long spin.
-    setTimeout(()=>reel(tEl,draw.teamOptions,draw.teamName,1250,done),260);
+    setTimeout(()=>reel(tEl,draw.teamOptions,draw.teamName,
+      dur(draw.teamOptions)??1250,done),260);
   });
 }
 
@@ -1000,24 +1057,43 @@ function nextSpin(){
 
 let activeTab=null;
 
-/* Rows are grouped by the spot they would fill, but a spot is only listed ONCE
-   even though there are two WR slots. The old build printed an identical "WR SPOT"
-   group twice, which just looked broken.
+/* TABS ARE THE FOUR POSITIONS. Nothing else.
 
-   Players you cannot sign stay on the board rather than vanishing from it, in
-   true points order, so a team's best player is visibly out of reach instead of
-   looking like a hole in the data. The ones whose position has no open spot left
-   have no tab to live under, so they collect in a locked group at the end. */
-const LOCKED='LOCKED';
+   There used to be a FLEX tab and a LOCKED tab as well. Both were bookkeeping
+   leaking into the UI: FLEX is a spot on the roster, not a position a player
+   plays, and LOCKED was a bin for players who no longer fit anywhere. Four tabs
+   now, QB RB WR TE, and every player sits under the position he actually played.
+
+   FLEX did not disappear as a mechanic. Signing an RB when the RB spot is taken
+   but FLEX is open still puts him at FLEX, and the tile says so, so the RB tab
+   stays live as long as either spot is open.
+
+   Within a tab, signable players come first best-first, then the ones you cannot
+   have, grayed at the bottom with the reason. A position with nowhere left to go
+   keeps its tab, grayed and pushed to the right end of the row. */
+const POSITIONS=['QB','RB','WR','TE'];
+
+/** Can a player of this position go anywhere on the roster right now? */
+function positionOpen(pos){
+  return R.openSlotNames(run).some(s=>E.SLOT_ELIGIBILITY[s].includes(pos));
+}
+
+/** Which spot a signing would fill, named, so a tile can say "goes to FLEX". */
+function destination(p){
+  const slot=R.slotForPlayer(run,p);
+  return slot===null?null:E.SLOTS[slot];
+}
+
 function optionGroups(draw){
-  const groups=new Map();
-  for(const s of R.openSlotNames(run)) if(!groups.has(s)) groups.set(s,[]);
+  const groups=new Map(POSITIONS.map(p=>[p,[]]));
   for(const row of draw.board){
     const p=BYKEY.get(row.key);
-    const slot=R.slotForPlayer(run,p);
-    const name=slot===null?LOCKED:E.SLOTS[slot];
-    if(!groups.has(name)) groups.set(name,[]);
-    groups.get(name).push({p,block:row.block});
+    if(!groups.has(p.position)) groups.set(p.position,[]);
+    groups.get(p.position).push({p,block:row.block});
+  }
+  // Signable first, then blocked, each half still best-first.
+  for(const rows of groups.values()){
+    rows.sort((a,b)=>(a.block?1:0)-(b.block?1:0)||b.p.ppr_ppg_mean-a.p.ppr_ppg_mean);
   }
   for(const [k,v] of [...groups]) if(!v.length) groups.delete(k);
   return groups;
@@ -1037,72 +1113,81 @@ function blockNote(p,block){
   return {text:'You have '+M(Math.max(0,R.remaining(run)-R.reserveFloor(run)))+' left to spend',cls:'why money'};
 }
 
-const stagger=(i)=>Math.min(220,(i||0)*32);
+const stagger=(i)=>Math.min(220,(i||0)*28);
 
-function lockedRow(p,block,i){
-  const note=blockNote(p,block);
-  return '<div class="opt off" style="animation-delay:'+stagger(i)+'ms">'+
-    '<span class="badge" style="background:linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.4))">'+p.position+'</span>'+
-    '<span class="who"><b>'+esc(p.name)+'</b>'+
-      '<span><span class="fppg">'+p.fppg.toFixed(1)+' FPPG</span>'+
-        (p.stat_line?'<span class="sep">&middot;</span>'+esc(p.stat_line):'')+'</span>'+
-      '<span class="'+note.cls+'">'+esc(note.text)+'</span></span>'+
-    '<span class="cost"><b>'+M(p.price_musd)+'</b></span></div>';
-}
+/* One player, one tile. A two-column grid rather than full-width rows: the price
+   and the points get their own corner instead of competing with the name for one
+   line, and twice as many players are on screen at once. */
+function optTile(row){
+  const p=row.p, i=row.i;
+  const tint='var('+COL[p.position]+')';
+  const head='<span class="pos" style="background:linear-gradient(150deg,'+tint+',rgba(0,0,0,.5))">'+
+    p.position+'</span><span class="pr">'+M(p.price_musd)+'</span>';
+  const who='<span class="nm">'+esc(p.name)+'</span>'+
+    '<span class="sn">'+p.season+' '+esc(E.nickname(p.franchise))+'</span>';
+  const pts='<span class="pts"><b>'+p.fppg.toFixed(1)+'</b><i>FPPG</i></span>';
 
-function optRow(row){
-  const p=row.p;
-  if(row.block) return lockedRow(p,row.block,row.i);
+  if(row.block){
+    const note=blockNote(p,row.block);
+    return '<div class="tile off" style="animation-delay:'+stagger(i)+'ms">'+
+      '<span class="th">'+head+'</span>'+who+
+      '<span class="tf">'+pts+'<span class="'+note.cls+'">'+esc(note.text)+'</span></span></div>';
+  }
+
   const pv=R.previewSigning(run,p,CTX), g=pv.delta;
   const top=pv.newLinks[0];
   const tier=top?E.linkTier(top.value):null;
-  const tag=g>0.0005&&top
-    ? '<span class="chemtag" style="background:'+TIER[tier].color+'22;color:'+TIER[tier].color+'">'+
-      pc(g)+' '+esc(top.short||top.label)+'</span>'
-    : (g<-0.0005&&top?'<span class="chemtag" style="background:rgba(239,68,68,.14);color:#fca5a5">'+
-      pc(g)+' '+esc(top.short||top.label)+'</span>':'');
-  const badges=(p.badges||[]).map(t=>{
-    const cls=/^Led the NFL/.test(t)?'bdg led':(/^\d/.test(t)?'bdg':'bdg mile');
-    return '<span class="'+cls+'">'+esc(t)+'</span>';
-  }).join('');
-  return '<button class="opt'+(g>0.0005?' hot':'')+'" style="animation-delay:'+stagger(row.i)+'ms" '+
+  const tag=Math.abs(g)>0.0005&&top
+    ? '<span class="chemtag" style="'+(g>0
+        ? 'background:'+TIER[tier].color+'22;color:'+TIER[tier].color
+        : 'background:rgba(239,68,68,.14);color:#fca5a5')+'">'+pc(g)+' '+esc(top.short||top.label)+'</span>'
+    : '';
+  const badge=(p.badges||[])[0];
+  const bcls=badge?(/^Led the NFL/.test(badge)?'bdg led':(/^\d/.test(badge)?'bdg':'bdg mile')):'';
+  // Where this signing actually lands. Worth saying when it is not his own spot,
+  // since that is the information the FLEX tab used to carry.
+  const dest=destination(p);
+  const flex=dest&&dest!=='FLEX'?'':'<span class="dest">Goes to flex</span>';
+  return '<button class="tile'+(g>0.0005?' hot':'')+'" style="animation-delay:'+stagger(i)+'ms" '+
     'data-k="'+p.player_id+'|'+p.season+'">'+
-    '<span class="badge" style="background:linear-gradient(160deg,var('+COL[p.position]+'),rgba(0,0,0,.4))">'+p.position+'</span>'+
-    '<span class="who"><b>'+esc(p.name)+'</b>'+
-      '<span><span class="fppg">'+p.fppg.toFixed(1)+' FPPG</span>'+
-        (p.stat_line?'<span class="sep">&middot;</span>'+esc(p.stat_line):'')+'</span>'+
-      (badges?'<span class="badges">'+badges+'</span>':'')+tag+'</span>'+
-    '<span class="cost"><b>'+M(p.price_musd)+'</b></span></button>';
+    '<span class="th">'+head+'</span>'+who+
+    (p.stat_line?'<span class="line">'+esc(p.stat_line)+'</span>':'')+
+    (badge?'<span class="'+bcls+'">'+esc(badge)+'</span>':'')+
+    '<span class="tf">'+pts+tag+'</span>'+flex+'</button>';
 }
 
 function paintOpts(draw){
   const groups=optionGroups(draw);
-  const names=[...groups.keys()];
-  /* A new board opens on a tab you can sign from rather than the locked pile,
-     but once you pick a tab it stays picked. Testing the first version of this
-     showed the locked tab bouncing straight back to WR, because the guard also
-     fired on the repaint that a tab click triggers. */
+  /* Positions you can still fill stay in football order, the ones that are done
+     drop to the right end of the row and gray out. They are kept rather than
+     removed so the row does not reshuffle under your thumb between spins. */
+  const names=[...groups.keys()]
+    .sort((a,b)=>(positionOpen(a)?0:1)-(positionOpen(b)?0:1)
+      ||POSITIONS.indexOf(a)-POSITIONS.indexOf(b));
+  /* A new board opens on a tab you can sign from, but once you pick a tab it
+     stays picked. The first version of this guard also fired on the repaint that
+     a tab click triggers, so a full tab bounced straight back to another one. */
   if(!names.includes(activeTab))
     activeTab=names.find(n=>signable(groups.get(n)))||names[0];
   $('tabs').innerHTML=names.map(n=>{
-    const col=n===LOCKED?'--dim':COL[n];
-    const on=n===activeTab;
-    const rows=groups.get(n);
-    // The count is what you can sign, since that is the size of the decision.
-    const n_=n===LOCKED?rows.length:signable(rows);
-    return '<button class="tab'+(on?' on':'')+'" data-t="'+n+'"'+
-      (on&&n!==LOCKED?' style="background:linear-gradient(135deg,var('+col+'),rgba(0,0,0,.45));"':'')+'>'+
-      n+'<span class="n">'+n_+'</span></button>';
+    const on=n===activeTab, open=positionOpen(n);
+    const count=open?signable(groups.get(n)):groups.get(n).length;
+    return '<button class="tab'+(on?' on':'')+(open?'':' full')+'" data-t="'+n+'"'+
+      (on&&open?' style="background:linear-gradient(135deg,var('+COL[n]+'),rgba(0,0,0,.45));"':'')+'>'+
+      n+'<span class="n">'+count+'</span></button>';
   }).join('');
-  $('opts').innerHTML=(groups.get(activeTab)||[]).map((r,i)=>optRow({...r,i})).join('');
-  // Highlight the spot this tab fills, so the tab and the field agree.
-  const si=E.SLOTS.indexOf(activeTab);
+  $('opts').innerHTML=(groups.get(activeTab)||[]).map((r,i)=>optTile({...r,i})).join('');
+  /* Light up the spot this tab would fill, so the tab and the field agree. The
+     tab is a POSITION now, so the spot is wherever a player of it would land,
+     which may be FLEX. */
+  const proto=(groups.get(activeTab)||[]).find(r=>!r.block);
+  const targetIdx=proto?R.slotForPlayer(run,proto.p):null;
   document.querySelectorAll('#field .chip').forEach(c=>{
-    c.classList.toggle('sel', !run.slotIndex.includes(+c.dataset.i) && E.SLOTS[+c.dataset.i]===activeTab);
+    // The exact spot, not every spot with that name: there are two WR chips.
+    c.classList.toggle('sel', +c.dataset.i===targetIdx);
   });
 
   paintRespins();
-  void si;
 }
 
 /* One button per wheel. Both cost the same, so the choice is about what you want
@@ -1142,7 +1227,7 @@ $('tabs').addEventListener('click',e=>{
 });
 
 $('opts').addEventListener('click',e=>{
-  const b=e.target.closest('.opt'); if(!b||b.classList.contains('off'))return;
+  const b=e.target.closest('.tile'); if(!b||b.classList.contains('off'))return;
   const p=BYKEY.get(b.dataset.k);
   try{R.sign(run,p);}catch(err){toast(err.message);return;}
   if(run.phase===R.PHASES.SEASON)paintSquad(); else nextSpin();

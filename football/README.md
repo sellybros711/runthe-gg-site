@@ -214,16 +214,57 @@ records a real team would post.
 ## The draft screen
 
 Your team never leaves the screen. The money bar and a condensed field are one
-sticky block at the top, so the field stays visible while you scroll the player
-list. Below that: the two wheels, then a tab per open spot, then the players.
+sticky block at the top, so the field stays visible while you scroll the players.
+Below that: the two wheels, four position tabs, then the players as tiles.
 
-Tabs are colored by position, and each spot appears **once** with a count, even
-though there are two WR slots. An earlier build printed an identical "WR SPOT"
-group twice, which just read as a bug. Selecting a tab also outlines the matching
-empty spot on the field, so the two always agree.
+### Four tabs, and nothing else
+
+QB, RB, WR, TE. There used to be a FLEX tab and a LOCKED tab too, and both were
+bookkeeping leaking into the UI: FLEX is a spot on the roster, not a position
+anybody plays, and LOCKED was a bin for players who no longer fit anywhere.
+
+Every player now sits under the position he actually played. FLEX survives as a
+mechanic, not as a tab: signing a running back when the RB spot is taken but FLEX
+is open still puts him at FLEX, the tile says "goes to flex", and the RB tab stays
+live as long as either spot is open. Selecting a tab outlines the exact spot a
+signing would fill, which is one chip and not both WRs.
+
+Inside a tab, signable players come first best-first, then the ones you cannot
+have, grayed at the bottom with the reason. A position with nowhere left to put
+anybody keeps its tab, grays out, and drops to the right end of the row. It is
+kept rather than removed so the row does not reshuffle under your thumb between
+spins.
+
+### Tiles, not rows
+
+Two to a row. Full-width rows had the name, the season, the stat line, the points
+and the price all competing for one line, which is why nearly everything was
+truncated with an ellipsis. A tile gives each of them a place: position and price
+across the top, name at 19px, season and team, the stat line clamped to two lines,
+then points, an award badge and the chemistry tag along the bottom. Names clamp to
+two lines so one long name cannot make its tile taller than its neighbor and break
+the grid.
 
 Position colors: QB red, RB green, WR blue, TE orange, FLEX purple. Wins are
 green, losses red.
+
+## Type
+
+| Variable | Face | Used for |
+|---|---|---|
+| `--fd` | Big Shoulders Display | Headlines, records, player names, the reels |
+| `--fn` | Oswald | Prices, points, tabs, position chips, small labels |
+| `--fb` | Chivo | Reading text |
+
+Anton and Archivo were the default free pairing you see on every side project,
+which is exactly why they read as generic. Everything goes through the three
+variables above, so this is one place to change rather than 47.
+
+The split between `--fd` and `--fn` is not decorative. Big Shoulders is extremely
+narrow: excellent at 19px and above, muddy below about 15px, which is where every
+price and points figure lives. Oswald is condensed too but has proper numerals and
+a lower x-height, so it stays legible small. Fallbacks stay in all three stacks so
+a blocked font request degrades instead of reflowing into something else.
 
 ## The field
 
@@ -238,6 +279,19 @@ receiver would:
 - An empty spot still holds the shape its own position implies, so the formation
   never looks lopsided mid-draft.
 
+Two coordinates are the way they are because of label geometry, not aesthetics. A
+**lone** back is offset rather than centered behind the quarterback: dead center,
+his disc lands on top of the quarterback's own name and year, because the gap is
+26% of a 180px field, about 47px, while a chip's label block runs 41px below its
+center. And the inside row sits at 70 and 30 rather than 75 and 25, because a name
+label is wider than its chip (78px against 62px, so long surnames fit) which left
+the outside receivers' labels lapping 2px onto the tight end and flex discs.
+
+Both were found by measurement, not by looking: a browser sweep walks 49 formations
+across 7 different draft orders and asserts that no chip label overlaps another
+chip's disc or label. It caught both, and it is the check to re-run after touching
+any of these numbers.
+
 Chips and lines are built once and then **moved**, never rebuilt, so a signing
 visibly slides the formation into its new shape. Both run off one animation loop
 rather than a CSS transition, because SVG line endpoints are attributes and cannot
@@ -245,14 +299,19 @@ be transitioned in CSS; sharing a clock keeps the lines attached to the chips wh
 everything is in motion. A field's first paint snaps into place, since there is
 nothing to move from.
 
-## Player rows
-
-Each row leads with fantasy points per game, then the real season line, on one
-line:
+## Player tiles
 
 ```
-Dez Bryant      18.7 FPPG . 90 rec, 1,371 yds, 12 TD      $34.0M
-                [3rd in receiving TDs]
+┌──────────────────────┐
+│ [WR]          $34.0M │
+│ Dez Bryant           │
+│ 2012 Cowboys         │
+│ 90 rec, 1,371 yds,   │
+│ 12 TD                │
+│ [3rd in receiving TDs]│
+│ 18.7 FPPG            │
+│ [+2.0% Both Cowboys] │
+└──────────────────────┘
 ```
 
 Badges are **derived from that season's real numbers**, never from award ballots.
