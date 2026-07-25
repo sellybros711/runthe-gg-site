@@ -142,6 +142,97 @@ function respinFees(used) {
   return total;
 }
 
+/* ─── how a final score got that way ────────────────────────────────────────── */
+
+/*
+ * A broadcast needs a story, but the result is already decided: resolveGame settles
+ * who won and toFootballScore turns that into a real-looking scoreline. So the job
+ * here is the reverse of a simulation. Given 24-20, invent a legal and watchable
+ * way to arrive at exactly 24-20, and never at 24-21.
+ *
+ * Increments are the ones football actually produces. 1 is the famous impossible
+ * score, so a decomposition may never leave a remainder of 1.
+ */
+const SCORE_KINDS = [
+  { points: 7, kind: 'TOUCHDOWN', weight: 58 },
+  { points: 3, kind: 'FIELD GOAL', weight: 28 },
+  { points: 6, kind: 'TOUCHDOWN', weight: 7, note: 'missed the kick' },
+  { points: 8, kind: 'TOUCHDOWN', weight: 5, note: 'two-point try' },
+  { points: 2, kind: 'SAFETY', weight: 2 },
+];
+
+/** Split a final total into the scores that made it up. */
+function scoreParts(total, rng) {
+  const out = [];
+  let left = Math.max(0, Math.round(total));
+  // 1 cannot be scored and cannot be left over. The display transform already
+  // rules it out, and this is the second lock on the same door.
+  if (left === 1) left = 2;
+  let guard = 0;
+  while (left > 0 && guard++ < 40) {
+    const legal = SCORE_KINDS.filter((k) => k.points <= left && left - k.points !== 1);
+    if (!legal.length) { out.push({ ...SCORE_KINDS[0], points: left, kind: 'TOUCHDOWN' }); break; }
+    const sum = legal.reduce((t, k) => t + k.weight, 0);
+    let r = rng() * sum;
+    let pick = legal[legal.length - 1];
+    for (const k of legal) { r -= k.weight; if (r <= 0) { pick = k; break; } }
+    out.push(pick);
+    left -= pick.points;
+  }
+  return out;
+}
+
+/**
+ * A quarter-by-quarter scoring script that ends on exactly `you` to `them`.
+ *
+ * The drama is placed, not simulated. A game decided by a single score puts the
+ * winner's last points inside the closing minutes, because that is the game a
+ * broadcast would have shown you, and a blowout spreads its scores earlier.
+ */
+function scoringScript(you, them, rng) {
+  const QUARTERS = 4, QUARTER_SECONDS = 15 * 60;
+  const mine = scoreParts(you, rng).map((k) => ({ ...k, team: 'you' }));
+  const theirs = scoreParts(them, rng).map((k) => ({ ...k, team: 'them' }));
+  const all = mine.concat(theirs);
+
+  const margin = Math.abs(you - them);
+  const winner = you >= them ? 'you' : 'them';
+  // The score that settled a close game belongs at the end of it.
+  const clincher = margin > 0 && margin <= 8
+    ? all.filter((e) => e.team === winner).pop() : null;
+
+  const rest = all.filter((e) => e !== clincher);
+  /*
+   * Spread the rest over the four quarters. Slightly back-loaded, because a game
+   * with all its points in the first half is not one anybody would sit through.
+   */
+  const WEIGHT = [0.22, 0.26, 0.24, 0.28];
+  const placed = rest.map((e) => {
+    let r = rng(), q = 0;
+    for (let i = 0; i < QUARTERS; i++) { r -= WEIGHT[i]; if (r <= 0) { q = i; break; } q = i; }
+    return { ...e, q, sec: Math.floor(rng() * QUARTER_SECONDS) };
+  });
+  if (clincher) {
+    // Inside the last eight minutes, and never at 0:00, which reads as a typo.
+    placed.push({ ...clincher, q: 3, sec: 15 + Math.floor(rng() * (8 * 60 - 15)) });
+  }
+
+  // Clock counts down, so later in a quarter means FEWER seconds left.
+  placed.sort((a, b) => a.q - b.q || b.sec - a.sec);
+
+  let ry = 0, rt = 0;
+  return placed.map((e) => {
+    if (e.team === 'you') ry += e.points; else rt += e.points;
+    return {
+      q: e.q + 1,
+      sec: e.sec,
+      clock: Math.floor(e.sec / 60) + ':' + String(e.sec % 60).padStart(2, '0'),
+      team: e.team, kind: e.kind, note: e.note || null, points: e.points,
+      you: ry, them: rt,
+    };
+  });
+}
+
 /** Round names, counting back from the final. */
 const PLAYOFF_ROUND_NAMES = ['Wild Card', 'Divisional', 'Conference Championship', 'Super Bowl'];
 
@@ -997,7 +1088,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 9;
+const ENGINE_API_VERSION = 10;
 
 const publicAPI = {
   API_VERSION: ENGINE_API_VERSION,
@@ -1007,7 +1098,7 @@ const publicAPI = {
   buildDivisionMap, opponentFranchises, generateSchedule, generatePlayoffs,
   resolveGame, playRun, prepareData, toFootballScore,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
-  respinCost, respinFees,
+  respinCost, respinFees, scoringScript, scoreParts, SCORE_KINDS,
   NICKNAMES, nickname, TEAM_COLORS, teamColors, contrast, LINK_TIERS, linkTier, rosterStructure, STRUCTURE, coachReport,
 };
 

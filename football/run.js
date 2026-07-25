@@ -885,7 +885,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 9;
+const RUN_API_VERSION = 10;
 
 const api = {
   API_VERSION: RUN_API_VERSION,

@@ -440,6 +440,62 @@
   .g .sc{flex:0 0 58px;text-align:right;font-family:var(--fn);font-size:14px;white-space:nowrap}
   .g.po{background:linear-gradient(90deg,rgba(168,85,247,.20),var(--panel))}
 
+  /* THE SCORE BUG
+     Laid out like the strip a broadcast keeps in the corner: a color bar and code
+     per team, the score hard right of each, then the quarter and clock in their own
+     cell. The leader is bright and the trailer sits back, which is how you read one
+     of these at a glance without reading the numbers. */
+  .bug{display:flex;align-items:stretch;border-radius:11px;overflow:hidden;
+    background:#080d17;border:1px solid var(--line-2);
+    box-shadow:0 14px 30px -16px #000,inset 0 1px 0 rgba(255,255,255,.05)}
+  .bug .bt{display:flex;align-items:center;gap:9px;padding:11px 12px;flex:1 1 0;min-width:0;
+    transition:background .2s ease}
+  .bug .bt+.bt{border-left:1px solid var(--line)}
+  .bug .bt i{flex:0 0 5px;align-self:stretch;border-radius:3px;background:var(--tcol,#475569)}
+  .bug .bt .ab{font-family:var(--fn);font-size:15px;font-weight:600;letter-spacing:.07em;
+    color:var(--dim);white-space:nowrap}
+  .bug .bt .sc{margin-left:auto;font-family:var(--fn);font-size:24px;font-weight:600;
+    line-height:1;color:var(--dim);font-variant-numeric:tabular-nums}
+  .bug .bt.lead .ab,.bug .bt.lead .sc{color:#fff}
+  .bug .bt.lead{background:rgba(255,255,255,.05)}
+  /* The number itself kicks when it changes, so a score never just appears. */
+  .bug .bt.scored .sc{animation:scorepop .5s cubic-bezier(.2,1.5,.35,1)}
+  @keyframes scorepop{0%{transform:scale(1)}35%{transform:scale(1.42)}100%{transform:scale(1)}}
+  .bug .bt.scored{background:rgba(255,255,255,.12)}
+  .bug .bc{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2px;padding:7px 13px;background:#0d1524;border-left:1px solid var(--line-2);min-width:74px}
+  .bug .bc .q{font-family:var(--fn);font-size:10px;font-weight:600;letter-spacing:.12em;
+    color:var(--dim-2)}
+  .bug .bc .ck{font-family:var(--fn);font-size:19px;font-weight:600;line-height:1;
+    font-variant-numeric:tabular-nums}
+  /* Under two minutes, the clock itself says so. */
+  .bug.urgent .bc{background:#2a0d12}
+  .bug.urgent .bc .ck{color:#fca5a5}
+  .bug.final .bc .ck{font-size:15px;letter-spacing:.1em}
+
+  /* The call: what just happened, once, then it fades back. */
+  .pocap{min-height:56px;margin-top:13px;display:flex;align-items:center;justify-content:center}
+  .pocap .call{text-align:center;padding:9px 15px;border-radius:11px;
+    background:var(--grad-panel);border:1px solid var(--line-2);
+    animation:callin .34s cubic-bezier(.2,1.4,.4,1) both}
+  .pocap .call b{display:block;font-family:var(--fd);font-size:26px;font-weight:900;
+    letter-spacing:.03em;line-height:1}
+  .pocap .call span{display:block;font-size:11.5px;color:var(--dim);margin-top:3px}
+  .pocap .call.you b{color:#4ade80} .pocap .call.them b{color:#fca5a5}
+  .pocap .call.big{border-color:rgba(251,191,36,.45)}
+  .pocap .call.big b{color:#fcd34d}
+  @keyframes callin{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
+
+  /* Every score, kept, so the game has a record you can read after it. */
+  .polog{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:6px}
+  .polog .pl{display:flex;align-items:center;gap:9px;min-width:0;font-size:12.5px;
+    padding:7px 10px;border-radius:9px;background:rgba(255,255,255,.03);
+    border:1px solid var(--line);animation:callin .3s ease-out both}
+  .polog .pl .t{flex:0 0 58px;font-family:var(--fn);font-size:11px;color:var(--dim-2)}
+  .polog .pl .w{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .polog .pl .n{flex:0 0 auto;font-family:var(--fn);font-size:13px;color:var(--dim)}
+  .polog .pl.you .w{color:#86efac} .polog .pl.them .w{color:#fca5a5}
+
   .bigrec{text-align:center;padding:6px 0 12px}
   .bigrec .r{font-family:var(--fd);font-size:62px;line-height:.95}
   .verdict{border-radius:16px;padding:22px 18px;text-align:center;border:1px solid var(--line);
@@ -697,6 +753,23 @@
     <div class="glist" id="v-list"></div>
   </div>
 
+  <!-- One playoff game, called like a broadcast. Separate from s-season because a
+       playoff game is watched and a regular-season week is skimmed. -->
+  <div class="screen" id="s-po">
+    <div class="eyebrow" id="po-round">Wild Card</div>
+    <h2 class="display" style="font-size:25px;margin:5px 0 14px" id="po-opp">Opponent</h2>
+
+    <div class="bug" id="po-bug">
+      <div class="bt you" id="po-you"><i></i><span class="ab">YOU</span><b class="sc">0</b></div>
+      <div class="bt them" id="po-them"><i></i><span class="ab">OPP</span><b class="sc">0</b></div>
+      <div class="bc"><span class="q" id="po-q">1ST</span><span class="ck num" id="po-ck">15:00</span></div>
+    </div>
+
+    <div class="pocap" id="po-cap"></div>
+    <div class="polog" id="po-log"></div>
+    <div style="margin-top:14px"><button class="btn ghost sm" id="b-po-fast">Skip to the final</button></div>
+  </div>
+
   <div class="screen" id="s-seed">
     <div class="bigrec"><div class="eyebrow">Final record</div><div class="r num" id="sd-rec">0-0</div></div>
     <div class="verdict" id="sd-card"><h2 id="sd-title">Playoffs</h2><p id="sd-sub"></p></div>
@@ -754,8 +827,8 @@
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=9"></script>
-<script src="run.js?v=9"></script>
+<script src="engine.js?v=10"></script>
+<script src="run.js?v=10"></script>
 <script>
 (function(){
 'use strict';
@@ -772,7 +845,7 @@ const $=(id)=>document.getElementById(id);
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=9;
+const NEED_VERSION=10;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -1582,7 +1655,8 @@ function startSeason(){
 }
 function runSim(){
   const step=()=>{
-    if(run.phase!==R.PHASES.SEASON&&run.phase!==R.PHASES.PLAYOFFS){after();return;}
+    // Regular season only. Playoff rounds are called on their own screen.
+    if(run.phase!==R.PHASES.SEASON){after();return;}
     const r=R.advanceWeek(run,DATA,LEAGUE,CAL);
     $('v-you').textContent=r.shownYou; $('v-them').textContent=r.shownThem;
     $('v-you').classList.toggle('down',!r.won); $('v-them').classList.toggle('down',r.won);
@@ -1600,7 +1674,7 @@ function fastForward(){
 }
 $('b-sim').onclick=()=>fastForward();
 function after(){
-  clearTimeout(simTimer);
+  clearTimeout(simTimer); clearTimeout(poTimer); cancelAnimationFrame(poRaf);
   if(run.phase===R.PHASES.SEEDING)paintSeed();
   else if(run.phase===R.PHASES.OVER)paintOver();
 }
@@ -1616,8 +1690,164 @@ function paintSeed(){
     : 'You are in. Four more wins takes the title.';
   show('s-seed');
 }
-$('b-po').onclick=()=>{R.startPlayoffs(run);paintNext();show('s-season');runSim();};
+/* ---------- playoff broadcast ----------
+   A playoff game is the one thing in the run worth watching rather than skimming,
+   so it gets called instead of flashed: a score bug with a running clock, and the
+   scores landing on it one at a time.
+
+   The result is settled before any of this runs. advanceWeek resolves the game and
+   E.scoringScript works backwards from the final to a legal way of reaching it, so
+   the broadcast can never contradict the outcome it is narrating.
+
+   Rounds get slower as they get bigger, which is the whole point: the Wild Card is
+   over in about twelve seconds and the Super Bowl takes twice that. */
+const PACE={
+  'Wild Card':               {quarterMs:1500, hold:620,  qbreak:220, half:420},
+  'Divisional':              {quarterMs:2000, hold:760,  qbreak:300, half:560},
+  'Conference Championship':  {quarterMs:2500, hold:900,  qbreak:380, half:700},
+  'Super Bowl':              {quarterMs:3100, hold:1080, qbreak:460, half:900},
+};
+const QNAME=['1ST','2ND','3RD','4TH'];
+const clockText=(sec)=>Math.floor(sec/60)+':'+String(Math.floor(sec%60)).padStart(2,'0');
+
+/* Flatten a script into segments of real time: run the clock down to the next
+   score, hold on it, repeat, then run out the quarter. */
+function buildTimeline(script,pace){
+  const segs=[];
+  for(let q=1;q<=4;q++){
+    let from=900;
+    for(const e of script.filter(x=>x.q===q)){
+      segs.push({kind:'run',q,from,to:e.sec,ms:Math.max(200,(from-e.sec)/900*pace.quarterMs)});
+      segs.push({kind:'score',q,e,ms:pace.hold});
+      from=e.sec;
+    }
+    segs.push({kind:'run',q,from,to:0,ms:Math.max(200,from/900*pace.quarterMs)});
+    if(q<4) segs.push({kind:'break',q,ms:q===2?pace.half:pace.qbreak});
+  }
+  return segs;
+}
+
+let poTimer=null, poRaf=0, poSkip=null;
+
+function playPlayoffGame(r,after){
+  const round=r.round||'Playoffs';
+  const opp=DATA.byTeamSeasonId[r.opponent_id];
+  const me=E.teamColors(run.franchise), them=E.teamColors(opp?opp.franchise:run.franchise);
+  const youEl=$('po-you'), themEl=$('po-them'), bug=$('po-bug');
+
+  $('po-round').textContent=round;
+  $('po-opp').textContent=r.opponent;
+  youEl.style.setProperty('--tcol',me.primary);
+  themEl.style.setProperty('--tcol',them.primary);
+  youEl.querySelector('.ab').textContent=run.franchise;
+  themEl.querySelector('.ab').textContent=opp?opp.franchise:'OPP';
+  youEl.querySelector('.sc').textContent='0';
+  themEl.querySelector('.sc').textContent='0';
+  youEl.className='bt you'; themEl.className='bt them';
+  bug.className='bug';
+  $('po-q').textContent=QNAME[0];
+  $('po-ck').textContent='15:00';
+  $('po-cap').innerHTML='';
+  $('po-log').innerHTML='';
+  show('s-po');
+
+  const pace=PACE[round]||PACE['Wild Card'];
+  const script=E.scoringScript(r.shownYou,r.shownThem,E.createSeededRNG(
+    E.hashSeed(run.seed+'|'+round+'|'+r.shownYou+'-'+r.shownThem)));
+  const segs=buildTimeline(script,pace);
+
+  const setLead=(y,t)=>{
+    youEl.classList.toggle('lead',y>=t);
+    themEl.classList.toggle('lead',t>y);
+  };
+  setLead(0,0);
+
+  const finish=()=>{
+    clearTimeout(poTimer); cancelAnimationFrame(poRaf); poSkip=null;
+    youEl.querySelector('.sc').textContent=r.shownYou;
+    themEl.querySelector('.sc').textContent=r.shownThem;
+    setLead(r.shownYou,r.shownThem);
+    bug.className='bug final';
+    $('po-q').textContent='FINAL';
+    $('po-ck').textContent=r.won?'YOU WIN':'YOU LOSE';
+    // Anything the clock never reached still belongs in the log.
+    $('po-log').innerHTML='';
+    script.forEach(e=>logScore(e));
+    $('po-cap').innerHTML='<div class="call '+(r.won?'you':'them')+
+      (r.won&&round==='Super Bowl'?' big':'')+'"><b>'+
+      (r.won?(round==='Super Bowl'?'CHAMPIONS':'YOU ADVANCE'):'SEASON OVER')+
+      '</b><span>'+esc(r.opponent)+' '+r.shownThem+', you '+r.shownYou+'</span></div>';
+    poTimer=setTimeout(after,round==='Super Bowl'?1900:1250);
+  };
+  poSkip=finish;
+
+  const logScore=(e)=>{
+    const who=e.team==='you'?run.franchise:(opp?opp.franchise:'OPP');
+    $('po-log').insertAdjacentHTML('afterbegin',
+      '<div class="pl '+e.team+'"><span class="t">Q'+e.q+' '+e.clock+'</span>'+
+      '<span class="w">'+esc(who)+' '+e.kind.toLowerCase()+
+      (e.note?', '+esc(e.note):'')+'</span>'+
+      '<span class="n">'+e.you+'-'+e.them+'</span></div>');
+  };
+
+  let i=0;
+  const next=()=>{
+    if(i>=segs.length){ finish(); return; }
+    const seg=segs[i++];
+    if(seg.kind==='run'){
+      /* Label AND clock together, synchronously. Setting the label here and leaving
+         the clock to the first animation frame left a frame showing "2ND 0:00", the
+         previous quarter's expired clock under the new quarter's name, which reads
+         as the clock running backward. Caught by a poll that happened to land in
+         that 16ms window. */
+      $('po-q').textContent=QNAME[seg.q-1];
+      $('po-ck').textContent=clockText(seg.from);
+      const t0=(window.performance||Date).now();
+      const step=()=>{
+        const k=Math.min(1,((window.performance||Date).now()-t0)/seg.ms);
+        const sec=seg.from+(seg.to-seg.from)*k;
+        $('po-ck').textContent=clockText(sec);
+        bug.classList.toggle('urgent',seg.q===4&&sec<=120);
+        if(k<1){ poRaf=requestAnimationFrame(step); return; }
+        next();
+      };
+      poRaf=requestAnimationFrame(step);
+      return;
+    }
+    if(seg.kind==='score'){
+      const e=seg.e;
+      const cell=e.team==='you'?youEl:themEl;
+      cell.querySelector('.sc').textContent=e.team==='you'?e.you:e.them;
+      setLead(e.you,e.them);
+      cell.classList.add('scored');
+      setTimeout(()=>cell.classList.remove('scored'),520);
+      $('po-cap').innerHTML='<div class="call '+e.team+'"><b>'+e.kind+'</b>'+
+        '<span>'+(e.team==='you'?'You':esc(r.opponent))+
+        (e.note?', '+esc(e.note):'')+'   '+e.you+'-'+e.them+'</span></div>';
+      logScore(e);
+      poTimer=setTimeout(next,seg.ms);
+      return;
+    }
+    // Quarter break: hold on 0:00 so the change of quarter registers.
+    poTimer=setTimeout(next,seg.ms);
+  };
+  next();
+}
+
+/* Play the rounds one at a time, each waiting for the last to finish. */
+function runPlayoffs(){
+  const step=()=>{
+    if(run.phase!==R.PHASES.PLAYOFFS){ after(); return; }
+    const r=R.advanceWeek(run,DATA,LEAGUE,CAL);
+    pushGame(r,$('v-list')); tally();
+    playPlayoffGame(r,step);
+  };
+  step();
+}
+
+$('b-po').onclick=()=>{R.startPlayoffs(run);runPlayoffs();};
 $('b-po-skip').onclick=()=>{R.startPlayoffs(run);show('s-season');fastForward();};
+$('b-po-fast').onclick=()=>{ if(poSkip) poSkip(); };
 
 /* ---------- result ----------
    Reads top to bottom as the answer to four questions in order: what was my
@@ -1950,7 +2180,8 @@ $('b-share').onclick=async()=>{
   }
 };
 $('b-again').onclick=()=>{
-  clearTimeout(simTimer); run=null; pickedTeam=null; lastChem=1;
+  clearTimeout(simTimer); clearTimeout(poTimer); cancelAnimationFrame(poRaf); poSkip=null;
+  run=null; pickedTeam=null; lastChem=1;
   document.querySelectorAll('.tm').forEach(x=>{x.classList.remove('on');x.removeAttribute('style');});
   $('b-draft').disabled=true; $('hdr').textContent='The Perfect Season';
   $('rivals').classList.remove('on'); $('rivals').innerHTML='';

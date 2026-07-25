@@ -718,6 +718,49 @@ The honest limit, stated in the UI rather than glossed over: it holds your six
 drawn **teams** fixed. It cannot know what the wheel would have shown after a
 different pick, because the wheel reacts to who you have already signed.
 
+## The playoff broadcast
+
+A playoff game is the one thing in a run worth watching rather than skimming, so it
+gets called instead of flashed. Its own screen, a score bug like the strip a
+broadcast keeps in the corner, and the scores landing on it one at a time:
+
+```
+| BUF  24 | LAC  14 | FINAL    |
+|         |         | YOU WIN  |
+```
+
+A color bar and code per club, the score hard right of each, quarter and clock in
+their own cell. The leader is bright and the trailer sits back, which is how you
+read one of these without reading the numbers. Inside two minutes of the fourth the
+clock cell goes red. Under it, the call for whatever just happened, and a running
+scoring summary that survives to the end of the game.
+
+**The result is settled before any of this runs.** `resolveGame` decides who won and
+`toFootballScore` turns that into a real-looking scoreline, so the broadcast's job is
+the reverse of a simulation: given 24-20, invent a legal and watchable way of
+arriving at exactly 24-20 and never at 24-21. That is `E.scoringScript`, and it works
+backwards from the final:
+
+- Totals decompose into the increments football actually produces, 7, 3, 6, 8 and 2,
+  weighted so touchdowns and field goals dominate. **1 is the one unscorable total,
+  so a decomposition may never leave a remainder of 1** either.
+- The drama is placed rather than simulated. A game decided by a single score puts
+  the winner's last points inside the closing eight minutes, because that is the
+  game a broadcast would have shown you. Everything else spreads over four quarters,
+  slightly back-loaded.
+- Verified exhaustively: every scoreline from 0-0 to 62-62 at three seeds, 34,596
+  scripts. Totals match exactly, every increment is legal, the clock never runs
+  backward, and 100% of one-score games put the deciding points late in the fourth.
+
+Rounds get slower as they get bigger, which is the point. Measured end to end: Wild
+Card 9.4s, Divisional 15.7s, and the Super Bowl around 24s. Every round has a skip.
+
+One bug worth remembering: the quarter label was set synchronously while the clock
+waited for the first animation frame, so for one frame the bug read `2ND 0:00`, the
+previous quarter's expired clock under the new quarter's name. A poll that happened
+to land in that 16ms window is what caught it, and the test still asserts the clock
+never rises inside a quarter.
+
 ## Sharing
 
 Two lines and a link:
