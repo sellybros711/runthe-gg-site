@@ -19,17 +19,19 @@
 <meta name="theme-color" content="#080b14">
 <link rel="canonical" href="https://runthe.gg/football/">
 <link rel="manifest" href="manifest.webmanifest">
-<!-- THE MARK, and why it is two different pictures.
-     The logo is a helmet built from four puzzle pieces with a facemask. Rendered on the
-     game's own background and measured at every size it gets used at, the whole mark reads
-     down to about 64px; at 44 the facemask goes to smudge and by 32 the lot is mush. So the
-     favicon is the FOUR PIECES ONLY, which still reads as an interlocking 2x2 at 32 and
-     keeps structure at 16, and the full mark is used everywhere there is room for it.
-     Same brand either way, since the pieces are the distinctive half. -->
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2">
-<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
-<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png?v=2">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2">
+<!-- THE MARK: ONE PICTURE, EVERYWHERE.
+     A helmet built from four puzzle pieces with a facemask, centred on a #111827 plate at
+     every size. 16 and 32 used to be the four pieces alone, on the argument that the facemask
+     goes to smudge that small, and the facemask was asked for everywhere instead.
+
+     The tradeoff is real and worth writing down rather than discovering later: a browser tab
+     draws the favicon at 1x, so at 16px the facemask is a handful of grey pixels and reads as
+     texture rather than as a helmet. At 32, which is what a retina tab actually uses, it
+     reads properly. What it buys is one mark instead of two. -->
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=3">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png?v=3">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3">
 <!-- THE SHARE CARD.
      Every finished run offers a share whose text ends in this page's URL, so this
      block is what a player's friends actually see. It had no og:image at all, which
@@ -206,18 +208,27 @@
     font-size:11px;color:var(--dim-2)}
   button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
 
+  /* BUTTONS ARE SET IN OSWALD, not the display face.
+     They were --fd, Big Shoulders Display, with no font-weight, which falls to 600, the
+     lightest weight the page loads. Rendered side by side at the real size against 800, 900
+     and Oswald at 600 and 700, the shipped button was plainly the thinnest of the five: a
+     tall narrow display face at its lightest weight, doing the job of UI text.
+
+     Oswald 700 is heavier and a touch wider while staying condensed, and it is the face the
+     type notes already reserve for exactly this, small text that has to hold up. Size drops
+     from 19 to 17 because Oswald has the taller x-height of the two. */
   .btn{display:block;width:100%;padding:16px 18px;border-radius:12px;background:var(--grad-red);
-    color:#fff;font-family:var(--fd);font-size:19px;text-transform:uppercase;
-    letter-spacing:.05em;text-align:center;box-shadow:var(--shadow);position:relative;overflow:hidden;
+    color:#fff;font-family:var(--fn);font-size:17px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.045em;text-align:center;box-shadow:var(--shadow);position:relative;overflow:hidden;
     transition:transform .07s ease,filter .15s ease}
   .btn:before{content:'';position:absolute;left:0;right:0;top:0;height:40%;
     background:linear-gradient(180deg,rgba(255,255,255,.22),transparent)}
   .btn:active{transform:translateY(1px) scale(.995);filter:brightness(1.08)}
   .btn:disabled{opacity:.4;cursor:default}
   .btn.blue{background:var(--grad-blue)}
-  .btn.ghost{background:transparent;box-shadow:none;border:1.5px solid var(--line-2);font-size:15px}
+  .btn.ghost{background:transparent;box-shadow:none;border:1.5px solid var(--line-2);font-size:14.5px}
   .btn.ghost:before{display:none}
-  .btn.sm{padding:11px 14px;font-size:14px;border-radius:10px}
+  .btn.sm{padding:11px 14px;font-size:13.5px;border-radius:10px}
   /* One re-spin button per wheel, priced the same, so the choice is about what
      you want to change rather than what is cheaper. */
   .respins{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -440,9 +451,22 @@
   .rcell.top10{border-color:rgba(59,130,246,.45);background:rgba(59,130,246,.08)}
   .rcell.top10 .rn{color:#93c5fd}
   .rcell.dead .rn{color:var(--dim-2);font-size:22px}
+  /* The guest prompt. Blue rather than red: it is an invitation, not a failure, and the red
+     boxes on this page all mean something went wrong. */
+  .guestgate{margin:11px 0 0;padding:12px 13px;border-radius:12px;
+    background:rgba(59,130,246,.09);border:1px solid rgba(59,130,246,.32)}
+  .guestgate b{display:block;font-family:var(--fn);font-size:14px;font-weight:600;
+    letter-spacing:.02em}
+  .guestgate span{display:block;margin:5px 0 10px;font-size:12.5px;line-height:1.45;
+    color:var(--dim)}
+  .guestgate .btn{background:var(--grad-blue)}
   .rankfoot{margin:10px 0 0;font-size:12.5px;color:var(--dim);line-height:1.45}
   .rankwho{margin:7px 0 0;font-size:11.5px;color:var(--dim-2);line-height:1.4}
   .rankpanel .btn.sm{margin-top:10px}
+  /* Results-page tab panes. display rather than visibility so a hidden pane costs no height,
+     which is the entire point of the change. */
+  .otab{display:none}
+  .otab.on{display:block;animation:in .2s ease both}
   /* Between the submit and the counts coming back. Nothing moves except the dots,
      so the panel does not change height when the numbers arrive. */
   .rload{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;
@@ -1141,6 +1165,9 @@
   .rost{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:11px}
   .rrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;min-width:0;
     background:rgba(255,255,255,.03);border:1px solid var(--line)}
+  /* The flex marker rides under the position rather than replacing it. */
+  .rrow .tag i{display:block;font-style:normal;font-size:7.5px;letter-spacing:.1em;
+    opacity:.72;margin-top:1px}
   .rrow .tag{color:#fff;flex:0 0 40px;text-align:center;font-family:var(--fn);font-size:9.5px;
     letter-spacing:.05em;color:#fff;padding:4px 0;border-radius:6px}
   .rrow .nm{flex:1;min-width:0}
@@ -1334,8 +1361,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     </div></div>
     <div class="sortbar">
       <div class="seg" id="lb-sort">
-        <button class="on" data-sort="record">Record</button>
-        <button data-sort="rating">Team rating</button>
+        <button class="on" data-sort="rating">Team rating</button>
+        <button data-sort="record">Record</button>
       </div>
       <button class="dirbtn" id="b-lb-dir" aria-label="Reverse the order">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M12 20l-6-6M12 20l6-6"/></svg>
@@ -1468,23 +1495,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="splits" id="o-splits"></div>
     </div>
 
-    <!-- 2. What the team actually did on the field. -->
+    <!-- 2. THE LINEUP, DIRECTLY UNDER THE RECORD.
+         It used to be the fourth panel of six, below the season stats and the rank windows,
+         which is a long way down from the number people came to look at. The six players ARE
+         the run: the record is what they did, and you want to see who did it next. -->
     <div class="panel" style="margin-top:12px">
-      <div class="eyebrow">Season stats</div>
-      <div class="stat4" id="o-stats"></div>
-      <div class="squadline" id="o-squadline"></div>
-    </div>
-
-    <!-- 3. Where the run stands against everyone else's. Filled in after the
-         season is submitted, and replaced with a plain offline notice if the
-         board cannot be reached. -->
-    <div class="panel rankpanel" id="o-rankpanel" style="margin-top:11px">
-      <div class="eyebrow">Where this run ranks</div>
-      <div id="o-ranks"></div>
-    </div>
-
-    <!-- 4. The squad you built. -->
-    <div class="panel" style="margin-top:11px">
       <div class="eyebrow">Your lineup</div>
       <div class="field short" id="field3"></div>
       <div class="rail" id="rail3"></div>
@@ -1492,25 +1507,51 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="rost" id="o-rost"></div>
     </div>
 
-    <!-- 5. How close it came to the best those same six teams allowed. -->
-    <div class="panel" style="margin-top:11px">
-      <div class="eyebrow">How close to perfect</div>
-      <div id="o-miss"></div>
+    <!-- 3. EVERYTHING ELSE, IN TABS.
+         Six stacked panels put the buttons that end the run about two and a half screens
+         below the fold, so the most common next action, playing again, was the hardest thing
+         on the page to find. One panel at a time, and the buttons come straight after. -->
+    <div class="tabwrap"><div class="tabs" id="o-tabs">
+      <button class="tab on" data-ot="ranks">Where it ranks</button>
+      <button class="tab" data-ot="stats">Season stats</button>
+      <button class="tab" data-ot="perfect">How close</button>
+      <button class="tab" data-ot="games">Schedule</button>
+    </div></div>
+
+    <div class="otab on" id="ot-ranks">
+      <div class="panel rankpanel" id="o-rankpanel" style="margin-top:11px">
+        <div class="eyebrow">Where this run ranks</div>
+        <div id="o-ranks"></div>
+      </div>
     </div>
 
-    <!-- 6. The schedule, last and shut. -->
-    <details class="drop" style="margin-top:11px">
-      <summary><span class="eyebrow">Schedule<span class="dim" id="o-gcount"></span></span>
-        <span class="caret">v</span></summary>
-      <div class="body"><div class="glist" id="o-list" style="max-height:none"></div></div>
-    </details>
+    <div class="otab" id="ot-stats">
+      <div class="panel" style="margin-top:11px">
+        <div class="eyebrow">Season stats</div>
+        <div class="stat4" id="o-stats"></div>
+        <div class="squadline" id="o-squadline"></div>
+      </div>
+    </div>
+
+    <div class="otab" id="ot-perfect">
+      <div class="panel" style="margin-top:11px">
+        <div class="eyebrow">How close to perfect</div>
+        <div id="o-miss"></div>
+      </div>
+    </div>
+
+    <div class="otab" id="ot-games">
+      <div class="panel" style="margin-top:11px">
+        <div class="eyebrow">Every game<span class="dim" id="o-gcount"></span></div>
+        <div class="glist" id="o-list" style="max-height:none;margin-top:8px"></div>
+      </div>
+    </div>
 
     <div style="margin-top:15px"><button class="btn" id="b-share">Share your season</button></div>
-    <!-- Straight back into a draft with the team you already picked. Its own line
-         because it is the thing most people want next, and going through the team
-         screen to pick the same team again is a tap that buys nothing. -->
-    <div style="margin-top:9px"><button class="btn ghost sm" id="b-same">Same team again</button></div>
-    <div class="hrow"><button class="btn ghost sm" id="b-again">Start over</button>
+    <!-- Straight into another draft. Its own line because it is what most people want next.
+         It was "Same team again" when there was a favourite team to keep. -->
+    <div style="margin-top:9px"><button class="btn blue" id="b-same">Draft again</button></div>
+    <div class="hrow"><button class="btn ghost sm" id="b-again">Back to the start</button>
       <button class="btn ghost sm" id="b-board2">Leaderboard</button></div>
   </div>
 </div>
@@ -2769,9 +2810,15 @@ function paintOver(){
   drawField($('field3'),false);
   const bySlot=new Array(E.SLOTS.length).fill(null);
   run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
+  /* ALWAYS QB, RB, WR, WR, TE, then the flex last, which is what walking E.SLOTS gives.
+     The flex row is labelled with the position the player actually plays rather than the word
+     FLEX, because "FLEX" tells you about the slot and you want to know about the player. Which
+     row was the flex is still visible: it is the sixth one, and it carries a small marker. */
   $('o-rost').innerHTML=E.SLOTS.map((slot,i)=>{
     const p=bySlot[i]; if(!p) return '';
-    return '<div class="rrow"><span class="tag" style="'+posPaint(slot)+'">'+slot+'</span>'+
+    const isFlex=slot==='FLEX';
+    return '<div class="rrow"><span class="tag" style="'+posPaint(p.position)+'">'+
+      esc(p.position)+(isFlex?'<i>flex</i>':'')+'</span>'+
       '<span class="nm"><b>'+esc(p.name)+'</b><span>'+p.season+' '+esc(E.nickname(p.franchise))+
         (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</span></span>'+
       '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
@@ -3374,7 +3421,13 @@ function authBoot(){
     /* Just signed in with a finished guest run on screen: take it over. The board
        stores no name for a guest row, so this is what puts one on the run you have
        just been looking at. */
-    if(!was&&st.signedIn&&submitted) claimThisRun();
+    /* Just signed in with a finished run on screen. A run played as a guest was never sent,
+       so it is submitted now; a run that WAS sent from an older build as a guest row still
+       gets claimed. */
+    if(!was&&st.signedIn){
+      if(submitted==='guest') submitAfterSignIn();
+      else if(submitted) claimThisRun();
+    }
     if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='profile')
       profileSheet();
   });
@@ -3591,12 +3644,33 @@ let lastPerfectShare=null;
 let submitted=null;      // the row id, or false once a submit has failed
 let myRanks=null;
 
+/* THE BOARD IS FOR SIGNED-IN PLAYERS.
+   Guest runs used to go on it as "Anonymous", which is a leaderboard nobody can be proud of
+   being on and nobody can be beaten on: a row with no owner cannot be defended, cannot be
+   claimed later if the browser is cleared, and cannot be told apart from another guest's.
+
+   A guest still plays the whole game and still sees where the run WOULD have placed, because
+   the rank query is a read and does not need an account. It just is not recorded until there
+   is somebody to record it against. */
 async function recordRun(){
   if(submitted!==null) return submitted;
+  if(!authState.signedIn){ submitted='guest'; return submitted; }
   const pay=runPayload();
   const id=await B.submit(pay);
   submitted=id===null?false:id;
   return submitted;
+}
+
+/* Signing in on the results screen submits the run that is on it. Before the board was gated
+   the equivalent step was claiming an already-submitted guest row; there is no row to claim
+   now, so the run is sent for the first time. */
+async function submitAfterSignIn(){
+  if(submitted!=='guest'||!run||!run.outcome) return;
+  submitted=null;
+  await recordRun();
+  if($('s-over').classList.contains('on')) paintRanks();
+  if($('s-board').classList.contains('on')) loadBoard();
+  if(submitted&&submitted!=='guest') toast('Your run is on the board');
 }
 
 /* For a daily run the first column is that day's puzzle rather than a clock window,
@@ -3642,6 +3716,26 @@ async function paintRanks(){
      threw a ReferenceError every time it was reached and the catch around paintRanks()
      quietly painted the generic "not reachable" line instead. The failure looked
      exactly like the one it was trying to explain. */
+  /* A guest sees exactly where the run placed and one sentence about why it is not on the
+     board, with the way to fix it next to it. Not a toast: this is the one moment the player
+     has a reason to care about an account, so it belongs in the panel they are already
+     reading. */
+  if(submitted==='guest'){
+    el.innerHTML='<p class="rankwho">'+(run.daily
+        ? "Where this would have placed among today's daily challenge."
+        : 'Where this would have placed among every free run.')+'</p>'+
+      '<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
+      '<div class="guestgate">'+
+        '<b>Sign in to get on the board</b>'+
+        '<span>The leaderboard only records runs with a name on them. Sign in and this run '+
+        'goes straight on, at the place shown above.</span>'+
+        '<button class="btn sm" id="b-gate-in">Sign in or create an account</button>'+
+      '</div>'+
+      '<button class="btn ghost sm" id="b-board3" style="margin-top:9px">See the leaderboard</button>';
+    $('b-gate-in').onclick=()=>profileSheet();
+    $('b-board3').onclick=openBoard;
+    return;
+  }
   if(submitted===false){
     el.innerHTML='<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
       '<p class="rankfoot">Those are the standings, but <b>this run was not recorded</b>, '+
@@ -3759,7 +3853,13 @@ function rankLine(r){
    the fastest way to see what the game does to a cheap roster. */
 /* lbWin is one of day / week / all / daily. "daily" is not a fourth time window: it
    selects the other competition, whose window is the puzzle's own date. */
-let lbWin='day', lbSort='record', lbDir='desc', lbShown=5, lbRows=null, lbBusy=false;
+/* TEAM RATING IS THE DEFAULT AXIS.
+   Record was, and record is the outcome rather than the achievement: a 14-6 off a soft
+   seventeen outranks a 13-7 that beat four all-time teams, and the schedule is randomized so
+   that gap is luck, not skill. Team rating is what the roster is worth with chemistry and
+   shape already in it, so it measures the six decisions the player actually made. Record is
+   still on every row, just under the rating rather than above it. */
+let lbWin='day', lbSort='rating', lbDir='desc', lbShown=5, lbRows=null, lbBusy=false;
 
 const lbIsDaily=()=>lbWin==='daily';
 /* What board.js should read for the tab that is showing.
@@ -3783,8 +3883,8 @@ const SORT_META={
   /* The right column always shows the quantity the board is sorted by, and with the
      name now taking the headline that is where the record has to live: it is what
      ranks you, so it cannot be small gray text in a subtitle. */
-  record:{label:'Record', of:(r)=>recordCell(r)},
   rating:{label:'Team rating', of:(r)=>ratingCell(r)},
+  record:{label:'Record', of:(r)=>recordCell(r)},
 };
 
 /* Coming off a run, open the board that run is actually on. Landing a daily player
@@ -4006,10 +4106,15 @@ function playerName(row,mine){
 }
 
 /* The line under the name: what the run did, then who was on it. */
+/* The line under the name. On the rating board the right column already carries the record,
+   so repeating it here would spend the row's only line of spare text on the same number
+   twice; the two best players on the roster are the more useful thing, since the board is
+   ranked on how good the roster was. */
 function rowSub(row){
-  const rec=row.wins+'-'+row.losses+' '+
-    (row.perfect?'perfect season':row.seed_label.toLowerCase());
   const who=rosterLine(row.picks);
+  const what=row.perfect?'perfect season':row.seed_label.toLowerCase();
+  if(lbSort==='rating') return who?who+' \u00b7 '+what:what;
+  const rec=row.wins+'-'+row.losses+' '+what;
   return who?rec+' \u00b7 '+who:rec;
 }
 
@@ -4031,11 +4136,20 @@ function recordCell(row){
 
 /* On the rating board the right column shows the rating, since sorting by a number
    the row does not print would be unreadable. */
+/* WHAT BELONGS ON A BOARD ROW, AND WHAT DOES NOT.
+   A row gets three things and no more: who, the rating that ranks them, and the record that
+   rating produced. Everything else about a run, the squad FPPG, the chemistry, the spend, the
+   team shape and how close it came to the best possible squad, is one tap away in the detail
+   sheet and was only ever readable there anyway: five numbers at 10px on the right of a 44px
+   row is a spreadsheet, not a leaderboard.
+
+   The record earns its place on the front because it is the one thing a player wants to
+   compare against their own besides the rating, and because a rating with no outcome beside
+   it reads as an abstraction. */
 function ratingCell(row){
   const r=row.team_rating===null?null:Number(row.team_rating);
-  return '<b>'+(r===null?'--':r.toFixed(1)+' rating')+'</b>'+
-    '<span>'+(row.perfect_pct===null?pc(Number(row.chemistry_pct)/100)+' chem'
-      :row.perfect_pct+'% of the best')+'</span>';
+  return '<b class="big'+(row.perfect?' gold':'')+'">'+(r===null?'--':r.toFixed(1))+'</b>'+
+    '<span>'+esc(row.wins+'-'+row.losses)+(row.perfect?' perfect':'')+'</span>';
 }
 
 /* The two best players on a board row, by the price the game put on them. Any id
@@ -4044,7 +4158,9 @@ function rosterLine(picks){
   if(!Array.isArray(picks)) return '';
   const men=picks.map(fromPickKey).filter(Boolean)
     .sort((a,b)=>b.price_musd-a.price_musd).slice(0,2);
-  if(!men.length) return picks.length+' players';
+  /* "0 players" is worse than saying nothing: it reads as a run with an empty roster rather
+     than as a row this browser cannot resolve names for. */
+  if(!men.length) return picks.length?picks.length+' players':'';
   return men.map(p=>lastName(p.name)+' '+p.season).join(', ');
 }
 
@@ -4083,6 +4199,16 @@ $('b-how').onclick=howToPlay;
 /* Wrapped, not passed. profileSheet(msg, ok) takes a message, and an onclick handler
    is handed the event as its first argument, so binding it directly would have
    rendered "[object PointerEvent]" in the error slot on every open. */
+/* The results page tabs. Delegated, so it survives every repaint, and the panes are shown by
+   display so a hidden one costs no page height. */
+$('o-tabs').addEventListener('click',(e)=>{
+  const b=e.target.closest('.tab'); if(!b) return;
+  const k=b.dataset.ot;
+  [...$('o-tabs').querySelectorAll('.tab')].forEach(t=>t.classList.toggle('on',t===b));
+  ['ranks','stats','perfect','games'].forEach(n=>
+    $('ot-'+n).classList.toggle('on',n===k));
+});
+
 $('b-profile').onclick=()=>profileSheet();
 $('b-board').onclick=openBoard;
 $('b-board2').onclick=openBoard;
