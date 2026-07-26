@@ -171,7 +171,12 @@ input:focus,select:focus{outline:none;border-color:var(--hand)}
 
 /* ── vote reveal, the one place the game slows down ─────────────────────── */
 .tallywrap{display:flex;gap:34px;justify-content:center;margin:22px 0 8px;flex-wrap:wrap}
-.tcol{text-align:center;min-width:120px}
+.tcol{text-align:center;min-width:132px}
+.tface{width:96px;height:96px;margin:0 auto 8px;border:2px solid var(--line);background:#000;
+  transition:border-color .3s}
+.tface svg{display:block;width:100%;height:100%}
+.tcol.out .tface{box-shadow:0 0 0 4px rgba(212,64,44,.18)}
+.tband{font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
 .tcol .who{font-family:var(--disp);font-size:17px;color:var(--paper);letter-spacing:.06em}
 .marks{font-family:var(--disp);font-size:30px;letter-spacing:.14em;color:var(--chalk);
   min-height:44px;line-height:1.3;word-break:break-all}
@@ -261,6 +266,80 @@ table.truth td.r{text-align:right;color:var(--dim)}
 .tl .a.mine{background:#1b1f23;border-left:2px solid var(--hand)}
 .tl .a i{font-style:normal;color:var(--dimmer);font-size:11px}
 
+/* ── the visual language, see ui.js ─────────────────────────────────────── */
+.ic{display:inline-block;vertical-align:-2px;flex:none}
+
+/* phase rail: where you are in the week and how far the vote is */
+.rail{display:flex;gap:2px;margin:10px 0 4px;overflow-x:auto;scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.rl{flex:1 1 0;min-width:38px;display:flex;flex-direction:column;gap:4px;align-items:center}
+.rl i{display:block;width:100%;height:3px;background:var(--line)}
+.rl b{font-family:var(--disp);font-weight:400;font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--dimmer);white-space:nowrap}
+.rl.done i{background:var(--dimmer)}
+.rl.done b{color:var(--dim)}
+.rl.now i{background:var(--hand);height:5px;margin-top:-1px}
+.rl.now b{color:var(--paper)}
+.railnote{color:var(--dim);font-size:11px;letter-spacing:.06em;margin-bottom:14px}
+
+/* relationship ladder: seven rungs, one lit */
+.ldr{display:inline-flex;gap:2px;align-items:flex-end;height:16px}
+.ldr i{display:block;width:5px;height:5px;background:#2b3138}
+.ldr i.on{height:16px;box-shadow:0 0 6px currentColor}
+
+.bbar{display:inline-block;height:4px;background:#1b1f24;vertical-align:middle}
+.bbar>span{display:block;height:100%}
+
+/* legend */
+.legend{border:1px solid var(--line);background:var(--panel);padding:10px 14px;margin-bottom:16px}
+.lgrow{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.lgrow+.lgrow{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.lg{display:inline-flex;align-items:center;gap:5px;font-size:10px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--dim)}
+.lg i{width:14px;height:8px;display:block}
+.dimrow .lg{color:var(--dimmer)}
+
+/* the wall, rebuilt around the colour language */
+.wall{gap:2px}
+.cell{border-left:4px solid transparent;padding-left:8px}
+.cell .top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.cell .marks{display:flex;gap:6px;align-items:center;color:var(--dim);flex-wrap:wrap;min-height:20px}
+.cell .marks .ic{opacity:.9}
+.m-cap{color:var(--paper)} .m-risk{color:var(--signal)} .m-veto{color:var(--ok)}
+.m-rat{color:#9a7f5a} .m-ally{color:var(--hand)} .m-seen{color:var(--dim)}
+.m-threat{color:#c8724f} .m-stale{color:var(--dimmer)} .m-power{color:var(--hand)}
+.cell .band{font-size:11px;letter-spacing:.04em}
+.cell .fresh{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--dimmer)}
+
+.sorts{display:flex;gap:0;margin-bottom:10px;border:1px solid var(--line);width:fit-content}
+.sorts button{padding:5px 12px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--dim);border-right:1px solid var(--line)}
+.sorts button:last-child{border-right:none}
+.sorts button.on{background:var(--panel2);color:var(--paper)}
+
+/* alliance map */
+.amap{width:100%;max-width:520px;display:block;margin:0 auto}
+.mapnote{color:var(--dim);font-size:11px;text-align:center;margin-top:8px}
+
+/* week strip */
+.strip{display:flex;gap:2px;margin-bottom:16px;background:var(--line);border:1px solid var(--line);
+  flex-wrap:wrap}
+.ws{flex:1 1 150px;background:var(--panel);padding:8px 12px;display:flex;flex-direction:column;gap:3px}
+.wsl{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--dimmer);
+  display:flex;align-items:center;gap:5px}
+.wsv{font-family:var(--disp);font-size:15px;letter-spacing:.04em;color:var(--paper)}
+.wsv.dim{color:var(--dimmer);font-size:13px}
+.ws.c-cap .wsl{color:var(--paper)} .ws.c-risk .wsl{color:var(--signal)}
+.ws.c-risk .wsv{color:var(--signal)} .ws.c-veto .wsl{color:var(--ok)}
+
+/* feed, colour coded by what kind of thing happened */
+.feed p{display:flex;gap:8px;align-items:flex-start}
+.feed p .ic{margin-top:2px;flex:none;opacity:.85}
+.feed p.ev-power{color:var(--hand)}
+.feed p.ev-vote{color:var(--paper)}
+.feed p.ev-bad{color:var(--signal)}
+.feed p.ev-good{color:var(--ok)}
+
 .hide{display:none !important}
 @media(max-width:720px){
   :root{--tile:104px}
@@ -285,13 +364,14 @@ table.truth td.r{text-align:right;color:var(--dim)}
 <script src="scenes.js"></script>
 <script src="run.js"></script>
 <script src="recap.js"></script>
+<script src="ui.js"></script>
 <script src="strings.js"></script>
 <script>
 (function(){
 'use strict';
 var RNG=window.RH_RNG, T=window.RH_TREE, G=window.RH_GEN, E=window.RH_ENGINE,
     C=window.RH_COMPS, R=window.RH_RUN, STR=window.RH_STRINGS,
-    PW=window.RH_POWERS, SC=window.RH_SCENES, RC=window.RH_RECAP;
+    PW=window.RH_POWERS, SC=window.RH_SCENES, RC=window.RH_RECAP, U=window.RH_UI;
 
 var app=document.getElementById('app');
 var bar=document.getElementById('bar');
@@ -351,11 +431,15 @@ function avatar(p,size){
 
 // ── feed ───────────────────────────────────────────────────────────────────
 var feedLines=[];
-function say(text,cls){ if(!text) return; feedLines.push({t:text,c:cls||''}); if(feedLines.length>90) feedLines.shift(); }
+/* A line in the feed can carry a drawn mark. Sixteen weeks of undifferentiated
+   grey paragraphs was the single hardest thing in this interface to skim: the
+   eviction and the small talk looked identical. */
+function say(text,cls,ic){ if(!text) return; feedLines.push({t:text,c:cls||'',i:ic||null});
+  if(feedLines.length>90) feedLines.shift(); }
 function sysline(text){ say(text,'sys'); }
 function renderFeed(){
   return '<div class="feed" id="feed">'+feedLines.map(function(l){
-    return '<p class="'+l.c+'">'+esc(l.t)+'</p>';
+    return '<p class="'+l.c+'">'+(l.i?U.icon(l.i,14):'')+'<span>'+esc(l.t)+'</span></p>';
   }).join('')+'</div>';
 }
 function esc(x){ return String(x).replace(/[&<>"]/g,function(c){
@@ -371,38 +455,78 @@ function readOf(id){
 }
 function cellFor(p,opts){
   var o=opts||{};
+  var me=s.human;
+  var rd=readOf(p.id);
+  var band=rd?rd.band.label:null;
+  var col=rd?U.bandColor(band):'#e7e2d7';
+
   var cls='cell';
   if(p.status!=='active') cls+=' gone';
   if(s.atRisk&&s.atRisk.indexOf(p.id)!==-1) cls+=' risk';
-  if(p.id===s.human) cls+=' you';
+  if(p.id===me) cls+=' you';
   if(o.selected&&o.selected.indexOf(p.id)!==-1) cls+=' sel';
-  var rd=readOf(p.id);
-  var pips='';
-  if(s.captain===p.id) pips+='<span class="pip cap">Captain</span>';
-  if(s.atRisk&&s.atRisk.indexOf(p.id)!==-1) pips+='<span class="pip risk">At Risk</span>';
-  if(s.vetoHolder===p.id) pips+='<span class="pip veto">Veto</span>';
-  if(p.onRations) pips+='<span class="pip">Rations</span>';
-  if(p.status==='panel') pips+='<span class="pip">Panel</span>';
-  else if(p.status==='evicted') pips+='<span class="pip">Out</span>';
 
-  var lbl='';
-  if(p.id===s.human) lbl='<b style="color:var(--paper)">You</b><i>'+esc(p.archetype)+'</i>';
-  else if(rd) lbl='<b class="t-'+rd.band.tone+'">'+esc(rd.band.label)+'</b><i>'+esc(rd.freshness)+'</i>';
+  /* Every state this person is in, as a drawn mark rather than a word. The
+     whole point is that a player can sweep the wall and see who holds power,
+     who is exposed and who they have stopped talking to, without reading. */
+  var marks='';
+  if(s.captain===p.id) marks+='<span class="m-cap">'+U.icon('captain',18)+'</span>';
+  if(s.atRisk&&s.atRisk.indexOf(p.id)!==-1) marks+='<span class="m-risk">'+U.icon('risk',18)+'</span>';
+  if(s.vetoHolder===p.id) marks+='<span class="m-veto">'+U.icon('veto',18)+'</span>';
+  if(p.onRations) marks+='<span class="m-rat">'+U.icon('rations',17)+'</span>';
+  if(p.id!==me){
+    var shared=E.sharedAlliances(s.alliances,me,p.id).filter(function(a){return a.alive;});
+    if(shared.length) marks+='<span class="m-ally">'+U.icon('alliance',18)+'</span>';
+    else {
+      var seen=s.alliances.filter(function(a){ return a.alive&&a.members.indexOf(p.id)!==-1&&a.known&&a.known[me]!=null; });
+      if(seen.length) marks+='<span class="m-seen">'+U.icon('seen',18)+'</span>';
+    }
+    var th=E.threatScore(s.rel,s.cast,me,p.id,s.panel,s.alliances);
+    if(th>=62) marks+='<span class="m-threat">'+U.icon('threat',17)+'</span>';
+    if(rd&&rd.conf<0.4) marks+='<span class="m-stale">'+U.icon('stale',17)+'</span>';
+  } else if(PW.heldBy(s,me).length){
+    marks+='<span class="m-power">'+U.icon('power',17)+'</span>';
+  }
+  if(p.status==='panel') marks+='<span class="m-seen">'+U.icon('panel',17)+'</span>';
+  else if(p.status==='evicted') marks+='<span class="m-seen">'+U.icon('out',17)+'</span>';
 
-  return '<div class="'+cls+'" data-id="'+p.id+'">'
+  var label;
+  if(p.id===me) label='<div class="band" style="color:var(--paper)">You</div>'
+    +'<div class="fresh">'+esc(p.archetype)+'</div>';
+  else label='<div class="band" style="color:'+col+'">'+esc(band)+'</div>'
+    +'<div class="fresh">'+esc(rd.freshness)+'</div>';
+
+  return '<div class="'+cls+'" data-id="'+p.id+'" style="border-left-color:'+col+'">'
     +(o.pick?'<button class="pick" data-pick="'+p.id+'" aria-label="'+esc(p.name)+'"></button>':'')
     +'<div class="cam">'+avatar(p,110)+'<span class="rec"></span></div>'
-    +'<div class="nm">'+esc(p.first)+'</div>'
-    +'<div class="lbl">'+lbl+'</div>'
-    +'<div class="pips">'+pips+'</div></div>';
+    +'<div class="top"><span class="nm">'+esc(p.first)+'</span>'
+      +(p.id===me?'':U.ladder(band,rd.conf))+'</div>'
+    +label
+    +'<div class="marks">'+marks+'</div></div>';
 }
+
+var wallSort='house';
 function wall(opts){
   var o=opts||{};
   var list=s.cast.filter(function(p){
     if(o.only) return o.only.indexOf(p.id)!==-1;
     return o.all?true:p.status==='active';
   });
-  return '<div class="wall">'+list.map(function(p){ return cellFor(p,o); }).join('')+'</div>';
+  if(!o.only) list=U.sortCast(s,E,list,wallSort);
+  var tabs='';
+  if(!o.only&&!o.nosort){
+    tabs='<div class="sorts">'+Object.keys(U.SORTS).map(function(k){
+      return '<button data-sort="'+k+'" class="'+(wallSort===k?'on':'')+'">'+U.SORTS[k].n+'</button>';
+    }).join('')+'</div>';
+  }
+  return tabs+'<div class="wall">'+list.map(function(p){ return cellFor(p,o); }).join('')+'</div>';
+}
+
+/* Re-bind the sort tabs after any paint that included a wall. */
+function bindSorts(repaint){
+  Array.prototype.forEach.call(app.querySelectorAll('[data-sort]'),function(el){
+    el.onclick=function(){ wallSort=el.dataset.sort; repaint(); };
+  });
 }
 
 // ── chrome ─────────────────────────────────────────────────────────────────
@@ -411,12 +535,32 @@ var PHASE_NAME={
   veto_comp:'Veto Comp',scheme2:'Scheming II',veto_ceremony:'Veto Ceremony',
   scheme3:'Scheming III',eviction:'Eviction',fallout:'Fallout',
   final3:'Final Three',panel:'The Panel',over:'Over',move_in:'Move In Night'};
-function topbar(){
+function topbar(withRail){
   if(!s) return '';
+  var rail=(withRail===false)?'':U.phaseRail(s.phase);
   return '<div class="topbar"><span class="wk">Week '+s.week+'</span>'
-    +'<span class="ph">'+esc(PHASE_NAME[s.phase]||s.phase)+'</span>'
+    +(rail?'':'<span class="ph">'+esc(PHASE_NAME[s.phase]||s.phase)+'</span>')
     +'<span class="sp">'+energyStrip()+'<span class="meta">'+R.activeCount(s)+' left</span>'
-    +'<span class="meta">Seed '+esc(s.seed)+'</span></span></div>';
+    +'<span class="meta">Seed '+esc(s.seed)+'</span></span></div>'+rail+weekStrip();
+}
+
+/* The three facts a player checks constantly and previously had to find by
+   scanning sixteen tiles for a small icon: who has the power, who is on the
+   block, who holds the Veto. */
+function weekStrip(){
+  if(!s||s.phase===R.PHASES.MOVE_IN||s.phase===R.PHASES.SETUP) return '';
+  function slot(label,ids,cls,ic){
+    if(!ids||!ids.length) return '<div class="ws"><span class="wsl">'+label+'</span>'
+      +'<span class="wsv dim">not yet</span></div>';
+    return '<div class="ws '+cls+'"><span class="wsl">'+ic+' '+label+'</span>'
+      +'<span class="wsv">'+ids.map(function(i){
+        return esc(s.cast[i].first)+(i===s.human?' (you)':''); }).join(', ')+'</span></div>';
+  }
+  return '<div class="strip">'
+    +slot('Captain',s.captain!=null?[s.captain]:null,'c-cap',U.icon('captain',15))
+    +slot('At Risk',s.atRisk&&s.atRisk.length?s.atRisk:null,'c-risk',U.icon('risk',15))
+    +slot('Veto',s.vetoHolder!=null?[s.vetoHolder]:null,'c-veto',U.icon('veto',15))
+    +'</div>';
 }
 /* Energy as marks rather than a number. GDD §17 scopes the no-numbers rule to
    relationship values, so a digit here would be legal, but a row of marks reads
@@ -622,10 +766,10 @@ function narrateAfter(ph,wkBefore){
     var aw=s.events.filter(function(e){ return e.kind==='power_awarded'&&e.week===s.week; });
     for(var ai=0;ai<aw.length;ai++){
       var d=PW.POWERS[aw[ai].kind];
-      if(aw[ai].holder===s.human) say('You have been handed the '+d.name+'. '+d.long,'hot');
-      else if(aw[ai].secrecy==='public') say(s.cast[aw[ai].holder].first+' has the '+d.name+'.','hot');
-      else if(aw[ai].secrecy==='known') say('Somebody in this house has the '+d.name+'. Nobody is saying who.','hot');
-      if(aw[ai].victim===s.human) say('Your vote has been taken off you this week. Nobody else knows.','hot');
+      if(aw[ai].holder===s.human) say('You have been handed the '+d.name+'. '+d.long,'ev-power','power');
+      else if(aw[ai].secrecy==='public') say(s.cast[aw[ai].holder].first+' has the '+d.name+'.','ev-power','power');
+      else if(aw[ai].secrecy==='known') say('Somebody in this house has the '+d.name+'. Nobody is saying who.','ev-power','power');
+      if(aw[ai].victim===s.human) say('Your vote has been taken off you this week. Nobody else knows.','ev-bad','broken');
     }
     var bb=s.events.filter(function(e){ return e.kind==='bounce_back'&&e.week===s.week; })[0];
     if(bb) say(s.cast[bb.who].name+' comes back through the door. Nobody expected to see them again.','hot');
@@ -633,42 +777,42 @@ function narrateAfter(ph,wkBefore){
   if(ph===R.PHASES.CAPTAIN_COMP&&s.captainResult){
     var r=s.captainResult;
     say('Captain Comp: '+r.name+'.');
-    say(s.captain===s.human?tsay('captainYou'):tsay('captainWon',{name:s.cast[s.captain].first}));
-    if(s.rations.length) say(tsay('rations',{names:s.rations.map(function(i){return s.cast[i].first;}).join(', ')}),'quiet');
+    say(s.captain===s.human?tsay('captainYou'):tsay('captainWon',{name:s.cast[s.captain].first}),'ev-vote','captain');
+    if(s.rations.length) say(tsay('rations',{names:s.rations.map(function(i){return s.cast[i].first;}).join(', ')}),'quiet','rations');
     s.captainResult=null;
   }
   if(ph===R.PHASES.NAMING&&s.atRisk.length){
     say(s.captain===s.human
       ? tsay('namingYou',{a:s.cast[s.atRisk[0]].first,b:s.cast[s.atRisk[1]].first})
-      : tsay('naming',{captain:s.cast[s.captain].first,a:s.cast[s.atRisk[0]].first,b:s.cast[s.atRisk[1]].first}));
+      : tsay('naming',{captain:s.cast[s.captain].first,a:s.cast[s.atRisk[0]].first,b:s.cast[s.atRisk[1]].first}),'ev-bad','risk');
   }
   if(ph===R.PHASES.VETO_COMP&&s.vetoResult){
-    say('Veto Comp: '+s.vetoResult.name+'. '+s.cast[s.vetoHolder].first+' takes it.');
+    say('Veto Comp: '+s.vetoResult.name+'. '+s.cast[s.vetoHolder].first+' takes it.','ev-good','veto');
     s.vetoResult=null;
   }
   if(ph===R.PHASES.VETO_CEREMONY&&s.phase!==R.PHASES.VETO_CEREMONY){
     if(s.vetoUsed){
-      say(tsay('vetoUsed',{holder:s.cast[s.vetoHolder].first,saved:s.cast[s.saved].first}));
+      say(tsay('vetoUsed',{holder:s.cast[s.vetoHolder].first,saved:s.cast[s.saved].first}),'ev-good','veto');
       if(s.replacement!=null) say(s.cast[s.captain].first+' names '+s.cast[s.replacement].first+' in their place.');
-    } else say(tsay('vetoHeld',{holder:s.cast[s.vetoHolder].first}));
+    } else say(tsay('vetoHeld',{holder:s.cast[s.vetoHolder].first}),'','veto');
   }
   var pl=s.events.filter(function(e){ return e.kind==='power_played'&&e.week===s.week&&!e.said; });
   for(var pi=0;pi<pl.length;pi++){
     pl[pi].said=true;
     var pd=PW.POWERS[pl[pi].kind], who=s.cast[pl[pi].holder];
-    if(pl[pi].kind==='safety') say((pl[pi].holder===s.human?'You are':who.first+' is')+' safe this week. The '+pd.name+' is spent.','hot');
+    if(pl[pi].kind==='safety') say((pl[pi].holder===s.human?'You are':who.first+' is')+' safe this week. The '+pd.name+' is spent.','ev-power','power');
     else if(pl[pi].kind==='diamond') say(who.first+' plays the Diamond Veto. '+s.cast[pl[pi].save].first
-      +' comes off, '+s.cast[pl[pi].replace].first+' goes up, and the Captain had no say in it.','hot');
-    else if(pl[pi].kind==='veto_pick') say(who.first+' picks '+s.cast[pl[pi].pick].first+' into the Veto Comp.','hot');
-    else if(pl[pi].kind==='back_to_back') say(who.first+' should not have been in that comp.','hot');
-    else if(pl[pi].kind==='extra_vote') say('The count came back one higher than it should have.','hot');
+      +' comes off, '+s.cast[pl[pi].replace].first+' goes up, and the Captain had no say in it.','ev-power','power');
+    else if(pl[pi].kind==='veto_pick') say(who.first+' picks '+s.cast[pl[pi].pick].first+' into the Veto Comp.','ev-power','power');
+    else if(pl[pi].kind==='back_to_back') say(who.first+' should not have been in that comp.','ev-power','power');
+    else if(pl[pi].kind==='extra_vote') say('The count came back one higher than it should have.','ev-power','power');
   }
 
   if(ph===R.PHASES.FALLOUT){
     var w=s.weeks[s.weeks.length-1];
     if(w&&w.blame&&w.blame.length){
       var mine=w.blame.filter(function(b){ return b.blamed===s.human; });
-      if(mine.length) say('Somebody thinks you flipped.','hot');
+      if(mine.length) say('Somebody thinks you flipped.','ev-bad','broken');
     }
   }
 }
@@ -724,6 +868,7 @@ function showNaming(){
       +'<div class="file"><h2>Name two At Risk</h2>'
       +'<div class="sub">You hold the power. Both of them will remember it, and one of them is staying.</div></div>'
       +wall({pick:true,selected:picked})+renderFeed();
+    bindSorts(paint);
     bindPicks(function(id){
       if(id===s.human) return;
       var i=picked.indexOf(id);
@@ -818,6 +963,7 @@ function bindPicks(fn){
 /* Scheming is now a place and a conversation rather than a verb list. You pick
    who to spend energy on, the house draws where you are and what it is about,
    and the answer is A, B or C. scenes.js owns the banks; this owns the screen. */
+var housePanel=false;
 function showScheming(need){
   screen='phase';
   var moment=null;
@@ -834,7 +980,15 @@ function showScheming(need){
       +'<div class="sub">Energy runs all week, not per phase. Hold some back for after '
       +'the Veto ceremony or spend it now while nobody has been named. '
       +'Everybody you skip drifts back toward how they felt about you on day one.</div></div>'
+      +'<details class="wk" id="hp"'+(housePanel?' open':'')+'><summary>'
+      +'<span class="no">Read</span><span class="hl">The house, as far as you know it</span>'
+      +'<span class="tags"><span class="pip">key and map</span></span></summary>'
+      +'<div class="body" style="padding-left:18px">'+U.legend()
+      +U.allianceMap(s,E)+'</div></details>'
       +wall({pick:true})+renderFeed();
+    var hp=document.getElementById('hp');
+    if(hp) hp.ontoggle=function(){ housePanel=hp.open; };
+    bindSorts(paintPick);
     bindPicks(function(id){
       if(id===s.human) return;
       if(s.energy<SC.ENERGY.SCENE_COST) return;
@@ -885,13 +1039,13 @@ function narrateScene(moment,out){
 
   for(var i=0;i<out.fx.length;i++){
     var f=out.fx[i];
-    if(f.k==='ally') say('You and '+nm+' have something now.');
+    if(f.k==='ally') say('You and '+nm+' have something now.','ev-good','alliance');
     else if(f.k==='ally_declined') say(nm+' is not ready to put a name on it.','quiet');
     else if(f.k==='intent') say(nm+' says they are voting out '+s.cast[f.target].first+'.');
     else if(f.k==='info') say(nm+' on '+s.cast[f.b].first+': '+f.band.toLowerCase()+'.','quiet');
     else if(f.k==='alliance_seen') say('They are working with '+f.members.map(function(x){return s.cast[x].first;}).join(' and ')+'.','quiet');
     else if(f.k==='heat') say(nm+' walks away thinking about '+s.cast[f.who].first+'.','quiet');
-    else if(f.k==='watched') say(nm+' is watching you now.','hot');
+    else if(f.k==='watched') say(nm+' is watching you now.','ev-bad','eye');
     else if(f.k==='backfire') say('You spent something you are not getting back.','hot');
   }
   if(out.read) say(nm+' reads '+out.read.band.label.toLowerCase()+' on you.','quiet');
@@ -1305,7 +1459,14 @@ function showVoteReveal(){
       +'<div class="file"><h2>The vote</h2><div class="sub">'+esc(STR.S.voteOpen[0])+'</div>'
       +'<div class="tallywrap">'+atRisk.map(function(id){
         var out=reveal&&res.evicted===id;
-        return '<div class="tcol'+(out?' out':'')+'"><div class="who">'+esc(s.cast[id].first)+'</div>'
+        var rd=readOf(id);
+        var col=rd?U.bandColor(rd.band.label):'#e7e2d7';
+        /* The face and the colour, not just a name. A player should be able to
+           feel which of these two they can afford to lose without reading. */
+        return '<div class="tcol'+(out?' out':'')+'">'
+          +'<div class="tface" style="border-color:'+(out?'var(--signal)':col)+'">'+avatar(s.cast[id],96)+'</div>'
+          +'<div class="who">'+esc(s.cast[id].first)+(id===s.human?' (you)':'')+'</div>'
+          +(rd?'<div class="tband" style="color:'+col+'">'+esc(rd.band.label)+'</div>':'<div class="tband">&nbsp;</div>')
           +'<div class="marks">'+marks(counts[id])+'</div></div>';
       }).join('')+'</div>'
       +(reveal?'<div style="text-align:center;color:var(--signal);font-family:var(--disp);'
@@ -1332,7 +1493,7 @@ function showVoteReveal(){
     if(i>=order.length){
       if(res.tieBreak!=null) say(s.cast[res.tieBreak].first+' breaks the tie.','hot');
       paint(true);
-      say(res.evicted===s.human?tsay('evictedYou'):tsay('evicted',{name:s.cast[res.evicted].name}),'hot');
+      say(res.evicted===s.human?tsay('evictedYou'):tsay('evicted',{name:s.cast[res.evicted].name}),'ev-bad','out');
       setBar('',[{label:'Continue',cls:'go',go:function(){
         screen='phase'; R.step(s,null); saveRun(); pump(); }}]);
       return;
@@ -1482,6 +1643,7 @@ function renderResults(){
 
 function renderPhase(){
   app.innerHTML=topbar()+wall({})+renderFeed();
+  bindSorts(renderPhase);
   scrollFeed();
 }
 
