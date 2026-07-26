@@ -173,10 +173,8 @@
   .lane.bad{animation:shake .4s; border-color:var(--red);}
   @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(4px);}}
   .lane-head{flex:0 0 168px; display:flex; align-items:center; flex-wrap:wrap; gap:4px 8px; min-height:20px; min-width:0;}
-  .lane-chip{width:19px; height:19px; flex:0 0 auto; color:var(--lc); display:inline-flex; align-items:center; justify-content:center;
-    transition:color .3s;}
-  .lane-chip svg{width:19px; height:19px; display:block;}
-  .lane.locked .lane-chip{filter:drop-shadow(0 1px 2px rgba(0,0,0,.28));}
+  .lane-chip{width:16px; height:16px; border-radius:5px; background:var(--lc); flex:0 0 auto; transition:background .3s;}
+  .lane.locked .lane-chip{box-shadow:0 1px 2px rgba(0,0,0,.28);}
   .lane-name{font-weight:900; font-size:13.5px; letter-spacing:.01em; color:var(--ink); min-width:0;}
   .lane-hidden .lane-name{color:var(--mut); font-weight:800;}
   .lane-sport{font-size:9.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);
@@ -644,24 +642,12 @@
       return tilesInLane(i).filter(function (x) { return x != null; }).length;
     }
 
-    // A distinct, sport-neutral marker per rack (a plain geometric token, so it
-    // never implies the category is about a particular sport). The shape inherits
-    // the lane colour (currentColor = --lc), so it sits neutral, then lights up in
-    // its category colour as the lane is revealed or solved.
-    var MARKS = [
-      // circle
-      '<circle cx="12" cy="12" r="8.5" fill="currentColor"/>',
-      // rounded square
-      '<rect x="3.8" y="3.8" width="16.4" height="16.4" rx="4" fill="currentColor"/>',
-      // triangle
-      '<path d="M12 3.6 20.6 19.4 3.4 19.4 Z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
-      // diamond
-      '<path d="M12 2.8 21.2 12 12 21.2 2.8 12 Z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>',
-      // hexagon
-      '<path d="M12 3 19.8 7.5 19.8 16.5 12 21 4.2 16.5 4.2 7.5 Z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>'
-    ];
-    function ballChip(i) {
-      return '<span class="lane-chip"><svg viewBox="0 0 24 24" aria-hidden="true">' + MARKS[i % MARKS.length] + '</svg></span>';
+    // A single, uniform colour chip per rack: sport-neutral, and it speaks the
+    // same visual language as the share-card colour bars. It inherits the lane
+    // colour (--lc), so it sits neutral, then lights up in the category colour as
+    // the lane is revealed or solved.
+    function ballChip() {
+      return '<span class="lane-chip"></span>';
     }
 
     function render() {
