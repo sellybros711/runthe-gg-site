@@ -1026,10 +1026,35 @@
   .scoreline{display:flex;align-items:center;justify-content:center;gap:16px;margin:12px 0 2px}
   .scoreline .s{font-family:var(--fd);font-size:52px;line-height:1}
   .scoreline .s.down{color:var(--dim-2)}
+  /* THE WEEK LANDING. The card takes the colour of the result for a beat, which is the whole
+     difference between a scoreboard and a list of numbers being replaced. */
+  .gamecard.won{animation:cardwon .55s ease-out both}
+  .gamecard.lost{animation:cardlost .55s ease-out both}
+  @keyframes cardwon{
+    0%{box-shadow:0 0 0 0 rgba(74,222,128,.55);border-color:rgba(74,222,128,.75)}
+    100%{box-shadow:0 0 0 14px rgba(74,222,128,0);border-color:var(--line)}}
+  @keyframes cardlost{
+    0%{box-shadow:0 0 0 0 rgba(239,68,68,.5);border-color:rgba(239,68,68,.7)}
+    100%{box-shadow:0 0 0 14px rgba(239,68,68,0);border-color:var(--line)}}
+  /* The record: two halves that move independently, so a win and a loss do not look the same. */
+  #v-rec b{font-family:inherit;font-weight:inherit;display:inline-block}
+  #v-rec i{font-style:normal;color:var(--dim-2);margin:0 1px}
+  #v-rec b.bump{animation:recbump .42s cubic-bezier(.2,1.5,.4,1) both}
+  @keyframes recbump{0%{transform:scale(1)}38%{transform:scale(1.34)}100%{transform:scale(1)}}
+  /* Three or more in a row. */
+  .streak{height:17px;margin-top:7px;text-align:center;font-family:var(--fn);font-size:11px;
+    font-weight:600;letter-spacing:.13em;text-transform:uppercase;opacity:0;
+    transition:opacity .25s ease}
+  .streak.on{opacity:1}
+  .streak.w{color:#4ade80} .streak.l{color:#f87171}
   .tally{display:flex;gap:4px;margin-top:13px}
-  .tick{height:22px;border-radius:3px;background:rgba(255,255,255,.08);flex:1 1 0;min-width:0}
+  .tick{height:22px;border-radius:3px;background:rgba(255,255,255,.08);flex:1 1 0;min-width:0;
+    transition:transform .2s ease}
   .tick.w{background:linear-gradient(135deg,#4ade80,#15803d)} .tick.l{background:var(--grad-red)}
   .tick.p{outline:1px solid rgba(255,255,255,.45);outline-offset:1px}
+  /* The one that just landed, so the eye is told where in the season it is. */
+  .tick.now{animation:tickpop .42s cubic-bezier(.2,1.5,.4,1) both}
+  @keyframes tickpop{0%{transform:scaleY(.4)}55%{transform:scaleY(1.35)}100%{transform:scaleY(1)}}
   .glist{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:12px;
     max-height:320px;overflow-y:auto}
   .g{display:flex;align-items:center;gap:9px;min-width:0;font-size:13px;padding:8px 10px;border-radius:9px;
@@ -1219,9 +1244,6 @@
   .rost{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:11px}
   .rrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;min-width:0;
     background:rgba(255,255,255,.03);border:1px solid var(--line)}
-  /* The flex marker rides under the position rather than replacing it. */
-  .rrow .tag i{display:block;font-style:normal;font-size:7.5px;letter-spacing:.1em;
-    opacity:.72;margin-top:1px}
   .rrow .tag{color:#fff;flex:0 0 40px;text-align:center;font-family:var(--fn);font-size:9.5px;
     letter-spacing:.05em;color:#fff;padding:4px 0;border-radius:6px}
   .rrow .nm{flex:1;min-width:0}
@@ -1516,6 +1538,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
       <div class="scoreline"><div class="s num" id="v-you">0</div>
         <div class="dim num" style="font-size:22px">-</div><div class="s num" id="v-them">0</div></div>
+      <!-- Three in a row either way. A season's story is its runs, and nothing on this screen
+           was telling you when you were on one. Height is reserved so the card does not jump
+           when it appears. -->
+      <div class="streak" id="v-streak"></div>
       <div class="tally" id="v-tally"></div>
     </div>
     <div style="margin-top:12px"><button class="btn blue" id="b-sim">Skip to the end</button></div>
@@ -1747,6 +1773,30 @@ const COL={QB:'--qb',RB:'--rb',WR:'--wr',TE:'--te',FLEX:'--flex'};
    palette change turns into a hunt. */
 function posPaint(pos){
   return 'background:linear-gradient(160deg,var('+(COL[pos]||'--flex')+'),rgba(0,0,0,.45))';
+}
+/* HOW A ROSTER ROW IS LABELLED, in one place, because four screens were each deciding it
+   differently and two of them disagreed with the field.
+
+   The label is the SLOT, so the sixth row always reads FLEX and a roster always reads
+   QB RB WR WR TE FLEX. The colour is the PLAYER'S position, so a flex filled by a back is
+   green and one filled by a receiver is blue. That way the row says both things at once: which
+   spot it is, and who is in it. Labelling it by the player made the flex invisible; colouring
+   it purple made the position invisible. */
+function slotTag(slot,pos){
+  const label=slot||pos;
+  return '<span class="tag" style="'+posPaint(pos||slot)+'">'+esc(label)+'</span>';
+}
+/* Roster order, always QB RB WR WR TE FLEX, whatever order the picks were made in.
+   Duplicated slots are consumed left to right, so the two receivers keep their own places. */
+function bySlotOrder(men){
+  const order=E.SLOTS.slice();
+  const out=[];
+  const rest=men.slice();
+  for(const slot of order){
+    const i=rest.findIndex(m=>m.slot===slot);
+    if(i>=0) out.push(rest.splice(i,1)[0]);
+  }
+  return out.concat(rest);          // anything with an unrecognised slot goes last, not lost
 }
 /* The same five colors as real hex, for the canvas share card, which cannot use a
    CSS variable. Resolved from the stylesheet so there is one palette in the file. */
@@ -2628,11 +2678,14 @@ function paintSquad(){
 $('b-play').onclick=()=>startSeason();
 
 /* ---------- season, revealed game by game ---------- */
-function tally(){
+function tally(live){
   const s=run.season, total=17+(run.playoffSeed?run.playoffSeed.rounds:0), cells=[];
+  const last=s.results.length-1;
   for(let i=0;i<Math.max(total,s.results.length);i++){
     const r=s.results[i];
-    cells.push('<span class="tick'+(r?(r.won?' w':' l'):'')+(r&&r.playoff?' p':'')+'"></span>');
+    // The tick that just landed pops, so the eye is told where in the season it is.
+    cells.push('<span class="tick'+(r?(r.won?' w':' l'):'')+(r&&r.playoff?' p':'')+
+      (live&&i===last?' now':'')+'"></span>');
   }
   $('v-tally').innerHTML=cells.join('');
 }
@@ -2643,7 +2696,7 @@ function pushGame(r,el){
     '<span class="opp">'+esc(r.opponent)+'</span>'+
     '<span class="sc">'+r.shownYou+'-'+r.shownThem+'</span></div>');
 }
-function paintNext(){
+function paintNext(live){
   const s=run.season;
   if(run.phase===R.PHASES.SEASON){
     const o=DATA.byTeamSeasonId[run.schedule[s.week]];
@@ -2653,24 +2706,86 @@ function paintNext(){
     $('v-round').textContent=run.playoffSeed.roundNames[s.playoffRound]||'Playoffs';
     $('v-opp').textContent=o?o.display:'';
   }
-  $('v-rec').textContent=s.wins+'-'+s.losses;
+  /* The record's two halves animate independently, so the half that changed is the half that
+     moves. Swapping the whole string makes a win and a loss look identical. */
+  const rec=$('v-rec');
+  if(!rec.dataset.split){
+    rec.innerHTML='<b id="v-w">0</b><i>-</i><b id="v-l">0</b>';
+    rec.dataset.split='1';
+  }
+  const wEl=$('v-w'), lEl=$('v-l');
+  const bumped=live&&(Number(wEl.textContent)!==s.wins?wEl:(Number(lEl.textContent)!==s.losses?lEl:null));
+  countTo(wEl,s.wins,live?300:0);
+  countTo(lEl,s.losses,live?300:0);
+  if(bumped){ bumped.classList.remove('bump'); void bumped.offsetWidth; bumped.classList.add('bump'); }
+
+  const st=streakOf(s.results);
+  const sEl=$('v-streak');
+  if(sEl){
+    sEl.className='streak'+(st?(st.won?' w on':' l on'):'');
+    sEl.textContent=st?(st.n+(st.won?' straight wins':' straight losses')):'';
+  }
 }
 function startSeason(){
   $('v-list').innerHTML=''; tally(); paintNext();
   $('v-you').textContent='0'; $('v-them').textContent='0';
   show('s-season'); runSim();
 }
+/* A NUMBER THAT ARRIVES RATHER THAN APPEARS.
+   Counts from where it is to where it is going, eased out so it slows into the value. Returns
+   immediately at the final number when motion is reduced, because the number is the
+   information and the counting is not. */
+function countTo(el,to,ms){
+  const from=parseInt(el.textContent,10)||0;
+  if(HERO_REDUCE||from===to||ms<=0){ el.textContent=to; return; }
+  const t0=performance.now();
+  const tick=(now)=>{
+    const k=Math.min(1,(now-t0)/ms);
+    const e=1-Math.pow(1-k,3);
+    el.textContent=Math.round(from+(to-from)*e);
+    if(k<1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+/* THE SEASON, REVEALED WEEK BY WEEK.
+   The scores used to swap in as text and the record with them, so seventeen games went past as
+   seventeen instant substitutions: nothing arrived, nothing landed, and the streak that is the
+   actual story of a season was invisible.
+
+   Now the two scores count up together, the card takes the colour of the result for a beat, the
+   tick that just landed pops, the winning half of the record ticks over, and a streak of three
+   or more says so. All of it is decoration over the same numbers: the result is decided in
+   advanceWeek before any of this runs. */
 function runSim(){
+  const card=document.querySelector('#s-season .gamecard');
   const step=()=>{
     // Regular season only. Playoff rounds are called on their own screen.
     if(run.phase!==R.PHASES.SEASON){after();return;}
     const r=R.advanceWeek(run,DATA,LEAGUE,CAL);
-    $('v-you').textContent=r.shownYou; $('v-them').textContent=r.shownThem;
+    /* From zero every week, not from last week's score: a scoreboard counting from 24 down to
+       17 reads as the previous game being corrected. */
+    $('v-you').textContent='0'; $('v-them').textContent='0';
+    countTo($('v-you'),r.shownYou,380);
+    countTo($('v-them'),r.shownThem,380);
     $('v-you').classList.toggle('down',!r.won); $('v-them').classList.toggle('down',r.won);
-    pushGame(r,$('v-list')); tally(); paintNext();
+    card.classList.remove('won','lost');
+    void card.offsetWidth;                       // restart the flash on a repeat result
+    card.classList.add(r.won?'won':'lost');
+    pushGame(r,$('v-list')); tally(true); paintNext(true);
     simTimer=setTimeout(step,540);
   };
   simTimer=setTimeout(step,340);
+}
+
+/* How many in a row, and which way. Read off the results rather than tracked, so it cannot
+   drift out of step with them. */
+function streakOf(results){
+  if(!results.length) return null;
+  const won=results[results.length-1].won;
+  let n=0;
+  for(let i=results.length-1;i>=0&&results[i].won===won;i--) n++;
+  return n>=3?{n,won}:null;
 }
 function fastForward(){
   clearTimeout(simTimer);
@@ -2940,9 +3055,7 @@ function paintOver(){
      row was the flex is still visible: it is the sixth one, and it carries a small marker. */
   $('o-rost').innerHTML=E.SLOTS.map((slot,i)=>{
     const p=bySlot[i]; if(!p) return '';
-    const isFlex=slot==='FLEX';
-    return '<div class="rrow"><span class="tag" style="'+posPaint(p.position)+'">'+
-      esc(p.position)+(isFlex?'<i>flex</i>':'')+'</span>'+
+    return '<div class="rrow">'+slotTag(slot,p.position)+
       '<span class="nm"><b>'+esc(p.name)+'</b><span>'+p.season+' '+esc(E.nickname(p.franchise))+
         (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</span></span>'+
       '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
@@ -3161,11 +3274,16 @@ function drawShareCard(){
   E.SLOTS.forEach((slot,i)=>{
     const p=bySlot[i]; if(!p) return;
     // chip
+    /* Same rule as every roster in the game: the chip says which SLOT it is, so the sixth row
+       reads FLEX, and it is coloured by the PLAYER'S position, so a flex filled by a back is
+       green. The card used to print the player's position on both counts, which made the flex
+       spot invisible on the one artefact that gets shared. */
     const cw=88,ch=52;
+    const tag=slot||p.position;
     x.fillStyle=COLS[p.position]||'#64748b';
     roundRect(x,PAD,y-38,cw,ch,12); x.fill();
     N('700',26); x.fillStyle='#ffffff';
-    x.fillText(p.position,PAD+cw/2-x.measureText(p.position).width/2,y-2);
+    x.fillText(tag,PAD+cw/2-x.measureText(tag).width/2,y-2);
     // name, shrunk only if it would collide with the right column
     const right=CARD.W-PAD;
     N('500',24); x.fillStyle='rgba(255,255,255,.5)';
@@ -4120,7 +4238,10 @@ function runDetail(row){
   const mine=!row;
   const picks=mine?runPayload().picks:(row.picks||[]);
   const slots=mine?runPayload().slots:(row.slots||[]);
-  const men=picks.map((k,i)=>({p:fromPickKey(k),slot:slots[i]||''}));
+  /* Sorted into slot order, not pick order. A row on the board was listing whatever order the
+     six spins happened to come in, so the same six players read differently on the results page
+     and in this sheet. */
+  const men=bySlotOrder(picks.map((k,i)=>({p:fromPickKey(k),slot:slots[i]||''})));
   const known=men.filter(m=>m.p);
   const o=mine?run.outcome:null;
   const p=mine?runPayload():null;
@@ -4151,8 +4272,7 @@ function runDetail(row){
     '<p class="dim" style="font-size:12.5px;margin:0">'+esc(label)+
       (club?' &middot; took the '+esc(poss(E.nickname(club)))+' place':'')+'</p>'+
     (known.length?'<div class="rost" style="margin-top:12px">'+known.map(m=>{
-      return '<div class="rrow"><span class="tag" style="'+posPaint(m.slot||m.p.position)+
-        '">'+esc(m.slot||m.p.position)+'</span>'+
+      return '<div class="rrow">'+slotTag(m.slot,m.p.position)+
         '<span class="nm"><b>'+esc(m.p.name)+'</b><span>'+m.p.season+' '+
           esc(E.nickname(m.p.franchise))+(m.p.stat_line?' &middot; '+esc(m.p.stat_line):'')+
         '</span></span>'+
