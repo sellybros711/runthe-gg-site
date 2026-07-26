@@ -38,10 +38,20 @@
   #truckBtn{ right:20px; bottom:calc(34px + env(safe-area-inset-bottom)); width:112px; height:112px; border-radius:50%;
     background:radial-gradient(circle at 40% 35%, #ffe07a, #f0a41c); box-shadow:0 6px 20px rgba(240,164,28,.4), inset 0 2px 0 rgba(255,255,255,.6);
     font-size:18px; }
-  #pitchBtn{ right:142px; bottom:calc(58px + env(safe-area-inset-bottom)); width:82px; height:82px; border-radius:50%;
+  #pitchBtn{ right:150px; bottom:calc(34px + env(safe-area-inset-bottom)); width:78px; height:78px; border-radius:50%;
     background:radial-gradient(circle at 40% 35%, #bfe0ff, #4a8ad6); box-shadow:0 5px 16px rgba(74,138,214,.4), inset 0 2px 0 rgba(255,255,255,.5);
-    font-size:14px; color:#0c2138; }
+    font-size:13px; color:#0c2138; }
+  #jukeBtn{ right:150px; bottom:calc(124px + env(safe-area-inset-bottom)); width:78px; height:78px; border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, #b6f5c8, #2fb36a); box-shadow:0 5px 16px rgba(47,179,106,.4), inset 0 2px 0 rgba(255,255,255,.5);
+    font-size:13px; color:#093019; }
   .abtn:active{ transform:translateY(2px); }
+  #truckBtn.coach{ animation:coachp .5s ease-in-out infinite; }
+  @keyframes coachp{ 0%,100%{ box-shadow:0 6px 20px rgba(240,164,28,.4), inset 0 2px 0 rgba(255,255,255,.6); }
+    50%{ box-shadow:0 0 0 8px rgba(143,240,160,.55), 0 6px 20px rgba(240,164,28,.6), inset 0 2px 0 rgba(255,255,255,.6); } }
+  #stamWrap{ position:absolute; left:20px; bottom:calc(162px + env(safe-area-inset-bottom)); width:130px; height:7px;
+    background:rgba(8,14,22,.5); border:1px solid rgba(150,175,210,.3); border-radius:5px; overflow:hidden; display:none; }
+  #stamFill{ height:100%; width:100%; background:linear-gradient(90deg,#f4ab1c,#ffe07a); border-radius:5px; transition:width .08s linear; }
+  #stamWrap.low #stamFill{ background:linear-gradient(90deg,#e0453f,#ff8a6b); }
   #setupHint{ display:none; position:absolute; top:calc(78px + env(safe-area-inset-top)); left:0; right:0; text-align:center;
     color:#ffe08a; font-size:13px; font-weight:800; letter-spacing:1.5px; text-shadow:0 2px 6px rgba(0,0,0,.6); }
   #kick{ display:none; position:absolute; left:50%; bottom:calc(30px + env(safe-area-inset-bottom)); transform:translateX(-50%);
@@ -64,6 +74,10 @@
   .startbtn{ margin-top:6px; padding:15px 40px; font-size:21px; font-weight:800; letter-spacing:1px; color:#3a2600;
     background:linear-gradient(180deg,#ffdf7a,#f4ab1c); border:none; border-radius:15px; box-shadow:0 6px 20px rgba(240,169,28,.4); }
   .tag{ position:fixed; bottom:5px; left:0; right:0; text-align:center; color:#3f5266; font-size:10px; z-index:4; letter-spacing:1px; }
+  #overStats{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px 18px; margin:4px 0 6px; width:min(420px,86vw); }
+  .stat{ background:rgba(255,255,255,.05); border:1px solid rgba(150,175,210,.2); border-radius:12px; padding:10px 6px; }
+  .stat .n{ font-size:26px; font-weight:800; color:#ffd34d; line-height:1; }
+  .stat .l{ font-size:10px; letter-spacing:1px; color:#9fb0c2; margin-top:5px; text-transform:uppercase; }
 </style>
 </head>
 <body>
@@ -81,6 +95,8 @@
   <div id="truck"><div class="ring"></div><div class="core">TRUCK</div></div>
   <div id="flash"></div>
   <div id="stick"><div class="nub" id="nub"></div></div>
+  <div id="stamWrap"><div id="stamFill"></div></div>
+  <button class="abtn" id="jukeBtn">JUKE</button>
   <button class="abtn" id="pitchBtn">PITCH</button>
   <button class="abtn" id="truckBtn">TRUCK</button>
   <div id="setupHint">DRAG YOUR PLAYERS · KEEP ONE IN THE CIRCLE</div>
@@ -90,13 +106,14 @@
 
 <div id="start">
   <h1>FUMBLE</h1>
-  <p>11-on-11, no going down. Take a hit and <b>the ball pops loose</b> — anyone can grab it, and every tackle pops it again. <b>Truck</b> to stay up, <b>pitch backward</b> to a trailing teammate, and score. Play never stops until someone crosses. <b>First to 3 wins.</b></p>
-  <p class="keys">Move: joystick / WASD · Truck: TRUCK / Space · Pitch back: PITCH / Shift · You control the highlighted player.</p>
+  <p>11-on-11, no going down. Take a hit and <b>the ball pops loose</b> — anyone can grab it, and every tackle pops it again. When a defender closes, tap <b>TRUCK</b> in the green ring to power through, <b>JUKE</b> to make him whiff, or <b>PITCH</b> backward to a trailing teammate. Push full stick to <b>sprint</b> (watch your stamina). Play never stops until someone scores. <b>First to 3 wins.</b></p>
+  <p class="keys">Move: joystick / WASD · Truck: Space · Juke: E · Pitch back: Shift · Sprint: full stick · You control the highlighted player.</p>
   <button class="startbtn" id="go">START</button>
 </div>
 <div id="over">
   <h1 id="overTitle">GAME</h1>
   <p id="overSub"></p>
+  <div id="overStats"></div>
   <button class="startbtn" id="again">PLAY AGAIN</button>
 </div>
 <div class="tag">FUMBLE · prototype · tune the constants at the top of the source</div>
@@ -151,6 +168,18 @@ const TUNE = {
   TURN_LERP:      10,
   BODY_RADIUS:    0.95,     // players have solid bodies — no two can overlap (stops the "run through people" clipping)
 
+  // ---- MOVES (skill ceiling) ----
+  JUKE_TIME:      0.22,     // duration of the sideways evade dash
+  JUKE_SPEED:     15,       // dash speed during a juke
+  JUKE_COOLDOWN:  0.9,
+  JUKE_COST:      0.28,     // stamina spent per juke
+  SPRINT_MULT:    1.32,     // carrier speed while sprinting (full stick + stamina)
+  STAMINA_DRAIN:  0.42,     // stamina/sec burned while sprinting
+  STAMINA_REGEN:  0.30,     // stamina/sec recovered otherwise
+
+  // ---- DIFFICULTY ----
+  DIFF_RAMP:      0.06,     // defender speed +this fraction per point already scored (both teams)
+
   // ---- CAMERA ----
   CAM_DIST: 10.5, CAM_HEIGHT: 5.4, CAM_LOOKAHEAD: 5, CAM_LERP: 5.5,
   LOOSE_CAM_DIST: 17, LOOSE_CAM_HEIGHT: 15, LOOSE_CAM_LERP: 3.4,
@@ -179,8 +208,16 @@ sun.shadow.mapSize.set(1024,1024); Object.assign(sun.shadow.camera,{left:-70,rig
 
 function fieldTex(){ const cv=document.createElement('canvas'); cv.width=256; cv.height=1200; const g=cv.getContext('2d');
   for(let i=0;i<24;i++){ g.fillStyle=i%2?'#173f2f':'#143726'; g.fillRect(0,i*50,256,50); }
-  g.strokeStyle='rgba(240,246,251,.65)'; g.lineWidth=3;
+  g.strokeStyle='rgba(240,246,251,.6)'; g.lineWidth=3;
   for(let y=0;y<=1200;y+=1200/13){ g.beginPath(); g.moveTo(0,y); g.lineTo(256,y); g.stroke(); }
+  // hash marks down the middle
+  g.strokeStyle='rgba(240,246,251,.35)'; g.lineWidth=2;
+  for(let y=0;y<1200;y+=20){ for(const x of [98,158]){ g.beginPath(); g.moveTo(x,y); g.lineTo(x,y+7); g.stroke(); } }
+  // yard numbers near each sideline (10-20-30-40-50-40-30-20-10)
+  g.fillStyle='rgba(233,240,248,.8)'; g.font='bold 30px Arial'; g.textAlign='center'; g.textBaseline='middle';
+  const labels=[10,20,30,40,50,40,30,20,10];
+  for(let k=0;k<labels.length;k++){ const y=140+92*(k+1);
+    for(const [x,rot] of [[44,-Math.PI/2],[212,Math.PI/2]]){ g.save(); g.translate(x,y); g.rotate(rot); g.fillText(String(labels[k]),0,0); g.restore(); } }
   const tx=new THREE.CanvasTexture(cv); tx.anisotropy=4; return tx; }
 const field=new THREE.Mesh(new THREE.PlaneGeometry(TUNE.FIELD_WIDTH,TUNE.FIELD_LENGTH),
   new THREE.MeshStandardMaterial({map:fieldTex(),roughness:1}));
@@ -201,15 +238,46 @@ function goalpost(z){ const mat=new THREE.MeshStandardMaterial({color:'#e6b32a',
   g.position.z=z; scene.add(g); }
 goalpost(TUNE.FIELD_LENGTH); goalpost(0);
 
+/* ---------------- stadium: night sky + crowd stands ---------------- */
+function skyTex(){ const cv=document.createElement('canvas'); cv.width=16; cv.height=256; const g=cv.getContext('2d');
+  const grd=g.createLinearGradient(0,0,0,256); grd.addColorStop(0,'#06101f'); grd.addColorStop(0.6,'#0d2740'); grd.addColorStop(1,'#164a52');
+  g.fillStyle=grd; g.fillRect(0,0,16,256); return new THREE.CanvasTexture(cv); }
+scene.background=skyTex();
+function crowdTex(){ const cv=document.createElement('canvas'); cv.width=128; cv.height=64; const g=cv.getContext('2d');
+  g.fillStyle='#0a0f18'; g.fillRect(0,0,128,64);
+  for(let i=0;i<1100;i++){ const l=38+Math.random()*36|0; g.fillStyle=`hsl(${Math.random()*360|0},${25+Math.random()*45|0}%,${l}%)`;
+    g.fillRect(Math.random()*128|0, Math.random()*64|0, 2, 2); }
+  const t=new THREE.CanvasTexture(cv); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(18,4); return t; }
+const crowdMat=new THREE.MeshStandardMaterial({map:crowdTex(),roughness:1});
+function sideStand(sign){ const g=new THREE.Group();
+  const box=new THREE.Mesh(new THREE.BoxGeometry(15,17,TUNE.FIELD_LENGTH+34), crowdMat); box.position.y=7; g.add(box);
+  g.position.set(sign*(TUNE.FIELD_WIDTH/2+9), 0, TUNE.FIELD_LENGTH/2); g.rotation.z=sign*0.5; scene.add(g); }
+sideStand(1); sideStand(-1);
+function endStand(sign){ const box=new THREE.Mesh(new THREE.BoxGeometry(TUNE.FIELD_WIDTH+30,17,15), crowdMat);
+  box.position.set(0,7, sign>0?TUNE.FIELD_LENGTH+12:-12); box.rotation.x=sign*0.5; scene.add(box); }
+endStand(1); endStand(-1);
+
 /* ---------------- players ---------------- */
-function makePlayer(color){ const g=new THREE.Group();
+const HELMET={ BLUE:'#eef2f8', RED:'#242b40' };   // white vs. navy shells
+const NUMS=[1,4,7,10,12,21,24,32,55,80,88];
+function numTex(n){ const cv=document.createElement('canvas'); cv.width=cv.height=64; const g=cv.getContext('2d');
+  g.font='bold 46px Arial'; g.textAlign='center'; g.textBaseline='middle';
+  g.lineWidth=7; g.strokeStyle='rgba(0,0,0,.5)'; g.strokeText(String(n),32,35); g.fillStyle='#ffffff'; g.fillText(String(n),32,35);
+  return new THREE.CanvasTexture(cv); }
+function makePlayer(team, number){ const g=new THREE.Group(); const color=TEAM[team];
   const bodyMat=new THREE.MeshStandardMaterial({color,roughness:.85});
   const body=new THREE.Mesh(new THREE.BoxGeometry(1.25,1.7,0.9),bodyMat); body.position.y=1.3; body.castShadow=true; g.add(body);
-  const head=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.75,0.8),new THREE.MeshStandardMaterial({color:'#d8b48a'})); head.position.y=2.45; head.castShadow=true; g.add(head);
+  const pads=new THREE.Mesh(new THREE.BoxGeometry(1.72,0.5,1.05),bodyMat); pads.position.y=2.02; pads.castShadow=true; g.add(pads);   // shoulder pads overhang
+  const helmet=new THREE.Mesh(new THREE.BoxGeometry(0.84,0.72,0.86), new THREE.MeshStandardMaterial({color:HELMET[team],roughness:.45,metalness:.15}));
+  helmet.position.y=2.63; helmet.castShadow=true; g.add(helmet);
+  const face=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.4,0.18), new THREE.MeshStandardMaterial({color:'#caa06e'})); face.position.set(0,2.55,0.45); g.add(face);
+  const mask=new THREE.Mesh(new THREE.BoxGeometry(0.46,0.08,0.14), new THREE.MeshStandardMaterial({color:'#c9ced6'})); mask.position.set(0,2.45,0.55); g.add(mask);
+  const num=new THREE.Mesh(new THREE.PlaneGeometry(0.95,0.95), new THREE.MeshBasicMaterial({map:numTex(number),transparent:true}));
+  num.position.set(0,1.55,-0.47); num.rotation.y=Math.PI; g.add(num);   // back number — what the behind-the-back camera sees
   g.userData={ bodyMat, knock:new THREE.Vector3(), knockT:0, engaged:false, facing:0 };
   return g; }
 const PL=[];
-for(const team of ['BLUE','RED']) for(let i=0;i<TUNE.TEAM_SIZE;i++){ const p=makePlayer(TEAM[team]); p.userData.team=team; scene.add(p); PL.push(p); }
+for(const team of ['BLUE','RED']) for(let i=0;i<TUNE.TEAM_SIZE;i++){ const p=makePlayer(team, NUMS[i]); p.userData.team=team; scene.add(p); PL.push(p); }
 // carrier highlight (gold) + controlled ring
 const ring=new THREE.Mesh(new THREE.RingGeometry(1.0,1.35,24), new THREE.MeshBasicMaterial({color:'#ffffff',side:THREE.DoubleSide,transparent:true,opacity:.9}));
 ring.rotation.x=-Math.PI/2; ring.position.y=0.05; scene.add(ring);
@@ -242,8 +310,11 @@ const ballVel=new THREE.Vector3(), ballAng=new THREE.Vector3();
 
 /* ---------------- state ---------------- */
 let possession='BLUE', carrier=-1, controlled=-1;
-let truck=null, truckCd=0, latCd=0;
+let truck=null, truckCd=0, latCd=0, jukeCd=0, jukeT=0, stamina=1;
+const jukeVel=new THREE.Vector3();
 let scoreB=0, scoreR=0, running=false, gameOver=false;
+const STATS={ trucks:0, jukes:0, takeaways:0, giveaways:0, tds:0, longest:0 };
+let possStartZ=null, lastFumbleTeam=null, coachDone=false;
 let phase='PLAY';                 // SETUP (place pieces, aerial) -> KICK (ball drops to the circle) -> PLAY
 let recvTeam='BLUE', kickReceiver=-1, grabbed=-1;
 let setupMode='MOVE', drawingIdx=-1;            // MOVE = drag to reposition · DRAW = drag to draw a blocker's initial block
@@ -299,6 +370,9 @@ const sfx={
   score(){ tone(330,0.5,'sawtooth',0.3); setTimeout(()=>tone(440,0.4,'sawtooth',0.3),120); setTimeout(()=>tone(554,0.7,'sawtooth',0.3),240); crowdSwell(0.45,2400); },
 };
 
+/* ---------------- haptics (mobile) ---------------- */
+function haptic(pattern){ try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
+
 /* ---------------- juice: screen shake + particle bursts ---------------- */
 let shakeT=0, shakeMag=0;
 function shake(mag,ms){ shakeMag=Math.max(shakeMag,mag); shakeT=Math.max(shakeT,(ms||300)/1000); }
@@ -336,7 +410,7 @@ function updateCues(){
 
 /* ---- SETUP phase: aerial view, drag your pieces, a landing circle that moves each possession ---- */
 function beginSetup(recv){
-  recvTeam=recv; phase='SETUP'; running=true; possession='NONE'; carrier=-1; truck=null; grabbed=-1; latCd=0;
+  recvTeam=recv; phase='SETUP'; running=true; possession='NONE'; carrier=-1; truck=null; grabbed=-1; latCd=0; jukeCd=0; jukeT=0; stamina=1;
   // landing spot in the receiving team's return area — RANDOM every possession
   // like a real kickoff: the returner catches DEEP near their OWN goal line and runs the field back
   const og = recv==='BLUE' ? goalLine('RED') : goalLine('BLUE');   // receiver's own goal line (14 for BLUE, 106 for RED)
@@ -377,7 +451,7 @@ function updateKickBtn(){ document.getElementById('kick').disabled=!canKick();
   document.getElementById('setupHint').textContent = recvTeam==='BLUE'
     ? (canKick()?'DRAG YOUR PLAYERS · RETURNER IS SET':'DRAG A PLAYER INTO THE GOLD CIRCLE')
     : 'DRAG YOUR DEFENDERS · CPU RETURNS AT THE CIRCLE'; }
-function showControls(on){ for(const id of ['stick','truckBtn','pitchBtn']) document.getElementById(id).style.display=on?'':'none'; }
+function showControls(on){ for(const id of ['stick','truckBtn','pitchBtn','jukeBtn','stamWrap']) document.getElementById(id).style.display=on?'':'none'; }
 function kickoff(){ if(!canKick())return; phase='KICK'; audioResume(); sfx.kick();
   kickReceiver=nearestOfTeam(recvTeam, landing); PL[kickReceiver].position.set(landing.x,0,landing.z);
   ball.position.set(landing.x,15,landing.z); ballVel.set(0,0,0);
@@ -390,6 +464,7 @@ function kickoff(){ if(!canKick())return; phase='KICK'; audioResume(); sfx.kick(
 function updateKick(dt){ ballVel.y-=TUNE.GRAVITY*dt; ball.position.y+=ballVel.y*dt; ball.rotation.x+=6*dt;
   if(ball.position.y<=1.5){ ball.position.y=1.5; possession=recvTeam; carrier=kickReceiver; truckCd=TUNE.TRUCK_COOLDOWN_S;
     phase='PLAY'; pickControlled(); updateHighlights(); camReady=false; flash(); sfx.catch(); crowdSwell(0.12,700);
+    if(recvTeam==='BLUE') possStartZ=landing.z;
     msg(recvTeam==='BLUE'?'YOUR BALL':'CPU RETURNS', recvTeam==='BLUE'?'good':'bad', 650); } }
 function pickControlled(){
   if(possession==='LOOSE') controlled=nearestOfTeam('BLUE',ball.position);
@@ -409,7 +484,9 @@ function updateContact(dt){
     const d=flat(p,cP); if(d<nd){nd=d;near=i;} }
   if(near<0 || nd>TUNE.TACKLE_RADIUS) return;
   if(possession==='BLUE'){                 // YOU carry -> timing check
-    if(!truck && truckCd<=0){ truck={t:0,tapped:false,foe:near}; showTruck(true); sfx.contact(); }
+    if(!truck && truckCd<=0){ truck={t:0,tapped:false,foe:near}; showTruck(true); sfx.contact();
+      if(!coachDone){ coachDone=true; const b=document.getElementById('truckBtn'); b.classList.add('coach');
+        msg('TAP TRUCK IN THE GREEN RING','good',1400); setTimeout(()=>b.classList.remove('coach'),2600); } }
   } else {                                  // CPU carrier tackled by your team -> pop
     popBall(PL[carrier].position, near);
   }
@@ -425,15 +502,15 @@ function attemptTruck(){ if(!truck||truck.tapped)return; truck.tapped=true;
   if(truck.t>=lead && truck.t<=tot){ flash();
     const f=PL[truck.foe]; if(f){ const away=f.position.clone().sub(PL[carrier].position).setY(0).normalize().multiplyScalar(TUNE.TRUCK_KNOCKBACK);
       f.userData.knock.copy(away); f.userData.knockT=0.45; }
-    sfx.truck(); shake(0.65,320); burst(PL[carrier].position,'#8ff0a0',18,6.5);
+    sfx.truck(); shake(0.65,320); burst(PL[carrier].position,'#8ff0a0',18,6.5); haptic(55); if(PL[carrier].userData.team==='BLUE') STATS.trucks++;
     PL[carrier].userData.boost=TUNE.TRUCK_BOOST_MS/1000; truckCd=TUNE.TRUCK_COOLDOWN_S; showTruck(false); truck=null; msg('TRUCK!','good',550);
   } else popBall(PL[carrier].position, truck.foe); }
 function showTruck(on){ document.getElementById('truck').style.display=on?'block':'none'; }
 function popBall(atPos, byIdx){
   showTruck(false); truck=null; const wasBlue = possession==='BLUE';
-  possession='LOOSE'; carrier=-1; updateHighlights(); flash();
-  sfx.hit(); sfx.fumble(); shake(0.85,380); burst(atPos,'#ffcf4d',20,7.5);
-  msg(wasBlue?'TACKLED!':'BALL OUT!', wasBlue?'bad':'good', 800);
+  possession='LOOSE'; carrier=-1; updateHighlights(); flash(); lastFumbleTeam = wasBlue?'BLUE':'RED';
+  sfx.hit(); sfx.fumble(); shake(0.85,380); burst(atPos,'#ffcf4d',20,7.5); haptic([40,30,90]);
+  msg(wasBlue?'FUMBLE!':'BALL OUT!', wasBlue?'bad':'good', 800);
   ball.position.copy(atPos).setY(1.6);
   ballVel.set((Math.random()*2-1)*TUNE.POP_SPREAD, TUNE.POP_UP, (Math.random()*2-1)*TUNE.POP_SPREAD);
   ballAng.set((Math.random()*2-1)*10,0,(Math.random()*2-1)*10);
@@ -455,7 +532,9 @@ function updateLooseBall(dt){
     let best=-1,bd=1e9; for(let i=0;i<PL.length;i++){ const d=Math.hypot(PL[i].position.x-ball.position.x,PL[i].position.z-ball.position.z); if(d<bd){bd=d;best=i;} }
     if(bd<TUNE.RECOVER_RADIUS && best>=0){ const t=PL[best].userData.team;
       possession=t; carrier=best; truckCd=TUNE.TRUCK_COOLDOWN_S; pickControlled(); updateHighlights(); camReady=false;
-      sfx.recover(); shake(0.3,220); burst(ball.position,t==='BLUE'?'#8ff0a0':'#ff8a6b',10,4.5); crowdSwell(0.14,700);
+      if(lastFumbleTeam && t!==lastFumbleTeam){ if(t==='BLUE') STATS.takeaways++; else STATS.giveaways++; }
+      if(t==='BLUE') possStartZ=ball.position.z;
+      sfx.recover(); shake(0.3,220); burst(ball.position,t==='BLUE'?'#8ff0a0':'#ff8a6b',10,4.5); crowdSwell(0.14,700); haptic(30);
       msg(t==='BLUE'?'YOU RECOVER!':'CPU BALL', t==='BLUE'?'good':'bad', 750); }
   }
 }
@@ -468,6 +547,25 @@ function attemptLateral(){
     const behind=(p.position.z - cP.z)*dir < 1.0;    // trailing (toward own goal) — a backward pitch
     if(!behind)continue; const d=flat(p,PL[carrier]); if(d<TUNE.LATERAL_RANGE && d<bd){bd=d;best=i;} }
   if(best>=0){ carrier=best; controlled=best; latCd=TUNE.LATERAL_COOLDOWN_S; truckCd=0.35; updateHighlights(); flash(); sfx.pitch(); msg('PITCH!','good',500); }
+}
+
+/* ---------------- juke (finesse evade — the counterpart to TRUCK) ---------------- */
+function attemptJuke(){
+  if(possession!=='BLUE'||carrier<0||jukeCd>0||stamina<TUNE.JUKE_COST) return;
+  const c=PL[carrier];
+  // dash direction = your steer (camera-relative); if neutral, sidestep away from the nearest tackler
+  const camYaw=Math.atan2(camA.x-camP.x,camA.z-camP.z), cy=Math.cos(camYaw), sy=Math.sin(camYaw);
+  let mx=cy*input.x+sy*input.y, mz=-sy*input.x+cy*input.y, m=Math.hypot(mx,mz);
+  if(m<0.2){ const fx=Math.sin(c.userData.facing), fz=Math.cos(c.userData.facing); mx=fz; mz=-fx; m=1;   // perpendicular to facing
+    const foe=nearestOfTeam('RED',c.position); if(foe>=0){ const f=PL[foe];
+      if((f.position.x-c.position.x)*mx+(f.position.z-c.position.z)*mz>0){ mx=-mx; mz=-mz; } } }   // dash away from him
+  else { mx/=m; mz/=m; }
+  jukeVel.set(mx,0,mz); jukeT=TUNE.JUKE_TIME; jukeCd=TUNE.JUKE_COOLDOWN; stamina=Math.max(0,stamina-TUNE.JUKE_COST);
+  faceTo(c, Math.atan2(mx,mz), 1);
+  if(truck){ const f=PL[truck.foe]; if(f){ f.userData.knock.set(-jukeVel.x*3.2,0,-jukeVel.z*3.2); f.userData.knockT=0.4; }  // tackler whiffs
+    showTruck(false); truck=null; truckCd=0.5; flash(); sfx.pitch(); shake(0.3,180); haptic(35); msg('JUKE!','good',480); }
+  else { sfx.pitch(); haptic(22); msg('JUKE!','good',320); }
+  STATS.jukes++;
 }
 
 /* ---------------- movement ---------------- */
@@ -486,6 +584,10 @@ function updatePlayers(dt){
       for(let j=0;j<PL.length;j++){ const b=PL[j]; if(b.userData.team!==possession||j===carrier)continue;
         if(flat(PL[i],b)<TUNE.BLOCK_RADIUS){ PL[i].userData.engaged=true; break; } } } }
 
+  const claimed=new Set();                                        // one blocker per defender
+  const diffMult=1+(scoreB+scoreR)*TUNE.DIFF_RAMP;                // defense sharpens as the game goes
+  const cP = carrier>=0 ? PL[carrier].position : null;
+  const cVx = carrier>=0 ? (PL[carrier].userData.vx||0) : 0, cVz = carrier>=0 ? (PL[carrier].userData.vz||0) : 0;
   for(let i=0;i<PL.length;i++){ const p=PL[i], u=p.userData;
     if(u.knockT>0){ u.knockT-=dt; p.position.addScaledVector(u.knock,dt); clampField(p); continue; }
     if(i===controlled){ applyInput(p,dt); continue; }
@@ -493,33 +595,45 @@ function updatePlayers(dt){
       const rank=teamRankToBall(p); const sp=(rank<3?TUNE.CHASE_SPEED:TUNE.MATE_SPEED*0.6);
       moveToward(p,ball.position.x,ball.position.z,sp,dt);
     } else if(u.team===possession){
-      if(i===carrier){ // AI carrier drives to its goal, veering from the nearest tackler
-        const g=goalZ(u.team); let tx=0; const foeIdx=nearestOfTeam(u.team==='BLUE'?'RED':'BLUE',p.position);
-        if(foeIdx>=0){ const f=PL[foeIdx]; if(flat(f,p)<6) tx = p.position.x + (p.position.x-f.position.x); }
+      if(i===carrier){ // AI carrier drives to its goal, veering hard from the nearest tackler toward open field
+        const g=goalZ(u.team); let tx=p.position.x; const foeIdx=nearestOfTeam(u.team==='BLUE'?'RED':'BLUE',p.position);
+        if(foeIdx>=0){ const f=PL[foeIdx], fd=flat(f,p);
+          if(fd<8){ const away=(p.position.x-f.position.x); tx = p.position.x + Math.sign(away||1)*(8-fd)*0.9; } }
+        tx=Math.max(-18,Math.min(18,tx));
         moveToward(p,tx,g,TUNE.CARRIER_SPEED,dt);
-      } else { // blocker
+      } else { // blocker — pick up the nearest UNCLAIMED defender to the carrier (no ganging)
         if(u.assign && u.blockT>0){ u.blockT-=dt;                 // run the DRAWN initial block first...
           if(Math.hypot(p.position.x-u.assign.x,p.position.z-u.assign.z)<1.6) u.blockT=0;
           else moveToward(p,u.assign.x,u.assign.z,TUNE.MATE_SPEED,dt);
         }
-        if(!(u.assign && u.blockT>0)){ u.assign=null;             // ...then revert to meeting the nearest defender
-          const dfd=nearestOfTeam(u.team==='BLUE'?'RED':'BLUE',PL[carrier].position);
-          if(dfd>=0) moveToward(p,PL[dfd].position.x,PL[dfd].position.z,TUNE.MATE_SPEED,dt);
-          else moveToward(p,0,goalZ(u.team),TUNE.MATE_SPEED,dt);
+        if(!(u.assign && u.blockT>0)){ u.assign=null;
+          const foe=u.team==='BLUE'?'RED':'BLUE'; let dfd=-1,bd=1e9;
+          for(let k=0;k<PL.length;k++){ if(PL[k].userData.team!==foe||claimed.has(k))continue;
+            const d=cP?Math.hypot(PL[k].position.x-cP.x,PL[k].position.z-cP.z):flat(PL[k],p); if(d<bd){bd=d;dfd=k;} }
+          if(dfd>=0){ claimed.add(dfd);
+            // meet the defender a step in FRONT (between him and the carrier) to wall him off
+            const f=PL[dfd].position, ang=cP?Math.atan2(cP.x-f.x,cP.z-f.z):0;
+            moveToward(p, f.x+Math.sin(ang)*1.2, f.z+Math.cos(ang)*1.2, TUNE.MATE_SPEED,dt);
+          } else moveToward(p,0,goalZ(u.team),TUNE.MATE_SPEED,dt);
         }
       }
-    } else { // defense
+    } else { // defense — pursue with an INTERCEPT angle (lead the carrier), not a stern-chase
       if(u.assign && u.blockT>0){ u.blockT-=dt;                  // run the DRAWN initial move first...
         if(Math.hypot(p.position.x-u.assign.x,p.position.z-u.assign.z)<1.6) u.blockT=0;
-        else moveToward(p,u.assign.x,u.assign.z,TUNE.DEF_SPEED,dt);
+        else moveToward(p,u.assign.x,u.assign.z,TUNE.DEF_SPEED*diffMult,dt);
       }
-      if(!(u.assign && u.blockT>0)){ u.assign=null;              // ...then pursue the carrier
-        const sp=u.engaged?TUNE.DEF_SPEED*TUNE.BLOCKED_MULT:TUNE.DEF_SPEED;
-        moveToward(p,PL[carrier].position.x,PL[carrier].position.z,sp,dt);
+      if(!(u.assign && u.blockT>0) && cP){ u.assign=null;
+        const sp=(u.engaged?TUNE.DEF_SPEED*TUNE.BLOCKED_MULT:TUNE.DEF_SPEED)*diffMult;
+        const dist=Math.hypot(cP.x-p.position.x,cP.z-p.position.z);
+        const lead=Math.min(1.1, dist/Math.max(4,sp))*0.6;        // how far ahead to aim (beatable, not perfect)
+        moveToward(p, cP.x+cVx*lead, cP.z+cVz*lead, sp,dt);
       }
     }
   }
   resolveBodies();
+  // velocity estimate (for intercept AI) — measured AFTER movement + separation
+  if(dt>0) for(const p of PL){ const u=p.userData;
+    u.vx=(p.position.x-(u.lx??p.position.x))/dt; u.vz=(p.position.z-(u.lz??p.position.z))/dt; u.lx=p.position.x; u.lz=p.position.z; }
 }
 // solid bodies: push any overlapping pair apart so players never clip through one another
 function resolveBodies(){
@@ -540,9 +654,13 @@ function teamRankToBall(p){ const my=Math.hypot(p.position.x-ball.position.x,p.p
   for(const q of PL){ if(q.userData.team!==p.userData.team||q===p)continue;
     if(Math.hypot(q.position.x-ball.position.x,q.position.z-ball.position.z)<my) r++; } return r; }
 function applyInput(p,dt){ const u=p.userData;
-  let sp = (possession==='BLUE'&&carrier===controlled) ? TUNE.CARRIER_SPEED : TUNE.CHASE_SPEED;
+  const iAmCarrier = possession==='BLUE'&&carrier===controlled;
+  let sp = iAmCarrier ? TUNE.CARRIER_SPEED : TUNE.CHASE_SPEED;
   if(u.boost>0){ sp*=TUNE.TRUCK_BOOST; u.boost-=dt; }
   const mag=Math.hypot(input.x,input.y);
+  // SPRINT: full stick + stamina makes the carrier faster (a resource to manage); regen otherwise
+  if(iAmCarrier && mag>0.85 && stamina>0.02){ sp*=TUNE.SPRINT_MULT; stamina=Math.max(0,stamina-TUNE.STAMINA_DRAIN*dt); }
+  else if(iAmCarrier){ stamina=Math.min(1,stamina+TUNE.STAMINA_REGEN*dt); }
   if(mag>0.05){
     // CAMERA-RELATIVE: "forward/up" always goes into the screen, "left/right" is screen-relative,
     // no matter which way the camera is pointing (fixes controls when chasing / camera swung around)
@@ -553,8 +671,10 @@ function applyInput(p,dt){ const u=p.userData;
     p.position.x+=mx*sp*dt*Math.min(1,mag); p.position.z+=mz*sp*dt*Math.min(1,mag);
     faceTo(p,Math.atan2(mx,mz),dt);
   }
+  // JUKE dash overlays movement for a brief burst
+  if(jukeT>0){ jukeT-=dt; p.position.x+=jukeVel.x*TUNE.JUKE_SPEED*dt; p.position.z+=jukeVel.z*TUNE.JUKE_SPEED*dt; }
   clampField(p);
-  if(possession==='BLUE'&&carrier===controlled) ball.position.copy(p.position).add(new THREE.Vector3(0.5,1.5,0));
+  if(iAmCarrier) ball.position.copy(p.position).add(new THREE.Vector3(0.5,1.5,0));
 }
 
 /* ---------------- score ---------------- */
@@ -565,8 +685,9 @@ function checkScore(){
   if(t==='RED'&&p.position.z<=goalLine('RED')) return doScore('RED');
 }
 function doScore(t){ if(gameOver)return; flash();
-  sfx.whistle(); sfx.score(); shake(1.15,650); if(carrier>=0) burst(PL[carrier].position, t==='BLUE'?'#8ff0a0':'#ff8a6b', 28, 8);
-  if(t==='BLUE'){ scoreB++; msg('TOUCHDOWN!','big',1500); } else { scoreR++; msg('CPU SCORES','bad',1500); }
+  sfx.whistle(); sfx.score(); shake(1.15,650); if(carrier>=0) burst(PL[carrier].position, t==='BLUE'?'#8ff0a0':'#ff8a6b', 28, 8); haptic([60,40,60,40,120]);
+  if(t==='BLUE'){ scoreB++; STATS.tds++; msg('TOUCHDOWN!','big',1500); } else { scoreR++; msg('CPU SCORES','bad',1500); }
+  possStartZ=null;
   updateScoreHud();
   if(scoreB>=TUNE.WIN_SCORE||scoreR>=TUNE.WIN_SCORE){ setTimeout(()=>endGame(),1400); running=false; return; }
   running=false;
@@ -576,6 +697,9 @@ function endGame(){ gameOver=true; const win=scoreB>scoreR;
   document.getElementById('overTitle').textContent = win?'YOU WIN':'CPU WINS';
   document.getElementById('overTitle').style.color = win?'#8ff0a0':'#ff8a6b';
   document.getElementById('overSub').textContent = 'Final — YOU '+scoreB+' · '+scoreR+' CPU';
+  const cells=[['longest','LONGEST RUN','yd'],['trucks','TRUCKS',''],['jukes','JUKES',''],['takeaways','TAKEAWAYS',''],['giveaways','GIVEAWAYS',''],['tds','TOUCHDOWNS','']];
+  document.getElementById('overStats').innerHTML = cells.map(([k,l,u])=>
+    `<div class="stat"><div class="n">${STATS[k]}${u?'<span style="font-size:13px">'+u+'</span>':''}</div><div class="l">${l}</div></div>`).join('');
   document.getElementById('over').style.display='flex'; }
 
 /* ---------------- camera + hud ---------------- */
@@ -606,9 +730,12 @@ function hud(){ if(phase!=='PLAY'){ ring.visible=false; return; }
   el.innerHTML = possession==='LOOSE' ? '<b>BALL LOOSE</b> — go get it'
     : possession==='BLUE' ? 'YOU HAVE THE BALL' : 'CPU HAS THE BALL — force it out';
   const d=document.getElementById('dir');
-  if(possession==='BLUE'&&carrier>=0){ const yds=Math.max(0,Math.round(goalLine('BLUE')-PL[carrier].position.z)); d.textContent=yds+' yds'; d.style.display='block'; }
+  if(possession==='BLUE'&&carrier>=0){ const yds=Math.max(0,Math.round(goalLine('BLUE')-PL[carrier].position.z)); d.textContent=yds+' yds'; d.style.display='block';
+    if(possStartZ!=null){ const gain=Math.round((PL[carrier].position.z-possStartZ)*dirOf('BLUE')); if(gain>STATS.longest) STATS.longest=gain; } }
   else d.style.display='none';
   ring.visible = controlled>=0 && running; if(controlled>=0){ ring.position.x=PL[controlled].position.x; ring.position.z=PL[controlled].position.z; }
+  const sw=document.getElementById('stamWrap'); document.getElementById('stamFill').style.width=Math.round(stamina*100)+'%';
+  sw.classList.toggle('low', stamina<0.3);
 }
 
 /* ---------------- loop ---------------- */
@@ -623,7 +750,7 @@ function tick(){ requestAnimationFrame(tick); let dt=clock.getDelta(); if(dt>0.0
       const wantSlow = truck && truck.t>=TUNE.TRUCK_PROMPT_LEAD_MS*0.5;
       timeScale += ((wantSlow?TUNE.SLOWMO:1)-timeScale)*Math.min(1,dt*14);
       const sdt=dt*timeScale;
-      if(truckCd>0)truckCd-=sdt; if(latCd>0)latCd-=sdt;
+      if(truckCd>0)truckCd-=sdt; if(latCd>0)latCd-=sdt; if(jukeCd>0)jukeCd-=sdt;
       pickControlled(); updatePlayers(sdt);
       if(possession==='LOOSE') updateLooseBall(sdt);
       else { updateContact(sdt); updateTruck(sdt); checkScore(); }
@@ -640,8 +767,9 @@ function flash(){ const f=document.getElementById('flash'); f.classList.remove('
 
 /* ---------------- input ---------------- */
 const keys={};
-addEventListener('keydown',e=>{ keys[e.code]=true;
+addEventListener('keydown',e=>{ if(e.repeat){return;} keys[e.code]=true;
   if(e.code==='Space'){ e.preventDefault(); attemptTruck(); }
+  if(e.code==='KeyE'||e.code==='KeyQ'){ e.preventDefault(); attemptJuke(); }
   if(e.code==='ShiftLeft'||e.code==='ShiftRight'){ e.preventDefault(); attemptLateral(); } keySteer(); });
 addEventListener('keyup',e=>{ keys[e.code]=false; keySteer(); });
 function keySteer(){ let x=0,y=0; if(keys['KeyA']||keys['ArrowLeft'])x-=1; if(keys['KeyD']||keys['ArrowRight'])x+=1;
@@ -655,6 +783,7 @@ function sMove(t){ let dx=t.clientX-sc.x,dy=t.clientY-sc.y; const max=50,d=Math.
   nub.style.transform=`translate(${dx-27}px,${dy-27}px)`; input.x=dx/max; input.y=-dy/max; }
 const tb=document.getElementById('truckBtn'); tb.addEventListener('touchstart',e=>{attemptTruck();e.preventDefault();},{passive:false}); tb.addEventListener('mousedown',()=>attemptTruck());
 const pb=document.getElementById('pitchBtn'); pb.addEventListener('touchstart',e=>{attemptLateral();e.preventDefault();},{passive:false}); pb.addEventListener('mousedown',()=>attemptLateral());
+const jb=document.getElementById('jukeBtn'); jb.addEventListener('touchstart',e=>{attemptJuke();e.preventDefault();},{passive:false}); jb.addEventListener('mousedown',()=>attemptJuke());
 
 /* ---------------- setup drag (place your pieces on the aerial field) ---------------- */
 function fieldPoint(e){ const r=canvas.getBoundingClientRect(); const nx=((e.clientX-r.left)/r.width)*2-1, ny=-((e.clientY-r.top)/r.height)*2+1;
@@ -681,6 +810,7 @@ document.getElementById('mode').addEventListener('click',()=>{ setupMode = setup
 function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); }
 addEventListener('resize',resize); resize();
 function newGame(){ audioInit(); audioResume(); scoreB=0; scoreR=0; gameOver=false; updateScoreHud();
+  STATS.trucks=STATS.jukes=STATS.takeaways=STATS.giveaways=STATS.tds=STATS.longest=0; possStartZ=null; lastFumbleTeam=null;
   document.getElementById('over').style.display='none'; document.getElementById('start').style.display='none';
   beginSetup('BLUE'); }
 document.getElementById('go').addEventListener('click',newGame);
