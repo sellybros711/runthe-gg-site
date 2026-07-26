@@ -320,24 +320,25 @@
      Tier 2 pulls the wordmark down for shorter windows again.
      Tier 3, and ONLY tier 3, reorders the screen. */
   @media (max-height:800px){
-    .hero-field{aspect-ratio:auto;height:96px}
+    .field.hero-field{aspect-ratio:auto;height:116px}
     .hero{margin-bottom:10px}
     .hnote{margin-top:7px;font-size:11.5px}
     .htitle{margin-bottom:11px}
     .legal{margin-top:16px}
   }
   @media (max-height:640px){
-    /* 74, because 80 left Start's bottom edge at 570px against an iPhone SE's 568.
-       Two pixels is still below the fold. */
-    .hero-field{height:74px}
-    .htitle h1{font-size:40px}
+    /* Was 74, because 80 left Start's bottom edge at 570px against an iPhone SE's 568 and
+       two pixels is still below the fold. The one-line headline gave about 51px back, so the
+       field can take 30 of it and the button still clears. Re-measured, not assumed. */
+    .field.hero-field{height:104px}
+    .htitle h1{font-size:min(10.5vw,40px)}
     .htitle .kicker{margin-bottom:2px}
     .htitle p{font-size:12.5px;margin-top:6px}
     .legal{margin-top:14px}
   }
   @media (max-height:500px){
-    .hero-field{height:104px}
-    .htitle h1{font-size:38px}
+    .field.hero-field{height:112px}
+    .htitle h1{font-size:min(9vw,38px)}
     /* AND THE BUTTONS COME FIRST.
        Shrinking alone was not enough: it took Start from 789px down the page to 519,
        against a 390px fold, and it could not do better without gutting the animation.
@@ -360,8 +361,8 @@
   }
   /* Shorter still, which is a phone in landscape with the browser chrome showing. */
   @media (max-height:400px){
-    .hero-field{height:76px}
-    .htitle h1{font-size:31px}
+    .field.hero-field{height:88px}
+    .htitle h1{font-size:min(8.5vw,31px)}
     .htitle p{display:none}
   }
   /* Legal and credit, at the foot of the landing screen. Quiet on purpose: it has to
@@ -381,7 +382,15 @@
   .hnote{margin:11px 0 0;text-align:center;font-size:12.5px;color:var(--dim-2);
     transition:opacity .3s ease}
   .hero-reels{margin-top:0}
-  .hero-field{aspect-ratio:1/0.52;margin-top:10px}
+  /* Taller than it was. The lowest chip carries a name and a team line UNDER its disc, and at
+     1/0.52 that ran into the field's own overflow:hidden and clipped the running back by 3px
+     on an iPhone SE. The extra height also stops the six spots sitting on top of each other.
+     Paid for by the headline, which now takes one line instead of two. */
+  /* .field.hero-field, not .hero-field: the element carries both classes, and the base .field
+     rule sits further down the stylesheet at the same specificity, so a single-class selector
+     here loses the aspect-ratio to it. It happened to be invisible while both said 0.52. */
+  .field.hero-field{aspect-ratio:1/0.60}
+  .hero-field{margin-top:10px}
   /* Nothing on the landing field is tappable, and a chip that looks tappable and
      is not is worse than one that plainly is not. */
   .hero-field .chip{cursor:default}
@@ -396,8 +405,19 @@
      band. Sized off the title rather than fixed, so the two move together. */
   .htitle .kicker{font-family:var(--fn);font-size:11px;font-weight:600;letter-spacing:.24em;
     text-transform:uppercase;color:var(--red)}
-  .htitle h1{font-family:var(--fd);font-size:46px;font-weight:900;line-height:.9;
-    letter-spacing:.005em;margin:7px 0 0;text-transform:uppercase}
+  /* ONE LINE, ALWAYS. At a fixed 46px "THE PERFECT SEASON" wrapped at every width, which
+     cost two things: a second line of vertical space on the screen that has the least of it,
+     and a headline that read as two stacked phrases rather than as the game's name.
+
+     Measured in the shipped face, the string is 7.79px wide per px of font size. Content
+     width is the viewport less 28px of padding, capped by .wrap at 600, so the widest type
+     that fits one line is 0.1284 x (vw - 28). At 11vw that leaves margin at every width from
+     240px up, and the cap holds it at 70 once .wrap stops growing.
+
+     nowrap deliberately: if the sizing is ever wrong the headline overflows and the overflow
+     test fails, rather than quietly wrapping again. */
+  .htitle h1{font-family:var(--fd);font-size:min(11vw,70px);font-weight:900;line-height:.9;
+    letter-spacing:.005em;margin:7px 0 0;text-transform:uppercase;white-space:nowrap}
   .htitle p{margin:11px auto 0;max-width:23em;font-size:14px;color:var(--dim);line-height:1.45}
   .hrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
 
@@ -1257,7 +1277,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
     <div class="htitle">
       <div class="kicker">1999 to 2025</div>
-      <h1>The Perfect<br>Season</h1>
+      <!-- No <br>. The break was hardcoded, so the headline was two lines no matter what
+           size it was set at, and the clamp below could never have fixed it on its own. -->
+      <h1>The Perfect Season</h1>
       <p>Draft six players out of NFL history, then try to win every game you play.</p>
     </div>
 
@@ -3169,11 +3191,31 @@ function heroFaces(){
 function heroChips(){
   const f=$('h-field');
   f.querySelectorAll('.chip').forEach(c=>c.remove());
+  /* VERTICAL POSITIONS ARE MAPPED INTO A SAFE BAND, not used as raw percentages.
+     A filled chip carries a name and a team line UNDER its disc, so the space it needs is
+     the disc radius plus about 24px of label. On a short field a spot at 82% has nowhere to
+     put that and the field's own overflow:hidden cuts the running back's name off: measured
+     at 10px on a 360x640 phone and 13px in landscape.
+
+     Percentages cannot express "leave room for the label", because the label is a fixed
+     number of pixels and the field is not. So the spots' 24-to-82% spread is squeezed into
+     whatever band actually fits the field as rendered. On a tall field the band is nearly the
+     whole height and nothing moves; on a short one everything gathers toward the middle,
+     which is the right failure. */
+  const H=f.getBoundingClientRect().height||1;
+  const DISC=17, LABEL=24;
+  const tops=HERO_SPOTS.map(sp=>sp.top);
+  const lo=Math.min(...tops), hi=Math.max(...tops);
+  const safeLo=DISC, safeHi=Math.max(safeLo, H-DISC-LABEL);
+  const place=(top)=>hi>lo
+    ? safeLo+((top-lo)/(hi-lo))*(safeHi-safeLo)
+    : (safeLo+safeHi)/2;
+
   HERO_SPOTS.forEach((sp,i)=>{
     const on=heroFilled.find(x=>x.at===i);
     const el=document.createElement('div');
     el.className='chip '+(on?'filled':'empty')+(on&&on.fresh?' pop':'');
-    el.style.left=sp.left+'%'; el.style.top=sp.top+'%';
+    el.style.left=sp.left+'%'; el.style.top=place(sp.top)+'px';
     const style=on?' style="background:linear-gradient(160deg,var(--'+on.pos.toLowerCase()+
       '),rgba(0,0,0,.45))"':'';
     el.innerHTML='<div class="disc"'+style+'><span class="dl">'+(on?on.pos:sp.label)+
