@@ -7492,8 +7492,10 @@ function pcStyleOnce(){ if(document.getElementById('pcardcss')) return; const st
    `visibility:visible`; the swap is delayed to the 90° midpoint of the rotation (transition-delay = half the
    flip duration) so the two faces are never coplanar (no z-fight / flip-flash) and neither can blank. */
 '.pcard-face{position:absolute;inset:0;border-radius:16px;overflow:hidden;border:3px solid var(--pcf,#8aa0a8);background:#0a1c12;box-shadow:0 14px 40px rgba(0,0,0,.55);transition:visibility 0s linear .3s}',
-'.pcard-front{transform:rotateY(0deg);-webkit-transform:rotateY(0deg)}',
-'.pcard-back{transform:rotateY(180deg);-webkit-transform:rotateY(180deg)}',
+/* scoped to .pcard3d: the pack-reveal cards reuse .pcard-front/.pcard-back with the OPPOSITE rotation
+   (front at 180deg) + their own rarity glow — unscoped rules here leaked onto them and flashed the aura. */
+'.pcard3d .pcard-front{transform:rotateY(0deg);-webkit-transform:rotateY(0deg)}',
+'.pcard3d .pcard-back{transform:rotateY(180deg);-webkit-transform:rotateY(180deg)}',
 '.pcard3d:not(.flipped) .pcard-back{visibility:hidden}',
 '.pcard3d.flipped .pcard-front{visibility:hidden}',
 '.pcf-mid .pcard-face{box-shadow:0 14px 40px rgba(0,0,0,.55),0 0 18px var(--pcfg)}',

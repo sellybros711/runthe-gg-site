@@ -13751,6 +13751,12 @@ allows Google Fonts, or self-host Anton.*
   neither can be culled. Reduced-motion makes the visibility swap instant too. Verified in Playwright: at
   rest front `visible` (full 312×447 content) / back `hidden`; flip swaps both ways; front no longer carries
   `backface-visibility:hidden`; 0 page errors. Works on the leaderboard + preview paths (shared CSS).
+  FOLLOW-UP: the first cut of this fix added `.pcard-front`/`.pcard-back` transform rules UNSCOPED, which
+  leaked onto the pack-reveal cards (`.packov`) — they reuse the same class names with the opposite rotation
+  (front at 180deg) + a rarity aura (`pkGlowPulse`), so the leak fought their transform and made the glow
+  flash/z-fight. Fixed by scoping both rules to `.pcard3d`. Verified with both stylesheets present: pack front
+  computes rotateY(180) (matrix3d -1) with its glow animation intact; preview front computes identity — no
+  cross-contamination.
 
 - **LAUNCH-PREP AUDIT — UX / legal / SEO pass (code fixes deployed to /golf; policy items flagged).** Ran
   three parallel expert audits (game UX, legal/compliance, technical SEO) over the game + site and applied
