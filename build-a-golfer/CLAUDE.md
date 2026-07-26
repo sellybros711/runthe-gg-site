@@ -13739,6 +13739,32 @@ allows Google Fonts, or self-host Anton.*
   --check` clean. Deployed to /golf. (The separate pack-reveal wheel cards use their own `.pcard` CSS at a
   different site - untouched.)
 
+- **COURSE OVERHAUL — every course made more unique + harder, par-3s made realistic (deployed to /golf).**
+  Owner brief: "significantly improve all courses so they are way more unique and difficult… yardages and
+  pars stay but the layouts and difficulties can get way crazier. Par-3s typically don't have a full fairway —
+  usually a big body of water or trees or hazards." Three coordinated changes, pars + yardages untouched:
+  1. **Par-3 realism (`hvGeom` + pixel renderer).** Par-3 holes no longer draw a tee-to-green fairway. A new
+     par-3 hazard block chooses per hole from {island green, forced water carry, cross-bunker sand carry, or a
+     tree-lined dry one-shotter} weighted by the course style (`st.water`/`st.creek`/`st.waste`/`st.bunk`).
+     The pixel renderer got a `g.par!==3` fairway guard plus a native rough-corridor `DIST` seed so the
+     green still reads as reachable. Sweep across all 41 courses: 161 par-3s → 50 water, 11 island, 16 sand,
+     84 tree-lined (no full-fairway par-3s remain).
+  2. **Per-course identity (`HV_COURSE_STYLE` + `DSIG_HAZ`/`HV_SIG_EXTRA`).** Rewrote the style knobs for all
+     40 courses with extreme, differentiated values (dogleg severity, fairway width, green size, bunker
+     density, pond/creek freq) so no two courses feel alike — e.g. Oakmont tight+bunkered+dry, St Andrews
+     wide+huge-greens, Sawgrass water-laced, Olympic hard-doglegged. Expanded `DSIG_HAZ` to 2–4 dramatic
+     signature hazards per course (Augusta creek/water swing at 11–16, Sawgrass island 17th, Carnoustie's
+     Barry Burn at 6/17/18, etc.).
+  3. **Difficulty recalibration.** Bumped `avg` + Monte-Carlo-solved `cdiff` for the eight brutal championship
+     venues (Oakmont, Winged Foot, Oakland Hills, Shinnecock, Merion, Olympic Club, Southern Hills, Bethpage
+     Black) so an OVR-80 build sits near the tour average and only strong builds beat the pro. Verified:
+     Olympic/Merion/Oakmont OVR-80 ≈ avg, OVR-94 beats the pro 76–83%.
+  Verified in Playwright: full render sweep of every course × every hole in BOTH the pixel (`hvBackdrop`) and
+  illustrated (`hvTerrain`) renderers = **0 bad holes, 0 page errors**; full e2e daily rounds on Olympic /
+  Southwind / Augusta complete cleanly (18 holes, shots intact). Fixed one latent bug surfaced by the sweep:
+  `hvTerrain`'s dune plant read `B.gorse[0]` unconditionally, which threw on the `sahara` biome (no gorse) —
+  now guarded with `if(B.gorse && …)`. `node --check` clean. Deployed to /golf.
+
 - **THE SAHARA — fantasy all-sand waste course + new `sahara` biome (POC, committed to the feature branch,
   NOT deployed).** A proof-of-concept for a wholly-invented course type: 18 green-ribbon holes cut through an
   endless dune sea (`fantasy:true`, `ver:false`, par 72 / 7,420y). Three pieces, all reusable:
