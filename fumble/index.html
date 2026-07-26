@@ -259,9 +259,10 @@ function nearestOfTeam(t,pt,skip){ let b=-1,bd=1e9; for(let i=0;i<PL.length;i++)
 function beginSetup(recv){
   recvTeam=recv; phase='SETUP'; running=true; possession='NONE'; carrier=-1; truck=null; grabbed=-1; latCd=0;
   // landing spot in the receiving team's return area — RANDOM every possession
-  // start the return closer to the scoring goal line (BLUE drives toward z=high, RED toward z=low)
-  const rz = recv==='BLUE' ? rand(TUNE.FIELD_LENGTH*0.52, TUNE.FIELD_LENGTH*0.70) : rand(TUNE.FIELD_LENGTH*0.30, TUNE.FIELD_LENGTH*0.48);
-  landing.set(rand(-TUNE.FIELD_WIDTH*0.32, TUNE.FIELD_WIDTH*0.32), 0, rz);
+  // like a real kickoff: the returner catches DEEP near their OWN goal line and runs the field back
+  const og = recv==='BLUE' ? goalLine('RED') : goalLine('BLUE');   // receiver's own goal line (14 for BLUE, 106 for RED)
+  const rz = og + dirOf(recv)*rand(6,12);                          // ~own 6-12 yard line
+  landing.set(rand(-TUNE.FIELD_WIDTH*0.22, TUNE.FIELD_WIDTH*0.22), 0, rz);  // aimed kick — returner stays fairly central
   landCircle.position.set(landing.x,0.06,landing.z); landCircle.visible=true;
   layoutForSetup(recv);
   ballVel.set(0,0,0); ballAng.set(0,0,0); ball.position.set(landing.x,15,landing.z);
@@ -278,11 +279,18 @@ function beginSetup(recv){
 }
 function layoutForSetup(recv){
   const dir=dirOf(recv), mates=teamPlayers(recv), foes=teamPlayers(recv==='BLUE'?'RED':'BLUE');
-  mates.forEach((p,i)=>{ if(i===0) p.position.set(landing.x,0,landing.z);                    // a default returner in the circle
-    else { const lane=(i-mates.length/2); p.position.set(landing.x+lane*3.0, 0, landing.z + dir*(6+Math.abs(lane)*1.4)); }
-    p.userData.facing=recv==='BLUE'?0:Math.PI; p.userData.knockT=0; });
-  foes.forEach((p,i)=>{ const lane=(i-(foes.length-1)/2); p.position.set(lane*4.4, 0, landing.z + dir*(17+Math.abs(lane)*1.4));
-    p.userData.facing=recv==='BLUE'?Math.PI:0; p.userData.knockT=0; });
+  const og = recv==='BLUE' ? goalLine('RED') : goalLine('BLUE');   // receiver's own goal line (deep)
+  // RETURN TEAM — deep returner in the circle, the other 10 form two staggered blocking walls upfield
+  mates.forEach((p,i)=>{
+    if(i===0){ p.position.set(landing.x,0,landing.z); }            // returner (catches the kick in the gold circle)
+    else { const n=i-1, back=n<5, col=back?n:n-5;                  // 5 up front, 5 behind
+      p.position.set((col-2)*8, 0, og + dir*(back?28:42)); }       // back wall ~30yd up, front wall ~44yd
+    p.userData.facing = recv==='BLUE'?0:Math.PI; p.userData.knockT=0;
+  });
+  // KICKING TEAM — even coverage line spread sideline-to-sideline near midfield, facing the returner
+  foes.forEach((p,i)=>{ const col=i-(foes.length-1)/2;
+    p.position.set(col*4.4, 0, og + dir*52);
+    p.userData.facing = recv==='BLUE'?Math.PI:0; p.userData.knockT=0; });
 }
 function blueInCircle(){ return teamPlayers('BLUE').some(p=>Math.hypot(p.position.x-landing.x,p.position.z-landing.z)<=LAND_R); }
 function canKick(){ return recvTeam==='RED' || blueInCircle(); }
@@ -473,8 +481,8 @@ function endGame(){ gameOver=true; const win=scoreB>scoreR;
 /* ---------------- camera + hud ---------------- */
 function updateCamera(dt){ let tp,ta;
   if(phase==='SETUP'||phase==='KICK'){                     // aerial bird's-eye, centered on the field (x=0) so it never skews
-    tp=new THREE.Vector3(0, 50, landing.z - 22*dirOf(recvTeam));
-    ta=new THREE.Vector3(0, 0, landing.z + 6*dirOf(recvTeam));
+    tp=new THREE.Vector3(0, 50, landing.z - 30*dirOf(recvTeam));   // behind & above the deep returner
+    ta=new THREE.Vector3(0, 2, landing.z + 22*dirOf(recvTeam));    // look upfield so the wall + coverage are framed
     const a=camReady?Math.min(1,4*dt):(camReady=true,1); camP.lerp(tp,a); camA.lerp(ta,a); camera.position.copy(camP); camera.lookAt(camA); return;
   }
   if(possession==='LOOSE'){ const mid=ball.position.clone().add(PL[controlled].position).multiplyScalar(0.5);
