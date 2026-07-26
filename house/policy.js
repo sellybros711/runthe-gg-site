@@ -221,6 +221,17 @@ function make(opts) {
         return s.energy >= SC.ENERGY.SCENE_COST ? null : { done: true };
       }
 
+      case 'captain_room': {
+        /* Take your own people up. The stand-in plays the obvious version so
+           the harness measures the ritual's cost, not a policy quirk. */
+        const scored = need.pool.map((id) => ({
+          id, v: s.rel.trust[me][id]
+            + (E.sharedAlliances(s.alliances, me, id).length ? 40 : 0),
+        }));
+        scored.sort((a, b) => b.v - a.v);
+        return { guests: scored.slice(0, need.take).map((x) => x.id) };
+      }
+
       case 'naming': {
         /* Name the two you least want in the house who are not shielding you. */
         const scored = need.pool.map((id) => ({

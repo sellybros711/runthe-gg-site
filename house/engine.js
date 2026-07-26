@@ -44,6 +44,11 @@
 (function () {
 
 
+/* The only bank the model reads. Alliance names are copy, so they live in
+   strings.js where the lint can see them, which is why strings.js is now the
+   first script tag on the page: it depends on nothing and this depends on it. */
+const STR = (typeof require !== 'undefined') ? require('./strings.js') : window.RH_STRINGS;
+
 // ─── tuning constants ────────────────────────────────────────────────────────
 
 /*
@@ -287,6 +292,7 @@ const K = {
    */
   PAWN_ALLY: 13,            // you can only ask somebody who is already yours
   PAWN_REPEAT: 6,           // per previous trip up there, capped below
+  PAWN_SHOWMANCE: -45,      // if the Veto goes wrong your partner goes home
 
   /*
    * NOT WORTH THE WEEK.
@@ -315,6 +321,33 @@ const K = {
    * pass produced, because pushing a proxy that was already fine to the edge of
    * its band is not an improvement.
    */
+  /*
+   * The rituals, GDD §19. Small numbers on purpose: these are colour that has
+   * to bite, not a second economy. Every one of them is a trust delta on top of
+   * a decision the model already made.
+   */
+  ROOM_GUEST: 9,            // an hour of the Captain's undivided attention
+  ROOM_SNUB: -2,            // and everybody else watched you pick
+  SPEECH_PAWN_SOFT: 11,     // being called a formality is the best news up there
+  SPEECH_PAWN_HARD: -4,     // which makes it clear who the week is about
+  SPEECH_PAWN_LIE: -6,      // there was no pawn and the room can count
+  SPEECH_THREAT_TARGET: -9, // a compliment nobody enjoys receiving
+  SPEECH_THREAT_OTHER: 3,
+  SPEECH_THREAT_BIAS: 9,    // and the house heard it too
+  SPEECH_PERSONAL_NOM: -15,
+  SPEECH_PERSONAL_ROOM: -4, // the room does not enjoy watching it either
+  SPEECH_FLAT_NOM: -2,
+  /* Campaigning, GDD §19.4. Base is low: most of the odds have to come from
+     whether the pitch is TRUE where the listener is standing, or the choice
+     between four pitches is decoration. */
+  CAMP_BASE: 0.14,
+  CAMP_NUMBERS: 0.46,
+  CAMP_THREAT: 0.52,
+  CAMP_MERCY: 0.40,
+  CAMP_DEAL: 0.50,
+  CAMP_REPEAT: 0.16,        // the second time you ask is worse than the first
+  CAMP_THREAT_BIAS: 8,
+
   NOM_IRRELEVANT: 22,       // how much being harmless is worth
   IRRELEVANT_FLOOR: 7,      // below this many active, everybody is worth the week
 
@@ -355,6 +388,18 @@ const K = {
   ALLY_LEAK_BASE: 0.05,
   ALLY_LEAK_SIZE: 0.030,    // per member beyond two
   /*
+   * A NAME LEAKS, and this is what naming actually does. GDD §7.7.
+   *
+   * MEASURED. On the base rate alone, 2.6 percent of outsiders ever learned a
+   * given alliance existed, and an unnamed group can only ever tell ONE person
+   * a week, so a group that lives four weeks caps out at four of thirteen
+   * however high the rate goes. A name is different in kind: it is repeatable,
+   * so you do not have to witness The Committee to have heard of it. Rolling
+   * per outsider instead took visibility of a named group from 4.1 percent to
+   * 18.7 percent, which is the number the alliance map is drawn from.
+   */
+  ALLY_LEAK_NAMED: 0.16,
+  /*
    * Betrayal scales with the SQUARE of membership. An alliance at majority size
    * wins every vote by definition, so without steep scaling the house solves
    * itself by week six and every run converges. GDD §7.5.
@@ -362,6 +407,39 @@ const K = {
   ALLY_BETRAY_BASE: 0.012,
   ALLY_BETRAY_SIZE2: 0.0045,
   ALLY_MAX_PER_PLAYER: 2,
+
+  /*
+   * Naming, GDD §7.7. Two people who trust each other have a deal. Three have a
+   * group, and a group gets called something, and the thing it is called is
+   * what the rest of the house repeats until everybody has heard it.
+   */
+  ALLY_NAME_SIZE: 3,
+  /* Size is one route to a name and time is the other. A pair that has held for
+     a month in this house is a known quantity and gets called something, which
+     is also what stops a quarter of all runs producing no named group at all.
+     MEASURED at 3, 5, 6 and 7 weeks: 5 gives a mean of 2.9 named groups a run
+     with 4 percent of runs producing none, against 26 percent on the size route
+     alone. Real seasons run two to four names worth remembering. */
+  ALLY_NAME_WEEKS: 5,
+  ALLY_NAME_COUNTED: 0.30,  // how often a group names itself after its headcount
+
+  /*
+   * Showmances, GDD §7.8. The one bond in this format that the house treats as
+   * a single number. They are almost impossible to hide, they are worth an
+   * unconditional vote, and they make both halves a target for the crime of
+   * being the other half.
+   */
+  SHOW_FORM_TRUST: 68,      // mutual, and well above the alliance threshold
+  SHOW_FORM_BASE: 0.14,
+  SHOW_MAX: 2,              // in the house at once
+  SHOW_BREAK_TRUST: 30,     // below this on either side and it is over
+  SHOW_LEAK: 0.45,          // per outsider per week. Nobody is fooling anybody
+  SHOW_SHIELD_NOM: 60,      // you do not put up the person you are sitting with
+  SHOW_SHIELD_VOTE: 30,
+  SHOW_HEAT_FLOOR: 7,       // the pair is a reason on its own
+  SHOW_HEAT_SHARE: 0.20,    // and your partner's threat is partly yours now
+  HEAT_MAX: 34,             // ceiling on everything pairHeat can add
+  D_SHOWMANCE: 15,
 
   // breadth exposure: being in everything makes you look like you are playing
   // everyone, which is exactly what gets you named.
@@ -377,6 +455,10 @@ const K = {
   RATIONS_COUNT: 4,
   RATIONS_COMP_PENALTY: 0.12,
   RATIONS_DECAY_MULT: 1.5,
+  /* Shared misery, GDD §19.3. Four people cold and hungry in the same room for
+     a week come out of it closer than they went in, whatever they think of each
+     other's game. It is small on purpose: it is a week, not an alliance. */
+  RATIONS_BOND: 4,
 
   // throwing, GDD §10
   THROW_STREAK_SUSPICION: 3,
@@ -768,12 +850,43 @@ function sharedAlliances(alliances, a, b) {
   return alliances.filter((x) => x.alive && x.members.indexOf(a) !== -1 && x.members.indexOf(b) !== -1);
 }
 
+/**
+ * What this group calls itself.
+ *
+ * Deterministic off the `text` stream, so the same seed produces the same
+ * house. Unique within a run, because two groups called The Committee is a
+ * bug the player would report and not a joke they would enjoy.
+ *
+ * The size is baked in at the moment of naming and never revised. An alliance
+ * that named itself The Six and is down to three keeps the name, which is both
+ * what really happens and the cheapest piece of storytelling in the game.
+ */
+function allianceName(state, a, rng) {
+  const taken = {};
+  for (const x of state.alliances) if (x.name) taken[x.name] = 1;
+  const n = a.members.length;
+  const numWord = STR.S.allyNum[n] || '';
+  /* Weighted toward the word bank. A house that names every one of its groups
+     after its own headcount reads as a spreadsheet, and real ones mostly do
+     not: for every Core Four there are three Brigades. */
+  for (let attempt = 0; attempt < 24; attempt++) {
+    const byCount = numWord && rng.chance(K.ALLY_NAME_COUNTED);
+    const name = byCount
+      ? STR.fill(rng.pick(STR.S.allyCount), { n: numWord })
+      : 'The ' + rng.pick(STR.S.allyWord);
+    if (!taken[name]) return name;
+  }
+  return 'The ' + (numWord || 'Room') + ' of Week ' + state.week;
+}
+
 function makeAlliance(members, week) {
   const priority = {};
   for (const m of members) priority[m] = 1;
   return {
     id: ALLIANCE_ID++, members: members.slice(), strength: 50,
     formedWeek: week, priority, alive: true, known: {}, target: null,
+    /* Null until it is big enough to be worth a name. See allianceName. */
+    name: null, namedWeek: null, namedSize: null,
   };
 }
 
@@ -864,6 +977,19 @@ function allianceTick(state, rng) {
     state.log.push({ week, kind: 'alliance_grew', id: a.id, joined: pick });
   }
 
+  /* Naming. Anything that has reached three people gets called something, once,
+     and keeps that name for the rest of its life. GDD §7.7. */
+  for (const a of alliances) {
+    if (!a.alive || a.name) continue;
+    const bigEnough = a.members.length >= K.ALLY_NAME_SIZE;
+    const oldEnough = week - a.formedWeek >= K.ALLY_NAME_WEEKS;
+    if (!bigEnough && !oldEnough) continue;
+    a.name = allianceName(state, a, state.rng ? state.rng.text : rng);
+    a.namedWeek = week;
+    a.namedSize = a.members.length;
+    state.log.push({ week, kind: 'alliance_named', id: a.id, name: a.name, size: a.namedSize });
+  }
+
   // leaks
   for (const a of alliances) {
     if (!a.alive) continue;
@@ -872,10 +998,30 @@ function allianceTick(state, rng) {
     const rate = K.ALLY_LEAK_BASE
       + Math.max(0, a.members.length - 2) * K.ALLY_LEAK_SIZE
       + (100 - loudest) / 100 * 0.10;
-    if (!rng.chance(clamp01(rate))) continue;
-
     const outsiders = active.map((p) => p.id).filter((id) => a.members.indexOf(id) === -1);
     if (!outsiders.length) continue;
+
+    /*
+     * An unnamed group leaks to ONE person, when somebody lets something slip.
+     * A named one leaks per person, every week, because a name is a thing that
+     * gets repeated: you do not have to witness The Committee to have heard of
+     * it. That difference is the entire reason naming is a mechanic and not a
+     * label. Rolling one outsider a week for a group that lives four weeks
+     * caps knowledge at four of thirteen however high the rate goes, which is
+     * why raising ALLY_LEAK_NAMED alone barely moved it: 4.1 percent of
+     * outsiders at zero, 10.4 percent at 0.35.
+     */
+    if (a.name) {
+      for (const id of outsiders) {
+        if (a.known[id] != null) continue;
+        if (!rng.chance(clamp01(K.ALLY_LEAK_NAMED))) continue;
+        a.known[id] = week;
+        state.log.push({ week, kind: 'alliance_leaked', id: a.id, to: id });
+      }
+      continue;
+    }
+
+    if (!rng.chance(clamp01(rate))) continue;
     const to = rng.pick(outsiders);
     a.known[to] = week;
     state.log.push({ week, kind: 'alliance_leaked', id: a.id, to });
@@ -899,6 +1045,167 @@ function allianceTick(state, rng) {
       if (a.members.length < 2) { a.alive = false; a.diedWeek = week; }
     }
   }
+}
+
+// ─── showmances ──────────────────────────────────────────────────────────────
+
+/*
+ * GDD §7.8.
+ *
+ * An alliance is a agreement about the game. A showmance is not, and that is
+ * exactly why it behaves differently: it does not decay on neglect, it cannot
+ * be kept quiet, and neither half will move against the other for any reason
+ * the model can express. In exchange the house stops seeing two players and
+ * starts seeing one number, and a number is the thing this format removes.
+ *
+ * It is stored outside `alliances` on purpose. Everything that reads alliances
+ * reads them as strategic groups: breadth exposure, betrayal scaling, the
+ * majority-size shed. None of that is true of a couple, and folding them in
+ * would have quietly broken all three.
+ */
+function showmanceOf(state, id) {
+  const list = state.showmances || [];
+  for (const x of list) if (x.alive && (x.a === id || x.b === id)) return x;
+  return null;
+}
+
+function showmancePartner(state, id) {
+  const sm = showmanceOf(state, id);
+  if (!sm) return null;
+  return sm.a === id ? sm.b : sm.a;
+}
+
+function showmanceTick(state, rng) {
+  const { rel, cast, week } = state;
+  if (!state.showmances) state.showmances = [];
+  const list = state.showmances;
+  const active = cast.filter((p) => p.status === 'active');
+
+  // endings: somebody left, or it stopped being one
+  for (const sm of list) {
+    if (!sm.alive) continue;
+    const gone = cast[sm.a].status !== 'active' || cast[sm.b].status !== 'active';
+    const cold = rel.trust[sm.a][sm.b] < K.SHOW_BREAK_TRUST
+      || rel.trust[sm.b][sm.a] < K.SHOW_BREAK_TRUST;
+    if (!gone && !cold) continue;
+    sm.alive = false;
+    sm.endedWeek = week;
+    /* Only a break-up in front of the house is worth reporting. A showmance
+       that ends because one of them was evicted is just the eviction. */
+    if (!gone) {
+      sm.broke = true;
+      state.log.push({ week, kind: 'showmance_broke', a: sm.a, b: sm.b });
+    }
+  }
+
+  // formation
+  const live = () => list.filter((x) => x.alive).length;
+  if (live() < K.SHOW_MAX) {
+    for (let ai = 0; ai < active.length && live() < K.SHOW_MAX; ai++) {
+      for (let bi = ai + 1; bi < active.length && live() < K.SHOW_MAX; bi++) {
+        const i = active[ai].id, j = active[bi].id;
+        if (showmanceOf(state, i) || showmanceOf(state, j)) continue;
+        /* Once it has ended in front of everybody it does not restart. Without
+           this the same two people break up and get back together every other
+           week, which reads as a bug however true to life it is. */
+        if (list.some((x) => x.broke && ((x.a === i && x.b === j) || (x.a === j && x.b === i)))) continue;
+        if (rel.trust[i][j] < K.SHOW_FORM_TRUST || rel.trust[j][i] < K.SHOW_FORM_TRUST) continue;
+        /* Somebody playing a hard game is slower to hand the house a target,
+           and somebody volatile is faster. Both read off traits already there
+           rather than a new attribute nobody can see. */
+        const guard = (cast[i].social.ambition + cast[j].social.ambition) / 200;
+        const loose = (cast[i].social.volatility + cast[j].social.volatility) / 200;
+        if (!rng.chance(clamp01(K.SHOW_FORM_BASE * (1.3 - guard * 0.6 + loose * 0.5)))) continue;
+
+        const sm = { a: i, b: j, week, alive: true, known: {}, endedWeek: null };
+        list.push(sm);
+        applyTrust(rel, i, j, K.D_SHOWMANCE);
+        applyTrust(rel, j, i, K.D_SHOWMANCE);
+        state.log.push({ week, kind: 'showmance_formed', a: i, b: j });
+      }
+    }
+  }
+
+  /* Discovery. There is no hiding one of these, so this is fast and one way. */
+  for (const sm of list) {
+    if (!sm.alive) continue;
+    for (const p of active) {
+      if (p.id === sm.a || p.id === sm.b || sm.known[p.id] != null) continue;
+      if (rng.chance(K.SHOW_LEAK)) sm.known[p.id] = week;
+    }
+  }
+}
+
+/**
+ * Heat that has nothing to do with how you have played.
+ *
+ * Two things in this format make somebody a target for what they are attached
+ * to rather than what they have done: sitting in a group the house has a NAME
+ * for, and being half of a pair. Both are read from `i`'s point of view,
+ * because heat nobody can see is not heat.
+ *
+ * Deliberately NOT folded into threatScore. Threat is a property of a person
+ * and every caller treats it that way, including the display; this is a
+ * property of a person as seen by one other person, and it is added where
+ * decisions are made so that `cover` cannot discount it. Being protected by
+ * your group is not a defence against being targeted FOR your group.
+ */
+function pairHeat(state, i, j) {
+  if (i === j) return 0;
+  let v = 0;
+  const alliances = state.alliances || [];
+
+  /*
+   * THERE IS NO NAMED-ALLIANCE TERM HERE, AND THERE WAS.
+   *
+   * The roadmap item asked for named groups that get hunted as a unit, so this
+   * function shipped with one. It could not be validated at any value and has
+   * been removed rather than left in looking like a mechanic. GDD §7.7 has the
+   * full account; the short version is that the nomination block holds exactly
+   * two seats a week, members of named groups already take a disproportionate
+   * share of them because of the cover model, and a conserved quantity cannot
+   * be pushed. Paired ablation on identical seeds, sweeping the constant from
+   * 0 to 45 across three different formulations, moved the nomination rate of
+   * named-group members by less than noise every time and never monotonically.
+   *
+   * What naming actually does is spread: see ALLY_LEAK_NAMED, which is
+   * measurable, is the reason real alliances get caught, and feeds the player
+   * the information the map is drawn from.
+   */
+
+  const sm = showmanceOf(state, j);
+  /* If `i` is the other half, there is no heat here, only the shield. You do
+     not target somebody for being with you. */
+  if (sm && sm.a !== i && sm.b !== i && sm.known[i] != null) {
+    const other = sm.a === j ? sm.b : sm.a;
+    if (state.cast[other].status === 'active') {
+      v += K.SHOW_HEAT_FLOOR + K.SHOW_HEAT_SHARE
+        * threatScore(state.rel, state.cast, i, other, state.panel, alliances);
+    }
+  }
+  return Math.min(K.HEAT_MAX, v);
+}
+
+/** Threat as one person sees another, group heat included. What the UI shows. */
+function threatSeen(state, i, j) {
+  return norm100(threatScore(state.rel, state.cast, i, j, state.panel, state.alliances)
+    + pairHeat(state, i, j));
+}
+
+/**
+ * Shared misery, GDD §19.3. The four on rations spend the week in the same cold
+ * room, and come out of it fractionally closer whatever they think of each
+ * other's game. Runs once a week, at the point the rations are handed out.
+ */
+function rationsBond(state) {
+  const ids = (state.rations || []).filter((id) => state.cast[id].status === 'active');
+  for (const i of ids) {
+    for (const j of ids) {
+      if (i === j) continue;
+      applyTrust(state.rel, i, j, K.RATIONS_BOND);
+    }
+  }
+  return ids.length;
 }
 
 // ─── the AI social tick ──────────────────────────────────────────────────────
@@ -1029,8 +1336,12 @@ function nominationDesire(state, hcId, targetId, rng) {
   const hc = cast[hcId];
 
   const trustTerm = (100 - rel.trust[hcId][targetId]) / 2;
+  /* Group heat sits OUTSIDE the cover multiplier. See pairHeat: your own people
+     are what protects you from being targeted for yourself, and they are the
+     reason you are being targeted at all once the house has a name for them. */
   const threatTerm = threatScore(rel, cast, hcId, targetId, panel, alliances)
-    * (1 - cover(rel, cast, hcId, targetId, alliances));
+    * (1 - cover(rel, cast, hcId, targetId, alliances))
+    + pairHeat(state, hcId, targetId);
 
   let pressure = 0;
   for (const al of allianceOf(alliances, hcId)) {
@@ -1055,6 +1366,9 @@ function nominationDesire(state, hcId, targetId, rng) {
   for (const al of sharedAlliances(alliances, hcId, targetId)) {
     v -= K.NOM_ALLY_SHIELD * (al.strength / 100) * (al.priority[hcId] || 0.5);
   }
+  /* The strongest shield in the game, and unconditional. A Captain does not put
+     up the person they are sitting with, whatever the numbers say. */
+  if (showmancePartner(state, hcId) === targetId) v -= K.SHOW_SHIELD_NOM;
 
   if (cast[targetId].throwStreak >= K.THROW_STREAK_SUSPICION) {
     v += K.NOM_THROW_SUSPICION * K.THROW_SUSPICION_STEP;
@@ -1090,11 +1404,12 @@ function houseAppetite(state, id) {
   const { rel, cast, panel, alliances } = state;
   const others = cast.filter((p) => p.status === 'active' && p.id !== id);
   if (!others.length) return 50;
-  let t = 0;
-  for (const p of others) t += rel.trust[p.id][id];
+  let t = 0, heat = 0;
+  for (const p of others) { t += rel.trust[p.id][id]; heat += pairHeat(state, p.id, id); }
   const liked = (100 - t / others.length) / 2;
   const threat = threatScore(rel, cast, id, id, panel, alliances)
-    * (1 - cover(rel, cast, id, id, alliances));
+    * (1 - cover(rel, cast, id, id, alliances))
+    + heat / others.length;
   return norm100(liked * 0.6 + threat * 0.4);
 }
 
@@ -1138,7 +1453,19 @@ function nominationPlan(state, hcId, rng, exclude) {
          push pawn duty onto the same few people, which is what a real season
          does and what leaves anybody else off the block entirely. */
       + (sharedAlliances(alliances, hcId, id).length ? K.PAWN_ALLY : 0)
-      + Math.min(2, cast[id].timesAtRisk || 0) * K.PAWN_REPEAT;
+      + Math.min(2, cast[id].timesAtRisk || 0) * K.PAWN_REPEAT
+      /*
+       * And not the person you are sitting with, GDD §7.8.
+       *
+       * MEASURED, and it is the reason this term exists rather than the
+       * nomination shield being raised. Every ingredient above describes a
+       * showmance partner: the house will not take them, the Captain trusts
+       * them, they are usually allied. So the Captain shielded their partner
+       * from being the TARGET and then seated them as the PAWN, 15 percent of
+       * the time, and the shield could be raised from 44 to 110 without moving
+       * that number by a tenth of a point, because it was never on this path.
+       */
+      + (showmancePartner(state, hcId) === id ? K.PAWN_SHOWMANCE : 0);
   }
 
   // ── backdoor ───────────────────────────────────────────────────────────────
@@ -1255,7 +1582,8 @@ function evictScore(state, voterId, targetId, rng, parts) {
 
   const trustTerm = (100 - rel.trust[voterId][targetId]) / 2;
   const threatTerm = threatScore(rel, cast, voterId, targetId, panel, alliances)
-    * (1 - cover(rel, cast, voterId, targetId, alliances));
+    * (1 - cover(rel, cast, voterId, targetId, alliances))
+    + pairHeat(state, voterId, targetId);
   const pressure = alliancePressure(state, voterId, targetId);
   const jury = panelThreat(state, voterId, targetId);
 
@@ -1272,6 +1600,7 @@ function evictScore(state, voterId, targetId, rng, parts) {
   for (const a of sharedAlliances(alliances, voterId, targetId)) {
     v -= 30 * (a.strength / 100) * (a.priority[voterId] || 0.5) * (1 + goalWeight(voter, 'allyBond'));
   }
+  if (showmancePartner(state, voterId) === targetId) v -= K.SHOW_SHIELD_VOTE;
 
   const noise = rng.normal(0, K.EV_VOL_SD * (voter.social.volatility / 100));
   v += noise;
@@ -1605,7 +1934,9 @@ const api = {
   refreshBelief, read,
   detectChance, rollDetection,
   socialReach, panelEquity, compPercentile, threatScore, cover, houseConsensus,
+  pairHeat, threatSeen, rationsBond,
   majoritySize, allianceOf, sharedAlliances, makeAlliance, renormalisePriorities, allianceTick,
+  allianceName, showmanceOf, showmancePartner, showmanceTick,
   socialTick, converse,
   nominationDesire, chooseNominations, nominationPlan, houseAppetite, irrelevance,
   panelThreat, alliancePressure, evictScore, resolveEviction, assignBlame,

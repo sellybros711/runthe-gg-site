@@ -158,6 +158,7 @@ function icon(name, size, cls) {
 const RAIL = [
   { p: 'reset', n: 'Reset', s: 'The week turns over' },
   { p: 'captain_comp', n: 'Captain', s: 'Somebody takes the power' },
+  { p: 'captain_room', n: 'The room', s: 'Who gets taken up first' },
   { p: 'scheme1', n: 'Talk', s: 'Before anybody is named' },
   { p: 'safety_call', n: 'Safety', s: 'Anyone holding it decides' },
   { p: 'naming', n: 'Naming', s: 'Two go up' },
@@ -297,11 +298,28 @@ function allianceMap(state, E) {
       + ` font-family="Inter,system-ui,sans-serif">${isMe ? 'YOU' : esc(p.first)}</text>`;
   }
 
+  /* Named groups get a line each. A name is the thing the player can carry
+     around in their head between weeks, which a set of curved lines is not, and
+     a name that no longer matches the size is the most useful line on the page:
+     The Six is down to three and still calling itself The Six. */
+  const named = known.filter((a) => a.name);
+  let roster = '';
+  if (named.length) {
+    roster = '<div class="rows amaprows">' + named.map((a) => {
+      const mine = a.members.indexOf(me) !== -1;
+      const shrunk = a.namedSize && a.members.length < a.namedSize;
+      return `<div><b>${esc(a.name)}</b>`
+        + esc(a.members.map((i) => (i === me ? 'you' : state.cast[i].first)).join(', '))
+        + `. ${mine ? 'You are in it' : 'You are not in it'}`
+        + `${shrunk ? `, and it is ${a.members.length} now` : ''}.</div>`;
+    }).join('') + '</div>';
+  }
+
   return `<svg class="amap" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`
     + edges + nodes + '</svg>'
     + `<div class="mapnote">${known.filter((a) => a.members.indexOf(me) !== -1).length} you are in, `
     + `${known.filter((a) => a.members.indexOf(me) === -1).length} you have found out about. `
-    + 'There are almost certainly more.</div>';
+    + 'There are almost certainly more.</div>' + roster;
 }
 
 function esc(x) {

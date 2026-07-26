@@ -217,6 +217,94 @@ function fullReport() {
   console.log(`  nominated three times or more ${repeatBlock.toFixed(2)} people`
     + `   ${repeatBlock >= 2 && repeatBlock <= 6 ? 'ok' : 'MISS'}  (want 2 to 6)`);
 
+  /*
+   * NAMED GROUPS AND SHOWMANCES, GDD §7.7 and §7.8.
+   *
+   * These three exist because the season-level proxies could not see the
+   * feature at all: with every ritual and every heat term switched off, the
+   * comp beast split, clean-to-eight, blindsides and lifespan all read the
+   * same to two significant figures. A mechanic no proxy can fail is a
+   * mechanic nobody will notice has broken.
+   *
+   * Each one is written so that zeroing its constant makes it MISS.
+   */
+
+  /*
+   * A NAME SPREADS. GDD §7.7.
+   *
+   * This proxy measures visibility and NOT targeting, and the difference is the
+   * whole story of the feature. The obvious proxy, "members of named groups are
+   * nominated more often than members of unnamed ones", reads 19.5 against 14.9
+   * and looks like a pass. It is not a measurement: with the heat term zeroed
+   * it reads 19.6 against 14.7. Paired ablation on identical seeds, sweeping
+   * the constant 0 to 45 across three formulations, never moved it and never
+   * moved monotonically, because the block holds exactly two seats a week and a
+   * conserved quantity cannot be pushed.
+   *
+   * So the heat term was deleted and this is what replaced it. Naming does one
+   * thing the model can prove: it makes the group public, which is what the
+   * player's map is drawn from and what every eavesdrop is looking for.
+   */
+  let seenNamed = 0, outNamed = 0, seenPlain = 0, outPlain = 0;
+  for (const s of runs) {
+    for (const a of s.alliances) {
+      const outsiders = s.cast.length - a.members.length;
+      const heard = Object.keys(a.known || {}).length;
+      if (a.name) { outNamed += outsiders; seenNamed += heard; }
+      else { outPlain += outsiders; seenPlain += heard; }
+    }
+  }
+  const vNamed = outNamed ? seenNamed / outNamed : 0, vPlain = outPlain ? seenPlain / outPlain : 0;
+  console.log(`  a name spreads              ${pct(vNamed)} of outsiders have heard of a named group`
+    + ` vs ${pct(vPlain)} unnamed`
+    + `   ${outNamed >= 2000 && vNamed > vPlain * 2 ? 'ok' : 'MISS'}  (want at least double, n=${outNamed})`);
+
+  /* A Captain does not put up the person they are sitting with. This is the
+     hardest shield in the model and the proxy for it should read near zero. */
+  let showOpp = 0, showNommed = 0;
+  for (const s of runs) {
+    for (const e of s.events) {
+      if (e.kind !== 'naming' || e.captain == null) continue;
+      const sm = (s.showmances || []).filter((x) => (x.a === e.captain || x.b === e.captain)
+        && x.week <= e.week && (x.endedWeek == null || x.endedWeek >= e.week))[0];
+      if (!sm) continue;
+      showOpp++;
+      const mate = sm.a === e.captain ? sm.b : sm.a;
+      if (e.atRisk.indexOf(mate) !== -1) showNommed++;
+    }
+  }
+  const showNomRate = showOpp ? showNommed / showOpp : 0;
+  console.log(`  Captain names their own pair  ${pct(showNomRate)}`
+    + `   ${showOpp >= 40 && showNomRate <= 0.06 ? 'ok' : 'MISS'}  (want <= 6%, n=${showOpp})`);
+
+  /* And the other side of the same bargain: once the house can see the pair,
+     both halves are worth naming for the crime of being half of it. */
+  let smAtRisk = 0, smWeeks = 0, fieldAtRisk = 0, fieldWeeks = 0;
+  for (const s of runs) {
+    for (const w of s.weeks) {
+      const seen = (id) => (s.showmances || []).some((x) => (x.a === id || x.b === id)
+        && x.week <= w.week && (x.endedWeek == null || x.endedWeek >= w.week)
+        && Object.keys(x.known || {}).length > 0);
+      for (const id of w.active || []) {
+        const up = (w.nominees || w.atRisk || []).indexOf(id) !== -1 ? 1 : 0;
+        if (seen(id)) { smWeeks++; smAtRisk += up; } else { fieldWeeks++; fieldAtRisk += up; }
+      }
+    }
+  }
+  const smRate = smWeeks ? smAtRisk / smWeeks : 0, fieldRateNom = fieldWeeks ? fieldAtRisk / fieldWeeks : 0;
+  /*
+   * REPORTED, NOT GATED, and deliberately so.
+   *
+   * Paired ablation moves this monotonically and only just: sweeping
+   * SHOW_HEAT_FLOOR 0 to 25 on identical seeds takes the rate from 17.6 to
+   * 18.9 percent, about 2.7 standard errors at n=7000. The effect is real and
+   * correctly signed, but a pass band tight enough to fail at zero would sit
+   * inside a percentage point of the shipped value and would flake. A number
+   * with an honest note beats a gate that goes off at random.
+   */
+  console.log(`  a seen pair draws heat        ${pct(smRate)} At Risk vs ${pct(fieldRateNom)} of the field`
+    + `   (reported, not gated, n=${smWeeks})`);
+
   /* Alliance lifespan. Median 3 to 5 weeks, under 10% surviving to Final 3. */
   const lifespans = [];
   let survivedToF3 = 0, totalAlliances = 0;
