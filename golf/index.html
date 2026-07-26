@@ -8206,7 +8206,7 @@ function overlayMenu(screen){
   // CS252: Settings - sound + haptics toggles (device-local, default on)
   const settings=$(`<div style="margin-bottom:16px"></div>`);
   settings.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Settings</div>`));
-  settings.appendChild(menuToggle('🟩','Pixel course art','Retro pixel hole view (off = illustrated)','bag_holeart_pixel',true));
+  // (the retro/illustrated hole-art toggle was removed — the pixel view is the only style now)
   // CS444: play major & Summer Games finals hole-by-hole (off = they sim; a contention Moment still fires)
   { const on=marqueeFinalsPref()==='1';
     const row=$(`<button class="btn ghost" role="switch" aria-checked="${on?'true':'false'}" style="display:flex;align-items:center;gap:12px;text-align:left;padding:11px 13px;margin-bottom:7px"><span style="font-size:19px;flex:0 0 auto;width:24px;text-align:center">🏆</span><span style="flex:1;min-width:0"><span style="display:block;font-weight:800;font-size:14px;color:var(--oncard)">Play marquee finals</span><span style="display:block;font-size:11.5px;color:var(--muted);margin-top:1px;font-weight:600">Play major &amp; Summer Games final rounds hole-by-hole</span></span><span class="mtog ${on?'on':''}"><span class="mtog-k"></span></span></button>`);
@@ -18548,7 +18548,7 @@ function dailyFeatureCard(key, extra){
 }
 // ---- PIXEL hole-view backdrop: retro pixel-art terrain, same camera/coords as the SVG view (owner-approved direction) ----
 const _pxCache=new Map();
-function hvArtMode(){ return LS.get('bag_holeart_pixel', true) ? 'pixel' : 'illus'; }
+function hvArtMode(){ return 'pixel'; }   // pixel is the only hole-view style now (the illustrated tracer was removed)
 function hvPinTeeSVG(g,B){   // tee box + cup + per-course flag drawn as SVG on top of the pixel backdrop (parity with the illustrated view)
   const [tx,ty]=hvProj(g,0,0), [ppx,ppy]=hvProj(g,g.pin[0],g.pin[1]);
   return `<rect x="${(tx-13).toFixed(1)}" y="${(ty-5).toFixed(1)}" width="26" height="10" rx="3" fill="${B.fw}" stroke="${B.outline}"/>`
@@ -18616,9 +18616,10 @@ function hvBackdrop(g, seedN, B, detailCam){
         }
         return s+hvPinTeePixel(g,B);
       }
-    }catch(e){ console.warn('pixel terrain failed, falling back to illustrated', e); }
+    }catch(e){ console.warn('pixel terrain failed, using flat fallback', e); }
   }
-  return hvTerrain(g, seedN, B);
+  // pixel terrain unavailable (very rare) → a flat colored ground so the tracer still has a surface, never blank.
+  return `<rect x="${-HV_EX}" y="0" width="${HV_W+HV_EX*2}" height="${HV_H}" fill="${(B&&B.base)||'#3f7a28'}"/>`+hvPinTeePixel(g,B);
 }
 const HV_PX_DETAIL=340;   // detail-tile vertical pixel count → tuned so a zoomed course pixel ~= the golfer sprite pixel
 const HV_PX_BASEH=254;    // base tile vertical pixel count (pxTerrainURL default GH), over HV_H course-units
@@ -18847,446 +18848,6 @@ function pxTerrainURL(g, seedN, B, opts){
   const out=document.createElement('canvas');out.width=GW*SC;out.height=GH*SC;
   const o=out.getContext('2d');o.imageSmoothingEnabled=false;o.drawImage(cv,0,0,out.width,out.height);
   const url=out.toDataURL('image/png'); _pxCache.set(key,url); return url;
-}
-function hvTerrain(g, seedN, B){
-  if(g._terrainStr) return g._terrainStr;   // terrain is static per hole - build once, reuse every re-render
-  B=B||HV_BIOMES.parkland;
-  const s=[]; const hh=(a)=>hvHash(seedN,a,3);
-  const sx=g.sx;
-  // FLAT daylight terrain (retro-videogame look, per the owner's reference): bright color
-  // blocks with chunky dark outlines. Only the ball keeps a gradient.
-  let defs=`<radialGradient id="hvball" cx=".35" cy=".3" r=".95"><stop offset="0" stop-color="#ffffff"/><stop offset=".75" stop-color="#eef3ef"/><stop offset="1" stop-color="#c6d1ca"/></radialGradient>`;
-  // CS219: a subtle frame vignette (edge/corner darkening) that gives the course depth and makes the bright
-  // turf pop - a lighting effect, not a surface gradient, so it keeps the flat retro look.
-  // CS249 (POC v2 - owner's stylized-illustration mockup): a DARK, moody forest with a glowing lit
-  // fairway, gold firefly particles in the shadows, and a soft sheen on the short grass. The dark
-  // vignette does the heavy lifting (edges fall to near-black like the mockup); a faint cool haze is
-  // kept only near water. Filter-blurred shapes are few, so cost stays low.
-  defs+=`<radialGradient id="hvvig" cx=".5" cy=".47" r=".64"><stop offset=".3" stop-color="#020c07" stop-opacity="0"/><stop offset=".72" stop-color="#020c07" stop-opacity=".34"/><stop offset="1" stop-color="#020c07" stop-opacity=".72"/></radialGradient>`;
-  const fogC=B.ocean?'#bcd2da':'#a9c0b0';
-  defs+=`<radialGradient id="hvfog" cx=".5" cy=".4" r=".92"><stop offset=".5" stop-color="${fogC}" stop-opacity="0"/><stop offset="1" stop-color="${fogC}" stop-opacity="${B.ocean?'.22':'.1'}"/></radialGradient>`;
-  defs+=`<radialGradient id="hvsheen" cx=".5" cy=".5" r=".6"><stop offset="0" stop-color="#eaffd0" stop-opacity=".2"/><stop offset="1" stop-color="#eaffd0" stop-opacity="0"/></radialGradient>`;
-  // CS249: shared shading gradients that make FLAT tree shapes look ROUNDED + LIT (the illustrated art
-  // style) regardless of each course's own colors - a highlight top-left, shadow bottom-right, overlaid.
-  defs+=`<radialGradient id="hvsphere" cx=".33" cy=".28" r=".82"><stop offset="0" stop-color="#ffffff" stop-opacity=".34"/><stop offset=".42" stop-color="#ffffff" stop-opacity="0"/><stop offset=".72" stop-color="#02100a" stop-opacity="0"/><stop offset="1" stop-color="#02100a" stop-opacity=".46"/></radialGradient>`;
-  defs+=`<linearGradient id="hvcone" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff" stop-opacity=".22"/><stop offset=".46" stop-color="#ffffff" stop-opacity="0"/><stop offset="1" stop-color="#02100a" stop-opacity=".44"/></linearGradient>`;
-  // (CS318: removed the unused hvsoft filter + the green-elevation blur - SVG filters force an offscreen
-  // re-rasterization on every reveal, which was a real cost; the green shading now uses filter-free
-  // low-opacity organic lobes instead.)
-  let fwDD=null, fwBounds=null;   // fwBounds: per-depth fairway screen x-range → keeps the forest out of the corridor
-  if(g.par!==3){ const Lp=[],Rp=[];
-    for(let k=0;k<=22;k++){ const y=g.fw0+(g.fw1-g.fw0)*k/22;
-      const w=g.fww?g.fww(y):g.fwW/2*(1+0.06*Math.sin(k*1.15+hh(30)*6));   // width PROFILE (pinches, flares)
-      Lp.push(hvProj(g,g.cx(y)-w,y)); Rp.push(hvProj(g,g.cx(y)+w,y)); }
-    fwDD='M '+Lp.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L ')+' L '+Rp.slice().reverse().map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L ')+' Z';
-    defs+=`<clipPath id="hvfw"><path d="${fwDD}"/></clipPath>`;
-    fwBounds=Lp.map((p,k)=>({y:(p[1]+Rp[k][1])/2, xL:Math.min(p[0],Rp[k][0]), xR:Math.max(p[0],Rp[k][0])})).sort((a,b)=>a.y-b.y);
-  }
-  const inFairway=(px,py)=>{ if(!fwBounds) return false;
-    if(py<fwBounds[0].y-6||py>fwBounds[fwBounds.length-1].y+6) return false;
-    let a=fwBounds[0];
-    for(let k=1;k<fwBounds.length;k++){ const b=fwBounds[k];
-      if(b.y>=py){ const t=(py-a.y)/((b.y-a.y)||1); return px>a.xL+(b.xL-a.xL)*t-2 && px<a.xR+(b.xR-a.xR)*t+2; }
-      a=b; }
-    return false; };
-  s.push(`<defs>${defs}</defs>`);
-  const FW=HV_W+2*HV_EX;
-  s.push(`<rect x="${-HV_EX}" width="${FW}" height="${HV_H}" fill="${B.base}"/>`);
-  const vTick=(x,y,c,o)=>`<path d="M ${x.toFixed(1)} ${y.toFixed(1)} l 1.5 1.9 l 1.5 -1.9" fill="none" stroke="${c}" stroke-width=".9" opacity="${o}"/>`;
-  // GROUND: subtle elevation shading (soft light/dark blobs = rolling terrain → depth) + per-biome texture
-  let gr='';
-  for(let i=0;i<9;i++){ const ux=-HV_EX+hh(700+i)*FW, uy=hh(720+i)*HV_H, urx=46+hh(740+i)*70;
-    gr+=`<ellipse cx="${ux.toFixed(1)}" cy="${uy.toFixed(1)}" rx="${urx.toFixed(1)}" ry="${(urx*0.52).toFixed(1)}" fill="${i%2?B.tickL:B.tickD}" opacity=".2"/>`; }
-  if(B.ground==='desert'){
-    // bare desert floor: gravel speckle, pale dry-wash sweeps, a few rust rock-shadow patches (no grass)
-    for(let i=0;i<66;i++){ gr+=`<circle cx="${(-HV_EX+hh(200+i)*FW).toFixed(1)}" cy="${(hh(300+i)*HV_H).toFixed(1)}" r="${(0.8+hh(360+i)*1.2).toFixed(1)}" fill="${i%3?B.gravel:B.floorD}" opacity=".5"/>`; }
-    for(let i=0;i<4;i++){ const wy=hh(400+i)*HV_H; let d=`M ${-HV_EX} ${wy.toFixed(1)}`;
-      for(let k=1;k<=6;k++) d+=` Q ${(-HV_EX+(k-0.5)*FW/6).toFixed(1)} ${(wy+(hh(410+i*6+k)-0.5)*34).toFixed(1)} ${(-HV_EX+k*FW/6).toFixed(1)} ${(wy+(hh(420+i*6+k)-0.5)*22).toFixed(1)}`;
-      gr+=`<path d="${d}" fill="none" stroke="${B.floorL}" stroke-width="${(10+hh(430+i)*14).toFixed(1)}" stroke-linecap="round" opacity=".4"/>`; }
-    for(let i=0;i<5;i++) gr+=`<path d="${hvBlobD(-HV_EX+hh(440+i)*FW, hh(450+i)*HV_H, 16+hh(460+i)*20, 8+hh(470+i)*10, seedN^(i*131), 0.3, 9)}" fill="${B.floorD}" opacity=".3"/>`;
-  } else if(B.ground==='links'){
-    for(let i=0;i<62;i++){ gr+=vTick(-HV_EX+hh(200+i)*FW, hh(300+i)*HV_H, i%2?B.tickD:B.tickL, '.5'); }
-    for(let i=0;i<5;i++) gr+=`<path d="${hvBlobD(-HV_EX+hh(450+i)*FW, hh(460+i)*HV_H, 18+hh(470+i)*16, 9+hh(480+i)*8, seedN^(i*97), 0.3, 9)}" fill="${B.sand}" opacity=".32"/>`;   // sandy scrapes
-  } else {
-    for(let i=0;i<56;i++){ gr+=vTick(-HV_EX+hh(200+i)*FW, hh(300+i)*HV_H, i%2?B.tickD:B.tickL, '.5'); }   // most rough is under the forest
-    // per-biome FLOOR texture (owner: push each biome farther): pine-straw beds, jungle undergrowth,
-    // prairie wildflower speckle - distinct rough character beyond the grass ticks
-    if(B.floorTex==='pinestraw'){ const pc=B.strawCol||'#a9773e';
-      for(let i=0;i<40;i++){ const x=-HV_EX+hh(500+i)*FW, y=hh(520+i)*HV_H, a=hh(540+i)*6.28;
-        gr+=`<path d="M ${x.toFixed(1)} ${y.toFixed(1)} l ${(Math.cos(a)*4.5).toFixed(1)} ${(Math.sin(a)*4.5).toFixed(1)}" stroke="${pc}" stroke-width=".8" opacity=".38"/>`; } }
-    else if(B.floorTex==='undergrowth'){ const uc=B.underCol||'#2c6a24';
-      for(let i=0;i<24;i++) gr+=`<path d="${hvBlobD(-HV_EX+hh(500+i)*FW, hh(520+i)*HV_H, 7+hh(540+i)*9, 4+hh(560+i)*5, seedN^(i*53), 0.34, 8)}" fill="${uc}" opacity=".28"/>`; }
-    else if(B.floorTex==='wildflower'){ const fc=B.flowerCols||['#e2b84a'];
-      for(let i=0;i<34;i++){ const x=-HV_EX+hh(500+i)*FW, y=hh(520+i)*HV_H;
-        gr+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(0.9+hh(560+i)*0.8).toFixed(1)}" fill="${fc[i%fc.length]}" opacity=".5"/>`; } }
-    else if(B.floorTex==='scree'){ const sc2=B.screeCol||'#8a8578';   // alpine rock chips
-      for(let i=0;i<46;i++){ const x=-HV_EX+hh(500+i)*FW, y=hh(520+i)*HV_H, a=hh(540+i)*6.28, ln=1.4+hh(560+i)*2.2;
-        gr+=`<path d="M ${x.toFixed(1)} ${y.toFixed(1)} l ${(Math.cos(a)*ln).toFixed(1)} ${(Math.sin(a)*ln).toFixed(1)}" stroke="${i%3?sc2:B.shad}" stroke-width="${(1.2+hh(580+i)).toFixed(1)}" stroke-linecap="round" opacity=".4"/>`; } }
-  }
-  s.push(gr);
-  // coastal biome: water runs down one side - mud-bank shoreline, flat bright blue, ripple dashes
-  let oceanSide=0, oceanW=0;
-  if(B.ocean){
-    // DRAMATIC sea (CS218): shallow→deep two-tone, a rocky cliff (or beach) shoreline, foam + whitecaps.
-    const ow=B.oceanW||[52,76]; oceanSide=hh(70)<0.5?-1:1; oceanW=ow[0]+hh(71)*(ow[1]-ow[0]);
-    const deep=B.deep||'#1f6fbe', shallow=B.shallow||'#5cb8ec', cliff=B.cliff||'#6f6b60', beach=B.beach;
-    const xs=oceanSide>0?HV_W+HV_EX:-HV_EX, n=11, edge=[];
-    for(let k=0;k<=n;k++){ const y=k/n*HV_H, w=oceanW+(hvHash(seedN,80+k,3)-0.5)*24;
-      edge.push([oceanSide>0?HV_W-w:w, y]); }
-    const pathTo=(pts)=>{ let d='M '+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1);
-      for(let k=1;k<pts.length;k++){ const a=pts[k-1], b=pts[k], my=((a[1]+b[1])/2).toFixed(1);
-        d+=` C ${a[0].toFixed(1)} ${my} ${b[0].toFixed(1)} ${my} ${b[0].toFixed(1)} ${b[1].toFixed(1)}`; } return d; };
-    const shoreD=pathTo(edge), off=oceanSide>0?18:-18, deepEdge=edge.map(p=>[p[0]+off,p[1]]);
-    s.push(`<path d="${shoreD} L ${xs} ${HV_H} L ${xs} 0 Z" fill="${shallow}"/>`);          // whole sea = shallow
-    s.push(`<path d="${pathTo(deepEdge)} L ${xs} ${HV_H} L ${xs} 0 Z" fill="${deep}"/>`);    // offshore = deep
-    if(beach){ s.push(`<path d="${shoreD}" fill="none" stroke="${beach}" stroke-width="8" opacity=".95"/>`); }
-    else { s.push(`<path d="${shoreD}" fill="none" stroke="${cliff}" stroke-width="7" opacity=".95"/>`);    // rocky cliff edge
-      for(let k=1;k<n;k++){ const p=edge[k];
-        s.push(`<circle cx="${(p[0]+(oceanSide>0?-3:3)).toFixed(1)}" cy="${p[1].toFixed(1)}" r="${(2.4+hvHash(seedN,120+k,4)*2.4).toFixed(1)}" fill="${cliff}" stroke="${B.outline}" stroke-width=".5"/>`); } }
-    s.push(`<path d="${shoreD}" fill="none" stroke="#eef8ff" stroke-width="1.7" opacity=".85"/>`);         // foam waterline
-    const shoreX=oceanSide>0?HV_W-oceanW:oceanW;
-    let caps='';
-    for(let k=0;k<20;k++){ const yy=hh(90+k)*HV_H, wx=shoreX+(xs-shoreX)*(0.12+hh(94+k)*0.82);
-      caps+=`<path d="M ${(wx-3).toFixed(1)} ${yy.toFixed(1)} q 3 -1.7 6 0" fill="none" stroke="#eef8ff" stroke-width="1.1" opacity=".5"/>`; }
-    s.push(caps);
-  }
-  if(fwDD){
-    // first-cut ring → flat fairway → faint mow bands + fairway ticks → chunky edge line
-    s.push(`<path d="${fwDD}" fill="none" stroke="${B.cut}" stroke-width="18" stroke-linejoin="round"/>`);
-    s.push(`<path d="${fwDD}" fill="${B.fw}"/>`);
-    let st=''; for(let yy=0; yy<HV_H; yy+=26){ const lite=(yy/26)%2<1;   // visible mowing stripes → a manicured, depth-y fairway
-      st+=`<rect x="0" y="${yy}" width="${HV_W}" height="13" fill="${lite?'#ffffff':'#0a2c14'}" opacity="${lite?'.09':'.06'}"/>`; }
-    for(let i=0;i<26;i++){ const ty=g.fw0+(g.fw1-g.fw0)*hh(600+i); const tp2=hvProj(g,g.cx(ty)+(hh(640+i)-0.5)*g.fwW*0.8,ty);
-      st+=vTick(tp2[0],tp2[1],B.fwEdge,'.4'); }
-    s.push(`<g clip-path="url(#hvfw)">${st}</g>`);
-    // CS249: a soft lit sheen down the fairway (a shaft of light on the short grass) → depth, not flat
-    s.push(`<g clip-path="url(#hvfw)"><ellipse cx="${(HV_W/2).toFixed(0)}" cy="${(HV_H*0.5).toFixed(0)}" rx="${(HV_W*0.34).toFixed(0)}" ry="${(HV_H*0.34).toFixed(0)}" fill="url(#hvsheen)"/></g>`);
-    s.push(`<path d="${fwDD}" fill="none" stroke="${B.fwEdge}" stroke-width="1.6" opacity=".95"/>`);
-  }
-  // green + water screen positions (needed as keep-out zones for the flora below; drawn later)
-  const [gpx,gpy]=hvProj(g,(g.gcx!=null?g.gcx:g.cx(g.L)),g.L), gt=g.t(g.L);
-  const grx=g.greenR[0]*sx*gt, gry=g.ry(g.greenR[1])*gt;
-  let wpos=null;
-  if(g.water){ const [wx,wy]=hvProj(g,g.water.x,g.water.y), wt2=g.t(g.water.y);
-    wpos={x:wx,y:wy,rx:g.water.rx*sx*wt2,ry:g.ry(g.water.ry)*wt2}; }
-  const creekPy=g.creek?hvProj(g,0,g.creek.y)[1]:null;
-  const bpos=g.bunkers.map(b=>{ const [bx,by]=hvProj(g,b.x,b.y),t=g.t(b.y); return {x:bx,y:by,rx:b.r*sx*t*(B.bunkerScale||1)+7,ry:g.ry(b.r)*t+7}; });
-  const clear=(px,py)=>{ // true if this spot is open ground (not sea/green/water/creek/bunker)
-    if(oceanSide && ((oceanSide>0 && px>HV_W-oceanW-8)||(oceanSide<0 && px<oceanW+8))) return false;
-    if(Math.pow((px-gpx)/(grx+11),2)+Math.pow((py-gpy)/(gry+10),2)<1) return false;
-    if(wpos && Math.pow((px-wpos.x)/(wpos.rx+8),2)+Math.pow((py-wpos.y)/(wpos.ry+7),2)<1) return false;
-    if(creekPy!=null && Math.abs(py-creekPy)<10) return false;
-    for(const bp of bpos){ if(Math.pow((px-bp.x)/bp.rx,2)+Math.pow((py-bp.y)/bp.ry,2)<1) return false; }
-    return true; };
-  /* flora, retro-videogame style: dense FOREST WALLS down both sides for parkland/coastal
-     (clustered two-tone canopies + autumn trees + birch trunks, like the reference), palm
-     groves for tropical, marram dunes + gorse for links, sparse saguaros for desert. */
-  const canopy=(px,py,r,autumn,fs)=>{
-    const C=autumn?B.treeA:B.treeG;
-    let o=`<ellipse cx="${(px+r*0.34).toFixed(1)}" cy="${(py+r*0.5).toFixed(1)}" rx="${(r*1.05).toFixed(1)}" ry="${(r*0.4).toFixed(1)}" fill="${B.shad}" opacity=".42"/>`;   // soft cast shadow
-    if(hvHash(seedN,fs,15)<0.22) o+=`<rect x="${(px-0.7).toFixed(1)}" y="${(py+r*0.5).toFixed(1)}" width="1.4" height="${(r*0.55).toFixed(1)}" fill="${B.trunk}"/>`;
-    o+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="${C[0]}" stroke="${B.outline}" stroke-width=".7"/>`;
-    o+=`<circle cx="${(px-r*0.2).toFixed(1)}" cy="${(py-r*0.16).toFixed(1)}" r="${(r*0.68).toFixed(1)}" fill="${C[1]}"/>`;
-    o+=`<circle cx="${(px+r*0.32).toFixed(1)}" cy="${(py).toFixed(1)}" r="${(r*0.42).toFixed(1)}" fill="${C[1]}"/>`;
-    o+=`<circle cx="${(px-r*0.32).toFixed(1)}" cy="${(py-r*0.36).toFixed(1)}" r="${(r*0.36).toFixed(1)}" fill="${C[3]}"/>`;   // lit crown
-    o+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="url(#hvsphere)"/>`;   // rounded lit/shaded sphere
-    return o;
-  };
-  const palm=(px,py,r,fs)=>{
-    const tc=B.palm, lean=(hvHash(seedN,fs,9)-0.5)*r*0.9, tx=px+lean, ty=py-r*1.15;
-    let o=`<ellipse cx="${(px+r*0.4).toFixed(1)}" cy="${(py+r*0.28).toFixed(1)}" rx="${(r*0.9).toFixed(1)}" ry="${(r*0.5).toFixed(1)}" fill="${B.shad}" opacity=".5"/>`;
-    o+=`<path d="M ${px.toFixed(1)} ${py.toFixed(1)} Q ${(px+lean*0.7).toFixed(1)} ${(py-r*0.6).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)}" fill="none" stroke="${tc[0]}" stroke-width="${Math.max(1,r*0.16).toFixed(1)}"/>`;
-    for(let a=0;a<5;a++){ const an=(-168+a*39)*Math.PI/180, ex=tx+Math.cos(an)*r*1.15, ey=ty+Math.sin(an)*r*0.8+r*0.22;
-      o+=`<path d="M ${tx.toFixed(1)} ${ty.toFixed(1)} Q ${(tx+Math.cos(an)*r*0.6).toFixed(1)} ${(ty+Math.sin(an)*r*0.55-r*0.3).toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}" fill="none" stroke="${a%2?tc[1]:tc[2]}" stroke-width="${Math.max(0.9,r*0.13).toFixed(1)}" stroke-linecap="round"/>`; }
-    return o;
-  };
-  const cactus=(px,py,r)=>{
-    const cc=B.cactus, ch=r*1.5, cw=Math.max(2.2,r*0.5);
-    let o=`<ellipse cx="${(px+2).toFixed(1)}" cy="${(py+1.6).toFixed(1)}" rx="${(r*0.7).toFixed(1)}" ry="${(r*0.32).toFixed(1)}" fill="${B.shad}" opacity=".45"/>`;
-    o+=`<rect x="${(px-cw/2).toFixed(1)}" y="${(py-ch).toFixed(1)}" width="${cw.toFixed(1)}" height="${ch.toFixed(1)}" rx="${(cw/2).toFixed(1)}" fill="${cc[0]}" stroke="${B.outline}" stroke-width=".6"/>`;
-    o+=`<rect x="${(px-cw*1.5).toFixed(1)}" y="${(py-ch*0.78).toFixed(1)}" width="${(cw*0.5).toFixed(1)}" height="${(ch*0.42).toFixed(1)}" rx="${(cw*0.25).toFixed(1)}" fill="${cc[0]}"/>`;
-    o+=`<rect x="${(px-cw*1.5).toFixed(1)}" y="${(py-ch*0.46).toFixed(1)}" width="${(cw*1.2).toFixed(1)}" height="${(cw*0.5).toFixed(1)}" rx="${(cw*0.25).toFixed(1)}" fill="${cc[0]}"/>`;
-    o+=`<line x1="${(px-cw*0.1).toFixed(1)}" y1="${(py-ch*0.85).toFixed(1)}" x2="${(px-cw*0.1).toFixed(1)}" y2="${(py-ch*0.12).toFixed(1)}" stroke="${cc[1]}" stroke-width=".7" opacity=".85"/>`;
-    return o;
-  };
-  const dune=(px,py,r,fs)=>{
-    const dc=B.dune, ds=Math.imul(fs,2654435761)>>>0;
-    let o=`<ellipse cx="${(px+r*0.3).toFixed(1)}" cy="${(py+r*0.3).toFixed(1)}" rx="${(r*1.2).toFixed(1)}" ry="${(r*0.5).toFixed(1)}" fill="${B.shad}" opacity=".4"/>`;
-    o+=`<path d="${hvBlobD(px,py,r*1.25,r*0.55,ds,0.18,8)}" fill="${dc[0]}" stroke="${B.outline}" stroke-width=".7"/>`;   // marram hummock
-    o+=`<path d="${hvBlobD(px-r*0.28,py-r*0.13,r*0.72,r*0.3,ds^7,0.2,8)}" fill="${dc[1]}"/>`;
-    o+=`<path d="${hvBlobD(px+r*0.42,py+r*0.1,r*0.4,r*0.19,ds^13,0.25,8)}" fill="${B.sand}" opacity=".9"/>`;             // exposed sand pocket
-    for(let t2=0;t2<3;t2++){ const gx2=px-r*0.55+t2*r*0.5, gy2=py-r*0.3;
-      o+=`<path d="M ${gx2.toFixed(1)} ${gy2.toFixed(1)} q -1.3 -2.4 -2 -3.1 M ${gx2.toFixed(1)} ${gy2.toFixed(1)} q .1 -2.8 .2 -3.5 M ${gx2.toFixed(1)} ${gy2.toFixed(1)} q 1.4 -2.2 2.1 -2.9" fill="none" stroke="#4a5a2a" stroke-width=".8"/>`; }
-    if(B.gorse && hvHash(seedN,fs,11)<0.5){ o+=`<circle cx="${(px+r*0.85).toFixed(1)}" cy="${(py-r*0.12).toFixed(1)}" r="${(r*0.3).toFixed(1)}" fill="${B.gorse[0]}" stroke="${B.outline}" stroke-width=".5"/><circle cx="${(px+r*0.76).toFixed(1)}" cy="${(py-r*0.22).toFixed(1)}" r=".8" fill="${B.gorse[1]}"/><circle cx="${(px+r*0.97).toFixed(1)}" cy="${(py-r*0.06).toFixed(1)}" r=".7" fill="${B.gorse[1]}"/>`; }
-    return o;
-  };
-  // ---- additional biome flora (owner: real, distinct biomes with varied tree types + flowers) ----
-  const pine=(px,py,r,fs)=>{ const C=B.pine||['#1b4416','#265a1f','#37732a'], w=r*1.08;
-    let o=`<ellipse cx="${(px+r*0.34).toFixed(1)}" cy="${(py+r*0.52).toFixed(1)}" rx="${(r*0.85).toFixed(1)}" ry="${(r*0.4).toFixed(1)}" fill="${B.shad}" opacity=".45"/>`;
-    o+=`<rect x="${(px-r*0.12).toFixed(1)}" y="${(py+r*0.25).toFixed(1)}" width="${(r*0.24).toFixed(1)}" height="${(r*0.6).toFixed(1)}" fill="${B.trunk||'#6b4a2a'}"/>`;
-    const tri=(cy,tw)=>`M ${px.toFixed(1)} ${(cy-r*0.9).toFixed(1)} L ${(px-tw).toFixed(1)} ${cy.toFixed(1)} L ${(px+tw).toFixed(1)} ${cy.toFixed(1)} Z`;
-    const tier=(cy,tw,c)=>`<path d="${tri(cy,tw)}" fill="${c}" stroke="${B.outline}" stroke-width=".5"/><path d="${tri(cy,tw)}" fill="url(#hvcone)"/>`;   // solid + lit-left/shaded-right cone shading
-    o+=tier(py+r*0.55,w,C[0])+tier(py+r*0.05,w*0.8,C[1])+tier(py-r*0.45,w*0.56,C[2]); return o; };
-  const cypress=(px,py,r,fs)=>{ const C=B.cypress||['#22401b','#356b26'], ds=Math.imul(fs,2654435761)>>>0, lean=(hvHash(seedN,fs,9)-0.5)*r*0.4;
-    let o=`<ellipse cx="${(px+r*0.3).toFixed(1)}" cy="${(py+r*0.4).toFixed(1)}" rx="${(r*0.7).toFixed(1)}" ry="${(r*0.35).toFixed(1)}" fill="${B.shad}" opacity=".45"/>`;
-    o+=`<path d="${hvBlobD(px+lean,py-r*0.45,r*0.6,r*1.15,ds,0.24,10)}" fill="${C[0]}" stroke="${B.outline}" stroke-width=".7"/>`;
-    o+=`<path d="${hvBlobD(px+lean-r*0.16,py-r*0.7,r*0.38,r*0.72,ds^7,0.26,9)}" fill="${C[1]}"/>`;
-    o+=`<ellipse cx="${(px+lean).toFixed(1)}" cy="${(py-r*0.45).toFixed(1)}" rx="${(r*0.6).toFixed(1)}" ry="${(r*1.15).toFixed(1)}" fill="url(#hvcone)"/>`; return o; };
-  const broadleaf=(px,py,r,fs)=>{ const C=B.broadleaf||['#1c541a','#2e7a2c','#49a83e'];
-    let o=`<ellipse cx="${(px+r*0.32).toFixed(1)}" cy="${(py+r*0.42).toFixed(1)}" rx="${(r*1.05).toFixed(1)}" ry="${(r*0.5).toFixed(1)}" fill="${B.shad}" opacity=".45"/>`;
-    o+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="${C[0]}" stroke="${B.outline}" stroke-width=".7"/>`;
-    o+=`<circle cx="${(px-r*0.3).toFixed(1)}" cy="${(py-r*0.18).toFixed(1)}" r="${(r*0.58).toFixed(1)}" fill="${C[1]}"/>`;
-    o+=`<circle cx="${(px+r*0.3).toFixed(1)}" cy="${(py-r*0.1).toFixed(1)}" r="${(r*0.46).toFixed(1)}" fill="${C[1]}"/>`;
-    o+=`<circle cx="${(px-r*0.05).toFixed(1)}" cy="${(py-r*0.4).toFixed(1)}" r="${(r*0.4).toFixed(1)}" fill="${C[2]}"/>`;
-    o+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="url(#hvsphere)"/>`; return o; };
-  const flowerBush=(px,py,r,fs)=>{ const cols=B.flowerCols||['#ff9ecb'], fr=r*0.82, base=(B.treeG&&B.treeG[1])||(B.broadleaf&&B.broadleaf[1])||'#3f7a28';
-    let o=`<ellipse cx="${(px+r*0.24).toFixed(1)}" cy="${(py+r*0.3).toFixed(1)}" rx="${(fr*0.9).toFixed(1)}" ry="${(fr*0.4).toFixed(1)}" fill="${B.shad}" opacity=".4"/>`;
-    o+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${fr.toFixed(1)}" fill="${base}" stroke="${B.outline}" stroke-width=".6"/>`;
-    for(let k=0;k<5;k++){ const a=k/5*6.283+fs, rr=fr*(0.3+hvHash(seedN,fs*7+k,5)*0.58);
-      o+=`<circle cx="${(px+Math.cos(a)*rr).toFixed(1)}" cy="${(py+Math.sin(a)*rr*0.9).toFixed(1)}" r="${(fr*0.26).toFixed(1)}" fill="${cols[k%cols.length]}"/>`; } return o; };
-  const barrel=(px,py,r)=>{ const cc=B.cactus||['#4f8f3f','#6aa74f'], br=r*0.55;
-    let o=`<ellipse cx="${(px+1.5).toFixed(1)}" cy="${(py+br*0.7).toFixed(1)}" rx="${(br*0.95).toFixed(1)}" ry="${(br*0.32).toFixed(1)}" fill="${B.shad}" opacity=".4"/>`;
-    o+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="${br.toFixed(1)}" ry="${(br*1.2).toFixed(1)}" fill="${cc[0]}" stroke="${B.outline}" stroke-width=".6"/>`;
-    for(let k=-2;k<=2;k++) o+=`<line x1="${(px+k*br*0.36).toFixed(1)}" y1="${(py-br*1.05).toFixed(1)}" x2="${(px+k*br*0.36).toFixed(1)}" y2="${(py+br*1.05).toFixed(1)}" stroke="${cc[1]}" stroke-width=".45" opacity=".7"/>`;
-    o+=`<circle cx="${px.toFixed(1)}" cy="${(py-br*1.15).toFixed(1)}" r="1.1" fill="#f2c53d"/>`; return o; };
-  const scrub=(px,py,r,fs)=>{ const ds=Math.imul(fs,2654435761)>>>0, sr=r*0.72;
-    let o=`<ellipse cx="${(px+1).toFixed(1)}" cy="${(py+sr*0.4).toFixed(1)}" rx="${sr.toFixed(1)}" ry="${(sr*0.3).toFixed(1)}" fill="${B.shad}" opacity=".35"/>`;
-    o+=`<path d="${hvBlobD(px,py,sr,sr*0.62,ds,0.32,9)}" fill="#7d8f4c" stroke="${B.outline}" stroke-width=".5"/>`;
-    o+=`<path d="${hvBlobD(px-sr*0.2,py-sr*0.14,sr*0.55,sr*0.36,ds^5,0.3,8)}" fill="#97a860"/>`; return o; };
-  const ocotillo=(px,py,r,fs)=>{ const oh=r*1.9;
-    let o=`<ellipse cx="${px.toFixed(1)}" cy="${(py+2).toFixed(1)}" rx="${(r*0.5).toFixed(1)}" ry="${(r*0.18).toFixed(1)}" fill="${B.shad}" opacity=".35"/>`;
-    for(let k=-2;k<=2;k++){ const a=k*17*Math.PI/180, ex=px+Math.sin(a)*oh*0.55, ey=py-oh;
-      o+=`<path d="M ${px.toFixed(1)} ${py.toFixed(1)} Q ${(px+Math.sin(a)*oh*0.22).toFixed(1)} ${(py-oh*0.5).toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}" fill="none" stroke="#5f7a34" stroke-width="1" stroke-linecap="round"/>`;
-      o+=`<circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="1.1" fill="#e8443a"/>`; } return o; };
-  const rock=(px,py,r,fs)=>{ const s2=Math.imul(fs,2654435761)>>>0;
-    const poly=(cx,cy,rr,c)=>{ let p=[]; for(let k=0;k<6;k++){ const a=k/6*6.283, rad=rr*(0.62+hvHash(s2,k*3+(cy|0),3)*0.6); p.push(`${(cx+Math.cos(a)*rad).toFixed(1)},${(cy+Math.sin(a)*rad*0.82).toFixed(1)}`); } return `<polygon points="${p.join(' ')}" fill="${c}" stroke="${B.outline}" stroke-width=".6"/>`; };
-    let o=`<ellipse cx="${(px+r*0.3).toFixed(1)}" cy="${(py+r*0.4).toFixed(1)}" rx="${(r*1.15).toFixed(1)}" ry="${(r*0.45).toFixed(1)}" fill="${B.shad}" opacity=".45"/>`;
-    o+=poly(px,py,r,B.rockB||'#9c4526')+poly(px-r*0.16,py-r*0.22,r*0.68,B.rockA||'#c46536')+poly(px+r*0.26,py-r*0.06,r*0.42,B.rockHi||'#e0925a'); return o; };
-  const gorseBush=(px,py,r,fs)=>{ const gc=B.gorse||['#4a5c22','#e2c34a'], ds=Math.imul(fs,2654435761)>>>0;
-    let o=`<ellipse cx="${(px+1).toFixed(1)}" cy="${(py+r*0.3).toFixed(1)}" rx="${(r*0.8).toFixed(1)}" ry="${(r*0.28).toFixed(1)}" fill="${B.shad}" opacity=".35"/>`;
-    o+=`<path d="${hvBlobD(px,py,r*0.78,r*0.5,ds,0.3,9)}" fill="${gc[0]}" stroke="${B.outline}" stroke-width=".5"/>`;
-    for(let k=0;k<6;k++){ const a=k/6*6.283+fs, rr=r*0.52; o+=`<circle cx="${(px+Math.cos(a)*rr).toFixed(1)}" cy="${(py+Math.sin(a)*rr*0.7).toFixed(1)}" r="1.2" fill="${gc[1]}"/>`; } return o; };
-  const fescue=(px,py,r,fs)=>{ let o=''; const n=5;
-    for(let k=0;k<n;k++){ const bx=px+(k-2)*1.7, sway=(hvHash(seedN,fs*7+k,3)-0.5)*3.4;
-      o+=`<path d="M ${bx.toFixed(1)} ${(py+r*0.3).toFixed(1)} q ${sway.toFixed(1)} ${(-r*0.7).toFixed(1)} ${(sway*1.5).toFixed(1)} ${(-r*1.35).toFixed(1)}" fill="none" stroke="${k%2?B.tickD:B.tickL}" stroke-width=".95" stroke-linecap="round"/>`; }
-    return o; };
-  // natural landscaping: a small clump of grass blades (rough texture, all biomes) + waterside reeds/cattails
-  const grassTuft=(px,py,fs)=>{ let o='';
-    for(let k=0;k<4;k++){ const bx=px+(k-1.5)*1.1, sway=(hvHash(seedN,fs*11+k,3)-0.5)*2.4;
-      o+=`<path d="M ${bx.toFixed(1)} ${py.toFixed(1)} q ${sway.toFixed(1)} -2.2 ${(sway*1.5).toFixed(1)} -4.4" fill="none" stroke="${k%2?B.tickD:B.tickL}" stroke-width=".8" stroke-linecap="round" opacity=".9"/>`; }
-    return o; };
-  const reed=(px,py,fs)=>{ let o='';
-    for(let k=0;k<3;k++){ const bx=px+(k-1)*1.5, h=4.5+hvHash(seedN,fs*5+k,3)*3, lean=(hvHash(seedN,fs*3+k,4)-0.5)*1.8;
-      o+=`<line x1="${bx.toFixed(1)}" y1="${py.toFixed(1)}" x2="${(bx+lean).toFixed(1)}" y2="${(py-h).toFixed(1)}" stroke="#3f6a2e" stroke-width=".85" stroke-linecap="round"/>`;
-      if(k===1) o+=`<ellipse cx="${(bx+lean).toFixed(1)}" cy="${(py-h).toFixed(1)}" rx=".7" ry="1.7" fill="#7a5326"/>`; }   // cattail head
-    return o; };
-  // tournament atmosphere: loose gallery crowds (CS318: removed the grandstand per owner)
-  const CROWD=['#e6ddce','#cf5347','#3f6ecb','#e0a93a','#f2eee6','#7a4a86','#2f8f5a','#d98cae','#4aa3c0','#b7bec7'];
-  const cCol=(fs)=>CROWD[(hvHash(seedN,fs,5)*CROWD.length)|0];
-  const gallery=(cx,cy,n,sw,fs)=>{ let o=''; for(let i=0;i<n;i++){ const gx=cx+(hvHash(seedN,fs*7+i,3)-0.5)*sw, gy=cy+(hvHash(seedN,fs*5+i,4)-0.5)*sw*0.44;
-      o+=`<circle cx="${gx.toFixed(1)}" cy="${(gy+0.9).toFixed(1)}" r="1" fill="#04120a" opacity=".28"/><circle cx="${gx.toFixed(1)}" cy="${gy.toFixed(1)}" r="0.95" fill="${cCol(fs*11+i)}"/>`; }
-    return o; };
-  // ---- alpine/heathland flora (CS218) ----
-  const spruce=(px,py,r,fs)=>{ const C=B.spruce||['#1a3a22','#25502e','#33683a'], w=r*0.9, ht=r*2.2;   // tall narrow dark conifer
-    let o=`<ellipse cx="${(px+r*0.3).toFixed(1)}" cy="${(py+r*0.5).toFixed(1)}" rx="${(r*0.7).toFixed(1)}" ry="${(r*0.34).toFixed(1)}" fill="${B.shad}" opacity=".5"/>`;
-    o+=`<rect x="${(px-r*0.1).toFixed(1)}" y="${(py+r*0.2).toFixed(1)}" width="${(r*0.2).toFixed(1)}" height="${(r*0.5).toFixed(1)}" fill="${B.trunk||'#5a3a1e'}"/>`;
-    const stri=(cy,tw)=>`M ${px.toFixed(1)} ${(cy-r*0.78).toFixed(1)} L ${(px-tw).toFixed(1)} ${cy.toFixed(1)} L ${(px+tw).toFixed(1)} ${cy.toFixed(1)} Z`;
-    const tier=(cy,tw,c)=>`<path d="${stri(cy,tw)}" fill="${c}" stroke="${B.outline}" stroke-width=".45"/><path d="${stri(cy,tw)}" fill="url(#hvcone)"/>`;
-    o+=tier(py+r*0.4,w,C[0])+tier(py-r*0.05,w*0.78,C[1])+tier(py-r*0.5,w*0.56,C[1])+tier(py-r*0.95,w*0.34,C[2]); return o; };
-  const heather=(px,py,r,fs)=>{ const C=B.heather||['#7a4a86','#9a5aa0','#c47ac4'], ds=Math.imul(fs,2654435761)>>>0, hr=r*0.75;
-    let o=`<ellipse cx="${(px+1).toFixed(1)}" cy="${(py+hr*0.4).toFixed(1)}" rx="${hr.toFixed(1)}" ry="${(hr*0.32).toFixed(1)}" fill="${B.shad}" opacity=".3"/>`;
-    o+=`<path d="${hvBlobD(px,py,hr,hr*0.55,ds,0.3,9)}" fill="${C[0]}" stroke="${B.outline}" stroke-width=".45"/>`;
-    for(let k=0;k<7;k++){ const a=k/7*6.283+fs, rr=hr*(0.4+hvHash(ds,k,5)*0.5);
-      o+=`<circle cx="${(px+Math.cos(a)*rr).toFixed(1)}" cy="${(py+Math.sin(a)*rr*0.65).toFixed(1)}" r="${(1+hvHash(ds,k+9,4)*0.9).toFixed(1)}" fill="${k%2?C[1]:C[2]}"/>`; }
-    return o; };
-  const birch=(px,py,r,fs)=>{ const C=B.birch||['#e8e4da','#3a6b28','#5a9038'], th=r*1.4;   // white trunk + light canopy
-    let o=`<ellipse cx="${(px+r*0.3).toFixed(1)}" cy="${(py+r*0.42).toFixed(1)}" rx="${(r*0.9).toFixed(1)}" ry="${(r*0.44).toFixed(1)}" fill="${B.shad}" opacity=".42"/>`;
-    o+=`<rect x="${(px-r*0.09).toFixed(1)}" y="${(py-r*0.1).toFixed(1)}" width="${(r*0.18).toFixed(1)}" height="${th.toFixed(1)}" fill="${C[0]}" stroke="${B.outline}" stroke-width=".35"/>`;
-    for(let k=0;k<3;k++) o+=`<rect x="${(px-r*0.09).toFixed(1)}" y="${(py+r*0.2+k*r*0.35).toFixed(1)}" width="${(r*0.18).toFixed(1)}" height="1" fill="#3a3a34" opacity=".7"/>`;   // birch bark marks
-    o+=`<circle cx="${px.toFixed(1)}" cy="${(py-r*0.2).toFixed(1)}" r="${(r*0.9).toFixed(1)}" fill="${C[1]}" stroke="${B.outline}" stroke-width=".6"/>`;
-    o+=`<circle cx="${(px-r*0.28).toFixed(1)}" cy="${(py-r*0.4).toFixed(1)}" r="${(r*0.5).toFixed(1)}" fill="${C[2]}"/>`;
-    o+=`<circle cx="${(px+r*0.3).toFixed(1)}" cy="${(py-r*0.3).toFixed(1)}" r="${(r*0.42).toFixed(1)}" fill="${C[2]}"/>`;
-    o+=`<circle cx="${px.toFixed(1)}" cy="${(py-r*0.2).toFixed(1)}" r="${(r*0.9).toFixed(1)}" fill="url(#hvsphere)"/>`; return o; };
-  const plantAt=(type,x,y,r,fs)=>{ switch(type){
-    case 'pine': return pine(x,y,r,fs);
-    case 'spruce': return spruce(x,y,r,fs);
-    case 'heather': return heather(x,y,r,fs);
-    case 'birch': return birch(x,y,r,fs);
-    case 'cypress': return cypress(x,y,r,fs);
-    case 'broadleaf': return broadleaf(x,y,r,fs);
-    case 'flower': return flowerBush(x,y,r,fs);
-    case 'palm': return palm(x,y,r,fs);
-    case 'saguaro': return cactus(x,y,r);
-    case 'barrel': return barrel(x,y,r);
-    case 'scrub': return scrub(x,y,r,fs);
-    case 'ocotillo': return ocotillo(x,y,r,fs);
-    case 'rock': return rock(x,y,r,fs);
-    case 'dune': return dune(x,y,r,fs);
-    case 'gorse': return gorseBush(x,y,r,fs);
-    case 'fescue': return fescue(x,y,r,fs);
-    default: return canopy(x,y,r,hvHash(seedN,fs,15)<(B.autumnP!=null?B.autumnP:0.2),fs);
-  }};
-  // weighted pick of a plant type from the biome's scatter mix
-  const pickPlant=(h)=>{ const sc=B.scatter||[['decid',1]]; let a=0; for(const e of sc){ a+=e[1]; if(h<a) return e[0]; } return sc[sc.length-1][0]; };
-  let tr='';
-  {
-    // Scatter the biome's flora across the whole rough tee-to-green from its plant MIX (B.scatter), drawn
-    // back-to-front for a layered, depth-y look. Wooded biomes (grass ground) fill a DENSE carpet - a hole
-    // carved through forest; desert/links are a more open scatter (bare floor is part of the character).
-    // Fairway corridor + green/water/bunker/ocean keep-outs stay clear; organic gaps + jitter break the grid.
-    // CS247 declutter: bigger STEP (fewer trees), larger/varied trees, an OPEN band along the fairway
-    // (breathing room), organic clearings, and half the flower speckles - so a hole reads as an intentional
-    // tree-framed course, not a wall-to-wall carpet of identical dots.
-    const dense=(B.ground==='grass' && !B.sparse), STEP=Math.round((dense?33:38)*(B.stepMul||1)), gap=dense?0.3:0.44;   // CS318: sparser scatter → fewer nodes → smoother reveal
-    const nearFw=(px,py,m)=>{ if(!fwBounds) return false;
-      if(py<fwBounds[0].y-m||py>fwBounds[fwBounds.length-1].y+m) return false;
-      let a=fwBounds[0];
-      for(let k=1;k<fwBounds.length;k++){ const b=fwBounds[k];
-        if(b.y>=py){ const t=(py-a.y)/((b.y-a.y)||1); return px>a.xL+(b.xL-a.xL)*t-m && px<a.xR+(b.xR-a.xR)*t+m; }
-        a=b; }
-      return false; };
-    const items=[];
-    for(let py=-6; py<HV_H+8; py+=STEP){ const dep=0.5+0.7*(py/HV_H);   // near (bottom) larger
-      for(let px=-HV_EX-4; px<HV_W+HV_EX+6; px+=STEP){
-        const jx=(hvHash(seedN,(px*7+py*131)|0,3)-0.5)*STEP*0.9, jy=(hvHash(seedN,(px*131+py*7)|0,5)-0.5)*STEP*0.8;
-        const x=px+jx, y=py+jy;
-        if(x<-HV_EX-5||x>HV_W+HV_EX+5||y<-8||y>HV_H+8) continue;
-        if(inFairway(x,y)||!clear(x,y)) continue;
-        if(hvHash(seedN,(px*17+py*29)|0,9)<gap) continue;                             // organic clearings
-        if(nearFw(x,y,STEP*1.15) && hvHash(seedN,(px*13+py*53)|0,19)<0.62) continue;  // open first-cut band by the fairway
-        const type=pickPlant(hvHash(seedN,(px*23+py*41)|0,17));
-        if(type==='flower' && hvHash(seedN,(px*5+py*3)|0,21)<0.55) continue;          // fewer flower speckles (less noise)
-        const r=(7.6+hvHash(seedN,(px*3+py*5)|0,11)*7)*dep;                           // bigger, more varied trees
-        items.push({x,y,r,type,fs:(px*7+py)|0});
-      }
-    }
-    items.sort((a,b)=>a.y-b.y);
-    for(const t of items) tr+=`<g>${plantAt(t.type,t.x,t.y,t.r,t.fs)}</g>`;
-    // light, universal grass-tuft texture in the rough (natural landscaping, allowed near the fairway edge
-    // since tufts are low) - sparse so it adds life, not clutter
-    const GS=Math.round(STEP*1.55);   // CS318: sparser tufts (fewer nodes)
-    for(let py=2; py<HV_H; py+=GS){ for(let px=-HV_EX; px<HV_W+HV_EX; px+=GS){
-      const x=px+(hvHash(seedN,(px*3+py*7)|0,23)-0.5)*GS, y=py+(hvHash(seedN,(px*7+py*3)|0,29)-0.5)*GS;
-      if(x<-HV_EX||x>HV_W+HV_EX||y<0||y>HV_H) continue;
-      if(inFairway(x,y)||!clear(x,y)) continue;
-      if(hvHash(seedN,(px*11+py*13)|0,31)<0.68) continue;   // sparse
-      tr+=grassTuft(x,y,(px*5+py)|0);
-    }}
-  }
-  s.push(tr);
-  // creek: a wobbled stream crossing the whole hole (mud banks + bright water + ripple dashes)
-  if(g.creek){
-    const cy2=g.creek.y, xspan=(HV_W/2+HV_EX)/(sx*g.t(cy2))+6, pts=[];
-    for(let k=0;k<=8;k++){ const xx=-xspan+k*(xspan*2/8), yy=cy2+(hvHash(seedN,60+k,3)-0.5)*7;
-      pts.push(hvProj(g,xx,yy)); }
-    const cd='M '+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L ');
-    s.push(`<path d="${cd}" fill="none" stroke="${B.waterBank}" stroke-width="9.5" stroke-linejoin="round" opacity=".9"/>`);
-    s.push(`<path d="${cd}" fill="none" stroke="${B.water}" stroke-width="6" stroke-linejoin="round"/>`);
-    s.push(`<path d="${cd}" fill="none" stroke="${B.ripple}" stroke-width=".9" stroke-dasharray="5 7" opacity=".6"/>`);
-    let cr2=''; for(let k=1;k<pts.length-1;k+=2){ const ex=pts[k][0], ey=pts[k][1]-4;   // reeds on the creek bank
-      if(ex<-HV_EX||ex>HV_W+HV_EX||ey<2||ey>HV_H) continue;
-      if(Math.pow((ex-gpx)/(grx+6),2)+Math.pow((ey-gpy)/(gry+5),2)<1) continue;
-      cr2+=reed(ex,ey,(k*17)|0); }
-    s.push(cr2);
-  }
-  // water hazard: mud bank ring → flat bright blue → waterline → ripple dashes
-  if(wpos){ const wseed=seedN^0x77;
-    const wD=hvBlobD(wpos.x,wpos.y,wpos.rx,wpos.ry,wseed,0.24,12);
-    s.push(`<path d="${hvBlobD(wpos.x,wpos.y,wpos.rx+2.5,wpos.ry+2.2,wseed,0.24,12)}" fill="${B.waterBank}"/>`);
-    s.push(`<path d="${wD}" fill="${B.water}" stroke="#eef8ff" stroke-width=".9"/>`);
-    s.push(`<path d="M ${(wpos.x-wpos.rx*0.45).toFixed(1)} ${(wpos.y-wpos.ry*0.2).toFixed(1)} h 7 M ${(wpos.x+wpos.rx*0.1).toFixed(1)} ${(wpos.y+wpos.ry*0.3).toFixed(1)} h 6 M ${(wpos.x-wpos.rx*0.15).toFixed(1)} ${(wpos.y+wpos.ry*0.02).toFixed(1)} h 5" fill="none" stroke="${B.ripple}" stroke-width="1" opacity=".65"/>`);
-    let wr=''; for(let k=0;k<6;k++){ const a=hvHash(wseed,k,7)*6.283, ex=wpos.x+Math.cos(a)*(wpos.rx+2.4), ey=wpos.y+Math.sin(a)*(wpos.ry+2);   // reeds/cattails on the pond bank
-      if(ex<-HV_EX||ex>HV_W+HV_EX||ey<2||ey>HV_H) continue;
-      if(Math.pow((ex-gpx)/(grx+6),2)+Math.pow((ey-gpy)/(gry+5),2)<1) continue;
-      wr+=reed(ex,ey,(k*23)|0); }
-    s.push(wr);
-  }
-  // green complex (CS313 realism): cast shadow → fringe ring → putting surface, then (clipped to the
-  // surface) subtle mowing bands + soft contour patches + a domed light/shadow so the green reads like a
-  // real, gently-sloped putting surface under light instead of a flat disc.
-  const gseed=seedN^0x51, gIrr=g.greenIrr||0.09;
-  const greenD=hvBlobD(gpx,gpy,grx,gry,gseed,gIrr,12);
-  const gcid='hvgc'+(gseed>>>0);
-  s.push(`<clipPath id="${gcid}"><path d="${greenD}"/></clipPath>`);
-  s.push(`<path d="${hvBlobD(gpx+1.9,gpy+2.6,grx+5.6,gry+4.7,gseed,gIrr,12)}" fill="${B.shad}" opacity=".55"/>`);   // cast shadow
-  s.push(`<path d="${hvBlobD(gpx,gpy,grx+5,gry+4,gseed,gIrr,12)}" fill="${B.fringe}"/>`);                            // fringe ring
-  s.push(`<path d="${greenD}" fill="${B.green}" stroke="${B.gLine}" stroke-width="1.2"/>`);                          // putting surface
-  { // faint mowing bands across the surface (angle varies per hole)
-    let gg=`<g clip-path="url(#${gcid})">`;
-    const bang=(hvHash(gseed,7,3)-0.5)*1.5, bw=Math.max(3.4,gry*0.5);
-    const dx=Math.sin(bang)*(grx+gry+30), dy=-Math.cos(bang)*(grx+gry+30);
-    for(let k=-9;k<=9;k++){ const off=k*bw, cx0=gpx+Math.cos(bang)*off, cy0=gpy+Math.sin(bang)*off;
-      gg+=`<line x1="${(cx0-dx).toFixed(1)}" y1="${(cy0-dy).toFixed(1)}" x2="${(cx0+dx).toFixed(1)}" y2="${(cy0+dy).toFixed(1)}" stroke="${k%2?'#ffffff':'#0a2c14'}" stroke-width="${bw.toFixed(1)}" opacity="${k%2?'.05':'.06'}"/>`; }
-    gg+=`</g>`;
-    s.push(gg);
-    // ELEVATION SHADING (organic, filter-free): low-opacity irregular light/dark lobes that follow the
-    // green so it reads as gentle undulation/tiers without a costly blur filter.
-    let el=`<g clip-path="url(#${gcid})">`;
-    const nlobe=3+Math.floor(hvHash(gseed,60,3)*2);
-    for(let c=0;c<nlobe;c++){
-      const ang=hvHash(gseed,70+c,3)*6.283, rr=0.25+hvHash(gseed,80+c,3)*0.6;
-      const cx=gpx+Math.cos(ang)*grx*0.6*rr, cy=gpy+Math.sin(ang)*gry*0.6*rr;
-      const lr=grx*(0.5+hvHash(gseed,90+c,3)*0.5), light=(c%2===0);
-      el+=`<path d="${hvBlobD(cx,cy,lr,lr*0.74,gseed^Math.imul(c+1,0x2b3),0.34,12)}" fill="${light?'#eaffce':'#04160b'}" opacity="${light?'.06':'.08'}"/>`;
-    }
-    el+=`</g>`;
-    s.push(el);
-  }
-  // bunkers (CS313 realism): cast shadow → sand → (clipped) concave shading + raked lines + a grassy lip
-  // shadow on the top rim, so a bunker reads as a real raked, dished hazard (links pots smaller, heavier lip)
-  const bs=B.bunkerScale||1;
-  g.bunkers.forEach((b,bi)=>{ const [bx,by]=hvProj(g,b.x,b.y), t=g.t(b.y);
-    const brx=b.r*sx*t*bs, bry=g.ry(b.r)*t*0.92*bs, bseed=seedN^Math.imul(bi+3,0x61c);
-    const bcid='hvbc'+(bseed>>>0), sandD=hvBlobD(bx,by,brx,bry,bseed,0.22,8);
-    s.push(`<clipPath id="${bcid}"><path d="${sandD}"/></clipPath>`);
-    s.push(`<path d="${hvBlobD(bx+1.4,by+1.9,brx,bry,bseed,0.22,8)}" fill="${B.shad}" opacity=".5"/>`);   // cast shadow
-    s.push(`<path d="${sandD}" fill="${B.sand}" stroke="${B.sandLine}" stroke-width="${bs<1?'1.1':'.9'}"/>`);
-    let bd=`<g clip-path="url(#${bcid})">`;
-    bd+=`<ellipse cx="${(bx-brx*0.18).toFixed(1)}" cy="${(by-bry*0.22).toFixed(1)}" rx="${(brx*0.66).toFixed(1)}" ry="${(bry*0.66).toFixed(1)}" fill="#ffffff" opacity=".18"/>`;   // lit sand floor
-    for(let r2=0;r2<3;r2++){ const f=0.72-r2*0.2;   // concentric rake lines
-      bd+=`<path d="${hvBlobD(bx,by,brx*f,bry*f,bseed^Math.imul(r2+1,29),0.22,8)}" fill="none" stroke="${B.sandLine}" stroke-width=".5" opacity=".28"/>`; }
-    bd+=`</g>`;
-    s.push(bd);
-    // grassy lip: a darker overhang shadow hugging the top rim of the sand
-    s.push(`<path d="${sandD}" fill="none" stroke="${B.shad}" stroke-width="2.4" opacity=".42" clip-path="url(#${bcid})" transform="translate(0,1.8)"/>`);
-    let sp='';
-    for(let k2=0;k2<6;k2++){ sp+=`<circle cx="${(bx+(hvHash(bseed,k2,5)-0.5)*brx*1.3).toFixed(1)}" cy="${(by+(hvHash(bseed,k2,6)-0.5)*bry*1.2).toFixed(1)}" r=".7" fill="${B.sandSpeck}"/>`; }
-    s.push(sp);
-  });
-  // tournament atmosphere: light gallery crowds flanking the green (owner: removed the grandstand). Only
-  // where there's open ground - cheap (a few dots) so it adds life without cost.
-  { const openSpot=(x,y)=>{
-      if(oceanSide && ((oceanSide>0 && x>HV_W-oceanW-8)||(oceanSide<0 && x<oceanW+8))) return false;
-      if(Math.pow((x-gpx)/(grx+5),2)+Math.pow((y-gpy)/(gry+5),2)<1) return false;              // not on the green
-      if(wpos && Math.pow((x-wpos.x)/(wpos.rx+4),2)+Math.pow((y-wpos.y)/(wpos.ry+4),2)<1) return false;
-      if(creekPy!=null && Math.abs(y-creekPy)<8) return false;
-      for(const bp of bpos){ if(Math.pow((x-bp.x)/(bp.rx+2),2)+Math.pow((y-bp.y)/(bp.ry+2),2)<1) return false; }
-      return true; };
-    for(const side of [-1,1]){ const gcx=gpx+side*(grx+9), gcy=gpy+gry*0.5;
-      if(gcx<-HV_EX+3||gcx>HV_W+HV_EX-3||gcy>HV_H-3) continue;
-      if(openSpot(gcx,gcy)&&!inFairway(gcx,gcy)) s.push(gallery(gcx,gcy,7,7,((gcx*5+gcy)|0)+side)); }
-  }
-  // tee box + tee markers
-  const [tx,ty]=hvProj(g,0,0);
-  s.push(`<rect x="${(tx-13).toFixed(1)}" y="${(ty-5).toFixed(1)}" width="26" height="10" rx="3" fill="${B.fw}" stroke="${B.outline}"/>`);
-  s.push(`<circle cx="${(tx-8).toFixed(1)}" cy="${ty.toFixed(1)}" r="1.3" fill="#F1D04A"/><circle cx="${(tx+8).toFixed(1)}" cy="${ty.toFixed(1)}" r="1.3" fill="#F1D04A"/>`);
-  // cup + pin: cup so putts visibly fall in; each course flies its OWN flag (per-course color/style)
-  const [ppx,ppy]=hvProj(g,g.pin[0],g.pin[1]);
-  s.push(`<g id="hv-pin"><ellipse cx="${ppx.toFixed(1)}" cy="${(ppy+0.4).toFixed(1)}" rx="${HV_CUP_RX}" ry="${HV_CUP_RY}" fill="#0c1810"/><ellipse cx="${ppx.toFixed(1)}" cy="${(ppy+0.2).toFixed(1)}" rx="${HV_CUP_RX}" ry="${HV_CUP_RY}" fill="none" stroke="#ffffff" stroke-width=".45" opacity=".75"/>`
-    +`<line x1="${(ppx+0.6).toFixed(1)}" y1="${(ppy+0.6).toFixed(1)}" x2="${(ppx+4.4).toFixed(1)}" y2="${(ppy+2).toFixed(1)}" stroke="${B.shad}" stroke-width=".8" opacity=".6"/>`
-    +hvFlagSVG(ppx,ppy,hvFlag(g.courseKey))+`</g>`);
-  s.push(`<rect x="${-HV_EX}" y="0" width="${FW}" height="${HV_H}" fill="url(#hvvig)" pointer-events="none"/>`);   // moody dark edges
-  s.push(`<rect x="${-HV_EX}" y="0" width="${FW}" height="${HV_H}" fill="url(#hvfog)" pointer-events="none"/>`);   // faint cool haze
-  // CS249: gold FIREFLY particles drifting in the shadows (the mockup's signature) - tiny warm dots,
-  // denser in the darker rough, sparse over the lit fairway, each with a soft glow.
-  { let fl=''; for(let i=0;i<30;i++){ const fx=-HV_EX+hh(950+i)*FW, fy=hh(980+i)*HV_H, br=0.7+hh(1010+i)*1.3;   // CS318: 46→30 (fewer nodes)
-      const onFw=(typeof inFairway==='function')&&inFairway(fx,fy);
-      if(onFw && hh(1040+i)<0.7) continue;                       // keep them mostly in the dark rough
-      const a=(0.25+hh(1020+i)*0.45).toFixed(2);
-      fl+=`<circle cx="${fx.toFixed(1)}" cy="${fy.toFixed(1)}" r="${(br*2).toFixed(1)}" fill="#ffe9a0" opacity="${(a*0.28).toFixed(2)}"/><circle cx="${fx.toFixed(1)}" cy="${fy.toFixed(1)}" r="${br.toFixed(1)}" fill="#fff2c4" opacity="${a}"/>`; }
-    s.push(fl);
-  }
-  return (g._terrainStr = s.join(''));
 }
 // one shot's static (already-played) tracer + marker. `small` shrinks markers/strokes for the
 // green close-up camera (a zoomed viewBox scales everything, so chips drawn full-size read huge)
@@ -20331,15 +19892,18 @@ function dailyReviewClose(){
 }
 // self-contained full-hole tracer SVG (terrain + every shot's flight line & marker), for the
 // static "share this shot" image (the animated GIF version is a fast-follow).
+// Shot-tracer overlay (all flight lines + rest markers) as a self-contained VECTOR SVG, plus the scene inputs
+// (g/seedN/biome) so the caller can rasterize the PIXEL terrain underneath it via hvPixelScene. Terrain is no
+// longer baked into this SVG — a nested raster wouldn't load when the SVG is drawn as an <img>.
 function hvStaticSVG(hole, courseKey, holeIdx){
   const shots=hole.shots||[]; if(!shots.length||!shots[0].k) return null;
   const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
   const g=(hole._hv&&hole._hv.g)||hvGeom(seedN, hole.par, hole.yards||400, courseKey, holeIdx);
   const plots=(hole._hv&&hole._hv.plots)||hvPlots(g, shots, seedN);
-  let inner=hvTerrain(g,seedN,hvBiome(courseKey));
-  for(let i=0;i<plots.length;i++) inner+=hvDoneShot(g,plots[i],false,false);
+  let inner=''; for(let i=0;i<plots.length;i++) inner+=hvDoneShot(g,plots[i],false,false);
   const [x,y,w,h]=HV_CAM;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${w} ${h}" width="${w}" height="${h}">${inner}</svg>`;
+  return { g, seedN, biome:hvBiome(courseKey),
+    svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${w} ${h}" width="${w}" height="${h}">${inner}</svg>` };
 }
 /* ---------- animated GIF shot-share: encodes the hole's shots playing out on the tracer into a
    looping GIF89a. Fully self-contained (no libs, CSP-safe): median-cut quantizer + LZW encoder.
@@ -20425,6 +19989,31 @@ function hvGifShare(holeIdx){
     setTimeout(()=>{ try{ hvGifRender(hole, holeIdx, c); }catch(e){ console.error('gif',e); hvShareShot(holeIdx); } }, 30);
   }catch(e){ hvShareShot(holeIdx); }
 }
+// Rasterize the PIXEL course scene (terrain PNG + pin/tee/flag overlay) to a W×imgH canvas. The terrain
+// image spans exactly HV_CAM, so it maps 1:1 to the canvas and stays aligned with hvProj shot lines. We load
+// the pixel PNG DIRECTLY (a same-origin canvas data URL — no taint) rather than wrapping it in an SVG, because
+// a nested raster inside an SVG loaded as an <img> is blocked in the browser's secure static-image mode.
+// Returns a Promise<canvas>. The pin/tee overlay is pure vector, so it rasterizes cleanly; it's best-effort.
+function hvPixelScene(g, seedN, B, W, imgH){
+  return new Promise((resolve,reject)=>{
+    const url=pxTerrainURL(g, seedN, B);
+    if(!url){ reject(new Error('no pixel terrain')); return; }
+    const cv=document.createElement('canvas'); cv.width=W; cv.height=imgH; const ctx=cv.getContext('2d');
+    ctx.imageSmoothingEnabled=false;   // keep the pixels crisp when scaling to the share size
+    const terr=new Image();
+    terr.onload=()=>{
+      ctx.drawImage(terr,0,0,W,imgH);
+      const [vx,vy,vw,vh]=HV_CAM;
+      const pin=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="${vw}" height="${vh}">${hvPinTeePixel(g,B)}</svg>`;
+      const p=new Image();
+      p.onload=()=>{ try{ ctx.drawImage(p,0,0,W,imgH); }catch(e){} resolve(cv); };
+      p.onerror=()=>resolve(cv);   // terrain alone is fine if the pin overlay fails
+      p.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(pin);
+    };
+    terr.onerror=()=>reject(new Error('pixel terrain image failed'));
+    terr.src=url;
+  });
+}
 function hvGifRender(hole, holeIdx, c){
   const courseKey=S.dailyCourse;
   const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
@@ -20432,23 +20021,14 @@ function hvGifRender(hole, holeIdx, c){
   const plots=(hole._hv&&hole._hv.plots)||hvPlots(g, hole.shots, seedN);
   const biome=hvBiome(courseKey), [vx,vy,vw,vh]=HV_CAM;
   const W=280, scale=W/vw, imgH=Math.round(vh*scale), barH=Math.round(W*0.14), H=imgH+barH;
-  const terr=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="${vw}" height="${vh}">${hvTerrain(g,seedN,biome)}</svg>`;
-  const img=new Image();
-  img.onload=()=>{ try{ hvGifCompose(img,g,plots,hole,c,{W,imgH,barH,H,scale,vx,vy}); }catch(e){ console.error('gif',e); hvShareShot(holeIdx); } };
-  img.onerror=()=>hvShareShot(holeIdx);
-  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(terr);
+  hvPixelScene(g, seedN, biome, W, imgH)
+    .then(base=>{ hvGifCompose(base, g, plots, hole, c, {W,imgH,barH,H,scale,vx,vy}); })
+    .catch(e=>{ console.error('gif',e); hvShareShot(holeIdx); });
 }
-function hvGifCompose(img,g,plots,hole,c,D){
-  const {W,imgH,barH,H,scale,vx,vy}=D;
-  const bg=document.createElement('canvas'); bg.width=W; bg.height=H; const bx=bg.getContext('2d');
-  bx.fillStyle='#0a1a10'; bx.fillRect(0,0,W,H); bx.drawImage(img,0,0,W,imgH);
-  bx.fillStyle='#07130c'; bx.fillRect(0,imgH,W,barH); bx.textBaseline='middle';
-  bx.fillStyle='#F1D04A'; bx.font=`800 ${Math.round(barH*0.32)}px "Barlow Semi Condensed",Arial,sans-serif`;
-  bx.fillText(`Hole ${hole.n} · Par ${hole.par}`, Math.round(barH*0.2), imgH+barH*0.34);
-  bx.fillStyle='#eef4ee';
-  bx.fillText(`${hole.par+hole.toPar} (${dtp(hole.toPar)}) · ${dResultLong(hole.par,hole.toPar)}`, Math.round(barH*0.2), imgH+barH*0.72);
-  bx.fillStyle='#9fb3a4'; bx.font=`700 ${Math.round(barH*0.24)}px "Barlow Semi Condensed",Arial,sans-serif`; bx.textAlign='right';
-  bx.fillText('RunTheTour · runthe.gg/golf', W-Math.round(barH*0.2), imgH+barH*0.53); bx.textAlign='left';
+// Shot-tracer draw kit: projects each plot into canvas space and returns the "done" + "animating" line
+// painters. Shared by the single-hole GIF and the multi-hole highlight reel.
+function hvTracerDraw(g, plots, D){
+  const {W,scale,vx,vy}=D;
   const P=pt=>{ const s=hvProj(g,pt[0],pt[1]); return [(s[0]-vx)*scale,(s[1]-vy)*scale]; };
   const cbez=(A,C,B,t)=>{ const u=1-t; return [u*u*A[0]+2*u*t*C[0]+t*t*B[0], u*u*A[1]+2*u*t*C[1]+t*t*B[1]]; };
   const lin=(A,B,t)=>[A[0]+(B[0]-A[0])*t, A[1]+(B[1]-A[1])*t];
@@ -20476,6 +20056,29 @@ function hvGifCompose(img,g,plots,hole,c,D){
       head=samp(t); }
     ctx.fillStyle='#fff'; ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=1;
     ctx.beginPath(); ctx.arc(head[0],head[1],W*0.016,0,7); ctx.fill(); ctx.stroke(); ctx.restore(); };
+  return {shots, drawDone, drawActive};
+}
+// A terrain+info-bar background canvas for one hole. `bar` gives the three text zones (title/sub/pos).
+function hvShareBg(base, D, bar){
+  const {W,imgH,barH,H}=D;
+  const bg=document.createElement('canvas'); bg.width=W; bg.height=H; const bx=bg.getContext('2d');
+  bx.imageSmoothingEnabled=false;
+  bx.fillStyle='#0a1a10'; bx.fillRect(0,0,W,H); bx.drawImage(base,0,0,W,imgH);
+  bx.fillStyle='#07130c'; bx.fillRect(0,imgH,W,barH); bx.textBaseline='middle';
+  bx.fillStyle='#F1D04A'; bx.font=`800 ${Math.round(barH*0.30)}px "Barlow Semi Condensed",Arial,sans-serif`;
+  bx.fillText(bar.title, Math.round(barH*0.18), imgH+barH*0.34);
+  bx.fillStyle='#eef4ee'; bx.font=`700 ${Math.round(barH*0.26)}px "Barlow Semi Condensed",Arial,sans-serif`;
+  bx.fillText(bar.sub, Math.round(barH*0.18), imgH+barH*0.72);
+  bx.fillStyle='#9fb3a4'; bx.font=`700 ${Math.round(barH*0.24)}px "Barlow Semi Condensed",Arial,sans-serif`; bx.textAlign='right';
+  if(bar.pos) bx.fillText(bar.pos, W-Math.round(barH*0.18), imgH+barH*0.34);
+  bx.fillText(bar.tag||'runthe.gg/golf', W-Math.round(barH*0.18), imgH+barH*0.72); bx.textAlign='left';
+  return bg;
+}
+function hvGifCompose(base,g,plots,hole,c,D){
+  const {W,H}=D;
+  const bg=hvShareBg(base, D, {title:`Hole ${hole.n} · Par ${hole.par}`,
+    sub:`${hole.par+hole.toPar} (${dtp(hole.toPar)}) · ${dResultLong(hole.par,hole.toPar)}`, tag:'RunTheTour · runthe.gg/golf'});
+  const {shots, drawDone, drawActive}=hvTracerDraw(g, plots, D);
   const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const ctx=cv.getContext('2d');
   const frames=[], cache=new Int32Array(262144).fill(-1); let pal=null;
   const state=(active,t)=>{ ctx.drawImage(bg,0,0);
@@ -20498,6 +20101,71 @@ function hvGifCompose(img,g,plots,hole,c,D){
   if(navigator.canShare&&navigator.canShare({files:[file]})){ navigator.share({files:[file],title:'RunTheTour',text:txt}).catch(e=>{ if(!(e&&e.name==='AbortError')) toast('Saved your shot GIF'); }); }
   else { const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); toast('Saved your shot GIF'); }
 }
+// ---------- HIGHLIGHT REEL: one looping GIF of every birdie-or-better hole's tracer, in order. Reuses the
+// pixel scene + tracer kit; one shared color table across all holes. ----------
+function hvReelResult(hole){ const ace=hole.par===3&&(hole.par+hole.toPar)===1;
+  return ace?'Hole-in-One':dResultLong(hole.par,hole.toPar); }
+function hvReelCaption(holes, c){
+  let eag=0,bir=0,ace=0; holes.forEach(h=>{ const tp=h.toPar; if(h.par===3&&h.par+tp===1)ace++; else if(tp<=-2)eag++; else if(tp===-1)bir++; });
+  const bits=[]; if(ace)bits.push(`${ace} hole-in-one${ace>1?'s':''}`); if(eag)bits.push(`${eag} eagle${eag>1?'s':''}`); if(bir)bits.push(`${bir} birdie${bir>1?'s':''}`);
+  return withSocial(`My highlight reel from RunTheTour: Daily Golf Game! ⛳\n${bits.join(' · ')} at ${dShort(c.v)}.\nThink you can top it? https://runthe.gg/golf`);
+}
+function hvReelRender(holeList, courseKey, c){
+  // holeList: [{hole, holeIdx}] already filtered to birdie-or-better, in play order
+  const [vx,vy,vw,vh]=HV_CAM;
+  // scale the frame size + animation steps down for long reels so a great round doesn't make a huge GIF
+  const big=holeList.length>5, W=big?224:260, fullSteps=big?6:8, puttSteps=big?4:5;
+  const scale=W/vw, imgH=Math.round(vh*scale), barH=Math.round(W*0.16), H=imgH+barH;
+  const D={W,imgH,barH,H,scale,vx,vy};
+  Promise.all(holeList.map(item=>{
+    const seedN=(dHash(courseKey||'x')^Math.imul((item.holeIdx|0)+1,0x9e3779b1))>>>0;
+    const g=(item.hole._hv&&item.hole._hv.g)||hvGeom(seedN,item.hole.par,item.hole.yards||400,courseKey,item.holeIdx);
+    const plots=(item.hole._hv&&item.hole._hv.plots)||hvPlots(g,item.hole.shots,seedN);
+    return hvPixelScene(g,seedN,hvBiome(courseKey),W,imgH).then(base=>({base,g,plots,hole:item.hole}));
+  })).then(scenes=>{
+    if(!scenes.length){ toast('No birdies to reel this round'); return; }
+    // one shared palette sampled across every hole's terrain (same biome → close color families)
+    const samp=[]; scenes.forEach(sc=>{ const d=sc.base.getContext('2d').getImageData(0,0,W,imgH).data;
+      const step=Math.max(4, (Math.floor(d.length/4/700))*4); for(let i=0;i<d.length;i+=step) samp.push(d[i],d[i+1],d[i+2]); });
+    let pal=gifMedianCut(new Uint8Array(samp),248);
+    pal.push([255,255,255],[255,215,106],[241,208,74],[10,25,16],[7,19,12],[159,179,164]);
+    if(pal.length>256) pal=pal.slice(0,256);
+    const cache=new Int32Array(262144).fill(-1);
+    const frames=[]; const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const ctx=cv.getContext('2d');
+    scenes.forEach((sc,si)=>{
+      const bg=hvShareBg(sc.base, D, {title:`${hvReelResult(sc.hole)} · Hole ${sc.hole.n}`,
+        sub:`Par ${sc.hole.par} · ${dtp(sc.hole.toPar)}`, pos:`${si+1}/${scenes.length}`});
+      const {shots, drawDone, drawActive}=hvTracerDraw(sc.g, sc.plots, D);
+      const state=(active,t)=>{ ctx.drawImage(bg,0,0);
+        for(let i=0;i<shots.length;i++){ if(i<active) drawDone(ctx,shots[i]); }
+        if(active<shots.length) drawActive(ctx,shots[active],t); else for(let i=0;i<shots.length;i++) drawDone(ctx,shots[i]); };
+      const push=delay=>{ const data=ctx.getImageData(0,0,W,H).data; const idx=new Uint8Array(W*H);
+        for(let p=0,q=0;p<data.length;p+=4,q++) idx[q]=gifNearest(pal,data[p],data[p+1],data[p+2],cache); frames.push({idx,delay}); };
+      state(0,0); push(35);   // brief address hold so each hole reads as a new clip
+      shots.forEach((sh,k)=>{ const steps=sh.putt?puttSteps:fullSteps; for(let s=1;s<=steps;s++){ state(k,s/steps); push(5); } });
+      state(shots.length,1); push(si===scenes.length-1?300:150);   // linger on the made shot; longest on the last
+    });
+    const bytes=gifBuild(W,H,pal,frames);
+    const blob=new Blob([bytes],{type:'image/gif'}), fname='runthetour-highlights.gif';
+    const file=new File([blob],fname,{type:'image/gif'}), txt=hvReelCaption(scenes.map(s=>s.hole), c);
+    if(navigator.canShare&&navigator.canShare({files:[file]})){ navigator.share({files:[file],title:'RunTheTour',text:txt}).catch(e=>{ if(!(e&&e.name==='AbortError')) toast('Saved your highlight reel'); }); }
+    else { const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); toast('Saved your highlight reel'); }
+  }).catch(e=>{ console.error('reel',e); toast("Couldn't build the highlight reel"); });
+}
+// Collect birdie-or-better holes (with shot data) from a set of played holes, in play order.
+function hvReelHoles(holes){
+  const out=[]; (holes||[]).forEach((h,i)=>{ if(h && h.toPar!=null && h.toPar<=-1 && h.shots && h.shots.length && h.shots[0] && h.shots[0].k) out.push({hole:h, holeIdx:i}); });
+  return out;
+}
+// Entry point for a "Share Highlights" button: courseKey + played holes → reel (or a toast if none).
+function shareHighlights(courseKey, holes){
+  const c=DAILY_COURSES[courseKey]; const list=hvReelHoles(holes);
+  if(!list.length){ toast('No birdies to reel this round'); return; }
+  try{questDaily('share');}catch(e){}
+  track('share_highlights',{course:courseKey, holes:list.length});
+  toast(list.length>1?`Building your ${list.length}-hole reel…`:'Building your highlight…');
+  setTimeout(()=>{ try{ hvReelRender(list, courseKey, c); }catch(e){ console.error('reel',e); toast("Couldn't build the highlight reel"); } }, 30);
+}
 // CS518 (owner): an inviting share caption that leads with the result you made (Eagle/Birdie/Par...),
 // e.g. "Check out this Eagle I just made on Run The Tour!" - then the course/hole/score + social tags.
 function hvShareCaption(hole, c){
@@ -20508,13 +20176,11 @@ function hvShareCaption(hole, c){
 function hvShareShot(holeIdx){
   const hole=S.dailyHoles[holeIdx], c=DAILY_COURSES[S.dailyCourse]; if(!hole||!c) return;
   try{questDaily('share');}catch(e){}
-  const svg=hvStaticSVG(hole, S.dailyCourse, holeIdx); if(!svg){ toast('Nothing to share on this hole'); return; }
+  const st=hvStaticSVG(hole, S.dailyCourse, holeIdx); if(!st){ toast('Nothing to share on this hole'); return; }
   const [,,vw,vh]=HV_CAM, scale=2.4;
   const W=Math.round(vw*scale), imgH=Math.round(vh*scale), barH=Math.round(W*0.12), H=imgH+barH;
   const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const ctx=cv.getContext('2d');
-  const img=new Image();
-  img.onload=()=>{
-    ctx.fillStyle='#0a1a10'; ctx.fillRect(0,0,W,H); ctx.drawImage(img,0,0,W,imgH);
+  const drawBarAndSave=()=>{
     ctx.fillStyle='#07130c'; ctx.fillRect(0,imgH,W,barH);
     ctx.textBaseline='middle';
     ctx.fillStyle='#F1D04A'; ctx.font=`800 ${Math.round(barH*0.34)}px "Barlow Semi Condensed",sans-serif`;
@@ -20529,8 +20195,14 @@ function hvShareShot(holeIdx){
       else { const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=fname; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); toast('Saved the shot image'); }
     },'image/png');
   };
-  img.onerror=()=>toast("Couldn't render the image");
-  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+  // pixel scene → shot-tracer overlay (vector) on top → info bar
+  hvPixelScene(st.g, st.seedN, st.biome, W, imgH).then(base=>{
+    ctx.fillStyle='#0a1a10'; ctx.fillRect(0,0,W,H); ctx.drawImage(base,0,0);
+    const sImg=new Image();
+    sImg.onload=()=>{ ctx.drawImage(sImg,0,0,W,imgH); drawBarAndSave(); };
+    sImg.onerror=drawBarAndSave;   // still share the scene if the tracer overlay fails
+    sImg.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(st.svg);
+  }).catch(()=>toast("Couldn't render the image"));
   track('daily_share_shot',{hole:holeIdx+1});
 }
 /* ---- Monthly Spotlight flow: reuses the whole daily draft→build→round pipeline (S.daily=true),
@@ -21614,6 +21286,13 @@ function scrDailyResult(){
   }
   const btnrow=$(`<div style="display:flex;gap:10px;max-width:520px;margin:14px auto 0"></div>`);
   btnrow.appendChild(shr); btnrow.appendChild(primary); add(btnrow);
+  // ✨ Share Highlights — a looping GIF reel of every birdie-or-better hole's tracer from this round.
+  // Uses the just-played round's holes (S.dailyHoles carries the shot data); disabled with a hint if none.
+  const reelHoles=(S.dailyHoles&&S.dailyHoles.length)?S.dailyHoles:((shareR&&shareR.holes)||[]);
+  const reelN=hvReelHoles(reelHoles).length;
+  const hi=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0"${reelN?'':' disabled'}>✨ Share Highlights<span class="sub">${reelN?`A GIF reel of your ${reelN} birdie${reelN>1?'s':''}-or-better`:'No birdies to reel this round'}</span></button>`);
+  if(reelN) hi.onclick=()=>shareHighlights(r.course, reelHoles);
+  add(hi);
   if(cr) add(cr);
   // CS483L: Legend Tokens section removed from the result page (owner) - it already lives on the daily
   // preview + the header Legend-token pill routes there, so it's not duplicated here.
@@ -25273,6 +24952,22 @@ function h2hResultCard(){
   card.appendChild(scoreCardEl({holes, pars, rows, tap:canReplay?h2hReplayHole:null}));
   return card;
 }
+// Adapt an h2h match into the daily-style {n,par,yards,toPar,shots} holes the highlight reel expects.
+// My shots live at playHoles[i].shots[myUnit] (same dShotSeq shape as daily); my per-hole score is
+// units[myUnit].scores[i]; the course key + hole geometry seed match the daily formula, so the reel
+// projects my tracers correctly. Returns null if there's no usable match/shot data.
+function h2hSharableHoles(){
+  try{
+    if(!S.h2h||!S.h2h.units||!S.h2h.units.length) return null;
+    const seed=S.h2h.seed, key=h2hCourseKey(seed), course=DAILY_COURSES[key]; if(!course) return null;
+    const myIdx=S.h2h.units.findIndex(u=>u.members&&u.members.some(p=>p.user_id===h2hUid()));
+    if(myIdx<0) return null;
+    if((!S.h2h.playHoles||!S.h2h.playHoles.length) && typeof h2hBuildPlay==='function'){ try{ h2hBuildPlay(); }catch(e){} }
+    const ph=S.h2h.playHoles||[], scores=(S.h2h.units[myIdx].scores)||[];
+    const holes=ph.map((p,i)=>({ n:p.n, par:p.par, yards:p.yards, toPar:scores[i], shots:(p.shots&&p.shots[myIdx])||[] }));
+    return { key, holes };
+  }catch(e){ return null; }
+}
 function scrH2HResult(){
   if(S.h2h) S.h2h.replay=null;   // leaving any single-hole replay
   const m=h2hMode(S.h2h.mode), course=S.h2h.course;
@@ -25299,6 +24994,11 @@ function scrH2HResult(){
     }
   }
   const stack=$(`<div class="stack" style="max-width:360px;margin:22px auto 0"></div>`);
+  // ✨ Share Highlights — reel your birdie-or-better holes from this match. Disabled with a hint if none.
+  if(!voided){ const shb=h2hSharableHoles(), rn=shb?hvReelHoles(shb.holes).length:0;
+    const hib=$(`<button class="btn ghost"${rn?'':' disabled'}>✨ Share Highlights<span class="sub">${rn?`A GIF reel of your ${rn} birdie${rn>1?'s':''}-or-better`:'No birdies to reel this match'}</span></button>`);
+    if(rn) hib.onclick=()=>shareHighlights(shb.key, shb.holes);
+    stack.appendChild(hib); }
   const again=$(`<button class="btn goldfill">Play again</button>`); again.onclick=openH2H; stack.appendChild(again);
   const brd=$(`<button class="btn gold">🏆 Leaderboards</button>`); brd.onclick=()=>{ _h2hBoardMode=S.h2h.mode; S.screen='h2hboard'; render(); }; stack.appendChild(brd);
   const home=$(`<button class="btn ghost">Back to home</button>`); home.onclick=h2hLeave; stack.appendChild(home);
