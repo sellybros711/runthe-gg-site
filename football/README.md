@@ -255,31 +255,82 @@ Colors are unchanged and still carry the strength band: **gold and thick** for a
 big link, **green** for a good one, **thin blue** for a small one, **red** for one
 that hurts.
 
-### Getting the strong links to fire at all
+### The wheel was not random, and now it is
 
-Connection tiers had to be separated rather than pooled. A flat "anything
-connected" set is dominated by college and draft-class matches, because there are
-hundreds of those and only a handful of team-seasons you have signed from. Pooled,
-the strongest links stayed as rare as with no bias at all: across six test drafts
-every link came back in the weakest band, so coloring by strength had nothing to
-show. Tiered, with `TIER_TAKE` deciding whether to stop at each tier:
+Reported as the wheel forcing the same team back so you get a chemistry boost, and
+that is exactly what it was doing. `run.js` had a `CONNECTION_BIAS` of 0.3: about
+three spins in ten drew from a pool restricted to team-seasons connected to somebody
+already signed, walking tiers strongest first so the exact team-season you had just
+drafted from was the first candidate.
 
-| `CONNECTION_BIAS` | Best-player chemistry | Chasing it | Gap | Drafts with 2+ colors |
-|---|---|---|---|---|
-| 0.20 | 4.3% | 5.6% | 1.3 | 56% |
-| **0.30** | **4.9%** | **6.8%** | **1.8** | **64%** |
-| 0.40 | 6.2% | 7.8% | 1.6 | 70% |
-| 0.50 | 7.8% | 9.1% | 1.3 | 80% |
+It existed for a real reason. Chemistry as specified could barely happen: six uniform
+draws out of 861 team-seasons rarely share a franchise, a college or a draft class,
+and the two biggest links in §6, Battery (+10%) and Teammates (+5%), both need two
+players off the **same** team-season, which §5's no-repeat rule forbade outright.
 
-0.30 gives the widest gap between playing for chemistry and ignoring it, which is
-the number that matters: the mechanic should be a decision, not a gift. Note the
-gap is inherently modest, because franchise, college and draft links attach to the
-*team*, so once the wheel hands you a connected team you get the link whoever you
-sign. Battery is the one link that is genuinely a player-level choice.
+**0.3 per spin sounds mild and was not.** Measured over 600 drafts:
 
-Around 64% of runs now see one team-season come up twice, which is the mechanism
-that makes Teammates and Battery possible at all. Two draws per team-season is the
-hard cap.
+| | with the bias | without |
+|---|---|---|
+| the same franchise came up twice | 87.7% of runs | 38.2% |
+| the same exact team-season came up twice | 65.8% of runs | 1.8% |
+| most spins one franchise took | 6 of 6 | 4 of 6 |
+
+Two things compounded to get from 0.3 to seven runs in eight. Every signing widens
+the connected set, so later spins have far more to hit than early ones. And the tier
+walk never actually declined a tier: the line meant to remember the weakest usable
+tier as a fallback assigned the pool unconditionally, so once the bias fired the pool
+was **always** restricted and `TIER_TAKE` only chose which tier.
+
+So the bias is gone, along with `connectedTiers()` and the three reverse indexes in
+`indexData()` that existed only to serve it. The verification is that `spin()` now
+lands on the same numbers as six draws taken straight out of the pool with no game
+logic involved at all: 38.4% against 41.0% for a franchise, 1.8% against 2.1% for a
+team-season, the small gap being the two-draw cap and the affordability filter.
+
+**The cost is real and accepted:**
+
+| | with the bias | without |
+|---|---|---|
+| average chemistry | +6.3% | +2.1% |
+| runs finishing with no chemistry at all | 7% | 35% |
+| Battery links in 600 runs | 109 | 3 |
+| a normal player's record (`taps the top row`) | 13-4 | 11-6 |
+| that player's playoff rate | 59.2% | 47.1% |
+| perfect play's title rate | 15.9% | 12.3% |
+
+Chemistry is now a bonus you notice rather than a subsidy every roster collects, and
+the game is harder, which is the direction it is meant to go. Note that perfect play's
+title rate drifts further below the 20% the difficulty target names: `SCALE` is the
+knob if that matters, and it is deliberately untouched here, because moving it would
+change every score already on the leaderboard.
+
+Everything downstream still holds. `--draft` passes all invariants over 3,000 runs:
+no over-cap runs, no dead ends, no player signed twice, no re-spin landing back on the
+team it was paid to leave. Zero chemistry is a state the UI already had words for, on
+both the draft rail ("No connections yet") and the results page ("Nobody here ever
+played together, so there is no chemistry this run").
+
+**`MAX_DRAWS_PER_TEAM_SEASON` stays at 2, deliberately.** A genuinely random wheel can
+repeat, and 1.8% of runs is what that looks like. Forbidding a repeat would make each
+draw depend on the ones before it, which is less random rather than more, and it is
+the same class of hidden rule that was just removed.
+
+### One draw, not two
+
+The wheels still reveal in two beats, year and then team, but the year is now read
+back off the drawn team-season instead of being chosen first. Choosing the year first
+made every year equally likely and then split that evenly among the teams in it, so a
+team-season in a thin year was likelier than one in a full year.
+
+Measured, that skew is small: 1.03x between the luckiest and unluckiest team-season on
+the first spin, 1.07x on a late one, because every year holds 30 to 32 teams and the
+affordability filter almost never empties one. Nobody would have felt it. It is fixed
+because a wheel that is supposed to be random costs nothing to make exactly random,
+and because leaving a known lean in place is how the last one grew.
+
+Both wheels stay honest either way: every face on either of them is a result that was
+really reachable.
 
 ## Season structure
 
@@ -753,9 +804,11 @@ stranding you with one player to take.
   exactly the case that used to look like a gap in the list. Players whose
   position has no open spot left have no tab to sit under, so they collect in a
   LOCKED tab at the end.
-- **About half of spins after the first favor a team-season connected to
-  somebody already signed** (`CONNECTION_BIAS` in `run.js`), so chemistry is
-  something you watch build rather than something you rarely luck into.
+- **Every spin is uniform over the team-seasons you could land on.** There used to
+  be a connection bias that favored a team-season linked to somebody already signed,
+  so chemistry would build rather than be lucked into. It was reported as the wheel
+  forcing the same team back, measuring proved that right, and it is gone. See "The
+  wheel was not random, and now it is".
 - **Division games are spread across the season.** The NFL formula produces
   rivals as adjacent pairs, which used to put all six division games in weeks 1
   through 6 and nothing but strangers after that. The order is now shuffled under
@@ -843,6 +896,27 @@ rows, then a wall of comparison numbers, and never showed the roster you drafted
 
 The schedule is last and shut, in a dropdown, because it is the part you go
 looking for rather than the part you need.
+
+### Playing again
+
+Three buttons under the results, and the order is what they get used in: **Share your
+season**, then **Same team again**, then **Start over** beside **Leaderboard**.
+
+Same team again goes straight to the first spin of a new run with the club you already
+picked. The team screen would have nothing left to ask: the club is chosen, its colors
+are already on the page and the header already says so, so sending you back there is a
+tap that buys nothing. It was reported exactly that way, as having to go back to the
+main menu and pick the same team a second time.
+
+It is always a **free** run, including coming off the daily. Today's daily is one set
+of six draws for everybody, so replaying it would deal the identical wheel and would
+not be another game. Off a daily the toast says which game you are now in rather than
+leaving it to be worked out.
+
+Both buttons tear the finished run down through one `endRun()`, which is the same
+lesson as `newRun()`: the season timers and the playoff broadcast's animation frame
+have to be canceled, and a second copy of that teardown is a second place to forget a
+line of it. A broadcast left running would keep firing into a screen that has moved on.
 
 Every grid list on the site now uses `minmax(0,1fr)` and `min-width:0` on its
 rows. A grid item's default minimum width is its content, so a long stat line

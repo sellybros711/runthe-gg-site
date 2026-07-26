@@ -1155,7 +1155,11 @@
     </details>
 
     <div style="margin-top:15px"><button class="btn" id="b-share">Share your season</button></div>
-    <div class="hrow"><button class="btn ghost sm" id="b-again">Run it again</button>
+    <!-- Straight back into a draft with the team you already picked. Its own line
+         because it is the thing most people want next, and going through the team
+         screen to pick the same team again is a tap that buys nothing. -->
+    <div style="margin-top:9px"><button class="btn ghost sm" id="b-same">Same team again</button></div>
+    <div class="hrow"><button class="btn ghost sm" id="b-again">Start over</button>
       <button class="btn ghost sm" id="b-board2">Leaderboard</button></div>
   </div>
 </div>
@@ -1164,8 +1168,8 @@
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=11"></script>
-<script src="run.js?v=11"></script>
+<script src="engine.js?v=12"></script>
+<script src="run.js?v=12"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -1212,7 +1216,7 @@ const $=(id)=>document.getElementById(id);
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=11;
+const NEED_VERSION=12;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -3605,12 +3609,42 @@ $('lb-sort').addEventListener('click',(e)=>{
 });
 $('b-lb-dir').onclick=()=>{ lbDir=lbDir==='asc'?'desc':'asc'; lbShown=5; loadBoard(); };
 
-$('b-again').onclick=()=>{
+/* TEARING DOWN A FINISHED RUN.
+   Both ways of playing again need every line of this, so it is one function rather
+   than two copies of it. The season timers are the reason it cannot be skipped: a
+   playoff broadcast left running would keep firing into a screen that has moved on.
+
+   `submitted` and `myRanks` belong to the run that just ended. newRun() clears them
+   too, but this also covers Start over, which ends with no run at all. */
+function endRun(){
   clearTimeout(simTimer); clearTimeout(poTimer); cancelAnimationFrame(poRaf); poSkip=null;
-  run=null; pickedTeam=null; lastChem=1;
-  /* Back to no run at all, which means no submitted row and no ranks either. Without
-     this the next run is measured against the last one's numbers. */
+  run=null; lastChem=1;
   submitted=null; myRanks=null; lastPerfectShare=null;
+}
+
+/* SAME TEAM, NEW DRAFT. Straight to the first spin: the club is already chosen, its
+   colors are already on the page and the header already says so, so there is nothing
+   the team screen would ask that has not been answered.
+
+   Always a free run, including off a daily. Today's daily is one set of six draws for
+   everybody, so replaying it would deal the identical wheel and would not be another
+   game. Coming off one, the toast says which game you are now in rather than leaving
+   it to be worked out from the results screen. */
+$('b-same').onclick=()=>{
+  const team=pickedTeam, wasDaily=!!(run&&run.daily);
+  if(!team){ $('b-again').click(); return; }
+  endRun();
+  newRun({});
+  pickedTeam=team;
+  R.pickFranchise(run,team);
+  $('hdr').textContent=team;
+  show('s-draft'); nextSpin();
+  if(wasDaily) toast("Today's daily is played. This one is a free run");
+};
+
+$('b-again').onclick=()=>{
+  endRun();
+  pickedTeam=null;
   document.querySelectorAll('.tm').forEach(x=>{x.classList.remove('on');x.removeAttribute('style');});
   $('b-draft').disabled=true; $('hdr').textContent='The Perfect Season';
   $('rivals').classList.remove('on'); $('rivals').innerHTML='';

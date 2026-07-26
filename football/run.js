@@ -259,68 +259,44 @@ function openSlotNames(run) {
 }
 
 /*
- * How often the wheel favors a team-season that could link to the team you
- * already have, and how many times one team-season can come up in a run.
+ * THE WHEEL IS RANDOM. THERE IS NO BIAS.
  *
- * Both exist because chemistry as specified could almost never happen. Measured
- * over 400 drafts by a player deliberately maximizing it on every single pick,
- * the result was +2% every time, and college was the ONLY link type that ever
- * fired. Two reasons:
+ * There was one, and taking it out is the point of this comment. `CONNECTION_BIAS`
+ * made about three spins in ten draw from a pool restricted to team-seasons
+ * connected to somebody already signed, so that chemistry would build rather than
+ * be lucked into. It was added because chemistry as specified could barely happen:
+ * six uniform draws out of 861 team-seasons rarely share a franchise, a college or
+ * a draft class, and the two biggest links in §6, Battery and Teammates, both need
+ * two players off the SAME team-season.
  *
- *   1. Six uniform draws out of 861 team-seasons rarely share a franchise, a
- *      college or a draft class, and draft_year is null for undrafted players,
- *      which removes that link for them entirely.
- *   2. §5 says a team-season may never repeat in a run, but Battery (+10%) and
- *      Teammates (+5%), the two largest links in §6, both need two players from
- *      the SAME team-season. Those rules contradict each other, so the biggest
- *      chemistry in the game was unreachable by construction.
+ * It was reported as the wheel forcing the same team back, and measuring it proved
+ * the report right by a wide margin. Over 600 drafts:
  *
- * A team-season can now come up twice, which makes Battery and Teammates
- * reachable while still stopping a run from being six players off one roster.
- * And about half of the spins after the first prefer a team-season connected to
- * somebody already signed, so chemistry is something you watch build rather than
- * something you occasionally luck into.
- */
-/*
- * Exported so it can be swept from the harness rather than guessed at. The
- * balance being struck: chemistry has to be reachable, but it must not be
- * ambient. Franchise, college and draft links attach to the TEAM, so once the
- * wheel hands you a connected team you get the link whoever you sign. Push the
- * bias too high and chemistry becomes a gift instead of a decision, which is the
- * opposite of §6's intent that it should "tempt you into a cheaper signing".
+ *                                        with the bias    without
+ *   the same franchise came up twice         87.7%          38.2%
+ *   the same team-season came up twice       65.8%           1.8%
+ *   most spins one franchise took             6 of 6         4 of 6
+ *
+ * A wheel that hands you the same franchise in seven runs out of eight is not a
+ * wheel, whatever the tuning constant says. 0.3 per spin sounds mild and is not,
+ * for two reasons that compound: every signing widens the connected set, so later
+ * spins have far more to hit, and the tier walk below never actually declined a
+ * tier, so once the bias fired the pool was always restricted.
+ *
+ * The cost is real and is accepted: average chemistry falls from +6.3% to +2.1%,
+ * about a third of runs now finish with none at all, and Battery and Teammates go
+ * back to being something you see a couple of times in a hundred runs. Chemistry is
+ * a bonus you notice, not a subsidy every roster collects. That makes the game
+ * harder, which is the direction it is meant to go.
+ *
+ * MAX_DRAWS_PER_TEAM_SEASON stays at 2, and deliberately. A genuinely random wheel
+ * can repeat, and 1.8% of runs is what that looks like. Forbidding a repeat would
+ * make each draw depend on the ones before it, which is less random rather than
+ * more, and it is the same class of hidden rule that was just removed.
  */
 const TUNING = {
-  CONNECTION_BIAS: 0.3,
-  TIER_TAKE: 0.6,          // chance of stopping at each tier, strongest first
   MAX_DRAWS_PER_TEAM_SEASON: 2,
 };
-
-/*
- * Connected team-seasons, split by how strong a link they would make.
- *
- * These have to be tiered rather than pooled. A flat "anything connected" set is
- * dominated by college and draft-class matches, because there are hundreds of
- * those and only a handful of team-seasons you have actually signed from. Pooling
- * them meant the strongest links stayed as rare as before the bias existed: over
- * six test drafts every single link came back in the weakest band, so the whole
- * point of coloring them by strength was invisible.
- */
-function connectedTiers(run, data) {
-  const same = new Set();      // the exact team-season: teammates, and battery
-  const franchise = new Set(); // same team, another year
-  const loose = new Set();     // same college or draft class
-  const pull = (set, into) => { if (set) for (const id of set) into.add(id); };
-  for (const p of run.roster) {
-    same.add(p.team_season_id);
-    pull(data.tsByFranchise[p.franchise], franchise);
-    pull(data.tsByCollege[p.college], loose);
-    pull(data.tsByDraftYear[p.draft_year], loose);
-  }
-  for (const id of same) franchise.delete(id);
-  for (const id of same) loose.delete(id);
-  for (const id of franchise) loose.delete(id);
-  return [same, franchise, loose];
-}
 
 /**
  * Draw a team-season for the current slot.
@@ -374,31 +350,27 @@ function spin(run, data, constraint) {
   if (!available.length) throw new Error('nothing left you can afford');
 
   /*
-   * When the bias fires, walk the tiers strongest first and take each one with
-   * TIER_TAKE probability. That gives the big links a real chance without making
-   * a reunion spin the default.
+   * ONE DRAW, uniform over everything you could have landed on.
+   *
+   * The wheels still reveal in two beats, year and then team, but the year is read
+   * back off the team-season rather than chosen first. Choosing the year first made
+   * each year equally likely and then split that evenly among the teams in it, so a
+   * team-season in a thin year was likelier than one in a full year. Measured, that
+   * skew is small: 1.03x between the luckiest and unluckiest team-season on the first
+   * spin and 1.07x on a late one, because every year holds 30 to 32 teams and the
+   * affordability filter almost never empties one. Nobody would have felt it. It is
+   * fixed because a wheel that is supposed to be random costs nothing to make
+   * exactly random, and because leaving a known lean in place is how the last one
+   * grew.
+   *
+   * Both wheels stay honest either way: every face on either of them is a result
+   * that was really reachable.
    */
-  let pool = available;
-  if (run.roster.length && rng() < TUNING.CONNECTION_BIAS) {
-    for (const tier of connectedTiers(run, data)) {
-      if (!tier.size) continue;
-      const usable = available.filter((t) => tier.has(t.team_season_id));
-      if (!usable.length) continue;
-      if (rng() < TUNING.TIER_TAKE) { pool = usable; break; }
-      pool = usable;   // remember the weakest usable tier as a fallback
-    }
-  }
-
-  /*
-   * Two wheels, year first and then the team, so the reveal lands in two beats.
-   * The year is picked from the years actually present in the pool, then the team
-   * from that year's teams in the same pool, which keeps both wheels honest: every
-   * face on either wheel is a result you could really have landed on.
-   */
-  const years = [...new Set(pool.map((t) => t.season))].sort((a, b) => a - b);
-  const season = years[Math.floor(rng() * years.length)];
-  const inYear = pool.filter((t) => t.season === season);
-  const t = inYear[Math.floor(rng() * inYear.length)];
+  const pool = available;
+  const t = pool[Math.floor(rng() * pool.length)];
+  const season = t.season;
+  const years = [...new Set(pool.map((x) => x.season))].sort((a, b) => a - b);
+  const inYear = pool.filter((x) => x.season === season);
 
   const board = boardFrom(run, t.team_season_id, data.playersByTeamSeason);
   run.currentDraw = {
@@ -593,22 +565,11 @@ function indexData(players, teamSeasons) {
   const byTeamSeasonId = {};
   for (const t of teamSeasons) byTeamSeasonId[t.team_season_id] = t;
 
-  /*
-   * Reverse indexes for the connection bias below: which team-seasons contain a
-   * player who could link to somebody, by franchise, college and draft class.
-   */
-  const tsByFranchise = {}, tsByCollege = {}, tsByDraftYear = {};
-  const add = (map, k, v) => { if (k === null || k === undefined || k === '') return;
-    (map[k] ??= new Set()).add(v); };
-  for (const p of players) {
-    if (!p.team_season_id) continue;
-    add(tsByFranchise, p.franchise, p.team_season_id);
-    add(tsByCollege, p.college, p.team_season_id);
-    add(tsByDraftYear, p.draft_year, p.team_season_id);
-  }
+  /* The three reverse indexes that used to live here, team-seasons by franchise, by
+     college and by draft class, existed only to find a team connected to somebody
+     already signed. Nothing biases the wheel now, so nothing reads them. */
   return {
     players, teamSeasons, playersByTeamSeason, byTeamSeasonId,
-    tsByFranchise, tsByCollege, tsByDraftYear,
     prepared: E.prepareData(teamSeasons),
   };
 }
@@ -885,7 +846,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 11;
+const RUN_API_VERSION = 12;
 
 const api = {
   API_VERSION: RUN_API_VERSION,
@@ -893,7 +854,7 @@ const api = {
   startSeason, advanceWeek, startPlayoffs, indexData, bestPossibleSquad, projectSeason,
   previewSigning,
   remaining, reserveFloor, canRespin, slotsLeft, affordableFrom,
-  boardFrom, blockFor, BLOCK,
+  boardFrom, blockFor, BLOCK, drawable,
   openSlots, openSlotNames, slotForPlayer, TUNING,
 };
 
