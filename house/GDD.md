@@ -1118,7 +1118,7 @@ behave like the genre it is modelling.
 |---|---|---|
 | 1 | Vote coalescence: the house votes as a house | DONE, §8.3 |
 | 2 | Nomination intent: pawn and backdoor | DONE, §8.2 |
-| 3 | Named alliances with size and identity, plus showmances that draw heat as a unit | DONE, §7.7 and §7.8, and see the third correction below |
+| 3 | Named alliances with size and identity, plus showmances that draw heat as a unit | DONE, §7.7 and §7.8, and see the third correction below. The heat half was later redirected to the Panel, §22.2, where it works |
 | 4 | Floater logic, so some people genuinely skate | DONE, §8.2, and see the correction below |
 | 5 | Jury management: make the Panel matter in the last three weeks | DONE, §8.3 |
 | 6 | Rituals: Captain's room, nomination speeches, rations bonding, campaigning from the block | DONE, §19 |
@@ -1675,3 +1675,85 @@ never. A player who kept pushing could pin the whole house at the clamp and it
 would hold there for the rest of the run. It now fades toward the standing
 personal misread at `BIAS_DECAY` a week, and that misread is stored separately
 in `biasBase` so decay cannot erase the character it exists to model.
+
+---
+
+## 22. Jury Management
+
+Jury management used to be one binary choice in the last five minutes of a run:
+`own` or `humble`, applied to all seven jurors at once. Everything that actually
+builds a jury happens during the fourteen weeks before that, and none of it was
+playable.
+
+### 22.1 Walking somebody out
+
+The person you just cut is standing in the doorway. They are about to spend
+weeks on a Panel with a vote and nothing to do but compare notes. What you say
+now is the last thing they take with them.
+
+Offered only when you **had a hand in it**: you voted them out, you named them,
+or you held the Veto and left them there. Watching somebody go does not earn you
+a speech.
+
+| What you say | What it does |
+|---|---|
+| **Tell them exactly why** | +30 to a juror who came here to play, −20 to one who came here for the people |
+| **Just say goodbye** | +16 to the second sort, −6 to the first. Small, never backfires |
+| **It was not me** | +26, unless the jury house works it out, and then −60 |
+| **Nothing** | nothing |
+
+Aimed at **one finalist**, not at the juror's bitterness in general, because
+bitterness is a scalar they carry against everybody and softening it would hand
+the benefit to your opponent as well. A good walkout also softens the
+`BITTER_WITHHOLD` roll, which is the "articulate why it was a strategic
+necessity" payoff stated as a mechanic.
+
+**The read is the decision, so the card shows it.** Owning a cut is worth a lot
+to one sort of juror and costs you with the other, so a player who cannot tell
+them apart is flipping a coin. Measured over 254 Final 2 appearances a side:
+
+| | Panel votes out of seven | Win rate |
+|---|---|---|
+| say nothing | 2.80 | 5.6% |
+| own it every time | 3.01 | 6.4% |
+| read the juror first | **3.15** | **6.9%** |
+
++0.35 votes against a standard error of 0.15. The gradient is the point: the
+skill is in telling them apart, and a flat policy captures well under half of
+what the ritual is worth.
+
+**Measured on Panel votes and not on where the player finished**, because a
+walkout can only act at the Panel and the player reaches the Final 2 in about
+one run in six. Averaging in the five sixths where the term never applies gave a
+headline of 0.01 places at a standard error of 0.01, which looks like a precise
+measurement of nothing and is really a measurement of how rarely it gets to
+matter.
+
+### 22.2 Riding a bloc
+
+This is the **redirect** for the named-alliance heat that could not be made to
+work, §15's third correction. That term failed because the nomination block
+holds exactly two seats a week and a conserved quantity cannot be pushed. The
+Panel is the opposite: seven people voting independently, nothing conserved, so
+a term that moves a juror moves an outcome.
+
+A juror who watched a named group run the house, and was not in it, does not
+enjoy handing it the money. `PANEL_BLOC_COST` 17, ablated:
+
+| Cost | Juror outside a named group votes for its members | Everybody else |
+|---|---|---|
+| 0 | 52.6% | 49.2% |
+| 17 | 43.0% | 52.0% |
+| 34 | 33.6% | 54.7% |
+
+At zero it MISSes, and note which way: with no penalty, being in a named bloc
+was slightly **advantageous** at the Panel, because bloc members are
+well-connected. So the claim in §7.7 that named groups get hunted is now true
+somewhere, and it is true here rather than at the nomination stage where three
+separate attempts to put it could not move anything.
+
+### 22.3 Scope
+
+The walkout is a **player** ritual. The AI do not walk each other out, so an AI
+finalist never gets the benefit. That is an asymmetry in the player's favour and
+it is written down rather than implied away, the same as §20.5 and §21.

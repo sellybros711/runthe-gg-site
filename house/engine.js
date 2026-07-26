@@ -503,6 +503,35 @@ const K = {
   PANEL_RESPECT: 0.38, PANEL_TRUST: 0.62,
   BITTER_BLINDSIDE: 26, BITTER_BROKEN_PROMISE: 30, BITTER_NAMED: 12, BITTER_VOTED: 16,
   BITTER_WITHHOLD: 0.42,    // scale on the bitter-jury probability
+
+  /*
+   * WALKING SOMEBODY OUT, GDD §22.
+   *
+   * Jury management was one binary choice in the last five minutes of a run.
+   * These are the terms for doing it fourteen times instead: what it is worth
+   * to explain a cut to the person you just cut, at the moment it lands.
+   *
+   * Aimed at ONE finalist, not applied to the juror's bitterness as a whole,
+   * because bitterness is a scalar the juror carries against everybody and
+   * softening it would hand the benefit to your opponent as well.
+   */
+  WALK_OWN: 30,             // to a juror who wanted a game played on them
+  WALK_OWN_SOFT: -20,       // and to one who wanted to be treated like a person
+  WALK_GOODBYE: 16,         // no strategy talk at all. Small, and it never backfires
+  WALK_GOODBYE_HARD: -6,    // except with somebody who wanted the reason
+  WALK_DEFLECT: 26,         // it was not me. Works right up until it does not
+  WALK_DEFLECT_CAUGHT: -60, // the jury house is nine people with nothing to do
+  WALK_CATCH_BASE: 0.34,    // chance the lie comes apart before the vote
+  WALK_FORGIVE: 0.45,       // how much a good walkout softens the withhold roll
+
+  /*
+   * RIDING A BLOC, GDD §22.2. The redirect for the named-alliance heat that
+   * could not be made to work through nominations, see §15. The block holds two
+   * seats a week and nothing could push them; the Panel is seven people voting
+   * independently and nothing is conserved there at all, so this is where
+   * being the visible beneficiary of a named group can actually cost you.
+   */
+  PANEL_BLOC_COST: 17,
   /* Juror independence. Inline literals here were a violation of this file's
      own rule: a number that cannot be swept cannot be tuned, and these two
      turned out to dominate the Panel outcome entirely. */
@@ -2028,11 +2057,46 @@ function panelVote(state, finalists, rng, framings) {
       for (const by of juror.namedBy) if (by === f) named++;
       v -= named * K.PANEL_NAMED_COST * (0.5 + juror.bitterness / 100);
 
+      /*
+       * WHAT YOU SAID TO THEM ON THE WAY OUT, GDD §22.
+       *
+       * Aimed at one finalist because that is who said it. A juror who was
+       * walked out properly by A is not thereby softened toward B.
+       */
+      let forgiven = 0;
+      const wo = juror.walkout;
+      if (wo && wo.by === f) {
+        const wantsReason = (juror.build.shares.long || 0)
+          + (juror.build.shares.comp || 0) * 0.5;
+        if (wo.kind === 'own') {
+          v += K.WALK_OWN * wantsReason + K.WALK_OWN_SOFT * (1 - wantsReason);
+          forgiven = K.WALK_FORGIVE;
+        } else if (wo.kind === 'goodbye') {
+          v += K.WALK_GOODBYE * (1 - wantsReason) + K.WALK_GOODBYE_HARD * wantsReason;
+          forgiven = K.WALK_FORGIVE * 0.6;
+        } else if (wo.kind === 'deflect') {
+          if (wo.caught) v += K.WALK_DEFLECT_CAUGHT;
+          else { v += K.WALK_DEFLECT; forgiven = K.WALK_FORGIVE; }
+        }
+      }
+
+      /*
+       * RIDING A BLOC, GDD §22.2. A juror who watched a named group run the
+       * house, and was not in it, does not enjoy handing it the money.
+       */
+      for (const a of (state.alliances || [])) {
+        if (!a.name || a.members.indexOf(f) === -1) continue;
+        if (a.members.indexOf(pid) !== -1) continue;
+        if (!(a.known && a.known[pid] != null)) continue;
+        v -= K.PANEL_BLOC_COST;
+        break;
+      }
+
       /* Bitter jury. Betrayal that landed on this juror can cost you their vote
          outright, whatever your game looked like. */
       const bitter = juror.bitterness / 100;
       const betrayed = rel.suspicion[pid][f] / 100;
-      if (rng.chance(bitter * betrayed * K.BITTER_WITHHOLD)) v -= 55;
+      if (rng.chance(bitter * betrayed * K.BITTER_WITHHOLD * (1 - forgiven))) v -= 55;
 
       return { f, v };
     });

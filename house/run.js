@@ -317,6 +317,21 @@ function needsInput(s) {
       return { kind: 'vote', atRisk: s.atRisk.slice(),
         extraVote: P.heldBy(s, me, 'extra_vote').length > 0 };
     }
+    case PHASES.FALLOUT: {
+      if (s.walkoutDone || !s.evictionResult) return null;
+      const gone = s.evictionResult.evicted;
+      if (!walkoutOwed(s, gone)) return null;
+      /*
+       * The read the choice needs. GDD §22: owning a cut is worth a lot to
+       * somebody who came here to play and costs you with somebody who came
+       * here for the people, so without this the card is a coin flip with
+       * three faces. Exposed as a band, not a number, per §17.
+       */
+      const g = s.cast[gone];
+      const wants = (g.build.shares.long || 0) + (g.build.shares.comp || 0) * 0.5;
+      return { kind: 'walkout', who: gone,
+        wants: wants > 0.62 ? 'game' : wants < 0.38 ? 'people' : 'mixed' };
+    }
     case PHASES.FINAL3:
       return s.final3Winner === me ? { kind: 'final3_pick', pool: activeIds(s).filter((i) => i !== me) } : null;
     case PHASES.PANEL:
@@ -348,7 +363,7 @@ function step(s, input) {
     case PHASES.VETO_COMP:  return doVetoComp(s, input);
     case PHASES.VETO_CEREMONY: return doVetoCeremony(s, input);
     case PHASES.EVICTION:   return doEviction(s, input);
-    case PHASES.FALLOUT:    return doFallout(s);
+    case PHASES.FALLOUT:    return doFallout(s, input);
     case PHASES.FINAL3:     return doFinal3(s, input);
     case PHASES.PANEL:      return doPanel(s, input);
     default:                return s;
@@ -512,6 +527,7 @@ function doReset(s) {
   s.backdoor = null; s.backdoorLanded = false;
   /* The rituals, GDD §19. All three are weekly and none of them carry over. */
   s.speech = null; s.roomGuests = null; s.campaigned = {};
+  s.walkoutDone = false;
 
   /* Bounce Back, GDD §12. Pool is the last six evicted whether or not the Panel
      has started forming, which is the fix for version 0.1 calling the returnee
@@ -1346,10 +1362,53 @@ function doEviction(s, input) {
   return s;
 }
 
-function doFallout(s) {
+/**
+ * Did the player have a hand in this one, GDD §22.
+ *
+ * You only get to explain a cut you actually made. Voting them out, naming
+ * them, or holding the Veto and leaving them there all count; watching it
+ * happen does not, and offering the beat anyway would make it a formality
+ * rather than a reckoning.
+ */
+function walkoutOwed(s, gone) {
+  const me = s.human;
+  if (gone === me || s.cast[me].status !== 'active') return false;
+  if (s.captain === me && (s.nominees || []).indexOf(gone) !== -1) return true;
+  if (s.vetoHolder === me && s.atRisk.indexOf(gone) !== -1 && !s.vetoUsed) return true;
+  const mine = (s.evictionResult.votes || []).filter((v) => v.voter === me)[0];
+  return !!(mine && mine.target === gone);
+}
+
+function doFallout(s, input) {
   const rng = s.rng.ai;
   const result = s.evictionResult;
   const gone = result.evicted;
+
+  /*
+   * THE LAST THING YOU SAY TO THEM, GDD §22.
+   *
+   * Held here, before anything else resolves, because the beat happens in the
+   * doorway. The player is the only seat that gets it; the AI do not walk each
+   * other out, and that asymmetry is written down in the GDD rather than
+   * implied away.
+   */
+  if (!s.walkoutDone && walkoutOwed(s, gone)) {
+    if (!isHumanActive(s)) s.walkoutDone = true;
+    else if (!input || !input.walkout) return s;
+    else {
+      s.walkoutDone = true;
+      const kind = input.walkout;
+      if (kind !== 'nothing') {
+        /* A lie told in a doorway to somebody with nine weeks of nothing to do
+           but compare notes. Perception is what makes it hold. */
+        const caught = kind === 'deflect'
+          && rng.chance(E.clamp01(E.K.WALK_CATCH_BASE
+            + (s.cast[gone].social.perception - s.cast[s.human].social.deception) / 260));
+        s.cast[gone].walkout = { by: s.human, kind, caught: !!caught, week: s.week };
+        pushEvent(s, 'walkout', { who: gone, kind, caught: !!caught });
+      }
+    }
+  }
 
   /* Trust moves on what people BELIEVE happened. Votes are anonymous, so the
      only certain thing is the tally. */
@@ -1426,6 +1485,7 @@ function doFallout(s) {
     s.hohTarget = null; s.hohPawn = null; s.nomMode = null;
     s.backdoor = null; s.backdoorLanded = false;
     s.speech = null; s.roomGuests = null; s.campaigned = {};
+    s.walkoutDone = false;
     s.phase = PHASES.CAPTAIN_COMP;
     pushEvent(s, 'double_eviction', {});
     return s;

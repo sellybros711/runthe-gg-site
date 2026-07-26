@@ -1867,6 +1867,22 @@ function narrateAfter(ph,wkBefore){
     if(bb) say(s.cast[bb.who].name+' comes back through the door. Nobody expected to see them again.','hot');
     narrateRooms();
   }
+  if(ph===R.PHASES.FALLOUT){
+    /* GDD §22. Reported plainly, because the whole point is that you will not
+       find out whether it worked until seven people vote. */
+    var wo=s.events.filter(function(e){ return e.kind==='walkout'&&e.week===s.week&&!e.said; })[0];
+    if(wo){
+      wo.said=true;
+      var wn=s.cast[wo.who].first;
+      if(wo.kind==='own') say('You tell '+wn+' exactly why. They do not thank you for it and they do not forget it either.','','out');
+      else if(wo.kind==='deflect') say('You tell '+wn+' it was not you. They believe it in the doorway.','quiet','out');
+      else if(wo.kind==='goodbye') say('You say goodbye to '+wn+' and leave the game out of it.','ev-good','out');
+      moment({kicker:'The doorway',icon:'out',tone:wo.kind==='own'?'':'good',
+        title:'The last thing '+wn+' heard from you',
+        sub:'They take it to the Panel. You will find out what it was worth when seven people vote.',
+        faces:[{id:wo.who,tag:'On the Panel',col:COL.dim}]});
+    }
+  }
   if(ph===R.PHASES.CAPTAIN_ROOM){
     var cr=s.events.filter(function(e){ return e.kind==='captain_room'&&e.week===s.week&&!e.said; })[0];
     if(cr){
@@ -2052,6 +2068,7 @@ function handleNeed(need){
   if(need.kind==='veto_use') return showVetoUse();
   if(need.kind==='replacement') return showReplacement();
   if(need.kind==='vote') return showVote();
+  if(need.kind==='walkout') return showWalkout(need);
   if(need.kind==='final3_pick') return showFinal3Pick();
   if(need.kind==='framing') return showFraming();
   R.step(s,null); pump();
@@ -2261,6 +2278,55 @@ function showVote(){
         note:bits.join(', '),
         go:function(){ answer({vote:id}); saveRun(); showVoteReveal(); }};
     })
+  });
+}
+
+/*
+ * WALKING SOMEBODY OUT, GDD §22.
+ *
+ * Jury management used to be one binary choice in the last five minutes of a
+ * run. This is the other fourteen: the person you just cut is standing in the
+ * doorway, they are about to spend nine weeks on a Panel with nothing to do but
+ * compare notes, and what you say now is the last thing they take with them.
+ *
+ * Only offered when you actually had a hand in it. Watching somebody go does
+ * not earn you a speech.
+ */
+function showWalkout(need){
+  dock({label:'Say it',off:true});
+  var nm=s.cast[need.who].first;
+  /* The read is the decision. Owning a cut is worth a lot to somebody who came
+     here to play and costs you with somebody who came here for the people, and
+     measured across a thousand runs a player who reads it takes 3.15 of seven
+     Panel votes against 3.01 for one who always owns it and 2.80 for one who
+     says nothing. Hiding the read would make this a coin flip. */
+  var wants=need.wants;
+  var read=wants==='game'
+    ? nm+' came here to play. They will respect a reason and resent being handled.'
+    : wants==='people'
+      ? nm+' came here for the people in it. A strategy lecture in a doorway will not land.'
+      : nm+' could go either way on this.';
+  openCard({
+    kicker:'The doorway', role:'Last word', icon:'out', tone:'bad',
+    title:nm+' is going, and they know it was partly you',
+    body:['They will be sitting on the Panel in a few weeks with a vote and a long memory.',
+      {t:read,c:'q'}],
+    faces:[{id:need.who,tag:'Evicted',col:COL.signal}],
+    choices:[
+      {label:'Tell them exactly why',cls:wants==='game'?'go':'',
+       note:wants==='game'?'This is what they want to hear.'
+         :wants==='people'?'They did not ask for the strategy. They asked why you.'
+         :'Respected by some of them, resented by the rest.',
+       go:function(){ answer({walkout:'own'}); }},
+      {label:'No strategy. Just say goodbye',cls:wants==='people'?'go':'',
+       note:wants==='people'?'This is what they want to hear.'
+         :'Small, and it never backfires. It also does not answer the question they are asking.',
+       go:function(){ answer({walkout:'goodbye'}); }},
+      {label:'It was not me',
+       note:'It buys you their vote, right up until the jury house compares notes.',
+       go:function(){ answer({walkout:'deflect'}); }}
+    ],
+    foot:{label:'Say nothing at all',go:function(){ answer({walkout:'nothing'}); }}
   });
 }
 
