@@ -1115,7 +1115,7 @@
     var tw=ticketWord(c);
     if(tw) g.push({ kind:'typeticket', cat:'word', type:'brain', q:'Type your destination, fast', word:tw });
     // Baggage Claim — grab YOUR bag off the belt, ignore lookalikes (visual match)
-    g.push({ kind:'baggage', cat:'reflex', type:'reflex', q:'Grab YOUR bag off the belt — 3 grabs' });
+    g.push({ kind:'baggage', cat:'reflex', type:'reflex', q:'Grab your bag off the carousel as it comes around.' });
     // Rhythm Echo — hear a rhythm, tap it back (timing memory; opens the audio category)
     g.push({ kind:'rhythmecho', cat:'audio', type:'brain', q:'Listen to the rhythm, then tap it back' });
     // ---- distance/direction games generated from coordinates (objective, no
@@ -1606,7 +1606,7 @@
     var bankEls=document.querySelectorAll('.ltile');
     S.scr.built.forEach(function(x){ if(bankEls[x.i]) bankEls[x.i].classList.add('used'); });
     if(S.scr.built.length===answer.length){
-      if(builtStr()===answer){ S.play.done=true; setTimeout(finishTask,200); }
+      if(builtStr()===answer){ sfx('correct'); vibe(14); S.play.done=true; setTimeout(finishTask,200); }
       else{ S.play.misses++; showMiss();
         // clear the wrong attempt (board glides back in rather than hard-cutting)
         S.scr.built=[]; S.scr.used=[]; setTimeout(function(){ if(!S.play.done){ renderScramble(t); swapIn(document.querySelector('.slot')); } },350); }
@@ -1654,7 +1654,7 @@
       S.seq.input.push(i);
       el.classList.add('tap'); setTimeout(function(){ if(el) el.classList.remove('tap'); },180);
       seqStatus();
-      if(S.seq.input.length===S.seq.seq.length){ S.play.done=true; setTimeout(finishTask,220); }
+      if(S.seq.input.length===S.seq.seq.length){ sfx('correct'); vibe(14); S.play.done=true; setTimeout(finishTask,220); }
     } else {
       S.play.misses++; showMiss(); S.seq.input=[];   // reset input on a wrong tile
       el.style.background='rgba(255,107,107,.35)'; setTimeout(function(){ if(el) el.style.background=''; },320);
@@ -1775,7 +1775,7 @@
       S.ord.placed.push(label);
       // update the tapped row IN PLACE (no full re-render → no dropped taps)
       if(el){ el.classList.add('placed'); var num=el.querySelector('.num'); if(num){ num.textContent=S.ord.placed.length; num.classList.add('on'); } }
-      if(S.ord.placed.length===S.ord.target.length){ S.play.done=true; setTimeout(finishTask,220); }
+      if(S.ord.placed.length===S.ord.target.length){ sfx('correct'); vibe(14); S.play.done=true; setTimeout(finishTask,220); }
     } else {
       S.play.misses++; showMiss();
       if(el){ el.style.borderColor='var(--bad)'; setTimeout(function(){ if(el) el.style.borderColor=''; },300); }
@@ -1795,7 +1795,7 @@
     var dots=t.stops.map(function(s,i){
       var p=llToXY(s.ll);
       return '<g class="fpstop" data-name="'+esc(s.name)+'" data-x="'+p[0]+'" data-y="'+p[1]+'" style="cursor:pointer;pointer-events:all">'
-        + '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="7" fill="transparent"/>'
+        + '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="16" fill="transparent"/>'
         + '<circle class="fpdot" cx="'+p[0]+'" cy="'+p[1]+'" r="3.4" fill="rgba(240,238,230,.85)" stroke="#0a081a" stroke-width="0.6"/>'
         + '<text class="fpnum" x="'+p[0]+'" y="'+(p[1]-6)+'" font-size="7" font-weight="800" text-anchor="middle" fill="#F6D488"></text>'
         + '</g>';
@@ -1925,7 +1925,7 @@
     if(S.mm.open.length===2){
       var a=S.mm.cards[S.mm.open[0]], b=S.mm.cards[S.mm.open[1]];
       if(a.em===b.em){
-        a.done=b.done=true; S.mm.open=[]; mmPaint(a.id); mmPaint(b.id);
+        sfx('correct'); vibe(12); a.done=b.done=true; S.mm.open=[]; mmPaint(a.id); mmPaint(b.id);
         var all=true; S.mm.cards.forEach(function(x){ if(!x.done) all=false; });
         if(all){ S.play.done=true; setTimeout(finishTask,260); }
       } else {
@@ -1939,7 +1939,7 @@
   // grid built ONCE; cells update via textContent so taps are never dropped mid-render
   function mgWhack(t){
     // pop rate speeds up (820→560ms) and one more hit is needed on later Stages
-    var d=ramp(), tick=Math.round(820-260*d);
+    var d=ramp(), tick=Math.round(900-220*d);   // hold each pop a touch longer so it doesn't vanish mid-reach
     S.wk={ hits:0, need:5+Math.round(d), cells:[null,null,null,null,null,null,null,null,null], timer:null };
     var cells=''; for(var i=0;i<9;i++){ cells+='<div class="seqtile wkc" data-i="'+i+'"></div>'; }
     $('mg').innerHTML='<div class="seqstatus" id="wkst"></div>'
@@ -1963,7 +1963,7 @@
   }
   function whackTap(t,i){
     if(S.play.done) return;
-    var c=S.wk.cells[i]; if(!c) return;
+    var c=S.wk.cells[i]; if(!c){ var ec=wkCell(i); if(ec) retrig(ec,'hitflash'); return; }   // empty tap: brief flash so it feels registered
     if(c===t.target){ S.wk.hits++; S.wk.cells[i]=null; var el=wkCell(i); if(el) el.textContent=''; wkStatus();
       if(S.wk.hits>=S.wk.need){ S.play.done=true; clearInterval(S.wk.timer); finishTask(); return; }
     } else { S.play.misses++; showMiss(); S.wk.cells[i]=null; var el2=wkCell(i); if(el2) el2.textContent=''; }
@@ -2053,7 +2053,7 @@
      won't fly (small miss, keep rolling); leave it too long and you overrun. */
   function mgSwingMeter(t){
     var d=ramp();
-    S.to={ spd:0, rate:0.40+0.12*d, bandC:0.68, bandW:0.26-0.09*d, done2:false, last:performance.now() };
+    S.to={ spd:0, rate:0.40+0.12*d, bandC:0.68, bandW:Math.max(0.21,0.26-0.09*d), done2:false, last:performance.now() };
     $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div id="tofield" style="position:relative;height:180px;border-radius:14px;overflow:hidden;border:1px solid var(--cardb);touch-action:manipulation;'
         + 'background:linear-gradient(180deg,#20386e,#3f63ad 40%,#89a7cf 60%,#b9cfe0 64%)">'
@@ -2207,49 +2207,74 @@
     }
   }
 
-  /* ---------- minigame: Baggage Claim (visual match on a moving belt) ---------- */
+  /* ---------- minigame: Baggage Claim (luggage carousel) ----------
+     Colored suitcases ride the belt; spot YOURS (matching colour + sticker) and
+     tap ANYWHERE the moment it reaches the middle grab zone — a timing tap, not a
+     precision grab on a moving sprite. Wrong bag in the zone = miss. */
+  var BAG_COLORS=['#e0524a','#3b74c4','#3fa564','#e3b74a','#8a5cc0','#e07b3a'];
+  var BAG_STICK=['⭐','🌙','⚡','🍀','🎀','🔔'];
   function mgBaggage(t){
     var d=ramp();
-    var bases=['🟥','🟦','🟩','🟨','🟪','🟧'], sticks=['⭐','🌙','⚡','🍀','🎀','🔔'];
-    var tb=pick(bases), ts=pick(sticks);
-    S.bg={ tb:tb, ts:ts, target:tb+ts, bases:bases, sticks:sticks, grabs:0, need:3,
-           slots:[null,null,null,null], hard:d, timer:null };
-    var cells=''; for(var i=0;i<4;i++){ cells+='<div class="seqtile bgc" data-i="'+i+'" style="width:74px;height:64px;font-size:23px;letter-spacing:2px"></div>'; }
+    var tci=Math.floor(Math.random()*BAG_COLORS.length), tst=BAG_STICK[Math.floor(Math.random()*BAG_STICK.length)];
+    S.bg={ need:3, grabs:0, tci:tci, tst:tst, zx0:0.36, zx1:0.64, spd:0.20+0.10*d, d:d, bags:[], hot:false, last:performance.now() };
     $('mg').innerHTML='<div class="seqstatus" id="bgst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div style="text-align:center;margin-bottom:10px"><span class="catchip">Your bag</span> <span style="font-size:26px;letter-spacing:2px;vertical-align:middle">'+S.bg.target+'</span></div>'
-      + '<div class="seqgrid" style="margin-top:2px">'+cells+'</div>'
-      + '<div class="ohint">The belt keeps moving — tap only YOUR bag.</div>';
-    each('.bgc', function(b){ fastTap(b, function(){ bgTap(+b.getAttribute('data-i')); }); });
-    bgStatus();
-    S.bg.timer=setInterval(bgTick, 1050-350*d); bgTick();
+      + '<div style="text-align:center;margin-bottom:8px"><span class="catchip">Your bag</span> '
+        + '<span style="display:inline-block;width:22px;height:15px;border-radius:3px;background:'+BAG_COLORS[tci]+';vertical-align:middle;margin:0 5px"></span>'
+        + '<span style="font-size:18px;vertical-align:middle">'+tst+'</span></div>'
+      + '<div id="bgfield" style="position:relative;height:150px;border-radius:14px;overflow:hidden;border:1px solid var(--cardb);cursor:pointer;touch-action:manipulation;background:linear-gradient(180deg,#2a2f45,#1c2030 62%,#141824)">'
+        + '<div id="bgzone" style="position:absolute;top:0;bottom:0;left:36%;width:28%;background:rgba(63,206,134,.12);border-left:2px dashed var(--ok);border-right:2px dashed var(--ok);transition:background .1s"></div>'
+        + '<div id="bgcue" style="position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:900;color:var(--ok);opacity:0;transition:opacity .1s">🖐️ GRAB!</div>'
+        + '<div style="position:absolute;left:0;right:0;bottom:14px;height:14px;background:repeating-linear-gradient(90deg,#3a3f52 0 14px,#2c3040 14px 28px)"></div>'
+      + '</div>'
+      + '<div class="ohint">Tap <b>anywhere</b> when YOUR bag reaches the middle — ignore the rest.</div>';
+    var f=$('bgfield'), NB=5, i;
+    for(i=0;i<NB;i++){
+      var el=document.createElement('div'); el.className='bag';
+      el.style.cssText='position:absolute;bottom:24px;width:46px;height:34px;border-radius:6px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;font-size:17px;pointer-events:none;box-shadow:inset 0 -6px 0 rgba(0,0,0,.18),0 4px 5px rgba(0,0,0,.45)';
+      var h=document.createElement('div'); h.style.cssText='position:absolute;top:-7px;left:50%;transform:translateX(-50%);width:18px;height:8px;border:2px solid;border-bottom:0;border-radius:6px 6px 0 0';
+      var s=document.createElement('span');
+      el.appendChild(h); el.appendChild(s); f.appendChild(el);
+      var bag={ el:el, h:h, s:s, x:-0.25+i*0.34, ci:0, st:'', target:false };
+      bgAssign(bag, i===0); S.bg.bags.push(bag);
+    }
+    bgStatus(); fastTap(f, bgGrab); S.bg.last=performance.now();
+    (function loop(){
+      var fld=$('bgfield'); if(S.play.done || !fld) return;
+      var now=performance.now(), dt=Math.min(0.05,(now-S.bg.last)/1000); S.bg.last=now;
+      S.bg.bags.forEach(function(bag){ bag.x+=S.bg.spd*dt;
+        if(bag.x>1.25){ bag.x-=0.34*S.bg.bags.length; bgAssign(bag); }
+        bag.el.style.left=(bag.x*100)+'%'; });
+      var hot=S.bg.bags.some(function(b){ return b.target && b.x>=S.bg.zx0 && b.x<=S.bg.zx1; });
+      if(hot!==S.bg.hot){ S.bg.hot=hot; var z=$('bgzone'); if(z) z.style.background=hot?'rgba(63,206,134,.4)':'rgba(63,206,134,.12)'; var c=$('bgcue'); if(c) c.style.opacity=hot?'1':'0'; }
+      requestAnimationFrame(loop);
+    })();
+  }
+  function bgAssign(bag, forceNonTarget){
+    var haveTarget=S.bg.bags.some(function(b){ return b!==bag && b.target; });
+    var makeTarget = !forceNonTarget && (!haveTarget || Math.random()<0.4);
+    bag.target=makeTarget;
+    bag.ci = makeTarget ? S.bg.tci : Math.floor(Math.random()*BAG_COLORS.length);
+    bag.st = makeTarget ? S.bg.tst : BAG_STICK[Math.floor(Math.random()*BAG_STICK.length)];
+    if(!makeTarget && bag.ci===S.bg.tci && bag.st===S.bg.tst) bag.st=BAG_STICK[(BAG_STICK.indexOf(bag.st)+1)%BAG_STICK.length];
+    bag.el.style.background=BAG_COLORS[bag.ci]; bag.h.style.borderColor=BAG_COLORS[bag.ci]; bag.s.textContent=bag.st;
+    bag.el.setAttribute('data-target', makeTarget?'1':'0');
   }
   function bgStatus(){ var e=$('bgst'); if(e) e.innerHTML='Grabbed <b>'+S.bg.grabs+'</b>/'+S.bg.need; }
-  function bgCell(i){ return document.querySelector('.bgc[data-i="'+i+'"]'); }
-  function bgNew(){
-    // decoys converge on your bag as the race ramps: same colour, wrong sticker
-    var b = (Math.random() < 0.35+0.5*S.bg.hard) ? S.bg.tb : pick(S.bg.bases);
-    var s = pick(S.bg.sticks);
-    if(b===S.bg.tb && s===S.bg.ts) s = S.bg.sticks[(S.bg.sticks.indexOf(s)+1)%S.bg.sticks.length];
-    return b+s;
-  }
-  function bgTick(){
-    if(S.play.done || !$('bgst')){ clearInterval(S.bg.timer); return; }
-    var incoming = (S.bg.slots.indexOf(S.bg.target)<0 && Math.random()<0.55) ? S.bg.target : bgNew();
-    S.bg.slots.shift(); S.bg.slots.push(incoming);
-    var i, el;
-    for(i=0;i<4;i++){ el=bgCell(i); if(el){ el.textContent=S.bg.slots[i]||''; el.classList.remove('bg-step'); } }
-    void document.body.offsetWidth;   // one reflow, then every bag slides in like the belt stepped
-    for(i=0;i<4;i++){ el=bgCell(i); if(el) el.classList.add('bg-step'); }
-  }
-  function bgTap(i){
+  function bgGrab(){
     if(S.play.done) return;
-    var bag=S.bg.slots[i]; if(!bag) return;
-    var el=bgCell(i);
-    if(bag===S.bg.target){
-      sfx('correct'); S.bg.grabs++; S.bg.slots[i]=null; if(el) el.textContent=''; bgStatus();
-      if(S.bg.grabs>=S.bg.need){ S.play.done=true; clearInterval(S.bg.timer); finishTask(); }
-    } else { S.play.misses++; showMiss(); S.bg.slots[i]=null; if(el) el.textContent=''; }
+    var hit=null;
+    S.bg.bags.forEach(function(b){ if(b.target && b.x>=S.bg.zx0 && b.x<=S.bg.zx1) hit=b; });
+    if(hit){
+      sfx('correct'); vibe(14); S.bg.grabs++; bgStatus();
+      var f=$('bgfield'); if(f) flash(f);
+      hit.x = Math.min.apply(null, S.bg.bags.map(function(b){ return b.x; })) - 0.34; bgAssign(hit, true); hit.el.style.left=(hit.x*100)+'%';
+      var c=$('bgcue'); if(c) c.style.opacity='0'; S.bg.hot=false;
+      if(S.bg.grabs>=S.bg.need){ S.play.done=true; setTimeout(finishTask,300); return; }
+    } else {
+      S.play.misses++; showMiss();
+      var fl=$('bgfield'); if(fl) retrig(fl,'hitflash');
+    }
   }
 
   /* ---------- minigame: Rhythm Echo (audio — hear a rhythm, tap it back) ----------
@@ -2740,14 +2765,17 @@
     S.gh={ tgt:t.target.ll, guesses:0, best:Infinity, par:4, done:false };
     var dots=t.pins.map(function(p,i){
       var x=p.ll[1]+180, y=90-p.ll[0];
-      return '<circle class="ghdot" data-i="'+i+'" cx="'+x+'" cy="'+y+'" r="3.2" '
-        + 'fill="rgba(240,238,230,.30)" stroke="rgba(255,255,255,.5)" stroke-width="0.5" style="cursor:pointer;transition:r .18s ease,fill .18s ease"/>';
+      return '<g class="ghpin" data-i="'+i+'" style="cursor:pointer;pointer-events:all">'
+        + '<circle cx="'+x+'" cy="'+y+'" r="14" fill="transparent"/>'   // finger-sized hit area
+        + '<circle class="ghdot" data-i="'+i+'" cx="'+x+'" cy="'+y+'" r="3.2" '
+        + 'fill="rgba(240,238,230,.30)" stroke="rgba(255,255,255,.5)" stroke-width="0.5" style="transition:r .18s ease,fill .18s ease"/>'
+        + '</g>';
     }).join('');
     $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<svg id="ghmap" viewBox="0 0 360 180" preserveAspectRatio="none" style="width:100%;height:auto;aspect-ratio:2/1;background:radial-gradient(120% 120% at 50% 40%,rgba(26,74,134,.5),rgba(10,8,26,.92));border:1px solid var(--cardb);border-radius:12px;touch-action:manipulation">'
       + worldSVGInner() + dots + '</svg>'
       + '<div id="ghread" style="text-align:center;margin-top:10px;font-weight:700;min-height:22px">Tap any dot to take a heat reading.</div>';
-    each('.ghdot', function(el){ el.addEventListener('click', function(){ ghTap(t, +el.getAttribute('data-i'), el); }); });
+    each('.ghpin', function(g){ g.addEventListener('click', function(){ var dot=g.querySelector('.ghdot'); ghTap(t, +g.getAttribute('data-i'), dot); }); });
   }
   function ghHeat(d){
     if(d<1200)  return { t:'Boiling 🔥', c:'#EE5A44' };
