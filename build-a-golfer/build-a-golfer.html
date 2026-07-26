@@ -14128,6 +14128,7 @@ function momentCourseKey(evtName){
   return keys[(dHash(evtName||'x')>>>0)%keys.length];
 }
 function startMomentRound(ce, info){
+  S.lastMomentReel=null;   // fresh Moment → drop any prior played-final reel
   const key=momentCourseKey(ce.evt.name), c=DAILY_COURSES[key];
   const p=buildPlayer(); const sk={}; CATS.forEach(cc=>sk[cc.k]=p[cc.k]);
   // FAIRNESS calibration: playing the Moment must carry the same EXPECTED score as simming it -
@@ -14173,6 +14174,9 @@ function finishMomentRound(){
     const s=o.p.you ? total : (o._r4sim!=null ? o._r4sim : simRound(o.eo,o.p.clu,{major:ce.evt.major,big:ce.evt.big,finalRd:true,courseAdj:ce.courseAdj}));
     o.rounds[r]=s; o.total+=s; delete o._r4sim; });
   ce.roundsDone=4; ce._momentHoles=holes; ce._momentTotal=total;
+  // stash this played final's holes (with shot data) for a "Share Highlights" reel on the win celebration.
+  // Stamped with event+year so a recurring major next year can't reuse stale holes; cleared on a new Moment.
+  try{ S.lastMomentReel={key:momentCourseKey(ce.evt.name), evt:ce.evt.name, year:S.year||1, holes:holes.slice()}; }catch(e){ S.lastMomentReel=null; }
   // CS276: the Sunday decisions you made carry career stakes (confidence + followers + persona), applied
   // once here regardless of whether a playoff follows. resultMomentum (from the final position) applies
   // separately in finalizeEvent, so the two don't double-count.
@@ -14801,6 +14805,13 @@ function celebrateWin(evt, o, opts){
     const actions=$(`<div class="celeb-actions"></div>`);
     const cont=$(`<button class="btn goldfill">Continue ▸</button>`); cont.onclick=e=>{ e.stopPropagation(); finish(); }; actions.appendChild(cont);
     if(major){ const sh=$(`<button class="btn gold">↗ Share win</button>`); sh.onclick=e=>{ e.stopPropagation(); if(celebTimer){clearTimeout(celebTimer);celebTimer=null;} shareMajorWin(evt,o); }; actions.appendChild(sh); }
+    // ✨ Share Highlights — only if THIS win's final was played hole-by-hole (so it has shot tracers to reel).
+    const lm=S.lastMomentReel;
+    if(lm && lm.evt===evt.name && lm.year===(S.year||1) && lm.holes && hvReelHoles(lm.holes).length){
+      const hh=$(`<button class="btn ghost">✨ Share Highlights</button>`);
+      hh.onclick=e=>{ e.stopPropagation(); if(celebTimer){clearTimeout(celebTimer);celebTimer=null;} shareHighlights(lm.key, lm.holes); };
+      actions.appendChild(hh);
+    }
     win.appendChild(actions);
   }
   document.body.appendChild(win);

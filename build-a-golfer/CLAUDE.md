@@ -13764,10 +13764,14 @@ allows Google Fonts, or self-host Anton.*
   - **Removed the illustrated tracer.** Deleted `hvTerrain` (~440 lines), removed the "Pixel course art" settings
     toggle, made `hvArtMode()` always return 'pixel', and replaced `hvBackdrop`'s illustrated fallback with a flat
     colored ground + pin/tee (only hit if pixel ever fails). Zero `hvTerrain` refs remain.
-  - **NOT done — career "moments" (flagged to owner).** The owner picked the end-of-season recap + major/win
-    moment cards for the button, but career/season rounds are SCORE-ONLY (`dSimHole` returns strokes-to-par, no
-    per-shot data), so a *tracer* reel literally can't be built there — no shots to animate. Left for an owner
-    decision (e.g. a season "best rounds" card, or replay-then-reel, or drop career).
+  - **Career "moments" — wired where tracers exist (owner chose this).** Career/season rounds are otherwise
+    SCORE-ONLY (`dSimHole` → strokes-to-par, no shots), so the reel only applies to marquee finals PLAYED
+    hole-by-hole (CS444 Moments, which run through the daily pipeline → real shots). `finishMomentRound` now
+    stashes the played final's holes in `S.lastMomentReel` (stamped with event+year so a recurring major can't
+    reuse stale holes; cleared on a new Moment); `celebrateWin` shows a "✨ Share Highlights" button next to
+    "Share win" ONLY when `S.lastMomentReel` matches that win (so a simmed final shows nothing). The end-of-
+    season recap stays out (it spans many rounds, not one). Verified: button appears on a played-final win →
+    valid reel GIF; hidden on an event mismatch; 0 page errors.
   - Verified in Playwright: full render sweep 41 courses 0 errors (pixel only now); single-hole pixel GIF
     (GIF89a) + static PNG both render (screenshotted — terrain/pin/tee/tracer all correct); daily reel (2
     birdies → valid 2.3MB GIF in ~0.95s, screenshotted first frame "Birdie · Hole 5 · 1/2"); daily button
