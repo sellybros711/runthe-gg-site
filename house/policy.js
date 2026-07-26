@@ -68,6 +68,9 @@ const DEFAULTS = {
    */
   seed: true,
   seedFloor: 0.45,
+  /* GDD §22. What the stand-in says in the doorway, so the ritual can be
+     ablated the same way as the other two player-only layers. */
+  walkout: 'read',
 };
 
 function make(opts) {
@@ -328,6 +331,14 @@ function make(opts) {
         }));
         scored.sort((a, b) => b.v - a.v);
         return { guests: scored.slice(0, need.take).map((x) => x.id) };
+      }
+
+      case 'walkout': {
+        if (cfg.walkout !== 'read') return { walkout: cfg.walkout };
+        /* Play it the way the card tells a player to: own it with somebody who
+           came here to play, say goodbye to somebody who came here for the
+           people. The flat 'own' setting is the control for exactly this. */
+        return { walkout: need.wants === 'people' ? 'goodbye' : 'own' };
       }
 
       case 'naming': {

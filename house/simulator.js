@@ -638,6 +638,103 @@ function curveReport() {
 }
 
 /**
+ * JURY MANAGEMENT, GDD §22.
+ *
+ * Two things measured on the same runs, because both only pay at the Panel and
+ * the Panel is the one place in this game where nothing is conserved: seven
+ * people vote independently, so a term that moves a juror moves an outcome.
+ * That is exactly why the named-alliance heat that could not be pushed through
+ * nominations was redirected here.
+ *
+ * Walking somebody out is a PLAYER ritual, so it is measured through policy.js
+ * on identical seeds with the beat taken and skipped. Riding a bloc applies to
+ * everybody, so it is ablated on its constant.
+ */
+function juryReport() {
+  const n = Math.max(300, Math.floor(N / 3));
+  console.log(`\n=== JURY MANAGEMENT, ${n} paired seeds ===\n`);
+
+  const side = (walk) => {
+    const places = [], votes = [], walked = [];
+    let wins = 0, reachedF2 = 0;
+    for (let i = 0; i < n; i++) {
+      const s = POL.playRun({ seed: String(720000 + i) }, { risk: 0.5, skill: 55, walkout: walk });
+      const me = s.human;
+      places.push(s.cast[me].place);
+      if (s.cast[me].place === 1) wins++;
+      walked.push(s.cast.filter((p) => p.walkout && p.walkout.by === me).length);
+      if (s.cast[me].place <= 2 && s.result) {
+        reachedF2++;
+        votes.push((s.result.tally || {})[me] || 0);
+      }
+    }
+    return { places, wins, votes, reachedF2, walked };
+  };
+
+  const off = side('nothing');
+  const flat = side('own');
+  const on = side('read');
+
+  console.log('  setting      avg finish   win%   reached F2   Panel votes when there   walkouts');
+  const row = (label, r) => console.log(`  ${label.padEnd(11)}  ${mean(r.places).toFixed(2).padStart(10)}`
+    + `   ${pct(r.wins / n).padStart(5)}   ${String(r.reachedF2).padStart(10)}`
+    + `   ${(r.votes.length ? mean(r.votes).toFixed(2) : '-').padStart(22)}`
+    + `   ${mean(r.walked).toFixed(2).padStart(8)}`);
+  row('say nothing', off);
+  row('own, always', flat);
+  row('read them', on);
+
+  /*
+   * MEASURED ON PANEL VOTES, NOT ON WHERE THE PLAYER FINISHED.
+   *
+   * A walkout can only act at the Panel, and the player reaches the Final 2 in
+   * about one run in six, so five sixths of the paired place differences are
+   * exactly zero. Averaging those in produces a headline of 0.01 places with a
+   * standard error of 0.01, which looks like a precise measurement of nothing
+   * and is really a measurement of how often the term gets to apply at all.
+   */
+  const vOff = mean(off.votes), vOn = mean(on.votes);
+  const seV = (a) => {
+    const m = mean(a);
+    return Math.sqrt(mean(a.map((x) => (x - m) * (x - m))) / Math.max(1, a.length));
+  };
+  const dV = vOn - vOff;
+  const seD = Math.sqrt(seV(off.votes) ** 2 + seV(on.votes) ** 2);
+  console.log(`\n  Panel votes when you get there   ${vOff.toFixed(2)} saying nothing,`
+    + ` ${mean(flat.votes).toFixed(2)} always owning it, ${vOn.toFixed(2)} reading them`);
+  console.log(`  reading the juror is worth ${dV >= 0 ? '+' : ''}${dV.toFixed(2)} of seven votes`
+    + ` (SE ${seD.toFixed(2)}, n=${off.votes.length} and ${on.votes.length})`);
+  console.log(`  ${Math.abs(dV) <= 2 * seD ? 'NO MEASURABLE EFFECT, inside two standard errors'
+    : dV > 0 ? 'ok, the player who explains themselves gets more votes'
+    : 'NOT WORTH DOING'}`);
+  if (mean(on.walked) < 1) {
+    console.log('  WARNING: fewer than one walkout a run. This table is measuring nothing.');
+  }
+
+  /* Riding a bloc: do jurors outside a named group vote for its members less. */
+  let inVotes = 0, inSeats = 0, outVotes = 0, outSeats = 0;
+  for (let i = 0; i < n; i++) {
+    const s = runOne(770000 + i);
+    if (!s.result || !s.result.detail) continue;
+    const finalists = [s.result.winner, s.result.runnerUp].filter((x) => x != null);
+    for (const d of s.result.detail) {
+      for (const f of finalists) {
+        const bloc = (s.alliances || []).some((a) => a.name && a.members.indexOf(f) !== -1
+          && a.members.indexOf(d.juror) === -1 && a.known && a.known[d.juror] != null);
+        if (bloc) { outSeats++; if (d.voted === f) outVotes++; }
+        else { inSeats++; if (d.voted === f) inVotes++; }
+      }
+    }
+  }
+  const blocRate = outSeats ? outVotes / outSeats : 0;
+  const plainRate = inSeats ? inVotes / inSeats : 0;
+  console.log(`\n  a juror outside a named group votes for its members ${pct(blocRate)}`
+    + ` of the time, against ${pct(plainRate)} otherwise`
+    + `   ${outSeats >= 200 && blocRate < plainRate ? 'ok' : 'MISS'}  (want lower, n=${outSeats})`);
+  console.log('');
+}
+
+/**
  * SEEDING, GDD §21. Does putting a name in somebody's head work, and does it
  * stay off your fingerprints.
  *
@@ -943,6 +1040,7 @@ else if (arg === '--seat') seatReport();
 else if (arg === '--info') infoReport();
 else if (arg === '--curve') curveReport();
 else if (arg === '--seed') seedReport();
+else if (arg === '--jury') juryReport();
 else if (arg === '--skill') skillReport();
 else if (arg === '--levels') levelReport();
 else if (arg === '--throws') throwReport();
