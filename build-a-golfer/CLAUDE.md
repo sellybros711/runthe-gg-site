@@ -13756,7 +13756,11 @@ allows Google Fonts, or self-host Anton.*
     history guard synced from `render()`, fails open if history is unavailable); bumped the 9px in-round
     control + bottom-nav labels to 10–10.5px; set `<select>` to 16px to stop iOS focus-zoom; anchored the
     overlay Close button to the centered content column on desktop; the render-error card now auto-clears
-    (6s) + is tap-to-dismiss (and fixed its "popped up broke" typo); added an `overflow-x:hidden` backstop.
+    (6s) + is tap-to-dismiss (and fixed its "popped up broke" typo). (An `overflow-x:hidden` backstop was
+    tried on `html,body` and then REVERTED — on iOS/WebKit a non-visible overflow on the root flattens the
+    preserve-3d player-card flip and blanked the "Preview my Player Card" front face; the horizontal-scroll
+    guard was only defensive, so it was dropped rather than break a shipping feature. If horizontal scroll
+    ever actually appears, fix the specific overflowing element instead of clamping the root.)
   - **Legal (copy fixes applied):** removed trademarked "Ryder Cup"/"Olympics" wording from user-visible
     strings — achievement copy now uses the game's own aliased "Nations Cup"; **GA4 now ships Google Consent
     Mode v2 defaults (ad + analytics storage denied until the certified CMP responds)**, aligning the code
