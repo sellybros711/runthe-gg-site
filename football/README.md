@@ -1620,10 +1620,9 @@ browsers will not, and somebody with scripting off got a blank dark page with no
 explanation at all. There is a static block with the H1, the pitch, the credit and the
 legal links now, matching what the golf page carries.
 
-The share image is built from `og-source.html` by rendering it at 1200x630, and it is
-deliberately drawn in the game's own type, position colors and field, with **no
-wordmark**, because which mark the game uses is still an open decision. Regenerating it
-is a screenshot of that file, so it stays in step with the palette.
+The share image is built from `og-source.html` by rendering it at 1200x630, so
+regenerating it is a screenshot of that file and it stays in step with the palette. It
+carries the logo at 214px, top right.
 
 `SHARE_URL` gained its trailing slash. `/football` is a directory, so the bare path was a
 301 on every single share and two URLs for one page to anything that counts links.
@@ -1849,6 +1848,55 @@ The one real lever left is deferring `player_seasons.json` until Start is presse
 landing screen paints against a tiny hero dataset and the rest downloads while a player is
 choosing a club. That is an architecture change with real regression risk and it is not
 worth making the week of a launch.
+
+## The mark
+
+A helmet built from four interlocking puzzle pieces with a facemask, supplied as a 3D
+render. Source kept as `logo-source.png`, the transparent 1024 original.
+
+**It is two pictures, and that is measured rather than a preference.** Rendered on the
+game's own background at every size it gets used at, the whole mark reads down to about
+64px; at 44 the facemask goes to smudge and by 32 the lot is mush. So:
+
+| where | which |
+|---|---|
+| favicon, 16 / 32 / 48 | the **four pieces only**, facemask and speed lines dropped |
+| apple-touch-icon 180, manifest 192 and 512 | the full mark on the `#111827` plate |
+| maskable 512 | the full mark at 64%, so Android's crop to the middle 80% keeps all of it |
+| the share card | the full mark at 214px |
+
+The pieces alone still read as an interlocking 2x2 at 32px and keep their structure at 16,
+and they are the distinctive half of the mark, so the two sizes are recognizably the same
+brand. Checked under a circular mask for the maskable one, and `v49.mjs` asserts that every
+file the page and the manifest point at exists and is the pixel size it claims: a 404 or a
+mismatched icon is invisible in the markup and only shows up on a real home screen.
+
+The baked drop shadow is a non-issue on this game: it disappears against `#080b14`.
+
+### The red piece still cannot be inserted
+
+Worth recording, because it is a different fault from the one in the previous version and a
+subtler one. **Each seam is individually well formed this time**, which the old version's
+were not:
+
+| seam | red | its neighbour | verdict |
+|---|---|---|---|
+| vertical | TAB 67px deep, center y=269 | blue SOCKET 57px, center y=266 | pair correctly, 3px apart |
+| horizontal | SOCKET 78px deep, center x=276 | green TAB 78px, center x=367 | pair correctly, depths identical |
+
+The fault is that **the two seams disagree about where the red piece is.** Closing the
+vertical gap needs red to move dx=+97, and its tab is already opposite blue's socket, so
+that seam wants dy≈0. Closing the horizontal gap needs dy=+102. The piece would have to be
+in two places at once, and they differ by 105px.
+
+Put the pieces together and you can see it: blue's socket sits empty at the top of the seam
+while red's tab lies on top of blue a hundred pixels below. The artwork was drawn so the
+seams look right where red currently floats, not where it would sit once inserted.
+
+**The fix is one number:** move blue's socket down about 105px along the vertical seam, from
+y=266 to y=371, or equivalently move red's tab up by the same amount. Nothing else changes.
+Left as it is for now because it is a re-render rather than a code change, and swapping the
+file is a one-line commit.
 
 ## Not built yet
 

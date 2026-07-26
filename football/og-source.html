@@ -27,7 +27,7 @@
   h1 span{display:block}
   h1 .two{background:linear-gradient(135deg,#f05252 0%,#b91c1c 100%);
     -webkit-background-clip:text;background-clip:text;color:transparent}
-  p{font-size:29px;line-height:1.34;color:#cbd5e1;margin-top:26px;max-width:790px}
+  p{font-size:29px;line-height:1.34;color:#cbd5e1;margin-top:26px;max-width:760px}
   p b{color:#eef2f9;font-weight:700}
   /* the six spots, in the game's own position colors */
   .slots{display:flex;gap:11px;margin-top:34px}
@@ -44,10 +44,14 @@
     letter-spacing:.14em;color:#64748b}
   .url b{color:#eef2f9}
   .url b i{color:#ef4444;font-style:normal}
+  /* The mark, top right, clear of the type. 214px, comfortably above the ~64px floor where
+     the facemask stops reading. */
+  .mark{position:absolute;right:70px;top:64px;width:214px;height:214px;display:block}
 </style></head>
 <body>
   <div class="lines"></div>
   <div class="wrap">
+    <img class="mark" src="/football/logo.png" alt="">
     <div class="eyebrow">Free &middot; No download &middot; Six spins, <b>one season</b></div>
     <h1><span>The Perfect</span><span class="two">Season</span></h1>
     <p>Spin for a year and a team. Sign one player off each of six draws,

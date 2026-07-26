@@ -19,8 +19,17 @@
 <meta name="theme-color" content="#080b14">
 <link rel="canonical" href="https://runthe.gg/football/">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111827'/%3E%3Cellipse cx='16' cy='16' rx='10' ry='7' fill='%23dc2626'/%3E%3Cpath d='M11 16h10M16 13v6' stroke='%23f8fafc' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- THE MARK, and why it is two different pictures.
+     The logo is a helmet built from four puzzle pieces with a facemask. Rendered on the
+     game's own background and measured at every size it gets used at, the whole mark reads
+     down to about 64px; at 44 the facemask goes to smudge and by 32 the lot is mush. So the
+     favicon is the FOUR PIECES ONLY, which still reads as an interlocking 2x2 at 32 and
+     keeps structure at 16, and the full mark is used everywhere there is room for it.
+     Same brand either way, since the pieces are the distinctive half. -->
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <!-- THE SHARE CARD.
      Every finished run offers a share whose text ends in this page's URL, so this
      block is what a player's friends actually see. It had no og:image at all, which
@@ -32,14 +41,14 @@
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/football/">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://runthe.gg/football/og.png?v=1">
+<meta property="og:image" content="https://runthe.gg/football/og.png?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="The Perfect Season: draft an all-time NFL roster under a $140M cap and play a full season. The six roster spots shown as QB, RB, WR, WR, TE and FLEX.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="The Perfect Season: Free NFL Roster Draft Game">
 <meta name="twitter:description" content="Draft an all-time NFL roster from 1999 to 2025 under a $140M cap, then play all 17 games and chase a perfect season.">
-<meta name="twitter:image" content="https://runthe.gg/football/og.png?v=1">
+<meta name="twitter:image" content="https://runthe.gg/football/og.png?v=2">
 <meta name="twitter:image:alt" content="The Perfect Season: draft an all-time NFL roster under a $140M cap and play a full season.">
 <!-- Structured data, so a search result can carry the game's name and category
      rather than only a blue link. VideoGame is the type Google documents for this;
