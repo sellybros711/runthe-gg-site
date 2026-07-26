@@ -160,6 +160,26 @@
   .howto li{margin-bottom:7px;}
   .howto b{color:var(--ink);}
 
+  /* ---------------- leaderboard card ---------------- */
+  .mlb{padding:14px 16px;}
+  .mlb-h{font-family:var(--hero); font-weight:400; letter-spacing:.03em; text-transform:uppercase; font-size:14px; color:var(--coralT); margin:0 0 12px; display:flex; align-items:center; gap:8px;}
+  .mlb-pill{font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--coralT); border:1px solid var(--coralT); border-radius:999px; padding:2px 8px;}
+  .mlb .lb-you{display:flex; gap:9px; margin-bottom:12px;}
+  .mlb .lb-you .box{flex:1; background:var(--card2); border:1px solid var(--line2); border-radius:10px; padding:10px 12px;}
+  .mlb .lb-you .box.me{border-color:var(--coralT); background:color-mix(in srgb, var(--coralT) 12%, var(--card2));}
+  .mlb .cap{display:block; font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);}
+  .mlb .big{display:block; font-family:var(--hero); font-weight:400; font-size:22px; line-height:1.2; margin-top:5px; color:var(--ink); font-variant-numeric:tabular-nums;}
+  .mlb .lb-you .box.me .big{color:var(--coralT);}
+  .mlb .lb-sample{opacity:.62;}
+  .mlb .lb-samplab{font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:2px 0 4px;}
+  .mlb .row{display:flex; align-items:center; gap:10px; padding:5px 0; font-size:13px; border-top:1px solid var(--line); color:var(--ink);}
+  .mlb .row:first-of-type{border-top:0;}
+  .mlb .row.you{color:var(--coralT);}
+  .mlb .rk{font-family:var(--hero); font-weight:400; color:var(--mut); width:20px;}
+  .mlb .who{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .mlb .tm{font-variant-numeric:tabular-nums; color:var(--coralT); font-weight:700;}
+  .mlb .note{font-size:11px; color:var(--mut); margin-top:8px;}
+
   /* revealed-category label pill shown on a lane header */
   .lane-pill{font-size:9px; font-weight:900; letter-spacing:.1em; text-transform:uppercase;
     color:var(--lc); border:1px solid var(--lc); border-radius:999px; padding:2px 8px; flex:0 0 auto;}
@@ -458,6 +478,21 @@
           <li>Stuck? <b>Reveal a group</b> for one guess. Six misses and your board's done.</li>
         </ol>
       </details>
+
+      <div class="card mlb">
+        <h3 class="mlb-h">Daily Leaderboard <span class="mlb-pill">Sample</span></h3>
+        <div class="lb-you">
+          <div class="box me"><span class="cap">Your time today</span><span class="big" id="mYourTm">—</span></div>
+          <div class="box"><span class="cap">Your streak</span><span class="big" id="mYourStreak">0</span></div>
+        </div>
+        <div class="lb-sample" id="mlbSample">
+          <div class="lb-samplab">Illustrative ranking</div>
+          <div class="row"><span class="rk">1</span><span class="who">gridiron_gary</span><span class="tm">1:38</span></div>
+          <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">2:12</span></div>
+          <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">2:44</span></div>
+        </div>
+        <div class="note" id="mlbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your real time.</div>
+      </div>
     </aside>
   </div>
 
@@ -521,6 +556,8 @@
   <script src="entities.js?v=12"></script>
   <script src="generator.js?v=12"></script>
   <script src="/grid/sfx.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="/grid/board.js"></script>
   <script>
   (function () {
     'use strict';
@@ -1087,6 +1124,16 @@
 
       LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, order: solveOrder.slice() }));
       renderWallet();
+
+      // ---- cloud: post the run on a win (signed-in only; fail-open). Raw solve
+      // time only; the server score formula adds its own per-mistake penalty. ----
+      if (won && window.RTG_BOARD) {
+        var raw = Math.max(0, Math.round(finalTime - penalty));
+        RTG_BOARD.submit('match', DATE, { seconds: raw, mistakes: mistakes, reveals: 0 }).then(function (res) {
+          if (res && res.streak) document.getElementById('streakVal').textContent = res.streak;
+          if (typeof renderMatchBoard === 'function') renderMatchBoard();
+        });
+      }
       setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, streak: s, celebrate: true, milestone: milestone }); }, won ? 350 : 1100);
     }
 
@@ -1557,6 +1604,49 @@
     buildDay();
     renderWallet();
     boot();
+
+    // ---- cloud board (fail-open: stays on the Sample board + local streak if offline) ----
+    (function initYou() {
+      var ys = document.getElementById('mYourStreak'); if (ys) ys.textContent = streakGet();
+      var sr = (typeof savedResult === 'function') ? savedResult() : null;
+      var yt = document.getElementById('mYourTm'); if (yt && sr && sr.time != null) yt.textContent = fmt(sr.time);
+    })();
+    function renderMatchBoard() {
+      if (!window.RTG_BOARD) return;
+      RTG_BOARD.leaderboard('match', DATE, 5).then(function (rows) {
+        if (rows === null) return;                       // offline: keep the Sample board
+        var pill = document.querySelector('.mlb-pill'); if (pill) pill.textContent = 'Live';
+        var samp = document.getElementById('mlbSample');
+        if (samp) {
+          samp.style.opacity = '1';
+          if (!rows.length) {
+            samp.innerHTML = '<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to post a time today.</div>';
+          } else {
+            var me = (RTG_BOARD.state().name || '').toLowerCase(), h = '<div class="lb-samplab">Today’s fastest</div>';
+            for (var i = 0; i < rows.length; i++) {
+              var r = rows[i], nm = r.display_name || 'Player', mine = me && nm.toLowerCase() === me;
+              h += '<div class="row' + (mine ? ' you' : '') + '"><span class="rk">' + (i + 1) + '</span><span class="who">' + escapeHtml(nm) + '</span><span class="tm">' + RTG_BOARD.fmtTime(r.base_seconds) + '</span></div>';
+            }
+            samp.innerHTML = h;
+          }
+        }
+        var note = document.getElementById('mlbNote'); if (note) note.textContent = 'Live daily board, ranked by time. Sign in on RunThe.GG to post yours.';
+      });
+    }
+    if (window.RTG_BOARD) {
+      RTG_BOARD.boot();
+      RTG_BOARD.onChange(function (st) {
+        if (st.signedIn) {
+          RTG_BOARD.streakOf('match').then(function (cs) {
+            if (cs) {
+              document.getElementById('streakVal').textContent = cs.streak || 0;
+              var ys = document.getElementById('mYourStreak'); if (ys) ys.textContent = cs.streak || 0;
+            }
+          });
+        }
+        renderMatchBoard();
+      });
+    }
   })();
   </script>
 </body>
