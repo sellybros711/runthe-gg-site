@@ -6,14 +6,74 @@
 <!-- Unlisted while the game is being tuned: live at the URL, absent from search.
      Remove when it is ready to be linked from the homepage and the sitemap. -->
 <meta name="robots" content="noindex">
-<title>The Perfect Season | RunThe.GG</title>
-<meta name="description" content="Spin for six NFL team seasons, sign one player from each, then play a full season and try to go undefeated.">
+<!-- TITLE: what people actually search for comes first, the brand last. Nobody
+     searches "The Perfect Season", they search for a football game they can play
+     without downloading anything, so the searched words lead and the name of the
+     game rides along with them. Kept under 60 characters so Google shows all of it. -->
+<title>The Perfect Season: Free NFL Roster Draft Game | RunThe.GG</title>
+<!-- DESCRIPTION: 155 characters, written as the sentence that would make somebody
+     click rather than as a summary. Leads with the verb, names the constraint that
+     makes it a game (the cap), and ends on the goal. -->
+<meta name="description" content="Draft an all-time NFL roster from 1999 to 2025 under a $140M cap, then play all 17 games and chase a perfect season. Free, no download, new every run.">
+<meta name="keywords" content="NFL draft game, fantasy football game, free online football game, NFL roster builder, football simulation game, perfect season">
 <meta name="theme-color" content="#080b14">
+<link rel="canonical" href="https://runthe.gg/football/">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111827'/%3E%3Cellipse cx='16' cy='16' rx='10' ry='7' fill='%23dc2626'/%3E%3Cpath d='M11 16h10M16 13v6' stroke='%23f8fafc' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
-<meta property="og:title" content="The Perfect Season | RunThe.GG">
-<meta property="og:description" content="Six spins. Six signings. One shot at going undefeated.">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- THE SHARE CARD.
+     Every finished run offers a share whose text ends in this page's URL, so this
+     block is what a player's friends actually see. It had no og:image at all, which
+     unfurls as a bare line of text in iMessage, WhatsApp, Discord and Slack: the
+     single worst place for a game that is spread by sharing to have a gap. -->
+<meta property="og:title" content="The Perfect Season: Free NFL Roster Draft Game">
+<meta property="og:description" content="Draft an all-time NFL roster from 1999 to 2025 under a $140M cap, then play all 17 games and chase a perfect season.">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="RunThe.GG">
+<meta property="og:url" content="https://runthe.gg/football/">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://runthe.gg/football/og.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Perfect Season: draft an all-time NFL roster under a $140M cap and play a full season. The six roster spots shown as QB, RB, WR, WR, TE and FLEX.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Perfect Season: Free NFL Roster Draft Game">
+<meta name="twitter:description" content="Draft an all-time NFL roster from 1999 to 2025 under a $140M cap, then play all 17 games and chase a perfect season.">
+<meta name="twitter:image" content="https://runthe.gg/football/og.png?v=1">
+<meta name="twitter:image:alt" content="The Perfect Season: draft an all-time NFL roster under a $140M cap and play a full season.">
+<!-- Structured data, so a search result can carry the game's name and category
+     rather than only a blue link. VideoGame is the type Google documents for this;
+     the offer says free, which is the fact most likely to earn the click. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  "name": "The Perfect Season",
+  "url": "https://runthe.gg/football/",
+  "description": "Draft an all-time NFL roster from 1999 to 2025 under a $140M salary cap, then play all 17 games and chase a perfect season.",
+  "image": "https://runthe.gg/football/og.png",
+  "genre": ["Sports", "Simulation", "Strategy"],
+  "gamePlatform": ["Web browser", "Android", "iOS"],
+  "applicationCategory": "Game",
+  "playMode": "SinglePlayer",
+  "inLanguage": "en",
+  "isAccessibleForFree": true,
+  "publisher": { "@type": "Organization", "name": "RunThe.GG", "url": "https://runthe.gg/" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD",
+    "availability": "https://schema.org/InStock" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "RunThe.GG", "item": "https://runthe.gg/" },
+    { "@type": "ListItem", "position": 2, "name": "The Perfect Season",
+      "item": "https://runthe.gg/football/" }
+  ]
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=Oswald:wght@500;600;700&family=Chivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
@@ -88,6 +148,34 @@
     --fb:'Chivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  /* KEYBOARD FOCUS.
+     There was none anywhere, and .fld:focus actively removed the browser's own ring
+     from the email and password fields with only a border-color change behind it,
+     which on this palette is a 1px shift almost nobody can see. That is a WCAG 2.4.7
+     failure on the one form in the game, and it locks out keyboard and switch-control
+     players everywhere else.
+
+     :focus-visible rather than :focus, so a mouse or thumb tap does not leave a ring
+     behind on a button that has already done its job. Two colors because one is not
+     enough on a page this dark: a white inset hairline to separate the ring from the
+     control, then the blue ring outside it. */
+  :focus-visible{outline:2.5px solid var(--blue);outline-offset:2px;
+    box-shadow:0 0 0 1px rgba(255,255,255,.55);border-radius:inherit}
+  /* The blanket rule for everything animated purely in CSS: 16 keyframe animations
+     and a lot of transitions. Not `animation:none`, which would leave anything that
+     animates IN stuck at its from-state and could hide content entirely; 0.01ms runs
+     the animation to its end frame immediately. The script-driven motion is handled
+     by reduceMotion() where it is produced. */
+  @media (prefers-reduced-motion:reduce){
+    *,*:before,*:after{animation-duration:.01ms !important;animation-delay:0ms !important;
+      animation-iteration-count:1 !important;transition-duration:.01ms !important;
+      scroll-behavior:auto !important}
+  }
+  /* Anything with its own rounding gets a ring that follows it rather than a
+     rectangle drawn around a pill. */
+  button:focus-visible,a:focus-visible,summary:focus-visible{border-radius:11px}
+  .avatar:focus-visible,.tm:focus-visible{border-radius:50%}
+  .tm:focus-visible{border-radius:11px}
   html,body{margin:0;background:var(--bg);color:var(--ink)}
   body{font-family:var(--fb);
     font-size:16px;line-height:1.45;overscroll-behavior-y:none;
@@ -148,11 +236,19 @@
 
   /* header right side: the run's label, then you */
   .hdr-r{display:flex;align-items:center;gap:8px;min-width:0}
-  .avatar{flex:0 0 34px;width:34px;height:34px;border-radius:50%;padding:0;
-    background:var(--panel);border:1px solid var(--line-2);display:grid;place-items:center}
+  /* 44px, which is the documented minimum for a thing you tap with a thumb. It was
+     34, and this is the one control present on EVERY screen of the game: the account
+     button, the way in to signing in and to your name on the board. The circle stays
+     34 so the header does not grow; the button around it is 44 and the extra 5px on
+     each side is transparent padding. Measured by audit.mjs at all four viewports. */
+  .avatar{flex:0 0 44px;width:44px;height:44px;border-radius:50%;padding:0;
+    background:none;border:none;display:grid;place-items:center;position:relative}
+  .avatar:before{content:'';position:absolute;width:34px;height:34px;border-radius:50%;
+    background:var(--panel);border:1px solid var(--line-2)}
+  .avatar>*{position:relative}
   .avatar svg{width:19px;height:19px;fill:none;stroke:var(--dim);stroke-width:1.7;
     stroke-linecap:round}
-  .avatar.signed{background:var(--grad-blue);border-color:transparent}
+  .avatar.signed:before{background:var(--grad-blue);border-color:transparent}
   .avatar.signed svg{stroke:#fff}
   .avatar .in{font-family:var(--fn);font-size:12px;font-weight:600;color:#fff;letter-spacing:.04em}
 
@@ -160,6 +256,84 @@
      Three treatments, one shown at a time. Each is assembled from components the
      game already uses, so nothing here is decoration that lies about the product. */
   .hero{margin-bottom:16px}
+  /* LANDSCAPE, AND SHORT WINDOWS.
+     There were no media queries at all, and measured at 844x390 the Start button sat
+     at y=729 against a 390px fold: a player who opened the game sideways saw the
+     animation and nothing to press. The hero field is the cause, since it is sized by
+     aspect ratio and gets TALLER as the window gets wider.
+
+     So on a short window the field flattens, the wordmark comes down and the margins
+     tighten. The reel housing is deliberately untouched: its 114px height is three
+     38px faces and REEL_H in the script positions the strip against exactly that, so
+     changing it in CSS alone would land every spin off-center. */
+  /* THREE TIERS, and the thresholds are measured rather than picked.
+     Start a run sat BELOW the fold on more than just landscape: 80px below on an
+     iPhone SE upright (320x568), 9px below on an iPhone 8 (375x667) and 25px below on
+     an iPad in landscape (1024x768). The cause is the hero field, which is sized by
+     aspect ratio and so grows taller as the window grows wider.
+
+     Tier 1 flattens it, which is enough for every portrait phone and the iPad.
+     Tier 2 pulls the wordmark down for shorter windows again.
+     Tier 3, and ONLY tier 3, reorders the screen. */
+  @media (max-height:800px){
+    .hero-field{aspect-ratio:auto;height:96px}
+    .hero{margin-bottom:10px}
+    .hnote{margin-top:7px;font-size:11.5px}
+    .htitle{margin-bottom:11px}
+    .legal{margin-top:16px}
+  }
+  @media (max-height:640px){
+    /* 74, because 80 left Start's bottom edge at 570px against an iPhone SE's 568.
+       Two pixels is still below the fold. */
+    .hero-field{height:74px}
+    .htitle h1{font-size:40px}
+    .htitle .kicker{margin-bottom:2px}
+    .htitle p{font-size:12.5px;margin-top:6px}
+    .legal{margin-top:14px}
+  }
+  @media (max-height:500px){
+    .hero-field{height:104px}
+    .htitle h1{font-size:38px}
+    /* AND THE BUTTONS COME FIRST.
+       Shrinking alone was not enough: it took Start from 789px down the page to 519,
+       against a 390px fold, and it could not do better without gutting the animation.
+       The reel housing is 114px and fixed by REEL_H in the script, so roughly 440px of
+       this screen is not compressible.
+
+       So on a short window the order changes instead. Title, then the buttons, then
+       the animation below them. Everything is reachable without scrolling and the
+       animation still plays, it just stops being the thing standing between a player
+       and the game. Portrait is untouched. */
+    #s-intro{display:flex;flex-direction:column}
+    #s-intro>*{order:5}
+    #s-intro .htitle{order:1;margin-bottom:12px}
+    #s-intro #b-start{order:2}
+    #s-intro .hrow{order:3}
+    #s-intro #b-board{order:4}
+    #s-intro .hero{order:6;margin-top:16px;margin-bottom:0}
+    #s-intro>p.dim{order:7}
+    #s-intro footer.legal{order:8}
+  }
+  /* Shorter still, which is a phone in landscape with the browser chrome showing. */
+  @media (max-height:400px){
+    .hero-field{height:76px}
+    .htitle h1{font-size:31px}
+    .htitle p{display:none}
+  }
+  /* Legal and credit, at the foot of the landing screen. Quiet on purpose: it has to
+     be findable and readable, not competing with the button above it. 12px is the
+     floor for a real sentence, so the links sit there rather than lower. */
+  .legal{margin:22px 0 0;text-align:center}
+  .legal p{margin:0;font-size:12px;line-height:1.5;color:var(--dim-2)}
+  /* Padded to a 40px hit box. These are a nav row rather than links inside a
+     sentence, so they are held to the tap-target guideline; the two source links in
+     the paragraph below are prose and are not, which is the documented distinction. */
+  .legal a{color:var(--dim);text-decoration:none;border-bottom:1px solid var(--line-2);
+    display:inline-block;padding:11px 3px 10px}
+  .legal a:hover{color:var(--ink)}
+  .legal span{margin:0 4px;color:var(--line-2)}
+  .legal .src{margin-top:4px;font-size:11.5px;line-height:1.55}
+  .legal .src a{display:inline;padding:0}
   .hnote{margin:11px 0 0;text-align:center;font-size:12.5px;color:var(--dim-2);
     transition:opacity .3s ease}
   .hero-reels{margin-top:0}
@@ -222,11 +396,15 @@
   .sortbar{display:flex;align-items:center;gap:8px;margin-top:9px}
   .seg{display:flex;flex:1;min-width:0;border-radius:10px;overflow:hidden;
     border:1px solid var(--line-2);background:rgba(255,255,255,.03)}
-  .seg button{flex:1;min-width:0;padding:8px 6px;font-family:var(--fn);font-size:11.5px;
+  /* 12px of vertical padding rather than 8, which takes these from 33px to 41 and
+     with the 1px border to 43. The row cannot go to a full 44 without the sort
+     controls becoming taller than the tabs above them, which would read as the more
+     important row of the two, and it is not. */
+  .seg button{flex:1;min-width:0;padding:12px 6px;font-family:var(--fn);font-size:11.5px;
     font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--dim-2);
     background:none;border:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .seg button.on{color:#fff;background:linear-gradient(135deg,#3f4c60,rgba(0,0,0,.5))}
-  .dirbtn{flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:8px 10px;
+  .dirbtn{flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:12px 10px;
     border-radius:10px;border:1px solid var(--line-2);background:rgba(255,255,255,.03);
     font-family:var(--fn);font-size:10.5px;font-weight:600;letter-spacing:.05em;
     text-transform:uppercase;color:var(--dim)}
@@ -297,11 +475,20 @@
   .fld{display:block;width:100%;margin-top:8px;padding:12px 13px;border-radius:11px;
     background:rgba(255,255,255,.04);border:1px solid var(--line-2);color:var(--ink);
     font-family:var(--fn);font-size:15px}
+  /* The ring is supplied by :focus-visible above. Keeping outline:none here for a
+     POINTER focus only, so tapping a field does not double up ring and border. */
   .fld:focus{outline:none;border-color:var(--blue)}
+  .fld:focus-visible{outline:2.5px solid var(--blue);outline-offset:2px}
   .autherr{margin:10px 0 0;padding:9px 12px;border-radius:10px;font-size:12.5px;
     line-height:1.4;color:#fca5a5;background:rgba(239,68,68,.10);
     border:1px solid rgba(239,68,68,.3)}
   .authok{color:#86efac;background:rgba(34,197,94,.10);border-color:rgba(34,197,94,.3)}
+  .consent{margin:11px 0 0;font-size:11.5px;line-height:1.5;color:var(--dim-2)}
+  .consent a{color:var(--dim);border-bottom:1px solid var(--line-2)}
+  /* Quitting is deliberately the quietest control on the draft screen until it is
+     armed, at which point it turns red so the second tap is unmistakably destructive. */
+  .btn.quit{color:var(--dim-2);border-color:var(--line)}
+  .btn.quit.armed{color:#fff;border-color:var(--red);background:rgba(239,68,68,.14)}
   .switch{margin-top:12px;font-size:12.5px;color:var(--dim)}
   .switch button{background:none;border:none;padding:0;color:#93c5fd;font:inherit;
     text-decoration:underline}
@@ -436,9 +623,16 @@
   .rail.off{height:0;margin-top:0;overflow:hidden;opacity:0}
   .rail.empty .rarcs{opacity:0}
   .rnodes{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));position:relative;z-index:2}
+  /* The hit area grows, the BOX does not. RAIL.NODE_BLOCK is 38 in the script and
+     .rarcs is positioned against the same 38 here, so padding the button would have
+     pushed the arcs over the surnames and left the rail short of its own contents.
+     An overlay extends the target to 41px unsigned and 54 signed with no layout
+     effect at all. Downward mostly, into the rail's caption, which is text and takes
+     no taps; six nodes across the row are ~56px apart so they cannot collide. */
   .rnode{background:none;border:0;padding:0;display:flex;flex-direction:column;align-items:center;
-    gap:3px;min-width:0;opacity:.32;transition:opacity .18s ease}
+    gap:3px;min-width:0;opacity:.32;transition:opacity .18s ease;position:relative}
   .rnode.on{opacity:1}
+  .rnode:after{content:'';position:absolute;left:0;right:0;top:-4px;bottom:-12px}
   .rnode .rdot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
     font-family:var(--fn);font-size:8.5px;font-weight:600;color:#fff;
     background:rgba(255,255,255,.06);border:1.5px dashed rgba(255,255,255,.2)}
@@ -600,10 +794,23 @@
   /* Four tabs, one per position, colored to match the field chips. A position with
      nowhere left to put anybody keeps its tab but grays out and drops to the right,
      so the row does not reshuffle under your thumb between spins. */
+  /* A tab row scrolls sideways when it does not fit, and the scrollbar is hidden, so
+     at 320px the Daily tab was 25px off the right edge with NOTHING saying the row
+     moved. Measured: it is reachable and it works, but a player on a small phone had
+     no reason to believe the leaderboard had a fourth tab at all.
+
+     The wrapper carries a fade over the right edge, shown only while there is more to
+     scroll to. .more is set by hintScroll() rather than by CSS, because scrollWidth
+     is not something a media query can ask about. */
+  .tabwrap{position:relative}
+  .tabwrap:after{content:'';position:absolute;top:0;bottom:2px;right:0;width:34px;
+    pointer-events:none;opacity:0;transition:opacity .18s ease;
+    background:linear-gradient(90deg,rgba(8,11,20,0),rgba(8,11,20,.93))}
+  .tabwrap.more:after{opacity:1}
   .tabs{display:flex;gap:6px;margin:12px 0 0;overflow-x:auto;-webkit-overflow-scrolling:touch;
     padding-bottom:2px;scrollbar-width:none}
   .tabs::-webkit-scrollbar{display:none}
-  .tab{flex:0 0 auto;padding:9px 14px;border-radius:10px;border:1.5px solid var(--line);
+  .tab{flex:0 0 auto;padding:11px 14px;border-radius:10px;border:1.5px solid var(--line);
     background:var(--panel);font-family:var(--fn);font-size:14px;font-weight:600;letter-spacing:.06em;
     color:var(--dim);display:flex;align-items:center;gap:6px;transition:all .12s ease}
   .tab .n{font-size:11px;opacity:.7}
@@ -904,6 +1111,29 @@
 </style>
 </head>
 <body>
+<!-- FOR A CLIENT THAT DOES NOT RUN THE SCRIPT.
+     Every screen in this game is `.screen{display:none}` until the data lands and
+     show() turns one on, so the real <h1> is inside a hidden container on first paint.
+     Google renders JavaScript and will see it; plenty of other crawlers, previewers and
+     text browsers will not, and neither will somebody with scripting off, who currently
+     got a blank dark page with no explanation. Same pattern as the golf game. -->
+<noscript>
+<main style="max-width:640px;margin:0 auto;padding:24px;font-family:system-ui,sans-serif;
+  color:#eef2f9;background:#080b14">
+<h1>The Perfect Season: Free NFL Roster Draft Game</h1>
+<p>Spin a wheel for a year and an NFL team, sign one player off each of six draws, and
+build a roster out of every season from 1999 to 2025 under a $140M salary cap.</p>
+<p>Then play all 17 games against a real schedule and chase a perfect season. Every
+player is priced and scored from his actual week by week statistics. There is a daily
+challenge where everybody gets the same six draws, and a leaderboard for the day, the
+week and all time. Free, no download, playable in your browser.</p>
+<p><strong>This game needs JavaScript to play.</strong> Please turn it on and reload.</p>
+<p>Stats, scores and coaches from nflverse and nfldata. An unofficial fan project, not
+affiliated with or endorsed by the NFL, the NFLPA or any club.
+<a href="/privacy.html" style="color:#93c5fd">Privacy</a> &middot;
+<a href="/terms.html" style="color:#93c5fd">Terms</a></p>
+</main>
+</noscript>
 <div class="wrap">
   <header>
     <div class="brand">RunThe<i>.GG</i></div>
@@ -961,6 +1191,34 @@
     <button class="btn ghost sm" id="b-board" style="margin-top:8px">Leaderboard</button>
     <p class="dim" style="font-size:12px;margin-top:15px">Every player is scored from his real
     week by week stats. Prices come from what he produced, not what he was paid.</p>
+
+    <!-- THE FOOTER. Three jobs, and the game shipped without any of them.
+
+         Legal: the game takes an email and a Google sign-in and writes finished runs
+         to a server, and had no link to the privacy policy or the terms from
+         anywhere inside it. Both pages already exist at the site root and already
+         cover exactly this, so the gap was only ever the link.
+
+         Credit: every player, price, score and coach in this game is derived from
+         nflverse and from Lee Sharpe's nfldata. That was acknowledged in the build
+         scripts and in the README, which is to say nowhere a player could see it.
+
+         Distance: the disclaimer belongs on the page and not only buried in the
+         terms, because the game is built out of real clubs and real players.
+
+         Every link opens in a new tab, deliberately. There is no mid-run save yet,
+         so following a link in this tab during a draft would throw the run away. -->
+    <footer class="legal">
+      <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
+        href="/terms.html" target="_blank" rel="noopener">Terms</a><span>&middot;</span><a
+        href="/about.html" target="_blank" rel="noopener">About</a><span>&middot;</span><a
+        href="/" target="_blank" rel="noopener">More games</a></p>
+      <p class="src">Stats, scores and coaches from
+        <a href="https://github.com/nflverse/nflverse-data" target="_blank" rel="noopener">nflverse</a>
+        and <a href="https://github.com/nflverse/nfldata" target="_blank" rel="noopener">nfldata</a>.
+        An unofficial fan project, not affiliated with or endorsed by the NFL, the
+        NFLPA or any club.</p>
+    </footer>
   </div>
 
   <!-- LEADERBOARD. Laid out now, wired up later: the shape assumes a cached top
@@ -968,12 +1226,12 @@
   <div class="screen" id="s-board">
     <div class="eyebrow">Standings</div>
     <h2 class="display" style="font-size:27px;margin:5px 0 10px">Leaderboard</h2>
-    <div class="tabs" id="lb-tabs">
+    <div class="tabwrap"><div class="tabs" id="lb-tabs">
       <button class="tab on" data-lb="day">Today</button>
       <button class="tab" data-lb="week">This week</button>
       <button class="tab" data-lb="all">All time</button>
       <button class="tab daily" data-lb="daily">Daily</button>
-    </div>
+    </div></div>
     <div class="sortbar">
       <div class="seg" id="lb-sort">
         <button class="on" data-sort="record">Record</button>
@@ -1006,6 +1264,11 @@
     <div class="divs" id="divs"></div>
     <div class="rivals" id="rivals"></div>
     <div style="margin-top:17px"><button class="btn" id="b-draft" disabled>Go to the draft</button></div>
+    <!-- There was no way back off this screen. Step 1 of 3 with a disabled primary
+         button and no exit: the only ways out were to pick a team you did not want or
+         to reload the page. The browser's own back button leaves the site, because
+         nothing here pushes history. Same ghost Back the leaderboard already uses. -->
+    <div style="margin-top:9px"><button class="btn ghost sm" id="b-team-back">Back</button></div>
   </div>
 
   <div class="screen" id="s-draft">
@@ -1034,9 +1297,15 @@
         <div class="reelbox team" id="box-t"><div class="strip" id="reel-t"></div><span class="band"></span><span class="wash"></span></div>
       </div>
     </div>
-    <div class="tabs" id="tabs"></div>
+    <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
     <div class="opts" id="opts"></div>
     <div id="d-respin" style="margin-top:10px"></div>
+    <!-- QUITTING. Six spins in, a player who has changed their mind had no exit
+         either, and a draft is the longest screen in the game to be trapped on.
+         Two taps rather than one, because a single tap here throws away a run in
+         progress and there is no undo. The second tap is the confirmation, so it
+         needs no dialog and cannot be dismissed by accident. -->
+    <div style="margin-top:14px"><button class="btn ghost sm quit" id="b-quit">Quit this run</button></div>
   </div>
 
   <div class="screen" id="s-squad">
@@ -1206,6 +1475,31 @@ const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS
 };
 const $=(id)=>document.getElementById(id);
 
+/* ---------- THE SCROLL HINT ON TAB ROWS ----------
+   A row that scrolls sideways with a hidden scrollbar looks like a row that has been
+   cut off. At 320px the Daily tab sat 25px past the edge with nothing to suggest the
+   row moved at all, so the daily leaderboard was effectively undiscoverable on a small
+   phone. This toggles a fade over the right edge while there is more to reach.
+
+   Wired to a MutationObserver rather than to the two places that paint tabs. Both rows
+   are static elements whose CONTENTS change, which a ResizeObserver never sees, and
+   calling it from each paint site is the kind of thing that gets added to one of them
+   and forgotten in the other. */
+function hintScroll(row){
+  const w=row.parentElement;
+  if(!w||!w.classList.contains('tabwrap')) return;
+  w.classList.toggle('more',row.scrollWidth-row.scrollLeft-row.clientWidth>4);
+}
+function watchTabs(){
+  for(const row of document.querySelectorAll('.tabwrap>.tabs')){
+    hintScroll(row);
+    row.addEventListener('scroll',()=>hintScroll(row),{passive:true});
+    new MutationObserver(()=>hintScroll(row)).observe(row,{childList:true});
+  }
+  addEventListener('resize',()=>document.querySelectorAll('.tabwrap>.tabs')
+    .forEach(hintScroll),{passive:true});
+}
+
 /* ---------- boot check ----------
    A phone that has been here before can hold an old engine.js or run.js behind a
    current index.html, and the two do not have to be compatible. That is exactly
@@ -1373,7 +1667,10 @@ function layoutFor(){
 let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,pickedTeam=null,simTimer=null,lastChem=1;
 
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');window.scrollTo({top:0});
-  if(typeof heroSync==='function') heroSync();}
+  if(typeof heroSync==='function') heroSync();
+  /* Measured here because a hidden element reports no scrollWidth at all: asking at
+     boot said every tab row fitted, whatever the viewport. */
+  document.querySelectorAll('.tabwrap>.tabs').forEach(hintScroll);}
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2300);}
 
 async function boot(){
@@ -1386,7 +1683,7 @@ async function boot(){
     DATA=R.indexData(pl,tm); CTX={battery:bat,coaches:co,curated:cu};
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
-    buildTeams(); authBoot(); show('s-intro');
+    buildTeams(); authBoot(); watchTabs(); show('s-intro');
   }catch(e){
     $('s-load').innerHTML='<div class="load"><h3 class="display">Could not load the data</h3>'+
       '<p class="dim" style="font-size:13px">'+esc(e.message)+'</p></div>';
@@ -1721,6 +2018,16 @@ function paintTop(){
    report. And the old version handed control to `transitionend` with a setTimeout
    as backup, which is the kind of thing that leaves a draft sitting there forever
    if either one misses. This owns its own clock and always reaches the end. */
+/* REDUCED MOTION, for everybody who has asked their device for it.
+   Only the landing animation honoured this. The draft's own wheels, which are the
+   thing a player sees most in a run, spun for a second and a quarter each with a
+   motion blur on them, and the playoff broadcast ran a timed reveal. Vestibular
+   sensitivity does not stop at the front page.
+
+   Live rather than read once: iOS and Android both let this be toggled while a page is
+   open, and a player who turns it on mid-run should get it mid-run. */
+const RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):null;
+const reduceMotion=()=>!!(RM&&RM.matches);
 const REEL_H=38;          // one face
 const REEL_FACES=3;       // faces visible in the window
 
@@ -1771,8 +2078,9 @@ function reel(el,faces,target,ms,done,onLand){
     const y=reelEase(t)*dist;
     el.style.transform='translate3d(0,'+(-y).toFixed(2)+'px,0)';
     // Blur from real speed, so it smears while flying and is sharp on the face.
+    // Never under reduced motion: a motion blur is the part of this that provokes.
     const v=Math.abs(y-prev); prev=y;
-    el.style.filter=t<1?'blur('+Math.min(6,v*0.2).toFixed(2)+'px)':'none';
+    el.style.filter=(t<1&&!reduceMotion())?'blur('+Math.min(6,v*0.2).toFixed(2)+'px)':'none';
     if(t<1){ el._raf=requestAnimationFrame(step); return; }
     el._raf=0; el.style.filter='none';
     box.classList.remove('spin');
@@ -1798,12 +2106,15 @@ function spinBoth(draw,done){
   tEl.style.transform='none';
   tEl.innerHTML=['','?',''].map(t=>'<div class="reel-i">'+t+'</div>').join('');
   // A wheel with one option gets a short spin, since there is nothing to see.
-  const dur=(faces)=>new Set(faces).size<=1?520:null;
+  // Reduced motion gets the same short spin for every wheel: the result still lands
+  // in the window so the draw reads as a draw, it just does not wind to get there.
+  const rm=reduceMotion();
+  const dur=(faces)=>(rm||new Set(faces).size<=1)?(rm?260:520):null;
   const years=draw.yearOptions.map(String);
   reel(yEl,years,String(draw.season),dur(years)??1150,()=>{
     // A beat between the two, or they read as one long spin.
     setTimeout(()=>reel(tEl,draw.teamOptions,draw.teamName,
-      dur(draw.teamOptions)??1250,done,dressInTeamColors(draw.franchise)),260);
+      dur(draw.teamOptions)??1250,done,dressInTeamColors(draw.franchise)),rm?90:260);
   });
 }
 
@@ -1821,6 +2132,7 @@ function dressInTeamColors(franchise){
 }
 
 function nextSpin(){
+  resetQuit();
   paintTop(); drawField($('field'),true);
   $('opts').innerHTML=''; $('tabs').innerHTML=''; $('d-respin').innerHTML='';
   activeTab=null;
@@ -2481,7 +2793,11 @@ function comparison(best){
    Two lines and a link. The old text pasted a 17-character LLLWLL grid and the
    whole roster, which nobody reads, and the bare "runthe.gg/football" did not
    become a tappable link in most apps. The scheme is what makes it one. */
-const SHARE_URL='https://runthe.gg/football';
+/* Trailing slash, matching <link rel="canonical">. /football is a directory, so the
+   bare path is a 301 to /football/, and this URL is pasted into a chat or a feed by
+   every share: a redirect hop on each one, and two URLs for the same page for anything
+   that counts links. */
+const SHARE_URL='https://runthe.gg/football/';
 
 function shareLines(){
   const o=run.outcome;
@@ -2712,7 +3028,7 @@ const HERO_PICKS=[
   {at:1, season:2020, team:'Tennessee Titans',   fr:'TEN', pos:'RB', last:'Henry'},
   {at:4, season:2019, team:'Kansas City Chiefs', fr:'KC',  pos:'TE', last:'Kelce'},
 ];
-const HERO_REDUCE=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+const HERO_REDUCE=reduceMotion();
 
 let heroRun=0;          // bumped to cancel whatever loop is in flight
 let heroFilled=[];
@@ -2991,6 +3307,15 @@ function profileSheet(msg,ok){
         'autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="20">':'')+
     '<div style="margin-top:10px"><button class="btn" id="a-go">'+
       (up?'Create my account':'Sign in')+'</button></div>'+
+    /* THE CONSENT LINE. This form takes an email and a password, and Google's takes
+       an identity, and neither said what that agrees to. The root site's own sign-in
+       carries the same sentence, so this is the house pattern rather than a new one.
+       Above the switch link, because it belongs to the button it sits under.
+       New tab: an account is often made mid-session and this must not lose a run. */
+    '<p class="consent">By continuing you agree to our '+
+      '<a href="/terms.html" target="_blank" rel="noopener">Terms</a> and '+
+      '<a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. '+
+      'Accounts are for ages 13 and up.</p>'+
     '<p class="switch">'+(up
       ? 'Already have one? <button id="a-swap">Sign in instead</button>'
       : 'New here? <button id="a-swap">Make an account</button>')+'</p>'+
@@ -3642,7 +3967,12 @@ $('b-same').onclick=()=>{
   if(wasDaily) toast("Today's daily is played. This one is a free run");
 };
 
-$('b-again').onclick=()=>{
+$('b-again').onclick=()=>{ toIntro(); };
+
+/* All the way back to the front, team and colors cleared. Named because three things
+   want it now: Start over off the results, Back off the team picker, and quitting a
+   draft. It was inline in one handler and the other two would have copied it. */
+function toIntro(){
   endRun();
   pickedTeam=null;
   document.querySelectorAll('.tm').forEach(x=>{x.classList.remove('on');x.removeAttribute('style');});
@@ -3651,6 +3981,25 @@ $('b-again').onclick=()=>{
   document.documentElement.style.removeProperty('--tc1');
   document.documentElement.style.removeProperty('--tc2');
   show('s-intro');
+}
+$('b-team-back').onclick=()=>{ toIntro(); };
+
+/* QUITTING A DRAFT, in two taps.
+   A run in progress is real work and there is no undo, so the first tap only arms the
+   button and the second one does it. The arming times out, because a button left
+   reading "Tap again to quit" is a trap for the next person who reaches for it.
+   Re-armed from scratch every time the draft screen is shown, in nextSpin(). */
+let quitArmed=0;
+function resetQuit(){
+  quitArmed=0;
+  const b=$('b-quit'); if(b){ b.textContent='Quit this run'; b.classList.remove('armed'); }
+}
+$('b-quit').onclick=()=>{
+  const b=$('b-quit');
+  if(quitArmed){ resetQuit(); toIntro(); return; }
+  quitArmed=setTimeout(resetQuit,4000);
+  b.textContent='Tap again to quit';
+  b.classList.add('armed');
 };
 
 boot();

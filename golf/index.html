@@ -4,24 +4,35 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <!-- RunTheTour, solo season · v2 · RunThePitch skin -->
-<title>Run The Tour · Daily Golf Simulation Game</title>
-<meta name="description" content="Run The Tour is a free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the pro on a new course every day, run a full career, and play head-to-head online.">
+<title>Run The Tour — Free Daily Golf Simulation Game | RunThe.GG</title>
+<meta name="description" content="Run The Tour is a free daily golf simulation game. Draft a skill from each real pro to build your golfer, beat the daily course, run a career, and play head-to-head online.">
 <meta name="theme-color" content="#11432f">
 <link rel="canonical" href="https://runthe.gg/golf/">
 <!-- Open Graph / Twitter. Absolute URLs for the runthe.gg/golf deploy; og.png sits beside this file. -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/golf/">
-<meta property="og:title" content="Run The Tour · Daily Golf Simulation Game">
+<meta property="og:title" content="Run The Tour — Free Daily Golf Simulation Game">
 <meta property="og:description" content="A free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the pro on a new course every day, run a full career, and play head-to-head online.">
 <meta property="og:image" content="https://runthe.gg/golf/og.png?v=8">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Run The Tour — a free daily golf simulation game. Draft skills from real pro golfers and beat the daily course.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Run The Tour · Daily Golf Simulation Game">
+<meta name="twitter:site" content="@RunTheGG">
+<meta name="twitter:title" content="Run The Tour — Free Daily Golf Simulation Game">
 <meta name="twitter:description" content="A free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the pro on a new course every day, run a full career, and play head-to-head online.">
-<meta name="twitter:image" content="https://runthe.gg/golf/og.png?v=2">
+<meta name="twitter:image" content="https://runthe.gg/golf/og.png?v=8">
+<!-- Structured data: a VideoGame + BreadcrumbList graph so search engines and AI crawlers can render
+     rich results (free-game price signal, genre/platform) for the game's marquee page. -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"VideoGame","@id":"https://runthe.gg/golf/#game","name":"Run The Tour","alternateName":"RunTheTour","url":"https://runthe.gg/golf/","image":"https://runthe.gg/golf/og.png","description":"Run The Tour is a free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the daily course, run a full career, and play head-to-head online.","genre":["Sports","Simulation","Golf"],"gamePlatform":["Web browser","Android","iOS"],"applicationCategory":"Game","operatingSystem":"Any (modern web browser)","inLanguage":"en","playMode":["SinglePlayer","MultiPlayer"],"publisher":{"@type":"Organization","name":"RunThe.GG","url":"https://runthe.gg/"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD","availability":"https://schema.org/InStock"}},
+{"@type":"BreadcrumbList","itemListElement":[
+{"@type":"ListItem","position":1,"name":"RunThe.GG","item":"https://runthe.gg/"},
+{"@type":"ListItem","position":2,"name":"Run The Tour","item":"https://runthe.gg/golf/"}]}
+]}
+</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 76'%3E%3Cpath d='M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z' fill='%2311432f' stroke='%23cda24a' stroke-width='3'/%3E%3Cpath d='M26 17 v36' stroke='%23e9d8ac' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M26 18 h16 l-4 5 4 5 h-16 z' fill='%23EBA61F'/%3E%3Cellipse cx='32' cy='57' rx='17' ry='5.4' fill='none' stroke='%23cda54a' stroke-width='1.6'/%3E%3Ccircle cx='38' cy='57' r='2.2' fill='%23f4ecd9'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -44,9 +55,18 @@
 <!-- RunThe.GG accounts + public leaderboard (same Supabase project as RunThePitch; optional, fails open).
      `defer`ed so a slow/blocked CDN can't parser-block first paint; sbInit() waits for it (see end of script). -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<!-- Google Consent Mode v2 defaults. Deny ad + analytics storage until the certified CMP (loaded by the
+     AdSense tag below) records the user's choice; the CMP then updates these signals automatically. This
+     runs BEFORE the ad/analytics tags so it honours privacy.html's promise that no advertising or
+     analytics cookies are set before consent. `wait_for_update` gives the CMP time to respond. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});
+</script>
 <!-- Google AdSense (same publisher as the rest of runthe.gg). Consent for EEA/UK/CH + US states is
      handled by Google's certified "Privacy & messaging" CMP, configured in the AdSense dashboard and
-     served automatically with this tag, no extra consent code needed on the page. -->
+     served automatically with this tag; the Consent Mode defaults above gate cookies until it responds. -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <!-- Analytics (GA4). Set GA_ID to your Measurement ID (G-XXXXXXXXXX) to activate. While it's the
      placeholder it stays fully INERT (no gtag.js request, no cookies) so nothing ships broken. Once a
@@ -119,9 +139,11 @@ window.GA_ID='G-L29P5MRWKE';
   .head--compact .wordmark .b{display:inline; background:none; -webkit-text-fill-color:currentColor; color:var(--gold)}
   .head--compact .pills{margin-top:11px}
   .topbar{display:flex; justify-content:flex-start; align-items:center; margin:0 0 8px}
-  .icobtn{width:38px;height:38px;border-radius:11px;background:var(--pill);border:1px solid var(--pillb);
+  .icobtn{position:relative;width:38px;height:38px;border-radius:11px;background:var(--pill);border:1px solid var(--pillb);
     display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--oncard);font-size:18px;
     box-shadow:0 4px 12px -6px rgba(0,0,0,.5)}
+  /* keep the compact 38/36px visual but guarantee a 44x44 touch target (WCAG 2.5.5) on the top-level nav */
+  .icobtn::before{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px}
   .crestrow{display:flex; align-items:center; justify-content:center; gap:18px}
   .crest{width:64px;height:76px;display:block;flex:0 0 auto}
   .wmblock{min-width:0}
@@ -487,8 +509,8 @@ window.GA_ID='G-L29P5MRWKE';
     border-top:1px solid var(--line); box-shadow:0 -8px 22px -10px rgba(0,0,0,.7); padding-bottom:env(safe-area-inset-bottom,0px)}
   .botnav-in{display:flex; width:100%; max-width:600px; margin:0 auto}
   .botnav button{flex:1; min-width:0; background:none; border:0; cursor:pointer; color:#9fb3a8; display:flex;
-    flex-direction:column; align-items:center; gap:3px; padding:7px 2px 6px; font:800 9px/1 var(--body);
-    letter-spacing:.03em; text-transform:uppercase; position:relative}
+    flex-direction:column; align-items:center; gap:3px; padding:7px 2px 6px; font:800 10px/1 var(--body);
+    letter-spacing:.03em; text-transform:uppercase; position:relative; white-space:nowrap}
   .botnav button .ic{width:22px; height:22px}
   /* unclaimed-reward indicator: a red dot at the top-right of a nav tab's icon (free pack → Pro Shop, new items → Profile) */
   .botnav button .navdot{position:absolute; top:4px; left:50%; transform:translateX(6px); width:9px; height:9px;
@@ -1059,7 +1081,7 @@ window.GA_ID='G-L29P5MRWKE';
   input.name{width:100%; background:#0a2740; border:1px solid var(--line); color:var(--oncard);
     font:800 16px/1 var(--body); border-radius:11px; padding:13px 14px; margin-top:6px}
   /* themed dropdowns - match the dark panel instead of the browser's white default */
-  select.name{width:100%; border:1px solid var(--line); color:var(--oncard); font:800 15.5px/1.2 var(--body);
+  select.name{width:100%; border:1px solid var(--line); color:var(--oncard); font:800 16px/1.2 var(--body);
     border-radius:11px; padding:13px 42px 13px 14px; margin-top:6px; cursor:pointer;
     -webkit-appearance:none; -moz-appearance:none; appearance:none;
     background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23EBA61F' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>") no-repeat right 14px center / 16px,
@@ -1290,7 +1312,7 @@ window.GA_ID='G-L29P5MRWKE';
     box-shadow:0 10px 26px -14px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.04)}
   .hvctrl-row{display:flex;align-items:center;justify-content:space-between;gap:3px}
   .hvctrl-side{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;
-    color:#e9f2ea;cursor:pointer;padding:4px 1px;font:800 9px/1.15 var(--body);letter-spacing:.06em;text-transform:uppercase;text-align:center}
+    color:#e9f2ea;cursor:pointer;padding:4px 1px;font:800 10.5px/1.15 var(--body);letter-spacing:.04em;text-transform:uppercase;text-align:center}
   /* Speed picker popover (accent-picker style): tap Speed → all options appear above it, pick one */
   .spdpop{position:absolute;bottom:calc(100% + 9px);left:0;display:flex;gap:5px;z-index:8;
     background:#0b1c14;border:1.5px solid rgba(241,208,74,.55);border-radius:13px;padding:6px;box-shadow:0 12px 28px rgba(0,0,0,.6)}
@@ -1667,7 +1689,7 @@ window.GA_ID='G-L29P5MRWKE';
   .ov ol{margin:0 0 14px; padding-left:18px; color:#dbe6ee} .ov li{margin:7px 0}
   /* CS356c: fixed (not absolute) so the top Close stays pinned + tappable even when a long overlay
      (e.g. Trophy Room) is scrolled down; z-index above the overlay's own scrolling content. */
-  .ov .x{position:fixed; top:calc(10px + env(safe-area-inset-top, 0px)); right:14px; z-index:3; box-shadow:0 2px 10px rgba(0,0,0,.5)}
+  .ov .x{position:fixed; top:calc(10px + env(safe-area-inset-top, 0px)); right:max(14px, calc((100% - 600px)/2)); z-index:3; box-shadow:0 2px 10px rgba(0,0,0,.5)}
 
   /* ---- Pro Shop / locker ---- */
   .shop-sticky{position:sticky; top:env(safe-area-inset-top, 0px); z-index:6; background:#06200f; padding-bottom:9px;
@@ -1849,7 +1871,18 @@ h2{font-size:11px;letter-spacing:.04em}
 </head>
 <body>
 
-<div id="app" aria-live="polite"></div>
+<!-- Static, crawlable fallback for no-JS clients + non-rendering crawlers (Bing, social/LLM scrapers).
+     Hidden the moment the app hydrates; JS clients never see it. Gives the marquee page a real H1 +
+     keyword-bearing body copy instead of an empty shell. -->
+<noscript>
+<main style="max-width:640px;margin:0 auto;padding:24px;font-family:system-ui,sans-serif;color:#eee;background:#11432f">
+<h1>Run The Tour — Free Daily Golf Simulation Game</h1>
+<p>Run The Tour is a free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then take on a brand-new championship course every day.</p>
+<p>Play the daily challenge, run a full career mode across dozens of iconic courses, climb the global leaderboard, and go head-to-head online. No download required — play free in your browser.</p>
+<p><strong>This game needs JavaScript enabled to play.</strong> Please turn on JavaScript and reload.</p>
+</main>
+</noscript>
+<div id="app"></div>
 
 <script>
 const $=(h)=>{const t=document.createElement('template'); t.innerHTML=emojifyIcons(h.trim()); return t.content.firstChild;};
@@ -2427,12 +2460,12 @@ const ACH=[].concat(
    {id:'oly_med',cat:'International',name:'On the Podium',    desc:'Win any medal at the Summer Games.',               goal:1,pts:40, get:m=>m.olyMedals},
    {id:'oly_g2', cat:'International',name:'Back-to-Back Gold',desc:'Win 2 gold medals at the Summer Games.',           goal:2,pts:120,get:m=>m.olyGold},
    {id:'oly_set',cat:'International',name:'Full Set',         desc:'Win gold, silver and bronze across your career.',goal:3,pts:100,get:m=>(m.olyGold>0?1:0)+(m.olySilver>0?1:0)+(m.olyBronze>0?1:0)},
-   {id:'cup_app',cat:'International',name:'Cup Debut',        desc:'Make a Ryder/Nations Cup team.',          goal:1,pts:35, get:m=>m.cupApps},
-   {id:'cup_win',cat:'International',name:'Cup Champion',     desc:'Be on the winning Ryder/Nations Cup team.',goal:1,pts:60, get:m=>m.cupWins},
-   {id:'cup_w5', cat:'International',name:'Cup Legend',       desc:'Win 5 Ryder/Nations Cups.',               goal:5,pts:100,get:m=>m.cupWins},
+   {id:'cup_app',cat:'International',name:'Cup Debut',        desc:'Make a Nations Cup team.',                goal:1,pts:35, get:m=>m.cupApps},
+   {id:'cup_win',cat:'International',name:'Cup Champion',     desc:'Be on the winning Nations Cup team.',      goal:1,pts:60, get:m=>m.cupWins},
+   {id:'cup_w5', cat:'International',name:'Cup Legend',       desc:'Win 5 Nations Cups.',                     goal:5,pts:100,get:m=>m.cupWins},
    {id:'cup_pts',cat:'International',name:'Team Talisman',    desc:'Bank 25 career Cup points.',                 goal:25,pts:80, get:m=>m.cupPoints},
    {id:'cup_5pt',cat:'International',name:'Perfect Week',     desc:'Win all 5 of your matches in one Cup.',       goal:5,pts:90, get:m=>m.cupBest},
-   {id:'cup_cap',cat:'International',name:'The Captaincy',    desc:'Captain a Ryder or Nations Cup team.',     goal:1,pts:50, get:m=>m.cupCaptain},
+   {id:'cup_cap',cat:'International',name:'The Captaincy',    desc:'Captain a Nations Cup team.',              goal:1,pts:50, get:m=>m.cupCaptain},
    {id:'cup_capw',cat:'International',name:'Winning Captain', desc:'Captain your team to a Cup win.',             goal:1,pts:80, get:m=>m.cupCaptainWins}],
   // ---- Majors ----
   [{id:'maj_masters',cat:'Majors',name:'Champion Blazer',    desc:'Win The Magnolia Invitational.',                             goal:1,pts:40, get:m=>m.mastersWins},
@@ -6825,9 +6858,12 @@ function render(){
     try{ track('screen_render_error',{overlay:S.overlay,message:(err&&err.message)||String(err)}); }catch(e){}
     const broken=S.overlay; S.overlay=null;
     const stray=app.querySelector('.ov'); if(stray) stray.remove();
-    app.appendChild($(`<div style="position:fixed;left:50%;bottom:calc(26px + var(--botnav-space,0px));transform:translateX(-50%);z-index:45;max-width:90vw;background:#0a1626;color:var(--oncard);border:1px solid #E14A33;border-radius:10px;padding:11px 16px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
-      <b style="color:#E14A33">That popped up broke, closed it.</b>
-      <div class="small muted" style="margin-top:3px;word-break:break-word">${esc(broken)}: ${esc((err&&err.message)||String(err))}</div></div>`));
+    const errCard=$(`<div role="status" aria-live="polite" title="Tap to dismiss" style="position:fixed;left:50%;bottom:calc(26px + var(--botnav-space,0px));transform:translateX(-50%);z-index:45;max-width:90vw;cursor:pointer;background:#0a1626;color:var(--oncard);border:1px solid #E14A33;border-radius:10px;padding:11px 16px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
+      <b style="color:#E14A33">That popup broke, closed it.</b>
+      <div class="small muted" style="margin-top:3px;word-break:break-word">${esc(broken)}: ${esc((err&&err.message)||String(err))}</div></div>`);
+    errCard.addEventListener('click',()=>errCard.remove());   // tap-to-dismiss...
+    setTimeout(()=>errCard.remove(), 6000);                    // ...and auto-clear so it never lingers over the UI
+    app.appendChild(errCard);
   }
   // A screen fn throwing used to leave the header/footer up but the middle of the page totally
   // blank with no error shown anywhere, this catch turns that into a recoverable "Back to Title"
@@ -6884,6 +6920,7 @@ function render(){
   _lastView=view;
   // lock the page behind an open overlay so background scroll can't bleed through / fight the overlay
   document.body.classList.toggle('ovopen', !!S.overlay);
+  syncOverlayBack();   // keep a history guard while an overlay is open so the mobile Back button closes it (not the game)
   // keep your place when re-rendering the same view (e.g. picking customization swatches, async
   // leaderboard loads); only jump to top when the view actually changes.
   const nowOv=app.querySelector('.ov');
@@ -8704,7 +8741,7 @@ function startRoll(){
 function toast(msg, ms){
   // sit ABOVE the "scroll to continue" pill when it's on the page (both live bottom-center), so they don't clash
   const bottom = document.querySelector('.scrollcue') ? 'calc(74px + env(safe-area-inset-bottom,0px) + var(--botnav-space,0px))' : 'calc(26px + var(--botnav-space,0px))';
-  const t=$(`<div style="position:fixed;left:50%;bottom:${bottom};transform:translateX(-50%);z-index:70;max-width:min(92vw,420px);text-align:center;line-height:1.4;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4)">${msg}</div>`);
+  const t=$(`<div role="status" aria-live="polite" style="position:fixed;left:50%;bottom:${bottom};transform:translateX(-50%);z-index:70;max-width:min(92vw,420px);text-align:center;line-height:1.4;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4)">${msg}</div>`);
   document.body.appendChild(t); setTimeout(()=>t.remove(), ms||1800);
 }
 
@@ -25260,6 +25297,20 @@ try{ window.addEventListener('online', ()=>flushPendingSeasons()); }catch(e){}  
 // CS356c: global Escape-to-close for any open overlay (belt-and-suspenders alongside the Close buttons,
 // which can be scrolled out of reach on long overlays like the Trophy Room).
 try{ window.addEventListener('keydown',e=>{ if(e.key==='Escape' && S.overlay){ S.overlay=null; render(); } }); }catch(e){}
+// Mobile hardware/gesture Back: close an open overlay instead of exiting the game/PWA. We keep exactly
+// ONE guard history entry alive while any overlay is open. A Back press pops it -> popstate closes the
+// overlay. Closing via the in-app X or Escape rolls the guard back (history.back) so no phantom entry is
+// left behind. _ovHist flips true only AFTER a successful pushState, so if history is unavailable we
+// simply never call back() and the feature fails open (old behaviour). render() calls syncOverlayBack().
+var _ovHist=false, _ovClosing=false;
+function syncOverlayBack(){
+  try{
+    if(S.overlay && !_ovHist){ history.pushState({rttOv:1},''); _ovHist=true; }
+    else if(!S.overlay && _ovHist){ _ovHist=false; if(!_ovClosing) history.back(); }
+  }catch(e){}
+  _ovClosing=false;
+}
+try{ window.addEventListener('popstate',function(){ if(S.overlay){ _ovClosing=true; _ovHist=false; S.overlay=null; try{render();}catch(e){} } }); }catch(e){}
 // Service worker: network-first for the HTML so a new deploy reaches players without a manual ?v= cache-bust,
 // with a cached copy as the offline fallback. Feature-detected + fully guarded; never blocks or breaks the game.
 if('serviceWorker' in navigator){ try{ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }catch(e){} }

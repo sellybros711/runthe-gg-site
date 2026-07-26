@@ -19,6 +19,8 @@ Calibration below, so the UI is built on top of a validated engine.
 | `run.js` | Draft loop and run state: wheel, re-spins, cap accounting, week-by-week advance. Browser: `window.PS_RUN`. |
 | `board.js` | Leaderboard client: submit a finished run, read rank and totals for today, this week and all time. Browser: `window.PS_BOARD`. Optional, fails soft. |
 | `auth.js` | Accounts: the site's existing Supabase Auth, wrapped in eight calls. Browser: `window.PS_AUTH`. Optional, fails soft. |
+| `og.png` | The 1200x630 share preview. Rendered from `og-source.html`; regenerate by screenshotting that file at 1200x630. |
+| `og-source.html` | Source for the share preview. Not served to players, kept beside it so the card cannot drift from the game's palette. |
 | `simulator.js` | Validation harness. Run this after any change to data, pricing, or constants. |
 | `playtest.js` | Plays one full run as readable text, draft, chemistry, schedule, weekly results, outcome card. The stand-in for the UI. |
 | `build/lib.mjs` | Shared build helpers: CSV parsing, cached fetch, franchise normalization. |
@@ -1554,11 +1556,213 @@ because the record is what ranks you; the differential is now a detail in matchi
 type. The pinned row was worse: it put chemistry in that same column, so the column
 read down the page as a comparison between two different quantities.
 
+## The launch pass
+
+A producer, UX and marketing review of the whole page before it goes public. Everything
+below was measured on the shipped page across 320x568, 390x844, 768x1024 and 1440x900,
+by `audit.mjs`, and each fix is asserted by `v48.mjs`.
+
+**The page passed the thing most likely to be wrong.** Zero horizontal scroll on any
+screen at any of the four viewports, and no control anywhere without an accessible name.
+The `minmax(0,1fr)` and `min-width:0` work paid for itself.
+
+### Legal, which was the actual blocker
+
+The game takes an email address, offers a Google sign-in and writes finished runs to a
+server, and **had no link to the privacy policy or the terms from anywhere inside it.**
+Both documents already exist at the site root and already describe exactly this
+behavior, including accounts, email, username and the under-13 position, so the gap was
+never the policy. It was the link.
+
+Now: a footer on the landing screen with Privacy, Terms, About and More games, and a
+consent line under the create-an-account button naming both documents and the minimum
+age. That sentence is the one the root site's own sign-in already uses.
+
+Every link opens in a new tab. That is not decoration: there is no mid-run save, so
+following a link in the same tab during a draft would throw the run away.
+
+**Attribution.** Every player, price, score and coach comes from nflverse and from Lee
+Sharpe's nfldata. That was credited in the build scripts and in this file, which is to
+say nowhere a player could see it. It is in the footer now, with the links.
+
+**Distance.** The terms already carry an unaffiliated disclaimer. It is on the page too
+now, because the game is built out of real clubs and real players and a reader should not
+have to open a legal document to find that out. The game uses no club logos and no club
+marks, only franchise codes and colors, which is the safer construction and worth keeping.
+
+Two things that are decisions rather than defects, and are the owner's to make: whether
+real club names and player names need a license for a commercial launch, and whether an
+age gate is wanted rather than a stated minimum. There are no ads, no analytics and no
+tracking scripts on this page, so it needs no consent banner of its own.
+
+### Search and share
+
+The share text on every finished run ends in this page's URL, and the page **had no
+`og:image` at all**, so every share into iMessage, WhatsApp, Discord or Slack unfurled
+as a bare line of text. For a game that spreads by being shared, that was the single
+most expensive omission on the page.
+
+| Was | Now |
+|---|---|
+| no `og:image` | `og.png`, 1200x630, with width, height and alt |
+| no canonical | `https://runthe.gg/football/` |
+| no `og:url`, `og:site_name`, `og:locale` | all three, `og:url` matching canonical |
+| no Twitter card | `summary_large_image` |
+| no structured data | `VideoGame` with a free offer, plus `BreadcrumbList` |
+| no `apple-touch-icon` | 180x180 PNG |
+| title 30 chars, brand first | 58 chars, searched words first |
+| description 103 chars | 150, inside the window Google shows |
+
+**A `<noscript>` hero, too.** Every screen is `display:none` until the data lands and
+`show()` turns one on, so the real `<h1>` sits inside a hidden container on first paint.
+Google renders JavaScript and will find it; other crawlers, link previewers and text
+browsers will not, and somebody with scripting off got a blank dark page with no
+explanation at all. There is a static block with the H1, the pitch, the credit and the
+legal links now, matching what the golf page carries.
+
+The share image is built from `og-source.html` by rendering it at 1200x630, and it is
+deliberately drawn in the game's own type, position colors and field, with **no
+wordmark**, because which mark the game uses is still an open decision. Regenerating it
+is a screenshot of that file, so it stays in step with the palette.
+
+`SHARE_URL` gained its trailing slash. `/football` is a directory, so the bare path was a
+301 on every single share and two URLs for one page to anything that counts links.
+
+**The manifest was painting the installed icon in Run The Tour's green.** `#0f3d2e` came
+across with the file it was copied from and disagreed with both the page favicon and the
+theme color, so anybody installing the game to a home screen got a golf-colored plate
+with a football on it. Now `#111827`, matching the favicon, plus a raster icon for
+launchers that will not use an SVG data URI, plus `categories`, `lang` and `id`.
+
+### Tap targets
+
+Measured against the 44px guideline, then fixed in order of how often a player meets them.
+
+| Control | Was | Now |
+|---|---|---|
+| the account button in the header, on **every** screen | 34px | 44px |
+| leaderboard window tabs, draft position tabs | 40px | 44px |
+| the sort segment, the direction button | 33px | 43px |
+| chemistry rail nodes | 25px | 41px |
+
+The account button keeps a 34px circle and gains a 44px transparent hit box around it, so
+the header does not grow. The rail nodes were the interesting one: `RAIL.NODE_BLOCK` is 38
+in the script and `.rarcs` is positioned against the same 38 in CSS, so padding the button
+would have pushed the arcs over the surnames and left the rail short of its own contents.
+They get an overlay that extends the target downward into the rail's caption, which is
+text and takes no taps. Asserted by clicking 8px below the visible dot.
+
+Links inside a running sentence are left alone, which is the documented distinction: the
+footer's four nav links are held to the guideline, the two source links in the paragraph
+under them are prose.
+
+### Keyboard focus
+
+There was **none, anywhere**, and `.fld:focus` actively removed the browser's own ring
+from the email and password fields with only a border-color change behind it, which on
+this palette is a 1px shift almost nobody can see. That is a WCAG 2.4.7 failure on the
+one form in the game and it locks out keyboard and switch-control players everywhere else.
+
+`:focus-visible` rather than `:focus`, so a thumb tap does not leave a ring behind on a
+button that has already done its job, with a white hairline inside the blue ring because
+one color is not enough separation on a page this dark.
+
+### Two navigation dead ends
+
+**The team picker had no way back.** Step 1 of 3, a disabled primary button, and the only
+exits were to pick a team you did not want or to reload. The browser's own back button
+leaves the site, because nothing here pushes history.
+
+**A started draft had no way out either**, and it is the longest screen in the game to be
+trapped on. Quitting now takes two taps: the first arms the button and turns it red, the
+second does it. No dialog, nothing to dismiss by accident, and it disarms itself after
+four seconds and on every new spin, because a button left reading "Tap again to quit" is a
+trap for whoever reaches for it next.
+
+Both routes and Start over go through one `toIntro()`, for the same reason `newRun()` and
+`endRun()` exist: three copies of a teardown is three places to forget a line of it.
+
+### The row that looked cut off
+
+At 320px the leaderboard's Daily tab sat 25px past the right edge. The row does scroll and
+the tab does work, but the scrollbar is hidden and nothing suggested the row moved, so on
+the narrowest phone still in use the daily competition was effectively undiscoverable.
+
+There is a fade over the right edge now, shown only while there is more to reach.
+Toggled from `show()` and from a MutationObserver, and the reason is worth writing down: a
+hidden element reports no `scrollWidth`, so measuring at boot said every row fitted at
+every viewport, and the leaderboard's tabs are static markup that never mutates. `show()`
+is the one place a screen becomes visible.
+
+### The fold, and landscape
+
+There were **no media queries at all**, and the hero field is sized by aspect ratio, so it
+gets taller as the window gets wider. Measured, Start a run sat below the fold on more
+than just landscape:
+
+| | Start's bottom edge | fold | now |
+|---|---|---|---|
+| iPhone SE portrait 320x568 | 648 | 568 | 564 |
+| iPhone 8 portrait 375x667 | 676 | 667 | 586 |
+| iPad landscape 1024x768 | 793 | 768 | 586 |
+| iPhone 12 landscape 844x390 | 789 | 390 | 253 |
+
+Three tiers, and the thresholds are measured rather than picked. Under 800px the field
+flattens, which is enough for every portrait phone and the iPad. Under 640 the wordmark
+comes down as well. Under 500, and only under 500, the screen **reorders**: title, then
+the buttons, then the animation below them.
+
+The reorder is landscape-only on purpose. An earlier attempt gated it at 620px, which
+caught an iPhone SE held upright and rearranged a screen that only needed 2px. Portrait
+phones start at 568 and landscape phones top out around 430, so 500 separates them.
+
+Shrinking alone could not fix landscape: roughly 440px of that screen is incompressible,
+because the reel housing is 114px and `REEL_H` in the script positions the strip against
+exactly that. **The reel housing is never touched by a media query**, and `v48.mjs`
+asserts the landing face still sits within 3px of the band's center at 844x390, which is
+the check that would catch it if anyone tried.
+
+### Reduced motion
+
+Only the landing animation honored `prefers-reduced-motion`. The draft's own wheels, which
+are the thing a player sees most in a run, wound for a second and a quarter each with a
+speed-tracked motion blur on them. Vestibular sensitivity does not stop at the front page.
+
+Now: one `reduceMotion()` read live rather than once, since both mobile platforms let this
+be toggled while a page is open. The wheels get a 260ms settle instead of a 1150ms wind,
+the blur never renders, and a blanket rule cuts every CSS animation and transition to
+0.01ms. Not `animation:none`, which would leave anything that animates *in* stuck at its
+from-state and could hide content outright. A full draft is played with it on in the test.
+
+### Left alone, on purpose
+
+- **`noindex` stays, and the page is still absent from the sitemap and the homepage.**
+  That is the launch switch and it is not a code question. Adding a sitemap entry while
+  the page says noindex would be asking Google to fetch a page that tells it to go away.
+- **The root site is untouched.** `sitemap.xml` lists the homepage, golf and soccer and
+  omits fumble, touchdown and grid, which is a real site-wide opportunity, but it is not
+  this game's file to edit.
+- **Text under 12px.** 1,772 instances at the four viewports, and almost all of them are
+  compact labels doing a compact label's job: position chips, the FPPG unit, the reel
+  captions. Raising them would reflow every screen in the game. The one worth a look
+  later is `.why` at 10px, which carries whole sentences like "No spot left for a WR".
+- **No service worker.** Run The Tour has one; this game does not, so it needs the network
+  for a first load. Offline replay is a feature, not a launch fix.
+- **`SCALE`**, for the reasons in the wheel section: moving it would change every score
+  already on the board.
+
 ## Not built yet
 
-Everything in the GDD's build sequence is done. The page is **not linked from the
-homepage or `sitemap.xml`**, deliberately, pending review. The leaderboard and accounts
-are both live.
+Everything in the GDD's build sequence is done. The leaderboard and accounts are both
+live, and the launch pass above is applied.
+
+**Three things are one switch, and it is the owner's to throw.** The page carries
+`<meta name="robots" content="noindex">`, is absent from `sitemap.xml`, and is not linked
+from the homepage. All the metadata a search result needs is in place behind that switch,
+so going public is: delete the noindex line, add a `<url>` block for
+`https://runthe.gg/football/` to the root sitemap with `football/og.png` as its image, and
+add the homepage tile. The last two touch the root site, which is why they are not done
+here.
 
 Known gaps worth a look during playtesting:
 
