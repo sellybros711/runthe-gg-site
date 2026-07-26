@@ -657,6 +657,17 @@ body.carded .dock,body.carded .bar{display:none}
 .panel{border:1px solid var(--line);background:var(--panel);padding:16px;margin-bottom:16px}
 /* A rule between sections of a page opened from the nav. */
 .pagehr{height:1px;background:var(--line);margin:22px 0 16px}
+/* The same row list, on a PAGE rather than in a card. Every rule for .rows was
+   scoped to .cbody, so the pages that use the class rendered an unstyled run of
+   divs with the bold label and its value collided on one line. */
+#app.scroll .rows{border:1px solid var(--line);margin:4px 0 14px;text-align:left;
+  background:var(--panel)}
+#app.scroll .rows div{padding:10px 13px;border-top:1px solid var(--line);
+  font-size:13.5px;color:var(--chalk)}
+#app.scroll .rows div:first-child{border-top:none}
+#app.scroll .rows div:nth-child(odd){background:var(--panel2)}
+#app.scroll .rows b{display:block;font-weight:600;color:var(--paper);
+  font-size:13.5px;letter-spacing:0;margin-bottom:2px}
 #app.scroll h3{font-size:15px;margin-bottom:4px}
 .panel h3{font-size:14px;color:var(--paper);margin-bottom:4px}
 .panel .sub{color:var(--dim);font-size:13.5px;margin-bottom:14px}
@@ -759,25 +770,27 @@ body.carded .dock,body.carded .bar{display:none}
      to move on every deploy. Bump BUILD below and they all miss at once. -->
 <!-- strings.js first: it depends on nothing, and engine.js reads the alliance
      name bank out of it. A bank the lint checks beats a bank in the model. -->
-<script src="strings.js?v=13"></script>
-<script src="rng.js?v=13"></script>
-<script src="tree.js?v=13"></script>
-<script src="generate.js?v=13"></script>
-<script src="engine.js?v=13"></script>
-<script src="comps.js?v=13"></script>
-<script src="powers.js?v=13"></script>
-<script src="scenes.js?v=13"></script>
-<script src="run.js?v=13"></script>
-<script src="recap.js?v=13"></script>
-<script src="avatar.js?v=13"></script>
-<script src="ui.js?v=13"></script>
+<script src="strings.js?v=14"></script>
+<script src="rng.js?v=14"></script>
+<script src="tree.js?v=14"></script>
+<script src="generate.js?v=14"></script>
+<script src="engine.js?v=14"></script>
+<script src="secrets.js?v=14"></script>
+<script src="comps.js?v=14"></script>
+<script src="powers.js?v=14"></script>
+<script src="scenes.js?v=14"></script>
+<script src="run.js?v=14"></script>
+<script src="recap.js?v=14"></script>
+<script src="avatar.js?v=14"></script>
+<script src="ui.js?v=14"></script>
 
 <script>
 (function(){
 'use strict';
 var RNG=window.RH_RNG, T=window.RH_TREE, G=window.RH_GEN, E=window.RH_ENGINE,
     C=window.RH_COMPS, R=window.RH_RUN, STR=window.RH_STRINGS,
-    PW=window.RH_POWERS, SC=window.RH_SCENES, RC=window.RH_RECAP, U=window.RH_UI, AV=window.RH_AVATAR;
+    PW=window.RH_POWERS, SC=window.RH_SCENES, RC=window.RH_RECAP, U=window.RH_UI, AV=window.RH_AVATAR,
+    SEC=window.RH_SECRETS;
 
 /*
  * The palette, once, in JavaScript.
@@ -1383,6 +1396,10 @@ function showPage(kind){
         +'and they vote at the end on which of the last two deserves it.</div>'
         +wall({only:s.panel,all:true});
     }
+  } else if(kind==='know'){
+    title='What you know';
+    sub='Every one of these is worth something to somebody, and nothing to everybody else. They go stale.';
+    body=knowList();
   } else if(kind==='map'){
     title='Who is working with who';
     sub='Only what you have actually seen or been told. An empty map means you have not been paying attention.';
@@ -1425,6 +1442,61 @@ function showPage(kind){
   });
   setBar('',[{label:'Back to the house',cls:'prime',go:function(){ idle(); }}]);
   window.scrollTo(0,0);
+}
+
+/*
+ * WHAT YOU KNOW, GDD §20.
+ *
+ * The inventory surface. Every line is a thing you actually learned, in the
+ * words the house would use, plus the two facts that make it a decision: how
+ * long it stays worth anything, and who it is worth the most to.
+ *
+ * Naming the best ear is deliberate. §17 keeps numbers off relationships, and
+ * a percentage here would be both a number and a lie, but "this is worth most
+ * to Devora" is the read a person in that house would actually have, and
+ * without it choosing between eleven facts and twelve people is a shrug.
+ */
+function secretLine(sec){
+  var n=function(i){ return i===s.human?'you':s.cast[i].first; };
+  if(sec.kind==='read'){
+    return n(sec.about[0])+' on '+n(sec.about[1])+': '+E.band(sec.value).label.toLowerCase();
+  }
+  if(sec.kind==='room'){
+    return 'A room with '+sec.about.map(n).join(', ')+' in it';
+  }
+  if(sec.kind==='name'){
+    return (sec.value||'A named group')+', which is '+sec.about.map(n).join(', ');
+  }
+  if(sec.kind==='pair'){
+    return n(sec.about[0])+' and '+n(sec.about[1])+' are one number';
+  }
+  if(sec.kind==='intent'){
+    return n(sec.value)+' is actually after '+n(sec.about[0]);
+  }
+  return 'Something you heard';
+}
+
+/* How long it has left, in words rather than a count of weeks. */
+function secretAge(sec){
+  var f=SEC.freshness(s,sec);
+  return f>0.74?'Still fresh':f>0.49?'Still good':f>0.24?'Going stale':'About to be worthless';
+}
+
+function knowList(){
+  var list=SEC.held(s);
+  if(!list.length) return '<div class="mapnote">'+esc(tsay('knowNothing'))+'</div>';
+  var pool=others();
+  return '<div class="rows">'+list.map(function(sec){
+    var ear=SEC.bestEar(s,sec,pool);
+    var to=ear.id!=null&&ear.worth>0.2
+      ? 'Worth most to '+esc(s.cast[ear.id].first)
+      : 'Nobody in this house needs this';
+    var told=Object.keys(sec.told||{}).length;
+    return '<div><b>'+esc(secretLine(sec))+'</b>'
+      +to+'. '+secretAge(sec)
+      +(told?'. Already told '+told+(told>1?' people':' person'):'')
+      +'.</div>';
+  }).join('')+'</div>';
 }
 
 /*
@@ -1561,6 +1633,7 @@ function barRow(b){
 var NAV=[
   {k:'house',n:'House',i:'eye'},
   {k:'map',n:'Alliances',i:'alliance'},
+  {k:'know',n:'You know',i:'seen'},
   {k:'you',n:'You',i:'power'}
 ];
 /**
@@ -2397,9 +2470,83 @@ function showScheming(need){
          off:s.energy<SC.ENERGY.EAVESDROP_COST,
          go:function(){
            var o=R.performAction(s,{kind:'eavesdrop'}); s.energy-=SC.ENERGY.EAVESDROP_COST;
-           narrateAction(o); saveRun(); backToFloor(); }}
+           narrateAction(o); saveRun(); backToFloor(); }},
+        /* GDD §20. Cheapest verb in the game, because handing over something
+           you already know costs you nothing but the risk of being the only
+           person who could have said it. */
+        {label:heldCount()?'Trade something you know':'You are not holding anything',
+         note:heldCount()?(heldCount()+' in hand. Costs '+SEC.K.TELL_COST+'.'):'Listen at a door first',
+         off:!heldCount()||s.energy<SEC.K.TELL_COST,
+         go:pickSecret}
       ],
       foot:{label:'Not yet',go:backToFloor}
+    });
+  }
+
+  function heldCount(){ return SEC.held(s).length; }
+
+  /*
+   * TRADING INFORMATION, GDD §20, in two cards: what, then who.
+   *
+   * That order is the whole point. Picking the fact first and the ear second is
+   * what makes this a strategic act rather than another way to talk to
+   * somebody: the same fact is decisive to one person and noise to twelve
+   * others, and the second card shows you which is which.
+   */
+  function pickSecret(){
+    dock({label:'Pick something',off:true});
+    var pool=others();
+    /* Only offer things somebody can still use. A secret the whole house has
+       already worked out is a dead end, and offering it leads to a card where
+       every button is disabled and the only way out is back to here. */
+    var list=SEC.held(s).map(function(sec){
+      return {sec:sec,ear:SEC.bestEar(s,sec,pool)}; });
+    var live=list.filter(function(x){ return x.ear.id!=null&&x.ear.worth>0; });
+    var dead=list.length-live.length;
+    openCard({
+      kicker:'What you know', role:live.length+' worth trading', icon:'seen',
+      title:'What are you trading',
+      body:['Everything here goes stale. Something you heard four weeks ago is history, not information.',
+        dead?{t:dead+(dead>1?' other things you know are':' other thing you know is')
+          +' no use to anybody now. Either they all worked it out or you already told them.',c:'d'}:null,
+        live.length?null:{t:'There is nothing here anybody still needs. Go and find something.',c:'q'}],
+      choices:live.map(function(x){
+        return {label:secretLine(x.sec),
+          note:'Worth most to '+s.cast[x.ear.id].first+'. '+secretAge(x.sec),
+          go:function(){ pickEar(x.sec); }};
+      }),
+      foot:{label:'Keep it all to yourself',go:backToFloor}
+    });
+  }
+
+  function pickEar(sec){
+    dock({label:'Pick somebody',off:true});
+    var pool=others();
+    /* Sorted by what it is worth to them, because the ranking IS the
+       information the player came to this card for. */
+    var ranked=pool.map(function(id){ return {id:id,w:SEC.worth(s,sec,id)}; })
+      .sort(function(a,b){ return b.w-a.w; });
+    openCard({
+      kicker:'What you know', role:'Who gets it', icon:'seen',
+      title:secretLine(sec),
+      body:['Handing this over buys you something with them. If they work out you were the only one who could have said it, it costs you with the person it is about.'],
+      choices:ranked.slice(0,5).map(function(r){
+        var w=r.w;
+        return {label:'Tell '+s.cast[r.id].first,
+          cls:w>0.6?'go':'',
+          note:w<=0?'They already know this.'
+            :w>0.6?'This is about them, or about somebody they cannot afford to be wrong about.'
+            :w>0.3?'They will want this.'
+            :'They will take it. It will not change their week.',
+          off:w<=0,
+          go:function(){
+            if(s.energy<SEC.K.TELL_COST) return;
+            var o=R.performAction(s,{kind:'tell',secret:sec.id,target:r.id});
+            s.energy-=SEC.K.TELL_COST;
+            narrateAction(o); saveRun(); backToFloor();
+          }};
+      }),
+      foot:{label:'Something else',go:pickSecret}
     });
   }
 
@@ -2593,6 +2740,48 @@ function narrateAction(o){
     if(o.caught) say(tsay('eavesCaught',{name:s.cast[o.pair[0]].first}),'hot');
   }
   if(o.kind==='confessional'&&o.read) say('You write it down. '+nm+': '+o.read.band.label.toLowerCase()+'.','quiet');
+  /* GDD §20. Anything you picked up is reported as a thing you now HOLD, so the
+     player learns the inventory exists at the moment it first has something in
+     it rather than by finding a tab. */
+  if(o.learned&&o.learned.length){
+    for(var li=0;li<o.learned.length;li++){
+      say('You are carrying that now: '+secretLine(o.learned[li])+'.','ev-power','seen');
+    }
+    if(!s.knowTaught){
+      s.knowTaught=true;
+      moment({kicker:'What you know',icon:'seen',tone:'good',
+        title:'You are holding something',
+        sub:'Things you learn are yours to spend. Pick the week, pick the person, and remember that the only people who could have told them are the ones who were there.',
+        rows:o.learned.map(function(x){ return ['You know',secretLine(x)]; })});
+    }
+  }
+  if(o.kind==='tell'){
+    if(o.missing){ say('Whatever that was, it is no good to anybody now.','quiet'); return; }
+    var bank=o.landed==='read_self'?'toldRead'
+      :o.landed==='read_third'?'toldThird'
+      :o.landed==='room'?'toldRoom'
+      :o.landed==='name'?'toldName'
+      :o.landed==='pair'?'toldPair'
+      :o.landed==='intent'?'toldIntent':'tellOk';
+    var other=o.about.length>1?s.cast[o.about[1]].first:'';
+    say(tsay(bank,{name:nm,target:s.cast[o.about[0]]?s.cast[o.about[0]].first:'',other:other}),'','seen');
+    say(tsay(o.worth>0.3?'tellOk':'tellFlat',
+      {name:nm,target:s.cast[o.about[0]]?s.cast[o.about[0]].first:''}),
+      o.worth>0.3?'ev-good':'quiet');
+    if(o.worth>0.6){
+      moment({kicker:'What you know',icon:'seen',tone:'good',
+        title:nm+' owes you one',
+        sub:'That was worth something to them, and they know where it came from.',
+        faces:[{id:o.target,tag:'Told',col:COL.ok}]});
+    }
+    if(o.traced!=null){
+      say(tsay('tellTraced',{target:s.cast[o.traced].first}),'ev-bad','broken');
+      moment({kicker:'It got back',icon:'broken',tone:'bad',
+        title:s.cast[o.traced].first+' knows it was you',
+        sub:'There were not many people who could have said it.',
+        faces:[{id:o.traced,tag:'Knows',col:COL.signal}]});
+    }
+  }
   if(o.kind==='campaign'){
     /* The feed has to say what moved, not that something happened. GDD §19.4
        moves a real vote intent when it lands, so the line names it. */
