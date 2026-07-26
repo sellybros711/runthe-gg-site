@@ -70,7 +70,28 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
   background:repeating-linear-gradient(180deg,rgba(23,34,47,.014) 0 1px,transparent 1px 3px);
   mix-blend-mode:multiply}
 
-#app{max-width:1180px;margin:0 auto;padding:0 16px 152px;min-height:100dvh}
+/*
+ * THE SHELL IS A FIXED FRAME, NOT A LONG PAGE.
+ *
+ * Playtest: "I like on BitLife how the main feed, the most recent is always
+ * right there without the need to scroll. You can scroll up to see the history
+ * but the latest should always be in the user's face."
+ *
+ * Exactly right, and the old shell could not do it: the log had no height, so
+ * the page grew all season and the newest line ended up below the fold under a
+ * pile of bars and panels. Now the frame is the viewport. Header block at the
+ * top, dock at the bottom, and the log takes whatever is left and is always
+ * scrolled to its end, so the last thing that happened sits just above the
+ * button that makes the next thing happen.
+ */
+#app{max-width:1180px;margin:0 auto;padding:0 16px;height:100dvh;
+  display:flex;flex-direction:column;overflow:hidden}
+#app.scroll{height:auto;min-height:100dvh;overflow:visible;padding-bottom:152px;display:block}
+.head{flex:none}
+.logwrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;margin-bottom:4px}
+.logwrap .log{flex:1 1 auto;min-height:0;overflow-y:auto;margin-bottom:0}
+/* Space for the dock, which is fixed over the bottom of the frame. */
+.dockpad{flex:none;height:118px}
 
 /* ── chrome ─────────────────────────────────────────────────────────────── */
 .topbar{position:sticky;top:0;z-index:40;background:linear-gradient(180deg,var(--cream) 78%,rgba(247,243,234,0));
@@ -492,13 +513,28 @@ details.wk .body h4{font-family:var(--disp);font-weight:600;font-size:11px;lette
 
 /* ── the card: one beat, one decision, never two ─────────────────────────── */
 body.carded .dock,body.carded .bar{display:none}
+/*
+ * A card can never be taller than the screen it is on.
+ *
+ * Playtest: "you click talk to and it goes blank." The card was 800px tall
+ * against an 844px test viewport, which fits; a real phone loses ninety pixels
+ * to the address bar and eighty to the toolbar, so the card overflowed, and a
+ * centred item in a scrolling flex container has its overflow pushed ABOVE the
+ * scroll origin where it cannot be reached. The header goes off the top of the
+ * world and what is left reads as blank.
+ *
+ * So it anchors to the bottom, which is also where thumbs are, and every part
+ * of it that can shrink does.
+ */
 .sheet{position:fixed;inset:0;z-index:70;background:rgba(23,34,47,.55);
-  display:flex;align-items:center;justify-content:center;padding:16px;
-  animation:fade .16s ease-out;overflow-y:auto}
+  display:flex;align-items:flex-end;justify-content:center;padding:12px;
+  animation:fade .16s ease-out;overflow:hidden}
+@media (min-width:721px){ .sheet{align-items:center;padding:16px} }
 @keyframes fade{from{opacity:0}to{opacity:1}}
 .card{width:100%;max-width:520px;background:var(--panel);border:1px solid var(--line2);
-  box-shadow:0 20px 50px rgba(23,34,47,.28),0 2px 6px rgba(23,34,47,.12);animation:pop .2s cubic-bezier(.2,.9,.3,1.1);
-  max-height:calc(100dvh - 32px);display:flex;flex-direction:column;margin:auto}
+  box-shadow:0 20px 50px rgba(23,34,47,.28),0 2px 6px rgba(23,34,47,.12);
+  animation:pop .2s cubic-bezier(.2,.9,.3,1.1);
+  max-height:calc(100dvh - 24px);display:flex;flex-direction:column;margin:0}
 @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
 .card .ch{display:flex;align-items:center;gap:10px;padding:9px 16px;
   background:linear-gradient(90deg,transparent,rgba(28,86,194,.13));
@@ -515,7 +551,8 @@ body.carded .dock,body.carded .bar{display:none}
 .card.t-good .ch{background:linear-gradient(90deg,transparent,rgba(31,122,77,.15))}
 .card.t-good .ch .r{color:var(--ok)}
 .card.t-power .ch{background:linear-gradient(90deg,transparent,rgba(168,118,43,.17))}
-.cbody{padding:20px 20px 4px;overflow-y:auto;flex:1;text-align:center}
+.cbody{padding:18px 20px 4px;overflow-y:auto;flex:1 1 auto;min-height:0;text-align:center;
+  display:flex;flex-direction:column}
 .cbody h2{font-size:22px;color:var(--paper);line-height:1.2;margin-bottom:12px;
   display:flex;gap:10px;align-items:center;justify-content:center;text-align:center}
 .cbody h2 .ic{flex:none}
@@ -531,7 +568,7 @@ body.carded .dock,body.carded .bar{display:none}
 .cbody .faces{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin:2px 0 16px}
 .cbody .sbars{margin:0 0 14px;border-color:var(--line)}
 
-.choices{padding:6px 14px 16px;display:flex;flex-direction:column;gap:8px}
+.choices{padding:6px 14px 14px;display:flex;flex-direction:column;gap:8px;flex:none}
 .chb{width:100%;background:var(--panel2);border:1px solid var(--dimmer);border-bottom-width:2px;
   padding:13px 15px;display:flex;gap:12px;align-items:center;text-align:left;transition:.13s}
 .chb:hover{background:var(--blue-soft);border-color:var(--paper)}
@@ -559,7 +596,7 @@ body.carded .dock,body.carded .bar{display:none}
 .chb.hot:hover{background:var(--signal-soft);border-color:var(--signal)}
 .chb.hot .txt{color:var(--signal)}
 .chb[disabled]{opacity:.32;pointer-events:none}
-.cfoot{padding:0 14px 16px;text-align:center}
+.cfoot{padding:0 14px 14px;text-align:center;flex:none}
 .cfoot button{font-size:12px;letter-spacing:.1em;color:var(--dim);text-decoration:underline;
   text-underline-offset:3px}
 .cfoot button:hover{color:var(--paper)}
@@ -567,7 +604,8 @@ body.carded .dock,body.carded .bar{display:none}
 /* picking a person, as a list rather than a sixteen tile grid. On a phone the
    grid was four rows of scrolling before you could see everybody's name. */
 .plist{display:flex;flex-direction:column;gap:1px;background:var(--line);
-  border:1px solid var(--line);margin:0 0 14px;max-height:min(46dvh,380px);overflow-y:auto}
+  border:1px solid var(--line);margin:0 0 14px;overflow-y:auto;
+  flex:1 1 auto;min-height:120px}
 .prow{background:var(--panel2);padding:8px 12px;display:flex;gap:11px;align-items:center;
   text-align:left;width:100%;transition:.12s;border-left:3px solid transparent}
 .prow:hover{background:var(--blue-soft)}
@@ -586,10 +624,39 @@ body.carded .dock,body.carded .bar{display:none}
 
 /* a panel opened from the nav, closed with the same button */
 .panel{border:1px solid var(--line);background:var(--panel);padding:16px;margin-bottom:16px}
+/* A rule between sections of a page opened from the nav. */
+.pagehr{height:1px;background:var(--line);margin:22px 0 16px}
+#app.scroll h3{font-size:15px;margin-bottom:4px}
 .panel h3{font-size:14px;color:var(--paper);margin-bottom:4px}
 .panel .sub{color:var(--dim);font-size:13.5px;margin-bottom:14px}
 
 @media (max-width:560px){
+  /*
+   * THE HEADER HAS TO EARN ITS PIXELS.
+   *
+   * Measured on a 664px viewport, which is what an iPhone actually gives a page
+   * once Safari has taken its chrome: the header was 430 of them and the log
+   * got sixteen. Everything below is the same information, tighter, and two
+   * things are dropped outright because they are furniture rather than facts:
+   * the seed, and the sentence under the rail describing the phase the rail is
+   * already naming.
+   */
+  .topbar{padding:9px 0 8px;margin-bottom:10px;gap:8px;align-items:center}
+  .topbar .wk{font-size:19px}
+  .topbar .sp{gap:8px}
+  .topbar .sp .meta:last-child{display:none}
+  .railnote{display:none}
+  .rail{margin:6px 0 2px}
+  .strip{margin-bottom:10px;flex-wrap:nowrap}
+  .ws{flex:1 1 0;min-width:0;padding:6px 8px}
+  .wsv{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .idbar{padding:7px 10px;margin-bottom:10px;gap:9px}
+  .idbar .av{width:36px;height:36px}
+  .yw{padding:7px 11px;margin-bottom:10px}
+  /* The head does not shrink and the log takes the rest. Asking the log for a
+     third of the screen instead squeezed the head to nothing and the feed
+     started at the top of a blank frame. */
+  .dockpad{height:104px}
   /* Twelve phase labels do not fit across a phone, so the rail scrolls. It has
      to be given room to scroll INTO, or the labels just overlap each other. */
   .rl{min-width:58px;padding:0 3px}
@@ -636,7 +703,11 @@ body.carded .dock,body.carded .bar{display:none}
 .hide{display:none !important}
 @media(max-width:720px){
   :root{--tile:104px}
-  #app{padding:0 10px 186px}
+  /* Bottom padding belongs to the SCROLLING screens only. On the fixed frame
+     it is subtracted from the height, and 186 of 664 pixels is why the log
+     would not grow: the children were already filling the content box. */
+  #app{padding:0 10px}
+  #app.scroll{padding:0 10px 186px}
   .tree{grid-template-columns:1fr}
   .topbar .wk{font-size:21px}
   .cell{min-height:150px}
@@ -655,18 +726,18 @@ body.carded .dock,body.carded .bar{display:none}
      copy. Worse than a stale page is a MIXED one, where a fresh index.html
      drives a cached scenes.js, so the query has to be on every module and has
      to move on every deploy. Bump BUILD below and they all miss at once. -->
-<script src="rng.js?v=8"></script>
-<script src="tree.js?v=8"></script>
-<script src="generate.js?v=8"></script>
-<script src="engine.js?v=8"></script>
-<script src="comps.js?v=8"></script>
-<script src="powers.js?v=8"></script>
-<script src="scenes.js?v=8"></script>
-<script src="run.js?v=8"></script>
-<script src="recap.js?v=8"></script>
-<script src="avatar.js?v=8"></script>
-<script src="ui.js?v=8"></script>
-<script src="strings.js?v=8"></script>
+<script src="rng.js?v=9"></script>
+<script src="tree.js?v=9"></script>
+<script src="generate.js?v=9"></script>
+<script src="engine.js?v=9"></script>
+<script src="comps.js?v=9"></script>
+<script src="powers.js?v=9"></script>
+<script src="scenes.js?v=9"></script>
+<script src="run.js?v=9"></script>
+<script src="recap.js?v=9"></script>
+<script src="avatar.js?v=9"></script>
+<script src="ui.js?v=9"></script>
+<script src="strings.js?v=9"></script>
 <script>
 (function(){
 'use strict';
@@ -918,6 +989,7 @@ function setBar(prompt,buttons){
 
 // ── screens ────────────────────────────────────────────────────────────────
 function render(){
+  if(screen==='page') return;              // owns its own paint
   if(screen==='title') return renderTitle();
   if(screen==='create') return renderCreate();
   if(screen==='tree') return renderTree();
@@ -929,6 +1001,7 @@ function render(){
 }
 
 function renderTitle(){
+  app.className='scroll';
   bar.classList.add('hide');
   var lv=level(), career=account.career||{runs:0,wins:0};
   app.innerHTML=''
@@ -977,6 +1050,7 @@ function renderTitle(){
 }
 
 function renderCreate(){
+  app.className='scroll';
   bar.classList.add('hide');
   var towns=G.HOMETOWNS.map(function(h){ return '<option value="'+esc(h[0])+'"'+(account.hometown===h[0]?' selected':'')+'>'+esc(h[0])+'</option>'; }).join('');
   app.innerHTML=''
@@ -1009,6 +1083,7 @@ function renderCreate(){
 }
 
 function renderTree(){
+  app.className='scroll';
   bar.classList.add('hide');
   var owned=new Set(account.owned);
   var attrs=T.deriveAttributes(owned);
@@ -1226,21 +1301,81 @@ function others(){
  * a week can come back, read down the page and know exactly where they are
  * without opening anything.
  */
-var openPanel=null;
 function renderStage(){
   screen='phase';
   var me=s.cast[s.human];
-  app.innerHTML=topbar()
+  app.className='';
+  /*
+   * Header, log, dock. Nothing else lives here.
+   *
+   * The bars and the panels used to sit between the header and the log, so by
+   * the time you had a Panel bar and an open House panel the newest line was
+   * two screens down. Playtest: "I want the bottom tabs to open up new pages
+   * instead of flooding the main page with more information." They do now, and
+   * this is what is left: who you are, what is true this week, and what just
+   * happened.
+   */
+  app.innerHTML='<div class="head">'+topbar()
     +'<div class="idbar"><div class="av">'+avatar(me,44)+'</div>'
     +'<div class="who"><b>'+esc(me.name)+'</b><span>'+esc(me.archetype)
       +(me.status==='active'?'':' &middot; out')+'</span></div>'
     +'<div class="rt"><b>'+R.activeCount(s)+'</b><span>still in</span></div></div>'
-    +selfBars()
     +yourWeek()
-    +panelHtml()
-    +renderLog();
-  bindPanel();
+    +'</div>'
+    +'<div class="logwrap">'+renderLog()+'</div>'
+    +'<div class="dockpad"></div>';
   scrollFeed();
+}
+
+/*
+ * The tabs, as pages.
+ *
+ * Each one takes the screen and comes back with one button, rather than being
+ * stapled underneath the log. The stage is untouched behind them, so closing a
+ * page puts you back exactly where you were with the newest line still in view.
+ */
+function showPage(kind){
+  screen='page';
+  app.className='scroll';
+  var me=s.cast[s.human];
+  var body='', title='', sub='';
+  if(kind==='house'){
+    title='The house'; sub='What you know, and how old the information is.';
+    body=U.legend()+wall({});
+    if(s.panel&&s.panel.length){
+      body+='<div class="pagehr"></div><h3>The Panel</h3>'
+        +'<div class="sub">Seven seats when it is full. They are still watching, '
+        +'and they vote at the end on which of the last two deserves it.</div>'
+        +wall({only:s.panel,all:true});
+    }
+  } else if(kind==='map'){
+    title='Who is working with who';
+    sub='Only what you have actually seen or been told. An empty map means you have not been paying attention.';
+    body=U.allianceMap(s,E);
+  } else {
+    title='Your file'; sub=me.archetype+'. Seed '+esc(s.seed)+'.';
+    var held=myPowers();
+    body=selfBars()
+      +(held.length?'<div class="rows">'+held.map(function(p){
+          var d=PW.POWERS[p.kind];
+          return '<div><b>'+esc(d.name)+'</b>'+esc(d.long)+'</div>'; }).join('')+'</div>'
+        :'<p style="color:var(--dim)">You are not holding anything.</p>');
+    var mine=E.allianceOf(s.alliances,s.human).filter(function(a){ return a.alive; });
+    if(mine.length){
+      body+='<div class="pagehr"></div><h3>Rooms you are in</h3>'
+        +'<div class="rows">'+mine.map(function(a){
+          return '<div><b>'+a.members.length+' of you</b>'
+            +esc(a.members.filter(function(i){ return i!==s.human; })
+              .map(function(i){ return s.cast[i].first; }).join(', '))+'</div>'; }).join('')+'</div>';
+    }
+  }
+  app.innerHTML='<div class="file"><h2>'+esc(title)+'</h2>'
+    +'<div class="sub">'+esc(sub)+'</div></div>'+body;
+  Array.prototype.forEach.call(app.querySelectorAll('[data-sort]'),function(el){
+    el.onclick=function(){ wallSort=el.dataset.sort; showPage(kind); };
+  });
+  setBar('',[{label:'Back to the house',cls:'prime',go:function(){ idle(); }}]);
+  window.scrollTo(0,0);
 }
 
 /*
@@ -1337,45 +1472,6 @@ function barRow(b){
     +'<em>'+(b.note||'')+'</em></div>';
 }
 
-/* Panels are opened from the nav and close with the same button. Nothing here
-   is ever a decision, so none of it belongs in a card. */
-function panelHtml(){
-  if(openPanel==='house'){
-    var out='<div class="panel"><h3>The house</h3>'
-      +'<div class="sub">What you know, and how old the information is.</div>'
-      +U.legend()+wall({})+'</div>';
-    /* Jurors used to vanish the week they were evicted, which made the people
-       who decide the winner the only people you could not look at. */
-    if(s.panel&&s.panel.length){
-      out+='<div class="panel"><h3>The Panel</h3>'
-        +'<div class="sub">Seven seats when it is full. They are still watching, '
-        +'and they vote at the end on which of the last two deserves it.</div>'
-        +wall({only:s.panel,all:true})+'</div>';
-    }
-    return out;
-  }
-  if(openPanel==='map') return '<div class="panel"><h3>Who is working with who</h3>'
-    +'<div class="sub">Only what you have actually seen or been told. '
-    +'An empty map means you have not been paying attention.</div>'
-    +U.allianceMap(s,E)+'</div>';
-  if(openPanel==='you'){
-    var held=myPowers();
-    return '<div class="panel"><h3>Your file</h3>'
-      +'<div class="sub">'+esc(s.cast[s.human].archetype)+'. Seed '+esc(s.seed)+'.</div>'
-      +(held.length?'<div class="rows">'+held.map(function(p){
-          var d=PW.POWERS[p.kind];
-          return '<div><b>'+esc(d.name)+'</b>'+esc(d.long)+'</div>'; }).join('')+'</div>'
-        :'<p style="color:var(--dim)">You are not holding anything.</p>')
-      +'</div>';
-  }
-  return '';
-}
-function bindPanel(){
-  Array.prototype.forEach.call(app.querySelectorAll('[data-sort]'),function(el){
-    el.onclick=function(){ wallSort=el.dataset.sort; renderStage(); };
-  });
-}
-
 // ── the dock ───────────────────────────────────────────────────────────────
 var NAV=[
   {k:'house',n:'House',i:'eye'},
@@ -1393,7 +1489,7 @@ var NAV=[
 function dock(main,extra){
   bar.classList.remove('hide');
   var nav='<div class="nav">'+NAV.map(function(n){
-    return '<button data-nav="'+n.k+'" class="'+(openPanel===n.k?'on':'')+'">'
+    return '<button data-nav="'+n.k+'">'
       +U.icon(n.i,16)+'<span>'+n.n+'</span></button>'; }).join('')+'</div>';
   var row='<div class="dockrow">'
     +(extra?'<button class="gobtn quiet" data-x="1">'+esc(extra.label)+'</button>':'')
@@ -1403,10 +1499,7 @@ function dock(main,extra){
   barin.innerHTML=nav+row;
   bar.className='dock';
   Array.prototype.forEach.call(barin.querySelectorAll('[data-nav]'),function(el){
-    el.onclick=function(){
-      openPanel=(openPanel===el.dataset.nav)?null:el.dataset.nav;
-      renderStage(); dock(main,extra);
-    };
+    el.onclick=function(){ showPage(el.dataset.nav); };
   });
   barin.querySelector('[data-go]').onclick=main.go;
   var x=barin.querySelector('[data-x]');
@@ -1466,6 +1559,26 @@ function pump(){
     if(feedLines.length>lines){ saveRun(); idle(); return; }
   }
   idle();
+}
+
+/**
+ * Answer whatever was being asked, THEN narrate the phase that answered it.
+ *
+ * This is the hole behind "still no popup saying who won HOH". narrateAfter was
+ * only ever called from inside pump's loop, for phases that resolve on their
+ * own. Every phase the PLAYER resolves went straight from the input handler to
+ * pump(), which starts by looking at the NEXT phase, so the beat you had just
+ * taken part in was the one beat never narrated. Play the Captain Comp yourself
+ * and no card said who won it; sit it out and one did.
+ *
+ * Every input handler goes through here now.
+ */
+function answer(input){
+  var before=s.phase, wkBefore=s.week;
+  R.step(s,input);
+  if(s.phase!==before) narrateAfter(before,wkBefore);
+  saveRun();
+  pump();
 }
 
 /** Nothing is being asked. Draw the stage and arm the button. */
@@ -1658,7 +1771,7 @@ function showMoveIn(need){
     body:[{t:need.beat.line,c:'q'}],
     choices:need.beat.options.map(function(o){
       return {label:o.text,go:function(){
-        say(o.text,'quiet'); R.step(s,{key:o.key}); pump(); }};
+        say(o.text,'quiet'); answer({key:o.key}); }};
     })
   });
 }
@@ -1710,7 +1823,7 @@ function showNaming(){
       pick:{pool:others(),selected:[want],block:picked,go:function(id){
         want=id; step2(); }},
       choices:[{label:back?'Set the trap':'Lock it in',cls:'go',go:function(){
-        R.step(s,{noms:picked,target:want}); pump(); }}],
+        answer({noms:picked,target:want}); }}],
       foot:{label:'Change the names',go:step1}
     });
   }
@@ -1730,10 +1843,10 @@ function showVetoUse(){
         cls:id===s.human?'go':'',
         note:id===s.human?'Nobody has ever been blamed for this one.'
           :'They owe you. The Captain will not.',
-        go:function(){ R.step(s,{save:id}); pump(); }};
+        go:function(){ answer({save:id}); }};
     }),
     foot:{label:mine?'Leave the names alone':'Hold it and stay clean',
-      go:function(){ R.step(s,{save:null}); pump(); }}
+      go:function(){ answer({save:null}); }}
   });
 }
 
@@ -1745,7 +1858,7 @@ function showReplacement(){
     title:'Somebody has to go up',
     body:['The Veto took one of yours off the block. This one has no chance to play for it.'],
     pick:{pool:pool,go:function(id){
-      if(pool.indexOf(id)!==-1){ R.step(s,{replacement:id}); pump(); } }}
+      if(pool.indexOf(id)!==-1){ answer({replacement:id}); } }}
   });
 }
 
@@ -1771,7 +1884,7 @@ function showFinal3Pick(){
     kicker:'Final Three', role:'Your call', icon:'captain', tone:'good',
     title:'You won the last one',
     body:['Pick who sits beside you. The other one joins the Panel and gets a vote on which of you deserves it.'],
-    pick:{pool:pool,go:function(id){ R.step(s,{keep:id}); pump(); }}
+    pick:{pool:pool,go:function(id){ answer({keep:id}); }}
   });
 }
 
@@ -1783,9 +1896,9 @@ function showFraming(){
     body:[tsay('panelOpen')],
     choices:[
       {label:'Own it',note:'Every move was yours and you would make them again. The strategists respect it. The ones you cut will not.',
-        go:function(){ R.step(s,{framing:'own'}); pump(); }},
+        go:function(){ answer({framing:'own'}); }},
       {label:'Play it down',note:'You did what the house made you do. Softer landing with the people you hurt, thinner with the ones who wanted a game.',
-        go:function(){ R.step(s,{framing:'humble'}); pump(); }}
+        go:function(){ answer({framing:'humble'}); }}
     ]
   });
 }
@@ -1813,14 +1926,14 @@ function showScheming(need){
   if(need&&need.whip){
     dock(
       {label:'Count the votes',note:'Ask around. It costs nothing.',go:showWhip},
-      {label:'Go to the vote',go:function(){ R.step(s,{done:true}); pump(); }}
+      {label:'Go to the vote',go:function(){ answer({done:true}); }}
     );
   } else {
     dock(
       {label:can?'Talk to somebody':'Out of energy',off:!can,
        note:can?(s.energy+' energy left this week'):'The week moves on without you',
        go:pickPerson},
-      {label:'Move on',go:function(){ R.step(s,{done:true}); pump(); }}
+      {label:'Move on',go:function(){ answer({done:true}); }}
     );
   }
 
@@ -1865,7 +1978,7 @@ function showScheming(need){
       choices:[
         {label:can?'Go and work on somebody':'No energy left to work with',
          off:!can,note:can?(s.energy+' energy left'):'',go:pickPerson},
-        {label:'Cast your vote',cls:'go',go:function(){ R.step(s,{done:true}); pump(); }}
+        {label:'Cast your vote',cls:'go',go:function(){ answer({done:true}); }}
       ]
     });
   }
@@ -1873,7 +1986,7 @@ function showScheming(need){
   function backToFloor(){
     /* Running out of energy ends the window, EXCEPT before the vote, where the
        count is free and the player has not necessarily taken it yet. */
-    if(s.energy<SC.ENERGY.SCENE_COST&&!(need&&need.whip)){ R.step(s,{done:true}); pump(); return; }
+    if(s.energy<SC.ENERGY.SCENE_COST&&!(need&&need.whip)){ answer({done:true}); return; }
     showScheming(need);
   }
 
@@ -2005,35 +2118,69 @@ function showScheming(need){
 function narrateScene(moment,out){
   var nm=s.cast[out.target].first;
   var lines=[], big=[];
-  say(moment.scene.charAt(0).toUpperCase()+moment.scene.slice(1)+'.','quiet');
-  if(out.kind==='safe') say('It goes the way those go.');
-  else if(out.kind==='neutral') say(out.landed?'It lands.':'It does not quite land.',out.landed?'':'quiet');
-  else say(out.landed?'It lands, and it moves something.':'It does not land, and '+nm+' will remember you tried.',
-    out.landed?'':'hot');
+
+  /*
+   * WHAT ACTUALLY HAPPENED, IN THE LOG.
+   *
+   * Playtest: "the live feed also has to be way more descriptive with the
+   * outcomes of your decisions." It was three sentences on rotation. "It
+   * lands", "It does not quite land", "It goes the way those go" is a report on
+   * a dice roll, not on a conversation, and it never once mentioned the person
+   * you had just spent two energy on or which way they moved.
+   *
+   * So: name them, say what you did, and say which direction it went. The
+   * choice text is the record of what you actually said, so it goes in.
+   */
+  var what=String(out.text||'').replace(/\.$/,'');
+  say('With '+nm+', '+moment.scene.replace(/^[A-Z]/,function(c){ return c.toLowerCase(); })+'.','quiet');
+  if(what) say('You went with: '+what+'.','quiet');
+
+  var moved=Math.round(out.gain||0);
+  var dir=moved>=6?(nm+' warms to you.')
+    :moved>0?(nm+' takes it well enough.')
+    :moved===0?(nm+' gives you nothing back.')
+    :(nm+' does not like it.');
+  if(out.kind==='safe') say('Nothing you could have got wrong. '+dir);
+  else if(out.kind==='neutral') say(out.landed?('It lands. '+dir)
+    :('It does not quite land. '+dir),out.landed?'':'quiet');
+  else say(out.landed?('You get away with it. '+dir)
+    :('You do not get away with it. '+nm+' will remember you tried.'),
+    out.landed?'ev-good':'hot');
+  if(out.read) lines.push(nm+' now reads '+out.read.band.label.toLowerCase()+' on you.');
 
   for(var i=0;i<out.fx.length;i++){
     var f=out.fx[i], line=null, weighty=false;
-    if(f.k==='ally'){ line='You and '+nm+' have something now.'; weighty=true;
-      say(line,'ev-good','alliance'); }
-    else if(f.k==='ally_declined'){ line=nm+' is not ready to put a name on it.'; say(line,'quiet'); }
-    else if(f.k==='swung'){ line=nm+' says they will vote out '+s.cast[f.target].first+'. You put that there.';
+    if(f.k==='ally'){ line='You and '+nm+' have a room now. It holds as long as both of you want it to.';
+      weighty=true; say(line,'ev-good','alliance'); }
+    else if(f.k==='ally_declined'){ line=nm+' will work with you but will not put a name on it yet.';
+      say(line,'quiet'); }
+    else if(f.k==='swung'){ line='You have moved a vote. '+nm+' says they are voting out '
+      +s.cast[f.target].first+' now, and they were not before.';
       weighty=true; say(line,'ev-vote','vote'); }
-    else if(f.k==='swing_refused'){ line=nm+' is not moving off it, and now they know you tried.';
+    else if(f.k==='swing_refused'){
+      line=nm+' will not move off '+(s.voteIntent[out.target]!=null
+        ? s.cast[s.voteIntent[out.target]].first : 'it')+', and now they know you asked.';
       weighty=true; say(line,'ev-bad','broken'); }
     else if(f.k==='intent'){ line=nm+' says they are voting out '+s.cast[f.target].first+'.'; say(line); }
-    else if(f.k==='info'){ line=nm+' on '+s.cast[f.b].first+': '+f.band.toLowerCase()+'.'; say(line,'quiet'); }
+    else if(f.k==='info'){ line='You get a read out of it. '+nm+' on '+s.cast[f.b].first
+      +': '+f.band.toLowerCase()+'.'; say(line,'','eye'); }
     else if(f.k==='alliance_seen'){
-      line='They are working with '+f.members.map(function(x){return s.cast[x].first;}).join(' and ')+'.';
+      line='You find out there is a room you were not in: '
+        +f.members.map(function(x){return s.cast[x].first;}).join(' and ')+'.';
       weighty=true; say(line,'ev-power','alliance'); }
-    else if(f.k==='heat'){ line=nm+' walks away thinking about '+s.cast[f.who].first+', and not kindly.';
+    else if(f.k==='heat'){ line='You have put '+s.cast[f.who].first+' in their head. '+nm
+      +' walks away thinking about them, and not kindly.';
       weighty=true; say(line,'','threat'); }
-    else if(f.k==='watched'){ line=nm+' is watching you now.'; weighty=true; say(line,'ev-bad','eye'); }
-    else if(f.k==='backfire'){ line='You spent something you are not getting back.'; say(line,'hot'); }
+    else if(f.k==='watched'){ line=nm+' has started watching what you do rather than what you say.';
+      weighty=true; say(line,'ev-bad','eye'); }
+    else if(f.k==='backfire'){ line='That cost you with '+nm+', and you are not getting it back this week.';
+      say(line,'hot'); }
     else if(f.k==='got_back'){ line='It gets back to '+s.cast[f.who].first+' by the evening.';
       weighty=true; say(line,'ev-bad','broken'); }
     if(line){ lines.push(line); if(weighty) big.push(line); }
   }
-  if(out.read) say(nm+' reads '+out.read.band.label.toLowerCase()+' on you.','quiet');
+  if(out.read) say(nm+' now reads '+out.read.band.label.toLowerCase()+' on you'
+    +(out.read.freshness==='current'?', and that is fresh.':'.'),'quiet');
 
   /* Handed back so the caller can stop the screen. A pleasant chat that nudged
      trust does not deserve a card; a vote you moved does. */
@@ -2070,9 +2217,9 @@ function showPowerSafety(need){
     body:[h.blurb,h.long,{t:'Names go up next. Once they are up this is worth nothing.',c:'q'}],
     choices:[
       {label:'Play it',cls:'go',note:'You cannot be named this week.',go:function(){
-        say('You take yourself off the table.'); R.step(s,{play:true}); pump(); }},
+        say('You take yourself off the table.'); answer({play:true}); }},
       {label:'Sit on it',note:'Worth nothing after the naming.',go:function(){
-        R.step(s,{play:false}); pump(); }}
+        answer({play:false}); }}
     ]});
 }
 
@@ -2083,8 +2230,8 @@ function showPowerVetoPick(need){
     body:[h.long,{t:'Whoever you choose, everybody sees you choose them.',c:'q'}],
     pick:{pool:need.pool,go:function(id){
       say('You put '+s.cast[id].first+' in the Veto Comp. Everyone saw.');
-      R.step(s,{pick:id}); pump(); }},
-    foot:{label:'Do not use it',go:function(){ R.step(s,{pick:null}); pump(); }}});
+      answer({pick:id}); }},
+    foot:{label:'Do not use it',go:function(){ answer({pick:null}); }}});
 }
 
 function showPowerDiamond(need){
@@ -2098,9 +2245,9 @@ function showPowerDiamond(need){
       pick:{pool:save==null?need.atRisk:need.pool,selected:save!=null?[save]:[],go:function(id){
         if(save==null){ save=id; paint(); return; }
         say('You take '+s.cast[save].first+' off and put '+s.cast[id].first+' up. Everybody knows it was you.','hot');
-        R.step(s,{diamond:true,save:save,replace:id}); pump();
+        answer({diamond:true,save:save,replace:id});
       }},
-      foot:{label:'Do not use it',go:function(){ R.step(s,{diamond:false}); pump(); }}});
+      foot:{label:'Do not use it',go:function(){ answer({diamond:false}); }}});
   }
   paint();
 }
@@ -2112,8 +2259,8 @@ function showPowerExtraVote(need){
     body:[h.long,{t:'The count comes back one higher than the house expects. Nobody can prove it was you, because nobody can prove anything about an anonymous vote.',c:'q'}],
     faces:need.atRisk.map(function(i){ return {id:i,tag:'At Risk',col:COL.signal}; }),
     choices:[
-      {label:'Play it',cls:'go',go:function(){ say('You put two in.'); R.step(s,{extraVote:true}); pump(); }},
-      {label:'Keep it',go:function(){ R.step(s,{extraVote:false}); pump(); }}
+      {label:'Play it',cls:'go',go:function(){ say('You put two in.'); answer({extraVote:true}); }},
+      {label:'Keep it',go:function(){ answer({extraVote:false}); }}
     ]});
 }
 
@@ -2140,12 +2287,13 @@ function showComp(need){
        go:function(){
          say(tsay('throwing'),'quiet');
          if(streak>=2) say(tsay('throwSuspicion'),'hot');
-         R.step(s,{throw:true}); pump();
+         answer({throw:true});
        }}
     ]});
 
   function runComp(comp){
     screen='comp';
+    app.className='scroll';
     app.innerHTML=topbar()
       +'<div class="file"><h2>'+esc(which)+': '+esc(comp.name)+'</h2>'
       +'<div class="sub">'+esc(comp.blurb)+'</div></div>'
@@ -2153,7 +2301,7 @@ function showComp(need){
     bar.className='bar hide'; barin.innerHTML='';
     startMinigame(comp,function(perf){
       say('You finish the '+comp.name+'.','quiet');
-      screen='phase'; R.step(s,{perf:perf}); pump();
+      screen='phase'; answer({perf:perf});
     });
   }
 }
@@ -2487,6 +2635,7 @@ function showVoteReveal(){
   var i=0, timer=null;
 
   function paint(reveal){
+    app.className='scroll';
     app.innerHTML=topbar()
       +'<div class="file"><h2>The vote</h2><div class="sub">'+esc(STR.S.voteOpen[0])+'</div>'
       +'<div class="tallywrap">'+atRisk.map(function(id){
@@ -2527,7 +2676,7 @@ function showVoteReveal(){
       paint(true);
       say(res.evicted===s.human?tsay('evictedYou'):tsay('evicted',{name:s.cast[res.evicted].name}),'ev-bad','out');
       dock({label:'Live with it',go:function(){
-        screen='phase'; R.step(s,null); saveRun(); pump(); }});
+        screen='phase'; answer(null); }});
       return;
     }
     counts[order[i].target]++;
@@ -2558,6 +2707,7 @@ function finishRun(){
 }
 
 function renderRecap(){
+  app.className='scroll';
   var rec=RC.build(s);
   var me=s.cast[s.human];
 
@@ -2627,6 +2777,7 @@ function renderRecap(){
 }
 
 function renderResults(){
+  app.className='scroll';
   var res=s.result, me=s.cast[s.human];
   var jurors=res.detail.map(function(d){
     return '<tr><td>'+esc(s.cast[d.juror].name)+'</td><td>'+esc(s.cast[d.voted].first)+'</td></tr>';
