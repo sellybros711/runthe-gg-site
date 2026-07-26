@@ -63,7 +63,10 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
 .cell.you{outline:1px solid var(--paper);outline-offset:-1px}
 .cell button.pick{position:absolute;inset:0;width:100%;height:100%;z-index:2}
 .cam{aspect-ratio:1/1;background:#000;border:1px solid var(--line);overflow:hidden;position:relative}
-.cam svg{display:block;width:100%;height:100%}
+.cam img.pxa,.cam svg{display:block;width:100%;height:100%}
+/* Never resample. The whole point of drawing at 32 square is that it stays at
+   32 square and the browser only decides how big each of those pixels is. */
+.pxa{image-rendering:pixelated;image-rendering:crisp-edges;display:block}
 .cam .rec{position:absolute;top:4px;right:5px;width:5px;height:5px;border-radius:50%;
   background:var(--signal);opacity:.85}
 .cell.gone .cam .rec{display:none}
@@ -174,7 +177,7 @@ input:focus,select:focus{outline:none;border-color:var(--hand)}
 .tcol{text-align:center;min-width:132px}
 .tface{width:96px;height:96px;margin:0 auto 8px;border:2px solid var(--line);background:#000;
   transition:border-color .3s}
-.tface svg{display:block;width:100%;height:100%}
+.tface img.pxa,.tface svg{display:block;width:100%;height:100%}
 .tcol.out .tface{box-shadow:0 0 0 4px rgba(212,64,44,.18)}
 .tband{font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
 .tcol .who{font-family:var(--disp);font-size:17px;color:var(--paper);letter-spacing:.06em}
@@ -364,6 +367,7 @@ table.truth td.r{text-align:right;color:var(--dim)}
 <script src="scenes.js"></script>
 <script src="run.js"></script>
 <script src="recap.js"></script>
+<script src="avatar.js"></script>
 <script src="ui.js"></script>
 <script src="strings.js"></script>
 <script>
@@ -371,7 +375,7 @@ table.truth td.r{text-align:right;color:var(--dim)}
 'use strict';
 var RNG=window.RH_RNG, T=window.RH_TREE, G=window.RH_GEN, E=window.RH_ENGINE,
     C=window.RH_COMPS, R=window.RH_RUN, STR=window.RH_STRINGS,
-    PW=window.RH_POWERS, SC=window.RH_SCENES, RC=window.RH_RECAP, U=window.RH_UI;
+    PW=window.RH_POWERS, SC=window.RH_SCENES, RC=window.RH_RECAP, U=window.RH_UI, AV=window.RH_AVATAR;
 
 var app=document.getElementById('app');
 var bar=document.getElementById('bar');
@@ -401,32 +405,7 @@ function hasRun(){ try{ return !!localStorage.getItem(SAVE); }catch(e){ return f
    (GDD §17). Two tones, hard edges, framed like a still off a camera that has
    been running for six weeks and is not being watched by anyone. */
 function avatar(p,size){
-  var r=RNG.mulberry32(RNG.hashSeed('av'+p.avatarSeed)());
-  var head=Math.floor(r()*3), hair=Math.floor(r()*5), acc=Math.floor(r()*4);
-  var hue=['#8d9299','#7d868e','#98938a','#8a8f95','#939089'][Math.floor(r()*5)];
-  var lit='#1a1d21';
-  var eyeY=52, eyeSp=9+Math.floor(r()*5);
-  var o='';
-  o+='<rect width="100" height="100" fill="#0c0e10"/>';
-  o+='<rect x="0" y="'+(64+Math.floor(r()*8))+'" width="100" height="40" fill="'+lit+'"/>';
-  // shoulders
-  o+='<path d="M14 100 Q22 '+(74+Math.floor(r()*6))+' 50 '+(72+Math.floor(r()*5))+' Q78 74 86 100 Z" fill="'+hue+'" opacity=".5"/>';
-  // head silhouette, three forms
-  if(head===0) o+='<rect x="33" y="26" width="34" height="44" rx="4" fill="'+hue+'"/>';
-  else if(head===1) o+='<ellipse cx="50" cy="47" rx="18" ry="23" fill="'+hue+'"/>';
-  else o+='<path d="M32 44 Q32 25 50 25 Q68 25 68 44 L66 62 Q58 71 50 71 Q42 71 34 62 Z" fill="'+hue+'"/>';
-  // hair mass
-  if(hair===0) o+='<path d="M30 44 Q30 20 50 20 Q70 20 70 44 L70 34 Q50 27 30 34 Z" fill="#101315"/>';
-  else if(hair===1) o+='<rect x="30" y="22" width="40" height="13" fill="#101315"/>';
-  else if(hair===2) o+='<path d="M29 46 Q28 21 50 21 Q72 21 71 46 L67 46 Q66 31 50 31 Q34 31 33 46 Z" fill="#101315"/>';
-  else if(hair===3) o+='<path d="M30 38 Q40 18 62 24 L70 40 L66 40 Q56 28 34 40 Z" fill="#101315"/>';
-  // eyes: two marks, nothing more. Faces read colder without mouths.
-  o+='<rect x="'+(50-eyeSp-3)+'" y="'+eyeY+'" width="5" height="2" fill="#0a0b0c"/>';
-  o+='<rect x="'+(50+eyeSp-2)+'" y="'+eyeY+'" width="5" height="2" fill="#0a0b0c"/>';
-  if(acc===0) o+='<rect x="'+(50-eyeSp-6)+'" y="'+(eyeY-4)+'" width="'+(2*eyeSp+12)+'" height="9" fill="none" stroke="#0a0b0c" stroke-width="1.5" opacity=".8"/>';
-  if(acc===1) o+='<rect x="34" y="'+(26+Math.floor(r()*4))+'" width="32" height="6" fill="#0f1214"/>';
-  o+='<rect x="0" y="0" width="100" height="100" fill="none" stroke="#000" stroke-width="6"/>';
-  return '<svg viewBox="0 0 100 100" width="'+(size||100)+'" height="'+(size||100)+'" aria-hidden="true">'+o+'</svg>';
+  return AV.img(p.avatarSeed,size||96);
 }
 
 // ── feed ───────────────────────────────────────────────────────────────────
