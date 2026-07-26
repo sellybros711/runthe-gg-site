@@ -602,7 +602,7 @@ tighter. Below that the facemask is the first thing to go to smudge.
 |---|---|
 | favicon 16 and 32 | the **four pieces only**, facemask dropped |
 | favicon 48, apple-touch-icon 180, manifest 192 and 512 | the full mark on the `#111827` plate |
-| maskable 512 | the full mark at 66%, so Android's crop to the middle 80% keeps all of it |
+| maskable 512 | the full mark at 59%, the widest that survives Android's crop to the middle 80% |
 | the share card | the full mark at 214px, top right |
 | the banner, top left | the **four pieces only** at 30px, as `mark.png` |
 
@@ -653,6 +653,47 @@ wider font later clips the pill instead of shoving the account button off screen
 image can get wrong: that it decodes at all, that it is the first child, that `width` and
 `height` reserve its box before it arrives, that `alt` is empty because the wordmark beside
 it already names the brand, and that it cannot shrink when the header gets tight.
+
+### The icons were off centre, and every check passed anyway
+
+Reported off a photo of the real home screen. The mark sat high on its plate: on the 180
+there were **11px above it and 41px below**. It was in every plate icon, and in `logo.png`,
+where the ink was flush against the top edge with 97px below it.
+
+The cause is upstream. `logo-source.png` is itself off centre on its own 1024 canvas, ink
+running y 142 to 808, and the build cropped by the canvas instead of by the ink, so the
+source's offset went into everything downstream untouched. Only the vertical was wrong;
+horizontally the plate icons were already symmetric.
+
+Now centred on the ink box, facemask included. **Centring the centre of mass was tried and
+rejected**: the mass sits almost exactly on the puzzle circle, because the facemask is a thin
+appendage and the circle is the heavy shape, so matching the mass to the plate centre slid
+the whole drawing right and pushed the facemask off the plate edge. Rendering the three
+options under the squircle iOS actually applies made that obvious in a way the numbers did
+not. Each file kept the ink width it already had, so nothing was resized and no earlier
+judgement was revisited.
+
+The maskable one stays at 301px of ink, which is not the 66% the note above once claimed but
+what geometry allows: a 512 icon's guaranteed circle is 410 across, the ink's aspect gives a
+994 diagonal, so the widest ink that survives the crop is 410 x 737/994, or 304. Measured at
+0 pixels outside the circle.
+
+`og.png` had to be re-rendered, because the card draws `logo.png` and inherited its offset.
+
+**Why nothing caught this.** Every icon was present, the right format and the right pixel
+size, so the whole suite was green while the home screen was visibly wrong. Position was
+simply never checked. `v49.mjs` now decodes each icon and measures where the ink sits,
+allowing one pixel of slack because odd ink in an even canvas cannot land dead centre. The
+plate is opaque so alpha finds nothing on its own: pixels matching the plate colour are
+ignored. It also asserts the maskable loses nothing to the middle-80% crop, and that the
+share card is dark, because a white 404 page screenshotted at 1200x630 passes a size check.
+Confirmed against the old file: the new assertion fails it at `dy=-15`.
+
+The renderer had that exact 404 trap in it. `ogshot.mjs` pointed at a `scratch-og.html` in
+the repo root that no longer exists, and reported success after screenshotting the error
+page. It now renders `football/og-source.html`, refuses to continue if the source or any
+asset 404s, waits for the mark to decode rather than screenshotting a hole, and prints the
+mean brightness.
 
 The baked drop shadow is a non-issue here: it disappears against `#080b14`.
 
