@@ -63,6 +63,17 @@
     "availability": "https://schema.org/InStock" }
 }
 </script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "RunThe.GG", "item": "https://runthe.gg/" },
+    { "@type": "ListItem", "position": 2, "name": "The Perfect Season",
+      "item": "https://runthe.gg/football/" }
+  ]
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=Oswald:wght@500;600;700&family=Chivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
@@ -1100,6 +1111,29 @@
 </style>
 </head>
 <body>
+<!-- FOR A CLIENT THAT DOES NOT RUN THE SCRIPT.
+     Every screen in this game is `.screen{display:none}` until the data lands and
+     show() turns one on, so the real <h1> is inside a hidden container on first paint.
+     Google renders JavaScript and will see it; plenty of other crawlers, previewers and
+     text browsers will not, and neither will somebody with scripting off, who currently
+     got a blank dark page with no explanation. Same pattern as the golf game. -->
+<noscript>
+<main style="max-width:640px;margin:0 auto;padding:24px;font-family:system-ui,sans-serif;
+  color:#eef2f9;background:#080b14">
+<h1>The Perfect Season: Free NFL Roster Draft Game</h1>
+<p>Spin a wheel for a year and an NFL team, sign one player off each of six draws, and
+build a roster out of every season from 1999 to 2025 under a $140M salary cap.</p>
+<p>Then play all 17 games against a real schedule and chase a perfect season. Every
+player is priced and scored from his actual week by week statistics. There is a daily
+challenge where everybody gets the same six draws, and a leaderboard for the day, the
+week and all time. Free, no download, playable in your browser.</p>
+<p><strong>This game needs JavaScript to play.</strong> Please turn it on and reload.</p>
+<p>Stats, scores and coaches from nflverse and nfldata. An unofficial fan project, not
+affiliated with or endorsed by the NFL, the NFLPA or any club.
+<a href="/privacy.html" style="color:#93c5fd">Privacy</a> &middot;
+<a href="/terms.html" style="color:#93c5fd">Terms</a></p>
+</main>
+</noscript>
 <div class="wrap">
   <header>
     <div class="brand">RunThe<i>.GG</i></div>

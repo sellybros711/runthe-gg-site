@@ -1608,10 +1608,17 @@ most expensive omission on the page.
 | no canonical | `https://runthe.gg/football/` |
 | no `og:url`, `og:site_name`, `og:locale` | all three, `og:url` matching canonical |
 | no Twitter card | `summary_large_image` |
-| no structured data | `VideoGame` with a free offer |
+| no structured data | `VideoGame` with a free offer, plus `BreadcrumbList` |
 | no `apple-touch-icon` | 180x180 PNG |
 | title 30 chars, brand first | 58 chars, searched words first |
 | description 103 chars | 150, inside the window Google shows |
+
+**A `<noscript>` hero, too.** Every screen is `display:none` until the data lands and
+`show()` turns one on, so the real `<h1>` sits inside a hidden container on first paint.
+Google renders JavaScript and will find it; other crawlers, link previewers and text
+browsers will not, and somebody with scripting off got a blank dark page with no
+explanation at all. There is a static block with the H1, the pitch, the credit and the
+legal links now, matching what the golf page carries.
 
 The share image is built from `og-source.html` by rendering it at 1200x630, and it is
 deliberately drawn in the game's own type, position colors and field, with **no
