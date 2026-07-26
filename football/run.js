@@ -476,8 +476,10 @@ function advanceWeek(run, data, leagueContext, displayCal) {
   }
 
   const playoff = run.phase === PHASES.PLAYOFFS;
+  /* End-aligned, via the engine's own helper. Indexing this list from the front would let a
+     first-round bye skip the Super Bowl opponent, which is backwards. */
   const oppId = playoff
-    ? run.playoffs[s.playoffRound % run.playoffs.length]
+    ? E.playoffOpponent(run.playoffs, run.playoffSeed.rounds, s.playoffRound)
     : run.schedule[s.week];
   const opp = data.byTeamSeasonId[oppId];
   const rng = rngFor(run);
@@ -564,6 +566,10 @@ function indexData(players, teamSeasons) {
   }
   const byTeamSeasonId = {};
   for (const t of teamSeasons) byTeamSeasonId[t.team_season_id] = t;
+  /* The 1972 Dolphins are not in the data files, because the dataset starts in 1999. They
+     are the Super Bowl opponent, so the lookup every screen uses has to resolve them or the
+     final would render with a blank opponent name. */
+  for (const t of E.LEGEND_TEAM_SEASONS) byTeamSeasonId[t.team_season_id] ??= t;
 
   /* The three reverse indexes that used to live here, team-seasons by franchise, by
      college and by draft class, existed only to find a team connected to somebody

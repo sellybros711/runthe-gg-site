@@ -2509,7 +2509,7 @@ function paintNext(){
     const o=DATA.byTeamSeasonId[run.schedule[s.week]];
     $('v-round').textContent='Week '+(s.week+1); $('v-opp').textContent=o?o.display:'';
   }else if(run.phase===R.PHASES.PLAYOFFS){
-    const o=DATA.byTeamSeasonId[run.playoffs[s.playoffRound%run.playoffs.length]];
+    const o=DATA.byTeamSeasonId[E.playoffOpponent(run.playoffs,run.playoffSeed.rounds,s.playoffRound)];
     $('v-round').textContent=run.playoffSeed.roundNames[s.playoffRound]||'Playoffs';
     $('v-opp').textContent=o?o.display:'';
   }

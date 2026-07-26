@@ -1017,17 +1017,93 @@ function generateSchedule(franchise, data, rng, opts = {}) {
 }
 
 /** Playoff opponents, weighted toward the strongest quartile. */
+/*
+ * THE TWO NAMED FINALS OPPONENTS.
+ *
+ * The 2007 Patriots are in the data, and they are the single strongest team-season in it:
+ * 36.8 scored and 17.1 allowed a game, strength_z 2.708 against a dataset maximum of 2.71.
+ * Nothing needs inventing for them.
+ *
+ * The 1972 Dolphins are not, because the dataset starts in 1999, so they are carried here as
+ * an explicit historical entry. Their season totals are the famous ones: 14-0, 385 points
+ * scored and 171 allowed over 14 games, which is 27.50 and 12.21 a game.
+ *
+ * Two things about that entry are inferred rather than measured, and both are worth stating
+ * plainly:
+ *
+ *   The per-game standard deviations. No game-level 1972 data is available here, so the
+ *   ratios come from the 40 elite team-seasons that ARE in the data: a median scored-sd of
+ *   0.346 of the mean and allowed-sd of 0.521. Applied to their means, that gives 9.52 and
+ *   6.36.
+ *
+ *   The era adjustment, which is NOT applied. resolveGame divides an opponent's points
+ *   allowed by that season's league average, and there is no 1972 league average in
+ *   league_context.json, so it falls through to the 21.5 default. 1972 was a lower-scoring
+ *   league than that, so their 12.21 allowed was less dominant against their own league than
+ *   the default makes it look. The bias therefore runs one way only: it makes them HARDER
+ *   than a true era adjustment would. For the team you meet in the Super Bowl of a game
+ *   called The Perfect Season, that is the right direction to err, but it is an assumption
+ *   and not a measurement.
+ */
+const LEGEND_IDS = {
+  PATRIOTS_2007: 'NE-2007',
+  DOLPHINS_1972: 'MIA-1972',
+};
+
+const LEGEND_TEAM_SEASONS = [{
+  team_season_id: LEGEND_IDS.DOLPHINS_1972,
+  franchise: 'MIA',
+  season: 1972,
+  display: '1972 Miami Dolphins',
+  division: 'AFC East',
+  games: 14,
+  record: '14-0',
+  pts_scored_mean: 27.50,
+  pts_scored_sd: 9.52,
+  pts_allowed_mean: 12.21,
+  pts_allowed_sd: 6.36,
+  point_diff_pg: 15.29,
+  strength_z: 3.2,
+  legend: true,
+}];
+
 function generatePlayoffs(data, rng, count = CONSTANTS.PLAYOFF_ROUNDS_WILD_CARD) {
-  const pool = data.topQuartile;
-  const out = [];
-  const used = new Set();
-  while (out.length < count) {
-    const g = pool[Math.floor(rng() * pool.length)];
-    if (used.has(g.team_season_id)) continue;
-    used.add(g.team_season_id);
-    out.push(g);
-  }
-  return out;
+  /*
+   * The playoffs escalate. They used to be four random top-quartile teams, so the Super
+   * Bowl was no harder than the Wild Card and the run just stopped when a coin came up
+   * wrong. The ladder now climbs to the two teams that define the thing the game is named
+   * after:
+   *
+   *   Wild Card    a good team
+   *   Divisional   a great team
+   *   Conference   the 2007 Patriots, who went 16-0 and then lost the one that counted
+   *   Super Bowl   the 1972 Dolphins, the only team to finish a season unbeaten
+   *
+   * Built full length and ALWAYS ending at the Dolphins. The round names count back from
+   * the final, so a top seed with a bye plays three rounds and must still finish against
+   * Miami; see playoffOpponent, which is the only thing allowed to index this list.
+   */
+  const ladder = [pickFrom(data.goodPool, rng), pickFrom(data.greatPool, rng),
+    data.byId(LEGEND_IDS.PATRIOTS_2007), data.byId(LEGEND_IDS.DOLPHINS_1972)];
+  return ladder.slice(ladder.length - Math.min(count, ladder.length));
+}
+
+/** One team from a pool, uniformly. */
+function pickFrom(pool, rng) {
+  return pool[Math.floor(rng() * pool.length)];
+}
+
+/**
+ * Which opponent a given playoff round faces.
+ *
+ * The ladder is aligned to the FINAL, not to the first round, because the number of rounds
+ * depends on your seed: 12 wins gets you four rounds, 15 gets a bye and three. Indexing from
+ * the front would mean a bye let you skip the Dolphins, which is exactly backwards. Every
+ * call site goes through here so the alignment cannot drift between them.
+ */
+function playoffOpponent(playoffs, rounds, roundIndex) {
+  const i = playoffs.length - rounds + roundIndex;
+  return playoffs[Math.max(0, Math.min(playoffs.length - 1, i))];
 }
 
 // ─── per-game resolution ─────────────────────────────────────────────────────
@@ -1219,7 +1295,7 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
   if (seed.made) {
     const names = playoffRoundNames(seed.rounds);
     for (let i = 0; i < seed.rounds; i++) {
-      const opp = playoffs[i % playoffs.length];
+      const opp = playoffOpponent(playoffs, seed.rounds, i);
       const won = play(opp, { week: schedule.length + i + 1, playoff: true, round: names[i] });
       if (!won) { exitRound = names[i]; break; }
       if (i === seed.rounds - 1) titleWon = true;
@@ -1255,10 +1331,24 @@ function prepareData(teamSeasons) {
   const eliteThreshold = q(0.90);
   const topQuartile = teamSeasons.filter((t) => t.strength_z >= q(0.75));
 
+  /*
+   * The two rungs below the named teams. "Good" is a solid playoff side and "great" is a
+   * genuine contender, kept apart so the Wild Card and the Divisional round do not feel
+   * like the same game twice.
+   */
+  const goodPool = teamSeasons.filter((t) => t.strength_z >= q(0.65) && t.strength_z < q(0.85));
+  const greatPool = teamSeasons.filter((t) => t.strength_z >= q(0.93));
+
+  const index = {};
+  for (const t of teamSeasons) index[t.team_season_id] = t;
+  for (const t of LEGEND_TEAM_SEASONS) index[t.team_season_id] ??= t;
+
   // A schedule of 17 average opponents sums to ~17 * mean(z) ~ 0.
   const meanZ = zs.reduce((a, b) => a + b, 0) / zs.length;
   return {
-    divisions, byFranchise, eliteThreshold, topQuartile,
+    divisions, byFranchise, eliteThreshold, topQuartile, goodPool, greatPool,
+    legends: LEGEND_TEAM_SEASONS,
+    byId: (id) => index[id],
     meanScheduleStrength: meanZ * 17,
   };
 }
@@ -1304,6 +1394,7 @@ const publicAPI = {
   pairLinks, resolveChemistry,
   buildDivisionMap, opponentFranchises, generateSchedule, generatePlayoffs,
   resolveGame, playRun, prepareData, toFootballScore,
+  playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
   respinCost, respinFees, scoringScript, scoreParts, SCORE_KINDS,
   eraCode, ERA_CODES,
