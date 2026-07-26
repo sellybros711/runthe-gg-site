@@ -541,22 +541,43 @@ player was dying in **weeks two to eight**, at roughly double the rate, while
 actually being safer late. That is backwards. Social threat is a late-game
 phenomenon in this format; being liked early is supposed to be pure upside.
 
-Two defects, both in how the Panel term entered threat:
+The cause was the Panel term. `wSocial` was carefully faded in across the run
+and `TH_PANEL` sat beside it at full weight from the instant the first person
+was evicted, reading an equity that a one person Panel can only answer 0 or 100.
 
-1. **`TH_PANEL` did not ramp.** `wSocial` was carefully faded in across the run
-   and `TH_PANEL` sat beside it at full weight from the instant the first person
-   was evicted. A term worth nothing in week six and thirty percent of the
-   threat score in week seven is a cliff nobody in the house could explain.
-2. **`panelEquity` reported a coin flip as a fact.** A one person Panel can only
-   answer 0 or 100. That got handed to `threatScore` at full weight, so anybody
-   the first juror happened to like read as a maximum jury threat for the rest
-   of that week.
+**THE FIRST DIAGNOSIS OF THIS WAS WRONG AND IS KEPT BECAUSE THE ERROR IS
+INSTRUCTIVE.** The obvious story is a cliff: a term worth nothing in week six
+and thirty percent of the threat score in week seven. That was written down,
+committed, and then measured, and the measurement did not support it. Isolating
+the Panel term's own contribution at a fixed moment, controlling for the fact
+that panel size is a proxy for week number, the **mean was already smooth**
+without any ramp: 5.6 points at one juror rising to 10.9 at five.
 
-Both land hardest on exactly the players the ramp existed to protect, because a
-well-liked player reads high the moment there is anybody to read them against.
-`TH_PANEL_EARLY` fixes the first. `PANEL_PRIOR`, two and a half
-pseudo-observations at even odds, fixes the second: one juror who likes you now
-reads 67 rather than 100, and a full Panel swamps the prior and tells the truth.
+What was actually broken was the **spread**, and who it landed on:
+
+| At one juror | standard deviation | well-liked player | isolated player | gap |
+|---|---|---|---|---|
+| before | 16.30 | +12.21 | +3.19 | **9.01** |
+| after | 3.44 | +8.05 | +5.62 | 2.42 |
+
+A single person's opinion was conjuring a nine point threat penalty out of
+nothing, and conjuring it almost entirely against the well liked, because a
+well liked player draws the 100 reading and an isolated one draws the 0. That
+asymmetry is the mechanism, and no amount of looking at averages would have
+found it.
+
+`TH_PANEL_EARLY` ramps the weight. `PANEL_PRIOR`, two and a half
+pseudo-observations at even odds, fixes the reading: one juror who likes you
+now reads 67 rather than 100, and a full Panel swamps the prior and tells the
+truth. Together they take the spread from 16.3 to 3.4 and the gap from 9.0 to
+2.4.
+
+The lesson, which is a sharper version of the one in §15: **a defect can be in
+the variance of a term rather than in its mean, and comparing averages will
+report it as absent.** The first pass compared mean threat by panel size, saw a
+step, and attributed it to the ramp. Panel size is a proxy for week number, so
+the step was mostly comp wins accumulating. Controlling for that made the mean
+difference vanish and the real defect visible.
 
 That removed the dip. `COVER_SOCIAL` from 0.35 to 0.45 supplied the slope:
 measured at 700 runs a setting, 0.35 gives +0.3pp from none to +8 (flat, inside
@@ -1345,10 +1366,14 @@ Version 0.1 said there were none. There were about thirty. These are what is lef
    kept because the diagnosis was worth more than the fix. The obvious channels
    (nominated more, evicted more when nominated) were both flat and explained
    none of it; a per-week hazard curve found the damage in weeks two to eight,
-   caused by the Panel term entering threat at full weight from the first
-   eviction and by a one person Panel reporting a coin flip as a fact. What is
-   still open is whether the same class of defect is hiding elsewhere: no other
-   ramped term in `threatScore` has been checked for a cliff at its boundary.
+   caused by a one person Panel reporting a coin flip as a fact at full weight.
+   The first write-up of the cause was ALSO wrong, called it a cliff in the
+   mean, and had to be corrected against a controlled measurement: see §7.9.
+   The rest of `threatScore` has since been audited the same way and the other
+   terms are clean, `compPercentile` guards its own small sample and
+   `panelThreat` was already ramped. What stays open is the general form: no
+   term in this engine is checked for pathological VARIANCE at a boundary, only
+   for its mean, and the one that was checked turned out to be broken.
 9. **Skill is currently a mild liability.** `--skill` shows that the better a
    player's hands, the more comps they win and the worse they finish, because
    power paints you. The weight is set at 0.45 to keep that from becoming a tax,
