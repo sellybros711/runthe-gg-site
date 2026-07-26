@@ -742,7 +742,21 @@
   .tierdot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
   .tierdot.big{background:#fbbf24} .tierdot.good{background:#22c55e}
   .tierdot.small{background:#38bdf8} .tierdot.bad{background:#ef4444}
-  .chip{position:absolute;transform:translate(-50%,-50%);width:62px;text-align:center;cursor:pointer}
+  /* THE DISC IS ANCHORED TO THE SPOT, NOT THE BOX.
+     This was translate(-50%,-50%), which centres the whole chip on its point. The chip grows
+     taller the moment a player signs, because a name and a team line appear under the disc, so
+     centring the box moved the DISC up by half the label height: the top-row receivers ended up
+     half outside the field. Offsetting by the disc's own radius instead pins the disc to the
+     spot and lets the label hang below it, which is what a signing should look like.
+     --discr is the radius, declared once so the transform and the flip below agree. */
+  .chip{--discr:17px;position:absolute;transform:translate(-50%,calc(-1 * var(--discr)));
+    display:flex;flex-direction:column;width:62px;text-align:center;cursor:pointer}
+  /* THE LOW SPOTS PUT THEIR LABEL ABOVE THE DISC.
+     A short field has no room under the bottom chip, and the field clips its overflow, so the
+     running back's name was being cut off. The disc still does not move: the box is offset by
+     its own height instead, so the label lands above the disc and the disc stays on its spot. */
+  .chip.above{flex-direction:column-reverse;
+    transform:translate(-50%,calc(-100% + var(--discr)))}
   .chip .disc{width:34px;height:34px;margin:0 auto;border-radius:50%;display:grid;place-items:center;
     font-family:var(--fn);font-size:11px;color:#fff;border:2px solid rgba(255,255,255,.22);
     box-shadow:0 5px 12px -4px rgba(0,0,0,.8)}
@@ -760,6 +774,9 @@
   /* Wider than the 62px chip and pulled back into center, so a name like
      Roethlisberger fits instead of being cut, and 2px of air keeps its
      descenders off the season below. */
+  /* Name and team in one block, so reversing the column for a low chip moves the pair as a
+     unit rather than putting the year above the name. */
+  .chip .lab{display:block}
   .chip .who{width:78px;margin:3px 0 2px -8px;font-size:9.5px;font-weight:800;line-height:1.1;
     text-shadow:0 2px 6px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .chip .yr{font-size:8.5px;color:var(--dim);font-weight:700;line-height:1.1}
@@ -767,8 +784,27 @@
      picks the team out first, since that is the part you are pattern-matching for chemistry. */
   .chip .yr .tc{color:var(--dim-2);letter-spacing:.04em}
 
-  .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 11px;margin:-4px 0 12px;
-    background:linear-gradient(180deg,var(--bg) 72%,rgba(8,11,20,0))}
+  /* The fade used to start at 72%, which was fine when the bar ended just under the money
+     figure. The lineup pips sit at the bottom of it now, and the year reel was showing straight
+     through them, so the solid part runs to 92% and only the last few pixels feather. */
+  .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 9px;margin:-4px 0 12px;
+    background:linear-gradient(180deg,var(--bg) 92%,rgba(8,11,20,0))}
+  /* THE LINEUP PIPS, in the sticky bar, fading in as the field scrolls off.
+     --sq runs 0 to 1 with how much of the field has gone. The height is RESERVED at every
+     value and only opacity moves: growing a sticky block as they appear would shift the page
+     under the finger, which is the same class of bug as trying to collapse the block itself. */
+  #s-draft{--sq:0}
+  .dpips{display:flex;gap:5px;justify-content:center;height:24px;align-items:center;
+    margin-top:8px;opacity:var(--sq);pointer-events:none;position:relative}
+  /* A hairline under the bar, fading in with the pips, so the pinned header has an edge once
+     content is scrolling behind it. Without one the pips float over the reels. */
+  .capwrap:after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
+    background:var(--line);opacity:var(--sq)}
+  .dpips i{flex:0 0 auto;min-width:27px;height:22px;padding:0 5px;border-radius:7px;
+    display:grid;place-items:center;font-family:var(--fn);font-size:9.5px;font-weight:600;
+    letter-spacing:.04em;font-style:normal;background:rgba(255,255,255,.05);
+    border:1px dashed var(--line-2);color:var(--dim-2)}
+  .dpips i.on{border-style:solid;border-color:transparent;color:#fff}
   .capline{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
   .capline .amt{font-family:var(--fd);font-size:32px;line-height:1}
   .capline .amt.low{color:var(--red)}
@@ -1409,7 +1445,16 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
       <div class="bar"><i id="c-bar" style="width:100%"></i></div>
       <div class="note" id="c-note" style="display:none"></div>
-      <div class="field" id="field" style="margin-top:10px"></div>
+      <!-- THE LINEUP, once the field has scrolled off. Height is reserved at every scroll
+           position and only the opacity changes, because growing a sticky block when they
+           appear would shift the page under the finger. -->
+      <div class="dpips" id="d-pips" aria-hidden="true"></div>
+    </div>
+    <!-- OUTSIDE .capwrap, which is position:sticky. That is the whole reason the field sat at
+         the top of the screen forever: nothing inside a pinned block can scroll out of view.
+         Out here it scrolls away like anything else and gives the space back for real. -->
+    <div class="dfold" id="d-fold">
+      <div class="field" id="field"></div>
       <div class="rail" id="rail1"></div>
       <p class="railnote"></p>
     </div>
@@ -1862,7 +1907,7 @@ function fieldState(el){
   el.innerHTML='<div class="lines"></div><div class="hash"></div><div class="ez t"></div><div class="ez b"></div>'+
     E.SLOTS.map((slot,i)=>'<div class="chip empty" data-i="'+i+'">'+
       '<div class="disc"><span class="dl">'+slot+'</span><i class="pip"></i></div>'+
-      '<div class="who"></div><div class="yr"></div></div>').join('');
+      '<div class="lab"><div class="who"></div><div class="yr"></div></div></div>').join('');
   el._ps={
     chips:[...el.querySelectorAll('.chip')],
     coords:SPOT_FALLBACK.map(c=>({...c})),
@@ -1884,6 +1929,9 @@ function drawField(el,live){
   const openCount=E.SLOTS.length-(run?run.roster.length:0);
 
   // The sticky bar's pips are the same six slots, so they are drawn from the same data.
+  // The sticky bar's pips are the same six slots, so they come off the same data.
+  if(el.id==='field'){ drawPips(bySlot); watchFold(); }
+
   // Contents update immediately; only the movement is animated.
   st.chips.forEach((c,i)=>{
     const p=bySlot[i];
@@ -1915,8 +1963,17 @@ function drawField(el,live){
     }else{ pip.style.display='none'; }
   });
 
+  /* Same flip as the landing field: a chip low enough that its label would fall outside the
+     field puts the label above the disc instead. The disc itself never moves, which is the
+     whole point; the field clips its overflow, so a label that hangs past the bottom is simply
+     cut off. Applied here rather than in CSS because the threshold is about the SPOT, and the
+     spots move as the formation rearranges. */
+  const FLIP_BELOW=62;
   const paint=(coords)=>{
-    st.chips.forEach((c,i)=>{ c.style.left=coords[i].x+'%'; c.style.top=coords[i].y+'%'; });
+    st.chips.forEach((c,i)=>{
+      c.style.left=coords[i].x+'%'; c.style.top=coords[i].y+'%';
+      c.classList.toggle('above',coords[i].y>FLIP_BELOW);
+    });
   };
 
   const from=st.coords.map(c=>({...c}));
@@ -3305,37 +3362,24 @@ function heroFaces(){
 function heroChips(){
   const f=$('h-field');
   f.querySelectorAll('.chip').forEach(c=>c.remove());
-  /* VERTICAL POSITIONS ARE MAPPED INTO A SAFE BAND, not used as raw percentages.
-     A filled chip carries a name and a team line UNDER its disc, so the space it needs is
-     the disc radius plus about 24px of label. On a short field a spot at 82% has nowhere to
-     put that and the field's own overflow:hidden cuts the running back's name off: measured
-     at 10px on a 360x640 phone and 13px in landscape.
-
-     Percentages cannot express "leave room for the label", because the label is a fixed
-     number of pixels and the field is not. So the spots' 24-to-82% spread is squeezed into
-     whatever band actually fits the field as rendered. On a tall field the band is nearly the
-     whole height and nothing moves; on a short one everything gathers toward the middle,
-     which is the right failure. */
-  const H=f.getBoundingClientRect().height||1;
-  const DISC=17, LABEL=24;
-  const tops=HERO_SPOTS.map(sp=>sp.top);
-  const lo=Math.min(...tops), hi=Math.max(...tops);
-  const safeLo=DISC, safeHi=Math.max(safeLo, H-DISC-LABEL);
-  const place=(top)=>hi>lo
-    ? safeLo+((top-lo)/(hi-lo))*(safeHi-safeLo)
-    : (safeLo+safeHi)/2;
-
+  /* Spots are used exactly as designed. An earlier version squeezed them into a "safe band"
+     computed from the field's height so labels always fit, and that was the wrong trade: it
+     moved every bubble, and pushed the top row hard against the field's edge. Nothing moves
+     now; the chips whose label would not fit below flip it above instead. */
+  const FLIP_BELOW=62;   // percent down the field, past which the label goes above the disc
   HERO_SPOTS.forEach((sp,i)=>{
     const on=heroFilled.find(x=>x.at===i);
     const el=document.createElement('div');
-    el.className='chip '+(on?'filled':'empty')+(on&&on.fresh?' pop':'');
-    el.style.left=sp.left+'%'; el.style.top=place(sp.top)+'px';
+    el.className='chip '+(on?'filled':'empty')+(on&&on.fresh?' pop':'')+
+      (sp.top>FLIP_BELOW?' above':'');
+    el.style.left=sp.left+'%'; el.style.top=sp.top+'%';
     const style=on?' style="background:linear-gradient(160deg,var(--'+on.pos.toLowerCase()+
       '),rgba(0,0,0,.45))"':'';
     el.innerHTML='<div class="disc"'+style+'><span class="dl">'+(on?on.pos:sp.label)+
-      '</span></div>'+(on?'<div class="who">'+esc(on.last)+'</div><div class="yr">'+
+      '</span></div>'+(on?'<div class="lab"><div class="who">'+esc(on.last)+
+      '</div><div class="yr">'+
       '<span class="tc">'+esc(E.eraCode(on.fr,on.season))+'</span> '+on.season+
-      '</div>':'');
+      '</div></div>':'');
     f.appendChild(el);
     if(on) on.fresh=false;
   });
@@ -4275,6 +4319,43 @@ $('b-how').onclick=howToPlay;
    is how a scroll goes from smooth to sticky on a phone. The natural height is measured and
    cached in --dfh rather than read every frame, for the same reason: reading it back after
    writing max-height would force a layout on each frame. */
+/* WHEN THE PIPS COME UP.
+   Driven by how much of the field is still on screen, via IntersectionObserver rather than a
+   scroll handler doing arithmetic: the browser computes the ratio off the main thread, so it
+   costs nothing per frame, and it cannot feed back into layout the way a scroll-linked height
+   did. The threshold list is what makes it continuous instead of a snap at one line.
+
+   The field has to be OUTSIDE .capwrap for any of this to mean anything. Inside a
+   position:sticky block it never leaves the viewport, so the ratio never moves. */
+let foldObs=null;
+function watchFold(){
+  const f=$('d-fold'), scr=$('s-draft');
+  if(!f||!scr) return;
+  if(typeof IntersectionObserver!=='function'){ scr.style.setProperty('--sq','0'); return; }
+  if(foldObs) foldObs.disconnect();
+  foldObs=new IntersectionObserver((entries)=>{
+    for(const e of entries){
+      /* Fully in view is no pips, fully gone is all of them. The 1.4 gets them to full opacity
+         a little before the field has completely left, so the two states overlap rather than
+         handing over at exactly the same instant. */
+      const sq=Math.max(0,Math.min(1,(1-e.intersectionRatio)*1.4));
+      scr.style.setProperty('--sq',sq.toFixed(3));
+    }
+  },{threshold:Array.from({length:21},(_,i)=>i/20)});
+  foldObs.observe(f);
+}
+
+/* The same six slots the field shows, in the same order, drawn from the same data, so the
+   sticky bar carries the lineup once the field is gone. */
+function drawPips(bySlot){
+  const el=$('d-pips'); if(!el) return;
+  el.innerHTML=E.SLOTS.map((slot,i)=>{
+    const p=bySlot[i];
+    return '<i class="'+(p?'on':'')+'"'+(p?' style="'+posPaint(p.position)+'"':'')+'>'+
+      esc(p?lastName(p.name):slot)+'</i>';
+  }).join('');
+}
+
 /* The results page tabs. Delegated, so it survives every repaint, and the panes are shown by
    display so a hidden one costs no page height. */
 $('o-tabs').addEventListener('click',(e)=>{
