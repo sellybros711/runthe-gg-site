@@ -155,6 +155,9 @@ const TUNE = {
   CAM_DIST: 10.5, CAM_HEIGHT: 5.4, CAM_LOOKAHEAD: 5, CAM_LERP: 5.5,
   LOOSE_CAM_DIST: 17, LOOSE_CAM_HEIGHT: 15, LOOSE_CAM_LERP: 3.4,
 
+  // ---- JUICE ----
+  SLOWMO: 0.5,              // time scale while a truck-timing window is live (drama + reaction time)
+
   // ---- FIELD ----
   FIELD_LENGTH: 120, FIELD_WIDTH: 50, ENDZONE: 7,
 };
@@ -256,6 +259,81 @@ function teamPlayers(t){ return PL.filter(p=>p.userData.team===t); }
 function nearestOfTeam(t,pt,skip){ let b=-1,bd=1e9; for(let i=0;i<PL.length;i++){ if(PL[i].userData.team!==t||i===skip)continue;
   const d=Math.hypot(PL[i].position.x-pt.x,PL[i].position.z-pt.z); if(d<bd){bd=d;b=i;} } return b; }
 
+/* ---------------- audio (synthesized — no assets, no network) ---------------- */
+const SND={ ctx:null, master:null, crowdGain:null, on:true };
+function audioInit(){
+  if(SND.ctx) return;
+  const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+  const ctx=new AC(); SND.ctx=ctx;
+  const master=ctx.createGain(); master.gain.value=0.85; master.connect(ctx.destination); SND.master=master;
+  // crowd bed: smoothed noise through a bandpass, low and steady, swelling on big plays
+  const buf=ctx.createBuffer(1, ctx.sampleRate*2|0, ctx.sampleRate), d=buf.getChannelData(0);
+  let last=0; for(let i=0;i<d.length;i++){ const w=Math.random()*2-1; last=(last+0.02*w)/1.02; d[i]=last*3.2; }
+  const src=ctx.createBufferSource(); src.buffer=buf; src.loop=true;
+  const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=600; bp.Q.value=0.6;
+  const cg=ctx.createGain(); cg.gain.value=0.10; src.connect(bp); bp.connect(cg); cg.connect(master); src.start();
+  SND.crowdGain=cg;
+}
+function audioResume(){ if(SND.ctx&&SND.ctx.state==='suspended') SND.ctx.resume(); }
+function crowdSwell(amt,ms){ if(!SND.ctx)return; const g=SND.crowdGain.gain,t=SND.ctx.currentTime;
+  g.cancelScheduledValues(t); g.setValueAtTime(g.value,t); g.linearRampToValueAtTime(0.10+amt,t+0.08); g.linearRampToValueAtTime(0.10,t+(ms||900)/1000); }
+function tone(freq,dur,type,vol,glide){ if(!SND.ctx||!SND.on)return; const ctx=SND.ctx,t=ctx.currentTime;
+  const o=ctx.createOscillator(),g=ctx.createGain(); o.type=type||'sine'; o.frequency.setValueAtTime(freq,t);
+  if(glide) o.frequency.exponentialRampToValueAtTime(glide,t+dur);
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol||0.3,t+0.008); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(SND.master); o.start(t); o.stop(t+dur+0.02); }
+function noise(dur,vol,cut){ if(!SND.ctx||!SND.on)return; const ctx=SND.ctx,n=(ctx.sampleRate*dur)|0,buf=ctx.createBuffer(1,n,ctx.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
+  const s=ctx.createBufferSource(); s.buffer=buf; const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=cut||900;
+  const g=ctx.createGain(); g.gain.value=vol||0.6; s.connect(lp); lp.connect(g); g.connect(SND.master); s.start(); }
+const sfx={
+  kick(){ noise(0.09,0.5,1200); tone(220,0.18,'sine',0.25,90); },
+  catch(){ tone(440,0.1,'triangle',0.2); },
+  contact(){ noise(0.08,0.3,700); },
+  hit(){ noise(0.2,0.75,800); tone(85,0.16,'square',0.28,55); },
+  fumble(){ noise(0.14,0.55,1000); tone(280,0.42,'sawtooth',0.3,920); crowdSwell(0.2,1300); },
+  recover(){ tone(520,0.11,'triangle',0.3); setTimeout(()=>tone(784,0.16,'triangle',0.28),70); },
+  truck(){ noise(0.18,0.7,700); tone(150,0.26,'sawtooth',0.32,340); crowdSwell(0.16,800); },
+  pitch(){ tone(660,0.1,'triangle',0.22,880); },
+  whistle(){ tone(2050,0.16,'square',0.16,2450); setTimeout(()=>tone(2050,0.13,'square',0.15,2450),120); },
+  score(){ tone(330,0.5,'sawtooth',0.3); setTimeout(()=>tone(440,0.4,'sawtooth',0.3),120); setTimeout(()=>tone(554,0.7,'sawtooth',0.3),240); crowdSwell(0.45,2400); },
+};
+
+/* ---------------- juice: screen shake + particle bursts ---------------- */
+let shakeT=0, shakeMag=0;
+function shake(mag,ms){ shakeMag=Math.max(shakeMag,mag); shakeT=Math.max(shakeT,(ms||300)/1000); }
+const FX=[], fxGeo=new THREE.BoxGeometry(0.32,0.32,0.32);
+for(let i=0;i<48;i++){ const m=new THREE.Mesh(fxGeo,new THREE.MeshBasicMaterial({color:'#ffffff'})); m.visible=false; scene.add(m); FX.push({m,v:new THREE.Vector3(),t:0}); }
+let fxi=0;
+function burst(pos,color,n,spd){ for(let k=0;k<(n||14);k++){ fxi=(fxi+1)%FX.length; const p=FX[fxi];
+  p.m.visible=true; p.m.material.color.set(color||'#ffffff'); p.m.position.set(pos.x,1.2,pos.z);
+  const a=Math.random()*Math.PI*2, up=2.5+Math.random()*4.5, r=(spd||6)*(0.35+Math.random());
+  p.v.set(Math.cos(a)*r, up, Math.sin(a)*r); p.t=0.55+Math.random()*0.35; } }
+function updateFX(dt){ for(const p of FX){ if(!p.m.visible)continue; p.t-=dt; if(p.t<=0){p.m.visible=false;continue;}
+  p.v.y-=32*dt; p.m.position.addScaledVector(p.v,dt);
+  if(p.m.position.y<0.16){ p.m.position.y=0.16; p.v.y*=-0.4; p.v.x*=0.7; p.v.z*=0.7; }
+  p.m.rotation.x+=dt*9; p.m.rotation.y+=dt*7; p.m.scale.setScalar(Math.max(0.05,p.t)); } }
+
+/* ---------------- readability: loose-ball beacon + incoming-tackler danger ring ---------------- */
+const beacon=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,44,8), new THREE.MeshBasicMaterial({color:'#ffdf4d',transparent:true,opacity:0.32}));
+beacon.position.y=22; beacon.visible=false; scene.add(beacon);
+const dangerRing=new THREE.Mesh(new THREE.RingGeometry(0.95,1.3,22), new THREE.MeshBasicMaterial({color:'#ff4436',side:THREE.DoubleSide,transparent:true,opacity:0.85}));
+dangerRing.rotation.x=-Math.PI/2; dangerRing.position.y=0.08; dangerRing.visible=false; scene.add(dangerRing);
+function updateCues(){
+  // loose-ball beacon
+  if(possession==='LOOSE'){ beacon.visible=true; beacon.position.x=ball.position.x; beacon.position.z=ball.position.z;
+    beacon.material.opacity=0.22+0.18*Math.abs(Math.sin(clock.getElapsedTime()*6)); }
+  else beacon.visible=false;
+  // danger ring under the nearest un-engaged tackler while YOU carry
+  if(possession==='BLUE'&&carrier>=0){ const cP=PL[carrier].position; let n=-1,nd=8;
+    for(let i=0;i<PL.length;i++){ const p=PL[i]; if(p.userData.team!=='RED'||p.userData.engaged)continue;
+      const d=Math.hypot(p.position.x-cP.x,p.position.z-cP.z); if(d<nd){nd=d;n=i;} }
+    if(n>=0){ dangerRing.visible=true; dangerRing.position.x=PL[n].position.x; dangerRing.position.z=PL[n].position.z;
+      dangerRing.material.opacity=0.5+0.4*Math.abs(Math.sin(clock.getElapsedTime()*9)); }
+    else dangerRing.visible=false;
+  } else dangerRing.visible=false;
+}
+
 /* ---- SETUP phase: aerial view, drag your pieces, a landing circle that moves each possession ---- */
 function beginSetup(recv){
   recvTeam=recv; phase='SETUP'; running=true; possession='NONE'; carrier=-1; truck=null; grabbed=-1; latCd=0;
@@ -300,7 +378,7 @@ function updateKickBtn(){ document.getElementById('kick').disabled=!canKick();
     ? (canKick()?'DRAG YOUR PLAYERS · RETURNER IS SET':'DRAG A PLAYER INTO THE GOLD CIRCLE')
     : 'DRAG YOUR DEFENDERS · CPU RETURNS AT THE CIRCLE'; }
 function showControls(on){ for(const id of ['stick','truckBtn','pitchBtn']) document.getElementById(id).style.display=on?'':'none'; }
-function kickoff(){ if(!canKick())return; phase='KICK';
+function kickoff(){ if(!canKick())return; phase='KICK'; audioResume(); sfx.kick();
   kickReceiver=nearestOfTeam(recvTeam, landing); PL[kickReceiver].position.set(landing.x,0,landing.z);
   ball.position.set(landing.x,15,landing.z); ballVel.set(0,0,0);
   // lock in the drawn initial-block assignments
@@ -311,7 +389,7 @@ function kickoff(){ if(!canKick())return; phase='KICK';
   document.getElementById('setupHint').style.display='none'; showControls(true); grabbed=-1; }
 function updateKick(dt){ ballVel.y-=TUNE.GRAVITY*dt; ball.position.y+=ballVel.y*dt; ball.rotation.x+=6*dt;
   if(ball.position.y<=1.5){ ball.position.y=1.5; possession=recvTeam; carrier=kickReceiver; truckCd=TUNE.TRUCK_COOLDOWN_S;
-    phase='PLAY'; pickControlled(); updateHighlights(); camReady=false; flash();
+    phase='PLAY'; pickControlled(); updateHighlights(); camReady=false; flash(); sfx.catch(); crowdSwell(0.12,700);
     msg(recvTeam==='BLUE'?'YOUR BALL':'CPU RETURNS', recvTeam==='BLUE'?'good':'bad', 650); } }
 function pickControlled(){
   if(possession==='LOOSE') controlled=nearestOfTeam('BLUE',ball.position);
@@ -331,7 +409,7 @@ function updateContact(dt){
     const d=flat(p,cP); if(d<nd){nd=d;near=i;} }
   if(near<0 || nd>TUNE.TACKLE_RADIUS) return;
   if(possession==='BLUE'){                 // YOU carry -> timing check
-    if(!truck && truckCd<=0){ truck={t:0,tapped:false,foe:near}; showTruck(true); }
+    if(!truck && truckCd<=0){ truck={t:0,tapped:false,foe:near}; showTruck(true); sfx.contact(); }
   } else {                                  // CPU carrier tackled by your team -> pop
     popBall(PL[carrier].position, near);
   }
@@ -347,12 +425,14 @@ function attemptTruck(){ if(!truck||truck.tapped)return; truck.tapped=true;
   if(truck.t>=lead && truck.t<=tot){ flash();
     const f=PL[truck.foe]; if(f){ const away=f.position.clone().sub(PL[carrier].position).setY(0).normalize().multiplyScalar(TUNE.TRUCK_KNOCKBACK);
       f.userData.knock.copy(away); f.userData.knockT=0.45; }
+    sfx.truck(); shake(0.65,320); burst(PL[carrier].position,'#8ff0a0',18,6.5);
     PL[carrier].userData.boost=TUNE.TRUCK_BOOST_MS/1000; truckCd=TUNE.TRUCK_COOLDOWN_S; showTruck(false); truck=null; msg('TRUCK!','good',550);
   } else popBall(PL[carrier].position, truck.foe); }
 function showTruck(on){ document.getElementById('truck').style.display=on?'block':'none'; }
 function popBall(atPos, byIdx){
   showTruck(false); truck=null; const wasBlue = possession==='BLUE';
   possession='LOOSE'; carrier=-1; updateHighlights(); flash();
+  sfx.hit(); sfx.fumble(); shake(0.85,380); burst(atPos,'#ffcf4d',20,7.5);
   msg(wasBlue?'TACKLED!':'BALL OUT!', wasBlue?'bad':'good', 800);
   ball.position.copy(atPos).setY(1.6);
   ballVel.set((Math.random()*2-1)*TUNE.POP_SPREAD, TUNE.POP_UP, (Math.random()*2-1)*TUNE.POP_SPREAD);
@@ -375,6 +455,7 @@ function updateLooseBall(dt){
     let best=-1,bd=1e9; for(let i=0;i<PL.length;i++){ const d=Math.hypot(PL[i].position.x-ball.position.x,PL[i].position.z-ball.position.z); if(d<bd){bd=d;best=i;} }
     if(bd<TUNE.RECOVER_RADIUS && best>=0){ const t=PL[best].userData.team;
       possession=t; carrier=best; truckCd=TUNE.TRUCK_COOLDOWN_S; pickControlled(); updateHighlights(); camReady=false;
+      sfx.recover(); shake(0.3,220); burst(ball.position,t==='BLUE'?'#8ff0a0':'#ff8a6b',10,4.5); crowdSwell(0.14,700);
       msg(t==='BLUE'?'YOU RECOVER!':'CPU BALL', t==='BLUE'?'good':'bad', 750); }
   }
 }
@@ -386,7 +467,7 @@ function attemptLateral(){
   let best=-1,bd=1e9; for(let i=0;i<PL.length;i++){ const p=PL[i]; if(p.userData.team!=='BLUE'||i===carrier)continue;
     const behind=(p.position.z - cP.z)*dir < 1.0;    // trailing (toward own goal) — a backward pitch
     if(!behind)continue; const d=flat(p,PL[carrier]); if(d<TUNE.LATERAL_RANGE && d<bd){bd=d;best=i;} }
-  if(best>=0){ carrier=best; controlled=best; latCd=TUNE.LATERAL_COOLDOWN_S; truckCd=0.35; updateHighlights(); flash(); msg('PITCH!','good',500); }
+  if(best>=0){ carrier=best; controlled=best; latCd=TUNE.LATERAL_COOLDOWN_S; truckCd=0.35; updateHighlights(); flash(); sfx.pitch(); msg('PITCH!','good',500); }
 }
 
 /* ---------------- movement ---------------- */
@@ -484,6 +565,7 @@ function checkScore(){
   if(t==='RED'&&p.position.z<=goalLine('RED')) return doScore('RED');
 }
 function doScore(t){ if(gameOver)return; flash();
+  sfx.whistle(); sfx.score(); shake(1.15,650); if(carrier>=0) burst(PL[carrier].position, t==='BLUE'?'#8ff0a0':'#ff8a6b', 28, 8);
   if(t==='BLUE'){ scoreB++; msg('TOUCHDOWN!','big',1500); } else { scoreR++; msg('CPU SCORES','bad',1500); }
   updateScoreHud();
   if(scoreB>=TUNE.WIN_SCORE||scoreR>=TUNE.WIN_SCORE){ setTimeout(()=>endGame(),1400); running=false; return; }
@@ -513,6 +595,9 @@ function updateCamera(dt){ let tp,ta;
   const l=possession==='LOOSE'?TUNE.LOOSE_CAM_LERP:TUNE.CAM_LERP;
   if(!camReady){ camP.copy(tp); camA.copy(ta); camReady=true; } else { const a=Math.min(1,l*dt); camP.lerp(tp,a); camA.lerp(ta,a); }
   camera.position.copy(camP); camera.lookAt(camA);
+  if(shakeT>0){ shakeT-=dt; const k=shakeMag*Math.min(1,shakeT*3.5);
+    camera.position.x+=(Math.random()*2-1)*k; camera.position.y+=(Math.random()*2-1)*k*0.7; camera.position.z+=(Math.random()*2-1)*k;
+    if(shakeT<=0) shakeMag=0; }
 }
 function updateScoreHud(){ document.querySelector('#score .you').textContent='YOU '+scoreB;
   document.querySelector('#score .cpu').textContent=scoreR+' CPU'; }
@@ -528,16 +613,21 @@ function hud(){ if(phase!=='PLAY'){ ring.visible=false; return; }
 
 /* ---------------- loop ---------------- */
 const clock=new THREE.Clock();
+let timeScale=1;
 function tick(){ requestAnimationFrame(tick); let dt=clock.getDelta(); if(dt>0.05)dt=0.05;
   if(running){
     if(phase==='SETUP'){ landCircle.material.opacity=0.55+0.3*Math.abs(Math.sin(clock.getElapsedTime()*3.5)); updateBlockArrows(); updateCamera(dt); hud(); }
-    else if(phase==='KICK'){ updateKick(dt); updateCamera(dt); }
+    else if(phase==='KICK'){ updateKick(dt); updateCamera(dt); updateFX(dt); }
     else {
-      if(truckCd>0)truckCd-=dt; if(latCd>0)latCd-=dt;
-      pickControlled(); updatePlayers(dt);
-      if(possession==='LOOSE') updateLooseBall(dt);
-      else { updateContact(dt); updateTruck(dt); checkScore(); }
-      updateCamera(dt); hud();
+      // slow-mo while a truck-timing window is live — drama + reaction time
+      const wantSlow = truck && truck.t>=TUNE.TRUCK_PROMPT_LEAD_MS*0.5;
+      timeScale += ((wantSlow?TUNE.SLOWMO:1)-timeScale)*Math.min(1,dt*14);
+      const sdt=dt*timeScale;
+      if(truckCd>0)truckCd-=sdt; if(latCd>0)latCd-=sdt;
+      pickControlled(); updatePlayers(sdt);
+      if(possession==='LOOSE') updateLooseBall(sdt);
+      else { updateContact(sdt); updateTruck(sdt); checkScore(); }
+      updateFX(dt); updateCues(); updateCamera(sdt); hud();
     }
   }
   renderer.render(scene,camera);
@@ -590,7 +680,7 @@ document.getElementById('mode').addEventListener('click',()=>{ setupMode = setup
 /* ---------------- boot ---------------- */
 function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); }
 addEventListener('resize',resize); resize();
-function newGame(){ scoreB=0; scoreR=0; gameOver=false; updateScoreHud();
+function newGame(){ audioInit(); audioResume(); scoreB=0; scoreR=0; gameOver=false; updateScoreHud();
   document.getElementById('over').style.display='none'; document.getElementById('start').style.display='none';
   beginSetup('BLUE'); }
 document.getElementById('go').addEventListener('click',newGame);
