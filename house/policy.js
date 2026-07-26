@@ -40,6 +40,7 @@ const E = (typeof require !== 'undefined') ? require('./engine.js') : window.RH_
 const SC = (typeof require !== 'undefined') ? require('./scenes.js') : window.RH_SCENES;
 const P = (typeof require !== 'undefined') ? require('./powers.js') : window.RH_POWERS;
 const R = (typeof require !== 'undefined') ? require('./run.js') : window.RH_RUN;
+const SEC = (typeof require !== 'undefined') ? require('./secrets.js') : window.RH_SECRETS;
 
 const DEFAULTS = {
   risk: 0.5,
@@ -47,6 +48,18 @@ const DEFAULTS = {
   /* How much a comp win has to be worth before it is worth the target it
      paints. Below this the policy throws. */
   throwThreshold: 0.62,
+  /*
+   * GDD §20. Whether the stand-in TRADES what it knows or sits on it.
+   *
+   * This exists so the information layer can be measured at all. Secrets are a
+   * player inventory, so the only seat that has them is the one policy.js
+   * drives, and the only honest way to ask whether trading information is
+   * worth doing is to run the same seeds with a player who does and a player
+   * who does not. `trade` is that switch. Below the floor the secret is not
+   * worth the trace risk.
+   */
+  trade: true,
+  tradeFloor: 0.30,
 };
 
 function make(opts) {
@@ -194,17 +207,61 @@ function make(opts) {
 
   // ── everything else the loop can ask ──────────────────────────────────────
 
+  /**
+   * The best thing to hand over right now, or null if nothing clears the floor.
+   *
+   * Greedy on worth, which is the obvious play and therefore the right one for
+   * a stand-in: the harness is asking whether trading information beats not
+   * trading it, not whether a clever trading policy beats a naive one.
+   */
+  function bestTrade(s) {
+    const me = s.human;
+    const pool = R.activeIds(s).filter((i) => i !== me);
+    if (!pool.length) return null;
+    let best = null;
+    for (const sec of SEC.held(s)) {
+      const ear = SEC.bestEar(s, sec, pool);
+      if (ear.id == null || ear.worth < cfg.tradeFloor) continue;
+      if (!best || ear.worth > best.worth) best = { id: sec.id, to: ear.id, worth: ear.worth };
+    }
+    return best;
+  }
+
   function decide(s, need) {
     const me = s.human;
 
     switch (need.kind) {
-      case 'move_in':
-        return { key: cfg.risk > 0.62 ? 'c' : (cfg.risk < 0.3 ? 'a' : 'b') };
+      case 'move_in': {
+        /* Four options now, and no letter keys: the first is always the
+           quietest answer and the last two are the ones that cost something,
+           so risk maps onto the index. */
+        const n = need.beat.options.length;
+        const i = Math.min(n - 1, Math.floor(cfg.risk * n));
+        return { opt: i };
+      }
 
       case 'comp':
         return compChoice(s, need);
 
       case 'actions': {
+        /* Spend information before energy. It is the cheaper verb and it goes
+           stale, so holding it through a week is a real loss. */
+        if (cfg.trade && s.energy >= SEC.K.TELL_COST) {
+          const move = bestTrade(s);
+          if (move) {
+            R.performAction(s, { kind: 'tell', secret: move.id, target: move.to });
+            s.energy -= SEC.K.TELL_COST;
+            return s.energy >= SC.ENERGY.SCENE_COST ? null : { done: true };
+          }
+        }
+        /* And go and find something when the hand is empty. A stand-in that
+           never listens at a door has no information to trade, which would make
+           the trade switch below measure nothing at all. */
+        if (cfg.trade && !SEC.held(s).length && s.energy >= SC.ENERGY.EAVESDROP_COST + SC.ENERGY.SCENE_COST) {
+          R.performAction(s, { kind: 'eavesdrop' });
+          s.energy -= SC.ENERGY.EAVESDROP_COST;
+          return s.energy >= SC.ENERGY.SCENE_COST ? null : { done: true };
+        }
         const target = chooseTarget(s);
         if (target == null) return { done: true };
         const moment = R.sceneFor(s, target);
@@ -213,6 +270,17 @@ function make(opts) {
            the UI does it, then the phase is closed when the energy runs out. */
         R.playScene(s, moment, key);
         return s.energy >= SC.ENERGY.SCENE_COST ? null : { done: true };
+      }
+
+      case 'captain_room': {
+        /* Take your own people up. The stand-in plays the obvious version so
+           the harness measures the ritual's cost, not a policy quirk. */
+        const scored = need.pool.map((id) => ({
+          id, v: s.rel.trust[me][id]
+            + (E.sharedAlliances(s.alliances, me, id).length ? 40 : 0),
+        }));
+        scored.sort((a, b) => b.v - a.v);
+        return { guests: scored.slice(0, need.take).map((x) => x.id) };
       }
 
       case 'naming': {

@@ -97,13 +97,50 @@ const S = {
     'You are three steps too slow leaving the hallway.',
   ],
 
-  leakOk: [
+  /*
+   * HANDING SOMETHING OVER, GDD §20. These two banks were written for a `leak`
+   * action that was never wired to a button. The copy was always right for the
+   * move; the move is now reachable.
+   */
+  tellOk: [
     '{name} takes the information and does not ask where it came from.',
     'You hand it over. {name} looks at {target} differently after.',
+    '{name} listens to all of it and says almost nothing back.',
   ],
-  leakTraced: [
+  tellFlat: [
+    '{name} already knew, or is doing a good job of looking like they did.',
+    'You tell {name} and watch it land on nothing.',
+  ],
+  tellTraced: [
     'It gets back to {target} by the evening.',
     '{target} works out who else could have known.',
+    'There were two people behind that door and {target} can count.',
+  ],
+
+  /* What it is like to be told each kind of thing. Second person for the
+     player, third for the house, per the voice rules at the top of this file. */
+  toldRead: [
+    'You tell {name} exactly what {target} said about them. They ask you to say it again.',
+  ],
+  toldThird: [
+    'You pass on what {target} thinks of {other}. {name} files it somewhere.',
+  ],
+  toldRoom: [
+    'You tell {name} there is a room they are not in. They want the names.',
+  ],
+  toldName: [
+    'You give {name} the name. A group that can be named is a group that can be counted.',
+  ],
+  toldPair: [
+    'You tell {name} the two of them are one number now.',
+  ],
+  toldIntent: [
+    'You tell {name} the week is about them. Nobody had said it out loud yet.',
+  ],
+
+  /* The inventory itself, when there is nothing in it. */
+  knowNothing: [
+    'You are not carrying anything worth trading. Listen at a door.',
   ],
 
   /* Phase furniture. The house narrating, not a UI label. */
@@ -190,6 +227,96 @@ const S = {
   ],
   lose: [
     'Second. The Panel had its reasons and you will get to read them.',
+  ],
+
+  /*
+   * ALLIANCE NAMES, GDD §7.7.
+   *
+   * A group with a name is a different object from a group without one. It gets
+   * talked about, it gets counted, and it gets hunted. The bank is deliberately
+   * plain: these are names people in a house would actually land on at two in
+   * the morning, not names a writer would give them.
+   *
+   * Assembled two ways. The word bank produces an identity, the count bank
+   * produces a size, and a name that states a size does not update when the
+   * size changes, which is the best drama in the whole system: The Six is down
+   * to three and still calling itself The Six.
+   */
+  allyWord: [
+    'Brigade', 'Committee', 'Cookout', 'Leftovers', 'Detonators', 'Renegades',
+    'Nightshift', 'Company', 'Firm', 'Quiet Room', 'Back Half', 'Long Table',
+    'Late Shift', 'Understudies', 'Regulars', 'Clean Slate', 'Split Level',
+    'Others', 'Cold Kitchen', 'Second Floor', 'Overnight', 'Standing Order',
+    'Usual Suspects', 'Dry Spell', 'Slow Burn', 'Handshake',
+  ],
+  allyCount: [
+    'The {n}', 'Core {n}', 'Level {n}', 'Final {n}', '{n} Deep', 'The Big {n}',
+  ],
+  allyNum: ['', '', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'],
+
+  /*
+   * NOMINATION SPEECHES, GDD §19.2. The Captain has to say something, and what
+   * they say is the only public statement of intent in the format.
+   */
+  speechPawnYou: [
+    'You tell the room this is not personal and that one of these two is a formality. Everybody hears which one.',
+  ],
+  speechPawn: [
+    '{captain} calls it a numbers decision and looks at exactly one of them while saying it.',
+  ],
+  speechThreatYou: [
+    'You say the word threat out loud. It is a compliment nobody has ever enjoyed receiving.',
+  ],
+  speechThreat: [
+    '{captain} says they are going after the biggest game in the house. Two people believe it and the rest count seats.',
+  ],
+  speechPersonalYou: [
+    'You do not dress it up. The room gets very quiet and very interested.',
+  ],
+  speechPersonal: [
+    '{captain} makes it personal in front of everybody. Nobody looks at their hands.',
+  ],
+  speechFlatYou: [
+    'You keep it to eleven words and sit down. Nothing to argue with, nothing to repeat.',
+  ],
+  speechFlat: [
+    '{captain} says almost nothing and sits down. It reads as either mercy or cowardice, depending who is listening.',
+  ],
+
+  /* CAMPAIGNING FROM THE BLOCK, GDD §19.4. */
+  campNumbers: [
+    'You put it in seats. {name} does the arithmetic while you talk, which is the point of doing it that way.',
+  ],
+  campThreat: [
+    'You spend the whole conversation on the other one. {name} does not disagree, which is not the same as agreeing.',
+  ],
+  campMercy: [
+    'You ask straight out. {name} does not enjoy being asked and does not forget it either.',
+  ],
+  campDeal: [
+    'You offer {name} the next two weeks. Both of you know what that promise is worth from where you are sitting.',
+  ],
+
+  /* THE CAPTAIN'S ROOM, GDD §19.1. */
+  roomYou: [
+    'They come up in ones and twos, look at your photographs, and say the right things.',
+  ],
+  roomInvited: [
+    '{name} takes you up first. You get the version of the room nobody else gets.',
+  ],
+  roomLeftOut: [
+    '{name} took people up before you and you found out from somebody else.',
+  ],
+
+  /* SHOWMANCES, GDD §7.8. */
+  showFormed: [
+    '{a} and {b} have stopped pretending. The house counts them as one number now.',
+  ],
+  showYou: [
+    'You and {name} are a thing the house has noticed. That is worth a vote and costs you a hiding place.',
+  ],
+  showBroken: [
+    '{a} and {b} are not doing that any more. Everybody noticed that too.',
   ],
 
   /* The ONLY bank where an exclamation point is permitted, and it is still

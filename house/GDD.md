@@ -224,12 +224,34 @@ shows a wider gap, threat coupling gets stronger until it closes.
 
 ### Move In Night
 
-Before week one, a short dialogue sequence where you meet the house and choose how
-to answer. Your choices seed your starting trust with each Player. This exists so
-that a new account is not socially poorer than a veteran account: the on ramp to
-being liked is a conversation, not a stat.
+Four beats drawn from a bank of **twelve**, off the `gen` stream so the opening
+belongs to the seed and a shared seed opens the same way. There used to be three
+beats, always the same three in the same order.
 
----
+Each answer **splits the room**. The first version applied one signed number to
+all fifteen people scaled by a positive multiplier, so every answer moved the
+whole house the same direction and your position relative to anybody else barely
+changed. Playtest, fairly: "idk how much the answers actually affect anything."
+`react` is now signed per person, so taking the room wins the confident half and
+puts off the wary half. `focus` goes further and spends the whole night on one
+person: a real bond and fourteen strangers, which is a completely different
+house to wake up in.
+
+Measured over 120 runs, holding the answer index constant:
+
+| Answer | House mean | Best | Worst |
+|---|---|---|---|
+| always the first | 10.4 | 27.1 | -1.0 |
+| always the second | 14.2 | 33.6 | -0.1 |
+| always the third | 7.7 | 25.5 | -7.8 |
+| always the fourth | 10.7 | 28.7 | -1.5 |
+
+The bold column is worth less on average and buys you real enemies, which is the
+trade the opening is supposed to offer.
+
+The night closes on where you actually stand: your two warmest and your two
+coldest, by name. You do not start level with fifteen strangers.
+
 
 ## 5. Player Generation
 
@@ -418,6 +440,74 @@ Labels age visibly when you neglect someone. The post game recap reveals the tru
 values alongside what you believed, which is the payoff of the whole system.
 
 ---
+
+### 7.7 Naming
+
+A group of two who trust each other has a deal. A group that is three, or that
+is two and has held for five weeks, gets **called something**, once, and keeps
+that name for the rest of its life.
+
+Names are assembled from an authored bank on the `text` stream, so a seed
+produces the same house every time. Seventy percent are an identity (The
+Brigade, The Cookout, The Quiet Room) and thirty percent are a headcount (Core
+Four, The Six, Three Deep). **The headcount is baked in at the moment of naming
+and never revised.** The Six being down to three and still calling itself The
+Six is the cheapest piece of storytelling in the build and it comes free.
+
+Measured, at `ALLY_NAME_WEEKS` 3, 5, 6 and 7: five gives a mean of 2.9 named
+groups per run with four percent of runs producing none. On the size route
+alone it was 26 percent of runs with no named group at all, which is a feature
+a quarter of players would never see.
+
+**What naming does mechanically is spread.** An unnamed group leaks to one
+person a week, when somebody lets something slip; a group that lives four weeks
+therefore caps out at four of thirteen knowing about it however high the rate
+goes. A name is different in kind, because a name is repeatable: you do not
+have to witness The Committee to have heard of it. So a named group rolls per
+outsider, every week. That took visibility of a named group from 4.1 percent of
+outsiders to 18.7 percent, and it is the number the alliance map is drawn from.
+
+**What naming does NOT do is make you a target, and the design tried hard to
+make it.** See the third correction in §15 Stage 12.
+
+### 7.8 Showmances
+
+The one bond in this format that the house treats as a single number.
+
+An alliance is an agreement about the game. A showmance is not, and it behaves
+differently on every axis: it does not decay on neglect, it cannot be kept
+quiet (each outsider learns of it at 45 percent a week), and neither half will
+move against the other for any reason the model can express. In exchange the
+house stops seeing two players and starts seeing one number, and removing
+numbers is what this format is.
+
+They are stored **outside** `alliances` deliberately. Everything that reads
+alliances reads them as strategic groups: breadth exposure, betrayal scaling
+with the square of membership, the majority-size shed. None of that is true of
+a couple, and folding them in would have quietly broken all three.
+
+| Term | Effect |
+|---|---|
+| `SHOW_FORM_TRUST` 68 | mutual, well above the alliance threshold |
+| `SHOW_MAX` 2 | in the house at once |
+| `SHOW_SHIELD_NOM` 60 | a Captain does not name their partner |
+| `PAWN_SHOWMANCE` -45 | and does not seat them as a pawn either |
+| `SHOW_SHIELD_VOTE` 30 | and does not vote them out |
+| `SHOW_HEAT_FLOOR` 7, `SHOW_HEAT_SHARE` 0.20 | once seen, each half carries part of the other's threat |
+
+Once it has ended in front of the house it does not restart. Without that, the
+same two people broke up and got back together every other week, which reads as
+a bug however true to life it is.
+
+**The shield needed two terms, and finding out why took an ablation.** The
+nomination shield alone left a Captain naming their own partner 15 percent of
+the time, and raising it from 44 to 110 did not move that by a tenth of a point.
+The shield was never on that path: the pawn seat is chosen by a separate `fit`
+score whose ingredients are low house appetite, high Captain trust, shared
+alliance and prior pawn duty, which is a description of a showmance partner. The
+Captain was shielding their partner from being the target and then seating them
+as the pawn. With `PAWN_SHOWMANCE` in, it is 0.4 percent; with both terms off it
+is 22.2 percent.
 
 ## 8. Threat and Vote Resolution
 
@@ -655,9 +745,25 @@ ordinary conversation has one way out of it that is about somebody real.
 
 **Live beats.** A third bank alongside SCENES and BEATS, whose lines take real
 arguments: who is on the block, who the Captain wants gone, who told somebody
-one thing last Thursday and did another. Fifteen of them, each declaring the
-situation it needs, weighted so the rare and urgent ones beat the ones that are
-true every week. About sixty percent of conversations are one.
+one thing last Thursday and did another. **Thirty five** of them, each declaring
+the situation it needs, weighted so the rare and urgent ones beat the ones that
+are true every week. About sixty percent of conversations are one.
+
+**A run does not ask you the same thing twice.** Measured before this rule: 10.8
+percent of a player's conversations in a run were repeats and the top beat was
+16.2 percent of everything, because selection was uniform over whatever
+currently applied and the beats that apply most often are the ones that apply
+nearly always. A per-run tally drops a beat you have had to a twelfth of its
+weight, and a second time to a fiftieth. It never reaches zero: at Final 5 with
+four beats legal, "you have had them all" has to resolve to something.
+
+| | before | after |
+|---|---|---|
+| repeat rate within a run | high, top beat 16.2% of all | 10.8%, top beat 4.9% |
+| distinct beats over 60 runs | 38 | 91 |
+
+The tally lives on the state, not in a module variable, so it survives a save
+and a reload.
 
     "Jules says the house is going for Noor. They want to know if you are with it."
     "Kabir tells you Lachlan has been saying your name in the other room."
@@ -933,10 +1039,10 @@ behave like the genre it is modelling.
 |---|---|---|
 | 1 | Vote coalescence: the house votes as a house | DONE, §8.3 |
 | 2 | Nomination intent: pawn and backdoor | DONE, §8.2 |
-| 3 | Named alliances with size and identity, plus showmances that draw heat as a unit | pending |
+| 3 | Named alliances with size and identity, plus showmances that draw heat as a unit | DONE, §7.7 and §7.8, and see the third correction below |
 | 4 | Floater logic, so some people genuinely skate | DONE, §8.2, and see the correction below |
 | 5 | Jury management: make the Panel matter in the last three weeks | DONE, §8.3 |
-| 6 | Rituals: Captain's room, nomination speeches, rations bonding, campaigning from the block | pending |
+| 6 | Rituals: Captain's room, nomination speeches, rations bonding, campaigning from the block | DONE, §19 |
 
 **Two corrections to the numbers this roadmap was written from**, kept because
 the mistakes are more instructive than the fixes.
@@ -961,10 +1067,42 @@ switching the term off entirely still changed 17.2 percent of evictions. It was
 never inert. It was a tiebreaker that never got to be the reason. So the fix was
 not a bigger flat weight, it was a curve.
 
-The general lesson, now a rule: **a proxy that cannot fail is not a test.** The
-old "at least 60 percent of the cast sit At Risk once" reported 99 percent every
-run and read as a pass while measuring the rules rather than the model. It has
-been replaced with the clean-to-eight band, which can fail in both directions.
+*Item 3 produced a mechanic that could not be made to work, and it was deleted
+rather than shipped.* The roadmap asked for named groups that get hunted as a
+unit, so `pairHeat` shipped with a named-alliance term and the harness got a
+proxy for it. The proxy read 19.5 percent of named-group member-weeks At Risk
+against 14.9 percent for unnamed, which looks like a pass. **With the constant
+zeroed it read 19.6 against 14.7.** The gap was entirely a confound: members of
+named groups are better connected, and everything about them differs from
+non-members besides the name.
+
+Paired ablation on identical seeds then killed it properly. Sweeping
+`HEAT_NAMED` from 0 to 45 across three formulations, at n around 6500, never
+moved the nomination rate of named-group members outside noise and never moved
+it monotonically. Three separate diagnoses were each real and each insufficient:
+almost nobody could see a named group (2.6 percent of outsiders, so the
+visibility gate was false 96 percent of the time); the size term discounted the
+first two members, so the 63 percent of named groups that are pairs drew exactly
+zero; and three-plus groups are 327 member-weeks in 6500, far too rare to
+measure anything against. Fixing all three still moved nothing, because **the
+nomination block holds exactly two seats a week and named-group members already
+take a disproportionate share of them.** A conserved quantity cannot be pushed.
+
+So the term is gone, and what replaced it is the thing naming demonstrably does:
+it spreads. That proxy reads 18.5 percent against 1.8 and drops to 2.0 percent
+when `ALLY_LEAK_NAMED` is zeroed.
+
+The general lesson, now a rule: **a proxy that cannot fail is not a test**, and
+the only way to know is to switch the mechanic off and re-run. The old "at least
+60 percent of the cast sit At Risk once" reported 99 percent every run while
+measuring the rules rather than the model. It was replaced with the
+clean-to-eight band, which can fail in both directions. Item 3 added the
+sharper version of the same rule: a cross-sectional comparison between two
+populations can never isolate a constant, because the populations differ in
+everything else too. **Ablate on identical seeds, or do not claim the mechanic
+works.** Of the three proxies written for items 3 and 6, that test killed one
+outright, promoted one to a gate, and demoted one to a reported number whose
+effect is real but too small to gate on without flaking.
 
 ---
 
@@ -1145,16 +1283,220 @@ Version 0.1 said there were none. There were about thirty. These are what is lef
    nodes grant attributes and unlocks, never behavior.
 7. **Does the player's own belief distortion apply to AI reading the player.**
    Currently yes, symmetric. Worth confirming it feels right in playtest.
-8. **Skill is currently a mild liability.** `--skill` shows that the better a
+8. **Being liked is a liability over most of its range, and that is bigger
+   than any one feature.** Measured in §20.3: a flat trust gift to the player
+   takes their last-five rate from 45.0 percent down to 31.6 percent before it
+   recovers at extreme values. The U is genuinely the paradox the format is
+   built on, but the dip is deep enough that any mechanic paying in likeability
+   pays nothing, which is why the information layer had to invent a second
+   currency to be worth building. The right fix is probably in how `socialReach`
+   feeds `threatScore`, and it needs its own calibration pass.
+9. **Skill is currently a mild liability.** `--skill` shows that the better a
    player's hands, the more comps they win and the worse they finish, because
    power paints you. The weight is set at 0.45 to keep that from becoming a tax,
    but the real release valve is knowing when to throw, and nothing has measured
    whether a player who throws well beats both ends of that table.
-9. **Comps still cost a socially strong player a little.** The `cover` mechanism
+10. **Comps still cost a socially strong player a little.** The `cover` mechanism
    fixed the case where a floor game made a comp winner worse, but holding power
    means naming people and the house remembers. The right way to close the last
    of it is to make comp wins pay MORE, not to soften the social game further.
-10. **The risky answer is level with the safe one, not better.** It should be a
+11. **The risky answer is level with the safe one, not better.** It should be a
    lever worth pulling when the effect is needed. Right now a selective player
    should beat a spammer, which is correct, but the policy is not selective
    enough to prove a selective player also beats a cautious one.
+
+---
+
+## 19. The Rituals
+
+The format is not only its rules. It is a set of things that happen every week
+in the same order, and the game had almost none of them: the Captaincy was worth
+exactly two nominations, the nominees appeared without anybody saying anything,
+rations were a stat penalty, and a player At Risk made small talk like everybody
+else. All four are cheap in model terms and none of them are cheap to a player.
+
+Every one is a trust delta on top of a decision the model already made. None of
+them is a second economy.
+
+### 19.1 The Captain's room
+
+A door that locks, a bed nobody else has slept in, and photographs of people who
+are not in the house. The Captain takes up to two people up first, and the other
+twelve find out about it afterwards.
+
+| Term | Value |
+|---|---|
+| `ROOM_GUEST` | +9 to each guest, half of that back to the Captain |
+| `ROOM_SNUB` | -2 from everybody who was not asked |
+
+Roughly net neutral per week and heavily concentrated, which is the point:
+picking the same two people every week costs you the room. Skipped on the second
+leg of a Double, because there is no evening in a Double.
+
+### 19.2 Nomination speeches
+
+The only public statement of intent the format contains. Four framings:
+
+| Speech | Effect |
+|---|---|
+| **pawn** | +11 to the pawn, -4 to the target. **If there is no pawn, -6 with the whole room** |
+| **threat** | -9 to the target, +3 to the other, and +9 threat bias on the target with everybody who heard it |
+| **personal** | -15 to both nominees, -4 with the room for making them watch |
+| **flat** | -2 to the nominees. Nothing gained, nothing given away |
+
+The pawn line is the one that matters, because **the house checks it**. Calling
+somebody a formality when there is no formality is a lie told standing up in
+front of everybody, and it is priced that way. That check is what makes the
+choice a choice rather than a free softener.
+
+AI Captains choose by weight: pawn tracks `nomMode` (and a backdoor is a lie by
+construction, so it leans hard on pawn), threat scales with ambition, personal
+is gated on volatility **and** on actually disliking the target. Measured over
+600 runs the mix is threat 40, flat 32, pawn 24, personal 4. Personal was 25
+percent before the spite gate, which is a Captain making it personal every
+fourth week and reads as a house full of lunatics.
+
+### 19.3 Rations bonding
+
+Four people cold and hungry in the same room for a week come out of it closer
+than they went in, whatever they think of each other's game. `RATIONS_BOND` is
++4 mutual across the four, once a week, at the moment rations are handed out.
+
+Small on purpose. It is a week, not an alliance.
+
+### 19.4 Campaigning from the block
+
+The one thing every nominee in this format actually does. It is **free**,
+because begging for your life is not a strategic expenditure, and capped at one
+conversation per person per week, because the second time you ask is worse than
+the first (`CAMP_REPEAT` -0.16 per repeat).
+
+Four pitches, each checked against something real where the listener is
+standing rather than rolled flat:
+
+| Pitch | Checked against | If it lands |
+|---|---|---|
+| **I am a number for you** | whether they fear the other nominee more, and whether you are already allied | moves their vote, +5 |
+| **They are the one to fear** | how dangerous they already find the other one | moves their vote, +3, and +8 threat bias on the other |
+| **Just keep me** | whether they already like you | moves their vote, +2, and costs you a little with everybody else |
+| **You get me for the next two weeks** | how exposed they feel themselves | moves their vote, +8, and -10 if it does not |
+
+The card shows which of the four is true where that listener is standing,
+because that read is the whole decision and hiding it would make this a lottery
+with four tickets. A landed pitch writes a real `voteIntent`, so it feeds the
+existing broken-promise and blame machinery with no special case.
+
+---
+
+## 20. The Information Layer
+
+Before this section the game had exactly one verb for information. `eavesdrop`
+listened at a door, updated your belief matrix, and the thing you learned was
+gone: you could not hold it, choose a moment for it, or give it to anybody.
+There was a `leak` action in run.js that was never wired to a button, and it did
+not know WHAT was being leaked, only who it was about.
+
+That is the wrong shape. Knowing a thing is not the power. Knowing who it is
+worth something to, and picking the week to hand it over, is the power.
+
+### 20.1 A secret is an object
+
+Five kinds, each with a real source. A sixth, "X lied to Y", was designed and
+cut before shipping because there was no honest way for the player to come by
+it: the detection roll fires when the player lies, not when they catch somebody
+else at it. A kind with no source is a dead branch.
+
+| Kind | What it is | Where it comes from |
+|---|---|---|
+| `read` | what X thinks of Y | listening at a door |
+| `room` | there is a group with these people in it | listening at a door |
+| `name` | the group is called this | a named group leaking to you (§7.7) |
+| `pair` | those two are one number | a showmance leaking to you (§7.8) |
+| `intent` | the Captain is actually after X | being close enough to the Captain to be told |
+
+Each carries an age, a witness count, and a record of who you have already told.
+They go stale over four weeks. The hand caps at fourteen and the oldest thing
+falls out of it.
+
+### 20.2 Worth is per listener, and that is the mechanic
+
+A secret has no value of its own. It has a value **to a person**, and the gap
+between the best ear in the house and the worst is what makes choosing an ear a
+decision instead of a formality.
+
+| Situation | Worth |
+|---|---|
+| It is about them | 1.00, scaled by how bad it was |
+| It is about somebody they are in a room with | 0.55 |
+| It is about somebody they already fear | up to 0.45 |
+| Anything else | 0.14, and it is just something to say |
+
+Anyone who can already see it is worth zero, and the UI says so rather than
+letting somebody spend a turn on it.
+
+Telling somebody what was said about **them** is the single most valuable move
+in the layer, which is correct for the format and is also why it is the easiest
+one to get caught doing: two people behind a door is the narrowest provenance in
+the game.
+
+### 20.3 What it buys, and why it is not affection
+
+**This is the part that was measured and then redesigned.**
+
+The first build paid the whole reward in trust. At 800 paired seeds it produced
+**no effect whatsoever** on where the player finished: +0.10 places against a
+standard error of 0.21, while the trading player handed over eleven secrets a
+run and netted around ninety trust. The mechanic was fully exercised and
+completely inert.
+
+The reason turned out to be a property of the model rather than of the feature.
+Handing the player a flat trust gift from the entire house every week makes them
+finish **worse** over most of the range:
+
+| Gift per person per week | Average finish | Reached the last five |
+|---|---|---|
+| none | 7.24 | 45.0% |
+| +3 | 7.72 | 36.0% |
+| +8 | 8.79 | 31.6% |
+| +20 | 6.99 | 50.6% |
+
+Trust feeds `socialReach`, `socialReach` feeds `threatScore`, and being widely
+liked paints a target about as fast as it buys protection. The curve only turns
+back up once you are so beloved that cover overwhelms threat. **Any mechanic
+that pays in likeability pays into that dead zone**, which is a finding well
+beyond this feature and is related to open questions 8 and 9.
+
+So a secret pays mostly into a different quantity. `rel.owed[i][j]` is what i
+feels they owe j for being useful. It lowers how much i wants to nominate or
+evict j and contributes **nothing** to `socialReach`, so it never raises j's
+threat. It decays at 6 a week and caps at 40, because nobody remembers a favour
+for a month and no run of good information should buy permanent immunity.
+
+Being useful to somebody is a different quantity from being liked by them, and
+it is the one the quiet winners of this format actually accumulate.
+
+With the payout split 26 into debt and 7 into liking, the same paired ablation
+reads **+0.92 places, standard error 0.21**. That is the feature working.
+
+### 20.4 The cost
+
+Handing something over can be traced back to you, and the fewer people who could
+have known it, the louder your fingerprints. Trace chance starts at 0.24, rises
+with how narrow the provenance was, and falls with your `deception` and with the
+listener's `loyalty`. Measured at 11 percent of tells across a run. When it
+lands, the person who had a reason to keep it quiet takes 26 off you and gains
+26 suspicion.
+
+For an `intent` secret the person who minds is the **Captain**, not the target
+you just warned, which is a bug worth recording because the first version took
+`about[0]` for every kind and that field is the target.
+
+### 20.5 Scope, stated plainly
+
+This is a **player** inventory. The AI house already moves information through
+`socialTick`, alliance leaks and the belief layer, and giving fifteen AI a
+second parallel information economy is a much larger change needing its own
+calibration pass. The harness measures this through `policy.js`, which drives
+the only seat that has it, via `node simulator.js --info`.
+
+That is a real asymmetry and it is written here rather than implied away.

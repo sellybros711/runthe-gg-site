@@ -232,6 +232,8 @@ function build(rnd) {
 
   /* One accessory at most. Everything in here is institutional issue. */
   const acc = rnd();
+  look.glasses = acc < 0.16;
+  look.beard = beard < 0.30;
   if (acc < 0.16) {
     rect(g, 16 - eyeSp - 3, eyeY - 1, 5, 4, M.ACC);
     rect(g, 16 + eyeSp - 2, eyeY - 1, 5, 4, M.ACC);
@@ -346,6 +348,25 @@ function url(seed) {
   return u;
 }
 
+/**
+ * What a face visibly has, without drawing it.
+ *
+ * Head Count asks the player to count the ones wearing glasses as they walk
+ * past, which means something has to be able to answer that question without
+ * looking at pixels. Cached by the same key as the image, so the answer and the
+ * picture can never disagree.
+ */
+const FEAT = new Map();
+function features(seed) {
+  const key = String(seed);
+  if (FEAT.has(key)) return FEAT.get(key);
+  const r = rng(typeof seed === 'number' ? seed : hashStr(key));
+  const f = build(r).look;
+  const out = { glasses: !!f.glasses, beard: !!f.beard };
+  FEAT.set(key, out);
+  return out;
+}
+
 function hashStr(str) {
   let h = 1779033703 ^ str.length;
   for (let i = 0; i < str.length; i++) {
@@ -360,7 +381,7 @@ function img(seed, size, cls) {
   return `<img class="pxa ${cls || ''}" src="${url(seed)}" width="${size}" height="${size}" alt="" draggable="false">`;
 }
 
-const api = { N, url, img, build, shade, SKIN, HAIR, SHIRT, M, DEPTH };
+const api = { N, url, img, features, build, shade, SKIN, HAIR, SHIRT, M, DEPTH };
 
 if (typeof window !== 'undefined') window.RH_AVATAR = api;
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
