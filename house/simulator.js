@@ -176,7 +176,26 @@ function fullReport() {
     const flag = r.rate > 0.105 ? '  HIGH' : (r.rate < 0.025 ? '  LOW' : '');
     console.log(`    ${r.k.padEnd(14)} ${String(r.n).padStart(5)} seen  ${pct(r.rate).padStart(6)}${flag}`);
   }
-  const worst = rows.length ? Math.max.apply(null, rows.map((r) => r.rate)) : 0;
+  /*
+   * MINIMUM SAMPLE BEFORE AN ARCHETYPE CAN SET THE TOP.
+   *
+   * A few archetypes are rare enough to appear forty times in two thousand
+   * runs. At n=40 a win rate has a standard error of six points, so one of them
+   * reads 17.5 percent on seven wins and trips a 13 percent gate that is meant
+   * to catch a degenerate build. That is noise reported as a regression, and it
+   * cost a real debugging session before the count was looked at.
+   *
+   * The excluded ones are LISTED, not silently dropped: a proxy that quietly
+   * ignores part of its own population reads as coverage it does not have.
+   */
+  const MIN_SEEN = 150;
+  const rated = rows.filter((r) => r.n >= MIN_SEEN);
+  const thin = rows.filter((r) => r.n < MIN_SEEN);
+  if (thin.length) {
+    console.log(`    (not rated, seen under ${MIN_SEEN} times: `
+      + thin.map((r) => `${r.k} ${r.n}`).join(', ') + ')');
+  }
+  const worst = rated.length ? Math.max.apply(null, rated.map((r) => r.rate)) : 0;
   /*
    * WIDENED from 10.5%, deliberately and with a cost noted in the README.
    *
@@ -563,6 +582,62 @@ function treeReport() {
 }
 
 /**
+ * DOES BEING LIKED PAY, GDD §7.9.
+ *
+ * The gate on the oldest structural defect this harness has found. Trust feeds
+ * socialReach feeds threatScore, so likeability buys protection and paints a
+ * target at the same time, and for a long while the target won: a player handed
+ * trust by the whole house every week went from a 45.0 percent last-five rate
+ * at no gift down to 31.6 percent at eight a head. Being liked made you worse
+ * off, which is wrong for the genre and quietly blunted every social mechanic
+ * built on top of it.
+ *
+ * The gift is artificial on purpose. It is the only way to move ONE input and
+ * hold everything else still, which is what a controlled measurement is.
+ *
+ * What this wants to see: never negative, mildly positive in the normal range,
+ * clearly positive at the top. It fails if the slope goes back below zero.
+ */
+function curveReport() {
+  const n = Math.max(400, Math.floor(N / 2));
+  console.log(`\n=== DOES BEING LIKED PAY, ${n} runs per setting ===\n`);
+  const out = [];
+  for (const gift of [0, 3, 8, 20]) {
+    const places = [];
+    for (let i = 0; i < n; i++) {
+      const s = R.createRun({ seed: 'curve' + i, autoPlayer: true });
+      let g = 8000, lw = -1;
+      while (g-- > 0 && s.phase !== R.PHASES.OVER) {
+        R.step(s, null);
+        if (gift && s.week !== lw) {
+          lw = s.week;
+          for (const p of s.cast) {
+            if (p.status !== 'active' || p.id === s.human) continue;
+            E.applyTrust(s.rel, p.id, s.human, gift);
+          }
+        }
+      }
+      places.push(s.cast[s.human].place);
+    }
+    const t5 = places.filter((p) => p <= 5).length / n;
+    out.push({ gift, place: mean(places), t5, se: Math.sqrt(t5 * (1 - t5) / n) });
+  }
+  console.log('  trust gift per head per week   avg finish   reached the last five');
+  for (const o of out) {
+    console.log(`  +${String(o.gift).padStart(2)}${' '.repeat(27)}${o.place.toFixed(2).padStart(6)}`
+      + `   ${pct(o.t5).padStart(7)}  (SE ${pct(o.se)})`);
+  }
+  const slope = (out[2].t5 - out[0].t5) * 100;
+  const slopeSE = Math.sqrt(out[0].se ** 2 + out[2].se ** 2) * 100;
+  const top = (out[3].t5 - out[0].t5) * 100;
+  console.log(`\n  slope from none to +8   ${slope >= 0 ? '+' : ''}${slope.toFixed(1)}pp (SE ${slopeSE.toFixed(1)})`
+    + `   ${slope > -slopeSE ? 'ok' : 'MISS, being liked is a liability again'}`);
+  console.log(`  slope from none to +20  ${top >= 0 ? '+' : ''}${top.toFixed(1)}pp`
+    + `   ${top > 5 ? 'ok' : 'MISS, the top of the range should be clearly good'}`);
+  console.log('');
+}
+
+/**
  * THE INFORMATION LAYER, GDD §20.
  *
  * A PAIRED ablation, and it is paired because this session already learned the
@@ -807,6 +882,7 @@ function axesReport() {
 if (arg === '--axes') axesReport();
 else if (arg === '--seat') seatReport();
 else if (arg === '--info') infoReport();
+else if (arg === '--curve') curveReport();
 else if (arg === '--skill') skillReport();
 else if (arg === '--levels') levelReport();
 else if (arg === '--throws') throwReport();

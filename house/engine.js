@@ -142,6 +142,12 @@ const K = {
    * makes both of those true at once.
    */
   TH_SOCIAL_EARLY: 0.30,
+  /* The same ramp for the Panel term. See threatScore: without it the jury
+     weight went from excluded to full the moment one person was evicted. */
+  TH_PANEL_EARLY: 0.25,
+  /* Pseudo-observations at even odds, so a one person Panel cannot report a
+     coin flip as a fact. See panelEquity. */
+  PANEL_PRIOR: 2.5,
   /*
    * Comp record as a saturating curve on raw wins rather than a percentile.
    * A percentile over the active house is savagely spiky early: one win in week
@@ -256,7 +262,7 @@ const K = {
    * it. A dangerous player with a floor game is still read as dangerous, and
    * nobody can do anything about it.
    */
-  COVER_SOCIAL: 0.35,       // from being widely liked
+  COVER_SOCIAL: 0.45,       // from being widely liked
   COVER_ALLY: 0.20,         // from having people who are actually committed
   COVER_MAX: 0.65,          // nobody is ever completely untouchable
   NOM_VOL_SD: 12,
@@ -754,11 +760,28 @@ function socialReach(rel, cast, j) {
   return elig ? (c / elig) * 100 : 0;
 }
 
+/**
+ * How much of the Panel would vote for you, as a percentage.
+ *
+ * SHRUNK TOWARD NEUTRAL WHEN THE PANEL IS SMALL, and that is the whole reason
+ * this function has more than two lines.
+ *
+ * A one person Panel can only ever answer 0 or 100. The raw version handed that
+ * coin flip to threatScore at full weight from the moment the first person was
+ * evicted, so anybody the first juror happened to like read as a maximum jury
+ * threat for the rest of that week. It is a measurement of one person reported
+ * as a fact about seven.
+ *
+ * PANEL_PRIOR pseudo-observations at even odds fix it: a single juror who likes
+ * you now reads 67 rather than 100, and by the time the Panel is genuinely full
+ * the prior is swamped and the number is the truth.
+ */
 function panelEquity(rel, cast, j, panel) {
   if (!panel || !panel.length) return null;
   let c = 0;
   for (const pid of panel) if (rel.trust[pid][j] > 20) c++;
-  return (c / panel.length) * 100;
+  const w = K.PANEL_PRIOR;
+  return ((c + w * 0.5) / (panel.length + w)) * 100;
 }
 
 /**
@@ -821,14 +844,25 @@ function threatScore(rel, cast, i, j, panel, alliances, opts) {
   /* How far into the run we are, read off how full the Panel is. */
   const late = clamp01((panel ? panel.length : 0) / K.PANEL_SIZE);
   const wSocial = K.TH_SOCIAL * (K.TH_SOCIAL_EARLY + (1 - K.TH_SOCIAL_EARLY) * late);
+  /*
+   * The Panel term RAMPS, exactly as the social term does, and it did not.
+   *
+   * wSocial was carefully faded in across the run and then K.TH_PANEL sat
+   * beside it at full weight from the instant the first person was evicted.
+   * A term that is worth nothing in week six and thirty percent in week seven
+   * is a cliff nobody in the house could explain, and it landed hardest on
+   * exactly the players this ramp was written to protect: the well liked ones,
+   * whose equity reads high the moment there is anybody to read it against.
+   */
+  const wPanel = K.TH_PANEL * (K.TH_PANEL_EARLY + (1 - K.TH_PANEL_EARLY) * late);
 
   let v;
   if (pan == null) {
     const tot = K.TH_COMP + wSocial;
     v = (K.TH_COMP / tot) * comp + (wSocial / tot) * social;
   } else {
-    const tot = K.TH_COMP + wSocial + K.TH_PANEL;
-    v = ((K.TH_COMP * comp) + (wSocial * social) + (K.TH_PANEL * pan)) / tot;
+    const tot = K.TH_COMP + wSocial + wPanel;
+    v = ((K.TH_COMP * comp) + (wSocial * social) + (wPanel * pan)) / tot;
   }
 
   /* Breadth exposure, GDD §7.5. Sitting in three alliances does not make you
