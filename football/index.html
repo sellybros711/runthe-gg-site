@@ -742,7 +742,21 @@
   .tierdot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
   .tierdot.big{background:#fbbf24} .tierdot.good{background:#22c55e}
   .tierdot.small{background:#38bdf8} .tierdot.bad{background:#ef4444}
-  .chip{position:absolute;transform:translate(-50%,-50%);width:62px;text-align:center;cursor:pointer}
+  /* THE DISC IS ANCHORED TO THE SPOT, NOT THE BOX.
+     This was translate(-50%,-50%), which centres the whole chip on its point. The chip grows
+     taller the moment a player signs, because a name and a team line appear under the disc, so
+     centring the box moved the DISC up by half the label height: the top-row receivers ended up
+     half outside the field. Offsetting by the disc's own radius instead pins the disc to the
+     spot and lets the label hang below it, which is what a signing should look like.
+     --discr is the radius, declared once so the transform and the flip below agree. */
+  .chip{--discr:17px;position:absolute;transform:translate(-50%,calc(-1 * var(--discr)));
+    display:flex;flex-direction:column;width:62px;text-align:center;cursor:pointer}
+  /* THE LOW SPOTS PUT THEIR LABEL ABOVE THE DISC.
+     A short field has no room under the bottom chip, and the field clips its overflow, so the
+     running back's name was being cut off. The disc still does not move: the box is offset by
+     its own height instead, so the label lands above the disc and the disc stays on its spot. */
+  .chip.above{flex-direction:column-reverse;
+    transform:translate(-50%,calc(-100% + var(--discr)))}
   .chip .disc{width:34px;height:34px;margin:0 auto;border-radius:50%;display:grid;place-items:center;
     font-family:var(--fn);font-size:11px;color:#fff;border:2px solid rgba(255,255,255,.22);
     box-shadow:0 5px 12px -4px rgba(0,0,0,.8)}
@@ -760,6 +774,9 @@
   /* Wider than the 62px chip and pulled back into center, so a name like
      Roethlisberger fits instead of being cut, and 2px of air keeps its
      descenders off the season below. */
+  /* Name and team in one block, so reversing the column for a low chip moves the pair as a
+     unit rather than putting the year above the name. */
+  .chip .lab{display:block}
   .chip .who{width:78px;margin:3px 0 2px -8px;font-size:9.5px;font-weight:800;line-height:1.1;
     text-shadow:0 2px 6px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .chip .yr{font-size:8.5px;color:var(--dim);font-weight:700;line-height:1.1}
@@ -767,8 +784,27 @@
      picks the team out first, since that is the part you are pattern-matching for chemistry. */
   .chip .yr .tc{color:var(--dim-2);letter-spacing:.04em}
 
-  .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 11px;margin:-4px 0 12px;
-    background:linear-gradient(180deg,var(--bg) 72%,rgba(8,11,20,0))}
+  /* The fade used to start at 72%, which was fine when the bar ended just under the money
+     figure. The lineup pips sit at the bottom of it now, and the year reel was showing straight
+     through them, so the solid part runs to 92% and only the last few pixels feather. */
+  .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 9px;margin:-4px 0 12px;
+    background:linear-gradient(180deg,var(--bg) 92%,rgba(8,11,20,0))}
+  /* THE LINEUP PIPS, in the sticky bar, fading in as the field scrolls off.
+     --sq runs 0 to 1 with how much of the field has gone. The height is RESERVED at every
+     value and only opacity moves: growing a sticky block as they appear would shift the page
+     under the finger, which is the same class of bug as trying to collapse the block itself. */
+  #s-draft{--sq:0}
+  .dpips{display:flex;gap:5px;justify-content:center;height:24px;align-items:center;
+    margin-top:8px;opacity:var(--sq);pointer-events:none;position:relative}
+  /* A hairline under the bar, fading in with the pips, so the pinned header has an edge once
+     content is scrolling behind it. Without one the pips float over the reels. */
+  .capwrap:after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
+    background:var(--line);opacity:var(--sq)}
+  .dpips i{flex:0 0 auto;min-width:27px;height:22px;padding:0 5px;border-radius:7px;
+    display:grid;place-items:center;font-family:var(--fn);font-size:9.5px;font-weight:600;
+    letter-spacing:.04em;font-style:normal;background:rgba(255,255,255,.05);
+    border:1px dashed var(--line-2);color:var(--dim-2)}
+  .dpips i.on{border-style:solid;border-color:transparent;color:#fff}
   .capline{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
   .capline .amt{font-family:var(--fd);font-size:32px;line-height:1}
   .capline .amt.low{color:var(--red)}
@@ -990,10 +1026,35 @@
   .scoreline{display:flex;align-items:center;justify-content:center;gap:16px;margin:12px 0 2px}
   .scoreline .s{font-family:var(--fd);font-size:52px;line-height:1}
   .scoreline .s.down{color:var(--dim-2)}
+  /* THE WEEK LANDING. The card takes the colour of the result for a beat, which is the whole
+     difference between a scoreboard and a list of numbers being replaced. */
+  .gamecard.won{animation:cardwon .55s ease-out both}
+  .gamecard.lost{animation:cardlost .55s ease-out both}
+  @keyframes cardwon{
+    0%{box-shadow:0 0 0 0 rgba(74,222,128,.55);border-color:rgba(74,222,128,.75)}
+    100%{box-shadow:0 0 0 14px rgba(74,222,128,0);border-color:var(--line)}}
+  @keyframes cardlost{
+    0%{box-shadow:0 0 0 0 rgba(239,68,68,.5);border-color:rgba(239,68,68,.7)}
+    100%{box-shadow:0 0 0 14px rgba(239,68,68,0);border-color:var(--line)}}
+  /* The record: two halves that move independently, so a win and a loss do not look the same. */
+  #v-rec b{font-family:inherit;font-weight:inherit;display:inline-block}
+  #v-rec i{font-style:normal;color:var(--dim-2);margin:0 1px}
+  #v-rec b.bump{animation:recbump .42s cubic-bezier(.2,1.5,.4,1) both}
+  @keyframes recbump{0%{transform:scale(1)}38%{transform:scale(1.34)}100%{transform:scale(1)}}
+  /* Three or more in a row. */
+  .streak{height:17px;margin-top:7px;text-align:center;font-family:var(--fn);font-size:11px;
+    font-weight:600;letter-spacing:.13em;text-transform:uppercase;opacity:0;
+    transition:opacity .25s ease}
+  .streak.on{opacity:1}
+  .streak.w{color:#4ade80} .streak.l{color:#f87171}
   .tally{display:flex;gap:4px;margin-top:13px}
-  .tick{height:22px;border-radius:3px;background:rgba(255,255,255,.08);flex:1 1 0;min-width:0}
+  .tick{height:22px;border-radius:3px;background:rgba(255,255,255,.08);flex:1 1 0;min-width:0;
+    transition:transform .2s ease}
   .tick.w{background:linear-gradient(135deg,#4ade80,#15803d)} .tick.l{background:var(--grad-red)}
   .tick.p{outline:1px solid rgba(255,255,255,.45);outline-offset:1px}
+  /* The one that just landed, so the eye is told where in the season it is. */
+  .tick.now{animation:tickpop .42s cubic-bezier(.2,1.5,.4,1) both}
+  @keyframes tickpop{0%{transform:scaleY(.4)}55%{transform:scaleY(1.35)}100%{transform:scaleY(1)}}
   .glist{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:12px;
     max-height:320px;overflow-y:auto}
   .g{display:flex;align-items:center;gap:9px;min-width:0;font-size:13px;padding:8px 10px;border-radius:9px;
@@ -1183,9 +1244,6 @@
   .rost{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:11px}
   .rrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;min-width:0;
     background:rgba(255,255,255,.03);border:1px solid var(--line)}
-  /* The flex marker rides under the position rather than replacing it. */
-  .rrow .tag i{display:block;font-style:normal;font-size:7.5px;letter-spacing:.1em;
-    opacity:.72;margin-top:1px}
   .rrow .tag{color:#fff;flex:0 0 40px;text-align:center;font-family:var(--fn);font-size:9.5px;
     letter-spacing:.05em;color:#fff;padding:4px 0;border-radius:6px}
   .rrow .nm{flex:1;min-width:0}
@@ -1409,7 +1467,16 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
       <div class="bar"><i id="c-bar" style="width:100%"></i></div>
       <div class="note" id="c-note" style="display:none"></div>
-      <div class="field" id="field" style="margin-top:10px"></div>
+      <!-- THE LINEUP, once the field has scrolled off. Height is reserved at every scroll
+           position and only the opacity changes, because growing a sticky block when they
+           appear would shift the page under the finger. -->
+      <div class="dpips" id="d-pips" aria-hidden="true"></div>
+    </div>
+    <!-- OUTSIDE .capwrap, which is position:sticky. That is the whole reason the field sat at
+         the top of the screen forever: nothing inside a pinned block can scroll out of view.
+         Out here it scrolls away like anything else and gives the space back for real. -->
+    <div class="dfold" id="d-fold">
+      <div class="field" id="field"></div>
       <div class="rail" id="rail1"></div>
       <p class="railnote"></p>
     </div>
@@ -1471,6 +1538,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
       <div class="scoreline"><div class="s num" id="v-you">0</div>
         <div class="dim num" style="font-size:22px">-</div><div class="s num" id="v-them">0</div></div>
+      <!-- Three in a row either way. A season's story is its runs, and nothing on this screen
+           was telling you when you were on one. Height is reserved so the card does not jump
+           when it appears. -->
+      <div class="streak" id="v-streak"></div>
       <div class="tally" id="v-tally"></div>
     </div>
     <div style="margin-top:12px"><button class="btn blue" id="b-sim">Skip to the end</button></div>
@@ -1703,6 +1774,30 @@ const COL={QB:'--qb',RB:'--rb',WR:'--wr',TE:'--te',FLEX:'--flex'};
 function posPaint(pos){
   return 'background:linear-gradient(160deg,var('+(COL[pos]||'--flex')+'),rgba(0,0,0,.45))';
 }
+/* HOW A ROSTER ROW IS LABELLED, in one place, because four screens were each deciding it
+   differently and two of them disagreed with the field.
+
+   The label is the SLOT, so the sixth row always reads FLEX and a roster always reads
+   QB RB WR WR TE FLEX. The colour is the PLAYER'S position, so a flex filled by a back is
+   green and one filled by a receiver is blue. That way the row says both things at once: which
+   spot it is, and who is in it. Labelling it by the player made the flex invisible; colouring
+   it purple made the position invisible. */
+function slotTag(slot,pos){
+  const label=slot||pos;
+  return '<span class="tag" style="'+posPaint(pos||slot)+'">'+esc(label)+'</span>';
+}
+/* Roster order, always QB RB WR WR TE FLEX, whatever order the picks were made in.
+   Duplicated slots are consumed left to right, so the two receivers keep their own places. */
+function bySlotOrder(men){
+  const order=E.SLOTS.slice();
+  const out=[];
+  const rest=men.slice();
+  for(const slot of order){
+    const i=rest.findIndex(m=>m.slot===slot);
+    if(i>=0) out.push(rest.splice(i,1)[0]);
+  }
+  return out.concat(rest);          // anything with an unrecognised slot goes last, not lost
+}
 /* The same five colors as real hex, for the canvas share card, which cannot use a
    CSS variable. Resolved from the stylesheet so there is one palette in the file. */
 let posColorCache=null;
@@ -1862,7 +1957,7 @@ function fieldState(el){
   el.innerHTML='<div class="lines"></div><div class="hash"></div><div class="ez t"></div><div class="ez b"></div>'+
     E.SLOTS.map((slot,i)=>'<div class="chip empty" data-i="'+i+'">'+
       '<div class="disc"><span class="dl">'+slot+'</span><i class="pip"></i></div>'+
-      '<div class="who"></div><div class="yr"></div></div>').join('');
+      '<div class="lab"><div class="who"></div><div class="yr"></div></div></div>').join('');
   el._ps={
     chips:[...el.querySelectorAll('.chip')],
     coords:SPOT_FALLBACK.map(c=>({...c})),
@@ -1884,6 +1979,9 @@ function drawField(el,live){
   const openCount=E.SLOTS.length-(run?run.roster.length:0);
 
   // The sticky bar's pips are the same six slots, so they are drawn from the same data.
+  // The sticky bar's pips are the same six slots, so they come off the same data.
+  if(el.id==='field'){ drawPips(bySlot); watchFold(); }
+
   // Contents update immediately; only the movement is animated.
   st.chips.forEach((c,i)=>{
     const p=bySlot[i];
@@ -1915,8 +2013,17 @@ function drawField(el,live){
     }else{ pip.style.display='none'; }
   });
 
+  /* Same flip as the landing field: a chip low enough that its label would fall outside the
+     field puts the label above the disc instead. The disc itself never moves, which is the
+     whole point; the field clips its overflow, so a label that hangs past the bottom is simply
+     cut off. Applied here rather than in CSS because the threshold is about the SPOT, and the
+     spots move as the formation rearranges. */
+  const FLIP_BELOW=62;
   const paint=(coords)=>{
-    st.chips.forEach((c,i)=>{ c.style.left=coords[i].x+'%'; c.style.top=coords[i].y+'%'; });
+    st.chips.forEach((c,i)=>{
+      c.style.left=coords[i].x+'%'; c.style.top=coords[i].y+'%';
+      c.classList.toggle('above',coords[i].y>FLIP_BELOW);
+    });
   };
 
   const from=st.coords.map(c=>({...c}));
@@ -2571,11 +2678,14 @@ function paintSquad(){
 $('b-play').onclick=()=>startSeason();
 
 /* ---------- season, revealed game by game ---------- */
-function tally(){
+function tally(live){
   const s=run.season, total=17+(run.playoffSeed?run.playoffSeed.rounds:0), cells=[];
+  const last=s.results.length-1;
   for(let i=0;i<Math.max(total,s.results.length);i++){
     const r=s.results[i];
-    cells.push('<span class="tick'+(r?(r.won?' w':' l'):'')+(r&&r.playoff?' p':'')+'"></span>');
+    // The tick that just landed pops, so the eye is told where in the season it is.
+    cells.push('<span class="tick'+(r?(r.won?' w':' l'):'')+(r&&r.playoff?' p':'')+
+      (live&&i===last?' now':'')+'"></span>');
   }
   $('v-tally').innerHTML=cells.join('');
 }
@@ -2586,7 +2696,7 @@ function pushGame(r,el){
     '<span class="opp">'+esc(r.opponent)+'</span>'+
     '<span class="sc">'+r.shownYou+'-'+r.shownThem+'</span></div>');
 }
-function paintNext(){
+function paintNext(live){
   const s=run.season;
   if(run.phase===R.PHASES.SEASON){
     const o=DATA.byTeamSeasonId[run.schedule[s.week]];
@@ -2596,24 +2706,86 @@ function paintNext(){
     $('v-round').textContent=run.playoffSeed.roundNames[s.playoffRound]||'Playoffs';
     $('v-opp').textContent=o?o.display:'';
   }
-  $('v-rec').textContent=s.wins+'-'+s.losses;
+  /* The record's two halves animate independently, so the half that changed is the half that
+     moves. Swapping the whole string makes a win and a loss look identical. */
+  const rec=$('v-rec');
+  if(!rec.dataset.split){
+    rec.innerHTML='<b id="v-w">0</b><i>-</i><b id="v-l">0</b>';
+    rec.dataset.split='1';
+  }
+  const wEl=$('v-w'), lEl=$('v-l');
+  const bumped=live&&(Number(wEl.textContent)!==s.wins?wEl:(Number(lEl.textContent)!==s.losses?lEl:null));
+  countTo(wEl,s.wins,live?300:0);
+  countTo(lEl,s.losses,live?300:0);
+  if(bumped){ bumped.classList.remove('bump'); void bumped.offsetWidth; bumped.classList.add('bump'); }
+
+  const st=streakOf(s.results);
+  const sEl=$('v-streak');
+  if(sEl){
+    sEl.className='streak'+(st?(st.won?' w on':' l on'):'');
+    sEl.textContent=st?(st.n+(st.won?' straight wins':' straight losses')):'';
+  }
 }
 function startSeason(){
   $('v-list').innerHTML=''; tally(); paintNext();
   $('v-you').textContent='0'; $('v-them').textContent='0';
   show('s-season'); runSim();
 }
+/* A NUMBER THAT ARRIVES RATHER THAN APPEARS.
+   Counts from where it is to where it is going, eased out so it slows into the value. Returns
+   immediately at the final number when motion is reduced, because the number is the
+   information and the counting is not. */
+function countTo(el,to,ms){
+  const from=parseInt(el.textContent,10)||0;
+  if(HERO_REDUCE||from===to||ms<=0){ el.textContent=to; return; }
+  const t0=performance.now();
+  const tick=(now)=>{
+    const k=Math.min(1,(now-t0)/ms);
+    const e=1-Math.pow(1-k,3);
+    el.textContent=Math.round(from+(to-from)*e);
+    if(k<1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+/* THE SEASON, REVEALED WEEK BY WEEK.
+   The scores used to swap in as text and the record with them, so seventeen games went past as
+   seventeen instant substitutions: nothing arrived, nothing landed, and the streak that is the
+   actual story of a season was invisible.
+
+   Now the two scores count up together, the card takes the colour of the result for a beat, the
+   tick that just landed pops, the winning half of the record ticks over, and a streak of three
+   or more says so. All of it is decoration over the same numbers: the result is decided in
+   advanceWeek before any of this runs. */
 function runSim(){
+  const card=document.querySelector('#s-season .gamecard');
   const step=()=>{
     // Regular season only. Playoff rounds are called on their own screen.
     if(run.phase!==R.PHASES.SEASON){after();return;}
     const r=R.advanceWeek(run,DATA,LEAGUE,CAL);
-    $('v-you').textContent=r.shownYou; $('v-them').textContent=r.shownThem;
+    /* From zero every week, not from last week's score: a scoreboard counting from 24 down to
+       17 reads as the previous game being corrected. */
+    $('v-you').textContent='0'; $('v-them').textContent='0';
+    countTo($('v-you'),r.shownYou,380);
+    countTo($('v-them'),r.shownThem,380);
     $('v-you').classList.toggle('down',!r.won); $('v-them').classList.toggle('down',r.won);
-    pushGame(r,$('v-list')); tally(); paintNext();
+    card.classList.remove('won','lost');
+    void card.offsetWidth;                       // restart the flash on a repeat result
+    card.classList.add(r.won?'won':'lost');
+    pushGame(r,$('v-list')); tally(true); paintNext(true);
     simTimer=setTimeout(step,540);
   };
   simTimer=setTimeout(step,340);
+}
+
+/* How many in a row, and which way. Read off the results rather than tracked, so it cannot
+   drift out of step with them. */
+function streakOf(results){
+  if(!results.length) return null;
+  const won=results[results.length-1].won;
+  let n=0;
+  for(let i=results.length-1;i>=0&&results[i].won===won;i--) n++;
+  return n>=3?{n,won}:null;
 }
 function fastForward(){
   clearTimeout(simTimer);
@@ -2883,9 +3055,7 @@ function paintOver(){
      row was the flex is still visible: it is the sixth one, and it carries a small marker. */
   $('o-rost').innerHTML=E.SLOTS.map((slot,i)=>{
     const p=bySlot[i]; if(!p) return '';
-    const isFlex=slot==='FLEX';
-    return '<div class="rrow"><span class="tag" style="'+posPaint(p.position)+'">'+
-      esc(p.position)+(isFlex?'<i>flex</i>':'')+'</span>'+
+    return '<div class="rrow">'+slotTag(slot,p.position)+
       '<span class="nm"><b>'+esc(p.name)+'</b><span>'+p.season+' '+esc(E.nickname(p.franchise))+
         (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</span></span>'+
       '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
@@ -3104,11 +3274,16 @@ function drawShareCard(){
   E.SLOTS.forEach((slot,i)=>{
     const p=bySlot[i]; if(!p) return;
     // chip
+    /* Same rule as every roster in the game: the chip says which SLOT it is, so the sixth row
+       reads FLEX, and it is coloured by the PLAYER'S position, so a flex filled by a back is
+       green. The card used to print the player's position on both counts, which made the flex
+       spot invisible on the one artefact that gets shared. */
     const cw=88,ch=52;
+    const tag=slot||p.position;
     x.fillStyle=COLS[p.position]||'#64748b';
     roundRect(x,PAD,y-38,cw,ch,12); x.fill();
     N('700',26); x.fillStyle='#ffffff';
-    x.fillText(p.position,PAD+cw/2-x.measureText(p.position).width/2,y-2);
+    x.fillText(tag,PAD+cw/2-x.measureText(tag).width/2,y-2);
     // name, shrunk only if it would collide with the right column
     const right=CARD.W-PAD;
     N('500',24); x.fillStyle='rgba(255,255,255,.5)';
@@ -3305,37 +3480,24 @@ function heroFaces(){
 function heroChips(){
   const f=$('h-field');
   f.querySelectorAll('.chip').forEach(c=>c.remove());
-  /* VERTICAL POSITIONS ARE MAPPED INTO A SAFE BAND, not used as raw percentages.
-     A filled chip carries a name and a team line UNDER its disc, so the space it needs is
-     the disc radius plus about 24px of label. On a short field a spot at 82% has nowhere to
-     put that and the field's own overflow:hidden cuts the running back's name off: measured
-     at 10px on a 360x640 phone and 13px in landscape.
-
-     Percentages cannot express "leave room for the label", because the label is a fixed
-     number of pixels and the field is not. So the spots' 24-to-82% spread is squeezed into
-     whatever band actually fits the field as rendered. On a tall field the band is nearly the
-     whole height and nothing moves; on a short one everything gathers toward the middle,
-     which is the right failure. */
-  const H=f.getBoundingClientRect().height||1;
-  const DISC=17, LABEL=24;
-  const tops=HERO_SPOTS.map(sp=>sp.top);
-  const lo=Math.min(...tops), hi=Math.max(...tops);
-  const safeLo=DISC, safeHi=Math.max(safeLo, H-DISC-LABEL);
-  const place=(top)=>hi>lo
-    ? safeLo+((top-lo)/(hi-lo))*(safeHi-safeLo)
-    : (safeLo+safeHi)/2;
-
+  /* Spots are used exactly as designed. An earlier version squeezed them into a "safe band"
+     computed from the field's height so labels always fit, and that was the wrong trade: it
+     moved every bubble, and pushed the top row hard against the field's edge. Nothing moves
+     now; the chips whose label would not fit below flip it above instead. */
+  const FLIP_BELOW=62;   // percent down the field, past which the label goes above the disc
   HERO_SPOTS.forEach((sp,i)=>{
     const on=heroFilled.find(x=>x.at===i);
     const el=document.createElement('div');
-    el.className='chip '+(on?'filled':'empty')+(on&&on.fresh?' pop':'');
-    el.style.left=sp.left+'%'; el.style.top=place(sp.top)+'px';
+    el.className='chip '+(on?'filled':'empty')+(on&&on.fresh?' pop':'')+
+      (sp.top>FLIP_BELOW?' above':'');
+    el.style.left=sp.left+'%'; el.style.top=sp.top+'%';
     const style=on?' style="background:linear-gradient(160deg,var(--'+on.pos.toLowerCase()+
       '),rgba(0,0,0,.45))"':'';
     el.innerHTML='<div class="disc"'+style+'><span class="dl">'+(on?on.pos:sp.label)+
-      '</span></div>'+(on?'<div class="who">'+esc(on.last)+'</div><div class="yr">'+
+      '</span></div>'+(on?'<div class="lab"><div class="who">'+esc(on.last)+
+      '</div><div class="yr">'+
       '<span class="tc">'+esc(E.eraCode(on.fr,on.season))+'</span> '+on.season+
-      '</div>':'');
+      '</div></div>':'');
     f.appendChild(el);
     if(on) on.fresh=false;
   });
@@ -4076,7 +4238,10 @@ function runDetail(row){
   const mine=!row;
   const picks=mine?runPayload().picks:(row.picks||[]);
   const slots=mine?runPayload().slots:(row.slots||[]);
-  const men=picks.map((k,i)=>({p:fromPickKey(k),slot:slots[i]||''}));
+  /* Sorted into slot order, not pick order. A row on the board was listing whatever order the
+     six spins happened to come in, so the same six players read differently on the results page
+     and in this sheet. */
+  const men=bySlotOrder(picks.map((k,i)=>({p:fromPickKey(k),slot:slots[i]||''})));
   const known=men.filter(m=>m.p);
   const o=mine?run.outcome:null;
   const p=mine?runPayload():null;
@@ -4107,8 +4272,7 @@ function runDetail(row){
     '<p class="dim" style="font-size:12.5px;margin:0">'+esc(label)+
       (club?' &middot; took the '+esc(poss(E.nickname(club)))+' place':'')+'</p>'+
     (known.length?'<div class="rost" style="margin-top:12px">'+known.map(m=>{
-      return '<div class="rrow"><span class="tag" style="'+posPaint(m.slot||m.p.position)+
-        '">'+esc(m.slot||m.p.position)+'</span>'+
+      return '<div class="rrow">'+slotTag(m.slot,m.p.position)+
         '<span class="nm"><b>'+esc(m.p.name)+'</b><span>'+m.p.season+' '+
           esc(E.nickname(m.p.franchise))+(m.p.stat_line?' &middot; '+esc(m.p.stat_line):'')+
         '</span></span>'+
@@ -4275,6 +4439,43 @@ $('b-how').onclick=howToPlay;
    is how a scroll goes from smooth to sticky on a phone. The natural height is measured and
    cached in --dfh rather than read every frame, for the same reason: reading it back after
    writing max-height would force a layout on each frame. */
+/* WHEN THE PIPS COME UP.
+   Driven by how much of the field is still on screen, via IntersectionObserver rather than a
+   scroll handler doing arithmetic: the browser computes the ratio off the main thread, so it
+   costs nothing per frame, and it cannot feed back into layout the way a scroll-linked height
+   did. The threshold list is what makes it continuous instead of a snap at one line.
+
+   The field has to be OUTSIDE .capwrap for any of this to mean anything. Inside a
+   position:sticky block it never leaves the viewport, so the ratio never moves. */
+let foldObs=null;
+function watchFold(){
+  const f=$('d-fold'), scr=$('s-draft');
+  if(!f||!scr) return;
+  if(typeof IntersectionObserver!=='function'){ scr.style.setProperty('--sq','0'); return; }
+  if(foldObs) foldObs.disconnect();
+  foldObs=new IntersectionObserver((entries)=>{
+    for(const e of entries){
+      /* Fully in view is no pips, fully gone is all of them. The 1.4 gets them to full opacity
+         a little before the field has completely left, so the two states overlap rather than
+         handing over at exactly the same instant. */
+      const sq=Math.max(0,Math.min(1,(1-e.intersectionRatio)*1.4));
+      scr.style.setProperty('--sq',sq.toFixed(3));
+    }
+  },{threshold:Array.from({length:21},(_,i)=>i/20)});
+  foldObs.observe(f);
+}
+
+/* The same six slots the field shows, in the same order, drawn from the same data, so the
+   sticky bar carries the lineup once the field is gone. */
+function drawPips(bySlot){
+  const el=$('d-pips'); if(!el) return;
+  el.innerHTML=E.SLOTS.map((slot,i)=>{
+    const p=bySlot[i];
+    return '<i class="'+(p?'on':'')+'"'+(p?' style="'+posPaint(p.position)+'"':'')+'>'+
+      esc(p?lastName(p.name):slot)+'</i>';
+  }).join('');
+}
+
 /* The results page tabs. Delegated, so it survives every repaint, and the panes are shown by
    display so a hidden one costs no page height. */
 $('o-tabs').addEventListener('click',(e)=>{
