@@ -189,8 +189,7 @@
   /* Anything with its own rounding gets a ring that follows it rather than a
      rectangle drawn around a pill. */
   button:focus-visible,a:focus-visible,summary:focus-visible{border-radius:11px}
-  .avatar:focus-visible,.tm:focus-visible{border-radius:50%}
-  .tm:focus-visible{border-radius:11px}
+  .avatar:focus-visible{border-radius:50%}
   html,body{margin:0;background:var(--bg);color:var(--ink)}
   body{font-family:var(--fb);
     font-size:16px;line-height:1.45;overscroll-behavior-y:none;
@@ -257,9 +256,20 @@
 
   header{display:flex;align-items:center;margin:2px 0 16px}
   header .mark{flex:0 0 auto;display:block;width:30px;height:27px;margin-right:9px}
+  /* The game's name now holds the display slot the site name used to, in the same face and
+     the same two-tone treatment: white then red. Matches the share card, which sets THE
+     PERFECT in white and SEASON in red. */
+  .lockup{display:flex;align-items:center;text-decoration:none;color:inherit;
+    flex:0 1 auto;min-width:0;border-radius:10px}
+  .lockup:focus-visible{outline:2px solid var(--wr);outline-offset:3px}
   .brand{font-family:var(--fd);font-size:16px;letter-spacing:.06em;text-transform:uppercase;
-    white-space:nowrap}
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .brand i{color:var(--red);font-style:normal}
+  /* The site link. Same pill it always was, so nothing about the header's shape changes. */
+  .pill.site{text-decoration:none;flex:0 0 auto}
+  .pill.site i{color:var(--red);font-style:normal}
+  .pill.site:hover{border-color:var(--line);color:var(--fg)}
+  .pill.site:focus-visible{outline:2px solid var(--wr);outline-offset:3px}
   /* The pill gives way rather than overflowing. At 320px the header has 43px of slack
      with nothing in the corner, and the mark takes 39 of it: the fit is measured and
      correct, but a longer game name or a wider font later should truncate here rather
@@ -593,50 +603,13 @@
     font-family:var(--fn);font-size:12px;display:grid;place-items:center;margin-top:1px}
   .rules b{color:#fff}
 
-  .divs{display:grid;gap:13px}
-  .teams{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:6px}
-  .tm{padding:12px 3px;border-radius:10px;border:1px solid var(--line);background:var(--panel);
-    font-family:var(--fd);font-size:14px;letter-spacing:.03em;transition:all .12s ease}
-  .tm:active{transform:scale(.95)}
-  /* Picked: the bubble fills with that club's own two colors, its secondary as a
-     keel line, and a text color chosen for contrast rather than assumed white.
-     No color-mix() anywhere: it needs Safari 16.2, and this page has already been
-     bitten once by shipping something an iPhone quietly ignored. Layering black
-     over the club color is the same trick the position chips use. */
-  .tm.on{border-color:transparent;color:var(--on);position:relative;overflow:hidden;
-    background:linear-gradient(160deg,rgba(255,255,255,.10) 0%,rgba(0,0,0,.34) 120%),var(--c1);
-    box-shadow:0 0 0 2px rgba(255,255,255,.22),0 6px 16px -8px #000;
-    animation:tmpick .34s cubic-bezier(.2,1.4,.4,1) both}
-  .tm.on:after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--c2)}
-  /* Who you will play twice, named as soon as you pick. */
-  .rivals{max-height:0;overflow:hidden;opacity:0;border-radius:12px;
-    background:var(--grad-panel);border:1px solid var(--line);
-    border-left:3px solid var(--c1,var(--line-2));
-    transition:max-height .3s ease,opacity .3s ease,margin .3s ease,padding .3s ease}
-  .rivals.on{max-height:130px;opacity:1;margin-top:13px;padding:11px 13px}
-  .rivals p{margin:0;font-size:13px;color:var(--dim)}
-  .rivals p b{color:var(--ink);font-weight:700}
-  @keyframes tmpick{from{transform:scale(.88)}to{transform:scale(1)}}
-
-  /* the field */
-  .field{position:relative;width:100%;aspect-ratio:1/0.52;border-radius:14px;overflow:hidden;
-    background:var(--grad-field);border:1px solid var(--line)}
   /* The results page is long, so its copy of the field is a little flatter. */
   .field.short{aspect-ratio:1/0.46}
-  /* Your club, very faintly, on every field once you have chosen one. --tc1 is set
-     on :root when the draft starts, so this is a no-op until then. */
-  /* THE CLUB WASH.
-     `screen` rather than plain alpha. Measured on the rendered page, a club color at 30%
-     opacity over this field came out mostly field: Kansas City's red arrived as #331f3f,
-     a violet, and five of eight clubs sampled arrived as plain blue, meaning the wash was
-     doing nothing at all. Screening lifts the field toward the club's hue instead of
-     averaging into it, so a red reads red. The colors themselves come from
-     E.washColors(), which floors club colors into a range that can show on a dark
-     ground; see the comment on it in engine.js. */
-  .field:before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
-    background:radial-gradient(118% 82% at 50% -14%,var(--tc1,transparent),transparent 62%),
-               radial-gradient(94% 64% at 50% 114%,var(--tc2,transparent),transparent 64%);
-    mix-blend-mode:screen;opacity:.26}
+  /* THE CLUB WASH IS GONE, along with the favourite team it tinted the field with. It
+     screened E.washColors() of your club over every field; with no club there is nothing for
+     it to be a wash of, and --tc1 would never be set, so it painted nothing. The end-zone
+     gradients below keep their own blue and red defaults, which is what they always fell
+     back to before a team was picked. */
   /* THE FIELD MARKINGS.
      This was a yard line every 9.6% at 7% white, plus red verticals at 10%, and the net
      effect on screen was a dark rectangle: the lines were at the edge of visibility and
@@ -1229,10 +1202,15 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
          width and height are set so it reserves its box before the image arrives, and
          alt is empty because the wordmark beside it already names the brand. -->
-    <img class="mark" src="mark.png?v=2" width="30" height="27" alt="" decoding="async">
-    <div class="brand">RunThe<i>.GG</i></div>
+    <!-- THE LOCKUP: mark plus game name, one click target, back to the game's front page.
+         Mid-run it arms first, the same two-tap the Quit button uses, because a logo that
+         silently throws away a draft you are six spins into is a trap. -->
+    <a class="lockup" id="b-home" href="." aria-label="The Perfect Season, back to the start">
+      <img class="mark" src="mark.png?v=2" width="30" height="27" alt="" decoding="async">
+      <span class="brand">The Perfect<i> Season</i></span>
+    </a>
     <div class="hdr-r">
-      <div class="pill" id="hdr">The Perfect Season</div>
+      <a class="pill site" href="https://runthe.gg">RunThe<i>.GG</i></a>
       <button class="avatar" id="b-profile" aria-label="Your profile">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.6" r="4"/>
           <path d="M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4"/></svg>
@@ -1345,29 +1323,6 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="hrow" style="margin-top:10px">
       <button class="btn ghost sm" id="b-board-back">Back</button>
       <button class="btn ghost sm" id="b-diag">Check the connection</button></div>
-  </div>
-
-  <div class="screen" id="s-team">
-    <!-- Back at the TOP as well as the bottom, because the bottom one alone reads as no
-         back button at all. Measured: this screen is 1003px tall and the bottom Back sits
-         at y=1041, so it needed 517px of scrolling to reach on an iPhone SE, 194px on an
-         iPhone 14 and 200px on a desktop. It worked the whole time; nobody could see it. -->
-    <div class="backrow"><button class="btn ghost sm js-back" data-back="intro">Back</button></div>
-    <div class="eyebrow">Step 1 of 3</div>
-    <h2 class="display" style="font-size:27px;margin:5px 0 4px">Your favorite team</h2>
-    <p class="dim" style="font-size:13.5px;margin:0 0 4px">You are not drafting for them, you are taking their place in the league.
-    That fixes your division, and you play your three rivals twice each, so six of
-    your seventeen games are decided right here.</p>
-    <p class="dim" style="font-size:12.5px;margin:0 0 15px">Every division is about
-    as hard as the next, so pick the one you actually care about.</p>
-    <div class="divs" id="divs"></div>
-    <div class="rivals" id="rivals"></div>
-    <div style="margin-top:17px"><button class="btn" id="b-draft" disabled>Go to the draft</button></div>
-    <!-- There was no way back off this screen. Step 1 of 3 with a disabled primary
-         button and no exit: the only ways out were to pick a team you did not want or
-         to reload the page. The browser's own back button leaves the site, because
-         nothing here pushes history. Same ghost Back the leaderboard already uses. -->
-    <div style="margin-top:9px"><button class="btn ghost sm js-back" data-back="intro">Back</button></div>
   </div>
 
   <div class="screen" id="s-draft">
@@ -1536,8 +1491,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=14"></script>
-<script src="run.js?v=14"></script>
+<script src="engine.js?v=15"></script>
+<script src="run.js?v=15"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -1609,7 +1564,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=14;
+const NEED_VERSION=15;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -1763,7 +1718,7 @@ function layoutFor(){
   return out;
 }
 
-let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,pickedTeam=null,simTimer=null,lastChem=1;
+let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,simTimer=null,lastChem=1;
 
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');window.scrollTo({top:0});
   if(typeof heroSync==='function') heroSync();
@@ -1782,42 +1737,11 @@ async function boot(){
     DATA=R.indexData(pl,tm); CTX={battery:bat,coaches:co,curated:cu};
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
-    buildTeams(); authBoot(); watchTabs(); show('s-intro');
+    authBoot(); watchTabs(); show('s-intro');
   }catch(e){
     $('s-load').innerHTML='<div class="load"><h3 class="display">Could not load the data</h3>'+
       '<p class="dim" style="font-size:13px">'+esc(e.message)+'</p></div>';
   }
-}
-
-function buildTeams(){
-  const d={};
-  for(const t of DATA.teamSeasons)(d[t.division] ??= new Set()).add(t.franchise);
-  const order=['AFC East','AFC North','AFC South','AFC West','NFC East','NFC North','NFC South','NFC West'];
-  $('divs').innerHTML=order.map(k=>'<div><div class="eyebrow">'+k+'</div><div class="teams">'+
-    [...d[k]].sort().map(f=>'<button class="tm" data-f="'+f+'">'+f+'</button>').join('')+'</div></div>').join('');
-  $('divs').addEventListener('click',e=>{
-    const b=e.target.closest('.tm'); if(!b)return;
-    document.querySelectorAll('.tm').forEach(x=>{x.classList.remove('on');x.removeAttribute('style');});
-    const tc=E.teamColors(b.dataset.f);
-    b.style.setProperty('--c1',tc.primary);
-    b.style.setProperty('--c2',tc.secondary);
-    b.style.setProperty('--on',tc.on);
-    b.classList.add('on'); pickedTeam=b.dataset.f; $('b-draft').disabled=false;
-    showRivals(b.dataset.f,tc);
-  });
-}
-
-/* Naming the three teams you will play twice turns "pick a team" from decoration
-   into a consequence you can see before you commit to it. */
-function showRivals(franchise,tc){
-  const el=$('rivals'); if(!el) return;
-  const divs=E.buildDivisionMap(DATA.teamSeasons);
-  const mine=Object.keys(divs).find(d=>divs[d].includes(franchise));
-  const rivals=(divs[mine]||[]).filter(f=>f!==franchise);
-  el.style.setProperty('--c1',tc.primary);
-  el.innerHTML='<div class="eyebrow" style="margin:0 0 6px">'+esc(mine)+'</div>'+
-    '<p>Twice each: <b>'+rivals.map(f=>esc(E.nickname(f))).join(', ')+'</b></p>';
-  el.classList.add('on');
 }
 
 /* ---------- the field ----------
@@ -2064,21 +1988,17 @@ function newRun(opts){
   run=R.createRun(opts||{});
   return run;
 }
-$('b-start').onclick=()=>{newRun({});show('s-team');};
-$('b-daily').onclick=()=>{newRun({daily:new Date().toISOString().slice(0,10)});
-  toast('Everyone gets the same six spins today');show('s-team');};
-$('b-draft').onclick=()=>{
-  R.pickFranchise(run,pickedTeam);
-  $('hdr').textContent=pickedTeam;
-  /* A wash of the club's colors on every field from here on. Kept deliberately
-     faint: it should make the run feel like yours, not repaint the game. */
-  /* washColors, not teamColors: nine clubs have a color darker than the field itself,
-     where a wash can only subtract, and the vivid reds came out violet. Everything else
-     on the page still uses the true club colors. */
-  const tc=E.washColors(pickedTeam);
-  document.documentElement.style.setProperty('--tc1',tc.a);
-  document.documentElement.style.setProperty('--tc2',tc.b);
-  show('s-draft'); nextSpin();
+/* STRAIGHT INTO THE DRAFT. There is no club to choose, so there is nothing between pressing
+   Start and the first spin. The schedule is 17 random historic team-seasons and the playoffs
+   are a fixed difficulty ladder, and neither of them asks who you support.
+
+   The club-colour wash went with it: it keyed off the favourite team, so with no favourite
+   team there is nothing for it to be a wash OF. */
+function beginDraft(opts){ newRun(opts); show('s-draft'); nextSpin(); }
+$('b-start').onclick=()=>{ beginDraft({}); };
+$('b-daily').onclick=()=>{
+  beginDraft({daily:new Date().toISOString().slice(0,10)});
+  toast('Everyone gets the same six spins today');
 };
 
 /* ---------- draft ---------- */
@@ -2599,19 +2519,23 @@ let poTimer=null, poRaf=0, poSkip=null;
 function playPlayoffGame(r,after){
   const round=r.round||'Playoffs';
   const opp=DATA.byTeamSeasonId[r.opponent_id];
-  /* washColors for the stripe, not the raw primary. The bug sits on #080d17 and 14 of the
-     32 clubs have a primary within 1.6:1 of that, which is a black bar on a black ground:
-     the Raiders, the Steelers, the Saints, the Bears, the Patriots, the Seahawks and eight
-     more had no visible club color on the score bug at all. Measured; the wash colors
-     clear it for all 32. */
-  const me=E.washColors(run.franchise), them=E.washColors(opp?opp.franchise:run.franchise);
+  /* YOUR side of the score bug is the game's own blue now, because there is no club to take
+     a colour from: you are not playing as anybody's franchise, you are a roster of six
+     players drawn from thirty years of them.
+
+     The OPPONENT's side is still their real club colour, via washColors rather than the raw
+     primary. The bug sits on #080d17 and 14 of the 32 clubs have a primary within 1.6:1 of
+     that, which is a black bar on a black ground: the Raiders, the Steelers, the Saints, the
+     Bears, the Patriots, the Seahawks and eight more had no visible colour on the bug at all.
+     Measured; the wash colours clear it for all 32. */
+  const me={a:'#4d8ef7'}, them=opp?E.washColors(opp.franchise):{a:'#8a97a8'};
   const youEl=$('po-you'), themEl=$('po-them'), bug=$('po-bug');
 
   $('po-round').textContent=round;
   $('po-opp').textContent=r.opponent;
   youEl.style.setProperty('--tcol',me.a);
   themEl.style.setProperty('--tcol',them.a);
-  youEl.querySelector('.ab').textContent=run.franchise;
+  youEl.querySelector('.ab').textContent='YOU';
   themEl.querySelector('.ab').textContent=opp?opp.franchise:'OPP';
   youEl.querySelector('.sc').textContent='0';
   themEl.querySelector('.sc').textContent='0';
@@ -2654,7 +2578,8 @@ function playPlayoffGame(r,after){
   poSkip=finish;
 
   const logScore=(e)=>{
-    const who=e.team==='you'?run.franchise:(opp?opp.franchise:'OPP');
+    /* "You", not a club code: the roster is yours, the franchise is not. */
+    const who=e.team==='you'?'You':(opp?opp.franchise:'OPP');
     $('po-log').insertAdjacentHTML('afterbegin',
       '<div class="pl '+e.team+'"><span class="t">Q'+e.q+' '+e.clock+'</span>'+
       '<span class="w">'+esc(who)+' '+e.kind.toLowerCase()+
@@ -2954,7 +2879,10 @@ function drawShareCard(){
   const c=document.createElement('canvas');
   c.width=CARD.W; c.height=CARD.H;
   const x=c.getContext('2d');
-  const o=run.outcome, tc=E.teamColors(run.franchise);
+  const o=run.outcome;
+  /* The card used to be washed in your club's colour. With no club it takes the game's own
+     two, which is what the share card's own source already uses for its headline. */
+  const tc={primary:'#b91c1c',secondary:'#1d4ed8',on:'#fff'};
   const PAD=CARD.PAD;
   const mid=CARD.W/2;
 
@@ -3508,7 +3436,9 @@ function runPayload(){
     chemistryPct:(run.season.chemistry-1)*100,
     spendMusd:run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed),
     respins:run.respinsUsed,
-    franchise:run.franchise,
+    /* No favourite club any more, so nothing to record. The column stays for the runs
+       submitted before the picker was removed. */
+    franchise:null,
     /* The puzzle's own date, which is what the daily board is keyed on. Null for a
        free run, and the server decides `daily` from whether it is there. */
     dailyDate:run.daily||null,
@@ -3867,7 +3797,8 @@ function runDetail(row){
   const chem=mine?p.chemistryPct:Number(row.chemistry_pct);
   const spend=mine?p.spendMusd:Number(row.spend_musd);
   const perf=mine?p.perfectPct:(row.perfect_pct===null?null:Number(row.perfect_pct));
-  const club=mine?run.franchise:row.franchise;
+  /* Only rows submitted before the team picker was removed carry a club. */
+  const club=mine?null:row.franchise;
 
   const tile=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
   const cols=club?E.teamColors(club):null;
@@ -4068,14 +3999,9 @@ function endRun(){
    game. Coming off one, the toast says which game you are now in rather than leaving
    it to be worked out from the results screen. */
 $('b-same').onclick=()=>{
-  const team=pickedTeam, wasDaily=!!(run&&run.daily);
-  if(!team){ $('b-again').click(); return; }
+  const wasDaily=!!(run&&run.daily);
   endRun();
-  newRun({});
-  pickedTeam=team;
-  R.pickFranchise(run,team);
-  $('hdr').textContent=team;
-  show('s-draft'); nextSpin();
+  beginDraft({});
   if(wasDaily) toast("Today's daily is played. This one is a free run");
 };
 
@@ -4086,17 +4012,35 @@ $('b-again').onclick=()=>{ toIntro(); };
    draft. It was inline in one handler and the other two would have copied it. */
 function toIntro(){
   endRun();
-  pickedTeam=null;
-  document.querySelectorAll('.tm').forEach(x=>{x.classList.remove('on');x.removeAttribute('style');});
-  $('b-draft').disabled=true; $('hdr').textContent='The Perfect Season';
-  $('rivals').classList.remove('on'); $('rivals').innerHTML='';
-  document.documentElement.style.removeProperty('--tc1');
-  document.documentElement.style.removeProperty('--tc2');
   show('s-intro');
 }
 /* Both copies, bound by class rather than by id. The screen carries two Back buttons and a
    third would be free; binding one id was how the bottom-only version came about. */
 document.querySelectorAll('.js-back[data-back="intro"]').forEach((b)=>{ b.onclick=()=>{ toIntro(); }; });
+
+/* THE LOCKUP. A real link, so it opens in a new tab on a middle click and reads as a link to
+   a screen reader. Its default navigation is intercepted only to avoid the reload: showing
+   the intro screen is the same destination and keeps the page warm.
+
+   Mid-run it arms first. The Quit button already established that ending a run takes two
+   taps, and the logo sits in the header on every screen where the thumb also reaches for the
+   profile button, so an accidental hit would be easy and expensive. */
+let homeArmed=null;
+function resetHome(){
+  if(homeArmed){clearTimeout(homeArmed);homeArmed=null;}
+  const b=$('b-home'); if(b) b.classList.remove('armed');
+}
+$('b-home').onclick=(e)=>{
+  e.preventDefault();
+  const live=!!run&&!$('s-intro').classList.contains('on');
+  if(!live){ toIntro(); return; }
+  if(homeArmed){ resetHome(); toIntro(); return; }
+  /* The prompt goes in a toast, not in the header. Putting it in the header's own text made
+     it carry a whole sentence, and at 320px the header has 2px of slack. */
+  toast('Tap the logo again to leave this run');
+  $('b-home').classList.add('armed');
+  homeArmed=setTimeout(resetHome,4000);
+};
 
 /* QUITTING A DRAFT, in two taps.
    A run in progress is real work and there is no undo, so the first tap only arms the

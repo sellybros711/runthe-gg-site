@@ -884,136 +884,71 @@ function buildDivisionMap(teamSeasons) {
 
 const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
 
-/**
- * Opponent franchises for one 17-game season, per the real NFL formula.
+/*
+ * Week order.
  *
- * The GDD's formula includes "2 same-place finishers in your conference's other
- * two divisions". There are no standings in this game, opponents are random
- * historical team-seasons and no league is simulated, so that rule has no
- * referent. Replaced with a random team from each of those two divisions, which
- * preserves the shape (one game against each) without inventing a table.
+ * This used to be a constraint solver. The old division formula produced each rival twice as
+ * an adjacent pair, so it had to force the two meetings MIN_REMATCH_GAP weeks apart and keep
+ * a division game late in the year. None of that has a referent now: opponents are unique and
+ * drawn at random, so there are no rematches to space out and no division games to save for
+ * the end. A straight shuffle is the honest implementation rather than a gutted solver.
  */
-function opponentFranchises(franchise, divisions, rng) {
-  const myDiv = Object.keys(divisions).find((d) => divisions[d].includes(franchise));
-  const [myConf] = myDiv.split(' ');
-  const otherConf = CONFERENCES.find((c) => c !== myConf);
-
-  const out = [];
-  for (const rival of divisions[myDiv].filter((f) => f !== franchise)) out.push(rival, rival);
-
-  const intraDivs = DIVISION_NAMES.map((d) => `${myConf} ${d}`).filter((d) => d !== myDiv);
-  const intra = pick(intraDivs, rng);
-  out.push(...divisions[intra]);
-
-  const interDivs = DIVISION_NAMES.map((d) => `${otherConf} ${d}`);
-  const inter = pick(interDivs, rng);
-  out.push(...divisions[inter]);
-
-  for (const d of intraDivs.filter((d) => d !== intra)) out.push(pick(divisions[d], rng));
-
-  const seventeenth = pick(interDivs.filter((d) => d !== inter), rng);
-  out.push(pick(divisions[seventeenth], rng));
-
+function orderSchedule(games, rng) {
+  const out = games.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
   return out;
 }
 
 /**
- * Put the 17 opponents into a week order that looks like a real season.
+ * A 17-game schedule of historic team-seasons.
  *
- * The formula produces division rivals as adjacent pairs, which used to land them
- * in weeks 1 through 6: three teams, home and away, back to back, then nothing but
- * strangers for eleven weeks. Real schedules spread the six division games out and
- * usually save one or two for the end.
+ * There is no favourite club any more, so there is no division and there are no rivals: the
+ * schedule is drawn from the whole 1999-2025 pool at random. What survives from the old
+ * version is the part that mattered, which is NORMALIZATION. An unconstrained random draw
+ * hands one player four all-time greats and another a soft seventeen, and since every run is
+ * measured against the same leaderboard, that is the difference between a fair board and a
+ * lottery. A draw is accepted only if its total strength lands near the league mean and it
+ * carries no more than `maxElite` elite teams, and it is redrawn until it does.
  *
- * Shuffle, then require the two meetings with any repeated opponent to sit at
- * least MIN_REMATCH_GAP weeks apart, and require at least one division game in the
- * closing stretch. Falls back to the least bad ordering if the constraints cannot
- * be met, so a schedule is always produced.
+ * One season per franchise per schedule. Drawing freely would let the same club turn up as
+ * three different vintages, and a 2007 Patriots plus a 2001 Patriots on one schedule reads as
+ * a bug rather than as a season.
  */
-const MIN_REMATCH_GAP = 4;
-
-function orderSchedule(games, rng) {
-  const n = games.length;
-  const spacing = (arr) => {
-    const seen = new Map();
-    let worst = Infinity;
-    arr.forEach((g, i) => {
-      if (seen.has(g.team_season_id)) worst = Math.min(worst, i - seen.get(g.team_season_id));
-      seen.set(g.team_season_id, i);
-    });
-    return worst;
-  };
-  // Repeated opponents are exactly the division rivals.
-  const counts = {};
-  for (const g of games) counts[g.team_season_id] = (counts[g.team_season_id] || 0) + 1;
-  const isDivision = (g) => counts[g.team_season_id] > 1;
-
-  let best = null;
-  for (let attempt = 0; attempt < 200; attempt++) {
-    const a = games.slice();
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(rng() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    const gap = spacing(a);
-    const lateDivision = a.slice(n - 4).some(isDivision);
-    const earlyDivisionCount = a.slice(0, 4).filter(isDivision).length;
-    const ok = gap >= MIN_REMATCH_GAP && lateDivision && earlyDivisionCount <= 2;
-    if (ok) return a;
-    const score = Math.min(gap, MIN_REMATCH_GAP) + (lateDivision ? 1 : 0) - earlyDivisionCount * 0.1;
-    if (!best || score > best.score) best = { a, score };
-  }
-  return best.a;
-}
-
-/**
- * Attach a random season to each opponent franchise, then normalize.
- *
- * Franchise choice must never be a difficulty lever, so a schedule is rejected
- * unless its total opponent strength sits within TOLERANCE of the league-wide
- * mean and it contains no more than MAX_ELITE very strong opponents.
- *
- * Houston has 24 drawable seasons rather than 27; that is handled implicitly by
- * drawing from whatever seasons exist for the franchise.
- */
-function generateSchedule(franchise, data, rng, opts = {}) {
+function generateSchedule(data, rng, opts = {}) {
   const tolerance = opts.tolerance ?? 0.05;
   const maxElite = opts.maxElite ?? 4;
   const maxAttempts = opts.maxAttempts ?? 400;
+  const count = opts.games ?? 17;
 
-  const { divisions, byFranchise, eliteThreshold, meanScheduleStrength } = data;
+  const { byFranchise, eliteThreshold, meanScheduleStrength } = data;
+  const franchises = Object.keys(byFranchise);
 
   let best = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const franchises = opponentFranchises(franchise, divisions, rng);
-    /*
-     * One season per franchise, reused for both meetings. A division rival is on
-     * the schedule twice (home and away) and you face the SAME team-season both
-     * times, you get a home and away game against the 2007 Patriots, not the
-     * 2007 and 2001 Patriots. Memoizing by franchise also makes any other
-     * repeat consistent for free.
-     *
-     * Consequence for normalization: a rival's strength counts twice, which is
-     * correct, a brutal division rival really is two hard games.
-     */
-    const drawn = new Map();
-    const unordered = franchises.map((f) => {
-      if (!drawn.has(f)) {
-        const pool = byFranchise[f];
-        drawn.set(f, pool[Math.floor(rng() * pool.length)]);
-      }
-      return drawn.get(f);
-    });
-    const games = orderSchedule(unordered, rng);
-    const total = games.reduce((s, g) => s + g.strength_z, 0);
-    const elite = games.filter((g) => g.strength_z >= eliteThreshold).length;
+    const used = new Set();
+    const unordered = [];
+    let guard = 0;
+    while (unordered.length < count && guard++ < 500) {
+      const f = franchises[Math.floor(rng() * franchises.length)];
+      if (used.has(f)) continue;
+      used.add(f);
+      const pool = byFranchise[f];
+      unordered.push(pool[Math.floor(rng() * pool.length)]);
+    }
+    const ordered = orderSchedule(unordered, rng);
+    const total = ordered.reduce((sum, g) => sum + g.strength_z, 0);
+    const elite = ordered.filter((g) => g.strength_z >= eliteThreshold).length;
     const drift = Math.abs(total - meanScheduleStrength);
-    const ok = drift <= Math.abs(meanScheduleStrength * tolerance) + tolerance * 17 && elite <= maxElite;
-    if (ok) return { games, total, elite, attempts: attempt + 1 };
-    if (!best || drift < best.drift) best = { games, total, elite, drift, attempts: attempt + 1 };
+    const ok = drift <= Math.abs(meanScheduleStrength * tolerance) + tolerance * count
+      && elite <= maxElite;
+    if (ok) return { games: ordered, total, elite, attempts: attempt + 1 };
+    if (!best || drift < best.drift) best = { games: ordered, total, elite, drift, attempts: attempt + 1 };
   }
-  // Deterministic fallback: never fail to produce a season.
-  return { games: best.games, total: best.total, elite: best.elite, attempts: maxAttempts, relaxed: true };
+  return { games: best.games, total: best.total, elite: best.elite, attempts: maxAttempts,
+    relaxed: true };
 }
 
 /** Playoff opponents, weighted toward the strongest quartile. */
@@ -1358,7 +1293,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 14;
+const ENGINE_API_VERSION = 15;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -1392,7 +1327,7 @@ const publicAPI = {
   CONSTANTS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
   hashSeed, createSeededRNG, sampleGamma,
   pairLinks, resolveChemistry,
-  buildDivisionMap, opponentFranchises, generateSchedule, generatePlayoffs,
+  buildDivisionMap, generateSchedule, generatePlayoffs,
   resolveGame, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,

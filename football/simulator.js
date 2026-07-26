@@ -276,8 +276,7 @@ function simulate(archetype, n, seed0) {
     const rng = E.createSeededRNG(seed0 + i * 7919);
     const roster = archetype.build(rng);
     const chem = E.resolveChemistry(roster, ctx);
-    const franchise = FRANCHISES[Math.floor(rng() * FRANCHISES.length)];
-    const sched = E.generateSchedule(franchise, data, rng);
+    const sched = E.generateSchedule(data, rng);
     const playoffs = E.generatePlayoffs(data, rng);
     const run = E.playRun(roster, chem.multiplier, sched.games, playoffs, leagueContext, rng, constants);
     for (const g of run.results) {
@@ -390,31 +389,29 @@ function chemReport() {
 }
 
 function scheduleReport(n) {
-  console.log(`schedule normalization, ${n} schedules per franchise\n`);
-  const rows = [];
-  for (const f of FRANCHISES) {
-    const totals = [], elites = [], attempts = [];
-    let relaxed = 0;
-    for (let i = 0; i < n; i++) {
-      const rng = E.createSeededRNG(E.hashSeed(f) + i * 104729);
-      const s = E.generateSchedule(f, data, rng);
-      totals.push(s.total); elites.push(s.elite); attempts.push(s.attempts);
-      if (s.relaxed) relaxed++;
-    }
-    rows.push({ f, mu: mean(totals), elite: mean(elites), att: mean(attempts), relaxed });
+  /* This used to report per franchise, because a schedule was built from your division. There
+     are no divisions any more: every schedule is 17 unique historic team-seasons drawn from the
+     whole pool. What still matters, and is the only reason the normalizer exists, is that the
+     draws land near the league mean so one player is not handed four all-time greats while
+     another gets a soft seventeen. */
+  console.log(`schedule normalization, ${n} schedules\n`);
+  const totals = [], elites = [], attempts = [];
+  let relaxed = 0, repeats = 0;
+  for (let i = 0; i < n; i++) {
+    const rng = E.createSeededRNG(20260101 + i * 104729);
+    const sc = E.generateSchedule(data, rng);
+    totals.push(sc.total); elites.push(sc.elite); attempts.push(sc.attempts);
+    if (sc.relaxed) relaxed++;
+    if (new Set(sc.games.map((g) => g.franchise)).size !== sc.games.length) repeats++;
   }
-  rows.sort((a, b) => a.mu - b.mu);
-  console.log('franchise  mean opp strength   mean elite opps   mean attempts  relaxed');
-  for (const r of rows.slice(0, 4).concat(rows.slice(-4))) {
-    console.log(`  ${r.f.padEnd(5)}    ${r.mu.toFixed(2).padStart(6)}             ` +
-      `${r.elite.toFixed(2)}              ${r.att.toFixed(1).padStart(5)}       ${r.relaxed}`);
-  }
-  const spread = rows.at(-1).mu - rows[0].mu;
-  console.log(`\nspread between easiest and hardest franchise: ${spread.toFixed(2)} z-units` +
-    ` over 17 games (${(spread / 17).toFixed(3)} per game)`);
-  console.log(spread < 1.0
-    ? 'Franchise choice is not a meaningful difficulty lever. ok'
-    : 'TOO WIDE, franchise choice would be a difficulty setting. FAIL');
+  const mu = mean(totals);
+  const sd = Math.sqrt(mean(totals.map((t) => (t - mu) ** 2)));
+  console.log(`  mean opponent strength   ${mu.toFixed(2)}  (league mean ${data.meanScheduleStrength.toFixed(2)})`);
+  console.log(`  spread, sd               ${sd.toFixed(2)}`);
+  console.log(`  mean elite opponents     ${mean(elites).toFixed(2)}  of a cap of 4`);
+  console.log(`  mean attempts to accept  ${mean(attempts).toFixed(1)}`);
+  console.log(`  fell back to best effort ${relaxed} of ${n}`);
+  console.log(`  schedules with a franchise twice  ${repeats} ${repeats === 0 ? 'ok' : 'FAIL'}`);
 }
 
 /*
@@ -509,15 +506,18 @@ function draftReport(n) {
     for (const [r, c] of Object.entries(blockedReasons)) console.log(`    ${c.toString().padStart(5)}  ${r}`);
   }
 
-  // Same-season division rivals
-  const rng = E.createSeededRNG(7);
-  const s = E.generateSchedule('BUF', data.prepared, rng);
-  const counts = {};
-  for (const g of s.games) counts[g.team_season_id] = (counts[g.team_season_id] || 0) + 1;
-  const twice = Object.entries(counts).filter(([, c]) => c === 2);
-  console.log(`\n  division rivals drawn twice as the SAME team-season: ${twice.length} of 3 expected` +
-    ` ${twice.length === 3 ? 'ok' : 'FAIL'}`);
-  for (const [id, c] of twice) console.log(`    ${data.byTeamSeasonId[id].display} x${c}`);
+  /* The same-season division-rival check is gone with the divisions. Its replacement is the
+     opposite invariant: a schedule must NOT contain the same franchise twice, because a
+     2007 Patriots plus a 2001 Patriots reads as a bug rather than as a season. */
+  {
+    let dupes = 0;
+    for (let i = 0; i < 300; i++) {
+      const sc = E.generateSchedule(data.prepared, E.createSeededRNG(900 + i));
+      if (new Set(sc.games.map((g) => g.franchise)).size !== sc.games.length) dupes++;
+    }
+    console.log(`\n  schedules of 300 with a repeated franchise: ${dupes} ` +
+      `${dupes === 0 ? 'ok' : 'FAIL'}`);
+  }
 
   // Daily determinism
   const a = R.createRun({ daily: '2026-07-25' });

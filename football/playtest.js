@@ -29,10 +29,9 @@ const byKey=new Map(players.map(p=>[`${p.player_id}|${p.season}`,p]));
 
 const daily=process.env.PS_DAILY||null;
 const run=R.createRun(daily?{daily}:{seed:Number(process.env.PS_SEED??20260725)});
-const franchise=process.env.PS_TEAM||'BUF';
-R.pickFranchise(run,franchise);
-
-console.log(`\n=== THE PERFECT SEASON, ${daily?'daily '+daily:'seed '+run.seed}, you are ${franchise} ===`);
+/* No franchise to pick: the schedule is 17 random historic team-seasons and the playoffs are a
+   fixed ladder, so nothing in a run depends on a favourite club. */
+console.log(`\n=== THE PERFECT SEASON, ${daily?'daily '+daily:'seed '+run.seed} ===`);
 console.log(`cap $${E.CONSTANTS.CAP_MUSD}M | re-spins $${E.CONSTANTS.RESPIN_LADDER_MUSD.join('M then $')}M from cap, ${E.CONSTANTS.MAX_RESPINS} max`);
 console.log(`playoffs at ${E.CONSTANTS.PLAYOFF_WINS} wins, first round off at ${E.CONSTANTS.BYE_SEED_WINS}\n`);
 
