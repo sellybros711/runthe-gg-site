@@ -27,7 +27,7 @@ a validated engine.
 | `strings.js` | Authored copy fragments. `RH_STRINGS`. |
 | `playtest.js` | Plays one full run as readable text. The design instrument. |
 | `simulator.js` | The validation harness. Run after any change to a weight. |
-| `lint-strings.js` | Enforces the §17 copy rules over strings.js and index.html. |
+| `lint-strings.js` | Enforces the §17 copy rules over strings.js, scenes.js and index.html. |
 
 Every module is dual-target: `require` in Node, a global in the browser. All of
 them are wrapped in an IIFE because they load as plain script tags and share one
@@ -64,13 +64,13 @@ node house/lint-strings.js       # copy rules
 | One vote Panel finishes | 37.5% | over 25% |
 | Pairs in the top trust band at Final 5 | 2.4 | about 2 |
 | Blame landed correctly | 53.2% | 45 to 70% |
+| Level 60 vs level 1 win ratio | 1.20x | under 1.5x |
 
 **The comp beast proxy is the one to watch.** It cleared comfortably before
 powers went in, at 27.0 against a 31.7 field. Powers add enough chaos to a week
 that comp record predicts less about survival, and the margin is now inside the
 noise at this sample size. It is passing rather than passing well. If it inverts,
 the lever is `TH_COMP` in `engine.js` K, not a special case.
-| Level 60 vs level 1 win ratio | 1.20x | under 1.5x |
 
 23 archetypes are reachable. The tree is 63 nodes and 372 tokens against 84
 tokens at the level cap, so a maxed account holds 22.6% of it.
@@ -108,7 +108,7 @@ that plays scenes, and it is not written yet.
 
 ## Not built yet
 
-`GDD.md` §18 has the live list. The short version: the Split House twist has no
-voting rule and is unbuildable as specified, the Envelope needs an AI play-timing
-policy, the store and the Supabase leaderboard are not wired, and Move In Night
-is one dialogue beat where it should be several.
+`GDD.md` §18 has the live list. The short version: the Split House twist still
+has no voting rule and is unbuildable as specified, the store and the Supabase
+leaderboard are deliberately last, and Move In Night is one dialogue beat where
+it should be several.

@@ -903,7 +903,9 @@ Version 0.1 said there were none. There were about thirty. These are what is lef
 1. **Split House voting rule.** Who votes on which pair, how one of four survives,
    whether there are two vetoes. Unbuildable until answered. Twist is Stage 10, so
    this is not blocking.
-2. **The Envelope AI policy.** When does an AI choose to play a one time veto.
+2. **Move In Night is one beat.** It seeds starting trust off a single choice
+   where it should be a short sequence, so a new account's on-ramp is thinner
+   than §4 promises.
 3. **Session length.** Roughly 27 comps and 117 action resolutions and paced vote
    reveals put the floor near 30 minutes with zero thinking time, against a 25 to
    40 minute target. Instant thrown comps help. If Stage 3 playtests come in long,
