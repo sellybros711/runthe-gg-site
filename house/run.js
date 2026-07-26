@@ -438,7 +438,7 @@ function doReset(s) {
     if (sch.week !== s.week || sch.done) continue;
     sch.done = true;
     const pw = P.award(s, sch.kind, rng);
-    if (pw) pushEvent(s, 'power_awarded', { kind: pw.kind, holder: pw.holder,
+    if (pw) pushEvent(s, 'power_awarded', { power: pw.kind, holder: pw.holder,
       secrecy: pw.secrecy, victim: pw.victim });
   }
   /* A power the house knows about but cannot place makes everybody jumpy,
@@ -484,7 +484,7 @@ function doCaptainComp(s, input) {
         if (id === s.lastCaptain) continue;
         E.applyTrust(s.rel, id, s.lastCaptain, -5);
       }
-      pushEvent(s, 'power_played', { kind: 'back_to_back', holder: s.lastCaptain, why: 'was barred and played anyway' });
+      pushEvent(s, 'power_played', { power: 'back_to_back', holder: s.lastCaptain, why: 'was barred and played anyway' });
     }
   }
 
@@ -540,11 +540,11 @@ function doSafetyCall(s, input) {
   for (const pw of holders) {
     if (pw.holder === s.human && isHumanActive(s)) {
       if (!input || input.play == null) return s;     // wait for the player
-      if (input.play) { P.spend(s, pw); pushEvent(s, 'power_played', { kind: 'safety', holder: pw.holder, why: 'you called it' }); }
+      if (input.play) { P.spend(s, pw); pushEvent(s, 'power_played', { power: 'safety', holder: pw.holder, why: 'you called it' }); }
       continue;
     }
     const want = P.wantsSafety(s, pw.holder, rng);
-    if (want.play) { P.spend(s, pw); pushEvent(s, 'power_played', { kind: 'safety', holder: pw.holder, why: want.why }); }
+    if (want.play) { P.spend(s, pw); pushEvent(s, 'power_played', { power: 'safety', holder: pw.holder, why: want.why }); }
   }
   s.phase = PHASES.NAMING;
   return s;
@@ -640,7 +640,7 @@ function doVetoDraw(s, input) {
         s.vetoForced = input.pick;
         P.spend(s, pw);
         E.applyTrust(s.rel, input.pick, pw.holder, 6);
-        pushEvent(s, 'power_played', { kind: 'veto_pick', holder: pw.holder, pick: input.pick, why: 'you chose them' });
+        pushEvent(s, 'power_played', { power: 'veto_pick', holder: pw.holder, pick: input.pick, why: 'you chose them' });
       }
       continue;
     }
@@ -654,7 +654,7 @@ function doVetoDraw(s, input) {
         if (id === want.pick || id === pw.holder) continue;
         E.applyTrust(s.rel, id, pw.holder, -3);
       }
-      pushEvent(s, 'power_played', { kind: 'veto_pick', holder: pw.holder, pick: want.pick, why: want.why });
+      pushEvent(s, 'power_played', { power: 'veto_pick', holder: pw.holder, pick: want.pick, why: want.why });
     }
   }
 
@@ -862,7 +862,7 @@ function applyDiamond(s, pw, save, replace, why) {
   if (s.captain != null) E.applyTrust(s.rel, s.captain, pw.holder, -18);
   P.spend(s, pw);
   s.diamondUsed = { holder: pw.holder, save, replace };
-  pushEvent(s, 'power_played', { kind: 'diamond', holder: pw.holder, save, replace, why });
+  pushEvent(s, 'power_played', { power: 'diamond', holder: pw.holder, save, replace, why });
 }
 
 function afterCeremony(s) {
@@ -998,7 +998,7 @@ function doEviction(s, input) {
         P.spend(s, pw);
         s.doubledVoter = pw.holder;
         voters.push(pw.holder);
-        pushEvent(s, 'power_played', { kind: 'extra_vote', holder: pw.holder, why });
+        pushEvent(s, 'power_played', { power: 'extra_vote', holder: pw.holder, why });
       }
     }
     s.pendingExtraVote = null;

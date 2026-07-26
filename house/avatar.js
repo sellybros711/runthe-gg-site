@@ -100,9 +100,18 @@ const IRIS = [
   ['#4a6b52', '#36503c', '#233427'], ['#3c3a38', '#2a2827', '#1a1918'],
 ];
 const MOUTH = ['#9a6a62', '#7a5049', '#563531'];
+/*
+ * The backdrop each portrait is shot against.
+ *
+ * These were near-black, which read as a surveillance still on a dark page and
+ * reads as a hole punched in the paper on a light one. Now they are the pale
+ * card stock a passport photo gets mounted on, in three barely different tints
+ * so sixteen avatars in a grid do not look stamped from one plate. Still three
+ * tones each, because the bevel pass shades the backdrop too.
+ */
 const BG = [
-  ['#171a1e', '#111417', '#0b0d10'], ['#1a1714', '#14110f', '#0d0b09'],
-  ['#151a1a', '#101414', '#0a0d0d'],
+  ['#dbe4f1', '#c9d5e7', '#b4c3da'], ['#e6ded0', '#d6ccba', '#c2b6a1'],
+  ['#d8e4e0', '#c6d5d0', '#b1c3bd'],
 ];
 
 // ─── grid helpers ────────────────────────────────────────────────────────────

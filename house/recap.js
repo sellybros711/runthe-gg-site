@@ -156,17 +156,21 @@ function weekRecap(state, w) {
 
   const powers = (state.events || [])
     .filter((e) => e.kind === 'power_played' && e.week === w.week)
+    /* `e.power`, not `e.kind`. `e.kind` is 'power_played' for all of these:
+       pushEvent stamps the event kind last, so the payload field naming the
+       power has to be called something else. Reading `kind` here matched
+       nothing, every lookup came back undefined, and the recap silently
+       reported every power as its own internal id. */
     .map((e) => {
-      const d = PW.POWERS[e.kind === 'power_played' ? e.kind : ''] || PW.POWERS[e.kind];
-      const def = PW.POWERS[e.kind] || null;
-      const name = (PW.POWERS[e.kind] && PW.POWERS[e.kind].name) || e.kind;
-      if (e.kind === 'diamond') {
+      const def = PW.POWERS[e.power] || null;
+      const name = (def && def.name) || e.power;
+      if (e.power === 'diamond') {
         return `${nm(e.holder)} played the Diamond Veto: ${nm(e.save)} came off, ${nm(e.replace)} went up, and the Captain had no say.`;
       }
-      if (e.kind === 'veto_pick') return `${nm(e.holder)} used Veto Player Selection on ${nm(e.pick)}.`;
-      if (e.kind === 'safety') return `${nm(e.holder)} played a Week of Safety.`;
-      if (e.kind === 'extra_vote') return `${nm(e.holder)} cast two votes. ${e.why ? `They ${e.why}.` : ''}`.trim();
-      if (e.kind === 'back_to_back') return `${nm(e.holder)} played the Captain Comp they were barred from.`;
+      if (e.power === 'veto_pick') return `${nm(e.holder)} used Veto Player Selection on ${nm(e.pick)}.`;
+      if (e.power === 'safety') return `${nm(e.holder)} played a Week of Safety.`;
+      if (e.power === 'extra_vote') return `${nm(e.holder)} cast two votes. ${e.why ? `They ${e.why}.` : ''}`.trim();
+      if (e.power === 'back_to_back') return `${nm(e.holder)} played the Captain Comp they were barred from.`;
       return `${nm(e.holder)} played ${name}.`;
     });
 

@@ -965,18 +965,40 @@ Numbers are fine everywhere else: timers, comp scores, career stats, the tree.
 
 **Visual rules**
 
+- Light. Cream page, white cards, blue ink, one red stamp
 - Custom typeface pairing, one display face with real personality plus one
-  workhorse for body
+  workhorse for body, and both of them chosen for READING, not for mood
 - No stock icon sets. Every glyph drawn for this game
 - Procedural avatars from a custom shape vocabulary
-- Layout built around the house as a physical space, not a dashboard of cards
-- Restrained palette per house theme, one aggressive accent reserved for eviction
-  and betrayal
+- Restrained palette, one aggressive accent reserved for eviction and betrayal
 - Motion deliberate and sparse. The sequential vote reveal is the one place the
   game slows down
 
-**Reference feel:** surveillance monitor, casting file paperwork, chalk scratched
-vote tallies. Cold institutional surfaces with human handwriting on top.
+**The palette.**
+
+| Token | Value | What it means |
+|---|---|---|
+| `--cream` | `#f7f3ea` | the page, warm paper stock |
+| `--panel` | `#ffffff` | cards and panels |
+| `--blue` | `#1c56c2` | the brand, and every primary action |
+| `--ink` | `#17222f` | body copy, blue-black rather than black |
+| `--signal` | `#c0392b` | eviction and betrayal, and nothing else |
+| `--ok` | `#1f7a4d` | saved, landed, survived |
+| `--hand` | `#a8762b` | powers and secrets |
+
+**Type:** Archivo for display, Inter for body, 15.5px base. The first build set
+body copy in letter-spaced monospace under condensed uppercase headings, which
+looked like the reference and was tiring to read a sentence in. Uppercase now
+belongs only to labels two words long, never to sentences.
+
+**Why not dark.** Version 0.2 was a dark surveillance monitor. It photographed
+well and read badly: sixteen relationship states, a log, and four bars of your
+own game are a lot of small text, and small text on glass at low contrast is
+where players stop reading and start guessing. The design idea did not change,
+only the surface it is printed on.
+
+**Reference feel:** a casting file on a producer's desk. Cream stock, white
+cards clipped to it, blue pen, and one red stamp for the thing that is final.
 
 ### 17.1 The shell
 
@@ -984,10 +1006,13 @@ The look is ours. The **shape** is borrowed from BitLife, deliberately and
 specifically, because that interface is legible to millions of people who never
 read a tutorial, and the reasons are structural rather than cosmetic:
 
-1. **One green button.** The thing that advances time is always in the same
+1. **One blue button.** The thing that advances time is always in the same
    place, always the same colour, and always says what it is about to do:
-   "Start the week", "Play for the Veto", "Hold the vote". It is the only green
-   in the game. A player is never looking for what to press.
+   "Start the week", "Play for the Veto", "Hold the vote". A player is never
+   looking for what to press. It was green first, matching the reference; once
+   the brand was named as cream and blue, blue became the go colour and the
+   interface was down an accent it did not need. Green survives only as an
+   OUTCOME: saved, landed, survived.
 2. **One decision at a time.** Everything that is being asked of you arrives as
    a card over a dimmed screen. Everything that is not being asked of you is
    either history you can scroll or a panel you chose to open.

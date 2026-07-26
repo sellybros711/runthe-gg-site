@@ -17,17 +17,23 @@
  *
  * ── THE COLOUR LANGUAGE ────────────────────────────────────────────────────
  *
- * One journey, red through grey to gold, and it means exactly one thing
+ * One journey, red through grey to blue, and it means exactly one thing
  * everywhere it appears: how somebody feels about YOU.
  *
  *   red      they want you gone
  *   grey     nothing either way
- *   gold     they are with you
+ *   blue     they are with you
  *
  * That keeps §17's rule that the aggressive accent belongs to eviction and
  * betrayal, because the red end of this ramp IS betrayal. Nothing else in the
  * interface may use these seven colours for anything else, or the language
  * stops meaning anything.
+ *
+ * The warm end used to be gold, which was the right answer on a black panel and
+ * is invisible on cream. Blue is now both the brand and the top of this ramp,
+ * which is a happy accident worth keeping: the house colour literally means
+ * somebody is with you. Every value below is picked for contrast against
+ * --panel (#ffffff) and --cream (#f7f3ea), not against black.
  *
  * ── EVERY GLYPH DRAWN FOR THIS GAME ────────────────────────────────────────
  *
@@ -44,13 +50,13 @@
 /* Keyed by the label engine.band() returns, so there is one source of truth for
    the bands and this file cannot drift out of step with the model. */
 const BAND = {
-  'Done with you': { c: '#d4402c', dim: '#6b241b', i: 0, short: 'Done' },
-  'Cold':          { c: '#b0523f', dim: '#5c2b21', i: 1, short: 'Cold' },
-  'Wary':          { c: '#8c6a58', dim: '#463429', i: 2, short: 'Wary' },
-  'Neutral':       { c: '#6f7681', dim: '#383d44', i: 3, short: 'Flat' },
-  'Warm':          { c: '#9d9c78', dim: '#4c4c39', i: 4, short: 'Warm' },
-  'Solid':         { c: '#c3ae83', dim: '#5f5540', i: 5, short: 'Solid' },
-  'Ride or die':   { c: '#ecd9a0', dim: '#6f6449', i: 6, short: 'Bonded' },
+  'Done with you': { c: '#b3261c', dim: '#f0d3d0', i: 0, short: 'Done' },
+  'Cold':          { c: '#c05c47', dim: '#f2ddd7', i: 1, short: 'Cold' },
+  'Wary':          { c: '#9c7a5e', dim: '#e9e0d3', i: 2, short: 'Wary' },
+  'Neutral':       { c: '#7c8794', dim: '#e2e5e9', i: 3, short: 'Flat' },
+  'Warm':          { c: '#5580c4', dim: '#dbe5f5', i: 4, short: 'Warm' },
+  'Solid':         { c: '#2a61c4', dim: '#cddcf5', i: 5, short: 'Solid' },
+  'Ride or die':   { c: '#123c8c', dim: '#c2d3f0', i: 6, short: 'Bonded' },
 };
 const BAND_ORDER = Object.keys(BAND);
 
@@ -238,7 +244,7 @@ function allianceMap(state, E) {
   let edges = '';
   known.forEach((a, ai) => {
     const mine = a.members.indexOf(me) !== -1;
-    const col = mine ? '#c3ae83' : '#6f7681';
+    const col = mine ? '#1c56c2' : '#9aa5b1';
     for (let i = 0; i < a.members.length; i++) {
       for (let j = i + 1; j < a.members.length; j++) {
         const A = pos[a.members[i]], B = pos[a.members[j]];
@@ -260,16 +266,16 @@ function allianceMap(state, E) {
     const q = pos[p.id];
     const isMe = p.id === me;
     const band = isMe ? null : E.band(state.rel.belief[me][p.id].v).label;
-    const col = isMe ? '#e7e2d7' : bandColor(band);
+    const col = isMe ? '#17222f' : bandColor(band);
     const inAny = known.some((a) => a.members.indexOf(p.id) !== -1);
     nodes += `<circle cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="${isMe ? 8 : 6}"`
-      + ` fill="${inAny ? col : '#12141750'}" stroke="${col}" stroke-width="${isMe ? 2.5 : 1.5}"/>`;
+      + ` fill="${inAny ? col : '#ffffff'}" stroke="${col}" stroke-width="${isMe ? 2.5 : 1.5}"/>`;
     const anchor = q.x < cx - 12 ? 'end' : (q.x > cx + 12 ? 'start' : 'middle');
     const dx = q.x < cx - 12 ? -11 : (q.x > cx + 12 ? 11 : 0);
     const dy = q.y < cy ? -11 : 15;
     nodes += `<text x="${(q.x + dx).toFixed(1)}" y="${(q.y + dy).toFixed(1)}"`
-      + ` text-anchor="${anchor}" fill="${isMe ? '#e7e2d7' : '#9aa2ad'}" font-size="11"`
-      + ` font-family="'IBM Plex Mono',monospace">${isMe ? 'YOU' : esc(p.first)}</text>`;
+      + ` text-anchor="${anchor}" fill="${isMe ? '#17222f' : '#5d6b7a'}" font-size="11" font-weight="600"`
+      + ` font-family="Inter,system-ui,sans-serif">${isMe ? 'YOU' : esc(p.first)}</text>`;
   }
 
   return `<svg class="amap" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`
