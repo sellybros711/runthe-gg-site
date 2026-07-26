@@ -56,7 +56,8 @@ node house/lint-strings.js       # copy rules
 | Proxy | Measured | Target |
 |---|---|---|
 | Week 1 boot was most trusted | 7.5% | under 10%, chance is 6.25% |
-| Comp beast survival to Final 5 | 31.0% against a 31.3% field | below the field |
+| Comp beast to Final 5, **with** cover | 47.2% | above the 31.5% field |
+| Comp beast to Final 5, **no** cover | 24.8% | below the field |
 | Winner above median trust at Final 5 | 47.8% | 45 to 70%, chance is 40% |
 | Archetype win rate, highest | 8.1% | under 10.5%, baseline 6.25% |
 | Cast At Risk at least once | 98.9% | over 60% |
@@ -69,11 +70,35 @@ node house/lint-strings.js       # copy rules
 | Blame landed correctly | 53.2% | 45 to 70% |
 | Level 60 vs level 1 win ratio | 1.20x | under 1.5x |
 
-**The comp beast proxy is the one to watch.** It cleared comfortably before
-powers went in, at 27.0 against a 31.7 field. Powers add enough chaos to a week
-that comp record predicts less about survival, and the margin is now inside the
-noise at this sample size. It is passing rather than passing well. If it inverts,
-the lever is `TH_COMP` in `engine.js` K, not a special case.
+**The comp beast proxy is split by cover, and the flat version was asking the
+wrong question.** "Comp beasts survive worse than the field" conflates two
+populations the design wants to behave in opposite ways. Winning too often makes
+you the biggest threat in the room; whether that kills you depends on whether you
+have the room. Measured flat, the two average to parity and the proxy reports a
+failure while the model does exactly what it should.
+
+## The axes
+
+`--axes` is the balance test that matters: does being good at both halves of the
+game pay. Both inputs are read at Final 10 and the outcome at the end, because
+measuring total comp wins against final placement is circular.
+
+| | win% | reached F5 | avg finish |
+|---|---|---|---|
+| high comp + high social | 11.3% | 46.1% | 5.73 |
+| low comp + high social | 13.9% | 61.4% | 4.89 |
+| high comp + LOW social | 5.6% | 30.3% | 6.73 |
+| low comp + low social | 7.0% | 43.9% | 5.91 |
+
+Social is the dominant axis, which is correct for a social game, and **a floor
+game is worth about 5.7 points of win rate to a comp winner**. Before the `cover`
+mechanism it was worth nothing: a well-liked comp winner finished 6.72 against
+6.24 for the same player with no friends, so social investment was actively
+harmful and the whole Floor Game trunk was a trap.
+
+The honest residual: comps still cost a socially strong player a little, because
+holding power means naming people and the house remembers. A small tax now
+rather than the death sentence it was.
 
 23 archetypes are reachable. The tree is 63 nodes and 372 tokens against 84
 tokens at the level cap, so a maxed account holds 22.6% of it.

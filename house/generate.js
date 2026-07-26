@@ -122,9 +122,15 @@ const GOALS = [
  *
  * Both constants are swept in simulator.js against the level-parity target.
  */
-const HOUSE_FLOOR = 46;
-const HOUSE_SLOPE = 0.75;
-const HOUSE_SPREAD = 0.30;
+/*
+ * On a MUTABLE object. This is the fourth constant in this project that the
+ * harness was told to sweep and could not reach: exported as bare consts, a
+ * sweep reassigns a copy while houseBudget() keeps reading the closed-over
+ * originals, and --levels printed four identical rows for four different house
+ * scalings. See comps.js TUNE, engine.js PANEL_NOISE_BASE and scenes.js RISK
+ * for the same bug three times over. simulator.js --guard now checks for it.
+ */
+const HOUSE = { FLOOR: 46, SLOPE: 0.75, SPREAD: 0.30 };
 
 /*
  * Temperament. Applied to the AI ONLY, on top of what their tree bought.
@@ -157,7 +163,7 @@ function applyTemperament(attrs, rng) {
 }
 
 function houseBudget(playerSpend) {
-  return HOUSE_FLOOR + Math.max(0, playerSpend) * HOUSE_SLOPE;
+  return HOUSE.FLOOR + Math.max(0, playerSpend) * HOUSE.SLOPE;
 }
 
 // ─── baseline affinity ───────────────────────────────────────────────────────
@@ -312,7 +318,7 @@ function generateCast(rng, human, opts) {
     do { town = rng.pick(HOMETOWNS); } while (usedTowns.has(town[0]) && tguard-- > 0);
     usedTowns.add(town[0]);
 
-    const budget = Math.max(6, Math.round(rng.normal(budgetCentre, budgetCentre * HOUSE_SPREAD)));
+    const budget = Math.max(6, Math.round(rng.normal(budgetCentre, budgetCentre * HOUSE.SPREAD)));
     const intent = T.randomIntent(rng);
     const owned = T.randomBuild(rng, budget, intent);
     const attrs = applyTemperament(T.deriveAttributes(owned), rng);
@@ -359,7 +365,7 @@ function generateBaselines(rng, cast) {
 
 const api = {
   FIRST_F, FIRST_M, FIRST_X, LAST, HOMETOWNS, REGIONS, GOALS,
-  HOUSE_FLOOR, HOUSE_SLOPE, HOUSE_SPREAD, houseBudget,
+  HOUSE, houseBudget,
   TRUNK_AFFINITY, AFFINITY, baselineAffinity,
   makePlayer, playerFromAccount, generateCast, generateBaselines, TEMPERAMENT, applyTemperament,
 };

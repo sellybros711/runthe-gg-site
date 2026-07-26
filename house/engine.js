@@ -122,16 +122,69 @@ const K = {
 
   // threat, GDD §8.1. All inputs normalised 0..100 before weighting.
   TH_COMP: 0.40, TH_SOCIAL: 0.30, TH_PANEL: 0.30,
+  /*
+   * How much of the social term is live before there is a Panel to be liked by.
+   *
+   * MEASURED, and this was the single worst calibration in the project. As a
+   * flat term, being well liked made you MORE dangerous from week one, so a
+   * player with a strong comp game and a strong floor game was read as the
+   * biggest threat in the house and finished BELOW the same comp player with no
+   * friends: 6.72 against 6.24 average placing. Social investment was worse than
+   * useless and the whole Floor Game trunk was a trap.
+   *
+   * Having a lot of friends is jury equity, and jury equity is an ENDGAME
+   * threat. Early it is protection, because the people who like you are the
+   * people who have to vote. Ramping the term in as the Panel fills is what
+   * makes both of those true at once.
+   */
+  TH_SOCIAL_EARLY: 0.30,
+  /*
+   * Comp record as a saturating curve on raw wins rather than a percentile.
+   * A percentile over the active house is savagely spiky early: one win in week
+   * two, when nobody else has any, reads as the hundredth percentile and the
+   * biggest comp threat in a house of sixteen. Wins are an absolute fact about
+   * how often you have held power, so treat them as one.
+   *   1 win -> 33, 2 -> 55, 3 -> 70, 5 -> 87
+   */
+  COMP_CURVE: 2.5,
   TH_BIAS_SD: 26,           // scaled by (100 - perception) / 100
   SOCIAL_REACH_CUT: 40,     // trust above this counts as reach
 
   // eviction, GDD §8.2
-  EV_TRUST: 0.42, EV_THREAT: 0.26, EV_PRESSURE: 0.22, EV_PANEL: 0.10,
+  EV_TRUST: 0.46, EV_THREAT: 0.23, EV_PRESSURE: 0.21, EV_PANEL: 0.10,
   EV_VOL_SD: 14,            // scaled by volatility/100
 
   // nomination
-  NOM_TRUST: 0.40, NOM_THREAT: 0.28, NOM_PRESSURE: 0.14, NOM_GOAL: 0.18,
+  NOM_TRUST: 0.45, NOM_THREAT: 0.24, NOM_PRESSURE: 0.13, NOM_GOAL: 0.18,
   NOM_ALLY_SHIELD: 34,      // how much an alliance protects you from your ally's nom
+  /*
+   * COVER. How much a social game stops the house ACTING on the threat it sees.
+   *
+   * This is the fix for the oldest miscalibration in the project, and it is
+   * structural rather than a weight. Trust and threat were two additive terms on
+   * one axis, so the only lever was their ratio, and the ratio traded one design
+   * promise against another:
+   *
+   *   threat heavy   comp beasts get targeted, which the pillar demands, but
+   *                  social play is worthless and comp wins are strictly bad.
+   *                  Measured: 2+ early comp wins finished 6.66 against 5.31,
+   *                  and were nominated 50 percent more often at identical
+   *                  trust, 0.90 against 0.59.
+   *   trust heavy    social play matters and comps pay off, but comp beasts
+   *                  survive BETTER than the field and the pillar is dead.
+   *
+   * No point on that slider satisfies both, because the two effects were never
+   * meant to be independent. What the genre actually does is this: the Captain
+   * wants the big threat gone and CANNOT MOVE, because the threat has the room.
+   * The same player with no friends goes home in week five.
+   *
+   * So cover multiplies the threat term down instead of adding points against
+   * it. A dangerous player with a floor game is still read as dangerous, and
+   * nobody can do anything about it.
+   */
+  COVER_SOCIAL: 0.35,       // from being widely liked
+  COVER_ALLY: 0.20,         // from having people who are actually committed
+  COVER_MAX: 0.65,          // nobody is ever completely untouchable
   NOM_VOL_SD: 12,
   NOM_THROW_SUSPICION: 0.55, // weight of throw-suspicion in nomination desire
 
@@ -457,9 +510,16 @@ function panelEquity(rel, cast, j, panel) {
  * 31.6 against 31.2, which is no targeting at all.
  */
 function compPercentile(cast, j, pool) {
-  const field = pool || cast.filter((p) => p.status === 'active');
-  if (field.length < 2) return 50;
   const mine = cast[j].compWins.length;
+  const curve = 100 * (1 - Math.exp(-mine / K.COMP_CURVE));
+
+  /* At the Panel the question is "how good was their game", which is genuinely
+     comparative, so the jury still ranks. Everywhere else the house is reacting
+     to how much power somebody has actually held, which is absolute. */
+  if (!pool) return curve;
+
+  const field = pool;
+  if (field.length < 2) return 50;
   let below = 0, tied = 0;
   for (const p of field) {
     if (p.id === j) continue;
@@ -487,12 +547,17 @@ function threatScore(rel, cast, i, j, panel, alliances, opts) {
   const social = socialReach(rel, cast, j);
   const pan = panelEquity(rel, cast, j, panel);
 
+  /* How far into the run we are, read off how full the Panel is. */
+  const late = clamp01((panel ? panel.length : 0) / K.PANEL_SIZE);
+  const wSocial = K.TH_SOCIAL * (K.TH_SOCIAL_EARLY + (1 - K.TH_SOCIAL_EARLY) * late);
+
   let v;
   if (pan == null) {
-    const tot = K.TH_COMP + K.TH_SOCIAL;
-    v = (K.TH_COMP / tot) * comp + (K.TH_SOCIAL / tot) * social;
+    const tot = K.TH_COMP + wSocial;
+    v = (K.TH_COMP / tot) * comp + (wSocial / tot) * social;
   } else {
-    v = K.TH_COMP * comp + K.TH_SOCIAL * social + K.TH_PANEL * pan;
+    const tot = K.TH_COMP + wSocial + K.TH_PANEL;
+    v = ((K.TH_COMP * comp) + (wSocial * social) + (K.TH_PANEL * pan)) / tot;
   }
 
   /* Breadth exposure, GDD §7.5. Sitting in three alliances does not make you
@@ -508,6 +573,26 @@ function threatScore(rel, cast, i, j, panel, alliances, opts) {
   }
 
   return norm100(v + (i === j ? 0 : rel.threatBias[i][j]));
+}
+
+/**
+ * How much of the threat somebody radiates the house is unable to act on.
+ *
+ * Read from the DECIDER's point of view: `i` is the person weighing a move
+ * against `j`, so alliances i shares with j count double, because you do not
+ * move on your own people.
+ */
+function cover(rel, cast, i, j, alliances) {
+  const reach = socialReach(rel, cast, j) / 100;
+  let allied = 0;
+  if (alliances) {
+    for (const a of alliances) {
+      if (!a.alive || a.members.indexOf(j) === -1) continue;
+      const strength = a.strength / 100;
+      allied += strength * (a.members.indexOf(i) !== -1 ? 0.5 : 0.22);
+    }
+  }
+  return clamp01(reach * K.COVER_SOCIAL + Math.min(0.6, allied) * K.COVER_ALLY) * K.COVER_MAX;
 }
 
 // ─── alliances ───────────────────────────────────────────────────────────────
@@ -676,7 +761,19 @@ function allianceTick(state, rng) {
  */
 function socialTick(state, rng) {
   const { rel, cast, alliances, week } = state;
-  const active = cast.filter((p) => p.status === 'active' && !p.isHuman);
+  /*
+   * The human is excluded because a real player spends their own energy through
+   * scenes.js. But when `autoPlayer` is on there IS no real player, and leaving
+   * them out meant the harness's stand-in sat in total silence for fourteen
+   * weeks: no conversations, no alliances, nothing but decay.
+   *
+   * Every level-parity and house-scaling number this project produced was
+   * measuring that. It is why sweeping BASE_ATTRS from 30 to 46 and the house
+   * floor from 46 down to 34 moved the player's win rate not at all: attributes
+   * cannot help somebody who never speaks to anybody.
+   */
+  const active = cast.filter((p) => p.status === 'active'
+    && !(p.isHuman && !state.autoPlayer));
 
   for (const p of active) {
     const i = p.id;
@@ -746,7 +843,8 @@ function nominationDesire(state, hcId, targetId, rng) {
   const hc = cast[hcId];
 
   const trustTerm = (100 - rel.trust[hcId][targetId]) / 2;
-  const threatTerm = threatScore(rel, cast, hcId, targetId, panel, alliances);
+  const threatTerm = threatScore(rel, cast, hcId, targetId, panel, alliances)
+    * (1 - cover(rel, cast, hcId, targetId, alliances));
 
   let pressure = 0;
   for (const al of allianceOf(alliances, hcId)) {
@@ -843,7 +941,8 @@ function evictScore(state, voterId, targetId, rng) {
   const voter = cast[voterId];
 
   const trustTerm = (100 - rel.trust[voterId][targetId]) / 2;
-  const threatTerm = threatScore(rel, cast, voterId, targetId, panel, alliances);
+  const threatTerm = threatScore(rel, cast, voterId, targetId, panel, alliances)
+    * (1 - cover(rel, cast, voterId, targetId, alliances));
   const pressure = alliancePressure(state, voterId, targetId);
   const jury = panelThreat(state, voterId, targetId);
 
@@ -1071,7 +1170,7 @@ const api = {
   createRelationships, applyTrust, decayWeek,
   refreshBelief, read,
   detectChance, rollDetection,
-  socialReach, panelEquity, compPercentile, threatScore,
+  socialReach, panelEquity, compPercentile, threatScore, cover,
   majoritySize, allianceOf, sharedAlliances, makeAlliance, renormalisePriorities, allianceTick,
   socialTick, converse,
   nominationDesire, chooseNominations,

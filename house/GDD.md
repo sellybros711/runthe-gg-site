@@ -922,7 +922,11 @@ Version 0.1 said there were none. There were about thirty. These are what is lef
    power paints you. The weight is set at 0.45 to keep that from becoming a tax,
    but the real release valve is knowing when to throw, and nothing has measured
    whether a player who throws well beats both ends of that table.
-9. **The risky answer is level with the safe one, not better.** It should be a
+9. **Comps still cost a socially strong player a little.** The `cover` mechanism
+   fixed the case where a floor game made a comp winner worse, but holding power
+   means naming people and the house remembers. The right way to close the last
+   of it is to make comp wins pay MORE, not to soften the social game further.
+10. **The risky answer is level with the safe one, not better.** It should be a
    lever worth pulling when the effect is needed. Right now a selective player
    should beat a spammer, which is correct, but the policy is not selective
    enough to prove a selective player also beats a cautious one.
