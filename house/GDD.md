@@ -450,7 +450,52 @@ their own beliefs, with error scaled by `(100 - perception)`. The error is a
 noise every tick. A persistent bias reads as a Player who is wrong about someone.
 Fresh noise reads as a Player who is broken.
 
-### 8.2 Eviction
+### 8.2 Nomination intent
+
+A Captain does not name two people. They pick **one person they want gone** and
+then work out how to get them out. Version 0.2 had only the first half, both
+names carried equal weight, and the house had nothing to read, which removed the
+strategy the genre is built on.
+
+Every naming now produces a plan in one of three shapes:
+
+| Shape | What it is | Rate |
+|---|---|---|
+| direct | two people the Captain would be happy to lose either way | ~70% |
+| pawn | one target, and beside them somebody the house will not take | ~23% |
+| backdoor | neither nominee is the target, and the Veto is the plan | ~7% |
+
+That is roughly one backdoor attempt per run, of which two thirds land. It is
+deliberately not more: pushing the rate up moves comp beast survival back to
+parity with the field, because a plan that misses is a week the target got for
+free, and the proxy in §15 is the gate.
+
+The plan's `target` is the field everything else reads. It leaks to the house
+(see 8.3), it drives the replacement nomination, and it is the only thing that
+makes a pawn a pawn rather than a second nominee.
+
+**Pawn.** The second seat goes to whoever scores highest on "the house will not
+take you": low house appetite, low threat, and enough trust from the Captain that
+it can be sold to them. The pawn still goes home about 15 to 20 percent of the
+time, which is the entire folklore of the move and needs no special case: if the
+room dislikes the pawn more than the target, the private leans outvote the pull.
+
+**Backdoor.** Appeal reads off two things already modelled: the target's comp
+record, because they would win the Veto and walk, and their **cover**, because
+the room would not forgive a straight shot. Cover is weighted higher than comps.
+The attempt is then multiplied by a **route** term, which is what a real Captain
+checks first: their own comp standing, plus how much of the house is committed to
+them. Without the route gate the move was a free week for exactly the people it
+was aimed at, because it fired on comp record and then failed a third of the
+time with the target never on the block at all.
+
+A backdoor only lands if somebody opens the seat. The Captain executes their own
+plan; an ally mostly goes along, since taking a pawn down costs them nothing; a
+nominee saving themselves opens it by accident. Anybody else never hears the plan
+and it simply dies, which is the correct failure and is why winning the Veto
+yourself matters.
+
+### 8.3 Eviction
 
 Votes are **always anonymous**. The tally is read aloud, never attributed.
 
@@ -472,7 +517,33 @@ visibility into their allies' intent, scaled by strength and by `perception`.
 There is a standing small chance of AI to AI side deals producing a vote you did
 not see coming. You should be blindsided sometimes.
 
-### 8.3 The reveal, and blame
+**Coalescence.** The formula above is what each voter privately wants. It is not
+what they do. A house votes as a house, and version 0.2 did not: sixteen
+independent calculators produced 31.5 percent minority vote share, 27.8 percent
+one-vote margins and 12 percent ties, which is nothing like a real season.
+
+Resolution is therefore two passes. Pass one collects every private lean and the
+margin behind it. `houseConsensus` then works out where the house is going: the
+Captain's target if the room read it, otherwise the lean with the most social
+weight behind it. Pass two lets each voter decide whether to go there.
+
+```
+hold   = margin * 0.011                       // how wrong it feels privately
+       + loyalty  * 0.35   if allied to the consensus target
+       + volatility * 0.30                    // some people do their own thing
+       - paranoia * 0.30                      // fear of being the odd vote out
+follow = 0.74 - hold
+```
+
+`HOH_INTENT_LEAK` is how reliably the room reads the Captain, at 0.72. Swept:
+the Captain's target went home 82.0 / 83.2 / 85.4 / 88.0 percent at 0.60 / 0.66 /
+0.72 / 0.80, and the pawn went home 21.2 / 19.9 / 19.6 / 17.9. Real seasons sit
+near 80 to 85 and near 15 to 20, and 0.80 put the Captain above both.
+
+Measured after: unanimous 41 percent (the most common outcome, as it should be),
+minority vote share 14 percent, ties 3.6 percent.
+
+### 8.4 The reveal, and blame
 
 The reveal is sequential and anonymous. Votes stack up one at a time without
 names. A 6 to 5 flip still lands, and arguably lands harder, because you are
@@ -821,6 +892,19 @@ reveal, house as physical space.
 stable first.
 
 **Stage 11, recap, share, board, store.** Truth-reveal recap in. Board and store pending.
+
+**Stage 12, alignment with the format.** In progress. Playthroughs against real
+seasons found six places where the simulation was structurally honest but did not
+behave like the genre it is modelling.
+
+| # | What | Status |
+|---|---|---|
+| 1 | Vote coalescence: the house votes as a house | DONE, §8.3 |
+| 2 | Nomination intent: pawn and backdoor | DONE, §8.2 |
+| 3 | Named alliances with size and identity, plus showmances that draw heat as a unit | pending |
+| 4 | Floater logic, so some people genuinely skate. 15.5 of 16 are nominated per run against 2 to 4 who never are in a real season | pending |
+| 5 | Jury management: the panel term currently decides 0.4 percent of votes and should matter in the last three weeks | pending |
+| 6 | Rituals: Captain's room, nomination speeches, rations bonding, campaigning from the block | pending |
 
 ---
 

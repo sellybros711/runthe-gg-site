@@ -114,6 +114,12 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
 .file h2{font-size:17px;color:var(--paper);margin-bottom:4px}
 .file .sub{color:var(--dim);font-size:12px;margin-bottom:16px}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+/* Reading of the plan you are currently holding, above the wall. */
+.tagrow{display:flex;gap:8px;flex-wrap:wrap;margin:-8px 0 16px}
+.tg{border:1px solid var(--line);padding:4px 9px;font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim);background:var(--panel)}
+.tg.bad{border-color:var(--signal);color:var(--signal)}
+.tg.good{border-color:#7f9a86;color:#7f9a86}
 label{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;
   color:var(--dim);margin-bottom:5px}
 input,select{font:inherit;background:#0e1013;border:1px solid var(--line);color:var(--paper);
@@ -470,8 +476,13 @@ function cellFor(p,opts){
   var col=rd?U.bandColor(band):'#e7e2d7';
 
   var cls='cell';
+  /* `block` is a provisional block: names the player has chosen but not yet
+     locked in. Without it the intent screen showed the two nominees looking
+     exactly like everybody else, and the only way to tell who was up there was
+     to read the tag row. */
+  var onBlock=(s.atRisk&&s.atRisk.indexOf(p.id)!==-1)||(o.block&&o.block.indexOf(p.id)!==-1);
   if(p.status!=='active') cls+=' gone';
-  if(s.atRisk&&s.atRisk.indexOf(p.id)!==-1) cls+=' risk';
+  if(onBlock) cls+=' risk';
   if(p.id===me) cls+=' you';
   if(o.selected&&o.selected.indexOf(p.id)!==-1) cls+=' sel';
 
@@ -480,7 +491,7 @@ function cellFor(p,opts){
      who is exposed and who they have stopped talking to, without reading. */
   var marks='';
   if(s.captain===p.id) marks+='<span class="m-cap">'+U.icon('captain',18)+'</span>';
-  if(s.atRisk&&s.atRisk.indexOf(p.id)!==-1) marks+='<span class="m-risk">'+U.icon('risk',18)+'</span>';
+  if(onBlock) marks+='<span class="m-risk">'+U.icon('risk',18)+'</span>';
   if(s.vetoHolder===p.id) marks+='<span class="m-veto">'+U.icon('veto',18)+'</span>';
   if(p.onRations) marks+='<span class="m-rat">'+U.icon('rations',17)+'</span>';
   if(p.id!==me){
@@ -831,6 +842,7 @@ function narrateAfter(ph,wkBefore){
     say(s.captain===s.human
       ? tsay('namingYou',{a:s.cast[s.atRisk[0]].first,b:s.cast[s.atRisk[1]].first})
       : tsay('naming',{captain:s.cast[s.captain].first,a:s.cast[s.atRisk[0]].first,b:s.cast[s.atRisk[1]].first}),'ev-bad','risk');
+    if(s.nomMode==='pawn') say(tsay(s.captain===s.human?'namingYouPawn':'namingPawn'),'quiet','risk');
   }
   if(ph===R.PHASES.VETO_DRAW&&s.vetoFieldIds&&s.vetoFieldIds.length){
     /* Playtest: "it also didn't show who was playing for veto". */
@@ -865,7 +877,13 @@ function narrateAfter(ph,wkBefore){
         ? tsay('vetoSelf',{holder:s.cast[s.vetoHolder].first})
         : tsay('vetoUsed',{holder:s.cast[s.vetoHolder].first,saved:s.cast[s.saved].first}),'ev-good','veto');
       if(s.replacement!=null) say(s.cast[s.captain].first+' names '+s.cast[s.replacement].first+' in their place.');
-    } else say(tsay('vetoHeld',{holder:s.cast[s.vetoHolder].first}),'','veto');
+      if(s.backdoorLanded) say(tsay('backdoorLanded',{name:s.cast[s.replacement].first}),'hot','risk');
+    } else {
+      say(tsay('vetoHeld',{holder:s.cast[s.vetoHolder].first}),'','veto');
+      /* A plan that needed the Veto used and did not get it. Only the Captain
+         knows it was ever a plan, so only the Captain is told it died. */
+      if(s.backdoor!=null&&s.captain===s.human) say(tsay('backdoorFailed'),'quiet','risk');
+    }
   }
   var pl=s.events.filter(function(e){ return e.kind==='power_played'&&e.week===s.week&&!e.said; });
   for(var pi=0;pi<pl.length;pi++){
@@ -938,22 +956,50 @@ function showMoveIn(need){
 
 function showNaming(){
   screen='phase';
-  var picked=[];
+  var picked=[],stage='noms',want=null;
   function paint(){
+    if(stage==='noms'){
+      app.innerHTML=topbar()
+        +'<div class="file"><h2>Name two At Risk</h2>'
+        +'<div class="sub">You hold the power. Both of them will remember it, and one of them is staying.</div></div>'
+        +wall({pick:true,selected:picked})+renderFeed();
+      bindSorts(paint);
+      bindPicks(function(id){
+        if(id===s.human) return;
+        var i=picked.indexOf(id);
+        if(i>=0) picked.splice(i,1); else if(picked.length<2) picked.push(id);
+        paint();
+      });
+      setBar(picked.length<2?'Choose two':'Locked in',[
+        {label:'Name them',cls:'hot go',off:picked.length<2,go:function(){
+          stage='intent'; want=picked[0]; paint(); }}
+      ]);
+      scrollFeed(); return;
+    }
+    /* Who you are ACTUALLY after. Naming somebody who is not on the block is
+       the backdoor, and there is no separate button for it on purpose: the plan
+       only exists because the Veto has not happened yet. */
+    var back=picked.indexOf(want)===-1;
     app.innerHTML=topbar()
-      +'<div class="file"><h2>Name two At Risk</h2>'
-      +'<div class="sub">You hold the power. Both of them will remember it, and one of them is staying.</div></div>'
-      +wall({pick:true,selected:picked})+renderFeed();
+      +'<div class="file"><h2>Who do you actually want gone</h2>'
+      +'<div class="sub">The house reads the room, not the speech. Whoever you are after '
+      +'is who the votes will drift toward. Pick somebody who is not on the block '
+      +'and you are backdooring them: you need the Veto used to open the seat.</div></div>'
+      +'<div class="tagrow">'
+      +'<span class="tg">On the block: '+picked.map(function(i){ return esc(s.cast[i].first); }).join(' and ')+'</span>'
+      +(back
+        ? '<span class="tg bad">Backdoor</span><span class="tg">Needs the Veto used</span>'
+        : (picked.filter(function(i){return i!==want;}).length
+          ? '<span class="tg good">'
+            +esc(s.cast[picked.filter(function(i){return i!==want;})[0]].first)+' is the pawn</span>'
+          : '<span class="tg">Straight shot</span>'))+'</div>'
+      +wall({pick:true,selected:[want],block:picked})+renderFeed();
     bindSorts(paint);
-    bindPicks(function(id){
-      if(id===s.human) return;
-      var i=picked.indexOf(id);
-      if(i>=0) picked.splice(i,1); else if(picked.length<2) picked.push(id);
-      paint();
-    });
-    setBar(picked.length<2?'Choose two':'Locked in',[
-      {label:'Name them',cls:'hot go',off:picked.length<2,go:function(){
-        R.step(s,{noms:picked}); pump(); }}
+    bindPicks(function(id){ if(id!==s.human&&id!==s.captain){ want=id; paint(); } });
+    setBar('Your target',[
+      {label:'Back',go:function(){ stage='noms'; paint(); }},
+      {label:back?'Set the trap':'Lock it in',cls:'hot go',go:function(){
+        R.step(s,{noms:picked,target:want}); pump(); }}
     ]);
     scrollFeed();
   }

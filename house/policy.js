@@ -205,7 +205,11 @@ function make(opts) {
             - (E.sharedAlliances(s.alliances, me, id).length ? 45 : 0),
         }));
         scored.sort((a, b) => b.v - a.v);
-        return { noms: scored.slice(0, 2).map((x) => x.id) };
+        const noms = scored.slice(0, 2).map((x) => x.id);
+        /* The stand-in plays it straight: names the two it wants gone and is
+           after the first of them. It does not backdoor, which keeps the
+           harness measuring the AI's use of the move rather than its own. */
+        return { noms, target: noms[0] };
       }
 
       case 'veto_use': {

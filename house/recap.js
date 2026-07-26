@@ -53,6 +53,10 @@ const REASONS = {
   pressure: { them: 'was told to by an alliance',      you: 'was told to by an alliance' },
   panel:    { them: 'could not beat them at the end',  you: 'did not think they could beat you' },
   noise:    { them: 'had no good reason at all',       you: 'had no good reason at all' },
+  /* Not a term in evictScore. It is the second pass: a voter who privately
+     wanted the other one and went where the house was going anyway. Without it
+     the recap invented a private reason for a vote that did not have one. */
+  house:    { them: 'went where the house was going',  you: 'went where the house was going' },
 };
 
 /*
@@ -63,6 +67,9 @@ const REASONS = {
  */
 function dominant(why) {
   if (!why) return null;
+  /* Coalescence outranks everything, because it is the only case where the
+     voter's own maths pointed the other way and lost. */
+  if (why.followedHouse) return 'house';
   /* Volatility is only the reason when it actually reversed the decision. See
      the note in engine.resolveEviction. */
   if (why.flipped) return 'noise';
@@ -125,12 +132,26 @@ function weekRecap(state, w) {
   if (w.rations && w.rations.length) {
     beats.push(`Rations went to ${w.rations.map(nm).join(', ')}.`);
   }
-  beats.push(`${nm(w.captain)} named ${w.atRisk.map(nm).join(' and ')} At Risk.`);
+  /* The two the Captain NAMED, not the post-ceremony block. */
+  beats.push(`${nm(w.captain)} named ${(w.nominees || w.atRisk).map(nm).join(' and ')} At Risk.`);
+  if (w.nomMode === 'pawn' && w.hohPawn != null) {
+    beats.push(`${nm(w.hohPawn)} was the pawn. ${nm(w.hohTarget)} was the point of the week.`);
+  } else if (w.nomMode === 'backdoor' && w.hohTarget != null) {
+    beats.push(w.backdoorLanded
+      ? `Neither of those names was the target. ${nm(w.hohTarget)} was.`
+      : `${nm(w.captain)} was setting up ${nm(w.hohTarget)} and never got the seat open.`);
+  }
   if (w.vetoHolder != null) {
     beats.push(w.vetoUsed
-      ? `${nm(w.vetoHolder)} used the Veto${w.savedId === w.vetoHolder ? ' on themselves' : ''}`
+      ? `${nm(w.vetoHolder)} used the Veto`
+        + `${w.savedId === w.vetoHolder ? ' on themselves' : (w.savedId != null ? ` on ${nm(w.savedId)}` : '')}`
         + `${w.replacement != null ? `, and ${nm(w.replacement)} went up instead` : ''}.`
       : `${nm(w.vetoHolder)} held the Veto and left the names alone.`);
+  }
+  /* The line the format is actually about: the Captain had a plan, the house
+     had a majority, and one of them was wrong. */
+  if (w.hohTarget != null && w.atRisk.indexOf(w.hohTarget) !== -1 && w.evicted !== w.hohTarget) {
+    beats.push(`${nm(w.captain)} wanted ${nm(w.hohTarget)} gone. The house went the other way.`);
   }
 
   const powers = (state.events || [])

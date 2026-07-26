@@ -102,6 +102,13 @@ function createRun(opts) {
     lastCaptain: null,
     atRisk: [],
     atRiskNamedBy: {},
+    nominees: [],
+    /* Nomination intent, GDD §8.2. Null outside a naming week. */
+    hohTarget: null,
+    hohPawn: null,
+    nomMode: null,
+    backdoor: null,
+    backdoorLanded: false,
     vetoHolder: null,
     vetoUsed: false,
     replacement: null,
@@ -391,6 +398,9 @@ function doReset(s) {
   s.vetoUsed = false;
   s.replacement = null;
   s.pendingReplacement = false;
+  s.nominees = [];
+  s.hohTarget = null; s.hohPawn = null; s.nomMode = null;
+  s.backdoor = null; s.backdoorLanded = false;
 
   /* Bounce Back, GDD §12. Pool is the last six evicted whether or not the Panel
      has started forming, which is the fix for version 0.1 calling the returnee
@@ -545,19 +555,44 @@ function doNaming(s, input) {
   const n = activeCount(s);
 
   const safe = P.safeThisWeek(s);
-  let noms;
+  const blocked = Object.keys(safe).map(Number);
+  let noms, plan;
   if (s.captain === s.human && isHumanActive(s) && input && input.noms) {
     noms = input.noms.slice(0, 2).filter((id) => !safe[id]);
+    /* The player names two and then says who they are actually after. Picking
+       somebody who is not on the block IS the backdoor, with no separate button
+       for it: the plan is only a plan because the Veto has not happened yet. */
+    const want = (input.target != null && !safe[input.target] && input.target !== s.captain)
+      ? input.target : noms[0];
+    plan = {
+      noms, target: want, pawn: null,
+      mode: noms.indexOf(want) === -1 ? 'backdoor' : (noms.length > 1 ? 'pawn' : 'direct'),
+    };
+    if (plan.mode === 'pawn') plan.pawn = noms.filter((id) => id !== want)[0];
+    if (plan.mode === 'backdoor') plan.pawn = noms[0];
   } else {
-    noms = E.chooseNominations(s, s.captain, rng, Object.keys(safe).map(Number));
+    plan = E.nominationPlan(s, s.captain, rng, blocked);
+    noms = plan.noms;
   }
   /* A Safety played after the Captain had already decided still has to leave
      two names on the block. */
   if (noms.length < 2) {
-    const extra = E.chooseNominations(s, s.captain, rng, noms.concat(Object.keys(safe).map(Number)));
+    const extra = E.chooseNominations(s, s.captain, rng, noms.concat(blocked));
     for (const id of extra) { if (noms.length < 2 && noms.indexOf(id) === -1) noms.push(id); }
   }
   s.atRisk = noms;
+  /* The two the Captain actually named. `atRisk` mutates at the ceremony, so
+     without this the recap reported the replacement as an original nominee and
+     a landed backdoor read as a contradiction: "named You and Rafferty At Risk,
+     neither of those names was the target, Rafferty was." */
+  s.nominees = noms.slice();
+  /* The single field that makes the strategy layer exist. Read by the vote
+     through HOH_INTENT_LEAK, by the ceremony to land a backdoor, and by the
+     recap to explain a week that looked like it went wrong. */
+  s.hohTarget = plan.target != null ? plan.target : noms[0];
+  s.hohPawn = plan.pawn;
+  s.nomMode = plan.mode;
+  s.backdoor = (plan.mode === 'backdoor' && noms.indexOf(plan.target) === -1) ? plan.target : null;
   for (const id of noms) {
     s.cast[id].timesAtRisk += 1;
     s.atRiskNamedBy[id] = s.captain;
@@ -579,7 +614,10 @@ function doNaming(s, input) {
     a.target = best;
   }
 
-  pushEvent(s, 'naming', { captain: s.captain, atRisk: noms.slice() });
+  pushEvent(s, 'naming', {
+    captain: s.captain, atRisk: noms.slice(),
+    mode: s.nomMode, target: s.hohTarget, pawn: s.hohPawn,
+  });
 
   s.phase = PHASES.VETO_DRAW;
   return s;
@@ -710,17 +748,33 @@ function doVetoCeremony(s, input) {
   let repl;
   if (s.captain === s.human && isHumanActive(s) && input && input.replacement != null) {
     repl = input.replacement;
+  } else if (s.backdoor != null && s.replacementPool.indexOf(s.backdoor) !== -1) {
+    repl = s.backdoor;                       // the whole point of the week
   } else {
     const scored = s.replacementPool.map((id) => ({ id, v: E.nominationDesire(s, s.captain, id, rng) }));
     scored.sort((a, b) => b.v - a.v);
     repl = scored[0].id;
   }
+  const landed = s.backdoor != null && repl === s.backdoor;
   s.replacement = repl;
+  s.backdoorLanded = landed;
   s.atRisk.push(repl);
   s.cast[repl].timesAtRisk += 1;
   s.atRiskNamedBy[repl] = s.captain;
   s.cast[repl].namedBy.push(s.captain);
   E.applyTrust(s.rel, repl, s.captain, E.K.D_NAMED_AT_RISK);
+  /* Being walked into is worse than being named, and the house watched it
+     happen, so the Captain pays for it with more than one person. */
+  if (landed) {
+    E.applyTrust(s.rel, repl, s.captain, E.K.D_BACKDOORED);
+    for (const a of s.alliances) {
+      if (!a.alive || a.members.indexOf(repl) === -1) continue;
+      for (const m of a.members) {
+        if (m !== repl && m !== s.captain) E.applyTrust(s.rel, m, s.captain, E.K.D_BACKDOORED * 0.35);
+      }
+    }
+    pushEvent(s, 'backdoor', { captain: s.captain, target: repl, pawn: s.saved });
+  }
   s.pendingReplacement = false;
 
   for (const a of s.alliances) {
@@ -845,6 +899,31 @@ function aiVetoChoice(s, holder, rng) {
     const v = s.rel.trust[holder][t] + bond * 0.6;
     if (v > bestV) { bestV = v; best = t; }
   }
+
+  /*
+   * The backdoor only works if somebody opens the seat, so the plan has to
+   * survive contact with whoever won the Veto.
+   *
+   * The Captain executes their own plan. An ally hears it and mostly goes along,
+   * because taking a pawn down costs them nothing and buys them the Captain.
+   * Anybody else never hears it and the plan simply dies, which is the correct
+   * failure and happens often enough to make winning the Veto yourself matter.
+   */
+  if (s.backdoor != null && s.atRisk.indexOf(s.backdoor) === -1) {
+    const seat = s.atRisk.indexOf(s.hohPawn) !== -1 ? s.hohPawn : best;
+    if (seat != null && holder === s.captain) return seat;
+    if (seat != null && E.sharedAlliances(s.alliances, holder, s.captain).length) {
+      const trust = s.rel.trust[holder][s.captain];
+      if (trust > 35 && seat !== s.backdoor) return seat;
+    }
+  }
+
+  /* A Captain does not take down their own nominee. They put those names up on
+     purpose an hour ago, and the only reason to open the seat is a plan, which
+     is handled above. Without this the recap kept producing weeks that read as
+     the Captain arguing with themselves. */
+  if (holder === s.captain) return null;
+
   /* Using it costs you cover with the Captain, so it takes a real relationship
      rather than mild warmth. */
   return bestV > 70 ? best : null;
@@ -986,10 +1065,17 @@ function doFallout(s) {
     week: s.week,
     captain: s.captain,
     atRisk: s.atRisk.slice(),
+    nominees: (s.nominees && s.nominees.length) ? s.nominees.slice() : s.atRisk.slice(),
     vetoHolder: s.vetoHolder,
     vetoUsed: s.vetoUsed,
     savedId: s.saved != null ? s.saved : null,
     replacement: s.replacement,
+    /* What the Captain was trying to do, which is the only way the recap can
+       tell a week that went to plan from one that went wrong. */
+    nomMode: s.nomMode || null,
+    hohTarget: s.hohTarget != null ? s.hohTarget : null,
+    hohPawn: s.hohPawn != null ? s.hohPawn : null,
+    backdoorLanded: !!s.backdoorLanded,
     tally: result.tally,
     votes: result.votes,
     evicted: gone,
@@ -1014,6 +1100,9 @@ function doFallout(s) {
     s.voteIntent = {};
     s.atRisk = [];
     s.vetoHolder = null; s.vetoUsed = false; s.replacement = null; s.saved = null;
+    s.nominees = [];
+  s.hohTarget = null; s.hohPawn = null; s.nomMode = null;
+  s.backdoor = null; s.backdoorLanded = false;
     s.phase = PHASES.CAPTAIN_COMP;
     pushEvent(s, 'double_eviction', {});
     return s;

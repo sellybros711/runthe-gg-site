@@ -125,6 +125,22 @@ const S = {
   namingYou: [
     'You name {a} and {b}. Neither of them looks at you after.',
   ],
+  /* Intent, GDD §5. The house is told there is a pawn and not which one, which
+     is the read the whole mechanic hangs on. */
+  namingPawn: [
+    'Only one of those names is the point of it. The house starts working out which.',
+    'Somebody up there is a pawn. Nobody has said so out loud yet.',
+  ],
+  namingYouPawn: [
+    'One of them is there to make the numbers look easy. You know which.',
+  ],
+  backdoorLanded: [
+    '{name} goes up in a seat that was open before the ceremony started.',
+    '{name} never played for the Veto and is now At Risk.',
+  ],
+  backdoorFailed: [
+    'The Veto stays in a pocket. The names stand and your week goes with them.',
+  ],
   vetoUsed: [
     '{holder} uses the Veto on {saved}.',
   ],
