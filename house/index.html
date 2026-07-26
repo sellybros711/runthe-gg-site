@@ -40,7 +40,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
   background:repeating-linear-gradient(180deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px);
   mix-blend-mode:screen}
 
-#app{max-width:1180px;margin:0 auto;padding:0 16px 96px;min-height:100dvh}
+#app{max-width:1180px;margin:0 auto;padding:0 16px 152px;min-height:100dvh}
 
 /* ── chrome ─────────────────────────────────────────────────────────────── */
 .topbar{position:sticky;top:0;z-index:40;background:linear-gradient(180deg,var(--ink) 72%,transparent);
@@ -349,6 +349,208 @@ table.truth td.r{text-align:right;color:var(--dim)}
 .feed p.ev-bad{color:var(--signal)}
 .feed p.ev-good{color:var(--ok)}
 
+/* ── the shell ────────────────────────────────────────────────────────────
+ *
+ * Borrowed in SHAPE from BitLife, deliberately not in skin. What makes that
+ * interface legible to millions of people who never read a tutorial is three
+ * structural rules, none of which cost us our own look:
+ *
+ *   1. The thing that advances time is always in the same place, always the
+ *      same colour, and always says what it is about to do.
+ *   2. There is never more than one decision on screen. Everything else is
+ *      either history you can scroll or a panel you chose to open.
+ *   3. Every beat arrives as a card: who it is about, a title, two sentences,
+ *      and its choices stacked full width and thumb sized.
+ *
+ * So: one green button, one log, one card at a time. The palette, the voice
+ * and the pixel avatars stay exactly as they were.
+ */
+:root{ --go:#2f9e5a; --go-hi:#3ab96a; --go-dark:#1d6b3c; }
+
+/* the log, which is now the main surface rather than a box under the fold */
+.log{border:1px solid var(--line);background:var(--panel);padding:4px 0 10px;margin-bottom:16px}
+.log .wkh{font-family:var(--disp);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--hand);padding:14px 16px 6px;border-top:1px solid var(--line);margin-top:8px}
+.log .wkh:first-child{border-top:none;margin-top:0;padding-top:12px}
+.log p{margin:0;padding:3px 16px;display:flex;gap:9px;align-items:flex-start}
+.log p .ic{margin-top:3px;flex:none;opacity:.85}
+.log p.ev-power{color:var(--hand)} .log p.ev-vote{color:var(--paper)}
+.log p.ev-bad{color:var(--signal)} .log p.ev-good{color:var(--ok)}
+.log p.quiet{color:var(--dimmer);font-style:italic}
+.log p.hot{color:var(--signal)}
+.log p.sys{display:none}
+
+/* who you are, pinned at the top the way a life sim pins your name */
+.idbar{display:flex;gap:12px;align-items:center;border:1px solid var(--line);
+  background:var(--panel);padding:10px 14px;margin-bottom:14px}
+.idbar .av{width:44px;height:44px;border:1px solid var(--line);background:#000;flex:none;overflow:hidden}
+.idbar .av img{width:100%;height:100%;display:block}
+.idbar .who{min-width:0;flex:1}
+.idbar .who b{display:block;font-family:var(--disp);font-weight:400;font-size:17px;
+  letter-spacing:.06em;color:var(--paper);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.idbar .who span{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.idbar .rt{text-align:right;flex:none}
+.idbar .rt b{display:block;font-family:var(--disp);font-weight:400;font-size:17px;color:var(--paper)}
+.idbar .rt span{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dimmer)}
+
+/* four bars that say how your game is going, no numbers on any of them */
+.sbars{border:1px solid var(--line);background:var(--panel);padding:9px 14px;margin-bottom:14px}
+.sb{display:flex;align-items:center;gap:10px;padding:3px 0}
+.sb i{font-style:normal;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);width:78px;flex:none}
+.sb u{text-decoration:none;flex:1;height:9px;background:#1b1f24;display:block;position:relative}
+.sb u>span{display:block;height:100%}
+.sb em{font-style:normal;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--dimmer);width:76px;text-align:right;flex:none}
+
+/* ── the dock: nav on top, the one green button underneath ───────────────── */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:50;
+  background:linear-gradient(180deg,rgba(10,11,12,0),rgba(10,11,12,.97) 22%);
+  padding:18px 16px calc(10px + env(safe-area-inset-bottom))}
+.dock .inner{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.nav{display:flex;gap:1px;background:var(--line);border:1px solid var(--line)}
+.nav button{flex:1 1 0;background:var(--panel);padding:7px 4px 6px;display:flex;
+  flex-direction:column;gap:3px;align-items:center;color:var(--dim);
+  font-size:9px;letter-spacing:.13em;text-transform:uppercase;transition:.14s}
+.nav button:hover{background:var(--panel2);color:var(--paper)}
+.nav button .ic{opacity:.8}
+.nav button.on{background:var(--panel2);color:var(--paper)}
+.nav button.on .ic{opacity:1}
+.nav button[disabled]{opacity:.3;pointer-events:none}
+
+.gobtn{width:100%;background:var(--go);color:#f2fbf4;border:none;border-bottom:3px solid var(--go-dark);
+  padding:15px 18px 14px;font-family:var(--disp);font-weight:400;font-size:19px;letter-spacing:.12em;
+  text-transform:uppercase;transition:.12s;display:flex;align-items:center;justify-content:center;gap:10px}
+.gobtn:hover{background:var(--go-hi)}
+.gobtn:active{transform:translateY(2px);border-bottom-width:1px}
+.gobtn[disabled]{opacity:.4;pointer-events:none}
+.gobtn small{font-family:var(--mono);font-size:10px;letter-spacing:.14em;opacity:.72;
+  text-transform:uppercase}
+/* the one place the accent is allowed on a button: sending somebody home */
+.gobtn.risk{background:var(--signal);border-bottom-color:#7c2b21;color:#fff2ef}
+.gobtn.risk:hover{background:#e04b36}
+.gobtn.quiet{background:var(--panel2);color:var(--chalk);border:1px solid var(--dimmer);
+  border-bottom:3px solid var(--line);font-size:15px}
+.gobtn.quiet:hover{background:#1c2025;color:var(--paper)}
+.dockrow{display:flex;gap:8px}
+.dockrow .gobtn{flex:1}
+/* The secondary action is a way out, not an equal choice, so it does not get
+   half the dock. */
+.dockrow .gobtn.quiet{flex:0 0 34%}
+
+/* ── the card: one beat, one decision, never two ─────────────────────────── */
+body.carded .dock,body.carded .bar{display:none}
+.sheet{position:fixed;inset:0;z-index:70;background:rgba(6,7,8,.72);
+  display:flex;align-items:center;justify-content:center;padding:16px;
+  animation:fade .16s ease-out;overflow-y:auto}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.card{width:100%;max-width:520px;background:var(--panel);border:1px solid var(--line);
+  box-shadow:0 24px 70px rgba(0,0,0,.7);animation:pop .2s cubic-bezier(.2,.9,.3,1.1);
+  max-height:calc(100dvh - 32px);display:flex;flex-direction:column;margin:auto}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+.card .ch{display:flex;align-items:center;gap:10px;padding:9px 16px;
+  background:linear-gradient(90deg,transparent,rgba(191,174,142,.22));
+  border-bottom:1px solid var(--line)}
+.card .ch .av{width:34px;height:34px;border:1px solid var(--line);background:#000;flex:none;overflow:hidden}
+.card .ch .av img{width:100%;height:100%;display:block}
+.card .ch .k{font-family:var(--disp);font-weight:400;font-size:11px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--chalk);flex:1;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .ch .r{font-family:var(--disp);font-weight:400;font-size:13px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--paper);flex:none}
+.card.t-bad .ch{background:linear-gradient(90deg,transparent,rgba(212,64,44,.3))}
+.card.t-bad .ch .r{color:var(--signal)}
+.card.t-good .ch{background:linear-gradient(90deg,transparent,rgba(127,154,134,.28))}
+.card.t-good .ch .r{color:var(--ok)}
+.card.t-power .ch{background:linear-gradient(90deg,transparent,rgba(191,174,142,.34))}
+.cbody{padding:20px 20px 4px;overflow-y:auto;flex:1;text-align:center}
+.cbody h2{font-size:22px;color:var(--paper);line-height:1.2;margin-bottom:12px;
+  display:flex;gap:10px;align-items:center;justify-content:center;text-align:center}
+.cbody h2 .ic{flex:none}
+.cbody p{margin:0 0 11px;color:var(--chalk);font-size:14px;line-height:1.6}
+.cbody p.q{color:var(--paper);font-size:15px}
+.cbody p.d{color:var(--dim);font-size:12.5px}
+.cbody .rows{border:1px solid var(--line);margin:4px 0 14px;text-align:left}
+.cbody .rows div{padding:8px 13px;border-top:1px solid var(--line);font-size:12.5px;color:var(--chalk)}
+.cbody .rows div:first-child{border-top:none}
+.cbody .rows div:nth-child(odd){background:var(--panel2)}
+.cbody .rows b{font-weight:400;color:var(--dim);letter-spacing:.1em;
+  font-size:10px;text-transform:uppercase;display:block}
+.cbody .faces{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin:2px 0 16px}
+.cbody .sbars{margin:0 0 14px;border-color:var(--line)}
+
+.choices{padding:6px 14px 16px;display:flex;flex-direction:column;gap:8px}
+.chb{width:100%;background:var(--panel2);border:1px solid var(--dimmer);border-bottom-width:2px;
+  padding:13px 15px;display:flex;gap:12px;align-items:center;text-align:left;transition:.13s}
+.chb:hover{background:#1c2126;border-color:var(--paper)}
+.chb:active{transform:translateY(1px)}
+.chb .key{font-family:var(--disp);font-size:16px;letter-spacing:.06em;color:var(--dim);
+  width:15px;flex:none}
+.chb .txt{flex:1;color:var(--paper);font-size:14px;line-height:1.4}
+.chb .txt small{display:block;color:var(--dim);font-size:11.5px;font-family:var(--mono);
+  line-height:1.45;margin-top:3px}
+.chb .tag{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dimmer);
+  border:1px solid var(--dimmer);padding:2px 6px;white-space:nowrap;flex:none}
+.chb.safe{border-left:3px solid var(--ok)}
+.chb.safe:hover .key{color:var(--ok)}
+.chb.neutral{border-left:3px solid var(--dim)}
+.chb.risky{border-left:3px solid var(--signal)}
+.chb.risky:hover{background:rgba(212,64,44,.09)}
+.chb.risky:hover .key{color:var(--signal)}
+.chb.risky .tag{border-color:var(--signal-dim);color:var(--signal)}
+.chb.go{background:var(--go);border-color:var(--go-dark);border-bottom-color:var(--go-dark);
+  justify-content:center}
+.chb.go .txt{color:#f2fbf4;font-family:var(--disp);letter-spacing:.12em;text-transform:uppercase;
+  flex:none;font-size:16px}
+.chb.go:hover{background:var(--go-hi);border-color:var(--go-dark)}
+.chb.hot{border-color:var(--signal-dim)}
+.chb.hot:hover{background:rgba(212,64,44,.1);border-color:var(--signal)}
+.chb.hot .txt{color:var(--signal)}
+.chb[disabled]{opacity:.32;pointer-events:none}
+.cfoot{padding:0 14px 16px;text-align:center}
+.cfoot button{font-size:12px;letter-spacing:.1em;color:var(--dim);text-decoration:underline;
+  text-underline-offset:3px}
+.cfoot button:hover{color:var(--paper)}
+
+/* picking a person, as a list rather than a sixteen tile grid. On a phone the
+   grid was four rows of scrolling before you could see everybody's name. */
+.plist{display:flex;flex-direction:column;gap:1px;background:var(--line);
+  border:1px solid var(--line);margin:0 0 14px;max-height:min(46dvh,380px);overflow-y:auto}
+.prow{background:var(--panel2);padding:8px 12px;display:flex;gap:11px;align-items:center;
+  text-align:left;width:100%;transition:.12s;border-left:3px solid transparent}
+.prow:hover{background:#1c2126}
+.prow .av{width:42px;height:42px;border:1px solid var(--line);background:#000;flex:none;overflow:hidden}
+.prow .av img{width:100%;height:100%;display:block}
+.prow .n{flex:1;min-width:0}
+.prow .n b{display:block;font-family:var(--disp);font-weight:400;font-size:15px;letter-spacing:.05em;
+  color:var(--paper);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prow .n span{font-size:10px;letter-spacing:.09em}
+.prow .mk{display:flex;gap:6px;align-items:center;color:var(--dim);flex:none}
+.prow.sel{background:#20262c;border-left-color:var(--hand)}
+.prow.sel .n b{color:var(--hand)}
+.prow.block{border-left-color:var(--signal)}
+.prow.you{opacity:.45;pointer-events:none}
+.prow[disabled]{opacity:.34;pointer-events:none}
+
+/* a panel opened from the nav, closed with the same button */
+.panel{border:1px solid var(--line);background:var(--panel);padding:16px;margin-bottom:16px}
+.panel h3{font-size:14px;color:var(--paper);margin-bottom:4px}
+.panel .sub{color:var(--dim);font-size:12px;margin-bottom:14px}
+
+@media (max-width:560px){
+  /* Twelve phase labels do not fit across a phone, so the rail scrolls. It has
+     to be given room to scroll INTO, or the labels just overlap each other. */
+  .rl{min-width:58px;padding:0 3px}
+  .cbody h2{font-size:19px}
+  .idbar .who b{font-size:15px}
+  /* Side by side, the note turned the button into a hundred pixel block of
+     wrapped text. Stacked, it reads as a subtitle, which is what it is. */
+  .gobtn{font-size:16px;padding:12px 10px 11px;flex-direction:column;gap:2px}
+  .gobtn small{font-size:9px;letter-spacing:.1em}
+  .dockrow .gobtn.quiet{flex:0 0 32%;font-size:13px}
+  .sb i{width:64px} .sb em{width:62px;font-size:9px}
+}
+
 /* ── moments: the beats that must not scroll past ────────────────────────── */
 .moment{border:1px solid var(--line);background:var(--panel);padding:0;margin-bottom:20px;
   overflow:hidden;animation:mo .28s ease-out}
@@ -382,7 +584,7 @@ table.truth td.r{text-align:right;color:var(--dim)}
 .hide{display:none !important}
 @media(max-width:720px){
   :root{--tile:104px}
-  #app{padding:0 10px 110px}
+  #app{padding:0 10px 186px}
   .tree{grid-template-columns:1fr}
   .topbar .wk{font-size:21px}
   .cell{min-height:150px}
@@ -393,6 +595,7 @@ table.truth td.r{text-align:right;color:var(--dim)}
 <body>
 <div id="app"></div>
 <div class="bar hide" id="bar"><div class="inner" id="barinner"></div></div>
+<div id="sheet"></div>
 
 <script src="rng.js"></script>
 <script src="tree.js"></script>
@@ -416,6 +619,7 @@ var RNG=window.RH_RNG, T=window.RH_TREE, G=window.RH_GEN, E=window.RH_ENGINE,
 var app=document.getElementById('app');
 var bar=document.getElementById('bar');
 var barin=document.getElementById('barinner');
+var sheet=document.getElementById('sheet');
 
 var SAVE='rh_run_v1', ACCT='rh_account_v1';
 var s=null, account=null, screen='title';
@@ -449,13 +653,34 @@ var feedLines=[];
 /* A line in the feed can carry a drawn mark. Sixteen weeks of undifferentiated
    grey paragraphs was the single hardest thing in this interface to skim: the
    eviction and the small talk looked identical. */
-function say(text,cls,ic){ if(!text) return; feedLines.push({t:text,c:cls||'',i:ic||null});
-  if(feedLines.length>90) feedLines.shift(); }
+function say(text,cls,ic){ if(!text) return;
+  feedLines.push({t:text,c:cls||'',i:ic||null,w:s?s.week:0});
+  if(feedLines.length>240) feedLines.shift(); }
 function sysline(text){ say(text,'sys'); }
-function renderFeed(){
-  return '<div class="feed" id="feed">'+feedLines.map(function(l){
-    return '<p class="'+l.c+'">'+(l.i?U.icon(l.i,14):'')+'<span>'+esc(l.t)+'</span></p>';
-  }).join('')+'</div>';
+/*
+ * The log, grouped by week.
+ *
+ * A life sim's history reads as "Age: 5 years" and then what happened at five,
+ * and that heading is doing more work than it looks like: it turns an
+ * undifferentiated column of grey sentences into a thing you can scan and
+ * scroll back through. Ours groups by week and keeps the whole run rather than
+ * the last ninety lines, because the run IS the story and the recap should not
+ * be the first time you can read it.
+ */
+function renderLog(){
+  var out='', last=null;
+  for(var i=0;i<feedLines.length;i++){
+    var l=feedLines[i];
+    /* Seed banners and phase markers were only ever there to break the old
+       undifferentiated feed into chunks. The week heading does that job now,
+       and an empty heading with nothing under it looks like a bug. */
+    if(l.c==='sys') continue;
+    if(l.w!==last){ last=l.w;
+      out+='<div class="wkh">'+(l.w>0?'Week '+l.w:'Move In Night')+'</div>'; }
+    out+='<p class="'+l.c+'">'+(l.i?U.icon(l.i,14):'')+'<span>'+esc(l.t)+'</span></p>';
+  }
+  if(!out) out='<p class="quiet" style="padding:14px 16px">Nothing has happened yet.</p>';
+  return '<div class="log" id="feed">'+out+'</div>';
 }
 function esc(x){ return String(x).replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
@@ -542,13 +767,6 @@ function wall(opts){
   return tabs+'<div class="wall">'+list.map(function(p){ return cellFor(p,o); }).join('')+'</div>';
 }
 
-/* Re-bind the sort tabs after any paint that included a wall. */
-function bindSorts(repaint){
-  Array.prototype.forEach.call(app.querySelectorAll('[data-sort]'),function(el){
-    el.onclick=function(){ wallSort=el.dataset.sort; repaint(); };
-  });
-}
-
 // ── chrome ─────────────────────────────────────────────────────────────────
 var PHASE_NAME={
   reset:'Reset',captain_comp:'Captain Comp',scheme1:'Scheming I',naming:'Naming',
@@ -594,14 +812,12 @@ function energyStrip(){
 
 /* What the player is holding, if anything, shown wherever it is relevant. */
 function myPowers(){ return PW.heldBy(s,s.human); }
-function powerBadge(){
-  var mine=myPowers();
-  if(!mine.length) return '';
-  return mine.map(function(p){
-    return '<span class="holding">'+esc(PW.POWERS[p.kind].name)+'</span>'; }).join('');
-}
 
+/* The old bar, still used by the screens that are not the week loop: the title,
+   the creator, the tree, the vote reveal and the results. dock() is the week
+   loop's version and swaps the class, so this has to swap it back. */
 function setBar(prompt,buttons){
+  bar.className='bar';
   if(!buttons||!buttons.length){ bar.classList.add('hide'); barin.innerHTML=''; return; }
   bar.classList.remove('hide');
   barin.innerHTML='<span class="prompt">'+esc(prompt||'')+'</span>'
@@ -772,9 +988,87 @@ function startRun(seed){
 var momentQ=[];
 function moment(m){ momentQ.push(m); }
 
+/* Moments are cards now. The old full-screen version replaced everything behind
+   it, so acknowledging one meant losing your place in the log. */
 function showMoment(m){
-  screen='phase';
-  var faces=(m.faces||[]).map(function(f){
+  openCard({
+    kicker:m.kicker||'The house', icon:m.icon||'captain', tone:m.tone||'',
+    title:m.title, body:m.sub?[m.sub]:[], faces:m.faces||[],
+    ok:{label:m.cta||'Go on',go:function(){ pump(); }}
+  });
+}
+
+// ── the card ───────────────────────────────────────────────────────────────
+/*
+ * ONE beat, ONE decision, and never both at once.
+ *
+ * Everything that used to paint itself over the whole screen paints in here
+ * instead: naming, the veto, powers, scenes, the vote. The stage behind it does
+ * not move, so a card is something that happened TO the run rather than a place
+ * you got taken to, and dismissing it puts you back exactly where you were.
+ *
+ * Shape:
+ *   kicker  what kind of beat this is, top left
+ *   who     the person it is about, with their avatar and their role, top right
+ *   title   one line, with a drawn mark
+ *   body    one to three sentences, never more
+ *   rows    a label and value table, for facts that are not prose
+ *   faces   the people involved
+ *   bars    where a number would go if we used numbers
+ *   pick    a list of people to choose from
+ *   choices stacked, full width, thumb sized
+ *   ok      or a single button when there is nothing to decide
+ *   foot    the one quiet escape, underlined, never a real option
+ */
+var cardOpen=null;
+function openCard(c){
+  cardOpen=c;
+  document.body.classList.add('carded');
+  var h='';
+  var who=c.who!=null?s.cast[c.who]:null;
+  h+='<div class="ch">'
+    +(who?'<div class="av">'+avatar(who,34)+'</div>':'')
+    +'<span class="k">'+esc(c.kicker||'')+'</span>'
+    +(c.role?'<span class="r">'+esc(c.role)+'</span>':'')
+    +'</div>';
+  h+='<div class="cbody">';
+  if(c.title) h+='<h2>'+(c.icon?U.icon(c.icon,20):'')+'<span>'+esc(c.title)+'</span></h2>';
+  (c.body||[]).forEach(function(b){
+    if(!b) return;
+    if(typeof b==='string') h+='<p>'+esc(b)+'</p>';
+    else h+='<p class="'+(b.c||'')+'">'+esc(b.t)+'</p>';
+  });
+  if(c.rows&&c.rows.length) h+='<div class="rows">'+c.rows.map(function(r){
+    return '<div><b>'+esc(r[0])+'</b>'+esc(r[1])+'</div>'; }).join('')+'</div>';
+  if(c.faces&&c.faces.length) h+='<div class="faces">'+facesHtml(c.faces)+'</div>';
+  if(c.bars&&c.bars.length) h+='<div class="sbars">'+c.bars.map(barRow).join('')+'</div>';
+  if(c.pick) h+=pickList(c.pick);
+  h+='</div>';
+
+  var btns=c.choices||(c.ok?[{label:c.ok.label,cls:'go',go:c.ok.go}]:[]);
+  if(btns.length) h+='<div class="choices">'+btns.map(function(b,i){
+    return '<button class="chb '+(b.cls||'')+'" data-c="'+i+'"'+(b.off?' disabled':'')+'>'
+      +(b.key?'<span class="key">'+esc(b.key)+'</span>':'')
+      +'<span class="txt">'+esc(b.label)+(b.note?'<small>'+esc(b.note)+'</small>':'')+'</span>'
+      +(b.tag?'<span class="tag">'+esc(b.tag)+'</span>':'')+'</button>';
+  }).join('')+'</div>';
+  if(c.foot) h+='<div class="cfoot"><button data-foot="1">'+esc(c.foot.label)+'</button></div>';
+
+  sheet.innerHTML='<div class="sheet"><div class="card t-'+(c.tone||'')+'">'+h+'</div></div>';
+
+  Array.prototype.forEach.call(sheet.querySelectorAll('[data-c]'),function(el){
+    el.onclick=function(){ var b=btns[Number(el.dataset.c)]; closeCard(); b.go(); };
+  });
+  var f=sheet.querySelector('[data-foot]');
+  if(f) f.onclick=function(){ closeCard(); c.foot.go(); };
+  if(c.pick) Array.prototype.forEach.call(sheet.querySelectorAll('[data-pick]'),function(el){
+    el.onclick=function(){ c.pick.go(Number(el.dataset.pick)); };
+  });
+}
+function closeCard(){ cardOpen=null; sheet.innerHTML=''; document.body.classList.remove('carded'); }
+
+function facesHtml(faces){
+  return faces.map(function(f){
     var rd=f.id===s.human?null:readOf(f.id);
     var col=f.col||(rd?U.bandColor(rd.band.label):'#e7e2d7');
     return '<div class="mface"><div class="fr" style="border-color:'+col+'">'
@@ -782,32 +1076,224 @@ function showMoment(m){
       +'<div class="fn">'+esc(s.cast[f.id].first)+(f.id===s.human?' (you)':'')+'</div>'
       +'<div class="ft" style="color:'+col+'">'+esc(f.tag||'')+'</div></div>';
   }).join('');
+}
+
+/* Choosing a person is a list, not the sixteen tile wall. On a phone the wall
+   was four rows of scrolling before you could read everybody's name, which is
+   the exact moment a player stops knowing what the screen is asking them. */
+function pickList(p){
+  var ids=p.pool.slice();
+  if(p.sort!==false) ids=U.sortCast(s,E,ids.map(function(i){return s.cast[i];}),wallSort)
+    .map(function(x){return x.id;});
+  return '<div class="plist">'+ids.map(function(id){
+    var pl=s.cast[id], rd=readOf(id);
+    var sel=p.selected&&p.selected.indexOf(id)!==-1;
+    var blk=p.block&&p.block.indexOf(id)!==-1;
+    var col=rd?U.bandColor(rd.band.label):'#e7e2d7';
+    var mk='';
+    if(s.captain===id) mk+='<span class="m-cap">'+U.icon('captain',16)+'</span>';
+    if(s.atRisk&&s.atRisk.indexOf(id)!==-1||blk) mk+='<span class="m-risk">'+U.icon('risk',16)+'</span>';
+    if(s.vetoHolder===id) mk+='<span class="m-veto">'+U.icon('veto',16)+'</span>';
+    if(id!==s.human&&E.sharedAlliances(s.alliances,s.human,id).filter(function(a){return a.alive;}).length)
+      mk+='<span class="m-ally">'+U.icon('alliance',16)+'</span>';
+    return '<button class="prow'+(sel?' sel':'')+(blk?' block':'')+(id===s.human?' you':'')+'"'
+      +' data-pick="'+id+'"'+(id===s.human?' disabled':'')+'>'
+      +'<div class="av">'+avatar(pl,42)+'</div>'
+      +'<div class="n"><b>'+esc(pl.first)+(id===s.human?' (you)':'')+'</b>'
+      +'<span style="color:'+col+'">'+esc(id===s.human?pl.archetype:rd.band.label)+'</span></div>'
+      +'<div class="mk">'+mk+'</div></button>';
+  }).join('')+'</div>';
+}
+
+/** Everybody still in but you. Nearly every pick list wants exactly this. */
+function others(){
+  return R.activeIds(s).filter(function(i){ return i!==s.human; });
+}
+
+// ── the stage: what is always on screen behind everything ──────────────────
+/*
+ * The stage never gets replaced, only redrawn. Your name and your standing at
+ * the top, the facts of the week under it, then the log, and pinned at the
+ * bottom the one button that moves time forward. A player who has been away for
+ * a week can come back, read down the page and know exactly where they are
+ * without opening anything.
+ */
+var openPanel=null;
+function renderStage(){
+  screen='phase';
+  var me=s.cast[s.human];
   app.innerHTML=topbar()
-    +'<div class="moment t-'+(m.tone||'')+'">'
-    +'<div class="mh">'+U.icon(m.icon||'captain',18)+'<b>'+esc(m.kicker||'')+'</b></div>'
-    +'<h2>'+esc(m.title)+'</h2>'
-    +(m.sub?'<div class="msub">'+esc(m.sub)+'</div>':'')
-    +(faces?'<div class="faces">'+faces+'</div>':'')
-    +'</div>'+renderFeed();
-  setBar('',[{label:m.cta||'Go on',cls:'go',go:function(){ pump(); }}]);
+    +'<div class="idbar"><div class="av">'+avatar(me,44)+'</div>'
+    +'<div class="who"><b>'+esc(me.name)+'</b><span>'+esc(me.archetype)
+      +(me.status==='active'?'':' &middot; out')+'</span></div>'
+    +'<div class="rt"><b>'+R.activeCount(s)+'</b><span>still in</span></div></div>'
+    +selfBars()
+    +panelHtml()
+    +renderLog();
+  bindPanel();
   scrollFeed();
 }
 
-// ── the pump: advance until the game needs the player ──────────────────────
+/*
+ * Four readings of your own game, as bars with no numbers on them.
+ *
+ * GDD §17 keeps numbers off relationships, and these are aggregates of exactly
+ * that, so they stay wordless: a bar and a band. What they are FOR is the thing
+ * a life sim does well and we did not, which is letting somebody see at a
+ * glance whether the last ten minutes went well.
+ */
+function selfBars(){
+  var me=s.human, act=R.activeIds(s).filter(function(i){ return i!==me; });
+  var warm=0, tot=0;
+  for(var i=0;i<act.length;i++){ tot+=s.rel.trust[act[i]][me]; if(s.rel.trust[act[i]][me]>25) warm++; }
+  var avg=act.length?tot/act.length:0;
+  var standing=Math.max(0,Math.min(100,(avg+100)/2));
+  var threat=act.length?E.threatScore(s.rel,s.cast,me,me,s.panel,s.alliances):50;
+  var reach=act.length?(warm/act.length)*100:0;
+  var allies=E.allianceOf(s.alliances,me).length;
+  var maxE=SC.ENERGY.BASE+SC.ENERGY.AT_RISK_BONUS;
+  return '<div class="sbars">'
+    +barRow({label:'Standing',v:standing,col:U.bandColor(E.band(avg).label),
+             note:E.band(avg).label})
+    +barRow({label:'Reach',v:reach,col:'#bfae8e',
+             note:warm+' of '+act.length+' warm'})
+    +barRow({label:'Exposure',v:threat,col:threat>62?'#d4402c':'#c8724f',
+             note:threat>62?'they see you':threat>44?'noticed':'under it'})
+    +barRow({label:'Energy',v:(s.energy/maxE)*100,col:'#7f9a86',
+             note:s.energy+' left this week'+(allies?' &middot; '+allies+(allies>1?' rooms':' room'):'')})
+    +'</div>';
+}
+function barRow(b){
+  var v=Math.max(0,Math.min(100,b.v||0));
+  return '<div class="sb"><i>'+esc(b.label)+'</i>'
+    +'<u><span style="width:'+v.toFixed(0)+'%;background:'+(b.col||'#bfae8e')+'"></span></u>'
+    +'<em>'+(b.note||'')+'</em></div>';
+}
+
+/* Panels are opened from the nav and close with the same button. Nothing here
+   is ever a decision, so none of it belongs in a card. */
+function panelHtml(){
+  if(openPanel==='house') return '<div class="panel"><h3>The house</h3>'
+    +'<div class="sub">What you know, and how old the information is.</div>'
+    +U.legend()+wall({})+'</div>';
+  if(openPanel==='map') return '<div class="panel"><h3>Who is working with who</h3>'
+    +'<div class="sub">Only what you have actually seen or been told. '
+    +'An empty map means you have not been paying attention.</div>'
+    +U.allianceMap(s,E)+'</div>';
+  if(openPanel==='you'){
+    var held=myPowers();
+    return '<div class="panel"><h3>Your file</h3>'
+      +'<div class="sub">'+esc(s.cast[s.human].archetype)+'. Seed '+esc(s.seed)+'.</div>'
+      +(held.length?'<div class="rows">'+held.map(function(p){
+          var d=PW.POWERS[p.kind];
+          return '<div><b>'+esc(d.name)+'</b>'+esc(d.long)+'</div>'; }).join('')+'</div>'
+        :'<p style="color:var(--dim)">You are not holding anything.</p>')
+      +'</div>';
+  }
+  return '';
+}
+function bindPanel(){
+  Array.prototype.forEach.call(app.querySelectorAll('[data-sort]'),function(el){
+    el.onclick=function(){ wallSort=el.dataset.sort; renderStage(); };
+  });
+}
+
+// ── the dock ───────────────────────────────────────────────────────────────
+var NAV=[
+  {k:'house',n:'House',i:'eye'},
+  {k:'map',n:'Alliances',i:'alliance'},
+  {k:'you',n:'You',i:'power'}
+];
+/**
+ * The dock. Nav chips on top, and under them the one button that moves time.
+ *
+ * `main` is always present and always green, because the single most useful
+ * thing a life sim does is guarantee that there is exactly one way to go
+ * forward and it never moves. `extra` is for the rare second action that is not
+ * advancing, and it renders beside it in a quieter box.
+ */
+function dock(main,extra){
+  bar.classList.remove('hide');
+  var nav='<div class="nav">'+NAV.map(function(n){
+    return '<button data-nav="'+n.k+'" class="'+(openPanel===n.k?'on':'')+'">'
+      +U.icon(n.i,16)+'<span>'+n.n+'</span></button>'; }).join('')+'</div>';
+  var row='<div class="dockrow">'
+    +(extra?'<button class="gobtn quiet" data-x="1">'+esc(extra.label)+'</button>':'')
+    +'<button class="gobtn '+(main.cls||'')+'" data-go="1"'+(main.off?' disabled':'')+'>'
+      +esc(main.label)+(main.note?'<small>'+esc(main.note)+'</small>':'')+'</button>'
+    +'</div>';
+  barin.innerHTML=nav+row;
+  bar.className='dock';
+  Array.prototype.forEach.call(barin.querySelectorAll('[data-nav]'),function(el){
+    el.onclick=function(){
+      openPanel=(openPanel===el.dataset.nav)?null:el.dataset.nav;
+      renderStage(); dock(main,extra);
+    };
+  });
+  barin.querySelector('[data-go]').onclick=main.go;
+  var x=barin.querySelector('[data-x]');
+  if(x) x.onclick=extra.go;
+}
+
+/* What the button says it is about to do. Naming a phase is not enough: the
+   label has to be the sentence a player would use. */
+var NEXT_LABEL={};
+NEXT_LABEL[R.PHASES.RESET]='Start the week';
+NEXT_LABEL[R.PHASES.CAPTAIN_COMP]='Play for Captain';
+NEXT_LABEL[R.PHASES.SCHEME1]='Work the house';
+NEXT_LABEL[R.PHASES.SAFETY_CALL]='Carry on';
+NEXT_LABEL[R.PHASES.NAMING]='The naming';
+NEXT_LABEL[R.PHASES.VETO_DRAW]='Draw for the Veto';
+NEXT_LABEL[R.PHASES.VETO_COMP]='Play for the Veto';
+NEXT_LABEL[R.PHASES.SCHEME2]='Work the house';
+NEXT_LABEL[R.PHASES.VETO_CEREMONY]='The ceremony';
+NEXT_LABEL[R.PHASES.SCHEME3]='Last word before the vote';
+NEXT_LABEL[R.PHASES.EVICTION]='Hold the vote';
+NEXT_LABEL[R.PHASES.FALLOUT]='See where it landed';
+NEXT_LABEL[R.PHASES.FINAL3]='The last competition';
+NEXT_LABEL[R.PHASES.PANEL]='Face the Panel';
+NEXT_LABEL[R.PHASES.MOVE_IN]='Move in';
+
+function nextLabel(){
+  var ph=s.phase;
+  if(ph===R.PHASES.NAMING&&s.captain===s.human) return 'Name two At Risk';
+  if(ph===R.PHASES.EVICTION&&s.atRisk.indexOf(s.human)!==-1) return 'Sit through it';
+  return NEXT_LABEL[ph]||'Go on';
+}
+
+// ── the pump: one press, one beat ──────────────────────────────────────────
+/*
+ * Press the button, something happens, read it, press again.
+ *
+ * The old pump ran every phase that did not need input in one go, so a single
+ * click could move the game through four phases and dump nine lines into a box
+ * under the fold. That is the thing the playtest kept calling hard to follow.
+ * Now it stops as soon as there is anything to look at: a card, a decision, or
+ * even one new line in the log. Phases that produce nothing visible are still
+ * absorbed, so this does not turn into twelve clicks a week.
+ */
 function pump(){
-  if(momentQ.length){ showMoment(momentQ.shift()); return; }
+  if(momentQ.length){ renderStage(); dock({label:'Go on',off:true}); showMoment(momentQ.shift()); return; }
   var guard=400;
   while(guard-->0){
     if(s.phase===R.PHASES.OVER){ finishRun(); return; }
     var need=R.needsInput(s);
-    if(need){ handleNeed(need); return; }
-    var before=s.phase, wkBefore=s.week;
+    if(need){ renderStage(); handleNeed(need); return; }
+    var before=s.phase, wkBefore=s.week, lines=feedLines.length;
     narrateBefore(before);
     R.step(s,null);
     narrateAfter(before,wkBefore);
-    if(s.phase===R.PHASES.EVICTION&&!R.needsInput(s)){ /* falls through to reveal */ }
     if(before===R.PHASES.EVICTION){ saveRun(); showVoteReveal(); return; }
+    if(momentQ.length){ renderStage(); dock({label:'Go on',off:true}); showMoment(momentQ.shift()); return; }
+    if(feedLines.length>lines){ saveRun(); idle(); return; }
   }
+  idle();
+}
+
+/** Nothing is being asked. Draw the stage and arm the button. */
+function idle(){
+  renderStage();
+  dock({label:nextLabel(),go:function(){ pump(); }});
 }
 
 function narrateBefore(ph){
@@ -930,154 +1416,145 @@ function handleNeed(need){
   R.step(s,null); pump();
 }
 
+var TAG={safe:'Safe',neutral:'Even',risky:'Risky'};
+
 function showMoveIn(need){
-  screen='phase';
-  var TAG={safe:'Safe',neutral:'Even',risky:'Risky'};
-  app.innerHTML='<div class="topbar"><span class="wk">Move In Night</span>'
-   +'<span class="ph">'+(need.step+1)+' of '+need.of+'</span></div>'
-   +'<div class="scene"><div class="where"><b>Fifteen strangers and a lot of cameras.</b></div>'
-   +'<div class="said">'+esc(need.beat.line)+'</div>'
-   +'<div class="opts">'+need.beat.options.map(function(o){
-      return '<button class="opt '+o.kind+'" data-mi="'+o.key+'">'
-        +'<span class="key">'+o.key.toUpperCase()+'</span>'
-        +'<span class="txt">'+esc(o.text)+'</span>'
-        +'<span class="tag">'+TAG[o.kind]+'</span></button>'; }).join('')
-   +'</div></div>'+renderFeed();
-  Array.prototype.forEach.call(app.querySelectorAll('[data-mi]'),function(el){
-    el.onclick=function(){
-      var o=need.beat.options.filter(function(x){ return x.key===el.dataset.mi; })[0];
-      say(o.text,'quiet');
-      R.step(s,{key:el.dataset.mi}); pump();
-    };
+  dock({label:'Answer',off:true});
+  openCard({
+    kicker:'Move In Night', role:(need.step+1)+' of '+need.of, icon:'eye',
+    title:'Fifteen strangers and a lot of cameras',
+    body:[{t:need.beat.line,c:'q'}],
+    choices:need.beat.options.map(function(o){
+      return {key:o.key.toUpperCase(),label:o.text,tag:TAG[o.kind],cls:o.kind,go:function(){
+        say(o.text,'quiet'); R.step(s,{key:o.key}); pump(); }};
+    })
   });
-  setBar('A, B or C',[]);
-  scrollFeed();
 }
 
+/*
+ * Naming, in two cards. Pick two, then say who you are actually after.
+ *
+ * The second card is the whole strategy layer: picking somebody who is NOT on
+ * the block is the backdoor, and there is no separate button for it on purpose,
+ * because the plan only exists while the Veto has not happened yet.
+ */
 function showNaming(){
-  screen='phase';
-  var picked=[],stage='noms',want=null;
-  function paint(){
-    if(stage==='noms'){
-      app.innerHTML=topbar()
-        +'<div class="file"><h2>Name two At Risk</h2>'
-        +'<div class="sub">You hold the power. Both of them will remember it, and one of them is staying.</div></div>'
-        +wall({pick:true,selected:picked})+renderFeed();
-      bindSorts(paint);
-      bindPicks(function(id){
-        if(id===s.human) return;
+  dock({label:'Name them',off:true});
+  var picked=[], want=null;
+
+  function step1(){
+    openCard({
+      kicker:'You are Captain', role:'Naming', icon:'risk', tone:'bad',
+      title:'Name two At Risk',
+      body:['Both of them will remember it, and one of them is staying.',
+            picked.length===2?{t:'On the block: '+s.cast[picked[0]].first+' and '+s.cast[picked[1]].first,c:'d'}
+              :{t:picked.length?'One more.':'Choose two.',c:'d'}],
+      pick:{pool:others(),selected:picked,block:picked,go:function(id){
         var i=picked.indexOf(id);
         if(i>=0) picked.splice(i,1); else if(picked.length<2) picked.push(id);
-        paint();
-      });
-      setBar(picked.length<2?'Choose two':'Locked in',[
-        {label:'Name them',cls:'hot go',off:picked.length<2,go:function(){
-          stage='intent'; want=picked[0]; paint(); }}
-      ]);
-      scrollFeed(); return;
-    }
-    /* Who you are ACTUALLY after. Naming somebody who is not on the block is
-       the backdoor, and there is no separate button for it on purpose: the plan
-       only exists because the Veto has not happened yet. */
-    var back=picked.indexOf(want)===-1;
-    app.innerHTML=topbar()
-      +'<div class="file"><h2>Who do you actually want gone</h2>'
-      +'<div class="sub">The house reads the room, not the speech. Whoever you are after '
-      +'is who the votes will drift toward. Pick somebody who is not on the block '
-      +'and you are backdooring them: you need the Veto used to open the seat.</div></div>'
-      +'<div class="tagrow">'
-      +'<span class="tg">On the block: '+picked.map(function(i){ return esc(s.cast[i].first); }).join(' and ')+'</span>'
-      +(back
-        ? '<span class="tg bad">Backdoor</span><span class="tg">Needs the Veto used</span>'
-        : (picked.filter(function(i){return i!==want;}).length
-          ? '<span class="tg good">'
-            +esc(s.cast[picked.filter(function(i){return i!==want;})[0]].first)+' is the pawn</span>'
-          : '<span class="tg">Straight shot</span>'))+'</div>'
-      +wall({pick:true,selected:[want],block:picked})+renderFeed();
-    bindSorts(paint);
-    bindPicks(function(id){ if(id!==s.human&&id!==s.captain){ want=id; paint(); } });
-    setBar('Your target',[
-      {label:'Back',go:function(){ stage='noms'; paint(); }},
-      {label:back?'Set the trap':'Lock it in',cls:'hot go',go:function(){
-        R.step(s,{noms:picked,target:want}); pump(); }}
-    ]);
-    scrollFeed();
+        step1();
+      }},
+      choices:[{label:'Name them',cls:'go',off:picked.length<2,go:function(){
+        want=picked[0]; step2(); }}]
+    });
   }
-  paint();
+
+  function step2(){
+    var back=picked.indexOf(want)===-1;
+    var pawn=picked.filter(function(i){ return i!==want; })[0];
+    openCard({
+      kicker:'You are Captain', role:back?'Backdoor':'Straight shot', icon:'eye',
+      tone:back?'bad':'',
+      title:'Who do you actually want gone',
+      body:[
+        'The house reads the room, not the speech. Whoever you are after is who the votes will drift toward.',
+        back
+          ? {t:s.cast[want].first+' is not on the block. You need the Veto used to open the seat, or this week is wasted.',c:'q'}
+          : (pawn!=null?{t:s.cast[pawn].first+' is the pawn. Sitting beside somebody the house wants gone is how a pawn survives.',c:'q'}
+             :{t:'A straight shot at the person you named.',c:'q'})
+      ],
+      rows:[['On the block',picked.map(function(i){ return s.cast[i].first; }).join(' and ')],
+            ['Your target',s.cast[want].first]],
+      pick:{pool:others(),selected:[want],block:picked,go:function(id){
+        want=id; step2(); }},
+      choices:[{label:back?'Set the trap':'Lock it in',cls:'go',go:function(){
+        R.step(s,{noms:picked,target:want}); pump(); }}],
+      foot:{label:'Change the names',go:step1}
+    });
+  }
+  step1();
 }
 
 function showVetoUse(){
-  screen='phase';
-  app.innerHTML=topbar()
-    +'<div class="file"><h2>You hold the Veto</h2>'
-    +'<div class="sub">Use it and the Captain has to name somebody else. '
-    +'They will know exactly who cost them their week.</div></div>'
-    +wall({only:s.atRisk.concat([s.human]),all:true})+renderFeed();
-  var btns=s.atRisk.map(function(id){
-    return {label:'Save '+s.cast[id].first,cls:'go',go:function(){ R.step(s,{save:id}); pump(); }};
+  dock({label:'The Veto',off:true});
+  var mine=s.atRisk.indexOf(s.human)!==-1;
+  openCard({
+    kicker:'You hold the Veto', role:'Ceremony', icon:'veto', tone:'good',
+    title:'Use it, or sit on it',
+    body:['Use it and the Captain has to name somebody else. They will know exactly who cost them their week.'],
+    faces:s.atRisk.map(function(i){ return {id:i,tag:i===s.human?'You':'At Risk',col:'#d4402c'}; }),
+    choices:s.atRisk.map(function(id){
+      return {label:id===s.human?'Take yourself off':'Save '+s.cast[id].first,
+        cls:id===s.human?'go':'',
+        note:id===s.human?'Nobody has ever been blamed for this one.'
+          :'They owe you. The Captain will not.',
+        go:function(){ R.step(s,{save:id}); pump(); }};
+    }),
+    foot:{label:mine?'Leave the names alone':'Hold it and stay clean',
+      go:function(){ R.step(s,{save:null}); pump(); }}
   });
-  btns.push({label:'Hold it',go:function(){ R.step(s,{save:null}); pump(); }});
-  setBar('The Veto',btns);
-  scrollFeed();
 }
 
 function showReplacement(){
-  screen='phase';
+  dock({label:'Name a replacement',off:true});
   var pool=s.replacementPool;
-  app.innerHTML=topbar()
-    +'<div class="file"><h2>Name a replacement</h2>'
-    +'<div class="sub">The Veto took one of yours off. Somebody has to go up.</div></div>'
-    +wall({pick:true,only:pool,all:true})+renderFeed();
-  bindPicks(function(id){ if(pool.indexOf(id)!==-1){ R.step(s,{replacement:id}); pump(); } });
-  setBar('Choose one',[]);
-  scrollFeed();
+  openCard({
+    kicker:'You are Captain', role:'Replacement', icon:'risk', tone:'bad',
+    title:'Somebody has to go up',
+    body:['The Veto took one of yours off the block. This one has no chance to play for it.'],
+    pick:{pool:pool,go:function(id){
+      if(pool.indexOf(id)!==-1){ R.step(s,{replacement:id}); pump(); } }}
+  });
 }
 
 function showVote(){
-  screen='phase';
-  app.innerHTML=topbar()
-    +'<div class="file"><h2>Cast your vote</h2>'
-    +'<div class="sub">Votes are anonymous. The tally gets read out, the names never do.</div></div>'
-    +wall({only:s.atRisk,all:true})+renderFeed();
-  setBar('Evict',s.atRisk.map(function(id){
-    return {label:'Evict '+s.cast[id].first,cls:'hot',go:function(){
-      R.step(s,{vote:id}); saveRun(); showVoteReveal(); }};
-  }));
-  scrollFeed();
+  dock({label:'Cast it',off:true});
+  openCard({
+    kicker:'The vote', role:'Anonymous', icon:'vote',
+    title:'Cast your vote',
+    body:['The tally gets read out. The names never do.'],
+    faces:s.atRisk.map(function(i){ return {id:i,tag:'At Risk',col:'#d4402c'}; }),
+    choices:s.atRisk.map(function(id){
+      return {label:'Evict '+s.cast[id].first,cls:'hot',
+        note:E.read(s.rel,s.human,id).band.label+' on you, '+E.read(s.rel,s.human,id).freshness,
+        go:function(){ R.step(s,{vote:id}); saveRun(); showVoteReveal(); }};
+    })
+  });
 }
 
 function showFinal3Pick(){
-  screen='phase';
+  dock({label:'Choose',off:true});
   var pool=R.activeIds(s).filter(function(i){ return i!==s.human; });
-  app.innerHTML=topbar()
-    +'<div class="file"><h2>You won the last one</h2>'
-    +'<div class="sub">Pick who sits beside you. The other one joins the Panel, '
-    +'and gets a vote on which of you deserves it.</div></div>'
-    +wall({pick:true,only:pool,all:true})+renderFeed();
-  bindPicks(function(id){ R.step(s,{keep:id}); pump(); });
-  setBar('Choose one',[]);
+  openCard({
+    kicker:'Final Three', role:'Your call', icon:'captain', tone:'good',
+    title:'You won the last one',
+    body:['Pick who sits beside you. The other one joins the Panel and gets a vote on which of you deserves it.'],
+    pick:{pool:pool,go:function(id){ R.step(s,{keep:id}); pump(); }}
+  });
 }
 
 function showFraming(){
-  screen='phase';
-  app.innerHTML=topbar()
-    +'<div class="file"><h2>The Panel is seated</h2>'
-    +'<div class="sub">'+esc(tsay('panelOpen'))+'</div>'
-    +'<div class="grid2">'
-    +'<button class="choice" data-fr="own"><b>Own it</b><span>Every move was yours and you would make them again. '
-    +'The strategists respect it. The ones you cut will not.</span></button>'
-    +'<button class="choice" data-fr="humble"><b>Play it down</b><span>You did what the house made you do. '
-    +'Softer landing with the people you hurt, thinner with the ones who wanted a game.</span></button>'
-    +'</div></div>'+renderFeed();
-  Array.prototype.forEach.call(app.querySelectorAll('[data-fr]'),function(el){
-    el.onclick=function(){ R.step(s,{framing:el.dataset.fr}); pump(); };
-  });
-  setBar('',[]);
-}
-
-function bindPicks(fn){
-  Array.prototype.forEach.call(app.querySelectorAll('[data-pick]'),function(el){
-    el.onclick=function(){ fn(Number(el.dataset.pick)); };
+  dock({label:'Speak',off:true});
+  openCard({
+    kicker:'The Panel is seated', role:'Final word', icon:'panel',
+    title:'How are you playing it',
+    body:[tsay('panelOpen')],
+    choices:[
+      {label:'Own it',note:'Every move was yours and you would make them again. The strategists respect it. The ones you cut will not.',
+        go:function(){ R.step(s,{framing:'own'}); pump(); }},
+      {label:'Play it down',note:'You did what the house made you do. Softer landing with the people you hurt, thinner with the ones who wanted a game.',
+        go:function(){ R.step(s,{framing:'humble'}); pump(); }}
+    ]
   });
 }
 
@@ -1085,77 +1562,85 @@ function bindPicks(fn){
 /* Scheming is now a place and a conversation rather than a verb list. You pick
    who to spend energy on, the house draws where you are and what it is about,
    and the answer is A, B or C. scenes.js owns the banks; this owns the screen. */
-var housePanel=false;
+/*
+ * Scheming is the surface the player spends the most time in, so it is the one
+ * that has to be least confusing.
+ *
+ * It now sits on the stage rather than in a card: the log and your bars stay
+ * visible, the dock's green button is "Talk to somebody", and the quiet button
+ * beside it moves the week on. Cards only open for the thing you chose to do.
+ * Previously this was four different full screen states with a sixteen tile
+ * grid in each of them, and the only way to know how much energy you had left
+ * was to count pips in the top right.
+ */
 function showScheming(need){
-  screen='phase';
-  var moment=null, gathering=null;
+  renderStage();
+  var can=s.energy>=SC.ENERGY.SCENE_COST;
+  dock(
+    {label:can?'Talk to somebody':'Out of energy',off:!can,
+     note:can?(s.energy+' energy left this week'):'The week moves on without you',
+     go:pickPerson},
+    {label:'Move on',go:function(){ R.step(s,{done:true}); pump(); }}
+  );
+  if(!can){ /* nothing left to spend, but the player still chooses when to leave */ }
 
-  function paintPick(){
-    var side=[
-      {label:'Bring people together',off:s.energy<SC.ENERGY.GATHER_MIN*SC.ENERGY.GATHER_PER_HEAD,
-        go:function(){ gathering=[]; paintGather(); }},
-      {label:'Eavesdrop',off:s.energy<SC.ENERGY.EAVESDROP_COST,go:function(){
-        var o=R.performAction(s,{kind:'eavesdrop'}); s.energy-=SC.ENERGY.EAVESDROP_COST;
-        narrateAction(o); saveRun(); paintPick(); }},
-      {label:'Move on',cls:'go',go:function(){ R.step(s,{done:true}); pump(); }}
-    ];
-    app.innerHTML=topbar()
-      +'<div class="file"><h2>Who are you spending it on'+powerBadge()+'</h2>'
-      +'<div class="sub">Energy runs all week, not per phase. Hold some back for after '
-      +'the Veto ceremony or spend it now while nobody has been named. '
-      +'Everybody you skip drifts back toward how they felt about you on day one.</div></div>'
-      +'<details class="wk" id="hp"'+(housePanel?' open':'')+'><summary>'
-      +'<span class="no">Read</span><span class="hl">The house, as far as you know it</span>'
-      +'<span class="tags"><span class="pip">key and map</span></span></summary>'
-      +'<div class="body" style="padding-left:18px">'+U.legend()
-      +U.allianceMap(s,E)+'</div></details>'
-      +wall({pick:true})+renderFeed();
-    var hp=document.getElementById('hp');
-    if(hp) hp.ontoggle=function(){ housePanel=hp.open; };
-    bindSorts(paintPick);
-    bindPicks(function(id){
-      if(id===s.human) return;
-      if(s.energy<SC.ENERGY.SCENE_COST) return;
-      moment=R.sceneFor(s,id); paintScene();
-    });
-    setBar('Pick somebody',side);
-    scrollFeed();
+  function backToFloor(){
+    if(s.energy<SC.ENERGY.SCENE_COST){ R.step(s,{done:true}); pump(); return; }
+    showScheming(need);
   }
 
-  /* Pull two to four people into one room and try to put a name on it. The
-     odds are shown as a read rather than a percentage: §17 keeps numbers off
-     relationships, and "these two cannot stand each other" is the useful
+  function pickPerson(){
+    dock({label:'Pick somebody',off:true});
+    openCard({
+      kicker:'The house', role:s.energy+' energy', icon:'eye',
+      title:'Who are you spending it on',
+      body:['Energy runs all week, not per phase. Everybody you skip drifts back toward how they felt about you on day one.'],
+      pick:{pool:others(),go:function(id){
+        if(s.energy<SC.ENERGY.SCENE_COST) return;
+        closeCard(); showScene(R.sceneFor(s,id));
+      }},
+      choices:[
+        {label:'Get people in one room',note:'Try to put a name on it. One energy a head.',
+         off:s.energy<SC.ENERGY.GATHER_MIN*SC.ENERGY.GATHER_PER_HEAD,
+         go:function(){ showGather([]); }},
+        {label:'Listen at a door',note:'Costs '+SC.ENERGY.EAVESDROP_COST+'. You find out what two of them think of each other.',
+         off:s.energy<SC.ENERGY.EAVESDROP_COST,
+         go:function(){
+           var o=R.performAction(s,{kind:'eavesdrop'}); s.energy-=SC.ENERGY.EAVESDROP_COST;
+           narrateAction(o); saveRun(); backToFloor(); }}
+      ],
+      foot:{label:'Not yet',go:backToFloor}
+    });
+  }
+
+  /* Pull two to four people into one room and try to put a name on it. The odds
+     are a read rather than a percentage: §17 keeps numbers off relationships,
+     and "somebody in this room cannot stand somebody else in it" is the useful
      version of that information anyway. */
-  function paintGather(){
-    var cost=gathering.length*SC.ENERGY.GATHER_PER_HEAD;
-    var ok=gathering.length>=SC.ENERGY.GATHER_MIN&&s.energy>=cost;
-    var read='';
-    if(gathering.length>=SC.ENERGY.GATHER_MIN){
-      var c=SC.gatherChance(s,gathering);
+  function showGather(g){
+    var cost=g.length*SC.ENERGY.GATHER_PER_HEAD;
+    var ok=g.length>=SC.ENERGY.GATHER_MIN&&s.energy>=cost;
+    var read=null;
+    if(g.length>=SC.ENERGY.GATHER_MIN){
+      var c=SC.gatherChance(s,g);
       read=c>0.62?'This room would hold.'
         :c>0.42?'It could go either way.'
         :c>0.22?'This is a stretch. Somebody in here is not there yet.'
         :'These people are nowhere near ready. Somebody in this room cannot stand somebody else in it.';
     }
-    app.innerHTML=topbar()
-      +'<div class="file"><h2>Get them in one room</h2>'
-      +'<div class="sub">Name the people you think are already with you. '
-      +'One energy a head, and every pair in the room has to hold, not just how each of them feels about you. '
-      +'If it does not land you have shown them all exactly who you were counting on.</div>'
-      +(read?'<div class="gread'+(SC.gatherChance(s,gathering)>0.42?' good':'')+'">'+esc(read)+'</div>':'')
-      +'</div>'
-      +wall({pick:true,selected:gathering,nosort:true})+renderFeed();
-    bindPicks(function(id){
-      if(id===s.human) return;
-      var i=gathering.indexOf(id);
-      if(i>=0) gathering.splice(i,1);
-      else if(gathering.length<SC.ENERGY.GATHER_MAX) gathering.push(id);
-      paintGather();
-    });
-    setBar(gathering.length?(cost+' energy'):'Pick two to four',[
-      {label:'Back',go:function(){ gathering=null; paintPick(); }},
-      {label:'Bring them in',cls:'go',off:!ok,go:function(){
-        var out=R.gatherPeople(s,gathering);
+    openCard({
+      kicker:'An alliance', role:cost?cost+' energy':'Pick two', icon:'alliance',
+      tone:read&&SC.gatherChance(s,g)>0.42?'good':'',
+      title:'Get them in one room',
+      body:['Every pair in the room has to hold, not just how each of them feels about you. If it does not land you have shown them all exactly who you were counting on.',
+            read?{t:read,c:'q'}:null],
+      pick:{pool:others(),selected:g,sort:false,go:function(id){
+        var i=g.indexOf(id);
+        if(i>=0) g.splice(i,1); else if(g.length<SC.ENERGY.GATHER_MAX) g.push(id);
+        showGather(g);
+      }},
+      choices:[{label:'Bring them in',cls:'go',off:!ok,go:function(){
+        var out=R.gatherPeople(s,g);
         if(out){
           if(out.landed){
             say('You get them in one room and it holds.','ev-good','alliance');
@@ -1167,43 +1652,31 @@ function showScheming(need){
             say('It does not come together, and now they all know who you counted on.','ev-bad','broken');
           }
         }
-        gathering=null; saveRun();
-        if(s.energy<SC.ENERGY.SCENE_COST){ R.step(s,{done:true}); pump(); return; }
-        pump();
-      }}
-    ]);
-    scrollFeed();
-  }
-
-  function paintScene(){
-    var TAG={safe:'Safe',neutral:'Even',risky:'Risky'};
-    app.innerHTML=topbar()
-      +'<div class="scene">'
-      +'<div class="where"><b>'+esc(moment.scene)+'</b></div>'
-      +'<div class="said">'+esc(moment.line)+'</div>'
-      +'<div class="opts">'+moment.options.map(function(o){
-        var off=s.energy<o.cost;
-        return '<button class="opt '+o.kind+'" data-opt="'+o.key+'"'+(off?' disabled':'')+'>'
-          +'<span class="key">'+o.key.toUpperCase()+'</span>'
-          +'<span class="txt">'+esc(o.text)+'</span>'
-          +'<span class="tag">'+TAG[o.kind]+'</span></button>';
-      }).join('')+'</div></div>'
-      +renderFeed();
-    Array.prototype.forEach.call(app.querySelectorAll('[data-opt]'),function(el){
-      el.onclick=function(){
-        var out=R.playScene(s,moment,el.dataset.opt);
-        if(!out) return;
-        narrateScene(moment,out);
-        moment=null; saveRun();
-        if(s.energy<SC.ENERGY.SCENE_COST){ R.step(s,{done:true}); pump(); return; }
-        paintPick();
-      };
+        saveRun();
+        if(momentQ.length){ pump(); return; }
+        backToFloor();
+      }}],
+      foot:{label:'Back',go:pickPerson}
     });
-    setBar('A, B or C',[{label:'Walk away',go:function(){ moment=null; paintPick(); }}]);
-    scrollFeed();
   }
 
-  paintPick();
+  function showScene(mo){
+    openCard({
+      kicker:mo.scene, who:mo.target, role:E.read(s.rel,s.human,mo.target).band.label,
+      icon:'eye', title:s.cast[mo.target].first,
+      body:[{t:mo.line,c:'q'}],
+      choices:mo.options.map(function(o){
+        return {key:o.key.toUpperCase(),label:o.text,tag:TAG[o.kind],cls:o.kind,
+          off:s.energy<o.cost,go:function(){
+            var out=R.playScene(s,mo,o.key);
+            if(!out) return;
+            narrateScene(mo,out); saveRun();
+            backToFloor();
+          }};
+      }),
+      foot:{label:'Walk away',go:pickPerson}
+    });
+  }
 }
 
 function narrateScene(moment,out){
@@ -1242,102 +1715,108 @@ function narrateAction(o){
 }
 
 // ── powers ─────────────────────────────────────────────────────────────────
-function powerCard(kind,extra){
+/* A power is a card like anything else. The old version painted the whole
+   screen and put a sixteen tile wall under it, which buried the one sentence
+   that said what the thing actually did. */
+function powerHead(kind){
   var d=PW.POWERS[kind];
-  return '<div class="power'+(kind==='diamond'?' hot':'')+'">'
-    +'<div class="kind">You are holding</div><h2>'+esc(d.name)+'</h2>'
-    +'<div class="sub">'+esc(d.blurb)+'</div>'
-    +'<div class="long">'+esc(d.long)+'</div>'
-    +(extra||'')+'</div>';
+  return {kicker:'You are holding', role:d.name, icon:'power',
+          tone:kind==='diamond'?'bad':'power', title:d.name, blurb:d.blurb, long:d.long};
 }
 
 function showPowerSafety(need){
-  screen='phase';
-  app.innerHTML=topbar()
-    +powerCard('safety','<div class="long">Names go up next. Once they are up this is worth nothing.</div>')
-    +wall({})+renderFeed();
-  setBar('Week of Safety',[
-    {label:'Play it',cls:'go',go:function(){ say('You take yourself off the table.'); R.step(s,{play:true}); pump(); }},
-    {label:'Sit on it',go:function(){ R.step(s,{play:false}); pump(); }}
-  ]);
-  scrollFeed();
+  var h=powerHead('safety');
+  dock({label:'Decide',off:true});
+  openCard({kicker:h.kicker,role:h.role,icon:h.icon,tone:h.tone,title:h.title,
+    body:[h.blurb,h.long,{t:'Names go up next. Once they are up this is worth nothing.',c:'q'}],
+    choices:[
+      {label:'Play it',cls:'go',note:'You cannot be named this week.',go:function(){
+        say('You take yourself off the table.'); R.step(s,{play:true}); pump(); }},
+      {label:'Sit on it',note:'Worth nothing after the naming.',go:function(){
+        R.step(s,{play:false}); pump(); }}
+    ]});
 }
 
 function showPowerVetoPick(need){
-  screen='phase';
-  app.innerHTML=topbar()
-    +powerCard('veto_pick','<div class="long">Whoever you choose, everybody sees you choose them.</div>')
-    +wall({pick:true,only:need.pool,all:true})+renderFeed();
-  bindPicks(function(id){
-    say('You put '+s.cast[id].first+' in the Veto Comp. Everyone saw.');
-    R.step(s,{pick:id}); pump();
-  });
-  setBar('Pick one, or pass',[{label:'Do not use it',go:function(){ R.step(s,{pick:null}); pump(); }}]);
-  scrollFeed();
+  var h=powerHead('veto_pick');
+  dock({label:'Decide',off:true});
+  openCard({kicker:h.kicker,role:h.role,icon:h.icon,tone:h.tone,title:h.title,
+    body:[h.long,{t:'Whoever you choose, everybody sees you choose them.',c:'q'}],
+    pick:{pool:need.pool,go:function(id){
+      say('You put '+s.cast[id].first+' in the Veto Comp. Everyone saw.');
+      R.step(s,{pick:id}); pump(); }},
+    foot:{label:'Do not use it',go:function(){ R.step(s,{pick:null}); pump(); }}});
 }
 
 function showPowerDiamond(need){
-  screen='phase';
+  var h=powerHead('diamond');
+  dock({label:'Decide',off:true});
   var save=null;
   function paint(){
-    app.innerHTML=topbar()
-      +powerCard('diamond','<div class="long">'+(save==null
-        ? 'Choose who comes off the block.'
-        : 'Now choose who goes up in their place. The Captain does not get a say.')+'</div>')
-      +wall({pick:true,only:save==null?need.atRisk:need.pool,all:true})
-      +renderFeed();
-    bindPicks(function(id){
-      if(save==null){ save=id; paint(); return; }
-      say('You take '+s.cast[save].first+' off and put '+s.cast[id].first+' up. Everybody knows it was you.','hot');
-      R.step(s,{diamond:true,save:save,replace:id}); pump();
-    });
-    setBar(save==null?'Take one off':'Put one up',
-      [{label:'Do not use it',go:function(){ R.step(s,{diamond:false}); pump(); }}]);
-    scrollFeed();
+    openCard({kicker:h.kicker,role:h.role,icon:h.icon,tone:'bad',title:h.title,
+      body:[h.long,{t:save==null?'Choose who comes off the block.'
+        :'Now choose who goes up in their place. The Captain does not get a say.',c:'q'}],
+      pick:{pool:save==null?need.atRisk:need.pool,selected:save!=null?[save]:[],go:function(id){
+        if(save==null){ save=id; paint(); return; }
+        say('You take '+s.cast[save].first+' off and put '+s.cast[id].first+' up. Everybody knows it was you.','hot');
+        R.step(s,{diamond:true,save:save,replace:id}); pump();
+      }},
+      foot:{label:'Do not use it',go:function(){ R.step(s,{diamond:false}); pump(); }}});
   }
   paint();
 }
 
 function showPowerExtraVote(need){
-  screen='phase';
-  app.innerHTML=topbar()
-    +powerCard('extra_vote','<div class="long">The count comes back one higher than the house expects. '
-      +'Nobody can prove it was you, because nobody can prove anything about an anonymous vote.</div>')
-    +wall({only:need.atRisk,all:true})+renderFeed();
-  setBar('Extra Vote',[
-    {label:'Play it',cls:'go',go:function(){ say('You put two in.'); R.step(s,{extraVote:true}); pump(); }},
-    {label:'Keep it',go:function(){ R.step(s,{extraVote:false}); pump(); }}
-  ]);
-  scrollFeed();
+  var h=powerHead('extra_vote');
+  dock({label:'Decide',off:true});
+  openCard({kicker:h.kicker,role:h.role,icon:h.icon,tone:h.tone,title:h.title,
+    body:[h.long,{t:'The count comes back one higher than the house expects. Nobody can prove it was you, because nobody can prove anything about an anonymous vote.',c:'q'}],
+    faces:need.atRisk.map(function(i){ return {id:i,tag:'At Risk',col:'#d4402c'}; }),
+    choices:[
+      {label:'Play it',cls:'go',go:function(){ say('You put two in.'); R.step(s,{extraVote:true}); pump(); }},
+      {label:'Keep it',go:function(){ R.step(s,{extraVote:false}); pump(); }}
+    ]});
 }
 
 // ── competitions ───────────────────────────────────────────────────────────
+/* The decision to play or throw is a card. The comp itself takes the screen,
+   because a minigame with a log and four bars around it is a minigame nobody
+   can concentrate on. */
 function showComp(need){
-  screen='comp';
   var comp=need.comp||C.pickComp(s.rng.comp,s.lastCompId);
   s.pendingComp=comp;
   var which=need.which==='captain'?'Captain Comp':'Veto Comp';
-  app.innerHTML=topbar()
-    +'<div class="file"><h2>'+esc(which)+': '+esc(comp.name)+'</h2>'
-    +'<div class="sub">'+esc(comp.blurb)+'</div></div>'
-    +'<div class="stage" id="stage"></div>'
-    +renderFeed();
-  setBar('',[
-    {label:'Throw it',go:function(){
-      say(tsay('throwing'),'quiet');
-      if(s.cast[s.human].throwStreak>=2) say(tsay('throwSuspicion'),'hot');
-      screen='phase'; R.step(s,{throw:true}); pump();
-    }},
-    {label:'Play',cls:'go',go:function(){ setBar('',[]); startMinigame(comp,function(perf){
+  var streak=s.cast[s.human].throwStreak;
+  renderStage();
+  dock({label:'Take your place',off:true});
+  openCard({
+    kicker:which, role:need.which==='captain'?'The power':'Off the block',
+    icon:need.which==='captain'?'captain':'veto',
+    title:comp.name, body:[comp.blurb],
+    choices:[
+      {label:'Play it',cls:'go',go:function(){ runComp(comp); }},
+      {label:'Throw it',cls:'hot',
+       note:streak>=2?'That would be three in a row. The house can count.'
+         :'Go out early. Lands you in Rations, and somebody else holds the power.',
+       go:function(){
+         say(tsay('throwing'),'quiet');
+         if(streak>=2) say(tsay('throwSuspicion'),'hot');
+         R.step(s,{throw:true}); pump();
+       }}
+    ]});
+
+  function runComp(comp){
+    screen='comp';
+    app.innerHTML=topbar()
+      +'<div class="file"><h2>'+esc(which)+': '+esc(comp.name)+'</h2>'
+      +'<div class="sub">'+esc(comp.blurb)+'</div></div>'
+      +'<div class="stage" id="stage"></div>';
+    bar.className='bar hide'; barin.innerHTML='';
+    startMinigame(comp,function(perf){
       say('You finish the '+comp.name+'.','quiet');
       screen='phase'; R.step(s,{perf:perf}); pump();
-    }); }}
-  ]);
-  var st=document.getElementById('stage');
-  st.innerHTML='<h2>'+esc(comp.name)+'</h2><div class="blurb">'+esc(comp.blurb)+'</div>'
-    +'<div class="blurb">Play it, or go out early and let somebody else hold the power. '
-    +'Throwing lands you in Rations, and three in a row is something the house can count.</div>';
-  scrollFeed();
+    });
+  }
 }
 
 /* Each minigame returns 0..100. comps.js blends that with the build at
@@ -1649,7 +2128,7 @@ function showVoteReveal(){
       +(reveal?'<div style="text-align:center;color:var(--signal);font-family:var(--disp);'
         +'font-size:20px;letter-spacing:.1em;text-transform:uppercase">'
         +esc(res.evicted===s.human?'You are evicted':s.cast[res.evicted].name+' is evicted')+'</div>':'')
-      +'</div>'+renderFeed();
+      +'</div>'+renderLog();
     scrollFeed();
   }
   function marks(n){
@@ -1671,8 +2150,8 @@ function showVoteReveal(){
       if(res.tieBreak!=null) say(s.cast[res.tieBreak].first+' breaks the tie.','hot');
       paint(true);
       say(res.evicted===s.human?tsay('evictedYou'):tsay('evicted',{name:s.cast[res.evicted].name}),'ev-bad','out');
-      setBar('',[{label:'Continue',cls:'go',go:function(){
-        screen='phase'; R.step(s,null); saveRun(); pump(); }}]);
+      dock({label:'Live with it',go:function(){
+        screen='phase'; R.step(s,null); saveRun(); pump(); }});
       return;
     }
     counts[order[i].target]++;
@@ -1680,7 +2159,8 @@ function showVoteReveal(){
     paint(false);
     timer=setTimeout(step,520);
   }
-  setBar('',[{label:'Read it out',go:skip}]);
+  /* The one green button still advances, it just advances the tally. */
+  dock({label:'Read it out',note:'Drop the rest of the votes at once',go:skip});
   paint(false);
   timer=setTimeout(step,640);
 }
@@ -1818,11 +2298,9 @@ function renderResults(){
     {label:'Back to the file',go:function(){ screen='title'; render(); }}]);
 }
 
-function renderPhase(){
-  app.innerHTML=topbar()+wall({})+renderFeed();
-  bindSorts(renderPhase);
-  scrollFeed();
-}
+/* Repainting the week loop from render() means redrawing the stage and arming
+   the button, which is exactly what idle() does. */
+function renderPhase(){ idle(); }
 
 // ── boot ───────────────────────────────────────────────────────────────────
 account=loadAccount();

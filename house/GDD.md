@@ -978,6 +978,43 @@ Numbers are fine everywhere else: timers, comp scores, career stats, the tree.
 **Reference feel:** surveillance monitor, casting file paperwork, chalk scratched
 vote tallies. Cold institutional surfaces with human handwriting on top.
 
+### 17.1 The shell
+
+The look is ours. The **shape** is borrowed from BitLife, deliberately and
+specifically, because that interface is legible to millions of people who never
+read a tutorial, and the reasons are structural rather than cosmetic:
+
+1. **One green button.** The thing that advances time is always in the same
+   place, always the same colour, and always says what it is about to do:
+   "Start the week", "Play for the Veto", "Hold the vote". It is the only green
+   in the game. A player is never looking for what to press.
+2. **One decision at a time.** Everything that is being asked of you arrives as
+   a card over a dimmed screen. Everything that is not being asked of you is
+   either history you can scroll or a panel you chose to open.
+3. **The log is the main surface**, grouped by week the way a life sim groups by
+   age. It holds the whole run, not the last ninety lines, because the run is
+   the story and the recap should not be the first place you can read it.
+4. **Cards have a fixed anatomy**: a header strip with the kind of beat and who
+   it is about, an icon and a title, one to three sentences, then either one
+   button or choices stacked full width and thumb sized.
+5. **Your own game as four bars**, pinned above the dock: Standing, Reach,
+   Exposure, Energy. Wordless, because §17 keeps numbers off relationships and
+   these are aggregates of exactly that.
+
+What is NOT borrowed: the palette, the typography, the emoji, the exclamation
+points, and the bright cartoon chrome. Those are the parts that would cost us
+the voice, and none of them are what makes that interface work.
+
+Choosing a person is a **list**, not the sixteen tile wall. The wall is still
+the House panel, where reading the whole room at once is the point, but on a
+phone a picker built on it was four rows of scrolling before you could see
+everybody's name, which is exactly when a player stops knowing what the screen
+is asking them.
+
+One press, one beat: the loop stops as soon as there is anything to look at, a
+card or a decision or even a single new line in the log. Phases that produce
+nothing visible are absorbed, so it does not become twelve presses a week.
+
 ---
 
 ## 18. Open Questions
