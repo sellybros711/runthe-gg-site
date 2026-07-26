@@ -639,11 +639,26 @@ function compose(state, rng, me, them) {
 
 // ─── resolution ──────────────────────────────────────────────────────────────
 
+/*
+ * What each answer is worth, and the arithmetic that had to be redone.
+ *
+ * Playtest note: "none of my risky talks have worked so far". Measured, the C
+ * option lands 41 percent of the time for a level one player, which is a fair
+ * coin flip and not the complaint. The complaint was correct about something
+ * else: risky COST three energy against two and returned LESS. At the old
+ * numbers its expected trust was +2.0 against safe's +3.5, so the strictly
+ * worse play was also the expensive one, and the only reason to ever take it
+ * was the information and alliances riding on the beat.
+ *
+ * The downside is now a sting rather than a week undone, which puts risky
+ * marginally ahead per point of energy and leaves the variance as the real
+ * cost. It is still the only route to intent, alliances and reads.
+ */
 const GAIN = {
   safe: [2, 5],
   neutral: [4, 9],
   risky_win: [12, 22],
-  risky_lose: [-12, -5],
+  risky_lose: [-8, -3],
 };
 
 /*
@@ -663,7 +678,7 @@ const GAIN = {
  * alone, clearly above it once the effect lands. Never negative.
  */
 const RISK = {
-  BASE: 0.42,
+  BASE: 0.50,
   DRIVE: 0.005,          // per point of (your drive - their perception)
   TRUST_COVER: 0.0032,   // people extend the benefit of the doubt
   SUSPICION: 0.28,       // and stop extending it once they have caught you
@@ -691,6 +706,22 @@ function riskyChance(state, me, them, beatFx) {
     + Math.max(0, state.rel.trust[them][me]) * RISK.TRUST_COVER
     - (state.rel.suspicion[them][me] / 100) * RISK.SUSPICION;
   return E.clamp(p, RISK.MIN, RISK.MAX);
+}
+
+/*
+ * The same number as a sentence, because the player was being asked to pick
+ * between three options with no way to tell which one they could get away with.
+ * Reads, not percentages: §17 keeps figures off anything to do with what
+ * somebody thinks of you, and "they are watching you too closely" is the useful
+ * version of 22 percent anyway.
+ */
+function riskyRead(state, me, them, beatFx) {
+  const c = riskyChance(state, me, them, beatFx || []);
+  if (c >= 0.68) return 'They would buy this from you.';
+  if (c >= 0.52) return 'You could probably sell this.';
+  if (c >= 0.38) return 'This could go either way.';
+  if (c >= 0.24) return 'They are paying more attention than that.';
+  return 'They are watching you too closely for this.';
 }
 
 /**
@@ -851,7 +882,7 @@ function gather(state, ids, rng) {
 
 const api = {
   ENERGY, SCENES, BEATS, RISK, MOVE_IN, weeklyEnergy, gatherChance, gather,
-  poolFor, pickScene, pickBeat, beatAllowed, compose, riskyChance, resolve, GAIN,
+  poolFor, pickScene, pickBeat, beatAllowed, compose, riskyChance, riskyRead, resolve, GAIN,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;

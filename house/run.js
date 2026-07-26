@@ -261,9 +261,16 @@ function needsInput(s) {
     }
     case PHASES.CAPTAIN_COMP:
       return captainCompField(s).indexOf(me) !== -1 ? { kind: 'comp', which: 'captain', comp: s.pendingComp } : null;
-    case PHASES.SCHEME1: case PHASES.SCHEME2: case PHASES.SCHEME3:
+    case PHASES.SCHEME1: case PHASES.SCHEME2:
       return s.energy >= SC.ENERGY.SCENE_COST
         ? { kind: 'actions', energy: s.energy, phase: s.phase } : null;
+    /* The last window before the vote ALWAYS opens, even with nothing left to
+       spend. Playtest: "after veto it goes straight to vote". It did, whenever
+       the week's energy was gone, which is most weeks by that point, so the one
+       moment the format is actually about was the one the player kept getting
+       skipped past. */
+    case PHASES.SCHEME3:
+      return { kind: 'actions', energy: s.energy, phase: s.phase, whip: true };
     case PHASES.SAFETY_CALL: {
       const mine = P.heldBy(s, me, 'safety');
       return mine.length ? { kind: 'power_safety', power: mine[0] } : null;
@@ -520,8 +527,12 @@ function doScheme(s, input) {
     return s;
   }
   /* The window closes when the player says so or when there is nothing left to
-     spend. Energy carries across windows; it does not reset per phase. */
-  if (isHumanActive(s) && s.energy >= SC.ENERGY.SCENE_COST && !(input && input.done)) return s;
+     spend. Energy carries across windows; it does not reset per phase. The last
+     window before the vote is the exception: it closes only when the player
+     closes it, because counting the votes costs nothing. */
+  const lastCall = s.phase === PHASES.SCHEME3;
+  if (isHumanActive(s) && !(input && input.done)
+    && (s.energy >= SC.ENERGY.SCENE_COST || lastCall)) return s;
 
   if (s.phase === PHASES.SCHEME1) { s.phase = PHASES.SAFETY_CALL; return s; }
   if (s.phase === PHASES.SCHEME2) { s.phase = PHASES.VETO_CEREMONY; return s; }
@@ -863,6 +874,30 @@ function applyDiamond(s, pw, save, replace, why) {
   P.spend(s, pw);
   s.diamondUsed = { holder: pw.holder, save, replace };
   pushEvent(s, 'power_played', { power: 'diamond', holder: pw.holder, save, replace, why });
+}
+
+/**
+ * The whip count. Who tells you how they are voting, and who will not say.
+ *
+ * Reports `voteIntent` faithfully and adds no deception of its own, because the
+ * lie is already downstream: what somebody SAYS here and what they DO at the
+ * vote are computed separately, and that gap is the blindside engine. What this
+ * gates instead is COVERAGE. People in a room with you talk, warm people talk,
+ * and everybody else tells you nothing, so how much of the vote you can see is
+ * a direct readout of your social game rather than a free weekly report.
+ */
+function whipCount(s) {
+  const me = s.human;
+  const out = [];
+  for (const v of eligibleVoters(s)) {
+    if (v === me) continue;
+    const allied = E.sharedAlliances(s.alliances, me, v).some((a) => a.alive);
+    const trust = s.rel.trust[v][me];
+    if (!allied && trust < E.K.WHIP_TRUST) { out.push({ voter: v, says: null, quiet: true }); continue; }
+    const said = s.voteIntent[v];
+    out.push({ voter: v, says: said != null ? said : null, allied, undecided: said == null });
+  }
+  return out;
 }
 
 function afterCeremony(s) {
@@ -1417,7 +1452,7 @@ const api = {
   serialise, restore, sceneFor, playScene, energyLeft, gatherPeople,
   createRun, defaultAccount, rollTwists,
   activeIds, activeCount, eligibleVoters, captainCompField, vetoField, name, nextPlace, finalisePlaces,
-  needsInput, step, playOut, performAction, declareIntents,
+  needsInput, step, playOut, performAction, declareIntents, whipCount,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;

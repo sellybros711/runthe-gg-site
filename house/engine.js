@@ -185,6 +185,10 @@ const K = {
    */
   HOH_INTENT_LEAK: 0.72,
 
+  /* How warm somebody has to be before they will tell you how they are voting.
+     Anybody in a room with you talks regardless. */
+  WHIP_TRUST: 22,
+
   // eviction, GDD §8.3
   EV_TRUST: 0.46, EV_THREAT: 0.23, EV_PRESSURE: 0.21, EV_PANEL: 0.30,
   /*

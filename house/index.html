@@ -431,6 +431,12 @@ details.wk .body h4{font-family:var(--disp);font-weight:600;font-size:11px;lette
 
 /* four bars that say how your game is going, no numbers on any of them */
 .sbars{border:1px solid var(--line);background:var(--panel);padding:9px 14px;margin-bottom:14px}
+/* A single line saying what you have spent the week on. */
+.yw{border:1px solid var(--line);border-left:3px solid var(--blue);background:var(--panel);
+  padding:9px 14px;margin-bottom:14px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.yw b{font-family:var(--disp);font-weight:600;font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--blue);flex:none}
+.yw span{color:var(--chalk);font-size:13.5px}
 .sb{display:flex;align-items:center;gap:10px;padding:3px 0}
 .sb i{font-style:normal;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
   color:var(--dim);width:78px;flex:none}
@@ -847,10 +853,21 @@ function weekStrip(){
       +'<span class="wsv">'+ids.map(function(i){
         return esc(s.cast[i].first)+(i===s.human?' (you)':''); }).join(', ')+'</span></div>';
   }
+  /* Playtest: "after a week it shows the same people on the block until after
+     you talk to everyone". The block is only cleared at the next Reset, so
+     between the vote and the new week the strip was still advertising two
+     names, one of whom had already gone. Once the vote is in, the block is
+     history and the strip says so. */
+  var done=s.phase===R.PHASES.FALLOUT||s.phase===R.PHASES.RESET;
+  var gone=done&&s.evictionResult?s.evictionResult.evicted:null;
+  var risk=(s.atRisk&&s.atRisk.length&&!done)?s.atRisk:null;
   return '<div class="strip">'
     +slot('Captain',s.captain!=null?[s.captain]:null,'c-cap',U.icon('captain',15))
-    +slot('At Risk',s.atRisk&&s.atRisk.length?s.atRisk:null,'c-risk',U.icon('risk',15))
-    +slot('Veto',s.vetoHolder!=null?[s.vetoHolder]:null,'c-veto',U.icon('veto',15))
+    +(gone!=null
+      ? '<div class="ws c-risk"><span class="wsl">'+U.icon('out',15)+' Evicted</span>'
+        +'<span class="wsv">'+esc(s.cast[gone].first)+(gone===s.human?' (you)':'')+'</span></div>'
+      : slot('At Risk',risk,'c-risk',U.icon('risk',15)))
+    +slot('Veto',(s.vetoHolder!=null&&!done)?[s.vetoHolder]:null,'c-veto',U.icon('veto',15))
     +'</div>';
 }
 /* Energy as marks rather than a number. GDD §17 scopes the no-numbers rule to
@@ -1053,7 +1070,7 @@ function moment(m){ momentQ.push(m); }
 function showMoment(m){
   openCard({
     kicker:m.kicker||'The house', icon:m.icon||'captain', tone:m.tone||'',
-    title:m.title, body:m.sub?[m.sub]:[], faces:m.faces||[],
+    title:m.title, body:m.sub?[m.sub]:[], faces:m.faces||[], rows:m.rows||null,
     ok:{label:m.cta||'Go on',go:function(){ pump(); }}
   });
 }
@@ -1114,7 +1131,19 @@ function openCard(c){
   }).join('')+'</div>';
   if(c.foot) h+='<div class="cfoot"><button data-foot="1">'+esc(c.foot.label)+'</button></div>';
 
+  /*
+   * Playtest: "doesn't let you choose two people for alliance, it's a glitch".
+   * It did let you. Every pick rebuilt the card, which reset the list's scroll
+   * to the top, so the second person you had scrolled down to find jumped away
+   * under your thumb and the tap looked like it had done nothing. Carry the
+   * scroll across the rebuild and the bug disappears.
+   */
+  var keepScroll=0;
+  var oldList=sheet.querySelector('.plist');
+  if(oldList) keepScroll=oldList.scrollTop;
   sheet.innerHTML='<div class="sheet"><div class="card t-'+(c.tone||'')+'">'+h+'</div></div>';
+  var newList=sheet.querySelector('.plist');
+  if(newList&&keepScroll) newList.scrollTop=keepScroll;
 
   Array.prototype.forEach.call(sheet.querySelectorAll('[data-c]'),function(el){
     el.onclick=function(){ var b=btns[Number(el.dataset.c)]; closeCard(); b.go(); };
@@ -1188,6 +1217,7 @@ function renderStage(){
       +(me.status==='active'?'':' &middot; out')+'</span></div>'
     +'<div class="rt"><b>'+R.activeCount(s)+'</b><span>still in</span></div></div>'
     +selfBars()
+    +yourWeek()
     +panelHtml()
     +renderLog();
   bindPanel();
@@ -1248,6 +1278,39 @@ function panelBar(){
     col:U.bandColor(E.band(avg).label),
     note:with_+' of '+s.panel.length+' with you'});
 }
+/*
+ * What YOU have done this week.
+ *
+ * Playtest: "overall it just feels hard to follow and track what is going on,
+ * and what you have done". The week strip answers the first half, the log
+ * answers it at length, and nothing at all answered the second half: a player
+ * could not tell who they had already spent energy on without scrolling back
+ * through a fortnight of prose. Read off the same log the recap uses, so it
+ * cannot disagree with the record.
+ */
+function yourWeek(){
+  if(!s.log||!s.log.length) return '';
+  var spoke=[], landed=0, rooms=0;
+  for(var i=0;i<s.log.length;i++){
+    var l=s.log[i];
+    if(l.week!==s.week) continue;
+    if(l.kind==='scene'&&l.result){
+      var nm=s.cast[l.result.target];
+      if(nm&&spoke.indexOf(nm.first)===-1) spoke.push(nm.first);
+      if(l.result.landed) landed++;
+    }
+    if(l.kind==='gather') rooms++;
+  }
+  if(!spoke.length&&!rooms) return '';
+  var line=spoke.length
+    ? 'You have been at '+spoke.slice(0,5).join(', ')
+      +(spoke.length>5?' and '+(spoke.length-5)+' more':'')+'.'
+    : '';
+  if(landed) line+=' '+landed+(landed>1?' of those landed.':' of those landed.');
+  if(rooms) line+=' You tried to get a room together'+(rooms>1?' '+rooms+' times.':'.');
+  return '<div class="yw"><b>This week</b><span>'+esc(line.trim())+'</span></div>';
+}
+
 function barRow(b){
   var v=Math.max(0,Math.min(100,b.v||0));
   return '<div class="sb"><i>'+esc(b.label)+'</i>'
@@ -1415,6 +1478,16 @@ function narrateAfter(ph,wkBefore){
   }
   if(ph===R.PHASES.CAPTAIN_COMP&&s.captainResult){
     var r=s.captainResult;
+    /* Playtest: "after captain comp should be a popup that says who won", and
+       "after HOH it should show the order of finish so you know how you did".
+       Both were only ever a line of text in the log. */
+    moment({kicker:'Captain Comp',icon:'captain',tone:s.captain===s.human?'good':'',
+      title:(s.captain===s.human?'You take the Captaincy':s.cast[s.captain].first+' takes the Captaincy'),
+      sub:r.name+'. '+(s.rations.length
+        ? 'Rations go to '+s.rations.map(function(i){return s.cast[i].first;}).join(', ')+'.'
+        : ''),
+      rows:standings(r),
+      faces:[{id:s.captain,tag:'Captain',col:COL.blue}]});
     say('Captain Comp: '+r.name+'.');
     say(s.captain===s.human?tsay('captainYou'):tsay('captainWon',{name:s.cast[s.captain].first}),'ev-vote','captain');
     if(s.rations.length) say(tsay('rations',{names:s.rations.map(function(i){return s.cast[i].first;}).join(', ')}),'quiet','rations');
@@ -1439,7 +1512,16 @@ function narrateAfter(ph,wkBefore){
         return {id:i,tag:i===s.captain?'Captain':(s.atRisk.indexOf(i)!==-1?'At Risk':'Drawn')}; })});
   }
   if(ph===R.PHASES.VETO_COMP&&s.vetoResult){
-    say('Veto Comp: '+s.vetoResult.name+'. '+s.cast[s.vetoHolder].first+' takes it.','ev-good','veto');
+    /* Playtest: "no popup that says who won veto. It should also tell you the
+       comp even if you aren't playing." Both true: this was one grey line, and
+       when the player was not drawn they never learned what was played. */
+    var vr=s.vetoResult, played=s.vetoFieldIds&&s.vetoFieldIds.indexOf(s.human)!==-1;
+    moment({kicker:'Veto Comp',icon:'veto',tone:s.vetoHolder===s.human?'good':'',
+      title:(s.vetoHolder===s.human?'You take the Veto':s.cast[s.vetoHolder].first+' takes the Veto'),
+      sub:vr.name+'. '+(played?'':'You were not drawn. It happened without you.'),
+      rows:standings(vr),
+      faces:[{id:s.vetoHolder,tag:'Holds it',col:COL.ok}]});
+    say('Veto Comp: '+vr.name+'. '+s.cast[s.vetoHolder].first+' takes it.','ev-good','veto');
     s.vetoResult=null;
   }
   if(ph===R.PHASES.VETO_CEREMONY&&s.phase!==R.PHASES.VETO_CEREMONY){
@@ -1496,6 +1578,38 @@ function narrateAfter(ph,wkBefore){
       if(mine.length) say('Somebody thinks you flipped.','ev-bad','broken');
     }
   }
+}
+
+/*
+ * How everybody finished, as a table on the result card.
+ *
+ * comps.js has always returned a full ranking with scores; nothing had ever
+ * shown it, so a player could win or lose a competition without any idea
+ * whether it was close. Names only, no scores: the number is meaningless out of
+ * context and the order is the whole story. Trimmed to the podium plus wherever
+ * you came, because sixteen rows is not a card.
+ */
+function standings(res){
+  if(!res||!res.ranking||!res.ranking.length) return null;
+  var rows=[], mineAt=-1;
+  for(var i=0;i<res.ranking.length;i++) if(res.ranking[i].id===s.human) mineAt=i;
+  function line(i){
+    var r=res.ranking[i];
+    return [ordinal(r.place),
+      s.cast[r.id].first+(r.id===s.human?' (you)':'')+(r.threw?', went out early':'')];
+  }
+  for(var j=0;j<Math.min(3,res.ranking.length);j++) rows.push(line(j));
+  if(mineAt>=3){
+    if(mineAt>3) rows.push(['','...']);
+    rows.push(line(mineAt));
+  }
+  return rows;
+}
+function ordinal(n){
+  if(n===1) return 'Won it';
+  var t=n%100;
+  if(t>=11&&t<=13) return n+'th';
+  return n+({1:'st',2:'nd',3:'rd'}[n%10]||'th');
 }
 
 // ── input handlers ─────────────────────────────────────────────────────────
@@ -1677,16 +1791,72 @@ function showFraming(){
 function showScheming(need){
   renderStage();
   var can=s.energy>=SC.ENERGY.SCENE_COST;
-  dock(
-    {label:can?'Talk to somebody':'Out of energy',off:!can,
-     note:can?(s.energy+' energy left this week'):'The week moves on without you',
-     go:pickPerson},
-    {label:'Move on',go:function(){ R.step(s,{done:true}); pump(); }}
-  );
-  if(!can){ /* nothing left to spend, but the player still chooses when to leave */ }
+  /* The last window before the vote leads with the count, not with talking,
+     because the count is free and it is the thing you came here for. */
+  if(need&&need.whip){
+    dock(
+      {label:'Count the votes',note:'Ask around. It costs nothing.',go:showWhip},
+      {label:'Go to the vote',go:function(){ R.step(s,{done:true}); pump(); }}
+    );
+  } else {
+    dock(
+      {label:can?'Talk to somebody':'Out of energy',off:!can,
+       note:can?(s.energy+' energy left this week'):'The week moves on without you',
+       go:pickPerson},
+      {label:'Move on',go:function(){ R.step(s,{done:true}); pump(); }}
+    );
+  }
+
+  /*
+   * The whip count. Who says what, and how much of the room you can see.
+   *
+   * The coverage IS the mechanic: people in a room with you talk, warm people
+   * talk, everybody else says nothing. A player with no social game gets a card
+   * full of shrugs, which is the correct answer and a more useful one than a
+   * number.
+   */
+  function showWhip(){
+    var rows=R.whipCount(s), tally={}, quiet=0, undecided=0;
+    s.atRisk.forEach(function(id){ tally[id]=0; });
+    rows.forEach(function(r){
+      if(r.quiet){ quiet++; return; }
+      if(r.undecided||r.says==null){ undecided++; return; }
+      if(tally[r.says]!=null) tally[r.says]++;
+    });
+    var table=rows.map(function(r){
+      var who=s.cast[r.voter].first+(r.allied?' (with you)':'');
+      if(r.quiet) return [who,'will not say'];
+      if(r.undecided||r.says==null) return [who,'has not decided'];
+      return [who,'says '+s.cast[r.says].first];
+    });
+    var lead=null, tied=false;
+    s.atRisk.forEach(function(id){
+      if(lead==null||tally[id]>tally[lead]){ lead=id; tied=false; }
+      else if(tally[id]===tally[lead]) tied=true;
+    });
+    var heard=rows.length-quiet-undecided;
+    var read=heard===0
+      ? 'Nobody in this house will tell you anything. You are voting blind.'
+      : (tied?'It is level as far as you can tell.'
+             :'As far as you can hear it, '+s.cast[lead].first+' is going.');
+    openCard({
+      kicker:'Before the vote', role:heard+' of '+rows.length+' talking', icon:'vote',
+      title:'Count the votes',
+      body:[read,
+        quiet?{t:quiet+(quiet>1?' people will':' person will')+' not tell you anything. That is what having no room with them costs.',c:'d'}:null],
+      rows:table.length?table:null,
+      choices:[
+        {label:can?'Go and work on somebody':'No energy left to work with',
+         off:!can,note:can?(s.energy+' energy left'):'',go:pickPerson},
+        {label:'Cast your vote',cls:'go',go:function(){ R.step(s,{done:true}); pump(); }}
+      ]
+    });
+  }
 
   function backToFloor(){
-    if(s.energy<SC.ENERGY.SCENE_COST){ R.step(s,{done:true}); pump(); return; }
+    /* Running out of energy ends the window, EXCEPT before the vote, where the
+       count is free and the player has not necessarily taken it yet. */
+    if(s.energy<SC.ENERGY.SCENE_COST&&!(need&&need.whip)){ R.step(s,{done:true}); pump(); return; }
     showScheming(need);
   }
 
@@ -1762,12 +1932,24 @@ function showScheming(need){
   }
 
   function showScene(mo){
+    /*
+     * Playtest: "none of my risky talks have worked so far". Measured, C lands
+     * about half the time, which is not the problem. The problem was that the
+     * player was choosing between three options with nothing to tell them which
+     * one they could get away with, so every failure read as the mechanic being
+     * broken rather than as a bet they took. The odds are a sentence, not a
+     * percentage, same as the read on getting a room together.
+     */
+    var risky=mo.options.filter(function(o){ return o.kind==='risky'; })[0];
+    var read=risky?SC.riskyRead(s,s.human,mo.target,risky.fx||[]):null;
     openCard({
       kicker:mo.scene, who:mo.target, role:E.read(s.rel,s.human,mo.target).band.label,
       icon:'eye', title:s.cast[mo.target].first,
       body:[{t:mo.line,c:'q'}],
       choices:mo.options.map(function(o){
-        return {key:o.key.toUpperCase(),label:o.text,tag:TAG[o.kind],cls:o.kind,
+        return {key:o.key.toUpperCase(),label:o.text,
+          tag:TAG[o.kind],cls:o.kind,
+          note:o.kind==='risky'?read:null,
           off:s.energy<o.cost,go:function(){
             var out=R.playScene(s,mo,o.key);
             if(!out) return;
