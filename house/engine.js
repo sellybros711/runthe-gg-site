@@ -532,6 +532,22 @@ const K = {
    * being the visible beneficiary of a named group can actually cost you.
    */
   PANEL_BLOC_COST: 17,
+
+  /*
+   * THE HOUSE PLAYS THE SAME GAME, GDD §23.
+   *
+   * Per person per week, and low on purpose. Each of these verbs was calibrated
+   * with exactly one actor using it; fifteen actors at a player's rate makes
+   * every secret common knowledge by the second week and pins the whole threat
+   * bias matrix at its clamp. See §23 for what each of these was measured at.
+   */
+  AI_TELL: 0.30,            // chance of handing something over, scaled by charisma
+  AI_TELL_FLOOR: 0.34,      // and it has to be worth something to somebody
+  AI_SEED: 0.22,            // chance of putting a name in somebody's head
+  AI_SEED_FLOOR: 0.50,      // only where the ground is genuinely there
+  AI_LEARN_READ: 0.13,      // a conversation that yields something worth keeping
+  AI_CAMPAIGN: 0.55,        // a nominee works the room. Most of them do
+  AI_CAMPAIGN_HEADS: 3,     // how many people they get to before the vote
   /* Juror independence. Inline literals here were a violation of this file's
      own rule: a number that cannot be swept cannot be tuned, and these two
      turned out to dominate the Panel outcome entirely. */

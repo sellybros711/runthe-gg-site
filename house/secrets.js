@@ -112,13 +112,20 @@ function resetIds() { SECRET_ID = 1; }
 function make(kind, about, week, extra) {
   return Object.assign({
     id: SECRET_ID++, kind, about: about.slice(), week,
-    told: {}, burned: false,
+    told: {}, burned: false, owner: null,
   }, extra || {});
 }
 
-/** Newest first, and anything past its shelf life is dropped on the way out. */
-function held(state) {
-  const list = (state.secrets || []).filter((x) => !x.burned && !stale(state, x));
+/**
+ * Newest first, and anything past its shelf life is dropped on the way out.
+ *
+ * OWNED, because everybody in the house has an inventory now. It was the
+ * player's alone until the AI were given the same verbs, and a single shared
+ * array meant fifteen people reading the player's hand.
+ */
+function held(state, owner) {
+  const list = (state.secrets || []).filter((x) => !x.burned && x.owner === owner
+    && !stale(state, x));
   return list.sort((a, b) => b.week - a.week);
 }
 
@@ -132,16 +139,17 @@ function freshness(state, sec) {
 }
 
 /** Add, dedupe against what is already held, and keep the hand a hand. */
-function learn(state, sec) {
+function learn(state, owner, sec) {
   if (!state.secrets) state.secrets = [];
-  const same = state.secrets.filter((x) => !x.burned && x.kind === sec.kind
-    && x.about.join(',') === sec.about.join(','));
+  sec.owner = owner;
+  const same = state.secrets.filter((x) => !x.burned && x.owner === owner
+    && x.kind === sec.kind && x.about.join(',') === sec.about.join(','));
   /* Re-learning something you already know refreshes it rather than stacking a
      second copy, which is both true and stops the list filling with duplicates
      of the one alliance that keeps leaking. */
   if (same.length) { same[0].week = sec.week; same[0].value = sec.value; return same[0]; }
   state.secrets.push(sec);
-  const live = state.secrets.filter((x) => !x.burned);
+  const live = state.secrets.filter((x) => !x.burned && x.owner === owner);
   if (live.length > K.MAX_HELD) {
     live.sort((a, b) => a.week - b.week);
     live[0].burned = true;      // you forget the oldest thing you were told

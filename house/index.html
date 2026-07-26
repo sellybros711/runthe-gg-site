@@ -1483,7 +1483,7 @@ function secretAge(sec){
 }
 
 function knowList(){
-  var list=SEC.held(s);
+  var list=SEC.held(s, s.human);
   if(!list.length) return '<div class="mapnote">'+esc(tsay('knowNothing'))+'</div>';
   var pool=others();
   return '<div class="rows">'+list.map(function(sec){
@@ -2471,7 +2471,7 @@ function showScheming(need){
 
   function pitchTo(id){
     var other=s.atRisk.filter(function(i){ return i!==s.human; })[0];
-    var again=(s.campaigned&&s.campaigned[id])||0;
+    var again=(s.campaigned&&s.campaigned[s.human+':'+id])||0;
     var nm=s.cast[id].first;
     var allied=E.sharedAlliances(s.alliances,s.human,id).filter(function(a){ return a.alive; }).length;
     var mine=E.threatSeen(s,id,s.human);
@@ -2555,12 +2555,12 @@ function showScheming(need){
     });
   }
 
-  function heldCount(){ return SEC.held(s).length; }
+  function heldCount(){ return SEC.held(s, s.human).length; }
   /* What is actually spendable, which is what the button has to count. Holding
      eleven things nobody needs is not the same as having something to trade. */
   function tradeCount(){
     var pool=others();
-    return SEC.held(s).filter(function(sec){
+    return SEC.held(s, s.human).filter(function(sec){
       return SEC.bestEar(s,sec,pool).worth>0; }).length;
   }
 
@@ -2631,7 +2631,7 @@ function showScheming(need){
     /* Only offer things somebody can still use. A secret the whole house has
        already worked out is a dead end, and offering it leads to a card where
        every button is disabled and the only way out is back to here. */
-    var list=SEC.held(s).map(function(sec){
+    var list=SEC.held(s, s.human).map(function(sec){
       return {sec:sec,ear:SEC.bestEar(s,sec,pool)}; });
     var live=list.filter(function(x){ return x.ear.id!=null&&x.ear.worth>0; });
     var dead=list.length-live.length;

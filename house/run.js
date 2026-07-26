@@ -465,6 +465,255 @@ function doMoveIn(s, input) {
 }
 
 /**
+ * The house's own nominees work the room, GDD §23.
+ *
+ * The player has campaigned from the block since §19.4 and the AI sat there
+ * making small talk. They pick their pitch the way the card tells a player to,
+ * off what is actually true where the listener is standing, and they get to a
+ * few people rather than everybody, because a week is a week.
+ */
+function aiCampaign(s, rng) {
+  const K = E.K;
+  for (const me of s.atRisk) {
+    if (s.cast[me].status !== 'active') continue;
+    if (me === s.human && !s.autoPlayer) continue;
+    if (!rng.chance(K.AI_CAMPAIGN)) continue;
+    const other = s.atRisk.filter((i) => i !== me)[0];
+    const room = eligibleVoters(s).filter((i) => i !== me && s.atRisk.indexOf(i) === -1);
+    if (!room.length) continue;
+    /* Go to the people who might actually move: warm enough to listen, not so
+       committed they are somebody else's already. */
+    const ranked = room
+      .map((id) => ({ id, v: s.rel.trust[id][me] + rng.normal(0, 18) }))
+      .sort((a, b) => b.v - a.v)
+      .slice(0, K.AI_CAMPAIGN_HEADS);
+    for (const r of ranked) {
+      const j = r.id;
+      const theirs = other != null ? E.threatSeen(s, j, other) : 50;
+      const mine = E.threatSeen(s, j, me);
+      const warmth = s.rel.trust[j][me];
+      /* The same reads the player's card shows, resolved by the AI itself. */
+      let pitch = 'mercy';
+      if (theirs > 58) pitch = 'threat';
+      else if (theirs > mine) pitch = 'numbers';
+      else if (E.threatSeen(s, j, j) > 55) pitch = 'deal';
+      else if (warmth < 10) pitch = 'numbers';
+      performCampaign(s, me, j, pitch, rng);
+    }
+  }
+}
+
+/**
+ * What the house picked up this week, GDD §23.
+ *
+ * The player learns secrets by listening at doors and by things leaking to
+ * them. The AI have no eavesdrop verb, they have the weekly social tick, so
+ * their equivalent is that some of those conversations turn up something worth
+ * keeping. Alliance and showmance leaks mint for whoever they leaked to,
+ * player or not, which is the same source the player already had.
+ */
+function aiLearn(s, rng) {
+  const K = E.K;
+  const active = activeIds(s);
+
+  /* Anything that leaked to somebody this week is something they now hold. */
+  for (const entry of s.log) {
+    if (entry.week !== s.week || entry.minted) continue;
+    if (entry.kind === 'alliance_leaked') {
+      const a = s.alliances.filter((x) => x.id === entry.id)[0];
+      if (!a) continue;
+      entry.minted = true;
+      if (entry.to === s.human) continue;      // relayWeekly already mints for the player
+      SEC.learn(s, entry.to, SEC.make(a.name ? 'name' : 'room', a.members.slice(), s.week,
+        { ref: a.id, value: a.name || null, witnesses: a.members.length + 2 }));
+    }
+  }
+
+  for (const sm of (s.showmances || [])) {
+    if (!sm.alive) continue;
+    for (const id of active) {
+      if (id === sm.a || id === sm.b || id === s.human) continue;
+      if (sm.known[id] == null || sm.mintedFor && sm.mintedFor[id]) continue;
+      if (!sm.mintedFor) sm.mintedFor = {};
+      sm.mintedFor[id] = true;
+      SEC.learn(s, id, SEC.make('pair', [sm.a, sm.b], s.week, { witnesses: 4 }));
+    }
+  }
+
+  /* And somebody says something in front of somebody who was listening. */
+  for (const i of active) {
+    if (i === s.human && !s.autoPlayer) continue;
+    if (!rng.chance(K.AI_LEARN_READ * (s.cast[i].social.perception / 55))) continue;
+    const pool = active.filter((x) => x !== i);
+    if (pool.length < 2) continue;
+    const a = rng.pick(pool);
+    const b = rng.pick(pool.filter((x) => x !== a));
+    SEC.learn(s, i, SEC.make('read', [a, b], s.week,
+      { value: s.rel.trust[a][b], witnesses: 3 }));
+  }
+}
+
+/*
+ * EVERYTHING THE PLAYER CAN DO, THE HOUSE CAN DO. GDD §23.
+ *
+ * Three verbs shipped player-only because each was easier to build and measure
+ * that way, and each was documented as an asymmetry. Three is not a scope note,
+ * it is a different game for the player than for everybody else, so the house
+ * gets them too: it trades what it knows, it puts names in each other's heads,
+ * it campaigns from the block, and it walks people out.
+ *
+ * RATES ARE THE WHOLE PROBLEM. Every one of these was calibrated with exactly
+ * one actor using it. Fifteen actors is not fifteen times more interesting, it
+ * is a house where every secret is common knowledge by Tuesday and everybody's
+ * threat bias is pinned at the clamp. So the per-person chances below are low
+ * and the tuning notes on each say what was measured.
+ */
+function aiVerbs(s, rng) {
+  const K = E.K;
+  const active = activeIds(s).filter((id) => id !== s.human || s.autoPlayer);
+
+  for (const i of active) {
+    const others = activeIds(s).filter((x) => x !== i);
+    if (!others.length) continue;
+
+    /* Trading what they know. Scaled by how much they play the room. */
+    const chatty = 0.5 + (s.cast[i].social.charisma / 100) * 0.5;
+    if (rng.chance(K.AI_TELL * chatty)) {
+      let best = null;
+      for (const sec of SEC.held(s, i)) {
+        const ear = SEC.bestEar(s, sec, others);
+        if (ear.id == null || ear.worth < K.AI_TELL_FLOOR) continue;
+        if (!best || ear.worth > best.worth) best = { sec, to: ear.id, worth: ear.worth };
+      }
+      if (best) SEC.tell(s, best.sec, i, best.to, rng);
+    }
+
+    /* Putting a name in somebody's head. Ambition is what makes somebody do
+       this rather than simply complain about the person. */
+    const scheming = 0.4 + (s.cast[i].social.ambition / 100) * 0.8;
+    if (rng.chance(K.AI_SEED * scheming)) {
+      let want = null, wantV = -Infinity;
+      for (const id of others) {
+        const v = E.threatSeen(s, i, id) - Math.max(0, s.rel.trust[i][id]);
+        if (v > wantV) { wantV = v; want = id; }
+      }
+      let ear = null, ground = 0;
+      for (const e of others) {
+        if (e === want) continue;
+        const seen = E.threatSeen(s, e, want), warmth = s.rel.trust[e][want];
+        const g = E.clamp01((seen - 30) / 45) * 0.55 + E.clamp01((25 - warmth) / 75) * 0.45;
+        if (g > ground) { ground = g; ear = e; }
+      }
+      if (ear != null && ground >= K.AI_SEED_FLOOR) {
+        performSeed(s, i, ear, want, rng);
+      }
+    }
+  }
+}
+
+/**
+ * The seed, shared by the player's action and the house's weekly pass so the
+ * two cannot drift apart. Returns what happened.
+ */
+
+/**
+ * Campaigning from the block, GDD §19.4, shared by the player's action and the
+ * house's own nominees so the two cannot drift apart. GDD §23.
+ */
+function performCampaign(s, me, target, pitch, rng) {
+  const out = {};
+
+  const j = target;
+  const other = s.atRisk.filter((i) => i !== me)[0];
+  /* Keyed by BOTH people. Two nominees working the same room would otherwise
+     share a counter, so the second one to reach somebody would be charged the
+     repeat penalty for a conversation the first one had. */
+  if (!s.campaigned) s.campaigned = {};
+  const ck = me + ':' + j;
+  s.campaigned[ck] = (s.campaigned[ck] || 0) + 1;
+
+  const K2 = E.K;
+  const warmth = s.rel.trust[j][me];
+  let base = K2.CAMP_BASE, gain = 5, lose = -5;
+  if (pitch === 'numbers') {
+    const allied = E.sharedAlliances(s.alliances, me, j).length ? 1 : 0;
+    const mine = E.threatSeen(s, j, me), theirs = other != null ? E.threatSeen(s, j, other) : 50;
+    base += K2.CAMP_NUMBERS * (allied * 0.5 + E.clamp01((theirs - mine) / 40) * 0.5);
+  } else if (pitch === 'threat') {
+    const theirs = other != null ? E.threatSeen(s, j, other) : 50;
+    base += K2.CAMP_THREAT * E.clamp01((theirs - 45) / 40);
+    gain = 3; lose = -8;
+  } else if (pitch === 'mercy') {
+    base += K2.CAMP_MERCY * E.clamp01((warmth + 20) / 90);
+    /* It works on people who already like you and costs you standing with
+       everybody, which is what asking looks like from outside. */
+    gain = 2; lose = -3;
+  } else {
+    const exposed = E.threatSeen(s, j, j) / 100;
+    base += K2.CAMP_DEAL * E.clamp01(exposed);
+    gain = 8; lose = -10;
+  }
+  /* Asking twice is worse than asking once. */
+  base -= (s.campaigned[ck] - 1) * K2.CAMP_REPEAT;
+  base += (s.cast[me].social.charisma - 50) / 260;
+
+  const ok = rng.chance(E.clamp01(base));
+  if (ok && other != null) { s.voteIntent[j] = other; E.applyTrust(s.rel, j, me, gain); }
+  else E.applyTrust(s.rel, j, me, lose);
+  if (pitch === 'threat' && other != null) {
+    s.rel.threatBias[j][other] = E.clamp(
+      s.rel.threatBias[j][other] + (ok ? K2.CAMP_THREAT_BIAS : 2), -40, 40);
+  }
+  if (pitch === 'mercy') {
+    for (const k of activeIds(s)) {
+      if (k === me || k === j) continue;
+      if (rng.chance(0.2)) E.applyTrust(s.rel, k, me, -2);
+    }
+  }
+  /* Counted across the whole run, unlike s.campaigned which resets weekly, so
+     the harness can see the volume without sampling mid-week. */
+  if (!s.campStats) s.campStats = { tried: 0, landed: 0 };
+  s.campStats.tried += 1;
+  if (ok) s.campStats.landed += 1;
+  out.ok = ok; out.against = other;
+  out.again = s.campaigned[ck] > 1;
+  return out;
+}
+
+function performSeed(s, me, j, against, rng) {
+  const K = E.K;
+  const seen = E.threatSeen(s, j, against);
+  const warmth = s.rel.trust[j][against];
+  const ground = E.clamp01((seen - 30) / 45) * 0.55 + E.clamp01((25 - warmth) / 75) * 0.45;
+  const skill = (s.cast[me].social.perception * 0.6 + s.cast[me].social.charisma * 0.4);
+  const ok = rng.chance(E.clamp01(K.SEED_BASE + K.SEED_GROUND * ground
+    + K.SEED_SKILL * ((skill - 50) / 100)));
+  if (ok) {
+    s.rel.threatBias[j][against] = E.clamp(
+      s.rel.threatBias[j][against] + K.SEED_STEP, -40, 40);
+    const room = activeIds(s).filter((id) => id !== j && id !== against && id !== me);
+    const heard = room.map((id) => ({ id, tie: s.rel.trust[j][id] }))
+      .sort((a, b) => b.tie - a.tie).slice(0, K.SEED_REACH);
+    for (const h of heard) {
+      if (!rng.chance(K.SEED_ECHO * (1 - s.cast[j].social.loyalty / 200))) continue;
+      s.rel.threatBias[h.id][against] = E.clamp(
+        s.rel.threatBias[h.id][against] + K.SEED_STEP * K.SEED_ECHO_STEP, -40, 40);
+    }
+  }
+  const noticed = rng.chance(E.clamp01(K.SEED_NOTICED * (s.cast[j].social.perception / 55)));
+  if (noticed) s.rel.suspicion[j][me] = Math.min(100, s.rel.suspicion[j][me] + K.SEED_SUSPICION);
+  if (!s.seedStats) s.seedStats = { tried: 0, planted: 0, noticed: 0 };
+  s.seedStats.tried += 1;
+  if (ok) s.seedStats.planted += 1;
+  if (noticed) s.seedStats.noticed += 1;
+  if (me === s.human) {
+    if (!s.seedLog) s.seedLog = [];
+    s.seedLog.push({ ear: j, at: against, week: s.week, ok });
+  }
+  return { ok, noticed, ground };
+}
+
+/**
  * Turn this week's model history into things the player can be told.
  *
  * A naming or a showmance is only news if the player would actually know: the
@@ -485,7 +734,7 @@ function relayWeekly(s) {
       if (!mine && !(a.known && a.known[me] != null)) continue;
       entry.said = true;
       if (!mine) {
-        SEC.learn(s, SEC.make('name', a.members.slice(), s.week,
+        SEC.learn(s, me, SEC.make('name', a.members.slice(), s.week,
           { ref: a.id, value: a.name, witnesses: a.members.length + 2 }));
       }
       pushEvent(s, 'alliance_named', { id: a.id, name: a.name, size: entry.size,
@@ -498,7 +747,7 @@ function relayWeekly(s) {
       told[entry.a + ':' + entry.b] = true;
       /* Something you found out is something you can pass on. GDD §20. */
       if (!mine) {
-        SEC.learn(s, SEC.make('pair', [entry.a, entry.b], s.week, { witnesses: 4 }));
+        SEC.learn(s, me, SEC.make('pair', [entry.a, entry.b], s.week, { witnesses: 4 }));
       }
       pushEvent(s, 'showmance_formed', { a: entry.a, b: entry.b, mine });
     } else if (entry.kind === 'showmance_broke') {
@@ -560,6 +809,8 @@ function doReset(s) {
   E.socialTick(s, rng);
   E.allianceTick(s, rng);
   E.showmanceTick(s, rng);
+  aiLearn(s, rng);
+  aiVerbs(s, rng);
   /* `state.log` is the model's own history and has no reader. Anything the
      house is supposed to find out about has to be relayed as an event. */
   relayWeekly(s);
@@ -833,12 +1084,21 @@ function doNaming(s, input) {
      false whenever the seat is being driven by the harness. Using it here meant
      the single most valuable secret in the game never minted in any measured
      run, which is exactly the class of thing a proxy is supposed to catch. */
-  if (s.captain !== s.human && s.cast[s.human].status === 'active'
-    && s.hohTarget != null && s.hohTarget !== s.human) {
-    const close = E.sharedAlliances(s.alliances, s.captain, s.human).some((a) => a.alive)
-      || s.rel.trust[s.captain][s.human] >= E.K.WHIP_TRUST + 15;
-    if (close) {
-      SEC.learn(s, SEC.make('intent', [s.hohTarget], s.week,
+  /*
+   * The Captain tells their own people what the week is actually about, and
+   * that is a thing anybody can carry to the person it is about. GDD §20.
+   *
+   * Minted for EVERYBODY close enough to be told, not just the player. Gated on
+   * a real relationship rather than a die roll, so the most valuable secret in
+   * the game is a payoff for social position rather than a lottery ticket.
+   */
+  if (s.hohTarget != null && s.captain != null) {
+    for (const id of activeIds(s)) {
+      if (id === s.captain || id === s.hohTarget) continue;
+      const close = E.sharedAlliances(s.alliances, s.captain, id).some((a) => a.alive)
+        || s.rel.trust[s.captain][id] >= E.K.WHIP_TRUST + 15;
+      if (!close) continue;
+      SEC.learn(s, id, SEC.make('intent', [s.hohTarget], s.week,
         { value: s.captain, witnesses: 3 }));
     }
   }
@@ -1198,6 +1458,7 @@ function whipCount(s) {
 
 function afterCeremony(s) {
   s.schemeIndex = 2;
+  aiCampaign(s, s.rng.ai);
   declareIntents(s, s.rng.ai);
 
   /* Everyone forms an expectation of safety. Being wrong about it is what
@@ -1370,13 +1631,44 @@ function doEviction(s, input) {
  * happen does not, and offering the beat anyway would make it a formality
  * rather than a reckoning.
  */
-function walkoutOwed(s, gone) {
-  const me = s.human;
+function walkoutOwedBy(s, gone, me) {
   if (gone === me || s.cast[me].status !== 'active') return false;
   if (s.captain === me && (s.nominees || []).indexOf(gone) !== -1) return true;
   if (s.vetoHolder === me && s.atRisk.indexOf(gone) !== -1 && !s.vetoUsed) return true;
   const mine = (s.evictionResult.votes || []).filter((v) => v.voter === me)[0];
   return !!(mine && mine.target === gone);
+}
+
+function walkoutOwed(s, gone) { return walkoutOwedBy(s, gone, s.human); }
+
+/**
+ * The rest of the house says goodbye too, GDD §23.
+ *
+ * ONE of them gets to be the one the juror remembers, because a juror carries a
+ * single `walkout` and the last word is the one that sticks. Whoever has the
+ * most standing with them is who that is, which is the same reason the player's
+ * own walkout is worth taking: it is a slot, and somebody is going to fill it.
+ *
+ * Each of them picks the way the player's card advises: own it with somebody
+ * who came here to play, say goodbye to somebody who came here for the people,
+ * and the disloyal deny it outright.
+ */
+function aiWalkouts(s, gone, rng) {
+  const g = s.cast[gone];
+  if (g.walkout) return;
+  const hands = activeIds(s).filter((id) => (id !== s.human || s.autoPlayer)
+    && walkoutOwedBy(s, gone, id));
+  if (!hands.length) return;
+  hands.sort((a, b) => s.rel.trust[gone][b] - s.rel.trust[gone][a]);
+  const me = hands[0];
+  const wants = (g.build.shares.long || 0) + (g.build.shares.comp || 0) * 0.5;
+  let kind;
+  if (s.cast[me].social.loyalty < 34 && rng.chance(0.45)) kind = 'deflect';
+  else kind = wants < 0.38 ? 'goodbye' : 'own';
+  const caught = kind === 'deflect'
+    && rng.chance(E.clamp01(E.K.WALK_CATCH_BASE
+      + (g.social.perception - s.cast[me].social.deception) / 260));
+  g.walkout = { by: me, kind, caught: !!caught, week: s.week };
 }
 
 function doFallout(s, input) {
@@ -1417,6 +1709,8 @@ function doFallout(s, input) {
     else E.applyTrust(s.rel, gone, v.voter, E.K.D_VOTED_KEEP);
   }
   const blame = E.assignBlame(s, result, rng);
+  /* If the player did not take the slot, somebody else does. GDD §23. */
+  aiWalkouts(s, gone, rng);
 
   /* Place is read BEFORE the status flips, or everyone finishes one spot
      better than they did: the Final 4 boot was coming out as third. */
@@ -1629,72 +1923,9 @@ function performAction(s, action) {
      * information layer in §20 tells you, is what makes this verb worth having.
      */
     case 'seed': {
-      const j = action.target, against = action.against;
-      const K2 = E.K;
-      /* What they already think, on the two axes that matter. */
-      const seen = E.threatSeen(s, j, against);
-      const warmth = s.rel.trust[j][against];
-      const ground = E.clamp01((seen - 30) / 45) * 0.55
-        + E.clamp01((25 - warmth) / 75) * 0.45;
-      /* Reading what somebody half believes is perception work, not lying. */
-      const skill = (s.cast[me].social.perception * 0.6 + s.cast[me].social.charisma * 0.4);
-      const p = K2.SEED_BASE + K2.SEED_GROUND * ground
-        + K2.SEED_SKILL * ((skill - 50) / 100);
-      const ok = rng.chance(E.clamp01(p));
-      if (ok) {
-        s.rel.threatBias[j][against] = E.clamp(
-          s.rel.threatBias[j][against] + K2.SEED_STEP, -40, 40);
-        /*
-         * AND IT TRAVELS, which is the difference between a mechanic and a
-         * gesture. MEASURED: pinning a bias of +15 on one person from the whole
-         * house takes them from an average finish of 8.93 to 11.21, so the
-         * channel is load bearing. One listener carrying +11 that fades over
-         * four weeks is about a tenth of that, which is why the first version
-         * of this verb was indistinguishable from setting its own constant to
-         * zero.
-         *
-         * So a planted name does what a planted name does: the listener
-         * repeats it to their own people. Same shape as ALLY_LEAK_NAMED in
-         * §7.7, and the same lesson, that a thing which is not repeated stays
-         * with one person and decides nothing.
-         */
-        const room = activeIds(s).filter((id) => id !== j && id !== against && id !== me);
-        const heard = room
-          .map((id) => ({ id, tie: s.rel.trust[j][id] }))
-          .sort((a, b) => b.tie - a.tie)
-          .slice(0, K2.SEED_REACH);
-        for (const h of heard) {
-          if (!rng.chance(K2.SEED_ECHO * (1 - s.cast[j].social.loyalty / 200))) continue;
-          s.rel.threatBias[h.id][against] = E.clamp(
-            s.rel.threatBias[h.id][against] + K2.SEED_STEP * K2.SEED_ECHO_STEP, -40, 40);
-          out.echoed = (out.echoed || 0) + 1;
-        }
-      }
-      /*
-       * The only way this costs you. A perceptive person can feel themselves
-       * being steered even when they cannot say toward what, and that is a
-       * small suspicion of YOU rather than a trust loss, because nothing was
-       * said that they could quote back.
-       */
-      const noticed = rng.chance(E.clamp01(
-        K2.SEED_NOTICED * (s.cast[j].social.perception / 55)));
-      if (noticed) {
-        s.rel.suspicion[j][me] = Math.min(100, s.rel.suspicion[j][me] + K2.SEED_SUSPICION);
-      }
-      /* Ground truth for the harness. Reconstructing who was seeded from
-         threatBias does not work: speeches, campaigning and three kinds of
-         secret all write to the same matrix, so a reconstruction selects
-         whoever the house already finds threatening, which is a person who was
-         going out early anyway. Measured that way the verb read as a 1.33 place
-         effect with its own constant set to ZERO. */
-      if (!s.seedLog) s.seedLog = [];
-      s.seedLog.push({ ear: j, at: against, week, ok });
-      if (!s.seedStats) s.seedStats = { tried: 0, planted: 0, noticed: 0 };
-      s.seedStats.tried += 1;
-      if (ok) s.seedStats.planted += 1;
-      if (noticed) s.seedStats.noticed += 1;
-      out.target = j; out.against = against; out.ok = ok;
-      out.noticed = noticed; out.ground = ground;
+      const res = performSeed(s, me, action.target, action.against, rng);
+      out.target = action.target; out.against = action.against;
+      out.ok = res.ok; out.noticed = res.noticed; out.ground = res.ground;
       break;
     }
     case 'lie': {
@@ -1752,51 +1983,9 @@ function performAction(s, action) {
      * making it.
      */
     case 'campaign': {
-      const j = action.target, pitch = action.pitch;
-      const other = s.atRisk.filter((i) => i !== me)[0];
-      if (!s.campaigned) s.campaigned = {};
-      s.campaigned[j] = (s.campaigned[j] || 0) + 1;
-
-      const K2 = E.K;
-      const warmth = s.rel.trust[j][me];
-      let base = K2.CAMP_BASE, gain = 5, lose = -5;
-      if (pitch === 'numbers') {
-        const allied = E.sharedAlliances(s.alliances, me, j).length ? 1 : 0;
-        const mine = E.threatSeen(s, j, me), theirs = other != null ? E.threatSeen(s, j, other) : 50;
-        base += K2.CAMP_NUMBERS * (allied * 0.5 + E.clamp01((theirs - mine) / 40) * 0.5);
-      } else if (pitch === 'threat') {
-        const theirs = other != null ? E.threatSeen(s, j, other) : 50;
-        base += K2.CAMP_THREAT * E.clamp01((theirs - 45) / 40);
-        gain = 3; lose = -8;
-      } else if (pitch === 'mercy') {
-        base += K2.CAMP_MERCY * E.clamp01((warmth + 20) / 90);
-        /* It works on people who already like you and costs you standing with
-           everybody, which is what asking looks like from outside. */
-        gain = 2; lose = -3;
-      } else {
-        const exposed = E.threatSeen(s, j, j) / 100;
-        base += K2.CAMP_DEAL * E.clamp01(exposed);
-        gain = 8; lose = -10;
-      }
-      /* Asking twice is worse than asking once. */
-      base -= (s.campaigned[j] - 1) * K2.CAMP_REPEAT;
-      base += (s.cast[me].social.charisma - 50) / 260;
-
-      const ok = rng.chance(E.clamp01(base));
-      if (ok && other != null) { s.voteIntent[j] = other; E.applyTrust(s.rel, j, me, gain); }
-      else E.applyTrust(s.rel, j, me, lose);
-      if (pitch === 'threat' && other != null) {
-        s.rel.threatBias[j][other] = E.clamp(
-          s.rel.threatBias[j][other] + (ok ? K2.CAMP_THREAT_BIAS : 2), -40, 40);
-      }
-      if (pitch === 'mercy') {
-        for (const k of activeIds(s)) {
-          if (k === me || k === j) continue;
-          if (rng.chance(0.2)) E.applyTrust(s.rel, k, me, -2);
-        }
-      }
-      out.target = j; out.pitch = pitch; out.ok = ok; out.against = other;
-      out.again = s.campaigned[j] > 1;
+      const res = performCampaign(s, me, action.target, action.pitch, rng);
+      Object.assign(out, res);
+      out.target = action.target; out.pitch = action.pitch;
       break;
     }
     case 'eavesdrop': {
@@ -1811,13 +2000,13 @@ function performAction(s, action) {
        * the narrowest provenance in the game, which is why witnesses is 2 and
        * why passing this on is the easiest way to get caught doing it.
        */
-      out.learned = [SEC.learn(s, SEC.make('read', [a, b], week,
+      out.learned = [SEC.learn(s, me, SEC.make('read', [a, b], week,
         { value: s.rel.trust[a][b], witnesses: 2 }))];
       const known = s.alliances.filter((x) => x.alive && x.members.indexOf(a) !== -1 && x.members.indexOf(b) !== -1);
       if (known.length) {
         out.alliance = known[0].members.slice();
         known[0].known[me] = week;
-        out.learned.push(SEC.learn(s, SEC.make(known[0].name ? 'name' : 'room',
+        out.learned.push(SEC.learn(s, me, SEC.make(known[0].name ? 'name' : 'room',
           known[0].members.slice(), week,
           { ref: known[0].id, value: known[0].name || null, witnesses: known[0].members.length })));
       }
