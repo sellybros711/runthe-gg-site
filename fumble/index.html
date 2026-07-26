@@ -136,12 +136,12 @@ const TUNE = {
   WIN_SCORE: 3,
 
   // ---- TRUCK (skill check to stay up through a hit) ----
-  TRUCK_PROMPT_LEAD_MS: 380,   // ring closes for this long BEFORE the window opens (early tap = tackled)
-  TRUCK_WINDOW_MS:      340,   // width of the success window — WIDER = easier to stay up
+  TRUCK_PROMPT_LEAD_MS: 400,   // ring closes for this long BEFORE the window opens (early tap = tackled)
+  TRUCK_WINDOW_MS:      380,   // width of the success window — WIDER = easier to stay up
   TACKLE_RADIUS:        2.0,   // how close a tackler must get to start a hit
   TRUCK_COOLDOWN_S:     1.0,   // grace after a broken tackle before the next hit
   TRUCK_KNOCKBACK:      6.0,   // how far a trucked tackler is flung
-  TRUCK_BOOST:          1.3, TRUCK_BOOST_MS: 600,
+  TRUCK_BOOST:          1.18, TRUCK_BOOST_MS: 480,   // a broken tackle gives a brief burst, not an escape hatch
 
   // ---- BALL POP + bounce physics (the make-or-break; a tackle always pops it) ----
   POP_UP:            12.5,  // vertical pop speed — HIGHER = ball hangs longer / more readable
@@ -162,7 +162,7 @@ const TUNE = {
   CARRIER_SPEED:  8.6,      // a touch faster than the D so good running creates separation
   CHASE_SPEED:    8.8,      // you, when chasing a carrier or a loose ball
   MATE_SPEED:     8.2,      // teammate AI (blockers)
-  DEF_SPEED:      8.0,      // defender AI — slower than the carrier so angles + numbers are the threat, not raw speed
+  DEF_SPEED:      8.15,     // defender AI — a hair slower than the carrier so angles + numbers are the threat, not raw speed
   BLOCK_RADIUS:   2.7,      // a blocker within this of a defender engages (slows) them — opens lanes
   BLOCKED_MULT:   0.34,     // engaged defenders move at this fraction (and can't tackle)
   TURN_LERP:      10,
@@ -173,12 +173,12 @@ const TUNE = {
   JUKE_SPEED:     15,       // dash speed during a juke
   JUKE_COOLDOWN:  0.9,
   JUKE_COST:      0.28,     // stamina spent per juke
-  SPRINT_MULT:    1.32,     // carrier speed while sprinting (full stick + stamina)
+  SPRINT_MULT:    1.18,     // carrier speed while sprinting — enough to pull away, not enough to leave everyone behind
   STAMINA_DRAIN:  0.42,     // stamina/sec burned while sprinting
   STAMINA_REGEN:  0.30,     // stamina/sec recovered otherwise
 
   // ---- DIFFICULTY ----
-  DIFF_RAMP:      0.06,     // defender speed +this fraction per point already scored (both teams)
+  DIFF_RAMP:      0.035,    // defender speed +this fraction per point already scored (both teams) — gentle, stays fair late
 
   // ---- CAMERA ----
   CAM_DIST: 10.5, CAM_HEIGHT: 5.4, CAM_LOOKAHEAD: 5, CAM_LERP: 5.5,
