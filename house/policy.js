@@ -230,7 +230,7 @@ function make(opts) {
     const pool = R.activeIds(s).filter((i) => i !== me);
     if (!pool.length) return null;
     let best = null;
-    for (const sec of SEC.held(s)) {
+    for (const sec of SEC.held(s, me)) {
       const ear = SEC.bestEar(s, sec, pool);
       if (ear.id == null || ear.worth < cfg.tradeFloor) continue;
       if (!best || ear.worth > best.worth) best = { id: sec.id, to: ear.id, worth: ear.worth };
@@ -297,7 +297,7 @@ function make(opts) {
         /* And go and find something when the hand is empty. A stand-in that
            never listens at a door has no information to trade, which would make
            the trade switch below measure nothing at all. */
-        if (cfg.trade && !SEC.held(s).length && s.energy >= SC.ENERGY.EAVESDROP_COST + SC.ENERGY.SCENE_COST) {
+        if (cfg.trade && !SEC.held(s, me).length && s.energy >= SC.ENERGY.EAVESDROP_COST + SC.ENERGY.SCENE_COST) {
           R.performAction(s, { kind: 'eavesdrop' });
           s.energy -= SC.ENERGY.EAVESDROP_COST;
           return s.energy >= SC.ENERGY.SCENE_COST ? null : { done: true };

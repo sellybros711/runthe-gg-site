@@ -1582,15 +1582,16 @@ For an `intent` secret the person who minds is the **Captain**, not the target
 you just warned, which is a bug worth recording because the first version took
 `about[0]` for every kind and that field is the target.
 
-### 20.5 Scope, stated plainly
+### 20.5 Scope
 
-This is a **player** inventory. The AI house already moves information through
-`socialTick`, alliance leaks and the belief layer, and giving fifteen AI a
-second parallel information economy is a much larger change needing its own
-calibration pass. The harness measures this through `policy.js`, which drives
-the only seat that has it, via `node simulator.js --info`.
+This shipped as a **player** inventory, and that asymmetry is gone: since §23
+everybody in the house holds, trades and gets caught passing secrets. Secrets
+carry an `owner` and `held(state, owner)` takes one.
 
-That is a real asymmetry and it is written here rather than implied away.
+Measured through `policy.js` via `node simulator.js --info`. Note that giving
+the house the same verb made the player's version **more** valuable, not less:
++1.02 places when the player was the only trader, +1.26 once hoarding meant
+falling behind a house that trades.
 
 ---
 
@@ -1754,6 +1755,78 @@ separate attempts to put it could not move anything.
 
 ### 22.3 Scope
 
-The walkout is a **player** ritual. The AI do not walk each other out, so an AI
-finalist never gets the benefit. That is an asymmetry in the player's favour and
-it is written down rather than implied away, the same as §20.5 and §21.
+The walkout shipped as a player ritual and is no longer one: since §23 the house
+walks people out too, and a juror carries a single `walkout` slot filled by
+whoever had the most standing with them. That makes taking the slot yourself
+worth something, because otherwise somebody else fills it.
+
+Worth +0.35 of seven Panel votes when the player was the only one doing it, and
+**+0.48** once the rest of the house was competing for the same slot.
+
+---
+
+## 23. The House Plays The Same Game
+
+Three verbs shipped player-only: trading information (§20), seeding (§21) and
+walking somebody out (§22). A fourth, campaigning from the block (§19.4), was
+player-only from the start. Each was easier to build and measure that way and
+each was documented as an asymmetry.
+
+Three is not a scope note. It is a different game for the player than for
+everybody else, and "every AI has a reason" in §1 does not survive fifteen
+people who cannot do things the sixteenth can. So the house does all four.
+
+| Verb | How the house does it |
+|---|---|
+| Trades secrets | `AI_TELL` a week, scaled by charisma, to the best ear above a worth floor |
+| Seeds names | `AI_SEED` a week, scaled by ambition, only where the ground is real |
+| Campaigns | a nominee reaches `AI_CAMPAIGN_HEADS` voters, picking the pitch off what is true where each listener stands |
+| Walks people out | whoever had the most standing with the evictee fills the slot, choosing by the evictee's own type |
+
+Every one of them runs the **same function the player's action calls**.
+`performSeed` and `performCampaign` were extracted for exactly that reason: two
+implementations of one verb drift, and the one nobody is looking at drifts
+faster.
+
+### 23.1 Rates are the whole problem
+
+Each verb was calibrated with exactly one actor using it. Fifteen actors is not
+fifteen times more interesting: it is a house where every secret is common
+knowledge by the second week and the whole threat-bias matrix is pinned at its
+clamp. The per-person weekly chances are deliberately low. Measured volumes
+across a run: 94 secrets held house-wide, 13 handovers, 9 seeds, 42 campaign
+conversations at a 41 percent landing rate, and 13 walkouts.
+
+### 23.2 What it did to the player, and to four instruments
+
+The player's verbs got **more** valuable, not less, because not using them now
+means falling behind a house that does:
+
+| | Player was the only one | House does it too |
+|---|---|---|
+| trading information | +1.02 places | **+1.26** |
+| walking people out | +0.35 of seven votes | **+0.48** |
+
+Before those numbers could be read, **four separate instruments had to be
+fixed**, and every one of them failed the same way: it measured the house and
+reported it as the seat.
+
+1. `SEC.held(state)` gained an `owner` argument and six call sites did not pass
+   it, so the player's hand read as empty and the trading policy silently
+   stopped trading.
+2. The information proxy counted `state.secrets.length`, which is now everybody's.
+3. It counted handovers off `tellStats`, a house-wide counter, so the
+   **hoarding** side reported twelve handovers a run.
+4. The seeding proxy counted planted names off `seedStats`, house-wide for the
+   same reason.
+
+Read together those said "trading information is worth nothing now", which
+would have been a plausible and completely wrong conclusion about the feature.
+The `WARNING: the trading policy handed over less than one secret a run` line,
+written when the proxy was built precisely because a table measuring nothing
+looks like a table measuring zero, is what caught it.
+
+**The lesson, and it is the sharpest form of the one in §15:** when a mechanic
+changes hands from one actor to sixteen, every counter that was implicitly
+scoped to the one actor is now measuring something else, and it will keep
+reporting confidently. Audit the instruments before believing the result.

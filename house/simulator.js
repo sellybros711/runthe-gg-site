@@ -760,8 +760,10 @@ function seedReport() {
       let t = 0;
       for (const id of live) t += s.rel.suspicion[id][s.human];
       susp.push(live.length ? t / live.length : 0);
-      const st = s.seedStats || { planted: 0, noticed: 0 };
-      planted.push(st.planted); noticed.push(st.noticed);
+      /* The PLAYER's own seeds. s.seedStats counts the whole house since §23,
+         and s.seedLog is the one that is player-only. */
+      const mine = (s.seedLog || []);
+      planted.push(mine.filter((x) => x.ok).length); noticed.push(mine.length);
     }
     return { places, wins, susp, planted, noticed };
   };
@@ -769,7 +771,7 @@ function seedReport() {
   const off = side(false);
   const on = side(true);
 
-  console.log('  setting     avg finish   win%   names planted   they noticed   suspicion of you');
+  console.log('  setting     avg finish   win%   names planted   seeds tried   suspicion of you');
   const row = (label, r) => console.log(`  ${label.padEnd(10)}  ${mean(r.places).toFixed(2).padStart(10)}`
     + `   ${pct(r.wins / n).padStart(5)}   ${mean(r.planted).toFixed(2).padStart(13)}`
     + `   ${mean(r.noticed).toFixed(2).padStart(12)}   ${mean(r.susp).toFixed(1).padStart(16)}`);
@@ -817,9 +819,23 @@ function infoReport() {
       const s = POL.playRun({ seed: String(700000 + i) }, { risk: 0.5, skill: 55, trade });
       places.push(s.cast[s.human].place);
       if (s.cast[s.human].place === 1) wins++;
-      held.push((s.secrets || []).length);
-      const st = s.tellStats || { told: 0, traced: 0, worth: 0 };
-      told.push(st.told); traced.push(st.traced);
+      /* The PLAYER's hand. Everybody has an inventory since §23, so counting
+         the whole array measures the house rather than the seat. */
+      held.push((s.secrets || []).filter((x) => x.owner === s.human).length);
+      /*
+       * Counted off the PLAYER's own secrets, not off s.tellStats, which has
+       * been a house-wide counter since §23. Reading the global made the
+       * hoarding side report twelve handovers a run, which is every AI in the
+       * house doing it, and would have made "trading is worth nothing" look
+       * like a finding rather than a broken instrument.
+       */
+      let myTold = 0;
+      for (const sec of (s.secrets || [])) {
+        if (sec.owner !== s.human) continue;
+        myTold += Object.keys(sec.told || {}).length;
+      }
+      told.push(myTold);
+      traced.push((s.tellStats || { traced: 0 }).traced);
     }
     return { places, wins, held, told, traced };
   };
