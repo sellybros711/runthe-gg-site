@@ -7,6 +7,7 @@
 <meta name="description" content="A social strategy elimination sim. Sixteen players, one prize, and fifteen opponents who form their own opinions of you.">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#f7f3ea">
+<meta http-equiv="cache-control" content="no-cache, must-revalidate">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f7f3ea'/%3E%3Crect x='6' y='9' width='20' height='14' fill='none' stroke='%231c56c2' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%231c56c2'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -648,18 +649,24 @@ body.carded .dock,body.carded .bar{display:none}
 <div class="bar hide" id="bar"><div class="inner" id="barinner"></div></div>
 <div id="sheet"></div>
 
-<script src="rng.js"></script>
-<script src="tree.js"></script>
-<script src="generate.js"></script>
-<script src="engine.js"></script>
-<script src="comps.js"></script>
-<script src="powers.js"></script>
-<script src="scenes.js"></script>
-<script src="run.js"></script>
-<script src="recap.js"></script>
-<script src="avatar.js"></script>
-<script src="ui.js"></script>
-<script src="strings.js"></script>
+<!-- Version stamped on every module.
+     A playtest screenshot came back showing options tagged SAFE, EVEN and RISKY
+     three deploys after those tags were deleted: the phone was holding a cached
+     copy. Worse than a stale page is a MIXED one, where a fresh index.html
+     drives a cached scenes.js, so the query has to be on every module and has
+     to move on every deploy. Bump BUILD below and they all miss at once. -->
+<script src="rng.js?v=8"></script>
+<script src="tree.js?v=8"></script>
+<script src="generate.js?v=8"></script>
+<script src="engine.js?v=8"></script>
+<script src="comps.js?v=8"></script>
+<script src="powers.js?v=8"></script>
+<script src="scenes.js?v=8"></script>
+<script src="run.js?v=8"></script>
+<script src="recap.js?v=8"></script>
+<script src="avatar.js?v=8"></script>
+<script src="ui.js?v=8"></script>
+<script src="strings.js?v=8"></script>
 <script>
 (function(){
 'use strict';
@@ -2151,12 +2158,45 @@ function showComp(need){
   }
 }
 
+/*
+ * NOTHING MAY HANG THE RUN.
+ *
+ * Every minigame ends by calling done(score), and several of them wait on a
+ * pointer event that may never arrive: a phone that locks, a tab that gets
+ * backgrounded mid round, a player who walks away. There is no way out of that
+ * state, and a competition that never finishes is a run that never finishes.
+ *
+ * So: done fires at most once, and a watchdog fires it anyway if nothing has
+ * been touched for a while. The score in that case is deliberately poor rather
+ * than zero, because somebody who wandered off did compete, badly.
+ */
+var MG_IDLE_MS=50000;
+function guardDone(done,st){
+  var fired=false,timer=null;
+  function finish(score){
+    if(fired) return;
+    fired=true;
+    if(timer) clearTimeout(timer);
+    if(st) st.onpointerdown=null;
+    done(Math.max(0,Math.min(100,score)));
+  }
+  function arm(){
+    if(timer) clearTimeout(timer);
+    timer=setTimeout(function(){ finish(12); },MG_IDLE_MS);
+  }
+  /* Any touch anywhere in the comp counts as still being here. */
+  if(st) st.addEventListener('pointerdown',arm,true);
+  arm();
+  return finish;
+}
+
 /* Each minigame returns 0..100. comps.js blends that with the build at
    HUMAN_SKILL_WEIGHT, so hands matter and the tree matters. Adding a comp is
    adding a case here plus a row in comps.js, and it never touches the engine. */
 function startMinigame(comp,done){
   var st=document.getElementById('stage');
   var k=comp.kind;
+  done=guardDone(done,st);
   if(k==='reaction') return mgReaction(st,done);
   if(k==='memory') return mgMemory(st,done);
   if(k==='hold') return mgHold(st,done);
@@ -2409,9 +2449,13 @@ function mgGrip(st,done){
     var steady=Math.max(0,1-vary/260);
     done(Math.max(0,Math.min(100,(rate*72+steady*28)-breaks*2.5)));
   }
+  /* The clock starts NOW, not on the first press. It said twelve seconds and
+     then waited indefinitely for a pad that might never be touched, which is
+     both a lie in the instructions and the one place a run could hang for real
+     rather than through inattention. */
+  start=Date.now(); last=start; tick();
   Array.prototype.forEach.call(pads,function(p){
     p.onpointerdown=function(){
-      if(!start){ start=Date.now(); last=start; tick(); }
       if(p.dataset.g===want){
         var now=Date.now(); if(hits>0) gaps.push(now-last); last=now;
         hits++; want=want==='l'?'r':'l'; light();
@@ -2577,8 +2621,9 @@ function renderRecap(){
         +'<td class="'+(r.wrong?'wrong':'')+'">'+esc(r.truth.label)+'</td>'
         +'<td class="r">'+(r.place||'')+'</td></tr>'; }).join('')
    +'</tbody></table></div></div>';
-  setBar('',[{label:'Back to the results',go:function(){ screen='results'; render(); }},
-             {label:'Back to the file',cls:'go',go:function(){ screen='title'; render(); }}]);
+  setBar('',[{label:'Run it again',cls:'prime',go:function(){ startRun(null); }},
+             {label:'Back to the results',go:function(){ screen='results'; render(); }},
+             {label:'Back to the file',go:function(){ screen='title'; render(); }}]);
 }
 
 function renderResults(){
@@ -2625,7 +2670,13 @@ function renderResults(){
    +'<div><label>Comp wins</label><div style="font-family:var(--disp);font-size:24px;color:var(--paper)">'+me.compWins.length+'</div></div>'
    +'<div><label>Level</label><div style="font-family:var(--disp);font-size:24px;color:var(--paper)">'+level()+'</div></div>'
    +'</div></div>';
+  /* The loop has to close HERE. Getting back into a new house meant going to
+     the title and finding New run, which is two steps and a screen change after
+     a fourteen week season. The most likely next thing a player wants is
+     another one, so it is the primary and it is on this screen. */
   setBar('',[
+    {label:'Run it again',cls:'prime',go:function(){
+      var sd=''; startRun(sd||null); }},
     {label:'Read it back',cls:'go',go:function(){ screen='recap'; render(); }},
     {label:'Back to the file',go:function(){ screen='title'; render(); }}]);
 }
