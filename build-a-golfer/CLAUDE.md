@@ -13739,6 +13739,21 @@ allows Google Fonts, or self-host Anton.*
   --check` clean. Deployed to /golf. (The separate pack-reveal wheel cards use their own `.pcard` CSS at a
   different site - untouched.)
 
+- **DRAFT BOARD — stat slot redesign (deployed to /golf).** Owner wanted the draft attribute tiles below the
+  golfer name reworked: the gold “+” circles were distracting, the value-colored bar + gold digits were hard
+  to read over the rarity gradient, and there was no way to see the stat you passed up. Redesigned `scrDraft`’s
+  slots (new `.dtile`/`.dgrid` CSS + markup; old `.attr`/`.dtake`/`.dfilled`/`.dadd`/`.attrbar` draft styles
+  left in place, now unused by the draft grid). New design (mocked + owner-picked via an artifact — “Treatment
+  2, cleaned”): ONE quality language — each stat is a single dot on a fixed 0–99 track (color from the existing
+  `ratColor()` ramp), the value is cream (readable on any ground, not gold), and the “+” becomes a calm outline
+  draft ring that only fills on hover. Open slots also show a small **weight cue** (Key/Matters/Minor dots from
+  `CATS[].w`) so players see which pulls move OVR most. FILLED slots add a hollow **ghost ring** on the same
+  track where THIS golfer would’ve landed (value already in `S.current[k]` — no new logic) + a compact caption
+  “via {source} · ○ {value}”, so you can see the stat you missed without any +/- nag. Verified in Playwright:
+  8 tiles render (open/filled/empty), ghost ring + “this golfer” value on filled, weight cue + draft ring on
+  open, cream value color, draft-click still fires `takeAttr`, no old gold “+”, 0 page errors; screenshot
+  eyeballed. (Off-season draft uses its own `.osswap` tiles — untouched.)
+
 - **PLAYER-CARD BLANK FRONT — real fix: drop backface-visibility, use a visibility swap (deployed to /golf).**
   Users on iOS couldn't see the front of the flip card on EITHER path ("Preview my Player Card" and tapping a
   name on the leaderboard) — the front rendered blank at rest. Root cause: each `.pcard-face` combined

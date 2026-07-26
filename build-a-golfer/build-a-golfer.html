@@ -840,6 +840,49 @@ window.GA_ID='G-L29P5MRWKE';
   .attr .dadd{flex:0 0 auto; margin-left:3px; width:22px; height:22px; border-radius:50%; background:var(--gold);
     display:inline-flex; align-items:center; justify-content:center}
   .attr .dadd svg{display:block; width:14px; height:14px}
+  /* ===== redesigned draft stat slots: one quality dot on a 0–99 track, a calm draft ring instead of the
+     gold "+", cream numbers, and (on filled slots) a hollow ghost ring showing what THIS golfer offered
+     there — the value the game already tracks in S.current. ===== */
+  .dgrid{grid-template-columns:1fr 1fr!important; gap:9px!important}
+  .dtile{position:relative; border-radius:12px; border:1px solid var(--panelb); background:var(--panel);
+    padding:10px 12px 12px; display:flex; flex-direction:column; gap:9px; overflow:hidden; text-align:left;
+    color:var(--oncard); font:inherit; width:100%; box-shadow:0 4px 12px -10px rgba(0,0,0,.6)}
+  .dtile.fav{box-shadow:inset 3px 0 0 var(--gold), 0 4px 12px -10px rgba(0,0,0,.6)}
+  .dtile.open{cursor:pointer; transition:border-color .12s ease, transform .06s ease}
+  .dtile.open:hover{border-color:rgba(150,210,170,.34)}
+  .dtile.open:active{transform:translateY(1px)}
+  .dtile.open:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+  .dtile.filled{background:rgba(255,255,255,.03); opacity:.94; cursor:default}
+  .dtile.empty{opacity:.4; border-style:dashed; min-height:54px; justify-content:center}
+  .dt-top{display:flex; align-items:center; gap:8px}
+  .dt-star{color:var(--gold); font-size:12px; flex:0 0 auto; line-height:1; margin-top:-1px}
+  .dt-lab{font:800 13px/1.1 var(--body); color:#e7efe9}
+  .dtile.filled .dt-lab{color:#c7d5cc}
+  .dt-sp{flex:1}
+  .dt-w{display:flex; align-items:center; gap:4px}
+  .dt-w i{width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.18)}
+  .dt-w i.on{background:var(--gold)}
+  .dt-w b{font:800 8px/1 var(--body); letter-spacing:.12em; text-transform:uppercase; color:#7f978b}
+  .dt-w b.key{color:var(--gold2)}
+  .dt-bot{display:flex; align-items:flex-end; gap:12px}
+  .dt-meter{flex:1; min-width:0}
+  .dt-track{position:relative; height:6px; border-radius:4px; background:rgba(255,255,255,.08)}
+  .dt-gap{position:absolute; top:50%; height:2px; transform:translateY(-50%); border-radius:2px; background:rgba(238,245,239,.24)}
+  .dt-mk{position:absolute; top:50%; width:13px; height:13px; border-radius:50%; transform:translate(-50%,-50%);
+    border:2px solid #08210f; box-shadow:0 1px 4px rgba(0,0,0,.55); z-index:2}
+  .dt-ring{position:absolute; top:50%; width:12px; height:12px; border-radius:50%; transform:translate(-50%,-50%);
+    background:transparent; border:1.5px solid rgba(238,245,239,.6); z-index:1}
+  .dt-val{font:800 23px/.9 var(--body); color:#eef4ee; flex:0 0 auto; font-variant-numeric:tabular-nums}
+  .dt-cap{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:6px; font:700 10px/1.2 var(--body); color:#7f978b}
+  .dt-cap>span{display:inline-flex; align-items:center; gap:4px; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .dt-miss{flex:0 0 auto; color:var(--muted)}   /* what THIS golfer offered here — ○ ties it to the ghost ring above */
+  .dt-ringmini{width:8px; height:8px; border-radius:50%; border:1.5px solid rgba(238,245,239,.6); flex:0 0 auto}
+  .dt-draft{width:28px; height:28px; border-radius:50%; border:1.5px solid rgba(205,162,74,.5); display:grid;
+    place-items:center; color:var(--gold2); flex:0 0 auto; transition:background .12s ease, color .12s ease, border-color .12s ease}
+  .dtile.open:hover .dt-draft{background:var(--gold); border-color:var(--gold); color:#1c150a}
+  .dt-draft svg{width:13px; height:13px}
+  .dt-lock{width:26px; height:26px; border-radius:50%; display:grid; place-items:center; background:rgba(255,255,255,.08);
+    color:#aebdb2; font-size:12px; flex:0 0 auto}
   /* CS339: dynamic animated rating web */
   .dynradar{max-width:250px; margin:0 auto 6px; position:relative}
   .dr-svg{width:100%; height:auto; display:block; overflow:visible; filter:drop-shadow(0 6px 16px rgba(0,0,0,.4))}
@@ -11753,22 +11796,34 @@ function scrDraft(){
   else if(!S.spinning && filled<8) add($(`<div class="small center osgridhint muted">Spin the wheel, then tap a slot to draft an attribute</div>`));
 
   // THE unified grid: 8 slot tiles. Filled → your pick; open + golfer shown → draft option; open + idle → placeholder.
-  const grid=$(`<div class="attrs osgrid"></div>`);
+  const grid=$(`<div class="attrs osgrid dgrid"></div>`);
+  const wCue=(w)=>{ const n=(w>=0.18?3:w>=0.11?2:1), lab=(w>=0.18?'Key':w>=0.11?'Matters':'Minor');
+    return `<span class="dt-w" title="${lab} stat — its weight toward your overall">${[0,1,2].map(i=>`<i class="${i<n?'on':''}"></i>`).join('')}<b class="${n===3?'key':''}">${lab}</b></span>`; };
   CATS.forEach(cat=>{
-    const f=S.slots[cat.k];
+    const f=S.slots[cat.k], isKey=dailyKeys&&dailyKeys.has(cat.k);
     if(f){
-      grid.appendChild($(`<div class="attr static dfilled" aria-label="${cat.short} locked in from ${esc(cardDispName(f.golfer))}, rated ${f.value}">
-        <span class="dcol"><span class="lab">${cat.short}</span><span class="dwho">${esc(cardDispName(f.golfer))}</span></span><span class="val">${f.value}</span><span class="dlock" aria-hidden="true">✓</span></div>`));
+      // what THIS golfer would have given you here (data already tracked) → a hollow "ghost" marker + a
+      // named caption, so you can see the stat you passed up without any nagging +/- math.
+      const cur=(S.current&&S.current[cat.k]!=null)?S.current[cat.k]:null, qc=ratColor(f.value), mine=Math.min(100,f.value);
+      let track=`<div class="dt-track">`;
+      if(cur!=null){ const c=Math.min(100,cur), lo=Math.min(mine,c), hi=Math.max(mine,c);
+        track+=`<span class="dt-gap" style="left:${lo}%;width:${hi-lo}%"></span><span class="dt-ring" style="left:${c}%" title="This golfer: ${cur}"></span>`; }
+      track+=`<span class="dt-mk" style="left:${mine}%;background:${qc}"></span></div>`;
+      const cap=`<div class="dt-cap"><span>via ${esc(cardDispName(f.golfer))}</span>${cur!=null?`<span class="dt-miss" title="This golfer offered ${cur} here"><i class="dt-ringmini"></i>${cur}</span>`:''}</div>`;
+      grid.appendChild($(`<div class="dtile filled${isKey?' fav':''}" aria-label="${cat.short} locked in from ${esc(cardDispName(f.golfer))}, rated ${f.value}${cur!=null?'. This golfer offered '+cur:''}">
+        <div class="dt-top">${isKey?'<span class="dt-star" aria-hidden="true">★</span>':''}<span class="dt-lab">${cat.short}</span><span class="dt-sp"></span><span class="dt-val">${f.value}</span><span class="dt-lock" aria-hidden="true">✓</span></div>
+        <div class="dt-bot"><div class="dt-meter">${track}${cap}</div></div></div>`));
       return;
     }
     if(spun){
-      const rv=S.current[cat.k], key=dailyKeys&&dailyKeys.has(cat.k);
-      const b=$(`<button class="attr dtake${key?' keyhole':''}" aria-label="Draft ${cat.short}, rated ${rv}${key?', a key skill for today\'s course':''}">
-        ${key?'<span class="keystar" aria-hidden="true">★</span>':''}<span class="lab">${cat.short}</span><span class="val">${rv}</span><span class="dadd" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M7 2.3v9.4M2.3 7h9.4" stroke="#20160a" stroke-width="2.4" stroke-linecap="round"/></svg></span><span class="attrbar"><i style="width:${Math.min(100,rv)}%;background:${ratColor(rv)}"></i></span></button>`);
+      const rv=S.current[cat.k], qc=ratColor(rv);
+      const b=$(`<button class="dtile open${isKey?' fav':''}" aria-label="Draft ${cat.short}, rated ${rv}${isKey?', a key skill for today\'s course':''}">
+        <div class="dt-top">${isKey?'<span class="dt-star" aria-hidden="true">★</span>':''}<span class="dt-lab">${cat.short}</span><span class="dt-sp"></span>${wCue(cat.w)}</div>
+        <div class="dt-bot"><div class="dt-meter"><div class="dt-track"><span class="dt-mk" style="left:${Math.min(100,rv)}%;background:${qc}"></span></div></div><span class="dt-val">${rv}</span><span class="dt-draft" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M7 2.6v8.8M2.6 7h8.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></div></div>`);
       b.onclick=()=>takeAttr(cat.k);
       grid.appendChild(b); return;
     }
-    grid.appendChild($(`<div class="attr static dempty" aria-label="${cat.short} open"><span class="lab">${cat.short}</span><span class="val">-</span></div>`));
+    grid.appendChild($(`<div class="dtile empty" aria-label="${cat.short} open"><div class="dt-top"><span class="dt-lab">${cat.short}</span><span class="dt-sp"></span><span class="dt-val" style="color:var(--muted)">–</span></div></div>`));
   });
   add(grid);
 
