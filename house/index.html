@@ -230,6 +230,37 @@ table.truth td.r{text-align:right;color:var(--dim)}
 .holding{display:inline-block;border:1px solid var(--hand);color:var(--hand);
   font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:1px 5px;margin-left:8px}
 
+/* ── the recap: the chain, week by week ─────────────────────────────────── */
+.wk{border:1px solid var(--line);background:var(--panel);margin-bottom:2px}
+.wk>summary{padding:12px 18px;cursor:pointer;list-style:none;display:flex;gap:14px;
+  align-items:baseline;transition:.14s}
+.wk>summary::-webkit-details-marker{display:none}
+.wk>summary:hover{background:var(--panel2)}
+.wk .no{font-family:var(--disp);font-size:15px;letter-spacing:.1em;color:var(--dim);min-width:64px}
+.wk .hl{color:var(--paper);flex:1}
+.wk .tags{display:flex;gap:4px}
+.wk .body{padding:4px 18px 16px 96px;border-top:1px solid var(--line)}
+.wk .body p{margin:0 0 6px;color:var(--chalk)}
+.wk .body p.b{color:var(--dim)}
+.wk .body p.pw{color:var(--hand)}
+.wk .body p.v{padding-left:12px;border-left:1px solid var(--line)}
+.wk .body p.v.broke{border-left-color:var(--signal)}
+.wk .body p.v.you{color:var(--paper);border-left-color:var(--paper)}
+.wk .body h4{font-family:var(--disp);font-weight:400;font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dimmer);margin:14px 0 6px}
+.chain{border:1px solid var(--signal-dim);background:linear-gradient(180deg,rgba(212,64,44,.07),var(--panel));
+  padding:20px;margin-bottom:20px}
+.chain h2{color:var(--signal)}
+.chain p{margin:0 0 8px;color:var(--chalk)}
+.chain p.big{color:var(--paper);font-size:15px}
+.chain p.good{color:var(--ok)}
+.chain small{display:block;color:var(--dimmer)}
+.tl{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)}
+.tl .a{background:var(--panel2);padding:8px 14px;display:flex;gap:12px;align-items:baseline;font-size:12px}
+.tl .a b{font-weight:400;color:var(--paper);flex:1}
+.tl .a.mine{background:#1b1f23;border-left:2px solid var(--hand)}
+.tl .a i{font-style:normal;color:var(--dimmer);font-size:11px}
+
 .hide{display:none !important}
 @media(max-width:720px){
   :root{--tile:104px}
@@ -253,13 +284,14 @@ table.truth td.r{text-align:right;color:var(--dim)}
 <script src="powers.js"></script>
 <script src="scenes.js"></script>
 <script src="run.js"></script>
+<script src="recap.js"></script>
 <script src="strings.js"></script>
 <script>
 (function(){
 'use strict';
 var RNG=window.RH_RNG, T=window.RH_TREE, G=window.RH_GEN, E=window.RH_ENGINE,
     C=window.RH_COMPS, R=window.RH_RUN, STR=window.RH_STRINGS,
-    PW=window.RH_POWERS, SC=window.RH_SCENES;
+    PW=window.RH_POWERS, SC=window.RH_SCENES, RC=window.RH_RECAP;
 
 var app=document.getElementById('app');
 var bar=document.getElementById('bar');
@@ -425,6 +457,7 @@ function render(){
   if(screen==='comp') return;               // owns its own paint
   if(screen==='vote') return;               // owns its own paint
   if(screen==='results') return renderResults();
+  if(screen==='recap') return renderRecap();
   return renderPhase();
 }
 
@@ -1231,6 +1264,74 @@ function finishRun(){
   screen='results'; render();
 }
 
+function renderRecap(){
+  var rec=RC.build(s);
+  var me=s.cast[s.human];
+
+  var weeks=rec.weeks.map(function(w){
+    var tags='';
+    if(w.broken) tags+='<span class="pip risk">'+w.broken+' broke a promise</span>';
+    if(w.powers&&w.powers.length) tags+='<span class="pip veto">power</span>';
+    if(w.evicted===s.human) tags+='<span class="pip risk">you</span>';
+    var body=''
+      +(w.beats||[]).map(function(b){ return '<p class="b">'+esc(b)+'</p>'; }).join('')
+      +((w.powers&&w.powers.length)?'<h4>Powers</h4>'+w.powers.map(function(p){ return '<p class="pw">'+esc(p)+'</p>'; }).join(''):'')
+      +((w.votes&&w.votes.length)?'<h4>The vote, with names on it</h4>'+w.votes.map(function(v){
+          return '<p class="v'+(v.broke?' broke':'')+(v.target===s.human||v.voter===s.human?' you':'')+'">'+esc(v.text)+'</p>'; }).join(''):'')
+      +((w.blame&&w.blame.length)?'<h4>Who got blamed</h4>'+w.blame.map(function(b){
+          return '<p class="b">'+esc(b.text)+' '+(b.correct?'They were right.':'They were wrong.')+'</p>'; }).join(''):'');
+    return '<details class="wk"'+(w.evicted===s.human?' open':'')+'><summary>'
+      +'<span class="no">Week '+w.week+'</span><span class="hl">'+esc(w.headline)+'</span>'
+      +'<span class="tags">'+tags+'</span></summary>'
+      +'<div class="body">'+body+'</div></details>';
+  }).join('');
+
+  var chain=rec.chain.map(function(c){
+    var cls=c.kind==='exit'||c.kind==='result'?'big':(c.good?'good':'');
+    return '<p class="'+cls+'">'+esc(c.text)+(c.detail?'<small>'+esc(c.detail)+'</small>':'')+'</p>';
+  }).join('');
+
+  var tl=rec.alliances.map(function(a){
+    return '<div class="a'+(a.hadYou?' mine':'')+'">'
+      +'<b>'+esc(a.members.join(', '))+'</b>'
+      +'<i>week '+a.formed+(a.alive?' to the end':(a.died?' to '+a.died:''))+'</i>'
+      +'<i>'+(a.hadYou?'yours':(a.youKnew?'you knew':'you never knew'))+'</i></div>';
+  }).join('')||'<div class="a"><b>Nobody formalised anything.</b></div>';
+
+  var pw=rec.powers.map(function(p){
+    return '<tr><td>'+esc(p.name)+'</td><td>'+esc(p.holder)+(p.wasYou?' (you)':'')+'</td>'
+      +'<td>week '+p.week+'</td><td>'+(p.used?'played week '+p.usedWeek:'never played')+'</td>'
+      +'<td>'+(p.victim?esc(p.victim)+(p.victimWasYou?' (you)':'')+' lost a vote':'')+'</td></tr>';
+  }).join('');
+
+  app.innerHTML=''
+   +'<div class="topbar"><span class="wk" style="font-family:var(--disp)">The Recap</span>'
+   +'<span class="ph">Seed '+esc(s.seed)+'</span></div>'
+   +'<div class="chain"><h2>'+(me.place===1?'How you won':'How it ended')+'</h2>'+chain+'</div>'
+   +'<div class="file"><h2>Every week, with the names on the votes</h2>'
+   +'<div class="sub">During the run the tally was anonymous. It is not any more.</div></div>'
+   +weeks
+   +'<div class="file" style="margin-top:20px"><h2>Alliances</h2>'
+   +'<div class="sub">Including the ones you never found out about.</div>'
+   +'<div class="tl">'+tl+'</div></div>'
+   +(pw?'<div class="file"><h2>Powers</h2><div class="scroll"><table class="truth">'
+     +'<thead><tr><th>Power</th><th>Held by</th><th>Awarded</th><th>Used</th><th>Cost</th></tr></thead>'
+     +'<tbody>'+pw+'</tbody></table></div></div>':'')
+   +'<div class="file"><h2>What you actually knew</h2>'
+   +'<div class="sub">You misread '+rec.stats.misread+' of the other fifteen, and '
+   +rec.stats.flattered+' of them let you think better of them than they thought of you.</div>'
+   +'<div class="scroll"><table class="truth"><thead><tr>'
+   +'<th>Name</th><th>Build</th><th>You believed</th><th>The truth</th><th>Place</th></tr></thead><tbody>'
+   +rec.reads.map(function(r){
+      return '<tr><td>'+esc(r.name)+'</td><td>'+esc(r.archetype)+'</td>'
+        +'<td>'+esc(r.believed.label)+'</td>'
+        +'<td class="'+(r.wrong?'wrong':'')+'">'+esc(r.truth.label)+'</td>'
+        +'<td class="r">'+(r.place||'')+'</td></tr>'; }).join('')
+   +'</tbody></table></div></div>';
+  setBar('',[{label:'Back to the results',go:function(){ screen='results'; render(); }},
+             {label:'Back to the file',cls:'go',go:function(){ screen='title'; render(); }}]);
+}
+
 function renderResults(){
   var res=s.result, me=s.cast[s.human];
   var jurors=res.detail.map(function(d){
@@ -1275,13 +1376,18 @@ function renderResults(){
    +'<div><label>Comp wins</label><div style="font-family:var(--disp);font-size:24px;color:var(--paper)">'+me.compWins.length+'</div></div>'
    +'<div><label>Level</label><div style="font-family:var(--disp);font-size:24px;color:var(--paper)">'+level()+'</div></div>'
    +'</div></div>';
-  setBar('',[{label:'Back to the file',cls:'go',go:function(){ screen='title'; render(); }}]);
+  setBar('',[
+    {label:'Read it back',cls:'go',go:function(){ screen='recap'; render(); }},
+    {label:'Back to the file',go:function(){ screen='title'; render(); }}]);
 }
 
 function renderPhase(){
   app.innerHTML=topbar()+wall({})+renderFeed();
   scrollFeed();
 }
+
+/* Test hook: drop a finished run straight onto the recap screen. */
+window.__inject=function(st){ s=st; screen='recap'; render(); };
 
 // ── boot ───────────────────────────────────────────────────────────────────
 account=loadAccount();

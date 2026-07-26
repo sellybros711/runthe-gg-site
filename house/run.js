@@ -837,15 +837,34 @@ function doEviction(s, input) {
   if (n === 4) {
     /* GDD §3, Final 4: the Captain casts the sole vote, in all cases. The veto
        holder is safe and advances. */
+    /* Scored the same way as any other vote, and with the same `why` breakdown,
+       so the recap can explain the Final 4 as readily as week two. */
+    const sc = s.atRisk.map((t) => {
+      const parts = {};
+      return { t, v: E.evictScore(s, s.captain, t, rng, parts), parts };
+    });
+    sc.sort((a, b) => b.v - a.v);
     const target = (s.captain === s.human && isHumanActive(s) && input && input.vote != null)
-      ? input.vote
-      : (() => {
-          const sc = s.atRisk.map((t) => ({ t, v: E.evictScore(s, s.captain, t, rng) }));
-          sc.sort((a, b) => b.v - a.v);
-          return sc[0].t;
-        })();
+      ? input.vote : sc[0].t;
+
+    const chosen = sc.filter((x) => x.t === target)[0] || sc[0];
+    const other = sc.filter((x) => x.t !== target)[0];
+    const why = other ? {
+      trust: chosen.parts.trust - other.parts.trust,
+      threat: chosen.parts.threat - other.parts.threat,
+      pressure: chosen.parts.pressure - other.parts.pressure,
+      panel: chosen.parts.panel - other.parts.panel,
+      noise: chosen.parts.noise - other.parts.noise,
+      flipped: (chosen.parts.trust - other.parts.trust) + (chosen.parts.threat - other.parts.threat)
+        + (chosen.parts.pressure - other.parts.pressure) + (chosen.parts.panel - other.parts.panel) <= 0,
+      allied: chosen.parts.allied,
+      margin: chosen.v - other.v,
+    } : chosen.parts;
+
     const tally = {}; s.atRisk.forEach((t) => { tally[t] = t === target ? 1 : 0; });
-    result = { votes: [{ voter: s.captain, target, promisedTarget: s.voteIntent[s.captain] != null ? s.voteIntent[s.captain] : null }], tally, evicted: target, tieBreak: null, soleVote: s.captain };
+    result = { votes: [{ voter: s.captain, target, why,
+      promisedTarget: s.voteIntent[s.captain] != null ? s.voteIntent[s.captain] : null }],
+      tally, evicted: target, tieBreak: null, soleVote: s.captain };
   } else {
     const voters = eligibleVoters(s);
 

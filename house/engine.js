@@ -152,7 +152,11 @@ const K = {
 
   // eviction, GDD §8.2
   EV_TRUST: 0.46, EV_THREAT: 0.23, EV_PRESSURE: 0.21, EV_PANEL: 0.10,
-  EV_VOL_SD: 14,            // scaled by volatility/100
+  /* Scaled by volatility/100. Lowered from 14 after the recap made the cost
+     visible: at 14 a quarter of all votes were emotional reversals, and a
+     simulation that answers "no good reason at all" that often is not the one
+     GDD §1 describes. Volatility should be a Wildcard, not the weather. */
+  EV_VOL_SD: 10,
 
   // nomination
   NOM_TRUST: 0.45, NOM_THREAT: 0.24, NOM_PRESSURE: 0.13, NOM_GOAL: 0.18,
@@ -935,8 +939,17 @@ function alliancePressure(state, voterId, targetId) {
   return norm100(50 + v / 2);
 }
 
-/** GDD §8.2. Each voter scores both At Risk and evicts the higher. */
-function evictScore(state, voterId, targetId, rng) {
+/**
+ * GDD §8.2. Each voter scores both At Risk and evicts the higher.
+ *
+ * Pass `parts` and it is filled with the component breakdown. That breakdown is
+ * the whole replay hook: §1 promises that if somebody flips on you there is a
+ * traceable chain behind it and that you can inspect it afterwards. A vote
+ * record that stores only the target cannot answer why, so it stores the four
+ * weighted terms and the noise, and recap.js turns the dominant one into a
+ * sentence.
+ */
+function evictScore(state, voterId, targetId, rng, parts) {
   const { rel, cast, panel, alliances } = state;
   const voter = cast[voterId];
 
@@ -956,7 +969,18 @@ function evictScore(state, voterId, targetId, rng) {
     v -= 30 * (a.strength / 100) * (a.priority[voterId] || 0.5) * (1 + goalWeight(voter, 'allyBond'));
   }
 
-  v += rng.normal(0, K.EV_VOL_SD * (voter.social.volatility / 100));
+  const noise = rng.normal(0, K.EV_VOL_SD * (voter.social.volatility / 100));
+  v += noise;
+
+  if (parts) {
+    parts.trust = K.EV_TRUST * trustTerm;
+    parts.threat = K.EV_THREAT * threatTerm;
+    parts.pressure = K.EV_PRESSURE * pressure;
+    parts.panel = K.EV_PANEL * jury;
+    parts.noise = noise;
+    parts.allied = sharedAlliances(alliances, voterId, targetId).length > 0;
+    parts.total = v;
+  }
   return v;
 }
 
@@ -972,11 +996,54 @@ function resolveEviction(state, atRisk, voters, rng) {
   for (const t of atRisk) tally[t] = 0;
 
   for (const v of voters) {
-    const scores = atRisk.map((t) => ({ t, s: evictScore(state, v, t, rng) }));
+    const scores = atRisk.map((t) => {
+      const parts = {};
+      return { t, s: evictScore(state, v, t, rng, parts), parts };
+    });
     scores.sort((a, b) => b.s - a.s);
     const target = scores[0].t;
     const promised = (state.voteIntent && state.voteIntent[v] != null) ? state.voteIntent[v] : null;
-    votes.push({ voter: v, target, promisedTarget: promised, margin: scores[0].s - scores[1].s });
+
+    /*
+     * `why` is the DIFFERENCE between the two nominees, not the absolute
+     * breakdown for the one who went.
+     *
+     * A vote is a comparison, so the reason has to be what separated them. The
+     * absolute version made every single line of the recap read "they never
+     * warmed to them", because EV_TRUST is the heaviest weight and the trust
+     * term is therefore almost always the largest number regardless of what
+     * actually decided the vote. The delta says which consideration did the
+     * separating, which is the question a player is asking.
+     */
+    const a = scores[0].parts, b = scores[1] ? scores[1].parts : null;
+    let why = a;
+    if (b) {
+      const considered = (a.trust - b.trust) + (a.threat - b.threat)
+        + (a.pressure - b.pressure) + (a.panel - b.panel);
+      why = {
+        trust: a.trust - b.trust,
+        threat: a.threat - b.threat,
+        pressure: a.pressure - b.pressure,
+        panel: a.panel - b.panel,
+        noise: a.noise - b.noise,
+        /*
+         * Did volatility actually DECIDE this, or was it merely present.
+         *
+         * The considered terms already point somewhere. If they pointed at the
+         * same person, the emotion changed nothing and calling it the reason is
+         * wrong. Attributing on "largest delta" instead made 46 percent of all
+         * votes in the game come out as "no good reason at all", which reads as
+         * a broken simulation rather than an occasional Wildcard, and directly
+         * contradicts the pillar in GDD §1.
+         */
+        flipped: considered <= 0,
+        allied: a.allied,
+        margin: scores[0].s - scores[1].s,
+      };
+    }
+
+    votes.push({ voter: v, target, promisedTarget: promised,
+      margin: scores[0].s - (scores[1] ? scores[1].s : 0), why });
     tally[target]++;
   }
 
