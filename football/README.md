@@ -604,6 +604,7 @@ tighter. Below that the facemask is the first thing to go to smudge.
 | favicon 48, apple-touch-icon 180, manifest 192 and 512 | the full mark on the `#111827` plate |
 | maskable 512 | the full mark at 66%, so Android's crop to the middle 80% keeps all of it |
 | the share card | the full mark at 214px, top right |
+| the banner, top left | the **four pieces only** at 30px, as `mark.png` |
 
 The pieces alone still read as an interlocking 2x2 at 32px and keep their structure at 16,
 and they are the distinctive half of the mark, so the two are recognizably one brand.
@@ -613,6 +614,45 @@ Checked under a circular mask for the maskable one.
 size it claims, because a 404 or a mismatched icon is invisible in the markup and only shows
 up on a real home screen. It checks the share card is cache-busted without pinning the
 number, since the card is re-rendered whenever the logo or the palette moves.
+
+### In the banner
+
+`mark.png`, the four pieces at 30px, first thing in the header on every screen. A 90px
+source into a 30px box so it stays sharp at 3x.
+
+The size was decided by rendering the real header at 320px, not by preference. The header
+had **43px of slack** at 320px with nothing in the corner, and the mark takes 39 of it:
+
+| mark | at 320px |
+|---|---|
+| full mark 30px | fits, but the facemask is a grey smudge |
+| full mark 36 or 40px | reads, but the pill clips to "The Perfect Seas..." |
+| four pieces 30px | reads, and the pill stays whole with 4px to spare |
+
+Same rule the favicons follow: below about 44px the facemask goes and the pieces carry the
+brand on their own.
+
+**The header layout was wrong for a beat and the picture caught it.** `header` was
+`justify-content:space-between`, which is correct for two children and wrong for three: it
+stranded the mark in the left corner and floated the wordmark into the middle of the banner,
+150px away from it at desktop width. The mark and the wordmark are one lockup, so the header
+is now plain `flex-start` and `.hdr-r` is pushed over by its own `margin-left:auto`.
+
+That bug also produced a **wrong measurement** that got as far as a code comment: the first
+comparison was rendered under `space-between`, where a 40px mark squeezed the pill onto two
+lines. Under the fixed layout the pill does not wrap, it truncates. The conclusion held but
+the stated reason did not, so it was re-rendered and the comment rewritten to what the fixed
+layout actually does.
+
+Because the fit at 320px is that tight, `.pill` also got `min-width:0` with
+`text-overflow:ellipsis`. Nothing needs it today. It is there so a longer game name or a
+wider font later clips the pill instead of shoving the account button off screen, and the
+40px rows in the table above are what that insurance looks like when it fires.
+
+`v49.mjs` covers the mark the same way it covers the icons, plus the things only an in-page
+image can get wrong: that it decodes at all, that it is the first child, that `width` and
+`height` reserve its box before it arrives, that `alt` is empty because the wordmark beside
+it already names the brand, and that it cannot shrink when the header gets tight.
 
 The baked drop shadow is a non-issue here: it disappears against `#080b14`.
 
