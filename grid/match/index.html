@@ -101,6 +101,9 @@
   .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
   :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
   :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
+  .sndBtn .ic-snd-on{display:none;} .sndBtn .ic-snd-off{display:block;}
+  .sndBtn.snd-on{color:var(--tealT); border-color:var(--teal);}
+  .sndBtn.snd-on .ic-snd-on{display:block;} .sndBtn.snd-on .ic-snd-off{display:none;}
 
   /* ---------------- app shell ---------------- */
   .app{max-width:1160px; margin:0 auto; padding:var(--sp-3) 20px 48px;
@@ -191,6 +194,8 @@
     font-weight:800; font-size:10.5px; letter-spacing:.04em; text-transform:uppercase; border-radius:6px;
     padding:4px 9px; min-height:26px; transition:color .12s, border-color .12s;}
   .clearbtn:hover{color:var(--coralT); border-color:var(--coralT);}
+  .pool-h .shufbtn{margin-left:auto; display:inline-flex; align-items:center; gap:5px;}
+  .pool-h .shufbtn:hover{color:var(--tealT); border-color:var(--teal);}
   .checkbtn{appearance:none; border:0; background:var(--teal); color:#071426; font-weight:900; font-size:12.5px;
     letter-spacing:.03em; border-radius:var(--r-sm); padding:9px 12px; min-height:40px; box-shadow:var(--shadow);
     display:inline-flex; align-items:center; justify-content:center; gap:7px; transition:filter .12s, transform .08s;}
@@ -365,6 +370,10 @@
         </div>
         <div class="explain">Sort 20 sports names into five hidden groups of four.</div>
       </div>
+      <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
+        <svg class="ic-snd-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+        <svg class="ic-snd-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M22 9l-5 6M17 9l5 6"/></svg>
+      </button>
       <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
         <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
@@ -400,6 +409,10 @@
       <div class="pool-h">
         <span class="t">Today's 20</span>
         <span class="n"><span id="poolCount">20</span> left to place</span>
+        <button class="clearbtn shufbtn" id="shuffleBtn" type="button" aria-label="Shuffle the names">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+          Shuffle
+        </button>
       </div>
       <div class="pool" id="pool" role="list" aria-label="Unplaced names"></div>
 
@@ -507,6 +520,7 @@
        browser caches will pair fresh HTML with old boards/engine -->
   <script src="entities.js?v=12"></script>
   <script src="generator.js?v=12"></script>
+  <script src="/grid/sfx.js"></script>
   <script>
   (function () {
     'use strict';
@@ -575,6 +589,7 @@
     var laneCat = {};                  // laneIndex -> catId (filled on solve)
     var locked = {};                   // laneIndex -> true
     var solveOrder = [];               // laneIndex in order solved
+    var poolOrder = [];                // tileId display order in the pool (shuffleable)
     var mistakes = 0, penalty = 0, started = false, startTs = 0, tick = null;
     var selected = null, done = false, revealedCats = {};   // revealedCats: catId -> true (from hints)
     var lastMissIds = {};              // laneIndex -> 'id,id,id,id' of the last wrong check (disables re-checking the same four)
@@ -754,10 +769,11 @@
         boardEl.appendChild(lane);
       }
 
-      // pool
+      // pool (rendered in poolOrder so a shuffle just reorders the display)
       poolEl.innerHTML = '';
-      var poolTiles = day.tiles.filter(function (t) { return place[t.id] == null; });
-      poolTiles.forEach(function (t) { poolEl.appendChild(tileEl(t.id, {})); });
+      if (poolOrder.length !== day.tiles.length) poolOrder = day.tiles.map(function (t) { return t.id; });
+      var poolTiles = poolOrder.filter(function (id) { return place[id] == null; });
+      poolTiles.forEach(function (id) { poolEl.appendChild(tileEl(id, {})); });
       document.getElementById('poolCount').textContent = poolTiles.length;
       attachPoolDrop();
       renderDots();
@@ -814,6 +830,7 @@
       if (laneFillCount(laneIdx) >= GROUP && place[tid] !== laneIdx) { toast('That group is full'); return; }
       startIfNeeded();
       place[tid] = laneIdx; selected = null;
+      if (window.RTGSound) RTGSound.place();
       render();
       var pe = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"] .tile[data-tid="' + tid + '"]');
       if (pe) pe.classList.add('settle');
@@ -822,6 +839,7 @@
     function playLockAnim(idx) {
       var laneEl = boardEl.querySelector('.lane[data-idx="' + idx + '"]');
       if (!laneEl) return;
+      if (window.RTGSound) RTGSound.lock();
       laneEl.classList.add('justlocked');
       laneEl.querySelectorAll('.tile.locked').forEach(function (t, i) {
         t.style.setProperty('--d', (i * 70) + 'ms'); t.classList.add('pop-in');
@@ -940,6 +958,7 @@
     // a factually-valid four that isn't this board's split: no guess charged
     function freeMiss(laneIdx, ids, message) {
       lastMissIds[laneIdx] = ids.join(',');
+      if (window.RTGSound) RTGSound.soft();
       var laneEl = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"]');
       if (laneEl) {
         laneEl.classList.add('bad');
@@ -996,6 +1015,7 @@
 
     function registerMiss(laneIdx, ids) {
       mistakes++; penalty += 5;
+      if (window.RTGSound) RTGSound.wrong();
       var close = oneAway(ids);
       lastMissIds[laneIdx] = ids.join(',');       // block re-checking the identical four
       var laneEl = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"]');
@@ -1148,6 +1168,7 @@
       // celebration: confetti on a fresh win (denser + gold-heavy when flawless / milestone)
       if (r.celebrate && r.won) {
         confetti(r.mistakes === 0 ? 130 : 80, r.mistakes === 0 || !!r.milestone);
+        if (window.RTGSound) RTGSound.win();
       }
     }
     function shareText(r) {
@@ -1311,6 +1332,18 @@
       if (done) return;
       day.tiles.forEach(function (t) { if (place[t.id] != null && !locked[place[t.id]]) place[t.id] = null; });
       selected = null; render();
+    });
+
+    // ---- shuffle the unplaced names (display order only; nothing about the puzzle changes) ----
+    document.getElementById('shuffleBtn').addEventListener('click', function () {
+      if (done) return;
+      if (poolOrder.length !== day.tiles.length) poolOrder = day.tiles.map(function (t) { return t.id; });
+      for (var i = poolOrder.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = poolOrder[i]; poolOrder[i] = poolOrder[j]; poolOrder[j] = tmp;
+      }
+      if (window.RTGSound) RTGSound.place();
+      render();
     });
 
     // ---- centered popup (hint reveal) ----
