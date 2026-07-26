@@ -13739,6 +13739,41 @@ allows Google Fonts, or self-host Anton.*
   --check` clean. Deployed to /golf. (The separate pack-reveal wheel cards use their own `.pcard` CSS at a
   different site - untouched.)
 
+- **SHARE HIGHLIGHTS reel + all shares pixel-themed + old illustrated tracer removed (deployed to /golf).**
+  Owner asks: (1) a "Share Highlights" button that reels every birdie-or-better hole from a round as one GIF;
+  (2) all share GIFs use the pixel theme, not the old illustrated one; (3) remove the old illustrated tour
+  tracer entirely.
+  - **Pixel shares.** The share GIF (`hvGifRender`/`hvGifCompose`) + static PNG (`hvShareShot`) rendered terrain
+    via the illustrated `hvTerrain`. Swapped to the PIXEL scene. Key gotcha: a nested raster inside an SVG
+    loaded as an `<img>` is blocked in the browser's secure static-image mode (on-screen inline SVG works,
+    rasterizing does not), so wrapping `hvBackdrop`'s pixel `<image>` in an SVG failed to load. Fix: new
+    `hvPixelScene(g,seedN,B,W,imgH)` loads `pxTerrainURL` (a same-origin PNG data URL — no canvas taint)
+    DIRECTLY, draws it crisp (`imageSmoothingEnabled=false`), then overlays the pin/tee/flag as a pure-vector
+    SVG. The terrain image spans exactly `HV_CAM`, so it maps 1:1 to the canvas and stays aligned with the
+    `hvProj` tracer lines. `hvStaticSVG` now returns a shots-only vector overlay drawn on top of the pixel scene.
+  - **Highlight reel.** Factored the tracer painters into `hvTracerDraw(g,plots,D)` + a bar helper `hvShareBg`.
+    New `hvReelRender(list,courseKey,c)` renders each birdie-or-better hole's pixel scene + animated tracer into
+    ONE looping GIF89a with a shared color table (sampled across all holes), a per-hole bar (result · hole ·
+    position N/total), and adaptive sizing (W + animation steps scale down when >5 holes so a great round isn't
+    a huge file). `hvReelHoles(holes)` filters to birdie-or-better WITH shot data; `shareHighlights(courseKey,
+    holes)` is the button entry point.
+  - **Buttons.** "✨ Share Highlights" on the DAILY result (uses `S.dailyHoles`) and the H2H result (new
+    `h2hSharableHoles()` adapts h2h's per-unit `playHoles[i].shots[myUnit]` + `units[myUnit].scores[i]` into the
+    daily-style `{n,par,yards,toPar,shots}` shape; h2h uses the same `dHash(courseKey)^holeIdx` geometry seed, so
+    tracers project correctly). Disabled-with-hint ("No birdies to reel this round") when none.
+  - **Removed the illustrated tracer.** Deleted `hvTerrain` (~440 lines), removed the "Pixel course art" settings
+    toggle, made `hvArtMode()` always return 'pixel', and replaced `hvBackdrop`'s illustrated fallback with a flat
+    colored ground + pin/tee (only hit if pixel ever fails). Zero `hvTerrain` refs remain.
+  - **NOT done — career "moments" (flagged to owner).** The owner picked the end-of-season recap + major/win
+    moment cards for the button, but career/season rounds are SCORE-ONLY (`dSimHole` returns strokes-to-par, no
+    per-shot data), so a *tracer* reel literally can't be built there — no shots to animate. Left for an owner
+    decision (e.g. a season "best rounds" card, or replay-then-reel, or drop career).
+  - Verified in Playwright: full render sweep 41 courses 0 errors (pixel only now); single-hole pixel GIF
+    (GIF89a) + static PNG both render (screenshotted — terrain/pin/tee/tracer all correct); daily reel (2
+    birdies → valid 2.3MB GIF in ~0.95s, screenshotted first frame "Birdie · Hole 5 · 1/2"); daily button
+    enabled/disabled states correct; h2h adapter → valid reel GIF; settings toggle gone; full e2e rounds still
+    complete clean.
+
 - **DRAFT BOARD — stat slot redesign (deployed to /golf).** Owner wanted the draft attribute tiles below the
   golfer name reworked: the gold “+” circles were distracting, the value-colored bar + gold digits were hard
   to read over the rarity gradient, and there was no way to see the stat you passed up. Redesigned `scrDraft`’s
