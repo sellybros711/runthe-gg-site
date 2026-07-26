@@ -13739,6 +13739,37 @@ allows Google Fonts, or self-host Anton.*
   --check` clean. Deployed to /golf. (The separate pack-reveal wheel cards use their own `.pcard` CSS at a
   different site - untouched.)
 
+- **LAUNCH-PREP AUDIT — UX / legal / SEO pass (code fixes deployed to /golf; policy items flagged).** Ran
+  three parallel expert audits (game UX, legal/compliance, technical SEO) over the game + site and applied
+  the non-breaking code improvements:
+  - **SEO (game head + body):** added a `VideoGame` + `BreadcrumbList` JSON-LD graph (the marquee page had
+    none); added a static `<noscript>` hero with a real `<h1>` + keyword copy so non-JS crawlers (Bing,
+    social/LLM scrapers) see real content instead of an empty `#app`; tightened the `<title>` (added "Free"
+    + brand suffix) and trimmed the meta description to ~160 chars; fixed the `og:image?v=8` vs
+    `twitter:image?v=2` cache-bust mismatch (both `v=8`); added `twitter:site`. Site: bumped `sitemap.xml`
+    lastmod; added `categories`/`id` to the PWA manifests; removed a non-standard `name="title"` meta on the
+    root landing.
+  - **UX (game):** guaranteed a 44×44 touch target on the top nav icon buttons (kept the 38/36px visual via a
+    `::before`); removed `aria-live="polite"` from `#app` (it re-announced the whole screen on every render —
+    unusable with a screen reader), scoped live-region semantics to `toast()` (`role="status"`) instead; the
+    mobile hardware/gesture **Back button now closes an open overlay instead of exiting the game** (a single
+    history guard synced from `render()`, fails open if history is unavailable); bumped the 9px in-round
+    control + bottom-nav labels to 10–10.5px; set `<select>` to 16px to stop iOS focus-zoom; anchored the
+    overlay Close button to the centered content column on desktop; the render-error card now auto-clears
+    (6s) + is tap-to-dismiss (and fixed its "popped up broke" typo); added an `overflow-x:hidden` backstop.
+  - **Legal (copy fixes applied):** removed trademarked "Ryder Cup"/"Olympics" wording from user-visible
+    strings — achievement copy now uses the game's own aliased "Nations Cup"; **GA4 now ships Google Consent
+    Mode v2 defaults (ad + analytics storage denied until the certified CMP responds)**, aligning the code
+    with privacy.html's promise that no analytics/ad cookies are set before consent.
+  - **Legal (FLAGGED, needs owner decision — NOT auto-changed):** (1) real, living pro golfers are used as
+    named draftable/collectible assets in an ad-monetized game with no alias (unlike courses, which are
+    aliased) — the top right-of-publicity exposure; (2) personalized ads / un-age-gated guests vs COPPA /
+    GDPR-K; (3) confirm `og.png` art carries no real likeness/logos and that DataGolf's terms permit derived-
+    rating redistribution. These are business/legal calls, left for the owner.
+  Verified in Playwright: JSON-LD parses (VideoGame+BreadcrumbList), consent default fires before config,
+  `#app` aria-live gone, Back-button closes overlays with no phantom history entry, 44px hit area, full
+  render sweep across all 41 courses in both renderers = 0 errors.
+
 - **COURSE OVERHAUL — every course made more unique + harder, par-3s made realistic (deployed to /golf).**
   Owner brief: "significantly improve all courses so they are way more unique and difficult… yardages and
   pars stay but the layouts and difficulties can get way crazier. Par-3s typically don't have a full fairway —
