@@ -603,6 +603,12 @@
     font-family:var(--fn);font-size:12px;display:grid;place-items:center;margin-top:1px}
   .rules b{color:#fff}
 
+  /* THE FIELD ITSELF. This rule was lost when the team picker's styles were cut out, because
+     it sat immediately after them: without `position:relative` and `overflow:hidden` the
+     absolutely-positioned yard lines, hash marks, end zones and player chips escaped their
+     box and painted across the entire page behind the content. */
+  .field{position:relative;width:100%;aspect-ratio:1/0.52;border-radius:14px;overflow:hidden;
+    background:var(--grad-field);border:1px solid var(--line)}
   /* The results page is long, so its copy of the field is a little flatter. */
   .field.short{aspect-ratio:1/0.46}
   /* THE CLUB WASH IS GONE, along with the favourite team it tinted the field with. It
@@ -1257,7 +1263,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
     <button class="btn" id="b-start">Start a run</button>
     <div class="hrow">
-      <button class="btn ghost sm" id="b-daily">Today's spins</button>
+      <button class="btn ghost sm" id="b-daily">Daily challenge</button>
       <button class="btn ghost sm" id="b-how">How to play</button>
     </div>
     <button class="btn ghost sm" id="b-board" style="margin-top:8px">Leaderboard</button>
@@ -1996,10 +2002,37 @@ function newRun(opts){
    team there is nothing for it to be a wash OF. */
 function beginDraft(opts){ newRun(opts); show('s-draft'); nextSpin(); }
 $('b-start').onclick=()=>{ beginDraft({}); };
-$('b-daily').onclick=()=>{
-  beginDraft({daily:new Date().toISOString().slice(0,10)});
-  toast('Everyone gets the same six spins today');
-};
+/* THE DAILY EXPLAINS ITSELF BEFORE IT STARTS.
+   It used to begin immediately and put the one rule that makes it a competition into a toast,
+   which is gone in two seconds and is the wrong place for the only thing a player needs to
+   understand. The daily is a fixed set of six draws, so it is the one mode where a bad spend
+   cannot be re-rolled away by starting again: that is worth a sentence before it counts. */
+$('b-daily').onclick=dailyRules;
+
+function dailyRules(){
+  const cap=M0(E.CONSTANTS.CAP_MUSD);
+  const today=new Date().toISOString().slice(0,10);
+  $('sheet-in').innerHTML='<div class="eyebrow">Daily challenge</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 10px">Same six spins for everyone</h2>'+
+    '<p class="dim" style="margin:0 0 14px;font-size:14px">Today is one fixed set of six draws. '+
+    'Every player in the world gets the same ones, so the board measures the decisions and '+
+    'nothing else.</p>'+
+    '<ul class="rules" style="margin-top:0">'+
+    '<li><span class="n">1</span><span>Build the <b>best team you can</b> out of the six spins '+
+      'you are given.</span></li>'+
+    '<li><span class="n">2</span><span>Everybody gets the <b>same six spins</b>. Nobody gets a '+
+      'kinder wheel than you did.</span></li>'+
+    '<li><span class="n">3</span><span>You have <b>'+cap+'</b>, and re-spins come out of it. '+
+      'Spend it well; the draws are the same for everyone, so the spending is the game.</span></li>'+
+    '<li><span class="n">4</span><span><b>One go a day.</b> Play it again and it counts as a '+
+      'free run instead.</span></li>'+
+    '</ul>'+
+    '<div style="margin-top:15px"><button class="btn" id="b-daily-go">Play today\'s challenge</button></div>'+
+    '<div style="margin-top:8px"><button class="btn ghost sm" id="b-daily-no">Not now</button></div>';
+  openSheet();
+  $('b-daily-go').onclick=()=>{ closeSheet(); beginDraft({daily:today}); };
+  $('b-daily-no').onclick=closeSheet;
+}
 
 /* ---------- draft ---------- */
 function paintTop(){
@@ -3061,13 +3094,56 @@ const HERO_SPOTS=[
   {label:'TE',   left:70, top:42},
   {label:'FLEX', left:30, top:42},
 ];
-/* Real player-seasons, checked against the shipped data by the test suite: the
-   team-season has to exist and it has to contain that player at that position. */
-const HERO_PICKS=[
-  {at:0, season:2004, team:'Indianapolis Colts', fr:'IND', pos:'QB', last:'Manning'},
-  {at:1, season:2020, team:'Tennessee Titans',   fr:'TEN', pos:'RB', last:'Henry'},
-  {at:4, season:2019, team:'Kansas City Chiefs', fr:'KC',  pos:'TE', last:'Kelce'},
-];
+/* WHICH PLAYERS SIGN ON THE FRONT PAGE.
+   It used to be three hardcoded names, so the landing animation played out identically every
+   time: Manning, Henry, Kelce, forever. They are drawn fresh every loop now, out of the top
+   20 of each position by points per game, so somebody who watches it twice sees two different
+   teams being built and every name that turns up is a genuinely elite player-season rather
+   than a random one.
+
+   Top 20 rather than the whole pool because this is a shop window. A random draw from 9,411
+   player-seasons mostly surfaces people nobody recognises, which makes the game look like it
+   is about obscure players when it is about the famous ones. */
+const HERO_TOP_N=20;
+let heroPoolCache=null;
+
+function heroPool(){
+  if(heroPoolCache) return heroPoolCache;
+  const by={};
+  for(const p of DATA.players)(by[p.position] ??= []).push(p);
+  for(const k in by){
+    by[k].sort((a,b)=>b.ppr_ppg_mean-a.ppr_ppg_mean);
+    by[k]=by[k].slice(0,HERO_TOP_N);
+  }
+  heroPoolCache=by;
+  return heroPoolCache;
+}
+
+/* Three signings, on three different spots, each filled by somebody who can actually play
+   there. The FLEX spot takes a back, a receiver or a tight end, which is the same rule the
+   real draft enforces. */
+function heroPicks(){
+  const pool=heroPool();
+  const spots=HERO_SPOTS.map((sp,i)=>i);
+  for(let i=spots.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1)); [spots[i],spots[j]]=[spots[j],spots[i]];
+  }
+  const out=[];
+  for(const at of spots){
+    if(out.length>=3) break;
+    const label=HERO_SPOTS[at].label;
+    const allowed=label==='FLEX'?['RB','WR','TE']:[label];
+    const pos=allowed[Math.floor(Math.random()*allowed.length)];
+    const cand=pool[pos];
+    if(!cand||!cand.length) continue;
+    const p=cand[Math.floor(Math.random()*cand.length)];
+    const ts=DATA.byTeamSeasonId[p.team_season_id];
+    if(!ts) continue;
+    out.push({at, season:p.season, team:ts.display.replace(/^\d{4}\s+/,''),
+      fr:p.franchise, pos, last:lastName(p.name)});
+  }
+  return out;
+}
 const HERO_REDUCE=reduceMotion();
 
 let heroRun=0;          // bumped to cancel whatever loop is in flight
@@ -3101,7 +3177,8 @@ function heroChips(){
     const style=on?' style="background:linear-gradient(160deg,var(--'+on.pos.toLowerCase()+
       '),rgba(0,0,0,.45))"':'';
     el.innerHTML='<div class="disc"'+style+'><span class="dl">'+(on?on.pos:sp.label)+
-      '</span></div>'+(on?'<div class="who">'+esc(on.last)+'</div><div class="yr">'+on.season+
+      '</span></div>'+(on?'<div class="who">'+esc(on.last)+'</div><div class="yr">'+
+      '<span class="tc">'+esc(E.eraCode(on.fr,on.season))+'</span> '+on.season+
       '</div>':'');
     f.appendChild(el);
     if(on) on.fresh=false;
@@ -3134,8 +3211,9 @@ function heroReset(){
 /* No animation at all for anyone who has asked their device for less of it. They
    get the end of the sequence held still, which is the same information. */
 function heroStatic(){
-  const last=HERO_PICKS[HERO_PICKS.length-1];
-  heroFilled=HERO_PICKS.map(p=>({...p}));
+  const picks=heroPicks();
+  const last=picks[picks.length-1];
+  heroFilled=picks.map(p=>({...p}));
   heroChips();
   heroSettle($('h-reel-y'),['2004',String(last.season),'2019'],String(last.season));
   heroSettle($('h-reel-t'),['Tennessee Titans',last.team,'Indianapolis Colts'],last.team);
@@ -3150,7 +3228,9 @@ async function heroLoop(seq){
   while(live()){
     heroFilled=[]; heroChips(); heroReset();
     await heroNap(HERO.gap);
-    for(const pk of HERO_PICKS){
+    /* Drawn per loop, not per page load, so the animation is different the second time
+       round rather than only different between visits. */
+    for(const pk of heroPicks()){
       if(!live()) return;
       const spinYear=heroSpin($('h-reel-y'),faces.years,String(pk.season),HERO.year);
       await heroNap(HERO.stagger);
@@ -3386,8 +3466,12 @@ function profileSheet(msg,ok){
 
 const openSheet=()=>{
   $('sheet').classList.add('on');
-  const x=$('sh-x'); if(x) x.onclick=()=>$('sheet').classList.remove('on');
+  const x=$('sh-x'); if(x) x.onclick=closeSheet;
 };
+/* Closing was written inline in five places as
+   $('sheet').classList.remove('on'). Named here because a sheet with its own buttons, like
+   the daily's, has to close itself from a handler that is not the Close button. */
+function closeSheet(){ $('sheet').classList.remove('on'); }
 /* A button that has been pressed says so, because a sign-in round trip is long
    enough that a silent button reads as a dead one. */
 function busy(id,label){
