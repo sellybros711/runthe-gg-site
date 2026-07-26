@@ -1374,7 +1374,10 @@ Version 0.1 said there were none. There were about thirty. These are what is lef
    `panelThreat` was already ramped. What stays open is the general form: no
    term in this engine is checked for pathological VARIANCE at a boundary, only
    for its mean, and the one that was checked turned out to be broken.
-9. **Skill is currently a mild liability.** `--skill` shows that the better a
+9. **Skill is currently a mild liability, and one fix has been tried and
+   reverted.** See §24.3 for the measurement and for why giving `cover` a comp
+   term made it worse rather than better. The original note stands otherwise:
+   `--skill` shows that the better a
    player's hands, the more comps they win and the worse they finish, because
    power paints you. The weight is set at 0.45 to keep that from becoming a tax,
    but the real release valve is knowing when to throw, and nothing has measured
@@ -1830,3 +1833,74 @@ looks like a table measuring zero, is what caught it.
 changes hands from one actor to sixteen, every counter that was implicitly
 scoped to the one actor is now measuring something else, and it will keep
 reporting confidently. Audit the instruments before believing the result.
+
+---
+
+## 24. Playable and Winnable
+
+Two health checks that should be run whenever the social model is touched, and
+what the second one found.
+
+### 24.1 Is it winnable
+
+`node simulator.js --seat`. A competent policy finishes around 6.9 to 7.6 and
+wins 6.8 to 9.0 percent of the time against a 6.25 percent chance baseline,
+while the AI stand-in in the same chair on the same seeds wins 4.5 percent.
+The seat is worth sitting in and skill in the chair shows up.
+
+The risk knob is still **not** a lever: playing entirely safe is the best
+setting. That is open question 11 and it predates this section.
+
+### 24.2 What a player's conversation was worth
+
+**The largest unintended asymmetry in the build**, found while checking the
+above.
+
+An AI `converse` pays `D_TALK_MIN` to `D_TALK_MAX` times a charisma multiplier,
+about **12 to 25 trust in both directions**, roughly eight times a week, free,
+out of `socialTick`. A player is excluded from `socialTick` by design, because
+scenes are supposed to BE their social game. A scene paid **4 to 9** for a
+neutral answer.
+
+So a player's best ordinary outcome was an AI's average one, six times a week
+instead of eight, at two energy each, with failure modes. Measured:
+
+| | Player | AI |
+|---|---|---|
+| mean trust the house holds in you | 19.3 | 33.1 |
+| your single warmest relationship | 45.9 | 64.6 |
+| weeks spent in an alliance | 9.0% | 28.5% |
+
+Alliance formation needs 50 mutual trust. **The player's warmest relationship
+averaged 45.9**, so they never quite cleared the bar: in 85 percent of runs the
+player never joined an alliance at all. That locked them out of ally shielding,
+alliance vote pressure, and most of `cover`, which is the single most protective
+quantity in the game.
+
+`GAIN_MULT` in scenes.js closes it. A multiplier rather than four rewritten
+pairs, because the SHAPE of the table was never wrong and one number can be
+swept. At 2.6 the player sits at 20.0 percent alliance weeks against the AI's
+27.7, with a warmest relationship of 53.6.
+
+**The risky column's downside is deliberately NOT scaled.** Scaling it too made
+the safe answer strictly better and moved the seat report's best setting to
+risk 0, which is the opposite of what open question 11 wants.
+
+### 24.3 A fix that was tried and reverted
+
+Skill in the minigames was a measurable liability: at `HUMAN_SKILL_WEIGHT` 0.45,
+a player at skill 80 reached the last five 41.2 percent of the time against 50.2
+for one at skill 20, on 1.77 comp wins. Their nomination rates were **identical**
+at 15 percent of weeks; the whole difference was losing the vote once up, 49.7
+against 36.5. Winning things did not get you named, it got you evicted.
+
+Open question 9 says the fix is to make comp wins pay more, so `cover` was given
+a comp term gated on having allies, on the logic that an alliance protects the
+person who keeps winning for it. It **made the slope worse**, -9.0 to -9.9,
+because it pays every AI comp winner too and the house wins more comps than the
+player does. It then broke the oldest pillar in the harness: a beast the proxy
+classes as having no cover was getting cover anyway, surviving at 31.9 percent
+against a 31.4 field.
+
+Reverted. The real asymmetry was §24.2, and it was not in the comp model at all.
+Skill remains flat to mildly negative and open question 9 stays open.

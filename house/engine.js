@@ -993,7 +993,22 @@ function cover(rel, cast, i, j, alliances) {
       allied += strength * (a.members.indexOf(i) !== -1 ? 0.5 : 0.22);
     }
   }
-  return clamp01(reach * K.COVER_SOCIAL + Math.min(0.6, allied) * K.COVER_ALLY) * K.COVER_MAX;
+  /*
+   * NO COMP TERM HERE, AND ONE WAS TRIED. GDD §24.
+   *
+   * The idea was sound on paper: an alliance protects the person who keeps
+   * winning things for it. Measured, it made the skill slope WORSE, taking the
+   * last-five gap between a low and high skill player from -9.0 to -9.9 points,
+   * because it pays every AI comp winner as well and the player wins fewer
+   * comps than the house does. It then broke the oldest pillar in the harness
+   * outright: a comp beast the proxy classes as having no cover was getting
+   * cover anyway and survived at 31.9 percent against a field of 31.4.
+   *
+   * The real asymmetry was somewhere else entirely, in what a player's
+   * conversation was worth against an AI's. See GAIN_MULT in scenes.js.
+   */
+  return clamp01(reach * K.COVER_SOCIAL + Math.min(0.6, allied) * K.COVER_ALLY)
+    * K.COVER_MAX;
 }
 
 // ─── alliances ───────────────────────────────────────────────────────────────

@@ -1513,6 +1513,28 @@ const GAIN = {
 };
 
 /*
+ * WHAT A PLAYER'S CONVERSATION IS WORTH AGAINST AN AI'S. GDD §24.
+ *
+ * MEASURED, and it was the largest unintended asymmetry in the build. An AI
+ * `converse` pays D_TALK_MIN to D_TALK_MAX times a charisma multiplier, about
+ * 12 to 25 trust, in both directions, roughly eight times a week, for free,
+ * out of socialTick. A player is excluded from socialTick by design because
+ * scenes ARE their social game, and a scene paid 4 to 9 for a neutral answer.
+ *
+ * So the player's BEST ordinary outcome was the AI's AVERAGE one, six times a
+ * week instead of eight, at two energy each, with failure modes. The house held
+ * 33.1 mean trust in an AI and 19.3 in the player; the player's single warmest
+ * relationship averaged 45.9 against an alliance threshold of 50, which is why
+ * the player was in an alliance 9 percent of weeks against the AI's 28.5 and
+ * never joined one at all in 85 percent of runs.
+ *
+ * A multiplier rather than four rewritten pairs, because it is one number the
+ * harness can sweep and because the SHAPE of the table, safe under neutral
+ * under risky, was never the problem.
+ */
+const GAIN_MULT = 2.6;
+
+/*
  * The risky roll, extracted from inline literals for the same reason the Panel
  * noise was: a number that cannot be swept cannot be tuned, and these turned out
  * to decide whether the whole C column is worth touching.
@@ -1591,17 +1613,23 @@ function resolve(state, moment, key, rng) {
 
   let gain;
   if (opt.kind === 'safe') {
-    gain = rng.range(GAIN.safe[0], GAIN.safe[1]);
+    gain = rng.range(GAIN.safe[0] * GAIN_MULT, GAIN.safe[1] * GAIN_MULT);
   } else if (opt.kind === 'neutral') {
     /* Neutral is not free. It fails occasionally and when it does it simply
        does nothing, which is a different feeling from backfiring. */
-    if (rng.chance(0.86)) gain = rng.range(GAIN.neutral[0], GAIN.neutral[1]);
+    if (rng.chance(0.86)) gain = rng.range(GAIN.neutral[0] * GAIN_MULT, GAIN.neutral[1] * GAIN_MULT);
     else { gain = rng.range(-2, 1); out.landed = false; }
   } else {
     const p = riskyChance(state, me, them, opt.fx);
     out.chance = p;
-    if (rng.chance(p)) gain = rng.range(GAIN.risky_win[0], GAIN.risky_win[1]);
+    if (rng.chance(p)) gain = rng.range(GAIN.risky_win[0] * GAIN_MULT, GAIN.risky_win[1] * GAIN_MULT);
     else {
+      /* NOT scaled. GAIN_MULT exists to bring a player's conversation up to
+         what an AI's is worth, and the downside of a risky answer was already
+         calibrated as a real cost. Multiplying it too made the safe column
+         strictly better than the risky one: the seat report's best setting
+         moved to risk 0, which is the opposite of what §18's open question 11
+         is asking for. */
       gain = rng.range(GAIN.risky_lose[0], GAIN.risky_lose[1]);
       out.landed = false;
       state.rel.suspicion[them][me] = Math.min(100, state.rel.suspicion[them][me] + RISK.FAIL_SUSPICION);
@@ -1812,7 +1840,7 @@ function gather(state, ids, rng) {
 }
 
 const api = {
-  ENERGY, SCENES, BEATS, RISK, MOVE_IN, MOVE_IN_SHOWN, moveInFor, weeklyEnergy, gatherChance, gather,
+  ENERGY, SCENES, BEATS, RISK, GAIN, GAIN_MULT, MOVE_IN, MOVE_IN_SHOWN, moveInFor, weeklyEnergy, gatherChance, gather,
   poolFor, pickScene, pickBeat, beatAllowed, compose, riskyChance, riskyRead, resolve, GAIN,
   LIVE, liveFor, markSeen, seenCount,
 };
