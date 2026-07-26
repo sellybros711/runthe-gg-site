@@ -16,6 +16,20 @@
 
 'use strict';
 
+/* WRAPPED IN AN IIFE, and it is not optional.
+ *
+ * These are plain <script> tags, not modules, so every file shares one global
+ * scope in the browser. Unwrapped, `const api` in seven files, `const E` in
+ * comps.js and run.js, `const T` in generate.js and run.js and `const BY_ID` in
+ * tree.js and comps.js all collide, and a colliding top-level const does not
+ * warn: the whole file fails to parse and its global is simply never defined.
+ * Measured symptom was six of seven modules missing and the page rendering
+ * nothing. football/engine.js hit the same wall and name-spaced its way out;
+ * a closure is the version that does not need policing as files grow.
+ */
+(function () {
+
+
 const RNG = (typeof require !== 'undefined') ? require('./rng.js') : window.RH_RNG;
 const T = (typeof require !== 'undefined') ? require('./tree.js') : window.RH_TREE;
 const G = (typeof require !== 'undefined') ? require('./generate.js') : window.RH_GEN;
@@ -965,8 +979,41 @@ function playOut(s, maxSteps) {
   return s;
 }
 
+// ─── save and restore ────────────────────────────────────────────────────────
+
+/*
+ * GDD §14: the whole run serialises to one JSON blob and autosaves continuously,
+ * so a session can be abandoned at any phase boundary and picked back up.
+ *
+ * The only non-serialisable thing in the state is the four RNG streams, which
+ * are functions. They are stored as a seed plus a call count per stream and
+ * rebuilt by replaying, which is O(n) in a small n and keeps the save format
+ * independent of mulberry32's internals. See rng.js.
+ */
+function serialise(s) {
+  const out = {};
+  for (const k of Object.keys(s)) {
+    if (k === 'rng') continue;
+    out[k] = s[k];
+  }
+  out.rngCalls = RNG.streamCalls(s.rng);
+  out.saveVersion = 1;
+  return out;
+}
+
+function restore(blob) {
+  const s = Object.assign({}, blob);
+  s.rng = RNG.createStreams(s.seed, s.rngCalls);
+  delete s.rngCalls;
+  /* Alliance and player objects come back as plain data, which is all they ever
+     were. Nothing in the engine hangs methods off them, deliberately, so that
+     this function can stay four lines long. */
+  return s;
+}
+
 const api = {
   PHASES, TWIST_WINDOWS, BOUNCE_CHANCE, FLAVOUR, BOUNCE_POOL,
+  serialise, restore,
   createRun, defaultAccount, rollTwists,
   activeIds, activeCount, eligibleVoters, captainCompField, vetoField, name, nextPlace, finalisePlaces,
   needsInput, step, playOut, performAction, declareIntents,
@@ -974,3 +1021,5 @@ const api = {
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 if (typeof window !== 'undefined') window.RH_RUN = api;
+
+})();

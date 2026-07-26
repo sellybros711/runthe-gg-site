@@ -190,10 +190,11 @@ lifetime token cap, and a free respec available at any time outside a run.
 | **Floor Game** | charisma, loyalty, perception | Be liked enough that nobody moves |
 | **Long Game** | deception, ambition, volatility control | Control what the house believes |
 
-Sizing, subject to Stage 4 tuning:
+Sizing, as built and reported by `simulator.js --tree`:
 
-- Level cap 60, paying roughly 90 tokens over an account's life
-- Full tree costs roughly 350 tokens
+- 63 nodes, 372 tokens to buy the whole thing
+- Level cap 60, paying 84 tokens over an account's life
+- A maxed account therefore holds 22.6 percent of the tree
 
 **You can never buy the tree.** A maxed account holds about a quarter of it, so
 veterans differ from each other and not merely from newcomers. Respec is free and
@@ -694,21 +695,21 @@ though the truth is never shown during the run.
 
 ## 15. Build Roadmap
 
-**Stage 1, deterministic spine.** RNG streams, name pools, the skill tree data and
+**Stage 1, deterministic spine.** DONE. RNG streams, name pools, the skill tree data and
 its archetype resolver, account and character creation, generation, JSON round
 trip, and the string lint. Exit: one seed produces a byte identical house twice,
 in Node and in browser.
 
-**Stage 2, relationship engine, headless.** Baseline affinity, trust, decay,
+**Stage 2, relationship engine, headless.** DONE. Baseline affinity, trust, decay,
 belief, the detection roll, alliance formation and growth and betrayal, threat,
 vote resolution, blame assignment. Exit: alliances form and break with no human
 present, and trust does not pin to the rails by week four.
 
-**Stage 3, week loop, headless.** All fourteen weeks including Final 5, 4, and 3,
+**Stage 3, week loop, headless.** DONE. All fourteen weeks including Final 5, 4, and 3,
 plus an AI stand in for the human seat. `playtest.js` prints a full run as
 readable text. This is the design instrument. Most tuning happens by reading these.
 
-**Stage 4, calibration harness.** `simulator.js`, 1,000 headless runs, sweep mode
+**Stage 4, calibration harness.** DONE, all proxies green. `simulator.js`, 1,000 headless runs, sweep mode
 for every weight. **Nothing reaches the UI until this passes.**
 
 Targets:
@@ -726,22 +727,22 @@ Targets:
 | Thrown comp backfire | Non ally Captain targets thrower or allies about 70 percent |
 | Level parity | Level 60 wins no more than about 1.5 times as often as level 1 |
 
-**Stage 5, belief layer surfaced.** Built before the UI, not inside it. Retrofitting
+**Stage 5, belief layer surfaced.** DONE. Built before the UI, not inside it. Retrofitting
 fog onto screens built on true values is a rewrite.
 
-**Stage 6, week loop UI.** Text driven phases, action budget, anonymous sequential
+**Stage 6, week loop UI.** DONE. Text driven phases, action budget, anonymous sequential
 reveal, house as physical space.
 
-**Stage 7, comps.** The framework, six minigames, the normalization sweep, throwing.
+**Stage 7, comps.** DONE, six minigames. The framework, six minigames, the normalization sweep, throwing.
 
-**Stage 8, character and progression.** Creator, Move In Night, tree UI, XP, levels.
+**Stage 8, character and progression.** DONE. Creator, Move In Night, tree UI, XP, levels.
 
-**Stage 9, endgame.** Panel, bitterness, questioning, bitter jury.
+**Stage 9, endgame.** DONE. Panel, bitterness, questioning, bitter jury.
 
-**Stage 10, twists.** Last, because most of them modify a loop that has to be
+**Stage 10, twists.** Double Eviction and Bounce Back in. Flavour twists pending. Last, because most of them modify a loop that has to be
 stable first.
 
-**Stage 11, recap, share, board, store.**
+**Stage 11, recap, share, board, store.** Truth-reveal recap in. Board and store pending.
 
 ---
 

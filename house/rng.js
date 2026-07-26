@@ -20,6 +20,20 @@
 
 'use strict';
 
+/* WRAPPED IN AN IIFE, and it is not optional.
+ *
+ * These are plain <script> tags, not modules, so every file shares one global
+ * scope in the browser. Unwrapped, `const api` in seven files, `const E` in
+ * comps.js and run.js, `const T` in generate.js and run.js and `const BY_ID` in
+ * tree.js and comps.js all collide, and a colliding top-level const does not
+ * warn: the whole file fails to parse and its global is simply never defined.
+ * Measured symptom was six of seven modules missing and the page rendering
+ * nothing. football/engine.js hit the same wall and name-spaced its way out;
+ * a closure is the version that does not need policing as files grow.
+ */
+(function () {
+
+
 /* xmur3. Turns any string into a well-mixed 32-bit seed. Without this, seeds
    that differ by one character produce first draws that differ by almost
    nothing, which is very visible when the first draw picks a name. */
@@ -136,3 +150,5 @@ const api = { hashSeed, mulberry32, createStreams, streamCalls, randomSeed, STRE
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 if (typeof window !== 'undefined') window.RH_RNG = api;
+
+})();
