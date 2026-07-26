@@ -117,41 +117,181 @@ function weeklyEnergy(state, id) {
  * read off THEIR attributes, so the same answer wins the room over with one
  * half of the house and costs you the other half. There is no correct opening.
  */
+/*
+ * MOVE IN NIGHT.
+ *
+ * Playtest: "the beginning asks the same 3 questions every time and idk how
+ * much the answers actually affect anything."
+ *
+ * Both true, and the second explains the first. There were three beats, always
+ * the same three in the same order, and every option applied ONE signed number
+ * to all fifteen people scaled by a positive multiplier. So the whole room
+ * moved together, your position relative to anybody else barely changed, and
+ * three questions produced roughly one outcome.
+ *
+ * The fix is not more questions, it is answers that SPLIT THE ROOM. `react`
+ * returns a signed response per person, so taking the room wins the confident
+ * half and puts off the wary half, and the house you wake up in on day two is
+ * different depending on what you did. `focus` goes further: some answers spend
+ * the whole night on one person and give you a real bond and fourteen
+ * strangers, which is a legitimate and very different way to start.
+ *
+ * Twelve beats, four of them per run, drawn off the `gen` stream so the opening
+ * is part of the seed rather than part of the session.
+ */
+const MOVE_IN_SHOWN = 4;
+
+/* Handy shorthands. p is the person reacting; every function returns a signed
+   multiplier, roughly -1.2 to +1.5, applied to the beat's spread. */
+const conf = (p) => (p.social.charisma - 50) / 50;
+const wary = (p) => (p.social.paranoia - 50) / 50;
+const loyal = (p) => (p.social.loyalty - 50) / 50;
+const sharp = (p) => (p.social.perception - 50) / 50;
+const sly = (p) => (p.social.deception - 50) / 50;
+
 const MOVE_IN = [
-  {
+  { id: 'first_word',
     line: 'The door closes behind sixteen people who have never met. Somebody has to speak first.',
     options: [
-      { key: 'a', kind: 'safe', text: 'Let somebody else.',
-        base: [1, 5], affinity: (p) => 1 + (p.social.paranoia - 50) / 200 },
-      { key: 'b', kind: 'neutral', text: 'Say your name and where you are from and nothing else.',
-        base: [3, 9], affinity: (p) => 1 + (p.social.loyalty - 50) / 160 },
-      { key: 'c', kind: 'risky', text: 'Take the room.',
-        base: [-4, 16], affinity: (p) => 1 + (p.social.charisma - 50) / 110 },
-    ],
-  },
-  {
+      { t: 'Let somebody else.', spread: [2, 6], react: (p) => 0.4 + wary(p) * 0.8 - conf(p) * 0.4 },
+      { t: 'Say your name and where you are from, and nothing else.',
+        spread: [3, 8], react: (p) => 0.7 + loyal(p) * 0.4 },
+      { t: 'Take the room.', spread: [4, 14], react: (p) => conf(p) * 1.3 - wary(p) * 0.9 + 0.2 },
+      { t: 'Speak last, after everybody else, and make it count.',
+        spread: [3, 11], react: (p) => sharp(p) * 1.0 - conf(p) * 0.3 + 0.3 },
+    ] },
+
+  { id: 'first_night',
     line: 'First night. Nobody is sleeping and everybody is pretending to.',
     options: [
-      { key: 'a', kind: 'safe', text: 'Go to bed anyway.',
-        base: [1, 4], affinity: () => 1 },
-      { key: 'b', kind: 'neutral', text: 'Sit up in the kitchen with whoever is still awake.',
-        base: [4, 11], affinity: (p) => 1 + (p.social.charisma - 50) / 200 },
-      { key: 'c', kind: 'risky', text: 'Find the one person nobody has spoken to and stay with them.',
-        base: [-2, 18], affinity: (p) => 1 + (50 - p.social.charisma) / 90 },
-    ],
-  },
-  {
+      { t: 'Go to bed anyway.', spread: [1, 4], react: (p) => 0.3 + wary(p) * 0.3 },
+      { t: 'Sit up in the kitchen with whoever is still awake.',
+        spread: [3, 10], react: (p) => 0.6 + conf(p) * 0.7 },
+      { t: 'Find the one person nobody has spoken to and stay with them.',
+        spread: [8, 20], focus: 'quietest', react: () => -0.05 },
+      { t: 'Walk the house on your own and learn where everything is.',
+        spread: [2, 7], react: (p) => sharp(p) * 0.9 - 0.1 },
+    ] },
+
+  { id: 'the_problem',
     line: 'First morning. Someone asks, lightly, who you think is going to be a problem in here.',
     options: [
-      { key: 'a', kind: 'safe', text: 'Say it is far too early to know.',
-        base: [2, 6], affinity: (p) => 1 + (p.social.perception - 50) / 220 },
-      { key: 'b', kind: 'neutral', text: 'Say you are more interested in who is going to be fun.',
-        base: [3, 10], affinity: (p) => 1 + (p.social.charisma - 50) / 170 },
-      { key: 'c', kind: 'risky', text: 'Give them a name.',
-        base: [-8, 20], affinity: (p) => 1 + (p.social.deception - 50) / 100 },
-    ],
-  },
+      { t: 'Say it is far too early to know.', spread: [2, 6], react: (p) => 0.5 + sharp(p) * 0.4 },
+      { t: 'Say you are more interested in who is going to be fun.',
+        spread: [3, 9], react: (p) => 0.6 + conf(p) * 0.6 - sharp(p) * 0.3 },
+      { t: 'Give them a name.', spread: [5, 16], react: (p) => sly(p) * 1.2 - loyal(p) * 1.0 },
+      { t: 'Turn it round and ask who they would name.',
+        spread: [3, 10], react: (p) => sly(p) * 0.7 + sharp(p) * 0.5 - wary(p) * 0.4 },
+    ] },
+
+  { id: 'the_beds',
+    line: 'There are not enough good beds and everybody has worked that out at the same time.',
+    options: [
+      { t: 'Take one and say nothing.', spread: [2, 8], react: (p) => conf(p) * 0.6 - loyal(p) * 0.5 },
+      { t: 'Give yours up before anybody asks.', spread: [4, 12], react: (p) => 0.7 + loyal(p) * 0.8 - sly(p) * 0.5 },
+      { t: 'Suggest drawing for them.', spread: [3, 9], react: (p) => 0.6 + sharp(p) * 0.3 },
+      { t: 'Let the argument run and see who wants it most.',
+        spread: [2, 11], react: (p) => sharp(p) * 0.9 - conf(p) * 0.6 - 0.1 },
+    ] },
+
+  { id: 'the_toast',
+    line: 'Somebody finds a bottle and decides there should be a toast.',
+    options: [
+      { t: 'Raise your glass and let them talk.', spread: [2, 6], react: (p) => 0.5 },
+      { t: 'Make the toast yourself.', spread: [4, 13], react: (p) => conf(p) * 1.1 - wary(p) * 0.6 + 0.2 },
+      { t: 'Toast the one person who looks like they would rather be anywhere else.',
+        spread: [7, 18], focus: 'quietest', react: (p) => 0.2 - sly(p) * 0.3 },
+      { t: 'Skip it and start washing up.', spread: [1, 6], react: (p) => loyal(p) * 0.8 - conf(p) * 0.4 + 0.2 },
+    ] },
+
+  { id: 'the_cameras',
+    line: 'Somebody points out how many cameras there are. The room goes quiet for a second.',
+    options: [
+      { t: 'Laugh it off.', spread: [2, 7], react: (p) => 0.5 + conf(p) * 0.4 },
+      { t: 'Say you have stopped noticing them, which is a lie.',
+        spread: [3, 10], react: (p) => sly(p) * 0.9 + 0.2 },
+      { t: 'Say out loud that everything either of you says is being kept.',
+        spread: [3, 12], react: (p) => sharp(p) * 1.1 - conf(p) * 0.5 },
+      { t: 'Wave at one.', spread: [2, 9], react: (p) => conf(p) * 0.8 - sharp(p) * 0.4 + 0.2 },
+    ] },
+
+  { id: 'the_pairs',
+    line: 'Two people have found each other already and everybody else has noticed.',
+    options: [
+      { t: 'Leave them to it.', spread: [2, 6], react: (p) => 0.4 + loyal(p) * 0.3 },
+      { t: 'Sit down with them and make it three.',
+        spread: [4, 13], react: (p) => conf(p) * 0.9 - wary(p) * 0.5 + 0.2 },
+      { t: 'Say something about it where the rest of the room can hear.',
+        spread: [4, 14], react: (p) => sly(p) * 0.8 - loyal(p) * 0.9 + sharp(p) * 0.4 },
+      { t: 'Go and find whoever is on their own instead.',
+        spread: [7, 17], focus: 'quietest', react: () => 0 },
+    ] },
+
+  { id: 'the_job',
+    line: 'The questions get round to what everybody does on the outside.',
+    options: [
+      { t: 'Tell the truth.', spread: [3, 9], react: (p) => 0.6 + loyal(p) * 0.5 - sharp(p) * 0.2 },
+      { t: 'Tell the truth and make it sound duller than it is.',
+        spread: [3, 11], react: (p) => sly(p) * 0.5 + 0.5 - sharp(p) * 0.4 },
+      { t: 'Lie, and pick something nobody will ask about twice.',
+        spread: [4, 15], react: (p) => sly(p) * 1.2 - sharp(p) * 1.1 },
+      { t: 'Ask everybody else first and answer last.',
+        spread: [3, 10], react: (p) => sharp(p) * 0.8 + 0.2 },
+    ] },
+
+  { id: 'the_loud_one',
+    line: 'One of them has been talking since the door shut and shows no sign of stopping.',
+    options: [
+      { t: 'Let them go.', spread: [2, 7], react: (p) => 0.4 + wary(p) * 0.3 },
+      { t: 'Match them.', spread: [3, 13], react: (p) => conf(p) * 1.2 - 0.2 },
+      { t: 'Catch somebody else\'s eye about it.',
+        spread: [5, 14], react: (p) => sly(p) * 0.7 + sharp(p) * 0.6 - loyal(p) * 0.4 },
+      { t: 'Ask them a question that makes them stop and think.',
+        spread: [4, 12], react: (p) => sharp(p) * 0.9 + 0.3 },
+    ] },
+
+  { id: 'the_rules',
+    line: 'The rules get read out. Somebody asks whether anybody actually understood the part about the Veto.',
+    options: [
+      { t: 'Say you did, and hope.', spread: [2, 8], react: (p) => conf(p) * 0.5 - sharp(p) * 0.6 + 0.2 },
+      { t: 'Admit you did not.', spread: [3, 10], react: (p) => 0.7 + loyal(p) * 0.5 - sly(p) * 0.3 },
+      { t: 'Explain it to the room.', spread: [4, 14], react: (p) => sharp(p) * 0.6 + conf(p) * 0.6 - wary(p) * 0.7 },
+      { t: 'Say nothing and work out who else is pretending.',
+        spread: [2, 9], react: (p) => sharp(p) * 1.0 - 0.2 },
+    ] },
+
+  { id: 'the_photo',
+    line: 'Everybody is asked to put one thing from home on the shelf in the hallway.',
+    options: [
+      { t: 'Put up something ordinary.', spread: [2, 7], react: (p) => 0.5 },
+      { t: 'Put up the thing you would actually miss.',
+        spread: [4, 13], react: (p) => 0.6 + loyal(p) * 0.9 - sly(p) * 0.4 },
+      { t: 'Put up nothing.', spread: [2, 11], react: (p) => wary(p) * 0.9 - conf(p) * 0.5 - 0.1 },
+      { t: 'Ask about somebody else\'s before you put up your own.',
+        spread: [5, 15], focus: 'random', react: (p) => 0.3 },
+    ] },
+
+  { id: 'the_first_read',
+    line: 'Late, and somebody asks you straight out who you have got a good feeling about.',
+    options: [
+      { t: 'Say you have not decided.', spread: [2, 7], react: (p) => 0.4 + wary(p) * 0.4 },
+      { t: 'Say them.', spread: [6, 16], focus: 'asker', react: (p) => 0.1 - sharp(p) * 0.3 },
+      { t: 'Name two other people and watch their face.',
+        spread: [4, 13], react: (p) => sly(p) * 0.9 + sharp(p) * 0.4 - loyal(p) * 0.5 },
+      { t: 'Say the honest answer, whoever it is.',
+        spread: [4, 12], react: (p) => 0.6 + loyal(p) * 0.7 - sly(p) * 0.5 },
+    ] },
 ];
+
+/**
+ * The four beats this run opens with, off the `gen` stream so they belong to the
+ * seed. Shared seeds have to open the same way or the seed means nothing.
+ */
+function moveInFor(rng) {
+  const pool = MOVE_IN.slice();
+  rng.shuffle(pool);
+  return pool.slice(0, MOVE_IN_SHOWN);
+}
 
 // ─── scenes: where you are, what your hands are doing ────────────────────────
 
@@ -1346,7 +1486,7 @@ function gather(state, ids, rng) {
 }
 
 const api = {
-  ENERGY, SCENES, BEATS, RISK, MOVE_IN, weeklyEnergy, gatherChance, gather,
+  ENERGY, SCENES, BEATS, RISK, MOVE_IN, MOVE_IN_SHOWN, moveInFor, weeklyEnergy, gatherChance, gather,
   poolFor, pickScene, pickBeat, beatAllowed, compose, riskyChance, riskyRead, resolve, GAIN,
 };
 

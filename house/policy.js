@@ -198,8 +198,14 @@ function make(opts) {
     const me = s.human;
 
     switch (need.kind) {
-      case 'move_in':
-        return { key: cfg.risk > 0.62 ? 'c' : (cfg.risk < 0.3 ? 'a' : 'b') };
+      case 'move_in': {
+        /* Four options now, and no letter keys: the first is always the
+           quietest answer and the last two are the ones that cost something,
+           so risk maps onto the index. */
+        const n = need.beat.options.length;
+        const i = Math.min(n - 1, Math.floor(cfg.risk * n));
+        return { opt: i };
+      }
 
       case 'comp':
         return compChoice(s, need);

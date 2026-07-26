@@ -224,12 +224,34 @@ shows a wider gap, threat coupling gets stronger until it closes.
 
 ### Move In Night
 
-Before week one, a short dialogue sequence where you meet the house and choose how
-to answer. Your choices seed your starting trust with each Player. This exists so
-that a new account is not socially poorer than a veteran account: the on ramp to
-being liked is a conversation, not a stat.
+Four beats drawn from a bank of **twelve**, off the `gen` stream so the opening
+belongs to the seed and a shared seed opens the same way. There used to be three
+beats, always the same three in the same order.
 
----
+Each answer **splits the room**. The first version applied one signed number to
+all fifteen people scaled by a positive multiplier, so every answer moved the
+whole house the same direction and your position relative to anybody else barely
+changed. Playtest, fairly: "idk how much the answers actually affect anything."
+`react` is now signed per person, so taking the room wins the confident half and
+puts off the wary half. `focus` goes further and spends the whole night on one
+person: a real bond and fourteen strangers, which is a completely different
+house to wake up in.
+
+Measured over 120 runs, holding the answer index constant:
+
+| Answer | House mean | Best | Worst |
+|---|---|---|---|
+| always the first | 10.4 | 27.1 | -1.0 |
+| always the second | 14.2 | 33.6 | -0.1 |
+| always the third | 7.7 | 25.5 | -7.8 |
+| always the fourth | 10.7 | 28.7 | -1.5 |
+
+The bold column is worth less on average and buys you real enemies, which is the
+trade the opening is supposed to offer.
+
+The night closes on where you actually stand: your two warmest and your two
+coldest, by name. You do not start level with fifteen strangers.
+
 
 ## 5. Player Generation
 

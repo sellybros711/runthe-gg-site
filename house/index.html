@@ -726,18 +726,18 @@ body.carded .dock,body.carded .bar{display:none}
      copy. Worse than a stale page is a MIXED one, where a fresh index.html
      drives a cached scenes.js, so the query has to be on every module and has
      to move on every deploy. Bump BUILD below and they all miss at once. -->
-<script src="rng.js?v=9"></script>
-<script src="tree.js?v=9"></script>
-<script src="generate.js?v=9"></script>
-<script src="engine.js?v=9"></script>
-<script src="comps.js?v=9"></script>
-<script src="powers.js?v=9"></script>
-<script src="scenes.js?v=9"></script>
-<script src="run.js?v=9"></script>
-<script src="recap.js?v=9"></script>
-<script src="avatar.js?v=9"></script>
-<script src="ui.js?v=9"></script>
-<script src="strings.js?v=9"></script>
+<script src="rng.js?v=10"></script>
+<script src="tree.js?v=10"></script>
+<script src="generate.js?v=10"></script>
+<script src="engine.js?v=10"></script>
+<script src="comps.js?v=10"></script>
+<script src="powers.js?v=10"></script>
+<script src="scenes.js?v=10"></script>
+<script src="run.js?v=10"></script>
+<script src="recap.js?v=10"></script>
+<script src="avatar.js?v=10"></script>
+<script src="ui.js?v=10"></script>
+<script src="strings.js?v=10"></script>
 <script>
 (function(){
 'use strict';
@@ -1590,7 +1590,61 @@ function idle(){
 function narrateBefore(ph){
   if(ph===R.PHASES.RESET&&s.week>0) sysline('Week '+(s.week+1));
 }
+
+/*
+ * What Move In Night actually did.
+ *
+ * Playtest: "idk how much the answers actually affect anything". They always
+ * did a lot, and none of it was ever shown. Now every answer reports which way
+ * the room went, and the night closes on where you are standing with the two
+ * people it worked on and the two it did not, which is the whole point of the
+ * opening: you do not start level with fifteen strangers, you start somewhere.
+ */
+function narrateMoveIn(){
+  var ev=s.events.filter(function(e){ return e.kind==='move_in'&&!e.said; });
+  for(var i=0;i<ev.length;i++){
+    var e=ev[i]; e.said=true;
+    say('You went with: '+e.text.replace(/\.$/,'')+'.','quiet');
+    var rest=Math.max(0,(R.activeCount(s)-1)-e.warmed-e.cooled);
+    if(e.focus!=null){
+      say('You spend the night on '+s.cast[e.focus].first
+        +'. Everybody else got an evening of you being somewhere else.','ev-good','alliance');
+    } else if(e.warmed&&e.cooled){
+      /* The shape of the split is the interesting part, so all three numbers
+         go in. Reporting only the side that moved most made one person cooling
+         read as the room turning on you. */
+      say(e.warmed+(e.warmed>1?' of them warm':' of them warms')+' to that and '
+        +e.cooled+(e.cooled>1?' do not':' does not')
+        +(rest?', with '+rest+' either way.':'.'),'ev-vote');
+    } else if(e.warmed){
+      say(e.warmed+(e.warmed>1?' of them take to it':' of them takes to it')
+        +(rest?', and the rest barely register it.':'.'),'ev-good');
+    } else if(e.cooled){
+      say(e.cooled+(e.cooled>1?' of them cool on you':' of them cools on you')
+        +(rest?', and nobody else moves.':'.'),'ev-bad');
+    } else {
+      say('Nobody in that room changes their mind about you either way.','quiet');
+    }
+  }
+  if(s.phase!==R.PHASES.MOVE_IN&&!s.moveInSummed&&s.moveInStep){
+    s.moveInSummed=true;
+    var me=s.human;
+    var rank=s.cast.filter(function(p){ return p.id!==me; })
+      .map(function(p){ return {id:p.id,v:s.rel.trust[p.id][me]}; })
+      .sort(function(a,b){ return b.v-a.v; });
+    var top=rank.slice(0,2), bot=rank.slice(-2);
+    moment({kicker:'Move In Night',icon:'eye',tone:'good',
+      title:'You do not start level with them',
+      sub:'Four nights in a house you have never been in, and everybody already has an opinion.',
+      rows:[['Closest to you',top.map(function(x){ return s.cast[x.id].first; }).join(' and ')],
+            ['Furthest from you',bot.map(function(x){ return s.cast[x.id].first; }).join(' and ')]],
+      faces:top.map(function(x){ return {id:x.id,tag:E.band(x.v).label,col:U.bandColor(E.band(x.v).label)}; })
+        .concat(bot.slice(0,1).map(function(x){
+          return {id:x.id,tag:E.band(x.v).label,col:U.bandColor(E.band(x.v).label)}; }))});
+  }
+}
 function narrateAfter(ph,wkBefore){
+  if(ph===R.PHASES.MOVE_IN) narrateMoveIn();
   if(ph===R.PHASES.RESET){
     say(tsay('reset'),'quiet');
     var aw=s.events.filter(function(e){ return e.kind==='power_awarded'&&e.week===s.week; });
@@ -1769,9 +1823,8 @@ function showMoveIn(need){
     kicker:'Move In Night', role:(need.step+1)+' of '+need.of, icon:'eye',
     title:'Fifteen strangers and a lot of cameras',
     body:[{t:need.beat.line,c:'q'}],
-    choices:need.beat.options.map(function(o){
-      return {label:o.text,go:function(){
-        say(o.text,'quiet'); answer({key:o.key}); }};
+    choices:need.beat.options.map(function(o,i){
+      return {label:o.t,go:function(){ answer({opt:i}); }};
     })
   });
 }

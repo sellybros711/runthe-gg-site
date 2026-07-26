@@ -121,6 +121,7 @@ function createRun(opts) {
     actionsLeft: 0,
     schemeIndex: 0,
     moveInStep: 0,
+    moveInBeats: null,
     twists: rollTwists(rng.gen),
     powers: [],
     powerSchedule: [],
@@ -256,8 +257,9 @@ function needsInput(s) {
   switch (s.phase) {
     case PHASES.MOVE_IN: {
       const step = s.moveInStep || 0;
-      const beat = SC.MOVE_IN[step];
-      return beat ? { kind: 'move_in', beat, step, of: SC.MOVE_IN.length } : null;
+      const beats = moveInBeats(s);
+      const beat = beats[step];
+      return beat ? { kind: 'move_in', beat, step, of: beats.length } : null;
     }
     case PHASES.CAPTAIN_COMP:
       return captainCompField(s).indexOf(me) !== -1 ? { kind: 'comp', which: 'captain', comp: s.pendingComp } : null;
@@ -363,34 +365,75 @@ function doSetup(s) {
  * This is the on-ramp that stops a level 1 account being socially poorer than a
  * level 60 one, so it has to be a real decision rather than a formality.
  */
+/**
+ * Move In Night, four beats of it.
+ *
+ * The old version applied one signed number to all fifteen people scaled by a
+ * positive multiplier, so every answer moved the whole room the same way and
+ * your position relative to anybody else barely changed. Playtest, fairly: "idk
+ * how much the answers actually affect anything."
+ *
+ * Now `react` is signed per person, so an answer WINS some of the room and
+ * loses the rest, and `focus` lets an answer spend the whole night on one
+ * person: a real bond and fourteen strangers, which is a completely different
+ * house to wake up in. The split is recorded on the event so the interface can
+ * say which way it went.
+ */
+function moveInBeats(s) {
+  if (!s.moveInBeats) s.moveInBeats = SC.moveInFor(s.rng.gen).map((b) => b.id);
+  return s.moveInBeats.map((id) => SC.MOVE_IN.filter((b) => b.id === id)[0]).filter(Boolean);
+}
+
 function doMoveIn(s, input) {
   const rng = s.rng.ai;
   const me = s.human;
   s.moveInStep = s.moveInStep || 0;
 
-  const beat = SC.MOVE_IN[s.moveInStep];
+  const beats = moveInBeats(s);
+  const beat = beats[s.moveInStep];
   if (!beat) { s.phase = PHASES.RESET; return s; }
 
-  let key = (input && input.key) || null;
-  if (!key) {
-    if (isHumanActive(s)) return s;                 // wait for the player
-    key = ['a', 'b', 'c'][rng.int(0, 2)];           // the stand-in picks
+  let idx = (input && input.opt != null) ? input.opt : null;
+  if (idx == null) {
+    if (isHumanActive(s)) return s;                       // wait for the player
+    idx = rng.int(0, beat.options.length - 1);            // the stand-in picks
   }
-  const opt = beat.options.filter((o) => o.key === key)[0] || beat.options[0];
+  const opt = beat.options[idx] || beat.options[0];
 
+  /* Who the night gets spent on, when it gets spent on one person. */
+  let focusId = null;
+  if (opt.focus) {
+    const others = s.cast.filter((p) => p.id !== me);
+    if (opt.focus === 'quietest') {
+      focusId = others.slice().sort((a, b) => a.social.charisma - b.social.charisma)[0].id;
+    } else {
+      focusId = rng.pick(others).id;
+    }
+  }
+
+  let warmed = 0, cooled = 0;
   for (const p of s.cast) {
     if (p.id === me) continue;
-    const base = rng.range(opt.base[0], opt.base[1]);
-    const mult = Math.max(0.2, opt.affinity(p));
-    E.applyTrust(s.rel, p.id, me, base * mult);
-    E.applyTrust(s.rel, me, p.id, rng.range(2, 7));
+    const mag = rng.range(opt.spread[0], opt.spread[1]);
+    let d;
+    if (focusId != null) {
+      /* Everything goes to one person. Everybody else got an evening of you
+         being somewhere else, which is close to nothing either way. */
+      d = p.id === focusId ? mag : rng.range(-1, 2) + mag * 0.06 * opt.react(p);
+    } else {
+      d = mag * E.clamp(opt.react(p), -1.2, 1.5);
+    }
+    E.applyTrust(s.rel, p.id, me, d);
+    E.applyTrust(s.rel, me, p.id, rng.range(1, 6) + (p.id === focusId ? mag * 0.4 : 0));
     E.refreshBelief(s.rel, s.cast, me, p.id, 0, rng);
     E.refreshBelief(s.rel, s.cast, p.id, me, 0, rng);
+    if (d >= 2) warmed++; else if (d <= -1.5) cooled++;
   }
-  pushEvent(s, 'move_in', { step: s.moveInStep, key, answer: opt.kind });
+  pushEvent(s, 'move_in', { step: s.moveInStep, beat: beat.id, opt: idx,
+    text: opt.t, warmed, cooled, focus: focusId });
 
   s.moveInStep += 1;
-  if (s.moveInStep >= SC.MOVE_IN.length) s.phase = PHASES.RESET;
+  if (s.moveInStep >= beats.length) s.phase = PHASES.RESET;
   return s;
 }
 
