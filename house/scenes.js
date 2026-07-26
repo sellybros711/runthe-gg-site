@@ -763,13 +763,44 @@ function beatAllowed(state, b) {
   return true;
 }
 
+/*
+ * A RUN DOES NOT ASK YOU THE SAME THING TWICE.
+ *
+ * Measured before this: 82.7 percent of the conversations offered in a single
+ * run were repeats, and three live beats accounted for 39 percent of
+ * everything. Playtest: "I feel like I see the same questions be asked in
+ * multiple plays and that makes me not want to play the game." Nothing was
+ * stopping it. Selection was uniform over whatever currently applied, and the
+ * beats that apply most often are by definition the ones that apply nearly
+ * always.
+ *
+ * `seen` is a per-run tally kept on the state, so the weight is remembered
+ * across a save and a reload. A beat you have had drops to a twelfth of its
+ * weight, and a second time to a fiftieth. It never reaches zero: at Final 5
+ * with four beats legal, "you have had them all" has to resolve to something.
+ */
+const REPEAT_WEIGHT = [1, 1 / 12, 1 / 50];
+
+function seenCount(state, key) {
+  return (state.beatsSeen && state.beatsSeen[key]) || 0;
+}
+function markSeen(state, key) {
+  if (!key) return;
+  if (!state.beatsSeen) state.beatsSeen = {};
+  state.beatsSeen[key] = (state.beatsSeen[key] || 0) + 1;
+}
+function repeatWeight(state, key) {
+  return REPEAT_WEIGHT[Math.min(REPEAT_WEIGHT.length - 1, seenCount(state, key))];
+}
+
 function pickBeat(state, rng, me, them) {
   const pools = poolFor(state, me, them);
   const pool = pools[Math.floor(rng() * pools.length)];
   let list = BEATS.filter((b) => b.pool === pool && beatAllowed(state, b));
   if (!list.length) list = BEATS.filter((b) => b.pool === 'bond' && beatAllowed(state, b));
   if (!list.length) list = BEATS.filter((b) => !b.needs);
-  return list[Math.floor(rng() * list.length)];
+  if (!list.length) return BEATS[0];
+  return rng.weighted(list, list.map((b) => repeatWeight(state, 'b' + BEATS.indexOf(b))));
 }
 
 /** Everything the UI needs to render one moment. */
@@ -1047,6 +1078,279 @@ const LIVE = [
           kind: 'risky', fx: ['heat:' + c.cap, 'suspicion'] },
       ] }) },
 
+  /* ── more of them, because fifteen was not enough ────────────────────────
+   *
+   * With fifteen, the three that are true nearly every week took 39 percent of
+   * every conversation in the game. Twenty five more, most keyed to situations
+   * that come and go, so the bank the picker draws from is wide at any moment
+   * rather than wide across a season.
+   */
+
+  { id: 'who_saved', w: 5,
+    when: (st, me, them) => (st.vetoUsed && st.saved != null && st.saved !== them
+      && st.vetoHolder != null && st.vetoHolder !== them) ? { s: st.saved, h: st.vetoHolder } : null,
+    build: (st, me, them, c) => ({
+      line: `${N(st, c.h)} used the Veto on ${N(st, c.s)}. ${N(st, them)} wants to know what that was about.`,
+      options: [
+        { t: `Say they are close and leave it there.`, kind: 'safe', fx: [] },
+        { t: `Ask what they think ${N(st, c.h)} got for it.`, kind: 'neutral', fx: ['read', 'info'] },
+        { t: `Say it means those two are a pair and should be treated as one.`,
+          kind: 'risky', fx: ['heat:' + c.h, 'ally'] },
+        { t: `Say you would have done the same, which tells them something.`,
+          kind: 'risky', fx: ['read', 'suspicion'] },
+      ] }) },
+
+  { id: 'you_captain', w: 6,
+    when: (st, me, them) => (st.captain === me && st.atRisk.length === 0) ? {} : null,
+    build: (st, me, them) => ({
+      line: `You have the power and ${N(st, them)} has found a reason to be in the same room as you.`,
+      options: [
+        { t: `Tell them nothing.`, kind: 'safe', fx: [] },
+        { t: `Ask who they would put up.`, kind: 'neutral', fx: ['read', 'info'] },
+        { t: `Promise them they are safe.`, kind: 'risky', fx: ['ally'] },
+        { t: `Promise them they are safe and mean the opposite.`,
+          kind: 'risky', fx: ['ally', 'suspicion'] },
+      ] }) },
+
+  { id: 'they_captain', w: 6,
+    when: (st, me, them) => (st.captain === them && st.atRisk.length === 0) ? {} : null,
+    build: (st, me, them) => ({
+      line: `${N(st, them)} has the power this week and everybody in this house wants five minutes.`,
+      options: [
+        { t: `Do not ask for anything.`, kind: 'safe', fx: ['read'] },
+        { t: `Ask straight out whether you are safe.`, kind: 'neutral', fx: ['read', 'info'] },
+        { t: `Give them a name to look at instead of yours.`,
+          kind: 'risky', fx: ['heat:@coldest', 'suspicion'] },
+        { t: `Offer them your vote for the rest of the month.`, kind: 'risky', fx: ['ally'] },
+      ] }) },
+
+  { id: 'you_on_block', w: 6,
+    when: (st, me, them) => (st.atRisk.indexOf(me) !== -1 && st.captain === them) ? {} : null,
+    build: (st, me, them) => ({
+      line: `${N(st, them)} put you up and is now standing in the kitchen as if that did not happen.`,
+      options: [
+        { t: `Be pleasant about it.`, kind: 'safe', fx: [] },
+        { t: `Ask why it was you.`, kind: 'neutral', fx: ['read', 'info'] },
+        { t: `Tell them exactly what you think of it.`, kind: 'risky', fx: ['read', 'suspicion'] },
+        { t: `Say you understand, and start counting.`, kind: 'neutral', fx: ['read'] },
+      ] }) },
+
+  { id: 'rations_you', w: 5,
+    when: (st, me, them) => (st.rations && st.rations.indexOf(me) !== -1
+      && st.rations.indexOf(them) === -1) ? {} : null,
+    build: (st, me, them) => ({
+      line: `You are on Rations and ${N(st, them)} is eating in front of you without meaning anything by it.`,
+      options: [
+        { t: `Say nothing about it.`, kind: 'safe', fx: [] },
+        { t: `Make a joke of it.`, kind: 'neutral', fx: ['read'] },
+        { t: `Ask them to save you something.`, kind: 'risky', fx: ['ally'] },
+        { t: `Point out who put you here.`, kind: 'risky', fx: ['heat:@captain'] },
+      ] }) },
+
+  { id: 'week_one', w: 5,
+    when: (st, me, them) => (st.week <= 1) ? {} : null,
+    build: (st, me, them) => ({
+      line: `Nothing has happened yet and ${N(st, them)} is already trying to work out who is with who.`,
+      options: [
+        { t: `Say it is far too early.`, kind: 'safe', fx: [] },
+        { t: `Compare notes.`, kind: 'neutral', fx: ['read', 'info'] },
+        { t: `Say the two of you should decide it before anybody else does.`,
+          kind: 'risky', fx: ['ally'] },
+        { t: `Give them a read that is not true and see where it turns up.`,
+          kind: 'risky', fx: ['heat:@coldest', 'suspicion'] },
+      ] }) },
+
+  { id: 'the_numbers', w: 5,
+    when: (st, me, them) => {
+      const n = st.cast.filter((p) => p.status === 'active').length;
+      return (n <= 9 && n > 6) ? { n } : null;
+    },
+    build: (st, me, them, c) => ({
+      line: `${c.n} left. ${N(st, them)} says out loud that the numbers are about to stop being on anybody's side.`,
+      options: [
+        { t: `Agree and change the subject.`, kind: 'safe', fx: [] },
+        { t: `Ask them who they count as theirs.`, kind: 'neutral', fx: ['read', 'info'] },
+        { t: `Count out loud with them, and put yourself in their column.`,
+          kind: 'risky', fx: ['ally'] },
+        { t: `Tell them their numbers are wrong and say why.`,
+          kind: 'risky', fx: ['info', 'suspicion'] },
+      ] }) },
+
+  { id: 'they_suspect', w: 6,
+    when: (st, me, them) => (st.rel.suspicion[them][me] > 35) ? {} : null,
+    build: (st, me, them) => ({
+      line: `${N(st, them)} has stopped finishing sentences around you. They think you did something.`,
+      options: [
+        { t: `Let it sit.`, kind: 'safe', fx: [] },
+        { t: `Ask them straight what they have heard.`, kind: 'neutral', fx: ['read', 'info'] },
+        { t: `Deny it before they have accused you of anything.`,
+          kind: 'risky', fx: ['suspicion', 'read'] },
+        { t: `Give them somebody else to be suspicious of.`,
+          kind: 'risky', fx: ['heat:@coldest'] },
+      ] }) },
+
+  { id: 'they_owe', w: 5,
+    when: (st, me, them) => (st.rel.trust[them][me] > 55
+      && E.sharedAlliances(st.alliances, me, them).some((a) => a.alive)) ? {} : null,
+    build: (st, me, them) => ({
+      line: `${N(st, them)} is in a room with you and has been for weeks. Neither of you has ever tested it.`,
+      options: [
+        { t: `Leave it untested.`, kind: 'safe', fx: [] },
+        { t: `Ask what they would do if you were up.`, kind: 'neutral', fx: ['read', 'info'] },
+        { t: `Ask them to say your name out loud to somebody else.`,
+          kind: 'risky', fx: ['ally', 'read'] },
+        { t: `Tell them you have been carrying it and you want something back.`,
+          kind: 'risky', fx: ['ally', 'suspicion'] },
+      ] }) },
+
+  { id: 'the_quiet_one', w: 4,
+    when: (st, me, them) => {
+      const pool = st.cast.filter((p) => p.status === 'active' && p.id !== me && p.id !== them);
+      pool.sort((a, b) => a.social.charisma - b.social.charisma);
+      return pool.length ? { q: pool[0].id } : null;
+    },
+    build: (st, me, them, c) => ({
+      line: `${N(st, them)} says nobody has heard ${N(st, c.q)} say a full sentence since the door shut.`,
+      options: [
+        { t: `Say some people are like that.`, kind: 'safe', fx: [] },
+        { t: `Ask whether that worries them.`, kind: 'neutral', fx: ['read', 'info'] },
+        { t: `Say quiet people are the ones who get to the end.`,
+          kind: 'risky', fx: ['heat:' + c.q] },
+        { t: `Say you will go and find out what they are actually doing.`,
+          kind: 'risky', fx: ['info', 'ally'] },
+      ] }) },
+
+  { id: 'the_comp_next', w: 4,
+    when: (st, me, them) => (st.phase === 'reset' || st.phase === 'scheme1') ? {} : null,
+    build: (st, me, them) => ({
+      line: `${N(st, them)} is trying to work out what the next competition is going to be.`,
+      options: [
+        { t: `Say you never guess right.`, kind: 'safe', fx: [] },
+        { t: `Compare what you have both noticed.`, kind: 'neutral', fx: ['read'] },
+        { t: `Agree that whichever of you gets it will keep the other safe.`,
+          kind: 'risky', fx: ['ally'] },
+        { t: `Tell them you would rather not win it, and watch what they do with that.`,
+          kind: 'risky', fx: ['read', 'suspicion'] },
+      ] }) },
+
+  { id: 'the_promise', w: 5,
+    when: (st, me, them) => (st.voteIntent[them] != null
+      && st.atRisk.indexOf(them) === -1 && st.atRisk.length === 2) ? { said: st.voteIntent[them] } : null,
+    build: (st, me, them, c) => ({
+      line: `${N(st, them)} has told you they are voting ${N(st, c.said)}. They have told other people other things.`,
+      options: [
+        { t: `Take them at their word.`, kind: 'safe', fx: [] },
+        { t: `Ask them to say it again in front of somebody.`, kind: 'neutral', fx: ['read'] },
+        { t: `Tell them you know what they said in the other room.`,
+          kind: 'risky', fx: ['read', 'suspicion'] },
+        { t: `Say it back to them as though it were your idea.`, kind: 'risky', fx: ['ally'] },
+      ] }) },
+
+  { id: 'the_target_friend', w: 5,
+    when: (st, me, them) => {
+      if (st.hohTarget == null || st.hohTarget === me || st.hohTarget === them) return null;
+      return (st.rel.trust[them][st.hohTarget] > 45) ? { t: st.hohTarget } : null;
+    },
+    build: (st, me, them, c) => ({
+      line: `The house is coming for ${N(st, c.t)}, and ${N(st, them)} is closer to them than anybody.`,
+      options: [
+        { t: `Say nothing and let them find out.`, kind: 'safe', fx: [] },
+        { t: `Tell them what you have heard.`, kind: 'neutral', fx: ['info', 'read'] },
+        { t: `Offer to help them save ${N(st, c.t)}.`, kind: 'risky', fx: ['ally'] },
+        { t: `Tell them ${N(st, c.t)} is finished and they should get clear of it.`,
+          kind: 'risky', fx: ['heat:' + c.t, 'suspicion'] },
+      ] }) },
+
+  { id: 'evicted_ghost', w: 4,
+    when: (st, me, them) => {
+      const w = st.weeks[st.weeks.length - 1];
+      return (w && w.evicted != null) ? { gone: w.evicted } : null;
+    },
+    build: (st, me, them, c) => ({
+      line: `${N(st, them)} keeps talking about ${N(st, c.gone)} as though they are still in the house.`,
+      options: [
+        { t: `Let them.`, kind: 'safe', fx: ['read'] },
+        { t: `Ask what they think went wrong there.`, kind: 'neutral', fx: ['info'] },
+        { t: `Tell them who actually did it.`, kind: 'risky', fx: ['heat:@coldest', 'info'] },
+        { t: `Say it will be one of you next if you do not do something.`,
+          kind: 'risky', fx: ['ally'] },
+      ] }) },
+
+  { id: 'you_won_it', w: 5,
+    when: (st, me, them) => (st.cast[me].compWins.length >= 2 && st.captain !== me) ? {} : null,
+    build: (st, me, them) => ({
+      line: `${N(st, them)} points out, lightly, that you have won a few of these now.`,
+      options: [
+        { t: `Say you have been lucky.`, kind: 'safe', fx: [] },
+        { t: `Ask whether people are talking about it.`, kind: 'neutral', fx: ['info', 'read'] },
+        { t: `Say you will go out early in the next one if they will do the same.`,
+          kind: 'risky', fx: ['ally'] },
+        { t: `Own it, and let them decide what to do with that.`,
+          kind: 'risky', fx: ['read', 'suspicion'] },
+      ] }) },
+
+  { id: 'no_room', w: 4,
+    when: (st, me, them) => (!E.allianceOf(st.alliances, me).some((a) => a.alive)
+      && st.week >= 3) ? {} : null,
+    build: (st, me, them) => ({
+      line: `Everybody in here belongs to something except you, and ${N(st, them)} has worked that out.`,
+      options: [
+        { t: `Say you like it that way.`, kind: 'safe', fx: [] },
+        { t: `Ask what is actually out there.`, kind: 'neutral', fx: ['info', 'read'] },
+        { t: `Ask them for a way in.`, kind: 'risky', fx: ['ally'] },
+        { t: `Say being in nothing means being nobody's problem.`,
+          kind: 'neutral', fx: ['read'] },
+      ] }) },
+
+  { id: 'the_double', w: 5,
+    when: (st, me, them) => (st.twists && st.twists.double === st.week) ? {} : null,
+    build: (st, me, them) => ({
+      line: `Something is wrong with the schedule and ${N(st, them)} has noticed before anybody else.`,
+      options: [
+        { t: `Say you had not thought about it.`, kind: 'safe', fx: [] },
+        { t: `Work out what it means together.`, kind: 'neutral', fx: ['read', 'info'] },
+        { t: `Agree now on who goes if it happens twice.`, kind: 'risky', fx: ['ally', 'intent'] },
+        { t: `Let them work it out wrong.`, kind: 'risky', fx: ['read', 'suspicion'] },
+      ] }) },
+
+  { id: 'panel_watching', w: 4,
+    when: (st, me, them) => (st.panel && st.panel.length >= 3) ? { n: st.panel.length } : null,
+    build: (st, me, them, c) => ({
+      line: `${c.n} of them are out there now with a vote each, and ${N(st, them)} has started counting them.`,
+      options: [
+        { t: `Say you have not thought about the end.`, kind: 'safe', fx: [] },
+        { t: `Ask who they think is out there for them.`, kind: 'neutral', fx: ['read', 'info'] },
+        { t: `Tell them who you think is out there for you, honestly.`,
+          kind: 'risky', fx: ['ally', 'read'] },
+        { t: `Say the jury already hates one of you.`, kind: 'risky', fx: ['heat:@coldest'] },
+      ] }) },
+
+  { id: 'they_are_up', w: 6,
+    when: (st, me, them) => (st.atRisk.indexOf(them) !== -1 && st.atRisk.indexOf(me) === -1)
+      ? { other: st.atRisk.filter((i) => i !== them)[0] } : null,
+    build: (st, me, them, c) => ({
+      line: `${N(st, them)} is sitting up there and has come to find you about it.`,
+      options: [
+        { t: `Say you have not decided.`, kind: 'safe', fx: [] },
+        { t: `Hear them out properly.`, kind: 'neutral', fx: ['read', 'info'] },
+        { t: `Tell them you are keeping them.`,
+          kind: 'risky', fx: c.other != null ? ['swing:' + c.other, 'ally'] : ['ally'] },
+        { t: `Tell them you are keeping them and vote the other way.`,
+          kind: 'risky', fx: ['ally', 'suspicion'] },
+      ] }) },
+
+  { id: 'the_veto_field', w: 4,
+    when: (st, me, them) => (st.vetoFieldIds && st.vetoFieldIds.length
+      && st.vetoFieldIds.indexOf(them) !== -1 && st.vetoHolder == null) ? {} : null,
+    build: (st, me, them) => ({
+      line: `${N(st, them)} is playing for the Veto in an hour and cannot sit still.`,
+      options: [
+        { t: `Wish them luck.`, kind: 'safe', fx: [] },
+        { t: `Ask what they will do if they win it.`, kind: 'neutral', fx: ['read', 'info'] },
+        { t: `Ask them to use it a particular way.`, kind: 'risky', fx: ['ally', 'intent'] },
+        { t: `Tell them not to win it.`, kind: 'risky', fx: ['read', 'suspicion'] },
+      ] }) },
+
   /* Somebody came down and somebody else went up. */
   { id: 'after_veto', w: 4,
     when: (st, me, them) => (st.vetoUsed && st.replacement != null && st.saved != null
@@ -1106,7 +1410,8 @@ function compose(state, rng, me, them) {
        three onward and would otherwise crowd out every conversation that is
        actually about this week. The rarer and more urgent the situation, the
        harder it pulls. */
-    const pickLive = rng.weighted(live, live.map((x) => x.w));
+    const pickLive = rng.weighted(live,
+      live.map((x) => x.w * repeatWeight(state, 'L' + x.def.id)));
     const built = pickLive.def.build(state, me, them, pickLive.ctx);
     base = { line: built.line, opts: built.options };
     poolName = 'live:' + pickLive.def.id;
@@ -1274,6 +1579,10 @@ function riskyRead(state, me, them, beatFx) {
  */
 function resolve(state, moment, key, rng) {
   const me = state.human, them = moment.target;
+  /* Marked here rather than in compose, because composing happens every time
+     you so much as look at somebody and playing is what you actually saw. */
+  markSeen(state, moment.pool && moment.pool.indexOf('live:') === 0
+    ? 'L' + moment.pool.slice(5) : 'b' + moment.beat);
   const opt = moment.options.filter((o) => o.key === key)[0];
   const out = { target: them, kind: opt.kind, fx: [], text: opt.text, landed: true };
 
@@ -1320,7 +1629,13 @@ function resolve(state, moment, key, rng) {
       const cut = String(raw).indexOf(':');
       if (cut <= 0) continue;
       let who = String(raw).slice(cut + 1);
-      who = who === '@captain' ? state.captain : Number(who);
+      if (who === '@captain') who = state.captain;
+      else if (who === '@coldest') {
+        const pool = state.cast.filter((p) => p.status === 'active'
+          && p.id !== me && p.id !== them);
+        pool.sort((a, b) => state.rel.trust[them][a.id] - state.rel.trust[them][b.id]);
+        who = pool.length ? pool[0].id : null;
+      } else who = Number(who);
       if (who == null || Number.isNaN(who) || !state.cast[who]
         || state.cast[who].status !== 'active' || who === me) continue;
       if (!rng.chance(RISK.SPILL)) continue;
@@ -1363,7 +1678,15 @@ function applyEffects(state, out, fx, rng) {
     if (cut > 0) {
       f = raw.slice(0, cut);
       arg = raw.slice(cut + 1);
-      arg = arg === '@captain' ? state.captain : Number(arg);
+      /* Late-resolved names. A beat is authored before there is a Captain, and
+         "whoever they already dislike" is a person the line cannot know. */
+      if (arg === '@captain') arg = state.captain;
+      else if (arg === '@coldest') {
+        const pool = state.cast.filter((p) => p.status === 'active'
+          && p.id !== me && p.id !== them);
+        pool.sort((a, b) => state.rel.trust[them][a.id] - state.rel.trust[them][b.id]);
+        arg = pool.length ? pool[0].id : null;
+      } else arg = Number(arg);
       if (arg == null || Number.isNaN(arg) || !state.cast[arg]
         || state.cast[arg].status !== 'active') { continue; }
     }
@@ -1488,6 +1811,7 @@ function gather(state, ids, rng) {
 const api = {
   ENERGY, SCENES, BEATS, RISK, MOVE_IN, MOVE_IN_SHOWN, moveInFor, weeklyEnergy, gatherChance, gather,
   poolFor, pickScene, pickBeat, beatAllowed, compose, riskyChance, riskyRead, resolve, GAIN,
+  LIVE, liveFor, markSeen, seenCount,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;

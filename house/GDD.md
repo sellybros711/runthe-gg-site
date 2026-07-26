@@ -677,9 +677,25 @@ ordinary conversation has one way out of it that is about somebody real.
 
 **Live beats.** A third bank alongside SCENES and BEATS, whose lines take real
 arguments: who is on the block, who the Captain wants gone, who told somebody
-one thing last Thursday and did another. Fifteen of them, each declaring the
-situation it needs, weighted so the rare and urgent ones beat the ones that are
-true every week. About sixty percent of conversations are one.
+one thing last Thursday and did another. **Thirty five** of them, each declaring
+the situation it needs, weighted so the rare and urgent ones beat the ones that
+are true every week. About sixty percent of conversations are one.
+
+**A run does not ask you the same thing twice.** Measured before this rule: 10.8
+percent of a player's conversations in a run were repeats and the top beat was
+16.2 percent of everything, because selection was uniform over whatever
+currently applied and the beats that apply most often are the ones that apply
+nearly always. A per-run tally drops a beat you have had to a twelfth of its
+weight, and a second time to a fiftieth. It never reaches zero: at Final 5 with
+four beats legal, "you have had them all" has to resolve to something.
+
+| | before | after |
+|---|---|---|
+| repeat rate within a run | high, top beat 16.2% of all | 10.8%, top beat 4.9% |
+| distinct beats over 60 runs | 38 | 91 |
+
+The tally lives on the state, not in a module variable, so it survives a save
+and a reload.
 
     "Jules says the house is going for Noor. They want to know if you are with it."
     "Kabir tells you Lachlan has been saying your name in the other room."

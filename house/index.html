@@ -468,6 +468,14 @@ details.wk .body h4{font-family:var(--disp);font-weight:600;font-size:11px;lette
 .yw b{font-family:var(--disp);font-weight:600;font-size:10px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--blue);flex:none}
 .yw span{color:var(--chalk);font-size:13.5px}
+/* Three names and a colour each: who is with you, who is not, and who you are
+   about to lose by not talking to them. */
+.stand{display:flex;gap:8px;flex-wrap:wrap;margin:-6px 0 14px}
+.st{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);
+  background:var(--panel);padding:5px 10px;font-size:12.5px;color:var(--paper)}
+.st i{width:9px;height:9px;flex:none;border-radius:1px}
+.st b{font-weight:600;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--dim)}
 .sb{display:flex;align-items:center;gap:10px;padding:3px 0}
 .sb i{font-style:normal;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
   color:var(--dim);width:78px;flex:none}
@@ -726,18 +734,18 @@ body.carded .dock,body.carded .bar{display:none}
      copy. Worse than a stale page is a MIXED one, where a fresh index.html
      drives a cached scenes.js, so the query has to be on every module and has
      to move on every deploy. Bump BUILD below and they all miss at once. -->
-<script src="rng.js?v=10"></script>
-<script src="tree.js?v=10"></script>
-<script src="generate.js?v=10"></script>
-<script src="engine.js?v=10"></script>
-<script src="comps.js?v=10"></script>
-<script src="powers.js?v=10"></script>
-<script src="scenes.js?v=10"></script>
-<script src="run.js?v=10"></script>
-<script src="recap.js?v=10"></script>
-<script src="avatar.js?v=10"></script>
-<script src="ui.js?v=10"></script>
-<script src="strings.js?v=10"></script>
+<script src="rng.js?v=11"></script>
+<script src="tree.js?v=11"></script>
+<script src="generate.js?v=11"></script>
+<script src="engine.js?v=11"></script>
+<script src="comps.js?v=11"></script>
+<script src="powers.js?v=11"></script>
+<script src="scenes.js?v=11"></script>
+<script src="run.js?v=11"></script>
+<script src="recap.js?v=11"></script>
+<script src="avatar.js?v=11"></script>
+<script src="ui.js?v=11"></script>
+<script src="strings.js?v=11"></script>
 <script>
 (function(){
 'use strict';
@@ -1455,14 +1463,50 @@ function yourWeek(){
     }
     if(l.kind==='gather') rooms++;
   }
-  if(!spoke.length&&!rooms) return '';
   var line=spoke.length
-    ? 'You have been at '+spoke.slice(0,5).join(', ')
-      +(spoke.length>5?' and '+(spoke.length-5)+' more':'')+'.'
-    : '';
-  if(landed) line+=' '+landed+(landed>1?' of those landed.':' of those landed.');
+    ? 'You have been at '+spoke.slice(0,4).join(', ')
+      +(spoke.length>4?' and '+(spoke.length-4)+' more':'')+'.'
+    : 'You have not spoken to anybody yet.';
+  if(landed) line+=' '+landed+' of those landed.';
   if(rooms) line+=' You tried to get a room together'+(rooms>1?' '+rooms+' times.':'.');
-  return '<div class="yw"><b>This week</b><span>'+esc(line.trim())+'</span></div>';
+  return '<div class="yw"><b>This week</b><span>'+esc(line.trim())+'</span></div>'
+    +whereYouStand();
+}
+
+/*
+ * WHERE YOU STAND, ALWAYS ON SCREEN.
+ *
+ * Playtest: "I like how it says who is closest and farthest from you now. Let's
+ * lean into these kinds of things to help make decisions easier." It was a card
+ * you saw once on Move In Night and never again, which is the wrong place for
+ * it: the answer changes every week and it is the single most useful thing to
+ * know before spending energy. Three names and one warning, on the stage.
+ *
+ * "Drifting" is the one that actually changes behaviour. Neglect is the
+ * pressure the whole relationship engine runs on, and it was only visible by
+ * opening the House page and reading fifteen freshness labels one at a time.
+ */
+function whereYouStand(){
+  var me=s.human, act=R.activeIds(s).filter(function(i){ return i!==me; });
+  if(act.length<3) return '';
+  var rank=act.map(function(i){ return {id:i,v:s.rel.trust[i][me]}; })
+    .sort(function(a,b){ return b.v-a.v; });
+  var top=rank[0], bot=rank[rank.length-1];
+  /* Somebody who liked you and has not seen you in a while. */
+  var drift=act.map(function(i){
+      return {id:i,gap:s.week-(s.rel.lastWeek[me][i]||0),v:s.rel.trust[i][me]}; })
+    .filter(function(x){ return x.gap>=2&&x.v>15; })
+    .sort(function(a,b){ return b.gap*b.v-a.gap*a.v; })[0];
+  function chip(id,label){
+    var band=E.band(s.rel.trust[id][me]).label;
+    return '<span class="st"><i style="background:'+U.bandColor(band)+'"></i>'
+      +'<b>'+esc(label)+'</b>'+esc(s.cast[id].first)+'</span>';
+  }
+  return '<div class="stand">'
+    +chip(top.id,'Closest')
+    +chip(bot.id,'Furthest')
+    +(drift?chip(drift.id,'Drifting'):'')
+    +'</div>';
 }
 
 function barRow(b){
@@ -1917,15 +1961,41 @@ function showReplacement(){
 
 function showVote(){
   dock({label:'Cast it',off:true});
+  /*
+   * Everything you need, at the sharpest moment in the week.
+   *
+   * Playtest: "I like how it says who is closest and farthest from you now.
+   * Let's lean into these kinds of things to help make decisions easier." This
+   * is where it matters most. Each name now carries how they read on you,
+   * whether you are in a room with them, how stale that read is, and how the
+   * count is going, so the vote is a judgement rather than a coin toss between
+   * two strangers.
+   */
+  var tally={}, heard=0;
+  s.atRisk.forEach(function(i){ tally[i]=0; });
+  R.whipCount(s).forEach(function(r){
+    if(r.quiet||r.says==null) return;
+    if(tally[r.says]!=null){ tally[r.says]++; heard++; }
+  });
   openCard({
     kicker:'The vote', role:'Anonymous', icon:'vote',
     title:'Cast your vote',
-    body:['The tally gets read out. The names never do.'],
+    body:['The tally gets read out. The names never do.',
+      heard?{t:'Of the '+heard+' who would tell you, '
+        +s.atRisk.map(function(i){ return tally[i]+' said '+s.cast[i].first; }).join(' and ')
+        +'.',c:'d'}
+        :{t:'Nobody would tell you which way they are going.',c:'d'}],
     faces:s.atRisk.map(function(i){ return {id:i,tag:'At Risk',col:COL.signal}; }),
     choices:s.atRisk.map(function(id){
+      var rd=E.read(s.rel,s.human,id);
+      var room=E.sharedAlliances(s.alliances,s.human,id).filter(function(a){ return a.alive; }).length;
+      var bits=[rd.band.label+' on you'];
+      if(room) bits.push('in a room with you');
+      if(rd.freshness!=='current') bits.push('read is '+rd.freshness);
+      if(tally[id]) bits.push(tally[id]+' said they would');
       return {label:'Evict '+s.cast[id].first,cls:'hot',
-        note:E.read(s.rel,s.human,id).band.label+' on you, '+E.read(s.rel,s.human,id).freshness,
-        go:function(){ R.step(s,{vote:id}); saveRun(); showVoteReveal(); }};
+        note:bits.join(', '),
+        go:function(){ answer({vote:id}); saveRun(); showVoteReveal(); }};
     })
   });
 }
@@ -2132,10 +2202,16 @@ function showScheming(need){
      * both doing the reading FOR the player, which is the job the player came
      * here to do. What the option costs is in what it says.
      */
+    /* The kicker used to be the whole scene string, which is a sentence, so it
+       always arrived truncated, as the first four words and an ellipsis. A
+       header is a
+       label. The scene belongs in the body, where there is room for it. */
+    var rd=E.read(s.rel,s.human,mo.target);
     openCard({
-      kicker:mo.scene, who:mo.target, role:E.read(s.rel,s.human,mo.target).band.label,
+      kicker:'Talking to', who:mo.target, role:rd.band.label,
       icon:'eye', title:s.cast[mo.target].first,
-      body:[{t:mo.line,c:'q'}],
+      body:[{t:mo.scene.charAt(0).toUpperCase()+mo.scene.slice(1)+'.',c:'d'},
+            {t:mo.line,c:'q'}],
       choices:mo.options.map(function(o){
         return {label:o.text,
           off:s.energy<o.cost,go:function(){

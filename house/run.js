@@ -1441,7 +1441,11 @@ function playScene(s, moment, key) {
   /* out carries its own `kind` (safe, neutral, risky), so spreading it over a
      literal with kind:'scene' silently overwrote the entry type and every
      consumer counting scenes read zero. Nest it instead of merging it. */
-  s.log.push({ kind: 'scene', week: s.week, pool: moment.pool, answer: out.kind, result: out });
+  /* `beat` recorded too: without it every generic beat in a pool logged under
+     the same key, which made "how often do you see the same conversation" an
+     unanswerable question. */
+  s.log.push({ kind: 'scene', week: s.week, pool: moment.pool, beat: moment.beat,
+    answer: out.kind, result: out });
   return out;
 }
 
