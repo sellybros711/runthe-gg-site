@@ -258,21 +258,26 @@
                 <defs><clipPath id="cwico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs>
                 <g clip-path="url(#cwico)">
                   <rect x="4" y="4" width="48" height="48" fill="#F4EEFE"/>
-                  <!-- blocked cells (180-degree symmetric) -->
+                  <!-- blocked cells cap the two across words; bottom two rows stay blank -->
                   <rect x="40" y="4" width="12" height="12" fill="#2a1c47"/>
-                  <rect x="4" y="40" width="12" height="12" fill="#2a1c47"/>
-                  <rect x="16" y="16" width="12" height="12" fill="#2a1c47"/>
-                  <rect x="28" y="28" width="12" height="12" fill="#2a1c47"/>
+                  <rect x="40" y="16" width="12" height="12" fill="#2a1c47"/>
                   <!-- grid lines -->
                   <g stroke="#D7C7F4" stroke-width="1">
                     <path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/>
                   </g>
-                  <!-- clue number + filled 'RUN' across the top row -->
-                  <text x="6.2" y="9.4" font-family="Archivo, sans-serif" font-size="5" font-weight="800" fill="#8a7bd8">1</text>
+                  <!-- clue numbers -->
+                  <g font-family="Archivo, sans-serif" font-size="5" font-weight="800" fill="#8a7bd8">
+                    <text x="6.2" y="9.4">1</text>
+                    <text x="6.2" y="21.4">2</text>
+                  </g>
+                  <!-- 'RUN' across the top row, 'THE' below; next two rows blank -->
                   <g font-family="Archivo, sans-serif" font-size="9" font-weight="900" fill="#3A2B63" text-anchor="middle">
                     <text x="10" y="13.2">R</text>
                     <text x="22" y="13.2">U</text>
                     <text x="34" y="13.2">N</text>
+                    <text x="10" y="25.2">T</text>
+                    <text x="22" y="25.2">H</text>
+                    <text x="34" y="25.2">E</text>
                   </g>
                 </g>
                 <rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#8a7bd8" stroke-width="2"/>
