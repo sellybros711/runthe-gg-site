@@ -60,6 +60,14 @@ const DEFAULTS = {
    */
   trade: true,
   tradeFloor: 0.30,
+  /*
+   * GDD §21. Whether the stand-in seeds names, and the ground it needs before
+   * it bothers. Same purpose as `trade`: seeding is a player verb, so the only
+   * honest way to ask whether it is worth doing is identical seeds with a
+   * player who does it and a player who does not.
+   */
+  seed: true,
+  seedFloor: 0.45,
 };
 
 function make(opts) {
@@ -227,6 +235,35 @@ function make(opts) {
     return best;
   }
 
+  /**
+   * The best name to leave with somebody, or null if no pair has enough ground.
+   *
+   * Points at whoever the stand-in itself most wants gone, through whichever
+   * listener is already closest to believing it. Greedy and obvious, which is
+   * right for a stand-in: the question is whether the verb is worth using, not
+   * whether a clever seeding policy beats a naive one.
+   */
+  function bestSeed(s) {
+    const me = s.human;
+    const pool = R.activeIds(s).filter((i) => i !== me);
+    if (pool.length < 2) return null;
+    let want = null, wantV = -Infinity;
+    for (const id of pool) {
+      const v = E.threatSeen(s, me, id) - Math.max(0, s.rel.trust[me][id]);
+      if (v > wantV) { wantV = v; want = id; }
+    }
+    if (want == null) return null;
+    let best = null;
+    for (const ear of pool) {
+      if (ear === want) continue;
+      const seen = E.threatSeen(s, ear, want), warmth = s.rel.trust[ear][want];
+      const ground = E.clamp01((seen - 30) / 45) * 0.55 + E.clamp01((25 - warmth) / 75) * 0.45;
+      if (ground < cfg.seedFloor) continue;
+      if (!best || ground > best.ground) best = { ear, at: want, ground };
+    }
+    return best;
+  }
+
   function decide(s, need) {
     const me = s.human;
 
@@ -261,6 +298,16 @@ function make(opts) {
           R.performAction(s, { kind: 'eavesdrop' });
           s.energy -= SC.ENERGY.EAVESDROP_COST;
           return s.energy >= SC.ENERGY.SCENE_COST ? null : { done: true };
+        }
+        /* Seed before spending on a scene. It is the same price and it is the
+           only move here that cannot be traced back. */
+        if (cfg.seed && s.energy >= SC.ENERGY.SEED_COST) {
+          const plant = bestSeed(s);
+          if (plant) {
+            R.performAction(s, { kind: 'seed', target: plant.ear, against: plant.at });
+            s.energy -= SC.ENERGY.SEED_COST;
+            return s.energy >= SC.ENERGY.SCENE_COST ? null : { done: true };
+          }
         }
         const target = chooseTarget(s);
         if (target == null) return { done: true };

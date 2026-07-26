@@ -86,6 +86,9 @@ const ENERGY = {
   SCENE_COST: 2,
   RISKY_SURCHARGE: 1,       // the C option costs more, decided before you answer
   EAVESDROP_COST: 2,
+  /* GDD §21. Half a scene, because a seed does a fraction of what a scene does
+     and priced level with one it is simply a worse scene. */
+  SEED_COST: 1,
   /*
    * Pulling a group into one room. One energy per person you are trying to get
    * there, so a three way costs three, which is most of a week's budget for a

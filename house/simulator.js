@@ -638,6 +638,65 @@ function curveReport() {
 }
 
 /**
+ * SEEDING, GDD §21. Does putting a name in somebody's head work, and does it
+ * stay off your fingerprints.
+ *
+ * Two questions, and the second is the one that matters. Anything can move a
+ * house if you push hard enough; the claim seeding makes is that it moves
+ * people WITHOUT leaving a trail, so the proxy has to measure the trail. Three
+ * paired sides on identical seeds: no steering at all, seeding, and for a
+ * reference point the direct scene verbs the game already had.
+ */
+function seedReport() {
+  const n = Math.max(250, Math.floor(N / 3));
+  console.log(`\n=== SEEDING, ${n} paired seeds ===\n`);
+
+  const side = (seed) => {
+    const places = [], susp = [], planted = [], noticed = [];
+    let wins = 0;
+    for (let i = 0; i < n; i++) {
+      const s = POL.playRun({ seed: String(650000 + i) }, { risk: 0.5, skill: 55, trade: false, seed });
+      places.push(s.cast[s.human].place);
+      if (s.cast[s.human].place === 1) wins++;
+      /* How suspicious the live house is OF THE PLAYER. This is the trail. */
+      const live = R.activeIds(s).filter((x) => x !== s.human);
+      let t = 0;
+      for (const id of live) t += s.rel.suspicion[id][s.human];
+      susp.push(live.length ? t / live.length : 0);
+      const st = s.seedStats || { planted: 0, noticed: 0 };
+      planted.push(st.planted); noticed.push(st.noticed);
+    }
+    return { places, wins, susp, planted, noticed };
+  };
+
+  const off = side(false);
+  const on = side(true);
+
+  console.log('  setting     avg finish   win%   names planted   they noticed   suspicion of you');
+  const row = (label, r) => console.log(`  ${label.padEnd(10)}  ${mean(r.places).toFixed(2).padStart(10)}`
+    + `   ${pct(r.wins / n).padStart(5)}   ${mean(r.planted).toFixed(2).padStart(13)}`
+    + `   ${mean(r.noticed).toFixed(2).padStart(12)}   ${mean(r.susp).toFixed(1).padStart(16)}`);
+  row('no steer', off);
+  row('seeds', on);
+
+  const diffs = off.places.map((p, i) => p - on.places[i]);
+  const gain = mean(diffs);
+  const sd = Math.sqrt(mean(diffs.map((d) => (d - gain) * (d - gain))));
+  const se = sd / Math.sqrt(diffs.length);
+  console.log(`\n  seeding is worth ${gain >= 0 ? '' : 'MINUS '}${Math.abs(gain).toFixed(2)} places`
+    + ` (paired, SE ${se.toFixed(2)})`);
+  console.log(`  ${Math.abs(gain) <= 2 * se ? 'NO MEASURABLE EFFECT, inside two standard errors'
+    : gain > 0 ? 'ok, the seeder finishes higher' : 'NOT WORTH DOING, the seeder finishes lower'}`);
+  const dSusp = mean(on.susp) - mean(off.susp);
+  console.log(`  suspicion it costs you  ${dSusp >= 0 ? '+' : ''}${dSusp.toFixed(2)}`
+    + `   ${dSusp < 3 ? 'ok, it stays off your fingerprints' : 'MISS, this is not deniable'}`);
+  if (mean(on.planted) < 1) {
+    console.log('  WARNING: fewer than one name planted per run. This table is measuring nothing.');
+  }
+  console.log('');
+}
+
+/**
  * THE INFORMATION LAYER, GDD §20.
  *
  * A PAIRED ablation, and it is paired because this session already learned the
@@ -883,6 +942,7 @@ if (arg === '--axes') axesReport();
 else if (arg === '--seat') seatReport();
 else if (arg === '--info') infoReport();
 else if (arg === '--curve') curveReport();
+else if (arg === '--seed') seedReport();
 else if (arg === '--skill') skillReport();
 else if (arg === '--levels') levelReport();
 else if (arg === '--throws') throwReport();

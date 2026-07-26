@@ -2474,16 +2474,82 @@ function showScheming(need){
         /* GDD §20. Cheapest verb in the game, because handing over something
            you already know costs you nothing but the risk of being the only
            person who could have said it. */
-        {label:heldCount()?'Trade something you know':'You are not holding anything',
-         note:heldCount()?(heldCount()+' in hand. Costs '+SEC.K.TELL_COST+'.'):'Listen at a door first',
-         off:!heldCount()||s.energy<SEC.K.TELL_COST,
-         go:pickSecret}
+        {label:tradeCount()?'Trade something you know':'You are not holding anything',
+         note:tradeCount()?(tradeCount()+' worth trading. Costs '+SEC.K.TELL_COST+'.')
+           :(heldCount()?'Nothing you know is any use to anybody now':'Listen at a door first'),
+         off:!tradeCount()||s.energy<SEC.K.TELL_COST,
+         go:pickSecret},
+        /* GDD §21. The slow verb: nothing at all happens tonight. */
+        {label:'Put a name in somebody’s head',
+         note:'Costs '+SC.ENERGY.SEED_COST+'. They will think they got there themselves.',
+         off:s.energy<SC.ENERGY.SEED_COST,
+         go:pickSeedEar}
       ],
       foot:{label:'Not yet',go:backToFloor}
     });
   }
 
   function heldCount(){ return SEC.held(s).length; }
+  /* What is actually spendable, which is what the button has to count. Holding
+     eleven things nobody needs is not the same as having something to trade. */
+  function tradeCount(){
+    var pool=others();
+    return SEC.held(s).filter(function(sec){
+      return SEC.bestEar(s,sec,pool).worth>0; }).length;
+  }
+
+  /*
+   * SEEDING, GDD §21, in two cards: who you are talking to, then who you point
+   * them at.
+   *
+   * The second card is the entire verb. It shows, for each possible name, how
+   * much ground is already there with that listener, because you cannot make
+   * somebody believe a thing they have no reason to believe. Finding the pair
+   * where the doubt already exists IS the play, and it is the thing the
+   * information layer in §20 exists to tell you.
+   */
+  function pickSeedEar(){
+    dock({label:'Pick somebody',off:true});
+    openCard({
+      kicker:'A quiet word', role:SC.ENERGY.SEED_COST+' energy', icon:'eye',
+      title:'Who are you talking to',
+      body:['You are not going to ask them for anything. You are going to ask them a question they already half know the answer to.'],
+      pick:{pool:others(),go:function(id){ closeCard(); pickSeedTarget(id); }},
+      foot:{label:'Not yet',go:backToFloor}
+    });
+  }
+
+  function pickSeedTarget(ear){
+    dock({label:'Pick a name',off:true});
+    var nm=s.cast[ear].first;
+    var pool=others().filter(function(i){ return i!==ear; });
+    var ranked=pool.map(function(id){
+      var seen=E.threatSeen(s,ear,id), warmth=s.rel.trust[ear][id];
+      var ground=Math.max(0,Math.min(1,(seen-30)/45))*0.55
+        +Math.max(0,Math.min(1,(25-warmth)/75))*0.45;
+      return {id:id,ground:ground};
+    }).sort(function(a,b){ return b.ground-a.ground; });
+    openCard({
+      kicker:'A quiet word', role:'Through '+nm, icon:'eye',
+      title:'Whose name are you leaving there',
+      body:['Nothing happens tonight. If it takes, '+nm+' starts seeing that person differently, and nobody can point at you for it.'],
+      choices:ranked.slice(0,5).map(function(r){
+        return {label:s.cast[r.id].first,
+          cls:r.ground>0.6?'go':'',
+          note:r.ground>0.6?nm+' is most of the way there already.'
+            :r.ground>0.35?nm+' has had the thought. It has not stuck yet.'
+            :r.ground>0.15?'Thin. '+nm+' does not see it.'
+            :nm+' has no reason at all to believe that.',
+          go:function(){
+            if(s.energy<SC.ENERGY.SEED_COST) return;
+            var o=R.performAction(s,{kind:'seed',target:ear,against:r.id});
+            s.energy-=SC.ENERGY.SEED_COST;
+            narrateAction(o); saveRun(); backToFloor();
+          }};
+      }),
+      foot:{label:'Somebody else',go:pickSeedEar}
+    });
+  }
 
   /*
    * TRADING INFORMATION, GDD §20, in two cards: what, then who.
@@ -2754,6 +2820,16 @@ function narrateAction(o){
         sub:'Things you learn are yours to spend. Pick the week, pick the person, and remember that the only people who could have told them are the ones who were there.',
         rows:o.learned.map(function(x){ return ['You know',secretLine(x)]; })});
     }
+  }
+  if(o.kind==='seed'){
+    /* Deliberately quiet in the feed. Nothing visible happened, which is what
+       the player is buying. GDD §21. */
+    var tgt=o.against!=null?s.cast[o.against].first:'';
+    say(tsay(o.ok?'seedOk':'seedFail',{name:nm,target:tgt}),o.ok?'ev-good':'quiet','eye');
+    if(o.ok){
+      say('Nothing happens tonight. '+nm+' will get there on their own, and nobody will be able to say who pointed them.','quiet');
+    }
+    if(o.noticed) say(tsay('seedNoticed',{name:nm}),'ev-bad','eye');
   }
   if(o.kind==='tell'){
     if(o.missing){ say('Whatever that was, it is no good to anybody now.','quiet'); return; }

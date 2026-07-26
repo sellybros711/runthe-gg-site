@@ -1549,20 +1549,92 @@ function performAction(s, action) {
       out.read = E.read(s.rel, me, j);
       break;
     }
-    case 'pitch': {
+    /*
+     * SEEDING, GDD §21. The Reflection Technique.
+     *
+     * This replaces `pitch`, which wrote a vote intent directly, was fully
+     * attributable, and like `leak` before it was never wired to a button.
+     *
+     * The difference from every other way of moving somebody is that this one
+     * leaves NO FINGERPRINTS. It writes no vote intent, so there is no promise
+     * to break and nothing for assignBlame to trace; it adds no suspicion when
+     * it works; and it pays off next week rather than tonight, through the
+     * threat model, because what you have actually done is hand somebody a
+     * reason to reach a conclusion on their own.
+     *
+     * In exchange it is weak, and it only works with the grain. You cannot make
+     * somebody believe a thing they have no reason to believe. SEED_GROUND
+     * reads how much doubt is already there and supplies most of the odds from
+     * it, which is why knowing who already distrusts whom, the thing the
+     * information layer in §20 tells you, is what makes this verb worth having.
+     */
+    case 'seed': {
       const j = action.target, against = action.against;
-      const persuasion = s.cast[me].social.charisma + s.rel.trust[j][me] * 0.5;
-      const resist = s.cast[j].social.perception * 0.5 + Math.max(0, s.rel.trust[j][against]);
-      const ok = rng.chance(E.clamp01(0.25 + (persuasion - resist) / 160));
+      const K2 = E.K;
+      /* What they already think, on the two axes that matter. */
+      const seen = E.threatSeen(s, j, against);
+      const warmth = s.rel.trust[j][against];
+      const ground = E.clamp01((seen - 30) / 45) * 0.55
+        + E.clamp01((25 - warmth) / 75) * 0.45;
+      /* Reading what somebody half believes is perception work, not lying. */
+      const skill = (s.cast[me].social.perception * 0.6 + s.cast[me].social.charisma * 0.4);
+      const p = K2.SEED_BASE + K2.SEED_GROUND * ground
+        + K2.SEED_SKILL * ((skill - 50) / 100);
+      const ok = rng.chance(E.clamp01(p));
       if (ok) {
-        s.voteIntent[j] = against;
-        E.applyTrust(s.rel, j, me, 3);
-      } else {
-        /* Pitching a target somebody likes tells them exactly where you stand. */
-        E.applyTrust(s.rel, j, me, -6);
-        s.rel.suspicion[j][me] = Math.min(100, s.rel.suspicion[j][me] + 10);
+        s.rel.threatBias[j][against] = E.clamp(
+          s.rel.threatBias[j][against] + K2.SEED_STEP, -40, 40);
+        /*
+         * AND IT TRAVELS, which is the difference between a mechanic and a
+         * gesture. MEASURED: pinning a bias of +15 on one person from the whole
+         * house takes them from an average finish of 8.93 to 11.21, so the
+         * channel is load bearing. One listener carrying +11 that fades over
+         * four weeks is about a tenth of that, which is why the first version
+         * of this verb was indistinguishable from setting its own constant to
+         * zero.
+         *
+         * So a planted name does what a planted name does: the listener
+         * repeats it to their own people. Same shape as ALLY_LEAK_NAMED in
+         * §7.7, and the same lesson, that a thing which is not repeated stays
+         * with one person and decides nothing.
+         */
+        const room = activeIds(s).filter((id) => id !== j && id !== against && id !== me);
+        const heard = room
+          .map((id) => ({ id, tie: s.rel.trust[j][id] }))
+          .sort((a, b) => b.tie - a.tie)
+          .slice(0, K2.SEED_REACH);
+        for (const h of heard) {
+          if (!rng.chance(K2.SEED_ECHO * (1 - s.cast[j].social.loyalty / 200))) continue;
+          s.rel.threatBias[h.id][against] = E.clamp(
+            s.rel.threatBias[h.id][against] + K2.SEED_STEP * K2.SEED_ECHO_STEP, -40, 40);
+          out.echoed = (out.echoed || 0) + 1;
+        }
       }
+      /*
+       * The only way this costs you. A perceptive person can feel themselves
+       * being steered even when they cannot say toward what, and that is a
+       * small suspicion of YOU rather than a trust loss, because nothing was
+       * said that they could quote back.
+       */
+      const noticed = rng.chance(E.clamp01(
+        K2.SEED_NOTICED * (s.cast[j].social.perception / 55)));
+      if (noticed) {
+        s.rel.suspicion[j][me] = Math.min(100, s.rel.suspicion[j][me] + K2.SEED_SUSPICION);
+      }
+      /* Ground truth for the harness. Reconstructing who was seeded from
+         threatBias does not work: speeches, campaigning and three kinds of
+         secret all write to the same matrix, so a reconstruction selects
+         whoever the house already finds threatening, which is a person who was
+         going out early anyway. Measured that way the verb read as a 1.33 place
+         effect with its own constant set to ZERO. */
+      if (!s.seedLog) s.seedLog = [];
+      s.seedLog.push({ ear: j, at: against, week, ok });
+      if (!s.seedStats) s.seedStats = { tried: 0, planted: 0, noticed: 0 };
+      s.seedStats.tried += 1;
+      if (ok) s.seedStats.planted += 1;
+      if (noticed) s.seedStats.noticed += 1;
       out.target = j; out.against = against; out.ok = ok;
+      out.noticed = noticed; out.ground = ground;
       break;
     }
     case 'lie': {
