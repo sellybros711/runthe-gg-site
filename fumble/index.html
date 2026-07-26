@@ -66,13 +66,40 @@
     background:radial-gradient(circle at 50% 52%, rgba(255,255,255,.5), transparent 55%); }
   #flash.go{ animation:fl .22s ease-out; } @keyframes fl{ 0%{opacity:.85;} 100%{opacity:0;} }
   #start,#over{ position:fixed; inset:0; z-index:8; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:15px; text-align:center; background:linear-gradient(180deg,#0a1522,#0c2033); padding:24px; }
+    gap:0; text-align:center; padding:26px; overflow:hidden;
+    background:radial-gradient(125% 85% at 50% -8%, #14405c 0%, #0b1a2b 46%, #060e1a 100%); }
+  #start::before{ content:''; position:absolute; inset:-10%; z-index:-1; pointer-events:none; opacity:.5;
+    background:repeating-linear-gradient(90deg, transparent 0 52px, rgba(150,190,235,.05) 52px 54px); }
   #over{ display:none; background:linear-gradient(180deg,rgba(10,21,34,.94),rgba(12,32,51,.96)); }
+  .hero{ position:relative; }
+  .hero::after{ content:''; position:absolute; left:50%; top:46%; transform:translate(-50%,-50%); width:130%; height:180%;
+    z-index:-1; background:radial-gradient(closest-side, rgba(255,197,64,.26), transparent 72%); animation:glow 3.6s ease-in-out infinite; }
+  @keyframes glow{ 0%,100%{opacity:.6;} 50%{opacity:1;} }
+  .kicker{ font-size:12px; letter-spacing:6px; color:#7f97b0; font-weight:800; }
+  #start h1{ font-size:clamp(66px,20vw,116px); font-weight:900; letter-spacing:2px; line-height:.86; margin-top:2px;
+    color:#ffd34d; text-shadow:0 3px 0 rgba(0,0,0,.3), 0 0 44px rgba(255,197,64,.5); }
   h1{ font-size:60px; font-weight:800; letter-spacing:2px; color:#ffd34d; text-shadow:0 4px 0 rgba(0,0,0,.4); }
+  .tagline{ margin:12px auto 0; color:#e4edf6; font-size:clamp(15px,4.6vw,19px); font-weight:600; max-width:20ch; line-height:1.35; }
+  .concept{ margin:16px auto 0; color:#95a9bd; font-size:13.5px; max-width:33ch; line-height:1.55; }
+  .concept b{ color:#ffd34d; }
+  .moves{ display:grid; grid-template-columns:1fr 1fr; gap:9px; margin:22px auto 2px; width:min(370px,90vw); }
+  .move{ display:flex; align-items:center; gap:10px; padding:9px 11px; text-align:left;
+    background:rgba(255,255,255,.045); border:1px solid rgba(150,175,210,.16); border-radius:13px; }
+  .badge{ flex:none; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:18px; font-weight:900; box-shadow:inset 0 2px 0 rgba(255,255,255,.5); }
+  .badge.t{ background:radial-gradient(circle at 40% 35%,#ffe07a,#f0a41c); color:#3a2600; }
+  .badge.j{ background:radial-gradient(circle at 40% 35%,#b6f5c8,#2fb36a); color:#093019; }
+  .badge.p{ background:radial-gradient(circle at 40% 35%,#bfe0ff,#4a8ad6); color:#0c2138; }
+  .badge.s{ background:radial-gradient(circle at 40% 35%,#ffd0a0,#f07d1c); color:#3a1e00; }
+  .mtext b{ display:block; font-size:13.5px; color:#eef4fb; letter-spacing:.5px; }
+  .mtext small{ font-size:10.5px; color:#8ea2b6; }
   p{ max-width:440px; color:#cdd8e6; font-size:16px; line-height:1.5; }
-  .keys{ color:#8fa2b8; font-size:13px; letter-spacing:.5px; }
-  .startbtn{ margin-top:6px; padding:15px 40px; font-size:21px; font-weight:800; letter-spacing:1px; color:#3a2600;
-    background:linear-gradient(180deg,#ffdf7a,#f4ab1c); border:none; border-radius:15px; box-shadow:0 6px 20px rgba(240,169,28,.4); }
+  .keys{ color:#697b8f; font-size:12px; letter-spacing:.4px; margin-top:14px; }
+  .startbtn{ margin-top:20px; padding:16px 56px; font-size:22px; font-weight:900; letter-spacing:2px; color:#3a2600; cursor:pointer;
+    background:linear-gradient(180deg,#ffe487,#f4ab1c); border:none; border-radius:16px;
+    box-shadow:0 8px 26px rgba(240,169,28,.45), inset 0 2px 0 rgba(255,255,255,.6); animation:pulse 2.3s ease-in-out infinite; }
+  .startbtn:active{ transform:translateY(2px); }
+  @keyframes pulse{ 0%,100%{ box-shadow:0 8px 26px rgba(240,169,28,.38), inset 0 2px 0 rgba(255,255,255,.6);} 50%{ box-shadow:0 10px 36px rgba(240,169,28,.72), inset 0 2px 0 rgba(255,255,255,.6);} }
   .tag{ position:fixed; bottom:5px; left:0; right:0; text-align:center; color:#3f5266; font-size:10px; z-index:4; letter-spacing:1px; }
   #overStats{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px 18px; margin:4px 0 6px; width:min(420px,86vw); }
   .stat{ background:rgba(255,255,255,.05); border:1px solid rgba(150,175,210,.2); border-radius:12px; padding:10px 6px; }
@@ -105,10 +132,20 @@
 </div>
 
 <div id="start">
-  <h1>FUMBLE</h1>
-  <p>11-on-11, no going down. Take a hit and <b>the ball pops loose</b> — anyone can grab it, and every tackle pops it again. When a defender closes, tap <b>TRUCK</b> in the green ring to power through, <b>JUKE</b> to make him whiff, or <b>PITCH</b> backward to a trailing teammate. Push full stick to <b>sprint</b> (watch your stamina). Play never stops until someone scores. <b>First to 3 wins.</b></p>
-  <p class="keys">Move: joystick / WASD · Truck: Space · Juke: E · Pitch back: Shift · Sprint: full stick · You control the highlighted player.</p>
+  <div class="hero">
+    <div class="kicker">RUNTHE.GG</div>
+    <h1>FUMBLE</h1>
+    <div class="tagline">No whistles. No going down. Get the ball to the house.</div>
+  </div>
+  <div class="concept">Every hit pops the ball loose — grab it, break tackles, and score. <b>First to 3 wins.</b></div>
+  <div class="moves">
+    <div class="move"><span class="badge t">⬆</span><div class="mtext"><b>TRUCK</b><small>power through a hit</small></div></div>
+    <div class="move"><span class="badge j">⇆</span><div class="mtext"><b>JUKE</b><small>sidestep him</small></div></div>
+    <div class="move"><span class="badge p">↩</span><div class="mtext"><b>PITCH</b><small>toss it backward</small></div></div>
+    <div class="move"><span class="badge s">»</span><div class="mtext"><b>SPRINT</b><small>full stick · stamina</small></div></div>
+  </div>
   <button class="startbtn" id="go">START</button>
+  <div class="keys">Move: joystick / WASD · Truck: Space · Juke: E · Pitch: Shift</div>
 </div>
 <div id="over">
   <h1 id="overTitle">GAME</h1>
@@ -132,7 +169,7 @@
    ---- ALL FEEL LIVES IN THE TUNE BLOCK BELOW. ----
 ============================================================================ */
 const TUNE = {
-  TEAM_SIZE: 11,          // players per side (blocky bodies are cheap; drop to 7 for a cleaner read)
+  TEAM_SIZE: 7,           // players per side — fewer bodies = cleaner read, less pile-up (was 11)
   WIN_SCORE: 3,
 
   // ---- TRUCK (skill check to stay up through a hit) ----
@@ -188,7 +225,7 @@ const TUNE = {
   SLOWMO: 0.5,              // time scale while a truck-timing window is live (drama + reaction time)
 
   // ---- FIELD ----
-  FIELD_LENGTH: 120, FIELD_WIDTH: 50, ENDZONE: 7,
+  FIELD_LENGTH: 120, FIELD_WIDTH: 64, ENDZONE: 7,
 };
 const BALL_R = 0.42;
 const TEAM = { BLUE:'#3b82f6', RED:'#e0453f' };   // BLUE = you, RED = cpu
@@ -433,16 +470,20 @@ function beginSetup(recv){
 function layoutForSetup(recv){
   const dir=dirOf(recv), mates=teamPlayers(recv), foes=teamPlayers(recv==='BLUE'?'RED':'BLUE');
   const og = recv==='BLUE' ? goalLine('RED') : goalLine('BLUE');   // receiver's own goal line (deep)
-  // RETURN TEAM — deep returner in the circle, the other 10 form two staggered blocking walls upfield
+  // RETURN TEAM — deep returner in the circle, the rest form two staggered blocking walls upfield
+  const nb=mates.length-1, row1=Math.ceil(nb/2);                   // split blockers across two rows
+  const wallSpread=TUNE.FIELD_WIDTH*0.60;
   mates.forEach((p,i)=>{
     if(i===0){ p.position.set(landing.x,0,landing.z); }            // returner (catches the kick in the gold circle)
-    else { const n=i-1, back=n<5, col=back?n:n-5;                  // 5 up front, 5 behind
-      p.position.set((col-2)*8, 0, og + dir*(back?28:42)); }       // back wall ~30yd up, front wall ~44yd
+    else { const n=i-1, back=n<row1, cnt=back?row1:(nb-row1), idx=back?n:n-row1;
+      const x = cnt>1 ? (idx/(cnt-1)-0.5)*wallSpread : 0;
+      p.position.set(x, 0, og + dir*(back?28:42)); }              // back wall ~30yd up, front wall ~44yd
     p.userData.facing = recv==='BLUE'?0:Math.PI; p.userData.knockT=0;
   });
   // KICKING TEAM — even coverage line spread sideline-to-sideline near midfield, facing the returner
-  foes.forEach((p,i)=>{ const col=i-(foes.length-1)/2;
-    p.position.set(col*4.4, 0, og + dir*52);
+  const covSpread=TUNE.FIELD_WIDTH*0.82;
+  foes.forEach((p,i)=>{ const x = foes.length>1 ? (i/(foes.length-1)-0.5)*covSpread : 0;
+    p.position.set(x, 0, og + dir*52);
     p.userData.facing = recv==='BLUE'?Math.PI:0; p.userData.knockT=0; });
 }
 function blueInCircle(){ return teamPlayers('BLUE').some(p=>Math.hypot(p.position.x-landing.x,p.position.z-landing.z)<=LAND_R); }
@@ -553,13 +594,13 @@ function attemptLateral(){
 function attemptJuke(){
   if(possession!=='BLUE'||carrier<0||jukeCd>0||stamina<TUNE.JUKE_COST) return;
   const c=PL[carrier];
-  // dash direction = your steer (camera-relative); if neutral, sidestep away from the nearest tackler
+  // juke is a pure SIDESTEP along the camera's lateral axis — never forward/back
   const camYaw=Math.atan2(camA.x-camP.x,camA.z-camP.z), cy=Math.cos(camYaw), sy=Math.sin(camYaw);
-  let mx=cy*input.x+sy*input.y, mz=-sy*input.x+cy*input.y, m=Math.hypot(mx,mz);
-  if(m<0.2){ const fx=Math.sin(c.userData.facing), fz=Math.cos(c.userData.facing); mx=fz; mz=-fx; m=1;   // perpendicular to facing
-    const foe=nearestOfTeam('RED',c.position); if(foe>=0){ const f=PL[foe];
-      if((f.position.x-c.position.x)*mx+(f.position.z-c.position.z)*mz>0){ mx=-mx; mz=-mz; } } }   // dash away from him
-  else { mx/=m; mz/=m; }
+  const rx=-cy, rz=sy;                          // screen-right in world
+  let side = input.x>0.25?1 : input.x<-0.25?-1 : 0;   // lean tells which way to cut
+  if(side===0){ const foe=nearestOfTeam('RED',c.position);   // no lean -> cut away from the nearest tackler
+    if(foe>=0){ const f=PL[foe]; side = ((f.position.x-c.position.x)*rx+(f.position.z-c.position.z)*rz)>0 ? -1:1; } else side=1; }
+  const mx=rx*side, mz=rz*side;
   jukeVel.set(mx,0,mz); jukeT=TUNE.JUKE_TIME; jukeCd=TUNE.JUKE_COOLDOWN; stamina=Math.max(0,stamina-TUNE.JUKE_COST);
   faceTo(c, Math.atan2(mx,mz), 1);
   if(truck){ const f=PL[truck.foe]; if(f){ f.userData.knock.set(-jukeVel.x*3.2,0,-jukeVel.z*3.2); f.userData.knockT=0.4; }  // tackler whiffs
@@ -599,7 +640,7 @@ function updatePlayers(dt){
         const g=goalZ(u.team); let tx=p.position.x; const foeIdx=nearestOfTeam(u.team==='BLUE'?'RED':'BLUE',p.position);
         if(foeIdx>=0){ const f=PL[foeIdx], fd=flat(f,p);
           if(fd<8){ const away=(p.position.x-f.position.x); tx = p.position.x + Math.sign(away||1)*(8-fd)*0.9; } }
-        tx=Math.max(-18,Math.min(18,tx));
+        tx=Math.max(-26,Math.min(26,tx));
         moveToward(p,tx,g,TUNE.CARRIER_SPEED,dt);
       } else { // blocker — pick up the nearest UNCLAIMED defender to the carrier (no ganging)
         if(u.assign && u.blockT>0){ u.blockT-=dt;                 // run the DRAWN initial block first...
@@ -665,8 +706,9 @@ function applyInput(p,dt){ const u=p.userData;
     // CAMERA-RELATIVE: "forward/up" always goes into the screen, "left/right" is screen-relative,
     // no matter which way the camera is pointing (fixes controls when chasing / camera swung around)
     const camYaw=Math.atan2(camA.x-camP.x, camA.z-camP.z), cy=Math.cos(camYaw), sy=Math.sin(camYaw);
-    let mx = cy*input.x + sy*input.y;      // right*x + forward*y  (forward=(sy,cy), right=(cy,-sy))
-    let mz = -sy*input.x + cy*input.y;
+    // forward = (sy,cy); screen-right = (-cy,sy). Pushing right must move you right on screen.
+    let mx = -cy*input.x + sy*input.y;
+    let mz =  sy*input.x + cy*input.y;
     const m=Math.hypot(mx,mz)||1; mx/=m; mz/=m;
     p.position.x+=mx*sp*dt*Math.min(1,mag); p.position.z+=mz*sp*dt*Math.min(1,mag);
     faceTo(p,Math.atan2(mx,mz),dt);
