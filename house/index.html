@@ -343,6 +343,36 @@ table.truth td.r{text-align:right;color:var(--dim)}
 .feed p.ev-bad{color:var(--signal)}
 .feed p.ev-good{color:var(--ok)}
 
+/* ── moments: the beats that must not scroll past ────────────────────────── */
+.moment{border:1px solid var(--line);background:var(--panel);padding:0;margin-bottom:20px;
+  overflow:hidden;animation:mo .28s ease-out}
+@keyframes mo{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.moment .mh{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;gap:10px;
+  align-items:center;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent)}
+.moment .mh b{font-family:var(--disp);font-weight:400;font-size:11px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--dim)}
+.moment h2{font-size:21px;color:var(--paper);padding:18px 20px 4px}
+.moment .msub{padding:0 20px 16px;color:var(--dim);font-size:13px}
+.moment .faces{display:flex;gap:14px;flex-wrap:wrap;padding:0 20px 18px}
+.mface{text-align:center;width:88px}
+.mface .fr{width:88px;height:88px;border:2px solid var(--line);background:#000;overflow:hidden}
+.mface .fr img{display:block;width:100%;height:100%}
+.mface .fn{font-family:var(--disp);font-size:13px;letter-spacing:.04em;color:var(--paper);
+  margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mface .ft{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dimmer)}
+.moment.t-bad .mh{background:linear-gradient(180deg,rgba(212,64,44,.16),transparent)}
+.moment.t-bad{border-color:var(--signal-dim)}
+.moment.t-bad .mh b{color:var(--signal)}
+.moment.t-good .mh{background:linear-gradient(180deg,rgba(127,154,134,.14),transparent)}
+.moment.t-good .mh b{color:var(--ok)}
+.moment.t-power .mh{background:linear-gradient(180deg,rgba(191,174,142,.16),transparent)}
+.moment.t-power{border-color:var(--hand)}
+.moment.t-power .mh b{color:var(--hand)}
+
+.gread{border-left:3px solid var(--dimmer);padding:8px 14px;margin-top:14px;
+  background:var(--panel2);color:var(--dim);font-size:13px}
+.gread.good{border-left-color:var(--ok);color:var(--chalk)}
+
 .hide{display:none !important}
 @media(max-width:720px){
   :root{--tile:104px}
@@ -720,8 +750,41 @@ function startRun(seed){
   clearRun(); screen='phase'; pump();
 }
 
+// ── moments ────────────────────────────────────────────────────────────────
+/*
+ * Playtest: "someone used the veto but the only way to know is the chat box all
+ * the way at the bottom." Correct, and it applied to the nominations, the veto
+ * draw and every power in the game. A beat that decides the week cannot be a
+ * line of grey text that scrolls past while the player is looking somewhere
+ * else. These stop the loop until acknowledged.
+ */
+var momentQ=[];
+function moment(m){ momentQ.push(m); }
+
+function showMoment(m){
+  screen='phase';
+  var faces=(m.faces||[]).map(function(f){
+    var rd=f.id===s.human?null:readOf(f.id);
+    var col=f.col||(rd?U.bandColor(rd.band.label):'#e7e2d7');
+    return '<div class="mface"><div class="fr" style="border-color:'+col+'">'
+      +avatar(s.cast[f.id],88)+'</div>'
+      +'<div class="fn">'+esc(s.cast[f.id].first)+(f.id===s.human?' (you)':'')+'</div>'
+      +'<div class="ft" style="color:'+col+'">'+esc(f.tag||'')+'</div></div>';
+  }).join('');
+  app.innerHTML=topbar()
+    +'<div class="moment t-'+(m.tone||'')+'">'
+    +'<div class="mh">'+U.icon(m.icon||'captain',18)+'<b>'+esc(m.kicker||'')+'</b></div>'
+    +'<h2>'+esc(m.title)+'</h2>'
+    +(m.sub?'<div class="msub">'+esc(m.sub)+'</div>':'')
+    +(faces?'<div class="faces">'+faces+'</div>':'')
+    +'</div>'+renderFeed();
+  setBar('',[{label:m.cta||'Go on',cls:'go',go:function(){ pump(); }}]);
+  scrollFeed();
+}
+
 // ── the pump: advance until the game needs the player ──────────────────────
 function pump(){
+  if(momentQ.length){ showMoment(momentQ.shift()); return; }
   var guard=400;
   while(guard-->0){
     if(s.phase===R.PHASES.OVER){ finishRun(); return; }
@@ -761,9 +824,21 @@ function narrateAfter(ph,wkBefore){
     s.captainResult=null;
   }
   if(ph===R.PHASES.NAMING&&s.atRisk.length){
+    moment({kicker:'Naming',icon:'risk',tone:'bad',
+      title:(s.captain===s.human?'You name':s.cast[s.captain].first+' names')+' two At Risk',
+      sub:'One of them is leaving unless the Veto changes it.',
+      faces:s.atRisk.map(function(i){ return {id:i,tag:'At Risk',col:'#d4402c'}; })});
     say(s.captain===s.human
       ? tsay('namingYou',{a:s.cast[s.atRisk[0]].first,b:s.cast[s.atRisk[1]].first})
       : tsay('naming',{captain:s.cast[s.captain].first,a:s.cast[s.atRisk[0]].first,b:s.cast[s.atRisk[1]].first}),'ev-bad','risk');
+  }
+  if(ph===R.PHASES.VETO_DRAW&&s.vetoFieldIds&&s.vetoFieldIds.length){
+    /* Playtest: "it also didn't show who was playing for veto". */
+    moment({kicker:'The draw',icon:'veto',
+      title:'Playing for the Veto',
+      sub:'The Captain and both At Risk, plus whoever came out of the draw.',
+      faces:s.vetoFieldIds.map(function(i){
+        return {id:i,tag:i===s.captain?'Captain':(s.atRisk.indexOf(i)!==-1?'At Risk':'Drawn')}; })});
   }
   if(ph===R.PHASES.VETO_COMP&&s.vetoResult){
     say('Veto Comp: '+s.vetoResult.name+'. '+s.cast[s.vetoHolder].first+' takes it.','ev-good','veto');
@@ -771,7 +846,24 @@ function narrateAfter(ph,wkBefore){
   }
   if(ph===R.PHASES.VETO_CEREMONY&&s.phase!==R.PHASES.VETO_CEREMONY){
     if(s.vetoUsed){
-      say(tsay('vetoUsed',{holder:s.cast[s.vetoHolder].first,saved:s.cast[s.saved].first}),'ev-good','veto');
+      var mf=[{id:s.saved,tag:'Saved',col:'#7f9a86'}];
+      if(s.replacement!=null) mf.push({id:s.replacement,tag:'Goes up',col:'#d4402c'});
+      moment({kicker:'The ceremony',icon:'veto',tone:'good',
+        title:(s.saved===s.vetoHolder
+          ? s.cast[s.vetoHolder].first+' takes themselves off the block'
+          : s.cast[s.vetoHolder].first+' saves '+s.cast[s.saved].first),
+        sub:s.replacement!=null?(s.cast[s.captain].first+' has to name somebody else.'):'',
+        faces:mf});
+    } else {
+      moment({kicker:'The ceremony',icon:'veto',
+        title:s.cast[s.vetoHolder].first+' holds the Veto',
+        sub:'The names stand.',
+        faces:s.atRisk.map(function(i){ return {id:i,tag:'At Risk',col:'#d4402c'}; })});
+    }
+    if(s.vetoUsed){
+      say(s.saved===s.vetoHolder
+        ? tsay('vetoSelf',{holder:s.cast[s.vetoHolder].first})
+        : tsay('vetoUsed',{holder:s.cast[s.vetoHolder].first,saved:s.cast[s.saved].first}),'ev-good','veto');
       if(s.replacement!=null) say(s.cast[s.captain].first+' names '+s.cast[s.replacement].first+' in their place.');
     } else say(tsay('vetoHeld',{holder:s.cast[s.vetoHolder].first}),'','veto');
   }
@@ -779,6 +871,11 @@ function narrateAfter(ph,wkBefore){
   for(var pi=0;pi<pl.length;pi++){
     pl[pi].said=true;
     var pd=PW.POWERS[pl[pi].kind], who=s.cast[pl[pi].holder];
+    var pf=[{id:pl[pi].holder,tag:'Played it',col:'#bfae8e'}];
+    if(pl[pi].kind==='diamond'){ pf.push({id:pl[pi].save,tag:'Saved',col:'#7f9a86'});
+      pf.push({id:pl[pi].replace,tag:'Goes up',col:'#d4402c'}); }
+    if(pl[pi].kind==='veto_pick') pf.push({id:pl[pi].pick,tag:'Chosen'});
+    moment({kicker:'A power',icon:'power',tone:'power',title:pd.name,sub:pd.long,faces:pf});
     if(pl[pi].kind==='safety') say((pl[pi].holder===s.human?'You are':who.first+' is')+' safe this week. The '+pd.name+' is spent.','ev-power','power');
     else if(pl[pi].kind==='diamond') say(who.first+' plays the Diamond Veto. '+s.cast[pl[pi].save].first
       +' comes off, '+s.cast[pl[pi].replace].first+' goes up, and the Captain had no say in it.','ev-power','power');
@@ -945,10 +1042,12 @@ function bindPicks(fn){
 var housePanel=false;
 function showScheming(need){
   screen='phase';
-  var moment=null;
+  var moment=null, gathering=null;
 
   function paintPick(){
     var side=[
+      {label:'Bring people together',off:s.energy<SC.ENERGY.GATHER_MIN*SC.ENERGY.GATHER_PER_HEAD,
+        go:function(){ gathering=[]; paintGather(); }},
       {label:'Eavesdrop',off:s.energy<SC.ENERGY.EAVESDROP_COST,go:function(){
         var o=R.performAction(s,{kind:'eavesdrop'}); s.energy-=SC.ENERGY.EAVESDROP_COST;
         narrateAction(o); saveRun(); paintPick(); }},
@@ -974,6 +1073,59 @@ function showScheming(need){
       moment=R.sceneFor(s,id); paintScene();
     });
     setBar('Pick somebody',side);
+    scrollFeed();
+  }
+
+  /* Pull two to four people into one room and try to put a name on it. The
+     odds are shown as a read rather than a percentage: §17 keeps numbers off
+     relationships, and "these two cannot stand each other" is the useful
+     version of that information anyway. */
+  function paintGather(){
+    var cost=gathering.length*SC.ENERGY.GATHER_PER_HEAD;
+    var ok=gathering.length>=SC.ENERGY.GATHER_MIN&&s.energy>=cost;
+    var read='';
+    if(gathering.length>=SC.ENERGY.GATHER_MIN){
+      var c=SC.gatherChance(s,gathering);
+      read=c>0.62?'This room would hold.'
+        :c>0.42?'It could go either way.'
+        :c>0.22?'This is a stretch. Somebody in here is not there yet.'
+        :'These people are nowhere near ready. Somebody in this room cannot stand somebody else in it.';
+    }
+    app.innerHTML=topbar()
+      +'<div class="file"><h2>Get them in one room</h2>'
+      +'<div class="sub">Name the people you think are already with you. '
+      +'One energy a head, and every pair in the room has to hold, not just how each of them feels about you. '
+      +'If it does not land you have shown them all exactly who you were counting on.</div>'
+      +(read?'<div class="gread'+(SC.gatherChance(s,gathering)>0.42?' good':'')+'">'+esc(read)+'</div>':'')
+      +'</div>'
+      +wall({pick:true,selected:gathering,nosort:true})+renderFeed();
+    bindPicks(function(id){
+      if(id===s.human) return;
+      var i=gathering.indexOf(id);
+      if(i>=0) gathering.splice(i,1);
+      else if(gathering.length<SC.ENERGY.GATHER_MAX) gathering.push(id);
+      paintGather();
+    });
+    setBar(gathering.length?(cost+' energy'):'Pick two to four',[
+      {label:'Back',go:function(){ gathering=null; paintPick(); }},
+      {label:'Bring them in',cls:'go',off:!ok,go:function(){
+        var out=R.gatherPeople(s,gathering);
+        if(out){
+          if(out.landed){
+            say('You get them in one room and it holds.','ev-good','alliance');
+            moment({kicker:'An alliance',icon:'alliance',tone:'good',
+              title:'You have something now',
+              sub:'It lasts as long as all of you want it to, which is never as long as you think.',
+              faces:out.members.map(function(i){ return {id:i,tag:i===s.human?'You':'In'}; })});
+          } else {
+            say('It does not come together, and now they all know who you counted on.','ev-bad','broken');
+          }
+        }
+        gathering=null; saveRun();
+        if(s.energy<SC.ENERGY.SCENE_COST){ R.step(s,{done:true}); pump(); return; }
+        pump();
+      }}
+    ]);
     scrollFeed();
   }
 

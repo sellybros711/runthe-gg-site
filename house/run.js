@@ -988,6 +988,7 @@ function doFallout(s) {
     atRisk: s.atRisk.slice(),
     vetoHolder: s.vetoHolder,
     vetoUsed: s.vetoUsed,
+    savedId: s.saved != null ? s.saved : null,
     replacement: s.replacement,
     tally: result.tally,
     votes: result.votes,
@@ -1251,6 +1252,18 @@ function sceneFor(s, targetId) {
   return SC.compose(s, s.rng.text, s.human, targetId);
 }
 
+/** Try to pull a group of people into one alliance. Costs one energy a head. */
+function gatherPeople(s, ids) {
+  const cost = ids.length * SC.ENERGY.GATHER_PER_HEAD;
+  if (s.energy < cost) return null;
+  if (ids.length < SC.ENERGY.GATHER_MIN || ids.length > SC.ENERGY.GATHER_MAX) return null;
+  s.energy -= cost;
+  const out = SC.gather(s, ids, s.rng.ai);
+  out.energyLeft = s.energy;
+  s.log.push({ kind: 'gather', week: s.week, ids: ids.slice(), landed: out.landed });
+  return out;
+}
+
 /** Commit to one of A, B or C. Returns what happened. */
 function playScene(s, moment, key) {
   const opt = moment.options.filter((o) => o.key === key)[0];
@@ -1312,7 +1325,7 @@ function restore(blob) {
 
 const api = {
   PHASES, TWIST_WINDOWS, BOUNCE_CHANCE, FLAVOUR, BOUNCE_POOL,
-  serialise, restore, sceneFor, playScene, energyLeft,
+  serialise, restore, sceneFor, playScene, energyLeft, gatherPeople,
   createRun, defaultAccount, rollTwists,
   activeIds, activeCount, eligibleVoters, captainCompField, vetoField, name, nextPlace, finalisePlaces,
   needsInput, step, playOut, performAction, declareIntents,

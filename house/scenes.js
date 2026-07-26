@@ -68,6 +68,13 @@ const ENERGY = {
   SCENE_COST: 2,
   RISKY_SURCHARGE: 1,       // the C option costs more, decided before you answer
   EAVESDROP_COST: 2,
+  /*
+   * Pulling a group into one room. One energy per person you are trying to get
+   * there, so a three way costs three, which is most of a week's budget for a
+   * thing that can fail. It should be a decision, not a habit.
+   */
+  GATHER_PER_HEAD: 1,
+  GATHER_MIN: 2, GATHER_MAX: 4,
   CONFESSIONAL_COST: 0,     // free, per GDD §9
 };
 
@@ -208,7 +215,7 @@ const BEATS = [
     a: { t: 'Say nobody has.' },
     b: { t: 'Tell them about your worst night in here.', fx: ['read'] },
     c: { t: 'Tell them you sleep fine because you know where you stand with them.', fx: ['ally'] } },
-  { pool: 'bond', line: '{name} is doing the thing where they laugh a beat after everybody else.',
+  { pool: 'bond', line: '{name} is doing the thing where they laugh a beat after everybody else.', needs: 'history',
     a: { t: 'Let it go.' },
     b: { t: 'Ask if they are alright.', fx: ['read'] },
     c: { t: 'Say out loud that they have been off since the vote.', fx: ['read', 'info'] } },
@@ -230,15 +237,15 @@ const BEATS = [
     c: { t: 'Name the person you trust least and watch their face.', fx: ['info', 'heat'] } },
 
   // ── probe: trying to get a read ──
-  { pool: 'probe', line: 'You want to know where {name} actually is this week.',
+  { pool: 'probe', line: 'You want to know where {name} actually is this week.', needs: 'noms',
     a: { t: 'Ask what they make of the noms.' },
     b: { t: 'Ask who they think is running things.', fx: ['read'] },
     c: { t: 'Ask them flat out who they are voting for.', fx: ['read', 'info'] } },
-  { pool: 'probe', line: '{name} has been in a lot of rooms with a lot of people this week.',
+  { pool: 'probe', line: '{name} has been in a lot of rooms with a lot of people this week.', needs: 'history',
     a: { t: 'Mention it lightly.' },
     b: { t: 'Ask what everybody has been telling them.', fx: ['info'] },
     c: { t: 'Tell them it looks bad and ask what they are doing.', fx: ['info', 'suspicion'] } },
-  { pool: 'probe', line: 'There is a name that keeps coming up and you cannot tell who started it.',
+  { pool: 'probe', line: 'There is a name that keeps coming up and you cannot tell who started it.', needs: 'history',
     a: { t: 'Ask if they have heard it too.' },
     b: { t: 'Ask where they think it came from.', fx: ['info'] },
     c: { t: 'Tell them you think it came from them.', fx: ['info', 'suspicion'] } },
@@ -246,7 +253,7 @@ const BEATS = [
     a: { t: 'Let the we go unexamined.' },
     b: { t: 'Ask who we is.', fx: ['read'] },
     c: { t: 'Ask whether you are in it.', fx: ['read', 'ally'] } },
-  { pool: 'probe', line: 'Somebody told you {name} said your name. It might not be true.',
+  { pool: 'probe', line: 'Somebody told you {name} said your name. It might not be true.', needs: 'history',
     a: { t: 'Say nothing about it.' },
     b: { t: 'Bring it up sideways and watch them.', fx: ['read'] },
     c: { t: 'Put it to them directly.', fx: ['read', 'suspicion'] } },
@@ -326,7 +333,7 @@ const BEATS = [
     c: { t: 'Tell {name} what the other one said about them last week.', fx: ['intent', 'heat', 'suspicion'] } },
 
   // ── deflect: you are being looked at ──
-  { pool: 'deflect', line: '{name} has been watching you since the vote and is not hiding it.',
+  { pool: 'deflect', line: '{name} has been watching you since the vote and is not hiding it.', needs: 'history',
     a: { t: 'Behave normally and wait it out.' },
     b: { t: 'Ask them what is on their mind.', fx: ['read'] },
     c: { t: 'Get in front of it and give them a different name to think about.', fx: ['heat'] } },
@@ -348,15 +355,15 @@ const BEATS = [
     a: { t: 'Keep it.' },
     b: { t: 'Give them the harmless half.', fx: ['read'] },
     c: { t: 'Give them all of it.', fx: ['heat', 'info'] } },
-  { pool: 'gossip', line: '{name} wants to know what people say about them.',
+  { pool: 'gossip', line: '{name} wants to know what people say about them.', needs: 'history',
     a: { t: 'Say only good things, which is a lie they will accept.' },
     b: { t: 'Tell them the mild version of the truth.', fx: ['read'] },
     c: { t: 'Tell them exactly who said what.', fx: ['info', 'heat'] } },
-  { pool: 'gossip', line: 'Two other people are working together and you are fairly sure of it.',
+  { pool: 'gossip', line: 'Two other people are working together and you are fairly sure of it.', needs: 'history',
     a: { t: 'Keep it to yourself a while longer.' },
     b: { t: 'Ask {name} whether they have noticed.', fx: ['info'] },
     c: { t: 'Tell {name} it exists and let them do something about it.', fx: ['heat', 'info'] } },
-  { pool: 'gossip', line: '{name} is repeating something back to you that you told somebody else.',
+  { pool: 'gossip', line: '{name} is repeating something back to you that you told somebody else.', needs: 'history',
     a: { t: 'Act like it is new.' },
     b: { t: 'Note where it must have travelled from.', fx: ['read', 'info'] },
     c: { t: 'Tell them it came from you and ask who passed it on.', fx: ['info', 'suspicion'] } },
@@ -372,7 +379,7 @@ const BEATS = [
     c: { t: 'Give them a name with confidence.', fx: ['heat', 'suspicion'] } },
 
   // ── captain: you hold the power this week ──
-  { pool: 'captain', line: 'You are the Captain and {name} has come upstairs to find out what that means for them.',
+  { pool: 'captain', line: 'You are the Captain and {name} has come upstairs to find out what that means for them.', needs: 'noms',
     a: { t: 'Tell them they are fine this week.' },
     b: { t: 'Tell them nothing is decided.', fx: ['read'] },
     c: { t: 'Tell them who you are naming and ask them to keep it.', fx: ['intent', 'ally'] } },
@@ -398,7 +405,7 @@ const BEATS = [
     a: { t: 'Acknowledge it and change the subject.' },
     b: { t: 'Agree to not put each other up if either of you wins.', fx: ['ally'] },
     c: { t: 'Ask them to throw it to you.', fx: ['intent', 'suspicion'] } },
-  { pool: 'late', line: 'You are both counting jury votes and pretending you are not.',
+  { pool: 'late', line: 'You are both counting jury votes and pretending you are not.', needs: 'history',
     a: { t: 'Keep pretending.' },
     b: { t: 'Admit you have been counting.', fx: ['read'] },
     c: { t: 'Tell them who you think they cannot beat.', fx: ['info', 'heat'] } },
@@ -418,7 +425,7 @@ const BEATS = [
     a: { t: 'Respect it.' },
     b: { t: 'Ask, once, and drop it if they deflect.', fx: ['read'] },
     c: { t: 'Tell them about yours until they tell you about theirs.', fx: ['read', 'ally'] } },
-  { pool: 'bond', line: 'Somebody left and the house is quieter than it was.',
+  { pool: 'bond', line: 'Somebody left and the house is quieter than it was.', needs: 'history',
     a: { t: 'Sit in it with {name}.' },
     b: { t: 'Say the thing everybody is thinking.', fx: ['read'] },
     c: { t: 'Say you are glad it was not either of you, and mean the second half.', fx: ['ally'] } },
@@ -432,7 +439,7 @@ const BEATS = [
     c: { t: 'Break it with something you should not say.', fx: ['read', 'ally'] } },
 
   // ── probe, continued ──
-  { pool: 'probe', line: '{name} answered the same question differently to two people today.',
+  { pool: 'probe', line: '{name} answered the same question differently to two people today.', needs: 'history',
     a: { t: 'File it away.' },
     b: { t: 'Ask the question a third time and see which version you get.', fx: ['read'] },
     c: { t: 'Tell them you have heard both versions.', fx: ['read', 'suspicion'] } },
@@ -440,21 +447,21 @@ const BEATS = [
     a: { t: 'Do not hand them the idea.' },
     b: { t: 'Ask what they would do with the power.', fx: ['read'] },
     c: { t: 'Ask whether you would be safe.', fx: ['read', 'ally'] } },
-  { pool: 'probe', line: '{name} has been very careful with you all week.',
+  { pool: 'probe', line: '{name} has been very careful with you all week.', needs: 'history',
     a: { t: 'Be careful back.' },
     b: { t: 'Ask them why they are being careful.', fx: ['read'] },
     c: { t: 'Say something reckless and watch what they do with it.', fx: ['read', 'info'] } },
 
   // ── float, continued ──
-  { pool: 'float', line: 'There is a name that would solve this week for both of you.',
+  { pool: 'float', line: 'There is a name that would solve this week for both of you.', needs: 'noms',
     a: { t: 'Wait for them to get there.' },
     b: { t: 'Describe the problem without naming the solution.', fx: ['read'] },
     c: { t: 'Name it and ask them to carry it.', fx: ['intent', 'heat'] } },
-  { pool: 'float', line: '{name} has the Captaincy and has not decided yet.',
+  { pool: 'float', line: '{name} has the Captaincy and has not decided yet.', needs: 'noms',
     a: { t: 'Stay out of their room.' },
     b: { t: 'Go up and talk about anything else.', fx: ['read'] },
     c: { t: 'Go up and give them a name.', fx: ['intent'] } },
-  { pool: 'float', line: 'The house has half agreed on somebody and it is not who you want.',
+  { pool: 'float', line: 'The house has half agreed on somebody and it is not who you want.', needs: 'noms',
     a: { t: 'Go with the house.' },
     b: { t: 'Ask {name} whether they are sure.', fx: ['read'] },
     c: { t: 'Try to turn it, starting here.', fx: ['intent', 'suspicion'] } },
@@ -474,7 +481,7 @@ const BEATS = [
     c: { t: 'Say you will go up next week in their place if it comes to it.', fx: ['intent', 'ally'] } },
 
   // ── deflect, continued ──
-  { pool: 'deflect', line: 'Your name has been in the air for two days and nobody has said it to you.',
+  { pool: 'deflect', line: 'Your name has been in the air for two days and nobody has said it to you.', needs: 'history',
     a: { t: 'Wait for somebody to.' },
     b: { t: 'Ask {name} whether they have heard it.', fx: ['read', 'info'] },
     c: { t: 'Say it yourself, first, and dare them to agree.', fx: ['heat'] } },
@@ -482,7 +489,7 @@ const BEATS = [
     a: { t: 'Behave as though it was nothing.' },
     b: { t: 'Explain it before they ask.', fx: ['read'] },
     c: { t: 'Tell them who you were actually in there with.', fx: ['info', 'heat'] } },
-  { pool: 'deflect', line: 'Somebody has been telling people you are running this house.',
+  { pool: 'deflect', line: 'Somebody has been telling people you are running this house.', needs: 'history',
     a: { t: 'Be smaller for a week.' },
     b: { t: 'Ask {name} where they think it started.', fx: ['info'] },
     c: { t: 'Point out who benefits from you looking like that.', fx: ['heat', 'suspicion'] } },
@@ -492,7 +499,7 @@ const BEATS = [
     a: { t: 'Decline politely.' },
     b: { t: 'Trade something you were going to lose anyway.', fx: ['info'] },
     c: { t: 'Trade something real and take what they have.', fx: ['info', 'ally'] } },
-  { pool: 'gossip', line: 'Two people had an argument and you were the only one who saw it.',
+  { pool: 'gossip', line: 'Two people had an argument and you were the only one who saw it.', needs: 'history',
     a: { t: 'Keep it.' },
     b: { t: 'Mention it to {name} without taking a side.', fx: ['info'] },
     c: { t: 'Tell {name} and pick a side while you do it.', fx: ['heat', 'info'] } },
@@ -512,7 +519,7 @@ const BEATS = [
     c: { t: 'Suggest the four of you rule each other out in public.', fx: ['heat', 'read'] } },
 
   // ── captain, continued ──
-  { pool: 'captain', line: 'You have to name two and there are four people you would happily see gone.',
+  { pool: 'captain', line: 'You have to name two and there are four people you would happily see gone.', needs: 'noms',
     a: { t: 'Tell {name} you have not decided.' },
     b: { t: 'Ask {name} who they would name.', fx: ['read', 'info'] },
     c: { t: 'Tell {name} they are safe and ask for something in return.', fx: ['ally', 'intent'] } },
@@ -520,7 +527,7 @@ const BEATS = [
     a: { t: 'Thank them and believe none of it.' },
     b: { t: 'Ask them to prove it with a name.', fx: ['read', 'info'] },
     c: { t: 'Tell them you know they were in the other room this morning.', fx: ['suspicion', 'heat'] } },
-  { pool: 'captain', line: 'Naming these two costs you both of them for the rest of the game.',
+  { pool: 'captain', line: 'Naming these two costs you both of them for the rest of the game.', needs: 'noms',
     a: { t: 'Do it and take the cost.' },
     b: { t: 'Tell {name} in advance so it is not a surprise.', fx: ['read'] },
     c: { t: 'Tell {name} it was somebody else pushing for it.', fx: ['heat', 'suspicion'] } },
@@ -578,11 +585,32 @@ function pickScene(rng, them) {
   return SCENES[Math.floor(rng() * SCENES.length)];
 }
 
+/*
+ * What has actually happened yet.
+ *
+ * Playtest caught this immediately and it was everywhere: week one offered "say
+ * out loud that they have been off since the vote" when there had been no vote,
+ * and "ask what they make of the noms" before anybody had been named. A beat
+ * that refers to an event the run has not reached breaks the fiction harder
+ * than a dull beat ever could, because it tells the player the house is not
+ * really tracking anything.
+ *
+ *   noms      two people are on the block RIGHT NOW
+ *   history   at least one eviction has already happened
+ */
+function beatAllowed(state, b) {
+  if (!b.needs) return true;
+  if (b.needs === 'noms') return state.atRisk && state.atRisk.length >= 2;
+  if (b.needs === 'history') return (state.weeks && state.weeks.length > 0);
+  return true;
+}
+
 function pickBeat(state, rng, me, them) {
   const pools = poolFor(state, me, them);
   const pool = pools[Math.floor(rng() * pools.length)];
-  const opts = BEATS.filter((b) => b.pool === pool);
-  const list = opts.length ? opts : BEATS.filter((b) => b.pool === 'bond');
+  let list = BEATS.filter((b) => b.pool === pool && beatAllowed(state, b));
+  if (!list.length) list = BEATS.filter((b) => b.pool === 'bond' && beatAllowed(state, b));
+  if (!list.length) list = BEATS.filter((b) => !b.needs);
   return list[Math.floor(rng() * list.length)];
 }
 
@@ -762,9 +790,68 @@ function applyEffects(state, out, fx, rng) {
   }
 }
 
+/**
+ * Get several people in one room and try to make it a thing.
+ *
+ * Alliances were previously something the player could only stumble into
+ * pairwise, while the AI formed and grew groups behind their back all game.
+ * This is the verb that was missing: name the people you think are already with
+ * you and try to put a name on it.
+ *
+ * It is harder than a two way and it should be. EVERY pair in the room has to
+ * hold, not just each person's feeling about you, because a group where two
+ * members quietly cannot stand each other is not an alliance, it is a meeting.
+ * That is also why the failure is expensive: you have just shown four people
+ * exactly who you think your people are.
+ */
+function gatherChance(state, ids) {
+  const me = state.human;
+  let worst = 1;
+  for (const a of [me].concat(ids)) {
+    for (const b of [me].concat(ids)) {
+      if (a === b) continue;
+      const t = state.rel.trust[a][b];
+      const p = E.clamp01((t + 10) / 90);
+      if (p < worst) worst = p;
+    }
+  }
+  /* Your own charisma is what holds a room together that would not hold itself. */
+  const lift = 0.72 + state.cast[me].social.charisma / 260;
+  const size = 1 - (ids.length - 1) * 0.12;
+  return E.clamp(worst * lift * size, 0.05, 0.88);
+}
+
+function gather(state, ids, rng) {
+  const me = state.human;
+  const chance = gatherChance(state, ids);
+  const out = { kind: 'gather', ids: ids.slice(), chance, landed: false, fx: [] };
+
+  if (rng.chance(chance)) {
+    const members = [me].concat(ids);
+    const al = E.makeAlliance(members, state.week);
+    state.alliances.push(al);
+    for (const a of members) for (const b of members) {
+      if (a !== b) E.applyTrust(state.rel, a, b, E.K.D_ALLIANCE * 0.8);
+    }
+    out.landed = true; out.alliance = al.id; out.members = members;
+  } else {
+    /* Everybody now knows who you counted on, including the people you left
+       out of the room and the people in it who were not ready. */
+    for (const id of ids) {
+      E.applyTrust(state.rel, id, me, -rng.range(3, 9));
+      state.rel.suspicion[id][me] = Math.min(100, state.rel.suspicion[id][me] + 12);
+    }
+  }
+  for (const id of ids) {
+    state.rel.lastWeek[me][id] = state.week;
+    E.refreshBelief(state.rel, state.cast, me, id, state.week, rng);
+  }
+  return out;
+}
+
 const api = {
-  ENERGY, SCENES, BEATS, RISK, MOVE_IN, weeklyEnergy,
-  poolFor, pickScene, pickBeat, compose, riskyChance, resolve, GAIN,
+  ENERGY, SCENES, BEATS, RISK, MOVE_IN, weeklyEnergy, gatherChance, gather,
+  poolFor, pickScene, pickBeat, beatAllowed, compose, riskyChance, resolve, GAIN,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;

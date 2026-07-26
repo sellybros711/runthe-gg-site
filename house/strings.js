@@ -128,6 +128,12 @@ const S = {
   vetoUsed: [
     '{holder} uses the Veto on {saved}.',
   ],
+  /* Somebody saving themselves is the common case and it read as
+     "Carlota W. uses the Veto on Carlota W.." which is two bugs in one line. */
+  vetoSelf: [
+    '{holder} takes themselves off the block.',
+    '{holder} uses the Veto on themselves. Nobody is surprised.',
+  ],
   vetoHeld: [
     '{holder} keeps the Veto in their pocket. The names stand.',
   ],
@@ -183,7 +189,16 @@ const S = {
  * because a string with a hole in it should fail loudly in a playtest.
  */
 function fill(tpl, vars) {
-  return tpl.replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] != null ? String(vars[k]) : m));
+  const out = tpl.replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] != null ? String(vars[k]) : m));
+  /*
+   * Collapse doubled terminal punctuation.
+   *
+   * First names are disambiguated with an initial when two people share one,
+   * so a slot can hold "Carlota W." and any template ending in a full stop then
+   * produces "Carlota W..". Fixing it at assembly is the only place it can be
+   * fixed once, rather than in every template that happens to end on a name.
+   */
+  return out.replace(/([.?])\1+/g, '$1');
 }
 
 /** Deterministic pick off the `text` stream, then filled. */

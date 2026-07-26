@@ -128,7 +128,8 @@ function weekRecap(state, w) {
   beats.push(`${nm(w.captain)} named ${w.atRisk.map(nm).join(' and ')} At Risk.`);
   if (w.vetoHolder != null) {
     beats.push(w.vetoUsed
-      ? `${nm(w.vetoHolder)} used the Veto${w.replacement != null ? `, and ${nm(w.replacement)} went up instead` : ''}.`
+      ? `${nm(w.vetoHolder)} used the Veto${w.savedId === w.vetoHolder ? ' on themselves' : ''}`
+        + `${w.replacement != null ? `, and ${nm(w.replacement)} went up instead` : ''}.`
       : `${nm(w.vetoHolder)} held the Veto and left the names alone.`);
   }
 
