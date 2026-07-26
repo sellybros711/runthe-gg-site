@@ -217,6 +217,11 @@ const TUNE = {
   // ---- DIFFICULTY ----
   DIFF_RAMP:      0.035,    // defender speed +this fraction per point already scored (both teams) — gentle, stays fair late
 
+  // ---- DEFENSE SHAPE (anti-bunching: contain lanes instead of everyone chasing the ball) ----
+  PURSUERS:       2,        // only this many defenders commit to the carrier; the rest hold a spread wall
+  CONTAIN_DEPTH:  11,       // how far AHEAD of the carrier the containment wall sits
+  LANE_WIDTH:     5.5,      // when the carrier enters a container's lane, that defender steps up to attack
+
   // ---- CAMERA ----
   CAM_DIST: 10.5, CAM_HEIGHT: 5.4, CAM_LOOKAHEAD: 5, CAM_LERP: 5.5,
   LOOSE_CAM_DIST: 17, LOOSE_CAM_HEIGHT: 15, LOOSE_CAM_LERP: 3.4,
@@ -314,7 +319,7 @@ function makePlayer(team, number){ const g=new THREE.Group(); const color=TEAM[t
   g.userData={ bodyMat, knock:new THREE.Vector3(), knockT:0, engaged:false, facing:0 };
   return g; }
 const PL=[];
-for(const team of ['BLUE','RED']) for(let i=0;i<TUNE.TEAM_SIZE;i++){ const p=makePlayer(team, NUMS[i]); p.userData.team=team; scene.add(p); PL.push(p); }
+for(const team of ['BLUE','RED']) for(let i=0;i<TUNE.TEAM_SIZE;i++){ const p=makePlayer(team, NUMS[i]); p.userData.team=team; p.userData.lane=i; scene.add(p); PL.push(p); }
 // carrier highlight (gold) + controlled ring
 const ring=new THREE.Mesh(new THREE.RingGeometry(1.0,1.35,24), new THREE.MeshBasicMaterial({color:'#ffffff',side:THREE.DoubleSide,transparent:true,opacity:.9}));
 ring.rotation.x=-Math.PI/2; ring.position.y=0.05; scene.add(ring);
@@ -658,16 +663,23 @@ function updatePlayers(dt){
           } else moveToward(p,0,goalZ(u.team),TUNE.MATE_SPEED,dt);
         }
       }
-    } else { // defense — pursue with an INTERCEPT angle (lead the carrier), not a stern-chase
+    } else { // defense — CONTAIN LANES: only the nearest few commit; the rest hold a spread wall (no blob)
       if(u.assign && u.blockT>0){ u.blockT-=dt;                  // run the DRAWN initial move first...
         if(Math.hypot(p.position.x-u.assign.x,p.position.z-u.assign.z)<1.6) u.blockT=0;
         else moveToward(p,u.assign.x,u.assign.z,TUNE.DEF_SPEED*diffMult,dt);
       }
       if(!(u.assign && u.blockT>0) && cP){ u.assign=null;
         const sp=(u.engaged?TUNE.DEF_SPEED*TUNE.BLOCKED_MULT:TUNE.DEF_SPEED)*diffMult;
-        const dist=Math.hypot(cP.x-p.position.x,cP.z-p.position.z);
-        const lead=Math.min(1.1, dist/Math.max(4,sp))*0.6;        // how far ahead to aim (beatable, not perfect)
-        moveToward(p, cP.x+cVx*lead, cP.z+cVz*lead, sp,dt);
+        const rank=defRankToCarrier(p), carDir=dirOf(possession);
+        const laneX=(u.lane/(TUNE.TEAM_SIZE-1)-0.5)*TUNE.FIELD_WIDTH*0.78;
+        const inMyLane=Math.abs(cP.x-laneX)<TUNE.LANE_WIDTH;
+        if(rank<TUNE.PURSUERS || inMyLane){                      // COMMIT — intercept the carrier
+          const dist=Math.hypot(cP.x-p.position.x,cP.z-p.position.z);
+          const lead=Math.min(1.1, dist/Math.max(4,sp))*0.6;
+          moveToward(p, cP.x+cVx*lead, cP.z+cVz*lead, sp,dt);
+        } else {                                                 // CONTAIN — hold your lane, wall AHEAD of the carrier
+          moveToward(p, laneX, cP.z+carDir*TUNE.CONTAIN_DEPTH, sp*0.94, dt);
+        }
       }
     }
   }
@@ -694,6 +706,10 @@ function resolveBodies(){
 function teamRankToBall(p){ const my=Math.hypot(p.position.x-ball.position.x,p.position.z-ball.position.z); let r=0;
   for(const q of PL){ if(q.userData.team!==p.userData.team||q===p)continue;
     if(Math.hypot(q.position.x-ball.position.x,q.position.z-ball.position.z)<my) r++; } return r; }
+function defRankToCarrier(p){ if(carrier<0) return 99; const cP=PL[carrier].position;
+  const my=Math.hypot(p.position.x-cP.x,p.position.z-cP.z); let r=0;
+  for(const q of PL){ if(q.userData.team!==p.userData.team||q===p)continue;
+    if(Math.hypot(q.position.x-cP.x,q.position.z-cP.z)<my) r++; } return r; }
 function applyInput(p,dt){ const u=p.userData;
   const iAmCarrier = possession==='BLUE'&&carrier===controlled;
   let sp = iAmCarrier ? TUNE.CARRIER_SPEED : TUNE.CHASE_SPEED;
