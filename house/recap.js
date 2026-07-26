@@ -53,6 +53,10 @@ const REASONS = {
   pressure: { them: 'was told to by an alliance',      you: 'was told to by an alliance' },
   panel:    { them: 'could not beat them at the end',  you: 'did not think they could beat you' },
   noise:    { them: 'had no good reason at all',       you: 'had no good reason at all' },
+  /* Not a term in evictScore. It is the second pass: a voter who privately
+     wanted the other one and went where the house was going anyway. Without it
+     the recap invented a private reason for a vote that did not have one. */
+  house:    { them: 'went where the house was going',  you: 'went where the house was going' },
 };
 
 /*
@@ -63,6 +67,9 @@ const REASONS = {
  */
 function dominant(why) {
   if (!why) return null;
+  /* Coalescence outranks everything, because it is the only case where the
+     voter's own maths pointed the other way and lost. */
+  if (why.followedHouse) return 'house';
   /* Volatility is only the reason when it actually reversed the decision. See
      the note in engine.resolveEviction. */
   if (why.flipped) return 'noise';
@@ -125,26 +132,45 @@ function weekRecap(state, w) {
   if (w.rations && w.rations.length) {
     beats.push(`Rations went to ${w.rations.map(nm).join(', ')}.`);
   }
-  beats.push(`${nm(w.captain)} named ${w.atRisk.map(nm).join(' and ')} At Risk.`);
+  /* The two the Captain NAMED, not the post-ceremony block. */
+  beats.push(`${nm(w.captain)} named ${(w.nominees || w.atRisk).map(nm).join(' and ')} At Risk.`);
+  if (w.nomMode === 'pawn' && w.hohPawn != null) {
+    beats.push(`${nm(w.hohPawn)} was the pawn. ${nm(w.hohTarget)} was the point of the week.`);
+  } else if (w.nomMode === 'backdoor' && w.hohTarget != null) {
+    beats.push(w.backdoorLanded
+      ? `Neither of those names was the target. ${nm(w.hohTarget)} was.`
+      : `${nm(w.captain)} was setting up ${nm(w.hohTarget)} and never got the seat open.`);
+  }
   if (w.vetoHolder != null) {
     beats.push(w.vetoUsed
-      ? `${nm(w.vetoHolder)} used the Veto${w.replacement != null ? `, and ${nm(w.replacement)} went up instead` : ''}.`
+      ? `${nm(w.vetoHolder)} used the Veto`
+        + `${w.savedId === w.vetoHolder ? ' on themselves' : (w.savedId != null ? ` on ${nm(w.savedId)}` : '')}`
+        + `${w.replacement != null ? `, and ${nm(w.replacement)} went up instead` : ''}.`
       : `${nm(w.vetoHolder)} held the Veto and left the names alone.`);
+  }
+  /* The line the format is actually about: the Captain had a plan, the house
+     had a majority, and one of them was wrong. */
+  if (w.hohTarget != null && w.atRisk.indexOf(w.hohTarget) !== -1 && w.evicted !== w.hohTarget) {
+    beats.push(`${nm(w.captain)} wanted ${nm(w.hohTarget)} gone. The house went the other way.`);
   }
 
   const powers = (state.events || [])
     .filter((e) => e.kind === 'power_played' && e.week === w.week)
+    /* `e.power`, not `e.kind`. `e.kind` is 'power_played' for all of these:
+       pushEvent stamps the event kind last, so the payload field naming the
+       power has to be called something else. Reading `kind` here matched
+       nothing, every lookup came back undefined, and the recap silently
+       reported every power as its own internal id. */
     .map((e) => {
-      const d = PW.POWERS[e.kind === 'power_played' ? e.kind : ''] || PW.POWERS[e.kind];
-      const def = PW.POWERS[e.kind] || null;
-      const name = (PW.POWERS[e.kind] && PW.POWERS[e.kind].name) || e.kind;
-      if (e.kind === 'diamond') {
+      const def = PW.POWERS[e.power] || null;
+      const name = (def && def.name) || e.power;
+      if (e.power === 'diamond') {
         return `${nm(e.holder)} played the Diamond Veto: ${nm(e.save)} came off, ${nm(e.replace)} went up, and the Captain had no say.`;
       }
-      if (e.kind === 'veto_pick') return `${nm(e.holder)} used Veto Player Selection on ${nm(e.pick)}.`;
-      if (e.kind === 'safety') return `${nm(e.holder)} played a Week of Safety.`;
-      if (e.kind === 'extra_vote') return `${nm(e.holder)} cast two votes. ${e.why ? `They ${e.why}.` : ''}`.trim();
-      if (e.kind === 'back_to_back') return `${nm(e.holder)} played the Captain Comp they were barred from.`;
+      if (e.power === 'veto_pick') return `${nm(e.holder)} used Veto Player Selection on ${nm(e.pick)}.`;
+      if (e.power === 'safety') return `${nm(e.holder)} played a Week of Safety.`;
+      if (e.power === 'extra_vote') return `${nm(e.holder)} cast two votes. ${e.why ? `They ${e.why}.` : ''}`.trim();
+      if (e.power === 'back_to_back') return `${nm(e.holder)} played the Captain Comp they were barred from.`;
       return `${nm(e.holder)} played ${name}.`;
     });
 

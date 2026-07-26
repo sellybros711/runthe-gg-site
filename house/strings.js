@@ -125,8 +125,30 @@ const S = {
   namingYou: [
     'You name {a} and {b}. Neither of them looks at you after.',
   ],
+  /* Intent, GDD §5. The house is told there is a pawn and not which one, which
+     is the read the whole mechanic hangs on. */
+  namingPawn: [
+    'Only one of those names is the point of it. The house starts working out which.',
+    'Somebody up there is a pawn. Nobody has said so out loud yet.',
+  ],
+  namingYouPawn: [
+    'One of them is there to make the numbers look easy. You know which.',
+  ],
+  backdoorLanded: [
+    '{name} goes up in a seat that was open before the ceremony started.',
+    '{name} never played for the Veto and is now At Risk.',
+  ],
+  backdoorFailed: [
+    'The Veto stays in a pocket. The names stand and your week goes with them.',
+  ],
   vetoUsed: [
     '{holder} uses the Veto on {saved}.',
+  ],
+  /* Somebody saving themselves is the common case and it read as
+     "Carlota W. uses the Veto on Carlota W.." which is two bugs in one line. */
+  vetoSelf: [
+    '{holder} takes themselves off the block.',
+    '{holder} uses the Veto on themselves. Nobody is surprised.',
   ],
   vetoHeld: [
     '{holder} keeps the Veto in their pocket. The names stand.',
@@ -183,7 +205,16 @@ const S = {
  * because a string with a hole in it should fail loudly in a playtest.
  */
 function fill(tpl, vars) {
-  return tpl.replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] != null ? String(vars[k]) : m));
+  const out = tpl.replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] != null ? String(vars[k]) : m));
+  /*
+   * Collapse doubled terminal punctuation.
+   *
+   * First names are disambiguated with an initial when two people share one,
+   * so a slot can hold "Carlota W." and any template ending in a full stop then
+   * produces "Carlota W..". Fixing it at assembly is the only place it can be
+   * fixed once, rather than in every template that happens to end on a name.
+   */
+  return out.replace(/([.?])\1+/g, '$1');
 }
 
 /** Deterministic pick off the `text` stream, then filled. */

@@ -102,6 +102,13 @@ function createRun(opts) {
     lastCaptain: null,
     atRisk: [],
     atRiskNamedBy: {},
+    nominees: [],
+    /* Nomination intent, GDD §8.2. Null outside a naming week. */
+    hohTarget: null,
+    hohPawn: null,
+    nomMode: null,
+    backdoor: null,
+    backdoorLanded: false,
     vetoHolder: null,
     vetoUsed: false,
     replacement: null,
@@ -254,9 +261,16 @@ function needsInput(s) {
     }
     case PHASES.CAPTAIN_COMP:
       return captainCompField(s).indexOf(me) !== -1 ? { kind: 'comp', which: 'captain', comp: s.pendingComp } : null;
-    case PHASES.SCHEME1: case PHASES.SCHEME2: case PHASES.SCHEME3:
+    case PHASES.SCHEME1: case PHASES.SCHEME2:
       return s.energy >= SC.ENERGY.SCENE_COST
         ? { kind: 'actions', energy: s.energy, phase: s.phase } : null;
+    /* The last window before the vote ALWAYS opens, even with nothing left to
+       spend. Playtest: "after veto it goes straight to vote". It did, whenever
+       the week's energy was gone, which is most weeks by that point, so the one
+       moment the format is actually about was the one the player kept getting
+       skipped past. */
+    case PHASES.SCHEME3:
+      return { kind: 'actions', energy: s.energy, phase: s.phase, whip: true };
     case PHASES.SAFETY_CALL: {
       const mine = P.heldBy(s, me, 'safety');
       return mine.length ? { kind: 'power_safety', power: mine[0] } : null;
@@ -391,6 +405,9 @@ function doReset(s) {
   s.vetoUsed = false;
   s.replacement = null;
   s.pendingReplacement = false;
+  s.nominees = [];
+  s.hohTarget = null; s.hohPawn = null; s.nomMode = null;
+  s.backdoor = null; s.backdoorLanded = false;
 
   /* Bounce Back, GDD §12. Pool is the last six evicted whether or not the Panel
      has started forming, which is the fix for version 0.1 calling the returnee
@@ -428,7 +445,7 @@ function doReset(s) {
     if (sch.week !== s.week || sch.done) continue;
     sch.done = true;
     const pw = P.award(s, sch.kind, rng);
-    if (pw) pushEvent(s, 'power_awarded', { kind: pw.kind, holder: pw.holder,
+    if (pw) pushEvent(s, 'power_awarded', { power: pw.kind, holder: pw.holder,
       secrecy: pw.secrecy, victim: pw.victim });
   }
   /* A power the house knows about but cannot place makes everybody jumpy,
@@ -474,7 +491,7 @@ function doCaptainComp(s, input) {
         if (id === s.lastCaptain) continue;
         E.applyTrust(s.rel, id, s.lastCaptain, -5);
       }
-      pushEvent(s, 'power_played', { kind: 'back_to_back', holder: s.lastCaptain, why: 'was barred and played anyway' });
+      pushEvent(s, 'power_played', { power: 'back_to_back', holder: s.lastCaptain, why: 'was barred and played anyway' });
     }
   }
 
@@ -510,8 +527,12 @@ function doScheme(s, input) {
     return s;
   }
   /* The window closes when the player says so or when there is nothing left to
-     spend. Energy carries across windows; it does not reset per phase. */
-  if (isHumanActive(s) && s.energy >= SC.ENERGY.SCENE_COST && !(input && input.done)) return s;
+     spend. Energy carries across windows; it does not reset per phase. The last
+     window before the vote is the exception: it closes only when the player
+     closes it, because counting the votes costs nothing. */
+  const lastCall = s.phase === PHASES.SCHEME3;
+  if (isHumanActive(s) && !(input && input.done)
+    && (s.energy >= SC.ENERGY.SCENE_COST || lastCall)) return s;
 
   if (s.phase === PHASES.SCHEME1) { s.phase = PHASES.SAFETY_CALL; return s; }
   if (s.phase === PHASES.SCHEME2) { s.phase = PHASES.VETO_CEREMONY; return s; }
@@ -530,11 +551,11 @@ function doSafetyCall(s, input) {
   for (const pw of holders) {
     if (pw.holder === s.human && isHumanActive(s)) {
       if (!input || input.play == null) return s;     // wait for the player
-      if (input.play) { P.spend(s, pw); pushEvent(s, 'power_played', { kind: 'safety', holder: pw.holder, why: 'you called it' }); }
+      if (input.play) { P.spend(s, pw); pushEvent(s, 'power_played', { power: 'safety', holder: pw.holder, why: 'you called it' }); }
       continue;
     }
     const want = P.wantsSafety(s, pw.holder, rng);
-    if (want.play) { P.spend(s, pw); pushEvent(s, 'power_played', { kind: 'safety', holder: pw.holder, why: want.why }); }
+    if (want.play) { P.spend(s, pw); pushEvent(s, 'power_played', { power: 'safety', holder: pw.holder, why: want.why }); }
   }
   s.phase = PHASES.NAMING;
   return s;
@@ -545,19 +566,44 @@ function doNaming(s, input) {
   const n = activeCount(s);
 
   const safe = P.safeThisWeek(s);
-  let noms;
+  const blocked = Object.keys(safe).map(Number);
+  let noms, plan;
   if (s.captain === s.human && isHumanActive(s) && input && input.noms) {
     noms = input.noms.slice(0, 2).filter((id) => !safe[id]);
+    /* The player names two and then says who they are actually after. Picking
+       somebody who is not on the block IS the backdoor, with no separate button
+       for it: the plan is only a plan because the Veto has not happened yet. */
+    const want = (input.target != null && !safe[input.target] && input.target !== s.captain)
+      ? input.target : noms[0];
+    plan = {
+      noms, target: want, pawn: null,
+      mode: noms.indexOf(want) === -1 ? 'backdoor' : (noms.length > 1 ? 'pawn' : 'direct'),
+    };
+    if (plan.mode === 'pawn') plan.pawn = noms.filter((id) => id !== want)[0];
+    if (plan.mode === 'backdoor') plan.pawn = noms[0];
   } else {
-    noms = E.chooseNominations(s, s.captain, rng, Object.keys(safe).map(Number));
+    plan = E.nominationPlan(s, s.captain, rng, blocked);
+    noms = plan.noms;
   }
   /* A Safety played after the Captain had already decided still has to leave
      two names on the block. */
   if (noms.length < 2) {
-    const extra = E.chooseNominations(s, s.captain, rng, noms.concat(Object.keys(safe).map(Number)));
+    const extra = E.chooseNominations(s, s.captain, rng, noms.concat(blocked));
     for (const id of extra) { if (noms.length < 2 && noms.indexOf(id) === -1) noms.push(id); }
   }
   s.atRisk = noms;
+  /* The two the Captain actually named. `atRisk` mutates at the ceremony, so
+     without this the recap reported the replacement as an original nominee and
+     a landed backdoor read as a contradiction: "named You and Rafferty At Risk,
+     neither of those names was the target, Rafferty was." */
+  s.nominees = noms.slice();
+  /* The single field that makes the strategy layer exist. Read by the vote
+     through HOH_INTENT_LEAK, by the ceremony to land a backdoor, and by the
+     recap to explain a week that looked like it went wrong. */
+  s.hohTarget = plan.target != null ? plan.target : noms[0];
+  s.hohPawn = plan.pawn;
+  s.nomMode = plan.mode;
+  s.backdoor = (plan.mode === 'backdoor' && noms.indexOf(plan.target) === -1) ? plan.target : null;
   for (const id of noms) {
     s.cast[id].timesAtRisk += 1;
     s.atRiskNamedBy[id] = s.captain;
@@ -579,7 +625,10 @@ function doNaming(s, input) {
     a.target = best;
   }
 
-  pushEvent(s, 'naming', { captain: s.captain, atRisk: noms.slice() });
+  pushEvent(s, 'naming', {
+    captain: s.captain, atRisk: noms.slice(),
+    mode: s.nomMode, target: s.hohTarget, pawn: s.hohPawn,
+  });
 
   s.phase = PHASES.VETO_DRAW;
   return s;
@@ -602,7 +651,7 @@ function doVetoDraw(s, input) {
         s.vetoForced = input.pick;
         P.spend(s, pw);
         E.applyTrust(s.rel, input.pick, pw.holder, 6);
-        pushEvent(s, 'power_played', { kind: 'veto_pick', holder: pw.holder, pick: input.pick, why: 'you chose them' });
+        pushEvent(s, 'power_played', { power: 'veto_pick', holder: pw.holder, pick: input.pick, why: 'you chose them' });
       }
       continue;
     }
@@ -616,7 +665,7 @@ function doVetoDraw(s, input) {
         if (id === want.pick || id === pw.holder) continue;
         E.applyTrust(s.rel, id, pw.holder, -3);
       }
-      pushEvent(s, 'power_played', { kind: 'veto_pick', holder: pw.holder, pick: want.pick, why: want.why });
+      pushEvent(s, 'power_played', { power: 'veto_pick', holder: pw.holder, pick: want.pick, why: want.why });
     }
   }
 
@@ -710,17 +759,33 @@ function doVetoCeremony(s, input) {
   let repl;
   if (s.captain === s.human && isHumanActive(s) && input && input.replacement != null) {
     repl = input.replacement;
+  } else if (s.backdoor != null && s.replacementPool.indexOf(s.backdoor) !== -1) {
+    repl = s.backdoor;                       // the whole point of the week
   } else {
     const scored = s.replacementPool.map((id) => ({ id, v: E.nominationDesire(s, s.captain, id, rng) }));
     scored.sort((a, b) => b.v - a.v);
     repl = scored[0].id;
   }
+  const landed = s.backdoor != null && repl === s.backdoor;
   s.replacement = repl;
+  s.backdoorLanded = landed;
   s.atRisk.push(repl);
   s.cast[repl].timesAtRisk += 1;
   s.atRiskNamedBy[repl] = s.captain;
   s.cast[repl].namedBy.push(s.captain);
   E.applyTrust(s.rel, repl, s.captain, E.K.D_NAMED_AT_RISK);
+  /* Being walked into is worse than being named, and the house watched it
+     happen, so the Captain pays for it with more than one person. */
+  if (landed) {
+    E.applyTrust(s.rel, repl, s.captain, E.K.D_BACKDOORED);
+    for (const a of s.alliances) {
+      if (!a.alive || a.members.indexOf(repl) === -1) continue;
+      for (const m of a.members) {
+        if (m !== repl && m !== s.captain) E.applyTrust(s.rel, m, s.captain, E.K.D_BACKDOORED * 0.35);
+      }
+    }
+    pushEvent(s, 'backdoor', { captain: s.captain, target: repl, pawn: s.saved });
+  }
   s.pendingReplacement = false;
 
   for (const a of s.alliances) {
@@ -808,7 +873,31 @@ function applyDiamond(s, pw, save, replace, why) {
   if (s.captain != null) E.applyTrust(s.rel, s.captain, pw.holder, -18);
   P.spend(s, pw);
   s.diamondUsed = { holder: pw.holder, save, replace };
-  pushEvent(s, 'power_played', { kind: 'diamond', holder: pw.holder, save, replace, why });
+  pushEvent(s, 'power_played', { power: 'diamond', holder: pw.holder, save, replace, why });
+}
+
+/**
+ * The whip count. Who tells you how they are voting, and who will not say.
+ *
+ * Reports `voteIntent` faithfully and adds no deception of its own, because the
+ * lie is already downstream: what somebody SAYS here and what they DO at the
+ * vote are computed separately, and that gap is the blindside engine. What this
+ * gates instead is COVERAGE. People in a room with you talk, warm people talk,
+ * and everybody else tells you nothing, so how much of the vote you can see is
+ * a direct readout of your social game rather than a free weekly report.
+ */
+function whipCount(s) {
+  const me = s.human;
+  const out = [];
+  for (const v of eligibleVoters(s)) {
+    if (v === me) continue;
+    const allied = E.sharedAlliances(s.alliances, me, v).some((a) => a.alive);
+    const trust = s.rel.trust[v][me];
+    if (!allied && trust < E.K.WHIP_TRUST) { out.push({ voter: v, says: null, quiet: true }); continue; }
+    const said = s.voteIntent[v];
+    out.push({ voter: v, says: said != null ? said : null, allied, undecided: said == null });
+  }
+  return out;
 }
 
 function afterCeremony(s) {
@@ -845,6 +934,31 @@ function aiVetoChoice(s, holder, rng) {
     const v = s.rel.trust[holder][t] + bond * 0.6;
     if (v > bestV) { bestV = v; best = t; }
   }
+
+  /*
+   * The backdoor only works if somebody opens the seat, so the plan has to
+   * survive contact with whoever won the Veto.
+   *
+   * The Captain executes their own plan. An ally hears it and mostly goes along,
+   * because taking a pawn down costs them nothing and buys them the Captain.
+   * Anybody else never hears it and the plan simply dies, which is the correct
+   * failure and happens often enough to make winning the Veto yourself matter.
+   */
+  if (s.backdoor != null && s.atRisk.indexOf(s.backdoor) === -1) {
+    const seat = s.atRisk.indexOf(s.hohPawn) !== -1 ? s.hohPawn : best;
+    if (seat != null && holder === s.captain) return seat;
+    if (seat != null && E.sharedAlliances(s.alliances, holder, s.captain).length) {
+      const trust = s.rel.trust[holder][s.captain];
+      if (trust > 35 && seat !== s.backdoor) return seat;
+    }
+  }
+
+  /* A Captain does not take down their own nominee. They put those names up on
+     purpose an hour ago, and the only reason to open the seat is a plan, which
+     is handled above. Without this the recap kept producing weeks that read as
+     the Captain arguing with themselves. */
+  if (holder === s.captain) return null;
+
   /* Using it costs you cover with the Captain, so it takes a real relationship
      rather than mild warmth. */
   return bestV > 70 ? best : null;
@@ -919,7 +1033,7 @@ function doEviction(s, input) {
         P.spend(s, pw);
         s.doubledVoter = pw.holder;
         voters.push(pw.holder);
-        pushEvent(s, 'power_played', { kind: 'extra_vote', holder: pw.holder, why });
+        pushEvent(s, 'power_played', { power: 'extra_vote', holder: pw.holder, why });
       }
     }
     s.pendingExtraVote = null;
@@ -986,9 +1100,17 @@ function doFallout(s) {
     week: s.week,
     captain: s.captain,
     atRisk: s.atRisk.slice(),
+    nominees: (s.nominees && s.nominees.length) ? s.nominees.slice() : s.atRisk.slice(),
     vetoHolder: s.vetoHolder,
     vetoUsed: s.vetoUsed,
+    savedId: s.saved != null ? s.saved : null,
     replacement: s.replacement,
+    /* What the Captain was trying to do, which is the only way the recap can
+       tell a week that went to plan from one that went wrong. */
+    nomMode: s.nomMode || null,
+    hohTarget: s.hohTarget != null ? s.hohTarget : null,
+    hohPawn: s.hohPawn != null ? s.hohPawn : null,
+    backdoorLanded: !!s.backdoorLanded,
     tally: result.tally,
     votes: result.votes,
     evicted: gone,
@@ -1013,6 +1135,9 @@ function doFallout(s) {
     s.voteIntent = {};
     s.atRisk = [];
     s.vetoHolder = null; s.vetoUsed = false; s.replacement = null; s.saved = null;
+    s.nominees = [];
+  s.hohTarget = null; s.hohPawn = null; s.nomMode = null;
+  s.backdoor = null; s.backdoorLanded = false;
     s.phase = PHASES.CAPTAIN_COMP;
     pushEvent(s, 'double_eviction', {});
     return s;
@@ -1251,6 +1376,18 @@ function sceneFor(s, targetId) {
   return SC.compose(s, s.rng.text, s.human, targetId);
 }
 
+/** Try to pull a group of people into one alliance. Costs one energy a head. */
+function gatherPeople(s, ids) {
+  const cost = ids.length * SC.ENERGY.GATHER_PER_HEAD;
+  if (s.energy < cost) return null;
+  if (ids.length < SC.ENERGY.GATHER_MIN || ids.length > SC.ENERGY.GATHER_MAX) return null;
+  s.energy -= cost;
+  const out = SC.gather(s, ids, s.rng.ai);
+  out.energyLeft = s.energy;
+  s.log.push({ kind: 'gather', week: s.week, ids: ids.slice(), landed: out.landed });
+  return out;
+}
+
 /** Commit to one of A, B or C. Returns what happened. */
 function playScene(s, moment, key) {
   const opt = moment.options.filter((o) => o.key === key)[0];
@@ -1312,10 +1449,10 @@ function restore(blob) {
 
 const api = {
   PHASES, TWIST_WINDOWS, BOUNCE_CHANCE, FLAVOUR, BOUNCE_POOL,
-  serialise, restore, sceneFor, playScene, energyLeft,
+  serialise, restore, sceneFor, playScene, energyLeft, gatherPeople,
   createRun, defaultAccount, rollTwists,
   activeIds, activeCount, eligibleVoters, captainCompField, vetoField, name, nextPlace, finalisePlaces,
-  needsInput, step, playOut, performAction, declareIntents,
+  needsInput, step, playOut, performAction, declareIntents, whipCount,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;

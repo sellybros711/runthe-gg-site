@@ -150,8 +150,74 @@ const K = {
   TH_BIAS_SD: 26,           // scaled by (100 - perception) / 100
   SOCIAL_REACH_CUT: 40,     // trust above this counts as reach
 
-  // eviction, GDD §8.2
-  EV_TRUST: 0.46, EV_THREAT: 0.23, EV_PRESSURE: 0.21, EV_PANEL: 0.10,
+  /*
+   * COALESCENCE. The house votes as a house, not as sixteen calculators.
+   *
+   * Measured before this existed: 31.5 percent of all votes were cast with the
+   * minority, 12 percent of evictions were ties, and only 18.6 percent were
+   * unanimous. Big Brother is the other way round. Lopsided is the norm, a
+   * close vote is an EPISODE, and a tie is a season event. Every eviction being
+   * a nail-biter means none of them are.
+   *
+   * The reason the real house converges is not that people agree. It is that
+   * nobody wants to be the vote that stands out, because the evictee's ally
+   * counts the numbers afterwards and works out who it was. So the house reads
+   * where it is going and gets on that side.
+   *
+   * Two passes. Everyone forms a private lean, a consensus emerges seeded by
+   * what the house believes the Captain wants, and then each voter decides
+   * whether to defect from it. Defection rises with how strongly they privately
+   * disagree, with loyalty to somebody on the other side, and with volatility.
+   * It falls with paranoia, because a jumpy player is exactly the one who will
+   * not be caught alone.
+   */
+  COALESCE_BASE: 0.74,       // baseline pull toward where the house is going
+  COALESCE_MARGIN: 0.011,    // per point of private disagreement, resists the pull
+  COALESCE_LOYALTY: 0.35,    // holding out for somebody you are actually loyal to
+  COALESCE_PARANOIA: 0.30,   // fear of being the odd vote out
+  COALESCE_VOL: 0.30,        // some people simply do their own thing
+  /*
+   * How reliably the house reads who the Captain actually wants gone. Swept
+   * against the two numbers this format is judged on: the Captain's target went
+   * home 82.0 / 83.2 / 85.4 / 88.0 percent at 0.60 / 0.66 / 0.72 / 0.80, and the
+   * pawn went home 21.2 / 19.9 / 19.6 / 17.9. Real seasons sit near 80 to 85 and
+   * near 15 to 20, and 0.80 was putting the Captain above both.
+   */
+  HOH_INTENT_LEAK: 0.72,
+
+  /* How warm somebody has to be before they will tell you how they are voting.
+     Anybody in a room with you talks regardless. */
+  WHIP_TRUST: 22,
+
+  // eviction, GDD §8.3
+  EV_TRUST: 0.46, EV_THREAT: 0.23, EV_PRESSURE: 0.21, EV_PANEL: 0.30,
+  /*
+   * WHEN THE JURY STARTS MATTERING.
+   *
+   * "Can I beat them at the end" is the whole late game of this format and was
+   * a flat 0.10 term from week one, which is wrong at both ends. In week two
+   * nobody is thinking about a jury that does not exist yet; at Final 5 it is
+   * often the ONLY thing anybody is thinking about.
+   *
+   * Measured before the ramp: the Panel term was the largest thing separating
+   * the two nominees in 0.3 percent of all votes. That number alone reads as an
+   * inert mechanic, and it was nearly the second mismeasurement of the day:
+   * switching the term off entirely still changed 17.2 percent of evictions, so
+   * it was never inert, it was a tiebreaker that never got to be a reason. The
+   * fix is not to make it bigger everywhere, it is to make it grow.
+   *
+   * Ramped off how full the Panel is, exactly like TH_SOCIAL in threatScore, so
+   * both curves key off the same visible fact rather than the week number,
+   * which Bounce Back and Double Eviction both move.
+   *
+   * After: the Panel is the deciding term in 0.9 / 2.4 / 6.2 percent of votes
+   * across the first half, the jury forming, and the last five, and switching it
+   * off changes HALF of all evictions at six or fewer. Stopped at 0.30 because
+   * 0.45 breaks comp beast targeting: with the weight that high, voters keep
+   * whoever the jury does not respect, and an uncovered comp beast is exactly
+   * that, so they survive at parity with the field and the pillar dies.
+   */
+  EV_PANEL_EARLY: 0.18,     // fraction of the weight before anybody is on the Panel
   /* Scaled by volatility/100. Lowered from 14 after the recap made the cost
      visible: at 14 a quarter of all votes were emotional reversals, and a
      simulation that answers "no good reason at all" that often is not the one
@@ -191,6 +257,93 @@ const K = {
   COVER_MAX: 0.65,          // nobody is ever completely untouchable
   NOM_VOL_SD: 12,
   NOM_THROW_SUSPICION: 0.55, // weight of throw-suspicion in nomination desire
+
+  /*
+   * INTENT. A Captain does not name two people, they pick one person they want
+   * gone and then work out how to get them out. Everything below is that second
+   * half, which version 0.2 did not have at all: both names carried equal weight
+   * and the house had nothing to read.
+   *
+   * PAWN. Sitting somebody safe beside the target, so the votes have an obvious
+   * place to go. It only works because the room knows who the Captain wants, so
+   * the pawn mechanic and HOH_INTENT_LEAK are the same mechanic seen from two
+   * sides. The pawn still goes home sometimes, which is the entire folklore of
+   * the move and needs no special case: if the house dislikes the pawn more than
+   * the target, the private leans outvote the pull.
+   */
+  PAWN_BASE: 0.20,          // chance the second name is a pawn at zero gap
+  PAWN_GAP: 0.011,          // per point of gap between first and second target
+  PAWN_SAFE: 0.55,          // weight on the pawn being someone the house will not take
+  PAWN_TRUST: 0.30,         // weight on the Captain being able to sell it to them
+  PAWN_THREAT: 0.25,        // a pawn who is a threat is not a pawn
+  /*
+   * Who actually gets asked. In a real season the pawn is nearly always
+   * somebody the Captain can TALK to first, which means their own people, and
+   * it is very often the same person twice, because a pawn who has already
+   * survived is a pawn the room has proved it will not take. Both of those
+   * concentrate pawn duty on a few players instead of spreading it evenly, and
+   * spreading it evenly is why nobody in this game could go a season without
+   * sitting on the block.
+   */
+  PAWN_ALLY: 13,            // you can only ask somebody who is already yours
+  PAWN_REPEAT: 6,           // per previous trip up there, capped below
+
+  /*
+   * NOT WORTH THE WEEK.
+   *
+   * A Captain does not spend their week on somebody who is no threat and is not
+   * coming for them, and they say so out loud every season. Version 0.2 had no
+   * version of that thought: NOM_TRUST is the heaviest term in nomination
+   * desire, so anybody the Captain merely disliked was a live candidate.
+   *
+   * SIZED SMALL, AND HERE IS THE HONEST REASON.
+   *
+   * This was put on the roadmap off the statistic "15.85 of 16 people are
+   * nominated per run against 2 to 4 who never are in a real season", which was
+   * measuring the wrong thing twice over. Nearly everybody being nominated
+   * eventually is FORCED: thirteen of sixteen are evicted and every eviction
+   * needs a nomination, so the ceiling on never-nominated is three and real
+   * seasons sit at zero to two, not two to four. The number that does mean
+   * something is how many of the last eight got there without sitting on the
+   * block, and measured properly this game was already at 2.75 of 8, inside the
+   * 2 to 4 a real season produces.
+   *
+   * So this term is not fixing a failure. It exists because the BEHAVIOUR was
+   * missing and because it opens a way of playing that the game did not have:
+   * stay quiet, stay friendly with whoever holds the power, and actually be
+   * skipped for it. Swept to land at 3.16 of 8 rather than the 3.60 the first
+   * pass produced, because pushing a proxy that was already fine to the edge of
+   * its band is not an improvement.
+   */
+  NOM_IRRELEVANT: 22,       // how much being harmless is worth
+  IRRELEVANT_FLOOR: 7,      // below this many active, everybody is worth the week
+
+  /*
+   * BACKDOOR. Name two people you have no intention of evicting, control the
+   * Veto, and put the real target up with no chance to save themselves. The
+   * reason it exists is that the direct shot can miss: a comp player takes
+   * themselves down, and somebody with the room behind them costs you the house.
+   * Both of those are already modelled, so the appeal reads off them rather than
+   * off a die roll.
+   *
+   * Weighted toward COVER rather than COMP after measurement, which also reads
+   * better as design. At 0.42 comp against 0.34 cover the move fired almost
+   * entirely on comp record, and since a third of attempts never get the seat
+   * open, it handed comp beasts a free week: survival to Final 5 for a beast
+   * with no cover went to 31.4 percent against a 30.7 percent field, which is
+   * no targeting at all. At 0.28 against 0.45 it is 28.0 against 31.1 over
+   * fifteen hundred runs. The Captain backdoors somebody because the room would
+   * not forgive a straight shot, at least as much as because they win things.
+   */
+  BACKDOOR_BASE: -0.16,     // deliberately negative: most weeks are direct
+  BACKDOOR_COMP: 0.28,      // they would win the Veto and walk
+  BACKDOOR_COVER: 0.45,     // the room would not forgive a straight shot
+  BACKDOOR_SCHEMER: 0.30,   // Long Game trunk plays this way and Comp Game does not
+  BACKDOOR_MIN_HOUSE: 7,    // it needs a crowd to hide in
+  BACKDOOR_ROUTE_FLOOR: 0.15, // you can always hope
+  BACKDOOR_ROUTE_COMP: 0.55,  // winning the Veto yourself is the reliable route
+  BACKDOOR_ROUTE_ALLY: 0.55,  // somebody who will take a pawn down for you
+  D_BACKDOORED: -14,        // on top of D_NAMED_AT_RISK, for the ambush itself
 
   // alliances, GDD §7.5
   ALLY_FORM_TRUST: 50,
@@ -838,6 +991,35 @@ function goalWeight(p, key) {
 }
 
 /**
+ * How much of a non-problem this person is, from the Captain's chair.
+ *
+ * Three things have to all be true for somebody to be genuinely not worth the
+ * week: they hold no power the Captain can see, the Captain reads them as
+ * friendly, and they have never come past the Captain before. Multiplied rather
+ * than added, so any ONE of those failing brings them back into range, which is
+ * what makes a floater a floater instead of a permanent immunity.
+ *
+ * Scaled by how full the house still is. At Final 6 there is nobody left who is
+ * not worth a week, and the term switches itself off.
+ */
+function irrelevance(state, hcId, targetId) {
+  const { rel, cast, alliances, panel } = state;
+  const active = cast.filter((p) => p.status === 'active').length;
+  const room = clamp01((active - K.IRRELEVANT_FLOOR) / (16 - K.IRRELEVANT_FLOOR));
+  if (room <= 0) return 0;
+
+  const threat = threatScore(rel, cast, hcId, targetId, panel, alliances);
+  const quiet = clamp01((62 - threat) / 55);
+  const read = rel.belief[hcId][targetId];
+  const friendly = clamp01(((read ? read.v : 0) + 25) / 85);
+  /* Somebody who has already put you up is never harmless again, however
+     pleasant they have been since. */
+  const past = cast[hcId].namedBy.indexOf(targetId) !== -1 ? 0 : 1;
+
+  return quiet * friendly * room * past;
+}
+
+/**
  * How much the Captain wants this person At Risk. Same shape as evictScore, but
  * the Captain is acting rather than reacting, so their own goal weighs more and
  * their alliances shield harder.
@@ -878,6 +1060,9 @@ function nominationDesire(state, hcId, targetId, rng) {
     v += K.NOM_THROW_SUSPICION * K.THROW_SUSPICION_STEP;
   }
 
+  /* Not worth the week. See irrelevance() above. */
+  v -= K.NOM_IRRELEVANT * irrelevance(state, hcId, targetId);
+
   v += rng.normal(0, K.NOM_VOL_SD * (hc.social.volatility / 100));
   return v;
 }
@@ -890,6 +1075,121 @@ function chooseNominations(state, hcId, rng, exclude) {
   const scored = pool.map((p) => ({ id: p.id, v: nominationDesire(state, hcId, p.id, rng) }));
   scored.sort((a, b) => b.v - a.v);
   return scored.slice(0, 2).map((s) => s.id);
+}
+
+/**
+ * How badly the house as a whole wants somebody gone, ignoring who is Captain.
+ *
+ * Deliberately cheap and deliberately rng-free: it is used to ask "would this
+ * person survive sitting there", which is a read the Captain is making about a
+ * room, not a vote being cast. Running the real evictScore sixteen times per
+ * candidate would be both slower and wrong, because it would give the Captain
+ * perfect knowledge of private leans.
+ */
+function houseAppetite(state, id) {
+  const { rel, cast, panel, alliances } = state;
+  const others = cast.filter((p) => p.status === 'active' && p.id !== id);
+  if (!others.length) return 50;
+  let t = 0;
+  for (const p of others) t += rel.trust[p.id][id];
+  const liked = (100 - t / others.length) / 2;
+  const threat = threatScore(rel, cast, id, id, panel, alliances)
+    * (1 - cover(rel, cast, id, id, alliances));
+  return norm100(liked * 0.6 + threat * 0.4);
+}
+
+/**
+ * What the Captain is actually trying to do this week.
+ *
+ * Returns the two names, plus the intent behind them, in one of three shapes:
+ *
+ *   direct    two people they would be happy to lose either way
+ *   pawn      one target, and beside them somebody the house will not take
+ *   backdoor  neither nominee is the target, and the Veto is the plan
+ *
+ * `target` is the field the rest of the game reads. It leaks to the house
+ * through HOH_INTENT_LEAK and pulls the vote; it drives the replacement
+ * nomination; it is what makes a pawn a pawn rather than a second nominee.
+ * Without it every week looked like two equal enemies, and the strategy the
+ * genre is built on had nowhere to live.
+ */
+function nominationPlan(state, hcId, rng, exclude) {
+  const { cast, rel, alliances } = state;
+  const ex = exclude || [];
+  const pool = cast.filter((p) => p.status === 'active' && p.id !== hcId && ex.indexOf(p.id) === -1);
+  const scored = pool.map((p) => ({ id: p.id, v: nominationDesire(state, hcId, p.id, rng) }));
+  scored.sort((a, b) => b.v - a.v);
+
+  const plain = { noms: scored.slice(0, 2).map((x) => x.id), target: null, pawn: null, mode: 'direct' };
+  if (scored.length < 2) return plain;
+
+  const wanted = scored[0].id;
+  plain.target = wanted;
+
+  /* Everybody who could plausibly sit there without being the point of it. */
+  const active = pool.map((p) => p.id);
+  const fit = {};
+  for (const id of active) {
+    fit[id] = -houseAppetite(state, id) * K.PAWN_SAFE
+      + rel.trust[hcId][id] * K.PAWN_TRUST
+      - threatScore(rel, cast, hcId, id, state.panel, alliances) * K.PAWN_THREAT
+      /* You can only ask somebody who is already yours, and a pawn who has
+         survived it before is one the room has proved it will not take. Both
+         push pawn duty onto the same few people, which is what a real season
+         does and what leaves anybody else off the block entirely. */
+      + (sharedAlliances(alliances, hcId, id).length ? K.PAWN_ALLY : 0)
+      + Math.min(2, cast[id].timesAtRisk || 0) * K.PAWN_REPEAT;
+  }
+
+  // ── backdoor ───────────────────────────────────────────────────────────────
+  const activePool = cast.filter((p) => p.status === 'active');
+  const activeAll = activePool.length;
+  if (activeAll >= K.BACKDOOR_MIN_HOUSE && active.length >= 3) {
+    const compPct = compPercentile(cast, wanted, activePool);
+    const shielded = cover(rel, cast, hcId, wanted, alliances);
+    const schemer = (cast[hcId].build && cast[hcId].build.shares.long) || 0;
+    let chance = clamp01(K.BACKDOOR_BASE
+      + K.BACKDOOR_COMP * (compPct / 100)
+      + K.BACKDOOR_COVER * shielded
+      + K.BACKDOOR_SCHEMER * schemer);
+
+    /*
+     * THE ROUTE, and the whole reason this multiplies rather than adds.
+     *
+     * A backdoor needs somebody to open the seat, so a Captain with no comp game
+     * and nobody committed to them is not planning one, they are just declining
+     * to nominate their target. Without this gate the move was a free week for
+     * exactly the people it was aimed at: comp beast survival to Final 5 went
+     * from 24.8 percent against a 30.5 percent field to 33.9 percent, because
+     * the attempt fired on high comp percentile and then failed a third of the
+     * time with the target never on the block at all.
+     */
+    const ring = new Set();
+    for (const a of alliances) {
+      if (!a.alive || a.members.indexOf(hcId) === -1) continue;
+      for (const m of a.members) if (m !== hcId && m !== wanted) ring.add(m);
+    }
+    const route = clamp01(K.BACKDOOR_ROUTE_FLOOR
+      + K.BACKDOOR_ROUTE_COMP * (compPercentile(cast, hcId, activePool) / 100)
+      + K.BACKDOOR_ROUTE_ALLY * (ring.size / Math.max(1, activeAll - 1)));
+    chance *= route;
+
+    if (rng.chance(chance)) {
+      const seats = active.filter((id) => id !== wanted).sort((a, b) => fit[b] - fit[a]);
+      if (seats.length >= 2) {
+        return { noms: [seats[0], seats[1]], target: wanted, pawn: seats[0], mode: 'backdoor' };
+      }
+    }
+  }
+
+  // ── pawn beside the target ─────────────────────────────────────────────────
+  const gap = scored[0].v - scored[1].v;
+  if (active.length >= 3 && rng.chance(clamp01(K.PAWN_BASE + gap * K.PAWN_GAP))) {
+    const seats = active.filter((id) => id !== wanted).sort((a, b) => fit[b] - fit[a]);
+    if (seats.length) return { noms: [wanted, seats[0]], target: wanted, pawn: seats[0], mode: 'pawn' };
+  }
+
+  return plain;
 }
 
 // ─── eviction ────────────────────────────────────────────────────────────────
@@ -940,7 +1240,7 @@ function alliancePressure(state, voterId, targetId) {
 }
 
 /**
- * GDD §8.2. Each voter scores both At Risk and evicts the higher.
+ * GDD §8.3. Each voter scores both At Risk and evicts the higher.
  *
  * Pass `parts` and it is filled with the component breakdown. That breakdown is
  * the whole replay hook: §1 promises that if somebody flips on you there is a
@@ -959,10 +1259,14 @@ function evictScore(state, voterId, targetId, rng, parts) {
   const pressure = alliancePressure(state, voterId, targetId);
   const jury = panelThreat(state, voterId, targetId);
 
+  /* The jury weight grows as the jury fills. See EV_PANEL_EARLY. */
+  const seated = clamp01((panel ? panel.length : 0) / K.PANEL_SIZE);
+  const wPanel = K.EV_PANEL * (K.EV_PANEL_EARLY + (1 - K.EV_PANEL_EARLY) * seated);
+
   let v = K.EV_TRUST * trustTerm
     + K.EV_THREAT * threatTerm
     + K.EV_PRESSURE * pressure
-    + K.EV_PANEL * jury;
+    + wPanel * jury;
 
   v += goalWeight(voter, 'threat') * threatTerm * 0.3;
   for (const a of sharedAlliances(alliances, voterId, targetId)) {
@@ -976,7 +1280,7 @@ function evictScore(state, voterId, targetId, rng, parts) {
     parts.trust = K.EV_TRUST * trustTerm;
     parts.threat = K.EV_THREAT * threatTerm;
     parts.pressure = K.EV_PRESSURE * pressure;
-    parts.panel = K.EV_PANEL * jury;
+    parts.panel = wPanel * jury;
     parts.noise = noise;
     parts.allied = sharedAlliances(alliances, voterId, targetId).length > 0;
     parts.total = v;
@@ -985,23 +1289,79 @@ function evictScore(state, voterId, targetId, rng, parts) {
 }
 
 /**
- * Run the vote. Votes are ANONYMOUS (GDD §8.2): the tally is read, never
+ * Run the vote. Votes are ANONYMOUS (GDD §8.3): the tally is read, never
  * attributed. The truth is recorded in the WeekLog for the post-game recap and
  * for blame assignment, and is never surfaced during a run.
  */
+/**
+ * Where the house thinks it is going.
+ *
+ * Seeded by the Captain's actual target, because in this format the house
+ * usually knows who the person in power wants gone: they say it, their allies
+ * repeat it, and the nomination speech is not subtle. `HOH_INTENT_LEAK` is how
+ * reliably that reads. When it does not read, the house forms its own view off
+ * the private leans, and that is where a flip comes from.
+ */
+function houseConsensus(state, atRisk, leans, rng) {
+  const known = state.hohTarget != null && atRisk.indexOf(state.hohTarget) !== -1
+    && rng.chance(K.HOH_INTENT_LEAK);
+  if (known) return state.hohTarget;
+
+  /* Weighted by social reach: the people everybody talks to are the people who
+     decide what "the house" thinks. */
+  const w = {};
+  for (const t of atRisk) w[t] = 0;
+  for (const l of leans) {
+    w[l.target] += 1 + socialReach(state.rel, state.cast, l.voter) / 60;
+  }
+  let best = atRisk[0];
+  for (const t of atRisk) if (w[t] > w[best]) best = t;
+  return best;
+}
+
 function resolveEviction(state, atRisk, voters, rng) {
   const { cast } = state;
   const votes = [];
   const tally = {};
   for (const t of atRisk) tally[t] = 0;
 
+  /* Pass one: what everybody privately thinks, before they know where the
+     house is. */
+  const leans = [];
   for (const v of voters) {
     const scores = atRisk.map((t) => {
       const parts = {};
       return { t, s: evictScore(state, v, t, rng, parts), parts };
     });
     scores.sort((a, b) => b.s - a.s);
-    const target = scores[0].t;
+    leans.push({ voter: v, target: scores[0].t, margin: scores[0].s - (scores[1] ? scores[1].s : 0), scores });
+  }
+
+  const consensus = houseConsensus(state, atRisk, leans, rng);
+
+  for (const v of voters) {
+    const lean = leans.filter((l) => l.voter === v)[0];
+    const scores = lean.scores;
+    const p = cast[v];
+
+    /*
+     * Pass two. Go with the house, or be the one who did not.
+     *
+     * A voter whose private read is nearly a coin flip has no reason to be the
+     * exception. A voter who is strongly against, or who is loyal to the person
+     * the house wants gone, has one.
+     */
+    let target = lean.target;
+    if (target !== consensus) {
+      const alliedToConsensus = sharedAlliances(state.alliances, v, consensus).length > 0;
+      let hold = lean.margin * K.COALESCE_MARGIN
+        + (alliedToConsensus ? (p.social.loyalty / 100) * K.COALESCE_LOYALTY : 0)
+        + (p.social.volatility / 100) * K.COALESCE_VOL
+        - (p.social.paranoia / 100) * K.COALESCE_PARANOIA;
+      const follow = clamp01(K.COALESCE_BASE - hold);
+      if (rng.chance(follow)) target = consensus;
+    }
+
     const promised = (state.voteIntent && state.voteIntent[v] != null) ? state.voteIntent[v] : null;
 
     /*
@@ -1015,7 +1375,13 @@ function resolveEviction(state, atRisk, voters, rng) {
      * actually decided the vote. The delta says which consideration did the
      * separating, which is the question a player is asking.
      */
-    const a = scores[0].parts, b = scores[1] ? scores[1].parts : null;
+    /* `why` still describes the voter's own reasoning about whoever they
+       actually voted for, so the recap never claims a motive they did not have.
+       Following the house IS the reason when it is the reason. */
+    const chosenIdx = scores[0].t === target ? 0 : 1;
+    const otherIdx = 1 - chosenIdx;
+    const followedHouse = target !== lean.target;
+    const a = scores[chosenIdx].parts, b = scores[otherIdx] ? scores[otherIdx].parts : null;
     let why = a;
     if (b) {
       const considered = (a.trust - b.trust) + (a.threat - b.threat)
@@ -1037,13 +1403,14 @@ function resolveEviction(state, atRisk, voters, rng) {
          * contradicts the pillar in GDD §1.
          */
         flipped: considered <= 0,
+        followedHouse,
         allied: a.allied,
-        margin: scores[0].s - scores[1].s,
+        margin: Math.abs(scores[0].s - scores[1].s),
       };
     }
 
     votes.push({ voter: v, target, promisedTarget: promised,
-      margin: scores[0].s - (scores[1] ? scores[1].s : 0), why });
+      margin: Math.abs(scores[0].s - (scores[1] ? scores[1].s : 0)), why });
     tally[target]++;
   }
 
@@ -1070,7 +1437,7 @@ function resolveEviction(state, atRisk, voters, rng) {
 // ─── blame ───────────────────────────────────────────────────────────────────
 
 /**
- * GDD §8.3. Because votes are anonymous, discovery is INFERENCE.
+ * GDD §8.4. Because votes are anonymous, discovery is INFERENCE.
  *
  * When the tally contradicts what someone was promised, the injured parties do
  * not learn who flipped. They decide who they THINK flipped, weighted by prior
@@ -1237,10 +1604,10 @@ const api = {
   createRelationships, applyTrust, decayWeek,
   refreshBelief, read,
   detectChance, rollDetection,
-  socialReach, panelEquity, compPercentile, threatScore, cover,
+  socialReach, panelEquity, compPercentile, threatScore, cover, houseConsensus,
   majoritySize, allianceOf, sharedAlliances, makeAlliance, renormalisePriorities, allianceTick,
   socialTick, converse,
-  nominationDesire, chooseNominations,
+  nominationDesire, chooseNominations, nominationPlan, houseAppetite, irrelevance,
   panelThreat, alliancePressure, evictScore, resolveEviction, assignBlame,
   computeBitterness, panelVote,
 };

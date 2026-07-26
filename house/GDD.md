@@ -450,7 +450,62 @@ their own beliefs, with error scaled by `(100 - perception)`. The error is a
 noise every tick. A persistent bias reads as a Player who is wrong about someone.
 Fresh noise reads as a Player who is broken.
 
-### 8.2 Eviction
+### 8.2 Nomination intent
+
+A Captain does not name two people. They pick **one person they want gone** and
+then work out how to get them out. Version 0.2 had only the first half, both
+names carried equal weight, and the house had nothing to read, which removed the
+strategy the genre is built on.
+
+Every naming now produces a plan in one of three shapes:
+
+| Shape | What it is | Rate |
+|---|---|---|
+| direct | two people the Captain would be happy to lose either way | ~70% |
+| pawn | one target, and beside them somebody the house will not take | ~23% |
+| backdoor | neither nominee is the target, and the Veto is the plan | ~7% |
+
+That is roughly one backdoor attempt per run, of which two thirds land. It is
+deliberately not more: pushing the rate up moves comp beast survival back to
+parity with the field, because a plan that misses is a week the target got for
+free, and the proxy in §15 is the gate.
+
+The plan's `target` is the field everything else reads. It leaks to the house
+(see 8.3), it drives the replacement nomination, and it is the only thing that
+makes a pawn a pawn rather than a second nominee.
+
+**Pawn.** The second seat goes to whoever scores highest on "the house will not
+take you": low house appetite, low threat, and enough trust from the Captain that
+it can be sold to them. The pawn still goes home about 15 to 20 percent of the
+time, which is the entire folklore of the move and needs no special case: if the
+room dislikes the pawn more than the target, the private leans outvote the pull.
+
+**Not worth the week.** A Captain does not spend their week on somebody who is
+no threat and is not coming for them. Three things must all be true: they hold
+no power the Captain can see, the Captain reads them as friendly, and they have
+never put the Captain up before. Multiplied rather than added, so any one of
+them failing brings you back into range, and scaled by how full the house is so
+it switches off entirely by Final 6. Pawn duty also concentrates: the pawn is
+somebody the Captain can actually talk to first, which means their own alliance,
+and often somebody who has sat there before and survived. Together those take
+the last eight from 2.75 clean to 3.26.
+
+**Backdoor.** Appeal reads off two things already modelled: the target's comp
+record, because they would win the Veto and walk, and their **cover**, because
+the room would not forgive a straight shot. Cover is weighted higher than comps.
+The attempt is then multiplied by a **route** term, which is what a real Captain
+checks first: their own comp standing, plus how much of the house is committed to
+them. Without the route gate the move was a free week for exactly the people it
+was aimed at, because it fired on comp record and then failed a third of the
+time with the target never on the block at all.
+
+A backdoor only lands if somebody opens the seat. The Captain executes their own
+plan; an ally mostly goes along, since taking a pawn down costs them nothing; a
+nominee saving themselves opens it by accident. Anybody else never hears the plan
+and it simply dies, which is the correct failure and is why winning the Veto
+yourself matters.
+
+### 8.3 Eviction
 
 Votes are **always anonymous**. The tally is read aloud, never attributed.
 
@@ -472,7 +527,50 @@ visibility into their allies' intent, scaled by strength and by `perception`.
 There is a standing small chance of AI to AI side deals producing a vote you did
 not see coming. You should be blindsided sometimes.
 
-### 8.3 The reveal, and blame
+**The Panel weight grows as the Panel fills.** "Can I beat them at the end" is
+the whole late game of this format, and it was a flat 0.10 term from week one,
+which is wrong at both ends: in week two nobody is thinking about a jury that
+does not exist, and at Final 5 it is often the only thing anybody is thinking
+about. `EV_PANEL` is now 0.30 scaled by how many seats are filled, from 18
+percent of that at an empty Panel to all of it at seven. It is the deciding term
+in 0.9 / 2.4 / 6.2 percent of votes across the first half, the jury forming, and
+the last five, and switching it off changes half of all evictions at six or
+fewer. Stopped at 0.30: at 0.45 voters start keeping whoever the jury does not
+respect, an uncovered comp beast is exactly that, and the design pillar dies.
+
+The player can see it. Once the Panel starts filling it appears as a fifth bar
+on the stage and as its own section in the House panel, in bands with no
+figures. Before that the people who decide the winner were the only people in
+the game you could not look at, because jurors dropped off the wall the week
+they were evicted.
+
+**Coalescence.** The formula above is what each voter privately wants. It is not
+what they do. A house votes as a house, and version 0.2 did not: sixteen
+independent calculators produced 31.5 percent minority vote share, 27.8 percent
+one-vote margins and 12 percent ties, which is nothing like a real season.
+
+Resolution is therefore two passes. Pass one collects every private lean and the
+margin behind it. `houseConsensus` then works out where the house is going: the
+Captain's target if the room read it, otherwise the lean with the most social
+weight behind it. Pass two lets each voter decide whether to go there.
+
+```
+hold   = margin * 0.011                       // how wrong it feels privately
+       + loyalty  * 0.35   if allied to the consensus target
+       + volatility * 0.30                    // some people do their own thing
+       - paranoia * 0.30                      // fear of being the odd vote out
+follow = 0.74 - hold
+```
+
+`HOH_INTENT_LEAK` is how reliably the room reads the Captain, at 0.72. Swept:
+the Captain's target went home 82.0 / 83.2 / 85.4 / 88.0 percent at 0.60 / 0.66 /
+0.72 / 0.80, and the pawn went home 21.2 / 19.9 / 19.6 / 17.9. Real seasons sit
+near 80 to 85 and near 15 to 20, and 0.80 put the Captain above both.
+
+Measured after: unanimous 41 percent (the most common outcome, as it should be),
+minority vote share 14 percent, ties 3.6 percent.
+
+### 8.4 The reveal, and blame
 
 The reveal is sequential and anonymous. Votes stack up one at a time without
 names. A 6 to 5 flip still lands, and arguably lands harder, because you are
@@ -539,27 +637,32 @@ seed. Being on the block produces a different conversation from being safe in
 week two. The pools are `bond`, `probe`, `float`, `recruit`, `defend`,
 `deflect`, `gossip`, `power`, `captain`, `late`.
 
-### A, B and C
+### Four answers
 
-Every beat offers exactly three answers, and they always mean the same thing, so
-the player learns the grammar once.
+Every moment offers **four**, and none of them is labelled. There used to be
+three, tagged SAFE, EVEN and RISKY, always in that order. A badge saying RISKY
+does the reading for the player, which is the one job the player came here to
+do, so the badges are gone, the order is shuffled, and what tells you the cost
+is what the option says.
 
-| | | |
-|---|---|---|
-| **A** | Safe | Always works. Small gain. Tells you nothing new. |
-| **B** | Even | Usually works. Better gain. Often refreshes your read. |
-| **C** | Risky | Rolls against them. Wins big AND does something mechanical. Loses hard. |
+Under the hood there are still three kinds. `safe` always works for a small
+gain. `neutral` usually works, gains more, and often refreshes your read.
+`risky` rolls against them: it wins big and does something mechanical, and when
+it loses, if it named a person, that person hears about it by the evening.
 
-The risky answer is the only one that can move the game: set a vote intent, open
-an alliance, buy information about a third party, push heat onto somebody else.
-That is the trade. You cannot win this from the safe column, and you cannot
-survive playing nothing but the risky one.
+The fourth answer is built from the house rather than the bank, so even an
+ordinary conversation has one way out of it that is about somebody real.
 
-The risky roll has deliberately the same shape as the lie-detection roll in the
-engine, so a player who learns how lying works has also learned how this works.
-Charisma carries the honest versions, deception carries the manipulative ones,
-their perception is what you are working against, and existing trust helps
-because people extend the benefit of the doubt to people they like.
+**Live beats.** A third bank alongside SCENES and BEATS, whose lines take real
+arguments: who is on the block, who the Captain wants gone, who told somebody
+one thing last Thursday and did another. Fifteen of them, each declaring the
+situation it needs, weighted so the rare and urgent ones beat the ones that are
+true every week. About sixty percent of conversations are one.
+
+    "Jules says the house is going for Noor. They want to know if you are with it."
+    "Kabir tells you Lachlan has been saying your name in the other room."
+    "Devora points out that Sunny has not sat up there once. Not one week."
+
 
 ### The verbs that survive
 
@@ -822,6 +925,47 @@ stable first.
 
 **Stage 11, recap, share, board, store.** Truth-reveal recap in. Board and store pending.
 
+**Stage 12, alignment with the format.** In progress. Playthroughs against real
+seasons found six places where the simulation was structurally honest but did not
+behave like the genre it is modelling.
+
+| # | What | Status |
+|---|---|---|
+| 1 | Vote coalescence: the house votes as a house | DONE, §8.3 |
+| 2 | Nomination intent: pawn and backdoor | DONE, §8.2 |
+| 3 | Named alliances with size and identity, plus showmances that draw heat as a unit | pending |
+| 4 | Floater logic, so some people genuinely skate | DONE, §8.2, and see the correction below |
+| 5 | Jury management: make the Panel matter in the last three weeks | DONE, §8.3 |
+| 6 | Rituals: Captain's room, nomination speeches, rations bonding, campaigning from the block | pending |
+
+**Two corrections to the numbers this roadmap was written from**, kept because
+the mistakes are more instructive than the fixes.
+
+*Item 4 was measured wrong.* The stated problem was "15.5 of 16 are nominated
+per run against 2 to 4 who never are in a real season". Both halves are bad.
+Nearly everybody being nominated eventually is FORCED by the rules: thirteen of
+sixteen are evicted and every eviction needs a nomination, so the ceiling on
+never-nominated is three and real seasons sit at zero to two. And the count that
+does mean something, how many of the last eight got there without ever sitting
+on the block, was measured at the END of the run, which scores somebody who
+coasted to the final eight and was then nominated at Final 7 the same as
+somebody who sat there in week two. Snapshotted correctly at the moment the
+house hits eight, the game was already at **2.75 of 8**, inside the range real
+seasons produce. The "not worth the week" term shipped anyway, sized small, on
+the grounds that the behaviour was genuinely missing and it opens a way of
+playing the game did not have. It lands at 3.26.
+
+*Item 5 was nearly the same mistake in reverse.* The stated problem was that the
+Panel term "decides 0.4 percent of votes", which is true and misleading:
+switching the term off entirely still changed 17.2 percent of evictions. It was
+never inert. It was a tiebreaker that never got to be the reason. So the fix was
+not a bigger flat weight, it was a curve.
+
+The general lesson, now a rule: **a proxy that cannot fail is not a test.** The
+old "at least 60 percent of the cast sit At Risk once" reported 99 percent every
+run and read as a pass while measuring the rules rather than the model. It has
+been replaced with the clean-to-eight band, which can fail in both directions.
+
 ---
 
 ## 16. Meta Layer
@@ -881,18 +1025,102 @@ Numbers are fine everywhere else: timers, comp scores, career stats, the tree.
 
 **Visual rules**
 
+- Light. Cream page, white cards, blue ink, one red stamp
 - Custom typeface pairing, one display face with real personality plus one
-  workhorse for body
+  workhorse for body, and both of them chosen for READING, not for mood
 - No stock icon sets. Every glyph drawn for this game
 - Procedural avatars from a custom shape vocabulary
-- Layout built around the house as a physical space, not a dashboard of cards
-- Restrained palette per house theme, one aggressive accent reserved for eviction
-  and betrayal
+- Restrained palette, one aggressive accent reserved for eviction and betrayal
 - Motion deliberate and sparse. The sequential vote reveal is the one place the
   game slows down
 
-**Reference feel:** surveillance monitor, casting file paperwork, chalk scratched
-vote tallies. Cold institutional surfaces with human handwriting on top.
+**The relationship ramp moves through hue, not just temperature.** Seven bands
+have to be tellable apart at a glance on a wall of sixteen tiles. The first
+light pass ran red through brown through grey into blue, which is elegant and
+useless: Cold, Wary and Neutral were three muddy neighbours. Playtest: "the
+colors that represent your relationship status feel way too dull and need to be
+way more clear and identifiable."
+
+| Band | | Meaning |
+|---|---|---|
+| Done with you | `#c81e14` red | they want you gone |
+| Cold | `#e2601d` orange | |
+| Wary | `#c99000` amber | |
+| Neutral | `#8c98a5` grey | nothing either way |
+| Warm | `#1c9e63` green | |
+| Solid | `#1668dc` blue | |
+| Ride or die | `#5b2bc4` violet | they are with you |
+
+Grey sits at the middle and is the only desaturated step in the set, because
+"nothing either way" should look like the absence of a reading rather than like
+a reading. The band is drawn as a filled chip in its own colour, not four pixels
+of border, because a wall of sixteen has to be readable in one sweep.
+
+**The palette.**
+
+| Token | Value | What it means |
+|---|---|---|
+| `--cream` | `#f7f3ea` | the page, warm paper stock |
+| `--panel` | `#ffffff` | cards and panels |
+| `--blue` | `#1c56c2` | the brand, and every primary action |
+| `--ink` | `#17222f` | body copy, blue-black rather than black |
+| `--signal` | `#c0392b` | eviction and betrayal, and nothing else |
+| `--ok` | `#1f7a4d` | saved, landed, survived |
+| `--hand` | `#a8762b` | powers and secrets |
+
+**Type:** Archivo for display, Inter for body, 15.5px base. The first build set
+body copy in letter-spaced monospace under condensed uppercase headings, which
+looked like the reference and was tiring to read a sentence in. Uppercase now
+belongs only to labels two words long, never to sentences.
+
+**Why not dark.** Version 0.2 was a dark surveillance monitor. It photographed
+well and read badly: sixteen relationship states, a log, and four bars of your
+own game are a lot of small text, and small text on glass at low contrast is
+where players stop reading and start guessing. The design idea did not change,
+only the surface it is printed on.
+
+**Reference feel:** a casting file on a producer's desk. Cream stock, white
+cards clipped to it, blue pen, and one red stamp for the thing that is final.
+
+### 17.1 The shell
+
+The look is ours. The **shape** is borrowed from BitLife, deliberately and
+specifically, because that interface is legible to millions of people who never
+read a tutorial, and the reasons are structural rather than cosmetic:
+
+1. **One blue button.** The thing that advances time is always in the same
+   place, always the same colour, and always says what it is about to do:
+   "Start the week", "Play for the Veto", "Hold the vote". A player is never
+   looking for what to press. It was green first, matching the reference; once
+   the brand was named as cream and blue, blue became the go colour and the
+   interface was down an accent it did not need. Green survives only as an
+   OUTCOME: saved, landed, survived.
+2. **One decision at a time.** Everything that is being asked of you arrives as
+   a card over a dimmed screen. Everything that is not being asked of you is
+   either history you can scroll or a panel you chose to open.
+3. **The log is the main surface**, grouped by week the way a life sim groups by
+   age. It holds the whole run, not the last ninety lines, because the run is
+   the story and the recap should not be the first place you can read it.
+4. **Cards have a fixed anatomy**: a header strip with the kind of beat and who
+   it is about, an icon and a title, one to three sentences, then either one
+   button or choices stacked full width and thumb sized.
+5. **Your own game as four bars**, pinned above the dock: Standing, Reach,
+   Exposure, Energy. Wordless, because §17 keeps numbers off relationships and
+   these are aggregates of exactly that.
+
+What is NOT borrowed: the palette, the typography, the emoji, the exclamation
+points, and the bright cartoon chrome. Those are the parts that would cost us
+the voice, and none of them are what makes that interface work.
+
+Choosing a person is a **list**, not the sixteen tile wall. The wall is still
+the House panel, where reading the whole room at once is the point, but on a
+phone a picker built on it was four rows of scrolling before you could see
+everybody's name, which is exactly when a player stops knowing what the screen
+is asking them.
+
+One press, one beat: the loop stops as soon as there is anything to look at, a
+card or a decision or even a single new line in the log. Phases that produce
+nothing visible are absorbed, so it does not become twelve presses a week.
 
 ---
 
