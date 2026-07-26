@@ -509,6 +509,64 @@ Captain was shielding their partner from being the target and then seating them
 as the pawn. With `PAWN_SHOWMANCE` in, it is 0.4 percent; with both terms off it
 is 22.2 percent.
 
+### 7.9 Does being liked pay
+
+For most of this build it did not, and that was the oldest structural defect in
+the model.
+
+Trust feeds `socialReach`. `socialReach` feeds `threatScore`. So being widely
+liked buys protection through `cover` and paints a target through threat at the
+same time, and for a long while the target won. Handing the player a flat trust
+gift from the whole house every week:
+
+| Gift per head per week | Reached the last five, before | after |
+|---|---|---|
+| none | 45.0% | 36.1% |
+| +3 | 36.0% | 37.0% |
+| +8 | **31.6%** | **43.6%** |
+| +20 | 50.6% | 64.1% |
+
+The gift is artificial on purpose. It is the only way to move one input and hold
+everything else still, which is what a controlled measurement is.
+
+**Being liked made you worse off**, which is wrong for the genre and quietly
+blunted every social mechanic built on top of it. The information layer in §20
+had to invent a second currency to be worth building at all.
+
+**Where the damage actually was.** Not where it looked. Nomination rate barely
+moved with likeability (15.9 to 18.4 percent of weeks) and loss-when-nominated
+was flat (44.8 to 43.6), so neither of the obvious channels explained a ten
+point drop in survival. A per-week hazard curve localised it: the well-liked
+player was dying in **weeks two to eight**, at roughly double the rate, while
+actually being safer late. That is backwards. Social threat is a late-game
+phenomenon in this format; being liked early is supposed to be pure upside.
+
+Two defects, both in how the Panel term entered threat:
+
+1. **`TH_PANEL` did not ramp.** `wSocial` was carefully faded in across the run
+   and `TH_PANEL` sat beside it at full weight from the instant the first person
+   was evicted. A term worth nothing in week six and thirty percent of the
+   threat score in week seven is a cliff nobody in the house could explain.
+2. **`panelEquity` reported a coin flip as a fact.** A one person Panel can only
+   answer 0 or 100. That got handed to `threatScore` at full weight, so anybody
+   the first juror happened to like read as a maximum jury threat for the rest
+   of that week.
+
+Both land hardest on exactly the players the ramp existed to protect, because a
+well-liked player reads high the moment there is anybody to read them against.
+`TH_PANEL_EARLY` fixes the first. `PANEL_PRIOR`, two and a half
+pseudo-observations at even odds, fixes the second: one juror who likes you now
+reads 67 rather than 100, and a full Panel swamps the prior and tells the truth.
+
+That removed the dip. `COVER_SOCIAL` from 0.35 to 0.45 supplied the slope:
+measured at 700 runs a setting, 0.35 gives +0.3pp from none to +8 (flat, inside
+its own error bar), 0.45 gives +3.4pp, and 0.55 gives +8.9pp but drops the
+baseline and pushes three other proxies toward their limits.
+
+**The shape this now wants, and the gate that holds it:** never negative, mildly
+positive in the normal range, clearly positive at the top. `node simulator.js
+--curve` fails if the slope goes back below zero.
+
 ## 8. Threat and Vote Resolution
 
 ### 8.1 Threat
@@ -1283,14 +1341,14 @@ Version 0.1 said there were none. There were about thirty. These are what is lef
    nodes grant attributes and unlocks, never behavior.
 7. **Does the player's own belief distortion apply to AI reading the player.**
    Currently yes, symmetric. Worth confirming it feels right in playtest.
-8. **Being liked is a liability over most of its range, and that is bigger
-   than any one feature.** Measured in §20.3: a flat trust gift to the player
-   takes their last-five rate from 45.0 percent down to 31.6 percent before it
-   recovers at extreme values. The U is genuinely the paradox the format is
-   built on, but the dip is deep enough that any mechanic paying in likeability
-   pays nothing, which is why the information layer had to invent a second
-   currency to be worth building. The right fix is probably in how `socialReach`
-   feeds `threatScore`, and it needs its own calibration pass.
+8. **Being liked used to be a liability. FIXED, see §7.9,** and the entry is
+   kept because the diagnosis was worth more than the fix. The obvious channels
+   (nominated more, evicted more when nominated) were both flat and explained
+   none of it; a per-week hazard curve found the damage in weeks two to eight,
+   caused by the Panel term entering threat at full weight from the first
+   eviction and by a one person Panel reporting a coin flip as a fact. What is
+   still open is whether the same class of defect is hiding elsewhere: no other
+   ramped term in `threatScore` has been checked for a cliff at its boundary.
 9. **Skill is currently a mild liability.** `--skill` shows that the better a
    player's hands, the more comps they win and the worse they finish, because
    power paints you. The weight is set at 0.45 to keep that from becoming a tax,
@@ -1474,6 +1532,14 @@ for a month and no run of good information should buy permanent immunity.
 
 Being useful to somebody is a different quantity from being liked by them, and
 it is the one the quiet winners of this format actually accumulate.
+
+**The curve above has since been fixed, see §7.9, and the debt design stands
+anyway.** Being liked now pays rather than costing, but it still pays by making
+you a bigger presence in the house, and a bigger presence is a bigger target.
+Debt is the channel that buys protection without buying visibility, which is a
+distinction worth keeping whatever the slope on likeability happens to be. With
+the curve repaired the same paired ablation reads +1.09 places rather than
++0.92: the information layer got better when the tax on being liked came off.
 
 With the payout split 26 into debt and 7 into liking, the same paired ablation
 reads **+0.92 places, standard error 0.21**. That is the feature working.
