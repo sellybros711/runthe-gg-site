@@ -119,30 +119,48 @@ function make(opts) {
    */
   function chooseOption(s, moment) {
     const me = s.human, them = moment.target;
-    const c = moment.options[2];
-    const chance = SC.riskyChance(s, me, them, c.fx);
-
     const onBlock = s.atRisk.indexOf(me) !== -1;
-    let want = 0;
-    for (const f of c.fx) {
-      if (f === 'intent') want += onBlock ? 3 : 1.2;
-      if (f === 'ally') want += E.allianceOf(s.alliances, me).length ? 0.6 : 2.2;
-      if (f === 'info') want += 1.0;
-      if (f === 'heat') want += onBlock ? 1.8 : 0.8;
-      if (f === 'read') want += 0.5;
+    const suspicious = s.rel.suspicion[them][me] > 40;
+
+    /* There are four answers now, in a shuffled order, and none of them is
+       labelled. The stand-in cannot index position 2 for "the risky one" any
+       more and has to read the option the way a player would: what does it try
+       to do, and can I afford it if it misses. */
+    function value(o) {
+      let want = 0;
+      for (const raw of o.fx) {
+        const f = String(raw).split(':')[0];
+        if (f === 'swing') want += onBlock ? 3.4 : 1.6;
+        if (f === 'intent') want += onBlock ? 3 : 1.2;
+        if (f === 'ally') want += E.allianceOf(s.alliances, me).length ? 0.6 : 2.2;
+        if (f === 'info') want += 1.0;
+        if (f === 'heat') want += onBlock ? 1.8 : 0.8;
+        if (f === 'read') want += 0.5;
+        if (f === 'suspicion') want -= suspicious ? 1.4 : 0.5;
+      }
+      return want;
     }
 
-    const suspicious = s.rel.suspicion[them][me] > 40;
-    /* Calibrated so the knob actually spans behaviour. At 0.72 minus a 0.34
-       swing the bar sat above a typical risky chance of about 0.41, and a
-       policy set to risk 0.5 took ONE risky answer in fifty two scenes, which
-       makes the knob decorative and the measurement worthless. */
-    const bar = 0.60 - cfg.risk * 0.42 - Math.min(0.18, want * 0.05) + (suspicious ? 0.12 : 0);
-
-    if (s.energy >= c.cost && chance >= bar && want > 0.4) return 'c';
-    /* A is for when you cannot afford to lose anything with this person. */
-    if (suspicious && roll() < 0.45) return 'a';
-    return 'b';
+    let best = null, bestScore = -Infinity;
+    for (const o of moment.options) {
+      if (s.energy < o.cost) continue;
+      const want = value(o);
+      let score;
+      if (o.kind === 'risky') {
+        const chance = SC.riskyChance(s, me, them, o.fx);
+        /* Calibrated so the knob actually spans behaviour. At 0.72 minus a 0.34
+           swing the bar sat above a typical risky chance of about 0.41, and a
+           policy set to risk 0.5 took ONE risky answer in fifty two scenes,
+           which makes the knob decorative and the measurement worthless. */
+        const bar = 0.60 - cfg.risk * 0.42 - Math.min(0.18, want * 0.05) + (suspicious ? 0.12 : 0);
+        score = (chance >= bar && want > 0.4) ? want + chance : want * 0.2 - 1;
+      } else {
+        score = want * 0.6 + (o.kind === 'neutral' ? 0.8 : 0.2)
+          + (suspicious && o.kind === 'safe' ? 0.9 : 0);
+      }
+      if (score > bestScore) { bestScore = score; best = o; }
+    }
+    return best ? best.key : moment.options[0].key;
   }
 
   // ── competitions ──────────────────────────────────────────────────────────

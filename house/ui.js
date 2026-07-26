@@ -49,19 +49,38 @@
 
 /* Keyed by the label engine.band() returns, so there is one source of truth for
    the bands and this file cannot drift out of step with the model. */
+/*
+ * SEVEN STEPS, AND THEY HAVE TO BE TELLABLE APART AT A GLANCE.
+ *
+ * The first light-theme pass ran red through brown through grey into blue,
+ * which is elegant on paper and useless in practice: Cold, Wary and Neutral
+ * were three muddy neighbours, and a wall of sixteen tiles read as one colour.
+ * Playtest, correctly: "the colors that represent your relationship status feel
+ * way too dull and need to be way more clear and identifiable."
+ *
+ * So the ramp now moves through HUE as well as temperature. It still means one
+ * thing and only one thing, how somebody feels about YOU, and it still ends on
+ * the house blue so the brand colour means somebody is with you. Grey sits at
+ * the middle on purpose and is the only desaturated step in the set, because
+ * "nothing either way" should look like the absence of a reading rather than
+ * like a reading.
+ *
+ * `dim` is the wash used behind a tile. `on` is a text colour for that wash.
+ */
 const BAND = {
-  'Done with you': { c: '#b3261c', dim: '#f0d3d0', i: 0, short: 'Done' },
-  'Cold':          { c: '#c05c47', dim: '#f2ddd7', i: 1, short: 'Cold' },
-  'Wary':          { c: '#9c7a5e', dim: '#e9e0d3', i: 2, short: 'Wary' },
-  'Neutral':       { c: '#7c8794', dim: '#e2e5e9', i: 3, short: 'Flat' },
-  'Warm':          { c: '#5580c4', dim: '#dbe5f5', i: 4, short: 'Warm' },
-  'Solid':         { c: '#2a61c4', dim: '#cddcf5', i: 5, short: 'Solid' },
-  'Ride or die':   { c: '#123c8c', dim: '#c2d3f0', i: 6, short: 'Bonded' },
+  'Done with you': { c: '#c81e14', dim: '#fbdedc', on: '#8e120b', i: 0, short: 'Done' },
+  'Cold':          { c: '#e2601d', dim: '#fde6d6', on: '#9c3f0d', i: 1, short: 'Cold' },
+  'Wary':          { c: '#c99000', dim: '#fbf0cf', on: '#8a6200', i: 2, short: 'Wary' },
+  'Neutral':       { c: '#8c98a5', dim: '#e8ebef', on: '#5d6b7a', i: 3, short: 'Flat' },
+  'Warm':          { c: '#1c9e63', dim: '#d7f2e5', on: '#116b43', i: 4, short: 'Warm' },
+  'Solid':         { c: '#1668dc', dim: '#d8e6fb', on: '#0f4694', i: 5, short: 'Solid' },
+  'Ride or die':   { c: '#5b2bc4', dim: '#e6dcfa', on: '#3e1c8a', i: 6, short: 'Bonded' },
 };
 const BAND_ORDER = Object.keys(BAND);
 
 function bandColor(label) { return (BAND[label] || BAND.Neutral).c; }
 function bandDim(label) { return (BAND[label] || BAND.Neutral).dim; }
+function bandOn(label) { return (BAND[label] || BAND.Neutral).on; }
 function bandIndex(label) { return (BAND[label] || BAND.Neutral).i; }
 
 /*
@@ -326,7 +345,7 @@ function sortCast(state, E, list, key) {
 }
 
 const api = {
-  BAND, BAND_ORDER, bandColor, bandDim, bandIndex,
+  BAND, BAND_ORDER, bandColor, bandDim, bandOn, bandIndex,
   freshOpacity, freshDash, PATHS, icon,
   RAIL, railIndex, phaseRail, bar, ladder, legend, allianceMap,
   SORTS, sortCast,

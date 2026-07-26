@@ -637,27 +637,32 @@ seed. Being on the block produces a different conversation from being safe in
 week two. The pools are `bond`, `probe`, `float`, `recruit`, `defend`,
 `deflect`, `gossip`, `power`, `captain`, `late`.
 
-### A, B and C
+### Four answers
 
-Every beat offers exactly three answers, and they always mean the same thing, so
-the player learns the grammar once.
+Every moment offers **four**, and none of them is labelled. There used to be
+three, tagged SAFE, EVEN and RISKY, always in that order. A badge saying RISKY
+does the reading for the player, which is the one job the player came here to
+do, so the badges are gone, the order is shuffled, and what tells you the cost
+is what the option says.
 
-| | | |
-|---|---|---|
-| **A** | Safe | Always works. Small gain. Tells you nothing new. |
-| **B** | Even | Usually works. Better gain. Often refreshes your read. |
-| **C** | Risky | Rolls against them. Wins big AND does something mechanical. Loses hard. |
+Under the hood there are still three kinds. `safe` always works for a small
+gain. `neutral` usually works, gains more, and often refreshes your read.
+`risky` rolls against them: it wins big and does something mechanical, and when
+it loses, if it named a person, that person hears about it by the evening.
 
-The risky answer is the only one that can move the game: set a vote intent, open
-an alliance, buy information about a third party, push heat onto somebody else.
-That is the trade. You cannot win this from the safe column, and you cannot
-survive playing nothing but the risky one.
+The fourth answer is built from the house rather than the bank, so even an
+ordinary conversation has one way out of it that is about somebody real.
 
-The risky roll has deliberately the same shape as the lie-detection roll in the
-engine, so a player who learns how lying works has also learned how this works.
-Charisma carries the honest versions, deception carries the manipulative ones,
-their perception is what you are working against, and existing trust helps
-because people extend the benefit of the doubt to people they like.
+**Live beats.** A third bank alongside SCENES and BEATS, whose lines take real
+arguments: who is on the block, who the Captain wants gone, who told somebody
+one thing last Thursday and did another. Fifteen of them, each declaring the
+situation it needs, weighted so the rare and urgent ones beat the ones that are
+true every week. About sixty percent of conversations are one.
+
+    "Jules says the house is going for Noor. They want to know if you are with it."
+    "Kabir tells you Lachlan has been saying your name in the other room."
+    "Devora points out that Sunny has not sat up there once. Not one week."
+
 
 ### The verbs that survive
 
@@ -1028,6 +1033,28 @@ Numbers are fine everywhere else: timers, comp scores, career stats, the tree.
 - Restrained palette, one aggressive accent reserved for eviction and betrayal
 - Motion deliberate and sparse. The sequential vote reveal is the one place the
   game slows down
+
+**The relationship ramp moves through hue, not just temperature.** Seven bands
+have to be tellable apart at a glance on a wall of sixteen tiles. The first
+light pass ran red through brown through grey into blue, which is elegant and
+useless: Cold, Wary and Neutral were three muddy neighbours. Playtest: "the
+colors that represent your relationship status feel way too dull and need to be
+way more clear and identifiable."
+
+| Band | | Meaning |
+|---|---|---|
+| Done with you | `#c81e14` red | they want you gone |
+| Cold | `#e2601d` orange | |
+| Wary | `#c99000` amber | |
+| Neutral | `#8c98a5` grey | nothing either way |
+| Warm | `#1c9e63` green | |
+| Solid | `#1668dc` blue | |
+| Ride or die | `#5b2bc4` violet | they are with you |
+
+Grey sits at the middle and is the only desaturated step in the set, because
+"nothing either way" should look like the absence of a reading rather than like
+a reading. The band is drawn as a filled chip in its own colour, not four pixels
+of border, because a wall of sixteen has to be readable in one sweep.
 
 **The palette.**
 

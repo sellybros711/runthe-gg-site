@@ -325,7 +325,8 @@ details.wk .body h4{font-family:var(--disp);font-weight:600;font-size:11px;lette
 
 /* relationship ladder: seven rungs, one lit */
 .ldr{display:inline-flex;gap:2px;align-items:flex-end;height:16px}
-.ldr i{display:block;width:5px;height:5px;background:var(--line2)}
+.ldr i.on{box-shadow:none;border-radius:1px}
+.ldr i{display:block;width:6px;height:5px;background:#d8d0c0}
 .ldr i.on{height:16px;box-shadow:0 0 6px currentColor}
 
 .bbar{display:inline-block;height:4px;background:var(--line2);vertical-align:middle}
@@ -350,6 +351,14 @@ details.wk .body h4{font-family:var(--disp);font-weight:600;font-size:11px;lette
 .m-rat{color:#9a7f5a} .m-ally{color:var(--hand)} .m-seen{color:var(--dim)}
 .m-threat{color:#c8724f} .m-stale{color:var(--dimmer)} .m-power{color:var(--hand)}
 .cell .band{font-size:11px;letter-spacing:.04em}
+/* The band as a filled chip, not four pixels of border. A wall of sixteen has
+   to be readable in one sweep. */
+.cell{border-left-width:6px}
+.cell .band{display:inline-block;padding:2px 7px;border-radius:2px;font-weight:600;
+  font-size:10.5px;letter-spacing:.06em;text-transform:uppercase}
+.prow .n span{display:inline-block;padding:1px 6px;border-radius:2px;font-weight:600;
+  font-size:10px;letter-spacing:.07em;text-transform:uppercase;margin-top:2px}
+.prow{border-left-width:5px}
 .cell .fresh{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dimmer)}
 
 .sorts{display:flex;gap:0;margin-bottom:10px;border:1px solid var(--line);width:fit-content}
@@ -797,7 +806,8 @@ function cellFor(p,opts){
   var label;
   if(p.id===me) label='<div class="band" style="color:var(--paper)">You</div>'
     +'<div class="fresh">'+esc(p.archetype)+'</div>';
-  else label='<div class="band" style="color:'+col+'">'+esc(band)+'</div>'
+  else label='<div class="band" style="background:'+U.bandDim(band)+';color:'+U.bandOn(band)+'">'
+      +esc(band)+'</div>'
     +'<div class="fresh">'+esc(rd.freshness)+'</div>';
 
   return '<div class="'+cls+'" data-id="'+p.id+'" style="border-left-color:'+col+'">'
@@ -1189,7 +1199,9 @@ function pickList(p){
       +' data-pick="'+id+'"'+(id===s.human?' disabled':'')+'>'
       +'<div class="av">'+avatar(pl,42)+'</div>'
       +'<div class="n"><b>'+esc(pl.first)+(id===s.human?' (you)':'')+'</b>'
-      +'<span style="color:'+col+'">'+esc(id===s.human?pl.archetype:rd.band.label)+'</span></div>'
+      +'<span style="background:'+(rd?U.bandDim(rd.band.label):'var(--panel2)')
+        +';color:'+(rd?U.bandOn(rd.band.label):'var(--dim)')+'">'
+        +esc(id===s.human?pl.archetype:rd.band.label)+'</span></div>'
       +'<div class="mk">'+mk+'</div></button>';
   }).join('')+'</div>';
 }
@@ -1631,8 +1643,6 @@ function handleNeed(need){
   R.step(s,null); pump();
 }
 
-var TAG={safe:'Safe',neutral:'Even',risky:'Risky'};
-
 function showMoveIn(need){
   dock({label:'Answer',off:true});
   openCard({
@@ -1640,7 +1650,7 @@ function showMoveIn(need){
     title:'Fifteen strangers and a lot of cameras',
     body:[{t:need.beat.line,c:'q'}],
     choices:need.beat.options.map(function(o){
-      return {key:o.key.toUpperCase(),label:o.text,tag:TAG[o.kind],cls:o.kind,go:function(){
+      return {label:o.text,go:function(){
         say(o.text,'quiet'); R.step(s,{key:o.key}); pump(); }};
     })
   });
@@ -1940,20 +1950,34 @@ function showScheming(need){
      * broken rather than as a bet they took. The odds are a sentence, not a
      * percentage, same as the read on getting a room together.
      */
-    var risky=mo.options.filter(function(o){ return o.kind==='risky'; })[0];
-    var read=risky?SC.riskyRead(s,s.human,mo.target,risky.fx||[]):null;
+    /*
+     * Four answers, nothing telling you which is which.
+     *
+     * Playtest: "I don't like that we tell the user which option is risky."
+     * Correct, and it retired the odds-read from the previous build with it: a
+     * tag saying RISKY and a sentence saying "this could go either way" were
+     * both doing the reading FOR the player, which is the job the player came
+     * here to do. What the option costs is in what it says.
+     */
     openCard({
       kicker:mo.scene, who:mo.target, role:E.read(s.rel,s.human,mo.target).band.label,
       icon:'eye', title:s.cast[mo.target].first,
       body:[{t:mo.line,c:'q'}],
       choices:mo.options.map(function(o){
-        return {key:o.key.toUpperCase(),label:o.text,
-          tag:TAG[o.kind],cls:o.kind,
-          note:o.kind==='risky'?read:null,
+        return {label:o.text,
           off:s.energy<o.cost,go:function(){
             var out=R.playScene(s,mo,o.key);
             if(!out) return;
-            narrateScene(mo,out); saveRun();
+            var big=narrateScene(mo,out); saveRun();
+            if(big.length){
+              openCard({kicker:'That conversation', who:out.target,
+                role:out.read?out.read.band.label:'', icon:'alliance',
+                tone:out.landed?'good':'bad',
+                title:out.landed?'It moved something':'That did not go your way',
+                body:big,
+                ok:{label:'Go on',go:backToFloor}});
+              return;
+            }
             backToFloor();
           }};
       }),
@@ -1962,8 +1986,18 @@ function showScheming(need){
   }
 }
 
+/*
+ * What came of it.
+ *
+ * Playtest: "I feel like the chats don't have a big enough impact." Half of
+ * that was mechanical and is fixed in scenes.js. The other half was that the
+ * consequence went into the log as a grey sentence, so moving a vote and asking
+ * somebody how they slept looked identical from the chair. Anything that
+ * actually changed the game now stops the screen and says so.
+ */
 function narrateScene(moment,out){
   var nm=s.cast[out.target].first;
+  var lines=[], big=[];
   say(moment.scene.charAt(0).toUpperCase()+moment.scene.slice(1)+'.','quiet');
   if(out.kind==='safe') say('It goes the way those go.');
   else if(out.kind==='neutral') say(out.landed?'It lands.':'It does not quite land.',out.landed?'':'quiet');
@@ -1971,17 +2005,32 @@ function narrateScene(moment,out){
     out.landed?'':'hot');
 
   for(var i=0;i<out.fx.length;i++){
-    var f=out.fx[i];
-    if(f.k==='ally') say('You and '+nm+' have something now.','ev-good','alliance');
-    else if(f.k==='ally_declined') say(nm+' is not ready to put a name on it.','quiet');
-    else if(f.k==='intent') say(nm+' says they are voting out '+s.cast[f.target].first+'.');
-    else if(f.k==='info') say(nm+' on '+s.cast[f.b].first+': '+f.band.toLowerCase()+'.','quiet');
-    else if(f.k==='alliance_seen') say('They are working with '+f.members.map(function(x){return s.cast[x].first;}).join(' and ')+'.','quiet');
-    else if(f.k==='heat') say(nm+' walks away thinking about '+s.cast[f.who].first+'.','quiet');
-    else if(f.k==='watched') say(nm+' is watching you now.','ev-bad','eye');
-    else if(f.k==='backfire') say('You spent something you are not getting back.','hot');
+    var f=out.fx[i], line=null, weighty=false;
+    if(f.k==='ally'){ line='You and '+nm+' have something now.'; weighty=true;
+      say(line,'ev-good','alliance'); }
+    else if(f.k==='ally_declined'){ line=nm+' is not ready to put a name on it.'; say(line,'quiet'); }
+    else if(f.k==='swung'){ line=nm+' says they will vote out '+s.cast[f.target].first+'. You put that there.';
+      weighty=true; say(line,'ev-vote','vote'); }
+    else if(f.k==='swing_refused'){ line=nm+' is not moving off it, and now they know you tried.';
+      weighty=true; say(line,'ev-bad','broken'); }
+    else if(f.k==='intent'){ line=nm+' says they are voting out '+s.cast[f.target].first+'.'; say(line); }
+    else if(f.k==='info'){ line=nm+' on '+s.cast[f.b].first+': '+f.band.toLowerCase()+'.'; say(line,'quiet'); }
+    else if(f.k==='alliance_seen'){
+      line='They are working with '+f.members.map(function(x){return s.cast[x].first;}).join(' and ')+'.';
+      weighty=true; say(line,'ev-power','alliance'); }
+    else if(f.k==='heat'){ line=nm+' walks away thinking about '+s.cast[f.who].first+', and not kindly.';
+      weighty=true; say(line,'','threat'); }
+    else if(f.k==='watched'){ line=nm+' is watching you now.'; weighty=true; say(line,'ev-bad','eye'); }
+    else if(f.k==='backfire'){ line='You spent something you are not getting back.'; say(line,'hot'); }
+    else if(f.k==='got_back'){ line='It gets back to '+s.cast[f.who].first+' by the evening.';
+      weighty=true; say(line,'ev-bad','broken'); }
+    if(line){ lines.push(line); if(weighty) big.push(line); }
   }
   if(out.read) say(nm+' reads '+out.read.band.label.toLowerCase()+' on you.','quiet');
+
+  /* Handed back so the caller can stop the screen. A pleasant chat that nudged
+     trust does not deserve a card; a vote you moved does. */
+  return big;
 }
 
 /* Eavesdrop and the Confessional survive the move to scenes: one is not a
