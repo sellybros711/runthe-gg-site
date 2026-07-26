@@ -13739,6 +13739,19 @@ allows Google Fonts, or self-host Anton.*
   --check` clean. Deployed to /golf. (The separate pack-reveal wheel cards use their own `.pcard` CSS at a
   different site - untouched.)
 
+- **PLAYER-CARD BLANK FRONT — real fix: drop backface-visibility, use a visibility swap (deployed to /golf).**
+  Users on iOS couldn't see the front of the flip card on EITHER path ("Preview my Player Card" and tapping a
+  name on the leaderboard) — the front rendered blank at rest. Root cause: each `.pcard-face` combined
+  `backface-visibility:hidden` + `overflow:hidden` inside a `preserve-3d` parent, a well-known iOS/WebKit
+  combo that culls the front face to blank. (An earlier attempt blamed the `overflow-x:hidden` root backstop
+  from the launch-prep pass and reverted it — that was a red herring; harmless to have removed but not the
+  cause.) Real fix: stop using `backface-visibility` to hide the away side. Keep the real 3D `rotateY` flip,
+  but only the facing side is `visibility:visible`, swapped at the 90° midpoint via `transition:visibility 0s
+  linear .3s` (half the now-symmetric `.6s ease-in-out` flip) so the two faces never co-show (no z-fight) and
+  neither can be culled. Reduced-motion makes the visibility swap instant too. Verified in Playwright: at
+  rest front `visible` (full 312×447 content) / back `hidden`; flip swaps both ways; front no longer carries
+  `backface-visibility:hidden`; 0 page errors. Works on the leaderboard + preview paths (shared CSS).
+
 - **LAUNCH-PREP AUDIT — UX / legal / SEO pass (code fixes deployed to /golf; policy items flagged).** Ran
   three parallel expert audits (game UX, legal/compliance, technical SEO) over the game + site and applied
   the non-breaking code improvements:
