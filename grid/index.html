@@ -52,8 +52,9 @@
 
   /* ---- top bar ---- */
   .top{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:22px;}
-  .top .gg{font-weight:900; font-style:italic; font-size:19px; letter-spacing:-.01em; color:var(--ink);}
-  .top .gg .d{color:var(--coralT);}
+  .top .gg{display:inline-flex; align-items:center; line-height:0;}
+  .top .gg img{height:38px; width:auto; display:block;}
+  @media (max-width:560px){ .top .gg img{height:32px;} }
   .topR{display:flex; align-items:center; gap:9px;}
   .coins{display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line2); border-radius:999px; padding:7px 13px; font-weight:800; font-size:14px; background:var(--card); box-shadow:var(--shadow); color:var(--goldT);}
   .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card);
@@ -187,7 +188,7 @@
 <div class="stage">
   <div class="wrap">
     <div class="top">
-      <span class="gg">RunThe<span class="d">Grid</span></span>
+      <a class="gg" href="/grid/" aria-label="RunTheGrid home"><img src="/grid/assets/runthegrid-logo.png" alt="RunTheGrid" width="871" height="303" /></a>
       <span class="topR">
         <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
           <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
