@@ -5,6 +5,8 @@
  *   node house/simulator.js --levels        level parity, 1 vs 30 vs 60
  *   node house/simulator.js --throws        thrown-comp backfire target
  *   node house/simulator.js --tree          tree reachability and token maths
+ *   node house/simulator.js --seat          the PLAYER's seat, played for real
+ *   node house/simulator.js --skill         sweep the human comp curve
  *
  * GDD §15 Stage 4 makes this a GATE, not a report: nothing reaches the UI until
  * these proxies pass. The design doc's version 0.1 success criterion was "the
@@ -23,6 +25,7 @@ const G = require('./generate.js');
 const E = require('./engine.js');
 const C = require('./comps.js');
 const R = require('./run.js');
+const POL = require('./policy.js');
 
 const N = Number(process.env.RH_N || 600);
 const arg = process.argv[2] || '';
@@ -391,7 +394,105 @@ function treeReport() {
   console.log('');
 }
 
-if (arg === '--levels') levelReport();
+/**
+ * The player's seat, played through the actual player surface.
+ *
+ * Everything else in this file drives that chair with `autoPlayer`, which runs
+ * it through the ENGINE's social tick: seven abstract conversations a week on
+ * the same weights every AI uses. A person does none of that. They spend energy
+ * on scenes and answer A, B or C, so every player-facing number this harness
+ * produced was describing an AI in a seat no AI actually occupies.
+ *
+ * policy.js plays that seat properly. It is not optimal, it is competent, and
+ * it has no privileged access to anything the UI does not also have.
+ */
+function seatReport() {
+  const n = Math.max(150, Math.floor(N / 2));
+  console.log(`\n=== THE PLAYER SEAT, ${n} runs per setting ===\n`);
+  console.log('  risk   A     B     C     avg finish   win%   F2%   jury%');
+
+  for (const risk of [0, 0.25, 0.5, 0.75, 1]) {
+    const ans = { safe: 0, neutral: 0, risky: 0 };
+    const places = [];
+    let landed = 0, riskyTried = 0;
+    for (let i = 0; i < n; i++) {
+      const s = POL.playRun({ seed: String(800000 + i) }, { risk, skill: 55 });
+      for (const l of s.log) {
+        if (l.kind !== 'scene') continue;
+        ans[l.answer]++;
+        if (l.answer === 'risky') { riskyTried++; if (l.result.landed) landed++; }
+      }
+      places.push(s.cast[s.human].place);
+    }
+    const tot = ans.safe + ans.neutral + ans.risky;
+    const pc = (v) => `${Math.round(v / tot * 100)}%`.padStart(4);
+    console.log(`  ${String(risk).padEnd(6)} ${pc(ans.safe)} ${pc(ans.neutral)} ${pc(ans.risky)}`
+      + `   ${mean(places).toFixed(2).padStart(9)}`
+      + `   ${pct(places.filter((p) => p === 1).length / n).padStart(5)}`
+      + ` ${pct(places.filter((p) => p <= 2).length / n).padStart(5)}`
+      + ` ${pct(places.filter((p) => p <= 8).length / n).padStart(5)}`
+      + `   ${riskyTried ? 'risky landed ' + pct(landed / riskyTried) : ''}`);
+  }
+
+  /* The comparison that matters: does a person in that chair do roughly what
+     the AI stand-in did, or has the harness been measuring a fiction. */
+  const auto = [];
+  for (let i = 0; i < n; i++) {
+    const s = R.createRun({ seed: String(800000 + i), autoPlayer: true });
+    let g = 6000; while (s.phase !== R.PHASES.OVER && g-- > 0) R.step(s, null);
+    auto.push(s.cast[s.human].place);
+  }
+  console.log(`\n  AI stand-in in the same seat, same seeds: avg finish ${mean(auto).toFixed(2)},`
+    + ` win ${pct(auto.filter((p) => p === 1).length / n)}`);
+  console.log('  If these diverge badly, every player-facing number in this file');
+  console.log('  describes the stand-in and not the game.');
+  console.log('');
+}
+
+/**
+ * The human comp curve, which GDD §10 calls the hardest number in the build and
+ * which nothing could measure until policy.js gave the harness hands.
+ *
+ * Sweeps HUMAN_SKILL_WEIGHT against player skill. What we want to see: skill
+ * matters, and it does not matter so much that a good player wins every
+ * precision comp for fourteen straight weeks.
+ */
+function skillReport() {
+  const n = Math.max(120, Math.floor(N / 3));
+  console.log(`\n=== THE HUMAN COMP CURVE, ${n} runs per cell ===\n`);
+  const weights = [0.35, 0.55, 0.75];
+  const skills = [25, 55, 85];
+  const original = C.TUNE.HUMAN_SKILL_WEIGHT;
+
+  console.log('  weight   skill 25        skill 55        skill 85       spread');
+  for (const w of weights) {
+    C.TUNE.HUMAN_SKILL_WEIGHT = w;
+    const row = [];
+    for (const sk of skills) {
+      let wins = 0, comps = 0;
+      const places = [];
+      for (let i = 0; i < n; i++) {
+        const s = POL.playRun({ seed: String(900000 + i) }, { risk: 0.5, skill: sk });
+        places.push(s.cast[s.human].place);
+        if (s.cast[s.human].place === 1) wins++;
+        comps += s.cast[s.human].compWins.length;
+      }
+      row.push({ sk, win: wins / n, avg: mean(places), comps: comps / n });
+    }
+    const spread = row[2].win - row[0].win;
+    console.log(`  ${w.toFixed(2)}    ` + row.map((r) =>
+      `${pct(r.win).padStart(5)} ${r.comps.toFixed(1)}c`.padEnd(16)).join('')
+      + `  ${(spread * 100).toFixed(1)}pp`);
+  }
+  C.TUNE.HUMAN_SKILL_WEIGHT = original;
+  console.log('\n  win% and comp wins per run, by the weight the engine gives a human hand.');
+  console.log('  Too flat and the minigames are decoration. Too steep and the build is.');
+  console.log('');
+}
+
+if (arg === '--seat') seatReport();
+else if (arg === '--skill') skillReport();
+else if (arg === '--levels') levelReport();
 else if (arg === '--throws') throwReport();
 else if (arg === '--tree') treeReport();
 else fullReport();

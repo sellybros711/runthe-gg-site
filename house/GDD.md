@@ -917,3 +917,12 @@ Version 0.1 said there were none. There were about thirty. These are what is lef
    nodes grant attributes and unlocks, never behavior.
 7. **Does the player's own belief distortion apply to AI reading the player.**
    Currently yes, symmetric. Worth confirming it feels right in playtest.
+8. **Skill is currently a mild liability.** `--skill` shows that the better a
+   player's hands, the more comps they win and the worse they finish, because
+   power paints you. The weight is set at 0.45 to keep that from becoming a tax,
+   but the real release valve is knowing when to throw, and nothing has measured
+   whether a player who throws well beats both ends of that table.
+9. **The risky answer is level with the safe one, not better.** It should be a
+   lever worth pulling when the effect is needed. Right now a selective player
+   should beat a spammer, which is correct, but the policy is not selective
+   enough to prove a selective player also beats a cautious one.

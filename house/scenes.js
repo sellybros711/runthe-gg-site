@@ -427,8 +427,33 @@ function compose(state, rng, me, them) {
 const GAIN = {
   safe: [2, 5],
   neutral: [4, 9],
-  risky_win: [10, 18],
-  risky_lose: [-16, -8],
+  risky_win: [12, 22],
+  risky_lose: [-12, -5],
+};
+
+/*
+ * The risky roll, extracted from inline literals for the same reason the Panel
+ * noise was: a number that cannot be swept cannot be tuned, and these turned out
+ * to decide whether the whole C column is worth touching.
+ *
+ * MEASURED, with policy.js playing the seat over 200 runs a setting. At a base
+ * of 0.34 with a 10-to-18 win against a 16-to-8 loss, C carried NEGATIVE
+ * expected trust, about minus 3 a scene against B's plus 5.6. So the more
+ * risky answers a player took the worse they finished, from 7.0 percent wins
+ * at risk 0 down to 2.5 percent at risk 1. The column the design calls the
+ * only one that can move the game was strictly a trap.
+ *
+ * The intended shape is that C costs you a LITTLE expected trust and buys you a
+ * lever: a vote, an alliance, a piece of information. Slightly below B on trust
+ * alone, clearly above it once the effect lands. Never negative.
+ */
+const RISK = {
+  BASE: 0.42,
+  DRIVE: 0.005,          // per point of (your drive - their perception)
+  TRUST_COVER: 0.0032,   // people extend the benefit of the doubt
+  SUSPICION: 0.28,       // and stop extending it once they have caught you
+  FAIL_SUSPICION: 10,    // what a failed risky answer costs you in their head
+  MIN: 0.08, MAX: 0.90,
 };
 
 /**
@@ -446,11 +471,11 @@ function riskyChance(state, me, them, beatFx) {
   const drive = manipulative
     ? (a.social.deception * 0.6 + a.social.charisma * 0.4)
     : (a.social.charisma * 0.7 + a.social.deception * 0.3);
-  let p = 0.34
-    + (drive - b.social.perception) * 0.005
-    + Math.max(0, state.rel.trust[them][me]) * 0.0032
-    - (state.rel.suspicion[them][me] / 100) * 0.28;
-  return E.clamp(p, 0.08, 0.90);
+  let p = RISK.BASE
+    + (drive - b.social.perception) * RISK.DRIVE
+    + Math.max(0, state.rel.trust[them][me]) * RISK.TRUST_COVER
+    - (state.rel.suspicion[them][me] / 100) * RISK.SUSPICION;
+  return E.clamp(p, RISK.MIN, RISK.MAX);
 }
 
 /**
@@ -477,7 +502,7 @@ function resolve(state, moment, key, rng) {
     else {
       gain = rng.range(GAIN.risky_lose[0], GAIN.risky_lose[1]);
       out.landed = false;
-      state.rel.suspicion[them][me] = Math.min(100, state.rel.suspicion[them][me] + 16);
+      state.rel.suspicion[them][me] = Math.min(100, state.rel.suspicion[them][me] + RISK.FAIL_SUSPICION);
     }
   }
 
@@ -551,7 +576,7 @@ function applyEffects(state, out, fx, rng) {
 }
 
 const api = {
-  ENERGY, SCENES, BEATS, weeklyEnergy,
+  ENERGY, SCENES, BEATS, RISK, weeklyEnergy,
   poolFor, pickScene, pickBeat, compose, riskyChance, resolve, GAIN,
 };
 

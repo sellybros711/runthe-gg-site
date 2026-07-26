@@ -24,6 +24,7 @@ a validated engine.
 | `run.js` | The week loop state machine, save and restore. `RH_RUN`. |
 | `powers.js` | The six secret powers, their award schedule and AI policies. `RH_POWERS`. |
 | `scenes.js` | Energy, the scene and beat banks, and the A/B/C resolution. `RH_SCENES`. |
+| `policy.js` | A scripted player. Answers every `needsInput` through the same surface the UI uses. `RH_POLICY`. |
 | `strings.js` | Authored copy fragments. `RH_STRINGS`. |
 | `playtest.js` | Plays one full run as readable text. The design instrument. |
 | `simulator.js` | The validation harness. Run after any change to a weight. |
@@ -43,6 +44,8 @@ node house/simulator.js          # the gate
 node house/simulator.js --levels # progression parity
 node house/simulator.js --throws # thrown comp backfire
 node house/simulator.js --tree   # tree maths and archetype reachability
+node house/simulator.js --seat   # the player's seat, played for real
+node house/simulator.js --skill  # the human comp curve
 node house/lint-strings.js       # copy rules
 ```
 
@@ -97,14 +100,37 @@ Every tunable lives in `engine.js` K. A number that cannot be swept cannot be
 tuned, which is why the Panel's juror noise moved out of an inline literal the
 moment it turned out to dominate the endgame.
 
-## The player's seat is not harness covered
+## The player's seat, measured
 
-`simulator.js` runs the human seat with an AI stand-in, which plays through the
-engine's own social tick. A real player plays through `scenes.js`: an energy pool
-and A/B/C answers. The two are sized to be comparable, but the harness does not
-measure the path a person actually takes, so the level parity number describes an
-AI in that chair rather than a human in it. Closing that needs a scripted policy
-that plays scenes, and it is not written yet.
+`policy.js` plays that chair through the real player surface: energy, scenes,
+A, B or C, and every `needsInput` the loop can raise. It is competent rather
+than optimal and has no privileged access to anything the UI lacks.
+
+450 runs per setting, `--seat`:
+
+| risk | A / B / C | avg finish | win% | reached the Panel |
+|---|---|---|---|---|
+| 0 | 1 / 96 / 3 | 6.75 | 7.7% | 69.0% |
+| 0.25 | 2 / 80 / 19 | 6.81 | 7.7% | 67.7% |
+| 0.5 | 4 / 44 / 52 | 7.51 | 7.7% | 62.0% |
+| 0.75 | 6 / 17 / 76 | 7.51 | 6.3% | 62.0% |
+| 1 | 6 / 9 / 85 | 7.58 | 4.3% | 63.0% |
+
+The AI stand-in over the same seeds finishes 7.06 and wins 5.7%, so **the
+harness was not measuring a fiction**: a person in that chair does roughly what
+the stand-in did, slightly better, which is what a deliberate target-picker
+should manage against generic weights.
+
+**This measurement found a real bug.** Before it existed, the risky column was a
+strict trap: C carried negative expected trust, about minus 3 a scene against
+B's plus 5.6, and win rate fell monotonically from 7.2 percent at risk 0 to 2.8
+percent at risk 1. The design says C is the only column that can move the game;
+the arithmetic said do not touch it. `scenes.js RISK` now holds the constants
+that fix it, and they are on a mutable object because the first two attempts at
+this could not be swept at all.
+
+Risk 0 through 0.5 now sit level and heavy spam is punished. That is the shape
+to keep: C is a lever you pull when you need something, not a better default.
 
 ## Not built yet
 

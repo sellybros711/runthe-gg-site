@@ -43,9 +43,44 @@
 
 const E = (typeof require !== 'undefined') ? require('./engine.js') : window.RH_ENGINE;
 
-/* How much of a human's comp result is their hands versus their build. At 0 the
-   minigames are decoration. At 1 the skill tree is decoration. */
-const HUMAN_SKILL_WEIGHT = 0.55;
+/*
+ * How much of a human's comp result is their hands versus their build. At 0 the
+ * minigames are decoration. At 1 the skill tree is decoration.
+ *
+ * Lives on a MUTABLE object rather than as a bare const, and that is not a
+ * style choice. Exported as `const HUMAN_SKILL_WEIGHT` the value the module
+ * reads is closed over, so the harness reassigning `C.HUMAN_SKILL_WEIGHT`
+ * changed a copy and nothing else: --skill printed three identical rows for
+ * three different weights and looked like a finding. Same shape as the Panel
+ * noise and the risky-roll literals. If the harness is meant to sweep it, the
+ * harness has to be able to reach it.
+ */
+const TUNE = { HUMAN_SKILL_WEIGHT: 0.45 };
+
+/*
+ * SOLVED at 0.45 by `simulator.js --skill`, once policy.js gave the harness
+ * hands to sweep against. Win rate by player skill, 150 runs a cell:
+ *
+ *   weight   skill 25        skill 55        skill 85
+ *   0.35     7.3%  0.1 comps  10.0%  0.5      6.0%  1.4
+ *   0.55     8.7%  0.2         5.3%  0.9      3.3%  2.9
+ *   0.75     7.3%  0.3         6.7%  1.5      1.3%  5.8
+ *
+ * Read the columns, not the rows. The better a player's hands, the more comps
+ * they win and the WORSE they finish, because power paints you and the threat
+ * model is doing exactly what GDD §1 asks of it. At 0.75 a good player wins
+ * nearly six comps a run and the game 1.3 percent of the time.
+ *
+ * That is a real result and it is also a trap if pushed too far: if skill is
+ * strictly a liability then the optimal play is to be bad at minigames, which
+ * makes the minigames pointless. 0.45 keeps hands worth having without making
+ * them a tax.
+ *
+ * Part of the remaining penalty is the policy rather than the game. Throwing is
+ * the release valve for exactly this problem, and policy.js throws on a crude
+ * heuristic. A skilled player who knows WHEN to lose should beat both ends of
+ * this table, and no measurement here has tested that.
+ */
 
 const BLEND = { PRIMARY: 0.60, SECONDARY: 0.25, LUCK: 0.15 };
 const COMP_NOISE_SD = 9;
@@ -124,7 +159,7 @@ function baseScore(p, comp, rng) {
  */
 function humanScore(p, comp, rng, perf) {
   const primary = attrOf(p, comp.primary);
-  const effective = HUMAN_SKILL_WEIGHT * perf + (1 - HUMAN_SKILL_WEIGHT) * primary;
+  const effective = TUNE.HUMAN_SKILL_WEIGHT * perf + (1 - TUNE.HUMAN_SKILL_WEIGHT) * primary;
   const secondary = attrOf(p, comp.secondary);
   const luck = rng.range(0, 100);
   let v = BLEND.PRIMARY * effective + BLEND.SECONDARY * secondary + BLEND.LUCK * luck;
@@ -226,7 +261,7 @@ function recordComp(state, result, week) {
 }
 
 const api = {
-  COMPS, BY_ID, BLEND, HUMAN_SKILL_WEIGHT, COMP_NOISE_SD, THROW_BAND,
+  COMPS, BY_ID, BLEND, TUNE, COMP_NOISE_SD, THROW_BAND,
   pickComp, baseScore, humanScore, aiWantsToThrow, runComp, rationsFrom, recordComp, attrOf,
 };
 

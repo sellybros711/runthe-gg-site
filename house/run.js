@@ -1209,7 +1209,10 @@ function playScene(s, moment, key) {
   s.energy -= opt.cost;
   const out = SC.resolve(s, moment, key, s.rng.ai);
   out.energyLeft = s.energy;
-  s.log.push(Object.assign({ kind: 'scene', week: s.week, pool: moment.pool }, out));
+  /* out carries its own `kind` (safe, neutral, risky), so spreading it over a
+     literal with kind:'scene' silently overwrote the entry type and every
+     consumer counting scenes read zero. Nest it instead of merging it. */
+  s.log.push({ kind: 'scene', week: s.week, pool: moment.pool, answer: out.kind, result: out });
   return out;
 }
 
