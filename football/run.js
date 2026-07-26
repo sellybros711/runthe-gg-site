@@ -15,8 +15,10 @@ const E = (typeof require !== 'undefined')
   ? require('./engine.js')
   : window.PS_ENGINE;
 
+/* PICK_FRANCHISE is gone. There is no favourite club to choose, so a run opens on the draft:
+   the schedule is 17 random historic team-seasons and the playoffs are a fixed difficulty
+   ladder, neither of which depends on who you support. */
 const PHASES = {
-  PICK_FRANCHISE: 'pick_franchise',
   DRAFT: 'draft',
   SEASON: 'season',      // the 17 regular-season games
   SEEDING: 'seeding',    // record is final, showing where it left you
@@ -172,8 +174,7 @@ function createRun(opts) {
     daily,
     seed,
     rngCalls: 0,
-    phase: PHASES.PICK_FRANCHISE,
-    franchise: null,
+    phase: PHASES.DRAFT,
     roster: [],
     // Which slot each signed player fills, as an index into E.SLOTS. Kept
     // alongside roster rather than making roster sparse, so chemistry and cap
@@ -203,13 +204,6 @@ function rngFor(run) {
   const rng = E.createSeededRNG(run.seed);
   for (let i = 0; i < run.rngCalls; i++) rng();
   return () => { run.rngCalls++; return rng(); };
-}
-
-function pickFranchise(run, franchise) {
-  if (run.phase !== PHASES.PICK_FRANCHISE) throw new Error('franchise already chosen');
-  run.franchise = franchise;
-  run.phase = PHASES.DRAFT;
-  return run;
 }
 
 /*
@@ -440,7 +434,7 @@ function startSeason(run, data, ctx) {
   if (run.phase !== PHASES.SEASON) throw new Error('draft not finished');
   const rng = rngFor(run);
   const chem = E.resolveChemistry(run.roster, ctx);
-  const sched = E.generateSchedule(run.franchise, data.prepared, rng);
+  const sched = E.generateSchedule(data.prepared, rng);
   run.schedule = sched.games.map((g) => g.team_season_id);
   run.playoffs = E.generatePlayoffs(data.prepared, rng).map((g) => g.team_season_id);
   run.season = {
@@ -476,8 +470,10 @@ function advanceWeek(run, data, leagueContext, displayCal) {
   }
 
   const playoff = run.phase === PHASES.PLAYOFFS;
+  /* End-aligned, via the engine's own helper. Indexing this list from the front would let a
+     first-round bye skip the Super Bowl opponent, which is backwards. */
   const oppId = playoff
-    ? run.playoffs[s.playoffRound % run.playoffs.length]
+    ? E.playoffOpponent(run.playoffs, run.playoffSeed.rounds, s.playoffRound)
     : run.schedule[s.week];
   const opp = data.byTeamSeasonId[oppId];
   const rng = rngFor(run);
@@ -564,6 +560,10 @@ function indexData(players, teamSeasons) {
   }
   const byTeamSeasonId = {};
   for (const t of teamSeasons) byTeamSeasonId[t.team_season_id] = t;
+  /* The 1972 Dolphins are not in the data files, because the dataset starts in 1999. They
+     are the Super Bowl opponent, so the lookup every screen uses has to resolve them or the
+     final would render with a blank opponent name. */
+  for (const t of E.LEGEND_TEAM_SEASONS) byTeamSeasonId[t.team_season_id] ??= t;
 
   /* The three reverse indexes that used to live here, team-seasons by franchise, by
      college and by draft class, existed only to find a team connected to somebody
@@ -846,11 +846,11 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 13;
+const RUN_API_VERSION = 15;
 
 const api = {
   API_VERSION: RUN_API_VERSION,
-  PHASES, createRun, pickFranchise, spin, respin, sign,
+  PHASES, createRun, spin, respin, sign,
   startSeason, advanceWeek, startPlayoffs, indexData, bestPossibleSquad, projectSeason,
   previewSigning,
   remaining, reserveFloor, canRespin, slotsLeft, affordableFrom,

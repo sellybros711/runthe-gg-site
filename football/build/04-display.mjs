@@ -53,6 +53,8 @@ async function main() {
   // ─── real NFL game shapes ──────────────────────────────────────────────────
   const text = await cachedCSV(GAMES_URL, 'games.csv');
   const margins = [];
+  const teamPoints = [];                    // every team's score in every game
+  const pairCounts = new Map();             // 'hi:lo' -> how often that final score happened
   const totalsByMarginBucket = new Map();   // |margin| -> [totals]
   for (const g of parseCSVObjects(text)) {
     if (g.game_type !== 'REG') continue;
@@ -63,8 +65,22 @@ async function main() {
     const a = Number(g.away_score), h = Number(g.home_score);
     const m = Math.abs(h - a);
     margins.push(m);
+    teamPoints.push(a, h);
     if (!totalsByMarginBucket.has(m)) totalsByMarginBucket.set(m, []);
     totalsByMarginBucket.get(m).push(a + h);
+    /*
+     * The actual final score, kept as a pair with its real frequency. The old map
+     * (margin -> total -> split) could land on scorelines football has never produced:
+     * a team score of 4 came up 0.43% of the time in the shipped build and has happened
+     * exactly ZERO times in 7,276 real games. Sampling real pairs makes that impossible
+     * by construction rather than by patching the arithmetic afterwards.
+     *
+     * Ties are dropped. The sim always has a winner, so a tied pair could never be used.
+     */
+    if (m >= 1) {
+      const key = Math.max(a, h) + ':' + Math.min(a, h);
+      pairCounts.set(key, (pairCounts.get(key) || 0) + 1);
+    }
   }
 
   // ─── internal margin distribution ──────────────────────────────────────────
@@ -91,15 +107,43 @@ async function main() {
     return best;
   });
 
+  /*
+   * Only rosters a player could actually field.
+   *
+   * The mix used to be drawn from price targets of 3 to 33 a slot, which spans FPPG 5 to
+   * 123 and puts 31% of its rosters OVER the $140M cap. That skews both maps: a genuinely
+   * stacked legal roster at 87 FPPG lands mid-distribution, so it was being reported at 24
+   * points a game when a real top offence scores about 30. The percentile map only means
+   * something if the distribution it is built from is the one the game produces.
+   */
+  const capped = (target) => {
+    for (let tries = 0; tries < 40; tries++) {
+      const r = buildAt(target);
+      if (r.reduce((a, p) => a + p.price_musd, 0) <= E.CONSTANTS.CAP_MUSD) return r;
+      target *= 0.88;                       // too expensive, aim cheaper and try again
+    }
+    return buildAt(2);
+  };
+
   const internalMargins = [];
+  /*
+   * And the internal score ITSELF, which the old calibration never recorded. Without it
+   * the reported total knew only the margin, so your points could not react to how good
+   * your offence was: measured across the whole cap-legal band, from a 48-FPPG roster to
+   * an 87-FPPG one, reported points moved only 18.3 to 25.2, and in one-score games only
+   * 20.9 to 23.1. Real NFL offences span about 16 to 30 a game. This table is what lets
+   * a stacked roster actually put up 31 and a thin one scrape 13.
+   */
+  const internalOffence = [];
   const lc = leagueCtx.league_avg_pts_allowed_by_season;
   for (let i = 0; i < 60000; i++) {
-    const target = 3 + rng() * 30;               // spans scrub to star rosters
-    const roster = buildAt(target);
+    const target = 2 + rng() * 24;               // spans scrub to as good as the cap allows
+    const roster = capped(target);
     const chem = 1 + rng() * 0.15;
     const opp = teamSeasons[Math.floor(rng() * teamSeasons.length)];
     const r = E.resolveGame(roster, chem, opp, lc[opp.season] ?? 21.5, rng);
     internalMargins.push(Math.abs(r.yourScore - r.oppScore));
+    internalOffence.push(r.yourScore);
   }
 
   // ─── conditional totals ────────────────────────────────────────────────────
@@ -118,12 +162,24 @@ async function main() {
     return quantileTable(totals);
   });
 
+  /*
+   * The real corpus, most common first so a runtime scan finds the likely scorelines
+   * early. 849 pairs, about 11KB, which buys the guarantee that every score the game
+   * ever puts on screen is one the NFL has actually produced.
+   */
+  const realPairs = [...pairCounts.entries()]
+    .map(([k, n]) => { const [hi, lo] = k.split(':').map(Number); return [hi, lo, n]; })
+    .sort((a, b) => b[2] - a[2]);
+
   const out = {
-    note: 'Maps internal fantasy-space margins onto real NFL score shapes. See build/04-display.mjs.',
+    note: 'Maps internal fantasy-space results onto real NFL scorelines. See build/04-display.mjs.',
     real_games: margins.length,
     internal_samples: internalMargins.length,
     internal_margin_q: quantileTable(internalMargins),
     real_margin_q: quantileTable(margins),
+    internal_offence_q: quantileTable(internalOffence),
+    real_team_pts_q: quantileTable(teamPoints),
+    real_pairs: realPairs,
     margin_buckets: MARGIN_BUCKETS,
     totals_by_bucket_q: totalsByBucket,
     real_margin_mean: round(mean(margins), 2),
@@ -134,10 +190,17 @@ async function main() {
   console.log(`display_calibration.json written (${(fs.statSync(path.join(DATA_DIR, 'display_calibration.json')).size / 1024).toFixed(0)} KB)`);
   console.log(`  real NFL games: ${margins.length}, mean |margin| ${out.real_margin_mean} (sd ${out.real_margin_sd})`);
   console.log(`  internal margin samples: ${internalMargins.length}, mean ${mean(internalMargins).toFixed(1)}`);
+  console.log(`  internal offence: mean ${mean(internalOffence).toFixed(1)}, ` +
+    `p10 ${out.internal_offence_q[20]}, p50 ${out.internal_offence_q[100]}, ` +
+    `p90 ${out.internal_offence_q[180]}`);
   console.log('\nreal NFL |margin| percentiles:');
   for (const q of [0.1, 0.25, 0.5, 0.75, 0.9, 0.99]) {
     console.log(`  p${String(q * 100).padStart(4)}: ${out.real_margin_q[Math.round(q * (QUANTILES - 1))]}`);
   }
+  console.log(`  real score pairs: ${realPairs.length} distinct, most common ` +
+    `${realPairs[0][0]}-${realPairs[0][1]} at ${(100 * realPairs[0][2] / margins.length).toFixed(2)}%`);
+  console.log(`  real team points per game: mean ${mean(teamPoints).toFixed(1)}, ` +
+    `p10 ${out.real_team_pts_q[20]}, p50 ${out.real_team_pts_q[100]}, p90 ${out.real_team_pts_q[180]}`);
   console.log('\nreal totals by margin bucket (median):');
   MARGIN_BUCKETS.slice(0, -1).forEach((lo, i) => {
     console.log(`  margin ${String(lo).padStart(2)}-${String(MARGIN_BUCKETS[i + 1] - 1).padStart(3)}: ` +

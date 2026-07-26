@@ -153,31 +153,85 @@ function respinFees(used) {
  * Increments are the ones football actually produces. 1 is the famous impossible
  * score, so a decomposition may never leave a remainder of 1.
  */
+/*
+ * Real per-team, per-game rates for each way of scoring, which is what the old model was
+ * missing. It had fixed weights and a rule that a decomposition may never leave a remainder
+ * of 1, and those two together produced the safety problem: at a remainder of 2 the safety
+ * is the ONLY legal kind, and at 4 it is the only legal kind twice in a row. Measured on the
+ * shipped build that came to 1.61 safeties a game with 52% of games showing two or more.
+ * The real NFL rate is about 0.09 a game, so it was roughly eighteen times too many.
+ *
+ * Kept as rates rather than weights so a composition can be scored by how likely it actually
+ * is. Touchdowns and field goals are per team per game; the extra-point miss rate is about
+ * 6% of touchdowns, two-point tries about 4% end up as 8, and a safety is 0.045 per team.
+ */
 const SCORE_KINDS = [
-  { points: 7, kind: 'TOUCHDOWN', weight: 58 },
-  { points: 3, kind: 'FIELD GOAL', weight: 28 },
-  { points: 6, kind: 'TOUCHDOWN', weight: 7, note: 'missed the kick' },
-  { points: 8, kind: 'TOUCHDOWN', weight: 5, note: 'two-point try' },
-  { points: 2, kind: 'SAFETY', weight: 2 },
+  { points: 7, kind: 'TOUCHDOWN', lambda: 2.25 },
+  { points: 3, kind: 'FIELD GOAL', lambda: 1.70 },
+  { points: 6, kind: 'TOUCHDOWN', lambda: 0.14, note: 'missed the kick' },
+  { points: 8, kind: 'TOUCHDOWN', lambda: 0.10, note: 'two-point try' },
+  { points: 2, kind: 'SAFETY', lambda: 0.045 },
 ];
+
+/*
+ * Every way to reach `total`, with how likely each one is.
+ *
+ * Counts of each scoring type are treated as independent Poissons at the rates above, so a
+ * composition's likelihood is the product of lambda^k / k!. That makes the arithmetic and the
+ * realism the same calculation: a safety appears only when the real rate says it should, and
+ * two safeties only when the number genuinely cannot be built any other way.
+ *
+ * Enumeration is cached per total. There are only a few dozen distinct totals, and the naive
+ * version cost about 14,000 combinations per call, which is fine for one broadcast and far
+ * too slow for a 50,000-game measurement run.
+ */
+const compositionCache = new Map();
+
+function compositionsFor(total) {
+  if (compositionCache.has(total)) return compositionCache.get(total);
+  const [K7, K3, K6, K8, K2] = SCORE_KINDS;
+  const out = [];
+  const logFact = (n) => { let f = 0; for (let i = 2; i <= n; i++) f += Math.log(i); return f; };
+  const lw = (k, n) => n * Math.log(k.lambda) - logFact(n);
+  for (let n7 = 0; n7 * 7 <= total; n7++) {
+    for (let n8 = 0; n7 * 7 + n8 * 8 <= total; n8++) {
+      for (let n6 = 0; n7 * 7 + n8 * 8 + n6 * 6 <= total; n6++) {
+        for (let n3 = 0; n7 * 7 + n8 * 8 + n6 * 6 + n3 * 3 <= total; n3++) {
+          const rest = total - n7 * 7 - n8 * 8 - n6 * 6 - n3 * 3;
+          if (rest % 2 !== 0) continue;              // only the safety is worth 2
+          const n2 = rest / 2;
+          const counts = [[K7, n7], [K3, n3], [K6, n6], [K8, n8], [K2, n2]];
+          let ll = 0;
+          for (const [k, n] of counts) if (n > 0) ll += lw(k, n);
+          out.push({ counts, ll });
+        }
+      }
+    }
+  }
+  // shift before exponentiating so a long score does not underflow to all zeros
+  const best = out.reduce((m, c) => Math.max(m, c.ll), -Infinity);
+  for (const c of out) c.w = Math.exp(c.ll - best);
+  compositionCache.set(total, out);
+  return out;
+}
 
 /** Split a final total into the scores that made it up. */
 function scoreParts(total, rng) {
-  const out = [];
   let left = Math.max(0, Math.round(total));
-  // 1 cannot be scored and cannot be left over. The display transform already
-  // rules it out, and this is the second lock on the same door.
+  // 1 cannot be scored. Real score pairs never ask for it; this is the second lock.
   if (left === 1) left = 2;
-  let guard = 0;
-  while (left > 0 && guard++ < 40) {
-    const legal = SCORE_KINDS.filter((k) => k.points <= left && left - k.points !== 1);
-    if (!legal.length) { out.push({ ...SCORE_KINDS[0], points: left, kind: 'TOUCHDOWN' }); break; }
-    const sum = legal.reduce((t, k) => t + k.weight, 0);
-    let r = rng() * sum;
-    let pick = legal[legal.length - 1];
-    for (const k of legal) { r -= k.weight; if (r <= 0) { pick = k; break; } }
-    out.push(pick);
-    left -= pick.points;
+  if (left === 0) return [];
+  const comps = compositionsFor(left);
+  if (!comps.length) return [{ points: left, kind: 'TOUCHDOWN' }];
+
+  const sum = comps.reduce((t, c) => t + c.w, 0);
+  let r = rng() * sum;
+  let pick = comps[comps.length - 1];
+  for (const c of comps) { r -= c.w; if (r <= 0) { pick = c; break; } }
+
+  const out = [];
+  for (const [kind, n] of pick.counts) {
+    for (let i = 0; i < n; i++) out.push({ ...kind });
   }
   return out;
 }
@@ -830,150 +884,161 @@ function buildDivisionMap(teamSeasons) {
 
 const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
 
-/**
- * Opponent franchises for one 17-game season, per the real NFL formula.
+/*
+ * Week order.
  *
- * The GDD's formula includes "2 same-place finishers in your conference's other
- * two divisions". There are no standings in this game, opponents are random
- * historical team-seasons and no league is simulated, so that rule has no
- * referent. Replaced with a random team from each of those two divisions, which
- * preserves the shape (one game against each) without inventing a table.
+ * This used to be a constraint solver. The old division formula produced each rival twice as
+ * an adjacent pair, so it had to force the two meetings MIN_REMATCH_GAP weeks apart and keep
+ * a division game late in the year. None of that has a referent now: opponents are unique and
+ * drawn at random, so there are no rematches to space out and no division games to save for
+ * the end. A straight shuffle is the honest implementation rather than a gutted solver.
  */
-function opponentFranchises(franchise, divisions, rng) {
-  const myDiv = Object.keys(divisions).find((d) => divisions[d].includes(franchise));
-  const [myConf] = myDiv.split(' ');
-  const otherConf = CONFERENCES.find((c) => c !== myConf);
-
-  const out = [];
-  for (const rival of divisions[myDiv].filter((f) => f !== franchise)) out.push(rival, rival);
-
-  const intraDivs = DIVISION_NAMES.map((d) => `${myConf} ${d}`).filter((d) => d !== myDiv);
-  const intra = pick(intraDivs, rng);
-  out.push(...divisions[intra]);
-
-  const interDivs = DIVISION_NAMES.map((d) => `${otherConf} ${d}`);
-  const inter = pick(interDivs, rng);
-  out.push(...divisions[inter]);
-
-  for (const d of intraDivs.filter((d) => d !== intra)) out.push(pick(divisions[d], rng));
-
-  const seventeenth = pick(interDivs.filter((d) => d !== inter), rng);
-  out.push(pick(divisions[seventeenth], rng));
-
+function orderSchedule(games, rng) {
+  const out = games.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
   return out;
 }
 
 /**
- * Put the 17 opponents into a week order that looks like a real season.
+ * A 17-game schedule of historic team-seasons.
  *
- * The formula produces division rivals as adjacent pairs, which used to land them
- * in weeks 1 through 6: three teams, home and away, back to back, then nothing but
- * strangers for eleven weeks. Real schedules spread the six division games out and
- * usually save one or two for the end.
+ * There is no favourite club any more, so there is no division and there are no rivals: the
+ * schedule is drawn from the whole 1999-2025 pool at random. What survives from the old
+ * version is the part that mattered, which is NORMALIZATION. An unconstrained random draw
+ * hands one player four all-time greats and another a soft seventeen, and since every run is
+ * measured against the same leaderboard, that is the difference between a fair board and a
+ * lottery. A draw is accepted only if its total strength lands near the league mean and it
+ * carries no more than `maxElite` elite teams, and it is redrawn until it does.
  *
- * Shuffle, then require the two meetings with any repeated opponent to sit at
- * least MIN_REMATCH_GAP weeks apart, and require at least one division game in the
- * closing stretch. Falls back to the least bad ordering if the constraints cannot
- * be met, so a schedule is always produced.
+ * One season per franchise per schedule. Drawing freely would let the same club turn up as
+ * three different vintages, and a 2007 Patriots plus a 2001 Patriots on one schedule reads as
+ * a bug rather than as a season.
  */
-const MIN_REMATCH_GAP = 4;
-
-function orderSchedule(games, rng) {
-  const n = games.length;
-  const spacing = (arr) => {
-    const seen = new Map();
-    let worst = Infinity;
-    arr.forEach((g, i) => {
-      if (seen.has(g.team_season_id)) worst = Math.min(worst, i - seen.get(g.team_season_id));
-      seen.set(g.team_season_id, i);
-    });
-    return worst;
-  };
-  // Repeated opponents are exactly the division rivals.
-  const counts = {};
-  for (const g of games) counts[g.team_season_id] = (counts[g.team_season_id] || 0) + 1;
-  const isDivision = (g) => counts[g.team_season_id] > 1;
-
-  let best = null;
-  for (let attempt = 0; attempt < 200; attempt++) {
-    const a = games.slice();
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(rng() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    const gap = spacing(a);
-    const lateDivision = a.slice(n - 4).some(isDivision);
-    const earlyDivisionCount = a.slice(0, 4).filter(isDivision).length;
-    const ok = gap >= MIN_REMATCH_GAP && lateDivision && earlyDivisionCount <= 2;
-    if (ok) return a;
-    const score = Math.min(gap, MIN_REMATCH_GAP) + (lateDivision ? 1 : 0) - earlyDivisionCount * 0.1;
-    if (!best || score > best.score) best = { a, score };
-  }
-  return best.a;
-}
-
-/**
- * Attach a random season to each opponent franchise, then normalize.
- *
- * Franchise choice must never be a difficulty lever, so a schedule is rejected
- * unless its total opponent strength sits within TOLERANCE of the league-wide
- * mean and it contains no more than MAX_ELITE very strong opponents.
- *
- * Houston has 24 drawable seasons rather than 27; that is handled implicitly by
- * drawing from whatever seasons exist for the franchise.
- */
-function generateSchedule(franchise, data, rng, opts = {}) {
+function generateSchedule(data, rng, opts = {}) {
   const tolerance = opts.tolerance ?? 0.05;
   const maxElite = opts.maxElite ?? 4;
   const maxAttempts = opts.maxAttempts ?? 400;
+  const count = opts.games ?? 17;
 
-  const { divisions, byFranchise, eliteThreshold, meanScheduleStrength } = data;
+  const { byFranchise, eliteThreshold, meanScheduleStrength } = data;
+  const franchises = Object.keys(byFranchise);
 
   let best = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const franchises = opponentFranchises(franchise, divisions, rng);
-    /*
-     * One season per franchise, reused for both meetings. A division rival is on
-     * the schedule twice (home and away) and you face the SAME team-season both
-     * times, you get a home and away game against the 2007 Patriots, not the
-     * 2007 and 2001 Patriots. Memoizing by franchise also makes any other
-     * repeat consistent for free.
-     *
-     * Consequence for normalization: a rival's strength counts twice, which is
-     * correct, a brutal division rival really is two hard games.
-     */
-    const drawn = new Map();
-    const unordered = franchises.map((f) => {
-      if (!drawn.has(f)) {
-        const pool = byFranchise[f];
-        drawn.set(f, pool[Math.floor(rng() * pool.length)]);
-      }
-      return drawn.get(f);
-    });
-    const games = orderSchedule(unordered, rng);
-    const total = games.reduce((s, g) => s + g.strength_z, 0);
-    const elite = games.filter((g) => g.strength_z >= eliteThreshold).length;
+    const used = new Set();
+    const unordered = [];
+    let guard = 0;
+    while (unordered.length < count && guard++ < 500) {
+      const f = franchises[Math.floor(rng() * franchises.length)];
+      if (used.has(f)) continue;
+      used.add(f);
+      const pool = byFranchise[f];
+      unordered.push(pool[Math.floor(rng() * pool.length)]);
+    }
+    const ordered = orderSchedule(unordered, rng);
+    const total = ordered.reduce((sum, g) => sum + g.strength_z, 0);
+    const elite = ordered.filter((g) => g.strength_z >= eliteThreshold).length;
     const drift = Math.abs(total - meanScheduleStrength);
-    const ok = drift <= Math.abs(meanScheduleStrength * tolerance) + tolerance * 17 && elite <= maxElite;
-    if (ok) return { games, total, elite, attempts: attempt + 1 };
-    if (!best || drift < best.drift) best = { games, total, elite, drift, attempts: attempt + 1 };
+    const ok = drift <= Math.abs(meanScheduleStrength * tolerance) + tolerance * count
+      && elite <= maxElite;
+    if (ok) return { games: ordered, total, elite, attempts: attempt + 1 };
+    if (!best || drift < best.drift) best = { games: ordered, total, elite, drift, attempts: attempt + 1 };
   }
-  // Deterministic fallback: never fail to produce a season.
-  return { games: best.games, total: best.total, elite: best.elite, attempts: maxAttempts, relaxed: true };
+  return { games: best.games, total: best.total, elite: best.elite, attempts: maxAttempts,
+    relaxed: true };
 }
 
 /** Playoff opponents, weighted toward the strongest quartile. */
+/*
+ * THE TWO NAMED FINALS OPPONENTS.
+ *
+ * The 2007 Patriots are in the data, and they are the single strongest team-season in it:
+ * 36.8 scored and 17.1 allowed a game, strength_z 2.708 against a dataset maximum of 2.71.
+ * Nothing needs inventing for them.
+ *
+ * The 1972 Dolphins are not, because the dataset starts in 1999, so they are carried here as
+ * an explicit historical entry. Their season totals are the famous ones: 14-0, 385 points
+ * scored and 171 allowed over 14 games, which is 27.50 and 12.21 a game.
+ *
+ * Two things about that entry are inferred rather than measured, and both are worth stating
+ * plainly:
+ *
+ *   The per-game standard deviations. No game-level 1972 data is available here, so the
+ *   ratios come from the 40 elite team-seasons that ARE in the data: a median scored-sd of
+ *   0.346 of the mean and allowed-sd of 0.521. Applied to their means, that gives 9.52 and
+ *   6.36.
+ *
+ *   The era adjustment, which is NOT applied. resolveGame divides an opponent's points
+ *   allowed by that season's league average, and there is no 1972 league average in
+ *   league_context.json, so it falls through to the 21.5 default. 1972 was a lower-scoring
+ *   league than that, so their 12.21 allowed was less dominant against their own league than
+ *   the default makes it look. The bias therefore runs one way only: it makes them HARDER
+ *   than a true era adjustment would. For the team you meet in the Super Bowl of a game
+ *   called The Perfect Season, that is the right direction to err, but it is an assumption
+ *   and not a measurement.
+ */
+const LEGEND_IDS = {
+  PATRIOTS_2007: 'NE-2007',
+  DOLPHINS_1972: 'MIA-1972',
+};
+
+const LEGEND_TEAM_SEASONS = [{
+  team_season_id: LEGEND_IDS.DOLPHINS_1972,
+  franchise: 'MIA',
+  season: 1972,
+  display: '1972 Miami Dolphins',
+  division: 'AFC East',
+  games: 14,
+  record: '14-0',
+  pts_scored_mean: 27.50,
+  pts_scored_sd: 9.52,
+  pts_allowed_mean: 12.21,
+  pts_allowed_sd: 6.36,
+  point_diff_pg: 15.29,
+  strength_z: 3.2,
+  legend: true,
+}];
+
 function generatePlayoffs(data, rng, count = CONSTANTS.PLAYOFF_ROUNDS_WILD_CARD) {
-  const pool = data.topQuartile;
-  const out = [];
-  const used = new Set();
-  while (out.length < count) {
-    const g = pool[Math.floor(rng() * pool.length)];
-    if (used.has(g.team_season_id)) continue;
-    used.add(g.team_season_id);
-    out.push(g);
-  }
-  return out;
+  /*
+   * The playoffs escalate. They used to be four random top-quartile teams, so the Super
+   * Bowl was no harder than the Wild Card and the run just stopped when a coin came up
+   * wrong. The ladder now climbs to the two teams that define the thing the game is named
+   * after:
+   *
+   *   Wild Card    a good team
+   *   Divisional   a great team
+   *   Conference   the 2007 Patriots, who went 16-0 and then lost the one that counted
+   *   Super Bowl   the 1972 Dolphins, the only team to finish a season unbeaten
+   *
+   * Built full length and ALWAYS ending at the Dolphins. The round names count back from
+   * the final, so a top seed with a bye plays three rounds and must still finish against
+   * Miami; see playoffOpponent, which is the only thing allowed to index this list.
+   */
+  const ladder = [pickFrom(data.goodPool, rng), pickFrom(data.greatPool, rng),
+    data.byId(LEGEND_IDS.PATRIOTS_2007), data.byId(LEGEND_IDS.DOLPHINS_1972)];
+  return ladder.slice(ladder.length - Math.min(count, ladder.length));
+}
+
+/** One team from a pool, uniformly. */
+function pickFrom(pool, rng) {
+  return pool[Math.floor(rng() * pool.length)];
+}
+
+/**
+ * Which opponent a given playoff round faces.
+ *
+ * The ladder is aligned to the FINAL, not to the first round, because the number of rounds
+ * depends on your seed: 12 wins gets you four rounds, 15 gets a bye and three. Indexing from
+ * the front would mean a bye let you skip the Dolphins, which is exactly backwards. Every
+ * call site goes through here so the alignment cannot drift between them.
+ */
+function playoffOpponent(playoffs, rounds, roundIndex) {
+  const i = playoffs.length - rounds + roundIndex;
+  return playoffs[Math.max(0, Math.min(playoffs.length - 1, i))];
 }
 
 // ─── per-game resolution ─────────────────────────────────────────────────────
@@ -1034,23 +1099,90 @@ function valueAt(table, p) {
   return table[i] + (table[j] - table[i]) * (x - i);
 }
 
+/*
+ * How hard the scoreline is pulled toward the two targets.
+ *
+ * Both are in points. Tight enough that a good offence visibly outscores a bad one, loose
+ * enough that the same roster does not report the same scoreline every week: the real
+ * corpus is sampled inside these tolerances by its own frequency, so 23-20 comes up often
+ * and 41-38 comes up rarely, exactly as often as football produces them.
+ */
+const SCORELINE_TOLERANCE = { margin: 4.5, points: 5.0 };
+
 /**
  * Turn an internal fantasy-space result into a football-looking scoreline.
  *
- * The sim decides the winner; this only decides how the game is *reported*. It
- * maps the internal margin onto the real distribution of NFL margins (1999-2025,
- * 6,967 games), draws a real total conditioned on that margin, and splits it.
- * The winner is always preserved exactly.
+ * The sim decides the winner; this only decides how the game is *reported*. It picks a
+ * scoreline that REALLY HAPPENED in the NFL between 1999 and 2025, matched on two things:
  *
- * Deliberately not a divisor: your internal mean (~73) sits far above an
- * opponent's (~43) because that gap is what carries win probability, so scaling
- * both sides down renders every week as a blowout.
+ *   1. the margin, mapped from the internal margin through both empirical CDFs, and
+ *   2. YOUR points, mapped from your internal score the same way.
+ *
+ * The second one is new and it is the point of the exercise. The old version conditioned
+ * the total on the margin alone, so the scoreline knew whether the game was close but knew
+ * nothing about whether your offence was any good: across the whole cap-legal band, from a
+ * 48-FPPG roster to an 87-FPPG one, reported points moved only 18.3 to 25.2, and in
+ * one-score games only 20.9 to 23.1. Real NFL offences span about 16 to 30 a game, so a
+ * stacked roster and a thin one were being reported almost identically. Win rate reacted
+ * properly the whole time; the scoreboard did not, which is what made it feel flat.
+ *
+ * Sampling real pairs also removes a whole class of impossible-looking results. The old
+ * arithmetic (draw a total, force its parity, split it) could land on a team score of 4,
+ * which it did 0.43% of the time and which has happened ZERO times in 7,276 real games.
+ *
+ * Deliberately not a divisor: your internal mean (~73) sits far above an opponent's (~43)
+ * because that gap is what carries win probability, so scaling both sides down renders
+ * every week as a blowout.
  */
 function toFootballScore(yourScore, oppScore, won, rng, cal) {
   const internalMargin = Math.abs(yourScore - oppScore);
+  const marginTarget = Math.max(1, valueAt(cal.real_margin_q,
+    percentileIn(cal.internal_margin_q, internalMargin)));
+
+  // Older calibration files carry no pair table. Fall back rather than throw.
+  if (!cal.real_pairs || !cal.internal_offence_q) {
+    return legacyFootballScore(yourScore, oppScore, won, rng, cal);
+  }
+
+  const pointsTarget = valueAt(cal.real_team_pts_q,
+    percentileIn(cal.internal_offence_q, yourScore));
+
+  /*
+   * Weight every real scoreline by how well it matches both targets and by how often it
+   * really happened. Gaussian in both terms so the fit degrades smoothly: if nothing sits
+   * near the targets the nearest real scorelines still carry all the weight.
+   */
+  const TM = SCORELINE_TOLERANCE.margin, TP = SCORELINE_TOLERANCE.points;
+  const pairs = cal.real_pairs;
+  let sum = 0;
+  const w = new Array(pairs.length);
+  for (let i = 0; i < pairs.length; i++) {
+    const hi = pairs[i][0], lo = pairs[i][1], n = pairs[i][2];
+    const mine = won ? hi : lo;
+    const dm = (hi - lo - marginTarget) / TM;
+    const dp = (mine - pointsTarget) / TP;
+    const v = n * Math.exp(-0.5 * (dm * dm + dp * dp));
+    w[i] = v;
+    sum += v;
+  }
+  if (!(sum > 0)) return legacyFootballScore(yourScore, oppScore, won, rng, cal);
+
+  let r = rng() * sum;
+  let k = pairs.length - 1;
+  for (let i = 0; i < pairs.length; i++) { r -= w[i]; if (r <= 0) { k = i; break; } }
+  const hi = pairs[k][0], lo = pairs[k][1];
+  return won ? { you: hi, them: lo } : { you: lo, them: hi };
+}
+
+/**
+ * The original margin-and-total arithmetic, kept only as a fallback for a calibration file
+ * built before the pair table existed. It can produce scorelines football does not produce,
+ * so nothing should reach it in a normal build.
+ */
+function legacyFootballScore(yourScore, oppScore, won, rng, cal) {
+  const internalMargin = Math.abs(yourScore - oppScore);
   const pct = percentileIn(cal.internal_margin_q, internalMargin);
   let margin = Math.round(valueAt(cal.real_margin_q, pct));
-  // The winner is already decided, so a reported tie would contradict the result.
   if (margin < 1) margin = 1;
 
   const buckets = cal.margin_buckets;
@@ -1060,16 +1192,12 @@ function toFootballScore(yourScore, oppScore, won, rng, cal) {
     if (i === buckets.length - 2) bi = i;
   }
   let total = Math.round(valueAt(cal.totals_by_bucket_q[bi], rng()));
-
-  // Total and margin must have the same parity to split into whole scores.
   if ((total - margin) % 2 !== 0) total += 1;
   let high = (total + margin) / 2;
   let low = high - margin;
   if (low < 0) { low = 0; high = margin; }
-  // 1 is the one unreachable score in football.
   if (low === 1) low = 2;
   if (high === 1) high = 2;
-
   return won ? { you: high, them: low } : { you: low, them: high };
 }
 
@@ -1102,7 +1230,7 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
   if (seed.made) {
     const names = playoffRoundNames(seed.rounds);
     for (let i = 0; i < seed.rounds; i++) {
-      const opp = playoffs[i % playoffs.length];
+      const opp = playoffOpponent(playoffs, seed.rounds, i);
       const won = play(opp, { week: schedule.length + i + 1, playoff: true, round: names[i] });
       if (!won) { exitRound = names[i]; break; }
       if (i === seed.rounds - 1) titleWon = true;
@@ -1138,10 +1266,24 @@ function prepareData(teamSeasons) {
   const eliteThreshold = q(0.90);
   const topQuartile = teamSeasons.filter((t) => t.strength_z >= q(0.75));
 
+  /*
+   * The two rungs below the named teams. "Good" is a solid playoff side and "great" is a
+   * genuine contender, kept apart so the Wild Card and the Divisional round do not feel
+   * like the same game twice.
+   */
+  const goodPool = teamSeasons.filter((t) => t.strength_z >= q(0.65) && t.strength_z < q(0.85));
+  const greatPool = teamSeasons.filter((t) => t.strength_z >= q(0.93));
+
+  const index = {};
+  for (const t of teamSeasons) index[t.team_season_id] = t;
+  for (const t of LEGEND_TEAM_SEASONS) index[t.team_season_id] ??= t;
+
   // A schedule of 17 average opponents sums to ~17 * mean(z) ~ 0.
   const meanZ = zs.reduce((a, b) => a + b, 0) / zs.length;
   return {
-    divisions, byFranchise, eliteThreshold, topQuartile,
+    divisions, byFranchise, eliteThreshold, topQuartile, goodPool, greatPool,
+    legends: LEGEND_TEAM_SEASONS,
+    byId: (id) => index[id],
     meanScheduleStrength: meanZ * 17,
   };
 }
@@ -1151,17 +1293,46 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 13;
+const ENGINE_API_VERSION = 15;
+
+/*
+ * The three-letter code a team actually wore in a given season.
+ *
+ * The data stores the CURRENT franchise code, so a 2014 Oakland Raider is filed under LV.
+ * That is right for grouping a franchise's history and wrong for a label: the rest of the
+ * game calls that team-season "2014 Oakland Raiders", so a chip reading LV 2014 would
+ * contradict it.
+ *
+ * These four are the only franchises whose display name moves between 1999 and 2025, read
+ * off team_seasons.json rather than from memory. Washington is in the list only to record
+ * that it does NOT need an entry: the name changed twice, Redskins to Football Team in 2020
+ * to Commanders in 2022, but the code stayed WAS throughout.
+ */
+const ERA_CODES = {
+  LAC: [[2017, 'LAC'], [0, 'SD']],       // San Diego through 2016
+  LAR: [[2016, 'LAR'], [0, 'STL']],      // St. Louis through 2015
+  LV: [[2020, 'LV'], [0, 'OAK']],        // Oakland through 2019
+};
+
+/** The code that team wore that year. Falls through to the current code. */
+function eraCode(franchise, season) {
+  const rules = ERA_CODES[franchise];
+  if (!rules) return franchise;
+  for (const [from, code] of rules) if (season >= from) return code;
+  return franchise;
+}
 
 const publicAPI = {
   API_VERSION: ENGINE_API_VERSION,
   CONSTANTS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
   hashSeed, createSeededRNG, sampleGamma,
   pairLinks, resolveChemistry,
-  buildDivisionMap, opponentFranchises, generateSchedule, generatePlayoffs,
+  buildDivisionMap, generateSchedule, generatePlayoffs,
   resolveGame, playRun, prepareData, toFootballScore,
+  playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
   respinCost, respinFees, scoringScript, scoreParts, SCORE_KINDS,
+  eraCode, ERA_CODES,
   NICKNAMES, nickname, TEAM_COLORS, teamColors, washColors, contrast, LINK_TIERS, linkTier, rosterStructure, STRUCTURE, coachReport,
 };
 
