@@ -1513,8 +1513,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=13"></script>
-<script src="run.js?v=13"></script>
+<script src="engine.js?v=14"></script>
+<script src="run.js?v=14"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -1586,7 +1586,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=13;
+const NEED_VERSION=14;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -1751,7 +1751,7 @@ function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clear
 
 async function boot(){
   try{
-    const j=(f)=>fetch(f+'?v=3').then(r=>{if(!r.ok)throw new Error(f);return r.json();});
+    const j=(f)=>fetch(f+'?v=4').then(r=>{if(!r.ok)throw new Error(f);return r.json();});
     const [pl,tm,bat,co,cu,lg,cal]=await Promise.all([
       j('data/player_seasons.json'),j('data/team_seasons.json'),j('data/battery.json'),
       j('data/coaches.json'),j('data/curated.json'),j('data/league_context.json'),

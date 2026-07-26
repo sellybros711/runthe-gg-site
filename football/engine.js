@@ -153,31 +153,85 @@ function respinFees(used) {
  * Increments are the ones football actually produces. 1 is the famous impossible
  * score, so a decomposition may never leave a remainder of 1.
  */
+/*
+ * Real per-team, per-game rates for each way of scoring, which is what the old model was
+ * missing. It had fixed weights and a rule that a decomposition may never leave a remainder
+ * of 1, and those two together produced the safety problem: at a remainder of 2 the safety
+ * is the ONLY legal kind, and at 4 it is the only legal kind twice in a row. Measured on the
+ * shipped build that came to 1.61 safeties a game with 52% of games showing two or more.
+ * The real NFL rate is about 0.09 a game, so it was roughly eighteen times too many.
+ *
+ * Kept as rates rather than weights so a composition can be scored by how likely it actually
+ * is. Touchdowns and field goals are per team per game; the extra-point miss rate is about
+ * 6% of touchdowns, two-point tries about 4% end up as 8, and a safety is 0.045 per team.
+ */
 const SCORE_KINDS = [
-  { points: 7, kind: 'TOUCHDOWN', weight: 58 },
-  { points: 3, kind: 'FIELD GOAL', weight: 28 },
-  { points: 6, kind: 'TOUCHDOWN', weight: 7, note: 'missed the kick' },
-  { points: 8, kind: 'TOUCHDOWN', weight: 5, note: 'two-point try' },
-  { points: 2, kind: 'SAFETY', weight: 2 },
+  { points: 7, kind: 'TOUCHDOWN', lambda: 2.25 },
+  { points: 3, kind: 'FIELD GOAL', lambda: 1.70 },
+  { points: 6, kind: 'TOUCHDOWN', lambda: 0.14, note: 'missed the kick' },
+  { points: 8, kind: 'TOUCHDOWN', lambda: 0.10, note: 'two-point try' },
+  { points: 2, kind: 'SAFETY', lambda: 0.045 },
 ];
+
+/*
+ * Every way to reach `total`, with how likely each one is.
+ *
+ * Counts of each scoring type are treated as independent Poissons at the rates above, so a
+ * composition's likelihood is the product of lambda^k / k!. That makes the arithmetic and the
+ * realism the same calculation: a safety appears only when the real rate says it should, and
+ * two safeties only when the number genuinely cannot be built any other way.
+ *
+ * Enumeration is cached per total. There are only a few dozen distinct totals, and the naive
+ * version cost about 14,000 combinations per call, which is fine for one broadcast and far
+ * too slow for a 50,000-game measurement run.
+ */
+const compositionCache = new Map();
+
+function compositionsFor(total) {
+  if (compositionCache.has(total)) return compositionCache.get(total);
+  const [K7, K3, K6, K8, K2] = SCORE_KINDS;
+  const out = [];
+  const logFact = (n) => { let f = 0; for (let i = 2; i <= n; i++) f += Math.log(i); return f; };
+  const lw = (k, n) => n * Math.log(k.lambda) - logFact(n);
+  for (let n7 = 0; n7 * 7 <= total; n7++) {
+    for (let n8 = 0; n7 * 7 + n8 * 8 <= total; n8++) {
+      for (let n6 = 0; n7 * 7 + n8 * 8 + n6 * 6 <= total; n6++) {
+        for (let n3 = 0; n7 * 7 + n8 * 8 + n6 * 6 + n3 * 3 <= total; n3++) {
+          const rest = total - n7 * 7 - n8 * 8 - n6 * 6 - n3 * 3;
+          if (rest % 2 !== 0) continue;              // only the safety is worth 2
+          const n2 = rest / 2;
+          const counts = [[K7, n7], [K3, n3], [K6, n6], [K8, n8], [K2, n2]];
+          let ll = 0;
+          for (const [k, n] of counts) if (n > 0) ll += lw(k, n);
+          out.push({ counts, ll });
+        }
+      }
+    }
+  }
+  // shift before exponentiating so a long score does not underflow to all zeros
+  const best = out.reduce((m, c) => Math.max(m, c.ll), -Infinity);
+  for (const c of out) c.w = Math.exp(c.ll - best);
+  compositionCache.set(total, out);
+  return out;
+}
 
 /** Split a final total into the scores that made it up. */
 function scoreParts(total, rng) {
-  const out = [];
   let left = Math.max(0, Math.round(total));
-  // 1 cannot be scored and cannot be left over. The display transform already
-  // rules it out, and this is the second lock on the same door.
+  // 1 cannot be scored. Real score pairs never ask for it; this is the second lock.
   if (left === 1) left = 2;
-  let guard = 0;
-  while (left > 0 && guard++ < 40) {
-    const legal = SCORE_KINDS.filter((k) => k.points <= left && left - k.points !== 1);
-    if (!legal.length) { out.push({ ...SCORE_KINDS[0], points: left, kind: 'TOUCHDOWN' }); break; }
-    const sum = legal.reduce((t, k) => t + k.weight, 0);
-    let r = rng() * sum;
-    let pick = legal[legal.length - 1];
-    for (const k of legal) { r -= k.weight; if (r <= 0) { pick = k; break; } }
-    out.push(pick);
-    left -= pick.points;
+  if (left === 0) return [];
+  const comps = compositionsFor(left);
+  if (!comps.length) return [{ points: left, kind: 'TOUCHDOWN' }];
+
+  const sum = comps.reduce((t, c) => t + c.w, 0);
+  let r = rng() * sum;
+  let pick = comps[comps.length - 1];
+  for (const c of comps) { r -= c.w; if (r <= 0) { pick = c; break; } }
+
+  const out = [];
+  for (const [kind, n] of pick.counts) {
+    for (let i = 0; i < n; i++) out.push({ ...kind });
   }
   return out;
 }
@@ -1034,23 +1088,90 @@ function valueAt(table, p) {
   return table[i] + (table[j] - table[i]) * (x - i);
 }
 
+/*
+ * How hard the scoreline is pulled toward the two targets.
+ *
+ * Both are in points. Tight enough that a good offence visibly outscores a bad one, loose
+ * enough that the same roster does not report the same scoreline every week: the real
+ * corpus is sampled inside these tolerances by its own frequency, so 23-20 comes up often
+ * and 41-38 comes up rarely, exactly as often as football produces them.
+ */
+const SCORELINE_TOLERANCE = { margin: 4.5, points: 5.0 };
+
 /**
  * Turn an internal fantasy-space result into a football-looking scoreline.
  *
- * The sim decides the winner; this only decides how the game is *reported*. It
- * maps the internal margin onto the real distribution of NFL margins (1999-2025,
- * 6,967 games), draws a real total conditioned on that margin, and splits it.
- * The winner is always preserved exactly.
+ * The sim decides the winner; this only decides how the game is *reported*. It picks a
+ * scoreline that REALLY HAPPENED in the NFL between 1999 and 2025, matched on two things:
  *
- * Deliberately not a divisor: your internal mean (~73) sits far above an
- * opponent's (~43) because that gap is what carries win probability, so scaling
- * both sides down renders every week as a blowout.
+ *   1. the margin, mapped from the internal margin through both empirical CDFs, and
+ *   2. YOUR points, mapped from your internal score the same way.
+ *
+ * The second one is new and it is the point of the exercise. The old version conditioned
+ * the total on the margin alone, so the scoreline knew whether the game was close but knew
+ * nothing about whether your offence was any good: across the whole cap-legal band, from a
+ * 48-FPPG roster to an 87-FPPG one, reported points moved only 18.3 to 25.2, and in
+ * one-score games only 20.9 to 23.1. Real NFL offences span about 16 to 30 a game, so a
+ * stacked roster and a thin one were being reported almost identically. Win rate reacted
+ * properly the whole time; the scoreboard did not, which is what made it feel flat.
+ *
+ * Sampling real pairs also removes a whole class of impossible-looking results. The old
+ * arithmetic (draw a total, force its parity, split it) could land on a team score of 4,
+ * which it did 0.43% of the time and which has happened ZERO times in 7,276 real games.
+ *
+ * Deliberately not a divisor: your internal mean (~73) sits far above an opponent's (~43)
+ * because that gap is what carries win probability, so scaling both sides down renders
+ * every week as a blowout.
  */
 function toFootballScore(yourScore, oppScore, won, rng, cal) {
   const internalMargin = Math.abs(yourScore - oppScore);
+  const marginTarget = Math.max(1, valueAt(cal.real_margin_q,
+    percentileIn(cal.internal_margin_q, internalMargin)));
+
+  // Older calibration files carry no pair table. Fall back rather than throw.
+  if (!cal.real_pairs || !cal.internal_offence_q) {
+    return legacyFootballScore(yourScore, oppScore, won, rng, cal);
+  }
+
+  const pointsTarget = valueAt(cal.real_team_pts_q,
+    percentileIn(cal.internal_offence_q, yourScore));
+
+  /*
+   * Weight every real scoreline by how well it matches both targets and by how often it
+   * really happened. Gaussian in both terms so the fit degrades smoothly: if nothing sits
+   * near the targets the nearest real scorelines still carry all the weight.
+   */
+  const TM = SCORELINE_TOLERANCE.margin, TP = SCORELINE_TOLERANCE.points;
+  const pairs = cal.real_pairs;
+  let sum = 0;
+  const w = new Array(pairs.length);
+  for (let i = 0; i < pairs.length; i++) {
+    const hi = pairs[i][0], lo = pairs[i][1], n = pairs[i][2];
+    const mine = won ? hi : lo;
+    const dm = (hi - lo - marginTarget) / TM;
+    const dp = (mine - pointsTarget) / TP;
+    const v = n * Math.exp(-0.5 * (dm * dm + dp * dp));
+    w[i] = v;
+    sum += v;
+  }
+  if (!(sum > 0)) return legacyFootballScore(yourScore, oppScore, won, rng, cal);
+
+  let r = rng() * sum;
+  let k = pairs.length - 1;
+  for (let i = 0; i < pairs.length; i++) { r -= w[i]; if (r <= 0) { k = i; break; } }
+  const hi = pairs[k][0], lo = pairs[k][1];
+  return won ? { you: hi, them: lo } : { you: lo, them: hi };
+}
+
+/**
+ * The original margin-and-total arithmetic, kept only as a fallback for a calibration file
+ * built before the pair table existed. It can produce scorelines football does not produce,
+ * so nothing should reach it in a normal build.
+ */
+function legacyFootballScore(yourScore, oppScore, won, rng, cal) {
+  const internalMargin = Math.abs(yourScore - oppScore);
   const pct = percentileIn(cal.internal_margin_q, internalMargin);
   let margin = Math.round(valueAt(cal.real_margin_q, pct));
-  // The winner is already decided, so a reported tie would contradict the result.
   if (margin < 1) margin = 1;
 
   const buckets = cal.margin_buckets;
@@ -1060,16 +1181,12 @@ function toFootballScore(yourScore, oppScore, won, rng, cal) {
     if (i === buckets.length - 2) bi = i;
   }
   let total = Math.round(valueAt(cal.totals_by_bucket_q[bi], rng()));
-
-  // Total and margin must have the same parity to split into whole scores.
   if ((total - margin) % 2 !== 0) total += 1;
   let high = (total + margin) / 2;
   let low = high - margin;
   if (low < 0) { low = 0; high = margin; }
-  // 1 is the one unreachable score in football.
   if (low === 1) low = 2;
   if (high === 1) high = 2;
-
   return won ? { you: high, them: low } : { you: low, them: high };
 }
 
@@ -1151,7 +1268,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 13;
+const ENGINE_API_VERSION = 14;
 
 const publicAPI = {
   API_VERSION: ENGINE_API_VERSION,
