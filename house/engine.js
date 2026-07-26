@@ -847,12 +847,20 @@ function threatScore(rel, cast, i, j, panel, alliances, opts) {
   /*
    * The Panel term RAMPS, exactly as the social term does, and it did not.
    *
-   * wSocial was carefully faded in across the run and then K.TH_PANEL sat
-   * beside it at full weight from the instant the first person was evicted.
-   * A term that is worth nothing in week six and thirty percent in week seven
-   * is a cliff nobody in the house could explain, and it landed hardest on
-   * exactly the players this ramp was written to protect: the well liked ones,
-   * whose equity reads high the moment there is anybody to read it against.
+   * MEASURED, AND NOT THE WAY IT FIRST LOOKED. The obvious story is a cliff:
+   * a term worth nothing in week six and thirty percent in week seven. That
+   * story is wrong, and the measurement says so. Isolating the Panel term's
+   * own contribution at a fixed moment, the MEAN was already smooth without
+   * the ramp: 5.6 points at one juror rising to 10.9 at five.
+   *
+   * What was actually broken was the SPREAD, and who it fell on. At one juror
+   * the contribution had a standard deviation of 16.3 points, because a one
+   * person Panel can only answer 0 or 100. And that noise was not symmetric:
+   * it taxed a well liked player 12.2 points of threat against 3.2 for an
+   * isolated one, a nine point gap conjured out of a single person's opinion.
+   * That asymmetry is the mechanism behind the trust curve in GDD §7.9.
+   *
+   * The ramp and the prior together take the spread to 3.4 and the gap to 2.4.
    */
   const wPanel = K.TH_PANEL * (K.TH_PANEL_EARLY + (1 - K.TH_PANEL_EARLY) * late);
 
