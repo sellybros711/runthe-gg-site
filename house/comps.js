@@ -91,56 +91,108 @@ const COMP_NOISE_SD = 9;
  * returns 0..100, and it never touches the engine. GDD §10 asks for exactly
  * that, because comps are the thing that has to stay fresh longest.
  */
+/*
+ * FOURTEEN, AND NO TWO OF THEM THE SAME SHAPE.
+ *
+ * There were nine, and five of them were "time or hold a thing" with different
+ * chrome: Hair Trigger, Dead Weight, Level Head, Tightrope and White Knuckle
+ * are one verb wearing five hats. Count was never the problem. The five added
+ * here are deliberately in the families that were empty, and four of them are
+ * built from THIS RUN, which is the thing a competition in this format can do
+ * that a minigame cannot: House Rules, Before and After, In Order and Odd One
+ * Out are all questions about the fifteen people you have been living with.
+ *
+ * `family` is what the player is told before they choose to play or throw, so
+ * "I am terrible at memory, I will take the Rations" is a real decision rather
+ * than a shrug. `tests` names the attribute in plain words, because the tree
+ * spends tokens on those names.
+ */
 const COMPS = [
   {
     id: 'reaction', kind: 'reaction', name: 'Hair Trigger',
+    family: 'Reflex', tests: 'a steady hand',
     primary: 'precision', secondary: 'mental',
     blurb: 'The light goes green. Everything before that is a guess.',
   },
   {
     id: 'memory', kind: 'memory', name: 'The Long Hallway',
+    family: 'Memory', tests: 'what you can hold in your head',
     primary: 'mental', secondary: 'precision',
     blurb: 'Walk it once. Walk it again from memory.',
   },
   {
     id: 'endurance', kind: 'hold', name: 'Dead Weight',
+    family: 'Endurance', tests: 'how long you last',
     primary: 'physical', secondary: 'mental',
     blurb: 'Hold on. The house will try to make you let go.',
   },
   {
-    id: 'trivia', kind: 'trivia', name: 'House Rules',
+    id: 'trivia', kind: 'trivia', needs: 2, name: 'House Rules',
+    family: 'The house', tests: 'whether you were paying attention',
     primary: 'mental', secondary: 'perception',
-    blurb: 'Everything that happened here is on the test.',
+    blurb: 'Everything that has happened in here is on the test.',
   },
   {
     id: 'balance', kind: 'slider', name: 'Level Head',
+    family: 'Precision', tests: 'a steady hand',
     primary: 'precision', secondary: 'physical',
     blurb: 'Keep it centred. It does not want to stay centred.',
   },
   {
     id: 'chance', kind: 'random', name: 'Draw',
+    family: 'Pure chance', tests: 'nothing at all',
     primary: 'luck', secondary: 'luck',
     blurb: 'No skill in it. Somebody still walks away with the power.',
   },
-  /*
-   * Comps are the thing that has to stay fresh longest, so the framework takes
-   * a new one as a row here plus a module in the UI that returns 0 to 100, and
-   * it never touches the engine. These three were added that way.
-   */
   {
     id: 'nerve', kind: 'nerve', name: 'Nerve',
+    family: 'Nerve', tests: 'when you stop',
     primary: 'luck', secondary: 'mental',
     blurb: 'Keep turning cards. Bank what you have, or find the one that ends it.',
   },
   {
     id: 'tightrope', kind: 'tightrope', name: 'Tightrope',
+    family: 'Precision', tests: 'a steady hand',
     primary: 'precision', secondary: 'physical',
     blurb: 'Stop it in the gap. The gap gets narrower every time.',
   },
   {
     id: 'grip', kind: 'grip', name: 'White Knuckle',
+    family: 'Endurance', tests: 'how long you last',
     primary: 'physical', secondary: 'precision',
     blurb: 'Left, right, left, right. Do not break the rhythm.',
+  },
+
+  /* ── the five that fill the empty families ─────────────────────────────── */
+  {
+    id: 'before_after', needs: 3, kind: 'before_after', name: 'Before and After',
+    family: 'The house', tests: 'whether you were paying attention',
+    primary: 'perception', secondary: 'mental',
+    blurb: 'Two things happened in this house. Say which came first.',
+  },
+  {
+    id: 'order', needs: 4, kind: 'order', name: 'In Order',
+    family: 'Puzzle', tests: 'whether you were paying attention',
+    primary: 'mental', secondary: 'perception',
+    blurb: 'Four people have gone. Put them back in the order they left.',
+  },
+  {
+    id: 'oddone', needs: 1, kind: 'oddone', name: 'Spot the Difference',
+    family: 'Perception', tests: 'what you notice',
+    primary: 'perception', secondary: 'precision',
+    blurb: 'One of these is not who it was a second ago.',
+  },
+  {
+    id: 'count', kind: 'count', name: 'Head Count',
+    family: 'Memory', tests: 'what you can hold in your head',
+    primary: 'mental', secondary: 'perception',
+    blurb: 'They walk past. You have one job and it is to count.',
+  },
+  {
+    id: 'potato', kind: 'potato', name: 'Hot Potato',
+    family: 'Nerve', tests: 'when you stop',
+    primary: 'luck', secondary: 'precision',
+    blurb: 'It is worth more every second and it goes off without warning.',
   },
 ];
 
@@ -151,8 +203,24 @@ const BY_ID = new Map(COMPS.map((c) => [c.id, c]));
  * not repeat back to back, because two memory comps in a row reads as a bug
  * even when it is fair.
  */
-function pickComp(rng, lastId) {
-  const pool = COMPS.filter((c) => c.id !== lastId);
+/**
+ * Which comp runs, given how much house there is to ask about.
+ *
+ * Four of these are built out of the run: House Rules, Before and After, In
+ * Order and Spot the Difference all read the WeekLog or the cast. In week one
+ * there is no WeekLog, so they used to fall back to a flat score with nothing
+ * on screen to play, which is a competition that is not a competition. They are
+ * gated on `needs` instead, and the bank fills out as the season does, which is
+ * also a nice shape: the house gets more interesting to be tested on the longer
+ * you have lived in it.
+ *
+ * `weeksDone` is optional so the signature stays callable from anywhere that
+ * only has an RNG, and an absent count means everything is legal.
+ */
+function pickComp(rng, lastId, weeksDone) {
+  const done = weeksDone == null ? 99 : weeksDone;
+  let pool = COMPS.filter((c) => c.id !== lastId && (!c.needs || done >= c.needs));
+  if (!pool.length) pool = COMPS.filter((c) => !c.needs);
   return rng.pick(pool);
 }
 

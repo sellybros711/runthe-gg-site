@@ -210,6 +210,11 @@ input:focus,select:focus{outline:none;border-color:var(--hand)}
   align-items:center;justify-content:center;gap:16px;user-select:none}
 .stage h2{font-size:22px;color:var(--paper)}
 .stage .blurb{color:var(--dim);font-size:13px;max-width:420px}
+/* The stage centres its children, so they size to their content and a grid
+   with a min track width will happily spill off both edges of the card. Any
+   row of options inside the stage states its own width. */
+.bastack{display:flex;flex-direction:column;gap:10px;width:100%;max-width:460px}
+.bastack .choice{text-align:center}
 .padgrid{display:grid;grid-template-columns:repeat(3,72px);gap:6px}
 .pad{aspect-ratio:1/1;border:1px solid var(--line);background:var(--panel);transition:.09s}
 .pad.lit{background:var(--paper);border-color:var(--paper)}
@@ -219,18 +224,36 @@ input:focus,select:focus{outline:none;border-color:var(--hand)}
   font-size:20px;letter-spacing:.1em;color:var(--dim);transition:.06s}
 .rbox.go{background:var(--ok);color:#0a0b0c;border-color:var(--ok)}
 .rbox.bad{background:var(--signal-dim);color:var(--paper)}
-.track{width:min(460px,86vw);height:26px;border:1px solid var(--line);background:var(--panel);
+/* Widths here are a share of the card, not of the window. The card is inset
+   from both edges, so a viewport unit overruns it on a phone. */
+.track{width:min(460px,100%);height:26px;border:1px solid var(--line);background:var(--panel);
   position:relative;overflow:hidden}
 .track .zone{position:absolute;top:0;bottom:0;left:42%;width:16%;background:rgba(31,122,77,.14);
   border-left:1px solid var(--ok);border-right:1px solid var(--ok)}
 .track .mk{position:absolute;top:2px;bottom:2px;width:4px;background:var(--paper)}
-.holdpad{width:min(300px,70vw);aspect-ratio:1/1;border:1px solid var(--dim);
+.holdpad{width:min(300px,100%);aspect-ratio:1/1;border:1px solid var(--dim);
   display:flex;align-items:center;justify-content:center;font-family:var(--disp);
   font-size:16px;letter-spacing:.14em;color:var(--dim);background:var(--panel);transition:.12s}
 .holdpad.on{border-color:var(--paper);color:var(--paper);background:#16191d}
-.qbtns{display:flex;flex-direction:column;gap:8px;width:min(420px,86vw)}
-.meterwrap{width:min(460px,86vw);height:5px;background:var(--panel);border:1px solid var(--line)}
+.qbtns{display:flex;flex-direction:column;gap:8px;width:min(420px,100%)}
+.meterwrap{width:min(460px,100%);height:5px;background:var(--panel);border:1px solid var(--line)}
 .meter{height:100%;background:var(--hand);width:0%}
+
+/* ── the new competitions ─────────────────────────────────────────────────── */
+.ordrow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;min-height:34px;margin:8px 0 14px}
+.ordpick{border:1px solid var(--blue-line);background:var(--blue-soft);color:var(--blue-deep);
+  padding:5px 10px;font-size:13px;font-weight:600}
+.oddrow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:14px 0}
+.oddface{width:86px;height:86px;border:2px solid var(--line);background:var(--panel2);
+  overflow:hidden;padding:0;display:block}
+.oddface img{display:block;width:100%;height:100%}
+button.oddface.pick{cursor:pointer;transition:.12s}
+button.oddface.pick:hover{border-color:var(--blue)}
+.walkway{height:150px;display:flex;align-items:center;justify-content:center;margin:14px 0;
+  border:1px solid var(--line);background:var(--panel);overflow:hidden}
+.walker{animation:walk .5s linear}
+@keyframes walk{from{transform:translateX(-90px);opacity:.2}to{transform:translateX(0);opacity:1}}
+.walker img{display:block}
 
 /* ── vote reveal, the one place the game slows down ─────────────────────── */
 .tallywrap{display:flex;gap:34px;justify-content:center;margin:22px 0 8px;flex-wrap:wrap}
@@ -734,18 +757,18 @@ body.carded .dock,body.carded .bar{display:none}
      copy. Worse than a stale page is a MIXED one, where a fresh index.html
      drives a cached scenes.js, so the query has to be on every module and has
      to move on every deploy. Bump BUILD below and they all miss at once. -->
-<script src="rng.js?v=11"></script>
-<script src="tree.js?v=11"></script>
-<script src="generate.js?v=11"></script>
-<script src="engine.js?v=11"></script>
-<script src="comps.js?v=11"></script>
-<script src="powers.js?v=11"></script>
-<script src="scenes.js?v=11"></script>
-<script src="run.js?v=11"></script>
-<script src="recap.js?v=11"></script>
-<script src="avatar.js?v=11"></script>
-<script src="ui.js?v=11"></script>
-<script src="strings.js?v=11"></script>
+<script src="rng.js?v=12"></script>
+<script src="tree.js?v=12"></script>
+<script src="generate.js?v=12"></script>
+<script src="engine.js?v=12"></script>
+<script src="comps.js?v=12"></script>
+<script src="powers.js?v=12"></script>
+<script src="scenes.js?v=12"></script>
+<script src="run.js?v=12"></script>
+<script src="recap.js?v=12"></script>
+<script src="avatar.js?v=12"></script>
+<script src="ui.js?v=12"></script>
+<script src="strings.js?v=12"></script>
 <script>
 (function(){
 'use strict';
@@ -2398,16 +2421,24 @@ function showPowerExtraVote(need){
    because a minigame with a log and four bars around it is a minigame nobody
    can concentrate on. */
 function showComp(need){
-  var comp=need.comp||C.pickComp(s.rng.comp,s.lastCompId);
+  var comp=need.comp||C.pickComp(s.rng.comp,s.lastCompId,s.weeks.length);
   s.pendingComp=comp;
   var which=need.which==='captain'?'Captain Comp':'Veto Comp';
   var streak=s.cast[s.human].throwStreak;
   renderStage();
   dock({label:'Take your place',off:true});
+  /* The family and what it tests go on the card, so "I am hopeless at memory,
+     I will take the Rations" is a real decision rather than a shrug. Throwing
+     is a strategy in this format and it cannot be one blind. */
   openCard({
-    kicker:which, role:need.which==='captain'?'The power':'Off the block',
+    kicker:which, role:comp.family,
     icon:need.which==='captain'?'captain':'veto',
     title:comp.name, body:[comp.blurb],
+    rows:[['What it is',comp.family],
+          ['What it tests',comp.tests],
+          [need.which==='captain'?'What you win':'What you win',
+           need.which==='captain'?'The power for a week'
+             :'The right to take somebody off the block']],
     choices:[
       {label:'Play it',cls:'go',go:function(){ runComp(comp); }},
       {label:'Throw it',cls:'hot',
@@ -2424,8 +2455,8 @@ function showComp(need){
     screen='comp';
     app.className='scroll';
     app.innerHTML=topbar()
-      +'<div class="file"><h2>'+esc(which)+': '+esc(comp.name)+'</h2>'
-      +'<div class="sub">'+esc(comp.blurb)+'</div></div>'
+      +'<div class="file"><h2>'+esc(comp.name)+'</h2>'
+      +'<div class="sub">'+esc(which)+'. '+esc(comp.blurb)+'</div></div>'
       +'<div class="stage" id="stage"></div>';
     bar.className='bar hide'; barin.innerHTML='';
     startMinigame(comp,function(perf){
@@ -2482,6 +2513,11 @@ function startMinigame(comp,done){
   if(k==='nerve') return mgNerve(st,done);
   if(k==='tightrope') return mgTightrope(st,done);
   if(k==='grip') return mgGrip(st,done);
+  if(k==='before_after') return mgBeforeAfter(st,done);
+  if(k==='order') return mgOrder(st,done);
+  if(k==='oddone') return mgOddOne(st,done);
+  if(k==='count') return mgCount(st,done);
+  if(k==='potato') return mgPotato(st,done);
   return mgRandom(st,done);
 }
 
@@ -2739,6 +2775,200 @@ function mgGrip(st,done){
       } else breaks++;
     };
   });
+}
+
+/*
+ * ── the five built out of this run ─────────────────────────────────────────
+ *
+ * A competition in this format can ask a question a minigame cannot: it can ask
+ * about the fifteen people you have been living with. Four of these five read
+ * the WeekLog and the cast, so no two houses ever set the same test, and being
+ * good at them is the same skill as playing well.
+ *
+ * All five degrade to something playable when the run is too young to have a
+ * history, because week one has to work too.
+ */
+
+/* Which came first. Two real events from this house, in the wrong order half
+   the time. */
+function mgBeforeAfter(st,done){
+  var rng=s.rng.comp, i=0, right=0;
+  var facts=[];
+  for(var w=0;w<s.weeks.length;w++){
+    var x=s.weeks[w];
+    if(x.final3||x.evicted==null) continue;
+    facts.push({wk:x.week,t:s.cast[x.evicted].first+' was evicted'});
+    if(x.captain!=null) facts.push({wk:x.week,t:s.cast[x.captain].first+' took the Captaincy'});
+    if(x.vetoUsed&&x.savedId!=null) facts.push({wk:x.week,t:s.cast[x.savedId].first+' came off the block'});
+  }
+  if(facts.length<4){ done(45); return; }
+  var pairs=[];
+  for(var n=0;n<5&&facts.length>1;n++){
+    var a=facts[Math.floor(rng()*facts.length)], b=facts[Math.floor(rng()*facts.length)];
+    if(a.wk===b.wk) continue;
+    pairs.push(rng()<0.5?[a,b]:[b,a]);
+  }
+  if(!pairs.length){ done(45); return; }
+  function ask(){
+    if(i>=pairs.length){ done(right/pairs.length*100); return; }
+    var p=pairs[i];
+    st.innerHTML='<h2>Before and After</h2>'
+      +'<div class="blurb">Which of these happened first.</div>'
+      +'<div class="bastack">'
+      +'<button class="choice" data-ba="0"><b>'+esc(p[0].t)+'</b></button>'
+      +'<button class="choice" data-ba="1"><b>'+esc(p[1].t)+'</b></button></div>'
+      +'<div class="blurb">'+(i+1)+' of '+pairs.length+'</div>';
+    Array.prototype.forEach.call(st.querySelectorAll('[data-ba]'),function(el){
+      el.onclick=function(){
+        var pickIdx=Number(el.dataset.ba);
+        var firstIdx=p[0].wk<p[1].wk?0:1;
+        if(pickIdx===firstIdx) right++;
+        i++; ask();
+      };
+    });
+  }
+  ask();
+}
+
+/* Put four people back in the order they left. */
+function mgOrder(st,done){
+  var gone=s.cast.filter(function(p){ return p.place!=null&&p.status!=='active'; })
+    .sort(function(a,b){ return b.place-a.place; }).slice(0,4);
+  if(gone.length<3){ done(45); return; }
+  var rng=s.rng.comp;
+  var shuffled=gone.slice(); rng.shuffle(shuffled);
+  var picked=[];
+  function paint(){
+    st.innerHTML='<h2>In Order</h2>'
+      +'<div class="blurb">Tap them in the order they left, earliest first.</div>'
+      +'<div class="ordrow">'+picked.map(function(p,n){
+        return '<span class="ordpick">'+(n+1)+'. '+esc(p.first)+'</span>'; }).join('')+'</div>'
+      +'<div class="padgrid" style="grid-template-columns:repeat(2,minmax(120px,1fr));max-width:400px">'
+      +shuffled.map(function(p){
+        var taken=picked.indexOf(p)!==-1;
+        return '<button class="choice" data-or="'+p.id+'"'+(taken?' disabled':'')+'>'
+          +'<b>'+esc(p.first)+'</b></button>'; }).join('')+'</div>';
+    Array.prototype.forEach.call(st.querySelectorAll('[data-or]'),function(el){
+      el.onclick=function(){
+        var p=shuffled.filter(function(x){ return x.id===Number(el.dataset.or); })[0];
+        if(!p||picked.indexOf(p)!==-1) return;
+        picked.push(p);
+        if(picked.length===shuffled.length){
+          var ok=0;
+          for(var n=0;n<picked.length;n++) if(picked[n]===gone[n]) ok++;
+          done(ok/picked.length*100);
+          return;
+        }
+        paint();
+      };
+    });
+  }
+  paint();
+}
+
+/* One of these faces is not the person who was standing there. */
+function mgOddOne(st,done){
+  var rng=s.rng.comp, round=0, rounds=4, right=0;
+  var pool=s.cast.slice();
+  function ask(){
+    if(round>=rounds){ done(right/rounds*100); return; }
+    rng.shuffle(pool);
+    var five=pool.slice(0,5);
+    var swapAt=Math.floor(rng()*five.length);
+    var replacement=pool.filter(function(p){ return five.indexOf(p)===-1; })[0];
+    if(!replacement){ done(50); return; }
+    st.innerHTML='<h2>Spot the Difference</h2>'
+      +'<div class="blurb">Look at them. Then find the one who changed.</div>'
+      +'<div class="oddrow" id="od">'+five.map(function(p){
+        return '<div class="oddface">'+avatar(p,86)+'</div>'; }).join('')+'</div>'
+      +'<div class="blurb">Round '+(round+1)+' of '+rounds+'</div>';
+    setTimeout(function(){
+      var shown=five.slice(); shown[swapAt]=replacement;
+      var od=document.getElementById('od');
+      if(!od) return;
+      od.innerHTML=shown.map(function(p,n){
+        return '<button class="oddface pick" data-od="'+n+'">'+avatar(p,86)+'</button>'; }).join('');
+      Array.prototype.forEach.call(od.querySelectorAll('[data-od]'),function(el){
+        el.onclick=function(){
+          if(Number(el.dataset.od)===swapAt) right++;
+          round++; ask();
+        };
+      });
+    },1500+Math.random()*700);
+  }
+  ask();
+}
+
+/* They walk past. Count the ones that match. */
+function mgCount(st,done){
+  var rng=s.rng.comp, round=0, rounds=3, total=0;
+  function ask(){
+    if(round>=rounds){ done(Math.max(0,total/rounds)); return; }
+    var pool=s.cast.slice(); rng.shuffle(pool);
+    var n=6+Math.floor(rng()*7);
+    var walkers=[]; for(var j=0;j<n;j++) walkers.push(pool[j%pool.length]);
+    var wanted=rng()<0.5?'glasses':'beard';
+    var truth=0;
+    walkers.forEach(function(p){ if(AV.features(p.avatarSeed)[wanted]) truth++; });
+    st.innerHTML='<h2>Head Count</h2>'
+      +'<div class="blurb">Count how many of them are '
+      +(wanted==='glasses'?'wearing glasses':'wearing a beard')+'.</div>'
+      +'<div class="walkway" id="wk"></div>';
+    var wk=document.getElementById('wk'), k=0;
+    var timer=setInterval(function(){
+      if(!wk){ clearInterval(timer); return; }
+      if(k>=walkers.length){
+        clearInterval(timer);
+        st.innerHTML='<h2>Head Count</h2><div class="blurb">How many were '
+          +(wanted==='glasses'?'wearing glasses':'wearing a beard')+'.</div>'
+          +'<div class="padgrid" style="grid-template-columns:repeat(4,64px);max-width:320px">'
+          +[0,1,2,3,4,5,6,7].map(function(v){
+            return '<button class="choice" data-ct="'+v+'"><b>'+v+'</b></button>'; }).join('')+'</div>';
+        Array.prototype.forEach.call(st.querySelectorAll('[data-ct]'),function(el){
+          el.onclick=function(){
+            var off=Math.abs(Number(el.dataset.ct)-truth);
+            total+=Math.max(0,100-off*34);
+            round++; ask();
+          };
+        });
+        return;
+      }
+      wk.innerHTML='<div class="walker">'+avatar(walkers[k],96)+'</div>';
+      k++;
+    },520);
+  }
+  ask();
+}
+
+/* Worth more every second, and it goes off without warning. */
+function mgPotato(st,done){
+  var rng=s.rng.comp, held=0, banked=0, round=0, rounds=3, timer=null, fuse=0;
+  function ask(){
+    if(round>=rounds){ done(Math.min(100,banked)); return; }
+    held=0; fuse=1800+rng()*5200;
+    st.innerHTML='<h2>Hot Potato</h2>'
+      +'<div class="blurb">Let go before it goes off. Round '+(round+1)+' of '+rounds+'.</div>'
+      +'<div class="rbox go" id="rb">0</div>'
+      +'<div class="blurb">Banked '+Math.round(banked)+'</div>';
+    var rb=document.getElementById('rb'), t0=Date.now();
+    timer=setInterval(function(){
+      held=Date.now()-t0;
+      if(!rb) { clearInterval(timer); return; }
+      rb.textContent=Math.round(held/1000*10);
+      if(held>=fuse){
+        clearInterval(timer);
+        rb.className='rbox bad'; rb.textContent='GONE';
+        round++; setTimeout(ask,700);
+      }
+    },60);
+    rb.onpointerdown=function(){
+      clearInterval(timer);
+      banked+=Math.round(held/1000*10);
+      rb.className='rbox'; rb.textContent='BANKED';
+      round++; setTimeout(ask,600);
+    };
+  }
+  ask();
 }
 
 function mgRandom(st,done){

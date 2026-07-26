@@ -461,7 +461,7 @@ function doReset(s) {
       .sort((a, b) => b.evictedWeek - a.evictedWeek)
       .slice(0, BOUNCE_POOL);
     if (pool.length) {
-      const comp = C.pickComp(s.rng.comp, s.lastCompId);
+      const comp = C.pickComp(s.rng.comp, s.lastCompId, s.weeks.length);
       const res = C.runComp(s, comp, pool.map((p) => p.id), s.rng.comp, null, new Set());
       const back = s.cast[res.winner];
       back.status = 'active';
@@ -504,7 +504,7 @@ function doCaptainComp(s, input) {
   const rng = s.rng.comp;
   const field = captainCompField(s);
 
-  if (!s.pendingComp) s.pendingComp = C.pickComp(rng, s.lastCompId);
+  if (!s.pendingComp) s.pendingComp = C.pickComp(rng, s.lastCompId, s.weeks.length);
   const comp = s.pendingComp;
 
   const throws = new Set();
@@ -721,7 +721,7 @@ function doVetoDraw(s, input) {
 function doVetoComp(s, input) {
   const rng = s.rng.comp;
   const field = s.vetoFieldIds || vetoField(s, rng);
-  if (!s.pendingComp) s.pendingComp = C.pickComp(rng, s.lastCompId);
+  if (!s.pendingComp) s.pendingComp = C.pickComp(rng, s.lastCompId, s.weeks.length);
   const comp = s.pendingComp;
 
   const throws = new Set();
@@ -1198,7 +1198,7 @@ function doFinal3(s, input) {
   if (!s.final3Winner) {
     let points = {}; ids.forEach((i) => { points[i] = 0; });
     for (let leg = 0; leg < 3; leg++) {
-      const comp = C.pickComp(rng, s.lastCompId);
+      const comp = C.pickComp(rng, s.lastCompId, s.weeks.length);
       s.lastCompId = comp.id;
       const perf = (leg === 0 && input && input.perf != null) ? input.perf : null;
       const res = C.runComp(s, comp, ids, rng, isHumanActive(s) ? (input && input.perf != null ? input.perf : 50) : null, new Set());
