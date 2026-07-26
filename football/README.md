@@ -1751,6 +1751,105 @@ from-state and could hide content outright. A full draft is played with it on in
 - **`SCALE`**, for the reasons in the wheel section: moving it would change every score
   already on the board.
 
+## The visual pass
+
+A graphics and polish round before launch, measured on the rendered page rather than
+judged by eye. Three of the four findings were defects rather than taste.
+
+### The club wash did not work
+
+The field carries a wash of your club's colors, and the comment on it read "kept
+deliberately faint: it should make the run feel like yours, not repaint the game."
+Sampling the rendered pixels for eight clubs showed it was fainter than that:
+
+| club | color | rendered as |
+|---|---|---|
+| KC | `#E31837` red | `#331f3f` **violet** |
+| CIN | `#FB4F14` orange | `#372839` **magenta** |
+| LV, PIT, CHI, NYJ, SEA | | **plain blue, no different from the bare field** |
+
+Two causes, and both had to be fixed. A club color at 30% opacity over a `#0f1830` field
+is mostly field, so a red lifts the red channel slightly and the field's own blue still
+dominates: violet. And **nine of the 32 clubs have a primary or secondary darker than the
+field itself**, where a wash can only ever subtract.
+
+So the wash gets its own colors. `E.washColors()` floors a club's colors into a range that
+can show on a dark ground, and the layer composites with `screen` so it lifts the field
+toward the club's hue instead of averaging into it. **Hue is never changed**, because hue
+is the identity: only lightness and saturation move.
+
+Two rules earned their place by being wrong first. A club whose color has no hue at all
+becomes its own silver rather than an invented hue. And a color so dark that its hue is an
+artifact gets the same treatment: Pittsburgh's `#101820` is black to look at but carries
+just enough blue that a plain saturation floor turned the Steelers blue. Saturation is
+capped as well as floored, or the Jets' and the Packers' dark greens came back as neon mint.
+
+`teamColors()` is untouched. The team picker, the reel dressing and the wordmark all use
+the true colors on their own backgrounds, where they read correctly already.
+
+**The end zones were declared twice.** Once with the club's colors, and again twenty lines
+later with a hardcoded blue and red. The second pair won, so the end zones never carried a
+club at all. One declaration now, club as a var, the old blue and red as its fallback for
+the landing screen, which has no club.
+
+### 14 of 32 clubs had an invisible score stripe
+
+The playoff score bug carries a 5px club stripe per team, drawn in the raw primary on a
+`#080d17` ground. Measured against that background, 14 clubs sit under 1.6:1: the Raiders,
+Steelers, Saints, Bears, Patriots, Seahawks, Ravens, Browns, Packers, Texans, Colts,
+Giants, Titans and Washington all had a black bar on a black ground. The opponent is a
+random historical team-season, so a player met it constantly. The wash colors clear it for
+all 32.
+
+### Text contrast
+
+`--dim-2` was `#64748b`, which measures **3.29:1** against the darker panel and 4.13:1
+against the page: below the 4.5:1 AA asks for body text, across **14 distinct text styles**
+including every eyebrow, the stat-tile captions and the rank window labels. `#7d8fa8` is
+the smallest step up the same slate ramp that clears 4.5:1 against all three backgrounds
+the game uses. After: **0 of 51 text styles fail AA.**
+
+### The field now looks like a field
+
+It was a yard line every 9.6% at 7% white plus red verticals at 10%, and the net effect on
+screen was a dark rectangle with some noise in it. Now: every five yards at 7.5% white,
+every ten at 15.5% and a little wider, the 50 brightest of all at 26%, and real hash marks
+as two short-dashed inboard rows rather than full-height colored verticals. Everything held
+under 26%, because the chips and their names sit on top of this and legibility beats
+decoration.
+
+One consequence had to be fixed with it. An empty slot's placeholder label sat on whatever
+the wash was doing underneath and measured **3.16:1** over Miami's cyan end zone. Those
+chips get their own dark ground now, which reads more clearly as a slot waiting to be
+filled and measures **9.3:1 on every club**.
+
+### What it costs to open
+
+Measured against a server that gzips, which is what GitHub Pages does. An earlier pass
+against the plain Python server reported 4.3 MB and 23 seconds, which overstated the
+payload sevenfold and is worth recording as a measurement error rather than a finding.
+
+| | |
+|---|---|
+| over the wire, compressed | **about 680 KB**, of which `player_seasons.json` is 479 KB |
+| landing screen usable, unthrottled | **320 ms** |
+| landing screen usable, 1.6 Mbps + 150 ms + 4x CPU | **4.5 s** |
+| scrolling the draft screen | 60 fps, median 16.7 ms, **zero frames over 20 ms** |
+
+The new field markings cost nothing to paint, which is the number that mattered for this
+round. The JSON is already minified and every field in it is read at runtime, so there is
+no cheap weight to remove.
+
+`<link rel="preload">` on the four biggest data files was tried and **reverted**: it
+measured 4437 ms against 4481 ms, inside the noise. `boot()` already fetches all seven
+files in one `Promise.all`, and the scripts ahead of them are only 65 KB, so the pipe is
+the bottleneck rather than the ordering. Four hints that do nothing are not worth shipping.
+
+The one real lever left is deferring `player_seasons.json` until Start is pressed, so the
+landing screen paints against a tiny hero dataset and the rest downloads while a player is
+choosing a club. That is an architecture change with real regression risk and it is not
+worth making the week of a launch.
+
 ## Not built yet
 
 Everything in the GDD's build sequence is done. The leaderboard and accounts are both

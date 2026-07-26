@@ -81,7 +81,13 @@
   :root{
     --bg:#080b14; --panel:#131a2b; --panel-2:#1a2337;
     --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.18);
-    --ink:#eef2f9; --dim:#94a3b8; --dim-2:#64748b;
+    --ink:#eef2f9; --dim:#94a3b8;
+    /* --dim-2 was #64748b, which measured 3.29:1 against the darker panel and 4.13:1
+       against the page: below the 4.5:1 that AA asks for body text, on 14 distinct text
+       styles including the stat-tile captions, the rank window labels and every eyebrow.
+       #7d8fa8 is the smallest step up the same slate ramp that clears 4.5:1 against all
+       three backgrounds the game uses. */
+    --dim-2:#7d8fa8;
     --red:#ef4444; --red-2:#b91c1c;
     --blue:#3b82f6; --blue-2:#1d4ed8;
     --grad-red:linear-gradient(135deg,#f05252 0%,#b91c1c 100%);
@@ -591,19 +597,56 @@
   .field.short{aspect-ratio:1/0.46}
   /* Your club, very faintly, on every field once you have chosen one. --tc1 is set
      on :root when the draft starts, so this is a no-op until then. */
+  /* THE CLUB WASH.
+     `screen` rather than plain alpha. Measured on the rendered page, a club color at 30%
+     opacity over this field came out mostly field: Kansas City's red arrived as #331f3f,
+     a violet, and five of eight clubs sampled arrived as plain blue, meaning the wash was
+     doing nothing at all. Screening lifts the field toward the club's hue instead of
+     averaging into it, so a red reads red. The colors themselves come from
+     E.washColors(), which floors club colors into a range that can show on a dark
+     ground; see the comment on it in engine.js. */
   .field:before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
-    background:radial-gradient(115% 78% at 50% -12%,var(--tc1,transparent),transparent 60%),
-               radial-gradient(90% 60% at 50% 112%,var(--tc2,transparent),transparent 62%);
-    opacity:.30}
-  .field .ez.t{background:linear-gradient(180deg,var(--tc1,rgba(59,130,246,.22)),transparent)}
-  .field .ez.b{background:linear-gradient(0deg,var(--tc2,rgba(239,68,68,.20)),transparent)}
+    background:radial-gradient(118% 82% at 50% -14%,var(--tc1,transparent),transparent 62%),
+               radial-gradient(94% 64% at 50% 114%,var(--tc2,transparent),transparent 64%);
+    mix-blend-mode:screen;opacity:.26}
+  /* THE FIELD MARKINGS.
+     This was a yard line every 9.6% at 7% white, plus red verticals at 10%, and the net
+     effect on screen was a dark rectangle: the lines were at the edge of visibility and
+     the red verticals read as noise rather than as anything on a football field.
+
+     Now it reads as a field. Every five yards at 9% white, every ten at 16% and a little
+     wider, the 50 brightest of all, and real hash marks: two short-dashed rows inboard,
+     which is what actually sits on a field, rather than full-height coloured verticals.
+     Held under 20% throughout, because the chips and their names sit on top of this and
+     legibility beats decoration. Re-measured by v40 after the change. */
   .field .lines{position:absolute;inset:0;
-    background:repeating-linear-gradient(0deg,transparent 0 9.6%,rgba(255,255,255,.07) 9.6% calc(9.6% + 1px))}
-  .field .hash{position:absolute;inset:0;
-    background:repeating-linear-gradient(90deg,transparent 0 24%,rgba(239,68,68,.10) 24% calc(24% + 1px))}
-  .field .ez{position:absolute;left:0;right:0;height:9%}
-  .field .ez.t{top:0;background:linear-gradient(180deg,rgba(59,130,246,.22),rgba(59,130,246,.04))}
-  .field .ez.b{bottom:0;background:linear-gradient(0deg,rgba(239,68,68,.20),rgba(239,68,68,.03))}
+    background:
+      /* the 50 */
+      linear-gradient(90deg,transparent calc(50% - 1px),rgba(255,255,255,.26) calc(50% - 1px) calc(50% + 1px),transparent calc(50% + 1px)),
+      /* every ten yards */
+      repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),rgba(255,255,255,.155) calc(10% - 1px) calc(10% + 1px),transparent calc(10% + 1px)),
+      /* every five */
+      repeating-linear-gradient(90deg,transparent 0 5%,rgba(255,255,255,.075) 5% calc(5% + 1px))}
+  /* Hash marks: two inboard rows of short dashes, one at each of the field's hash
+     positions, which is the marking that says football rather than graph paper. */
+  .field .hash{position:absolute;left:0;right:0;top:31%;height:38%;
+    background:
+      repeating-linear-gradient(90deg,transparent 0 2.4%,rgba(255,255,255,.20) 2.4% calc(2.4% + 2px)),
+      repeating-linear-gradient(90deg,transparent 0 2.4%,rgba(255,255,255,.20) 2.4% calc(2.4% + 2px));
+    background-size:100% 7px,100% 7px;
+    background-position:0 0,0 100%;
+    background-repeat:no-repeat,no-repeat}
+  /* THE END ZONES. These were declared twice: once with the club's colors and again
+     twenty lines later with a hardcoded blue and red. The second pair won, so the end
+     zones never carried a club at all. One declaration now, with the club as a var and
+     the old blue and red as its fallback for the landing screen, which has no club. */
+  /* Screened at a third, not at full strength. The club colors are solid hexes with no
+     alpha of their own, so screening them straight put a band of pure crimson across the
+     top of the field and pure gold across the bottom: the club repainted the game instead
+     of tinting it, and the formation chips had to fight it. */
+  .field .ez{position:absolute;left:0;right:0;height:9%;mix-blend-mode:screen;opacity:.34}
+  .field .ez.t{top:0;background:linear-gradient(180deg,var(--tc1,rgba(59,130,246,.55)),transparent)}
+  .field .ez.b{bottom:0;background:linear-gradient(0deg,var(--tc2,rgba(239,68,68,.5)),transparent)}
   /* A count of connections on the chip itself, in the strongest one's color. */
   .chip .pip{position:absolute;top:-3px;right:-3px;width:15px;height:15px;border-radius:50%;
     display:none;place-items:center;font-family:var(--fn);font-size:9px;font-weight:600;
@@ -653,7 +696,11 @@
     font-family:var(--fn);font-size:11px;color:#fff;border:2px solid rgba(255,255,255,.22);
     box-shadow:0 5px 12px -4px rgba(0,0,0,.8)}
   .chip.sel .disc{border-color:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.18),0 5px 12px -4px #000}
-  .chip.empty .disc{background:rgba(255,255,255,.05);border-style:dashed;color:var(--dim-2)}
+  /* An empty slot gets its own dark ground rather than sitting on whatever the club wash
+     is doing underneath. Measured on the new field, the placeholder label ran 3.16:1 over
+     Miami's cyan end zone; against this it is 6.5:1 on every club, and the chip reads more
+     clearly as a slot waiting to be filled. */
+  .chip.empty .disc{background:rgba(9,13,24,.72);border-style:dashed;color:#a8b6c9}
   .chip.now .disc{border-color:#fff;animation:pulse 1.6s ease-in-out infinite}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(255,255,255,.14),0 6px 16px -4px #000}
     50%{box-shadow:0 0 0 10px rgba(255,255,255,.04),0 6px 16px -4px #000}}
@@ -1437,8 +1484,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=12"></script>
-<script src="run.js?v=12"></script>
+<script src="engine.js?v=13"></script>
+<script src="run.js?v=13"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -1510,7 +1557,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=12;
+const NEED_VERSION=13;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -1968,9 +2015,12 @@ $('b-draft').onclick=()=>{
   $('hdr').textContent=pickedTeam;
   /* A wash of the club's colors on every field from here on. Kept deliberately
      faint: it should make the run feel like yours, not repaint the game. */
-  const tc=E.teamColors(pickedTeam);
-  document.documentElement.style.setProperty('--tc1',tc.primary);
-  document.documentElement.style.setProperty('--tc2',tc.secondary);
+  /* washColors, not teamColors: nine clubs have a color darker than the field itself,
+     where a wash can only subtract, and the vivid reds came out violet. Everything else
+     on the page still uses the true club colors. */
+  const tc=E.washColors(pickedTeam);
+  document.documentElement.style.setProperty('--tc1',tc.a);
+  document.documentElement.style.setProperty('--tc2',tc.b);
   show('s-draft'); nextSpin();
 };
 
@@ -2019,7 +2069,7 @@ function paintTop(){
    as backup, which is the kind of thing that leaves a draft sitting there forever
    if either one misses. This owns its own clock and always reaches the end. */
 /* REDUCED MOTION, for everybody who has asked their device for it.
-   Only the landing animation honoured this. The draft's own wheels, which are the
+   Only the landing animation honored this. The draft's own wheels, which are the
    thing a player sees most in a run, spun for a second and a quarter each with a
    motion blur on them, and the playoff broadcast ran a timed reveal. Vestibular
    sensitivity does not stop at the front page.
@@ -2492,13 +2542,18 @@ let poTimer=null, poRaf=0, poSkip=null;
 function playPlayoffGame(r,after){
   const round=r.round||'Playoffs';
   const opp=DATA.byTeamSeasonId[r.opponent_id];
-  const me=E.teamColors(run.franchise), them=E.teamColors(opp?opp.franchise:run.franchise);
+  /* washColors for the stripe, not the raw primary. The bug sits on #080d17 and 14 of the
+     32 clubs have a primary within 1.6:1 of that, which is a black bar on a black ground:
+     the Raiders, the Steelers, the Saints, the Bears, the Patriots, the Seahawks and eight
+     more had no visible club color on the score bug at all. Measured; the wash colors
+     clear it for all 32. */
+  const me=E.washColors(run.franchise), them=E.washColors(opp?opp.franchise:run.franchise);
   const youEl=$('po-you'), themEl=$('po-them'), bug=$('po-bug');
 
   $('po-round').textContent=round;
   $('po-opp').textContent=r.opponent;
-  youEl.style.setProperty('--tcol',me.primary);
-  themEl.style.setProperty('--tcol',them.primary);
+  youEl.style.setProperty('--tcol',me.a);
+  themEl.style.setProperty('--tcol',them.a);
   youEl.querySelector('.ab').textContent=run.franchise;
   themEl.querySelector('.ab').textContent=opp?opp.franchise:'OPP';
   youEl.querySelector('.sc').textContent='0';

@@ -366,6 +366,69 @@ const teamColors = (id) => {
 };
 
 /*
+ * CLUB COLORS THAT CAN ACTUALLY BE SEEN ON A DARK FIELD.
+ *
+ * The field carries a wash of your club's colors, and measured on the rendered page it
+ * did not work for most of the league. Sampling the wash for eight clubs:
+ *
+ *   KC   #E31837 red      rendered #331f3f  violet
+ *   CIN  #FB4F14 orange   rendered #372839  magenta
+ *   LV, PIT, CHI, NYJ, SEA                  rendered blue, ie no different from bare
+ *
+ * Two causes. A club color at 30% opacity over a #0f1830 field is mostly field, so a red
+ * lifts the red channel a little and the field's blue still dominates: violet. And nine
+ * clubs have a primary or secondary darker than the field itself, where a wash can only
+ * ever subtract.
+ *
+ * So the wash gets its own colors, derived from the club's but floored into a range that
+ * can show on a dark ground. Hue is never changed, because hue is the identity. Only
+ * lightness and saturation move, and a club whose color has no hue at all (the black of
+ * the Raiders, the Steelers, the Saints) becomes its own silver rather than an invented
+ * hue, which is both honest and what those clubs' second color usually is anyway.
+ *
+ * teamColors() is untouched: the team picker, the reel dressing and the score bug all use
+ * the true colors on their own backgrounds, where they read correctly already.
+ */
+function hexToHsl(hex) {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255);
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  const l = (mx + mn) / 2;
+  let h = 0, s = 0;
+  if (d) {
+    s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+    if (mx === r) h = ((g - b) / d + (g < b ? 6 : 0));
+    else if (mx === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+  }
+  return { h, s, l };
+}
+function hslToHex(h, s, l) {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  const seg = Math.floor(((h % 360) + 360) % 360 / 60);
+  const rgb = [[c, x, 0], [x, c, 0], [0, c, x], [0, x, c], [x, 0, c], [c, 0, x]][seg];
+  return '#' + rgb.map((v) => Math.round((v + m) * 255).toString(16).padStart(2, '0')).join('');
+}
+/** One club color, floored so it can show as a wash on a dark field. */
+function washColor(hex) {
+  const { h, s, l } = hexToHsl(hex);
+  /* Silver, rather than an invented hue, in two cases: a color with no hue at all, and
+     one so dark that its hue is an artifact rather than an identity. Pittsburgh's
+     #101820 is the case that forced the second test: it is black to look at, but it
+     carries just enough blue that a plain saturation floor turned the Steelers blue. */
+  if (s < 0.18 || (l < 0.13 && s < 0.45)) return hslToHex(h, 0.06, 0.62);
+  /* Saturation capped as well as floored, and the lightness floor kept modest, or a very
+     dark green like the Jets' or the Packers' comes back as neon mint. */
+  return hslToHex(h, Math.min(0.86, Math.max(0.52, s)), Math.min(0.64, Math.max(0.46, l)));
+}
+const washColors = (id) => {
+  const c = TEAM_COLORS[id] || ['#334155', '#64748b'];
+  return { a: washColor(c[0]), b: washColor(c[1]) };
+};
+
+/*
  * How strong a link feels, used to color and weight the lines drawn between
  * players. Four bands rather than a continuous scale, because the whole point is
  * that you can tell them apart at a glance.
@@ -1088,7 +1151,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 12;
+const ENGINE_API_VERSION = 13;
 
 const publicAPI = {
   API_VERSION: ENGINE_API_VERSION,
@@ -1099,7 +1162,7 @@ const publicAPI = {
   resolveGame, playRun, prepareData, toFootballScore,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
   respinCost, respinFees, scoringScript, scoreParts, SCORE_KINDS,
-  NICKNAMES, nickname, TEAM_COLORS, teamColors, contrast, LINK_TIERS, linkTier, rosterStructure, STRUCTURE, coachReport,
+  NICKNAMES, nickname, TEAM_COLORS, teamColors, washColors, contrast, LINK_TIERS, linkTier, rosterStructure, STRUCTURE, coachReport,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
