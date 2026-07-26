@@ -149,6 +149,7 @@ const TUNE = {
   BLOCK_RADIUS:   2.7,      // a blocker within this of a defender engages (slows) them — opens lanes
   BLOCKED_MULT:   0.34,     // engaged defenders move at this fraction (and can't tackle)
   TURN_LERP:      10,
+  BODY_RADIUS:    0.95,     // players have solid bodies — no two can overlap (stops the "run through people" clipping)
 
   // ---- CAMERA ----
   CAM_DIST: 10.5, CAM_HEIGHT: 5.4, CAM_LOOKAHEAD: 5, CAM_LERP: 5.5,
@@ -436,6 +437,22 @@ function updatePlayers(dt){
       }
     }
   }
+  resolveBodies();
+}
+// solid bodies: push any overlapping pair apart so players never clip through one another
+function resolveBodies(){
+  const minD=TUNE.BODY_RADIUS*2, minD2=minD*minD;
+  for(let i=0;i<PL.length;i++){ const a=PL[i]; if(a.userData.knockT>0) continue;
+    for(let j=i+1;j<PL.length;j++){ const b=PL[j]; if(b.userData.knockT>0) continue;
+      let dx=b.position.x-a.position.x, dz=b.position.z-a.position.z; let d2=dx*dx+dz*dz;
+      if(d2>=minD2) continue;
+      let d=Math.sqrt(d2)||0.0001; const push=(minD-d)/2;
+      dx/=d; dz/=d;
+      a.position.x-=dx*push; a.position.z-=dz*push;
+      b.position.x+=dx*push; b.position.z+=dz*push;
+    }
+  }
+  for(const p of PL) clampField(p);
 }
 function teamRankToBall(p){ const my=Math.hypot(p.position.x-ball.position.x,p.position.z-ball.position.z); let r=0;
   for(const q of PL){ if(q.userData.team!==p.userData.team||q===p)continue;
@@ -487,9 +504,11 @@ function updateCamera(dt){ let tp,ta;
   }
   if(possession==='LOOSE'){ const mid=ball.position.clone().add(PL[controlled].position).multiplyScalar(0.5);
     tp=new THREE.Vector3(mid.x,TUNE.LOOSE_CAM_HEIGHT,mid.z-TUNE.LOOSE_CAM_DIST); ta=ball.position.clone(); }
-  else { const c=PL[controlled], f=fwdVec(c.userData.facing);
-    tp=c.position.clone().addScaledVector(f,-TUNE.CAM_DIST).add(new THREE.Vector3(0,TUNE.CAM_HEIGHT,0));
-    ta=c.position.clone().addScaledVector(f,TUNE.CAM_LOOKAHEAD).setY(1.4); }
+  else { const c=PL[controlled];
+    // fixed DOWNFIELD axis — the camera tracks the player but never spins when you steer left/right
+    const dir=dirOf(possession==='BLUE'?'BLUE':'RED');
+    tp=new THREE.Vector3(c.position.x, TUNE.CAM_HEIGHT, c.position.z - TUNE.CAM_DIST*dir);
+    ta=new THREE.Vector3(c.position.x, 1.4, c.position.z + TUNE.CAM_LOOKAHEAD*dir); }
   const l=possession==='LOOSE'?TUNE.LOOSE_CAM_LERP:TUNE.CAM_LERP;
   if(!camReady){ camP.copy(tp); camA.copy(ta); camReady=true; } else { const a=Math.min(1,l*dt); camP.lerp(tp,a); camA.lerp(ta,a); }
   camera.position.copy(camP); camera.lookAt(camA);
