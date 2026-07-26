@@ -603,6 +603,12 @@
     font-family:var(--fn);font-size:12px;display:grid;place-items:center;margin-top:1px}
   .rules b{color:#fff}
 
+  /* THE FIELD ITSELF. This rule was lost when the team picker's styles were cut out, because
+     it sat immediately after them: without `position:relative` and `overflow:hidden` the
+     absolutely-positioned yard lines, hash marks, end zones and player chips escaped their
+     box and painted across the entire page behind the content. */
+  .field{position:relative;width:100%;aspect-ratio:1/0.52;border-radius:14px;overflow:hidden;
+    background:var(--grad-field);border:1px solid var(--line)}
   /* The results page is long, so its copy of the field is a little flatter. */
   .field.short{aspect-ratio:1/0.46}
   /* THE CLUB WASH IS GONE, along with the favourite team it tinted the field with. It
