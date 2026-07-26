@@ -1103,18 +1103,36 @@
   .vs-row .c{color:#4ade80}
   .vs-row.hi{background:rgba(74,222,128,.06)}
 
-  /* coach panel */
-  .verdictline{font-family:var(--fd);font-size:20px;line-height:1.1;margin:4px 0 10px}
-  .cnote{display:flex;gap:9px;font-size:13px;padding:7px 0;border-top:1px solid var(--line);line-height:1.35}
+  /* COACH PANEL.
+     The shape multiplier is the headline because it is the number the sim actually uses, and
+     the three bars under it are the things that produced it. */
+  .verdictline{margin:6px 0 12px}
+  .verdictline .shape{display:flex;align-items:baseline;gap:10px}
+  .verdictline .shape b{font-family:var(--fd);font-size:40px;line-height:.9;letter-spacing:-.01em}
+  .verdictline .shape span{font-family:var(--fn);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim-2);line-height:1.3}
+  .verdictline .shape span em{display:block;font-style:normal;letter-spacing:.1em;
+    color:var(--dim)}
+  .verdictline .take{margin:9px 0 0;font-size:14px;line-height:1.4;color:var(--ink)}
+  .cnote{display:flex;gap:9px;font-size:13px;padding:8px 0;border-top:1px solid var(--line);line-height:1.35}
   .cnote .m{flex:0 0 16px;height:16px;border-radius:4px;display:grid;place-items:center;margin-top:2px;
     font-family:var(--fn);font-size:11px;color:#fff}
   .cnote.good .m{background:#15803d} .cnote.bad .m{background:var(--red-2)}
-  .meters{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;margin-top:11px}
-  .meter{display:flex;align-items:center;gap:9px;font-size:11.5px}
-  .meter .lbl{flex:0 0 96px;color:var(--dim)}
-  .meter .track{flex:1;height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;position:relative}
-  .meter .track i{position:absolute;top:0;bottom:0;border-radius:99px}
-  .meter .val{flex:0 0 42px;text-align:right;font-family:var(--fn);font-size:12px}
+  .meters{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;margin-top:4px}
+  /* The label column holds a name and the number behind it, stacked, so the row reads
+     left to right as "this thing, this measurement, this much, this verdict". */
+  .meter{display:grid;grid-template-columns:minmax(0,1fr) 62px;grid-template-rows:auto auto;
+    align-items:center;column-gap:10px;row-gap:5px}
+  .meter .lbl{font-family:var(--fn);font-size:12.5px;font-weight:600;letter-spacing:.02em;
+    color:var(--ink);min-width:0}
+  .meter .lbl em{display:block;font-style:normal;font-family:var(--fb);font-size:11px;
+    font-weight:400;color:var(--dim-2);letter-spacing:0;margin-top:1px}
+  .meter .val{grid-column:2;grid-row:1;text-align:right;font-family:var(--fn);font-size:12px;
+    font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+  .meter .track{grid-column:1/-1;grid-row:2;height:6px;border-radius:99px;
+    background:rgba(255,255,255,.08);overflow:hidden}
+  .meter .track i{display:block;height:100%;border-radius:99px;
+    transition:width .5s cubic-bezier(.2,.8,.3,1)}
   /* collapsible schedule */
   details.drop{border:1px solid var(--line);border-radius:12px;background:var(--grad-panel);overflow:hidden}
   details.drop>summary{list-style:none;cursor:pointer;padding:13px 15px;display:flex;
@@ -1865,6 +1883,7 @@ function drawField(el,live){
   if(run) run.roster.forEach((p,i)=>at.set(p.name,run.slotIndex[i]));
   const openCount=E.SLOTS.length-(run?run.roster.length:0);
 
+  // The sticky bar's pips are the same six slots, so they are drawn from the same data.
   // Contents update immediately; only the movement is animated.
   st.chips.forEach((c,i)=>{
     const p=bySlot[i];
@@ -2478,21 +2497,69 @@ function paintSquad(){
   const cr=E.coachReport(run.roster,run.season.chemistry,spend);
   $('q-verdict').textContent=cr.verdict;
   const st=cr.structure;
-  const meter=(lbl,val,ideal,fmt,good)=>{
-    const pct=Math.max(2,Math.min(100,val*100));
-    const col=good?'#22c55e':(val<ideal?'#ef4444':'#f97316');
-    return '<div class="meter"><span class="lbl">'+lbl+'</span>'+
-      '<span class="track"><i style="left:0;width:'+pct+'%;background:'+col+'"></i></span>'+
-      '<span class="val" style="color:'+col+'">'+fmt+'</span></div>';
+  /* WHAT WAS WRONG WITH THIS PANEL.
+     Three different quantities were being drawn as one row. The bar's LENGTH was a normalized
+     value, its COLOUR came from a separate comparison against a different threshold, and the
+     figure on the right was a different unit on every line: "OK", then "19% run", then "26%
+     one man", then "x0.94". So a long red bar sat next to the word OK, and nothing could be
+     read down the column.
+
+     One quantity per row now: how good this part of the roster is, from 0 to 100. The bar's
+     length IS the score and the colour is a band of the same score, so a long bar is always
+     good and a red one is always short. The raw number that produced it sits under the label,
+     where it explains the score instead of competing with it.
+
+     The team-shape bar is gone as a bar. It is the product of the other three, so drawing it
+     alongside them showed the same information twice; it is the headline figure instead. */
+  const band=(v)=>v>=0.75?{c:'#22c55e',w:'Strong'}:(v>=0.45?{c:'#f59e0b',w:'OK'}:{c:'#ef4444',w:'Weak'});
+  const meter=(lbl,detail,score)=>{
+    const b=band(score);
+    const pct=Math.max(4,Math.min(100,Math.round(score*100)));
+    return '<div class="meter"><span class="lbl">'+lbl+
+      '<em>'+esc(detail)+'</em></span>'+
+      '<span class="track"><i style="width:'+pct+'%;background:'+b.c+'"></i></span>'+
+      '<span class="val" style="color:'+b.c+'">'+b.w+'</span></div>';
   };
+  /* Scores are scaled against the range each measure can actually take, read off STRUCTURE
+     rather than guessed: quarterback support is clamped to 0.62-1.18, and balance and
+     concentration are both penalties subtracted from 1, so they top out at exactly 1. */
+  const span=(v,lo,hi)=>Math.max(0,Math.min(1,(v-lo)/(hi-lo)));
+  const shape=st.multiplier;
+  const shapeBand=band(span(shape,0.82,1.06));
+  $('q-verdict').innerHTML=
+    '<div class="shape"><b style="color:'+shapeBand.c+'">x'+shape.toFixed(2)+'</b>'+
+      '<span>team shape<em>'+shapeBand.w.toLowerCase()+'</em></span></div>'+
+    '<p class="take">'+esc(cr.verdict)+'</p>';
   $('q-meters').innerHTML=
-    meter('Passing game',Math.min(1,st.qbSupport/1.15),0.85,st.qbSupport>=1.0?'Strong':(st.qbSupport>=0.9?'OK':'Weak'),st.qbSupport>=1.0)+
-    meter('Run and pass',st.balance,0.95,(st.rushShare*100).toFixed(0)+'% run',st.balance>=0.99)+
-    meter('Spread around',st.concentration,0.97,(st.topShare*100).toFixed(0)+'% one man',st.concentration>=0.99)+
-    meter('Team shape',Math.min(1,st.multiplier/1.15),0.85,'x'+st.multiplier.toFixed(2),st.multiplier>=1.0);
-  $('q-notes').innerHTML=
-    cr.strengths.map(t=>'<div class="cnote good"><span class="m">+</span><span>'+esc(t)+'</span></div>').join('')+
-    cr.weaknesses.map(t=>'<div class="cnote bad"><span class="m">-</span><span>'+esc(t)+'</span></div>').join('');
+    meter('Quarterback',st.qbPass?st.qbPass.toFixed(1)+' passing points a game':'no quarterback',
+      span(st.qbSupport,0.70,1.12))+
+    /* NOT scaled off balance and concentration directly, which was the first attempt and
+       made two of the three bars read 100% on nearly every roster. Both are penalties
+       subtracted from 1, and both have a wide dead band: the sim charges nothing for a rush
+       share anywhere between 13% and 37%, or for a top man under 24%. So the penalty is
+       almost always zero and a bar drawn from it is almost always full, which tells the
+       player nothing.
+
+       These measure DISTANCE FROM THE LEAGUE-AVERAGE SHAPE instead, 25% of yards on the
+       ground and 24% through one man, both measured. That is one meaning per bar and it
+       discriminates. What the shape actually COSTS is the headline multiplier above, which is
+       the number the sim uses; these three say which way the roster is leaning. */
+    meter('Run and pass balance',(st.rushShare*100).toFixed(0)+'% of yards on the ground, '+
+      'against a league average of 25%',
+      1-Math.min(1,Math.abs(st.rushShare-0.25)/0.25))+
+    meter('Spread of the scoring',(st.topShare*100).toFixed(0)+'% through one man, '+
+      'against a league median of 24%',
+      1-Math.min(1,Math.max(0,st.topShare-0.24)/0.20));
+  /* THREE NOTES, NOT FIVE OR SIX. Every weakness ties to a meter above, so a list that repeats
+     all of them is the same panel twice. The most important of each is kept: the meters carry
+     the detail and these carry the judgement. */
+  const notes=[
+    ...cr.weaknesses.slice(0,2).map(t=>['bad',t]),
+    ...cr.strengths.slice(0,2).map(t=>['good',t]),
+  ].slice(0,3);
+  $('q-notes').innerHTML=notes.map(([k,t])=>
+    '<div class="cnote '+k+'"><span class="m">'+(k==='good'?'+':'-')+'</span><span>'+
+    esc(t)+'</span></div>').join('');
 
   $('q-sched').innerHTML=run.schedule.map((id,i)=>{
     const t=DATA.byTeamSeasonId[id];
@@ -4199,6 +4266,15 @@ $('b-how').onclick=howToPlay;
 /* Wrapped, not passed. profileSheet(msg, ok) takes a message, and an onclick handler
    is handed the event as its first argument, so binding it directly would have
    rendered "[object PointerEvent]" in the error slot on every open. */
+/* THE DRAFT HUD'S FOLD.
+   One number, --sq, from 0 to 1, recomputed on every scroll frame: how far the folding block
+   has travelled under the sticky bar. Everything visual is a calc() off it in the stylesheet,
+   so this only has to produce the number.
+
+   rAF-coalesced, because a scroll handler that writes layout-affecting styles on every event
+   is how a scroll goes from smooth to sticky on a phone. The natural height is measured and
+   cached in --dfh rather than read every frame, for the same reason: reading it back after
+   writing max-height would force a layout on each frame. */
 /* The results page tabs. Delegated, so it survives every repaint, and the panes are shown by
    display so a hidden one costs no page height. */
 $('o-tabs').addEventListener('click',(e)=>{
