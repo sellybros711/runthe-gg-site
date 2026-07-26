@@ -78,6 +78,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .brand{font-family:var(--brandf); font-size:17px; font-style:italic; letter-spacing:-.01em; font-weight:900; color:var(--ink); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .brand .b2{color:var(--coralT);}
 .brand .sub{display:block; font-family:var(--pix); font-size:8px; font-style:normal; letter-spacing:2px; color:var(--mut); margin-top:3px; font-weight:800;}
+.brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; text-decoration:none;}
+.brand.logo img{height:26px; width:auto; display:block;}
+.brand.logo .sub{margin-top:5px; margin-left:2px;}
 .spacer{flex:1;}
 .chip{display:flex; flex-direction:column; align-items:center; gap:1px; background:var(--card); flex:0 0 auto;
   border:1px solid var(--line2); border-radius:10px; padding:5px 10px; box-shadow:var(--shadow); min-width:54px;}
@@ -257,7 +260,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   <div class="topbar">
     <a class="icon-btn" href="/grid/" aria-label="Back to RunTheGrid">‹</a>
-    <div class="brand">Run<span class="b2">The</span>Grid<span class="sub">DAILY CROSSWORD</span></div>
+    <a class="brand logo" href="/grid/" aria-label="RunTheGrid home"><img src="/grid/assets/runthegrid-logo.png" alt="RunTheGrid" width="871" height="303" /><span class="sub">DAILY CROSSWORD</span></a>
     <div class="spacer"></div>
     <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
       <svg class="ic-snd-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
