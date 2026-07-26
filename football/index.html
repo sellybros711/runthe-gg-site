@@ -247,8 +247,16 @@
      was right for two children and wrong for three: it stranded the mark in the corner and
      floated the wordmark into the middle of the banner. The mark and the wordmark are one
      lockup, so they stay flush left and the right side is pushed over by its own margin. */
+  /* The top Back is a step backwards, not an action, so it is small and left-aligned and
+     does not compete with the screen's primary button. Still a 44px tap target. */
+  .backrow{margin:0 0 12px}
+  .backrow .btn{width:auto;padding-left:16px;padding-right:18px}
+  .backrow .btn::before{content:'';display:inline-block;width:6px;height:6px;margin-right:8px;
+    border-left:2px solid currentColor;border-bottom:2px solid currentColor;
+    transform:rotate(45deg);vertical-align:2px}
+
   header{display:flex;align-items:center;margin:2px 0 16px}
-  header .mark{flex:0 0 auto;display:block;width:30px;height:30px;margin-right:9px}
+  header .mark{flex:0 0 auto;display:block;width:30px;height:27px;margin-right:9px}
   .brand{font-family:var(--fd);font-size:16px;letter-spacing:.06em;text-transform:uppercase;
     white-space:nowrap}
   .brand i{color:var(--red);font-style:normal}
@@ -732,6 +740,9 @@
   .chip .who{width:78px;margin:3px 0 2px -8px;font-size:9.5px;font-weight:800;line-height:1.1;
     text-shadow:0 2px 6px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .chip .yr{font-size:8.5px;color:var(--dim);font-weight:700;line-height:1.1}
+  /* The code carries the team, the year carries the season. Slightly brighter so the eye
+     picks the team out first, since that is the part you are pattern-matching for chemistry. */
+  .chip .yr .tc{color:var(--dim-2);letter-spacing:.04em}
 
   .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 11px;margin:-4px 0 12px;
     background:linear-gradient(180deg,var(--bg) 72%,rgba(8,11,20,0))}
@@ -1204,14 +1215,21 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="wrap">
   <header>
     <!-- THE MARK, top left of the banner, on every screen.
-         The FOUR PIECES, not the whole logo, and that is measured. The full mark needs
-         about 40px before the facemask stops being a grey smudge, and at 320px a mark that
-         big leaves the pill no room: it clips to "The Perfect Seas...". The pieces read
-         cleanly at 30 and leave the pill whole. Same rule the favicon follows: below
-         48px the facemask goes, and the pieces are the distinctive half anyway.
+         THE WHOLE MARK, facemask included.
+
+         It shipped as the four pieces alone on the grounds that the facemask was a grey
+         smudge below about 40px. That was judged off a 1x render, which is the wrong test:
+         phones draw this header at 2x or 3x, so a 30px box is really 60 or 90 device pixels
+         and the facemask has plenty of room. Re-rendered at 1x, 2x and 3x, it reads clearly
+         at both of the ratios anybody actually views it on.
+
+         Sized 30x27 rather than square because the ink is 737x667, wider than tall. A square
+         box would letterbox it and shrink the drawing for nothing. Width stays at 30 so the
+         header keeps the 4px of slack it was measured to have at 320px.
+
          width and height are set so it reserves its box before the image arrives, and
          alt is empty because the wordmark beside it already names the brand. -->
-    <img class="mark" src="mark.png?v=1" width="30" height="30" alt="" decoding="async">
+    <img class="mark" src="mark.png?v=2" width="30" height="27" alt="" decoding="async">
     <div class="brand">RunThe<i>.GG</i></div>
     <div class="hdr-r">
       <div class="pill" id="hdr">The Perfect Season</div>
@@ -1330,6 +1348,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   </div>
 
   <div class="screen" id="s-team">
+    <!-- Back at the TOP as well as the bottom, because the bottom one alone reads as no
+         back button at all. Measured: this screen is 1003px tall and the bottom Back sits
+         at y=1041, so it needed 517px of scrolling to reach on an iPhone SE, 194px on an
+         iPhone 14 and 200px on a desktop. It worked the whole time; nobody could see it. -->
+    <div class="backrow"><button class="btn ghost sm js-back" data-back="intro">Back</button></div>
     <div class="eyebrow">Step 1 of 3</div>
     <h2 class="display" style="font-size:27px;margin:5px 0 4px">Your favorite team</h2>
     <p class="dim" style="font-size:13.5px;margin:0 0 4px">You are not drafting for them, you are taking their place in the league.
@@ -1344,7 +1367,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          button and no exit: the only ways out were to pick a team you did not want or
          to reload the page. The browser's own back button leaves the site, because
          nothing here pushes history. Same ghost Back the leaderboard already uses. -->
-    <div style="margin-top:9px"><button class="btn ghost sm" id="b-team-back">Back</button></div>
+    <div style="margin-top:9px"><button class="btn ghost sm js-back" data-back="intro">Back</button></div>
   </div>
 
   <div class="screen" id="s-draft">
@@ -1861,7 +1884,12 @@ function drawField(el,live){
     disc.querySelector('.dl').textContent=p?p.position:E.SLOTS[i];
     disc.style.cssText=p?posPaint(p.position):'';
     c.querySelector('.who').textContent=p?lastName(p.name):'';
-    c.querySelector('.yr').textContent=p?p.season:'';
+    /* Team code before the year, so a chip says which team-season the player came out of
+       rather than just when. Era code, not the current one: a 2014 Raider is OAK, and
+       labelling him LV would contradict the "2014 Oakland Raiders" the rest of the game
+       shows. */
+    c.querySelector('.yr').innerHTML=p
+      ?'<span class="tc">'+esc(E.eraCode(p.franchise,p.season))+'</span> '+p.season:'';
     /* How many players he connects to, in his strongest link's color. The web
        itself lives on the rail; this is the count, so a glance at the formation
        still says who is tied in and who is on his own. */
@@ -4066,7 +4094,9 @@ function toIntro(){
   document.documentElement.style.removeProperty('--tc2');
   show('s-intro');
 }
-$('b-team-back').onclick=()=>{ toIntro(); };
+/* Both copies, bound by class rather than by id. The screen carries two Back buttons and a
+   third would be free; binding one id was how the bottom-only version came about. */
+document.querySelectorAll('.js-back[data-back="intro"]').forEach((b)=>{ b.onclick=()=>{ toIntro(); }; });
 
 /* QUITTING A DRAFT, in two taps.
    A run in progress is real work and there is no undo, so the first tap only arms the

@@ -1270,6 +1270,33 @@ function prepareData(teamSeasons) {
  * check below reported it correctly. */
 const ENGINE_API_VERSION = 14;
 
+/*
+ * The three-letter code a team actually wore in a given season.
+ *
+ * The data stores the CURRENT franchise code, so a 2014 Oakland Raider is filed under LV.
+ * That is right for grouping a franchise's history and wrong for a label: the rest of the
+ * game calls that team-season "2014 Oakland Raiders", so a chip reading LV 2014 would
+ * contradict it.
+ *
+ * These four are the only franchises whose display name moves between 1999 and 2025, read
+ * off team_seasons.json rather than from memory. Washington is in the list only to record
+ * that it does NOT need an entry: the name changed twice, Redskins to Football Team in 2020
+ * to Commanders in 2022, but the code stayed WAS throughout.
+ */
+const ERA_CODES = {
+  LAC: [[2017, 'LAC'], [0, 'SD']],       // San Diego through 2016
+  LAR: [[2016, 'LAR'], [0, 'STL']],      // St. Louis through 2015
+  LV: [[2020, 'LV'], [0, 'OAK']],        // Oakland through 2019
+};
+
+/** The code that team wore that year. Falls through to the current code. */
+function eraCode(franchise, season) {
+  const rules = ERA_CODES[franchise];
+  if (!rules) return franchise;
+  for (const [from, code] of rules) if (season >= from) return code;
+  return franchise;
+}
+
 const publicAPI = {
   API_VERSION: ENGINE_API_VERSION,
   CONSTANTS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
@@ -1279,6 +1306,7 @@ const publicAPI = {
   resolveGame, playRun, prepareData, toFootballScore,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
   respinCost, respinFees, scoringScript, scoreParts, SCORE_KINDS,
+  eraCode, ERA_CODES,
   NICKNAMES, nickname, TEAM_COLORS, teamColors, washColors, contrast, LINK_TIERS, linkTier, rosterStructure, STRUCTURE, coachReport,
 };
 
