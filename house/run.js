@@ -35,6 +35,8 @@ const T = (typeof require !== 'undefined') ? require('./tree.js') : window.RH_TR
 const G = (typeof require !== 'undefined') ? require('./generate.js') : window.RH_GEN;
 const E = (typeof require !== 'undefined') ? require('./engine.js') : window.RH_ENGINE;
 const C = (typeof require !== 'undefined') ? require('./comps.js') : window.RH_COMPS;
+const P = (typeof require !== 'undefined') ? require('./powers.js') : window.RH_POWERS;
+const SC = (typeof require !== 'undefined') ? require('./scenes.js') : window.RH_SCENES;
 
 const PHASES = {
   SETUP: 'setup',
@@ -42,7 +44,9 @@ const PHASES = {
   RESET: 'reset',
   CAPTAIN_COMP: 'captain_comp',
   SCHEME1: 'scheme1',
+  SAFETY_CALL: 'safety_call',   // a Week of Safety holder decides, before naming
   NAMING: 'naming',
+  VETO_DRAW: 'veto_draw',       // Veto Player Selection overrides the draw
   VETO_COMP: 'veto_comp',
   SCHEME2: 'scheme2',
   VETO_CEREMONY: 'veto_ceremony',
@@ -110,6 +114,9 @@ function createRun(opts) {
     actionsLeft: 0,
     schemeIndex: 0,
     twists: rollTwists(rng.gen),
+    powers: [],
+    powerSchedule: [],
+    energy: 0,
     doubleSecondLeg: false,
     log: [],
     weeks: [],
@@ -117,6 +124,7 @@ function createRun(opts) {
     result: null,
   };
 
+  state.powerSchedule = P.rollSchedule(rng.gen);
   state.human = human.id;
   return state;
 }
@@ -150,7 +158,12 @@ const name = (s, id) => s.cast[id].first;
 
 /** Who may vote: everyone active except the Captain and the two At Risk. */
 function eligibleVoters(s) {
-  return activeIds(s).filter((id) => id !== s.captain && s.atRisk.indexOf(id) === -1);
+  /* Lose a Vote is applied HERE and nowhere else, so the stripped player still
+     appears in every campaigning surface all week and only discovers their
+     irrelevance when the count comes in one short. */
+  const stripped = P.voteStripped(s);
+  return activeIds(s).filter((id) => id !== s.captain
+    && s.atRisk.indexOf(id) === -1 && !stripped[id]);
 }
 
 /** Who may play for Captain: everyone active except the outgoing one. */
@@ -159,6 +172,9 @@ function captainCompField(s) {
   /* The bar lifts at Final 4, where three eligible players is already thin and
      the GDD's Final 4 rules put all four in the veto anyway. */
   if (ids.length <= 4) return ids;
+  /* Back to Back is not a decision. If the outgoing Captain holds it, they are
+     in the comp, and everybody watches them walk into it. */
+  if (s.lastCaptain != null && P.heldBy(s, s.lastCaptain, 'back_to_back').length) return ids;
   return ids.filter((id) => id !== s.lastCaptain);
 }
 
@@ -171,9 +187,10 @@ function vetoField(s, rng) {
   const ids = activeIds(s);
   if (ids.length <= 6) return ids;
   const core = [s.captain].concat(s.atRisk);
-  const pool = ids.filter((id) => core.indexOf(id) === -1);
+  const forced = (s.vetoForced != null && core.indexOf(s.vetoForced) === -1) ? [s.vetoForced] : [];
+  const pool = ids.filter((id) => core.indexOf(id) === -1 && forced.indexOf(id) === -1);
   rng.shuffle(pool);
-  return core.concat(pool.slice(0, 3));
+  return core.concat(forced).concat(pool.slice(0, Math.max(0, 3 - forced.length)));
 }
 
 /**
@@ -227,18 +244,41 @@ function needsInput(s) {
     case PHASES.CAPTAIN_COMP:
       return captainCompField(s).indexOf(me) !== -1 ? { kind: 'comp', which: 'captain', comp: s.pendingComp } : null;
     case PHASES.SCHEME1: case PHASES.SCHEME2: case PHASES.SCHEME3:
-      return { kind: 'actions', left: s.actionsLeft, phase: s.phase };
-    case PHASES.NAMING:
-      return s.captain === me ? { kind: 'naming', pool: activeIds(s).filter((i) => i !== me) } : null;
+      return s.energy >= SC.ENERGY.SCENE_COST
+        ? { kind: 'actions', energy: s.energy, phase: s.phase } : null;
+    case PHASES.SAFETY_CALL: {
+      const mine = P.heldBy(s, me, 'safety');
+      return mine.length ? { kind: 'power_safety', power: mine[0] } : null;
+    }
+    case PHASES.NAMING: {
+      if (s.captain !== me) return null;
+      const safe = P.safeThisWeek(s);
+      return { kind: 'naming', pool: activeIds(s).filter((i) => i !== me && !safe[i]) };
+    }
+    case PHASES.VETO_DRAW: {
+      const mine = P.heldBy(s, me, 'veto_pick');
+      if (!mine.length) return null;
+      const core = [s.captain].concat(s.atRisk);
+      return { kind: 'power_veto_pick', power: mine[0],
+        pool: activeIds(s).filter((i) => core.indexOf(i) === -1) };
+    }
     case PHASES.VETO_COMP:
       return s.vetoFieldIds && s.vetoFieldIds.indexOf(me) !== -1
         ? { kind: 'comp', which: 'veto', comp: s.pendingComp } : null;
     case PHASES.VETO_CEREMONY:
+      if (s.pendingDiamond) {
+        return { kind: 'power_diamond', atRisk: s.atRisk.slice(),
+          pool: activeIds(s).filter((i) => i !== me && i !== s.captain && s.atRisk.indexOf(i) === -1) };
+      }
       if (s.vetoHolder === me) return { kind: 'veto_use', atRisk: s.atRisk.slice() };
       if (s.captain === me && s.pendingReplacement) return { kind: 'replacement', pool: s.replacementPool.slice() };
       return null;
-    case PHASES.EVICTION:
-      return eligibleVoters(s).indexOf(me) !== -1 ? { kind: 'vote', atRisk: s.atRisk.slice() } : null;
+    case PHASES.EVICTION: {
+      if (s.pendingExtraVote) return { kind: 'power_extra_vote', atRisk: s.atRisk.slice() };
+      if (eligibleVoters(s).indexOf(me) === -1) return null;
+      return { kind: 'vote', atRisk: s.atRisk.slice(),
+        extraVote: P.heldBy(s, me, 'extra_vote').length > 0 };
+    }
     case PHASES.FINAL3:
       return s.final3Winner === me ? { kind: 'final3_pick', pool: activeIds(s).filter((i) => i !== me) } : null;
     case PHASES.PANEL:
@@ -263,7 +303,9 @@ function step(s, input) {
     case PHASES.SCHEME1:
     case PHASES.SCHEME2:
     case PHASES.SCHEME3:    return doScheme(s, input);
+    case PHASES.SAFETY_CALL: return doSafetyCall(s, input);
     case PHASES.NAMING:     return doNaming(s, input);
+    case PHASES.VETO_DRAW:  return doVetoDraw(s, input);
     case PHASES.VETO_COMP:  return doVetoComp(s, input);
     case PHASES.VETO_CEREMONY: return doVetoCeremony(s, input);
     case PHASES.EVICTION:   return doEviction(s, input);
@@ -351,6 +393,19 @@ function doReset(s) {
   E.socialTick(s, rng);
   E.allianceTick(s, rng);
 
+  /* Powers are awarded at Reset so the whole week can be played around them. */
+  for (const sch of s.powerSchedule) {
+    if (sch.week !== s.week || sch.done) continue;
+    sch.done = true;
+    const pw = P.award(s, sch.kind, rng);
+    if (pw) pushEvent(s, 'power_awarded', { kind: pw.kind, holder: pw.holder,
+      secrecy: pw.secrecy, victim: pw.victim });
+  }
+  /* A power the house knows about but cannot place makes everybody jumpy,
+     whether or not it is ever played. That cost is the point of `known`. */
+  P.suspicionSweep(s, rng);
+
+  s.energy = SC.weeklyEnergy(s, s.human);
   s.phase = activeCount(s) === 3 ? PHASES.FINAL3 : PHASES.CAPTAIN_COMP;
   return s;
 }
@@ -377,6 +432,22 @@ function doCaptainComp(s, input) {
   const res = C.runComp(s, comp, field, rng, perf, throws);
   C.recordComp(s, res, s.week);
 
+  /* Back to Back is spent when the barred Captain actually walks into the comp,
+     not when the field is computed. captainCompField has to stay a pure query,
+     or every caller that peeks at the field silently burns the power. */
+  if (s.lastCaptain != null && field.indexOf(s.lastCaptain) !== -1) {
+    const btb = P.heldBy(s, s.lastCaptain, 'back_to_back')[0];
+    if (btb) {
+      P.spend(s, btb);
+      /* Public, and the house watches you do it. */
+      for (const id of activeIds(s)) {
+        if (id === s.lastCaptain) continue;
+        E.applyTrust(s.rel, id, s.lastCaptain, -5);
+      }
+      pushEvent(s, 'power_played', { kind: 'back_to_back', holder: s.lastCaptain, why: 'was barred and played anyway' });
+    }
+  }
+
   s.lastCaptain = s.captain;
   s.captain = res.winner;
   s.cast[s.captain].weeksAsCaptain += 1;
@@ -393,8 +464,7 @@ function doCaptainComp(s, input) {
   pushEvent(s, 'captain', { winner: res.winner, comp: comp.id, thrown: res.thrown, rations: s.rations.slice() });
 
   s.schemeIndex = 0;
-  s.actionsLeft = s.doubleSecondLeg ? 1 : E.K.PLAYER_ACTIONS[0];
-  s.phase = s.doubleSecondLeg ? PHASES.NAMING : PHASES.SCHEME1;
+  s.phase = s.doubleSecondLeg ? PHASES.SAFETY_CALL : PHASES.SCHEME1;
   return s;
 }
 
@@ -403,16 +473,40 @@ function doCaptainComp(s, input) {
  * is the player's alone; stepping it with no actions left moves on.
  */
 function doScheme(s, input) {
-  if (isHumanActive(s) && input && input.action && s.actionsLeft > 0) {
-    performAction(s, input.action);
-    s.actionsLeft -= 1;
-    if (s.actionsLeft > 0) return s;
+  if (isHumanActive(s) && input && input.action) {
+    const cost = input.action.kind === 'confessional' ? SC.ENERGY.CONFESSIONAL_COST
+      : input.action.kind === 'eavesdrop' ? SC.ENERGY.EAVESDROP_COST : SC.ENERGY.SCENE_COST;
+    if (s.energy >= cost) { performAction(s, input.action); s.energy -= cost; }
+    return s;
   }
-  if (isHumanActive(s) && s.actionsLeft > 0 && !(input && input.done)) return s;
+  /* The window closes when the player says so or when there is nothing left to
+     spend. Energy carries across windows; it does not reset per phase. */
+  if (isHumanActive(s) && s.energy >= SC.ENERGY.SCENE_COST && !(input && input.done)) return s;
 
-  if (s.phase === PHASES.SCHEME1) { s.phase = PHASES.NAMING; return s; }
+  if (s.phase === PHASES.SCHEME1) { s.phase = PHASES.SAFETY_CALL; return s; }
   if (s.phase === PHASES.SCHEME2) { s.phase = PHASES.VETO_CEREMONY; return s; }
   s.phase = PHASES.EVICTION;
+  return s;
+}
+
+/**
+ * Week of Safety is played BEFORE the Captain names, which is the only moment
+ * it is worth anything. Holding it through the ceremony and revealing it after
+ * would be a different, worse power.
+ */
+function doSafetyCall(s, input) {
+  const rng = s.rng.ai;
+  const holders = P.live(s, 'safety');
+  for (const pw of holders) {
+    if (pw.holder === s.human && isHumanActive(s)) {
+      if (!input || input.play == null) return s;     // wait for the player
+      if (input.play) { P.spend(s, pw); pushEvent(s, 'power_played', { kind: 'safety', holder: pw.holder, why: 'you called it' }); }
+      continue;
+    }
+    const want = P.wantsSafety(s, pw.holder, rng);
+    if (want.play) { P.spend(s, pw); pushEvent(s, 'power_played', { kind: 'safety', holder: pw.holder, why: want.why }); }
+  }
+  s.phase = PHASES.NAMING;
   return s;
 }
 
@@ -420,11 +514,18 @@ function doNaming(s, input) {
   const rng = s.rng.ai;
   const n = activeCount(s);
 
+  const safe = P.safeThisWeek(s);
   let noms;
   if (s.captain === s.human && isHumanActive(s) && input && input.noms) {
-    noms = input.noms.slice(0, 2);
+    noms = input.noms.slice(0, 2).filter((id) => !safe[id]);
   } else {
-    noms = E.chooseNominations(s, s.captain, rng);
+    noms = E.chooseNominations(s, s.captain, rng, Object.keys(safe).map(Number));
+  }
+  /* A Safety played after the Captain had already decided still has to leave
+     two names on the block. */
+  if (noms.length < 2) {
+    const extra = E.chooseNominations(s, s.captain, rng, noms.concat(Object.keys(safe).map(Number)));
+    for (const id of extra) { if (noms.length < 2 && noms.indexOf(id) === -1) noms.push(id); }
   }
   s.atRisk = noms;
   for (const id of noms) {
@@ -450,7 +551,47 @@ function doNaming(s, input) {
 
   pushEvent(s, 'naming', { captain: s.captain, atRisk: noms.slice() });
 
+  s.phase = PHASES.VETO_DRAW;
+  return s;
+}
+
+/**
+ * Veto Player Selection. Public by nature: you cannot hide who you chose, which
+ * is the whole cost of the power. Resolved as its own phase because the draw is
+ * a moment the house watches.
+ */
+function doVetoDraw(s, input) {
+  const rng = s.rng.ai;
+  const holders = P.live(s, 'veto_pick');
+  const provisional = vetoField(s, rng);
+
+  for (const pw of holders) {
+    if (pw.holder === s.human && isHumanActive(s)) {
+      if (!input || input.pick === undefined) return s;
+      if (input.pick != null) {
+        s.vetoForced = input.pick;
+        P.spend(s, pw);
+        E.applyTrust(s.rel, input.pick, pw.holder, 6);
+        pushEvent(s, 'power_played', { kind: 'veto_pick', holder: pw.holder, pick: input.pick, why: 'you chose them' });
+      }
+      continue;
+    }
+    const want = P.wantsVetoPick(s, pw.holder, rng, provisional);
+    if (want.play) {
+      s.vetoForced = want.pick;
+      P.spend(s, pw);
+      /* Being chosen is a favour. Being passed over in public is not. */
+      E.applyTrust(s.rel, want.pick, pw.holder, 6);
+      for (const id of activeIds(s)) {
+        if (id === want.pick || id === pw.holder) continue;
+        E.applyTrust(s.rel, id, pw.holder, -3);
+      }
+      pushEvent(s, 'power_played', { kind: 'veto_pick', holder: pw.holder, pick: want.pick, why: want.why });
+    }
+  }
+
   s.vetoFieldIds = vetoField(s, rng);
+  s.vetoForced = null;
   s.phase = PHASES.VETO_COMP;
   return s;
 }
@@ -485,7 +626,6 @@ function doVetoComp(s, input) {
   pushEvent(s, 'veto_comp', { winner: res.winner, comp: comp.id, thrown: res.thrown });
 
   s.schemeIndex = 1;
-  s.actionsLeft = s.doubleSecondLeg ? 0 : E.K.PLAYER_ACTIONS[1];
   s.phase = s.doubleSecondLeg ? PHASES.VETO_CEREMONY : PHASES.SCHEME2;
   return s;
 }
@@ -498,6 +638,12 @@ function doVetoCeremony(s, input) {
   const rng = s.rng.ai;
   const holder = s.vetoHolder;
   const n = activeCount(s);
+
+  /* Re-entering after the player was asked about a Diamond. */
+  if (s.pendingDiamond) {
+    if (diamondStep(s, input) === 'wait') return s;
+    return afterCeremony(s);
+  }
 
   if (!s.pendingReplacement) {
     let saveId = null;
@@ -527,6 +673,7 @@ function doVetoCeremony(s, input) {
       }
     }
     pushEvent(s, 'veto', { holder, used: s.vetoUsed, saved: s.saved || null });
+    if (diamondStep(s, input) === 'wait') return s;
     return afterCeremony(s);
   }
 
@@ -552,6 +699,7 @@ function doVetoCeremony(s, input) {
   }
 
   pushEvent(s, 'veto', { holder, used: s.vetoUsed, saved: s.saved || null, replacement: repl });
+  if (diamondStep(s, input) === 'wait') return s;
   return afterCeremony(s);
 }
 
@@ -589,9 +737,52 @@ function declareIntents(s, rng) {
   }
 }
 
+/**
+ * Diamond Veto. Fires after the ordinary ceremony, because it overrides the
+ * RESULT of that ceremony rather than replacing it: the holder pulls somebody
+ * off and names the replacement themselves, and the Captain does not get a say.
+ *
+ * Hidden until this moment, and after it nothing is hidden at all. Everybody
+ * now knows who had it and exactly who they were protecting, which is usually
+ * worse for the holder than the week they just bought.
+ */
+function diamondStep(s, input) {
+  const rng = s.rng.ai;
+  const holders = P.live(s, 'diamond');
+  if (!holders.length) return null;
+
+  for (const pw of holders) {
+    if (pw.holder === s.human && isHumanActive(s)) {
+      if (!input || input.diamond === undefined) { s.pendingDiamond = pw.id; return 'wait'; }
+      s.pendingDiamond = null;
+      if (input.diamond && input.save != null && input.replace != null) {
+        applyDiamond(s, pw, input.save, input.replace, 'you played it');
+      }
+      continue;
+    }
+    const want = P.wantsDiamond(s, pw.holder, rng);
+    if (want.play) applyDiamond(s, pw, want.save, want.replace, want.why);
+  }
+  return null;
+}
+
+function applyDiamond(s, pw, save, replace, why) {
+  s.atRisk = s.atRisk.filter((id) => id !== save);
+  s.atRisk.push(replace);
+  s.cast[replace].timesAtRisk += 1;
+  s.cast[replace].namedBy.push(pw.holder);
+  s.atRiskNamedBy[replace] = pw.holder;
+  E.applyTrust(s.rel, replace, pw.holder, E.K.D_NAMED_AT_RISK * 1.2);
+  E.applyTrust(s.rel, save, pw.holder, E.K.D_VETO_SAVE);
+  /* The Captain just had their week taken off them in public. */
+  if (s.captain != null) E.applyTrust(s.rel, s.captain, pw.holder, -18);
+  P.spend(s, pw);
+  s.diamondUsed = { holder: pw.holder, save, replace };
+  pushEvent(s, 'power_played', { kind: 'diamond', holder: pw.holder, save, replace, why });
+}
+
 function afterCeremony(s) {
   s.schemeIndex = 2;
-  s.actionsLeft = s.doubleSecondLeg ? 1 : E.K.PLAYER_ACTIONS[2];
   declareIntents(s, s.rng.ai);
 
   /* Everyone forms an expectation of safety. Being wrong about it is what
@@ -657,6 +848,33 @@ function doEviction(s, input) {
     result = { votes: [{ voter: s.captain, target, promisedTarget: s.voteIntent[s.captain] != null ? s.voteIntent[s.captain] : null }], tally, evicted: target, tieBreak: null, soleVote: s.captain };
   } else {
     const voters = eligibleVoters(s);
+
+    /*
+     * Extra Vote. The holder is added to the voter list a SECOND time, which is
+     * literally what the power is: the count comes back one higher than the
+     * house expected and nobody can attribute the surplus, because the tally is
+     * anonymous anyway. That is the misdirection the power is bought for.
+     */
+    s.doubledVoter = null;
+    for (const pw of P.live(s, 'extra_vote')) {
+      if (voters.indexOf(pw.holder) === -1) continue;
+      let play = false, why = '';
+      if (pw.holder === s.human && isHumanActive(s)) {
+        if (!input || input.extraVote === undefined) { s.pendingExtraVote = pw.id; return s; }
+        play = !!input.extraVote; why = 'you played it';
+      } else {
+        const want = P.wantsExtraVote(s, pw.holder, rng);
+        play = want.play; why = want.why || '';
+      }
+      if (play) {
+        P.spend(s, pw);
+        s.doubledVoter = pw.holder;
+        voters.push(pw.holder);
+        pushEvent(s, 'power_played', { kind: 'extra_vote', holder: pw.holder, why });
+      }
+    }
+    s.pendingExtraVote = null;
+
     if (isHumanActive(s) && voters.indexOf(s.human) !== -1) {
       const choice = (input && input.vote != null) ? input.vote : s.atRisk[0];
       s.forcedVote = { voter: s.human, target: choice };
@@ -966,6 +1184,35 @@ function performAction(s, action) {
   return out;
 }
 
+// ─── energy and scenes ───────────────────────────────────────────────────────
+
+/*
+ * The player's week is one energy pool spent across all three Scheming windows,
+ * not a fixed 4 then 3 then 2. GDD §9's verb list is what the ENGINE does;
+ * scenes.js is what a week feels like from a chair.
+ *
+ * Holding energy back for Scheming III buys votes after the week has taken its
+ * final shape. Spending it all in Scheming I buys information before the
+ * Captain has named anybody. Both are real plans and both can lose.
+ */
+const energyLeft = (s) => s.energy;
+
+/** Draw the moment for a chosen person. Not yet committed to. */
+function sceneFor(s, targetId) {
+  return SC.compose(s, s.rng.text, s.human, targetId);
+}
+
+/** Commit to one of A, B or C. Returns what happened. */
+function playScene(s, moment, key) {
+  const opt = moment.options.filter((o) => o.key === key)[0];
+  if (!opt || s.energy < opt.cost) return null;
+  s.energy -= opt.cost;
+  const out = SC.resolve(s, moment, key, s.rng.ai);
+  out.energyLeft = s.energy;
+  s.log.push(Object.assign({ kind: 'scene', week: s.week, pool: moment.pool }, out));
+  return out;
+}
+
 // ─── driving a whole run ─────────────────────────────────────────────────────
 
 /**
@@ -1013,7 +1260,7 @@ function restore(blob) {
 
 const api = {
   PHASES, TWIST_WINDOWS, BOUNCE_CHANCE, FLAVOUR, BOUNCE_POOL,
-  serialise, restore,
+  serialise, restore, sceneFor, playScene, energyLeft,
   createRun, defaultAccount, rollTwists,
   activeIds, activeCount, eligibleVoters, captainCompField, vetoField, name, nextPlace, finalisePlaces,
   needsInput, step, playOut, performAction, declareIntents,

@@ -79,6 +79,20 @@ for (const bank of Object.keys(STR.S)) {
  * like CSS content strings, which is the safe direction for a lint whose whole
  * job is to be annoying about punctuation.
  */
+/* scenes.js is a string bank in everything but name: 40 scenes and 54 beats
+   with three answers each is more shipped prose than strings.js holds. */
+for (const mod of ['scenes.js']) {
+  const M = require('./' + mod);
+  (M.SCENES || []).forEach((sc, i) => { lineCount++; checkText(mod + ' SCENES[' + i + ']', sc.t, {}); });
+  (M.BEATS || []).forEach((bt, i) => {
+    lineCount++; checkText(mod + ' BEATS[' + i + '].line', bt.line, {});
+    for (const k of ['a', 'b', 'c']) {
+      lineCount++; checkText(mod + ' BEATS[' + i + '].' + k, bt[k].t, {});
+    }
+  });
+  bankCount += 2;
+}
+
 const uiPath = path.join(HERE, 'index.html');
 if (fs.existsSync(uiPath)) {
   const src = fs.readFileSync(uiPath, 'utf8');

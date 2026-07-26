@@ -489,35 +489,82 @@ thinks lied, and it is the drama engine.
 
 ---
 
-## 9. Player Actions
+## 9. The Week, From a Chair
 
-| Action | Effect |
+Version 0.2 listed a verb set: Talk, Pitch, Lie, Form alliance, Eavesdrop, Leak.
+Those are what the ENGINE does. They are not what a week feels like to play, and
+a UI built directly on them is a menu of abstractions.
+
+What a week feels like is playing chess in the kitchen with somebody who keeps
+asking who you would take to the end.
+
+### Energy
+
+One pool for the whole week, not a fixed budget per Scheming window.
+
+| | |
 |---|---|
-| **Talk** | Trust up, scaled by charisma and their current mood |
-| **Pitch a target** | Attempt to set vote intent, may backfire if trust is low |
-| **Lie** | High reward, one detection roll, a caught lie spreads |
-| **Form alliance** | Requires mutual belief above threshold |
-| **Eavesdrop** | Reveals a slice of belief or one alliance, small chance of being caught |
-| **Leak** | Feed real information about A to B, damages A, costs you if traced |
-| **Confessional** | Free. Log your read. Grants a small accuracy bonus on your next belief refresh |
+| Base | 12 |
+| On Rations | minus 3 |
+| Sitting At Risk | plus 2 |
+| A scene | 2 |
+| The risky answer | 3 |
+| Eavesdrop | 2 |
+| Confessional | free |
 
-Budget is 4, then 3, then 2 across the three Scheming phases.
+Six real conversations a week against fifteen people. Everyone you skip decays
+back toward how they felt about you on day one, so neglect has to bite.
 
-### The one detection roll
+Energy carries across all three Scheming windows, which makes *when* you spend
+it a decision. Spend early and you buy information before the Captain has named
+anybody. Hold it back and you buy votes after the Veto ceremony, when the week
+has taken its final shape. Both are real plans and both can lose.
 
-Every dialogue option carries a truth value. When you lie to X, roll your
-`deception` against X's `perception`, modified by X's current belief about you,
-because people believe people they trust. On a failure, `suspicion[X][you]` is set
-and the lie becomes known and spreads.
+### Scenes
 
-Blame assignment in section 8.3 uses the same roll shape. There is one detection
-model in this game. Version 0.1 had three, in sections 4, 6, and 7, and they
-disagreed.
+A moment is assembled from two independent banks:
 
-The Confessional now has a mechanical effect, which is what makes the Silent Week
-twist cost anything.
+- **SCENES**, where you are and what your hands are doing. Pure flavour.
+- **BEATS**, what the conversation is actually about, and the three answers. All
+  the mechanics.
 
----
+40 scenes against 54 beats is over two thousand distinct moments from 283
+authored fragments, and adding one scene adds another 54. That is the only way
+to get real variety and still hand author every line, which §17 requires. Same
+authored-fragments-plus-deterministic-assembly rule as the string banks, one
+level up.
+
+Which beat you get is chosen by the state of your week, then drawn from the
+seed. Being on the block produces a different conversation from being safe in
+week two. The pools are `bond`, `probe`, `float`, `recruit`, `defend`,
+`deflect`, `gossip`, `power`, `captain`, `late`.
+
+### A, B and C
+
+Every beat offers exactly three answers, and they always mean the same thing, so
+the player learns the grammar once.
+
+| | | |
+|---|---|---|
+| **A** | Safe | Always works. Small gain. Tells you nothing new. |
+| **B** | Even | Usually works. Better gain. Often refreshes your read. |
+| **C** | Risky | Rolls against them. Wins big AND does something mechanical. Loses hard. |
+
+The risky answer is the only one that can move the game: set a vote intent, open
+an alliance, buy information about a third party, push heat onto somebody else.
+That is the trade. You cannot win this from the safe column, and you cannot
+survive playing nothing but the risky one.
+
+The risky roll has deliberately the same shape as the lie-detection roll in the
+engine, so a player who learns how lying works has also learned how this works.
+Charisma carries the honest versions, deception carries the manipulative ones,
+their perception is what you are working against, and existing trust helps
+because people extend the benefit of the doubt to people they like.
+
+### The verbs that survive
+
+Eavesdrop and the Confessional stay as they were. One is not a conversation and
+the other is not with anybody.
 
 ## 10. Competitions
 
@@ -601,31 +648,62 @@ to 3 finishes at least 25 percent.
 
 ---
 
-## 12. Twists
+## 12. Twists and Powers
 
-Version 0.1 said one twist per run. That is no longer the model.
+### Scheduled twists
 
-- **Double Eviction**, every run, on a week drawn from 5 to 9. The full loop
-  compressed. Removes a week from the run.
-- **Bounce Back**, 33 percent of runs, on a week drawn from 6 to 10 and never
-  adjacent to the Double Eviction. One Player returns via comp, drawn from the
-  **last six evicted**, whether or not the Panel has started forming. A returnee
-  can be evicted again the following week and rejoins the Panel. Adds a week.
-- **Zero or one flavor twist** from the remaining pool.
+- **Double Eviction**, every run, on a week drawn from 5 to 9. Removes a week.
+- **Bounce Back**, 33 percent of runs, week drawn from 6 to 10 and never
+  adjacent to the Double Eviction. The returning Player is drawn from the **last
+  six evicted**, whether or not the Panel has started forming. A returnee can be
+  evicted again and rejoins the Panel. Adds a week.
 
-Flavor pool:
-
-- **Silent Week**, no Confessional, no eavesdrop. Now has a real cost, because the
-  Confessional feeds belief accuracy.
-- **Split House**, two Captains, two At Risk pairs, one eviction. Needs its voting
-  rule specified before build. See section 18.
-- **The Envelope**, one Player secretly holds a one time veto playable at any
-  ceremony. Needs an AI play timing policy, not just a UI affordance.
-
-**Blind Vote is cut.** Votes are now always anonymous, so hiding the tally would
+**Blind Vote is cut.** Votes are always anonymous, so hiding the tally would
 delete the sequential reveal and turn Fallout into a no op.
 
----
+### Powers
+
+Six, replacing version 0.2's single vague Envelope. A run draws 0 to 2, on
+scheduled weeks between 3 and 10, and each expires 3 weeks after it is awarded.
+Use it or lose it.
+
+| Power | Secrecy | Played at | Overrides |
+|---|---|---|---|
+| **Extra Vote** | known | Eviction | Cast two votes instead of one |
+| **Lose a Vote** | victim only | Eviction | Silently stripped of your vote |
+| **Veto Player Selection** | public | Veto draw | Pick one player into the Veto Comp |
+| **Diamond Veto** | hidden | Veto ceremony | Pull a nominee AND name the replacement |
+| **Back to Back** | public | Captain Comp | Play the comp you are barred from |
+| **Week of Safety** | known | Before Naming | Cannot be named or evicted |
+
+**Secrecy is a game state, not a UI flag,** and the three levels behave
+differently. `public` means everyone knows who holds it from the moment it is
+awarded. `hidden` means nobody knows anything until it fires. `known` is the most
+interesting: the house is told a power is loose but not who has it, which turns
+the week into a hunt and makes every unexpected vote count deniable. A `known`
+power raises suspicion across the whole house whether or not it is ever played,
+because paranoia about an unseen vote is a real cost.
+
+**Lose a Vote is never drawn on its own.** A power that only takes something away
+and gives the holder nothing is a bad beat rather than a mechanic. It is attached
+as the *price* of another power, roughly 45 percent of the time, which is the
+shape that makes it interesting: somebody in this house accepted something, and
+somebody else is paying for it without knowing.
+
+Powers are weighted **away** from the sitting Captain and **toward** players who
+have been At Risk. A power landing on whoever is already running the week
+compounds an advantage; one landing on somebody who has been on the block twice
+is a lever. That is the only deliberate thumb on the scale in the system.
+
+Every power needs an AI policy legible enough to put in a recap sentence, per §1.
+An AI plays a Diamond Veto because their closest ally was named and they had
+somewhere to put the heat, not on a coin flip. Measured play rates: Diamond 84
+percent, Extra Vote 73, Week of Safety 55, Veto Player Selection 48, Back to Back
+29.
+
+### Still unspecified
+
+**Split House** has no voting rule. See §18.
 
 ## 13. Data Model
 

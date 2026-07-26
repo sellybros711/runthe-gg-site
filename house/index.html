@@ -187,6 +187,49 @@ table.truth td.r{text-align:right;color:var(--dim)}
 .wrong{color:var(--signal)}
 .scroll{overflow-x:auto}
 
+/* ── the scene: where you are, what it is about, three ways to answer ────── */
+.scene{border:1px solid var(--line);background:var(--panel);padding:0;margin-bottom:20px;overflow:hidden}
+.scene .where{padding:16px 20px 14px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(191,174,142,.07),transparent)}
+.scene .where b{display:block;font-family:var(--disp);font-size:19px;letter-spacing:.04em;
+  color:var(--hand);font-weight:400;text-transform:none}
+.scene .said{padding:18px 20px;color:var(--paper);font-size:15px;line-height:1.65}
+.opts{display:flex;flex-direction:column;gap:1px;background:var(--line)}
+.opt{background:var(--panel2);padding:13px 18px;display:flex;gap:14px;align-items:flex-start;
+  text-align:left;width:100%;transition:.14s;border-left:2px solid transparent}
+.opt:hover{background:#1c2025}
+.opt .key{font-family:var(--disp);font-size:17px;letter-spacing:.06em;color:var(--dim);
+  min-width:16px;padding-top:1px}
+.opt .txt{flex:1;color:var(--chalk)}
+.opt .tag{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dimmer);
+  border:1px solid var(--dimmer);padding:1px 5px;white-space:nowrap;align-self:center}
+.opt.safe{border-left-color:var(--ok)}
+.opt.safe:hover .key{color:var(--ok)}
+.opt.neutral{border-left-color:var(--dim)}
+.opt.risky{border-left-color:var(--signal)}
+.opt.risky:hover{background:rgba(212,64,44,.07)}
+.opt.risky:hover .key{color:var(--signal)}
+.opt.risky .tag{border-color:var(--signal-dim);color:var(--signal)}
+.opt[disabled]{opacity:.32;pointer-events:none}
+
+.energy{display:flex;align-items:center;gap:7px}
+.pips-e{display:flex;gap:2px}
+.pip-e{width:7px;height:13px;background:var(--hand);opacity:.9}
+.pip-e.spent{background:transparent;border:1px solid var(--dimmer)}
+
+/* ── powers ───────────────────────────────────────────────────────────────── */
+.power{border:1px solid var(--hand);background:linear-gradient(180deg,rgba(191,174,142,.09),var(--panel));
+  padding:18px 20px;margin-bottom:20px}
+.power h2{color:var(--hand);font-size:18px}
+.power .kind{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+  margin-bottom:6px}
+.power .long{color:var(--chalk);margin-top:8px;font-size:13px}
+.power.hot{border-color:var(--signal);
+  background:linear-gradient(180deg,rgba(212,64,44,.12),var(--panel))}
+.power.hot h2{color:var(--signal)}
+.holding{display:inline-block;border:1px solid var(--hand);color:var(--hand);
+  font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:1px 5px;margin-left:8px}
+
 .hide{display:none !important}
 @media(max-width:720px){
   :root{--tile:104px}
@@ -207,13 +250,16 @@ table.truth td.r{text-align:right;color:var(--dim)}
 <script src="generate.js"></script>
 <script src="engine.js"></script>
 <script src="comps.js"></script>
+<script src="powers.js"></script>
+<script src="scenes.js"></script>
 <script src="run.js"></script>
 <script src="strings.js"></script>
 <script>
 (function(){
 'use strict';
 var RNG=window.RH_RNG, T=window.RH_TREE, G=window.RH_GEN, E=window.RH_ENGINE,
-    C=window.RH_COMPS, R=window.RH_RUN, STR=window.RH_STRINGS;
+    C=window.RH_COMPS, R=window.RH_RUN, STR=window.RH_STRINGS,
+    PW=window.RH_POWERS, SC=window.RH_SCENES;
 
 var app=document.getElementById('app');
 var bar=document.getElementById('bar');
@@ -337,9 +383,28 @@ function topbar(){
   if(!s) return '';
   return '<div class="topbar"><span class="wk">Week '+s.week+'</span>'
     +'<span class="ph">'+esc(PHASE_NAME[s.phase]||s.phase)+'</span>'
-    +'<span class="sp"><span class="meta">'+R.activeCount(s)+' left</span>'
+    +'<span class="sp">'+energyStrip()+'<span class="meta">'+R.activeCount(s)+' left</span>'
     +'<span class="meta">Seed '+esc(s.seed)+'</span></span></div>';
 }
+/* Energy as marks rather than a number. GDD §17 scopes the no-numbers rule to
+   relationship values, so a digit here would be legal, but a row of marks reads
+   as something you are burning through and a digit reads as a budget. */
+function energyStrip(){
+  if(!s||!s.energy&&s.energy!==0) return '';
+  var max=SC.ENERGY.BASE+SC.ENERGY.AT_RISK_BONUS, o='';
+  for(var i=0;i<max;i++) o+='<span class="pip-e'+(i<s.energy?'':' spent')+'"></span>';
+  return '<span class="energy"><span class="meta">Energy</span><span class="pips-e">'+o+'</span></span>';
+}
+
+/* What the player is holding, if anything, shown wherever it is relevant. */
+function myPowers(){ return PW.heldBy(s,s.human); }
+function powerBadge(){
+  var mine=myPowers();
+  if(!mine.length) return '';
+  return mine.map(function(p){
+    return '<span class="holding">'+esc(PW.POWERS[p.kind].name)+'</span>'; }).join('');
+}
+
 function setBar(prompt,buttons){
   if(!buttons||!buttons.length){ bar.classList.add('hide'); barin.innerHTML=''; return; }
   bar.classList.remove('hide');
@@ -521,6 +586,14 @@ function narrateBefore(ph){
 function narrateAfter(ph,wkBefore){
   if(ph===R.PHASES.RESET){
     say(tsay('reset'),'quiet');
+    var aw=s.events.filter(function(e){ return e.kind==='power_awarded'&&e.week===s.week; });
+    for(var ai=0;ai<aw.length;ai++){
+      var d=PW.POWERS[aw[ai].kind];
+      if(aw[ai].holder===s.human) say('You have been handed the '+d.name+'. '+d.long,'hot');
+      else if(aw[ai].secrecy==='public') say(s.cast[aw[ai].holder].first+' has the '+d.name+'.','hot');
+      else if(aw[ai].secrecy==='known') say('Somebody in this house has the '+d.name+'. Nobody is saying who.','hot');
+      if(aw[ai].victim===s.human) say('Your vote has been taken off you this week. Nobody else knows.','hot');
+    }
     var bb=s.events.filter(function(e){ return e.kind==='bounce_back'&&e.week===s.week; })[0];
     if(bb) say(s.cast[bb.who].name+' comes back through the door. Nobody expected to see them again.','hot');
   }
@@ -546,6 +619,18 @@ function narrateAfter(ph,wkBefore){
       if(s.replacement!=null) say(s.cast[s.captain].first+' names '+s.cast[s.replacement].first+' in their place.');
     } else say(tsay('vetoHeld',{holder:s.cast[s.vetoHolder].first}));
   }
+  var pl=s.events.filter(function(e){ return e.kind==='power_played'&&e.week===s.week&&!e.said; });
+  for(var pi=0;pi<pl.length;pi++){
+    pl[pi].said=true;
+    var pd=PW.POWERS[pl[pi].kind], who=s.cast[pl[pi].holder];
+    if(pl[pi].kind==='safety') say((pl[pi].holder===s.human?'You are':who.first+' is')+' safe this week. The '+pd.name+' is spent.','hot');
+    else if(pl[pi].kind==='diamond') say(who.first+' plays the Diamond Veto. '+s.cast[pl[pi].save].first
+      +' comes off, '+s.cast[pl[pi].replace].first+' goes up, and the Captain had no say in it.','hot');
+    else if(pl[pi].kind==='veto_pick') say(who.first+' picks '+s.cast[pl[pi].pick].first+' into the Veto Comp.','hot');
+    else if(pl[pi].kind==='back_to_back') say(who.first+' should not have been in that comp.','hot');
+    else if(pl[pi].kind==='extra_vote') say('The count came back one higher than it should have.','hot');
+  }
+
   if(ph===R.PHASES.FALLOUT){
     var w=s.weeks[s.weeks.length-1];
     if(w&&w.blame&&w.blame.length){
@@ -561,6 +646,10 @@ function handleNeed(need){
   if(need.kind==='move_in') return showMoveIn();
   if(need.kind==='comp') return showComp(need);
   if(need.kind==='actions') return showScheming(need);
+  if(need.kind==='power_safety') return showPowerSafety(need);
+  if(need.kind==='power_veto_pick') return showPowerVetoPick(need);
+  if(need.kind==='power_diamond') return showPowerDiamond(need);
+  if(need.kind==='power_extra_vote') return showPowerExtraVote(need);
   if(need.kind==='naming') return showNaming();
   if(need.kind==='veto_use') return showVetoUse();
   if(need.kind==='replacement') return showReplacement();
@@ -692,97 +781,169 @@ function bindPicks(fn){
 }
 
 // ── scheming ───────────────────────────────────────────────────────────────
-var ACTIONS=[
-  {k:'talk',n:'Talk',d:'Spend time with somebody. Slow, reliable, and the only thing that stops a read going stale.'},
-  {k:'pitch',n:'Pitch a name',d:'Try to set their vote. Backfires if they like the target more than they like you.'},
-  {k:'lie',n:'Lie',d:'High reward. One roll against their read of people. A caught lie spreads on its own.'},
-  {k:'ally',n:'Offer an alliance',d:'Needs it to be mutual. Asking and being turned down costs you.'},
-  {k:'eavesdrop',n:'Eavesdrop',d:'Hear how two of them actually feel. Small chance of being found in the hallway.'},
-  {k:'leak',n:'Leak',d:'Feed something true about one of them to another. Damages them. Costs you if traced.'},
-  {k:'confessional',n:'Confessional',d:'Free. Log a read and sharpen it. Costs no action.'}
-];
+/* Scheming is now a place and a conversation rather than a verb list. You pick
+   who to spend energy on, the house draws where you are and what it is about,
+   and the answer is A, B or C. scenes.js owns the banks; this owns the screen. */
 function showScheming(need){
   screen='phase';
-  var mode=null, first=null;
-  function paint(){
-    var acts=ACTIONS.map(function(a){
-      var off=(a.k!=='confessional'&&need.left<=0);
-      return '<button class="choice'+(mode===a.k?' on':'')+'" data-a="'+a.k+'"'+(off?' disabled style="opacity:.35"':'')+'>'
-        +'<b>'+esc(a.n)+'</b><span>'+esc(a.d)+'</span></button>';
-    }).join('');
-    var head=mode
-      ? (mode==='leak'&&!first?'Leak about whom'
-        :mode==='pitch'&&!first?'Pitch to whom'
-        :mode==='leak'?'Tell it to whom'
-        :mode==='pitch'?'Pitch which name'
-        :'Choose somebody')
-      : 'What are you doing';
+  var moment=null;
+
+  function paintPick(){
+    var side=[
+      {label:'Eavesdrop',off:s.energy<SC.ENERGY.EAVESDROP_COST,go:function(){
+        var o=R.performAction(s,{kind:'eavesdrop'}); s.energy-=SC.ENERGY.EAVESDROP_COST;
+        narrateAction(o); saveRun(); paintPick(); }},
+      {label:'Move on',cls:'go',go:function(){ R.step(s,{done:true}); pump(); }}
+    ];
     app.innerHTML=topbar()
-      +'<div class="file"><h2>'+esc(head)+'</h2>'
-      +'<div class="sub">'+s.actionsLeft+' action'+(s.actionsLeft===1?'':'s')+' left this phase. '
-      +'Everybody you do not speak to drifts back toward how they felt about you on day one.</div>'
-      +(mode?'':'<div class="grid2">'+acts+'</div>')+'</div>'
-      +(mode?wall({pick:true}):'')
-      +renderFeed();
-    if(!mode){
-      Array.prototype.forEach.call(app.querySelectorAll('[data-a]'),function(el){
-        el.onclick=function(){
-          if(el.hasAttribute('disabled')) return;
-          if(el.dataset.a==='eavesdrop'){ doAction({kind:'eavesdrop'}); return; }
-          mode=el.dataset.a; first=null; paint();
-        };
-      });
-    } else {
-      bindPicks(function(id){
-        if(id===s.human) return;
-        if(mode==='pitch'){
-          if(first==null){ first=id; paint(); return; }
-          doAction({kind:'pitch',target:first,against:id});
-        } else if(mode==='leak'){
-          if(first==null){ first=id; paint(); return; }
-          doAction({kind:'leak',about:first,target:id});
-        } else doAction({kind:mode,target:id});
-      });
-    }
-    setBar(mode?'Pick from the wall':'Scheming',
-      (mode?[{label:'Back',go:function(){ mode=null; first=null; paint(); }}]:[])
-      .concat([{label:s.actionsLeft>0?'Skip ahead':'Move on',cls:'go',go:function(){
-        R.step(s,{done:true}); pump(); }}]));
+      +'<div class="file"><h2>Who are you spending it on'+powerBadge()+'</h2>'
+      +'<div class="sub">Energy runs all week, not per phase. Hold some back for after '
+      +'the Veto ceremony or spend it now while nobody has been named. '
+      +'Everybody you skip drifts back toward how they felt about you on day one.</div></div>'
+      +wall({pick:true})+renderFeed();
+    bindPicks(function(id){
+      if(id===s.human) return;
+      if(s.energy<SC.ENERGY.SCENE_COST) return;
+      moment=R.sceneFor(s,id); paintScene();
+    });
+    setBar('Pick somebody',side);
     scrollFeed();
   }
-  function doAction(a){
-    var out=R.performAction(s,a);
-    narrateAction(out);
-    s.actionsLeft-=1;
-    mode=null; first=null;
-    saveRun();
-    if(s.actionsLeft<=0){ R.step(s,{done:true}); pump(); return; }
-    need.left=s.actionsLeft;
-    paint();
+
+  function paintScene(){
+    var TAG={safe:'Safe',neutral:'Even',risky:'Risky'};
+    app.innerHTML=topbar()
+      +'<div class="scene">'
+      +'<div class="where"><b>'+esc(moment.scene)+'</b></div>'
+      +'<div class="said">'+esc(moment.line)+'</div>'
+      +'<div class="opts">'+moment.options.map(function(o){
+        var off=s.energy<o.cost;
+        return '<button class="opt '+o.kind+'" data-opt="'+o.key+'"'+(off?' disabled':'')+'>'
+          +'<span class="key">'+o.key.toUpperCase()+'</span>'
+          +'<span class="txt">'+esc(o.text)+'</span>'
+          +'<span class="tag">'+TAG[o.kind]+'</span></button>';
+      }).join('')+'</div></div>'
+      +renderFeed();
+    Array.prototype.forEach.call(app.querySelectorAll('[data-opt]'),function(el){
+      el.onclick=function(){
+        var out=R.playScene(s,moment,el.dataset.opt);
+        if(!out) return;
+        narrateScene(moment,out);
+        moment=null; saveRun();
+        if(s.energy<SC.ENERGY.SCENE_COST){ R.step(s,{done:true}); pump(); return; }
+        paintPick();
+      };
+    });
+    setBar('A, B or C',[{label:'Walk away',go:function(){ moment=null; paintPick(); }}]);
+    scrollFeed();
   }
-  paint();
+
+  paintPick();
 }
 
+function narrateScene(moment,out){
+  var nm=s.cast[out.target].first;
+  say(moment.scene.charAt(0).toUpperCase()+moment.scene.slice(1)+'.','quiet');
+  if(out.kind==='safe') say('It goes the way those go.');
+  else if(out.kind==='neutral') say(out.landed?'It lands.':'It does not quite land.',out.landed?'':'quiet');
+  else say(out.landed?'It lands, and it moves something.':'It does not land, and '+nm+' will remember you tried.',
+    out.landed?'':'hot');
+
+  for(var i=0;i<out.fx.length;i++){
+    var f=out.fx[i];
+    if(f.k==='ally') say('You and '+nm+' have something now.');
+    else if(f.k==='ally_declined') say(nm+' is not ready to put a name on it.','quiet');
+    else if(f.k==='intent') say(nm+' says they are voting out '+s.cast[f.target].first+'.');
+    else if(f.k==='info') say(nm+' on '+s.cast[f.b].first+': '+f.band.toLowerCase()+'.','quiet');
+    else if(f.k==='alliance_seen') say('They are working with '+f.members.map(function(x){return s.cast[x].first;}).join(' and ')+'.','quiet');
+    else if(f.k==='heat') say(nm+' walks away thinking about '+s.cast[f.who].first+'.','quiet');
+    else if(f.k==='watched') say(nm+' is watching you now.','hot');
+    else if(f.k==='backfire') say('You spent something you are not getting back.','hot');
+  }
+  if(out.read) say(nm+' reads '+out.read.band.label.toLowerCase()+' on you.','quiet');
+}
+
+/* Eavesdrop and the Confessional survive the move to scenes: one is not a
+   conversation and the other is not with anybody. */
 function narrateAction(o){
   var nm=o.target!=null?s.cast[o.target].first:'';
-  if(o.kind==='talk'){
-    say(tsay(STR.talkBank(s.rel.trust[o.target][s.human]),{name:nm}));
-    if(o.read) say(nm+' reads '+o.read.band.label.toLowerCase()+' on you.','quiet');
-  }
-  if(o.kind==='pitch') say(o.ok?tsay('pitchOk',{name:nm}):tsay('pitchFail',{name:nm,target:s.cast[o.against].first}),o.ok?'':'hot');
-  if(o.kind==='lie') say(o.caught?tsay('lieCaught',{name:nm}):tsay('lieOk',{name:nm}),o.caught?'hot':'');
-  if(o.kind==='ally') say(o.ok?tsay('allyOk',{name:nm}):tsay('allyFail',{name:nm}));
   if(o.kind==='eavesdrop'){
     say(tsay('eavesOk'));
     say(s.cast[o.pair[0]].first+' on '+s.cast[o.pair[1]].first+': '+o.value.toLowerCase()+'.','quiet');
     if(o.alliance) say('They are working together. '+o.alliance.map(function(i){return s.cast[i].first;}).join(', ')+'.','quiet');
     if(o.caught) say(tsay('eavesCaught',{name:s.cast[o.pair[0]].first}),'hot');
   }
-  if(o.kind==='leak'){
-    say(tsay('leakOk',{name:nm,target:s.cast[o.about].first}));
-    if(o.traced) say(tsay('leakTraced',{target:s.cast[o.about].first}),'hot');
-  }
   if(o.kind==='confessional'&&o.read) say('You write it down. '+nm+': '+o.read.band.label.toLowerCase()+'.','quiet');
+}
+
+// ── powers ─────────────────────────────────────────────────────────────────
+function powerCard(kind,extra){
+  var d=PW.POWERS[kind];
+  return '<div class="power'+(kind==='diamond'?' hot':'')+'">'
+    +'<div class="kind">You are holding</div><h2>'+esc(d.name)+'</h2>'
+    +'<div class="sub">'+esc(d.blurb)+'</div>'
+    +'<div class="long">'+esc(d.long)+'</div>'
+    +(extra||'')+'</div>';
+}
+
+function showPowerSafety(need){
+  screen='phase';
+  app.innerHTML=topbar()
+    +powerCard('safety','<div class="long">Names go up next. Once they are up this is worth nothing.</div>')
+    +wall({})+renderFeed();
+  setBar('Week of Safety',[
+    {label:'Play it',cls:'go',go:function(){ say('You take yourself off the table.'); R.step(s,{play:true}); pump(); }},
+    {label:'Sit on it',go:function(){ R.step(s,{play:false}); pump(); }}
+  ]);
+  scrollFeed();
+}
+
+function showPowerVetoPick(need){
+  screen='phase';
+  app.innerHTML=topbar()
+    +powerCard('veto_pick','<div class="long">Whoever you choose, everybody sees you choose them.</div>')
+    +wall({pick:true,only:need.pool,all:true})+renderFeed();
+  bindPicks(function(id){
+    say('You put '+s.cast[id].first+' in the Veto Comp. Everyone saw.');
+    R.step(s,{pick:id}); pump();
+  });
+  setBar('Pick one, or pass',[{label:'Do not use it',go:function(){ R.step(s,{pick:null}); pump(); }}]);
+  scrollFeed();
+}
+
+function showPowerDiamond(need){
+  screen='phase';
+  var save=null;
+  function paint(){
+    app.innerHTML=topbar()
+      +powerCard('diamond','<div class="long">'+(save==null
+        ? 'Choose who comes off the block.'
+        : 'Now choose who goes up in their place. The Captain does not get a say.')+'</div>')
+      +wall({pick:true,only:save==null?need.atRisk:need.pool,all:true})
+      +renderFeed();
+    bindPicks(function(id){
+      if(save==null){ save=id; paint(); return; }
+      say('You take '+s.cast[save].first+' off and put '+s.cast[id].first+' up. Everybody knows it was you.','hot');
+      R.step(s,{diamond:true,save:save,replace:id}); pump();
+    });
+    setBar(save==null?'Take one off':'Put one up',
+      [{label:'Do not use it',go:function(){ R.step(s,{diamond:false}); pump(); }}]);
+    scrollFeed();
+  }
+  paint();
+}
+
+function showPowerExtraVote(need){
+  screen='phase';
+  app.innerHTML=topbar()
+    +powerCard('extra_vote','<div class="long">The count comes back one higher than the house expects. '
+      +'Nobody can prove it was you, because nobody can prove anything about an anonymous vote.</div>')
+    +wall({only:need.atRisk,all:true})+renderFeed();
+  setBar('Extra Vote',[
+    {label:'Play it',cls:'go',go:function(){ say('You put two in.'); R.step(s,{extraVote:true}); pump(); }},
+    {label:'Keep it',go:function(){ R.step(s,{extraVote:false}); pump(); }}
+  ]);
+  scrollFeed();
 }
 
 // ── competitions ───────────────────────────────────────────────────────────

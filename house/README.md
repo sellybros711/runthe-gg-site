@@ -22,6 +22,8 @@ a validated engine.
 | `engine.js` | Trust, belief, decay, detection, threat, alliances, votes, blame, the Panel. `RH_ENGINE`. |
 | `comps.js` | Comp definitions, blended resolution, throwing. `RH_COMPS`. |
 | `run.js` | The week loop state machine, save and restore. `RH_RUN`. |
+| `powers.js` | The six secret powers, their award schedule and AI policies. `RH_POWERS`. |
+| `scenes.js` | Energy, the scene and beat banks, and the A/B/C resolution. `RH_SCENES`. |
 | `strings.js` | Authored copy fragments. `RH_STRINGS`. |
 | `playtest.js` | Plays one full run as readable text. The design instrument. |
 | `simulator.js` | The validation harness. Run after any change to a weight. |
@@ -51,7 +53,7 @@ node house/lint-strings.js       # copy rules
 | Proxy | Measured | Target |
 |---|---|---|
 | Week 1 boot was most trusted | 7.5% | under 10%, chance is 6.25% |
-| Comp beast survival to Final 5 | 27.0% against a 31.7% field | below the field |
+| Comp beast survival to Final 5 | 31.0% against a 31.3% field | below the field |
 | Winner above median trust at Final 5 | 47.8% | 45 to 70%, chance is 40% |
 | Archetype win rate, highest | 8.1% | under 10.5%, baseline 6.25% |
 | Cast At Risk at least once | 98.9% | over 60% |
@@ -61,7 +63,13 @@ node house/lint-strings.js       # copy rules
 | Unanimous Panel votes | 8.2% | under 20% |
 | One vote Panel finishes | 37.5% | over 25% |
 | Pairs in the top trust band at Final 5 | 2.4 | about 2 |
-| Blame landed correctly | 53.5% | 45 to 70% |
+| Blame landed correctly | 53.2% | 45 to 70% |
+
+**The comp beast proxy is the one to watch.** It cleared comfortably before
+powers went in, at 27.0 against a 31.7 field. Powers add enough chaos to a week
+that comp record predicts less about survival, and the margin is now inside the
+noise at this sample size. It is passing rather than passing well. If it inverts,
+the lever is `TH_COMP` in `engine.js` K, not a special case.
 | Level 60 vs level 1 win ratio | 1.20x | under 1.5x |
 
 23 archetypes are reachable. The tree is 63 nodes and 372 tokens against 84
@@ -88,6 +96,15 @@ weight in `engine.js` K; do not add `if (compWins > 3) threat += 20`.
 Every tunable lives in `engine.js` K. A number that cannot be swept cannot be
 tuned, which is why the Panel's juror noise moved out of an inline literal the
 moment it turned out to dominate the endgame.
+
+## The player's seat is not harness covered
+
+`simulator.js` runs the human seat with an AI stand-in, which plays through the
+engine's own social tick. A real player plays through `scenes.js`: an energy pool
+and A/B/C answers. The two are sized to be comparable, but the harness does not
+measure the path a person actually takes, so the level parity number describes an
+AI in that chair rather than a human in it. Closing that needs a scripted policy
+that plays scenes, and it is not written yet.
 
 ## Not built yet
 
