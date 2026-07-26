@@ -243,14 +243,25 @@
   .screen.on{display:block;animation:in .25s ease both}
   @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-  header{display:flex;align-items:center;justify-content:space-between;margin:2px 0 16px}
-  .brand{font-family:var(--fd);font-size:16px;letter-spacing:.06em;text-transform:uppercase}
+  /* Three children now: mark, wordmark, right side. This used to be space-between, which
+     was right for two children and wrong for three: it stranded the mark in the corner and
+     floated the wordmark into the middle of the banner. The mark and the wordmark are one
+     lockup, so they stay flush left and the right side is pushed over by its own margin. */
+  header{display:flex;align-items:center;margin:2px 0 16px}
+  header .mark{flex:0 0 auto;display:block;width:30px;height:30px;margin-right:9px}
+  .brand{font-family:var(--fd);font-size:16px;letter-spacing:.06em;text-transform:uppercase;
+    white-space:nowrap}
   .brand i{color:var(--red);font-style:normal}
+  /* The pill gives way rather than overflowing. At 320px the header has 43px of slack
+     with nothing in the corner, and the mark takes 39 of it: the fit is measured and
+     correct, but a longer game name or a wider font later should truncate here rather
+     than push the account button off the screen. */
   .pill{font-family:var(--fn);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
-    padding:5px 10px;border-radius:99px;border:1px solid var(--line-2);color:var(--dim)}
+    padding:5px 10px;border-radius:99px;border:1px solid var(--line-2);color:var(--dim);
+    min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
   /* header right side: the run's label, then you */
-  .hdr-r{display:flex;align-items:center;gap:8px;min-width:0}
+  .hdr-r{display:flex;align-items:center;gap:8px;min-width:0;margin-left:auto}
   /* 44px, which is the documented minimum for a thing you tap with a thumb. It was
      34, and this is the one control present on EVERY screen of the game: the account
      button, the way in to signing in and to your name on the board. The circle stays
@@ -1192,6 +1203,15 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 </noscript>
 <div class="wrap">
   <header>
+    <!-- THE MARK, top left of the banner, on every screen.
+         The FOUR PIECES, not the whole logo, and that is measured. The full mark needs
+         about 40px before the facemask stops being a grey smudge, and at 320px a mark that
+         big leaves the pill no room: it clips to "The Perfect Seas...". The pieces read
+         cleanly at 30 and leave the pill whole. Same rule the favicon follows: below
+         48px the facemask goes, and the pieces are the distinctive half anyway.
+         width and height are set so it reserves its box before the image arrives, and
+         alt is empty because the wordmark beside it already names the brand. -->
+    <img class="mark" src="mark.png?v=1" width="30" height="30" alt="" decoding="async">
     <div class="brand">RunThe<i>.GG</i></div>
     <div class="hdr-r">
       <div class="pill" id="hdr">The Perfect Season</div>
