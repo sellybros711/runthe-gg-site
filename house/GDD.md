@@ -441,6 +441,74 @@ values alongside what you believed, which is the payoff of the whole system.
 
 ---
 
+### 7.7 Naming
+
+A group of two who trust each other has a deal. A group that is three, or that
+is two and has held for five weeks, gets **called something**, once, and keeps
+that name for the rest of its life.
+
+Names are assembled from an authored bank on the `text` stream, so a seed
+produces the same house every time. Seventy percent are an identity (The
+Brigade, The Cookout, The Quiet Room) and thirty percent are a headcount (Core
+Four, The Six, Three Deep). **The headcount is baked in at the moment of naming
+and never revised.** The Six being down to three and still calling itself The
+Six is the cheapest piece of storytelling in the build and it comes free.
+
+Measured, at `ALLY_NAME_WEEKS` 3, 5, 6 and 7: five gives a mean of 2.9 named
+groups per run with four percent of runs producing none. On the size route
+alone it was 26 percent of runs with no named group at all, which is a feature
+a quarter of players would never see.
+
+**What naming does mechanically is spread.** An unnamed group leaks to one
+person a week, when somebody lets something slip; a group that lives four weeks
+therefore caps out at four of thirteen knowing about it however high the rate
+goes. A name is different in kind, because a name is repeatable: you do not
+have to witness The Committee to have heard of it. So a named group rolls per
+outsider, every week. That took visibility of a named group from 4.1 percent of
+outsiders to 18.7 percent, and it is the number the alliance map is drawn from.
+
+**What naming does NOT do is make you a target, and the design tried hard to
+make it.** See the third correction in §15 Stage 12.
+
+### 7.8 Showmances
+
+The one bond in this format that the house treats as a single number.
+
+An alliance is an agreement about the game. A showmance is not, and it behaves
+differently on every axis: it does not decay on neglect, it cannot be kept
+quiet (each outsider learns of it at 45 percent a week), and neither half will
+move against the other for any reason the model can express. In exchange the
+house stops seeing two players and starts seeing one number, and removing
+numbers is what this format is.
+
+They are stored **outside** `alliances` deliberately. Everything that reads
+alliances reads them as strategic groups: breadth exposure, betrayal scaling
+with the square of membership, the majority-size shed. None of that is true of
+a couple, and folding them in would have quietly broken all three.
+
+| Term | Effect |
+|---|---|
+| `SHOW_FORM_TRUST` 68 | mutual, well above the alliance threshold |
+| `SHOW_MAX` 2 | in the house at once |
+| `SHOW_SHIELD_NOM` 60 | a Captain does not name their partner |
+| `PAWN_SHOWMANCE` -45 | and does not seat them as a pawn either |
+| `SHOW_SHIELD_VOTE` 30 | and does not vote them out |
+| `SHOW_HEAT_FLOOR` 7, `SHOW_HEAT_SHARE` 0.20 | once seen, each half carries part of the other's threat |
+
+Once it has ended in front of the house it does not restart. Without that, the
+same two people broke up and got back together every other week, which reads as
+a bug however true to life it is.
+
+**The shield needed two terms, and finding out why took an ablation.** The
+nomination shield alone left a Captain naming their own partner 15 percent of
+the time, and raising it from 44 to 110 did not move that by a tenth of a point.
+The shield was never on that path: the pawn seat is chosen by a separate `fit`
+score whose ingredients are low house appetite, high Captain trust, shared
+alliance and prior pawn duty, which is a description of a showmance partner. The
+Captain was shielding their partner from being the target and then seating them
+as the pawn. With `PAWN_SHOWMANCE` in, it is 0.4 percent; with both terms off it
+is 22.2 percent.
+
 ## 8. Threat and Vote Resolution
 
 ### 8.1 Threat
@@ -971,10 +1039,10 @@ behave like the genre it is modelling.
 |---|---|---|
 | 1 | Vote coalescence: the house votes as a house | DONE, §8.3 |
 | 2 | Nomination intent: pawn and backdoor | DONE, §8.2 |
-| 3 | Named alliances with size and identity, plus showmances that draw heat as a unit | pending |
+| 3 | Named alliances with size and identity, plus showmances that draw heat as a unit | DONE, §7.7 and §7.8, and see the third correction below |
 | 4 | Floater logic, so some people genuinely skate | DONE, §8.2, and see the correction below |
 | 5 | Jury management: make the Panel matter in the last three weeks | DONE, §8.3 |
-| 6 | Rituals: Captain's room, nomination speeches, rations bonding, campaigning from the block | pending |
+| 6 | Rituals: Captain's room, nomination speeches, rations bonding, campaigning from the block | DONE, §19 |
 
 **Two corrections to the numbers this roadmap was written from**, kept because
 the mistakes are more instructive than the fixes.
@@ -999,10 +1067,42 @@ switching the term off entirely still changed 17.2 percent of evictions. It was
 never inert. It was a tiebreaker that never got to be the reason. So the fix was
 not a bigger flat weight, it was a curve.
 
-The general lesson, now a rule: **a proxy that cannot fail is not a test.** The
-old "at least 60 percent of the cast sit At Risk once" reported 99 percent every
-run and read as a pass while measuring the rules rather than the model. It has
-been replaced with the clean-to-eight band, which can fail in both directions.
+*Item 3 produced a mechanic that could not be made to work, and it was deleted
+rather than shipped.* The roadmap asked for named groups that get hunted as a
+unit, so `pairHeat` shipped with a named-alliance term and the harness got a
+proxy for it. The proxy read 19.5 percent of named-group member-weeks At Risk
+against 14.9 percent for unnamed, which looks like a pass. **With the constant
+zeroed it read 19.6 against 14.7.** The gap was entirely a confound: members of
+named groups are better connected, and everything about them differs from
+non-members besides the name.
+
+Paired ablation on identical seeds then killed it properly. Sweeping
+`HEAT_NAMED` from 0 to 45 across three formulations, at n around 6500, never
+moved the nomination rate of named-group members outside noise and never moved
+it monotonically. Three separate diagnoses were each real and each insufficient:
+almost nobody could see a named group (2.6 percent of outsiders, so the
+visibility gate was false 96 percent of the time); the size term discounted the
+first two members, so the 63 percent of named groups that are pairs drew exactly
+zero; and three-plus groups are 327 member-weeks in 6500, far too rare to
+measure anything against. Fixing all three still moved nothing, because **the
+nomination block holds exactly two seats a week and named-group members already
+take a disproportionate share of them.** A conserved quantity cannot be pushed.
+
+So the term is gone, and what replaced it is the thing naming demonstrably does:
+it spreads. That proxy reads 18.5 percent against 1.8 and drops to 2.0 percent
+when `ALLY_LEAK_NAMED` is zeroed.
+
+The general lesson, now a rule: **a proxy that cannot fail is not a test**, and
+the only way to know is to switch the mechanic off and re-run. The old "at least
+60 percent of the cast sit At Risk once" reported 99 percent every run while
+measuring the rules rather than the model. It was replaced with the
+clean-to-eight band, which can fail in both directions. Item 3 added the
+sharper version of the same rule: a cross-sectional comparison between two
+populations can never isolate a constant, because the populations differ in
+everything else too. **Ablate on identical seeds, or do not claim the mechanic
+works.** Of the three proxies written for items 3 and 6, that test killed one
+outright, promoted one to a gate, and demoted one to a reported number whose
+effect is real but too small to gate on without flaking.
 
 ---
 
@@ -1196,3 +1296,84 @@ Version 0.1 said there were none. There were about thirty. These are what is lef
    lever worth pulling when the effect is needed. Right now a selective player
    should beat a spammer, which is correct, but the policy is not selective
    enough to prove a selective player also beats a cautious one.
+
+---
+
+## 19. The Rituals
+
+The format is not only its rules. It is a set of things that happen every week
+in the same order, and the game had almost none of them: the Captaincy was worth
+exactly two nominations, the nominees appeared without anybody saying anything,
+rations were a stat penalty, and a player At Risk made small talk like everybody
+else. All four are cheap in model terms and none of them are cheap to a player.
+
+Every one is a trust delta on top of a decision the model already made. None of
+them is a second economy.
+
+### 19.1 The Captain's room
+
+A door that locks, a bed nobody else has slept in, and photographs of people who
+are not in the house. The Captain takes up to two people up first, and the other
+twelve find out about it afterwards.
+
+| Term | Value |
+|---|---|
+| `ROOM_GUEST` | +9 to each guest, half of that back to the Captain |
+| `ROOM_SNUB` | -2 from everybody who was not asked |
+
+Roughly net neutral per week and heavily concentrated, which is the point:
+picking the same two people every week costs you the room. Skipped on the second
+leg of a Double, because there is no evening in a Double.
+
+### 19.2 Nomination speeches
+
+The only public statement of intent the format contains. Four framings:
+
+| Speech | Effect |
+|---|---|
+| **pawn** | +11 to the pawn, -4 to the target. **If there is no pawn, -6 with the whole room** |
+| **threat** | -9 to the target, +3 to the other, and +9 threat bias on the target with everybody who heard it |
+| **personal** | -15 to both nominees, -4 with the room for making them watch |
+| **flat** | -2 to the nominees. Nothing gained, nothing given away |
+
+The pawn line is the one that matters, because **the house checks it**. Calling
+somebody a formality when there is no formality is a lie told standing up in
+front of everybody, and it is priced that way. That check is what makes the
+choice a choice rather than a free softener.
+
+AI Captains choose by weight: pawn tracks `nomMode` (and a backdoor is a lie by
+construction, so it leans hard on pawn), threat scales with ambition, personal
+is gated on volatility **and** on actually disliking the target. Measured over
+600 runs the mix is threat 40, flat 32, pawn 24, personal 4. Personal was 25
+percent before the spite gate, which is a Captain making it personal every
+fourth week and reads as a house full of lunatics.
+
+### 19.3 Rations bonding
+
+Four people cold and hungry in the same room for a week come out of it closer
+than they went in, whatever they think of each other's game. `RATIONS_BOND` is
++4 mutual across the four, once a week, at the moment rations are handed out.
+
+Small on purpose. It is a week, not an alliance.
+
+### 19.4 Campaigning from the block
+
+The one thing every nominee in this format actually does. It is **free**,
+because begging for your life is not a strategic expenditure, and capped at one
+conversation per person per week, because the second time you ask is worse than
+the first (`CAMP_REPEAT` -0.16 per repeat).
+
+Four pitches, each checked against something real where the listener is
+standing rather than rolled flat:
+
+| Pitch | Checked against | If it lands |
+|---|---|---|
+| **I am a number for you** | whether they fear the other nominee more, and whether you are already allied | moves their vote, +5 |
+| **They are the one to fear** | how dangerous they already find the other one | moves their vote, +3, and +8 threat bias on the other |
+| **Just keep me** | whether they already like you | moves their vote, +2, and costs you a little with everybody else |
+| **You get me for the next two weeks** | how exposed they feel themselves | moves their vote, +8, and -10 if it does not |
+
+The card shows which of the four is true where that listener is standing,
+because that read is the whole decision and hiding it would make this a lottery
+with four tickets. A landed pitch writes a real `voteIntent`, so it feeds the
+existing broken-promise and blame machinery with no special case.

@@ -757,18 +757,21 @@ body.carded .dock,body.carded .bar{display:none}
      copy. Worse than a stale page is a MIXED one, where a fresh index.html
      drives a cached scenes.js, so the query has to be on every module and has
      to move on every deploy. Bump BUILD below and they all miss at once. -->
-<script src="rng.js?v=12"></script>
-<script src="tree.js?v=12"></script>
-<script src="generate.js?v=12"></script>
-<script src="engine.js?v=12"></script>
-<script src="comps.js?v=12"></script>
-<script src="powers.js?v=12"></script>
-<script src="scenes.js?v=12"></script>
-<script src="run.js?v=12"></script>
-<script src="recap.js?v=12"></script>
-<script src="avatar.js?v=12"></script>
-<script src="ui.js?v=12"></script>
-<script src="strings.js?v=12"></script>
+<!-- strings.js first: it depends on nothing, and engine.js reads the alliance
+     name bank out of it. A bank the lint checks beats a bank in the model. -->
+<script src="strings.js?v=13"></script>
+<script src="rng.js?v=13"></script>
+<script src="tree.js?v=13"></script>
+<script src="generate.js?v=13"></script>
+<script src="engine.js?v=13"></script>
+<script src="comps.js?v=13"></script>
+<script src="powers.js?v=13"></script>
+<script src="scenes.js?v=13"></script>
+<script src="run.js?v=13"></script>
+<script src="recap.js?v=13"></script>
+<script src="avatar.js?v=13"></script>
+<script src="ui.js?v=13"></script>
+
 <script>
 (function(){
 'use strict';
@@ -947,7 +950,8 @@ function wall(opts){
 
 // ── chrome ─────────────────────────────────────────────────────────────────
 var PHASE_NAME={
-  reset:'Reset',captain_comp:'Captain Comp',scheme1:'Scheming I',naming:'Naming',
+  reset:'Reset',captain_comp:'Captain Comp',captain_room:"The Captain's room",
+  scheme1:'Scheming I',naming:'Naming',
   veto_comp:'Veto Comp',scheme2:'Scheming II',veto_ceremony:'Veto Ceremony',
   scheme3:'Scheming III',eviction:'Eviction',fallout:'Fallout',
   final3:'Final Three',panel:'The Panel',over:'Over',move_in:'Move In Night'};
@@ -1395,9 +1399,23 @@ function showPage(kind){
     if(mine.length){
       body+='<div class="pagehr"></div><h3>Rooms you are in</h3>'
         +'<div class="rows">'+mine.map(function(a){
-          return '<div><b>'+a.members.length+' of you</b>'
+          /* A named group is a different object from an unnamed one, and the
+             heading has to say which one you are looking at, because only one
+             of them is drawing heat. GDD §7.7. */
+          return '<div><b>'+esc(a.name||(a.members.length+' of you'))+'</b>'
             +esc(a.members.filter(function(i){ return i!==s.human; })
-              .map(function(i){ return s.cast[i].first; }).join(', '))+'</div>'; }).join('')+'</div>';
+              .map(function(i){ return s.cast[i].first; }).join(', '))
+            +(a.name?'. '+a.members.length+' of you'
+              +(a.namedSize&&a.members.length<a.namedSize?', and the house still uses the old number':'')+'.'
+              :'. No name on it, which is the only reason nobody is counting it.')
+            +'</div>'; }).join('')+'</div>';
+    }
+    var sm=E.showmanceOf(s,s.human);
+    if(sm&&sm.alive){
+      var mate=sm.a===s.human?sm.b:sm.a;
+      body+='<div class="pagehr"></div><h3>The house counts you as one</h3>'
+        +'<div class="rows"><div><b>'+esc(s.cast[mate].first)+'</b>'
+        +'Neither of you will move against the other. Everything they draw, you draw.</div></div>';
     }
   }
   app.innerHTML='<div class="file"><h2>'+esc(title)+'</h2>'
@@ -1578,6 +1596,7 @@ function dock(main,extra){
 var NEXT_LABEL={};
 NEXT_LABEL[R.PHASES.RESET]='Start the week';
 NEXT_LABEL[R.PHASES.CAPTAIN_COMP]='Play for Captain';
+NEXT_LABEL[R.PHASES.CAPTAIN_ROOM]='Up to the room';
 NEXT_LABEL[R.PHASES.SCHEME1]='Work the house';
 NEXT_LABEL[R.PHASES.SAFETY_CALL]='Carry on';
 NEXT_LABEL[R.PHASES.NAMING]='The naming';
@@ -1710,6 +1729,51 @@ function narrateMoveIn(){
           return {id:x.id,tag:E.band(x.v).label,col:U.bandColor(E.band(x.v).label)}; }))});
   }
 }
+/*
+ * What the house started calling things, and who stopped pretending.
+ *
+ * Both are relayed by run.js only when the player would actually know, so this
+ * never has to check the fog itself. A group with a name is the single most
+ * useful thing a player can be told: it is the object the rest of the house
+ * will spend the next four weeks taking apart. GDD §7.7 and §7.8.
+ */
+function narrateRooms(){
+  var ev=s.events.filter(function(e){
+    return !e.said&&(e.kind==='alliance_named'||e.kind==='showmance_formed'||e.kind==='showmance_broke'); });
+  for(var i=0;i<ev.length;i++){
+    var e=ev[i]; e.said=true;
+    if(e.kind==='alliance_named'){
+      var who=e.members.map(function(x){ return x===s.human?'you':s.cast[x].first; }).join(', ');
+      say((e.mine?'Your room has a name now. ':'There is a name going round for a room you are not in. ')
+        +e.name+'. '+who+'.',e.mine?'ev-good':'ev-power','alliance');
+      moment({kicker:e.mine?'Naming':'You hear a name',icon:'alliance',tone:e.mine?'good':'',
+        title:e.name,
+        sub:e.mine?'A group with a name is a group the rest of them can count, and hunt.'
+                  :'Now you know what they call themselves, which is most of the way to knowing who they are.',
+        rows:[['Who is in it',who],['Size when it was named',String(e.size)]],
+        faces:e.members.slice(0,3).map(function(x){
+          return {id:x,tag:x===s.human?'You':'In it',col:e.mine?COL.ok:COL.dim}; })});
+    } else if(e.kind==='showmance_formed'){
+      if(e.mine){
+        var mate=e.a===s.human?e.b:e.a;
+        say(tsay('showYou',{name:s.cast[mate].first}),'ev-good','alliance');
+        moment({kicker:'The house noticed',icon:'alliance',tone:'good',
+          title:'You and '+s.cast[mate].first,
+          sub:'Neither of you will move against the other. Everything they draw, you draw as well.',
+          faces:[{id:mate,tag:'With you',col:COL.ok}]});
+      } else {
+        say(tsay('showFormed',{a:s.cast[e.a].first,b:s.cast[e.b].first}),'ev-power','alliance');
+        moment({kicker:'Two of them',icon:'alliance',
+          title:s.cast[e.a].first+' and '+s.cast[e.b].first,
+          sub:'The house counts them as one number now, and one number is easier to aim at than two.',
+          faces:[{id:e.a,tag:'Together',col:COL.blue},{id:e.b,tag:'Together',col:COL.blue}]});
+      }
+    } else {
+      say(tsay('showBroken',{a:s.cast[e.a].first,b:s.cast[e.b].first}),'hot','broken');
+    }
+  }
+}
+
 function narrateAfter(ph,wkBefore){
   if(ph===R.PHASES.MOVE_IN) narrateMoveIn();
   if(ph===R.PHASES.RESET){
@@ -1728,6 +1792,32 @@ function narrateAfter(ph,wkBefore){
     }
     var bb=s.events.filter(function(e){ return e.kind==='bounce_back'&&e.week===s.week; })[0];
     if(bb) say(s.cast[bb.who].name+' comes back through the door. Nobody expected to see them again.','hot');
+    narrateRooms();
+  }
+  if(ph===R.PHASES.CAPTAIN_ROOM){
+    var cr=s.events.filter(function(e){ return e.kind==='captain_room'&&e.week===s.week&&!e.said; })[0];
+    if(cr){
+      cr.said=true;
+      var g=cr.guests||[];
+      var names=g.map(function(i){ return i===s.human?'you':s.cast[i].first; }).join(' and ');
+      if(cr.captain===s.human){
+        say(g.length?('You take '+names+' up first. '+tsay('roomYou')):'You go up alone and lock the door.',
+          'ev-good','captain');
+        if(g.length) moment({kicker:'The room',icon:'captain',tone:'good',
+          title:'You take '+names+' up',
+          sub:'Everybody else finds out about this from somebody who was there.',
+          faces:g.map(function(i){ return {id:i,tag:'In the room',col:COL.ok}; })});
+      } else if(g.indexOf(s.human)!==-1){
+        say(tsay('roomInvited',{name:s.cast[cr.captain].first}),'ev-good','captain');
+        moment({kicker:'The room',icon:'captain',tone:'good',
+          title:s.cast[cr.captain].first+' takes you up',
+          sub:'An hour of the only person in this house with power, and a door that locks.',
+          faces:[{id:cr.captain,tag:'Captain',col:COL.blue}]});
+      } else if(g.length){
+        say(tsay('roomLeftOut',{name:s.cast[cr.captain].first})
+          +' It was '+names+'.','quiet','eye');
+      }
+    }
   }
   if(ph===R.PHASES.CAPTAIN_COMP&&s.captainResult){
     var r=s.captainResult;
@@ -1755,6 +1845,15 @@ function narrateAfter(ph,wkBefore){
       ? tsay('namingYou',{a:s.cast[s.atRisk[0]].first,b:s.cast[s.atRisk[1]].first})
       : tsay('naming',{captain:s.cast[s.captain].first,a:s.cast[s.atRisk[0]].first,b:s.cast[s.atRisk[1]].first}),'ev-bad','risk');
     if(s.nomMode==='pawn') say(tsay(s.captain===s.human?'namingYouPawn':'namingPawn'),'quiet','risk');
+    /* The speech, GDD §19.2. Reported for every Captain, not just the player,
+       because the only value of a public statement of intent is that the whole
+       house hears it. */
+    if(s.speech){
+      var you=s.captain===s.human;
+      var bank={pawn:'speechPawn',threat:'speechThreat',personal:'speechPersonal',flat:'speechFlat'}[s.speech];
+      say(tsay(bank+(you?'You':''),{captain:you?'You':s.cast[s.captain].first}),
+        s.speech==='personal'?'hot':'quiet','risk');
+    }
   }
   if(ph===R.PHASES.VETO_DRAW&&s.vetoFieldIds&&s.vetoFieldIds.length){
     /* Playtest: "it also didn't show who was playing for veto". */
@@ -1875,6 +1974,7 @@ function handleNeed(need){
   if(need.kind==='power_veto_pick') return showPowerVetoPick(need);
   if(need.kind==='power_diamond') return showPowerDiamond(need);
   if(need.kind==='power_extra_vote') return showPowerExtraVote(need);
+  if(need.kind==='captain_room') return showCaptainRoom(need);
   if(need.kind==='naming') return showNaming();
   if(need.kind==='veto_use') return showVetoUse();
   if(need.kind==='replacement') return showReplacement();
@@ -1897,7 +1997,39 @@ function showMoveIn(need){
 }
 
 /*
- * Naming, in two cards. Pick two, then say who you are actually after.
+ * THE CAPTAIN'S ROOM, GDD §19.1.
+ *
+ * The Captaincy used to be worth exactly two nominations. This is the other
+ * half of it: a private space, and the choice of who gets to be in it. Two
+ * people get an hour of you. The other twelve watched you pick.
+ */
+function showCaptainRoom(need){
+  dock({label:'Take them up',off:true});
+  var picked=[];
+  function draw(){
+    var left=need.take-picked.length;
+    openCard({
+      kicker:'You are Captain', role:'The room', icon:'captain', tone:'good',
+      title:'Who comes up first',
+      body:['A door that locks, a bed nobody else has slept in, and photographs of people who are not in this house.',
+        {t:left?('Room for '+left+' more.'):'The rest of the house finds out about this afterwards.',c:'d'}],
+      pick:{pool:need.pool,selected:picked,go:function(id){
+        var i=picked.indexOf(id);
+        if(i>=0) picked.splice(i,1); else if(picked.length<need.take) picked.push(id);
+        draw();
+      }},
+      choices:[{label:'Take them up',cls:'go',off:!picked.length,
+        note:'They will remember it. So will everybody you did not ask.',
+        go:function(){ answer({guests:picked}); }}],
+      foot:{label:'Sit up there on your own',go:function(){ answer({guests:[]}); }}
+    });
+  }
+  draw();
+}
+
+/*
+ * Naming, in three cards. Pick two, say who you are actually after, then say
+ * something about it in front of the whole house.
  *
  * The second card is the whole strategy layer: picking somebody who is NOT on
  * the block is the backdoor, and there is no separate button for it on purpose,
@@ -1942,9 +2074,45 @@ function showNaming(){
             ['Your target',s.cast[want].first]],
       pick:{pool:others(),selected:[want],block:picked,go:function(id){
         want=id; step2(); }},
-      choices:[{label:back?'Set the trap':'Lock it in',cls:'go',go:function(){
-        answer({noms:picked,target:want}); }}],
+      choices:[{label:back?'Set the trap':'Lock it in',cls:'go',go:step3}],
       foot:{label:'Change the names',go:step1}
+    });
+  }
+
+  /*
+   * The speech, GDD §19.2. The only public statement of intent in the format,
+   * and the game had none of it: two names appeared and the house guessed.
+   *
+   * The pawn line is the interesting one, because the house checks it. Calling
+   * somebody a formality when there is no formality is a lie told standing up
+   * in front of everybody, and it is priced that way.
+   */
+  function step3(){
+    var pawn=picked.filter(function(i){ return i!==want; })[0];
+    var back=picked.indexOf(want)===-1;
+    var real=!back&&pawn!=null;
+    openCard({
+      kicker:'You are Captain', role:'The speech', icon:'risk', tone:'bad',
+      title:'You have to say something',
+      body:['Everybody is sitting down and looking at you. What you say now is the only thing the house hears from you all week.'],
+      rows:[['On the block',picked.map(function(i){ return s.cast[i].first; }).join(' and ')],
+            ['After',back?s.cast[want].first+', if the Veto opens the seat':s.cast[want].first]],
+      choices:[
+        {label:'One of you is a formality',
+         note:real?'Softens '+s.cast[pawn].first+' and points the room at '+s.cast[want].first+'.'
+           :'There is no formality here. If the room works that out it costs you with all of them.',
+         go:function(){ answer({noms:picked,target:want,speech:'pawn'}); }},
+        {label:'I am going after the biggest game in here',
+         note:'Flatters '+s.cast[back?picked[0]:want].first+' and hardens them. Everybody else hears the word threat and keeps it.',
+         go:function(){ answer({noms:picked,target:want,speech:'threat'}); }},
+        {label:'Make it personal',
+         note:'Cheapest with the room, worst with the two of them. They will not forget the wording.',
+         go:function(){ answer({noms:picked,target:want,speech:'personal'}); }},
+        {label:'Eleven words and sit down',
+         note:'Nothing to argue with. Nothing given away either.',
+         go:function(){ answer({noms:picked,target:want,speech:'flat'}); }}
+      ],
+      foot:{label:'Back to the target',go:step2}
     });
   }
   step1();
@@ -2069,9 +2237,15 @@ function showScheming(need){
   var can=s.energy>=SC.ENERGY.SCENE_COST;
   /* The last window before the vote leads with the count, not with talking,
      because the count is free and it is the thing you came here for. */
+  var onBlock=s.atRisk.indexOf(s.human)!==-1;
   if(need&&need.whip){
+    /* The dock holds two buttons, so campaigning lives one level in, at the top
+       of the card it belongs to. GDD §19.4. */
     dock(
-      {label:'Count the votes',note:'Ask around. It costs nothing.',go:showWhip},
+      {label:onBlock?'Work the room from the block':'Count the votes',
+       note:onBlock?'Count the votes, then go and change them. Both are free.'
+                   :'Ask around. It costs nothing.',
+       go:showWhip},
       {label:'Go to the vote',go:function(){ answer({done:true}); }}
     );
   } else {
@@ -2122,11 +2296,80 @@ function showScheming(need){
         quiet?{t:quiet+(quiet>1?' people will':' person will')+' not tell you anything. That is what having no room with them costs.',c:'d'}:null],
       rows:table.length?table:null,
       choices:[
+        onBlock?{label:'Campaign for your life',cls:'go',
+          note:'Free. One conversation each, and the second time you ask them is worse than the first.',
+          go:pickCampaign}:null,
         {label:can?'Go and work on somebody':'No energy left to work with',
          off:!can,note:can?(s.energy+' energy left'):'',go:pickPerson},
-        {label:'Cast your vote',cls:'go',go:function(){ answer({done:true}); }}
-      ]
+        {label:'Cast your vote',cls:onBlock?'':'go',go:function(){ answer({done:true}); }}
+      ].filter(Boolean)
     });
+  }
+
+  /*
+   * CAMPAIGNING FROM THE BLOCK, GDD §19.4.
+   *
+   * The one thing every nominee in this format actually does, and the game had
+   * no verb for it: you sat At Risk and made small talk like everybody else.
+   *
+   * Four pitches, and each is checked against something real where the listener
+   * is standing rather than rolled flat. The card says which of them is true
+   * here, because that read is the whole decision and hiding it would make this
+   * a lottery with four tickets.
+   */
+  function pickCampaign(){
+    dock({label:'Pick somebody',off:true});
+    var pool=R.activeIds(s).filter(function(i){
+      return i!==s.human&&s.atRisk.indexOf(i)===-1; });
+    openCard({
+      kicker:'From the block', role:'Free', icon:'risk', tone:'bad',
+      title:'Who are you asking',
+      body:['Everybody in this house is deciding between you and the other one this evening. Some of them have not thought about it yet.'],
+      pick:{pool:pool,go:function(id){ closeCard(); pitchTo(id); }},
+      foot:{label:'Back',go:showWhip}
+    });
+  }
+
+  function pitchTo(id){
+    var other=s.atRisk.filter(function(i){ return i!==s.human; })[0];
+    var again=(s.campaigned&&s.campaigned[id])||0;
+    var nm=s.cast[id].first;
+    var allied=E.sharedAlliances(s.alliances,s.human,id).filter(function(a){ return a.alive; }).length;
+    var mine=E.threatSeen(s,id,s.human);
+    var theirs=other!=null?E.threatSeen(s,id,other):50;
+    var rd=E.read(s.rel,s.human,id);
+    dock({label:'Say it',off:true});
+    openCard({
+      kicker:'From the block', role:again?'You have already asked':'Free', icon:'risk', tone:'bad',
+      title:'What do you say to '+nm,
+      body:[again?{t:'You have been to '+nm+' once already this week. Going back is worse than not going.',c:'q'}:null,
+        {t:nm+' reads '+rd.band.label.toLowerCase()+' on you'
+          +(allied?', and you are in a room together':'')+'.',c:'d'}],
+      choices:[
+        {label:'I am a number for you',
+         note:theirs>mine?'True here. '+nm+' has more to fear from '+s.cast[other].first+' than from you.'
+           :'A stretch. '+nm+' does not think '+s.cast[other].first+' is the bigger problem.',
+         go:function(){ doCampaign(id,'numbers'); }},
+        {label:s.cast[other].first+' is the one you should be scared of',
+         note:theirs>58?'They already half believe it.'
+           :'Nothing in what '+nm+' has seen supports that yet.',
+         go:function(){ doCampaign(id,'threat'); }},
+        {label:'Just keep me',
+         note:rd.band.label==='Cold'||rd.band.label==='Hostile'
+           ?'You are asking somebody who does not like you. It shows.'
+           :'Works on people who already want you here. Asking still costs you a little with everybody.',
+         go:function(){ doCampaign(id,'mercy'); }},
+        {label:'You get me for the next two weeks',
+         note:'Worth most to somebody who thinks they are next. Worth nothing if they are comfortable.',
+         go:function(){ doCampaign(id,'deal'); }}
+      ],
+      foot:{label:'Somebody else',go:pickCampaign}
+    });
+  }
+
+  function doCampaign(id,pitch){
+    var o=R.performAction(s,{kind:'campaign',target:id,pitch:pitch});
+    narrateAction(o); saveRun(); showWhip();
   }
 
   function backToFloor(){
@@ -2350,6 +2593,24 @@ function narrateAction(o){
     if(o.caught) say(tsay('eavesCaught',{name:s.cast[o.pair[0]].first}),'hot');
   }
   if(o.kind==='confessional'&&o.read) say('You write it down. '+nm+': '+o.read.band.label.toLowerCase()+'.','quiet');
+  if(o.kind==='campaign'){
+    /* The feed has to say what moved, not that something happened. GDD §19.4
+       moves a real vote intent when it lands, so the line names it. */
+    say(tsay(o.pitch==='numbers'?'campNumbers'
+      :o.pitch==='threat'?'campThreat'
+      :o.pitch==='mercy'?'campMercy':'campDeal',{name:nm}),'quiet','risk');
+    if(o.ok&&o.against!=null){
+      say(nm+' says they are voting out '+s.cast[o.against].first+'. That was not where they were an hour ago.',
+        'ev-vote','vote');
+      moment({kicker:'From the block',icon:'vote',tone:'good',
+        title:'You have moved '+nm,
+        sub:'One conversation, one vote. It still has to hold until the tally.',
+        faces:[{id:o.target,tag:'Moved',col:COL.ok}]});
+    } else {
+      say(nm+' does not move, and now they know exactly how worried you are.','ev-bad','broken');
+    }
+    if(o.again) say('That was your second time asking them. It landed worse than the first.','quiet');
+  }
 }
 
 // ── powers ─────────────────────────────────────────────────────────────────
@@ -2478,6 +2739,20 @@ function showComp(need){
  * been touched for a while. The score in that case is deliberately poor rather
  * than zero, because somebody who wandered off did compete, badly.
  */
+/*
+ * A minigame that re-renders on a timer has to stop when its stage is gone.
+ *
+ * Half the comps run in rounds and schedule the next round on a setTimeout.
+ * Nothing stopped that chain: the idle watchdog below can end a comp between
+ * rounds, and so can the phase moving on, and the pending callback then writes
+ * into a detached stage and asks the DOCUMENT for elements that are no longer
+ * in it. Measured symptom was an intermittent "Cannot read properties of null
+ * reading style" out of Tightrope, in roughly one run in four.
+ */
+function later(st,fn,ms){
+  return setTimeout(function(){ if(st&&st.isConnected) fn(); },ms);
+}
+
 var MG_IDLE_MS=50000;
 function guardDone(done,st){
   var fired=false,timer=null;
@@ -2534,13 +2809,13 @@ function mgReaction(st,done){
       900+Math.random()*2200);
     rb.onpointerdown=function(){
       if(!armed){ clearTimeout(timer); rb.className='rbox bad'; rb.textContent='TOO EARLY';
-        round++; total+=8; setTimeout(next,700); return; }
+        round++; total+=8; later(st,next,700); return; }
       var ms=Date.now()-t0;
       /* 180ms is a very good human; 600ms is asleep. */
       var sc=Math.max(0,Math.min(100,100-(ms-180)/4.2));
       total+=sc; round++;
       rb.className='rbox'; rb.textContent=ms+' ms';
-      setTimeout(next,650);
+      later(st,next,650);
     };
   }
   next();
@@ -2571,7 +2846,7 @@ function mgMemory(st,done){
           idx++;
           if(idx>=seq.length){ lock=true; best=len; len++;
             if(len>7){ finish(); return; }
-            setTimeout(show,420); }
+            later(st,show,420); }
         };
       });
     },480*seq.length+320);
@@ -2729,7 +3004,7 @@ function mgTightrope(st,done){
       if(!running) return; running=false; cancelAnimationFrame(raf);
       var off=Math.abs(pos-50), half=width()/2;
       score+=off<=half?Math.max(35,100-(off/half)*55):Math.max(0,30-off);
-      round++; setTimeout(next,420);
+      round++; later(st,next,420);
     };
   }
   next();
@@ -2958,14 +3233,14 @@ function mgPotato(st,done){
       if(held>=fuse){
         clearInterval(timer);
         rb.className='rbox bad'; rb.textContent='GONE';
-        round++; setTimeout(ask,700);
+        round++; later(st,ask,700);
       }
     },60);
     rb.onpointerdown=function(){
       clearInterval(timer);
       banked+=Math.round(held/1000*10);
       rb.className='rbox'; rb.textContent='BANKED';
-      round++; setTimeout(ask,600);
+      round++; later(st,ask,600);
     };
   }
   ask();

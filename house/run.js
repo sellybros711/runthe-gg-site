@@ -43,6 +43,7 @@ const PHASES = {
   MOVE_IN: 'move_in',
   RESET: 'reset',
   CAPTAIN_COMP: 'captain_comp',
+  CAPTAIN_ROOM: 'captain_room',   // GDD §19.1, the first ritual of the week
   SCHEME1: 'scheme1',
   SAFETY_CALL: 'safety_call',   // a Week of Safety holder decides, before naming
   NAMING: 'naming',
@@ -95,6 +96,9 @@ function createRun(opts) {
     cast,
     rel,
     alliances: [],
+    /* GDD §7.8. Kept out of `alliances` on purpose: nothing that reads
+       alliances as strategic groups is true of a couple. */
+    showmances: [],
     panel: [],
     week: 0,
     phase: PHASES.SETUP,
@@ -263,6 +267,10 @@ function needsInput(s) {
     }
     case PHASES.CAPTAIN_COMP:
       return captainCompField(s).indexOf(me) !== -1 ? { kind: 'comp', which: 'captain', comp: s.pendingComp } : null;
+    case PHASES.CAPTAIN_ROOM:
+      return s.captain === me
+        ? { kind: 'captain_room', pool: activeIds(s).filter((i) => i !== me), take: ROOM_GUESTS }
+        : null;
     case PHASES.SCHEME1: case PHASES.SCHEME2:
       return s.energy >= SC.ENERGY.SCENE_COST
         ? { kind: 'actions', energy: s.energy, phase: s.phase } : null;
@@ -327,6 +335,7 @@ function step(s, input) {
     case PHASES.MOVE_IN:    return doMoveIn(s, input);
     case PHASES.RESET:      return doReset(s);
     case PHASES.CAPTAIN_COMP: return doCaptainComp(s, input);
+    case PHASES.CAPTAIN_ROOM: return doCaptainRoom(s, input);
     case PHASES.SCHEME1:
     case PHASES.SCHEME2:
     case PHASES.SCHEME3:    return doScheme(s, input);
@@ -437,6 +446,45 @@ function doMoveIn(s, input) {
   return s;
 }
 
+/**
+ * Turn this week's model history into things the player can be told.
+ *
+ * A naming or a showmance is only news if the player would actually know: the
+ * fog is the game. A group you are in, or one that has leaked to you, is news.
+ * A couple is news to everybody, eventually, because that is what a couple is.
+ */
+function relayWeekly(s) {
+  const me = s.human;
+  /* Not filtered to this week. A group can be named in week two and leak to the
+     player in week six, and week six is when they found out. */
+  const told = s.showmanceTold || (s.showmanceTold = {});
+  for (const entry of s.log) {
+    if (entry.said) continue;
+    if (entry.kind === 'alliance_named') {
+      const a = s.alliances.filter((x) => x.id === entry.id)[0];
+      if (!a) continue;
+      const mine = a.members.indexOf(me) !== -1;
+      if (!mine && !(a.known && a.known[me] != null)) continue;
+      entry.said = true;
+      pushEvent(s, 'alliance_named', { id: a.id, name: a.name, size: entry.size,
+        members: a.members.slice(), mine });
+    } else if (entry.kind === 'showmance_formed') {
+      const sm = (s.showmances || []).filter((x) => x.a === entry.a && x.b === entry.b)[0];
+      const mine = entry.a === me || entry.b === me;
+      if (!mine && !(sm && sm.known && sm.known[me] != null)) continue;
+      entry.said = true;
+      told[entry.a + ':' + entry.b] = true;
+      pushEvent(s, 'showmance_formed', { a: entry.a, b: entry.b, mine });
+    } else if (entry.kind === 'showmance_broke') {
+      /* A break-up is only news if the player was ever told there was one. */
+      entry.said = true;
+      if (!told[entry.a + ':' + entry.b]) continue;
+      pushEvent(s, 'showmance_broke', { a: entry.a, b: entry.b,
+        mine: entry.a === me || entry.b === me });
+    }
+  }
+}
+
 function doReset(s) {
   const rng = s.rng.ai;
   s.week += 1;
@@ -451,6 +499,8 @@ function doReset(s) {
   s.nominees = [];
   s.hohTarget = null; s.hohPawn = null; s.nomMode = null;
   s.backdoor = null; s.backdoorLanded = false;
+  /* The rituals, GDD §19. All three are weekly and none of them carry over. */
+  s.speech = null; s.roomGuests = null; s.campaigned = {};
 
   /* Bounce Back, GDD §12. Pool is the last six evicted whether or not the Panel
      has started forming, which is the fix for version 0.1 calling the returnee
@@ -482,6 +532,10 @@ function doReset(s) {
   E.decayWeek(s.rel, s.cast, s.week);
   E.socialTick(s, rng);
   E.allianceTick(s, rng);
+  E.showmanceTick(s, rng);
+  /* `state.log` is the model's own history and has no reader. Anything the
+     house is supposed to find out about has to be relayed as an event. */
+  relayWeekly(s);
 
   /* Powers are awarded at Reset so the whole week can be played around them. */
   for (const sch of s.powerSchedule) {
@@ -549,12 +603,82 @@ function doCaptainComp(s, input) {
   for (const p of s.cast) p.onRations = false;
   s.rations = C.rationsFrom(res, E.K.RATIONS_COUNT);
   for (const id of s.rations) s.cast[id].onRations = true;
+  /* Shared misery, GDD §19.3. A week cold and hungry in the same room. */
+  E.rationsBond(s);
 
   s.captainResult = res;
   pushEvent(s, 'captain', { winner: res.winner, comp: comp.id, thrown: res.thrown, rations: s.rations.slice() });
 
+  s.roomGuests = null;
   s.schemeIndex = 0;
-  s.phase = s.doubleSecondLeg ? PHASES.SAFETY_CALL : PHASES.SCHEME1;
+  /* The Captain's room, GDD §19.1. Skipped on the second leg of a Double: there
+     is no evening in a Double, which is what makes a Double what it is. */
+  s.phase = s.doubleSecondLeg ? PHASES.SAFETY_CALL : PHASES.CAPTAIN_ROOM;
+  return s;
+}
+
+/**
+ * The Captain's room, GDD §19.1.
+ *
+ * The first ritual of the week and the only one that is purely social. The
+ * Captain gets a room to themselves and decides who sees it first, and the
+ * house watches them decide. Two people get an hour of undivided attention;
+ * everybody else finds out about it afterwards.
+ *
+ * It exists because the format's power comes with a private space, and a
+ * private space is a thing you can give away. Version 0.1 had a Captaincy that
+ * was worth exactly two nominations and nothing else.
+ */
+const ROOM_GUESTS = 2;
+
+function roomGuestPick(s, rng) {
+  const cap = s.captain;
+  const pool = activeIds(s).filter((id) => id !== cap);
+  if (!pool.length) return [];
+  const w = pool.map((id) => {
+    let v = Math.max(1, s.rel.trust[cap][id] + 60);
+    /* You take your own people up, and you take the person you are sitting
+       with up first of all. */
+    if (E.sharedAlliances(s.alliances, cap, id).length) v *= 1.8;
+    if (E.showmancePartner(s, cap) === id) v *= 3;
+    return v;
+  });
+  const out = [];
+  const left = pool.slice(), lw = w.slice();
+  while (out.length < ROOM_GUESTS && left.length) {
+    const pick = rng.weighted(left, lw);
+    const i = left.indexOf(pick);
+    left.splice(i, 1); lw.splice(i, 1);
+    out.push(pick);
+  }
+  return out;
+}
+
+function doCaptainRoom(s, input) {
+  const rng = s.rng.ai;
+  let guests;
+  if (s.captain === s.human && isHumanActive(s)) {
+    if (!input || !input.guests) return s;
+    guests = input.guests.filter((id) => id !== s.human && s.cast[id].status === 'active')
+      .slice(0, ROOM_GUESTS);
+  } else {
+    guests = roomGuestPick(s, rng);
+  }
+
+  for (const id of guests) {
+    E.applyTrust(s.rel, id, s.captain, E.K.ROOM_GUEST);
+    E.applyTrust(s.rel, s.captain, id, E.K.ROOM_GUEST * 0.5);
+  }
+  /* Everybody who was not asked watched two people who were. It is small, and
+     it is the reason picking the same two every week is a real cost. */
+  for (const id of activeIds(s)) {
+    if (id === s.captain || guests.indexOf(id) !== -1) continue;
+    E.applyTrust(s.rel, id, s.captain, E.K.ROOM_SNUB);
+  }
+
+  s.roomGuests = guests.slice();
+  pushEvent(s, 'captain_room', { captain: s.captain, guests: guests.slice() });
+  s.phase = PHASES.SCHEME1;
   return s;
 }
 
@@ -668,13 +792,91 @@ function doNaming(s, input) {
     a.target = best;
   }
 
+  /* The speech, GDD §19.2. */
+  s.speech = (s.captain === s.human && isHumanActive(s) && input && input.speech)
+    ? input.speech : aiSpeech(s, rng);
+  applySpeech(s);
+
   pushEvent(s, 'naming', {
     captain: s.captain, atRisk: noms.slice(),
-    mode: s.nomMode, target: s.hohTarget, pawn: s.hohPawn,
+    mode: s.nomMode, target: s.hohTarget, pawn: s.hohPawn, speech: s.speech,
   });
 
   s.phase = PHASES.VETO_DRAW;
   return s;
+}
+
+/*
+ * NOMINATION SPEECHES, GDD §19.2.
+ *
+ * The only public statement of intent the format contains, and until now the
+ * game had none: two names appeared and the house inferred everything. A speech
+ * is a choice between telling the truth about what you are doing and not, and
+ * both have a price.
+ *
+ *   pawn      one of them is a formality. Softens the pawn, and if the house
+ *             can see it is a lie, costs you with everybody
+ *   threat    you are going after the biggest game in the room. Flatters the
+ *             target, hardens them, and puts the word threat in the air
+ *   personal  no strategy offered. Cheapest with the room, worst with the two
+ *   flat      eleven words and sit down. Nothing gained, nothing given away
+ *
+ * The house checks a pawn claim against what it can see. That check is what
+ * makes the choice a choice rather than a free softener.
+ */
+const SPEECHES = ['pawn', 'threat', 'personal', 'flat'];
+
+/** Zero when you do not mind them, one when you cannot stand them. */
+function clampSpite(trust) { return E.clamp01((-trust) / 60); }
+
+function aiSpeech(s, rng) {
+  const cap = s.cast[s.captain];
+  if (!s.atRisk.length) return 'flat';
+  /* Making it personal in front of the whole house is a thing that happens a
+     few times a season, not every fourth week, so it is gated hard on
+     volatility and on the Captain actually disliking the person. */
+  const spite = s.hohTarget != null ? clampSpite(s.rel.trust[s.captain][s.hohTarget]) : 0;
+  const w = {
+    pawn: s.nomMode === 'pawn' ? 3.4 : 0.4,
+    threat: 1 + (cap.social.ambition / 100) * 1.6,
+    personal: 0.15 + (cap.social.volatility / 100) * 1.1 * spite,
+    flat: 1.4,
+  };
+  /* A backdoor is a lie by construction, and the lie it needs told is that
+     neither of these two is the point. */
+  if (s.nomMode === 'backdoor') { w.pawn = 3.6; w.threat = 0.3; w.personal = 0.2; }
+  return rng.weighted(SPEECHES, SPEECHES.map((k) => w[k]));
+}
+
+function applySpeech(s) {
+  const K = E.K;
+  const cap = s.captain, noms = s.atRisk;
+  if (cap == null || !noms.length) return;
+  const others = activeIds(s).filter((id) => id !== cap && noms.indexOf(id) === -1);
+
+  if (s.speech === 'pawn') {
+    const pawn = s.hohPawn != null && noms.indexOf(s.hohPawn) !== -1 ? s.hohPawn : null;
+    for (const id of noms) {
+      E.applyTrust(s.rel, id, cap, id === pawn ? K.SPEECH_PAWN_SOFT : K.SPEECH_PAWN_HARD);
+    }
+    /* If there is no pawn there is no numbers decision, and standing up and
+       saying there is in front of fourteen people is not free. */
+    if (!pawn) for (const id of others) E.applyTrust(s.rel, id, cap, K.SPEECH_PAWN_LIE);
+  } else if (s.speech === 'threat') {
+    const t = s.hohTarget != null && noms.indexOf(s.hohTarget) !== -1 ? s.hohTarget : noms[0];
+    for (const id of noms) {
+      E.applyTrust(s.rel, id, cap, id === t ? K.SPEECH_THREAT_TARGET : K.SPEECH_THREAT_OTHER);
+    }
+    /* Naming somebody the biggest threat in the house is a thing everybody
+       else heard, and they will keep hearing it at the vote. */
+    for (const id of others) s.rel.threatBias[id][t] = E.clamp(
+      s.rel.threatBias[id][t] + K.SPEECH_THREAT_BIAS, -40, 40);
+  } else if (s.speech === 'personal') {
+    for (const id of noms) E.applyTrust(s.rel, id, cap, K.SPEECH_PERSONAL_NOM);
+    for (const id of others) E.applyTrust(s.rel, id, cap, K.SPEECH_PERSONAL_ROOM);
+  } else {
+    for (const id of noms) E.applyTrust(s.rel, id, cap, K.SPEECH_FLAT_NOM);
+  }
 }
 
 /**
@@ -1161,6 +1363,13 @@ function doFallout(s) {
     soleVote: result.soleVote || null,
     blame,
     rations: s.rations.slice(),
+    /* Who was still in the house this week. Nothing recorded who was ALIVE at
+       a given moment, so any question of the form "how often does this happen
+       to somebody in a named group" had no denominator to divide by. */
+    active: activeIds(s).slice(),
+    /* The rituals, GDD §19, so the recap and the harness can both see them. */
+    speech: s.speech || null,
+    roomGuests: s.roomGuests ? s.roomGuests.slice() : [],
     leg: s.doubleSecondLeg ? 2 : 1,
   });
   pushEvent(s, 'eviction', { evicted: gone, tally: result.tally, tieBreak: result.tieBreak || null });
@@ -1179,8 +1388,9 @@ function doFallout(s) {
     s.atRisk = [];
     s.vetoHolder = null; s.vetoUsed = false; s.replacement = null; s.saved = null;
     s.nominees = [];
-  s.hohTarget = null; s.hohPawn = null; s.nomMode = null;
-  s.backdoor = null; s.backdoorLanded = false;
+    s.hohTarget = null; s.hohPawn = null; s.nomMode = null;
+    s.backdoor = null; s.backdoorLanded = false;
+    s.speech = null; s.roomGuests = null; s.campaigned = {};
     s.phase = PHASES.CAPTAIN_COMP;
     pushEvent(s, 'double_eviction', {});
     return s;
@@ -1356,6 +1566,70 @@ function performAction(s, action) {
         E.applyTrust(s.rel, j, me, -4);
       }
       out.target = j;
+      break;
+    }
+    /*
+     * CAMPAIGNING FROM THE BLOCK, GDD §19.4.
+     *
+     * The one thing every nominee in this format actually does, and the game
+     * had no verb for it: the player sat At Risk and talked about the weather
+     * like everybody else. It is free, because begging for your life is not a
+     * strategic expenditure, and it is capped at one conversation per person
+     * per week, because the second time you ask is worse than the first.
+     *
+     * Each pitch is checked against something REAL rather than rolled flat:
+     * numbers against whether you would actually be a number for them, threat
+     * against how dangerous they already find the other one, mercy against
+     * whether they like you, a deal against how exposed they feel. A pitch that
+     * is not true where they are standing does not land, and they remember you
+     * making it.
+     */
+    case 'campaign': {
+      const j = action.target, pitch = action.pitch;
+      const other = s.atRisk.filter((i) => i !== me)[0];
+      if (!s.campaigned) s.campaigned = {};
+      s.campaigned[j] = (s.campaigned[j] || 0) + 1;
+
+      const K2 = E.K;
+      const warmth = s.rel.trust[j][me];
+      let base = K2.CAMP_BASE, gain = 5, lose = -5;
+      if (pitch === 'numbers') {
+        const allied = E.sharedAlliances(s.alliances, me, j).length ? 1 : 0;
+        const mine = E.threatSeen(s, j, me), theirs = other != null ? E.threatSeen(s, j, other) : 50;
+        base += K2.CAMP_NUMBERS * (allied * 0.5 + E.clamp01((theirs - mine) / 40) * 0.5);
+      } else if (pitch === 'threat') {
+        const theirs = other != null ? E.threatSeen(s, j, other) : 50;
+        base += K2.CAMP_THREAT * E.clamp01((theirs - 45) / 40);
+        gain = 3; lose = -8;
+      } else if (pitch === 'mercy') {
+        base += K2.CAMP_MERCY * E.clamp01((warmth + 20) / 90);
+        /* It works on people who already like you and costs you standing with
+           everybody, which is what asking looks like from outside. */
+        gain = 2; lose = -3;
+      } else {
+        const exposed = E.threatSeen(s, j, j) / 100;
+        base += K2.CAMP_DEAL * E.clamp01(exposed);
+        gain = 8; lose = -10;
+      }
+      /* Asking twice is worse than asking once. */
+      base -= (s.campaigned[j] - 1) * K2.CAMP_REPEAT;
+      base += (s.cast[me].social.charisma - 50) / 260;
+
+      const ok = rng.chance(E.clamp01(base));
+      if (ok && other != null) { s.voteIntent[j] = other; E.applyTrust(s.rel, j, me, gain); }
+      else E.applyTrust(s.rel, j, me, lose);
+      if (pitch === 'threat' && other != null) {
+        s.rel.threatBias[j][other] = E.clamp(
+          s.rel.threatBias[j][other] + (ok ? K2.CAMP_THREAT_BIAS : 2), -40, 40);
+      }
+      if (pitch === 'mercy') {
+        for (const k of activeIds(s)) {
+          if (k === me || k === j) continue;
+          if (rng.chance(0.2)) E.applyTrust(s.rel, k, me, -2);
+        }
+      }
+      out.target = j; out.pitch = pitch; out.ok = ok; out.against = other;
+      out.again = s.campaigned[j] > 1;
       break;
     }
     case 'eavesdrop': {
