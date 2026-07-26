@@ -48,7 +48,17 @@ const median = (a) => {
 function runOne(seed, account) {
   const s = R.createRun({ seed: String(seed), autoPlayer: true, account });
   let guard = 6000;
-  while (s.phase !== R.PHASES.OVER && guard-- > 0) R.step(s, null);
+  while (s.phase !== R.PHASES.OVER && guard-- > 0) {
+    R.step(s, null);
+    /* Snapshotted mid-run on purpose. Counting clean players at the END would
+       score somebody who coasted to the final eight and was then nominated at
+       Final 7 identically to somebody who sat there in week two, which is the
+       mismeasurement that put "floaters" on the roadmap in the first place. */
+    if (s.cleanAtEight == null) {
+      const alive = s.cast.filter((p) => p.status === 'active');
+      if (alive.length <= 8) s.cleanAtEight = alive.filter((p) => !p.timesAtRisk).length;
+    }
+  }
   return s;
 }
 
@@ -182,10 +192,30 @@ function fullReport() {
    */
   console.log(`  spread                       top ${pct(worst)}   ${worst <= 0.13 ? 'ok' : 'MISS'}  (want <= 13%)`);
 
-  /* At least 60% of the cast should sit At Risk once before Final 5, or the
-     nomination model is picking the same four people every week. */
-  const atRiskShare = mean(runs.map((s) => s.cast.filter((p) => p.timesAtRisk > 0).length / 16));
-  report('cast At Risk at least once', atRiskShare, (v) => v >= 0.6, '>= 60%');
+  /*
+   * THE BLOCK, and this proxy replaced one that could not fail.
+   *
+   * The old version asked for at least 60 percent of the cast to sit At Risk
+   * once. It reported 99 percent every run and read as a pass, but thirteen of
+   * sixteen people are EVICTED and every eviction needs a nomination, so the
+   * floor is about 81 percent by arithmetic and the test was measuring the
+   * rules rather than the model.
+   *
+   * What actually distinguishes a real season is how many of the final eight
+   * got there without ever sitting on the block: the players who kept their
+   * heads down and were skipped for it. Two to four is the range across real
+   * seasons. Under two means the nomination model cannot leave anybody alone;
+   * over four means it cannot find anybody, and half the house is coasting.
+   */
+  const cleanToEight = [];
+  for (const s of runs) if (s.cleanAtEight != null) cleanToEight.push(s.cleanAtEight);
+  const clean = mean(cleanToEight);
+  console.log(`  reached the last eight clean  ${clean.toFixed(2)} of 8`
+    + `   ${clean >= 2 && clean <= 4 ? 'ok' : 'MISS'}  (want 2 to 4, real seasons)`);
+
+  const repeatBlock = mean(runs.map((s) => s.cast.filter((p) => p.timesAtRisk >= 3).length));
+  console.log(`  nominated three times or more ${repeatBlock.toFixed(2)} people`
+    + `   ${repeatBlock >= 2 && repeatBlock <= 6 ? 'ok' : 'MISS'}  (want 2 to 6)`);
 
   /* Alliance lifespan. Median 3 to 5 weeks, under 10% surviving to Final 3. */
   const lifespans = [];

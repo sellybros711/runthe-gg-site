@@ -480,6 +480,16 @@ it can be sold to them. The pawn still goes home about 15 to 20 percent of the
 time, which is the entire folklore of the move and needs no special case: if the
 room dislikes the pawn more than the target, the private leans outvote the pull.
 
+**Not worth the week.** A Captain does not spend their week on somebody who is
+no threat and is not coming for them. Three things must all be true: they hold
+no power the Captain can see, the Captain reads them as friendly, and they have
+never put the Captain up before. Multiplied rather than added, so any one of
+them failing brings you back into range, and scaled by how full the house is so
+it switches off entirely by Final 6. Pawn duty also concentrates: the pawn is
+somebody the Captain can actually talk to first, which means their own alliance,
+and often somebody who has sat there before and survived. Together those take
+the last eight from 2.75 clean to 3.26.
+
 **Backdoor.** Appeal reads off two things already modelled: the target's comp
 record, because they would win the Veto and walk, and their **cover**, because
 the room would not forgive a straight shot. Cover is weighted higher than comps.
@@ -516,6 +526,23 @@ Members of a solidified alliance, and a Final 2 partner, get probabilistic
 visibility into their allies' intent, scaled by strength and by `perception`.
 There is a standing small chance of AI to AI side deals producing a vote you did
 not see coming. You should be blindsided sometimes.
+
+**The Panel weight grows as the Panel fills.** "Can I beat them at the end" is
+the whole late game of this format, and it was a flat 0.10 term from week one,
+which is wrong at both ends: in week two nobody is thinking about a jury that
+does not exist, and at Final 5 it is often the only thing anybody is thinking
+about. `EV_PANEL` is now 0.30 scaled by how many seats are filled, from 18
+percent of that at an empty Panel to all of it at seven. It is the deciding term
+in 0.9 / 2.4 / 6.2 percent of votes across the first half, the jury forming, and
+the last five, and switching it off changes half of all evictions at six or
+fewer. Stopped at 0.30: at 0.45 voters start keeping whoever the jury does not
+respect, an uncovered comp beast is exactly that, and the design pillar dies.
+
+The player can see it. Once the Panel starts filling it appears as a fifth bar
+on the stage and as its own section in the House panel, in bands with no
+figures. Before that the people who decide the winner were the only people in
+the game you could not look at, because jurors dropped off the wall the week
+they were evicted.
 
 **Coalescence.** The formula above is what each voter privately wants. It is not
 what they do. A house votes as a house, and version 0.2 did not: sixteen
@@ -902,9 +929,37 @@ behave like the genre it is modelling.
 | 1 | Vote coalescence: the house votes as a house | DONE, §8.3 |
 | 2 | Nomination intent: pawn and backdoor | DONE, §8.2 |
 | 3 | Named alliances with size and identity, plus showmances that draw heat as a unit | pending |
-| 4 | Floater logic, so some people genuinely skate. 15.5 of 16 are nominated per run against 2 to 4 who never are in a real season | pending |
-| 5 | Jury management: the panel term currently decides 0.4 percent of votes and should matter in the last three weeks | pending |
+| 4 | Floater logic, so some people genuinely skate | DONE, §8.2, and see the correction below |
+| 5 | Jury management: make the Panel matter in the last three weeks | DONE, §8.3 |
 | 6 | Rituals: Captain's room, nomination speeches, rations bonding, campaigning from the block | pending |
+
+**Two corrections to the numbers this roadmap was written from**, kept because
+the mistakes are more instructive than the fixes.
+
+*Item 4 was measured wrong.* The stated problem was "15.5 of 16 are nominated
+per run against 2 to 4 who never are in a real season". Both halves are bad.
+Nearly everybody being nominated eventually is FORCED by the rules: thirteen of
+sixteen are evicted and every eviction needs a nomination, so the ceiling on
+never-nominated is three and real seasons sit at zero to two. And the count that
+does mean something, how many of the last eight got there without ever sitting
+on the block, was measured at the END of the run, which scores somebody who
+coasted to the final eight and was then nominated at Final 7 the same as
+somebody who sat there in week two. Snapshotted correctly at the moment the
+house hits eight, the game was already at **2.75 of 8**, inside the range real
+seasons produce. The "not worth the week" term shipped anyway, sized small, on
+the grounds that the behaviour was genuinely missing and it opens a way of
+playing the game did not have. It lands at 3.26.
+
+*Item 5 was nearly the same mistake in reverse.* The stated problem was that the
+Panel term "decides 0.4 percent of votes", which is true and misleading:
+switching the term off entirely still changed 17.2 percent of evictions. It was
+never inert. It was a tiebreaker that never got to be the reason. So the fix was
+not a bigger flat weight, it was a curve.
+
+The general lesson, now a rule: **a proxy that cannot fail is not a test.** The
+old "at least 60 percent of the cast sit At Risk once" reported 99 percent every
+run and read as a pass while measuring the rules rather than the model. It has
+been replaced with the clean-to-eight band, which can fail in both directions.
 
 ---
 

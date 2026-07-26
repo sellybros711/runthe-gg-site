@@ -1221,7 +1221,32 @@ function selfBars(){
              note:threat>62?'they see you':threat>44?'noticed':'under it'})
     +barRow({label:'Energy',v:(s.energy/maxE)*100,col:COL.ok,
              note:s.energy+' left this week'+(allies?' &middot; '+allies+(allies>1?' rooms':' room'):'')})
+    +panelBar()
     +'</div>';
+}
+
+/*
+ * The Panel, once there is one.
+ *
+ * Everybody in the house starts thinking about the jury the moment it starts
+ * filling, and by the last five it is the thing deciding half the evictions.
+ * The player had no way to see it: jurors drop off the wall the week they
+ * leave and never come back, so the one number that decides the end of the game
+ * was the one number nobody could read.
+ *
+ * Bands, no figures, same as every other relationship reading. §17.
+ */
+function panelBar(){
+  if(!s.panel||!s.panel.length) return '';
+  var me=s.human, tot=0, with_=0;
+  for(var i=0;i<s.panel.length;i++){
+    var v=s.rel.trust[s.panel[i]][me];
+    tot+=v; if(v>25) with_++;
+  }
+  var avg=tot/s.panel.length;
+  return barRow({label:'The Panel',v:Math.max(0,Math.min(100,(avg+100)/2)),
+    col:U.bandColor(E.band(avg).label),
+    note:with_+' of '+s.panel.length+' with you'});
 }
 function barRow(b){
   var v=Math.max(0,Math.min(100,b.v||0));
@@ -1233,9 +1258,20 @@ function barRow(b){
 /* Panels are opened from the nav and close with the same button. Nothing here
    is ever a decision, so none of it belongs in a card. */
 function panelHtml(){
-  if(openPanel==='house') return '<div class="panel"><h3>The house</h3>'
-    +'<div class="sub">What you know, and how old the information is.</div>'
-    +U.legend()+wall({})+'</div>';
+  if(openPanel==='house'){
+    var out='<div class="panel"><h3>The house</h3>'
+      +'<div class="sub">What you know, and how old the information is.</div>'
+      +U.legend()+wall({})+'</div>';
+    /* Jurors used to vanish the week they were evicted, which made the people
+       who decide the winner the only people you could not look at. */
+    if(s.panel&&s.panel.length){
+      out+='<div class="panel"><h3>The Panel</h3>'
+        +'<div class="sub">Seven seats when it is full. They are still watching, '
+        +'and they vote at the end on which of the last two deserves it.</div>'
+        +wall({only:s.panel,all:true})+'</div>';
+    }
+    return out;
+  }
   if(openPanel==='map') return '<div class="panel"><h3>Who is working with who</h3>'
     +'<div class="sub">Only what you have actually seen or been told. '
     +'An empty map means you have not been paying attention.</div>'

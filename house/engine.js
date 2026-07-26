@@ -186,7 +186,34 @@ const K = {
   HOH_INTENT_LEAK: 0.72,
 
   // eviction, GDD §8.3
-  EV_TRUST: 0.46, EV_THREAT: 0.23, EV_PRESSURE: 0.21, EV_PANEL: 0.10,
+  EV_TRUST: 0.46, EV_THREAT: 0.23, EV_PRESSURE: 0.21, EV_PANEL: 0.30,
+  /*
+   * WHEN THE JURY STARTS MATTERING.
+   *
+   * "Can I beat them at the end" is the whole late game of this format and was
+   * a flat 0.10 term from week one, which is wrong at both ends. In week two
+   * nobody is thinking about a jury that does not exist yet; at Final 5 it is
+   * often the ONLY thing anybody is thinking about.
+   *
+   * Measured before the ramp: the Panel term was the largest thing separating
+   * the two nominees in 0.3 percent of all votes. That number alone reads as an
+   * inert mechanic, and it was nearly the second mismeasurement of the day:
+   * switching the term off entirely still changed 17.2 percent of evictions, so
+   * it was never inert, it was a tiebreaker that never got to be a reason. The
+   * fix is not to make it bigger everywhere, it is to make it grow.
+   *
+   * Ramped off how full the Panel is, exactly like TH_SOCIAL in threatScore, so
+   * both curves key off the same visible fact rather than the week number,
+   * which Bounce Back and Double Eviction both move.
+   *
+   * After: the Panel is the deciding term in 0.9 / 2.4 / 6.2 percent of votes
+   * across the first half, the jury forming, and the last five, and switching it
+   * off changes HALF of all evictions at six or fewer. Stopped at 0.30 because
+   * 0.45 breaks comp beast targeting: with the weight that high, voters keep
+   * whoever the jury does not respect, and an uncovered comp beast is exactly
+   * that, so they survive at parity with the field and the pillar dies.
+   */
+  EV_PANEL_EARLY: 0.18,     // fraction of the weight before anybody is on the Panel
   /* Scaled by volatility/100. Lowered from 14 after the recap made the cost
      visible: at 14 a quarter of all votes were emotional reversals, and a
      simulation that answers "no good reason at all" that often is not the one
@@ -245,6 +272,47 @@ const K = {
   PAWN_SAFE: 0.55,          // weight on the pawn being someone the house will not take
   PAWN_TRUST: 0.30,         // weight on the Captain being able to sell it to them
   PAWN_THREAT: 0.25,        // a pawn who is a threat is not a pawn
+  /*
+   * Who actually gets asked. In a real season the pawn is nearly always
+   * somebody the Captain can TALK to first, which means their own people, and
+   * it is very often the same person twice, because a pawn who has already
+   * survived is a pawn the room has proved it will not take. Both of those
+   * concentrate pawn duty on a few players instead of spreading it evenly, and
+   * spreading it evenly is why nobody in this game could go a season without
+   * sitting on the block.
+   */
+  PAWN_ALLY: 13,            // you can only ask somebody who is already yours
+  PAWN_REPEAT: 6,           // per previous trip up there, capped below
+
+  /*
+   * NOT WORTH THE WEEK.
+   *
+   * A Captain does not spend their week on somebody who is no threat and is not
+   * coming for them, and they say so out loud every season. Version 0.2 had no
+   * version of that thought: NOM_TRUST is the heaviest term in nomination
+   * desire, so anybody the Captain merely disliked was a live candidate.
+   *
+   * SIZED SMALL, AND HERE IS THE HONEST REASON.
+   *
+   * This was put on the roadmap off the statistic "15.85 of 16 people are
+   * nominated per run against 2 to 4 who never are in a real season", which was
+   * measuring the wrong thing twice over. Nearly everybody being nominated
+   * eventually is FORCED: thirteen of sixteen are evicted and every eviction
+   * needs a nomination, so the ceiling on never-nominated is three and real
+   * seasons sit at zero to two, not two to four. The number that does mean
+   * something is how many of the last eight got there without sitting on the
+   * block, and measured properly this game was already at 2.75 of 8, inside the
+   * 2 to 4 a real season produces.
+   *
+   * So this term is not fixing a failure. It exists because the BEHAVIOUR was
+   * missing and because it opens a way of playing that the game did not have:
+   * stay quiet, stay friendly with whoever holds the power, and actually be
+   * skipped for it. Swept to land at 3.16 of 8 rather than the 3.60 the first
+   * pass produced, because pushing a proxy that was already fine to the edge of
+   * its band is not an improvement.
+   */
+  NOM_IRRELEVANT: 22,       // how much being harmless is worth
+  IRRELEVANT_FLOOR: 7,      // below this many active, everybody is worth the week
 
   /*
    * BACKDOOR. Name two people you have no intention of evicting, control the
@@ -919,6 +987,35 @@ function goalWeight(p, key) {
 }
 
 /**
+ * How much of a non-problem this person is, from the Captain's chair.
+ *
+ * Three things have to all be true for somebody to be genuinely not worth the
+ * week: they hold no power the Captain can see, the Captain reads them as
+ * friendly, and they have never come past the Captain before. Multiplied rather
+ * than added, so any ONE of those failing brings them back into range, which is
+ * what makes a floater a floater instead of a permanent immunity.
+ *
+ * Scaled by how full the house still is. At Final 6 there is nobody left who is
+ * not worth a week, and the term switches itself off.
+ */
+function irrelevance(state, hcId, targetId) {
+  const { rel, cast, alliances, panel } = state;
+  const active = cast.filter((p) => p.status === 'active').length;
+  const room = clamp01((active - K.IRRELEVANT_FLOOR) / (16 - K.IRRELEVANT_FLOOR));
+  if (room <= 0) return 0;
+
+  const threat = threatScore(rel, cast, hcId, targetId, panel, alliances);
+  const quiet = clamp01((62 - threat) / 55);
+  const read = rel.belief[hcId][targetId];
+  const friendly = clamp01(((read ? read.v : 0) + 25) / 85);
+  /* Somebody who has already put you up is never harmless again, however
+     pleasant they have been since. */
+  const past = cast[hcId].namedBy.indexOf(targetId) !== -1 ? 0 : 1;
+
+  return quiet * friendly * room * past;
+}
+
+/**
  * How much the Captain wants this person At Risk. Same shape as evictScore, but
  * the Captain is acting rather than reacting, so their own goal weighs more and
  * their alliances shield harder.
@@ -958,6 +1055,9 @@ function nominationDesire(state, hcId, targetId, rng) {
   if (cast[targetId].throwStreak >= K.THROW_STREAK_SUSPICION) {
     v += K.NOM_THROW_SUSPICION * K.THROW_SUSPICION_STEP;
   }
+
+  /* Not worth the week. See irrelevance() above. */
+  v -= K.NOM_IRRELEVANT * irrelevance(state, hcId, targetId);
 
   v += rng.normal(0, K.NOM_VOL_SD * (hc.social.volatility / 100));
   return v;
@@ -1028,7 +1128,13 @@ function nominationPlan(state, hcId, rng, exclude) {
   for (const id of active) {
     fit[id] = -houseAppetite(state, id) * K.PAWN_SAFE
       + rel.trust[hcId][id] * K.PAWN_TRUST
-      - threatScore(rel, cast, hcId, id, state.panel, alliances) * K.PAWN_THREAT;
+      - threatScore(rel, cast, hcId, id, state.panel, alliances) * K.PAWN_THREAT
+      /* You can only ask somebody who is already yours, and a pawn who has
+         survived it before is one the room has proved it will not take. Both
+         push pawn duty onto the same few people, which is what a real season
+         does and what leaves anybody else off the block entirely. */
+      + (sharedAlliances(alliances, hcId, id).length ? K.PAWN_ALLY : 0)
+      + Math.min(2, cast[id].timesAtRisk || 0) * K.PAWN_REPEAT;
   }
 
   // ── backdoor ───────────────────────────────────────────────────────────────
@@ -1149,10 +1255,14 @@ function evictScore(state, voterId, targetId, rng, parts) {
   const pressure = alliancePressure(state, voterId, targetId);
   const jury = panelThreat(state, voterId, targetId);
 
+  /* The jury weight grows as the jury fills. See EV_PANEL_EARLY. */
+  const seated = clamp01((panel ? panel.length : 0) / K.PANEL_SIZE);
+  const wPanel = K.EV_PANEL * (K.EV_PANEL_EARLY + (1 - K.EV_PANEL_EARLY) * seated);
+
   let v = K.EV_TRUST * trustTerm
     + K.EV_THREAT * threatTerm
     + K.EV_PRESSURE * pressure
-    + K.EV_PANEL * jury;
+    + wPanel * jury;
 
   v += goalWeight(voter, 'threat') * threatTerm * 0.3;
   for (const a of sharedAlliances(alliances, voterId, targetId)) {
@@ -1166,7 +1276,7 @@ function evictScore(state, voterId, targetId, rng, parts) {
     parts.trust = K.EV_TRUST * trustTerm;
     parts.threat = K.EV_THREAT * threatTerm;
     parts.pressure = K.EV_PRESSURE * pressure;
-    parts.panel = K.EV_PANEL * jury;
+    parts.panel = wPanel * jury;
     parts.noise = noise;
     parts.allied = sharedAlliances(alliances, voterId, targetId).length > 0;
     parts.total = v;
@@ -1493,7 +1603,7 @@ const api = {
   socialReach, panelEquity, compPercentile, threatScore, cover, houseConsensus,
   majoritySize, allianceOf, sharedAlliances, makeAlliance, renormalisePriorities, allianceTick,
   socialTick, converse,
-  nominationDesire, chooseNominations, nominationPlan, houseAppetite,
+  nominationDesire, chooseNominations, nominationPlan, houseAppetite, irrelevance,
   panelThreat, alliancePressure, evictScore, resolveEviction, assignBlame,
   computeBitterness, panelVote,
 };
