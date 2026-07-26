@@ -1485,9 +1485,6 @@ function renderPhase(){
   scrollFeed();
 }
 
-/* Test hook: drop a finished run straight onto the recap screen. */
-window.__inject=function(st){ s=st; screen='recap'; render(); };
-
 // ── boot ───────────────────────────────────────────────────────────────────
 account=loadAccount();
 render();
