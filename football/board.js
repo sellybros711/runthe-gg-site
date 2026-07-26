@@ -36,9 +36,20 @@
   /* Columns the board list needs. Named explicitly rather than select=*, so the
      rows stay small and adding a column to the table does not silently grow every
      board request. */
-  const ROW_COLS = 'id,created_at,wins,losses,games,title_won,perfect,made_playoffs,' +
+  /* Two column lists, and the reason is a real deployment hazard rather than
+     tidiness. display_name arrives with 51_football_accounts.sql, and PostgREST
+     answers a select naming a column the table does not have with a 400, which would
+     take the WHOLE board down on a project that had run 50 and not yet 51: not a
+     missing name, an empty leaderboard. So a 400 that names the column falls back to
+     the list without it, once, and remembers. Same shape as the pre-migration retries
+     in the soccer client. */
+  const BASE_COLS = 'id,created_at,wins,losses,games,title_won,perfect,made_playoffs,' +
     'seed_label,point_diff,chemistry_pct,spend_musd,respins,franchise,daily,picks,slots,' +
     'squad_fppg,structure_mult,team_rating,perfect_pct';
+  let namesColumn = true;          // until the database says otherwise
+  const rowCols = () => BASE_COLS + (namesColumn ? ',display_name' : '');
+  const missingNameColumn = (body) =>
+    !!(body && /display_name/.test(body.message || '') && /does not exist/i.test(body.message || ''));
 
   /* The two things a board can be sorted by, and the column each one orders on.
      Named here rather than taking a column name from the caller, so nothing can
@@ -68,6 +79,9 @@
      call with a JSON body carrying a code and a message, and that body is the whole
      diagnosis, so it is kept and shown. */
   let lastError = null;
+  /* Set when the board had to fall back to the pre-accounts column list, so the
+     diagnostics can name the file to run instead of leaving it to be guessed. */
+  let needsAccountsMigration = false;
   async function fail(where, res) {
     offline = true;
     let body = null;
@@ -92,11 +106,19 @@
      first. */
   const round1 = (n) => Math.round(Number(n) * 10) / 10;
 
-  const headers = (extra) => Object.assign({
-    apikey: SB_ANON,
-    Authorization: 'Bearer ' + SB_ANON,
-    'Content-Type': 'application/json',
-  }, extra || {});
+  /* THE SIGNED-IN USER'S TOKEN, WHEN THERE IS ONE.
+     Sending the anon key while somebody is signed in would leave auth.uid() null
+     inside ps_submit_run(), so their run would record as a guest and their name would
+     never appear on it. The apikey header stays the anon key either way, which is what
+     PostgREST wants; only the bearer changes. */
+  const headers = (extra) => {
+    const tok = (window.PS_AUTH && window.PS_AUTH.token && window.PS_AUTH.token()) || SB_ANON;
+    return Object.assign({
+      apikey: SB_ANON,
+      Authorization: 'Bearer ' + tok,
+      'Content-Type': 'application/json',
+    }, extra || {});
+  };
 
   /* A hung request must not leave the results screen waiting forever. */
   function timed(url, opts) {
@@ -322,12 +344,27 @@
   async function top(opts, limit, sort, dir) {
     const col = SORTS[sort] || SORTS.record;
     const way = dir === 'asc' ? 'asc' : 'desc';
+    const url = () => base() + TABLE + '?select=' + rowCols() +
+      '&order=' + col + '.' + way + ',created_at.' + ORDER_TIEBREAK[way] +
+      '&limit=' + (limit || 10) + scope(opts) +
+      (col !== 'score' ? '&' + col + '=not.is.null' : '');
     try {
-      let q = base() + TABLE + '?select=' + ROW_COLS +
-        '&order=' + col + '.' + way + ',created_at.' + ORDER_TIEBREAK[way] +
-        '&limit=' + (limit || 10) + scope(opts);
-      if (col !== 'score') q += '&' + col + '=not.is.null';
-      const res = await timed(q, { headers: headers() });
+      let res = await timed(url(), { headers: headers() });
+      if (!res.ok && namesColumn && res.status === 400) {
+        /* Read the body before deciding: only a complaint about display_name earns
+           the retry, so a genuinely broken query still surfaces as itself. */
+        const body = await res.json().catch(() => null);
+        if (missingNameColumn(body)) {
+          namesColumn = false;
+          needsAccountsMigration = true;
+          res = await timed(url(), { headers: headers() });
+        } else {
+          offline = true;
+          lastError = { where: 'board', status: 400, code: (body && body.code) || '',
+            message: (body && body.message) || 'bad request' };
+          return null;
+        }
+      }
       if (!res.ok) return await fail('board', res);
       const rows = await res.json().catch(() => null);
       return Array.isArray(rows) ? rows : null;
@@ -338,7 +375,7 @@
      pinned under the list. */
   async function byId(id) {
     try {
-      const q = base() + TABLE + '?select=' + ROW_COLS + '&id=eq.' + encodeURIComponent(id);
+      const q = base() + TABLE + '?select=' + rowCols() + '&id=eq.' + encodeURIComponent(id);
       const res = await timed(q, { headers: headers() });
       if (!res.ok) { offline = true; return null; }
       const rows = await res.json().catch(() => null);
@@ -370,6 +407,7 @@
     probe,
     get offline() { return offline; },
     get lastError() { return lastError; },
+    get needsAccountsMigration() { return needsAccountsMigration; },
     /* Used by the tests to prove a failed board never breaks the results screen. */
     _forceOffline() { offline = true; },
   };

@@ -256,6 +256,60 @@
   .rdstat span{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
     color:var(--dim-2);margin-top:2px}
 
+  /* THE PODIUM
+     The top three, second and first and third across, which is how a podium is
+     actually arranged and not how a list is. Only on a board pointed high to low:
+     on a reversed one the top three are the three worst runs and a podium would be
+     celebrating them. */
+  .podium{display:none;margin:13px 0 16px}
+  .podium.on{display:block}
+  /* The three steps, then ONE base under all of them. Each step used to carry its own
+     little stub of a floor, which read as three boxes that had been cut off rather
+     than as a podium, and with nothing under it the whole thing ran straight into the
+     line of text below. */
+  .podrow{display:grid;grid-template-columns:1fr 1.16fr 1fr;align-items:end;gap:7px}
+  .podbase{height:6px;border-radius:0 0 7px 7px;
+    background:linear-gradient(180deg,var(--line-2),rgba(255,255,255,.05))}
+  .pod{min-width:0;border-radius:12px 12px 0 0;padding:9px 7px 8px;text-align:center;
+    background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
+    border:1px solid var(--line);border-bottom:none;cursor:pointer}
+  .pod .pl{display:block;font-family:var(--fd);font-size:20px;font-weight:900;line-height:1;
+    color:var(--dim-2)}
+  .pod .pn{display:block;font-size:11.5px;font-weight:700;margin-top:5px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pod .pr{display:block;font-family:var(--fn);font-size:15px;font-weight:600;margin-top:2px}
+  .pod .ps{display:block;font-size:9.5px;color:var(--dim-2);margin-top:1px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pod:active{transform:translateY(1px)}
+  /* First is taller and gold. Second and third step down, which is the whole point
+     of a podium: you can see the gap without reading a number. */
+  .pod.p1{padding-top:17px;border-color:rgba(251,191,36,.45);
+    background:linear-gradient(180deg,rgba(251,191,36,.16),rgba(251,191,36,.03))}
+  .pod.p1 .pl{color:#fcd34d;font-size:25px}
+  .pod.p2{padding-top:11px;border-color:rgba(203,213,225,.3)}
+  .pod.p2 .pl{color:#cbd5e1}
+  .pod.p3{border-color:rgba(180,120,70,.34)}
+  .pod.p3 .pl{color:#c08457}
+  .pod.mine{border-color:rgba(59,130,246,.6);
+    background:linear-gradient(180deg,rgba(59,130,246,.18),rgba(59,130,246,.04))}
+
+  /* sign-in */
+  .fld{display:block;width:100%;margin-top:8px;padding:12px 13px;border-radius:11px;
+    background:rgba(255,255,255,.04);border:1px solid var(--line-2);color:var(--ink);
+    font-family:var(--fn);font-size:15px}
+  .fld:focus{outline:none;border-color:var(--blue)}
+  .autherr{margin:10px 0 0;padding:9px 12px;border-radius:10px;font-size:12.5px;
+    line-height:1.4;color:#fca5a5;background:rgba(239,68,68,.10);
+    border:1px solid rgba(239,68,68,.3)}
+  .authok{color:#86efac;background:rgba(34,197,94,.10);border-color:rgba(34,197,94,.3)}
+  .switch{margin-top:12px;font-size:12.5px;color:var(--dim)}
+  .switch button{background:none;border:none;padding:0;color:#93c5fd;font:inherit;
+    text-decoration:underline}
+  .who-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+  .who-row .av{flex:0 0 40px;width:40px;height:40px;border-radius:50%;
+    background:var(--grad-blue);display:grid;place-items:center;font-family:var(--fd);
+    font-size:18px;font-weight:900;color:#fff}
+
   /* leaderboard */
   .notlive{margin:11px 0 0;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.4;
     color:#d6b45f;background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.28)}
@@ -720,7 +774,7 @@
     letter-spacing:.1em;margin-right:5px}
   /* BEST is the answer these rows exist to give, so it is the green already used for
      the BEST column of the table below and for a positive delta. It was the same
-     grey as YOU, which made the two lines look like a list rather than a comparison
+     gray as YOU, which made the two lines look like a list rather than a comparison
      with a right answer in it. */
   .cmp .side .lbl.b{color:#4ade80;font-weight:700}
   .cmp .side b{font-weight:800}
@@ -930,6 +984,7 @@
         <span id="lb-dir-label">High to low</span>
       </button>
     </div>
+    <div class="podium" id="lb-podium"></div>
     <p class="lbcount" id="lb-count"></p>
     <p class="dim" id="lb-blurb" style="font-size:11.5px;margin:7px 0 0"></p>
     <div class="lb" id="lb-rows"></div>
@@ -1111,7 +1166,11 @@
 
 <script src="engine.js?v=11"></script>
 <script src="run.js?v=11"></script>
-<script src="board.js?v=1"></script>
+<!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
+     did, with runs recorded anonymously. Deferred so neither delays first paint. -->
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="board.js?v=2"></script>
+<script defer src="auth.js?v=1"></script>
 <script>
 (function(){
 'use strict';
@@ -1130,7 +1189,16 @@ const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS
   rankIn:async()=>null, total:async()=>null, top:async()=>null, byId:async()=>null,
   scoreOf:(w,d)=>w*10000+Math.min(9999,Math.max(0,
     Math.round((Math.round(d*10)/10+40)*100))),
-  cutoffISO:()=>null,
+  cutoffISO:()=>null, todayUTC:()=>new Date().toISOString().slice(0,10),
+  SORTS:{record:'score',rating:'team_rating'},
+  /* The stub has to answer everything the module does, or a blocked board.js turns a
+     missing method into a thrown error somewhere far away from the cause. The probe's
+     answer is the honest one for this state: the board is not there to ask. */
+  probe:async()=>({read:{status:0,ok:false,message:'board.js did not load'},
+    write:{status:0,code:'blocked',message:'board.js did not load',healthy:false}}),
+  lastError:{where:'board.js',status:0,code:'blocked',
+    message:'the leaderboard script did not load, usually a blocked request'},
+  needsAccountsMigration:false,
 };
 const $=(id)=>document.getElementById(id);
 
@@ -1314,7 +1382,7 @@ async function boot(){
     DATA=R.indexData(pl,tm); CTX={battery:bat,coaches:co,curated:cu};
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
-    buildTeams(); show('s-intro');
+    buildTeams(); authBoot(); show('s-intro');
   }catch(e){
     $('s-load').innerHTML='<div class="load"><h3 class="display">Could not load the data</h3>'+
       '<p class="dim" style="font-size:13px">'+esc(e.message)+'</p></div>';
@@ -2793,34 +2861,169 @@ function howToPlay(){
     '<p class="dim" style="font-size:12.5px;margin:13px 0 0">Win everything and you finish '+
       '<b>20 and 0</b>. Nobody has ever done it.</p>'+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
-  $('sheet').classList.add('on');
-  $('sh-x').onclick=()=>$('sheet').classList.remove('on');
+  $('sheet-in').dataset.kind='how';
+  openSheet();
 }
 
-/* Signed-out shell. No inputs, nothing submitted, nothing stored: the buttons are
-   disabled on purpose until accounts actually exist.
+/* ---------- ACCOUNTS ----------
 
-   The list of what a finished run sends is not boilerplate. Runs go to the
-   leaderboard now, and a player looking at a sign-in screen is entitled to know
-   what is already being recorded without one. */
-function profileSheet(){
-  $('sheet-in').innerHTML='<div class="eyebrow">Your profile</div>'+
-    '<h2 class="display" style="font-size:25px;margin:4px 0 6px">Not signed in</h2>'+
-    '<p class="dim" style="font-size:13.5px;margin:0">A RunThe.GG account will keep your runs, '+
-    'your best record and your place on the leaderboard across devices.</p>'+
-    '<p class="notlive" style="margin-top:12px">Accounts are not live yet, so these buttons do '+
-    'nothing. They are here so the shape is settled before launch.</p>'+
-    '<div class="signin">'+
-      '<button disabled>Continue with Google</button>'+
-      '<button disabled>Continue with Apple</button>'+
-      '<button disabled>Use an email link</button>'+
-    '</div>'+
-    '<p class="dim" style="font-size:11.5px;margin:13px 0 0">The leaderboard is live even without '+
-    'an account. When a season ends it records your record, your six players, your chemistry and '+
-    'what you spent. No name, no account, nothing that identifies you or your device.</p>'+
-    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+   No new account system. The site already has one and this is it: `profiles` from
+   supabase/10_accounts.sql, and the email-and-password and Google sign-in the other
+   games already use. A RunThe.GG account IS the account here, which is why none of
+   this needed any dashboard setup: the providers, the redirect URLs and the email
+   templates were already configured.
+
+   Signing in is never required. A guest's run still records, still ranks, and still
+   appears on the board as Anonymous. What an account adds is a name on it, and the
+   run you finished before signing in gets claimed rather than abandoned.
+
+   Nothing here ever sends a display name. ps_submit_run() reads it out of profiles
+   for auth.uid(), so the board's names cannot be forged from a browser. */
+const A=()=>window.PS_AUTH||null;
+let authState={ready:false,signedIn:false};
+let authMode='in';          // 'in' | 'up' | 'name'
+
+function authBoot(){
+  const a=A(); if(!a) return;
+  a.onChange((st)=>{
+    const was=authState.signedIn;
+    authState=st;
+    paintAvatar();
+    /* Just signed in with a finished guest run on screen: take it over. The board
+       stores no name for a guest row, so this is what puts one on the run you have
+       just been looking at. */
+    if(!was&&st.signedIn&&submitted) claimThisRun();
+    if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='profile')
+      profileSheet();
+  });
+  a.boot();
+}
+
+async function claimThisRun(){
+  const a=A(); if(!a||!submitted) return;
+  const ok=await a.claim(submitted);
+  if(!ok) return;
+  toast('That run is on your account now');
+  if($('s-board').classList.contains('on')) loadBoard();
+  if($('s-over').classList.contains('on')&&myRanks) paintRanks();
+}
+
+/* The header button: initials once there is a name, the line-art figure until then. */
+function paintAvatar(){
+  const b=$('b-profile');
+  const nm=authState.name;
+  b.classList.toggle('signed',!!authState.signedIn);
+  if(nm) b.innerHTML='<span class="in">'+esc(nm.slice(0,2).toUpperCase())+'</span>';
+  else b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.6" r="4"/>'+
+    '<path d="M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4"/></svg>';
+}
+
+const authMsg=(m,ok)=>'<p class="autherr'+(ok?' authok':'')+'">'+esc(m)+'</p>';
+
+function profileSheet(msg,ok){
+  const box=$('sheet-in');
+  box.dataset.kind='profile';
+  const st=authState;
+  const close='<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+
+  /* The library did not load, which is a CDN being blocked or an ad blocker. Say that
+     rather than showing a form that cannot submit. */
+  if(!A()||!st.ready){
+    box.innerHTML='<div class="eyebrow">Your profile</div>'+
+      '<h2 class="display" style="font-size:25px;margin:4px 0 6px">Accounts are offline</h2>'+
+      '<p class="dim" style="font-size:13.5px;margin:0">The sign-in library did not load, '+
+      'usually a blocked script. Your runs are still recorded and still ranked, without a '+
+      'name on them.</p>'+close;
+    openSheet(); return;
+  }
+
+  if(st.signedIn){
+    const nm=st.name;
+    box.innerHTML='<div class="eyebrow">Your profile</div>'+
+      (nm
+        ? '<h2 class="display" style="font-size:25px;margin:4px 0 2px">'+esc(nm)+'</h2>'+
+          '<p class="dim" style="font-size:12.5px;margin:0">'+esc(st.email||'')+'</p>'
+        : '<h2 class="display" style="font-size:25px;margin:4px 0 6px">Pick a name</h2>'+
+          '<p class="dim" style="font-size:13.5px;margin:0">This is what the leaderboard '+
+          'will call you. Three to twenty letters, numbers or underscores.</p>')+
+      (msg?authMsg(msg,ok):'')+
+      '<input class="fld" id="a-name" placeholder="'+(nm?esc(nm):'yourname')+
+        '" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="20">'+
+      '<div style="margin-top:9px"><button class="btn" id="a-setname">'+
+        (nm?'Change my name':'Save my name')+'</button></div>'+
+      '<p class="dim" style="font-size:11.5px;margin:12px 0 0">Runs you finish are '+
+      'recorded under this name. Changing it renames the ones already on the board.</p>'+
+      '<div style="margin-top:12px"><button class="btn ghost sm" id="a-signout">Sign out</button></div>'+
+      close;
+    openSheet();
+    $('a-setname').onclick=async()=>{
+      const v=($('a-name').value||'').trim();
+      if(!v){ profileSheet('Type a name first.'); return; }
+      busy('a-setname','Saving');
+      const r=await A().setName(v);
+      profileSheet(r.error||'Saved.',!r.error);
+    };
+    $('a-signout').onclick=async()=>{ await A().signOut(); profileSheet(); };
+    return;
+  }
+
+  /* Signed out: sign in, or make an account. Google first because it is one tap and
+     needs no password, then email for anyone who would rather not. */
+  const up=authMode==='up';
+  box.innerHTML='<div class="eyebrow">'+(up?'New account':'Sign in')+'</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 6px">'+
+      (up?'Put your name on it':'Welcome back')+'</h2>'+
+    '<p class="dim" style="font-size:13.5px;margin:0">'+(up
+      ? 'One account across every game on RunThe.GG.'
+      : 'The same account you use anywhere else on RunThe.GG.')+'</p>'+
+    (msg?authMsg(msg,ok):'')+
+    '<div class="signin"><button id="a-google">Continue with Google</button></div>'+
+    '<div class="hr" style="margin:14px 0"></div>'+
+    '<input class="fld" id="a-email" type="email" placeholder="you@email.com" '+
+      'autocapitalize="off" autocorrect="off" spellcheck="false">'+
+    '<input class="fld" id="a-pass" type="password" placeholder="password" '+
+      'autocomplete="'+(up?'new-password':'current-password')+'">'+
+    (up?'<input class="fld" id="a-user" placeholder="a name for the board" '+
+        'autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="20">':'')+
+    '<div style="margin-top:10px"><button class="btn" id="a-go">'+
+      (up?'Create my account':'Sign in')+'</button></div>'+
+    '<p class="switch">'+(up
+      ? 'Already have one? <button id="a-swap">Sign in instead</button>'
+      : 'New here? <button id="a-swap">Make an account</button>')+'</p>'+
+    close;
+  openSheet();
+  $('a-swap').onclick=()=>{ authMode=up?'in':'up'; profileSheet(); };
+  $('a-google').onclick=async()=>{
+    busy('a-google','Opening Google');
+    const r=await A().signInGoogle();
+    if(r.error) profileSheet(r.error);
+  };
+  $('a-go').onclick=async()=>{
+    const email=($('a-email').value||'').trim();
+    const pass=$('a-pass').value||'';
+    if(!email||!pass){ profileSheet('An email and a password, please.'); return; }
+    busy('a-go',up?'Creating':'Signing in');
+    if(up){
+      const user=($('a-user').value||'').trim();
+      if(!user){ profileSheet('Pick a name for the board.'); return; }
+      const r=await A().signUp(email,pass,user);
+      profileSheet(r.error||'Check your email to confirm, then sign in.',!r.error);
+    }else{
+      const r=await A().signIn(email,pass);
+      if(r.error) profileSheet(r.error); else profileSheet();
+    }
+  };
+}
+
+const openSheet=()=>{
   $('sheet').classList.add('on');
-  $('sh-x').onclick=()=>$('sheet').classList.remove('on');
+  const x=$('sh-x'); if(x) x.onclick=()=>$('sheet').classList.remove('on');
+};
+/* A button that has been pressed says so, because a sign-in round trip is long
+   enough that a silent button reads as a dead one. */
+function busy(id,label){
+  const b=$(id); if(!b) return;
+  b.disabled=true; b.textContent=label+'...';
 }
 
 /* ---------- THE LEADERBOARD ----------
@@ -2990,6 +3193,11 @@ async function runDiagnostics(){
     verdict='The board cannot be read at all.';
     fix='The table is not there, or the project is unreachable from this device. Run '+
       'supabase/50_football_perfect_season.sql.';
+  }else if(r.write&&r.write.healthy&&B.needsAccountsMigration){
+    verdict='The board works, but names are missing.';
+    fix='51_football_accounts.sql has not been run, so ps_runs has no display_name '+
+      'column and every row shows as Anonymous. The board falls back to reading '+
+      'without it rather than breaking, which is why everything else still works.';
   }else if(r.write&&r.write.healthy){
     verdict='Everything is wired up correctly.';
     fix='Reads work and the function refused a deliberately impossible run for the '+
@@ -3077,7 +3285,7 @@ function lbWindowsLive(){ return !(lbSort==='rating'); }
 const SORT_META={
   /* The right column always shows the quantity the board is sorted by, and with the
      name now taking the headline that is where the record has to live: it is what
-     ranks you, so it cannot be small grey text in a subtitle. */
+     ranks you, so it cannot be small gray text in a subtitle. */
   record:{label:'Record', of:(r)=>recordCell(r)},
   rating:{label:'Team rating', of:(r)=>ratingCell(r)},
 };
@@ -3093,6 +3301,7 @@ async function loadBoard(){
   if(lbBusy) return;
   lbBusy=true;
   $('lb-note').style.display='none';
+  $('lb-podium').className='podium'; $('lb-podium').innerHTML='';
   $('lb-rows').innerHTML='<div class="rload"><i></i><i></i><i></i><span>Loading the board</span></div>';
   $('lb-count').textContent='';
   $('b-lb-more').style.display='none';
@@ -3112,8 +3321,8 @@ async function loadBoard(){
     : (lbSort==='rating'
       ? 'Free runs, ranked all time. Team rating is about the roster, not the '+
         'season, so it is not split by day.'
-      : 'Free runs only, with no name on them. Daily runs have their own board. '+
-        'Windows reset at midnight UTC and the week starts Monday.');
+      : 'Free runs only. Daily runs have their own board. Windows reset at '+
+        'midnight UTC and the week starts Monday.');
   /* 25 rows in one request, shown 5 at a time. Paging over the network for every
      tap on a five-row list is a lot of round trips for very little. */
   const sc=lbScope();
@@ -3138,9 +3347,35 @@ async function loadBoard(){
   paintBoard();
 }
 
+/* THE TOP THREE, as a podium.
+   Hidden when the board is reversed, because the first three rows of a low-to-high
+   board are the three worst runs in the window and putting them on a podium would be
+   congratulating them. Hidden below three rows too: a podium with one step is a box. */
+function paintPodium(rows){
+  const el=$('lb-podium');
+  if(lbDir!=='desc'||rows.length<3){ el.className='podium'; el.innerHTML=''; return; }
+  const order=[1,0,2];                    // second, first, third: an actual podium
+  el.className='podium on';
+  el.innerHTML='<div class="podrow">'+order.map((i)=>{
+    const row=rows[i], place=i+1;
+    const mine=submitted&&row.id===submitted;
+    const fig=lbSort==='rating'
+      ? (row.team_rating===null?'--':Number(row.team_rating).toFixed(1))
+      : row.wins+'-'+row.losses;
+    const sub=lbSort==='rating'?'rating'
+      :(row.perfect?'perfect':row.seed_label.toLowerCase());
+    return '<div class="pod p'+place+(mine?' mine':'')+'" data-i="'+i+'">'+
+      '<span class="pl">'+place+'</span>'+
+      '<span class="pn">'+esc(playerName(row,mine))+'</span>'+
+      '<span class="pr">'+esc(fig)+'</span>'+
+      '<span class="ps">'+esc(sub)+'</span></div>';
+  }).join('')+'</div><div class="podbase"></div>';
+}
+
 function paintBoard(){
   const rows=lbRows||[];
   if(!rows.length){
+    $('lb-podium').className='podium'; $('lb-podium').innerHTML='';
     $('lb-rows').innerHTML='<div class="lbempty">'+
       (lbIsDaily()?"Nobody has finished today's daily yet. Play it and you are first."
         :(lbWin==='all'||lbSort==='rating'
@@ -3150,12 +3385,18 @@ function paintBoard(){
     $('b-lb-more').style.display='none';
     return;
   }
+  paintPodium(rows);
   $('lb-rows').innerHTML=rows.slice(0,lbShown).map(boardRow).join('')+minePinned(rows);
   $('b-lb-more').style.display=lbShown>=rows.length?'none':'block';
 }
 
 /* Tap a row for the lineup behind it. Delegated, so it keeps working through every
    repaint without rebinding. */
+$('lb-podium').addEventListener('click',(e)=>{
+  const el=e.target.closest('.pod'); if(!el) return;
+  const row=(lbRows||[])[+el.dataset.i];
+  if(row) runDetail(row);
+});
 $('lb-rows').addEventListener('click',(e)=>{
   const el=e.target.closest('.lbr'); if(!el) return;
   if(el.classList.contains('mine')&&!el.dataset.i){ runDetail(null); return; }
@@ -3245,8 +3486,8 @@ function boardRow(row,i){
   const lead=rank===1&&lbDir==='desc';
   /* Every row says WHO. With no rows carrying an identity the board read as a list
      of numbers rather than a list of people, which is what made it look empty of
-     players. Accounts are not live, so everybody is a guest and everybody is
-     Anonymous, and saying so is better than saying nothing. */
+     players. A guest still gets Anonymous, because saying that is better than
+     saying nothing at all. */
   return '<div class="lbr'+(lead?' gold':'')+(mine?' mine':'')+'" data-i="'+i+'">'+
     '<span class="rk">'+rank+'</span>'+
     '<span class="who"><b>'+esc(playerName(row,mine))+'</b>'+
@@ -3255,10 +3496,9 @@ function boardRow(row,i){
     '<span class="go">&rsaquo;</span></div>';
 }
 
-/* Who played it. Nothing on a row carries a name yet: accounts are not live, so
-   user_id is null on every one of them and there is no profile to join to. When
-   there is, the name comes from that profile and not from anything a client sent,
-   for the same reason no other text on these rows does.
+/* Who played it. A signed-in run carries the name ps_submit_run() copied out of
+   profiles, never anything a client sent, for the same reason no other text on these
+   rows comes from a client. A guest run carries none, and reads as Anonymous.
 
    Your own run says so, because "Anonymous" sitting where you know your own row is
    reads as the board having lost you. */
@@ -3342,7 +3582,10 @@ function minePinned(rows){
 }
 
 $('b-how').onclick=howToPlay;
-$('b-profile').onclick=profileSheet;
+/* Wrapped, not passed. profileSheet(msg, ok) takes a message, and an onclick handler
+   is handed the event as its first argument, so binding it directly would have
+   rendered "[object PointerEvent]" in the error slot on every open. */
+$('b-profile').onclick=()=>profileSheet();
 $('b-board').onclick=openBoard;
 $('b-board2').onclick=openBoard;
 $('b-board-back').onclick=()=>show(run&&run.outcome?'s-over':'s-intro');

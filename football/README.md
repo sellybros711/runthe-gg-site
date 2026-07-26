@@ -18,6 +18,7 @@ Calibration below, so the UI is built on top of a validated engine.
 | `engine.js` | Chemistry resolution, schedule generation, per-game resolution, display scores. Headless, no deps. Browser: `window.PS_ENGINE`; Node: `require`. |
 | `run.js` | Draft loop and run state: wheel, re-spins, cap accounting, week-by-week advance. Browser: `window.PS_RUN`. |
 | `board.js` | Leaderboard client: submit a finished run, read rank and totals for today, this week and all time. Browser: `window.PS_BOARD`. Optional, fails soft. |
+| `auth.js` | Accounts: the site's existing Supabase Auth, wrapped in eight calls. Browser: `window.PS_AUTH`. Optional, fails soft. |
 | `simulator.js` | Validation harness. Run this after any change to data, pricing, or constants. |
 | `playtest.js` | Plays one full run as readable text, draft, chemistry, schedule, weekly results, outcome card. The stand-in for the UI. |
 | `build/lib.mjs` | Shared build helpers: CSV parsing, cached fetch, franchise normalization. |
@@ -1069,11 +1070,12 @@ both the landing screen and the draft now assert the `?` is inside the band.
 
 ## The leaderboard
 
-Live, against Supabase. Three files:
+Live, against Supabase. Four files:
 
 | Where | What |
 |---|---|
 | `supabase/50_football_perfect_season.sql` | The `ps_runs` table, the indexes, RLS, and `ps_submit_run()`. Run once in the SQL editor. |
+| `supabase/51_football_accounts.sql` | Adds `display_name`, `ps_claim_run()` and `ps_rename_runs()`, and replaces `ps_submit_run()` with one that copies the name out of `profiles`. Run after 50. |
 | `board.js` | The client. Five request shapes, plain `fetch`, no supabase-js. |
 | `index.html` | The rank panel on the results screen and the board screen. |
 
@@ -1229,6 +1231,28 @@ detail sheet says so in words.
 Ordering is looked up from a two-entry table in `board.js`, not taken from the
 caller, so nothing can put an arbitrary string into an `order=` parameter.
 
+### The podium
+
+The top three sit above the list as three steps, in the order 2, 1, 3. That order is
+the point: a podium reads left to right as second, first, third, and putting first
+place on the left turns it back into a list with a taller first row.
+
+First place is the tallest step and sits highest, which is what the podium is for. The
+figure on each step follows the sort axis, so on the rating board it is the rating and
+not the record. Your own step is outlined the way your own row is. Tapping a step opens
+the same detail sheet a row does.
+
+It is hidden in two cases, and both were wrong first:
+
+- **On a reversed board.** The first three rows of a low-to-high board are the three
+  worst runs in the window, and putting them on a podium congratulates them.
+- **Under three rows.** A podium with one step is a box.
+
+The three steps sit on one continuous base rather than each carrying its own stub of a
+floor. With a floor per step the first screenshot read as three boxes that had been cut
+off at different heights, and with nothing under them at all the steps ran straight
+into the count line below.
+
 ### Tapping a row
 
 Any row opens a sheet with the six players in their slots, the club whose place the
@@ -1318,7 +1342,7 @@ broken. One function computes it, shared with the run the leaderboard records, s
 YOURS column and the leaderboard can never be two different quantities.
 
 **BEST is green**, matching the BEST column of that table and a positive delta. It was
-the same grey as YOU, which made the two lines read as a list rather than a comparison
+the same gray as YOU, which made the two lines read as a list rather than a comparison
 with a right answer in it.
 
 One inconsistency fixed while there: with an identical roster the BEST column still
@@ -1369,46 +1393,83 @@ Every board row carries a name. It did not, and a board of records with no ident
 any row reads as a list of numbers rather than a list of people, which is what made it
 look empty of players.
 
-Accounts are not live, so every row is a guest and every guest reads **Anonymous**.
-Your own row says **You**, because "Anonymous" sitting where you know your own run is
-reads as the board having lost you.
+A signed-in run carries the name on its account. A guest run carries none and reads
+**Anonymous**, which is better than reading nothing. Your own row says **You**, because
+"Anonymous" sitting where you know your own run is reads as the board having lost you.
 
 The name takes the row's headline, which moved the record into the right-hand column
 where the rating already lives. That is the correct place for it: the right column
 always shows the quantity the board is sorted by, and on the record board the record is
-what ranks you, so it cannot be small grey text in a subtitle.
+what ranks you, so it cannot be small gray text in a subtitle.
 
-Nothing on a row carries a name in the database. `user_id` is null on all of them and
-there is no profile to join to yet. When there is, the name comes from that profile and
-never from anything a client sent, for the same reason no other text on these rows does.
+**The name is never sent by a client.** `ps_submit_run()` reads it out of `profiles`
+for `auth.uid()` and writes it to the row itself, for the same reason no other text on
+these rows comes from a browser. There is no name argument to pass.
 
 ### What a row contains, and what it does not
 
 No free text, ever. A row is numbers plus the six picks as `<player_id>:<season>`,
 and the board renders names by resolving those ids against the browser's own copy of
-`player_seasons.json`. With no accounts there is nobody to attach a name to, and a
-player-supplied name or headline column would be an abuse surface for nothing. An id
-this browser cannot resolve is skipped rather than printed raw.
+`player_seasons.json`. The one piece of text on a row is the display name, and that is
+copied from `profiles` by the function rather than sent, so a player-supplied name or
+headline column never exists to moderate. An id this browser cannot resolve is skipped
+rather than printed raw.
 
 A double submit inside a minute returns the existing row instead of a second one, so
 a retry after a timeout cannot put the same season on the board twice.
 
 ### Accounts
 
-Still not live. The sign-in buttons are disabled and collect nothing, and `user_id`
-is nullable so anonymous runs can be claimed later.
+Live, and **no new account system was built**. The site already has one: `profiles` from
+`supabase/10_accounts.sql`, and the email-and-password and Google sign-in the other
+games use. A RunThe.GG account is the account here, which is why none of this needed
+dashboard setup: the providers, the redirect URLs and the email templates were already
+configured. `auth.js` wraps supabase-js in eight calls and nothing else.
 
-The profile sheet used to end with "every run is kept on this device only, and
-nothing about you is sent anywhere". The moment runs started being submitted that
-sentence was false, so it now lists what a finished season records: your record, your
-six players, your chemistry and what you spent, with no name, no account and nothing
-identifying. The board screen says the same thing in one line.
+**Signing in is never required, and that is a design decision rather than a phase.** A
+guest's run records, ranks and appears on the board exactly as a signed-in one does. All
+an account adds is a name on it. Making the leaderboard the reason to sign up would turn
+a game you can play in one tap into a game with a form in front of it.
 
-### Still to decide
+Four things follow, and each is a place a naive version leaks:
 
-Daily runs and free runs share one board. Everyone who plays the daily gets the same
-six draws, which makes it a fairer comparison than the open board, so these are
-probably worth splitting. The `daily` column is stored so that is a query change.
+- **The session token has to reach the request.** Sending the anon key while somebody is
+  signed in leaves `auth.uid()` null inside `ps_submit_run()`, so their own run records
+  as a guest and their name never appears on it. `headers()` sends the session JWT as the
+  bearer when there is one and the anon key otherwise; the `apikey` header stays the anon
+  key either way, which is what PostgREST wants.
+- **The run you finished before signing in gets claimed, not abandoned.** Sign in with a
+  finished run on screen and `ps_claim_run()` takes it over: it sets `user_id` and the
+  name `where id = ? and user_id is null`, so a row that already has an owner cannot be
+  stolen, and a guest cannot claim anything because there is no `auth.uid()` to claim it
+  for. Both are asserted by trying.
+- **Renaming reaches the rows already on the board.** `ps_rename_runs()` rewrites
+  `display_name` on every row you own. Without it, changing your name leaves the old one
+  on the board with no way to tell it is yours.
+- **The name comes from `profiles` on the server side.** See the section above.
+
+The profile sheet has four states, all of them screenshotted: signed out with sign-in and
+Google, signed in with a name, signed in with no name yet (which is where a fresh Google
+sign-in lands, since the trigger makes the profile row but nothing names it), and the
+library failing to load. That last one says accounts are offline and that runs are still
+recorded without a name, rather than showing a form that cannot submit. The header button
+shows your initials once there is a name and a line-art figure until then.
+
+### If 50 is run and 51 is not
+
+The board still works, and this took a fix. PostgREST answers a select naming a column
+the table does not have with a **400**, so a project that had run
+`50_football_perfect_season.sql` and not `51_football_accounts.sql` would not have shown
+everyone as Anonymous: the whole leaderboard would have gone dark, on every tab, with the
+offline notice up.
+
+So `board.js` keeps two column lists. A 400 whose message names `display_name` retries
+once without it and remembers, which costs one extra request on the first read of a
+session and none after. Any other 400 still surfaces as itself, so a genuinely broken
+query is not swallowed. The diagnostics sheet then names the file to run instead of
+leaving it to be guessed. `v46.mjs` builds a database in exactly that state, checks the
+board loads and ranks anyway, applies 51 and checks the same browser goes back to reading
+names.
 
 ### One design fix worth recording
 
@@ -1422,8 +1483,8 @@ read down the page as a comparison between two different quantities.
 ## Not built yet
 
 Everything in the GDD's build sequence is done. The page is **not linked from the
-homepage or `sitemap.xml`** and accounts are not connected to anything, both
-deliberately, pending review. The leaderboard is connected.
+homepage or `sitemap.xml`**, deliberately, pending review. The leaderboard and accounts
+are both live.
 
 Known gaps worth a look during playtesting:
 
@@ -1434,11 +1495,10 @@ Known gaps worth a look during playtesting:
   asserted in `--draft`) but the page does not yet write it to localStorage, so a
   refresh mid-season loses the run. Use the key prefix `rtps:` when adding it,
   `rtd:v1` belongs to RunTheDrive on the same origin.
-- **Sign-in is a shell.** Disabled, collecting nothing, until accounts exist. The
-  leaderboard itself is live and does not need them.
-- **`supabase/50_football_perfect_season.sql` has to be run once** in the SQL editor.
-  Until it is, the board reports itself unreachable, which is handled, but no run is
-  recorded.
+- **Two SQL files have to be run once** in the SQL editor, in order:
+  `supabase/50_football_perfect_season.sql`, then `supabase/51_football_accounts.sql`.
+  Until 50 is run the board reports itself unreachable, which is handled, but no run is
+  recorded. Until 51 is run the board works and every row reads Anonymous.
 - **Awards and Pro Bowl selections are not in.** Waiting on the data as
   `season, player name, team, award`. Team is required: there are 19 name-plus-season
   collisions in the player file, and every unmatched row will be reported rather than
