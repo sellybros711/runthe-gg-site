@@ -336,6 +336,25 @@ const K = {
    * same as what they think of you. Capped so a run of good information cannot
    * buy permanent immunity, and decaying fast so it has to be kept up.
    */
+  /*
+   * Seeding, GDD §21. Planting a name without leaving fingerprints on it.
+   *
+   * SEED_GROUND is the whole design. You cannot make somebody believe a thing
+   * they have no reason to believe; you can only hand them a reason to say out
+   * loud what they were already half thinking. So almost all of the odds come
+   * from ground that is already there, and the base is deliberately poor.
+   */
+  SEED_BASE: 0.12,
+  SEED_GROUND: 0.62,        // how much of it comes from what they already think
+  SEED_SKILL: 0.20,         // and how much from being able to read that
+  SEED_STEP: 11,            // threat bias planted when it lands
+  SEED_REACH: 3,            // how many of their people they might repeat it to
+  SEED_ECHO: 0.55,          // and how likely each of them is to hear it
+  SEED_ECHO_STEP: 0.6,      // second hand, so it lands softer
+  SEED_NOTICED: 0.10,       // they clock that you are steering. Rare, and small
+  SEED_SUSPICION: 9,
+  BIAS_DECAY: 2.5,          // per week, back toward the standing misread
+
   OWED_MAX: 40,
   OWED_DECAY: 6,            // per week. Nobody remembers a favour for a month
   OWED_NOM: 0.55,           // how much of it shields you from being named
@@ -549,6 +568,7 @@ function createRelationships(rng, cast, baselines) {
     suspicion: mk(0),
     lastWeek: mk(0),
     threatBias: mk(0),
+    biasBase: mk(0),
     /*
      * WHAT i FEELS THEY OWE j, GDD §20, and it is deliberately NOT trust.
      *
@@ -595,6 +615,11 @@ function createRelationships(rng, cast, baselines) {
       if (i !== j) {
         const blind = (100 - cast[i].social.perception) / 100;
         rel.threatBias[i][j] = rng.normal(0, K.TH_BIAS_SD * blind);
+        /* The standing misread is kept separately so that everything which
+           PUSHES on threatBias later, speeches, campaigning, secrets and
+           seeding, can fade back to it. Without a floor to fade to, decay
+           would erase the personal error this bias exists to model. */
+        rel.biasBase[i][j] = rel.threatBias[i][j];
       }
     }
   }
@@ -653,6 +678,24 @@ function decayWeek(rel, cast, week) {
       /* A favour is remembered for about a fortnight, GDD §20. */
       if (rel.owed[i][j]) {
         rel.owed[i][j] = Math.max(0, rel.owed[i][j] - K.OWED_DECAY);
+      }
+
+      /*
+       * A doubt somebody planted in you fades unless it keeps being fed.
+       *
+       * Five separate mechanics push on threatBias now: nomination speeches,
+       * campaigning from the block, three kinds of secret, and seeding. None of
+       * them ever gave anything back, and the value is clamped at forty, so a
+       * player who kept pushing could pin the whole house at maximum suspicion
+       * of a target and it would hold there for the rest of the run. It fades
+       * toward the standing personal misread, never past it.
+       */
+      if (rel.biasBase) {
+        const b = rel.biasBase[i][j], cur = rel.threatBias[i][j];
+        if (cur !== b) {
+          const back = Math.sign(b - cur) * Math.min(Math.abs(b - cur), K.BIAS_DECAY);
+          rel.threatBias[i][j] = cur + back;
+        }
       }
 
       const gap = clamp(1 + (week - rel.lastWeek[i][j]), 1, K.DECAY_MAX_WEEKS);

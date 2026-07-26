@@ -1591,3 +1591,87 @@ calibration pass. The harness measures this through `policy.js`, which drives
 the only seat that has it, via `node simulator.js --info`.
 
 That is a real asymmetry and it is written here rather than implied away.
+
+---
+
+## 21. Seeding, the Reflection Technique
+
+Every other way of moving somebody in this game is attributable. A scene that
+swings a vote writes a `voteIntent`, which becomes a promise, which `assignBlame`
+can trace back to you. Seeding is the one move that leaves nothing to trace: you
+ask a question somebody already half knows the answer to, and they arrive at the
+name on their own.
+
+Mechanically it writes `threatBias[listener][target]` and **never touches
+`voteIntent`**. No promise, no blame trail, no suspicion when it works. It pays
+off next week, through the threat model, rather than tonight.
+
+It replaces `pitch`, which wrote a vote intent directly and, like `leak` before
+it, was written and never wired to a button.
+
+### 21.1 You can only plant what is already there
+
+`SEED_GROUND` supplies most of the odds and the base is deliberately poor. The
+card shows, for every possible name, how much ground that listener already has:
+"most of the way there already" down to "no reason at all to believe that".
+Finding the pair where the doubt already exists **is** the play, and it is what
+the information layer in §20 is for.
+
+The only cost is that a perceptive listener can feel themselves being steered
+without being able to say toward what, which is a small suspicion of you rather
+than a trust loss, because nothing was said that could be quoted back.
+
+### 21.2 What it took to make it work, and what it is worth
+
+The first build was **indistinguishable from switching it off**, and three
+separate measurements were needed to find out why. All three are worth keeping.
+
+**The first measurement was invalid.** It reconstructed "who was seeded against"
+from `threatBias` at the end of a run. But five mechanics write to that matrix,
+so the reconstruction was really selecting whoever the house already found
+threatening, which is a person going out early anyway. Measured that way the
+verb read as a 1.33 place effect **with its own constant set to zero**. The
+control is what caught it. Seed targets are now logged as ground truth.
+
+**The second showed the channel was fine and the throughput was not.** Pinning a
+bias on one person from the whole house every week:
+
+| Bias pinned by everybody | Average finish | Out before the last eight |
+|---|---|---|
+| none | 8.93 | 54.5% |
+| +15 | 11.21 | 76.5% |
+| +40 | 14.86 | 98.0% |
+
+So `threatBias` decides plenty. One listener carrying +11 that fades over four
+weeks is roughly a tenth of what it takes, which is why sweeping `SEED_STEP`
+from 11 to 40 moved nothing: the problem was never the size of the push.
+
+So a planted name **travels**. The listener repeats it to the people they are
+closest to, at a lower strength, scaled by how loose-lipped they are. Same shape
+as `ALLY_LEAK_NAMED` in §7.7 and the same lesson twice over: a thing that is not
+repeated stays with one person and decides nothing.
+
+**The third found it was competing with itself.** Even with echo, seeding priced
+at a full scene was worth +0.03 places at a standard error of 0.10, because the
+energy came out of scene actions that move votes directly. Halved to
+`SEED_COST` 1, it is worth **+0.17 places at a standard error of 0.08**.
+
+That is real and it is small, about a sixth of what trading information is
+worth. Which is the right size for a slow, deniable, second-order verb, and it
+is stated here rather than dressed up.
+
+### 21.3 What is still unproven
+
+The suspicion figure in `--seed` reads 3.9 lower for a seeder, and **that number
+is confounded**: seeding displaces scene actions, and scenes are what generate
+suspicion. It is not evidence of deniability. Proving deniability is worth
+something needs the direct verbs to carry a suspicion cost that seeding avoids,
+which is a change to the scene economy and has not been made.
+
+### 21.4 One more thing this forced
+
+`threatBias` is now written by six mechanics and, until this section, decayed
+never. A player who kept pushing could pin the whole house at the clamp and it
+would hold there for the rest of the run. It now fades toward the standing
+personal misread at `BIAS_DECAY` a week, and that misread is stored separately
+in `biasBase` so decay cannot erase the character it exists to model.

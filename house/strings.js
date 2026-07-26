@@ -56,15 +56,24 @@ const S = {
     '{name} was already leaving when you started.',
   ],
 
-  pitchOk: [
+  /*
+   * SEEDING, GDD §21. Nothing in this bank is a request, an argument or an
+   * accusation, because the move is a question that answers itself. The line
+   * that matters is the first one: they say the name, not you.
+   */
+  seedOk: [
     '{name} says the name back to you. That usually means it stuck.',
-    '{name} was already most of the way there.',
-    'You make the case. {name} does not argue with it.',
+    '{name} was already most of the way there. You just left the door open.',
+    'You ask who has been quiet lately. {name} answers it themselves.',
+    'You do not say {target}. {name} does, about a minute later.',
   ],
-  pitchFail: [
-    '{name} hears you out and changes the subject.',
+  seedFail: [
+    '{name} hears the question and answers a different one.',
     'You misread the room. {name} likes {target} more than you thought.',
-    '{name} will remember that you asked.',
+    'Nothing takes. {name} is thinking about somebody else this week.',
+  ],
+  seedNoticed: [
+    '{name} looks at you a beat too long. They could not say what you were doing, only that you were doing something.',
   ],
 
   lieOk: [
