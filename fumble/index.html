@@ -318,8 +318,9 @@ function pickControlled(){
   else if(possession==='BLUE') controlled=carrier;
   else controlled=nearestOfTeam('BLUE', PL[carrier].position);
 }
-function updateHighlights(){ for(const p of PL){ p.userData.bodyMat.emissive.set('#000000'); }
-  if(carrier>=0){ PL[carrier].userData.bodyMat.emissive.set('#8a6a00'); } }
+function updateHighlights(){ for(const p of PL){ const m=p.userData.bodyMat; m.emissive.set('#000000'); m.emissiveIntensity=1; }
+  // carrier glows in its OWN team color (keeps the jersey blue, just luminous) instead of washing out to gold
+  if(carrier>=0){ const p=PL[carrier], m=p.userData.bodyMat; m.emissive.set(TEAM[p.userData.team]); m.emissiveIntensity=0.5; } }
 
 /* ---------------- tackle / truck / pop ---------------- */
 function updateContact(dt){
