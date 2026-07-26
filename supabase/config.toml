@@ -1,0 +1,14 @@
+# Supabase project config (for the Stripe payment Edge Functions).
+# The rest of the backend is applied as raw SQL (see supabase/*.sql), so this
+# file intentionally only declares what the functions need.
+project_id = "jcrrxqfpdelrmvjuihnm"
+
+# Authenticated: the browser sends the signed-in user's JWT. The gateway checks
+# it, and the function additionally resolves the user via auth.getUser().
+[functions.create-checkout-session]
+verify_jwt = true
+
+# Public endpoint for Stripe. Stripe does not send a Supabase JWT — security is
+# the webhook signature check inside the function, so JWT verification is OFF.
+[functions.stripe-webhook]
+verify_jwt = false
