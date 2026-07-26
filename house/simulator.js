@@ -563,6 +563,74 @@ function treeReport() {
 }
 
 /**
+ * THE INFORMATION LAYER, GDD §20.
+ *
+ * A PAIRED ablation, and it is paired because this session already learned the
+ * hard way that a cross-sectional comparison cannot isolate a mechanic: the two
+ * populations differ in everything else too. Same seeds, same policy, one
+ * switch. If trading what you know is worth doing, the traded runs finish
+ * better; if it is not, this says so and the feature is wrong.
+ *
+ * Reported as numbers with a direction rather than a pass band. Finish position
+ * is noisy at these sample sizes and a band tight enough to fail would flake,
+ * which is the same call made for the showmance heat term.
+ */
+function infoReport() {
+  const n = Math.max(200, Math.floor(N / 3));
+  console.log(`\n=== THE INFORMATION LAYER, ${n} paired seeds ===\n`);
+
+  const runSide = (trade) => {
+    const places = [], held = [], told = [], traced = [];
+    let wins = 0;
+    for (let i = 0; i < n; i++) {
+      const s = POL.playRun({ seed: String(700000 + i) }, { risk: 0.5, skill: 55, trade });
+      places.push(s.cast[s.human].place);
+      if (s.cast[s.human].place === 1) wins++;
+      held.push((s.secrets || []).length);
+      const st = s.tellStats || { told: 0, traced: 0, worth: 0 };
+      told.push(st.told); traced.push(st.traced);
+    }
+    return { places, wins, held, told, traced };
+  };
+
+  const off = runSide(false);
+  const on = runSide(true);
+
+  console.log('  setting     avg finish   win%    learned   handed over   traced back');
+  const row = (label, r) => console.log(`  ${label.padEnd(10)}  ${mean(r.places).toFixed(2).padStart(10)}`
+    + `   ${pct(r.wins / n).padStart(5)}   ${mean(r.held).toFixed(2).padStart(7)}`
+    + `   ${mean(r.told).toFixed(2).padStart(11)}`
+    + `   ${(mean(r.told) ? pct(mean(r.traced) / mean(r.told)) : '-').padStart(11)}`);
+  row('hoards', off);
+  row('trades', on);
+
+  /*
+   * THE PAIRED DIFFERENCE, not the difference of the means.
+   *
+   * These are the same seeds, so the same house, the same cast and the same
+   * opening weeks on both sides. Differencing per seed cancels all of that and
+   * leaves only what the switch did. Comparing two means instead throws the
+   * pairing away and buries a half-place effect under the variance of sixteen
+   * different houses: at 200 seeds the standard error on that comparison is
+   * 0.46 places, so it cannot see anything smaller than a full place.
+   */
+  const diffs = off.places.map((p, i) => p - on.places[i]);
+  const gain = mean(diffs);
+  const sd = Math.sqrt(mean(diffs.map((d) => (d - gain) * (d - gain))));
+  const se = sd / Math.sqrt(diffs.length);
+  const sig = Math.abs(gain) > 2 * se;
+  console.log(`\n  trading is worth ${gain >= 0 ? '' : 'MINUS '}${Math.abs(gain).toFixed(2)} places`
+    + ` (paired, SE ${se.toFixed(2)})`);
+  console.log(`  ${!sig ? 'NO MEASURABLE EFFECT, inside two standard errors'
+    : gain > 0 ? 'ok, the trader finishes higher' : 'NOT WORTH DOING, the trader finishes lower'}`);
+  if (mean(on.told) < 1) {
+    console.log('  WARNING: the trading policy handed over less than one secret a run.');
+    console.log('  Whatever this table is measuring, it is not the information layer.');
+  }
+  console.log('');
+}
+
+/**
  * The player's seat, played through the actual player surface.
  *
  * Everything else in this file drives that chair with `autoPlayer`, which runs
@@ -738,6 +806,7 @@ function axesReport() {
 
 if (arg === '--axes') axesReport();
 else if (arg === '--seat') seatReport();
+else if (arg === '--info') infoReport();
 else if (arg === '--skill') skillReport();
 else if (arg === '--levels') levelReport();
 else if (arg === '--throws') throwReport();

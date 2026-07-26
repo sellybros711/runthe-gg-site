@@ -1283,16 +1283,24 @@ Version 0.1 said there were none. There were about thirty. These are what is lef
    nodes grant attributes and unlocks, never behavior.
 7. **Does the player's own belief distortion apply to AI reading the player.**
    Currently yes, symmetric. Worth confirming it feels right in playtest.
-8. **Skill is currently a mild liability.** `--skill` shows that the better a
+8. **Being liked is a liability over most of its range, and that is bigger
+   than any one feature.** Measured in §20.3: a flat trust gift to the player
+   takes their last-five rate from 45.0 percent down to 31.6 percent before it
+   recovers at extreme values. The U is genuinely the paradox the format is
+   built on, but the dip is deep enough that any mechanic paying in likeability
+   pays nothing, which is why the information layer had to invent a second
+   currency to be worth building. The right fix is probably in how `socialReach`
+   feeds `threatScore`, and it needs its own calibration pass.
+9. **Skill is currently a mild liability.** `--skill` shows that the better a
    player's hands, the more comps they win and the worse they finish, because
    power paints you. The weight is set at 0.45 to keep that from becoming a tax,
    but the real release valve is knowing when to throw, and nothing has measured
    whether a player who throws well beats both ends of that table.
-9. **Comps still cost a socially strong player a little.** The `cover` mechanism
+10. **Comps still cost a socially strong player a little.** The `cover` mechanism
    fixed the case where a floor game made a comp winner worse, but holding power
    means naming people and the house remembers. The right way to close the last
    of it is to make comp wins pay MORE, not to soften the social game further.
-10. **The risky answer is level with the safe one, not better.** It should be a
+11. **The risky answer is level with the safe one, not better.** It should be a
    lever worth pulling when the effect is needed. Right now a selective player
    should beat a spammer, which is correct, but the policy is not selective
    enough to prove a selective player also beats a cautious one.
@@ -1377,3 +1385,118 @@ The card shows which of the four is true where that listener is standing,
 because that read is the whole decision and hiding it would make this a lottery
 with four tickets. A landed pitch writes a real `voteIntent`, so it feeds the
 existing broken-promise and blame machinery with no special case.
+
+---
+
+## 20. The Information Layer
+
+Before this section the game had exactly one verb for information. `eavesdrop`
+listened at a door, updated your belief matrix, and the thing you learned was
+gone: you could not hold it, choose a moment for it, or give it to anybody.
+There was a `leak` action in run.js that was never wired to a button, and it did
+not know WHAT was being leaked, only who it was about.
+
+That is the wrong shape. Knowing a thing is not the power. Knowing who it is
+worth something to, and picking the week to hand it over, is the power.
+
+### 20.1 A secret is an object
+
+Five kinds, each with a real source. A sixth, "X lied to Y", was designed and
+cut before shipping because there was no honest way for the player to come by
+it: the detection roll fires when the player lies, not when they catch somebody
+else at it. A kind with no source is a dead branch.
+
+| Kind | What it is | Where it comes from |
+|---|---|---|
+| `read` | what X thinks of Y | listening at a door |
+| `room` | there is a group with these people in it | listening at a door |
+| `name` | the group is called this | a named group leaking to you (§7.7) |
+| `pair` | those two are one number | a showmance leaking to you (§7.8) |
+| `intent` | the Captain is actually after X | being close enough to the Captain to be told |
+
+Each carries an age, a witness count, and a record of who you have already told.
+They go stale over four weeks. The hand caps at fourteen and the oldest thing
+falls out of it.
+
+### 20.2 Worth is per listener, and that is the mechanic
+
+A secret has no value of its own. It has a value **to a person**, and the gap
+between the best ear in the house and the worst is what makes choosing an ear a
+decision instead of a formality.
+
+| Situation | Worth |
+|---|---|
+| It is about them | 1.00, scaled by how bad it was |
+| It is about somebody they are in a room with | 0.55 |
+| It is about somebody they already fear | up to 0.45 |
+| Anything else | 0.14, and it is just something to say |
+
+Anyone who can already see it is worth zero, and the UI says so rather than
+letting somebody spend a turn on it.
+
+Telling somebody what was said about **them** is the single most valuable move
+in the layer, which is correct for the format and is also why it is the easiest
+one to get caught doing: two people behind a door is the narrowest provenance in
+the game.
+
+### 20.3 What it buys, and why it is not affection
+
+**This is the part that was measured and then redesigned.**
+
+The first build paid the whole reward in trust. At 800 paired seeds it produced
+**no effect whatsoever** on where the player finished: +0.10 places against a
+standard error of 0.21, while the trading player handed over eleven secrets a
+run and netted around ninety trust. The mechanic was fully exercised and
+completely inert.
+
+The reason turned out to be a property of the model rather than of the feature.
+Handing the player a flat trust gift from the entire house every week makes them
+finish **worse** over most of the range:
+
+| Gift per person per week | Average finish | Reached the last five |
+|---|---|---|
+| none | 7.24 | 45.0% |
+| +3 | 7.72 | 36.0% |
+| +8 | 8.79 | 31.6% |
+| +20 | 6.99 | 50.6% |
+
+Trust feeds `socialReach`, `socialReach` feeds `threatScore`, and being widely
+liked paints a target about as fast as it buys protection. The curve only turns
+back up once you are so beloved that cover overwhelms threat. **Any mechanic
+that pays in likeability pays into that dead zone**, which is a finding well
+beyond this feature and is related to open questions 8 and 9.
+
+So a secret pays mostly into a different quantity. `rel.owed[i][j]` is what i
+feels they owe j for being useful. It lowers how much i wants to nominate or
+evict j and contributes **nothing** to `socialReach`, so it never raises j's
+threat. It decays at 6 a week and caps at 40, because nobody remembers a favour
+for a month and no run of good information should buy permanent immunity.
+
+Being useful to somebody is a different quantity from being liked by them, and
+it is the one the quiet winners of this format actually accumulate.
+
+With the payout split 26 into debt and 7 into liking, the same paired ablation
+reads **+0.92 places, standard error 0.21**. That is the feature working.
+
+### 20.4 The cost
+
+Handing something over can be traced back to you, and the fewer people who could
+have known it, the louder your fingerprints. Trace chance starts at 0.24, rises
+with how narrow the provenance was, and falls with your `deception` and with the
+listener's `loyalty`. Measured at 11 percent of tells across a run. When it
+lands, the person who had a reason to keep it quiet takes 26 off you and gains
+26 suspicion.
+
+For an `intent` secret the person who minds is the **Captain**, not the target
+you just warned, which is a bug worth recording because the first version took
+`about[0]` for every kind and that field is the target.
+
+### 20.5 Scope, stated plainly
+
+This is a **player** inventory. The AI house already moves information through
+`socialTick`, alliance leaks and the belief layer, and giving fifteen AI a
+second parallel information economy is a much larger change needing its own
+calibration pass. The harness measures this through `policy.js`, which drives
+the only seat that has it, via `node simulator.js --info`.
+
+That is a real asymmetry and it is written here rather than implied away.

@@ -37,6 +37,7 @@ const E = (typeof require !== 'undefined') ? require('./engine.js') : window.RH_
 const C = (typeof require !== 'undefined') ? require('./comps.js') : window.RH_COMPS;
 const P = (typeof require !== 'undefined') ? require('./powers.js') : window.RH_POWERS;
 const SC = (typeof require !== 'undefined') ? require('./scenes.js') : window.RH_SCENES;
+const SEC = (typeof require !== 'undefined') ? require('./secrets.js') : window.RH_SECRETS;
 
 const PHASES = {
   SETUP: 'setup',
@@ -99,6 +100,8 @@ function createRun(opts) {
     /* GDD §7.8. Kept out of `alliances` on purpose: nothing that reads
        alliances as strategic groups is true of a couple. */
     showmances: [],
+    /* GDD §20. What the player knows and has not yet spent. */
+    secrets: [],
     panel: [],
     week: 0,
     phase: PHASES.SETUP,
@@ -466,6 +469,10 @@ function relayWeekly(s) {
       const mine = a.members.indexOf(me) !== -1;
       if (!mine && !(a.known && a.known[me] != null)) continue;
       entry.said = true;
+      if (!mine) {
+        SEC.learn(s, SEC.make('name', a.members.slice(), s.week,
+          { ref: a.id, value: a.name, witnesses: a.members.length + 2 }));
+      }
       pushEvent(s, 'alliance_named', { id: a.id, name: a.name, size: entry.size,
         members: a.members.slice(), mine });
     } else if (entry.kind === 'showmance_formed') {
@@ -474,6 +481,10 @@ function relayWeekly(s) {
       if (!mine && !(sm && sm.known && sm.known[me] != null)) continue;
       entry.said = true;
       told[entry.a + ':' + entry.b] = true;
+      /* Something you found out is something you can pass on. GDD §20. */
+      if (!mine) {
+        SEC.learn(s, SEC.make('pair', [entry.a, entry.b], s.week, { witnesses: 4 }));
+      }
       pushEvent(s, 'showmance_formed', { a: entry.a, b: entry.b, mine });
     } else if (entry.kind === 'showmance_broke') {
       /* A break-up is only news if the player was ever told there was one. */
@@ -790,6 +801,30 @@ function doNaming(s, input) {
       if (v > bestV) { bestV = v; best = t; }
     }
     a.target = best;
+  }
+
+  /*
+   * The Captain tells their own people what the week is actually about, and
+   * that is a thing you can carry to the person it is about. GDD §20.
+   *
+   * Gated on being genuinely close to them rather than on a die roll, so the
+   * most valuable secret in the game is a payoff for the social position and
+   * not a lottery ticket. Not minted when you ARE the Captain, because you do
+   * not need telling, and not when the target is you, because you will find out
+   * on your own soon enough.
+   */
+  /* Gated on the player being IN the house, not on isHumanActive, which is
+     false whenever the seat is being driven by the harness. Using it here meant
+     the single most valuable secret in the game never minted in any measured
+     run, which is exactly the class of thing a proxy is supposed to catch. */
+  if (s.captain !== s.human && s.cast[s.human].status === 'active'
+    && s.hohTarget != null && s.hohTarget !== s.human) {
+    const close = E.sharedAlliances(s.alliances, s.captain, s.human).some((a) => a.alive)
+      || s.rel.trust[s.captain][s.human] >= E.K.WHIP_TRUST + 15;
+    if (close) {
+      SEC.learn(s, SEC.make('intent', [s.hohTarget], s.week,
+        { value: s.captain, witnesses: 3 }));
+    }
   }
 
   /* The speech, GDD §19.2. */
@@ -1638,8 +1673,22 @@ function performAction(s, action) {
       const b = rng.pick(pool.filter((i) => i !== a));
       out.pair = [a, b];
       out.value = E.band(s.rel.trust[a][b]).label;
+      /*
+       * GDD §20. What you overheard is now a thing you HOLD, not a thing that
+       * has already happened to your belief matrix. Two people behind a door is
+       * the narrowest provenance in the game, which is why witnesses is 2 and
+       * why passing this on is the easiest way to get caught doing it.
+       */
+      out.learned = [SEC.learn(s, SEC.make('read', [a, b], week,
+        { value: s.rel.trust[a][b], witnesses: 2 }))];
       const known = s.alliances.filter((x) => x.alive && x.members.indexOf(a) !== -1 && x.members.indexOf(b) !== -1);
-      if (known.length) { out.alliance = known[0].members.slice(); known[0].known[me] = week; }
+      if (known.length) {
+        out.alliance = known[0].members.slice();
+        known[0].known[me] = week;
+        out.learned.push(SEC.learn(s, SEC.make(known[0].name ? 'name' : 'room',
+          known[0].members.slice(), week,
+          { ref: known[0].id, value: known[0].name || null, witnesses: known[0].members.length })));
+      }
       /* Getting caught is the cost, and perception is the defence. */
       if (rng.chance(E.clamp01(0.22 - s.cast[me].social.perception / 500))) {
         out.caught = true;
@@ -1648,16 +1697,19 @@ function performAction(s, action) {
       }
       break;
     }
-    case 'leak': {
-      const about = action.about, to = action.target;
-      E.applyTrust(s.rel, to, about, -rng.range(10, 22));
-      E.applyTrust(s.rel, to, me, rng.range(2, 7));
-      if (rng.chance(E.clamp01(0.30 - s.cast[me].social.deception / 400))) {
-        out.traced = true;
-        E.applyTrust(s.rel, about, me, E.K.D_LEAK_BURN);
-        s.rel.suspicion[about][me] = Math.min(100, s.rel.suspicion[about][me] + 25);
-      }
-      out.target = to; out.about = about;
+    /*
+     * GDD §20. This replaces `leak`, which was written, never wired to a
+     * button, and did not know WHAT was being leaked: it applied a flat trust
+     * hit to a named person with no reference to any fact. Handing somebody a
+     * specific thing you actually learned is a different move, and it is the
+     * one the format is built on.
+     */
+    case 'tell': {
+      const sec = (s.secrets || []).filter((x) => x.id === action.secret && !x.burned)[0];
+      if (!sec) { out.missing = true; break; }
+      const res = SEC.tell(s, sec, me, action.target, rng);
+      Object.assign(out, res);
+      out.target = action.target;
       break;
     }
     case 'confessional': {

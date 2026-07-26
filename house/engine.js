@@ -91,7 +91,6 @@ const K = {
   D_NAMED_AT_RISK: -20,
   D_BROKEN_PROMISE: -35,
   D_CAUGHT_LIE: -25,
-  D_LEAK_BURN: -18,
 
   /*
    * Soft clamp exponent. GDD §7.2. Raw deltas of 15 to 35 against a 200-wide
@@ -326,6 +325,16 @@ const K = {
    * to bite, not a second economy. Every one of them is a trust delta on top of
    * a decision the model already made.
    */
+  /*
+   * Debt, GDD §20. What somebody owes you for being useful, which is not the
+   * same as what they think of you. Capped so a run of good information cannot
+   * buy permanent immunity, and decaying fast so it has to be kept up.
+   */
+  OWED_MAX: 40,
+  OWED_DECAY: 6,            // per week. Nobody remembers a favour for a month
+  OWED_NOM: 0.55,           // how much of it shields you from being named
+  OWED_EVICT: 0.42,         // and from the vote
+
   ROOM_GUEST: 9,            // an hour of the Captain's undivided attention
   ROOM_SNUB: -2,            // and everybody else watched you pick
   SPEECH_PAWN_SOFT: 11,     // being called a formality is the best news up there
@@ -534,6 +543,24 @@ function createRelationships(rng, cast, baselines) {
     suspicion: mk(0),
     lastWeek: mk(0),
     threatBias: mk(0),
+    /*
+     * WHAT i FEELS THEY OWE j, GDD §20, and it is deliberately NOT trust.
+     *
+     * MEASURED, and this matrix exists because of the measurement. Handing the
+     * player a flat trust gift from the whole house every week makes them
+     * finish WORSE across most of the range: top-five went from 45.0 percent
+     * at no gift to 31.6 percent at eight a head, recovering only at twenty.
+     * Trust feeds socialReach, socialReach feeds threatScore, and being widely
+     * liked paints a target about as fast as it buys protection. So any
+     * mechanic that pays in likeability pays into a dead zone.
+     *
+     * Being USEFUL to somebody is a different quantity from being liked by
+     * them, and it is the one the quiet winners of this format actually
+     * accumulate. Debt lowers how much i wants to move against j and does not
+     * touch socialReach, so it never raises j's threat. It decays fast: nobody
+     * remembers a favour for a month.
+     */
+    owed: mk(0),
     belief: [],
   };
 
@@ -617,6 +644,11 @@ function decayWeek(rel, cast, week) {
        * maintenance a level to hold ABOVE, which is the pressure GDD §7.3 is
        * actually describing.
        */
+      /* A favour is remembered for about a fortnight, GDD §20. */
+      if (rel.owed[i][j]) {
+        rel.owed[i][j] = Math.max(0, rel.owed[i][j] - K.OWED_DECAY);
+      }
+
       const gap = clamp(1 + (week - rel.lastWeek[i][j]), 1, K.DECAY_MAX_WEEKS);
 
       const base = rel.baseline[i][j];
@@ -1370,6 +1402,11 @@ function nominationDesire(state, hcId, targetId, rng) {
      up the person they are sitting with, whatever the numbers say. */
   if (showmancePartner(state, hcId) === targetId) v -= K.SHOW_SHIELD_NOM;
 
+  /* And a smaller one you can actually build: what they owe you. GDD §20.
+     Note it is subtracted here and contributes NOTHING to threatScore, which
+     is the entire point of it being a separate quantity from trust. */
+  v -= K.OWED_NOM * (rel.owed ? rel.owed[hcId][targetId] : 0);
+
   if (cast[targetId].throwStreak >= K.THROW_STREAK_SUSPICION) {
     v += K.NOM_THROW_SUSPICION * K.THROW_SUSPICION_STEP;
   }
@@ -1601,6 +1638,7 @@ function evictScore(state, voterId, targetId, rng, parts) {
     v -= 30 * (a.strength / 100) * (a.priority[voterId] || 0.5) * (1 + goalWeight(voter, 'allyBond'));
   }
   if (showmancePartner(state, voterId) === targetId) v -= K.SHOW_SHIELD_VOTE;
+  v -= K.OWED_EVICT * (rel.owed ? rel.owed[voterId][targetId] : 0);
 
   const noise = rng.normal(0, K.EV_VOL_SD * (voter.social.volatility / 100));
   v += noise;

@@ -97,13 +97,50 @@ const S = {
     'You are three steps too slow leaving the hallway.',
   ],
 
-  leakOk: [
+  /*
+   * HANDING SOMETHING OVER, GDD §20. These two banks were written for a `leak`
+   * action that was never wired to a button. The copy was always right for the
+   * move; the move is now reachable.
+   */
+  tellOk: [
     '{name} takes the information and does not ask where it came from.',
     'You hand it over. {name} looks at {target} differently after.',
+    '{name} listens to all of it and says almost nothing back.',
   ],
-  leakTraced: [
+  tellFlat: [
+    '{name} already knew, or is doing a good job of looking like they did.',
+    'You tell {name} and watch it land on nothing.',
+  ],
+  tellTraced: [
     'It gets back to {target} by the evening.',
     '{target} works out who else could have known.',
+    'There were two people behind that door and {target} can count.',
+  ],
+
+  /* What it is like to be told each kind of thing. Second person for the
+     player, third for the house, per the voice rules at the top of this file. */
+  toldRead: [
+    'You tell {name} exactly what {target} said about them. They ask you to say it again.',
+  ],
+  toldThird: [
+    'You pass on what {target} thinks of {other}. {name} files it somewhere.',
+  ],
+  toldRoom: [
+    'You tell {name} there is a room they are not in. They want the names.',
+  ],
+  toldName: [
+    'You give {name} the name. A group that can be named is a group that can be counted.',
+  ],
+  toldPair: [
+    'You tell {name} the two of them are one number now.',
+  ],
+  toldIntent: [
+    'You tell {name} the week is about them. Nobody had said it out loud yet.',
+  ],
+
+  /* The inventory itself, when there is nothing in it. */
+  knowNothing: [
+    'You are not carrying anything worth trading. Listen at a door.',
   ],
 
   /* Phase furniture. The house narrating, not a UI label. */
