@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RunTheHouse</title>
+<meta name="description" content="A social strategy elimination sim. Sixteen players, one prize, and fifteen opponents who form their own opinions of you.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0a0b0c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0b0c'/%3E%3Crect x='6' y='9' width='20' height='14' fill='none' stroke='%23d4402c' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23d4402c'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;600&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* ── RunTheHouse. Surveillance monitor, casting file paperwork, chalk tallies.
+   Cold institutional surfaces with human handwriting on top. GDD §17.
+   ONE aggressive accent, --signal, and it is reserved for eviction and
+   betrayal. If it starts appearing on buttons, the design has drifted. */
+:root{
+  --ink:#0a0b0c; --panel:#121417; --panel2:#171a1e; --line:#252a30;
+  --chalk:#c9cfd5; --dim:#727a85; --dimmer:#4a515b;
+  --paper:#e7e2d7; --hand:#bfae8e;
+  --signal:#d4402c; --signal-dim:#7c2b21;
+  --ok:#7f9a86;
+  --tile:132px;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --disp:'Oswald','Arial Narrow',sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--ink);color:var(--chalk);
+  font-family:var(--mono);font-size:14px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+body{min-height:100vh;min-height:100dvh}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+h1,h2,h3{font-family:var(--disp);font-weight:400;letter-spacing:.06em;
+  text-transform:uppercase;margin:0}
+
+/* film grain + scanlines, the surveillance surface */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px);
+  mix-blend-mode:screen}
+
+#app{max-width:1180px;margin:0 auto;padding:0 16px 96px;min-height:100dvh}
+
+/* ── chrome ─────────────────────────────────────────────────────────────── */
+.topbar{position:sticky;top:0;z-index:40;background:linear-gradient(180deg,var(--ink) 72%,transparent);
+  padding:14px 0 12px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;
+  border-bottom:1px solid var(--line);margin-bottom:20px}
+.topbar .wk{font-family:var(--disp);font-size:26px;letter-spacing:.1em;color:var(--paper)}
+.topbar .ph{color:var(--dim);text-transform:uppercase;letter-spacing:.16em;font-size:11px}
+.topbar .sp{margin-left:auto;display:flex;gap:14px;align-items:baseline}
+.meta{color:var(--dimmer);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+
+/* ── the house wall: a bank of cameras, not a dashboard of cards ────────── */
+.wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--tile),1fr));gap:2px;
+  background:var(--line);border:1px solid var(--line);margin-bottom:22px}
+.cell{background:var(--panel);position:relative;padding:8px 8px 9px;
+  display:flex;flex-direction:column;gap:5px;min-height:170px;
+  transition:background .18s}
+.cell.sel{background:var(--panel2);outline:1px solid var(--hand);outline-offset:-1px}
+.cell.gone{opacity:.28;filter:grayscale(1)}
+.cell.risk{background:linear-gradient(180deg,var(--panel) 60%,rgba(212,64,44,.14))}
+.cell.you{outline:1px solid var(--paper);outline-offset:-1px}
+.cell button.pick{position:absolute;inset:0;width:100%;height:100%;z-index:2}
+.cam{aspect-ratio:1/1;background:#000;border:1px solid var(--line);overflow:hidden;position:relative}
+.cam svg{display:block;width:100%;height:100%}
+.cam .rec{position:absolute;top:4px;right:5px;width:5px;height:5px;border-radius:50%;
+  background:var(--signal);opacity:.85}
+.cell.gone .cam .rec{display:none}
+.nm{font-family:var(--disp);font-size:14px;letter-spacing:.05em;color:var(--paper);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbl{font-size:11px;letter-spacing:.04em;line-height:1.3}
+.lbl b{font-weight:400;display:block}
+.lbl i{font-style:normal;color:var(--dimmer);font-size:10px;letter-spacing:.06em}
+.t-bonded{color:#e4d9b8} .t-warm{color:#b6c3ae} .t-flat{color:var(--dim)}
+.t-cool{color:#b08a80} .t-hostile{color:var(--signal)}
+.pips{display:flex;gap:3px;flex-wrap:wrap;margin-top:auto;padding-top:4px}
+.pip{font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:1px 4px;
+  border:1px solid var(--dimmer);color:var(--dim)}
+.pip.cap{border-color:var(--paper);color:var(--paper)}
+.pip.risk{border-color:var(--signal);color:var(--signal)}
+.pip.veto{border-color:var(--ok);color:var(--ok)}
+
+/* ── the feed: chalk on slate ───────────────────────────────────────────── */
+.feed{border:1px solid var(--line);background:var(--panel);padding:14px 16px;
+  max-height:280px;overflow-y:auto;margin-bottom:20px;scroll-behavior:smooth}
+.feed p{margin:0 0 9px;color:var(--chalk)}
+.feed p:last-child{margin-bottom:0}
+.feed .sys{color:var(--dim);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  border-top:1px solid var(--line);padding-top:10px;margin-top:12px}
+.feed .hot{color:var(--signal)}
+.feed .quiet{color:var(--dimmer);font-style:italic}
+
+/* ── actions ────────────────────────────────────────────────────────────── */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(10,11,12,.97);
+  border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+.bar .inner{max-width:1180px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bar .prompt{color:var(--dim);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  margin-right:auto}
+.btn{border:1px solid var(--dimmer);padding:8px 16px;font-family:var(--disp);font-size:14px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--chalk);transition:.15s}
+.btn:hover{border-color:var(--paper);color:var(--paper);background:rgba(255,255,255,.03)}
+.btn[disabled]{opacity:.3;pointer-events:none}
+.btn.go{border-color:var(--paper);color:var(--paper)}
+.btn.hot{border-color:var(--signal);color:var(--signal)}
+.btn.hot:hover{background:rgba(212,64,44,.1);border-color:var(--signal)}
+.btn.sm{padding:5px 10px;font-size:12px}
+
+/* ── panels, forms, the file ────────────────────────────────────────────── */
+.file{border:1px solid var(--line);background:var(--panel);padding:20px;margin-bottom:20px}
+.file h2{font-size:17px;color:var(--paper);margin-bottom:4px}
+.file .sub{color:var(--dim);font-size:12px;margin-bottom:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+label{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:5px}
+input,select{font:inherit;background:#0e1013;border:1px solid var(--line);color:var(--paper);
+  padding:8px 10px;min-width:0;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--hand)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.choice{border:1px solid var(--line);background:var(--panel2);padding:12px 14px;text-align:left;
+  transition:.15s;width:100%}
+.choice:hover{border-color:var(--hand)}
+.choice.on{border-color:var(--paper);background:rgba(255,255,255,.04)}
+.choice b{display:block;font-family:var(--disp);font-size:15px;letter-spacing:.06em;
+  color:var(--paper);font-weight:400;text-transform:uppercase}
+.choice span{color:var(--dim);font-size:12px}
+
+/* ── the tree ───────────────────────────────────────────────────────────── */
+.tree{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.trunk h3{font-size:14px;color:var(--paper);margin-bottom:2px}
+.trunk .blurb{color:var(--dimmer);font-size:11px;margin-bottom:10px;min-height:30px}
+.branch{margin-bottom:10px}
+.branch .bn{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+  margin-bottom:4px}
+.nodes{display:flex;gap:3px}
+.node{flex:1;aspect-ratio:1/1;border:1px solid var(--line);background:#0e1013;
+  display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dimmer);
+  position:relative;transition:.15s}
+.node.can{border-color:var(--dim);color:var(--chalk);cursor:pointer}
+.node.can:hover{border-color:var(--paper);background:rgba(255,255,255,.05)}
+.node.own{background:var(--hand);border-color:var(--hand);color:#14161a}
+.node.locked{opacity:.4}
+
+/* ── comps ──────────────────────────────────────────────────────────────── */
+.stage{border:1px solid var(--line);background:var(--panel);padding:24px;margin-bottom:20px;
+  text-align:center;min-height:300px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;user-select:none}
+.stage h2{font-size:22px;color:var(--paper)}
+.stage .blurb{color:var(--dim);font-size:13px;max-width:420px}
+.padgrid{display:grid;grid-template-columns:repeat(3,72px);gap:6px}
+.pad{aspect-ratio:1/1;border:1px solid var(--line);background:#0e1013;transition:.09s}
+.pad.lit{background:var(--paper);border-color:var(--paper)}
+.pad.hit{background:var(--hand);border-color:var(--hand)}
+.rbox{width:min(420px,80vw);height:130px;border:1px solid var(--line);background:#0e1013;
+  display:flex;align-items:center;justify-content:center;font-family:var(--disp);
+  font-size:20px;letter-spacing:.1em;color:var(--dim);transition:.06s}
+.rbox.go{background:var(--ok);color:#0a0b0c;border-color:var(--ok)}
+.rbox.bad{background:var(--signal-dim);color:var(--paper)}
+.track{width:min(460px,86vw);height:26px;border:1px solid var(--line);background:#0e1013;
+  position:relative;overflow:hidden}
+.track .zone{position:absolute;top:0;bottom:0;left:42%;width:16%;background:rgba(127,154,134,.16);
+  border-left:1px solid var(--ok);border-right:1px solid var(--ok)}
+.track .mk{position:absolute;top:2px;bottom:2px;width:4px;background:var(--paper)}
+.holdpad{width:min(300px,70vw);aspect-ratio:1/1;border:1px solid var(--dim);
+  display:flex;align-items:center;justify-content:center;font-family:var(--disp);
+  font-size:16px;letter-spacing:.14em;color:var(--dim);background:#0e1013;transition:.12s}
+.holdpad.on{border-color:var(--paper);color:var(--paper);background:#16191d}
+.qbtns{display:flex;flex-direction:column;gap:8px;width:min(420px,86vw)}
+.meterwrap{width:min(460px,86vw);height:5px;background:#0e1013;border:1px solid var(--line)}
+.meter{height:100%;background:var(--hand);width:0%}
+
+/* ── vote reveal, the one place the game slows down ─────────────────────── */
+.tallywrap{display:flex;gap:34px;justify-content:center;margin:22px 0 8px;flex-wrap:wrap}
+.tcol{text-align:center;min-width:120px}
+.tcol .who{font-family:var(--disp);font-size:17px;color:var(--paper);letter-spacing:.06em}
+.marks{font-family:var(--disp);font-size:30px;letter-spacing:.14em;color:var(--chalk);
+  min-height:44px;line-height:1.3;word-break:break-all}
+.tcol.out .who{color:var(--signal)}
+.tcol.out .marks{color:var(--signal)}
+
+/* ── results ────────────────────────────────────────────────────────────── */
+table.truth{width:100%;border-collapse:collapse;font-size:12px}
+table.truth th{text-align:left;font-weight:400;color:var(--dim);font-size:10px;
+  letter-spacing:.14em;text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--line)}
+table.truth td{padding:6px 8px;border-bottom:1px solid #1a1d21}
+table.truth td.r{text-align:right;color:var(--dim)}
+.wrong{color:var(--signal)}
+.scroll{overflow-x:auto}
+
+/* ── the scene: where you are, what it is about, three ways to answer ────── */
+.scene{border:1px solid var(--line);background:var(--panel);padding:0;margin-bottom:20px;overflow:hidden}
+.scene .where{padding:16px 20px 14px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(191,174,142,.07),transparent)}
+.scene .where b{display:block;font-family:var(--disp);font-size:19px;letter-spacing:.04em;
+  color:var(--hand);font-weight:400;text-transform:none}
+.scene .said{padding:18px 20px;color:var(--paper);font-size:15px;line-height:1.65}
+.opts{display:flex;flex-direction:column;gap:1px;background:var(--line)}
+.opt{background:var(--panel2);padding:13px 18px;display:flex;gap:14px;align-items:flex-start;
+  text-align:left;width:100%;transition:.14s;border-left:2px solid transparent}
+.opt:hover{background:#1c2025}
+.opt .key{font-family:var(--disp);font-size:17px;letter-spacing:.06em;color:var(--dim);
+  min-width:16px;padding-top:1px}
+.opt .txt{flex:1;color:var(--chalk)}
+.opt .tag{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dimmer);
+  border:1px solid var(--dimmer);padding:1px 5px;white-space:nowrap;align-self:center}
+.opt.safe{border-left-color:var(--ok)}
+.opt.safe:hover .key{color:var(--ok)}
+.opt.neutral{border-left-color:var(--dim)}
+.opt.risky{border-left-color:var(--signal)}
+.opt.risky:hover{background:rgba(212,64,44,.07)}
+.opt.risky:hover .key{color:var(--signal)}
+.opt.risky .tag{border-color:var(--signal-dim);color:var(--signal)}
+.opt[disabled]{opacity:.32;pointer-events:none}
+
+.energy{display:flex;align-items:center;gap:7px}
+.pips-e{display:flex;gap:2px}
+.pip-e{width:7px;height:13px;background:var(--hand);opacity:.9}
+.pip-e.spent{background:transparent;border:1px solid var(--dimmer)}
+
+/* ── powers ───────────────────────────────────────────────────────────────── */
+.power{border:1px solid var(--hand);background:linear-gradient(180deg,rgba(191,174,142,.09),var(--panel));
+  padding:18px 20px;margin-bottom:20px}
+.power h2{color:var(--hand);font-size:18px}
+.power .kind{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+  margin-bottom:6px}
+.power .long{color:var(--chalk);margin-top:8px;font-size:13px}
+.power.hot{border-color:var(--signal);
+  background:linear-gradient(180deg,rgba(212,64,44,.12),var(--panel))}
+.power.hot h2{color:var(--signal)}
+.holding{display:inline-block;border:1px solid var(--hand);color:var(--hand);
+  font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:1px 5px;margin-left:8px}
+
+/* ── the recap: the chain, week by week ─────────────────────────────────── */
+.wk{border:1px solid var(--line);background:var(--panel);margin-bottom:2px}
+.wk>summary{padding:12px 18px;cursor:pointer;list-style:none;display:flex;gap:14px;
+  align-items:baseline;transition:.14s}
+.wk>summary::-webkit-details-marker{display:none}
+.wk>summary:hover{background:var(--panel2)}
+.wk .no{font-family:var(--disp);font-size:15px;letter-spacing:.1em;color:var(--dim);min-width:64px}
+.wk .hl{color:var(--paper);flex:1}
+.wk .tags{display:flex;gap:4px}
+.wk .body{padding:4px 18px 16px 96px;border-top:1px solid var(--line)}
+.wk .body p{margin:0 0 6px;color:var(--chalk)}
+.wk .body p.b{color:var(--dim)}
+.wk .body p.pw{color:var(--hand)}
+.wk .body p.v{padding-left:12px;border-left:1px solid var(--line)}
+.wk .body p.v.broke{border-left-color:var(--signal)}
+.wk .body p.v.you{color:var(--paper);border-left-color:var(--paper)}
+.wk .body h4{font-family:var(--disp);font-weight:400;font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dimmer);margin:14px 0 6px}
+.chain{border:1px solid var(--signal-dim);background:linear-gradient(180deg,rgba(212,64,44,.07),var(--panel));
+  padding:20px;margin-bottom:20px}
+.chain h2{color:var(--signal)}
+.chain p{margin:0 0 8px;color:var(--chalk)}
+.chain p.big{color:var(--paper);font-size:15px}
+.chain p.good{color:var(--ok)}
+.chain small{display:block;color:var(--dimmer)}
+.tl{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)}
+.tl .a{background:var(--panel2);padding:8px 14px;display:flex;gap:12px;align-items:baseline;font-size:12px}
+.tl .a b{font-weight:400;color:var(--paper);flex:1}
+.tl .a.mine{background:#1b1f23;border-left:2px solid var(--hand)}
+.tl .a i{font-style:normal;color:var(--dimmer);font-size:11px}
+
+.hide{display:none !important}
+@media(max-width:720px){
+  :root{--tile:104px}
+  #app{padding:0 10px 110px}
+  .tree{grid-template-columns:1fr}
+  .topbar .wk{font-size:21px}
+  .cell{min-height:150px}
+  .padgrid{grid-template-columns:repeat(3,60px)}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="bar hide" id="bar"><div class="inner" id="barinner"></div></div>
+
+<script src="rng.js"></script>
+<script src="tree.js"></script>
+<script src="generate.js"></script>
+<script src="engine.js"></script>
+<script src="comps.js"></script>
+<script src="powers.js"></script>
+<script src="scenes.js"></script>
+<script src="run.js"></script>
+<script src="recap.js"></script>
+<script src="strings.js"></script>
+<script>
+(function(){
+'use strict';
+var RNG=window.RH_RNG, T=window.RH_TREE, G=window.RH_GEN, E=window.RH_ENGINE,
+    C=window.RH_COMPS, R=window.RH_RUN, STR=window.RH_STRINGS,
+    PW=window.RH_POWERS, SC=window.RH_SCENES, RC=window.RH_RECAP;
+
+var app=document.getElementById('app');
+var bar=document.getElementById('bar');
+var barin=document.getElementById('barinner');
+
+var SAVE='rh_run_v1', ACCT='rh_account_v1';
+var s=null, account=null, screen='title';
+
+// ── account ────────────────────────────────────────────────────────────────
+function loadAccount(){
+  try{ var a=JSON.parse(localStorage.getItem(ACCT)); if(a&&a.owned) return a; }catch(e){}
+  return {name:'',gender:'x',hometown:'',region:'',owned:[],xp:0,
+          career:{runs:0,wins:0,panels:0,bestPlace:null,placeSum:0}};
+}
+function saveAccount(){ try{ localStorage.setItem(ACCT,JSON.stringify(account)); }catch(e){} }
+function level(){ return T.levelForXp(account.xp||0); }
+function tokensTotal(){ return T.tokensForLevel(level()); }
+function tokensSpent(){ return T.spend(new Set(account.owned)); }
+function tokensLeft(){ return tokensTotal()-tokensSpent(); }
+
+function saveRun(){ try{ localStorage.setItem(SAVE,JSON.stringify(R.serialise(s))); }catch(e){} }
+function clearRun(){ try{ localStorage.removeItem(SAVE); }catch(e){} }
+function hasRun(){ try{ return !!localStorage.getItem(SAVE); }catch(e){ return false; } }
+
+// ── procedural avatars ─────────────────────────────────────────────────────
+/* Built from a small custom shape vocabulary rather than an illustration pack
+   (GDD §17). Two tones, hard edges, framed like a still off a camera that has
+   been running for six weeks and is not being watched by anyone. */
+function avatar(p,size){
+  var r=RNG.mulberry32(RNG.hashSeed('av'+p.avatarSeed)());
+  var head=Math.floor(r()*3), hair=Math.floor(r()*5), acc=Math.floor(r()*4);
+  var hue=['#8d9299','#7d868e','#98938a','#8a8f95','#939089'][Math.floor(r()*5)];
+  var lit='#1a1d21';
+  var eyeY=52, eyeSp=9+Math.floor(r()*5);
+  var o='';
+  o+='<rect width="100" height="100" fill="#0c0e10"/>';
+  o+='<rect x="0" y="'+(64+Math.floor(r()*8))+'" width="100" height="40" fill="'+lit+'"/>';
+  // shoulders
+  o+='<path d="M14 100 Q22 '+(74+Math.floor(r()*6))+' 50 '+(72+Math.floor(r()*5))+' Q78 74 86 100 Z" fill="'+hue+'" opacity=".5"/>';
+  // head silhouette, three forms
+  if(head===0) o+='<rect x="33" y="26" width="34" height="44" rx="4" fill="'+hue+'"/>';
+  else if(head===1) o+='<ellipse cx="50" cy="47" rx="18" ry="23" fill="'+hue+'"/>';
+  else o+='<path d="M32 44 Q32 25 50 25 Q68 25 68 44 L66 62 Q58 71 50 71 Q42 71 34 62 Z" fill="'+hue+'"/>';
+  // hair mass
+  if(hair===0) o+='<path d="M30 44 Q30 20 50 20 Q70 20 70 44 L70 34 Q50 27 30 34 Z" fill="#101315"/>';
+  else if(hair===1) o+='<rect x="30" y="22" width="40" height="13" fill="#101315"/>';
+  else if(hair===2) o+='<path d="M29 46 Q28 21 50 21 Q72 21 71 46 L67 46 Q66 31 50 31 Q34 31 33 46 Z" fill="#101315"/>';
+  else if(hair===3) o+='<path d="M30 38 Q40 18 62 24 L70 40 L66 40 Q56 28 34 40 Z" fill="#101315"/>';
+  // eyes: two marks, nothing more. Faces read colder without mouths.
+  o+='<rect x="'+(50-eyeSp-3)+'" y="'+eyeY+'" width="5" height="2" fill="#0a0b0c"/>';
+  o+='<rect x="'+(50+eyeSp-2)+'" y="'+eyeY+'" width="5" height="2" fill="#0a0b0c"/>';
+  if(acc===0) o+='<rect x="'+(50-eyeSp-6)+'" y="'+(eyeY-4)+'" width="'+(2*eyeSp+12)+'" height="9" fill="none" stroke="#0a0b0c" stroke-width="1.5" opacity=".8"/>';
+  if(acc===1) o+='<rect x="34" y="'+(26+Math.floor(r()*4))+'" width="32" height="6" fill="#0f1214"/>';
+  o+='<rect x="0" y="0" width="100" height="100" fill="none" stroke="#000" stroke-width="6"/>';
+  return '<svg viewBox="0 0 100 100" width="'+(size||100)+'" height="'+(size||100)+'" aria-hidden="true">'+o+'</svg>';
+}
+
+// ── feed ───────────────────────────────────────────────────────────────────
+var feedLines=[];
+function say(text,cls){ if(!text) return; feedLines.push({t:text,c:cls||''}); if(feedLines.length>90) feedLines.shift(); }
+function sysline(text){ say(text,'sys'); }
+function renderFeed(){
+  return '<div class="feed" id="feed">'+feedLines.map(function(l){
+    return '<p class="'+l.c+'">'+esc(l.t)+'</p>';
+  }).join('')+'</div>';
+}
+function esc(x){ return String(x).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function scrollFeed(){ var f=document.getElementById('feed'); if(f) f.scrollTop=f.scrollHeight; }
+
+function tsay(bank,vars){ return STR.say(s.rng.text,bank,vars); }
+
+// ── the wall ───────────────────────────────────────────────────────────────
+function readOf(id){
+  if(id===s.human) return null;
+  return E.read(s.rel,s.human,id);
+}
+function cellFor(p,opts){
+  var o=opts||{};
+  var cls='cell';
+  if(p.status!=='active') cls+=' gone';
+  if(s.atRisk&&s.atRisk.indexOf(p.id)!==-1) cls+=' risk';
+  if(p.id===s.human) cls+=' you';
+  if(o.selected&&o.selected.indexOf(p.id)!==-1) cls+=' sel';
+  var rd=readOf(p.id);
+  var pips='';
+  if(s.captain===p.id) pips+='<span class="pip cap">Captain</span>';
+  if(s.atRisk&&s.atRisk.indexOf(p.id)!==-1) pips+='<span class="pip risk">At Risk</span>';
+  if(s.vetoHolder===p.id) pips+='<span class="pip veto">Veto</span>';
+  if(p.onRations) pips+='<span class="pip">Rations</span>';
+  if(p.status==='panel') pips+='<span class="pip">Panel</span>';
+  else if(p.status==='evicted') pips+='<span class="pip">Out</span>';
+
+  var lbl='';
+  if(p.id===s.human) lbl='<b style="color:var(--paper)">You</b><i>'+esc(p.archetype)+'</i>';
+  else if(rd) lbl='<b class="t-'+rd.band.tone+'">'+esc(rd.band.label)+'</b><i>'+esc(rd.freshness)+'</i>';
+
+  return '<div class="'+cls+'" data-id="'+p.id+'">'
+    +(o.pick?'<button class="pick" data-pick="'+p.id+'" aria-label="'+esc(p.name)+'"></button>':'')
+    +'<div class="cam">'+avatar(p,110)+'<span class="rec"></span></div>'
+    +'<div class="nm">'+esc(p.first)+'</div>'
+    +'<div class="lbl">'+lbl+'</div>'
+    +'<div class="pips">'+pips+'</div></div>';
+}
+function wall(opts){
+  var o=opts||{};
+  var list=s.cast.filter(function(p){
+    if(o.only) return o.only.indexOf(p.id)!==-1;
+    return o.all?true:p.status==='active';
+  });
+  return '<div class="wall">'+list.map(function(p){ return cellFor(p,o); }).join('')+'</div>';
+}
+
+// ── chrome ─────────────────────────────────────────────────────────────────
+var PHASE_NAME={
+  reset:'Reset',captain_comp:'Captain Comp',scheme1:'Scheming I',naming:'Naming',
+  veto_comp:'Veto Comp',scheme2:'Scheming II',veto_ceremony:'Veto Ceremony',
+  scheme3:'Scheming III',eviction:'Eviction',fallout:'Fallout',
+  final3:'Final Three',panel:'The Panel',over:'Over',move_in:'Move In Night'};
+function topbar(){
+  if(!s) return '';
+  return '<div class="topbar"><span class="wk">Week '+s.week+'</span>'
+    +'<span class="ph">'+esc(PHASE_NAME[s.phase]||s.phase)+'</span>'
+    +'<span class="sp">'+energyStrip()+'<span class="meta">'+R.activeCount(s)+' left</span>'
+    +'<span class="meta">Seed '+esc(s.seed)+'</span></span></div>';
+}
+/* Energy as marks rather than a number. GDD §17 scopes the no-numbers rule to
+   relationship values, so a digit here would be legal, but a row of marks reads
+   as something you are burning through and a digit reads as a budget. */
+function energyStrip(){
+  if(!s||!s.energy&&s.energy!==0) return '';
+  var max=SC.ENERGY.BASE+SC.ENERGY.AT_RISK_BONUS, o='';
+  for(var i=0;i<max;i++) o+='<span class="pip-e'+(i<s.energy?'':' spent')+'"></span>';
+  return '<span class="energy"><span class="meta">Energy</span><span class="pips-e">'+o+'</span></span>';
+}
+
+/* What the player is holding, if anything, shown wherever it is relevant. */
+function myPowers(){ return PW.heldBy(s,s.human); }
+function powerBadge(){
+  var mine=myPowers();
+  if(!mine.length) return '';
+  return mine.map(function(p){
+    return '<span class="holding">'+esc(PW.POWERS[p.kind].name)+'</span>'; }).join('');
+}
+
+function setBar(prompt,buttons){
+  if(!buttons||!buttons.length){ bar.classList.add('hide'); barin.innerHTML=''; return; }
+  bar.classList.remove('hide');
+  barin.innerHTML='<span class="prompt">'+esc(prompt||'')+'</span>'
+    +buttons.map(function(b,i){
+      return '<button class="btn '+(b.cls||'')+'" data-act="'+i+'"'+(b.off?' disabled':'')+'>'+esc(b.label)+'</button>';
+    }).join('');
+  Array.prototype.forEach.call(barin.querySelectorAll('[data-act]'),function(el){
+    el.onclick=function(){ buttons[Number(el.dataset.act)].go(); };
+  });
+}
+
+// ── screens ────────────────────────────────────────────────────────────────
+function render(){
+  if(screen==='title') return renderTitle();
+  if(screen==='create') return renderCreate();
+  if(screen==='tree') return renderTree();
+  if(screen==='comp') return;               // owns its own paint
+  if(screen==='vote') return;               // owns its own paint
+  if(screen==='results') return renderResults();
+  if(screen==='recap') return renderRecap();
+  return renderPhase();
+}
+
+function renderTitle(){
+  bar.classList.add('hide');
+  var lv=level(), career=account.career||{runs:0,wins:0};
+  app.innerHTML=''
+   +'<div style="padding:44px 0 10px">'
+   +'<h1 style="font-size:clamp(38px,9vw,80px);color:var(--paper);letter-spacing:.02em">RunTheHouse</h1>'
+   +'<p style="color:var(--dim);max-width:560px;margin:12px 0 0">'
+   +'Sixteen people, one prize, and a sealed house. Nobody here is scripted. '
+   +'They form their own opinions of you, build their own alliances behind your back, '
+   +'and vote on their own maths. You survive by managing what people think of you.</p></div>'
+   +'<div class="file"><h2>Your File</h2>'
+   +'<div class="sub">'+(account.name?esc(account.name):'Unfiled')+'</div>'
+   +'<div class="grid2">'
+   +'<div><label>Level</label><div style="font-family:var(--disp);font-size:24px;color:var(--paper)">'+lv+'</div></div>'
+   +'<div><label>Skill tokens</label><div style="font-family:var(--disp);font-size:24px;color:var(--paper)">'+tokensLeft()+' of '+tokensTotal()+'</div></div>'
+   +'<div><label>Runs</label><div style="font-family:var(--disp);font-size:24px;color:var(--paper)">'+(career.runs||0)+'</div></div>'
+   +'<div><label>Wins</label><div style="font-family:var(--disp);font-size:24px;color:var(--paper)">'+(career.wins||0)+'</div></div>'
+   +'</div></div>'
+   +'<div class="row">'
+   +(hasRun()?'<button class="btn go" id="resume">Resume run</button>':'')
+   +'<button class="btn '+(hasRun()?'':'go')+'" id="newrun">New run</button>'
+   +'<button class="btn" id="tofile">'+(account.name?'Edit character':'Create character')+'</button>'
+   +'<button class="btn" id="totree">Skill tree</button>'
+   +'</div>'
+   +'<div class="row"><label style="margin:0">Seed, optional</label>'
+   +'<input id="seedin" placeholder="leave blank for a new house" style="max-width:280px" inputmode="numeric"></div>';
+
+  var res=document.getElementById('resume');
+  if(res) res.onclick=function(){
+    try{ s=R.restore(JSON.parse(localStorage.getItem(SAVE))); }catch(e){ clearRun(); renderTitle(); return; }
+    feedLines=[]; sysline('Run resumed.'); screen='phase'; pump();
+  };
+  document.getElementById('newrun').onclick=function(){
+    if(!account.name){ screen='create'; render(); return; }
+    var sd=document.getElementById('seedin').value.trim();
+    startRun(sd||null);
+  };
+  document.getElementById('tofile').onclick=function(){ screen='create'; render(); };
+  document.getElementById('totree').onclick=function(){ screen='tree'; render(); };
+}
+
+function renderCreate(){
+  bar.classList.add('hide');
+  var towns=G.HOMETOWNS.map(function(h){ return '<option value="'+esc(h[0])+'"'+(account.hometown===h[0]?' selected':'')+'>'+esc(h[0])+'</option>'; }).join('');
+  app.innerHTML=''
+   +'<div class="topbar"><span class="wk">Casting File</span></div>'
+   +'<div class="file"><h2>Who is walking in</h2>'
+   +'<div class="sub">Name, where you are from, and how you read on paper. '
+   +'Region and gender shape first impressions and nothing else. They never touch a competition.</div>'
+   +'<div class="grid2">'
+   +'<div><label>Name</label><input id="cn" value="'+esc(account.name||'')+'" maxlength="26" placeholder="First Last"></div>'
+   +'<div><label>Gender</label><select id="cg">'
+     +'<option value="f"'+(account.gender==='f'?' selected':'')+'>Woman</option>'
+     +'<option value="m"'+(account.gender==='m'?' selected':'')+'>Man</option>'
+     +'<option value="x"'+(account.gender==='x'?' selected':'')+'>Nonbinary</option></select></div>'
+   +'<div><label>Hometown</label><select id="ch">'+towns+'</select></div>'
+   +'</div></div>'
+   +'<div class="row"><button class="btn go" id="csave">Save file</button>'
+   +'<button class="btn" id="cback">Back</button></div>';
+  document.getElementById('csave').onclick=function(){
+    var nm=document.getElementById('cn').value.trim();
+    if(!nm){ document.getElementById('cn').focus(); return; }
+    account.name=nm;
+    account.gender=document.getElementById('cg').value;
+    account.hometown=document.getElementById('ch').value;
+    var t=G.HOMETOWNS.filter(function(h){ return h[0]===account.hometown; })[0];
+    account.region=t?t[1]:'northeast';
+    if(!account.avatarSeed) account.avatarSeed=Math.floor(Math.random()*1e9);
+    saveAccount(); screen='title'; render();
+  };
+  document.getElementById('cback').onclick=function(){ screen='title'; render(); };
+}
+
+function renderTree(){
+  bar.classList.add('hide');
+  var owned=new Set(account.owned);
+  var attrs=T.deriveAttributes(owned);
+  var arch=T.resolveArchetype(owned,attrs);
+  var trunks=['comp','floor','long'];
+  var cols=trunks.map(function(tk){
+    var info=T.TRUNKS[tk];
+    var root=T.BY_ID.get(tk+'.root');
+    var rootCls=owned.has(root.id)?'own':(T.canBuy(owned,root.id)&&tokensLeft()>=root.cost?'can':'locked');
+    var brs=T.BRANCHES.filter(function(b){ return b.trunk===tk; }).map(function(b){
+      var nodes=[1,2,3,4,5,6].map(function(t){
+        var id=tk+'.'+b.id+'.'+t, n=T.BY_ID.get(id);
+        var cls=owned.has(id)?'own':(T.canBuy(owned,id)&&tokensLeft()>=n.cost?'can':'locked');
+        return '<div class="node '+cls+'" data-node="'+id+'" title="'+esc(n.name+', '+n.cost+' tokens')+'">'+n.cost+'</div>';
+      }).join('');
+      return '<div class="branch"><div class="bn">'+esc(b.name)+'</div><div class="nodes">'+nodes+'</div></div>';
+    }).join('');
+    var capId=tk+'.capstone', cap=T.BY_ID.get(capId);
+    var capCls=owned.has(capId)?'own':(T.canBuy(owned,capId)&&tokensLeft()>=cap.cost?'can':'locked');
+    return '<div class="trunk"><h3>'+esc(info.name)+'</h3><div class="blurb">'+esc(info.blurb)+'</div>'
+      +'<div class="branch"><div class="bn">Root</div><div class="nodes">'
+      +'<div class="node '+rootCls+'" data-node="'+root.id+'">'+root.cost+'</div></div></div>'
+      +brs
+      +'<div class="branch"><div class="bn">Mastery</div><div class="nodes">'
+      +'<div class="node '+capCls+'" data-node="'+capId+'">'+cap.cost+'</div></div></div></div>';
+  }).join('');
+
+  var attrRows=T.ALL_ATTRS.map(function(k){
+    return '<tr><td>'+esc(k)+'</td><td class="r">'+attrs[k]+'</td></tr>';
+  }).join('');
+
+  app.innerHTML=''
+   +'<div class="topbar"><span class="wk">Skill Tree</span>'
+   +'<span class="ph">'+esc(arch.name)+'</span>'
+   +'<span class="sp"><span class="meta">'+tokensLeft()+' tokens unspent</span></span></div>'
+   +'<div class="file"><div class="sub">Every point you spend also makes you a bigger target. '
+   +'The house scales to your level, and being good at things is how people get evicted here.</div>'
+   +'<div class="tree">'+cols+'</div></div>'
+   +'<div class="file"><h2>Attributes</h2><div class="scroll">'
+   +'<table class="truth"><tbody>'+attrRows+'</tbody></table></div></div>'
+   +'<div class="row"><button class="btn" id="respec">Reset tree</button>'
+   +'<button class="btn go" id="tback">Done</button></div>';
+
+  Array.prototype.forEach.call(app.querySelectorAll('.node.can'),function(el){
+    el.onclick=function(){
+      var id=el.dataset.node, n=T.BY_ID.get(id);
+      if(tokensLeft()<n.cost) return;
+      account.owned.push(id); saveAccount(); render();
+    };
+  });
+  document.getElementById('respec').onclick=function(){ account.owned=[]; saveAccount(); render(); };
+  document.getElementById('tback').onclick=function(){ screen='title'; render(); };
+}
+
+// ── starting a run ─────────────────────────────────────────────────────────
+function startRun(seed){
+  s=R.createRun({seed:seed||undefined,account:account});
+  feedLines=[];
+  sysline('Seed '+s.seed+'. Sixteen people. One of them is you.');
+  clearRun(); screen='phase'; pump();
+}
+
+// ── the pump: advance until the game needs the player ──────────────────────
+function pump(){
+  var guard=400;
+  while(guard-->0){
+    if(s.phase===R.PHASES.OVER){ finishRun(); return; }
+    var need=R.needsInput(s);
+    if(need){ handleNeed(need); return; }
+    var before=s.phase, wkBefore=s.week;
+    narrateBefore(before);
+    R.step(s,null);
+    narrateAfter(before,wkBefore);
+    if(s.phase===R.PHASES.EVICTION&&!R.needsInput(s)){ /* falls through to reveal */ }
+    if(before===R.PHASES.EVICTION){ saveRun(); showVoteReveal(); return; }
+  }
+}
+
+function narrateBefore(ph){
+  if(ph===R.PHASES.RESET&&s.week>0) sysline('Week '+(s.week+1));
+}
+function narrateAfter(ph,wkBefore){
+  if(ph===R.PHASES.RESET){
+    say(tsay('reset'),'quiet');
+    var aw=s.events.filter(function(e){ return e.kind==='power_awarded'&&e.week===s.week; });
+    for(var ai=0;ai<aw.length;ai++){
+      var d=PW.POWERS[aw[ai].kind];
+      if(aw[ai].holder===s.human) say('You have been handed the '+d.name+'. '+d.long,'hot');
+      else if(aw[ai].secrecy==='public') say(s.cast[aw[ai].holder].first+' has the '+d.name+'.','hot');
+      else if(aw[ai].secrecy==='known') say('Somebody in this house has the '+d.name+'. Nobody is saying who.','hot');
+      if(aw[ai].victim===s.human) say('Your vote has been taken off you this week. Nobody else knows.','hot');
+    }
+    var bb=s.events.filter(function(e){ return e.kind==='bounce_back'&&e.week===s.week; })[0];
+    if(bb) say(s.cast[bb.who].name+' comes back through the door. Nobody expected to see them again.','hot');
+  }
+  if(ph===R.PHASES.CAPTAIN_COMP&&s.captainResult){
+    var r=s.captainResult;
+    say('Captain Comp: '+r.name+'.');
+    say(s.captain===s.human?tsay('captainYou'):tsay('captainWon',{name:s.cast[s.captain].first}));
+    if(s.rations.length) say(tsay('rations',{names:s.rations.map(function(i){return s.cast[i].first;}).join(', ')}),'quiet');
+    s.captainResult=null;
+  }
+  if(ph===R.PHASES.NAMING&&s.atRisk.length){
+    say(s.captain===s.human
+      ? tsay('namingYou',{a:s.cast[s.atRisk[0]].first,b:s.cast[s.atRisk[1]].first})
+      : tsay('naming',{captain:s.cast[s.captain].first,a:s.cast[s.atRisk[0]].first,b:s.cast[s.atRisk[1]].first}));
+  }
+  if(ph===R.PHASES.VETO_COMP&&s.vetoResult){
+    say('Veto Comp: '+s.vetoResult.name+'. '+s.cast[s.vetoHolder].first+' takes it.');
+    s.vetoResult=null;
+  }
+  if(ph===R.PHASES.VETO_CEREMONY&&s.phase!==R.PHASES.VETO_CEREMONY){
+    if(s.vetoUsed){
+      say(tsay('vetoUsed',{holder:s.cast[s.vetoHolder].first,saved:s.cast[s.saved].first}));
+      if(s.replacement!=null) say(s.cast[s.captain].first+' names '+s.cast[s.replacement].first+' in their place.');
+    } else say(tsay('vetoHeld',{holder:s.cast[s.vetoHolder].first}));
+  }
+  var pl=s.events.filter(function(e){ return e.kind==='power_played'&&e.week===s.week&&!e.said; });
+  for(var pi=0;pi<pl.length;pi++){
+    pl[pi].said=true;
+    var pd=PW.POWERS[pl[pi].kind], who=s.cast[pl[pi].holder];
+    if(pl[pi].kind==='safety') say((pl[pi].holder===s.human?'You are':who.first+' is')+' safe this week. The '+pd.name+' is spent.','hot');
+    else if(pl[pi].kind==='diamond') say(who.first+' plays the Diamond Veto. '+s.cast[pl[pi].save].first
+      +' comes off, '+s.cast[pl[pi].replace].first+' goes up, and the Captain had no say in it.','hot');
+    else if(pl[pi].kind==='veto_pick') say(who.first+' picks '+s.cast[pl[pi].pick].first+' into the Veto Comp.','hot');
+    else if(pl[pi].kind==='back_to_back') say(who.first+' should not have been in that comp.','hot');
+    else if(pl[pi].kind==='extra_vote') say('The count came back one higher than it should have.','hot');
+  }
+
+  if(ph===R.PHASES.FALLOUT){
+    var w=s.weeks[s.weeks.length-1];
+    if(w&&w.blame&&w.blame.length){
+      var mine=w.blame.filter(function(b){ return b.blamed===s.human; });
+      if(mine.length) say('Somebody thinks you flipped.','hot');
+    }
+  }
+}
+
+// ── input handlers ─────────────────────────────────────────────────────────
+function handleNeed(need){
+  saveRun();
+  if(need.kind==='move_in') return showMoveIn(need);
+  if(need.kind==='comp') return showComp(need);
+  if(need.kind==='actions') return showScheming(need);
+  if(need.kind==='power_safety') return showPowerSafety(need);
+  if(need.kind==='power_veto_pick') return showPowerVetoPick(need);
+  if(need.kind==='power_diamond') return showPowerDiamond(need);
+  if(need.kind==='power_extra_vote') return showPowerExtraVote(need);
+  if(need.kind==='naming') return showNaming();
+  if(need.kind==='veto_use') return showVetoUse();
+  if(need.kind==='replacement') return showReplacement();
+  if(need.kind==='vote') return showVote();
+  if(need.kind==='final3_pick') return showFinal3Pick();
+  if(need.kind==='framing') return showFraming();
+  R.step(s,null); pump();
+}
+
+function showMoveIn(need){
+  screen='phase';
+  var TAG={safe:'Safe',neutral:'Even',risky:'Risky'};
+  app.innerHTML='<div class="topbar"><span class="wk">Move In Night</span>'
+   +'<span class="ph">'+(need.step+1)+' of '+need.of+'</span></div>'
+   +'<div class="scene"><div class="where"><b>Fifteen strangers and a lot of cameras.</b></div>'
+   +'<div class="said">'+esc(need.beat.line)+'</div>'
+   +'<div class="opts">'+need.beat.options.map(function(o){
+      return '<button class="opt '+o.kind+'" data-mi="'+o.key+'">'
+        +'<span class="key">'+o.key.toUpperCase()+'</span>'
+        +'<span class="txt">'+esc(o.text)+'</span>'
+        +'<span class="tag">'+TAG[o.kind]+'</span></button>'; }).join('')
+   +'</div></div>'+renderFeed();
+  Array.prototype.forEach.call(app.querySelectorAll('[data-mi]'),function(el){
+    el.onclick=function(){
+      var o=need.beat.options.filter(function(x){ return x.key===el.dataset.mi; })[0];
+      say(o.text,'quiet');
+      R.step(s,{key:el.dataset.mi}); pump();
+    };
+  });
+  setBar('A, B or C',[]);
+  scrollFeed();
+}
+
+function showNaming(){
+  screen='phase';
+  var picked=[];
+  function paint(){
+    app.innerHTML=topbar()
+      +'<div class="file"><h2>Name two At Risk</h2>'
+      +'<div class="sub">You hold the power. Both of them will remember it, and one of them is staying.</div></div>'
+      +wall({pick:true,selected:picked})+renderFeed();
+    bindPicks(function(id){
+      if(id===s.human) return;
+      var i=picked.indexOf(id);
+      if(i>=0) picked.splice(i,1); else if(picked.length<2) picked.push(id);
+      paint();
+    });
+    setBar(picked.length<2?'Choose two':'Locked in',[
+      {label:'Name them',cls:'hot go',off:picked.length<2,go:function(){
+        R.step(s,{noms:picked}); pump(); }}
+    ]);
+    scrollFeed();
+  }
+  paint();
+}
+
+function showVetoUse(){
+  screen='phase';
+  app.innerHTML=topbar()
+    +'<div class="file"><h2>You hold the Veto</h2>'
+    +'<div class="sub">Use it and the Captain has to name somebody else. '
+    +'They will know exactly who cost them their week.</div></div>'
+    +wall({only:s.atRisk.concat([s.human]),all:true})+renderFeed();
+  var btns=s.atRisk.map(function(id){
+    return {label:'Save '+s.cast[id].first,cls:'go',go:function(){ R.step(s,{save:id}); pump(); }};
+  });
+  btns.push({label:'Hold it',go:function(){ R.step(s,{save:null}); pump(); }});
+  setBar('The Veto',btns);
+  scrollFeed();
+}
+
+function showReplacement(){
+  screen='phase';
+  var pool=s.replacementPool;
+  app.innerHTML=topbar()
+    +'<div class="file"><h2>Name a replacement</h2>'
+    +'<div class="sub">The Veto took one of yours off. Somebody has to go up.</div></div>'
+    +wall({pick:true,only:pool,all:true})+renderFeed();
+  bindPicks(function(id){ if(pool.indexOf(id)!==-1){ R.step(s,{replacement:id}); pump(); } });
+  setBar('Choose one',[]);
+  scrollFeed();
+}
+
+function showVote(){
+  screen='phase';
+  app.innerHTML=topbar()
+    +'<div class="file"><h2>Cast your vote</h2>'
+    +'<div class="sub">Votes are anonymous. The tally gets read out, the names never do.</div></div>'
+    +wall({only:s.atRisk,all:true})+renderFeed();
+  setBar('Evict',s.atRisk.map(function(id){
+    return {label:'Evict '+s.cast[id].first,cls:'hot',go:function(){
+      R.step(s,{vote:id}); saveRun(); showVoteReveal(); }};
+  }));
+  scrollFeed();
+}
+
+function showFinal3Pick(){
+  screen='phase';
+  var pool=R.activeIds(s).filter(function(i){ return i!==s.human; });
+  app.innerHTML=topbar()
+    +'<div class="file"><h2>You won the last one</h2>'
+    +'<div class="sub">Pick who sits beside you. The other one joins the Panel, '
+    +'and gets a vote on which of you deserves it.</div></div>'
+    +wall({pick:true,only:pool,all:true})+renderFeed();
+  bindPicks(function(id){ R.step(s,{keep:id}); pump(); });
+  setBar('Choose one',[]);
+}
+
+function showFraming(){
+  screen='phase';
+  app.innerHTML=topbar()
+    +'<div class="file"><h2>The Panel is seated</h2>'
+    +'<div class="sub">'+esc(tsay('panelOpen'))+'</div>'
+    +'<div class="grid2">'
+    +'<button class="choice" data-fr="own"><b>Own it</b><span>Every move was yours and you would make them again. '
+    +'The strategists respect it. The ones you cut will not.</span></button>'
+    +'<button class="choice" data-fr="humble"><b>Play it down</b><span>You did what the house made you do. '
+    +'Softer landing with the people you hurt, thinner with the ones who wanted a game.</span></button>'
+    +'</div></div>'+renderFeed();
+  Array.prototype.forEach.call(app.querySelectorAll('[data-fr]'),function(el){
+    el.onclick=function(){ R.step(s,{framing:el.dataset.fr}); pump(); };
+  });
+  setBar('',[]);
+}
+
+function bindPicks(fn){
+  Array.prototype.forEach.call(app.querySelectorAll('[data-pick]'),function(el){
+    el.onclick=function(){ fn(Number(el.dataset.pick)); };
+  });
+}
+
+// ── scheming ───────────────────────────────────────────────────────────────
+/* Scheming is now a place and a conversation rather than a verb list. You pick
+   who to spend energy on, the house draws where you are and what it is about,
+   and the answer is A, B or C. scenes.js owns the banks; this owns the screen. */
+function showScheming(need){
+  screen='phase';
+  var moment=null;
+
+  function paintPick(){
+    var side=[
+      {label:'Eavesdrop',off:s.energy<SC.ENERGY.EAVESDROP_COST,go:function(){
+        var o=R.performAction(s,{kind:'eavesdrop'}); s.energy-=SC.ENERGY.EAVESDROP_COST;
+        narrateAction(o); saveRun(); paintPick(); }},
+      {label:'Move on',cls:'go',go:function(){ R.step(s,{done:true}); pump(); }}
+    ];
+    app.innerHTML=topbar()
+      +'<div class="file"><h2>Who are you spending it on'+powerBadge()+'</h2>'
+      +'<div class="sub">Energy runs all week, not per phase. Hold some back for after '
+      +'the Veto ceremony or spend it now while nobody has been named. '
+      +'Everybody you skip drifts back toward how they felt about you on day one.</div></div>'
+      +wall({pick:true})+renderFeed();
+    bindPicks(function(id){
+      if(id===s.human) return;
+      if(s.energy<SC.ENERGY.SCENE_COST) return;
+      moment=R.sceneFor(s,id); paintScene();
+    });
+    setBar('Pick somebody',side);
+    scrollFeed();
+  }
+
+  function paintScene(){
+    var TAG={safe:'Safe',neutral:'Even',risky:'Risky'};
+    app.innerHTML=topbar()
+      +'<div class="scene">'
+      +'<div class="where"><b>'+esc(moment.scene)+'</b></div>'
+      +'<div class="said">'+esc(moment.line)+'</div>'
+      +'<div class="opts">'+moment.options.map(function(o){
+        var off=s.energy<o.cost;
+        return '<button class="opt '+o.kind+'" data-opt="'+o.key+'"'+(off?' disabled':'')+'>'
+          +'<span class="key">'+o.key.toUpperCase()+'</span>'
+          +'<span class="txt">'+esc(o.text)+'</span>'
+          +'<span class="tag">'+TAG[o.kind]+'</span></button>';
+      }).join('')+'</div></div>'
+      +renderFeed();
+    Array.prototype.forEach.call(app.querySelectorAll('[data-opt]'),function(el){
+      el.onclick=function(){
+        var out=R.playScene(s,moment,el.dataset.opt);
+        if(!out) return;
+        narrateScene(moment,out);
+        moment=null; saveRun();
+        if(s.energy<SC.ENERGY.SCENE_COST){ R.step(s,{done:true}); pump(); return; }
+        paintPick();
+      };
+    });
+    setBar('A, B or C',[{label:'Walk away',go:function(){ moment=null; paintPick(); }}]);
+    scrollFeed();
+  }
+
+  paintPick();
+}
+
+function narrateScene(moment,out){
+  var nm=s.cast[out.target].first;
+  say(moment.scene.charAt(0).toUpperCase()+moment.scene.slice(1)+'.','quiet');
+  if(out.kind==='safe') say('It goes the way those go.');
+  else if(out.kind==='neutral') say(out.landed?'It lands.':'It does not quite land.',out.landed?'':'quiet');
+  else say(out.landed?'It lands, and it moves something.':'It does not land, and '+nm+' will remember you tried.',
+    out.landed?'':'hot');
+
+  for(var i=0;i<out.fx.length;i++){
+    var f=out.fx[i];
+    if(f.k==='ally') say('You and '+nm+' have something now.');
+    else if(f.k==='ally_declined') say(nm+' is not ready to put a name on it.','quiet');
+    else if(f.k==='intent') say(nm+' says they are voting out '+s.cast[f.target].first+'.');
+    else if(f.k==='info') say(nm+' on '+s.cast[f.b].first+': '+f.band.toLowerCase()+'.','quiet');
+    else if(f.k==='alliance_seen') say('They are working with '+f.members.map(function(x){return s.cast[x].first;}).join(' and ')+'.','quiet');
+    else if(f.k==='heat') say(nm+' walks away thinking about '+s.cast[f.who].first+'.','quiet');
+    else if(f.k==='watched') say(nm+' is watching you now.','hot');
+    else if(f.k==='backfire') say('You spent something you are not getting back.','hot');
+  }
+  if(out.read) say(nm+' reads '+out.read.band.label.toLowerCase()+' on you.','quiet');
+}
+
+/* Eavesdrop and the Confessional survive the move to scenes: one is not a
+   conversation and the other is not with anybody. */
+function narrateAction(o){
+  var nm=o.target!=null?s.cast[o.target].first:'';
+  if(o.kind==='eavesdrop'){
+    say(tsay('eavesOk'));
+    say(s.cast[o.pair[0]].first+' on '+s.cast[o.pair[1]].first+': '+o.value.toLowerCase()+'.','quiet');
+    if(o.alliance) say('They are working together. '+o.alliance.map(function(i){return s.cast[i].first;}).join(', ')+'.','quiet');
+    if(o.caught) say(tsay('eavesCaught',{name:s.cast[o.pair[0]].first}),'hot');
+  }
+  if(o.kind==='confessional'&&o.read) say('You write it down. '+nm+': '+o.read.band.label.toLowerCase()+'.','quiet');
+}
+
+// ── powers ─────────────────────────────────────────────────────────────────
+function powerCard(kind,extra){
+  var d=PW.POWERS[kind];
+  return '<div class="power'+(kind==='diamond'?' hot':'')+'">'
+    +'<div class="kind">You are holding</div><h2>'+esc(d.name)+'</h2>'
+    +'<div class="sub">'+esc(d.blurb)+'</div>'
+    +'<div class="long">'+esc(d.long)+'</div>'
+    +(extra||'')+'</div>';
+}
+
+function showPowerSafety(need){
+  screen='phase';
+  app.innerHTML=topbar()
+    +powerCard('safety','<div class="long">Names go up next. Once they are up this is worth nothing.</div>')
+    +wall({})+renderFeed();
+  setBar('Week of Safety',[
+    {label:'Play it',cls:'go',go:function(){ say('You take yourself off the table.'); R.step(s,{play:true}); pump(); }},
+    {label:'Sit on it',go:function(){ R.step(s,{play:false}); pump(); }}
+  ]);
+  scrollFeed();
+}
+
+function showPowerVetoPick(need){
+  screen='phase';
+  app.innerHTML=topbar()
+    +powerCard('veto_pick','<div class="long">Whoever you choose, everybody sees you choose them.</div>')
+    +wall({pick:true,only:need.pool,all:true})+renderFeed();
+  bindPicks(function(id){
+    say('You put '+s.cast[id].first+' in the Veto Comp. Everyone saw.');
+    R.step(s,{pick:id}); pump();
+  });
+  setBar('Pick one, or pass',[{label:'Do not use it',go:function(){ R.step(s,{pick:null}); pump(); }}]);
+  scrollFeed();
+}
+
+function showPowerDiamond(need){
+  screen='phase';
+  var save=null;
+  function paint(){
+    app.innerHTML=topbar()
+      +powerCard('diamond','<div class="long">'+(save==null
+        ? 'Choose who comes off the block.'
+        : 'Now choose who goes up in their place. The Captain does not get a say.')+'</div>')
+      +wall({pick:true,only:save==null?need.atRisk:need.pool,all:true})
+      +renderFeed();
+    bindPicks(function(id){
+      if(save==null){ save=id; paint(); return; }
+      say('You take '+s.cast[save].first+' off and put '+s.cast[id].first+' up. Everybody knows it was you.','hot');
+      R.step(s,{diamond:true,save:save,replace:id}); pump();
+    });
+    setBar(save==null?'Take one off':'Put one up',
+      [{label:'Do not use it',go:function(){ R.step(s,{diamond:false}); pump(); }}]);
+    scrollFeed();
+  }
+  paint();
+}
+
+function showPowerExtraVote(need){
+  screen='phase';
+  app.innerHTML=topbar()
+    +powerCard('extra_vote','<div class="long">The count comes back one higher than the house expects. '
+      +'Nobody can prove it was you, because nobody can prove anything about an anonymous vote.</div>')
+    +wall({only:need.atRisk,all:true})+renderFeed();
+  setBar('Extra Vote',[
+    {label:'Play it',cls:'go',go:function(){ say('You put two in.'); R.step(s,{extraVote:true}); pump(); }},
+    {label:'Keep it',go:function(){ R.step(s,{extraVote:false}); pump(); }}
+  ]);
+  scrollFeed();
+}
+
+// ── competitions ───────────────────────────────────────────────────────────
+function showComp(need){
+  screen='comp';
+  var comp=need.comp||C.pickComp(s.rng.comp,s.lastCompId);
+  s.pendingComp=comp;
+  var which=need.which==='captain'?'Captain Comp':'Veto Comp';
+  app.innerHTML=topbar()
+    +'<div class="file"><h2>'+esc(which)+': '+esc(comp.name)+'</h2>'
+    +'<div class="sub">'+esc(comp.blurb)+'</div></div>'
+    +'<div class="stage" id="stage"></div>'
+    +renderFeed();
+  setBar('',[
+    {label:'Throw it',go:function(){
+      say(tsay('throwing'),'quiet');
+      if(s.cast[s.human].throwStreak>=2) say(tsay('throwSuspicion'),'hot');
+      screen='phase'; R.step(s,{throw:true}); pump();
+    }},
+    {label:'Play',cls:'go',go:function(){ setBar('',[]); startMinigame(comp,function(perf){
+      say('You finish the '+comp.name+'.','quiet');
+      screen='phase'; R.step(s,{perf:perf}); pump();
+    }); }}
+  ]);
+  var st=document.getElementById('stage');
+  st.innerHTML='<h2>'+esc(comp.name)+'</h2><div class="blurb">'+esc(comp.blurb)+'</div>'
+    +'<div class="blurb">Play it, or go out early and let somebody else hold the power. '
+    +'Throwing lands you in Rations, and three in a row is something the house can count.</div>';
+  scrollFeed();
+}
+
+/* Each minigame returns 0..100. comps.js blends that with the build at
+   HUMAN_SKILL_WEIGHT, so hands matter and the tree matters. Adding a comp is
+   adding a case here plus a row in comps.js, and it never touches the engine. */
+function startMinigame(comp,done){
+  var st=document.getElementById('stage');
+  var k=comp.kind;
+  if(k==='reaction') return mgReaction(st,done);
+  if(k==='memory') return mgMemory(st,done);
+  if(k==='hold') return mgHold(st,done);
+  if(k==='slider') return mgSlider(st,done);
+  if(k==='trivia') return mgTrivia(st,done);
+  if(k==='nerve') return mgNerve(st,done);
+  if(k==='tightrope') return mgTightrope(st,done);
+  if(k==='grip') return mgGrip(st,done);
+  return mgRandom(st,done);
+}
+
+function mgReaction(st,done){
+  var round=0,total=0,rounds=3,t0=0,armed=false,timer=null;
+  function next(){
+    if(round>=rounds){ done(Math.max(0,Math.min(100,total/rounds))); return; }
+    st.innerHTML='<h2>Hair Trigger</h2><div class="blurb">Round '+(round+1)+' of '+rounds+'. '
+      +'Wait for it. Going early costs you the round.</div>'
+      +'<div class="rbox" id="rb">WAIT</div>';
+    var rb=document.getElementById('rb');
+    armed=false;
+    timer=setTimeout(function(){ armed=true; t0=Date.now(); rb.className='rbox go'; rb.textContent='NOW'; },
+      900+Math.random()*2200);
+    rb.onpointerdown=function(){
+      if(!armed){ clearTimeout(timer); rb.className='rbox bad'; rb.textContent='TOO EARLY';
+        round++; total+=8; setTimeout(next,700); return; }
+      var ms=Date.now()-t0;
+      /* 180ms is a very good human; 600ms is asleep. */
+      var sc=Math.max(0,Math.min(100,100-(ms-180)/4.2));
+      total+=sc; round++;
+      rb.className='rbox'; rb.textContent=ms+' ms';
+      setTimeout(next,650);
+    };
+  }
+  next();
+}
+
+function mgMemory(st,done){
+  var len=3,best=0,seq=[],idx=0,lock=true;
+  function show(){
+    seq=[]; for(var i=0;i<len;i++) seq.push(Math.floor(Math.random()*9));
+    st.innerHTML='<h2>The Long Hallway</h2><div class="blurb">Watch, then repeat. '
+      +'Length '+len+'.</div><div class="padgrid" id="pg">'
+      +Array.apply(null,Array(9)).map(function(_,i){ return '<div class="pad" data-p="'+i+'"></div>'; }).join('')
+      +'</div>';
+    var pads=app.querySelectorAll('[data-p]');
+    lock=true; idx=0;
+    seq.forEach(function(v,i){
+      setTimeout(function(){ pads[v].classList.add('lit');
+        setTimeout(function(){ pads[v].classList.remove('lit'); },330); }, 480*i+260);
+    });
+    setTimeout(function(){
+      lock=false;
+      Array.prototype.forEach.call(pads,function(el){
+        el.onpointerdown=function(){
+          if(lock) return;
+          var v=Number(el.dataset.p);
+          el.classList.add('hit'); setTimeout(function(){ el.classList.remove('hit'); },140);
+          if(v!==seq[idx]){ lock=true; finish(); return; }
+          idx++;
+          if(idx>=seq.length){ lock=true; best=len; len++;
+            if(len>7){ finish(); return; }
+            setTimeout(show,420); }
+        };
+      });
+    },480*seq.length+320);
+  }
+  function finish(){
+    /* 3 is a floor, 7 is exceptional. */
+    done(Math.max(0,Math.min(100,(best-2)/5*100)));
+  }
+  show();
+}
+
+function mgHold(st,done){
+  var start=0,held=0,running=false,raf=null,target=14000;
+  st.innerHTML='<h2>Dead Weight</h2><div class="blurb">Hold it down. Let go and it is over. '
+    +'The house will try to make you let go.</div>'
+    +'<div class="holdpad" id="hp">HOLD</div>'
+    +'<div class="meterwrap"><div class="meter" id="mt"></div></div>';
+  var hp=document.getElementById('hp'), mt=document.getElementById('mt');
+  function tick(){
+    held=Date.now()-start;
+    mt.style.width=Math.min(100,held/target*100)+'%';
+    /* Distraction escalates. Nothing here changes the score, it only makes the
+       pad harder to keep a finger on, which is the whole comp. */
+    var jitter=Math.min(20,held/900);
+    hp.style.transform='translate('+(Math.random()*jitter-jitter/2).toFixed(1)+'px,'
+      +(Math.random()*jitter-jitter/2).toFixed(1)+'px)';
+    if(held>=target){ stop(); return; }
+    raf=requestAnimationFrame(tick);
+  }
+  function stop(){
+    if(!running) return; running=false; cancelAnimationFrame(raf);
+    hp.classList.remove('on'); hp.textContent='DONE';
+    done(Math.max(0,Math.min(100,held/target*100)));
+  }
+  hp.onpointerdown=function(){ if(running) return; running=true; start=Date.now();
+    hp.classList.add('on'); hp.textContent='HOLDING'; tick(); };
+  hp.onpointerup=stop; hp.onpointerleave=stop; hp.onpointercancel=stop;
+}
+
+function mgSlider(st,done){
+  st.innerHTML='<h2>Level Head</h2><div class="blurb">Hold the marker in the band. '
+    +'Press and hold to push it right. It falls left on its own.</div>'
+    +'<div class="track" id="tk"><div class="zone"></div><div class="mk" id="mk"></div></div>'
+    +'<div class="meterwrap"><div class="meter" id="mt"></div></div>';
+  var tk=document.getElementById('tk'), mk=document.getElementById('mk'), mt=document.getElementById('mt');
+  var pos=50,vel=0,push=false,inZone=0,elapsed=0,last=Date.now(),dur=15000,raf=null;
+  function tick(){
+    var now=Date.now(), dt=Math.min(60,now-last); last=now; elapsed+=dt;
+    var drift=-0.020-Math.sin(elapsed/1400)*0.014;
+    vel+=(push?0.052:0)+drift;
+    vel*=0.94; pos+=vel*dt*0.75;
+    if(pos<0){pos=0;vel=0;} if(pos>100){pos=100;vel=0;}
+    if(pos>=42&&pos<=58) inZone+=dt;
+    mk.style.left='calc('+pos+'% - 2px)';
+    mt.style.width=(elapsed/dur*100)+'%';
+    if(elapsed>=dur){ cancelAnimationFrame(raf); done(Math.max(0,Math.min(100,inZone/dur*135))); return; }
+    raf=requestAnimationFrame(tick);
+  }
+  tk.onpointerdown=function(){push=true;}; tk.onpointerup=function(){push=false;};
+  tk.onpointerleave=function(){push=false;}; tk.onpointercancel=function(){push=false;};
+  tick();
+}
+
+/* Trivia is built from the WeekLog, which GDD §13 says it powers. The questions
+   only exist because the run happened. */
+function mgTrivia(st,done){
+  var qs=buildTrivia();
+  if(!qs.length){ done(45); return; }
+  var i=0,right=0;
+  function ask(){
+    if(i>=qs.length){ done(Math.max(0,Math.min(100,right/qs.length*100))); return; }
+    var q=qs[i];
+    st.innerHTML='<h2>House Rules</h2><div class="blurb">'+esc(q.q)+'</div>'
+      +'<div class="qbtns">'+q.opts.map(function(o,n){
+        return '<button class="choice" data-q="'+n+'"><b>'+esc(o)+'</b></button>'; }).join('')+'</div>'
+      +'<div class="blurb">'+(i+1)+' of '+qs.length+'</div>';
+    Array.prototype.forEach.call(app.querySelectorAll('[data-q]'),function(el){
+      el.onclick=function(){
+        if(q.opts[Number(el.dataset.q)]===q.a) right++;
+        i++; ask();
+      };
+    });
+  }
+  ask();
+}
+function buildTrivia(){
+  var out=[], rng=s.rng.comp;
+  var pool=s.weeks.filter(function(w){ return !w.final3&&w.evicted!=null; });
+  for(var n=0;n<Math.min(4,pool.length);n++){
+    var w=pool[Math.floor(rng()*pool.length)];
+    var kind=Math.floor(rng()*2);
+    var ans,q;
+    if(kind===0){ ans=s.cast[w.evicted].first; q='Who was evicted in week '+w.week+'?'; }
+    else { ans=s.cast[w.captain].first; q='Who was Captain in week '+w.week+'?'; }
+    var opts=[ans];
+    var others=s.cast.filter(function(p){ return p.first!==ans; });
+    while(opts.length<4&&others.length){
+      var pick=others.splice(Math.floor(rng()*others.length),1)[0];
+      if(opts.indexOf(pick.first)===-1) opts.push(pick.first);
+    }
+    rng.shuffle(opts);
+    out.push({q:q,a:ans,opts:opts});
+  }
+  return out;
+}
+
+/* Push your luck. Every card is worth more than the last and one of them ends
+   the run. The decision is when to stop, which is the same decision the game
+   asks everywhere else. */
+function mgNerve(st,done){
+  var banked=0,turned=0,dead=false;
+  var risk=function(n){ return Math.min(0.55,0.10+n*0.055); };
+  function paint(msg){
+    st.innerHTML='<h2>Nerve</h2>'
+      +'<div class="blurb">'+(msg||'Each card is worth more than the last. One of them is not a card.')+'</div>'
+      +'<div class="rbox'+(dead?' bad':'')+'" id="rb">'+(dead?'GONE':banked+' BANKED')+'</div>'
+      +'<div class="blurb">'+turned+' turned</div>';
+    if(dead) return;
+    document.getElementById('rb').onpointerdown=turn;
+  }
+  function turn(){
+    if(dead) return;
+    if(Math.random()<risk(turned)){ dead=true; banked=Math.round(banked*0.25); paint('That was the one.');
+      setTimeout(function(){ done(Math.max(0,Math.min(100,banked))); },900); return; }
+    turned++; banked+=6+turned*3;
+    if(banked>=100||turned>=12){ paint('You have taken everything there is.');
+      setTimeout(function(){ done(Math.min(100,banked)); },700); return; }
+    paint();
+  }
+  paint();
+  setBar('Nerve',[{label:'Bank it',cls:'go',go:function(){ if(!dead){ dead=true; done(Math.min(100,banked)); } }}]);
+}
+
+/* Stop a sweeping marker inside a target that shrinks each round. */
+function mgTightrope(st,done){
+  var round=0,rounds=5,score=0,raf=null,pos=0,dir=1,running=false;
+  function width(){ return 26-round*4; }
+  function next(){
+    if(round>=rounds){ done(Math.max(0,Math.min(100,score/rounds))); return; }
+    st.innerHTML='<h2>Tightrope</h2><div class="blurb">Round '+(round+1)+' of '+rounds
+      +'. Stop it in the gap.</div>'
+      +'<div class="track" id="tk"><div class="zone" id="zn"></div><div class="mk" id="mk"></div></div>'
+      +'<div class="blurb">'+Math.round(score/Math.max(1,round))+' average</div>';
+    var zn=document.getElementById('zn'), mk=document.getElementById('mk'), tk=document.getElementById('tk');
+    zn.style.left=(50-width()/2)+'%'; zn.style.width=width()+'%';
+    pos=0; dir=1; running=true;
+    var speed=0.9+round*0.35;
+    (function tick(){
+      if(!running) return;
+      pos+=dir*speed; if(pos>100){pos=100;dir=-1;} if(pos<0){pos=0;dir=1;}
+      mk.style.left='calc('+pos+'% - 2px)';
+      raf=requestAnimationFrame(tick);
+    })();
+    tk.onpointerdown=function(){
+      if(!running) return; running=false; cancelAnimationFrame(raf);
+      var off=Math.abs(pos-50), half=width()/2;
+      score+=off<=half?Math.max(35,100-(off/half)*55):Math.max(0,30-off);
+      round++; setTimeout(next,420);
+    };
+  }
+  next();
+}
+
+/* Alternate two pads without breaking rhythm. Mistiming costs more than being
+   slow, which is what makes it precision as well as physical. */
+function mgGrip(st,done){
+  var want='l',hits=0,breaks=0,start=0,dur=12000,raf=null,last=0,gaps=[];
+  st.innerHTML='<h2>White Knuckle</h2><div class="blurb">Alternate. Left, right, left, right. '
+    +'Twelve seconds.</div>'
+    +'<div class="padgrid" style="grid-template-columns:repeat(2,96px)">'
+    +'<div class="pad lit" data-g="l" style="aspect-ratio:1/1"></div>'
+    +'<div class="pad" data-g="r" style="aspect-ratio:1/1"></div></div>'
+    +'<div class="meterwrap"><div class="meter" id="mt"></div></div>';
+  var pads=app.querySelectorAll('[data-g]'), mt=document.getElementById('mt');
+  function light(){ Array.prototype.forEach.call(pads,function(p){
+    p.classList.toggle('lit',p.dataset.g===want); }); }
+  function tick(){
+    var el=Date.now()-start; mt.style.width=Math.min(100,el/dur*100)+'%';
+    if(el>=dur){ finish(); return; }
+    raf=requestAnimationFrame(tick);
+  }
+  function finish(){
+    cancelAnimationFrame(raf);
+    /* Rhythm matters: steady gaps score better than a fast burst and a stall. */
+    var mean=gaps.length?gaps.reduce(function(a,b){return a+b;},0)/gaps.length:1000;
+    var vary=gaps.length>1?Math.sqrt(gaps.reduce(function(a,g){return a+(g-mean)*(g-mean);},0)/gaps.length):400;
+    var rate=Math.min(1,hits/46);
+    var steady=Math.max(0,1-vary/260);
+    done(Math.max(0,Math.min(100,(rate*72+steady*28)-breaks*2.5)));
+  }
+  Array.prototype.forEach.call(pads,function(p){
+    p.onpointerdown=function(){
+      if(!start){ start=Date.now(); last=start; tick(); }
+      if(p.dataset.g===want){
+        var now=Date.now(); if(hits>0) gaps.push(now-last); last=now;
+        hits++; want=want==='l'?'r':'l'; light();
+      } else breaks++;
+    };
+  });
+}
+
+function mgRandom(st,done){
+  st.innerHTML='<h2>Draw</h2><div class="blurb">No skill in it. Somebody still walks away with the power.</div>'
+    +'<div class="rbox" id="rb">DRAW</div>';
+  document.getElementById('rb').onpointerdown=function(){
+    var v=Math.random()*100;
+    this.textContent=v>66?'GOOD DRAW':v>33?'MIDDLING':'POOR DRAW';
+    setTimeout(function(){ done(v); },800);
+  };
+}
+
+// ── the vote reveal ────────────────────────────────────────────────────────
+/* The one place the game slows down, GDD §17. Anonymous: the tally builds one
+   mark at a time and no name is ever attached to a vote. */
+function showVoteReveal(){
+  screen='vote';
+  var res=s.evictionResult;
+  if(!res||!res.votes.length){ screen='phase'; R.step(s,null); pump(); return; }
+  var atRisk=s.atRisk.slice();
+  var counts={}; atRisk.forEach(function(id){ counts[id]=0; });
+  var order=res.votes.slice();
+  var i=0, timer=null;
+
+  function paint(reveal){
+    app.innerHTML=topbar()
+      +'<div class="file"><h2>The vote</h2><div class="sub">'+esc(STR.S.voteOpen[0])+'</div>'
+      +'<div class="tallywrap">'+atRisk.map(function(id){
+        var out=reveal&&res.evicted===id;
+        return '<div class="tcol'+(out?' out':'')+'"><div class="who">'+esc(s.cast[id].first)+'</div>'
+          +'<div class="marks">'+marks(counts[id])+'</div></div>';
+      }).join('')+'</div>'
+      +(reveal?'<div style="text-align:center;color:var(--signal);font-family:var(--disp);'
+        +'font-size:20px;letter-spacing:.1em;text-transform:uppercase">'
+        +esc(res.evicted===s.human?'You are evicted':s.cast[res.evicted].name+' is evicted')+'</div>':'')
+      +'</div>'+renderFeed();
+    scrollFeed();
+  }
+  function marks(n){
+    var o='';
+    for(var j=0;j<n;j++) o+=(j>0&&j%5===0?' ':'')+'|';
+    return o||'.';
+  }
+  /* Deliberate, but not punishing. At 760ms a twelve vote tally took ten
+     seconds and there are thirteen of them in a run, which is over two minutes
+     of a twenty five minute session spent watching marks appear. Tapping
+     anywhere drops the rest at once. */
+  function skip(){
+    while(i<order.length){ counts[order[i].target]++; i++; }
+    if(timer) clearTimeout(timer);
+    step();
+  }
+  function step(){
+    if(i>=order.length){
+      if(res.tieBreak!=null) say(s.cast[res.tieBreak].first+' breaks the tie.','hot');
+      paint(true);
+      say(res.evicted===s.human?tsay('evictedYou'):tsay('evicted',{name:s.cast[res.evicted].name}),'hot');
+      setBar('',[{label:'Continue',cls:'go',go:function(){
+        screen='phase'; R.step(s,null); saveRun(); pump(); }}]);
+      return;
+    }
+    counts[order[i].target]++;
+    i++;
+    paint(false);
+    timer=setTimeout(step,520);
+  }
+  setBar('',[{label:'Read it out',go:skip}]);
+  paint(false);
+  timer=setTimeout(step,640);
+}
+
+// ── results ────────────────────────────────────────────────────────────────
+function finishRun(){
+  if(!s.awarded){
+    s.awarded=true;
+    var place=s.result.playerPlace;
+    account.xp=(account.xp||0)+T.xpForFinish(place);
+    var c=account.career||{runs:0,wins:0,panels:0,placeSum:0,bestPlace:null};
+    c.runs=(c.runs||0)+1; c.placeSum=(c.placeSum||0)+place;
+    if(place===1) c.wins=(c.wins||0)+1;
+    if(place<=8) c.panels=(c.panels||0)+1;
+    c.bestPlace=c.bestPlace==null?place:Math.min(c.bestPlace,place);
+    account.career=c; saveAccount(); clearRun();
+  }
+  screen='results'; render();
+}
+
+function renderRecap(){
+  var rec=RC.build(s);
+  var me=s.cast[s.human];
+
+  var weeks=rec.weeks.map(function(w){
+    var tags='';
+    if(w.broken) tags+='<span class="pip risk">'+w.broken+' broke a promise</span>';
+    if(w.powers&&w.powers.length) tags+='<span class="pip veto">power</span>';
+    if(w.evicted===s.human) tags+='<span class="pip risk">you</span>';
+    var body=''
+      +(w.beats||[]).map(function(b){ return '<p class="b">'+esc(b)+'</p>'; }).join('')
+      +((w.powers&&w.powers.length)?'<h4>Powers</h4>'+w.powers.map(function(p){ return '<p class="pw">'+esc(p)+'</p>'; }).join(''):'')
+      +((w.votes&&w.votes.length)?'<h4>The vote, with names on it</h4>'+w.votes.map(function(v){
+          return '<p class="v'+(v.broke?' broke':'')+(v.target===s.human||v.voter===s.human?' you':'')+'">'+esc(v.text)+'</p>'; }).join(''):'')
+      +((w.blame&&w.blame.length)?'<h4>Who got blamed</h4>'+w.blame.map(function(b){
+          return '<p class="b">'+esc(b.text)+' '+(b.correct?'They were right.':'They were wrong.')+'</p>'; }).join(''):'');
+    return '<details class="wk"'+(w.evicted===s.human?' open':'')+'><summary>'
+      +'<span class="no">Week '+w.week+'</span><span class="hl">'+esc(w.headline)+'</span>'
+      +'<span class="tags">'+tags+'</span></summary>'
+      +'<div class="body">'+body+'</div></details>';
+  }).join('');
+
+  var chain=rec.chain.map(function(c){
+    var cls=c.kind==='exit'||c.kind==='result'?'big':(c.good?'good':'');
+    return '<p class="'+cls+'">'+esc(c.text)+(c.detail?'<small>'+esc(c.detail)+'</small>':'')+'</p>';
+  }).join('');
+
+  var tl=rec.alliances.map(function(a){
+    return '<div class="a'+(a.hadYou?' mine':'')+'">'
+      +'<b>'+esc(a.members.join(', '))+'</b>'
+      +'<i>week '+a.formed+(a.alive?' to the end':(a.died?' to '+a.died:''))+'</i>'
+      +'<i>'+(a.hadYou?'yours':(a.youKnew?'you knew':'you never knew'))+'</i></div>';
+  }).join('')||'<div class="a"><b>Nobody formalised anything.</b></div>';
+
+  var pw=rec.powers.map(function(p){
+    return '<tr><td>'+esc(p.name)+'</td><td>'+esc(p.holder)+(p.wasYou?' (you)':'')+'</td>'
+      +'<td>week '+p.week+'</td><td>'+(p.used?'played week '+p.usedWeek:'never played')+'</td>'
+      +'<td>'+(p.victim?esc(p.victim)+(p.victimWasYou?' (you)':'')+' lost a vote':'')+'</td></tr>';
+  }).join('');
+
+  app.innerHTML=''
+   +'<div class="topbar"><span class="wk" style="font-family:var(--disp)">The Recap</span>'
+   +'<span class="ph">Seed '+esc(s.seed)+'</span></div>'
+   +'<div class="chain"><h2>'+(me.place===1?'How you won':'How it ended')+'</h2>'+chain+'</div>'
+   +'<div class="file"><h2>Every week, with the names on the votes</h2>'
+   +'<div class="sub">During the run the tally was anonymous. It is not any more.</div></div>'
+   +weeks
+   +'<div class="file" style="margin-top:20px"><h2>Alliances</h2>'
+   +'<div class="sub">Including the ones you never found out about.</div>'
+   +'<div class="tl">'+tl+'</div></div>'
+   +(pw?'<div class="file"><h2>Powers</h2><div class="scroll"><table class="truth">'
+     +'<thead><tr><th>Power</th><th>Held by</th><th>Awarded</th><th>Used</th><th>Cost</th></tr></thead>'
+     +'<tbody>'+pw+'</tbody></table></div></div>':'')
+   +'<div class="file"><h2>What you actually knew</h2>'
+   +'<div class="sub">You misread '+rec.stats.misread+' of the other fifteen, and '
+   +rec.stats.flattered+' of them let you think better of them than they thought of you.</div>'
+   +'<div class="scroll"><table class="truth"><thead><tr>'
+   +'<th>Name</th><th>Build</th><th>You believed</th><th>The truth</th><th>Place</th></tr></thead><tbody>'
+   +rec.reads.map(function(r){
+      return '<tr><td>'+esc(r.name)+'</td><td>'+esc(r.archetype)+'</td>'
+        +'<td>'+esc(r.believed.label)+'</td>'
+        +'<td class="'+(r.wrong?'wrong':'')+'">'+esc(r.truth.label)+'</td>'
+        +'<td class="r">'+(r.place||'')+'</td></tr>'; }).join('')
+   +'</tbody></table></div></div>';
+  setBar('',[{label:'Back to the results',go:function(){ screen='results'; render(); }},
+             {label:'Back to the file',cls:'go',go:function(){ screen='title'; render(); }}]);
+}
+
+function renderResults(){
+  var res=s.result, me=s.cast[s.human];
+  var jurors=res.detail.map(function(d){
+    return '<tr><td>'+esc(s.cast[d.juror].name)+'</td><td>'+esc(s.cast[d.voted].first)+'</td></tr>';
+  }).join('');
+
+  /* The truth reveal. Everything the run kept from you, side by side with what
+     you believed. This is the payoff for the whole belief layer. */
+  var truth=s.cast.filter(function(p){ return p.id!==s.human; }).map(function(p){
+    var believed=E.band(s.rel.belief[s.human][p.id].v);
+    var actual=E.band(s.rel.trust[p.id][s.human]);
+    var wrong=believed.label!==actual.label;
+    return '<tr><td>'+esc(p.name)+'</td><td>'+esc(p.archetype)+'</td>'
+      +'<td>'+esc(believed.label)+'</td>'
+      +'<td class="'+(wrong?'wrong':'')+'">'+esc(actual.label)+'</td>'
+      +'<td class="r">'+(p.place||'')+'</td></tr>';
+  }).join('');
+
+  var wrongCount=s.cast.filter(function(p){
+    return p.id!==s.human
+      && E.band(s.rel.belief[s.human][p.id].v).label!==E.band(s.rel.trust[p.id][s.human]).label;
+  }).length;
+
+  app.innerHTML=''
+   +'<div class="topbar"><span class="wk">'+(me.place===1?'You won':'Place '+me.place)+'</span>'
+   +'<span class="ph">Seed '+esc(s.seed)+'</span></div>'
+   +'<div class="file"><h2>'+esc(s.cast[res.winner].name)+' takes it</h2>'
+   +'<div class="sub">'+esc(s.cast[res.winner].archetype)+', '
+   +s.cast[res.winner].compWins.length+' comp wins, '
+   +s.cast[res.winner].weeksAsCaptain+' weeks as Captain, At Risk '+s.cast[res.winner].timesAtRisk+' times.</div>'
+   +'<div class="scroll"><table class="truth"><thead><tr><th>Juror</th><th>Voted</th></tr></thead>'
+   +'<tbody>'+jurors+'</tbody></table></div></div>'
+   +'<div class="file"><h2>What you actually knew</h2>'
+   +'<div class="sub">You misread '+wrongCount+' of the other fifteen. '
+   +'The right hand column is what they really thought of you.</div>'
+   +'<div class="scroll"><table class="truth"><thead><tr>'
+   +'<th>Name</th><th>Build</th><th>You believed</th><th>The truth</th><th>Place</th>'
+   +'</tr></thead><tbody>'+truth+'</tbody></table></div></div>'
+   +'<div class="file"><h2>Your run</h2><div class="grid2">'
+   +'<div><label>Finish</label><div style="font-family:var(--disp);font-size:24px;color:var(--paper)">'+me.place+' of 16</div></div>'
+   +'<div><label>XP earned</label><div style="font-family:var(--disp);font-size:24px;color:var(--paper)">'+T.xpForFinish(me.place)+'</div></div>'
+   +'<div><label>Comp wins</label><div style="font-family:var(--disp);font-size:24px;color:var(--paper)">'+me.compWins.length+'</div></div>'
+   +'<div><label>Level</label><div style="font-family:var(--disp);font-size:24px;color:var(--paper)">'+level()+'</div></div>'
+   +'</div></div>';
+  setBar('',[
+    {label:'Read it back',cls:'go',go:function(){ screen='recap'; render(); }},
+    {label:'Back to the file',go:function(){ screen='title'; render(); }}]);
+}
+
+function renderPhase(){
+  app.innerHTML=topbar()+wall({})+renderFeed();
+  scrollFeed();
+}
+
+// ── boot ───────────────────────────────────────────────────────────────────
+account=loadAccount();
+render();
+})();
+</script>
+</body>
+</html>
