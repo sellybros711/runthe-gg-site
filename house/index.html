@@ -676,7 +676,7 @@ function narrateAfter(ph,wkBefore){
 // ── input handlers ─────────────────────────────────────────────────────────
 function handleNeed(need){
   saveRun();
-  if(need.kind==='move_in') return showMoveIn();
+  if(need.kind==='move_in') return showMoveIn(need);
   if(need.kind==='comp') return showComp(need);
   if(need.kind==='actions') return showScheming(need);
   if(need.kind==='power_safety') return showPowerSafety(need);
@@ -692,27 +692,28 @@ function handleNeed(need){
   R.step(s,null); pump();
 }
 
-function showMoveIn(){
+function showMoveIn(need){
   screen='phase';
-  app.innerHTML='<div class="topbar"><span class="wk">Move In Night</span></div>'
-   +'<div class="file"><h2>First night</h2>'
-   +'<div class="sub">Fifteen strangers and a lot of cameras. How you play the first hour '
-   +'is the only thing anybody has to go on for a while.</div>'
-   +'<div class="grid2">'
-   +'<button class="choice" data-mi="open"><b>Open</b><span>Work the room. Broad and shallow, and everyone gets a piece of you.</span></button>'
-   +'<button class="choice" data-mi="guarded"><b>Guarded</b><span>Say less. Narrow, slower, and it lands hardest with the loyal ones.</span></button>'
-   +'<button class="choice" data-mi="funny"><b>Loud</b><span>Be the story of the night. High variance. Some of them will hate it.</span></button>'
+  var TAG={safe:'Safe',neutral:'Even',risky:'Risky'};
+  app.innerHTML='<div class="topbar"><span class="wk">Move In Night</span>'
+   +'<span class="ph">'+(need.step+1)+' of '+need.of+'</span></div>'
+   +'<div class="scene"><div class="where"><b>Fifteen strangers and a lot of cameras.</b></div>'
+   +'<div class="said">'+esc(need.beat.line)+'</div>'
+   +'<div class="opts">'+need.beat.options.map(function(o){
+      return '<button class="opt '+o.kind+'" data-mi="'+o.key+'">'
+        +'<span class="key">'+o.key.toUpperCase()+'</span>'
+        +'<span class="txt">'+esc(o.text)+'</span>'
+        +'<span class="tag">'+TAG[o.kind]+'</span></button>'; }).join('')
    +'</div></div>'+renderFeed();
   Array.prototype.forEach.call(app.querySelectorAll('[data-mi]'),function(el){
     el.onclick=function(){
-      var c=el.dataset.mi;
-      say(c==='open'?'You talk to everyone and remember about half of it.'
-        :c==='guarded'?'You listen more than you talk. A couple of them notice.'
-        :'You take the room. It works on some of them.');
-      R.step(s,{choice:c}); pump();
+      var o=need.beat.options.filter(function(x){ return x.key===el.dataset.mi; })[0];
+      say(o.text,'quiet');
+      R.step(s,{key:el.dataset.mi}); pump();
     };
   });
-  setBar('',[]);
+  setBar('A, B or C',[]);
+  scrollFeed();
 }
 
 function showNaming(){
@@ -1019,6 +1020,9 @@ function startMinigame(comp,done){
   if(k==='hold') return mgHold(st,done);
   if(k==='slider') return mgSlider(st,done);
   if(k==='trivia') return mgTrivia(st,done);
+  if(k==='nerve') return mgNerve(st,done);
+  if(k==='tightrope') return mgTightrope(st,done);
+  if(k==='grip') return mgGrip(st,done);
   return mgRandom(st,done);
 }
 
@@ -1177,6 +1181,101 @@ function buildTrivia(){
     out.push({q:q,a:ans,opts:opts});
   }
   return out;
+}
+
+/* Push your luck. Every card is worth more than the last and one of them ends
+   the run. The decision is when to stop, which is the same decision the game
+   asks everywhere else. */
+function mgNerve(st,done){
+  var banked=0,turned=0,dead=false;
+  var risk=function(n){ return Math.min(0.55,0.10+n*0.055); };
+  function paint(msg){
+    st.innerHTML='<h2>Nerve</h2>'
+      +'<div class="blurb">'+(msg||'Each card is worth more than the last. One of them is not a card.')+'</div>'
+      +'<div class="rbox'+(dead?' bad':'')+'" id="rb">'+(dead?'GONE':banked+' BANKED')+'</div>'
+      +'<div class="blurb">'+turned+' turned</div>';
+    if(dead) return;
+    document.getElementById('rb').onpointerdown=turn;
+  }
+  function turn(){
+    if(dead) return;
+    if(Math.random()<risk(turned)){ dead=true; banked=Math.round(banked*0.25); paint('That was the one.');
+      setTimeout(function(){ done(Math.max(0,Math.min(100,banked))); },900); return; }
+    turned++; banked+=6+turned*3;
+    if(banked>=100||turned>=12){ paint('You have taken everything there is.');
+      setTimeout(function(){ done(Math.min(100,banked)); },700); return; }
+    paint();
+  }
+  paint();
+  setBar('Nerve',[{label:'Bank it',cls:'go',go:function(){ if(!dead){ dead=true; done(Math.min(100,banked)); } }}]);
+}
+
+/* Stop a sweeping marker inside a target that shrinks each round. */
+function mgTightrope(st,done){
+  var round=0,rounds=5,score=0,raf=null,pos=0,dir=1,running=false;
+  function width(){ return 26-round*4; }
+  function next(){
+    if(round>=rounds){ done(Math.max(0,Math.min(100,score/rounds))); return; }
+    st.innerHTML='<h2>Tightrope</h2><div class="blurb">Round '+(round+1)+' of '+rounds
+      +'. Stop it in the gap.</div>'
+      +'<div class="track" id="tk"><div class="zone" id="zn"></div><div class="mk" id="mk"></div></div>'
+      +'<div class="blurb">'+Math.round(score/Math.max(1,round))+' average</div>';
+    var zn=document.getElementById('zn'), mk=document.getElementById('mk'), tk=document.getElementById('tk');
+    zn.style.left=(50-width()/2)+'%'; zn.style.width=width()+'%';
+    pos=0; dir=1; running=true;
+    var speed=0.9+round*0.35;
+    (function tick(){
+      if(!running) return;
+      pos+=dir*speed; if(pos>100){pos=100;dir=-1;} if(pos<0){pos=0;dir=1;}
+      mk.style.left='calc('+pos+'% - 2px)';
+      raf=requestAnimationFrame(tick);
+    })();
+    tk.onpointerdown=function(){
+      if(!running) return; running=false; cancelAnimationFrame(raf);
+      var off=Math.abs(pos-50), half=width()/2;
+      score+=off<=half?Math.max(35,100-(off/half)*55):Math.max(0,30-off);
+      round++; setTimeout(next,420);
+    };
+  }
+  next();
+}
+
+/* Alternate two pads without breaking rhythm. Mistiming costs more than being
+   slow, which is what makes it precision as well as physical. */
+function mgGrip(st,done){
+  var want='l',hits=0,breaks=0,start=0,dur=12000,raf=null,last=0,gaps=[];
+  st.innerHTML='<h2>White Knuckle</h2><div class="blurb">Alternate. Left, right, left, right. '
+    +'Twelve seconds.</div>'
+    +'<div class="padgrid" style="grid-template-columns:repeat(2,96px)">'
+    +'<div class="pad lit" data-g="l" style="aspect-ratio:1/1"></div>'
+    +'<div class="pad" data-g="r" style="aspect-ratio:1/1"></div></div>'
+    +'<div class="meterwrap"><div class="meter" id="mt"></div></div>';
+  var pads=app.querySelectorAll('[data-g]'), mt=document.getElementById('mt');
+  function light(){ Array.prototype.forEach.call(pads,function(p){
+    p.classList.toggle('lit',p.dataset.g===want); }); }
+  function tick(){
+    var el=Date.now()-start; mt.style.width=Math.min(100,el/dur*100)+'%';
+    if(el>=dur){ finish(); return; }
+    raf=requestAnimationFrame(tick);
+  }
+  function finish(){
+    cancelAnimationFrame(raf);
+    /* Rhythm matters: steady gaps score better than a fast burst and a stall. */
+    var mean=gaps.length?gaps.reduce(function(a,b){return a+b;},0)/gaps.length:1000;
+    var vary=gaps.length>1?Math.sqrt(gaps.reduce(function(a,g){return a+(g-mean)*(g-mean);},0)/gaps.length):400;
+    var rate=Math.min(1,hits/46);
+    var steady=Math.max(0,1-vary/260);
+    done(Math.max(0,Math.min(100,(rate*72+steady*28)-breaks*2.5)));
+  }
+  Array.prototype.forEach.call(pads,function(p){
+    p.onpointerdown=function(){
+      if(!start){ start=Date.now(); last=start; tick(); }
+      if(p.dataset.g===want){
+        var now=Date.now(); if(hits>0) gaps.push(now-last); last=now;
+        hits++; want=want==='l'?'r':'l'; light();
+      } else breaks++;
+    };
+  });
 }
 
 function mgRandom(st,done){

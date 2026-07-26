@@ -25,6 +25,7 @@ a validated engine.
 | `powers.js` | The six secret powers, their award schedule and AI policies. `RH_POWERS`. |
 | `scenes.js` | Energy, the scene and beat banks, and the A/B/C resolution. `RH_SCENES`. |
 | `policy.js` | A scripted player. Answers every `needsInput` through the same surface the UI uses. `RH_POLICY`. |
+| `recap.js` | Turns the WeekLog into the traceable chain GDD §1 promises. `RH_RECAP`. |
 | `strings.js` | Authored copy fragments. `RH_STRINGS`. |
 | `playtest.js` | Plays one full run as readable text. The design instrument. |
 | `simulator.js` | The validation harness. Run after any change to a weight. |
@@ -160,6 +161,15 @@ to keep: C is a lever you pull when you need something, not a better default.
 ## Not built yet
 
 `GDD.md` §18 has the live list. The short version: the Split House twist still
-has no voting rule and is unbuildable as specified, the store and the Supabase
-leaderboard are deliberately last, and Move In Night is one dialogue beat where
-it should be several.
+has no voting rule and is unbuildable as specified, and the store and the
+Supabase leaderboard are deliberately last.
+
+## Content
+
+- **9 competitions**, six of which have hand-built minigames. Adding one is a row
+  in `comps.js` plus a module returning 0 to 100, and it never touches the engine.
+- **75 beats against 40 scenes**, so 3,000 distinct social moments from 399
+  authored fragments. Adding one scene adds another 75.
+- **Move In Night is three beats**, and every answer lands differently on
+  different people, read off their attributes. The opening that wins half the
+  house costs you the other half.

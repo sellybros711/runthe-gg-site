@@ -181,7 +181,7 @@ function make(opts) {
 
     switch (need.kind) {
       case 'move_in':
-        return { choice: cfg.risk > 0.6 ? 'funny' : (cfg.risk < 0.3 ? 'guarded' : 'open') };
+        return { key: cfg.risk > 0.62 ? 'c' : (cfg.risk < 0.3 ? 'a' : 'b') };
 
       case 'comp':
         return compChoice(s, need);

@@ -113,6 +113,7 @@ function createRun(opts) {
     autoPlayer: !!o.autoPlayer,
     actionsLeft: 0,
     schemeIndex: 0,
+    moveInStep: 0,
     twists: rollTwists(rng.gen),
     powers: [],
     powerSchedule: [],
@@ -224,8 +225,15 @@ function finalisePlaces(s) {
   }
 }
 
+/*
+ * `kind` is applied LAST and therefore wins. Spreading the payload over a
+ * literal let any caller that happened to carry its own `kind` silently rename
+ * the event: the Move In beats logged as "risky" and "neutral" instead of
+ * "move_in", and anything counting them read zero. The scene log had the
+ * identical bug. An envelope field should not be overwritable by its contents.
+ */
 function pushEvent(s, kind, data) {
-  s.events.push(Object.assign({ week: s.week, phase: s.phase, kind }, data || {}));
+  s.events.push(Object.assign({ week: s.week, phase: s.phase }, data || {}, { kind }));
 }
 
 // ─── what the UI has to ask for ──────────────────────────────────────────────
@@ -239,8 +247,11 @@ function needsInput(s) {
   if (!isHumanActive(s)) return null;
   const me = s.human;
   switch (s.phase) {
-    case PHASES.MOVE_IN:
-      return { kind: 'move_in' };
+    case PHASES.MOVE_IN: {
+      const step = s.moveInStep || 0;
+      const beat = SC.MOVE_IN[step];
+      return beat ? { kind: 'move_in', beat, step, of: SC.MOVE_IN.length } : null;
+    }
     case PHASES.CAPTAIN_COMP:
       return captainCompField(s).indexOf(me) !== -1 ? { kind: 'comp', which: 'captain', comp: s.pendingComp } : null;
     case PHASES.SCHEME1: case PHASES.SCHEME2: case PHASES.SCHEME3:
@@ -326,27 +337,46 @@ function doSetup(s) {
  * than a level 60 one. The on-ramp to being liked is a conversation, not a
  * stat, and the choices here seed the player's starting trust across the house.
  */
+/**
+ * GDD §4. Three beats, not one.
+ *
+ * Every answer lands differently on different people, read off THEIR
+ * attributes, so the opening that wins over half the house costs you the other
+ * half. There is deliberately no correct sequence: the safe column is small and
+ * broad, the risky column is a big swing that some archetypes love and others
+ * never forgive.
+ *
+ * This is the on-ramp that stops a level 1 account being socially poorer than a
+ * level 60 one, so it has to be a real decision rather than a formality.
+ */
 function doMoveIn(s, input) {
   const rng = s.rng.ai;
   const me = s.human;
-  const choice = (input && input.choice) || 'open';
+  s.moveInStep = s.moveInStep || 0;
 
-  /* Three postures, three shapes of first impression. None is strictly best:
-     `open` is broad and shallow, `guarded` is narrow and durable, `funny` is
-     high variance and reads differently to different archetypes. */
+  const beat = SC.MOVE_IN[s.moveInStep];
+  if (!beat) { s.phase = PHASES.RESET; return s; }
+
+  let key = (input && input.key) || null;
+  if (!key) {
+    if (isHumanActive(s)) return s;                 // wait for the player
+    key = ['a', 'b', 'c'][rng.int(0, 2)];           // the stand-in picks
+  }
+  const opt = beat.options.filter((o) => o.key === key)[0] || beat.options[0];
+
   for (const p of s.cast) {
     if (p.id === me) continue;
-    let d = 0;
-    if (choice === 'open') d = rng.range(4, 12);
-    else if (choice === 'guarded') d = rng.range(-2, 7) + (p.social.loyalty - 50) * 0.10;
-    else if (choice === 'funny') d = rng.range(-8, 20) * (0.5 + p.social.charisma / 150);
-    E.applyTrust(s.rel, p.id, me, d);
-    E.applyTrust(s.rel, me, p.id, rng.range(2, 8));
+    const base = rng.range(opt.base[0], opt.base[1]);
+    const mult = Math.max(0.2, opt.affinity(p));
+    E.applyTrust(s.rel, p.id, me, base * mult);
+    E.applyTrust(s.rel, me, p.id, rng.range(2, 7));
     E.refreshBelief(s.rel, s.cast, me, p.id, 0, rng);
     E.refreshBelief(s.rel, s.cast, p.id, me, 0, rng);
   }
-  pushEvent(s, 'move_in', { choice });
-  s.phase = PHASES.RESET;
+  pushEvent(s, 'move_in', { step: s.moveInStep, key, answer: opt.kind });
+
+  s.moveInStep += 1;
+  if (s.moveInStep >= SC.MOVE_IN.length) s.phase = PHASES.RESET;
   return s;
 }
 

@@ -122,6 +122,26 @@ const COMPS = [
     primary: 'luck', secondary: 'luck',
     blurb: 'No skill in it. Somebody still walks away with the power.',
   },
+  /*
+   * Comps are the thing that has to stay fresh longest, so the framework takes
+   * a new one as a row here plus a module in the UI that returns 0 to 100, and
+   * it never touches the engine. These three were added that way.
+   */
+  {
+    id: 'nerve', kind: 'nerve', name: 'Nerve',
+    primary: 'luck', secondary: 'mental',
+    blurb: 'Keep turning cards. Bank what you have, or find the one that ends it.',
+  },
+  {
+    id: 'tightrope', kind: 'tightrope', name: 'Tightrope',
+    primary: 'precision', secondary: 'physical',
+    blurb: 'Stop it in the gap. The gap gets narrower every time.',
+  },
+  {
+    id: 'grip', kind: 'grip', name: 'White Knuckle',
+    primary: 'physical', secondary: 'precision',
+    blurb: 'Left, right, left, right. Do not break the rhythm.',
+  },
 ];
 
 const BY_ID = new Map(COMPS.map((c) => [c.id, c]));

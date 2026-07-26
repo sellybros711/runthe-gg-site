@@ -78,6 +78,56 @@ function weeklyEnergy(state, id) {
   return Math.max(4, e);
 }
 
+
+// ─── Move In Night ───────────────────────────────────────────────────────────
+
+/*
+ * GDD §4. This is the on-ramp, and it exists so that a level 1 account is not
+ * socially poorer than a level 60 one: the route to being liked on day one is a
+ * conversation, not a stat.
+ *
+ * It was one choice, which is not a sequence and did not carry the weight §4
+ * puts on it. Three beats now, and each one lands differently on different
+ * people. `affinity` returns a multiplier on the trust each Player extends,
+ * read off THEIR attributes, so the same answer wins the room over with one
+ * half of the house and costs you the other half. There is no correct opening.
+ */
+const MOVE_IN = [
+  {
+    line: 'The door closes behind sixteen people who have never met. Somebody has to speak first.',
+    options: [
+      { key: 'a', kind: 'safe', text: 'Let somebody else.',
+        base: [1, 5], affinity: (p) => 1 + (p.social.paranoia - 50) / 200 },
+      { key: 'b', kind: 'neutral', text: 'Say your name and where you are from and nothing else.',
+        base: [3, 9], affinity: (p) => 1 + (p.social.loyalty - 50) / 160 },
+      { key: 'c', kind: 'risky', text: 'Take the room.',
+        base: [-4, 16], affinity: (p) => 1 + (p.social.charisma - 50) / 110 },
+    ],
+  },
+  {
+    line: 'First night. Nobody is sleeping and everybody is pretending to.',
+    options: [
+      { key: 'a', kind: 'safe', text: 'Go to bed anyway.',
+        base: [1, 4], affinity: () => 1 },
+      { key: 'b', kind: 'neutral', text: 'Sit up in the kitchen with whoever is still awake.',
+        base: [4, 11], affinity: (p) => 1 + (p.social.charisma - 50) / 200 },
+      { key: 'c', kind: 'risky', text: 'Find the one person nobody has spoken to and stay with them.',
+        base: [-2, 18], affinity: (p) => 1 + (50 - p.social.charisma) / 90 },
+    ],
+  },
+  {
+    line: 'First morning. Someone asks, lightly, who you think is going to be a problem in here.',
+    options: [
+      { key: 'a', kind: 'safe', text: 'Say it is far too early to know.',
+        base: [2, 6], affinity: (p) => 1 + (p.social.perception - 50) / 220 },
+      { key: 'b', kind: 'neutral', text: 'Say you are more interested in who is going to be fun.',
+        base: [3, 10], affinity: (p) => 1 + (p.social.charisma - 50) / 170 },
+      { key: 'c', kind: 'risky', text: 'Give them a name.',
+        base: [-8, 20], affinity: (p) => 1 + (p.social.deception - 50) / 100 },
+    ],
+  },
+];
+
 // ─── scenes: where you are, what your hands are doing ────────────────────────
 
 /*
@@ -352,7 +402,144 @@ const BEATS = [
     a: { t: 'Keep pretending.' },
     b: { t: 'Admit you have been counting.', fx: ['read'] },
     c: { t: 'Tell them who you think they cannot beat.', fx: ['info', 'heat'] } },
+
+  // ── recruit, continued ──
+  { pool: 'recruit', line: '{name} says the word first, and waits.',
+    a: { t: 'Say you are with them without saying what that means.' },
+    b: { t: 'Agree, and name one person you both stay away from.', fx: ['read'] },
+    c: { t: 'Agree, and tell them who you are already working with.', fx: ['ally', 'info'] } },
+  { pool: 'recruit', line: 'You need a third and {name} is the obvious one.',
+    a: { t: 'Do not bring it up yet.' },
+    b: { t: 'Feel out how they would take it.', fx: ['read'] },
+    c: { t: 'Bring them in tonight.', fx: ['ally'] } },
+
+  // ── bond, continued ──
+  { pool: 'bond', line: '{name} has been here eleven days and has not mentioned home once.',
+    a: { t: 'Respect it.' },
+    b: { t: 'Ask, once, and drop it if they deflect.', fx: ['read'] },
+    c: { t: 'Tell them about yours until they tell you about theirs.', fx: ['read', 'ally'] } },
+  { pool: 'bond', line: 'Somebody left and the house is quieter than it was.',
+    a: { t: 'Sit in it with {name}.' },
+    b: { t: 'Say the thing everybody is thinking.', fx: ['read'] },
+    c: { t: 'Say you are glad it was not either of you, and mean the second half.', fx: ['ally'] } },
+  { pool: 'bond', line: '{name} is cooking for the house again and nobody has thanked them.',
+    a: { t: 'Thank them.' },
+    b: { t: 'Help, badly.', fx: ['read'] },
+    c: { t: 'Point out to the room that they have done it every night.', fx: ['ally', 'heat'] } },
+  { pool: 'bond', line: 'You are the only two awake and neither of you has anything to say.',
+    a: { t: 'Let the quiet be fine.' },
+    b: { t: 'Break it with something true.', fx: ['read'] },
+    c: { t: 'Break it with something you should not say.', fx: ['read', 'ally'] } },
+
+  // ── probe, continued ──
+  { pool: 'probe', line: '{name} answered the same question differently to two people today.',
+    a: { t: 'File it away.' },
+    b: { t: 'Ask the question a third time and see which version you get.', fx: ['read'] },
+    c: { t: 'Tell them you have heard both versions.', fx: ['read', 'suspicion'] } },
+  { pool: 'probe', line: 'You want to know whether {name} would ever put you up.',
+    a: { t: 'Do not hand them the idea.' },
+    b: { t: 'Ask what they would do with the power.', fx: ['read'] },
+    c: { t: 'Ask whether you would be safe.', fx: ['read', 'ally'] } },
+  { pool: 'probe', line: '{name} has been very careful with you all week.',
+    a: { t: 'Be careful back.' },
+    b: { t: 'Ask them why they are being careful.', fx: ['read'] },
+    c: { t: 'Say something reckless and watch what they do with it.', fx: ['read', 'info'] } },
+
+  // ── float, continued ──
+  { pool: 'float', line: 'There is a name that would solve this week for both of you.',
+    a: { t: 'Wait for them to get there.' },
+    b: { t: 'Describe the problem without naming the solution.', fx: ['read'] },
+    c: { t: 'Name it and ask them to carry it.', fx: ['intent', 'heat'] } },
+  { pool: 'float', line: '{name} has the Captaincy and has not decided yet.',
+    a: { t: 'Stay out of their room.' },
+    b: { t: 'Go up and talk about anything else.', fx: ['read'] },
+    c: { t: 'Go up and give them a name.', fx: ['intent'] } },
+  { pool: 'float', line: 'The house has half agreed on somebody and it is not who you want.',
+    a: { t: 'Go with the house.' },
+    b: { t: 'Ask {name} whether they are sure.', fx: ['read'] },
+    c: { t: 'Try to turn it, starting here.', fx: ['intent', 'suspicion'] } },
+
+  // ── defend, continued ──
+  { pool: 'defend', line: 'You have three days and you are two votes short.',
+    a: { t: 'Ask {name} straight and let them think.' },
+    b: { t: 'Give them a reason that is about them, not you.', fx: ['read'] },
+    c: { t: 'Tell them the other one has been saying their name.', fx: ['intent', 'heat'] } },
+  { pool: 'defend', line: '{name} has been avoiding the room you are in.',
+    a: { t: 'Let them.' },
+    b: { t: 'Catch them somewhere they cannot leave.', fx: ['read'] },
+    c: { t: 'Say out loud, in front of people, that they have been avoiding you.', fx: ['heat', 'suspicion'] } },
+  { pool: 'defend', line: 'They want to know why they should keep you over somebody they like more.',
+    a: { t: 'Say you would do the same for them.' },
+    b: { t: 'Say the other one is further ahead than they look.', fx: ['read'] },
+    c: { t: 'Say you will go up next week in their place if it comes to it.', fx: ['intent', 'ally'] } },
+
+  // ── deflect, continued ──
+  { pool: 'deflect', line: 'Your name has been in the air for two days and nobody has said it to you.',
+    a: { t: 'Wait for somebody to.' },
+    b: { t: 'Ask {name} whether they have heard it.', fx: ['read', 'info'] },
+    c: { t: 'Say it yourself, first, and dare them to agree.', fx: ['heat'] } },
+  { pool: 'deflect', line: '{name} watched you come out of a room you had no reason to be in.',
+    a: { t: 'Behave as though it was nothing.' },
+    b: { t: 'Explain it before they ask.', fx: ['read'] },
+    c: { t: 'Tell them who you were actually in there with.', fx: ['info', 'heat'] } },
+  { pool: 'deflect', line: 'Somebody has been telling people you are running this house.',
+    a: { t: 'Be smaller for a week.' },
+    b: { t: 'Ask {name} where they think it started.', fx: ['info'] },
+    c: { t: 'Point out who benefits from you looking like that.', fx: ['heat', 'suspicion'] } },
+
+  // ── gossip, continued ──
+  { pool: 'gossip', line: '{name} wants to trade. They have something and they want something.',
+    a: { t: 'Decline politely.' },
+    b: { t: 'Trade something you were going to lose anyway.', fx: ['info'] },
+    c: { t: 'Trade something real and take what they have.', fx: ['info', 'ally'] } },
+  { pool: 'gossip', line: 'Two people had an argument and you were the only one who saw it.',
+    a: { t: 'Keep it.' },
+    b: { t: 'Mention it to {name} without taking a side.', fx: ['info'] },
+    c: { t: 'Tell {name} and pick a side while you do it.', fx: ['heat', 'info'] } },
+  { pool: 'gossip', line: '{name} is about to find out something on their own by tomorrow.',
+    a: { t: 'Let them find out.' },
+    b: { t: 'Get there first.', fx: ['read'] },
+    c: { t: 'Get there first and shape it on the way.', fx: ['heat', 'info'] } },
+
+  // ── power, continued ──
+  { pool: 'power', line: 'You could spend it this week or hold it and be safe for two.',
+    a: { t: 'Hold it and say nothing.' },
+    b: { t: 'Sound out {name} on what they would do.', fx: ['read'] },
+    c: { t: 'Tell {name} it exists and make them useful.', fx: ['ally', 'suspicion'] } },
+  { pool: 'power', line: 'The house has narrowed it down to four people and you are one of them.',
+    a: { t: 'Act exactly as you have all week.' },
+    b: { t: 'Volunteer a theory about one of the other three.', fx: ['heat'] },
+    c: { t: 'Suggest the four of you rule each other out in public.', fx: ['heat', 'read'] } },
+
+  // ── captain, continued ──
+  { pool: 'captain', line: 'You have to name two and there are four people you would happily see gone.',
+    a: { t: 'Tell {name} you have not decided.' },
+    b: { t: 'Ask {name} who they would name.', fx: ['read', 'info'] },
+    c: { t: 'Tell {name} they are safe and ask for something in return.', fx: ['ally', 'intent'] } },
+  { pool: 'captain', line: '{name} has come to tell you they are loyal, which is what people say when they are not.',
+    a: { t: 'Thank them and believe none of it.' },
+    b: { t: 'Ask them to prove it with a name.', fx: ['read', 'info'] },
+    c: { t: 'Tell them you know they were in the other room this morning.', fx: ['suspicion', 'heat'] } },
+  { pool: 'captain', line: 'Naming these two costs you both of them for the rest of the game.',
+    a: { t: 'Do it and take the cost.' },
+    b: { t: 'Tell {name} in advance so it is not a surprise.', fx: ['read'] },
+    c: { t: 'Tell {name} it was somebody else pushing for it.', fx: ['heat', 'suspicion'] } },
+
+  // ── late, continued ──
+  { pool: 'late', line: 'One of you is going next week and you both know which.',
+    a: { t: 'Do not say it out loud.' },
+    b: { t: 'Say it out loud and be kind about it.', fx: ['read'] },
+    c: { t: 'Say it out loud and offer them a way out of it.', fx: ['ally', 'intent'] } },
+  { pool: 'late', line: '{name} is the last person in here who has never lied to you.',
+    a: { t: 'Leave that intact.' },
+    b: { t: 'Tell them it is true and that it matters.', fx: ['read'] },
+    c: { t: 'Tell them, and then ask them for the thing you need.', fx: ['intent', 'ally'] } },
+  { pool: 'late', line: 'You are going to be sat in front of these people asking for their vote.',
+    a: { t: 'Do not remind them.' },
+    b: { t: 'Start being somebody they would vote for.', fx: ['read'] },
+    c: { t: 'Ask {name} outright what it would take.', fx: ['read', 'info'] } },
 ];
+
 
 // ─── picking ─────────────────────────────────────────────────────────────────
 
@@ -576,7 +763,7 @@ function applyEffects(state, out, fx, rng) {
 }
 
 const api = {
-  ENERGY, SCENES, BEATS, RISK, weeklyEnergy,
+  ENERGY, SCENES, BEATS, RISK, MOVE_IN, weeklyEnergy,
   poolFor, pickScene, pickBeat, compose, riskyChance, resolve, GAIN,
 };
 
