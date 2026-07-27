@@ -367,11 +367,17 @@ window.GA_ID='G-L29P5MRWKE';
   .avatar>*{position:relative}
   .avatar svg{width:19px;height:19px;fill:none;stroke:var(--dim);stroke-width:1.7;
     stroke-linecap:round}
-  /* The chosen colour when there is one, the old blue when there is not: a signed-in
-     player with no name yet has nothing to derive a colour from. */
-  .avatar.signed:before{background:var(--pfp,var(--grad-blue));border-color:transparent}
+  /* The chosen colours when there are any, the old blue when there are not: a signed-in
+     player with no name yet has nothing to derive one from. The ring is the club's second
+     colour, drawn inside so the button's 34px circle stays 34px. */
+  .avatar.signed:before{background:var(--pfp,var(--grad-blue));border-color:transparent;
+    box-shadow:inset 0 0 0 2px var(--pfpring,transparent)}
   .avatar.signed svg{stroke:#fff}
-  .avatar .in{font-family:var(--fn);font-size:12px;font-weight:600;color:#fff;letter-spacing:.04em}
+  /* currentColor, not #fff. Four clubs have a primary bright enough that white on it is
+     unreadable, and teamColors() already works out which; hardcoding white here would have
+     thrown that away for exactly those four. */
+  .avatar .in{font-family:var(--fn);font-size:12px;font-weight:600;color:currentColor;
+    letter-spacing:.04em}
 
   /* SIGNED OUT, IT SAYS SO IN WORDS.
      A line-art figure in a circle is the convention for "your account" and says nothing at
@@ -759,16 +765,27 @@ window.GA_ID='G-L29P5MRWKE';
   /* ---------- CHOOSING ONE, in the profile sheet ---------- */
   .pfpedit{display:flex;align-items:center;gap:13px;margin-top:11px}
   .pfpedit .col{flex:1;min-width:0}
-  /* FIVE ACROSS, NOT NINE. Nine on one row measured 24px each at 320 and 30px at 390,
-     which is under anything anybody wants to hit with a thumb. Five gives two rows of
-     roughly 46px at 320 and 56px at 390, and nine items over five columns reads as a
-     palette rather than as a row that happens to have run out. */
-  .swatches{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:9px}
-  .swatch{aspect-ratio:1;border-radius:50%;border:2px solid transparent;padding:0;
-    position:relative}
-  .swatch:after{content:'';position:absolute;inset:2px;border-radius:50%;background:inherit}
-  .swatch.on{border-color:#fff}
-  .swatch:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  /* THIRTY-TWO CLUBS, WITH THEIR CODES UNDER THEM.
+     Circles alone were fine for nine abstract colours and are useless for thirty-two clubs:
+     nobody scans a grid of discs for the Bengals. The code is what makes it findable, and
+     the grid is sorted by it, so finding yours is alphabetical rather than a hunt. auto-fill
+     rather than a fixed column count, so the same rule gives five across at 320 and six at
+     390 without a second breakpoint. */
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));
+    gap:8px 6px;margin-top:10px}
+  .swatch{padding:0;background:none;border:none;display:grid;justify-items:center;gap:3px}
+  /* The disc itself, so the button around it can carry the label and stay a 44px target. */
+  .swatch i{display:block;width:34px;height:34px;border-radius:50%}
+  .swatch span{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.04em;
+    color:var(--dim-2);line-height:1}
+  .swatch.on i{box-shadow:inset 0 0 0 2px var(--ring,transparent),0 0 0 2px #fff}
+  .swatch.on span{color:var(--ink)}
+  .swatch:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:8px}
+  /* Which club is picked, spelled out. A ringed disc in a grid of thirty-two does not tell
+     anybody they have chosen the Jaguars. */
+  .pfpteam{margin:9px 0 0;font-family:var(--fn);font-size:12px;font-weight:600;
+    color:var(--dim)}
+  .pfpteam b{color:var(--ink)}
   /* Two characters is a two-character field. A full-width input for it invites a word. */
   /* .08em, not .18. Two characters centred with heavy tracking read as two separate things
      with a gap between them: "Q9" came out "Q 9", which is not what will be on the board. */
@@ -4963,23 +4980,40 @@ async function claimThisRun(){
 }
 
 /* ---------------- PROFILE CIRCLES ----------------
-   Nine colours, keyed by the same nine names the check constraint in
-   53_football_profile_avatars.sql allows. THAT FILE IS THE SINGLE SOURCE OF WHAT IS
-   LEGAL AND THIS IS THE SINGLE SOURCE OF WHAT IT LOOKS LIKE, and neither is a copy of
-   the other: the database stores a word, never a colour, so nothing a client sends can
-   end up as a paint value on a public leaderboard. The two lists have to keep the same
-   keys, and nothing else about them has to agree.
+   WHAT YOU CHOOSE IS A CLUB. Thirty-two of them, filled with the club's primary and ringed
+   with its secondary, so the circle beside your name on the board says who you support
+   rather than which swatch you liked. The codes and the colours come from the engine's own
+   TEAM_COLORS, which the team picker, the reel dressing and the score bug already draw
+   from, so there is no second copy of sixty-four hex values in this file and no way for a
+   club to look like one thing on the field and another on the board.
+
+   The database stores the CODE, never the colours. 54_football_team_colorways.sql owns
+   which codes are legal and the engine owns what they look like; neither is a copy of the
+   other, and nothing a client sends can become a paint value on a public leaderboard.
+
+   MEASURED BEFORE IT WAS BUILT, because fourteen of the thirty-two have a primary darker
+   than this page's own background: Las Vegas is #000000 and Pittsburgh, New Orleans and
+   Chicago are within a hair of it. All fourteen are saved by their ring, and there is no
+   club where the fill and the ring both disappear. The worst case for initials on a fill is
+   the Chargers at 4.37:1, which clears the 3:1 bar for large bold text, and teamColors()
+   already picks whichever of white or near-black wins on each fill.
 
    Flat fills rather than the gradient the header used, because these are drawn at 26px on
    a board row where a gradient is a smudge, and one circle has to read the same in both
    places to be recognisable as the same person. */
+const AVATAR_TEAMS=Object.keys(E.TEAM_COLORS).sort();
+
+/* THE NINE ARE STILL HERE, BUT ONLY AS THE DERIVED DEFAULT.
+   Nothing stores one any more; 54 replaced the storable list with the thirty-two codes. A
+   player who has chosen no club still needs a colour and it must not be a club, because
+   handing somebody the Cowboys because of how their username hashes would put words in
+   their mouth about the one thing on this screen that is a statement. */
 const AVATAR_COLORS={
   red:'#dc2626', orange:'#ea580c', amber:'#d97706', green:'#16a34a', teal:'#0d9488',
   blue:'#2563eb', violet:'#7c3aed', pink:'#db2777', slate:'#475569',
 };
-/* The eight everybody gets shuffled between before choosing. Slate is left out: it is the
-   deliberate "no colour" option, so handing it out at random would give somebody the one
-   colour that looks like they have not been given one. */
+/* The eight the derived default draws from. Slate is left out: it is the muted one, and
+   handing it out at random would give somebody the one colour that looks like a mistake. */
 const AVATAR_AUTO=['red','orange','amber','green','teal','blue','violet','pink'];
 
 /* YOUR OWN CHOICE, held here rather than read per paint. paintAvatar runs on every auth
@@ -5008,20 +5042,34 @@ function avatarHash(s){
    for one would put a stranger's monogram on somebody else's run. */
 function avatarOf(name,color,initials){
   const nm=(name||'').trim();
-  if(!nm) return {bg:'rgba(255,255,255,.05)',fg:'transparent',text:'',anon:true};
-  const key=AVATAR_COLORS[color]?color:AVATAR_AUTO[avatarHash(nm.toLowerCase())%AVATAR_AUTO.length];
+  if(!nm) return {bg:'rgba(255,255,255,.05)',ring:'',fg:'transparent',text:'',anon:true};
   /* Stored initials win, and they are already validated to one or two of A-Z0-9 by the
      database. The fallback is the first two letters of the name, which is what the header
      did before any of this existed. */
-  const two=(initials||nm.slice(0,2)).toUpperCase();
-  return {bg:AVATAR_COLORS[key],fg:'#fff',text:esc(two),anon:false,key};
+  const two=esc((initials||nm.slice(0,2)).toUpperCase());
+  /* A CLUB, IF ONE WAS CHOSEN. The ring is the club's second colour, which is the whole
+     reason two colours are worth carrying: fourteen of the thirty-two have a primary that
+     vanishes into this page's background, and the ring is what keeps their disc a disc. */
+  if(E.TEAM_COLORS[color]){
+    const c=E.teamColors(color);
+    return {bg:c.primary,ring:c.secondary,fg:c.on,text:two,anon:false,key:color,
+      team:E.nickname(color)};
+  }
+  const key=AVATAR_AUTO[avatarHash(nm.toLowerCase())%AVATAR_AUTO.length];
+  /* The derived circle gets a ring too, faint and white, so it belongs to the same family
+     as the club ones rather than reading as a different kind of object. */
+  return {bg:AVATAR_COLORS[key],ring:'rgba(255,255,255,.22)',fg:'#fff',text:two,
+    anon:false,key};
 }
 
-/* One circle, as markup. `cls` lets the caller size it: the board rows and the podium use
-   the same element at two sizes rather than two elements that can drift apart. */
+/* One circle, as markup. `cls` lets the caller size it: the board rows, the podium and the
+   settings use the same element at three sizes rather than three that can drift apart.
+   The ring is an inset box-shadow rather than a border, so it costs the disc no width and
+   26px stays 26px wherever it is dropped in. */
 function avatarHTML(a,cls){
   return '<span class="pfp'+(cls?' '+cls:'')+(a.anon?' anon':'')+'" aria-hidden="true" '+
-    'style="background:'+a.bg+';color:'+a.fg+'">'+a.text+'</span>';
+    'style="background:'+a.bg+';color:'+a.fg+
+    (a.ring?';box-shadow:inset 0 0 0 2px '+a.ring:'')+'">'+a.text+'</span>';
 }
 
 /* The header button. Three states, and each one is the truth about the account:
@@ -5048,11 +5096,14 @@ function paintAvatar(){
        both of those are now the fallback inside avatarOf rather than a second rule here. */
     const a=avatarOf(nm,myAvatar.color,myAvatar.initials);
     b.style.setProperty('--pfp',a.bg);
+    b.style.setProperty('--pfpring',a.ring||'transparent');
+    b.style.color=a.fg;
     b.innerHTML='<span class="in">'+a.text+'</span>';
   }
   else b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.6" r="4"/>'+
     '<path d="M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4"/></svg>';
-  if(!nm) b.style.removeProperty('--pfp');
+  if(!nm){ b.style.removeProperty('--pfp'); b.style.removeProperty('--pfpring');
+    b.style.removeProperty('color'); }
 }
 
 async function loadMyAvatar(){
@@ -5079,21 +5130,32 @@ function paintPfpEdit(nm){
   const swatches=$('a-swatches'), inits=$('a-inits'), demo=$('pfp-demo');
   if(!swatches||!inits||!demo) return;
   inits.value=myAvatar.initials||'';
+  const label=$('pfp-team');
   const draw=()=>{
     const a=avatarOf(nm,pfpPend.color,pfpPend.initials);
     demo.innerHTML=avatarHTML(a,'huge');
-    /* The chosen swatch is marked, and when nothing is chosen the one the name derives to
-       is marked instead: the circle IS that colour, so showing nothing selected would say
-       the colour on screen came from nowhere. */
-    [...swatches.children].forEach(b=>b.classList.toggle('on',b.dataset.c===a.key));
+    /* The chosen club is marked. Nothing is marked when nothing is chosen: unlike the nine
+       colours this replaced, the derived circle is NOT one of the options, so highlighting
+       the club whose colour happens to be nearest would claim a choice never made. */
+    [...swatches.children].forEach(b=>b.classList.toggle('on',b.dataset.c===pfpPend.color));
+    if(label){
+      label.innerHTML=a.team
+        ? 'Playing for the <b>'+esc(a.team)+'</b>'
+        : 'No club yet, so your circle is <b>the colour your name gives you</b>';
+    }
   };
-  swatches.innerHTML=Object.keys(AVATAR_COLORS).map(k=>
-    '<button type="button" class="swatch" data-c="'+k+'" aria-label="'+k+'" '+
-    'style="background:'+AVATAR_COLORS[k]+'"></button>').join('');
+  swatches.innerHTML=AVATAR_TEAMS.map(k=>{
+    const c=E.teamColors(k);
+    return '<button type="button" class="swatch" data-c="'+k+'" '+
+      'aria-label="'+esc(E.nickname(k))+'" title="'+esc(E.nickname(k))+'" '+
+      'style="--ring:'+c.secondary+'">'+
+      '<i style="background:'+c.primary+';box-shadow:inset 0 0 0 2px '+c.secondary+'"></i>'+
+      '<span>'+esc(k)+'</span></button>';
+  }).join('');
   swatches.onclick=(e)=>{
     const b=e.target.closest('.swatch'); if(!b) return;
-    /* Tapping the one already chosen clears it, which is the only way back to the derived
-       colour once you have picked something. */
+    /* Tapping the club already chosen clears it, which is the only way back to no club once
+       one has been picked. */
     pfpPend.color=(pfpPend.color===b.dataset.c)?null:b.dataset.c;
     draw();
   };
@@ -5302,7 +5364,7 @@ function profileSheet(msg,ok){
          Only for an account that has a name, for the same reason the career panel is: with
          no name there is nothing to derive a circle from and picking one is not the job of
          the screen yet. */
-      (nm?'<p class="shsec">Your circle</p>'+
+      (nm?'<p class="shsec">Your club and your circle</p>'+
         '<div class="pfpedit">'+
           '<span id="pfp-demo"></span>'+
           '<div class="col">'+
@@ -5316,10 +5378,11 @@ function profileSheet(msg,ok){
               'placeholder="'+esc(nm.slice(0,2).toUpperCase())+'">'+
           '</div>'+
         '</div>'+
+        '<p class="pfpteam" id="pfp-team"></p>'+
         '<div class="swatches" id="a-swatches"></div>'+
-        '<p class="dim" style="font-size:11.5px;margin:9px 0 0">Two letters or numbers, or '+
-          'leave it blank for the first two of your name. This is what everyone sees beside '+
-          'you on the leaderboard.</p>'+
+        '<p class="dim" style="font-size:11.5px;margin:9px 0 0">Pick the club whose colours '+
+          'you want beside your name, or tap it again for none. Initials are two letters or '+
+          'numbers, or leave them blank for the first two of your name.</p>'+
         '<div style="margin-top:9px"><button class="btn sm" id="a-savepfp">Save my circle</button></div>'+
         '<div class="hr" style="margin:15px 0"></div>':'')+
       '<input class="fld" id="a-name" placeholder="'+(nm?esc(nm):'yourname')+
