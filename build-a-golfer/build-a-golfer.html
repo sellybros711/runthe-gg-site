@@ -12247,7 +12247,7 @@ const DAYS=['THU','FRI','SAT','SUN'];
 // Pacing: default to a slow, readable "sweat" cadence so a round lands and can be absorbed
 // (testers said the old ~0.8s/round blew by too fast to read). Players can speed it up.
 const PACE={chill:{r:2200,e:3200,lbl:'Broadcast'}, normal:{r:820,e:1250,lbl:'Standard'}, fast:{r:460,e:820,lbl:'Fast'}};   // Standard sped up + is now the default (owner)
-function paceMs(){ return PACE[S.simPace]||PACE.normal; }
+function paceMs(){ let p=S.simPace; if(p==='fast'&&!passProActive()) p='normal'; return PACE[p]||PACE.normal; }   // Fast pace is a Tour Pass Pro perk
 let _lbRects=null;   // {name: top-within-board} from the previous season render, for FLIP glide
 let _hvbRects=null;  // {name: top-within-board} of the tracer's floating scoreboard, for crisp FLIP swaps
 let _prevScTotal=null;   // your last-rendered rounded to-par, for the scorecard count-up tween
@@ -15730,6 +15730,7 @@ function seasonRailNode(){
 function scrSeason(){
   clearTimeout(seasonTimer);
   if(!S.simPace) S.simPace=LS.get('bag_pace','normal');   // default to the brisk Standard cadence (owner)
+  if(S.simPace==='fast' && !passProActive()) S.simPace='normal';   // Fast is a Tour Pass Pro perk — non-Pro falls back to Standard
   // Ryder/Nations Cup weeks route to their own match-play screen
   const cur=S.schedule[S.evtIndex];
   if(cur && cur.teamcup && !S.daily){ scrTeamCup(); return; }
@@ -15952,7 +15953,7 @@ function scrSeason(){
   const bar=$(`<div style="display:grid;grid-template-columns:repeat(${S.daily?3:4},1fr);gap:8px;margin-top:10px"></div>`);
   bar.appendChild(mkc('repeat', S.autoSim?'Auto On':'Auto Off', ()=>{S.autoSim=!S.autoSim; LS.set('bag_autosim',S.autoSim); track('autosim_toggle',{on:S.autoSim}); render();}, S.autoSim, 'Auto-advance events'));
   bar.appendChild(mkc('skip','Skip', ()=>{ S.overlay='confirmSkip'; render(); }, false, 'Skip to the end of the season'));
-  bar.appendChild(mkc('clock', paceMs().lbl, ()=>{ const ord=['normal','fast','chill']; S.simPace=ord[(ord.indexOf(S.simPace)+1)%3]||'normal'; LS.set('bag_pace',S.simPace); track('sim_pace',{pace:S.simPace}); render(); }, false, 'How fast rounds play'));
+  bar.appendChild(mkc('clock', paceMs().lbl, ()=>{ const pro=passProActive(); const ord=pro?['normal','fast','chill']:['normal','chill']; let cur=S.simPace; if(cur==='fast'&&!pro) cur='normal'; S.simPace=ord[(ord.indexOf(cur)+1)%ord.length]||'normal'; LS.set('bag_pace',S.simPace); track('sim_pace',{pace:S.simPace}); render(); }, false, passProActive()?'How fast rounds play':'How fast rounds play · Fast is a Tour Pass perk'));
   if(!S.daily) bar.appendChild(mkc('home','Exit', saveMidSeasonAndExit, false, 'Save & exit to home'));
   ctrl.appendChild(bar);
   // keep the coin-forfeit note (compact one-liner) so skipping still warns
