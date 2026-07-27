@@ -1699,7 +1699,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
     <button class="btn" id="b-start">Start a run</button>
     <div class="hrow">
-      <button class="btn ghost sm" id="b-daily">Daily challenge</button>
+      <button class="btn ghost sm" id="b-daily">Daily puzzle</button>
       <button class="btn ghost sm" id="b-how">How to play</button>
     </div>
     <button class="btn ghost sm" id="b-board" style="margin-top:8px">Leaderboard</button>
@@ -2628,18 +2628,17 @@ $('b-start').onclick=()=>{ beginDraft({}); };
 /* THE DAILY EXPLAINS ITSELF BEFORE IT STARTS.
    It used to begin immediately and put the one rule that makes it a competition into a toast,
    which is gone in two seconds and is the wrong place for the only thing a player needs to
-   understand. The daily is a fixed set of six draws, so it is the one mode where a bad spend
+   understand. The puzzle is a fixed set of six draws, so it is the one mode where a bad spend
    cannot be re-rolled away by starting again: that is worth a sentence before it counts. */
 $('b-daily').onclick=dailyRules;
 
 function dailyRules(){
   const cap=M0(E.CONSTANTS.CAP_MUSD);
   const today=new Date().toISOString().slice(0,10);
-  $('sheet-in').innerHTML='<div class="eyebrow">Daily challenge</div>'+
-    '<h2 class="display" style="font-size:25px;margin:4px 0 10px">Same six spins for everyone</h2>'+
-    '<p class="dim" style="margin:0 0 14px;font-size:14px">Today is one fixed set of six draws. '+
-    'Every player in the world gets the same ones, so the board measures the decisions and '+
-    'nothing else.</p>'+
+  /* No paragraph before the list. It said what points 2 and 3 already say, so the sheet
+     opened with the same fact three times and buried the rules under it. */
+  $('sheet-in').innerHTML='<div class="eyebrow">Daily puzzle</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 14px">Same six spins for everyone</h2>'+
     '<ul class="rules" style="margin-top:0">'+
     '<li><span class="n">1</span><span>Build the <b>best team you can</b> out of the six spins '+
       'you are given.</span></li>'+
@@ -2650,7 +2649,7 @@ function dailyRules(){
     '<li><span class="n">4</span><span><b>One go a day.</b> Play it again and it counts as a '+
       'free run instead.</span></li>'+
     '</ul>'+
-    '<div style="margin-top:15px"><button class="btn" id="b-daily-go">Play today\'s challenge</button></div>'+
+    '<div style="margin-top:15px"><button class="btn" id="b-daily-go">Play today\'s puzzle</button></div>'+
     '<div style="margin-top:8px"><button class="btn ghost sm" id="b-daily-no">Not now</button></div>';
   openSheet();
   $('b-daily-go').onclick=()=>{ closeSheet(); beginDraft({daily:today}); };
@@ -4500,7 +4499,7 @@ async function paintRanks(){
      reading. */
   if(submitted==='guest'){
     el.innerHTML='<p class="rankwho">'+(run.daily
-        ? "Where this would have placed among today's daily challenge."
+        ? "Where this would have placed among today's daily puzzle."
         : 'Where this would have placed among every free run.')+'</p>'+
       '<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
       '<div class="guestgate">'+
@@ -4525,8 +4524,8 @@ async function paintRanks(){
     return;
   }
   el.innerHTML='<p class="rankwho">'+(run.daily
-      ? "Against everyone who played today's daily challenge."
-      : 'Against every free run. The daily challenge is scored separately.')+'</p>'+
+      ? "Against everyone who played today's daily puzzle."
+      : 'Against every free run. The daily puzzle is scored separately.')+'</p>'+
     '<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
     '<p class="rankfoot">'+rankLine(r)+'</p>'+
     '<button class="btn ghost sm" id="b-board3">See the leaderboard</button>';
@@ -4691,7 +4690,7 @@ async function loadBoard(){
     t.disabled=!live&&t.dataset.lb!=='daily'&&t.dataset.lb!=='all';
   });
   $('lb-blurb').textContent=lbIsDaily()
-    ? "Today's daily challenge. Everybody gets the same six draws, so this board is "+
+    ? "Today's daily puzzle. Everybody gets the same six draws, so this board is "+
       'the only fair comparison in the game. It resets at midnight UTC.'
     : (lbSort==='rating'
       ? 'Free runs, ranked all time. Team rating is about the roster, not the '+
