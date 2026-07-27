@@ -5655,6 +5655,7 @@ const ACCESSORIES=[
   {id:'ball_soft',   slot:'ball',  name:'Tour-Soft Ball',      rarity:'rare',     price:1800, boost:{scr:3},        desc:'Checks up on a dime.'},
   {id:'ball_ureth',  slot:'ball',  name:'Urethane Tour Ball',  rarity:'epic',     price:5500, boost:{app:3,scr:2},  desc:'Total command of your flight.'},
   {id:'ball_proto',  slot:'ball',  name:'Prototype Tour Ball', rarity:'legendary',price:14000,boost:{app:4,scr:3},  desc:'Not available in stores. Except this one.'},
+  {id:'ball_rungames',slot:'ball', name:'Run The Games Tour Ball',rarity:'legendary',price:16000,boost:{app:3,scr:2,clu:1},desc:'The house ball — all-around command, tee to green.'},
   {id:'charm_tee',   slot:'charm', name:'Lucky Tee',           rarity:'common',   price:400,  boost:{scr:2},        desc:'You just get up-and-down more.'},
   {id:'charm_mark',  slot:'charm', name:'Ball-Marker Coin',    rarity:'rare',     price:1800, boost:{clu:3},        desc:'A little swagger on the greens.'},
   {id:'charm_divot', slot:'charm', name:'Divot-Tool Charm',    rarity:'epic',     price:5500, boost:{scr:3,clu:2},  desc:'Fix the green, fix your nerves.'},
@@ -5871,7 +5872,8 @@ const PXFX=[
   {id:'celestial',name:'Celestial Aura',hist:'Written in the stars',    price:30000, col:'#b088ff', tracer:{g:'rgba(176,136,255,.6)',  c:'#efe8ff'}},
   {id:'heatwave', name:'Heatwave',     hist:'Summer scorcher',          price:18000, col:'#ff6a3a', tracer:{g:'rgba(255,106,58,.55)',  c:'#ffd8c0'}},
   {id:'ecto',     name:'Ecto Aura',    hist:'Something spooky follows', price:18000, col:'#7dff5a', tracer:{g:'rgba(125,255,90,.55)',  c:'#e8ffd8'}},
-  {id:'stadium',  name:'Stadium Lights',hist:'Big-game glow',           price:18000, col:'#e8f2ff', tracer:{g:'rgba(232,242,255,.55)', c:'#ffffff'}} ];
+  {id:'stadium',  name:'Stadium Lights',hist:'Big-game glow',           price:18000, col:'#e8f2ff', tracer:{g:'rgba(232,242,255,.55)', c:'#ffffff'}},
+  {id:'rungames', name:'Run The Games Aura',hist:'The house glow — green and gold', price:30000, col:'#35d67e', tracer:{g:'rgba(241,208,74,.55)', c:'#fff2b0'}} ];
 const PXFX_BY={}; PXFX.forEach(function(f){ PXFX_BY[f.id]=f; });
 function fxOf(look){ var id=(look&&look.fx)||'none'; return (id&&id!=='none'&&PXFX_BY[id])?PXFX_BY[id]:null; }
 function pxFxClass(look){ var f=fxOf(look); return f?(' fx-'+f.id):''; }
@@ -5915,7 +5917,8 @@ const PXBALL=[
   {id:'flamingo', name:'Flamingo Ball', hist:'Poolside plumage',         price:12000, col:'#ff7fa8', tracer:{g:'rgba(255,127,168,.5)', c:'#ffd4e2'}},
   {id:'ghost',    name:'Ghost Ball',    hist:'Now you see it...',        price:13000, col:'#eef2f6', tracer:{g:'rgba(238,242,246,.45)', c:'#ffffff'}},
   {id:'snowball', name:'Snowball',      hist:'Packed fresh every tee',   price:12000, col:'#eaf6ff', tracer:{g:'rgba(234,246,255,.5)', c:'#ffffff'}},
-  {id:'pigskin',  name:'Pigskin',       hist:'Built for the big game',   price:16000, col:'#7a4a22', tracer:{g:'rgba(122,74,34,.5)',  c:'#d8b48a'}} ];
+  {id:'pigskin',  name:'Pigskin',       hist:'Built for the big game',   price:16000, col:'#7a4a22', tracer:{g:'rgba(122,74,34,.5)',  c:'#d8b48a'}},
+  {id:'rungames', name:'Run The Games Ball',hist:'Green and gold, straight down the middle', price:20000, col:'#2fbf6f', tracer:{g:'rgba(241,208,74,.5)', c:'#fff2b0'}} ];
 const PXBALL_BY={}; PXBALL.forEach(function(o){ PXBALL_BY[o.id]=o; });
 function ballOf(look){ var id=(look&&look.ball)||'none'; return (id&&id!=='none'&&PXBALL_BY[id])?PXBALL_BY[id]:null; }
 /* ==== PLAYER CARDS (owner): a collectible flip card of your golfer. Customize the NAMEPLATE + CARD
@@ -5929,6 +5932,7 @@ const PLATES=[
   {id:'no1',         name:'World No.1',        hist:'Top of the world ranking'},
   {id:'tourcup',     name:'Tour Cup',          hist:'The season-long crown'},
   {id:'sunsplash',   name:'Sunsplash',         hist:'Poolside-season exclusive'},
+  {id:'rungames',    name:'Run The Games',     hist:'Signed to the house brand'},
 ];
 const PLATE_STYLE={
   classic:     {c1:'#0e2a1c',c2:'#123f2c',tx:'#F4E3C9',bd:'rgba(244,227,201,.35)'},
@@ -5937,6 +5941,7 @@ const PLATE_STYLE={
   slam:        {c1:'#2a230b',c2:'#141003',tx:'#F1D04A',bd:'#F1D04A',laurel:1},
   no1:         {c1:'#12233f',c2:'#0a1526',tx:'#dbe6f5',bd:'#9fb9dd'},
   tourcup:     {c1:'#0a3a35',c2:'#06211e',tx:'#7df0e2',bd:'#16b5a6'},
+  rungames:    {c1:'#11432f',c2:'#06210f',tx:'#F1D04A',bd:'#cda24a'},
   sunsplash:   {c1:'#ff9d3a',c2:'#e2554e',tx:'#2a1204',bd:'#ffd9a0'},
 };
 function plateCss(id){ const p=PLATE_STYLE[id]||PLATE_STYLE.classic; return 'background:linear-gradient(180deg,'+p.c1+','+p.c2+');border:1px solid '+p.bd+';color:'+p.tx; }
@@ -5962,6 +5967,7 @@ const CARDBGS=[
   {id:'endlesssummer',name:'Endless Summer',   hist:'Poolside-season exclusive'},
   {id:'mythicvault', name:'The Mythic Vault',  hist:'Forged for legends'},
  {id:'goat',         name:'The G.O.A.T. Pasture', hist:'Only the greatest graze here'},
+ {id:'rungames',     name:'Run The Games Arena',  hist:'Under the house lights'},
 ];
 // pixel-scene config per background (hand-authored palettes so each reads distinct)
 const CARDBG_ART={
@@ -5986,6 +5992,7 @@ const CARDBG_ART={
  endlesssummer:{sky:['#5a2a6e','#e05a6e','#ff9d3a'], sun:{x:.5,y:.46,r:9,c:'#ffd98c'}, sea:{h:.18,c1:'#ff9d6a',c2:'#8a3a7e'}, band:'palms', bandC:'#241430', ground:['#e8c890','#c2985e'], noflag:1},
  mythicvault: {sky:['#12071f','#4a1270','#c060ff'], sun:{x:.5,y:.38,r:9,c:'#e9c8ff'}, band2:'peaks', band2C:'#241040', band2C2:'#8a3ad0', band:'pines', bandC:'#160a24', ground:['#3a1a5e','#1e0e34'], accents:{c:['#c060ff','#e9c8ff','#8a3ad0'],n:22}, goldflag:1, stripes:1},
  goat:        {sky:['#28483c','#7aa86a','#f1d04a'], sun:{x:.74,y:.36,r:6,c:'#ffe9a0'}, band:'trees', bandC:'#14300f', ground:['#4a7a2a','#2c5518'], stripes:1, goats:1, goldflag:1},
+ rungames:    {sky:['#06120b','#0e3a24','#F1D04A'], sun:{x:.5,y:.30,r:7,c:'#ffe9a0'}, band:'trees', bandC:'#08200f', ground:['#1f7a45','#0e3f24'], stripes:1, goldflag:1},
 };
 const _cardBgCv={}, _cardBgURL={};
 function pxCardBgCanvas(id){
@@ -6334,7 +6341,12 @@ function cardFrameFor(repName){
 // Course Passport, so unlocks are cross-device consistent.
 function biomeConquered(b){ try{ const m=courseMastery(); return DAILY_KEYS.some(k=>((HV_COURSE_BIOME[k]||'parkland')===b) && m[k] && (m[k].beat|0)>0); }catch(e){ return false; } }
 function _cardLt(){ try{ return badgeMetrics(career()); }catch(e){ return null; } }
+// True once Run The Games (the Icon-tier house brand) has ever signed this account — persists so the branded
+// nameplate + card background stay earned across careers. Set in signSponsor().
+function rtgSigned(){ try{ return !!LS.get('bag_rtg_signed', false); }catch(e){ return false; } }
 const CARD_EARN={
+ 'np:rungames':    {hint:'Sign with Run The Games', req:()=>rtgSigned()},
+ 'cb:rungames':    {hint:'Sign with Run The Games', req:()=>rtgSigned()},
  'np:goldengraved':{hint:'Win a tour event', req:()=>{const m=_cardLt(); return !!m&&m.wins>=1;}},
  'np:major':       {hint:'Win a major championship', req:()=>{const m=_cardLt(); return !!m&&m.majors>=1;}},
  'np:slam':        {hint:'Complete the career Grand Slam', req:()=>{const m=_cardLt(); return !!m&&(m.careerSlams>=1||m.distinctMajors>=4);}},
@@ -13460,7 +13472,7 @@ const BRAND_TRAITS={
   patient:    {label:'Patient',    desc:'They stand by you through lean years, far slower to walk away.', strikes:3},
   performance:{label:'Big-stage',  desc:'They live for the marquee moments, win & major bonuses are boosted.', stretch:1.4}
 };
-const BRAND_CATS={apparel:'Apparel',equipment:'Equipment',auto:'Motors',finance:'Finance',luxury:'Luxury',energy:'Energy',airline:'Airline',tech:'Tech',beverage:'Beverage'};
+const BRAND_CATS={apparel:'Apparel',equipment:'Equipment',auto:'Motors',finance:'Finance',luxury:'Luxury',energy:'Energy',airline:'Airline',tech:'Tech',beverage:'Beverage',gaming:'Gaming'};
 const BRANDS=[
   // Tier 0, Regional
   {name:'Cedar & Oak', tier:0, cat:'apparel', color:'#6f8f5a', tag:'Built for the long walk.', trait:'steady'},
@@ -13545,7 +13557,11 @@ const BRANDS=[
   {name:'Infinitum Tech', tier:5, cat:'tech', color:'#6f8ae8', tag:'No ceiling.', trait:'steady'},
   {name:'Empire Athletic', tier:5, cat:'apparel', color:'#c94a3a', tag:'Build a dynasty.', trait:'loyal'},
   {name:'Aurum', tier:5, cat:'luxury', color:'#d4a63a', tag:'Pure gold.', trait:'demanding'},
-  {name:'Legacy Global', tier:5, cat:'finance', color:'#3f9f8a', tag:'Written in history.', trait:'loyal'}
+  {name:'Legacy Global', tier:5, cat:'finance', color:'#3f9f8a', tag:'Written in history.', trait:'loyal'},
+  // THE HOUSE BRAND — Run The Games, the game's own label. An Icon-tier flagship deal: it only comes calling
+  // once you're a legend, and signing it means you've reached the very top. Signing unlocks the Run The Games
+  // nameplate + card background (see CARD_EARN / rtgSigned). All brands here are fictional.
+  {name:'Run The Games', tier:5, cat:'gaming', color:'#F1D04A', tag:'Play them all.', trait:'marketing', house:true}
 ];
 const BRAND_BY_NAME={}; BRANDS.forEach(b=>BRAND_BY_NAME[b.name]=b);
 function brandInfo(name){ return BRAND_BY_NAME[name]||{name:name||'Sponsor', tier:0, cat:'apparel', color:'#5fd0e0', tag:'', trait:'steady'}; }
@@ -13703,6 +13719,8 @@ function computeSponsorOffers(){ if(S.daily||S.circuitMode||!S.career) return []
 function signSponsor(offer, slot){ const s=ensureSponsors(); const prev=s[slot];
   if(prev){ (S.career.sponsorHistory=S.career.sponsorHistory||[]).push({brand:prev.brand, tier:prev.tier, endYear:S.year||1, reason:'replaced', slot}); }
   s[slot]={brand:offer.brand, tier:offer.tier, rel:1, seasons:0};
+  // Signing the house brand permanently unlocks the Run The Games nameplate + card background (see CARD_EARN).
+  if(offer.brand==='Run The Games'){ try{ LS.set('bag_rtg_signed', true); }catch(e){} }
   const signing=sponsorSigningBonus(offer.brand);
   S.career.pendingSigning=(S.career.pendingSigning||0)+signing;   // paid into next season's net (accumulates if you sign two)
   S.career.sponsorOffers=(S.career.sponsorOffers||[]).filter(o=>o.brand!==offer.brand);

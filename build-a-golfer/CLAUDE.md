@@ -13739,6 +13739,28 @@ allows Google Fonts, or self-host Anton.*
   --check` clean. Deployed to /golf. (The separate pack-reveal wheel cards use their own `.pcard` CSS at a
   different site - untouched.)
 
+- **RUN THE GAMES — the house brand: signable sponsor + branded store items (deployed to /golf).** Owner
+  wanted "Run The Games" as a fictional in-game brand that can sponsor your golfer AND has branded store items.
+  It slots into the EXISTING systems (no new mechanics):
+  - **Sponsor.** Added `{name:'Run The Games', tier:5, cat:'gaming', color:'#F1D04A', tag:'Play them all.',
+    trait:'marketing', house:true}` to `BRANDS` (+ new `gaming` in `BRAND_CATS`). Owner-chosen Icon-tier
+    flagship → it only appears in sponsor offers once you're a legend (tier-5 market value), signs into a
+    hat/shirt slot like any brand, and its logo auto-renders (gold "RT" badge via the existing
+    name+color logo generator — no bespoke asset).
+  - **Purchasable cosmetics** (color-driven, no new sprite art): a **Run The Games Aura** (`PXFX`, green glow +
+    gold tracer, 30k) and **Run The Games Ball** skin (`PXBALL`, green + gold, 20k) — both in the Pro Shop.
+  - **Functional gear**: a **Run The Games Tour Ball** in `ACCESSORIES` (legendary, 16k, boost app+3/scr+2/clu+1)
+    — bought in the gear shop like other equipment.
+  - **Earned card cosmetics**: a **Run The Games** nameplate (`PLATES`+`PLATE_STYLE`, green/gold) and **Run The
+    Games Arena** card background (`CARDBGS`+`CARDBG_ART`, green field → gold house-lights + gold flag), both
+    gated in `CARD_EARN` on `rtgSigned()` — a persistent `bag_rtg_signed` LS flag set by `signSponsor()` when
+    Run The Games signs you (persists across careers so the cosmetics stay earned). Locked tiles show "Sign
+    with Run The Games".
+  Verified in Playwright: brand present as a tier-5 offer + logo renders; aura/ball-skin priced (30k/20k) in
+  the cosmetics list; gear ball in `ACCESSORIES`; nameplate/backdrop render (screenshotted the card — cohesive
+  green+gold); CARD_EARN locked→unlocked as the flag flips; `signSponsor('Run The Games')` sets the flag; full
+  sweep + e2e clean, 0 page errors.
+
 - **SHARE HIGHLIGHTS reel + all shares pixel-themed + old illustrated tracer removed (deployed to /golf).**
   Owner asks: (1) a "Share Highlights" button that reels every birdie-or-better hole from a round as one GIF;
   (2) all share GIFs use the pixel theme, not the old illustrated one; (3) remove the old illustrated tour
