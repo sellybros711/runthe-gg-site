@@ -46,10 +46,23 @@
   const BASE_COLS = 'id,created_at,wins,losses,games,title_won,perfect,made_playoffs,' +
     'seed_label,point_diff,chemistry_pct,spend_musd,respins,franchise,daily,picks,slots,' +
     'squad_fppg,structure_mult,team_rating,perfect_pct';
+  /* TWO OPTIONAL SETS, DROPPED SEPARATELY, and the separateness is the whole point.
+     display_name arrives with 51_football_accounts.sql and the avatar pair with
+     53_football_profile_avatars.sql, so there is a real state in between where the name is
+     there and the avatar is not. Dropping all three on the first 400 would take the names
+     off a board that has them, for the length of time it takes somebody to get round to
+     running the second file. So the avatar pair goes first, and only a complaint that names
+     the name column drops that too. */
   let namesColumn = true;          // until the database says otherwise
-  const rowCols = () => BASE_COLS + (namesColumn ? ',display_name' : '');
-  const missingNameColumn = (body) =>
-    !!(body && /display_name/.test(body.message || '') && /does not exist/i.test(body.message || ''));
+  let avatarColumns = true;
+  const rowCols = () => BASE_COLS + (namesColumn ? ',display_name' : '') +
+    (avatarColumns ? ',display_color,display_initials' : '');
+  const missingCol = (body, re) => {
+    const m = (body && body.message) || '';
+    return re.test(m) && /does not exist/i.test(m);
+  };
+  const missingAvatarColumn = (body) => missingCol(body, /display_color|display_initials/);
+  const missingNameColumn = (body) => missingCol(body, /display_name/);
 
   /* The two things a board can be sorted by, and the column each one orders on.
      Named here rather than taking a column name from the caller, so nothing can
@@ -82,6 +95,9 @@
   /* Set when the board had to fall back to the pre-accounts column list, so the
      diagnostics can name the file to run instead of leaving it to be guessed. */
   let needsAccountsMigration = false;
+  /* Same idea one file along: set when the board had to drop the avatar columns, so the
+     diagnostics can name 53 instead of leaving it to be guessed. */
+  let needsAvatarMigration = false;
   async function fail(where, res) {
     offline = true;
     let body = null;
@@ -443,20 +459,25 @@
       (col !== 'score' ? '&' + col + '=not.is.null' : '');
     try {
       let res = await timed(url(), { headers: headers() });
-      if (!res.ok && namesColumn && res.status === 400) {
-        /* Read the body before deciding: only a complaint about display_name earns
-           the retry, so a genuinely broken query still surfaces as itself. */
+      /* UP TO TWO RETRIES, one per optional set, narrowest first. Each pass reads the body
+         before deciding, so a genuinely broken query still surfaces as itself rather than
+         being mistaken for a schema one file behind. The loop cannot run away: each branch
+         permanently clears the flag that let it in. */
+      for (let pass = 0; pass < 2 && !res.ok && res.status === 400; pass++) {
         const body = await res.json().catch(() => null);
-        if (missingNameColumn(body)) {
+        if (avatarColumns && missingAvatarColumn(body)) {
+          avatarColumns = false;
+          needsAvatarMigration = true;
+        } else if (namesColumn && missingNameColumn(body)) {
           namesColumn = false;
           needsAccountsMigration = true;
-          res = await timed(url(), { headers: headers() });
         } else {
           offline = true;
           lastError = { where: 'board', status: 400, code: (body && body.code) || '',
             message: (body && body.message) || 'bad request' };
           return null;
         }
+        res = await timed(url(), { headers: headers() });
       }
       if (!res.ok) return await fail('board', res);
       const rows = await res.json().catch(() => null);
@@ -529,6 +550,58 @@
     } catch (e) { return failThrown('mine', e); }
   }
 
+  /* ---------------- your own colour and initials ----------------
+     Read straight off profiles, which 10_accounts.sql makes world-readable because the
+     things on it are what a public leaderboard prints. Only ever read for yourself here,
+     because the board rows carry everybody else's already: asking profiles per row would
+     be the join 51 and 53 both explain not doing.
+
+     Answers null for "could not read", which the settings form treats as "leave the fields
+     as the defaults" rather than as "they have chosen nothing". */
+  async function myAvatar(userId) {
+    if (!userId) return null;
+    try {
+      const q = base() + 'profiles?select=avatar_color,avatar_initials&id=eq.' +
+        encodeURIComponent(userId);
+      const res = await timed(q, { headers: headers() });
+      /* A project that has not run 53 yet has no such columns, and that is not an error
+         worth surfacing: it is the same "one file behind" state top() handles, and the
+         answer is the same, which is that nothing has been chosen. */
+      if (!res.ok) { if (res.status === 400) return { color: null, initials: null }; 
+        return await fail('avatar', res); }
+      const rows = await res.json().catch(() => null);
+      const r = (Array.isArray(rows) && rows[0]) || {};
+      return { color: r.avatar_color || null, initials: r.avatar_initials || null };
+    } catch (e) { return failThrown('avatar', e); }
+  }
+
+  /* THE ONLY WRITE PATH. ps_set_avatar validates the colour against its own list and strips
+     the initials to at most two of A-Z0-9, then rewrites every one of the caller's rows in
+     the same transaction, so the board never shows one player in two colours. What it
+     returns is what it stored, which is what the caller should then draw: sending 'xyz' and
+     rendering 'xyz' while the database holds 'XY' is how a settings screen starts lying. */
+  async function setAvatar(color, initials) {
+    try {
+      const res = await timed(base() + 'rpc/ps_set_avatar', {
+        method: 'POST', headers: headers(),
+        body: JSON.stringify({ p_color: color || '', p_initials: initials || '' }) });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        lastError = { where: 'avatar', status: res.status, code: (body && body.code) || '',
+          message: (body && (body.message || body.hint)) || res.statusText || 'no message' };
+        /* NOT offline. A refused colour is the database working exactly as intended, and
+           marking the whole board unreachable over it would put a "not reachable" notice on
+           a leaderboard that is answering every other call. */
+        return { error: lastError.message };
+      }
+      /* `returns table` comes back as an array of one row. */
+      const r = (Array.isArray(body) ? body[0] : body) || {};
+      return { color: r.color || null, initials: r.initials || null };
+    } catch (e) {
+      return { error: (e && e.message) || 'the request did not complete' };
+    }
+  }
+
   /* One row by id, so a player who is nowhere near the top page can still be
      pinned under the list. */
   async function byId(id) {
@@ -560,12 +633,13 @@
   }
 
   window.PS_BOARD = {
-    API_VERSION: 3,
+    API_VERSION: 4,
     submit, ranks, rankIn, placeIn, total, top, mine, byId, scoreOf, cutoffISO, todayUTC,
-    SORTS, probe,
+    SORTS, probe, myAvatar, setAvatar,
     get offline() { return offline; },
     get lastError() { return lastError; },
     get needsAccountsMigration() { return needsAccountsMigration; },
+    get needsAvatarMigration() { return needsAvatarMigration; },
     /* Used by the tests to prove a failed board never breaks the results screen. */
     _forceOffline() { offline = true; },
   };

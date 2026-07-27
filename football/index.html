@@ -367,7 +367,9 @@ window.GA_ID='G-L29P5MRWKE';
   .avatar>*{position:relative}
   .avatar svg{width:19px;height:19px;fill:none;stroke:var(--dim);stroke-width:1.7;
     stroke-linecap:round}
-  .avatar.signed:before{background:var(--grad-blue);border-color:transparent}
+  /* The chosen colour when there is one, the old blue when there is not: a signed-in
+     player with no name yet has nothing to derive a colour from. */
+  .avatar.signed:before{background:var(--pfp,var(--grad-blue));border-color:transparent}
   .avatar.signed svg{stroke:#fff}
   .avatar .in{font-family:var(--fn);font-size:12px;font-weight:600;color:#fff;letter-spacing:.04em}
 
@@ -739,6 +741,40 @@ window.GA_ID='G-L29P5MRWKE';
     background:rgba(255,255,255,.03);border:1px solid var(--line)}
   .lbr .rk{flex:0 0 26px;font-family:var(--fn);font-size:14px;font-weight:600;color:var(--dim-2);
     text-align:right}
+  /* THE PROFILE CIRCLE, on a board row and on a podium step.
+     One element at two sizes rather than two elements that drift apart. The colour and the
+     letters come from a style attribute, because they are per-row data and there is no
+     stylesheet that can know them; the shape, size and type are here. */
+  .pfp{flex:0 0 auto;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;
+    font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.02em;
+    line-height:1;text-transform:uppercase;overflow:hidden}
+  /* A guest has no identity to show, so the disc is an outline rather than a colour with
+     invented letters in it. It is still drawn, so every name on the board starts at the
+     same x and the column reads as a column. */
+  .pfp.anon{border:1px dashed var(--line-2);background:none !important}
+  .pfp.big{width:34px;height:34px;font-size:13px}
+  /* The one in the settings, big enough to be the thing you are editing. */
+  .pfp.huge{width:56px;height:56px;font-size:20px}
+
+  /* ---------- CHOOSING ONE, in the profile sheet ---------- */
+  .pfpedit{display:flex;align-items:center;gap:13px;margin-top:11px}
+  .pfpedit .col{flex:1;min-width:0}
+  /* FIVE ACROSS, NOT NINE. Nine on one row measured 24px each at 320 and 30px at 390,
+     which is under anything anybody wants to hit with a thumb. Five gives two rows of
+     roughly 46px at 320 and 56px at 390, and nine items over five columns reads as a
+     palette rather than as a row that happens to have run out. */
+  .swatches{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:9px}
+  .swatch{aspect-ratio:1;border-radius:50%;border:2px solid transparent;padding:0;
+    position:relative}
+  .swatch:after{content:'';position:absolute;inset:2px;border-radius:50%;background:inherit}
+  .swatch.on{border-color:#fff}
+  .swatch:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  /* Two characters is a two-character field. A full-width input for it invites a word. */
+  /* .08em, not .18. Two characters centred with heavy tracking read as two separate things
+     with a gap between them: "Q9" came out "Q 9", which is not what will be on the board. */
+  .inits{width:78px;text-align:center;letter-spacing:.08em;text-transform:uppercase;
+    font-family:var(--fn);font-weight:700}
+
   .lbr .who{flex:1;min-width:0}
   .lbr .who b{display:block;font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis}
@@ -2492,7 +2528,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=5"></script>
+<script src="board.js?v=6"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
@@ -2509,12 +2545,13 @@ const E=window.PS_ENGINE, R=window.PS_RUN;
    cached board.js older than this page, and they only catch it while they agree: a page
    that says 1 against a module that says 2 rejects a module that is newer than itself
    and quietly runs the stub, which is a dead leaderboard with no error anywhere. */
-const BOARD_VERSION=3;
+const BOARD_VERSION=4;
 const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
   API_VERSION:BOARD_VERSION, offline:true,
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
   rankIn:async()=>null, placeIn:async()=>null, total:async()=>null, top:async()=>null,
   mine:async()=>null, byId:async()=>null,
+  myAvatar:async()=>null, setAvatar:async()=>({error:'the leaderboard script did not load'}),
   scoreOf:(w,d)=>w*10000+Math.min(9999,Math.max(0,
     Math.round((Math.round(d*10)/10+40)*100))),
   cutoffISO:()=>null, todayUTC:()=>new Date().toISOString().slice(0,10),
@@ -2526,7 +2563,7 @@ const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS
     write:{status:0,code:'blocked',message:'board.js did not load',healthy:false}}),
   lastError:{where:'board.js',status:0,code:'blocked',
     message:'the leaderboard script did not load, usually a blocked request'},
-  needsAccountsMigration:false,
+  needsAccountsMigration:false, needsAvatarMigration:false,
 };
 const $=(id)=>document.getElementById(id);
 function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(e){}}
@@ -4890,8 +4927,14 @@ function authBoot(){
        stops a stale panel being painted for the fraction of a second before the new
        request lands. */
     if(!st.signedIn||st.userId!==authState.userId) careerClear();
+    const newAccount=st.userId!==authState.userId;
     authState=st;
     paintAvatar();
+    /* The colour and initials belong to the account, so they are re-read whenever the
+       account changes and cleared when there is none. Not awaited: the circle is already
+       drawn from the derived default and this only ever replaces it with something more
+       specific. */
+    if(newAccount||!st.signedIn){ myAvatar={color:null,initials:null,loaded:false}; loadMyAvatar(); }
     /* Just signed in with a finished guest run on screen: take it over. The board
        stores no name for a guest row, so this is what puts one on the run you have
        just been looking at. */
@@ -4919,6 +4962,68 @@ async function claimThisRun(){
   if($('s-over').classList.contains('on')&&myRanks) paintRanks();
 }
 
+/* ---------------- PROFILE CIRCLES ----------------
+   Nine colours, keyed by the same nine names the check constraint in
+   53_football_profile_avatars.sql allows. THAT FILE IS THE SINGLE SOURCE OF WHAT IS
+   LEGAL AND THIS IS THE SINGLE SOURCE OF WHAT IT LOOKS LIKE, and neither is a copy of
+   the other: the database stores a word, never a colour, so nothing a client sends can
+   end up as a paint value on a public leaderboard. The two lists have to keep the same
+   keys, and nothing else about them has to agree.
+
+   Flat fills rather than the gradient the header used, because these are drawn at 26px on
+   a board row where a gradient is a smudge, and one circle has to read the same in both
+   places to be recognisable as the same person. */
+const AVATAR_COLORS={
+  red:'#dc2626', orange:'#ea580c', amber:'#d97706', green:'#16a34a', teal:'#0d9488',
+  blue:'#2563eb', violet:'#7c3aed', pink:'#db2777', slate:'#475569',
+};
+/* The eight everybody gets shuffled between before choosing. Slate is left out: it is the
+   deliberate "no colour" option, so handing it out at random would give somebody the one
+   colour that looks like they have not been given one. */
+const AVATAR_AUTO=['red','orange','amber','green','teal','blue','violet','pink'];
+
+/* YOUR OWN CHOICE, held here rather than read per paint. paintAvatar runs on every auth
+   change and on every repaint of the profile sheet, and going to the network for two
+   strings each time would put a request behind a redraw. Declared above everything that
+   reads it, because a binding in its temporal dead zone read from a function defined
+   earlier has already cost this file one silent bug. */
+let myAvatar={color:null,initials:null,loaded:false};
+
+/* THE DEFAULT IS DERIVED, NOT STORED, so a board full of people who have never opened the
+   settings is already a board of different colours rather than a column of identical blue
+   discs. Same name in, same colour out, everywhere and forever, which is what makes it
+   recognisable: this runs in the header, on every board row and on the podium, and all
+   three have to agree without asking the server anything.
+
+   A plain FNV-1a over the name. It only has to spread eight ways and be stable. */
+function avatarHash(s){
+  let h=0x811c9dc5;
+  for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; }
+  return h;
+}
+
+/* Everything needed to draw one circle, from whatever the row happens to carry.
+   `name` may be null for a guest, in which case there is nothing to derive from and the
+   circle is deliberately empty: a guest has no identity to show, and inventing initials
+   for one would put a stranger's monogram on somebody else's run. */
+function avatarOf(name,color,initials){
+  const nm=(name||'').trim();
+  if(!nm) return {bg:'rgba(255,255,255,.05)',fg:'transparent',text:'',anon:true};
+  const key=AVATAR_COLORS[color]?color:AVATAR_AUTO[avatarHash(nm.toLowerCase())%AVATAR_AUTO.length];
+  /* Stored initials win, and they are already validated to one or two of A-Z0-9 by the
+     database. The fallback is the first two letters of the name, which is what the header
+     did before any of this existed. */
+  const two=(initials||nm.slice(0,2)).toUpperCase();
+  return {bg:AVATAR_COLORS[key],fg:'#fff',text:esc(two),anon:false,key};
+}
+
+/* One circle, as markup. `cls` lets the caller size it: the board rows and the podium use
+   the same element at two sizes rather than two elements that can drift apart. */
+function avatarHTML(a,cls){
+  return '<span class="pfp'+(cls?' '+cls:'')+(a.anon?' anon':'')+'" aria-hidden="true" '+
+    'style="background:'+a.bg+';color:'+a.fg+'">'+a.text+'</span>';
+}
+
 /* The header button. Three states, and each one is the truth about the account:
      signed in with a name   the initials, in the blue circle
      signed in without one   the figure, in the blue circle: they have an account and the
@@ -4937,12 +5042,85 @@ function paintAvatar(){
   b.classList.toggle('signin',out);
   b.setAttribute('aria-label',out?'Sign in or create an account':'Your profile');
   if(out) b.innerHTML='<span class="lbl">Sign in</span>';
-  else if(nm) b.innerHTML='<span class="in">'+esc(nm.slice(0,2).toUpperCase())+'</span>';
+  else if(nm){
+    /* Your own circle, in your own colour, drawn by the same function that draws it on
+       every board row. It used to be a fixed blue with the first two letters of the name;
+       both of those are now the fallback inside avatarOf rather than a second rule here. */
+    const a=avatarOf(nm,myAvatar.color,myAvatar.initials);
+    b.style.setProperty('--pfp',a.bg);
+    b.innerHTML='<span class="in">'+a.text+'</span>';
+  }
   else b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.6" r="4"/>'+
     '<path d="M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4"/></svg>';
+  if(!nm) b.style.removeProperty('--pfp');
+}
+
+async function loadMyAvatar(){
+  if(!authState.signedIn||!authState.userId){ myAvatar={color:null,initials:null,loaded:false}; return; }
+  const a=await B.myAvatar(authState.userId);
+  if(!a) return;                     // unreadable: keep the derived default, say nothing
+  myAvatar={color:a.color,initials:a.initials,loaded:true};
+  paintAvatar();
 }
 
 const authMsg=(m,ok)=>'<p class="autherr'+(ok?' authok':'')+'">'+esc(m)+'</p>';
+
+/* ---------------- CHOOSING YOUR CIRCLE ----------------
+   Live, not on save: the swatches and the initials field both redraw the big circle beside
+   them as they are touched, because the only question this control has to answer is "what
+   will I look like", and answering it after a round trip makes you save to find out.
+
+   `pend` is what is being tried on, separate from myAvatar, which is what is actually
+   stored. Nothing tells the board anything until Save. */
+let pfpPend={color:null,initials:null};
+
+function paintPfpEdit(nm){
+  pfpPend={color:myAvatar.color,initials:myAvatar.initials};
+  const swatches=$('a-swatches'), inits=$('a-inits'), demo=$('pfp-demo');
+  if(!swatches||!inits||!demo) return;
+  inits.value=myAvatar.initials||'';
+  const draw=()=>{
+    const a=avatarOf(nm,pfpPend.color,pfpPend.initials);
+    demo.innerHTML=avatarHTML(a,'huge');
+    /* The chosen swatch is marked, and when nothing is chosen the one the name derives to
+       is marked instead: the circle IS that colour, so showing nothing selected would say
+       the colour on screen came from nowhere. */
+    [...swatches.children].forEach(b=>b.classList.toggle('on',b.dataset.c===a.key));
+  };
+  swatches.innerHTML=Object.keys(AVATAR_COLORS).map(k=>
+    '<button type="button" class="swatch" data-c="'+k+'" aria-label="'+k+'" '+
+    'style="background:'+AVATAR_COLORS[k]+'"></button>').join('');
+  swatches.onclick=(e)=>{
+    const b=e.target.closest('.swatch'); if(!b) return;
+    /* Tapping the one already chosen clears it, which is the only way back to the derived
+       colour once you have picked something. */
+    pfpPend.color=(pfpPend.color===b.dataset.c)?null:b.dataset.c;
+    draw();
+  };
+  /* Filtered as it is typed, to the same characters the database will accept. Doing it here
+     as well as there is not a duplicated rule: the server one is the guarantee, this one is
+     so nobody types a word and gets a silent two letters back. */
+  inits.oninput=()=>{
+    const v=inits.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,2);
+    if(v!==inits.value) inits.value=v;
+    pfpPend.initials=v||null;
+    draw();
+  };
+  draw();
+  $('a-savepfp').onclick=async()=>{
+    busy('a-savepfp','Saving');
+    const r=await B.setAvatar(pfpPend.color,pfpPend.initials);
+    if(r.error){ profileSheet(r.error); return; }
+    /* What the DATABASE stored, not what was sent. It strips and uppercases, and a settings
+       screen that shows the request rather than the result is a settings screen that lies. */
+    myAvatar={color:r.color,initials:r.initials,loaded:true};
+    paintAvatar();
+    /* Every row of yours was rewritten server-side in the same transaction, so anything
+       already on screen is now a repaint behind. */
+    if($('s-board').classList.contains('on')) loadBoard();
+    profileSheet('Saved.',true);
+  };
+}
 
 /* ---------------- YOUR CAREER, in the profile sheet ----------------
    Six numbers and your five best drafts, worked out here from your own runs rather than
@@ -5118,6 +5296,32 @@ function profileSheet(msg,ok){
       (nm?'<div id="sh-career"><p class="shsec">Your career</p>'+
         '<div class="rload" style="margin-top:8px"><i></i><i></i><i></i>'+
         '<span>Reading your runs</span></div></div>':'')+
+      /* YOUR CIRCLE, and the two things about it you get to choose. Above the name field
+         because it is the more interesting of the two settings and the one that shows up
+         next to your name on every board; changing your name is rarer.
+         Only for an account that has a name, for the same reason the career panel is: with
+         no name there is nothing to derive a circle from and picking one is not the job of
+         the screen yet. */
+      (nm?'<p class="shsec">Your circle</p>'+
+        '<div class="pfpedit">'+
+          '<span id="pfp-demo"></span>'+
+          '<div class="col">'+
+            '<label class="dim" style="font-size:11.5px;display:block">Initials</label>'+
+            /* NO maxlength. It fights the filter below rather than helping it: the browser
+               cuts the value to two characters BEFORE the input handler runs, so pasting
+               "a-b!" arrived as "a-" and came out "A" instead of "AB". The filter already
+               slices to two, and it is the one that knows which characters count. */
+            '<input class="fld inits" id="a-inits" autocapitalize="characters" '+
+              'autocorrect="off" spellcheck="false" inputmode="text" '+
+              'placeholder="'+esc(nm.slice(0,2).toUpperCase())+'">'+
+          '</div>'+
+        '</div>'+
+        '<div class="swatches" id="a-swatches"></div>'+
+        '<p class="dim" style="font-size:11.5px;margin:9px 0 0">Two letters or numbers, or '+
+          'leave it blank for the first two of your name. This is what everyone sees beside '+
+          'you on the leaderboard.</p>'+
+        '<div style="margin-top:9px"><button class="btn sm" id="a-savepfp">Save my circle</button></div>'+
+        '<div class="hr" style="margin:15px 0"></div>':'')+
       '<input class="fld" id="a-name" placeholder="'+(nm?esc(nm):'yourname')+
         '" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="20">'+
       '<div style="margin-top:9px"><button class="btn" id="a-setname">'+
@@ -5129,6 +5333,7 @@ function profileSheet(msg,ok){
         '<button class="btn ghost sm" id="a-signout">Sign out</button></div>'+
       close;
     openSheet();
+    if(nm) paintPfpEdit(nm);
     if(nm) careerPaint(st.userId);
     $('a-feedback').onclick=()=>feedbackSheet();
     $('a-setname').onclick=async()=>{
@@ -5760,6 +5965,14 @@ async function runDiagnostics(){
     fix='51_football_accounts.sql has not been run, so ps_runs has no display_name '+
       'column and every row shows as Anonymous. The board falls back to reading '+
       'without it rather than breaking, which is why everything else still works.';
+  /* Below the names one and above the healthy one, in the same shape and for the same
+     reason: a board that works but is one file behind should say which file, rather than
+     reporting "everything is wired up correctly" while a feature quietly does nothing. */
+  }else if(r.write&&r.write.healthy&&B.needsAvatarMigration){
+    verdict='The board works, but nobody can choose a colour.';
+    fix='53_football_profile_avatars.sql has not been run, so ps_runs has no display_color '+
+      'column. Names and places are unaffected and every circle falls back to the colour '+
+      'worked out from the name, which is why nothing looks broken.';
   }else if(r.write&&r.write.healthy){
     verdict='Everything is wired up correctly.';
     fix='Reads work and the function refused a deliberately impossible run for the '+
@@ -5965,8 +6178,10 @@ function paintPodium(rows){
       : row.wins+'-'+row.losses;
     const sub=lbSort==='rating'?'rating'
       :(row.perfect?'perfect':row.seed_label.toLowerCase());
+    const pf=avatarOf(row.display_name,row.display_color,row.display_initials);
     return '<div class="pod p'+place+(mine?' mine':'')+'" data-i="'+i+'">'+
       '<span class="pl">'+place+'</span>'+
+      avatarHTML(pf,'big')+
       '<span class="pn">'+esc(playerName(row,mine))+'</span>'+
       '<span class="pr">'+esc(fig)+'</span>'+
       '<span class="ps">'+esc(sub)+'</span></div>';
@@ -6114,8 +6329,13 @@ function boardRow(row,i){
      of numbers rather than a list of people, which is what made it look empty of
      players. A guest still gets Anonymous, because saying that is better than
      saying nothing at all. */
+  /* The circle goes between the number and the name, which is where a face sits on every
+     other leaderboard anybody has used. Drawn from the ROW's own columns, never from the
+     viewer's: two people who both chose teal both show teal. */
+  const pf=avatarOf(row.display_name,row.display_color,row.display_initials);
   return '<div class="lbr'+(lead?' gold':'')+(mine?' mine':'')+'" data-i="'+i+'">'+
     '<span class="rk">'+rank+'</span>'+
+    avatarHTML(pf)+
     '<span class="who"><b>'+esc(playerName(row,mine))+'</b>'+
       '<span>'+esc(rowSub(row))+'</span></span>'+
     '<span class="rec">'+SORT_META[lbSort].of(row)+'</span>'+
@@ -6238,10 +6458,15 @@ function paintMyPin(rows){
   const live=submitted&&submitted!=='guest';
   const of=lbIsDaily()?"today's daily":(lbWin==='day'?'today'
     :(lbWin==='week'?'this week':'all time'));
+  /* Your own circle here comes from your own account rather than from a board row, because
+     this run may not be on the board at all yet. A guest gets the outline, which is honest:
+     the run carries no name until they sign in. */
+  const pf=avatarOf(live?authState.name:null,myAvatar.color,myAvatar.initials);
   el.innerHTML='<span class="pinlab">'+(live?'Your place':'Where this run would sit')+
     ' \u00b7 '+esc(SORT_META[lbSort].label.toLowerCase())+', '+esc(of)+'</span>'+
     '<div class="lbr mine"><span class="rk">'+
       (lbMyPlace>999?'#'+lbMyPlace.toLocaleString():lbMyPlace)+'</span>'+
+    avatarHTML(pf)+
     '<span class="who"><b>'+(live?'You':'This run')+'</b><span>'+
       esc(run.outcome.record+' \u00b7 '+(rosterLine(p.picks)||'this run'))+'</span></span>'+
     '<span class="rec">'+cell+'</span>'+
