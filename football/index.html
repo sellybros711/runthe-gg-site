@@ -99,7 +99,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Big+Shoulders+Display:wght@600;700&family=Archivo:wght@500;600;700;800&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#080b14; --panel:#131a2b; --panel-2:#1a2337;
@@ -173,6 +173,13 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
        Fallbacks stay in every stack so a blocked font request degrades instead
        of reflowing into something unrecognizable. */
     --fd:'Anton',Impact,'Haettenschweiler',sans-serif;
+    /* --fp is a PLAYER'S NAME, and it is a fourth family on purpose.
+       Names were set in --fd at weight 800, which Anton does not have: Anton ships one
+       weight, so every one of those was synthetic bold, the browser smearing the glyphs
+       sideways to fake it. On a two-line name at 19px that reads as a shout. Anton at its
+       real weight is still a poster face and still too heavy for a name, so names go back
+       to the condensed athletic face they had before, which is what they wanted. */
+    --fp:'Big Shoulders Display','Anton',Impact,sans-serif;
     --fn:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
     --fb:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   }
@@ -240,11 +247,23 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .btn.sm{padding:11px 14px;font-size:13.5px;border-radius:10px}
   /* One re-spin button per wheel, priced the same, so the choice is about what
      you want to change rather than what is cheaper. */
-  .respins{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .respin{display:block;text-align:center;padding:10px 8px;border-radius:11px;min-width:0}
-  .respin b{display:block;font-family:var(--fn);font-size:14px;letter-spacing:.03em;
+  /* SMALLER THAN THE BUTTONS THAT MOVE THE GAME ON. These are an option, not the next
+     step, and at the old size two of them under the wheels read as the main action on the
+     screen. The label and the price go on one line for the same reason. */
+  .respins{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+  /* .respins .respin, not .respin: these carry .btn.sm too, which is two classes, so a
+     single-class rule loses the padding no matter where it sits in the file. */
+  .respins .respin{display:flex;align-items:baseline;justify-content:center;gap:6px;
+    text-align:center;padding:7px 8px;border-radius:9px;min-width:0;font-size:11.5px}
+  .respin b{font-family:var(--fn);font-size:11.5px;letter-spacing:.03em;
     text-transform:uppercase;line-height:1.1}
-  .respin span{display:block;font-size:11px;color:var(--dim);margin-top:3px;line-height:1.25}
+  .respin span{font-size:10.5px;color:var(--dim);line-height:1.2;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* A refused re-spin still has to say why, and a reason does not fit on one line, so
+     that one goes back to stacking. */
+  .respins .respin.off{display:block;text-align:center}
+  .respins .respin.off b{display:block}
+  .respins .respin.off span{display:block;margin-top:2px;white-space:normal}
   .respins .respin:first-child{border-color:rgba(239,68,68,.45)}
   .respins .respin:last-child{border-color:rgba(59,130,246,.45)}
   .respins .respin:first-child span{color:#f6a5a5}
@@ -473,7 +492,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 
      nowrap deliberately: if the sizing is ever wrong the headline overflows and the overflow
      test fails, rather than quietly wrapping again. */
-  .htitle h1{font-family:var(--fd);font-size:min(11vw,70px);font-weight:900;line-height:.9;
+  .htitle h1{font-family:var(--fd);font-size:min(11vw,70px);line-height:.9;
     letter-spacing:.005em;margin:7px 0 0;text-transform:uppercase;white-space:nowrap}
   .htitle p{margin:11px auto 0;max-width:23em;font-size:14px;color:var(--dim);line-height:1.45}
   .hrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
@@ -487,7 +506,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     background:rgba(255,255,255,.035);border:1px solid var(--line)}
   .rcell .rw{display:block;font-family:var(--fn);font-size:9px;letter-spacing:.15em;
     text-transform:uppercase;color:var(--dim-2)}
-  .rcell .rn{display:block;font-family:var(--fd);font-size:31px;font-weight:900;
+  .rcell .rn{display:block;font-family:var(--fd);font-size:31px;
     line-height:1;margin:5px 0 3px;letter-spacing:-.01em}
   .rcell .rof{display:block;font-size:10px;color:var(--dim-2);white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis}
@@ -585,7 +604,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .pod{min-width:0;border-radius:12px 12px 0 0;padding:9px 7px 8px;text-align:center;
     background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
     border:1px solid var(--line);border-bottom:none;cursor:pointer}
-  .pod .pl{display:block;font-family:var(--fd);font-size:20px;font-weight:900;line-height:1;
+  .pod .pl{display:block;font-family:var(--fd);font-size:20px;line-height:1;
     color:var(--dim-2)}
   .pod .pn{display:block;font-size:11.5px;font-weight:700;margin-top:5px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -629,7 +648,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .who-row{display:flex;align-items:center;gap:10px;margin-top:10px}
   .who-row .av{flex:0 0 40px;width:40px;height:40px;border-radius:50%;
     background:var(--grad-blue);display:grid;place-items:center;font-family:var(--fd);
-    font-size:18px;font-weight:900;color:#fff}
+    font-size:18px;color:#fff}
 
   /* leaderboard */
   .notlive{margin:11px 0 0;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.4;
@@ -746,7 +765,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      Ground, not figure. Set large the way a real field's are, then taken almost all the way
      down, because a player's name has to win over them every time. */
   .field .fnum{position:absolute;display:flex;align-items:center;gap:0;
-    font-family:var(--fd);font-size:30px;font-weight:900;line-height:1;
+    font-family:var(--fd);font-size:30px;line-height:1;
     color:rgba(255,255,255,.10);letter-spacing:.06em}
   /* CENTRED ON THE LINE, WITH THE LINE BETWEEN THE DIGITS. That is how a field is painted: on
      a 10 the 1 sits one side of the yard line and the 0 the other. The gap element is the
@@ -1191,8 +1210,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   /* Two lines then cut, so a long name never pushes one tile taller than its
      neighbor and breaks the grid. */
   .tile .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-    margin-top:7px;font-family:var(--fd);font-size:19px;font-weight:800;
-    line-height:.98;letter-spacing:.005em}
+    margin-top:7px;font-family:var(--fp);font-size:20px;font-weight:700;
+    line-height:.98;letter-spacing:.01em}
   .tile .sn{display:block;margin-top:3px;font-size:10.5px;color:var(--dim-2);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tile .line{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
@@ -1476,7 +1495,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .pocap .call{text-align:center;padding:9px 15px;border-radius:11px;
     background:var(--grad-panel);border:1px solid var(--line-2);
     animation:callin .34s cubic-bezier(.2,1.4,.4,1) both}
-  .pocap .call b{display:block;font-family:var(--fd);font-size:26px;font-weight:900;
+  .pocap .call b{display:block;font-family:var(--fd);font-size:26px;
     letter-spacing:.03em;line-height:1}
   .pocap .call span{display:block;font-size:11.5px;color:var(--dim);margin-top:3px}
   .pocap .call.you b{color:#4ade80} .pocap .call.them b{color:#fca5a5}
@@ -1953,9 +1972,13 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
           <div class="reelbox team" id="box-t"><div class="strip" id="reel-t"></div><span class="band"></span><span class="wash"></span></div>
         </div>
       </div>
+      <!-- Directly under the wheels, because that is what they act on: a re-spin moves a
+           wheel, not the board of players. It used to sit under the whole options list,
+           which put the control for the thing at the top of the column at the bottom of
+           it, and out of sight on a phone. -->
+      <div id="d-respin"></div>
       <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
       <div class="opts" id="opts"></div>
-      <div id="d-respin" style="margin-top:10px"></div>
      </div>
     </div>
     <!-- QUITTING. Six spins in, a player who has changed their mind had no exit
