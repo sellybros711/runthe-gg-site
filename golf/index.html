@@ -62,7 +62,7 @@
 <script>
 window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
-gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});
 </script>
 <!-- Google AdSense (same publisher as the rest of runthe.gg). Consent for EEA/UK/CH + US states is
      handled by Google's certified "Privacy & messaging" CMP, configured in the AdSense dashboard and
@@ -5893,8 +5893,11 @@ function passAddXp(n){ if(!passEnabled()||!sbSignedIn()||!(n>0)) return; const s
   s.xp+=Math.round(n); passSave(s); const after=passTierAt(s.xp);
   if(after>before){ S.passFreshTier=after; try{ toast('<span style="color:#ffd447;font-weight:800">🎟️ Tour Pass · Tier '+after+' reached!</span><br><span class="small">Claim your rewards in the Tour Pass ▸</span>', 3400); }catch(e){} } }
 // Reward tables — milestone tiers give cosmetics/packs; the rest default to coins (+ a shard cadence).
-const PASS_FREE_MILE={ 10:{pack:{tier:'base',n:1}}, 25:{pack:{tier:'base',n:1}}, 40:{pack:{tier:'base',n:1}}, 50:{shard:{r:'rare',n:3}, coins:2000} };
-const PASS_PREM_MILE={ 5:{pack:{tier:'tour',n:1}}, 15:{pack:{tier:'tour',n:1}}, 20:{cos:{cat:'plate',id:'passplate',name:'Tour Pass Plate'}}, 25:{pack:{tier:'champ',n:1}}, 30:{pack:{tier:'tour',n:1}}, 40:{shard:{r:'legendary',n:1}}, 45:{pack:{tier:'tour',n:1}}, 50:{cos:{cat:'fx',id:'passcrown',name:'Tour Champion Aura'}, coins:5000} };
+// FREE lane loads up on base packs + gives away TWO Summer Smash collectibles (Beach Shades, Sun Floppy
+// Hat) so every player earns real drop progress; the free capstone is a Tour pack. PRO lane packs it out
+// with Tour/Champion packs at almost every milestone + the exclusive Tour Pass Plate/Champion Aura.
+const PASS_FREE_MILE={ 5:{pack:{tier:'base',n:1}}, 10:{pack:{tier:'base',n:1}}, 15:{cos:{cat:'ew',id:'beach',name:'Beach Shades'}}, 20:{pack:{tier:'base',n:1}}, 30:{pack:{tier:'base',n:1}}, 35:{cos:{cat:'hw',id:'floppy',name:'Sun Floppy Hat'}}, 40:{pack:{tier:'base',n:1}}, 50:{pack:{tier:'tour',n:1}, coins:3000} };
+const PASS_PREM_MILE={ 5:{pack:{tier:'tour',n:1}}, 10:{pack:{tier:'base',n:1}}, 15:{pack:{tier:'tour',n:1}}, 20:{cos:{cat:'plate',id:'passplate',name:'Tour Pass Plate'}, coins:1500}, 25:{pack:{tier:'champ',n:1}}, 30:{pack:{tier:'tour',n:1}}, 35:{pack:{tier:'champ',n:1}}, 40:{shard:{r:'legendary',n:1}, coins:2500}, 45:{pack:{tier:'tour',n:1}}, 48:{pack:{tier:'champ',n:1}}, 50:{cos:{cat:'fx',id:'passcrown',name:'Tour Champion Aura'}, coins:5000} };
 function passTierReward(t, lane){
   const mile=(lane==='prem'?PASS_PREM_MILE:PASS_FREE_MILE)[t]; if(mile) return mile;
   if(lane==='prem'){ if(t%4===0) return {shard:{r:(t>=32?'epic':t>=16?'rare':'common'), n:1}, coins:300+t*25}; return {coins:500+t*45}; }
@@ -12237,7 +12240,7 @@ const DAYS=['THU','FRI','SAT','SUN'];
 // Pacing: default to a slow, readable "sweat" cadence so a round lands and can be absorbed
 // (testers said the old ~0.8s/round blew by too fast to read). Players can speed it up.
 const PACE={chill:{r:2200,e:3200,lbl:'Broadcast'}, normal:{r:820,e:1250,lbl:'Standard'}, fast:{r:460,e:820,lbl:'Fast'}};   // Standard sped up + is now the default (owner)
-function paceMs(){ return PACE[S.simPace]||PACE.normal; }
+function paceMs(){ let p=S.simPace; if(p==='fast'&&!passProActive()) p='normal'; return PACE[p]||PACE.normal; }   // Fast pace is a Tour Pass Pro perk
 let _lbRects=null;   // {name: top-within-board} from the previous season render, for FLIP glide
 let _hvbRects=null;  // {name: top-within-board} of the tracer's floating scoreboard, for crisp FLIP swaps
 let _prevScTotal=null;   // your last-rendered rounded to-par, for the scorecard count-up tween
@@ -15720,6 +15723,7 @@ function seasonRailNode(){
 function scrSeason(){
   clearTimeout(seasonTimer);
   if(!S.simPace) S.simPace=LS.get('bag_pace','normal');   // default to the brisk Standard cadence (owner)
+  if(S.simPace==='fast' && !passProActive()) S.simPace='normal';   // Fast is a Tour Pass Pro perk — non-Pro falls back to Standard
   // Ryder/Nations Cup weeks route to their own match-play screen
   const cur=S.schedule[S.evtIndex];
   if(cur && cur.teamcup && !S.daily){ scrTeamCup(); return; }
@@ -15942,7 +15946,7 @@ function scrSeason(){
   const bar=$(`<div style="display:grid;grid-template-columns:repeat(${S.daily?3:4},1fr);gap:8px;margin-top:10px"></div>`);
   bar.appendChild(mkc('repeat', S.autoSim?'Auto On':'Auto Off', ()=>{S.autoSim=!S.autoSim; LS.set('bag_autosim',S.autoSim); track('autosim_toggle',{on:S.autoSim}); render();}, S.autoSim, 'Auto-advance events'));
   bar.appendChild(mkc('skip','Skip', ()=>{ S.overlay='confirmSkip'; render(); }, false, 'Skip to the end of the season'));
-  bar.appendChild(mkc('clock', paceMs().lbl, ()=>{ const ord=['normal','fast','chill']; S.simPace=ord[(ord.indexOf(S.simPace)+1)%3]||'normal'; LS.set('bag_pace',S.simPace); track('sim_pace',{pace:S.simPace}); render(); }, false, 'How fast rounds play'));
+  bar.appendChild(mkc('clock', paceMs().lbl, ()=>{ const pro=passProActive(); const ord=pro?['normal','fast','chill']:['normal','chill']; let cur=S.simPace; if(cur==='fast'&&!pro) cur='normal'; S.simPace=ord[(ord.indexOf(cur)+1)%ord.length]||'normal'; LS.set('bag_pace',S.simPace); track('sim_pace',{pace:S.simPace}); render(); }, false, passProActive()?'How fast rounds play':'How fast rounds play · Fast is a Tour Pass perk'));
   if(!S.daily) bar.appendChild(mkc('home','Exit', saveMidSeasonAndExit, false, 'Save & exit to home'));
   ctrl.appendChild(bar);
   // keep the coin-forfeit note (compact one-liner) so skipping still warns
