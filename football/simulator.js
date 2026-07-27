@@ -35,7 +35,6 @@ const data = E.prepareData(teamSeasons);
 const SCALE = Number(process.env.PS_SCALE ?? E.CONSTANTS.SCALE);
 const constants = { ...E.CONSTANTS, SCALE };
 
-const FRANCHISES = [...new Set(teamSeasons.map((t) => t.franchise))].sort();
 const byPos = {};
 for (const p of players) (byPos[p.position] ??= []).push(p);
 for (const list of Object.values(byPos)) list.sort((a, b) => a.price_musd - b.price_musd);
@@ -429,7 +428,6 @@ function draftReport(n) {
   const blockedReasons = {};
   for (let i = 0; i < n; i++) {
     const run = R.createRun({ seed: 4242 + i * 7919 });
-    R.pickFranchise(run, FRANCHISES[i % FRANCHISES.length]);
     try {
       while (run.phase === R.PHASES.DRAFT) {
         R.spin(run, data);
@@ -528,7 +526,6 @@ function draftReport(n) {
 
   // Resume-safety: rebuilding from (seed, rngCalls) must continue the stream
   const r1 = R.createRun({ seed: 99 });
-  R.pickFranchise(r1, 'NE');
   R.spin(r1, data);
   const snapshot = JSON.parse(JSON.stringify(r1));
   const first = R.spin(r1, data).team_season_id;
@@ -599,7 +596,6 @@ function policyReport(n) {
   const run1 = (policy, seed) => {
     const run = R.createRun({ seed });
     const rng = E.createSeededRNG(seed ^ 0x5f5f);
-    R.pickFranchise(run, FRANCHISES[Math.floor(rng() * FRANCHISES.length)]);
     while (run.phase === R.PHASES.DRAFT) {
       const d = R.spin(run, rdata);
       const opts = d.options.map((k) => byk.get(k));

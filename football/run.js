@@ -91,16 +91,18 @@ function canRespin(run, kind, data) {
     } finally {
       run.respinsUsed--;
     }
+    /* Asked against the SAME constraint the re-spin will apply, or the check approves a
+       re-spin the wheel then cannot honour and it falls back to an unconstrained draw. */
     const ok = kind === 'team'
       ? rest.some((t) => t.season === draw.season)
-      : rest.some((t) => t.season !== draw.season);
+      : rest.some((t) => t.franchise === draw.franchise && t.season !== draw.season);
     if (!ok) {
       return {
         ok: false,
         cost,
         reason: kind === 'team'
           ? `no other ${draw.season} team you could use`
-          : 'no other year you could use',
+          : `no other ${E.nickname(draw.franchise)} season you could use`,
       };
     }
   }
@@ -334,6 +336,7 @@ function spin(run, data, constraint) {
   let available = drawable(run, data);
   if (constraint) {
     const narrowed = available.filter((t) => t.team_season_id !== constraint.avoid
+      && (constraint.franchise == null || t.franchise === constraint.franchise)
       && (constraint.season != null
         ? t.season === constraint.season
         : t.season !== constraint.notSeason));
@@ -401,10 +404,15 @@ function respin(run, data, kind) {
   // The drawn team-season is consumed, you saw it and rejected it.
   if (draw) run.usedTeamSeasons.push(draw.team_season_id);
   run.currentDraw = null;
+  /* EACH WHEEL HOLDS THE OTHER ONE STILL.
+     "New team" keeps the year and draws a different club in it, which it always did.
+     "New year" is supposed to keep the CLUB and draw a different season of it, and it did not:
+     it only forbade the same season, so it re-rolled the team as well and the year wheel was
+     the only one you could see moving. Both constraints now name what is held. */
   const constraint = !draw ? null
     : (which === 'team'
       ? { season: draw.season, avoid: draw.team_season_id }
-      : { notSeason: draw.season, avoid: draw.team_season_id });
+      : { franchise: draw.franchise, notSeason: draw.season, avoid: draw.team_season_id });
   return spin(run, data, constraint);
 }
 
@@ -846,7 +854,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 15;
+const RUN_API_VERSION = 16;
 
 const api = {
   API_VERSION: RUN_API_VERSION,

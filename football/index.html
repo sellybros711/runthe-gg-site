@@ -1349,29 +1349,49 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   details.drop[open]>summary .caret{transform:rotate(180deg)}
   details.drop .body{padding:0 15px 14px}
   /* results hero */
-  .hero-rec{text-align:center;padding:6px 0 2px}
-  .hero-rec .big{font-family:var(--fd);font-size:88px;line-height:.86;letter-spacing:-.02em}
+  .hero-rec{text-align:center;padding:2px 0 0}
+  .hero-rec .big{font-family:var(--fd);font-size:78px;line-height:.86;letter-spacing:-.02em}
   .hero-rec .big.gold{background:linear-gradient(180deg,#fde68a,#d97706);-webkit-background-clip:text;
     background-clip:text;color:transparent}
   .hero-rec .big.win{background:linear-gradient(180deg,#bfdbfe,#2563eb);-webkit-background-clip:text;
     background-clip:text;color:transparent}
   .hero-sub{font-family:var(--fd);font-size:15px;letter-spacing:.06em;
-    text-transform:uppercase;margin-top:4px}
-  .hero-note{color:var(--dim);font-size:13px;margin:7px 0 0}
+    text-transform:uppercase;margin-top:3px}
+  .hero-note{color:var(--dim);font-size:12.5px;margin:5px 0 0}
+
+  /* THE SECOND HEADLINE. The record answers "how did the season go"; the team overall
+     answers "how good was the roster", and it is the number the leaderboard sorts on.
+     Two cells, big type, so they read as a pair with the record and not as a stat strip. */
+  .ovr{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:15px}
+  .ovr>div{min-width:0;padding:10px 8px 11px;border-radius:12px;text-align:center;
+    background:rgba(255,255,255,.05);border:1px solid var(--line-2)}
+  .ovr .k{font-family:var(--fn);font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--dim-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ovr .v{font-family:var(--fd);font-size:33px;line-height:.92;margin-top:4px}
+  .ovr .t{height:5px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;
+    margin-top:9px}
+  .ovr .t i{display:block;height:100%;border-radius:99px;
+    transition:width .6s cubic-bezier(.2,.8,.3,1)}
   .stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px}
   .st{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:11px;padding:10px 8px;text-align:center}
   .st .v{font-family:var(--fd);font-size:22px;line-height:1.05}
   .st .k{font-size:10px;color:var(--dim-2);font-family:var(--fn);letter-spacing:.09em;
     text-transform:uppercase;margin-top:3px}
 
-  /* Regular season and playoffs, split out, so a 15-5 line adds up in your head. */
-  .splits{display:flex;margin-top:16px;border-top:1px solid var(--line);padding-top:13px}
-  .splits div{flex:1;padding:0 4px}
-  .splits div+div{border-left:1px solid var(--line)}
-  .splits b{display:block;font-family:var(--fd);font-size:19px;line-height:1;
+  /* Regular season and playoffs, split out, so a 15-5 line adds up in your head.
+     Two rows of three rather than one row of three: chemistry and money used to be
+     visible only inside the leaderboard sheet, and they belong next to the record
+     that they produced. Third tier of the hierarchy, so the type is small. */
+  .splits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:14px;
+    border-top:1px solid var(--line);padding-top:12px}
+  .splits div{min-width:0;padding:0 4px}
+  .splits div:not(:nth-child(3n+1)){border-left:1px solid var(--line)}
+  .splits div:nth-child(n+4){border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+  .splits b{display:block;font-family:var(--fd);font-size:18px;line-height:1;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .splits span{display:block;font-family:var(--fn);font-size:9px;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--dim-2);margin-top:4px}
+  .splits span{display:block;font-family:var(--fn);font-size:8.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--dim-2);margin-top:4px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
   /* season stats */
   .stat4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px}
@@ -1380,9 +1400,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .stat4 .st .v.up{color:#4ade80} .stat4 .st .v.dn{color:#f87171}
   .stat4 .st .k{font-size:9px;letter-spacing:.06em}
   .squadline{margin-top:11px;padding-top:10px;border-top:1px solid var(--line);
-    font-size:12px;color:var(--dim);display:flex;flex-wrap:wrap;gap:4px 12px}
-  .squadline b{font-family:var(--fn);font-size:13.5px;color:var(--ink);
-    letter-spacing:.02em;margin-right:4px}
+    font-size:12px;line-height:1.45;color:var(--dim)}
+  .squadline b{font-family:var(--fn);font-size:13px;color:var(--ink);letter-spacing:.02em}
 
   /* the lineup you built, on the results page */
   /* minmax(0,1fr) and min-width:0, or the long stat line makes each row wider
@@ -1726,6 +1745,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <div class="hero-sub" id="o-title">Season over</div>
         <p class="hero-note" id="o-sub"></p>
       </div>
+      <!-- The two headline numbers, side by side under the record: what the roster is
+           worth, and how much of the available roster you actually got. These used to
+           live only in the leaderboard's detail sheet, which meant the number the board
+           ranks you on was invisible on the page that ends your run. -->
+      <div class="ovr" id="o-ovr"></div>
       <div class="splits" id="o-splits"></div>
     </div>
 
@@ -1746,13 +1770,13 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          below the fold, so the most common next action, playing again, was the hardest thing
          on the page to find. One panel at a time, and the buttons come straight after. -->
     <div class="tabwrap"><div class="tabs" id="o-tabs">
-      <button class="tab on" data-ot="ranks">Where it ranks</button>
+      <button class="tab on" data-ot="perfect">How close</button>
+      <button class="tab" data-ot="ranks">Where it ranks</button>
       <button class="tab" data-ot="stats">Season stats</button>
-      <button class="tab" data-ot="perfect">How close</button>
       <button class="tab" data-ot="games">Schedule</button>
     </div></div>
 
-    <div class="otab on" id="ot-ranks">
+    <div class="otab" id="ot-ranks">
       <div class="panel rankpanel" id="o-rankpanel" style="margin-top:11px">
         <div class="eyebrow">Where this run ranks</div>
         <div id="o-ranks"></div>
@@ -1767,7 +1791,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
     </div>
 
-    <div class="otab" id="ot-perfect">
+    <div class="otab on" id="ot-perfect">
       <div class="panel" style="margin-top:11px">
         <div class="eyebrow">How close to perfect</div>
         <div id="o-miss"></div>
@@ -1813,8 +1837,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=15"></script>
-<script src="run.js?v=15"></script>
+<script src="engine.js?v=16"></script>
+<script src="run.js?v=16"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -1886,7 +1910,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=15;
+const NEED_VERSION=16;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -2597,7 +2621,11 @@ function spinBoth(draw,done){
      height printed it in the top row instead, above the band, which read as a
      rendering fault rather than a prompt. */
   tEl.style.transform='none';
-  tEl.innerHTML=['','?',''].map(t=>'<div class="reel-i">'+t+'</div>').join('');
+  /* The team window sits EMPTY until the year lands, rather than showing a question mark.
+     The mark was meant to read as "waiting", and instead it read as a missing value: the
+     window already has a lit band and a label above it saying TEAM, so an empty band is
+     plainly a slot about to be filled and needs nothing standing in for the answer. */
+  tEl.innerHTML=['','',''].map(()=>'<div class="reel-i"></div>').join('');
   // A wheel with one option gets a short spin, since there is nothing to see.
   // Reduced motion gets the same short spin for every wheel: the result still lands
   // in the window so the draw reads as a draw, it just does not wind to get there.
@@ -3255,14 +3283,45 @@ function paintOver(){
     $('o-sub').textContent='It takes '+E.CONSTANTS.PLAYOFF_WINS+' wins to get in.';
   }
 
-  /* A 15-5 line only makes sense once you can see it was 13-4 and then 2-1. */
+  /* THE SECOND HEADLINE AND THE STRIP UNDER IT.
+     Both are worked out before anything is painted, because the "of the best possible"
+     figure comes from the same solve the How close tab uses and there is no sense
+     running it twice. */
+  const spendUsed=run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed);
+  const squadFppg=run.roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
+  const st=E.rosterStructure(run.roster);
+  const rating=teamRating(run.roster,run.season.chemistry);
+  const best=R.bestPossibleSquad(run,DATA,CTX);
+  const share=best?Math.round(100*Math.min(1,best.yourProjected/best.bestProjected)):null;
+  lastPerfectShare=share;
+
+  /* Measured over 1,600 drafts across four play styles, team rating runs from about 1
+     to about 100, so the number doubles as its own percentage and the bar needs no
+     invented scale. Bands at 75 and 50: a player taking the best man on every board
+     lands around 73, so green means you beat greedy. */
+  const rband=rating>=75?'#22c55e':(rating>=50?'#fbbf24':'#ef4444');
+  const sband=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
+  const bigcell=(k,v,pctFill,color)=>'<div><div class="k">'+k+'</div>'+
+    '<div class="v" style="color:'+color+'">'+v+'</div>'+
+    '<div class="t"><i style="width:'+pctFill+'%;background:'+color+'"></i></div></div>';
+  $('o-ovr').innerHTML=
+    bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
+    bigcell('Of the best possible',share===null?'--':share+'%',
+      share===null?0:Math.max(2,share),share===null?'#94a3b8':sband);
+
+  /* A 15-5 line only makes sense once you can see it was 13-4 and then 2-1. The
+     three cells under those are the rest of what the leaderboard's detail sheet
+     shows, so the board and this page never disagree about a run. */
   const po=s.results.filter(r=>r.playoff);
   const reg=s.results.filter(r=>!r.playoff);
   const won=(arr)=>arr.filter(r=>r.won).length;
   const split=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
   $('o-splits').innerHTML=split(won(reg)+'-'+(reg.length-won(reg)),'Regular season')+
-    (po.length?split(won(po)+'-'+(po.length-won(po)),'Playoffs'):'')+
-    split(o.seedLabel.replace(/^Missed.*/,'None'),'Playoff seed');
+    split(po.length?won(po)+'-'+(po.length-won(po)):'--','Playoffs')+
+    split(o.seedLabel.replace(/^Missed.*/,'None'),'Playoff seed')+
+    split(pc(run.season.chemistry-1),'Chemistry')+
+    split(M0(spendUsed),'Spent')+
+    split('x'+st.multiplier.toFixed(2),'Team shape');
 
   /* Real team stats off the scores you were shown, not fantasy totals. Points
      for and against say more about the season than a points-scored figure on
@@ -3280,14 +3339,14 @@ function paintOver(){
     tile((diff>=0?'+':'')+diff.toFixed(1),'Difference',diff>=0?'up':'dn')+
     tile(bestStreak,'Longest streak');
 
-  const spendUsed=run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed);
-  const fppg=run.roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
-  const st=E.rosterStructure(run.roster);
-  $('o-squadline').innerHTML=
-    '<span><b>'+fppg.toFixed(0)+'</b>squad FPPG</span>'+
-    '<span><b>'+pc(run.season.chemistry-1)+'</b>chemistry</span>'+
-    '<span><b>'+M(spendUsed)+'</b>of '+M(E.CONSTANTS.CAP_MUSD)+'</span>'+
-    '<span><b>x'+st.multiplier.toFixed(2)+'</b>team shape</span>';
+  /* Chemistry, money and team shape now sit in the hero strip, so repeating them here
+     as four more tiles was the same four numbers twice. What this tab can add instead is
+     the sum: how those three turn into the team overall at the top. Same sentence the
+     leaderboard's detail sheet uses, so the two can never read differently. */
+  $('o-squadline').innerHTML='<span>'+squadFppg.toFixed(0)+' squad FPPG, '+
+    pc(run.season.chemistry-1)+' chemistry and a x'+st.multiplier.toFixed(2)+
+    ' team shape, which is a <b>'+rating.toFixed(1)+'</b> team overall against an '+
+    'average defense. You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.</span>';
 
   /* The lineup, which the old results page never showed at all. */
   drawField($('field3'),false);
@@ -3305,15 +3364,11 @@ function paintOver(){
       '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
   }).join('');
 
-  lastPerfectShare=null;
-  const best=R.bestPossibleSquad(run,DATA,CTX);
   if(!best){ $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>'; }
   else{
-    const share=Math.round(100*Math.min(1,best.yourProjected/best.bestProjected));
-    lastPerfectShare=share;
     const kept=best.lineup.filter(r=>r.same).length;
     const band=share>=90?'pgood':(share>=70?'pmid':'pbad');
-    const fill=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
+    const fill=sband;
     /* The two numbers can disagree, and often do: a 92% team with zero matching
        picks means you found different players worth nearly as much. Saying "0 of
        6 spots right" under a 92% score without that read badly. */
@@ -3340,6 +3395,9 @@ function paintOver(){
   const list=$('o-list');
   list.innerHTML=''; s.results.forEach(r=>pushGame(r,list));
   $('o-gcount').textContent=' \u00b7 '+s.results.length+' games';
+  /* Back to the default tab. The class is on the markup, but it moves as soon as
+     anyone taps, and a new season should not open on the pane the last one ended on. */
+  setOverTab('perfect');
   show('s-over');
   /* Deliberately not awaited. The results page is fully painted and on screen
      before a single byte goes to the network, so a slow or dead board delays
@@ -3766,7 +3824,7 @@ function heroReset(){
   $('h-box-y').className='reelbox year waiting';
   $('h-box-t').className='reelbox team waiting';
   $('h-box-t').removeAttribute('style');
-  heroBlank($('h-reel-y')); heroBlank($('h-reel-t'),'?');
+  heroBlank($('h-reel-y')); heroBlank($('h-reel-t'));
 }
 
 /* No animation at all for anyone who has asked their device for less of it. They
@@ -4721,12 +4779,13 @@ function drawPips(bySlot){
 
 /* The results page tabs. Delegated, so it survives every repaint, and the panes are shown by
    display so a hidden one costs no page height. */
+function setOverTab(k){
+  [...$('o-tabs').querySelectorAll('.tab')].forEach(t=>t.classList.toggle('on',t.dataset.ot===k));
+  ['ranks','stats','perfect','games'].forEach(n=>$('ot-'+n).classList.toggle('on',n===k));
+}
 $('o-tabs').addEventListener('click',(e)=>{
   const b=e.target.closest('.tab'); if(!b) return;
-  const k=b.dataset.ot;
-  [...$('o-tabs').querySelectorAll('.tab')].forEach(t=>t.classList.toggle('on',t===b));
-  ['ranks','stats','perfect','games'].forEach(n=>
-    $('ot-'+n).classList.toggle('on',n===k));
+  setOverTab(b.dataset.ot);
 });
 
 $('b-profile').onclick=()=>profileSheet();

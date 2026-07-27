@@ -1293,7 +1293,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 15;
+const ENGINE_API_VERSION = 16;
 
 /*
  * The three-letter code a team actually wore in a given season.
