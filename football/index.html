@@ -1119,6 +1119,59 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      price all fighting over one line, which is why everything was clipped with an
      ellipsis. In a tile each of those gets its own place. */
   .opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+
+  /* ================= THE DRAFT ON A WIDE SCREEN =================
+     One column on a phone, and the phone layout is untouched: .dcols is display:block
+     by default, so the order down the page is still field, rail, reels, tabs, options,
+     re-spins. Wide, the formation stays left and everything you touch goes right.
+
+     WHY THE THRESHOLDS ARE WHAT THEY ARE. A column has to be at least about 420px for
+     the field to be worth looking at, and the formation was solved for fields from 260
+     to 572 wide, so a column outside that range would be laying out a shape nobody
+     measured. Two columns plus the 24px gutter therefore needs 864px of content:
+
+       under 920      one column. 920 - 28 of wrap padding = 892, the first width that
+                      clears it without the ad rails in the way.
+       920 to 1199    two columns, no rails at these widths.
+       1200 to 1259   ONE column. The rails appear at 1200 and want 200px a side, which
+                      leaves 800 for the draft, and 800 is not two columns. The rails
+                      keep the space, because a cramped two-column draft is worse than
+                      a good one-column draft and the ads pay for the game.
+       1260 and up    two columns again, and the wrap stops growing at 1040 so a column
+                      never exceeds 508 and stays inside the range the formation was
+                      measured at.
+
+     :has() on the wrap, because only the draft screen wants the extra width; every
+     other screen is a column of text and cards that reads worse wide. */
+  .dcols{display:block}
+  @media (min-width:920px){
+    .wrap:has(#s-draft.on){max-width:1040px}
+    .dcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      column-gap:24px;align-items:start}
+    /* The field is the top of its column, so the reels line up with it rather than
+       sitting a row lower than the thing they fill. */
+    #reels{margin-top:0}
+    /* Nothing here is sticky. The wheels inside a column is the obvious next idea and it
+       is the same trap as before: a sticky block whose own height changes reshapes the
+       page under the finger, and this layout has already lost a day to that once. */
+    /* THE LINEUP PIPS GO AWAY ENTIRELY, height and all.
+       They exist to carry the lineup once the field has scrolled out of the sticky HUD.
+       In two columns the field has its own column and never leaves the screen, so they
+       never fade in, and all their reserved height did was leave a 32px dark band under
+       the money bar. Reserving space for something that cannot happen is just a gap. */
+    .dpips{display:none}
+    .capwrap:after{display:none}
+  }
+  @media (min-width:1200px) and (max-width:1259px){
+    .wrap:has(#s-draft.on){max-width:600px}
+    .dcols{display:block}
+    #reels{margin-top:11px}
+    .dpips{display:flex}
+    .capwrap:after{display:block}
+  }
+  @media (min-width:1260px){
+    .wrap:has(#s-draft.on){max-width:min(1040px,calc(100vw - 400px))}
+  }
   /* Tiles arrive as a consequence of the reels landing, so they come in on a short
      stagger rather than all at once out of nowhere. */
   @keyframes optin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -1868,28 +1921,43 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            appear would shift the page under the finger. -->
       <div class="dpips" id="d-pips" aria-hidden="true"></div>
     </div>
-    <!-- OUTSIDE .capwrap, which is position:sticky. That is the whole reason the field sat at
-         the top of the screen forever: nothing inside a pinned block can scroll out of view.
-         Out here it scrolls away like anything else and gives the space back for real. -->
-    <div class="dfold" id="d-fold">
-      <div class="field" id="field"></div>
-      <div class="rail" id="rail1"></div>
-      <p class="railnote"></p>
-    </div>
+    <!-- TWO COLUMNS ON A WIDE SCREEN, one on a phone.
+         .dcols is display:block until there is room for two, so on a phone the order down
+         the page is exactly what it always was: field, rail, reels, tabs, options, re-spins.
+         Wide, the formation and its chemistry stay on the left and everything you touch
+         moves to the right, which is the half of a landscape screen a thumb can reach.
 
-    <div class="reels" id="reels">
-      <div class="reelcol">
-        <span class="rlabel">Year</span>
-        <div class="reelbox year" id="box-y"><div class="strip" id="reel-y"></div><span class="band"></span><span class="wash"></span></div>
+         It is a wrapper rather than a grid on #s-draft itself, and that is not tidiness:
+         .capwrap is position:sticky, a sticky grid ITEM is constrained to its own grid area,
+         and a one-row area is exactly its own height, so putting the grid on the screen
+         would have stopped the HUD sticking at all. -->
+    <div class="dcols">
+     <div class="dcol">
+      <!-- OUTSIDE .capwrap, which is position:sticky. That is the whole reason the field sat at
+           the top of the screen forever: nothing inside a pinned block can scroll out of view.
+           Out here it scrolls away like anything else and gives the space back for real. -->
+      <div class="dfold" id="d-fold">
+        <div class="field" id="field"></div>
+        <div class="rail" id="rail1"></div>
+        <p class="railnote"></p>
       </div>
-      <div class="reelcol">
-        <span class="rlabel">Team</span>
-        <div class="reelbox team" id="box-t"><div class="strip" id="reel-t"></div><span class="band"></span><span class="wash"></span></div>
+     </div>
+     <div class="dcol">
+      <div class="reels" id="reels">
+        <div class="reelcol">
+          <span class="rlabel">Year</span>
+          <div class="reelbox year" id="box-y"><div class="strip" id="reel-y"></div><span class="band"></span><span class="wash"></span></div>
+        </div>
+        <div class="reelcol">
+          <span class="rlabel">Team</span>
+          <div class="reelbox team" id="box-t"><div class="strip" id="reel-t"></div><span class="band"></span><span class="wash"></span></div>
+        </div>
       </div>
+      <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
+      <div class="opts" id="opts"></div>
+      <div id="d-respin" style="margin-top:10px"></div>
+     </div>
     </div>
-    <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
-    <div class="opts" id="opts"></div>
-    <div id="d-respin" style="margin-top:10px"></div>
     <!-- QUITTING. Six spins in, a player who has changed their mind had no exit
          either, and a draft is the longest screen in the game to be trapped on.
          Two taps rather than one, because a single tap here throws away a run in
