@@ -34,13 +34,13 @@ branches on the package **kind** (coins / tokens / pass).
 **Coin packs** (`kind: coins`) — first purchase gets **+100%** automatically.
 Large / XL / Mega also grant bonus packs (handled client-side):
 
-| Package | Price  | Coins   | Bonus packs        |
-|---------|--------|---------|--------------------|
-| Small   | $1.99  | 15,000  | —                  |
-| Medium  | $4.99  | 42,000  | —                  |
-| Large   | $9.99  | 95,000  | +1 Tour pack       |
-| XL      | $19.99 | 210,000 | +1 Champion pack   |
-| Mega    | $49.99 | 575,000 | +3 Champion packs  |
+| Package        | Price  | Coins   | Bonus packs        |
+|----------------|--------|---------|--------------------|
+| Small Bucket   | $1.99  | 15,000  | —                  |
+| Medium Bucket  | $4.99  | 45,000  | —                  |
+| Large Bucket   | $9.99  | 102,000 | +1 Tour pack       |
+| XL Bucket      | $19.99 | 285,000 | +1 Champion pack   |
+| Mega Bucket    | $49.99 | 625,000 | +3 Champion packs  |
 
 **Daily Tokens** (`kind: tokens`) — extra Daily-Challenge attempts beyond the free 3/day:
 
@@ -58,7 +58,7 @@ reward multiplier, and 2 seasonal packs while active):
 
 | Package        | Price  | Grants                              |
 |----------------|--------|-------------------------------------|
-| Tour Pass      | $9.99  | 30,000 coins + this month's pass    |
+| Tour Pass      | $14.99 | 30,000 coins + this month's pass    |
 
 Copy each **Price ID** (`price_...`).
 

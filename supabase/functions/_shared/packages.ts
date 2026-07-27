@@ -35,7 +35,7 @@ export const PACKAGES: Record<string, CoinPackage> = {
   // (handled client-side); the coin figures below are what the wallet receives.
   small: {
     id: "small",
-    label: "Small",
+    label: "Small Bucket",
     kind: "coins",
     coins: 15000,
     priceCents: 199,
@@ -43,33 +43,33 @@ export const PACKAGES: Record<string, CoinPackage> = {
   },
   medium: {
     id: "medium",
-    label: "Medium",
+    label: "Medium Bucket",
     kind: "coins",
-    coins: 42000,
+    coins: 45000,
     priceCents: 499,
     priceEnv: "STRIPE_PRICE_MEDIUM",
   },
   large: {
     id: "large",
-    label: "Large",
+    label: "Large Bucket",
     kind: "coins",
-    coins: 95000,
+    coins: 102000,
     priceCents: 999,
     priceEnv: "STRIPE_PRICE_LARGE",
   },
   xl: {
     id: "xl",
-    label: "XL",
+    label: "XL Bucket",
     kind: "coins",
-    coins: 210000,
+    coins: 285000,
     priceCents: 1999,
     priceEnv: "STRIPE_PRICE_XL",
   },
   mega: {
     id: "mega",
-    label: "Mega",
+    label: "Mega Bucket",
     kind: "coins",
-    coins: 575000,
+    coins: 625000,
     priceCents: 4999,
     priceEnv: "STRIPE_PRICE_MEGA",
   },
@@ -121,7 +121,7 @@ export const PACKAGES: Record<string, CoinPackage> = {
     kind: "pass",
     passCoins: 30000, // coins credited on purchase
     passPacks: 2,     // seasonal packs granted client-side for this period
-    priceCents: 999,
+    priceCents: 1499,
     priceEnv: "STRIPE_PRICE_TOURPASS",
   },
 };

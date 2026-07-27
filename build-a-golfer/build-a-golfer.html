@@ -21781,11 +21781,11 @@ const BUCKETS_ENABLED=false;
 // supabase/functions/_shared/packages.ts (the SERVER is authoritative on what's delivered). First purchase
 // gets +100% coins, applied SERVER-SIDE in the webhook. NOTE (owner rule): NEVER surface "careers" in the UI.
 const BUCKETS=[
-  {id:'small',  name:'Small',  usd:1.99,  coins:15000,  col:'#3fbf7a'},
-  {id:'medium', name:'Medium', usd:4.99,  coins:42000,  col:'#5bcfe8', bonus:12},
-  {id:'large',  name:'Large',  usd:9.99,  coins:95000,  col:'#a24be0', bonus:26, badge:'POPULAR',    packTier:'tour',  packN:1},
-  {id:'xl',     name:'XL',     usd:19.99, coins:210000, col:'#e8922a', bonus:39,                     packTier:'champ', packN:1},
-  {id:'mega',   name:'Mega',   usd:49.99, coins:575000, col:'#F1D04A', bonus:53, badge:'BEST VALUE', packTier:'champ', packN:3},
+  {id:'small',  name:'Small Bucket',  usd:1.99,  coins:15000,  col:'#3fbf7a'},
+  {id:'medium', name:'Medium Bucket', usd:4.99,  coins:45000,  col:'#5bcfe8', bonus:20},
+  {id:'large',  name:'Large Bucket',  usd:9.99,  coins:102000, col:'#a24be0', bonus:35, badge:'POPULAR',    packTier:'tour',  packN:1},
+  {id:'xl',     name:'XL Bucket',     usd:19.99, coins:285000, col:'#e8922a', bonus:89,                     packTier:'champ', packN:1},
+  {id:'mega',   name:'Mega Bucket',   usd:49.99, coins:625000, col:'#F1D04A', bonus:66, badge:'BEST VALUE', packTier:'champ', packN:3},
 ];
 // LAUNCH FLAGS for the real-money features. Default OFF so the client ships ahead of the backend without
 // putting checkout buttons that error in front of live players. Flip each to true AT GO-LIVE, once the owner
@@ -21807,7 +21807,7 @@ const DAILY_TOKENS=[
 // THIS month's pass. While active: unlimited daily plays, a reward multiplier (earn bigger & better), a
 // coin drop + seasonal packs. When the month resets you buy a new pass. id/coins MUST match packages.ts.
 const TOURPASS_ENABLED=false;
-const TOURPASS={ id:'tourpass', usd:9.99, coins:30000, packs:2 };
+const TOURPASS={ id:'tourpass', usd:14.99, coins:30000, packs:2 };
 const PASS_REWARD_MULT=1.5;   // Tour Pass holders earn 1.5× coins from play
 const _PASS_THEMES=['Winter Classic','Cold Snap','Spring Swing','Fairway Bloom','Peak Approach','Summer Heat','Midsummer Run','Dog Days','Autumn Drive','Fall Classic','Playoff Push','Holiday Cup'];
 function passThemeName(){ try{ return _PASS_THEMES[new Date().getMonth()]+' Pass'; }catch(e){ return 'Tour Pass'; } }
