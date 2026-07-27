@@ -878,11 +878,23 @@
   .reel-vp{
     position:relative;height:128px;overflow:hidden;border:1.5px solid var(--border-soft);border-radius:16px;
     background:linear-gradient(var(--paper),#fff);
+    /* recessed "slot window" depth so the reel reads as a spinning drum */
+    box-shadow:inset 0 11px 15px -11px rgba(var(--shadow-rgb),.55), inset 0 -11px 15px -11px rgba(var(--shadow-rgb),.55);
   }
   .reel-vp::before,.reel-vp::after{content:"";position:absolute;left:0;right:0;height:34px;z-index:3;pointer-events:none;}
-  .reel-vp::before{top:0;background:linear-gradient(#fff,rgba(255,255,255,0));}
-  .reel-vp::after{bottom:0;background:linear-gradient(rgba(255,255,255,0),#fff);}
+  .reel-vp::before{top:0;background:linear-gradient(var(--white),rgba(255,255,255,0));}
+  .reel-vp::after{bottom:0;background:linear-gradient(rgba(255,255,255,0),var(--white));}
   .reel-strip{position:absolute;left:0;right:0;top:0;will-change:transform;}
+  /* gold pointer notches at the centre payline — the classic slot "you are here" */
+  .reel-notch{position:absolute;top:50%;transform:translateY(-50%);z-index:4;width:0;height:0;pointer-events:none;
+    border-top:7px solid transparent;border-bottom:7px solid transparent;
+    filter:drop-shadow(0 1px 1px rgba(var(--shadow-rgb),.3));}
+  .reel-notch.l{left:0;border-left:9px solid var(--gold);}
+  .reel-notch.r{right:0;border-right:9px solid var(--gold);}
+  /* landed flash when a reel settles on its result */
+  @keyframes reelHit{0%{box-shadow:inset 0 0 0 2.5px var(--gold), 0 0 18px rgba(244,180,19,.5);}
+    100%{box-shadow:inset 0 0 0 0 rgba(244,180,19,0), 0 0 0 rgba(244,180,19,0);}}
+  .reel-vp.hit{animation:reelHit .75s ease-out;}
   .reel-item{height:128px;display:flex;align-items:center;justify-content:center;}
   .reel-item .fg{font-size:78px;line-height:1;}
   .reel-item .yr{font-family:'Anton';font-size:62px;color:var(--blue);}
@@ -3739,11 +3751,11 @@ window.GA_ID='G-L29P5MRWKE';
         <div class="reel-stage">
           <div class="reel-block year">
             <div class="reel-cap">Year</div>
-            <div class="reel-vp"><div class="reel-strip" id="reel-year"></div></div>
+            <div class="reel-vp"><span class="reel-notch l"></span><span class="reel-notch r"></span><div class="reel-strip" id="reel-year"></div></div>
           </div>
           <div class="reel-block country">
             <div class="reel-cap">Nation</div>
-            <div class="reel-vp"><div class="reel-strip" id="reel-country"></div></div>
+            <div class="reel-vp"><span class="reel-notch l"></span><span class="reel-notch r"></span><div class="reel-strip" id="reel-country"></div></div>
           </div>
         </div>
         <div class="landed-name" id="landed-name"></div>
@@ -5002,15 +5014,22 @@ function spinStrip(strip, rowH, duration){
   });
 }
 
+// Flash the slot window when a reel lands on its symbol.
+function pulseReel(strip){
+  const vp=strip && strip.closest('.reel-vp'); if(!vp) return;
+  vp.classList.remove('hit'); void vp.offsetWidth; vp.classList.add('hit');
+}
 // animation only, spins both reels and shows the landed result
 async function doSpinAnim(country, year){
   $('landed-name').innerHTML='';
   $('reel-country').innerHTML='';         // country stays blank during the year spin
   buildYearStrip(year,true);              // build the year reel just as it starts spinning
   await spinStrip($('reel-year'),YEAR_ROW,spinDur(1100));
+  pulseReel($('reel-year'));              // year settles → flash the window
   // landed-name stays blank until both wheels have settled
   buildCountryStrip(country,true);        // build the nation reel only now, as it starts spinning
   await spinStrip($('reel-country'),COUNTRY_ROW,spinDur(1700));
+  pulseReel($('reel-country'));           // nation settles → flash the window
   $('landed-name').innerHTML=`${flagChip(country,'lg')} ${country} <span class="yr">'${String(year).slice(2)}</span>`;
 }
 
