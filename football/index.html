@@ -975,22 +975,32 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     letter-spacing:.04em;font-style:normal;background:rgba(255,255,255,.05);
     border:1px dashed var(--line-2);color:var(--dim-2)}
   .dpips i.on{border-style:solid;border-color:transparent;color:#fff}
-  .capline{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+  .cap-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .capline{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:3px}
   .capline .amt{font-family:var(--fd);font-size:32px;line-height:1}
   .capline .amt.low{color:var(--red)}
-  /* What is left divided by the spots still to fill. Under the money rather than
-     across from it, because it is the same fact read a second way and the two should
-     be read together. */
-  .capline .perslot{font-family:var(--fn);font-size:12px;font-weight:600;color:var(--dim);
-    margin-top:4px;white-space:nowrap}
-  .capline .perslot.low{color:#f87171}
-  .bar{height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:8px}
+  /* What is left divided by the spots still to fill. Under the BAR now, not inside the
+     money column: it is the same fact read a second way, and sitting it below the gauge
+     puts a money label above the bar and a money caption under it, which is what tells
+     you the bar is about money and not about the percentage across the row. */
+  .capwrap .perslot{font-family:var(--fn);font-size:12px;font-weight:600;color:var(--dim);
+    margin-top:7px;white-space:nowrap}
+  .capwrap .perslot.low{color:#f87171}
+  /* Thinner than it was. It starts full and drains, so at the first spin it was a solid
+     slab of blue and the largest thing in the HUD, carrying no information at all: you
+     always begin with the whole budget. A gauge, not a headline. */
+  .bar{height:5px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:9px}
   .bar i{display:block;height:100%;border-radius:99px;background:var(--grad-blue);transition:width .4s ease}
   .bar i.low{background:var(--grad-red)}
   .note{margin-top:8px;font-size:12.5px;font-weight:700;color:#fca5a5}
 
   .chemrow{display:flex;align-items:center;gap:11px;margin-top:11px}
-  .chemval{font-family:var(--fd);line-height:1;min-width:74px}
+  /* Label and value on one baseline. min-width on the value so the label does not slide
+     left and right as the number changes width between spins. */
+  .chem{display:flex;align-items:baseline;gap:7px;flex:0 0 auto}
+  .chem .ck{font-family:var(--fn);font-size:9.5px;font-weight:600;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--dim-2);white-space:nowrap}
+  .chemval{font-family:var(--fd);font-size:23px;line-height:1;min-width:62px;text-align:right}
   .chemval.pos{color:#4ade80} .chemval.zero{color:var(--dim-2)} .chemval.neg{color:var(--red)}
   .chembar{flex:1;height:9px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}
   .chembar i{display:block;height:100%;border-radius:99px;
@@ -1923,14 +1933,27 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
   <div class="screen" id="s-draft">
     <div class="capwrap">
+      <!-- ONE LABEL PER FACT, AND THE BAR BACK WITH THE MONEY.
+           This carried three unrelated things and labelled two of them with one string:
+           the eyebrow read "Chemistry, spin 1 of 6", so the big number under it could
+           have been either, and the money bar sat directly under the percentage while
+           belonging to the figure on the other side of the row.
+
+           Now: the two eyebrows are parallel, each naming its own column. Chemistry
+           carries its own label on its own baseline, so the percentage is never orphaned
+           and never competes with the money for size. And the bar is bracketed by money
+           facts, label above and per-spot caption below, which is what makes it read as
+           the budget gauge it is. -->
+      <div class="cap-hd">
+        <span class="eyebrow">Money left</span>
+        <span class="eyebrow" id="d-count">Spin 1 of 6</span>
+      </div>
       <div class="capline">
-        <div><div class="eyebrow">Money left</div>
-          <div class="amt num" id="c-amt"></div>
-          <div class="perslot num" id="c-per"></div></div>
-        <div style="text-align:right"><div class="eyebrow" id="d-count">Spin 1 of 6</div>
-          <div class="chemval num zero" id="c-chem" style="font-size:27px">0.0%</div></div>
+        <div class="amt num" id="c-amt"></div>
+        <div class="chem"><span class="ck">Chemistry</span><span class="chemval num zero" id="c-chem">0.0%</span></div>
       </div>
       <div class="bar"><i id="c-bar" style="width:100%"></i></div>
+      <div class="perslot num" id="c-per"></div>
       <div class="note" id="c-note" style="display:none"></div>
       <!-- THE LINEUP, once the field has scrolled off. Height is reserved at every scroll
            position and only the opacity changes, because growing a sticky block when they
@@ -2915,15 +2938,20 @@ function paintTop(){
   const b=$('c-bar'); b.style.width=Math.max(0,Math.min(100,rem/E.CONSTANTS.CAP_MUSD*100))+'%';
   b.classList.toggle('low',low);
   const chem=run.roster.length>1?E.resolveChemistry(run.roster,CTX).multiplier:1;
-  const el=$('c-chem'); el.textContent=((chem-1)*100).toFixed(1)+'%';
-  el.className='chemval num '+(chem>1.0005?'pos':(chem<0.9995?'neg':'zero'));
+  /* Signed when there is something to sign, because a bare "2.7%" does not say which way
+     it went. Nothing is "None" rather than "+0.0%": a signed zero reads as a measurement
+     when what it means is that no two of these players have anything in common yet. */
+  const el=$('c-chem');
+  const zero=Math.abs(chem-1)<0.0005;
+  el.textContent=zero?'None':pc(chem-1);
+  el.className='chemval num '+(zero?'zero':(chem>1?'pos':'neg'));
   if(Math.abs(chem-lastChem)>0.0005){el.classList.add('bump');setTimeout(()=>el.classList.remove('bump'),640);}
   lastChem=chem;
   const n=$('c-note');
   if(left>1&&rem-floor<8){n.style.display='block';n.textContent='Keep at least '+M(floor)+' back or you cannot fill the rest of your team.';}
   else if(left===1&&rem>25){n.style.display='block';n.textContent='You still have '+M(rem)+' left and this is the last spot to spend it on.';}
   else n.style.display='none';
-  $('d-count').textContent='Chemistry, spin '+Math.min(6,run.roster.length+1)+' of 6';
+  $('d-count').textContent='Spin '+Math.min(6,run.roster.length+1)+' of 6';
 }
 
 /* ---------- the wheels ----------
