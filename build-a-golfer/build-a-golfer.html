@@ -5852,6 +5852,17 @@ function coinShort(n){ n=Math.round(n||0);
   if(n<1e9)  return (n/1e6).toFixed(n<1e7?2:1).replace(/\.?0+$/,'')+'M';
   return (n/1e9).toFixed(2).replace(/\.?0+$/,'')+'B'; }
 
+/* ---- DEV / EARLY ACCESS -----------------------------------------------------------------------
+   Named accounts get in-progress features LIVE on the public site before launch, so we can test on
+   the real runthe.gg/golf without exposing anything to the public. Deploy normally: everyone sees
+   the stable game; these accounts also see any feature gated behind devMode(). Username-matched the
+   same way as the coin grants (server-attributed sbUsername, lowercased — no one else can hold these
+   handles). To LAUNCH a feature to everyone, flip its own _LIVE flag to true. */
+const DEV_USERS=['csel8','runnyj'];
+function devMode(){ return sbSignedIn() && DEV_USERS.indexOf((sbUsername||'').toLowerCase())>=0; }
+const TOURPASS_LIVE=false;                       // set true to release the Tour Pass to everyone
+function passEnabled(){ return TOURPASS_LIVE || devMode(); }
+
 /* ============================ TOUR PASS — 60-day umbrella season pass ============================
    An EARNED (coin-unlocked) battle pass that ties the whole economy together. A 60-day GLOBAL season
    (ET-aligned, like the Daily) with a 50-tier Track. Climb it with Pass XP earned from EVERY mode
@@ -5880,7 +5891,7 @@ function passProActive(){ return sbSignedIn() && passState().pro; }
 function passTierCost(t){ return 140 + (t-1)*11; }
 function passXpForTier(t){ let x=0; for(let i=1;i<=t;i++) x+=passTierCost(i); return x; }
 function passTierAt(xp){ let t=0; while(t<PASS_TIERS && xp>=passXpForTier(t+1)) t++; return t; }
-function passAddXp(n){ if(!sbSignedIn()||!(n>0)) return; const s=passState(), before=passTierAt(s.xp);
+function passAddXp(n){ if(!passEnabled()||!sbSignedIn()||!(n>0)) return; const s=passState(), before=passTierAt(s.xp);
   s.xp+=Math.round(n); passSave(s); const after=passTierAt(s.xp);
   if(after>before){ S.passFreshTier=after; try{ toast('<span style="color:#ffd447;font-weight:800">🎟️ Tour Pass · Tier '+after+' reached!</span><br><span class="small">Claim your rewards in the Tour Pass ▸</span>', 3400); }catch(e){} } }
 // Reward tables — milestone tiers give cosmetics/packs; the rest default to coins (+ a shard cadence).
@@ -8351,7 +8362,7 @@ function overlayMenu(screen){
   play.appendChild(menuRow('📖','How to Play','Career mode & daily challenge',go(openRules)));
   play.appendChild(menuRow('🏆','Leaderboard','Season & career rankings',go(()=>{S.overlay='leaderboard';})));
   play.appendChild(menuRow('🎯','Challenges',signedIn?(repTier().tier.name+' · daily & weekly quests'):'Sign in to earn Tour Rep & rewards',go(()=>{S.overlay='challenges';})));
-  play.appendChild(menuRow('🎟️','Tour Pass',(()=>{ const ssn=passSeason(); if(signedIn){ const s=passState(),cl=passClaimable(); return 'Season '+ssn.n+' · Tier '+passTierAt(s.xp)+'/'+PASS_TIERS+(cl>0?' · '+cl+' to claim':''); } return 'Season '+ssn.n+' · 60-day reward track'; })(),go(()=>{S.overlay='tourpass';})));
+  if(passEnabled()) play.appendChild(menuRow('🎟️','Tour Pass',(()=>{ const ssn=passSeason(); if(signedIn){ const s=passState(),cl=passClaimable(); return 'Season '+ssn.n+' · Tier '+passTierAt(s.xp)+'/'+PASS_TIERS+(cl>0?' · '+cl+' to claim':''); } return 'Season '+ssn.n+' · 60-day reward track'; })(),go(()=>{S.overlay='tourpass';})));
   play.appendChild(menuRow('🏅','Profile',signedIn?'Your trophies, titles & stats':'Sign in to unlock your record',go(()=>{S.overlay='record';})));
   play.appendChild(menuRow('⛳','Course Records','Today\'s board & all-time bests',go(()=>{S.overlay='courserecords';})));
   play.appendChild(menuRow('🎫','Course Passport',`Your best grade at all ${DAILY_KEYS.length} courses`,go(()=>{S.overlay='passport';})));
@@ -8888,8 +8899,9 @@ function scrTitle(){
       stack.appendChild(careerHeroCard(true));
     }
   }
-  // 3) Tour Pass (season pass) - the umbrella progression card, violet-gold accent
-  stack.appendChild(tourPassCard());
+  // 3) Tour Pass (season pass) - the umbrella progression card, violet-gold accent.
+  // Gated to dev accounts (or the TOURPASS_LIVE launch flag) so we can live-test before public.
+  if(passEnabled()) stack.appendChild(tourPassCard());
   // 4) Play Online (teal card)
   stack.appendChild(onlineHeroCard());
   // 4) Monthly Spotlight (purple card while live, else a small "next" tease)
@@ -21594,6 +21606,7 @@ function passStyleOnce(){ if(_tpcss) return; _tpcss=true; const st=document.crea
   document.head.appendChild(st);
 }
 function overlayTourPass(screen){
+  if(!passEnabled()){ S.overlay=null; return; }   // dev/early-access gate until the Tour Pass launches
   passStyleOnce();
   const ssn=passSeason();
   if(!sbSignedIn()){
