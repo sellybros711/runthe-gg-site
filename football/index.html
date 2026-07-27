@@ -85,6 +85,18 @@
   ]
 }
 </script>
+<!-- CONSENT MODE DEFAULTS, before any ad or analytics tag, so nothing is stored until
+     Google's certified CMP answers. The same block the rest of runthe.gg runs; it is what makes
+     privacy.html's promise true rather than aspirational. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});
+</script>
+<!-- Google AdSense, same publisher as the rest of the site. Units are manual and sit near the
+     foot of the body; Auto Ads stays off in the dashboard, which is what keeps an ad from being
+     injected into the middle of a game screen. -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=Oswald:wght@500;600;700&family=Chivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
@@ -703,14 +715,14 @@
 
      Ground, not figure. Set large the way a real field's are, then taken almost all the way
      down, because a player's name has to win over them every time. */
-  .field .fnum{position:absolute;display:flex;align-items:center;gap:5px;
+  .field .fnum{position:absolute;display:flex;align-items:center;gap:0;
     font-family:var(--fd);font-size:30px;font-weight:900;line-height:1;
     color:rgba(255,255,255,.10);letter-spacing:.06em}
-  /* Hard against the sidelines, and clear of the line rather than straddling it. The number
-     used to sit centred on its yard line, so the line ran through the middle of the numerals
-     and read as clutter at this size; it sits just up-field of the line now, on the same side
-     the arrow points, which keeps each number attached to one line and one line only. */
-  .field .fnum{margin-top:-27px}
+  /* CENTRED ON THE LINE, WITH THE LINE BETWEEN THE DIGITS. That is how a field is painted: on
+     a 10 the 1 sits one side of the yard line and the 0 the other. The gap element is the
+     space the line shows through, and it is why the digits are separate spans rather than one
+     string. Hard against the sidelines at 10%. */
+  .field .fnum .gap{width:9px;flex:0 0 auto}
   .field .fnum.l{left:10%;transform:translate(-50%,-50%) rotate(-90deg)}
   .field .fnum.r{right:10%;transform:translate(50%,-50%) rotate(90deg)}
   /* THE ARROW POINTS AT THE GOAL LINE, which is upfield, on both sides.
@@ -719,7 +731,16 @@
      in its own box ends up pointing up on one side and down on the other. Colouring the left
      border makes it point right in local space, the right border makes it point left, and
      after each rotation both land pointing up the field. */
-  .field .fnum .ar{width:0;height:0;border-style:solid;order:-1;margin-top:1px}
+  /* The arrow is taken OUT of the centred row. It used to be a flex item, so centring the row
+     on the yard line centred the digits AND the arrow together and left the digits five to
+     nine pixels off the line they are supposed to straddle. Absolutely positioned, only the
+     numerals decide where the pair sits.
+
+     Each side hangs it on the edge that faces up-field: after the rotations that is the
+     numerals' own right on the left-hand side and their left on the right-hand side. */
+  .field .fnum .ar{position:absolute;top:50%;width:0;height:0;border-style:solid}
+  .field .fnum.l .ar{left:100%;margin-left:7px;transform:translateY(-50%)}
+  .field .fnum.r .ar{right:100%;margin-right:7px;transform:translateY(-50%)}
   /* The arrow has to sit ON the goal-line side of the numerals as well as point that way, and
      the rotations put opposite ends of the flex line at the top of the screen: the last item
      lands up-field on the left, the first item on the right. */
@@ -1223,6 +1244,36 @@
   .vs-row .c{color:#4ade80}
   .vs-row.hi{background:rgba(74,222,128,.06)}
 
+  /* ============================================================
+     GOOGLE ADSENSE, manual units only, matching the soccer game.
+     Confined to the empty space around the board. The mobile strip is a FIXED 50px tall,
+     non-responsive and clipped, so it can never grow up over a game button; on soccer that
+     growth is exactly what broke an earlier version. */
+  .rtp-ad-rail{position:fixed;top:50%;transform:translateY(-50%);z-index:50;display:none}
+  .rtp-ad-left{left:24px} .rtp-ad-right{right:24px}
+  /* Side rails only where there is genuinely room beside the 600px board. */
+  @media (min-width:1200px){ .rtp-ad-rail{display:block} }
+
+  .rtp-ad-mobile-bottom{position:fixed;left:0;right:0;bottom:0;height:50px;z-index:40;
+    display:none;overflow:hidden;text-align:center;background:transparent}
+  /* Framed ONLY once a real ad has filled it, so before AdSense serves, or when it returns
+     nothing, the empty container is invisible rather than an empty bar. Browsers without :has
+     just show the ad and no frame. */
+  .rtp-ad-mobile-bottom:has(ins[data-ad-status="filled"]){
+    background:#0b1220;border-top:1px solid var(--line)}
+  .rtp-ad-mobile-bottom .adsbygoogle{display:inline-block;width:320px;height:50px}
+  @media (max-width:1199px){
+    .rtp-ad-mobile-bottom{display:block}
+    .rtp-ad-rail{display:none !important}
+    /* Reserve the strip so nothing in the game hides behind it. */
+    body{padding-bottom:calc(54px + env(safe-area-inset-bottom,0px))}
+  }
+  /* THE SCREENS THAT GET NO ADS: the two where a game is being played out, which run a live
+     scoreboard near the bottom edge and are the one part of this that asks for undivided
+     attention. The strip goes and its reserved space goes with it. */
+  body.rtp-hide-ads .rtp-ad-mobile-bottom{display:none !important}
+  @media (max-width:1199px){ body.rtp-hide-ads{padding-bottom:0 !important} }
+
   /* COACH PANEL.
      The shape multiplier is the headline because it is the number the sim actually uses, and
      the three bars under it are the things that produced it. */
@@ -1703,6 +1754,25 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   </div>
 </div>
 
+<!-- ===== AdSense units. Manual, and placed before the overlays so the sheet, the toast and
+     the crash banner all paint above them. The slot ids are placeholders until the units are
+     created in the dashboard; the initialiser at the foot of this file refuses to start a unit
+     whose slot is still a placeholder, rather than reporting this game's traffic against
+     another game's unit. ===== -->
+<div class="rtp-ad-rail rtp-ad-left">
+  <ins class="adsbygoogle" style="display:block;width:160px;height:600px"
+       data-ad-client="ca-pub-5952069078178257" data-ad-slot="0000000000"></ins>
+</div>
+<div class="rtp-ad-rail rtp-ad-right">
+  <ins class="adsbygoogle" style="display:block;width:160px;height:600px"
+       data-ad-client="ca-pub-5952069078178257" data-ad-slot="0000000000"></ins>
+</div>
+<!-- Fixed 320x50, deliberately not responsive: a responsive unit here can grow over a button. -->
+<div class="rtp-ad-mobile-bottom">
+  <ins class="adsbygoogle" style="display:inline-block;width:320px;height:50px"
+       data-ad-client="ca-pub-5952069078178257" data-ad-slot="0000000000"></ins>
+</div>
+
 <div class="crash" id="crash"></div>
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
@@ -1973,7 +2043,11 @@ function layoutFor(){
 
 let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,simTimer=null,lastChem=1;
 
+/* Screens that get no ad strip: the two where a game is played out and the scoreboard sits
+   near the bottom edge. Everywhere else keeps it. */
+const NO_ADS=['s-season','s-po'];
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');window.scrollTo({top:0});
+  document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
   if(typeof heroSync==='function') heroSync();
   /* Measured here because a hidden element reports no scrollWidth at all: asking at
      boot said every tab row fitted, whatever the viewport. */
@@ -2073,10 +2147,15 @@ function fieldMarkings(){
          points to the nearest goal line, which here is upfield. The 50 is the one number that
          gets no arrow, because it is equidistant; it is out of this window anyway. */
       if(line%10===0&&top>8&&top<92){
-        out.push('<div class="fnum l" style="top:'+top+'%">'+
-                   '<span class="d">'+line+'</span><span class="ar"></span></div>',
-                 '<div class="fnum r" style="top:'+top+'%">'+
-                   '<span class="d">'+line+'</span><span class="ar"></span></div>');
+        /* THE YARD LINE RUNS BETWEEN THE TWO DIGITS, which is how a real field is painted:
+           the 1 sits one side of the 10 and the 0 the other. So the digits are separate
+           elements with a gap, and the pair is centred ON the line rather than pushed clear
+           of it. Pushing it clear was the previous attempt and it is not what a field does. */
+        const d=String(line).split('');
+        const pair='<span class="d">'+d[0]+'</span><span class="gap"></span>'+
+                   '<span class="d">'+d[1]+'</span>';
+        out.push('<div class="fnum l" style="top:'+top+'%">'+pair+'<span class="ar"></span></div>',
+                 '<div class="fnum r" style="top:'+top+'%">'+pair+'<span class="ar"></span></div>');
       }
     }else{
       out.push('<div class="tick" style="top:'+top+'%;left:29.6%"></div>',
@@ -4718,6 +4797,26 @@ $('b-quit').onclick=()=>{
 
 boot();
 })();
+</script>
+<script>
+  /* Start each AdSense unit exactly once.
+     Wrapped so a missing, blocked or slow adsbygoogle.js can never throw and take the game
+     with it: an ad blocker is the common case, not the edge case.
+
+     A unit whose slot is still the placeholder is SKIPPED. This game's units do not exist in
+     the dashboard yet, and pushing a placeholder either serves nothing or, worse, could be
+     pointed at another game's slot by a careless copy and report the wrong game's traffic.
+     Paste the real slot ids into the three ins elements above and they start on their own. */
+  (function(){
+    try{
+      var units=document.querySelectorAll('ins.adsbygoogle');
+      for(var i=0;i<units.length;i++){
+        var slot=units[i].getAttribute('data-ad-slot');
+        if(!slot||/^0+$/.test(slot)) continue;
+        (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+    }catch(e){}
+  })();
 </script>
 </body>
 </html>
