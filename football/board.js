@@ -493,6 +493,42 @@
     } catch (e) { return failThrown('place', e); }
   }
 
+  /* ---------------- one player's own runs ----------------
+     Everything the profile's career panel needs, in one request. Newest first, with the
+     exact total in the Content-Range header, so the count is right even when there are
+     more runs than were fetched and the panel can say which it is.
+
+     ORDERED BY created_at RATHER THAN BY RATING, even though the panel's headline is a
+     best-drafts list. Sorting by rating in the query would return the top N and nothing
+     else, and a career total, a perfect-season count and a playoff rate cannot be worked
+     out from the best N runs; they need the whole set. So the whole set comes back and the
+     ranking happens here. ps_runs_user_idx is (user_id, created_at desc), so this is the
+     one ordering that is already an index scan.
+
+     BASE_COLS, without display_name: these are your own runs and the panel never prints a
+     name on them, which also means this call needs none of the pre-migration retry dance
+     that top() does. */
+  async function mine(userId, limit) {
+    if (!userId) return null;
+    try {
+      const q = base() + TABLE + '?select=' + BASE_COLS +
+        '&user_id=eq.' + encodeURIComponent(userId) +
+        '&order=created_at.desc&limit=' + (limit || 500);
+      const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
+      if (!res.ok) return await fail('mine', res);
+      const rows = await res.json().catch(() => null);
+      if (!Array.isArray(rows)) {
+        lastError = { where: 'mine', status: res.status, code: 'shape',
+          message: 'the call succeeded but did not return a list of runs' };
+        return null;
+      }
+      /* A null count is not a zero, for the same reason it is not in countOf: it means the
+         header could not be read, so the row count is the honest fallback. */
+      const total = countOf(res);
+      return { rows, total: total === null ? rows.length : total, capped: rows.length >= (limit || 500) };
+    } catch (e) { return failThrown('mine', e); }
+  }
+
   /* One row by id, so a player who is nowhere near the top page can still be
      pinned under the list. */
   async function byId(id) {
@@ -524,8 +560,8 @@
   }
 
   window.PS_BOARD = {
-    API_VERSION: 2,
-    submit, ranks, rankIn, placeIn, total, top, byId, scoreOf, cutoffISO, todayUTC,
+    API_VERSION: 3,
+    submit, ranks, rankIn, placeIn, total, top, mine, byId, scoreOf, cutoffISO, todayUTC,
     SORTS, probe,
     get offline() { return offline; },
     get lastError() { return lastError; },
