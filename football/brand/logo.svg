@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" role="img"
+     aria-label="RunThe.GG The Perfect Season">
+  <title>The Perfect Season</title>
+  <!--
+    THE HORIZONTAL LOCKUP, for web use.
+
+    This one sets the wordmark as TEXT, not as outlines, so it needs Big Shoulders
+    Display to be loaded by the page around it. That is fine here, because the page
+    already loads it for every record and every reel, and text stays editable and
+    weighs nothing. It is NOT fine anywhere the font is absent, which is why:
+
+      - brand/mark.svg and brand/icon.svg carry no type at all and render anywhere
+      - brand/logo.png is a raster of this file, for anything that cannot load a font
+
+    Clear space is the height of the mark's band on every side, which is 13 units at
+    this scale. The mark and the wordmark are locked: do not respace them, do not
+    restack them, and do not set the wordmark in anything but Big Shoulders 900.
+  -->
+  <g transform="translate(4 4) scale(1)">
+    <path d="M21.5 9h21a10 10 0 0 1 10 10v26a10 10 0 0 1-10 10h-21a10 10 0 0 1-10-10V19a10 10 0 0 1 10-10z"
+          fill="none" stroke="#0f93ff" stroke-width="8"/>
+    <rect x="3" y="25.5" width="58" height="13" rx="5" fill="#ff0a3b"/>
+    <rect x="10" y="29.5" width="44" height="5" rx="2.5" fill="#ffffff"/>
+  </g>
+  <text x="82" y="18" fill="#ff0a3b"
+        font-family="Oswald, 'Arial Narrow', sans-serif" font-size="11" font-weight="600"
+        letter-spacing="2.9">RUNTHE.GG</text>
+  <text x="82" y="43" fill="#eef2f9"
+        font-family="'Big Shoulders Display', 'Arial Narrow', sans-serif"
+        font-size="32" font-weight="900" letter-spacing="0.2">THE PERFECT</text>
+  <text x="82" y="70" fill="#eef2f9"
+        font-family="'Big Shoulders Display', 'Arial Narrow', sans-serif"
+        font-size="32" font-weight="900" letter-spacing="0.2">SEASON</text>
+</svg>

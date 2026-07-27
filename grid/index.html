@@ -5,200 +5,299 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>RunTheGrid: Daily Sports Puzzles | RunThe.GG</title>
 <meta name="robots" content="noindex, nofollow" />
-<meta name="theme-color" content="#f7f5f2" />
+<meta name="theme-color" content="#071426" id="themeMeta" />
+<script>
+/* theme boot: manual choice persists in runthegrid_theme (shared across the
+   suite); otherwise follow the system. Runs before first paint. */
+(function(){
+  var t; try{ t = localStorage.getItem('runthegrid_theme'); }catch(e){}
+  if(t !== 'light' && t !== 'dark'){
+    t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 <meta name="description" content="RunTheGrid is a daily set of quick sports brain-games on RunThe.GG. A Daily Match and a Daily Crossword every day. Beat the clock, keep your streak." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23fff'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23FF5A3C'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23FFC24B'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%237C5CF0'/%3E%3C/svg%3E" />
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23fff'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23FF5A3C'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23FFC24B'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%237C5CF0'/%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
 <style>
   :root{
-    --bg:#f7f5f2; --card:#ffffff; --ink:#182430; --mut:#5c6b7a; --dim:#8b98a6;
-    --line:rgba(24,36,48,.10); --line2:rgba(24,36,48,.16);
-    --coral:#FF5A3C; --coral-d:#ec4325; --blue:#2F6BFF; --violet:#7C5CF0; --gold:#F5A623;
-    --shadow:0 14px 34px -20px rgba(24,36,48,.4);
+    --bg:#071426; --card:#10233A; --card2:#162B44;
+    --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
+    --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
+    --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A; --pink:#F65C9C;
+    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A;
+    --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --hero:'Anton', Impact, sans-serif;
   }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  :root[data-theme="light"]{
+    --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA;
+    --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
+    --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
+    --coralT:#D8452F; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A;
+    --shadow:0 6px 18px -12px rgba(13,27,44,.25);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
   html,body{margin:0; padding:0;}
-  body{font-family:var(--f); color:var(--ink); min-height:100dvh; -webkit-font-smoothing:antialiased;
-    background:
-      radial-gradient(70% 40% at 8% -6%, rgba(255,90,60,.10), transparent 60%),
-      radial-gradient(60% 40% at 100% 0%, rgba(124,92,240,.10), transparent 60%),
-      linear-gradient(180deg,#faf8f5,#f2f0ec);}
+  body{font-family:var(--f); color:var(--ink); min-height:100dvh; -webkit-font-smoothing:antialiased; background:var(--bg);}
   a{color:inherit; text-decoration:none;}
-  /* faint yard-lines for a subtle sporty texture */
-  .field{position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.5;
-    background:repeating-linear-gradient(90deg, rgba(24,36,48,.028) 0 1px, transparent 1px 78px);
-    -webkit-mask:linear-gradient(180deg, transparent, #000 22%); mask:linear-gradient(180deg, transparent, #000 22%);}
+  :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
 
-  .stage{position:relative; min-height:100dvh; padding-bottom:82px;}
-  .wrap{width:100%; max-width:680px; margin:0 auto; padding:calc(16px + env(safe-area-inset-top,0)) 16px 40px; position:relative;}
+  .stage{position:relative; min-height:100dvh; padding-bottom:86px;}
+  .wrap{width:100%; max-width:1060px; margin:0 auto; padding:calc(16px + env(safe-area-inset-top,0)) 18px 40px; position:relative;}
 
   /* ---- top bar ---- */
-  .top{display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;}
-  .top .gg{font-weight:900; font-style:italic; font-size:19px; letter-spacing:-.01em; color:var(--ink);}
-  .top .gg .d{color:var(--coral);}
-  .coins{display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line2); border-radius:999px; padding:7px 13px; font-weight:800; font-size:14px; background:#fff; box-shadow:var(--shadow);}
-  .coins svg{color:var(--gold);}
+  .top{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:22px;}
+  .top .gg{display:inline-flex; align-items:center; line-height:0;}
+  .top .gg img{height:38px; width:auto; display:block;}
+  @media (max-width:560px){ .top .gg img{height:32px;} }
+  .topR{display:flex; align-items:center; gap:9px;}
+  .coins{display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line2); border-radius:999px; padding:7px 13px; font-weight:800; font-size:14px; background:var(--card); box-shadow:var(--shadow); color:var(--goldT);}
+  .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card);
+    color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0;}
+  .themeBtn:hover{color:var(--ink);}
+  .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
+  :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
+  :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
 
-  /* ---- hero ---- */
-  .hero{text-align:center; margin-bottom:22px;}
-  .kick{font-weight:900; letter-spacing:.26em; text-transform:uppercase; font-size:12.5px; color:var(--coral); margin-bottom:4px;}
-  .wm{font-weight:900; font-style:italic; font-size:clamp(40px,13vw,86px); line-height:.9; letter-spacing:-.03em; margin:0; white-space:nowrap;}
-  .wm .a{color:var(--ink);} .wm .b{color:var(--coral);}
-  .dots{display:flex; align-items:center; justify-content:center; margin:15px 0 0;}
-  .dots i{width:15px; height:15px; border-radius:4px; position:relative;}
-  .dots i+i{margin-left:26px;}
-  .dots i+i:before{content:""; position:absolute; right:100%; top:50%; width:26px; height:2px; transform:translateY(-50%); background:rgba(24,36,48,.16);}
-  .tag{color:var(--mut); font-weight:600; font-size:16px; line-height:1.5; max-width:440px; margin:16px auto 0;}
-  .tag b{color:var(--ink); font-weight:800;}
-  .datep{display:inline-flex; align-items:center; gap:9px; margin-top:18px; padding:9px 16px; border-radius:10px;
-    font-size:13px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--ink); background:#fff; border:1px solid var(--line); box-shadow:var(--shadow);}
-  .datep svg{color:var(--coral);}
+  /* ============================================================
+     DASHBOARD LAYOUT — a daily-games console, not a landing page.
+     Left: sticky player HUD rail.  Right: today's puzzle tiles.
+     ============================================================ */
+  .board{display:grid; grid-template-columns:320px 1fr; gap:22px; align-items:start; margin-top:4px;}
+  @media (max-width:880px){ .board{grid-template-columns:1fr; gap:18px;} }
 
-  .seclab{display:flex; align-items:center; gap:9px; margin:26px 4px 14px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; font-size:12.5px; color:var(--ink);}
-  .seclab svg{color:var(--coral);}
+  /* ---- player HUD rail ---- */
+  .hud{position:sticky; top:14px; display:flex; flex-direction:column; gap:0;
+    background:var(--card); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); overflow:hidden;}
+  @media (max-width:880px){ .hud{position:static; order:2;} }
+  .hud-hd{display:flex; align-items:center; gap:11px; padding:16px 18px; border-bottom:1px solid var(--line);
+    background:linear-gradient(120deg, color-mix(in srgb,var(--coral) 16%, var(--card)), var(--card) 70%);}
+  .hud-hd .av{flex:0 0 auto; width:38px; height:38px; border-radius:11px; display:grid; place-items:center;
+    background:color-mix(in srgb,var(--coral) 18%, var(--card)); border:1px solid color-mix(in srgb,var(--coral) 40%, transparent); color:var(--coralT);}
+  .hud-hd .who{min-width:0; line-height:1.2;}
+  .hud-hd .who b{display:block; font-weight:900; font-style:italic; font-size:15px; color:var(--ink);}
+  .hud-hd .who span{display:block; font-size:10px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut); margin-top:2px;}
+  .hud-hd .coins{margin-left:auto; box-shadow:none; padding:6px 11px; font-size:13px;}
 
-  /* ---- puzzle cards ---- */
-  .cards{display:flex; flex-direction:column; gap:16px;}
-  .pz{--c:var(--blue); position:relative; display:flex; align-items:stretch; gap:18px; padding:20px; border-radius:20px; overflow:hidden;
-    background:#fff; border:1px solid var(--line); box-shadow:var(--shadow); transition:transform .16s ease, box-shadow .16s ease;}
-  .pz:before{content:""; position:absolute; left:0; top:0; bottom:0; width:6px; background:var(--c);}
-  .pz.match{--c:var(--blue);} .pz.cross{--c:var(--violet);}
-  .pz:hover{transform:translateY(-3px); box-shadow:0 26px 50px -26px rgba(24,36,48,.5);}
-  .pz .ico{flex:0 0 auto; width:84px; height:84px; border-radius:18px; display:grid; place-items:center; align-self:center;
-    background:color-mix(in srgb, var(--c) 12%, #fff); border:1px solid color-mix(in srgb, var(--c) 30%, #fff);}
-  .pz .ico svg{width:54px; height:54px;}
-  .pz .meta{min-width:0; flex:1; display:flex; flex-direction:column; justify-content:center;}
-  .pz .row1{display:flex; align-items:center; gap:11px; flex-wrap:wrap;}
-  .pz .nm{font-weight:900; font-style:italic; font-size:29px; line-height:1; letter-spacing:-.01em; color:var(--ink);}
-  .pz .badge{font-size:11px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; padding:4px 9px; border-radius:6px; line-height:1; color:#fff; background:var(--c);}
-  .pz .desc{color:var(--mut); font-size:14.5px; line-height:1.5; margin:9px 0 0; max-width:360px;}
-  .pz .chips{display:flex; align-items:center; gap:12px; margin-top:13px; flex-wrap:wrap;}
-  .pz .chip{display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; color:var(--mut);}
-  .pz .chip .dot{color:var(--dim);}
-  .pz .play{flex:0 0 auto; align-self:stretch; min-width:120px; border-radius:14px; display:flex; align-items:center; justify-content:center; gap:8px;
-    font-weight:900; font-style:italic; font-size:17px; letter-spacing:.02em; color:#fff; background:var(--c); box-shadow:0 12px 24px -14px var(--c); transition:filter .12s;}
-  .pz:hover .play{filter:brightness(1.05);}
-  .pz .play .arw{font-size:20px; transition:transform .16s;}
-  .pz:hover .play .arw{transform:translateX(4px);}
-  @media (max-width:560px){
-    .pz{flex-wrap:wrap; gap:14px; padding-left:22px;}
-    .pz .ico{width:58px; height:58px;} .pz .ico svg{width:38px;height:38px;}
-    .pz .nm{font-size:24px;} .pz .desc{max-width:none;}
-    .pz .play{width:100%; align-self:auto; min-height:52px;}
-  }
+  /* streak block */
+  .hud-streak{display:flex; align-items:center; gap:16px; padding:20px 18px 16px;}
+  .hud-streak .flame{flex:0 0 auto; width:52px; height:52px; border-radius:14px; display:grid; place-items:center;
+    background:color-mix(in srgb, var(--coral) 16%, var(--card)); border:1px solid color-mix(in srgb, var(--coral) 42%, transparent); color:var(--coralT);}
+  .hud-streak .big{line-height:.9;}
+  .hud-streak .big .n{font-family:var(--hero); font-weight:400; font-size:52px; color:var(--ink); font-variant-numeric:tabular-nums;}
+  .hud-streak .big .cap{display:block; font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--coralT); margin-top:4px;}
+  .hud-streak .best{margin-left:auto; text-align:right;}
+  .hud-streak .best .n{font-family:var(--hero); font-weight:400; font-size:26px; color:var(--mut); line-height:1;}
+  .hud-streak .best .cap{display:block; font-size:9px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
 
-  /* ---- streak panel ---- */
-  .streak{display:flex; align-items:center; gap:18px; margin-top:16px; padding:18px 20px; border-radius:18px; background:#fff; border:1px solid var(--line); box-shadow:var(--shadow);}
-  .streak .flame{flex:0 0 auto; font-size:32px; line-height:1;}
-  .streak .lead{min-width:0; flex:1;}
-  .streak .lead h3{margin:0 0 4px; font-weight:900; letter-spacing:.05em; text-transform:uppercase; font-size:14px; color:var(--coral);}
-  .streak .lead p{margin:0; color:var(--mut); font-size:13px; line-height:1.45;}
-  .streak .stat{flex:0 0 auto; text-align:center; padding:0 4px;}
-  .streak .stat .n{font-weight:900; font-style:italic; font-size:30px; line-height:1; color:var(--ink);}
-  .streak .stat .l{font-size:10px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:5px;}
-  .streak .stat .cap{display:block; font-size:9.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); margin-bottom:4px;}
-  .streak .trophy{flex:0 0 auto; width:46px; height:46px; border-radius:12px; display:grid; place-items:center; border:1px solid color-mix(in srgb,var(--gold) 40%,#fff); background:color-mix(in srgb,var(--gold) 12%,#fff); font-size:22px;}
-  @media (max-width:520px){ .streak .lead p{display:none;} .streak{gap:12px; padding:15px;} .streak .stat .n{font-size:24px;} }
+  /* milestone bar inside HUD */
+  .hud-mile{padding:0 18px 18px;}
+  .hud-mile .lab{display:flex; justify-content:space-between; font-size:10.5px; font-weight:900; letter-spacing:.05em; text-transform:uppercase; color:var(--mut); margin-bottom:7px;}
+  .hud-mile .lab b{color:var(--goldT);}
+  .hud-mile .bar{height:9px; border-radius:999px; background:var(--card2); border:1px solid var(--line); overflow:hidden;}
+  .hud-mile .bar i{display:block; height:100%; width:0; border-radius:999px; background:linear-gradient(90deg,var(--coral),var(--gold)); transition:width .8s cubic-bezier(.2,.8,.2,1);}
 
-  /* ---- account bar ---- */
-  .acct{display:flex; align-items:center; gap:15px; margin-top:16px; padding:16px 18px; border-radius:16px; background:#fff; border:1px solid var(--line); box-shadow:var(--shadow);}
-  .acct .pic{flex:0 0 auto; width:40px; height:40px; border-radius:10px; display:grid; place-items:center; border:1px solid var(--line2); color:var(--mut);}
-  .acct .txt{min-width:0; flex:1; color:var(--mut); font-size:13.5px; line-height:1.5;}
-  .acct .txt b{color:var(--ink);}
-  .acct .btn{flex:0 0 auto; font-weight:900; font-size:13px; letter-spacing:.02em; padding:12px 18px; border-radius:10px; border:0; cursor:pointer;
-    color:#fff; background:var(--coral); box-shadow:0 10px 22px -12px var(--coral);}
-  .acct .btn:hover{background:var(--coral-d);}
-  @media (max-width:520px){ .acct{flex-wrap:wrap;} .acct .btn{width:100%;} }
+  /* next-drop footer inside HUD */
+  .hud-drop{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 18px;
+    border-top:1px solid var(--line); background:var(--card2);}
+  .hud-drop .lbl{font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
+  .hud-drop .t{font-family:var(--hero); font-weight:400; font-size:24px; letter-spacing:.04em; color:var(--tealT); font-variant-numeric:tabular-nums; line-height:1;}
+
+  /* sign-in strip inside HUD */
+  .hud-cta{padding:16px 18px; border-top:1px solid var(--line);}
+  .hud-cta p{margin:0 0 11px; color:var(--mut); font-size:12.5px; line-height:1.5;}
+  .hud-cta p b{color:var(--ink);}
+  .hud-cta .btn{display:block; text-align:center; font-weight:900; font-size:13.5px; letter-spacing:.02em; padding:12px 14px; border-radius:11px;
+    color:#fff; background:var(--coral);}
+  .hud-cta .btn:hover{filter:brightness(1.06);}
+
+  /* ---- play zone (right) ---- */
+  .zone-head{display:flex; align-items:baseline; gap:12px; margin:2px 2px 15px;}
+  .zone-head .day{font-family:var(--hero); font-weight:400; font-size:26px; letter-spacing:.02em; color:var(--ink); line-height:1;}
+  .zone-head .lab{font-size:11px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
+  .dprog{margin-left:auto; display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);}
+  .dprog .pips{display:flex; gap:5px;}
+  .dprog .pip{width:11px; height:11px; border-radius:50%; border:1.5px solid var(--line2); background:transparent;}
+  .dprog .pip.done{background:var(--green); border-color:var(--green);}
+  .dprog.all{color:var(--greenT);}
+
+  /* ---- puzzle TILES (vertical, arcade-style) ---- */
+  .tiles{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:560px){ .tiles{grid-template-columns:1fr;} }
+  .tile{--c:var(--blue); position:relative; display:flex; flex-direction:column; border-radius:20px; overflow:hidden;
+    background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:transform .16s ease, box-shadow .16s ease;}
+  .tile:hover{transform:translateY(-4px); box-shadow:0 26px 50px -26px rgba(0,0,0,.6);}
+  .tile.match{--c:var(--blue);}
+  .tile.cross{--c:var(--violet);}
+  /* colored header cap with the game motif */
+  .tile .cap{position:relative; height:118px; display:grid; place-items:center; overflow:hidden;
+    background:linear-gradient(150deg, color-mix(in srgb, var(--c) 34%, var(--card)) 0%, color-mix(in srgb, var(--c) 14%, var(--card)) 100%);
+    border-bottom:1px solid color-mix(in srgb, var(--c) 30%, transparent);}
+  .tile .cap:after{content:""; position:absolute; inset:0; background:
+    radial-gradient(120px 120px at 85% -10%, color-mix(in srgb,var(--c) 40%, transparent), transparent 70%);}
+  .tile .cap svg{width:66px; height:66px; position:relative; z-index:1; filter:drop-shadow(0 6px 14px rgba(0,0,0,.35));}
+  .tile .badge{position:absolute; top:11px; left:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase;
+    padding:4px 8px; border-radius:6px; line-height:1; color:#071426; background:var(--c);}
+  .tile .status{position:absolute; top:11px; right:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.08em; text-transform:uppercase;
+    padding:4px 9px; border-radius:999px; line-height:1; border:1.5px solid var(--line2); color:var(--mut); background:color-mix(in srgb,var(--card) 78%, transparent);}
+  .tile .status.ready{border-color:var(--gold); color:var(--goldT);}
+  .tile .status.done{border-color:var(--green); color:var(--greenT);}
+  .tile .body{display:flex; flex-direction:column; flex:1; padding:16px 16px 16px;}
+  .tile .nm{font-weight:900; font-style:italic; font-size:22px; line-height:1; letter-spacing:-.01em; color:var(--ink);}
+  .tile .desc{color:var(--mut); font-size:13px; line-height:1.5; margin:9px 0 16px;}
+  .tile .play{margin-top:auto; border-radius:13px; min-height:48px; display:flex; align-items:center; justify-content:center; gap:8px;
+    font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:#fff; background:var(--c); transition:filter .12s;}
+  .tile.cross .play{color:#071426;}
+  .tile:hover .play{filter:brightness(1.08);}
+  .tile .play .arw{font-size:19px; transition:transform .16s;}
+  .tile:hover .play .arw{transform:translateX(4px);}
+  .tile.unplayed .play{animation:playpulse 2.2s ease-in-out infinite;}
+  @keyframes playpulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--c) 45%, transparent);}55%{box-shadow:0 0 0 9px transparent;}}
+  .tile.solved .play{background:var(--card2); color:var(--greenT); border:1.5px solid var(--green); animation:none;}
+
+  /* ---- daily double banner (both solved) ---- */
+  .double{display:none; align-items:center; gap:12px; margin-top:16px; padding:14px 18px; border-radius:16px;
+    background:linear-gradient(90deg, color-mix(in srgb,var(--coral) 18%, var(--card)), color-mix(in srgb,var(--gold) 18%, var(--card)));
+    border:1px solid color-mix(in srgb, var(--gold) 45%, transparent); font-weight:800; font-size:14px; color:var(--ink);}
+  .double.on{display:flex; animation:dpop .5s ease;}
+  @keyframes dpop{0%{transform:scale(.94); opacity:0;}100%{transform:scale(1); opacity:1;}}
+  .double svg{color:var(--goldT); flex:0 0 auto;}
+  .double .sub{display:block; font-weight:600; font-size:12px; color:var(--mut); margin-top:2px;}
 
   /* ---- bottom nav ---- */
   .nav{position:fixed; left:0; right:0; bottom:0; z-index:20; display:flex; justify-content:space-around; align-items:center;
-    padding:8px 6px calc(8px + env(safe-area-inset-bottom,0)); background:rgba(255,255,255,.94); backdrop-filter:blur(10px); border-top:1px solid var(--line);}
+    padding:8px 6px calc(8px + env(safe-area-inset-bottom,0)); background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(10px); border-top:1px solid var(--line);}
   .nav a{display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--dim); font-size:9.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:4px 8px; flex:1; text-align:center;}
   .nav a svg{width:21px; height:21px;}
-  .nav a.on{color:var(--coral);}
+  .nav a.on{color:var(--coralT);}
   .nav a.soon{opacity:.5;}
 
   .foot{text-align:center; color:var(--dim); font-size:12.5px; margin-top:26px;}
   .foot .soc{display:flex; justify-content:center; gap:16px; margin:10px 0;}
-  .foot .soc a{color:var(--mut);} .foot .soc a:hover{color:var(--coral);}
-  .foot .h{color:var(--coral); font-weight:800;}
-  @media (prefers-reduced-motion:reduce){ *{transition:none !important;} }
+  .foot .soc a{color:var(--mut);} .foot .soc a:hover{color:var(--coralT);}
+  .foot .h{color:var(--coralT); font-weight:800;}
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important;} }
 </style>
 </head>
 <body>
-<div class="field"></div>
 <div class="stage">
   <div class="wrap">
     <div class="top">
-      <span class="gg">RUNTHE<span class="d">.GG</span></span>
-      <span class="coins"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 0 5"/></svg><span id="coinVal">0</span></span>
+      <a class="gg" href="/grid/" aria-label="RunTheGrid home"><img src="/grid/assets/runthegrid-logo.png" alt="RunTheGrid" width="871" height="303" /></a>
+      <span class="topR">
+        <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
+          <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+        </button>
+      </span>
     </div>
 
-    <header class="hero">
-      <div class="kick">Daily Sports Puzzles</div>
-      <h1 class="wm"><span class="a">RunThe</span><span class="b">Grid</span></h1>
-      <div class="dots" aria-hidden="true">
-        <i style="background:#2F6BFF"></i><i style="background:#FF5A3C"></i><i style="background:#F5A623"></i><i style="background:#7C5CF0"></i><i style="background:#F65C9C"></i>
-      </div>
-      <p class="tag">Quick daily brain games for sports fans.<br><b>One of each day.</b> Beat the clock, keep the streak.</p>
-      <div class="datep"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg><span id="datep">Today</span></div>
-    </header>
+    <div class="board">
+      <!-- LEFT: player HUD rail -->
+      <aside class="hud">
+        <div class="hud-hd">
+          <span class="av"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
+          <span class="who"><b>Guest</b><span id="dateShort">Today</span></span>
+          <span class="coins"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 0 5"/></svg><span id="coinValH">0</span></span>
+        </div>
 
-    <div class="seclab"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> Today's Puzzles</div>
+        <div class="hud-streak">
+          <span class="flame"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg></span>
+          <span class="big"><span class="n" id="curStreak">0</span><span class="cap">Day streak</span></span>
+          <span class="best"><span class="n" id="bestStreak">0</span><span class="cap">Best</span></span>
+        </div>
 
-    <main class="cards">
-      <a class="pz match" href="/grid/match/">
-        <span class="ico" aria-hidden="true">
-          <svg viewBox="0 0 56 56"><g>
-            <rect x="2" y="2" width="15" height="15" rx="3" fill="#2F6BFF"/><rect x="20.5" y="2" width="15" height="15" rx="3" fill="#F5A623"/><rect x="39" y="2" width="15" height="15" rx="3" fill="#FF5A3C"/>
-            <rect x="2" y="20.5" width="15" height="15" rx="3" fill="#FF5A3C"/><rect x="20.5" y="20.5" width="15" height="15" rx="3" fill="#7C5CF0"/><rect x="39" y="20.5" width="15" height="15" rx="3" fill="#2F6BFF"/>
-            <rect x="2" y="39" width="15" height="15" rx="3" fill="#F5A623"/><rect x="20.5" y="39" width="15" height="15" rx="3" fill="#F65C9C"/><rect x="39" y="39" width="15" height="15" rx="3" fill="#FF5A3C"/>
-          </g></svg>
-        </span>
-        <span class="meta">
-          <span class="row1"><span class="nm">Daily Match</span><span class="badge">New</span></span>
-          <span class="desc">Sort 25 sports names into five hidden categories. Traps everywhere, and one wrong lane costs you.</span>
-          <span class="chips"><span class="chip">🏈 NFL</span><span class="dot">·</span><span class="chip">🏀 NBA</span><span class="dot">·</span><span class="chip">⚾ MLB</span></span>
-        </span>
-        <span class="play">PLAY <span class="arw">→</span></span>
-      </a>
+        <div class="hud-mile" id="mile" hidden>
+          <div class="lab"><span id="mileLab">Next milestone</span><b id="mileTo"></b></div>
+          <div class="bar"><i id="mileBar"></i></div>
+        </div>
 
-      <a class="pz cross" href="/grid/crossword/">
-        <span class="ico" aria-hidden="true">
-          <svg viewBox="0 0 56 56">
-            <rect x="3" y="3" width="50" height="50" rx="5" fill="none" stroke="#cfd7e0" stroke-width="2"/>
-            <rect x="4" y="4" width="12" height="12" fill="#182430"/><rect x="28" y="4" width="12" height="12" fill="#7C5CF0"/>
-            <rect x="16" y="16" width="12" height="12" fill="#7C5CF0"/><rect x="40" y="16" width="12" height="12" fill="#182430"/>
-            <rect x="4" y="28" width="12" height="12" fill="#7C5CF0"/><rect x="28" y="28" width="12" height="12" fill="#182430"/>
-            <rect x="16" y="40" width="12" height="12" fill="#182430"/><rect x="40" y="40" width="12" height="12" fill="#7C5CF0"/>
-          </svg>
-        </span>
-        <span class="meta">
-          <span class="row1"><span class="nm">Daily Crossword</span><span class="badge">New</span></span>
-          <span class="desc">A sports-themed mini crossword, fresh every day. Same streak, same wallet, and a second way to start your morning.</span>
-          <span class="chips"><span class="chip">👥 Players</span><span class="dot">·</span><span class="chip">🛡️ Teams</span><span class="dot">·</span><span class="chip">📖 Terms</span></span>
-        </span>
-        <span class="play">PLAY <span class="arw">→</span></span>
-      </a>
-    </main>
+        <div class="hud-drop">
+          <span class="lbl">Next drop</span>
+          <span class="t" id="cdT">--:--:--</span>
+        </div>
 
-    <section class="streak">
-      <span class="flame">🔥</span>
-      <div class="lead"><h3>Keep the Streak</h3><p>Play daily to build your streak, earn coins, and climb the ranks.</p></div>
-      <div class="stat"><span class="cap">Current</span><div class="n" id="curStreak">0</div><div class="l">Days</div></div>
-      <div class="stat"><span class="cap">Best</span><div class="n" id="bestStreak">0</div><div class="l">Days</div></div>
-      <span class="trophy">🏆</span>
-    </section>
+        <div class="hud-cta">
+          <p>Playing as a <b>guest</b>. Sign in to save your streak, coins and rank across every game.</p>
+          <a class="btn" href="/">Sign in / Sign up</a>
+        </div>
+      </aside>
 
-    <section class="acct">
-      <span class="pic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
-      <span class="txt">Play as a guest, or sign in with your <b>RunThe.GG account</b> to save your streak, coins and rank across every game.</span>
-      <a class="btn" href="/">Sign in / Sign up</a>
-    </section>
+      <!-- RIGHT: today's puzzles -->
+      <main>
+        <div class="zone-head">
+          <span class="day">Today's Puzzles</span>
+          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipM"></span><span class="pip" id="pipC"></span></span><span id="dprogT">0 / 2 played</span></span>
+        </div>
+
+        <div class="tiles">
+          <a class="tile match" id="cardMatch" href="/grid/match/">
+            <span class="cap" aria-hidden="true">
+              <span class="badge">New</span><span class="status" id="stM">Ready</span>
+              <svg viewBox="0 0 56 56"><g>
+                <rect x="2" y="2" width="15" height="15" rx="3" fill="#2F6BFF"/><rect x="20.5" y="2" width="15" height="15" rx="3" fill="#F2B632"/><rect x="39" y="2" width="15" height="15" rx="3" fill="#F06A5F"/>
+                <rect x="2" y="20.5" width="15" height="15" rx="3" fill="#F06A5F"/><rect x="20.5" y="20.5" width="15" height="15" rx="3" fill="#A982F3"/><rect x="39" y="20.5" width="15" height="15" rx="3" fill="#2F6BFF"/>
+                <rect x="2" y="39" width="15" height="15" rx="3" fill="#F2B632"/><rect x="20.5" y="39" width="15" height="15" rx="3" fill="#F65C9C"/><rect x="39" y="39" width="15" height="15" rx="3" fill="#F06A5F"/>
+              </g></svg>
+            </span>
+            <span class="body">
+              <span class="nm">Daily Match</span>
+              <span class="desc" id="descM">Sort 20 sports names into five hidden groups of four. Find them all before six misses.</span>
+              <span class="play" id="playM">PLAY <span class="arw">→</span></span>
+            </span>
+          </a>
+
+          <a class="tile cross" id="cardCross" href="/grid/crossword/">
+            <span class="cap" aria-hidden="true">
+              <span class="badge">New</span><span class="status" id="stC">Ready</span>
+              <svg viewBox="0 0 56 56">
+                <defs><clipPath id="cwico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs>
+                <g clip-path="url(#cwico)">
+                  <rect x="4" y="4" width="48" height="48" fill="#F4EEFE"/>
+                  <!-- blocked cells cap the two answers; kept 180-degree symmetric -->
+                  <rect x="40" y="4" width="12" height="12" fill="#2a1c47"/>
+                  <rect x="4" y="40" width="12" height="12" fill="#2a1c47"/>
+                  <!-- grid lines -->
+                  <g stroke="#D7C7F4" stroke-width="1">
+                    <path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/>
+                  </g>
+                  <!-- clue numbers -->
+                  <g font-family="Archivo, sans-serif" font-size="5" font-weight="800" fill="#8a7bd8">
+                    <text x="6.2" y="9.4">1</text>
+                    <text x="42.2" y="21.4">2</text>
+                  </g>
+                  <!-- 1-Across 'RUN' along the top; 2-Down 'THE' down the right column (no gibberish crossings) -->
+                  <g font-family="Archivo, sans-serif" font-size="9" font-weight="900" fill="#3A2B63" text-anchor="middle">
+                    <text x="10" y="13.2">R</text>
+                    <text x="22" y="13.2">U</text>
+                    <text x="34" y="13.2">N</text>
+                    <text x="46" y="25.2">T</text>
+                    <text x="46" y="37.2">H</text>
+                    <text x="46" y="49.2">E</text>
+                  </g>
+                </g>
+                <rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#8a7bd8" stroke-width="2"/>
+              </svg>
+            </span>
+            <span class="body">
+              <span class="nm">Daily Crossword</span>
+              <span class="desc">A sports mini crossword, fresh every day. Beat the clock for a flawless solve.</span>
+              <span class="play" id="playC">PLAY <span class="arw">→</span></span>
+            </span>
+          </a>
+        </div>
+
+        <div class="double" id="double">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+          <span>Daily double complete!<span class="sub">You beat both of today's puzzles. New ones drop in <b id="cdT2">--</b>.</span></span>
+        </div>
+      </main>
+    </div>
 
     <div class="foot">
       <div class="soc">
@@ -221,16 +320,96 @@
 
 <script>
 (function () {
-  var d = new Date();
-  document.getElementById('datep').textContent = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-  try {
-    document.getElementById('coinVal').textContent = parseInt(localStorage.getItem('runthegrid_coins') || '0', 10) || 0;
-    var cur = parseInt(localStorage.getItem('grid_match_streak') || '0', 10) || 0;
-    var best = parseInt(localStorage.getItem('grid_best_streak') || '0', 10) || 0;
-    if (cur > best) { best = cur; localStorage.setItem('grid_best_streak', String(best)); }
-    document.getElementById('curStreak').textContent = cur;
-    document.getElementById('bestStreak').textContent = best;
-  } catch (e) {}
+  var LS = window.localStorage;
+  function g(k, d) { try { return LS.getItem(k) || d; } catch (e) { return d; } }
+
+  // ---- theme toggle (shared suite preference) ----
+  function applyThemeMeta() {
+    var t = document.documentElement.getAttribute('data-theme');
+    var m = document.getElementById('themeMeta');
+    if (m) m.setAttribute('content', t === 'light' ? '#EEF2F7' : '#071426');
+  }
+  applyThemeMeta();
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    try { LS.setItem('runthegrid_theme', next); } catch (e) {}
+    applyThemeMeta();
+  });
+
+  // ---- date + live countdown to local midnight ----
+  var now = new Date();
+  document.getElementById('dateShort').textContent =
+    now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function tickCd() {
+    var n = new Date();
+    var t = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 0, 0) - n;
+    var s = Math.max(0, Math.floor(t / 1000));
+    var str = Math.floor(s / 3600) + ':' + pad(Math.floor((s % 3600) / 60)) + ':' + pad(s % 60);
+    document.getElementById('cdT').textContent = str;
+    var c2 = document.getElementById('cdT2'); if (c2) c2.textContent = Math.floor(s / 3600) + 'h ' + pad(Math.floor((s % 3600) / 60)) + 'm';
+  }
+  tickCd(); setInterval(tickCd, 1000);
+
+  // ---- wallet + streaks ----
+  document.getElementById('coinValH').textContent = parseInt(g('runthegrid_coins', '0'), 10) || 0;
+  var cur = parseInt(g('grid_match_streak', '0'), 10) || 0;
+  var best = parseInt(g('grid_best_streak', '0'), 10) || 0;
+  var cw = {}; try { cw = JSON.parse(g('rtg:cw:v1', '{}')) || {}; } catch (e) {}
+  cur = Math.max(cur, cw.streak | 0);
+  best = Math.max(best, cur, cw.bestStreak | 0);
+  document.getElementById('curStreak').textContent = cur;
+  document.getElementById('bestStreak').textContent = best;
+
+  // milestone progress toward the next streak badge
+  var MILES = [3, 5, 7, 14, 30, 50, 100];
+  var next = null;
+  for (var i = 0; i < MILES.length; i++) { if (cur < MILES[i]) { next = MILES[i]; break; } }
+  var mile = document.getElementById('mile');
+  if (cur > 0 && next) {
+    mile.hidden = false;
+    var prev = 0;
+    for (var j = 0; j < MILES.length; j++) { if (MILES[j] < next) prev = MILES[j]; }
+    var frac = Math.max(0.06, (cur - prev) / (next - prev));
+    document.getElementById('mileLab').textContent = next + '-day streak badge';
+    document.getElementById('mileTo').textContent = (next - cur) + ' day' + (next - cur === 1 ? '' : 's') + ' to go';
+    setTimeout(function () { document.getElementById('mileBar').style.width = Math.min(100, Math.round(frac * 100)) + '%'; }, 120);
+  }
+
+  // ---- today's play states -> card status + pips ----
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  var t = todayStr();
+  var mRes = null; try { mRes = JSON.parse(g('grid_match_result_' + t, 'null')); } catch (e) {}
+  var mDone = !!mRes;
+  var cDone = (cw.lastDone === t);
+
+  var cardM = document.getElementById('cardMatch'), cardC = document.getElementById('cardCross');
+  if (mDone) {
+    cardM.classList.add('solved');
+    var stM = document.getElementById('stM');
+    stM.className = 'status done';
+    stM.textContent = mRes && mRes.grade ? ('Solved · ' + mRes.grade) : 'Solved';
+    document.getElementById('playM').innerHTML = '✓ DONE';
+    document.getElementById('pipM').classList.add('done');
+  } else { cardM.classList.add('unplayed'); document.getElementById('stM').className = 'status ready'; }
+  if (cDone) {
+    cardC.classList.add('solved');
+    var stC = document.getElementById('stC');
+    stC.className = 'status done'; stC.textContent = 'Solved';
+    document.getElementById('playC').innerHTML = '✓ DONE';
+    document.getElementById('pipC').classList.add('done');
+  } else { cardC.classList.add('unplayed'); document.getElementById('stC').className = 'status ready'; }
+
+  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0);
+  document.getElementById('dprogT').textContent = n + ' / 2 played';
+  if (n === 2) {
+    document.getElementById('dprog').classList.add('all');
+    document.getElementById('double').classList.add('on');
+  }
 })();
 </script>
 </body>

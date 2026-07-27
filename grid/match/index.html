@@ -82,7 +82,9 @@
   .brand{min-width:0; flex:1;}
   .brand .suite{display:block; font-size:10.5px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--coralT); margin-bottom:1px;}
   .brand .suite a{color:inherit; text-decoration:none;}
-  .titleRow{display:flex; align-items:center; gap:9px;}
+  .brand .suite.logo{display:inline-flex; align-items:center; line-height:0; margin-bottom:5px;}
+  .brand .suite.logo img{height:26px; width:auto; display:block;}
+  .titleRow{display:flex; align-items:center; gap:9px; flex-wrap:wrap; row-gap:2px;}
   .brand .game{font-family:var(--hero); font-weight:400; letter-spacing:.02em; font-size:24px; color:var(--ink); line-height:1.05;}
   .datep{font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
   .explain{font-size:12.5px; color:var(--mut); font-weight:600; margin-top:2px;}
@@ -101,6 +103,9 @@
   .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
   :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
   :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
+  .sndBtn .ic-snd-on{display:none;} .sndBtn .ic-snd-off{display:block;}
+  .sndBtn.snd-on{color:var(--tealT); border-color:var(--teal);}
+  .sndBtn.snd-on .ic-snd-on{display:block;} .sndBtn.snd-on .ic-snd-off{display:none;}
 
   /* ---------------- app shell ---------------- */
   .app{max-width:1160px; margin:0 auto; padding:var(--sp-3) 20px 48px;
@@ -157,45 +162,74 @@
   .howto li{margin-bottom:7px;}
   .howto b{color:var(--ink);}
 
+  /* ---------------- leaderboard card ---------------- */
+  .mlb{padding:14px 16px;}
+  .mlb-h{font-family:var(--hero); font-weight:400; letter-spacing:.03em; text-transform:uppercase; font-size:14px; color:var(--coralT); margin:0 0 12px; display:flex; align-items:center; gap:8px;}
+  .mlb-pill{font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--coralT); border:1px solid var(--coralT); border-radius:999px; padding:2px 8px;}
+  .mlb .lb-you{display:flex; gap:9px; margin-bottom:12px;}
+  .mlb .lb-you .box{flex:1; background:var(--card2); border:1px solid var(--line2); border-radius:10px; padding:10px 12px;}
+  .mlb .lb-you .box.me{border-color:var(--coralT); background:color-mix(in srgb, var(--coralT) 12%, var(--card2));}
+  .mlb .cap{display:block; font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);}
+  .mlb .big{display:block; font-family:var(--hero); font-weight:400; font-size:22px; line-height:1.2; margin-top:5px; color:var(--ink); font-variant-numeric:tabular-nums;}
+  .mlb .lb-you .box.me .big{color:var(--coralT);}
+  .mlb .lb-sample{opacity:.62;}
+  .mlb .lb-samplab{font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:2px 0 4px;}
+  .mlb .row{display:flex; align-items:center; gap:10px; padding:5px 0; font-size:13px; border-top:1px solid var(--line); color:var(--ink);}
+  .mlb .row:first-of-type{border-top:0;}
+  .mlb .row.you{color:var(--coralT);}
+  .mlb .rk{font-family:var(--hero); font-weight:400; color:var(--mut); width:20px;}
+  .mlb .who{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .mlb .tm{font-variant-numeric:tabular-nums; color:var(--coralT); font-weight:700;}
+  .mlb .note{font-size:11px; color:var(--mut); margin-top:8px;}
+
   /* revealed-category label pill shown on a lane header */
   .lane-pill{font-size:9px; font-weight:900; letter-spacing:.1em; text-transform:uppercase;
     color:var(--lc); border:1px solid var(--lc); border-radius:999px; padding:2px 8px; flex:0 0 auto;}
 
   /* ---------------- group boards ---------------- */
-  .board{display:flex; flex-direction:column; gap:var(--sp-1); margin-bottom:var(--sp-3);}
-  .lane{border:1px solid var(--line); border-left:4px solid var(--lc); border-radius:var(--r-md); background:var(--card);
-    box-shadow:var(--shadow); padding:10px 12px 12px; transition:border-color .2s, background .3s;}
+  .board{display:flex; flex-direction:column; gap:10px; margin-bottom:var(--sp-3);}
+  /* compact "rack" rows: header block left, four slim slots right */
+  .lane{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px;
+    border:1px solid var(--line); border-left:4px solid var(--lc); border-radius:var(--r-md); background:var(--card);
+    box-shadow:var(--shadow); padding:9px 12px; transition:border-color .2s, background .3s;}
   .lane.drop{border-color:var(--teal); background:var(--dropbg);}
   .lane.drop .slot:not(.filled){border-color:var(--teal); background:rgba(55,197,213,.07);}
   .lane.locked{background:linear-gradient(180deg, color-mix(in srgb, var(--lc) 14%, var(--card)), var(--card)); border-color:color-mix(in srgb, var(--lc) 55%, transparent);}
   .lane.bad{animation:shake .4s; border-color:var(--red);}
   @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(4px);}}
-  .lane-head{display:flex; align-items:center; gap:8px; margin-bottom:8px; min-height:20px;}
-  .lane-chip{width:11px; height:11px; border-radius:3px; background:var(--lc); flex:0 0 auto;}
+  .lane-head{flex:0 0 168px; display:flex; align-items:center; flex-wrap:wrap; gap:4px 8px; min-height:20px; min-width:0;}
+  .lane-chip{width:16px; height:16px; border-radius:5px; background:var(--lc); flex:0 0 auto; transition:background .3s;}
+  .lane.locked .lane-chip{box-shadow:0 1px 2px rgba(0,0,0,.28);}
   .lane-name{font-weight:900; font-size:13.5px; letter-spacing:.01em; color:var(--ink); min-width:0;}
   .lane-hidden .lane-name{color:var(--mut); font-weight:800;}
-  .lane-sport{font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);
-    border:1px solid var(--line2); border-radius:5px; padding:2px 7px; margin-left:auto; flex:0 0 auto;}
+  .lane-sport{font-size:9.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);
+    border:1px solid var(--line2); border-radius:5px; padding:2px 7px; flex:0 0 auto;}
   .lane-check{margin-left:auto; color:var(--lc); font-weight:900; font-size:12.5px; display:none;}
   .lane.locked .lane-check{display:inline;} .lane.locked .lane-sport{display:none;}
-  .slots{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
-  .slot{min-height:56px; border-radius:var(--r-sm); border:1.5px dashed var(--line2); background:var(--slotbg);
+  .slots{flex:1 1 320px; display:grid; grid-template-columns:repeat(4,1fr); gap:7px;}
+  .slot{min-height:44px; border-radius:var(--r-sm); border:1.5px dashed var(--line2); background:var(--slotbg);
     display:flex; align-items:center; justify-content:center; padding:3px; text-align:center; position:relative; overflow:hidden; transition:border-color .15s, background .15s;}
   .slot:not(.filled)::after{content:"+"; color:var(--line2); font-size:20px; font-weight:800; line-height:1;}
   .slot.filled{border-style:solid; border-color:transparent; background:transparent; padding:0;}
-  .checkWrap{margin-top:10px; display:flex; justify-content:flex-end;}
-  .checkbtn{appearance:none; border:0; background:var(--teal); color:#071426; font-weight:900; font-size:13px;
-    letter-spacing:.03em; border-radius:var(--r-sm); padding:10px 18px; min-height:44px; box-shadow:var(--shadow);
-    display:inline-flex; align-items:center; gap:7px; transition:filter .12s, transform .08s;}
+  .lane-head .checkbtn{flex-basis:100%;}
+  .clearbtn{appearance:none; border:1px solid var(--line2); background:transparent; color:var(--mut);
+    font-weight:800; font-size:10.5px; letter-spacing:.04em; text-transform:uppercase; border-radius:6px;
+    padding:4px 9px; min-height:26px; transition:color .12s, border-color .12s;}
+  .clearbtn:hover{color:var(--coralT); border-color:var(--coralT);}
+  .pool-h .shufbtn{margin-left:auto; display:inline-flex; align-items:center; gap:5px;}
+  .pool-h .shufbtn:hover{color:var(--tealT); border-color:var(--teal);}
+  .checkbtn{appearance:none; border:0; background:var(--teal); color:#071426; font-weight:900; font-size:12.5px;
+    letter-spacing:.03em; border-radius:var(--r-sm); padding:9px 12px; min-height:40px; box-shadow:var(--shadow);
+    display:inline-flex; align-items:center; justify-content:center; gap:7px; transition:filter .12s, transform .08s;}
   .checkbtn:hover{filter:brightness(1.07);}
   .checkbtn:active{transform:translateY(1px);}
   .checkbtn:disabled{background:var(--card2); color:var(--mut); cursor:default; filter:none;}
-  .lane-note{margin-top:9px; font-size:12.5px; font-weight:800; border-radius:var(--r-sm); padding:8px 12px; line-height:1.35;}
+  .lane-note{flex-basis:100%; margin-top:2px; font-size:12.5px; font-weight:800; border-radius:var(--r-sm); padding:8px 12px; line-height:1.35;}
   .lane-note.close{background:rgba(242,182,50,.12); color:var(--goldT); border:1px solid rgba(242,182,50,.35);}
   .lane-note.miss{background:rgba(255,98,95,.10); color:var(--redT); border:1px solid rgba(255,98,95,.35);}
 
   /* ---------------- tiles ---------------- */
-  .tile{width:100%; height:100%; min-height:52px; min-width:0; border-radius:var(--r-sm); border:1px solid var(--line2);
+  .tile{width:100%; height:100%; min-height:44px; min-width:0; border-radius:var(--r-sm); border:1px solid var(--line2);
     background:var(--card2); color:var(--ink); font-weight:800; font-size:12px; line-height:1.18;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:6px 5px; text-align:center; cursor:grab;
     overflow:hidden; overflow-wrap:anywhere; hyphens:auto; box-shadow:0 2px 5px -3px rgba(0,0,0,.5);
@@ -215,8 +249,9 @@
   .pool-h{display:flex; align-items:baseline; gap:10px; margin:0 2px 10px;}
   .pool-h .t{font-family:var(--hero); font-weight:400; letter-spacing:.04em; text-transform:uppercase; font-size:16px; color:var(--ink);}
   .pool-h .n{font-size:11.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--tealT);}
-  .pool{display:grid; grid-template-columns:repeat(5,1fr); gap:9px; min-height:52px;}
-  .pool .tile{min-height:60px;}
+  .pool{display:grid; grid-template-columns:repeat(5,1fr); gap:9px; min-height:52px; margin-bottom:var(--sp-3);}
+  .pool .tile{min-height:62px; font-size:12.5px;}
+  .groups-h .n{color:var(--mut); text-transform:none; letter-spacing:.02em; font-weight:700;}
   .pool.drop{outline:2px dashed var(--teal); outline-offset:4px; border-radius:var(--r-md);}
 
   /* ---------------- modals ---------------- */
@@ -275,6 +310,9 @@
     background:linear-gradient(90deg,var(--coral),var(--gold)); padding:7px 15px; border-radius:999px;}
   @keyframes flpop{0%{transform:scale(.6); opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1); opacity:1;}}
 
+  .reportline{text-align:center; margin:8px 0 0; font-size:11px;}
+  .reportline a{color:var(--mut); text-decoration:underline; text-underline-offset:2px;}
+  .reportline a:hover{color:var(--ink);}
   /* ---------------- dopamine: countdown + milestone ---------------- */
   .countdown{text-align:center; margin:13px 0 2px; font-size:12px; font-weight:800; color:var(--mut);}
   .countdown b{color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:.01em;}
@@ -328,6 +366,9 @@
     .mstatus .dot{width:12px; height:12px;}
     .mstatus .mprog{font-size:11px; font-weight:900; color:var(--mut); letter-spacing:.06em; text-transform:uppercase;}
     .mstatus .mprog b{color:var(--tealT);}
+    .lane{display:block;}
+    .lane-head{margin-bottom:8px;}
+    .lane-note{margin-top:9px;}
     .slots{grid-template-columns:repeat(2,1fr);}
     .slot{min-height:48px;}
     .pool{grid-template-columns:repeat(2,1fr);}
@@ -343,7 +384,7 @@
     <div class="headIn">
       <a class="home" href="/grid/" aria-label="Back to RunTheGrid puzzles">←</a>
       <div class="brand">
-        <span class="suite"><a href="/grid/">RunTheGrid</a></span>
+        <a class="suite logo" href="/grid/" aria-label="RunTheGrid home"><img src="/grid/assets/runthegrid-logo.png" alt="RunTheGrid" width="871" height="303" /></a>
         <div class="titleRow">
           <span class="game">Daily Match</span>
           <button class="helpBtn" id="helpBtn" type="button" aria-label="How to play">?</button>
@@ -351,6 +392,10 @@
         </div>
         <div class="explain">Sort 20 sports names into five hidden groups of four.</div>
       </div>
+      <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
+        <svg class="ic-snd-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+        <svg class="ic-snd-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M22 9l-5 6M17 9l5 6"/></svg>
+      </button>
       <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
         <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
@@ -383,13 +428,21 @@
         <div class="mprog" id="progressM"><b>0</b> / 5 solved</div>
       </div>
 
-      <div class="board" id="board" role="list" aria-label="Five group boards"></div>
-
       <div class="pool-h">
-        <span class="t">Player pool</span>
-        <span class="n"><span id="poolCount">20</span> remaining</span>
+        <span class="t">Today's 20</span>
+        <span class="n"><span id="poolCount">20</span> left to place</span>
+        <button class="clearbtn shufbtn" id="shuffleBtn" type="button" aria-label="Shuffle the names">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+          Shuffle
+        </button>
       </div>
       <div class="pool" id="pool" role="list" aria-label="Unplaced names"></div>
+
+      <div class="pool-h groups-h">
+        <span class="t">Build your groups</span>
+        <span class="n">drag or tap a name, then a rack</span>
+      </div>
+      <div class="board" id="board" role="list" aria-label="Five group racks"></div>
     </main>
 
     <aside class="side" aria-label="Game status and controls">
@@ -410,7 +463,7 @@
         </button>
         <button class="abtn ghost" id="btnClear" type="button">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
-          Reset pool
+          Clear board
         </button>
         <button class="abtn ghost" id="btnNew" type="button" style="display:none">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
@@ -421,12 +474,27 @@
       <details class="card howto" id="howto">
         <summary>How to play <span class="chev" aria-hidden="true">▼</span></summary>
         <ol>
-          <li><b>Sort all 20 names</b> into five groups of four. Each group shares a team, a jersey number, a surname, or a feat.</li>
-          <li>One group's name is <b>revealed free</b>. Drag a name into a group, or tap a name then tap a group.</li>
-          <li>When a group has four names, hit <b>Check group</b>. Right locks it in; wrong costs a guess.</li>
-          <li>Stuck? <b>Reveal a group</b> for one guess. Six wrong guesses ends the board.</li>
+          <li><b>Find the five hidden groups.</b> Every name shares a team, a jersey number, a surname, or a feat with exactly three others.</li>
+          <li><b>Drag a name onto a rack</b>, or tap the name then the rack. Your first group is revealed free to get you rolling.</li>
+          <li>Filled a rack? <b>Hit Check group.</b> Nail it and it locks in; miss and it costs you a guess.</li>
+          <li>Stuck? <b>Reveal a group</b> for one guess. Six misses and your board's done.</li>
         </ol>
       </details>
+
+      <div class="card mlb">
+        <h3 class="mlb-h">Daily Leaderboard <span class="mlb-pill">Sample</span></h3>
+        <div class="lb-you">
+          <div class="box me"><span class="cap">Your time today</span><span class="big" id="mYourTm">—</span></div>
+          <div class="box"><span class="cap">Your streak</span><span class="big" id="mYourStreak">0</span></div>
+        </div>
+        <div class="lb-sample" id="mlbSample">
+          <div class="lb-samplab">Illustrative ranking</div>
+          <div class="row"><span class="rk">1</span><span class="who">gridiron_gary</span><span class="tm">1:38</span></div>
+          <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">2:12</span></div>
+          <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">2:44</span></div>
+        </div>
+        <div class="note" id="mlbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your real time.</div>
+      </div>
     </aside>
   </div>
 
@@ -449,6 +517,7 @@
       <div class="milestone" id="resMilestone"></div>
       <div class="coinline" id="resCoins">+0 coins</div>
       <div class="countdown" id="resCountdown"></div>
+      <div class="reportline"><a href="mailto:sellybros711@gmail.com?subject=RunTheGrid%20data%20error">Spot a data error? Tell us</a></div>
       <div class="rcta">
         <button class="btn primary" id="resShare" type="button">Share</button>
         <button class="btn" id="resStats" type="button">Stats</button>
@@ -486,8 +555,11 @@
 
   <!-- cache-busted: bump ?v= whenever entities/generator change, or stale
        browser caches will pair fresh HTML with old boards/engine -->
-  <script src="entities.js?v=5"></script>
-  <script src="generator.js?v=5"></script>
+  <script src="entities.js?v=12"></script>
+  <script src="generator.js?v=12"></script>
+  <script src="/grid/sfx.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="/grid/board.js"></script>
   <script>
   (function () {
     'use strict';
@@ -556,6 +628,7 @@
     var laneCat = {};                  // laneIndex -> catId (filled on solve)
     var locked = {};                   // laneIndex -> true
     var solveOrder = [];               // laneIndex in order solved
+    var poolOrder = [];                // tileId display order in the pool (shuffleable)
     var mistakes = 0, penalty = 0, started = false, startTs = 0, tick = null;
     var selected = null, done = false, revealedCats = {};   // revealedCats: catId -> true (from hints)
     var lastMissIds = {};              // laneIndex -> 'id,id,id,id' of the last wrong check (disables re-checking the same four)
@@ -623,6 +696,14 @@
       return tilesInLane(i).filter(function (x) { return x != null; }).length;
     }
 
+    // A single, uniform colour chip per rack: sport-neutral, and it speaks the
+    // same visual language as the share-card colour bars. It inherits the lane
+    // colour (--lc), so it sits neutral, then lights up in the category colour as
+    // the lane is revealed or solved.
+    function ballChip() {
+      return '<span class="lane-chip"></span>';
+    }
+
     function render() {
       // revealed-but-unsolved categories label lanes from the top down (the
       // free one lands on Group 1). Labels are display-only: any valid four
@@ -650,16 +731,16 @@
         var head = document.createElement('div');
         head.className = 'lane-head';
         if (isLocked && cat) {
-          head.innerHTML = '<span class="lane-chip"></span><span class="lane-name">' + escapeHtml(cat.name) + '</span>' +
+          head.innerHTML = ballChip(i) + '<span class="lane-name">' + escapeHtml(cat.name) + '</span>' +
             '<span class="lane-sport">' + (cat.sport === 'multi' ? 'Multi-sport' : cat.sport) + '</span>' +
             '<span class="lane-check">✓ Locked</span>';
         } else if (revLabel) {
-          head.innerHTML = '<span class="lane-chip"></span><span class="lane-name">' + escapeHtml(revLabel.name) + '</span>' +
+          head.innerHTML = ballChip(i) + '<span class="lane-name">' + escapeHtml(revLabel.name) + '</span>' +
             '<span class="lane-pill">' + (day.lanes[0] && revLabel.id === day.lanes[0].id ? 'Free' : 'Revealed') + '</span>' +
             '<span class="lane-sport">' + laneFillCount(i) + ' / 4 players</span>';
         } else {
           lane.classList.add('lane-hidden');
-          head.innerHTML = '<span class="lane-chip"></span>' +
+          head.innerHTML = ballChip(i) +
             '<span class="lane-name">Group ' + (i + 1) + '</span>' +
             '<span class="lane-sport">' + laneFillCount(i) + ' / 4 players</span>';
         }
@@ -681,10 +762,9 @@
         }
         lane.appendChild(slots);
 
-        // explicit submit: a full, unlocked group shows a Check button
+        // explicit submit: a full, unlocked group grows a Check button right
+        // in its header block (where the group name sits)
         if (!isLocked && laneFillCount(i) === GROUP && !done) {
-          var wrap = document.createElement('div');
-          wrap.className = 'checkWrap';
           var cb = document.createElement('button');
           cb.className = 'checkbtn';
           cb.type = 'button';
@@ -694,8 +774,23 @@
           cb.textContent = repeat ? 'Change a name to re-check' : 'Check group';
           cb.setAttribute('aria-label', 'Check group ' + (i + 1));
           (function (idx) { cb.addEventListener('click', function (e) { e.stopPropagation(); validate(idx); }); })(i);
-          wrap.appendChild(cb);
-          lane.appendChild(wrap);
+          head.appendChild(cb);
+        }
+        // per-rack Clear: dump this rack's names back to the pool in one tap
+        if (!isLocked && laneFillCount(i) > 0 && !done) {
+          var clr = document.createElement('button');
+          clr.className = 'clearbtn';
+          clr.type = 'button';
+          clr.textContent = 'Clear';
+          clr.setAttribute('aria-label', 'Clear group ' + (i + 1));
+          (function (idx) {
+            clr.addEventListener('click', function (e) {
+              e.stopPropagation();
+              day.tiles.forEach(function (t) { if (place[t.id] === idx) place[t.id] = null; });
+              delete lastMissIds[idx]; selected = null; render();
+            });
+          })(i);
+          head.appendChild(clr);
         }
 
         if (!isLocked) {
@@ -713,10 +808,11 @@
         boardEl.appendChild(lane);
       }
 
-      // pool
+      // pool (rendered in poolOrder so a shuffle just reorders the display)
       poolEl.innerHTML = '';
-      var poolTiles = day.tiles.filter(function (t) { return place[t.id] == null; });
-      poolTiles.forEach(function (t) { poolEl.appendChild(tileEl(t.id, {})); });
+      if (poolOrder.length !== day.tiles.length) poolOrder = day.tiles.map(function (t) { return t.id; });
+      var poolTiles = poolOrder.filter(function (id) { return place[id] == null; });
+      poolTiles.forEach(function (id) { poolEl.appendChild(tileEl(id, {})); });
       document.getElementById('poolCount').textContent = poolTiles.length;
       attachPoolDrop();
       renderDots();
@@ -773,6 +869,7 @@
       if (laneFillCount(laneIdx) >= GROUP && place[tid] !== laneIdx) { toast('That group is full'); return; }
       startIfNeeded();
       place[tid] = laneIdx; selected = null;
+      if (window.RTGSound) RTGSound.place();
       render();
       var pe = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"] .tile[data-tid="' + tid + '"]');
       if (pe) pe.classList.add('settle');
@@ -781,6 +878,7 @@
     function playLockAnim(idx) {
       var laneEl = boardEl.querySelector('.lane[data-idx="' + idx + '"]');
       if (!laneEl) return;
+      if (window.RTGSound) RTGSound.lock();
       laneEl.classList.add('justlocked');
       laneEl.querySelectorAll('.tile.locked').forEach(function (t, i) {
         t.style.setProperty('--d', (i * 70) + 'ms'); t.classList.add('pop-in');
@@ -839,7 +937,9 @@
         delete lastMissIds[laneIdx];
         render();
         playLockAnim(laneIdx);
-        if (solveOrder.length === CATS) finish(true);
+        // four down -> the fifth is forced. Auto-solve it (no busywork), then win.
+        if (solveOrder.length === CATS - 1) autoSolveLast();
+        else if (solveOrder.length === CATS) finish(true);
       } else {
         // FAIRNESS: never punish a factually correct grouping. Two nets:
         // (1) the four fully satisfy an unsolved BOARD category;
@@ -858,6 +958,24 @@
           registerMiss(laneIdx, ids);
         }
       }
+    }
+
+    // four groups locked -> the last is a gimme; auto-place, lock, and win.
+    function autoSolveLast() {
+      var freeIdx = -1;
+      for (var i = 0; i < CATS; i++) { if (!locked[i]) { freeIdx = i; break; } }
+      var usedCats = {}; for (var k in laneCat) { if (locked[k]) usedCats[laneCat[k]] = 1; }
+      var remId = null; day.lanes.forEach(function (l) { if (!usedCats[l.id]) remId = l.id; });
+      if (freeIdx < 0 || !remId) { finish(true); return; }
+      // clear anything in the free lane, drop in the true four
+      day.tiles.forEach(function (t) { if (place[t.id] === freeIdx) place[t.id] = null; });
+      day.solution[remId].forEach(function (tid) { place[tid] = freeIdx; });
+      locked[freeIdx] = true; laneCat[freeIdx] = remId; solveOrder.push(freeIdx);
+      delete lastMissIds[freeIdx];
+      render();
+      playLockAnim(freeIdx);
+      popup('Last group\'s yours!', laneById[remId] ? laneById[remId].name : '');
+      setTimeout(function () { finish(true); }, 620);
     }
 
     // does this exact four fully satisfy some unsolved lane's category per the
@@ -879,6 +997,7 @@
     // a factually-valid four that isn't this board's split: no guess charged
     function freeMiss(laneIdx, ids, message) {
       lastMissIds[laneIdx] = ids.join(',');
+      if (window.RTGSound) RTGSound.soft();
       var laneEl = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"]');
       if (laneEl) {
         laneEl.classList.add('bad');
@@ -916,7 +1035,8 @@
       if (es[0].col && es.every(function (e) { return e.col === es[0].col; })) return 'played college ball at ' + es[0].col;
       if (es[0].dy && es.every(function (e) { return e.dy === es[0].dy; })) return 'are from the ' + es[0].dy + ' draft class';
       if (es.every(function (e) { return e.dp === 1; })) return 'went No. 1 overall';
-      if (es[0].pos && es.every(function (e) { return e.sport === es[0].sport && e.pos === es[0].pos; })) return 'play the same position';
+      function _fam(pos){ var w=String(pos).trim().split(/\s+/); return w[w.length-1]; }
+      if (es[0].pos && es.every(function (e) { return e.pos && _fam(e.pos) === _fam(es[0].pos); })) return 'are all ' + _fam(es[0].pos).toLowerCase() + 's';
       return null;
     }
 
@@ -934,6 +1054,7 @@
 
     function registerMiss(laneIdx, ids) {
       mistakes++; penalty += 5;
+      if (window.RTGSound) RTGSound.wrong();
       var close = oneAway(ids);
       lastMissIds[laneIdx] = ids.join(',');       // block re-checking the identical four
       var laneEl = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"]');
@@ -1005,6 +1126,16 @@
 
       LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, order: solveOrder.slice() }));
       renderWallet();
+
+      // ---- cloud: post the run on a win (signed-in only; fail-open). Raw solve
+      // time only; the server score formula adds its own per-mistake penalty. ----
+      if (won && window.RTG_BOARD) {
+        var raw = Math.max(0, Math.round(finalTime - penalty));
+        RTG_BOARD.submit('match', DATE, { seconds: raw, mistakes: mistakes, reveals: 0 }).then(function (res) {
+          if (res && res.streak) document.getElementById('streakVal').textContent = res.streak;
+          if (typeof renderMatchBoard === 'function') renderMatchBoard();
+        });
+      }
       setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, streak: s, celebrate: true, milestone: milestone }); }, won ? 350 : 1100);
     }
 
@@ -1086,6 +1217,7 @@
       // celebration: confetti on a fresh win (denser + gold-heavy when flawless / milestone)
       if (r.celebrate && r.won) {
         confetti(r.mistakes === 0 ? 130 : 80, r.mistakes === 0 || !!r.milestone);
+        if (window.RTGSound) RTGSound.win();
       }
     }
     function shareText(r) {
@@ -1124,23 +1256,35 @@
       g.fillStyle = '#ffffff'; rr(70, 300, W - 140, 770, 44); g.fill();
       g.strokeStyle = 'rgba(24,36,48,.10)'; g.lineWidth = 2; rr(70, 300, W - 140, 770, 44); g.stroke();
 
-      var cy = 372;
+      var cy = 384;
       if (r.won && r.mistakes === 0) {
         var rw = 460, rh = 66, rx = W / 2 - rw / 2;
         var rg = g.createLinearGradient(rx, 0, rx + rw, 0); rg.addColorStop(0, '#FF5A3C'); rg.addColorStop(1, '#EBA61F');
         g.fillStyle = rg; rr(rx, cy, rw, rh, 33); g.fill();
         g.fillStyle = '#fff'; g.font = '900 27px Archivo, sans-serif'; ls('3px'); g.fillText('⭐ FLAWLESS', W / 2, cy + 43); ls('0px');
-        cy += 112;
-      } else { cy += 26; }
+        cy += 96;
+      } else { cy += 20; }
 
-      g.font = '900 26px Archivo, sans-serif'; ls('5px'); g.fillStyle = '#5c6b7a'; g.fillText(r.won ? 'DRAFT GRADE' : 'FINAL', W / 2, cy); ls('0px');
-      g.font = '400 300px Anton, Impact, sans-serif'; g.fillStyle = GRADE_COL[r.grade] || '#182430';
-      g.fillText(r.grade, W / 2, cy + 250);
-      g.font = '800 42px Archivo, sans-serif'; g.fillStyle = '#182430'; g.fillText(r.verdict, W / 2, cy + 330);
+      // HERO: you finished. (grade removed — the accomplishment + the solve
+      // order are the story now.)
+      var heroWord = r.won ? 'SOLVED' : 'FINAL';
+      var heroCol = r.won ? '#17A34A' : '#5c6b7a';
+      g.font = '400 172px Anton, Impact, sans-serif'; g.fillStyle = heroCol;
+      g.fillText(heroWord, W / 2, cy + 130);
 
-      // stat pills
+      // THE STORY: solve-order colour strip, big and centered
+      var sy = cy + 198;
+      if (r.strip && r.strip.length) {
+        g.font = '900 22px Archivo, sans-serif'; ls('4px'); g.fillStyle = '#5c6b7a'; g.fillText('THE ORDER YOU CRACKED THEM', W / 2, sy); ls('0px');
+        var bw = 132, bh = 52, bgap = 18, tw2 = r.strip.length * bw + (r.strip.length - 1) * bgap, bx0 = W / 2 - tw2 / 2, by = sy + 34;
+        r.strip.forEach(function (col, i) {
+          g.fillStyle = col; rr(bx0 + i * (bw + bgap), by, bw, bh, 14); g.fill();
+        });
+      }
+
+      // stat pills: TIME / MISSES / STREAK
       var pills = [['TIME', r.timeStr], ['MISSES', String(r.mistakes)], ['STREAK', String(r.streak)]];
-      var pw = 252, ph = 146, gap = 28, tot = pw * 3 + gap * 2, px0 = W / 2 - tot / 2, py = cy + 410;
+      var pw = 252, ph = 146, gap = 28, tot = pw * 3 + gap * 2, px0 = W / 2 - tot / 2, py = sy + 150;
       pills.forEach(function (p, i) {
         var px = px0 + i * (pw + gap);
         g.fillStyle = '#faf8f5'; rr(px, py, pw, ph, 26); g.fill();
@@ -1148,12 +1292,6 @@
         g.fillStyle = '#182430'; g.font = '400 66px Anton, Impact, sans-serif'; g.fillText(p[1], px + pw / 2, py + 84);
         g.fillStyle = '#5c6b7a'; g.font = '900 22px Archivo, sans-serif'; ls('3px'); g.fillText(p[0], px + pw / 2, py + 122); ls('0px');
       });
-
-      // solve-order colour strip
-      if (r.strip && r.strip.length) {
-        var bw = 92, bh = 28, bgap = 16, tw2 = r.strip.length * bw + (r.strip.length - 1) * bgap, bx0 = W / 2 - tw2 / 2, by = py + ph + 52;
-        r.strip.forEach(function (col, i) { g.fillStyle = col; rr(bx0 + i * (bw + bgap), by, bw, bh, 10); g.fill(); });
-      }
 
       g.fillStyle = '#FF5A3C'; g.font = '900 36px Archivo, sans-serif'; ls('1px'); g.fillText('runthe.gg/grid', W / 2, H - 72); ls('0px');
       return cv;
@@ -1243,6 +1381,18 @@
       if (done) return;
       day.tiles.forEach(function (t) { if (place[t.id] != null && !locked[place[t.id]]) place[t.id] = null; });
       selected = null; render();
+    });
+
+    // ---- shuffle the unplaced names (display order only; nothing about the puzzle changes) ----
+    document.getElementById('shuffleBtn').addEventListener('click', function () {
+      if (done) return;
+      if (poolOrder.length !== day.tiles.length) poolOrder = day.tiles.map(function (t) { return t.id; });
+      for (var i = poolOrder.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = poolOrder[i]; poolOrder[i] = poolOrder[j]; poolOrder[j] = tmp;
+      }
+      if (window.RTGSound) RTGSound.place();
+      render();
     });
 
     // ---- centered popup (hint reveal) ----
@@ -1456,6 +1606,49 @@
     buildDay();
     renderWallet();
     boot();
+
+    // ---- cloud board (fail-open: stays on the Sample board + local streak if offline) ----
+    (function initYou() {
+      var ys = document.getElementById('mYourStreak'); if (ys) ys.textContent = streakGet();
+      var sr = (typeof savedResult === 'function') ? savedResult() : null;
+      var yt = document.getElementById('mYourTm'); if (yt && sr && sr.time != null) yt.textContent = fmt(sr.time);
+    })();
+    function renderMatchBoard() {
+      if (!window.RTG_BOARD) return;
+      RTG_BOARD.leaderboard('match', DATE, 5).then(function (rows) {
+        if (rows === null) return;                       // offline: keep the Sample board
+        var pill = document.querySelector('.mlb-pill'); if (pill) pill.textContent = 'Live';
+        var samp = document.getElementById('mlbSample');
+        if (samp) {
+          samp.style.opacity = '1';
+          if (!rows.length) {
+            samp.innerHTML = '<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to post a time today.</div>';
+          } else {
+            var me = (RTG_BOARD.state().name || '').toLowerCase(), h = '<div class="lb-samplab">Today’s fastest</div>';
+            for (var i = 0; i < rows.length; i++) {
+              var r = rows[i], nm = r.display_name || 'Player', mine = me && nm.toLowerCase() === me;
+              h += '<div class="row' + (mine ? ' you' : '') + '"><span class="rk">' + (i + 1) + '</span><span class="who">' + escapeHtml(nm) + '</span><span class="tm">' + RTG_BOARD.fmtTime(r.base_seconds) + '</span></div>';
+            }
+            samp.innerHTML = h;
+          }
+        }
+        var note = document.getElementById('mlbNote'); if (note) note.textContent = 'Live daily board, ranked by time. Sign in on RunThe.GG to post yours.';
+      });
+    }
+    if (window.RTG_BOARD) {
+      RTG_BOARD.boot();
+      RTG_BOARD.onChange(function (st) {
+        if (st.signedIn) {
+          RTG_BOARD.streakOf('match').then(function (cs) {
+            if (cs) {
+              document.getElementById('streakVal').textContent = cs.streak || 0;
+              var ys = document.getElementById('mYourStreak'); if (ys) ys.textContent = cs.streak || 0;
+            }
+          });
+        }
+        renderMatchBoard();
+      });
+    }
   })();
   </script>
 </body>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@600;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* 1200x630, the share-preview size every platform crops from.
+     Same visual language as the game and the in-game share card: the dark field,
+     the red/blue wash, the five position colors. No wordmark, because which mark
+     the game uses is still being decided. */
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1200px;height:630px;overflow:hidden;background:#080b14;color:#eef2f9;
+    font-family:'Inter',system-ui,sans-serif;position:relative;
+    background-image:
+      radial-gradient(900px 540px at 50% -12%, rgba(59,130,246,.20), transparent 70%),
+      radial-gradient(760px 470px at 100% 110%, rgba(239,68,68,.16), transparent 70%);}
+  /* the yard lines, faint, from the game's field panel */
+  .lines{position:absolute;inset:0;
+    background-image:repeating-linear-gradient(90deg,
+      rgba(255,255,255,.05) 0 1px, transparent 1px 100px);}
+  .wrap{position:relative;height:100%;display:flex;flex-direction:column;
+    justify-content:center;padding:0 74px 46px}
+  .eyebrow{font-family:'Anton',sans-serif;font-weight:400;
+    font-size:25px;letter-spacing:.24em;text-transform:uppercase;color:#94a3b8;
+    margin-bottom:12px}
+  .eyebrow b{color:#ef4444}
+  h1{font-family:'Anton',Impact,sans-serif;font-weight:400;
+    text-transform:uppercase;font-size:132px;line-height:.84;letter-spacing:.008em}
+  h1 span{display:block}
+  h1 .two{background:linear-gradient(135deg,#f05252 0%,#b91c1c 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  p{font-size:29px;line-height:1.34;color:#cbd5e1;margin-top:26px;max-width:760px}
+  p b{color:#eef2f9;font-weight:700}
+  /* the six spots, in the game's own position colors */
+  .slots{display:flex;gap:11px;margin-top:34px}
+  .slot{font-family:'Anton',sans-serif;font-weight:400;font-size:27px;
+    letter-spacing:.1em;padding:13px 21px;border-radius:12px;color:#fff;
+    box-shadow:0 10px 26px -10px rgba(0,0,0,.8)}
+  .qb{background:linear-gradient(180deg,#ff0a3b,#a3072a)}
+  .rb{background:linear-gradient(180deg,#33e66e,#178943)}
+  .wr{background:linear-gradient(180deg,#2aa5ff,#0b5fa8)}
+  .te{background:linear-gradient(180deg,#ffab1f,#a35f00)}
+  .fx{background:linear-gradient(180deg,#c74dff,#7c1bab)}
+  .url{position:absolute;right:74px;bottom:52px;text-align:right;
+    font-family:'Anton',sans-serif;font-weight:400;font-size:31px;
+    letter-spacing:.14em;color:#64748b}
+  .url b{color:#eef2f9}
+  .url b i{color:#ef4444;font-style:normal}
+  /* The mark, top right, clear of the type. 214px, comfortably above the ~64px floor where
+     the facemask stops reading. */
+  .mark{position:absolute;right:70px;top:64px;width:214px;height:214px;display:block}
+</style></head>
+<body>
+  <div class="lines"></div>
+  <div class="wrap">
+    <img class="mark" src="/football/logo.png" alt="">
+    <div class="eyebrow">Free &middot; No download &middot; Six spins, <b>one season</b></div>
+    <h1><span>The Perfect</span><span class="two">Season</span></h1>
+    <p>Spin for a year and a team. Sign one player off each of six draws,
+       under a <b>$140M cap</b>. Then play all 17 games and try to go undefeated.</p>
+    <div class="slots">
+      <span class="slot qb">QB</span><span class="slot rb">RB</span>
+      <span class="slot wr">WR</span><span class="slot wr">WR</span>
+      <span class="slot te">TE</span><span class="slot fx">FLEX</span>
+    </div>
+  </div>
+  <div class="url"><b>RUNTHE<i>.GG</i></b>/FOOTBALL</div>
+</body></html>

@@ -6,7 +6,7 @@ sitting alongside RunTheTour (golf), RunThePitch (soccer) and RunTheDrive
 one streak, one wallet.
 
 Lives at `runthe.gg/grid/`. **Hidden for now** — `noindex`, not linked from the
-homepage — same as `/football/` while it's in development.
+homepage — same as `/touchdown/` while it's in development.
 
 ```
 /grid/

@@ -1,0 +1,42 @@
+{
+ "errors": [
+  {
+   "puzzle": 3,
+   "clue": "Michael ___, a 1980s star",
+   "answer": "IRVIN",
+   "reason": "Misleading decade: Michael Irvin entered the NFL in 1988 and his stardom (Pro Bowls, Cowboys Super Bowls) came in the 1990s. He was a college star at Miami in the mid-1980s, but 'a 1980s star' does not accurately describe him and invites other 5-letter Michaels (see ambiguous)."
+  },
+  {
+   "puzzle": 2,
+   "clue": "MLB coach Joe ___",
+   "answer": "TORRE",
+   "reason": "Minor terminology error: Joe Torre was an MLB manager, not a coach. In baseball, 'manager' and 'coach' are distinct roles; the clue should read 'MLB manager Joe ___'."
+  },
+  {
+   "puzzle": 5,
+   "clue": "MLB coach Tony La ___",
+   "answer": "RUSSA",
+   "reason": "Minor terminology error: Tony La Russa was an MLB manager, not a coach. Should be 'MLB manager Tony La ___'."
+  }
+ ],
+ "ambiguous": [
+  {
+   "puzzle": 6,
+   "clue": "Hall of Famer Ray ___",
+   "answer": "LEWIS",
+   "alt": "ALLEN — Ray Allen (Basketball Hall of Fame, 2018) is also a 5-letter Hall of Famer named Ray; with no sport specified, LEWIS and ALLEN fit equally well."
+  },
+  {
+   "puzzle": 6,
+   "clue": "NBA coach Steve ___",
+   "answer": "KERR",
+   "alt": "NASH — Steve Nash was also an NBA head coach (Nets, 2020-22) and fits the same 4 letters; Kerr is the more canonical answer but the clue does not disambiguate."
+  },
+  {
+   "puzzle": 3,
+   "clue": "Michael ___, a 1980s star",
+   "answer": "IRVIN",
+   "alt": "CHANG — Michael Chang (1989 French Open champion) is a genuine 1980s star with a 5-letter surname; given Irvin's stardom was actually the 1990s, CHANG arguably fits the clue better."
+  }
+ ]
+}

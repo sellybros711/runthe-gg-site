@@ -1,0 +1,25 @@
+{
+  "name": "RunTheDrive",
+  "short_name": "RunTheDrive",
+  "description": "One drive a day. Read the defense, call the plays, chase the touchdown, and keep your streak alive. A daily football game on RunThe.GG.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#092018",
+  "theme_color": "#0c3324",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20192%20192%27%3E%3Crect%20width%3D%27192%27%20height%3D%27192%27%20rx%3D%2734%27%20fill%3D%27%230c3324%27/%3E%3Cellipse%20cx%3D%2796.0%27%20cy%3D%2796.0%27%20rx%3D%2761%27%20ry%3D%2740%27%20fill%3D%27%238a4a20%27%20stroke%3D%27%233a1e0c%27%20stroke-width%3D%276%27/%3E%3Cg%20stroke%3D%27%23efe6cf%27%20stroke-width%3D%275%27%20stroke-linecap%3D%27round%27%3E%3Cpath%20d%3D%27M73%2096.0%20H119%27/%3E%3Cpath%20d%3D%27M96%2081%20V111%27/%3E%3Cpath%20d%3D%27M84%2083%20V109%27/%3E%3Cpath%20d%3D%27M108%2083%20V109%27/%3E%3C/g%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20512%20512%27%3E%3Crect%20width%3D%27512%27%20height%3D%27512%27%20rx%3D%2792%27%20fill%3D%27%230c3324%27/%3E%3Cellipse%20cx%3D%27256.0%27%20cy%3D%27256.0%27%20rx%3D%27164%27%20ry%3D%27108%27%20fill%3D%27%238a4a20%27%20stroke%3D%27%233a1e0c%27%20stroke-width%3D%2715%27/%3E%3Cg%20stroke%3D%27%23efe6cf%27%20stroke-width%3D%2713%27%20stroke-linecap%3D%27round%27%3E%3Cpath%20d%3D%27M195%20256.0%20H317%27/%3E%3Cpath%20d%3D%27M256%20215%20V297%27/%3E%3Cpath%20d%3D%27M225%20220%20V292%27/%3E%3Cpath%20d%3D%27M287%20220%20V292%27/%3E%3C/g%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

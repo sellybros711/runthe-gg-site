@@ -78,6 +78,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .brand{font-family:var(--brandf); font-size:17px; font-style:italic; letter-spacing:-.01em; font-weight:900; color:var(--ink); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .brand .b2{color:var(--coralT);}
 .brand .sub{display:block; font-family:var(--pix); font-size:8px; font-style:normal; letter-spacing:2px; color:var(--mut); margin-top:3px; font-weight:800;}
+.brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; text-decoration:none;}
+.brand.logo img{height:26px; width:auto; display:block;}
+.brand.logo .sub{margin-top:5px; margin-left:2px;}
 .spacer{flex:1;}
 .chip{display:flex; flex-direction:column; align-items:center; gap:1px; background:var(--card); flex:0 0 auto;
   border:1px solid var(--line2); border-radius:10px; padding:5px 10px; box-shadow:var(--shadow); min-width:54px;}
@@ -211,6 +214,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
 :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
 :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
+.sndBtn .ic-snd-on{display:none;} .sndBtn .ic-snd-off{display:block;}
+.sndBtn.snd-on{color:var(--tealT); border-color:var(--teal);}
+.sndBtn.snd-on .ic-snd-on{display:block;} .sndBtn.snd-on .ic-snd-off{display:none;}
 /* stats modal specifics */
 .modal .subttl{font-family:var(--pix); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--mut); margin:-2px 0 15px; font-weight:800;}
 .statgrid.four{grid-template-columns:repeat(4,1fr); gap:8px;}
@@ -230,7 +236,19 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .lb .tm{font-variant-numeric:tabular-nums; color:var(--coralT); font-weight:700;}
 .lb .row.you{color:var(--coralT);} .lb .row.you .rk,.lb .row.you .tm{color:var(--coralT);}
 .lb .note{font-size:11px; color:var(--mut); margin-top:8px;}
+/* "You" hero: your own time is the real, honest number on this card */
+.lb-you{display:flex; align-items:stretch; gap:10px; margin-bottom:12px;}
+.lb-you .box{flex:1; background:var(--card2); border:1px solid var(--line2); border-radius:10px; padding:10px 12px;}
+.lb-you .box.me{border-color:var(--coralT); background:color-mix(in srgb, var(--coralT) 12%, var(--card2));}
+.lb-you .cap{display:block; font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);}
+.lb-you .big{display:block; font-family:var(--pix); font-size:20px; line-height:1.2; margin-top:5px; color:var(--ink); font-variant-numeric:tabular-nums;}
+.lb-you .box.me .big{color:var(--coralT);}
+/* sample rows: clearly illustrative, visually dialled back */
+.lb-sample{opacity:.62;}
+.lb-samplab{font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:2px 0 4px;}
 
+.reportline{text-align:center; margin:10px 0 0; font-size:11px;}
+.reportline a{color:var(--mut); text-decoration:underline; text-underline-offset:2px;}
 .foot{text-align:center; color:var(--mut); font-size:11px; padding:8px 0 2px;}
 .foot a{color:var(--coralT);}
 .pill{display:inline-block; font-size:9px; font-weight:800; letter-spacing:1px; text-transform:uppercase;
@@ -242,8 +260,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   <div class="topbar">
     <a class="icon-btn" href="/grid/" aria-label="Back to RunTheGrid">‹</a>
-    <div class="brand">Run<span class="b2">The</span>Grid<span class="sub">DAILY CROSSWORD</span></div>
+    <a class="brand logo" href="/grid/" aria-label="RunTheGrid home"><img src="/grid/assets/runthegrid-logo.png" alt="RunTheGrid" width="871" height="303" /><span class="sub">DAILY CROSSWORD</span></a>
     <div class="spacer"></div>
+    <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
+      <svg class="ic-snd-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+      <svg class="ic-snd-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M22 9l-5 6M17 9l5 6"/></svg>
+    </button>
     <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
       <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
@@ -285,12 +307,18 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   </div>
 
   <div class="lb">
-    <h3>Today's Leaderboard</h3>
-    <div class="row"><span class="rk">1</span><span class="who">gridiron_gary</span><span class="tm">1:12</span></div>
-    <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">1:48</span></div>
-    <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">2:05</span></div>
-    <div class="row you"><span class="rk" id="yourRk">—</span><span class="who">You</span><span class="tm" id="yourTm">—</span></div>
-    <div class="note">One combined daily board, ranked by completion time. Sign in with your RunThe.GG account to post a score. <span class="pill">Preview</span></div>
+    <h3>Daily Leaderboard <span class="pill">Sample</span></h3>
+    <div class="lb-you">
+      <div class="box me"><span class="cap">Your time today</span><span class="big" id="yourTm">—</span></div>
+      <div class="box"><span class="cap">Your best</span><span class="big" id="yourBest">—</span></div>
+    </div>
+    <div class="lb-sample">
+      <div class="lb-samplab">Illustrative ranking</div>
+      <div class="row"><span class="rk">1</span><span class="who">gridiron_gary</span><span class="tm">1:12</span></div>
+      <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">1:48</span></div>
+      <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">2:05</span></div>
+    </div>
+    <div class="note" id="lbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your real time.</div>
   </div>
 
   <div class="foot">A daily crossword inside <b>RunTheGrid</b> · <a href="/">RunThe.GG</a></div>
@@ -318,6 +346,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <button class="btn gold" id="mShare">Share result</button>
     <button class="btn ghost" id="mStats">Stats</button>
     <button class="btn ghost" id="mClose">Close</button>
+    <div class="reportline"><a href="mailto:sellybros711@gmail.com?subject=RunTheGrid%20data%20error">Spot a data error? Tell us</a></div>
   </div>
 </div>
 
@@ -339,7 +368,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 </div>
 
 <!-- cache-busted: bump ?v= whenever the puzzle bank changes -->
-<script src="puzzles.js?v=4"></script>
+<script src="puzzles.js?v=7"></script>
+<script src="/grid/sfx.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/grid/board.js"></script>
 <script>
 (function(){
   "use strict";
@@ -518,6 +550,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     ensureStarted();
     var tr=sel.r, tc=sel.c;
     cell.val = ch.toUpperCase(); cell.checked=false;
+    if(window.RTGSound) RTGSound.key();
     advance();
     render();
     maybeWordFill(tr,tc);
@@ -636,6 +669,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       var boardEl=document.getElementById('board');
       boardEl.classList.remove('shake'); void boardEl.offsetWidth; boardEl.classList.add('shake');
       setTimeout(function(){ boardEl.classList.remove('shake'); }, 500);
+      if(window.RTGSound) RTGSound.wrong();
       toast('Almost — '+w+' square'+(w===1?' is':'s are')+' off. Tap Check to spot them.');
     }
   }
@@ -679,9 +713,22 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     document.getElementById('mStreak').textContent = s.streak||1;
     document.getElementById('mBest').textContent = fmt(s.best||elapsed);
     document.getElementById('mShareGrid').textContent = buildShareGrid();
-    document.getElementById('yourRk').textContent = '4';
     document.getElementById('yourTm').textContent = fmt(elapsed);
+    document.getElementById('yourBest').textContent = fmt(s.best || elapsed);
     document.getElementById('mFlawless').classList.toggle('on', flawless);
+
+    // ---- cloud: post the run (signed-in only; fail-open). Cloud streak wins. ----
+    if(window.RTG_BOARD && !TESTER){
+      var revealed=0; for(var rr=0;rr<N;rr++) for(var cc=0;cc<N;cc++){ if(!cells[rr][cc].block && cells[rr][cc].revealed) revealed++; }
+      RTG_BOARD.submit('crossword', P.id, { seconds:Math.round(elapsed), mistakes:0, reveals:revealed }).then(function(res){
+        if(res && res.streak){
+          document.getElementById('streakN').textContent = res.streak;
+          var msn=document.getElementById('mStreak'); if(msn) msn.textContent = res.streak;
+        }
+        renderRealBoard();
+      });
+    }
+
     var mm=document.getElementById('mMilestone');
     if(milestone){ mm.textContent=milestone; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); }
     if(!TESTER) startCountdown('mCountdown'); else document.getElementById('mCountdown').textContent='';
@@ -689,6 +736,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     setTimeout(function(){
       document.getElementById('scrim').classList.remove('hidden');
       confetti(flawless?130:80, flawless || !!milestone);
+      if(window.RTGSound) RTGSound.win();
     }, 350);
   }
 
@@ -907,7 +955,40 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   document.getElementById('dateSeg').innerHTML = fmtDate(P.date)+' <small>Daily</small>';
   document.getElementById('sizeSeg').textContent = N+' × '+N;
   var saved=load(); document.getElementById('streakN').textContent = saved.streak||0;
+  if(saved.best){ var yb=document.getElementById('yourBest'); if(yb) yb.textContent = fmt(saved.best); }
   function fmtDate(iso){ try{ return new Date(iso+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'}); }catch(e){ return iso; } }
+
+  // ---- cloud board (fail-open: stays on the Sample board + local streak if offline) ----
+  function lbEsc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function renderRealBoard(){
+    if(!window.RTG_BOARD) return;
+    RTG_BOARD.leaderboard('crossword', P.id, 5).then(function(rows){
+      if(rows===null) return;                        // offline: keep the Sample board untouched
+      var lb=document.querySelector('.lb'); if(!lb) return;
+      var pill=lb.querySelector('.pill'); if(pill) pill.textContent='Live';
+      var samp=lb.querySelector('.lb-sample'); if(samp){ samp.style.opacity='1';
+        if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to post a time today.</div>'; }
+        else{
+          var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Today’s fastest</div>';
+          for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
+            h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+RTG_BOARD.fmtTime(r.base_seconds)+'</span></div>'; }
+          samp.innerHTML=h;
+        }
+      }
+      var note=document.getElementById('lbNote'); if(note) note.textContent='Live daily board, ranked by time. Sign in on RunThe.GG to post yours.';
+    });
+  }
+  if(window.RTG_BOARD){
+    RTG_BOARD.boot();
+    RTG_BOARD.onChange(function(st){
+      if(st.signedIn){
+        RTG_BOARD.streakOf('crossword').then(function(cs){
+          if(cs){ document.getElementById('streakN').textContent=cs.streak||0; }
+        });
+      }
+      renderRealBoard();
+    });
+  }
 
   buildLists();
   render();

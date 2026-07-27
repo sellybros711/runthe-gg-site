@@ -1,7 +1,9 @@
 {
+  "id": "/",
   "name": "RunThe.GG: Free Online Games",
   "short_name": "RunThe.GG",
   "description": "Free, no-download sports games. RunThePitch (World Cup) and RunTheTour (golf). One account, play them all.",
+  "categories": ["games", "sports"],
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
