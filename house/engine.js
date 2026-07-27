@@ -156,7 +156,26 @@ const K = {
    * how often you have held power, so treat them as one.
    *   1 win -> 33, 2 -> 55, 3 -> 70, 5 -> 87
    */
-  COMP_CURVE: 2.5,
+  /*
+   * HOW MANY WINS MAKES YOU A COMP BEAST. GDD §25.
+   *
+   * Was `100 * (1 - exp(-wins / 2.5))`, which is concave: the FIRST win costs
+   * the most threat and every one after it costs less. That is backwards. One
+   * win does not mark you in this format and five does, and the old shape put
+   * a player on 1.5 wins, which is BELOW the house average of 1.75, at 45
+   * threat out of 100.
+   *
+   * An S-curve instead. Nothing much happens until you are winning more than
+   * the field, and then it happens quickly.
+   *
+   *      wins    old    new
+   *         1     33     16
+   *       1.5     45     22
+   *         3     70     50
+   *         5     86     84
+   */
+  COMP_MID: 3.0,            // wins at which you read as a genuine threat
+  COMP_SPREAD: 1.2,         // how sharply it turns
   TH_BIAS_SD: 26,           // scaled by (100 - perception) / 100
   SOCIAL_REACH_CUT: 40,     // trust above this counts as reach
 
@@ -359,6 +378,24 @@ const K = {
   OWED_DECAY: 6,            // per week. Nobody remembers a favour for a month
   OWED_NOM: 0.55,           // how much of it shields you from being named
   OWED_EVICT: 0.42,         // and from the vote
+
+  /*
+   * PEOPLE MANAGE UPWARD, GDD §25.
+   *
+   * MEASURED, and it is why winning things did not pay. Holding the Captaincy
+   * makes you 23.2 percent likely to go out the FOLLOWING week against a 10.0
+   * percent baseline: you name two people who resent it, your threat rises, and
+   * the format bars you from competing for the next one, so you cannot protect
+   * yourself. One safe week bought at more than twice the hazard afterwards is
+   * a trap, not a prize, and a house full of traps makes throwing comps the
+   * dominant line.
+   *
+   * What was missing is the half of the format that is not about safety: while
+   * somebody holds the power, the rest of the house is nice to them. Everybody
+   * has a reason to be. It is the most reliable social event of the week and
+   * the model had no term for it.
+   */
+  CAPTAIN_COURTED: 7,
 
   ROOM_GUEST: 9,            // an hour of the Captain's undivided attention
   ROOM_SNUB: -2,            // and everybody else watched you pick
@@ -893,7 +930,7 @@ function panelEquity(rel, cast, j, panel) {
  */
 function compPercentile(cast, j, pool) {
   const mine = cast[j].compWins.length;
-  const curve = 100 * (1 - Math.exp(-mine / K.COMP_CURVE));
+  const curve = 100 / (1 + Math.exp(-(mine - K.COMP_MID) / K.COMP_SPREAD));
 
   /* At the Panel the question is "how good was their game", which is genuinely
      comparative, so the jury still ranks. Everywhere else the house is reacting

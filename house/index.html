@@ -1706,7 +1706,18 @@ function pump(){
   if(momentQ.length){ renderStage(); dock({label:'Go on',off:true}); showMoment(momentQ.shift()); return; }
   var guard=400;
   while(guard-->0){
-    if(s.phase===R.PHASES.OVER){ finishRun(); return; }
+    if(s.phase===R.PHASES.OVER){
+      /*
+       * Close whatever is open first. `answer` does not close the card it was
+       * answering: normally the next `handleNeed` opens a new one over the top,
+       * but on a terminal path there is no next card, so the results screen
+       * rendered UNDERNEATH a live sheet with body.carded still set and the run
+       * could not be finished. Seen as a wedge on the Final Three pick, which
+       * is the one card whose answer can end the run outright.
+       */
+      if(cardOpen) closeCard();
+      finishRun(); return;
+    }
     var need=R.needsInput(s);
     if(need){ renderStage(); handleNeed(need); return; }
     var before=s.phase, wkBefore=s.week, lines=feedLines.length;
