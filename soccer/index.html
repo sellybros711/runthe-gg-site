@@ -1612,6 +1612,17 @@
   .sim-summary.out{--res-acc:linear-gradient(90deg,#6e2820,#E5402A,#6e2820);}
   .sim-summary.out .res-headline{color:#ff8f80;}
   .sim-summary h2{font-family:'Anton',sans-serif; font-size:20px; margin:0 0 10px; letter-spacing:1px;}
+  /* result stat strip — big data-forward header tiles (squad rating / KO / goals) */
+  .sim-summary .res-statstrip{display:flex;gap:8px;margin:2px 0 14px;}
+  .sim-summary .res-stat{flex:1 1 0;text-align:center;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:9px 6px;}
+  .sim-summary .res-stat .rs-val{font-family:'Anton',Impact,sans-serif;font-size:24px;line-height:1;color:#f0e8d8;}
+  .sim-summary .res-stat .rs-val .rs-sep{opacity:.4;margin:0 1px;}
+  .sim-summary .res-stat .rs-cap{font-weight:900;font-size:8.5px;letter-spacing:1px;text-transform:uppercase;
+    color:rgba(240,232,216,.45);margin-top:5px;}
+  .sim-summary.won .res-stat:first-child .rs-val{color:#F4B413;}
+  .sim-summary.deep .res-stat:first-child .rs-val{color:#9dc0ff;}
+  .sim-summary.out .res-stat:first-child .rs-val{color:#ff8f80;}
   .sim-summary-row{
     display:flex; justify-content:space-between; align-items:center;
     font-size:12px; font-weight:700; padding:4px 0; border-bottom:1px solid rgba(240,232,216,0.15); gap:10px;
@@ -12467,6 +12478,19 @@ function buildSummaryCard(){
 
   const mot = r.manOfTournament ? r.manOfTournament.player : '-';
 
+  // Data-forward stat strip (echoes the draft status header + Perfect Season's
+  // big stat headers): final squad rating, knockout W–L, goals for–against.
+  const koW = r.matches.filter(m=>m.winner==='user').length;
+  const koL = Math.max(0, r.matches.length - koW);
+  const gf = r.matches.reduce((a,m)=>a+(+m.userGoals||0),0);
+  const ga = r.matches.reduce((a,m)=>a+(+m.opponentGoals||0),0);
+  const teamOv = Math.round((r&&r.userOverall) || (typeof gs!=='undefined'&&gs&&gs.result&&gs.result.teamOverall) || 0) || null;
+  const statStrip = `<div class="res-statstrip">
+    <div class="res-stat"><div class="rs-val">${teamOv==null?'—':teamOv}</div><div class="rs-cap">Squad rating</div></div>
+    <div class="res-stat"><div class="rs-val">${koW}<span class="rs-sep">–</span>${koL}</div><div class="rs-cap">Knockout</div></div>
+    <div class="res-stat"><div class="rs-val">${gf}<span class="rs-sep">–</span>${ga}</div><div class="rs-cap">Goals</div></div>
+  </div>`;
+
   // Build tournament totals player stats table
   const allMatchStats = [
     ...((r.groupStage&&r.groupStage.matchdays)||[]).map(md=>md._playerStats).filter(Boolean),
@@ -12519,6 +12543,7 @@ function buildSummaryCard(){
     ${emoji?`<div class="res-emoji" style="text-align:center;font-size:62px;line-height:1;margin-bottom:2px;">${emToSvg(emoji)}</div>`:''}
     <div class="res-headline display" style="text-align:center;font-size:34px;line-height:1.05;margin:${emoji?'2px':'4px'} 0 ${oc.message?'8px':'14px'};">${headline}</div>
     ${oc.message?`<div style="text-align:center;font-weight:600;font-size:13px;line-height:1.45;color:rgba(240,232,216,.55);margin-bottom:12px;">${oc.message}</div>`:''}
+    ${statStrip}
     <div class="sim-sub-label">MATCHES</div>
     ${rows || '<div class="sim-summary-row"><span>No knockout matches</span><span></span></div>'}
     <div class="sim-sub-label">MAN OF THE TOURNAMENT</div>
