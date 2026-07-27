@@ -696,11 +696,37 @@
       rgba(255,255,255,.46) 93%,transparent)}
   .field .tick{position:absolute;width:10px;height:2px;background:rgba(255,255,255,.24)}
   .field .tick.edge{width:16px;background:rgba(255,255,255,.16)}
-  /* Ground, not figure. A player's name has to win over these every time, so they are set
-     large the way a real field's numbers are and then taken almost all the way down. */
-  .field .fnum{position:absolute;font-family:var(--fd);font-size:34px;font-weight:900;
-    line-height:1;color:rgba(255,255,255,.10);letter-spacing:.02em}
-  .field .fnum.l{left:2.5%} .field .fnum.r{right:2.5%}
+  /* THE NUMBERS, as a real field wears them.
+     Turned a quarter turn so each one faces its own sideline, which is how they are painted:
+     you read them from the touchline. Sat about 22% in from each edge, since the NFL puts the
+     foot of the numerals twelve yards off the sideline and a field is 53.3 yards wide.
+
+     Ground, not figure. Set large the way a real field's are, then taken almost all the way
+     down, because a player's name has to win over them every time. */
+  .field .fnum{position:absolute;display:flex;align-items:center;gap:5px;
+    font-family:var(--fd);font-size:30px;font-weight:900;line-height:1;
+    color:rgba(255,255,255,.10);letter-spacing:.06em}
+  /* Hard against the sidelines, and clear of the line rather than straddling it. The number
+     used to sit centred on its yard line, so the line ran through the middle of the numerals
+     and read as clutter at this size; it sits just up-field of the line now, on the same side
+     the arrow points, which keeps each number attached to one line and one line only. */
+  .field .fnum{margin-top:-27px}
+  .field .fnum.l{left:10%;transform:translate(-50%,-50%) rotate(-90deg)}
+  .field .fnum.r{right:10%;transform:translate(50%,-50%) rotate(90deg)}
+  /* THE ARROW POINTS AT THE GOAL LINE, which is upfield, on both sides.
+     The two sides need opposite triangles to get there, and assuming one would do was the bug:
+     the left number is turned -90deg and the right +90deg, so a triangle pointing the same way
+     in its own box ends up pointing up on one side and down on the other. Colouring the left
+     border makes it point right in local space, the right border makes it point left, and
+     after each rotation both land pointing up the field. */
+  .field .fnum .ar{width:0;height:0;border-style:solid;order:-1;margin-top:1px}
+  /* The arrow has to sit ON the goal-line side of the numerals as well as point that way, and
+     the rotations put opposite ends of the flex line at the top of the screen: the last item
+     lands up-field on the left, the first item on the right. */
+  .field .fnum.l .ar{order:1;border-width:6px 0 6px 9px;
+    border-color:transparent transparent transparent rgba(255,255,255,.10)}
+  .field .fnum.r .ar{border-width:6px 9px 6px 0;
+    border-color:transparent rgba(255,255,255,.10) transparent transparent}
   /* The end zone: a shade darker than the pitch, with the goal line as the brightest mark on
      the field, which is what it is. */
   .field .ez{position:absolute;left:0;right:0;top:0;
@@ -2009,7 +2035,11 @@ const easeOut=(t)=>1-Math.pow(1-t,3);
    The offence moves up the screen, so the goal line sits above the receivers and the end zone
    above that. Twenty-two yards in view: four of end zone, the goal line, then the 5, the 10 and
    the 15, which are the numbers a red-zone snap is played between. */
-const FIELD_YARDS=22, FIELD_EZ_YARDS=4;
+/* 24 yards in view: four of end zone, the goal line, then out to the 20. That puts the two
+   numbers a real field would carry in this stretch, the 10 and the 20, inside the picture. */
+/* 28 yards in view: four of end zone, the goal line, then out to the 24. Deep enough that the
+   20 sits at 86% rather than exactly on the bottom edge, where it was being cut in half. */
+const FIELD_YARDS=28, FIELD_EZ_YARDS=4;
 
 /* The lines run ACROSS, because the offence moves up the screen: the receivers are at 26% of
    the height, the quarterback at 58% and the back at 84%. Yard lines are perpendicular to the
@@ -2034,9 +2064,19 @@ function fieldMarkings(){
     if(line===0) continue;                     // the goal line is drawn above, heavier
     if(line%5===0){
       out.push('<div class="yd'+(line%10===0?' ten':'')+'" style="top:'+top+'%"></div>');
-      if(top>7&&top<93){
-        out.push('<div class="fnum l" style="top:calc('+top+'% - 17px)">'+line+'</div>',
-                 '<div class="fnum r" style="top:calc('+top+'% - 17px)">'+line+'</div>');
+      /* NUMBERS ONLY EVERY TEN YARDS, which is what a real field paints. There is no 5 and no
+         15 anywhere on an NFL field, and drawing them was the tell. In this window that leaves
+         the 10 and the 20.
+
+         Each number is turned to face its own sideline, the way they really are: you read them
+         standing on the touchline, not from the end zone. And each carries the arrow that
+         points to the nearest goal line, which here is upfield. The 50 is the one number that
+         gets no arrow, because it is equidistant; it is out of this window anyway. */
+      if(line%10===0&&top>8&&top<92){
+        out.push('<div class="fnum l" style="top:'+top+'%">'+
+                   '<span class="d">'+line+'</span><span class="ar"></span></div>',
+                 '<div class="fnum r" style="top:'+top+'%">'+
+                   '<span class="d">'+line+'</span><span class="ar"></span></div>');
       }
     }else{
       out.push('<div class="tick" style="top:'+top+'%;left:29.6%"></div>',
