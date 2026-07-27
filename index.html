@@ -482,8 +482,6 @@ window.GA_ID='G-L29P5MRWKE';
     .feat.soccer .feat-in{grid-template-columns:1fr 210px;}
     .feat.soccer .phone{width:96px;}
     .feat.soccer .shots{order:2;padding-bottom:2px;}
-    .feat.football .feat-in{grid-template-columns:1fr 220px;}
-    .feat.football .fb-demo{order:2;}
   }
   /* screenshot "phones" */
   .shots{display:flex;gap:12px;align-items:flex-start;text-decoration:none;
@@ -524,44 +522,9 @@ window.GA_ID='G-L29P5MRWKE';
   .feat.football .chip{color:#f0b3b0;border-left-color:rgba(220,60,60,.65);}
   .feat.football .badge-mode{color:#f0b3b0;border-left-color:rgba(220,60,60,.65);}
   .feat.football .play{background:linear-gradient(180deg,#EF5350,#C0272B);color:#2a0708;box-shadow:0 8px 20px -12px rgba(220,60,60,.9);}
-  /* ---- Perfect Season mini field demo (mirrored from football/index.html hero) ---- */
-  .fb-demo{display:block;text-decoration:none;color:inherit;min-width:0;}
-  .fb-reels-row{display:flex;gap:6px;margin-bottom:8px;}
-  .fb-reel{flex:1;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;
-    font-size:13px;font-weight:800;overflow:hidden;border:1px solid rgba(255,255,255,.12);}
-  .fb-reel-yr{border-color:rgba(239,68,68,.38);background:rgba(239,68,68,.08);color:#fca5a5;}
-  .fb-reel-tm{border-color:rgba(59,130,246,.38);background:rgba(59,130,246,.08);color:#93c5fd;}
-  .fb-reel span{display:block;transition:transform .16s ease,opacity .16s ease;}
-  .fb-reel span.fb-exit{transform:translateY(-8px);opacity:0;}
-  .fb-field{position:relative;width:100%;aspect-ratio:1/0.52;border-radius:10px;overflow:hidden;
-    background:radial-gradient(125% 85% at 50% -12%,#16283f,#0a1220 58%,#070c16 100%);
-    border:1px solid rgba(255,255,255,.10);}
-  .fb-turf{position:absolute;inset:0;
-    background:repeating-linear-gradient(180deg,rgba(255,255,255,.018) 0 25%,transparent 25% 50%);}
-  .fb-ez{position:absolute;left:0;right:0;height:12%;}
-  .fb-ez-top{top:0;background:linear-gradient(180deg,rgba(220,50,50,.14),transparent);}
-  .fb-ez-bot{bottom:0;background:linear-gradient(0deg,rgba(59,130,246,.12),transparent);}
-  .fb-goal{position:absolute;left:0;right:0;top:12%;height:1.5px;
-    background:linear-gradient(90deg,transparent,rgba(255,255,255,.38) 8%,rgba(255,255,255,.38) 92%,transparent);}
-  .fb-yd{position:absolute;left:5%;right:5%;height:1px;background:rgba(255,255,255,.15);}
-  .fb-vig{position:absolute;inset:0;pointer-events:none;
-    box-shadow:inset 0 0 46px 14px rgba(3,6,12,.75);}
-  .fb-chip{position:absolute;transform:translate(-50%,-50%) scale(0);
-    width:30px;height:30px;border-radius:50%;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
-    border:1.5px solid rgba(255,255,255,.22);pointer-events:none;}
-  .fb-chip.fb-on{animation:fbPop .3s cubic-bezier(.2,1.5,.4,1) forwards;}
-  @keyframes fbPop{to{transform:translate(-50%,-50%) scale(1);}}
-  .fb-chip.fb-clear{opacity:0;transition:opacity .28s ease;}
-  .fb-chip span{display:block;text-align:center;line-height:1.1;color:#fff;}
-  .fb-chip .fb-pos{font-size:7px;font-weight:800;}
-  .fb-chip .fb-nm{font-size:5px;opacity:.8;font-weight:700;white-space:nowrap;max-width:28px;overflow:hidden;text-overflow:ellipsis;}
-  .fb-chip-qb{background:linear-gradient(160deg,rgba(255,10,59,.78),rgba(0,0,0,.42));}
-  .fb-chip-rb{background:linear-gradient(160deg,rgba(34,197,94,.78),rgba(0,0,0,.42));}
-  .fb-chip-wr{background:linear-gradient(160deg,rgba(15,147,255,.78),rgba(0,0,0,.42));}
-  .fb-chip-te{background:linear-gradient(160deg,rgba(235,149,0,.78),rgba(0,0,0,.42));}
-  .fb-chip-flex{background:linear-gradient(160deg,rgba(186,34,241,.78),rgba(0,0,0,.42));}
-  @media (prefers-reduced-motion:reduce){.fb-chip.fb-on{animation:none;transform:translate(-50%,-50%) scale(1);}}
+  /* full-card clickable overlay; play button + shots stay above it via z-index:2 */
+  .feat-link{position:absolute;inset:0;z-index:1;}
+  .feat .play,.feat .shots{position:relative;z-index:2;}
   .play:hover{filter:brightness(1.06);} .play:hover .arw{transform:translateX(4px);}
 
   /* ---- "coming soon" tile styled as a game slot ---- */
@@ -610,10 +573,9 @@ window.GA_ID='G-L29P5MRWKE';
       <span class="note">Free · No download</span>
     </div>
     <main class="games">
-      <!-- THE PERFECT SEASON. First slot, and now has its own mini field animation
-           that mirrors the hero animation on the game's own landing page. -->
-      <article class="feat football">
+      <article class="feat football noshots">
         <span class="art"></span>
+        <a class="feat-link" href="/football/" aria-hidden="true" tabindex="-1"></a>
         <div class="feat-in">
           <div class="feat-info">
             <span class="g-head">
@@ -626,23 +588,6 @@ window.GA_ID='G-L29P5MRWKE';
             <span class="g-chips"><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" fill="#DC3C3C"/><rect x="2" y="2" width="8" height="8" fill="#f3c4c2"/><rect x="4" y="4" width="4" height="4" fill="#DC3C3C"/><rect x="5" y="5" width="2" height="2" fill="#F2C14E"/></svg>Daily Puzzle</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="3" y="4" width="6" height="1" fill="#f3c4c2"/><rect x="2" y="5" width="8" height="2" fill="#DC3C3C"/><rect x="3" y="7" width="6" height="1" fill="#f3c4c2"/><rect x="5" y="5" width="2" height="2" fill="#f4ecd9"/></svg>All-Time Rosters</span><span class="chip"><svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="7" width="3" height="4" fill="#DC3C3C"/><rect x="4" y="4" width="3" height="7" fill="#F2C14E"/><rect x="7" y="6" width="3" height="5" fill="#DC3C3C"/><rect x="4" y="2" width="3" height="1" fill="#F2C14E"/></svg>Leaderboards</span></span>
             <div class="g-foot"><a class="play" href="/football/">Play now <span class="arw">&rarr;</span></a></div>
           </div>
-          <!-- Mini hero animation: same reels + field layout as football/index.html -->
-          <a class="fb-demo" href="/football/" aria-label="Play The Perfect Season" tabindex="-1">
-            <div class="fb-reels-row">
-              <div class="fb-reel fb-reel-yr"><span id="fb-yr">—</span></div>
-              <div class="fb-reel fb-reel-tm"><span id="fb-tm">—</span></div>
-            </div>
-            <div class="fb-field" id="fb-fld">
-              <div class="fb-turf"></div>
-              <div class="fb-ez fb-ez-top"></div>
-              <div class="fb-ez fb-ez-bot"></div>
-              <div class="fb-yd" style="top:33%"></div>
-              <div class="fb-yd" style="top:53%"></div>
-              <div class="fb-yd" style="top:73%"></div>
-              <div class="fb-goal"></div>
-              <div class="fb-vig"></div>
-            </div>
-          </a>
         </div>
       </article>
 
@@ -677,6 +622,7 @@ window.GA_ID='G-L29P5MRWKE';
             </g>
           </svg>
         </span>
+        <a class="feat-link" href="/golf/" aria-hidden="true" tabindex="-1"></a>
         <div class="feat-in">
           <div class="feat-info">
             <span class="g-head">
@@ -694,6 +640,7 @@ window.GA_ID='G-L29P5MRWKE';
 
       <article class="feat soccer">
         <span class="art"></span>
+        <a class="feat-link" href="/soccer/" aria-hidden="true" tabindex="-1"></a>
         <div class="feat-in">
           <a class="shots" href="/soccer/" aria-label="Play RunThePitch">
             <span class="phone"><video class="clip" poster="/assets/screens/soccer-clip2.jpg" width="440" height="954" muted loop autoplay playsinline preload="metadata" aria-label="Building your starting XI in RunThePitch"><source src="/assets/screens/soccer-clip2.webm" type="video/webm" /><source src="/assets/screens/soccer-clip2.mp4" type="video/mp4" /></video></span>
@@ -1220,98 +1167,5 @@ window.GA_ID='G-L29P5MRWKE';
 })();
 </script>
 
-<script>
-/* Perfect Season card: mini field + reel animation that mirrors the game's own hero.
-   All data is hardcoded — no external fetch needed. Position colours match the game's
-   CSS variables (--qb red, --rb green, --wr blue, --te orange, --flex purple). */
-(function(){
-  'use strict';
-  const fld=document.getElementById('fb-fld');
-  const yrSpan=document.getElementById('fb-yr');
-  const tmSpan=document.getElementById('fb-tm');
-  if(!fld||!yrSpan||!tmSpan) return;
-  let reduced=false;
-  try{reduced=window.matchMedia('(prefers-reduced-motion:reduce)').matches;}catch(e){}
-
-  /* Six spots match HERO_SPOTS in football/index.html exactly. */
-  const SPOTS=[
-    {left:50,top:44},{left:28,top:64},{left:12,top:24},
-    {left:88,top:24},{left:68,top:24},{left:32,top:24}
-  ];
-  /* Three preset sequences — famous player seasons from the game's data pool. */
-  const SEQS=[
-    [{pos:'QB',last:'Manning',   yr:2004,team:'Indianapolis',  spot:0},
-     {pos:'WR',last:'Moss',      yr:2007,team:'New England',   spot:3},
-     {pos:'RB',last:'Henry',     yr:2019,team:'Tennessee',     spot:1}],
-    [{pos:'TE',last:'Gronkowski',yr:2011,team:'New England',   spot:4},
-     {pos:'QB',last:'Brees',     yr:2009,team:'New Orleans',   spot:0},
-     {pos:'WR',last:'Rice',      yr:1995,team:'San Francisco', spot:2}],
-    [{pos:'QB',last:'Mahomes',   yr:2018,team:'Kansas City',   spot:0},
-     {pos:'RB',last:'Tomlinson',yr:2006,team:'San Diego',     spot:1},
-     {pos:'WR',last:'Johnson',   yr:2012,team:'Detroit',       spot:3}],
-  ];
-
-  const nap=ms=>new Promise(r=>setTimeout(r,ms));
-
-  function setReel(el,text){
-    el.classList.add('fb-exit');
-    return nap(160).then(()=>{el.textContent=text;el.classList.remove('fb-exit');});
-  }
-
-  function addChip(pk){
-    const sp=SPOTS[pk.spot];
-    const c=document.createElement('div');
-    c.className='fb-chip fb-chip-'+pk.pos.toLowerCase();
-    c.style.left=sp.left+'%'; c.style.top=sp.top+'%';
-    c.innerHTML='<span class="fb-pos">'+pk.pos+'</span><span class="fb-nm">'+pk.last+'</span>';
-    fld.appendChild(c);
-    void c.offsetWidth;
-    c.classList.add('fb-on');
-  }
-
-  function clearChips(){
-    fld.querySelectorAll('.fb-chip').forEach(c=>{
-      c.classList.add('fb-clear');
-      setTimeout(()=>c.remove(),300);
-    });
-  }
-
-  let seqIdx=0, alive=false, running=false;
-
-  async function loop(){
-    if(running) return; running=true;
-    while(alive){
-      const picks=SEQS[seqIdx%SEQS.length]; seqIdx++;
-      await nap(700);
-      for(const pk of picks){
-        if(!alive) break;
-        await Promise.all([setReel(yrSpan,pk.yr),setReel(tmSpan,pk.team)]);
-        await nap(520);
-        if(!alive) break;
-        addChip(pk);
-        await nap(950);
-      }
-      if(!alive) break;
-      await nap(1600);
-      clearChips();
-      await Promise.all([setReel(yrSpan,'—'),setReel(tmSpan,'—')]);
-      await nap(400);
-    }
-    running=false;
-  }
-
-  if(reduced) return;
-
-  if('IntersectionObserver' in window){
-    const obs=new IntersectionObserver(ents=>{
-      alive=ents[0].isIntersecting;
-      if(alive&&!running) loop();
-    },{threshold:0.25});
-    obs.observe(fld);
-  } else {
-    alive=true; loop();
-  }
-})();
-</script>
 </body>
 </html>
