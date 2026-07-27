@@ -99,7 +99,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=Oswald:wght@500;600;700&family=Chivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#080b14; --panel:#131a2b; --panel-2:#1a2337;
@@ -160,21 +160,21 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
        those pixels on every run and fails if white ever stops being the better of
        the two, which is the only way this stays true through the next palette. */
 
-    /* THE TYPE
-       Anton and Archivo were the default free pairing you see everywhere, which
-       is exactly why they read as generic. Three faces now, each doing one job:
+    /* THE TYPE. Three faces, one job each.
 
-       --fd  Big Shoulders Display. Tall, narrow, athletic. Headlines, records,
-             the reels, anything that should look stencilled onto a scoreboard.
-       --fn  Oswald. Also condensed but with real numerals and a lower x-height,
-             so prices and FPPG stay legible at 11px where --fd goes muddy.
-       --fb  Chivo. A grotesque with some grit in it, for reading text.
+       --fd  Anton. The poster face: the record, the scores, the headings, the buttons,
+             the reels. Heavy and square, which is the weight NFL print design actually
+             uses and the one the old condensed face could not reach. It ships a single
+             weight, so nothing in here asks it for a bolder one.
+       --fn  Archivo. Small caps and figures: labels, records, tags, prices. Real
+             numerals and a lower x-height, so 11px stays legible where --fd goes muddy.
+       --fb  Inter. Running text.
 
        Fallbacks stay in every stack so a blocked font request degrades instead
        of reflowing into something unrecognizable. */
-    --fd:'Big Shoulders Display','Anton',Impact,'Haettenschweiler',sans-serif;
-    --fn:'Oswald','Anton',Impact,sans-serif;
-    --fb:'Chivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --fd:'Anton',Impact,'Haettenschweiler',sans-serif;
+    --fn:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --fb:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   /* KEYBOARD FOCUS.
@@ -220,15 +220,11 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     font-size:11px;color:var(--dim-2)}
   button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
 
-  /* BUTTONS ARE SET IN OSWALD, not the display face.
-     They were --fd, Big Shoulders Display, with no font-weight, which falls to 600, the
-     lightest weight the page loads. Rendered side by side at the real size against 800, 900
-     and Oswald at 600 and 700, the shipped button was plainly the thinnest of the five: a
-     tall narrow display face at its lightest weight, doing the job of UI text.
-
-     Oswald 700 is heavier and a touch wider while staying condensed, and it is the face the
-     type notes already reserve for exactly this, small text that has to hold up. Size drops
-     from 19 to 17 because Oswald has the taller x-height of the two. */
+  /* BUTTONS ARE SET IN --fn, NOT THE DISPLAY FACE.
+     They used to be the display face at its lightest weight, doing the job of UI text, and
+     rendered side by side against the alternatives it was plainly the thinnest of the set.
+     Archivo 700 holds up at button size and has the taller x-height, which is why the size
+     is 17 rather than the 19 the display face wanted. */
   .btn{display:block;width:100%;padding:16px 18px;border-radius:12px;background:var(--grad-red);
     color:#fff;font-family:var(--fn);font-size:17px;font-weight:700;text-transform:uppercase;
     letter-spacing:.045em;text-align:center;box-shadow:var(--shadow);position:relative;overflow:hidden;
@@ -302,7 +298,10 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .brand i{color:var(--red);font-style:normal}
   /* The site link. Same pill it always was, so nothing about the header's shape changes. */
-  .pill.site{text-decoration:none;flex:0 0 auto}
+  /* Shrinkable, not fixed. The note below says the pill should give way before the
+     account button leaves the screen; at flex:0 0 auto it never did, and a wider display
+     face pushed the avatar 4px past the right edge at 320. */
+  .pill.site{text-decoration:none;flex:0 1 auto}
   .pill.site i{color:var(--red);font-style:normal}
   .pill.site:hover{border-color:var(--line);color:var(--fg)}
   .pill.site:focus-visible{outline:2px solid var(--wr);outline-offset:3px}
@@ -321,7 +320,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      button, the way in to signing in and to your name on the board. The circle stays
      34 so the header does not grow; the button around it is 44 and the extra 5px on
      each side is transparent padding. Measured by audit.mjs at all four viewports. */
-  .avatar{flex:0 0 44px;width:44px;height:44px;border-radius:50%;padding:0;
+  .avatar{flex:0 0 44px;width:44px;height:44px;border-radius:50%;padding:0;margin-right:-5px;
     background:none;border:none;display:grid;place-items:center;position:relative}
   .avatar:before{content:'';position:absolute;width:34px;height:34px;border-radius:50%;
     background:var(--panel);border:1px solid var(--line-2)}
@@ -1505,11 +1504,14 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   /* THE SECOND HEADLINE. The record answers "how did the season go"; the team overall
      answers "how good was the roster", and it is the number the leaderboard sorts on.
      Two cells, big type, so they read as a pair with the record and not as a stat strip. */
-  .ovr{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:15px}
+  /* minmax(0,1fr), not 1fr: a 1fr track's minimum is its content, so on a 320px screen
+     the two labels widened the grid past the viewport and the whole page scrolled sideways. */
+  .ovr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;margin-top:15px}
   .ovr>div{min-width:0;padding:10px 8px 11px;border-radius:12px;text-align:center;
     background:rgba(255,255,255,.05);border:1px solid var(--line-2)}
-  .ovr .k{font-family:var(--fn);font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;
-    color:var(--dim-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ovr .k{font-family:var(--fn);font-size:clamp(7.5px,2.2vw,8.5px);letter-spacing:.08em;
+    text-transform:uppercase;color:var(--dim-2);white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis}
   .ovr .v{font-family:var(--fd);font-size:33px;line-height:.92;margin-top:4px}
   .ovr .t{height:5px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;
     margin-top:9px}
@@ -1532,8 +1534,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .splits div:nth-child(n+4){border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
   .splits b{display:block;font-family:var(--fd);font-size:18px;line-height:1;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .splits span{display:block;font-family:var(--fn);font-size:8.5px;letter-spacing:.08em;
-    text-transform:uppercase;color:var(--dim-2);margin-top:4px;
+  .splits span{display:block;font-family:var(--fn);font-size:clamp(7.5px,2.1vw,8.5px);
+    letter-spacing:.05em;text-transform:uppercase;color:var(--dim-2);margin-top:4px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
   /* season stats */
@@ -3551,7 +3553,7 @@ function paintOver(){
     '<div class="t"><i style="width:'+pctFill+'%;background:'+color+'"></i></div></div>';
   $('o-ovr').innerHTML=
     bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
-    bigcell('Of the best possible',share===null?'--':share+'%',
+    bigcell('Best possible',share===null?'--':share+'%',
       share===null?0:Math.max(2,share),share===null?'#94a3b8':sband);
 
   /* A 15-5 line only makes sense once you can see it was 13-4 and then 2-1. The
@@ -3750,7 +3752,7 @@ function shareLines(){
 const CARD={
   W:1080, H:1350, PAD:76,
   TITLE:92, TAG:132,          // what the game is, for whoever has not played it
-  /* The record is 250px, and Big Shoulders has a cap height near 0.73 of that, so
+  /* The record is 250px and the display face has a cap height near 0.73 of that, so
      its glyphs reach 182px above their own baseline. At 320 that put them straight
      through the tagline at 132. Everything below moved down with it. */
   REC:350, VERDICT:412,       // the record, and how the season ended
@@ -3781,9 +3783,9 @@ function drawShareCard(){
   // The club's secondary as a keel line along the very bottom.
   x.fillStyle=tc.secondary; x.fillRect(0,CARD.H-CARD.KEEL,CARD.W,CARD.KEEL);
 
-  const D=(w,sz)=>{ x.font=w+' '+sz+"px 'Big Shoulders Display','Anton',Impact,sans-serif"; };
-  const N=(w,sz)=>{ x.font=w+' '+sz+"px 'Oswald','Anton',sans-serif"; };
-  const B=(w,sz)=>{ x.font=w+' '+sz+"px 'Chivo',system-ui,sans-serif"; };
+  const D=(w,sz)=>{ x.font=w+' '+sz+"px 'Anton',Impact,sans-serif"; };
+  const N=(w,sz)=>{ x.font=w+' '+sz+"px 'Archivo',system-ui,sans-serif"; };
+  const B=(w,sz)=>{ x.font=w+' '+sz+"px 'Inter',system-ui,sans-serif"; };
   const centered=(t,y)=>x.fillText(t,mid-x.measureText(t).width/2,y);
 
   // Header, plus one line telling a stranger what they are looking at.
