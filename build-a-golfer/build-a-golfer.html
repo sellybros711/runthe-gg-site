@@ -354,6 +354,14 @@ window.GA_ID='G-L29P5MRWKE';
   /* CS483m: violet share button - distinct from the scorecard's green(birdie)/amber(bogey)/red score colors */
   .btn.violet{background:linear-gradient(180deg,#a78bfa,#7048d6); color:#f4eeff; box-shadow:0 8px 20px -8px rgba(90,55,175,.72), inset 0 1px 0 rgba(255,255,255,.3)}
   .btn.violet:active{transform:translateY(2px)}
+  /* featured button (a neat/new feature we want to stand out) + a "NEW" corner sticker */
+  .btn.feat{position:relative; animation:featPulse 2.4s ease-in-out infinite}
+  @keyframes featPulse{0%,100%{box-shadow:0 8px 20px -8px rgba(90,55,175,.72), 0 0 0 1px rgba(167,139,250,.45), inset 0 1px 0 rgba(255,255,255,.3)}
+    50%{box-shadow:0 12px 30px -6px rgba(125,85,235,.95), 0 0 22px -4px rgba(150,110,250,.6), 0 0 0 1px rgba(190,165,255,.7), inset 0 1px 0 rgba(255,255,255,.34)}}
+  @media(prefers-reduced-motion:reduce){.btn.feat{animation:none}}
+  .newsticker{position:absolute; top:-8px; right:-7px; background:linear-gradient(180deg,#ffe071,#eba61f); color:#2a1e04;
+    font-family:var(--body); font-weight:900; font-size:10px; line-height:1; letter-spacing:.06em; padding:4px 7px; border-radius:8px;
+    transform:rotate(9deg); box-shadow:0 3px 8px -2px rgba(0,0,0,.55); border:1.5px solid rgba(255,255,255,.55); z-index:3}
   .btn.ghost{background:transparent; color:var(--oncard); border:1px solid var(--line); font-size:18px}
   /* paired risk/reward choices read as ONE decision: same neutral style, "or" between them */
   .btn.choice{background:rgba(244,227,201,.10); color:var(--oncard); border:1.5px solid rgba(244,227,201,.5)}
@@ -21403,15 +21411,27 @@ function scrDailyResult(){
   // Uses the just-played round's holes (S.dailyHoles carries the shot data); disabled with a hint if none.
   const reelHoles=(S.dailyHoles&&S.dailyHoles.length)?S.dailyHoles:((shareR&&shareR.holes)||[]);
   const reelN=hvReelHoles(reelHoles).length;
-  const hi=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0"${reelN?'':' disabled'}>✨ Share Highlights<span class="sub">${reelN?`A GIF reel of your ${reelN} birdie${reelN>1?'s':''}-or-better`:'No birdies to reel this round'}</span></button>`);
-  if(reelN) hi.onclick=()=>shareHighlights(r.course, reelHoles);
-  add(hi);
-  if(cr) add(cr);
+  // FEATURED: Share Highlights is a neat new feature, so it stands out (violet + glow + a NEW sticker)
+  // instead of blending into the plain ghost buttons. Only featured when there's actually a reel to share.
+  if(reelN){
+    const hi=$(`<button class="btn violet feat" style="max-width:520px;margin:16px auto 4px">✨ Share Highlights<span class="sub">A GIF reel of your ${reelN} birdie${reelN>1?'s':''}-or-better</span><span class="newsticker">NEW</span></button>`);
+    hi.onclick=()=>shareHighlights(r.course, reelHoles); add(hi);
+  } else {
+    add($(`<button class="btn ghost" style="max-width:520px;margin:16px auto 0;opacity:.5" disabled>✨ Share Highlights<span class="sub">No birdies to reel this round</span></button>`));
+  }
   // CS483L: Legend Tokens section removed from the result page (owner) - it already lives on the daily
   // preview + the header Legend-token pill routes there, so it's not duplicated here.
-  const pass=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">🎫 Course Passport<span class="sub">Your best grade &amp; score at all ${DAILY_KEYS.length} courses</span></button>`);
-  pass.onclick=()=>{S.overlay='passport';render();}; add(pass);
-  const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Return to home</button>`); home.onclick=()=>{S._claimDaily=null;S._dailyClaimFlow=false;S.dailyClaimMsg=null;S.screen='title';S.daily=false;render();}; add(home);
+  // Secondary "explore" — Course Records + Passport, compact and side by side (less prominent than the featured share).
+  const pass=$(`<button class="btn ghost" style="flex:1;margin:0;font-size:15px">🎫 Passport</button>`); pass.onclick=()=>{S.overlay='passport';render();};
+  if(cr){
+    const recs=$(`<button class="btn ghost" style="flex:1;margin:0;font-size:15px">🏆 Records</button>`); recs.onclick=()=>{S.overlay='courserecords';render();};
+    const srow=$(`<div style="display:flex;gap:10px;max-width:520px;margin:12px auto 0"></div>`);
+    srow.appendChild(recs); srow.appendChild(pass); add(srow);
+  } else {
+    pass.setAttribute('style','max-width:520px;margin:12px auto 0;font-size:15px'); add(pass);
+  }
+  // Exit — the most de-emphasized action (small, muted).
+  const home=$(`<button class="btn ghost" style="max-width:300px;margin:12px auto 0;opacity:.6;font-size:14px;padding:11px">Return to home</button>`); home.onclick=()=>{S._claimDaily=null;S._dailyClaimFlow=false;S.dailyClaimMsg=null;S.screen='title';S.daily=false;render();}; add(home);
   add($(`<p class="small muted center" style="margin-top:12px">${practice?'Practice mode · unlimited rounds, nothing is recorded · ':(left>0?`${left} attempt${left>1?'s':''} left today · `:'')}A new course drops at midnight ET${practice?'':' · streak '+streakDisplay()+' 🔥'}</p>`));
 }
 // #5 Course Passport: your best round + best grade at every Daily course, a solo collection to complete
