@@ -13739,6 +13739,18 @@ allows Google Fonts, or self-host Anton.*
   --check` clean. Deployed to /golf. (The separate pack-reveal wheel cards use their own `.pcard` CSS at a
   different site - untouched.)
 
+- **RUN THE GAMES — rebranded to the real RunThe.GG RGB identity + real logo asset (deployed to /golf).** Owner
+  shared the homepage branding: dark navy ground, retro pixel type, bright GREEN hero, cyan-BLUE + coral-RED
+  pixel accents (the RGB mark). My first pass used gold — wrong. Resampled the exact palette from the repo brand
+  assets (green `#80ff76`, blue `#5bcfe8`, red `#f7534d`, navy `#081c3c`→`#070f21`) and recolored every Run The
+  Games item: brand `color`→green; **aura**→green glow; **ball skin**→cyan-blue; **nameplate**→navy gradient +
+  green text + blue border; **card background** ("Run The Games Arena")→navy sky + green fairway + red/green/blue
+  pixel-speck accents (echoing the logo). Also wired the REAL logo: `brandLogoSVG('Run The Games')` now returns
+  the actual `/assets/runthegames-icon_192.png` "R GAMES" mark instead of a generated badge (the sprite-worn
+  vector badge follows the green brand color). `/assets/*` resolves at the domain root on the /golf deploy.
+  Verified in Playwright (screenshotted the logo + a card wearing the kit — cohesive navy/green/RGB); sweep +
+  e2e clean, 0 errors.
+
 - **RUN THE GAMES — the house brand: signable sponsor + branded store items (deployed to /golf).** Owner
   wanted "Run The Games" as a fictional in-game brand that can sponsor your golfer AND has branded store items.
   It slots into the EXISTING systems (no new mechanics):

@@ -5873,7 +5873,7 @@ const PXFX=[
   {id:'heatwave', name:'Heatwave',     hist:'Summer scorcher',          price:18000, col:'#ff6a3a', tracer:{g:'rgba(255,106,58,.55)',  c:'#ffd8c0'}},
   {id:'ecto',     name:'Ecto Aura',    hist:'Something spooky follows', price:18000, col:'#7dff5a', tracer:{g:'rgba(125,255,90,.55)',  c:'#e8ffd8'}},
   {id:'stadium',  name:'Stadium Lights',hist:'Big-game glow',           price:18000, col:'#e8f2ff', tracer:{g:'rgba(232,242,255,.55)', c:'#ffffff'}},
-  {id:'rungames', name:'Run The Games Aura',hist:'The house glow — green and gold', price:30000, col:'#35d67e', tracer:{g:'rgba(241,208,74,.55)', c:'#fff2b0'}} ];
+  {id:'rungames', name:'Run The Games Aura',hist:'The house glow, in signature green', price:30000, col:'#80ff76', tracer:{g:'rgba(128,255,118,.55)', c:'#e6ffe0'}} ];
 const PXFX_BY={}; PXFX.forEach(function(f){ PXFX_BY[f.id]=f; });
 function fxOf(look){ var id=(look&&look.fx)||'none'; return (id&&id!=='none'&&PXFX_BY[id])?PXFX_BY[id]:null; }
 function pxFxClass(look){ var f=fxOf(look); return f?(' fx-'+f.id):''; }
@@ -5918,7 +5918,7 @@ const PXBALL=[
   {id:'ghost',    name:'Ghost Ball',    hist:'Now you see it...',        price:13000, col:'#eef2f6', tracer:{g:'rgba(238,242,246,.45)', c:'#ffffff'}},
   {id:'snowball', name:'Snowball',      hist:'Packed fresh every tee',   price:12000, col:'#eaf6ff', tracer:{g:'rgba(234,246,255,.5)', c:'#ffffff'}},
   {id:'pigskin',  name:'Pigskin',       hist:'Built for the big game',   price:16000, col:'#7a4a22', tracer:{g:'rgba(122,74,34,.5)',  c:'#d8b48a'}},
-  {id:'rungames', name:'Run The Games Ball',hist:'Green and gold, straight down the middle', price:20000, col:'#2fbf6f', tracer:{g:'rgba(241,208,74,.5)', c:'#fff2b0'}} ];
+  {id:'rungames', name:'Run The Games Ball',hist:'House colors, straight down the middle', price:20000, col:'#5bcfe8', tracer:{g:'rgba(91,207,232,.55)', c:'#e0f7ff'}} ];
 const PXBALL_BY={}; PXBALL.forEach(function(o){ PXBALL_BY[o.id]=o; });
 function ballOf(look){ var id=(look&&look.ball)||'none'; return (id&&id!=='none'&&PXBALL_BY[id])?PXBALL_BY[id]:null; }
 /* ==== PLAYER CARDS (owner): a collectible flip card of your golfer. Customize the NAMEPLATE + CARD
@@ -5941,7 +5941,7 @@ const PLATE_STYLE={
   slam:        {c1:'#2a230b',c2:'#141003',tx:'#F1D04A',bd:'#F1D04A',laurel:1},
   no1:         {c1:'#12233f',c2:'#0a1526',tx:'#dbe6f5',bd:'#9fb9dd'},
   tourcup:     {c1:'#0a3a35',c2:'#06211e',tx:'#7df0e2',bd:'#16b5a6'},
-  rungames:    {c1:'#11432f',c2:'#06210f',tx:'#F1D04A',bd:'#cda24a'},
+  rungames:    {c1:'#0d2b4a',c2:'#070f21',tx:'#80ff76',bd:'#5bcfe8'},
   sunsplash:   {c1:'#ff9d3a',c2:'#e2554e',tx:'#2a1204',bd:'#ffd9a0'},
 };
 function plateCss(id){ const p=PLATE_STYLE[id]||PLATE_STYLE.classic; return 'background:linear-gradient(180deg,'+p.c1+','+p.c2+');border:1px solid '+p.bd+';color:'+p.tx; }
@@ -5992,7 +5992,7 @@ const CARDBG_ART={
  endlesssummer:{sky:['#5a2a6e','#e05a6e','#ff9d3a'], sun:{x:.5,y:.46,r:9,c:'#ffd98c'}, sea:{h:.18,c1:'#ff9d6a',c2:'#8a3a7e'}, band:'palms', bandC:'#241430', ground:['#e8c890','#c2985e'], noflag:1},
  mythicvault: {sky:['#12071f','#4a1270','#c060ff'], sun:{x:.5,y:.38,r:9,c:'#e9c8ff'}, band2:'peaks', band2C:'#241040', band2C2:'#8a3ad0', band:'pines', bandC:'#160a24', ground:['#3a1a5e','#1e0e34'], accents:{c:['#c060ff','#e9c8ff','#8a3ad0'],n:22}, goldflag:1, stripes:1},
  goat:        {sky:['#28483c','#7aa86a','#f1d04a'], sun:{x:.74,y:.36,r:6,c:'#ffe9a0'}, band:'trees', bandC:'#14300f', ground:['#4a7a2a','#2c5518'], stripes:1, goats:1, goldflag:1},
- rungames:    {sky:['#06120b','#0e3a24','#F1D04A'], sun:{x:.5,y:.30,r:7,c:'#ffe9a0'}, band:'trees', bandC:'#08200f', ground:['#1f7a45','#0e3f24'], stripes:1, goldflag:1},
+ rungames:    {sky:['#070f21','#0d2b4a','#3a6ea5'], band:'trees', bandC:'#06170e', ground:['#2a9a3f','#0e3a1f'], stripes:1, accents:{c:['#f7534d','#80ff76','#5bcfe8'],n:18}},
 };
 const _cardBgCv={}, _cardBgURL={};
 function pxCardBgCanvas(id){
@@ -13561,7 +13561,7 @@ const BRANDS=[
   // THE HOUSE BRAND — Run The Games, the game's own label. An Icon-tier flagship deal: it only comes calling
   // once you're a legend, and signing it means you've reached the very top. Signing unlocks the Run The Games
   // nameplate + card background (see CARD_EARN / rtgSigned). All brands here are fictional.
-  {name:'Run The Games', tier:5, cat:'gaming', color:'#F1D04A', tag:'Play them all.', trait:'marketing', house:true}
+  {name:'Run The Games', tier:5, cat:'gaming', color:'#80ff76', tag:'Play them all.', trait:'marketing', house:true}
 ];
 const BRAND_BY_NAME={}; BRANDS.forEach(b=>BRAND_BY_NAME[b.name]=b);
 function brandInfo(name){ return BRAND_BY_NAME[name]||{name:name||'Sponsor', tier:0, cat:'apparel', color:'#5fd0e0', tag:'', trait:'steady'}; }
@@ -13606,7 +13606,10 @@ function _logoShapeSVG(sh){
   }
 }
 // SVG logo mark (for all UI: slot cards, offers, live/report cards, badges)
-function brandLogoSVG(name, sz){ sz=sz||34; const b=brandInfo(name), sp=logoSpecOf(name);
+function brandLogoSVG(name, sz){ sz=sz||34;
+  // The house brand uses its REAL logo asset (the RunThe.GG "R GAMES" mark) instead of a generated badge.
+  if(name==='Run The Games') return `<span class="brandlogo" style="width:${sz}px;height:${sz}px;flex:0 0 auto;display:inline-flex;border-radius:22%;overflow:hidden;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))"><img src="/assets/runthegames-icon_192.png" alt="Run The Games" style="width:100%;height:100%;object-fit:cover"></span>`;
+  const b=brandInfo(name), sp=logoSpecOf(name);
   const fg=_logoContrast(b.color), sh=_logoShapeSVG(sp.sh), dark=_logoShade(b.color,-0.32);
   const id='lg'+(dHash(name)%99999);
   let accent='';
