@@ -5594,7 +5594,7 @@ function statSheetHTML(sk, real, opts){
 // (the derived balance was far too generous - a long-time account could buy everything at once - and the
 // boosts were too strong). Flip this true only once the economy is redesigned (likely server-authoritative).
 // While false: no shop entry points render, the overlay is unreachable, and equipped gear gives ZERO boost.
-const SHOP_ENABLED=true;   // CS186: re-enabled with a rebalanced economy (0-coin reset + higher prices + smaller boosts)
+const SHOP_ENABLED=false;   // CS186: re-enabled with a rebalanced economy (0-coin reset + higher prices + smaller boosts)
 const COIN_START=300;                       // welcome coins (baked into the reset baseline, so post-reset everyone starts at 0)
 const COIN_RATE=0.1;                         // Economy re-anchor: coins are a heavy grind ($1.99 ≈ one full 30-year career's total earnings ≈ ~2 base packs)
 const COIN_EPOCH=2;                          // bump to re-baseline every account's spendable coins to 0 at the new rate (owned gear/cosmetics are PRESERVED across the bump)
@@ -21689,7 +21689,7 @@ function shopTileClick(b){
 // Legend gear). Dupes refund a little (owner Q1). Pool includes boost gear + bag tier-1 (Q2).
 // Earned-only, client-side v1 (Q4). NOTHING is live until PACKS_ENABLED is flipped; window._PACKSTEST
 // is a test-only override for the reveal QA (never affects prices).
-const PACKS_ENABLED=true;                    // LIVE (owner: finish + launch). Enabling this also flips priceHike() to PACK_HIKE.
+const PACKS_ENABLED=false;                    // LIVE (owner: finish + launch). Enabling this also flips priceHike() to PACK_HIKE.
 const PACK_HIKE=2;                           // direct-buy prices x2 the day packs launch (owner: softer than x5)
 const PACK_PRICE=12000;                      // coins per pack (owner: cheaper than 20k, undercuts most direct buys post-hike)
 const PACK_BUNDLE_N=5;                        // bundle: 5 packs...
@@ -21736,7 +21736,7 @@ const PACK_TYPES={
 // package id + coins MUST match supabase/functions/_shared/packages.ts (the SERVER is authoritative on
 // coins delivered — a tampered client can't change what it receives). First purchase gets +100% coins,
 // applied SERVER-SIDE in the webhook. Set BUCKETS_ENABLED=false to instantly pull the store offline.
-const BUCKETS_ENABLED=true;
+const BUCKETS_ENABLED=false;
 const BUCKETS=[
   {id:'warmup',       name:'Driving Range', usd:1.99,  coins:15000,  col:'#3fbf7a'},
   {id:'clubhouse',    name:'Clubhouse',     usd:4.99,  coins:45000,  col:'#5bcfe8', bonus:20},
