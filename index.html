@@ -1167,5 +1167,15 @@ window.GA_ID='G-L29P5MRWKE';
 })();
 </script>
 
+<script>
+// Track which game card a user clicks on the home page.
+document.querySelectorAll('.feat-link').forEach(function(a){
+  a.addEventListener('click',function(){
+    var game=(a.getAttribute('href')||'').replace(/\//g,'')||'unknown';
+    if(typeof gtag==='function') gtag('event','game_card_clicked',{game:game});
+  });
+});
+</script>
+
 </body>
 </html>

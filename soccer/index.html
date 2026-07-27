@@ -3193,6 +3193,7 @@ window.GA_ID='G-L29P5MRWKE';
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
 </script>
+<script>function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(e){}}</script>
 </head>
 <body>
 <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle light / dark mode" title="Light / dark mode">
@@ -5188,6 +5189,7 @@ async function doCountryRespin(){
 function resolveSpin(country, year){
   pendingCountry=country; pendingYear=year;
   gs = G.confirmSpin(gs, country, year);
+  ga('spin_completed',{nation:country,year:year,round:(gs&&gs.picks?gs.picks.length:0)+1,is_daily:!!(gs&&gs.daily),draft_type:draftType,game_mode:gameMode});
   // brief beat so the landed result registers, then glide into the roster
   setTimeout(goToSelect, 650);
 }
@@ -5922,9 +5924,11 @@ function closeSheet(){$('sheet-bg').classList.remove('show');selectedPlayer=null
 
 function assign(player, slot){
   gs = G.selectPlayer(gs, player.player_id, slot);
+  ga('player_drafted',{player_name:player.name,position:player.position,overall:player.wc_overall,slot:slot,round:gs&&gs.picks?gs.picks.length:0,draft_type:draftType,game_mode:gameMode,is_daily:!!(gs&&gs.daily)});
   closeSheet();
   if(gs.phase==='COMPLETE'){
     applyLeadershipBonus();   // bake the official (base × multiplier) overall into gs.result
+    ga('draft_complete',{team_overall:gs.result&&gs.result.teamOverall,draft_type:draftType,game_mode:gameMode,is_daily:!!(gs&&gs.daily),player_count:gs.picks?gs.picks.length:0});
     // back to the pitch: fill the final slot (and slide FLEX into formation),
     // then run the flip reveal before handing off to the scorecard screen.
     showScreen('home');
@@ -7945,6 +7949,7 @@ function startDailyChallenge(){
   // Full draft, no respins (the sequence is fixed for fairness).
   gs = G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS, respins:{ full:0 } });
   gs.daily = true; gs.dailyTheme = theme.id; gs.dailyThemeName = theme.name;
+  ga('daily_started',{theme_id:theme.id,theme_name:theme.name,date:DAILY.date});
   goToHome();
 }
 
@@ -8005,6 +8010,7 @@ async function fillDailyRankBadge(overall, progress){
   const lb={ rank, total, streak:(authProfile&&authProfile.current_streak)||0,
              signedIn:isSignedIn(), already:(isSignedIn()&&recorded===null) };
   gs.result._lb=lb; gs.result._lbId=recorded;
+  ga('daily_completed',{overall:overall,progress:progress,rank:rank,total:total,streak:lb.streak,is_daily:true,is_signed_in:isSignedIn()});
   renderDailyRankLine(el, lb);
   if(isSignedIn()) afterGameAchievementCheck();   // alert on any newly-earned badge
   if(rank && rank<=3){ try{ launchConfetti(); }catch(e){} }
@@ -8269,6 +8275,8 @@ function goToResults(){
   const ROUND_PROGRESS={'Group Stage':0,'Round of 32':1,'Round of 16':2,'Quarter-final':3,'Semi-final':4,'Final':5};
   const progress = champ ? 6 : (sim ? (ROUND_PROGRESS[sim.furthestRound] ?? 0) : 0);
   const roundName = sim ? (ROUND_DISPLAY[sim.furthestRound]||sim.furthestRound) : oc.label;
+  ga('result_viewed',{furthest_round:roundName,progress:progress,champion:champ,team_overall:gs&&gs.result&&gs.result.teamOverall,draft_type:draftType,game_mode:gameMode,is_daily:!!(gs&&gs.daily)});
+  if(champ) ga('world_cup_won',{team_overall:gs&&gs.result&&gs.result.teamOverall,draft_type:draftType,game_mode:gameMode,is_daily:!!(gs&&gs.daily)});
 
   // The mode badge now lives in the recap card's top-right corner (buildSummaryCard).
   // Rank line (leaderboard count) sits directly under the black box; it is filled in
@@ -9167,6 +9175,7 @@ const SHARE_TARGETS = [
   {key:'telegram', label:'Telegram', color:'#229ED9', build:(m,l)=>`https://t.me/share/url?url=${encodeURIComponent(l)}&text=${encodeURIComponent(m)}`},
 ];
 async function openSharePopup(){
+  ga('share_opened',{champion:!!(simResult&&!simResult.eliminated&&simResult.furthestRound==='Final'),is_daily:!!(gs&&gs.daily),draft_type:draftType,game_mode:gameMode});
   const bg=$('share-bg'); if(!bg) return;
   // generated preview image (async; hidden until ready)
   const img=$('share-preview'); if(img){ img.style.display='none';
@@ -9224,6 +9233,7 @@ function goToDraftSetup(){
   $('seg-mode').dataset.active  = gameMode;
   renderSetupInfo();
   showScreen('setup');
+  ga('game_setup_opened',{draft_type:draftType,game_mode:gameMode});
 }
 // kept under the old name so existing callers (btn-start, fx-solo) still work
 function goToDraftTypeSelect(){ goToDraftSetup(); }
@@ -13616,6 +13626,7 @@ async function h2hPlayAndShow(m, st, iAmGuest, oppSquadOverride, opts){
 
 function h2hShowResult(mForMe, oppName, mySquad, oppSquad){
   const won = mForMe.winner==='user';
+  ga('h2h_result',{won:won,my_goals:mForMe.userGoals,opp_goals:mForMe.opponentGoals,penalties:!!mForMe.penalties,draft_type:draftType,game_mode:gameMode});
   $('h2h-result-title').textContent = won ? 'VICTORY! 🔥' : 'DEFEAT';
   $('h2h-result-score').innerHTML = `<span class="${won?'ok':'no'}">${mForMe.userGoals} - ${mForMe.opponentGoals}</span>`;
   $('h2h-result-note').textContent = won

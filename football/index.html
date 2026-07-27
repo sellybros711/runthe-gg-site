@@ -90,6 +90,16 @@ window.dataLayer=window.dataLayer||[];
 window.gtag=window.gtag||function(){dataLayer.push(arguments);};
 gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});
 </script>
+<!-- GA4 — same property as the rest of runthe.gg. Consent defaults above gate it. -->
+<script>
+window.GA_ID='G-L29P5MRWKE';
+(function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
+  window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments);};
+  gtag('js',new Date());gtag('config',id);
+  var s=document.createElement('script');s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+  document.head.appendChild(s);})();
+</script>
 <!-- Google AdSense, same publisher as the rest of the site. Units are manual and sit near the
      foot of the body; Auto Ads stays off in the dashboard, which is what keeps an ad from being
      injected into the middle of a game screen. -->
@@ -2475,6 +2485,7 @@ const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS
   needsAccountsMigration:false,
 };
 const $=(id)=>document.getElementById(id);
+function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(e){}}
 
 /* ---------- THE SCROLL HINT ON TAB ROWS ----------
    A row that scrolls sideways with a hidden scrollbar looks like a row that has been
@@ -2801,7 +2812,7 @@ async function boot(){
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     $('h-field').innerHTML=fieldMarkings();
-    authBoot(); watchTabs(); show('s-intro');
+    authBoot(); watchTabs(); show('s-intro'); ga('game_loaded');
   }catch(e){
     $('s-load').innerHTML='<div class="load"><h3 class="display">Could not load the data</h3>'+
       '<p class="dim" style="font-size:13px">'+esc(e.message)+'</p></div>';
@@ -3134,7 +3145,7 @@ function newRun(opts){
 
    The club-colour wash went with it: it keyed off the favourite team, so with no favourite
    team there is nothing for it to be a wash OF. */
-function beginDraft(opts){ newRun(opts); show('s-draft'); nextSpin(); }
+function beginDraft(opts){ newRun(opts); ga('game_started',{mode:opts&&opts.daily?'daily':'free',date:(opts&&opts.daily)||null}); show('s-draft'); nextSpin(); }
 $('b-start').onclick=()=>{ beginDraft({}); };
 /* THE DAILY EXPLAINS ITSELF BEFORE IT STARTS.
    It used to begin immediately and put the one rule that makes it a competition into a toast,
@@ -3339,7 +3350,7 @@ function nextSpin(){
   $('opts').innerHTML=''; $('tabs').innerHTML=''; $('d-respin').innerHTML='';
   activeTab=null;
   const draw=R.spin(run,DATA);
-  spinBoth(draw,()=>paintOpts(draw));
+  spinBoth(draw,()=>{ga('spin_completed',{spin_n:(run.roster||[]).length+1,year:draw.season,team:draw.teamName,franchise:draw.franchise,mode:run.daily?'daily':'free'});paintOpts(draw);});
 }
 
 let activeTab=null;
@@ -3529,6 +3540,7 @@ function paintRespins(){
   el.querySelectorAll('button.respin').forEach(b=>{
     b.onclick=()=>{
       $('opts').innerHTML='';$('tabs').innerHTML='';el.innerHTML='';
+      ga('respin_used',{kind:b.dataset.kind,respins_used:(run.respinsUsed||0)+1,mode:run.daily?'daily':'free'});
       const d=R.respin(run,DATA,b.dataset.kind);
       paintTop();spinBoth(d,()=>paintOpts(d));
     };
@@ -3545,7 +3557,11 @@ $('opts').addEventListener('click',e=>{
   const b=e.target.closest('.tile'); if(!b||b.classList.contains('off'))return;
   const p=BYKEY.get(b.dataset.k);
   try{R.sign(run,p);}catch(err){toast(err.message);return;}
-  if(run.phase===R.PHASES.SEASON)paintSquad(); else nextSpin();
+  ga('player_signed',{spin_n:(run.roster||[]).length,position:p&&p.position,name:p&&p.last,season:p&&p.season,franchise:p&&p.franchise,price_musd:p&&p.price_musd,mode:run.daily?'daily':'free'});
+  if(run.phase===R.PHASES.SEASON){
+    ga('roster_complete',{total_spend:Math.round((run.roster.reduce((t,x)=>t+(x.price_musd||0),0)+E.respinFees(run.respinsUsed))*10)/10,respins_used:run.respinsUsed,mode:run.daily?'daily':'free'});
+    paintSquad();
+  }else nextSpin();
 });
 
 /* ---------- squad ---------- */
@@ -3734,6 +3750,7 @@ function paintNext(live){
   }
 }
 function startSeason(){
+  ga('season_started',{mode:run&&run.daily?'daily':'free'});
   paintNext(); paintUpcomingBug(); paintCalendar();
   $('v-you').textContent='0'; $('v-them').textContent='0';
   $('v-byou').classList.add('lead'); $('v-bthem').classList.add('lead');
@@ -3809,8 +3826,10 @@ function fastForward(){
 $('b-sim').onclick=()=>fastForward();
 function after(){
   clearTimeout(simTimer); clearTimeout(poTimer); cancelAnimationFrame(poRaf);
-  if(run.phase===R.PHASES.SEEDING)paintSeed();
-  else if(run.phase===R.PHASES.OVER)paintOver();
+  if(run.phase===R.PHASES.SEEDING){
+    ga('playoffs_reached',{seed:run.playoffSeed&&run.playoffSeed.seed,bye:run.playoffSeed&&!!run.playoffSeed.bye,record:run.playoffSeed&&run.playoffSeed.regularRecord,mode:run.daily?'daily':'free'});
+    paintSeed();
+  }else if(run.phase===R.PHASES.OVER)paintOver();
 }
 
 /* ---------- seeding ---------- */
@@ -4055,6 +4074,7 @@ function paintOver(){
     $('o-title').textContent='Missed the playoffs';
     $('o-sub').textContent='It takes '+E.CONSTANTS.PLAYOFF_WINS+' wins to get in.';
   }
+  ga('run_complete',{outcome:o.perfect?'perfect':o.titleWon?'champion':o.eliminatedIn?'eliminated':'missed_playoffs',record:o.record,mode:run&&run.daily?'daily':'free'});
 
   /* THE SECOND HEADLINE AND THE STRIP UNDER IT.
      Both are worked out before anything is painted, because the "of the best possible"
@@ -4428,6 +4448,7 @@ function roundRect(x,l,t,w,h,r){
 const canvasBlob=(c)=>new Promise((res)=>c.toBlob(res,'image/png'));
 
 $('b-share').onclick=async()=>{
+  ga('result_shared',{outcome:run&&run.outcome&&(run.outcome.perfect?'perfect':run.outcome.titleWon?'champion':run.outcome.eliminatedIn?'eliminated':'missed_playoffs'),mode:run&&run.daily?'daily':'free'});
   const {head,text}=shareLines();
   let file=null;
   try{
