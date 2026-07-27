@@ -589,7 +589,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      actually arranged and not how a list is. Only on a board pointed high to low:
      on a reversed one the top three are the three worst runs and a podium would be
      celebrating them. */
-  .podium{display:none;margin:13px 0 16px}
+  .podium{display:none;margin:11px 0 16px}
   .podium.on{display:block}
   /* The three steps, then ONE base under all of them. Each step used to carry its own
      little stub of a floor, which read as three boxes that had been cut off rather
@@ -681,7 +681,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .lbempty{margin:11px 0 0;padding:16px 12px;border-radius:12px;text-align:center;
     font-size:13px;color:var(--dim-2);background:rgba(255,255,255,.025);
     border:1px dashed var(--line-2)}
-  .lbcount{margin:9px 0 0;font-family:var(--fn);font-size:11.5px;letter-spacing:.06em;
+  .lbcount{margin:11px 0 0;font-family:var(--fn);font-size:11.5px;letter-spacing:.06em;
     text-transform:uppercase;color:var(--dim-2)}
   .lbcount b{font-size:14px;color:var(--ink)}
 
@@ -1920,12 +1920,18 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <span id="lb-dir-label">High to low</span>
       </button>
     </div>
-    <div class="podium" id="lb-podium"></div>
+    <!-- The count LABELS the board, so it goes above it. Under the podium it read as a
+         footnote to the top three rather than as the size of the field they lead, and it
+         sat between the podium and the list it belongs to. -->
     <p class="lbcount" id="lb-count"></p>
-    <p class="dim" id="lb-blurb" style="font-size:11.5px;margin:7px 0 0"></p>
+    <div class="podium" id="lb-podium"></div>
     <div class="lb" id="lb-rows"></div>
     <p class="notlive" id="lb-note" style="display:none"></p>
     <button class="btn ghost sm" id="b-lb-more" style="margin-top:10px">Show more</button>
+    <!-- Which runs this board counts and when it resets: fine print, so it goes at the
+         foot. It used to sit between the podium and the rows, interrupting the one place
+         on this screen where the reading order matters. -->
+    <p class="dim" id="lb-blurb" style="font-size:11.5px;margin:14px 0 0"></p>
     <div class="hrow" style="margin-top:10px">
       <button class="btn ghost sm" id="b-board-back">Back</button>
       <button class="btn ghost sm" id="b-diag">Check the connection</button></div>
@@ -5077,9 +5083,11 @@ async function loadBoard(){
    Hidden when the board is reversed, because the first three rows of a low-to-high
    board are the three worst runs in the window and putting them on a podium would be
    congratulating them. Hidden below three rows too: a podium with one step is a box. */
+/* Returns whether it actually drew, because the list below has to know how many runs
+   have already been shown above it. */
 function paintPodium(rows){
   const el=$('lb-podium');
-  if(lbDir!=='desc'||rows.length<3){ el.className='podium'; el.innerHTML=''; return; }
+  if(lbDir!=='desc'||rows.length<3){ el.className='podium'; el.innerHTML=''; return false; }
   const order=[1,0,2];                    // second, first, third: an actual podium
   el.className='podium on';
   el.innerHTML='<div class="podrow">'+order.map((i)=>{
@@ -5096,6 +5104,7 @@ function paintPodium(rows){
       '<span class="pr">'+esc(fig)+'</span>'+
       '<span class="ps">'+esc(sub)+'</span></div>';
   }).join('')+'</div><div class="podbase"></div>';
+  return true;
 }
 
 function paintBoard(){
@@ -5111,9 +5120,17 @@ function paintBoard(){
     $('b-lb-more').style.display='none';
     return;
   }
-  paintPodium(rows);
-  $('lb-rows').innerHTML=rows.slice(0,lbShown).map(boardRow).join('')+minePinned(rows);
-  $('b-lb-more').style.display=lbShown>=rows.length?'none':'block';
+  /* THE LIST STARTS WHERE THE PODIUM STOPPED.
+     It started at one, so first, second and third appeared twice on the same screen:
+     once on the podium and again as the first three rows under it. The podium only draws
+     on a descending board with at least three runs, so the offset is whether it actually
+     drew rather than a hardcoded three, and the true index still goes to boardRow so the
+     rank on a row and the row a tap opens are both still right. */
+  const above=paintPodium(rows)?3:0;
+  const shown=Math.min(rows.length,above+lbShown);
+  $('lb-rows').innerHTML=rows.slice(above,shown)
+    .map((r,j)=>boardRow(r,above+j)).join('')+minePinned(rows,shown);
+  $('b-lb-more').style.display=shown>=rows.length?'none':'block';
 }
 
 /* Tap a row for the lineup behind it. Delegated, so it keeps working through every
@@ -5300,7 +5317,9 @@ function rosterLine(picks){
 /* Your own row, pinned under the list. At any real number of players you are not
    inside the top page, and a board that only ever shows strangers is a board
    nobody checks twice. */
-function minePinned(rows){
+/* `shown` is how many of the top runs are already on screen, podium included, so your
+   own row is not pinned under a list it is already in. */
+function minePinned(rows,shown){
   if(!run||!run.outcome||!myRanks) return '';
   /* The pinned row's number is your RECORD rank, which is the only rank the game
      computes. Showing it beside a rating board, or beside a reversed one, would be
@@ -5311,7 +5330,7 @@ function minePinned(rows){
   if(lbIsDaily()!==!!run.daily) return '';
   const w=myRanks[lbIsDaily()?'day':lbWin];
   if(!w) return '';
-  if(rows.slice(0,lbShown).some(r=>submitted&&r.id===submitted)) return '';
+  if(rows.slice(0,shown).some(r=>submitted&&r.id===submitted)) return '';
   const o=run.outcome;
   const p=runPayload();
   /* Your own row shows the same quantity the board is sorted by, so the column
