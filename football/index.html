@@ -652,7 +652,8 @@
      absolutely-positioned yard lines, hash marks, end zones and player chips escaped their
      box and painted across the entire page behind the content. */
   .field{position:relative;width:100%;aspect-ratio:1/0.52;border-radius:14px;overflow:hidden;
-    background:var(--grad-field);border:1px solid var(--line)}
+    background:radial-gradient(125% 85% at 50% -12%,#16283f 0%,#0a1220 58%,#070c16 100%);
+    border:1px solid var(--line)}
   /* The results page is long, so its copy of the field is a little flatter. */
   .field.short{aspect-ratio:1/0.46}
   /* THE CLUB WASH IS GONE, along with the favourite team it tinted the field with. It
@@ -670,34 +671,30 @@
      which is what actually sits on a field, rather than full-height coloured verticals.
      Held under 20% throughout, because the chips and their names sit on top of this and
      legibility beats decoration. Re-measured by v40 after the change. */
-  .field .lines{position:absolute;inset:0;
-    background:
-      /* the 50 */
-      linear-gradient(90deg,transparent calc(50% - 1px),rgba(255,255,255,.26) calc(50% - 1px) calc(50% + 1px),transparent calc(50% + 1px)),
-      /* every ten yards */
-      repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),rgba(255,255,255,.155) calc(10% - 1px) calc(10% + 1px),transparent calc(10% + 1px)),
-      /* every five */
-      repeating-linear-gradient(90deg,transparent 0 5%,rgba(255,255,255,.075) 5% calc(5% + 1px))}
-  /* Hash marks: two inboard rows of short dashes, one at each of the field's hash
-     positions, which is the marking that says football rather than graph paper. */
-  .field .hash{position:absolute;left:0;right:0;top:31%;height:38%;
-    background:
-      repeating-linear-gradient(90deg,transparent 0 2.4%,rgba(255,255,255,.20) 2.4% calc(2.4% + 2px)),
-      repeating-linear-gradient(90deg,transparent 0 2.4%,rgba(255,255,255,.20) 2.4% calc(2.4% + 2px));
-    background-size:100% 7px,100% 7px;
-    background-position:0 0,0 100%;
-    background-repeat:no-repeat,no-repeat}
-  /* THE END ZONES. These were declared twice: once with the club's colors and again
-     twenty lines later with a hardcoded blue and red. The second pair won, so the end
-     zones never carried a club at all. One declaration now, with the club as a var and
-     the old blue and red as its fallback for the landing screen, which has no club. */
-  /* Screened at a third, not at full strength. The club colors are solid hexes with no
-     alpha of their own, so screening them straight put a band of pure crimson across the
-     top of the field and pure gold across the bottom: the club repainted the game instead
-     of tinting it, and the formation chips had to fight it. */
-  .field .ez{position:absolute;left:0;right:0;height:9%;mix-blend-mode:screen;opacity:.34}
-  .field .ez.t{top:0;background:linear-gradient(180deg,var(--tc1,rgba(59,130,246,.55)),transparent)}
-  .field .ez.b{bottom:0;background:linear-gradient(0deg,var(--tc2,rgba(239,68,68,.5)),transparent)}
+  /* THE MARKINGS: a real field's furniture, lit from above.
+     The lines run across, five yards apart, with every tenth heavier and numbered at both
+     sidelines; the one-yard ticks sit in the two inbound columns at 29.6% and 70.4%, which is
+     where a real field puts them. Everything fades toward the sidelines the way a lit pitch
+     falls off, rather than running edge to edge at one flat opacity. */
+  .field .turf{position:absolute;inset:0;background:repeating-linear-gradient(180deg,
+    rgba(255,255,255,.020) 0 25%,transparent 25% 50%)}
+  .field .lit{position:absolute;inset:0;
+    background:radial-gradient(58% 44% at 50% 30%,rgba(190,220,255,.11),transparent 72%)}
+  .field .yd{position:absolute;left:0;right:0;height:1.5px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.30) 9%,
+      rgba(255,255,255,.30) 91%,transparent)}
+  .field .yd.ten{height:2px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.46) 7%,
+      rgba(255,255,255,.46) 93%,transparent)}
+  .field .tick{position:absolute;width:10px;height:2px;background:rgba(255,255,255,.24)}
+  .field .tick.edge{width:16px;background:rgba(255,255,255,.16)}
+  /* Ground, not figure. A player's name has to win over these every time, so they are set
+     large the way a real field's numbers are and then taken almost all the way down. */
+  .field .fnum{position:absolute;font-family:var(--fd);font-size:34px;font-weight:900;
+    line-height:1;color:rgba(255,255,255,.10);letter-spacing:.02em}
+  .field .fnum.l{left:2.5%} .field .fnum.r{right:2.5%}
+  .field .vig{position:absolute;inset:0;pointer-events:none;
+    box-shadow:inset 0 0 66px 20px rgba(3,6,12,.8)}
   /* A count of connections on the chip itself, in the strongest one's color. */
   .chip .pip{position:absolute;top:-3px;right:-3px;width:15px;height:15px;border-radius:50%;
     display:none;place-items:center;font-family:var(--fn);font-size:9px;font-weight:600;
@@ -757,15 +754,26 @@
      its own height instead, so the label lands above the disc and the disc stays on its spot. */
   .chip.above{flex-direction:column-reverse;
     transform:translate(-50%,calc(-100% + var(--discr)))}
+  /* THE RING IS OPAQUE, and that is the fix for the disc looking cut off at the top.
+     It was rgba(255,255,255,.22), a translucent white, so whatever sat behind it read straight
+     through: a chip parked on the bright halfway line showed that line as a notch across the
+     circle. A dark ring with a faint light halo outside it gives the same lift and cannot be
+     bled through. */
   .chip .disc{width:34px;height:34px;margin:0 auto;border-radius:50%;display:grid;place-items:center;
-    font-family:var(--fn);font-size:11px;color:#fff;border:2px solid rgba(255,255,255,.22);
-    box-shadow:0 5px 12px -4px rgba(0,0,0,.8)}
+    font-family:var(--fn);font-size:11px;color:#fff;border:2px solid #0a1019;
+    box-shadow:0 7px 16px -6px rgba(0,0,0,.95)}
+  .chip.filled .disc:after{content:'';position:absolute;inset:-5px;border-radius:50%;
+    border:1px solid rgba(255,255,255,.17);pointer-events:none}
   .chip.sel .disc{border-color:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.18),0 5px 12px -4px #000}
   /* An empty slot gets its own dark ground rather than sitting on whatever the club wash
      is doing underneath. Measured on the new field, the placeholder label ran 3.16:1 over
      Miami's cyan end zone; against this it is 6.5:1 on every club, and the chip reads more
      clearly as a slot waiting to be filled. */
-  .chip.empty .disc{background:rgba(9,13,24,.72);border-style:dashed;color:#a8b6c9}
+  /* No drop shadow on an empty spot. The filled disc's shadow is what lifts a signed player
+     off the pitch; on a placeholder it just paints a dark blob under a dashed ring, which over
+     the lit middle of the field read as a smudge rather than as an empty slot. */
+  .chip.empty .disc{background:rgba(9,13,24,.72);border:1.5px dashed rgba(255,255,255,.30);
+    color:#a8b6c9;box-shadow:none}
   .chip.now .disc{border-color:#fff;animation:pulse 1.6s ease-in-out infinite}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(255,255,255,.14),0 6px 16px -4px #000}
     50%{box-shadow:0 0 0 10px rgba(255,255,255,.04),0 6px 16px -4px #000}}
@@ -1371,10 +1379,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
           <div class="reelbox team waiting" id="h-box-t"><div class="strip" id="h-reel-t"></div>
             <span class="band"></span><span class="wash"></span></div></div>
       </div>
-      <div class="field hero-field" id="h-field">
-        <div class="lines"></div><div class="hash"></div>
-        <div class="ez t"></div><div class="ez b"></div>
-      </div>
+      <!-- Markings are written in by fieldMarkings() at boot, the same call the draft field
+           uses, so the two fields can never drift apart. -->
+      <div class="field hero-field" id="h-field"></div>
       <p class="hnote" id="h-note">Six spins, six spots, one shot at all of them.</p>
     </div>
 
@@ -1919,6 +1926,7 @@ async function boot(){
     DATA=R.indexData(pl,tm); CTX={battery:bat,coaches:co,curated:cu};
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
+    $('h-field').innerHTML=fieldMarkings();
     authBoot(); watchTabs(); show('s-intro');
   }catch(e){
     $('s-load').innerHTML='<div class="load"><h3 class="display">Could not load the data</h3>'+
@@ -1952,9 +1960,49 @@ async function boot(){
 const MOVE_MS=520;
 const easeOut=(t)=>1-Math.pow(1-t,3);
 
+/* HOW MUCH FIELD IS ON SCREEN.
+   A formation occupies about fifteen yards, so drawing a hundred of them into a 200px box
+   turns every marking into noise: that is what the old repeating-gradient field was, a full
+   pitch compressed until the yard lines were texture. Twenty yards is the window, which puts
+   two numbered lines in view and leaves the one-yard ticks far enough apart to read as ticks.
+
+   The top edge starts on a round number so the markings land where they would in life. */
+const FIELD_YARDS=20, FIELD_TOP_YARD=42;
+
+/* The lines run ACROSS, because the offence moves up the screen: the receivers are at 26% of
+   the height, the quarterback at 58% and the back at 84%. Yard lines are perpendicular to the
+   direction of play, and the old field had them parallel to it, which is the pitch turned 90
+   degrees from the formation standing on it. */
+function fieldMarkings(){
+  const out=['<div class="turf"></div><div class="lit"></div>'];
+  for(let y=0;y<=FIELD_YARDS;y++){
+    const top=100*y/FIELD_YARDS;
+    const line=FIELD_TOP_YARD+y;
+    const mark=line<=50?line:100-line;         // counts up to midfield and back down
+    if(line%5===0){
+      out.push('<div class="yd'+(line%10===0?' ten':'')+'" style="top:'+top+'%"></div>');
+      if(line%10===0&&top>8&&top<92){
+        /* Numbers sit hard against the sidelines and are deliberately faint. They are ground,
+           not figure: a player's name has to win over them every time. */
+        out.push('<div class="fnum l" style="top:calc('+top+'% - 17px)">'+mark+'</div>',
+                 '<div class="fnum r" style="top:calc('+top+'% - 17px)">'+mark+'</div>');
+      }
+    }else{
+      /* The two inbound hash columns, at the real 29.6% and 70.4% of a field's width, plus a
+         tick on each sideline. */
+      out.push('<div class="tick" style="top:'+top+'%;left:29.6%"></div>',
+               '<div class="tick" style="top:'+top+'%;left:70.4%"></div>',
+               '<div class="tick edge" style="top:'+top+'%;left:0"></div>',
+               '<div class="tick edge" style="top:'+top+'%;right:0"></div>');
+    }
+  }
+  out.push('<div class="vig"></div>');
+  return out.join('');
+}
+
 function fieldState(el){
   if(el._ps) return el._ps;
-  el.innerHTML='<div class="lines"></div><div class="hash"></div><div class="ez t"></div><div class="ez b"></div>'+
+  el.innerHTML=fieldMarkings()+
     E.SLOTS.map((slot,i)=>'<div class="chip empty" data-i="'+i+'">'+
       '<div class="disc"><span class="dl">'+slot+'</span><i class="pip"></i></div>'+
       '<div class="lab"><div class="who"></div><div class="yr"></div></div></div>').join('');
