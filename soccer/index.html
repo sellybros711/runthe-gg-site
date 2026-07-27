@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
 <script>
-  // Theme (light/dark), apply BEFORE any CSS/paint to avoid a flash. Light is
-  // the default; we only add the class when the user has chosen dark.
+  // Theme (light/dark), apply BEFORE any CSS/paint to avoid a flash. Dark is the
+  // default; we stay in dark unless the user has explicitly chosen light.
   (function(){
-    try{ if(localStorage.getItem('rtp-theme')==='dark'){ document.documentElement.classList.add('dark'); } }catch(e){}
+    var t=null;
+    try{ t=localStorage.getItem('rtp-theme'); }catch(e){}
+    if(t!=='light') document.documentElement.classList.add('dark');
   })();
 </script>
 <script>
