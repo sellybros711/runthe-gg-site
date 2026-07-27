@@ -1885,6 +1885,51 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   @keyframes up{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
   .kv{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px}
   .hr{height:1px;background:var(--line);margin:14px 0}
+
+  /* ---------- THE CAREER PANEL, in the profile sheet ----------
+     Six numbers and your five best drafts. Three columns rather than the two .rdstat
+     uses, because six tiles in two columns is three rows deep and pushes the best-drafts
+     list off a phone screen entirely. */
+  .career{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:11px}
+  .career div{min-width:0;padding:8px 8px 7px;border-radius:10px;text-align:center;
+    background:rgba(255,255,255,.035);border:1px solid var(--line)}
+  .career b{display:block;font-family:var(--fn);font-size:16px;font-weight:600;line-height:1.1;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .career span{display:block;margin-top:3px;font-size:9px;letter-spacing:.07em;
+    text-transform:uppercase;color:var(--dim-2);line-height:1.25}
+  .career .gold b{color:#fcd34d}
+  /* Two columns on the smallest phones. At 320 a third of the sheet is 66px of usable
+     width and "Best rating" needs 69px, so those two tiles wrapped to a second line and
+     stood 11px taller than the other four. Three rows of two gives every label room for
+     one line and keeps all six the same height; the sheet already scrolls. */
+  @media (max-width:359px){ .career{grid-template-columns:repeat(2,minmax(0,1fr))} }
+
+  /* A section label inside the sheet. */
+  .shsec{margin:15px 0 0;font-family:var(--fn);font-size:10.5px;font-weight:600;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2)}
+
+  /* Your best drafts. Same row shape as the leaderboard, so a run reads the same wherever
+     it appears, with the place on the left replaced by a medal position in your own list. */
+  .bestlist{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:7px}
+  .bestrow{display:flex;align-items:center;gap:10px;min-width:0;padding:8px 10px;
+    border-radius:10px;cursor:pointer;text-align:left;width:100%;
+    background:rgba(255,255,255,.03);border:1px solid var(--line)}
+  .bestrow .n{flex:0 0 18px;font-family:var(--fn);font-size:13px;font-weight:600;
+    color:var(--dim-2);text-align:right}
+  .bestrow .who{flex:1;min-width:0}
+  .bestrow .who b{display:block;font-family:var(--fn);font-size:14px;font-weight:600;
+    line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bestrow .who span{display:block;font-size:10.5px;color:var(--dim-2);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .bestrow .rt{flex:0 0 auto;text-align:right}
+  .bestrow .rt b{display:block;font-family:var(--fn);font-size:15px;font-weight:600;
+    line-height:1.15}
+  .bestrow .rt span{display:block;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--dim-2)}
+  .bestrow .go{flex:0 0 auto;color:var(--dim-2);font-size:17px;line-height:1}
+  .bestrow.top1{border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.07)}
+  .bestrow.top1 .n,.bestrow.top1 .rt b{color:#fcd34d}
+  .bestrow:hover{border-color:var(--line-2)}
 </style>
 </head>
 <body>
@@ -2353,7 +2398,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=4"></script>
+<script src="board.js?v=5"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
@@ -2370,12 +2415,12 @@ const E=window.PS_ENGINE, R=window.PS_RUN;
    cached board.js older than this page, and they only catch it while they agree: a page
    that says 1 against a module that says 2 rejects a module that is newer than itself
    and quietly runs the stub, which is a dead leaderboard with no error anywhere. */
-const BOARD_VERSION=2;
+const BOARD_VERSION=3;
 const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
   API_VERSION:BOARD_VERSION, offline:true,
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
   rankIn:async()=>null, placeIn:async()=>null, total:async()=>null, top:async()=>null,
-  byId:async()=>null,
+  mine:async()=>null, byId:async()=>null,
   scoreOf:(w,d)=>w*10000+Math.min(9999,Math.max(0,
     Math.round((Math.round(d*10)/10+40)*100))),
   cutoffISO:()=>null, todayUTC:()=>new Date().toISOString().slice(0,10),
@@ -4653,6 +4698,11 @@ function authBoot(){
   const a=A(); if(!a) return;
   a.onChange((st)=>{
     const was=authState.signedIn;
+    /* A different account, or none, means the cached run history belongs to somebody else.
+       careerLoad keys its cache by user id as well, so this is a belt to that brace: it
+       stops a stale panel being painted for the fraction of a second before the new
+       request lands. */
+    if(!st.signedIn||st.userId!==authState.userId) careerClear();
     authState=st;
     paintAvatar();
     /* Just signed in with a finished guest run on screen: take it over. The board
@@ -4675,6 +4725,8 @@ async function claimThisRun(){
   const a=A(); if(!a||!submitted) return;
   const ok=await a.claim(submitted);
   if(!ok) return;
+  /* It is one of your runs now, so the cached career panel is a run short. */
+  careerClear();
   toast('That run is on your account now');
   if($('s-board').classList.contains('on')) loadBoard();
   if($('s-over').classList.contains('on')&&myRanks) paintRanks();
@@ -4691,6 +4743,143 @@ function paintAvatar(){
 }
 
 const authMsg=(m,ok)=>'<p class="autherr'+(ok?' authok':'')+'">'+esc(m)+'</p>';
+
+/* ---------------- YOUR CAREER, in the profile sheet ----------------
+   Six numbers and your five best drafts, worked out here from your own runs rather than
+   asked of the database as an aggregate. That is a deliberate trade: PostgREST does not
+   expose aggregate functions unless a project turns them on, and an RPC would be another
+   file to run by hand before the panel worked at all. One ordinary select of your own rows
+   needs nothing installed that the leaderboard does not already need.
+
+   CACHED, because profileSheet() is called again on every auth change, after every name
+   change and after every failed form submit, and refetching your whole history each time
+   would put a network round trip behind a button press that has nothing to do with it. The
+   cache is keyed by user id so signing into a different account cannot show the last
+   account's runs, and cleared whenever a run is recorded so the panel is never one run
+   stale. */
+let career=null;            // {userId, rows, total, capped} once loaded
+let careerBusy=false;
+
+function careerClear(){ career=null; }
+
+async function careerLoad(userId){
+  if(!userId) return null;
+  if(career&&career.userId===userId) return career;
+  if(careerBusy) return null;
+  careerBusy=true;
+  const r=await B.mine(userId,500);
+  careerBusy=false;
+  if(!r) return null;
+  career={userId,rows:r.rows,total:r.total,capped:r.capped};
+  return career;
+}
+
+/* THE NUMBERS. Deliberately six, and deliberately these six: what you have played, the
+   two bests worth bragging about, and the three outcomes the game is actually about.
+   Nothing derived from a single run, because that is what the results page is for. */
+function careerStats(rows,total){
+  const rated=rows.filter(r=>r.team_rating!==null&&r.team_rating!==undefined);
+  const bestRating=rated.length?Math.max(...rated.map(r=>Number(r.team_rating))):null;
+  /* Best RECORD, by the same score the board ranks on, so "best" here and "first" there
+     mean the same thing: wins first, then the points differential inside a tie. */
+  let bestRec=null,bestScore=-1;
+  rows.forEach(r=>{ const s=B.scoreOf(r.wins,Number(r.point_diff));
+    if(s>bestScore){ bestScore=s; bestRec=r; } });
+  const n=(f)=>rows.filter(f).length;
+  return {
+    runs:total,
+    bestRating,
+    bestRec:bestRec?bestRec.wins+'-'+bestRec.losses:null,
+    perfect:n(r=>r.perfect),
+    titles:n(r=>r.title_won),
+    playoffs:n(r=>r.made_playoffs),
+  };
+}
+
+function careerTiles(s,shownOf){
+  const cell=(v,k,gold)=>'<div'+(gold&&v!=='0'&&v!=='--'?' class="gold"':'')+'><b>'+v+
+    '</b><span>'+k+'</span></div>';
+  /* The playoff figure is a rate rather than a count, because 9 playoff seasons means
+     nothing without knowing whether that was out of 10 runs or out of 90. */
+  const rate=shownOf?Math.round(s.playoffs/shownOf*100)+'%':'--';
+  return '<div class="career">'+
+    cell(s.runs.toLocaleString(),'Runs')+
+    cell(s.bestRating===null?'--':s.bestRating.toFixed(1),'Best rating')+
+    cell(s.bestRec||'--','Best record')+
+    /* One word each, because "Perfect seasons" wrapped to two lines and made the whole
+       bottom row of tiles taller than the top one. */
+    cell(String(s.perfect),'Perfect',true)+
+    cell(String(s.titles),'Titles',true)+
+    cell(rate,'Playoffs')+
+  '</div>';
+}
+
+/* THE BEST FIVE, by team rating, which is the axis that measures the draft rather than
+   the season the draft happened to produce. Runs recorded before the game stored a rating
+   have none, so they cannot be ranked on it and are left out of this list rather than
+   sorted to one end of it. */
+function careerBest(rows,n){
+  return rows.filter(r=>r.team_rating!==null&&r.team_rating!==undefined)
+    .slice().sort((a,b)=>Number(b.team_rating)-Number(a.team_rating)
+      ||new Date(a.created_at)-new Date(b.created_at))
+    .slice(0,n||5);
+}
+
+function careerBlock(c){
+  if(!c) return '';
+  const rows=c.rows;
+  if(!rows.length){
+    return '<p class="shsec">Your career</p>'+
+      '<p class="dim" style="font-size:12.5px;margin:7px 0 0">No runs recorded yet. '+
+      'Finish a season and it lands here.</p>';
+  }
+  const s=careerStats(rows,c.total);
+  const best=careerBest(rows,5);
+  const day=(iso)=>{ const d=new Date(iso);
+    return isNaN(d)?'':d.toLocaleDateString(undefined,{month:'short',day:'numeric'}); };
+  return '<p class="shsec">Your career</p>'+
+    careerTiles(s,rows.length)+
+    (c.capped?'<p class="caveat" style="margin:7px 0 0">Runs is your true total. The rest '+
+      'is from your most recent '+rows.length.toLocaleString()+'.</p>':'')+
+    (best.length?'<p class="shsec">Your best drafts</p><div class="bestlist">'+
+      best.map((r,i)=>'<button class="bestrow'+(i===0?' top1':'')+'" data-best="'+i+'">'+
+        '<span class="n">'+(i+1)+'</span>'+
+        '<span class="who"><b>'+esc(r.wins+'-'+r.losses+
+          (r.perfect?' perfect season':' '+r.seed_label.toLowerCase()))+'</b>'+
+          '<span>'+esc((rosterLine(r.picks)||(r.daily?'daily puzzle':'free run'))+
+            (day(r.created_at)?' · '+day(r.created_at):''))+'</span></span>'+
+        '<span class="rt"><b>'+Number(r.team_rating).toFixed(1)+'</b><span>rating</span></span>'+
+        '<span class="go">›</span></button>').join('')+'</div>'
+      :'')+
+    '<div class="hr" style="margin:15px 0 0"></div>';
+}
+
+/* Filled in after the sheet is already on screen, because reading your history is a
+   network call and the profile must open at once. The placeholder is replaced in place, so
+   nothing else in the sheet repaints and the name field keeps whatever you had typed. */
+async function careerPaint(userId){
+  const slot=$('sh-career'); if(!slot) return;
+  const c=await careerLoad(userId);
+  /* The sheet may have been closed, reopened as something else, or repainted while that
+     was in flight. Re-read the slot rather than trusting the one captured above. */
+  const now=$('sh-career');
+  if(!now||$('sheet-in').dataset.kind!=='profile') return;
+  if(!c){
+    now.innerHTML='<p class="shsec">Your career</p>'+
+      '<p class="dim" style="font-size:12.5px;margin:7px 0 0">Your run history could not '+
+      'be read just now. Nothing has been lost.</p>';
+    return;
+  }
+  now.innerHTML=careerBlock(c);
+  /* Delegated on the list rather than bound per row, and the row index is looked up in the
+     same sorted list the markup came from, so the run a tap opens is the run it shows. */
+  const list=now.querySelector('.bestlist');
+  if(list) list.onclick=(e)=>{
+    const b=e.target.closest('.bestrow'); if(!b) return;
+    const row=careerBest(c.rows,5)[+b.dataset.best];
+    if(row) runDetail(row,()=>profileSheet());
+  };
+}
 
 function profileSheet(msg,ok){
   const box=$('sheet-in');
@@ -4719,6 +4908,16 @@ function profileSheet(msg,ok){
           '<p class="dim" style="font-size:13.5px;margin:0">This is what the leaderboard '+
           'will call you. Three to twenty letters, numbers or underscores.</p>')+
       (msg?authMsg(msg,ok):'')+
+      /* THE CAREER PANEL GOES ABOVE THE SETTINGS, and only once there is a name.
+         What you came to the profile to look at is your record; the name field and the
+         sign-out button are housekeeping, and putting housekeeping first made this sheet
+         read as a settings page with your history hidden under it. Nobody without a name
+         has anything to show yet, and for them picking one IS the whole job of this
+         screen, so the panel stays out of the way until there is one.
+         An empty div, filled by careerPaint once the request lands. */
+      (nm?'<div id="sh-career"><p class="shsec">Your career</p>'+
+        '<div class="rload" style="margin-top:8px"><i></i><i></i><i></i>'+
+        '<span>Reading your runs</span></div></div>':'')+
       '<input class="fld" id="a-name" placeholder="'+(nm?esc(nm):'yourname')+
         '" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="20">'+
       '<div style="margin-top:9px"><button class="btn" id="a-setname">'+
@@ -4728,6 +4927,7 @@ function profileSheet(msg,ok){
       '<div style="margin-top:12px"><button class="btn ghost sm" id="a-signout">Sign out</button></div>'+
       close;
     openSheet();
+    if(nm) careerPaint(st.userId);
     $('a-setname').onclick=async()=>{
       const v=($('a-name').value||'').trim();
       if(!v){ profileSheet('Type a name first.'); return; }
@@ -4895,6 +5095,10 @@ async function recordRun(){
   const pay=runPayload();
   const id=await B.submit(pay);
   submitted=id===null?false:id;
+  /* The career panel is cached, so a run that has just landed has to invalidate it or the
+     profile shows a history one run out of date immediately after the run people most want
+     to see in it. */
+  if(submitted&&submitted!=='guest') careerClear();
   return submitted;
 }
 
@@ -5421,7 +5625,10 @@ $('lb-rows').addEventListener('click',(e)=>{
    Built from the row's own picks and slots, resolved against this browser's copy
    of the player data. Passing null shows your own run, which is the same view of
    the same thing and needs no round trip. */
-function runDetail(row){
+/* `back`, when given, is what the sheet's own button should do instead of closing: the
+   career panel opens run details from inside the profile sheet, and closing outright there
+   would throw away the screen you were reading and make the list a one-way trip. */
+function runDetail(row,back){
   const mine=!row;
   const picks=mine?runPayload().picks:(row.picks||[]);
   const slots=mine?runPayload().slots:(row.slots||[]);
@@ -5486,11 +5693,17 @@ function runDetail(row){
         'stored a team rating.</p>')+
     (perf!==null?'<p class="caveat" style="margin:6px 0 0">The perfect figure is this roster '+
       'against the strongest one those same six draws allowed under the same cap.</p>':'')+
-    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">'+
+      (back?'Back':'Close')+'</button></div>';
   if(cols) $('sheet-in').style.borderTop='3px solid '+cols.primary;
   else $('sheet-in').style.borderTop='';
   $('sheet').classList.add('on');
-  $('sh-x').onclick=()=>{$('sheet').classList.remove('on');$('sheet-in').style.borderTop='';};
+  /* The coloured top edge is this sheet's, so it has to go whichever way we leave, or the
+     profile behind it inherits a club stripe it has nothing to do with. */
+  $('sh-x').onclick=()=>{
+    $('sheet-in').style.borderTop='';
+    if(back) back(); else $('sheet').classList.remove('on');
+  };
 }
 
 /* A row is rendered entirely from numbers and from player ids resolved against
