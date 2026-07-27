@@ -179,9 +179,10 @@
 
   /* Top header bar: menu · RunThe.GG hub · theme + profile. Full-width strip that
      holds the (re-parented) menu/theme toggles, so all top controls live in one bar. */
-  .topbar{display:flex;align-items:center;gap:8px;margin:-8px -16px 14px;padding:8px 12px;
-    background:linear-gradient(180deg,rgba(244,180,19,.12),rgba(244,180,19,0));
-    border-bottom:1px solid var(--border-soft);}
+  .topbar{position:sticky;top:0;z-index:30;
+    display:flex;align-items:center;gap:8px;margin:-8px -16px 14px;padding:10px 12px;
+    background:linear-gradient(180deg,rgba(244,180,19,.14),rgba(244,180,19,.02)),var(--paper);
+    border-bottom:1px solid var(--border-soft);box-shadow:0 4px 14px rgba(var(--shadow-rgb),.18);}
   .topbar .tb-left{flex:1 1 0;display:flex;justify-content:flex-start;}
   .topbar .tb-hub{flex:0 0 auto;text-decoration:none;}
   .topbar .tb-right{flex:1 1 0;display:flex;justify-content:flex-end;align-items:center;gap:8px;}
@@ -14889,8 +14890,24 @@ boot().then(async ()=>{
     font-size:14px;color:#8aa0b6}
   .rt-seo .rt-links a{color:#cfe0f0}
   .rt-seo .rt-links .sep{margin:0 8px;color:#3c4c60}
+  /* collapse the long-form copy into a dropdown so the page isn't enormous;
+     it stays in the DOM (crawlable), just hidden until opened */
+  .rt-seo details{border:1px solid rgba(255,255,255,.1);border-radius:12px;
+    background:rgba(255,255,255,.02);padding:0 16px;}
+  .rt-seo summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:12px;
+    font-family:'Anton',Impact,'Arial Narrow',sans-serif;font-weight:400;text-transform:uppercase;
+    letter-spacing:.02em;color:#3ce8b8;font-size:19px;padding:15px 0;-webkit-tap-highlight-color:transparent;}
+  .rt-seo summary::-webkit-details-marker{display:none;}
+  .rt-seo summary .sm-chev{margin-left:auto;width:9px;height:9px;flex:0 0 auto;
+    border-right:2px solid #8aa0b6;border-bottom:2px solid #8aa0b6;transform:rotate(45deg);
+    transition:transform .2s ease;margin-right:3px;}
+  .rt-seo details[open] summary .sm-chev{transform:rotate(-135deg);}
+  .rt-seo .rt-seo-body{padding-bottom:10px;}
   </style>
 
+  <details class="rt-seo-details">
+    <summary>About RunThePitch &amp; FAQ<span class="sm-chev" aria-hidden="true"></span></summary>
+    <div class="rt-seo-body">
   <h2>About RunThePitch</h2>
   <p><b>RunThePitch</b> is a free, browser-based World Cup squad-building game. You spin for a nation and a
      year, draft a legendary player each round, assemble your dream squad and formation, then simulate your run
@@ -14928,6 +14945,8 @@ boot().then(async ()=>{
   <p><b>Is this an official World Cup or FIFA game?</b> No. RunThePitch is an independent, unofficial, fan-made
      game and is not affiliated with, endorsed by, or sponsored by FIFA or any football organization, team, or
      player. Player names are used to build a fictional squad-drafting game for entertainment only.</p>
+    </div>
+  </details>
 
   <div class="rt-links">
     <a href="/">RunThe.GG home</a><span class="sep">·</span>
