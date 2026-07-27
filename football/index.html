@@ -722,6 +722,20 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      a 10 the 1 sits one side of the yard line and the 0 the other. The gap element is the
      space the line shows through, and it is why the digits are separate spans rather than one
      string. Hard against the sidelines at 10%. */
+  /* EVERY DIGIT GETS THE SAME BOX, which is what makes the pairs space evenly.
+     A 1 has a narrower advance than a 0 or a 2, and the digits are rotated, so that advance
+     becomes their height on screen: centring the pair then put the yard line anywhere from 0
+     to 9px into the gap depending on which numerals were in it. Measured, a 10 sat 2 above and
+     7 below on one side and 9 above and 0 below on the other, while a 20 sat 5 and 4. A real
+     field's numerals are block figures of uniform width, so a fixed box is also the truer
+     shape. */
+  .field .fnum .d{flex:0 0 auto;width:.62em;text-align:center;font-variant-numeric:tabular-nums}
+  /* One pixel up. With uniform digit boxes the pair still measured 5.5px above the line and
+     3.5 below, the same on all four numbers, which is a constant offset in the glyph box
+     rather than anything to do with the layout. POSITIVE, not negative: the shift happens
+     before the rotation, so a negative margin moves the pair up the screen and made the gap
+     above the line bigger, not smaller. */
+  .field .fnum{margin-top:1px}
   .field .fnum .gap{width:9px;flex:0 0 auto}
   .field .fnum.l{left:10%;transform:translate(-50%,-50%) rotate(-90deg)}
   .field .fnum.r{right:10%;transform:translate(50%,-50%) rotate(90deg)}
