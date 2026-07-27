@@ -4294,14 +4294,28 @@ function comparison(best){
    that counts links. */
 const SHARE_URL='https://runthe.gg/football/';
 
+/* THE LINE THAT MAKES IT A DARE RATHER THAN A SCOREBOARD.
+   A shared result with no invitation in it gives the person reading nothing to do. Which
+   dare depends on what happened: telling somebody who went 20-0 to "draft better" is
+   nonsense, and so is daring them to beat a season that cannot be beaten. */
+function shareDare(o){
+  return o.perfect?'Can you go unbeaten?':'Can you draft better?';
+}
+
 function shareLines(){
   const o=run.outcome;
   const what=o.perfect?'Perfect season.'
     :o.titleWon?'Champions.'
     :o.eliminatedIn?'Out in the '+o.eliminatedIn+'.'
     :'Missed the playoffs.';
-  return {head:'The Perfect Season: '+o.record+'. '+what,
-    text:'The Perfect Season: '+o.record+'. '+what+'\n'+SHARE_URL};
+  const rating=runPayload().teamRating;
+  /* The team rating goes in the text as well as on the card, because plenty of places show
+     the text and drop the image, and the rating is the one number that says how good the
+     roster was rather than how the season happened to go. */
+  const rate=(rating===null||rating===undefined)?'':' Team rating '+Number(rating).toFixed(1)+'.';
+  const head='The Perfect Season: '+o.record+'. '+what;
+  return {head,
+    text:head+rate+'\n'+shareDare(o)+'\n'+SHARE_URL};
 }
 
 /*
@@ -4327,10 +4341,16 @@ const CARD={
      through the tagline at 132. Everything below moved down with it. */
   REC:350, VERDICT:412,       // the record, and how the season ended
   RULE1:456,
-  ROWS:518, ROW:100,          // six players, last baseline 1018
-  RULE2:1088,
-  STAT:1178, STAT_LABEL:1220, // chemistry and spend
-  FOOT:1296, KEEL:10,
+  /* 94 rather than 100. Six rows at 100 left the bottom of the card with 130px for a
+     stats row, a dare and a link, which is not enough for any of the three; the six
+     rows give up 36px between them and nothing about them reads tighter, because the
+     chips are 52px and 42px of air between them is still air. */
+  ROWS:518, ROW:94,           // six players, last baseline 988
+  RULE2:1044,
+  STAT:1132, STAT_LABEL:1174, // team rating, chemistry, spend
+  DARE:1240,                  // the invitation
+  LINK_T:1264, LINK_H:60,     // and where to accept it, as a pill
+  KEEL:10,
 };
 
 function drawShareCard(){
@@ -4350,10 +4370,41 @@ function drawShareCard(){
   const g=x.createRadialGradient(mid,-160,40,mid,-160,CARD.W*1.15);
   g.addColorStop(0,tc.primary); g.addColorStop(1,'rgba(7,11,19,0)');
   x.globalAlpha=0.30; x.fillStyle=g; x.fillRect(0,0,CARD.W,CARD.H*0.62); x.globalAlpha=1;
+
+  /* THE FIELD, VERY FAINTLY, UNDER EVERYTHING.
+     Same markings the game draws on its own field, in the same rhythm: a line every five
+     yards, twice as bright every ten, and the hash marks between them. At these alphas it
+     is texture rather than a picture, which is the point: it has to say football without
+     competing with a 250px record sitting on top of it.
+
+     Drawn before any text and never again, so nothing below has to think about it. */
+  const YD=CARD.H/28;                     // 28 lines fills the card, so ~48px apart
+  for(let i=1;i<28;i++){
+    const ly=Math.round(i*YD);
+    const ten=i%2===0;                    // every other line is a ten-yard line
+    x.fillStyle='rgba(255,255,255,'+(ten?0.045:0.022)+')';
+    x.fillRect(0,ly,CARD.W,ten?2:1);
+    /* Hash marks, at the two inboard sets a real field has. Only between the lines, and
+       only on the fainter rows, so they read as marks rather than as a grid. */
+    if(!ten){
+      x.fillStyle='rgba(255,255,255,.028)';
+      [CARD.W*0.31,CARD.W*0.69].forEach((hx)=>x.fillRect(Math.round(hx)-1,ly-14,2,10));
+    }
+  }
   // The club's secondary as a keel line along the very bottom.
   x.fillStyle=tc.secondary; x.fillRect(0,CARD.H-CARD.KEEL,CARD.W,CARD.KEEL);
 
-  const D=(w,sz)=>{ x.font=w+' '+sz+"px 'Anton',Impact,sans-serif"; };
+  /* ANTON HAS ONE WEIGHT, so asking for 800 or 900 does not get a heavier cut, it gets the
+     browser to smear the 400 outwards and fake one. That is what made the record and every
+     player name on this card look bludgeoned, and it is the same mistake that had already
+     been found and fixed in the stylesheet; the canvas kept its own copy of it. Every call
+     here is 400 now, which is the only weight that exists.
+
+     And player names use the game's OWN name face rather than the display face, because
+     that is what they are set in everywhere else in the game. A card whose names are in a
+     different typeface from the screen they came off does not look like the same product. */
+  const D=(sz)=>{ x.font="400 "+sz+"px 'Anton',Impact,sans-serif"; };
+  const P=(w,sz)=>{ x.font=w+' '+sz+"px 'Big Shoulders Display','Anton',Impact,sans-serif"; };
   const N=(w,sz)=>{ x.font=w+' '+sz+"px 'Archivo',system-ui,sans-serif"; };
   const B=(w,sz)=>{ x.font=w+' '+sz+"px 'Inter',system-ui,sans-serif"; };
   const centered=(t,y)=>x.fillText(t,mid-x.measureText(t).width/2,y);
@@ -4368,10 +4419,10 @@ function drawShareCard(){
 
   // The record, which is the whole point of the card.
   const tone=o.perfect?'#fcd34d':(o.titleWon?'#93c5fd':'#ffffff');
-  D('900',250); x.fillStyle=tone;
+  D(250); x.fillStyle=tone;
   centered(o.record,CARD.REC);
 
-  D('800',52); x.fillStyle='rgba(255,255,255,.92)';
+  D(52); x.fillStyle='rgba(255,255,255,.92)';
   const what=(o.perfect?'PERFECT SEASON'
     :o.titleWon?'CHAMPIONS'
     :o.eliminatedIn?'OUT IN THE '+o.eliminatedIn.toUpperCase()
@@ -4409,10 +4460,13 @@ function drawShareCard(){
     const meta=p.season+' '+E.nickname(p.franchise);
     const mw=x.measureText(meta).width;
     x.fillText(meta,right-mw,y-4);
-    let size=46;
-    D('800',size);
+    /* The name face, at 700, which is a real cut of Big Shoulders Display rather than a
+       faked one. It is narrower than Anton at the same size, so it starts a little larger
+       and still fits more names without shrinking. */
+    let size=50;
+    P('700',size);
     const room=right-mw-28-(PAD+cw+22);
-    while(x.measureText(p.name).width>room&&size>26){ size-=2; D('800',size); }
+    while(x.measureText(p.name).width>room&&size>28){ size-=2; P('700',size); }
     x.fillStyle='#ffffff';
     x.fillText(p.name,PAD+cw+22,y+2);
     y+=ROW;
@@ -4420,25 +4474,49 @@ function drawShareCard(){
 
   x.fillStyle='rgba(255,255,255,.14)'; x.fillRect(PAD,CARD.RULE2,CARD.W-PAD*2,2);
 
-  // Two figures that say something about the build, not just the result.
+  /* Three figures that say something about the BUILD, not just the result, and the team
+     rating leads them because it is the one the game ranks rosters on: two people can share
+     the same 11-6 off a 40 and off a 90, and the rating is what tells them apart. Banded on
+     the same thresholds the results screen uses, so a number that is green there is green
+     here. */
   const spend=run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed);
   const chem=(run.season.chemistry-1)*100;
-  const stat=(label,val,cx,color)=>{
-    D('900',70); x.fillStyle=color;
+  const rating=runPayload().teamRating;
+  const stat=(label,val,cx,color,size)=>{
+    D(size||62); x.fillStyle=color;
     x.fillText(val,cx-x.measureText(val).width/2,CARD.STAT);
-    N('500',23); x.fillStyle='rgba(255,255,255,.5)';
-    x.letterSpacing='4px';
+    N('500',22); x.fillStyle='rgba(255,255,255,.5)';
+    x.letterSpacing='3px';
     x.fillText(label,cx-x.measureText(label).width/2,CARD.STAT_LABEL);
     x.letterSpacing='0px';
   };
-  stat('CHEMISTRY',(chem>=0?'+':'')+chem.toFixed(1)+'%',CARD.W*0.30,
+  const rband=(v)=>v>=75?'#4ade80':(v>=50?'#fbbf24':'#f87171');
+  stat('TEAM RATING',rating===null||rating===undefined?'--':Number(rating).toFixed(1),
+    CARD.W*0.22,rating===null||rating===undefined?'#e2e8f0':rband(Number(rating)),70);
+  stat('CHEMISTRY',(chem>=0?'+':'')+chem.toFixed(1)+'%',CARD.W*0.5,
     chem>0.05?'#4ade80':'#e2e8f0');
-  stat('SPENT','$'+spend.toFixed(0)+'M',CARD.W*0.70,'#e2e8f0');
+  stat('SPENT','$'+spend.toFixed(0)+'M',CARD.W*0.78,'#e2e8f0');
 
-  // Footer
-  N('600',34); x.fillStyle='rgba(255,255,255,.85)';
-  x.letterSpacing='3px';
-  centered('RUNTHE.GG/FOOTBALL',CARD.FOOT);
+  /* THE DARE, AND THEN THE WAY TO TAKE IT. The card used to end on a grey line of small
+     caps that read as a watermark rather than as somewhere to go: an address printed at 34px
+     in 85% white, under two statistics, with nothing telling anyone why they would type it.
+     A question, then the address inside a bordered pill in the game's own red, which is the
+     only thing on the lower half of the card with a shape around it. */
+  B('600',30); x.fillStyle='rgba(255,255,255,.62)';
+  centered(shareDare(o),CARD.DARE);
+
+  const label='RUNTHE.GG/FOOTBALL';
+  N('700',34); x.letterSpacing='3px';
+  const lw=x.measureText(label).width;
+  const pw=lw+72, pl=mid-pw/2;
+  x.fillStyle='rgba(185,28,28,.22)';
+  roundRect(x,pl,CARD.LINK_T,pw,CARD.LINK_H,CARD.LINK_H/2); x.fill();
+  x.strokeStyle='rgba(248,113,113,.55)'; x.lineWidth=2;
+  roundRect(x,pl+1,CARD.LINK_T+1,pw-2,CARD.LINK_H-2,(CARD.LINK_H-2)/2); x.stroke();
+  x.fillStyle='#ffffff';
+  /* Optically centred on the pill rather than sitting on a baseline guessed at: cap height
+     for this face is about 0.72 of the size, so half of that below the middle. */
+  x.fillText(label,pl+36,CARD.LINK_T+CARD.LINK_H/2+34*0.36);
   x.letterSpacing='0px';
   return c;
 }
