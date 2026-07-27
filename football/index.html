@@ -729,7 +729,15 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      7 below on one side and 9 above and 0 below on the other, while a 20 sat 5 and 4. A real
      field's numerals are block figures of uniform width, so a fixed box is also the truer
      shape. */
-  .field .fnum .d{flex:0 0 auto;width:.62em;text-align:center;font-variant-numeric:tabular-nums}
+  .field .fnum .d{flex:0 0 auto;width:.62em;font-variant-numeric:tabular-nums}
+  /* THE INK LEANS TOWARD THE LINE, not the box.
+     Equal boxes made the spacing consistent but not right: a 1 is a narrow glyph centred in
+     its box, so its INK sat further from the yard line than a 0's, which fills the box. The
+     boxes measured dead even and the 1s and 2s still read as too far out. Each digit is now
+     aligned to the edge that faces the gap, so what is 4.5px from the line is the ink rather
+     than an empty box edge. A 0 does not move, because it was already filling its box. */
+  .field .fnum .d.one{text-align:right}
+  .field .fnum .d.two{text-align:left}
   /* One pixel up. With uniform digit boxes the pair still measured 5.5px above the line and
      3.5 below, the same on all four numbers, which is a constant offset in the glyph box
      rather than anything to do with the layout. POSITIVE, not negative: the shift happens
@@ -2166,8 +2174,8 @@ function fieldMarkings(){
            elements with a gap, and the pair is centred ON the line rather than pushed clear
            of it. Pushing it clear was the previous attempt and it is not what a field does. */
         const d=String(line).split('');
-        const pair='<span class="d">'+d[0]+'</span><span class="gap"></span>'+
-                   '<span class="d">'+d[1]+'</span>';
+        const pair='<span class="d one">'+d[0]+'</span><span class="gap"></span>'+
+                   '<span class="d two">'+d[1]+'</span>';
         out.push('<div class="fnum l" style="top:'+top+'%">'+pair+'<span class="ar"></span></div>',
                  '<div class="fnum r" style="top:'+top+'%">'+pair+'<span class="ar"></span></div>');
       }
