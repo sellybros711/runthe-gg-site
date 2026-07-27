@@ -5046,10 +5046,10 @@ async function loadBoard(){
     ? "Today's daily puzzle. Everybody gets the same six draws, so this board is "+
       'the only fair comparison in the game. It resets at midnight UTC.'
     : (lbSort==='rating'
-      ? 'Free runs, ranked on the roster rather than the season. Windows reset at '+
-        'midnight UTC and the week starts Monday.'
-      : 'Free runs only. Daily runs have their own board. Windows reset at '+
-        'midnight UTC and the week starts Monday.');
+      ? 'Free runs, ranked on the roster rather than the season. Today resets at '+
+        'midnight Eastern, and the week starts Monday.'
+      : 'Free runs only. Daily runs have their own board. Today resets at '+
+        'midnight Eastern, and the week starts Monday.');
   /* 25 rows in one request, shown 5 at a time. Paging over the network for every
      tap on a five-row list is a lot of round trips for very little. */
   const sc=lbScope();
