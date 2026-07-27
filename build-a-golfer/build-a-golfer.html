@@ -22658,7 +22658,7 @@ function bucketShopNode(){
     var card=$('<div style="max-width:400px;margin:12px auto 0;padding:12px 13px;border-radius:14px;background:rgba(12,31,22,.7);border:1px solid '+b.col+'66;position:relative"></div>');
     if(b.badge) card.appendChild($('<div style="position:absolute;top:-9px;right:12px;background:'+b.col+';color:#0c1f16;font:900 9px var(--body);letter-spacing:.1em;padding:3px 8px;border-radius:20px">'+esc(b.badge)+'</div>'));
     card.appendChild($('<div style="display:flex;gap:12px;align-items:center">'
-      +'<div style="flex:0 0 auto;width:48px;height:48px;display:flex;align-items:center;justify-content:center">'+coinBucketSVG(bi+1,b.col,46)+'</div>'
+      +'<div style="flex:0 0 auto;width:74px;height:74px;display:flex;align-items:flex-end;justify-content:center">'+coinBucketSVG(bi+1,b.col,[34,45,56,66,74][bi])+'</div>'
       +'<div style="flex:1;min-width:0">'
         +'<div style="font-family:var(--display);font-size:17px;color:'+b.col+'">'+esc(b.name)+'</div>'
         +'<div style="font:900 20px var(--body);color:#ffd45e;display:flex;align-items:center;gap:5px;margin-top:1px"><span style="width:16px;height:16px">'+ic('coin',{size:'16px'})+'</span>'+coinFmt(coins)+(firstBuy?'<span class="small" style="color:'+b.col+';font-weight:800;margin-left:4px">2×!</span>':'')+'</div>'
