@@ -13739,6 +13739,21 @@ allows Google Fonts, or self-host Anton.*
   --check` clean. Deployed to /golf. (The separate pack-reveal wheel cards use their own `.pcard` CSS at a
   different site - untouched.)
 
+- **RUN THE GAMES COLLECTION — branded apparel kit + a collectible drop (deployed to /golf).** Owner wanted a
+  special shirt/hat/pants/cleats, all grouped in a collection. Added the branded apparel (all buyable, RGB
+  palette): shirt color `rtggreen` (#5fd94a) + hat color `rtgnavy` + trousers `rtgnavy` (POLOS/PANTS — POLOS
+  are always-unlocked so no shirt-req crash), and **Run The Games Cleats** (reuses the Sunday sneaker shape
+  with a house palette — white upper, green flash, navy sole, blue laces; wired into `PXG_CLEATS`/`_PAL`,
+  `cosmeticItems('cleats')`, and the price map at 13k). Then grouped everything into a new always-available
+  **DROP** `rungames` ("Run The Games Collection", accent green) with 6 collectible items (aura, ball, shirt,
+  hat, pants, cleats); completing it claims `DROP_REWARDS.rungames` = the Run The Games **nameplate** + **Arena
+  backdrop** + 100k coins. Reconciled the earlier design: the nameplate/backdrop are now the COLLECTION REWARD
+  (reward-only via `rewardDrop`/`cosRewardOnly`) instead of sign-unlocked — removed the `CARD_EARN` np/cb
+  entries, `rtgSigned()`, and the `signSponsor` flag hook (single clean unlock path). The Icon-tier sponsor
+  deal itself is unchanged. Verified in Playwright: apparel present + buyable (4k/4k/4k/13k); collection has 6
+  items, reward = plate+cardbg+100k; plate/cardbg are reward-only and out of CARD_EARN; golfer renders in the
+  full kit (screenshotted — green shirt, navy cap + trousers, branded cleats); sweep + e2e clean, 0 errors.
+
 - **RUN THE GAMES — rebranded to the real RunThe.GG RGB identity + real logo asset (deployed to /golf).** Owner
   shared the homepage branding: dark navy ground, retro pixel type, bright GREEN hero, cyan-BLUE + coral-RED
   pixel accents (the RGB mark). My first pass used gold — wrong. Resampled the exact palette from the repo brand
