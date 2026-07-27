@@ -969,7 +969,39 @@
   .posbadge.MID{background:var(--pos-mid);}
   .posbadge.FWD{background:var(--pos-fwd);}
   .pcard .psub{font-weight:600;font-size:9px;color:#9a8d80;}
-  .pcard .statline{font-weight:600;font-size:10px;color:var(--ink);letter-spacing:.1px;line-height:1.25;}
+  .pcard .statline{font-weight:600;font-size:9.5px;color:#9a8d80;letter-spacing:.1px;line-height:1.2;margin-top:1px;}
+
+  /* ---- draft status header (round progress + live squad rating + bar) ---- */
+  .draft-status{position:relative;display:flex;align-items:flex-start;gap:12px;
+    border:1.5px solid var(--border-soft);border-radius:14px;background:var(--white);
+    box-shadow:0 4px 10px rgba(var(--shadow-rgb),.20);padding:11px 15px 15px;margin:0 0 12px;overflow:hidden;}
+  .draft-status .ds-main{flex:1 1 auto;min-width:0;}
+  .draft-status .ds-side{flex:0 0 auto;text-align:right;}
+  .draft-status .ds-cap{font-weight:900;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+  .draft-status .ds-big{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:25px;line-height:1;
+    letter-spacing:.5px;color:var(--ink);margin-top:4px;}
+  .draft-status .ds-ovr{color:var(--teal);}
+  .draft-status .ds-bar{position:absolute;left:0;right:0;bottom:0;height:5px;background:var(--border-soft);}
+  .draft-status .ds-bar-fill{height:100%;width:0;border-radius:0 3px 3px 0;
+    background:linear-gradient(90deg,var(--teal),var(--gold));transition:width .35s ease;}
+
+  /* ---- position filter chips (ALL / GK / DEF / MID / FWD, with counts) ---- */
+  .pos-filter{display:flex;gap:6px;overflow-x:auto;padding:1px 2px 9px;margin:0 -2px;scrollbar-width:none;}
+  .pos-filter::-webkit-scrollbar{display:none;}
+  .pf-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;font-weight:900;font-size:11px;
+    letter-spacing:.6px;color:var(--ink);background:var(--white);border:1.5px solid var(--border-soft);
+    border-radius:999px;padding:6px 11px;box-shadow:0 2px 6px rgba(var(--shadow-rgb),.14);cursor:pointer;
+    transition:transform .08s ease;}
+  .pf-chip:active{transform:translateY(1px);}
+  .pf-chip .pf-n{font-size:9px;font-weight:800;color:#fff;background:var(--muted);border-radius:999px;
+    padding:1px 5px;min-width:15px;text-align:center;}
+  .pf-chip.on{color:#fff;background:var(--ink);border-color:var(--ink);}
+  .pf-chip.on .pf-n{background:rgba(255,255,255,.28);}
+  .pf-chip.GK.on{background:var(--pos-gk);border-color:var(--pos-gk);color:var(--ink);}
+  .pf-chip.GK.on .pf-n{background:rgba(0,0,0,.22);color:#fff;}
+  .pf-chip.DEF.on{background:var(--pos-def);border-color:var(--pos-def);}
+  .pf-chip.MID.on{background:var(--pos-mid);border-color:var(--pos-mid);}
+  .pf-chip.FWD.on{background:var(--pos-fwd);border-color:var(--pos-fwd);}
 
   /* slot picker sheet */
   .sheet-bg{position:fixed;inset:0;background:rgba(22,18,15,.55);display:none;z-index:40;align-items:flex-end;justify-content:center;}
@@ -3728,6 +3760,19 @@ window.GA_ID='G-L29P5MRWKE';
       <span class="finish-badge" id="select-finish" style="display:none"></span>
       <span class="mode-pill" id="select-mode-pill" style="display:none"></span>
     </div>
+    <!-- Draft status: round progress + live squad rating + progress bar
+         (the RunThePitch analog to Perfect Season's money/chemistry header) -->
+    <div class="draft-status" id="draft-status">
+      <div class="ds-main">
+        <div class="ds-cap">Draft progress</div>
+        <div class="ds-big" id="ds-round">Round 1 / 6</div>
+      </div>
+      <div class="ds-side" id="ds-side">
+        <div class="ds-cap">Squad rating</div>
+        <div class="ds-big ds-ovr" id="ds-ovr">—</div>
+      </div>
+      <div class="ds-bar"><div class="ds-bar-fill" id="ds-bar-fill"></div></div>
+    </div>
     <div class="sel-respins" id="select-respins">
       <button id="btn-respin-full" class="rebtn">↻ Re-spin (1)</button>
     </div>
@@ -3740,6 +3785,7 @@ window.GA_ID='G-L29P5MRWKE';
       <div class="mslot" id="mini-flex"><span class="ml">FLEX</span></div>
     </div>
     <div class="full-shape" id="full-shape-select" style="display:none"></div>
+    <div class="pos-filter" id="pos-filter"></div>
     <div class="grid" id="player-grid"></div>
     <button class="rate-trigger" id="rate-link-select">Disagree with a rating?</button>
   </section>
@@ -5540,8 +5586,59 @@ function paintSquad(){
   }
   if(isFullDraft()) buildFullMiniPitch(); else restoreQuickMiniPitch();
   updateMiniPitch();
+  updateDraftStatus();
   renderGrid(squad);
   updateRespinButtons();
+}
+
+// Draft status header: round progress + a live running squad rating (average
+// overall of who you've drafted so far). Hard mode hides ratings, so the squad
+// rating is suppressed there — only the round + progress bar show.
+function updateDraftStatus(){
+  const el=$('draft-status'); if(!el) return;
+  const total=isFullDraft()?11:6;
+  const done=gs.picks.length;
+  const roundNo=Math.min(done+1,total);
+  const rnd=$('ds-round'); if(rnd) rnd.textContent=`Round ${roundNo} / ${total}`;
+  const fill=$('ds-bar-fill'); if(fill) fill.style.width=Math.round(Math.min(done,total)/total*100)+'%';
+  const side=$('ds-side');
+  if(gameMode==='hard'){ if(side) side.style.visibility='hidden'; }
+  else if(side){
+    side.style.visibility='visible';
+    const ovrs=gs.picks.map(pk=>pk.player.wc_overall ?? pk.player.overall).filter(v=>v!=null);
+    const avg=ovrs.length?Math.round(ovrs.reduce((a,b)=>a+b,0)/ovrs.length):null;
+    const v=$('ds-ovr'); if(v) v.textContent=avg==null?'—':avg;
+  }
+}
+
+// Position filter chips for the pick list. ALL + one chip per position that still
+// has a pickable player, each with a live count. Filtering is a pure show/hide on
+// the already-rendered cards (they carry data-pos), so it's instant.
+let draftPosFilter='ALL';
+function buildPosFilter(squad, pickedIds){
+  const bar=$('pos-filter'); if(!bar) return;
+  const avail=p=>eligibleSlotsFor(p).length>0 && !pickedIds.has(p.player_id);
+  const order=['GK','DEF','MID','FWD'];
+  const counts={GK:0,DEF:0,MID:0,FWD:0}; let all=0;
+  squad.forEach(p=>{ if(avail(p)){ all++; if(counts[p.position]!=null) counts[p.position]++; } });
+  if(draftPosFilter!=='ALL' && !counts[draftPosFilter]) draftPosFilter='ALL';
+  const chips=[['ALL',all]].concat(order.filter(k=>counts[k]>0).map(k=>[k,counts[k]]));
+  bar.innerHTML=chips.map(([k,n])=>
+    `<button class="pf-chip${draftPosFilter===k?' on':''}${k!=='ALL'?' '+k:''}" data-pos="${k}">${k}<span class="pf-n">${n}</span></button>`
+  ).join('');
+  bar.querySelectorAll('.pf-chip').forEach(c=>c.addEventListener('click',()=>{
+    draftPosFilter=c.dataset.pos;
+    bar.querySelectorAll('.pf-chip').forEach(x=>x.classList.toggle('on',x.dataset.pos===draftPosFilter));
+    // re-tint: only the active chip keeps its position colour
+    applyPosFilter();
+  }));
+}
+function applyPosFilter(){
+  const g=$('player-grid'); if(!g) return;
+  g.querySelectorAll('.pcard').forEach(card=>{
+    const pos=card.dataset.pos||'';
+    card.style.display=(draftPosFilter==='ALL'||pos===draftPosFilter)?'':'none';
+  });
 }
 
 // Award badge labels keyed by the CSV award value.
@@ -5625,6 +5722,7 @@ function cardStatBlock(p){
 
 function renderGrid(squad){
   const g=$('player-grid'); g.innerHTML='';
+  draftPosFilter='ALL';   // each new nation/round starts unfiltered
   // players already drafted this game can't be picked again
   const pickedIds = new Set(gs.picks.map(pk=>pk.player.player_id));
   const available = p => eligibleSlotsFor(p).length>0 && !pickedIds.has(p.player_id);
@@ -5657,12 +5755,15 @@ function renderGrid(squad){
     const isBest = p.player_id===bestId;
     btn.className='pcard'+(taken?' taken':'')+(showCap?' cap':'')+(isBest?' best':'');
     btn.style.setProperty('--pos', PITCH_COLORS[p.position]||'#c9bdae'); // position accent
+    btn.dataset.pos=p.position;   // for the position filter chips
     btn.disabled = elig.length===0 || taken; // grey out & block re-picking
+    const statHtml = gameMode!=='hard' ? `<div class="statline">${statLine(p)}</div>` : '';
     btn.innerHTML=`
       <div class="ptop">
         <span class="nm">${isBest?'<span class="best-star" title="Top pick available">★</span>':''}${p.name}</span>
         <span class="posbadge ${p.position}">${p.position}</span>
       </div>
+      ${statHtml}
       <div class="pbottom">
         ${cardStatBlock(p)}
         ${cardBottomRight(p, taken)}
@@ -5672,6 +5773,8 @@ function renderGrid(squad){
     if(!btn.disabled) btn.addEventListener('click',()=>openSheet(p));
     g.appendChild(btn);
   });
+  buildPosFilter(squad, pickedIds);
+  applyPosFilter();
 }
 
 // ---------- slot picker sheet ----------
