@@ -179,21 +179,29 @@ create index if not exists ps_runs_daily_score_idx
 create index if not exists ps_runs_daily_rating_idx
   on ps_runs (daily_date, team_rating desc, created_at asc);
 
--- WHY THE FREE RATING BOARD IS ALL-TIME ONLY
+-- ORDERING BY RATING OVER A TIME WINDOW, AND WHY created_at IS IN EVERY INDEX
 --
--- Ordering by team_rating over a created_at RANGE is the one query shape here that
--- no index can satisfy without a gamble. Postgres either walks the rating index in
--- order and throws away everything outside the window, or fetches the window and
--- sorts it, and it has to guess which is cheaper from a row estimate. When it
--- guesses wrong on a sparse window the cost is brutal: measured at 2M rows, a
--- window containing NO qualifying rows walked all 1.5M index entries to return
--- nothing, in 125ms.
+-- This is the one query shape here that could go badly, and the trailing created_at
+-- column is what stops it. Postgres either walks the rating index in order and throws
+-- away everything outside the window, or fetches the window and sorts it, and it has to
+-- guess which is cheaper from a row estimate. The walk is only cheap when the window can
+-- be tested from INSIDE the index, which is exactly what created_at being the last
+-- column buys: an Index Cond rather than a Filter, and no heap fetch per candidate row.
 --
--- So the client does not ask that question. The free rating board is all time, which
--- is the natural framing anyway ("the best roster anybody has built" is not a
--- daily question), and every rating query becomes an unwindowed index scan: 0.24ms
--- descending, 0.14ms ascending. The daily rating board keeps its window because
--- daily_date is an equality and lands in the index alongside the sort.
+-- Measured on 2,000,000 rows, the rating board for this week, 500 rows deep:
+--
+--   window on created_at, which is in this index      1,081 buffers,   9.0ms
+--   window on a separate day column, which is not    59,917 buffers, 251.9ms
+--                                                    (Rows Removed by Filter: 58,777)
+--
+-- The free rating board used to be all-time only on the theory that no index could
+-- serve the windowed version. It can, and does: Today and This week both answer on this
+-- index in about 2ms at 2M rows. What must never change is the shape: any new way of
+-- windowing the board has to use a column these indexes already carry, or it turns a
+-- 2ms query into a quarter of a second. See the note above scope() in board.js.
+--
+-- The daily rating board is a plain index scan for a different reason: daily_date is an
+-- equality, so it lands in the index alongside the sort with nothing to filter.
 -- Claiming anonymous runs once accounts exist, and a player's own history.
 create index if not exists ps_runs_user_idx       on ps_runs (user_id, created_at desc);
 

@@ -701,6 +701,47 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     text-transform:uppercase;color:var(--dim-2)}
   .lbcount b{font-size:14px;color:var(--ink)}
 
+  /* FIVE HUNDRED ROWS FOR THE PRICE OF THE ONES YOU CAN SEE.
+     content-visibility lets the browser skip layout, style and paint for a row that is
+     off screen, which is what makes a list this long scroll like a short one. The
+     intrinsic size is the row's real height, so the scrollbar is honest and does not
+     jump as rows are rendered on approach. Rows are a fixed height here (two lines of
+     fixed type in a fixed padding), so there is no guess in that number.
+     Scoped to .lb .lbr so the sticky row below, which is always on screen, is not
+     asked to do this.
+
+     55px is measured, not estimated: every one of the 500 rows on a real board comes out
+     at 54.78px at 320, 390 and 430 wide, because both lines of the row are fixed type at
+     a fixed size and every text run in it is nowrap. If a row ever gains a wrapping line
+     this number has to be re-measured, or the scrollbar will lie by the difference times
+     five hundred. */
+  .lb .lbr{content-visibility:auto;contain-intrinsic-size:auto 55px}
+
+  /* WHERE YOU SIT, PINNED TO THE BOTTOM OF THE VIEWPORT.
+     A board 500 rows deep is a board almost nobody is on the front of, and the whole
+     reason to open one is to find yourself. So your own place travels with the scroll.
+     It is the same row as any other, one shade louder, and it opens the same detail
+     sheet. */
+  .mypin{position:sticky;bottom:8px;z-index:6;margin-top:10px;padding-top:7px;
+    /* The list runs on underneath this, so it needs its own backdrop rather than
+       borrowing the page's: a translucent row over moving text is unreadable on a
+       phone. The padding is what keeps the label off the row it is floating over. */
+    background:var(--bg);border-radius:12px;
+    box-shadow:0 -10px 18px -6px var(--bg),0 10px 26px -8px rgba(0,0,0,.6)}
+  .mypin[hidden]{display:none}
+  .mypin .lbr{border-color:rgba(59,130,246,.62);background:rgba(59,130,246,.14)}
+  .mypin .lbr .rk{color:#93c5fd}
+  .mypin .lbr .who b{color:#dbeafe}
+  /* The label that makes it a preview rather than a row that has lost its place in the
+     list. Small, above the figures, and it says which board the number is for. */
+  .mypin .pinlab{display:block;padding:0 2px 4px;font-family:var(--fn);font-size:9.5px;
+    font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2)}
+  /* Fading out rather than vanishing, because it disappears the moment your real row
+     scrolls into view and a hard cut there reads as a glitch. */
+  .mypin{transition:opacity .18s linear,transform .18s ease}
+  .mypin.away{opacity:0;transform:translateY(6px);pointer-events:none}
+  @media (prefers-reduced-motion:reduce){ .mypin{transition:none} }
+
   /* sign-in shell */
   .signin{display:grid;gap:8px;margin-top:13px}
   .signin button{width:100%;padding:13px 14px;border-radius:11px;text-align:center;
@@ -1943,7 +1984,13 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="podium" id="lb-podium"></div>
     <div class="lb" id="lb-rows"></div>
     <p class="notlive" id="lb-note" style="display:none"></p>
-    <button class="btn ghost sm" id="b-lb-more" style="margin-top:10px">Show more</button>
+    <!-- YOUR PLACE, ALWAYS ON SCREEN.
+         Sticky rather than sitting under the list, because the list is now up to 500
+         rows long: a row at the foot of it would be five hundred rows of scrolling
+         away, which is worse than the five-row list it replaced. It hides itself
+         while your real row is in view, so it is only ever there when the board is
+         showing you strangers. -->
+    <div class="mypin" id="lb-mine" hidden></div>
     <!-- Which runs this board counts and when it resets: fine print, so it goes at the
          foot. It used to sit between the podium and the rows, interrupting the one place
          on this screen where the reading order matters. -->
@@ -2224,7 +2271,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=3"></script>
+<script src="board.js?v=4"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
@@ -2237,11 +2284,16 @@ const E=window.PS_ENGINE, R=window.PS_RUN;
    gate below. It degrades to a stub whose every call answers null, which is the
    same answer the real module gives when the network is down, so there is exactly
    one code path for "no board" instead of two. */
-const BOARD_VERSION=1;
+/* Bumped WITH board.js's own API_VERSION, every time. The two numbers exist to catch a
+   cached board.js older than this page, and they only catch it while they agree: a page
+   that says 1 against a module that says 2 rejects a module that is newer than itself
+   and quietly runs the stub, which is a dead leaderboard with no error anywhere. */
+const BOARD_VERSION=2;
 const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
   API_VERSION:BOARD_VERSION, offline:true,
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
-  rankIn:async()=>null, total:async()=>null, top:async()=>null, byId:async()=>null,
+  rankIn:async()=>null, placeIn:async()=>null, total:async()=>null, top:async()=>null,
+  byId:async()=>null,
   scoreOf:(w,d)=>w*10000+Math.min(9999,Math.max(0,
     Math.round((Math.round(d*10)/10+40)*100))),
   cutoffISO:()=>null, todayUTC:()=>new Date().toISOString().slice(0,10),
@@ -4789,18 +4841,30 @@ async function showMyRowOnBoard(){
   closeSheet();
   if(run&&run.daily){ lbWin='daily'; }
   else { lbWin='day'; lbSort='record'; lbDir='desc'; }
-  lbShown=5;
   show('s-board');
   await loadBoard();
-  /* paintRanks is still in flight when this runs on a slow board, and minePinned needs
-     myRanks to draw the fallback row, so the board is repainted once more if the first
-     pass found nothing to highlight. */
-  let el=$('lb-rows').querySelector('.lbr.mine')||$('lb-podium').querySelector('.pod.mine');
-  if(!el&&myRanks){ paintBoard(); el=$('lb-rows').querySelector('.lbr.mine'); }
-  if(!el){ toast('Your run is on the board'); return; }
-  el.scrollIntoView({block:'center',behavior:HERO_REDUCE?'auto':'smooth'});
-  el.classList.remove('found'); void el.offsetWidth; el.classList.add('found');
-  toast('You are on the board');
+  /* Your actual row, which the 500-row list will hold unless five hundred people beat
+     you today. The podium counts: rows one to three are up there and not in the list. */
+  const el=$('lb-rows').querySelector('.lbr.mine')||$('lb-podium').querySelector('.pod.mine');
+  if(el){
+    el.scrollIntoView({block:'center',behavior:HERO_REDUCE?'auto':'smooth'});
+    el.classList.remove('found'); void el.offsetWidth; el.classList.add('found');
+    toast('You are on the board');
+    return;
+  }
+  /* Outside the 500. The sticky preview at the foot of the screen is already carrying
+     your place, so it is flashed rather than announced: pointing at the thing that
+     answers the question beats a toast that repeats it. */
+  /* The flash goes on the inner row, not on the sticky wrapper: the wrapper carries the
+     shadow that lifts it off the list, and the animation sets box-shadow, so pulsing the
+     wrapper would blink that shadow away with it. */
+  const pin=$('lb-mine'), pinrow=pin&&pin.querySelector('.lbr');
+  if(pinrow&&!pin.hidden){
+    pinrow.classList.remove('found'); void pinrow.offsetWidth; pinrow.classList.add('found');
+    toast('Your run is on the board, below the top '+LB_LIMIT);
+    return;
+  }
+  toast('Your run is on the board');
 }
 
 /* For a daily run the first column is that day's puzzle rather than a clock window,
@@ -4872,7 +4936,7 @@ document.addEventListener('click',(e)=>{
   const b=e.target.closest('#o-splits .lbc.go'); if(!b) return;
   if(run&&run.daily){ lbWin='daily'; }
   else { lbSort='record'; lbWin=b.dataset.win; }
-  lbShown=5; show('s-board'); loadBoard();
+  show('s-board'); loadBoard();
 });
 
 /* Submit, then read the rank. In that order so a run is counted in its own
@@ -5073,7 +5137,21 @@ function rankLine(r){
    that gap is luck, not skill. Team rating is what the roster is worth with chemistry and
    shape already in it, so it measures the six decisions the player actually made. Record is
    still on every row, just under the rating rather than above it. */
-let lbWin='day', lbSort='rating', lbDir='desc', lbShown=5, lbRows=null, lbBusy=false;
+/* HOW DEEP THE BOARD GOES.
+   The whole window in one request, up to 500 rows, all of them rendered. It used to
+   fetch 25 and reveal five per tap, which meant four taps to see twenty-five runs and
+   then nothing more however hard you pressed. Five hundred is the number because it is
+   comfortably inside PostgREST's own row ceiling, it is one request rather than paging
+   over the network, and past a few hundred nobody is reading rows any more, they are
+   looking for themselves, which is what the pinned row at the bottom is for. */
+const LB_LIMIT=500;
+
+let lbWin='day', lbSort='rating', lbDir='desc', lbRows=null, lbBusy=false;
+/* Where this run sits on the board currently showing, on ITS axis and in ITS direction,
+   which is not the same number as any of the three record ranks on the results page.
+   Read once per board load, cleared on the way in so a stale place from the last tab can
+   never be drawn under a new one. */
+let lbMyPlace=null;
 
 const lbIsDaily=()=>lbWin==='daily';
 /* What board.js should read for the tab that is showing.
@@ -5115,7 +5193,7 @@ const SORT_META={
    on the free board would show them a table they are not in. */
 function openBoard(){
   if(run&&run.outcome) lbWin=run.daily?'daily':(lbWin==='daily'?'day':lbWin);
-  lbShown=5; show('s-board'); loadBoard();
+  show('s-board'); loadBoard();
 }
 
 async function loadBoard(){
@@ -5125,7 +5203,7 @@ async function loadBoard(){
   $('lb-podium').className='podium'; $('lb-podium').innerHTML='';
   $('lb-rows').innerHTML='<div class="rload"><i></i><i></i><i></i><span>Loading the board</span></div>';
   $('lb-count').textContent='';
-  $('b-lb-more').style.display='none';
+  hideMyPin();
   [...document.querySelectorAll('#lb-tabs .tab')].forEach(t=>
     t.classList.toggle('on',t.dataset.lb===lbWin));
   [...document.querySelectorAll('#lb-sort button')].forEach(t=>
@@ -5142,12 +5220,17 @@ async function loadBoard(){
         'midnight Eastern, and the week starts Monday.'
       : 'Free runs only. Daily runs have their own board. Today resets at '+
         'midnight Eastern, and the week starts Monday.');
-  /* 25 rows in one request, shown 5 at a time. Paging over the network for every
-     tap on a five-row list is a lot of round trips for very little. */
+  /* Rows, the size of the field, and where this run sits on this exact board, in one
+     go. The place is asked for alongside rather than after, because it is an index-only
+     count and waiting on it would put a second round trip in front of the list. It
+     resolves to null when there is no run to place, which is most visits. */
   const sc=lbScope();
-  const [rows,total]=await Promise.all([B.top(sc,25,lbSort,lbDir),B.total(sc)]);
+  const [rows,total,place]=await Promise.all([
+    B.top(sc,LB_LIMIT,lbSort,lbDir),B.total(sc),myPlaceValue()===null?null:
+      B.placeIn(sc,lbSort,lbDir,myPlaceValue())]);
   lbBusy=false;
   lbRows=rows;
+  lbMyPlace=place;
   if(rows===null){
     $('lb-rows').innerHTML='';
     $('lb-note').style.display='';
@@ -5159,8 +5242,13 @@ async function loadBoard(){
   if(total!==null){
     const word=lbIsDaily()?"played today's daily"
       :(lbWin==='day'?'played today':(lbWin==='week'?'played this week':'played in all'));
+    /* Said out loud when the field is bigger than the list, so a board that stops at 500
+       is a board that told you it stops at 500 rather than one that looks like the whole
+       field and is not. */
+    const capped=rows.length>=LB_LIMIT&&total>rows.length
+      ? ' · top '+LB_LIMIT.toLocaleString()+' shown' : '';
     $('lb-count').innerHTML='<b>'+total.toLocaleString()+'</b> '+
-      (total===1?'run ':'runs ')+word;
+      (total===1?'run ':'runs ')+word+capped;
   }
   paintBoard();
 }
@@ -5203,7 +5291,7 @@ function paintBoard(){
           ?'No runs recorded yet. Play one and you are first.'
           :'Nobody has finished a run in this window yet. Play one and you are first.'))+
       '</div>';
-    $('b-lb-more').style.display='none';
+    hideMyPin();
     return;
   }
   /* THE LIST STARTS WHERE THE PODIUM STOPPED.
@@ -5213,10 +5301,12 @@ function paintBoard(){
      drew rather than a hardcoded three, and the true index still goes to boardRow so the
      rank on a row and the row a tap opens are both still right. */
   const above=paintPodium(rows)?3:0;
-  const shown=Math.min(rows.length,above+lbShown);
-  $('lb-rows').innerHTML=rows.slice(above,shown)
-    .map((r,j)=>boardRow(r,above+j)).join('')+minePinned(rows,shown);
-  $('b-lb-more').style.display=shown>=rows.length?'none':'block';
+  /* EVERY ROW, IN ONE PASS. No slice and no Show more: the request already fetched the
+     whole window, so revealing it five at a time was hiding rows this browser had
+     already been handed. The cost of rendering them all is paid by content-visibility
+     on .lb .lbr, which skips layout and paint for every row that is off screen. */
+  $('lb-rows').innerHTML=rows.slice(above).map((r,j)=>boardRow(r,above+j)).join('');
+  paintMyPin(rows);
 }
 
 /* Tap a row for the lineup behind it. Delegated, so it keeps working through every
@@ -5354,14 +5444,6 @@ function rowSub(row){
   return who?rec+' \u00b7 '+who:rec;
 }
 
-/* The same right-hand column for every row, the pinned one included. It used to
-   show the differential on the board rows and chemistry on your own row, so the
-   column read down the page as a comparison between two different quantities. */
-function diffCell(diff,chemPct,spend){
-  return '<b>'+(diff>=0?'+':'')+Number(diff).toFixed(1)+' diff</b>'+
-    '<span>'+pc(Number(chemPct)/100)+' chem, '+M0(Number(spend))+'</span>';
-}
-
 /* The record board's right column: the record, then the differential that breaks
    ties inside it. */
 function recordCell(row){
@@ -5400,38 +5482,84 @@ function rosterLine(picks){
   return men.map(p=>lastName(p.name)+' '+p.season).join(', ');
 }
 
-/* Your own row, pinned under the list. At any real number of players you are not
-   inside the top page, and a board that only ever shows strangers is a board
-   nobody checks twice. */
-/* `shown` is how many of the top runs are already on screen, podium included, so your
-   own row is not pinned under a list it is already in. */
-function minePinned(rows,shown){
-  if(!run||!run.outcome||!myRanks) return '';
-  /* The pinned row's number is your RECORD rank, which is the only rank the game
-     computes. Showing it beside a rating board, or beside a reversed one, would be
-     a number that does not describe the list it sits under. */
-  if(lbSort!=='record'||lbDir!=='desc') return '';
-  /* And a run only belongs on its own competition's board. A free run pinned under
-     the daily board, or the other way round, is a row from a different table. */
-  if(lbIsDaily()!==!!run.daily) return '';
-  const w=myRanks[lbIsDaily()?'day':lbWin];
-  if(!w) return '';
-  if(rows.slice(0,shown).some(r=>submitted&&r.id===submitted)) return '';
-  const o=run.outcome;
+/* ---------------- YOUR PLACE, ON EVERY BOARD ----------------
+   A board 500 rows deep is a board hardly anybody is on the front of, and finding
+   yourself is the reason to open one. So this travels with the scroll and only stands
+   down when your real row is actually in view.
+
+   It replaces a row that was pinned under the list and only appeared on a descending
+   record board, because the record rank was the only rank the game computed. That
+   restriction was the wrong way round: it meant the two boards a player is least likely
+   to be near the top of, the rating board and any reversed one, were the two that told
+   them nothing. B.placeIn now counts whatever is ahead of you on whichever axis and
+   direction is showing, so the number always describes the list it sits under. */
+
+/* THE QUANTITY THAT RANKS THIS RUN on the board currently showing. Null when there is
+   no run to place, or when the board is not this run's competition: a free run has no
+   place on the daily board and a daily run has none on the free one, and inventing a
+   number there would be a row from a different table. */
+function myPlaceValue(){
+  if(!run||!run.outcome) return null;
+  if(lbIsDaily()!==!!run.daily) return null;
   const p=runPayload();
-  /* Your own row shows the same quantity the board is sorted by, so the column
-     still reads as one column. It has no data-i because it is not in lbRows. */
+  if(lbSort==='rating'){
+    return (p.teamRating===null||p.teamRating===undefined)?null:Number(p.teamRating);
+  }
+  return B.scoreOf(run.outcome.wins,p.pointDiff);
+}
+
+function hideMyPin(){
+  const el=$('lb-mine'); if(!el) return;
+  el.hidden=true; el.innerHTML='';
+  if(myPinObs){ myPinObs.disconnect(); myPinObs=null; }
+}
+
+/* Watches your real row in the list, if you have one, and stands the sticky preview
+   down while it is on screen. Held at module scope so a repaint replaces the observer
+   rather than stacking a second one on the same element. */
+let myPinObs=null;
+
+function paintMyPin(rows){
+  const el=$('lb-mine'); if(!el) return;
+  hideMyPin();
+  if(lbMyPlace===null||myPlaceValue()===null) return;
+  const p=runPayload();
+  /* The same right-hand column the rows carry, so the figure your eye compares against
+     is the same quantity in the same place. */
   const cell=lbSort==='rating'
-    ? ratingCell({team_rating:p.teamRating,chemistry_pct:p.chemistryPct,
-                  perfect_pct:p.perfectPct})
-    : diffCell(p.pointDiff,p.chemistryPct,p.spendMusd);
-  return '<div class="lbr mine"><span class="rk">'+
-    (w.rank>999?'#'+w.rank.toLocaleString():w.rank)+'</span>'+
-    '<span class="who"><b>You</b><span>'+
-      esc(o.record+' \u00b7 '+(rosterLine(p.picks)||'this run'))+'</span></span>'+
+    ? ratingCell({team_rating:p.teamRating,wins:run.outcome.wins,losses:run.outcome.losses,
+                  perfect:run.outcome.perfect})
+    : recordCell({wins:run.outcome.wins,losses:run.outcome.losses,
+                  perfect:run.outcome.perfect,point_diff:p.pointDiff});
+  /* Whether it is a place or a preview of one is a real distinction and the label makes
+     it. A guest's run is not on this board and saying "your place" would be a lie. */
+  const live=submitted&&submitted!=='guest';
+  const of=lbIsDaily()?"today's daily":(lbWin==='day'?'today'
+    :(lbWin==='week'?'this week':'all time'));
+  el.innerHTML='<span class="pinlab">'+(live?'Your place':'Where this run would sit')+
+    ' \u00b7 '+esc(SORT_META[lbSort].label.toLowerCase())+', '+esc(of)+'</span>'+
+    '<div class="lbr mine"><span class="rk">'+
+      (lbMyPlace>999?'#'+lbMyPlace.toLocaleString():lbMyPlace)+'</span>'+
+    '<span class="who"><b>'+(live?'You':'This run')+'</b><span>'+
+      esc(run.outcome.record+' \u00b7 '+(rosterLine(p.picks)||'this run'))+'</span></span>'+
     '<span class="rec">'+cell+'</span>'+
     '<span class="go">&rsaquo;</span></div>';
+  el.hidden=false;
+  el.classList.remove('away');
+  /* Your real row, when the run is on this board and inside the 500. Nothing to watch
+     otherwise, and the preview simply stays up. */
+  const real=submitted&&submitted!=='guest'
+    ? $('lb-rows').querySelector('.lbr.mine') : null;
+  if(!real||typeof IntersectionObserver!=='function') return;
+  myPinObs=new IntersectionObserver((es)=>{
+    for(const e of es) el.classList.toggle('away',e.isIntersecting);
+  },{threshold:0.6});
+  myPinObs.observe(real);
 }
+
+/* Tapping it opens the same detail sheet the results page shows, which needs no round
+   trip: it is this browser's own run. */
+$('lb-mine').addEventListener('click',()=>{ if(run&&run.outcome) runDetail(null); });
 
 $('b-how').onclick=howToPlay;
 /* Wrapped, not passed. profileSheet(msg, ok) takes a message, and an onclick handler
@@ -5498,20 +5626,19 @@ $('b-profile').onclick=()=>profileSheet();
 $('b-board').onclick=openBoard;
 $('b-board2').onclick=openBoard;
 $('b-board-back').onclick=()=>show(run&&run.outcome?'s-over':'s-intro');
-$('b-lb-more').onclick=()=>{lbShown+=5;paintBoard();};
 $('b-diag').onclick=runDiagnostics;
 $('lb-tabs').addEventListener('click',(e)=>{
   const t=e.target.closest('.tab'); if(!t||t.disabled||t.dataset.lb===lbWin) return;
-  lbWin=t.dataset.lb; lbShown=5; loadBoard();
+  lbWin=t.dataset.lb; loadBoard();
 });
 $('lb-sort').addEventListener('click',(e)=>{
   const t=e.target.closest('button'); if(!t||t.dataset.sort===lbSort) return;
   /* The window survives a change of axis now. Switching to rating used to yank the tab
      back to All time, because rating could not answer a window; it can. */
-  lbSort=t.dataset.sort; lbShown=5;
+  lbSort=t.dataset.sort;
   loadBoard();
 });
-$('b-lb-dir').onclick=()=>{ lbDir=lbDir==='asc'?'desc':'asc'; lbShown=5; loadBoard(); };
+$('b-lb-dir').onclick=()=>{ lbDir=lbDir==='asc'?'desc':'asc'; loadBoard(); };
 
 /* TEARING DOWN A FINISHED RUN.
    Both ways of playing again need every line of this, so it is one function rather

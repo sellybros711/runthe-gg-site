@@ -6,8 +6,8 @@
  * call here is one of five shapes, and none of them needs a client library:
  *
  *   submit a run          POST /rpc/ps_submit_run
- *   count better runs     GET  /ps_runs?score=gt.N        + Prefer: count=exact
- *   count runs in window  GET  /ps_runs?created_at=gte.T  + Prefer: count=exact
+ *   count better runs     GET  /ps_runs?score=gt.N       + Prefer: count=exact
+ *   count runs in window  GET  /ps_runs?created_at=gte.T + Prefer: count=exact
  *   list the top rows     GET  /ps_runs?order=score.desc&limit=N
  *
  * EVERY FUNCTION FAILS SOFT. If supabase/50_football_perfect_season.sql has not
@@ -105,6 +105,11 @@
      up here because both submit() and scoreOf() need it and submit() is defined
      first. */
   const round1 = (n) => Math.round(Number(n) * 10) / 10;
+  /* Two, matching the numeric(6,2) team_rating column. The column type does the
+     rounding on the way in, so a place counted against an unrounded local rating
+     counts your own row as ahead of you: 73.456 stored as 73.46 is greater than
+     73.456. Same trap as the point_diff rounding in scoreOf, one column over. */
+  const round2 = (n) => Math.round(Number(n) * 100) / 100;
 
   /* THE SIGNED-IN USER'S TOKEN, WHEN THERE IS ONE.
      Sending the anon key while somebody is signed in would leave auth.uid() null
@@ -208,6 +213,43 @@
 
   /* Today's puzzle, as the date the game builds its daily seed from. */
   const todayUTC = () => new Date().toISOString().slice(0, 10);
+
+  /* ---------------- WHY THE WINDOW IS STILL AN INSTANT AND NOT A DAY ----------------
+     The obvious way to make a 500-row windowed board cheap is to stop comparing
+     created_at against a boundary instant and compare a stored Eastern-day column
+     against a date: Today becomes an equality, and an equality can lead an index.
+     That was built, measured against the real schema at 2,000,000 rows, and thrown
+     away, because it is 30 times slower on the board it was meant to speed up.
+
+     The reason is the reason created_at is the last column of every index in
+     50_football_perfect_season.sql. On the rating axis for this week, with the
+     created_at boundary:
+
+       Index Cond: (daily = false AND team_rating IS NOT NULL AND created_at >= ...)
+       1,081 buffers, 9.0ms
+
+     and with a run_date column the rating index does not carry:
+
+       Index Cond: (daily = false AND team_rating IS NOT NULL)
+       Filter:     (run_date >= ...)      Rows Removed by Filter: 58,777
+       59,917 buffers, 251.9ms
+
+     The window has to be a column the sort index already contains, or it stops being
+     an index condition and becomes a heap fetch per candidate row. created_at is in
+     every one of those indexes. A new column would be in none of them, and adding it
+     to all of them to save nothing is how a table ends up paying write cost on every
+     insert for indexes nobody needed.
+
+     Measured on the same 2M rows, the deep page on the shipped indexes:
+
+       rating, today, 500 rows     2.0ms
+       rating, this week, 500      2.7ms
+       record, today, 500          2.3ms
+       count ahead of you, today   1.3ms
+
+     So this needs no schema change at all, which is the whole point of writing it down
+     here: the next person to notice that a range scan cannot lead an index will have
+     the same good idea, and this is the measurement that says not to. */
 
   /* ---------------- free play and the daily are two competitions ----------------
      Not one board with a flag on it. Everybody who plays a given day's daily gets
@@ -422,6 +464,35 @@
     } catch (e) { return failThrown('board', e); }
   }
 
+  /* ---------------- where one run sits on the board that is showing ----------------
+     rankIn() answers this for the record board and nothing else, because `score` is the
+     only ranking column the client can work out for itself. That was enough while the
+     pinned row only appeared on a descending record board. It is not enough now: the
+     row is meant to be there on every board, so it needs the number that describes the
+     list it is sitting under, whichever axis and whichever direction that list is in.
+
+     Ahead of you means greater on a high-to-low board and smaller on a low-to-high one,
+     so the comparison flips with the direction. Nulls need no excluding: a row with no
+     team_rating is neither greater than nor less than yours, so it falls out of the
+     count on its own, which matches a list that also leaves it out.
+
+     Same tie rule as rankIn: equal runs share a place, and the list breaks the tie by
+     who got there first. */
+  async function placeIn(opts, sort, dir, value) {
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) return null;
+    const col = SORTS[sort] || SORTS.record;
+    const v = col === 'team_rating' ? round2(value) : value;
+    try {
+      const q = base() + TABLE + '?select=id&limit=1' +
+        '&' + col + '=' + (dir === 'asc' ? 'lt.' : 'gt.') + encodeURIComponent(v) +
+        scope(opts);
+      const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
+      if (!res.ok) return await fail('place', res);
+      const ahead = countOf(res);
+      return ahead === null ? null : ahead + 1;
+    } catch (e) { return failThrown('place', e); }
+  }
+
   /* One row by id, so a player who is nowhere near the top page can still be
      pinned under the list. */
   async function byId(id) {
@@ -453,9 +524,9 @@
   }
 
   window.PS_BOARD = {
-    API_VERSION: 1,
-    submit, ranks, rankIn, total, top, byId, scoreOf, cutoffISO, todayUTC, SORTS,
-    probe,
+    API_VERSION: 2,
+    submit, ranks, rankIn, placeIn, total, top, byId, scoreOf, cutoffISO, todayUTC,
+    SORTS, probe,
     get offline() { return offline; },
     get lastError() { return lastError; },
     get needsAccountsMigration() { return needsAccountsMigration; },
