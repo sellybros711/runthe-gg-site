@@ -21,7 +21,7 @@ export interface CoinPackage {
 export const PACKAGES: Record<string, CoinPackage> = {
   warmup: {
     id: "warmup",
-    label: "Warm-up",
+    label: "Driving Range",
     coins: 15000,
     priceCents: 199,
     priceEnv: "STRIPE_PRICE_WARMUP",
