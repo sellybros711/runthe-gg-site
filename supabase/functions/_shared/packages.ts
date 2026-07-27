@@ -28,46 +28,50 @@ export interface CoinPackage {
 }
 
 export const PACKAGES: Record<string, CoinPackage> = {
-  // ---- Coin buckets (Buy Coins) --------------------------------------------
-  warmup: {
-    id: "warmup",
-    label: "Driving Range",
+  // ---- Coin buckets (Buy Coins) — owner-approved tiers ---------------------
+  // ids + coins MUST match the client BUCKETS config in build-a-golfer.html.
+  // `coins` is the base delivered; the +100% first-purchase bonus is applied on
+  // top, SERVER-SIDE, in the webhook. Larger tiers also grant bonus packs
+  // (handled client-side); the coin figures below are what the wallet receives.
+  small: {
+    id: "small",
+    label: "Small",
     kind: "coins",
     coins: 15000,
     priceCents: 199,
-    priceEnv: "STRIPE_PRICE_WARMUP",
+    priceEnv: "STRIPE_PRICE_SMALL",
   },
-  clubhouse: {
-    id: "clubhouse",
-    label: "Clubhouse",
+  medium: {
+    id: "medium",
+    label: "Medium",
     kind: "coins",
-    coins: 45000, // 42,000 + 3,000 bonus, baked into the delivered amount
+    coins: 42000,
     priceCents: 499,
-    priceEnv: "STRIPE_PRICE_CLUBHOUSE",
+    priceEnv: "STRIPE_PRICE_MEDIUM",
   },
-  tour: {
-    id: "tour",
-    label: "Tour",
+  large: {
+    id: "large",
+    label: "Large",
     kind: "coins",
-    coins: 102000, // 90,000 + 12,000 bonus
+    coins: 95000,
     priceCents: 999,
-    priceEnv: "STRIPE_PRICE_TOUR",
+    priceEnv: "STRIPE_PRICE_LARGE",
   },
-  championship: {
-    id: "championship",
-    label: "Championship",
+  xl: {
+    id: "xl",
+    label: "XL",
     kind: "coins",
-    coins: 285000, // 240,000 + 45,000 bonus
-    priceCents: 2499,
-    priceEnv: "STRIPE_PRICE_CHAMPIONSHIP",
+    coins: 210000,
+    priceCents: 1999,
+    priceEnv: "STRIPE_PRICE_XL",
   },
-  biggest: {
-    id: "biggest",
-    label: "Biggest Bucket",
+  mega: {
+    id: "mega",
+    label: "Mega",
     kind: "coins",
-    coins: 625000, // ~42 careers; ~+66% value over the base $1.99=15,000 rate
+    coins: 575000,
     priceCents: 4999,
-    priceEnv: "STRIPE_PRICE_BIGGEST",
+    priceEnv: "STRIPE_PRICE_MEGA",
   },
 
   // ---- Daily-Challenge tokens (extra plays beyond the free 3/day) ----------
@@ -115,7 +119,7 @@ export const PACKAGES: Record<string, CoinPackage> = {
     id: "tourpass",
     label: "Tour Pass",
     kind: "pass",
-    passCoins: 30000, // ~2 careers of coins credited on purchase
+    passCoins: 30000, // coins credited on purchase
     passPacks: 2,     // seasonal packs granted client-side for this period
     priceCents: 999,
     priceEnv: "STRIPE_PRICE_TOURPASS",

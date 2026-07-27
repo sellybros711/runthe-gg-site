@@ -8,8 +8,9 @@
 //
 // Required env:
 //   STRIPE_SECRET_KEY, SUPABASE_URL, SUPABASE_ANON_KEY, SITE_URL,
-//   STRIPE_PRICE_WARMUP, STRIPE_PRICE_CLUBHOUSE, STRIPE_PRICE_TOUR,
-//   STRIPE_PRICE_CHAMPIONSHIP
+//   STRIPE_PRICE_SMALL, STRIPE_PRICE_MEDIUM, STRIPE_PRICE_LARGE,
+//   STRIPE_PRICE_XL, STRIPE_PRICE_MEGA, plus the token/pass price env vars
+//   (see _shared/packages.ts for the full list)
 //
 // Deploy (JWT enforced so only signed-in players can buy):
 //   supabase functions deploy create-checkout

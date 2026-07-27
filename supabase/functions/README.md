@@ -31,15 +31,16 @@ Create one **Product** per package with a one-time **Price** (USD). Amounts are
 enforced server-side in `_shared/packages.ts`, not by Stripe. The webhook
 branches on the package **kind** (coins / tokens / pass).
 
-**Coin packs** (`kind: coins`) — first purchase gets **+100%** automatically:
+**Coin packs** (`kind: coins`) — first purchase gets **+100%** automatically.
+Large / XL / Mega also grant bonus packs (handled client-side):
 
-| Package        | Price  | Coins delivered |
-|----------------|--------|-----------------|
-| Warm-up        | $1.99  | 15,000          |
-| Clubhouse      | $4.99  | 45,000          |
-| Tour           | $9.99  | 102,000         |
-| Championship   | $24.99 | 285,000         |
-| Biggest Bucket | $49.99 | 625,000         |
+| Package | Price  | Coins   | Bonus packs        |
+|---------|--------|---------|--------------------|
+| Small   | $1.99  | 15,000  | —                  |
+| Medium  | $4.99  | 42,000  | —                  |
+| Large   | $9.99  | 95,000  | +1 Tour pack       |
+| XL      | $19.99 | 210,000 | +1 Champion pack   |
+| Mega    | $49.99 | 575,000 | +3 Champion packs  |
 
 **Daily Tokens** (`kind: tokens`) — extra Daily-Challenge attempts beyond the free 3/day:
 
@@ -67,11 +68,11 @@ Copy each **Price ID** (`price_...`).
 supabase secrets set \
   STRIPE_SECRET_KEY=sk_live_or_test_... \
   STRIPE_WEBHOOK_SECRET=whsec_...        `# from step 5` \
-  STRIPE_PRICE_WARMUP=price_... \
-  STRIPE_PRICE_CLUBHOUSE=price_... \
-  STRIPE_PRICE_TOUR=price_... \
-  STRIPE_PRICE_CHAMPIONSHIP=price_... \
-  STRIPE_PRICE_BIGGEST=price_... \
+  STRIPE_PRICE_SMALL=price_... \
+  STRIPE_PRICE_MEDIUM=price_... \
+  STRIPE_PRICE_LARGE=price_... \
+  STRIPE_PRICE_XL=price_... \
+  STRIPE_PRICE_MEGA=price_... \
   STRIPE_PRICE_TOK1=price_... \
   STRIPE_PRICE_TOK3=price_... \
   STRIPE_PRICE_TOK7=price_... \
@@ -125,16 +126,16 @@ Verify: `coin_purchase` gets one row, `coin_wallet.paid_coins` increases once
 - Credit/refund/grant RPCs are **`service_role`-only**; the browser can only
   *read* its wallet and *spend* what it holds.
 
-## 7. Flip the client launch flags (Biggest Bucket / Tokens / Tour Pass)
+## 7. Flip the client launch flags (Buy Coins / Tokens / Tour Pass)
 
-The client ships these three features **behind launch flags, default OFF**, so
-the store never shows checkout buttons that error before the Stripe products
-exist. In `build-a-golfer/build-a-golfer.html`, once steps 1–6 above are done
-for each feature, set:
+The client ships these features **behind launch flags, default OFF**, so the
+store never shows checkout buttons that error before the Stripe products exist.
+In `build-a-golfer/build-a-golfer.html`, once steps 1–6 above are done for each
+feature, set:
 
-- `const BIGGEST_ENABLED=false;` → `true`   (needs `STRIPE_PRICE_BIGGEST`)
-- `const TOKENS_ENABLED=false;`  → `true`   (needs `STRIPE_PRICE_TOK1/3/7/15`)
-- `const TOURPASS_ENABLED=false;`→ `true`   (needs `STRIPE_PRICE_TOURPASS` **and** migration 71)
+- `const BUCKETS_ENABLED=false;`  → `true`   (needs `STRIPE_PRICE_SMALL/MEDIUM/LARGE/XL/MEGA`)
+- `const TOKENS_ENABLED=false;`   → `true`   (needs `STRIPE_PRICE_TOK1/3/7/15`)
+- `const TOURPASS_ENABLED=false;` → `true`   (needs `STRIPE_PRICE_TOURPASS` **and** migration 71)
 
 then redeploy the client (copy `build-a-golfer.html` → `golf/index.html`). Each
 flag is an independent kill-switch. `runtour_wallet()` returns `daily_tokens`/
@@ -159,6 +160,6 @@ reads inactive, so the daily gate behaves exactly as today.
 
 - Tune `runtour_claim_founder` (`v_amount`, `v_cutoff` in `70_...`) to the real
   founder bonus + launch instant.
-- Pass reward magnitude/mult, token counts, and Biggest Bucket coins are all in
+- Pass reward magnitude/mult, token counts, and coin-bucket amounts are all in
   `_shared/packages.ts` (server, authoritative) + the client config constants
   (`TOURPASS`, `DAILY_TOKENS`, `PASS_REWARD_MULT`, `BUCKETS`) — keep them in sync.

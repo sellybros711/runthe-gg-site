@@ -21776,22 +21776,24 @@ const PACK_TYPES={
 // coins delivered — a tampered client can't change what it receives). First purchase gets +100% coins,
 // applied SERVER-SIDE in the webhook. Set BUCKETS_ENABLED=false to instantly pull the store offline.
 const BUCKETS_ENABLED=false;
+// Coin buckets (owner-approved tiers). `bonus` = % extra coins vs the base $1.99=15,000 rate (display only,
+// derived). packTier/packN = BONUS PACKS granted on purchase (Large/XL/Mega). id + coins MUST match
+// supabase/functions/_shared/packages.ts (the SERVER is authoritative on what's delivered). First purchase
+// gets +100% coins, applied SERVER-SIDE in the webhook. NOTE (owner rule): NEVER surface "careers" in the UI.
 const BUCKETS=[
-  {id:'warmup',       name:'Driving Range', usd:1.99,  coins:15000,  col:'#3fbf7a'},
-  {id:'clubhouse',    name:'Clubhouse',     usd:4.99,  coins:45000,  col:'#5bcfe8', bonus:20},
-  {id:'tour',         name:'Tour',          usd:9.99,  coins:102000, col:'#a24be0', bonus:35, badge:'POPULAR'},
-  {id:'championship', name:'Championship',  usd:24.99, coins:285000, col:'#F1D04A', bonus:51, badge:'BEST VALUE'},
-  {id:'biggest',      name:'Biggest Bucket',usd:49.99, coins:625000, col:'#e14a6d', bonus:66, badge:'BIGGEST', hold:true},
+  {id:'small',  name:'Small',  usd:1.99,  coins:15000,  col:'#3fbf7a'},
+  {id:'medium', name:'Medium', usd:4.99,  coins:42000,  col:'#5bcfe8', bonus:12},
+  {id:'large',  name:'Large',  usd:9.99,  coins:95000,  col:'#a24be0', bonus:26, badge:'POPULAR',    packTier:'tour',  packN:1},
+  {id:'xl',     name:'XL',     usd:19.99, coins:210000, col:'#e8922a', bonus:39,                     packTier:'champ', packN:1},
+  {id:'mega',   name:'Mega',   usd:49.99, coins:575000, col:'#F1D04A', bonus:53, badge:'BEST VALUE', packTier:'champ', packN:3},
 ];
-// LAUNCH FLAGS for the new monetization features. Default OFF so the client can ship ahead of the backend
-// without putting checkout buttons that error in front of live players. Flip each to true AT GO-LIVE, once
-// the owner has: created the Stripe Product/Price + set its STRIPE_PRICE_* secret, redeployed
-// create-checkout + stripe-webhook (they import _shared/packages.ts), and run supabase/71_runtour_tokens_pass.sql.
-//   BIGGEST_ENABLED  → STRIPE_PRICE_BIGGEST  (the $49.99 Biggest Bucket coin pack)
+// LAUNCH FLAGS for the real-money features. Default OFF so the client ships ahead of the backend without
+// putting checkout buttons that error in front of live players. Flip each to true AT GO-LIVE, once the owner
+// has: created the Stripe Product/Price + set its STRIPE_PRICE_* secret, redeployed create-checkout +
+// stripe-webhook (they import _shared/packages.ts), and run supabase/71_runtour_tokens_pass.sql.
 //   TOKENS_ENABLED   → STRIPE_PRICE_TOK1/TOK3/TOK7/TOK15  (extra Daily-Challenge attempts)
 //   TOURPASS_ENABLED → STRIPE_PRICE_TOURPASS + migration 71 (monthly Tour Pass)
-const BIGGEST_ENABLED=false;
-function bucketCareers(c){ return c/15000; }   // 15,000 coins = one full career's earnings at average play
+function packTierLabel(t){ return t==='champ'?'Champion':t==='tour'?'Tour':'Base'; }   // bonus-pack display name
 // ---- Daily Tokens: buy extra Daily-Challenge attempts beyond the free 3/day. Server-authoritative
 // (credited by the Stripe webhook, spent via runtour_spend_token). ids + counts MUST match packages.ts.
 const TOKENS_ENABLED=false;
@@ -22582,24 +22584,26 @@ function bucketShopNode(){
   if(_walletCache===null) loadWallet();   // refresh the purchased-coin balance for this view
   var wi=walletInfo(), firstBuy=!!(wi && (wi.lifePurchased||0)===0);   // server gives +100% on the FIRST paid pack
   var wrap=$('<div style="padding:6px 2px 4px"></div>');
-  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:6px auto 6px;line-height:1.5">Top up your coins for gear, packs and cosmetics. <b style="color:#8fe0c4">15,000 coins ≈ a full 30-year career’s worth of earnings.</b></div>'));
+  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:6px auto 8px;line-height:1.5">Coins for gear &amp; packs.</div>'));
   if(firstBuy) wrap.appendChild($('<div style="max-width:400px;margin:4px auto 0;text-align:center;font:900 13px var(--body);color:#ffd45e;background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.4);border-radius:12px;padding:8px 10px">🎉 First purchase bonus — <span style="color:#fff">DOUBLE coins</span> on your first pack!</div>'));
   BUCKETS.forEach(function(b){
-    if(b.hold && !BIGGEST_ENABLED) return;   // Biggest Bucket hidden until its Stripe product is live (launch flag)
     var coins=firstBuy?b.coins*2:b.coins;
-    var careers=bucketCareers(coins), careerTxt=careers<1.5?'~1 career':('~'+Math.round(careers)+' careers');
-    var card=$('<div style="max-width:400px;margin:14px auto 0;padding:13px;border-radius:16px;background:linear-gradient(165deg,'+b.col+'1c,#0c1f16);border:2px solid '+b.col+';box-shadow:0 0 18px '+b.col+'55;position:relative"></div>');
+    // extra line: "+X% value" and any bonus packs granted (Large/XL/Mega). NO "careers" language (owner rule).
+    var extras=[];
+    if(b.bonus) extras.push('<b style="color:'+b.col+'">+'+b.bonus+'% value</b>');
+    if(b.packTier) extras.push('<b style="color:'+b.col+'">+'+b.packN+' '+packTierLabel(b.packTier)+' pack'+(b.packN===1?'':'s')+'</b>');
+    var card=$('<div style="max-width:400px;margin:12px auto 0;padding:12px 13px;border-radius:14px;background:rgba(12,31,22,.7);border:1px solid '+b.col+'66;position:relative"></div>');
     if(b.badge) card.appendChild($('<div style="position:absolute;top:-9px;right:12px;background:'+b.col+';color:#0c1f16;font:900 9px var(--body);letter-spacing:.1em;padding:3px 8px;border-radius:20px">'+esc(b.badge)+'</div>'));
     card.appendChild($('<div style="display:flex;gap:12px;align-items:center">'
-      +'<div style="flex:0 0 auto;width:64px;height:64px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 12px '+b.col+'88)">'+ic('coins',{size:'56px'})+'</div>'
+      +'<div style="flex:0 0 auto;width:46px;height:46px;display:flex;align-items:center;justify-content:center;color:'+b.col+'">'+ic('coins',{size:'40px'})+'</div>'
       +'<div style="flex:1;min-width:0">'
-        +'<div style="font-family:var(--display);font-size:20px;color:'+b.col+'">'+esc(b.name)+'</div>'
-        +'<div style="font:900 22px var(--body);color:#ffd45e;display:flex;align-items:center;gap:5px;margin-top:1px"><span style="width:18px;height:18px">'+ic('coin',{size:'18px'})+'</span>'+coinFmt(coins)+(firstBuy?'<span class="small" style="color:'+b.col+';font-weight:800;margin-left:4px">2×!</span>':'')+'</div>'
-        +'<div class="small" style="color:#cfe6d8;margin-top:2px">'+careerTxt+(b.bonus?' · <b style="color:'+b.col+'">+'+b.bonus+'% value</b>':'')+'</div>'
-      +'</div></div>'));
-    var buy=$('<button class="btn" style="width:100%;margin:10px 0 0;background:'+b.col+';color:#0c1f16;font-weight:900;font-size:16px">$'+b.usd.toFixed(2)+'</button>');
-    buy.onclick=function(){ beginBucketPurchase(b.id); };
-    card.appendChild(buy);
+        +'<div style="font-family:var(--display);font-size:17px;color:'+b.col+'">'+esc(b.name)+'</div>'
+        +'<div style="font:900 20px var(--body);color:#ffd45e;display:flex;align-items:center;gap:5px;margin-top:1px"><span style="width:16px;height:16px">'+ic('coin',{size:'16px'})+'</span>'+coinFmt(coins)+(firstBuy?'<span class="small" style="color:'+b.col+';font-weight:800;margin-left:4px">2×!</span>':'')+'</div>'
+        +(extras.length?'<div class="small" style="color:#cfe6d8;margin-top:2px">'+extras.join(' · ')+'</div>':'')
+      +'</div>'
+      +'<button class="btn buybtn" style="flex:0 0 auto;width:auto;margin:0;background:'+b.col+';color:#0c1f16;font-weight:900;font-size:15px;padding:11px 16px;white-space:nowrap">$'+b.usd.toFixed(2)+'</button>'
+    +'</div>'));
+    card.querySelector('.buybtn').onclick=function(){ beginBucketPurchase(b.id); };
     wrap.appendChild(card);
   });
   // ---- Tour Pass (monthly) ----
@@ -22610,7 +22614,7 @@ function bucketShopNode(){
     pc.appendChild($('<div style="font-family:var(--display);font-size:22px;color:'+passCol+';text-align:center">'+esc(passThemeName())+'</div>'));
     pc.appendChild($('<div class="small" style="text-align:center;color:#cfe6d8;margin:2px 0 8px">A new themed pass every month</div>'));
     var perks=$('<div style="display:flex;flex-direction:column;gap:5px;margin:0 auto;max-width:300px"></div>');
-    [['♾️','Unlimited Daily Challenge plays'],['⭐','Earn '+PASS_REWARD_MULT+'× coins from every mode'],['🪙',coinFmt(TOURPASS.coins)+' coins, instantly'],['🎁',TOURPASS.packs+' seasonal packs']].forEach(function(p){
+    [['♾️','Unlimited daily plays at any course'],['🏆','Extra rewards & challenges all month'],['🎁','Free bundle of seasonal packs'],['⭐','Earn '+PASS_REWARD_MULT+'× coins from every mode']].forEach(function(p){
       perks.appendChild($('<div class="small" style="display:flex;gap:8px;align-items:center;color:#eaf5ee"><span style="flex:0 0 auto">'+p[0]+'</span><span>'+esc(p[1])+'</span></div>'));
     });
     pc.appendChild(perks);
@@ -22741,14 +22745,14 @@ function overlayShop(screen){
     <button class="shop-closetcta" data-closet><span style="font-size:18px;flex:0 0 auto">🚪</span><span><b>Customize your golfer in your closet</b><br><span class="small" style="opacity:.85">Equip everything you own — colors, patterns, gear &amp; effects</span></span><span style="margin-left:auto">▸</span></button>
     <button class="shop-refcta" data-refshare><span style="width:18px;height:18px;flex:0 0 auto">${ic('coins',{size:'18px'})}</span><span><b>Invite a friend, get a free pack</b><br><span class="small" style="opacity:.85">They sign up with your link, you both score a pack</span></span><span style="margin-left:auto">↗</span></button>
     <div class="segrow">
-      ${BUCKETS_ENABLED?`<button data-sec="buckets" class="${sec==='buckets'?'on':''}">Buy Coins</button>`:''}
       ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
       <button data-sec="drops" class="${sec==='drops'?'on':''}">Drops${(function(){if(typeof anyDropClaimable==='function'&&anyDropClaimable())return '<span class="droplivedot" style="background:#F1D04A;box-shadow:0 0 8px #F1D04A"></span>'; const ld=liveThemedDrop();return ld?'<span class="droplivedot" style="background:'+ld.accent+'"></span>':'';})()}</button>
       <button data-sec="bag" class="${sec==='bag'?'on':''}">Clubs${(sec!=='bag'&&cosCatNew('club')>0)?NDOT:''}</button>
       <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel${secDot('apparel')}</button>
       <button data-sec="accessories" class="${sec==='accessories'?'on':''}">Accessories${secDot('accessories')}</button>
       <button data-sec="effects" class="${sec==='effects'?'on':''}">Effects${secDot('effects')}</button>
-      <button data-sec="owned" class="${sec==='owned'?'on':''}">My Items</button></div>
+      <button data-sec="owned" class="${sec==='owned'?'on':''}">My Items</button>
+      ${BUCKETS_ENABLED?`<button data-sec="buckets" class="${sec==='buckets'?'on':''}">Buy Coins</button>`:''}</div>
     ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-cat="${c[0]}">${esc(c[1])}${(c[0]!==cat && cosCatNew(c[0])>0)?NDOT:''}</button>`).join('')}</div>`:''}
   </div>`);
   ov.appendChild(sticky);
