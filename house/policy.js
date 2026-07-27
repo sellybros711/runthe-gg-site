@@ -71,6 +71,8 @@ const DEFAULTS = {
   /* GDD §22. What the stand-in says in the doorway, so the ritual can be
      ablated the same way as the other two player-only layers. */
   walkout: 'read',
+  /* GDD §26. Whether the stand-in shakes on a final two. */
+  deal: true,
 };
 
 function make(opts) {
@@ -308,6 +310,20 @@ function make(opts) {
           const plant = bestSeed(s);
           if (plant) {
             R.performAction(s, { kind: 'seed', target: plant.ear, against: plant.at });
+            s.energy -= SC.ENERGY.SEED_COST;
+            return s.energy >= SC.ENERGY.SCENE_COST ? null : { done: true };
+          }
+        }
+        /* GDD §26. Shake on the last two seats when somebody is there. One
+           conversation, and it is the only thing in the game that reaches past
+           the alliance eating itself. */
+        if (cfg.deal && !E.dealOf(s, me) && s.energy >= SC.ENERGY.SEED_COST) {
+          const ready = R.activeIds(s).filter((i) => i !== me && !E.dealOf(s, i)
+            && s.rel.trust[i][me] >= E.K.DEAL_FORM_TRUST - 6
+            && s.rel.trust[me][i] >= E.K.DEAL_FORM_TRUST - 14);
+          if (ready.length) {
+            ready.sort((a, b) => s.rel.trust[b][me] - s.rel.trust[a][me]);
+            R.performAction(s, { kind: 'deal', target: ready[0] });
             s.energy -= SC.ENERGY.SEED_COST;
             return s.energy >= SC.ENERGY.SCENE_COST ? null : { done: true };
           }
