@@ -218,6 +218,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .dim{color:var(--dim)}
   .eyebrow{font-family:var(--fn);text-transform:uppercase;letter-spacing:.16em;
     font-size:11px;color:var(--dim-2)}
+  .eyebrow.red{color:var(--red)}
   button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
 
   /* BUTTONS ARE SET IN --fn, NOT THE DISPLAY FACE.
@@ -677,7 +678,9 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .rules li{display:flex;gap:11px;align-items:flex-start;font-size:14.5px}
   .rules .n{flex:0 0 24px;height:24px;border-radius:7px;background:var(--grad-blue);color:#fff;
     font-family:var(--fn);font-size:12px;display:grid;place-items:center;margin-top:1px}
-  .rules b{color:#fff}
+  /* The emphasis in a rule is the rule. Red, the same red the eyebrow above the list
+     uses, so the four things you have to know are the four things that are coloured. */
+  .rules b{color:var(--red)}
 
   /* THE FIELD ITSELF. This rule was lost when the team picker's styles were cut out, because
      it sat immediately after them: without `position:relative` and `overflow:hidden` the
@@ -686,10 +689,10 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .field{position:relative;width:100%;aspect-ratio:1/0.54;border-radius:14px;overflow:hidden;
     background:radial-gradient(125% 85% at 50% -12%,#16283f 0%,#0a1220 58%,#070c16 100%);
     border:1px solid var(--line)}
-  /* The results page is long, so its copy of the field is a little flatter. Not much
-     flatter: the formation sits lower than it used to and a chip's label runs 47px below
-     its spot, so at 0.46 the back's team plate finished 6px off the bottom edge. */
-  .field.short{aspect-ratio:1/0.50}
+  /* The results copy of the field used to be flatter than the draft's, and it is the
+     field that broke: 47px of label under a back at 64% does not fit in 0.46 of 330px.
+     Same aspect as the draft field now, which is the one the formation was solved for. */
+  .field.short{aspect-ratio:1/0.54}
   /* THE CLUB WASH IS GONE, along with the favourite team it tinted the field with. It
      screened E.washColors() of your club over every field; with no club there is nothing for
      it to be a wash of, and --tc1 would never be set, so it painted nothing. The end-zone
@@ -893,9 +896,19 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   /* Name and team in one block, so reversing the column for a low chip moves the pair as a
      unit rather than putting the year above the name. */
   .chip .lab{display:block}
-  .chip .who{width:78px;margin:3px 0 2px -8px;font-size:9.5px;font-weight:800;line-height:1.1;
+  /* Wider than the 62px chip so a name like Roethlisberger fits, but capped against the
+     viewport: at 320 a fixed 78px ran the outside receivers' names 5px off the edge of
+     the field, and the field clips. The margin re-centres it on the chip, since auto
+     margins compute to zero on a box wider than its container. */
+  .chip{--labw:min(78px,19vw)}
+  .chip .who{width:var(--labw);margin:3px 0 2px calc((62px - var(--labw))/2);
+    font-size:9.5px;font-weight:800;line-height:1.1;
     text-shadow:0 2px 6px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .chip .yr{font-size:8.5px;color:var(--dim);font-weight:700;line-height:13px}
+  /* Capped at the chip's own width. The club plate and the season are centred on a
+     block that was free to be as wide as its content, so a tight end and the receiver
+     outside him printed OAK 2013 through NYG 2007. */
+  .chip .yr{font-size:8.5px;color:var(--dim);font-weight:700;line-height:13px;
+    max-width:100%;overflow:hidden;white-space:nowrap}
   /* THE TEAM CODE ON A PLATE IN THAT CLUB'S COLOUR.
      The code carries the team and the year carries the season, and the team is the part
      you are pattern-matching for chemistry, so it gets the colour. On a plate rather than
@@ -1531,14 +1544,43 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      that they produced. Third tier of the hierarchy, so the type is small. */
   .splits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:14px;
     border-top:1px solid var(--line);padding-top:12px}
-  .splits div{min-width:0;padding:0 4px}
-  .splits div:not(:nth-child(3n+1)){border-left:1px solid var(--line)}
-  .splits div:nth-child(n+4){border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+  /* >* rather than div: the second row's cells are buttons. */
+  .splits>*{min-width:0;padding:0 4px;background:none;border:none;color:inherit;
+    font:inherit;text-align:center;display:block;width:100%}
+  .splits>*:not(:nth-child(3n+1)){border-left:1px solid var(--line)}
+  .splits>*:nth-child(n+4){border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
   .splits b{display:block;font-family:var(--fd);font-size:18px;line-height:1;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .splits span{display:block;font-family:var(--fn);font-size:clamp(7.5px,2.1vw,8.5px);
     letter-spacing:.05em;text-transform:uppercase;color:var(--dim-2);margin-top:4px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .gateline:empty{display:none}
+  .gateline{margin-top:14px;padding-top:13px;border-top:1px solid var(--line);
+    font-size:12.5px;line-height:1.4;color:var(--dim)}
+  .gateline b{color:#fff;font-weight:700}
+  .gateline .btn{margin-top:10px}
+
+  /* WHERE THE RUN PLACED, AND THE WAY IN.
+     A rank without its field size is not a fact, so the total gets its own line: #12
+     of 20 and #12 of 20,000 are not the same run. The three of them are the bottom row
+     of the same grid as chemistry and money, so they inherit its type. */
+  .splits .lbc i{display:block;font-style:normal;font-family:var(--fn);font-size:9px;
+    line-height:1;color:var(--dim-2);margin-top:3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .splits .lbc.waiting b,.splits .lbc.waiting i{opacity:.45}
+  .splits .lbc.go{cursor:pointer;border-radius:8px;transition:background .15s ease}
+  /* The tap target keeps the row's dividers, so the padding goes on the inside. */
+  .splits .lbc.go:hover{background:rgba(255,255,255,.05)}
+  .splits .lbc.go:active{background:rgba(255,255,255,.09)}
+  .splits .lbc.go:focus-visible{outline:2px solid var(--wr);outline-offset:2px}
+  .splits .lbc.go b{color:#7dabff}
+  .splits .lbc.go.top b{color:#4ade80}
+  .splits .lbc.go.first b{background:linear-gradient(180deg,#fde68a,#d97706);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  /* A caret, so the three of them read as somewhere to go rather than three more
+     numbers sitting next to three numbers. */
+  .splits .lbc.go span:after{content:' \203a';color:var(--dim-2)}
 
   /* season stats */
   .stat4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px}
@@ -1909,6 +1951,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            ranks you on was invisible on the page that ends your run. -->
       <div class="ovr" id="o-ovr"></div>
       <div class="splits" id="o-splits"></div>
+      <!-- One line, guests only. The full sign-in gate lives in the Where it ranks tab,
+           which stopped being the tab this page opens on, and a prompt nobody sees is
+           not a prompt. The placings above are real; what a guest is missing is the row. -->
+      <div class="gateline" id="o-gate"></div>
     </div>
 
     <!-- 2. THE LINEUP, DIRECTLY UNDER THE RECORD.
@@ -2215,18 +2261,30 @@ const TIER={
  * collision entirely and is a formation real teams line up in.
  */
 const SPOTS = {
-  QB:   [{x:50,y:45}],
-  RB:   [[{x:34,y:65}], [{x:33,y:65},{x:67,y:65}]],
-  WR:   [[], [{x:50,y:27}], [{x:10,y:27},{x:90,y:27}], [{x:10,y:27},{x:90,y:27},{x:30,y:36}]],
+  QB:   [{x:50,y:44}],
+  RB:   [[{x:28,y:64}], [{x:28,y:64},{x:72,y:64}]],
+  WR:   [[], [{x:50,y:24}], [{x:12,y:24},{x:88,y:24}], [{x:12,y:24},{x:88,y:24},{x:32,y:24}]],
   /*
-   * The inside row sits at 70 and 30, not 75 and 25. A chip's name label is wider
-   * than the chip itself (78px against 62px) so long surnames fit, which left the
-   * outside receivers' labels lapping 2px onto the tight end and flex discs.
-   * Measured, not guessed: a sweep of 49 formations caught it every time. Ten px of
-   * clearance now, and the labels stay wide.
+   * THE FRONT FOUR SHARE ONE LINE, AND THAT IS WHAT STOPPED THE COLLISIONS.
+   *
+   * The inside pair used to sit a tier below the outside receivers, which put whoever
+   * was in the flex directly above the lone back: his disc landed on their name, which
+   * is what an opaque circle drawn over text looks like, and it did it in every layout
+   * the game can produce.
+   *
+   * Two chips on the SAME line can never collide vertically, because a label starts 20px
+   * below its spot and a disc ends 17px below its own. So the four men on the line of
+   * scrimmage are genuinely on one line, which is also how a spread formation lines up,
+   * and only the quarterback and the backfield sit below them.
+   *
+   * The numbers come from a sweep of every layout this game can reach (the flex is the
+   * only free slot, so there are exactly four) at nine field sizes from 320 to 768, both
+   * aspects, with and without the team-plate line. Zero discs over text, nothing off the
+   * field. What is left is label boxes touching, which is not the same thing: both are
+   * centred text with an ellipsis and the box is far wider than most surnames.
    */
-  TE:   [[], [{x:70,y:36}], [{x:70,y:36},{x:30,y:36}]],
-  FLEX: {x:30,y:36},
+  TE:   [[], [{x:68,y:24}], [{x:68,y:24},{x:32,y:24}]],
+  FLEX: {x:32,y:24},
 };
 /* THE FORMATION IS SIZED SO EVERY LABEL FITS UNDER ITS DISC.
    Measured, not estimated: a chip needs 84px below its spot, the disc's radius plus the name
@@ -2241,7 +2299,7 @@ const SPOTS = {
    BOTH TABLES HAVE TO MOVE TOGETHER. This one is only the fallback; SPOTS above is what the
    draft field actually lays out from, and changing one and not the other is why the running
    back kept clipping after the fallback said it should not. */
-const SPOT_FALLBACK=[{x:50,y:45},{x:34,y:65},{x:10,y:27},{x:90,y:27},{x:70,y:36},{x:30,y:36}];
+const SPOT_FALLBACK=[{x:50,y:44},{x:28,y:64},{x:12,y:24},{x:88,y:24},{x:68,y:24},{x:32,y:24}];
 
 /** Target coordinate for every slot index, given who is currently signed. */
 function layoutFor(){
@@ -2637,7 +2695,7 @@ function dailyRules(){
   const today=new Date().toISOString().slice(0,10);
   /* No paragraph before the list. It said what points 2 and 3 already say, so the sheet
      opened with the same fact three times and buried the rules under it. */
-  $('sheet-in').innerHTML='<div class="eyebrow">Daily puzzle</div>'+
+  $('sheet-in').innerHTML='<div class="eyebrow red">Daily puzzle</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 14px">Same six spins for everyone</h2>'+
     '<ul class="rules" style="margin-top:0">'+
     '<li><span class="n">1</span><span>Build the <b>best team you can</b> out of the six spins '+
@@ -3547,6 +3605,7 @@ function paintOver(){
      to about 100, so the number doubles as its own percentage and the bar needs no
      invented scale. Bands at 75 and 50: a player taking the best man on every board
      lands around 73, so green means you beat greedy. */
+  const split=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
   const rband=rating>=75?'#22c55e':(rating>=50?'#fbbf24':'#ef4444');
   const sband=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
   const bigcell=(k,v,pctFill,color)=>'<div><div class="k">'+k+'</div>'+
@@ -3557,19 +3616,16 @@ function paintOver(){
     bigcell('Best possible',share===null?'--':share+'%',
       share===null?0:Math.max(2,share),share===null?'#94a3b8':sband);
 
-  /* A 15-5 line only makes sense once you can see it was 13-4 and then 2-1. The
-     three cells under those are the rest of what the leaderboard's detail sheet
-     shows, so the board and this page never disagree about a run. */
-  const po=s.results.filter(r=>r.playoff);
-  const reg=s.results.filter(r=>!r.playoff);
-  const won=(arr)=>arr.filter(r=>r.won).length;
-  const split=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
-  $('o-splits').innerHTML=split(won(reg)+'-'+(reg.length-won(reg)),'Regular season')+
-    split(po.length?won(po)+'-'+(po.length-won(po)):'--','Playoffs')+
-    split(o.seedLabel.replace(/^Missed.*/,'None'),'Playoff seed')+
+  /* THE STRIP. Top row is what the roster cost you and where it finished; bottom row
+     is where the run placed, and each of those three opens the board on that window
+     rather than making you find it. Painted with the ranks unknown, because the board
+     is a network call and the page is on screen before it answers; paintRankStrip
+     fills them in when it does. */
+  $('o-splits').innerHTML=
     split(pc(run.season.chemistry-1),'Chemistry')+
     split(M0(spendUsed),'Spent')+
-    split('x'+st.multiplier.toFixed(2),'Team shape');
+    split(o.seedLabel.replace(/^Missed.*/,'None'),'Playoff seed')+
+    RANK_WINDOWS.map(([k,label])=>rankCell(k,label,null)).join('');
 
   /* Real team stats off the scores you were shown, not fantasy totals. Points
      for and against say more about the season than a points-scored figure on
@@ -3949,12 +4005,12 @@ const HERO={year:820, stagger:300, team:970, land:320, sign:760,
 /* Same six spots, same coordinates, as the real field. */
 /* Same coordinates as the real field, for the same reason: see SPOT_FALLBACK. */
 const HERO_SPOTS=[
-  {label:'QB',   left:50, top:45},
-  {label:'RB',   left:34, top:65},
-  {label:'WR',   left:10, top:27},
-  {label:'WR',   left:90, top:27},
-  {label:'TE',   left:70, top:36},
-  {label:'FLEX', left:30, top:36},
+  {label:'QB',   left:50, top:44},
+  {label:'RB',   left:28, top:64},
+  {label:'WR',   left:12, top:24},
+  {label:'WR',   left:88, top:24},
+  {label:'TE',   left:68, top:24},
+  {label:'FLEX', left:32, top:24},
 ];
 /* WHICH PLAYERS SIGN ON THE FRONT PAGE.
    It used to be three hardcoded names, so the landing animation played out identically every
@@ -4455,6 +4511,60 @@ async function submitAfterSignIn(){
 const WINDOWS_FREE=[['day','Today'],['week','This week'],['all','All time']];
 const WINDOWS_DAILY=[["day","Today's daily"],['week','This week'],['all','All dailies']];
 
+/* THE BOTTOM ROW OF THE RESULTS STRIP: where this run placed, and a way in.
+   Short labels, because these three sit beside chemistry and money in a grid three
+   cells wide, not in the roomier panel further down the page. */
+const RANK_WINDOWS=[['day','Today'],['week','This week'],['all','All time']];
+
+/* One cell. `w` is null while the board is still being read, false-ish when it
+   answered but has nothing for that window. Only a cell with a real rank is a button:
+   there is nothing to open if the board never answered. */
+function rankCell(k,label,w){
+  if(w===null){
+    return '<div class="lbc waiting"><b>--</b><i>reading</i><span>'+label+'</span></div>';
+  }
+  if(!w){
+    return '<div class="lbc"><b>--</b><i>no board</i><span>'+label+'</span></div>';
+  }
+  const cls=w.rank===1?' first':(w.rank<=10?' top':'');
+  return '<button class="lbc go'+cls+'" data-win="'+k+'">'+
+    '<b>#'+w.rank.toLocaleString()+'</b><i>of '+w.total.toLocaleString()+'</i>'+
+    '<span>'+label+'</span></button>';
+}
+
+function paintRankStrip(r){
+  const g=$('o-gate');
+  if(g){
+    const any=r&&RANK_WINDOWS.some(([k])=>r[k]);
+    g.innerHTML=(submitted==='guest'&&any)
+      ? '<span>Those placings are where this run <b>would</b> sit. Only runs with a name '+
+        'on them go on the board.</span>'+
+        '<button class="btn sm" id="b-gate-strip">Sign in and keep this run</button>'
+      : '';
+    if(submitted==='guest'&&any) $('b-gate-strip').onclick=()=>profileSheet();
+  }
+  const el=$('o-splits'); if(!el) return;
+  const cells=[...el.children];
+  /* The three rank cells are the second row of a six-cell grid. Replaced in place so
+     the top row, which has nothing to do with the board, never repaints. */
+  RANK_WINDOWS.forEach(([k,label],i)=>{
+    const at=cells[3+i]; if(!at) return;
+    const tmp=document.createElement('div');
+    tmp.innerHTML=rankCell(k,label,r&&r[k]?r[k]:false);
+    at.replaceWith(tmp.firstChild);
+  });
+}
+
+/* Tapping a placing opens the board on that window. Sorted by record, not by team
+   rating: the rank on the cell IS the record rank, and the rating board is all-time
+   only, so leaving the sort alone would open a board this number is not from. */
+document.addEventListener('click',(e)=>{
+  const b=e.target.closest('#o-splits .lbc.go'); if(!b) return;
+  if(run&&run.daily){ lbWin='daily'; }
+  else { lbSort='record'; lbWin=b.dataset.win; }
+  lbShown=5; show('s-board'); loadBoard();
+});
+
 /* Submit, then read the rank. In that order so a run is counted in its own
    denominator, and the rank query does not depend on the submit having worked. */
 async function paintRanks(){
@@ -4466,6 +4576,9 @@ async function paintRanks(){
      comparing a fixed set of draws against a re-rollable one. */
   const r=await B.ranks(score,run.daily?'daily':'free');
   myRanks=r;
+  /* The strip at the top of the page carries the same three numbers, and it is the
+     one most people will read, so it is filled whatever this panel goes on to say. */
+  paintRankStrip(r);
   const any=(run.daily?WINDOWS_DAILY:WINDOWS_FREE).some(([k])=>r[k]);
   if(!any){
     el.innerHTML='<p class="rankfoot" style="margin-top:8px">The leaderboard is not '+
