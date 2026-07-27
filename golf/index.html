@@ -873,19 +873,14 @@ window.GA_ID='G-L29P5MRWKE';
   .dtile.open:hover{border-color:rgba(150,210,170,.34)}
   .dtile.open:active{transform:translateY(1px)}
   .dtile.open:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
-  .dtile.filled{background:rgba(255,255,255,.02); opacity:.58; filter:saturate(.55); cursor:default}
+  .dtile.filled{background:linear-gradient(180deg, rgba(53,214,160,.18), rgba(53,214,160,.06)); border-color:rgba(90,214,160,.5); box-shadow:inset 3px 0 0 #35d6a0, 0 6px 16px -8px rgba(0,0,0,.55); cursor:default}
   .dtile.empty{opacity:.4; border-style:dashed; min-height:54px; justify-content:center}
   .dt-top{display:flex; align-items:center; gap:8px}
   .dt-star{color:var(--gold); font-size:12px; flex:0 0 auto; line-height:1; margin-top:-1px}
   .dt-lab{font:800 13px/1.1 var(--body); color:#e7efe9}
-  .dtile.filled .dt-lab{color:#8ba295}
-  .dtile.filled .dt-val{color:#8ba295}
+  .dtile.filled .dt-lab{color:#eaf7f0}
+  .dtile.filled .dt-val{color:#7fe8bd}
   .dt-sp{flex:1}
-  .dt-w{display:flex; align-items:center; gap:4px}
-  .dt-w i{width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.18)}
-  .dt-w i.on{background:var(--gold)}
-  .dt-w b{font:800 8px/1 var(--body); letter-spacing:.12em; text-transform:uppercase; color:#7f978b}
-  .dt-w b.key{color:var(--gold2)}
   .dt-bot{display:flex; align-items:flex-end; gap:12px}
   .dt-meter{flex:1; min-width:0}
   .dt-track{position:relative; height:6px; border-radius:4px; background:rgba(255,255,255,.08)}
@@ -11979,10 +11974,8 @@ function scrDraft(){
 
   // THE unified grid: 8 slot tiles. Filled → your pick; open + golfer shown → draft option; open + idle → placeholder.
   const grid=$(`<div class="attrs osgrid dgrid"></div>`);
-  const wCue=(w)=>{ const n=(w>=0.18?3:w>=0.11?2:1), lab=(w>=0.18?'Key':w>=0.11?'Matters':'Minor');
-    return `<span class="dt-w" title="${lab} stat — its weight toward your overall">${[0,1,2].map(i=>`<i class="${i<n?'on':''}"></i>`).join('')}<b class="${n===3?'key':''}">${lab}</b></span>`; };
   CATS.forEach(cat=>{
-    const f=S.slots[cat.k], isKey=dailyKeys&&dailyKeys.has(cat.k);
+    const f=S.slots[cat.k], isKey=cat.w>=0.18;
     if(f){
       // what THIS golfer would have given you here (data already tracked) → a hollow "ghost" marker + a
       // named caption, so you can see the stat you passed up without any nagging +/- math.
@@ -12000,7 +11993,7 @@ function scrDraft(){
     if(spun){
       const rv=S.current[cat.k], qc=ratColor(rv);
       const b=$(`<button class="dtile open${isKey?' fav':''}" aria-label="Draft ${cat.short}, rated ${rv}${isKey?', a key skill for today\'s course':''}">
-        <div class="dt-top">${isKey?'<span class="dt-star" aria-hidden="true">★</span>':''}<span class="dt-lab">${cat.short}</span><span class="dt-sp"></span>${wCue(cat.w)}</div>
+        <div class="dt-top">${isKey?'<span class="dt-star" aria-hidden="true">★</span>':''}<span class="dt-lab">${cat.short}</span><span class="dt-sp"></span></div>
         <div class="dt-bot"><div class="dt-meter"><div class="dt-track"><span class="dt-mk" style="left:${Math.min(100,rv)}%;background:${qc}"></span></div></div><span class="dt-val">${rv}</span><span class="dt-draft" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M7 2.6v8.8M2.6 7h8.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></div></div>`);
       b.onclick=()=>takeAttr(cat.k);
       grid.appendChild(b); return;
