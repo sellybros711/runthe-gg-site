@@ -2240,8 +2240,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     </div></div>
     <div class="sortbar">
       <div class="seg" id="lb-sort">
-        <button class="on" data-sort="rating">Team rating</button>
-        <button data-sort="record">Record</button>
+        <button class="on" data-sort="record">Record</button>
+        <button data-sort="rating">Team rating</button>
       </div>
       <button class="dirbtn" id="b-lb-dir" aria-label="Reverse the order">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M12 20l-6-6M12 20l6-6"/></svg>
@@ -2550,7 +2550,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=7"></script>
+<script src="board.js?v=8"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
@@ -2567,7 +2567,7 @@ const E=window.PS_ENGINE, R=window.PS_RUN;
    cached board.js older than this page, and they only catch it while they agree: a page
    that says 1 against a module that says 2 rejects a module that is newer than itself
    and quietly runs the stub, which is a dead leaderboard with no error anywhere. */
-const BOARD_VERSION=5;
+const BOARD_VERSION=6;
 const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
   API_VERSION:BOARD_VERSION, offline:true,
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
@@ -6142,7 +6142,7 @@ function rankLine(r){
    looking for themselves, which is what the pinned row at the bottom is for. */
 const LB_LIMIT=500;
 
-let lbWin='day', lbSort='rating', lbDir='desc', lbRows=null, lbBusy=false;
+let lbWin='day', lbSort='record', lbDir='desc', lbRows=null, lbBusy=false;
 /* Where this run sits on the board currently showing, on ITS axis and in ITS direction,
    which is not the same number as any of the three record ranks on the results page.
    Read once per board load, cleared on the way in so a stale place from the last tab can
@@ -6220,10 +6220,15 @@ async function loadBoard(){
      go. The place is asked for alongside rather than after, because it is an index-only
      count and waiting on it would put a second round trip in front of the list. It
      resolves to null when there is no run to place, which is most visits. */
+  /* TWO COUNTS, because they answer two different questions and the board should not have
+     to pick one. How many drafts were played is activity, and a guest draft is a draft; how
+     many are on the board is who signed in for one. The list and every placing are the
+     second of those, and the line above them says both. */
   const sc=lbScope();
-  const [rows,total,place]=await Promise.all([
-    B.top(sc,LB_LIMIT,lbSort,lbDir),B.total(sc),myPlaceValue()===null?null:
-      B.placeIn(sc,lbSort,lbDir,myPlaceValue())]);
+  const scNamed=Object.assign({},sc,{named:true});
+  const [rows,total,onBoard,place]=await Promise.all([
+    B.top(scNamed,LB_LIMIT,lbSort,lbDir),B.total(sc),B.total(scNamed),
+    myPlaceValue()===null?null:B.placeIn(scNamed,lbSort,lbDir,myPlaceValue())]);
   lbBusy=false;
   lbRows=rows;
   lbMyPlace=place;
@@ -6241,10 +6246,15 @@ async function loadBoard(){
     /* Said out loud when the field is bigger than the list, so a board that stops at 500
        is a board that told you it stops at 500 rather than one that looks like the whole
        field and is not. */
-    const capped=rows.length>=LB_LIMIT&&total>rows.length
+    const capped=onBoard!==null&&rows.length>=LB_LIMIT&&onBoard>rows.length
       ? ' · top '+LB_LIMIT.toLocaleString()+' shown' : '';
+    /* The second number only when it differs, and never when the count could not be read:
+       "224 drafts, 224 on the board" is noise, and a confident zero standing in for a
+       failed query is worse than saying nothing. */
+    const named=(onBoard!==null&&onBoard!==total)
+      ? ' · <b>'+onBoard.toLocaleString()+'</b> on the board' : '';
     $('lb-count').innerHTML='<b>'+total.toLocaleString()+'</b> '+
-      (total===1?'run ':'runs ')+word+capped;
+      (total===1?'draft ':'drafts ')+word+named+capped;
   }
   paintBoard();
 }
@@ -6448,12 +6458,46 @@ function playerName(row,mine){
    so repeating it here would spend the row's only line of spare text on the same number
    twice; the two best players on the roster are the more useful thing, since the board is
    ranked on how good the roster was. */
+/* THREE THINGS ABOUT THE DRAFT, on both axes.
+   It used to carry the record and the seed label, which on the record board was the same
+   record already printed in large type on the right of the same row, and on the rating board
+   was the same rating. The row's one line of small text is worth more than an echo.
+
+   These three, because between them they answer "was this a good draft" from three
+   directions the right column cannot: how strong the roster was, how close it came to the
+   best the same six spins allowed, and who the best man on it was. */
 function rowSub(row){
-  const who=rosterLine(row.picks);
-  const what=row.perfect?'perfect season':row.seed_label.toLowerCase();
-  if(lbSort==='rating') return who?who+' \u00b7 '+what:what;
-  const rec=row.wins+'-'+row.losses+' '+what;
-  return who?rec+' \u00b7 '+who:rec;
+  const bits=[];
+  /* Except on the rating board, where the rating is already the big number on the right of
+     this same row. Printing it twice in two sizes is not emphasis, it is a row that looks
+     like it has a bug in it, and the other two still fit the sentence on their own. */
+  if(lbSort!=='rating'&&row.team_rating!==null&&row.team_rating!==undefined){
+    bits.push(Number(row.team_rating).toFixed(1)+' rating');
+  }
+  /* Older runs were recorded before the game worked this out, so it is a maybe rather than
+     a zero: printing "0% perfect" for a run nobody measured would be a lie about the draft
+     rather than a gap in the data. */
+  if(row.perfect_pct!==null&&row.perfect_pct!==undefined){
+    bits.push(row.perfect_pct+'% perfect');
+  }
+  const best=bestPlayer(row.picks);
+  if(best) bits.push(best);
+  /* Nothing resolvable at all, which is a run whose players this browser does not have.
+     Falls back to what the row can still say for itself. */
+  if(!bits.length) return row.perfect?'perfect season':row.seed_label.toLowerCase();
+  return bits.join(' \u00b7 ');
+}
+
+/* The best man on a roster, by the price the game put on him, which is the same measure
+   rosterLine uses for its two. Name and year, because a surname alone is ambiguous across
+   twenty-six seasons of this pool. */
+function bestPlayer(picks){
+  if(!Array.isArray(picks)) return '';
+  let best=null;
+  picks.map(fromPickKey).filter(Boolean).forEach(p=>{
+    if(!best||p.price_musd>best.price_musd) best=p;
+  });
+  return best?lastName(best.name)+' '+best.season:'';
 }
 
 /* The record board's right column: the record, then the differential that breaks

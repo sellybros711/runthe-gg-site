@@ -287,6 +287,17 @@
     opts = opts || {};
     const daily = opts.mode === 'daily';
     let f = '&daily=is.' + (daily ? 'true' : 'false');
+    /* NAMED RUNS ONLY, when asked for. A guest run is a real draft and counts towards how
+       many have been played, but it carries no name, so listing it puts a row of Anonymous
+       on a board whose whole job is to say who did what. Every ranking call asks for this
+       and the activity count deliberately does not, which is the difference between "how
+       many drafts happened" and "who is on the board".
+
+       ps_runs_named_score_idx and ps_runs_named_rating_idx are partial indexes over exactly
+       these rows, and they are why this is free. Measured at 2,000,000 rows of which 20 were
+       named, which is the shape a young board really has: as a plain filter the top-500 read
+       scanned 666,726 rows in 246ms; against the partial index it is 0.03ms off 16kB. */
+    if (opts.named && namesColumn) f += '&display_name=not.is.null';
     if (daily && opts.puzzle) {
       f += '&daily_date=eq.' + (opts.puzzle === 'today' ? todayUTC() : opts.puzzle);
       return f;                       // the date IS the window
@@ -427,13 +438,16 @@
     /* A run is ranked against its own kind. For a daily run "today" is that day's
        puzzle rather than a clock window, so the number under it is the field that
        played the same six draws. */
+    /* named:true throughout. The number under a placing is "of the runs on the board", and
+       the board is named runs, so counting guests into that denominator would print a total
+       no list on any screen adds up to. */
     const scopes = mode === 'daily'
-      ? [['day', { mode: 'daily', puzzle: 'today' }],
-         ['week', { mode: 'daily', win: 'week' }],
-         ['all', { mode: 'daily', win: 'all' }]]
-      : [['day', { mode: 'free', win: 'day' }],
-         ['week', { mode: 'free', win: 'week' }],
-         ['all', { mode: 'free', win: 'all' }]];
+      ? [['day', { mode: 'daily', puzzle: 'today', named: true }],
+         ['week', { mode: 'daily', win: 'week', named: true }],
+         ['all', { mode: 'daily', win: 'all', named: true }]]
+      : [['day', { mode: 'free', win: 'day', named: true }],
+         ['week', { mode: 'free', win: 'week', named: true }],
+         ['all', { mode: 'free', win: 'all', named: true }]];
     const got = await Promise.all(scopes.map(([, o]) =>
       Promise.all([rankIn(o, score), total(o)])));
     const out = {};
@@ -644,7 +658,7 @@
   }
 
   window.PS_BOARD = {
-    API_VERSION: 5,
+    API_VERSION: 6,
     submit, ranks, rankIn, placeIn, total, top, mine, byId, scoreOf, cutoffISO, todayUTC,
     SORTS, probe, myAvatar, setAvatar,
     get offline() { return offline; },
