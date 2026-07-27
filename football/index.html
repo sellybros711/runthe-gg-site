@@ -894,10 +894,21 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .chip .lab{display:block}
   .chip .who{width:78px;margin:3px 0 2px -8px;font-size:9.5px;font-weight:800;line-height:1.1;
     text-shadow:0 2px 6px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .chip .yr{font-size:8.5px;color:var(--dim);font-weight:700;line-height:1.1}
-  /* The code carries the team, the year carries the season. Slightly brighter so the eye
-     picks the team out first, since that is the part you are pattern-matching for chemistry. */
-  .chip .yr .tc{color:var(--dim-2);letter-spacing:.04em}
+  .chip .yr{font-size:8.5px;color:var(--dim);font-weight:700;line-height:13px}
+  /* THE TEAM CODE ON A PLATE IN THAT CLUB'S COLOUR.
+     The code carries the team and the year carries the season, and the team is the part
+     you are pattern-matching for chemistry, so it gets the colour. On a plate rather than
+     inside the disc: the disc already carries the position, and painting the club over it
+     would cost the one thing the formation has to say at a glance.
+
+     True club primary rather than the washed version, because a plate has its own ground
+     and does not have to survive on the field's. A hairline round it so a black or navy
+     club still reads as a plate, and the text colour is measured per club rather than
+     assumed white. */
+  .chip .yr .tc{display:inline-block;padding:0 4px;border-radius:4px;line-height:12px;
+    font-size:8px;letter-spacing:.05em;vertical-align:1px;
+    color:var(--tcon,#fff);background:var(--tcbg,#475569);
+    border:1px solid rgba(255,255,255,.26);box-shadow:0 1px 3px rgba(0,0,0,.5)}
 
   /* The fade used to start at 72%, which was fine when the bar ended just under the money
      figure. The lineup pips sit at the bottom of it now, and the year reel was showing straight
@@ -1161,13 +1172,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     transition:opacity .25s ease}
   .streak.on{opacity:1}
   .streak.w{color:#4ade80} .streak.l{color:#f87171}
-  .tally{display:flex;gap:4px;margin-top:13px}
-  .tick{height:22px;border-radius:3px;background:rgba(255,255,255,.08);flex:1 1 0;min-width:0;
-    transition:transform .2s ease}
-  .tick.w{background:linear-gradient(135deg,#4ade80,#15803d)} .tick.l{background:var(--grad-red)}
-  .tick.p{outline:1px solid rgba(255,255,255,.45);outline-offset:1px}
-  /* The one that just landed, so the eye is told where in the season it is. */
-  .tick.now{animation:tickpop .42s cubic-bezier(.2,1.5,.4,1) both}
+  /* The tick that just landed pops. Kept for the calendar, which reuses it. */
   @keyframes tickpop{0%{transform:scaleY(.4)}55%{transform:scaleY(1.35)}100%{transform:scaleY(1)}}
   /* THE SEASON AS A CALENDAR.
      This used to be a list that grew upward, so week 1 finished at the bottom and a
@@ -1198,7 +1203,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .cw.l{background:linear-gradient(160deg,rgba(239,68,68,.19),var(--panel));
     border-color:rgba(239,68,68,.38)}
   .cw.l .s{color:#fca5a5}
-  .cw.now{animation:tickpop .42s cubic-bezier(.2,1.5,.4,1) both}
+  .cw.now{animation:cwpop .42s cubic-bezier(.2,1.5,.4,1) both}
+  @keyframes cwpop{0%{transform:scale(.82)}55%{transform:scale(1.07)}100%{transform:scale(1)}}
   /* The playoff tail, dressed the way the score bug dresses for each rung. Dashed
      until it is played, because it has not happened yet. */
   .cw.po{border-style:dashed}
@@ -1235,89 +1241,115 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 
      Each playoff round dresses the bug differently, escalating slate to steel to
      silver to gold, so the Super Bowl never looks like the Wild Card. */
+     A broadcast bug is not a flat panel: every cell is a moulded piece with a lit top
+     edge, a shadowed bottom edge and its own seam. That is what the depth here is for.
+     The plate carries a specular sweep across its top half, a bright inner rule along
+     the top and the club's secondary colour as a rule along the bottom; the score sits
+     in its own recessed well; the strip's cells are pressed into the strip rather than
+     printed on it; and the round cell is cut to a chevron, the way a network cuts the
+     down-and-distance cell. */
   .bug{border-radius:12px;overflow:hidden;background:#070c15;
-    border:1px solid var(--line-2);
-    box-shadow:0 14px 30px -16px #000,inset 0 1px 0 rgba(255,255,255,.06)}
-  .bug .btop{display:flex;align-items:stretch}
-  /* The plate. Flat club colour with a gloss over it, rather than a computed shade,
-     so nothing depends on colour-mix being available. */
+    border:1px solid rgba(255,255,255,.15);
+    box-shadow:0 18px 38px -18px #000,0 2px 8px -3px rgba(0,0,0,.7),
+      inset 0 1px 0 rgba(255,255,255,.16),inset 0 -1px 0 rgba(0,0,0,.65)}
+  /* A real groove between the plates, not a hairline. Half the league washes to some
+     shade of blue and so does YOUR side, so two adjacent plates can land within a few
+     points of each other; a 3px dark gap keeps them two objects whatever the colours. */
+  .bug .btop{display:flex;align-items:stretch;gap:3px;background:#04070d}
+  /* The plate. Flat club colour with the gloss painted over it rather than a computed
+     shade, so nothing here depends on colour-mix being available. The hard stop at 47%
+     is the specular break: a broadcast plate is two surfaces, not a fade. */
   .bug .bt{flex:1 1 0;min-width:0;position:relative;display:flex;align-items:center;
-    gap:7px;padding:9px 11px;
+    gap:7px;padding:9px 11px 11px;
     background-color:var(--tcol,#334155);
-    background-image:linear-gradient(180deg,rgba(255,255,255,.17),rgba(255,255,255,0) 55%,
-      rgba(0,0,0,.34));
+    background-image:linear-gradient(180deg,rgba(255,255,255,.30),rgba(255,255,255,.07) 46%,
+      rgba(0,0,0,.10) 47%,rgba(0,0,0,.38));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.38);
     transition:filter .2s ease}
   .bug .bt.them{flex-direction:row-reverse}
-  .bug .bt+.bt{border-left:1px solid rgba(0,0,0,.5)}
   /* The bright rail on the outer edge, where a broadcast stacks its timeout pips.
      Not pips: nothing in this game has timeouts, and three lit boxes that never go
      out would be a readout of something that does not exist. */
-  .bug .bt:before{content:'';position:absolute;top:0;bottom:0;width:4px;
-    background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(255,255,255,.28))}
+  .bug .bt:before{content:'';position:absolute;top:0;bottom:0;width:4px;z-index:1;
+    background:linear-gradient(180deg,rgba(255,255,255,.8),rgba(255,255,255,.22))}
   .bug .bt.you:before{left:0} .bug .bt.them:before{right:0}
+  /* The club's second colour as a rule along the foot of its own plate, the way a
+     network underlines a team block. */
+  .bug .bt:after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;
+    background:var(--tcol2,rgba(255,255,255,.3));box-shadow:0 -1px 0 rgba(0,0,0,.45)}
   .bug .bt .cd{font-family:var(--fd);font-size:17px;letter-spacing:.05em;line-height:1;
-    color:#fff;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.55)}
+    color:#fff;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6)}
   .bug .bt .rc{font-family:var(--fn);font-size:11px;font-weight:600;line-height:1;
-    color:rgba(255,255,255,.78);white-space:nowrap;font-variant-numeric:tabular-nums;
-    text-shadow:0 1px 2px rgba(0,0,0,.5)}
-  .bug .bt .sc{margin-left:auto;font-family:var(--fd);font-size:31px;line-height:.9;
-    color:#fff;font-variant-numeric:tabular-nums;text-shadow:0 2px 4px rgba(0,0,0,.5)}
+    color:rgba(255,255,255,.8);white-space:nowrap;font-variant-numeric:tabular-nums;
+    text-shadow:0 1px 2px rgba(0,0,0,.55)}
+  /* The score in its own recessed well, like the black score box on a network plate. */
+  .bug .bt .sc{margin-left:auto;font-family:var(--fd);font-size:29px;line-height:1;
+    padding:1px 8px 2px;border-radius:6px;color:#fff;font-variant-numeric:tabular-nums;
+    background:linear-gradient(180deg,rgba(0,0,0,.52),rgba(0,0,0,.24));
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.75),inset 0 0 0 1px rgba(0,0,0,.4),
+      0 1px 0 rgba(255,255,255,.16);
+    text-shadow:0 2px 4px rgba(0,0,0,.6)}
   .bug .bt.them .sc{margin-left:0;margin-right:auto}
   /* The trailing side sits back, which is how you read one of these without reading
      the numbers. Applied to the plate, so the club colour dims with it. */
-  .bug .bt{filter:saturate(.55) brightness(.72)}
+  .bug .bt{filter:saturate(.74) brightness(.8)}
   .bug .bt.lead{filter:none}
   /* The number itself kicks when it changes, so a score never just appears. */
   .bug .bt.scored .sc{animation:scorepop .5s cubic-bezier(.2,1.5,.35,1)}
   @keyframes scorepop{0%{transform:scale(1)}35%{transform:scale(1.42)}100%{transform:scale(1)}}
-  .bug .bt.scored{filter:brightness(1.28)}
+  .bug .bt.scored{filter:brightness(1.3)}
 
-  .bug .bbot{display:flex;align-items:center;gap:10px;padding:7px 12px;
-    background:linear-gradient(180deg,#101a2c,#0a1220);
-    border-top:1px solid rgba(255,255,255,.09)}
+  .bug .bbot{display:flex;align-items:center;gap:9px;padding:7px 10px;
+    background:linear-gradient(180deg,#1b2740,#0b1220 52%,#070d18);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 8px 10px -10px rgba(255,255,255,.2)}
   .bug .bbot .q{font-family:var(--fd);font-size:14px;letter-spacing:.06em;color:#cbd5e1;
-    flex:0 0 auto}
-  .bug .bbot .ck{font-family:var(--fd);font-size:20px;line-height:1;letter-spacing:.01em;
-    font-variant-numeric:tabular-nums;flex:0 0 auto}
+    flex:0 0 auto;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+  /* Pressed into the strip rather than printed on it. */
+  .bug .bbot .ck{font-family:var(--fd);font-size:19px;line-height:1;letter-spacing:.01em;
+    font-variant-numeric:tabular-nums;flex:0 0 auto;padding:2px 8px 3px;border-radius:5px;
+    background:rgba(0,0,0,.42);
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.1)}
   .bug .bbot .ck:empty{display:none}
-  /* The round or the week, hard right, in its own inset cell so it reads as a
-     separate readout and not as more clock. */
+  /* The round or the week, hard right, cut to a chevron the way a network cuts its
+     down-and-distance cell. Its own readout, not more clock. */
   .bug .bbot .rd{margin-left:auto;font-family:var(--fd);font-size:12.5px;letter-spacing:.09em;
-    line-height:1;padding:5px 9px;border-radius:6px;white-space:nowrap;
-    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:#e2e8f0}
+    line-height:1;padding:6px 9px 6px 16px;white-space:nowrap;color:#e2e8f0;
+    clip-path:polygon(9px 0,100% 0,100% 100%,9px 100%,0 50%);
+    background:linear-gradient(180deg,rgba(255,255,255,.19),rgba(255,255,255,.05));
+    text-shadow:0 1px 2px rgba(0,0,0,.55)}
   /* Under two minutes, the clock itself says so. */
-  .bug.urgent .bbot{background:linear-gradient(180deg,#3a1016,#22090d)}
+  .bug.urgent .bbot{background:linear-gradient(180deg,#4a1620,#22090d)}
   .bug.urgent .bbot .ck{color:#fca5a5}
   .bug.final .bbot .ck{font-size:14px;letter-spacing:.09em}
 
-  /* ROUND BY ROUND. Wild Card is the base above. Each rung adds trim rather than
-     changing the layout, so the bug stays the same object all the way up. */
-  .bug.r-div{border-color:rgba(96,165,250,.42)}
-  .bug.r-div .bbot{background:linear-gradient(180deg,#152744,#0a1424);
-    border-top-color:rgba(96,165,250,.4)}
-  .bug.r-div .bbot .rd{background:rgba(96,165,250,.16);border-color:rgba(96,165,250,.45);
-    color:#bfdbfe}
+  /* ROUND BY ROUND. Wild Card is the base above. Each rung re-finishes the metal rather
+     than changing the layout, so the bug stays the same object all the way up: steel,
+     then brushed silver, then gold. */
+  .bug.r-div{border-color:rgba(96,165,250,.45)}
+  .bug.r-div .bbot{background:linear-gradient(180deg,#22406e,#0c1730 52%,#08101f)}
+  .bug.r-div .bbot .q{color:#dbeafe}
+  .bug.r-div .bbot .rd{color:#dbeafe;
+    background:linear-gradient(180deg,rgba(147,197,253,.42),rgba(37,99,235,.22))}
 
-  .bug.r-cc{border-color:rgba(203,213,225,.5);
-    box-shadow:0 14px 34px -16px #000,0 0 0 1px rgba(255,255,255,.06),
-      inset 0 1px 0 rgba(255,255,255,.16)}
-  .bug.r-cc .bbot{background:linear-gradient(180deg,#33405a,#141c2c);
-    border-top-color:rgba(226,232,240,.5)}
-  .bug.r-cc .bbot .q{color:#f1f5f9}
-  .bug.r-cc .bbot .rd{background:linear-gradient(180deg,rgba(241,245,249,.28),rgba(148,163,184,.14));
-    border-color:rgba(241,245,249,.55);color:#fff}
+  .bug.r-cc{border-color:rgba(203,213,225,.55);
+    box-shadow:0 18px 40px -18px #000,0 0 20px -8px rgba(226,232,240,.5),
+      inset 0 1px 0 rgba(255,255,255,.3),inset 0 -1px 0 rgba(0,0,0,.6)}
+  .bug.r-cc .bbot{background:linear-gradient(180deg,#7f8ba3,#3b465e 46%,#222b3d 47%,#131a28)}
+  .bug.r-cc .bbot .q{color:#fff}
+  .bug.r-cc .bbot .ck{color:#f8fafc}
+  .bug.r-cc .bbot .rd{color:#0d1320;text-shadow:none;
+    background:linear-gradient(180deg,#f8fafc,#c3cbd8 46%,#aab4c4 47%,#dde3ea)}
 
-  .bug.r-sb{border-color:rgba(245,190,80,.6);
-    box-shadow:0 16px 40px -14px #000,0 0 26px -6px rgba(245,158,11,.4),
-      inset 0 1px 0 rgba(255,225,150,.28)}
-  .bug.r-sb .bbot{background:linear-gradient(180deg,#4a3610,#1c1305);
-    border-top-color:rgba(245,190,80,.6)}
+  .bug.r-sb{border-color:rgba(245,190,80,.65);
+    box-shadow:0 20px 44px -16px #000,0 0 30px -6px rgba(245,158,11,.45),
+      inset 0 1px 0 rgba(255,228,155,.4),inset 0 -1px 0 rgba(0,0,0,.6)}
+  .bug.r-sb .bbot{background:linear-gradient(180deg,#8a6516,#4a3610 46%,#33240a 47%,#1c1305)}
   .bug.r-sb .bbot .q{color:#fde68a}
   .bug.r-sb .bbot .ck{color:#fef3c7}
-  .bug.r-sb .bbot .rd{background:linear-gradient(180deg,#fde68a,#d19410);border-color:#f0c25a;
-    color:#2a1b02;font-size:13px}
-  .bug.r-sb .bt .sc{font-size:34px}
-  .bug.r-sb.urgent .bbot{background:linear-gradient(180deg,#4a1620,#22090d)}
+  .bug.r-sb .bbot .rd{color:#2a1b02;text-shadow:none;font-size:13px;
+    background:linear-gradient(180deg,#fff3c4,#e8b53c 46%,#cf9614 47%,#f3d071)}
+  .bug.r-sb .bt .sc{font-size:32px}
+  .bug.r-sb.urgent .bbot{background:linear-gradient(180deg,#6b1f2a,#22090d)}
 
   /* On the season screen the bug is the subject of the whole screen rather than a
      strip in the corner of one, so it runs larger, and the strip carries the
@@ -1821,7 +1853,6 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            was telling you when you were on one. Height is reserved so the card does not jump
            when it appears. -->
       <div class="streak" id="v-streak"></div>
-      <div class="tally" id="v-tally"></div>
     </div>
     <div style="margin-top:12px"><button class="btn blue" id="b-sim">Skip to the end</button></div>
     <!-- The whole season laid out in order, weeks first, playoff rounds after. -->
@@ -2084,6 +2115,15 @@ const COL={QB:'--qb',RB:'--rb',WR:'--wr',TE:'--te',FLEX:'--flex'};
    palette change turns into a hunt. */
 function posPaint(pos){
   return 'background:linear-gradient(160deg,var('+(COL[pos]||'--flex')+'),rgba(0,0,0,.45))';
+}
+/* The club plate under a player on the field. Era code, not the current one: a 2014
+   Raider is OAK, and labelling him LV would contradict the "2014 Oakland Raiders" the
+   rest of the game shows. `on` is the engine's own measured choice of black or white
+   text for that primary, so no club gets an unreadable plate. */
+function tcPlate(franchise,season){
+  const c=E.teamColors(franchise);
+  return '<span class="tc" style="--tcbg:'+c.primary+';--tcon:'+c.on+'">'+
+    esc(E.eraCode(franchise,season))+'</span>';
 }
 /* HOW A ROSTER ROW IS LABELLED, in one place, because four screens were each deciding it
    differently and two of them disagreed with the field.
@@ -2398,8 +2438,7 @@ function drawField(el,live){
        rather than just when. Era code, not the current one: a 2014 Raider is OAK, and
        labelling him LV would contradict the "2014 Oakland Raiders" the rest of the game
        shows. */
-    c.querySelector('.yr').innerHTML=p
-      ?'<span class="tc">'+esc(E.eraCode(p.franchise,p.season))+'</span> '+p.season:'';
+    c.querySelector('.yr').innerHTML=p?tcPlate(p.franchise,p.season)+' '+p.season:'';
     /* How many players he connects to, in his strongest link's color. The web
        itself lives on the rail; this is the count, so a glance at the formation
        still says who is tied in and who is on his own. */
@@ -3073,17 +3112,6 @@ function paintSquad(){
 $('b-play').onclick=()=>startSeason();
 
 /* ---------- season, revealed game by game ---------- */
-function tally(live){
-  const s=run.season, total=17+(run.playoffSeed?run.playoffSeed.rounds:0), cells=[];
-  const last=s.results.length-1;
-  for(let i=0;i<Math.max(total,s.results.length);i++){
-    const r=s.results[i];
-    // The tick that just landed pops, so the eye is told where in the season it is.
-    cells.push('<span class="tick'+(r?(r.won?' w':' l'):'')+(r&&r.playoff?' p':'')+
-      (live&&i===last?' now':'')+'"></span>');
-  }
-  $('v-tally').innerHTML=cells.join('');
-}
 function pushGame(r,el){
   el.insertAdjacentHTML('afterbegin','<div class="g new'+(r.playoff?' po':'')+'">'+
     '<span class="wk">'+(r.playoff?(ROUND_TAG[r.round]||'PO'):'WK '+r.week)+'</span>'+
@@ -3132,9 +3160,13 @@ function paintCalendar(justPlayed){
    record on a plate always belong to the score beside them. */
 function paintSeasonBug(oppId,label){
   const o=oppId?DATA.byTeamSeasonId[oppId]:null;
-  const themEl=$('v-bthem');
-  $('v-byou').style.setProperty('--tcol','#4d8ef7');
-  themEl.style.setProperty('--tcol',o?E.washColors(o.franchise).a:'#8a97a8');
+  const themEl=$('v-bthem'), w=o?E.washColors(o.franchise):null;
+  /* YOUR plate is a deeper blue than the wash palette reaches, so it never lands on
+     top of an opponent's colour. Half the league washes to a pale blue. */
+  $('v-byou').style.setProperty('--tcol','#1f5fc4');
+  $('v-byou').style.setProperty('--tcol2','#93c5fd');
+  themEl.style.setProperty('--tcol',w?w.a:'#8a97a8');
+  themEl.style.setProperty('--tcol2',w?w.b:'rgba(255,255,255,.3)');
   themEl.querySelector('.cd').textContent=o?E.eraCode(o.franchise,o.season):'OPP';
   themEl.querySelector('.rc').textContent=o?o.record:'';
   $('v-opp').textContent=o?o.season+' '+E.nickname(o.franchise):'';
@@ -3174,7 +3206,7 @@ function paintNext(live){
   }
 }
 function startSeason(){
-  tally(); paintNext(); paintUpcomingBug(); paintCalendar();
+  paintNext(); paintUpcomingBug(); paintCalendar();
   $('v-you').textContent='0'; $('v-them').textContent='0';
   $('v-byou').classList.add('lead'); $('v-bthem').classList.add('lead');
   show('s-season'); runSim();
@@ -3224,7 +3256,7 @@ function runSim(){
     card.classList.remove('won','lost');
     void card.offsetWidth;                       // restart the flash on a repeat result
     card.classList.add(r.won?'won':'lost');
-    tally(true); paintNext(true); paintCalendar(r);
+    paintNext(true); paintCalendar(r);
     simTimer=setTimeout(step,540);
   };
   simTimer=setTimeout(step,340);
@@ -3244,7 +3276,7 @@ function fastForward(){
   while(run.phase===R.PHASES.SEASON||run.phase===R.PHASES.PLAYOFFS){
     R.advanceWeek(run,DATA,LEAGUE,CAL);
   }
-  tally(); paintCalendar(); after();
+  paintCalendar(); after();
 }
 $('b-sim').onclick=()=>fastForward();
 function after(){
@@ -3334,14 +3366,18 @@ function playPlayoffGame(r,after){
      that, which is a black bar on a black ground: the Raiders, the Steelers, the Saints, the
      Bears, the Patriots, the Seahawks and eight more had no visible colour on the bug at all.
      Measured; the wash colours clear it for all 32. */
-  const me={a:'#4d8ef7'}, them=opp?E.washColors(opp.franchise):{a:'#8a97a8'};
+  const me={a:'#1f5fc4'}, them=opp?E.washColors(opp.franchise):{a:'#8a97a8'};
   const youEl=$('po-you'), themEl=$('po-them'), bug=$('po-bug');
   const rcls=ROUND_CLASS[round]||'r-wc';
 
   $('po-round').textContent=round;
   $('po-opp').textContent=r.opponent;
   youEl.style.setProperty('--tcol',me.a);
+  youEl.style.setProperty('--tcol2','#93c5fd');
   themEl.style.setProperty('--tcol',them.a);
+  /* The second colour as the rule along the foot of the plate. Washed like the first,
+     because a club whose second colour is black would otherwise draw no rule at all. */
+  themEl.style.setProperty('--tcol2',them.b||'rgba(255,255,255,.3)');
   /* Their code is the one they wore that year, so the 1994 Rams read LA and not LAR. */
   youEl.querySelector('.cd').textContent='YOU';
   themEl.querySelector('.cd').textContent=opp?E.eraCode(opp.franchise,opp.season):'OPP';
@@ -3452,7 +3488,7 @@ function runPlayoffs(){
   const step=()=>{
     if(run.phase!==R.PHASES.PLAYOFFS){ after(); return; }
     const r=R.advanceWeek(run,DATA,LEAGUE,CAL);
-    tally(); paintCalendar(r);
+    paintCalendar(r);
     playPlayoffGame(r,step);
   };
   step();
@@ -4005,8 +4041,7 @@ function heroChips(){
       '),rgba(0,0,0,.45))"':'';
     el.innerHTML='<div class="disc"'+style+'><span class="dl">'+(on?on.pos:sp.label)+
       '</span></div>'+(on?'<div class="lab"><div class="who">'+esc(on.last)+
-      '</div><div class="yr">'+
-      '<span class="tc">'+esc(E.eraCode(on.fr,on.season))+'</span> '+on.season+
+      '</div><div class="yr">'+tcPlate(on.fr,on.season)+' '+on.season+
       '</div></div>':'');
     f.appendChild(el);
     if(on) on.fresh=false;

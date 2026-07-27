@@ -1270,9 +1270,28 @@ function prepareData(teamSeasons) {
    * The two rungs below the named teams. "Good" is a solid playoff side and "great" is a
    * genuine contender, kept apart so the Wild Card and the Divisional round do not feel
    * like the same game twice.
+   *
+   * BOTH ARE GATED ON WINS, NOT ON STRENGTH ALONE. They used to be strength-z bands, and
+   * 80% of the "good" band had fewer than twelve wins: the game asked you for twelve to
+   * get in and then sat an 8-8 team across from you in the Wild Card. A playoff field
+   * clears the same bar the player does.
+   *
+   *   good    exactly 12 wins                        64 team-seasons, 27 franchises
+   *   great   14 or more, or 13 with top-5% strength  41 team-seasons, 20 franchises
+   *
+   * Measured against a roster at the top of what the cap allows, that is 58% and 47%:
+   * an eleven-point gap, so the first two rounds still do not feel like the same game
+   * twice. Splitting on wins alone left them six points apart. The 13-win teams with an
+   * elite point differential are in the great pool rather than out of the ladder, which
+   * is what keeps it at twenty franchises instead of fifteen.
+   *
+   * Ties are ignored on purpose: a 12-3-1 team won twelve, which is the test.
    */
-  const goodPool = teamSeasons.filter((t) => t.strength_z >= q(0.65) && t.strength_z < q(0.85));
-  const greatPool = teamSeasons.filter((t) => t.strength_z >= q(0.93));
+  const winsOf = (t) => Number(String(t.record).split('-')[0]) || 0;
+  const playoffField = teamSeasons.filter((t) => winsOf(t) >= CONSTANTS.PLAYOFF_WINS);
+  const goodPool = playoffField.filter((t) => winsOf(t) === CONSTANTS.PLAYOFF_WINS);
+  const greatPool = playoffField.filter((t) => winsOf(t) >= CONSTANTS.PLAYOFF_WINS + 2
+    || (winsOf(t) === CONSTANTS.PLAYOFF_WINS + 1 && t.strength_z >= q(0.95)));
 
   const index = {};
   for (const t of teamSeasons) index[t.team_season_id] = t;
