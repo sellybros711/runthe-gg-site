@@ -884,6 +884,15 @@ function doCaptainComp(s, input) {
   /* Shared misery, GDD §19.3. A week cold and hungry in the same room. */
   E.rationsBond(s);
 
+  /*
+   * The house manages upward, GDD §25. Applied once, when the Captaincy is
+   * won, to everybody who now has a reason to be pleasant about it.
+   */
+  for (const id of activeIds(s)) {
+    if (id === s.captain) continue;
+    E.applyTrust(s.rel, id, s.captain, E.K.CAPTAIN_COURTED);
+  }
+
   s.captainResult = res;
   pushEvent(s, 'captain', { winner: res.winner, comp: comp.id, thrown: res.thrown, rations: s.rations.slice() });
 
@@ -1751,10 +1760,16 @@ function doFallout(s, input) {
     soleVote: result.soleVote || null,
     blame,
     rations: s.rations.slice(),
-    /* Who was still in the house this week. Nothing recorded who was ALIVE at
-       a given moment, so any question of the form "how often does this happen
-       to somebody in a named group" had no denominator to divide by. */
-    active: activeIds(s).slice(),
+    /*
+     * Who was in the house THIS WEEK, which includes the person who left at
+     * the end of it.
+     *
+     * This is written after the evictee's status has already flipped, so
+     * activeIds alone silently dropped them and every proxy dividing by this
+     * roster was excluding, from each week, the one person that week happened
+     * to. A hazard measured against it reads exactly zero.
+     */
+    active: activeIds(s).concat([gone]),
     /* The rituals, GDD §19, so the recap and the harness can both see them. */
     speech: s.speech || null,
     roomGuests: s.roomGuests ? s.roomGuests.slice() : [],

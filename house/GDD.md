@@ -1904,3 +1904,92 @@ against a 31.4 field.
 
 Reverted. The real asymmetry was §24.2, and it was not in the comp model at all.
 Skill remains flat to mildly negative and open question 9 stays open.
+
+---
+
+## 25. Making Comp Skill Pay
+
+Open question 9, closed. Playing the minigames well used to shorten your run.
+
+### 25.1 What it cost, and where
+
+At `HUMAN_SKILL_WEIGHT` 0.45 a player at skill 80 reached the last five 41.2
+percent of the time against 50.2 for one at skill 20. Their **nomination rates
+were identical** at 15 percent of weeks. The whole difference was losing the
+vote once up, 49.7 against 36.5. Winning things did not get you named, it got
+you evicted.
+
+Holding power is priced worse than it looks:
+
+| | Chance of going out that week |
+|---|---|
+| while you hold the Captaincy | 0.0% |
+| the week **after** holding it | 23.2% |
+| any other week | 10.0% |
+
+One safe week bought at more than twice the hazard afterwards. You name two
+people who resent it, your threat rises, and the format bars you from competing
+for the next Captaincy so you cannot protect yourself. That is a trap, and a
+house full of traps makes throwing the dominant line.
+
+### 25.2 The curve was the wrong shape
+
+`compPercentile` was `100 * (1 - exp(-wins / 2.5))`. That is **concave**: the
+FIRST win costs the most threat and every one after it costs less. Backwards.
+One win does not mark you in this format and five does, and the old shape put a
+player on 1.5 wins, which is BELOW the house average of 1.75, at 45 threat.
+
+An S-curve instead, `COMP_MID` 3.0 and `COMP_SPREAD` 1.2. Nothing much happens
+until you are winning more than the field, and then it happens quickly:
+
+| wins | old | new |
+|---|---|---|
+| 1 | 33 | 16 |
+| 1.5 | 45 | 22 |
+| 3 | 70 | 50 |
+| 5 | 86 | 84 |
+
+With `HUMAN_SKILL_WEIGHT` raised to 0.70 so hands convert into wins, measured at
+1400 runs a cell:
+
+| skill | last five | win rate |
+|---|---|---|
+| 20 | 35.9% | 6.0% |
+| 55 | 38.6% | 6.4% |
+| 80 | 40.1% | **8.8%** |
+
+Skill pays, monotonically, on both measures. The comp beast split is intact:
+47.5 percent with cover, 29.0 without, against a 30.9 field.
+
+### 25.3 The honest cost
+
+The player's overall win rate fell from about 8.1 percent to 6.4 at mid skill.
+That is real and it is worth stating plainly: **under the old curve the
+player's edge came from the rest of the house being over-punished for winning**,
+and the player wins fewer comps than anybody. Removing that punishment removes
+an edge that was never earned. A competent policy still roughly doubles the AI
+stand-in in the same chair on the same seeds, 6.4 against 3.8.
+
+### 25.4 Three levers that were tried and did not work
+
+- **`CAPTAIN_COURTED`**, the house managing upward while you hold power. Moves
+  post-Captaincy hazard monotonically, 23.2 to 21.0 to 19.6, so it is kept at 7
+  on its own merits. **Inert on the skill question**: skill-80 last-five sat at
+  41.2 percent at every setting.
+- **Lowering `TH_COMP`** from 0.40. Makes skill neutral at 0.20 and positive at
+  0.05, but 0.25 already breaks the comp beast pillar outright.
+- **Raising the player's base comp attributes** from 30. Seat win rate 6.2, 6.7,
+  6.3 across 30, 38 and 44: flat inside noise, confirming the note in engine.js
+  that attributes do not move the player's outcome.
+
+### 25.5 A wedge that had to be fixed to measure any of this
+
+`pump` calls `finishRun` when the phase reaches OVER and did not close an open
+card, and `answer` does not close the card it is answering. Normally the next
+`handleNeed` opens a new sheet over the top, but on a terminal path there is no
+next card, so the results screen rendered UNDERNEATH a live sheet with
+`body.carded` still set and the run could not be finished at all.
+
+It surfaced on the Final Three pick, the one card whose answer can end the run
+outright. Seen once in 32 browser runs and dismissed as a flake, then once in 6,
+which is what a rare deterministic bug looks like before you catch it.

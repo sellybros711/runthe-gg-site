@@ -55,7 +55,7 @@ const E = (typeof require !== 'undefined') ? require('./engine.js') : window.RH_
  * noise and the risky-roll literals. If the harness is meant to sweep it, the
  * harness has to be able to reach it.
  */
-const TUNE = { HUMAN_SKILL_WEIGHT: 0.45 };
+const TUNE = { HUMAN_SKILL_WEIGHT: 0.70 };
 
 /*
  * SOLVED at 0.45 by `simulator.js --skill`, once policy.js gave the harness
