@@ -5898,8 +5898,11 @@ function passAddXp(n){ if(!passEnabled()||!sbSignedIn()||!(n>0)) return; const s
   s.xp+=Math.round(n); passSave(s); const after=passTierAt(s.xp);
   if(after>before){ S.passFreshTier=after; try{ toast('<span style="color:#ffd447;font-weight:800">🎟️ Tour Pass · Tier '+after+' reached!</span><br><span class="small">Claim your rewards in the Tour Pass ▸</span>', 3400); }catch(e){} } }
 // Reward tables — milestone tiers give cosmetics/packs; the rest default to coins (+ a shard cadence).
-const PASS_FREE_MILE={ 10:{pack:{tier:'base',n:1}}, 25:{pack:{tier:'base',n:1}}, 40:{pack:{tier:'base',n:1}}, 50:{shard:{r:'rare',n:3}, coins:2000} };
-const PASS_PREM_MILE={ 5:{pack:{tier:'tour',n:1}}, 15:{pack:{tier:'tour',n:1}}, 20:{cos:{cat:'plate',id:'passplate',name:'Tour Pass Plate'}}, 25:{pack:{tier:'champ',n:1}}, 30:{pack:{tier:'tour',n:1}}, 40:{shard:{r:'legendary',n:1}}, 45:{pack:{tier:'tour',n:1}}, 50:{cos:{cat:'fx',id:'passcrown',name:'Tour Champion Aura'}, coins:5000} };
+// FREE lane loads up on base packs + gives away TWO Summer Smash collectibles (Beach Shades, Sun Floppy
+// Hat) so every player earns real drop progress; the free capstone is a Tour pack. PRO lane packs it out
+// with Tour/Champion packs at almost every milestone + the exclusive Tour Pass Plate/Champion Aura.
+const PASS_FREE_MILE={ 5:{pack:{tier:'base',n:1}}, 10:{pack:{tier:'base',n:1}}, 15:{cos:{cat:'ew',id:'beach',name:'Beach Shades'}}, 20:{pack:{tier:'base',n:1}}, 30:{pack:{tier:'base',n:1}}, 35:{cos:{cat:'hw',id:'floppy',name:'Sun Floppy Hat'}}, 40:{pack:{tier:'base',n:1}}, 50:{pack:{tier:'tour',n:1}, coins:3000} };
+const PASS_PREM_MILE={ 5:{pack:{tier:'tour',n:1}}, 10:{pack:{tier:'base',n:1}}, 15:{pack:{tier:'tour',n:1}}, 20:{cos:{cat:'plate',id:'passplate',name:'Tour Pass Plate'}, coins:1500}, 25:{pack:{tier:'champ',n:1}}, 30:{pack:{tier:'tour',n:1}}, 35:{pack:{tier:'champ',n:1}}, 40:{shard:{r:'legendary',n:1}, coins:2500}, 45:{pack:{tier:'tour',n:1}}, 48:{pack:{tier:'champ',n:1}}, 50:{cos:{cat:'fx',id:'passcrown',name:'Tour Champion Aura'}, coins:5000} };
 function passTierReward(t, lane){
   const mile=(lane==='prem'?PASS_PREM_MILE:PASS_FREE_MILE)[t]; if(mile) return mile;
   if(lane==='prem'){ if(t%4===0) return {shard:{r:(t>=32?'epic':t>=16?'rare':'common'), n:1}, coins:300+t*25}; return {coins:500+t*45}; }
