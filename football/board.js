@@ -98,6 +98,9 @@
   /* Same idea one file along: set when the board had to drop the avatar columns, so the
      diagnostics can name 53 instead of leaving it to be guessed. */
   let needsAvatarMigration = false;
+  /* Set when ps_set_avatar itself is missing, which is 53 and 54 not having been run at all,
+     or run without PostgREST reloading its schema cache. */
+  let avatarFnMissing = false;
   async function fail(where, res) {
     offline = true;
     let body = null;
@@ -592,7 +595,15 @@
         /* NOT offline. A refused colour is the database working exactly as intended, and
            marking the whole board unreachable over it would put a "not reachable" notice on
            a leaderboard that is answering every other call. */
-        return { error: lastError.message };
+        /* THE FUNCTION IS NOT THERE, which is a different thing from the call being refused,
+           and the one the caller has to be able to tell apart: nothing the player does will
+           make it work, so the answer is not "try again". PostgREST says PGRST202 with a 404
+           when a function is missing from its schema cache. Remembered, so the diagnostics
+           can name the file rather than leaving the raw sentence about a schema cache to be
+           shown to somebody who is here to play a game. */
+        if (res.status === 404 || lastError.code === 'PGRST202') avatarFnMissing = true;
+        return { error: lastError.message, code: lastError.code, status: res.status,
+          missing: avatarFnMissing };
       }
       /* `returns table` comes back as an array of one row. */
       const r = (Array.isArray(body) ? body[0] : body) || {};
@@ -633,13 +644,14 @@
   }
 
   window.PS_BOARD = {
-    API_VERSION: 4,
+    API_VERSION: 5,
     submit, ranks, rankIn, placeIn, total, top, mine, byId, scoreOf, cutoffISO, todayUTC,
     SORTS, probe, myAvatar, setAvatar,
     get offline() { return offline; },
     get lastError() { return lastError; },
     get needsAccountsMigration() { return needsAccountsMigration; },
     get needsAvatarMigration() { return needsAvatarMigration; },
+    get avatarFnMissing() { return avatarFnMissing; },
     /* Used by the tests to prove a failed board never breaks the results screen. */
     _forceOffline() { offline = true; },
   };

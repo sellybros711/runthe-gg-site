@@ -695,6 +695,11 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid var(--line);border-bottom:none;cursor:pointer}
   .pod .pl{display:block;font-family:var(--fd);font-size:20px;line-height:1;
     color:var(--dim-2)}
+  /* CENTRED. .pod is text-align:center and every other child is display:block, which
+     centres their TEXT; .pfp is a 34px grid box, so the text rule did nothing for it and it
+     sat against the left edge of the step. Auto margins are what centre a fixed-width
+     block. */
+  .pod .pfp{margin:7px auto 0}
   .pod .pn{display:block;font-size:11.5px;font-weight:700;margin-top:5px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pod .pr{display:block;font-family:var(--fn);font-size:15px;font-weight:600;margin-top:2px}
@@ -2545,7 +2550,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=6"></script>
+<script src="board.js?v=7"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
@@ -2562,7 +2567,7 @@ const E=window.PS_ENGINE, R=window.PS_RUN;
    cached board.js older than this page, and they only catch it while they agree: a page
    that says 1 against a module that says 2 rejects a module that is newer than itself
    and quietly runs the stub, which is a dead leaderboard with no error anywhere. */
-const BOARD_VERSION=4;
+const BOARD_VERSION=5;
 const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
   API_VERSION:BOARD_VERSION, offline:true,
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
@@ -2580,7 +2585,7 @@ const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS
     write:{status:0,code:'blocked',message:'board.js did not load',healthy:false}}),
   lastError:{where:'board.js',status:0,code:'blocked',
     message:'the leaderboard script did not load, usually a blocked request'},
-  needsAccountsMigration:false, needsAvatarMigration:false,
+  needsAccountsMigration:false, needsAvatarMigration:false, avatarFnMissing:false,
 };
 const $=(id)=>document.getElementById(id);
 function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(e){}}
@@ -5003,18 +5008,13 @@ async function claimThisRun(){
    places to be recognisable as the same person. */
 const AVATAR_TEAMS=Object.keys(E.TEAM_COLORS).sort();
 
-/* THE NINE ARE STILL HERE, BUT ONLY AS THE DERIVED DEFAULT.
-   Nothing stores one any more; 54 replaced the storable list with the thirty-two codes. A
-   player who has chosen no club still needs a colour and it must not be a club, because
-   handing somebody the Cowboys because of how their username hashes would put words in
-   their mouth about the one thing on this screen that is a statement. */
-const AVATAR_COLORS={
-  red:'#dc2626', orange:'#ea580c', amber:'#d97706', green:'#16a34a', teal:'#0d9488',
-  blue:'#2563eb', violet:'#7c3aed', pink:'#db2777', slate:'#475569',
-};
-/* The eight the derived default draws from. Slate is left out: it is the muted one, and
-   handing it out at random would give somebody the one colour that looks like a mistake. */
-const AVATAR_AUTO=['red','orange','amber','green','teal','blue','violet','pink'];
+/* EVERYBODY GETS A CLUB, chosen or not.
+   The default used to be one of nine abstract colours, on the argument that deriving a club
+   from a username puts words in somebody's mouth. That was the wrong call for the board: a
+   column where some circles are two-tone club colours and the rest are flat pink and teal
+   reads as half-finished, and the derived one is not a claim anybody can see, because there
+   is nothing on screen that says "chosen". It is a starting kit, changed in two taps, and
+   the alternative was a board that looked broken. */
 
 /* YOUR OWN CHOICE, held here rather than read per paint. paintAvatar runs on every auth
    change and on every repaint of the profile sheet, and going to the network for two
@@ -5047,19 +5047,18 @@ function avatarOf(name,color,initials){
      database. The fallback is the first two letters of the name, which is what the header
      did before any of this existed. */
   const two=esc((initials||nm.slice(0,2)).toUpperCase());
-  /* A CLUB, IF ONE WAS CHOSEN. The ring is the club's second colour, which is the whole
-     reason two colours are worth carrying: fourteen of the thirty-two have a primary that
-     vanishes into this page's background, and the ring is what keeps their disc a disc. */
-  if(E.TEAM_COLORS[color]){
-    const c=E.teamColors(color);
-    return {bg:c.primary,ring:c.secondary,fg:c.on,text:two,anon:false,key:color,
-      team:E.nickname(color)};
-  }
-  const key=AVATAR_AUTO[avatarHash(nm.toLowerCase())%AVATAR_AUTO.length];
-  /* The derived circle gets a ring too, faint and white, so it belongs to the same family
-     as the club ones rather than reading as a different kind of object. */
-  return {bg:AVATAR_COLORS[key],ring:'rgba(255,255,255,.22)',fg:'#fff',text:two,
-    anon:false,key};
+  /* The club they chose, or the one their name lands on. `chosen` is what the picker needs
+     to know: it must not mark a club nobody picked, and the label above the grid says which
+     of the two this is in words.
+
+     The ring is the club's second colour, which is the whole reason two colours are worth
+     carrying: fourteen of the thirty-two have a primary that vanishes into this page's
+     background, and the ring is what keeps their disc a disc. */
+  const chosen=!!E.TEAM_COLORS[color];
+  const key=chosen?color:AVATAR_TEAMS[avatarHash(nm.toLowerCase())%AVATAR_TEAMS.length];
+  const c=E.teamColors(key);
+  return {bg:c.primary,ring:c.secondary,fg:c.on,text:two,anon:false,key,
+    team:E.nickname(key),chosen};
 }
 
 /* One circle, as markup. `cls` lets the caller size it: the board rows, the podium and the
@@ -5124,12 +5123,16 @@ const authMsg=(m,ok)=>'<p class="autherr'+(ok?' authok':'')+'">'+esc(m)+'</p>';
    `pend` is what is being tried on, separate from myAvatar, which is what is actually
    stored. Nothing tells the board anything until Save. */
 let pfpPend={color:null,initials:null};
+let pfpDirty=false;
 
 function paintPfpEdit(nm){
-  pfpPend={color:myAvatar.color,initials:myAvatar.initials};
+  /* A repaint normally starts from what is stored. The exception is a repaint caused by a
+     failed save, which has to start from what they were trying to store. */
+  if(pfpDirty) pfpDirty=false;
+  else pfpPend={color:myAvatar.color,initials:myAvatar.initials};
   const swatches=$('a-swatches'), inits=$('a-inits'), demo=$('pfp-demo');
   if(!swatches||!inits||!demo) return;
-  inits.value=myAvatar.initials||'';
+  inits.value=pfpPend.initials||'';
   const label=$('pfp-team');
   const draw=()=>{
     const a=avatarOf(nm,pfpPend.color,pfpPend.initials);
@@ -5139,9 +5142,12 @@ function paintPfpEdit(nm){
        the club whose colour happens to be nearest would claim a choice never made. */
     [...swatches.children].forEach(b=>b.classList.toggle('on',b.dataset.c===pfpPend.color));
     if(label){
-      label.innerHTML=a.team
+      /* Which of the two it is, in words, because the grid cannot say it: a marked club and
+         an unmarked one that happens to be the colour on your circle look the same at a
+         glance, and the difference is whether anybody chose it. */
+      label.innerHTML=a.chosen
         ? 'Playing for the <b>'+esc(a.team)+'</b>'
-        : 'No club yet, so your circle is <b>the colour your name gives you</b>';
+        : 'No club picked, so you are showing <b>'+esc(a.team)+'</b> colours for now';
     }
   };
   swatches.innerHTML=AVATAR_TEAMS.map(k=>{
@@ -5172,7 +5178,20 @@ function paintPfpEdit(nm){
   $('a-savepfp').onclick=async()=>{
     busy('a-savepfp','Saving');
     const r=await B.setAvatar(pfpPend.color,pfpPend.initials);
-    if(r.error){ profileSheet(r.error); return; }
+    if(r.error){
+      /* KEEP WHAT THEY PICKED. profileSheet repaints and paintPfpEdit reads myAvatar, so a
+         failed save used to throw the choice away and leave them looking at their old circle
+         with an error over it: they had to find the club again to try again. */
+      pfpDirty=true;
+      /* AND SAY IT IN ENGLISH. "Could not find the function public.ps_set_avatar(p_color,
+         p_initials) in the schema cache" is a true sentence for whoever runs the database
+         and gibberish to everybody else, and it was going straight onto the screen. */
+      profileSheet(r.missing
+        ? 'Clubs and initials are not switched on for this game yet, so there was nothing '+
+          'to save to. Nothing has changed, and your pick is still here.'
+        : r.error);
+      return;
+    }
     /* What the DATABASE stored, not what was sent. It strips and uppercases, and a settings
        screen that shows the request rather than the result is a settings screen that lies. */
     myAvatar={color:r.color,initials:r.initials,loaded:true};
@@ -6031,6 +6050,14 @@ async function runDiagnostics(){
   /* Below the names one and above the healthy one, in the same shape and for the same
      reason: a board that works but is one file behind should say which file, rather than
      reporting "everything is wired up correctly" while a feature quietly does nothing. */
+  /* Above the column check, because a missing FUNCTION is the louder of the two symptoms:
+     the columns going missing costs a colour, the function going missing means a player
+     pressed Save and got an error. */
+  }else if(r.write&&r.write.healthy&&B.avatarFnMissing){
+    verdict='The board works, but clubs and initials cannot be saved.';
+    fix='ps_set_avatar is not in the API schema cache, which is 53_football_profile_avatars.sql '+
+      'and 54_football_team_colorways.sql not having been run, or run without the cache '+
+      'reloading. Run them, then run: notify pgrst, \'reload schema\';';
   }else if(r.write&&r.write.healthy&&B.needsAvatarMigration){
     verdict='The board works, but nobody can choose a colour.';
     fix='53_football_profile_avatars.sql has not been run, so ps_runs has no display_color '+
