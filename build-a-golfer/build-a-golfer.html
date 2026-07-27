@@ -570,24 +570,24 @@ window.GA_ID='G-L29P5MRWKE';
   .stack-sep span{height:1px; flex:1; background:linear-gradient(90deg,transparent,rgba(244,227,201,.22),transparent)}
   .stack-sep b{font-family:var(--body); font-weight:800; letter-spacing:.2em; font-size:11px; color:var(--pagemut); text-transform:uppercase}
   /* CS254: richer "continue your career" card - bigger than a button, shows where you are (owner) */
-  .resumecard{display:block; width:100%; max-width:520px; margin:0 auto; text-align:left; cursor:pointer; color:#20160a;
-    background:var(--gold-grad-d); border:0; border-radius:18px; padding:15px 17px 14px;
-    box-shadow:0 6px 16px -6px rgba(0,0,0,.6), 0 22px 44px -12px rgba(0,0,0,.6), 0 16px 40px -14px rgba(241,208,74,.5), inset 0 1px 0 rgba(255,255,255,.35)}
+  .resumecard{display:block; width:100%; max-width:520px; margin:0 auto; text-align:left; cursor:pointer; color:#f1f6ff;
+    background:linear-gradient(158deg,#5f90f2,#3a63c8 60%,#3053b4); border:0; border-radius:18px; padding:15px 17px 14px;
+    box-shadow:0 6px 16px -6px rgba(0,0,0,.6), 0 22px 44px -12px rgba(0,0,0,.6), 0 16px 40px -14px rgba(58,99,200,.55), inset 0 1px 0 rgba(255,255,255,.28)}
   .resumecard:active{transform:translateY(1px)}
   .rc-top{display:flex; align-items:center; justify-content:space-between; gap:12px}
   .rc-kick{font:800 10px/1 var(--body); letter-spacing:.15em; text-transform:uppercase; opacity:.62}
   .rc-name{font-family:var(--display); font-weight:400; font-style:normal; font-size:27px; line-height:1.05; letter-spacing:.01em; margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:6px}
-  .rc-ovr{flex:0 0 auto; text-align:center; background:rgba(20,15,8,.15); border-radius:11px; padding:6px 12px}
+  .rc-ovr{flex:0 0 auto; text-align:center; background:rgba(4,12,30,.34); border-radius:11px; padding:6px 12px}
   .rc-ovr b{display:block; font:900 21px/1 var(--mono)}
   .rc-ovr span{font:800 8px/1 var(--body); letter-spacing:.12em; opacity:.62}
   .rc-prog{margin-top:12px}
   .rc-prog-lb{display:flex; justify-content:space-between; align-items:baseline; font:800 12px/1 var(--body); margin-bottom:5px}
   .rc-status{font-size:10px; letter-spacing:.08em; text-transform:uppercase; opacity:.75}
-  .rc-prog-bar{height:7px; border-radius:4px; background:rgba(20,15,8,.16); overflow:hidden}
-  .rc-prog-bar i{display:block; height:100%; background:#20160a; border-radius:4px}
+  .rc-prog-bar{height:7px; border-radius:4px; background:rgba(4,12,30,.34); overflow:hidden}
+  .rc-prog-bar i{display:block; height:100%; background:#cfe0ff; border-radius:4px}
   .rc-stats{display:flex; align-items:center; gap:16px; margin-top:12px}
   .rc-stat b{font:900 16px/1 var(--mono)} .rc-stat span{font:700 10px/1 var(--body); opacity:.66; margin-left:3px}
-  .rc-go{margin-left:auto; font:900 12.5px/1 var(--body); letter-spacing:.03em; background:rgba(20,15,8,.14); border-radius:9px; padding:8px 13px}
+  .rc-go{margin-left:auto; font:900 12.5px/1 var(--body); letter-spacing:.03em; background:rgba(4,12,30,.34); border-radius:9px; padding:8px 13px}
   /* CS256: matching hero cards for Daily / Spotlight / Online (same polish as the resume card, own accents) */
   .gcard{display:block; width:100%; max-width:520px; margin:0 auto; text-align:left; cursor:pointer; border:0; border-radius:18px;
     padding:14px 16px; position:relative; overflow:hidden; box-shadow:0 6px 15px -6px rgba(0,0,0,.6), 0 24px 48px -12px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.14)}
@@ -605,6 +605,7 @@ window.GA_ID='G-L29P5MRWKE';
   .gc-row{display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap}
   .gc-chip{display:inline-flex; align-items:center; gap:5px; font:800 11.5px/1 var(--body); border-radius:8px; padding:6px 9px; background:var(--chip)}
   .gc-chip.hot{background:rgba(241,208,74,.92); color:#20160a}
+  .gc-gold .gc-chip.hot{background:#c0392b; color:#fff}
   .gc-go{margin-left:auto; font:900 12.5px/1 var(--body); letter-spacing:.03em; border-radius:9px; padding:8px 13px; background:var(--chip)}
   /* CS258: a clear gap so the stacked hero cards never look like they're touching */
   .stack>.gcard, .stack>.resumecard{margin-top:16px}
@@ -616,6 +617,17 @@ window.GA_ID='G-L29P5MRWKE';
   @media (prefers-reduced-motion:reduce){ .gcard.spotlive{animation:none} .gcard.spotlive{box-shadow:0 14px 32px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18), 0 0 26px 4px rgba(196,124,255,.75)} }
   .gcard.spot-done{opacity:.5; filter:saturate(.55); box-shadow:0 10px 22px -16px rgba(0,0,0,.5)}
   .gcard.spot-done .gc-go{opacity:.7}
+  /* Play Online - compact strip (owner: small / less invasive) */
+  .online-mini{display:flex; align-items:center; gap:8px; width:100%; max-width:520px; margin:14px auto 4px;
+    background:linear-gradient(158deg,rgba(32,189,169,.16),rgba(10,135,122,.14)); border:1px solid rgba(32,189,169,.42);
+    border-radius:12px; padding:8px 11px; box-shadow:0 3px 10px -6px rgba(0,0,0,.5)}
+  .om-dot{width:8px; height:8px; border-radius:50%; background:#35d6a0; flex:0 0 auto; box-shadow:0 0 8px #35d6a0}
+  .om-lab{min-width:0; line-height:1.15; margin-right:auto}
+  .om-lab b{display:block; font:800 13px/1 var(--body); color:#8ff0dd}
+  .om-lab span{display:block; font:700 9.5px/1 var(--body); color:#7fbdb2; margin-top:3px}
+  .om-btn{flex:0 0 auto; background:rgba(32,189,169,.2); border:1px solid rgba(53,214,160,.5); border-radius:9px;
+    padding:7px 11px; color:#eafff9; font:800 12px/1 var(--body); cursor:pointer}
+  .om-btn:active{transform:translateY(1px)}
   /* online card's two mode buttons */
   .oc-row{display:flex; gap:8px; margin-top:12px}
   .oc-btn{flex:1; min-width:0; background:rgba(2,20,16,.3); border:1px solid rgba(255,255,255,.18); border-radius:12px; padding:9px 8px; color:inherit; cursor:pointer; text-align:center}
@@ -5912,7 +5924,10 @@ const PXFX=[
   {id:'heatwave', name:'Heatwave',     hist:'Summer scorcher',          price:18000, col:'#ff6a3a', tracer:{g:'rgba(255,106,58,.55)',  c:'#ffd8c0'}},
   {id:'ecto',     name:'Ecto Aura',    hist:'Something spooky follows', price:18000, col:'#7dff5a', tracer:{g:'rgba(125,255,90,.55)',  c:'#e8ffd8'}},
   {id:'stadium',  name:'Stadium Lights',hist:'Big-game glow',           price:18000, col:'#e8f2ff', tracer:{g:'rgba(232,242,255,.55)', c:'#ffffff'}},
-  {id:'rungames', name:'Run The Games Aura',hist:'The house glow, in signature green', price:30000, col:'#80ff76', tracer:{g:'rgba(128,255,118,.55)', c:'#e6ffe0'}} ];
+  {id:'rungames', name:'Run The Games Aura',hist:'The house glow, in signature green', price:30000, col:'#80ff76', tracer:{g:'rgba(128,255,118,.55)', c:'#e6ffe0'}},
+  // Tour Pass Track capstone (level 50) — pass:true keeps it out of the shop + pack pool + shards, so it is
+  // ONLY obtainable by maxing that month's Tour Pass. A one-month-only exclusive (genuinely limited).
+  {id:'passcrown', name:'Tour Champion Aura', hist:'Only for those who ran the whole Tour Pass', price:0, pass:true, col:'#ffd447', tracer:{g:'rgba(255,212,71,.65)', c:'#fff6cf'}} ];
 const PXFX_BY={}; PXFX.forEach(function(f){ PXFX_BY[f.id]=f; });
 function fxOf(look){ var id=(look&&look.fx)||'none'; return (id&&id!=='none'&&PXFX_BY[id])?PXFX_BY[id]:null; }
 function pxFxClass(look){ var f=fxOf(look); return f?(' fx-'+f.id):''; }
@@ -8518,7 +8533,7 @@ function dailyHeroCard(){
   const streakChip = PRACTICE ? '' : (st>0
     ? `<span class="gc-chip${atRisk?' hot':''}">🔥 ${st}-day streak${atRisk?' on the line':''}${(fz>0&&!atRisk)?` · ❄️ ${fz}`:''}</span>`
     : `<span class="gc-chip">🔥 Start your streak</span>`);
-  const card=$(`<button class="gcard gc-blue" aria-label="Play 18, the daily round">
+  const card=$(`<button class="gcard gc-gold" aria-label="Play 18, the daily round">
     <div class="gc-top"><div style="min-width:0"><div class="gc-kick">Daily Challenge</div><div class="gc-title">Play 18</div></div>${badge?`<span class="gc-badge">${badge}</span>`:''}</div>
     <div class="gc-mid">${mid}</div>
     <div class="gc-row">${streakChip}<span class="gc-chip">New in ${dCd('hm')}</span><span class="gc-go">Play ▸</span></div>
@@ -8554,7 +8569,7 @@ function careerHeroCard(fresh){
   const best=(c&&c.builds>0)
     ? `<div class="gc-row" style="margin-top:10px"><span class="gc-chip">Best ${fmt(c.bestMoney)}</span><span class="gc-chip">OVR ${c.bestOvr}</span><span class="gc-chip">${c.builds} build${c.builds>1?'s':''}</span></div>`
     : '';
-  const card=$(`<button class="gcard gc-gold" aria-label="Career Mode, build your golfer">
+  const card=$(`<button class="gcard gc-blue" aria-label="Career Mode, build your golfer">
     <div class="gc-top"><div style="min-width:0"><div class="gc-kick">${fresh?'Start Your Journey':'New Career'}</div><div class="gc-title">${fresh?'Career Mode':'New Golfer'}</div></div><span class="gc-badge">UP TO 42 YRS</span></div>
     <div class="gc-mid">Build your golfer and play a 30-year tour career, then join the Legend Circuit for up to 42 years in all. Retire whenever you choose.</div>
     ${best}
@@ -8563,15 +8578,13 @@ function careerHeroCard(fresh){
   card.onclick=()=>{reset();S.mode='easy';S.screen='setup';render();};
   return card;
 }
-// CS256: Play Online hero card (teal) - a container with the two mode entry buttons.
+// Play Online - a COMPACT teal strip (owner: much smaller / less invasive than a full hero card).
 function onlineHeroCard(){
-  const card=$(`<div class="gcard gc-teal" style="margin:16px auto 4px">
-    <div class="gc-top"><div style="min-width:0"><div class="gc-kick"><span class="online-dot"></span>Play Online <span class="online-badge">NEW</span></div><div class="gc-title">Head to Head</div></div></div>
-    <div class="gc-mid">Build your golfer, then face real players live.</div>
-    <div class="oc-row">
-      <button class="oc-btn" id="ol-1v1"><span class="ol-l">1v1</span><span class="ol-s">Head-to-head · live</span></button>
-      <button class="oc-btn" id="ol-4"><span class="ol-l">Foursomes</span><span class="ol-s">2v2 &amp; 4-player</span></button>
-    </div>
+  const card=$(`<div class="online-mini">
+    <span class="om-dot" aria-hidden="true"></span>
+    <div class="om-lab"><b>Play Online</b><span>Live head-to-head</span></div>
+    <button class="om-btn" id="ol-1v1">1v1</button>
+    <button class="om-btn" id="ol-4">Foursomes</button>
   </div>`);
   const ob1=card.querySelector('#ol-1v1'), ob4=card.querySelector('#ol-4');
   if(ob1) ob1.onclick=()=>openH2H('1v1');
