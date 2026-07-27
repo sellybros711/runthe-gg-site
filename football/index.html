@@ -371,6 +371,50 @@ window.GA_ID='G-L29P5MRWKE';
   .avatar.signed svg{stroke:#fff}
   .avatar .in{font-family:var(--fn);font-size:12px;font-weight:600;color:#fff;letter-spacing:.04em}
 
+  /* SIGNED OUT, IT SAYS SO IN WORDS.
+     A line-art figure in a circle is the convention for "your account" and says nothing at
+     all to somebody who does not have one: it reads as a decorative avatar, and the one
+     control that puts your name on the leaderboard looked like a picture of a person. So
+     when the library has answered and nobody is signed in, the circle becomes a pill that
+     says Sign in.
+
+     Only then. Before auth reports, and while signed in without a name yet, it stays the
+     circle: telling a returning player to sign in for the half second before their session
+     restores would be worse than saying nothing.
+
+     Same 44px tap height as the circle it replaces, which is the documented minimum for the
+     one control on every screen of the game. The visible pill is the same :before, stretched
+     to the button's width and inset 5px top and bottom, so the header's row height does not
+     move. */
+  .avatar.signin{flex:0 0 auto;width:auto;height:44px;padding:0 11px;margin-right:-3px}
+  .avatar.signin:before{inset:5px 0;width:auto;height:auto;border-radius:99px;
+    background:rgba(59,130,246,.16);border-color:rgba(96,165,250,.5)}
+  .avatar.signin .lbl{font-family:var(--fn);font-size:10px;font-weight:600;
+    letter-spacing:.07em;text-transform:uppercase;color:#bfdbfe;white-space:nowrap}
+  .avatar.signin:hover:before{background:rgba(59,130,246,.26)}
+
+  /* THE WORDS COST 24px, AND THE HEADER DID NOT HAVE THEM.
+     Measured: with the pill in place the game's own name AND the link to the site both fell
+     to an ellipsis at 320 and at 360, which are the two things the note above says this
+     header exists to carry. The type reduction that already makes the header fit at 320
+     is applied up to 400 instead, but only while the pill is actually there, so a signed-in
+     player on a 390px phone keeps the full-size name they have now.
+
+     :has, which this stylesheet already depends on in two other places. Where it is not
+     supported these rules do not apply and the header truncates exactly as it did before
+     this rule existed, which is the same graceful path the ad frame takes. */
+  @media (max-width:399px){
+    header:has(.avatar.signin) .brand{font-size:13.5px;letter-spacing:.04em}
+    header:has(.avatar.signin) .pill.site{font-size:9.5px;padding:5px 8px;letter-spacing:.1em}
+    header:has(.avatar.signin) .hdr-r{gap:6px}
+    header:has(.avatar.signin) .avatar.signin{padding:0 8px}
+    /* The last three pixels, off the mark's right margin. At 320 the game's name was still
+       one pixel short of itself with everything else already reduced, and one pixel is a
+       whole ellipsis: "THE PERFECT SEAS...". The mark is 30px of drawing that does not care
+       whether it has 9px of air after it or 6. */
+    header:has(.avatar.signin) .mark{margin-right:6px}
+  }
+
   /* THE HERO
      Three treatments, one shown at a time. Each is assembled from components the
      game already uses, so nothing here is decoration that lies about the product. */
@@ -4875,12 +4919,25 @@ async function claimThisRun(){
   if($('s-over').classList.contains('on')&&myRanks) paintRanks();
 }
 
-/* The header button: initials once there is a name, the line-art figure until then. */
+/* The header button. Three states, and each one is the truth about the account:
+     signed in with a name   the initials, in the blue circle
+     signed in without one   the figure, in the blue circle: they have an account and the
+                             sheet's job is to get a name onto it
+     signed out, and known    a pill that says Sign in
+
+   "And known" is the part that matters. authState.ready is false until the auth library has
+   answered, and a session restore is a round trip, so painting Sign in before that would
+   flash it at every returning player on every load. Until then it is the plain circle,
+   which is true whichever way the answer goes. */
 function paintAvatar(){
   const b=$('b-profile');
   const nm=authState.name;
+  const out=authState.ready&&!authState.signedIn;
   b.classList.toggle('signed',!!authState.signedIn);
-  if(nm) b.innerHTML='<span class="in">'+esc(nm.slice(0,2).toUpperCase())+'</span>';
+  b.classList.toggle('signin',out);
+  b.setAttribute('aria-label',out?'Sign in or create an account':'Your profile');
+  if(out) b.innerHTML='<span class="lbl">Sign in</span>';
+  else if(nm) b.innerHTML='<span class="in">'+esc(nm.slice(0,2).toUpperCase())+'</span>';
   else b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.6" r="4"/>'+
     '<path d="M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4"/></svg>';
 }
