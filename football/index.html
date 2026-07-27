@@ -676,6 +676,22 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .lbr.gold .rk{color:#fcd34d}
   .lbr.mine{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.09)}
   .lbr.mine .rk{color:#93c5fd}
+  /* JUST ARRIVED. A player who signs in from the results page is brought here to be
+     shown one row out of twenty-five, and .mine alone is a faint blue tint that does not
+     survive that hunt. Three pulses, then it settles back into .mine and stays found. */
+  .found{animation:foundrow 1.9s cubic-bezier(.3,.7,.4,1) both}
+  @keyframes foundrow{
+    0%{box-shadow:0 0 0 0 rgba(59,130,246,.75);border-color:rgba(96,165,250,.95)}
+    18%{box-shadow:0 0 0 9px rgba(59,130,246,0);border-color:rgba(96,165,250,.95)}
+    36%{box-shadow:0 0 0 0 rgba(59,130,246,.7);border-color:rgba(96,165,250,.95)}
+    54%{box-shadow:0 0 0 9px rgba(59,130,246,0);border-color:rgba(96,165,250,.95)}
+    72%{box-shadow:0 0 0 0 rgba(59,130,246,.6);border-color:rgba(96,165,250,.95)}
+    100%{box-shadow:0 0 0 9px rgba(59,130,246,0);border-color:rgba(59,130,246,.5)}}
+  @media (prefers-reduced-motion:reduce){
+    /* No pulse, but it still has to be the row that stands out. */
+    .found{animation:none;border-color:rgba(96,165,250,.95) !important;
+      box-shadow:0 0 0 2px rgba(59,130,246,.5)}
+  }
   .lbr .rec b.gold{color:#fcd34d}
   /* The board is empty rather than broken: a window nobody has played yet. */
   .lbempty{margin:11px 0 0;padding:16px 12px;border-radius:12px;text-align:center;
@@ -4734,13 +4750,52 @@ async function recordRun(){
 /* Signing in on the results screen submits the run that is on it. Before the board was gated
    the equivalent step was claiming an already-submitted guest row; there is no row to claim
    now, so the run is sent for the first time. */
+/* Set when the player taps a sign-in prompt that only exists BECAUSE their run is not
+   on the board. That is the one case where signing in should move them off the results
+   page: they asked for the board, so they are taken to it and their own row is found for
+   them. Signing in from the avatar at any other time leaves them where they are. */
+let signInForBoard=false;
+
 async function submitAfterSignIn(){
   if(submitted!=='guest'||!run||!run.outcome) return;
+  const wanted=signInForBoard; signInForBoard=false;
   submitted=null;
   await recordRun();
   if($('s-over').classList.contains('on')) paintRanks();
   if($('s-board').classList.contains('on')) loadBoard();
-  if(submitted&&submitted!=='guest') toast('Your run is on the board');
+  const on=submitted&&submitted!=='guest';
+  if(!on){ toast('Signed in, but the run could not be sent'); return; }
+  if(wanted) await showMyRowOnBoard();
+  else toast('Your run is on the board');
+}
+
+/* THE BOARD, OPENED ON THE ROW THAT WAS JUST ADDED.
+   Forced to the window and the axis where the run is certain to be findable rather than
+   wherever the board was last left: today, by record, best first. A run played in the
+   last few minutes is in today's board by definition, and the pinned-row fallback that
+   catches a run outside the top page only runs on a record board in descending order,
+   so those are the settings that guarantee there is something to point at. A daily run
+   goes to the daily board, which is the only board it is on. */
+async function showMyRowOnBoard(){
+  /* THE PROFILE SHEET HAS TO GO FIRST. The player got here by signing in inside it, and
+     the auth handler repaints it rather than closing it, so without this the board is
+     opened and scrolled underneath a full-screen sheet: the one thing they asked to see,
+     behind the thing they used to ask for it. */
+  closeSheet();
+  if(run&&run.daily){ lbWin='daily'; }
+  else { lbWin='day'; lbSort='record'; lbDir='desc'; }
+  lbShown=5;
+  show('s-board');
+  await loadBoard();
+  /* paintRanks is still in flight when this runs on a slow board, and minePinned needs
+     myRanks to draw the fallback row, so the board is repainted once more if the first
+     pass found nothing to highlight. */
+  let el=$('lb-rows').querySelector('.lbr.mine')||$('lb-podium').querySelector('.pod.mine');
+  if(!el&&myRanks){ paintBoard(); el=$('lb-rows').querySelector('.lbr.mine'); }
+  if(!el){ toast('Your run is on the board'); return; }
+  el.scrollIntoView({block:'center',behavior:HERO_REDUCE?'auto':'smooth'});
+  el.classList.remove('found'); void el.offsetWidth; el.classList.add('found');
+  toast('You are on the board');
 }
 
 /* For a daily run the first column is that day's puzzle rather than a clock window,
@@ -4778,7 +4833,7 @@ function paintRankStrip(r){
         'on them go on the board.</span>'+
         '<button class="btn sm" id="b-gate-strip">Sign in and keep this run</button>'
       : '';
-    if(submitted==='guest'&&any) $('b-gate-strip').onclick=()=>profileSheet();
+    if(submitted==='guest'&&any) $('b-gate-strip').onclick=()=>{signInForBoard=true;profileSheet();};
   }
   const el=$('o-splits'); if(!el) return;
   const cells=[...el.children];
@@ -4860,7 +4915,7 @@ async function paintRanks(){
         '<button class="btn sm" id="b-gate-in">Sign in or create an account</button>'+
       '</div>'+
       '<button class="btn ghost sm" id="b-board3" style="margin-top:9px">See the leaderboard</button>';
-    $('b-gate-in').onclick=()=>profileSheet();
+    $('b-gate-in').onclick=()=>{signInForBoard=true;profileSheet();};
     $('b-board3').onclick=openBoard;
     return;
   }
