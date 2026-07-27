@@ -314,6 +314,19 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     padding:5px 10px;border-radius:99px;border:1px solid var(--line-2);color:var(--dim);
     min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
+  /* AT 320 THE HEADER NEEDS 324px AND HAS 292.
+     Measured: the mark and its margin take 39, the game's name wants 139, the site
+     pill wants 99 and the account button takes 39. Both type sizes come down at the
+     narrowest widths rather than truncating the game's own name or dropping the link
+     to the site, which are the two things this header exists to carry. Everything
+     from 360 up is unchanged and fits with room to spare. */
+  @media (max-width:359px){
+    header .mark{width:26px;height:23px;margin-right:7px}
+    .brand{font-size:13.5px;letter-spacing:.04em}
+    .pill.site{font-size:9.5px;padding:5px 8px;letter-spacing:.1em}
+    .hdr-r{gap:6px}
+  }
+
   /* header right side: the run's label, then you */
   .hdr-r{display:flex;align-items:center;gap:8px;min-width:0;margin-left:auto}
   /* 44px, which is the documented minimum for a thing you tap with a thumb. It was
@@ -1155,6 +1168,36 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     white-space:nowrap}
   .bdg.led{background:rgba(251,191,36,.22);color:#fcd34d}
   .bdg.mile{background:rgba(56,189,248,.14);color:#7dd3fc;border-color:rgba(56,189,248,.28)}
+
+  /* AN AWARD IS NOT A STAT.
+     The badges above are facts about this season's numbers and are drawn as outlined
+     amber. Hardware is a filled plate, because it is the one thing on a tile that is
+     not another number and should not read as one. MVP, Super Bowl MVP and Offensive
+     Player of the Year get the full plate; the rest keep the shape in a quieter
+     finish, so a roster with six All-Pros does not look like a roster with six MVPs. */
+  .awd{display:inline-block;font-family:var(--fn);font-size:8.5px;font-weight:700;
+    letter-spacing:.07em;text-transform:uppercase;padding:3px 7px;border-radius:5px;
+    background:linear-gradient(180deg,#fde68a,#d19410);color:#2a1b02;
+    border:1px solid #f0c25a;box-shadow:0 1px 4px rgba(0,0,0,.45);
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* Still a filled plate, just a duller metal. It was a translucent amber fill, which
+     rendered within a few points of the outlined stat badge sitting right under it, so
+     the one distinction this pair has to make was the one it did not make. Filled means
+     hardware, outlined means a number: that rule now holds for all seven awards. */
+  .awd.minor{background:linear-gradient(180deg,#e3c883,#a67c24);color:#241a05;
+    border-color:#c2a04a;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  /* The chip and its "+2" travel together on the tile, so the count cannot wrap onto
+     its own line under a long award name. */
+  .tile .awdrow{display:flex;align-items:center;gap:5px;margin-top:5px;min-width:0}
+  .awdmore{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.05em;
+    color:#fcd34d;flex:0 0 auto}
+  /* Its own column on a roster row, not appended to the name. Both text lines on a
+     row ellipsize, and a gold plate cut in half by an ellipsis reads as broken. */
+  .rrow .awdcol{flex:0 0 auto;display:flex;align-items:center}
+  .hw:empty{display:none}
+  .hw{margin:11px 0 0;padding:9px 11px;border-radius:10px;font-size:12.5px;line-height:1.4;
+    color:#fde68a;background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.28)}
+  .hw b{color:#fff;font-weight:700}
   .chemtag{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 6px;
     border-radius:5px;background:rgba(74,222,128,.16);color:#4ade80;max-width:100%;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1966,6 +2009,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="field short" id="field3"></div>
       <div class="rail" id="rail3"></div>
       <p class="railnote"></p>
+      <!-- What the six of them won between them, when they won anything. -->
+      <p class="hw" id="o-hw"></p>
       <div class="rost" id="o-rost"></div>
     </div>
 
@@ -2041,8 +2086,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=16"></script>
-<script src="run.js?v=16"></script>
+<script src="engine.js?v=17"></script>
+<script src="run.js?v=17"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -2114,7 +2159,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=16;
+const NEED_VERSION=17;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -2183,6 +2228,46 @@ function tcPlate(franchise,season){
    green and one filled by a receiver is blue. That way the row says both things at once: which
    spot it is, and who is in it. Labelling it by the player made the flex invisible; colouring
    it purple made the position invisible. */
+/* AWARDS.
+   They arrive on a player row as full names, because that is what they are called and
+   the detail sheet has room to say so. The short forms are for the tile and the roster
+   row, which have room for about eight characters.
+
+   Nothing here touches a price, a projection or the simulation. A player is not better
+   because he won MVP; he won MVP because he was better, and his points already say so.
+   This is recognition, and its whole job is to help you spot the season you are looking
+   at while the wheel is still spinning. */
+const AWARD_SHORT={
+  'MVP':'MVP',
+  'Super Bowl MVP':'SB MVP',
+  'Offensive Player of the Year':'OPOY',
+  'Offensive Rookie of the Year':'OROY',
+  'First Team All-Pro':'All-Pro',
+  'Comeback Player of the Year':'Comeback',
+  'Walter Payton Man of the Year':'Man of the Year',
+};
+/* The three that get the full gold plate. */
+const AWARD_MAJOR=new Set(['MVP','Super Bowl MVP','Offensive Player of the Year']);
+/* Prestige order, the same one the build sorts a player's own awards into, so the
+   hardware line reads down from MVP rather than in whatever order the roster came. */
+const AWARD_LIST=['MVP','Super Bowl MVP','Offensive Player of the Year',
+  'Offensive Rookie of the Year','First Team All-Pro','Comeback Player of the Year',
+  'Walter Payton Man of the Year'];
+/* Plural forms for the one place that counts them out loud. */
+const AWARD_PLURAL={
+  'MVP':'MVPs','Super Bowl MVP':'Super Bowl MVPs',
+  'Offensive Player of the Year':'Offensive Player of the Year awards',
+  'Offensive Rookie of the Year':'Offensive Rookie of the Year awards',
+  'First Team All-Pro':'First Team All-Pro selections',
+  'Comeback Player of the Year':'Comeback Player of the Year awards',
+  'Walter Payton Man of the Year':'Walter Payton Man of the Year awards',
+};
+const awardChip=(a,short)=>'<span class="awd'+(AWARD_MAJOR.has(a)?'':' minor')+'">'+
+  esc(short?(AWARD_SHORT[a]||a):a)+'</span>';
+/* The one worth showing when there is only room for one. The build already sorted a
+   player's awards by prestige, so it is the first. */
+const topAward=(p)=>(p&&p.awards&&p.awards.length)?p.awards[0]:null;
+
 function slotTag(slot,pos){
   const label=slot||pos;
   return '<span class="tag" style="'+posPaint(pos||slot)+'">'+esc(label)+'</span>';
@@ -2341,7 +2426,9 @@ function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clear
 
 async function boot(){
   try{
-    const j=(f)=>fetch(f+'?v=4').then(r=>{if(!r.ok)throw new Error(f);return r.json();});
+    /* v5: player_seasons.json now carries awards. Bumped so a returning visitor is not
+       served last week's copy from cache, which would silently have no hardware in it. */
+    const j=(f)=>fetch(f+'?v=5').then(r=>{if(!r.ok)throw new Error(f);return r.json();});
     const [pl,tm,bat,co,cu,lg,cal]=await Promise.all([
       j('data/player_seasons.json'),j('data/team_seasons.json'),j('data/battery.json'),
       j('data/coaches.json'),j('data/curated.json'),j('data/league_context.json'),
@@ -2645,6 +2732,8 @@ function sheet(p){
     '<div class="kv"><span class="dim">Spot</span><b>'+p.position+'</b></div>'+
     '<div class="kv"><span class="dim">Cost</span><b>'+M(p.price_musd)+'</b></div>'+
     (p.stat_line?'<p style="margin:0 0 10px;font-size:13px;color:var(--dim)">'+esc(p.stat_line)+'</p>':'')+
+    ((p.awards||[]).length?'<div class="badges" style="margin-bottom:9px">'+
+      p.awards.map(a=>awardChip(a,false)).join('')+'</div>':'')+
     ((p.badges||[]).length?'<div class="badges" style="margin-bottom:10px">'+p.badges.map(t=>
       '<span class="'+(/^Led the NFL/.test(t)?'bdg led':(/^\d/.test(t)?'bdg':'bdg mile'))+'">'+esc(t)+'</span>').join('')+'</div>':'')+
     '<div class="kv"><span class="dim">Fantasy points per game</span><b>'+p.fppg.toFixed(1)+' FPPG</b></div>'+
@@ -2987,6 +3076,15 @@ function optTile(row){
     : '';
   const badge=(p.badges||[])[0];
   const bcls=badge?(/^Led the NFL/.test(badge)?'bdg led':(/^\d/.test(badge)?'bdg':'bdg mile')):'';
+  /* Hardware first, above the stat badge. On a board of six seasons it is the fastest
+     way to tell which one you are actually being offered. A count rather than a second
+     plate when he won more than one, because two plates on a tile this size crowd out
+     the stat line underneath. */
+  const aw=p.awards||[];
+  const awd=aw.length
+    ? '<span class="awdrow">'+awardChip(aw[0],true)+
+      (aw.length>1?'<span class="awdmore">+'+(aw.length-1)+'</span>':'')+'</span>'
+    : '';
   // Where this signing actually lands. Worth saying when it is not his own spot,
   // since that is the information the FLEX tab used to carry.
   const dest=destination(p);
@@ -2995,7 +3093,7 @@ function optTile(row){
     'data-k="'+p.player_id+'|'+p.season+'">'+
     '<span class="th">'+head+'</span>'+who+
     (p.stat_line?'<span class="line">'+esc(p.stat_line)+'</span>':'')+
-    (badge?'<span class="'+bcls+'">'+esc(badge)+'</span>':'')+
+    awd+(badge?'<span class="'+bcls+'">'+esc(badge)+'</span>':'')+
     '<span class="tf">'+pts+tag+'</span>'+flex+'</button>';
 }
 
@@ -3652,6 +3750,21 @@ function paintOver(){
     ' team shape, which is a <b>'+rating.toFixed(1)+'</b> team overall against an '+
     'average defense. You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.</span>';
 
+  /* WHAT THE SIX WON BETWEEN THEM. Counted from the same field the tiles read, so
+     the line can never disagree with the plates on the rows below it. Silent when a
+     roster won nothing, which most rosters do. */
+  const hw={};
+  run.roster.forEach(p=>(p.awards||[]).forEach(a=>{hw[a]=(hw[a]||0)+1;}));
+  const hwParts=Object.keys(hw)
+    .sort((a,b)=>AWARD_LIST.indexOf(a)-AWARD_LIST.indexOf(b))
+    .map(a=>'<b>'+hw[a]+'</b> '+(hw[a]===1?a.replace(/^First Team All-Pro$/,'First Team All-Pro selection')
+      :AWARD_PLURAL[a]));
+  $('o-hw').innerHTML=hwParts.length
+    ? 'Between them these six won '+
+      (hwParts.length===1?hwParts[0]
+        :hwParts.slice(0,-1).join(', ')+' and '+hwParts[hwParts.length-1])+'.'
+    : '';
+
   /* The lineup, which the old results page never showed at all. */
   drawField($('field3'),false);
   const bySlot=new Array(E.SLOTS.length).fill(null);
@@ -3662,9 +3775,11 @@ function paintOver(){
      row was the flex is still visible: it is the sixth one, and it carries a small marker. */
   $('o-rost').innerHTML=E.SLOTS.map((slot,i)=>{
     const p=bySlot[i]; if(!p) return '';
+    const a=topAward(p);
     return '<div class="rrow">'+slotTag(slot,p.position)+
       '<span class="nm"><b>'+esc(p.name)+'</b><span>'+p.season+' '+esc(E.nickname(p.franchise))+
         (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</span></span>'+
+      (a?'<span class="awdcol">'+awardChip(a,true)+'</span>':'')+
       '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
   }).join('');
 
@@ -4933,10 +5048,12 @@ function runDetail(row){
     '<p class="dim" style="font-size:12.5px;margin:0">'+esc(label)+
       (club?' &middot; took the '+esc(poss(E.nickname(club)))+' place':'')+'</p>'+
     (known.length?'<div class="rost" style="margin-top:12px">'+known.map(m=>{
+      const a=topAward(m.p);
       return '<div class="rrow">'+slotTag(m.slot,m.p.position)+
         '<span class="nm"><b>'+esc(m.p.name)+'</b><span>'+m.p.season+' '+
           esc(E.nickname(m.p.franchise))+(m.p.stat_line?' &middot; '+esc(m.p.stat_line):'')+
         '</span></span>'+
+        (a?'<span class="awdcol">'+awardChip(a,true)+'</span>':'')+
         '<span class="num"><b>'+m.p.fppg.toFixed(1)+'</b><span>'+M(m.p.price_musd)+
         '</span></span></div>';
     }).join('')+'</div>'

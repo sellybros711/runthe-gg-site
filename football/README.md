@@ -28,6 +28,7 @@ Calibration below, so the UI is built on top of a validated engine.
 | `build/02-teams.mjs` | → `data/team_seasons.{json,csv}`, `team_season_rosters.json`, `league_context.json` |
 | `build/03-chemistry.mjs` | → `data/battery.json`, `coaches.json`, `curated.json` |
 | `build/04-display.mjs` | → `data/display_calibration.json` (football-score transform) |
+| `build/05-awards.mjs` | `data/raw/awards.csv` → an `awards` field on `data/player_seasons.json` |
 
 Rebuild everything:
 
@@ -36,8 +37,13 @@ node football/build/01-players.mjs
 node football/build/02-teams.mjs
 node football/build/03-chemistry.mjs
 node football/build/04-display.mjs
+node football/build/05-awards.mjs   # after 01, which it writes into
 node football/simulator.js          # then re-validate
 ```
+
+Stage 5 is the only one that reads a hand-kept file rather than nflverse, and the
+only one that can run offline against the shipped data. It writes into the output of
+stage 1, so it runs after it.
 
 Downloads cache in `build/.cache/` (gitignored, ~200MB). First run fetches from
 nflverse; later runs are offline.
@@ -51,6 +57,28 @@ Sources: nflverse `stats_player` (weekly PPR), `players` (college, draft), and
 nfldata `games.csv` (scores, head coaches).
 
 Shipped payload is ~3.5MB of JSON, of which chemistry is 224KB.
+
+### Awards
+
+`data/raw/awards.csv` is a hand-kept list of 332 skill-position awards from 1999 to
+2025: MVP, Super Bowl MVP, Offensive Player of the Year, Offensive Rookie of the Year,
+First Team All-Pro, Comeback Player of the Year and Walter Payton Man of the Year.
+328 of them join to a player-season in the pool, landing on 265 of the 9,411 rows.
+
+The four that do not join are correct misses, and `05-awards.mjs` prints all of them
+every run so a future data drop cannot quietly lose an MVP. Two are return specialists
+(2002 Michael Lewis, 2019 Deonte Harris), who are not skill positions; two played fewer
+than eight games for the club they won it with (2017 Nick Foles, 2023 Joe Flacco).
+
+**Awards change no number the game simulates.** Not the price, not the points, not the
+chemistry, not the projection. A player is not better because he won MVP; he won MVP
+because he was better, and his points already say so. Their only job is to help a
+player recognise the season on the board in front of him.
+
+The join is on normalised name plus season, with the club code as a tie-break, because
+name plus season is *not* unique here: nineteen pairs collide, including two Adrian
+Petersons in 2007, 2008 and 2009 and two Steve Smiths from 2008 to 2012. An award that
+cannot be placed even with the club stops the build rather than guessing.
 
 ### The payload trim
 
