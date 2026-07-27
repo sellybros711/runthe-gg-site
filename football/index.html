@@ -337,11 +337,19 @@
     .htitle{margin-bottom:11px}
     .legal{margin-top:16px}
   }
+  /* ON A SHORT SCREEN THE TEAM LINE STANDS DOWN.
+     A field of 118px leaves 35px under the bottom spot, and a full label needs 44. The name is
+     the part that matters and the team code is the part that can wait for a taller screen, so
+     the second line is dropped rather than the first being flipped above the disc or the whole
+     chip being shrunk to a size nobody can read. */
+  @media (max-height:640px){
+    .field .chip .yr{display:none}
+  }
   @media (max-height:640px){
     /* Was 74, because 80 left Start's bottom edge at 570px against an iPhone SE's 568 and
        two pixels is still below the fold. The one-line headline gave about 51px back, so the
        field can take 30 of it and the button still clears. Re-measured, not assumed. */
-    .field.hero-field{height:104px}
+    .field.hero-field{height:118px}
     .htitle h1{font-size:min(10.5vw,40px)}
     .htitle .kicker{margin-bottom:2px}
     .htitle p{font-size:12.5px;margin-top:6px}
@@ -372,7 +380,7 @@
   }
   /* Shorter still, which is a phone in landscape with the browser chrome showing. */
   @media (max-height:400px){
-    .field.hero-field{height:88px}
+    .field.hero-field{height:112px}
     .htitle h1{font-size:min(8.5vw,31px)}
     .htitle p{display:none}
   }
@@ -651,7 +659,7 @@
      it sat immediately after them: without `position:relative` and `overflow:hidden` the
      absolutely-positioned yard lines, hash marks, end zones and player chips escaped their
      box and painted across the entire page behind the content. */
-  .field{position:relative;width:100%;aspect-ratio:1/0.52;border-radius:14px;overflow:hidden;
+  .field{position:relative;width:100%;aspect-ratio:1/0.62;border-radius:14px;overflow:hidden;
     background:radial-gradient(125% 85% at 50% -12%,#16283f 0%,#0a1220 58%,#070c16 100%);
     border:1px solid var(--line)}
   /* The results page is long, so its copy of the field is a little flatter. */
@@ -693,6 +701,24 @@
   .field .fnum{position:absolute;font-family:var(--fd);font-size:34px;font-weight:900;
     line-height:1;color:rgba(255,255,255,.10);letter-spacing:.02em}
   .field .fnum.l{left:2.5%} .field .fnum.r{right:2.5%}
+  /* The end zone: a shade darker than the pitch, with the goal line as the brightest mark on
+     the field, which is what it is. */
+  .field .ez{position:absolute;left:0;right:0;top:0;
+    background:linear-gradient(180deg,rgba(4,8,16,.62),rgba(6,11,20,.34))}
+  .field .goal{position:absolute;left:0;right:0;height:2.5px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.62) 5%,
+      rgba(255,255,255,.62) 95%,transparent)}
+  /* THE MARK PAINTED ON THE END ZONE. Low contrast on purpose: it is paint on grass, so it
+     sits under the players and under the markings instead of competing with them. */
+  .field .ezmark{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;
+    justify-content:center;gap:.42em;
+    font-family:var(--fd);font-size:clamp(14px,4.6vw,26px);letter-spacing:.10em;
+    text-transform:uppercase;color:rgba(255,255,255,.085);white-space:nowrap;
+    pointer-events:none}
+  .field .ezmark i{font-style:normal;color:rgba(239,68,68,.16)}
+  /* The helmet, at the same weight as the wordmark beside it. opacity rather than a second
+     copy of the file: it is the same mark.png the header uses, so there is one picture. */
+  .field .ezmark img{height:1.25em;width:auto;opacity:.14;flex:0 0 auto}
   .field .vig{position:absolute;inset:0;pointer-events:none;
     box-shadow:inset 0 0 66px 20px rgba(3,6,12,.8)}
   /* A count of connections on the chip itself, in the strongest one's color. */
@@ -752,8 +778,9 @@
      A short field has no room under the bottom chip, and the field clips its overflow, so the
      running back's name was being cut off. The disc still does not move: the box is offset by
      its own height instead, so the label lands above the disc and the disc stays on its spot. */
-  .chip.above{flex-direction:column-reverse;
-    transform:translate(-50%,calc(-100% + var(--discr)))}
+  /* NOTHING FLIPS ANY MORE. The label used to go above the disc on the low spots, because a
+     spot at 82% of a short field had no room underneath. The formation is sized to fit its own
+     labels now, so every name reads in the same place relative to its bubble. */
   /* THE RING IS OPAQUE, and that is the fix for the disc looking cut off at the top.
      It was rgba(255,255,255,.22), a translucent white, so whatever sat behind it read straight
      through: a chip parked on the bright halfway line showed that line as a notch across the
@@ -1867,9 +1894,9 @@ const TIER={
  * collision entirely and is a formation real teams line up in.
  */
 const SPOTS = {
-  QB:   [{x:50,y:56}],
-  RB:   [[{x:34,y:82}], [{x:33,y:82},{x:67,y:82}]],
-  WR:   [[], [{x:50,y:24}], [{x:10,y:24},{x:90,y:24}], [{x:10,y:24},{x:90,y:24},{x:30,y:36}]],
+  QB:   [{x:50,y:44}],
+  RB:   [[{x:34,y:59}], [{x:33,y:59},{x:67,y:59}]],
+  WR:   [[], [{x:50,y:24}], [{x:10,y:24},{x:90,y:24}], [{x:10,y:24},{x:90,y:24},{x:30,y:35}]],
   /*
    * The inside row sits at 70 and 30, not 75 and 25. A chip's name label is wider
    * than the chip itself (78px against 62px) so long surnames fit, which left the
@@ -1877,10 +1904,23 @@ const SPOTS = {
    * Measured, not guessed: a sweep of 49 formations caught it every time. Ten px of
    * clearance now, and the labels stay wide.
    */
-  TE:   [[], [{x:70,y:42}], [{x:70,y:42},{x:30,y:42}]],
-  FLEX: {x:30,y:42},
+  TE:   [[], [{x:70,y:35}], [{x:70,y:35},{x:30,y:35}]],
+  FLEX: {x:30,y:35},
 };
-const SPOT_FALLBACK=[{x:50,y:56},{x:34,y:82},{x:10,y:24},{x:90,y:24},{x:70,y:42},{x:30,y:42}];
+/* THE FORMATION IS SIZED SO EVERY LABEL FITS UNDER ITS DISC.
+   Measured, not estimated: a chip needs 84px below its spot, the disc's radius plus the name
+   and team lines with their margins. A spot at fraction f of the height therefore needs a
+   field at least 84/(1-f) tall, and the old bottom spot at 82% needed 467px, which no
+   phone-width field has ever had. That is why the label used to flip above the disc.
+
+   The same shape squeezed into 24% to 59% needs 205px, and the base aspect of 0.62 gives 181px
+   at 320 wide, 224 at 390 and 355 on a desktop. The narrow case is covered by the short-screen
+   rule that stands the team line down, which takes the requirement to 58px.
+
+   BOTH TABLES HAVE TO MOVE TOGETHER. This one is only the fallback; SPOTS above is what the
+   draft field actually lays out from, and changing one and not the other is why the running
+   back kept clipping after the fallback said it should not. */
+const SPOT_FALLBACK=[{x:50,y:44},{x:34,y:59},{x:10,y:24},{x:90,y:24},{x:70,y:35},{x:30,y:35}];
 
 /** Target coordinate for every slot index, given who is currently signed. */
 function layoutFor(){
@@ -1967,7 +2007,11 @@ const easeOut=(t)=>1-Math.pow(1-t,3);
    two numbered lines in view and leaves the one-yard ticks far enough apart to read as ticks.
 
    The top edge starts on a round number so the markings land where they would in life. */
-const FIELD_YARDS=20, FIELD_TOP_YARD=42;
+/* THE RED ZONE, with the end zone at the top of the picture.
+   The offence moves up the screen, so the goal line sits above the receivers and the end zone
+   above that. Twenty-two yards in view: four of end zone, the goal line, then the 5, the 10 and
+   the 15, which are the numbers a red-zone snap is played between. */
+const FIELD_YARDS=22, FIELD_EZ_YARDS=4;
 
 /* The lines run ACROSS, because the offence moves up the screen: the receivers are at 26% of
    the height, the quarterback at 58% and the back at 84%. Yard lines are perpendicular to the
@@ -1975,21 +2019,28 @@ const FIELD_YARDS=20, FIELD_TOP_YARD=42;
    degrees from the formation standing on it. */
 function fieldMarkings(){
   const out=['<div class="turf"></div><div class="lit"></div>'];
-  for(let y=0;y<=FIELD_YARDS;y++){
-    const top=100*y/FIELD_YARDS;
-    const line=FIELD_TOP_YARD+y;
-    const mark=line<=50?line:100-line;         // counts up to midfield and back down
+  const pct=(yd)=>100*yd/FIELD_YARDS;
+  const goal=pct(FIELD_EZ_YARDS);
+
+  /* The end zone, and the mark in it. Deliberately near the floor of what is visible: it is
+     paint on grass, so it has to sit under the players and under the markings rather than
+     competing with either. */
+  out.push('<div class="ez" style="height:'+goal+'%"></div>',
+    '<div class="ezmark" style="height:'+goal+'%">'+
+      '<img src="mark.png?v=2" alt="" decoding="async">RunThe<i>.GG</i></div>',
+    '<div class="goal" style="top:'+goal+'%"></div>');
+
+  for(let y=FIELD_EZ_YARDS;y<=FIELD_YARDS;y++){
+    const top=pct(y);
+    const line=y-FIELD_EZ_YARDS;               // yards from the goal line
+    if(line===0) continue;                     // the goal line is drawn above, heavier
     if(line%5===0){
       out.push('<div class="yd'+(line%10===0?' ten':'')+'" style="top:'+top+'%"></div>');
-      if(line%10===0&&top>8&&top<92){
-        /* Numbers sit hard against the sidelines and are deliberately faint. They are ground,
-           not figure: a player's name has to win over them every time. */
-        out.push('<div class="fnum l" style="top:calc('+top+'% - 17px)">'+mark+'</div>',
-                 '<div class="fnum r" style="top:calc('+top+'% - 17px)">'+mark+'</div>');
+      if(top>7&&top<93){
+        out.push('<div class="fnum l" style="top:calc('+top+'% - 17px)">'+line+'</div>',
+                 '<div class="fnum r" style="top:calc('+top+'% - 17px)">'+line+'</div>');
       }
     }else{
-      /* The two inbound hash columns, at the real 29.6% and 70.4% of a field's width, plus a
-         tick on each sideline. */
       out.push('<div class="tick" style="top:'+top+'%;left:29.6%"></div>',
                '<div class="tick" style="top:'+top+'%;left:70.4%"></div>',
                '<div class="tick edge" style="top:'+top+'%;left:0"></div>',
@@ -2061,17 +2112,8 @@ function drawField(el,live){
     }else{ pip.style.display='none'; }
   });
 
-  /* Same flip as the landing field: a chip low enough that its label would fall outside the
-     field puts the label above the disc instead. The disc itself never moves, which is the
-     whole point; the field clips its overflow, so a label that hangs past the bottom is simply
-     cut off. Applied here rather than in CSS because the threshold is about the SPOT, and the
-     spots move as the formation rearranges. */
-  const FLIP_BELOW=62;
   const paint=(coords)=>{
-    st.chips.forEach((c,i)=>{
-      c.style.left=coords[i].x+'%'; c.style.top=coords[i].y+'%';
-      c.classList.toggle('above',coords[i].y>FLIP_BELOW);
-    });
+    st.chips.forEach((c,i)=>{ c.style.left=coords[i].x+'%'; c.style.top=coords[i].y+'%'; });
   };
 
   const from=st.coords.map(c=>({...c}));
@@ -3445,13 +3487,14 @@ const HERO={year:820, stagger:300, team:970, land:320, sign:760,
             hold:2300, clear:520, gap:190};
 
 /* Same six spots, same coordinates, as the real field. */
+/* Same coordinates as the real field, for the same reason: see SPOT_FALLBACK. */
 const HERO_SPOTS=[
-  {label:'QB',   left:50, top:56},
-  {label:'RB',   left:34, top:82},
+  {label:'QB',   left:50, top:44},
+  {label:'RB',   left:34, top:59},
   {label:'WR',   left:10, top:24},
   {label:'WR',   left:90, top:24},
-  {label:'TE',   left:70, top:42},
-  {label:'FLEX', left:30, top:42},
+  {label:'TE',   left:70, top:35},
+  {label:'FLEX', left:30, top:35},
 ];
 /* WHICH PLAYERS SIGN ON THE FRONT PAGE.
    It used to be three hardcoded names, so the landing animation played out identically every
@@ -3532,12 +3575,10 @@ function heroChips(){
      computed from the field's height so labels always fit, and that was the wrong trade: it
      moved every bubble, and pushed the top row hard against the field's edge. Nothing moves
      now; the chips whose label would not fit below flip it above instead. */
-  const FLIP_BELOW=62;   // percent down the field, past which the label goes above the disc
   HERO_SPOTS.forEach((sp,i)=>{
     const on=heroFilled.find(x=>x.at===i);
     const el=document.createElement('div');
-    el.className='chip '+(on?'filled':'empty')+(on&&on.fresh?' pop':'')+
-      (sp.top>FLIP_BELOW?' above':'');
+    el.className='chip '+(on?'filled':'empty')+(on&&on.fresh?' pop':'');
     el.style.left=sp.left+'%'; el.style.top=sp.top+'%';
     const style=on?' style="background:linear-gradient(160deg,var(--'+on.pos.toLowerCase()+
       '),rgba(0,0,0,.45))"':'';
