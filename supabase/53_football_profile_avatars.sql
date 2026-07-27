@@ -1,4 +1,18 @@
 -- ============================================================================
+-- SUPERSEDED BY 55_football_avatars_setup.sql. Do not run this file.
+-- ============================================================================
+-- This one and 54 have to be run in order, and 54 opens by clearing values out of
+-- a column that this file creates. Run on a project that had not had this one, 54
+-- fails on `column "avatar_color" does not exist`, and because the Supabase SQL
+-- editor runs a script as ONE TRANSACTION the failure rolls back everything after
+-- it too: no columns and no ps_set_avatar, and the game reports the function
+-- missing from the schema cache with no hint that the cause was file ordering.
+--
+-- 55 is both of these in one file, in an order that cannot trip, and safe to run
+-- from any starting state including this one. Kept here only as history.
+-- ============================================================================
+
+-- ============================================================================
 -- 53_football_profile_avatars.sql : a colour and initials of your own
 -- ============================================================================
 -- Run AFTER 50_football_perfect_season.sql and 51_football_accounts.sql.

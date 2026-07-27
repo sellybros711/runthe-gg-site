@@ -6055,9 +6055,9 @@ async function runDiagnostics(){
      pressed Save and got an error. */
   }else if(r.write&&r.write.healthy&&B.avatarFnMissing){
     verdict='The board works, but clubs and initials cannot be saved.';
-    fix='ps_set_avatar is not in the API schema cache, which is 53_football_profile_avatars.sql '+
-      'and 54_football_team_colorways.sql not having been run, or run without the cache '+
-      'reloading. Run them, then run: notify pgrst, \'reload schema\';';
+    fix='ps_set_avatar is not in the API schema cache. Run '+
+      'supabase/55_football_avatars_setup.sql, which sets this up from any starting state '+
+      'and ends by reporting what is now in place.';
   }else if(r.write&&r.write.healthy&&B.needsAvatarMigration){
     verdict='The board works, but nobody can choose a colour.';
     fix='53_football_profile_avatars.sql has not been run, so ps_runs has no display_color '+
