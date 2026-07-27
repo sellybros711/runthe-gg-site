@@ -277,7 +277,20 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     border-left:2px solid currentColor;border-bottom:2px solid currentColor;
     transform:rotate(45deg);vertical-align:2px}
 
-  header{display:flex;align-items:center;margin:2px 0 16px}
+  /* THE BANNER IS PINNED, on every screen and at every scroll position.
+     Padding and margins are traded off against each other so the header occupies exactly the
+     same 62px of vertical space it did before: 44px of content plus 12 of new padding, less
+     4px of the old top margin and 6 of the bottom. The fold budget on an iPhone SE is measured
+     in single pixels, so this could not be allowed to grow.
+
+     --hdr is the pinned height, declared once, because the draft HUD sticks too and has to
+     stack UNDER this rather than on top of it. */
+  :root{--hdr:56px}
+  header{position:sticky;top:0;z-index:60;display:flex;align-items:center;
+    padding:6px 0;margin:-4px 0 10px}
+  /* The page's own background, carried out over the wrap's 14px of side padding so nothing
+     scrolls past in the gutter. Behind the header's content, not over it. */
+  header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-index:-1}
   header .mark{flex:0 0 auto;display:block;width:30px;height:27px;margin-right:9px}
   /* The game's name now holds the display slot the site name used to, in the same face and
      the same two-tone treatment: white then red. Matches the share card, which sets THE
@@ -889,7 +902,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   /* The fade used to start at 72%, which was fine when the bar ended just under the money
      figure. The lineup pips sit at the bottom of it now, and the year reel was showing straight
      through them, so the solid part runs to 92% and only the last few pixels feather. */
-  .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 9px;margin:-4px 0 12px;
+  /* Sticks BELOW the banner, not underneath it. z-index stays under the header's 60. */
+  .capwrap{position:sticky;top:var(--hdr);z-index:30;padding:9px 0 9px;margin:-4px 0 12px;
     background:linear-gradient(180deg,var(--bg) 92%,rgba(8,11,20,0))}
   /* THE LINEUP PIPS, in the sticky bar, fading in as the field scrolls off.
      --sq runs 0 to 1 with how much of the field has gone. The height is RESERVED at every
