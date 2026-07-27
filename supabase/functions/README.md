@@ -16,18 +16,22 @@ browser ──(JWT)──▶ create-checkout ──▶ Stripe Checkout (hosted p
 browser ──(JWT)──▶ runtour_wallet() / runtour_spend_paid() / runtour_claim_founder()
 ```
 
-## 1. Apply the database migration
+## 1. Apply the database migrations
 
 ```bash
 # via Supabase SQL editor, or:
-supabase db push        # (or run supabase/52_runtour_wallet.sql directly)
+supabase db push        # (or run the files directly)
+#   supabase/70_runtour_wallet.sql        — coin wallet (already applied)
+#   supabase/71_runtour_tokens_pass.sql   — Daily Tokens + monthly Tour Pass
 ```
 
 ## 2. Create the products in the Stripe Dashboard
 
-Create one **Product** per package with a one-time **Price** (USD). Ladder =
-"Revenue-Focused" from the audit (coin amounts are enforced server-side in
-`_shared/packages.ts`, not by Stripe):
+Create one **Product** per package with a one-time **Price** (USD). Amounts are
+enforced server-side in `_shared/packages.ts`, not by Stripe. The webhook
+branches on the package **kind** (coins / tokens / pass).
+
+**Coin packs** (`kind: coins`) — first purchase gets **+100%** automatically:
 
 | Package        | Price  | Coins delivered |
 |----------------|--------|-----------------|
@@ -35,8 +39,25 @@ Create one **Product** per package with a one-time **Price** (USD). Ladder =
 | Clubhouse      | $4.99  | 45,000          |
 | Tour           | $9.99  | 102,000         |
 | Championship   | $24.99 | 285,000         |
+| Biggest Bucket | $49.99 | 625,000         |
 
-First purchase gets **+100%** automatically (applied in the webhook).
+**Daily Tokens** (`kind: tokens`) — extra Daily-Challenge attempts beyond the free 3/day:
+
+| Package        | Price  | Tokens |
+|----------------|--------|--------|
+| 1 Daily Token  | $0.99  | 1      |
+| 3 Daily Tokens | $1.99  | 3      |
+| 7 Daily Tokens | $2.99  | 7      |
+| 15 Daily Tokens| $4.99  | 15     |
+
+**Tour Pass** (`kind: pass`) — a **one-time monthly** purchase (buy again each
+calendar month). Grants the current month's pass: 30,000 coins credited + a
+`tour_pass` entitlement (the client then unlocks unlimited daily plays, a 1.5×
+reward multiplier, and 2 seasonal packs while active):
+
+| Package        | Price  | Grants                              |
+|----------------|--------|-------------------------------------|
+| Tour Pass      | $9.99  | 30,000 coins + this month's pass    |
 
 Copy each **Price ID** (`price_...`).
 
@@ -50,6 +71,12 @@ supabase secrets set \
   STRIPE_PRICE_CLUBHOUSE=price_... \
   STRIPE_PRICE_TOUR=price_... \
   STRIPE_PRICE_CHAMPIONSHIP=price_... \
+  STRIPE_PRICE_BIGGEST=price_... \
+  STRIPE_PRICE_TOK1=price_... \
+  STRIPE_PRICE_TOK3=price_... \
+  STRIPE_PRICE_TOK7=price_... \
+  STRIPE_PRICE_TOK15=price_... \
+  STRIPE_PRICE_TOURPASS=price_... \
   SITE_URL=https://runthe.gg
 ```
 
@@ -98,14 +125,40 @@ Verify: `coin_purchase` gets one row, `coin_wallet.paid_coins` increases once
 - Credit/refund/grant RPCs are **`service_role`-only**; the browser can only
   *read* its wallet and *spend* what it holds.
 
-## Not yet wired (next steps)
+## 7. Flip the client launch flags (Biggest Bucket / Tokens / Tour Pass)
 
-- Client UI: a Pro Shop "Buy Coins" panel calling `create-checkout`, showing
-  `paid_coins` folded into the displayed balance, routing spends through
-  `runtour_spend_paid`, and a one-time "Founder thank-you" using
-  `runtour_claim_founder`.
-- Tune `runtour_claim_founder` (`v_amount`, `v_cutoff` in the migration) to the
-  real founder bonus + launch instant.
-- Harden the pre-existing `runtour_daily_attempt_start` (currently fails open)
-  and the client-clock streak — a separate migration, pending confirmation of
-  the live function definitions.
+The client ships these three features **behind launch flags, default OFF**, so
+the store never shows checkout buttons that error before the Stripe products
+exist. In `build-a-golfer/build-a-golfer.html`, once steps 1–6 above are done
+for each feature, set:
+
+- `const BIGGEST_ENABLED=false;` → `true`   (needs `STRIPE_PRICE_BIGGEST`)
+- `const TOKENS_ENABLED=false;`  → `true`   (needs `STRIPE_PRICE_TOK1/3/7/15`)
+- `const TOURPASS_ENABLED=false;`→ `true`   (needs `STRIPE_PRICE_TOURPASS` **and** migration 71)
+
+then redeploy the client (copy `build-a-golfer.html` → `golf/index.html`). Each
+flag is an independent kill-switch. `runtour_wallet()` returns `daily_tokens`/
+`pass_active` only after migration 71 — before it, tokens read 0 and the pass
+reads inactive, so the daily gate behaves exactly as today.
+
+## Tour Pass model
+
+- A **new themed pass each calendar month**; buying grants **this month only**
+  (`tour_pass(user_id, period='YYYY-MM')`). Active = a row for the current UTC
+  month; it lapses at month end and a new one must be bought.
+- Server credits the pass **coins** into `paid_coins` at purchase. The **seasonal
+  packs** are granted client-side once per period (`bag_pass.claimed`, cloud-
+  synced) — packs are an inherently client-side store.
+- While active: unlimited daily plays (bypasses the free 3/day cap), a **1.5×**
+  coin reward multiplier on play, and the seasonal packs.
+- Month boundary uses **UTC** (`to_char(now() at time zone 'utc','YYYY-MM')`),
+  a few hours off the daily's ET reset — acceptable; note it if strict alignment
+  is ever needed.
+
+## Still open / tunable
+
+- Tune `runtour_claim_founder` (`v_amount`, `v_cutoff` in `70_...`) to the real
+  founder bonus + launch instant.
+- Pass reward magnitude/mult, token counts, and Biggest Bucket coins are all in
+  `_shared/packages.ts` (server, authoritative) + the client config constants
+  (`TOURPASS`, `DAILY_TOKENS`, `PASS_REWARD_MULT`, `BUCKETS`) — keep them in sync.

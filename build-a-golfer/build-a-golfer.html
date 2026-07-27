@@ -5709,12 +5709,19 @@ function coinsEarnedRaw(){ let e=0; const ac=(achState().unlocked)||{};
 // Earned coins are client-derived; PURCHASED coins live only on the server (coin_wallet.paid_coins),
 // credited by the Stripe webhook, read via runtour_wallet(), spent via runtour_spend_paid(). We cache
 // the wallet locally for display and refresh it from the server on sign-in / shop-open / after a buy.
-var _walletCache=null;   // {paid, lifePurchased, lifeGranted} or null
+var _walletCache=null;   // {paid, lifePurchased, lifeGranted, tokens, passActive, passPeriod} or null
 function paidCoins(){ return _walletCache?(_walletCache.paid||0):0; }
 function walletInfo(){ return _walletCache; }
+// Daily Tokens = bought extra Daily-Challenge attempts (beyond the free 3/day). Tour Pass = a monthly
+// one-time entitlement (unlimited daily plays + a reward multiplier + seasonal packs while active).
+// Both are server-authoritative (runtour_wallet); daily_tokens/pass_active are absent pre-migration-71 → 0/false.
+function dailyTokens(){ return _walletCache?(_walletCache.tokens||0):0; }
+function dailyPassActive(){ return !!(_walletCache&&_walletCache.passActive); }
+function passRewardMult(){ return dailyPassActive()?PASS_REWARD_MULT:1; }
 function loadWallet(cb){ if(!sb||!sbSignedIn()){ _walletCache=null; return; }
-  try{ sb.rpc('runtour_wallet').then(function(r){ if(!r.error && r.data && r.data[0]){
-      _walletCache={paid:+r.data[0].paid_coins||0, lifePurchased:+r.data[0].lifetime_purchased||0, lifeGranted:+r.data[0].lifetime_granted||0};
+  try{ sb.rpc('runtour_wallet').then(function(r){ if(!r.error && r.data && r.data[0]){ var d=r.data[0];
+      _walletCache={paid:+d.paid_coins||0, lifePurchased:+d.lifetime_purchased||0, lifeGranted:+d.lifetime_granted||0,
+        tokens:+d.daily_tokens||0, passActive:!!d.pass_active, passPeriod:d.pass_period||null};
       if(cb){ try{cb();}catch(e){} } else { try{render();}catch(e){} } } }).catch(function(){}); }catch(e){} }
 // coinBalance = spendable EARNED coins + PURCHASED coins (server wallet).
 function coinBalance(){ return Math.max(0, coinsEarned()-coinState().spent) + paidCoins(); }
@@ -5806,8 +5813,11 @@ function seasonBonusCoins(){
   return {total, parts};
 }
 // award + a "spend it" nudge toward the Pro Shop (owner: tell players to spend / buy packs)
-function awardPlayCoins(n, label){ if(!sbSignedIn()||!(n>0)) return 0; addBonusCoins(n,{silent:true});
-  try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(label?' · '+label:'')+'<br><span class="small" style="color:#8fe0c4">Spend them at the Pro Shop, or open a pack ▸</span>', 3400); }catch(e){}
+function awardPlayCoins(n, label){ if(!sbSignedIn()||!(n>0)) return 0;
+  var mult=passRewardMult(), passBonus=mult>1;   // Tour Pass holders earn bigger & better
+  if(passBonus){ n=Math.round(n*mult); }
+  addBonusCoins(n,{silent:true});
+  try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(label?' · '+label:'')+(passBonus?' <span class="small" style="color:#a24be0">· Tour Pass ×'+mult+'</span>':'')+'<br><span class="small" style="color:#8fe0c4">Spend them at the Pro Shop, or open a pack ▸</span>', 3400); }catch(e){}
   return n; }
 function coinFmt(n){ n=Math.round(n||0); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','); }   // comma-grouped, no $ - the coin icon is the currency mark
 // CS471: compact coin display for the tight top banner pill so a 7-digit balance (1,017,520) doesn't push
@@ -8144,14 +8154,27 @@ function overlayDailyDone(screen){
     ${r.record?`<div class="scout" style="text-align:center;border-color:var(--gold);margin-top:6px"><b style="color:var(--gold)">🏆 You hold the course record</b></div>`:''}
     <div class="small muted center" style="margin-top:6px">OVR ${r.ovr}${r.cond?' · '+dCondLabel(r.cond):''} · streak ${streakDisplay()} 🔥</div>`
    :`<p class="lede">You've used all ${DAILY_MAX_ATTEMPTS} attempts today. Come back at midnight ET for a fresh course.</p>`;
+  // signed-in players who are out of free attempts can play more with a bought token, or grab tokens / the Tour Pass.
+  const tok=dailyTokens();
+  const moreSell=(TOKENS_ENABLED||TOURPASS_ENABLED);   // only pitch "get more plays" once the products are live
+  const moreHTML = !sbSignedIn() ? '' : (tok>0
+    ? `<button class="btn blue" id="dd-token" style="margin-bottom:8px">▶ Play again — use a token (${tok} left)</button>`
+    : (moreSell
+      ? `<div class="scout" style="text-align:center;margin:4px 0 10px;border-color:#5bcfe8"><b style="color:#5bcfe8">Want more plays?</b><div class="small muted" style="margin:3px 0 9px">${TOKENS_ENABLED?'Buy extra Daily Tokens':''}${(TOKENS_ENABLED&&TOURPASS_ENABLED)?', or ':''}${TOURPASS_ENABLED?'get the Tour Pass for unlimited plays all month':''}.</div>
+         <div style="display:flex;gap:8px;justify-content:center">${TOKENS_ENABLED?`<button class="btn" id="dd-buytok" style="width:auto;padding:9px 14px;font-size:13px;background:#5bcfe8;color:#0c1f16;font-weight:900">Buy Tokens</button>`:''}${TOURPASS_ENABLED?`<button class="btn" id="dd-pass" style="width:auto;padding:9px 14px;font-size:13px;background:#a24be0;color:#fff;font-weight:900">Tour Pass</button>`:''}</div></div>`
+      : ''));
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Daily Challenge</h3>
     ${body}
     <div class="center" style="margin:12px 0 2px"><span class="small muted">New course in </span><span style="color:var(--gold);font-weight:800;font-size:18px">${dCd('clock')}</span></div>
     <div style="height:12px"></div>
+    ${moreHTML}
     <button class="btn gold" id="dd-records" style="margin-bottom:8px">Course Records</button>
     <button class="btn red">Close</button></div>`);
+  const tb=ov.querySelector('#dd-token'); if(tb) tb.onclick=()=>{ beginDailyTokenPlay(); };
+  const bt=ov.querySelector('#dd-buytok'); if(bt) bt.onclick=()=>{S.overlay='shop';S.shopSec='buckets';render();};
+  const pp=ov.querySelector('#dd-pass'); if(pp) pp.onclick=()=>{S.overlay='shop';S.shopSec='buckets';render();};
   const rb=ov.querySelector('#dd-records'); if(rb) rb.onclick=()=>{S.overlay='courserecords';render();};
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
@@ -19196,7 +19219,7 @@ function startDailyChallenge(){
   // No showable result (e.g. the account's server attempt count was reconciled in without a stored round):
   // if attempts remain (or you own a Legend, which plays free), go to the preview; otherwise a graceful
   // "done for today" overlay - never a blank bounce.
-  if(dailyAttemptsLeft()>0 || hasFreeLegends()){ beginDailyAttempt(); return; }
+  if(dailyAttemptsLeft()>0 || hasFreeLegends() || dailyPassActive()){ beginDailyAttempt(); return; }
   S.daily=false; S.overlay='dailydone'; render();
 }
 // UI-FIRST: tapping Daily Challenge must ALWAYS change the screen immediately, on every browser/network.
@@ -19205,8 +19228,10 @@ function startDailyChallenge(){
 // the button appeared to "do nothing". Now we render the preview synchronously and enforce the account's
 // 3-a-day cap in the BACKGROUND (enforceDailyAttempt) - it still bounces an over-cap player to the "done"
 // overlay within a moment, and score submission / records are separately server-gated, so the cap holds.
-function beginDailyAttempt(){
-  if(!PRACTICE && dailyAttemptsLeft()<=0 && !hasFreeLegends()){ S.overlay='dailydone'; render(); return; }   // out of draft attempts + no free Legend to play → done
+function beginDailyAttempt(extra){
+  S.dailyExtra=extra||null;   // 'token' = a bought extra play beyond the free cap (consumed at first spin)
+  // Tour Pass = unlimited plays; a token play carries its own allowance; a free Legend plays free.
+  if(!PRACTICE && !S.dailyExtra && dailyAttemptsLeft()<=0 && !hasFreeLegends() && !dailyPassActive()){ S.overlay='dailydone'; render(); return; }   // out of attempts + nothing to play → done
   const seed=todayKey();
   // practice: a random attempt salt so every practice round offers a fresh draft wheel + fresh
   // per-hole luck (a fixed number would replay near-identical rounds); determinism doesn't matter
@@ -19232,7 +19257,21 @@ function claimDailyAttempt(){
   if(PRACTICE) return;   // practice rounds are free: no local bump, no server claim
   const seed=S.dailySeed, prev=dailyToday(), cur=prev?dailyAttempts():0;
   LS.set(acctKey('bag_daily'), {date:seed, attempts:cur+1, best:prev?(prev.best||prev.result||null):null, result:prev?(prev.result||null):null});
+  if(dailyPassActive()) return;                    // Tour Pass = unlimited plays, no server free-cap claim
+  if(S.dailyExtra==='token'){ spendDailyToken(seed); return; }   // an EXTRA play → consume a bought token (not a free attempt)
   enforceDailyAttempt(seed);   // signed-in: server-side cross-device claim + cap (fail-open, timeout-guarded)
+}
+// Spend one bought Daily Token (server-authoritative, atomic) for an extra play beyond the free cap.
+// Consumed at the FIRST WHEEL SPIN (via claimDailyAttempt), so opening the preview + backing out is free.
+function spendDailyToken(seed){
+  if(_walletCache) _walletCache.tokens=Math.max(0,(_walletCache.tokens||0)-1);   // optimistic
+  if(sb&&sbSignedIn()){ try{ sb.rpc('runtour_spend_token',{p_day:seed}).then(function(r){ if(r.error){ loadWallet(); } else if(r.data!=null && _walletCache){ _walletCache.tokens=+r.data; } }).catch(function(){ loadWallet(); }); }catch(e){} }
+}
+// Start an extra Daily-Challenge round paid for with a bought token (offered on the "done for today" overlay).
+function beginDailyTokenPlay(){
+  if(!sbSignedIn()){ toast('Sign in to use daily tokens'); return; }
+  if(dailyTokens()<=0){ toast('No daily tokens left'); return; }
+  S.overlay=null; beginDailyAttempt('token');
 }
 // Signed-in players' 3-a-day cap is enforced by the ACCOUNT server-side, not just this browser's localStorage
 // counter (otherwise signing into the same account on another browser/device, or clearing storage, would reset
@@ -21742,23 +21781,52 @@ const BUCKETS=[
   {id:'clubhouse',    name:'Clubhouse',     usd:4.99,  coins:45000,  col:'#5bcfe8', bonus:20},
   {id:'tour',         name:'Tour',          usd:9.99,  coins:102000, col:'#a24be0', bonus:35, badge:'POPULAR'},
   {id:'championship', name:'Championship',  usd:24.99, coins:285000, col:'#F1D04A', bonus:51, badge:'BEST VALUE'},
+  {id:'biggest',      name:'Biggest Bucket',usd:49.99, coins:625000, col:'#e14a6d', bonus:66, badge:'BIGGEST', hold:true},
 ];
+// LAUNCH FLAGS for the new monetization features. Default OFF so the client can ship ahead of the backend
+// without putting checkout buttons that error in front of live players. Flip each to true AT GO-LIVE, once
+// the owner has: created the Stripe Product/Price + set its STRIPE_PRICE_* secret, redeployed
+// create-checkout + stripe-webhook (they import _shared/packages.ts), and run supabase/71_runtour_tokens_pass.sql.
+//   BIGGEST_ENABLED  → STRIPE_PRICE_BIGGEST  (the $49.99 Biggest Bucket coin pack)
+//   TOKENS_ENABLED   → STRIPE_PRICE_TOK1/TOK3/TOK7/TOK15  (extra Daily-Challenge attempts)
+//   TOURPASS_ENABLED → STRIPE_PRICE_TOURPASS + migration 71 (monthly Tour Pass)
+const BIGGEST_ENABLED=false;
 function bucketCareers(c){ return c/15000; }   // 15,000 coins = one full career's earnings at average play
-function beginBucketPurchase(id){
-  var b=BUCKETS.find(function(x){return x.id===id;}); if(!b) return;
-  if(!sbSignedIn()){ toast('Sign in to buy coins'); S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); return; }
+// ---- Daily Tokens: buy extra Daily-Challenge attempts beyond the free 3/day. Server-authoritative
+// (credited by the Stripe webhook, spent via runtour_spend_token). ids + counts MUST match packages.ts.
+const TOKENS_ENABLED=false;
+const DAILY_TOKENS=[
+  {id:'tok1',  n:1,  usd:0.99},
+  {id:'tok3',  n:3,  usd:1.99, badge:'POPULAR'},
+  {id:'tok7',  n:7,  usd:2.99},
+  {id:'tok15', n:15, usd:4.99, badge:'BEST VALUE'},
+];
+// ---- Tour Pass: a ONE-TIME monthly purchase. A new themed pass runs each calendar month; buying grants
+// THIS month's pass. While active: unlimited daily plays, a reward multiplier (earn bigger & better), a
+// coin drop + seasonal packs. When the month resets you buy a new pass. id/coins MUST match packages.ts.
+const TOURPASS_ENABLED=false;
+const TOURPASS={ id:'tourpass', usd:9.99, coins:30000, packs:2 };
+const PASS_REWARD_MULT=1.5;   // Tour Pass holders earn 1.5× coins from play
+const _PASS_THEMES=['Winter Classic','Cold Snap','Spring Swing','Fairway Bloom','Peak Approach','Summer Heat','Midsummer Run','Dog Days','Autumn Drive','Fall Classic','Playoff Push','Holiday Cup'];
+function passThemeName(){ try{ return _PASS_THEMES[new Date().getMonth()]+' Pass'; }catch(e){ return 'Tour Pass'; } }
+// shared checkout kickoff for any package (coins / tokens / pass). create-checkout authenticates the buyer
+// from their JWT, looks up the package + Stripe Price on the SERVER, and returns a hosted Checkout URL.
+// Coins/tokens/pass are credited ONLY by the signed webhook — the client never grants them.
+function beginCheckout(pkgId, ev){
+  if(!sbSignedIn()){ toast('Sign in to buy'); S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); return; }
   if(!sb){ toast('Store unavailable right now — try again shortly.'); return; }
-  try{ track('bucket_checkout',{id:b.id, usd:b.usd}); }catch(e){}
+  try{ track(ev||'checkout',{id:pkgId}); }catch(e){}
   toast('Starting secure checkout…');
-  // create-checkout authenticates the buyer from their JWT, looks up the package + Stripe Price on the
-  // SERVER, and returns a hosted Stripe Checkout URL. Coins are credited ONLY by the signed webhook.
   try{
-    sb.functions.invoke('create-checkout',{ body:{ package_id:b.id, return_path:'/golf/' } }).then(function(r){
+    sb.functions.invoke('create-checkout',{ body:{ package_id:pkgId, return_path:'/golf/' } }).then(function(r){
       if(r && !r.error && r.data && r.data.url){ location.href=r.data.url; }
       else { toast('Couldn’t start checkout. Please try again.'); }
     }).catch(function(){ toast('Couldn’t start checkout. Please try again.'); });
   }catch(e){ toast('Couldn’t start checkout. Please try again.'); }
 }
+function beginBucketPurchase(id){ var b=BUCKETS.find(function(x){return x.id===id;}); if(b) beginCheckout(b.id,'bucket_checkout'); }
+function beginTokenPurchase(id){ var t=DAILY_TOKENS.find(function(x){return x.id===id;}); if(t) beginCheckout(t.id,'token_checkout'); }
+function beginPassPurchase(){ beginCheckout(TOURPASS.id,'pass_checkout'); }
 const PACK_TIER_ORDER=['base','tour','champ'];
 // tiers to actually offer/display right now: the permanent ladder + any live seasonal packs (price-sorted).
 function packTierLive(id){ var pt=packType(id); if(!pt.seasonal) return true; var d=(typeof dropById==='function')&&dropById(pt.dropId); return !!(d && (!d.window || dropLive(d))); }
@@ -22005,6 +22073,25 @@ function grantFreePack(n,opts){ opts=opts||{}; n=n||1; if(!packsOn()||!sbSignedI
 function maybeWelcomePack(){ if(!packsOn()||!sbSignedIn()) return; if(packState().welcomePack) return;
   var p=packState(); p.welcomePack=true; p.packEarned=(p.packEarned||0)+1; packSave(p);
   toast('<span style="color:var(--gold);font-weight:800">🎁 Welcome to RunThe.GG!</span><br><span class="small">Here’s a FREE pack, on us. Open it in the Pro Shop → Packs.</span>', 5200); }
+// The current calendar month as the server sees the Tour Pass period (UTC 'YYYY-MM'); gates the
+// once-per-period client grant of the pass's seasonal packs.
+function passPeriodNow(){ try{ return new Date().toISOString().slice(0,7); }catch(e){ return ''; } }
+function passPackTier(){ var t='tour'; try{ Object.keys(PACK_TYPES).forEach(function(id){ if(PACK_TYPES[id].seasonal && packTierLive(id)) t=id; }); }catch(e){} return t; }
+// Tour Pass rewards are split: the pass COINS are credited SERVER-SIDE at purchase (in the wallet); the
+// SEASONAL PACKS are granted here, client-side, once per pass period (packs are an inherently client-side
+// store). Runs when an active pass is detected (sign-in / post-purchase). Idempotent via a per-account,
+// cloud-synced claim flag (bag_pass.claimed = the period already rewarded).
+function maybePassRewards(){ try{
+  if(!sbSignedIn() || !dailyPassActive()) return;
+  var period=(_walletCache&&_walletCache.passPeriod)||passPeriodNow();
+  var st=LS.get(acctKey('bag_pass'),null)||{};
+  if(st.claimed===period) return;                        // already granted this month's pass packs
+  st.claimed=period; LS.set(acctKey('bag_pass'), st);
+  var n=TOURPASS.packs||0, tier=passPackTier();
+  if(n>0 && typeof grantFreePack==='function'){ grantFreePack(n,{tier:tier, silent:true}); }
+  try{ cloudPush(); }catch(e){}
+  try{ toast('<span style="color:#a24be0;font-weight:800">🎟️ '+esc(passThemeName())+' active!</span><br><span class="small">Unlimited daily plays &amp; '+PASS_REWARD_MULT+'× rewards'+(n>0?', plus '+n+' seasonal pack'+(n>1?'s':''):'')+'.</span>', 5200); }catch(e){}
+}catch(e){} }
 // First pack is free (owner onboarding): a signed-in player's very first open costs no coins.
 function packIsFree(){ return packsOn() && sbSignedIn() && !packState().freeUsed; }
 function rollPackRarity(odds){ odds=odds||PACK_ODDS; var r=Math.random(),a=0; for(var i=0;i<odds.length;i++){ a+=odds[i][1]; if(r<a) return odds[i][0]; } return 'common'; }
@@ -22498,6 +22585,7 @@ function bucketShopNode(){
   wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:6px auto 6px;line-height:1.5">Top up your coins for gear, packs and cosmetics. <b style="color:#8fe0c4">15,000 coins ≈ a full 30-year career’s worth of earnings.</b></div>'));
   if(firstBuy) wrap.appendChild($('<div style="max-width:400px;margin:4px auto 0;text-align:center;font:900 13px var(--body);color:#ffd45e;background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.4);border-radius:12px;padding:8px 10px">🎉 First purchase bonus — <span style="color:#fff">DOUBLE coins</span> on your first pack!</div>'));
   BUCKETS.forEach(function(b){
+    if(b.hold && !BIGGEST_ENABLED) return;   // Biggest Bucket hidden until its Stripe product is live (launch flag)
     var coins=firstBuy?b.coins*2:b.coins;
     var careers=bucketCareers(coins), careerTxt=careers<1.5?'~1 career':('~'+Math.round(careers)+' careers');
     var card=$('<div style="max-width:400px;margin:14px auto 0;padding:13px;border-radius:16px;background:linear-gradient(165deg,'+b.col+'1c,#0c1f16);border:2px solid '+b.col+';box-shadow:0 0 18px '+b.col+'55;position:relative"></div>');
@@ -22514,7 +22602,47 @@ function bucketShopNode(){
     card.appendChild(buy);
     wrap.appendChild(card);
   });
-  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:14px auto 0;line-height:1.5">Secure checkout by Stripe · prices in USD. All sales are final. Coins have no cash value and can’t be cashed out. RunThe.GG is free to play — purchases are optional upgrades that support development.</div>'));
+  // ---- Tour Pass (monthly) ----
+  if(TOURPASS_ENABLED){
+    var passCol='#a24be0', active=dailyPassActive();
+    wrap.appendChild($('<div class="small muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:800;text-align:center;margin:22px 0 2px;color:'+passCol+'">Tour Pass</div>'));
+    var pc=$('<div class="'+(active?'':'packcard-glow')+'" style="--pkg:'+passCol+'aa;max-width:400px;margin:8px auto 0;padding:14px;border-radius:16px;background:linear-gradient(165deg,'+passCol+'22,#0c1f16);border:2px solid '+passCol+';'+(active?'box-shadow:0 0 18px '+passCol+'66':'')+'"></div>');
+    pc.appendChild($('<div style="font-family:var(--display);font-size:22px;color:'+passCol+';text-align:center">'+esc(passThemeName())+'</div>'));
+    pc.appendChild($('<div class="small" style="text-align:center;color:#cfe6d8;margin:2px 0 8px">A new themed pass every month</div>'));
+    var perks=$('<div style="display:flex;flex-direction:column;gap:5px;margin:0 auto;max-width:300px"></div>');
+    [['♾️','Unlimited Daily Challenge plays'],['⭐','Earn '+PASS_REWARD_MULT+'× coins from every mode'],['🪙',coinFmt(TOURPASS.coins)+' coins, instantly'],['🎁',TOURPASS.packs+' seasonal packs']].forEach(function(p){
+      perks.appendChild($('<div class="small" style="display:flex;gap:8px;align-items:center;color:#eaf5ee"><span style="flex:0 0 auto">'+p[0]+'</span><span>'+esc(p[1])+'</span></div>'));
+    });
+    pc.appendChild(perks);
+    if(active){
+      pc.appendChild($('<div style="margin-top:11px;text-align:center;font:900 14px var(--body);color:#35d6a0;background:rgba(53,214,160,.12);border:1px solid rgba(53,214,160,.4);border-radius:12px;padding:9px">✓ Active this month · unlimited plays &amp; '+PASS_REWARD_MULT+'× rewards</div>'));
+      pc.appendChild($('<div class="small muted" style="text-align:center;margin-top:6px">Ends when the month resets — grab next month’s pass then.</div>'));
+    } else {
+      var pbuy=$('<button class="btn" style="width:100%;margin:11px 0 0;background:'+passCol+';color:#fff;font-weight:900;font-size:16px">Get the Tour Pass · $'+TOURPASS.usd.toFixed(2)+'</button>');
+      pbuy.onclick=function(){ beginPassPurchase(); };
+      pc.appendChild(pbuy);
+    }
+    wrap.appendChild(pc);
+  }
+  // ---- Daily Tokens ----
+  if(TOKENS_ENABLED){
+    wrap.appendChild($('<div class="small muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:800;text-align:center;margin:22px 0 2px;color:#5bcfe8">Daily Tokens</div>'));
+    wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:2px auto 0;line-height:1.5">Play extra Daily Challenge rounds beyond your free 3/day. You have <b style="color:#5bcfe8">'+dailyTokens()+'</b> token'+(dailyTokens()===1?'':'s')+'.</div>'));
+    var tg=$('<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;max-width:400px;margin:9px auto 0"></div>');
+    DAILY_TOKENS.forEach(function(t){
+      var col='#5bcfe8';
+      var card=$('<div style="padding:11px 8px;border-radius:14px;background:linear-gradient(165deg,'+col+'18,#0c1f16);border:1.5px solid '+col+'99;text-align:center;position:relative"></div>');
+      if(t.badge) card.appendChild($('<div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:'+col+';color:#0c1f16;font:900 8px var(--body);letter-spacing:.08em;padding:2px 7px;border-radius:20px;white-space:nowrap">'+esc(t.badge)+'</div>'));
+      card.appendChild($('<div style="font:900 26px var(--body);color:'+col+'">'+t.n+'</div>'));
+      card.appendChild($('<div class="small muted" style="margin-top:-2px">token'+(t.n===1?'':'s')+'</div>'));
+      var tb=$('<button class="btn" style="width:100%;margin:8px 0 0;background:'+col+';color:#0c1f16;font-weight:900;font-size:14px;padding:9px">$'+t.usd.toFixed(2)+'</button>');
+      tb.onclick=function(){ beginTokenPurchase(t.id); };
+      card.appendChild(tb);
+      tg.appendChild(card);
+    });
+    wrap.appendChild(tg);
+  }
+  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:16px auto 0;line-height:1.5">Secure checkout by Stripe · prices in USD. All sales are final. Coins &amp; tokens have no cash value and can’t be cashed out. RunThe.GG is free to play — purchases are optional upgrades that support development.</div>'));
   return wrap;
 }
 function packShopNode(){
@@ -23230,7 +23358,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -23413,7 +23541,14 @@ function cloudBundle(){
     packs: LS.get(acctKey('bag_packs'), null),                   // pack pity counters + first-pack-free flag
     login: LS.get(acctKey('bag_login'), null),                   // CS461: daily-login bonus loop {day, n}
     primes: LS.get(acctKey('bag_primes'), null),                 // distinct Prime cards rolled on the draft wheel (name→1 map)
+    pass: LS.get(acctKey('bag_pass'), null),                     // Tour Pass: {claimed:'YYYY-MM'} — the month whose seasonal packs were granted
   };
+}
+// Tour Pass claim flag: the LATER claimed month wins (so a device that already granted this month's packs
+// won't re-grant), matching how a pass is a per-period one-time client reward.
+function mergePass(local, server){
+  var l=(local&&typeof local==='object')?local:{}, s=(server&&typeof server==='object')?server:{};
+  var lc=l.claimed||'', sc=s.claimed||''; return { claimed: (sc>lc?sc:lc) };
 }
 // distinct Prime cards rolled: UNION the name→1 maps (grow-only), so a Prime rolled on any device stays counted.
 function mergePrimes(local, server){
@@ -23639,6 +23774,7 @@ async function cloudPull(){
     if(server.packs) LS.set(acctKey('bag_packs'), mergePacks(packState(), server.packs));   // pack pity + first-pack-free cross-device
     { const ml=mergeLogin(LS.get(acctKey('bag_login'),null), server.login); if(ml&&(ml.day||ml.n)) LS.set(acctKey('bag_login'), ml); }   // CS461: daily-login loop cross-device
     { const mp=mergePrimes(LS.get(acctKey('bag_primes'),null), server.primes); if(mp&&Object.keys(mp).length) LS.set(acctKey('bag_primes'), mp); }   // distinct Prime pulls cross-device
+    { const mpass=mergePass(LS.get(acctKey('bag_pass'),null), server.pass); if(mpass&&mpass.claimed) LS.set(acctKey('bag_pass'), mpass); }   // Tour Pass per-period pack-claim flag cross-device
     reconcileCoins(true);   // self-heal earned total + grant milestone gear silently after a cross-device merge
     cloudPush();
     render();
@@ -24149,13 +24285,16 @@ function purchaseCheck(){
   try{ const u=new URL(location.href); u.searchParams.delete('purchase'); history.replaceState(null,'',u.pathname+(u.search||'')+(u.hash||'')); }catch(e){}
   if(st==='cancelled'){ try{ toast('Checkout cancelled — no charge was made.', 3600); }catch(e){} return; }
   try{ track('purchase_return',{status:'success'}); }catch(e){}
-  // poll the wallet a few times so the freshly-credited coins appear even if the webhook lands after us.
-  var tries=0, before=paidCoins(), doneMsg=false;
+  // poll the wallet a few times so the freshly-credited coins/tokens/pass appear even if the webhook lands
+  // after we return from Stripe. A coin pack raises paidCoins; a token pack raises tokens; a pass flips
+  // passActive (and its coins raise paidCoins) — any change ends the poll.
+  var tries=0, before=paidCoins(), tokBefore=dailyTokens(), passBefore=dailyPassActive(), doneMsg=false;
   function say(){ if(doneMsg) return; doneMsg=true;
-    try{ toast('<b style="color:#ffd45e">Purchase complete — coins added!</b><br><span class="small">Thanks for supporting RunThe.GG ⛳</span>', 5000); }catch(e){}
+    try{ maybePassRewards(); }catch(e){}   // if the pass just activated, grant its seasonal packs now
+    try{ toast('<b style="color:#ffd45e">Purchase complete — added to your account!</b><br><span class="small">Thanks for supporting RunThe.GG ⛳</span>', 5000); }catch(e){}
     try{ render(); }catch(e){} }
   (function poll(){ tries++; loadWallet();
-    setTimeout(function(){ if(paidCoins()>before || tries>=6){ say(); } else { poll(); } }, 1500);
+    setTimeout(function(){ if(paidCoins()>before || dailyTokens()>tokBefore || dailyPassActive()!==passBefore || tries>=6){ say(); } else { poll(); } }, 1500);
   })();
 }
 // redeem a stashed referral (once, after sign-in), then claim any queued packs (referrer side too). Fail-open.

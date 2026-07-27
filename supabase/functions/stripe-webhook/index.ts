@@ -66,16 +66,56 @@ Deno.serve(async (req) => {
           break; // 200 so Stripe stops retrying a session we can't map
         }
 
-        // First-purchase +100% — decided by the SERVER, from prior purchases.
-        let coins = pkg.coins;
+        const pi = (session.payment_intent as string) ?? null;
+        const amount = session.amount_total ?? pkg.priceCents;
+        const currency = session.currency ?? "usd";
+
+        if (pkg.kind === "tokens") {
+          // Extra Daily-Challenge attempts (consumables). No first-purchase bonus.
+          const { data, error } = await admin.rpc("runtour_credit_tokens", {
+            p_user: userId,
+            p_event: event.id,
+            p_session: session.id,
+            p_pi: pi,
+            p_package: pkg.id,
+            p_tokens: pkg.tokens ?? 0,
+            p_amount_cents: amount,
+            p_currency: currency,
+          });
+          if (error) throw error;
+          console.log(`credited ${pkg.tokens} tokens to ${userId} (${pkg.id}), balance=${data}`);
+          break;
+        }
+
+        if (pkg.kind === "pass") {
+          // Grant the current month's Tour Pass + its coin reward.
+          const { data, error } = await admin.rpc("runtour_grant_pass", {
+            p_user: userId,
+            p_event: event.id,
+            p_session: session.id,
+            p_pi: pi,
+            p_package: pkg.id,
+            p_coins: pkg.passCoins ?? 0,
+            p_amount_cents: amount,
+            p_currency: currency,
+          });
+          if (error) throw error;
+          console.log(`granted Tour Pass to ${userId} (${pkg.id}), period=${data}`);
+          break;
+        }
+
+        // ---- coins ----
+        // First-purchase +100% on the first paid COIN pack — decided by the SERVER.
+        let coins = pkg.coins ?? 0;
         let pkgKey = pkg.id;
         const { count } = await admin
           .from("coin_purchase")
           .select("id", { count: "exact", head: true })
           .eq("user_id", userId)
-          .eq("status", "paid");
+          .eq("status", "paid")
+          .gt("coins", 0); // token/pass rows don't count toward the coin first-purchase bonus
         if ((count ?? 0) === 0) {
-          coins = pkg.coins * FIRST_PURCHASE_MULTIPLIER;
+          coins = (pkg.coins ?? 0) * FIRST_PURCHASE_MULTIPLIER;
           pkgKey = `${pkg.id}+fp`;
         }
 
@@ -83,11 +123,11 @@ Deno.serve(async (req) => {
           p_user: userId,
           p_event: event.id,
           p_session: session.id,
-          p_pi: (session.payment_intent as string) ?? null,
+          p_pi: pi,
           p_package: pkgKey,
           p_coins: coins,
-          p_amount_cents: session.amount_total ?? pkg.priceCents,
-          p_currency: session.currency ?? "usd",
+          p_amount_cents: amount,
+          p_currency: currency,
         });
         if (error) throw error;
         console.log(`credited ${coins} coins to ${userId} (${pkgKey}), balance=${data}`);
