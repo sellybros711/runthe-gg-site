@@ -2224,7 +2224,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=2"></script>
+<script src="board.js?v=3"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
@@ -3962,6 +3962,11 @@ function paintOver(){
   paintRanks().catch(()=>{
     $('o-ranks').innerHTML='<p class="rankfoot" style="margin-top:8px">The leaderboard '+
       'is not reachable right now, so this run has not been counted.</p>';
+    /* AND THE STRIP, which paintRanks fills as its second act. If it threw before it got
+       there the three cells would sit on "reading" for the rest of the session and a
+       guest would never see the sign in button, because that button lives in the strip.
+       Painting it with nothing says "no board" in all three and still makes the offer. */
+    paintRankStrip(null);
   });
 }
 
@@ -4827,13 +4832,25 @@ function rankCell(k,label,w){
 function paintRankStrip(r){
   const g=$('o-gate');
   if(g){
+    /* THE PROMPT DOES NOT DEPEND ON THE BOARD BEING READABLE.
+       It used to require at least one window to have come back with a number, so when
+       the board could not be read a guest got no way to sign in at all: the one screen
+       where signing in matters, with the button missing exactly when it was most needed.
+
+       Reads and writes fail separately here, and a read failing says nothing about
+       whether a submit would land, so the offer stands either way. Only the sentence
+       above it changes, because promising a placing we could not fetch would be a lie. */
     const any=r&&RANK_WINDOWS.some(([k])=>r[k]);
-    g.innerHTML=(submitted==='guest'&&any)
-      ? '<span>Those placings are where this run <b>would</b> sit. Only runs with a name '+
-        'on them go on the board.</span>'+
-        '<button class="btn sm" id="b-gate-strip">Sign in and keep this run</button>'
-      : '';
-    if(submitted==='guest'&&any) $('b-gate-strip').onclick=()=>{signInForBoard=true;profileSheet();};
+    g.innerHTML=submitted!=='guest' ? ''
+      : (any
+        ? '<span>Those placings are where this run <b>would</b> sit. Only runs with a name '+
+          'on them go on the board.</span>'+
+          '<button class="btn sm" id="b-gate-strip">Sign in and keep this run</button>'
+        : '<span>The board could not be read just now, so there is no placing to show. '+
+          'Runs are only recorded with a name on them, so <b>sign in and this one still '+
+          'goes on</b>.</span>'+
+          '<button class="btn sm" id="b-gate-strip">Sign in and keep this run</button>');
+    if(submitted==='guest') $('b-gate-strip').onclick=()=>{signInForBoard=true;profileSheet();};
   }
   const el=$('o-splits'); if(!el) return;
   const cells=[...el.children];
@@ -4874,9 +4891,23 @@ async function paintRanks(){
   paintRankStrip(r);
   const any=(run.daily?WINDOWS_DAILY:WINDOWS_FREE).some(([k])=>r[k]);
   if(!any){
-    el.innerHTML='<p class="rankfoot" style="margin-top:8px">The leaderboard is not '+
-      'reachable right now, so this run has not been counted. Nothing else about your '+
-      'season changes.</p>'+boardWhy();
+    /* Unreadable board. A guest still gets the way in, for the reason above: the submit
+       is a different call from the count and may well work. And the probe goes here,
+       because this is where the problem is being seen. */
+    el.innerHTML='<p class="rankfoot" style="margin-top:8px">The leaderboard could not '+
+      'be read just now, so there is no placing to show. Nothing else about your season '+
+      'changes.</p>'+boardWhy()+
+      (submitted==='guest'
+        ? '<div class="guestgate"><b>Sign in to get on the board</b>'+
+          '<span>The board only records runs with a name on them. Signing in sends this '+
+          'run, which is a separate request from the one that just failed.</span>'+
+          '<button class="btn sm" id="b-gate-in">Sign in or create an account</button></div>'
+        : '')+
+      '<div class="hrow"><button class="btn ghost sm" id="b-board3">See the leaderboard</button>'+
+      '<button class="btn ghost sm" id="b-diag-x">Check the connection</button></div>';
+    if(submitted==='guest') $('b-gate-in').onclick=()=>{signInForBoard=true;profileSheet();};
+    $('b-board3').onclick=openBoard;
+    $('b-diag-x').onclick=runDiagnostics;
     return;
   }
   const WINDOWS=run.daily?WINDOWS_DAILY:WINDOWS_FREE;
