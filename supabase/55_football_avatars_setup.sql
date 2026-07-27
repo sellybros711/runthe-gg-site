@@ -227,6 +227,26 @@ update ps_runs r
    and (r.display_color is distinct from p.avatar_color
      or r.display_initials is distinct from p.avatar_initials);
 
+-- ---------------------------------------------------------------------------
+-- 8. THE BOARD LISTS NAMED RUNS ONLY, and these are what make that free.
+--
+-- A guest draft is a real draft and still counts towards how many have been
+-- played, but it carries no name, so listing it puts a row of Anonymous on a
+-- board whose whole job is to say who did what. The client filters those rows
+-- out of every list and every ranking, and leaves them in the activity count.
+--
+-- Partial indexes, over exactly the rows the board reads, because a plain filter
+-- is brutal in precisely the state a young board is in: measured at 2,000,000
+-- rows of which 20 were named, the top-500 read scanned 666,726 rows in 246ms.
+-- Against these it is 0.03ms, and each index is 16kB, because it only holds the
+-- named rows. They shrink and grow with the number of people who signed in,
+-- never with the number of drafts played.
+-- ---------------------------------------------------------------------------
+create index if not exists ps_runs_named_score_idx
+  on ps_runs (daily, score desc, created_at asc) where display_name is not null;
+create index if not exists ps_runs_named_rating_idx
+  on ps_runs (daily, team_rating desc, created_at asc) where display_name is not null;
+
 analyze ps_runs;
 analyze profiles;
 
