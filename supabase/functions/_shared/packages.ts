@@ -80,7 +80,7 @@ export const PACKAGES: Record<string, CoinPackage> = {
     label: "1 Daily Token",
     kind: "tokens",
     tokens: 1,
-    priceCents: 99,
+    priceCents: 199,
     priceEnv: "STRIPE_PRICE_TOK1",
   },
   tok3: {
@@ -88,7 +88,7 @@ export const PACKAGES: Record<string, CoinPackage> = {
     label: "3 Daily Tokens",
     kind: "tokens",
     tokens: 3,
-    priceCents: 199,
+    priceCents: 299,
     priceEnv: "STRIPE_PRICE_TOK3",
   },
   tok7: {
@@ -96,7 +96,7 @@ export const PACKAGES: Record<string, CoinPackage> = {
     label: "7 Daily Tokens",
     kind: "tokens",
     tokens: 7,
-    priceCents: 299,
+    priceCents: 499,
     priceEnv: "STRIPE_PRICE_TOK7",
   },
   tok15: {
@@ -104,7 +104,7 @@ export const PACKAGES: Record<string, CoinPackage> = {
     label: "15 Daily Tokens",
     kind: "tokens",
     tokens: 15,
-    priceCents: 499,
+    priceCents: 999,
     priceEnv: "STRIPE_PRICE_TOK15",
   },
 

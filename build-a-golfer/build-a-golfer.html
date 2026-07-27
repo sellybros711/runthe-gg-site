@@ -21798,10 +21798,10 @@ function packTierLabel(t){ return t==='champ'?'Champion':t==='tour'?'Tour':'Base
 // (credited by the Stripe webhook, spent via runtour_spend_token). ids + counts MUST match packages.ts.
 const TOKENS_ENABLED=false;
 const DAILY_TOKENS=[
-  {id:'tok1',  n:1,  usd:0.99},
-  {id:'tok3',  n:3,  usd:1.99, badge:'POPULAR'},
-  {id:'tok7',  n:7,  usd:2.99},
-  {id:'tok15', n:15, usd:4.99, badge:'BEST VALUE'},
+  {id:'tok1',  n:1,  usd:1.99},
+  {id:'tok3',  n:3,  usd:2.99, badge:'POPULAR'},
+  {id:'tok7',  n:7,  usd:4.99},
+  {id:'tok15', n:15, usd:9.99, badge:'BEST VALUE'},
 ];
 // ---- Tour Pass: a ONE-TIME monthly purchase. A new themed pass runs each calendar month; buying grants
 // THIS month's pass. While active: unlimited daily plays, a reward multiplier (earn bigger & better), a
@@ -22579,6 +22579,27 @@ function overlayPackReveal(app){
   if(d.chosen!=null) renderFoot();
   app.appendChild(ov);
 }
+// A bucket overflowing with coins, drawn to hold MORE coins as the tier climbs (Small->Mega).
+// `level` 1..5, `col` tints the pail; coins are always gold so they read as coins.
+function coinBucketSVG(level,col,size){
+  size=size||44; level=Math.max(1,Math.min(5,level|| 1));
+  function coin(cx,cy,r){ r=r||5; return '<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+r+'" ry="'+(r*0.58).toFixed(2)+'" fill="#F1D04A" stroke="#b8891a" stroke-width="1"/><ellipse cx="'+(cx-r*0.28).toFixed(2)+'" cy="'+(cy-r*0.22).toFixed(2)+'" rx="'+(r*0.34).toFixed(2)+'" ry="'+(r*0.2).toFixed(2)+'" fill="#fff3bf" opacity=".7"/>'; }
+  var bk='<path d="M11 21 L37 21 L34.6 43 Q34.4 45 32.4 45 L15.6 45 Q13.6 45 13.4 43 Z" fill="'+col+'" opacity=".2"/>'
+    +'<path d="M11 21 L37 21 L34.6 43 Q34.4 45 32.4 45 L15.6 45 Q13.6 45 13.4 43 Z" fill="none" stroke="'+col+'" stroke-width="1.7" stroke-linejoin="round"/>'
+    +'<path d="M12.5 21 Q24 11 35.5 21" fill="none" stroke="'+col+'" stroke-width="1.7"/>'
+    +'<ellipse cx="24" cy="21" rx="13" ry="3.4" fill="'+col+'" opacity=".28" stroke="'+col+'" stroke-width="1.7"/>';
+  var rims=[
+    [[21,22],[27,22]],
+    [[19.5,22],[24,22.5],[28.5,22],[24,19.5]],
+    [[19,22],[24,22],[29,22],[21.5,19],[26.5,19],[24,16.3]],
+    [[18,22],[23,22],[28,22],[32.5,22.5],[20.5,19],[25.5,19],[30,19.3],[23,16],[27.7,16]],
+    [[17.5,22],[22.5,22],[27.5,22],[32.5,22],[20,19],[25,19],[30,19],[22.5,16],[27.5,16],[25,13.2]]
+  ];
+  var spill=[[],[],[],[[8.5,44],[39,43.5]],[[7.5,44.5],[40,44],[10.5,45.6],[37.5,45.6]]];
+  var C=''; rims[level-1].forEach(function(p){ C+=coin(p[0],p[1]); });
+  spill[level-1].forEach(function(p){ C+=coin(p[0],p[1],4.2); });
+  return '<svg viewBox="0 0 48 48" width="'+size+'" height="'+size+'" style="display:block">'+bk+C+'</svg>';
+}
 function bucketShopNode(){
   packStyleOnce();
   if(_walletCache===null) loadWallet();   // refresh the purchased-coin balance for this view
@@ -22628,7 +22649,7 @@ function bucketShopNode(){
   wrap.appendChild($('<div class="small muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:800;text-align:center;margin:22px 0 2px;color:#F1D04A">Coins</div>'));
   wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:2px auto 6px;line-height:1.5">Coins for gear &amp; packs.</div>'));
   if(firstBuy) wrap.appendChild($('<div style="max-width:400px;margin:4px auto 0;text-align:center;font:900 13px var(--body);color:#ffd45e;background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.4);border-radius:12px;padding:8px 10px">🎉 First purchase bonus — <span style="color:#fff">DOUBLE coins</span> on your first pack!</div>'));
-  BUCKETS.forEach(function(b){
+  BUCKETS.forEach(function(b,bi){
     var coins=firstBuy?b.coins*2:b.coins;
     // extra line: "+X% value" and any bonus packs granted (Large/XL/Mega). NO "careers" language (owner rule).
     var extras=[];
@@ -22637,7 +22658,7 @@ function bucketShopNode(){
     var card=$('<div style="max-width:400px;margin:12px auto 0;padding:12px 13px;border-radius:14px;background:rgba(12,31,22,.7);border:1px solid '+b.col+'66;position:relative"></div>');
     if(b.badge) card.appendChild($('<div style="position:absolute;top:-9px;right:12px;background:'+b.col+';color:#0c1f16;font:900 9px var(--body);letter-spacing:.1em;padding:3px 8px;border-radius:20px">'+esc(b.badge)+'</div>'));
     card.appendChild($('<div style="display:flex;gap:12px;align-items:center">'
-      +'<div style="flex:0 0 auto;width:46px;height:46px;display:flex;align-items:center;justify-content:center;color:'+b.col+'">'+ic('coins',{size:'40px'})+'</div>'
+      +'<div style="flex:0 0 auto;width:48px;height:48px;display:flex;align-items:center;justify-content:center">'+coinBucketSVG(bi+1,b.col,46)+'</div>'
       +'<div style="flex:1;min-width:0">'
         +'<div style="font-family:var(--display);font-size:17px;color:'+b.col+'">'+esc(b.name)+'</div>'
         +'<div style="font:900 20px var(--body);color:#ffd45e;display:flex;align-items:center;gap:5px;margin-top:1px"><span style="width:16px;height:16px">'+ic('coin',{size:'16px'})+'</span>'+coinFmt(coins)+(firstBuy?'<span class="small" style="color:'+b.col+';font-weight:800;margin-left:4px">2×!</span>':'')+'</div>'

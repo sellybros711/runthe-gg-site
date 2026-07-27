@@ -46,10 +46,10 @@ Large / XL / Mega also grant bonus packs (handled client-side):
 
 | Package        | Price  | Tokens |
 |----------------|--------|--------|
-| 1 Daily Token  | $0.99  | 1      |
-| 3 Daily Tokens | $1.99  | 3      |
-| 7 Daily Tokens | $2.99  | 7      |
-| 15 Daily Tokens| $4.99  | 15     |
+| 1 Daily Token  | $1.99  | 1      |
+| 3 Daily Tokens | $2.99  | 3      |
+| 7 Daily Tokens | $4.99  | 7      |
+| 15 Daily Tokens| $9.99  | 15     |
 
 **Tour Pass** (`kind: pass`) — a **one-time monthly** purchase (buy again each
 calendar month). Grants the current month's pass: 30,000 coins credited + a
