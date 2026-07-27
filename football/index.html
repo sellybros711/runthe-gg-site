@@ -433,7 +433,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   /* .field.hero-field, not .hero-field: the element carries both classes, and the base .field
      rule sits further down the stylesheet at the same specificity, so a single-class selector
      here loses the aspect-ratio to it. It happened to be invisible while both said 0.52. */
-  .field.hero-field{aspect-ratio:1/0.60}
+  .field.hero-field{aspect-ratio:1/0.54}
   .hero-field{margin-top:10px}
   /* Nothing on the landing field is tappable, and a chip that looks tappable and
      is not is worse than one that plainly is not. */
@@ -684,7 +684,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      it sat immediately after them: without `position:relative` and `overflow:hidden` the
      absolutely-positioned yard lines, hash marks, end zones and player chips escaped their
      box and painted across the entire page behind the content. */
-  .field{position:relative;width:100%;aspect-ratio:1/0.62;border-radius:14px;overflow:hidden;
+  .field{position:relative;width:100%;aspect-ratio:1/0.54;border-radius:14px;overflow:hidden;
     background:radial-gradient(125% 85% at 50% -12%,#16283f 0%,#0a1220 58%,#070c16 100%);
     border:1px solid var(--line)}
   /* The results page is long, so its copy of the field is a little flatter. */
@@ -2024,9 +2024,9 @@ const TIER={
  * collision entirely and is a formation real teams line up in.
  */
 const SPOTS = {
-  QB:   [{x:50,y:44}],
-  RB:   [[{x:34,y:59}], [{x:33,y:59},{x:67,y:59}]],
-  WR:   [[], [{x:50,y:24}], [{x:10,y:24},{x:90,y:24}], [{x:10,y:24},{x:90,y:24},{x:30,y:35}]],
+  QB:   [{x:50,y:38}],
+  RB:   [[{x:34,y:50}], [{x:33,y:50},{x:67,y:50}]],
+  WR:   [[], [{x:50,y:20}], [{x:10,y:20},{x:90,y:20}], [{x:10,y:20},{x:90,y:20},{x:30,y:29}]],
   /*
    * The inside row sits at 70 and 30, not 75 and 25. A chip's name label is wider
    * than the chip itself (78px against 62px) so long surnames fit, which left the
@@ -2034,8 +2034,8 @@ const SPOTS = {
    * Measured, not guessed: a sweep of 49 formations caught it every time. Ten px of
    * clearance now, and the labels stay wide.
    */
-  TE:   [[], [{x:70,y:35}], [{x:70,y:35},{x:30,y:35}]],
-  FLEX: {x:30,y:35},
+  TE:   [[], [{x:70,y:29}], [{x:70,y:29},{x:30,y:29}]],
+  FLEX: {x:30,y:29},
 };
 /* THE FORMATION IS SIZED SO EVERY LABEL FITS UNDER ITS DISC.
    Measured, not estimated: a chip needs 84px below its spot, the disc's radius plus the name
@@ -2050,7 +2050,7 @@ const SPOTS = {
    BOTH TABLES HAVE TO MOVE TOGETHER. This one is only the fallback; SPOTS above is what the
    draft field actually lays out from, and changing one and not the other is why the running
    back kept clipping after the fallback said it should not. */
-const SPOT_FALLBACK=[{x:50,y:44},{x:34,y:59},{x:10,y:24},{x:90,y:24},{x:70,y:35},{x:30,y:35}];
+const SPOT_FALLBACK=[{x:50,y:38},{x:34,y:50},{x:10,y:20},{x:90,y:20},{x:70,y:29},{x:30,y:29}];
 
 /** Target coordinate for every slot index, given who is currently signed. */
 function layoutFor(){
@@ -2147,9 +2147,10 @@ const easeOut=(t)=>1-Math.pow(1-t,3);
    the 15, which are the numbers a red-zone snap is played between. */
 /* 24 yards in view: four of end zone, the goal line, then out to the 20. That puts the two
    numbers a real field would carry in this stretch, the 10 and the 20, inside the picture. */
-/* 28 yards in view: four of end zone, the goal line, then out to the 24. Deep enough that the
-   20 sits at 86% rather than exactly on the bottom edge, where it was being cut in half. */
-const FIELD_YARDS=28, FIELD_EZ_YARDS=4;
+/* 23 yards in view: four of end zone, the goal line, then out to the 19, so the bottom edge
+   lands just short of the 20 and the whole board is shorter. The 15 is the deepest line drawn
+   and the 10 is the only number, which is what a red-zone camera actually frames. */
+const FIELD_YARDS=23, FIELD_EZ_YARDS=4;
 
 /* The lines run ACROSS, because the offence moves up the screen: the receivers are at 26% of
    the height, the quarterback at 58% and the back at 84%. Yard lines are perpendicular to the
@@ -3642,12 +3643,12 @@ const HERO={year:820, stagger:300, team:970, land:320, sign:760,
 /* Same six spots, same coordinates, as the real field. */
 /* Same coordinates as the real field, for the same reason: see SPOT_FALLBACK. */
 const HERO_SPOTS=[
-  {label:'QB',   left:50, top:44},
-  {label:'RB',   left:34, top:59},
-  {label:'WR',   left:10, top:24},
-  {label:'WR',   left:90, top:24},
-  {label:'TE',   left:70, top:35},
-  {label:'FLEX', left:30, top:35},
+  {label:'QB',   left:50, top:38},
+  {label:'RB',   left:34, top:50},
+  {label:'WR',   left:10, top:20},
+  {label:'WR',   left:90, top:20},
+  {label:'TE',   left:70, top:29},
+  {label:'FLEX', left:30, top:29},
 ];
 /* WHICH PLAYERS SIGN ON THE FRONT PAGE.
    It used to be three hardcoded names, so the landing animation played out identically every
