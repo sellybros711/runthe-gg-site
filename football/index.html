@@ -4786,9 +4786,10 @@ function paintRankStrip(r){
   });
 }
 
-/* Tapping a placing opens the board on that window. Sorted by record, not by team
-   rating: the rank on the cell IS the record rank, and the rating board is all-time
-   only, so leaving the sort alone would open a board this number is not from. */
+/* Tapping a placing opens the board on that window, sorted by record rather than by
+   team rating. Still record even now that the rating axis answers every window: the
+   number on the cell IS a record rank, from B.scoreOf, so opening on the rating axis
+   would show a board that number does not come from. */
 document.addEventListener('click',(e)=>{
   const b=e.target.closest('#o-splits .lbc.go'); if(!b) return;
   if(run&&run.daily){ lbWin='daily'; }
@@ -4985,18 +4986,28 @@ let lbWin='day', lbSort='rating', lbDir='desc', lbShown=5, lbRows=null, lbBusy=f
 const lbIsDaily=()=>lbWin==='daily';
 /* What board.js should read for the tab that is showing.
 
-   The free rating board is all time, always. Ordering by rating over a time range is
-   the one query no index can answer without the planner gambling, and when it loses
-   on a sparse window it walks the whole index: measured 125ms at 2M rows to return
-   nothing. All time is also the better framing, since the best roster anybody has
-   built is not a daily question. The daily board keeps its window because a puzzle
-   date is an equality and sits in the index next to the sort. */
+   EVERY WINDOW WORKS ON EVERY AXIS. The rating board used to be all time only, on the
+   argument that ordering by rating over a time range is a query no index can answer, so
+   the Today and This week tabs were greyed out on that axis.
+
+   That was wrong, and measurably so. ps_runs_mode_rating_idx is
+   (daily, team_rating DESC, created_at): created_at is IN the index, so the window is an
+   index condition rather than a filter applied after the fact. Measured on the real
+   schema at 2,000,000 rows with today at 0.08% of them:
+
+     rating, all time      0.3ms
+     rating, today         1.9ms   <- the tab that was disabled
+     rating, this week     1.9ms
+     rating, empty window  0.1ms   <- planner switches to the created_at index
+     record, today         6.9ms   <- the tab that was already enabled
+
+   So the disabled query is three times faster than one that has been shipping enabled
+   the whole time. Nothing needed to change in board.js either: scope() already appends
+   the window to any sort. */
 function lbScope(){
   if(lbIsDaily()) return {mode:'daily',puzzle:'today'};
-  return {mode:'free',win:lbSort==='rating'?'all':lbWin};
+  return {mode:'free',win:lbWin};
 }
-/* Which window tabs mean anything for the axis on show. */
-function lbWindowsLive(){ return !(lbSort==='rating'); }
 
 /* What the big right-hand figure means for each axis, so the column always says
    which quantity it is showing rather than leaving it to be guessed. */
@@ -5029,16 +5040,14 @@ async function loadBoard(){
     t.classList.toggle('on',t.dataset.sort===lbSort));
   $('b-lb-dir').classList.toggle('up',lbDir==='asc');
   $('lb-dir-label').textContent=lbDir==='asc'?'Low to high':'High to low';
-  const live=lbWindowsLive();
-  [...document.querySelectorAll('#lb-tabs .tab')].forEach(t=>{
-    t.disabled=!live&&t.dataset.lb!=='daily'&&t.dataset.lb!=='all';
-  });
+  /* No tab is ever disabled now. Both axes answer every window. */
+  [...document.querySelectorAll('#lb-tabs .tab')].forEach(t=>{ t.disabled=false; });
   $('lb-blurb').textContent=lbIsDaily()
     ? "Today's daily puzzle. Everybody gets the same six draws, so this board is "+
       'the only fair comparison in the game. It resets at midnight UTC.'
     : (lbSort==='rating'
-      ? 'Free runs, ranked all time. Team rating is about the roster, not the '+
-        'season, so it is not split by day.'
+      ? 'Free runs, ranked on the roster rather than the season. Windows reset at '+
+        'midnight UTC and the week starts Monday.'
       : 'Free runs only. Daily runs have their own board. Windows reset at '+
         'midnight UTC and the week starts Monday.');
   /* 25 rows in one request, shown 5 at a time. Paging over the network for every
@@ -5057,8 +5066,7 @@ async function loadBoard(){
   }
   if(total!==null){
     const word=lbIsDaily()?"played today's daily"
-      :(lbSort==='rating'?'played in all'
-        :(lbWin==='day'?'played today':(lbWin==='week'?'played this week':'played in all')));
+      :(lbWin==='day'?'played today':(lbWin==='week'?'played this week':'played in all'));
     $('lb-count').innerHTML='<b>'+total.toLocaleString()+'</b> '+
       (total===1?'run ':'runs ')+word;
   }
@@ -5096,7 +5104,7 @@ function paintBoard(){
     $('lb-podium').className='podium'; $('lb-podium').innerHTML='';
     $('lb-rows').innerHTML='<div class="lbempty">'+
       (lbIsDaily()?"Nobody has finished today's daily yet. Play it and you are first."
-        :(lbWin==='all'||lbSort==='rating'
+        :(lbWin==='all'
           ?'No runs recorded yet. Play one and you are first.'
           :'Nobody has finished a run in this window yet. Play one and you are first.'))+
       '</div>';
@@ -5393,10 +5401,9 @@ $('lb-tabs').addEventListener('click',(e)=>{
 });
 $('lb-sort').addEventListener('click',(e)=>{
   const t=e.target.closest('button'); if(!t||t.dataset.sort===lbSort) return;
+  /* The window survives a change of axis now. Switching to rating used to yank the tab
+     back to All time, because rating could not answer a window; it can. */
   lbSort=t.dataset.sort; lbShown=5;
-  /* Switching to the rating axis on a free window that it cannot answer moves the
-     tab to All time rather than showing a board that quietly ignores the tab. */
-  if(lbSort==='rating'&&!lbIsDaily()) lbWin='all';
   loadBoard();
 });
 $('b-lb-dir').onclick=()=>{ lbDir=lbDir==='asc'?'desc':'asc'; lbShown=5; loadBoard(); };
