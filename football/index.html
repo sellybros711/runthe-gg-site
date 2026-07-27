@@ -717,12 +717,63 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      five hundred. */
   .lb .lbr{content-visibility:auto;contain-intrinsic-size:auto 55px}
 
+  /* THE TITLE AND THE WAY OUT, on one line. */
+  .lbtop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+    margin-bottom:10px}
+  .closex{flex:0 0 auto;width:36px;height:36px;margin-top:2px;border-radius:50%;
+    display:grid;place-items:center;background:var(--panel);border:1px solid var(--line-2);
+    color:var(--dim)}
+  .closex svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2.2;
+    stroke-linecap:round}
+  .closex:hover,.closex:focus-visible{color:var(--ink);background:var(--panel-2)}
+
+  /* THE PINNED FOOT OF THE BOARD.
+     The way out used to be under the list, which was fine when the list was five rows
+     and absurd once it was five hundred. One fixed height, declared here and reused as
+     .mypin's offset, because the two are sticky siblings and the only thing stopping
+     them overlapping is that one knows how tall the other is. */
+  #s-board{--lbdock:54px}
+  /* Sat above the fixed ad strip, not under it: sticky offsets are measured from the
+     scrollport, so bottom:0 is the viewport edge, which is exactly where the strip is.
+
+     A GRID, not a flex row, and not the 1fr 1fr of .hrow either. .btn is width:100%, so
+     flex-basis:auto resolved to the full row width and Back took all of it while the
+     diagnostic was crushed to 28px and pushed 24px off the right edge. Two tracks, one
+     sized to Back's own word and one taking the rest, keeps both on a single line at 320
+     and keeps the bar exactly --lbdock tall, which is what .mypin above it is offset by. */
+  /* IT SITS ON THE VIEWPORT EDGE AND PADS ITSELF OVER THE STRIP, rather than floating
+     54px up. Offsetting it left the ad strip's band transparent, so the list carried on
+     scrolling visibly underneath the bar and out of the bottom of the screen, which read
+     as a rendering fault. box-sizing is border-box everywhere here, so the content box is
+     still exactly --lbdock and .mypin's offset above is unchanged. */
+  .lbfoot{position:sticky;bottom:0;z-index:6;
+    display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center;
+    height:calc(var(--lbdock) + var(--adstrip));padding-bottom:var(--adstrip);
+    margin-top:10px;background:var(--bg)}
+  /* The fade above it, for when the place row is faded out and the list runs straight
+     into the bar. Painted outside the box and BEHIND the place row, which is opaque and
+     one layer up, so with the row showing there is no fade to see through. */
+  .lbfoot::before{content:'';position:absolute;left:0;right:0;bottom:100%;height:14px;
+    pointer-events:none;
+    /* --bg at zero alpha, written out because a gradient cannot take the alpha off a
+       variable. One theme on this page, so one value to keep in step. */
+    background:linear-gradient(to bottom,rgba(8,11,20,0),var(--bg))}
+  /* Same height for both, set here rather than left to whatever their two font sizes
+     happen to produce. */
+  .lbfoot .btn{width:auto;margin:0;height:42px;padding-top:0;padding-bottom:0;
+    display:grid;place-items:center}
+  .lbfoot #b-board-back{padding-left:20px;padding-right:20px}
+  .lbfoot #b-diag{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
+
   /* WHERE YOU SIT, PINNED TO THE BOTTOM OF THE VIEWPORT.
      A board 500 rows deep is a board almost nobody is on the front of, and the whole
      reason to open one is to find yourself. So your own place travels with the scroll.
      It is the same row as any other, one shade louder, and it opens the same detail
      sheet. */
-  .mypin{position:sticky;bottom:8px;z-index:6;margin-top:10px;padding-top:7px;
+  /* One layer ABOVE .lbfoot, so where the two meet the place row's opaque backdrop wins
+     and the bar's top fade is hidden behind it. */
+  .mypin{position:sticky;bottom:calc(var(--adstrip) + var(--lbdock));z-index:7;
+    margin-top:10px;padding-top:7px;
     /* The list runs on underneath this, so it needs its own backdrop rather than
        borrowing the page's: a translucent row over moving text is unreadable on a
        phone. The padding is what keeps the label off the row it is floating over. */
@@ -1626,19 +1677,32 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   /* Side rails only where there is genuinely room beside the 600px board. */
   @media (min-width:1200px){ .rtp-ad-rail{display:block} }
 
+  /* HOW MUCH OF THE BOTTOM EDGE THE FIXED STRIP OWNS, as one number, because two things
+     need it: the page padding that keeps content clear of it, and anything sticky that
+     wants to sit just above it. They were separate and drifted, which is how the pinned
+     buttons at the foot of the leaderboard ended up underneath the strip. */
+  :root{--adstrip:0px}
+  @media (max-width:1199px){ :root{--adstrip:calc(54px + env(safe-area-inset-bottom,0px))} }
+  body.rtp-hide-ads{--adstrip:0px}
+
   .rtp-ad-mobile-bottom{position:fixed;left:0;right:0;bottom:0;height:50px;z-index:40;
-    display:none;overflow:hidden;text-align:center;background:transparent}
+    display:none;overflow:hidden;text-align:center;background:transparent;
+    /* AN EMPTY CONTAINER MUST NOT SWALLOW TAPS. It is transparent and 50px tall across the
+       whole width whether or not AdSense ever serves into it, and at z-index 40 it wins
+       every hit test in that band: a button under it looks perfectly normal and does
+       nothing. Taps pass through until a real ad is actually in there to receive them. */
+    pointer-events:none}
   /* Framed ONLY once a real ad has filled it, so before AdSense serves, or when it returns
      nothing, the empty container is invisible rather than an empty bar. Browsers without :has
      just show the ad and no frame. */
   .rtp-ad-mobile-bottom:has(ins[data-ad-status="filled"]){
-    background:#0b1220;border-top:1px solid var(--line)}
+    background:#0b1220;border-top:1px solid var(--line);pointer-events:auto}
   .rtp-ad-mobile-bottom .adsbygoogle{display:inline-block;width:320px;height:50px}
   @media (max-width:1199px){
     .rtp-ad-mobile-bottom{display:block}
     .rtp-ad-rail{display:none !important}
     /* Reserve the strip so nothing in the game hides behind it. */
-    body{padding-bottom:calc(54px + env(safe-area-inset-bottom,0px))}
+    body{padding-bottom:var(--adstrip)}
   }
   /* THE SCREENS THAT GET NO ADS: the two where a game is being played out, which run a live
      scoreboard near the bottom edge and are the one part of this that asks for undivided
@@ -1959,8 +2023,18 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   <!-- LEADERBOARD. Laid out now, wired up later: the shape assumes a cached top
        page and a pinned row for you, which is what it will need at scale. -->
   <div class="screen" id="s-board">
-    <div class="eyebrow">Standings</div>
-    <h2 class="display" style="font-size:27px;margin:5px 0 10px">Leaderboard</h2>
+    <!-- The title, and the way out. An X in the top corner is where everybody looks for
+         one, and it goes back to the screen the board was opened FROM rather than to a
+         fixed screen, so opening the board mid-season returns you to the season. -->
+    <div class="lbtop">
+      <div>
+        <div class="eyebrow">Standings</div>
+        <h2 class="display" style="font-size:27px;margin:5px 0 0">Leaderboard</h2>
+      </div>
+      <button class="closex" id="b-board-x" aria-label="Close the leaderboard">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
     <div class="tabwrap"><div class="tabs" id="lb-tabs">
       <button class="tab on" data-lb="day">Today</button>
       <button class="tab" data-lb="week">This week</button>
@@ -1990,12 +2064,20 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          away, which is worse than the five-row list it replaced. It hides itself
          while your real row is in view, so it is only ever there when the board is
          showing you strangers. -->
-    <div class="mypin" id="lb-mine" hidden></div>
     <!-- Which runs this board counts and when it resets: fine print, so it goes at the
          foot. It used to sit between the podium and the rows, interrupting the one place
-         on this screen where the reading order matters. -->
+         on this screen where the reading order matters.
+         ABOVE the two pinned blocks below, so that when you do reach the real bottom of
+         the page the order reads list, fine print, your place, buttons, instead of the
+         fine print being sandwiched between the two things that are pinned together. -->
     <p class="dim" id="lb-blurb" style="font-size:11.5px;margin:14px 0 0"></p>
-    <div class="hrow" style="margin-top:10px">
+    <div class="mypin" id="lb-mine" hidden></div>
+    <!-- PINNED, because the list is up to 500 rows long and the way out was 500 rows
+         down. Two sticky blocks rather than one, so that the place row above can fade
+         out when your own row scrolls into view without the buttons jumping down into
+         the gap it leaves. Its height is fixed in CSS and shared with .mypin's offset
+         through --lbdock, which is what keeps the two from overlapping. -->
+    <div class="lbfoot">
       <button class="btn ghost sm" id="b-board-back">Back</button>
       <button class="btn ghost sm" id="b-diag">Check the connection</button></div>
   </div>
@@ -2601,7 +2683,19 @@ let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,simTimer=null,la
 /* Screens that get no ad strip: the two where a game is played out and the scoreboard sits
    near the bottom edge. Everywhere else keeps it. */
 const NO_ADS=['s-season','s-po'];
-function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');window.scrollTo({top:0});
+/* WHERE THE LEADERBOARD WAS OPENED FROM, so closing it goes back there.
+   Recorded in show() rather than at each of the five places that open the board, because
+   that is the one place every route has to pass through, including whichever route gets
+   added next. Closing used to go to the results page if a run had finished and to the
+   landing screen otherwise, which is the right guess twice and wrong from the squad, the
+   season and the draft. */
+let boardFrom='s-intro';
+function show(id){
+  if(id==='s-board'){
+    const cur=document.querySelector('.screen.on');
+    if(cur&&cur.id!=='s-board') boardFrom=cur.id;
+  }
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');window.scrollTo({top:0});
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
   if(typeof heroSync==='function') heroSync();
   /* Measured here because a hidden element reports no scrollWidth at all: asking at
@@ -5625,7 +5719,18 @@ $('o-tabs').addEventListener('click',(e)=>{
 $('b-profile').onclick=()=>profileSheet();
 $('b-board').onclick=openBoard;
 $('b-board2').onclick=openBoard;
-$('b-board-back').onclick=()=>show(run&&run.outcome?'s-over':'s-intro');
+/* Both ways out do the same thing: back to the screen you were on. The X is for when you
+   are at the top, the pinned button for when you are a few hundred rows down and it is
+   the thing under your thumb. */
+function closeBoard(){
+  /* A screen that no longer exists, or the board itself, would leave nothing showing at
+     all, so the old guess is still the fallback. */
+  const to=boardFrom&&boardFrom!=='s-board'&&$(boardFrom)
+    ? boardFrom : (run&&run.outcome?'s-over':'s-intro');
+  show(to);
+}
+$('b-board-back').onclick=closeBoard;
+$('b-board-x').onclick=closeBoard;
 $('b-diag').onclick=runDiagnostics;
 $('lb-tabs').addEventListener('click',(e)=>{
   const t=e.target.closest('.tab'); if(!t||t.disabled||t.dataset.lb===lbWin) return;
