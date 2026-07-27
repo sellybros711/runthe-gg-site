@@ -140,19 +140,70 @@
   }
 
   /* ---------------- the three windows ----------------
-     UTC, not local time. A daily board where everyone's day starts at a different
-     moment is not one board, and the copy on the leaderboard screen promises a
-     midnight UTC reset. The week starts Monday, for the same reason: it has to be
-     the same week for everybody. */
+     EASTERN, NOT UTC, AND NOT THE VIEWER'S OWN CLOCK.
+
+     One fixed zone, because a board where everyone's day starts at a different moment
+     is not one board. It was UTC, which put the reset at 8pm Eastern the evening
+     before: "Today" filled up during Sunday evening and the week rolled over while
+     Sunday was still being played. Eastern is where the sport is, so that is the
+     clock the windows keep. The week still starts Monday, now Monday at midnight
+     Eastern, which is the moment Sunday ends.
+
+     America/New_York rather than a fixed -5, so the reset stays at midnight through
+     the summer instead of drifting to 1am. */
+  const ZONE = 'America/New_York';
+
+  /* The wall clock in the zone at a given instant, as numbers. */
+  function zoneParts(d) {
+    const f = new Intl.DateTimeFormat('en-US', {
+      timeZone: ZONE, hourCycle: 'h23', year: 'numeric', month: '2-digit',
+      day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const p = {};
+    for (const part of f.formatToParts(d)) if (part.type !== 'literal') p[part.type] = +part.value;
+    return p;
+  }
+
+  /* How far the zone is from UTC in minutes at that instant: -240 on EDT, -300 on EST. */
+  function zoneOffsetMin(d) {
+    const p = zoneParts(d);
+    const asIfUTC = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+    return (asIfUTC - Math.floor(d.getTime() / 1000) * 1000) / 60000;
+  }
+
+  /* The instant a given Eastern calendar day began.
+     Iterated, because the offset is read at one instant and applied at another, and on
+     the two days a year the clocks move those are not the same offset. One pass lands
+     within an hour; the second uses the offset that actually applies at the candidate
+     and lands exactly. */
+  function zoneMidnight(year, month, day) {
+    const wall = Date.UTC(year, month - 1, day);
+    let t = wall - zoneOffsetMin(new Date()) * 60000;
+    t = wall - zoneOffsetMin(new Date(t)) * 60000;
+    return new Date(wall - zoneOffsetMin(new Date(t)) * 60000);
+  }
+
   function cutoffISO(win) {
-    const now = new Date();
     if (win === 'all') return null;
-    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    if (win === 'week') {
-      const dow = (d.getUTCDay() + 6) % 7;      // 0 = Monday
-      d.setUTCDate(d.getUTCDate() - dow);
+    try {
+      const p = zoneParts(new Date());
+      let y = p.year, m = p.month, d = p.day;
+      if (win === 'week') {
+        /* Which weekday that Eastern date is. Plain calendar arithmetic on the date
+           itself, so no zone is involved in the question. 0 = Monday. */
+        const dow = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
+        const back = new Date(Date.UTC(y, m - 1, d - dow));
+        y = back.getUTCFullYear(); m = back.getUTCMonth() + 1; d = back.getUTCDate();
+      }
+      return zoneMidnight(y, m, d).toISOString();
+    } catch (e) {
+      /* No zone database in this engine. Fall back to the old UTC boundary rather than
+         returning nothing, because a board with no window at all would quietly show
+         all-time numbers under a Today tab. */
+      const now = new Date();
+      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      if (win === 'week') d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+      return d.toISOString();
     }
-    return d.toISOString();
   }
 
   /* Today's puzzle, as the date the game builds its daily seed from. */
