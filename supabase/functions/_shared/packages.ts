@@ -69,7 +69,7 @@ export const PACKAGES: Record<string, CoinPackage> = {
     id: "mega",
     label: "Mega Bucket",
     kind: "coins",
-    coins: 625000,
+    coins: 750000,
     priceCents: 4999,
     priceEnv: "STRIPE_PRICE_MEGA",
   },

@@ -40,7 +40,7 @@ Large / XL / Mega also grant bonus packs (handled client-side):
 | Medium Bucket  | $4.99  | 45,000  | —                  |
 | Large Bucket   | $9.99  | 102,000 | +1 Tour pack       |
 | XL Bucket      | $19.99 | 285,000 | +1 Champion pack   |
-| Mega Bucket    | $49.99 | 625,000 | +3 Champion packs  |
+| Mega Bucket    | $49.99 | 750,000 | +3 Champion packs  |
 
 **Daily Tokens** (`kind: tokens`) — extra Daily-Challenge attempts beyond the free 3/day:
 

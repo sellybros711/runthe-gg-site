@@ -21785,7 +21785,7 @@ const BUCKETS=[
   {id:'medium', name:'Medium Bucket', usd:4.99,  coins:45000,  col:'#5bcfe8', bonus:20},
   {id:'large',  name:'Large Bucket',  usd:9.99,  coins:102000, col:'#a24be0', bonus:35, badge:'POPULAR',    packTier:'tour',  packN:1},
   {id:'xl',     name:'XL Bucket',     usd:19.99, coins:285000, col:'#e8922a', bonus:89,                     packTier:'champ', packN:1},
-  {id:'mega',   name:'Mega Bucket',   usd:49.99, coins:625000, col:'#F1D04A', bonus:66, badge:'BEST VALUE', packTier:'champ', packN:3},
+  {id:'mega',   name:'Mega Bucket',   usd:49.99, coins:750000, col:'#F1D04A', bonus:99, badge:'BEST VALUE', packTier:'champ', packN:3},
 ];
 // LAUNCH FLAGS for the real-money features. Default OFF so the client ships ahead of the backend without
 // putting checkout buttons that error in front of live players. Flip each to true AT GO-LIVE, once the owner
@@ -22584,28 +22584,6 @@ function bucketShopNode(){
   if(_walletCache===null) loadWallet();   // refresh the purchased-coin balance for this view
   var wi=walletInfo(), firstBuy=!!(wi && (wi.lifePurchased||0)===0);   // server gives +100% on the FIRST paid pack
   var wrap=$('<div style="padding:6px 2px 4px"></div>');
-  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:6px auto 8px;line-height:1.5">Coins for gear &amp; packs.</div>'));
-  if(firstBuy) wrap.appendChild($('<div style="max-width:400px;margin:4px auto 0;text-align:center;font:900 13px var(--body);color:#ffd45e;background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.4);border-radius:12px;padding:8px 10px">🎉 First purchase bonus — <span style="color:#fff">DOUBLE coins</span> on your first pack!</div>'));
-  BUCKETS.forEach(function(b){
-    var coins=firstBuy?b.coins*2:b.coins;
-    // extra line: "+X% value" and any bonus packs granted (Large/XL/Mega). NO "careers" language (owner rule).
-    var extras=[];
-    if(b.bonus) extras.push('<b style="color:'+b.col+'">+'+b.bonus+'% value</b>');
-    if(b.packTier) extras.push('<b style="color:'+b.col+'">+'+b.packN+' '+packTierLabel(b.packTier)+' pack'+(b.packN===1?'':'s')+'</b>');
-    var card=$('<div style="max-width:400px;margin:12px auto 0;padding:12px 13px;border-radius:14px;background:rgba(12,31,22,.7);border:1px solid '+b.col+'66;position:relative"></div>');
-    if(b.badge) card.appendChild($('<div style="position:absolute;top:-9px;right:12px;background:'+b.col+';color:#0c1f16;font:900 9px var(--body);letter-spacing:.1em;padding:3px 8px;border-radius:20px">'+esc(b.badge)+'</div>'));
-    card.appendChild($('<div style="display:flex;gap:12px;align-items:center">'
-      +'<div style="flex:0 0 auto;width:46px;height:46px;display:flex;align-items:center;justify-content:center;color:'+b.col+'">'+ic('coins',{size:'40px'})+'</div>'
-      +'<div style="flex:1;min-width:0">'
-        +'<div style="font-family:var(--display);font-size:17px;color:'+b.col+'">'+esc(b.name)+'</div>'
-        +'<div style="font:900 20px var(--body);color:#ffd45e;display:flex;align-items:center;gap:5px;margin-top:1px"><span style="width:16px;height:16px">'+ic('coin',{size:'16px'})+'</span>'+coinFmt(coins)+(firstBuy?'<span class="small" style="color:'+b.col+';font-weight:800;margin-left:4px">2×!</span>':'')+'</div>'
-        +(extras.length?'<div class="small" style="color:#cfe6d8;margin-top:2px">'+extras.join(' · ')+'</div>':'')
-      +'</div>'
-      +'<button class="btn buybtn" style="flex:0 0 auto;width:auto;margin:0;background:'+b.col+';color:#0c1f16;font-weight:900;font-size:15px;padding:11px 16px;white-space:nowrap">$'+b.usd.toFixed(2)+'</button>'
-    +'</div>'));
-    card.querySelector('.buybtn').onclick=function(){ beginBucketPurchase(b.id); };
-    wrap.appendChild(card);
-  });
   // ---- Tour Pass (monthly) ----
   if(TOURPASS_ENABLED){
     var passCol='#a24be0', active=dailyPassActive();
@@ -22646,6 +22624,30 @@ function bucketShopNode(){
     });
     wrap.appendChild(tg);
   }
+  // ---- Coins (buckets) — at the BOTTOM of the store ----
+  wrap.appendChild($('<div class="small muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:800;text-align:center;margin:22px 0 2px;color:#F1D04A">Coins</div>'));
+  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:2px auto 6px;line-height:1.5">Coins for gear &amp; packs.</div>'));
+  if(firstBuy) wrap.appendChild($('<div style="max-width:400px;margin:4px auto 0;text-align:center;font:900 13px var(--body);color:#ffd45e;background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.4);border-radius:12px;padding:8px 10px">🎉 First purchase bonus — <span style="color:#fff">DOUBLE coins</span> on your first pack!</div>'));
+  BUCKETS.forEach(function(b){
+    var coins=firstBuy?b.coins*2:b.coins;
+    // extra line: "+X% value" and any bonus packs granted (Large/XL/Mega). NO "careers" language (owner rule).
+    var extras=[];
+    if(b.bonus) extras.push('<b style="color:'+b.col+'">+'+b.bonus+'% value</b>');
+    if(b.packTier) extras.push('<b style="color:'+b.col+'">+'+b.packN+' '+packTierLabel(b.packTier)+' pack'+(b.packN===1?'':'s')+'</b>');
+    var card=$('<div style="max-width:400px;margin:12px auto 0;padding:12px 13px;border-radius:14px;background:rgba(12,31,22,.7);border:1px solid '+b.col+'66;position:relative"></div>');
+    if(b.badge) card.appendChild($('<div style="position:absolute;top:-9px;right:12px;background:'+b.col+';color:#0c1f16;font:900 9px var(--body);letter-spacing:.1em;padding:3px 8px;border-radius:20px">'+esc(b.badge)+'</div>'));
+    card.appendChild($('<div style="display:flex;gap:12px;align-items:center">'
+      +'<div style="flex:0 0 auto;width:46px;height:46px;display:flex;align-items:center;justify-content:center;color:'+b.col+'">'+ic('coins',{size:'40px'})+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-family:var(--display);font-size:17px;color:'+b.col+'">'+esc(b.name)+'</div>'
+        +'<div style="font:900 20px var(--body);color:#ffd45e;display:flex;align-items:center;gap:5px;margin-top:1px"><span style="width:16px;height:16px">'+ic('coin',{size:'16px'})+'</span>'+coinFmt(coins)+(firstBuy?'<span class="small" style="color:'+b.col+';font-weight:800;margin-left:4px">2×!</span>':'')+'</div>'
+        +(extras.length?'<div class="small" style="color:#cfe6d8;margin-top:2px">'+extras.join(' · ')+'</div>':'')
+      +'</div>'
+      +'<button class="btn buybtn" style="flex:0 0 auto;width:auto;margin:0;background:'+b.col+';color:#0c1f16;font-weight:900;font-size:15px;padding:11px 16px;white-space:nowrap">$'+b.usd.toFixed(2)+'</button>'
+    +'</div>'));
+    card.querySelector('.buybtn').onclick=function(){ beginBucketPurchase(b.id); };
+    wrap.appendChild(card);
+  });
   wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:16px auto 0;line-height:1.5">Secure checkout by Stripe · prices in USD. All sales are final. Coins &amp; tokens have no cash value and can’t be cashed out. RunThe.GG is free to play — purchases are optional upgrades that support development.</div>'));
   return wrap;
 }
