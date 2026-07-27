@@ -5705,7 +5705,32 @@ function coinsEarnedRaw(){ let e=0; const ac=(achState().unlocked)||{};
   e+=levelCoinTotal(playerLevel());                             // XP Player Level pays out coins per level reached
   return Math.round(COIN_START + e*COIN_RATE);                  // Pro Shop relaunch: earned progress scaled ~40% slower (welcome start unscaled)
 }
-function coinBalance(){ return Math.max(0, coinsEarned()-coinState().spent); }
+// ---- SERVER-AUTHORITATIVE PURCHASED COINS (Stripe wallet, migration 70) --------------------------
+// Earned coins are client-derived; PURCHASED coins live only on the server (coin_wallet.paid_coins),
+// credited by the Stripe webhook, read via runtour_wallet(), spent via runtour_spend_paid(). We cache
+// the wallet locally for display and refresh it from the server on sign-in / shop-open / after a buy.
+var _walletCache=null;   // {paid, lifePurchased, lifeGranted} or null
+function paidCoins(){ return _walletCache?(_walletCache.paid||0):0; }
+function walletInfo(){ return _walletCache; }
+function loadWallet(cb){ if(!sb||!sbSignedIn()){ _walletCache=null; return; }
+  try{ sb.rpc('runtour_wallet').then(function(r){ if(!r.error && r.data && r.data[0]){
+      _walletCache={paid:+r.data[0].paid_coins||0, lifePurchased:+r.data[0].lifetime_purchased||0, lifeGranted:+r.data[0].lifetime_granted||0};
+      if(cb){ try{cb();}catch(e){} } else { try{render();}catch(e){} } } }).catch(function(){}); }catch(e){} }
+// coinBalance = spendable EARNED coins + PURCHASED coins (server wallet).
+function coinBalance(){ return Math.max(0, coinsEarned()-coinState().spent) + paidCoins(); }
+// coinCharge: spend `price`, drawing from EARNED coins first (local), then PURCHASED coins (server).
+// Call sites must have already checked coinBalance() >= price. The paid-remainder spend is server-authoritative
+// (runtour_spend_paid, atomic + row-locked); the local wallet cache is updated optimistically and self-heals
+// from the server value the RPC returns (or a reload on error).
+function coinCharge(price){ price=Math.round(price||0); if(price<=0) return;
+  const s=coinState(); const earnedAvail=Math.max(0, coinsEarned()-(s.spent||0));
+  const fromEarned=Math.min(price, earnedAvail);
+  if(fromEarned>0){ s.spent=(s.spent||0)+fromEarned; coinSave(s); }
+  const rem=price-fromEarned;
+  if(rem>0){ if(_walletCache) _walletCache.paid=Math.max(0,(_walletCache.paid||0)-rem);   // optimistic
+    if(sb&&sbSignedIn()){ try{ sb.rpc('runtour_spend_paid',{p_amount:rem,p_item:'shop'}).then(function(r){
+        if(r.error){ loadWallet(); } else if(r.data!=null && _walletCache){ _walletCache.paid=+r.data; } }).catch(function(){ loadWallet(); }); }catch(e){} } }
+}
 // CS288: bonus coins earned by ACTIONS (e.g. playing a career Moment yourself instead of simming it).
 // Added on top of the derived earned total (kept out of coinsEarnedRaw to avoid the reset-baseline loop).
 function addBonusCoins(n, opts){ opts=opts||{}; n=Math.round(n||0); if(!sbSignedIn()||n<=0) return 0;
@@ -5834,8 +5859,8 @@ function accBuy(id){ const it=accById(id); if(!it) return {ok:false,msg:'Unknown
   if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy gear'};
   if(accOwned(id)) return {ok:false,msg:'Already owned'};
   if(it.rarity==='exclusive') return {ok:false,msg:'Earned, not bought'};
-  const s=coinState(), price=accPrice(it); if(coinBalance() < price) return {ok:false,msg:'Not enough coins'};
-  s.spent+=price; s.owned[id]=1; coinSave(s); accEquip(id);
+  const price=accPrice(it); if(coinBalance() < price) return {ok:false,msg:'Not enough coins'};
+  coinCharge(price); const s=coinState(); s.owned[id]=1; coinSave(s); accEquip(id);
   track('shop_buy',{id:id,price:price,rarity:it.rarity});
   return {ok:true};
 }
@@ -6459,9 +6484,9 @@ function cosBuy(cat,id){
   if(cosmeticPriceBase(cat,id)<=0) return {ok:false,msg:'That one is earned, not bought'};   // earned colorways can never be a 0-coin buy
   const _dl=(typeof itemDropLocked==='function')?itemDropLocked(cat,id):null;
   if(_dl) return {ok:false,msg:_dl.name+' is out of season · '+dropReturnsLabel(_dl)};
-  const price=cosmeticPrice(cat,id), s=coinState();
+  const price=cosmeticPrice(cat,id);
   if(coinBalance()<price) return {ok:false,msg:'Not enough coins'};
-  s.spent+=price; s.owned[cosKey(cat,id)]=1; coinSave(s);
+  coinCharge(price); const s=coinState(); s.owned[cosKey(cat,id)]=1; coinSave(s);
   track('shop_buy_cos',{cat,id,price}); return {ok:true};
 }
 // the selectable items in a cosmetic category (id, display name, swatch color / pattern id)
@@ -6575,8 +6600,8 @@ function bagBuy(club,tier){ const c=BAG_BY[club]; tier=+tier; if(!c||tier<1||tie
   if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy clubs'};
   if(bagTierOwned(club)>=tier) return {ok:false,msg:'Already owned'};
   if(tier>1 && bagTierOwned(club)<tier-1) return {ok:false,msg:'Upgrade the previous tier first'};
-  const s=coinState(), price=bagPrice(tier); if(coinBalance()<price) return {ok:false,msg:'Not enough coins'};
-  s.spent+=price; s.owned[bagKey(club,tier)]=1; coinSave(s);
+  const price=bagPrice(tier); if(coinBalance()<price) return {ok:false,msg:'Not enough coins'};
+  coinCharge(price); const s=coinState(); s.owned[bagKey(club,tier)]=1; coinSave(s);
   track('shop_buy',{id:bagKey(club,tier),price:price,rarity:'bag'});
   return {ok:true};
 }
@@ -7126,7 +7151,7 @@ function scrRules(){
 
   perkSection('🪙 Coins','var(--gold)','Earn coins by playing',null,[
     ['🏆','Win to earn','Bank coins for winning tournaments and majors, completing the daily (more for beating the pro), winning online matches and finishing seasons. The game tells you the moment you earn.'],
-    ['🎁','Never real money','Coins are earned in-game only, they can never be bought with real money, and cosmetics have no real-world value.'],
+    ['🎁','Free to play','The game is completely free — earn coins just by playing. Optional coin upgrades are available if you want to speed things up; coins have no real-world cash value.'],
     ['🛍️','Spend at the Pro Shop','Use coins on cosmetics or packs. Tap the coins pill at the top right any time to jump straight to the packs.'],
   ]);
 
@@ -8399,11 +8424,12 @@ function overlayTerms(screen){
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Terms">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Terms</h3>
-    <p class="lede">RunTheTour is a free, fan-made golf simulation game. By playing, creating an account, or appearing on the leaderboard, you agree to these terms.</p>
+    <p class="lede">RunTheTour is a free-to-play, fan-made golf simulation game with optional upgrades. By playing, creating an account, making a purchase, or appearing on the leaderboard, you agree to these terms.</p>
     <ol style="color:#dbe6ee;padding-left:18px">
       <li><b>Not affiliated with any real organization.</b> RunTheTour is an independent, unofficial fan project, not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, or any professional golfer; all tournaments, venues, cups and sponsor brands in the game are fictional, and any resemblance to a real event, company, or organization is coincidental. Real player names and public statistics build fictional, simulated golfers; all results are entirely fictional.</li>
-      <li><b>Entertainment only, no real money.</b> In-game currency, prize money, and rankings have no real-world value and aren't a form of gambling or wagering.</li>
-      <li><b>Randomized packs.</b> The Pro Shop offers optional "packs" that grant a random cosmetic or gear item. Packs are opened only with coins you earn by playing (coins cannot be bought with real money), and the drop-rate odds for each rarity are published in-game on the pack screen. Items have no real-world value.</li>
+      <li><b>Free to play, with optional upgrades.</b> The game is completely free to play. We also offer optional upgrades — coin packages you can buy with real money through our payment processor (Stripe). <b>All sales are final</b> and purchases are non-refundable except where required by law. Purchased coins are added to your account, have no cash value, and can't be transferred or cashed out.</li>
+      <li><b>Entertainment only.</b> Coins, prize money, and rankings have no real-world cash value, can't be cashed out or transferred, and aren't a form of gambling or wagering.</li>
+      <li><b>Randomized packs.</b> The Pro Shop offers optional "packs" that grant a random cosmetic or gear item, opened with coins (earned by playing or purchased). The drop-rate odds for each rarity are published in-game on the pack screen. Items have no real-world value.</li>
       <li><b>Your account.</b> Choose a username that isn't offensive, impersonating, or misleading. We reserve the right to rename, suspend, or remove accounts, leaderboard entries, or usernames that violate this, or that we determine were used to abuse or manipulate the leaderboard.</li>
       <li><b>No warranty.</b> RunTheTour is provided "as is," in active development, without warranties of any kind, we don't guarantee the game, leaderboard, or your saved progress will always be available or error-free.</li>
     </ol>
@@ -21706,24 +21732,32 @@ const PACK_TYPES={
 //       NEVER by the client (beginBucketPurchase below never grants coins), or they're a trivial
 //       console exploit. This also reverses the current "coins can never be bought" Terms/perk copy,
 //       which must be updated before the flag is flipped.
-// Flip BUCKETS_ENABLED once (1)+(2) exist. Prices/coins are tunable.
-const BUCKETS_ENABLED=false;
+// LIVE: wired to the Stripe backend (create-checkout + stripe-webhook + migration 70's coin_wallet).
+// package id + coins MUST match supabase/functions/_shared/packages.ts (the SERVER is authoritative on
+// coins delivered — a tampered client can't change what it receives). First purchase gets +100% coins,
+// applied SERVER-SIDE in the webhook. Set BUCKETS_ENABLED=false to instantly pull the store offline.
+const BUCKETS_ENABLED=true;
 const BUCKETS=[
-  {id:'small',  name:'Small Bucket',  usd:1.99,  coins:15000,  col:'#3fbf7a'},
-  {id:'medium', name:'Medium Bucket', usd:4.99,  coins:42000,  col:'#5bcfe8', bonus:12},
-  {id:'large',  name:'Large Bucket',  usd:9.99,  coins:95000,  col:'#a24be0', bonus:26, badge:'POPULAR',   packs:{tier:'tour', n:1}},
-  {id:'jumbo',  name:'Jumbo Bucket',  usd:19.99, coins:210000, col:'#F1D04A', bonus:39, packs:{tier:'champ',n:1}},
-  {id:'mega',   name:'Mega Bucket',   usd:49.99, coins:575000, col:'#ff6b57', bonus:53, badge:'BEST VALUE', packs:{tier:'champ',n:3}},
+  {id:'warmup',       name:'Driving Range', usd:1.99,  coins:15000,  col:'#3fbf7a'},
+  {id:'clubhouse',    name:'Clubhouse',     usd:4.99,  coins:45000,  col:'#5bcfe8', bonus:20},
+  {id:'tour',         name:'Tour',          usd:9.99,  coins:102000, col:'#a24be0', bonus:35, badge:'POPULAR'},
+  {id:'championship', name:'Championship',  usd:24.99, coins:285000, col:'#F1D04A', bonus:51, badge:'BEST VALUE'},
 ];
-function bucketCareers(c){ return c/15000; }   // 15,000 coins = one full career at average play
+function bucketCareers(c){ return c/15000; }   // 15,000 coins = one full career's earnings at average play
 function beginBucketPurchase(id){
   var b=BUCKETS.find(function(x){return x.id===id;}); if(!b) return;
-  try{ track('bucket_checkout',{id:id, usd:b.usd}); }catch(e){}
-  // === PAYMENT INTEGRATION POINT ===
-  // Wire a real provider here (Stripe Checkout / IAP). On a VERIFIED payment, a SERVER endpoint must
-  // credit b.coins (+ any b.packs) to the account and the client reflects the new server balance.
-  // Do NOT grant coins here - never trust the client with a purchase.
-  toast('<b>Checkout coming soon</b><br><span class="small">Real-money coin buckets aren’t live yet.</span>', 3600);
+  if(!sbSignedIn()){ toast('Sign in to buy coins'); S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); return; }
+  if(!sb){ toast('Store unavailable right now — try again shortly.'); return; }
+  try{ track('bucket_checkout',{id:b.id, usd:b.usd}); }catch(e){}
+  toast('Starting secure checkout…');
+  // create-checkout authenticates the buyer from their JWT, looks up the package + Stripe Price on the
+  // SERVER, and returns a hosted Stripe Checkout URL. Coins are credited ONLY by the signed webhook.
+  try{
+    sb.functions.invoke('create-checkout',{ body:{ package_id:b.id, return_path:'/golf/' } }).then(function(r){
+      if(r && !r.error && r.data && r.data.url){ location.href=r.data.url; }
+      else { toast('Couldn’t start checkout. Please try again.'); }
+    }).catch(function(){ toast('Couldn’t start checkout. Please try again.'); });
+  }catch(e){ toast('Couldn’t start checkout. Please try again.'); }
 }
 const PACK_TIER_ORDER=['base','tour','champ'];
 // tiers to actually offer/display right now: the permanent ladder + any live seasonal packs (price-sorted).
@@ -21993,7 +22027,7 @@ function openPack(){
   if(!packsOn()) return {err:'off'};
   if(!sbSignedIn()) return {err:'signin'};
   if(!packAffordable()) return {err:'coins'};
-  var s=coinState(); s.spent+=PACK_PRICE; coinSave(s);          // pay
+  coinCharge(PACK_PRICE);          // pay (earned first, then purchased)
   var p=packState(); p.opened++;
   var rar;                                                        // pity-aware rarity
   if(p.sinceLeg+1>=PACK_PITY_LEG) rar='legendary';
@@ -22114,7 +22148,7 @@ function startPackDeal(opts){ opts=opts||{};
     var freeFirst=(tier==='base') && (opts.free||packIsFree());  // the one-time first-pack-free is base only
     var freeCredit=!freeFirst && !pt.seasonal && packCredits(tier)>0;   // CS407: earned free-pack credit (never on seasonal — coins only)
     free=freeFirst||freeCredit;
-    if(!free){ if(coinBalance()<pt.price){ toast(packErr('coins')); return; } var s=coinState(); s.spent+=pt.price; coinSave(s); }
+    if(!free){ if(coinBalance()<pt.price){ toast(packErr('coins')); return; } coinCharge(pt.price); }
     else { var p=packState(); if(freeFirst){ p.freeUsed=true; } else { var f=packCreditFields(tier); p[f[1]]=(p[f[1]]||0)+1; } packSave(p); }
   }
   // CS404 — wheel spin: roll the winner up front (tier odds), build the reel, land on it.
@@ -22129,7 +22163,7 @@ function startPackBundle(tier){
   if(!packsOn()){ toast(packErr('off')); return; }
   if(!sbSignedIn()){ toast(packErr('signin')); return; }
   if(coinBalance()<bprice){ toast(packErr('coins')); return; }
-  var s=coinState(); s.spent+=bprice; coinSave(s);
+  coinCharge(bprice);
   try{ track('pack_bundle',{n:PACK_BUNDLE_N,pack:pt.id}); }catch(e){}
   S.packBundle={total:PACK_BUNDLE_N,done:0,results:[],pack:tier};
   startPackDeal({bundle:true});
@@ -22458,26 +22492,29 @@ function overlayPackReveal(app){
 }
 function bucketShopNode(){
   packStyleOnce();
+  if(_walletCache===null) loadWallet();   // refresh the purchased-coin balance for this view
+  var wi=walletInfo(), firstBuy=!!(wi && (wi.lifePurchased||0)===0);   // server gives +100% on the FIRST paid pack
   var wrap=$('<div style="padding:6px 2px 4px"></div>');
-  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:6px auto 8px;line-height:1.5">Top up your coins for gear, packs and cosmetics. <b style="color:#8fe0c4">15,000 coins ≈ a full 30-year career’s worth of earnings.</b></div>'));
+  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:6px auto 6px;line-height:1.5">Top up your coins for gear, packs and cosmetics. <b style="color:#8fe0c4">15,000 coins ≈ a full 30-year career’s worth of earnings.</b></div>'));
+  if(firstBuy) wrap.appendChild($('<div style="max-width:400px;margin:4px auto 0;text-align:center;font:900 13px var(--body);color:#ffd45e;background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.4);border-radius:12px;padding:8px 10px">🎉 First purchase bonus — <span style="color:#fff">DOUBLE coins</span> on your first pack!</div>'));
   BUCKETS.forEach(function(b){
-    var careers=bucketCareers(b.coins), careerTxt=careers<2?'~1 career':('~'+Math.round(careers)+' careers');
+    var coins=firstBuy?b.coins*2:b.coins;
+    var careers=bucketCareers(coins), careerTxt=careers<1.5?'~1 career':('~'+Math.round(careers)+' careers');
     var card=$('<div style="max-width:400px;margin:14px auto 0;padding:13px;border-radius:16px;background:linear-gradient(165deg,'+b.col+'1c,#0c1f16);border:2px solid '+b.col+';box-shadow:0 0 18px '+b.col+'55;position:relative"></div>');
     if(b.badge) card.appendChild($('<div style="position:absolute;top:-9px;right:12px;background:'+b.col+';color:#0c1f16;font:900 9px var(--body);letter-spacing:.1em;padding:3px 8px;border-radius:20px">'+esc(b.badge)+'</div>'));
     card.appendChild($('<div style="display:flex;gap:12px;align-items:center">'
       +'<div style="flex:0 0 auto;width:64px;height:64px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 12px '+b.col+'88)">'+ic('coins',{size:'56px'})+'</div>'
       +'<div style="flex:1;min-width:0">'
         +'<div style="font-family:var(--display);font-size:20px;color:'+b.col+'">'+esc(b.name)+'</div>'
-        +'<div style="font:900 22px var(--body);color:#ffd45e;display:flex;align-items:center;gap:5px;margin-top:1px"><span style="width:18px;height:18px">'+ic('coin',{size:'18px'})+'</span>'+coinFmt(b.coins)+'</div>'
+        +'<div style="font:900 22px var(--body);color:#ffd45e;display:flex;align-items:center;gap:5px;margin-top:1px"><span style="width:18px;height:18px">'+ic('coin',{size:'18px'})+'</span>'+coinFmt(coins)+(firstBuy?'<span class="small" style="color:'+b.col+';font-weight:800;margin-left:4px">2×!</span>':'')+'</div>'
         +'<div class="small" style="color:#cfe6d8;margin-top:2px">'+careerTxt+(b.bonus?' · <b style="color:'+b.col+'">+'+b.bonus+'% value</b>':'')+'</div>'
-        +(b.packs?'<div style="font:800 10.5px var(--body);color:'+b.col+';margin-top:3px">+ '+b.packs.n+' free '+esc(packType(b.packs.tier).short)+' pack'+(b.packs.n>1?'s':'')+'</div>':'')
       +'</div></div>'));
     var buy=$('<button class="btn" style="width:100%;margin:10px 0 0;background:'+b.col+';color:#0c1f16;font-weight:900;font-size:16px">$'+b.usd.toFixed(2)+'</button>');
     buy.onclick=function(){ beginBucketPurchase(b.id); };
     card.appendChild(buy);
     wrap.appendChild(card);
   });
-  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:14px auto 0;line-height:1.5">Prices in USD. Coins have no cash value and can’t be cashed out. Purchases support development of RunThe.GG.</div>'));
+  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:14px auto 0;line-height:1.5">Secure checkout by Stripe · prices in USD. All sales are final. Coins have no cash value and can’t be cashed out. RunThe.GG is free to play — purchases are optional upgrades that support development.</div>'));
   return wrap;
 }
 function packShopNode(){
@@ -23193,7 +23230,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461)
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -24098,6 +24135,28 @@ function refCheck(){
   try{ const u=new URL(location.href); u.searchParams.delete('ref'); history.replaceState(null,'',u.pathname+(u.search||'')); }catch(e){}   // drop just ?ref, keep others
   // a gentle nudge once the page has rendered (they still need to sign up to claim it)
   try{ setTimeout(()=>{ if(!sbSignedIn()) toast('🎁 A friend invited you! Create a free account and you\'ll BOTH get a free pack.', 6000); }, 1400); }catch(e){}
+}
+// Returned from Stripe Checkout? (?purchase=success|cancelled). Fulfillment happens on the signed webhook,
+// NOT here — the client just refreshes the server wallet (with a couple of retries, since the webhook may
+// land a moment after the redirect) and shows a thank-you / cancelled note. Cleans the param either way.
+var _purchaseHandled=false;
+function purchaseCheck(){
+  if(_purchaseHandled) return; var st=null;
+  try{ st=new URL(location.href).searchParams.get('purchase'); }catch(e){}
+  if(!st){ const m=/[#&?]purchase=(success|cancelled)/.exec(location.hash||''); if(m) st=m[1]; }
+  if(!st) return;
+  _purchaseHandled=true;
+  try{ const u=new URL(location.href); u.searchParams.delete('purchase'); history.replaceState(null,'',u.pathname+(u.search||'')+(u.hash||'')); }catch(e){}
+  if(st==='cancelled'){ try{ toast('Checkout cancelled — no charge was made.', 3600); }catch(e){} return; }
+  try{ track('purchase_return',{status:'success'}); }catch(e){}
+  // poll the wallet a few times so the freshly-credited coins appear even if the webhook lands after us.
+  var tries=0, before=paidCoins(), doneMsg=false;
+  function say(){ if(doneMsg) return; doneMsg=true;
+    try{ toast('<b style="color:#ffd45e">Purchase complete — coins added!</b><br><span class="small">Thanks for supporting RunThe.GG ⛳</span>', 5000); }catch(e){}
+    try{ render(); }catch(e){} }
+  (function poll(){ tries++; loadWallet();
+    setTimeout(function(){ if(paidCoins()>before || tries>=6){ say(); } else { poll(); } }, 1500);
+  })();
 }
 // redeem a stashed referral (once, after sign-in), then claim any queued packs (referrer side too). Fail-open.
 async function maybeReferralFlow(){
