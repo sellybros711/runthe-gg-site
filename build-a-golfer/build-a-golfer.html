@@ -605,6 +605,7 @@ window.GA_ID='G-L29P5MRWKE';
   .gc-amber{background:linear-gradient(158deg,#f6c463,#ec9a25 60%,#df7d1c); color:#24170a; --chip:rgba(20,14,6,.15)}
   .gc-purple{background:linear-gradient(158deg,#b07ef0,#8149cf 58%,#6d38bd); color:#f5edff; --chip:rgba(24,8,42,.32)}
   .gc-gold{background:var(--gold-grad-d); color:#24170a; --chip:rgba(20,14,6,.16)}
+  .gc-pass{background:linear-gradient(158deg,#8b6cf5,#5a34c8 50%,#c79a1e); color:#f7f1ff; --chip:rgba(18,8,40,.34)}
   .gc-top{display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
   .gc-kick{font:800 10.5px/1.3 var(--body); letter-spacing:.15em; text-transform:uppercase; opacity:.82; display:flex; align-items:center; gap:6px}
   .gc-title{font-family:var(--display); font-style:italic; font-size:28px; line-height:1.02; margin-top:5px; padding-right:3px; overflow-wrap:break-word; letter-spacing:.01em}
@@ -5738,7 +5739,7 @@ function walletInfo(){ return _walletCache; }
 // Both are server-authoritative (runtour_wallet); daily_tokens/pass_active are absent pre-migration-71 → 0/false.
 function dailyTokens(){ return _walletCache?(_walletCache.tokens||0):0; }
 function dailyPassActive(){ return !!(_walletCache&&_walletCache.passActive); }
-function passRewardMult(){ return dailyPassActive()?PASS_REWARD_MULT:1; }
+function passRewardMult(){ var m=dailyPassActive()?PASS_REWARD_MULT:1; if(typeof passProActive==='function'&&passProActive()) m=Math.max(m,PASS_PRO_MULT); return m; }
 function loadWallet(cb){ if(!sb||!sbSignedIn()){ _walletCache=null; return; }
   try{ sb.rpc('runtour_wallet').then(function(r){ if(!r.error && r.data && r.data[0]){ var d=r.data[0];
       _walletCache={paid:+d.paid_coins||0, lifePurchased:+d.lifetime_purchased||0, lifeGranted:+d.lifetime_granted||0,
@@ -5835,9 +5836,11 @@ function seasonBonusCoins(){
 }
 // award + a "spend it" nudge toward the Pro Shop (owner: tell players to spend / buy packs)
 function awardPlayCoins(n, label){ if(!sbSignedIn()||!(n>0)) return 0;
+  var base=n;   // Tour Pass XP is earned from the BASE (pre-mult) amount, so the Pro coin mult never double-dips XP
   var mult=passRewardMult(), passBonus=mult>1;   // Tour Pass holders earn bigger & better
   if(passBonus){ n=Math.round(n*mult); }
   addBonusCoins(n,{silent:true});
+  passAddXp(base*PASS_XP_RATE);   // Tour Pass: every play faucet feeds the Track
   try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(label?' · '+label:'')+(passBonus?' <span class="small" style="color:#a24be0">· Tour Pass ×'+mult+'</span>':'')+'<br><span class="small" style="color:#8fe0c4">Spend them at the Pro Shop, or open a pack ▸</span>', 3400); }catch(e){}
   return n; }
 function coinFmt(n){ n=Math.round(n||0); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','); }   // comma-grouped, no $ - the coin icon is the currency mark
@@ -5848,6 +5851,75 @@ function coinShort(n){ n=Math.round(n||0);
   if(n<1e6)  return (n/1e3).toFixed(n<1e5?1:0).replace(/\.0$/,'')+'k';
   if(n<1e9)  return (n/1e6).toFixed(n<1e7?2:1).replace(/\.?0+$/,'')+'M';
   return (n/1e9).toFixed(2).replace(/\.?0+$/,'')+'B'; }
+
+/* ============================ TOUR PASS — 60-day umbrella season pass ============================
+   An EARNED (coin-unlocked) battle pass that ties the whole economy together. A 60-day GLOBAL season
+   (ET-aligned, like the Daily) with a 50-tier Track. Climb it with Pass XP earned from EVERY mode
+   (folded into the awardPlayCoins faucet, so daily / career events, wins, majors, season-end, online
+   H2H, and moments all feed it). Two lanes per tier: FREE (everyone) + PRO (unlock once per season
+   with COINS — never real money). Rewards are drawn from the EXISTING pools (coins / shards / packs /
+   cosmetics), so there's no new currency. Season-scoped state in bag_tourpass resets each season, so
+   the previous season's rewards lock out — a genuine limited-time chase. Distinct from the DISABLED
+   real-money monthly subscription (bag_pass / TOURPASS / the passRewardMult wallet). */
+const TOURPASS_LEN=60;                                        // days per season
+const TOURPASS_EPOCH=Math.floor(Date.UTC(2026,6,1)/86400000);// season 1 began (ET) Jul 1 2026 (tunable launch anchor)
+const PASS_TIERS=50;
+const PASS_PRO_PRICE=30000;                                  // coins to unlock the Pro lane for the season
+const PASS_XP_RATE=0.6;                                      // Pass XP per BASE coin earned — the key climb-speed knob
+const PASS_PRO_MULT=1.25;                                    // Pro holders earn 1.25× coins from play (reuses passRewardMult)
+function passDayNum(){ const t=todayKey(), y=Math.floor(t/10000), mo=Math.floor(t/100)%100, d=t%100; return Math.floor(Date.UTC(y,mo-1,d)/86400000); }
+function passSeason(){ let el=passDayNum()-TOURPASS_EPOCH; if(el<0) el=0; const n=Math.floor(el/TOURPASS_LEN)+1, day=(el%TOURPASS_LEN)+1; return {n, day, len:TOURPASS_LEN, daysLeft:TOURPASS_LEN-day+1}; }
+function passState(){ let s=LS.get(acctKey('bag_tourpass'),null); const cur=passSeason().n;
+  if(!s||typeof s!=='object'||s.season!==cur){ s={season:cur, xp:0, pro:false, claimed:{free:[],prem:[]}}; }   // new season -> fresh (last season's rewards lock out)
+  if(!s.claimed||typeof s.claimed!=='object') s.claimed={free:[],prem:[]};
+  if(!Array.isArray(s.claimed.free)) s.claimed.free=[]; if(!Array.isArray(s.claimed.prem)) s.claimed.prem=[];
+  s.xp=Math.max(0,+s.xp||0); s.pro=!!s.pro; return s; }
+function passSave(s){ try{ LS.set(acctKey('bag_tourpass'), s); }catch(e){} if(typeof cloudPush==='function') cloudPush(); }
+function passProActive(){ return sbSignedIn() && passState().pro; }
+// XP curve: rising cost per tier (early cheap, later a grind). passXpForTier(t)=cumulative XP to REACH tier t.
+function passTierCost(t){ return 140 + (t-1)*11; }
+function passXpForTier(t){ let x=0; for(let i=1;i<=t;i++) x+=passTierCost(i); return x; }
+function passTierAt(xp){ let t=0; while(t<PASS_TIERS && xp>=passXpForTier(t+1)) t++; return t; }
+function passAddXp(n){ if(!sbSignedIn()||!(n>0)) return; const s=passState(), before=passTierAt(s.xp);
+  s.xp+=Math.round(n); passSave(s); const after=passTierAt(s.xp);
+  if(after>before){ S.passFreshTier=after; try{ toast('<span style="color:#ffd447;font-weight:800">🎟️ Tour Pass · Tier '+after+' reached!</span><br><span class="small">Claim your rewards in the Tour Pass ▸</span>', 3400); }catch(e){} } }
+// Reward tables — milestone tiers give cosmetics/packs; the rest default to coins (+ a shard cadence).
+const PASS_FREE_MILE={ 10:{pack:{tier:'base',n:1}}, 25:{pack:{tier:'base',n:1}}, 40:{pack:{tier:'base',n:1}}, 50:{shard:{r:'rare',n:3}, coins:2000} };
+const PASS_PREM_MILE={ 5:{pack:{tier:'tour',n:1}}, 15:{pack:{tier:'tour',n:1}}, 20:{cos:{cat:'plate',id:'passplate',name:'Tour Pass Plate'}}, 25:{pack:{tier:'champ',n:1}}, 30:{pack:{tier:'tour',n:1}}, 40:{shard:{r:'legendary',n:1}}, 45:{pack:{tier:'tour',n:1}}, 50:{cos:{cat:'fx',id:'passcrown',name:'Tour Champion Aura'}, coins:5000} };
+function passTierReward(t, lane){
+  const mile=(lane==='prem'?PASS_PREM_MILE:PASS_FREE_MILE)[t]; if(mile) return mile;
+  if(lane==='prem'){ if(t%4===0) return {shard:{r:(t>=32?'epic':t>=16?'rare':'common'), n:1}, coins:300+t*25}; return {coins:500+t*45}; }
+  if(t%5===0) return {shard:{r:'common', n:1}, coins:150+t*15};
+  return {coins:200+t*22};
+}
+function passClaim(tier, lane){
+  if(!sbSignedIn()) return {ok:false,msg:'Sign in'};
+  const s=passState(); if(passTierAt(s.xp)<tier) return {ok:false,msg:'Reach tier '+tier+' first'};
+  if(lane==='prem' && !s.pro) return {ok:false,msg:'Unlock the Pro Pass to claim'};
+  const arr=lane==='prem'?s.claimed.prem:s.claimed.free; if(arr.indexOf(tier)>=0) return {ok:false,msg:'Already claimed'};
+  const r=passTierReward(tier, lane);
+  if(r.coins) addBonusCoins(r.coins,{silent:true});
+  if(r.shard) shardEarn(r.shard.r, r.shard.n);
+  if(r.pack)  grantFreePack(r.pack.n||1, {tier:r.pack.tier, silent:true});
+  if(r.cos){ const cs=coinState(); cs.owned[cosKey(r.cos.cat,r.cos.id)]=1; coinSave(cs); }
+  arr.push(tier); passSave(s); track('tourpass_claim',{tier,lane}); return {ok:true, reward:r};
+}
+function passClaimAll(){ if(!sbSignedIn()) return 0; const s=passState(), t=passTierAt(s.xp); let n=0;
+  for(let i=1;i<=t;i++){ if(passClaim(i,'free').ok) n++; if(s.pro && passClaim(i,'prem').ok) n++; } return n; }
+function passClaimable(){ if(!sbSignedIn()) return 0; const s=passState(), t=passTierAt(s.xp); let n=0;
+  for(let i=1;i<=t;i++){ if(s.claimed.free.indexOf(i)<0) n++; if(s.pro && s.claimed.prem.indexOf(i)<0) n++; } return n; }
+function passBuyPro(){ if(!sbSignedIn()) return {ok:false,msg:'Sign in'}; const s=passState(); if(s.pro) return {ok:false,msg:'Already unlocked'};
+  if(coinBalance()<PASS_PRO_PRICE) return {ok:false,msg:'Not enough coins'};
+  coinCharge(PASS_PRO_PRICE); s.pro=true; passSave(s); track('tourpass_buy_pro',{season:s.season}); return {ok:true}; }
+function mergeTourPass(local, server){
+  if(!server) return local; if(!local) return server;
+  if((server.season||0) > (local.season||0)) return server;
+  if((local.season||0) > (server.season||0)) return local;
+  const uni=(a,b)=>{ const s=new Set(); (a||[]).forEach(x=>s.add(x)); (b||[]).forEach(x=>s.add(x)); return [...s]; };
+  return { season:local.season, xp:Math.max(+local.xp||0,+server.xp||0), pro:!!(local.pro||server.pro),
+    claimed:{ free:uni(local.claimed&&local.claimed.free, server.claimed&&server.claimed.free),
+              prem:uni(local.claimed&&local.claimed.prem, server.claimed&&server.claimed.prem) } };
+}
 function grantMilestoneItems(s){ const m=achMetrics(); MILESTONE_ITEMS.forEach(mi=>{ try{ if(!s.owned[mi.id] && mi.when(m)) s.owned[mi.id]=1; }catch(e){} }); }
 // Legend gear (earn:true special shirts) is auto-granted to owned once its hard req is met, so it's a true unlock.
 function grantUnlockShirts(s){ const m=badgeMetrics(); COSMETIC_SHIRTS.forEach(cs=>{ if(!cs.earn) return; try{ if(cs.req(m)){ if(!s.owned['sh:'+cs.id]) s.owned['sh:'+cs.id]=1; if(!s.owned['ht:'+cs.id]) s.owned['ht:'+cs.id]=1; } }catch(e){} }); }   // an earned colorway unlocks for shirt AND hat
@@ -5996,8 +6068,10 @@ const PLATES=[
   {id:'tourcup',     name:'Tour Cup',          hist:'The season-long crown'},
   {id:'sunsplash',   name:'Sunsplash',         hist:'Poolside-season exclusive'},
   {id:'rungames',    name:'Run The Games',     hist:'Signed to the house brand'},
+  {id:'passplate',   name:'Tour Pass',         hist:'Climbed the Tour Pass Track'},
 ];
 const PLATE_STYLE={
+  passplate:   {c1:'#3a2a6e',c2:'#1a1140',tx:'#ffd447',bd:'#a78bfa'},
   classic:     {c1:'#0e2a1c',c2:'#123f2c',tx:'#F4E3C9',bd:'rgba(244,227,201,.35)'},
   goldengraved:{c1:'#f6e7a6',c2:'#c9a520',tx:'#1c2a15',bd:'#8a6d14'},
   major:       {c1:'#6e1f2e',c2:'#471119',tx:'#f6e7a6',bd:'#c9a520'},
@@ -6954,6 +7028,7 @@ function render(){
     if(S.overlay==='courserecords') overlayCourseRecords(app);
     if(S.overlay==='playercard') overlayPlayerCard(app);
     if(S.overlay==='passport') overlayPassport(app);
+    if(S.overlay==='tourpass') overlayTourPass(app);
     if(S.overlay==='shop') overlayShop(app);
     if(S.overlay==='packreveal') overlayPackReveal(app);
     if(S.overlay==='packwheel') overlayPackWheel(app);
@@ -8276,6 +8351,7 @@ function overlayMenu(screen){
   play.appendChild(menuRow('📖','How to Play','Career mode & daily challenge',go(openRules)));
   play.appendChild(menuRow('🏆','Leaderboard','Season & career rankings',go(()=>{S.overlay='leaderboard';})));
   play.appendChild(menuRow('🎯','Challenges',signedIn?(repTier().tier.name+' · daily & weekly quests'):'Sign in to earn Tour Rep & rewards',go(()=>{S.overlay='challenges';})));
+  play.appendChild(menuRow('🎟️','Tour Pass',(()=>{ const ssn=passSeason(); if(signedIn){ const s=passState(),cl=passClaimable(); return 'Season '+ssn.n+' · Tier '+passTierAt(s.xp)+'/'+PASS_TIERS+(cl>0?' · '+cl+' to claim':''); } return 'Season '+ssn.n+' · 60-day reward track'; })(),go(()=>{S.overlay='tourpass';})));
   play.appendChild(menuRow('🏅','Profile',signedIn?'Your trophies, titles & stats':'Sign in to unlock your record',go(()=>{S.overlay='record';})));
   play.appendChild(menuRow('⛳','Course Records','Today\'s board & all-time bests',go(()=>{S.overlay='courserecords';})));
   play.appendChild(menuRow('🎫','Course Passport',`Your best grade at all ${DAILY_KEYS.length} courses`,go(()=>{S.overlay='passport';})));
@@ -8812,7 +8888,9 @@ function scrTitle(){
       stack.appendChild(careerHeroCard(true));
     }
   }
-  // 3) Play Online (teal card)
+  // 3) Tour Pass (season pass) - the umbrella progression card, violet-gold accent
+  stack.appendChild(tourPassCard());
+  // 4) Play Online (teal card)
   stack.appendChild(onlineHeroCard());
   // 4) Monthly Spotlight (purple card while live, else a small "next" tease)
   if(spotlightLiveToday()){
@@ -21460,6 +21538,132 @@ function overlayPassport(screen){
   ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
   screen.appendChild(ov);
 }
+/* ---- TOUR PASS UI ---- */
+function passRewardLabel(r){ const p=[]; if(r.coins) p.push(coinFmt(r.coins)+' coins'); if(r.shard) p.push('◆ '+r.shard.n+' '+r.shard.r+' shard'+(r.shard.n>1?'s':'')); if(r.pack) p.push(packType(r.pack.tier).name); if(r.cos) p.push(r.cos.name); return p.join(' · '); }
+function passRewardCell(r){
+  let inner='';
+  if(r.cos){ const co=(r.cos.cat==='fx'&&PXFX_BY[r.cos.id])?PXFX_BY[r.cos.id].col:null; inner=`<div class="prc-thumb">${cosThumbHTML(r.cos.cat,{id:r.cos.id,col:co})}</div><span class="prc-lab">${esc(r.cos.name)}</span>`; }
+  else if(r.pack){ inner=`<img class="prc-pack" src="${pxPackURL(r.pack.tier)}" alt=""><span class="prc-lab">${esc(packType(r.pack.tier).name)}${r.pack.n>1?' ×'+r.pack.n:''}</span>`; }
+  else if(r.shard){ const rr=ACC_RARITY[r.shard.r]; inner=`<span class="prc-ic" style="color:${rr.c}">◆${r.shard.n}</span><span class="prc-lab" style="color:${rr.c}">${rr.label} shard${r.shard.n>1?'s':''}</span>`; }
+  else if(r.coins){ inner=`<span class="prc-ic" style="width:24px;height:24px">${ic('coin',{size:'24px'})}</span><span class="prc-lab" style="color:#ffd45e">${coinFmt(r.coins)}</span>`; }
+  if(r.coins && (r.cos||r.pack||r.shard)) inner+=`<span class="prc-extra"><span style="width:11px;height:11px">${ic('coin',{size:'11px'})}</span>${coinFmt(r.coins)}</span>`;
+  return inner;
+}
+let _tpcss=false;
+function passStyleOnce(){ if(_tpcss) return; _tpcss=true; const st=document.createElement('style'); st.textContent=`
+  .tpov .tp-head{position:sticky;top:0;z-index:2;background:linear-gradient(180deg,#0a2416,#081c11);padding:12px 4px 12px;border-bottom:1px solid rgba(255,255,255,.08);text-align:center;margin:34px 0 0}
+  .tp-kick{font:900 12px/1 var(--body);letter-spacing:.18em;color:#a78bfa}
+  .tp-tier{font:900 21px/1 var(--body);color:var(--oncard);margin:9px 0 7px}
+  .tp-tier b{color:var(--gold);font-size:25px}
+  .tp-pro{background:linear-gradient(180deg,#a78bfa,#7048d6);color:#fff;font-size:11px;padding:2px 8px;border-radius:6px;margin-left:6px;vertical-align:middle}
+  .tp-bar{position:relative;height:16px;border-radius:9px;background:rgba(255,255,255,.1);max-width:420px;margin:0 auto;overflow:hidden}
+  .tp-fill{height:100%;background:linear-gradient(90deg,#ffd447,#f0a51e)}
+  .tp-bar span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:800 10px/1 var(--body);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+  .tp-meta{font:700 11px/1.35 var(--body);color:var(--muted);margin-top:8px}
+  .tp-cta{margin:12px auto 0;max-width:520px}
+  .tp-legend{display:flex;max-width:520px;margin:14px auto 4px;padding:0 4px;gap:8px}
+  .tp-legend span{flex:1;text-align:center;font:900 10px/1 var(--body);letter-spacing:.16em;color:var(--muted);padding-bottom:5px;border-bottom:2px solid rgba(255,255,255,.12)}
+  .tp-legend span:first-child{flex:0 0 46px}
+  .tp-legend .pro{color:#a78bfa;border-color:rgba(167,139,250,.4)}
+  .tp-track{max-width:520px;margin:0 auto;padding-bottom:8px}
+  .tp-row{display:grid;grid-template-columns:46px 1fr 1fr;gap:8px;align-items:stretch;margin-bottom:8px}
+  .tp-row.cur .tp-tnum{background:rgba(241,208,74,.16);border-color:var(--gold)}
+  .tp-tnum{display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.03)}
+  .tp-tnum b{font:900 17px/1 var(--body);color:var(--oncard)}
+  .tp-row.cap .tp-tnum b{color:var(--gold)}
+  .tp-tnum span{font:700 8px/1 var(--body);color:var(--muted);margin-top:3px}
+  .tp-cell{position:relative;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);padding:9px 8px 30px;display:flex;flex-direction:column;align-items:center;gap:4px;min-height:78px;justify-content:center;text-align:center}
+  .tp-cell.prem{border-color:rgba(167,139,250,.28);background:rgba(120,80,214,.08)}
+  .tp-cell.locked{opacity:.4}
+  .tp-cell.prolock{opacity:.55}
+  .tp-cell.claimed{opacity:.6}
+  .tp-cell.claimable{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 0 14px -4px rgba(241,208,74,.6)}
+  .tp-cell.prem.claimable{border-color:#a78bfa;box-shadow:0 0 0 1px #a78bfa,0 0 14px -4px rgba(167,139,250,.6)}
+  .prc-ic{font:900 22px/1 var(--body)}
+  .prc-lab{font:800 10.5px/1.15 var(--body);color:var(--oncard)}
+  .prc-thumb{width:34px;height:34px}
+  .prc-thumb .sthumb{width:100%;height:100%;display:block}
+  .prc-thumb img,.prc-thumb canvas,.prc-thumb svg{width:100%;height:100%;object-fit:contain}
+  .prc-pack{width:30px;height:38px;object-fit:contain;image-rendering:pixelated}
+  .prc-extra{display:inline-flex;align-items:center;gap:3px;font:800 9px/1 var(--body);color:#ffd45e}
+  .tp-badge{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font:900 10px/1 var(--body);padding:4px 9px;border-radius:7px;white-space:nowrap}
+  .tp-badge.done{background:rgba(53,214,160,.18);color:#35d6a0}
+  .tp-badge.lock{background:rgba(255,255,255,.08);color:var(--muted)}
+  .tp-claim{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);border:0;border-radius:7px;padding:5px 13px;font:900 10px/1 var(--body);background:linear-gradient(180deg,#ffd447,#eba61f);color:#241a05;cursor:pointer}
+  .tp-cell.prem .tp-claim{background:linear-gradient(180deg,#a78bfa,#7048d6);color:#fff}`;
+  document.head.appendChild(st);
+}
+function overlayTourPass(screen){
+  passStyleOnce();
+  const ssn=passSeason();
+  if(!sbSignedIn()){
+    const ov=$(`<div class="ov tpov" role="dialog" aria-modal="true" aria-label="Tour Pass">
+      <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+      <h3 style="margin-top:34px">Tour Pass</h3>
+      <p class="lede" style="margin-top:-2px">A 60-day season track. Earn Pass XP in every mode and climb 50 tiers of coins, packs, shards and exclusive cosmetics — free for everyone, with a coin-unlocked Pro lane.</p>
+      <div class="scout" style="text-align:center;border-color:#a78bfa"><b style="color:#a78bfa">Sign in to play the Tour Pass</b><div class="small muted" style="margin-top:3px">Season ${ssn.n} · ${ssn.daysLeft} days left</div></div>
+      <button class="btn goldfill" id="tp-signin">Sign in ▸</button>
+      <button class="btn red">Close</button></div>`);
+    ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
+    ov.querySelector('#tp-signin').onclick=()=>{ S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); };
+    screen.appendChild(ov); return;
+  }
+  const s=passState(), tier=passTierAt(s.xp), capXp=passXpForTier(PASS_TIERS);
+  const base=tier<PASS_TIERS?passXpForTier(tier):capXp, nxt=tier<PASS_TIERS?passXpForTier(tier+1):capXp;
+  const into=Math.min(s.xp,capXp)-base, need=Math.max(1,nxt-base), pct=tier<PASS_TIERS?Math.min(100,Math.round(100*into/need)):100;
+  const claimable=passClaimable();
+  const ov=$(`<div class="ov tpov" role="dialog" aria-modal="true" aria-label="Tour Pass">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button></div>`);
+  ov.appendChild($(`<div class="tp-head">
+    <div class="tp-kick">TOUR PASS · SEASON ${ssn.n}</div>
+    <div class="tp-tier">Tier <b>${tier}</b> / ${PASS_TIERS}${s.pro?' <span class="tp-pro">PRO</span>':''}</div>
+    <div class="tp-bar"><div class="tp-fill" style="width:${pct}%"></div><span>${tier<PASS_TIERS?into+' / '+need+' XP to Tier '+(tier+1):'MAX TIER'}</span></div>
+    <div class="tp-meta">${ssn.daysLeft} day${ssn.daysLeft>1?'s':''} left this season · earn Pass XP in every mode</div></div>`));
+  const cta=$(`<div class="tp-cta"></div>`);
+  if(!s.pro){ const afford=coinBalance()>=PASS_PRO_PRICE;
+    cta.appendChild($(`<button class="btn violet feat" data-buypro ${afford?'':'disabled'} style="margin:0 auto">🔓 Unlock Pro Pass<span class="sub">${coinFmt(PASS_PRO_PRICE)} coins · every tier's Pro rewards, exclusive cosmetics &amp; 1.25× coins</span></button>`)); }
+  else cta.appendChild($(`<div class="scout" style="text-align:center;border-color:#a78bfa;margin:0"><b style="color:#a78bfa">✓ Pro Pass active</b> <span class="small muted">· claim both lanes on every tier you reach</span></div>`));
+  if(claimable>0) cta.appendChild($(`<button class="btn goldfill" data-claimall style="margin:10px auto 0">Claim all · ${claimable} ready</button>`));
+  ov.appendChild(cta);
+  ov.appendChild($(`<div class="tp-legend"><span>TIER</span><span>FREE</span><span class="pro">PRO${s.pro?'':' · locked'}</span></div>`));
+  const track=$(`<div class="tp-track"></div>`);
+  for(let t=1;t<=PASS_TIERS;t++){
+    const reached=tier>=t, fC=s.claimed.free.indexOf(t)>=0, pC=s.claimed.prem.indexOf(t)>=0;
+    const cell=(lane)=>{ const r=passTierReward(t,lane), claimed=lane==='prem'?pC:fC;
+      let badge, st;
+      if(claimed){ badge=`<span class="tp-badge done">✓ Claimed</span>`; st='claimed'; }
+      else if(reached && (lane==='free'||s.pro)){ badge=`<button class="tp-claim" data-claim="${t}" data-lane="${lane}">Claim</button>`; st='claimable'; }
+      else if(reached && lane==='prem'){ badge=`<span class="tp-badge lock">Pro only</span>`; st='prolock'; }
+      else { badge=`<span class="tp-badge lock">🔒 Tier ${t}</span>`; st='locked'; }
+      return `<div class="tp-cell ${lane} ${st}">${passRewardCell(r)}${badge}</div>`; };
+    track.appendChild($(`<div class="tp-row ${t===tier+1?'cur':''} ${t===PASS_TIERS?'cap':''}" data-t="${t}">
+      <div class="tp-tnum"><b>${t===PASS_TIERS?'★':t}</b><span>${passXpForTier(t)>=1000?(passXpForTier(t)/1000).toFixed(1).replace(/\.0$/,'')+'k':passXpForTier(t)}</span></div>
+      ${cell('free')}${cell('prem')}</div>`));
+  }
+  ov.appendChild(track);
+  ov.appendChild($(`<button class="btn red">Close</button>`));
+  ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
+  const bp=ov.querySelector('[data-buypro]'); if(bp) bp.onclick=()=>{ const r=passBuyPro(); if(r.ok){ toast('<span style="color:#a78bfa;font-weight:800">Pro Pass unlocked!</span><br><span class="small">Claim your Pro rewards on every tier you\'ve reached.</span>',3600); render(); } else toast(r.msg); };
+  const ca=ov.querySelector('[data-claimall]'); if(ca) ca.onclick=()=>{ const n=passClaimAll(); if(n>0){ toast('<span style="color:var(--gold);font-weight:800">Claimed '+n+' reward'+(n>1?'s':'')+'!</span>',3200); render(); } };
+  ov.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>{ const rr=passClaim(+b.getAttribute('data-claim'), b.getAttribute('data-lane')); if(rr.ok){ toast('<span style="color:var(--gold);font-weight:800">Claimed!</span> '+passRewardLabel(rr.reward),3200); render(); } else toast(rr.msg); });
+  screen.appendChild(ov);
+  requestAnimationFrame(()=>{ const cur=ov.querySelector('.tp-row.cur')||ov.querySelector('[data-t="'+Math.max(1,tier)+'"]'); if(cur) cur.scrollIntoView({block:'center'}); });
+}
+// Home-screen Tour Pass card (a mode card in the .stack)
+function tourPassCard(){
+  const ssn=passSeason(); let mid, badge=`<span class="gc-badge">S${ssn.n}</span>`;
+  if(sbSignedIn()){ const s=passState(), tier=passTierAt(s.xp), cl=passClaimable();
+    mid=`Tier ${tier}/${PASS_TIERS}${s.pro?' · PRO':''} · ${ssn.daysLeft} day${ssn.daysLeft>1?'s':''} left`;
+    if(cl>0) badge=`<span class="gc-badge" style="background:rgba(241,208,74,.92);color:#20160a">${cl} to claim</span>`;
+  } else mid=`Earn XP in every mode · climb 50 tiers of rewards`;
+  const card=$(`<button class="gcard gc-pass" aria-label="Tour Pass season ${ssn.n}">
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">🎟️ Season Pass</div><div class="gc-title">Tour Pass</div></div>${badge}</div>
+    <div class="gc-mid">${mid}</div>
+    <div class="gc-row"><span class="gc-go">${sbSignedIn()?'View the Track ▸':'Play ▸'}</span></div>
+  </button>`);
+  card.onclick=()=>{ S.overlay='tourpass'; render(); };
+  return card;
+}
 function shopBoostTxt(boost){ if(!boost) return ''; return Object.keys(boost).map(k=>{ const v=boost[k]; return `<span style="color:${v>=0?'#35d6a0':'#e2554e'}">${v>=0?'+':''}${v} ${RSHORT[k]||k}</span>`; }).join(' · '); }
 function shopCard(it){ const r=ACC_RARITY[it.rarity]||ACC_RARITY.common, owned=accOwned(it.id), eq=accEquipped(it.slot)===it.id;
   const price=accPrice(it), afford=coinBalance()>=price, sl=ACC_SLOT_BY[it.slot]||{icon:'gear'};
@@ -23602,7 +23806,8 @@ function cloudBundle(){
     packs: LS.get(acctKey('bag_packs'), null),                   // pack pity counters + first-pack-free flag
     login: LS.get(acctKey('bag_login'), null),                   // CS461: daily-login bonus loop {day, n}
     primes: LS.get(acctKey('bag_primes'), null),                 // distinct Prime cards rolled on the draft wheel (name→1 map)
-    pass: LS.get(acctKey('bag_pass'), null),                     // Tour Pass: {claimed:'YYYY-MM'} — the month whose seasonal packs were granted
+    pass: LS.get(acctKey('bag_pass'), null),                     // (dormant paid subscription) {claimed:'YYYY-MM'} — the month whose seasonal packs were granted
+    tourpass: LS.get(acctKey('bag_tourpass'), null),             // Tour Pass Track: {season, xp, pro, claimed:{free[],prem[]}}
   };
 }
 // Tour Pass claim flag: the LATER claimed month wins (so a device that already granted this month's packs
@@ -23836,6 +24041,7 @@ async function cloudPull(){
     { const ml=mergeLogin(LS.get(acctKey('bag_login'),null), server.login); if(ml&&(ml.day||ml.n)) LS.set(acctKey('bag_login'), ml); }   // CS461: daily-login loop cross-device
     { const mp=mergePrimes(LS.get(acctKey('bag_primes'),null), server.primes); if(mp&&Object.keys(mp).length) LS.set(acctKey('bag_primes'), mp); }   // distinct Prime pulls cross-device
     { const mpass=mergePass(LS.get(acctKey('bag_pass'),null), server.pass); if(mpass&&mpass.claimed) LS.set(acctKey('bag_pass'), mpass); }   // Tour Pass per-period pack-claim flag cross-device
+    { const mtp=mergeTourPass(LS.get(acctKey('bag_tourpass'),null), server.tourpass); if(mtp) LS.set(acctKey('bag_tourpass'), mtp); }   // Tour Pass Track progress cross-device
     reconcileCoins(true);   // self-heal earned total + grant milestone gear silently after a cross-device merge
     cloudPush();
     render();
