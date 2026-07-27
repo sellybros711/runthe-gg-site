@@ -2802,6 +2802,10 @@ async function boot(){
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     $('h-field').innerHTML=fieldMarkings();
     authBoot(); watchTabs(); show('s-intro');
+    /* Anything a previous visit could not send. Deliberately not awaited and deliberately
+       last: it is somebody else's message from an earlier session, and it must not hold up
+       this one by a single frame. */
+    fbFlush();
   }catch(e){
     $('s-load').innerHTML='<div class="load"><h3 class="display">Could not load the data</h3>'+
       '<p class="dim" style="font-size:13px">'+esc(e.message)+'</p></div>';
@@ -5047,20 +5051,67 @@ function profileSheet(msg,ok){
 }
 
 /* ---------------- FEEDBACK ----------------
-   The same pipeline the other games on this site use: one Formspree form, which emails
-   the message silently, and a mailto fallback for when that request cannot be made at all.
-   The endpoint is shared with RunThePitch on purpose, so there is one inbox rather than
-   three, and the subject line is what separates them.
+   Every message is emailed to the address below. Not "to whatever a dashboard is set to":
+   THE DESTINATION IS IN THE URL, which is the whole reason this relay is used instead of a
+   hosted form. A hosted form keeps its recipient in a web console, so the code cannot say
+   where anything goes, nobody can check it by reading the page, and the two can silently
+   disagree. FormSubmit posts to whatever address its path names, so the recipient is
+   reviewable in the diff and cannot drift out of step.
 
-   The endpoint is validated rather than trusted. It is a constant in a page, so the thing
-   that goes wrong with it is somebody pasting a form ID that is not one, and a POST to a
-   malformed URL fails silently while the player is told their message was sent. If it does
-   not look like a Formspree endpoint, the form goes straight to mailto instead. */
+   This is RunTheTour's pipeline, the same relay and the same address, which also means the
+   address is already activated: FormSubmit sends a one-time confirmation to a new address
+   on its first submission, and that has already happened for this one.
+
+   AND IT KEEPS TRYING. A send that fails is not lost and does not go to the mail app: it is
+   written to localStorage and retried on the next load and after the next message, until it
+   lands. The point of the word "automatically" is that a player on a train should not have
+   to think about it, and a message that only sends when the network happens to be up is not
+   a feedback channel. */
 const FB_EMAIL='sellybros711@gmail.com';
-const FB_ENDPOINT='https://formspree.io/f/xojzebbj';
-const FB_READY=/^https:\/\/formspree\.io\/f\/[A-Za-z0-9]+$/.test(FB_ENDPOINT);
+const FB_ENDPOINT='https://formsubmit.co/ajax/'+FB_EMAIL;
+const FB_QUEUE='ps_feedback_queue';
+const FB_QUEUE_MAX=20;
 const FB_CATS=[['bug','Bug'],['idea','Idea'],['other','Other']];
 let fbCat='bug';
+
+/* localStorage throws rather than returning null in a browser with storage blocked, in
+   private mode on some versions of Safari, and inside some in-app webviews. Every access
+   goes through these, so a blocked store costs the retry and nothing else. */
+function fbQueueLoad(){
+  try{ const a=JSON.parse(localStorage.getItem(FB_QUEUE)||'[]');
+    return Array.isArray(a)?a:[]; }catch(e){ return []; }
+}
+function fbQueueSave(a){
+  /* Capped, because this is a queue that only drains when the network allows and nothing
+     else prunes it. The newest are kept: an hour-old bug report is worth more than a
+     week-old one, and 20 x ~2KB cannot fill a 5MB store. */
+  try{ localStorage.setItem(FB_QUEUE,JSON.stringify(a.slice(-FB_QUEUE_MAX))); return true; }
+  catch(e){ return false; }
+}
+
+async function fbPost(payload){
+  try{
+    const r=await fetch(FB_ENDPOINT,{method:'POST',mode:'cors',
+      headers:{'Content-Type':'application/json',Accept:'application/json'},
+      body:JSON.stringify(payload)});
+    return !!(r&&r.ok);
+  }catch(e){ return false; }
+}
+
+/* Drains what is waiting. Called on load and after every send, and it never re-sends
+   anything that has already landed: a message is dropped from the queue only once the
+   relay has accepted it. */
+let fbFlushing=false;
+async function fbFlush(){
+  if(fbFlushing) return 0;
+  const q=fbQueueLoad(); if(!q.length) return 0;
+  fbFlushing=true;
+  const keep=[];
+  for(const p of q){ if(!(await fbPost(p))) keep.push(p); }
+  fbQueueSave(keep);
+  fbFlushing=false;
+  return q.length-keep.length;
+}
 /* Declared here rather than below feedbackSheet, which reads it. A const in its temporal
    dead zone read from a function defined above it has already cost this file one silent
    bug, so the declaration goes first. */
@@ -5129,30 +5180,59 @@ async function sendFeedback(){
   fbDraft.msg=$('fb-msg').value; fbDraft.email=email;
   if(!body){ feedbackSheet('Write something first, then send.'); return; }
   const label=FB_CATS.find(([k])=>k===fbCat)[1];
-  const ctx=fbContext();
-  if(FB_READY){
-    busy('fb-send','Sending');
-    try{
-      const res=await fetch(FB_ENDPOINT,{method:'POST',
-        headers:{'Content-Type':'application/json',Accept:'application/json'},
-        body:JSON.stringify({_subject:'The Perfect Season, '+label+' feedback',
-          category:label,message:body,reply_email:email||'-',context:ctx})});
-      if(res.ok){ fbDraft.msg=''; fbDraft.email=''; closeSheet(); toast('Sent. Thank you'); return; }
-    }catch(e){ /* falls through to the mail app */ }
+  /* _template:'table' so it arrives readable rather than as a wall of JSON, and
+     _captcha:'false' because an AJAX post has no page to show a captcha on. Field names are
+     the column headings in that table, which is why they are words and not identifiers. */
+  const payload={
+    _subject:'The Perfect Season, '+label+' feedback',
+    _template:'table',
+    _captcha:'false',
+    Category:label,
+    Message:body,
+    'Reply email':email||'(not provided)',
+    Context:fbContext(),
+  };
+  /* SO REPLY WORKS. Without this the reply-to is the relay, and answering a player means
+     copying their address out of the body by hand. Only set when it actually looks like an
+     address, because a malformed reply-to gets the whole message rejected, and losing a bug
+     report over a typo in an optional field would be a poor trade. */
+  if(/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email)) payload._replyto=email;
+
+  busy('fb-send','Sending');
+  if(await fbPost(payload)){
+    fbDraft.msg=''; fbDraft.email='';
+    closeSheet(); toast('Sent. Thank you');
+    fbFlush();                    // anything waiting can go out on the same working network
+    return;
   }
-  /* THE FALLBACK HANDS THE MESSAGE BACK, it does not send it. So the sheet stays open with
-     everything still typed in it: if no mail app opens, which is normal in plenty of
-     browsers, closing the sheet here would silently destroy what they wrote. */
+  /* IT DID NOT SEND, SO IT IS QUEUED, and the sheet closes anyway: the message is safe, and
+     keeping the form open with the text still in it would invite sending it twice. */
+  if(fbQueueSave(fbQueueLoad().concat([payload]))){
+    fbDraft.msg=''; fbDraft.email='';
+    closeSheet();
+    toast('Saved. It will send itself when you are back online');
+    return;
+  }
+  /* Nowhere to keep it either, which means storage is blocked as well as the network. This
+     is the only case that hands the message back, and it stays on screen with every
+     character in place because there is nothing else holding it. */
+  /* THE SHEET IS REDRAWN BEFORE THE MAILTO IS ATTEMPTED, and the order is the whole point.
+     Assigning to location starts a navigation, and a DOM write made after that can be
+     thrown away with the page that is on its way out: written the other way round this
+     left the form closed, the button still disabled and no explanation anywhere, which is
+     the worst possible outcome for the one path that exists to save the message.
+
+     "SHOULD OPEN", not "has been opened". A mailto does nothing at all in a browser with
+     no mail handler and there is no way to find out which happened, so the message does not
+     claim the part that cannot be checked. It names the address instead, which is the one
+     thing that works either way. */
+  feedbackSheet('That could not be sent, and this browser will not let the game hold on to '+
+    'it either. Your mail app should open with the message in it. If nothing opens, nothing '+
+    'has been lost: send it to '+FB_EMAIL+'.');
   const mail='mailto:'+FB_EMAIL+'?subject='+encodeURIComponent('The Perfect Season, '+label+
-    ' feedback')+'&body='+encodeURIComponent(body+'\n\n--- context ---\n'+ctx+
+    ' feedback')+'&body='+encodeURIComponent(body+'\n\n--- context ---\n'+payload.Context+
     (email?'\nReply to: '+email:''));
   try{ window.location.href=mail; }catch(e){ /* nothing more to try */ }
-  /* "SHOULD OPEN", not "has been opened". Setting location to a mailto does nothing at all
-     in a browser with no mail handler registered, and there is no way to find out which
-     happened, so the message must not claim the part that cannot be checked. It names the
-     address instead, which is the one thing that works either way. */
-  feedbackSheet('That could not be sent from here, so your mail app should open with the '+
-    'message in it. If nothing opens, nothing has been lost: send it to '+FB_EMAIL+'.');
 }
 
 const openSheet=()=>{
