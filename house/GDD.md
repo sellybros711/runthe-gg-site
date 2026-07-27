@@ -1993,3 +1993,59 @@ next card, so the results screen rendered UNDERNEATH a live sheet with
 It surfaced on the Final Three pick, the one card whose answer can end the run
 outright. Seen once in 32 browser runs and dismissed as a flake, then once in 6,
 which is what a rare deterministic bug looks like before you catch it.
+
+---
+
+## 26. The Side Piece
+
+A final two deal, and a third kind of bond alongside alliances (§7.5) and
+showmances (§7.8).
+
+An alliance is a bloc: it votes together, it gets named, it gets hunted, and
+belonging to several makes you look like you are playing everybody. A showmance
+is public by nature. This is two people, a handshake, and nobody else told.
+
+| | Alliance | Showmance | Side piece |
+|---|---|---|---|
+| leaks | yes, and faster once named | 45% a week per outsider | 4% a week |
+| counts toward the alliance cap | yes | no | no |
+| feeds `EXPOSURE_PER_ALLIANCE` | yes | no | no |
+| shields you from nomination | 34 | 60 | 22 |
+| decides the last seat | no | no | **yes** |
+
+What it buys is the endgame, and that is the whole point of it. A bloc eats
+itself around Final 5. Every winner in this genre had a quiet second thing.
+
+**Measured, ablating `DEAL_F3_PULL` on identical seeds:** the Final 3 winner
+keeps their deal partner in **30.8 percent of runs with it and 17.0 without**.
+The pull nearly doubles it.
+
+Breaking it is allowed and priced. The pull scales with the breaker's loyalty,
+so a disloyal winner cuts their partner anyway, and the partner sits on the
+Panel with `DEAL_BROKEN_BITTER` added to what they already felt. That is the
+drama the mechanic exists for; a handshake nobody can break is just a rule.
+
+For the player it is one cheap conversation, offered only with somebody who
+would actually say yes, because asking somebody who is not there yet tells them
+exactly how you are thinking about the end of this. With the stand-in shaking on
+one: Final 2 rate 11.9 to 13.6 percent, win rate 6.3 to 7.1. Small and
+directionally positive at the seat; the engine-level ablation above is the
+decisive number.
+
+### 26.1 House paranoia, built and removed
+
+The companion idea was a collective warping that intensifies as the house
+empties: fewer people, longer days, every silence louder, so belief drifts
+further from truth and votes get less predictable.
+
+It was built, as a multiplier on belief distortion and on vote volatility,
+ramped by how much of the cast is gone. **It moved nothing.** Mean belief error
+in a late house read 6.9, 7.0 and 6.9 across a sweep from 0 to 1.1, because
+distortion is already near zero once trust is positive and scaling near zero by
+1.55 is still near zero. The vote channel moved blindsides from 9.67 to 9.93 per
+run, inside one standard error.
+
+Removed rather than shipped, on the same rule that deleted the named-alliance
+heat in §15: the late game already gets more volatile through a smaller house,
+a fuller Panel and higher stakes, and a constant on top of that which no
+measurement can see is decoration.

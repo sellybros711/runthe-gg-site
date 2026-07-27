@@ -512,6 +512,29 @@ const K = {
   HEAT_MAX: 34,             // ceiling on everything pairHeat can add
   D_SHOWMANCE: 15,
 
+  /*
+   * THE SIDE PIECE, GDD §26.
+   *
+   * A final two deal, and a different object from both an alliance and a
+   * showmance. An alliance is a bloc that votes together and gets named and
+   * hunted. A showmance is public by nature. This is two people, a handshake,
+   * and nobody else told: it does not leak, it does not count toward the
+   * alliance cap, and it does not feed EXPOSURE_PER_ALLIANCE, because nobody
+   * can see it to hold it against you.
+   *
+   * What it buys is the endgame. Every winner in this genre had one, and the
+   * reason is that a bloc eats itself around Final 5 and the person who has
+   * quietly agreed the last seat with somebody walks through that.
+   */
+  DEAL_FORM_TRUST: 58,      // mutual, and it has to be somebody you would keep
+  DEAL_FORM_BASE: 0.13,
+  DEAL_SHIELD_NOM: 22,      // smaller than a showmance: this is a plan, not a bond
+  DEAL_SHIELD_VOTE: 18,
+  DEAL_BREAK_TRUST: 22,     // below this on either side and the deal is off
+  DEAL_LEAK: 0.04,          // it is two people. Almost nobody ever finds out
+  DEAL_F3_PULL: 42,         // how hard it pulls the last seat
+  DEAL_BROKEN_BITTER: 34,   // and what cutting them anyway costs at the Panel
+
   // breadth exposure: being in everything makes you look like you are playing
   // everyone, which is exactly what gets you named.
   EXPOSURE_PER_ALLIANCE: 7,
@@ -530,6 +553,7 @@ const K = {
      a week come out of it closer than they went in, whatever they think of each
      other's game. It is small on purpose: it is a week, not an alliance. */
   RATIONS_BOND: 4,
+
 
   // throwing, GDD §10
   THROW_STREAK_SUSPICION: 3,
@@ -1289,6 +1313,61 @@ function showmancePartner(state, id) {
   return sm.a === id ? sm.b : sm.a;
 }
 
+/*
+ * GDD §26. Same shape as showmanceOf, and kept separate for the same reason:
+ * everything that reads `alliances` treats them as blocs, and a two person
+ * handshake is not one.
+ */
+function dealOf(state, id) {
+  const list = state.deals || [];
+  for (const x of list) if (x.alive && (x.a === id || x.b === id)) return x;
+  return null;
+}
+
+function dealPartner(state, id) {
+  const d = dealOf(state, id);
+  if (!d) return null;
+  return d.a === id ? d.b : d.a;
+}
+
+function dealTick(state, rng) {
+  const { rel, cast, week } = state;
+  if (!state.deals) state.deals = [];
+  const list = state.deals;
+  const active = cast.filter((p) => p.status === 'active');
+
+  for (const d of list) {
+    if (!d.alive) continue;
+    const gone = cast[d.a].status !== 'active' || cast[d.b].status !== 'active';
+    const cold = rel.trust[d.a][d.b] < K.DEAL_BREAK_TRUST
+      || rel.trust[d.b][d.a] < K.DEAL_BREAK_TRUST;
+    if (gone || cold) { d.alive = false; d.endedWeek = week; }
+  }
+
+  for (let ai = 0; ai < active.length; ai++) {
+    for (let bi = ai + 1; bi < active.length; bi++) {
+      const i = active[ai].id, j = active[bi].id;
+      if (dealOf(state, i) || dealOf(state, j)) continue;
+      if (rel.trust[i][j] < K.DEAL_FORM_TRUST || rel.trust[j][i] < K.DEAL_FORM_TRUST) continue;
+      /* Somebody playing a long game reaches for this; somebody playing the
+         room does not think that far ahead. */
+      const plan = ((cast[i].build.shares.long || 0) + (cast[j].build.shares.long || 0)) / 2;
+      if (!rng.chance(clamp01(K.DEAL_FORM_BASE * (0.7 + plan)))) continue;
+      list.push({ a: i, b: j, week, alive: true, known: {}, endedWeek: null });
+      state.log.push({ week, kind: 'deal_made', a: i, b: j });
+    }
+  }
+
+  /* It almost never gets out, and that is the whole point of it. */
+  for (const d of list) {
+    if (!d.alive) continue;
+    for (const p of active) {
+      if (p.id === d.a || p.id === d.b || d.known[p.id] != null) continue;
+      if (rng.chance(K.DEAL_LEAK)) d.known[p.id] = week;
+    }
+  }
+}
+
 function showmanceTick(state, rng) {
   const { rel, cast, week } = state;
   if (!state.showmances) state.showmances = [];
@@ -1583,6 +1662,8 @@ function nominationDesire(state, hcId, targetId, rng) {
   /* The strongest shield in the game, and unconditional. A Captain does not put
      up the person they are sitting with, whatever the numbers say. */
   if (showmancePartner(state, hcId) === targetId) v -= K.SHOW_SHIELD_NOM;
+  /* And you do not put up the person you have agreed the last seat with. */
+  if (dealPartner(state, hcId) === targetId) v -= K.DEAL_SHIELD_NOM;
 
   /* And a smaller one you can actually build: what they owe you. GDD §20.
      Note it is subtracted here and contributes NOTHING to threatScore, which
@@ -1820,6 +1901,7 @@ function evictScore(state, voterId, targetId, rng, parts) {
     v -= 30 * (a.strength / 100) * (a.priority[voterId] || 0.5) * (1 + goalWeight(voter, 'allyBond'));
   }
   if (showmancePartner(state, voterId) === targetId) v -= K.SHOW_SHIELD_VOTE;
+  if (dealPartner(state, voterId) === targetId) v -= K.DEAL_SHIELD_VOTE;
   v -= K.OWED_EVICT * (rel.owed ? rel.owed[voterId][targetId] : 0);
 
   const noise = rng.normal(0, K.EV_VOL_SD * (voter.social.volatility / 100));
@@ -2192,6 +2274,7 @@ const api = {
   pairHeat, threatSeen, rationsBond,
   majoritySize, allianceOf, sharedAlliances, makeAlliance, renormalisePriorities, allianceTick,
   allianceName, showmanceOf, showmancePartner, showmanceTick,
+  dealOf, dealPartner, dealTick,
   socialTick, converse,
   nominationDesire, chooseNominations, nominationPlan, houseAppetite, irrelevance,
   panelThreat, alliancePressure, evictScore, resolveEviction, assignBlame,

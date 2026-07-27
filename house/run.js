@@ -100,6 +100,9 @@ function createRun(opts) {
     /* GDD §7.8. Kept out of `alliances` on purpose: nothing that reads
        alliances as strategic groups is true of a couple. */
     showmances: [],
+    /* GDD §26. The final two handshake. Separate from alliances for the same
+       reason showmances are: nothing that reads a bloc is true of two people. */
+    deals: [],
     /* GDD §20. What the player knows and has not yet spent. */
     secrets: [],
     panel: [],
@@ -809,6 +812,7 @@ function doReset(s) {
   E.socialTick(s, rng);
   E.allianceTick(s, rng);
   E.showmanceTick(s, rng);
+  E.dealTick(s, rng);
   aiLearn(s, rng);
   aiVerbs(s, rng);
   /* `state.log` is the model's own history and has no reader. Anything the
@@ -1845,19 +1849,34 @@ function doFinal3(s, input) {
       const bond = E.sharedAlliances(s.alliances, winner, o)
         .reduce((v, a) => v + a.strength * (a.priority[winner] || 0.5), 0);
       const loyalPull = (s.cast[winner].social.loyalty / 100) * bond * 0.22;
-      return { o, v: beatable - loyalPull };
+      /* The last seat is what a side piece was FOR, GDD §26. Scaled by loyalty,
+         because the whole drama of the move is that it can be broken. */
+      const deal = E.dealPartner(s, winner) === o
+        ? E.K.DEAL_F3_PULL * (0.35 + (s.cast[winner].social.loyalty / 100) * 0.65)
+        : 0;
+      return { o, v: beatable - loyalPull - deal };
     });
     sc.sort((a, b) => a.v - b.v);
     keep = sc[0].o;
   }
   const cut = others.find((o) => o !== keep);
 
+  /* Cutting the person you shook on it with, GDD §26. They sit on the Panel
+     knowing exactly what the handshake was worth. */
+  if (E.dealPartner(s, winner) === cut) {
+    const d = E.dealOf(s, cut);
+    if (d) { d.alive = false; d.brokenBy = winner; d.endedWeek = s.week; }
+    s.cast[cut].dealCut = true;
+    pushEvent(s, 'deal_broken', { by: winner, on: cut });
+  }
+
   const p = s.cast[cut];
   s.evictionOrder.push(cut);
   p.status = 'evicted';
   p.evictedWeek = s.week;
   p.place = nextPlace(s);
-  p.bitterness = E.clamp(40 + (100 - p.social.loyalty) * 0.3, 0, 100);
+  p.bitterness = E.clamp(40 + (100 - p.social.loyalty) * 0.3
+    + (p.dealCut ? E.K.DEAL_BROKEN_BITTER : 0), 0, 100);
   s.panel.push(cut);
   while (s.panel.length > E.K.PANEL_SIZE) s.panel.shift();
   for (const id of s.panel) s.cast[id].status = 'panel';
@@ -1937,6 +1956,29 @@ function performAction(s, action) {
      * it, which is why knowing who already distrusts whom, the thing the
      * information layer in §20 tells you, is what makes this verb worth having.
      */
+    /*
+     * GDD §26. Two people and a handshake. Cheap, because the conversation is
+     * short, and it either lands or it does not: there is no half a deal.
+     */
+    case 'deal': {
+      const j = action.target;
+      if (E.dealOf(s, me) || E.dealOf(s, j)) { out.ok = false; out.taken = true; break; }
+      const mutual = s.rel.trust[j][me] >= E.K.DEAL_FORM_TRUST - 6
+        && s.rel.trust[me][j] >= E.K.DEAL_FORM_TRUST - 14;
+      if (mutual) {
+        if (!s.deals) s.deals = [];
+        s.deals.push({ a: me, b: j, week, alive: true, known: {}, endedWeek: null });
+        out.ok = true;
+      } else {
+        out.ok = false;
+        /* Asking somebody who is not there yet tells them how you are thinking
+           about the end of this, which is not nothing. */
+        E.applyTrust(s.rel, j, me, -5);
+        s.rel.suspicion[j][me] = Math.min(100, s.rel.suspicion[j][me] + 8);
+      }
+      out.target = j;
+      break;
+    }
     case 'seed': {
       const res = performSeed(s, me, action.target, action.against, rng);
       out.target = action.target; out.against = action.against;

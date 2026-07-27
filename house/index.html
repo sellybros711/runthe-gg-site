@@ -2556,6 +2556,14 @@ function showScheming(need){
            :(heldCount()?'Nothing you know is any use to anybody now':'Listen at a door first'),
          off:!tradeCount()||s.energy<SEC.K.TELL_COST,
          go:pickSecret},
+        /* GDD §26. One conversation, and only with somebody who is already
+           there. The card names who, because asking the wrong person costs. */
+        {label:dealMate()?('You have a deal with '+esc(s.cast[dealMate()].first)):'Shake on the last two seats',
+         note:dealMate()?'Nobody else knows about it.'
+           :(dealReady().length?dealReady().length+' of them would say yes. Costs '+SC.ENERGY.SEED_COST+'.'
+             :'Nobody trusts you that far yet'),
+         off:!!dealMate()||!dealReady().length||s.energy<SC.ENERGY.SEED_COST,
+         go:pickDeal},
         /* GDD §21. The slow verb: nothing at all happens tonight. */
         {label:'Put a name in somebody’s head',
          note:'Costs '+SC.ENERGY.SEED_COST+'. They will think they got there themselves.',
@@ -2567,6 +2575,41 @@ function showScheming(need){
   }
 
   function heldCount(){ return SEC.held(s, s.human).length; }
+  function dealMate(){ var d=E.dealOf(s,s.human); return d?(d.a===s.human?d.b:d.a):null; }
+  /* Who would actually shake on it. Shown as a count rather than a list on the
+     dock, because the list is the next card's job. */
+  function dealReady(){
+    return others().filter(function(i){
+      return !E.dealOf(s,i)
+        && s.rel.trust[i][s.human]>=E.K.DEAL_FORM_TRUST-6
+        && s.rel.trust[s.human][i]>=E.K.DEAL_FORM_TRUST-14; });
+  }
+
+  /*
+   * THE SIDE PIECE, GDD §26.
+   *
+   * Two people and a handshake. It is not an alliance: nobody else is told, it
+   * does not get named, and it does not make you look like you are playing
+   * everybody. What it buys is the last seat, which is the thing a bloc cannot
+   * give you because a bloc eats itself around Final 5.
+   */
+  function pickDeal(){
+    dock({label:'Shake on it',off:true});
+    var ready=dealReady();
+    openCard({
+      kicker:'The last two seats', role:SC.ENERGY.SEED_COST+' energy', icon:'alliance',
+      title:'Who are you going to the end with',
+      body:['Nobody else hears about this one. It does not make you a bloc and it cannot be hunted, and if you both get there it decides who sits in the second chair.',
+        {t:'Asking somebody who is not there yet tells them exactly how you are thinking about the end of this.',c:'q'}],
+      pick:{pool:ready,go:function(id){
+        if(s.energy<SC.ENERGY.SEED_COST) return;
+        var o=R.performAction(s,{kind:'deal',target:id});
+        s.energy-=SC.ENERGY.SEED_COST;
+        narrateAction(o); saveRun(); backToFloor();
+      }},
+      foot:{label:'Not yet',go:backToFloor}
+    });
+  }
   /* What is actually spendable, which is what the button has to count. Holding
      eleven things nobody needs is not the same as having something to trade. */
   function tradeCount(){
@@ -2897,6 +2940,19 @@ function narrateAction(o){
         sub:'Things you learn are yours to spend. Pick the week, pick the person, and remember that the only people who could have told them are the ones who were there.',
         rows:o.learned.map(function(x){ return ['You know',secretLine(x)]; })});
     }
+  }
+  if(o.kind==='deal'){
+    if(o.taken){ say('One of you has already shaken on it with somebody else.','quiet'); return; }
+    if(o.ok){
+      say('You and '+nm+' agree the last two seats. Nobody writes anything down and nobody else is told.','ev-good','alliance');
+      moment({kicker:'The last two seats',icon:'alliance',tone:'good',
+        title:'You and '+nm,
+        sub:'Not an alliance. Nothing to name, nothing to hunt, and one chair at the end already spoken for.',
+        faces:[{id:o.target,tag:'Shook on it',col:COL.ok}]});
+    } else {
+      say(nm+' is not thinking that far ahead, and now they know that you are.','ev-bad','broken');
+    }
+    return;
   }
   if(o.kind==='seed'){
     /* Deliberately quiet in the feed. Nothing visible happened, which is what
