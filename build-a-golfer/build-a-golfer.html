@@ -21695,6 +21695,36 @@ const PACK_TYPES={
           odds:[['common',0.30],['rare',0.40],['epic',0.22],['legendary',0.08]],
           pityEpic:6, pityLeg:24, col:'#ff9d3a', accent:'#ffd39a', glow:'rgba(255,157,58,.48)'},
 };
+// ---- REAL-MONEY COIN BUCKETS ------------------------------------------------------------------
+// The "$1.99 = 15,000 coins = one full 30-year career's earnings" anchor, as an escalating-value
+// ladder (bigger buckets = more coins per dollar + bonus packs). BUILT BEHIND A FLAG.
+//
+// GOING LIVE requires TWO things this build does NOT include:
+//   (1) a payment provider (Stripe Checkout on web / App Store & Play IAP in a wrapped app), and
+//   (2) SERVER-SIDE FULFILLMENT. Coins are granted client-side today (addBonusCoins), so purchased
+//       coins MUST be credited by a verified-payment webhook writing to the account server-side -
+//       NEVER by the client (beginBucketPurchase below never grants coins), or they're a trivial
+//       console exploit. This also reverses the current "coins can never be bought" Terms/perk copy,
+//       which must be updated before the flag is flipped.
+// Flip BUCKETS_ENABLED once (1)+(2) exist. Prices/coins are tunable.
+const BUCKETS_ENABLED=false;
+const BUCKETS=[
+  {id:'small',  name:'Small Bucket',  usd:1.99,  coins:15000,  col:'#3fbf7a'},
+  {id:'medium', name:'Medium Bucket', usd:4.99,  coins:42000,  col:'#5bcfe8', bonus:12},
+  {id:'large',  name:'Large Bucket',  usd:9.99,  coins:95000,  col:'#a24be0', bonus:26, badge:'POPULAR',   packs:{tier:'tour', n:1}},
+  {id:'jumbo',  name:'Jumbo Bucket',  usd:19.99, coins:210000, col:'#F1D04A', bonus:39, packs:{tier:'champ',n:1}},
+  {id:'mega',   name:'Mega Bucket',   usd:49.99, coins:575000, col:'#ff6b57', bonus:53, badge:'BEST VALUE', packs:{tier:'champ',n:3}},
+];
+function bucketCareers(c){ return c/15000; }   // 15,000 coins = one full career at average play
+function beginBucketPurchase(id){
+  var b=BUCKETS.find(function(x){return x.id===id;}); if(!b) return;
+  try{ track('bucket_checkout',{id:id, usd:b.usd}); }catch(e){}
+  // === PAYMENT INTEGRATION POINT ===
+  // Wire a real provider here (Stripe Checkout / IAP). On a VERIFIED payment, a SERVER endpoint must
+  // credit b.coins (+ any b.packs) to the account and the client reflects the new server balance.
+  // Do NOT grant coins here - never trust the client with a purchase.
+  toast('<b>Checkout coming soon</b><br><span class="small">Real-money coin buckets aren’t live yet.</span>', 3600);
+}
 const PACK_TIER_ORDER=['base','tour','champ'];
 // tiers to actually offer/display right now: the permanent ladder + any live seasonal packs (price-sorted).
 function packTierLive(id){ var pt=packType(id); if(!pt.seasonal) return true; var d=(typeof dropById==='function')&&dropById(pt.dropId); return !!(d && (!d.window || dropLive(d))); }
@@ -22426,6 +22456,30 @@ function overlayPackReveal(app){
   if(d.chosen!=null) renderFoot();
   app.appendChild(ov);
 }
+function bucketShopNode(){
+  packStyleOnce();
+  var wrap=$('<div style="padding:6px 2px 4px"></div>');
+  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:6px auto 8px;line-height:1.5">Top up your coins for gear, packs and cosmetics. <b style="color:#8fe0c4">15,000 coins ≈ a full 30-year career’s worth of earnings.</b></div>'));
+  BUCKETS.forEach(function(b){
+    var careers=bucketCareers(b.coins), careerTxt=careers<2?'~1 career':('~'+Math.round(careers)+' careers');
+    var card=$('<div style="max-width:400px;margin:14px auto 0;padding:13px;border-radius:16px;background:linear-gradient(165deg,'+b.col+'1c,#0c1f16);border:2px solid '+b.col+';box-shadow:0 0 18px '+b.col+'55;position:relative"></div>');
+    if(b.badge) card.appendChild($('<div style="position:absolute;top:-9px;right:12px;background:'+b.col+';color:#0c1f16;font:900 9px var(--body);letter-spacing:.1em;padding:3px 8px;border-radius:20px">'+esc(b.badge)+'</div>'));
+    card.appendChild($('<div style="display:flex;gap:12px;align-items:center">'
+      +'<div style="flex:0 0 auto;width:64px;height:64px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 12px '+b.col+'88)">'+ic('coins',{size:'56px'})+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-family:var(--display);font-size:20px;color:'+b.col+'">'+esc(b.name)+'</div>'
+        +'<div style="font:900 22px var(--body);color:#ffd45e;display:flex;align-items:center;gap:5px;margin-top:1px"><span style="width:18px;height:18px">'+ic('coin',{size:'18px'})+'</span>'+coinFmt(b.coins)+'</div>'
+        +'<div class="small" style="color:#cfe6d8;margin-top:2px">'+careerTxt+(b.bonus?' · <b style="color:'+b.col+'">+'+b.bonus+'% value</b>':'')+'</div>'
+        +(b.packs?'<div style="font:800 10.5px var(--body);color:'+b.col+';margin-top:3px">+ '+b.packs.n+' free '+esc(packType(b.packs.tier).short)+' pack'+(b.packs.n>1?'s':'')+'</div>':'')
+      +'</div></div>'));
+    var buy=$('<button class="btn" style="width:100%;margin:10px 0 0;background:'+b.col+';color:#0c1f16;font-weight:900;font-size:16px">$'+b.usd.toFixed(2)+'</button>');
+    buy.onclick=function(){ beginBucketPurchase(b.id); };
+    card.appendChild(buy);
+    wrap.appendChild(card);
+  });
+  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:14px auto 0;line-height:1.5">Prices in USD. Coins have no cash value and can’t be cashed out. Purchases support development of RunThe.GG.</div>'));
+  return wrap;
+}
 function packShopNode(){
   packStyleOnce();
   var p=packState(), free=packIsFree(), credits=packCredits(), bal=coinBalance();
@@ -22502,7 +22556,7 @@ function overlayShop(screen){
   }
   // CS356g: the pixel golfer renders shirt/hat/pants/shoe COLORS, shirt PATTERNS, and headwear/eyewear
   // ACCESSORIES - so the shop sells all of those (Apparel = colors + pattern, Accessories = headwear/eyewear).
-  let sec=S.shopSec; if(sec==='packs'&&!packsOn()) sec='apparel'; if(sec!=='accessories'&&sec!=='effects'&&sec!=='owned'&&sec!=='bag'&&sec!=='packs'&&sec!=='drops') sec='apparel';
+  let sec=S.shopSec; if(sec==='packs'&&!packsOn()) sec='apparel'; if(sec==='buckets'&&!BUCKETS_ENABLED) sec=packsOn()?'packs':'apparel'; if(sec!=='accessories'&&sec!=='effects'&&sec!=='owned'&&sec!=='bag'&&sec!=='packs'&&sec!=='drops'&&sec!=='buckets') sec='apparel';
   const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['hw','Headwear'],['ew','Eyewear'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];   // headwear + eyewear are apparel (owner)
   const ACCS=[['ball','Balls'],['cleats','Cleats']];   // clubs (looks) live on the Clubs tab with the boost tiers
   const FXCATS=[['fx','Aura']];
@@ -22522,6 +22576,7 @@ function overlayShop(screen){
     <button class="shop-closetcta" data-closet><span style="font-size:18px;flex:0 0 auto">🚪</span><span><b>Customize your golfer in your closet</b><br><span class="small" style="opacity:.85">Equip everything you own — colors, patterns, gear &amp; effects</span></span><span style="margin-left:auto">▸</span></button>
     <button class="shop-refcta" data-refshare><span style="width:18px;height:18px;flex:0 0 auto">${ic('coins',{size:'18px'})}</span><span><b>Invite a friend, get a free pack</b><br><span class="small" style="opacity:.85">They sign up with your link, you both score a pack</span></span><span style="margin-left:auto">↗</span></button>
     <div class="segrow">
+      ${BUCKETS_ENABLED?`<button data-sec="buckets" class="${sec==='buckets'?'on':''}">Buy Coins</button>`:''}
       ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
       <button data-sec="drops" class="${sec==='drops'?'on':''}">Drops${(function(){if(typeof anyDropClaimable==='function'&&anyDropClaimable())return '<span class="droplivedot" style="background:#F1D04A;box-shadow:0 0 8px #F1D04A"></span>'; const ld=liveThemedDrop();return ld?'<span class="droplivedot" style="background:'+ld.accent+'"></span>':'';})()}</button>
       <button data-sec="bag" class="${sec==='bag'?'on':''}">Clubs${(sec!=='bag'&&cosCatNew('club')>0)?NDOT:''}</button>
@@ -22537,6 +22592,13 @@ function overlayShop(screen){
   // (screen already 'setup'), just close the overlay to reveal it; otherwise open the closet in edit mode.
   sticky.querySelectorAll('[data-closet]').forEach(x=>x.onclick=()=>{ track('shop_open_closet'); S.shopPreview=null; S.overlay=null;
     if(S.screen==='setup'){ render(); return; } S.setupEdit=true; S.setupReturn=null; S.screen='setup'; S.setupCat='shirt'; render(); });
+  if(sec==='buckets'){
+    ov.appendChild(bucketShopNode());
+    ov.appendChild($(`<button class="btn red" style="margin-top:14px">Done</button>`));
+    sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
+    ov.querySelectorAll('.x2,.red').forEach(el=>el.onclick=()=>{S.shopPreview=null;S.overlay=null;render();});
+    screen.appendChild(ov); return;
+  }
   if(sec==='packs'){
     try{ const ld=liveThemedDrop();
       if(ld){ const pb=$(`<button class="homedrop" style="--dacc:${ld.accent};margin:0 0 12px">
