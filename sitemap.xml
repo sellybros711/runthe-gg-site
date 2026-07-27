@@ -9,6 +9,13 @@
     <image:image><image:loc>https://runthe.gg/assets/runthegames-og_1200x630.png</image:loc></image:image>
   </url>
   <url>
+    <loc>https://runthe.gg/football/</loc>
+    <lastmod>2026-07-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image><image:loc>https://runthe.gg/football/og.png</image:loc></image:image>
+  </url>
+  <url>
     <loc>https://runthe.gg/golf/</loc>
     <lastmod>2026-07-26</lastmod>
     <changefreq>weekly</changefreq>
