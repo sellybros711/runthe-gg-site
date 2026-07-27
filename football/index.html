@@ -710,15 +710,13 @@
       rgba(255,255,255,.62) 95%,transparent)}
   /* THE MARK PAINTED ON THE END ZONE. Low contrast on purpose: it is paint on grass, so it
      sits under the players and under the markings instead of competing with them. */
-  .field .ezmark{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;
-    justify-content:center;gap:.42em;
-    font-family:var(--fd);font-size:clamp(14px,4.6vw,26px);letter-spacing:.10em;
-    text-transform:uppercase;color:rgba(255,255,255,.085);white-space:nowrap;
-    pointer-events:none}
-  .field .ezmark i{font-style:normal;color:rgba(239,68,68,.16)}
-  /* The helmet, at the same weight as the wordmark beside it. opacity rather than a second
-     copy of the file: it is the same mark.png the header uses, so there is one picture. */
-  .field .ezmark img{height:1.25em;width:auto;opacity:.14;flex:0 0 auto}
+  .field .ezmark{position:absolute;left:0;right:0;top:0;display:grid;place-items:center;
+    pointer-events:none;padding:0 12%}
+  /* THE SITE'S OWN WORDMARK, painted on the end zone. The real brand asset rather than the
+     name set in the display face, which is what an end zone actually carries. Low contrast on
+     purpose: it is paint on grass, so it sits under the players and under the markings instead
+     of competing with either. */
+  .field .ezmark img{width:100%;max-width:260px;height:auto;opacity:.11}
   .field .vig{position:absolute;inset:0;pointer-events:none;
     box-shadow:inset 0 0 66px 20px rgba(3,6,12,.8)}
   /* A count of connections on the chip itself, in the strongest one's color. */
@@ -2027,7 +2025,7 @@ function fieldMarkings(){
      competing with either. */
   out.push('<div class="ez" style="height:'+goal+'%"></div>',
     '<div class="ezmark" style="height:'+goal+'%">'+
-      '<img src="mark.png?v=2" alt="" decoding="async">RunThe<i>.GG</i></div>',
+      '<img src="wordmark.png?v=1" alt="" decoding="async"></div>',
     '<div class="goal" style="top:'+goal+'%"></div>');
 
   for(let y=FIELD_EZ_YARDS;y<=FIELD_YARDS;y++){
