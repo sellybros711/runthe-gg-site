@@ -452,6 +452,36 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .legal span{margin:0 4px;color:var(--line-2)}
   .legal .src{margin-top:4px;font-size:11.5px;line-height:1.55}
   .legal .src a{display:inline;padding:0}
+
+  /* ---------- FOLLOW ON X, AND SEND FEEDBACK ----------
+     Both live at the foot of the landing screen, which is where the other games on this
+     site put them. The follow line is the house wording from RunThePitch; the difference
+     here is that it carries the mark, because a line of grey text above a row of grey
+     legal links is a line nobody reads. */
+  .xfollow{display:flex;align-items:center;justify-content:center;gap:9px;margin:18px 0 0;
+    padding:12px 14px;border-radius:12px;text-align:left;
+    background:rgba(255,255,255,.035);border:1px solid var(--line-2)}
+  .xfollow:hover{border-color:var(--line-2);background:rgba(255,255,255,.06)}
+  .xfollow svg{flex:0 0 auto;width:17px;height:17px;fill:var(--ink)}
+  .xfollow span{font-family:var(--fn);font-size:12.5px;line-height:1.35;color:var(--dim)}
+  .xfollow b{color:var(--ink);font-weight:700}
+  /* Overrides .legal a, which underlines and pads every link in this footer as a nav row.
+     This one is a card, not a nav item. display has to be repeated here rather than left to
+     .xfollow above: `.legal a` is a class plus a type and beats a bare class, so
+     inline-block won and the card came out shrink-to-fit at 329px against the 358px button
+     directly above it, which read as a misalignment rather than as a choice. */
+  .legal a.xfollow{display:flex;border-bottom:none;padding:12px 14px}
+  .legal a.xfollow:hover{color:inherit}
+
+  .fbrow{margin:9px 0 0}
+
+  /* The feedback form, inside the sheet the rest of the game already uses. */
+  .fbcats{display:flex;gap:0;margin-top:11px}
+  /* A textarea is not a .fld: it needs a height, and it must only ever grow downwards,
+     because a horizontal drag handle inside a 16px-padded sheet on a phone is a way to
+     push the send button off the screen. */
+  textarea.fld{min-height:104px;resize:vertical;line-height:1.45;font-size:14.5px}
+  .fbnote{margin:9px 0 0;font-size:11.5px;line-height:1.5;color:var(--dim-2)}
   .hnote{margin:11px 0 0;text-align:center;font-size:12.5px;color:var(--dim-2);
     transition:opacity .3s ease}
   .hero-reels{margin-top:0}
@@ -2062,6 +2092,16 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         and <a href="https://github.com/nflverse/nfldata" target="_blank" rel="noopener">nfldata</a>.
         An unofficial fan project, not affiliated with or endorsed by the NFL, the
         NFLPA or any club.</p>
+      <!-- Follow, and tell us what is wrong with it. Both in the footer, which is where
+           RunThePitch and RunTheTour put them, so somebody who plays two of these games
+           finds the same two things in the same place. Feedback is a sheet rather than a
+           link to a contact page: there is no mid-run save, so sending somebody to
+           another page to report a bug would throw away the run they are reporting. -->
+      <div class="fbrow"><button class="btn ghost sm" id="b-feedback">Send feedback</button></div>
+      <a class="xfollow" href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        <span>Follow <b>@RunTheGG</b> on X for news and updates</span>
+      </a>
     </footer>
   </div>
 
@@ -4924,10 +4964,13 @@ function profileSheet(msg,ok){
         (nm?'Change my name':'Save my name')+'</button></div>'+
       '<p class="dim" style="font-size:11.5px;margin:12px 0 0">Runs you finish are '+
       'recorded under this name. Changing it renames the ones already on the board.</p>'+
-      '<div style="margin-top:12px"><button class="btn ghost sm" id="a-signout">Sign out</button></div>'+
+      '<div class="hrow" style="margin-top:12px">'+
+        '<button class="btn ghost sm" id="a-feedback">Send feedback</button>'+
+        '<button class="btn ghost sm" id="a-signout">Sign out</button></div>'+
       close;
     openSheet();
     if(nm) careerPaint(st.userId);
+    $('a-feedback').onclick=()=>feedbackSheet();
     $('a-setname').onclick=async()=>{
       const v=($('a-name').value||'').trim();
       if(!v){ profileSheet('Type a name first.'); return; }
@@ -4971,8 +5014,15 @@ function profileSheet(msg,ok){
     '<p class="switch">'+(up
       ? 'Already have one? <button id="a-swap">Sign in instead</button>'
       : 'New here? <button id="a-swap">Make an account</button>')+'</p>'+
-    close;
+    /* Feedback beside Close rather than above the form: a guest reaches this sheet from
+       the avatar on every screen, and the footer button that opens it only exists on the
+       landing screen, so without this a bug found mid-draft can only be reported by
+       abandoning the run. Beside Close, because it must not compete with signing in. */
+    '<div class="hrow" style="margin-top:14px">'+
+      '<button class="btn ghost" id="a-feedback2">Send feedback</button>'+
+      '<button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet();
+  $('a-feedback2').onclick=()=>feedbackSheet();
   $('a-swap').onclick=()=>{ authMode=up?'in':'up'; profileSheet(); };
   $('a-google').onclick=async()=>{
     busy('a-google','Opening Google');
@@ -4994,6 +5044,115 @@ function profileSheet(msg,ok){
       if(r.error) profileSheet(r.error); else profileSheet();
     }
   };
+}
+
+/* ---------------- FEEDBACK ----------------
+   The same pipeline the other games on this site use: one Formspree form, which emails
+   the message silently, and a mailto fallback for when that request cannot be made at all.
+   The endpoint is shared with RunThePitch on purpose, so there is one inbox rather than
+   three, and the subject line is what separates them.
+
+   The endpoint is validated rather than trusted. It is a constant in a page, so the thing
+   that goes wrong with it is somebody pasting a form ID that is not one, and a POST to a
+   malformed URL fails silently while the player is told their message was sent. If it does
+   not look like a Formspree endpoint, the form goes straight to mailto instead. */
+const FB_EMAIL='sellybros711@gmail.com';
+const FB_ENDPOINT='https://formspree.io/f/xojzebbj';
+const FB_READY=/^https:\/\/formspree\.io\/f\/[A-Za-z0-9]+$/.test(FB_ENDPOINT);
+const FB_CATS=[['bug','Bug'],['idea','Idea'],['other','Other']];
+let fbCat='bug';
+/* Declared here rather than below feedbackSheet, which reads it. A const in its temporal
+   dead zone read from a function defined above it has already cost this file one silent
+   bug, so the declaration goes first. */
+const fbDraft={msg:'',email:''};
+
+/* WHAT WAS ON SCREEN WHEN THEY WROTE IT. Attached automatically, because "the wheel got
+   stuck" is unactionable and "the wheel got stuck, on the draft screen, spin 4 of 6,
+   engine 17, on iOS Safari" is a bug that can be found. Nothing here is anything the
+   player typed, and nothing identifies them beyond the account they already chose to
+   have. */
+function fbContext(){
+  try{
+    const scr=(document.querySelector('.screen.on')||{}).id||'-';
+    const who=authState.signedIn?(authState.name||'(no name yet)'):'(guest)';
+    let where='no run';
+    if(run&&run.outcome) where='finished '+run.outcome.record+
+      (run.daily?' (daily puzzle)':' (free run)');
+    else if(run) where='mid-run, '+(run.roster?run.roster.length:0)+' of 6 picked'+
+      (run.daily?' (daily puzzle)':' (free run)');
+    return 'Screen: '+scr+'\nRun: '+where+'\nAccount: '+who+
+      '\nEngine: '+E.API_VERSION+', run '+R.API_VERSION+', board '+B.API_VERSION+
+      '\nViewport: '+window.innerWidth+'x'+window.innerHeight+
+      '\nURL: '+location.href+'\nUA: '+navigator.userAgent;
+  }catch(e){ return 'context unavailable: '+((e&&e.message)||'unknown'); }
+}
+
+function feedbackSheet(msg,ok){
+  const box=$('sheet-in');
+  box.dataset.kind='feedback';
+  box.style.borderTop='';
+  box.innerHTML='<div class="eyebrow">Tell us</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 6px">Send feedback</h2>'+
+    '<p class="dim" style="font-size:13.5px;margin:0">Found a bug, or thought of something '+
+      'that would make this better? It gets read.</p>'+
+    (msg?authMsg(msg,ok):'')+
+    '<div class="fbcats"><div class="seg" id="fb-cats">'+
+      FB_CATS.map(([k,label])=>'<button'+(k===fbCat?' class="on"':'')+' data-cat="'+k+
+        '">'+label+'</button>').join('')+'</div></div>'+
+    '<textarea class="fld" id="fb-msg" rows="5" maxlength="1500" '+
+      'placeholder="What happened, or what would you like to see?"></textarea>'+
+    '<input class="fld" id="fb-email" type="email" maxlength="120" autocomplete="email" '+
+      'placeholder="your email, only if you want a reply">'+
+    '<div style="margin-top:10px"><button class="btn" id="fb-send">Send</button></div>'+
+    '<p class="fbnote">What screen you are on, which version you are running and your '+
+      'browser go along with it, so a bug can be found without a conversation about it. '+
+      'Nothing else.</p>'+
+    '<div style="margin-top:12px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  openSheet();
+  /* Whatever was typed survives a repaint, which happens whenever the form comes back with
+     a message on it. Losing 1,500 characters of bug report to a failed send would be worse
+     than the bug. */
+  if(fbDraft.msg) $('fb-msg').value=fbDraft.msg;
+  $('fb-email').value=fbDraft.email||(authState.signedIn&&authState.email)||'';
+  $('fb-cats').onclick=(e)=>{
+    const b=e.target.closest('button'); if(!b||b.dataset.cat===fbCat) return;
+    fbDraft.msg=$('fb-msg').value; fbDraft.email=$('fb-email').value;
+    fbCat=b.dataset.cat; feedbackSheet();
+  };
+  $('fb-send').onclick=sendFeedback;
+  setTimeout(()=>{ const t=$('fb-msg'); if(t&&$('sheet-in').dataset.kind==='feedback') t.focus(); },60);
+}
+
+async function sendFeedback(){
+  const body=($('fb-msg').value||'').trim();
+  const email=($('fb-email').value||'').trim();
+  fbDraft.msg=$('fb-msg').value; fbDraft.email=email;
+  if(!body){ feedbackSheet('Write something first, then send.'); return; }
+  const label=FB_CATS.find(([k])=>k===fbCat)[1];
+  const ctx=fbContext();
+  if(FB_READY){
+    busy('fb-send','Sending');
+    try{
+      const res=await fetch(FB_ENDPOINT,{method:'POST',
+        headers:{'Content-Type':'application/json',Accept:'application/json'},
+        body:JSON.stringify({_subject:'The Perfect Season, '+label+' feedback',
+          category:label,message:body,reply_email:email||'-',context:ctx})});
+      if(res.ok){ fbDraft.msg=''; fbDraft.email=''; closeSheet(); toast('Sent. Thank you'); return; }
+    }catch(e){ /* falls through to the mail app */ }
+  }
+  /* THE FALLBACK HANDS THE MESSAGE BACK, it does not send it. So the sheet stays open with
+     everything still typed in it: if no mail app opens, which is normal in plenty of
+     browsers, closing the sheet here would silently destroy what they wrote. */
+  const mail='mailto:'+FB_EMAIL+'?subject='+encodeURIComponent('The Perfect Season, '+label+
+    ' feedback')+'&body='+encodeURIComponent(body+'\n\n--- context ---\n'+ctx+
+    (email?'\nReply to: '+email:''));
+  try{ window.location.href=mail; }catch(e){ /* nothing more to try */ }
+  /* "SHOULD OPEN", not "has been opened". Setting location to a mailto does nothing at all
+     in a browser with no mail handler registered, and there is no way to find out which
+     happened, so the message must not claim the part that cannot be checked. It names the
+     address instead, which is the one thing that works either way. */
+  feedbackSheet('That could not be sent from here, so your mail app should open with the '+
+    'message in it. If nothing opens, nothing has been lost: send it to '+FB_EMAIL+'.');
 }
 
 const openSheet=()=>{
@@ -5929,6 +6088,7 @@ $('o-tabs').addEventListener('click',(e)=>{
   setOverTab(b.dataset.ot);
 });
 
+$('b-feedback').onclick=()=>feedbackSheet();
 $('b-profile').onclick=()=>profileSheet();
 $('b-board').onclick=openBoard;
 $('b-board2').onclick=openBoard;
