@@ -3196,9 +3196,9 @@ function streakDays(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.
 // climbs a reward track: coin days scale UP from 200→1000 across the week; days 3 & 6 → a Mulli-Spin;
 // day 4 → a FREE BASE pack; day 7 → a FREE TOUR pack (the middle tier). The track resets every Sunday; the
 // OVERALL streak count (bag_streak.current) persists across weeks as long as you keep it.
-// CS407b (owner): the 3 coin days (1, 2, 5) scale UP hard - 1,000 → 2,500 → 7,500. Non-coin days are unused.
-const STREAK_WEEK_COIN_DAY={1:1000, 2:2500, 3:2500, 4:2500, 5:7500, 6:7500, 7:7500};
-function streakDayCoins(day){ return STREAK_WEEK_COIN_DAY[Math.max(1,Math.min(7,day||1))]||1000; }
+// Economy re-anchor: coins are much harder to earn (so $1.99 ≈ a full career's grind). Coin days (1,2,5) 150 → 350 → 1,000.
+const STREAK_WEEK_COIN_DAY={1:150, 2:350, 3:350, 4:350, 5:1000, 6:1000, 7:1000};
+function streakDayCoins(day){ return STREAK_WEEK_COIN_DAY[Math.max(1,Math.min(7,day||1))]||150; }
 const STREAK_WEEK_TRACK={1:'coins',2:'coins',3:'mulligan',4:'basepack',5:'coins',6:'mulligan',7:'champpack'};   // CS461: daily-CHALLENGE day 7 = the BEST (Champion) pack
 function sundayWeekKey(){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
   const dt=new Date(Date.UTC(y,m-1,d,12,0,0)); dt.setUTCDate(dt.getUTCDate()-dt.getUTCDay());   // back up to the week's Sunday (ET day-of-week)
@@ -3266,7 +3266,7 @@ function streakAdventNode(){ if(!sbSignedIn()) return null;
 // (Tour) pack. (The daily-challenge track gives the BEST (Champion) pack on ITS day 7.) Signed-in only
 // (coins/packs need an account). Forgiving: a missed day doesn't reset - the loop advances on the next login.
 const LOGIN_TRACK={1:'coins',2:'coins',3:'coins',4:'basepack',5:'coins',6:'mulligan',7:'tourpack'};
-const LOGIN_COIN_DAY={1:200,2:300,3:500,5:700};
+const LOGIN_COIN_DAY={1:50,2:75,3:100,5:150};
 function loginState(){ let s=LS.get(acctKey('bag_login'),null); if(!s||typeof s!=='object') s={day:null,n:0}; s.n=s.n||0; return s; }
 function loginSave(s){ LS.set(acctKey('bag_login'),s); if(typeof cloudPush==='function') cloudPush(); }
 function loginReward(n){ n=Math.max(1,Math.min(7,n||1)); const kind=LOGIN_TRACK[n]||'coins'; const o={day:n,kind:kind};
@@ -5596,7 +5596,7 @@ function statSheetHTML(sk, real, opts){
 // While false: no shop entry points render, the overlay is unreachable, and equipped gear gives ZERO boost.
 const SHOP_ENABLED=true;   // CS186: re-enabled with a rebalanced economy (0-coin reset + higher prices + smaller boosts)
 const COIN_START=300;                       // welcome coins (baked into the reset baseline, so post-reset everyone starts at 0)
-const COIN_RATE=0.6;                         // Pro Shop relaunch: earned coins (above the welcome start) run ~40% slower, so the good gear is a real grind
+const COIN_RATE=0.1;                         // Economy re-anchor: coins are a heavy grind ($1.99 ≈ one full 30-year career's total earnings ≈ ~2 base packs)
 const COIN_EPOCH=2;                          // bump to re-baseline every account's spendable coins to 0 at the new rate (owned gear/cosmetics are PRESERVED across the bump)
 // Economy coherence pass: gear is a meaningful EDGE, never a second draft. Live boosts come from worn
 // cosmetics + the golf bag; the catalog holds ~+23 of optimized gear, so the TOTAL cap still BINDS at the
@@ -5729,11 +5729,11 @@ function maybeCoinGrant(){ try{
   try{ render(); }catch(e){}
 }catch(e){} }
 // coins awarded for PLAYING a Moment round yourself (simming forfeits this). Bigger stage = bigger bonus.
-// CS435 (owner): bumped up (200 felt too little vs pack prices) - base 500, big 800, major 1200.
-function momentPlayCoins(evt){ if(!evt) return 500; return evt.major?1200:(evt.big||evt.playoff||evt.type==='finale')?800:500; }
+// Economy re-anchor: coins are a heavy grind - base 120, big 200, major 350.
+function momentPlayCoins(evt){ if(!evt) return 120; return evt.major?350:(evt.big||evt.playoff||evt.type==='finale')?200:120; }
 // CS435: coins for in-round DECISIONS PAYING OFF - each aggressive call that produced a birdie/eagle (boldWins),
 // plus a bonus for winning a Grudge Match. Scaled by the stage. Rewards the choices, not just finishing.
-const COIN_BOLD_WIN=250, COIN_GRUDGE_WIN=400;
+const COIN_BOLD_WIN=60, COIN_GRUDGE_WIN=100;
 function stageMult(evt){ return (evt&&evt.major)?1.5:(evt&&(evt.big||evt.playoff||evt.type==='finale'))?1.2:1.0; }
 function momentDecisionCoins(st, evt){ if(!st||!st.boldWins) return 0; return Math.round(st.boldWins*COIN_BOLD_WIN*stageMult(evt)); }
 // CS436: decision-payoff coins in EVERY hole-by-hole mode (Daily / Spotlight / Moment) - each aggressive
@@ -5744,24 +5744,24 @@ function decisionPayoutCoins(holes, mult){ const bw=boldWinsIn(holes); return bw
 // which bypasses the CS186 reset baseline, so they always accrue for every account (a maxed account whose
 // derived total was baselined to 0 still earns from playing). Tunable amounts. ----
 const COIN_WIN=300, COIN_WIN_MAJOR=1000, COIN_WIN_BIG=500;   // per tournament win (interactive; skipping forfeits)
-const COIN_DAILY=1000, COIN_DAILY_BEAT=600;                  // CS400: finish a daily = 1000 coins, +600 for beating the pro (+ up to 400 margin) → ~1000-2000/day
+const COIN_DAILY=60, COIN_DAILY_BEAT=100;                    // Economy re-anchor: finish a daily = 60 coins, +100 for beating the pro (+ margin) - a heavy grind
 const COIN_DAILY_XP=50, COIN_DAILY_XP_BEAT=50;               // Tour Rep (XP) for completing a daily (+ beat bonus)
-const COIN_H2H_WIN=120;                                       // win an online match
+const COIN_H2H_WIN=40;                                        // win an online match
 function winCoins(evt){ if(!evt) return COIN_WIN; if(evt.major) return COIN_WIN_MAJOR; if(evt.big||evt.playoff||evt.type==='finale') return COIN_WIN_BIG; return COIN_WIN; }
 // CS392: every career/circuit season rewards coins scaled by how you PERFORMED (wins/majors/top-10s/cuts +
 // money-list finish), awarded once at season end. Modest by design (coins stay a grind). A season SIMMED to
 // the end (Skip to end) earns COIN_SEASON_SKIP of this (far fewer, not zero).
 const COIN_SEASON_SKIP=0.35;
 function seasonCoins(t, moneyRank){ if(!t) return 0;
-  let c=(t.wins||0)*200 + (t.majors||0)*700 + (t.top10||0)*25 + (t.made||0)*6;
+  let c=(t.wins||0)*80 + (t.majors||0)*250 + (t.top10||0)*8 + (t.made||0)*2;
   const r=moneyRank||999;
-  c += r===1?400 : r<=3?275 : r<=5?180 : r<=10?110 : r<=25?50 : r<=50?20 : 0;
+  c += r===1?150 : r<=3?90 : r<=5?55 : r<=10?30 : r<=25?12 : r<=50?4 : 0;
   return Math.round(c); }
 // CS438: SPECIALTY-EVENT bonus coins - the team-cup + international-medal successes that seasonCoins (which
 // only counts tour wins/majors/finishes) doesn't reward. Earned by PLAYING through the season; a SIMMED
 // (Skip-to-End) season forfeits them (gated on !S.season.skipped at the call site). Tunable amounts.
-const COIN_CUP_MATCH=150, COIN_CUP_PERFECT=500, COIN_CUP_WIN=1200, COIN_CUP_CAPTAIN_WIN=1800, COIN_TOURCUP=1500;
-const COIN_MEDAL={gold:2000, silver:1200, bronze:800};
+const COIN_CUP_MATCH=50, COIN_CUP_PERFECT=200, COIN_CUP_WIN=400, COIN_CUP_CAPTAIN_WIN=600, COIN_TOURCUP=500;
+const COIN_MEDAL={gold:600, silver:350, bronze:200};
 function seasonBonusCoins(){
   let total=0; const parts=[];
   const T=S.season&&S.season.teamCup;
@@ -20414,7 +20414,7 @@ function finishDailyRound(){
   if(won){ sfx('win'); buzz([0,30,40,50]); } else { sfx('streak'); buzz([0,25]); }
   // coins for playing the daily, scaled by performance: base + beat-the-pro bonus + a margin bonus for how
   // far under the tour average you finished (CS392: every mode rewards by how you performed).
-  if(signedIn){ const margin=won?Math.min(400, Math.round(Math.max(0, avg-total)*40)):0;
+  if(signedIn){ const margin=won?Math.min(400, Math.round(Math.max(0, avg-total)*30)):0;
     const _xp=COIN_DAILY_XP + (won?COIN_DAILY_XP_BEAT:0); addXp(_xp); S.dailyXpGain=_xp;   // CS400: + Tour Rep (XP) for completing
     const dcoins=decisionPayoutCoins(S.dailyHoles, 1.0);   // CS436: coins for bold calls that paid off
     // CS401: the Sunday-to-Sunday streak-week reward track (once per new day)
