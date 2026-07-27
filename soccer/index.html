@@ -168,6 +168,28 @@
   button{font-family:inherit;cursor:pointer;}
   .app{max-width:640px;margin:0 auto;padding:18px 16px 48px;}
 
+  /* RunThe.GG cross-promo banners — top (hub) + bottom (more games). Full-width
+     slim strips with a centred pill button; kept clear of the fixed corner
+     toggles by generous side padding. Themed via the shared palette vars. */
+  .rtg-banner{display:flex;justify-content:center;align-items:center;text-decoration:none;
+    margin:0 -16px;padding:8px 54px;-webkit-tap-highlight-color:transparent;}
+  .rtg-banner.rtg-top{margin-top:-8px;margin-bottom:14px;
+    background:linear-gradient(180deg,rgba(244,180,19,.12),rgba(244,180,19,0));
+    border-bottom:1px solid var(--border-soft);}
+  .rtg-banner.rtg-bottom{margin:2px -16px 16px;padding-top:16px;border-top:1px solid var(--border-soft);}
+  .rtg-pill{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;
+    font-weight:800;font-size:12px;letter-spacing:.3px;color:var(--ink);
+    background:var(--white);border:1.5px solid var(--border-soft);border-radius:999px;
+    padding:8px 16px;box-shadow:0 3px 10px rgba(var(--shadow-rgb),.18);
+    transition:transform .1s ease,border-color .15s ease,box-shadow .15s ease;}
+  .rtg-banner:hover .rtg-pill{border-color:var(--gold);box-shadow:0 4px 14px rgba(var(--shadow-rgb),.26);}
+  .rtg-banner:active .rtg-pill{transform:translateY(1px);}
+  .rtg-pill .rtg-wm{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:15px;letter-spacing:.5px;}
+  .rtg-pill .rtg-wm .gg{color:var(--gold);}
+  .rtg-pill .rtg-lbl{text-transform:uppercase;font-size:10.5px;letter-spacing:1px;opacity:.7;}
+  .rtg-pill .rtg-ico{font-size:13px;}
+  .rtg-pill .rtg-arrow{color:var(--gold);font-weight:900;font-size:13px;margin-left:1px;}
+
   /* site-wide navigation footer (additive; sits at natural bottom of every screen) */
   .site-footer{margin-top:40px;padding:20px 0 8px;text-align:center;
     font-size:12px;color:#9a9387;font-family:'Archivo',system-ui,sans-serif;}
@@ -3233,6 +3255,11 @@ window.GA_ID='G-L29P5MRWKE';
 </script>
 <div class="app">
 
+  <!-- Top cross-promo banner: back to the RunThe.GG hub (all games) -->
+  <a class="rtg-banner rtg-top" href="https://runthe.gg" target="_blank" rel="noopener" aria-label="Go to RunThe.GG">
+    <span class="rtg-pill"><span class="rtg-wm">RunThe<span class="gg">.GG</span></span><span class="rtg-arrow" aria-hidden="true">↗</span></span>
+  </a>
+
   <div class="masthead">
     <span class="logo-badge"><img class="logo-light" src="/assets/runthepitch-logo-full_navytext_filled-shield_transparent.png" alt="RunThePitch" width="1983" height="793" /><img class="logo-dark" src="/assets/runthepitch-logo-full_shield-navy_transparent.png" alt="RunThePitch" width="1983" height="793" /></span>
     <span class="edition">World Cup Game</span>
@@ -4136,6 +4163,10 @@ window.GA_ID='G-L29P5MRWKE';
 
   <!-- ===== site-wide navigation footer (additive) ===== -->
   <footer class="site-footer">
+    <!-- Bottom cross-promo banner: more games at the RunThe.GG hub -->
+    <a class="rtg-banner rtg-bottom" href="https://runthe.gg" target="_blank" rel="noopener" aria-label="More games at RunThe.GG">
+      <span class="rtg-pill"><span class="rtg-ico" aria-hidden="true">🎮</span><span class="rtg-lbl">More Games at</span><span class="rtg-wm">RunThe<span class="gg">.GG</span></span><span class="rtg-arrow" aria-hidden="true">↗</span></span>
+    </a>
     <div class="footer-actions">
       <button id="btn-roster-updates" type="button" class="footer-btn"><svg class="tl-ico" viewBox="0 0 14 20" aria-hidden="true"><polygon points="9,0 2,11 7,11 5,20 12,9 7,9" fill="currentColor"/></svg> Roster Updates</button>
       <button id="btn-add-home" type="button" class="footer-btn"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="10.4" y1="4.3" x2="13.6" y2="4.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="19.6" r=".95" fill="currentColor"/><rect x="8.4" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="8.4" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/></svg> Add to Home</button>
