@@ -2047,7 +2047,8 @@ window.GA_ID='G-L29P5MRWKE';
   .scheme-none .stripe{display:none}
   .scheme-badge{display:flex;align-items:center;gap:10px;margin:8px 0 10px}
   .scheme-icon{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;
-    font-size:17px;flex-shrink:0}
+    flex-shrink:0}
+  .scheme-icon svg{width:19px;height:19px}
   .scheme-name{font-family:var(--fd);font-size:21px;line-height:1.05;letter-spacing:-.01em;
     text-transform:uppercase}
   .scheme-bonus{font-family:var(--fn);font-size:11.5px;font-weight:600;letter-spacing:.03em;
@@ -2615,7 +2616,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="stripe"></div>
       <div class="eyebrow" id="q-scheme-eye">Coach's take</div>
       <div class="scheme-badge" id="q-scheme-badge" hidden>
-        <div class="scheme-icon">&#9733;</div>
+        <div class="scheme-icon" id="q-scheme-icon"></div>
         <span class="scheme-name" id="q-scheme-name"></span>
         <span class="scheme-bonus">+3%</span>
       </div>
@@ -4142,6 +4143,24 @@ $('opts').addEventListener('click',e=>{
 });
 
 /* ---------- squad ---------- */
+/* One line icon per scheme, in the scheme's own colour (the tile sets `color`, and
+   every path draws with currentColor). Keyed to the engine's scheme keys. */
+const SCHEME_ICONS={
+  greatest_show:'<polyline points="3 16 9 10 13 14 21 6"/><polyline points="15 6 21 6 21 12"/>',
+  triplets:'<circle cx="12" cy="7" r="2" fill="currentColor" stroke="none"/><circle cx="7" cy="16" r="2" fill="currentColor" stroke="none"/><circle cx="17" cy="16" r="2" fill="currentColor" stroke="none"/>',
+  wildcat:'<circle cx="12" cy="15" r="3.4" fill="currentColor" stroke="none"/><circle cx="6.7" cy="11" r="1.5" fill="currentColor" stroke="none"/><circle cx="17.3" cy="11" r="1.5" fill="currentColor" stroke="none"/><circle cx="9.5" cy="7" r="1.4" fill="currentColor" stroke="none"/><circle cx="14.5" cy="7" r="1.4" fill="currentColor" stroke="none"/>',
+  air_coryell:'<path d="M13 2 4 14h7l-1 8 9-13h-7z"/>',
+  air_raid:'<path d="M3 8h9a2.5 2.5 0 1 0-2.5-2.5"/><path d="M3 12h13a2.5 2.5 0 1 1-2.5 2.5"/><path d="M3 16h7a2 2 0 1 1-2 2"/>',
+  run_and_shoot:'<circle cx="12" cy="12" r="8"/><line x1="12" y1="1.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22.5" y2="12"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/>',
+  west_coast:'<circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="6" r="2.6"/><circle cx="18" cy="18" r="2.6"/><line x1="8.3" y1="10.8" x2="15.7" y2="7.2"/><line x1="8.3" y1="13.2" x2="15.7" y2="16.8"/>',
+  ground_and_pound:'<line x1="12" y1="3" x2="12" y2="14"/><polyline points="7 9 12 14 17 9"/><line x1="5" y1="20" x2="19" y2="20"/>',
+  dual_threat:'<path d="M12 21V13"/><path d="M12 13 6 6.5"/><path d="M12 13 18 6.5"/><polyline points="6 10.5 6 6 10.5 6"/><polyline points="13.5 6 18 6 18 10.5"/>',
+  two_te:'<rect x="12.8" y="2" width="7.2" height="6" rx="2" fill="currentColor" stroke="none"/><path fill="currentColor" stroke="none" d="M13 6 L20 6 L20 19 Q20 20 19 20 L5 20 Q3 20 3 18 L3 16 Q3 13 5.5 13 Q8.5 13 10.5 9 Q12.5 6 13 10 Z"/>',
+};
+const schemeIconSvg=(key)=>SCHEME_ICONS[key]
+  ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '+
+   'stroke-linecap="round" stroke-linejoin="round">'+SCHEME_ICONS[key]+'</svg>'
+  :'';
 function paintSquad(){
   R.startSeason(run,DATA,CTX);
   drawField($('field2'),false);
@@ -4201,6 +4220,7 @@ function paintSquad(){
   $('q-scheme-tagline').hidden=!schemeName;
   $('q-verdict').hidden=!!schemeName;
   if(schemeName){
+    $('q-scheme-icon').innerHTML=schemeIconSvg(st.scheme);
     $('q-scheme-name').textContent=schemeName;
     $('q-scheme-tagline').textContent=E.SCHEME_TAGLINES[st.scheme]||'';
   }else{
