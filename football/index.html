@@ -4868,21 +4868,14 @@ function shareLines(){
  */
 const CARD={
   W:1080, H:1350, PAD:76,
-  TITLE:92, TAG:132,          // what the game is, for whoever has not played it
-  /* The record is 250px and the display face has a cap height near 0.73 of that, so
-     its glyphs reach 182px above their own baseline. At 320 that put them straight
-     through the tagline at 132. Everything below moved down with it. */
-  REC:350, VERDICT:412,       // the record, and how the season ended
-  RULE1:456,
-  /* 94 rather than 100. Six rows at 100 left the bottom of the card with 130px for a
-     stats row, a dare and a link, which is not enough for any of the three; the six
-     rows give up 36px between them and nothing about them reads tighter, because the
-     chips are 52px and 42px of air between them is still air. */
-  ROWS:518, ROW:94,           // six players, last baseline 988
-  RULE2:1044,
-  STAT:1132, STAT_LABEL:1174, // team rating, chemistry, spend
-  DARE:1240,                  // the invitation
-  LINK_T:1264, LINK_H:60,     // and where to accept it, as a pill
+  TITLE:92, TAG:120,          // what the game is, for whoever has not played it
+  REC:360, VERDICT:422,       // the record, and how the season ended
+  RULE1:466,
+  ROWS:528, ROW:94,           // six players, last baseline 998
+  RULE2:1054,
+  STAT:1142, STAT_LABEL:1184, // team rating, chemistry, spend
+  DARE:1250,                  // the invitation
+  LINK_T:1274, LINK_H:60,     // and where to accept it, as a pill
   KEEL:10,
 };
 
@@ -4972,7 +4965,7 @@ function drawShareCard(){
   B('400',25); x.fillStyle='rgba(255,255,255,.42)';
   centered(run.franchise
     ? 'One Franchise: '+E.cityLabel(run.franchise)+'. Six spins, six players, any year.'
-    : 'Six spins. Six signings. One shot at 20-0.',CARD.TAG);
+    : 'Six spins. One roster. One shot at 20-0.',CARD.TAG);
 
   // The record, which is the whole point of the card.
   const tone=o.perfect?'#fcd34d':(o.titleWon?'#93c5fd':'#ffffff');
