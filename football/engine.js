@@ -707,17 +707,28 @@ const STRUCTURE = {
   MAX: 1.18,
 };
 
+/*
+ * Each detect returns a FIT in 0..1 when the roster qualifies, or -1 when it does not.
+ * The fit is how far the scheme's key numbers clear their thresholds: 0 for a roster that
+ * only just qualifies, 1 for one that blows past every requirement. rosterStructure turns
+ * that into the bonus, 1% at fit 0 up to 3% at fit 1, so a stronger fit is worth more.
+ *
+ * `over(v, min, span)` is the building block: 0 at the threshold, 1 once v is `span` above
+ * it. `fitAvg` averages the requirements, so a scheme is only strongly itself when all of
+ * its parts are, not when one number is huge and the rest scrape by.
+ */
 const SCHEMES = [
   {
     key: 'greatest_show',
     name: 'Greatest Show on Turf',
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
-      if (!qb || (qb.pass_ppg || 0) < 15) return false;
+      if (!qb || (qb.pass_ppg || 0) < 15) return -1;
       const wr = roster.filter(p => p.position === 'WR').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
-      if (!wr || (wr.rec_ppg || 0) < 9) return false;
+      if (!wr || (wr.rec_ppg || 0) < 9) return -1;
       const rb = roster.filter(p => p.position === 'RB').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
-      return rb && (rb.rec_ppg || 0) >= 4;
+      if (!rb || (rb.rec_ppg || 0) < 4) return -1;
+      return fitAvg(over(qb.pass_ppg, 15, 7), over(wr.rec_ppg, 9, 6), over(rb.rec_ppg, 4, 4));
     },
     strength: 'Greatest Show on Turf. Warner, Faulk, Bruce and Holt reborn.',
   },
@@ -725,11 +736,13 @@ const SCHEMES = [
     key: 'triplets',
     name: 'The Triplets',
     detect(roster) {
-      const pos = new Set();
+      const byPos = {};
       for (const p of roster) {
-        if (p.ppr_ppg_mean >= 14) pos.add(p.position);
+        if (p.ppr_ppg_mean >= 14) byPos[p.position] = Math.max(byPos[p.position] || 0, p.ppr_ppg_mean);
       }
-      return pos.size >= 3;
+      const stars = Object.values(byPos).sort((a, b) => b - a);
+      if (stars.length < 3) return -1;
+      return fitAvg(...stars.slice(0, 3).map(v => over(v, 14, 12)));
     },
     strength: 'The Triplets. Three stars at three positions, like the Cowboys.',
   },
@@ -738,9 +751,10 @@ const SCHEMES = [
     name: 'Wildcat',
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
-      if (!qb || (qb.rush_ppg || 0) < 3.5) return false;
+      if (!qb || (qb.rush_ppg || 0) < 3.5) return -1;
       const rb = roster.filter(p => p.position === 'RB').sort((a, b) => (b.rush_ppg || 0) - (a.rush_ppg || 0))[0];
-      return rb && (rb.rush_ppg || 0) >= 10;
+      if (!rb || (rb.rush_ppg || 0) < 10) return -1;
+      return fitAvg(over(qb.rush_ppg, 3.5, 4), over(rb.rush_ppg, 10, 6));
     },
     strength: 'Wildcat. Two runners the defense cannot account for.',
   },
@@ -749,11 +763,12 @@ const SCHEMES = [
     name: 'Air Coryell',
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
-      if (!qb || (qb.pass_ppg || 0) < 14) return false;
+      if (!qb || (qb.pass_ppg || 0) < 14) return -1;
       const te = roster.filter(p => p.position === 'TE').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
-      if (!te || (te.rec_ppg || 0) < 6) return false;
+      if (!te || (te.rec_ppg || 0) < 6) return -1;
       const wr = roster.filter(p => p.position === 'WR').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
-      return wr && (wr.rec_ppg || 0) >= 8;
+      if (!wr || (wr.rec_ppg || 0) < 8) return -1;
+      return fitAvg(over(qb.pass_ppg, 14, 7), over(te.rec_ppg, 6, 5), over(wr.rec_ppg, 8, 6));
     },
     strength: 'Air Coryell. The vertical game with a tight end who can beat you.',
   },
@@ -762,9 +777,11 @@ const SCHEMES = [
     name: 'Air Raid',
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
-      if (!qb || (qb.pass_ppg || 0) < 13) return false;
-      const strongWR = roster.filter(p => p.position === 'WR' && (p.rec_ppg || 0) >= 7);
-      return strongWR.length >= 2;
+      if (!qb || (qb.pass_ppg || 0) < 13) return -1;
+      const wrs = roster.filter(p => p.position === 'WR' && (p.rec_ppg || 0) >= 7)
+        .sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0));
+      if (wrs.length < 2) return -1;
+      return fitAvg(over(qb.pass_ppg, 13, 7), over(wrs[0].rec_ppg, 7, 7), over(wrs[1].rec_ppg, 7, 7));
     },
     strength: 'Air Raid. The passing game can carry this team.',
   },
@@ -773,9 +790,11 @@ const SCHEMES = [
     name: 'Run and Shoot',
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
-      if (!qb || (qb.pass_ppg || 0) < 12) return false;
-      const wrs = roster.filter(p => p.position === 'WR');
-      return wrs.length >= 3;
+      if (!qb || (qb.pass_ppg || 0) < 12) return -1;
+      const wrs = roster.filter(p => p.position === 'WR').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0));
+      if (wrs.length < 3) return -1;
+      const wrFit = fitAvg(...wrs.slice(0, 3).map(w => over(w.rec_ppg, 5, 7)));
+      return fitAvg(over(qb.pass_ppg, 12, 8), wrFit);
     },
     strength: 'Run and Shoot. Three wideouts and a quarterback who can find them.',
   },
@@ -784,13 +803,14 @@ const SCHEMES = [
     name: 'West Coast',
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
-      if (!qb || (qb.pass_ppg || 0) < 11) return false;
+      if (!qb || (qb.pass_ppg || 0) < 11) return -1;
       const te = roster.filter(p => p.position === 'TE').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
-      if (!te || (te.rec_ppg || 0) < 5) return false;
+      if (!te || (te.rec_ppg || 0) < 5) return -1;
       const rb = roster.filter(p => p.position === 'RB').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
-      if (!rb || (rb.rec_ppg || 0) < 3) return false;
+      if (!rb || (rb.rec_ppg || 0) < 3) return -1;
       const wr = roster.filter(p => p.position === 'WR').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
-      return wr && (wr.rec_ppg || 0) >= 6;
+      if (!wr || (wr.rec_ppg || 0) < 6) return -1;
+      return fitAvg(over(qb.pass_ppg, 11, 8), over(te.rec_ppg, 5, 5), over(rb.rec_ppg, 3, 4), over(wr.rec_ppg, 6, 6));
     },
     strength: 'West Coast. Short passes, every position catches, nobody is open by accident.',
   },
@@ -799,9 +819,10 @@ const SCHEMES = [
     name: 'Ground and Pound',
     detect(roster) {
       const rb = roster.filter(p => p.position === 'RB').sort((a, b) => (b.rush_ppg || 0) - (a.rush_ppg || 0))[0];
-      if (!rb || (rb.rush_ppg || 0) < 9) return false;
+      if (!rb || (rb.rush_ppg || 0) < 9) return -1;
       const te = roster.filter(p => p.position === 'TE').sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
-      return te && te.ppr_ppg_mean >= 7;
+      if (!te || te.ppr_ppg_mean < 7) return -1;
+      return fitAvg(over(rb.rush_ppg, 9, 7), over(te.ppr_ppg_mean, 7, 8));
     },
     strength: 'Ground and Pound. The run game controls the clock.',
   },
@@ -810,7 +831,8 @@ const SCHEMES = [
     name: 'Dual Threat',
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
-      return qb && (qb.rush_ppg || 0) >= 3.5;
+      if (!qb || (qb.rush_ppg || 0) < 3.5) return -1;
+      return over(qb.rush_ppg, 3.5, 6);
     },
     strength: 'Dual Threat quarterback. Defenses cannot key on one thing.',
   },
@@ -818,21 +840,28 @@ const SCHEMES = [
     key: 'two_te',
     name: 'Two TE Set',
     detect(roster) {
-      const tes = roster.filter(p => p.position === 'TE' && p.ppr_ppg_mean >= 6);
-      return tes.length >= 2;
+      const tes = roster.filter(p => p.position === 'TE' && p.ppr_ppg_mean >= 6)
+        .sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean);
+      if (tes.length < 2) return -1;
+      return fitAvg(over(tes[0].ppr_ppg_mean, 6, 8), over(tes[1].ppr_ppg_mean, 6, 8));
     },
     strength: 'Two TE Set. Heavy personnel that can run or catch.',
   },
 ];
 
+/* The first scheme in the list (hardest and most specific first) that the roster fits,
+   with the fit strength that sets the size of its bonus. */
 function detectScheme(roster) {
   for (const s of SCHEMES) {
-    if (s.detect(roster)) return s;
+    const fit = s.detect(roster);
+    if (fit >= 0) return { key: s.key, name: s.name, fit: clamp(fit, 0, 1) };
   }
   return null;
 }
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const over = (v, min, span) => clamp(((v || 0) - min) / span, 0, 1);
+const fitAvg = (...xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
 /**
  * Read a roster's shape. Returns the multiplier plus the parts that produced it,
@@ -879,15 +908,19 @@ function rosterStructure(roster) {
   // Quarterback support applies to catching points only, so it is folded in as a
   // change to the effective total rather than a flat multiplier.
   const effective = sum((p) => p.pass_ppg) + rush + rec * qbSupport;
-  const SCHEME_BONUS = 0.03;
+  /* The scheme bonus is a range, not a flat number: 1% for a roster that only just
+     fits the scheme, scaling to 3% for one that fits it strongly. detectScheme's fit
+     (0..1) is what slides it between the two. */
+  const SCHEME_MIN_BONUS = 0.01, SCHEME_MAX_BONUS = 0.03;
+  const schemeBonus = scheme
+    ? SCHEME_MIN_BONUS + (SCHEME_MAX_BONUS - SCHEME_MIN_BONUS) * scheme.fit : 0;
   const multiplier = clamp(
-    (effective / total) * balance * concentration * Math.max(0.3, floor)
-      + (scheme ? SCHEME_BONUS : 0),
+    (effective / total) * balance * concentration * Math.max(0.3, floor) + schemeBonus,
     S.MIN, S.MAX,
   );
 
   return { multiplier, qbSupport, balance, concentration, floor, floorShare,
-    rushShare, topShare, qbPass, total, scheme: scheme ? scheme.key : null };
+    rushShare, topShare, qbPass, total, scheme: scheme ? scheme.key : null, schemeBonus };
 }
 
 /**
@@ -1796,7 +1829,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 29;
+const ENGINE_API_VERSION = 30;
 
 /*
  * The three-letter code a team actually wore in a given season.
