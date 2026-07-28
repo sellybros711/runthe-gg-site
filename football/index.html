@@ -106,7 +106,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Big+Shoulders+Display:wght@600;700&family=Archivo:wght@500;600;700;800&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Big+Shoulders+Display:wght@600;700&family=Archivo:wght@500;600;700;800&family=Barlow+Condensed:wght@700;800&family=Orbitron:wght@700;900&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#080b14; --panel:#131a2b; --panel-2:#1a2337;
@@ -189,6 +189,10 @@ window.GA_ID='G-L29P5MRWKE';
     --fp:'Big Shoulders Display','Anton',Impact,sans-serif;
     --fn:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
     --fb:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    /* Score bug faces: Barlow Condensed for the default glossy bug, Orbitron for the
+       2000s-era LED jumbotron. */
+    --fbar:'Barlow Condensed',Impact,sans-serif;
+    --fled:'Orbitron','Barlow Condensed',sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   /* KEYBOARD FOCUS.
@@ -1799,118 +1803,103 @@ window.GA_ID='G-L29P5MRWKE';
      in its own recessed well; the strip's cells are pressed into the strip rather than
      printed on it; and the round cell is cut to a chevron, the way a network cuts the
      down-and-distance cell. */
-  .bug{border-radius:12px;overflow:hidden;background:#070c15;
-    border:1px solid rgba(255,255,255,.15);
-    box-shadow:0 18px 38px -18px #000,0 2px 8px -3px rgba(0,0,0,.7),
-      inset 0 1px 0 rgba(255,255,255,.16),inset 0 -1px 0 rgba(0,0,0,.65)}
-  /* A real groove between the plates, not a hairline. Half the league washes to some
-     shade of blue and so does YOUR side, so two adjacent plates can land within a few
-     points of each other; a 3px dark gap keeps them two objects whatever the colours. */
-  .bug .btop{display:flex;align-items:stretch;gap:3px;background:#04070d}
-  /* The plate. Flat club colour with the gloss painted over it rather than a computed
-     shade, so nothing here depends on colour-mix being available. The hard stop at 47%
-     is the specular break: a broadcast plate is two surfaces, not a fade. */
-  .bug .bt{flex:1 1 0;min-width:0;position:relative;display:flex;align-items:center;
-    gap:7px;padding:9px 11px 11px;
+  /* ── SCORE BUG ────────────────────────────────────────────────────────────────
+     Aqua-gloss broadcast bug: rounded glassy plates in the club colour with a wet
+     sheen across the top, the score in a WHITE pill. Dark numerals on white read
+     sharp over any club colour, which is what keeps the two sides legible even when
+     both wash to a similar blue. Set in Barlow Condensed. The 2000s era swaps the
+     whole thing for an LED jumbotron (.bug.led) at the end of this block. */
+  .bug{border-radius:16px;overflow:hidden;padding:5px;
+    background:linear-gradient(180deg,#3a4457,#12161f);
+    box-shadow:0 16px 34px -14px #000,inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 6px rgba(0,0,0,.6)}
+  .bug .btop{display:flex;align-items:stretch;gap:5px}
+  .bug .bt{flex:1 1 0;min-width:0;position:relative;border-radius:12px;overflow:hidden;
+    display:flex;align-items:center;gap:8px;padding:11px 14px;
     background-color:var(--tcol,#334155);
-    background-image:linear-gradient(180deg,rgba(255,255,255,.30),rgba(255,255,255,.07) 46%,
-      rgba(0,0,0,.10) 47%,rgba(0,0,0,.38));
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.38);
+    background-image:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.10) 46%,
+      rgba(0,0,0,.10) 54%,rgba(0,0,0,.32));
     transition:filter .2s ease}
-  .bug .bt.them{flex-direction:row-reverse}
-  /* The bright rail on the outer edge, where a broadcast stacks its timeout pips.
-     Not pips: nothing in this game has timeouts, and three lit boxes that never go
-     out would be a readout of something that does not exist. */
-  .bug .bt:before{content:'';position:absolute;top:0;bottom:0;width:4px;z-index:1;
-    background:linear-gradient(180deg,rgba(255,255,255,.8),rgba(255,255,255,.22))}
-  .bug .bt.you:before{left:0} .bug .bt.them:before{right:0}
-  /* The club's second colour as a rule along the foot of its own plate, the way a
-     network underlines a team block. */
+  .bug .bt.them{flex-direction:row-reverse;text-align:right}
+  /* The wet sheen across the top half, the whole point of the look. */
+  .bug .bt:before{content:'';position:absolute;left:6px;right:6px;top:4px;height:42%;border-radius:10px;
+    background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.04));pointer-events:none}
+  /* The club's second colour as a rule along the foot of its own plate. */
   .bug .bt:after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;
-    background:var(--tcol2,rgba(255,255,255,.3));box-shadow:0 -1px 0 rgba(0,0,0,.45)}
-  .bug .bt .cd{font-family:var(--fd);font-size:17px;letter-spacing:.05em;line-height:1;
-    color:#fff;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6)}
-  .bug .bt .rc{font-family:var(--fn);font-size:11px;font-weight:600;line-height:1;
-    color:rgba(255,255,255,.8);white-space:nowrap;font-variant-numeric:tabular-nums;
-    text-shadow:0 1px 2px rgba(0,0,0,.55)}
-  /* The score in its own recessed well, like the black score box on a network plate. */
-  .bug .bt .sc{margin-left:auto;font-family:var(--fd);font-size:29px;line-height:1;
-    padding:1px 8px 2px;border-radius:6px;color:#fff;font-variant-numeric:tabular-nums;
-    background:linear-gradient(180deg,rgba(0,0,0,.52),rgba(0,0,0,.24));
-    box-shadow:inset 0 1px 2px rgba(0,0,0,.75),inset 0 0 0 1px rgba(0,0,0,.4),
-      0 1px 0 rgba(255,255,255,.16);
-    text-shadow:0 2px 4px rgba(0,0,0,.6)}
+    background:var(--tcol2,rgba(255,255,255,.3))}
+  .bug .bt .cd{position:relative;font-family:var(--fbar);font-weight:800;font-size:22px;line-height:1;
+    letter-spacing:.01em;color:#fff;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+  .bug .bt .rc{position:relative;font-family:var(--fbar);font-weight:800;font-size:13px;line-height:1;
+    color:rgba(255,255,255,.88);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .bug .bt .sc{position:relative;margin-left:auto;font-family:var(--fbar);font-weight:800;font-size:30px;
+    line-height:.9;padding:2px 10px 3px;border-radius:8px;color:#12161f;font-variant-numeric:tabular-nums;
+    background:linear-gradient(180deg,#fff,#cdd6e2);box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.4)}
   .bug .bt.them .sc{margin-left:0;margin-right:auto}
-  /* The trailing side sits back, which is how you read one of these without reading
-     the numbers. Applied to the plate, so the club colour dims with it. */
-  .bug .bt{filter:saturate(.74) brightness(.8)}
+  /* The trailing side sits back, so you read who leads without reading the numbers. */
+  .bug .bt{filter:saturate(.66) brightness(.68)}
   .bug .bt.lead{filter:none}
-  /* The number itself kicks when it changes, so a score never just appears. */
   .bug .bt.scored .sc{animation:scorepop .5s cubic-bezier(.2,1.5,.35,1)}
   @keyframes scorepop{0%{transform:scale(1)}35%{transform:scale(1.42)}100%{transform:scale(1)}}
-  .bug .bt.scored{filter:brightness(1.3)}
+  .bug .bt.scored{filter:brightness(1.22)}
 
-  .bug .bbot{display:flex;align-items:center;gap:9px;padding:7px 10px;
-    background:linear-gradient(180deg,#1b2740,#0b1220 52%,#070d18);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 8px 10px -10px rgba(255,255,255,.2)}
-  .bug .bbot .q{font-family:var(--fd);font-size:14px;letter-spacing:.06em;color:#cbd5e1;
-    flex:0 0 auto;text-shadow:0 1px 2px rgba(0,0,0,.6)}
-  /* Pressed into the strip rather than printed on it. */
-  .bug .bbot .ck{font-family:var(--fd);font-size:19px;line-height:1;letter-spacing:.01em;
-    font-variant-numeric:tabular-nums;flex:0 0 auto;padding:2px 8px 3px;border-radius:5px;
-    background:rgba(0,0,0,.42);
-    box-shadow:inset 0 1px 3px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.1)}
+  .bug .bbot{display:flex;align-items:center;gap:10px;padding:8px 13px 6px;
+    font-family:var(--fbar);font-weight:800}
+  .bug .bbot .q{font-size:15px;letter-spacing:.04em;color:#cbd5e1;flex:0 0 auto;line-height:1}
+  .bug .bbot .ck{font-size:20px;line-height:1;color:#fff;flex:0 0 auto;font-variant-numeric:tabular-nums}
   .bug .bbot .ck:empty{display:none}
-  /* The round or the week, hard right, cut to a chevron the way a network cuts its
-     down-and-distance cell. Its own readout, not more clock. */
-  .bug .bbot .rd{margin-left:auto;font-family:var(--fd);font-size:12.5px;letter-spacing:.09em;
-    line-height:1;padding:6px 9px 6px 16px;white-space:nowrap;color:#e2e8f0;
-    clip-path:polygon(9px 0,100% 0,100% 100%,9px 100%,0 50%);
-    background:linear-gradient(180deg,rgba(255,255,255,.19),rgba(255,255,255,.05));
-    text-shadow:0 1px 2px rgba(0,0,0,.55)}
-  /* Under two minutes, the clock itself says so. */
-  .bug.urgent .bbot{background:linear-gradient(180deg,#4a1620,#22090d)}
+  /* The round or the week, hard right, as a coloured tag. Slate by default and for the
+     season's week; it climbs blue, brushed silver, gold up the playoffs (round rules below). */
+  .bug .bbot .rd{margin-left:auto;font-size:14px;letter-spacing:.05em;line-height:1;white-space:nowrap;
+    color:#e6edf6;background:linear-gradient(180deg,#586479,#333c4c);padding:5px 12px;border-radius:8px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+  /* The season name in the q slot, where a playoff bug carries the clock. */
+  .bug .bbot .q.name{flex:1 1 auto;min-width:0;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bug.urgent .bbot .ck{color:#fca5a5}
-  .bug.final .bbot .ck{font-size:14px;letter-spacing:.09em}
+  .bug.final .bbot .ck{font-size:14px;letter-spacing:.06em}
 
-  /* ROUND BY ROUND. Wild Card is the base above. Each rung re-finishes the metal rather
-     than changing the layout, so the bug stays the same object all the way up: steel,
-     then brushed silver, then gold. */
-  .bug.r-div{border-color:rgba(96,165,250,.45)}
-  .bug.r-div .bbot{background:linear-gradient(180deg,#22406e,#0c1730 52%,#08101f)}
-  .bug.r-div .bbot .q{color:#dbeafe}
-  .bug.r-div .bbot .rd{color:#dbeafe;
-    background:linear-gradient(180deg,rgba(147,197,253,.42),rgba(37,99,235,.22))}
+  /* ROUND BY ROUND. The round tag climbs the metals without changing the layout: slate
+     (wild card, the base), then blue, then brushed silver, then gold at the Super Bowl. */
+  .bug.r-div .bbot .rd{color:#08172e;background:linear-gradient(180deg,#bcd6ff,#4f8de0)}
+  .bug.r-cc .bbot .rd{color:#12161f;background:linear-gradient(180deg,#f8fafc,#aab4c4)}
+  .bug.r-sb{box-shadow:0 18px 40px -14px #000,0 0 28px -8px rgba(245,158,11,.4),
+    inset 0 1px 0 rgba(255,228,155,.4),inset 0 -2px 6px rgba(0,0,0,.6)}
+  .bug.r-sb .bbot .rd{color:#3a2600;background:linear-gradient(180deg,#ffe08a,#e0a423)}
 
-  .bug.r-cc{border-color:rgba(203,213,225,.55);
-    box-shadow:0 18px 40px -18px #000,0 0 20px -8px rgba(226,232,240,.5),
-      inset 0 1px 0 rgba(255,255,255,.3),inset 0 -1px 0 rgba(0,0,0,.6)}
-  .bug.r-cc .bbot{background:linear-gradient(180deg,#7f8ba3,#3b465e 46%,#222b3d 47%,#131a28)}
-  .bug.r-cc .bbot .q{color:#fff}
-  .bug.r-cc .bbot .ck{color:#f8fafc}
-  .bug.r-cc .bbot .rd{color:#0d1320;text-shadow:none;
-    background:linear-gradient(180deg,#f8fafc,#c3cbd8 46%,#aab4c4 47%,#dde3ea)}
-
-  .bug.r-sb{border-color:rgba(245,190,80,.65);
-    box-shadow:0 20px 44px -16px #000,0 0 30px -6px rgba(245,158,11,.45),
-      inset 0 1px 0 rgba(255,228,155,.4),inset 0 -1px 0 rgba(0,0,0,.6)}
-  .bug.r-sb .bbot{background:linear-gradient(180deg,#8a6516,#4a3610 46%,#33240a 47%,#1c1305)}
-  .bug.r-sb .bbot .q{color:#fde68a}
-  .bug.r-sb .bbot .ck{color:#fef3c7}
-  .bug.r-sb .bbot .rd{color:#2a1b02;text-shadow:none;font-size:13px;
-    background:linear-gradient(180deg,#fff3c4,#e8b53c 46%,#cf9614 47%,#f3d071)}
-  .bug.r-sb .bt .sc{font-size:32px}
-  .bug.r-sb.urgent .bbot{background:linear-gradient(180deg,#6b1f2a,#22090d)}
-
-  /* On the season screen the bug is the subject of the whole screen rather than a
-     strip in the corner of one, so it runs larger, and the strip carries the
-     opponent's name where a playoff bug carries the clock. */
-  .bug.big .bt{padding:13px 13px}
-  .bug.big .bt .cd{font-size:19px}
-  .bug.big .bt .rc{font-size:12.5px}
+  /* On the season screen the bug is the subject of the whole screen, so it runs larger. */
+  .bug.big .bt{padding:13px 16px}
+  .bug.big .bt .cd{font-size:26px}
+  .bug.big .bt .rc{font-size:14px}
   .bug.big .bt .sc{font-size:44px}
-  .bug .bbot .q.name{flex:1 1 auto;min-width:0;font-size:13px;letter-spacing:.02em;
-    color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bug.big .bbot .ck{font-size:22px}
+  .bug.big .bbot .q.name{font-size:14px}
+
+  /* ── 2000s ERA: LED JUMBOTRON ──────────────────────────────────────────────────
+     A black stadium screen in a brushed-metal bezel, segmented digits glowing in
+     Orbitron, a green game clock. Overrides the gloss above whenever a 2000s-era run
+     is played (JS adds .led to the bug then). */
+  .bug.led{padding:5px;border-radius:9px;
+    background:linear-gradient(180deg,#c9ced6,#7d8794 45%,#535c69 55%,#aab2bd);
+    box-shadow:0 14px 30px -12px #000,inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(0,0,0,.5)}
+  .bug.led .btop{gap:0;background:#05070a;border-radius:5px 5px 0 0;padding:12px 15px 11px}
+  .bug.led .bt{background:none;border-radius:0;padding:0 8px;overflow:visible;filter:none}
+  .bug.led .bt.you{box-shadow:1px 0 0 rgba(255,255,255,.1)}
+  .bug.led .bt:before,.bug.led .bt:after{display:none}
+  .bug.led .bt:not(.lead){opacity:.5}
+  .bug.led .bt .cd{font-family:var(--fled);font-weight:900;font-size:17px;letter-spacing:.03em;text-shadow:none}
+  .bug.led .bt.you .cd{color:#5aa6ff;text-shadow:0 0 8px rgba(90,166,255,.8)}
+  .bug.led .bt.them .cd{color:#2fe4d2;text-shadow:0 0 8px rgba(47,228,210,.7)}
+  .bug.led .bt .rc{font-family:var(--fled);font-weight:900;font-size:11px;color:#8ea3bd;text-shadow:none}
+  .bug.led .bt .sc{font-family:var(--fled);font-weight:900;font-size:30px;color:#ffcf3f;background:none;
+    box-shadow:none;padding:0;border-radius:0;text-shadow:0 0 10px rgba(255,180,20,.9),0 0 2px #ffcf3f}
+  .bug.led .bbot{background:#05070a;border-radius:0 0 5px 5px;padding:8px 15px 10px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+  .bug.led .bbot .q{font-family:var(--fled);font-weight:900;font-size:12px;color:#8ea3bd}
+  .bug.led .bbot .ck{font-family:var(--fled);font-weight:900;font-size:17px;color:#7CFC5A;
+    text-shadow:0 0 8px rgba(90,240,90,.7)}
+  .bug.led .bbot .rd{font-family:var(--fled);font-weight:900;font-size:11px;letter-spacing:.06em;color:#ffcf3f;
+    background:none;box-shadow:none;padding:0;text-shadow:0 0 6px rgba(255,180,20,.6)}
+  .bug.led.big .bt .cd{font-size:22px}
+  .bug.led.big .bt .sc{font-size:40px}
+  .bug.led.big .bbot .ck{font-size:20px}
 
   /* The call: what just happened, once, then it fades back. */
   .pocap{min-height:56px;margin-top:13px;display:flex;align-items:center;justify-content:center}
@@ -4448,6 +4437,8 @@ function startSeason(){
   paintNext(); paintUpcomingBug(); paintCalendar();
   $('v-you').textContent='0'; $('v-them').textContent='0';
   $('v-byou').classList.add('lead'); $('v-bthem').classList.add('lead');
+  /* A 2000s-era run wears the LED jumbotron; everything else keeps the glossy bug. */
+  $('v-bug').classList.toggle('led', run.era==='2000s');
   show('s-season'); runSim();
 }
 /* A NUMBER THAT ARRIVES RATHER THAN APPEARS.
@@ -4632,7 +4623,7 @@ function playPlayoffGame(r,after){
   youEl.querySelector('.sc').textContent='0';
   themEl.querySelector('.sc').textContent='0';
   youEl.className='bt you'; themEl.className='bt them';
-  bug.className='bug '+rcls;
+  bug.className='bug '+rcls+(run.era==='2000s'?' led':'');
   $('po-q').textContent=QNAME[0];
   $('po-ck').textContent='15:00';
   $('po-rd').textContent=ROUND_SHORT[round]||round.toUpperCase();
@@ -4658,7 +4649,7 @@ function playPlayoffGame(r,after){
     youEl.querySelector('.sc').textContent=r.shownYou;
     themEl.querySelector('.sc').textContent=r.shownThem;
     setLead(r.shownYou,r.shownThem);
-    bug.className='bug final '+rcls;
+    bug.className='bug final '+rcls+(run.era==='2000s'?' led':'');
     $('po-q').textContent='FINAL';
     $('po-ck').textContent=r.won?'YOU WIN':'YOU LOSE';
     // Anything the clock never reached still belongs in the log.
