@@ -2114,6 +2114,11 @@ window.GA_ID='G-L29P5MRWKE';
   details.drop .body{padding:0 15px 14px}
   /* results hero */
   .hero-rec{text-align:center;padding:2px 0 0}
+  /* Which competition the run was: a bordered chip above the record, so a shared
+     screen says whether a rating came from free play, one franchise, or one era. */
+  .modetag{display:inline-block;font-family:var(--fn);font-size:10.5px;font-weight:700;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+    border:1px solid var(--line-2);border-radius:99px;padding:4px 11px;margin:0 0 9px}
   .hero-rec .big{font-family:var(--fd);font-size:78px;line-height:.86;letter-spacing:-.02em}
   .hero-rec .big.gold{background:linear-gradient(180deg,#fde68a,#d97706);-webkit-background-clip:text;
     background-clip:text;color:transparent}
@@ -2691,6 +2696,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <!-- 1. Record and how the season ended. -->
     <div class="verdict" id="o-card">
       <div class="hero-rec">
+        <div class="modetag" id="o-mode">Free play</div>
         <div class="eyebrow" id="o-eyebrow">Final record</div>
         <div class="big" id="o-rec">0-0</div>
         <div class="hero-sub" id="o-title">Season over</div>
@@ -2844,6 +2850,14 @@ function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(
    events and every board call ask it, and a run with no club is a free run wherever it is
    asked from. Safe before a run exists, which is most of the page's life. */
 function runMode(){ return (run&&run.era)?'era':(run&&run.franchise)?'club':'free'; }
+/* The competition this run belongs to, in plain words, for the result screen and the
+   share card. A free-play rating and a One Franchise rating are not the same achievement
+   and they sit on different boards, so anything that shows a rating has to say which. */
+function runModeLabel(){
+  if(run&&run.franchise) return 'One Franchise: '+E.cityLabel(run.franchise);
+  if(run&&run.era) return run.era+' era';
+  return 'Free play';
+}
 /* What chemistry needs to know about the mode. Same object run.js builds, and it has to
    be passed at every call site or the rail on the draft screen draws links the season
    does not pay for. */
@@ -4709,6 +4723,7 @@ const ROUND_TAG={'Wild Card':'WC','Divisional':'DIV','Conference Championship':'
 function paintOver(){
   const o=run.outcome,s=run.season,c=$('o-card');
   c.className='verdict';
+  $('o-mode').textContent=runModeLabel();
   $('o-rec').textContent=o.record;
   $('o-rec').className='big'+(o.perfect?' gold':(o.titleWon?' win':''));
   if(o.perfect){c.classList.add('gold');
@@ -4955,8 +4970,11 @@ function shareLines(){
      run going 15-5, and the rating on the end of it is only comparable to other runs of the
      same kind, so the text has to say which. */
   const head='The Perfect Season: '+o.record+'. '+what;
-  /* The city, for the same reason the card uses it: this text is posted somewhere else. */
-  const mode=run.franchise?' One Franchise: '+E.cityLabel(run.franchise)+'.':'';
+  /* The city, for the same reason the card uses it: this text is posted somewhere else.
+     Era runs name the decade for the same reason. A free run needs no tag: it is the
+     open competition, and the leaderboard treats an untagged run as one. */
+  const mode=run.franchise?' One Franchise: '+E.cityLabel(run.franchise)+'.'
+    :run.era?' '+run.era+' era.':'';
   return {head,
     text:head+mode+rate+'\n'+shareDare(o)+'\n'+SHARE_URL};
 }
@@ -5075,7 +5093,9 @@ function drawShareCard(){
   B('400',25); x.fillStyle='rgba(255,255,255,.42)';
   centered(run.franchise
     ? 'One Franchise: '+E.cityLabel(run.franchise)+'. Six spins, six players, any year.'
-    : 'Six spins. One roster. One shot at 20-0.',CARD.TAG);
+    : run.era
+    ? run.era+' era. Six spins, six players from one decade.'
+    : 'Free play. Six spins, one roster, one shot at 20-0.',CARD.TAG);
 
   // The record, which is the whole point of the card.
   const tone=o.perfect?'#fcd34d':(o.titleWon?'#93c5fd':'#ffffff');
