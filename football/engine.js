@@ -71,7 +71,18 @@ const CONSTANTS = {
    * Re-solve before trusting any change to pricing, the cap, chemistry, or the
    * structure model. All four move these numbers.
    */
-  SCALE: 2.65,
+  /* RAISED 2.65 -> 2.85 TO MAKE 20-0 RARE AGAIN, ESPECIALLY BELOW A 95 RATING.
+   * Opponents score a little more in every game, which shrinks the win margin a
+   * good roster carries. The margin is what a 20-game unbeaten run compounds, so
+   * the tail is far more sensitive to this than a typical record is: measured over
+   * 4,000 seasons per rating, going 20-0 fell from 0.35% to 0.10% at a 93 rating
+   * and from 1.4% to 0.5% at 100, while the top team's usual record barely moved
+   * (about 14-3, one game off). Variance was the wrong dial for this: dropping
+   * CONSISTENCY to zero moved a 93's 20-0 rate by 0.07 of a point, because the gap
+   * between a strong roster and its opponents, not the noise around it, is what
+   * lets it win out. The policy table above was solved at 2.65 and is kept as the
+   * pre-change baseline; only the opponent strength moved. */
+  SCALE: 2.85,
   CAP_MUSD: 140,
   /*
    * Re-spins are two separate levers now, one per wheel, and they get dearer as
@@ -1755,7 +1766,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 26;
+const ENGINE_API_VERSION = 27;
 
 /*
  * The three-letter code a team actually wore in a given season.
