@@ -666,6 +666,68 @@ const STRUCTURE = {
   MAX: 1.18,
 };
 
+const SCHEMES = [
+  {
+    key: 'air_raid',
+    name: 'Air Raid',
+    relief: 0.70,
+    bonus: 0.02,
+    detect(roster) {
+      const qb = roster.find(p => p.position === 'QB');
+      if (!qb || (qb.pass_ppg || 0) < 13) return false;
+      const strongWR = roster.filter(p => p.position === 'WR' && (p.rec_ppg || 0) >= 7);
+      return strongWR.length >= 2;
+    },
+    strength: 'Air Raid. The passing game can carry this team.',
+  },
+  {
+    key: 'ground_and_pound',
+    name: 'Ground and Pound',
+    relief: 0.70,
+    bonus: 0.02,
+    detect(roster) {
+      const rb = roster.filter(p => p.position === 'RB').sort((a, b) => (b.rush_ppg || 0) - (a.rush_ppg || 0))[0];
+      if (!rb || (rb.rush_ppg || 0) < 9) return false;
+      const te = roster.filter(p => p.position === 'TE').sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
+      return te && te.ppr_ppg_mean >= 7;
+    },
+    strength: 'Ground and Pound. The run game controls the clock.',
+  },
+  {
+    key: 'dual_threat',
+    name: 'Dual Threat',
+    relief: 0,
+    bonus: 0.03,
+    detect(roster) {
+      const qb = roster.find(p => p.position === 'QB');
+      return qb && (qb.rush_ppg || 0) >= 3.5;
+    },
+    strength: 'Dual Threat quarterback. Defenses cannot key on one thing.',
+  },
+  {
+    key: 'two_te',
+    name: 'Two TE Set',
+    relief: 0,
+    bonus: 0.02,
+    detect(roster) {
+      const tes = roster.filter(p => p.position === 'TE' && p.ppr_ppg_mean >= 6);
+      return tes.length >= 2;
+    },
+    strength: 'Two TE Set. Heavy personnel that can run or catch.',
+  },
+];
+
+function detectScheme(roster) {
+  let best = null;
+  let bestVal = -1;
+  for (const s of SCHEMES) {
+    if (!s.detect(roster)) continue;
+    const val = s.relief + s.bonus;
+    if (val > bestVal) { best = s; bestVal = val; }
+  }
+  return best;
+}
+
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 /**
@@ -708,16 +770,24 @@ function rosterStructure(roster) {
   const floor = 1 - S.FLOOR_WEIGHT
     * Math.max(0, S.IDEAL_FLOOR_SHARE - floorShare - S.FLOOR_TOLERANCE);
 
+  const scheme = detectScheme(roster);
+
+  let adjBalance = balance;
+  if (scheme && scheme.relief > 0 && balance < 1) {
+    adjBalance = 1 - (1 - balance) * (1 - scheme.relief);
+  }
+
   // Quarterback support applies to catching points only, so it is folded in as a
   // change to the effective total rather than a flat multiplier.
   const effective = sum((p) => p.pass_ppg) + rush + rec * qbSupport;
   const multiplier = clamp(
-    (effective / total) * balance * concentration * Math.max(0.3, floor),
+    (effective / total) * adjBalance * concentration * Math.max(0.3, floor)
+      + (scheme ? scheme.bonus : 0),
     S.MIN, S.MAX,
   );
 
-  return { multiplier, qbSupport, balance, concentration, floor, floorShare,
-    rushShare, topShare, qbPass, total };
+  return { multiplier, qbSupport, balance: adjBalance, concentration, floor, floorShare,
+    rushShare, topShare, qbPass, total, scheme: scheme ? scheme.key : null };
 }
 
 /**
@@ -784,6 +854,12 @@ function coachReport(roster, chemistryMultiplier, spend) {
     weaknesses.push('Two of your six barely score at all.');
   } else if (st.floorShare >= 0.64) {
     strengths.push('All six of them score. Nobody is a passenger.');
+  }
+
+  // Scheme
+  if (st.scheme) {
+    const s = SCHEMES.find(x => x.key === st.scheme);
+    if (s) strengths.push(s.strength);
   }
 
   // Chemistry
@@ -1620,7 +1696,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 24;
+const ENGINE_API_VERSION = 25;
 
 /*
  * The three-letter code a team actually wore in a given season.
