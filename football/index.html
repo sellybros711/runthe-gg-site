@@ -2172,6 +2172,16 @@ window.GA_ID='G-L29P5MRWKE';
     font-size:12.5px;line-height:1.4;color:var(--dim)}
   .gateline b{color:#fff;font-weight:700}
   .gateline .btn{margin-top:10px}
+  /* The unsaved-run banner. Red, above the record, impossible to read past. */
+  .savefail{display:flex;align-items:center;gap:12px;margin-bottom:11px;
+    padding:12px 14px;border-radius:12px;
+    border:1px solid rgba(239,68,68,.55);background:rgba(239,68,68,.12)}
+  .savefail[hidden]{display:none}
+  .savefail .sf-txt{flex:1;min-width:0;font-size:12.5px;line-height:1.4;color:#fecaca}
+  .savefail .sf-txt b{display:block;font-family:var(--fn);font-size:14px;font-weight:700;
+    letter-spacing:.02em;color:#fff}
+  .savefail .btn{flex:0 0 auto;width:auto;margin:0;padding:9px 15px;
+    background:var(--red);border-color:transparent}
 
   /* WHERE THE RUN PLACED, AND THE WAY IN.
      A rank without its field size is not a fact, so the total gets its own line: #12
@@ -2693,6 +2703,13 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   </div>
 
   <div class="screen" id="s-over">
+    <!-- A run that failed to send is not a footnote. It sits above the record, in red,
+         with the way to fix it, because the alternative is a player believing a season
+         counted when it never reached the board. -->
+    <div class="savefail" id="o-savefail" hidden>
+      <div class="sf-txt"><b>This run was not saved.</b><span id="o-savefail-why">The leaderboard could not be reached, so it has not been counted.</span></div>
+      <button class="btn sm" id="b-save-retry">Try again</button>
+    </div>
     <!-- 1. Record and how the season ended. -->
     <div class="verdict" id="o-card">
       <div class="hero-rec">
@@ -2806,7 +2823,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=13"></script>
+<script src="board.js?v=14"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
@@ -4722,6 +4739,19 @@ const ROUND_TAG={'Wild Card':'WC','Divisional':'DIV','Conference Championship':'
 
 function paintOver(){
   const o=run.outcome,s=run.season,c=$('o-card');
+  /* FIRE THE NETWORK BEFORE THE CPU. The submit and the three rank counts are both
+     network round trips, and the score they need is known the instant the run ends.
+     Kicking them off here, before the best-possible solve and all the rendering below,
+     means the round trip runs alongside that work instead of waiting in line behind it.
+     The request is dispatched synchronously; its result cannot paint until this whole
+     function returns, so every cell it fills (o-ranks, the strip) is already on screen.
+     Not awaited: a slow or dead board delays nothing. */
+  paintRanks().catch(()=>{
+    $('o-ranks').innerHTML='<p class="rankfoot" style="margin-top:8px">The leaderboard '+
+      'is not reachable right now, so this run has not been counted.</p>';
+    paintRankStrip(null);
+    paintSaveBanner();
+  });
   c.className='verdict';
   $('o-mode').textContent=runModeLabel();
   $('o-rec').textContent=o.record;
@@ -4858,18 +4888,6 @@ function paintOver(){
      anyone taps, and a new season should not open on the pane the last one ended on. */
   setOverTab('perfect');
   show('s-over');
-  /* Deliberately not awaited. The results page is fully painted and on screen
-     before a single byte goes to the network, so a slow or dead board delays
-     nothing and breaks nothing. */
-  paintRanks().catch(()=>{
-    $('o-ranks').innerHTML='<p class="rankfoot" style="margin-top:8px">The leaderboard '+
-      'is not reachable right now, so this run has not been counted.</p>';
-    /* AND THE STRIP, which paintRanks fills as its second act. If it threw before it got
-       there the three cells would sit on "reading" for the rest of the session and a
-       guest would never see the sign in button, because that button lives in the strip.
-       Painting it with nothing says "no board" in all three and still makes the offer. */
-    paintRankStrip(null);
-  });
 }
 
 /* Spot by spot, so it always names who replaces whom rather than showing one
@@ -6563,6 +6581,23 @@ document.addEventListener('click',(e)=>{
   show('s-board'); loadBoard();
 });
 
+/* THE LOUD BANNER. It shows only on a genuine send failure (submitted===false). A guest,
+   or a signed-in player with no username, is not a failure: each has its own invitation
+   in the strip and the panel, and painting those red would be crying wolf. */
+function paintSaveBanner(){
+  const b=$('o-savefail'); if(!b) return;
+  b.hidden=submitted!==false;
+}
+/* Retry sends the run again from scratch. Clearing submitted lets recordRun re-fire, and
+   paintRanks re-reads the placings and repaints the banner, so a success clears it. */
+$('b-save-retry').onclick=async()=>{
+  const btn=$('b-save-retry');
+  btn.disabled=true; btn.textContent='Saving…';
+  submitted=null;
+  try{ await paintRanks(); }catch(_){ paintSaveBanner(); }
+  btn.disabled=false; btn.textContent='Try again';
+};
+
 async function paintRanks(){
   const el=$('o-ranks');
   el.innerHTML='<div class="rload"><i></i><i></i><i></i><span>Reading the board</span></div>';
@@ -6572,6 +6607,9 @@ async function paintRanks(){
     B.ranks(score,runMode(),run.franchise||null,run.era||null)
   ]);
   myRanks=r;
+  /* Set the loud banner here, once, whatever the panel below goes on to render, so a
+     failed send is called out no matter which state the placings land in. */
+  paintSaveBanner();
   /* The strip at the top of the page carries the same three numbers, and it is the
      one most people will read, so it is filled whatever this panel goes on to say. */
   paintRankStrip(r);
