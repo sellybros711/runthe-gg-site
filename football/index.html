@@ -3801,7 +3801,7 @@ function spinBoth(draw,done){
     const years=draw.yearOptions.map(String);
     const rmc=reduceMotion();
     reel(yEl,years,String(draw.season),
-      (rmc||new Set(years).size<=1)?(rmc?260:520):1150,done);
+      (rmc||new Set(years).size<=1)?(rmc?195:390):860,done);
     return;
   }
   // The team reel sits dim with a question on it until the year is settled.
@@ -3822,12 +3822,12 @@ function spinBoth(draw,done){
   // Reduced motion gets the same short spin for every wheel: the result still lands
   // in the window so the draw reads as a draw, it just does not wind to get there.
   const rm=reduceMotion();
-  const dur=(faces)=>(rm||new Set(faces).size<=1)?(rm?260:520):null;
+  const dur=(faces)=>(rm||new Set(faces).size<=1)?(rm?195:390):null;
   const years=draw.yearOptions.map(String);
-  reel(yEl,years,String(draw.season),dur(years)??1150,()=>{
+  reel(yEl,years,String(draw.season),dur(years)??860,()=>{
     // A beat between the two, or they read as one long spin.
     setTimeout(()=>reel(tEl,draw.teamOptions,draw.teamName,
-      dur(draw.teamOptions)??1250,done,dressInTeamColors(draw.franchise)),rm?90:260);
+      dur(draw.teamOptions)??940,done,dressInTeamColors(draw.franchise)),rm?68:195);
   });
 }
 
