@@ -218,6 +218,11 @@ window.GA_ID='G-L29P5MRWKE';
      rectangle drawn around a pill. */
   button:focus-visible,a:focus-visible,summary:focus-visible{border-radius:11px}
   .avatar:focus-visible{border-radius:50%}
+  /* overscroll-behavior on HTML, the root scroller, not only body: the rubber-band bounce
+     at the bottom of a long leaderboard was lifting the pinned "your place" bar and the
+     buttons up off the bottom edge, showing empty rows behind them. Disabling the bounce on
+     the element that actually scrolls keeps the bottom bar glued where it belongs. */
+  html{overscroll-behavior:none}
   html,body{margin:0;background:var(--bg);color:var(--ink)}
   body{font-family:var(--fb);
     font-size:16px;line-height:1.45;overscroll-behavior-y:none;
@@ -1299,17 +1304,20 @@ window.GA_ID='G-L29P5MRWKE';
      value and only opacity moves: growing a sticky block as they appear would shift the page
      under the finger, which is the same class of bug as trying to collapse the block itself. */
   #s-draft{--sq:0}
-  .dpips{display:flex;gap:5px;justify-content:center;height:24px;align-items:center;
+  .dpips{display:flex;gap:5px;justify-content:center;height:34px;align-items:center;
     margin-top:8px;opacity:var(--sq);pointer-events:none;position:relative}
   /* A hairline under the bar, fading in with the pips, so the pinned header has an edge once
      content is scrolling behind it. Without one the pips float over the reels. */
   .capwrap:after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
     background:var(--line);opacity:var(--sq)}
-  .dpips i{flex:0 0 auto;min-width:27px;height:22px;padding:0 5px;border-radius:7px;
-    display:grid;place-items:center;font-family:var(--fn);font-size:9.5px;font-weight:600;
+  .dpips i{flex:0 0 auto;min-width:27px;height:32px;padding:0 6px;border-radius:7px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    font-family:var(--fn);font-size:9.5px;font-weight:600;line-height:1.05;
     letter-spacing:.04em;font-style:normal;background:rgba(255,255,255,.05);
     border:1px dashed var(--line-2);color:var(--dim-2)}
   .dpips i.on{border-style:solid;border-color:transparent;color:#fff}
+  .dpips i.on b{font-weight:700}
+  .dpips i.on span{font-size:8px;font-weight:600;letter-spacing:.02em;opacity:.72}
   .cap-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
   /* 6px, not 3. The right-hand column stacks an eyebrow over a 22px display figure, and
      Anton is set at line-height 1, so at 3px the ascenders of "None" came up level with the
@@ -4865,7 +4873,13 @@ function paintOver(){
      the placings are read at the same time. */
   afterPaint(()=>{
     const best=R.bestPossibleSquad(run,DATA,CTX);
-    const share=best?Math.round(100*Math.min(1,best.yourProjected/best.bestProjected)):null;
+    const kept=best?best.lineup.filter(r=>r.same).length:0;
+    let share=best?Math.round(100*Math.min(1,best.yourProjected/best.bestProjected)):null;
+    /* 100% is reserved for a true six-for-six draft: the best available player at every
+       spot. A roster that only EQUALS the best team's projected points with different
+       players rounds up to 100 but is not perfect, so it is held at 99 unless every spot
+       matched. */
+    if(share!==null && kept<6) share=Math.min(share,99);
     lastPerfectShare=share;
     const sband=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
     $('o-ovr').innerHTML=
@@ -4874,7 +4888,6 @@ function paintOver(){
         share===null?0:Math.max(2,share),share===null?'#94a3b8':sband);
     if(!best){ $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>'; }
     else{
-      const kept=best.lineup.filter(r=>r.same).length;
       const band=share>=90?'pgood':(share>=70?'pmid':'pbad');
       const fill=sband;
       /* The two numbers can disagree, and often do: a 92% team with zero matching
@@ -7488,8 +7501,11 @@ function drawPips(bySlot){
   const el=$('d-pips'); if(!el) return;
   el.innerHTML=E.SLOTS.map((slot,i)=>{
     const p=bySlot[i];
-    return '<i class="'+(p?'on':'')+'"'+(p?' style="'+posPaint(p.position)+'"':'')+'>'+
-      esc(p?lastName(p.name):slot)+'</i>';
+    if(!p) return '<i>'+esc(slot)+'</i>';
+    /* Filled: the last name, and the salary under it, so the strip is a running tally
+       of what each signing cost as much as who it was. */
+    return '<i class="on" style="'+posPaint(p.position)+'"><b>'+esc(lastName(p.name))+'</b>'+
+      '<span>'+M(p.price_musd)+'</span></i>';
   }).join('');
 }
 
