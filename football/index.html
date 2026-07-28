@@ -5193,7 +5193,7 @@ const canvasBlob=(c)=>new Promise((res)=>c.toBlob(res,'image/png'));
 
 $('b-share').onclick=async()=>{
   ga('result_shared',{outcome:run&&run.outcome&&(run.outcome.perfect?'perfect':run.outcome.titleWon?'champion':run.outcome.eliminatedIn?'eliminated':'missed_playoffs'),mode:runMode(),club:run&&run.franchise||null});
-  const {head,text}=shareLines();
+  const {text}=shareLines();
   let file=null;
   try{
     // The fonts have to be in before anything is measured, or the card lays itself
@@ -5205,10 +5205,10 @@ $('b-share').onclick=async()=>{
 
   try{
     if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
-      await navigator.share({title:head,text,files:[file]});
+      await navigator.share({text,files:[file]});
       return;
     }
-    if(navigator.share){ await navigator.share({title:head,text}); return; }
+    if(navigator.share){ await navigator.share({text}); return; }
     throw new Error('no share');
   }catch(e){
     if(e&&e.name==='AbortError') return;   // they closed the sheet, not a failure
