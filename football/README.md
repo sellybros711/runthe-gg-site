@@ -398,6 +398,9 @@ ranked against everybody else who picked it. A run with no name on it cannot be 
 of them, so a signed-out player would get the draft and none of what makes it worth
 playing.
 
+The sheet is headed **FREE MEMBERS ONLY**, because "members only" on its own reads as
+paid and the whole ask is that it costs nothing.
+
 **The wall is a username, not just an account.** An account exists the moment somebody
 signs up and the username is a separate step that Google sign-in skips entirely, so
 "signed in" on its own still means a run that is recorded, owned, and invisible. That
