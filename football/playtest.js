@@ -1,8 +1,8 @@
 /* The Perfect Season, play one full run as readable text.
  *
  *   node football/playtest.js
- *   PS_SEED=7 PS_TEAM=NE node football/playtest.js
- *   PS_DAILY=2026-07-25 node football/playtest.js
+ *   PS_SEED=7 node football/playtest.js
+ *   PS_CLUB=MIA node football/playtest.js      all-time team mode
  *
  * A stand-in for the UI: draft, chemistry, schedule, week-by-week results and
  * the outcome card, exactly the information the season page will show. Use it to
@@ -27,11 +27,12 @@ const ctx={battery:load('battery.json'),coaches:load('coaches.json'),curated:loa
 const data=R.indexData(players,teamSeasons);
 const byKey=new Map(players.map(p=>[`${p.player_id}|${p.season}`,p]));
 
-const daily=process.env.PS_DAILY||null;
-const run=R.createRun(daily?{daily}:{seed:Number(process.env.PS_SEED??20260725)});
-/* No franchise to pick: the schedule is 17 random historic team-seasons and the playoffs are a
-   fixed ladder, so nothing in a run depends on a favourite club. */
-console.log(`\n=== THE PERFECT SEASON, ${daily?'daily '+daily:'seed '+run.seed} ===`);
+/* A club here locks every wheel to that club, which is all-time team mode. Without one the
+   wheel can land anywhere, which is free play. The SCHEDULE does not change either way: it is
+   17 random historic team-seasons and a fixed playoff ladder. */
+const club=(process.env.PS_CLUB||'').toUpperCase()||null;
+const run=R.createRun({franchise:club,seed:Number(process.env.PS_SEED??20260725)});
+console.log(`\n=== THE PERFECT SEASON, ${club?'all-time '+E.nickname(club):'free run'}, seed ${run.seed} ===`);
 console.log(`cap $${E.CONSTANTS.CAP_MUSD}M | re-spins $${E.CONSTANTS.RESPIN_LADDER_MUSD.join('M then $')}M from cap, ${E.CONSTANTS.MAX_RESPINS} max`);
 console.log(`playoffs at ${E.CONSTANTS.PLAYOFF_WINS} wins, first round off at ${E.CONSTANTS.BYE_SEED_WINS}\n`);
 

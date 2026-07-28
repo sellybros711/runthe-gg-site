@@ -196,8 +196,9 @@ Also validated:
   policy. **Zero over-cap runs, zero dead ends**, correct slot shape in every run,
   no team-season drawn more than twice, and no person drafted twice. It also
   alternates the two re-spin wheels and asserts that each one moved what it was
-  meant to move and never handed back the team just rejected. Plus: the daily seed
-  is stable within a date, and a run serialized mid-draft resumes on the same RNG
+  meant to move and never handed back the team just rejected. Plus: a draft locked
+  to each of the 32 clubs holds that club on all six spins and through a re-spin
+  without dead-ending, and a run serialized mid-draft resumes on the same RNG
   stream.
 - `--record`: the regular-season win distribution per archetype, and what each
   candidate playoff threshold would mean. This is how the 12 and 15 cutoffs were
@@ -758,10 +759,14 @@ Known gaps worth a look during playtesting:
   asserted in `--draft`) but the page does not yet write it to localStorage, so a
   refresh mid-season loses the run. Use the key prefix `rtps:` when adding it,
   `rtd:v1` belongs to RunTheDrive on the same origin.
-- **Two SQL files have to be run once** in the SQL editor, in order:
-  `supabase/50_football_perfect_season.sql`, then `supabase/51_football_accounts.sql`.
-  Until 50 is run the board reports itself unreachable, which is handled, but no run is
-  recorded. Until 51 is run the board works and every row reads Anonymous.
+- **The SQL files have to be run once** in the SQL editor, in order:
+  `50_football_perfect_season.sql`, `51_football_accounts.sql`,
+  `55_football_avatars_setup.sql`, `56_football_all_time_teams.sql`. Until 50 is run the
+  board reports itself unreachable, which is handled, but no run is recorded. Until 51 is
+  run the board works and every row reads Anonymous. Until 55 is run nobody can save a club
+  or initials for their circle. Until 56 is run there is no board at all: every query
+  filters on `mode`, so a 400 comes back on all of them, and the connection check names the
+  file. 52 to 54 are superseded or read-only; 53 and 54 say so in their own headers.
 - **Awards and Pro Bowl selections are not in.** Waiting on the data as
   `season, player name, team, award`. Team is required: there are 19 name-plus-season
   collisions in the player file, and every unmatched row will be reported rather than

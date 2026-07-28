@@ -517,12 +517,36 @@ function draftReport(n) {
       `${dupes === 0 ? 'ok' : 'FAIL'}`);
   }
 
-  // Daily determinism
-  const a = R.createRun({ daily: '2026-07-25' });
-  const b = R.createRun({ daily: '2026-07-25' });
-  const c = R.createRun({ daily: '2026-07-26' });
-  console.log(`\n  daily seed stable within a date: ${a.seed === b.seed ? 'ok' : 'FAIL'}` +
-    `   differs across dates: ${a.seed !== c.seed ? 'ok' : 'FAIL'}`);
+  /* ALL-TIME TEAM MODE: the lock has to hold for the whole draft, not just the first
+     spin, and it has to hold through a re-spin. Every club, so an expansion team with
+     twenty-four seasons in the pool is covered as well as one with twenty-seven. */
+  {
+    const clubs = [...new Set(data.teamSeasons.map((t) => t.franchise))].sort();
+    const byKey = new Map(data.players.map((p) => [`${p.player_id}|${p.season}`, p]));
+    let broke = 0, stuck = 0;
+    for (const f of clubs) {
+      const run = R.createRun({ franchise: f, seed: E.hashSeed('club|' + f) });
+      try {
+        for (let i = 0; i < 6; i++) {
+          let d = R.spin(run, data);
+          if (d.franchise !== f) broke++;
+          // A year re-spin on the third pick, which is the one that has to keep the club.
+          if (i === 2 && R.canRespin(run, 'year', data).ok) {
+            d = R.respin(run, data, 'year');
+            if (d.franchise !== f) broke++;
+          }
+          // Take the cheapest signable man, which is the policy least likely to strand.
+          const opts = d.options.map((k) => byKey.get(k))
+            .filter((p) => R.slotForPlayer(run, p) !== null)
+            .sort((x, y) => x.price_musd - y.price_musd);
+          if (!opts.length) { stuck++; break; }
+          R.sign(run, opts[0]);
+        }
+      } catch (e) { stuck++; }
+    }
+    console.log(`\n  club lock held on all ${clubs.length} clubs: ${broke === 0 ? 'ok' : 'FAIL ' + broke}` +
+      `   drafts that dead-ended: ${stuck === 0 ? 'ok' : 'FAIL ' + stuck}`);
+  }
 
   // Resume-safety: rebuilding from (seed, rngCalls) must continue the stream
   const r1 = R.createRun({ seed: 99 });
