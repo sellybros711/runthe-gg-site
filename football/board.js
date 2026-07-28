@@ -347,41 +347,61 @@
 
      Returns the new row id, or null if it did not go through. A null here is not
      an error the player should see: their season still happened. */
+  /* RETRIED, because a lost submit is how a real season goes unrecorded. The count
+     queries can fail soft and silent all day: a rank that does not draw costs nothing.
+     A submit that does not land loses the run, and on mobile the single most common
+     reason is a dropped or timed-out request, not a rejected one. So a submit that
+     THREW (network, timeout) or came back 5xx is tried again, up to three times with
+     a widening gap. A 4xx is deterministic: the payload is wrong and no number of
+     retries changes that, so it fails straight through with the server's reason kept. */
   async function submit(payload) {
-    try {
-      const res = await timed(base() + 'rpc/ps_submit_run', {
-        method: 'POST',
-        headers: headers(),
-        body: JSON.stringify({
-          p_regular_wins: payload.regularWins,
-          p_playoff_wins: payload.playoffWins,
-          p_point_diff: round1(payload.pointDiff),
-          p_chemistry_pct: payload.chemistryPct,
-          p_spend_musd: payload.spendMusd,
-          p_respins: payload.respins || 0,
-          p_franchise: payload.franchise || null,
-          p_era: payload.era || null,
-          p_mode: payload.mode === 'era' ? 'era' : payload.mode === 'club' ? 'club' : 'free',
-          p_picks: payload.picks,
-          p_slots: payload.slots || null,
-          p_seed: payload.seed || null,
-          p_rng_calls: payload.rngCalls || null,
-          p_squad_fppg: payload.squadFppg ?? null,
-          p_structure_mult: payload.structureMult ?? null,
-          p_team_rating: payload.teamRating ?? null,
-          p_perfect_pct: payload.perfectPct ?? null,
-        }),
-      });
-      if (!res.ok) return await fail('submit', res);
-      const id = await res.json().catch(() => null);
-      if (typeof id !== 'number') {
-        lastError = { where: 'submit', status: res.status, code: 'shape',
-          message: 'the call succeeded but did not return a row id' };
-        return null;
+    const body = JSON.stringify({
+      p_regular_wins: payload.regularWins,
+      p_playoff_wins: payload.playoffWins,
+      p_point_diff: round1(payload.pointDiff),
+      p_chemistry_pct: payload.chemistryPct,
+      p_spend_musd: payload.spendMusd,
+      p_respins: payload.respins || 0,
+      p_franchise: payload.franchise || null,
+      p_era: payload.era || null,
+      p_mode: payload.mode === 'era' ? 'era' : payload.mode === 'club' ? 'club' : 'free',
+      p_picks: payload.picks,
+      p_slots: payload.slots || null,
+      p_seed: payload.seed || null,
+      p_rng_calls: payload.rngCalls || null,
+      p_squad_fppg: payload.squadFppg ?? null,
+      p_structure_mult: payload.structureMult ?? null,
+      p_team_rating: payload.teamRating ?? null,
+      p_perfect_pct: payload.perfectPct ?? null,
+    });
+    const ATTEMPTS = 3;
+    for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+      try {
+        const res = await timed(base() + 'rpc/ps_submit_run', {
+          method: 'POST', headers: headers(), body,
+        });
+        if (res.ok) {
+          const id = await res.json().catch(() => null);
+          if (typeof id !== 'number') {
+            lastError = { where: 'submit', status: res.status, code: 'shape',
+              message: 'the call succeeded but did not return a row id' };
+            return null;
+          }
+          lastError = null;
+          return id;
+        }
+        /* 4xx: the server rejected the payload itself. Retrying sends the same bytes
+           to the same rule, so stop and keep the reason. */
+        if (res.status < 500) return await fail('submit', res);
+        await fail('submit', res);   // 5xx: record it, then fall through to retry
+      } catch (e) {
+        failThrown('submit', e);     // network/timeout: record it, then retry
       }
-      lastError = null;
-      return id;
-    } catch (e) { return failThrown('submit', e); }
+      if (attempt < ATTEMPTS - 1) {
+        await new Promise((r) => setTimeout(r, 500 * Math.pow(2, attempt)));
+      }
+    }
+    return null;   // lastError already holds the final failure
   }
 
   /* ---------------- the probe ----------------
