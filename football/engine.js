@@ -147,6 +147,12 @@ const CONSTANTS = {
   PLAYOFF_HOME_FIELD: 0.35,
 };
 
+const ERAS = {
+  '2000s': [1999, 2009],
+  '2010s': [2010, 2019],
+  '2020s': [2020, 2025],
+};
+
 /**
  * What the NEXT re-spin costs, given how many have already been used.
  *
@@ -1091,7 +1097,9 @@ function generateSchedule(data, rng, opts = {}) {
   const maxAttempts = opts.maxAttempts ?? 400;
   const count = opts.games ?? 17;
 
-  const { byFranchise, divisions, eliteThreshold, meanScheduleStrength } = data;
+  const era = opts.era ?? null;
+  const src = era ? eraSlice(data, era) : data;
+  const { byFranchise, divisions, eliteThreshold, meanScheduleStrength } = src;
   const franchise = opts.franchise ?? null;
 
   if (franchise) {
@@ -1259,24 +1267,24 @@ const LEGEND_TEAM_SEASONS = [{
   legend: true,
 }];
 
-function generatePlayoffs(data, rng, count = CONSTANTS.PLAYOFF_ROUNDS_WILD_CARD) {
-  /*
-   * The playoffs escalate. They used to be four random top-quartile teams, so the Super
-   * Bowl was no harder than the Wild Card and the run just stopped when a coin came up
-   * wrong. The ladder now climbs to the two teams that define the thing the game is named
-   * after:
-   *
-   *   Wild Card    a good team
-   *   Divisional   a great team
-   *   Conference   the 2007 Patriots, who went 16-0 and then lost the one that counted
-   *   Super Bowl   the 1972 Dolphins, the only team to finish a season unbeaten
-   *
-   * Built full length and ALWAYS ending at the Dolphins. The round names count back from
-   * the final, so a top seed with a bye plays three rounds and must still finish against
-   * Miami; see playoffOpponent, which is the only thing allowed to index this list.
-   */
+function generatePlayoffs(data, rng, opts = {}) {
+  const count = opts.count ?? CONSTANTS.PLAYOFF_ROUNDS_WILD_CARD;
+  const era = opts.era ?? null;
+  if (era) return generateEraPlayoffs(data, rng, era, count);
+
   const ladder = [pickFrom(data.goodPool, rng), pickFrom(data.greatPool, rng),
     data.byId(LEGEND_IDS.PATRIOTS_2007), data.byId(LEGEND_IDS.DOLPHINS_1972)];
+  return ladder.slice(ladder.length - Math.min(count, ladder.length));
+}
+
+function generateEraPlayoffs(data, rng, era, count) {
+  const src = eraSlice(data, era);
+  const ladder = [
+    pickFrom(src.goodPool, rng),
+    pickFrom(src.greatPool, rng),
+    pickFrom(src.greatPool, rng),
+    pickFrom(src.greatPool, rng),
+  ];
   return ladder.slice(ladder.length - Math.min(count, ladder.length));
 }
 
@@ -1526,6 +1534,35 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
 
 // ─── data prep ───────────────────────────────────────────────────────────────
 
+function eraSlice(data, era) {
+  const range = ERAS[era];
+  if (!range) throw new Error('unknown era ' + era);
+  const inEra = (t) => t.season >= range[0] && t.season <= range[1];
+  const byFranchise = {};
+  for (const [f, ts] of Object.entries(data.byFranchise)) {
+    const filtered = ts.filter(inEra);
+    if (filtered.length) byFranchise[f] = filtered;
+  }
+  const all = Object.values(byFranchise).flat();
+  const zs = all.map((t) => t.strength_z).sort((a, b) => a - b);
+  const q = (p) => zs[Math.min(zs.length - 1, Math.max(0, Math.round(p * (zs.length - 1))))];
+  const eliteThreshold = q(0.90);
+  const winsOf = (t) => Number(String(t.record).split('-')[0]) || 0;
+  const playoffField = all.filter((t) => winsOf(t) >= CONSTANTS.PLAYOFF_WINS);
+  const goodPool = playoffField.filter((t) => winsOf(t) === CONSTANTS.PLAYOFF_WINS);
+  const greatPool = playoffField.filter((t) => winsOf(t) >= CONSTANTS.PLAYOFF_WINS + 2
+    || (winsOf(t) === CONSTANTS.PLAYOFF_WINS + 1 && t.strength_z >= q(0.95)));
+  const meanZ = zs.reduce((a, b) => a + b, 0) / zs.length;
+  return {
+    divisions: data.divisions,
+    byFranchise,
+    eliteThreshold,
+    goodPool,
+    greatPool,
+    meanScheduleStrength: meanZ * 17,
+  };
+}
+
 /** Precompute the derived structures the schedule generator needs. */
 function prepareData(teamSeasons) {
   const divisions = buildDivisionMap(teamSeasons);
@@ -1583,7 +1620,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 23;
+const ENGINE_API_VERSION = 24;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -1614,7 +1651,7 @@ function eraCode(franchise, season) {
 
 const publicAPI = {
   API_VERSION: ENGINE_API_VERSION,
-  CONSTANTS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
+  CONSTANTS, ERAS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
   hashSeed, createSeededRNG, sampleGamma,
   pairLinks, resolveChemistry,
   buildDivisionMap, generateSchedule, generatePlayoffs,

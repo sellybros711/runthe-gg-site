@@ -379,10 +379,15 @@ function createRun(opts) {
   if (franchise !== null && !E.TEAM_COLORS[franchise]) {
     throw new Error(`unknown franchise ${franchise}`);
   }
+  const era = opts.era ?? null;
+  if (era !== null && !E.ERAS[era]) {
+    throw new Error(`unknown era ${era}`);
+  }
   const seed = opts.seed ?? E.hashSeed(String(Math.random()));
   return {
     version: 1,
     franchise,
+    era,
     seed,
     rngCalls: 0,
     phase: PHASES.DRAFT,
@@ -532,6 +537,7 @@ function drawable(run, data, limit) {
        club has twenty-four to twenty-seven seasons in the pool and a draft draws six with
        a limit of two each, so the lock can never run the pool dry. */
     .filter((t) => !run.franchise || t.franchise === run.franchise)
+    .filter((t) => { if (!run.era) return true; const r = E.ERAS[run.era]; return t.season >= r[0] && t.season <= r[1]; })
     .filter((t) => (drawn[t.team_season_id] || 0) < (limit ?? TUNING.MAX_DRAWS_PER_TEAM_SEASON))
     .filter(canFill);
 }
@@ -663,10 +669,13 @@ function startSeason(run, data, ctx) {
   if (run.phase !== PHASES.SEASON) throw new Error('draft not finished');
   const rng = rngFor(run);
   const chem = E.resolveChemistry(run.roster, ctx, chemOpts(run));
-  const sched = E.generateSchedule(data.prepared, rng,
-    run.franchise ? { franchise: run.franchise } : {});
+  const schedOpts = {};
+  if (run.franchise) schedOpts.franchise = run.franchise;
+  if (run.era) schedOpts.era = run.era;
+  const sched = E.generateSchedule(data.prepared, rng, schedOpts);
   run.schedule = sched.games.map((g) => g.team_season_id);
-  run.playoffs = E.generatePlayoffs(data.prepared, rng).map((g) => g.team_season_id);
+  const poOpts = run.era ? { era: run.era } : {};
+  run.playoffs = E.generatePlayoffs(data.prepared, rng, poOpts).map((g) => g.team_season_id);
   run.season = {
     chemistry: chem.multiplier,
     chemistryLinks: chem.links,
@@ -1115,7 +1124,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 23;
+const RUN_API_VERSION = 24;
 
 const api = {
   API_VERSION: RUN_API_VERSION,

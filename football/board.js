@@ -319,8 +319,10 @@
   function scope(opts) {
     opts = opts || {};
     const club = opts.mode === 'club' && opts.franchise;
-    let f = '&run_mode=eq.' + (club ? 'club' : 'free');
+    const eraMode = opts.mode === 'era' && opts.era;
+    let f = '&run_mode=eq.' + (eraMode ? 'era' : club ? 'club' : 'free');
     if (club) f += '&franchise=eq.' + encodeURIComponent(opts.franchise);
+    if (eraMode) f += '&era=eq.' + encodeURIComponent(opts.era);
     /* NAMED RUNS ONLY, when asked for. A guest run is a real draft and counts towards how
        many have been played, but it carries no name, so listing it puts a row of Anonymous
        on a board whose whole job is to say who did what. Every ranking call asks for this
@@ -358,10 +360,8 @@
           p_spend_musd: payload.spendMusd,
           p_respins: payload.respins || 0,
           p_franchise: payload.franchise || null,
-          /* 'free' or 'club'. The server decides nothing from the franchise alone: the
-             column predates One Franchise mode and the oldest rows in the table are free
-             runs that carry a favourite club. */
-          p_mode: payload.mode === 'club' ? 'club' : 'free',
+          p_era: payload.era || null,
+          p_mode: payload.mode === 'era' ? 'era' : payload.mode === 'club' ? 'club' : 'free',
           p_picks: payload.picks,
           p_slots: payload.slots || null,
           p_seed: payload.seed || null,
@@ -471,20 +471,12 @@
      board does it: the two counts are separate queries, so a run inserted a moment
      ago can be missing from the total while already counted in the rank, which
      would render an impossible "#41 of 40". */
-  async function ranks(score, mode, franchise) {
-    /* A run is ranked against its own kind. A club run is placed on that club's board and
-       nowhere else: it would top the free board on chemistry alone, and it would be
-       meaningless on another club's.
-
-       The three windows are the same three either way, which is the point of giving the
-       club boards a created_at window rather than making them all-time only: one shape of
-       answer, one strip on the results page, one set of tabs. */
-    /* named:true throughout. The number under a placing is "of the runs on the board", and
-       the board is named runs, so counting guests into that denominator would print a total
-       no list on any screen adds up to. */
-    const of = (win) => (mode === 'club' && franchise)
-      ? { mode: 'club', franchise, win, named: true }
-      : { mode: 'free', win, named: true };
+  async function ranks(score, mode, franchise, era) {
+    const of = (win) => {
+      if (mode === 'era' && era) return { mode: 'era', era, win, named: true };
+      if (mode === 'club' && franchise) return { mode: 'club', franchise, win, named: true };
+      return { mode: 'free', win, named: true };
+    };
     const scopes = [['day', of('day')], ['week', of('week')], ['all', of('all')]];
     const got = await Promise.all(scopes.map(([, o]) =>
       Promise.all([rankIn(o, score), total(o)])));

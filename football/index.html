@@ -249,13 +249,9 @@ window.GA_ID='G-L29P5MRWKE';
   .btn:active{transform:translateY(1px) scale(.995);filter:brightness(1.08)}
   .btn:disabled{opacity:.4;cursor:default}
   .btn.blue{background:var(--grad-blue)}
-  /* THE PADLOCK ON ONE FRANCHISE. Hidden unless the mode is locked, so a member never sees
+  /* THE PADLOCK ON MORE GAME MODES. Hidden unless the modes are locked, so a member never sees
      it, and inline-flex on the button so the glyph sits on the text's own line rather than
-     under it: .btn is display:block and a plain inline svg would drop below.
-     nowrap because this button shares a 1fr 1fr row with "How to play": at 320px each half
-     is 142px, and "One Franchise" wants 101.5px of that on top of the lock. The padding and
-     gap here are trimmed from .btn.sm's 14px/7px to buy back the difference, and the
-     narrowest phones get a smaller type size below. Measured, not guessed. */
+     under it. */
   #b-teams{display:inline-flex;align-items:center;justify-content:center;gap:6px;
     white-space:nowrap;padding-left:10px;padding-right:10px}
   #b-teams .lk{display:none;width:12px;height:12px;flex:0 0 auto;fill:none;
@@ -847,6 +843,13 @@ window.GA_ID='G-L29P5MRWKE';
   .modenotes li:before{content:'';position:absolute;left:0;top:7px;width:4px;height:4px;
     border-radius:50%;background:var(--red-2)}
   .modenotes b{color:var(--ink);font-weight:700}
+  .modecards{display:grid;gap:12px;margin-top:4px}
+  .modecard{padding:14px 16px;border-radius:13px;border:1.5px solid var(--line-2);
+    background:var(--grad-panel)}
+  .modecard p{font-size:13px;line-height:1.4;color:var(--dim);margin:4px 0 10px}
+  .modecard .btn{width:100%}
+  .eragrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+  .erabtn{font-size:16px;padding:16px 10px}
   .clubgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
     gap:8px;margin-top:10px}
   .clubtile{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;
@@ -2313,7 +2316,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <!-- The padlock is drawn, not written, and it is only shown while the mode is
            actually locked. A label that says "One Franchise" and opens a sign-up sheet with no
            warning is a bait; a padlock sets the expectation before the tap. -->
-      <button class="btn ghost sm locked" id="b-teams">One Franchise<svg class="lk" viewBox="0 0 24 24"
+      <button class="btn ghost sm locked" id="b-teams">More game modes<svg class="lk" viewBox="0 0 24 24"
         aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path
         d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
       <button class="btn ghost sm" id="b-how">How to play</button>
@@ -2701,8 +2704,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=23"></script>
-<script src="run.js?v=23"></script>
+<script src="engine.js?v=24"></script>
+<script src="run.js?v=24"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -2749,7 +2752,7 @@ function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(
 /* Which competition the run in progress belongs to. One function because eight analytics
    events and every board call ask it, and a run with no club is a free run wherever it is
    asked from. Safe before a run exists, which is most of the page's life. */
-function runMode(){ return (run&&run.franchise)?'club':'free'; }
+function runMode(){ return (run&&run.era)?'era':(run&&run.franchise)?'club':'free'; }
 /* What chemistry needs to know about the mode. Same object run.js builds, and it has to
    be passed at every call site or the rail on the draft screen draws links the season
    does not pay for. */
@@ -2826,7 +2829,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=23;
+const NEED_VERSION=24;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -3443,14 +3446,13 @@ function newRun(opts){
    team-seasons and the playoffs are a fixed difficulty ladder either way: the club you draft
    from does not change who you play. */
 function beginDraft(opts){
-  /* THE GUARD LIVES HERE AS WELL AS ON THE BUTTON, because this is the only door into a run
-     and a check on one caller is a check somebody else's caller skips. */
-  if(opts&&opts.franchise&&!oneTeamReady()){
+  if(opts&&(opts.franchise||opts.era)&&!oneTeamReady()){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking');
   }
   newRun(opts);
   dressTeam();
-  ga('game_started',{mode:(opts&&opts.franchise)?'club':'free',club:(opts&&opts.franchise)||null});
+  const m=opts&&opts.era?'era':(opts&&opts.franchise)?'club':'free';
+  ga('game_started',{mode:m,club:(opts&&opts.franchise)||null,era:(opts&&opts.era)||null});
   show('s-draft'); nextSpin();
 }
 $('b-start').onclick=()=>{ beginDraft({}); };
@@ -3481,13 +3483,7 @@ const oneTeamReady=()=>!!(authState.signedIn&&authState.name);
    into the team picker rather than back on the front page wondering what happened. */
 let wantOneTeam=false;
 
-$('b-teams').onclick=()=>{
-  /* Before auth.js has answered, nobody is anything yet. Showing the wall here would tell a
-     signed-in player to sign in, so the sheet says what it is actually waiting for. */
-  if(!authState.ready) return oneTeamWall('checking');
-  if(!oneTeamReady()) return oneTeamWall(authState.signedIn?'noname':'out');
-  clubPicker();
-};
+$('b-teams').onclick=()=>{ modeMenu(); };
 
 function oneTeamWall(why){
   const line=why==='checking'
@@ -3521,6 +3517,72 @@ function oneTeamWall(why){
   const free=$('b-wall-free');
   if(free) free.onclick=()=>{ closeSheet(); beginDraft({}); };
   ga('one_team_blocked',{reason:why});
+}
+
+function modeMenu(){
+  const locked=!oneTeamReady();
+  const lockNote=!authState.ready
+    ? 'Checking your account. Give it a second and try again.'
+    : (authState.signedIn
+      ? 'Pick a username to unlock these modes. Every run is listed under a name.'
+      : 'These modes need a free account so your runs show up on the leaderboard.');
+  $('sheet-in').innerHTML=
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">More game modes</h2>'+
+    (locked?'<p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 12px">'+esc(lockNote)+'</p>':'')+
+    '<div class="modecards">'+
+      '<div class="modecard">'+
+        '<div class="eyebrow red">One Franchise</div>'+
+        '<p>Draft the greatest team in one franchise\'s history. Every spin gives you '+
+          'that franchise in a different year.</p>'+
+        (locked
+          ? '<button class="btn ghost sm" id="b-mc-club" disabled>Sign in to play</button>'
+          : '<button class="btn ghost sm" id="b-mc-club">Pick a franchise</button>')+
+      '</div>'+
+      '<div class="modecard">'+
+        '<div class="eyebrow blue">Eras Draft</div>'+
+        '<p>Pick a decade and draft only from teams and players of that era. '+
+          'Each decade has its own leaderboard.</p>'+
+        (locked
+          ? '<button class="btn ghost sm" id="b-mc-era" disabled>Sign in to play</button>'
+          : '<button class="btn ghost sm" id="b-mc-era">Pick a decade</button>')+
+      '</div>'+
+    '</div>'+
+    (locked&&authState.ready
+      ? '<div style="margin-top:14px"><button class="btn" id="b-mc-signin">'+
+          (authState.signedIn?'Pick a username':'Sign in or create an account')+'</button></div>'
+      : '')+
+    '<div style="margin-top:'+(locked&&authState.ready?'8':'14')+'px"><button class="btn ghost sm" id="b-mc-x">Close</button></div>';
+  $('sheet-in').dataset.kind='modes';
+  openSheet();
+  const x=$('b-mc-x'); if(x) x.onclick=closeSheet;
+  const si=$('b-mc-signin');
+  if(si) si.onclick=()=>{ wantModes=true; profileSheet(); };
+  const club=$('b-mc-club');
+  if(club&&!locked) club.onclick=()=>{ closeSheet(); clubPicker(); };
+  const era=$('b-mc-era');
+  if(era&&!locked) era.onclick=()=>{ closeSheet(); eraPicker(); };
+}
+
+let wantModes=false;
+
+function eraPicker(){
+  const eras=Object.keys(E.ERAS);
+  $('sheet-in').innerHTML=
+    '<div class="eyebrow blue">Eras Draft</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Pick a decade</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">'+
+      'Every spin gives you a team from that decade. Your opponents come from the same era, '+
+      'and you are ranked against other players who picked it.</p>'+
+    '<div class="eragrid">'+
+      eras.map(e=>'<button class="btn erabtn" data-era="'+e+'">'+esc(e)+'</button>').join('')+
+    '</div>'+
+    '<div style="margin-top:14px"><button class="btn ghost sm" id="b-era-no">Not now</button></div>';
+  $('sheet-in').dataset.kind='eras';
+  openSheet();
+  $('b-era-no').onclick=closeSheet;
+  $('sheet-in').querySelectorAll('.erabtn').forEach(b=>{
+    b.onclick=()=>{ closeSheet(); beginDraft({era:b.dataset.era}); };
+  });
 }
 
 /* Their own club leads, because somebody who has picked one has already told the game which
@@ -5353,6 +5415,11 @@ function authBoot(){
       closeSheet();
       clubPicker();
     }
+    if(wantModes&&oneTeamReady()){
+      wantModes=false;
+      closeSheet();
+      modeMenu();
+    }
     if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='profile')
       profileSheet();
   });
@@ -6135,6 +6202,7 @@ function runPayload(){
        in the table are free runs carrying somebody's favourite team, so the mode is sent
        as its own field and the two are checked against each other server-side. */
     franchise:run.franchise||null,
+    era:run.era||null,
     mode:runMode(),
     picks:run.roster.map(pickKey),
     slots:run.roster.map((p,i)=>E.SLOTS[run.slotIndex[i]]),
@@ -6360,7 +6428,7 @@ async function paintRanks(){
   await recordRun();
   /* Ranked among its own kind. A One Franchise Dolphins run drafts from twenty-odd seasons
      rather than 861, so it is a different game, and it means nothing on the Bears board. */
-  const r=await B.ranks(score,runMode(),run.franchise||null);
+  const r=await B.ranks(score,runMode(),run.franchise||null,run.era||null);
   myRanks=r;
   /* The strip at the top of the page carries the same three numbers, and it is the
      one most people will read, so it is filled whatever this panel goes on to say. */
@@ -6598,6 +6666,7 @@ let lbWin='day', lbSort='record', lbDir='desc', lbRows=null, lbBusy=false;
    the same three windows, which is why the club boards were given a created_at window
    rather than being all-time only. */
 let lbClub=null;
+let lbEra=null;
 /* Where this run sits on the board currently showing, on ITS axis and in ITS direction,
    which is not the same number as any of the three record ranks on the results page.
    Read once per board load, cleared on the way in so a stale place from the last tab can
@@ -6624,6 +6693,7 @@ let lbMyPlace=null;
    the whole time. Nothing needed to change in board.js either: scope() already appends
    the window to any sort. */
 function lbScope(){
+  if(lbEra) return {mode:'era',era:lbEra,win:lbWin};
   return lbClub
     ? {mode:'club',franchise:lbClub,win:lbWin}
     : {mode:'free',win:lbWin};
@@ -6636,13 +6706,19 @@ function paintComp(){
   const sel=$('lb-comp');
   if(!sel.options.length){
     sel.innerHTML='<option value="">Free play</option>'+
+      '<optgroup label="Eras Draft">'+
+        Object.keys(E.ERAS).map(e=>'<option value="era:'+e+'">'+esc(e)+'</option>').join('')+
+      '</optgroup>'+
+      '<optgroup label="One Franchise">'+
       AVATAR_TEAMS.slice().sort((a,b)=>E.nickname(a).localeCompare(E.nickname(b)))
-        .map(c=>'<option value="'+c+'">'+esc(E.nickname(c))+'</option>').join('');
+        .map(c=>'<option value="'+c+'">'+esc(E.nickname(c))+'</option>').join('')+
+      '</optgroup>';
   }
-  sel.value=lbClub||'';
+  sel.value=lbEra?'era:'+lbEra:(lbClub||'');
   const wrap=sel.parentElement;
-  wrap.classList.toggle('isclub',!!lbClub);
-  if(lbClub){
+  wrap.classList.toggle('isclub',!!lbClub&&!lbEra);
+  wrap.classList.toggle('isera',!!lbEra);
+  if(lbClub&&!lbEra){
     const tc=E.teamColors(lbClub);
     wrap.style.setProperty('--c1',tc.primary);
     wrap.style.setProperty('--c2',tc.secondary);
@@ -6652,8 +6728,13 @@ function paintComp(){
   }
 }
 $('lb-comp').addEventListener('change',()=>{
-  lbClub=$('lb-comp').value||null;
-  ga('board_competition',{mode:lbClub?'club':'free',club:lbClub});
+  const v=$('lb-comp').value||'';
+  if(v.startsWith('era:')){
+    lbEra=v.slice(4); lbClub=null;
+  }else{
+    lbEra=null; lbClub=v||null;
+  }
+  ga('board_competition',{mode:lbEra?'era':lbClub?'club':'free',club:lbClub,era:lbEra});
   loadBoard();
 });
 
@@ -6670,8 +6751,12 @@ const SORT_META={
 /* Coming off a run, open the board that run is actually on. Landing a One Franchise Dolphins
    player on the free board would show them a table they are not in. */
 function openBoard(){
-  if(run&&run.outcome) lbClub=run.franchise||null;
-  ga('board_opened',{mode:lbClub?'club':'free',club:lbClub||null});
+  if(run&&run.outcome){
+    lbEra=run.era||null;
+    lbClub=lbEra?null:(run.franchise||null);
+  }
+  const m=lbEra?'era':lbClub?'club':'free';
+  ga('board_opened',{mode:m,club:lbClub||null,era:lbEra||null});
   show('s-board'); loadBoard();
 }
 
@@ -6693,7 +6778,9 @@ async function loadBoard(){
   [...document.querySelectorAll('#lb-tabs .tab')].forEach(t=>{ t.disabled=false; });
   paintComp();
   const clock='Today resets at midnight Eastern, and the week starts Monday.';
-  $('lb-blurb').textContent=lbClub
+  $('lb-blurb').textContent=lbEra
+    ? 'Every Eras Draft run from the '+lbEra+'. Ranked apart from other decades. '+clock
+    : lbClub
     ? 'Every One Franchise run anybody has played with the '+E.nickname(lbClub)+'. Ranked '+
       'apart from free play, because the draft only offers one franchise. '+clock
     : (lbSort==='rating'
@@ -7059,7 +7146,8 @@ function rosterLine(picks){
    a number there would be a row from a different table. */
 function myPlaceValue(){
   if(!run||!run.outcome) return null;
-  if((lbClub||null)!==(run.franchise||null)) return null;
+  if((lbEra||null)!==(run.era||null)) return null;
+  if(!lbEra&&(lbClub||null)!==(run.franchise||null)) return null;
   const p=runPayload();
   if(lbSort==='rating'){
     return (p.teamRating===null||p.teamRating===undefined)?null:Number(p.teamRating);
