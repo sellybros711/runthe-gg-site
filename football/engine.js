@@ -670,8 +670,7 @@ const SCHEMES = [
   {
     key: 'greatest_show',
     name: 'Greatest Show on Turf',
-    relief: 0,
-    bonus: 0.04,
+    bonus: 0.02,
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
       if (!qb || (qb.pass_ppg || 0) < 15) return false;
@@ -685,8 +684,7 @@ const SCHEMES = [
   {
     key: 'triplets',
     name: 'The Triplets',
-    relief: 0,
-    bonus: 0.04,
+    bonus: 0.02,
     detect(roster) {
       const pos = new Set();
       for (const p of roster) {
@@ -699,8 +697,7 @@ const SCHEMES = [
   {
     key: 'wildcat',
     name: 'Wildcat',
-    relief: 0,
-    bonus: 0.04,
+    bonus: 0.02,
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
       if (!qb || (qb.rush_ppg || 0) < 3.5) return false;
@@ -712,8 +709,7 @@ const SCHEMES = [
   {
     key: 'air_coryell',
     name: 'Air Coryell',
-    relief: 0,
-    bonus: 0.03,
+    bonus: 0.02,
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
       if (!qb || (qb.pass_ppg || 0) < 14) return false;
@@ -727,7 +723,6 @@ const SCHEMES = [
   {
     key: 'air_raid',
     name: 'Air Raid',
-    relief: 0.40,
     bonus: 0.02,
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
@@ -740,7 +735,6 @@ const SCHEMES = [
   {
     key: 'run_and_shoot',
     name: 'Run and Shoot',
-    relief: 0.40,
     bonus: 0.02,
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
@@ -753,7 +747,6 @@ const SCHEMES = [
   {
     key: 'west_coast',
     name: 'West Coast',
-    relief: 0.30,
     bonus: 0.02,
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
@@ -770,7 +763,6 @@ const SCHEMES = [
   {
     key: 'ground_and_pound',
     name: 'Ground and Pound',
-    relief: 0.40,
     bonus: 0.02,
     detect(roster) {
       const rb = roster.filter(p => p.position === 'RB').sort((a, b) => (b.rush_ppg || 0) - (a.rush_ppg || 0))[0];
@@ -783,8 +775,7 @@ const SCHEMES = [
   {
     key: 'dual_threat',
     name: 'Dual Threat',
-    relief: 0,
-    bonus: 0.03,
+    bonus: 0.02,
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
       return qb && (qb.rush_ppg || 0) >= 3.5;
@@ -794,7 +785,6 @@ const SCHEMES = [
   {
     key: 'two_te',
     name: 'Two TE Set',
-    relief: 0,
     bonus: 0.02,
     detect(roster) {
       const tes = roster.filter(p => p.position === 'TE' && p.ppr_ppg_mean >= 6);
@@ -855,21 +845,16 @@ function rosterStructure(roster) {
 
   const scheme = detectScheme(roster);
 
-  let adjBalance = balance;
-  if (scheme && scheme.relief > 0 && balance < 1) {
-    adjBalance = 1 - (1 - balance) * (1 - scheme.relief);
-  }
-
   // Quarterback support applies to catching points only, so it is folded in as a
   // change to the effective total rather than a flat multiplier.
   const effective = sum((p) => p.pass_ppg) + rush + rec * qbSupport;
   const multiplier = clamp(
-    (effective / total) * adjBalance * concentration * Math.max(0.3, floor)
+    (effective / total) * balance * concentration * Math.max(0.3, floor)
       + (scheme ? scheme.bonus : 0),
     S.MIN, S.MAX,
   );
 
-  return { multiplier, qbSupport, balance: adjBalance, concentration, floor, floorShare,
+  return { multiplier, qbSupport, balance, concentration, floor, floorShare,
     rushShare, topShare, qbPass, total, scheme: scheme ? scheme.key : null };
 }
 
