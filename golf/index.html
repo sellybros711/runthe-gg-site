@@ -12160,19 +12160,35 @@ function scrBuild(){
     <span style="font-size:20px;flex:0 0 auto">🎒</span>
     <div style="min-width:0"><div style="font-weight:800;color:var(--oncard);font-size:13.5px">${esc(cad.name)}<span class="small muted" style="font-weight:600"> on the bag</span></div>
     <div class="small" style="color:var(--gold);font-weight:700;margin-top:1px">${esc(cad.desc)}</div></div></div>`));
-  // RIGHT, scorecard + season pick. Ratings your caddie boosts show the BOOSTED number in green with
-  // a ▲ (p from buildPlayer already has the caddie's base deltas baked in; the raw slot value is what
-  // you drafted, so the difference IS the caddie effect, incl. red ▼ for Two Shot Lynch's −1 tradeoff).
+  // edit your bag / gear right here (owner): opens the Closet at the Clubs (bag) menu and returns to this
+  // screen so you can equip clubs/gear whose boosts feed your ratings. Career + signed-in only (gear is
+  // career-only, and the Closet needs an account).
+  if(!S.daily && sbSignedIn()){
+    const eb=$(`<button class="btn ghost" style="margin-top:10px;width:auto;padding:10px 15px;font-size:12.5px">🎒 Edit your bag &amp; gear<span class="sub" style="font-size:9px">Clubs, gear &amp; cosmetics · their boosts show below</span></button>`);
+    eb.onclick=()=>{ track('build_edit_bag'); S.setupEdit=true; S.setupReturn={screen:'build',overlay:null}; S.setupCat='club'; S.overlay=null; S.screen='setup'; render(); };
+    left.appendChild(eb);
+  }
+  // RIGHT, scorecard + season pick. Ratings your CADDIE + GEAR boost show the BOOSTED number in green with
+  // a ▲ (p from buildPlayer already has the caddie base + equipped gear deltas baked in; the raw slot value
+  // is what you drafted, so the difference IS the boost, incl. red ▼ for a tradeoff like Two Shot Lynch's −1).
   right.appendChild($(`<h2 style="margin:0 0 8px">Your scorecard</h2>`));
   const card=$(`<div class="card-grid"></div>`);
   CATS.forEach(cat=>{const f=S.slots[cat.k]; const raw=f?f.value:REPLACEMENT; const bv=p[cat.k], d=bv-raw;
-    const vHTML = d>0 ? `<span class="v" style="color:#35d6a0" title="${esc(cad?cad.name:'Caddie')} boost">${bv}<span style="font-size:12px"> ▲</span></span>`
-      : d<0 ? `<span class="v" style="color:#E14A33" title="${esc(cad?cad.name:'Caddie')} tradeoff">${bv}<span style="font-size:12px"> ▼</span></span>`
+    const vHTML = d>0 ? `<span class="v" style="color:#35d6a0" title="+${d} from your caddie &amp; gear">${bv}<span style="font-size:12px"> ▲</span></span>`
+      : d<0 ? `<span class="v" style="color:#E14A33" title="${d} from a gear/caddie tradeoff">${bv}<span style="font-size:12px"> ▼</span></span>`
       : `<span class="v">${bv}</span>`;
     card.appendChild($(`<div class="slot ${f?'':'empty'}">
       <span class="lab">${cat.short}</span><span class="who">${f?cardDispName(f.golfer):'no spin, journeyman'}</span>
       ${vHTML}</div>`));});
   right.appendChild(card);
+  // owner: fully integrate the gear boosts so they're VISIBLE - the active-boost summary right under the
+  // scorecard (career only; the same numbers baked into your ratings above + the sim). Guides you to gear
+  // up if you have nothing equipped.
+  if(!S.daily && SHOP_ENABLED){
+    const boostBox=$(`<div class="scout" style="margin-top:10px"></div>`);
+    boostBox.appendChild(accBoostSummaryNode());
+    right.appendChild(boostBox);
+  }
   right.appendChild($(`<div style="height:16px"></div>`));
   if(S.daily){
     const cN=S.dailyCourse?dShort(DAILY_COURSES[S.dailyCourse].v):"today's course";
@@ -15779,6 +15795,13 @@ function scrSeason(){
   const showMeters=!S.daily && !S.circuitMode && S.career;
   const rspVal=showMeters?repRespect():0;
   const fansVal=showMeters?Math.round(careerStory().followers||0):0;   // CS434: live Fans counter (moves up/down each event)
+  // coins earned this season (owner): shown live on the banner - projected from full-season performance
+  // (credited at season end). Includes specialty-event bonuses + the Tour Pass multiplier so it matches
+  // what actually lands. Career + circuit (any non-daily season pays coins).
+  const _byMoney=Object.entries(S.season.totals).map(([n,v])=>({n,money:v.money})).sort((a,b)=>b.money-a.money);
+  const _moneyRankLive=_byMoney.findIndex(r=>r.n===S.season.me.name)+1;
+  const _passM=(typeof passRewardMult==='function'?passRewardMult():1);
+  const seasonCoinsLive=!S.daily?Math.round((seasonCoins(t,_moneyRankLive)+seasonBonusCoins().total)*_passM):0;
   // CS498 (owner): Confidence & Respect start collapsed; tap the toggle to expand.
   const metersOpen=!!S._metersOpen;
   const metersHTML=showMeters?`<div class="cb-meters">
@@ -15808,6 +15831,7 @@ function scrSeason(){
       <div class="cb-stat"><div class="k">Wins</div><div class="v">${t.wins}</div></div>
       <div class="cb-stat"><div class="k">Top 10</div><div class="v">${t.top10}</div></div>
       <div class="cb-stat"><div class="k">Cuts</div><div class="v">${t.made}/${t.played||0}</div></div>
+      ${!S.daily?`<div class="cb-stat"><div class="k">Coins</div><div class="v" style="color:#ffd45e"><span style="display:inline-flex;align-items:center;gap:3px;justify-content:center">${ic('coin',{size:'16px'})}${coinFmt(seasonCoinsLive)}</span></div></div>`:''}
       ${showMeters?`<div class="cb-stat"><div class="k">Fans</div><div class="v" style="color:var(--oncard)"><span id="cb-fans">${fmtFollowers2(fansVal)}</span>${cbArrow(S._bannerFansDir||0)}</div></div>`:''}
     </div>
     ${metersHTML}
@@ -16635,10 +16659,12 @@ function scrSummary(){
       // a simmed season forfeits them. Folded into the single season-coins toast so it doesn't clobber it.
       const bonus = skipped ? {total:0,parts:[]} : seasonBonusCoins();
       const amt=base+bonus.total;
+      let credited=0;
       if(amt>0){ _coinsSuppressToast=false;
         let label = skipped?'season simmed to the end':('season'+(t.wins?(' · '+t.wins+' win'+(t.wins>1?'s':'')):''));
         if(bonus.parts.length) label += ' · ' + bonus.parts.join(' · ');
-        awardPlayCoins(amt, label); }
+        credited=awardPlayCoins(amt, label)||0; }
+      if(S.season) S.season.coinsEarned=credited;   // shown on the Earnings recap tab (owner)
       track('season_coins',{year:S.year||1,amt,base,bonus:bonus.total,skipped,wins:t.wins,majors:t.majors,moneyRank});
     }
     // CS412: the header coin pill was built at the top of THIS render pass, BEFORE these season coins were
@@ -16716,10 +16742,12 @@ function scrSummary(){
       <span class="k" style="font:800 11px/1 var(--body);letter-spacing:.13em;text-transform:uppercase;color:var(--muted)">${lab}</span>
       <span style="text-align:right;min-width:0"><span class="v" style="font-family:var(--mono);font-weight:800;font-size:21px;white-space:nowrap;color:${col}">${val}</span><br><span class="small muted" style="font-size:9.5px">${sub}</span></span>
     </div>`;
+  const _seasonCoins=(S.season&&S.season.coinsEarned)||0;   // coins earned this season (credited at season end)
   const moneyBar=$(`<div class="tile" style="margin:4px 0 8px;padding:11px 16px">
     <div class="moneybar-row" style="display:flex;flex-wrap:wrap;align-items:stretch;gap:2px 24px">
       ${statRow('Earnings', fmt(t.money), 'var(--oncard)', 'prize money won')}
       ${statRow('Net profit', fmtSigned(netTotal), netCol0, contractBonus>0?('incl. +'+fmt(contractBonus)+' sponsor'):('after −'+fmt(ec.costs)+' costs'))}
+      ${_seasonCoins>0?statRow('Coins earned', ic('coin',{size:'18px'})+' '+coinFmt(_seasonCoins), '#ffd45e', 'spend at the Pro Shop'):''}
     </div>
   </div>`);
   add(moneyBar);
@@ -17455,6 +17483,9 @@ function scrOffseason(){
   // spin/risk); mid-swap → the tap-to-swap hint. (The age/locked context now lives in the card.)
   if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap a stat to swap it, <span style="color:#35d6a0">▲ applies instantly</span> · <span style="color:#e07a5f">▼ asks to confirm</span></div>`));
   else add($(`<div class="oslabel">Your Skills</div>`));
+  // owner: gear boosts must be visible at every career stage - the active-boost summary (the same deltas
+  // baked into your ratings + the sim) sits above your skills here in the off-season too, when idle.
+  if(!spun && SHOP_ENABLED){ const bx=$(`<div class="scout" style="max-width:520px;margin:0 auto 8px"></div>`); bx.appendChild(accBoostSummaryNode()); add(bx); }
 
   // THE unified grid: always 8 tiles. Idle → current bag; spun → current value + the swap it would make.
   const grid=$(`<div class="attrs osgrid"></div>`);
@@ -20636,21 +20667,26 @@ async function verifyDailyRecord(courseKey, isLegend, isSpotlight){
   await (isSpotlight ? crLoadSpot() : (isLegend ? crLoadLegend() : crLoad()));   // refetch + self-heal the local course-record cache
   const rec=(isSpotlight?courseRecordsSpot():(isLegend?courseRecordsLegend():courseRecords()))[courseKey];
   // CS307: preserve the tie vs sole-record distinction ('tie' when you co-hold with others, 'record' when
-  // you hold it alone, false when someone shot lower) instead of a bare boolean.
-  const code = (rec && rec.mine) ? ((rec.names && rec.names.length>1) ? 'tie' : 'record') : false;
+  // you hold it alone, false when someone shot lower). BUT a record is only tied/set by THIS round when this
+  // round's score actually MATCHES the record's to-par - you can HOLD the record from a previous, lower
+  // round while this round was worse (a +2 must not read "record tied" just because you already own the -3).
+  const codeFor=(total)=> (rec && rec.mine && total!=null && rec.toPar===total)
+    ? ((rec.names && rec.names.length>1) ? 'tie' : 'record') : false;
   let changed=false;
-  if(isSpotlight){ if(S.spotResult && S.spotResult.course===courseKey && S.spotResult.record!==code){ S.spotResult.record=code; changed=true; if(S.dailyResult===S.spotResult){} } if(changed) render(); return; }
-  if(S.dailyResult && S.dailyResult.course===courseKey && !!S.dailyResult.isLegend===!!isLegend && S.dailyResult.record!==code){
-    S.dailyResult.record=code; changed=true;
+  if(isSpotlight){ const code=codeFor(S.spotResult && S.spotResult.course===courseKey ? S.spotResult.total : null);
+    if(S.spotResult && S.spotResult.course===courseKey && S.spotResult.record!==code){ S.spotResult.record=code; changed=true; } if(changed) render(); return; }
+  if(S.dailyResult && S.dailyResult.course===courseKey && !!S.dailyResult.isLegend===!!isLegend){
+    const code=codeFor(S.dailyResult.total);
+    if(S.dailyResult.record!==code){ S.dailyResult.record=code; changed=true; }
     const today=dailyToday();
-    if(today){
-      if(today.result && today.result.course===courseKey) today.result.record=code;
-      if(today.best && today.best.course===courseKey) today.best.record=code;
-      LS.set(acctKey('bag_daily'), today);
+    if(today){ let tch=false;
+      if(today.result && today.result.course===courseKey){ const rc=codeFor(today.result.total); if(today.result.record!==rc){ today.result.record=rc; tch=true; } }
+      if(today.best && today.best.course===courseKey){ const bc=codeFor(today.best.total); if(today.best.record!==bc){ today.best.record=bc; tch=true; } }
+      if(tch){ LS.set(acctKey('bag_daily'), today); changed=true; }
     }
   }
   // the "logged a guest round to your account" banner also claims a record, guest claims are never legend
-  if(!isLegend && S.dailyClaimMsg && S.dailyClaimMsg.record!==code){ S.dailyClaimMsg.record=code; changed=true; }
+  if(!isLegend && S.dailyClaimMsg && S.dailyClaimMsg.record!==codeFor(S.dailyClaimMsg.total)){ S.dailyClaimMsg.record=codeFor(S.dailyClaimMsg.total); changed=true; }
   if(changed) render();
 }
 // When a guest signs in (or creates an account) with a just-played daily round waiting, log that round
@@ -22663,7 +22699,12 @@ function overlayPackWheel(app){
   function renderFoot(){
     footer.innerHTML='';
     if(!w.done){
-      if(!w.spun){ var sb=$('<button class="btn goldfill">Spin the wheel</button>'); sb.onclick=function(){ spin(); }; footer.appendChild(sb); }
+      if(!w.spun){ var sb=$('<button class="btn goldfill">Spin the wheel</button>'); sb.onclick=function(){ spin(); }; footer.appendChild(sb);
+        // owner: show this pack's drop-rate odds under the spin button - it goes away once you spin
+        var odds=(pt.odds||PACK_ODDS);
+        var oddsHTML=odds.map(function(o){ var rc=PACK_RCOL[o[0]]||'#b8c4bd'; return '<span style="color:'+rc+';white-space:nowrap"><b>'+(Math.round(o[1]*1000)/10)+'%</b> '+PACK_RLABEL[o[0]]+'</span>'; }).join('<span style="opacity:.35;margin:0 2px">·</span>');
+        footer.appendChild($('<div class="pwodds" style="margin-top:12px;text-align:center"><div class="small muted" style="letter-spacing:.14em;text-transform:uppercase;font-size:9.5px;margin-bottom:5px">Odds this pack</div><div class="small" style="line-height:1.8;font-size:12px">'+oddsHTML+'</div></div>'));
+      }
       else footer.appendChild($('<div class="small muted">Good luck...</div>'));
       return;
     }
