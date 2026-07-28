@@ -831,12 +831,21 @@ Known gaps worth a look during playtesting:
   `rtd:v1` belongs to RunTheDrive on the same origin.
 - **The SQL files have to be run once** in the SQL editor, in order:
   `50_football_perfect_season.sql`, `51_football_accounts.sql`,
-  `55_football_avatars_setup.sql`, `56_football_all_time_teams.sql`. Until 50 is run the
+  `55_football_avatars_setup.sql`, `57_football_run_mode.sql`. Until 50 is run the
   board reports itself unreachable, which is handled, but no run is recorded. Until 51 is
-  run the board works and every row reads Anonymous. Until 55 is run nobody can save a club
-  or initials for their circle. Until 56 is run there is no board at all: every query
-  filters on `mode`, so a 400 comes back on all of them, and the connection check names the
-  file. 52 to 54 are superseded or read-only; 53 and 54 say so in their own headers.
+  run the board works and every row reads Anonymous. Until 55 is run nobody can save a team
+  or initials for their circle. Until 57 is run there is no board at all: every query
+  filters on `run_mode`, so a 400 comes back on all of them, and the connection check names
+  the file. 52 is read-only; 53, 54 and 56 are superseded and say so in their own headers.
+
+  **`run_mode` is not called `mode`, and that cost a shipped outage.** 56 named it `mode`
+  and the board came back with `400 42809. WITHIN GROUP is required for ordered-set
+  aggregate mode` on a query that calls no function at all. PostgREST lets you filter on a
+  computed column, so when its schema cache does not have the column, it resolves the name
+  as a function and emits an unqualified `mode(ps_runs)`; Postgres finds `pg_catalog.mode()`,
+  the ordered-set aggregate, and complains it was called without `WITHIN GROUP`. Reproduced
+  exactly against a real database. Never name a column after a built-in aggregate: `mode`,
+  `min`, `max`, `sum`, `avg`, `count`, `rank`, `percentile_cont`.
 - **Awards and Pro Bowl selections are not in.** Waiting on the data as
   `season, player name, team, award`. Team is required: there are 19 name-plus-season
   collisions in the player file, and every unmatched row will be reported rather than

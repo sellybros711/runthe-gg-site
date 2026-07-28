@@ -1,63 +1,44 @@
 -- ============================================================================
--- SUPERSEDED BY 57_football_run_mode.sql. Do not run this file.
+-- 57_football_run_mode.sql : One Team mode, with a column name that cannot bite
 -- ============================================================================
--- The column this file adds is called `mode`, and that name took the whole board
--- down with a message about a function nobody called:
+-- THIS IS THE ONLY FILE YOU NEED FOR ONE TEAM MODE. It replaces
+-- 56_football_all_time_teams.sql and is safe whether or not you ever ran that
+-- one. Safe to run more than once. Run it in the Supabase SQL editor in one go.
+--
+-- ----------------------------------------------------------------------------
+-- WHY THIS FILE EXISTS: `mode` IS A FUNCTION NAME IN POSTGRES
+-- ----------------------------------------------------------------------------
+-- 56 added a column called `mode`. The board then failed with
 --
 --     400 42809. WITHIN GROUP is required for ordered-set aggregate mode
 --
--- PostgREST lets you filter on a computed column, so when its schema cache does
--- not have the column it resolves the name as a function and emits an unqualified
--- mode(ps_runs). Postgres finds pg_catalog.mode(), the ordered-set aggregate, and
--- complains it was called without WITHIN GROUP. Reproduced exactly against a real
--- database.
+-- which is a message about an aggregate function, on a query that calls no
+-- function at all. Reproduced against a real database, the cause is exact:
 --
--- 57 is this file with the column renamed to `run_mode`, and it is safe to run
--- whether or not this one was ever run: it renames the column if it is there and
--- creates it if it is not, so club runs already recorded keep their mode. Kept
--- here only as history.
--- ============================================================================
-
--- ============================================================================
--- 56_football_all_time_teams.sql : the daily puzzle goes, club boards arrive
--- ============================================================================
--- Safe to run more than once, and safe to run before or after any earlier file.
--- Run it in the Supabase SQL editor in one go.
+--     select id from ps_runs where mode(ps_runs) = 'club';
+--     ERROR: WITHIN GROUP is required for ordered-set aggregate mode
 --
--- WHAT CHANGES
+-- PostgREST allows filtering on a computed column, which is a function taking
+-- the table's row type. When its schema cache does not have the column -- either
+-- because the migration has not run or because the cache has not reloaded since
+-- it did -- a filter on that name is resolved as a computed column and emitted
+-- as an unqualified `mode(ps_runs)`. Postgres then finds pg_catalog.mode(), the
+-- ordered-set aggregate that computes the most common value, and complains that
+-- it was called without WITHIN GROUP.
 --
--- The daily puzzle is retired and replaced by One Team mode: you pick one
--- of the thirty-two teams and every spin of that draft is that team, with only
--- the year moving, so the run is an attempt at the best Dolphins or Steelers or
--- Bears team anybody has built out of that club's own history. Each club gets
--- its own board.
+-- So the name turned "you are one migration behind" into a message nobody can
+-- act on. `run_mode` collides with nothing, and a stale cache now says the
+-- column is missing, which is the truth and is fixable.
 --
--- WHY A `mode` COLUMN AND NOT A SECOND BOOLEAN
---
--- There are three kinds of run in this table now and there will not be two
--- again. A boolean per kind means every board query carries a growing pile of
--- "and not that one" clauses, and the day a fourth mode arrives every one of
--- them silently starts including it. One column with a check constraint says
--- what a row IS, and a board asks for the one it wants.
---
--- WHY `franchise` COULD NOT BE THE DISCRIMINATOR ON ITS OWN
---
--- It is tempting, because a club run always has one and a free run never does.
--- But the column predates this: an early version of the game asked for your
--- favourite club and stored it on ordinary free runs. Those rows are still
--- here, and treating "has a franchise" as "is a club run" would drop hundreds
--- of them onto club boards they were never played on.
---
--- THE DAILY ROWS STAY. They are somebody's season and they are somebody's best
--- record. They move to mode 'daily', which no board reads, so they are out of
--- the way rather than deleted.
+-- The lesson is bigger than this column: a column named after a built-in
+-- aggregate (mode, min, max, sum, avg, count, rank, percentile_cont) can be
+-- resolved as a function call by anything that guesses. Do not use one.
 -- ----------------------------------------------------------------------------
 
 
 -- ---------------------------------------------------------------------------
--- 1. The list of clubs, once, as a function. Repeated from 55 so this file can
---    be run on a project that has not had that one; `create or replace` over an
---    identical definition costs nothing.
+-- 1. The list of teams, once, as a function, so the constraint and
+--    ps_submit_run cannot disagree about it.
 -- ---------------------------------------------------------------------------
 create or replace function ps_is_franchise(p text)
 returns boolean
@@ -74,83 +55,112 @@ grant execute on function ps_is_franchise(text) to anon, authenticated;
 
 
 -- ---------------------------------------------------------------------------
--- 2. The column, then the backfill, then the constraint. In that order, because
---    a check constraint is validated against every existing row the moment it is
---    added: put it on before the daily rows are moved and it is fine, put it on
---    before the column is filled and there is nothing to check. The order also
---    means re-running this file is a no-op rather than an error.
+-- 2. The column, from any starting state.
+--
+--    Three states are possible and all three end the same way: 56 was run and
+--    there is a `mode` column to rename, 56 was never run and there is nothing,
+--    or this file has already been run and there is a `run_mode`. A rename
+--    rather than a new column plus a copy, so the club runs somebody has already
+--    played keep their mode instead of silently reverting to 'free'.
 -- ---------------------------------------------------------------------------
-alter table ps_runs add column if not exists mode text not null default 'free';
+do $$
+begin
+  if exists (select 1 from pg_attribute
+              where attrelid = to_regclass('public.ps_runs')
+                and attname = 'mode' and not attisdropped)
+     and not exists (select 1 from pg_attribute
+              where attrelid = to_regclass('public.ps_runs')
+                and attname = 'run_mode' and not attisdropped)
+  then
+    alter table ps_runs rename column mode to run_mode;
+  end if;
+end $$;
 
--- Existing daily runs, off the free board and out of the way. Guarded on
--- mode = 'free' so a second run of this file cannot move anything twice.
-update ps_runs set mode = 'daily' where daily and mode = 'free';
+alter table ps_runs add column if not exists run_mode text not null default 'free';
 
+-- The retired daily runs, off the free board and out of the way rather than
+-- deleted: they are somebody's season and somebody's best record. Guarded on
+-- 'free' so running this file twice cannot move anything twice, and guarded on
+-- the column existing because a project that never had the daily still has it.
+update ps_runs set run_mode = 'daily' where daily and run_mode = 'free';
+
+-- Constraints AFTER the backfill: a check constraint is validated against every
+-- existing row the moment it is added.
 alter table ps_runs drop constraint if exists ps_runs_mode_ck;
-alter table ps_runs add  constraint ps_runs_mode_ck
-  check (mode in ('free', 'daily', 'club'));
+alter table ps_runs drop constraint if exists ps_runs_run_mode_ck;
+alter table ps_runs add  constraint ps_runs_run_mode_ck
+  check (run_mode in ('free', 'daily', 'club'));
 
--- A club run without a club is a row no board can place. Free and daily rows are
--- deliberately not constrained the other way: the old favourite-club rows are
--- free runs that carry a franchise, and rejecting them now would mean rewriting
--- history to satisfy a rule written after it.
+-- A One Team run without a team is a row no board can place. Free and daily rows
+-- are deliberately NOT constrained the other way: the oldest rows in this table
+-- are free runs that carry the player's favourite team, from a version of the
+-- game that asked for one, and rejecting those now would mean rewriting history
+-- to satisfy a rule written after it.
 alter table ps_runs drop constraint if exists ps_runs_club_needs_franchise_ck;
 alter table ps_runs add  constraint ps_runs_club_needs_franchise_ck
-  check (mode <> 'club' or (franchise is not null and ps_is_franchise(franchise)));
+  check (run_mode <> 'club' or (franchise is not null and ps_is_franchise(franchise)));
 
-comment on column ps_runs.mode is
-  'Which competition this run belongs to: free (the open draft), club (all-time '
-  'team mode, franchise says which), or daily (the retired daily puzzle, kept so '
-  'those seasons are not lost, read by nothing).';
+comment on column ps_runs.run_mode is
+  'Which competition this run belongs to: free (the open draft), club (One Team '
+  'mode, franchise says which team), or daily (the retired daily puzzle, kept so '
+  'those seasons are not lost, read by nothing). Named run_mode and not mode '
+  'because a column called mode is resolved as pg_catalog.mode() by anything '
+  'that guesses at it; see the header of this file.';
 
 
 -- ---------------------------------------------------------------------------
 -- 3. Indexes.
 --
--- THE RULE THIS FILE INHERITS, and the reason every index below ends in
+-- THE RULE EVERY ONE OF THESE FOLLOWS, and the reason they all end in
 -- created_at: the board windows on created_at, and a window has to be a column
 -- the sort index already carries or it stops being an index condition and
 -- becomes a heap fetch per candidate row. Measured on the real schema at
 -- 2,000,000 rows: 1,081 buffers and 9.0ms with created_at in the index, 59,917
 -- buffers and 251.9ms with it as a filter. The full working is in
 -- 50_football_perfect_season.sql and in board.js; do not re-derive it.
---
--- The old indexes led on `daily`, which no query asks about any more. New names
--- rather than a drop-and-recreate under the old ones, so that re-running 50
--- later recreates something harmless instead of something wrong.
 -- ---------------------------------------------------------------------------
 
--- The free board, both axes. mode leads because it is an equality on every read.
-create index if not exists ps_runs_m_score_idx
-  on ps_runs (mode, score desc, created_at asc);
-create index if not exists ps_runs_m_rating_idx
-  on ps_runs (mode, team_rating desc, created_at asc);
+-- The free board, both axes. run_mode leads because it is an equality on every read.
+create index if not exists ps_runs_rm_score_idx
+  on ps_runs (run_mode, score desc, created_at asc);
+create index if not exists ps_runs_rm_rating_idx
+  on ps_runs (run_mode, team_rating desc, created_at asc);
 
 -- The same two over named rows only, which is every list and every placing. At
 -- 2,000,000 rows of which 20 were named, the top-500 read as a plain filter
 -- scanned 666,726 rows in 246ms; against a partial index it is 0.03ms off 16kB,
 -- because the index only holds the rows a board can show.
-create index if not exists ps_runs_m_named_score_idx
-  on ps_runs (mode, score desc, created_at asc) where display_name is not null;
-create index if not exists ps_runs_m_named_rating_idx
-  on ps_runs (mode, team_rating desc, created_at asc) where display_name is not null;
+create index if not exists ps_runs_rm_named_score_idx
+  on ps_runs (run_mode, score desc, created_at asc) where display_name is not null;
+create index if not exists ps_runs_rm_named_rating_idx
+  on ps_runs (run_mode, team_rating desc, created_at asc) where display_name is not null;
 
--- The club boards. Partial on mode so franchise can lead: a club board is always
--- one club, so the equality that matters is the franchise and mode is a constant
--- the index does not need to store thirty-two million times over.
-create index if not exists ps_runs_club_score_idx
-  on ps_runs (franchise, score desc, created_at asc) where mode = 'club';
-create index if not exists ps_runs_club_rating_idx
-  on ps_runs (franchise, team_rating desc, created_at asc) where mode = 'club';
-create index if not exists ps_runs_club_named_score_idx
+-- The thirty-two One Team boards. Partial on run_mode so franchise can lead: one
+-- of these boards is always one team, so the equality that matters is the
+-- franchise and the mode is a constant the index need not store per row.
+create index if not exists ps_runs_rmclub_score_idx
+  on ps_runs (franchise, score desc, created_at asc) where run_mode = 'club';
+create index if not exists ps_runs_rmclub_rating_idx
+  on ps_runs (franchise, team_rating desc, created_at asc) where run_mode = 'club';
+create index if not exists ps_runs_rmclub_named_score_idx
   on ps_runs (franchise, score desc, created_at asc)
-  where mode = 'club' and display_name is not null;
-create index if not exists ps_runs_club_named_rating_idx
+  where run_mode = 'club' and display_name is not null;
+create index if not exists ps_runs_rmclub_named_rating_idx
   on ps_runs (franchise, team_rating desc, created_at asc)
-  where mode = 'club' and display_name is not null;
+  where run_mode = 'club' and display_name is not null;
 
--- The retired ones. Nothing reads `daily` or `daily_date` any more, and an index
--- costs write time on every insert whether or not anything reads it.
+-- Everything the older files left behind. A renamed column takes its indexes
+-- with it, so 56's are still here under their old names and still correct; they
+-- are dropped anyway because two indexes answering one query is write cost for
+-- nothing. `daily` and `daily_date` are read by nothing at all now.
+drop index if exists ps_runs_m_score_idx;
+drop index if exists ps_runs_m_rating_idx;
+drop index if exists ps_runs_m_named_score_idx;
+drop index if exists ps_runs_m_named_rating_idx;
+drop index if exists ps_runs_club_score_idx;
+drop index if exists ps_runs_club_rating_idx;
+drop index if exists ps_runs_club_named_score_idx;
+drop index if exists ps_runs_club_named_rating_idx;
 drop index if exists ps_runs_mode_score_idx;
 drop index if exists ps_runs_mode_created_idx;
 drop index if exists ps_runs_mode_rating_idx;
@@ -161,21 +171,27 @@ drop index if exists ps_runs_named_rating_idx;
 
 
 -- ---------------------------------------------------------------------------
--- 4. ps_submit_run(), which now takes the mode.
+-- 4. ps_submit_run().
 --
--- THE OLD SIGNATURE HAS TO GO, not just be replaced. Adding a parameter makes a
--- new function rather than replacing the old one, and PostgREST picks an
--- overload by the argument names in the request body: with both installed, a
--- call that omits p_mode is ambiguous and fails with no useful message. So the
--- exact old signature is dropped first.
+-- EVERY OLD SIGNATURE HAS TO GO, not just be replaced. Adding a parameter makes
+-- a new function rather than replacing the old one, and PostgREST picks an
+-- overload by the argument names in the request body: with two installed, a call
+-- is ambiguous and fails with no useful message. Both earlier signatures are
+-- dropped by name below, the 16-argument one from 50 and the 17-argument one
+-- from 56.
 --
--- p_daily_date is kept, and still works. A browser holding a cached copy of the
--- old page can still finish the run it is in the middle of, and that run lands
--- as mode 'daily' where it bothers nobody, instead of erroring out on the last
--- call of the game.
+-- p_mode keeps its name. It is an argument and not a column, so it cannot be
+-- mistaken for a function, and renaming it would break any browser still holding
+-- a cached copy of the page mid-run.
+--
+-- p_daily_date is kept and still works, for the same reason: a browser part-way
+-- through a daily puzzle can still finish it, and that run lands as 'daily'
+-- where it bothers nobody, instead of erroring out on the last call of the game.
 -- ---------------------------------------------------------------------------
 drop function if exists ps_submit_run(int,int,numeric,numeric,numeric,int,text,text,
   text[],text[],text,int,numeric,numeric,numeric,int);
+drop function if exists ps_submit_run(int,int,numeric,numeric,numeric,int,text,text,
+  text[],text[],text,int,numeric,numeric,numeric,int,text);
 
 create or replace function ps_submit_run(
   p_regular_wins  int,
@@ -184,8 +200,8 @@ create or replace function ps_submit_run(
   p_chemistry_pct numeric,
   p_spend_musd    numeric,
   p_respins       int      default 0,
-  -- For a club run this is the club the whole draft was locked to. For a free run
-  -- it is null, and for the oldest rows in the table it was a favourite club.
+  -- For a One Team run this is the team the whole draft was locked to. For a free
+  -- run it is null, and for the oldest rows in the table it was a favourite team.
   p_franchise     text     default null,
   p_daily_date    text     default null,
   p_picks         text[]   default null,
@@ -255,7 +271,7 @@ begin
     end if;
   end if;
 
-  -- ---- the club, which a club run must have and no other kind may ----
+  -- ---- the team, which a One Team run must have and no other kind may ----
   v_club := nullif(upper(btrim(coalesce(p_franchise, ''))), '');
   if v_club is not null and not ps_is_franchise(v_club) then
     raise exception 'franchise code looks wrong: %', p_franchise;
@@ -302,12 +318,12 @@ begin
   if p_point_diff is null or p_point_diff < -60 or p_point_diff > 60 then
     raise exception 'point differential out of range: %', p_point_diff;
   end if;
-  -- 100 STAYS. There is nothing to raise it for: One Team suppresses the two links
-  -- that would otherwise fire on every pair of a one-club roster, so measured over
-  -- 796 One Team drafts across all 32 clubs chemistry comes out at a mean of +3.1%
-  -- against +2.2% in free play. The engine also saturates toward a hard +15%
-  -- ceiling rather than summing links, so no roster of any kind can approach this
-  -- bound.
+  -- 100 STAYS, and it was worth measuring rather than assuming. One Team
+  -- suppresses the two chemistry links that would otherwise fire on every pair of
+  -- a one-team roster, so measured over 796 One Team drafts across all 32 teams
+  -- chemistry comes out at a mean of +3.1% against +2.2% in free play. The engine
+  -- also saturates toward a hard +15% ceiling rather than summing links, so no
+  -- roster of any kind can approach this bound.
   if p_chemistry_pct is null or p_chemistry_pct < 0 or p_chemistry_pct > 100 then
     raise exception 'chemistry out of range: %', p_chemistry_pct;
   end if;
@@ -329,7 +345,7 @@ begin
     raise exception 'structure multiplier out of range: %', p_structure_mult;
   end if;
   -- 400 stays too. One Team runs rate a little higher, measured at a mean of 71
-  -- against 67 for free play and a largest of 108 against 100, because a club's
+  -- against 67 for free play and a largest of 108 against 100, because a team's
   -- best years are a richer pool than six random draws. That is nowhere near the
   -- bound, and the bound is a sanity check on a client-reported number, not a
   -- balance dial.
@@ -367,7 +383,7 @@ begin
   -- is idempotency.
   select id into v_dupe from ps_runs
    where picks = p_picks and regular_wins = v_reg and playoff_wins = v_po
-     and mode = v_mode
+     and run_mode = v_mode
      and created_at > now() - interval '1 minute'
    limit 1;
   if v_dupe is not null then return v_dupe; end if;
@@ -375,7 +391,7 @@ begin
   insert into ps_runs (
     user_id, regular_wins, playoff_wins, wins, losses, games,
     title_won, made_playoffs, perfect, seed_label,
-    point_diff, chemistry_pct, spend_musd, respins, franchise, mode, daily, daily_date,
+    point_diff, chemistry_pct, spend_musd, respins, franchise, run_mode, daily, daily_date,
     picks, slots, seed, rng_calls,
     squad_fppg, structure_mult, team_rating, perfect_pct
   ) values (
@@ -398,32 +414,37 @@ grant execute on function ps_submit_run(int,int,numeric,numeric,numeric,int,text
 
 
 -- ---------------------------------------------------------------------------
--- 5. Tell PostgREST the shape changed, or ps_submit_run is a 404 and selecting
---    mode is a 400 until its cache happens to reload on its own.
+-- 5. Tell PostgREST the shape changed. Without this its cache can keep the old
+--    shape for a while, and a filter on a column it does not know about is
+--    exactly the failure this whole file is about.
 -- ---------------------------------------------------------------------------
 analyze ps_runs;
 notify pgrst, 'reload schema';
 
 
 -- ---------------------------------------------------------------------------
--- 6. What is now in place. One row, so it reads on a phone. Every column should
---    say ok.
+-- 6. What is now in place. One row, so it reads on a phone. Every column that
+--    can say ok should say ok.
 -- ---------------------------------------------------------------------------
 select
   case when exists (select 1 from pg_attribute where attrelid=to_regclass('public.ps_runs')
-        and attname='mode' and not attisdropped) then 'ok' else 'MISSING' end   as mode_column,
+        and attname='run_mode' and not attisdropped) then 'ok' else 'MISSING' end
+                                                                          as run_mode_column,
+  case when exists (select 1 from pg_attribute where attrelid=to_regclass('public.ps_runs')
+        and attname='mode' and not attisdropped) then 'STILL THERE' else 'gone, good' end
+                                                                          as old_mode_column,
   case when exists (select 1 from pg_constraint
-        where conrelid=to_regclass('public.ps_runs') and conname='ps_runs_mode_ck')
-       then 'ok' else 'MISSING' end                                             as mode_check,
+        where conrelid=to_regclass('public.ps_runs') and conname='ps_runs_run_mode_ck')
+       then 'ok' else 'MISSING' end                                       as run_mode_check,
   case when (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
         where n.nspname='public' and p.proname='ps_submit_run') = 1
-       then 'ok' else 'NOT EXACTLY ONE, drop the spare overload' end            as submit_fn,
+       then 'ok' else 'NOT EXACTLY ONE, drop the spare overload' end      as submit_fn,
   case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
         where n.nspname='public' and p.proname='ps_submit_run'
           and has_function_privilege('anon', p.oid, 'execute'))
-       then 'ok' else 'NO GRANT' end                                            as anyone_can_submit,
+       then 'ok' else 'NO GRANT' end                                      as anyone_can_submit,
   (select count(*) from pg_indexes where schemaname='public' and tablename='ps_runs'
-     and indexname like 'ps_runs_club_%')                                       as club_indexes,
-  (select count(*) from ps_runs where mode='free')                              as free_runs,
-  (select count(*) from ps_runs where mode='club')                              as club_runs,
-  (select count(*) from ps_runs where mode='daily')                             as retired_daily_runs;
+     and indexname like 'ps_runs_rm%')                                    as new_indexes,
+  (select count(*) from ps_runs where run_mode='free')                    as free_runs,
+  (select count(*) from ps_runs where run_mode='club')                    as one_team_runs,
+  (select count(*) from ps_runs where run_mode='daily')                   as retired_daily_runs;

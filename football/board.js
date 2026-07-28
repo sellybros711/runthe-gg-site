@@ -43,14 +43,28 @@
      missing name, an empty leaderboard. So a 400 that names the column falls back to
      the list without it, once, and remembers. Same shape as the pre-migration retries
      in the soccer client. */
-  /* `mode` is NOT in an optional set the way display_name is, and deliberately. Those
+  /* `run_mode` is NOT in an optional set the way display_name is, and deliberately. Those
      exist because a board can still be useful with a column missing: no names is a board
-     of Anonymous rows, no avatar pair is a board of derived colours. `mode` is what every
+     of Anonymous rows, no avatar pair is a board of derived colours. run_mode is what every
      board query filters ON, so a project without it cannot answer a board request at all
-     and there is nothing to fall back to. 56_football_all_time_teams.sql is required, and
-     the diagnostic below names it rather than pretending a retry could help. */
+     and there is nothing to fall back to. 57_football_run_mode.sql is required, and the
+     diagnostic names it rather than pretending a retry could help.
+
+     AND IT IS run_mode AND NOT mode, which is not a style preference. A column called
+     `mode` sent the whole board down with
+
+         400 42809. WITHIN GROUP is required for ordered-set aggregate mode
+
+     on a query that calls no function at all. PostgREST lets you filter on a computed
+     column, so when its schema cache does not have the column, either because the migration
+     has not run or because the cache has not reloaded since it did, it resolves the name as
+     a function and emits an unqualified mode(ps_runs). Postgres then finds pg_catalog.mode(),
+     the ordered-set aggregate, and complains it was called without WITHIN GROUP. Reproduced
+     exactly against a real database. Any column named after a built-in aggregate can do this;
+     run_mode collides with nothing, and a stale cache now says the column is missing, which
+     is the truth and is actionable. */
   const BASE_COLS = 'id,created_at,wins,losses,games,title_won,perfect,made_playoffs,' +
-    'seed_label,point_diff,chemistry_pct,spend_musd,respins,franchise,mode,picks,slots,' +
+    'seed_label,point_diff,chemistry_pct,spend_musd,respins,franchise,run_mode,picks,slots,' +
     'squad_fppg,structure_mult,team_rating,perfect_pct';
   /* TWO OPTIONAL SETS, DROPPED SEPARATELY, and the separateness is the whole point.
      display_name arrives with 51_football_accounts.sql and the avatar pair with
@@ -70,8 +84,15 @@
   const missingAvatarColumn = (body) => missingCol(body, /display_color|display_initials/);
   const missingNameColumn = (body) => missingCol(body, /display_name/);
   /* Not retried, only remembered, for the reason above BASE_COLS. Set so the connection
-     check can say which file to run instead of "the board cannot be read". */
-  const missingModeColumn = (body) => missingCol(body, /\bmode\b/);
+     check can say which file to run instead of "the board cannot be read".
+
+     TWO SHAPES, because the same missing column shows up two different ways. If PostgREST
+     knows the column is absent it says so and this is an ordinary "does not exist". If its
+     cache is stale it guesses the name is a function instead, and Postgres answers about an
+     aggregate; that is 42809 and it names no column at all. Both mean the same thing to a
+     player, so both point at the same file. */
+  const missingModeColumn = (body) => missingCol(body, /\brun_mode\b/)
+    || /ordered-set aggregate/i.test((body && body.message) || '');
   let modeColumnMissing = false;
 
   /* The two things a board can be sorted by, and the column each one orders on.
@@ -83,7 +104,7 @@
   };
 
   /* THE TIEBREAK REVERSES WITH THE SORT, and that is a performance decision as much
-     as a design one. Every index here is (mode, <axis> desc, created_at asc), and
+     as a design one. Every index here is (run_mode, <axis> desc, created_at asc), and
      Postgres can read an index backwards only when EVERY sort key reverses together:
      `score asc, created_at asc` is a backward scan plus an Incremental Sort, while
      `score asc, created_at desc` is a clean backward scan. Measured 0.234ms against
@@ -290,7 +311,7 @@
      exactly like the free board.
 
      WHY A CLUB BOARD STILL WINDOWS ON created_at rather than being all-time only. The
-     club indexes are (franchise, <axis> desc, created_at asc) partial on mode='club', so
+     club indexes are (franchise, <axis> desc, created_at asc) partial on run_mode='club', so
      created_at is IN the index and Today is an index condition, not a filter. A window
      costs nothing here for the same reason it costs nothing on the free board, which is
      written out at length above. All-time only would have been less code and a worse
@@ -298,7 +319,7 @@
   function scope(opts) {
     opts = opts || {};
     const club = opts.mode === 'club' && opts.franchise;
-    let f = '&mode=eq.' + (club ? 'club' : 'free');
+    let f = '&run_mode=eq.' + (club ? 'club' : 'free');
     if (club) f += '&franchise=eq.' + encodeURIComponent(opts.franchise);
     /* NAMED RUNS ONLY, when asked for. A guest run is a real draft and counts towards how
        many have been played, but it carries no name, so listing it puts a row of Anonymous
@@ -678,7 +699,7 @@
   }
 
   window.PS_BOARD = {
-    API_VERSION: 7,
+    API_VERSION: 8,
     submit, ranks, rankIn, placeIn, total, top, mine, byId, scoreOf, cutoffISO,
     SORTS, probe, myAvatar, setAvatar,
     get offline() { return offline; },

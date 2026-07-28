@@ -2671,7 +2671,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=9"></script>
+<script src="board.js?v=10"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
@@ -2688,7 +2688,7 @@ const E=window.PS_ENGINE, R=window.PS_RUN;
    cached board.js older than this page, and they only catch it while they agree: a page
    that says 1 against a module that says 2 rejects a module that is newer than itself
    and quietly runs the stub, which is a dead leaderboard with no error anywhere. */
-const BOARD_VERSION=7;
+const BOARD_VERSION=8;
 const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
   API_VERSION:BOARD_VERSION, offline:true,
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
@@ -5975,8 +5975,8 @@ function busy(id,label){
    The three windows are UTC days and UTC weeks starting Monday, because a "today"
    that starts at a different moment for each player is not one board.
 
-   Free play and each of the thirty-two clubs are separate competitions, keyed on the
-   `mode` column and, for a club, on `franchise`. They have to be: six men off one club
+   Free play and each of the thirty-two teams are separate competitions, keyed on the
+   `run_mode` column and, for a team, on `franchise`. They have to be: six men off one team
    share a franchise by construction, which is why the franchise and coach chemistry links
    are suppressed in that mode: they would fire on every pair whatever you drafted.
 */
@@ -6004,7 +6004,7 @@ function runPayload(){
     respins:run.respinsUsed,
     /* THE CLUB THIS DRAFT WAS LOCKED TO, and null for a free run. The server does not
        infer the mode from it: the column predates One Team mode and the oldest rows
-       in the table are free runs carrying somebody's favourite club, so the mode is sent
+       in the table are free runs carrying somebody's favourite team, so the mode is sent
        as its own field and the two are checked against each other server-side. */
     franchise:run.franchise||null,
     mode:runMode(),
@@ -6329,9 +6329,11 @@ async function runDiagnostics(){
      while the column every query filters on is absent. */
   }else if(B.modeColumnMissing){
     verdict='The board cannot be read: it is one file behind.';
-    fix='ps_runs has no mode column, so every board query is rejected. Run '+
-      'supabase/56_football_all_time_teams.sql, which adds it, moves the old daily runs '+
-      'out of the way and ends by reporting what is now in place.';
+    fix='ps_runs has no run_mode column, so every board query is rejected. Run '+
+      'supabase/57_football_run_mode.sql, which adds it, moves the old daily runs out of '+
+      'the way and ends by reporting what is now in place. If the message below mentions '+
+      'an ordered-set aggregate, that is the same problem seen through a stale API schema '+
+      'cache, and the same file fixes it.';
   }else if(r.write&&r.write.healthy&&B.avatarFnMissing){
     verdict='The board works, but teams and initials cannot be saved.';
     fix='ps_set_avatar is not in the API schema cache. Run '+
@@ -6846,14 +6848,14 @@ function ratingCell(row){
     '<span>'+esc(row.wins+'-'+row.losses)+(row.perfect?' perfect':'')+'</span>';
 }
 
-/* What kind of run a board row was, in words. Reads `mode` and not the presence of a
-   franchise: rows from the first version of the game are free runs that carry whatever club
+/* What kind of run a board row was, in words. Reads `run_mode` and not the presence of a
+   franchise: rows from the first version of the game are free runs that carry whatever team
    the player said they supported, and calling those One Team runs would be wrong about
    several hundred of them. Rows recorded before the column existed answer 'free', which is
    what they were. */
 function runKindOf(row){
-  if(row&&row.mode==='club'&&row.franchise) return 'One Team, '+E.nickname(row.franchise);
-  if(row&&row.mode==='daily') return 'daily puzzle';
+  if(row&&row.run_mode==='club'&&row.franchise) return 'One Team, '+E.nickname(row.franchise);
+  if(row&&row.run_mode==='daily') return 'daily puzzle';
   return 'free run';
 }
 
