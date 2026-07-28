@@ -6061,6 +6061,30 @@ async function recordRun(){
    them. Signing in from the avatar at any other time leaves them where they are. */
 let signInForBoard=false;
 
+/* SIGNED IN, BUT WITH NO USERNAME YET.
+   An account exists the moment somebody signs up, and the username is a separate step:
+   Google sign-in in particular lands you signed in with no name at all. A run played in
+   that state IS recorded and IS owned, which is right, and it can never appear on the
+   board, because the board lists named runs only.
+
+   Nothing said so. The results page read the run as recorded and printed placings as
+   though they were this run's, which is a lie by omission on the one screen where it
+   matters. Measured on the live board: 20 recorded runs belonged to accounts with no
+   username, counted in "drafts played" and invisible in every list.
+
+   Treated as its own state rather than folded into the guest one, because the fix is
+   different and so is the promise. A guest has to sign in and the run is sent for the
+   first time; these players are already signed in and the run is already there, so
+   picking a username is all it takes. ps_rename_runs(), which auth.js already calls
+   after set_username(), stamps the name onto every past run, so their run appears the
+   moment they choose one. */
+const nameless=()=>!!(authState.signedIn&&!authState.name);
+/* Whether this run can actually be found on a board. Guests are not on it, and neither
+   is a run with no name on it. One function, because the strip, the panel and the pinned
+   row all have to agree: two of them saying "your place" while the third says "would" is
+   worse than any of them being wrong on their own. */
+const onTheBoard=()=>!!(submitted&&submitted!=='guest'&&!nameless());
+
 async function submitAfterSignIn(){
   if(submitted!=='guest'||!run||!run.outcome) return;
   const wanted=signInForBoard; signInForBoard=false;
@@ -6070,6 +6094,11 @@ async function submitAfterSignIn(){
   if($('s-board').classList.contains('on')) loadBoard();
   const on=submitted&&submitted!=='guest';
   if(!on){ toast('Signed in, but the run could not be sent'); return; }
+  /* Signed in with no username yet, which Google sign-in lands you in: the run is sent
+     and owned, and it is still not on any list until there is a name to list it under.
+     Saying "your run is on the board" here would be the same lie the results panel used
+     to tell, and taking them to the board would show them a table they are not in. */
+  if(nameless()){ toast('Run saved. Pick a username to get it on the board'); return; }
   if(wanted) await showMyRowOnBoard();
   else toast('Your run is on the board');
 }
@@ -6154,16 +6183,22 @@ function paintRankStrip(r){
        whether a submit would land, so the offer stands either way. Only the sentence
        above it changes, because promising a placing we could not fetch would be a lie. */
     const any=r&&RANK_WINDOWS.some(([k])=>r[k]);
-    g.innerHTML=submitted!=='guest' ? ''
+    /* Three states, not two. A guest signs in; a signed-in player with no username picks
+       one; everybody else needs no prompt at all. */
+    const gate=submitted==='guest'?'guest':(nameless()&&submitted?'noname':'');
+    const act=gate==='guest'?'Sign in and keep this run':'Pick a username';
+    g.innerHTML=!gate ? ''
       : (any
         ? '<span>Those placings are where this run <b>would</b> sit. Only runs with a name '+
           'on them go on the board.</span>'+
-          '<button class="btn sm" id="b-gate-strip">Sign in and keep this run</button>'
+          '<button class="btn sm" id="b-gate-strip">'+act+'</button>'
         : '<span>The board could not be read just now, so there is no placing to show. '+
-          'Runs are only recorded with a name on them, so <b>sign in and this one still '+
-          'goes on</b>.</span>'+
-          '<button class="btn sm" id="b-gate-strip">Sign in and keep this run</button>');
-    if(submitted==='guest') $('b-gate-strip').onclick=()=>{signInForBoard=true;profileSheet();};
+          'Only runs with a name on them go on it, and <b>this one is kept either '+
+          'way</b>.</span>'+
+          '<button class="btn sm" id="b-gate-strip">'+act+'</button>');
+    if(gate){
+      $('b-gate-strip').onclick=()=>{ if(gate==='guest') signInForBoard=true; profileSheet(); };
+    }
   }
   const el=$('o-splits'); if(!el) return;
   const cells=[...el.children];
@@ -6247,20 +6282,26 @@ async function paintRanks(){
      board, with the way to fix it next to it. Not a toast: this is the one moment the player
      has a reason to care about an account, so it belongs in the panel they are already
      reading. */
-  if(submitted==='guest'){
+  if(submitted==='guest'||nameless()){
+    const guest=submitted==='guest';
     el.innerHTML='<p class="rankwho">'+(run.franchise
         ? 'Where this would have placed among every One Team '+
           esc(E.nickname(run.franchise))+' run.'
         : 'Where this would have placed among every free run.')+'</p>'+
       '<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
       '<div class="guestgate">'+
-        '<b>Sign in to get on the board</b>'+
-        '<span>The leaderboard only records runs with a name on them. Sign in and this run '+
-        'goes straight on, at the place shown above.</span>'+
-        '<button class="btn sm" id="b-gate-in">Sign in or create an account</button>'+
+        '<b>'+(guest?'Sign in to get on the board':'Pick a username to get on the board')+'</b>'+
+        '<span>'+(guest
+          ? 'The leaderboard only records runs with a name on them. Sign in and this run '+
+            'goes straight on, at the place shown above.'
+          : 'Your run is saved, but the leaderboard only lists runs with a name on them. '+
+            'Choose a username and this one appears, at the place shown above, along with '+
+            'every run you have already played.')+'</span>'+
+        '<button class="btn sm" id="b-gate-in">'+
+          (guest?'Sign in or create an account':'Choose a username')+'</button>'+
       '</div>'+
       '<button class="btn ghost sm" id="b-board3" style="margin-top:9px">See the leaderboard</button>';
-    $('b-gate-in').onclick=()=>{signInForBoard=true;profileSheet();};
+    $('b-gate-in').onclick=()=>{ if(guest) signInForBoard=true; profileSheet(); };
     $('b-board3').onclick=openBoard;
     return;
   }
@@ -6922,7 +6963,7 @@ function paintMyPin(rows){
                   perfect:run.outcome.perfect,point_diff:p.pointDiff});
   /* Whether it is a place or a preview of one is a real distinction and the label makes
      it. A guest's run is not on this board and saying "your place" would be a lie. */
-  const live=submitted&&submitted!=='guest';
+  const live=onTheBoard();
   const of=lbWin==='day'?'today':(lbWin==='week'?'this week':'all time');
   /* Your own circle here comes from your own account rather than from a board row, because
      this run may not be on the board at all yet. A guest gets the outline, which is honest:
