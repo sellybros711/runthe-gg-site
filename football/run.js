@@ -3,10 +3,9 @@
  * Headless and dependency-free. Browser: window.PS_RUN. Node: require.
  *
  * The run state is deliberately a plain serializable object with the seed inside
- * it, so daily mode is a config flag rather than a rewrite: pass
- * `{ daily: 'YYYY-MM-DD' }` and every player that day gets the same franchise,
- * the same six wheel results and the same schedule. That was §7's ask and §10's
- * open item.
+ * it, so a mode is a config flag rather than a rewrite: pass
+ * `{ franchise: 'MIA' }` and every spin of the draft is a Dolphins season, which
+ * is the whole of all-time team mode.
  */
 
 'use strict';
@@ -33,26 +32,141 @@ const pkey = (p) => `${p.player_id}|${p.season}`;
  * shrinks as you fish for a better team-season, a re-spin costs you a tier of
  * player somewhere else, which is the point.
  */
+/*
+ * MONEY IS ROUNDED TO THE CENT, and this is a bug fix rather than tidiness.
+ *
+ * Every price in the pool has one decimal place and so does the cap, so any sum
+ * of them is exact to a cent. In binary floating point it is not: a five-man
+ * roster costing $134.8M leaves 140 - 134.8 = 5.199999999999989, and the last
+ * quarterback the club has left is priced at exactly $5.2M. He is 1.1e-14 too
+ * expensive, so the wheel has nothing to land on and the draft dead-ends one
+ * spin from the end with the money to finish it sitting right there.
+ *
+ * Found in all-time team mode, where a club can have exactly one affordable man
+ * left, but it was always possible in free play and nobody had hit it.
+ */
+const money = (v) => Math.round(v * 100) / 100;
+
 function remaining(run) {
   const spent = run.roster.reduce((s, p) => s + p.price_musd, 0);
   const fees = E.respinFees(run.respinsUsed);
-  return E.CONSTANTS.CAP_MUSD - spent - fees;
+  return money(E.CONSTANTS.CAP_MUSD - spent - fees);
 }
 
 /** Slots still to fill, including the current one. */
 const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
 
 /**
- * The floor the UI warns about: you must keep at least $3M per slot you have
- * not filled yet, or you cannot legally finish the draft.
+ * The floor the UI warns about: money you must keep back or you cannot legally
+ * finish the draft.
  *
  * §5 wants this as a passive warning on signings, bankrupting yourself into
  * five minimum-salary scrubs is a lesson the game is allowed to teach. It is a
  * hard block on RE-SPINS only, because a re-spin that makes the draft
  * unfinishable is not a lesson, it is a dead end.
+ *
+ * WHY THIS IS NO LONGER A FLAT $3M A SLOT, and it is all-time team mode that
+ * broke it. $3M works in free play because the wheel draws from 861 team-seasons
+ * and somewhere in there is a $3M man at every position. One club is twenty-odd
+ * seasons, and a club can simply not have a cheap one: the cheapest quarterback
+ * in Atlanta's whole history in this pool is $5.0M and Chicago's is $6.8M. So a
+ * greedy draft spends down to $4.2M with the quarterback spot still open, every
+ * remaining Falcons season is unaffordable, and the wheel has nothing to land
+ * on. Measured before this: 90 of 1280 club drafts, 7%, dead-ended exactly that
+ * way, and every one of them was a run the player could not finish.
+ *
+ * So the reserve is read off the pool this run actually draws from. The cheapest
+ * man who can still fill each open spot is assigned to it, most-constrained spot
+ * first, and the sum of those is what has to stay in the budget. Minus the
+ * smallest of them, because one of those spots is the one you are filling right
+ * now: whichever it turns out to be, dropping the cheapest is the safe bound.
+ *
+ * In free play the two formulas agree to the cent, which is not a coincidence:
+ * the price floor is $3M and every position has somebody at it, so the pool
+ * calculation lands on the same $3M a slot the constant always meant.
  */
 function reserveFloor(run) {
-  return Math.max(0, slotsLeft(run) - 1) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
+  const flat = Math.max(0, slotsLeft(run) - 1) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
+  const per = assignedFloors(run);
+  if (!per || per.length !== slotsLeft(run)) return flat;
+  const sum = per.reduce((a, c) => a + c, 0);
+  return money(Math.max(flat, sum - Math.min(...per)));
+}
+
+/**
+ * What it would cost to fill EVERY open spot at the cheapest man left who can
+ * take it. reserveFloor's answer plus the one it drops, and the right question
+ * for a re-spin, which has to leave the whole roster fillable rather than all
+ * but one of it.
+ */
+function fullFloor(run) {
+  const per = assignedFloors(run);
+  const flat = slotsLeft(run) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
+  if (!per || per.length !== slotsLeft(run)) return flat;
+  return money(Math.max(flat, per.reduce((a, c) => a + c, 0)));
+}
+
+/**
+ * One price per open spot: the cheapest unsigned man in this run's pool who can
+ * fill it, with no man counted for two spots.
+ *
+ * Most-constrained spot first, which is exact here rather than a heuristic: the
+ * eligibility sets are nested, QB takes only quarterbacks and FLEX takes
+ * everything the other three do, so giving the narrow spots first pick can never
+ * strand a wide one.
+ *
+ * Returns null before the first spin, when the pool is not known yet, and the
+ * caller falls back to the flat constant.
+ */
+function assignedFloors(run) {
+  const lists = run.floorLists;
+  if (!lists) return null;
+  const taken = new Set(run.usedPlayers);
+  /* A CHEAP MAN THE WHEEL CANNOT REACH IS NOT A FLOOR. Houston's cheapest
+     quarterback in the pool is Tom Savage at $8.1M and he plays for exactly one
+     team-season, 2017; sign two other Texans out of 2017 and that season has had
+     its two draws and can never come up again. Reserving $8.1M for a man behind a
+     door that is already shut is how the last of these dead ends survived. */
+  const spent = {};
+  for (const id of run.usedTeamSeasons) spent[id] = (spent[id] || 0) + 1;
+  const reachable = (c) => (spent[c.ts] || 0) < TUNING.MAX_DRAWS_PER_TEAM_SEASON;
+  const open = openSlots(run).map((i) => E.SLOTS[i])
+    .sort((a, b) => E.SLOT_ELIGIBILITY[a].length - E.SLOT_ELIGIBILITY[b].length);
+  const out = [];
+  for (const slot of open) {
+    let best = null;
+    for (const pos of E.SLOT_ELIGIBILITY[slot]) {
+      for (const c of (lists[pos] || [])) {
+        if (taken.has(c.id) || !reachable(c)) continue;
+        if (best === null || c.price < best.price) best = c;
+        break;                          // each list is cheapest first
+      }
+    }
+    if (best === null) return null;     // a spot nobody left can fill: promise nothing
+    taken.add(best.id);
+    /* EVERY SPOT NEEDS ITS OWN SPIN, and a spin spends one of a team-season's two
+       draws. So the man promised to one spot uses up the season he plays for, and
+       the next spot cannot be promised somebody standing behind him in that same
+       season. Miami's cheapest tight end and the only quarterback left inside the
+       budget were the same team-season: counted separately the roster looked
+       fillable, and taking the tight end shut the door on the quarterback. */
+    spent[best.ts] = (spent[best.ts] || 0) + 1;
+    out.push(best.price);
+  }
+  return out;
+}
+
+/**
+ * The most you may commit on this signing.
+ *
+ * Rounded in its own right and not just built from two rounded numbers, because
+ * the SUBTRACTION reintroduces the error: $8.2M less a $5.2M reserve is
+ * 2.9999999999999991 in binary, and the last $3.0M tight end the club has left
+ * is a cent too expensive again. One function, so every caller asks the same
+ * question and gets the same answer.
+ */
+function spendable(run) {
+  return money(remaining(run) - reserveFloor(run));
 }
 
 /**
@@ -67,30 +181,41 @@ function canRespin(run, kind, data) {
   const cost = E.respinCost(run.respinsUsed);
   if (run.phase !== PHASES.DRAFT) return { ok: false, reason: 'not drafting', cost };
   if (run.respinsUsed >= E.CONSTANTS.MAX_RESPINS) return { ok: false, reason: 'no re-spins left', cost };
-  const after = remaining(run) - cost;
-  // Must still be able to fill every remaining slot at the minimum price.
-  if (after < slotsLeft(run) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD) {
+  const draw = run.currentDraw;
+  /*
+   * EVERY QUESTION HERE IS ASKED OF THE STATE THE RE-SPIN WOULD LEAVE BEHIND, and
+   * that is two changes rather than one. The fee is paid, which was always
+   * simulated: charging $5M can push team-seasons out of reach, so a check run
+   * against the pre-fee budget can approve a re-spin whose constraint is then
+   * impossible to honor. And the team-season you are looking at is SPENT, which
+   * was not: it goes into usedTeamSeasons the moment you re-spin, and if it was
+   * the last reachable season holding the club's cheapest quarterback then the
+   * money you have to keep back jumps the instant you press the button. Approve
+   * against the old floor and the draft is unfinishable one spin later, with the
+   * budget sitting a few million under what it now needs.
+   *
+   * Both are bumped and restored rather than threaded through drawable ->
+   * affordableFrom -> blockFor -> remaining, which all read them.
+   */
+  run.respinsUsed++;
+  if (draw) run.usedTeamSeasons.push(draw.team_season_id);
+  let rest = null;
+  let short = false;
+  try {
+    short = remaining(run) < fullFloor(run);
+    if (!short && kind && draw && data) {
+      rest = drawable(run, data).filter((t) => t.team_season_id !== draw.team_season_id);
+    }
+  } finally {
+    if (draw) run.usedTeamSeasons.pop();
+    run.respinsUsed--;
+  }
+  // Must still be able to fill every remaining slot at the cheapest man left who
+  // can take it, which in all-time team mode is not the same as $3M a slot.
+  if (short) {
     return { ok: false, reason: 'would leave too little to fill your roster', cost };
   }
-  const draw = run.currentDraw;
-  if (kind && draw && data) {
-    /*
-     * Judged with the fee ALREADY PAID. Charging $5M can push team-seasons out of
-     * reach, so a check run against the pre-fee budget can approve a re-spin whose
-     * constraint is then impossible to honor, and the wheel moves the wrong one.
-     * Measured at 2 in 3,000 runs before this, which is rare and still wrong.
-     *
-     * The counter is bumped and restored rather than threaded through
-     * drawable -> affordableFrom -> blockFor -> remaining, which all read it.
-     */
-    run.respinsUsed++;
-    let rest;
-    try {
-      // The team you are looking at is spent either way, so ask what is left after it.
-      rest = drawable(run, data).filter((t) => t.team_season_id !== draw.team_season_id);
-    } finally {
-      run.respinsUsed--;
-    }
+  if (rest) {
     /* Asked against the SAME constraint the re-spin will apply, or the check approves a
        re-spin the wheel then cannot honour and it falls back to an unconstrained draw. */
     const ok = kind === 'team'
@@ -129,17 +254,64 @@ const BLOCK = { DRAFTED: 'drafted', NO_SPOT: 'no_spot', PRICE: 'price' };
  * Order matters. Already drafted is permanent, so it wins over a price you
  * might still be able to afford after a cheaper signing elsewhere.
  */
-function blockFor(run, player) {
+function blockFor(run, player, teamSeasonId) {
   if (run.usedPlayers.includes(player.player_id)) return BLOCK.DRAFTED;
   if (slotForPlayer(run, player) === null) return BLOCK.NO_SPOT;
-  if (player.price_musd > remaining(run) - reserveFloor(run)) return BLOCK.PRICE;
+  if (!canFinishAfter(run, player, teamSeasonId)) return BLOCK.PRICE;
   return null;
+}
+
+/**
+ * Could you still finish the draft having signed this man?
+ *
+ * ASKED PER PLAYER, and it has to be. reserveFloor() answers the same question
+ * for the row of numbers at the top of the screen, where there is no player to
+ * ask about, so it has to guess which spot you are about to fill and guesses the
+ * cheapest. That is the safe guess for a display and the wrong one for a block:
+ * sign a tight end out of the only Dallas season that still had a cheap
+ * quarterback in it and that season is spent, the quarterback is gone, and the
+ * money you now need jumps by six million after the signing rather than before
+ * it. Twenty-five of 4,800 club drafts died exactly there, all of them with the
+ * budget looking fine right up to the last spin.
+ *
+ * Simulating the signing costs nothing worth counting: the state is pushed and
+ * popped, and it runs once per man on a twelve-man board.
+ *
+ * In free play this is the old rule to the cent. Every position has a $3M man
+ * across 861 team-seasons, so "what is left after him" is always $3M a slot.
+ */
+function canFinishAfter(run, player, teamSeasonId) {
+  const slot = slotForPlayer(run, player);
+  if (slot === null) return false;
+  /* The cheap reject first. Most blocked men are blocked because the budget will
+     not cover them at all, and that costs one subtraction instead of building a
+     whole assignment. This runs for every man on every team-season in the pool
+     on every spin, so the constant matters. */
+  if (player.price_musd > remaining(run)) return false;
+  /* THE TEAM-SEASON HAS TO BE PASSED IN, not read off run.currentDraw, because
+     drawable() asks this question about every season in the pool while
+     currentDraw still holds the LAST one. Reading the wrong season made the
+     board and sign() disagree, so a tile you could see refused to be taken. */
+  const ts = teamSeasonId
+    || (run.currentDraw && run.currentDraw.team_season_id);
+  run.roster.push(player);
+  run.slotIndex.push(slot);
+  run.usedPlayers.push(player.player_id);
+  if (ts) run.usedTeamSeasons.push(ts);
+  try {
+    return remaining(run) >= fullFloor(run);
+  } finally {
+    if (ts) run.usedTeamSeasons.pop();
+    run.usedPlayers.pop();
+    run.slotIndex.pop();
+    run.roster.pop();
+  }
 }
 
 /** Every player on a team-season, best first, each with the reason he is out. */
 function boardFrom(run, teamSeasonId, playersByTeamSeason) {
   return (playersByTeamSeason[teamSeasonId] ?? [])
-    .map((p) => ({ player: p, block: blockFor(run, p) }))
+    .map((p) => ({ player: p, block: blockFor(run, p, teamSeasonId) }))
     .sort((a, b) => b.player.ppr_ppg_mean - a.player.ppr_ppg_mean);
 }
 
@@ -148,6 +320,23 @@ function affordableFrom(run, teamSeasonId, playersByTeamSeason) {
   return boardFrom(run, teamSeasonId, playersByTeamSeason)
     .filter((r) => r.block === null)
     .map((r) => r.player);
+}
+
+/**
+ * Is there ANYBODY here you could sign? The only thing drawable() needs to know,
+ * and it used to ask by building the whole board and measuring it.
+ *
+ * That was free when affordability was one subtraction. It is not now: the check
+ * simulates the signing, and drawable() runs it for every man of every
+ * team-season in the pool on every spin. Stopping at the first man who passes
+ * turns 861 full boards into 861 single tests, because indexData sorts each
+ * team-season cheapest first and the cheapest man is the one most likely to fit.
+ */
+function someAffordable(run, teamSeasonId, playersByTeamSeason) {
+  const list = playersByTeamSeason[teamSeasonId];
+  if (!list) return false;
+  for (const p of list) if (blockFor(run, p, teamSeasonId) === null) return true;
+  return false;
 }
 
 /**
@@ -169,11 +358,22 @@ function previewSigning(run, player, ctx) {
 }
 
 function createRun(opts) {
-  const daily = opts.daily ?? null;
-  const seed = daily ? E.hashSeed(`perfect-season|${daily}`) : (opts.seed ?? E.hashSeed(String(Math.random())));
+  /* ALL-TIME TEAM MODE IS ONE FIELD.
+     A club code here locks every wheel in the draft to that club, so only the year moves
+     and the run is an attempt at the best all-time team that club could field. Null is
+     free play, where the wheel can land anywhere in the pool.
+
+     Validated here rather than trusted, because everything downstream filters on it: an
+     unknown code would silently empty the pool and the draft would open on "nothing left
+     you can afford", which reads as a broken game rather than a bad argument. */
+  const franchise = opts.franchise ?? null;
+  if (franchise !== null && !E.TEAM_COLORS[franchise]) {
+    throw new Error(`unknown franchise ${franchise}`);
+  }
+  const seed = opts.seed ?? E.hashSeed(String(Math.random()));
   return {
     version: 1,
-    daily,
+    franchise,
     seed,
     rngCalls: 0,
     phase: PHASES.DRAFT,
@@ -314,8 +514,15 @@ const TUNING = {
 function drawable(run, data, limit) {
   const drawn = {};
   for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
-  const canFill = (t) => affordableFrom(run, t.team_season_id, data.playersByTeamSeason).length > 0;
+  const canFill = (t) => someAffordable(run, t.team_season_id, data.playersByTeamSeason);
   return data.teamSeasons
+    /* ALL-TIME TEAM MODE, in one line. The lock lives here rather than in spin() so that
+       every other question about the pool answers correctly on its own: canRespin asks
+       drawable() what is left, and with the filter here a "new team, same year" re-spin
+       reports that there is no other team rather than being separately forbidden. One
+       club has twenty-four to twenty-seven seasons in the pool and a draft draws six with
+       a limit of two each, so the lock can never run the pool dry. */
+    .filter((t) => !run.franchise || t.franchise === run.franchise)
     .filter((t) => (drawn[t.team_season_id] || 0) < (limit ?? TUNING.MAX_DRAWS_PER_TEAM_SEASON))
     .filter(canFill);
 }
@@ -331,6 +538,10 @@ function drawable(run, data, limit) {
  */
 function spin(run, data, constraint) {
   if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
+  /* Attached on the first spin rather than at createRun(), which does not get the data.
+     Before this point reserveFloor() has nothing to read and falls back to the flat
+     constant, which is only ever the opening paint of an empty roster. */
+  run.floorLists ??= (data.cheapBy && (data.cheapBy[run.franchise || '*'] || null));
   const rng = rngFor(run);
 
   let available = drawable(run, data);
@@ -420,7 +631,8 @@ function sign(run, player) {
   if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
   if (!run.currentDraw) throw new Error('nothing drawn');
   if (!run.currentDraw.options.includes(pkey(player))) throw new Error('player not on this team');
-  if (player.price_musd > remaining(run) - reserveFloor(run)) throw new Error('cannot afford');
+  /* The same predicate the board uses, so a tile you can see is a tile you can take. */
+  if (!canFinishAfter(run, player, run.currentDraw.team_season_id)) throw new Error('cannot afford');
   const slot = slotForPlayer(run, player);
   if (slot === null) throw new Error('no empty spot for a ' + player.position);
 
@@ -566,6 +778,11 @@ function indexData(players, teamSeasons) {
     if (!p.team_season_id) continue;
     (playersByTeamSeason[p.team_season_id] ??= []).push(p);
   }
+  /* Cheapest first, which someAffordable() relies on to stop at the first man and
+     which costs boardFrom() nothing: it sorts by points itself before drawing. */
+  for (const list of Object.values(playersByTeamSeason)) {
+    list.sort((a, b) => a.price_musd - b.price_musd);
+  }
   const byTeamSeasonId = {};
   for (const t of teamSeasons) byTeamSeasonId[t.team_season_id] = t;
   /* The 1972 Dolphins are not in the data files, because the dataset starts in 1999. They
@@ -576,8 +793,36 @@ function indexData(players, teamSeasons) {
   /* The three reverse indexes that used to live here, team-seasons by franchise, by
      college and by draft class, existed only to find a team connected to somebody
      already signed. Nothing biases the wheel now, so nothing reads them. */
+
+  /* THE CHEAPEST MEN AT EACH POSITION, per club and for the pool as a whole. This is
+     what reserveFloor() reads, and the reason it is built here is that it is the same
+     answer on every call and the pool never changes inside a run.
+
+     FLOOR_DEPTH has to clear more than the twelve men a draft can consume: entries are
+     also skipped when their team-season has had its two draws, and one exhausted season
+     can take several cheap men out of a list at once. Forty-eight is the whole cheap end
+     of every position for every club, and the table is still only a few thousand
+     numbers. */
+  const FLOOR_DEPTH = 48;
+  const cheapBy = {};
+  const add = (key, p) => {
+    const at = ((cheapBy[key] ??= {})[p.position] ??= []);
+    at.push({ id: p.player_id, price: p.price_musd, ts: p.team_season_id });
+  };
+  for (const p of players) {
+    if (!p.position) continue;
+    add('*', p);
+    if (p.franchise) add(p.franchise, p);
+  }
+  for (const lists of Object.values(cheapBy)) {
+    for (const pos of Object.keys(lists)) {
+      lists[pos].sort((a, b) => a.price - b.price);
+      lists[pos] = lists[pos].slice(0, FLOOR_DEPTH);
+    }
+  }
+
   return {
-    players, teamSeasons, playersByTeamSeason, byTeamSeasonId,
+    players, teamSeasons, playersByTeamSeason, byTeamSeasonId, cheapBy,
     prepared: E.prepareData(teamSeasons),
   };
 }
@@ -854,14 +1099,14 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 18;
+const RUN_API_VERSION = 19;
 
 const api = {
   API_VERSION: RUN_API_VERSION,
   PHASES, createRun, spin, respin, sign,
   startSeason, advanceWeek, startPlayoffs, indexData, bestPossibleSquad, projectSeason,
   previewSigning,
-  remaining, reserveFloor, canRespin, slotsLeft, affordableFrom,
+  remaining, reserveFloor, spendable, canRespin, slotsLeft, affordableFrom,
   boardFrom, blockFor, BLOCK, drawable,
   openSlots, openSlotNames, slotForPlayer, TUNING,
 };

@@ -43,8 +43,14 @@
      missing name, an empty leaderboard. So a 400 that names the column falls back to
      the list without it, once, and remembers. Same shape as the pre-migration retries
      in the soccer client. */
+  /* `mode` is NOT in an optional set the way display_name is, and deliberately. Those
+     exist because a board can still be useful with a column missing: no names is a board
+     of Anonymous rows, no avatar pair is a board of derived colours. `mode` is what every
+     board query filters ON, so a project without it cannot answer a board request at all
+     and there is nothing to fall back to. 56_football_all_time_teams.sql is required, and
+     the diagnostic below names it rather than pretending a retry could help. */
   const BASE_COLS = 'id,created_at,wins,losses,games,title_won,perfect,made_playoffs,' +
-    'seed_label,point_diff,chemistry_pct,spend_musd,respins,franchise,daily,picks,slots,' +
+    'seed_label,point_diff,chemistry_pct,spend_musd,respins,franchise,mode,picks,slots,' +
     'squad_fppg,structure_mult,team_rating,perfect_pct';
   /* TWO OPTIONAL SETS, DROPPED SEPARATELY, and the separateness is the whole point.
      display_name arrives with 51_football_accounts.sql and the avatar pair with
@@ -63,6 +69,10 @@
   };
   const missingAvatarColumn = (body) => missingCol(body, /display_color|display_initials/);
   const missingNameColumn = (body) => missingCol(body, /display_name/);
+  /* Not retried, only remembered, for the reason above BASE_COLS. Set so the connection
+     check can say which file to run instead of "the board cannot be read". */
+  const missingModeColumn = (body) => missingCol(body, /\bmode\b/);
+  let modeColumnMissing = false;
 
   /* The two things a board can be sorted by, and the column each one orders on.
      Named here rather than taking a column name from the caller, so nothing can
@@ -230,8 +240,6 @@
     }
   }
 
-  /* Today's puzzle, as the date the game builds its daily seed from. */
-  const todayUTC = () => new Date().toISOString().slice(0, 10);
 
   /* ---------------- WHY THE WINDOW IS STILL AN INSTANT AND NOT A DAY ----------------
      The obvious way to make a 500-row windowed board cheap is to stop comparing
@@ -270,23 +278,28 @@
      here: the next person to notice that a range scan cannot lead an index will have
      the same good idea, and this is the measurement that says not to. */
 
-  /* ---------------- free play and the daily are two competitions ----------------
-     Not one board with a flag on it. Everybody who plays a given day's daily gets
-     the same six draws, so those runs are comparable with each other in a way no
-     two free runs are, and a free player can re-roll until the wheel is kind. Mixed
-     together, the free board is unfair in one direction and the daily board is
-     meaningless in the other.
+  /* ---------------- free play and each club are separate competitions ----------------
+     Not one board with a flag on it. An all-time team run draws from ONE club's
+     twenty-odd seasons, so six men off that roster share a franchise by construction
+     and chemistry fires on almost every one of them. Ratings come out far above what
+     the open draft produces. Mixed together, the free board would be nothing but club
+     runs and the club runs would be ranked against a game they were not playing.
 
-     mode is 'free' or 'daily'. For the daily, `puzzle` narrows to one day's board by
-     its own date: created_at is the wrong thing to window it on, because a run
-     started at 23:58 and submitted at 00:03 was still that day's puzzle.
+     mode is 'free' or 'club'. A club scope also carries `franchise`, and that is the
+     whole difference: thirty-two boards, each one club, each windowed on created_at
+     exactly like the free board.
 
-     Passing puzzle:'today' means today's board. Passing nothing means every daily
-     run ever, which is what the all-time daily numbers rank against. */
+     WHY A CLUB BOARD STILL WINDOWS ON created_at rather than being all-time only. The
+     club indexes are (franchise, <axis> desc, created_at asc) partial on mode='club', so
+     created_at is IN the index and Today is an index condition, not a filter. A window
+     costs nothing here for the same reason it costs nothing on the free board, which is
+     written out at length above. All-time only would have been less code and a worse
+     board: after a month nobody new can reach the top of it. */
   function scope(opts) {
     opts = opts || {};
-    const daily = opts.mode === 'daily';
-    let f = '&daily=is.' + (daily ? 'true' : 'false');
+    const club = opts.mode === 'club' && opts.franchise;
+    let f = '&mode=eq.' + (club ? 'club' : 'free');
+    if (club) f += '&franchise=eq.' + encodeURIComponent(opts.franchise);
     /* NAMED RUNS ONLY, when asked for. A guest run is a real draft and counts towards how
        many have been played, but it carries no name, so listing it puts a row of Anonymous
        on a board whose whole job is to say who did what. Every ranking call asks for this
@@ -298,10 +311,6 @@
        named, which is the shape a young board really has: as a plain filter the top-500 read
        scanned 666,726 rows in 246ms; against the partial index it is 0.03ms off 16kB. */
     if (opts.named && namesColumn) f += '&display_name=not.is.null';
-    if (daily && opts.puzzle) {
-      f += '&daily_date=eq.' + (opts.puzzle === 'today' ? todayUTC() : opts.puzzle);
-      return f;                       // the date IS the window
-    }
     const cut = cutoffISO(opts.win || 'all');
     if (cut) f += '&created_at=gte.' + encodeURIComponent(cut);
     return f;
@@ -328,7 +337,10 @@
           p_spend_musd: payload.spendMusd,
           p_respins: payload.respins || 0,
           p_franchise: payload.franchise || null,
-          p_daily_date: payload.dailyDate || null,
+          /* 'free' or 'club'. The server decides nothing from the franchise alone: the
+             column predates all-time team mode and the oldest rows in the table are free
+             runs that carry a favourite club. */
+          p_mode: payload.mode === 'club' ? 'club' : 'free',
           p_picks: payload.picks,
           p_slots: payload.slots || null,
           p_seed: payload.seed || null,
@@ -377,7 +389,11 @@
         method: 'POST', headers: headers(),
         body: JSON.stringify({
           p_regular_wins: 99, p_playoff_wins: 0, p_point_diff: 0, p_chemistry_pct: 0,
-          p_spend_musd: 0, p_respins: 0, p_franchise: null, p_daily_date: null,
+          /* p_mode is sent so the probe exercises the SAME signature a real submit
+             does. PostgREST picks an overload by the argument names in the body, so a
+             probe that omits it could resolve to a different function than the game
+             uses and report a healthy setup for one the game cannot call. */
+          p_spend_musd: 0, p_respins: 0, p_franchise: null, p_mode: 'free',
           p_picks: ['probe:2001', 'probe:2002', 'probe:2003', 'probe:2004',
                     'probe:2005', 'probe:2006'],
           p_slots: null, p_seed: null, p_rng_calls: null, p_squad_fppg: null,
@@ -434,20 +450,21 @@
      board does it: the two counts are separate queries, so a run inserted a moment
      ago can be missing from the total while already counted in the rank, which
      would render an impossible "#41 of 40". */
-  async function ranks(score, mode) {
-    /* A run is ranked against its own kind. For a daily run "today" is that day's
-       puzzle rather than a clock window, so the number under it is the field that
-       played the same six draws. */
+  async function ranks(score, mode, franchise) {
+    /* A run is ranked against its own kind. A club run is placed on that club's board and
+       nowhere else: it would top the free board on chemistry alone, and it would be
+       meaningless on another club's.
+
+       The three windows are the same three either way, which is the point of giving the
+       club boards a created_at window rather than making them all-time only: one shape of
+       answer, one strip on the results page, one set of tabs. */
     /* named:true throughout. The number under a placing is "of the runs on the board", and
        the board is named runs, so counting guests into that denominator would print a total
        no list on any screen adds up to. */
-    const scopes = mode === 'daily'
-      ? [['day', { mode: 'daily', puzzle: 'today', named: true }],
-         ['week', { mode: 'daily', win: 'week', named: true }],
-         ['all', { mode: 'daily', win: 'all', named: true }]]
-      : [['day', { mode: 'free', win: 'day', named: true }],
-         ['week', { mode: 'free', win: 'week', named: true }],
-         ['all', { mode: 'free', win: 'all', named: true }]];
+    const of = (win) => (mode === 'club' && franchise)
+      ? { mode: 'club', franchise, win, named: true }
+      : { mode: 'free', win, named: true };
+    const scopes = [['day', of('day')], ['week', of('week')], ['all', of('all')]];
     const got = await Promise.all(scopes.map(([, o]) =>
       Promise.all([rankIn(o, score), total(o)])));
     const out = {};
@@ -489,6 +506,9 @@
           namesColumn = false;
           needsAccountsMigration = true;
         } else {
+          /* Remembered, not retried. There is no board without this column, so the only
+             useful thing left is to name the file that adds it. */
+          if (missingModeColumn(body)) modeColumnMissing = true;
           offline = true;
           lastError = { where: 'board', status: 400, code: (body && body.code) || '',
             message: (body && body.message) || 'bad request' };
@@ -658,14 +678,15 @@
   }
 
   window.PS_BOARD = {
-    API_VERSION: 6,
-    submit, ranks, rankIn, placeIn, total, top, mine, byId, scoreOf, cutoffISO, todayUTC,
+    API_VERSION: 7,
+    submit, ranks, rankIn, placeIn, total, top, mine, byId, scoreOf, cutoffISO,
     SORTS, probe, myAvatar, setAvatar,
     get offline() { return offline; },
     get lastError() { return lastError; },
     get needsAccountsMigration() { return needsAccountsMigration; },
     get needsAvatarMigration() { return needsAvatarMigration; },
     get avatarFnMissing() { return avatarFnMissing; },
+    get modeColumnMissing() { return modeColumnMissing; },
     /* Used by the tests to prove a failed board never breaks the results screen. */
     _forceOffline() { offline = true; },
   };

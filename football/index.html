@@ -258,6 +258,9 @@ window.GA_ID='G-L29P5MRWKE';
      step, and at the old size two of them under the wheels read as the main action on the
      screen. The label and the price go on one line for the same reason. */
   .respins{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+  /* All-time team mode has only the year to re-roll, so the one button takes the row
+     rather than sitting in half of it with a gap where the other used to be. */
+  .respins.one{grid-template-columns:minmax(0,1fr)}
   /* .respins .respin, not .respin: these carry .btn.sm too, which is two classes, so a
      single-class rule loses the padding no matter where it sits in the file. */
   .respins .respin{display:flex;align-items:baseline;justify-content:center;gap:6px;
@@ -654,10 +657,25 @@ window.GA_ID='G-L29P5MRWKE';
     stroke-linecap:round;stroke-linejoin:round;transition:transform .22s ease}
   .dirbtn.up svg{transform:rotate(180deg)}
 
-  /* The daily tab is a different competition, not a fourth time window, so it is
-     marked off with the red the game uses for anything to do with the calendar. */
-  .tab.daily{border-color:rgba(239,68,68,.4)}
-  .tab.daily.on{background:var(--grad-red);border-color:transparent}
+  /* WHICH COMPETITION. Free play, or one of the thirty-two clubs. Full width and above
+     the window tabs because it changes what the whole board IS, and the tabs under it only
+     change how much of it you are looking at.
+
+     Styled rather than left native: an unstyled select on a dark page renders as a white
+     box on iOS, and this is the widest control on the screen. appearance:none plus a drawn
+     caret is the same treatment the rest of the site uses. */
+  .lbmode{margin:11px 0 0}
+  .lbmode select{-webkit-appearance:none;appearance:none;width:100%;
+    font-family:var(--fn);font-size:14px;font-weight:600;letter-spacing:.01em;
+    color:var(--ink);background:var(--grad-panel);border:1px solid var(--line);
+    border-radius:11px;padding:11px 34px 11px 13px;line-height:1.2;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 11px center;background-size:15px}
+  .lbmode select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  /* The club's own colours on the bar, so the board you are looking at is obvious before
+     you read the name of it. Set from script, because there are thirty-two of them. */
+  .lbmode.isclub select{border-color:var(--c1);
+    box-shadow:inset 3px 0 0 var(--c2),inset 0 0 0 1px transparent}
   /* A window tab the current axis cannot answer. Visibly out of play rather than
      removed, so the row does not reflow when you switch axis. */
   .tab[disabled]{opacity:.32}
@@ -791,6 +809,28 @@ window.GA_ID='G-L29P5MRWKE';
   .pfpteam{margin:9px 0 0;font-family:var(--fn);font-size:12px;font-weight:600;
     color:var(--dim)}
   .pfpteam b{color:var(--ink)}
+  /* THE CLUB PICKER that starts an all-time team run. Two across at every width, because
+     this grid carries the club's NAME and the profile swatches do not: a player choosing who
+     to build has to read "Buccaneers", and thirty-two three-letter codes is a puzzle. The
+     colours are the same two the profile circle uses, so the club a player already picked
+     for themselves is recognisable in this grid at a glance. */
+  /* .clubtile and not .club, which is a name this file cannot have twice. The leaderboard
+     marks its competition bar with a state class on a wrapper, and a bare .club rule turned
+     that wrapper into a grid: the select stopped being full width and shrank to its own
+     text. Both names say what they are on now. */
+  .clubgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+    gap:8px;margin-top:10px}
+  .clubtile{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;
+    align-items:center;column-gap:9px;text-align:left;padding:9px 10px;border-radius:11px;
+    border:1px solid var(--line);background:var(--grad-panel);cursor:pointer}
+  .clubtile i{grid-row:1/3;width:26px;height:26px;border-radius:50%;background:var(--c1);
+    box-shadow:inset 0 0 0 2px var(--c2)}
+  .clubtile b{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.08em;
+    color:var(--dim-2);line-height:1.1}
+  .clubtile span{font-family:var(--fb);font-size:13px;font-weight:600;color:var(--ink);
+    line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .clubtile.mine{border-color:var(--c1)}
+  .clubtile:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
   /* Two characters is a two-character field. A full-width input for it invites a word. */
   /* .08em, not .18. Two characters centred with heavy tracking read as two separate things
      with a gap between them: "Q9" came out "Q 9", which is not what will be on the board. */
@@ -1343,6 +1383,9 @@ window.GA_ID='G-L29P5MRWKE';
      as loudly as the result until they are faded explicitly. */
   .reelbox.clubbed .reel-i{color:var(--on);opacity:.34}
   .reelbox.clubbed .reel-i.land{opacity:1;font-weight:900;letter-spacing:.03em}
+  /* The team wheel in all-time team mode. It never spins, so the band that marks where a
+     face is about to stop would be marking nothing; the club's name simply sits there. */
+  .reelbox.locked .band{opacity:.45}
   /* The band becomes a glaze that lifts the middle face out of the vignette. */
   .reelbox.clubbed .band,.reelbox.clubbed.done .band{border-color:var(--c2);border-width:1.5px;
     background:rgba(255,255,255,.13)}
@@ -1361,10 +1404,10 @@ window.GA_ID='G-L29P5MRWKE';
   /* Four tabs, one per position, colored to match the field chips. A position with
      nowhere left to put anybody keeps its tab but grays out and drops to the right,
      so the row does not reshuffle under your thumb between spins. */
-  /* A tab row scrolls sideways when it does not fit, and the scrollbar is hidden, so
-     at 320px the Daily tab was 25px off the right edge with NOTHING saying the row
-     moved. Measured: it is reachable and it works, but a player on a small phone had
-     no reason to believe the leaderboard had a fourth tab at all.
+  /* A tab row scrolls sideways when it does not fit, and the scrollbar is hidden, so a
+     tab past the right edge had NOTHING saying the row moved. Measured at 320px on the
+     draft's position row: it is reachable and it works, but a player on a small phone had
+     no reason to believe there was anything past the last tab they could see.
 
      The wrapper carries a fade over the right edge, shown only while there is more to
      scroll to. .more is set by hintScroll() rather than by CSS, because scrollWidth
@@ -2087,9 +2130,9 @@ window.GA_ID='G-L29P5MRWKE';
 <p>Spin a wheel for a year and an NFL team, sign one player off each of six draws, and
 build a roster out of every season from 1999 to 2025 under a $140M salary cap.</p>
 <p>Then play all 17 games against a real schedule and chase a perfect season. Every
-player is priced and scored from his actual week by week statistics. There is a daily
-challenge where everybody gets the same six draws, and a leaderboard for the day, the
-week and all time. Free, no download, playable in your browser.</p>
+player is priced and scored from his actual week by week statistics. There is an all-time
+teams mode where every spin is one club you choose, and a leaderboard for each of the
+thirty-two clubs as well as for free play. Free, no download, playable in your browser.</p>
 <p><strong>This game needs JavaScript to play.</strong> Please turn it on and reload.</p>
 <p>Stats, scores and coaches from nflverse and nfldata. An unofficial fan project, not
 affiliated with or endorsed by the NFL, the NFLPA or any club.
@@ -2170,7 +2213,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
     <button class="btn" id="b-start">Start a run</button>
     <div class="hrow">
-      <button class="btn ghost sm" id="b-daily">Daily puzzle</button>
+      <button class="btn ghost sm" id="b-teams">All-time teams</button>
       <button class="btn ghost sm" id="b-how">How to play</button>
     </div>
     <button class="btn ghost sm" id="b-board" style="margin-top:8px">Leaderboard</button>
@@ -2231,11 +2274,22 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
+    <!-- WHICH COMPETITION, then which window. Two questions, and they used to be crammed
+         into one row: the daily was a fourth "window" tab that was not a window at all, and
+         it worked only because there was exactly one other competition. There are
+         thirty-three now, so the competition is a select and the windows stay tabs.
+
+         A native select rather than a grid of thirty-two, deliberately. On a phone this
+         opens the system picker, which scrolls and searches and is a control everybody
+         already knows; a custom grid here would be a second club picker to build, test and
+         keep in step with the one on the front page, for a control that is used once. -->
+    <div class="lbmode">
+      <select id="lb-comp" aria-label="Which leaderboard"></select>
+    </div>
     <div class="tabwrap"><div class="tabs" id="lb-tabs">
       <button class="tab on" data-lb="day">Today</button>
       <button class="tab" data-lb="week">This week</button>
       <button class="tab" data-lb="all">All time</button>
-      <button class="tab daily" data-lb="daily">Daily</button>
     </div></div>
     <div class="sortbar">
       <div class="seg" id="lb-sort">
@@ -2545,12 +2599,12 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=18"></script>
-<script src="run.js?v=18"></script>
+<script src="engine.js?v=19"></script>
+<script src="run.js?v=19"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=8"></script>
+<script src="board.js?v=9"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
@@ -2567,7 +2621,7 @@ const E=window.PS_ENGINE, R=window.PS_RUN;
    cached board.js older than this page, and they only catch it while they agree: a page
    that says 1 against a module that says 2 rejects a module that is newer than itself
    and quietly runs the stub, which is a dead leaderboard with no error anywhere. */
-const BOARD_VERSION=6;
+const BOARD_VERSION=7;
 const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
   API_VERSION:BOARD_VERSION, offline:true,
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
@@ -2586,15 +2640,20 @@ const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS
   lastError:{where:'board.js',status:0,code:'blocked',
     message:'the leaderboard script did not load, usually a blocked request'},
   needsAccountsMigration:false, needsAvatarMigration:false, avatarFnMissing:false,
+  modeColumnMissing:false,
 };
 const $=(id)=>document.getElementById(id);
 function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(e){}}
+/* Which competition the run in progress belongs to. One function because eight analytics
+   events and every board call ask it, and a run with no club is a free run wherever it is
+   asked from. Safe before a run exists, which is most of the page's life. */
+function runMode(){ return (run&&run.franchise)?'club':'free'; }
 
 /* ---------- THE SCROLL HINT ON TAB ROWS ----------
    A row that scrolls sideways with a hidden scrollbar looks like a row that has been
-   cut off. At 320px the Daily tab sat 25px past the edge with nothing to suggest the
-   row moved at all, so the daily leaderboard was effectively undiscoverable on a small
-   phone. This toggles a fade over the right edge while there is more to reach.
+   cut off. The draft's position tabs still overflow at 320px, and a row that gives no sign
+   it moves is a row whose last tab nobody finds. This toggles a fade over the right edge
+   while there is more to reach.
 
    Wired to a MutationObserver rather than to the two places that paint tabs. Both rows
    are static elements whose CONTENTS change, which a ResizeObserver never sees, and
@@ -2625,7 +2684,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=18;
+const NEED_VERSION=19;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -3236,43 +3295,55 @@ function newRun(opts){
   run=R.createRun(opts||{});
   return run;
 }
-/* STRAIGHT INTO THE DRAFT. There is no club to choose, so there is nothing between pressing
-   Start and the first spin. The schedule is 17 random historic team-seasons and the playoffs
-   are a fixed difficulty ladder, and neither of them asks who you support.
-
-   The club-colour wash went with it: it keyed off the favourite team, so with no favourite
-   team there is nothing for it to be a wash OF. */
-function beginDraft(opts){ newRun(opts); ga('game_started',{mode:opts&&opts.daily?'daily':'free',date:(opts&&opts.daily)||null}); show('s-draft'); nextSpin(); }
+/* STRAIGHT INTO THE DRAFT. Free play has no club to choose, so there is nothing between
+   pressing Start and the first spin, and all-time team mode asks its one question in a sheet
+   on the front page rather than on a screen of its own. The schedule is 17 random historic
+   team-seasons and the playoffs are a fixed difficulty ladder either way: the club you draft
+   from does not change who you play. */
+function beginDraft(opts){
+  newRun(opts);
+  ga('game_started',{mode:(opts&&opts.franchise)?'club':'free',club:(opts&&opts.franchise)||null});
+  show('s-draft'); nextSpin();
+}
 $('b-start').onclick=()=>{ beginDraft({}); };
-/* THE DAILY EXPLAINS ITSELF BEFORE IT STARTS.
-   It used to begin immediately and put the one rule that makes it a competition into a toast,
-   which is gone in two seconds and is the wrong place for the only thing a player needs to
-   understand. The puzzle is a fixed set of six draws, so it is the one mode where a bad spend
-   cannot be re-rolled away by starting again: that is worth a sentence before it counts. */
-$('b-daily').onclick=dailyRules;
 
-function dailyRules(){
-  const cap=M0(E.CONSTANTS.CAP_MUSD);
-  const today=new Date().toISOString().slice(0,10);
-  /* No paragraph before the list. It said what points 2 and 3 already say, so the sheet
-     opened with the same fact three times and buried the rules under it. */
-  $('sheet-in').innerHTML='<div class="eyebrow red">Daily puzzle</div>'+
-    '<h2 class="display" style="font-size:25px;margin:4px 0 14px">Same six spins for everyone</h2>'+
-    '<ul class="rules" style="margin-top:0">'+
-    '<li><span class="n">1</span><span>Build the <b>best team you can</b> out of the six spins '+
-      'you are given.</span></li>'+
-    '<li><span class="n">2</span><span>Everybody gets the <b>same six spins</b>. Nobody gets a '+
-      'kinder wheel than you did.</span></li>'+
-    '<li><span class="n">3</span><span>You have <b>'+cap+'</b>, and re-spins come out of it. '+
-      'Spend it well; the draws are the same for everyone, so the spending is the game.</span></li>'+
-    '<li><span class="n">4</span><span><b>One go a day.</b> Play it again and it counts as a '+
-      'free run instead.</span></li>'+
-    '</ul>'+
-    '<div style="margin-top:15px"><button class="btn" id="b-daily-go">Play today\'s puzzle</button></div>'+
-    '<div style="margin-top:8px"><button class="btn ghost sm" id="b-daily-no">Not now</button></div>';
+/* ---------- ALL-TIME TEAMS ----------
+   Pick a club and every spin of the draft is that club. Only the year moves, so the run is
+   an attempt at the best team that club could ever have fielded out of 1999 to 2025.
+
+   The picker is the thirty-two colourways the profile circle already uses, so a player who
+   has chosen a club for their circle sees it first and recognises the grid. */
+$('b-teams').onclick=clubPicker;
+
+/* Their own club leads, because somebody who has picked one has already told the game which
+   team they care about and making them hunt for it in an alphabetical grid ignores that. */
+function myClubCode(){
+  const c=(authState.signedIn&&myAvatar&&myAvatar.color)||null;
+  return (c&&E.TEAM_COLORS[c])?c:null;
+}
+
+function clubPicker(){
+  const mine=myClubCode();
+  const cell=(code)=>{
+    const tc=E.teamColors(code);
+    return '<button class="clubtile'+(code===mine?' mine':'')+'" data-club="'+code+'" '+
+      'style="--c1:'+tc.primary+';--c2:'+tc.secondary+'">'+
+      '<i></i><b>'+esc(code)+'</b><span>'+esc(E.nickname(code))+'</span></button>';
+  };
+  const order=AVATAR_TEAMS.slice().sort((a,b)=>
+    (a===mine?-1:0)-(b===mine?-1:0)||E.nickname(a).localeCompare(E.nickname(b)));
+  $('sheet-in').innerHTML='<div class="eyebrow red">All-time teams</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Pick a club</h2>'+
+    '<p class="dim" style="font-size:13px;margin:0 0 12px">Every spin is that club. Only the '+
+      'year moves, so you are building the best team they could ever have put out. Each club '+
+      'has its own leaderboard.</p>'+
+    '<div class="clubgrid">'+order.map(cell).join('')+'</div>'+
+    '<div style="margin-top:14px"><button class="btn ghost sm" id="b-club-no">Not now</button></div>';
   openSheet();
-  $('b-daily-go').onclick=()=>{ closeSheet(); beginDraft({daily:today}); };
-  $('b-daily-no').onclick=closeSheet;
+  $('b-club-no').onclick=closeSheet;
+  $('sheet-in').querySelectorAll('.clubtile').forEach(b=>{
+    b.onclick=()=>{ closeSheet(); beginDraft({franchise:b.dataset.club}); };
+  });
 }
 
 /* ---------- draft ---------- */
@@ -3312,7 +3383,11 @@ function paintTop(){
   if(left>1&&rem-floor<8){n.style.display='block';n.textContent='Keep at least '+M(floor)+' back or you cannot fill the rest of your team.';}
   else if(left===1&&rem>25){n.style.display='block';n.textContent='You still have '+M(rem)+' left and this is the last spot to spend it on.';}
   else n.style.display='none';
-  $('d-count').textContent='Spin '+Math.min(6,run.roster.length+1)+' of 6';
+  /* The club goes here rather than into a banner of its own. It is the one thing about an
+     all-time team run that is not true of a free one, and this eyebrow is already the line
+     that says what kind of spin you are on. */
+  $('d-count').textContent=(run.franchise?E.nickname(run.franchise)+' · ':'')+
+    'Spin '+Math.min(6,run.roster.length+1)+' of 6';
 }
 
 /* ---------- the wheels ----------
@@ -3401,6 +3476,23 @@ function reel(el,faces,target,ms,done,onLand){
 /* Year lands first, then the team, so the reveal has two beats. */
 function spinBoth(draw,done){
   const yEl=$('reel-y'), tEl=$('reel-t'), tBox=$('box-t');
+  /* ALL-TIME TEAM MODE: THE TEAM WHEEL DOES NOT SPIN.
+     It cannot land anywhere else, and a wheel that winds up and stops on the answer it was
+     always going to give is a lie about how random the draw is. It sits still in the club's
+     colours with the club's name on it while the year wheel does the work, which is exactly
+     what the mode is: one club, any year. */
+  if(run&&run.franchise){
+    tBox.className='reelbox team clubbed locked';
+    dressInTeamColors(draw.franchise)(tBox);
+    tEl.style.filter='none'; tEl.style.transform='none';
+    tEl.innerHTML='<div class="reel-i"></div><div class="reel-i land">'+esc(draw.teamName)+
+      '</div><div class="reel-i"></div>';
+    const years=draw.yearOptions.map(String);
+    const rmc=reduceMotion();
+    reel(yEl,years,String(draw.season),
+      (rmc||new Set(years).size<=1)?(rmc?260:520):1150,done);
+    return;
+  }
   // The team reel sits dim with a question on it until the year is settled.
   tBox.className='reelbox team waiting';
   tBox.removeAttribute('style');
@@ -3447,7 +3539,7 @@ function nextSpin(){
   $('opts').innerHTML=''; $('tabs').innerHTML=''; $('d-respin').innerHTML='';
   activeTab=null;
   const draw=R.spin(run,DATA);
-  spinBoth(draw,()=>{ga('spin_completed',{spin_n:(run.roster||[]).length+1,year:draw.season,team:draw.teamName,franchise:draw.franchise,mode:run.daily?'daily':'free'});paintOpts(draw);});
+  spinBoth(draw,()=>{ga('spin_completed',{spin_n:(run.roster||[]).length+1,year:draw.season,team:draw.teamName,franchise:draw.franchise,mode:runMode(),club:run&&run.franchise||null});paintOpts(draw);});
 }
 
 let activeTab=null;
@@ -3617,9 +3709,15 @@ function paintOpts(draw){
    to change: a different team from this year, or a different year entirely. */
 function paintRespins(){
   const el=$('d-respin');
-  const y=R.canRespin(run,'year',DATA), t=R.canRespin(run,'team',DATA);
+  /* ONE BUTTON IN ALL-TIME TEAM MODE. "New team, same year" cannot do anything when the
+     draft is locked to one club, and canRespin already says so in words. Printing it greyed
+     out with "no other 2014 team you could use" on every single spin is a dead control
+     explaining itself over and over; the mode's whole promise is that the team never
+     changes. */
+  const clubRun=!!(run&&run.franchise);
+  const y=R.canRespin(run,'year',DATA), t=clubRun?null:R.canRespin(run,'team',DATA);
   const left=E.CONSTANTS.MAX_RESPINS-run.respinsUsed;
-  if(!y.ok&&!t.ok){
+  if(!y.ok&&!(t&&t.ok)){
     el.innerHTML='<p class="dim" style="font-size:12px;text-align:center;margin:0">'+
       (left<=0?'No re-spins left':esc(y.reason))+'</p>';
     return;
@@ -3628,8 +3726,8 @@ function paintRespins(){
     ? '<button class="btn ghost sm respin" data-kind="'+kind+'"><b>'+label+'</b>'+
       '<span>'+M0(chk.cost)+'</span></button>'
     : '<div class="respin off"><b>'+label+'</b><span>'+esc(chk.reason)+'</span></div>';
-  el.innerHTML='<div class="respins">'+
-      btn('year','New year',y)+btn('team','New team',t)+
+  el.innerHTML='<div class="respins'+(clubRun?' one':'')+'">'+
+      btn('year','New year',y)+(t?btn('team','New team',t):'')+
     '</div>'+
     '<p class="respinnote">Comes off your budget. '+
       (left>1?'Next one costs '+M0(E.respinCost(run.respinsUsed+1))+'. ':'')+
@@ -3637,7 +3735,7 @@ function paintRespins(){
   el.querySelectorAll('button.respin').forEach(b=>{
     b.onclick=()=>{
       $('opts').innerHTML='';$('tabs').innerHTML='';el.innerHTML='';
-      ga('respin_used',{kind:b.dataset.kind,respins_used:(run.respinsUsed||0)+1,mode:run.daily?'daily':'free'});
+      ga('respin_used',{kind:b.dataset.kind,respins_used:(run.respinsUsed||0)+1,mode:runMode(),club:run&&run.franchise||null});
       const d=R.respin(run,DATA,b.dataset.kind);
       paintTop();spinBoth(d,()=>paintOpts(d));
     };
@@ -3654,9 +3752,9 @@ $('opts').addEventListener('click',e=>{
   const b=e.target.closest('.tile'); if(!b||b.classList.contains('off'))return;
   const p=BYKEY.get(b.dataset.k);
   try{R.sign(run,p);}catch(err){toast(err.message);return;}
-  ga('player_signed',{spin_n:(run.roster||[]).length,position:p&&p.position,name:p&&p.last,season:p&&p.season,franchise:p&&p.franchise,price_musd:p&&p.price_musd,mode:run.daily?'daily':'free'});
+  ga('player_signed',{spin_n:(run.roster||[]).length,position:p&&p.position,name:p&&p.last,season:p&&p.season,franchise:p&&p.franchise,price_musd:p&&p.price_musd,mode:runMode(),club:run&&run.franchise||null});
   if(run.phase===R.PHASES.SEASON){
-    ga('roster_complete',{total_spend:Math.round((run.roster.reduce((t,x)=>t+(x.price_musd||0),0)+E.respinFees(run.respinsUsed))*10)/10,respins_used:run.respinsUsed,mode:run.daily?'daily':'free'});
+    ga('roster_complete',{total_spend:Math.round((run.roster.reduce((t,x)=>t+(x.price_musd||0),0)+E.respinFees(run.respinsUsed))*10)/10,respins_used:run.respinsUsed,mode:runMode(),club:run&&run.franchise||null});
     paintSquad();
   }else nextSpin();
 });
@@ -3854,7 +3952,7 @@ function paintNext(live){
   }
 }
 function startSeason(){
-  ga('season_started',{mode:run&&run.daily?'daily':'free'});
+  ga('season_started',{mode:runMode(),club:run&&run.franchise||null});
   paintNext(); paintUpcomingBug(); paintCalendar();
   $('v-you').textContent='0'; $('v-them').textContent='0';
   $('v-byou').classList.add('lead'); $('v-bthem').classList.add('lead');
@@ -3931,7 +4029,7 @@ $('b-sim').onclick=()=>fastForward();
 function after(){
   clearTimeout(simTimer); clearTimeout(poTimer); cancelAnimationFrame(poRaf);
   if(run.phase===R.PHASES.SEEDING){
-    ga('playoffs_reached',{seed:run.playoffSeed&&run.playoffSeed.seed,bye:run.playoffSeed&&!!run.playoffSeed.bye,record:run.playoffSeed&&run.playoffSeed.regularRecord,mode:run.daily?'daily':'free'});
+    ga('playoffs_reached',{seed:run.playoffSeed&&run.playoffSeed.seed,bye:run.playoffSeed&&!!run.playoffSeed.bye,record:run.playoffSeed&&run.playoffSeed.regularRecord,mode:runMode(),club:run&&run.franchise||null});
     paintSeed();
   }else if(run.phase===R.PHASES.OVER)paintOver();
 }
@@ -4178,7 +4276,7 @@ function paintOver(){
     $('o-title').textContent='Missed the playoffs';
     $('o-sub').textContent='It takes '+E.CONSTANTS.PLAYOFF_WINS+' wins to get in.';
   }
-  ga('run_complete',{outcome:o.perfect?'perfect':o.titleWon?'champion':o.eliminatedIn?'eliminated':'missed_playoffs',record:o.record,mode:run&&run.daily?'daily':'free'});
+  ga('run_complete',{outcome:o.perfect?'perfect':o.titleWon?'champion':o.eliminatedIn?'eliminated':'missed_playoffs',record:o.record,mode:runMode(),club:run&&run.franchise||null});
 
   /* THE SECOND HEADLINE AND THE STRIP UNDER IT.
      Both are worked out before anything is painted, because the "of the best possible"
@@ -4404,9 +4502,13 @@ function shareLines(){
      the text and drop the image, and the rating is the one number that says how good the
      roster was rather than how the season happened to go. */
   const rate=(rating===null||rating===undefined)?'':' Team rating '+Number(rating).toFixed(1)+'.';
+  /* WHICH GAME THIS WAS. An all-time Dolphins team going 15-5 is a different boast from
+     a free run going 15-5, and the rating on the end of it is only comparable to other
+     runs of the same kind, so the text has to say which. */
   const head='The Perfect Season: '+o.record+'. '+what;
+  const mode=run.franchise?' All-time '+E.nickname(run.franchise)+'.':'';
   return {head,
-    text:head+rate+'\n'+shareDare(o)+'\n'+SHARE_URL};
+    text:head+mode+rate+'\n'+shareDare(o)+'\n'+SHARE_URL};
 }
 
 /*
@@ -4505,8 +4607,13 @@ function drawShareCard(){
   x.letterSpacing='6px';
   centered('THE PERFECT SEASON',CARD.TITLE);
   x.letterSpacing='0px';
+  /* WHICH GAME, on the tagline, because the tagline is the line that explains the card to
+     somebody who has never played. An all-time Dolphins team and a free run are two
+     different achievements and the record alone does not say which one this is. */
   B('400',25); x.fillStyle='rgba(255,255,255,.42)';
-  centered('Six spins. Six signings. One shot at 20-0.',CARD.TAG);
+  centered(run.franchise
+    ? 'All-time '+E.nickname(run.franchise)+'. Six spins, one club, any year.'
+    : 'Six spins. Six signings. One shot at 20-0.',CARD.TAG);
 
   // The record, which is the whole point of the card.
   const tone=o.perfect?'#fcd34d':(o.titleWon?'#93c5fd':'#ffffff');
@@ -4621,7 +4728,7 @@ function roundRect(x,l,t,w,h,r){
 const canvasBlob=(c)=>new Promise((res)=>c.toBlob(res,'image/png'));
 
 $('b-share').onclick=async()=>{
-  ga('result_shared',{outcome:run&&run.outcome&&(run.outcome.perfect?'perfect':run.outcome.titleWon?'champion':run.outcome.eliminatedIn?'eliminated':'missed_playoffs'),mode:run&&run.daily?'daily':'free'});
+  ga('result_shared',{outcome:run&&run.outcome&&(run.outcome.perfect?'perfect':run.outcome.titleWon?'champion':run.outcome.eliminatedIn?'eliminated':'missed_playoffs'),mode:runMode(),club:run&&run.franchise||null});
   const {head,text}=shareLines();
   let file=null;
   try{
@@ -4902,6 +5009,8 @@ function howToPlay(){
       'throw wastes your receivers, and stars alongside nobody get found out.</span></li>'+
     '<li><span class="n">6</span><span>Play all <b>17 games</b>. Win 12 and you are in the playoffs, '+
       'win 15 and you skip a round. One playoff loss ends it.</span></li>'+
+    '<li><span class="n">7</span><span><b>All-time teams</b> is the same game with the wheel '+
+      'locked to one club. Only the year moves, and every club has its own leaderboard.</span></li>'+
     '</ul>'+
     '<p class="dim" style="font-size:12.5px;margin:13px 0 0">Win everything and you finish '+
       '<b>20 and 0</b>. Nobody has ever done it.</p>'+
@@ -5293,7 +5402,7 @@ function careerBlock(c){
         '<span class="n">'+(i+1)+'</span>'+
         '<span class="who"><b>'+esc(r.wins+'-'+r.losses+
           (r.perfect?' perfect season':' '+r.seed_label.toLowerCase()))+'</b>'+
-          '<span>'+esc((rosterLine(r.picks)||(r.daily?'daily puzzle':'free run'))+
+          '<span>'+esc((rosterLine(r.picks)||runKindOf(r))+
             (day(r.created_at)?' · '+day(r.created_at):''))+'</span></span>'+
         '<span class="rt"><b>'+Number(r.team_rating).toFixed(1)+'</b><span>rating</span></span>'+
         '<span class="go">›</span></button>').join('')+'</div>'
@@ -5558,10 +5667,9 @@ function fbContext(){
     const scr=(document.querySelector('.screen.on')||{}).id||'-';
     const who=authState.signedIn?(authState.name||'(no name yet)'):'(guest)';
     let where='no run';
-    if(run&&run.outcome) where='finished '+run.outcome.record+
-      (run.daily?' (daily puzzle)':' (free run)');
-    else if(run) where='mid-run, '+(run.roster?run.roster.length:0)+' of 6 picked'+
-      (run.daily?' (daily puzzle)':' (free run)');
+    const kind=run&&run.franchise?' (all-time '+E.nickname(run.franchise)+')':' (free run)';
+    if(run&&run.outcome) where='finished '+run.outcome.record+kind;
+    else if(run) where='mid-run, '+(run.roster?run.roster.length:0)+' of 6 picked'+kind;
     return 'Screen: '+scr+'\nRun: '+where+'\nAccount: '+who+
       '\nEngine: '+E.API_VERSION+', run '+R.API_VERSION+', board '+B.API_VERSION+
       '\nViewport: '+window.innerWidth+'x'+window.innerHeight+
@@ -5672,7 +5780,7 @@ const openSheet=()=>{
 };
 /* Closing was written inline in five places as
    $('sheet').classList.remove('on'). Named here because a sheet with its own buttons, like
-   the daily's, has to close itself from a handler that is not the Close button. */
+   the club picker's, has to close itself from a handler that is not the Close button. */
 function closeSheet(){ $('sheet').classList.remove('on'); }
 /* A button that has been pressed says so, because a sign-in round trip is long
    enough that a silent button reads as a dead one. */
@@ -5695,9 +5803,10 @@ function busy(id,label){
    The three windows are UTC days and UTC weeks starting Monday, because a "today"
    that starts at a different moment for each player is not one board.
 
-   Daily runs and free runs share one board for now. The `daily` column is stored
-   so they can be split later, which is worth doing: everybody who plays the daily
-   gets the same six draws, so that board is a fairer comparison than the open one.
+   Free play and each of the thirty-two clubs are separate competitions, keyed on the
+   `mode` column and, for a club, on `franchise`. They have to be: six men off one club
+   share a franchise by construction, so chemistry fires on nearly every all-time team run
+   and the ratings come out far above what the open draft produces.
 */
 
 /* One key format for a player-season across the whole system. The database wants
@@ -5722,12 +5831,12 @@ function runPayload(){
     chemistryPct:(run.season.chemistry-1)*100,
     spendMusd:run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed),
     respins:run.respinsUsed,
-    /* No favourite club any more, so nothing to record. The column stays for the runs
-       submitted before the picker was removed. */
-    franchise:null,
-    /* The puzzle's own date, which is what the daily board is keyed on. Null for a
-       free run, and the server decides `daily` from whether it is there. */
-    dailyDate:run.daily||null,
+    /* THE CLUB THIS DRAFT WAS LOCKED TO, and null for a free run. The server does not
+       infer the mode from it: the column predates all-time team mode and the oldest rows
+       in the table are free runs carrying somebody's favourite club, so the mode is sent
+       as its own field and the two are checked against each other server-side. */
+    franchise:run.franchise||null,
+    mode:runMode(),
     picks:run.roster.map(pickKey),
     slots:run.roster.map((p,i)=>E.SLOTS[run.slotIndex[i]]),
     seed:String(run.seed),
@@ -5799,16 +5908,16 @@ async function submitAfterSignIn(){
    wherever the board was last left: today, by record, best first. A run played in the
    last few minutes is in today's board by definition, and the pinned-row fallback that
    catches a run outside the top page only runs on a record board in descending order,
-   so those are the settings that guarantee there is something to point at. A daily run
-   goes to the daily board, which is the only board it is on. */
+   so those are the settings that guarantee there is something to point at. A club run goes
+   to that club's board, which is the only board it is on. */
 async function showMyRowOnBoard(){
   /* THE PROFILE SHEET HAS TO GO FIRST. The player got here by signing in inside it, and
      the auth handler repaints it rather than closing it, so without this the board is
      opened and scrolled underneath a full-screen sheet: the one thing they asked to see,
      behind the thing they used to ask for it. */
   closeSheet();
-  if(run&&run.daily){ lbWin='daily'; }
-  else { lbWin='day'; lbSort='record'; lbDir='desc'; }
+  lbClub=(run&&run.franchise)||null;
+  lbWin='day'; lbSort='record'; lbDir='desc';
   show('s-board');
   await loadBoard();
   /* Your actual row, which the 500-row list will hold unless five hundred people beat
@@ -5835,10 +5944,11 @@ async function showMyRowOnBoard(){
   toast('Your run is on the board');
 }
 
-/* For a daily run the first column is that day's puzzle rather than a clock window,
-   so it is labelled for what it is. */
+/* THREE WINDOWS, WHICHEVER COMPETITION YOU ARE IN. This used to have a second list for
+   the daily, whose first column was a puzzle rather than a clock window. All-time team mode
+   needs no such thing: a club board is windowed on created_at exactly like the free board,
+   which is why the club indexes carry created_at, so one list serves all thirty-three. */
 const WINDOWS_FREE=[['day','Today'],['week','This week'],['all','All time']];
-const WINDOWS_DAILY=[["day","Today's daily"],['week','This week'],['all','All dailies']];
 
 /* THE BOTTOM ROW OF THE RESULTS STRIP: where this run placed, and a way in.
    Short labels, because these three sit beside chemistry and money in a grid three
@@ -5902,8 +6012,8 @@ function paintRankStrip(r){
    would show a board that number does not come from. */
 document.addEventListener('click',(e)=>{
   const b=e.target.closest('#o-splits .lbc.go'); if(!b) return;
-  if(run&&run.daily){ lbWin='daily'; }
-  else { lbSort='record'; lbWin=b.dataset.win; }
+  lbClub=(run&&run.franchise)||null;
+  lbSort='record'; lbWin=b.dataset.win;
   show('s-board'); loadBoard();
 });
 
@@ -5914,14 +6024,14 @@ async function paintRanks(){
   el.innerHTML='<div class="rload"><i></i><i></i><i></i><span>Reading the board</span></div>';
   const score=B.scoreOf(run.outcome.wins,runPayload().pointDiff);
   await recordRun();
-  /* Ranked among its own kind. A daily run compared against free runs would be
-     comparing a fixed set of draws against a re-rollable one. */
-  const r=await B.ranks(score,run.daily?'daily':'free');
+  /* Ranked among its own kind. An all-time Dolphins team compared against free runs would
+     top the free board on chemistry alone, and mean nothing on the Bears board. */
+  const r=await B.ranks(score,runMode(),run.franchise||null);
   myRanks=r;
   /* The strip at the top of the page carries the same three numbers, and it is the
      one most people will read, so it is filled whatever this panel goes on to say. */
   paintRankStrip(r);
-  const any=(run.daily?WINDOWS_DAILY:WINDOWS_FREE).some(([k])=>r[k]);
+  const any=WINDOWS_FREE.some(([k])=>r[k]);
   if(!any){
     /* Unreadable board. A guest still gets the way in, for the reason above: the submit
        is a different call from the count and may well work. And the probe goes here,
@@ -5942,7 +6052,7 @@ async function paintRanks(){
     $('b-diag-x').onclick=runDiagnostics;
     return;
   }
-  const WINDOWS=run.daily?WINDOWS_DAILY:WINDOWS_FREE;
+  const WINDOWS=WINDOWS_FREE;
   const cell=([k,label])=>{
     const w=r[k];
     if(!w) return '<div class="rcell dead"><span class="rw">'+label+
@@ -5967,8 +6077,9 @@ async function paintRanks(){
      has a reason to care about an account, so it belongs in the panel they are already
      reading. */
   if(submitted==='guest'){
-    el.innerHTML='<p class="rankwho">'+(run.daily
-        ? "Where this would have placed among today's daily puzzle."
+    el.innerHTML='<p class="rankwho">'+(run.franchise
+        ? 'Where this would have placed among every all-time '+
+          esc(E.nickname(run.franchise))+' team.'
         : 'Where this would have placed among every free run.')+'</p>'+
       '<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
       '<div class="guestgate">'+
@@ -5992,9 +6103,10 @@ async function paintRanks(){
     $('b-diag-x').onclick=runDiagnostics;
     return;
   }
-  el.innerHTML='<p class="rankwho">'+(run.daily
-      ? "Against everyone who played today's daily puzzle."
-      : 'Against every free run. The daily puzzle is scored separately.')+'</p>'+
+  el.innerHTML='<p class="rankwho">'+(run.franchise
+      ? 'Against every all-time '+esc(E.nickname(run.franchise))+' team. Each club has '+
+        'its own board.'
+      : 'Against every free run. All-time team runs are scored separately.')+'</p>'+
     '<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
     '<p class="rankfoot">'+rankLine(r)+'</p>'+
     '<button class="btn ghost sm" id="b-board3">See the leaderboard</button>';
@@ -6041,6 +6153,14 @@ async function runDiagnostics(){
   /* Above the column check, because a missing FUNCTION is the louder of the two symptoms:
      the columns going missing costs a colour, the function going missing means a player
      pressed Save and got an error. */
+  /* FIRST OF THE MIGRATION BRANCHES, because this one is not a feature quietly doing
+     nothing, it is the whole board returning 400 on every read. Nothing below can be true
+     while the column every query filters on is absent. */
+  }else if(B.modeColumnMissing){
+    verdict='The board cannot be read: it is one file behind.';
+    fix='ps_runs has no mode column, so every board query is rejected. Run '+
+      'supabase/56_football_all_time_teams.sql, which adds it, moves the old daily runs '+
+      'out of the way and ends by reporting what is now in place.';
   }else if(r.write&&r.write.healthy&&B.avatarFnMissing){
     verdict='The board works, but clubs and initials cannot be saved.';
     fix='ps_set_avatar is not in the API schema cache. Run '+
@@ -6113,8 +6233,8 @@ function rankLine(r){
    Reversing the order is a real feature and not a curiosity. The worst season
    anybody has played is funnier than the best, and a low-to-high rating board is
    the fastest way to see what the game does to a cheap roster. */
-/* lbWin is one of day / week / all / daily. "daily" is not a fourth time window: it
-   selects the other competition, whose window is the puzzle's own date. */
+/* lbWin is one of day / week / all, and that is all it is now. The daily used to be a
+   fourth "window" that was not a window; which competition you are looking at is lbClub. */
 /* TEAM RATING IS THE DEFAULT AXIS.
    Record was, and record is the outcome rather than the achievement: a 14-6 off a soft
    seventeen outranks a 13-7 that beat four all-time teams, and the schedule is randomized so
@@ -6131,21 +6251,24 @@ function rankLine(r){
 const LB_LIMIT=500;
 
 let lbWin='day', lbSort='record', lbDir='desc', lbRows=null, lbBusy=false;
+/* WHICH COMPETITION IS SHOWING. 'free', or a club code for one of the thirty-two all-time
+   team boards. Separate from lbWin because it is a separate question: every competition has
+   the same three windows, which is why the club boards were given a created_at window
+   rather than being all-time only. */
+let lbClub=null;
 /* Where this run sits on the board currently showing, on ITS axis and in ITS direction,
    which is not the same number as any of the three record ranks on the results page.
    Read once per board load, cleared on the way in so a stale place from the last tab can
    never be drawn under a new one. */
 let lbMyPlace=null;
-
-const lbIsDaily=()=>lbWin==='daily';
 /* What board.js should read for the tab that is showing.
 
    EVERY WINDOW WORKS ON EVERY AXIS. The rating board used to be all time only, on the
    argument that ordering by rating over a time range is a query no index can answer, so
    the Today and This week tabs were greyed out on that axis.
 
-   That was wrong, and measurably so. ps_runs_mode_rating_idx is
-   (daily, team_rating DESC, created_at): created_at is IN the index, so the window is an
+   That was wrong, and measurably so. ps_runs_m_rating_idx is
+   (mode, team_rating DESC, created_at): created_at is IN the index, so the window is an
    index condition rather than a filter applied after the fact. Measured on the real
    schema at 2,000,000 rows with today at 0.08% of them:
 
@@ -6159,9 +6282,38 @@ const lbIsDaily=()=>lbWin==='daily';
    the whole time. Nothing needed to change in board.js either: scope() already appends
    the window to any sort. */
 function lbScope(){
-  if(lbIsDaily()) return {mode:'daily',puzzle:'today'};
-  return {mode:'free',win:lbWin};
+  return lbClub
+    ? {mode:'club',franchise:lbClub,win:lbWin}
+    : {mode:'free',win:lbWin};
 }
+
+/* The competition select. Free play, then the thirty-two clubs by name, because "Bears"
+   is what somebody is looking for and 'CHI' is what the database calls it. Built once and
+   only its value moves after that: rebuilding a select that is open closes it. */
+function paintComp(){
+  const sel=$('lb-comp');
+  if(!sel.options.length){
+    sel.innerHTML='<option value="">Free play</option>'+
+      AVATAR_TEAMS.slice().sort((a,b)=>E.nickname(a).localeCompare(E.nickname(b)))
+        .map(c=>'<option value="'+c+'">'+esc(E.nickname(c))+'</option>').join('');
+  }
+  sel.value=lbClub||'';
+  const wrap=sel.parentElement;
+  wrap.classList.toggle('isclub',!!lbClub);
+  if(lbClub){
+    const tc=E.teamColors(lbClub);
+    wrap.style.setProperty('--c1',tc.primary);
+    wrap.style.setProperty('--c2',tc.secondary);
+  }else{
+    wrap.style.removeProperty('--c1');
+    wrap.style.removeProperty('--c2');
+  }
+}
+$('lb-comp').addEventListener('change',()=>{
+  lbClub=$('lb-comp').value||null;
+  ga('board_competition',{mode:lbClub?'club':'free',club:lbClub});
+  loadBoard();
+});
 
 /* What the big right-hand figure means for each axis, so the column always says
    which quantity it is showing rather than leaving it to be guessed. */
@@ -6173,10 +6325,10 @@ const SORT_META={
   record:{label:'Record', of:(r)=>recordCell(r)},
 };
 
-/* Coming off a run, open the board that run is actually on. Landing a daily player
-   on the free board would show them a table they are not in. */
+/* Coming off a run, open the board that run is actually on. Landing an all-time Dolphins
+   player on the free board would show them a table they are not in. */
 function openBoard(){
-  if(run&&run.outcome) lbWin=run.daily?'daily':(lbWin==='daily'?'day':lbWin);
+  if(run&&run.outcome) lbClub=run.franchise||null;
   show('s-board'); loadBoard();
 }
 
@@ -6196,14 +6348,14 @@ async function loadBoard(){
   $('lb-dir-label').textContent=lbDir==='asc'?'Low to high':'High to low';
   /* No tab is ever disabled now. Both axes answer every window. */
   [...document.querySelectorAll('#lb-tabs .tab')].forEach(t=>{ t.disabled=false; });
-  $('lb-blurb').textContent=lbIsDaily()
-    ? "Today's daily puzzle. Everybody gets the same six draws, so this board is "+
-      'the only fair comparison in the game. It resets at midnight UTC.'
+  paintComp();
+  const clock='Today resets at midnight Eastern, and the week starts Monday.';
+  $('lb-blurb').textContent=lbClub
+    ? 'Every all-time '+E.nickname(lbClub)+' team anybody has drafted. Six men off one '+
+      'club, so these score higher than free runs and are ranked apart from them. '+clock
     : (lbSort==='rating'
-      ? 'Free runs, ranked on the roster rather than the season. Today resets at '+
-        'midnight Eastern, and the week starts Monday.'
-      : 'Free runs only. Daily runs have their own board. Today resets at '+
-        'midnight Eastern, and the week starts Monday.');
+      ? 'Free runs, ranked on the roster rather than the season. '+clock
+      : 'Free runs only. Each club has its own board. '+clock);
   /* Rows, the size of the field, and where this run sits on this exact board, in one
      go. The place is asked for alongside rather than after, because it is an index-only
      count and waiting on it would put a second round trip in front of the list. It
@@ -6229,8 +6381,8 @@ async function loadBoard(){
     return;   // the board screen has its own Check the connection button already
   }
   if(total!==null){
-    const word=lbIsDaily()?"played today's daily"
-      :(lbWin==='day'?'played today':(lbWin==='week'?'played this week':'played in all'));
+    const word=lbWin==='day'?'played today'
+      :(lbWin==='week'?'played this week':'played in all');
     /* Said out loud when the field is bigger than the list, so a board that stops at 500
        is a board that told you it stops at 500 rather than one that looks like the whole
        field and is not. */
@@ -6282,10 +6434,11 @@ function paintBoard(){
   if(!rows.length){
     $('lb-podium').className='podium'; $('lb-podium').innerHTML='';
     $('lb-rows').innerHTML='<div class="lbempty">'+
-      (lbIsDaily()?"Nobody has finished today's daily yet. Play it and you are first."
-        :(lbWin==='all'
-          ?'No runs recorded yet. Play one and you are first.'
-          :'Nobody has finished a run in this window yet. Play one and you are first.'))+
+      (lbWin==='all'
+        ?(lbClub?'Nobody has built an all-time '+esc(E.nickname(lbClub))+' team yet. '+
+            'Draft one and you are first.'
+          :'No runs recorded yet. Play one and you are first.')
+        :'Nobody has finished a run in this window yet. Play one and you are first.')+
       '</div>';
     hideMyPin();
     return;
@@ -6514,6 +6667,17 @@ function ratingCell(row){
     '<span>'+esc(row.wins+'-'+row.losses)+(row.perfect?' perfect':'')+'</span>';
 }
 
+/* What kind of run a board row was, in words. Reads `mode` and not the presence of a
+   franchise: rows from the first version of the game are free runs that carry whatever club
+   the player said they supported, and calling those all-time team runs would be wrong about
+   several hundred of them. Rows recorded before the column existed answer 'free', which is
+   what they were. */
+function runKindOf(row){
+  if(row&&row.mode==='club'&&row.franchise) return 'all-time '+E.nickname(row.franchise);
+  if(row&&row.mode==='daily') return 'daily puzzle';
+  return 'free run';
+}
+
 /* The two best players on a board row, by the price the game put on them. Any id
    this browser cannot resolve is skipped rather than printed raw. */
 function rosterLine(picks){
@@ -6540,11 +6704,11 @@ function rosterLine(picks){
 
 /* THE QUANTITY THAT RANKS THIS RUN on the board currently showing. Null when there is
    no run to place, or when the board is not this run's competition: a free run has no
-   place on the daily board and a daily run has none on the free one, and inventing a
-   number there would be a row from a different table. */
+   place on the Dolphins board and a Dolphins run has none on the Bears one, and inventing
+   a number there would be a row from a different table. */
 function myPlaceValue(){
   if(!run||!run.outcome) return null;
-  if(lbIsDaily()!==!!run.daily) return null;
+  if((lbClub||null)!==(run.franchise||null)) return null;
   const p=runPayload();
   if(lbSort==='rating'){
     return (p.teamRating===null||p.teamRating===undefined)?null:Number(p.teamRating);
@@ -6578,8 +6742,7 @@ function paintMyPin(rows){
   /* Whether it is a place or a preview of one is a real distinction and the label makes
      it. A guest's run is not on this board and saying "your place" would be a lie. */
   const live=submitted&&submitted!=='guest';
-  const of=lbIsDaily()?"today's daily":(lbWin==='day'?'today'
-    :(lbWin==='week'?'this week':'all time'));
+  const of=lbWin==='day'?'today':(lbWin==='week'?'this week':'all time');
   /* Your own circle here comes from your own account rather than from a board row, because
      this run may not be on the board at all yet. A guest gets the outline, which is honest:
      the run carries no name until they sign in. */
@@ -6718,15 +6881,15 @@ function endRun(){
    colors are already on the page and the header already says so, so there is nothing
    the team screen would ask that has not been answered.
 
-   Always a free run, including off a daily. Today's daily is one set of six draws for
-   everybody, so replaying it would deal the identical wheel and would not be another
-   game. Coming off one, the toast says which game you are now in rather than leaving
-   it to be worked out from the results screen. */
+   THE SAME COMPETITION, which is what the button says. Off an all-time Dolphins run this
+   is another all-time Dolphins run, because that is the thing the player just chose to do
+   and the wheel deals a different set of Dolphins years every time. Off a free run it is
+   another free run. Nothing here has to warn anybody they have switched modes, because
+   nobody does. */
 $('b-same').onclick=()=>{
-  const wasDaily=!!(run&&run.daily);
+  const club=(run&&run.franchise)||null;
   endRun();
-  beginDraft({});
-  if(wasDaily) toast("Today's daily is played. This one is a free run");
+  beginDraft(club?{franchise:club}:{});
 };
 
 $('b-again').onclick=()=>{ toIntro(); };
