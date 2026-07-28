@@ -313,6 +313,34 @@ function scoringScript(you, them, rng) {
     placed.push({ ...clincher, q: 3, sec: 15 + Math.floor(rng() * (8 * 60 - 15)) });
   }
 
+  /*
+   * KEEP THE KICKING HONEST. A team down by more than a field goal in the fourth
+   * quarter goes for the touchdown; it does not kick, because three points still
+   * leaves it losing. The placement above is blind to the running score, so a
+   * field goal can land late with its own team trailing by four or more, which no
+   * real team would do. Any such kick is pushed back to an earlier quarter, where
+   * taking the points while a score down is the ordinary thing. A winner's late
+   * field goal is never touched: to win by kicking it the team was within three
+   * beforehand, so it never trips this rule. Each pass only moves a kick OUT of the
+   * fourth, so the number of offenders falls every time and the loop settles.
+   */
+  const trailingLateFG = () => {
+    const seq = placed.slice().sort((a, b) => a.q - b.q || b.sec - a.sec);
+    let y = 0, t = 0;
+    for (const e of seq) {
+      const behind = e.team === 'you' ? t - y : y - t;   // the kicking team's deficit, before this score
+      if (e.kind === 'FIELD GOAL' && e.q === QUARTERS - 1 && behind > 3) return e;
+      if (e.team === 'you') y += e.points; else t += e.points;
+    }
+    return null;
+  };
+  for (let guard = 0; guard < placed.length + 4; guard++) {
+    const bad = trailingLateFG();
+    if (!bad) break;
+    bad.q = Math.floor(rng() * (QUARTERS - 1));          // 0..2, an earlier quarter
+    bad.sec = Math.floor(rng() * QUARTER_SECONDS);
+  }
+
   // Clock counts down, so later in a quarter means FEWER seconds left.
   placed.sort((a, b) => a.q - b.q || b.sec - a.sec);
 
@@ -1768,7 +1796,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 28;
+const ENGINE_API_VERSION = 29;
 
 /*
  * The three-letter code a team actually wore in a given season.
