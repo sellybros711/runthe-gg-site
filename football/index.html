@@ -2548,7 +2548,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div id="q-links" style="margin-top:8px"></div>
     </div>
     <div class="panel" style="margin-top:11px">
-      <div class="eyebrow">Coach's take</div>
+      <div class="eyebrow" id="q-scheme-eye">Coach's take</div>
       <div class="verdictline" id="q-verdict"></div>
       <div class="meters" id="q-meters"></div>
       <div id="q-notes" style="margin-top:9px"></div>
@@ -4120,6 +4120,8 @@ function paintSquad(){
   const fitBand=band(span(st.multiplier,0.82,1.06));
   const fitPct=Math.abs(Math.round((st.multiplier-1)*100));
   const strong='<b style="color:'+fitBand.c+'">';
+  const schemeName=st.scheme?E.SCHEME_NAMES[st.scheme]:null;
+  $('q-scheme-eye').textContent=schemeName||"Coach's take";
   $('q-verdict').innerHTML=
     '<p class="take">'+esc(cr.verdict)+'</p>'+
     '<p class="fit">'+(fitPct===0
@@ -4144,7 +4146,7 @@ function paintSquad(){
        the number beside it is a good one, and the notes underneath say why when it matters. */
     meter('Run and pass',(st.rushShare*100).toFixed(0)+'% run, '+
       (100-st.rushShare*100).toFixed(0)+'% pass',
-      1-Math.min(1,Math.abs(st.rushShare-0.25)/0.25))+
+      schemeName?span(st.balance,0.70,1.0):(1-Math.min(1,Math.abs(st.rushShare-0.25)/0.25)))+
     /* "Spread", not "Top scorer": the word on the right is the verdict on the ROW, and a row
        called Top scorer reading Strong says the wrong thing entirely. */
     meter('Spread',(st.topShare*100).toFixed(0)+'% through one player',
@@ -4160,9 +4162,12 @@ function paintSquad(){
   /* THREE NOTES, NOT FIVE OR SIX. Every weakness ties to a meter above, so a list that repeats
      all of them is the same panel twice. The most important of each is kept: the meters carry
      the detail and these carry the judgement. */
+  const strFiltered=schemeName
+    ?cr.strengths.filter(t=>!t.startsWith(schemeName))
+    :cr.strengths;
   const notes=[
     ...cr.weaknesses.slice(0,2).map(t=>['bad',t]),
-    ...cr.strengths.slice(0,2).map(t=>['good',t]),
+    ...strFiltered.slice(0,2).map(t=>['good',t]),
   ].slice(0,3);
   $('q-notes').innerHTML=notes.map(([k,t])=>
     '<div class="cnote '+k+'"><span class="m">'+(k==='good'?'+':'-')+'</span><span>'+
