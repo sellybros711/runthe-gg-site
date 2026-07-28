@@ -1275,7 +1275,11 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px dashed var(--line-2);color:var(--dim-2)}
   .dpips i.on{border-style:solid;border-color:transparent;color:#fff}
   .cap-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-  .capline{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:3px}
+  /* 6px, not 3. The right-hand column stacks an eyebrow over a 22px display figure, and
+     Anton is set at line-height 1, so at 3px the ascenders of "None" came up level with the
+     letters of the line above it. Nothing measured as overlapping and it read as though it
+     did, which on a screen is the same complaint. */
+  .capline{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:6px}
   .capline .amt{font-family:var(--fd);font-size:32px;line-height:1}
   .capline .amt.low{color:var(--red)}
   /* What is left divided by the spots still to fill. Under the BAR now, not inside the
@@ -1293,13 +1297,67 @@ window.GA_ID='G-L29P5MRWKE';
   .bar i.low{background:var(--grad-red)}
   .note{margin-top:8px;font-size:12.5px;font-weight:700;color:#fca5a5}
 
+  /* ---------- ONE TEAM WEARS THE TEAM'S COLOURS ----------
+     Set from script as six custom properties on <body>; see dressTeam() for what each one
+     is for and why five colours are needed rather than two. Everything here is scoped to
+     body.oneteam, so free play is untouched by all of it.
+
+     WHAT IS NOT COLOURED, and this is the whole discipline of the block. Position colours
+     stay: a QB chip is red in every mode because red means quarterback, and a Chiefs run
+     recolouring it would break the one legend the game has. Outcome colours stay: gold is
+     a perfect season, green is good chemistry, red is over budget. Those are meanings, not
+     decoration, and a team's colours cannot be allowed to say them. What gets coloured is
+     everything that was arbitrary blue: the budget gauge, the field, the eyebrows, the
+     forward button, your side of the score bug. */
+
+  /* The budget gauge, which was the largest arbitrary blue on the draft screen. */
+  body.oneteam .bar i{background:linear-gradient(135deg,var(--tw1) 0%,var(--tw2) 100%)}
+  /* Except when it is nearly empty, which is a warning and stays red. */
+  body.oneteam .bar i.low{background:var(--grad-red)}
+
+  /* Eyebrows, which label every block on every screen of a run. --tink and not --t1: half
+     the league's primary is unreadable on this page, and this is text. */
+  body.oneteam #s-draft .eyebrow,body.oneteam #s-squad .eyebrow,
+  body.oneteam #s-season .caleye span,body.oneteam #s-po .eyebrow,
+  body.oneteam #s-over .eyebrow{color:var(--tink)}
+
+  /* The forward action, on its own darkened pair of the team's hue rather than on the two
+     washes: a gradient between two mid-tones cannot hold a label, measured at 2.14:1 for
+     Baltimore. White clears 4.5:1 on both stops for all thirty-two, so the label is white
+     rather than picked per team. */
+  body.oneteam .btn.blue{background:linear-gradient(135deg,var(--tb1) 0%,var(--tb2) 100%);
+    color:#fff}
+
+  /* THE FIELD, WASHED. This is the one that makes a Dolphins draft look like a Dolphins
+     draft, because the field is the biggest object on the screen. It went away with the
+     favourite-team picker, which is what the note above .field.short is about; it is back
+     here scoped to the one mode that has a team to wash it with.
+
+     Two stops from the two washes and 0.16 at the top falling to nothing by the halfway
+     line, so the markings and the six position bubbles on top of it keep their contrast.
+     A pseudo-element rather than a background on .field itself, because .field already
+     carries the pitch gradient and the markings are children of it. */
+  body.oneteam .field:before{content:'';position:absolute;inset:0;border-radius:inherit;
+    pointer-events:none;z-index:0;
+    background:linear-gradient(160deg,var(--tw1) 0%,var(--tw2) 55%,transparent 78%);
+    opacity:.16}
+  body.oneteam .field{border-color:var(--tw1)}
+
+  /* The re-spin button's own accent, and the pips that show the lineup filling up. */
+  body.oneteam .respins .respin{border-color:var(--tw1)}
+  body.oneteam .dpips i.on{background:var(--tw1);color:var(--ton)}
+
+  /* The leaderboard is shared ground and keeps the site's colours: it lists thirty-two
+     teams' runs at once, so painting it one team's colours would be a lie about whose board
+     it is. The competition bar already carries the team's two colours on its own. */
+
   .chemrow{display:flex;align-items:center;gap:11px;margin-top:11px}
   /* Label and value on one baseline. min-width on the value so the label does not slide
      left and right as the number changes width between spins. */
   .chem{display:flex;align-items:baseline;gap:7px;flex:0 0 auto}
   .chem .ck{font-family:var(--fn);font-size:9.5px;font-weight:600;letter-spacing:.13em;
     text-transform:uppercase;color:var(--dim-2);white-space:nowrap}
-  .chemval{font-family:var(--fd);font-size:23px;line-height:1;min-width:62px;text-align:right}
+  .chemval{font-family:var(--fd);font-size:22px;line-height:1;min-width:62px;text-align:right}
   .chemval.pos{color:#4ade80} .chemval.zero{color:var(--dim-2)} .chemval.neg{color:var(--red)}
   .chembar{flex:1;height:9px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}
   .chembar i{display:block;height:100%;border-radius:99px;
@@ -2608,8 +2666,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=20"></script>
-<script src="run.js?v=20"></script>
+<script src="engine.js?v=21"></script>
+<script src="run.js?v=21"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -2662,6 +2720,42 @@ function runMode(){ return (run&&run.franchise)?'club':'free'; }
    does not pay for. */
 function chemOpts(){ return {sameClub:!!(run&&run.franchise)}; }
 
+/* ---------- THE TEAM SKIN ----------
+   One Team mode should not look like free play with a different wheel, so the moment a team
+   is chosen the page carries its colours: the money gauge, the field, the eyebrows, the
+   forward button and your side of the score bug. All of it comes off six custom properties
+   set on <body>, which is what makes it one function rather than a change on every screen.
+
+   FIVE COLOURS AND NOT TWO, and each one exists because the other four cannot do its job:
+
+     --t1 / --t2   the true primary and secondary. For fills that sit on their own ground,
+                   like a solid chip, where the real colour reads correctly.
+     --tw1 / --tw2 the wash pair. Fourteen of the thirty-two clubs have a primary within
+                   1.6:1 of this page's background, so a bar or a gauge painted in --t1 is
+                   invisible for nearly half the league. The washes are floored into a range
+                   that shows on dark, hue untouched. Worked out in engine.js.
+     --tink        a colour that can carry TEXT, which is a harder job again: every one of
+                   the thirty-two clears 4.5:1 against the page.
+     --ton         white or near-black, whichever survives on top of --t1.
+
+   Cleared on the way out, so a free run cannot inherit the last team's colours. */
+const TEAM_VARS=['--t1','--t2','--tw1','--tw2','--tink','--ton','--tb1','--tb2'];
+function dressTeam(){
+  const b=document.body;
+  const f=(run&&run.franchise)||null;
+  b.classList.toggle('oneteam',!!f);
+  if(!f){ TEAM_VARS.forEach(k=>b.style.removeProperty(k)); return; }
+  const tc=E.teamColors(f), w=E.washColors(f);
+  const set=(k,v)=>b.style.setProperty(k,v);
+  set('--t1',tc.primary); set('--t2',tc.secondary); set('--ton',tc.on);
+  set('--tw1',w.a); set('--tw2',w.b); set('--tink',E.teamInk(f));
+  /* The forward button's own pair, one hue dark enough that white always wins. Not the two
+     washes: both are mid-tone by construction, so Baltimore's purple-to-gold carried its
+     label at 2.14:1 and there was no third colour to try. Worked out in engine.js. */
+  const g=E.teamButton(f);
+  set('--tb1',g.a); set('--tb2',g.b);
+}
+
 /* ---------- THE SCROLL HINT ON TAB ROWS ----------
    A row that scrolls sideways with a hidden scrollbar looks like a row that has been
    cut off. The draft's position tabs still overflow at 320px, and a row that gives no sign
@@ -2697,7 +2791,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=20;
+const NEED_VERSION=21;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -3315,6 +3409,7 @@ function newRun(opts){
    from does not change who you play. */
 function beginDraft(opts){
   newRun(opts);
+  dressTeam();
   ga('game_started',{mode:(opts&&opts.franchise)?'club':'free',club:(opts&&opts.franchise)||null});
   show('s-draft'); nextSpin();
 }
@@ -3345,20 +3440,20 @@ function clubPicker(){
   };
   const order=AVATAR_TEAMS.slice().sort((a,b)=>
     (a===mine?-1:0)-(b===mine?-1:0)||E.nickname(a).localeCompare(E.nickname(b)));
-  /* THREE LINES AND TWO FACTS, and that is the whole description.
-     The first version explained the mode twice and then explained the leaderboard: "every
-     spin is that club, only the year moves, so you are building the best team they could
-     ever have put out, and each club has its own leaderboard". Two of those clauses say
-     the same thing. What a player needs before they tap a club is what the mode does and
-     who they will be ranked against. */
+  /* WHAT THE MODE IS, IN ONE SENTENCE, and it took three goes to get there.
+     The first version explained the mode twice and then explained the leaderboard in one
+     paragraph. The second said "draft six players who really played for one club", which is
+     the mechanic and not the point: what a player is doing here is picking a team and trying
+     to beat everyone else's attempt at that team's best-ever roster. That is the sentence,
+     and the two facts under it are the two things they will want back later. */
   $('sheet-in').innerHTML='<div class="eyebrow red">One Team</div>'+
-    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Pick a club</h2>'+
-    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">Draft six '+
-      'players who really played for one club. The wheel stays on that club and only the '+
-      'year moves.</p>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Pick a team</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">Draft the '+
+      'greatest team in one franchise\'s history. Every spin gives you that team in a '+
+      'different year, and you sign one player from each.</p>'+
     '<ul class="modenotes">'+
-      '<li><b>Every club has its own leaderboard.</b> You are only up against people who '+
-        'picked the same club.</li>'+
+      '<li><b>Every team has its own leaderboard.</b> You are only up against people who '+
+        'picked the same team.</li>'+
       '<li><b>Sign in to get on it.</b> Guest runs are played and counted, but not '+
         'recorded.</li>'+
     '</ul>'+
@@ -3935,16 +4030,35 @@ function paintCalendar(justPlayed){
   $('v-calrec').textContent=w+'-'+(s.results.length-w);
 }
 
+/* WHOSE COLOURS YOUR SIDE OF THE SCORE BUG WEARS.
+   In free play the deep blue it always was: you are a roster of six men from thirty years,
+   not anybody's franchise, so there is nothing to take a colour from.
+
+   In One Team mode it is your team, and that needs one guard. The comment this replaces
+   said your plate was "a deeper blue than the wash palette reaches, so it never lands on
+   top of an opponent's colour", which is exactly the protection a team colour gives up:
+   half the league washes to a pale blue, so a Lions run against the Bills would be two
+   plates of the same colour with the scores between them. So if the opponent's wash is
+   within 1.35:1 of yours, your plate falls back to the deep blue for that game only, and
+   the one screen where telling the two sides apart matters most keeps telling them apart. */
+const YOU_BLUE={a:'#1f5fc4',b:'#93c5fd'};
+function youColors(oppWash){
+  const f=run&&run.franchise;
+  if(!f) return YOU_BLUE;
+  const w=E.washColors(f);
+  if(oppWash&&E.contrast(w.a,oppWash.a)<1.35) return YOU_BLUE;
+  return {a:w.a,b:w.b};
+}
+
 /* The score bug on the season screen. Called with the game about to be played before
    the first snap and with the game just played after each one, so the code and the
    record on a plate always belong to the score beside them. */
 function paintSeasonBug(oppId,label){
   const o=oppId?DATA.byTeamSeasonId[oppId]:null;
   const themEl=$('v-bthem'), w=o?E.washColors(o.franchise):null;
-  /* YOUR plate is a deeper blue than the wash palette reaches, so it never lands on
-     top of an opponent's colour. Half the league washes to a pale blue. */
-  $('v-byou').style.setProperty('--tcol','#1f5fc4');
-  $('v-byou').style.setProperty('--tcol2','#93c5fd');
+  const mine=youColors(w);
+  $('v-byou').style.setProperty('--tcol',mine.a);
+  $('v-byou').style.setProperty('--tcol2',mine.b);
   themEl.style.setProperty('--tcol',w?w.a:'#8a97a8');
   themEl.style.setProperty('--tcol2',w?w.b:'rgba(255,255,255,.3)');
   themEl.querySelector('.cd').textContent=o?E.eraCode(o.franchise,o.season):'OPP';
@@ -4140,23 +4254,25 @@ let poTimer=null, poRaf=0, poSkip=null;
 function playPlayoffGame(r,after){
   const round=r.round||'Playoffs';
   const opp=DATA.byTeamSeasonId[r.opponent_id];
-  /* YOUR side of the score bug is the game's own blue now, because there is no club to take
-     a colour from: you are not playing as anybody's franchise, you are a roster of six
-     players drawn from thirty years of them.
+  /* YOUR side of the score bug is the team's colours in One Team mode and the game's own
+     blue in free play, where there is no team to take a colour from: you are a roster of six
+     players drawn from thirty years of them. youColors() carries the guard that stops your
+     plate and the opponent's landing on the same colour.
 
      The OPPONENT's side is still their real club colour, via washColors rather than the raw
      primary. The bug sits on #080d17 and 14 of the 32 clubs have a primary within 1.6:1 of
      that, which is a black bar on a black ground: the Raiders, the Steelers, the Saints, the
      Bears, the Patriots, the Seahawks and eight more had no visible colour on the bug at all.
      Measured; the wash colours clear it for all 32. */
-  const me={a:'#1f5fc4'}, them=opp?E.washColors(opp.franchise):{a:'#8a97a8'};
+  const them=opp?E.washColors(opp.franchise):{a:'#8a97a8'};
+  const me=youColors(opp?E.washColors(opp.franchise):null);
   const youEl=$('po-you'), themEl=$('po-them'), bug=$('po-bug');
   const rcls=ROUND_CLASS[round]||'r-wc';
 
   $('po-round').textContent=round;
   $('po-opp').textContent=r.opponent;
   youEl.style.setProperty('--tcol',me.a);
-  youEl.style.setProperty('--tcol2','#93c5fd');
+  youEl.style.setProperty('--tcol2',me.b);
   themEl.style.setProperty('--tcol',them.a);
   /* The second colour as the rule along the foot of the plate. Washed like the first,
      because a club whose second colour is black would otherwise draw no rule at all. */
@@ -4536,11 +4652,12 @@ function shareLines(){
      the text and drop the image, and the rating is the one number that says how good the
      roster was rather than how the season happened to go. */
   const rate=(rating===null||rating===undefined)?'':' Team rating '+Number(rating).toFixed(1)+'.';
-  /* WHICH GAME THIS WAS. A One Team Dolphins run going 15-5 is a different boast from a
-     free run going 15-5, and the rating on the end of it is only comparable to other runs
-     of the same kind, so the text has to say which. */
+  /* WHICH GAME THIS WAS. A One Team Miami run going 15-5 is a different boast from a free
+     run going 15-5, and the rating on the end of it is only comparable to other runs of the
+     same kind, so the text has to say which. */
   const head='The Perfect Season: '+o.record+'. '+what;
-  const mode=run.franchise?' One Team: '+E.nickname(run.franchise)+'.':'';
+  /* The city, for the same reason the card uses it: this text is posted somewhere else. */
+  const mode=run.franchise?' One Team: '+E.cityLabel(run.franchise)+'.':'';
   return {head,
     text:head+mode+rate+'\n'+shareDare(o)+'\n'+SHARE_URL};
 }
@@ -4585,9 +4702,25 @@ function drawShareCard(){
   c.width=CARD.W; c.height=CARD.H;
   const x=c.getContext('2d');
   const o=run.outcome;
-  /* The card used to be washed in your club's colour. With no club it takes the game's own
-     two, which is what the share card's own source already uses for its headline. */
-  const tc={primary:'#b91c1c',secondary:'#1d4ed8',on:'#fff'};
+  /* THE CARD TAKES THE TEAM'S COLOURS IN ONE TEAM MODE, and the game's own red and blue in
+     free play, where there is no team to take them from. The wash, the keel and the two
+     rules all read from this, so one object is the whole difference between a Dolphins card
+     and a Steelers one.
+
+     The wash uses the WASH colour rather than the raw primary, for the reason written out in
+     engine.js: fourteen of the thirty-two clubs have a primary within 1.6:1 of a near-black
+     ground, so a raw primary at 30% over #070b13 is invisible for nearly half the league. */
+  const tc=run.franchise
+    ? {primary:E.washColors(run.franchise).a,secondary:E.teamColors(run.franchise).secondary,
+       ink:E.teamInk(run.franchise)}
+    : {primary:'#b91c1c',secondary:'#1d4ed8',ink:'#f87171'};
+  /* rgba from a hex, because a canvas cannot take an opacity separately from a colour and
+     every rule and pill on this card is a colour at an alpha. */
+  const at=(hex,a)=>{
+    const h=hex.replace('#','');
+    const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16);
+    return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';
+  };
   const PAD=CARD.PAD;
   const mid=CARD.W/2;
 
@@ -4644,9 +4777,12 @@ function drawShareCard(){
   /* WHICH GAME, on the tagline, because the tagline is the line that explains the card to
      somebody who has never played. A One Team Dolphins run and a free run are two
      different achievements and the record alone does not say which one this is. */
+  /* CITY, NEVER THE MASCOT, on anything that leaves this site. cityLabel adds the
+     three-letter code for the four franchises that share a city with another, because "Los
+     Angeles" on its own is two different clubs. */
   B('400',25); x.fillStyle='rgba(255,255,255,.42)';
   centered(run.franchise
-    ? 'One Team: '+E.nickname(run.franchise)+'. Six spins, one club, any year.'
+    ? 'One Team: '+E.cityLabel(run.franchise)+'. Six spins, one team, any year.'
     : 'Six spins. Six signings. One shot at 20-0.',CARD.TAG);
 
   // The record, which is the whole point of the card.
@@ -4661,9 +4797,9 @@ function drawShareCard(){
     :'MISSED THE PLAYOFFS');
   centered(what,CARD.VERDICT);
 
-  x.fillStyle='rgba(255,255,255,.14)'; x.fillRect(PAD,CARD.RULE1,CARD.W-PAD*2,2);
+  x.fillStyle=at(tc.ink,.34); x.fillRect(PAD,CARD.RULE1,CARD.W-PAD*2,2);
 
-  /* The six players. Position chip, name, then the year and club on the right, so
+  /* The six players. Position chip, name, then the year and city on the right, so
      the eye can run down either column on its own. */
   const bySlot=new Array(E.SLOTS.length).fill(null);
   run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
@@ -4689,7 +4825,9 @@ function drawShareCard(){
     // name, shrunk only if it would collide with the right column
     const right=CARD.W-PAD;
     N('500',24); x.fillStyle='rgba(255,255,255,.5)';
-    const meta=p.season+' '+E.nickname(p.franchise);
+    /* The city and not the nickname, on every row, in both modes. This is a graphic that
+       gets posted somewhere we do not control, so no mascot name appears on it at all. */
+    const meta=p.season+' '+E.city(p.franchise);
     const mw=x.measureText(meta).width;
     x.fillText(meta,right-mw,y-4);
     /* The name face, at 700, which is a real cut of Big Shoulders Display rather than a
@@ -4704,7 +4842,7 @@ function drawShareCard(){
     y+=ROW;
   });
 
-  x.fillStyle='rgba(255,255,255,.14)'; x.fillRect(PAD,CARD.RULE2,CARD.W-PAD*2,2);
+  x.fillStyle=at(tc.ink,.34); x.fillRect(PAD,CARD.RULE2,CARD.W-PAD*2,2);
 
   /* Three figures that say something about the BUILD, not just the result, and the team
      rating leads them because it is the one the game ranks rosters on: two people can share
@@ -4741,9 +4879,9 @@ function drawShareCard(){
   N('700',34); x.letterSpacing='3px';
   const lw=x.measureText(label).width;
   const pw=lw+72, pl=mid-pw/2;
-  x.fillStyle='rgba(185,28,28,.22)';
+  x.fillStyle=at(tc.ink,.20);
   roundRect(x,pl,CARD.LINK_T,pw,CARD.LINK_H,CARD.LINK_H/2); x.fill();
-  x.strokeStyle='rgba(248,113,113,.55)'; x.lineWidth=2;
+  x.strokeStyle=at(tc.ink,.62); x.lineWidth=2;
   roundRect(x,pl+1,CARD.LINK_T+1,pw-2,CARD.LINK_H-2,(CARD.LINK_H-2)/2); x.stroke();
   x.fillStyle='#ffffff';
   /* Optically centred on the pill rather than sitting on a baseline guessed at: cap height
@@ -5044,7 +5182,7 @@ function howToPlay(){
     '<li><span class="n">6</span><span>Play all <b>17 games</b>. Win 12 and you are in the playoffs, '+
       'win 15 and you skip a round. One playoff loss ends it.</span></li>'+
     '<li><span class="n">7</span><span><b>One Team</b> is the same game with the wheel locked '+
-      'to one club. Only the year moves, and every club has its own leaderboard.</span></li>'+
+      'to one team. Only the year moves, and every team has its own leaderboard.</span></li>'+
     '</ul>'+
     '<p class="dim" style="font-size:12.5px;margin:13px 0 0">Win everything and you finish '+
       '<b>20 and 0</b>. Nobody has ever done it.</p>'+
@@ -5278,7 +5416,7 @@ function paintPfpEdit(nm){
          glance, and the difference is whether anybody chose it. */
       label.innerHTML=a.chosen
         ? 'Playing for the <b>'+esc(a.team)+'</b>'
-        : 'No club picked, so you are showing <b>'+esc(a.team)+'</b> colours for now';
+        : 'No team picked, so you are showing <b>'+esc(a.team)+'</b> colours for now';
     }
   };
   swatches.innerHTML=AVATAR_TEAMS.map(k=>{
@@ -5514,7 +5652,7 @@ function profileSheet(msg,ok){
          Only for an account that has a name, for the same reason the career panel is: with
          no name there is nothing to derive a circle from and picking one is not the job of
          the screen yet. */
-      (nm?'<p class="shsec">Your club and your circle</p>'+
+      (nm?'<p class="shsec">Your team and your circle</p>'+
         '<div class="pfpedit">'+
           '<span id="pfp-demo"></span>'+
           '<div class="col">'+
@@ -5530,7 +5668,7 @@ function profileSheet(msg,ok){
         '</div>'+
         '<p class="pfpteam" id="pfp-team"></p>'+
         '<div class="swatches" id="a-swatches"></div>'+
-        '<p class="dim" style="font-size:11.5px;margin:9px 0 0">Pick the club whose colours '+
+        '<p class="dim" style="font-size:11.5px;margin:9px 0 0">Pick the team whose colours '+
           'you want beside your name, or tap it again for none. Initials are two letters or '+
           'numbers, or leave them blank for the first two of your name.</p>'+
         '<div style="margin-top:9px"><button class="btn sm" id="a-savepfp">Save my circle</button></div>'+
@@ -5846,7 +5984,6 @@ function busy(id,label){
 /* One key format for a player-season across the whole system. The database wants
    a colon because the validation regex is easier to read that way, and BYKEY was
    already using a pipe, so the conversion lives here and nowhere else. */
-const poss=(name)=>name+(/s$/i.test(name)?"'":"'s");
 const pickKey=(p)=>p.player_id+':'+p.season;
 const fromPickKey=(k)=>{const i=k.lastIndexOf(':');
   return BYKEY.get(k.slice(0,i)+'|'+k.slice(i+1))||null;};
@@ -6138,7 +6275,7 @@ async function paintRanks(){
     return;
   }
   el.innerHTML='<p class="rankwho">'+(run.franchise
-      ? 'Against every One Team '+esc(E.nickname(run.franchise))+' run. Each club has its '+
+      ? 'Against every One Team '+esc(E.nickname(run.franchise))+' run. Each team has its '+
         'own board.'
       : 'Against every free run. One Team runs are scored separately.')+'</p>'+
     '<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
@@ -6196,7 +6333,7 @@ async function runDiagnostics(){
       'supabase/56_football_all_time_teams.sql, which adds it, moves the old daily runs '+
       'out of the way and ends by reporting what is now in place.';
   }else if(r.write&&r.write.healthy&&B.avatarFnMissing){
-    verdict='The board works, but clubs and initials cannot be saved.';
+    verdict='The board works, but teams and initials cannot be saved.';
     fix='ps_set_avatar is not in the API schema cache. Run '+
       'supabase/55_football_avatars_setup.sql, which sets this up from any starting state '+
       'and ends by reporting what is now in place.';
@@ -6386,10 +6523,10 @@ async function loadBoard(){
   const clock='Today resets at midnight Eastern, and the week starts Monday.';
   $('lb-blurb').textContent=lbClub
     ? 'Every One Team run anybody has played with the '+E.nickname(lbClub)+'. Ranked '+
-      'apart from free play, because the draft only offers one club. '+clock
+      'apart from free play, because the draft only offers one team. '+clock
     : (lbSort==='rating'
       ? 'Free runs, ranked on the roster rather than the season. '+clock
-      : 'Free runs only. Each club has its own board. '+clock);
+      : 'Free runs only. Each team has its own board. '+clock);
   /* Rows, the size of the field, and where this run sits on this exact board, in one
      go. The place is asked for alongside rather than after, because it is an index-only
      count and waiting on it would put a second round trip in front of the list. It
@@ -6534,8 +6671,16 @@ function runDetail(row,back){
   const chem=mine?p.chemistryPct:Number(row.chemistry_pct);
   const spend=mine?p.spendMusd:Number(row.spend_musd);
   const perf=mine?p.perfectPct:(row.perfect_pct===null?null:Number(row.perfect_pct));
-  /* Only rows submitted before the team picker was removed carry a club. */
-  const club=mine?null:row.franchise;
+  /* THE TEAM THIS SHEET IS COLOURED BY, and what the line under the record says.
+     `franchise` means two different things on two vintages of row: on a One Team run it is
+     the team the whole draft was locked to, and on the oldest rows in the table it was the
+     player's favourite team on an ordinary free run. `mode` is what tells them apart, which
+     is why runKindOf reads that and not this. Both are worth a colour on the sheet; only
+     the One Team ones get the sentence. */
+  const club=mine?(run&&run.franchise)||null:row.franchise;
+  const kind=mine
+    ? (run&&run.franchise?'One Team, '+E.nickname(run.franchise):'free run')
+    : runKindOf(row);
 
   const tile=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
   const cols=club?E.teamColors(club):null;
@@ -6549,7 +6694,7 @@ function runDetail(row,back){
     '<h2 class="display" style="font-size:30px;margin:3px 0 1px;letter-spacing:.01em">'+
       esc(rec)+'</h2>'+
     '<p class="dim" style="font-size:12.5px;margin:0">'+esc(label)+
-      (club?' &middot; took the '+esc(poss(E.nickname(club)))+' place':'')+'</p>'+
+      ' &middot; '+esc(kind)+'</p>'+
     (known.length?'<div class="rost" style="margin-top:12px">'+known.map(m=>{
       const a=topAward(m.p);
       return '<div class="rrow">'+slotTag(m.slot,m.p.position)+
@@ -6909,6 +7054,8 @@ function endRun(){
   clearTimeout(simTimer); clearTimeout(poTimer); cancelAnimationFrame(poRaf); poSkip=null;
   run=null; lastChem=1;
   submitted=null; myRanks=null; lastPerfectShare=null;
+  /* After run=null, so it reads the absence of a run rather than the team that just left. */
+  dressTeam();
 }
 
 /* SAME TEAM, NEW DRAFT. Straight to the first spin: the club is already chosen, its

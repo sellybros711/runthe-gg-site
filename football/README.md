@@ -365,7 +365,7 @@ really reachable.
 
 ## One Team, and the two links it turns off
 
-One Team locks the wheel to a club you choose, so every man on the roster shares that
+One Team locks the wheel to a team you choose, so every man on the roster shares that
 franchise by construction. Two of the seven chemistry links stop being decisions when
 that is true, and both are suppressed for the mode (`resolveChemistry(roster, ctx,
 {sameClub:true})`, threaded from `run.franchise`):
@@ -376,19 +376,62 @@ that is true, and both are suppressed for the mode (`resolveChemistry(roster, ct
   clubs: mean **+14.3%**, largest +14.6%, against +2.2% in free play. Chemistry was not
   a bonus in that mode, it was a constant.
 - **`system`, "both coached by X."** Suppressing only the franchise link left this one
-  firing **2,433 times across 796 drafts, 76% of every link in the mode**, because a club
+  firing **2,433 times across 796 drafts, 76% of every link in the mode**, because a team
   with one long-serving head coach connects almost any two of its years. New England came
   out at +11.8% mean and Washington at +4.7%, which is not a decision either player made.
 
 What is left is earned, and it costs you a draw: `teammates` and `battery` both need two
-men out of the **same season** of that club, which means spending two of your six spins on
+men out of the **same season** of that team, which means spending two of your six spins on
 one year. `college`, `draft_class` and `family` are untouched. Measured with both
 suppressed, One Team chemistry is a mean of **+3.1%** and a median of +1.9%, against +2.2%
 and +1.9% in free play, and about a third of rosters get none at all in either mode.
 
 The empty-chemistry line on the squad screen is different in this mode for the same
 reason. "Nobody here ever played together" under six Dolphins reads as a bug, so it says
-that sharing the club earns nothing here and names what does.
+that sharing the team earns nothing here and names what does.
+
+## The One Team skin, and five colours where two will not do
+
+A One Team run wears the team's colours: the budget gauge, the field, every eyebrow, the
+forward button and your side of the score bug. All of it comes off custom properties set
+on `<body>` by `dressTeam()`, so it is one function rather than an edit on every screen,
+and it is all scoped to `body.oneteam` so free play is untouched.
+
+Five colours per team, and each one exists because the others cannot do its job:
+
+| property | what it is | why |
+| --- | --- | --- |
+| `--t1` / `--t2` | the true primary and secondary | fills that sit on their own ground |
+| `--tw1` / `--tw2` | `washColors()` | 14 of 32 primaries are within **1.6:1** of this page's background, so a gauge in `--t1` is invisible for nearly half the league |
+| `--tink` | `teamInk()` | text is harder again; every one of the 32 clears **4.5:1** on the page |
+| `--tb1` / `--tb2` | `teamButton()` | a button label has to survive a gradient |
+| `--ton` | white or near-black | whatever survives on top of `--t1` |
+
+`teamButton()` exists because the obvious thing failed a measurement. Gradienting the two
+wash colours and picking white or near-black for the label gives Baltimore purple-to-gold,
+and both are mid-tone by construction, so its label came out at **2.14:1** with no third
+colour to try. The gradient runs across one hue instead, lightness descending until white
+clears 4.5:1, and then the label is white for all 32 rather than chosen per team. Worst
+case measured on the rendered page: 4.52:1.
+
+**What is never recoloured**, and this is the discipline of the whole block. Position
+colours stay, because red means quarterback in every mode and a Chiefs run recolouring the
+chip would break the only legend the game has. Outcome colours stay: gold is a perfect
+season, green is chemistry, red is over budget. Those are meanings, not decoration.
+
+One guard worth knowing about: your plate on the score bug used to be a deep blue chosen
+precisely because no wash colour reaches it, so it could never match an opponent's. A team
+colour gives that up, and half the league washes to a pale blue, so if the opponent's wash
+is within 1.35:1 of yours your plate falls back to the deep blue for that game.
+
+### Cities on anything that leaves the site
+
+Share text and the share card carry the **city and the colours, never the mascot**:
+"One Team: Miami", and every player row reads "2008 Miami". `cityLabel()` appends the
+three-letter code to exactly the four franchises that share a city with another, computed
+from the table rather than listed, because "Los Angeles" on its own is two different teams.
+Inside the game the nickname is still used, because the game is where somebody is choosing
+between 32 of them and "New York" does not say which.
 
 ## Season structure
 
