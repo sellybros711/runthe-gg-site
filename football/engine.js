@@ -1070,17 +1070,20 @@ function orderSchedule(games, rng) {
 /**
  * A 17-game schedule of historic team-seasons.
  *
- * There is no favourite club any more, so there is no division and there are no rivals: the
- * schedule is drawn from the whole 1999-2025 pool at random. What survives from the old
- * version is the part that mattered, which is NORMALIZATION. An unconstrained random draw
- * hands one player four all-time greats and another a soft seventeen, and since every run is
- * measured against the same leaderboard, that is the difference between a fair board and a
- * lottery. A draw is accepted only if its total strength lands near the league mean and it
- * carries no more than `maxElite` elite teams, and it is redrawn until it does.
+ * In free play there is no favourite club, so the schedule is drawn from the
+ * whole 1999-2025 pool at random: one season per franchise, no repeats.
  *
- * One season per franchise per schedule. Drawing freely would let the same club turn up as
- * three different vintages, and a 2007 Patriots plus a 2001 Patriots on one schedule reads as
- * a bug rather than as a season.
+ * In ONE FRANCHISE MODE (opts.franchise set) the schedule mirrors a real NFL
+ * regular season: each of the three divisional rivals appears twice (two
+ * different seasons drawn from that rival's history, 6 games total) and the
+ * remaining 11 come from the rest of the league. You never play your own
+ * franchise. The two meetings with a rival are spaced at least four weeks
+ * apart, the way a real schedule keeps division rematches from clustering.
+ *
+ * Both paths share the same normalization gate: the total strength must land
+ * near the league mean, and no more than `maxElite` elite opponents, so one
+ * player does not draw four all-time greats while another gets a soft
+ * seventeen.
  */
 function generateSchedule(data, rng, opts = {}) {
   const tolerance = opts.tolerance ?? 0.05;
@@ -1088,7 +1091,15 @@ function generateSchedule(data, rng, opts = {}) {
   const maxAttempts = opts.maxAttempts ?? 400;
   const count = opts.games ?? 17;
 
-  const { byFranchise, eliteThreshold, meanScheduleStrength } = data;
+  const { byFranchise, divisions, eliteThreshold, meanScheduleStrength } = data;
+  const franchise = opts.franchise ?? null;
+
+  if (franchise) {
+    return generateFranchiseSchedule(
+      byFranchise, divisions, franchise, eliteThreshold, meanScheduleStrength,
+      rng, tolerance, maxElite, maxAttempts, count);
+  }
+
   const franchises = Object.keys(byFranchise);
 
   let best = null;
@@ -1114,6 +1125,87 @@ function generateSchedule(data, rng, opts = {}) {
   }
   return { games: best.games, total: best.total, elite: best.elite, attempts: maxAttempts,
     relaxed: true };
+}
+
+/**
+ * One Franchise schedule: 6 divisional games (each rival twice) + 11 random.
+ *
+ * The two draws from each rival are always different seasons, and the eleven
+ * non-division opponents each come from a different franchise, none of which
+ * is the player's own club.
+ */
+function generateFranchiseSchedule(
+    byFranchise, divisions, franchise, eliteThreshold, meanScheduleStrength,
+    rng, tolerance, maxElite, maxAttempts, count) {
+  const div = Object.entries(divisions)
+    .find(([, members]) => members.includes(franchise));
+  const rivals = div ? div[1].filter((f) => f !== franchise) : [];
+  const nonDivFranchises = Object.keys(byFranchise)
+    .filter((f) => f !== franchise && !rivals.includes(f));
+  const nonDivCount = count - rivals.length * 2;
+
+  let best = null;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const unordered = [];
+
+    for (const r of rivals) {
+      const pool = byFranchise[r];
+      const a = Math.floor(rng() * pool.length);
+      let b = Math.floor(rng() * (pool.length - 1));
+      if (b >= a) b++;
+      unordered.push(pool[a], pool[b]);
+    }
+
+    const used = new Set();
+    let guard = 0;
+    while (unordered.length < count && guard++ < 500) {
+      const f = nonDivFranchises[Math.floor(rng() * nonDivFranchises.length)];
+      if (used.has(f)) continue;
+      used.add(f);
+      const pool = byFranchise[f];
+      unordered.push(pool[Math.floor(rng() * pool.length)]);
+    }
+
+    const ordered = orderFranchiseSchedule(unordered, rivals, rng);
+    const total = ordered.reduce((sum, g) => sum + g.strength_z, 0);
+    const elite = ordered.filter((g) => g.strength_z >= eliteThreshold).length;
+    const drift = Math.abs(total - meanScheduleStrength);
+    const ok = drift <= Math.abs(meanScheduleStrength * tolerance) + tolerance * count
+      && elite <= maxElite;
+    if (ok) return { games: ordered, total, elite, attempts: attempt + 1 };
+    if (!best || drift < best.drift) best = { games: ordered, total, elite, drift, attempts: attempt + 1 };
+  }
+  return { games: best.games, total: best.total, elite: best.elite, attempts: maxAttempts,
+    relaxed: true };
+}
+
+/**
+ * Shuffle with a rematch gap: divisional opponents who appear twice are kept
+ * at least MIN_REMATCH_GAP weeks apart so the schedule reads like a real
+ * season rather than back-to-back division games.
+ */
+function orderFranchiseSchedule(games, rivals, rng) {
+  const MIN_REMATCH_GAP = 4;
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const out = games.slice();
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+    let ok = true;
+    for (const r of rivals) {
+      const idxs = [];
+      for (let i = 0; i < out.length; i++) {
+        if (out[i].franchise === r) idxs.push(i);
+      }
+      if (idxs.length === 2 && Math.abs(idxs[0] - idxs[1]) < MIN_REMATCH_GAP) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) return out;
+  }
+  return games.slice();
 }
 
 /** Playoff opponents, weighted toward the strongest quartile. */
@@ -1491,7 +1583,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 22;
+const ENGINE_API_VERSION = 23;
 
 /*
  * The three-letter code a team actually wore in a given season.
