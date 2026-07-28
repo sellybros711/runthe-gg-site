@@ -838,8 +838,10 @@ function rosterStructure(roster) {
   // Quarterback support applies to catching points only, so it is folded in as a
   // change to the effective total rather than a flat multiplier.
   const effective = sum((p) => p.pass_ppg) + rush + rec * qbSupport;
+  const SCHEME_BONUS = 0.03;
   const multiplier = clamp(
-    (effective / total) * balance * concentration * Math.max(0.3, floor),
+    (effective / total) * balance * concentration * Math.max(0.3, floor)
+      + (scheme ? SCHEME_BONUS : 0),
     S.MIN, S.MAX,
   );
 
