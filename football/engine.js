@@ -1755,7 +1755,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 25;
+const ENGINE_API_VERSION = 26;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -1798,6 +1798,12 @@ const publicAPI = {
   NICKNAMES, nickname, CITIES, city, cityLabel, TEAM_COLORS, teamColors, washColors,
   teamInk, teamButton, contrast, LINK_TIERS, linkTier, rosterStructure, STRUCTURE, coachReport,
   SCHEME_NAMES: Object.fromEntries(SCHEMES.map(s => [s.key, s.name])),
+  /* The scheme's one-line description, taken from its strength note with the leading
+     name stripped off, so the panel can show it as a tagline under the scheme name. */
+  SCHEME_TAGLINES: Object.fromEntries(SCHEMES.map(s => {
+    const cut = s.strength.indexOf('. ');
+    return [s.key, cut >= 0 ? s.strength.slice(cut + 2) : s.strength];
+  })),
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

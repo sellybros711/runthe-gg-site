@@ -2039,6 +2039,70 @@ window.GA_ID='G-L29P5MRWKE';
     background:rgba(255,255,255,.08);overflow:hidden}
   .meter .track i{display:block;height:100%;border-radius:99px;
     transition:width .5s cubic-bezier(.2,.8,.3,1)}
+  /* Offensive scheme panel. When the roster fits one of the ten schemes the panel
+     wears that scheme's own colour on the stripe, the name, the icon and the +3%
+     badge. With no scheme it falls back to the plain coach's take (scheme-none). */
+  .schemepanel{position:relative;overflow:hidden}
+  .schemepanel .stripe{position:absolute;top:0;left:0;right:0;height:3px}
+  .scheme-none .stripe{display:none}
+  .scheme-badge{display:flex;align-items:center;gap:10px;margin:8px 0 10px}
+  .scheme-icon{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;
+    font-size:17px;flex-shrink:0}
+  .scheme-name{font-family:var(--fd);font-size:21px;line-height:1.05;letter-spacing:-.01em;
+    text-transform:uppercase}
+  .scheme-bonus{font-family:var(--fn);font-size:11.5px;font-weight:600;letter-spacing:.03em;
+    padding:2px 7px;border-radius:5px;margin-left:auto;white-space:nowrap;flex-shrink:0}
+  .scheme-tagline{font-family:var(--fb);font-size:12.5px;line-height:1.4;color:var(--dim-2)}
+  /* Greatest Show on Turf: Rams gold */
+  .scheme-greatest_show .stripe{background:linear-gradient(90deg,#d4a017,#f5c842)}
+  .scheme-greatest_show .scheme-icon{background:rgba(212,160,23,.18);color:#f5c842}
+  .scheme-greatest_show .scheme-name{color:#f5c842}
+  .scheme-greatest_show .scheme-bonus{background:rgba(212,160,23,.15);color:#f5c842}
+  /* The Triplets: Cowboys silver-blue */
+  .scheme-triplets .stripe{background:linear-gradient(90deg,#8b9bb5,#c0cfe0)}
+  .scheme-triplets .scheme-icon{background:rgba(192,207,224,.14);color:#c0cfe0}
+  .scheme-triplets .scheme-name{color:#c0cfe0}
+  .scheme-triplets .scheme-bonus{background:rgba(192,207,224,.12);color:#c0cfe0}
+  /* Wildcat: Dolphins teal */
+  .scheme-wildcat .stripe{background:linear-gradient(90deg,#008e97,#00c4b0)}
+  .scheme-wildcat .scheme-icon{background:rgba(0,196,176,.14);color:#00c4b0}
+  .scheme-wildcat .scheme-name{color:#00c4b0}
+  .scheme-wildcat .scheme-bonus{background:rgba(0,196,176,.12);color:#00c4b0}
+  /* Air Coryell: Chargers powder blue */
+  .scheme-air_coryell .stripe{background:linear-gradient(90deg,#0080c6,#55b4f7)}
+  .scheme-air_coryell .scheme-icon{background:rgba(85,180,247,.14);color:#55b4f7}
+  .scheme-air_coryell .scheme-name{color:#55b4f7}
+  .scheme-air_coryell .scheme-bonus{background:rgba(85,180,247,.12);color:#55b4f7}
+  /* Air Raid: aggressive red-orange */
+  .scheme-air_raid .stripe{background:linear-gradient(90deg,#e53e3e,#f97316)}
+  .scheme-air_raid .scheme-icon{background:rgba(249,115,22,.15);color:#f97316}
+  .scheme-air_raid .scheme-name{color:#f97316}
+  .scheme-air_raid .scheme-bonus{background:rgba(249,115,22,.12);color:#f97316}
+  /* Run and Shoot: Oilers columbia blue */
+  .scheme-run_and_shoot .stripe{background:linear-gradient(90deg,#4a90d9,#7ec8e3)}
+  .scheme-run_and_shoot .scheme-icon{background:rgba(126,200,227,.14);color:#7ec8e3}
+  .scheme-run_and_shoot .scheme-name{color:#7ec8e3}
+  .scheme-run_and_shoot .scheme-bonus{background:rgba(126,200,227,.12);color:#7ec8e3}
+  /* West Coast: 49ers gold-red */
+  .scheme-west_coast .stripe{background:linear-gradient(90deg,#aa1e22,#e8c547)}
+  .scheme-west_coast .scheme-icon{background:rgba(232,197,71,.15);color:#e8c547}
+  .scheme-west_coast .scheme-name{color:#e8c547}
+  .scheme-west_coast .scheme-bonus{background:rgba(232,197,71,.12);color:#e8c547}
+  /* Ground and Pound: earthy green */
+  .scheme-ground_and_pound .stripe{background:linear-gradient(90deg,#5b7a3a,#8cb454)}
+  .scheme-ground_and_pound .scheme-icon{background:rgba(140,180,84,.15);color:#8cb454}
+  .scheme-ground_and_pound .scheme-name{color:#8cb454}
+  .scheme-ground_and_pound .scheme-bonus{background:rgba(140,180,84,.12);color:#8cb454}
+  /* Dual Threat: electric purple */
+  .scheme-dual_threat .stripe{background:linear-gradient(90deg,#7c3aed,#a78bfa)}
+  .scheme-dual_threat .scheme-icon{background:rgba(167,139,250,.15);color:#a78bfa}
+  .scheme-dual_threat .scheme-name{color:#a78bfa}
+  .scheme-dual_threat .scheme-bonus{background:rgba(167,139,250,.12);color:#a78bfa}
+  /* Two TE Set: burnt orange */
+  .scheme-two_te .stripe{background:linear-gradient(90deg,#c2710c,#e8a33c)}
+  .scheme-two_te .scheme-icon{background:rgba(232,163,60,.15);color:#e8a33c}
+  .scheme-two_te .scheme-name{color:#e8a33c}
+  .scheme-two_te .scheme-bonus{background:rgba(232,163,60,.12);color:#e8a33c}
   /* collapsible schedule */
   details.drop{border:1px solid var(--line);border-radius:12px;background:var(--grad-panel);overflow:hidden}
   details.drop>summary{list-style:none;cursor:pointer;padding:13px 15px;display:flex;
@@ -2547,8 +2611,15 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <div class="chembar"><i id="q-chembar" style="width:0%"></i></div></div>
       <div id="q-links" style="margin-top:8px"></div>
     </div>
-    <div class="panel" style="margin-top:11px">
+    <div class="panel schemepanel scheme-none" id="q-panel" style="margin-top:11px">
+      <div class="stripe"></div>
       <div class="eyebrow" id="q-scheme-eye">Coach's take</div>
+      <div class="scheme-badge" id="q-scheme-badge" hidden>
+        <div class="scheme-icon">&#9733;</div>
+        <span class="scheme-name" id="q-scheme-name"></span>
+        <span class="scheme-bonus">+3%</span>
+      </div>
+      <div class="scheme-tagline" id="q-scheme-tagline" hidden></div>
       <div class="verdictline" id="q-verdict"></div>
       <div class="meters" id="q-meters"></div>
       <div id="q-notes" style="margin-top:9px"></div>
@@ -2723,8 +2794,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=25"></script>
-<script src="run.js?v=25"></script>
+<script src="engine.js?v=26"></script>
+<script src="run.js?v=26"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -2848,7 +2919,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=25;
+const NEED_VERSION=26;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -4120,15 +4191,27 @@ function paintSquad(){
   const fitBand=band(span(st.multiplier,0.82,1.06));
   const fitPct=Math.abs(Math.round((st.multiplier-1)*100));
   const strong='<b style="color:'+fitBand.c+'">';
+  /* Scheme mode swaps the coach's take headline for the scheme's own identity: its
+     name in the scheme colour, its tagline, and the +3% it earns. No scheme falls
+     back to the verdict and the multiplier sentence. */
   const schemeName=st.scheme?E.SCHEME_NAMES[st.scheme]:null;
-  $('q-scheme-eye').textContent=schemeName||"Coach's take";
-  $('q-verdict').innerHTML=
-    '<p class="take">'+esc(cr.verdict)+'</p>'+
-    '<p class="fit">'+(fitPct===0
-      ? 'These six neither help nor hold each other back, so they score about what their '+
-        'own numbers add up to.'
-      : 'Because of how these six fit together, they score '+strong+fitPct+'% '+
-        (st.multiplier>1?'more':'less')+'</b> than their own numbers add up to.')+'</p>';
+  $('q-panel').className='panel schemepanel scheme-'+(st.scheme||'none');
+  $('q-scheme-eye').textContent=schemeName?'Offensive scheme':"Coach's take";
+  $('q-scheme-badge').hidden=!schemeName;
+  $('q-scheme-tagline').hidden=!schemeName;
+  $('q-verdict').hidden=!!schemeName;
+  if(schemeName){
+    $('q-scheme-name').textContent=schemeName;
+    $('q-scheme-tagline').textContent=E.SCHEME_TAGLINES[st.scheme]||'';
+  }else{
+    $('q-verdict').innerHTML=
+      '<p class="take">'+esc(cr.verdict)+'</p>'+
+      '<p class="fit">'+(fitPct===0
+        ? 'These six neither help nor hold each other back, so they score about what their '+
+          'own numbers add up to.'
+        : 'Because of how these six fit together, they score '+strong+fitPct+'% '+
+          (st.multiplier>1?'more':'less')+'</b> than their own numbers add up to.')+'</p>';
+  }
   $('q-meters').innerHTML=
     meter('Quarterback',st.qbPass?st.qbPass.toFixed(1)+' pass points a game':'nobody at quarterback',
       span(st.qbSupport,0.70,1.12))+
