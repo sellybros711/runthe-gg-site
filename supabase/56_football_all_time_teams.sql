@@ -6,10 +6,11 @@
 --
 -- WHAT CHANGES
 --
--- The daily puzzle is retired and replaced by all-time team mode: you pick one
+-- The daily puzzle is retired and replaced by One Team mode: you pick one
 -- of the thirty-two clubs and every spin of that draft is that club, with only
--- the year moving, so the run is an attempt at the best all-time Dolphins or
--- Steelers or Bears team anybody has built. Each club gets its own board.
+-- the year moving, so the run is an attempt at the best Dolphins or Steelers or
+-- Bears team anybody has built out of that club's own history. Each club gets
+-- its own board.
 --
 -- WHY A `mode` COLUMN AND NOT A SECOND BOOLEAN
 --
@@ -240,7 +241,7 @@ begin
     raise exception 'franchise code looks wrong: %', p_franchise;
   end if;
   if v_mode = 'club' and v_club is null then
-    raise exception 'an all-time team run has to say which club';
+    raise exception 'a One Team run has to say which club';
   end if;
 
   -- ---- the record has to be a record this game can produce ----
@@ -281,13 +282,12 @@ begin
   if p_point_diff is null or p_point_diff < -60 or p_point_diff > 60 then
     raise exception 'point differential out of range: %', p_point_diff;
   end if;
-  -- 100 STAYS, and it was worth measuring before assuming otherwise. Six men off
-  -- one club do fire chemistry on nearly every roster, and the obvious worry is
-  -- that a bound written for free play would start rejecting real club runs. It
-  -- does not: the engine saturates chemistry toward a hard +15% ceiling rather
-  -- than summing links, so measured over 796 club drafts across all 32 clubs the
-  -- mean is +14.3% and the largest is +14.6%, against +2.2% in free play. The
-  -- mode moves chemistry from rare to guaranteed, not from 15% to 100%.
+  -- 100 STAYS. There is nothing to raise it for: One Team suppresses the two links
+  -- that would otherwise fire on every pair of a one-club roster, so measured over
+  -- 796 One Team drafts across all 32 clubs chemistry comes out at a mean of +3.1%
+  -- against +2.2% in free play. The engine also saturates toward a hard +15%
+  -- ceiling rather than summing links, so no roster of any kind can approach this
+  -- bound.
   if p_chemistry_pct is null or p_chemistry_pct < 0 or p_chemistry_pct > 100 then
     raise exception 'chemistry out of range: %', p_chemistry_pct;
   end if;
@@ -308,10 +308,11 @@ begin
   if p_structure_mult is not null and (p_structure_mult < 0.2 or p_structure_mult > 2) then
     raise exception 'structure multiplier out of range: %', p_structure_mult;
   end if;
-  -- 400 stays too. Club runs do rate higher, measured at a mean of 78 against 67
-  -- for free play and a largest of 113 against 100, because the chemistry is
-  -- guaranteed rather than lucky. That is nowhere near the bound, and the bound is
-  -- a sanity check on a client-reported number, not a balance dial.
+  -- 400 stays too. One Team runs rate a little higher, measured at a mean of 71
+  -- against 67 for free play and a largest of 108 against 100, because a club's
+  -- best years are a richer pool than six random draws. That is nowhere near the
+  -- bound, and the bound is a sanity check on a client-reported number, not a
+  -- balance dial.
   if p_team_rating is not null and (p_team_rating < 0 or p_team_rating > 400) then
     raise exception 'team rating out of range: %', p_team_rating;
   end if;

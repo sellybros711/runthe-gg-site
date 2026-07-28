@@ -768,7 +768,7 @@ const key = (p) => `${p.player_id}|${p.season}`;
  * Every link that exists for one pair, strongest first. Only the strongest is
  * ever used (the GDD's "no stacking within a pair").
  */
-function pairLinks(a, b, ctx) {
+function pairLinks(a, b, ctx, opts) {
   const out = [];
   const V = CHEMISTRY.VALUES;
 
@@ -795,7 +795,27 @@ function pairLinks(a, b, ctx) {
       label: `Teammates on the ${a.season} ${nickname(a.franchise)}`,
       short: 'Teammates',
     });
-  } else if (a.franchise && a.franchise === b.franchise) {
+  } else if (a.franchise && a.franchise === b.franchise && !(opts && opts.sameClub)) {
+    /*
+     * TWO LINKS ARE OFF IN ONE TEAM MODE, this one and the coach link below.
+     *
+     * A link is supposed to be a reason to prefer one signing over another. This
+     * one fires on every pair of a One Team roster whatever you do, so it rewards
+     * nothing and cannot be lost: fifteen pairs at 0.03 is 0.45 raw, and the
+     * saturation curve turns that into +14.25%, which is the +15% ceiling for
+     * practical purposes. Measured across 796 One Team drafts the mean was
+     * +14.3% and the largest +14.6%, against +2.2% in free play. Chemistry was
+     * not a decision in that mode, it was a constant.
+     *
+     * WHAT IS LEFT IS EARNED. Two men out of the SAME SEASON of that club are
+     * still teammates and a quarterback who really threw to that receiver is
+     * still a battery, and both of those cost you: one of your six draws has to
+     * go on a second man from one year. College, draft class and family are
+     * untouched. Measured with both suppressed, One Team chemistry comes out at
+     * a mean of +3.1% with a median of +1.9%, against +2.2% and +1.9% in free
+     * play, and a third of rosters get none at all in either mode. It is the
+     * same game again rather than a bonus for turning up.
+     */
     out.push({
       type: 'franchise', value: V.franchise,
       label: `Both played for the ${nickname(a.franchise)}`,
@@ -832,7 +852,17 @@ function pairLinks(a, b, ctx) {
   const coaches = ctx.coaches || {};
   const ca = coaches[a.team_season_id]?.hc;
   const cb = coaches[b.team_season_id]?.hc;
-  if (ca && cb && ca === cb) {
+  /*
+   * OFF IN ONE TEAM MODE FOR THE SAME REASON AS THE FRANCHISE LINK, and the
+   * measurement is what settled it rather than the argument. Suppressing only the
+   * franchise link left the coach link firing 2,433 times across 796 One Team
+   * drafts, 76% of every link in the mode, because a club with one long-serving
+   * head coach connects almost any two of its years: New England came out at
+   * +11.8% mean chemistry and Washington at +4.7%, which is not a decision either
+   * player made. Twenty years of Belichick is the same team wearing a different
+   * date.
+   */
+  if (ca && cb && ca === cb && !(opts && opts.sameClub)) {
     out.push({
       type: 'system', value: V.system,
       label: `Both coached by ${ca}`,
@@ -867,11 +897,15 @@ function pairLinks(a, b, ctx) {
  * Multiplies the squad score, never individual output, so it cannot cascade
  * through the sim.
  */
-function resolveChemistry(roster, ctx) {
+/**
+ * `opts.sameClub` says every man on this roster plays for the same club because
+ * the mode said so, which suppresses the franchise link. See pairLinks.
+ */
+function resolveChemistry(roster, ctx, opts) {
   const links = [];
   for (let i = 0; i < roster.length; i++) {
     for (let j = i + 1; j < roster.length; j++) {
-      const best = pairLinks(roster[i], roster[j], ctx)[0];
+      const best = pairLinks(roster[i], roster[j], ctx, opts)[0];
       if (best) links.push({ ...best, a: roster[i].name, b: roster[j].name });
     }
   }
@@ -1337,7 +1371,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 19;
+const ENGINE_API_VERSION = 20;
 
 /*
  * The three-letter code a team actually wore in a given season.
