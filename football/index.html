@@ -6621,16 +6621,22 @@ async function paintRanks(){
   const el=$('o-ranks');
   el.innerHTML='<div class="rload"><i></i><i></i><i></i><span>Reading the board</span></div>';
   const score=B.scoreOf(run.outcome.wins,runPayload().pointDiff);
-  const [,r]=await Promise.all([
-    recordRun(),
-    B.ranks(score,runMode(),run.franchise||null,run.era||null)
-  ]);
+  /* THE SUBMIT RUNS IN THE BACKGROUND. It is a write; the board read is a read; the two
+     finish separately, and the placings a player came to see are the read's, not the
+     write's. Awaiting both together let a slow or retrying submit hold the whole panel on
+     its spinner while the standings sat ready in hand, which is the stall people hit
+     "entering the leaderboard". So the submit is fired and left to settle, the panel is
+     painted the instant the READ returns, and when the submit lands it repaints only the
+     parts that depend on it. */
+  const submitP=recordRun();
+  const r=await B.ranks(score,runMode(),run.franchise||null,run.era||null);
   myRanks=r;
-  /* Set the loud banner here, once, whatever the panel below goes on to render, so a
-     failed send is called out no matter which state the placings land in. */
+
+  /* Everything from here reads the submit state (the banner, the strip prompt, the
+     guest/failed panels), so it lives in render() and runs twice: once now with the
+     placings in hand, and again when the submit settles. */
+  const render=()=>{
   paintSaveBanner();
-  /* The strip at the top of the page carries the same three numbers, and it is the
-     one most people will read, so it is filled whatever this panel goes on to say. */
   paintRankStrip(r);
   const any=WINDOWS_FREE.some(([k])=>r[k]);
   if(!any){
@@ -6718,6 +6724,14 @@ async function paintRanks(){
     '<p class="rankfoot">'+rankLine(r)+'</p>'+
     '<button class="btn ghost sm" id="b-board3">See the leaderboard</button>';
   $('b-board3').onclick=openBoard;
+  };
+  /* Paint now with the read in hand. For a signed-in run the submit is still in flight,
+     so submitted is null and this optimistically shows the placing as counted, which is
+     what it will be. If the submit then fails, the settle flips it to the not-recorded
+     panel and raises the banner. Guests and no-username runs are known without the
+     network, so they render correctly on this first pass. */
+  render();
+  submitP.then(render, render);
 }
 
 /* WHAT THE SERVER ACTUALLY SAID.
