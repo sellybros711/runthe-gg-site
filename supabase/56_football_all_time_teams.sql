@@ -7,7 +7,7 @@
 -- WHAT CHANGES
 --
 -- The daily puzzle is retired and replaced by One Team mode: you pick one
--- of the thirty-two clubs and every spin of that draft is that club, with only
+-- of the thirty-two teams and every spin of that draft is that team, with only
 -- the year moving, so the run is an attempt at the best Dolphins or Steelers or
 -- Bears team anybody has built out of that club's own history. Each club gets
 -- its own board.
@@ -241,7 +241,7 @@ begin
     raise exception 'franchise code looks wrong: %', p_franchise;
   end if;
   if v_mode = 'club' and v_club is null then
-    raise exception 'a One Team run has to say which club';
+    raise exception 'a One Team run has to say which team';
   end if;
 
   -- ---- the record has to be a record this game can produce ----

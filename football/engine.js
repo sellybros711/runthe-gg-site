@@ -369,6 +369,43 @@ const NICKNAMES = {
 const nickname = (id) => NICKNAMES[id] || id;
 
 /*
+ * CITY NAMES, and the only names that go out on a share.
+ *
+ * A share card and a share tweet leave this site and land somewhere we do not
+ * control, so they carry the city and the club's colors and never the mascot.
+ * Inside the game the nickname is still used, because the game is where a player
+ * is choosing between thirty-two of them and "Miami" and "Los Angeles" do not
+ * tell you which.
+ *
+ * PRESENT-DAY CITIES, not the city of the season drawn. A One Team run spans
+ * 1999 to 2025 and the franchise is one thing across all of it; labelling a run
+ * "Oakland" because one of the six seasons happened to be 2005 would be a claim
+ * about a roster rather than about a club.
+ *
+ * Four franchises share a city with another, so cityLabel() adds the three-letter
+ * code to exactly those and to nothing else. A code is not a mascot, and "Los
+ * Angeles" alone on a share card is a real ambiguity: two clubs play there.
+ */
+const CITIES = {
+  ARI: 'Arizona', ATL: 'Atlanta', BAL: 'Baltimore', BUF: 'Buffalo', CAR: 'Carolina',
+  CHI: 'Chicago', CIN: 'Cincinnati', CLE: 'Cleveland', DAL: 'Dallas', DEN: 'Denver',
+  DET: 'Detroit', GB: 'Green Bay', HOU: 'Houston', IND: 'Indianapolis', JAX: 'Jacksonville',
+  KC: 'Kansas City', LAC: 'Los Angeles', LAR: 'Los Angeles', LV: 'Las Vegas', MIA: 'Miami',
+  MIN: 'Minnesota', NE: 'New England', NO: 'New Orleans', NYG: 'New York', NYJ: 'New York',
+  PHI: 'Philadelphia', PIT: 'Pittsburgh', SEA: 'Seattle', SF: 'San Francisco',
+  TB: 'Tampa Bay', TEN: 'Tennessee', WAS: 'Washington',
+};
+const city = (id) => CITIES[id] || id;
+/* Computed, not listed, so adding a franchise cannot leave a stale ambiguity behind. */
+const SHARED_CITIES = new Set(Object.entries(
+  Object.values(CITIES).reduce((m, c) => { m[c] = (m[c] || 0) + 1; return m; }, {}),
+).filter(([, n]) => n > 1).map(([c]) => c));
+const cityLabel = (id) => {
+  const c = city(id);
+  return SHARED_CITIES.has(c) ? `${c} (${id})` : c;
+};
+
+/*
  * Team colors, primary then secondary, for the franchise picker and the wheel.
  *
  * Hardcoded rather than fetched. nflverse ships a colors table, but a build step
@@ -481,6 +518,52 @@ const washColors = (id) => {
   const c = TEAM_COLORS[id] || ['#334155', '#64748b'];
   return { a: washColor(c[0]), b: washColor(c[1]) };
 };
+
+/*
+ * A CLUB COLOR THAT CAN CARRY TEXT ON THE DARK PAGE.
+ *
+ * washColor() floors a color into a range that shows as a WASH, which is a fill at
+ * low opacity and a much easier job than a letterform. Its floor is lightness 0.46,
+ * and measured against the page's #0b1220 that leaves several clubs under 4.5:1,
+ * which is the ratio a label has to clear to be read at 10px.
+ *
+ * So this starts from the wash color and lifts lightness in 0.02 steps until the
+ * ratio passes, hue untouched, and stops at 0.86 so nothing turns into white. Every
+ * one of the thirty-two clears 4.5:1 and no hue moves.
+ */
+/*
+ * A GRADIENT FOR A BUTTON, which is a harder problem than either of the above.
+ *
+ * The first attempt gradiented the two wash colors and put white or near-black on
+ * top, whichever held up better. Measured, that fails: both washes are mid-tone by
+ * construction, so Baltimore's purple-to-gold carried its label at 2.14:1 and there
+ * was no third choice. A gradient across two mid-tones cannot hold text at all.
+ *
+ * So the gradient runs across ONE hue instead, dark enough that white always wins.
+ * Lightness descends from the wash's own until white clears 4.5:1, and that becomes
+ * the light end; the dark end is 0.12 below it, which is easier still. Hue and
+ * saturation never move, so the button is unmistakably the club's color, and the
+ * label is white for all thirty-two rather than picked per club.
+ */
+function teamButton(id) {
+  const c = TEAM_COLORS[id] || ['#334155', '#64748b'];
+  const { h, s, l } = hexToHsl(washColor(c[0]));
+  let top = l;
+  while (top > 0.14 && contrast(hslToHex(h, s, top), '#ffffff') < 4.5) top -= 0.02;
+  return { a: hslToHex(h, s, top), b: hslToHex(h, s, Math.max(0.08, top - 0.12)) };
+}
+
+const INK_BG = '#0b1220';
+function teamInk(id) {
+  const c = TEAM_COLORS[id] || ['#334155', '#64748b'];
+  let best = washColor(c[0]);
+  const { h, s } = hexToHsl(best);
+  for (let l = hexToHsl(best).l; l <= 0.86; l += 0.02) {
+    best = hslToHex(h, s, l);
+    if (contrast(best, INK_BG) >= 4.5) break;
+  }
+  return best;
+}
 
 /*
  * How strong a link feels, used to color and weight the lines drawn between
@@ -1371,7 +1454,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 20;
+const ENGINE_API_VERSION = 21;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -1411,7 +1494,8 @@ const publicAPI = {
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
   respinCost, respinFees, scoringScript, scoreParts, SCORE_KINDS,
   eraCode, ERA_CODES,
-  NICKNAMES, nickname, TEAM_COLORS, teamColors, washColors, contrast, LINK_TIERS, linkTier, rosterStructure, STRUCTURE, coachReport,
+  NICKNAMES, nickname, CITIES, city, cityLabel, TEAM_COLORS, teamColors, washColors,
+  teamInk, teamButton, contrast, LINK_TIERS, linkTier, rosterStructure, STRUCTURE, coachReport,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
