@@ -485,6 +485,19 @@
     } catch (e) { return failThrown('total', e); }
   }
 
+  /* How many 20-0 seasons the table holds, across every mode and every player, named
+     or guest. The `perfect` column is set by ps_submit_run() only when a run wins the
+     title with no loss on it, so this is the honest count of the thing the how-to-play
+     screen calls never done. Fails soft to null like everything else here. */
+  async function perfectCount() {
+    try {
+      const q = base() + TABLE + '?select=id&limit=1&perfect=is.true';
+      const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
+      if (!res.ok) return await fail('perfect', res);
+      return countOf(res);
+    } catch (e) { return failThrown('perfect', e); }
+  }
+
   /* All three windows in one call when ps_rank_windows() exists (60_football_rank_windows.sql),
      falling back to six individual queries when it does not. One HTTP round trip instead of
      six makes the difference on mobile, where the old approach regularly timed out. */
@@ -734,8 +747,8 @@
   }
 
   window.PS_BOARD = {
-    API_VERSION: 8,
-    submit, ranks, rankIn, placeIn, total, top, mine, byId, scoreOf, cutoffISO,
+    API_VERSION: 9,
+    submit, ranks, rankIn, placeIn, total, perfectCount, top, mine, byId, scoreOf, cutoffISO,
     SORTS, probe, myAvatar, setAvatar,
     get offline() { return offline; },
     get lastError() { return lastError; },

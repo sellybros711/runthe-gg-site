@@ -2823,7 +2823,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=14"></script>
+<script src="board.js?v=15"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
@@ -2840,11 +2840,11 @@ const E=window.PS_ENGINE, R=window.PS_RUN;
    cached board.js older than this page, and they only catch it while they agree: a page
    that says 1 against a module that says 2 rejects a module that is newer than itself
    and quietly runs the stub, which is a dead leaderboard with no error anywhere. */
-const BOARD_VERSION=8;
+const BOARD_VERSION=9;
 const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
   API_VERSION:BOARD_VERSION, offline:true,
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
-  rankIn:async()=>null, placeIn:async()=>null, total:async()=>null, top:async()=>null,
+  rankIn:async()=>null, placeIn:async()=>null, total:async()=>null, perfectCount:async()=>null, top:async()=>null,
   mine:async()=>null, byId:async()=>null,
   myAvatar:async()=>null, setAvatar:async()=>({error:'the leaderboard script did not load'}),
   scoreOf:(w,d)=>w*10000+Math.min(9999,Math.max(0,
@@ -5534,11 +5534,29 @@ function howToPlay(){
       'locked to one franchise. Only the year moves, every franchise has its own '+
       'leaderboard, and it needs a free account.</span></li>'+
     '</ul>'+
-    '<p class="dim" style="font-size:12.5px;margin:13px 0 0">Win everything and you finish '+
-      '<b>20 and 0</b>. Nobody has ever done it.</p>'+
+    '<p class="dim" id="how-perfect" style="font-size:12.5px;margin:13px 0 0">'+perfectLine(null)+'</p>'+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   $('sheet-in').dataset.kind='how';
   openSheet();
+  /* The closing line counts the 20-0 seasons that have actually happened, read live from
+     the board. Until it answers, and if it never does, the line keeps the "nobody" wording,
+     which is the safe thing to say when the count is unknown. */
+  if(typeof B.perfectCount==='function'){
+    B.perfectCount().then((n)=>{
+      const el=$('how-perfect');
+      if(el&&n!==null&&n!==undefined) el.innerHTML=perfectLine(n);
+    }).catch(()=>{});
+  }
+}
+
+/* The 20-0 line, in words. Zero or unknown keeps "nobody"; small counts read as words so
+   "done twice" lands better than "done 2 times"; anything larger takes the numeral. */
+function perfectLine(n){
+  const head='Win everything and you finish <b>20 and 0</b>. ';
+  if(n===null||n===undefined||n<=0) return head+'Nobody has ever done it.';
+  const WORD={1:'once',2:'twice',3:'three times',4:'four times',5:'five times'};
+  const times=WORD[n]||(n.toLocaleString()+' times');
+  return head+'It has been done <b>'+times+'</b>.';
 }
 
 /* ---------- ACCOUNTS ----------
