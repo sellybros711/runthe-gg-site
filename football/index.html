@@ -843,10 +843,23 @@ window.GA_ID='G-L29P5MRWKE';
   .modenotes li:before{content:'';position:absolute;left:0;top:7px;width:4px;height:4px;
     border-radius:50%;background:var(--red-2)}
   .modenotes b{color:var(--ink);font-weight:700}
-  .modecards{display:grid;gap:12px;margin-top:4px}
-  .modecard{padding:14px 16px;border-radius:13px;border:1.5px solid var(--line-2);
+  .modecards{display:grid;gap:14px;margin-top:6px}
+  .modecard{padding:16px 18px;border-radius:14px;border:1.5px solid var(--line-2);
     background:var(--grad-panel)}
-  .modecard p{font-size:13px;line-height:1.4;color:var(--dim);margin:4px 0 10px}
+  .modecard.mc-club{border-color:rgba(239,68,68,.35)}
+  .modecard.mc-era{border-color:rgba(59,130,246,.35)}
+  .modecard .mc-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .modecard .mc-icon{width:32px;height:32px;border-radius:8px;display:flex;
+    align-items:center;justify-content:center;flex:0 0 auto}
+  .modecard .mc-icon svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round}
+  .modecard.mc-club .mc-icon{background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%)}
+  .modecard.mc-era .mc-icon{background:linear-gradient(135deg,#2563eb 0%,#1e40af 100%)}
+  .modecard .mc-title{font-family:var(--fd);font-size:17px;font-weight:800;
+    letter-spacing:.04em;text-transform:uppercase;color:var(--ink);line-height:1.1}
+  .modecard.mc-club .mc-title{color:var(--red-2)}
+  .modecard.mc-era .mc-title{color:var(--blue)}
+  .modecard p{font-size:13px;line-height:1.4;color:var(--dim);margin:0 0 12px}
   .modecard .btn{width:100%}
   .eragrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
   .erabtn{font-size:16px;padding:16px 10px}
@@ -3530,16 +3543,20 @@ function modeMenu(){
     '<h2 class="display" style="font-size:25px;margin:4px 0 8px">More game modes</h2>'+
     (locked?'<p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 12px">'+esc(lockNote)+'</p>':'')+
     '<div class="modecards">'+
-      '<div class="modecard">'+
-        '<div class="eyebrow red">One Franchise</div>'+
+      '<div class="modecard mc-club">'+
+        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
+          '<path d="M12 2L3 7v6c0 5.25 3.75 10.13 9 11.25C17.25 23.13 21 18.25 21 13V7L12 2z"/>'+
+          '</svg></div><div class="mc-title">One Franchise</div></div>'+
         '<p>Draft the greatest team in one franchise\'s history. Every spin gives you '+
           'that franchise in a different year.</p>'+
         (locked
           ? '<button class="btn ghost sm" id="b-mc-club" disabled>Sign in to play</button>'
           : '<button class="btn ghost sm" id="b-mc-club">Pick a franchise</button>')+
       '</div>'+
-      '<div class="modecard">'+
-        '<div class="eyebrow blue">Eras Draft</div>'+
+      '<div class="modecard mc-era">'+
+        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
+          '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'+
+          '</svg></div><div class="mc-title">Eras Draft</div></div>'+
         '<p>Pick a decade and draft only from teams and players of that era. '+
           'Each decade has its own leaderboard.</p>'+
         (locked
