@@ -1752,8 +1752,12 @@ window.GA_ID='G-L29P5MRWKE';
   .ov .x{position:fixed; top:calc(10px + env(safe-area-inset-top, 0px)); right:max(14px, calc((100% - 600px)/2)); z-index:3; box-shadow:0 2px 10px rgba(0,0,0,.5)}
 
   /* ---- Pro Shop / locker ---- */
-  .shop-sticky{position:sticky; top:env(safe-area-inset-top, 0px); z-index:6; background:#06200f; padding-bottom:9px;
+  /* pin flush to the very top: safe-area is padded INSIDE (opaque bg fills the notch band) so no item tile can
+     ever scroll above the frozen header on a notched device. */
+  .shop-sticky{position:sticky; top:0; z-index:6; background:#06200f; padding:calc(10px + env(safe-area-inset-top, 0px)) 0 9px;
     box-shadow:0 12px 14px -12px rgba(0,0,0,.7)}
+  /* the shop overlay's sticky handles its own top spacing, so drop the .ov top padding to raise the frozen block */
+  .ov.ov-shop{padding-top:0}
   .shop-bar{display:flex; align-items:center; justify-content:space-between; gap:10px}
   .shop-bar h3{margin:0; font-size:22px}
   /* customize: active boosts + Pro Shop button under the golfer */
@@ -13616,12 +13620,12 @@ function storyFeedHTML(){
 // Rewards also scale with your FOLLOWING (popularity sells). Each off-season, if your standing has grown
 // enough to attract a bigger brand, you're offered the choice: stay and keep compounding loyalty, or upgrade.
 const SPONSOR_TIERS=[   // CS242: reward ladder compressed so the top tier can't compound to a windfall. CS330: +Elite/Icon so the climb lasts a whole career.
-  {name:'Regional', reward:1.00, diff:1.00},
-  {name:'National', reward:1.28, diff:1.24},
-  {name:'Premium',  reward:1.50, diff:1.50},
-  {name:'Global',   reward:2.05, diff:1.80},
-  {name:'Elite',    reward:2.40, diff:2.05},
-  {name:'Icon',     reward:2.80, diff:2.30}
+  {name:'Tier 1', reward:1.00, diff:1.00},
+  {name:'Tier 2', reward:1.28, diff:1.24},
+  {name:'Tier 3', reward:1.50, diff:1.50},
+  {name:'Tier 4', reward:2.05, diff:1.80},
+  {name:'Tier 5', reward:2.40, diff:2.05},
+  {name:'Tier 6', reward:2.80, diff:2.30}
 ];
 // CS330: market value needed to attract each tier, Global comes mid-career, Elite/Icon are the long game
 // (Icon needs a legendary CV: huge following + peak OVR + many wins/majors, so it's a late-career pinnacle).
@@ -22985,7 +22989,7 @@ function packShopNode(){
 function overlayShop(screen){
   if(!SHOP_ENABLED){ S.overlay=null; return; }   // shelved until the economy is rebalanced
   const signed=sbSignedIn();
-  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Pro Shop"></div>`);
+  const ov=$(`<div class="ov ov-shop" role="dialog" aria-modal="true" aria-label="Pro Shop"></div>`);
   if(!signed){
     ov.appendChild($(`<button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button><h3>Pro Shop</h3>`));
     ov.appendChild($(`<div class="lockcta" style="text-align:center;padding:22px 12px;margin-top:8px;flex-direction:column">
