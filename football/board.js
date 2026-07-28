@@ -30,7 +30,7 @@
      for PostgREST without touching the shipped constants. */
   const base = () => (window.PS_BOARD_URL || SB_URL) + '/rest/v1/';
 
-  const TIMEOUT_MS = 8000;
+  const TIMEOUT_MS = 15000;
   const TABLE = 'ps_runs';
 
   /* Columns the board list needs. Named explicitly rather than select=*, so the
