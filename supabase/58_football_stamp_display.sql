@@ -12,7 +12,7 @@
 -- counted; it just had no display_name, and the list only shows named runs
 -- because a row nobody owns cannot be defended or beaten.
 --
--- The cause is mine. ps_submit_run() has been rewritten twice for One Team mode,
+-- The cause is mine. ps_submit_run() has been rewritten twice for One Franchise mode,
 -- and both times it was rewritten from the version in
 -- 50_football_perfect_season.sql, which predates accounts. The version actually
 -- installed was 51_football_accounts.sql's, which does one thing more:

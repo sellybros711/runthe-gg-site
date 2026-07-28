@@ -2,7 +2,7 @@
  *
  *   node football/playtest.js
  *   PS_SEED=7 node football/playtest.js
- *   PS_CLUB=MIA node football/playtest.js      One Team mode
+ *   PS_CLUB=MIA node football/playtest.js      One Franchise mode
  *
  * A stand-in for the UI: draft, chemistry, schedule, week-by-week results and
  * the outcome card, exactly the information the season page will show. Use it to
@@ -27,7 +27,7 @@ const ctx={battery:load('battery.json'),coaches:load('coaches.json'),curated:loa
 const data=R.indexData(players,teamSeasons);
 const byKey=new Map(players.map(p=>[`${p.player_id}|${p.season}`,p]));
 
-/* A club here locks every wheel to that club, which is One Team mode. Without one the
+/* A club here locks every wheel to that club, which is One Franchise mode. Without one the
    wheel can land anywhere, which is free play. The SCHEDULE does not change either way: it is
    17 random historic team-seasons and a fixed playoff ladder. */
 const club=(process.env.PS_CLUB||'').toUpperCase()||null;

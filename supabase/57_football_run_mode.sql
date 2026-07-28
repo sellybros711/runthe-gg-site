@@ -1,5 +1,5 @@
 -- ============================================================================
--- 57_football_run_mode.sql : One Team mode, with a column name that cannot bite
+-- 57_football_run_mode.sql : One Franchise mode, with a column name that cannot bite
 -- ============================================================================
 -- Replaces 56_football_all_time_teams.sql and is safe whether or not you ever ran
 -- that one. Safe to run more than once. Run it in the Supabase SQL editor in one
@@ -94,7 +94,7 @@ alter table ps_runs drop constraint if exists ps_runs_run_mode_ck;
 alter table ps_runs add  constraint ps_runs_run_mode_ck
   check (run_mode in ('free', 'daily', 'club'));
 
--- A One Team run without a team is a row no board can place. Free and daily rows
+-- A One Franchise run without a team is a row no board can place. Free and daily rows
 -- are deliberately NOT constrained the other way: the oldest rows in this table
 -- are free runs that carry the player's favourite team, from a version of the
 -- game that asked for one, and rejecting those now would mean rewriting history
@@ -104,7 +104,7 @@ alter table ps_runs add  constraint ps_runs_club_needs_franchise_ck
   check (run_mode <> 'club' or (franchise is not null and ps_is_franchise(franchise)));
 
 comment on column ps_runs.run_mode is
-  'Which competition this run belongs to: free (the open draft), club (One Team '
+  'Which competition this run belongs to: free (the open draft), club (One Franchise '
   'mode, franchise says which team), or daily (the retired daily puzzle, kept so '
   'those seasons are not lost, read by nothing). Named run_mode and not mode '
   'because a column called mode is resolved as pg_catalog.mode() by anything '
@@ -138,7 +138,7 @@ create index if not exists ps_runs_rm_named_score_idx
 create index if not exists ps_runs_rm_named_rating_idx
   on ps_runs (run_mode, team_rating desc, created_at asc) where display_name is not null;
 
--- The thirty-two One Team boards. Partial on run_mode so franchise can lead: one
+-- The thirty-two One Franchise boards. Partial on run_mode so franchise can lead: one
 -- of these boards is always one team, so the equality that matters is the
 -- franchise and the mode is a constant the index need not store per row.
 create index if not exists ps_runs_rmclub_score_idx
@@ -203,7 +203,7 @@ create or replace function ps_submit_run(
   p_chemistry_pct numeric,
   p_spend_musd    numeric,
   p_respins       int      default 0,
-  -- For a One Team run this is the team the whole draft was locked to. For a free
+  -- For a One Franchise run this is the team the whole draft was locked to. For a free
   -- run it is null, and for the oldest rows in the table it was a favourite team.
   p_franchise     text     default null,
   p_daily_date    text     default null,
@@ -252,7 +252,7 @@ declare
   v_club    text;
   -- THE NAME, and it is read here rather than accepted from the caller so that no
   -- client can put a name on a row it does not own. Both earlier rewrites of this
-  -- function for One Team mode were made from the pre-accounts version in 50 and
+  -- function for One Franchise mode were made from the pre-accounts version in 50 and
   -- silently dropped it, which recorded every signed-in run unnamed and therefore
   -- off the board. 58_football_stamp_display.sql moves the same job into the
   -- BEFORE INSERT trigger as well, which is what makes it un-loseable; this stays
@@ -283,13 +283,13 @@ begin
     end if;
   end if;
 
-  -- ---- the team, which a One Team run must have and no other kind may ----
+  -- ---- the team, which a One Franchise run must have and no other kind may ----
   v_club := nullif(upper(btrim(coalesce(p_franchise, ''))), '');
   if v_club is not null and not ps_is_franchise(v_club) then
     raise exception 'franchise code looks wrong: %', p_franchise;
   end if;
   if v_mode = 'club' and v_club is null then
-    raise exception 'a One Team run has to say which team';
+    raise exception 'a One Franchise run has to say which team';
   end if;
 
   -- ---- the record has to be a record this game can produce ----
@@ -330,9 +330,9 @@ begin
   if p_point_diff is null or p_point_diff < -60 or p_point_diff > 60 then
     raise exception 'point differential out of range: %', p_point_diff;
   end if;
-  -- 100 STAYS, and it was worth measuring rather than assuming. One Team
+  -- 100 STAYS, and it was worth measuring rather than assuming. One Franchise
   -- suppresses the two chemistry links that would otherwise fire on every pair of
-  -- a one-team roster, so measured over 796 One Team drafts across all 32 teams
+  -- a one-team roster, so measured over 796 One Franchise drafts across all 32 teams
   -- chemistry comes out at a mean of +3.1% against +2.2% in free play. The engine
   -- also saturates toward a hard +15% ceiling rather than summing links, so no
   -- roster of any kind can approach this bound.
@@ -356,7 +356,7 @@ begin
   if p_structure_mult is not null and (p_structure_mult < 0.2 or p_structure_mult > 2) then
     raise exception 'structure multiplier out of range: %', p_structure_mult;
   end if;
-  -- 400 stays too. One Team runs rate a little higher, measured at a mean of 71
+  -- 400 stays too. One Franchise runs rate a little higher, measured at a mean of 71
   -- against 67 for free play and a largest of 108 against 100, because a team's
   -- best years are a richer pool than six random draws. That is nowhere near the
   -- bound, and the bound is a sanity check on a client-reported number, not a
