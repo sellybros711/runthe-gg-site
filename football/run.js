@@ -706,7 +706,13 @@ function advanceWeek(run, data, leagueContext, displayCal) {
     : run.schedule[s.week];
   const opp = data.byTeamSeasonId[oppId];
   const rng = rngFor(run);
-  const r = E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 21.5, rng);
+  const isFinal = playoff && s.playoffRound === run.playoffSeed.rounds - 1;
+  const advantage = playoff && !isFinal
+    ? 1 + (E.CONSTANTS.PLAYOFF_HOME_FIELD || 0)
+      * Math.max(0, s.regularWins - E.CONSTANTS.PLAYOFF_WINS)
+      / (E.CONSTANTS.REGULAR_SEASON_GAMES - E.CONSTANTS.PLAYOFF_WINS)
+    : 1;
+  const r = E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 21.5, rng, E.CONSTANTS, advantage);
   const shown = displayCal ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal) : null;
 
   const roundName = playoff ? run.playoffSeed.roundNames[s.playoffRound] : null;
@@ -1108,7 +1114,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 21;
+const RUN_API_VERSION = 22;
 
 const api = {
   API_VERSION: RUN_API_VERSION,
