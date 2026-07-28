@@ -2174,12 +2174,16 @@ window.GA_ID='G-L29P5MRWKE';
     background:var(--panel-2);border:1px solid var(--line-2);padding:12px 18px;border-radius:10px;
     font-weight:700;font-size:14px;opacity:0;transition:all .25s ease;pointer-events:none}
   .toast.on{transform:translateX(-50%);opacity:1}
-  .sheet{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;z-index:60;
-    align-items:flex-end;justify-content:center;padding:14px}
-  .sheet.on{display:flex}
+  .sheet{position:fixed;inset:0;background:rgba(0,0,0,0);display:flex;z-index:60;
+    align-items:flex-end;justify-content:center;padding:14px;
+    visibility:hidden;pointer-events:none;transition:background .3s ease,visibility 0s .3s}
+  .sheet.on{visibility:visible;pointer-events:auto;background:rgba(0,0,0,.72);
+    transition:background .3s ease,visibility 0s}
   .sheet .inner{width:100%;max-width:560px;background:var(--grad-panel);border:1px solid var(--line-2);
-    border-radius:16px;padding:16px;animation:up .22s ease both;max-height:86vh;overflow-y:auto}
-  @keyframes up{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+    border-radius:16px;padding:16px;max-height:86vh;overflow-y:auto;will-change:transform;
+    transform:translateY(100%);opacity:0;transition:transform .24s ease,opacity .18s ease}
+  .sheet.on .inner{transform:translateY(0);opacity:1;
+    transition:transform .38s cubic-bezier(.33,1,.68,1),opacity .25s ease}
   .kv{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px}
   .hr{height:1px;background:var(--line);margin:14px 0}
 
