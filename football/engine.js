@@ -727,7 +727,7 @@ const SCHEMES = [
   {
     key: 'air_raid',
     name: 'Air Raid',
-    relief: 0.70,
+    relief: 0.40,
     bonus: 0.02,
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
@@ -740,7 +740,7 @@ const SCHEMES = [
   {
     key: 'run_and_shoot',
     name: 'Run and Shoot',
-    relief: 0.70,
+    relief: 0.40,
     bonus: 0.02,
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
@@ -753,7 +753,7 @@ const SCHEMES = [
   {
     key: 'west_coast',
     name: 'West Coast',
-    relief: 0.50,
+    relief: 0.30,
     bonus: 0.02,
     detect(roster) {
       const qb = roster.find(p => p.position === 'QB');
@@ -770,7 +770,7 @@ const SCHEMES = [
   {
     key: 'ground_and_pound',
     name: 'Ground and Pound',
-    relief: 0.70,
+    relief: 0.40,
     bonus: 0.02,
     detect(roster) {
       const rb = roster.filter(p => p.position === 'RB').sort((a, b) => (b.rush_ppg || 0) - (a.rush_ppg || 0))[0];
