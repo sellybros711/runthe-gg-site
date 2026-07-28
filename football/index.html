@@ -2546,7 +2546,6 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="chemrow"><div class="chemval num" id="q-chem" style="font-size:27px">0.0%</div>
         <div class="chembar"><i id="q-chembar" style="width:0%"></i></div></div>
       <div id="q-links" style="margin-top:8px"></div>
-      <div id="q-chem-note" style="display:none"></div>
     </div>
     <div class="panel" style="margin-top:11px">
       <div class="eyebrow" id="q-scheme-eye">Coach's take</div>
@@ -4123,12 +4122,6 @@ function paintSquad(){
   const strong='<b style="color:'+fitBand.c+'">';
   const schemeName=st.scheme?E.SCHEME_NAMES[st.scheme]:null;
   $('q-scheme-eye').textContent=schemeName||"Coach's take";
-  const chemNote=$('q-chem-note');
-  if(!schemeName&&run.season.chemistry>1){
-    chemNote.style.display='';
-    chemNote.innerHTML='<p class="dim" style="font-size:12px;margin:8px 0 0">'+
-      'Chemistry only counts when your roster fits a scheme.</p>';
-  }else{chemNote.style.display='none';}
   $('q-verdict').innerHTML=
     '<p class="take">'+esc(cr.verdict)+'</p>'+
     '<p class="fit">'+(fitPct===0
