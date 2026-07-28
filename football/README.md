@@ -363,6 +363,33 @@ and because leaving a known lean in place is how the last one grew.
 Both wheels stay honest either way: every face on either of them is a result that was
 really reachable.
 
+## One Team, and the two links it turns off
+
+One Team locks the wheel to a club you choose, so every man on the roster shares that
+franchise by construction. Two of the seven chemistry links stop being decisions when
+that is true, and both are suppressed for the mode (`resolveChemistry(roster, ctx,
+{sameClub:true})`, threaded from `run.franchise`):
+
+- **`franchise`, "both played for the X."** Fires on all fifteen pairs whatever you
+  draft. Fifteen at 0.03 is 0.45 raw, and the saturation curve turns that into
+  **+14.25%** against a +15% ceiling. Measured over 796 One Team drafts across all 32
+  clubs: mean **+14.3%**, largest +14.6%, against +2.2% in free play. Chemistry was not
+  a bonus in that mode, it was a constant.
+- **`system`, "both coached by X."** Suppressing only the franchise link left this one
+  firing **2,433 times across 796 drafts, 76% of every link in the mode**, because a club
+  with one long-serving head coach connects almost any two of its years. New England came
+  out at +11.8% mean and Washington at +4.7%, which is not a decision either player made.
+
+What is left is earned, and it costs you a draw: `teammates` and `battery` both need two
+men out of the **same season** of that club, which means spending two of your six spins on
+one year. `college`, `draft_class` and `family` are untouched. Measured with both
+suppressed, One Team chemistry is a mean of **+3.1%** and a median of +1.9%, against +2.2%
+and +1.9% in free play, and about a third of rosters get none at all in either mode.
+
+The empty-chemistry line on the squad screen is different in this mode for the same
+reason. "Nobody here ever played together" under six Dolphins reads as a bug, so it says
+that sharing the club earns nothing here and names what does.
+
 ## Season structure
 
 You always play all 17 games. An earlier build ended the run on the second loss,

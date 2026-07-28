@@ -258,7 +258,7 @@ window.GA_ID='G-L29P5MRWKE';
      step, and at the old size two of them under the wheels read as the main action on the
      screen. The label and the price go on one line for the same reason. */
   .respins{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
-  /* All-time team mode has only the year to re-roll, so the one button takes the row
+  /* One Team mode has only the year to re-roll, so the one button takes the row
      rather than sitting in half of it with a gap where the other used to be. */
   .respins.one{grid-template-columns:minmax(0,1fr)}
   /* .respins .respin, not .respin: these carry .btn.sm too, which is two classes, so a
@@ -809,7 +809,7 @@ window.GA_ID='G-L29P5MRWKE';
   .pfpteam{margin:9px 0 0;font-family:var(--fn);font-size:12px;font-weight:600;
     color:var(--dim)}
   .pfpteam b{color:var(--ink)}
-  /* THE CLUB PICKER that starts an all-time team run. Two across at every width, because
+  /* THE CLUB PICKER that starts a One Team run. Two across at every width, because
      this grid carries the club's NAME and the profile swatches do not: a player choosing who
      to build has to read "Buccaneers", and thirty-two three-letter codes is a puzzle. The
      colours are the same two the profile circle uses, so the club a player already picked
@@ -818,6 +818,15 @@ window.GA_ID='G-L29P5MRWKE';
      marks its competition bar with a state class on a wrapper, and a bare .club rule turned
      that wrapper into a grid: the select stopped being full width and shrank to its own
      text. Both names say what they are on now. */
+  /* The two things worth knowing before you pick, as a short list rather than another
+     paragraph: a paragraph is read once and skimmed, and these are the two facts a player
+     will want back later. */
+  .modenotes{list-style:none;margin:0 0 4px;padding:0;display:grid;gap:6px}
+  .modenotes li{font-size:12.5px;line-height:1.4;color:var(--dim-2);padding-left:12px;
+    position:relative}
+  .modenotes li:before{content:'';position:absolute;left:0;top:7px;width:4px;height:4px;
+    border-radius:50%;background:var(--red-2)}
+  .modenotes b{color:var(--ink);font-weight:700}
   .clubgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
     gap:8px;margin-top:10px}
   .clubtile{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;
@@ -1383,7 +1392,7 @@ window.GA_ID='G-L29P5MRWKE';
      as loudly as the result until they are faded explicitly. */
   .reelbox.clubbed .reel-i{color:var(--on);opacity:.34}
   .reelbox.clubbed .reel-i.land{opacity:1;font-weight:900;letter-spacing:.03em}
-  /* The team wheel in all-time team mode. It never spins, so the band that marks where a
+  /* The team wheel in One Team mode. It never spins, so the band that marks where a
      face is about to stop would be marking nothing; the club's name simply sits there. */
   .reelbox.locked .band{opacity:.45}
   /* The band becomes a glaze that lifts the middle face out of the vignette. */
@@ -2130,9 +2139,9 @@ window.GA_ID='G-L29P5MRWKE';
 <p>Spin a wheel for a year and an NFL team, sign one player off each of six draws, and
 build a roster out of every season from 1999 to 2025 under a $140M salary cap.</p>
 <p>Then play all 17 games against a real schedule and chase a perfect season. Every
-player is priced and scored from his actual week by week statistics. There is an all-time
-teams mode where every spin is one club you choose, and a leaderboard for each of the
-thirty-two clubs as well as for free play. Free, no download, playable in your browser.</p>
+player is priced and scored from his actual week by week statistics. There is a One Team
+mode where every spin is one club you choose, and a leaderboard for each of the thirty-two
+clubs as well as for free play. Free, no download, playable in your browser.</p>
 <p><strong>This game needs JavaScript to play.</strong> Please turn it on and reload.</p>
 <p>Stats, scores and coaches from nflverse and nfldata. An unofficial fan project, not
 affiliated with or endorsed by the NFL, the NFLPA or any club.
@@ -2213,7 +2222,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
     <button class="btn" id="b-start">Start a run</button>
     <div class="hrow">
-      <button class="btn ghost sm" id="b-teams">All-time teams</button>
+      <button class="btn ghost sm" id="b-teams">One Team</button>
       <button class="btn ghost sm" id="b-how">How to play</button>
     </div>
     <button class="btn ghost sm" id="b-board" style="margin-top:8px">Leaderboard</button>
@@ -2599,8 +2608,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=19"></script>
-<script src="run.js?v=19"></script>
+<script src="engine.js?v=20"></script>
+<script src="run.js?v=20"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -2648,6 +2657,10 @@ function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(
    events and every board call ask it, and a run with no club is a free run wherever it is
    asked from. Safe before a run exists, which is most of the page's life. */
 function runMode(){ return (run&&run.franchise)?'club':'free'; }
+/* What chemistry needs to know about the mode. Same object run.js builds, and it has to
+   be passed at every call site or the rail on the draft screen draws links the season
+   does not pay for. */
+function chemOpts(){ return {sameClub:!!(run&&run.franchise)}; }
 
 /* ---------- THE SCROLL HINT ON TAB ROWS ----------
    A row that scrolls sideways with a hidden scrollbar looks like a row that has been
@@ -2684,7 +2697,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=19;
+const NEED_VERSION=20;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -3093,7 +3106,7 @@ function drawField(el,live){
   const st=fieldState(el);
   const bySlot=new Array(E.SLOTS.length).fill(null);
   if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
-  const links=(run&&run.roster.length>1)?E.resolveChemistry(run.roster,CTX).links:[];
+  const links=(run&&run.roster.length>1)?E.resolveChemistry(run.roster,CTX,chemOpts()).links:[];
   const at=new Map();
   if(run) run.roster.forEach((p,i)=>at.set(p.name,run.slotIndex[i]));
   const openCount=E.SLOTS.length-(run?run.roster.length:0);
@@ -3254,7 +3267,7 @@ function drawRail(el,bySlot,links,at){
 
 function sheet(p){
   const links=run.roster.length>1
-    ? E.resolveChemistry(run.roster,CTX).links.filter(l=>l.a===p.name||l.b===p.name) : [];
+    ? E.resolveChemistry(run.roster,CTX,chemOpts()).links.filter(l=>l.a===p.name||l.b===p.name) : [];
   /* team_display used to be copied onto every player row, which cost 308KB of the
      shipped payload for a string team_seasons.json already has. */
   const ts=DATA.byTeamSeasonId[p.team_season_id];
@@ -3296,7 +3309,7 @@ function newRun(opts){
   return run;
 }
 /* STRAIGHT INTO THE DRAFT. Free play has no club to choose, so there is nothing between
-   pressing Start and the first spin, and all-time team mode asks its one question in a sheet
+   pressing Start and the first spin, and One Team mode asks its one question in a sheet
    on the front page rather than on a screen of its own. The schedule is 17 random historic
    team-seasons and the playoffs are a fixed difficulty ladder either way: the club you draft
    from does not change who you play. */
@@ -3332,11 +3345,23 @@ function clubPicker(){
   };
   const order=AVATAR_TEAMS.slice().sort((a,b)=>
     (a===mine?-1:0)-(b===mine?-1:0)||E.nickname(a).localeCompare(E.nickname(b)));
-  $('sheet-in').innerHTML='<div class="eyebrow red">All-time teams</div>'+
+  /* THREE LINES AND TWO FACTS, and that is the whole description.
+     The first version explained the mode twice and then explained the leaderboard: "every
+     spin is that club, only the year moves, so you are building the best team they could
+     ever have put out, and each club has its own leaderboard". Two of those clauses say
+     the same thing. What a player needs before they tap a club is what the mode does and
+     who they will be ranked against. */
+  $('sheet-in').innerHTML='<div class="eyebrow red">One Team</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Pick a club</h2>'+
-    '<p class="dim" style="font-size:13px;margin:0 0 12px">Every spin is that club. Only the '+
-      'year moves, so you are building the best team they could ever have put out. Each club '+
-      'has its own leaderboard.</p>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">Draft six '+
+      'players who really played for one club. The wheel stays on that club and only the '+
+      'year moves.</p>'+
+    '<ul class="modenotes">'+
+      '<li><b>Every club has its own leaderboard.</b> You are only up against people who '+
+        'picked the same club.</li>'+
+      '<li><b>Sign in to get on it.</b> Guest runs are played and counted, but not '+
+        'recorded.</li>'+
+    '</ul>'+
     '<div class="clubgrid">'+order.map(cell).join('')+'</div>'+
     '<div style="margin-top:14px"><button class="btn ghost sm" id="b-club-no">Not now</button></div>';
   openSheet();
@@ -3369,7 +3394,7 @@ function paintTop(){
   per.classList.toggle('low',left>0&&rem/Math.max(1,left)<E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD*2);
   const b=$('c-bar'); b.style.width=Math.max(0,Math.min(100,rem/E.CONSTANTS.CAP_MUSD*100))+'%';
   b.classList.toggle('low',low);
-  const chem=run.roster.length>1?E.resolveChemistry(run.roster,CTX).multiplier:1;
+  const chem=run.roster.length>1?E.resolveChemistry(run.roster,CTX,chemOpts()).multiplier:1;
   /* Signed when there is something to sign, because a bare "2.7%" does not say which way
      it went. Nothing is "None" rather than "+0.0%": a signed zero reads as a measurement
      when what it means is that no two of these players have anything in common yet. */
@@ -3384,7 +3409,7 @@ function paintTop(){
   else if(left===1&&rem>25){n.style.display='block';n.textContent='You still have '+M(rem)+' left and this is the last spot to spend it on.';}
   else n.style.display='none';
   /* The club goes here rather than into a banner of its own. It is the one thing about an
-     all-time team run that is not true of a free one, and this eyebrow is already the line
+     One Team run that is not true of a free one, and this eyebrow is already the line
      that says what kind of spin you are on. */
   $('d-count').textContent=(run.franchise?E.nickname(run.franchise)+' · ':'')+
     'Spin '+Math.min(6,run.roster.length+1)+' of 6';
@@ -3768,9 +3793,18 @@ function paintSquad(){
   el.className='chemval num '+(p>0.0005?'pos':(p<-0.0005?'neg':'zero'));
   $('q-chembar').style.width=Math.max(0,Math.min(100,p/E.CHEMISTRY.MAX*100))+'%';
   const links=run.season.chemistryLinks;
+  /* IN ONE TEAM MODE THE EMPTY LINE HAS TO SAY MORE.
+     "Nobody here ever played together" under a roster of six Dolphins reads as a bug: they
+     obviously all played for the Dolphins. It is true and it is not the point. Being on the
+     same club earns nothing in this mode, because it would be true of every roster whatever
+     you drafted, so the line names what does earn something instead. */
   $('q-links').innerHTML=links.length
     ? links.map(l=>linkRow(l)).join('')
-    : '<p class="dim" style="font-size:13px;margin:6px 0 0">Nobody here ever played together, so there is no chemistry this run.</p>';
+    : '<p class="dim" style="font-size:13px;margin:6px 0 0">'+(run.franchise
+        ? 'Sharing the '+esc(E.nickname(run.franchise))+' earns nothing here, because every '+
+          'roster in this mode does. None of these six shared a season, a college or a draft '+
+          'class, so there is no chemistry this run.'
+        : 'Nobody here ever played together, so there is no chemistry this run.')+'</p>';
   /* Coach's take. Every line ties to one of the meters underneath it, so the
      structure multiplier explains itself instead of being a hidden number. */
   const spend=run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed);
@@ -4502,11 +4536,11 @@ function shareLines(){
      the text and drop the image, and the rating is the one number that says how good the
      roster was rather than how the season happened to go. */
   const rate=(rating===null||rating===undefined)?'':' Team rating '+Number(rating).toFixed(1)+'.';
-  /* WHICH GAME THIS WAS. An all-time Dolphins team going 15-5 is a different boast from
-     a free run going 15-5, and the rating on the end of it is only comparable to other
-     runs of the same kind, so the text has to say which. */
+  /* WHICH GAME THIS WAS. A One Team Dolphins run going 15-5 is a different boast from a
+     free run going 15-5, and the rating on the end of it is only comparable to other runs
+     of the same kind, so the text has to say which. */
   const head='The Perfect Season: '+o.record+'. '+what;
-  const mode=run.franchise?' All-time '+E.nickname(run.franchise)+'.':'';
+  const mode=run.franchise?' One Team: '+E.nickname(run.franchise)+'.':'';
   return {head,
     text:head+mode+rate+'\n'+shareDare(o)+'\n'+SHARE_URL};
 }
@@ -4608,11 +4642,11 @@ function drawShareCard(){
   centered('THE PERFECT SEASON',CARD.TITLE);
   x.letterSpacing='0px';
   /* WHICH GAME, on the tagline, because the tagline is the line that explains the card to
-     somebody who has never played. An all-time Dolphins team and a free run are two
+     somebody who has never played. A One Team Dolphins run and a free run are two
      different achievements and the record alone does not say which one this is. */
   B('400',25); x.fillStyle='rgba(255,255,255,.42)';
   centered(run.franchise
-    ? 'All-time '+E.nickname(run.franchise)+'. Six spins, one club, any year.'
+    ? 'One Team: '+E.nickname(run.franchise)+'. Six spins, one club, any year.'
     : 'Six spins. Six signings. One shot at 20-0.',CARD.TAG);
 
   // The record, which is the whole point of the card.
@@ -5009,8 +5043,8 @@ function howToPlay(){
       'throw wastes your receivers, and stars alongside nobody get found out.</span></li>'+
     '<li><span class="n">6</span><span>Play all <b>17 games</b>. Win 12 and you are in the playoffs, '+
       'win 15 and you skip a round. One playoff loss ends it.</span></li>'+
-    '<li><span class="n">7</span><span><b>All-time teams</b> is the same game with the wheel '+
-      'locked to one club. Only the year moves, and every club has its own leaderboard.</span></li>'+
+    '<li><span class="n">7</span><span><b>One Team</b> is the same game with the wheel locked '+
+      'to one club. Only the year moves, and every club has its own leaderboard.</span></li>'+
     '</ul>'+
     '<p class="dim" style="font-size:12.5px;margin:13px 0 0">Win everything and you finish '+
       '<b>20 and 0</b>. Nobody has ever done it.</p>'+
@@ -5667,7 +5701,7 @@ function fbContext(){
     const scr=(document.querySelector('.screen.on')||{}).id||'-';
     const who=authState.signedIn?(authState.name||'(no name yet)'):'(guest)';
     let where='no run';
-    const kind=run&&run.franchise?' (all-time '+E.nickname(run.franchise)+')':' (free run)';
+    const kind=run&&run.franchise?' (One Team: '+E.nickname(run.franchise)+')':' (free run)';
     if(run&&run.outcome) where='finished '+run.outcome.record+kind;
     else if(run) where='mid-run, '+(run.roster?run.roster.length:0)+' of 6 picked'+kind;
     return 'Screen: '+scr+'\nRun: '+where+'\nAccount: '+who+
@@ -5805,8 +5839,8 @@ function busy(id,label){
 
    Free play and each of the thirty-two clubs are separate competitions, keyed on the
    `mode` column and, for a club, on `franchise`. They have to be: six men off one club
-   share a franchise by construction, so chemistry fires on nearly every all-time team run
-   and the ratings come out far above what the open draft produces.
+   share a franchise by construction, which is why the franchise and coach chemistry links
+   are suppressed in that mode: they would fire on every pair whatever you drafted.
 */
 
 /* One key format for a player-season across the whole system. The database wants
@@ -5832,7 +5866,7 @@ function runPayload(){
     spendMusd:run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed),
     respins:run.respinsUsed,
     /* THE CLUB THIS DRAFT WAS LOCKED TO, and null for a free run. The server does not
-       infer the mode from it: the column predates all-time team mode and the oldest rows
+       infer the mode from it: the column predates One Team mode and the oldest rows
        in the table are free runs carrying somebody's favourite club, so the mode is sent
        as its own field and the two are checked against each other server-side. */
     franchise:run.franchise||null,
@@ -5945,7 +5979,7 @@ async function showMyRowOnBoard(){
 }
 
 /* THREE WINDOWS, WHICHEVER COMPETITION YOU ARE IN. This used to have a second list for
-   the daily, whose first column was a puzzle rather than a clock window. All-time team mode
+   the daily, whose first column was a puzzle rather than a clock window. One Team mode
    needs no such thing: a club board is windowed on created_at exactly like the free board,
    which is why the club indexes carry created_at, so one list serves all thirty-three. */
 const WINDOWS_FREE=[['day','Today'],['week','This week'],['all','All time']];
@@ -6024,8 +6058,8 @@ async function paintRanks(){
   el.innerHTML='<div class="rload"><i></i><i></i><i></i><span>Reading the board</span></div>';
   const score=B.scoreOf(run.outcome.wins,runPayload().pointDiff);
   await recordRun();
-  /* Ranked among its own kind. An all-time Dolphins team compared against free runs would
-     top the free board on chemistry alone, and mean nothing on the Bears board. */
+  /* Ranked among its own kind. A One Team Dolphins run drafts from twenty-odd seasons
+     rather than 861, so it is a different game, and it means nothing on the Bears board. */
   const r=await B.ranks(score,runMode(),run.franchise||null);
   myRanks=r;
   /* The strip at the top of the page carries the same three numbers, and it is the
@@ -6078,8 +6112,8 @@ async function paintRanks(){
      reading. */
   if(submitted==='guest'){
     el.innerHTML='<p class="rankwho">'+(run.franchise
-        ? 'Where this would have placed among every all-time '+
-          esc(E.nickname(run.franchise))+' team.'
+        ? 'Where this would have placed among every One Team '+
+          esc(E.nickname(run.franchise))+' run.'
         : 'Where this would have placed among every free run.')+'</p>'+
       '<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
       '<div class="guestgate">'+
@@ -6104,9 +6138,9 @@ async function paintRanks(){
     return;
   }
   el.innerHTML='<p class="rankwho">'+(run.franchise
-      ? 'Against every all-time '+esc(E.nickname(run.franchise))+' team. Each club has '+
-        'its own board.'
-      : 'Against every free run. All-time team runs are scored separately.')+'</p>'+
+      ? 'Against every One Team '+esc(E.nickname(run.franchise))+' run. Each club has its '+
+        'own board.'
+      : 'Against every free run. One Team runs are scored separately.')+'</p>'+
     '<div class="r3">'+WINDOWS.map(cell).join('')+'</div>'+
     '<p class="rankfoot">'+rankLine(r)+'</p>'+
     '<button class="btn ghost sm" id="b-board3">See the leaderboard</button>';
@@ -6237,7 +6271,7 @@ function rankLine(r){
    fourth "window" that was not a window; which competition you are looking at is lbClub. */
 /* TEAM RATING IS THE DEFAULT AXIS.
    Record was, and record is the outcome rather than the achievement: a 14-6 off a soft
-   seventeen outranks a 13-7 that beat four all-time teams, and the schedule is randomized so
+   seventeen outranks a 13-7 that beat four great teams, and the schedule is randomized so
    that gap is luck, not skill. Team rating is what the roster is worth with chemistry and
    shape already in it, so it measures the six decisions the player actually made. Record is
    still on every row, just under the rating rather than above it. */
@@ -6251,8 +6285,8 @@ function rankLine(r){
 const LB_LIMIT=500;
 
 let lbWin='day', lbSort='record', lbDir='desc', lbRows=null, lbBusy=false;
-/* WHICH COMPETITION IS SHOWING. 'free', or a club code for one of the thirty-two all-time
-   team boards. Separate from lbWin because it is a separate question: every competition has
+/* WHICH COMPETITION IS SHOWING. 'free', or a club code for one of the thirty-two One Team
+   boards. Separate from lbWin because it is a separate question: every competition has
    the same three windows, which is why the club boards were given a created_at window
    rather than being all-time only. */
 let lbClub=null;
@@ -6325,7 +6359,7 @@ const SORT_META={
   record:{label:'Record', of:(r)=>recordCell(r)},
 };
 
-/* Coming off a run, open the board that run is actually on. Landing an all-time Dolphins
+/* Coming off a run, open the board that run is actually on. Landing a One Team Dolphins
    player on the free board would show them a table they are not in. */
 function openBoard(){
   if(run&&run.outcome) lbClub=run.franchise||null;
@@ -6351,8 +6385,8 @@ async function loadBoard(){
   paintComp();
   const clock='Today resets at midnight Eastern, and the week starts Monday.';
   $('lb-blurb').textContent=lbClub
-    ? 'Every all-time '+E.nickname(lbClub)+' team anybody has drafted. Six men off one '+
-      'club, so these score higher than free runs and are ranked apart from them. '+clock
+    ? 'Every One Team run anybody has played with the '+E.nickname(lbClub)+'. Ranked '+
+      'apart from free play, because the draft only offers one club. '+clock
     : (lbSort==='rating'
       ? 'Free runs, ranked on the roster rather than the season. '+clock
       : 'Free runs only. Each club has its own board. '+clock);
@@ -6435,8 +6469,8 @@ function paintBoard(){
     $('lb-podium').className='podium'; $('lb-podium').innerHTML='';
     $('lb-rows').innerHTML='<div class="lbempty">'+
       (lbWin==='all'
-        ?(lbClub?'Nobody has built an all-time '+esc(E.nickname(lbClub))+' team yet. '+
-            'Draft one and you are first.'
+        ?(lbClub?'Nobody has drafted a One Team '+esc(E.nickname(lbClub))+' run yet. '+
+            'Play one and you are first.'
           :'No runs recorded yet. Play one and you are first.')
         :'Nobody has finished a run in this window yet. Play one and you are first.')+
       '</div>';
@@ -6669,11 +6703,11 @@ function ratingCell(row){
 
 /* What kind of run a board row was, in words. Reads `mode` and not the presence of a
    franchise: rows from the first version of the game are free runs that carry whatever club
-   the player said they supported, and calling those all-time team runs would be wrong about
+   the player said they supported, and calling those One Team runs would be wrong about
    several hundred of them. Rows recorded before the column existed answer 'free', which is
    what they were. */
 function runKindOf(row){
-  if(row&&row.mode==='club'&&row.franchise) return 'all-time '+E.nickname(row.franchise);
+  if(row&&row.mode==='club'&&row.franchise) return 'One Team, '+E.nickname(row.franchise);
   if(row&&row.mode==='daily') return 'daily puzzle';
   return 'free run';
 }
@@ -6881,8 +6915,8 @@ function endRun(){
    colors are already on the page and the header already says so, so there is nothing
    the team screen would ask that has not been answered.
 
-   THE SAME COMPETITION, which is what the button says. Off an all-time Dolphins run this
-   is another all-time Dolphins run, because that is the thing the player just chose to do
+   THE SAME COMPETITION, which is what the button says. Off a One Team Dolphins run this
+   is another One Team Dolphins run, because that is the thing the player just chose to do
    and the wheel deals a different set of Dolphins years every time. Off a free run it is
    another free run. Nothing here has to warn anybody they have switched modes, because
    nobody does. */

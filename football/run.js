@@ -5,7 +5,7 @@
  * The run state is deliberately a plain serializable object with the seed inside
  * it, so a mode is a config flag rather than a rewrite: pass
  * `{ franchise: 'MIA' }` and every spin of the draft is a Dolphins season, which
- * is the whole of all-time team mode.
+ * is the whole of One Team mode.
  */
 
 'use strict';
@@ -28,6 +28,15 @@ const PHASES = {
 const pkey = (p) => `${p.player_id}|${p.season}`;
 
 /**
+ * What chemistry needs to know about the mode. One field, but it goes to five
+ * call sites and every one of them has to agree: the preview on a draft tile, the
+ * season's real multiplier, the best-possible-squad solver's objective and the
+ * chemistry it reports. Get one wrong and the tile promises a bonus the season
+ * does not pay.
+ */
+const chemOpts = (run) => ({ sameClub: !!(run && run.franchise) });
+
+/**
  * Money still available. The re-spin fee comes out of the cap, so the budget
  * shrinks as you fish for a better team-season, a re-spin costs you a tier of
  * player somewhere else, which is the point.
@@ -42,7 +51,7 @@ const pkey = (p) => `${p.player_id}|${p.season}`;
  * expensive, so the wheel has nothing to land on and the draft dead-ends one
  * spin from the end with the money to finish it sitting right there.
  *
- * Found in all-time team mode, where a club can have exactly one affordable man
+ * Found in One Team mode, where a club can have exactly one affordable man
  * left, but it was always possible in free play and nobody had hit it.
  */
 const money = (v) => Math.round(v * 100) / 100;
@@ -65,7 +74,7 @@ const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
  * hard block on RE-SPINS only, because a re-spin that makes the draft
  * unfinishable is not a lesson, it is a dead end.
  *
- * WHY THIS IS NO LONGER A FLAT $3M A SLOT, and it is all-time team mode that
+ * WHY THIS IS NO LONGER A FLAT $3M A SLOT, and it is One Team mode that
  * broke it. $3M works in free play because the wheel draws from 861 team-seasons
  * and somewhere in there is a $3M man at every position. One club is twenty-odd
  * seasons, and a club can simply not have a cheap one: the cheapest quarterback
@@ -211,7 +220,7 @@ function canRespin(run, kind, data) {
     run.respinsUsed--;
   }
   // Must still be able to fill every remaining slot at the cheapest man left who
-  // can take it, which in all-time team mode is not the same as $3M a slot.
+  // can take it, which in One Team mode is not the same as $3M a slot.
   if (short) {
     return { ok: false, reason: 'would leave too little to fill your roster', cost };
   }
@@ -347,8 +356,8 @@ function someAffordable(run, teamSeasonId, playersByTeamSeason) {
  * reason for, not reward you after the fact.
  */
 function previewSigning(run, player, ctx) {
-  const before = E.resolveChemistry(run.roster, ctx);
-  const after = E.resolveChemistry(run.roster.concat([player]), ctx);
+  const before = E.resolveChemistry(run.roster, ctx, chemOpts(run));
+  const after = E.resolveChemistry(run.roster.concat([player]), ctx, chemOpts(run));
   const seen = new Set(before.links.map((l) => l.a + '|' + l.b + '|' + l.type));
   return {
     multiplier: after.multiplier,
@@ -358,9 +367,9 @@ function previewSigning(run, player, ctx) {
 }
 
 function createRun(opts) {
-  /* ALL-TIME TEAM MODE IS ONE FIELD.
+  /* ONE TEAM MODE IS ONE FIELD.
      A club code here locks every wheel in the draft to that club, so only the year moves
-     and the run is an attempt at the best all-time team that club could field. Null is
+     and the run is an attempt at the best team that club could ever have fielded. Null is
      free play, where the wheel can land anywhere in the pool.
 
      Validated here rather than trusted, because everything downstream filters on it: an
@@ -516,7 +525,7 @@ function drawable(run, data, limit) {
   for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
   const canFill = (t) => someAffordable(run, t.team_season_id, data.playersByTeamSeason);
   return data.teamSeasons
-    /* ALL-TIME TEAM MODE, in one line. The lock lives here rather than in spin() so that
+    /* ONE TEAM MODE, in one line. The lock lives here rather than in spin() so that
        every other question about the pool answers correctly on its own: canRespin asks
        drawable() what is left, and with the filter here a "new team, same year" re-spin
        reports that there is no other team rather than being separately forbidden. One
@@ -653,7 +662,7 @@ function sign(run, player) {
 function startSeason(run, data, ctx) {
   if (run.phase !== PHASES.SEASON) throw new Error('draft not finished');
   const rng = rngFor(run);
-  const chem = E.resolveChemistry(run.roster, ctx);
+  const chem = E.resolveChemistry(run.roster, ctx, chemOpts(run));
   const sched = E.generateSchedule(data.prepared, rng);
   run.schedule = sched.games.map((g) => g.team_season_id);
   run.playoffs = E.generatePlayoffs(data.prepared, rng).map((g) => g.team_season_id);
@@ -975,7 +984,7 @@ function bestPossibleSquad(run, data, ctx) {
     const spend = arr.reduce((t, p) => t + p.price_musd, 0);
     if (spend > budget + 1e-9) return -1;
     return arr.reduce((t, p) => t + p.ppr_ppg_mean, 0)
-      * E.resolveChemistry(arr, ctx).multiplier
+      * E.resolveChemistry(arr, ctx, chemOpts(run)).multiplier
       * E.rosterStructure(arr).multiplier;
   };
   const climb = (start, ofSlot) => {
@@ -1013,7 +1022,7 @@ function bestPossibleSquad(run, data, ctx) {
   const won = runs.reduce((a, b) => (b.score > a.score ? b : a));
   const best = won.arr, bestScore = won.score;
 
-  const chem = E.resolveChemistry(best, ctx);
+  const chem = E.resolveChemistry(best, ctx, chemOpts(run));
   const yourPts = run.roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
 
   return {
@@ -1099,7 +1108,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 19;
+const RUN_API_VERSION = 20;
 
 const api = {
   API_VERSION: RUN_API_VERSION,

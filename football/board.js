@@ -279,7 +279,7 @@
      the same good idea, and this is the measurement that says not to. */
 
   /* ---------------- free play and each club are separate competitions ----------------
-     Not one board with a flag on it. An all-time team run draws from ONE club's
+     Not one board with a flag on it. A One Team run draws from ONE club's
      twenty-odd seasons, so six men off that roster share a franchise by construction
      and chemistry fires on almost every one of them. Ratings come out far above what
      the open draft produces. Mixed together, the free board would be nothing but club
@@ -338,7 +338,7 @@
           p_respins: payload.respins || 0,
           p_franchise: payload.franchise || null,
           /* 'free' or 'club'. The server decides nothing from the franchise alone: the
-             column predates all-time team mode and the oldest rows in the table are free
+             column predates One Team mode and the oldest rows in the table are free
              runs that carry a favourite club. */
           p_mode: payload.mode === 'club' ? 'club' : 'free',
           p_picks: payload.picks,
