@@ -831,12 +831,23 @@ Known gaps worth a look during playtesting:
   `rtd:v1` belongs to RunTheDrive on the same origin.
 - **The SQL files have to be run once** in the SQL editor, in order:
   `50_football_perfect_season.sql`, `51_football_accounts.sql`,
-  `55_football_avatars_setup.sql`, `57_football_run_mode.sql`. Until 50 is run the
+  `55_football_avatars_setup.sql`, `57_football_run_mode.sql`,
+  `58_football_stamp_display.sql`. Until 50 is run the
   board reports itself unreachable, which is handled, but no run is recorded. Until 51 is
   run the board works and every row reads Anonymous. Until 55 is run nobody can save a team
   or initials for their circle. Until 57 is run there is no board at all: every query
   filters on `run_mode`, so a 400 comes back on all of them, and the connection check names
   the file. 52 is read-only; 53, 54 and 56 are superseded and say so in their own headers.
+
+  **58 exists because a rewrite silently dropped a column from an insert.**
+  `ps_submit_run()` was rebuilt twice for One Team mode, both times from the version in
+  50, which predates accounts. The version actually installed was 51's, which also reads
+  `profiles.username` and writes `display_name`. Rebuilding from the older text dropped
+  it: runs went in with the right `user_id`, were counted, and were never listed, because
+  the board lists named runs only. Nothing failed and no error was raised. The fix moves
+  the name into the BEFORE INSERT trigger that 55 already uses for the avatar, so all
+  three display fields are filled from the profile whatever version of the function is
+  installed and a rewrite cannot lose them.
 
   **`run_mode` is not called `mode`, and that cost a shipped outage.** 56 named it `mode`
   and the board came back with `400 42809. WITHIN GROUP is required for ordered-set

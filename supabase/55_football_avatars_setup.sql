@@ -146,6 +146,11 @@ grant execute on function ps_set_avatar(text,text) to authenticated;
 --    same profiles row that function already reads for the name, so the two cannot
 --    disagree, and it does not care which version of ps_submit_run is installed.
 -- ---------------------------------------------------------------------------
+-- SUPERSEDED BY 58_football_stamp_display.sql, which stamps the NAME here too.
+-- Leaving the name to ps_submit_run() is what let a rewrite of that function drop it
+-- without anything failing: runs went in owned, coloured and unnamed, so they were
+-- counted and never listed. 58 replaces this trigger with one that reads all three
+-- display fields, and this one is dropped by it.
 create or replace function ps_runs_stamp_avatar()
 returns trigger
 language plpgsql
