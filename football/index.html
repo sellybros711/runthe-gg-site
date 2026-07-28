@@ -1523,10 +1523,6 @@ window.GA_ID='G-L29P5MRWKE';
   /* Its own column on a roster row, not appended to the name. Both text lines on a
      row ellipsize, and a gold plate cut in half by an ellipsis reads as broken. */
   .rrow .awdcol{flex:0 0 auto;display:flex;align-items:center}
-  .hw:empty{display:none}
-  .hw{margin:11px 0 0;padding:9px 11px;border-radius:10px;font-size:12.5px;line-height:1.4;
-    color:#fde68a;background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.28)}
-  .hw b{color:#fff;font-weight:700}
   .chemtag{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 6px;
     border-radius:5px;background:rgba(74,222,128,.16);color:#4ade80;max-width:100%;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -2471,8 +2467,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="field short" id="field3"></div>
       <div class="rail" id="rail3"></div>
       <p class="railnote"></p>
-      <!-- What the six of them won between them, when they won anything. -->
-      <p class="hw" id="o-hw"></p>
+      <!-- No summary of what the six won between them. The gold plate is already on the row
+           of the player who won it, three lines below, so counting them out loud in a
+           sentence said the same thing twice and said it worse. -->
       <div class="rost" id="o-rost"></div>
     </div>
 
@@ -2717,20 +2714,10 @@ const AWARD_SHORT={
 };
 /* The three that get the full gold plate. */
 const AWARD_MAJOR=new Set(['MVP','Super Bowl MVP','Offensive Player of the Year']);
-/* Prestige order, the same one the build sorts a player's own awards into, so the
-   hardware line reads down from MVP rather than in whatever order the roster came. */
-const AWARD_LIST=['MVP','Super Bowl MVP','Offensive Player of the Year',
-  'Offensive Rookie of the Year','First Team All-Pro','Comeback Player of the Year',
-  'Walter Payton Man of the Year'];
-/* Plural forms for the one place that counts them out loud. */
-const AWARD_PLURAL={
-  'MVP':'MVPs','Super Bowl MVP':'Super Bowl MVPs',
-  'Offensive Player of the Year':'Offensive Player of the Year awards',
-  'Offensive Rookie of the Year':'Offensive Rookie of the Year awards',
-  'First Team All-Pro':'First Team All-Pro selections',
-  'Comeback Player of the Year':'Comeback Player of the Year awards',
-  'Walter Payton Man of the Year':'Walter Payton Man of the Year awards',
-};
+/* The prestige order and the plural forms both went with the summary line on the results
+   page, which was the only thing that read an award's name out in a sentence. Everywhere
+   else an award is a plate with a short name on it, and the build has already sorted each
+   player's own awards by prestige before the page ever sees them. */
 const awardChip=(a,short)=>'<span class="awd'+(AWARD_MAJOR.has(a)?'':' minor')+'">'+
   esc(short?(AWARD_SHORT[a]||a):a)+'</span>';
 /* The one worth showing when there is only room for one. The build already sorted a
@@ -4255,21 +4242,6 @@ function paintOver(){
     pc(run.season.chemistry-1)+' chemistry and '+fitPct(st.multiplier)+
     ' for how the six fit together, which is a <b>'+rating.toFixed(1)+'</b> team overall '+
     'against an average defense. You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.</span>';
-
-  /* WHAT THE SIX WON BETWEEN THEM. Counted from the same field the tiles read, so
-     the line can never disagree with the plates on the rows below it. Silent when a
-     roster won nothing, which most rosters do. */
-  const hw={};
-  run.roster.forEach(p=>(p.awards||[]).forEach(a=>{hw[a]=(hw[a]||0)+1;}));
-  const hwParts=Object.keys(hw)
-    .sort((a,b)=>AWARD_LIST.indexOf(a)-AWARD_LIST.indexOf(b))
-    .map(a=>'<b>'+hw[a]+'</b> '+(hw[a]===1?a.replace(/^First Team All-Pro$/,'First Team All-Pro selection')
-      :AWARD_PLURAL[a]));
-  $('o-hw').innerHTML=hwParts.length
-    ? 'Between them these six won '+
-      (hwParts.length===1?hwParts[0]
-        :hwParts.slice(0,-1).join(', ')+' and '+hwParts[hwParts.length-1])+'.'
-    : '';
 
   /* The lineup, which the old results page never showed at all. */
   drawField($('field3'),false);
