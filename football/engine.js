@@ -71,18 +71,20 @@ const CONSTANTS = {
    * Re-solve before trusting any change to pricing, the cap, chemistry, or the
    * structure model. All four move these numbers.
    */
-  /* RAISED 2.65 -> 2.85 TO MAKE 20-0 RARE AGAIN, ESPECIALLY BELOW A 95 RATING.
+  /* RAISED 2.65 -> 2.90 TO MAKE 20-0 RARE AGAIN, ESPECIALLY BELOW A 95 RATING.
    * Opponents score a little more in every game, which shrinks the win margin a
    * good roster carries. The margin is what a 20-game unbeaten run compounds, so
    * the tail is far more sensitive to this than a typical record is: measured over
-   * 4,000 seasons per rating, going 20-0 fell from 0.35% to 0.10% at a 93 rating
-   * and from 1.4% to 0.5% at 100, while the top team's usual record barely moved
-   * (about 14-3, one game off). Variance was the wrong dial for this: dropping
-   * CONSISTENCY to zero moved a 93's 20-0 rate by 0.07 of a point, because the gap
-   * between a strong roster and its opponents, not the noise around it, is what
-   * lets it win out. The policy table above was solved at 2.65 and is kept as the
-   * pre-change baseline; only the opponent strength moved. */
-  SCALE: 2.85,
+   * thousands of seasons per rating, going 20-0 fell from 0.35% to about 0.05% at
+   * a 93 rating and from 1.4% to about 0.3% at 100, while the top team's usual
+   * record barely moved (about 14-3). The reason it stays hard even at the very top
+   * is that the reachable rating ceiling is only ~101, so a 20-game run is a coin
+   * that has to land right twenty times for everyone. Variance was the wrong dial:
+   * dropping CONSISTENCY to zero moved a 93's 20-0 rate by under a tenth of a point,
+   * because the gap between a strong roster and its opponents, not the noise around
+   * it, is what lets it win out. The policy table above was solved at 2.65 and is
+   * kept as the pre-change baseline; only the opponent strength moved. */
+  SCALE: 2.90,
   CAP_MUSD: 140,
   /*
    * Re-spins are two separate levers now, one per wheel, and they get dearer as
@@ -1766,7 +1768,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 27;
+const ENGINE_API_VERSION = 28;
 
 /*
  * The three-letter code a team actually wore in a given season.
