@@ -5,7 +5,7 @@
  * The run state is deliberately a plain serializable object with the seed inside
  * it, so a mode is a config flag rather than a rewrite: pass
  * `{ franchise: 'MIA' }` and every spin of the draft is a Dolphins season, which
- * is the whole of One Team mode.
+ * is the whole of One Franchise mode.
  */
 
 'use strict';
@@ -51,7 +51,7 @@ const chemOpts = (run) => ({ sameClub: !!(run && run.franchise) });
  * expensive, so the wheel has nothing to land on and the draft dead-ends one
  * spin from the end with the money to finish it sitting right there.
  *
- * Found in One Team mode, where a club can have exactly one affordable man
+ * Found in One Franchise mode, where a club can have exactly one affordable man
  * left, but it was always possible in free play and nobody had hit it.
  */
 const money = (v) => Math.round(v * 100) / 100;
@@ -74,7 +74,7 @@ const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
  * hard block on RE-SPINS only, because a re-spin that makes the draft
  * unfinishable is not a lesson, it is a dead end.
  *
- * WHY THIS IS NO LONGER A FLAT $3M A SLOT, and it is One Team mode that
+ * WHY THIS IS NO LONGER A FLAT $3M A SLOT, and it is One Franchise mode that
  * broke it. $3M works in free play because the wheel draws from 861 team-seasons
  * and somewhere in there is a $3M man at every position. One club is twenty-odd
  * seasons, and a club can simply not have a cheap one: the cheapest quarterback
@@ -220,7 +220,7 @@ function canRespin(run, kind, data) {
     run.respinsUsed--;
   }
   // Must still be able to fill every remaining slot at the cheapest man left who
-  // can take it, which in One Team mode is not the same as $3M a slot.
+  // can take it, which in One Franchise mode is not the same as $3M a slot.
   if (short) {
     return { ok: false, reason: 'would leave too little to fill your roster', cost };
   }
@@ -367,7 +367,7 @@ function previewSigning(run, player, ctx) {
 }
 
 function createRun(opts) {
-  /* ONE TEAM MODE IS ONE FIELD.
+  /* ONE FRANCHISE MODE IS ONE FIELD.
      A club code here locks every wheel in the draft to that club, so only the year moves
      and the run is an attempt at the best team that club could ever have fielded. Null is
      free play, where the wheel can land anywhere in the pool.
@@ -525,7 +525,7 @@ function drawable(run, data, limit) {
   for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
   const canFill = (t) => someAffordable(run, t.team_season_id, data.playersByTeamSeason);
   return data.teamSeasons
-    /* ONE TEAM MODE, in one line. The lock lives here rather than in spin() so that
+    /* ONE FRANCHISE MODE, in one line. The lock lives here rather than in spin() so that
        every other question about the pool answers correctly on its own: canRespin asks
        drawable() what is left, and with the filter here a "new team, same year" re-spin
        reports that there is no other team rather than being separately forbidden. One

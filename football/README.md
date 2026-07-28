@@ -363,16 +363,37 @@ and because leaving a known lean in place is how the last one grew.
 Both wheels stay honest either way: every face on either of them is a result that was
 really reachable.
 
-## One Team, and the two links it turns off
+## The name, and the 320px it has to fit in
 
-One Team locks the wheel to a team you choose, so every man on the roster shares that
+The mode was called One Team for its first week. The name described the constraint and not
+the appeal: the interesting thing is not that the wheel is stuck, it is that you are
+building the best roster that franchise could ever have fielded. One Franchise says the
+subject out loud, and it is what the mode is now called everywhere a player can read.
+
+It also costs five characters in a place with none to spare. The button lives in a
+`1fr 1fr` row beside "How to play", which at 320px gives each half 142px, and inside its
+border the label has 140px to work with. "ONE FRANCHISE" wants 105.6px plus a 12px padlock
+and the gap between them, and the first attempt wrapped to two lines. The trap was
+measuring the label in mixed case: `text-transform: uppercase` makes the same string
+**16% wider**, which is the difference between fitting and not.
+
+What fixed it, in order of how much each bought back: type size 13.5px to 12px, tracking
+.045em to .03em, padding 14px to 7px a side, gap 7px to 5px, padlock 13px to 12px. Both
+buttons in the pair take the smaller type rather than only the long one, because a
+half-point difference between two buttons sitting side by side is not something you can
+unsee. `white-space: nowrap` on top of all of it, so the failure mode if a future font
+ships wider metrics is a hair of clipping rather than a silent second line.
+
+## One Franchise, and the two links it turns off
+
+One Franchise locks the wheel to a team you choose, so every man on the roster shares that
 franchise by construction. Two of the seven chemistry links stop being decisions when
 that is true, and both are suppressed for the mode (`resolveChemistry(roster, ctx,
 {sameClub:true})`, threaded from `run.franchise`):
 
 - **`franchise`, "both played for the X."** Fires on all fifteen pairs whatever you
   draft. Fifteen at 0.03 is 0.45 raw, and the saturation curve turns that into
-  **+14.25%** against a +15% ceiling. Measured over 796 One Team drafts across all 32
+  **+14.25%** against a +15% ceiling. Measured over 796 One Franchise drafts across all 32
   clubs: mean **+14.3%**, largest +14.6%, against +2.2% in free play. Chemistry was not
   a bonus in that mode, it was a constant.
 - **`system`, "both coached by X."** Suppressing only the franchise link left this one
@@ -383,17 +404,17 @@ that is true, and both are suppressed for the mode (`resolveChemistry(roster, ct
 What is left is earned, and it costs you a draw: `teammates` and `battery` both need two
 men out of the **same season** of that team, which means spending two of your six spins on
 one year. `college`, `draft_class` and `family` are untouched. Measured with both
-suppressed, One Team chemistry is a mean of **+3.1%** and a median of +1.9%, against +2.2%
+suppressed, One Franchise chemistry is a mean of **+3.1%** and a median of +1.9%, against +2.2%
 and +1.9% in free play, and about a third of rosters get none at all in either mode.
 
 The empty-chemistry line on the squad screen is different in this mode for the same
 reason. "Nobody here ever played together" under six Dolphins reads as a bug, so it says
 that sharing the team earns nothing here and names what does.
 
-## One Team is behind a login wall
+## One Franchise is behind a login wall
 
 It is the one part of the game that is, and the reason is the mode rather than the
-funnel: One Team is 32 leaderboards, and the whole point of picking a team is being
+funnel: One Franchise is 32 leaderboards, and the whole point of picking a team is being
 ranked against everybody else who picked it. A run with no name on it cannot be on any
 of them, so a signed-out player would get the draft and none of what makes it worth
 playing.
@@ -418,7 +439,7 @@ Turned away and then qualified drops straight into the picker, checked on every 
 change rather than only on the sign-in transition, because the username usually arrives
 one change after the account does.
 
-**What stays open:** free play, for everybody including guests, and every One Team board.
+**What stays open:** free play, for everybody including guests, and every One Franchise board.
 A signed-out visitor seeing the Dolphins board is the argument for signing up.
 
 Two bugs the test caught, both worth knowing about:
@@ -432,9 +453,9 @@ Two bugs the test caught, both worth knowing about:
   does not run until the first auth change arrives, so in the not-yet-answered state the
   button rendered unlocked and then turned you away.
 
-## The One Team skin, and five colours where two will not do
+## The One Franchise skin, and five colours where two will not do
 
-A One Team run wears the team's colours: the budget gauge, the field, every eyebrow, the
+A One Franchise run wears the team's colours: the budget gauge, the field, every eyebrow, the
 forward button and your side of the score bug. All of it comes off custom properties set
 on `<body>` by `dressTeam()`, so it is one function rather than an edit on every screen,
 and it is all scoped to `body.oneteam` so free play is untouched.
@@ -469,7 +490,7 @@ is within 1.35:1 of yours your plate falls back to the deep blue for that game.
 ### Cities on anything that leaves the site
 
 Share text and the share card carry the **city and the colours, never the mascot**:
-"One Team: Miami", and every player row reads "2008 Miami". `cityLabel()` appends the
+"One Franchise: Miami", and every player row reads "2008 Miami". `cityLabel()` appends the
 three-letter code to exactly the four franchises that share a city with another, computed
 from the table rather than listed, because "Los Angeles" on its own is two different teams.
 Inside the game the nickname is still used, because the game is where somebody is choosing
@@ -882,7 +903,7 @@ Known gaps worth a look during playtesting:
   the file. 52 is read-only; 53, 54 and 56 are superseded and say so in their own headers.
 
   **58 exists because a rewrite silently dropped a column from an insert.**
-  `ps_submit_run()` was rebuilt twice for One Team mode, both times from the version in
+  `ps_submit_run()` was rebuilt twice for One Franchise mode, both times from the version in
   50, which predates accounts. The version actually installed was 51's, which also reads
   `profiles.username` and writes `display_name`. Rebuilding from the older text dropped
   it: runs went in with the right `user_id`, were counted, and were never listed, because

@@ -26,7 +26,7 @@
 --
 -- WHAT CHANGES
 --
--- The daily puzzle is retired and replaced by One Team mode: you pick one
+-- The daily puzzle is retired and replaced by One Franchise mode: you pick one
 -- of the thirty-two teams and every spin of that draft is that team, with only
 -- the year moving, so the run is an attempt at the best Dolphins or Steelers or
 -- Bears team anybody has built out of that club's own history. Each club gets
@@ -261,7 +261,7 @@ begin
     raise exception 'franchise code looks wrong: %', p_franchise;
   end if;
   if v_mode = 'club' and v_club is null then
-    raise exception 'a One Team run has to say which team';
+    raise exception 'a One Franchise run has to say which team';
   end if;
 
   -- ---- the record has to be a record this game can produce ----
@@ -302,9 +302,9 @@ begin
   if p_point_diff is null or p_point_diff < -60 or p_point_diff > 60 then
     raise exception 'point differential out of range: %', p_point_diff;
   end if;
-  -- 100 STAYS. There is nothing to raise it for: One Team suppresses the two links
+  -- 100 STAYS. There is nothing to raise it for: One Franchise suppresses the two links
   -- that would otherwise fire on every pair of a one-club roster, so measured over
-  -- 796 One Team drafts across all 32 clubs chemistry comes out at a mean of +3.1%
+  -- 796 One Franchise drafts across all 32 clubs chemistry comes out at a mean of +3.1%
   -- against +2.2% in free play. The engine also saturates toward a hard +15%
   -- ceiling rather than summing links, so no roster of any kind can approach this
   -- bound.
@@ -328,7 +328,7 @@ begin
   if p_structure_mult is not null and (p_structure_mult < 0.2 or p_structure_mult > 2) then
     raise exception 'structure multiplier out of range: %', p_structure_mult;
   end if;
-  -- 400 stays too. One Team runs rate a little higher, measured at a mean of 71
+  -- 400 stays too. One Franchise runs rate a little higher, measured at a mean of 71
   -- against 67 for free play and a largest of 108 against 100, because a club's
   -- best years are a richer pool than six random draws. That is nowhere near the
   -- bound, and the bound is a sanity check on a client-reported number, not a

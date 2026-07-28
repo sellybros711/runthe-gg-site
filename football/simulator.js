@@ -517,7 +517,7 @@ function draftReport(n) {
       `${dupes === 0 ? 'ok' : 'FAIL'}`);
   }
 
-  /* ONE TEAM MODE: the lock has to hold for the whole draft, not just the first
+  /* ONE FRANCHISE MODE: the lock has to hold for the whole draft, not just the first
      spin, and it has to hold through a re-spin. Every club, so an expansion team with
      twenty-four seasons in the pool is covered as well as one with twenty-seven. */
   {

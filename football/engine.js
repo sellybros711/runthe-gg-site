@@ -377,7 +377,7 @@ const nickname = (id) => NICKNAMES[id] || id;
  * is choosing between thirty-two of them and "Miami" and "Los Angeles" do not
  * tell you which.
  *
- * PRESENT-DAY CITIES, not the city of the season drawn. A One Team run spans
+ * PRESENT-DAY CITIES, not the city of the season drawn. A One Franchise run spans
  * 1999 to 2025 and the franchise is one thing across all of it; labelling a run
  * "Oakland" because one of the six seasons happened to be 2005 would be a claim
  * about a roster rather than about a club.
@@ -880,13 +880,13 @@ function pairLinks(a, b, ctx, opts) {
     });
   } else if (a.franchise && a.franchise === b.franchise && !(opts && opts.sameClub)) {
     /*
-     * TWO LINKS ARE OFF IN ONE TEAM MODE, this one and the coach link below.
+     * TWO LINKS ARE OFF IN ONE FRANCHISE MODE, this one and the coach link below.
      *
      * A link is supposed to be a reason to prefer one signing over another. This
-     * one fires on every pair of a One Team roster whatever you do, so it rewards
+     * one fires on every pair of a One Franchise roster whatever you do, so it rewards
      * nothing and cannot be lost: fifteen pairs at 0.03 is 0.45 raw, and the
      * saturation curve turns that into +14.25%, which is the +15% ceiling for
-     * practical purposes. Measured across 796 One Team drafts the mean was
+     * practical purposes. Measured across 796 One Franchise drafts the mean was
      * +14.3% and the largest +14.6%, against +2.2% in free play. Chemistry was
      * not a decision in that mode, it was a constant.
      *
@@ -894,7 +894,7 @@ function pairLinks(a, b, ctx, opts) {
      * still teammates and a quarterback who really threw to that receiver is
      * still a battery, and both of those cost you: one of your six draws has to
      * go on a second man from one year. College, draft class and family are
-     * untouched. Measured with both suppressed, One Team chemistry comes out at
+     * untouched. Measured with both suppressed, One Franchise chemistry comes out at
      * a mean of +3.1% with a median of +1.9%, against +2.2% and +1.9% in free
      * play, and a third of rosters get none at all in either mode. It is the
      * same game again rather than a bonus for turning up.
@@ -936,9 +936,9 @@ function pairLinks(a, b, ctx, opts) {
   const ca = coaches[a.team_season_id]?.hc;
   const cb = coaches[b.team_season_id]?.hc;
   /*
-   * OFF IN ONE TEAM MODE FOR THE SAME REASON AS THE FRANCHISE LINK, and the
+   * OFF IN ONE FRANCHISE MODE FOR THE SAME REASON AS THE FRANCHISE LINK, and the
    * measurement is what settled it rather than the argument. Suppressing only the
-   * franchise link left the coach link firing 2,433 times across 796 One Team
+   * franchise link left the coach link firing 2,433 times across 796 One Franchise
    * drafts, 76% of every link in the mode, because a club with one long-serving
    * head coach connects almost any two of its years: New England came out at
    * +11.8% mean chemistry and Washington at +4.7%, which is not a decision either
