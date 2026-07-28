@@ -249,6 +249,13 @@ window.GA_ID='G-L29P5MRWKE';
   .btn:active{transform:translateY(1px) scale(.995);filter:brightness(1.08)}
   .btn:disabled{opacity:.4;cursor:default}
   .btn.blue{background:var(--grad-blue)}
+  /* THE PADLOCK ON ONE TEAM. Hidden unless the mode is locked, so a member never sees it,
+     and inline-flex on the button so the glyph sits on the text's own line rather than
+     under it: .btn is display:block and a plain inline svg would drop below. */
+  #b-teams{display:inline-flex;align-items:center;justify-content:center;gap:7px}
+  #b-teams .lk{display:none;width:13px;height:13px;flex:0 0 auto;fill:none;
+    stroke:currentColor;stroke-width:2.1;stroke-linecap:round;opacity:.75}
+  #b-teams.locked .lk{display:block}
   .btn.ghost{background:transparent;box-shadow:none;border:1.5px solid var(--line-2);font-size:14.5px}
   .btn.ghost:before{display:none}
   .btn.sm{padding:11px 14px;font-size:13.5px;border-radius:10px}
@@ -2280,7 +2287,12 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
     <button class="btn" id="b-start">Start a run</button>
     <div class="hrow">
-      <button class="btn ghost sm" id="b-teams">One Team</button>
+      <!-- The padlock is drawn, not written, and it is only shown while the mode is
+           actually locked. A label that says "One Team" and opens a sign-up sheet with no
+           warning is a bait; a padlock sets the expectation before the tap. -->
+      <button class="btn ghost sm locked" id="b-teams">One Team<svg class="lk" viewBox="0 0 24 24"
+        aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path
+        d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
       <button class="btn ghost sm" id="b-how">How to play</button>
     </div>
     <button class="btn ghost sm" id="b-board" style="margin-top:8px">Leaderboard</button>
@@ -3408,6 +3420,11 @@ function newRun(opts){
    team-seasons and the playoffs are a fixed difficulty ladder either way: the club you draft
    from does not change who you play. */
 function beginDraft(opts){
+  /* THE GUARD LIVES HERE AS WELL AS ON THE BUTTON, because this is the only door into a run
+     and a check on one caller is a check somebody else's caller skips. */
+  if(opts&&opts.franchise&&!oneTeamReady()){
+    return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking');
+  }
   newRun(opts);
   dressTeam();
   ga('game_started',{mode:(opts&&opts.franchise)?'club':'free',club:(opts&&opts.franchise)||null});
@@ -3421,7 +3438,67 @@ $('b-start').onclick=()=>{ beginDraft({}); };
 
    The picker is the thirty-two colourways the profile circle already uses, so a player who
    has chosen a club for their circle sees it first and recognises the grid. */
-$('b-teams').onclick=clubPicker;
+/* ---------- ONE TEAM NEEDS AN ACCOUNT ----------
+   The one part of the game behind a wall, and the reason is the mode itself: it is thirty-two
+   boards, and the whole point of picking a team is being ranked against everybody else who
+   picked it. A run with no name on it cannot be on any of them, so a signed-out player would
+   get the draft and none of what makes it worth playing.
+
+   THE WALL IS A USERNAME, NOT JUST AN ACCOUNT, and that is not extra friction for its own
+   sake. An account exists the moment somebody signs up and the username is a separate step
+   that Google sign-in skips entirely, so "signed in" on its own still means a run that is
+   recorded, owned, and invisible. That state has just cost twenty runs; putting the wall one
+   step further along means nobody reaches this mode and then finds out their season was
+   never listed.
+
+   Free play is untouched and stays open to everybody, including guests. Every One Team board
+   is readable signed out too: seeing the Dolphins board is the argument for signing up. */
+const oneTeamReady=()=>!!(authState.signedIn&&authState.name);
+/* Set when somebody is turned away from One Team, so that finishing the sign-up drops them
+   into the team picker rather than back on the front page wondering what happened. */
+let wantOneTeam=false;
+
+$('b-teams').onclick=()=>{
+  /* Before auth.js has answered, nobody is anything yet. Showing the wall here would tell a
+     signed-in player to sign in, so the sheet says what it is actually waiting for. */
+  if(!authState.ready) return oneTeamWall('checking');
+  if(!oneTeamReady()) return oneTeamWall(authState.signedIn?'noname':'out');
+  clubPicker();
+};
+
+function oneTeamWall(why){
+  const line=why==='checking'
+    ? 'Checking your account. Give it a second and try again.'
+    : (why==='noname'
+      ? 'You are signed in. Pick a username and One Team opens, because every run on these '+
+        'boards is listed under a name.'
+      : 'One Team needs a free account. It is thirty-two leaderboards, one per team, and a '+
+        'run has to have a name on it to be listed.');
+  $('sheet-in').innerHTML='<div class="eyebrow red">One Team</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Members only</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">Draft the '+
+      'greatest team in one franchise\'s history. Every spin gives you that team in a '+
+      'different year, and you sign one player from each.</p>'+
+    '<ul class="modenotes">'+
+      '<li><b>Every team has its own leaderboard.</b> You are only up against people who '+
+        'picked the same team.</li>'+
+      '<li><b>'+esc(line)+'</b></li>'+
+    '</ul>'+
+    (why==='checking'
+      ? '<div style="margin-top:14px"><button class="btn ghost" id="b-wall-x">Close</button></div>'
+      : '<div style="margin-top:14px"><button class="btn" id="b-wall-in">'+
+          (why==='noname'?'Pick a username':'Sign in or create an account')+'</button></div>'+
+        '<div style="margin-top:8px"><button class="btn ghost sm" id="b-wall-free">'+
+          'Play a free run instead</button></div>');
+  $('sheet-in').dataset.kind='wall';
+  openSheet();
+  const x=$('b-wall-x'); if(x) x.onclick=closeSheet;
+  const go=$('b-wall-in');
+  if(go) go.onclick=()=>{ wantOneTeam=true; profileSheet(); };
+  const free=$('b-wall-free');
+  if(free) free.onclick=()=>{ closeSheet(); beginDraft({}); };
+  ga('one_team_blocked',{reason:why});
+}
 
 /* Their own club leads, because somebody who has picked one has already told the game which
    team they care about and making them hunt for it in an alphabetical grid ignores that. */
@@ -3459,6 +3536,12 @@ function clubPicker(){
     '</ul>'+
     '<div class="clubgrid">'+order.map(cell).join('')+'</div>'+
     '<div style="margin-top:14px"><button class="btn ghost sm" id="b-club-no">Not now</button></div>';
+  /* EVERY SHEET HAS TO NAME ITSELF. The auth handler repaints the profile sheet on any
+     account change when the open sheet says it is the profile one, and dataset.kind is what
+     it asks. A sheet that leaves the previous value in place inherits somebody else's
+     repaint: signing up and landing here put the picker on screen and then replaced it with
+     the profile sheet a frame later, which read as the sign-up simply not working. */
+  $('sheet-in').dataset.kind='teams';
   openSheet();
   $('b-club-no').onclick=closeSheet;
   $('sheet-in').querySelectorAll('.clubtile').forEach(b=>{
@@ -5182,7 +5265,8 @@ function howToPlay(){
     '<li><span class="n">6</span><span>Play all <b>17 games</b>. Win 12 and you are in the playoffs, '+
       'win 15 and you skip a round. One playoff loss ends it.</span></li>'+
     '<li><span class="n">7</span><span><b>One Team</b> is the same game with the wheel locked '+
-      'to one team. Only the year moves, and every team has its own leaderboard.</span></li>'+
+      'to one team. Only the year moves, every team has its own leaderboard, and it needs a '+
+      'free account.</span></li>'+
     '</ul>'+
     '<p class="dim" style="font-size:12.5px;margin:13px 0 0">Win everything and you finish '+
       '<b>20 and 0</b>. Nobody has ever done it.</p>'+
@@ -5235,6 +5319,16 @@ function authBoot(){
     if(!was&&st.signedIn){
       if(submitted==='guest') submitAfterSignIn();
       else if(submitted) claimThisRun();
+    }
+    /* Turned away from One Team, and now qualified. Straight into the picker: they asked for
+       that mode, the sign-up was the thing in the way, and dropping them back on the front
+       page to press the same button again is the sort of thing that loses people at exactly
+       the moment they have finished signing up. Checked on every change and not only on the
+       transition, because the username usually arrives one change AFTER signing in. */
+    if(wantOneTeam&&oneTeamReady()){
+      wantOneTeam=false;
+      closeSheet();
+      clubPicker();
     }
     if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='profile')
       profileSheet();
@@ -5372,6 +5466,14 @@ function paintAvatar(){
     '<path d="M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4"/></svg>';
   if(!nm){ b.style.removeProperty('--pfp'); b.style.removeProperty('--pfpring');
     b.style.removeProperty('color'); }
+  /* The One Team padlock, from here because this is the one function that already runs on
+     every auth change. It starts locked IN THE MARKUP and is only ever unlocked here, which
+     is what covers the state before auth answers: paintAvatar does not run until the first
+     change arrives, so a padlock added only by script would be missing exactly when nobody
+     knows whether the mode is open. An unlocked button that turns you away is worse than a
+     locked one that opens. */
+  const t=$('b-teams');
+  if(t) t.classList.toggle('locked',!oneTeamReady());
 }
 
 async function loadMyAvatar(){

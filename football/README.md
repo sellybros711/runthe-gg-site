@@ -390,6 +390,45 @@ The empty-chemistry line on the squad screen is different in this mode for the s
 reason. "Nobody here ever played together" under six Dolphins reads as a bug, so it says
 that sharing the team earns nothing here and names what does.
 
+## One Team is behind a login wall
+
+It is the one part of the game that is, and the reason is the mode rather than the
+funnel: One Team is 32 leaderboards, and the whole point of picking a team is being
+ranked against everybody else who picked it. A run with no name on it cannot be on any
+of them, so a signed-out player would get the draft and none of what makes it worth
+playing.
+
+**The wall is a username, not just an account.** An account exists the moment somebody
+signs up and the username is a separate step that Google sign-in skips entirely, so
+"signed in" on its own still means a run that is recorded, owned, and invisible. That
+state had already cost 20 runs (see 58); putting the wall one step further along means
+nobody reaches this mode and then finds out their season was never listed.
+
+`oneTeamReady()` is `signedIn && name`. The guard is on the button AND inside
+`beginDraft()`, because that is the only door into a run and a check on one caller is a
+check somebody else's caller skips. Four states, all tested: signed out, signed in with
+no name, signed in with a name, and auth not yet answered — the last one says what it is
+waiting for rather than accusing a signed-in player of being signed out, and the padlock
+starts on **in the markup** so the pre-answer state is the honest one.
+
+Turned away and then qualified drops straight into the picker, checked on every auth
+change rather than only on the sign-in transition, because the username usually arrives
+one change after the account does.
+
+**What stays open:** free play, for everybody including guests, and every One Team board.
+A signed-out visitor seeing the Dolphins board is the argument for signing up.
+
+Two bugs the test caught, both worth knowing about:
+
+- **Every sheet has to set `dataset.kind`.** The auth handler repaints the profile sheet
+  on any account change when the open sheet claims to be the profile one. The picker did
+  not name itself, so it inherited the previous sheet's value: signing up put the picker
+  on screen and replaced it with the profile sheet a frame later, which reads as the
+  sign-up simply not working.
+- **A padlock added only by script is missing exactly when it matters.** `paintAvatar()`
+  does not run until the first auth change arrives, so in the not-yet-answered state the
+  button rendered unlocked and then turned you away.
+
 ## The One Team skin, and five colours where two will not do
 
 A One Team run wears the team's colours: the budget gauge, the field, every eyebrow, the
