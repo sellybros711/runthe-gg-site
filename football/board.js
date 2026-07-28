@@ -465,13 +465,36 @@
     } catch (e) { return failThrown('total', e); }
   }
 
-  /* All three windows at once. A window whose two numbers did not both come back
-     is returned as null rather than half-filled, so the UI never prints
-     "#4 of null". The total is floored at the rank for the same reason the soccer
-     board does it: the two counts are separate queries, so a run inserted a moment
-     ago can be missing from the total while already counted in the rank, which
-     would render an impossible "#41 of 40". */
+  /* All three windows in one call when ps_rank_windows() exists (60_football_rank_windows.sql),
+     falling back to six individual queries when it does not. One HTTP round trip instead of
+     six makes the difference on mobile, where the old approach regularly timed out. */
+  let batchSupported = true;
+  async function ranksBatch(score, mode, franchise, era) {
+    if (!batchSupported) return null;
+    try {
+      const m = (mode === 'era' && era) ? 'era' : (mode === 'club' && franchise) ? 'club' : 'free';
+      const res = await timed(base() + 'rpc/ps_rank_windows', {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify({
+          p_score: score,
+          p_mode: m,
+          p_franchise: franchise || null,
+          p_era: era || null,
+          p_day_cut: cutoffISO('day'),
+          p_week_cut: cutoffISO('week'),
+        }),
+      });
+      if (!res.ok) { batchSupported = false; return null; }
+      const r = await res.json();
+      if (!r || typeof r !== 'object') { batchSupported = false; return null; }
+      return r;
+    } catch (e) { batchSupported = false; return null; }
+  }
+
   async function ranks(score, mode, franchise, era) {
+    const batch = await ranksBatch(score, mode, franchise, era);
+    if (batch) return batch;
     const of = (win) => {
       if (mode === 'era' && era) return { mode: 'era', era, win, named: true };
       if (mode === 'club' && franchise) return { mode: 'club', franchise, win, named: true };
