@@ -2818,8 +2818,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=27"></script>
-<script src="run.js?v=27"></script>
+<script src="engine.js?v=28"></script>
+<script src="run.js?v=28"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -2951,7 +2951,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=27;
+const NEED_VERSION=28;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
