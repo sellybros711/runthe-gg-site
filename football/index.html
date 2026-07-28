@@ -4146,7 +4146,7 @@ function paintSquad(){
        the number beside it is a good one, and the notes underneath say why when it matters. */
     meter('Run and pass',(st.rushShare*100).toFixed(0)+'% run, '+
       (100-st.rushShare*100).toFixed(0)+'% pass',
-      schemeName?span(st.balance,0.70,1.0):(1-Math.min(1,Math.abs(st.rushShare-0.25)/0.25)))+
+      1-Math.min(1,Math.abs(st.rushShare-0.25)/0.25))+
     /* "Spread", not "Top scorer": the word on the right is the verdict on the ROW, and a row
        called Top scorer reading Strong says the wrong thing entirely. */
     meter('Spread',(st.topShare*100).toFixed(0)+'% through one player',
