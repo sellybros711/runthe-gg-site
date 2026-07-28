@@ -94,3 +94,50 @@ select
               where schemaname='public' and tablename='ps_runs'
                 and indexname like 'ps_runs_mode%'),
            'none, the board still works but scans; run 50')                    as board_indexes;
+
+
+-- ---------------------------------------------------------------------------
+-- 3. THE PROFILE CIRCLES, added by 55_football_avatars_setup.sql. Catalog only, so
+-- this one answers whatever state the database is in and never errors. Every column
+-- reads "ok" when the clubs and initials are switched on.
+-- ---------------------------------------------------------------------------
+select
+  case when exists (select 1 from pg_attribute where attrelid=to_regclass('public.profiles')
+        and attname='avatar_color' and not attisdropped)
+       then 'ok' else 'MISSING, run 55_football_avatars_setup.sql' end        as profiles_color,
+  case when exists (select 1 from pg_attribute where attrelid=to_regclass('public.ps_runs')
+        and attname='display_color' and not attisdropped)
+       then 'ok' else 'MISSING, run 55' end                                   as runs_color,
+  case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+        where n.nspname='public' and p.proname='ps_set_avatar')
+       then 'ok' else 'MISSING, saving a club fails; run 55' end              as set_avatar_fn,
+  case when exists (select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+        where n.nspname='public' and p.proname='ps_set_avatar'
+          and has_function_privilege('authenticated', p.oid, 'execute'))
+       then 'ok' else 'NO GRANT, re-run the grants at the end of 55' end      as signed_in_can_call,
+  case when exists (select 1 from pg_trigger
+        where tgrelid=to_regclass('public.ps_runs') and tgname='ps_runs_avatar_stamp')
+       then 'ok' else 'MISSING, new runs will not carry a club; run 55' end   as new_run_trigger,
+  coalesce((select string_agg(indexname,', ' order by indexname) from pg_indexes
+              where schemaname='public' and tablename='ps_runs'
+                and indexname like 'ps_runs_named%'),
+           'none, the named board still works but scans; run 55')             as named_indexes,
+  (select count(*) from profiles where avatar_color is not null)              as accounts_with_a_club;
+
+
+-- ---------------------------------------------------------------------------
+-- 4. THE SAME COLUMNS, READ THE WAY THE WEBSITE READS THEM. Query 3 is catalog, and
+-- the editor runs as `postgres`, which has BYPASSRLS: it can say "ok" to all of it
+-- while the anon key still gets nothing. This is the read the browser makes.
+--
+-- An error naming display_color is the answer too: the column is not there, so 55
+-- has not run or did not finish.
+-- ---------------------------------------------------------------------------
+begin;
+set local role anon;
+select
+  count(*)                                              as rows_anon_can_see,
+  count(*) filter (where display_color is not null)     as runs_showing_a_club,
+  count(*) filter (where display_initials is not null)  as runs_with_own_initials
+from ps_runs;
+commit;
