@@ -663,7 +663,8 @@ function startSeason(run, data, ctx) {
   if (run.phase !== PHASES.SEASON) throw new Error('draft not finished');
   const rng = rngFor(run);
   const chem = E.resolveChemistry(run.roster, ctx, chemOpts(run));
-  const sched = E.generateSchedule(data.prepared, rng);
+  const sched = E.generateSchedule(data.prepared, rng,
+    run.franchise ? { franchise: run.franchise } : {});
   run.schedule = sched.games.map((g) => g.team_season_id);
   run.playoffs = E.generatePlayoffs(data.prepared, rng).map((g) => g.team_season_id);
   run.season = {
@@ -1114,7 +1115,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 22;
+const RUN_API_VERSION = 23;
 
 const api = {
   API_VERSION: RUN_API_VERSION,
