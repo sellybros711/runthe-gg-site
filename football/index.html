@@ -4737,21 +4737,18 @@ $('b-po-fast').onclick=()=>{ if(poSkip) poSkip(); };
    identical PO rows. */
 const ROUND_TAG={'Wild Card':'WC','Divisional':'DIV','Conference Championship':'CONF','Super Bowl':'SB'};
 
+/* Run a piece of work AFTER the browser has painted the current frame, so a screen is
+   on the glass before anything heavy that follows runs. Two animation frames: the first
+   callback fires just before a paint, the second just after it has committed. Falls back
+   to a timeout where requestAnimationFrame is missing. */
+function afterPaint(fn){
+  if(typeof requestAnimationFrame==='function'){
+    requestAnimationFrame(()=>requestAnimationFrame(fn));
+  }else{ setTimeout(fn,0); }
+}
+
 function paintOver(){
   const o=run.outcome,s=run.season,c=$('o-card');
-  /* FIRE THE NETWORK BEFORE THE CPU. The submit and the three rank counts are both
-     network round trips, and the score they need is known the instant the run ends.
-     Kicking them off here, before the best-possible solve and all the rendering below,
-     means the round trip runs alongside that work instead of waiting in line behind it.
-     The request is dispatched synchronously; its result cannot paint until this whole
-     function returns, so every cell it fills (o-ranks, the strip) is already on screen.
-     Not awaited: a slow or dead board delays nothing. */
-  paintRanks().catch(()=>{
-    $('o-ranks').innerHTML='<p class="rankfoot" style="margin-top:8px">The leaderboard '+
-      'is not reachable right now, so this run has not been counted.</p>';
-    paintRankStrip(null);
-    paintSaveBanner();
-  });
   c.className='verdict';
   $('o-mode').textContent=runModeLabel();
   $('o-rec').textContent=o.record;
@@ -4772,17 +4769,15 @@ function paintOver(){
   }
   ga('run_complete',{outcome:o.perfect?'perfect':o.titleWon?'champion':o.eliminatedIn?'eliminated':'missed_playoffs',record:o.record,mode:runMode(),club:run&&run.franchise||null});
 
-  /* THE SECOND HEADLINE AND THE STRIP UNDER IT.
-     Both are worked out before anything is painted, because the "of the best possible"
-     figure comes from the same solve the How close tab uses and there is no sense
-     running it twice. */
+  /* THE SECOND HEADLINE. Team overall is cheap, a sum and two multipliers, so it paints
+     with everything else. Best possible needs the optimiser and the two season
+     projections behind the How close tab, which are deferred to after the first paint
+     (see the afterPaint block at the end) so the record and every cheap number appear
+     at once instead of waiting on them. Its cell shows a brief working state until then. */
   const spendUsed=run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed);
   const squadFppg=run.roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
   const st=E.rosterStructure(run.roster);
   const rating=teamRating(run.roster,run.season.chemistry);
-  const best=R.bestPossibleSquad(run,DATA,CTX);
-  const share=best?Math.round(100*Math.min(1,best.yourProjected/best.bestProjected)):null;
-  lastPerfectShare=share;
 
   /* Measured over 1,600 drafts across four play styles, team rating runs from about 1
      to about 100, so the number doubles as its own percentage and the bar needs no
@@ -4790,14 +4785,12 @@ function paintOver(){
      lands around 73, so green means you beat greedy. */
   const split=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
   const rband=rating>=75?'#22c55e':(rating>=50?'#fbbf24':'#ef4444');
-  const sband=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
   const bigcell=(k,v,pctFill,color)=>'<div><div class="k">'+k+'</div>'+
     '<div class="v" style="color:'+color+'">'+v+'</div>'+
     '<div class="t"><i style="width:'+pctFill+'%;background:'+color+'"></i></div></div>';
   $('o-ovr').innerHTML=
     bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
-    bigcell('Best possible',share===null?'--':share+'%',
-      share===null?0:Math.max(2,share),share===null?'#94a3b8':sband);
+    bigcell('Best possible','…',0,'#94a3b8');
 
   /* THE STRIP. Top row is what the roster cost you and where it finished; bottom row
      is where the run placed, and each of those three opens the board on that window
@@ -4853,33 +4846,8 @@ function paintOver(){
       '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
   }).join('');
 
-  if(!best){ $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>'; }
-  else{
-    const kept=best.lineup.filter(r=>r.same).length;
-    const band=share>=90?'pgood':(share>=70?'pmid':'pbad');
-    const fill=sband;
-    /* The two numbers can disagree, and often do: a 92% team with zero matching
-       picks means you found different players worth nearly as much. Saying "0 of
-       6 spots right" under a 92% score without that read badly. */
-    const spots=kept===6?'You picked the best available player at every spot.'
-      :kept?'You had '+kept+' of the 6 spots exactly right.'
-      :'You matched none of the best picks, so the gap is all in the players, not in how they fit.';
-    /* One number, then what it means. The old page opened with six comparison
-       rows and made you add them up yourself. */
-    $('o-miss').innerHTML=
-      '<div class="pgauge"><div class="pv '+band+'">'+share+'%</div><div class="pr">'+
-        '<div class="ptrack"><i style="width:'+share+'%;background:'+fill+'"></i></div>'+
-        '<div class="pl">Of the strongest team your six spins allowed. '+spots+'</div>'+
-      '</div></div>'+
-      '<p class="caveat" style="margin:0 0 2px">Spot by spot, against the best your same six teams '+
-      'and same '+M(E.CONSTANTS.CAP_MUSD)+' allowed. A spot can go down on purpose when spending less '+
-      'there buys more somewhere else.</p>'+
-      swapRows(best)+comparison(best)+
-      '<p class="caveat">Points a game includes chemistry and how the six fit, because that is what '+
-      'the simulation scores with. Both records come from replaying the two teams against your actual 17 opponents '+
-      'many times, because one season is mostly luck. Your six teams stay fixed: a different pick would '+
-      'also have changed what the wheel showed you next.</p>';
-  }
+  $('o-miss').innerHTML='<div class="rload"><i></i><i></i><i></i>'+
+    '<span>Working out the best you could have drafted</span></div>';
 
   const list=$('o-list');
   list.innerHTML=''; s.results.forEach(r=>pushGame(r,list));
@@ -4888,6 +4856,57 @@ function paintOver(){
      anyone taps, and a new season should not open on the pane the last one ended on. */
   setOverTab('perfect');
   show('s-over');
+
+  /* THE HEAVY WORK, ONE FRAME LATER. The optimiser and the two 400-season projections
+     it feeds are the only expensive part of this screen, and nothing above needs them,
+     so they run after the browser has painted everything else. That is what makes the
+     record and the numbers appear at once instead of behind a solve. The run is SENT
+     from in here, after the best-possible figure it carries has been worked out, and
+     the placings are read at the same time. */
+  afterPaint(()=>{
+    const best=R.bestPossibleSquad(run,DATA,CTX);
+    const share=best?Math.round(100*Math.min(1,best.yourProjected/best.bestProjected)):null;
+    lastPerfectShare=share;
+    const sband=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
+    $('o-ovr').innerHTML=
+      bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
+      bigcell('Best possible',share===null?'--':share+'%',
+        share===null?0:Math.max(2,share),share===null?'#94a3b8':sband);
+    if(!best){ $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>'; }
+    else{
+      const kept=best.lineup.filter(r=>r.same).length;
+      const band=share>=90?'pgood':(share>=70?'pmid':'pbad');
+      const fill=sband;
+      /* The two numbers can disagree, and often do: a 92% team with zero matching
+         picks means you found different players worth nearly as much. Saying "0 of
+         6 spots right" under a 92% score without that read badly. */
+      const spots=kept===6?'You picked the best available player at every spot.'
+        :kept?'You had '+kept+' of the 6 spots exactly right.'
+        :'You matched none of the best picks, so the gap is all in the players, not in how they fit.';
+      /* One number, then what it means. The old page opened with six comparison
+         rows and made you add them up yourself. */
+      $('o-miss').innerHTML=
+        '<div class="pgauge"><div class="pv '+band+'">'+share+'%</div><div class="pr">'+
+          '<div class="ptrack"><i style="width:'+share+'%;background:'+fill+'"></i></div>'+
+          '<div class="pl">Of the strongest team your six spins allowed. '+spots+'</div>'+
+        '</div></div>'+
+        '<p class="caveat" style="margin:0 0 2px">Spot by spot, against the best your same six teams '+
+        'and same '+M(E.CONSTANTS.CAP_MUSD)+' allowed. A spot can go down on purpose when spending less '+
+        'there buys more somewhere else.</p>'+
+        swapRows(best)+comparison(best)+
+        '<p class="caveat">Points a game includes chemistry and how the six fit, because that is what '+
+        'the simulation scores with. Both records come from replaying the two teams against your actual 17 opponents '+
+        'many times, because one season is mostly luck. Your six teams stay fixed: a different pick would '+
+        'also have changed what the wheel showed you next.</p>';
+    }
+    /* Only now, with perfectPct known, is the run sent and the board read. */
+    paintRanks().catch(()=>{
+      $('o-ranks').innerHTML='<p class="rankfoot" style="margin-top:8px">The leaderboard '+
+        'is not reachable right now, so this run has not been counted.</p>';
+      paintRankStrip(null);
+      paintSaveBanner();
+    });
+  });
 }
 
 /* Spot by spot, so it always names who replaces whom rather than showing one
