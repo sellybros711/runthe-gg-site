@@ -286,71 +286,93 @@ function scoreParts(total, rng) {
  * broadcast would have shown you, and a blowout spreads its scores earlier.
  */
 function scoringScript(you, them, rng) {
-  const QUARTERS = 4, QUARTER_SECONDS = 15 * 60;
-  const mine = scoreParts(you, rng).map((k) => ({ ...k, team: 'you' }));
-  const theirs = scoreParts(them, rng).map((k) => ({ ...k, team: 'them' }));
-  const all = mine.concat(theirs);
+  const QUARTERS = 4, QSEC = 15 * 60, GAME = QUARTERS * QSEC;
+  const yParts = scoreParts(you, rng).map((k) => ({ ...k, team: 'you' }));
+  const tParts = scoreParts(them, rng).map((k) => ({ ...k, team: 'them' }));
+  if (!yParts.length && !tParts.length) return [];
 
-  const margin = Math.abs(you - them);
-  const winner = you >= them ? 'you' : 'them';
-  // The score that settled a close game belongs at the end of it.
-  const clincher = margin > 0 && margin <= 8
-    ? all.filter((e) => e.team === winner).pop() : null;
-
-  const rest = all.filter((e) => e !== clincher);
-  /*
-   * Spread the rest over the four quarters. Slightly back-loaded, because a game
-   * with all its points in the first half is not one anybody would sit through.
-   */
-  const WEIGHT = [0.22, 0.26, 0.24, 0.28];
-  const placed = rest.map((e) => {
-    let r = rng(), q = 0;
-    for (let i = 0; i < QUARTERS; i++) { r -= WEIGHT[i]; if (r <= 0) { q = i; break; } q = i; }
-    return { ...e, q, sec: Math.floor(rng() * QUARTER_SECONDS) };
-  });
-  if (clincher) {
-    // Inside the last eight minutes, and never at 0:00, which reads as a typo.
-    placed.push({ ...clincher, q: 3, sec: 15 + Math.floor(rng() * (8 * 60 - 15)) });
+  const margin = you - them;
+  const winner = margin >= 0 ? 'you' : 'them';
+  /* The score that settled a one-possession game is the winner's last one, held back to
+     land in the closing minutes where a broadcast would have shown it. */
+  let clincher = null;
+  if (margin !== 0 && Math.abs(margin) <= 8) {
+    clincher = (winner === 'you' ? yParts : tParts).pop();
   }
 
-  /*
-   * KEEP THE KICKING HONEST. A team down by more than a field goal in the fourth
-   * quarter goes for the touchdown; it does not kick, because three points still
-   * leaves it losing. The placement above is blind to the running score, so a
-   * field goal can land late with its own team trailing by four or more, which no
-   * real team would do. Any such kick is pushed back to an earlier quarter, where
-   * taking the points while a score down is the ordinary thing. A winner's late
-   * field goal is never touched: to win by kicking it the team was within three
-   * beforehand, so it never trips this rule. Each pass only moves a kick OUT of the
-   * fourth, so the number of offenders falls every time and the loop settles.
-   */
-  const trailingLateFG = () => {
-    const seq = placed.slice().sort((a, b) => a.q - b.q || b.sec - a.sec);
-    let y = 0, t = 0;
-    for (const e of seq) {
-      const behind = e.team === 'you' ? t - y : y - t;   // the kicking team's deficit, before this score
-      if (e.kind === 'FIELD GOAL' && e.q === QUARTERS - 1 && behind > 3) return e;
-      if (e.team === 'you') y += e.points; else t += e.points;
+  /* INTERLEAVE THE POSSESSIONS. A real game trades the ball back and forth, so the same
+     team almost never scores three times running: between two scores the other side has
+     had it. Greedy - give the next score to whoever has more left, but force a change after
+     two in a row while the other team still has one to give. This is what was missing
+     before, when three of one team's scores could land in a row with no answer between. */
+  const y = yParts.slice(), t = tParts.slice(), order = [];
+  while (y.length || t.length) {
+    const a = order.length;
+    const twoSame = a >= 2 && order[a - 1].team === order[a - 2].team ? order[a - 1].team : null;
+    let takeYou;
+    if (!t.length) takeYou = true;
+    else if (!y.length) takeYou = false;
+    else if (twoSame === 'you') takeYou = false;
+    else if (twoSame === 'them') takeYou = true;
+    else takeYou = y.length >= t.length;
+    order.push((takeYou ? y : t).shift());
+  }
+  if (clincher) order.push(clincher);
+
+  /* ONE TIMESTAMP PER SCORE, and they are the thing the old version got most wrong: it drew
+     a random second in a random quarter for each, so two scores could share a clock (the
+     7:17 and 7:17 that gave this away) and whole quarters could sit empty. Here each score
+     takes its own even slice of the hour with a little jitter, so times are always distinct
+     and the game fills out. Elapsed seconds, 0 at kickoff; the clincher lands in the last
+     five minutes, never at 0:00. A touch back-loaded by giving later slots to later scores. */
+  const n = order.length;
+  const el = [];
+  for (let i = 0; i < n; i++) {
+    if (clincher && i === n - 1) { el.push(GAME - (25 + Math.floor(rng() * (5 * 60)))); continue; }
+    const lo = (i / n) * GAME, span = GAME / n;
+    el.push(lo + span * (0.15 + rng() * 0.7));
+  }
+
+  /* Same honesty rule as before, now on the timeline: a team down by more than a field goal
+     does not kick one in the fourth quarter, because three points still leaves it losing.
+     Move any such kick to an earlier point in the game and settle. Only ever moves a kick
+     earlier, so the count of offenders falls each pass. */
+  const quarterOf = (t0) => Math.min(QUARTERS - 1, Math.floor(t0 / QSEC));
+  const badLateFG = () => {
+    const idx = order.map((e, i) => i).sort((a, b) => el[a] - el[b]);
+    let ry = 0, rt = 0;
+    for (const i of idx) {
+      const e = order[i];
+      const behind = e.team === 'you' ? rt - ry : ry - rt;
+      if (e.kind === 'FIELD GOAL' && quarterOf(el[i]) === QUARTERS - 1 && behind > 3) return i;
+      if (e.team === 'you') ry += e.points; else rt += e.points;
     }
-    return null;
+    return -1;
   };
-  for (let guard = 0; guard < placed.length + 4; guard++) {
-    const bad = trailingLateFG();
-    if (!bad) break;
-    bad.q = Math.floor(rng() * (QUARTERS - 1));          // 0..2, an earlier quarter
-    bad.sec = Math.floor(rng() * QUARTER_SECONDS);
+  for (let guard = 0; guard < n + 4; guard++) {
+    const bad = badLateFG();
+    if (bad < 0) break;
+    el[bad] = Math.floor(rng() * (3 * QSEC));   // somewhere in the first three quarters
   }
 
-  // Clock counts down, so later in a quarter means FEWER seconds left.
-  placed.sort((a, b) => a.q - b.q || b.sec - a.sec);
+  /* Sort into time order and force the clocks a whole second apart, on the ROUNDED seconds
+     rather than the raw ones, so two scores a fraction of a second apart never floor onto
+     the same displayed clock. */
+  const idx = order.map((e, i) => i).sort((a, b) => el[a] - el[b]);
+  const secs = idx.map((i) => Math.max(1, Math.min(GAME - 1, Math.floor(el[i]))));
+  for (let i = 1; i < secs.length; i++) if (secs[i] <= secs[i - 1]) secs[i] = Math.min(GAME - 1, secs[i - 1] + 1);
 
   let ry = 0, rt = 0;
-  return placed.map((e) => {
+  return idx.map((i, k) => {
+    const e = order[i];
+    const t0 = secs[k];
+    const q = quarterOf(t0);
+    const sec = Math.max(1, Math.min(QSEC - 1, QSEC - (t0 - q * QSEC)));
     if (e.team === 'you') ry += e.points; else rt += e.points;
     return {
-      q: e.q + 1,
-      sec: e.sec,
-      clock: Math.floor(e.sec / 60) + ':' + String(e.sec % 60).padStart(2, '0'),
+      q: q + 1,
+      sec,
+      clock: Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'),
       team: e.team, kind: e.kind, note: e.note || null, points: e.points,
       you: ry, them: rt,
     };
@@ -1829,7 +1851,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 30;
+const ENGINE_API_VERSION = 31;
 
 /*
  * The three-letter code a team actually wore in a given season.
