@@ -1575,6 +1575,7 @@ window.GA_ID='G-L29P5MRWKE';
     .wrap:has(#s-over.on){max-width:860px}
     .dcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
       column-gap:24px;align-items:start}
+    .opts{grid-template-columns:repeat(3,minmax(0,1fr))}
     /* The field is the top of its column, so the reels line up with it rather than
        sitting a row lower than the thing they fill. */
     #reels{margin-top:0}
@@ -1592,6 +1593,7 @@ window.GA_ID='G-L29P5MRWKE';
   @media (min-width:1200px) and (max-width:1259px){
     .wrap:has(#s-draft.on){max-width:600px}
     .dcols{display:block}
+    .opts{grid-template-columns:repeat(2,minmax(0,1fr))}
     #reels{margin-top:11px}
     .dpips{display:flex}
     .capwrap:after{display:block}
@@ -2520,10 +2522,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            which put the control for the thing at the top of the column at the bottom of
            it, and out of sight on a phone. -->
       <div id="d-respin"></div>
-      <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
-      <div class="opts" id="opts"></div>
      </div>
     </div>
+    <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
+    <div class="opts" id="opts"></div>
     <!-- QUITTING. Six spins in, a player who has changed their mind had no exit
          either, and a draft is the longest screen in the game to be trapped on.
          Two taps rather than one, because a single tap here throws away a run in
