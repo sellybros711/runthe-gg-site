@@ -47,30 +47,26 @@ const CONSTANTS = {
    * STRUCTURE.IDEAL_FLOOR_SHARE, so the extra money has to buy a whole offense
    * rather than stars and empty jerseys. See the note there.
    *
-   * At $140M and SCALE 2.65, measured over 150 runs per policy:
+   * At $140M, SCALE 2.65, CONSISTENCY 0.20, HOME_FIELD 0.35, measured over
+   * 150 runs per policy:
    *
    *   policy                 spend  FPPG shape  record  playoffs title  20-0
-   *   cheapest every time     $42M    22  0.51    0-17       0%     0%    0%
-   *   best points per dollar  $61M    44  0.92    5-12       1%     0%    0%
-   *   random tap              $81M    51  0.73    4-13       5%     0%    0%
-   *   taps the top row       $136M    79  0.86    12-5      54%     7%  0.3%
-   *   perfect play (DP)      $137M    84  1.02    14-3      89%    16%  0.9%
+   *   cheapest every time     $43M    21  0.51    0-17       0%     0%    0%
+   *   best points per dollar  $61M    44  0.92    5-12       0%     0%    0%
+   *   random tap              $81M    51  0.73    4-13       4%     0%    0%
+   *   taps the top row       $137M    79  0.82    11-6      43%     1%    0%
+   *   perfect play (DP)      $138M    85  1.02    14-3      90%     4%  0.3%
    *
-   * Two wins and 35 points of playoff odds between careless and perfect, which is
-   * the room skill had at the old cap. USE 150 RUNS, not 40, to judge any of this:
-   * the spread across drawn team-sets is wide enough that two 40-run samples of the
-   * same settings disagreed by 18 points of playoff odds, which is how a bad
-   * calibration gets locked in.
+   * CONSISTENCY and PLAYOFF_HOME_FIELD together widen the gap between
+   * careless and perfect play. A 17-0 team now loses the Divisional round
+   * about 19% of the time (was 66% without either dial). 20-0 is still
+   * near-mythical at 0.2-0.3% of runs. USE 150 RUNS, not 40, to judge
+   * any of this.
    *
-   * Two things worth reading twice. Random tapping fell from 10-7 to 4-13, because
-   * random picks build broken offenses and the model finally says so. And perfect
-   * play buys FEWER expensive players than careless play (1.4 against 2.1 at or
-   * above the p90 price), because the balanced roster is the better one. That is
-   * the decision the bigger budget was supposed to create.
-   *
-   * This deliberately does not chase §9's 3-6% perfect-season target. The owner
-   * played it there and found it too easy; 20-0 reads better as near-mythical with
-   * the title as the reachable goal.
+   * Random tapping at 4-13 is still correct: random picks build broken
+   * offenses and the model says so. Perfect play buys FEWER expensive
+   * players than careless play because the balanced roster is the better
+   * one. That is the decision the bigger budget creates.
    *
    * Re-solve before trusting any change to pricing, the cap, chemistry, or the
    * structure model. All four move these numbers.
@@ -122,6 +118,33 @@ const CONSTANTS = {
   PLAYOFF_WINS: 12,
   PLAYOFF_ROUNDS_WITH_BYE: 3,
   PLAYOFF_ROUNDS_WILD_CARD: 4,
+
+  /*
+   * How much each side's score is pulled toward its expected value.
+   *
+   * At 0 every point is sampled, so variance is king and a stacked roster
+   * can lose to anyone on a bad draw. At 1 every game is deterministic and
+   * the better team always wins. 0.10 is a light touch: it narrows the
+   * tails just enough that team quality shows through more often without
+   * making outcomes feel scripted.
+   *
+   * Applied symmetrically to both sides, so it is HARDER to upset a strong
+   * opponent (their mean is high, and pulling toward it keeps it there) and
+   * EASIER to beat a weak one. Net effect: more 17-0 regular seasons, fewer
+   * first-round exits, and a harder path through the legends at the end.
+   */
+  CONSISTENCY: 0.20,
+
+  /*
+   * Playoff home-field advantage, scaling linearly from PLAYOFF_WINS (no
+   * advantage) to a 17-0 record (full advantage). Applied as a divisor to
+   * the opponent's score: a 17-0 team's opponents score about 10% less.
+   *
+   * In the real NFL the top seed plays every round at home and the crowd
+   * matters. Here it rewards the regular season: if your team earned a
+   * dominant record, the playoffs respect it.
+   */
+  PLAYOFF_HOME_FIELD: 0.35,
 };
 
 /**
@@ -1198,16 +1221,22 @@ function playoffOpponent(playoffs, rounds, roundIndex) {
  * scoring drifts (20.8 in 1999 to 23.0 in 2025) and a single constant would
  * systematically mis-rate one era against the other.
  */
-function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rng, constants = CONSTANTS) {
+function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rng, constants = CONSTANTS, advantage = 1) {
   let raw = 0;
   for (const p of roster) raw += sampleGamma(p.ppr_ppg_mean, p.ppr_ppg_sd, rng);
+
+  const C = constants.CONSISTENCY || 0;
+  if (C > 0) {
+    const expected = roster.reduce((s, p) => s + p.ppr_ppg_mean, 0);
+    raw = raw * (1 - C) + expected * C;
+  }
 
   // Structure is read from the roster itself, so no caller can forget to apply it.
   const structure = rosterStructure(roster).multiplier;
   const defenseModifier = opponent.pts_allowed_mean / leagueAvgAllowed;
   const yourScore = raw * chemistryMultiplier * structure * defenseModifier;
 
-  const oppScore = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng) * constants.SCALE;
+  const oppScore = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng) * constants.SCALE / advantage;
 
   let won;
   if (yourScore > oppScore) won = true;
@@ -1367,14 +1396,22 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
   const regularLosses = losses;
   const seed = seedFromRecord(regularWins);
 
+  const advantage = 1 + (constants.PLAYOFF_HOME_FIELD || 0)
+    * Math.max(0, regularWins - constants.PLAYOFF_WINS)
+    / (constants.REGULAR_SEASON_GAMES - constants.PLAYOFF_WINS);
+
   let titleWon = false;
   let exitRound = null;
   if (seed.made) {
     const names = playoffRoundNames(seed.rounds);
     for (let i = 0; i < seed.rounds; i++) {
       const opp = playoffOpponent(playoffs, seed.rounds, i);
-      const won = play(opp, { week: schedule.length + i + 1, playoff: true, round: names[i] });
-      if (!won) { exitRound = names[i]; break; }
+      const leagueAvg = leagueContext[opp.season] ?? 21.5;
+      const isFinal = i === seed.rounds - 1;
+      const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants, isFinal ? 1 : advantage);
+      results.push({ opponent: opp.display, opponent_id: opp.team_season_id,
+        week: schedule.length + i + 1, playoff: true, round: names[i], ...r });
+      if (r.won) wins++; else { losses++; exitRound = names[i]; break; }
       if (i === seed.rounds - 1) titleWon = true;
     }
   }
@@ -1454,7 +1491,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 21;
+const ENGINE_API_VERSION = 22;
 
 /*
  * The three-letter code a team actually wore in a given season.
