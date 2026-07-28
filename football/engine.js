@@ -668,6 +668,63 @@ const STRUCTURE = {
 
 const SCHEMES = [
   {
+    key: 'greatest_show',
+    name: 'Greatest Show on Turf',
+    relief: 0,
+    bonus: 0.04,
+    detect(roster) {
+      const qb = roster.find(p => p.position === 'QB');
+      if (!qb || (qb.pass_ppg || 0) < 15) return false;
+      const wr = roster.filter(p => p.position === 'WR').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
+      if (!wr || (wr.rec_ppg || 0) < 9) return false;
+      const rb = roster.filter(p => p.position === 'RB').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
+      return rb && (rb.rec_ppg || 0) >= 4;
+    },
+    strength: 'Greatest Show on Turf. Warner, Faulk, Bruce and Holt reborn.',
+  },
+  {
+    key: 'triplets',
+    name: 'The Triplets',
+    relief: 0,
+    bonus: 0.04,
+    detect(roster) {
+      const pos = new Set();
+      for (const p of roster) {
+        if (p.ppr_ppg_mean >= 14) pos.add(p.position);
+      }
+      return pos.size >= 3;
+    },
+    strength: 'The Triplets. Three stars at three positions, like the Cowboys.',
+  },
+  {
+    key: 'wildcat',
+    name: 'Wildcat',
+    relief: 0,
+    bonus: 0.04,
+    detect(roster) {
+      const qb = roster.find(p => p.position === 'QB');
+      if (!qb || (qb.rush_ppg || 0) < 3.5) return false;
+      const rb = roster.filter(p => p.position === 'RB').sort((a, b) => (b.rush_ppg || 0) - (a.rush_ppg || 0))[0];
+      return rb && (rb.rush_ppg || 0) >= 10;
+    },
+    strength: 'Wildcat. Two runners the defense cannot account for.',
+  },
+  {
+    key: 'air_coryell',
+    name: 'Air Coryell',
+    relief: 0,
+    bonus: 0.03,
+    detect(roster) {
+      const qb = roster.find(p => p.position === 'QB');
+      if (!qb || (qb.pass_ppg || 0) < 14) return false;
+      const te = roster.filter(p => p.position === 'TE').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
+      if (!te || (te.rec_ppg || 0) < 6) return false;
+      const wr = roster.filter(p => p.position === 'WR').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
+      return wr && (wr.rec_ppg || 0) >= 8;
+    },
+    strength: 'Air Coryell. The vertical game with a tight end who can beat you.',
+  },
+  {
     key: 'air_raid',
     name: 'Air Raid',
     relief: 0.70,
@@ -679,6 +736,36 @@ const SCHEMES = [
       return strongWR.length >= 2;
     },
     strength: 'Air Raid. The passing game can carry this team.',
+  },
+  {
+    key: 'run_and_shoot',
+    name: 'Run and Shoot',
+    relief: 0.70,
+    bonus: 0.02,
+    detect(roster) {
+      const qb = roster.find(p => p.position === 'QB');
+      if (!qb || (qb.pass_ppg || 0) < 12) return false;
+      const wrs = roster.filter(p => p.position === 'WR');
+      return wrs.length >= 3;
+    },
+    strength: 'Run and Shoot. Three wideouts and a quarterback who can find them.',
+  },
+  {
+    key: 'west_coast',
+    name: 'West Coast',
+    relief: 0.50,
+    bonus: 0.02,
+    detect(roster) {
+      const qb = roster.find(p => p.position === 'QB');
+      if (!qb || (qb.pass_ppg || 0) < 11) return false;
+      const te = roster.filter(p => p.position === 'TE').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
+      if (!te || (te.rec_ppg || 0) < 5) return false;
+      const rb = roster.filter(p => p.position === 'RB').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
+      if (!rb || (rb.rec_ppg || 0) < 3) return false;
+      const wr = roster.filter(p => p.position === 'WR').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
+      return wr && (wr.rec_ppg || 0) >= 6;
+    },
+    strength: 'West Coast. Short passes, every position catches, nobody is open by accident.',
   },
   {
     key: 'ground_and_pound',
@@ -718,14 +805,10 @@ const SCHEMES = [
 ];
 
 function detectScheme(roster) {
-  let best = null;
-  let bestVal = -1;
   for (const s of SCHEMES) {
-    if (!s.detect(roster)) continue;
-    const val = s.relief + s.bonus;
-    if (val > bestVal) { best = s; bestVal = val; }
+    if (s.detect(roster)) return s;
   }
-  return best;
+  return null;
 }
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
