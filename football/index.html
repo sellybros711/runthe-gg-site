@@ -1552,6 +1552,11 @@ window.GA_ID='G-L29P5MRWKE';
   .dcols{display:block}
   @media (min-width:920px){
     .wrap:has(#s-draft.on){max-width:1040px}
+    .wrap:has(#s-squad.on),
+    .wrap:has(#s-season.on),
+    .wrap:has(#s-po.on),
+    .wrap:has(#s-seed.on),
+    .wrap:has(#s-over.on){max-width:860px}
     .dcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
       column-gap:24px;align-items:start}
     /* The field is the top of its column, so the reels line up with it rather than
@@ -1577,6 +1582,11 @@ window.GA_ID='G-L29P5MRWKE';
   }
   @media (min-width:1260px){
     .wrap:has(#s-draft.on){max-width:min(1040px,calc(100vw - 400px))}
+    .wrap:has(#s-squad.on),
+    .wrap:has(#s-season.on),
+    .wrap:has(#s-po.on),
+    .wrap:has(#s-seed.on),
+    .wrap:has(#s-over.on){max-width:min(860px,calc(100vw - 400px))}
   }
   /* Tiles arrive as a consequence of the reels landing, so they come in on a short
      stagger rather than all at once out of nowhere. */
@@ -5707,6 +5717,7 @@ async function careerPaint(userId){
      was in flight. Re-read the slot rather than trusting the one captured above. */
   const now=$('sh-career');
   if(!now||$('sheet-in').dataset.kind!=='profile') return;
+  if(c&&c.rows.length) ga('career_viewed',{runs:c.total,best_rating:careerStats(c.rows,c.total).bestRating});
   if(!c){
     now.innerHTML='<p class="shsec">Your career</p>'+
       '<p class="dim" style="font-size:12.5px;margin:7px 0 0">Your run history could not '+
@@ -5965,6 +5976,7 @@ function fbContext(){
 }
 
 function feedbackSheet(msg,ok){
+  if(!msg) ga('feedback_opened');
   const box=$('sheet-in');
   box.dataset.kind='feedback';
   box.style.borderTop='';
@@ -6026,6 +6038,7 @@ async function sendFeedback(){
 
   busy('fb-send','Sending');
   if(await fbPost(payload)){
+    ga('feedback_sent',{category:label});
     fbDraft.msg=''; fbDraft.email='';
     closeSheet(); toast('Sent. Thank you');
     fbFlush();                    // anything waiting can go out on the same working network
@@ -6658,6 +6671,7 @@ const SORT_META={
    player on the free board would show them a table they are not in. */
 function openBoard(){
   if(run&&run.outcome) lbClub=run.franchise||null;
+  ga('board_opened',{mode:lbClub?'club':'free',club:lbClub||null});
   show('s-board'); loadBoard();
 }
 
@@ -7190,16 +7204,16 @@ $('b-board-x').onclick=closeBoard;
 $('b-diag').onclick=runDiagnostics;
 $('lb-tabs').addEventListener('click',(e)=>{
   const t=e.target.closest('.tab'); if(!t||t.disabled||t.dataset.lb===lbWin) return;
-  lbWin=t.dataset.lb; loadBoard();
+  lbWin=t.dataset.lb; ga('board_window',{window:lbWin}); loadBoard();
 });
 $('lb-sort').addEventListener('click',(e)=>{
   const t=e.target.closest('button'); if(!t||t.dataset.sort===lbSort) return;
   /* The window survives a change of axis now. Switching to rating used to yank the tab
      back to All time, because rating could not answer a window; it can. */
-  lbSort=t.dataset.sort;
+  lbSort=t.dataset.sort; ga('board_sort',{sort:lbSort});
   loadBoard();
 });
-$('b-lb-dir').onclick=()=>{ lbDir=lbDir==='asc'?'desc':'asc'; loadBoard(); };
+$('b-lb-dir').onclick=()=>{ lbDir=lbDir==='asc'?'desc':'asc'; ga('board_sort',{sort:lbSort,dir:lbDir}); loadBoard(); };
 
 /* TEARING DOWN A FINISHED RUN.
    Both ways of playing again need every line of this, so it is one function rather
