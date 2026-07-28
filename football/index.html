@@ -2644,7 +2644,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="scheme-badge" id="q-scheme-badge" hidden>
         <div class="scheme-icon" id="q-scheme-icon"></div>
         <span class="scheme-name" id="q-scheme-name"></span>
-        <span class="scheme-bonus">+3%</span>
+        <span class="scheme-bonus" id="q-scheme-bonus">+3%</span>
       </div>
       <div class="scheme-tagline" id="q-scheme-tagline" hidden></div>
       <div class="verdictline" id="q-verdict"></div>
@@ -2829,8 +2829,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=29"></script>
-<script src="run.js?v=29"></script>
+<script src="engine.js?v=30"></script>
+<script src="run.js?v=30"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -2962,7 +2962,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=29;
+const NEED_VERSION=30;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -4265,6 +4265,9 @@ function paintSquad(){
     $('q-scheme-icon').innerHTML=schemeIconSvg(st.scheme);
     $('q-scheme-name').textContent=schemeName;
     $('q-scheme-tagline').textContent=E.SCHEME_TAGLINES[st.scheme]||'';
+    /* The badge shows the boost this fit actually earned, 1 to 3 per cent, not a flat
+       number, so a stronger fit reads as worth more. */
+    $('q-scheme-bonus').textContent='+'+Math.round((st.schemeBonus||0)*100)+'%';
   }else{
     $('q-verdict').innerHTML=
       '<p class="take">'+esc(cr.verdict)+'</p>'+
