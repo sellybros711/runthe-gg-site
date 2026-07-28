@@ -1853,32 +1853,35 @@ window.GA_ID='G-L29P5MRWKE';
   @media (max-width:1199px){ body.rtp-hide-ads{padding-bottom:0 !important} }
 
   /* COACH PANEL.
-     The shape multiplier is the headline because it is the number the sim actually uses, and
-     the three bars under it are the things that produced it. */
-  .verdictline{margin:6px 0 12px}
-  .verdictline .shape{display:flex;align-items:baseline;gap:10px}
-  .verdictline .shape b{font-family:var(--fd);font-size:40px;line-height:.9;letter-spacing:-.01em}
-  .verdictline .shape span{font-family:var(--fn);font-size:11px;letter-spacing:.14em;
-    text-transform:uppercase;color:var(--dim-2);line-height:1.3}
-  .verdictline .shape span em{display:block;font-style:normal;letter-spacing:.1em;
-    color:var(--dim)}
-  .verdictline .take{margin:9px 0 0;font-size:14px;line-height:1.4;color:var(--ink)}
-  .cnote{display:flex;gap:9px;font-size:13px;padding:8px 0;border-top:1px solid var(--line);line-height:1.35}
-  .cnote .m{flex:0 0 16px;height:16px;border-radius:4px;display:grid;place-items:center;margin-top:2px;
+     WHAT WAS WRONG WITH IT. The headline was "x1.06 TEAM SHAPE", a multiplier and a phrase
+     that only mean anything if you have read the code. A player looking at it could not say
+     what it had to do with the six men on the field above, and it cost forty pixels of Anton
+     to say it. The panel is the same three measures and the same notes, but it opens with the
+     verdict in words and then one sentence of plain English for the multiplier: these six
+     score six per cent more than their own numbers add up to. That is what the multiplier is.
+
+     Every row is one line now. The old rows stacked a label, a sentence of detail and a 6px
+     bar, three rows deep each, which is where most of the height went. */
+  .verdictline{margin:4px 0 0}
+  .verdictline .take{margin:0;font-family:var(--fd);font-size:22px;line-height:1.08;
+    letter-spacing:-.01em;color:var(--ink)}
+  .verdictline .fit{margin:6px 0 0;font-size:12.5px;line-height:1.4;color:var(--dim-2)}
+  .verdictline .fit b{font-weight:700}
+  .cnote{display:flex;gap:8px;font-size:12.5px;padding:6px 0;border-top:1px solid var(--line);line-height:1.35}
+  .cnote .m{flex:0 0 15px;height:15px;border-radius:4px;display:grid;place-items:center;margin-top:2px;
     font-family:var(--fn);font-size:11px;color:#fff}
   .cnote.good .m{background:#15803d} .cnote.bad .m{background:var(--red-2)}
-  .meters{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;margin-top:4px}
-  /* The label column holds a name and the number behind it, stacked, so the row reads
-     left to right as "this thing, this measurement, this much, this verdict". */
-  .meter{display:grid;grid-template-columns:minmax(0,1fr) 62px;grid-template-rows:auto auto;
-    align-items:center;column-gap:10px;row-gap:5px}
+  .meters{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:12px}
+  /* Name, the measurement behind it and the verdict all on one line, with the bar as a 3px
+     rule under them. Reads left to right as "this part of the team, this much, this good". */
+  .meter{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:baseline;
+    column-gap:8px;row-gap:5px}
   .meter .lbl{font-family:var(--fn);font-size:12.5px;font-weight:600;letter-spacing:.02em;
-    color:var(--ink);min-width:0}
-  .meter .lbl em{display:block;font-style:normal;font-family:var(--fb);font-size:11px;
-    font-weight:400;color:var(--dim-2);letter-spacing:0;margin-top:1px}
-  .meter .val{grid-column:2;grid-row:1;text-align:right;font-family:var(--fn);font-size:12px;
-    font-weight:600;letter-spacing:.06em;text-transform:uppercase}
-  .meter .track{grid-column:1/-1;grid-row:2;height:6px;border-radius:99px;
+    color:var(--ink);white-space:nowrap}
+  .meter .det{font-family:var(--fb);font-size:11.5px;color:var(--dim-2);min-width:0}
+  .meter .val{text-align:right;font-family:var(--fn);font-size:11.5px;
+    font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+  .meter .track{grid-column:1/-1;height:3px;border-radius:99px;
     background:rgba(255,255,255,.08);overflow:hidden}
   .meter .track i{display:block;height:100%;border-radius:99px;
     transition:width .5s cubic-bezier(.2,.8,.3,1)}
@@ -2374,7 +2377,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="eyebrow">Coach's take</div>
       <div class="verdictline" id="q-verdict"></div>
       <div class="meters" id="q-meters"></div>
-      <div id="q-notes" style="margin-top:11px"></div>
+      <div id="q-notes" style="margin-top:9px"></div>
     </div>
     <details class="drop" style="margin-top:11px">
       <summary><span class="eyebrow">Your schedule</span><span class="caret">v</span></summary>
@@ -2545,8 +2548,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=17"></script>
-<script src="run.js?v=17"></script>
+<script src="engine.js?v=18"></script>
+<script src="run.js?v=18"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -2625,7 +2628,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=17;
+const NEED_VERSION=18;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -3687,43 +3690,40 @@ function paintSquad(){
      structure multiplier explains itself instead of being a hidden number. */
   const spend=run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed);
   const cr=E.coachReport(run.roster,run.season.chemistry,spend);
-  $('q-verdict').textContent=cr.verdict;
   const st=cr.structure;
-  /* WHAT WAS WRONG WITH THIS PANEL.
-     Three different quantities were being drawn as one row. The bar's LENGTH was a normalized
-     value, its COLOUR came from a separate comparison against a different threshold, and the
-     figure on the right was a different unit on every line: "OK", then "19% run", then "26%
-     one man", then "x0.94". So a long red bar sat next to the word OK, and nothing could be
-     read down the column.
+  /* WHAT THE PANEL SAYS, IN THE ORDER IT SAYS IT.
+     The verdict, then one sentence for the multiplier, then the three parts that made it,
+     then the notes. No multiplier notation and no phrase the player has to be taught: the
+     old headline read "x1.06 TEAM SHAPE STRONG", which is three pieces of jargon in four
+     words and never said what it had to do with the six men on the field above it.
 
-     One quantity per row now: how good this part of the roster is, from 0 to 100. The bar's
-     length IS the score and the colour is a band of the same score, so a long bar is always
-     good and a red one is always short. The raw number that produced it sits under the label,
-     where it explains the score instead of competing with it.
-
-     The team-shape bar is gone as a bar. It is the product of the other three, so drawing it
-     alongside them showed the same information twice; it is the headline figure instead. */
+     "Six per cent more than their own numbers add up to" is exactly what the multiplier
+     does, said once, in words anybody can check against the fantasy points on the rows. */
   const band=(v)=>v>=0.75?{c:'#22c55e',w:'Strong'}:(v>=0.45?{c:'#f59e0b',w:'OK'}:{c:'#ef4444',w:'Weak'});
   const meter=(lbl,detail,score)=>{
     const b=band(score);
     const pct=Math.max(4,Math.min(100,Math.round(score*100)));
-    return '<div class="meter"><span class="lbl">'+lbl+
-      '<em>'+esc(detail)+'</em></span>'+
-      '<span class="track"><i style="width:'+pct+'%;background:'+b.c+'"></i></span>'+
-      '<span class="val" style="color:'+b.c+'">'+b.w+'</span></div>';
+    return '<div class="meter"><span class="lbl">'+lbl+'</span>'+
+      '<span class="det">'+esc(detail)+'</span>'+
+      '<span class="val" style="color:'+b.c+'">'+b.w+'</span>'+
+      '<span class="track"><i style="width:'+pct+'%;background:'+b.c+'"></i></span></div>';
   };
   /* Scores are scaled against the range each measure can actually take, read off STRUCTURE
      rather than guessed: quarterback support is clamped to 0.62-1.18, and balance and
      concentration are both penalties subtracted from 1, so they top out at exactly 1. */
   const span=(v,lo,hi)=>Math.max(0,Math.min(1,(v-lo)/(hi-lo)));
-  const shape=st.multiplier;
-  const shapeBand=band(span(shape,0.82,1.06));
+  const fitBand=band(span(st.multiplier,0.82,1.06));
+  const fitPct=Math.abs(Math.round((st.multiplier-1)*100));
+  const strong='<b style="color:'+fitBand.c+'">';
   $('q-verdict').innerHTML=
-    '<div class="shape"><b style="color:'+shapeBand.c+'">x'+shape.toFixed(2)+'</b>'+
-      '<span>team shape<em>'+shapeBand.w.toLowerCase()+'</em></span></div>'+
-    '<p class="take">'+esc(cr.verdict)+'</p>';
+    '<p class="take">'+esc(cr.verdict)+'</p>'+
+    '<p class="fit">'+(fitPct===0
+      ? 'These six neither help nor hold each other back, so they score about what their '+
+        'own numbers add up to.'
+      : 'Because of how these six fit together, they score '+strong+fitPct+'% '+
+        (st.multiplier>1?'more':'less')+'</b> than their own numbers add up to.')+'</p>';
   $('q-meters').innerHTML=
-    meter('Quarterback',st.qbPass?st.qbPass.toFixed(1)+' passing points a game':'no quarterback',
+    meter('Quarterback',st.qbPass?st.qbPass.toFixed(1)+' pass points a game':'nobody at quarterback',
       span(st.qbSupport,0.70,1.12))+
     /* NOT scaled off balance and concentration directly, which was the first attempt and
        made two of the three bars read 100% on nearly every roster. Both are penalties
@@ -3734,14 +3734,24 @@ function paintSquad(){
 
        These measure DISTANCE FROM THE LEAGUE-AVERAGE SHAPE instead, 25% of yards on the
        ground and 24% through one man, both measured. That is one meaning per bar and it
-       discriminates. What the shape actually COSTS is the headline multiplier above, which is
-       the number the sim uses; these three say which way the roster is leaning. */
-    meter('Run and pass balance',(st.rushShare*100).toFixed(0)+'% of yards on the ground, '+
-      'against a league average of 25%',
+       discriminates. The league figures used to be printed on every row, which was the
+       longest text in the panel and the least useful: the coloured word already says whether
+       the number beside it is a good one, and the notes underneath say why when it matters. */
+    meter('Run and pass',(st.rushShare*100).toFixed(0)+'% run, '+
+      (100-st.rushShare*100).toFixed(0)+'% pass',
       1-Math.min(1,Math.abs(st.rushShare-0.25)/0.25))+
-    meter('Spread of the scoring',(st.topShare*100).toFixed(0)+'% through one man, '+
-      'against a league median of 24%',
-      1-Math.min(1,Math.max(0,st.topShare-0.24)/0.20));
+    /* "Spread", not "Top scorer": the word on the right is the verdict on the ROW, and a row
+       called Top scorer reading Strong says the wrong thing entirely. */
+    meter('Spread',(st.topShare*100).toFixed(0)+'% through one player',
+      1-Math.min(1,Math.max(0,st.topShare-0.24)/0.20))+
+    /* DEPTH, WHICH WAS MISSING AND HAD TO BE ADDED THE MOMENT THE HEADLINE SAID IT IN WORDS.
+       The floor term is the biggest penalty the shape applies and it had no row, so a roster
+       could read Strong, Strong, Strong and still be told it scores a third less than its own
+       numbers. Three green bars and that sentence together is worse than the old jargon.
+       Scaled between the two measured figures the penalty itself uses: 0.14 of the roster
+       average is stars and scrubs, 0.64 is what real teams do. */
+    meter('Depth','quietest two at '+(st.floorShare*100).toFixed(0)+'% of your average',
+      span(st.floorShare,0.14,0.64));
   /* THREE NOTES, NOT FIVE OR SIX. Every weakness ties to a meter above, so a list that repeats
      all of them is the same panel twice. The most important of each is kept: the meters carry
      the detail and these carry the judgement. */
@@ -4237,14 +4247,14 @@ function paintOver(){
     tile((diff>=0?'+':'')+diff.toFixed(1),'Difference',diff>=0?'up':'dn')+
     tile(bestStreak,'Longest streak');
 
-  /* Chemistry, money and team shape now sit in the hero strip, so repeating them here
+  /* Chemistry, money and how the six fit now sit in the hero strip, so repeating them here
      as four more tiles was the same four numbers twice. What this tab can add instead is
      the sum: how those three turn into the team overall at the top. Same sentence the
      leaderboard's detail sheet uses, so the two can never read differently. */
   $('o-squadline').innerHTML='<span>'+squadFppg.toFixed(0)+' squad FPPG, '+
-    pc(run.season.chemistry-1)+' chemistry and a x'+st.multiplier.toFixed(2)+
-    ' team shape, which is a <b>'+rating.toFixed(1)+'</b> team overall against an '+
-    'average defense. You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.</span>';
+    pc(run.season.chemistry-1)+' chemistry and '+fitPct(st.multiplier)+
+    ' for how the six fit together, which is a <b>'+rating.toFixed(1)+'</b> team overall '+
+    'against an average defense. You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.</span>';
 
   /* WHAT THE SIX WON BETWEEN THEM. Counted from the same field the tiles read, so
      the line can never disagree with the plates on the rows below it. Silent when a
@@ -4289,7 +4299,7 @@ function paintOver(){
        6 spots right" under a 92% score without that read badly. */
     const spots=kept===6?'You picked the best available player at every spot.'
       :kept?'You had '+kept+' of the 6 spots exactly right.'
-      :'You matched none of the best picks, so the gap is all in the players, not the shape.';
+      :'You matched none of the best picks, so the gap is all in the players, not in how they fit.';
     /* One number, then what it means. The old page opened with six comparison
        rows and made you add them up yourself. */
     $('o-miss').innerHTML=
@@ -4301,7 +4311,7 @@ function paintOver(){
       'and same '+M(E.CONSTANTS.CAP_MUSD)+' allowed. A spot can go down on purpose when spending less '+
       'there buys more somewhere else.</p>'+
       swapRows(best)+comparison(best)+
-      '<p class="caveat">Points a game includes chemistry and team shape, because that is what '+
+      '<p class="caveat">Points a game includes chemistry and how the six fit, because that is what '+
       'the simulation scores with. Both records come from replaying the two teams against your actual 17 opponents '+
       'many times, because one season is mostly luck. Your six teams stay fixed: a different pick would '+
       'also have changed what the wheel showed you next.</p>';
@@ -4355,6 +4365,12 @@ function teamRating(roster,chemistry){
   const fppg=roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
   return fppg*chemistry*E.rosterStructure(roster).multiplier;
 }
+
+/* THE STRUCTURE MULTIPLIER, IN A FORM A PLAYER CAN READ.
+   Every line that used to print "a x1.06 team shape" prints "+6% for how the six fit
+   together" instead. Same number, and now it says what it does to your points. -0 prints as
+   0% on its own, so the sign only ever appears on a real one. */
+function fitPct(mult){ const n=Math.round((mult-1)*100); return (n>0?'+':'')+n+'%'; }
 
 /* Four rows, not seven. Money and chemistry already have their own place in the
    stats above, and a title-odds row on a team that missed the playoffs was noise. */
@@ -6397,7 +6413,7 @@ function runDetail(row,back){
     '</div>'+
     (fppg!==null&&mult!==null&&rating!==null
       ? '<p class="caveat" style="margin:9px 0 0">'+fppg.toFixed(0)+' squad FPPG, '+
-        pc(chem/100)+' chemistry and a x'+mult.toFixed(2)+' team shape, which is '+
+        pc(chem/100)+' chemistry and '+fitPct(mult)+' for how the six fit together, which is '+
         rating.toFixed(1)+' points a game against an average defense.</p>'
       : '<p class="caveat" style="margin:9px 0 0">This run was recorded before the game '+
         'stored a team rating.</p>')+

@@ -624,44 +624,69 @@ function coachReport(roster, chemistryMultiplier, spend) {
   const chem = (chemistryMultiplier - 1) * 100;
   const last = (n) => n.split(' ').slice(-1)[0];
 
+  /*
+   * ONE LINE EACH, AND THAT IS A LAYOUT RULE, NOT A STYLE PREFERENCE.
+   *
+   * These print in a panel about 300px wide at 12.5px, which is fifty characters. Every note
+   * that ran over became two lines, and three two-line notes were the tallest block on a
+   * screen the player had already said was too tall. Nothing below was cut to make room; the
+   * sentences just say the same thing without the second clause explaining the first.
+   */
+
   // Quarterback
   if (st.qbSupport >= 1.06) {
-    strengths.push(`${qb ? last(qb.name) : 'Your quarterback'} throws well enough to lift everyone he targets.`);
+    strengths.push(`${qb ? last(qb.name) : 'Your quarterback'} lifts everyone he throws to.`);
   } else if (st.qbSupport <= 0.86) {
-    weaknesses.push(`${qb ? last(qb.name) : 'Your quarterback'} cannot get the ball to these receivers. It holds the whole passing game back.`);
+    weaknesses.push(`${qb ? last(qb.name) : 'Your quarterback'} cannot get these receivers the ball.`);
   } else if (st.qbSupport <= 0.95) {
-    weaknesses.push('Your quarterback is ordinary, so your receivers will not see their best numbers.');
+    weaknesses.push('An ordinary quarterback holds your receivers back.');
   }
 
   // Balance
   if (st.rushShare < 0.13) {
-    weaknesses.push('There is no running game here. Teams can sit back and defend the pass all day.');
+    weaknesses.push('No running game, so defenses can sit on the pass.');
   } else if (st.rushShare > 0.45) {
     weaknesses.push('You run it too often to scare anybody deep.');
   } else {
-    strengths.push('You can run it and throw it, so defenses have to respect both.');
+    strengths.push('Run or pass, defenses have to respect both.');
   }
 
   // Concentration
   if (st.topShare >= 0.36) {
-    weaknesses.push(`Everything runs through ${last(star.name)}. Take him away and this offense stops.`);
+    weaknesses.push(`Take ${last(star.name)} away and this offense stops.`);
   } else if (st.topShare <= 0.26) {
-    strengths.push('The scoring is spread around, so no single defender can take you apart.');
+    strengths.push('Scoring is spread around. No one man to stop.');
+  }
+
+  /*
+   * Depth, which nothing in this list used to mention.
+   *
+   * The floor term is the largest single penalty the shape can apply, and it is the one a
+   * player cannot see: three stars and three passengers keeps the top man's share near
+   * ideal, so concentration says nothing and the notes said nothing either. A roster losing
+   * a third of its points to the floor read as a healthy one with a bad number attached.
+   * 0.36 and 0.64 are the measured figures from 848 real team-seasons, the same two the
+   * penalty itself is built from.
+   */
+  if (st.floorShare < 0.36) {
+    weaknesses.push('Two of your six barely score at all.');
+  } else if (st.floorShare >= 0.64) {
+    strengths.push('All six of them score. Nobody is a passenger.');
   }
 
   // Chemistry
   if (chem >= 8) strengths.push('These players know each other, and it shows.');
-  else if (chem < 1) weaknesses.push('Six strangers. Nobody here has played a down together.');
+  else if (chem < 1) weaknesses.push('Six strangers. Nobody has played a down together.');
 
   // Money
   const unspent = CONSTANTS.CAP_MUSD - spend;
-  if (unspent >= 20) weaknesses.push(`You left $${unspent.toFixed(0)}M on the table. That was a better player you did not sign.`);
+  if (unspent >= 20) weaknesses.push(`You left $${unspent.toFixed(0)}M unspent. That was a better player.`);
   else if (unspent <= 3) strengths.push('You used the whole budget.');
 
   // Boom or bust
   const swing = roster.reduce((t, p) => t + p.ppr_ppg_sd, 0) / Math.max(1, total);
-  if (swing > 0.52) weaknesses.push('This group is streaky. Big weeks, and some very quiet ones.');
-  else if (swing < 0.38) strengths.push('Steady week to week, which matters when one loss can end you.');
+  if (swing > 0.52) weaknesses.push('Streaky. Big weeks, and some very quiet ones.');
+  else if (swing < 0.38) strengths.push('Steady week to week, and that matters here.');
 
   let verdict;
   if (st.multiplier >= 1.03 && total >= 60) verdict = 'A real contender.';
@@ -1312,7 +1337,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 17;
+const ENGINE_API_VERSION = 18;
 
 /*
  * The three-letter code a team actually wore in a given season.
