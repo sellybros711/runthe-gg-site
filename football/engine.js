@@ -1738,6 +1738,7 @@ const publicAPI = {
   eraCode, ERA_CODES,
   NICKNAMES, nickname, CITIES, city, cityLabel, TEAM_COLORS, teamColors, washColors,
   teamInk, teamButton, contrast, LINK_TIERS, linkTier, rosterStructure, STRUCTURE, coachReport,
+  SCHEME_NAMES: Object.fromEntries(SCHEMES.map(s => [s.key, s.name])),
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
