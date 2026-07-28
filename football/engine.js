@@ -930,9 +930,13 @@ function coachReport(roster, chemistryMultiplier, spend) {
     if (s) strengths.push(s.strength);
   }
 
-  // Chemistry
-  if (chem >= 8) strengths.push('These players know each other, and it shows.');
-  else if (chem < 1) weaknesses.push('Six strangers. Nobody has played a down together.');
+  // Chemistry only counts when a scheme is active.
+  if (st.scheme) {
+    if (chem >= 8) strengths.push('These players know each other, and it shows.');
+    else if (chem < 1) weaknesses.push('Six strangers. Nobody has played a down together.');
+  } else {
+    if (chem >= 4) weaknesses.push('Chemistry without a scheme does nothing.');
+  }
 
   // Money
   const unspent = CONSTANTS.CAP_MUSD - spend;
@@ -1476,9 +1480,10 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
   }
 
   // Structure is read from the roster itself, so no caller can forget to apply it.
-  const structure = rosterStructure(roster).multiplier;
+  const st = rosterStructure(roster);
+  const chem = st.scheme ? chemistryMultiplier : 1;
   const defenseModifier = opponent.pts_allowed_mean / leagueAvgAllowed;
-  const yourScore = raw * chemistryMultiplier * structure * defenseModifier;
+  const yourScore = raw * chem * st.multiplier * defenseModifier;
 
   const oppScore = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng) * constants.SCALE / advantage;
 
