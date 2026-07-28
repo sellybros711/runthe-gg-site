@@ -1,9 +1,12 @@
 -- ============================================================================
 -- 57_football_run_mode.sql : One Team mode, with a column name that cannot bite
 -- ============================================================================
--- THIS IS THE ONLY FILE YOU NEED FOR ONE TEAM MODE. It replaces
--- 56_football_all_time_teams.sql and is safe whether or not you ever ran that
--- one. Safe to run more than once. Run it in the Supabase SQL editor in one go.
+-- Replaces 56_football_all_time_teams.sql and is safe whether or not you ever ran
+-- that one. Safe to run more than once. Run it in the Supabase SQL editor in one
+-- go, and run 58_football_stamp_display.sql after it: an earlier version of this
+-- file dropped display_name from the insert, so runs recorded by it were counted
+-- and never listed. 58 fixes the rows that already exist and moves the stamping
+-- into the trigger so it cannot be dropped again.
 --
 -- ----------------------------------------------------------------------------
 -- WHY THIS FILE EXISTS: `mode` IS A FUNCTION NAME IN POSTGRES
@@ -247,6 +250,15 @@ declare
   v_daily   boolean;
   v_mode    text;
   v_club    text;
+  -- THE NAME, and it is read here rather than accepted from the caller so that no
+  -- client can put a name on a row it does not own. Both earlier rewrites of this
+  -- function for One Team mode were made from the pre-accounts version in 50 and
+  -- silently dropped it, which recorded every signed-in run unnamed and therefore
+  -- off the board. 58_football_stamp_display.sql moves the same job into the
+  -- BEFORE INSERT trigger as well, which is what makes it un-loseable; this stays
+  -- so that a project running 50, 51, 55 and 57 in order is correct without it.
+  v_user    uuid := auth.uid();
+  v_name    text;
 begin
   -- ---- which competition, decided here and not sent twice ----
   v_mode := lower(btrim(coalesce(p_mode, 'free')));
@@ -376,6 +388,11 @@ begin
     end if;
   end if;
 
+  -- ---- the name, read from the profile and never from the caller ----
+  if v_user is not null then
+    select username::text into v_name from profiles where id = v_user;
+  end if;
+
   -- ---- swallow an accidental double submit ----
   -- A retry after a timeout, or a second tap on Share, should not put the same
   -- season on the board twice. Same roster, same result, same mode, inside a
@@ -389,13 +406,13 @@ begin
   if v_dupe is not null then return v_dupe; end if;
 
   insert into ps_runs (
-    user_id, regular_wins, playoff_wins, wins, losses, games,
+    user_id, display_name, regular_wins, playoff_wins, wins, losses, games,
     title_won, made_playoffs, perfect, seed_label,
     point_diff, chemistry_pct, spend_musd, respins, franchise, run_mode, daily, daily_date,
     picks, slots, seed, rng_calls,
     squad_fppg, structure_mult, team_rating, perfect_pct
   ) values (
-    auth.uid(), v_reg, v_po, v_wins, v_losses, v_games,
+    v_user, v_name, v_reg, v_po, v_wins, v_losses, v_games,
     v_title, v_made, (v_title and v_losses = 0), v_label,
     round(p_point_diff, 1), round(p_chemistry_pct, 2), round(p_spend_musd, 1),
     coalesce(p_respins, 0), v_club, v_mode, v_daily, v_ddate,
