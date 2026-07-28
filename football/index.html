@@ -1924,7 +1924,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   .bigrec{text-align:center;padding:6px 0 12px}
   .bigrec .r{font-family:var(--fd);font-size:62px;line-height:.95}
-  .verdict{border-radius:16px;padding:22px 18px;text-align:center;border:1px solid var(--line);
+  .verdict{border-radius:16px;padding:12px 18px 22px;text-align:center;border:1px solid var(--line);
     background:var(--grad-panel)}
   .verdict.gold{background:linear-gradient(160deg,#3b2f0a,#181305);border-color:rgba(245,158,11,.42)}
   .verdict.win{background:linear-gradient(160deg,#0c2a4d,#0a1526);border-color:rgba(59,130,246,.42)}
@@ -6433,16 +6433,14 @@ document.addEventListener('click',(e)=>{
   show('s-board'); loadBoard();
 });
 
-/* Submit, then read the rank. In that order so a run is counted in its own
-   denominator, and the rank query does not depend on the submit having worked. */
 async function paintRanks(){
   const el=$('o-ranks');
   el.innerHTML='<div class="rload"><i></i><i></i><i></i><span>Reading the board</span></div>';
   const score=B.scoreOf(run.outcome.wins,runPayload().pointDiff);
-  await recordRun();
-  /* Ranked among its own kind. A One Franchise Dolphins run drafts from twenty-odd seasons
-     rather than 861, so it is a different game, and it means nothing on the Bears board. */
-  const r=await B.ranks(score,runMode(),run.franchise||null,run.era||null);
+  const [,r]=await Promise.all([
+    recordRun(),
+    B.ranks(score,runMode(),run.franchise||null,run.era||null)
+  ]);
   myRanks=r;
   /* The strip at the top of the page carries the same three numbers, and it is the
      one most people will read, so it is filled whatever this panel goes on to say. */
