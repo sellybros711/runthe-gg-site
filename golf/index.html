@@ -3421,7 +3421,7 @@ const SOCIAL_TAG='@RunTheGG #golf #RunTheTour';   // kept for a possible dedicat
 // tags would just spam a friend getting the text in Messages; the owner wants simple, challenging captions.
 function withSocial(t){ return t||''; }
 async function shareText(text){ text=withSocial(text); recordAchEvent({set:{shared:1}}); evaluateAch(); try{questDaily('share');}catch(e){}
-  try{ if(navigator.share){ await navigator.share({text}); return; } }catch(e){ if(e&&e.name==='AbortError')return; }
+  try{ if(navigator.share){ await navigator.share({text,url:'https://runthe.gg/golf/?utm_source=native_share&utm_medium=social&utm_campaign=golf'}); return; } }catch(e){ if(e&&e.name==='AbortError')return; }
   try{ await navigator.clipboard.writeText(text); toast('Copied! Paste it anywhere'); }catch(_){ toast('Could not copy'); } }
 /* ---------- ROUND RATING: a secondary "how you played" grade (S/A/B/C/D), distinct from the raw
    score. Rewards the SHAPE of the round (birdies, eagles, hole-outs, bogey-free, beating the field)
@@ -16323,7 +16323,7 @@ function shareCard(cv,text,name,suffix){
     if(!b){toast('Could not build the image, copy the text instead');return;}
     const file=new File([b],((name||'golfer').replace(/\s+/g,'-'))+'-'+(suffix||'season')+'.png',{type:'image/png'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
-      try{await navigator.share({files:[file],text}); return;}catch(e){if(e&&e.name==='AbortError')return;}
+      try{await navigator.share({files:[file],text,url:'https://runthe.gg/golf/?utm_source=native_share&utm_medium=social&utm_campaign=golf'}); return;}catch(e){if(e&&e.name==='AbortError')return;}
     }
     const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=file.name; a.click(); URL.revokeObjectURL(u);
     toast('Card saved. Attach it to your post');

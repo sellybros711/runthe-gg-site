@@ -8534,7 +8534,7 @@ function shareTextCore(){
 }
 // Full four-line block including the link, for clipboard + the on-screen box.
 function reportText(){
-  return `${shareTextCore()}\n${SHARE_HOME}`;
+  return `${shareTextCore()}\nhttps://runthe.gg/soccer/?utm_source=native_share&utm_medium=social&utm_campaign=soccer`;
 }
 
 function goToReport(){
@@ -8840,8 +8840,9 @@ async function nativeShareWithImage(){
     if(blob) file=new File([blob],'runthepitch.png',{type:'image/png'});
   }catch(e){ /* render failed → share text only */ }
 
+  const NATIVE_SHARE_URL='https://runthe.gg/soccer/?utm_source=native_share&utm_medium=social&utm_campaign=soccer';
   if(file && navigator.canShare && navigator.canShare({files:[file]})){
-    try{ await navigator.share({ files:[file], text, title:'RunThePitch: World Cup Game', url:SHARE_HOME }); return; }
+    try{ await navigator.share({ files:[file], text, title:'RunThePitch: World Cup Game', url:NATIVE_SHARE_URL }); return; }
     catch(e){ if(e && e.name==='AbortError') return; }
   }
   // Desktop / no file-share: download the image so it can still be posted, + copy text.
@@ -8855,7 +8856,7 @@ async function nativeShareWithImage(){
     }catch(e){ /* fall through */ }
   }
   if(navigator.share){
-    try{ await navigator.share({ text, title:'RunThePitch: World Cup Game', url:SHARE_HOME }); return; }
+    try{ await navigator.share({ text, title:'RunThePitch: World Cup Game', url:NATIVE_SHARE_URL }); return; }
     catch(e){ if(e && e.name==='AbortError') return; }
   }
   await copyToClipboard(reportText()); showToast('Copied to clipboard ✓');
@@ -9199,8 +9200,9 @@ async function openSharePopup(){
       .catch(()=>{ buildSimpleShareCanvas().then(canvas=>{ img.src=canvas.toDataURL('image/png'); img.style.display=''; }).catch(()=>{}); }); }
   // share-target grid
   const grid=$('share-grid'); grid.innerHTML='';
-  const msg=shareTextCore(), link=SHARE_HOME;
+  const msg=shareTextCore();
   SHARE_TARGETS.forEach(t=>{
+    const link='https://runthe.gg/soccer/?utm_source='+t.key+'&utm_medium=social&utm_campaign=soccer';
     const b=document.createElement('button'); b.type='button'; b.className='shr-opt';
     b.innerHTML=`<span class="si" style="background:${t.color}">${SHARE_ICON[t.key]||''}</span><span class="sl">${t.label}</span>`;
     b.addEventListener('click',()=>{ try{ window.open(t.build(msg,link),'_blank','noopener'); }catch(e){} });
