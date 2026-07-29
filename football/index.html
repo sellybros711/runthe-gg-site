@@ -4779,162 +4779,197 @@ function buildTimeline(script,pace){
 }
 
 /* ---- Drive chart: possession-by-possession field visualization ----
-   Generates a list of drives (both scoring and non-scoring) from the scoring
-   script, then paints them on a canvas football field as they happen. */
+   Generates drives from the scoring script with proper football logic:
+   field position chains through kickoffs, punts, and turnovers.
+   Both teams share a single field; drives animate in sync with the scorebug.
 
-function generateDrives(script, rng) {
-  const GAME = 4 * 900;
-  const drives = [];
-  let possession = 'you';
-  let ticks = [];
-  for (const e of script) ticks.push({ sec: (e.q - 1) * 900 + (900 - e.sec), team: e.team, kind: e.kind, points: e.points });
+   Coordinate system: 0 = YOUR end zone, 100 = THEIR end zone.
+   YOU drives advance toward 100 (left→right).
+   THEM drives advance toward 0 (right→left). */
 
-  let t = 0;
-  for (let i = 0; i <= ticks.length; i++) {
-    const next = i < ticks.length ? ticks[i] : { sec: GAME, team: null };
-    const gap = next.sec - t;
-    if (gap <= 0) { t = next.sec; if (next.team) possession = next.team === 'you' ? 'them' : 'you'; continue; }
-    const drivesInGap = Math.max(1, Math.round(gap / 180));
-    const sliceLen = gap / drivesInGap;
-    for (let d = 0; d < drivesInGap; d++) {
-      const isLast = d === drivesInGap - 1 && i < ticks.length;
-      const driveStart = t + d * sliceLen;
-      const driveEnd = t + (d + 1) * sliceLen;
-      const team = isLast ? next.team : possession;
-      const startYard = 15 + Math.floor(rng() * 25);
-      let endYard, result;
-      if (isLast) {
-        endYard = next.kind === 'FIELD GOAL' ? 65 + Math.floor(rng() * 15) : 100;
-        result = next.kind.toLowerCase();
-      } else {
-        const outcome = rng();
-        if (outcome < 0.45) { endYard = startYard + 10 + Math.floor(rng() * 25); result = 'punt'; }
-        else if (outcome < 0.65) { endYard = startYard + Math.floor(rng() * 15); result = 'punt'; }
-        else if (outcome < 0.80) { endYard = startYard + 5 + Math.floor(rng() * 20); result = 'turnover'; }
-        else { endYard = startYard + Math.floor(rng() * 10); result = 'punt'; }
-        endYard = Math.min(endYard, 85);
+function generateDrives(script,rng){
+  const GAME=3600,drives=[],ticks=[];
+  for(const e of script) ticks.push({sec:(e.q-1)*900+(900-e.sec),team:e.team,kind:e.kind,points:e.points});
+  let pos='you',at=20+Math.floor(rng()*10),t=0;
+  const flip=()=>{pos=pos==='you'?'them':'you';};
+  const youKO=()=>18+Math.floor(rng()*12);
+  const themKO=()=>82-Math.floor(rng()*12);
+
+  for(let i=0;i<=ticks.length;i++){
+    const ns=i<ticks.length?ticks[i]:null;
+    const tE=ns?ns.sec:GAME,gap=tE-t;
+    if(gap<5){
+      if(ns){
+        if(ns.kind==='SAFETY'){pos=ns.team;at=ns.team==='you'?youKO()+12:themKO()-12;}
+        else{pos=ns.team==='you'?'them':'you';at=pos==='you'?youKO():themKO();}
       }
-      drives.push({ team, startYard, endYard: Math.min(endYard, 100), result, tStart: driveStart, tEnd: driveEnd });
-      possession = team === 'you' ? 'them' : 'you';
+      t=tE;continue;
     }
-    t = next.sec;
-    if (next.team) possession = next.team === 'you' ? 'them' : 'you';
+    const scorePoss=ns?(ns.kind==='SAFETY'?(ns.team==='you'?'them':'you'):ns.team):null;
+    let filler=Math.max(0,Math.round(gap/220)-1+(rng()<0.45?1:0));
+    if(scorePoss){
+      const af=filler%2===0?pos:(pos==='you'?'them':'you');
+      if(af!==scorePoss) filler++;
+    }
+    const total=scorePoss?filler+1:Math.max(1,filler);
+    const sl=gap/total;
+
+    for(let d=0;d<total;d++){
+      const ds=t+d*sl,de=t+(d+1)*sl;
+      const sy=Math.max(1,Math.min(99,at));
+      let ey,res;
+
+      if(scorePoss&&d===total-1){
+        if(ns.kind==='TOUCHDOWN'){
+          ey=pos==='you'?100:0;res='touchdown';
+        }else if(ns.kind==='FIELD GOAL'){
+          if(pos==='you'){ey=Math.min(97,Math.max(sy+2,60+Math.floor(rng()*18)));}
+          else{ey=Math.max(3,Math.min(sy-2,40-Math.floor(rng()*18)));}
+          res='field goal';
+        }else{
+          if(pos==='you'){
+            const sc=Math.min(sy,8+Math.floor(rng()*5));
+            drives.push({team:pos,startYard:sc,endYard:Math.max(0,sc-1-Math.floor(rng()*3)),result:'safety',tStart:ds,tEnd:de});
+          }else{
+            const sc=Math.max(sy,92-Math.floor(rng()*5));
+            drives.push({team:pos,startYard:sc,endYard:Math.min(100,sc+1+Math.floor(rng()*3)),result:'safety',tStart:ds,tEnd:de});
+          }
+          pos=ns.team;at=ns.team==='you'?youKO()+12:themKO()-12;
+          continue;
+        }
+        drives.push({team:pos,startYard:sy,endYard:ey,result:res,tStart:ds,tEnd:de});
+        pos=ns.team==='you'?'them':'you';at=pos==='you'?youKO():themKO();
+      }else{
+        const roll=rng();
+        if(pos==='you'){
+          const g=5+Math.floor(rng()*28);ey=Math.min(sy+g,88);
+          if(roll<0.68){res='punt';at=ey+32+Math.floor(rng()*18);if(at>=100)at=80;}
+          else{res='turnover';at=ey;}
+        }else{
+          const g=5+Math.floor(rng()*28);ey=Math.max(sy-g,12);
+          if(roll<0.68){res='punt';at=ey-32-Math.floor(rng()*18);if(at<=0)at=20;}
+          else{res='turnover';at=ey;}
+        }
+        drives.push({team:pos,startYard:sy,endYard:ey,result:res,tStart:ds,tEnd:de});
+        flip();
+      }
+    }
+    t=tE;
   }
   return drives;
 }
 
-function drawDriveChart(ctx, w, h, drives, upTo, youColor, themColor) {
-  if (!ctx) return;
-  const dpr = window.devicePixelRatio || 1;
-  ctx.save();
-  ctx.clearRect(0, 0, w, h);
-  const pad = { l: 28 * dpr, r: 6 * dpr, t: 14 * dpr, b: 16 * dpr };
-  const fw = w - pad.l - pad.r;
-  const fh = h - pad.t - pad.b;
-  const fl = pad.l, ft = pad.t;
+function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor){
+  if(!ctx)return;
+  const dpr=window.devicePixelRatio||1;
+  ctx.save();ctx.clearRect(0,0,w,h);
 
-  ctx.fillStyle = '#1b3f1b';
-  ctx.fillRect(fl, ft, fw, fh);
+  const pad={l:4*dpr,r:4*dpr,t:10*dpr,b:14*dpr};
+  const fw=w-pad.l-pad.r,fh=h-pad.t-pad.b;
+  const fl=pad.l,ft=pad.t;
 
-  ctx.fillStyle = 'rgba(255,255,255,.04)';
-  ctx.fillRect(fl, ft, fw * 0.1, fh);
-  ctx.fillRect(fl + fw * 0.9, ft, fw * 0.1, fh);
+  /* field */
+  ctx.fillStyle='#1a3a1a';ctx.fillRect(fl,ft,fw,fh);
 
-  for (let yd = 0; yd <= 100; yd += 10) {
-    const x = fl + (yd / 100) * fw;
-    ctx.strokeStyle = yd === 0 || yd === 100 ? 'rgba(255,255,255,.45)' : 'rgba(255,255,255,.12)';
-    ctx.lineWidth = yd === 0 || yd === 100 ? 1.5 * dpr : 1 * dpr;
-    ctx.beginPath(); ctx.moveTo(x, ft); ctx.lineTo(x, ft + fh); ctx.stroke();
+  /* end-zone colour wash */
+  const ezW=fw*0.1;
+  ctx.globalAlpha=0.10;
+  ctx.fillStyle=youColor;ctx.fillRect(fl,ft,ezW,fh);
+  ctx.fillStyle=themColor;ctx.fillRect(fl+fw-ezW,ft,ezW,fh);
+  ctx.globalAlpha=1;
+
+  /* yard lines */
+  for(let yd=0;yd<=100;yd+=10){
+    const x=fl+(yd/100)*fw;
+    if(yd===50){ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1*dpr;}
+    else if(yd===0||yd===100){ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1.2*dpr;}
+    else{ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=0.5*dpr;}
+    ctx.beginPath();ctx.moveTo(x,ft);ctx.lineTo(x,ft+fh);ctx.stroke();
   }
 
-  const labels = [10, 20, 30, 40, 50, 40, 30, 20, 10];
-  ctx.fillStyle = 'rgba(255,255,255,.25)';
-  ctx.font = (8 * dpr) + 'px sans-serif';
-  ctx.textAlign = 'center';
-  labels.forEach((n, i) => {
-    const x = fl + ((i + 1) * 10 / 100) * fw;
-    ctx.fillText(n, x, ft + fh + 11 * dpr);
-  });
+  /* yard labels */
+  const labels=[10,20,30,40,50,40,30,20,10];
+  ctx.fillStyle='rgba(255,255,255,.2)';ctx.font=(7*dpr)+'px sans-serif';ctx.textAlign='center';
+  labels.forEach((n,i)=>ctx.fillText(n,fl+((i+1)/10)*fw,ft+fh+10*dpr));
 
-  const youDrives = [], themDrives = [];
-  for (const d of drives) {
-    if (d.tStart > upTo) break;
-    (d.team === 'you' ? youDrives : themDrives).push(d);
+  /* collect visible drives + detect in-progress */
+  const visible=[];let active=null;
+  for(const d of drives){
+    if(d.tStart>upTo)break;
+    visible.push(d);
+    if(d.tEnd>upTo)active=d;
   }
+  if(!visible.length){ctx.restore();return;}
 
-  const maxRows = 5;
-  const halfH = fh / 2 - 1 * dpr;
-  const rowH = halfH / maxRows;
-  const mid = ft + fh / 2;
+  const maxRows=7,rowH=fh/maxRows;
+  const start=Math.max(0,visible.length-maxRows);
+  const shown=visible.slice(start);
 
-  ctx.strokeStyle = 'rgba(255,255,255,.2)';
-  ctx.lineWidth = 1 * dpr;
-  ctx.setLineDash([3 * dpr, 3 * dpr]);
-  ctx.beginPath(); ctx.moveTo(fl, mid); ctx.lineTo(fl + fw, mid); ctx.stroke();
-  ctx.setLineDash([]);
+  for(let i=0;i<shown.length;i++){
+    const d=shown[i],isActive=d===active;
+    const y=ft+i*rowH;
+    const barH=Math.max(rowH*0.52,3*dpr);
+    const barY=y+(rowH-barH)/2;
 
-  ctx.fillStyle = 'rgba(255,255,255,.3)';
-  ctx.font = 'bold ' + (7 * dpr) + 'px sans-serif';
-  ctx.textAlign = 'right';
-  ctx.fillText('YOU', fl - 4 * dpr, ft + 8 * dpr);
-  ctx.fillText('OPP', fl - 4 * dpr, ft + fh - 2 * dpr);
-
-  const drawBar = (d, baseY, row, rowH, color, alpha, flip) => {
-    let x1, x2;
-    if (flip) {
-      x1 = fl + ((100 - d.startYard) / 100) * fw;
-      x2 = fl + ((100 - d.endYard) / 100) * fw;
-    } else {
-      x1 = fl + (d.startYard / 100) * fw;
-      x2 = fl + (d.endYard / 100) * fw;
+    /* animate in-progress drive */
+    let drawEnd=d.endYard;
+    if(isActive){
+      const p=Math.min(1,(upTo-d.tStart)/Math.max(1,d.tEnd-d.tStart));
+      drawEnd=d.startYard+(d.endYard-d.startYard)*p;
     }
-    const y = baseY + row * rowH;
-    const barH = Math.max(rowH * 0.6, 3 * dpr);
-    const barY = y + (rowH - barH) / 2;
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = color;
-    const left = Math.min(x1, x2), right = Math.max(x1, x2);
-    const barW = Math.max(right - left, 3 * dpr);
-    const r = Math.min(barH / 2, 2 * dpr);
+
+    const x1=fl+(d.startYard/100)*fw,x2=fl+(drawEnd/100)*fw;
+    const left=Math.min(x1,x2),right=Math.max(x1,x2);
+    const barW=Math.max(right-left,2*dpr);
+
+    /* fade older drives */
+    const age=shown.length-1-i;
+    const alpha=isActive?0.88:Math.max(0.14,0.82-age*0.11);
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle=d.team==='you'?youColor:themColor;
+
+    /* rounded bar */
+    const r=Math.min(barH/2,2*dpr);
     ctx.beginPath();
-    if(ctx.roundRect) ctx.roundRect(left, barY, barW, barH, r);
-    else { ctx.moveTo(left+r,barY); ctx.lineTo(left+barW-r,barY); ctx.arcTo(left+barW,barY,left+barW,barY+r,r);
-      ctx.lineTo(left+barW,barY+barH-r); ctx.arcTo(left+barW,barY+barH,left+barW-r,barY+barH,r);
-      ctx.lineTo(left+r,barY+barH); ctx.arcTo(left,barY+barH,left,barY+barH-r,r);
-      ctx.lineTo(left,barY+r); ctx.arcTo(left,barY,left+r,barY,r); }
+    if(ctx.roundRect)ctx.roundRect(left,barY,barW,barH,r);
+    else{ctx.moveTo(left+r,barY);ctx.lineTo(left+barW-r,barY);
+      ctx.arcTo(left+barW,barY,left+barW,barY+r,r);
+      ctx.lineTo(left+barW,barY+barH-r);ctx.arcTo(left+barW,barY+barH,left+barW-r,barY+barH,r);
+      ctx.lineTo(left+r,barY+barH);ctx.arcTo(left,barY+barH,left,barY+barH-r,r);
+      ctx.lineTo(left,barY+r);ctx.arcTo(left,barY,left+r,barY,r);}
     ctx.fill();
 
-    const scored = d.result === 'touchdown' || d.result === 'field goal' || d.result === 'safety';
-    if (scored) {
-      const dotX = flip ? Math.min(x1, x2) : Math.max(x1, x2);
+    /* directional arrow at leading edge */
+    if(!isActive||(upTo-d.tStart)>(d.tEnd-d.tStart)*0.15){
+      const tipX=d.team==='you'?right:left;
+      const dir=d.team==='you'?1:-1;
+      const sz=Math.min(barH*0.38,3*dpr);
       ctx.beginPath();
-      ctx.arc(dotX, y + rowH / 2, 3 * dpr, 0, Math.PI * 2);
-      ctx.fillStyle = d.result === 'touchdown' ? '#fbbf24' : '#67e8f9';
-      ctx.fill();
+      ctx.moveTo(tipX,barY+barH/2-sz);
+      ctx.lineTo(tipX+dir*sz*1.3,barY+barH/2);
+      ctx.lineTo(tipX,barY+barH/2+sz);
+      ctx.closePath();ctx.fill();
     }
-    if (d.result === 'turnover') {
-      const dotX = flip ? Math.min(x1, x2) : Math.max(x1, x2);
-      ctx.fillStyle = '#ef4444';
-      const s = 3 * dpr;
-      ctx.fillRect(dotX - s, y + rowH / 2 - 1 * dpr, s * 2, 2 * dpr);
-      ctx.fillRect(dotX - 1 * dpr, y + rowH / 2 - s, 2 * dpr, s * 2);
+
+    /* result markers on completed drives */
+    if(!isActive){
+      const scored=d.result==='touchdown'||d.result==='field goal';
+      if(scored){
+        ctx.globalAlpha=Math.max(alpha,0.65);
+        const dx=d.team==='you'?right+4*dpr:left-4*dpr;
+        ctx.beginPath();ctx.arc(dx,barY+barH/2,2.5*dpr,0,Math.PI*2);
+        ctx.fillStyle=d.result==='touchdown'?'#fbbf24':'#67e8f9';ctx.fill();
+      }else if(d.result==='turnover'){
+        ctx.globalAlpha=Math.max(alpha,0.55);
+        ctx.fillStyle='#ef4444';const s=2.5*dpr;
+        ctx.save();ctx.translate(d.team==='you'?right:left,barY+barH/2);
+        ctx.rotate(Math.PI/4);
+        ctx.fillRect(-s,-0.7*dpr,s*2,1.4*dpr);ctx.fillRect(-0.7*dpr,-s,1.4*dpr,s*2);
+        ctx.restore();
+      }
     }
-    ctx.globalAlpha = 1;
-  };
-
-  const renderSet = (list, baseY, color, flip) => {
-    const n = list.length;
-    const start = Math.max(0, n - maxRows);
-    for (let i = start; i < n; i++) {
-      const row = i - start;
-      const alpha = i === n - 1 ? 0.95 : 0.25 + 0.55 * (row / Math.max(1, Math.min(n, maxRows) - 1));
-      drawBar(list[i], baseY, row, rowH, color, alpha, flip);
-    }
-  };
-
-  renderSet(youDrives, ft + 1 * dpr, youColor || '#60a5fa', false);
-  renderSet(themDrives, mid + 1 * dpr, themColor || '#f87171', true);
-
+    ctx.globalAlpha=1;
+  }
   ctx.restore();
 }
 
