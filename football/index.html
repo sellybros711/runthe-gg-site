@@ -901,6 +901,10 @@ window.GA_ID='G-L29P5MRWKE';
   .mc-beta{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
     padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.12);color:var(--dim);
     vertical-align:middle;margin-left:6px}
+  .modecard.mc-soon{opacity:.45;pointer-events:none;filter:grayscale(.5)}
+  .mc-soon-tag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.10);color:var(--dim-2);
+    vertical-align:middle;margin-left:6px}
   .cc-row,.tw-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;
     align-items:center;padding:11px 12px;border-radius:10px;border:1.5px solid var(--line-2);
     background:var(--panel);margin-bottom:6px;cursor:pointer;transition:border-color .12s}
@@ -4111,29 +4115,25 @@ function modeMenu(){
           ? '<button class="btn ghost sm" id="b-mc-era" disabled>Sign in to play</button>'
           : '<button class="btn ghost sm" id="b-mc-era">Pick a decade</button>')+
       '</div>'+
-      '<div class="modecard mc-cap">'+
-        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
-          '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'+
-          '</svg></div><div class="mc-title">Salary Cap Survivor <span class="mc-beta">Beta</span></div></div>'+
-        '<p>Draft your six, but after every game your most expensive player’s '+
-          'contract inflates 10%. Exceed the cap and you’re forced to cut '+
-          'someone and spin for a replacement.</p>'+
-        (locked
-          ? '<button class="btn ghost sm" id="b-mc-cap" disabled>Sign in to play</button>'
-          : '<button class="btn ghost sm" id="b-mc-cap">Play now</button>')+
-      '</div>'+
-      '<div class="modecard mc-trade">'+
-        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
-          '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>'+
-          '<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'+
-          '</svg></div><div class="mc-title">The Trade Machine <span class="mc-beta">Beta</span></div></div>'+
-        '<p>Start with a random roster, no draft. Every four games '+
-          'you get a trade window: cut one player, spin once, sign the '+
-          'replacement if you can afford the restructured cap.</p>'+
-        (locked
-          ? '<button class="btn ghost sm" id="b-mc-trade" disabled>Sign in to play</button>'
-          : '<button class="btn ghost sm" id="b-mc-trade">Play now</button>')+
-      '</div>'+
+      ‘<div class="modecard mc-cap mc-soon">’+
+        ‘<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">’+
+          ‘<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>’+
+          ‘</svg></div><div class="mc-title">Salary Cap Survivor <span class="mc-soon-tag">Coming Soon</span></div></div>’+
+        ‘<p>Draft your six, but after every game your most expensive player\’s ‘+
+          ‘contract inflates 10%. Exceed the cap and you\’re forced to cut ‘+
+          ‘someone and spin for a replacement.</p>’+
+        ‘<button class="btn ghost sm" disabled>Coming Soon</button>’+
+      ‘</div>’+
+      ‘<div class="modecard mc-trade mc-soon">’+
+        ‘<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">’+
+          ‘<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>’+
+          ‘<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>’+
+          ‘</svg></div><div class="mc-title">The Trade Machine <span class="mc-soon-tag">Coming Soon</span></div></div>’+
+        ‘<p>Start with a random roster, no draft. Every four games ‘+
+          ‘you get a trade window: cut one player, spin once, sign the ‘+
+          ‘replacement if you can afford the restructured cap.</p>’+
+        ‘<button class="btn ghost sm" disabled>Coming Soon</button>’+
+      ‘</div>’+
     '</div>'+
     (locked&&authState.ready
       ? '<div style="margin-top:14px"><button class="btn" id="b-mc-signin">'+
