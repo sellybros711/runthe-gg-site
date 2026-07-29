@@ -4115,25 +4115,25 @@ function modeMenu(){
           ? '<button class="btn ghost sm" id="b-mc-era" disabled>Sign in to play</button>'
           : '<button class="btn ghost sm" id="b-mc-era">Pick a decade</button>')+
       '</div>'+
-      ‘<div class="modecard mc-cap mc-soon">’+
-        ‘<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">’+
-          ‘<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>’+
-          ‘</svg></div><div class="mc-title">Salary Cap Survivor <span class="mc-soon-tag">Coming Soon</span></div></div>’+
-        ‘<p>Draft your six, but after every game your most expensive player\’s ‘+
-          ‘contract inflates 10%. Exceed the cap and you\’re forced to cut ‘+
-          ‘someone and spin for a replacement.</p>’+
-        ‘<button class="btn ghost sm" disabled>Coming Soon</button>’+
-      ‘</div>’+
-      ‘<div class="modecard mc-trade mc-soon">’+
-        ‘<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">’+
-          ‘<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>’+
-          ‘<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>’+
-          ‘</svg></div><div class="mc-title">The Trade Machine <span class="mc-soon-tag">Coming Soon</span></div></div>’+
-        ‘<p>Start with a random roster, no draft. Every four games ‘+
-          ‘you get a trade window: cut one player, spin once, sign the ‘+
-          ‘replacement if you can afford the restructured cap.</p>’+
-        ‘<button class="btn ghost sm" disabled>Coming Soon</button>’+
-      ‘</div>’+
+      '<div class="modecard mc-cap mc-soon">'+
+        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
+          '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'+
+          '</svg></div><div class="mc-title">Salary Cap Survivor <span class="mc-soon-tag">Coming Soon</span></div></div>'+
+        '<p>Draft your six, but after every game your most expensive player\'s '+
+          'contract inflates 10%. Exceed the cap and you\'re forced to cut '+
+          'someone and spin for a replacement.</p>'+
+        '<button class="btn ghost sm" disabled>Coming Soon</button>'+
+      '</div>'+
+      '<div class="modecard mc-trade mc-soon">'+
+        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
+          '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>'+
+          '<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'+
+          '</svg></div><div class="mc-title">The Trade Machine <span class="mc-soon-tag">Coming Soon</span></div></div>'+
+        '<p>Start with a random roster, no draft. Every four games '+
+          'you get a trade window: cut one player, spin once, sign the '+
+          'replacement if you can afford the restructured cap.</p>'+
+        '<button class="btn ghost sm" disabled>Coming Soon</button>'+
+      '</div>'+
     '</div>'+
     (locked&&authState.ready
       ? '<div style="margin-top:14px"><button class="btn" id="b-mc-signin">'+
@@ -6486,7 +6486,7 @@ function paintChallengeIntro(t){
     if(draftBtn) draftBtn.textContent='Draft your team'; }
   else { $('ch-rating').textContent='--';
     $('ch-rost').innerHTML='<p class="dim" style="font-size:12.5px;margin:8px 0 0">This team was built with newer '+
-      'player data than this page has, so it can’t be shown here — you can still play a normal game.</p>';
+      'player data than this page has, so it can\u2019t be shown here — you can still play a normal game.</p>';
     if(draftBtn) draftBtn.textContent='Play a normal game'; }
 }
 
