@@ -7034,6 +7034,10 @@ function render(){
   try{
   app.classList.remove('has-cupbar');   // CS298: cleared each render; only the team-cup reveal re-adds it (reserves space for the fixed control bar)
   app.classList.remove('has-roundbar'); // CS513: cleared each render; scrDailyRound re-adds it when the fixed round-control bar is shown
+  // clear any stranded draft-spin height reservation once we've left the draft/offseason screens (reveal()
+  // holds it so the shorter spinning state can't shrink the page + clamp scroll; finish() clears it on the
+  // draft/offseason screen itself, so only clear here for OTHER screens to avoid fighting finish's re-render).
+  if(app.style.minHeight && S.screen!=='draft' && S.screen!=='offseason') app.style.minHeight='';
   const savedY=window.scrollY;
   const prevOv=app.querySelector('.ov'); const savedOvY=prevOv?prevOv.scrollTop:0;   // keep overlay scroll across async re-renders
   if(S.screen!=='dailyround') clearDailyTimer();   // stop daily auto-advance if we left the round
@@ -12074,12 +12078,21 @@ function reelPreviewHTML(){
   return `<div class="previewstrip" style="animation-duration:${(names.length*0.9).toFixed(1)}s">${rows}${rows}</div>`;
 }
 function reveal(){
+  // Reserve the pre-spin page height on #app (which persists across render, since render only replaces its
+  // children). The auto-spin state is SHORTER than the landed state (no draft hint / re-spin button, collapsed
+  // tiles), so without this the document shrinks, render's scrollTo(savedY) clamps to the smaller max, and the
+  // view jumps UP after every pick, forcing the player to scroll back down (owner: "clicking an attribute moves
+  // the screen up"). Cleared the moment the next golfer lands.
+  const holdH = (S.screen==='draft'||S.screen==='offseason'||S.screen==='h2hdraft') ? (app.offsetHeight||0) : 0;
+  if(holdH) app.style.minHeight=holdH+'px';
   S.spinning=true; S.current=null; render();
   const reel=app.querySelector('.reel .name')||app.querySelector('.osreel .name');   // CS337: off-season uses .osreel
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const land=drawGolfer(S.drawRng, RPOOL, S.revealed);   // rarity-weighted bucket pull
-  if(!land){S.spinning=false;render();return;}
-  const finish=()=>{S.current=land;S.spinning=false;render();rarityFlash(land);if(land.prime)recordPrimePull(land.name);offPersistSpin();};
+  if(!land){S.spinning=false;render();app.style.minHeight='';return;}
+  // clear the reserved height AFTER the taller landed state has rendered, so the page never momentarily shrinks
+  // (which would clamp scroll) between the spinning and landed renders.
+  const finish=()=>{S.current=land;S.spinning=false;render();app.style.minHeight='';rarityFlash(land);if(land.prime)recordPrimePull(land.name);offPersistSpin();};
   if(reduce || !reel){ finish(); return; }
   slotSpin(reel, land.name, finish);   // CS341: a real slot-reel spin (vertical scroll + decelerate), not a text shuffle
 }
@@ -19113,6 +19126,12 @@ function pxTerrainURL(g, seedN, B, opts){
           put(cx,cy,vnoise(cx*0.7,cy*0.7+3)>0.6?shade(rk,-16):rk); } }
     }
   }
+  // Floor genuinely near-black terrain pixels. The deep-rough horizon depth-darkening + stacked tree cast
+  // shadows can drive a dark green all the way to pure black ([0,~15,0]), which reads as scattered black
+  // dots / a black horizon smear in the shared GIF & stills. Lift ONLY near-black pixels to a dark forest
+  // green so no terrain pixel ever renders pure black. Trees/sand/water/ocean always keep a channel >40, so
+  // this can't wash the scenery - it only catches the over-darkened green.
+  for(let i=0;i<D.length;i+=4){ if(D[i]<22&&D[i+1]<42&&D[i+2]<22){ if(D[i]<16)D[i]=16; if(D[i+1]<34)D[i+1]=34; if(D[i+2]<12)D[i+2]=12; } }
   ctx.putImageData(img,0,0);
   const out=document.createElement('canvas');out.width=GW*SC;out.height=GH*SC;
   const o=out.getContext('2d');o.imageSmoothingEnabled=false;o.drawImage(cv,0,0,out.width,out.height);
