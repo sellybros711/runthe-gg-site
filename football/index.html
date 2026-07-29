@@ -2567,11 +2567,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     </div>
 
     <button class="btn" id="b-start">Start a run</button>
-    <!-- Other game modes runs full width under Start; How to play and Leaderboard pair up
+    <!-- Mini games runs full width under Start; How to play and Leaderboard pair up
          on the line below. The padlock is drawn, not written, and only shown while the mode
          is actually locked: a label that opens a sign-up sheet with no warning is a bait; a
          padlock sets the expectation before the tap. -->
-    <button class="btn ghost sm locked" id="b-teams" style="margin-top:8px">Other game modes<svg class="lk" viewBox="0 0 24 24"
+    <button class="btn ghost sm locked" id="b-teams" style="margin-top:8px">Mini games<svg class="lk" viewBox="0 0 24 24"
       aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path
       d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
     <div class="hrow">
@@ -3929,7 +3929,7 @@ function modeMenu(){
       ? 'Pick a username to unlock these modes. Every run is listed under a name.'
       : 'These modes need a free account so your runs show up on the leaderboard.');
   $('sheet-in').innerHTML=
-    '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">Other game modes</h2>'+
+    '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">Mini games</h2>'+
     (locked?'<p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 12px">'+esc(lockNote)+'</p>':'')+
     '<div class="modecards">'+
       '<div class="modecard mc-club">'+
