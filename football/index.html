@@ -4905,10 +4905,20 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor){
   const start=Math.max(0,visible.length-maxRows);
   const shown=visible.slice(start);
 
+  const barPath=(l,t2,bw,bh,rad)=>{
+    ctx.beginPath();
+    if(ctx.roundRect){ctx.roundRect(l,t2,bw,bh,rad);}
+    else{ctx.moveTo(l+rad,t2);ctx.lineTo(l+bw-rad,t2);
+      ctx.arcTo(l+bw,t2,l+bw,t2+rad,rad);ctx.lineTo(l+bw,t2+bh-rad);
+      ctx.arcTo(l+bw,t2+bh,l+bw-rad,t2+bh,rad);ctx.lineTo(l+rad,t2+bh);
+      ctx.arcTo(l,t2+bh,l,t2+bh-rad,rad);ctx.lineTo(l,t2+rad);
+      ctx.arcTo(l,t2,l+rad,t2,rad);}
+  };
+
   for(let i=0;i<shown.length;i++){
     const d=shown[i],isActive=d===active;
     const y=ft+i*rowH;
-    const barH=Math.max(rowH*0.52,3*dpr);
+    const barH=Math.max(rowH*0.42,3*dpr);
     const barY=y+(rowH-barH)/2;
 
     /* animate in-progress drive */
@@ -4922,31 +4932,37 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor){
     const left=Math.min(x1,x2),right=Math.max(x1,x2);
     const barW=Math.max(right-left,2*dpr);
 
-    /* fade older drives */
+    /* fade older drives — quadratic ease for smoother falloff */
     const age=shown.length-1-i;
-    const alpha=isActive?0.88:Math.max(0.14,0.82-age*0.11);
-    ctx.globalAlpha=alpha;
-    ctx.fillStyle=d.team==='you'?youColor:themColor;
+    const t2=Math.max(0,1-age/(maxRows-1));
+    const alpha=isActive?0.92:Math.max(0.22,t2*t2*0.75+0.1);
+    const color=d.team==='you'?youColor:themColor;
 
-    /* rounded bar */
-    const r=Math.min(barH/2,2*dpr);
-    ctx.beginPath();
-    if(ctx.roundRect)ctx.roundRect(left,barY,barW,barH,r);
-    else{ctx.moveTo(left+r,barY);ctx.lineTo(left+barW-r,barY);
-      ctx.arcTo(left+barW,barY,left+barW,barY+r,r);
-      ctx.lineTo(left+barW,barY+barH-r);ctx.arcTo(left+barW,barY+barH,left+barW-r,barY+barH,r);
-      ctx.lineTo(left+r,barY+barH);ctx.arcTo(left,barY+barH,left,barY+barH-r,r);
-      ctx.lineTo(left,barY+r);ctx.arcTo(left,barY,left+r,barY,r);}
+    /* rounded bar with gradient sheen */
+    const r=Math.min(barH/2,3*dpr);
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle=color;
+    barPath(left,barY,barW,barH,r);
+    ctx.fill();
+
+    /* subtle top-light gradient overlay */
+    const grad=ctx.createLinearGradient(0,barY,0,barY+barH);
+    grad.addColorStop(0,'rgba(255,255,255,0.14)');
+    grad.addColorStop(0.5,'rgba(255,255,255,0)');
+    grad.addColorStop(1,'rgba(0,0,0,0.12)');
+    ctx.fillStyle=grad;
+    barPath(left,barY,barW,barH,r);
     ctx.fill();
 
     /* directional arrow at leading edge */
-    if(!isActive||(upTo-d.tStart)>(d.tEnd-d.tStart)*0.15){
+    if(!isActive||(upTo-d.tStart)>(d.tEnd-d.tStart)*0.12){
       const tipX=d.team==='you'?right:left;
       const dir=d.team==='you'?1:-1;
-      const sz=Math.min(barH*0.38,3*dpr);
+      const sz=Math.min(barH*0.35,3*dpr);
+      ctx.fillStyle=color;
       ctx.beginPath();
       ctx.moveTo(tipX,barY+barH/2-sz);
-      ctx.lineTo(tipX+dir*sz*1.3,barY+barH/2);
+      ctx.lineTo(tipX+dir*sz*1.4,barY+barH/2);
       ctx.lineTo(tipX,barY+barH/2+sz);
       ctx.closePath();ctx.fill();
     }
@@ -4955,7 +4971,7 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor){
     if(!isActive){
       const scored=d.result==='touchdown'||d.result==='field goal';
       if(scored){
-        ctx.globalAlpha=Math.max(alpha,0.65);
+        ctx.globalAlpha=Math.max(alpha,0.7);
         const dx=d.team==='you'?right+4*dpr:left-4*dpr;
         ctx.beginPath();ctx.arc(dx,barY+barH/2,2.5*dpr,0,Math.PI*2);
         ctx.fillStyle=d.result==='touchdown'?'#fbbf24':'#67e8f9';ctx.fill();
@@ -5045,7 +5061,20 @@ function playPlayoffGame(r,after){
   const drives=generateDrives(script,driveRng);
   const fieldCtx=initFieldCanvas('po-fcanvas');
   const fcv=$('po-fcanvas');
-  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.a,them.a):()=>{};
+  const cDist=(a,b)=>{const x=parseInt(a.slice(1),16),y=parseInt(b.slice(1),16);
+    const r=(x>>16&255)-(y>>16&255),g=(x>>8&255)-(y>>8&255),bl=(x&255)-(y&255);
+    return Math.sqrt(r*r+g*g+bl*bl);};
+  let dcY=me.a,dcT=them.a;
+  if(cDist(dcY,dcT)<110){
+    dcT=them.b||'#e87461';
+    if(!dcT||dcT===dcY||cDist(dcY,dcT)<80)dcT='#e87461';
+    /* grey/silver secondaries wash out on the dark-green field — use coral */
+    const cParts=(c)=>{const v=parseInt(c.slice(1),16);return[(v>>16)&255,(v>>8)&255,v&255];};
+    const [cr,cg,cb]=cParts(dcT);
+    const sat=Math.max(cr,cg,cb)-Math.min(cr,cg,cb);
+    if(sat<50)dcT='#e87461';
+  }
+  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,dcY,dcT):()=>{};
   paintField(0);
 
   const setLead=(y,t)=>{
