@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>How to Play RunThePitch: Drafting, Team OVR &amp; Formations Guide | RunThe.GG</title>
-<meta name="description" content="The complete guide to RunThePitch, the free World Cup squad-building game on RunThe.GG: how the nation-and-year draft works, how Team OVR is calculated, formations and tactics, how matches are simulated, and every game mode.">
+<title>How to Play RunThePitch | RunThe.GG</title>
+<meta name="description" content="The rules of RunThePitch, the free World Cup squad-building game on RunThe.GG: the nation-and-year draft, how Team OVR works, formations, and every game mode.">
 <link rel="canonical" href="https://runthe.gg/soccer/how-to-play.html">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <meta name="theme-color" content="#0b1324">
@@ -15,8 +15,8 @@
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/soccer/how-to-play.html">
-<meta property="og:title" content="How to Play RunThePitch: Drafting, Team OVR &amp; Formations Guide">
-<meta property="og:description" content="Spin a nation and a year, draft a legend, build your XI and simulate a World Cup. The full rules and strategy guide.">
+<meta property="og:title" content="How to Play RunThePitch">
+<meta property="og:description" content="Spin a nation and a year, draft a legend, build your XI and simulate a World Cup. The rules.">
 <meta property="og:image" content="https://runthe.gg/assets/runthepitch-og-image_1200x630.png?v=5">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@RunTheGG">
@@ -26,64 +26,59 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"HowTo","name":"How to play RunThePitch","description":"Spin a nation and a World Cup year, draft one legend from that squad each round, build your XI, then simulate a run to the final.","totalTime":"PT8M","estimatedCost":{"@type":"MonetaryAmount","currency":"USD","value":"0"},"step":[{"@type":"HowToStep","name":"Draft a squad","text":"Each round the wheel lands on a country and a World Cup year from 1966 to 2026, and you draft one player from that squad into an open slot."},{"@type":"HowToStep","name":"Build your best XI","text":"Fill a goalkeeper, defenders, midfielders, forwards and flex slots. Player ratings, captains and awards all feed your Team OVR."},{"@type":"HowToStep","name":"Pick your shape","text":"Your flex picks settle your XI into a real formation and one of four tactical identities."},{"@type":"HowToStep","name":"Simulate your World Cup","text":"Play the group stage, then the knockouts, then the final, and climb the leaderboard."}]}
+{"@context":"https://schema.org","@type":"HowTo","name":"How to play RunThePitch","description":"Spin a nation and a World Cup year, draft one legend from that squad each round, build your XI, then simulate a run to the final.","totalTime":"PT8M","estimatedCost":{"@type":"MonetaryAmount","currency":"USD","value":"0"},"step":[{"@type":"HowToStep","name":"Draft a squad","text":"Each round the wheel lands on a country and a World Cup year from 1966 to 2026, and you draft one player from that squad."},{"@type":"HowToStep","name":"Build your best XI","text":"Player ratings, captains and awards all feed your Team OVR."},{"@type":"HowToStep","name":"Pick your shape","text":"Your flex picks settle your XI into a real formation and a tactical identity."},{"@type":"HowToStep","name":"Simulate your World Cup","text":"Play the group stage, the knockouts and the final, then climb the leaderboard."}]}
 </script>
 
 <style>
   :root{
     --bg:#0b1324; --card:#122a44; --cardb:#1e3d5c; --ink:#FDF6E3; --mut:#93a7bd;
-    --gold:#F4B413; --teal:#35C4CD; --coral:#EF4E50; --line:rgba(255,255,255,.09);
+    --gold:#F4B413; --teal:#35C4CD; --line:rgba(255,255,255,.09);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{background:#0b1324;}
   html,body{margin:0;padding:0;}
-  body{font-family:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.65;
+  body{font-family:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.6;
     color:var(--ink);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;
     background:
       radial-gradient(1100px 520px at 50% -8%, rgba(53,196,205,.16), transparent 60%),
       radial-gradient(900px 460px at 88% 4%, rgba(244,180,19,.10), transparent 55%),
       linear-gradient(180deg,#0d1830 0%, var(--bg) 46%, #070d1a 100%);
     background-attachment:fixed;}
-  .wrap{max-width:760px;margin:0 auto;padding:24px 18px 60px;}
-  .mast{text-align:center;margin:2px 0 18px;}
-  .mast img{display:block;width:100%;max-width:112px;height:auto;margin:0 auto;}
+  .wrap{max-width:600px;margin:0 auto;padding:24px 18px 56px;}
+  .mast{text-align:center;margin:2px 0 16px;}
+  .mast img{display:block;width:100%;max-width:104px;height:auto;margin:0 auto;}
   .crumb{font-size:12.5px;color:#7186a0;margin:0 0 16px;text-align:center;}
   .crumb a{color:#9db0cb;text-decoration:none;font-weight:700;}
   .crumb a:hover{color:var(--ink);}
   .crumb .sep{margin:0 7px;color:#3c4a60;}
 
   .card{background:linear-gradient(180deg,var(--card),#0f2338);border:1px solid var(--cardb);
-    border-radius:12px;padding:26px 22px 30px;}
+    border-radius:12px;padding:26px 22px 28px;}
   h1{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.01em;
-    font-size:clamp(28px,7vw,44px);line-height:1.02;margin:0 0 10px;}
+    font-size:clamp(27px,7vw,38px);line-height:1.04;margin:0 0 10px;}
   h1 .a{color:var(--gold);}
-  .lede{font-size:16.5px;color:#c8d6e6;margin:0 0 6px;}
-  .updated{color:#7186a0;font-size:12.5px;font-weight:700;margin:14px 0 0;}
+  .lede{font-size:16px;color:#c8d6e6;margin:0 0 20px;}
   h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.5px;
-    font-size:21px;margin:34px 0 10px;display:flex;align-items:center;color:var(--ink);scroll-margin-top:16px;}
-  h2:before{content:"";width:10px;height:10px;background:var(--teal);border-radius:2px;margin-right:10px;flex:0 0 auto;}
-  h3{font-size:16px;font-weight:900;margin:22px 0 6px;color:var(--gold);}
-  p{margin:0 0 14px;font-size:15.5px;color:var(--mut);}
-  p b,strong{color:var(--ink);font-weight:800;}
+    font-size:17px;margin:26px 0 10px;display:flex;align-items:center;color:var(--ink);}
+  h2:before{content:"";width:9px;height:9px;background:var(--teal);border-radius:2px;margin-right:9px;flex:0 0 auto;}
+  p{margin:0 0 13px;font-size:15.5px;color:var(--mut);}
+  p b,strong,li b{color:var(--ink);font-weight:800;}
   a{color:var(--teal);font-weight:700;text-decoration:none;}
   a:hover{text-decoration:underline;}
-  ul{margin:0 0 16px;padding-left:20px;color:var(--mut);font-size:15.5px;}
-  li{margin:0 0 9px;}
-  .toc{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:0 0 6px;}
-  .toc ul{margin:0;padding-left:18px;font-size:14.5px;}
-  .toc li{margin:0 0 5px;}
-  .callout{border-left:3px solid var(--gold);background:rgba(244,180,19,.07);border-radius:0 8px 8px 0;
-    padding:13px 16px;margin:0 0 16px;}
-  .callout p{margin:0;font-size:14.5px;color:#dfc98f;}
-  table{width:100%;border-collapse:collapse;margin:0 0 18px;font-size:14.5px;}
-  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);color:var(--mut);}
-  th{color:var(--ink);font-weight:900;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;}
-  td b{color:var(--ink);}
+  ol.rules{margin:0;padding:0;list-style:none;counter-reset:r;}
+  ol.rules li{position:relative;counter-increment:r;padding:0 0 0 34px;margin:0 0 13px;
+    font-size:15.5px;color:var(--mut);}
+  ol.rules li:before{content:counter(r);position:absolute;left:0;top:1px;width:23px;height:23px;
+    border-radius:6px;background:linear-gradient(180deg,#3FD3DC,#1E8E97);color:#04222a;
+    font:900 12.5px/23px 'Archivo',sans-serif;text-align:center;}
+  ul{margin:0 0 13px;padding-left:19px;color:var(--mut);font-size:15.5px;}
+  ul li{margin:0 0 7px;}
   .cta{display:block;text-align:center;background:linear-gradient(180deg,#F6C33C,#D69408);color:#241804;
     font-weight:900;text-transform:uppercase;letter-spacing:.5px;font-size:16px;padding:15px 26px;
-    border-radius:9px;text-decoration:none;margin:28px 0 6px;box-shadow:0 10px 26px -14px rgba(244,180,19,.95);}
+    border-radius:9px;text-decoration:none;margin:24px 0 4px;box-shadow:0 10px 26px -14px rgba(244,180,19,.95);}
   .cta:hover{filter:brightness(1.06);text-decoration:none;}
-  .disc{font-size:13px;color:#7186a0;margin:26px 0 0;padding-top:16px;border-top:1px solid var(--line);}
-  .foot{margin-top:26px;text-align:center;font-size:12.5px;color:#7186a0;line-height:2;}
+  .disc{font-size:12.5px;color:#7186a0;margin:22px 0 0;padding-top:14px;border-top:1px solid var(--line);}
+  .foot{margin-top:24px;text-align:center;font-size:12.5px;color:#7186a0;line-height:2;}
   .foot a{color:#9db0cb;text-decoration:none;font-weight:700;}
   .foot a:hover{color:var(--ink);}
   .foot .sep{margin:0 7px;color:#3c4a60;}
@@ -102,143 +97,42 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 </head>
 <body>
   <div class="wrap">
-    <div class="mast"><a href="/"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="RunThePitch" width="112" height="112" loading="eager"></a></div>
+    <div class="mast"><a href="/soccer/"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="RunThePitch" width="104" height="104" loading="eager"></a></div>
     <nav class="crumb"><a href="/">RunThe.GG</a><span class="sep">›</span><a href="/soccer/">RunThePitch</a><span class="sep">›</span>How to play</nav>
 
     <main class="card">
       <h1>How to Play <span class="a">RunThePitch</span></h1>
-      <p class="lede">Spin a nation and a year, draft a legend from that squad, build your best XI and
-        simulate a World Cup run. This guide explains how the draft works, exactly how Team OVR is
-        calculated, what formations actually do, and how the match engine decides your tournament.</p>
+      <p class="lede">Spin a nation and a year, draft a legend, build your XI and simulate your World
+        Cup run. Free to play in your browser, no download and no account needed.</p>
 
-      <div class="toc">
-        <ul>
-          <li><a href="#draft">Drafting your squad</a></li>
-          <li><a href="#sizes">Draft sizes and difficulty</a></li>
-          <li><a href="#ovr">Team Rating (OVR), explained</a></li>
-          <li><a href="#shape">Formations and tactics</a></li>
-          <li><a href="#sim">How matches are simulated</a></li>
-          <li><a href="#modes">Game modes</a></li>
-          <li><a href="#strategy">Six strategy tips</a></li>
-          <li><a href="#faq">Common questions</a></li>
-        </ul>
-      </div>
+      <h2>The rules</h2>
+      <ol class="rules">
+        <li>Every round the wheel lands on a country and a World Cup year, <b>1966 to 2026</b>. Draft one player from that squad into an open slot.</li>
+        <li>Pick your draft size. <b>Quick Draft</b> is six rounds; <b>Full Team</b> is a complete XI over 11 rounds, with three FLEX slots you can fill with any outfield player.</li>
+        <li>Pick your difficulty. <b>Easy</b> shows overall ratings as you draft. <b>Hard</b> hides them, so you go on name and gut alone.</li>
+        <li>Your <b>Team OVR</b> starts as the average rating of your XI, then climbs for 99-rated legends, captains and major individual awards. The best squads push past 100.</li>
+        <li>Your FLEX picks settle your XI into a real formation and a tactical identity. Shape changes how matches play out, but it does <b>not</b> change your Team OVR.</li>
+        <li>Simulate the group stage, the knockouts and the final against <b>real historical squads</b>. Quality leads, but upsets happen and level matches go to penalties.</li>
+      </ol>
 
-      <h2 id="draft">Drafting your squad</h2>
-      <p>Every round the wheel lands on a country and a World Cup year somewhere between <b>1966 and
-        2026</b>. You then draft one player from that exact squad into an open slot on your team.</p>
-      <p>This is where the game rewards genuine football knowledge. Great teams come from reading the
-        spin — knowing which nations were stacked in which cycle, which squads carried a generational
-        player, and which famous nations were surprisingly thin in a given year. The wheel is the same
-        for everyone; what you do with Brazil 1970 versus Brazil 1990 is not.</p>
+      <h2>How hard is the trophy?</h2>
+      <p>Deliberately hard. An 86 OVR side lifts it a couple of percent of the time, 90 is about one
+        in five, 92 about two in five, and a 99-rated super team wins it upwards of 80%. Below 86 it
+        is a long shot by design, and squads in the low 80s face an extra hurdle in the first
+        knockout rounds.</p>
 
-      <h2 id="sizes">Draft sizes and difficulty</h2>
-      <p>There are two draft lengths:</p>
+      <h2>Other ways to play</h2>
       <ul>
-        <li><b>Quick Draft</b> — six fast rounds: GK, DEF, DEF, MID, FWD, FLEX. A quick hit when you
-          don't want a full squad build.</li>
-        <li><b>Full Team</b> — a complete 11-man XI over 11 rounds: one GK, three DEF, two MID, two FWD,
-          and <b>three FLEX slots</b> you can fill with any outfield player. Your flex picks are what
-          decide your formation.</li>
+        <li><b>Daily Challenge.</b> One themed draft, the same for everyone, every day. Build a streak.</li>
+        <li><b>Online Friendly.</b> Draft and get matched 1v1, then watch the match play out live.</li>
+        <li><b>Online World Cup.</b> A 48-player pool splits into 12 groups of 4, then a 32-team knockout.</li>
       </ul>
-      <p>And two difficulties. <b>Easy</b> shows overall ratings while you draft, so you can chase the
-        strongest possible lineup. <b>Hard</b> hides them completely — you draft on name and gut alone,
-        which turns the whole thing into a pure test of ball knowledge.</p>
-
-      <h2 id="ovr">Team Rating (OVR), explained</h2>
-      <p>Your Team OVR is the number that ranks you on the leaderboard, and it is built up in four
-        layers:</p>
-      <table>
-        <thead><tr><th>Layer</th><th>Effect</th></tr></thead>
-        <tbody>
-          <tr><td><b>Base</b></td><td>The average overall rating of your drafted players.</td></tr>
-          <tr><td><b>99-rated legends</b></td><td>Each one adds a little extra on top, so stacking all-time greats compounds.</td></tr>
-          <tr><td><b>Captains</b></td><td>Each captain multiplies your rating up slightly — a leadership bonus.</td></tr>
-          <tr><td><b>Major awards</b></td><td>Golden Boot, Golden Ball and similar honours add a further boost per award.</td></tr>
-        </tbody>
-      </table>
-      <p>The strongest squads push past <b>100 OVR</b>. Note that this rating is pure squad quality:
-        <b>your formation does not change your Team OVR</b>. Shape changes how you play, not the number
-        you're ranked by.</p>
-
-      <h2 id="shape">Formations and tactics</h2>
-      <p>In Full Team drafts, the positions you pick — especially those three FLEX slots — settle your XI
-        into a real formation such as 4-3-3 or 5-3-2, and into one of four tactical identities. That
-        identity shapes how your matches actually play out.</p>
-      <div class="callout">
-        <p><b>Shape is a real but secondary lever.</b> A smart formation gives you an edge in a specific
-          matchup and changes your scorelines. A clearly stronger squad still wins most of the time.
-          Aiming your strength at an opponent's weakness is worth a few percent — it is not a free win.</p>
-      </div>
-
-      <h2 id="sim">How matches are simulated</h2>
-      <p>Your opponents are <b>real historical World Cup squads</b>, drawn to match the round you're in.
-        Each match is decided by a calibrated model rather than a coin flip:</p>
-      <ul>
-        <li><b>Quality leads.</b> The bigger your Team OVR edge, the more likely you win — but an upset
-          is always possible.</li>
-        <li><b>The title is meant to be hard.</b> Roughly: an 86 OVR side lifts the trophy a couple of
-          percent of the time, 90 is about 1-in-5, 92 about 2-in-5, and a 99-rated super-team wins it
-          upwards of 80% of the time. Below 86 it is a long shot by design.</li>
-        <li><b>Weak sides get punished early.</b> Squads in the low 80s and below face an extra hurdle in
-          the first knockout rounds, so they bow out early rather than fluking a deep run.</li>
-        <li><b>The group stage is a strength gate.</b> 90+ sides go through automatically, 86+ almost
-          always, and it scales down from there.</li>
-        <li><b>Level matches go to extra time and penalties</b>, with formation nudging the margins.</li>
-      </ul>
-
-      <h2 id="modes">Game modes</h2>
-      <table>
-        <thead><tr><th>Mode</th><th>How it works</th></tr></thead>
-        <tbody>
-          <tr><td><b>World Cup (solo)</b></td><td>The main event. Draft, then simulate group stage → knockouts → final. Reach the trophy and top the all-time board.</td></tr>
-          <tr><td><b>Daily Challenge</b></td><td>One themed draft, the same for everybody, every day. Build a streak.</td></tr>
-          <tr><td><b>Online Friendly</b></td><td>Draft and get matched 1v1 against another player, then watch the match play out live. Formation matters here too.</td></tr>
-          <tr><td><b>Online World Cup</b></td><td>Join a 48-player pool. When it fills it splits into 12 groups of 4; the top 2 of each group plus the 8 best third-place teams reach a 32-team knockout.</td></tr>
-          <tr><td><b>Leaderboards</b></td><td>Every mode ranks you. One free account carries your record, streaks and titles.</td></tr>
-        </tbody>
-      </table>
-
-      <h2 id="strategy">Six strategy tips</h2>
-      <ul>
-        <li><b>Learn the stacked cycles.</b> Knowing that a nation peaked in one specific year is worth
-          more than knowing its most famous player.</li>
-        <li><b>Captains and awards are cheap OVR.</b> Two players of similar rating are not equal if one
-          of them captained his country or won a Golden Ball.</li>
-        <li><b>Chase 99s deliberately.</b> They add on top of the average rather than just raising it, so
-          a squad with three of them outruns a flat squad of very good players.</li>
-        <li><b>Use FLEX slots last if you can.</b> They're your formation lever, so filling them once you
-          can see the shape of your XI is better than committing early.</li>
-        <li><b>86 OVR is the real threshold.</b> Below it, the knockout hurdle makes a deep run unlikely
-          no matter how the draw falls. That's your target before you worry about anything else.</li>
-        <li><b>Play Hard mode to actually improve.</b> Easy mode lets you optimise; Hard mode teaches you
-          which squads were genuinely deep.</li>
-      </ul>
-
-      <h2 id="faq">Common questions</h2>
-      <h3>Is RunThePitch free?</h3>
-      <p>Yes, completely free. The site is funded by advertising, and there is no paid version,
-        subscription or paywall.</p>
-      <h3>Do I need an account?</h3>
-      <p>Not for a solo World Cup run. A free RunThe.GG account saves your record, streaks and titles,
-        puts you on the global leaderboards, and is needed for the online modes. The same account works
-        across every game on the site.</p>
-      <h3>Which World Cups are included?</h3>
-      <p>Squads from 1966 through 2026.</p>
-      <h3>Does my formation change my leaderboard rating?</h3>
-      <p>No. Team OVR is pure squad quality. Formation changes how your matches play out, not the number
-        you're ranked by.</p>
-      <h3>Can I play on my phone?</h3>
-      <p>Yes — it runs in any modern mobile browser with nothing to install.</p>
 
       <a class="cta" href="/soccer/">Play RunThePitch →</a>
 
-      <p class="disc">RunThePitch is an independent fan project from RunThe.GG. It is not affiliated
-        with, endorsed by, or sponsored by FIFA, any national football association, or any player shown
-        in the game. Player and nation names are used for identification purposes only, and every match
-        result is simulated for entertainment.</p>
-
-      <p class="updated">Last updated: July 29, 2026</p>
+      <p class="disc">An independent fan project from RunThe.GG. Not affiliated with, endorsed by, or
+        sponsored by FIFA, any national association, or any player shown in the game. All match
+        results are simulated for entertainment.</p>
     </main>
 
     <footer class="foot">
@@ -247,6 +141,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       <a href="/about.html">About</a><span class="sep">·</span>
       <a href="/privacy.html">Privacy</a><span class="sep">·</span>
       <a href="/terms.html">Terms</a><span class="sep">·</span>
+      <a href="/disclaimer.html">Disclaimer</a><span class="sep">·</span>
       <a href="/contact.html">Contact</a>
     </footer>
   </div>
