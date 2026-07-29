@@ -2754,7 +2754,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <canvas id="po-fcanvas" width="600" height="160"></canvas>
     </div>
     <div class="polog" id="po-log"></div>
-    <div style="margin-top:14px"><button class="btn ghost sm" id="b-po-fast">Skip to the final</button></div>
+    <div style="margin-top:14px"><button class="btn ghost sm" id="b-po-fast">Sim to the end</button></div>
   </div>
 
   <div class="screen" id="s-seed">
@@ -5047,7 +5047,7 @@ function playPlayoffGame(r,after){
   /* The fast-forward button ends the run on the last game, so on the Super Bowl it goes
      straight to the results rather than "the final" it is already on. */
   const fastBtn=$('b-po-fast');
-  if(fastBtn) fastBtn.textContent=round==='Super Bowl'?'See results':'Skip to the final';
+  if(fastBtn) fastBtn.textContent='Sim to the end';
   $('po-cap').innerHTML='';
   $('po-log').innerHTML='';
   show('s-po');
@@ -5085,6 +5085,7 @@ function playPlayoffGame(r,after){
 
   const finish=()=>{
     clearTimeout(poTimer); cancelAnimationFrame(poRaf); poSkip=null;
+    if(fastBtn) fastBtn.textContent='Continue';
     youEl.querySelector('.sc').textContent=r.shownYou;
     themEl.querySelector('.sc').textContent=r.shownThem;
     setLead(r.shownYou,r.shownThem);
