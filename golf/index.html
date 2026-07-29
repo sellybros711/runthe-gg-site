@@ -3181,9 +3181,14 @@ function dailyMaxAttempts(){ return sbSignedIn()?DAILY_MAX_ATTEMPTS:GUEST_DAILY_
 function dailyState(){return LS.get(acctKey('bag_daily'),null);}
 function dailyToday(){const dd=dailyState();return (dd&&dd.date===todayKey())?dd:null;}
 function dailyAttempts(){const dd=dailyToday(); if(!dd)return 0; return dd.attempts!=null?dd.attempts:(dd.done?1:0);}
-function dailyAttemptsLeft(){return Math.max(0,dailyMaxAttempts()-dailyAttempts());}
+function dailyAttemptsLeft(){ if(dailyUnlimited()) return 99; return Math.max(0,dailyMaxAttempts()-dailyAttempts());}
 function dailyBest(){const dd=dailyToday(); return dd?(dd.best||dd.result||null):null;}
-function dailyDoneToday(){return dailyAttemptsLeft()<=0;}   // "done" = all attempts used
+// Dev accounts (RunnyJ, CSel8 — see devMode) get UNLIMITED Play 18 attempts so we can check the live game any
+// time; only the FIRST 3 attempts of the day count toward records (course records + the daily board), so our
+// testing never pollutes the leaderboards. Everyone else keeps the normal 3-a-day cap unchanged.
+function dailyUnlimited(){ return devMode(); }
+function dailyAttemptRecords(){ return !(devMode() && (S.dailyAttempt||0) >= DAILY_MAX_ATTEMPTS); }
+function dailyDoneToday(){return !dailyUnlimited() && dailyAttemptsLeft()<=0;}   // "done" = all attempts used (never for dev accounts)
 function startDaily(){
   if(dailyDoneToday()){S.overlay='dailydone';render();return;}
   const seed=todayKey(); reset();
@@ -7083,6 +7088,7 @@ function render(){
     if(S.overlay==='shop') overlayShop(app);
     if(S.overlay==='packreveal') overlayPackReveal(app);
     if(S.overlay==='packwheel') overlayPackWheel(app);
+    if(S.overlay==='packbatch') overlayPackBatch(app);
     if(S.overlay==='careerwall') overlayCareerwall(app);
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
     if(S.overlay==='confirmRetire') overlayConfirmRetire(app);
@@ -8668,6 +8674,7 @@ function dailyHeroCard(){
   const bestTxt=dbest?`Best ${dTot(dbest.total, dbest.par!=null?dbest.par:(DAILY_COURSES[dbest.course]||{}).par)}`:'';
   let badge,mid;
   if(PRACTICE){ badge='PRACTICE'; mid='Unlimited rounds · nothing recorded'; }
+  else if(dailyUnlimited()){ badge='DEV ∞'; mid=`${bestTxt?bestTxt+' · ':''}Unlimited attempts · first ${DAILY_MAX_ATTEMPTS} count for records`; }   // dev accounts
   else if(datt===0){ badge=''; mid='Beat the tour average at a new famous course every day'; }   // no "PLAY" badge, the "Play ▸" CTA covers it
   else if(dleft<=0){ badge=dwon?'BEATEN ✓':'DONE'; mid=`${bestTxt||'Played today'}${dwon?' · you beat the pro':' · came up short'} · new course at midnight ET`; }
   else { badge=`${dleft} LEFT`; mid=`${bestTxt?bestTxt+' · ':''}${dwon?'beaten ✓ · go lower':'beat the tour average to win'}`; }
@@ -10031,6 +10038,9 @@ const PXG_EW_AVIATORS=[
 "............................................",
 "............................................"
 ];
+// CS: round WIRE glasses (John-Lennon / Payne-Stewart style) — thin gold rims + clear lenses (a single
+// glint) + a bridge + temple arms to the ears. The old version was filled gold-rim + white-highlight +
+// dark lens per eye, which read as two eyes rather than glasses.
 const PXG_EW_ROUND=[
 "............................................",
 "............................................",
@@ -10044,11 +10054,11 @@ const PXG_EW_ROUND=[
 "............................................",
 "............................................",
 "............................................",
-"............................................",
-"................gg........gg................",
-"...............gLEg...g..gLEg...............",
-"...............gEEg......gEEg...............",
-"................gg........gg................",
+"...............555........555...............",
+"..............56..5......56..5..............",
+".........55555.....555555.....55555.........",
+"..............5...5......5...5..............",
+"...............555........555...............",
 "............................................",
 "............................................",
 "............................................",
@@ -19485,6 +19495,7 @@ function beginDailyTokenPlay(){
 // matching the rest of the online backend; only an explicit "no attempts left" bounces the player out.
 async function enforceDailyAttempt(seed){
   if(PRACTICE) return;   // belt-and-suspenders: a practice round never touches the server counter
+  if(dailyUnlimited()) return;   // dev accounts: no server-side cap (they get unlimited attempts)
   if(!sb || !sbSignedIn()) return;
   const withTimeout=(promise,ms)=>Promise.race([
     Promise.resolve(promise).then(v=>({v}),e=>({e})),
@@ -20658,8 +20669,11 @@ function finishDailyRound(){
   }
   const signedIn=sbSignedIn();
   const isLegend=!!S.dailyLegend;
+  // dev accounts get unlimited attempts, but only their FIRST 3 count for records (course records + the daily
+  // board + the recorded best-of-day); attempts 4+ play freely and show a result but never touch the records.
+  const rec=dailyAttemptRecords();
   // guests can't claim a course record or post to the global board, they sign in to log the score
-  const isRec=signedIn?recordCourseScore(S.dailyCourse,total,S.dailyOvr,sbUsername||S.name||'You',isLegend):false;
+  const isRec=(signedIn&&rec)?recordCourseScore(S.dailyCourse,total,S.dailyOvr,sbUsername||S.name||'You',isLegend):false;
   const holes=S.dailyHoles.map(h=>({par:h.par,toPar:h.toPar}));   // compact, enough to redraw the scorecard
   const avg=dTourAvg(c), won=total<avg;   // beat the real tour scoring average = won the day
   const decisions={plan:S.dailyPlan,att:(S.dailyAttempt||0),attacks:S.dailyHoles.filter(h=>h.attack!=null).map(h=>({n:h.n,a:h.attack}))};
@@ -20704,12 +20718,13 @@ function finishDailyRound(){
   // do NOT +1 here (that double-counted a claimed attempt). Fallback to 1 if somehow unclaimed.
   const prev=dailyToday(); const attempts=Math.max(1, dailyAttempts());
   let best=prev?(prev.best||prev.result||null):null;
-  const improved=!best||total<best.total; if(improved) best=S.dailyResult;
+  // a dev's non-recording attempt (4th+) never becomes the best-of-day, so records reflect only the first 3
+  const improved=rec && (!best||total<best.total); if(improved) best=S.dailyResult;
   S.dailyAttemptNo=attempts; S.dailyImproved=improved;
-  LS.set(acctKey('bag_daily'),{date:S.dailySeed,attempts,best,result:S.dailyResult});
-  track('daily_completed',{course:S.dailyCourse,total,attempt:attempts,best:best.total,won,avg,guest:!signedIn,legend:isLegend});
+  LS.set(acctKey('bag_daily'),{date:S.dailySeed,attempts,best:best||S.dailyResult,result:S.dailyResult});
+  track('daily_completed',{course:S.dailyCourse,total,attempt:attempts,best:(best||S.dailyResult).total,won,avg,guest:!signedIn,legend:isLegend});
   if(improved && signedIn) sbSubmitDaily(best);   // only accounts post to the board; guests post on sign-in (gated by attempts)
-  if(signedIn) verifyDailyRecord(S.dailyCourse, isLegend);   // correct the optimistic "record!" guess against the server
+  if(signedIn && rec) verifyDailyRecord(S.dailyCourse, isLegend);   // correct the optimistic "record!" guess against the server
   // remember this guest round so signing in from the result screen logs it to the account (consuming an attempt)
   S._claimDaily = signedIn ? null : S.dailyResult;
   S.dailyClaimMsg=null;
@@ -22727,6 +22742,52 @@ function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=
   document.head.appendChild(st); }
 // CS404 — the pack-opening WHEEL SPIN (replaces the 3-card pick). One item is already decided (rollPackWin,
 // odds unchanged); the reel scrolls and decelerates onto it under a center pointer, then reveals it.
+// "Receive the rest of your items" — when a bundle (or a stack of free-pack credits) has more packs to
+// open, bulk-open ALL the remaining ones at once (rolling each, granting the items) and show a single
+// summary instead of spinning the wheel one by one. The CURRENT (already-revealed) pack is included.
+function packOpenRest(){
+  var w=S.packWheel; if(!w) return;
+  var results=[{item:w.win.item, dupe:w.win.dupe, refund:w.win.refund}];   // the pack already on screen
+  if(S.packBundle){
+    var pack=S.packBundle.pack;
+    var remaining=Math.max(0, S.packBundle.total-(S.packBundle.done||0));
+    for(var i=0;i<remaining;i++){ var win=rollPackWin(pack); if(win.err) break; results.push({item:win.item,dupe:win.dupe,refund:win.refund}); }   // prepaid
+    S.packBundle=null;
+  } else {
+    var tier=w.pack||'base', pt=packType(tier), guard=0;
+    while(guard++<200){
+      var freeFirst=(tier==='base') && packIsFree();
+      var cr=pt.seasonal?0:packCredits(tier);
+      if(!freeFirst && cr<=0) break;                     // no more free/credit packs of this tier
+      var p=packState(); if(freeFirst){ p.freeUsed=true; } else { var f=packCreditFields(tier); p[f[1]]=(p[f[1]]||0)+1; } packSave(p);
+      var win2=rollPackWin(tier); if(win2.err) break;
+      results.push({item:win2.item,dupe:win2.dupe,refund:win2.refund});
+    }
+  }
+  S.packBatch={results:results, pack:w.pack||'base'};
+  S.packWheel=null; S.overlay='packbatch'; render();
+}
+// summary of a bulk "receive the rest" open (or the tail of a bundle) — every item at once, coins refunded.
+function overlayPackBatch(app){
+  var b=S.packBatch; if(!b||!b.results||!b.results.length){ S.overlay='shop'; S.shopSec='packs'; return; }
+  packStyleOnce();
+  var pt=packType(b.pack||'base'), n=b.results.length;
+  var ov=$('<div class="ov packov" role="dialog" aria-modal="true" aria-label="Packs opened"></div>');
+  ov.appendChild($('<div class="packtitle">'+(pt.id!=='base'?('<span style="color:'+pt.col+'">'+esc(pt.name)+'</span> · '):'')+'Opened '+n+' pack'+(n>1?'s':'')+'</div>'));
+  var xb=$('<button class="x" aria-label="Close">✕</button>'); xb.onclick=function(){ S.packBatch=null; S.overlay='shop'; S.shopSec='packs'; render(); }; ov.appendChild(xb);
+  var foot=$('<div class="packfoot"></div>');
+  foot.appendChild($('<div class="small" style="color:var(--gold);font-weight:800;margin-top:2px">Your '+n+' items</div>'));
+  var sum=$('<div class="packsum"></div>');
+  b.results.forEach(function(r){ var rc=PACK_RCOL[r.item.rarity]||'#b8c4bd'; sum.appendChild($('<span class="packsumchip" style="color:'+rc+';border-color:'+rc+'">'+esc(r.item.name)+(r.dupe?' · dup':'')+'</span>')); });
+  foot.appendChild(sum);
+  var totRefund=b.results.reduce(function(a,r){return a+(r.refund||0);},0);
+  if(totRefund>0) foot.appendChild($('<div class="small muted" style="margin-top:6px;text-align:center">Duplicates refunded +'+coinFmt(totRefund)+' coins · equip your new items in the Closet</div>'));
+  else foot.appendChild($('<div class="small muted" style="margin-top:6px;text-align:center">Equip your new items in the Closet</div>'));
+  var btns=$('<div class="packbtns"></div>');
+  var done=$('<button class="btn goldfill">Done</button>'); done.onclick=function(){ S.packBatch=null; S.overlay='shop'; S.shopSec='packs'; render(); };
+  btns.appendChild(done); foot.appendChild(btns);
+  ov.appendChild(foot); app.appendChild(ov);
+}
 function overlayPackWheel(app){
   var w=S.packWheel; if(!w||!w.reel||!w.reel.length){ S.overlay=null; return; }
   packStyleOnce();
@@ -22793,8 +22854,11 @@ function overlayPackWheel(app){
         if(!footer.querySelector('.preq')) footer.insertBefore($('<div class="preq">\u2713 Equipped! '+esc(item.name)+' is now on your golfer</div>'), btns);
       }; btns.appendChild(eb); }
     if(S.packBundle && (S.packBundle.done||0) < S.packBundle.total){
-      var nxt=$('<button class="btn teal">Next pack ▸ · '+(S.packBundle.total-(S.packBundle.done||0))+' left</button>'); nxt.onclick=function(){ startPackDeal({bundle:true}); };
-      btns.appendChild(nxt); footer.appendChild(btns); return;
+      var bleft=S.packBundle.total-(S.packBundle.done||0);
+      var nxt=$('<button class="btn teal">Next pack ▸ · '+bleft+' left</button>'); nxt.onclick=function(){ startPackDeal({bundle:true}); };
+      btns.appendChild(nxt);
+      if(bleft>=2){ var rest=$('<button class="btn ghost">Receive the rest ▸ · '+bleft+' items</button>'); rest.onclick=function(){ packOpenRest(); }; btns.appendChild(rest); }
+      footer.appendChild(btns); return;
     }
     if(S.packBundle){
       footer.appendChild(btns);
@@ -22811,7 +22875,11 @@ function overlayPackWheel(app){
     var againLabel=freeNext?('Open a FREE '+esc(pt.short)+' pack'+(cr>0?' · '+cr+' left':'')):('Open another '+esc(pt.short)+' · '+coinFmt(pt.price));
     var again=$('<button class="btn '+(can?'teal':'ghost')+'"'+(can?'':' disabled')+'>'+againLabel+'</button>'); again.onclick=function(){ startPackDeal({pack:pt.id}); };
     var done=$('<button class="btn ghost">Done</button>'); done.onclick=function(){ S.packWheel=null; S.overlay='shop'; S.shopSec='packs'; render(); };
-    btns.appendChild(again); btns.appendChild(done); footer.appendChild(btns);
+    btns.appendChild(again); btns.appendChild(done);
+    // multiple free packs still stacked up → offer opening them all at once for the items
+    var restN=(isBase&&packIsFree()?1:0)+cr;
+    if(freeNext && restN>=2){ var restB=$('<button class="btn ghost" style="flex-basis:100%">Receive the rest ▸ · '+restN+' free packs</button>'); restB.onclick=function(){ packOpenRest(); }; btns.appendChild(restB); }
+    footer.appendChild(btns);
   }
   // final resting transform: center the winning cell under the pointer, with a small random offset within it
   function finalX(vw, jitter){ return vw/2 - (w.winIdx*PITCH + CW/2) + (jitter||0); }
@@ -22904,8 +22972,11 @@ function overlayPackReveal(app){
     if((item.kind==='cos'||item.kind==='acc') && !d.dupe){ var eb=$('<button class="btn goldfill">Equip</button>'); eb.onclick=function(){ packEquip(item); toast('Equipped!'); }; btns.appendChild(eb); }
     // BUNDLE: more prepaid packs to open → "Next pack"; the last pack shows a summary of all N
     if(S.packBundle && (S.packBundle.done||0) < S.packBundle.total){
-      var nxt=$('<button class="btn teal">Next pack ▸ · '+(S.packBundle.total-(S.packBundle.done||0))+' left</button>'); nxt.onclick=function(){ startPackDeal({bundle:true}); };
-      btns.appendChild(nxt); footer.appendChild(btns); return;
+      var bleft=S.packBundle.total-(S.packBundle.done||0);
+      var nxt=$('<button class="btn teal">Next pack ▸ · '+bleft+' left</button>'); nxt.onclick=function(){ startPackDeal({bundle:true}); };
+      btns.appendChild(nxt);
+      if(bleft>=2){ var rest=$('<button class="btn ghost">Receive the rest ▸ · '+bleft+' items</button>'); rest.onclick=function(){ packOpenRest(); }; btns.appendChild(rest); }
+      footer.appendChild(btns); return;
     }
     if(S.packBundle){
       footer.appendChild(btns);
