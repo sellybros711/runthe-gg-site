@@ -926,6 +926,38 @@ window.GA_ID='G-L29P5MRWKE';
   .tw-row .cr-price-new.up{color:#4ade80}
   .tw-row .cr-price-new.down{color:var(--red)}
   .tw-row .cr-price-new.same{color:var(--ink)}
+
+  .squad-split{display:block}
+  .squad-right{display:none}
+  body.trade-mode .squad-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  body.trade-mode .squad-left .field{aspect-ratio:1/0.72}
+  body.trade-mode .squad-left .rail{display:none}
+  body.trade-mode .squad-left .railnote{display:none}
+  body.trade-mode .squad-right{display:block}
+  body.trade-mode .squad-right .sr-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px;
+    align-items:center;padding:8px 10px;border-radius:8px;border:1px solid var(--line-2);
+    background:var(--panel);margin-bottom:4px;cursor:pointer;transition:border-color .12s}
+  body.trade-mode .squad-right .sr-row:hover{border-color:rgba(96,165,250,.5)}
+  body.trade-mode .squad-right .sr-pos{font-family:var(--fn);font-size:9px;font-weight:700;
+    color:var(--dim);text-transform:uppercase;letter-spacing:.5px;align-self:center}
+  body.trade-mode .squad-right .sr-name{font-family:var(--fp);font-size:13px;font-weight:600;
+    line-height:1.2;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body.trade-mode .squad-right .sr-sub{font-size:10px;color:var(--dim);line-height:1.2;
+    display:flex;align-items:center;gap:4px}
+  body.trade-mode .squad-right .sr-price{font-family:var(--fd);font-size:14px;color:var(--ink);text-align:right}
+  body.trade-mode .squad-right .sr-cap{display:flex;align-items:baseline;gap:3px;
+    font-family:var(--fn);font-size:12px;font-weight:700;margin-bottom:6px;padding:0 2px}
+  body.trade-mode .squad-right .sr-cap-total{color:#fbbf24}
+  body.trade-mode .squad-right .sr-cap-limit{color:var(--dim-2)}
+  body.trade-mode .squad-right .sr-cap-room{margin-left:auto;font-size:10px;font-weight:600;color:var(--dim)}
+  body.trade-mode #s-squad .eyebrow{display:none}
+  body.trade-mode #s-squad>p.dim{display:none}
+  @media(max-width:459px){
+    body.trade-mode .squad-split{grid-template-columns:1fr;gap:10px}
+    body.trade-mode .squad-left .field{aspect-ratio:1/0.54}
+    body.trade-mode .squad-right .sr-row{padding:7px 8px}
+  }
+
   .cr-board-tile{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;
     align-items:center;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line-2);
     background:var(--panel);margin-bottom:5px;cursor:pointer;transition:border-color .12s}
@@ -1790,6 +1822,7 @@ window.GA_ID='G-L29P5MRWKE';
     transition:opacity .25s ease}
   .streak.on{opacity:1}
   .streak.w{color:#4ade80} .streak.l{color:#f87171}
+  .streak.clinch{font-size:14px;letter-spacing:.18em;animation:clinchPop .5s ease both}
   .cap-tracker{margin:10px 0 0;padding:10px 14px;border-radius:10px;
     background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25)}
   .cap-tracker.danger{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.35)}
@@ -1805,6 +1838,7 @@ window.GA_ID='G-L29P5MRWKE';
   .cap-limit{color:var(--dim-2);font-weight:600}
   /* The tick that just landed pops. Kept for the calendar, which reuses it. */
   @keyframes tickpop{0%{transform:scaleY(.4)}55%{transform:scaleY(1.35)}100%{transform:scaleY(1)}}
+  @keyframes clinchPop{0%{transform:scale(.7);opacity:0}50%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
   /* THE SEASON AS A CALENDAR.
      This used to be a list that grew upward, so week 1 finished at the bottom and a
      season read backwards. A schedule is a calendar: every week in order, every
@@ -2831,9 +2865,14 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="eyebrow">Step 3 of 3</div>
     <h2 class="display" style="font-size:27px;margin:5px 0 6px">Your team</h2>
     <p class="dim" style="font-size:13px;margin:0 0 12px">Tap a player for his numbers. The rail under the field arcs between the players who connect, and the number on a shirt is how many he connects to.</p>
-    <div class="field" id="field2"></div>
-    <div class="rail" id="rail2"></div>
-    <p class="railnote"></p>
+    <div class="squad-split">
+      <div class="squad-left">
+        <div class="field" id="field2"></div>
+        <div class="rail" id="rail2"></div>
+        <p class="railnote"></p>
+      </div>
+      <div class="squad-right" id="q-roster-list"></div>
+    </div>
     <div class="panel" style="margin-top:12px">
       <div class="eyebrow">Chemistry</div>
       <div class="chemrow"><div class="chemval num" id="q-chem" style="font-size:27px">0.0%</div>
@@ -3168,8 +3207,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=35"></script>
-<script src="run.js?v=35"></script>
+<script src="engine.js?v=36"></script>
+<script src="run.js?v=36"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -3306,7 +3345,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=35;
+const NEED_VERSION=36;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -4667,6 +4706,25 @@ const schemeIconSvg=(key)=>SCHEME_ICONS[key]
 function paintSquad(){
   R.startSeason(run,DATA,CTX);
   drawField($('field2'),false);
+  const rl=$('q-roster-list');
+  if(run.tradeMachine){
+    const total=Math.round(run.roster.reduce((s,p)=>s+p.price_musd,0)*10)/10;
+    const cap=E.CONSTANTS.CAP_MUSD;
+    const room=Math.round((cap-total)*10)/10;
+    let h='<div class="sr-cap"><span class="sr-cap-total">$'+total.toFixed(1)+'M</span>'+
+      '<span class="sr-cap-limit" style="color:var(--dim-2)">/ $'+cap+'M</span>'+
+      '<span class="sr-cap-room">$'+room.toFixed(1)+'M room</span></div>';
+    run.roster.forEach((p,i)=>{
+      h+='<div class="sr-row" data-i="'+i+'">'+
+        '<span class="sr-pos" style="'+posPaint(p.position)+'">'+esc(E.SLOTS[run.slotIndex[i]])+'</span>'+
+        '<div><div class="sr-name">'+esc(p.name)+'</div>'+
+        '<div class="sr-sub">'+tcPlate(p.franchise,p.season)+' '+p.season+'</div></div>'+
+        '<span class="sr-price">$'+p.price_musd.toFixed(1)+'M</span></div>';
+    });
+    rl.innerHTML=h;
+    rl.onclick=(e)=>{const r=e.target.closest('.sr-row');if(!r)return;
+      const p=run.roster[+r.dataset.i];if(p)sheet(p);};
+  }else{rl.innerHTML='';}
   const p=run.season.chemistry-1, el=$('q-chem');
   el.textContent=pc(p);
   el.className='chemval num '+(p>0.0005?'pos':(p<-0.0005?'neg':'zero'));
@@ -4977,6 +5035,17 @@ function runSim(){
     void card.offsetWidth;
     card.classList.add(r.won?'won':'lost');
     paintNext(true); paintCalendar(r);
+
+    if(run.phase!==R.PHASES.SEASON){
+      const made=run.playoffSeed&&run.playoffSeed.made;
+      const sEl=$('v-streak');
+      if(sEl){
+        sEl.className='streak'+(made?' w on':' l on')+' clinch';
+        sEl.textContent=made?'Clinched the playoffs!':'Season over';
+      }
+      simTimer=setTimeout(after,1800);
+      return;
+    }
 
     if(run.capSurvivor&&run.phase===R.PHASES.SEASON){
       const inf=R.inflateCap(run);
