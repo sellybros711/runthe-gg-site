@@ -83,8 +83,13 @@ const CONSTANTS = {
    * dropping CONSISTENCY to zero moved a 93's 20-0 rate by under a tenth of a point,
    * because the gap between a strong roster and its opponents, not the noise around
    * it, is what lets it win out. The policy table above was solved at 2.65 and is
-   * kept as the pre-change baseline; only the opponent strength moved. */
-  SCALE: 2.90,
+   * kept as the pre-change baseline; only the opponent strength moved.
+   *
+   * Nudged 2.90 -> 3.05 to make everything slightly harder across the board: opponents
+   * score ~5% more, so a near-optimal roster's title odds roughly halve and 20-0 drops to
+   * a negligible tail. SCALE never touches team rating (fppg x chem x structure), so this
+   * changes future game outcomes only; recorded runs and their ratings are untouched. */
+  SCALE: 3.05,
   CAP_MUSD: 140,
   /*
    * Re-spins are two separate levers now, one per wheel, and they get dearer as
@@ -1866,7 +1871,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 32;
+const ENGINE_API_VERSION = 33;
 
 /*
  * The three-letter code a team actually wore in a given season.
