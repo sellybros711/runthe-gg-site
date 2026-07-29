@@ -258,6 +258,14 @@ window.GA_ID='G-L29P5MRWKE';
   .btn:active{transform:translateY(1px) scale(.995);filter:brightness(1.08)}
   .btn:disabled{opacity:.4;cursor:default}
   .btn.blue{background:var(--grad-blue)}
+  /* The Challenge Bowl's own screens deep-link in, skipping the normal header, so they carry
+     their own Home control. Kept small and quiet in the top-right; the flow's real CTAs are
+     the full-width buttons below. */
+  .chhead{display:flex;justify-content:flex-end;margin:0 0 6px}
+  .homebtn{background:transparent;border:1px solid var(--line-2);color:var(--dim);
+    font-family:var(--fn);font-size:12px;font-weight:700;letter-spacing:.04em;
+    padding:6px 12px;border-radius:99px;cursor:pointer}
+  .homebtn:active{transform:translateY(1px)}
   /* THE PADLOCK ON MORE GAME MODES. Hidden unless the modes are locked, so a member never sees
      it, and inline-flex on the button so the glyph sits on the text's own line rather than
      under it. */
@@ -2834,11 +2842,73 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     </div>
 
     <div style="margin-top:15px"><button class="btn" id="b-share">Share your season</button></div>
+    <!-- Challenge a friend: sends a link that drops them into a draft to face THIS team. -->
+    <div style="margin-top:9px"><button class="btn" id="b-challenge">Challenge a friend</button></div>
     <!-- Straight into another draft. Its own line because it is what most people want next.
          It was "Same team again" when there was a favourite team to keep. -->
     <div style="margin-top:9px"><button class="btn blue" id="b-same">Draft again</button></div>
     <div class="hrow"><button class="btn ghost sm" id="b-again">Back to the start</button>
       <button class="btn ghost sm" id="b-board2">Leaderboard</button></div>
+  </div>
+
+  <!-- ===== CHALLENGE A FRIEND =====
+       Deep-linked from a shared URL (?c=...). The challenger's team rides in the link, so
+       this opens with no account and no server. The friend drafts under the same rules, plays
+       one head-to-head "Challenge Bowl", then can turn that same roster into a ranked season. -->
+  <div class="screen" id="s-challenge">
+    <div class="chhead"><button class="homebtn" id="b-ch-home" aria-label="Home">&#8962; Home</button></div>
+    <div class="eyebrow red">You've been challenged</div>
+    <h2 class="display mtitle" id="ch-title" style="font-size:26px;margin:4px 0 6px">Beat this team</h2>
+    <p class="dim" id="ch-sub" style="font-size:13.5px;line-height:1.45;margin:0 0 14px"></p>
+    <div class="verdict" id="ch-card">
+      <div class="hero-rec">
+        <div class="modetag" id="ch-mode">Free play</div>
+        <div class="eyebrow">Their team rating</div>
+        <div class="big" id="ch-rating">0.0</div>
+      </div>
+      <div class="rost" id="ch-rost" style="margin-top:12px"></div>
+    </div>
+    <div style="margin-top:15px"><button class="btn" id="b-ch-draft">Draft your team</button></div>
+    <div style="margin-top:9px"><button class="btn ghost sm" id="b-ch-skip">Just play normally</button></div>
+  </div>
+
+  <!-- The Challenge Bowl broadcast + result. Same score bug as the playoffs. -->
+  <div class="screen" id="s-bowl">
+    <div class="chhead"><button class="homebtn" id="b-bowl-home" aria-label="Home">&#8962; Home</button></div>
+    <div class="eyebrow red">Challenge Bowl</div>
+    <h2 class="display" style="font-size:24px;margin:5px 0 14px" id="bowl-title">Your team vs their team</h2>
+
+    <div class="bug" id="bowl-bug">
+      <div class="btop">
+        <div class="bt you" id="bowl-you"><span class="cd">YOU</span><span class="rc"></span>
+          <b class="sc">0</b></div>
+        <div class="bt them" id="bowl-them"><span class="cd">OPP</span><span class="rc"></span>
+          <b class="sc">0</b></div>
+      </div>
+      <div class="bbot"><span class="q" id="bowl-q">1ST</span>
+        <span class="ck" id="bowl-ck">15:00</span>
+        <span class="rd" id="bowl-rd">BOWL</span></div>
+    </div>
+
+    <div class="pocap" id="bowl-cap"></div>
+    <div class="polog" id="bowl-log"></div>
+    <div style="margin-top:14px" id="bowl-fastwrap"><button class="btn ghost sm" id="b-bowl-fast">See result</button></div>
+
+    <div id="bowl-result" hidden>
+      <div class="verdict" id="bowl-verdict" style="margin-top:6px">
+        <div class="hero-rec">
+          <div class="eyebrow" id="bowl-reyebrow">Final</div>
+          <div class="big" id="bowl-final">0-0</div>
+          <div class="hero-sub" id="bowl-outcome">RESULT</div>
+          <p class="hero-note" id="bowl-note"></p>
+        </div>
+      </div>
+      <div style="margin-top:15px"><button class="btn blue" id="b-bowl-season">Play a full season with this team</button></div>
+      <div style="margin-top:9px"><button class="btn" id="b-bowl-play">Draft your own team</button></div>
+      <div style="margin-top:9px"><button class="btn ghost sm" id="b-bowl-share">Send the result back</button></div>
+      <div class="hrow"><button class="btn ghost sm" id="b-bowl-new">New draft</button>
+        <button class="btn ghost sm" id="b-bowl-home2">Home</button></div>
+    </div>
   </div>
 </div>
 
@@ -2865,8 +2935,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=33"></script>
-<script src="run.js?v=33"></script>
+<script src="engine.js?v=34"></script>
+<script src="run.js?v=34"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -2998,7 +3068,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=33;
+const NEED_VERSION=34;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -3282,7 +3352,11 @@ async function boot(){
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     $('h-field').innerHTML=fieldMarkings();
-    authBoot(); watchTabs(); show('s-intro'); ga('game_loaded');
+    authBoot(); watchTabs();
+    /* A challenge link (?c=) or a result link (?cr=) takes over the first screen; otherwise
+       the normal intro. routeChallenge falls back to false on anything it cannot decode. */
+    if(!routeChallenge()) show('s-intro');
+    ga('game_loaded');
     /* Anything a previous visit could not send. Deliberately not awaited and deliberately
        last: it is somebody else's message from an earlier session, and it must not hold up
        this one by a single frame. */
@@ -3610,6 +3684,8 @@ function newRun(opts){
   submitted=null;
   myRanks=null;
   lastPerfectShare=null;
+  pendingChallenge=false;   // any new run cancels a pending Challenge Bowl; the challenge
+                            // draft re-arms it immediately after beginDraft().
   run=R.createRun(opts||{});
   return run;
 }
@@ -4419,9 +4495,13 @@ function paintSquad(){
     return '<div style="display:flex;gap:9px;padding:4px 0;font-size:13px"><span class="dim" style="flex:0 0 46px">Wk '+(i+1)+'</span>'+
       '<span style="flex:1;min-width:0;font-weight:600">'+esc(t.display)+'</span><span class="dim">'+t.record+'</span></div>';
   }).join('');
+  /* In a Challenge, the squad screen leads into the head-to-head Bowl instead of the season;
+     the season is offered afterward, off the Bowl result. */
+  const playBtn=$('b-play');
+  if(playBtn) playBtn.textContent=pendingChallenge?'Play the Challenge Bowl':'Play the season';
   show('s-squad');
 }
-$('b-play').onclick=()=>startSeason();
+$('b-play').onclick=()=>{ if(pendingChallenge) playBowl(); else startSeason(); };
 
 /* ---------- season, revealed game by game ---------- */
 function pushGame(r,el){
@@ -5545,6 +5625,247 @@ $('b-share').onclick=async()=>{
     }
   }
 };
+
+/* ================= CHALLENGE A FRIEND =================
+   A run's six players ride in a shareable link (?c=). A friend opens it, drafts their own
+   six under the same rules, and plays one head-to-head "Challenge Bowl" against the sender's
+   team. They can then turn that same roster into a ranked season, start fresh, or go home.
+   Everything is deterministic and stateless: the team is in the link, the Bowl is recomputed
+   from a seed made of both rosters, so sender, friend and any onlooker see the same result. */
+
+function b64urlEnc(str){ return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function b64urlDec(s){ try{ s=String(s).replace(/-/g,'+').replace(/_/g,'/'); return decodeURIComponent(escape(atob(s))); }catch(_){ return null; } }
+
+/* The sender's team, small enough for a URL: six picks, their slots, chemistry, the mode it
+   was drafted under (so the friend drafts fairly), and a display name. */
+function teamBlob(){
+  return { v:1,
+    p:run.roster.map(pickKey),
+    s:run.roster.map((p,i)=>E.SLOTS[run.slotIndex[i]]),
+    c:Math.round((run.season.chemistry-1)*1000)/10,
+    f:run.franchise||'', e:run.era||'',
+    n:((authState&&authState.name)||'').slice(0,24) };
+}
+function decodeTeam(str){ const j=b64urlDec(str); if(!j) return null; let o; try{o=JSON.parse(j);}catch(_){return null;}
+  if(!o||o.v!==1||!Array.isArray(o.p)||o.p.length!==E.SLOTS.length) return null; return o; }
+function decodeCR(str){ const j=b64urlDec(str); if(!j) return null; let o; try{o=JSON.parse(j);}catch(_){return null;}
+  if(!o||o.v!==1||!o.a||!o.b) return null; return o; }
+
+/* Rebuild a playable roster from a blob against THIS browser's player data. Null if any pick
+   cannot be resolved (the sender had newer data), which the caller degrades to a normal game. */
+function rosterFromBlob(t){
+  const roster=[], slotIndex=[];
+  for(let i=0;i<t.p.length;i++){ const pl=fromPickKey(t.p[i]); if(!pl) return null;
+    roster.push(pl); slotIndex.push(Math.max(0,E.SLOTS.indexOf((t.s&&t.s[i])||''))); }
+  return { roster, slotIndex, chemistry:1+(Number(t.c)||0)/100 };
+}
+const challengeModeLabel=(t)=> t.f?('One Franchise · '+E.nickname(t.f)) : t.e?(t.e+' era') : 'Free play';
+
+/* The same lineup rows the results screen draws, for showing a team you did not draft. */
+function renderRosterRows(el, roster, slotIndex){
+  const bySlot=new Array(E.SLOTS.length).fill(null);
+  roster.forEach((p,i)=>{ bySlot[slotIndex[i]]=p; });
+  el.innerHTML=E.SLOTS.map((slot,i)=>{ const p=bySlot[i]; if(!p) return '';
+    const a=topAward(p);
+    return '<div class="rrow">'+slotTag(slot,p.position)+
+      '<span class="nm"><b>'+esc(p.name)+'</b><span>'+p.season+' '+esc(E.nickname(p.franchise))+
+        (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</span></span>'+
+      (a?'<span class="awdcol">'+awardChip(a,true)+'</span>':'')+
+      '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
+  }).join('');
+}
+
+let challengeTeam=null;     // the sender's decoded blob while accepting a challenge
+let pendingChallenge=false; // this draft ends in the Bowl, not straight into a season
+let lastBowl=null;          // {youWon, shownYou, shownThem, themName} for the result share
+
+function stopBowl(){ clearTimeout(poTimer); cancelAnimationFrame(poRaf); poSkip=null; }
+function clearChallenge(){ challengeTeam=null; pendingChallenge=false; stopBowl(); }
+function stripChallengeParams(){ try{ const u=new URL(location.href); u.searchParams.delete('c'); u.searchParams.delete('cr');
+  history.replaceState(null,'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():'')+u.hash); }catch(_){} }
+function goHome(){ clearChallenge(); stripChallengeParams(); document.querySelectorAll('.confetti-cv').forEach(c=>c.remove()); show('s-intro'); }
+
+/* Read a challenge (or result) out of the URL on load. Returns true if it took over. */
+function routeChallenge(){
+  let params; try{ params=new URLSearchParams(location.search); }catch(_){ return false; }
+  const cr=params.get('cr'); if(cr){ const o=decodeCR(cr); if(o){ showBowlResultView(o.a,o.b); return true; } }
+  const c=params.get('c'); if(c){ const t=decodeTeam(c); if(t){ enterChallengeAccept(t); return true; } }
+  return false;
+}
+
+function enterChallengeAccept(t){ challengeTeam=t; pendingChallenge=false; paintChallengeIntro(t); show('s-challenge'); ga('challenge_opened',{}); }
+
+function paintChallengeIntro(t){
+  const rb=rosterFromBlob(t);
+  const rating=rb?teamRating(rb.roster,rb.chemistry):null;
+  $('ch-title').textContent = t.n ? (t.n+'’s team') : 'Beat this team';
+  $('ch-sub').textContent = (t.n?(t.n+' drafted a team. '):'Someone drafted a team. ')+
+    'Build your own six to beat it in the Challenge Bowl — then take your team into a full ranked season.';
+  $('ch-mode').textContent = challengeModeLabel(t);
+  const c=$('ch-card'); c.className='verdict'+(rating!=null&&rating>=75?' gold':(rating!=null&&rating>=50?' win':''));
+  const draftBtn=$('b-ch-draft');
+  if(rb){ $('ch-rating').textContent=rating.toFixed(1); renderRosterRows($('ch-rost'),rb.roster,rb.slotIndex);
+    if(draftBtn) draftBtn.textContent='Draft your team'; }
+  else { $('ch-rating').textContent='--';
+    $('ch-rost').innerHTML='<p class="dim" style="font-size:12.5px;margin:8px 0 0">This team was built with newer '+
+      'player data than this page has, so it can’t be shown here — you can still play a normal game.</p>';
+    if(draftBtn) draftBtn.textContent='Play a normal game'; }
+}
+
+/* The Bowl broadcast. Fully config-driven (never reads `run`) so it also serves the result
+   view, where there is no run in progress. Mirrors the playoff broadcast on the same bug. */
+function bowlBroadcast(cfg){
+  stopBowl();
+  lastBowl={youWon:cfg.youWon, shownYou:cfg.shownYou, shownThem:cfg.shownThem, themName:cfg.themName};
+  const themWash = cfg.themFranchise ? E.washColors(cfg.themFranchise) : {a:'#e0575f', b:'#7f1d1d'};
+  const me = youColors(cfg.themFranchise?themWash:null);
+  const youEl=$('bowl-you'), themEl=$('bowl-them'), bug=$('bowl-bug'), rcls='r-sb';
+  $('bowl-title').textContent='Your team vs '+(cfg.themName||'their team');
+  youEl.style.setProperty('--tcol',me.a); youEl.style.setProperty('--tcol2',me.b);
+  themEl.style.setProperty('--tcol',themWash.a); themEl.style.setProperty('--tcol2',themWash.b||'rgba(255,255,255,.3)');
+  youEl.querySelector('.cd').textContent='YOU';
+  themEl.querySelector('.cd').textContent=(cfg.themFranchise?String(E.nickname(cfg.themFranchise)).slice(0,3).toUpperCase()
+    :(cfg.themName?cfg.themName.replace(/[^A-Za-z0-9]/g,'').slice(0,3).toUpperCase()||'OPP':'OPP'));
+  youEl.querySelector('.rc').textContent=''; themEl.querySelector('.rc').textContent='';
+  youEl.querySelector('.sc').textContent='0'; themEl.querySelector('.sc').textContent='0';
+  youEl.className='bt you'; themEl.className='bt them';
+  bug.className='bug '+rcls;
+  $('bowl-q').textContent=QNAME[0]; $('bowl-ck').textContent='15:00'; $('bowl-rd').textContent='BOWL';
+  $('bowl-cap').innerHTML=''; $('bowl-log').innerHTML='';
+  $('bowl-result').hidden=true; $('bowl-fastwrap').hidden=false;
+  show('s-bowl');
+
+  const pace=PACE['Super Bowl'];
+  const rng=E.createSeededRNG(E.hashSeed('bowl|'+cfg.shownYou+'-'+cfg.shownThem+'|'+(cfg.themName||'')));
+  const script=E.scoringScript(cfg.shownYou,cfg.shownThem,rng);
+  const segs=buildTimeline(script,pace);
+  const setLead=(y,t)=>{ youEl.classList.toggle('lead',y>=t); themEl.classList.toggle('lead',t>=y); };
+  setLead(0,0);
+  const logScore=(e)=>{ const who=e.team==='you'?'You':(cfg.themName||'Them');
+    $('bowl-log').insertAdjacentHTML('afterbegin','<div class="pl '+e.team+'"><span class="t">Q'+e.q+' '+e.clock+
+      '</span><span class="w">'+esc(who)+' '+e.kind.toLowerCase()+(e.note?', '+esc(e.note):'')+
+      '</span><span class="n">'+e.you+'-'+e.them+'</span></div>'); };
+  const finish=()=>{
+    stopBowl();
+    youEl.querySelector('.sc').textContent=cfg.shownYou; themEl.querySelector('.sc').textContent=cfg.shownThem;
+    setLead(cfg.shownYou,cfg.shownThem);
+    bug.className='bug final '+rcls;
+    $('bowl-q').textContent='FINAL'; $('bowl-ck').textContent=cfg.youWon?'YOU WIN':'YOU LOSE';
+    $('bowl-log').innerHTML=''; script.forEach(logScore);
+    $('bowl-cap').innerHTML='';
+    $('bowl-final').textContent=cfg.shownYou+'-'+cfg.shownThem;
+    $('bowl-final').className='big'+(cfg.youWon?' gold':'');
+    $('bowl-outcome').textContent=cfg.youWon?'YOU WIN':'YOU LOSE';
+    $('bowl-note').textContent=cfg.youWon?('Your team beat '+(cfg.themName||'their team')+'.')
+      :((cfg.themName||'Their team')+' beat your team.');
+    $('bowl-verdict').className='verdict'+(cfg.youWon?' gold':' out');
+    const play=cfg.ctx==='play';
+    $('b-bowl-season').hidden=!play; $('b-bowl-share').hidden=!play; $('b-bowl-play').hidden=play;
+    if($('b-bowl-share')) $('b-bowl-share').textContent='Send the result to '+(cfg.themName||'your friend');
+    $('bowl-fastwrap').hidden=true; $('bowl-result').hidden=false;
+    if(cfg.youWon) afterPaint(()=>fireConfetti(confettiTheme(false)));
+  };
+  poSkip=finish;
+  if(cfg.instant){ finish(); return; }
+  let i=0;
+  const next=()=>{
+    if(i>=segs.length){ finish(); return; }
+    const seg=segs[i++];
+    if(seg.kind==='run'){
+      $('bowl-q').textContent=QNAME[seg.q-1]; $('bowl-ck').textContent=clockText(seg.from);
+      const t0=(window.performance||Date).now();
+      const stepf=()=>{ const k=Math.min(1,((window.performance||Date).now()-t0)/seg.ms);
+        const sec=seg.from+(seg.to-seg.from)*k; $('bowl-ck').textContent=clockText(sec);
+        bug.classList.toggle('urgent',seg.q===4&&sec<=120);
+        if(k<1){ poRaf=requestAnimationFrame(stepf); return; } next(); };
+      poRaf=requestAnimationFrame(stepf); return;
+    }
+    if(seg.kind==='score'){
+      const e=seg.e; const cell=e.team==='you'?youEl:themEl;
+      cell.querySelector('.sc').textContent=e.team==='you'?e.you:e.them; setLead(e.you,e.them);
+      cell.classList.add('scored'); setTimeout(()=>cell.classList.remove('scored'),520);
+      $('bowl-cap').innerHTML='<div class="call '+e.team+'"><b>'+e.kind+'</b><span>'+
+        (e.team==='you'?'You':esc(cfg.themName||'Them'))+(e.note?', '+esc(e.note):'')+'   '+e.you+'-'+e.them+'</span></div>';
+      logScore(e); poTimer=setTimeout(next,seg.ms); return;
+    }
+    poTimer=setTimeout(next,seg.ms);
+  };
+  next();
+}
+
+/* Play the friend's freshly drafted team against the sender's. Canonical order a=sender,
+   b=friend, so the seed-derived result is identical for everyone; the UI flips perspective. */
+function playBowl(){
+  const sender=rosterFromBlob(challengeTeam);
+  if(!sender){ pendingChallenge=false; startSeason(); return; }
+  const friendPicks=run.roster.map(pickKey);
+  const seed=E.hashSeed(challengeTeam.p.join(',')+'|'+friendPicks.join(','));
+  const res=E.resolveHeadToHead(
+    {roster:sender.roster, chemistry:sender.chemistry},
+    {roster:run.roster, chemistry:run.season.chemistry},
+    E.createSeededRNG(seed), CAL);
+  ga('challenge_bowl_played',{won:!res.aWon,mode:runMode()});
+  bowlBroadcast({ themName:(challengeTeam.n||''), themFranchise:challengeTeam.f||null,
+    shownYou:res.shownB, shownThem:res.shownA, youWon:!res.aWon, ctx:'play' });
+}
+
+/* Anyone opening a result link recomputes the same Bowl and watches it from the SENDER's
+   side (they are "you"), then gets a draft CTA of their own. */
+function showBowlResultView(aBlob,bBlob){
+  const A=rosterFromBlob(aBlob), B=rosterFromBlob(bBlob);
+  if(!A||!B){ show('s-intro'); return; }
+  const seed=E.hashSeed(aBlob.p.join(',')+'|'+bBlob.p.join(','));
+  const res=E.resolveHeadToHead({roster:A.roster,chemistry:A.chemistry},{roster:B.roster,chemistry:B.chemistry},
+    E.createSeededRNG(seed), CAL);
+  ga('challenge_result_viewed',{});
+  bowlBroadcast({ themName:(bBlob.n||''), themFranchise:bBlob.f||null,
+    shownYou:res.shownA, shownThem:res.shownB, youWon:res.aWon, ctx:'view' });
+}
+
+async function shareTextFile(text,file,fname){
+  try{
+    if(file&&navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({text,files:[file]}); return; }
+    if(navigator.share){ await navigator.share({text}); return; }
+    throw new Error('no share');
+  }catch(e){ if(e&&e.name==='AbortError') return;
+    try{ await navigator.clipboard.writeText(text); toast('Link copied'); }catch(_){ toast('Could not copy'); }
+    if(file){ const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=fname||'card.png';
+      a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); }
+  }
+}
+
+/* Handlers. */
+if($('b-ch-home')) $('b-ch-home').onclick=goHome;
+if($('b-bowl-home')) $('b-bowl-home').onclick=goHome;
+if($('b-bowl-home2')) $('b-bowl-home2').onclick=goHome;
+if($('b-ch-skip')) $('b-ch-skip').onclick=()=>{ clearChallenge(); stripChallengeParams(); beginDraft({}); };
+if($('b-ch-draft')) $('b-ch-draft').onclick=()=>{ if(!challengeTeam) return;
+  if(!rosterFromBlob(challengeTeam)){ clearChallenge(); stripChallengeParams(); beginDraft({}); return; }
+  const o={}; if(challengeTeam.f) o.franchise=challengeTeam.f; else if(challengeTeam.e) o.era=challengeTeam.e;
+  beginDraft(o); pendingChallenge=true; };
+if($('b-bowl-fast')) $('b-bowl-fast').onclick=()=>{ if(poSkip) poSkip(); };
+if($('b-bowl-season')) $('b-bowl-season').onclick=()=>{ pendingChallenge=false; challengeTeam=null; stopBowl(); stripChallengeParams(); startSeason(); };
+if($('b-bowl-new')) $('b-bowl-new').onclick=()=>{ clearChallenge(); stripChallengeParams(); beginDraft({}); };
+if($('b-bowl-play')) $('b-bowl-play').onclick=()=>{ clearChallenge(); stripChallengeParams(); beginDraft({}); };
+if($('b-bowl-share')) $('b-bowl-share').onclick=()=>{ if(!challengeTeam||!lastBowl) return;
+  const cr={v:1,a:challengeTeam,b:teamBlob()};
+  const link=location.origin+location.pathname+'?cr='+b64urlEnc(JSON.stringify(cr));
+  const who=(challengeTeam.n||'your friend');
+  const text=(lastBowl.youWon?('I beat '+who+' '+lastBowl.shownYou+'–'+lastBowl.shownThem+' in the Challenge Bowl. See it: ')
+    :('The Challenge Bowl vs '+who+' — see how it went: '))+link;
+  ga('challenge_result_shared',{won:lastBowl.youWon}); shareTextFile(text,null,'bowl.png'); };
+if($('b-challenge')) $('b-challenge').onclick=async()=>{
+  if(!run||!run.roster||run.roster.length<E.SLOTS.length) return;
+  const t=teamBlob();
+  const link=location.origin+location.pathname+'?c='+b64urlEnc(JSON.stringify(t));
+  const rec=run.outcome&&run.outcome.record;
+  const text=(rec?'My team went '+rec+'. ':'')+'Think you can draft a better team? Beat mine: '+link;
+  ga('challenge_created',{mode:runMode(),club:run&&run.franchise||null});
+  let file=null; try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready;
+    const blob=await canvasBlob(drawShareCard()); if(blob) file=new File([blob],'challenge.png',{type:'image/png'}); }catch(_){}
+  shareTextFile(text,file,'challenge.png');
+};
+
 /* ---------- landing, profile, leaderboard ----------
 
    The leaderboard is live. Accounts are not, and the sign-in controls stay disabled
