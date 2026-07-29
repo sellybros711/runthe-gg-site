@@ -14021,3 +14021,29 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
     clean (0 bag-kind), store/closet/My-Items/create/title all render, pack cards show club boosts, 0 page
     errors. Committed to the feature branch; NOT yet deployed to /golf (awaiting owner go-ahead per the
     deploy guardrail). Tunable: the `CLUBS` catalog + `CLUB_SEL` selector; boosts in `COS_BOOST` (`cl:` keys).
+
+- **Personalized-ads age gate for guests + Sahara/course-overhaul verified live (deployed to /golf).**
+  Owner: "Deploy the Sahara only to the daily rotation, make sure we significantly enhanced the course
+  design and layouts everywhere, and then take care of the personalized ads age gate for guests." First
+  established (byte-identical diff of the working file vs `origin/main:golf/index.html`) that The Sahara,
+  the course overhaul, one-club, packs, player cards etc. were ALREADY deployed to /golf (the earlier
+  "NOT deployed" CLAUDE notes were stale). Verified: The Sahara is a `DAILY_COURSES` key
+  (`DAILY_KEYS`=40, only Concordia/Games excluded) and plays a full 18-hole daily round to the result
+  with 0 page errors; the course design is genuinely enhanced everywhere (41 distinct `HV_COURSE_STYLE`
+  knob sets, 39 courses with 2-4 signature hazards in `DSIG_HAZ`, Sahara's sand vocabulary, par-3
+  realism in `hvGeom`, difficulty recalibration) - no gaps to fill.
+  NEW WORK: personalized-ads age gate. AdSense runs Auto Ads (no manual slots), loaded unconditionally
+  in `<head>`. Added an inline npa gate BEFORE the AdSense tag that reads the account age screen's stored
+  `rtt_birth_year` and requests personalized ads (`requestNonPersonalizedAds=0`) ONLY for a verified 18+
+  user; guests (no age) and self-declared minors get non-personalized ads (`npa=1`). It composes with the
+  existing Consent Mode v2 (a personalized ad now needs BOTH an adult AND consent) and covers COPPA (<13)
+  + GDPR-K (<16) since anyone not confirmed 18+ is non-personalized. `adsAgeRefresh(birthYear)` re-applies
+  the gate the moment a birth year is confirmed at signup (called from `ageGateOk`). Privacy disclosure
+  updated in BOTH the in-app Privacy overlay and the standalone `privacy.html` (deploys to
+  `golf/privacy.html`): "personalized ads only for signed-in 18+, guests + under-18 always
+  non-personalized." No em dashes in the new copy. Verified in Playwright: guest npa=1, adult (b.1990)
+  npa=0, minor (b.2015) npa=1, `adsAgeRefresh` forward-refresh adult->0/minor->1, Sahara round clean,
+  0 page errors. Deployed to /golf (main `2751785`); feature branch pushed (`b6003ff`). `AGE_MIN` stays
+  13 for account creation; the personalized-ads threshold is 18 (const in the head gate + `adsAgeRefresh`).
+  NOTE: one-club is already live on /golf (shipped in a prior session) - flagged to the owner that this
+  deploy touched ONLY the age gate, nothing else.
