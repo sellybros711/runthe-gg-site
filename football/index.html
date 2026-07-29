@@ -1938,6 +1938,28 @@ window.GA_ID='G-L29P5MRWKE';
   .verdict.gold{background:linear-gradient(160deg,#3b2f0a,#181305);border-color:rgba(245,158,11,.42)}
   .verdict.win{background:linear-gradient(160deg,#0c2a4d,#0a1526);border-color:rgba(59,130,246,.42)}
   .verdict.out{background:linear-gradient(160deg,#3a1114,#1a0a0c);border-color:rgba(239,68,68,.34)}
+  /* A win screen is a moment, so the champion and perfect cards get lit: a soft glow
+     bloom behind the record, a thin gilded/steel top edge, and — for a perfect run — the
+     card border itself breathes. Kept to the two winning states; everything else is flat. */
+  .verdict.gold,.verdict.win{position:relative;overflow:hidden}
+  .verdict.gold:before,.verdict.win:before{content:'';position:absolute;left:50%;top:-30%;
+    width:130%;height:150%;transform:translateX(-50%);pointer-events:none;z-index:0;
+    background:radial-gradient(60% 46% at 50% 34%,var(--glow,rgba(245,158,11,.28)),transparent 72%)}
+  .verdict.win:before{--glow:rgba(59,130,246,.26)}
+  .verdict.gold:after,.verdict.win:after{content:'';position:absolute;left:14%;right:14%;top:0;
+    height:2px;pointer-events:none;
+    background:linear-gradient(90deg,transparent,rgba(253,230,138,.9),transparent)}
+  .verdict.win:after{background:linear-gradient(90deg,transparent,rgba(191,219,254,.9),transparent)}
+  .verdict.gold>*,.verdict.win>*{position:relative;z-index:1}
+  .verdict.gold.perfect{animation:goldbreath 2.8s ease-in-out infinite}
+  @keyframes goldbreath{0%,100%{border-color:rgba(245,158,11,.42);box-shadow:0 0 0 0 rgba(245,158,11,0)}
+    50%{border-color:rgba(253,224,71,.85);box-shadow:0 0 30px -6px rgba(245,158,11,.45)}}
+  /* The emblem above the record: a trophy for a title, a crown for a perfect season. */
+  .emblem{display:flex;justify-content:center;margin:2px 0 6px}
+  .emblem svg{width:46px;height:46px;display:block;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5))}
+  .verdict.gold .emblem svg{animation:embpop .6s cubic-bezier(.2,1.3,.4,1) both}
+  .verdict.win .emblem svg{animation:embpop .6s cubic-bezier(.2,1.3,.4,1) both}
+  @keyframes embpop{0%{transform:scale(.3) rotate(-12deg);opacity:0}100%{transform:none;opacity:1}}
   .verdict h2{font-family:var(--fd);font-size:31px;text-transform:uppercase;line-height:.98;
     margin-top:5px}
   .verdict p{margin:9px 0 0;color:var(--dim);font-size:14px}
@@ -2127,10 +2149,19 @@ window.GA_ID='G-L29P5MRWKE';
     letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
     border:1px solid var(--line-2);border-radius:99px;padding:4px 11px;margin:0 0 9px}
   .hero-rec .big{font-family:var(--fd);font-size:78px;line-height:.86;letter-spacing:-.02em}
-  .hero-rec .big.gold{background:linear-gradient(180deg,#fde68a,#d97706);-webkit-background-clip:text;
-    background-clip:text;color:transparent}
-  .hero-rec .big.win{background:linear-gradient(180deg,#bfdbfe,#2563eb);-webkit-background-clip:text;
-    background-clip:text;color:transparent}
+  /* The record carries a moving sheen on a win — a highlight that sweeps across the gilded
+     (or steel) number every few seconds. background-size >100% gives the highlight room to
+     travel; the keyframe slides its position. */
+  .hero-rec .big.gold{background:linear-gradient(110deg,#fbbf24 0%,#fde68a 30%,#fffbeb 46%,#fde68a 62%,#d97706 100%);
+    background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:recsheen 3.4s ease-in-out infinite}
+  .hero-rec .big.win{background:linear-gradient(110deg,#3b82f6 0%,#bfdbfe 30%,#f8fbff 46%,#bfdbfe 62%,#2563eb 100%);
+    background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:recsheen 3.4s ease-in-out infinite}
+  @keyframes recsheen{0%{background-position:190% 0}100%{background-position:-90% 0}}
+  @media (prefers-reduced-motion: reduce){
+    .hero-rec .big.gold,.hero-rec .big.win,.verdict.gold.perfect,
+    .verdict.gold .emblem svg,.verdict.win .emblem svg{animation:none}}
   .hero-sub{font-family:var(--fd);font-size:15px;letter-spacing:.06em;
     text-transform:uppercase;margin-top:3px}
   .hero-note{color:var(--dim);font-size:12.5px;margin:5px 0 0}
@@ -2263,6 +2294,8 @@ window.GA_ID='G-L29P5MRWKE';
     background:var(--panel-2);border:1px solid var(--line-2);padding:12px 18px;border-radius:10px;
     font-weight:700;font-size:14px;opacity:0;transition:all .25s ease;pointer-events:none}
   .toast.on{transform:translateX(-50%);opacity:1}
+  /* Confetti rides above the page but below any modal sheet or toast, and never eats a tap. */
+  .confetti-cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:58}
   .sheet{position:fixed;inset:0;background:rgba(0,0,0,0);display:flex;z-index:60;
     align-items:flex-end;justify-content:center;padding:14px;
     visibility:hidden;pointer-events:none;transition:background .3s ease,visibility 0s .3s}
@@ -2720,6 +2753,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <!-- 1. Record and how the season ended. -->
     <div class="verdict" id="o-card">
       <div class="hero-rec">
+        <div class="emblem" id="o-emblem" hidden></div>
         <div class="modetag" id="o-mode">Free play</div>
         <div class="eyebrow" id="o-eyebrow">Final record</div>
         <div class="big" id="o-rec">0-0</div>
@@ -3217,6 +3251,10 @@ function show(id){
     const cur=document.querySelector('.screen.on');
     if(cur&&cur.id!=='s-board') boardFrom=cur.id;
   }
+  /* A change of screen clears any confetti still falling, so a burst never lingers over
+     the next draft. The results screen re-fires its own a frame later, so this does not
+     rob a winner of their celebration. */
+  document.querySelectorAll('.confetti-cv').forEach(cv=>cv.remove());
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');window.scrollTo({top:0});
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
   if(typeof heroSync==='function') heroSync();
@@ -4659,6 +4697,10 @@ function playPlayoffGame(r,after){
   $('po-q').textContent=QNAME[0];
   $('po-ck').textContent='15:00';
   $('po-rd').textContent=ROUND_SHORT[round]||round.toUpperCase();
+  /* The fast-forward button ends the run on the last game, so on the Super Bowl it goes
+     straight to the results rather than "the final" it is already on. */
+  const fastBtn=$('b-po-fast');
+  if(fastBtn) fastBtn.textContent=round==='Super Bowl'?'See results':'Skip to the final';
   $('po-cap').innerHTML='';
   $('po-log').innerHTML='';
   show('s-po');
@@ -4691,6 +4733,13 @@ function playPlayoffGame(r,after){
       (r.won&&round==='Super Bowl'?' big':'')+'"><b>'+
       (r.won?(round==='Super Bowl'?'CHAMPIONS':'YOU ADVANCE'):'SEASON OVER')+
       '</b><span>'+esc(r.opponent)+' '+r.shownThem+', you '+r.shownYou+'</span></div>';
+    /* The whistle on a title: confetti rains the moment CHAMPIONS lands. Gold for a
+       perfect run in the making, the club's own colours otherwise. The results screen
+       fires its own burst a beat later, so a player who skips the broadcast still gets it. */
+    if(r.won&&round==='Super Bowl'){
+      const perfectRun=run.season.results.every(x=>x.won);
+      fireConfetti(confettiTheme(perfectRun));
+    }
     poTimer=setTimeout(after,round==='Super Bowl'?1900:1250);
   };
   poSkip=finish;
@@ -4774,6 +4823,67 @@ $('b-po-fast').onclick=()=>{ if(poSkip) poSkip(); };
    identical PO rows. */
 const ROUND_TAG={'Wild Card':'WC','Divisional':'DIV','Conference Championship':'CONF','Super Bowl':'SB'};
 
+/* ---------- CONFETTI ----------
+   A self-contained canvas burst: no library, so nothing to load and nothing the CSP can
+   block. Coloured strips rain from above the top of the screen with gravity, drift and
+   spin, fade over the last stretch, and the canvas removes itself when the last one is
+   gone. Skipped entirely when the player has asked for reduced motion. */
+const perfNow=()=>(window.performance||Date).now();
+
+/* The palette for a win. Gold for a perfect run, the club's own two colours (plus gold
+   and white to lift them) for an ordinary title, and the game's red/blue in free play. */
+function confettiTheme(perfect){
+  if(perfect) return {colors:['#fde68a','#fcd34d','#f59e0b','#fffbeb','#ffffff'],count:200,duration:4200};
+  let base=['#ef4444','#3b82f6'];
+  if(run&&run.franchise){ const c=E.teamColors(run.franchise); base=[c.primary,c.secondary]; }
+  return {colors:base.concat(['#fcd34d','#ffffff']),count:150,duration:3400};
+}
+
+function fireConfetti(opts){
+  opts=opts||{};
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches) return null;
+  const colors=opts.colors||['#fcd34d','#f59e0b','#ffffff','#fde68a'];
+  const duration=opts.duration||3400, count=opts.count||150;
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const cv=document.createElement('canvas');
+  cv.className='confetti-cv';
+  cv.width=Math.floor(innerWidth*dpr); cv.height=Math.floor(innerHeight*dpr);
+  document.body.appendChild(cv);
+  const cx=cv.getContext('2d'), W=cv.width, H=cv.height;
+  const parts=[];
+  for(let i=0;i<count;i++){
+    parts.push({
+      x:Math.random()*W,
+      y:-Math.random()*H*0.5-20*dpr,      // staggered above the top, so it rains in
+      w:(5+Math.random()*7)*dpr, h:(9+Math.random()*13)*dpr,
+      vx:(-1.1+Math.random()*2.2)*dpr, vy:(2.2+Math.random()*3.4)*dpr,
+      g:(0.028+Math.random()*0.02)*dpr,   // gravity
+      rot:Math.random()*Math.PI, vr:(-0.22+Math.random()*0.44),
+      sway:Math.random()*Math.PI*2, swA:(0.4+Math.random()*0.7)*dpr,
+      col:colors[(Math.random()*colors.length)|0],
+      round:Math.random()<0.28,           // a few discs among the strips
+    });
+  }
+  const t0=perfNow();
+  const step=()=>{
+    const t=perfNow()-t0, life=Math.min(1,t/duration);
+    cx.clearRect(0,0,W,H);
+    cx.globalAlpha=life<0.82?1:Math.max(0,1-(life-0.82)/0.18);   // fade the tail
+    for(const p of parts){
+      p.sway+=0.035; p.x+=p.vx+Math.sin(p.sway)*p.swA;
+      p.vy+=p.g; p.y+=p.vy; p.rot+=p.vr;
+      if(p.y-p.h>H) continue;
+      cx.save(); cx.translate(p.x,p.y); cx.rotate(p.rot); cx.fillStyle=p.col;
+      if(p.round){ cx.beginPath(); cx.arc(0,0,p.w*0.6,0,6.2832); cx.fill(); }
+      else cx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      cx.restore();
+    }
+    if(life<1) requestAnimationFrame(step); else cv.remove();
+  };
+  requestAnimationFrame(step);
+  return cv;
+}
+
 /* Run a piece of work AFTER the browser has painted the current frame, so a screen is
    on the glass before anything heavy that follows runs. Two animation frames: the first
    callback fires just before a paint, the second just after it has committed. Falls back
@@ -4784,16 +4894,43 @@ function afterPaint(fn){
   }else{ setTimeout(fn,0); }
 }
 
+/* The two win emblems, gilded. A crown for a perfect season, a trophy for a title. Each
+   carries its own gradient with a unique id so two of them could never collide. */
+const EMBLEM_CROWN='<svg viewBox="0 0 48 48" aria-hidden="true">'+
+  '<defs><linearGradient id="emcrown" x1="0" y1="0" x2="0" y2="1">'+
+  '<stop offset="0" stop-color="#fffbeb"/><stop offset=".45" stop-color="#fcd34d"/>'+
+  '<stop offset="1" stop-color="#d97706"/></linearGradient></defs>'+
+  '<path fill="url(#emcrown)" stroke="#a55b06" stroke-width="1" stroke-linejoin="round" '+
+  'd="M7 37 10 16 18 23 24 11 30 23 38 16 41 37Z"/>'+
+  '<rect x="10" y="37" width="28" height="5.4" rx="2.7" fill="url(#emcrown)" stroke="#a55b06" stroke-width="1"/>'+
+  '<circle cx="10" cy="15" r="2.4" fill="#fff7e0"/><circle cx="38" cy="15" r="2.4" fill="#fff7e0"/>'+
+  '<circle cx="24" cy="9" r="2.7" fill="#fff7e0"/></svg>';
+const EMBLEM_TROPHY='<svg viewBox="0 0 48 48" aria-hidden="true">'+
+  '<defs><linearGradient id="emtro" x1="0" y1="0" x2="0" y2="1">'+
+  '<stop offset="0" stop-color="#fffbeb"/><stop offset=".5" stop-color="#fcd34d"/>'+
+  '<stop offset="1" stop-color="#d97706"/></linearGradient></defs>'+
+  '<path d="M13 10c-6 0-8 3-8 6.5S8 23 13.5 23" fill="none" stroke="url(#emtro)" stroke-width="3.2" stroke-linecap="round"/>'+
+  '<path d="M35 10c6 0 8 3 8 6.5S40 23 34.5 23" fill="none" stroke="url(#emtro)" stroke-width="3.2" stroke-linecap="round"/>'+
+  '<path fill="url(#emtro)" stroke="#a55b06" stroke-width="1" stroke-linejoin="round" '+
+  'd="M12 6h24v8a12 12 0 0 1-24 0V6Z"/>'+
+  '<rect x="21" y="25" width="6" height="7" fill="url(#emtro)"/>'+
+  '<path fill="url(#emtro)" stroke="#a55b06" stroke-width="1" stroke-linejoin="round" d="M15 41 18 32h12l3 9Z"/>'+
+  '<rect x="12" y="40" width="24" height="4.4" rx="2.2" fill="url(#emtro)" stroke="#a55b06" stroke-width="1"/></svg>';
+
 function paintOver(){
   const o=run.outcome,s=run.season,c=$('o-card');
   c.className='verdict';
   $('o-mode').textContent=runModeLabel();
   $('o-rec').textContent=o.record;
   $('o-rec').className='big'+(o.perfect?' gold':(o.titleWon?' win':''));
-  if(o.perfect){c.classList.add('gold');
+  const emb=$('o-emblem');
+  emb.hidden=true; emb.innerHTML='';
+  if(o.perfect){c.classList.add('gold','perfect');
+    emb.hidden=false; emb.innerHTML=EMBLEM_CROWN;
     $('o-title').textContent='Perfect season';
     $('o-sub').textContent='Seventeen straight, then three more. No real team has ever done it.';
   }else if(o.titleWon){c.classList.add('win');
+    emb.hidden=false; emb.innerHTML=EMBLEM_TROPHY;
     $('o-title').textContent='Champions';
     $('o-sub').textContent='You won the title. The undefeated run is still out there.';
   }else if(o.eliminatedIn){c.classList.add('out');
@@ -4893,6 +5030,12 @@ function paintOver(){
      anyone taps, and a new season should not open on the pane the last one ended on. */
   setOverTab('perfect');
   show('s-over');
+
+  /* The celebration. A perfect run gets the biggest burst, a title a club-coloured one;
+     everything else gets nothing. Fired once the screen is up so it rains over the record,
+     and on this screen too (not only the whistle) so a player who skipped the broadcast or
+     the whole playoff view still gets their moment. */
+  if(o.perfect||o.titleWon) afterPaint(()=>fireConfetti(confettiTheme(o.perfect)));
 
   /* THE HEAVY WORK, ONE FRAME LATER. The optimiser and the two 400-season projections
      it feeds are the only expensive part of this screen, and nothing above needs them,
@@ -5176,10 +5319,41 @@ function drawShareCard(){
     ? run.era+' era. Six spins, six players from one decade.'
     : 'Free play. Six spins, one roster, one shot at 20-0.',CARD.TAG);
 
-  // The record, which is the whole point of the card.
+  /* A WIN GETS DRESSED. Behind the record: a warm gold bloom for a perfect season, a cool
+     one for a title, and a scatter of confetti the record then sits on top of. All of it is
+     seeded off the run, so the same season always draws the same card. Nothing on a season
+     that did not win the title, so a card is loud only when the result earns it. */
   const tone=o.perfect?'#fcd34d':(o.titleWon?'#93c5fd':'#ffffff');
-  D(250); x.fillStyle=tone;
+  if(o.perfect||o.titleWon){
+    const warm=o.perfect;
+    const glow=x.createRadialGradient(mid,300,20,mid,300,560);
+    glow.addColorStop(0,warm?'rgba(245,158,11,.36)':'rgba(59,130,246,.32)');
+    glow.addColorStop(1,'rgba(7,11,19,0)');
+    x.fillStyle=glow; x.fillRect(0,70,CARD.W,520);
+    const rng=E.createSeededRNG(E.hashSeed((run.seed||'x')+'|card'));
+    const palette=warm
+      ? ['#fde68a','#fcd34d','#f59e0b','#ffffff','#fffbeb']
+      : [tc.primary,tc.secondary,'#fcd34d','#ffffff'];
+    for(let i=0;i<52;i++){
+      const px=rng()*CARD.W, py=150+rng()*286, pw=9+rng()*16, ph=15+rng()*22;
+      x.save(); x.translate(px,py); x.rotate((rng()-0.5)*Math.PI*1.4);
+      x.globalAlpha=0.5+rng()*0.4; x.fillStyle=palette[(rng()*palette.length)|0];
+      if(rng()<0.3){ x.beginPath(); x.arc(0,0,pw*0.55,0,6.2832); x.fill(); }
+      else x.fillRect(-pw/2,-ph/2,pw,ph);
+      x.restore();
+    }
+    x.globalAlpha=1;
+  }
+  // The record, which is the whole point of the card.
+  let recFill=tone;
+  if(o.perfect){ const gg=x.createLinearGradient(0,150,0,CARD.REC);
+    gg.addColorStop(0,'#fffbeb'); gg.addColorStop(.5,'#fcd34d'); gg.addColorStop(1,'#e0870a'); recFill=gg;
+  }else if(o.titleWon){ const gg=x.createLinearGradient(0,150,0,CARD.REC);
+    gg.addColorStop(0,'#eff6ff'); gg.addColorStop(.5,'#93c5fd'); gg.addColorStop(1,'#2563eb'); recFill=gg; }
+  if(o.perfect||o.titleWon){ x.shadowColor=o.perfect?'rgba(245,158,11,.55)':'rgba(59,130,246,.5)'; x.shadowBlur=36; }
+  D(250); x.fillStyle=recFill;
   centered(o.record,CARD.REC);
+  x.shadowBlur=0; x.shadowColor='transparent';
 
   D(52); x.fillStyle='rgba(255,255,255,.92)';
   const what=(o.perfect?'PERFECT SEASON'
