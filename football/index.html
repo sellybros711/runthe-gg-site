@@ -6068,6 +6068,7 @@ function comparison(best){
    every share: a redirect hop on each one, and two URLs for the same page for anything
    that counts links. */
 const SHARE_URL='https://runthe.gg/football/';
+const CHALLENGE_URL='https://runthe.gg/football/challenge/';
 
 /* THE LINE THAT MAKES IT A DARE RATHER THAN A SCOREBOARD.
    A shared result with no invitation in it gives the person reading nothing to do. Which
@@ -6084,21 +6085,12 @@ function shareLines(){
     :o.eliminatedIn?'Out in the '+o.eliminatedIn+'.'
     :'Missed the playoffs.';
   const rating=runPayload().teamRating;
-  /* The team rating goes in the text as well as on the card, because plenty of places show
-     the text and drop the image, and the rating is the one number that says how good the
-     roster was rather than how the season happened to go. */
   const rate=(rating===null||rating===undefined)?'':' Team rating '+Number(rating).toFixed(1)+'.';
-  /* WHICH GAME THIS WAS. A One Franchise Miami run going 15-5 is a different boast from a free
-     run going 15-5, and the rating on the end of it is only comparable to other runs of the
-     same kind, so the text has to say which. */
   const head='The Perfect Season: '+o.record+'. '+what;
-  /* The city, for the same reason the card uses it: this text is posted somewhere else.
-     Era runs name the decade for the same reason. A free run needs no tag: it is the
-     open competition, and the leaderboard treats an untagged run as one. */
   const mode=run.franchise?' One Franchise: '+E.cityLabel(run.franchise)+'.'
     :run.era?' '+run.era+' era.':'';
   return {head,
-    text:head+mode+rate+'\n'+shareDare(o)+'\n'+SHARE_URL};
+    text:head+mode+rate+'\n'+shareDare(o)+'\n'+CHALLENGE_URL};
 }
 
 /*
