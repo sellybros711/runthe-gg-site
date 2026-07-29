@@ -6624,7 +6624,7 @@ if($('b-bowl-share')) $('b-bowl-share').onclick=()=>{ if(!challengeTeam||!lastBo
 if($('b-challenge')) $('b-challenge').onclick=async()=>{
   if(!run||!run.roster||run.roster.length<E.SLOTS.length) return;
   const t=teamBlob();
-  const link=location.origin+location.pathname+'?c='+b64urlEnc(JSON.stringify(t));
+  const link=CHALLENGE_URL+'?c='+b64urlEnc(JSON.stringify(t));
   const rec=run.outcome&&run.outcome.record;
   const text=(rec?'My team went '+rec+'. ':'')+'Think you can draft a better team? Beat mine: '+link;
   ga('challenge_created',{mode:runMode(),club:run&&run.franchise||null});
