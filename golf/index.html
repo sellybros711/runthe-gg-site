@@ -67,6 +67,17 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 <!-- Google AdSense (same publisher as the rest of runthe.gg). Consent for EEA/UK/CH + US states is
      handled by Google's certified "Privacy & messaging" CMP, configured in the AdSense dashboard and
      served automatically with this tag; the Consent Mode defaults above gate cookies until it responds. -->
+<!-- Personalized-ads age gate. Personalized ads require a user we know to be an adult; guests (no
+     verified age) and self-declared minors are served NON-personalized ads (npa=1). We read the birth
+     year the account age screen stored (rtt_birth_year) and request personalized ads (npa=0) ONLY for a
+     verified 18+ user. Set BEFORE the AdSense tag so Auto Ads honour it; composes with Consent Mode
+     above, so a personalized ad needs BOTH an adult AND consent. This covers COPPA (<13) and GDPR-K
+     (<16) since anyone not confirmed 18+ (all guests included) gets non-personalized ads. -->
+<script>
+(function(){var npa=1;try{var by=parseInt(localStorage.getItem('rtt_birth_year'),10),yr=(new Date()).getFullYear();
+  if(by>1900&&by<=yr&&(yr-by)>=18)npa=0;}catch(e){}
+  (window.adsbygoogle=window.adsbygoogle||[]).requestNonPersonalizedAds=npa;})();
+</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <!-- Analytics (GA4). Set GA_ID to your Measurement ID (G-XXXXXXXXXX) to activate. While it's the
      placeholder it stays fully INERT (no gtag.js request, no cookies) so nothing ships broken. Once a
@@ -7451,10 +7462,15 @@ function unlockPerks(){
 }
 // Neutral age gate for ACCOUNT CREATION (email is personal data → COPPA/GDPR-K trigger). We ask for a
 // year of birth (a neutral age screen, not a "confirm you're 18+" toggle) and block under-13 signups.
-// Stored locally so a returning user isn't re-asked. Guests (no account) aren't gated. NOTE for owner:
-// 13 is the US COPPA floor; raise AGE_MIN to 16 for stricter EU GDPR-K, and gate personalized ads for
-// under-16s via the AdSense CMP if you keep 13.
+// Stored locally so a returning user isn't re-asked. Guests (no account) aren't gated for PLAY, but for
+// ADS: guests + anyone not confirmed 18+ get non-personalized ads (see the npa gate in <head>, refreshed
+// here when a birth year is confirmed). 13 is the US COPPA floor; raise AGE_MIN to 16 for stricter EU
+// GDPR-K (the personalized-ads gate already uses 18, which covers both regardless of AGE_MIN).
 const AGE_MIN=13;
+// Personalized ads only for a verified adult (18+); everyone else (guests + minors) stays non-personalized.
+function adsAgeRefresh(birthYear){ try{ var yr=(new Date()).getFullYear();
+  (window.adsbygoogle=window.adsbygoogle||[]).requestNonPersonalizedAds = (birthYear>1900&&(yr-birthYear)>=18)?0:1;
+}catch(e){} }
 function ageGateOk(box){
   const el=box&&box.querySelector('#au-birth'); if(!el) return {ok:true};
   const y=parseInt(el.value,10);
@@ -7462,6 +7478,7 @@ function ageGateOk(box){
   if(!y || y<1900 || y>cur) return {ok:false,msg:'Enter your year of birth.'};
   if((cur-y) < AGE_MIN) return {ok:false,msg:`Sorry, you must be at least ${AGE_MIN} to create an account.`};
   try{ localStorage.setItem('rtt_birth_year', String(y)); }catch(e){}
+  adsAgeRefresh(y);
   return {ok:true};
 }
 function overlayAccount(screen){
@@ -8548,7 +8565,7 @@ function overlayPrivacy(screen){
       <li><b>As a guest, your identity stays on your device.</b> Your golfer, look, record, and daily streak live only in this browser (localStorage). Finished seasons are posted to the public leaderboard <b>anonymously</b>, shown as "Anonymous / Guest Player," never anything that identifies you.</li>
       <li><b>Creating an account</b> stores the email + username you provide, or, with "Sign in with Google," the email Google shares with us. Sign-in is handled by our database provider, Supabase, and by Google. We don't sell your personal information.</li>
       <li><b>Signed in, your profile syncs.</b> Your career save, trophies, streaks and stats are saved to your account (Supabase) so they follow you across devices. Finished seasons post to the public leaderboard under your username and golfer name. Your email is never shown publicly.</li>
-      <li><b>Advertising.</b> We show ads (Google AdSense) to keep the game free. Third-party vendors, including Google, use advertising cookies to serve ads based on your prior visits to this and other websites. You can opt out of personalized ads at <a href="https://adssettings.google.com" target="_blank" rel="noopener" style="color:var(--gold)">Google Ads Settings</a> or <a href="https://www.aboutads.info" target="_blank" rel="noopener" style="color:var(--gold)">aboutads.info</a>. In the EEA, UK and Switzerland, a consent message lets you choose before any ad cookies are set.</li>
+      <li><b>Advertising.</b> We show ads (Google AdSense) to keep the game free. Third-party vendors, including Google, use advertising cookies to serve ads based on your prior visits to this and other websites. <b>We only request personalized ads for signed-in users confirmed to be 18 or older.</b> Guests (who provide no age) and anyone under 18 are always served non-personalized ads. You can also opt out of personalized ads at <a href="https://adssettings.google.com" target="_blank" rel="noopener" style="color:var(--gold)">Google Ads Settings</a> or <a href="https://www.aboutads.info" target="_blank" rel="noopener" style="color:var(--gold)">aboutads.info</a>. In the EEA, UK and Switzerland, a consent message lets you choose before any ad cookies are set.</li>
       <li><b>Player ratings</b> are built from public statistics, including data from DataGolf, performance data about public figures, not personal data about you.</li>
       <li><b>Clear it anytime.</b> Use Reset, or clear this site's browser data, to wipe local data. Email us to delete your account and all associated data.</li>
       <li><b>Not directed to children under 13;</b> we don't knowingly collect personal information from them.</li>
