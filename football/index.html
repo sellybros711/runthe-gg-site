@@ -3032,7 +3032,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="verdict" id="o-card">
       <div class="hero-rec">
         <div class="emblem" id="o-emblem" hidden></div>
-        <div class="modetag" id="o-mode">Free play</div>
+        <div class="modetag" id="o-mode">Classic Mode</div>
         <div class="eyebrow" id="o-eyebrow">Final record</div>
         <div class="big" id="o-rec">0-0</div>
         <div class="hero-sub" id="o-title">Season over</div>
@@ -3130,7 +3130,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <p class="dim" id="ch-sub" style="font-size:13.5px;line-height:1.45;margin:0 0 14px"></p>
     <div class="verdict" id="ch-card">
       <div class="hero-rec">
-        <div class="modetag" id="ch-mode">Free play</div>
+        <div class="modetag" id="ch-mode">Classic Mode</div>
         <div class="eyebrow">Their team rating</div>
         <div class="big" id="ch-rating">0.0</div>
       </div>
@@ -3265,7 +3265,7 @@ function runModeLabel(){
   if(run&&run.tradeMachine) return 'The Trade Machine';
   if(run&&run.franchise) return 'One Franchise: '+E.cityLabel(run.franchise);
   if(run&&run.era) return run.era+' era';
-  return 'Free play';
+  return 'Classic Mode';
 }
 /* What chemistry needs to know about the mode. Same object run.js builds, and it has to
    be passed at every call site or the rail on the draft screen draws links the season
@@ -6225,7 +6225,7 @@ function drawShareCard(){
     ? 'One Franchise: '+E.cityLabel(run.franchise)+'. Six spins, six players, any year.'
     : run.era
     ? run.era+' era. Six spins, six players from one decade.'
-    : 'Free play. Six spins, one roster, one shot at 20-0.',CARD.TAG);
+    : 'Classic Mode. Six spins, one roster, one shot at 20-0.',CARD.TAG);
 
   /* A WIN GETS DRESSED. Behind the record: a warm gold bloom for a perfect season, a cool
      one for a title, and a scatter of confetti the record then sits on top of. All of it is
@@ -6437,7 +6437,7 @@ function rosterFromBlob(t){
     roster.push(pl); slotIndex.push(Math.max(0,E.SLOTS.indexOf((t.s&&t.s[i])||''))); }
   return { roster, slotIndex, chemistry:1+(Number(t.c)||0)/100 };
 }
-const challengeModeLabel=(t)=> t.f?('One Franchise · '+E.nickname(t.f)) : t.e?(t.e+' era') : 'Free play';
+const challengeModeLabel=(t)=> t.f?('One Franchise · '+E.nickname(t.f)) : t.e?(t.e+' era') : 'Classic Mode';
 
 /* The same lineup rows the results screen draws, for showing a team you did not draft. */
 function renderRosterRows(el, roster, slotIndex){
@@ -8306,7 +8306,7 @@ function lbScope(){
 function paintComp(){
   const sel=$('lb-comp');
   if(!sel.options.length){
-    sel.innerHTML='<option value="">Free play</option>'+
+    sel.innerHTML='<option value="">Perfect Season - Classic Mode</option>'+
       '<optgroup label="Eras Draft">'+
         Object.keys(E.ERAS).map(e=>'<option value="era:'+e+'">'+esc(e)+'</option>').join('')+
       '</optgroup>'+
