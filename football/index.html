@@ -2841,12 +2841,12 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
     </div>
 
-    <div style="margin-top:15px"><button class="btn" id="b-share">Share your season</button></div>
-    <!-- Challenge a friend: sends a link that drops them into a draft to face THIS team. -->
-    <div style="margin-top:9px"><button class="btn" id="b-challenge">Challenge a friend</button></div>
-    <!-- Straight into another draft. Its own line because it is what most people want next.
-         It was "Same team again" when there was a favourite team to keep. -->
+    <!-- One emphasis colour each: Challenge (the social hook) red, Draft again blue, and
+         Share drops to a ghost so two primary buttons never read as the same action. -->
+    <div style="margin-top:15px"><button class="btn" id="b-challenge">Challenge a friend</button></div>
+    <!-- Straight into another draft. It was "Same team again" when there was a favourite team. -->
     <div style="margin-top:9px"><button class="btn blue" id="b-same">Draft again</button></div>
+    <div style="margin-top:9px"><button class="btn ghost" id="b-share">Share your season</button></div>
     <div class="hrow"><button class="btn ghost sm" id="b-again">Back to the start</button>
       <button class="btn ghost sm" id="b-board2">Leaderboard</button></div>
   </div>
@@ -2903,11 +2903,15 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
           <p class="hero-note" id="bowl-note"></p>
         </div>
       </div>
-      <div style="margin-top:15px"><button class="btn blue" id="b-bowl-season">Play a full season with this team</button></div>
-      <div style="margin-top:9px"><button class="btn" id="b-bowl-play">Draft your own team</button></div>
-      <div style="margin-top:9px"><button class="btn ghost sm" id="b-bowl-share">Send the result back</button></div>
-      <div class="hrow"><button class="btn ghost sm" id="b-bowl-new">New draft</button>
-        <button class="btn ghost sm" id="b-bowl-home2">Home</button></div>
+      <!-- Each exit is its own wrapper so it can be shown/hidden individually: `hidden` on a
+           .btn does nothing (the class sets display:block), but it works on these plain divs.
+           A friend who just played sees season / new / send-result / home; someone opening a
+           shared result link (no run of their own) sees only draft-a-new-team + home. -->
+      <div style="margin-top:15px" id="bw-season"><button class="btn blue" id="b-bowl-season">Play a full season with this team</button></div>
+      <div style="margin-top:15px" id="bw-play"><button class="btn" id="b-bowl-play">Draft a new team</button></div>
+      <div style="margin-top:9px" id="bw-new"><button class="btn ghost" id="b-bowl-new">New draft</button></div>
+      <div style="margin-top:9px" id="bw-share"><button class="btn ghost sm" id="b-bowl-share">Send the result back</button></div>
+      <div style="margin-top:9px" id="bw-home"><button class="btn ghost sm" id="b-bowl-home2">Home</button></div>
     </div>
   </div>
 </div>
@@ -5759,8 +5763,13 @@ function bowlBroadcast(cfg){
     $('bowl-note').textContent=cfg.youWon?('Your team beat '+(cfg.themName||'their team')+'.')
       :((cfg.themName||'Their team')+' beat your team.');
     $('bowl-verdict').className='verdict'+(cfg.youWon?' gold':' out');
+    /* Hide the WRAPPERS, not the buttons: `hidden` on a .btn is overridden by its display rule.
+       Play (a friend who just drafted): turn the roster into a season, start over, share back, or
+       go home. View (opened a shared result, no run of their own): just draft a new team, or home. */
     const play=cfg.ctx==='play';
-    $('b-bowl-season').hidden=!play; $('b-bowl-share').hidden=!play; $('b-bowl-play').hidden=play;
+    const setRow=(id,shown)=>{ const el=$(id); if(el) el.hidden=!shown; };
+    setRow('bw-season',play); setRow('bw-new',play); setRow('bw-share',play);
+    setRow('bw-play',!play); setRow('bw-home',true);
     if($('b-bowl-share')) $('b-bowl-share').textContent='Send the result to '+(cfg.themName||'your friend');
     $('bowl-fastwrap').hidden=true; $('bowl-result').hidden=false;
     if(cfg.youWon) afterPaint(()=>fireConfetti(confettiTheme(false)));
@@ -5844,10 +5853,10 @@ if($('b-ch-draft')) $('b-ch-draft').onclick=()=>{ if(!challengeTeam) return;
   const o={}; if(challengeTeam.f) o.franchise=challengeTeam.f; else if(challengeTeam.e) o.era=challengeTeam.e;
   beginDraft(o); pendingChallenge=true; };
 if($('b-bowl-fast')) $('b-bowl-fast').onclick=()=>{ if(poSkip) poSkip(); };
-if($('b-bowl-season')) $('b-bowl-season').onclick=()=>{ pendingChallenge=false; challengeTeam=null; stopBowl(); stripChallengeParams(); startSeason(); };
+if($('b-bowl-season')) $('b-bowl-season').onclick=()=>{ if(!run||!run.season){ goHome(); return; } pendingChallenge=false; challengeTeam=null; stopBowl(); stripChallengeParams(); startSeason(); };
 if($('b-bowl-new')) $('b-bowl-new').onclick=()=>{ clearChallenge(); stripChallengeParams(); beginDraft({}); };
 if($('b-bowl-play')) $('b-bowl-play').onclick=()=>{ clearChallenge(); stripChallengeParams(); beginDraft({}); };
-if($('b-bowl-share')) $('b-bowl-share').onclick=()=>{ if(!challengeTeam||!lastBowl) return;
+if($('b-bowl-share')) $('b-bowl-share').onclick=()=>{ if(!challengeTeam||!lastBowl||!run||!run.season) return;
   const cr={v:1,a:challengeTeam,b:teamBlob()};
   const link=location.origin+location.pathname+'?cr='+b64urlEnc(JSON.stringify(cr));
   const who=(challengeTeam.n||'your friend');
