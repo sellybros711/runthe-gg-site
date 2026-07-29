@@ -13950,6 +13950,43 @@ allows Google Fonts, or self-host Anton.*
   Screenshots (`/tmp/sahara.png` hole grid, `/tmp/sahara_round.png` in-game). Tunable: the Sahara `avg`/
   `cdiff`/`fit`, the sand-vocabulary hazard sizes in `hvGeom`, the `sahara` biome palette.
 
+- **Black dots in the shared GIF/course fixed + draft-screen scroll-jump fixed (deployed to /golf).** Two
+  owner fixes.
+  1. **Black dots (owner: "you also never fixed the black dots in the gif").** Rendered a real share GIF +
+     decoded it back and confirmed the pipeline is clean (the median-cut/`gifNearest` quantization darkened
+     0 pixels); the near-black specks were in the BASE pixel terrain (`pxTerrainURL`) - the deep-rough
+     horizon depth-darkening (`shade(base, -14..-34)`) + stacked tree cast shadows (`cshadow` -24) drive a
+     dark green all the way to pure black (`[0,~15,0]`), which reads as a black horizon smear + scattered
+     black dots in the shared GIF & stills (and in the live course view). Diagnosed the distribution: 199 of
+     218 near-black pixels sat in the top horizon band. Fix: a targeted FLOOR pass at the end of
+     `pxTerrainURL` (before `putImageData`) that lifts ONLY genuinely near-black pixels
+     (`D[i]<22 && D[i+1]<42 && D[i+2]<22`) to a dark forest green (min channels 16/34/12), so no terrain
+     pixel ever renders pure black. Trees/sand/water/ocean always keep a channel >40, so it can't wash the
+     scenery - it only catches the over-darkened green. Because it's in `pxTerrainURL`, it cleans the black
+     dots EVERYWHERE the pixel course renders (live hole view + GIF share + highlight reel + stills).
+     Verified in Playwright: near-black (all<30) 298→0 at the share size; a true-black sweep (all<14) across
+     all 41 courses × 4 holes = 0 black pixels, 0 page errors; a re-decoded GIF frame + base scene render
+     clean across grass/pine/sandhills biomes (screenshots confirm the black horizon smear + scattered
+     specks are gone). Tunable: the floor threshold/min-channels.
+  2. **Draft-screen scroll-jump (owner, earlier: "when I click an attribute it moves the screen up. I
+     should be able to draft without continuing to have to scroll every time").** Root cause: drafting a
+     stat (`takeAttr` → `reveal()`) auto-spins the NEXT golfer, and the SPINNING state (`S.spinning=true,
+     S.current=null`) is SHORTER than the landed state - no draft hint, no Re-spin button, and the open
+     draftable tiles collapse to placeholders - so the document shrinks, `render()`'s
+     `scrollTo(savedY)` clamps to the smaller page's max, and the view jumps UP ~180px after every pick; it
+     then never recovers (the next render captures the already-clamped scroll). Fix: `reveal()` reserves the
+     pre-spin page height on `#app` (which persists across `render()`, since render only replaces its
+     children) before the spinning render, so the shorter spinning state can't shrink the document + clamp
+     the scroll; the reservation is cleared in `finish()` AFTER the taller landed state has rendered (clearing
+     it before the landed re-render, as a first cut did, let the page momentarily shrink under reduced-motion
+     and re-introduced the jump). A `render()` safety-net clears any stranded reservation once we've left the
+     draft/offseason screens (finish clears it on the draft/offseason screen itself). Shared `reveal()`, so
+     it covers the career draft, the daily draft, AND the off-season spin. Verified in Playwright: 0px scroll
+     jump across 3 consecutive drafts in BOTH reduced-motion (synchronous land) and normal-motion (the 1.25s
+     slotSpin holds mid-spin at 0px too); the reservation clears (no strand); a full 8-pick draft → build →
+     season → summary and a full 18-hole daily round both complete with 0 page errors.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
