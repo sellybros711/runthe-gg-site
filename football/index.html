@@ -913,6 +913,19 @@ window.GA_ID='G-L29P5MRWKE';
   .cc-row .cr-price,.tw-row .cr-price{font-family:var(--fd);font-size:16px;color:var(--ink);
     text-align:right;white-space:nowrap}
   .cc-row .cr-price.hot{color:var(--red)}
+  .tw-cap-bar{display:flex;align-items:baseline;gap:3px;margin:0 0 10px;
+    font-family:var(--fn);font-size:13px;font-weight:700}
+  .tw-cap-spent{color:#fbbf24}
+  .tw-cap-sep{color:var(--dim-2)}
+  .tw-cap-limit{color:var(--dim-2)}
+  .tw-cap-room{margin-left:auto;font-size:11px;font-weight:600;color:var(--dim)}
+  .tw-row .cr-prices{text-align:right;white-space:nowrap}
+  .tw-row .cr-price-old{font-family:var(--fn);font-size:10.5px;color:var(--dim-2);
+    text-decoration:line-through}
+  .tw-row .cr-price-new{font-family:var(--fd);font-size:16px}
+  .tw-row .cr-price-new.up{color:#4ade80}
+  .tw-row .cr-price-new.down{color:var(--red)}
+  .tw-row .cr-price-new.same{color:var(--ink)}
   .cr-board-tile{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;
     align-items:center;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line-2);
     background:var(--panel);margin-bottom:5px;cursor:pointer;transition:border-color .12s}
@@ -1777,6 +1790,19 @@ window.GA_ID='G-L29P5MRWKE';
     transition:opacity .25s ease}
   .streak.on{opacity:1}
   .streak.w{color:#4ade80} .streak.l{color:#f87171}
+  .cap-tracker{margin:10px 0 0;padding:10px 14px;border-radius:10px;
+    background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25)}
+  .cap-tracker.danger{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.35)}
+  .cap-bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+  .cap-fill{height:100%;border-radius:3px;background:#22c55e;transition:width .4s ease}
+  .cap-tracker.danger .cap-fill{background:var(--red)}
+  .cap-labels{display:flex;justify-content:space-between;align-items:center;
+    margin-top:5px;font-family:var(--fn);font-size:11px}
+  .cap-total{font-weight:700;color:#4ade80}
+  .cap-tracker.danger .cap-total{color:var(--red)}
+  .cap-event{flex:1;text-align:center;color:var(--dim);font-size:10px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px}
+  .cap-limit{color:var(--dim-2);font-weight:600}
   /* The tick that just landed pops. Kept for the calendar, which reuses it. */
   @keyframes tickpop{0%{transform:scaleY(.4)}55%{transform:scaleY(1.35)}100%{transform:scaleY(1)}}
   /* THE SEASON AS A CALENDAR.
@@ -2853,6 +2879,14 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            when it appears. -->
       <div class="streak" id="v-streak"></div>
     </div>
+    <div class="cap-tracker" id="cap-tracker" hidden>
+      <div class="cap-bar"><div class="cap-fill" id="cap-fill"></div></div>
+      <div class="cap-labels">
+        <span class="cap-total" id="cap-total">$0M</span>
+        <span class="cap-event" id="cap-event"></span>
+        <span class="cap-limit">$140M cap</span>
+      </div>
+    </div>
     <div style="margin-top:12px"><button class="btn blue" id="b-sim">Skip to the end</button></div>
     <!-- The whole season laid out in order, weeks first, playoff rounds after. -->
     <div class="caleye"><span>The season</span><b id="v-calrec">0-0</b></div>
@@ -2885,9 +2919,13 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   <div class="screen" id="s-trade">
     <div class="eyebrow" style="color:#fbbf24">Trade window</div>
     <h2 class="display" style="font-size:22px;margin:4px 0 6px">Make a move?</h2>
-    <p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 12px">Drop a player and
-      spin for a replacement, or keep your roster and press on. Players have been
-      repriced based on performance.</p>
+    <p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 6px">Tap a player to drop them and spin for a replacement, or keep your roster.</p>
+    <div class="tw-cap-bar" id="tw-cap-bar">
+      <span class="tw-cap-spent" id="tw-cap-spent">$0M</span>
+      <span class="tw-cap-sep">/</span>
+      <span class="tw-cap-limit">$140M</span>
+      <span class="tw-cap-room" id="tw-cap-room"></span>
+    </div>
     <div id="tw-roster"></div>
     <button class="btn ghost sm" id="b-tw-skip" style="margin-top:12px">Keep roster, skip trade</button>
   </div>
@@ -3219,6 +3257,8 @@ function dressTeam(){
   const b=document.body;
   const f=(run&&run.franchise)||null;
   b.classList.toggle('oneteam',!!f);
+  b.classList.toggle('trade-mode',!!(run&&run.tradeMachine));
+  b.classList.toggle('cap-mode',!!(run&&run.capSurvivor));
   if(!f){ TEAM_VARS.forEach(k=>b.style.removeProperty(k)); return; }
   const tc=E.teamColors(f), w=E.washColors(f);
   const set=(k,v)=>b.style.setProperty(k,v);
@@ -3509,6 +3549,7 @@ function layoutFor(){
 }
 
 let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,simTimer=null,lastChem=1;
+let replaceCtx=null;
 
 /* Screens that get no ad strip: the two where a game is played out and the scoreboard sits
    near the bottom edge. Everywhere else keeps it. */
@@ -3896,6 +3937,7 @@ function beginDraft(opts){
   if(opts&&(opts.franchise||opts.era||opts.capSurvivor||opts.tradeMachine)&&!oneTeamReady()){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking');
   }
+  replaceCtx=null;
   newRun(opts);
   dressTeam();
   const m=runMode();
@@ -4208,8 +4250,12 @@ function paintTop(){
   /* The club goes here rather than into a banner of its own. It is the one thing about an
      One Franchise run that is not true of a free one, and this eyebrow is already the line
      that says what kind of spin you are on. */
-  $('d-count').textContent=(run.franchise?E.nickname(run.franchise)+' · ':'')+
-    'Spin '+Math.min(6,run.roster.length+1)+' of 6';
+  if(replaceCtx){
+    $('d-count').textContent=replaceCtx.mode==='cap'?'Cap replacement':'Trade spin';
+  }else{
+    $('d-count').textContent=(run.franchise?E.nickname(run.franchise)+' · ':'')+
+      'Spin '+Math.min(6,run.roster.length+1)+' of 6';
+  }
 }
 
 /* ---------- the wheels ----------
@@ -4524,7 +4570,11 @@ function paintOpts(draw){
     c.classList.toggle('sel', +c.dataset.i===targetIdx);
   });
 
-  paintRespins();
+  if(replaceCtx){
+    $('d-respin').innerHTML='';
+  }else{
+    paintRespins();
+  }
 }
 
 /* One button per wheel. Both cost the same, so the choice is about what you want
@@ -4573,6 +4623,20 @@ $('tabs').addEventListener('click',e=>{
 $('opts').addEventListener('click',e=>{
   const b=e.target.closest('.tile'); if(!b||b.classList.contains('off'))return;
   const p=BYKEY.get(b.dataset.k);
+  if(replaceCtx){
+    const ctx=replaceCtx;
+    replaceCtx=null;
+    try{
+      if(ctx.mode==='cap'){R.capSign(run,p);}
+      else{R.tradeSign(run,p);}
+    }catch(err){replaceCtx=ctx;toast(err.message);return;}
+    const chem=E.resolveChemistry(run.roster,CTX,chemOpts());
+    run.season.chemistry=chem.multiplier;
+    run.season.chemistryLinks=chem.links;
+    if(run.capSurvivor) paintCapTracker(null);
+    show('s-season'); simTimer=setTimeout(ctx.resumeStep,400);
+    return;
+  }
   try{R.sign(run,p);}catch(err){toast(err.message);return;}
   ga('player_signed',{spin_n:(run.roster||[]).length,position:p&&p.position,name:p&&p.last,season:p&&p.season,franchise:p&&p.franchise,price_musd:p&&p.price_musd,mode:runMode(),club:run&&run.franchise||null});
   if(run.phase===R.PHASES.SEASON){
@@ -4844,13 +4908,31 @@ function paintNext(live){
     sEl.textContent=st?(st.n+(st.won?' straight wins':' straight losses')):'';
   }
 }
+function paintCapTracker(inf){
+  const el=$('cap-tracker');
+  if(!run.capSurvivor){el.hidden=true;return;}
+  el.hidden=false;
+  const total=Math.round(run.roster.reduce((s,p)=>s+p.price_musd,0)*10)/10;
+  const cap=E.CONSTANTS.CAP_MUSD;
+  const pct=Math.min(100,Math.round(total/cap*100));
+  const danger=total>cap*0.92;
+  el.classList.toggle('danger',danger);
+  $('cap-fill').style.width=pct+'%';
+  $('cap-total').textContent='$'+total.toFixed(1)+'M';
+  if(inf){
+    const p=run.roster[inf.inflatedIdx];
+    $('cap-event').textContent=p?p.name+' ↑$'+p.price_musd.toFixed(1)+'M':'';
+  }else{
+    $('cap-event').textContent='';
+  }
+}
 function startSeason(){
   ga('season_started',{mode:runMode(),club:run&&run.franchise||null});
   paintNext(); paintUpcomingBug(); paintCalendar();
   $('v-you').textContent='0'; $('v-them').textContent='0';
   $('v-byou').classList.add('lead'); $('v-bthem').classList.add('lead');
-  /* A 2000s-era run wears the LED jumbotron; everything else keeps the glossy bug. */
   $('v-bug').classList.toggle('led', run.era==='2000s');
+  paintCapTracker(null);
   show('s-season'); runSim();
 }
 /* A NUMBER THAT ARRIVES RATHER THAN APPEARS.
@@ -4898,6 +4980,7 @@ function runSim(){
 
     if(run.capSurvivor&&run.phase===R.PHASES.SEASON){
       const inf=R.inflateCap(run);
+      paintCapTracker(inf);
       if(inf&&inf.overCap){
         simTimer=setTimeout(()=>openCapCrisis(inf,step),700);
         return;
@@ -4986,54 +5069,43 @@ function openCapCrisis(inf,resumeStep){
 }
 
 function openCapReplace(cutPlayer,resumeStep){
-  $('cr-cut').textContent=cutPlayer.name;
   const draw=R.capSpin(run,DATA);
   if(!draw){
     toast('No replacement available');
     show('s-season'); resumeStep();
     return;
   }
-  const el=$('cr-board'); el.innerHTML='';
-  const remaining=E.CONSTANTS.CAP_MUSD-run.roster.reduce((s,p)=>s+p.price_musd,0);
-  $('cr-remaining').textContent='$'+remaining.toFixed(1)+'M';
-  draw.board.forEach(b=>{
-    const p=BYKEY.get(b.key);
-    if(!p) return;
-    const affordable=p.price_musd<=remaining;
-    const blocked=b.block!==null||!affordable;
-    const tile=document.createElement('div');
-    tile.className='cr-board-tile'+(blocked?' off':'');
-    tile.innerHTML=
-      '<span class="cr-pos">'+esc(p.position)+'</span>'+
-      '<div><div class="cr-name">'+esc(p.name)+'</div>'+
-        '<div class="cr-sub">'+esc(p.franchise+' '+p.season)+(b.block?' — '+esc(b.block):'')+'</div></div>'+
-      '<span class="cr-price">$'+p.price_musd.toFixed(1)+'M</span>';
-    if(!blocked){
-      tile.onclick=()=>{
-        try{R.capSign(run,p);}catch(e){toast(e.message);return;}
-        const chem=E.resolveChemistry(run.roster,CTX,chemOpts());
-        run.season.chemistry=chem.multiplier;
-        run.season.chemistryLinks=chem.links;
-        show('s-season'); simTimer=setTimeout(resumeStep,400);
-      };
-    }
-    el.appendChild(tile);
-  });
-  show('s-capreplace');
+  replaceCtx={mode:'cap',resumeStep,cutPlayer};
+  paintTop(); drawField($('field'),true);
+  show('s-draft');
+  $('opts').innerHTML=''; $('tabs').innerHTML=''; $('d-respin').innerHTML='';
+  activeTab=null;
+  spinBoth(draw,()=>paintOpts(draw));
 }
 
 /* ---------- THE TRADE MACHINE: trade window ---------- */
 function openTradeWindow(resumeStep){
   R.repriceRoster(run);
+  const total=Math.round(run.roster.reduce((s,p)=>s+p.price_musd,0)*10)/10;
+  const cap=E.CONSTANTS.CAP_MUSD;
+  const room=Math.round((cap-total)*10)/10;
+  $('tw-cap-spent').textContent='$'+total.toFixed(1)+'M';
+  $('tw-cap-room').textContent='$'+room.toFixed(1)+'M room';
   const el=$('tw-roster'); el.innerHTML='';
   run.roster.forEach((p,i)=>{
+    const base=p._basePrice||p.price_musd;
+    const changed=Math.abs(p.price_musd-base)>0.05;
+    const up=p.price_musd>base;
     const row=document.createElement('div');
     row.className='tw-row';
     row.innerHTML=
       '<span class="cr-pos">'+esc(E.SLOTS[run.slotIndex[i]])+'</span>'+
       '<div><div class="cr-name">'+esc(p.name)+'</div>'+
         '<div class="cr-sub">'+esc(p.franchise+' '+p.season)+'</div></div>'+
-      '<span class="cr-price">$'+p.price_musd.toFixed(1)+'M</span>';
+      '<div class="cr-prices">'+
+        (changed?'<div class="cr-price-old">$'+base.toFixed(1)+'M</div>':'')+
+        '<div class="cr-price-new'+(changed?(up?' up':' down'):' same')+'">$'+p.price_musd.toFixed(1)+'M</div>'+
+      '</div>';
     row.onclick=()=>{
       const cut=R.tradeCut(run,i);
       openTradeReplace(cut,resumeStep);
@@ -5047,40 +5119,18 @@ function openTradeWindow(resumeStep){
 }
 
 function openTradeReplace(cutPlayer,resumeStep){
-  $('tr-cut').textContent=cutPlayer.name;
   const draw=R.tradeSpin(run,DATA);
   if(!draw){
     toast('No replacement available');
     show('s-season'); simTimer=setTimeout(resumeStep,400);
     return;
   }
-  const el=$('tr-board'); el.innerHTML='';
-  const remaining=E.CONSTANTS.CAP_MUSD-run.roster.reduce((s,p)=>s+p.price_musd,0);
-  $('tr-remaining').textContent='$'+remaining.toFixed(1)+'M';
-  draw.board.forEach(b=>{
-    const p=BYKEY.get(b.key);
-    if(!p) return;
-    const affordable=p.price_musd<=remaining;
-    const blocked=b.block!==null||!affordable;
-    const tile=document.createElement('div');
-    tile.className='cr-board-tile'+(blocked?' off':'');
-    tile.innerHTML=
-      '<span class="cr-pos">'+esc(p.position)+'</span>'+
-      '<div><div class="cr-name">'+esc(p.name)+'</div>'+
-        '<div class="cr-sub">'+esc(p.franchise+' '+p.season)+(b.block?' — '+esc(b.block):'')+'</div></div>'+
-      '<span class="cr-price">$'+p.price_musd.toFixed(1)+'M</span>';
-    if(!blocked){
-      tile.onclick=()=>{
-        try{R.tradeSign(run,p);}catch(e){toast(e.message);return;}
-        const chem=E.resolveChemistry(run.roster,CTX,chemOpts());
-        run.season.chemistry=chem.multiplier;
-        run.season.chemistryLinks=chem.links;
-        show('s-season'); simTimer=setTimeout(resumeStep,400);
-      };
-    }
-    el.appendChild(tile);
-  });
-  show('s-tradereplace');
+  replaceCtx={mode:'trade',resumeStep,cutPlayer};
+  paintTop(); drawField($('field'),true);
+  show('s-draft');
+  $('opts').innerHTML=''; $('tabs').innerHTML=''; $('d-respin').innerHTML='';
+  activeTab=null;
+  spinBoth(draw,()=>paintOpts(draw));
 }
 
 /* ---------- seeding ---------- */
@@ -8818,7 +8868,23 @@ function endRun(){
    another free run. Nothing here has to warn anybody they have switched modes, because
    nobody does. */
 $('b-same').onclick=()=>{
+  const wasCap=run&&run.capSurvivor;
+  const wasTrade=run&&run.tradeMachine;
   const club=(run&&run.franchise)||null;
+  if(wasCap||wasTrade){
+    const label=wasCap?'Salary Cap Survivor':'The Trade Machine';
+    $('sheet-in').innerHTML=
+      '<h3 class="display" style="font-size:20px;margin:0 0 10px">Play again?</h3>'+
+      '<button class="btn ghost sm" id="b-ra-mode" style="width:100%;margin-bottom:8px">'+esc(label)+' again</button>'+
+      '<button class="btn ghost sm" id="b-ra-classic" style="width:100%">Classic run</button>';
+    $('sheet').classList.add('on');
+    $('b-ra-mode').onclick=()=>{
+      closeSheet();endRun();
+      beginDraft(wasCap?{capSurvivor:true}:{tradeMachine:true});
+    };
+    $('b-ra-classic').onclick=()=>{closeSheet();endRun();beginDraft({});};
+    return;
+  }
   endRun();
   beginDraft(club?{franchise:club}:{});
 };
