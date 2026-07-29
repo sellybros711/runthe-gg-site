@@ -3179,6 +3179,14 @@
   body.rtp-hide-ads .rtp-ad-mobile-bottom{ display:none !important; }
   @media (max-width:1199px){ body.rtp-hide-ads{ padding-bottom:0 !important; } }
 </style>
+<!-- Google Consent Mode v2 defaults: deny ad storage until the certified CMP (loaded by the
+     AdSense tag) records the user's choice, then updates these signals. Must run BEFORE the ad
+     tag so no advertising cookie is ever set ahead of consent. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
      crossorigin="anonymous"></script>
 <!-- Supabase JS (auth: email/password + Google OAuth, session persistence) -->
@@ -3230,6 +3238,7 @@ window.GA_ID='G-L29P5MRWKE';
       <button class="menu-item" type="button" data-act="feedback"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z"/><path d="M8 9h8M8 12.5h5"/></svg> Feedback</button>
       <button class="menu-item" type="button" data-act="a2hs"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4"/><line x1="10.4" y1="4.6" x2="13.6" y2="4.6"/><circle cx="12" cy="18.8" r=".9" class="mi-fill"/></svg> Add to Home</button>
       <div class="menu-sep"></div>
+      <a class="menu-item" href="/soccer/how-to-play.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h6a2.5 2.5 0 0 1 2 2.5v10a2 2 0 0 0-2-1.5H4z" fill="none"/><path d="M20 5.5h-6a2.5 2.5 0 0 0-2 2.5v10a2 2 0 0 1 2-1.5h6z" fill="none"/></svg> Full Guide</a>
       <a class="menu-item" href="/soccer/about.html"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6h.01"/></svg> About</a>
       <a class="menu-item" href="/soccer/privacy.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.6-3 7.7-7 9-4-1.3-7-4.4-7-9V6z"/><path d="M9.2 12l1.9 1.9 3.7-3.8"/></svg> Privacy</a>
       <a class="menu-item" href="/soccer/contact.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/></svg> Contact</a>
@@ -4222,7 +4231,7 @@ window.GA_ID='G-L29P5MRWKE';
       <button id="btn-feedback-foot" type="button" class="footer-btn fb-footer"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9h8M8 12.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Feedback</button>
     </div>
     <div class="x-follow"><a href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">Follow <b>@RunTheGG</b> on X for News and Updates</a></div>
-    <a href="/">Home</a><span class="sep">·</span><a href="/soccer/about.html">About</a><span class="sep">·</span><a href="/soccer/privacy.html">Privacy</a><span class="sep">·</span><a href="/soccer/contact.html">Contact</a>
+    <a href="/">Home</a><span class="sep">·</span><a href="/soccer/how-to-play.html">How to play</a><span class="sep">·</span><a href="/soccer/about.html">About</a><span class="sep">·</span><a href="/soccer/privacy.html">Privacy</a><span class="sep">·</span><a href="/terms.html">Terms</a><span class="sep">·</span><a href="/disclaimer.html">Disclaimer</a><span class="sep">·</span><a href="/soccer/contact.html">Contact</a>
   </footer>
 
 </div>
@@ -14962,8 +14971,11 @@ boot().then(async ()=>{
   <div class="rt-links">
     <a href="/">RunThe.GG home</a><span class="sep">·</span>
     <a href="/golf/">RunTheTour</a><span class="sep">·</span>
+    <a href="/soccer/how-to-play.html">How to play</a><span class="sep">·</span>
     <a href="/soccer/about.html">About</a><span class="sep">·</span>
     <a href="/soccer/privacy.html">Privacy</a><span class="sep">·</span>
+    <a href="/terms.html">Terms</a><span class="sep">·</span>
+    <a href="/disclaimer.html">Disclaimer</a><span class="sep">·</span>
     <a href="/soccer/contact.html">Contact</a>
   </div>
 </footer>
