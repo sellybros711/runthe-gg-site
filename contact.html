@@ -44,7 +44,15 @@
     .cta:hover{filter:brightness(1.05);}
     .muted{font-size:13px;color:#7d8fa6;margin-top:30px;}
     .muted a{color:var(--teal);font-weight:700;text-decoration:none;}
-    .foot{margin-top:28px;text-align:center;font-size:12.5px;color:#6f829a;}
+    h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.5px;
+      font-size:18px;margin:34px 0 4px;color:var(--ink);}
+    .reasons{text-align:left;display:grid;gap:14px;margin:16px 0 0;}
+    .reason{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:9px;padding:13px 15px;}
+    .reason b{display:block;color:var(--ink);font-weight:900;font-size:14.5px;margin-bottom:3px;}
+    .reason span{display:block;font-size:14px;color:var(--mut);line-height:1.55;}
+    .reason a{color:var(--teal);font-weight:700;text-decoration:none;}
+    .reason a:hover{text-decoration:underline;}
+    .foot{margin-top:28px;text-align:center;font-size:12.5px;color:#6f829a;line-height:2;}
     .foot a{color:#9db2c8;text-decoration:none;font-weight:700;}
     .foot a:hover{color:var(--ink);}
     .foot a.here{color:var(--ink);}
@@ -76,16 +84,54 @@
       <p class="sub">We'd love to hear from you</p>
 
       <p>RunThe.GG is made by two brothers, and a real person reads every message.
-         Whether you've found a bug, have an idea for a new game, need help with your
-         account or a leaderboard entry, or you're interested in advertising or a
-         partnership, we'd love to hear from you.</p>
-
-      <p>Email us and we'll get back to you as soon as we can — usually within a couple
-         of days.</p>
+         There's no support ticket queue and no chatbot — just us. Email us at
+         <b>hello@runthe.gg</b> and we'll get back to you as soon as we can, usually
+         within a couple of days.</p>
 
       <a class="cta" href="mailto:hello@runthe.gg">Email us</a>
 
-      <p class="muted">or reach us directly at
+      <h2>What to get in touch about</h2>
+      <div class="reasons">
+        <div class="reason">
+          <b>Found a bug?</b>
+          <span>Tell us which game you were in, what you were doing when it broke, and
+            what device and browser you were using. A screenshot helps enormously. Bugs
+            that cost somebody a run go to the front of the queue.</span>
+        </div>
+        <div class="reason">
+          <b>Account or leaderboard help</b>
+          <span>Can't sign in, lost saved progress, need a username changed, or think a
+            leaderboard entry is wrong? Email from the address on the account if you can —
+            it makes it much faster for us to help.</span>
+        </div>
+        <div class="reason">
+          <b>Delete your account or your data</b>
+          <span>Ask us and we'll remove your account, email, username and saved progress.
+            You don't have to give a reason. See our
+            <a href="privacy.html">Privacy Policy</a> for exactly what we hold.</span>
+        </div>
+        <div class="reason">
+          <b>Ideas and feedback</b>
+          <span>Want a sport we don't cover, a mode we haven't built, or a rule changed?
+            A lot of what's on the site started as somebody's email. We read all of them,
+            even when we can't build them.</span>
+        </div>
+        <div class="reason">
+          <b>Advertising and partnerships</b>
+          <span>For media enquiries, sponsorship or anything commercial, email the same
+            address with "Partnership" in the subject line and it'll reach the right one
+            of us.</span>
+        </div>
+        <div class="reason">
+          <b>Rights holders and press</b>
+          <span>Our games are unofficial fan projects (see our
+            <a href="disclaimer.html">Disclaimer</a>). If you represent a league, club,
+            athlete or data provider and have a concern about anything on the site, email
+            us and we'll respond quickly.</span>
+        </div>
+      </div>
+
+      <p class="muted">Reach us directly at
          <a href="mailto:hello@runthe.gg">hello@runthe.gg</a><br>
          You can also follow <a href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">@RunTheGG</a>
          on X for news and updates.</p>
@@ -96,6 +142,7 @@
       <a href="about.html">About</a><span class="sep">·</span>
       <a href="privacy.html">Privacy</a><span class="sep">·</span>
       <a href="terms.html">Terms</a><span class="sep">·</span>
+      <a href="disclaimer.html">Disclaimer</a><span class="sep">·</span>
       <a href="contact.html" class="here">Contact</a>
     </footer>
   </div>

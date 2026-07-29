@@ -43,6 +43,17 @@
   .foot a{color:#cfe3d6; font-weight:700; border:none}
   .foot .sep{margin:0 7px; color:#4a6a5a}
 </style>
+<!-- Google Consent Mode v2 defaults: deny ad storage until the certified CMP (loaded by the
+     AdSense tag) records the user's choice, then updates these signals. Must run BEFORE the ad
+     tag so no advertising cookie is ever set ahead of consent. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<!-- Google AdSense (site-wide publisher tag; Auto ads decide placement) -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
+     crossorigin="anonymous"></script>
 </head>
 <body>
   <div class="wrap">
