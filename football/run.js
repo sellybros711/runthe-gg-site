@@ -383,20 +383,20 @@ function createRun(opts) {
   if (era !== null && !E.ERAS[era]) {
     throw new Error(`unknown era ${era}`);
   }
+  const capSurvivor = !!opts.capSurvivor;
+  const tradeMachine = !!opts.tradeMachine;
   const seed = opts.seed ?? E.hashSeed(String(Math.random()));
   return {
     version: 1,
     franchise,
     era,
+    capSurvivor,
+    tradeMachine,
     seed,
     rngCalls: 0,
-    phase: PHASES.DRAFT,
+    phase: tradeMachine ? PHASES.DRAFT : PHASES.DRAFT,
     roster: [],
-    // Which slot each signed player fills, as an index into E.SLOTS. Kept
-    // alongside roster rather than making roster sparse, so chemistry and cap
-    // maths can keep treating roster as a dense list of who you have.
     slotIndex: [],
-    // Player ids, not player-seasons: one man, one spot on the roster.
     usedPlayers: [],
     usedTeamSeasons: [],
     draws: [],
@@ -408,6 +408,11 @@ function createRun(opts) {
     season: null,
     playoffSeed: null,
     outcome: null,
+    // Salary Cap Survivor: prices inflate after each game
+    capHistory: capSurvivor ? [] : null,
+    // Trade Machine: tracks per-player game performance for repricing
+    tradePerf: tradeMachine ? {} : null,
+    tradeWindows: tradeMachine ? 0 : null,
   };
 }
 
@@ -776,6 +781,180 @@ function startPlayoffs(run) {
   return run;
 }
 
+/* ---------- SALARY CAP SURVIVOR ----------
+   After every game the most expensive player's price inflates 10%. If the
+   roster total exceeds the cap, the player must cut someone and spin for a
+   replacement. Returns {inflatedIdx, overCap, total, cap}. */
+function inflateCap(run) {
+  if (!run.capSurvivor || !run.roster.length) return null;
+  let maxIdx = 0;
+  for (let i = 1; i < run.roster.length; i++) {
+    if (run.roster[i].price_musd > run.roster[maxIdx].price_musd) maxIdx = i;
+  }
+  const old = run.roster[maxIdx].price_musd;
+  run.roster[maxIdx].price_musd = money(old * 1.10);
+  const total = money(run.roster.reduce((s, p) => s + p.price_musd, 0));
+  const cap = E.CONSTANTS.CAP_MUSD;
+  run.capHistory.push({
+    week: run.season.week,
+    player: run.roster[maxIdx].name,
+    oldPrice: old,
+    newPrice: run.roster[maxIdx].price_musd,
+    total,
+  });
+  return { inflatedIdx: maxIdx, overCap: total > cap, total, cap };
+}
+
+function capCut(run, rosterIdx) {
+  if (!run.capSurvivor) throw new Error('not cap survivor mode');
+  if (rosterIdx < 0 || rosterIdx >= run.roster.length) throw new Error('bad index');
+  const cut = run.roster[rosterIdx];
+  run.roster.splice(rosterIdx, 1);
+  run.slotIndex.splice(rosterIdx, 1);
+  return cut;
+}
+
+function midSeasonSpin(run, data) {
+  run.floorLists ??= (data.cheapBy && (data.cheapBy[run.franchise || '*'] || null));
+  const rng = rngFor(run);
+  let available = drawable(run, data);
+  if (!available.length) return null;
+  const t = available[Math.floor(rng() * available.length)];
+  const board = boardFrom(run, t.team_season_id, data.playersByTeamSeason);
+  run.currentDraw = {
+    season: t.season,
+    team_season_id: t.team_season_id,
+    franchise: t.franchise,
+    display: t.display,
+    teamName: t.display.replace(/^\d{4}\s+/, ''),
+    yearOptions: [t.season],
+    teamOptions: [t.display.replace(/^\d{4}\s+/, '')],
+    board: board.map((r) => ({ key: pkey(r.player), block: r.block })),
+    options: board.filter((r) => r.block === null).map((r) => pkey(r.player)),
+  };
+  return run.currentDraw;
+}
+
+function capSpin(run, data) {
+  if (!run.capSurvivor) throw new Error('not cap survivor mode');
+  return midSeasonSpin(run, data);
+}
+
+function capSign(run, player) {
+  if (!run.capSurvivor) throw new Error('not cap survivor mode');
+  if (!run.currentDraw) throw new Error('nothing drawn');
+  if (!run.currentDraw.options.includes(pkey(player))) throw new Error('player not on this team');
+  const slot = slotForPlayer(run, player);
+  if (slot === null) throw new Error('no empty spot for a ' + player.position);
+  run.roster.push(player);
+  run.slotIndex.push(slot);
+  run.usedPlayers.push(player.player_id);
+  run.usedTeamSeasons.push(run.currentDraw.team_season_id);
+  run.currentDraw = null;
+  return run;
+}
+
+/* ---------- THE TRADE MACHINE ----------
+   Start with a random roster. Every 4 games get a trade window: drop one,
+   spin once, reprice based on performance. */
+function autoDraft(run, data) {
+  if (!run.tradeMachine) throw new Error('not trade machine mode');
+  run.floorLists ??= (data.cheapBy && (data.cheapBy[run.franchise || '*'] || null));
+  const rng = rngFor(run);
+  const slots = E.SLOTS.slice();
+  for (let i = 0; i < slots.length; i++) {
+    let available = drawable(run, data);
+    if (!available.length) throw new Error('pool exhausted during auto-draft');
+    const t = available[Math.floor(rng() * available.length)];
+    const players = data.playersByTeamSeason[t.team_season_id] || [];
+    const eligible = players.filter((p) => {
+      if (run.usedPlayers.includes(p.player_id)) return false;
+      return slotForPlayer(run, p) !== null;
+    });
+    if (!eligible.length) { i--; continue; }
+    eligible.sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean);
+    const pick = eligible[Math.floor(rng() * Math.min(3, eligible.length))];
+    const slot = slotForPlayer(run, pick);
+    run.roster.push(pick);
+    run.slotIndex.push(slot);
+    run.usedPlayers.push(pick.player_id);
+    run.usedTeamSeasons.push(t.team_season_id);
+    run.draws.push({ slot: E.SLOTS[slot], team_season_id: t.team_season_id });
+  }
+  run.currentDraw = null;
+  if (run.roster.length === E.SLOTS.length) run.phase = PHASES.SEASON;
+  return run;
+}
+
+function isTradeWindow(run) {
+  if (!run.tradeMachine || !run.season) return false;
+  const w = run.season.week;
+  return w > 0 && w % 4 === 0 && w < (run.schedule ? run.schedule.length : 17);
+}
+
+function repriceRoster(run) {
+  if (!run.tradeMachine || !run.season) return;
+  const results = run.season.results.filter((r) => !r.playoff);
+  if (!results.length) return;
+  for (const p of run.roster) {
+    const perf = run.tradePerf[pkey(p)];
+    if (!perf || !perf.games) continue;
+    const avgScore = perf.totalScore / perf.games;
+    const ratio = avgScore / (p.ppr_ppg_mean || 10);
+    const factor = 0.5 + 0.5 * Math.max(0.5, Math.min(2.0, ratio));
+    p.price_musd = money(p._basePrice * factor);
+  }
+}
+
+function trackPerformance(run, result) {
+  if (!run.tradeMachine) return;
+  const rng = rngFor(run);
+  for (const p of run.roster) {
+    const k = pkey(p);
+    if (!run.tradePerf[k]) {
+      run.tradePerf[k] = { games: 0, totalScore: 0 };
+      p._basePrice = p.price_musd;
+    }
+    run.tradePerf[k].games++;
+    run.tradePerf[k].totalScore += p.ppr_ppg_mean * (result.won ? 1.15 : 0.9) * (0.85 + rng() * 0.3);
+  }
+}
+
+function tradeCut(run, rosterIdx) {
+  if (!run.tradeMachine) throw new Error('not trade machine mode');
+  if (rosterIdx < 0 || rosterIdx >= run.roster.length) throw new Error('bad index');
+  const cut = run.roster[rosterIdx];
+  run.roster.splice(rosterIdx, 1);
+  run.slotIndex.splice(rosterIdx, 1);
+  const k = pkey(cut);
+  delete run.tradePerf[k];
+  run.tradeWindows++;
+  return cut;
+}
+
+function tradeSpin(run, data) {
+  if (!run.tradeMachine) throw new Error('not trade machine mode');
+  return midSeasonSpin(run, data);
+}
+
+function tradeSign(run, player) {
+  if (!run.tradeMachine) throw new Error('not trade machine mode');
+  if (!run.currentDraw) throw new Error('nothing drawn');
+  if (!run.currentDraw.options.includes(pkey(player))) throw new Error('player not on this team');
+  const total = run.roster.reduce((s, p) => s + p.price_musd, 0) + player.price_musd;
+  if (total > E.CONSTANTS.CAP_MUSD) throw new Error('over the cap');
+  const slot = slotForPlayer(run, player);
+  if (slot === null) throw new Error('no empty spot for a ' + player.position);
+  run.roster.push(player);
+  run.slotIndex.push(slot);
+  run.usedPlayers.push(player.player_id);
+  run.usedTeamSeasons.push(run.currentDraw.team_season_id);
+  run.tradePerf[pkey(player)] = { games: 0, totalScore: 0 };
+  player._basePrice = player.price_musd;
+  run.currentDraw = null;
+  return run;
+}
+
 function finish(run, how) {
   const s = run.season;
   run.phase = PHASES.OVER;
@@ -1134,6 +1313,8 @@ const api = {
   remaining, reserveFloor, spendable, canRespin, slotsLeft, affordableFrom,
   boardFrom, blockFor, BLOCK, drawable,
   openSlots, openSlotNames, slotForPlayer, TUNING,
+  inflateCap, capCut, capSpin, capSign,
+  autoDraft, isTradeWindow, repriceRoster, trackPerformance, tradeCut, tradeSpin, tradeSign,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;

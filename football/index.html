@@ -269,14 +269,26 @@ window.GA_ID='G-L29P5MRWKE';
   /* THE PADLOCK ON MORE GAME MODES. Hidden unless the modes are locked, so a member never sees
      it, and inline-flex on the button so the glyph sits on the text's own line rather than
      under it. */
-  #b-teams{display:inline-flex;align-items:center;justify-content:center;gap:6px;
-    white-space:nowrap;padding-left:10px;padding-right:10px}
-  #b-teams .lk{display:none;width:12px;height:12px;flex:0 0 auto;fill:none;
-    stroke:currentColor;stroke-width:2.1;stroke-linecap:round;opacity:.75}
-  #b-teams.locked .lk{display:block}
+  #b-teams{padding-left:10px;padding-right:10px}
   .btn.ghost{background:transparent;box-shadow:none;border:1.5px solid var(--line-2);font-size:14.5px}
   .btn.ghost:before{display:none}
   .btn.sm{padding:11px 14px;font-size:13.5px;border-radius:10px}
+  .hp-start{padding:18px 18px;font-size:19px;background:#c62828;box-shadow:0 2px 8px rgba(0,0,0,.35);
+    border-radius:12px}
+  .hp-start:before{display:none}
+  .hp-secondary{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    margin-top:8px;padding:14px 18px;font-size:14.5px;background:rgba(19,26,43,.85);
+    border:1.5px solid var(--line-2);box-shadow:none;border-radius:10px;white-space:nowrap}
+  .hp-secondary:before{display:none}
+  .hp-secondary .lk{display:none;width:12px;height:12px;flex:0 0 auto;fill:none;
+    stroke:currentColor;stroke-width:2.1;stroke-linecap:round;opacity:.65}
+  .hp-secondary.locked .lk{display:block}
+  .hp-util{margin-top:8px}
+  .hp-util-btn{padding:11px 14px;font-size:13px;background:transparent;box-shadow:none;
+    border:1.5px solid var(--line);border-radius:10px;color:var(--dim);font-weight:600;
+    letter-spacing:.04em}
+  .hp-util-btn:before{display:none}
+  .hp-util-btn:active{background:rgba(255,255,255,.04)}
   /* One re-spin button per wheel, priced the same, so the choice is about what
      you want to change rather than what is cheaper. */
   /* SMALLER THAN THE BUTTONS THAT MOVE THE GAME ON. These are an option, not the next
@@ -385,8 +397,8 @@ window.GA_ID='G-L29P5MRWKE';
        between two buttons sitting side by side is the kind of thing you cannot unsee once
        you notice it. Uppercase is 16% wider than the same string in mixed case, which is
        the trap here, so these numbers come off the rendered button. */
-    #s-intro .hrow .btn{font-size:12px;letter-spacing:.03em;padding-left:7px;padding-right:7px}
-    #b-teams{gap:5px}
+    .hp-util-btn{font-size:11.5px;letter-spacing:.03em;padding-left:7px;padding-right:7px}
+    .hp-secondary{gap:5px;font-size:13px}
   }
 
   /* header right side: the run's label, then you */
@@ -487,7 +499,7 @@ window.GA_ID='G-L29P5MRWKE';
     .hero{margin-bottom:10px}
     .hnote{margin-top:7px;font-size:11.5px}
     .htitle{margin-bottom:11px}
-    .legal{margin-top:16px}
+    .legal{margin-top:28px}
   }
   /* ON A SHORT SCREEN THE TEAM LINE STANDS DOWN.
      A field of 118px leaves 35px under the bottom spot, and a full label needs 44. The name is
@@ -505,7 +517,7 @@ window.GA_ID='G-L29P5MRWKE';
     .htitle h1{font-size:min(10.5vw,40px)}
     .htitle .kicker{margin-bottom:2px}
     .htitle p{font-size:12.5px;margin-top:6px}
-    .legal{margin-top:14px}
+    .legal{margin-top:24px}
   }
   @media (max-height:500px){
     .field.hero-field{height:112px}
@@ -525,10 +537,9 @@ window.GA_ID='G-L29P5MRWKE';
     #s-intro .htitle{order:1;margin-bottom:12px}
     #s-intro #b-start{order:2}
     #s-intro #b-teams{order:3}
-    #s-intro .hrow{order:4}
+    #s-intro .hp-util{order:4}
     #s-intro .hero{order:6;margin-top:16px;margin-bottom:0}
-    #s-intro>p.dim{order:7}
-    #s-intro footer.legal{order:8}
+    #s-intro footer.legal{order:7}
   }
   /* Shorter still, which is a phone in landscape with the browser chrome showing. */
   @media (max-height:400px){
@@ -539,7 +550,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* Legal and credit, at the foot of the landing screen. Quiet on purpose: it has to
      be findable and readable, not competing with the button above it. 12px is the
      floor for a real sentence, so the links sit there rather than lower. */
-  .legal{margin:22px 0 0;text-align:center}
+  .legal{margin:38px 0 0;text-align:center}
   .legal p{margin:0;font-size:12px;line-height:1.5;color:var(--dim-2)}
   /* Padded to a 40px hit box. These are a nav row rather than links inside a
      sentence, so they are held to the tap-target guideline; the two source links in
@@ -877,12 +888,36 @@ window.GA_ID='G-L29P5MRWKE';
     stroke-linecap:round;stroke-linejoin:round}
   .modecard.mc-club .mc-icon{background:linear-gradient(135deg,var(--mc-a,#dc2626) 0%,var(--mc-a2,#991b1b) 100%)}
   .modecard.mc-era .mc-icon{background:linear-gradient(135deg,#2563eb 0%,#1e40af 100%)}
-  /* Titles use Archivo (--fn) not Anton — heavier weight + tighter tracking reads far more
-     legibly at this size than the tall condensed display face did. */
+  .modecard.mc-cap .mc-icon{background:linear-gradient(135deg,#16a34a 0%,#15803d 100%)}
+  .modecard.mc-trade .mc-icon{background:linear-gradient(135deg,#d97706 0%,#b45309 100%)}
   .modecard .mc-title{font-family:var(--fn);font-size:17px;font-weight:800;
     letter-spacing:.01em;text-transform:uppercase;color:var(--ink);line-height:1.15}
   .modecard.mc-club .mc-title{color:var(--mc-ink,var(--red-2))}
   .modecard.mc-era .mc-title{color:var(--blue)}
+  .modecard.mc-cap{border-color:rgba(22,163,74,.35)}
+  .modecard.mc-cap .mc-title{color:#4ade80}
+  .modecard.mc-trade{border-color:rgba(217,119,6,.35)}
+  .modecard.mc-trade .mc-title{color:#fbbf24}
+  .mc-beta{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.12);color:var(--dim);
+    vertical-align:middle;margin-left:6px}
+  .cc-row,.tw-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;
+    align-items:center;padding:11px 12px;border-radius:10px;border:1.5px solid var(--line-2);
+    background:var(--panel);margin-bottom:6px;cursor:pointer;transition:border-color .12s}
+  .cc-row:hover,.tw-row:hover{border-color:var(--red)}
+  .cc-row .cr-pos,.tw-row .cr-pos{font-family:var(--fn);font-size:10px;font-weight:700;
+    letter-spacing:.08em;color:var(--dim-2);text-transform:uppercase;width:28px}
+  .cc-row .cr-name,.tw-row .cr-name{font-family:var(--fb);font-size:14px;font-weight:600;
+    color:var(--ink);line-height:1.2}
+  .cc-row .cr-sub,.tw-row .cr-sub{font-size:11.5px;color:var(--dim);line-height:1.2}
+  .cc-row .cr-price,.tw-row .cr-price{font-family:var(--fd);font-size:16px;color:var(--ink);
+    text-align:right;white-space:nowrap}
+  .cc-row .cr-price.hot{color:var(--red)}
+  .cr-board-tile{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;
+    align-items:center;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line-2);
+    background:var(--panel);margin-bottom:5px;cursor:pointer;transition:border-color .12s}
+  .cr-board-tile:hover{border-color:rgba(96,165,250,.6)}
+  .cr-board-tile.off{opacity:.35;pointer-events:none}
   .modecard p{font-size:13px;line-height:1.4;color:var(--dim);margin:0 0 12px}
   .modecard .btn{width:100%}
   .eragrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
@@ -2025,8 +2060,6 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* ---- End-of-season "What's next?" panel ---- */
   .next-panel{margin-top:20px;padding:20px 0 0;border-top:1px solid var(--line)}
-  .next-head{font-family:var(--fn);font-size:13px;font-weight:700;letter-spacing:.12em;
-    text-transform:uppercase;color:var(--dim);text-align:center;margin-bottom:14px}
   .next-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   @media(max-width:479px){.next-pair{grid-template-columns:1fr;gap:10px}}
   .next-primary{background:linear-gradient(170deg,#ef4444,#c62828);padding:14px 12px;font-size:15px;
@@ -2563,23 +2596,17 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <!-- No <br>. The break was hardcoded, so the headline was two lines no matter what
            size it was set at, and the clamp below could never have fixed it on its own. -->
       <h1>The Perfect Season</h1>
-      <p>Draft six players out of NFL history, then try to win every game you play.</p>
+      <p>Draft six NFL legends. Build your lineup. Chase a perfect season.</p>
     </div>
 
-    <button class="btn" id="b-start">Start a run</button>
-    <!-- Mini games runs full width under Start; How to play and Leaderboard pair up
-         on the line below. The padlock is drawn, not written, and only shown while the mode
-         is actually locked: a label that opens a sign-up sheet with no warning is a bait; a
-         padlock sets the expectation before the tap. -->
-    <button class="btn ghost sm locked" id="b-teams" style="margin-top:8px">Mini games<svg class="lk" viewBox="0 0 24 24"
+    <button class="btn hp-start" id="b-start">Start a run</button>
+    <button class="btn hp-secondary locked" id="b-teams">Mini games<svg class="lk" viewBox="0 0 24 24"
       aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path
       d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
-    <div class="hrow">
-      <button class="btn ghost sm" id="b-how">How to play</button>
-      <button class="btn ghost sm" id="b-board">Leaderboard</button>
+    <div class="hrow hp-util">
+      <button class="btn hp-util-btn" id="b-how">How to play</button>
+      <button class="btn hp-util-btn" id="b-board">Leaderboard</button>
     </div>
-    <p class="dim" style="font-size:12px;margin-top:15px">Every player is scored from his real
-    week by week stats. Prices come from what he produced, not what he was paid.</p>
 
     <!-- THE FOOTER. Three jobs, and the game shipped without any of them.
 
@@ -2832,6 +2859,50 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="cal" id="v-list"></div>
   </div>
 
+  <!-- CAP CRISIS: Salary Cap Survivor mode — pick someone to cut, then spin a replacement -->
+  <div class="screen" id="s-capcrisis">
+    <div class="eyebrow red">Over the cap</div>
+    <h2 class="display" style="font-size:22px;margin:4px 0 4px">Cap crisis</h2>
+    <p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 12px">Your payroll hit
+      <b id="cc-total" class="num" style="color:var(--red)">$0M</b>
+      against a <b class="num">$<span id="cc-cap">140</span>M</b> cap.
+      Cut a player, then sign a replacement.</p>
+    <div id="cc-roster"></div>
+  </div>
+
+  <!-- CAP REPLACEMENT: after cutting, spin and sign a new player -->
+  <div class="screen" id="s-capreplace">
+    <div class="eyebrow">Replacement spin</div>
+    <h2 class="display" style="font-size:22px;margin:4px 0 4px">Sign someone new</h2>
+    <p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 8px">You cut
+      <b id="cr-cut"></b>. Pick a replacement from this team.</p>
+    <div id="cr-board"></div>
+    <p class="dim" style="font-size:12px;margin-top:10px">Remaining cap:
+      <b id="cr-remaining" class="num"></b></p>
+  </div>
+
+  <!-- TRADE WINDOW: The Trade Machine mode — drop one, spin one -->
+  <div class="screen" id="s-trade">
+    <div class="eyebrow" style="color:#fbbf24">Trade window</div>
+    <h2 class="display" style="font-size:22px;margin:4px 0 6px">Make a move?</h2>
+    <p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 12px">Drop a player and
+      spin for a replacement, or keep your roster and press on. Players have been
+      repriced based on performance.</p>
+    <div id="tw-roster"></div>
+    <button class="btn ghost sm" id="b-tw-skip" style="margin-top:12px">Keep roster, skip trade</button>
+  </div>
+
+  <!-- TRADE REPLACEMENT: after dropping, spin and sign -->
+  <div class="screen" id="s-tradereplace">
+    <div class="eyebrow" style="color:#fbbf24">Trade spin</div>
+    <h2 class="display" style="font-size:22px;margin:4px 0 4px">Sign a replacement</h2>
+    <p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 8px">You dropped
+      <b id="tr-cut"></b>. Pick from this team.</p>
+    <div id="tr-board"></div>
+    <p class="dim" style="font-size:12px;margin-top:10px">Remaining cap:
+      <b id="tr-remaining" class="num"></b></p>
+  </div>
+
   <!-- One playoff game, called like a broadcast. Separate from s-season because a
        playoff game is watched and a regular-season week is skimmed. -->
   <div class="screen" id="s-po">
@@ -2958,7 +3029,6 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     </div>
 
     <div class="next-panel">
-      <div class="next-head">What's next?</div>
       <div class="next-pair">
         <button class="btn next-primary" id="b-challenge"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-3.3 0-6 1.34-6 3v1h12v-1c0-1.66-2.7-3-6-3Z"/><path d="M13 8a3 3 0 1 0 0-6M14 10c2.2.3 5 1.4 5 3v1h-3"/></svg>Challenge a friend</button>
         <button class="btn next-secondary" id="b-same"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 10a7 7 0 0 1 12.9-3.7M17 10a7 7 0 0 1-12.9 3.7"/><path d="M3 4v3h3M17 16v-3h-3"/></svg>Draft again</button>
@@ -3108,11 +3178,14 @@ function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(
 /* Which competition the run in progress belongs to. One function because eight analytics
    events and every board call ask it, and a run with no club is a free run wherever it is
    asked from. Safe before a run exists, which is most of the page's life. */
-function runMode(){ return (run&&run.era)?'era':(run&&run.franchise)?'club':'free'; }
-/* The competition this run belongs to, in plain words, for the result screen and the
-   share card. A free-play rating and a One Franchise rating are not the same achievement
-   and they sit on different boards, so anything that shows a rating has to say which. */
+function runMode(){
+  if(run&&run.capSurvivor) return 'capsurvivor';
+  if(run&&run.tradeMachine) return 'trade';
+  return (run&&run.era)?'era':(run&&run.franchise)?'club':'free';
+}
 function runModeLabel(){
+  if(run&&run.capSurvivor) return 'Salary Cap Survivor';
+  if(run&&run.tradeMachine) return 'The Trade Machine';
   if(run&&run.franchise) return 'One Franchise: '+E.cityLabel(run.franchise);
   if(run&&run.era) return run.era+' era';
   return 'Free play';
@@ -3820,13 +3893,18 @@ function newRun(opts){
    team-seasons and the playoffs are a fixed difficulty ladder either way: the club you draft
    from does not change who you play. */
 function beginDraft(opts){
-  if(opts&&(opts.franchise||opts.era)&&!oneTeamReady()){
+  if(opts&&(opts.franchise||opts.era||opts.capSurvivor||opts.tradeMachine)&&!oneTeamReady()){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking');
   }
   newRun(opts);
   dressTeam();
-  const m=opts&&opts.era?'era':(opts&&opts.franchise)?'club':'free';
+  const m=runMode();
   ga('game_started',{mode:m,club:(opts&&opts.franchise)||null,era:(opts&&opts.era)||null});
+  if(opts&&opts.tradeMachine){
+    R.autoDraft(run,DATA);
+    paintSquad();
+    return;
+  }
   show('s-draft'); nextSpin();
 }
 $('b-start').onclick=()=>{ beginDraft({}); };
@@ -3952,6 +4030,29 @@ function modeMenu(){
           ? '<button class="btn ghost sm" id="b-mc-era" disabled>Sign in to play</button>'
           : '<button class="btn ghost sm" id="b-mc-era">Pick a decade</button>')+
       '</div>'+
+      '<div class="modecard mc-cap">'+
+        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
+          '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'+
+          '</svg></div><div class="mc-title">Salary Cap Survivor <span class="mc-beta">Beta</span></div></div>'+
+        '<p>Draft your six, but after every game your most expensive player’s '+
+          'contract inflates 10%. Exceed the cap and you’re forced to cut '+
+          'someone and spin for a replacement.</p>'+
+        (locked
+          ? '<button class="btn ghost sm" id="b-mc-cap" disabled>Sign in to play</button>'
+          : '<button class="btn ghost sm" id="b-mc-cap">Start a run</button>')+
+      '</div>'+
+      '<div class="modecard mc-trade">'+
+        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
+          '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>'+
+          '<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'+
+          '</svg></div><div class="mc-title">The Trade Machine <span class="mc-beta">Beta</span></div></div>'+
+        '<p>Start with a random roster—no draft. Every four games '+
+          'you get a trade window: cut one player, spin once, sign the '+
+          'replacement if you can afford the restructured cap.</p>'+
+        (locked
+          ? '<button class="btn ghost sm" id="b-mc-trade" disabled>Sign in to play</button>'
+          : '<button class="btn ghost sm" id="b-mc-trade">Start a run</button>')+
+      '</div>'+
     '</div>'+
     (locked&&authState.ready
       ? '<div style="margin-top:14px"><button class="btn" id="b-mc-signin">'+
@@ -3992,6 +4093,10 @@ function modeMenu(){
   if(club&&!locked) club.onclick=()=>{ closeSheet(); clubPicker(); };
   const era=$('b-mc-era');
   if(era&&!locked) era.onclick=()=>{ closeSheet(); eraPicker(); };
+  const cap=$('b-mc-cap');
+  if(cap&&!locked) cap.onclick=()=>{ closeSheet(); beginDraft({capSurvivor:true}); };
+  const trade=$('b-mc-trade');
+  if(trade&&!locked) trade.onclick=()=>{ closeSheet(); beginDraft({tradeMachine:true}); };
 }
 
 let wantModes=false;
@@ -4777,23 +4882,32 @@ function countTo(el,to,ms){
 function runSim(){
   const card=document.querySelector('#s-season .gamecard');
   const step=()=>{
-    // Regular season only. Playoff rounds are called on their own screen.
     if(run.phase!==R.PHASES.SEASON){after();return;}
     const r=R.advanceWeek(run,DATA,LEAGUE,CAL);
-    /* The bug belongs to the game that just resolved, not to next week's. */
+    if(run.tradeMachine) R.trackPerformance(run,r);
     paintSeasonBug(r.opponent_id,'Week '+r.week);
-    /* From zero every week, not from last week's score: a scoreboard counting from 24 down to
-       17 reads as the previous game being corrected. */
     $('v-you').textContent='0'; $('v-them').textContent='0';
     countTo($('v-you'),r.shownYou,380);
     countTo($('v-them'),r.shownThem,380);
-    /* The losing plate sits back, the way a broadcast dims the trailing side. */
     $('v-byou').classList.toggle('lead',r.shownYou>=r.shownThem);
     $('v-bthem').classList.toggle('lead',r.shownThem>=r.shownYou);
     card.classList.remove('won','lost');
-    void card.offsetWidth;                       // restart the flash on a repeat result
+    void card.offsetWidth;
     card.classList.add(r.won?'won':'lost');
     paintNext(true); paintCalendar(r);
+
+    if(run.capSurvivor&&run.phase===R.PHASES.SEASON){
+      const inf=R.inflateCap(run);
+      if(inf&&inf.overCap){
+        simTimer=setTimeout(()=>openCapCrisis(inf,step),700);
+        return;
+      }
+    }
+    if(run.tradeMachine&&R.isTradeWindow(run)&&run.phase===R.PHASES.SEASON){
+      R.repriceRoster(run);
+      simTimer=setTimeout(()=>openTradeWindow(step),700);
+      return;
+    }
     simTimer=setTimeout(step,540);
   };
   simTimer=setTimeout(step,340);
@@ -4811,7 +4925,31 @@ function streakOf(results){
 function fastForward(){
   clearTimeout(simTimer);
   while(run.phase===R.PHASES.SEASON||run.phase===R.PHASES.PLAYOFFS){
-    R.advanceWeek(run,DATA,LEAGUE,CAL);
+    const r=R.advanceWeek(run,DATA,LEAGUE,CAL);
+    if(run.tradeMachine) R.trackPerformance(run,r);
+    if(run.capSurvivor&&run.phase===R.PHASES.SEASON){
+      const inf=R.inflateCap(run);
+      if(inf&&inf.overCap){
+        let maxIdx=0;
+        for(let i=1;i<run.roster.length;i++){
+          if(run.roster[i].price_musd>run.roster[maxIdx].price_musd) maxIdx=i;
+        }
+        R.capCut(run,maxIdx);
+        const draw=R.capSpin(run,DATA);
+        if(draw){
+          const opts=draw.options;
+          if(opts.length){
+            const p=BYKEY.get(opts[0]);
+            if(p){
+              R.capSign(run,p);
+              const chem=E.resolveChemistry(run.roster,CTX,chemOpts());
+              run.season.chemistry=chem.multiplier;
+              run.season.chemistryLinks=chem.links;
+            }
+          }
+        }
+      }
+    }
   }
   paintCalendar(); after();
 }
@@ -4822,6 +4960,127 @@ function after(){
     ga('playoffs_reached',{seed:run.playoffSeed&&run.playoffSeed.seed,bye:run.playoffSeed&&!!run.playoffSeed.bye,record:run.playoffSeed&&run.playoffSeed.regularRecord,mode:runMode(),club:run&&run.franchise||null});
     paintSeed();
   }else if(run.phase===R.PHASES.OVER)paintOver();
+}
+
+/* ---------- SALARY CAP SURVIVOR: cap crisis ---------- */
+function openCapCrisis(inf,resumeStep){
+  $('cc-total').textContent='$'+inf.total.toFixed(1)+'M';
+  $('cc-cap').textContent=String(inf.cap);
+  const el=$('cc-roster'); el.innerHTML='';
+  run.roster.forEach((p,i)=>{
+    const isHot=i===inf.inflatedIdx;
+    const row=document.createElement('div');
+    row.className='cc-row';
+    row.innerHTML=
+      '<span class="cr-pos">'+esc(E.SLOTS[run.slotIndex[i]])+'</span>'+
+      '<div><div class="cr-name">'+esc(p.name)+'</div>'+
+        '<div class="cr-sub">'+esc(p.franchise+' '+p.season)+'</div></div>'+
+      '<span class="cr-price'+(isHot?' hot':'')+'">$'+p.price_musd.toFixed(1)+'M</span>';
+    row.onclick=()=>{
+      const cut=R.capCut(run,i);
+      openCapReplace(cut,resumeStep);
+    };
+    el.appendChild(row);
+  });
+  show('s-capcrisis');
+}
+
+function openCapReplace(cutPlayer,resumeStep){
+  $('cr-cut').textContent=cutPlayer.name;
+  const draw=R.capSpin(run,DATA);
+  if(!draw){
+    toast('No replacement available');
+    show('s-season'); resumeStep();
+    return;
+  }
+  const el=$('cr-board'); el.innerHTML='';
+  const remaining=E.CONSTANTS.CAP_MUSD-run.roster.reduce((s,p)=>s+p.price_musd,0);
+  $('cr-remaining').textContent='$'+remaining.toFixed(1)+'M';
+  draw.board.forEach(b=>{
+    const p=BYKEY.get(b.key);
+    if(!p) return;
+    const affordable=p.price_musd<=remaining;
+    const blocked=b.block!==null||!affordable;
+    const tile=document.createElement('div');
+    tile.className='cr-board-tile'+(blocked?' off':'');
+    tile.innerHTML=
+      '<span class="cr-pos">'+esc(p.position)+'</span>'+
+      '<div><div class="cr-name">'+esc(p.name)+'</div>'+
+        '<div class="cr-sub">'+esc(p.franchise+' '+p.season)+(b.block?' — '+esc(b.block):'')+'</div></div>'+
+      '<span class="cr-price">$'+p.price_musd.toFixed(1)+'M</span>';
+    if(!blocked){
+      tile.onclick=()=>{
+        try{R.capSign(run,p);}catch(e){toast(e.message);return;}
+        const chem=E.resolveChemistry(run.roster,CTX,chemOpts());
+        run.season.chemistry=chem.multiplier;
+        run.season.chemistryLinks=chem.links;
+        show('s-season'); simTimer=setTimeout(resumeStep,400);
+      };
+    }
+    el.appendChild(tile);
+  });
+  show('s-capreplace');
+}
+
+/* ---------- THE TRADE MACHINE: trade window ---------- */
+function openTradeWindow(resumeStep){
+  R.repriceRoster(run);
+  const el=$('tw-roster'); el.innerHTML='';
+  run.roster.forEach((p,i)=>{
+    const row=document.createElement('div');
+    row.className='tw-row';
+    row.innerHTML=
+      '<span class="cr-pos">'+esc(E.SLOTS[run.slotIndex[i]])+'</span>'+
+      '<div><div class="cr-name">'+esc(p.name)+'</div>'+
+        '<div class="cr-sub">'+esc(p.franchise+' '+p.season)+'</div></div>'+
+      '<span class="cr-price">$'+p.price_musd.toFixed(1)+'M</span>';
+    row.onclick=()=>{
+      const cut=R.tradeCut(run,i);
+      openTradeReplace(cut,resumeStep);
+    };
+    el.appendChild(row);
+  });
+  $('b-tw-skip').onclick=()=>{
+    show('s-season'); simTimer=setTimeout(resumeStep,400);
+  };
+  show('s-trade');
+}
+
+function openTradeReplace(cutPlayer,resumeStep){
+  $('tr-cut').textContent=cutPlayer.name;
+  const draw=R.tradeSpin(run,DATA);
+  if(!draw){
+    toast('No replacement available');
+    show('s-season'); simTimer=setTimeout(resumeStep,400);
+    return;
+  }
+  const el=$('tr-board'); el.innerHTML='';
+  const remaining=E.CONSTANTS.CAP_MUSD-run.roster.reduce((s,p)=>s+p.price_musd,0);
+  $('tr-remaining').textContent='$'+remaining.toFixed(1)+'M';
+  draw.board.forEach(b=>{
+    const p=BYKEY.get(b.key);
+    if(!p) return;
+    const affordable=p.price_musd<=remaining;
+    const blocked=b.block!==null||!affordable;
+    const tile=document.createElement('div');
+    tile.className='cr-board-tile'+(blocked?' off':'');
+    tile.innerHTML=
+      '<span class="cr-pos">'+esc(p.position)+'</span>'+
+      '<div><div class="cr-name">'+esc(p.name)+'</div>'+
+        '<div class="cr-sub">'+esc(p.franchise+' '+p.season)+(b.block?' — '+esc(b.block):'')+'</div></div>'+
+      '<span class="cr-price">$'+p.price_musd.toFixed(1)+'M</span>';
+    if(!blocked){
+      tile.onclick=()=>{
+        try{R.tradeSign(run,p);}catch(e){toast(e.message);return;}
+        const chem=E.resolveChemistry(run.roster,CTX,chemOpts());
+        run.season.chemistry=chem.multiplier;
+        run.season.chemistryLinks=chem.links;
+        show('s-season'); simTimer=setTimeout(resumeStep,400);
+      };
+    }
+    el.appendChild(tile);
+  });
+  show('s-tradereplace');
 }
 
 /* ---------- seeding ---------- */
