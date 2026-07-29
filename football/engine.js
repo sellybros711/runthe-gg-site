@@ -725,6 +725,11 @@ const STRUCTURE = {
   IDEAL_FLOOR_SHARE: 0.64,
   FLOOR_TOLERANCE: 0.14,        // p10 of real teams, so no real shape is punished
   FLOOR_WEIGHT: 1.30,
+  /* How hard team shape swings the multiplier. The shape terms are centred on 1.0; this
+     scales their combined distance from 1.0. 1.0 is the original full-strength swing; 0.5
+     halves it, so a build worth +12% becomes +6% and its penalties soften to match, with
+     the scheme bonus riding on top rather than under it. */
+  SHAPE_STRENGTH: 0.5,
   MIN: 0.50,
   MAX: 1.18,
 };
@@ -936,13 +941,23 @@ function rosterStructure(roster) {
   const SCHEME_MIN_BONUS = 0.01, SCHEME_MAX_BONUS = 0.03;
   const schemeBonus = scheme
     ? SCHEME_MIN_BONUS + (SCHEME_MAX_BONUS - SCHEME_MIN_BONUS) * scheme.fit : 0;
-  const multiplier = clamp(
-    (effective / total) * balance * concentration * Math.max(0.3, floor) + schemeBonus,
-    S.MIN, S.MAX,
-  );
+
+  /* TEAM SHAPE, HALF STRENGTH. The raw product of the four shape terms is centred on 1.0
+     (a perfectly average build scores 1.0; a strong QB and a clean shape push it up, the
+     balance/concentration/floor penalties pull it down). Left alone it swings the rating
+     hard — a great build was worth +12% on its own, which dwarfed the offensive scheme.
+     SHAPE_STRENGTH scales that swing: at 0.5 the deviation from 1.0 is halved, so the same
+     build is worth +6% and a penalty bites half as much, while good and bad rosters still
+     separate. The scheme bonus (1–3%) then sits on top as its own signal, not buried under
+     a much larger shape term. This multiplier drives both the displayed rating and the game
+     sim, so the two stay one number. */
+  const shape = (effective / total) * balance * concentration * Math.max(0.3, floor);
+  const shapeDamped = 1 + (shape - 1) * S.SHAPE_STRENGTH;
+  const multiplier = clamp(shapeDamped + schemeBonus, S.MIN, S.MAX);
 
   return { multiplier, qbSupport, balance, concentration, floor, floorShare,
-    rushShare, topShare, qbPass, total, scheme: scheme ? scheme.key : null, schemeBonus };
+    rushShare, topShare, qbPass, total, scheme: scheme ? scheme.key : null, schemeBonus,
+    shape, shapeDamped };
 }
 
 /**
@@ -1851,7 +1866,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 31;
+const ENGINE_API_VERSION = 32;
 
 /*
  * The three-letter code a team actually wore in a given season.
