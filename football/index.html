@@ -269,14 +269,26 @@ window.GA_ID='G-L29P5MRWKE';
   /* THE PADLOCK ON MORE GAME MODES. Hidden unless the modes are locked, so a member never sees
      it, and inline-flex on the button so the glyph sits on the text's own line rather than
      under it. */
-  #b-teams{display:inline-flex;align-items:center;justify-content:center;gap:6px;
-    white-space:nowrap;padding-left:10px;padding-right:10px}
-  #b-teams .lk{display:none;width:12px;height:12px;flex:0 0 auto;fill:none;
-    stroke:currentColor;stroke-width:2.1;stroke-linecap:round;opacity:.75}
-  #b-teams.locked .lk{display:block}
+  #b-teams{padding-left:10px;padding-right:10px}
   .btn.ghost{background:transparent;box-shadow:none;border:1.5px solid var(--line-2);font-size:14.5px}
   .btn.ghost:before{display:none}
   .btn.sm{padding:11px 14px;font-size:13.5px;border-radius:10px}
+  .hp-start{padding:18px 18px;font-size:19px;background:#c62828;box-shadow:0 2px 8px rgba(0,0,0,.35);
+    border-radius:12px}
+  .hp-start:before{display:none}
+  .hp-secondary{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    margin-top:8px;padding:14px 18px;font-size:14.5px;background:rgba(19,26,43,.85);
+    border:1.5px solid var(--line-2);box-shadow:none;border-radius:10px;white-space:nowrap}
+  .hp-secondary:before{display:none}
+  .hp-secondary .lk{display:none;width:12px;height:12px;flex:0 0 auto;fill:none;
+    stroke:currentColor;stroke-width:2.1;stroke-linecap:round;opacity:.65}
+  .hp-secondary.locked .lk{display:block}
+  .hp-util{margin-top:8px}
+  .hp-util-btn{padding:11px 14px;font-size:13px;background:transparent;box-shadow:none;
+    border:1.5px solid var(--line);border-radius:10px;color:var(--dim);font-weight:600;
+    letter-spacing:.04em}
+  .hp-util-btn:before{display:none}
+  .hp-util-btn:active{background:rgba(255,255,255,.04)}
   /* One re-spin button per wheel, priced the same, so the choice is about what
      you want to change rather than what is cheaper. */
   /* SMALLER THAN THE BUTTONS THAT MOVE THE GAME ON. These are an option, not the next
@@ -385,8 +397,8 @@ window.GA_ID='G-L29P5MRWKE';
        between two buttons sitting side by side is the kind of thing you cannot unsee once
        you notice it. Uppercase is 16% wider than the same string in mixed case, which is
        the trap here, so these numbers come off the rendered button. */
-    #s-intro .hrow .btn{font-size:12px;letter-spacing:.03em;padding-left:7px;padding-right:7px}
-    #b-teams{gap:5px}
+    .hp-util-btn{font-size:11.5px;letter-spacing:.03em;padding-left:7px;padding-right:7px}
+    .hp-secondary{gap:5px;font-size:13px}
   }
 
   /* header right side: the run's label, then you */
@@ -525,10 +537,9 @@ window.GA_ID='G-L29P5MRWKE';
     #s-intro .htitle{order:1;margin-bottom:12px}
     #s-intro #b-start{order:2}
     #s-intro #b-teams{order:3}
-    #s-intro .hrow{order:4}
+    #s-intro .hp-util{order:4}
     #s-intro .hero{order:6;margin-top:16px;margin-bottom:0}
-    #s-intro>p.dim{order:7}
-    #s-intro footer.legal{order:8}
+    #s-intro footer.legal{order:7}
   }
   /* Shorter still, which is a phone in landscape with the browser chrome showing. */
   @media (max-height:400px){
@@ -2563,23 +2574,17 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <!-- No <br>. The break was hardcoded, so the headline was two lines no matter what
            size it was set at, and the clamp below could never have fixed it on its own. -->
       <h1>The Perfect Season</h1>
-      <p>Draft six players out of NFL history, then try to win every game you play.</p>
+      <p>Draft six NFL legends. Build your lineup. Chase a perfect season.</p>
     </div>
 
-    <button class="btn" id="b-start">Start a run</button>
-    <!-- Mini games runs full width under Start; How to play and Leaderboard pair up
-         on the line below. The padlock is drawn, not written, and only shown while the mode
-         is actually locked: a label that opens a sign-up sheet with no warning is a bait; a
-         padlock sets the expectation before the tap. -->
-    <button class="btn ghost sm locked" id="b-teams" style="margin-top:8px">Mini games<svg class="lk" viewBox="0 0 24 24"
+    <button class="btn hp-start" id="b-start">Start a run</button>
+    <button class="btn hp-secondary locked" id="b-teams">Mini games<svg class="lk" viewBox="0 0 24 24"
       aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path
       d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
-    <div class="hrow">
-      <button class="btn ghost sm" id="b-how">How to play</button>
-      <button class="btn ghost sm" id="b-board">Leaderboard</button>
+    <div class="hrow hp-util">
+      <button class="btn hp-util-btn" id="b-how">How to play</button>
+      <button class="btn hp-util-btn" id="b-board">Leaderboard</button>
     </div>
-    <p class="dim" style="font-size:12px;margin-top:15px">Every player is scored from his real
-    week by week stats. Prices come from what he produced, not what he was paid.</p>
 
     <!-- THE FOOTER. Three jobs, and the game shipped without any of them.
 
