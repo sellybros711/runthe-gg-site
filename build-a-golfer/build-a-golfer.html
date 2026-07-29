@@ -16299,6 +16299,11 @@ function drawPlayerCard(ctx,W,H,o){
     let vs=''+c[1], fs=25; while(ctx.measureText(vs).width>tw-10 && fs>13){ fs-=1; ctx.font='800 '+fs+'px Impact,system-ui,sans-serif'; }
     ctx.fillText(vs, x+tw/2, ty+53);
   });
+  // bottom-middle site tag
+  ctx.textAlign='center';
+  ctx.fillStyle=GOLD; ctx.font='800 15px system-ui,sans-serif'; ctx.globalAlpha=.92;
+  ctx.fillText('RunThe.gg/golf', W/2, H-11);
+  ctx.globalAlpha=1;
 }
 function cardRoundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 function drawCareerCard(cv,info,vals){
