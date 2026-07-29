@@ -1,4 +1,4 @@
-// The Perfect Season — one-time leaderboard rating backfill.
+// The Perfect Season — one-time leaderboard rating backfill (compute step).
 //
 // WHY THIS EXISTS
 //   The roster-fit bonus changed (it is now an offensive-scheme fit scaled 1–3%,
@@ -14,119 +14,103 @@
 //   the `score` column, perfect flags and the record-sorted board are left exactly as
 //   they are. This is the "rating only" migration, not a re-simulation.
 //
-//   new_rating = squad_fppg * (1 + chemistry_pct/100) * rosterStructure(roster).multiplier
+//     new_rating = squad_fppg * (1 + chemistry_pct/100) * rosterStructure(roster).multiplier
 //
-//   Note: rosterStructure reads each player's current per-game stats, so if the player
-//   data has been rebuilt since a run was recorded the recomputed multiplier reflects
-//   today's numbers. squad_fppg is taken from the row (not re-summed), so the raw points
-//   stay fixed; only the fit multiplier is re-derived. This is intentional for option A.
+//   rosterStructure reads each player's current per-game stats, so if the player data
+//   has been rebuilt since a run was recorded the recomputed multiplier reflects today's
+//   numbers. squad_fppg is taken from the row (not re-summed), so the raw points stay
+//   fixed; only the fit multiplier is re-derived. Intentional for the rating-only pass.
 //
-// USAGE
-//   SUPABASE_URL=https://xxxx.supabase.co \
-//   SUPABASE_SERVICE_KEY=<service-role key, NOT the anon key> \
-//   node scripts/recalc_leaderboard_ratings.js            # dry run: reports, writes nothing
-//   node scripts/recalc_leaderboard_ratings.js --apply    # actually writes the updates
+// HOW IT RUNS (no network, no npm packages)
+//   This script only computes. It reads the rows it needs as TSV on stdin and writes
+//   `UPDATE ps_runs …` statements to stdout; a human-readable summary goes to stderr.
+//   The GitHub Action (.github/workflows/recalc-ps-ratings.yml) does the database I/O
+//   with psql and the existing SUPABASE_DB_URL secret:
 //
-//   The service-role key bypasses row-level security, which anon PATCHes cannot. Keep it
-//   out of the browser and out of git; pass it through the environment only.
+//     psql "$SUPABASE_DB_URL" -At -F '\t' -c \
+//       "select id, array_to_string(picks,'|'), chemistry_pct, squad_fppg,
+//               structure_mult, team_rating
+//          from ps_runs where team_rating is not null" \
+//     | node scripts/recalc_leaderboard_ratings.js > updates.sql
+//     psql "$SUPABASE_DB_URL" -1 -f updates.sql          # apply, in one transaction
 //
-// No npm packages: Node 18+ has global fetch.
+//   Locally you can pipe a TSV the same way. Nothing here writes to the database.
 
-const fs = require('fs');
 const path = require('path');
 
-const APPLY = process.argv.includes('--apply');
-const PAGE = 1000;
-
-const URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
-const KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-if (!URL || !KEY) {
-  console.error('Set SUPABASE_URL and SUPABASE_SERVICE_KEY in the environment.');
-  process.exit(1);
-}
-const REST = URL + '/rest/v1/';
-const HEADERS = { apikey: KEY, Authorization: 'Bearer ' + KEY };
-
-// ─── the engine and the player data, exactly what the game recomputes against ──
 const E = require(path.join(__dirname, '..', 'football', 'engine.js'));
 const players = require(path.join(__dirname, '..', 'football', 'data', 'player_seasons.json'));
 
 // pickKey is `${player_id}:${season}`; BYKEY is keyed `${player_id}|${season}` — the same
-// two functions the client uses (index.html), reproduced so a pick resolves identically.
+// resolution the client uses, so a stored pick maps to the same player object.
 const BYKEY = new Map(players.map((p) => [p.player_id + '|' + p.season, p]));
 const fromPickKey = (k) => {
   const i = String(k).lastIndexOf(':');
   return BYKEY.get(String(k).slice(0, i) + '|' + String(k).slice(i + 1)) || null;
 };
 
-const round2 = (n) => Math.round(n * 100) / 100;
+const round2 = (n) => Math.round(n * 100) / 100;   // team_rating   numeric(6,2)
+const round3 = (n) => Math.round(n * 1000) / 1000;  // structure_mult numeric(4,3)
 
-async function getPage(offset) {
-  const cols = 'id,picks,chemistry_pct,squad_fppg,structure_mult,team_rating';
-  const q = REST + 'ps_runs?select=' + cols +
-    '&team_rating=not.is.null&order=id.asc&limit=' + PAGE + '&offset=' + offset;
-  const res = await fetch(q, { headers: HEADERS });
-  if (!res.ok) throw new Error('read failed ' + res.status + ' ' + (await res.text()).slice(0, 200));
-  return res.json();
-}
-
-async function patchRow(id, body) {
-  const res = await fetch(REST + 'ps_runs?id=eq.' + encodeURIComponent(id), {
-    method: 'PATCH',
-    headers: Object.assign({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }, HEADERS),
-    body: JSON.stringify(body),
+function readStdin() {
+  return new Promise((resolve) => {
+    let buf = '';
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (d) => { buf += d; });
+    process.stdin.on('end', () => resolve(buf));
   });
-  if (!res.ok) throw new Error('patch ' + id + ' failed ' + res.status + ' ' + (await res.text()).slice(0, 200));
 }
 
 (async () => {
-  console.log((APPLY ? 'APPLY' : 'DRY RUN') + ' — recomputing rating on ps_runs against ' + URL);
-  let offset = 0, seen = 0, changed = 0, unchanged = 0, skipped = 0, errors = 0;
+  const text = await readStdin();
+  const lines = text.split('\n').map((l) => l.replace(/\r$/, '')).filter((l) => l.length);
+
+  let seen = 0, changed = 0, unchanged = 0, skipped = 0;
   const samples = [];
+  const out = [];
 
-  for (;;) {
-    let rows;
-    try { rows = await getPage(offset); }
-    catch (e) { console.error(e.message); process.exit(1); }
-    if (!rows.length) break;
+  for (const line of lines) {
+    seen++;
+    // id \t picks(joined by |) \t chemistry_pct \t squad_fppg \t structure_mult \t team_rating
+    const f = line.split('\t');
+    const id = f[0];
+    const picks = (f[1] || '').split('|').filter(Boolean);
+    const chemPct = f[2] === '' || f[2] == null ? null : Number(f[2]);
+    const fppg = f[3] === '' || f[3] == null ? null : Number(f[3]);
+    const oldRating = f[5] === '' || f[5] == null ? null : round2(Number(f[5]));
 
-    for (const r of rows) {
-      seen++;
-      const picks = r.picks || [];
-      const fppg = r.squad_fppg == null ? null : Number(r.squad_fppg);
-      const chemPct = r.chemistry_pct == null ? null : Number(r.chemistry_pct);
-      if (!picks.length || fppg == null || chemPct == null) { skipped++; continue; }
+    if (!id || picks.length !== E.SLOTS.length || chemPct == null || fppg == null) { skipped++; continue; }
 
-      const roster = picks.map(fromPickKey);
-      if (roster.length !== E.SLOTS.length || roster.some((p) => !p)) { skipped++; continue; }
+    const roster = picks.map(fromPickKey);
+    if (roster.some((p) => !p)) { skipped++; continue; }   // older player data than this file
 
-      const newMult = E.rosterStructure(roster).multiplier;
-      const newRating = round2(fppg * (1 + chemPct / 100) * newMult);
-      const oldRating = r.team_rating == null ? null : round2(Number(r.team_rating));
+    /* Rating uses the FULL-precision multiplier, exactly as the client's teamRating() does
+       (fppg * chemistry * multiplier), so a recomputed row matches what a fresh run would
+       store for the same six today. structure_mult is the same multiplier at the column's
+       3-dp scale — the client stores it the same way, since numeric(4,3) rounds it. */
+    const multFull = E.rosterStructure(roster).multiplier;
+    const newMult = round3(multFull);
+    const newRating = round2(fppg * (1 + chemPct / 100) * multFull);
 
-      if (oldRating !== null && Math.abs(newRating - oldRating) < 0.005) { unchanged++; continue; }
+    if (oldRating !== null && Math.abs(newRating - oldRating) < 0.005) { unchanged++; continue; }
 
-      if (samples.length < 12) {
-        samples.push('  #' + r.id + '  rating ' + (oldRating == null ? '--' : oldRating.toFixed(2)) +
-          ' -> ' + newRating.toFixed(2) + '   mult ' +
-          (r.structure_mult == null ? '--' : Number(r.structure_mult).toFixed(4)) +
-          ' -> ' + newMult.toFixed(4));
-      }
-
-      if (APPLY) {
-        try { await patchRow(r.id, { team_rating: newRating, structure_mult: newMult }); changed++; }
-        catch (e) { errors++; console.error(e.message); }
-      } else { changed++; }
+    changed++;
+    out.push('update ps_runs set team_rating=' + newRating.toFixed(2) +
+      ', structure_mult=' + newMult.toFixed(3) + ' where id=' + id + ';');
+    if (samples.length < 15) {
+      samples.push('  #' + id + '  rating ' + (oldRating == null ? '--' : oldRating.toFixed(2)) +
+        ' -> ' + newRating.toFixed(2) + '   mult ' +
+        (f[4] === '' ? '--' : Number(f[4]).toFixed(3)) + ' -> ' + newMult.toFixed(3));
     }
-
-    offset += rows.length;
-    if (rows.length < PAGE) break;
   }
 
-  console.log('\nsample of the changes:');
-  console.log(samples.join('\n') || '  (none)');
-  console.log('\n' + (APPLY ? 'updated' : 'would update') + ': ' + changed +
-    '   unchanged: ' + unchanged + '   skipped (unresolved/incomplete): ' + skipped +
-    '   errors: ' + errors + '   seen: ' + seen);
-  if (!APPLY && changed) console.log('\nRe-run with --apply to write these updates.');
+  process.stdout.write(out.join('\n') + (out.length ? '\n' : ''));
+
+  const log = (s) => process.stderr.write(s + '\n');
+  log('');
+  log('sample of the changes:');
+  log(samples.join('\n') || '  (none)');
+  log('');
+  log('rows seen: ' + seen + '   to update: ' + changed + '   unchanged: ' + unchanged +
+    '   skipped (incomplete/unresolvable): ' + skipped);
 })();

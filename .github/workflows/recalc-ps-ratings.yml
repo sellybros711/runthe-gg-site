@@ -1,0 +1,84 @@
+name: Recalc Perfect Season ratings
+
+# One-time (re-runnable) backfill that brings every ps_runs row's team_rating and
+# structure_mult onto the current roster-fit formula (offensive-scheme fit, 1–3%).
+# It recomputes ONLY those two columns, reusing each row's stored squad_fppg and
+# chemistry_pct, so win/loss records, the `score` column and perfect flags are never
+# touched. See scripts/recalc_leaderboard_ratings.js for the why and the maths.
+#
+# Run it from Actions → "Recalc Perfect Season ratings" → Run workflow.
+#   - Leave "apply" unchecked for a DRY RUN: it reads the rows, prints exactly what
+#     would change, and writes nothing.
+#   - Check "apply" to write the updates, in a single transaction.
+#
+# Uses the SAME SUPABASE_DB_URL secret as the other Supabase workflows. No new secret.
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Write the updates? Unchecked = dry run (reads only, writes nothing).'
+        type: boolean
+        default: false
+
+concurrency:
+  group: recalc-ps-ratings
+  cancel-in-progress: false
+
+jobs:
+  recalc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Recompute ratings and (optionally) apply
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          APPLY: ${{ inputs.apply }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not set — add it under Settings → Secrets → Actions."
+            exit 1
+          fi
+
+          echo "Reading rows from ps_runs (rating not null)…"
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -At -F $'\t' -c \
+            "select id, array_to_string(picks,'|'), chemistry_pct,
+                    coalesce(squad_fppg::text,''), coalesce(structure_mult::text,''),
+                    coalesce(team_rating::text,'')
+               from ps_runs
+              where team_rating is not null
+              order by id" > rows.tsv
+          echo "rows read: $(wc -l < rows.tsv)"
+
+          # Pure compute: TSV in, UPDATE statements out, summary on stderr (shown here).
+          node scripts/recalc_leaderboard_ratings.js < rows.tsv > updates.sql
+
+          COUNT=$(grep -c '^update ' updates.sql || true)
+          echo ""
+          echo "update statements generated: $COUNT"
+          echo "----- first statements -----"
+          head -n 20 updates.sql || true
+          echo "----------------------------"
+
+          if [ "$APPLY" != "true" ]; then
+            echo ""
+            echo "DRY RUN — nothing written. Re-run with 'apply' checked to apply these $COUNT updates."
+            exit 0
+          fi
+
+          if [ "$COUNT" = "0" ]; then
+            echo "Nothing to update. Done."
+            exit 0
+          fi
+
+          echo ""
+          echo "APPLYING $COUNT updates in a single transaction…"
+          # -1 wraps the whole file in one transaction: any error rolls the lot back,
+          # so the table is never left half-migrated.
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -1 -f updates.sql
+          echo "Done. Applied $COUNT updates."
