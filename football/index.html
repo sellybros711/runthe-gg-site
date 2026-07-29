@@ -3694,6 +3694,26 @@ function hexRGBA(hex,a){
   return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';
 }
 
+/* Multiply a #rrggbb toward black by factor f (0..1), hue and saturation left where they
+   are — a plain brightness cut, which is all the club-colour gradient needs. */
+function scaleHex(hex,f){
+  const h=(hex||'').replace('#',''); if(h.length!==6) return hex;
+  const n=parseInt(h,16);
+  const r=Math.round(((n>>16)&255)*f), g=Math.round(((n>>8)&255)*f), bl=Math.round((n&255)*f);
+  return '#'+(((1<<24)+(r<<16)+(g<<8)+bl).toString(16).slice(1));
+}
+
+/* Darken a club colour only as far as white text/artwork needs to read on it, and no
+   further. A navy that already carries white is returned untouched; a bright gold is taken
+   down until it clears. Iterated in small steps against the engine's own contrast measure,
+   so both ends of a two-colour gradient can hold a white label without either being
+   flattened to black. */
+function darkenForWhite(hex,target){
+  target=target||4.0; let c=hex, f=1;
+  for(let i=0;i<16 && E.contrast(c,'#ffffff')<target; i++){ f-=0.07; c=scaleHex(hex,Math.max(0.1,f)); }
+  return c;
+}
+
 function modeMenu(){
   const locked=!oneTeamReady();
   const lockNote=!authState.ready
@@ -3735,20 +3755,28 @@ function modeMenu(){
   openSheet();
   /* Theme the One Franchise card to the player's own profile club. avatarOf resolves the
      same key the header disc uses — the club they chose, or the one their name lands on —
-     so the card always matches the colour they see on their avatar. teamButton gives a hue
-     dark enough that the white icon reads on it; teamInk gives a lift bright enough that the
-     title reads on the dark card. Signed-out / no-name players keep the red CSS fallback. */
+     so the card always matches the colour they see on their avatar. The icon and button run
+     a gradient across BOTH of the club's colours: the primary into the secondary, each
+     darkened only as far as it needs to go for white artwork and text to read on it, so both
+     hues stay distinct rather than collapsing to one. The title takes teamInk (the primary
+     lifted bright enough for text on the dark card) and the border takes the secondary as an
+     accent. Signed-out / no-name players keep the red CSS fallback. */
   const av=avatarOf(authState.name,myAvatar.color,myAvatar.initials);
   const teamKey=(av&&!av.anon)?av.key:null;
   const clubCard=$('sheet-in').querySelector('.modecard.mc-club');
   if(clubCard&&teamKey){
-    const g=E.teamButton(teamKey), ink=E.teamInk(teamKey);
-    clubCard.style.setProperty('--mc-a',g.a);
-    clubCard.style.setProperty('--mc-a2',g.b);
+    const tc=E.teamColors(teamKey), ink=E.teamInk(teamKey);
+    const a=darkenForWhite(tc.primary), b=darkenForWhite(tc.secondary);
+    clubCard.style.setProperty('--mc-a',a);
+    clubCard.style.setProperty('--mc-a2',b);
     clubCard.style.setProperty('--mc-ink',ink);
-    clubCard.style.setProperty('--mc-bd',hexRGBA(g.a,.5));
+    clubCard.style.setProperty('--mc-bd',hexRGBA(tc.secondary,.55));
     const cb=$('b-mc-club');
-    if(cb&&!cb.disabled){ cb.style.background='linear-gradient(135deg,'+g.a+' 0%,'+g.b+' 100%)'; cb.style.borderColor='transparent'; cb.style.color='#fff'; }
+    if(cb&&!cb.disabled){
+      cb.style.background='linear-gradient(135deg,'+a+' 0%,'+b+' 100%)';
+      cb.style.borderColor='transparent'; cb.style.color='#fff';
+      cb.style.textShadow='0 1px 2px rgba(0,0,0,.45)';
+    }
   }
   const x=$('b-mc-x'); if(x) x.onclick=closeSheet;
   const si=$('b-mc-signin');
