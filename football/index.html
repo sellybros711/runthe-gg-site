@@ -852,21 +852,28 @@ window.GA_ID='G-L29P5MRWKE';
   .modenotes li:before{content:'';position:absolute;left:0;top:7px;width:4px;height:4px;
     border-radius:50%;background:var(--red-2)}
   .modenotes b{color:var(--ink);font-weight:700}
+  /* Sheet heading override — Archivo instead of Anton for a bolder, more legible title. */
+  .display.mtitle{font-family:var(--fn);font-weight:800;letter-spacing:0}
   .modecards{display:grid;gap:14px;margin-top:6px}
   .modecard{padding:16px 18px;border-radius:14px;border:1.5px solid var(--line-2);
     background:var(--grad-panel)}
-  .modecard.mc-club{border-color:rgba(239,68,68,.35)}
+  /* The One Franchise card themes to the player's own profile team colour (--mc-a / --mc-a2
+     / --mc-bd set in modeMenu). The red here is the fallback for signed-out players and
+     anyone who has not chosen a club. */
+  .modecard.mc-club{border-color:var(--mc-bd,rgba(239,68,68,.35))}
   .modecard.mc-era{border-color:rgba(59,130,246,.35)}
   .modecard .mc-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
   .modecard .mc-icon{width:32px;height:32px;border-radius:8px;display:flex;
     align-items:center;justify-content:center;flex:0 0 auto}
   .modecard .mc-icon svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:1.8;
     stroke-linecap:round;stroke-linejoin:round}
-  .modecard.mc-club .mc-icon{background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%)}
+  .modecard.mc-club .mc-icon{background:linear-gradient(135deg,var(--mc-a,#dc2626) 0%,var(--mc-a2,#991b1b) 100%)}
   .modecard.mc-era .mc-icon{background:linear-gradient(135deg,#2563eb 0%,#1e40af 100%)}
-  .modecard .mc-title{font-family:var(--fd);font-size:17px;font-weight:800;
-    letter-spacing:.04em;text-transform:uppercase;color:var(--ink);line-height:1.1}
-  .modecard.mc-club .mc-title{color:var(--red-2)}
+  /* Titles use Archivo (--fn) not Anton — heavier weight + tighter tracking reads far more
+     legibly at this size than the tall condensed display face did. */
+  .modecard .mc-title{font-family:var(--fn);font-size:17px;font-weight:800;
+    letter-spacing:.01em;text-transform:uppercase;color:var(--ink);line-height:1.15}
+  .modecard.mc-club .mc-title{color:var(--mc-ink,var(--red-2))}
   .modecard.mc-era .mc-title{color:var(--blue)}
   .modecard p{font-size:13px;line-height:1.4;color:var(--dim);margin:0 0 12px}
   .modecard .btn{width:100%}
@@ -3641,6 +3648,14 @@ function oneTeamWall(why){
   ga('one_team_blocked',{reason:why});
 }
 
+/* #rrggbb -> rgba() at the given alpha, for the tinted card border. */
+function hexRGBA(hex,a){
+  const h=(hex||'').replace('#','');
+  if(h.length!==6) return 'rgba(239,68,68,'+a+')';
+  const n=parseInt(h,16);
+  return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';
+}
+
 function modeMenu(){
   const locked=!oneTeamReady();
   const lockNote=!authState.ready
@@ -3649,7 +3664,7 @@ function modeMenu(){
       ? 'Pick a username to unlock these modes. Every run is listed under a name.'
       : 'These modes need a free account so your runs show up on the leaderboard.');
   $('sheet-in').innerHTML=
-    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">More game modes</h2>'+
+    '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">More game modes</h2>'+
     (locked?'<p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 12px">'+esc(lockNote)+'</p>':'')+
     '<div class="modecards">'+
       '<div class="modecard mc-club">'+
@@ -3680,6 +3695,23 @@ function modeMenu(){
     '<div style="margin-top:'+(locked&&authState.ready?'8':'14')+'px"><button class="btn ghost sm" id="b-mc-x">Close</button></div>';
   $('sheet-in').dataset.kind='modes';
   openSheet();
+  /* Theme the One Franchise card to the player's own profile club. avatarOf resolves the
+     same key the header disc uses — the club they chose, or the one their name lands on —
+     so the card always matches the colour they see on their avatar. teamButton gives a hue
+     dark enough that the white icon reads on it; teamInk gives a lift bright enough that the
+     title reads on the dark card. Signed-out / no-name players keep the red CSS fallback. */
+  const av=avatarOf(authState.name,myAvatar.color,myAvatar.initials);
+  const teamKey=(av&&!av.anon)?av.key:null;
+  const clubCard=$('sheet-in').querySelector('.modecard.mc-club');
+  if(clubCard&&teamKey){
+    const g=E.teamButton(teamKey), ink=E.teamInk(teamKey);
+    clubCard.style.setProperty('--mc-a',g.a);
+    clubCard.style.setProperty('--mc-a2',g.b);
+    clubCard.style.setProperty('--mc-ink',ink);
+    clubCard.style.setProperty('--mc-bd',hexRGBA(g.a,.5));
+    const cb=$('b-mc-club');
+    if(cb&&!cb.disabled){ cb.style.background='linear-gradient(135deg,'+g.a+' 0%,'+g.b+' 100%)'; cb.style.borderColor='transparent'; cb.style.color='#fff'; }
+  }
   const x=$('b-mc-x'); if(x) x.onclick=closeSheet;
   const si=$('b-mc-signin');
   if(si) si.onclick=()=>{ wantModes=true; profileSheet(); };
