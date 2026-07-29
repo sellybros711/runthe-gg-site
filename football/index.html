@@ -1946,6 +1946,107 @@ window.GA_ID='G-L29P5MRWKE';
 
   .bigrec{text-align:center;padding:6px 0 12px}
   .bigrec .r{font-family:var(--fd);font-size:62px;line-height:.95}
+
+  /* ---- Seed / postseason panel ---- */
+  .seed-hero{text-align:center;padding:24px 0 20px}
+  .seed-rec{font-family:var(--fd);font-size:72px;line-height:.9;margin-top:6px;color:var(--ink)}
+  @media(max-width:599px){.seed-hero{padding:20px 0 16px}.seed-rec{font-size:64px}}
+  @media(prefers-reduced-motion:no-preference){
+    .seed-hero .eyebrow{animation:seedUp .35s ease both}
+    .seed-rec{animation:seedUp .4s .08s ease both}
+    @keyframes seedUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  }
+
+  .seed-panel{border-radius:16px;padding:20px 24px 22px;text-align:center;position:relative;overflow:hidden;
+    border:1px solid var(--line);background:var(--grad-panel)}
+  .seed-panel.gold{border-color:rgba(245,158,11,.34);
+    background:linear-gradient(170deg,rgba(40,32,8,.65),rgba(18,14,6,.85))}
+  .seed-panel.win{border-color:rgba(59,130,246,.34);
+    background:linear-gradient(170deg,rgba(12,30,60,.6),rgba(10,18,32,.85))}
+  .seed-panel:after{content:'';position:absolute;left:12%;right:12%;top:0;height:1.5px;pointer-events:none;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent)}
+  .seed-panel.gold:after{background:linear-gradient(90deg,transparent,rgba(253,230,138,.6),transparent)}
+  .seed-panel.win:after{background:linear-gradient(90deg,transparent,rgba(147,197,253,.5),transparent)}
+  .seed-panel>*{position:relative;z-index:1}
+  @media(max-width:599px){.seed-panel{padding:16px 18px 18px}}
+
+  .seed-badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .seed-badge{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8px;
+    font-family:var(--fn);font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:var(--ink)}
+  .seed-badge.gold{border-color:rgba(245,178,40,.45);color:#fde68a;background:rgba(245,158,11,.14)}
+  .seed-badge.blue{border-color:rgba(96,165,250,.4);color:#bfdbfe;background:rgba(59,130,246,.12)}
+  .seed-badge svg{width:13px;height:13px;flex:0 0 auto}
+  @media(prefers-reduced-motion:no-preference){
+    .seed-badge{animation:badgePop .3s .2s ease both}
+    .seed-badge:nth-child(2){animation-delay:.3s}
+    @keyframes badgePop{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:none}}
+  }
+
+  .seed-desc{margin:12px 0 0;color:var(--dim);font-family:var(--fb);font-size:14.5px;line-height:1.4}
+  @media(max-width:599px){.seed-desc{font-size:14px}}
+
+  /* Playoff progress tracker */
+  .po-tracker{display:flex;align-items:center;justify-content:center;gap:0;margin-top:16px;
+    padding:10px 0 2px}
+  .po-step{display:flex;align-items:center;gap:0;font-family:var(--fn);font-size:12px;
+    font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+  .po-step[aria-current="step"]{color:#fff;font-weight:700}
+  .po-step.done{color:var(--dim)}
+  .po-dot{width:11px;height:11px;border-radius:50%;border:2px solid var(--dim);
+    flex:0 0 auto;margin-right:6px;display:flex;align-items:center;justify-content:center}
+  .po-step.done .po-dot{border-color:#4ade80;background:#4ade80}
+  .po-step.done .po-dot svg{display:block}
+  .po-step[aria-current="step"] .po-dot{border-color:#fff;background:#fff}
+  .po-dot svg{width:7px;height:7px;display:none;fill:none;stroke:#0f1830;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+  .po-line{width:18px;height:1.5px;background:rgba(255,255,255,.2);flex:0 0 auto;margin:0 4px}
+  @media(max-width:420px){.po-step{font-size:10.5px}.po-line{width:10px}}
+  @media(prefers-reduced-motion:no-preference){
+    .po-step{animation:stepIn .3s ease both}
+    .po-step:nth-child(3){animation-delay:.28s}
+    .po-step:nth-child(5){animation-delay:.34s}
+    .po-step:nth-child(7){animation-delay:.40s}
+    .po-step:nth-child(9){animation-delay:.46s}
+    @keyframes stepIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}
+  }
+
+  /* Seed CTA */
+  .seed-cta{margin-top:16px;padding:15px 18px;font-size:17px;border-radius:13px;
+    background:linear-gradient(170deg,#ef4444,#c62828);box-shadow:0 4px 16px -4px rgba(0,0,0,.5)}
+  .seed-cta:before{height:30%;background:linear-gradient(180deg,rgba(255,255,255,.1),transparent)}
+  .seed-cta:hover{filter:brightness(1.06);transform:translateY(-1px)}
+  @media(max-width:599px){.seed-cta{padding:14px 16px;font-size:16px}}
+  .seed-sim{margin-top:10px;display:block;width:100%;text-align:center}
+  .btn-text{background:none;border:none;color:var(--dim);font-family:var(--fn);font-size:14px;
+    font-weight:600;cursor:pointer;padding:8px 12px;transition:color .15s}
+  .btn-text:hover{color:var(--ink)}
+  .btn-text:active{color:var(--ink);transform:translateY(1px)}
+  .btn-text:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
+
+  /* ---- End-of-season "What's next?" panel ---- */
+  .next-panel{margin-top:20px;padding:20px 0 0;border-top:1px solid var(--line)}
+  .next-head{font-family:var(--fn);font-size:13px;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--dim);text-align:center;margin-bottom:14px}
+  .next-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:479px){.next-pair{grid-template-columns:1fr;gap:10px}}
+  .next-primary{background:linear-gradient(170deg,#ef4444,#c62828);padding:14px 12px;font-size:15px;
+    border-radius:12px;box-shadow:0 4px 16px -4px rgba(0,0,0,.5)}
+  .next-primary:before{height:28%;background:linear-gradient(180deg,rgba(255,255,255,.1),transparent)}
+  .next-primary:hover{filter:brightness(1.06);transform:translateY(-1px)}
+  .next-secondary{background:linear-gradient(170deg,#2a4a80,#1a3468);padding:14px 12px;
+    font-size:15px;border-radius:12px;box-shadow:0 4px 16px -4px rgba(0,0,0,.5)}
+  .next-secondary:before{height:28%;background:linear-gradient(180deg,rgba(255,255,255,.08),transparent)}
+  .next-secondary:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .next-share{margin-top:10px;background:transparent;box-shadow:none;border:1.5px solid var(--line-2);
+    padding:12px 14px;font-size:14px;border-radius:11px}
+  .next-share:before{display:none}
+  .next-share:hover{border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.03)}
+  .btn-ico{width:16px;height:16px;display:inline-block;vertical-align:-2px;margin-right:5px;
+    flex:0 0 auto;fill:none;stroke:currentColor}
+  .next-footer{display:flex;align-items:center;justify-content:center;gap:0;margin-top:8px;padding:4px 0}
+  .next-dot{width:3px;height:3px;border-radius:50%;background:var(--dim-2);flex:0 0 auto;margin:0 8px}
+  .next-foot{font-size:13.5px;padding:10px 8px}
+
   .verdict{border-radius:16px;padding:12px 18px 22px;text-align:center;border:1px solid var(--line);
     background:var(--grad-panel)}
   .verdict.gold{background:linear-gradient(160deg,#3b2f0a,#181305);border-color:rgba(245,158,11,.42)}
@@ -2758,10 +2859,17 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   </div>
 
   <div class="screen" id="s-seed">
-    <div class="bigrec"><div class="eyebrow">Final record</div><div class="r num" id="sd-rec">0-0</div></div>
-    <div class="verdict" id="sd-card"><h2 id="sd-title">Playoffs</h2><p id="sd-sub"></p></div>
-    <div style="margin-top:14px"><button class="btn" id="b-po">Start the playoffs</button></div>
-    <div style="margin-top:9px"><button class="btn ghost" id="b-po-skip">Skip to the result</button></div>
+    <div class="seed-hero">
+      <div class="eyebrow">Regular season complete</div>
+      <div class="seed-rec num" id="sd-rec">0-0</div>
+    </div>
+    <div class="seed-panel" id="sd-card">
+      <div class="seed-badges" id="sd-badges"></div>
+      <p class="seed-desc" id="sd-sub"></p>
+      <div class="po-tracker" id="sd-tracker" role="list" aria-label="Playoff progress"></div>
+    </div>
+    <button class="btn seed-cta" id="b-po">Begin Divisional Round</button>
+    <button class="btn-text seed-sim" id="b-po-skip">Simulate the postseason</button>
   </div>
 
   <div class="screen" id="s-over">
@@ -2849,14 +2957,19 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
     </div>
 
-    <!-- One emphasis colour each: Challenge (the social hook) red, Draft again blue, and
-         Share drops to a ghost so two primary buttons never read as the same action. -->
-    <div style="margin-top:15px"><button class="btn" id="b-challenge">Challenge a friend</button></div>
-    <!-- Straight into another draft. It was "Same team again" when there was a favourite team. -->
-    <div style="margin-top:9px"><button class="btn blue" id="b-same">Draft again</button></div>
-    <div style="margin-top:9px"><button class="btn ghost" id="b-share">Share your season</button></div>
-    <div class="hrow"><button class="btn ghost sm" id="b-again">Back to the start</button>
-      <button class="btn ghost sm" id="b-board2">Leaderboard</button></div>
+    <div class="next-panel">
+      <div class="next-head">What's next?</div>
+      <div class="next-pair">
+        <button class="btn next-primary" id="b-challenge"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-3.3 0-6 1.34-6 3v1h12v-1c0-1.66-2.7-3-6-3Z"/><path d="M13 8a3 3 0 1 0 0-6M14 10c2.2.3 5 1.4 5 3v1h-3"/></svg>Challenge a friend</button>
+        <button class="btn next-secondary" id="b-same"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 10a7 7 0 0 1 12.9-3.7M17 10a7 7 0 0 1-12.9 3.7"/><path d="M3 4v3h3M17 16v-3h-3"/></svg>Draft again</button>
+      </div>
+      <button class="btn next-share" id="b-share"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="5" cy="10" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="15" cy="15" r="2"/><path d="M7 11l6 3M7 9l6-3"/></svg>Share your season</button>
+      <div class="next-footer">
+        <button class="btn-text next-foot" id="b-board2">Leaderboard</button>
+        <span class="next-dot"></span>
+        <button class="btn-text next-foot" id="b-again">Back to start</button>
+      </div>
+    </div>
   </div>
 
   <!-- ===== CHALLENGE A FRIEND =====
@@ -4715,11 +4828,43 @@ function after(){
 function paintSeed(){
   const sd=run.playoffSeed;
   $('sd-rec').textContent=sd.regularRecord;
-  const c=$('sd-card'); c.className='verdict '+(sd.bye?'gold':'win');
-  $('sd-title').textContent=sd.bye?'Top seed':'Wild card';
+  const c=$('sd-card'); c.className='seed-panel '+(sd.bye?'gold':'win');
+
+  /* Badges */
+  const badges=$('sd-badges');badges.innerHTML='';
+  if(sd.bye){
+    badges.innerHTML='<span class="seed-badge gold"><svg viewBox="0 0 16 16"><path d="M8 1l2.2 4.5 5 .7-3.6 3.5.9 5L8 12.5 3.5 14.7l.9-5L.8 6.2l5-.7z" fill="currentColor" stroke="none"/></svg>#1 Seed</span>'+
+      '<span class="seed-badge gold">First-round bye</span>';
+  }else{
+    badges.innerHTML='<span class="seed-badge blue">Wild Card</span>';
+  }
+
+  /* Description */
   $('sd-sub').textContent=sd.bye
-    ? 'You skip the first round. Three more wins takes the title.'
-    : 'You are in. Four more wins takes the title.';
+    ? 'You earned a first-round bye. Three wins from a championship.'
+    : 'You are in. Four wins from a championship.';
+
+  /* Playoff progress tracker */
+  const allRounds=['Wild Card','Divisional','Conf.','Title'];
+  const roundNames=sd.bye?allRounds.slice(0):allRounds;
+  const firstPlayable=sd.bye?1:0;
+  const tracker=$('sd-tracker');tracker.innerHTML='';
+  const check='<svg viewBox="0 0 10 10"><polyline points="2,5.5 4.2,7.8 8,2.5"/></svg>';
+  roundNames.forEach((name,i)=>{
+    if(i>0) tracker.insertAdjacentHTML('beforeend','<span class="po-line"></span>');
+    const cls=i<firstPlayable?'po-step done':i===firstPlayable?'po-step':'po-step';
+    const aria=i===firstPlayable?' aria-current="step"':'';
+    const dot=i<firstPlayable?'<span class="po-dot">'+check+'</span>':'<span class="po-dot"></span>';
+    tracker.insertAdjacentHTML('beforeend',
+      '<span class="'+cls+'" role="listitem"'+aria+'>'+dot+name+'</span>');
+  });
+
+  /* Dynamic CTA */
+  const nextRound=sd.roundNames[0];
+  if(nextRound==='Wild Card')$('b-po').textContent='Play Wild Card game';
+  else if(nextRound==='Divisional')$('b-po').textContent='Begin Divisional Round';
+  else $('b-po').textContent='Start the playoffs';
+
   show('s-seed');
 }
 /* ---------- playoff broadcast ----------
