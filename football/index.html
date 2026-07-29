@@ -5028,7 +5028,7 @@ function paintOver(){
      leaderboard's detail sheet uses, so the two can never read differently. */
   $('o-squadline').innerHTML='<span>'+squadFppg.toFixed(0)+' squad FPPG, '+
     pc(run.season.chemistry-1)+' chemistry and '+fitPct(st.multiplier)+
-    ' for how the six fit together, which is a <b>'+rating.toFixed(1)+'</b> team overall '+
+    ' '+fitPhrase(st)+', which is a <b>'+rating.toFixed(1)+'</b> team overall '+
     'against an average defense. You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.</span>';
 
   /* The lineup, which the old results page never showed at all. */
@@ -5156,6 +5156,15 @@ function teamRating(roster,chemistry){
    together" instead. Same number, and now it says what it does to your points. -0 prints as
    0% on its own, so the sign only ever appears on a real one. */
 function fitPct(mult){ const n=Math.round((mult-1)*100); return (n>0?'+':'')+n+'%'; }
+
+/* How the fit bonus is described in the "…points a game" summary. The multiplier is
+   scheme-forward now, so when the roster fits an offensive scheme it is named; a roster
+   that fits none keeps the plain wording. Takes a rosterStructure result (or null when the
+   roster could not be rebuilt), so both the results screen and the board detail read alike. */
+function fitPhrase(st){
+  const nm=st&&st.scheme?E.SCHEME_NAMES[st.scheme]:null;
+  return nm?('for how the six fit the '+nm+' scheme'):'for how the six fit together';
+}
 
 /* Four rows, not seven. Money and chemistry already have their own place in the
    stats above, and a title-odds row on a team that missed the playoffs was noise. */
@@ -7394,6 +7403,11 @@ function runDetail(row,back){
      and in this sheet. */
   const men=bySlotOrder(picks.map((k,i)=>({p:fromPickKey(k),slot:slots[i]||''})));
   const known=men.filter(m=>m.p);
+  /* The offensive scheme this roster fits, for the fit line's wording. Only when all six
+     resolved against this browser's data, since a partial roster detects the wrong scheme
+     or none. The stored multiplier is still what the number reports; this only names it. */
+  const detailSt=(men.length>=E.SLOTS.length&&known.length===men.length)
+    ? E.rosterStructure(known.map(m=>m.p)) : null;
   const o=mine?run.outcome:null;
   const p=mine?runPayload():null;
 
@@ -7452,7 +7466,7 @@ function runDetail(row,back){
     '</div>'+
     (fppg!==null&&mult!==null&&rating!==null
       ? '<p class="caveat" style="margin:9px 0 0">'+fppg.toFixed(0)+' squad FPPG, '+
-        pc(chem/100)+' chemistry and '+fitPct(mult)+' for how the six fit together, which is '+
+        pc(chem/100)+' chemistry and '+fitPct(mult)+' '+fitPhrase(detailSt)+', which is '+
         rating.toFixed(1)+' points a game against an average defense.</p>'
       : '<p class="caveat" style="margin:9px 0 0">This run was recorded before the game '+
         'stored a team rating.</p>')+
