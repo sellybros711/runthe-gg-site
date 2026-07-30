@@ -831,6 +831,11 @@ window.GA_ID='G-L29P5MRWKE';
   .previewstrip .slotrow{height:36px; line-height:36px; font-family:var(--display); font-weight:400; font-size:19px; text-transform:uppercase; letter-spacing:.02em}
   @keyframes previewscroll{from{transform:translateY(-50%)} to{transform:translateY(0)}}   /* CS460: scroll DOWN (was up) */
   @media(prefers-reduced-motion:reduce){ .previewstrip{animation:none} }
+  /* the idle preview reel is itself a spin button (owner: tapping the reel starts the spin, like the red button) */
+  .osreel.tapspin{cursor:pointer; transition:border-color .15s,box-shadow .15s,transform .1s}
+  .osreel.tapspin:hover{border-color:var(--gold); box-shadow:0 0 16px rgba(241,208,74,.28) inset}
+  .osreel.tapspin:active{transform:scale(.99)}
+  .osreel.tapspin:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   .osgridhint{max-width:520px; margin:0 auto 7px}
   .osgrid{max-width:520px; margin:0 auto; grid-template-columns:1fr 1fr!important; gap:6px}
   .attr.static{cursor:default; box-shadow:none}
@@ -9217,7 +9222,7 @@ function scrSetup(){
   const EFFECTS=[['fx','Aura']];
   const SECTIONS = guest
     ? [['look','Appearance',LOOKCATS]]
-    : [['look','Look',LOOKCATS],['apparel','Apparel',APPAREL],['gear','Gear',GEAR],['fx','Effects',EFFECTS],['card','Card',[['plate','Nameplate'],['cardbg','Background']]],['profile','Profile',[['details','Name & Country']]]];
+    : [['look','Look',LOOKCATS],['apparel','Apparel',APPAREL],['gear','Gear',GEAR],['fx','Effects',EFFECTS],['card','Card',[['plate','Nameplate'],['cardbg','Background']]],['profile','Profile',[['details','Name & Country'],['caddie','Caddie']]]];
   const cats = SECTIONS.reduce((a,s)=>a.concat(s[2]),[]);
   let cat=S.setupCat; if(!cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.setupCat=cat;
   const sec = SECTIONS.find(s=>s[2].some(c=>c[0]===cat)) || SECTIONS[0];   // the section holding the current category
@@ -9255,6 +9260,14 @@ function scrSetup(){
     inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name); saveLook();}; nrow.appendChild(inp); form.appendChild(nrow);
     const crow=$(`<div class="setrow"><div class="setlab">Country</div></div>`); crow.appendChild(countryRow()); form.appendChild(crow);
     wrap.appendChild(form);
+  } else if(cat==='caddie' && !guest){
+    // owner: pick your caddie right here on the profile/closet page. A caddie gives a small on-theme career edge.
+    const cform=$(`<div style="margin-top:12px"></div>`);
+    cform.appendChild($(`<div class="setlab" style="margin-bottom:2px">Caddie</div>`));
+    cform.appendChild(caddieRow());
+    const nu=nextCaddieUnlock&&nextCaddieUnlock();
+    if(nu) cform.appendChild($(`<div class="small muted" style="margin-top:7px">Climb your Tour Rep to <b style="color:var(--gold)">${esc(nu.rank)}</b> to unlock ${nu.count} more caddie${nu.count>1?'s':''}.</div>`));
+    wrap.appendChild(cform);
   } else if(cat==='club' && !guest){
     // YOUR BAG: 6 club slots — tap one to open its boost status + the looks you can equip in it
     wrap.appendChild(bagMenuNode());
@@ -12021,14 +12034,16 @@ function scrDraft(){
   // reserved reel slot - same height idle / spinning / landed, so tapping Spin (or an auto-spin after a take) never jumps
   const rar=spun?g.rarity:null, RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
   const idlePrev=(!spun && !S.spinning);
-  add($(`<div class="osreel ${S.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
+  const reelEl=$(`<div class="osreel ${S.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}${idlePrev?' tapspin':''}"${idlePrev?' role="button" tabindex="0" aria-label="Spin the wheel"':''}>
     ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:(idlePrev?`<div class="reeltag">PREVIEW · THE POOL</div>`:'')}
     <div class="name${idlePrev?' preview':''}">${S.spinning?'…':(spun?(esc(cardDispName(g.name))+cardKindHTML(g)):(idlePrev?reelPreviewHTML():'…'))}</div>
-    <div class="sub">${spun?esc([g.nation,g.note].filter(Boolean).join(' · ')):(S.spinning?'':(idlePrev?'Spin the wheel below':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`));
+    <div class="sub">${spun?esc([g.nation,g.note].filter(Boolean).join(' · ')):(S.spinning?'':(idlePrev?'Tap to spin':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`);
+  if(idlePrev){ reelEl.onclick=spin_; reelEl.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); spin_(); } }; }
+  add(reelEl);
 
   // hint
   if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(cardDispName(g.name))}</b>'s attribute into your bag</div>`));
-  else if(!S.spinning && filled<8) add($(`<div class="small center osgridhint muted">Spin the wheel, then tap a slot to draft an attribute</div>`));
+  else if(!S.spinning && filled<8) add($(`<div class="small center osgridhint muted">Tap the reel or the button below to spin, then tap a slot to draft an attribute</div>`));
 
   // THE unified grid: 8 slot tiles. Filled → your pick; open + golfer shown → draft option; open + idle → placeholder.
   const grid=$(`<div class="attrs osgrid dgrid"></div>`);
@@ -25403,14 +25418,16 @@ function scrH2HDraft(){
   // reserved reel slot - same height idle / spinning / landed, so a spin (or auto-spin after a take) never jumps
   const rar=spun?g.rarity:null, RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
   const idlePrev=(!spun && !S.h2h.spinning);
-  add($(`<div class="osreel ${S.h2h.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
+  const reelEl=$(`<div class="osreel ${S.h2h.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}${idlePrev?' tapspin':''}"${idlePrev?' role="button" tabindex="0" aria-label="Spin the wheel"':''}>
     ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:(idlePrev?`<div class="reeltag">PREVIEW · THE POOL</div>`:'')}
     <div class="name${idlePrev?' preview':''}">${S.h2h.spinning?'…':(spun?(esc(cardDispName(g.name))+cardKindHTML(g)):(idlePrev?reelPreviewHTML():'…'))}</div>
-    <div class="sub">${spun?esc([g.nation,g.note].filter(Boolean).join(' · ')):(S.h2h.spinning?'':(idlePrev?'Spin the wheel below':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`));
+    <div class="sub">${spun?esc([g.nation,g.note].filter(Boolean).join(' · ')):(S.h2h.spinning?'':(idlePrev?'Tap to spin':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`);
+  if(idlePrev){ reelEl.onclick=h2hSpin; reelEl.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); h2hSpin(); } }; }
+  add(reelEl);
 
   // hint
   if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(cardDispName(g.name))}</b>'s attribute into your bag</div>`));
-  else if(!S.h2h.spinning && filled<8) add($(`<div class="small center osgridhint muted">Spin the wheel, then tap a slot to draft an attribute</div>`));
+  else if(!S.h2h.spinning && filled<8) add($(`<div class="small center osgridhint muted">Tap the reel or the button below to spin, then tap a slot to draft an attribute</div>`));
 
   // THE unified grid: 8 slot tiles. Filled → your pick; open + golfer shown → draft option; open + idle → placeholder.
   const grid=$(`<div class="attrs osgrid"></div>`);
