@@ -34,7 +34,13 @@ const CONSTANTS = {
   NY6_MAX_LOSSES: 3,
   BOWL_MAX_LOSSES: 5,
   MINOR_BOWL_MAX_LOSSES: 6,
-  CONSISTENCY: 0.20,
+  // How much each side's score is pulled toward its true mean each game. Higher
+  // means less week-to-week noise, so roster strength wins out and better teams go
+  // farther. The opponent used to be fully random (OPP_CONSISTENCY effectively 0),
+  // which let weak opponents get hot and upset strong rosters regardless of talent;
+  // damping both sides makes the playoff and a title track real quality.
+  CONSISTENCY: 0.40,
+  OPP_CONSISTENCY: 0.40,
   PLAYOFF_HOME_FIELD: 0.35,
 };
 
@@ -892,7 +898,10 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
   const defenseModifier = opponent.pts_allowed_mean / leagueAvgAllowed;
   const yourScore = raw * chemistryMultiplier * structure * defenseModifier;
 
-  const oppScore = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng) * constants.SCALE / advantage;
+  let oppRaw = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng);
+  const OC = constants.OPP_CONSISTENCY || 0;
+  if (OC > 0) oppRaw = oppRaw * (1 - OC) + opponent.pts_scored_mean * OC;
+  const oppScore = oppRaw * constants.SCALE / advantage;
 
   let won;
   if (yourScore > oppScore) won = true;
