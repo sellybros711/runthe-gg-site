@@ -381,6 +381,32 @@
   .linkrow .lk i{font-style:normal;display:block;font-size:11px;color:var(--dim-2);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+  /* ── gameday ribbon ─────────────────────────────────────────────
+     The broadcast title strip over the score bug. It reads the stakes of the
+     game — a ranked-opponent showdown, the rivalry-week finale, or plain
+     gameday — the way a college broadcast frames every kickoff. */
+  .gameday{display:flex;justify-content:center;margin:0 0 11px}
+  .gameday span{position:relative;font-family:var(--fn);font-size:10.5px;font-weight:800;
+    letter-spacing:.2em;text-transform:uppercase;color:#08130d;padding:5px 15px 4px;
+    border-radius:99px;white-space:nowrap;background:var(--grad-green);
+    box-shadow:0 5px 14px -5px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.45)}
+  .gameday span:before,.gameday span:after{content:'';position:absolute;top:50%;width:14px;height:2px;
+    transform:translateY(-50%);background:currentColor;opacity:.5;border-radius:2px}
+  .gameday span:before{right:100%;margin-right:7px} .gameday span:after{left:100%;margin-left:7px}
+  .gameday.rivalry span{background:linear-gradient(135deg,#fb7185,#dc2626);color:#fff;
+    animation:gdpulse-r 1.8s ease-in-out infinite}
+  @keyframes gdpulse-r{0%,100%{box-shadow:0 5px 14px -5px rgba(0,0,0,.7),0 0 0 0 rgba(220,38,38,.6),
+      inset 0 1px 0 rgba(255,255,255,.3)}
+    50%{box-shadow:0 5px 14px -5px rgba(0,0,0,.7),0 0 18px 3px rgba(220,38,38,.55),
+      inset 0 1px 0 rgba(255,255,255,.3)}}
+  .gameday.ranked span{background:var(--grad-gold);color:#1a1206}
+  .gameday.showdown span{background:linear-gradient(135deg,#fde047,#f59e0b);color:#1a1206;
+    animation:gdpulse 1.8s ease-in-out infinite}
+  @keyframes gdpulse{0%,100%{box-shadow:0 5px 14px -5px rgba(0,0,0,.7),0 0 0 0 rgba(245,158,11,.55),
+      inset 0 1px 0 rgba(255,255,255,.45)}
+    50%{box-shadow:0 5px 14px -5px rgba(0,0,0,.7),0 0 18px 3px rgba(245,158,11,.5),
+      inset 0 1px 0 rgba(255,255,255,.45)}}
+
   /* ── gamecard / season ──────────────────────────────────────── */
   .gamecard{border-radius:16px;padding:16px;background:var(--grad-field);border:1px solid var(--line);
     position:relative;overflow:hidden}
@@ -414,8 +440,13 @@
     color:var(--dim-2)}
   .caleye b{font-family:var(--fd);font-size:16px;line-height:1;font-variant-numeric:tabular-nums}
   .cal{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:5px;margin-top:9px}
-  .cw{border-radius:9px;padding:7px 5px 6px;text-align:center;min-width:0;overflow:hidden;
+  .cw{position:relative;border-radius:9px;padding:7px 5px 6px;text-align:center;min-width:0;overflow:hidden;
     background:var(--panel);border:1px solid var(--line)}
+  /* A gold rank flag on games against ranked teams — the poll follows you all
+     season, on the schedule as well as the score bug. */
+  .cw .rkflag{position:absolute;top:3px;right:4px;font-family:var(--fd);font-size:9px;line-height:1;
+    color:#ffd23a;text-shadow:0 1px 1px rgba(0,0,0,.7)}
+  .cw.ranked{border-color:rgba(255,210,58,.42)}
   .cw .t{display:block;font-family:var(--fn);font-size:8.5px;letter-spacing:.09em;
     text-transform:uppercase;color:var(--dim-2)}
   .cw .o{display:block;font-family:var(--fd);font-size:15px;line-height:1.05;margin-top:3px;
@@ -1076,6 +1107,7 @@ or endorsed by the NCAA, the CFP or any school.
   <!-- s-season -->
   <div class="screen" id="s-season">
     <div class="gamecard">
+      <div class="gameday" id="v-gameday"><span id="v-gdtext">Gameday</span></div>
       <div class="bug big" id="v-bug">
         <div class="btop">
           <div class="bt you lead" id="v-byou" style="--tcol:#0e7a4f;--tcol2:#6ee7b7">
@@ -1124,6 +1156,7 @@ or endorsed by the NCAA, the CFP or any school.
   <div class="screen" id="s-po">
     <div class="eyebrow red" id="po-round">Playoffs</div>
     <h2 class="display" style="font-size:22px;margin:5px 0 10px" id="po-opp">Opponent</h2>
+    <div class="gameday" id="po-gameday" style="display:none"><span id="po-gdtext"></span></div>
     <div class="bug" id="po-bug">
       <div class="btop">
         <div class="bt you" id="po-you"><span class="rk"></span><span class="cd">YOU</span><span class="rc"></span>
@@ -1148,6 +1181,7 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="eyebrow" style="color:#d8b4fe" id="bowl-eyebrow">Bowl Game</div>
     <h2 class="display" style="font-size:22px;margin:5px 0 4px" id="bowl-title">Bowl Game</h2>
     <p class="dim" style="font-size:13px;margin:0 0 10px" id="bowl-tagline"></p>
+    <div class="gameday" id="bowl-gameday" style="display:none"><span id="bowl-gdtext"></span></div>
     <div class="bug" id="bowl-bug">
       <div class="btop">
         <div class="bt you" id="bowl-you"><span class="rk"></span><span class="cd">YOU</span><span class="rc"></span>
@@ -1980,10 +2014,13 @@ function paintCalendar(justPlayed){
     else if(r.bowl) done.set('bowl',r);
     else done.set('w|'+r.week,r);
   });
-  const square=(key,tag,code,extra)=>{
+  const square=(key,tag,code,extra,oppId)=>{
     const r=done.get(key);
+    const theId=r?r.opponent_id:oppId;
+    const rk=theId?teamRank(theId):0;
     return '<div class="cw'+(r?(r.won?' w':' l'):' todo')+(extra?' '+extra:'')+
-      (r&&r===justPlayed?' now':'')+'">'+
+      (rk?' ranked':'')+(r&&r===justPlayed?' now':'')+'">'+
+      (rk?'<span class="rkflag">#'+rk+'</span>':'')+
       '<span class="t">'+tag+'</span>'+
       '<span class="o">'+(r?esc(DATA.byTeamSeasonId[r.opponent_id]?
         E.teamColors(DATA.byTeamSeasonId[r.opponent_id]).abbreviation:'--'):code)+'</span>'+
@@ -1991,7 +2028,7 @@ function paintCalendar(justPlayed){
   };
   const codeOf=(id)=>{const o=id?DATA.byTeamSeasonId[id]:null;
     return o?E.teamColors(o).abbreviation:'--';};
-  run.schedule.forEach((id,i)=>cells.push(square('w|'+(i+1),'Wk '+(i+1),codeOf(id))));
+  run.schedule.forEach((id,i)=>cells.push(square('w|'+(i+1),'Wk '+(i+1),codeOf(id),null,id)));
   if(run.playoffSeed&&run.playoffSeed.made){
     for(let i=0;i<run.playoffSeed.rounds;i++){
       const name=run.playoffSeed.roundNames[i]||'Playoffs';
@@ -2010,15 +2047,38 @@ function paintCalendar(justPlayed){
 const YOU_GREEN={bg:'#0e7a4f',accent:'#6ee7b7'};
 function youColors(){return YOU_GREEN;}
 
+/* The broadcast ribbon reads the stakes: a ranked opponent is a showdown, the
+   final regular-season week is rivalry week, everything else is just gameday. */
+function gamedayFor(rk,label){
+  if(label==='Week '+E.CONSTANTS.REGULAR_SEASON_GAMES) return {cls:'rivalry',text:'Rivalry Week'};
+  if(rk&&rk<=10) return {cls:'showdown',text:'Top 10 Showdown'};
+  if(rk) return {cls:'ranked',text:'Ranked Matchup'};
+  if(/^Week/.test(label)) return {cls:'',text:'Gameday'};
+  return {cls:'',text:label||'Gameday'};
+}
+function setGameday(rk,label){
+  const g=gamedayFor(rk,label);
+  $('v-gameday').className='gameday'+(g.cls?' '+g.cls:'');
+  $('v-gdtext').textContent=g.text;
+}
+/* Playoff and bowl broadcasts already carry a round/bowl title, so their ribbon
+   only lights up for the drama that title can't say: a ranked-opponent showdown. */
+function setShowdown(boxId,txtId,rk){
+  const box=$(boxId);
+  if(rk&&rk<=10){box.className='gameday showdown';box.style.display='';$(txtId).textContent='Top 10 Showdown';}
+  else if(rk){box.className='gameday ranked';box.style.display='';$(txtId).textContent='Ranked Matchup';}
+  else{box.style.display='none';}
+}
+
 function paintSeasonBug(oppId,label){
   const o=oppId?DATA.byTeamSeasonId[oppId]:null;
+  const rk=o?teamRank(oppId):0;
   const mine=youColors();
   $('v-byou').style.setProperty('--tcol',mine.bg);
   $('v-byou').style.setProperty('--tcol2',mine.accent);
   $('v-byou').querySelector('.rk').textContent='';
   if(o){
     const w=E.washColors(o.color||'#8a97a8',o.alt_color);
-    const rk=teamRank(oppId);
     $('v-bthem').style.setProperty('--tcol',w.bg);
     $('v-bthem').style.setProperty('--tcol2',w.accent);
     $('v-bthem').querySelector('.cd').textContent=E.teamColors(o).abbreviation;
@@ -2036,6 +2096,7 @@ function paintSeasonBug(oppId,label){
     $('v-opp').textContent='';
     $('v-bug').classList.remove('ranked');
   }
+  setGameday(rk,label);
   $('v-round').textContent=label;
 }
 
@@ -2444,6 +2505,7 @@ function playPlayoffGame(r,afterFn){
   themEl.querySelector('.sc').textContent='0';
   youEl.className='bt you'; themEl.className='bt them';
   bug.className='bug '+rcls+(poRk?' ranked':'');
+  setShowdown('po-gameday','po-gdtext',poRk);
   $('po-q').textContent=QNAME[0];
   $('po-ck').textContent='15:00';
   $('po-rd').textContent=ROUND_SHORT[round]||round.toUpperCase();
@@ -2577,6 +2639,7 @@ function playBowlBroadcast(){
   youEl.querySelector('.sc').textContent='0';themEl.querySelector('.sc').textContent='0';
   youEl.className='bt you';themEl.className='bt them';
   bug.className='bug'+(bowlRk?' ranked':'');
+  setShowdown('bowl-gameday','bowl-gdtext',bowlRk);
   $('bowl-q').textContent=QNAME[0];$('bowl-ck').textContent='15:00';$('bowl-rd').textContent='BOWL';
   $('bowl-cap').innerHTML='';$('bowl-log').innerHTML='';
   $('bowl-fastwrap').hidden=false;
