@@ -930,33 +930,63 @@ window.GA_ID='G-L29P5MRWKE';
   .cc-row .cr-price.hot{color:var(--red)}
 
   .trade-proposals{display:flex;flex-direction:column;gap:8px}
-  .tprop{border:1.5px solid var(--line-2);border-radius:10px;background:var(--panel);
-    padding:10px 12px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+  /* AN OFFER CARD IS THE WHOLE TRADE. Both halves of the exchange are on the card (what
+     leaves and what arrives), and the one number that decides it -- what the deal does to
+     the team rating -- is a badge in the corner rather than fine print, because that is
+     the thing that must not be missed. */
+  .tprop{border:1.5px solid var(--line-2);border-radius:12px;background:var(--panel);
+    padding:0;overflow:hidden;cursor:pointer;transition:border-color .15s,box-shadow .15s}
   .tprop:hover{border-color:rgba(251,191,36,.45)}
   .tprop.selected{border-color:#fbbf24;box-shadow:0 0 0 1px #fbbf24}
-  .tp-tag{display:inline-block;font-family:var(--fn);font-size:9px;font-weight:800;
-    letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:5px;margin-bottom:7px;
-    background:rgba(251,191,36,.16);color:#fbbf24}
-  .tp-tag.good{background:rgba(34,197,94,.16);color:#22c55e}
-  .tp-tag.swap{background:rgba(96,165,250,.16);color:#60a5fa}
-  .tp-tag.big{background:rgba(251,191,36,.16);color:#fbbf24}
-  .tp-pitch{font-family:var(--fb);font-size:12.5px;font-weight:500;line-height:1.35;
-    color:var(--dim);margin-bottom:8px;font-style:italic}
-  .tp-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
-  .tp-dir{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.06em;
-    text-transform:uppercase;width:28px;flex-shrink:0}
-  .tp-dir.out{color:var(--red)}
-  .tp-dir.in{color:#22c55e}
-  .tp-player{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
+  .tp-head{display:flex;align-items:center;gap:10px;padding:9px 12px;
+    background:rgba(255,255,255,.03);border-bottom:1px solid var(--line-2)}
+  .tp-partner{min-width:0;flex:1}
+  .tp-partner .tp-club{font-family:var(--fp);font-size:14.5px;font-weight:700;color:var(--ink);
+    line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tp-partner .tp-plbl{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--dim-2)}
+  /* The headline metric. Sized and coloured to be read first. */
+  .tp-grade{flex:0 0 auto;text-align:center;border-radius:9px;padding:5px 9px;min-width:62px;
+    border:1.5px solid transparent}
+  .tp-grade .tg-num{font-family:var(--fd);font-size:21px;font-weight:700;line-height:1}
+  .tp-grade .tg-lbl{font-family:var(--fn);font-size:7.5px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim);margin-top:1px}
+  .tp-grade.up{background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.5)}
+  .tp-grade.up .tg-num{color:#22c55e}
+  .tp-grade.dn{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.45)}
+  .tp-grade.dn .tg-num{color:var(--red)}
+  .tp-grade.flat{background:rgba(148,163,184,.12);border-color:rgba(148,163,184,.35)}
+  .tp-grade.flat .tg-num{color:var(--dim)}
+  .tp-body{padding:9px 12px 10px}
+  /* GIVE / GET, labelled, so the exchange reads in one pass. */
+  .tp-side{font-family:var(--fn);font-size:8.5px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;margin:0 0 4px}
+  .tp-side.out{color:var(--red)}
+  .tp-side.in{color:#22c55e;margin-top:8px}
+  .tp-give{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:11.5px;
+    color:var(--dim);line-height:1.3}
+  .tp-give .g1{display:flex;align-items:center;gap:5px;min-width:0}
+  .tp-give .gn{color:var(--ink);font-weight:600}
+  .tp-give .gv{font-family:var(--fn);font-size:10.5px}
+  .tp-row{display:flex;align-items:center;gap:8px;padding:3px 0}
+  .tp-player{display:flex;align-items:center;gap:7px;flex:1;min-width:0}
   .tp-player .tp-name{font-family:var(--fb);font-size:13.5px;font-weight:600;color:var(--ink);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .tp-player .tp-sub{font-size:10.5px;color:var(--dim)}
+  .tp-player .tp-sub{font-size:10.5px;color:var(--dim);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .tp-stat{flex:0 0 auto;text-align:right;white-space:nowrap}
+  .tp-stat b{font-family:var(--fd);font-size:15px;color:var(--ink);display:block;line-height:1}
+  .tp-stat span{font-size:9.5px;color:var(--dim)}
   .pos-chip{font-family:var(--fn);font-size:9px;font-weight:700;letter-spacing:.06em;
     padding:2px 5px;border-radius:4px;text-transform:uppercase;flex-shrink:0}
-  .tp-cap{font-family:var(--fn);font-size:11px;font-weight:600;color:var(--dim);
-    margin-top:4px;text-align:right}
+  /* Secondary numbers, on their own footer line. */
+  .tp-cap{display:flex;gap:14px;align-items:baseline;margin-top:9px;padding-top:8px;
+    border-top:1px solid rgba(148,163,184,.14);
+    font-family:var(--fn);font-size:11px;font-weight:600;color:var(--dim)}
   .tp-cap .up{color:#22c55e}
   .tp-cap .dn{color:var(--red)}
+  .tp-cap .tp-hint{font-weight:600;color:var(--dim-2);margin-left:4px;font-size:9.5px;
+    text-transform:uppercase;letter-spacing:.05em}
 
   .fa-cards{display:flex;flex-direction:column;gap:8px}
   .fa-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;
@@ -1117,13 +1147,11 @@ window.GA_ID='G-L29P5MRWKE';
   .market-out b{color:var(--ink)}
   .market-out .mo-lbl{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.06em;
     text-transform:uppercase;color:var(--red);margin-right:6px}
-  .tp-delta{font-family:var(--fn);font-size:11px;font-weight:700}
-  .tp-delta .up{color:#22c55e}
-  .tp-delta .dn{color:var(--red)}
-  .tp-from{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
-    color:var(--dim-2);margin-bottom:6px}
-  .tp-from~.tp-from{margin-top:8px}
-  .tp-fa-note{font-size:11px;color:var(--dim);font-style:italic;margin-top:5px}
+  .tp-fa-note{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim);
+    margin-top:4px;padding:3px 0 0}
+  .tp-fa-note::before{content:"+";font-family:var(--fd);font-size:13px;color:#22c55e}
+  .tp-est{font-family:var(--fn);font-size:8px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--dim-2)}
   /* Live trade preview: the row coming in, and the slot a 2-for-1 leaves open. */
   .rp-row.incoming{background:rgba(34,197,94,.10);border-radius:8px;
     box-shadow:inset 0 0 0 1px rgba(34,197,94,.35);margin:2px 0;padding:8px 8px}
@@ -3466,7 +3494,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=36"></script>
-<script src="run.js?v=42"></script>
+<script src="run.js?v=43"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -5640,9 +5668,12 @@ function openTradeWindow(step){
   run.tradeWindows=(run.tradeWindows||0)+1;
   tradeResumeStep=step;
   shopSel=[]; currentOffers=[]; selectedOffer=null;
-  $('tw-eye').textContent='Trade window · Week '+run.season.week;
+  const deadline=run.season.week>=15;
+  $('tw-eye').textContent=(deadline?'Trade deadline':'Trade window')+' · Week '+run.season.week;
   $('tw-title').textContent='Trade finder';
-  $('tw-sub').textContent='Put one or two players on the block, then see what the league offers.';
+  $('tw-sub').textContent=deadline
+    ?'Last chance to deal. Put one or two players on the block.'
+    :'Put one or two players on the block, then see what the league offers.';
   $('tw-market').style.display='none';
   $('tw-shop').style.display='';
   paintShopList();
@@ -5694,13 +5725,16 @@ function updateShopState(){
   const btn=$('b-tw-find');
   btn.disabled=shopSel.length===0;
   const names=shopSel.map(i=>lastName(run.roster[i].name)).join(' + ');
-  btn.textContent=shopSel.length?'Find offers for '+names:'Find offers';
+  btn.textContent=shopSel.length?'Find offers for '+names:'Select a player to shop';
   const capEl=$('tw-shop-cap');
-  if(!shopSel.length){ capEl.innerHTML='The more you put on the block, the better the return.'; return; }
+  if(!shopSel.length){
+    capEl.innerHTML='Tap a player to put him on the block. Shop two and the return can be one bigger player or two.';
+    return;
+  }
   const outVal=shopSel.reduce((t,i)=>t+run.roster[i].ppr_ppg_mean,0);
   const outSal=shopSel.reduce((t,i)=>t+run.roster[i].price_musd,0);
-  capEl.innerHTML='Shopping <b>'+outVal.toFixed(1)+' FPPG</b> and <b>$'+outSal.toFixed(1)+'M</b>'+
-    (shopSel.length===2?' for one player, plus a free agent to fill the open spot.':'.');
+  capEl.innerHTML='On the block: <b>'+outVal.toFixed(1)+' FPPG</b> and <b>$'+outSal.toFixed(1)+'M</b> of cap'+
+    (shopSel.length===2?'. Offers come back as one player plus a free agent, or as two players.':'.');
 }
 
 /* Ask the league. R.findOffers returns the market for exactly the package you chose. */
@@ -5708,12 +5742,12 @@ function enterMarket(){
   if(!shopSel.length) return;
   currentOffers=R.findOffers(run,DATA,CTX,shopSel.slice());
   selectedOffer=null;
-  const outNames=shopSel.map(i=>{const p=run.roster[i];
-    return '<b>'+esc(p.name)+'</b> ('+esc(p.position)+', '+p.ppr_ppg_mean.toFixed(1)+')';}).join(' and ');
-  $('tw-market-out').innerHTML='<span class="mo-lbl">You give</span>'+outNames+
-    (shopSel.length===2?'. Some deals send one player back with a free agent for the open spot; others send two.':'.');
-  $('tw-title').textContent='Offers';
-  $('tw-sub').textContent=currentOffers.length?'Tap an offer to preview it, then accept.'
+  const outNames=shopSel.map(i=>esc(lastName(run.roster[i].name))).join(' + ');
+  $('tw-market-out').innerHTML='<span class="mo-lbl">Shopping</span><b>'+outNames+'</b>'+
+    '. Rating is what each deal does to your team overall, the number that decides it.';
+  $('tw-title').textContent=currentOffers.length?currentOffers.length+' offer'+(currentOffers.length===1?'':'s')
+    :'No offers';
+  $('tw-sub').textContent=currentOffers.length?'Best for your team first. Tap one to preview it.'
     :'Nobody is biting on that package.';
   $('tw-shop').style.display='none';
   $('tw-market').style.display='';
@@ -5721,22 +5755,39 @@ function enterMarket(){
   paintOffers();
   paintTradePreview(null);
   $('b-tw-accept').disabled=true;
+  $('b-tw-accept').textContent='Accept trade';
   $('b-tw-accept').onclick=()=>{
     if(selectedOffer===null) return;
     const prop=currentOffers[selectedOffer];
+    const got=prop.inPlayers.map(p=>lastName(p.name)).join(' and ');
     R.acceptTrade(run,prop,DATA,CTX);
     drawField($('field2'),false);
     paintSquadSidebar();
     paintRosterPanel('season-rp-body','season-rp-cap');
-    toast('Trade accepted');
+    toast('Acquired '+got);
     if(run.pendingFreeAgency){ openFreeAgency(); return; }
     show('s-season'); simTimer=setTimeout(tradeResumeStep,600);
   };
 }
 
-/* The returns, ranked best-first. Each card is the incoming player and the concrete
-   trade-off against what you gave up: production gained or lost, and the cap swing.
-   Numbers, not labels, so you read the deal rather than a canned tag. */
+/* THE MARKET, ranked by what each deal does to your team. Every card carries the WHOLE
+   exchange -- who leaves and who arrives -- plus the trade partner it came from, so a deal
+   can be judged without cross-referencing the header. The rating swing is a badge in the
+   corner because it is the number that decides the trade; cap and chemistry sit under a
+   rule as supporting detail. */
+function offerPlayerRow(p){
+  const posColor=posPaint(p.position).replace('background:','');
+  return '<div class="tp-row">'+
+    '<div class="tp-player">'+
+      '<span class="pos-chip" style="background:'+posColor+';color:#fff">'+esc(p.position)+'</span>'+
+      '<div style="min-width:0"><div class="tp-name">'+esc(p.name)+'</div>'+
+        '<div class="tp-sub">'+esc(p.season+' '+E.nickname(p.franchise))+
+          (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</div></div>'+
+    '</div>'+
+    '<div class="tp-stat"><b>'+p.ppr_ppg_mean.toFixed(1)+'</b><span>$'+p.price_musd.toFixed(1)+'M</span></div>'+
+  '</div>';
+}
+
 function paintOffers(){
   const el=$('tw-list'); el.innerHTML='';
   if(!currentOffers.length){
@@ -5747,22 +5798,43 @@ function paintOffers(){
   }
   $('b-tw-accept').style.display='';
   currentOffers.forEach((o,i)=>{
-    const vs=o.netVal, cs=o.netCap;
+    const rd=o.ratingDelta, cs=o.netCap, cd=o.chemDelta;
+    const cls=rd===null?'flat':(rd>0.05?'up':(rd<-0.05?'dn':'flat'));
+    const rtxt=rd===null?'--':(rd>0?'+':'')+rd.toFixed(1);
     const card=document.createElement('div');
     card.className='tprop';
-    let html='';
-    o.inPlayers.forEach((inP)=>{
-      html+='<div class="tp-from">From the '+esc(inP.season+' '+E.nickname(inP.franchise))+'</div>'+
-        playerRow('in',inP);
-    });
-    if(o.type==='2for1') html+='<div class="tp-fa-note">plus a free agent for the open spot</div>';
-    html+='<div class="tp-cap">Production <span class="'+(vs>=0?'up':'dn')+'">'+(vs>0?'+':'')+vs.toFixed(1)+'</span>'+
-      '&nbsp;&nbsp;&middot;&nbsp;&nbsp;Cap <span class="'+(cs>0?'dn':'up')+'">'+(cs>0?'+':'')+'$'+Math.abs(cs).toFixed(1)+'M</span></div>';
+    let html=
+      '<div class="tp-head">'+
+        '<div class="tp-partner"><div class="tp-club">'+
+          esc(o.partnerSeason+' '+E.nickname(o.partnerFranchise))+'</div>'+
+          '<div class="tp-plbl">Trade partner</div></div>'+
+        '<div class="tp-grade '+cls+'"><div class="tg-num">'+(o.estimated?'~':'')+rtxt+'</div>'+
+          '<div class="tg-lbl">Rating</div></div>'+
+      '</div>'+
+      '<div class="tp-body">'+
+        '<div class="tp-side out">You give</div><div class="tp-give">'+
+        o.outPlayers.map(p=>'<span class="g1">'+
+          '<span class="pos-chip" style="background:'+posPaint(p.position).replace('background:','')+';color:#fff">'+
+          esc(p.position)+'</span><span class="gn">'+esc(lastName(p.name))+'</span>'+
+          '<span class="gv">'+p.ppr_ppg_mean.toFixed(1)+' &middot; $'+p.price_musd.toFixed(1)+'M</span></span>').join('')+
+        '</div>';
+    html+='<div class="tp-side in">You get</div>';
+    o.inPlayers.forEach(p=>{ html+=offerPlayerRow(p); });
+    if(o.type==='2for1') html+='<div class="tp-fa-note">a free agent to fill the open '+esc(o.faPos)+' spot</div>';
+    const capTxt=(cs>0?'+$':'\u2212$')+Math.abs(cs).toFixed(1)+'M';
+    html+='<div class="tp-cap"><span>Cap <span class="'+(cs>0?'dn':'up')+'">'+capTxt+'</span>'+
+        '<span class="tp-hint">'+(cs>0?'costs':'frees')+'</span></span>';
+    if(cd!==null&&Math.abs(cd)>=0.1){
+      html+='<span>Chemistry <span class="'+(cd>0?'up':'dn')+'">'+(cd>0?'+':'')+cd.toFixed(1)+'%</span></span>';
+    }
+    html+='</div></div>';
     card.innerHTML=html;
     card.onclick=()=>{
       const re=selectedOffer===i; selectedOffer=re?null:i;
       el.querySelectorAll('.tprop').forEach((c,j)=>c.classList.toggle('selected',j===selectedOffer));
       $('b-tw-accept').disabled=selectedOffer===null;
+      $('b-tw-accept').textContent=selectedOffer===null?'Accept trade'
+        :'Accept trade with '+E.nickname(currentOffers[selectedOffer].partnerFranchise);
       paintTradePreview(selectedOffer===null?null:currentOffers[selectedOffer]);
     };
     el.appendChild(card);
@@ -5821,19 +5893,6 @@ function paintTradePreview(offer){
   body.innerHTML=h;
   body.onclick=(e)=>{const r=e.target.closest('.rp-row');if(!r||r.dataset.r===undefined)return;
     const p=tradePreviewPlayers[+r.dataset.r];if(p)sheet(p);};
-}
-
-function playerRow(dir,p){
-  const posColor=posPaint(p.position).replace('color:','').replace(';','');
-  return '<div class="tp-row">'+
-    '<span class="tp-dir '+dir+'">'+dir+'</span>'+
-    '<div class="tp-player">'+
-      '<span class="pos-chip" style="background:'+posColor+';color:#fff">'+esc(p.position)+'</span>'+
-      '<div><div class="tp-name">'+esc(p.name)+'</div>'+
-        '<div class="tp-sub">'+esc(p.franchise)+' '+p.season+' • '+p.ppr_ppg_mean.toFixed(1)+' FPPG • $'+p.price_musd.toFixed(1)+'M</div>'+
-      '</div>'+
-    '</div>'+
-  '</div>';
 }
 
 let selectedFAPlayer=null;
