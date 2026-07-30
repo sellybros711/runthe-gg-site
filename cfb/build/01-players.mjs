@@ -168,7 +168,7 @@ function computeFantasyPPR(stats) {
     return Number(v) || 0;
   };
 
-  // Passing C/ATT comes as "13/18" — parse both
+  // Passing C/ATT comes as "13/18", parse both
   let completions = 0, passAttempts = 0;
   const catt = stats['passing_C/ATT'];
   if (catt && typeof catt === 'string') {

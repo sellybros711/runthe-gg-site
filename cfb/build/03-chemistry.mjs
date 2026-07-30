@@ -6,9 +6,9 @@
  * a player's own attributes is derived at runtime. Only what cannot be derived
  * from a single row is precomputed here:
  *
- *   cfb_battery.json  — QB-receiver pairing data
- *   cfb_coaches.json  — head coach of each team-season
- *   cfb_curated.json  — family and rivalry, hand-authored
+ *   cfb_battery.json, QB-receiver pairing data
+ *   cfb_coaches.json, head coach of each team-season
+ *   cfb_curated.json, family and rivalry, hand-authored
  *
  * Runtime-derived chemistry links (from cfb_player_seasons.json fields):
  *   Teammates   = same team_season_id
