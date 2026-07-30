@@ -410,9 +410,13 @@ function createRun(opts) {
     outcome: null,
     // Salary Cap Survivor: prices inflate after each game
     capHistory: capSurvivor ? [] : null,
-    // Trade Machine: tracks per-player game performance for repricing
-    tradePerf: tradeMachine ? {} : null,
-    tradeWindows: tradeMachine ? 0 : null,
+    // Trade Machine
+    startRating: tradeMachine ? null : undefined,
+    startSalary: tradeMachine ? null : undefined,
+    tradesAccepted: tradeMachine ? 0 : undefined,
+    tradeHistory: tradeMachine ? [] : undefined,
+    tradeWindows: tradeMachine ? 0 : undefined,
+    pendingFreeAgency: tradeMachine ? null : undefined,
   };
 }
 
@@ -855,104 +859,294 @@ function capSign(run, player) {
 }
 
 /* ---------- THE TRADE MACHINE ----------
-   Start with a random roster. Every 4 games get a trade window: drop one,
-   spin once, reprice based on performance. */
-function autoDraft(run, data) {
-  if (!run.tradeMachine) throw new Error('not trade machine mode');
-  run.floorLists ??= (data.cheapBy && (data.cheapBy[run.franchise || '*'] || null));
-  const rng = rngFor(run);
-  const slots = E.SLOTS.slice();
-  for (let i = 0; i < slots.length; i++) {
-    let available = drawable(run, data);
-    if (!available.length) throw new Error('pool exhausted during auto-draft');
-    const t = available[Math.floor(rng() * available.length)];
-    const players = data.playersByTeamSeason[t.team_season_id] || [];
-    const eligible = players.filter((p) => {
-      if (run.usedPlayers.includes(p.player_id)) return false;
-      return slotForPlayer(run, p) !== null;
-    });
-    if (!eligible.length) { i--; continue; }
-    eligible.sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean);
-    const pick = eligible[Math.floor(rng() * Math.min(3, eligible.length))];
-    const slot = slotForPlayer(run, pick);
-    run.roster.push(pick);
-    run.slotIndex.push(slot);
-    run.usedPlayers.push(pick.player_id);
-    run.usedTeamSeasons.push(t.team_season_id);
-    run.draws.push({ slot: E.SLOTS[slot], team_season_id: t.team_season_id });
+   Auto-draft a 60-72 rated roster, play game by game with trade windows
+   at weeks 4, 8, 12 and 15 where rival GMs offer proposals. */
+
+const TRADE_PITCHES = {
+  fire_sale: [
+    "We're blowing it up. Take him while you can.",
+    "Rebuilding. This guy deserves a contender.",
+    "Everything must go. Name your price.",
+    "We're selling. Don't overthink it.",
+  ],
+  retooling: [
+    "Change of scenery might help both sides.",
+    "He's got upside if you can develop him.",
+    "We're retooling. He doesn't fit the timeline.",
+    "Fresh start for both rosters.",
+  ],
+  buyers: [
+    "You want to win now? This is the price.",
+    "Playoff push? He's your guy.",
+    "Contenders pay a premium. You know that.",
+    "Win-now move. Take it or leave it.",
+  ],
+  contender: [
+    "Everyone's calling about him. Take it or leave it.",
+    "You're in first. We both know you'll overpay.",
+    "Championship tax. That's the deal.",
+    "You want the ring? This is what it costs.",
+  ],
+};
+
+function autoDraftTrade(run, data, ctx) {
+  const savedRngCalls = run.rngCalls;
+  let accepted = false;
+  for (let attempt = 0; attempt < 500; attempt++) {
+    run.roster = [];
+    run.slotIndex = [];
+    run.usedPlayers = [];
+    run.usedTeamSeasons = [];
+    run.draws = [];
+    run.currentDraw = null;
+    run.rngCalls = savedRngCalls;
+    for (let pick = 0; pick < E.SLOTS.length; pick++) {
+      spin(run, data);
+      const rng = rngFor(run);
+      const opts = run.currentDraw.options;
+      const chosenKey = opts[Math.floor(rng() * opts.length)];
+      const tsPlayers = data.playersByTeamSeason[run.currentDraw.team_season_id];
+      const player = tsPlayers.find((p) => pkey(p) === chosenKey);
+      sign(run, player);
+    }
+    const rawPts = run.roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+    const chemMult = E.resolveChemistry(run.roster, ctx).multiplier;
+    const structMult = E.rosterStructure(run.roster).multiplier;
+    const rating = rawPts * chemMult * structMult;
+    const totalSalary = run.roster.reduce((t, p) => t + p.price_musd, 0);
+    if (rating >= 60 && rating <= 72 && totalSalary <= E.CONSTANTS.CAP_MUSD) {
+      run.startRating = rating;
+      run.startSalary = totalSalary;
+      accepted = true;
+      break;
+    }
   }
-  run.currentDraw = null;
-  if (run.roster.length === E.SLOTS.length) run.phase = PHASES.SEASON;
+  if (!accepted) {
+    const rawPts = run.roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+    const chemMult = E.resolveChemistry(run.roster, ctx).multiplier;
+    const structMult = E.rosterStructure(run.roster).multiplier;
+    run.startRating = rawPts * chemMult * structMult;
+    run.startSalary = run.roster.reduce((t, p) => t + p.price_musd, 0);
+  }
+  run.phase = PHASES.SEASON;
   return run;
 }
 
 function isTradeWindow(run) {
-  if (!run.tradeMachine || !run.season) return false;
   const w = run.season.week;
-  return w > 0 && w % 4 === 0 && w < (run.schedule ? run.schedule.length : 17);
+  return w === 4 || w === 8 || w === 12 || w === 15;
 }
 
-function repriceRoster(run) {
-  if (!run.tradeMachine || !run.season) return;
-  const results = run.season.results.filter((r) => !r.playoff);
-  if (!results.length) return;
+function inflateContracts(run) {
   for (const p of run.roster) {
-    const perf = run.tradePerf[pkey(p)];
-    if (!perf || !perf.games) continue;
-    const avgScore = perf.totalScore / perf.games;
-    const ratio = avgScore / (p.ppr_ppg_mean || 10);
-    const factor = 0.5 + 0.5 * Math.max(0.5, Math.min(2.0, ratio));
-    p.price_musd = money(p._basePrice * factor);
+    p.price_musd = Math.round(p.price_musd * 1.06 * 100) / 100;
   }
 }
 
-function trackPerformance(run, result) {
-  if (!run.tradeMachine) return;
+function generateProposals(run, data, ctx) {
   const rng = rngFor(run);
-  for (const p of run.roster) {
-    const k = pkey(p);
-    if (!run.tradePerf[k]) {
-      run.tradePerf[k] = { games: 0, totalScore: 0 };
-      p._basePrice = p.price_musd;
+  const gamesPlayed = run.season.wins + run.season.losses;
+  const winRate = gamesPlayed > 0 ? run.season.wins / gamesPlayed : 0.5;
+  let tier, rangeLo, rangeHi;
+  if (winRate <= 0.25) { tier = 'fire_sale'; rangeLo = 1.20; rangeHi = 1.50; }
+  else if (winRate <= 0.50) { tier = 'retooling'; rangeLo = 1.05; rangeHi = 1.25; }
+  else if (winRate <= 0.75) { tier = 'buyers'; rangeLo = 0.95; rangeHi = 1.15; }
+  else { tier = 'contender'; rangeLo = 0.90; rangeHi = 1.05; }
+  const numProposals = run.season.week === 15 ? 4 : 3;
+  const twoForOneIdx = Math.floor(rng() * 3);
+  let weakestIdx = 0, weakestRating = Infinity;
+  for (let i = 0; i < run.roster.length; i++) {
+    if (run.roster[i].ppr_ppg_mean < weakestRating) {
+      weakestRating = run.roster[i].ppr_ppg_mean;
+      weakestIdx = i;
     }
-    run.tradePerf[k].games++;
-    run.tradePerf[k].totalScore += p.ppr_ppg_mean * (result.won ? 1.15 : 0.9) * (0.85 + rng() * 0.3);
   }
+  const currentSalary = run.roster.reduce((t, p) => t + p.price_musd, 0);
+  const pool = drawable(run, data, 999);
+  function findIncoming(position, minRating, maxRating, excludeIds) {
+    const candidates = [];
+    for (const ts of pool) {
+      const players = data.playersByTeamSeason[ts.team_season_id] ?? [];
+      for (const p of players) {
+        if (p.position !== position) continue;
+        if (excludeIds && excludeIds.includes(p.player_id)) continue;
+        if (p.ppr_ppg_mean >= minRating && p.ppr_ppg_mean <= maxRating) candidates.push(p);
+      }
+    }
+    if (!candidates.length) return null;
+    return candidates[Math.floor(rng() * candidates.length)];
+  }
+  function make1for1(targetIdx) {
+    const target = run.roster[targetIdx];
+    const minR = target.ppr_ppg_mean * rangeLo;
+    const maxR = target.ppr_ppg_mean * rangeHi;
+    const excludeIds = run.roster.map((p) => p.player_id);
+    for (let att = 0; att < 50; att++) {
+      const incoming = findIncoming(target.position, minR, maxR, excludeIds);
+      if (!incoming) return null;
+      const newSalary = currentSalary - target.price_musd + incoming.price_musd;
+      if (newSalary <= E.CONSTANTS.CAP_MUSD) {
+        const pitch = TRADE_PITCHES[tier][Math.floor(rng() * TRADE_PITCHES[tier].length)];
+        return { type: '1for1', outIdx: targetIdx, outPlayer: target, inPlayer: incoming,
+          netCap: incoming.price_musd - target.price_musd, pitch };
+      }
+    }
+    return null;
+  }
+  function make2for1() {
+    const idx1 = weakestIdx;
+    let idx2;
+    for (let att = 0; att < 50; att++) {
+      idx2 = Math.floor(rng() * run.roster.length);
+      if (idx2 !== idx1) break;
+    }
+    if (idx2 === idx1) return null;
+    const p1 = run.roster[idx1], p2 = run.roster[idx2];
+    const combinedRating = p1.ppr_ppg_mean + p2.ppr_ppg_mean;
+    const minR = combinedRating * 0.70, maxR = combinedRating * 0.90;
+    const slot1 = run.slotIndex[idx1];
+    const eligiblePositions = new Set();
+    for (const pos of E.SLOT_ELIGIBILITY[E.SLOTS[slot1]]) eligiblePositions.add(pos);
+    const excludeIds = run.roster.map((p) => p.player_id);
+    for (let att = 0; att < 50; att++) {
+      const posArr = [...eligiblePositions];
+      const pos = posArr[Math.floor(rng() * posArr.length)];
+      const incoming = findIncoming(pos, minR, maxR, excludeIds);
+      if (!incoming) continue;
+      const newSalary = currentSalary - p1.price_musd - p2.price_musd + incoming.price_musd;
+      if (newSalary <= E.CONSTANTS.CAP_MUSD - 3) {
+        const slot2 = run.slotIndex[idx2];
+        const pitch = TRADE_PITCHES[tier][Math.floor(rng() * TRADE_PITCHES[tier].length)];
+        return { type: '2for1', outIdx: [idx1, idx2], outPlayers: [p1, p2], inPlayer: incoming,
+          netCap: incoming.price_musd - p1.price_musd - p2.price_musd, emptySlot: slot2, pitch };
+      }
+    }
+    return null;
+  }
+  const proposals = [];
+  let weakestTargeted = false;
+  for (let i = 0; i < numProposals; i++) {
+    let proposal = null;
+    if (i === 3) { proposal = make1for1(weakestIdx); }
+    else if (i === twoForOneIdx) { proposal = make2for1(); }
+    else {
+      let targetIdx;
+      if (!weakestTargeted) { targetIdx = weakestIdx; weakestTargeted = true; }
+      else { targetIdx = Math.floor(rng() * run.roster.length); }
+      proposal = make1for1(targetIdx);
+    }
+    if (proposal) {
+      if (proposal.type === '2for1' || proposal.outIdx === weakestIdx) weakestTargeted = true;
+      proposals.push(proposal);
+    }
+  }
+  return proposals;
 }
 
-function tradeCut(run, rosterIdx) {
-  if (!run.tradeMachine) throw new Error('not trade machine mode');
-  if (rosterIdx < 0 || rosterIdx >= run.roster.length) throw new Error('bad index');
-  const cut = run.roster[rosterIdx];
-  run.roster.splice(rosterIdx, 1);
-  run.slotIndex.splice(rosterIdx, 1);
-  const k = pkey(cut);
-  delete run.tradePerf[k];
-  run.tradeWindows++;
-  return cut;
+function generateFreeAgents(run, data, position) {
+  const rng = rngFor(run);
+  const pool = drawable(run, data, 999);
+  const candidates = [];
+  for (const ts of pool) {
+    const players = data.playersByTeamSeason[ts.team_season_id] ?? [];
+    for (const p of players) {
+      if (p.position !== position) continue;
+      if (run.usedPlayers.includes(p.player_id)) continue;
+      if ((p.position_percentile ?? 1) > 0.30) continue;
+      if (p.price_musd < 3 || p.price_musd > 8) continue;
+      candidates.push(p);
+    }
+  }
+  const result = [];
+  for (let i = 0; i < 3 && candidates.length > 0; i++) {
+    const idx = Math.floor(rng() * candidates.length);
+    result.push(candidates.splice(idx, 1)[0]);
+  }
+  return result;
 }
 
-function tradeSpin(run, data) {
-  if (!run.tradeMachine) throw new Error('not trade machine mode');
-  return midSeasonSpin(run, data);
-}
-
-function tradeSign(run, player) {
-  if (!run.tradeMachine) throw new Error('not trade machine mode');
-  if (!run.currentDraw) throw new Error('nothing drawn');
-  if (!run.currentDraw.options.includes(pkey(player))) throw new Error('player not on this team');
-  const total = run.roster.reduce((s, p) => s + p.price_musd, 0) + player.price_musd;
-  if (total > E.CONSTANTS.CAP_MUSD) throw new Error('over the cap');
-  const slot = slotForPlayer(run, player);
-  if (slot === null) throw new Error('no empty spot for a ' + player.position);
-  run.roster.push(player);
-  run.slotIndex.push(slot);
-  run.usedPlayers.push(player.player_id);
-  run.usedTeamSeasons.push(run.currentDraw.team_season_id);
-  run.tradePerf[pkey(player)] = { games: 0, totalScore: 0 };
-  player._basePrice = player.price_musd;
-  run.currentDraw = null;
+function acceptTrade(run, proposal, data, ctx) {
+  if (proposal.type === '1for1') {
+    const idx = proposal.outIdx;
+    const slot = run.slotIndex[idx];
+    run.roster.splice(idx, 1);
+    run.slotIndex.splice(idx, 1);
+    const pid = proposal.outPlayer.player_id;
+    const pidIdx = run.usedPlayers.indexOf(pid);
+    if (pidIdx !== -1) run.usedPlayers.splice(pidIdx, 1);
+    run.roster.push(proposal.inPlayer);
+    run.slotIndex.push(slot);
+    run.usedPlayers.push(proposal.inPlayer.player_id);
+  } else {
+    const [idx1, idx2] = proposal.outIdx;
+    const slot1 = run.slotIndex[idx1];
+    const slot2 = run.slotIndex[idx2];
+    const sortedIdxs = [idx1, idx2].sort((a, b) => b - a);
+    for (const idx of sortedIdxs) {
+      const pid = run.roster[idx].player_id;
+      run.roster.splice(idx, 1);
+      run.slotIndex.splice(idx, 1);
+      const pidIdx = run.usedPlayers.indexOf(pid);
+      if (pidIdx !== -1) run.usedPlayers.splice(pidIdx, 1);
+    }
+    run.roster.push(proposal.inPlayer);
+    run.slotIndex.push(slot1);
+    run.usedPlayers.push(proposal.inPlayer.player_id);
+    const secondOutgoing = proposal.outPlayers[1];
+    run.pendingFreeAgency = { position: secondOutgoing.position, slotIndex: slot2 };
+  }
+  const chem = E.resolveChemistry(run.roster, ctx);
+  run.season.chemistry = chem.multiplier;
+  run.season.chemistryLinks = chem.links;
+  run.tradesAccepted = (run.tradesAccepted || 0) + 1;
+  run.tradeHistory = run.tradeHistory || [];
+  run.tradeHistory.push({
+    week: run.season.week,
+    type: proposal.type,
+    out: proposal.type === '2for1' ? proposal.outPlayers.map((p) => p.name) : [proposal.outPlayer.name],
+    in: proposal.inPlayer.name,
+  });
   return run;
+}
+
+function signFreeAgent(run, player, ctx) {
+  const pending = run.pendingFreeAgency;
+  if (!pending) throw new Error('no pending free agency');
+  run.roster.push(player);
+  run.slotIndex.push(pending.slotIndex);
+  run.usedPlayers.push(player.player_id);
+  run.pendingFreeAgency = null;
+  const chem = E.resolveChemistry(run.roster, ctx);
+  run.season.chemistry = chem.multiplier;
+  run.season.chemistryLinks = chem.links;
+  return run;
+}
+
+function computeGMRating(run) {
+  const regularWins = run.season.regularWins ?? run.season.wins;
+  let playoffBonus = 0;
+  if (run.outcome.madePlayoffs) playoffBonus += 5;
+  const playoffWins = run.season.results.filter((r) => r.playoff && r.won).length;
+  playoffBonus += playoffWins * 5;
+  if (run.outcome.titleWon) playoffBonus += 5;
+  const regularPts = regularWins * 2;
+  const resultScore = Math.min(100, (regularPts + playoffBonus) / 64 * 100);
+  const finalRating = run.roster.reduce((t, p) => t + p.ppr_ppg_mean, 0)
+    * run.season.chemistry * E.rosterStructure(run.roster).multiplier;
+  const improvementScore = Math.max(0, Math.min(100, (finalRating - run.startRating) / 25 * 100));
+  const totalSalary = run.roster.reduce((t, p) => t + p.price_musd, 0);
+  const capRemaining = E.CONSTANTS.CAP_MUSD - totalSalary;
+  const capScore = Math.max(0, Math.min(100, capRemaining / 20 * 100));
+  const salaryIncrease = Math.max(0, totalSalary - run.startSalary);
+  const ratingGain = Math.max(0, finalRating - run.startRating);
+  const valueScore = salaryIncrease <= 0 ? 100
+    : Math.max(0, Math.min(100, (ratingGain / Math.max(1, salaryIncrease)) / 2 * 100));
+  const efficiencyScore = capScore * 0.6 + valueScore * 0.4;
+  const expectedWins = 6 + (run.startRating - 60) * (5 / 12);
+  const overScore = Math.max(0, Math.min(100, (regularWins - expectedWins) / 6 * 100));
+  const raw = resultScore * 0.40 + improvementScore * 0.30 + efficiencyScore * 0.20 + overScore * 0.10;
+  run.outcome.gmRating = Math.max(0, Math.min(99.99, Math.round(raw * 100) / 100));
+  return run.outcome.gmRating;
 }
 
 function finish(run, how) {
@@ -1314,7 +1508,8 @@ const api = {
   boardFrom, blockFor, BLOCK, drawable,
   openSlots, openSlotNames, slotForPlayer, TUNING,
   inflateCap, capCut, capSpin, capSign,
-  autoDraft, isTradeWindow, repriceRoster, trackPerformance, tradeCut, tradeSpin, tradeSign,
+  autoDraftTrade, isTradeWindow, inflateContracts, generateProposals,
+  generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
