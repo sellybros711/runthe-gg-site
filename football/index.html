@@ -1076,6 +1076,41 @@ window.GA_ID='G-L29P5MRWKE';
   .rp-row .rp-sub{font-size:10.5px;color:var(--dim);line-height:1.2}
   .rp-row .rp-fppg{font-family:var(--fd);font-size:15px;color:var(--ink);text-align:right;white-space:nowrap}
   .rp-row .rp-fppg span{font-size:9.5px;color:var(--dim);display:block;font-family:var(--fn)}
+
+  /* Trade finder: the shopping list (tap up to two), and the market header. */
+  .shop-list{display:flex;flex-direction:column;gap:6px}
+  .shop-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;
+    padding:10px 11px;border-radius:10px;border:1.5px solid var(--line-2);background:var(--panel);
+    cursor:pointer;transition:border-color .12s,box-shadow .12s}
+  .shop-row:hover{border-color:rgba(251,191,36,.4)}
+  .shop-row.picked{border-color:#fbbf24;box-shadow:inset 0 0 0 1px #fbbf24;
+    background:linear-gradient(150deg,rgba(251,191,36,.08),var(--panel))}
+  .shop-row .sh-pos{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.04em;
+    text-transform:uppercase;padding:4px 7px;border-radius:6px;color:#fff;min-width:34px;text-align:center}
+  .shop-row .sh-name-row{display:flex;align-items:center;gap:6px;min-width:0}
+  .shop-row .sh-name{font-family:var(--fp);font-size:15px;font-weight:700;color:var(--ink);line-height:1.1;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .shop-row .sh-sub{font-size:10.5px;color:var(--dim);line-height:1.2}
+  .shop-row .sh-nums{text-align:right;white-space:nowrap}
+  .shop-row .sh-fppg{font-family:var(--fd);font-size:16px;color:var(--ink);line-height:1}
+  .shop-row .sh-money{font-size:9.5px;color:var(--dim);font-family:var(--fn);letter-spacing:.04em}
+  .shop-row .sh-tag{display:none;font-family:var(--fn);font-size:8px;font-weight:800;
+    letter-spacing:.06em;text-transform:uppercase;background:#fbbf24;color:#111827;padding:2px 5px;border-radius:4px;
+    flex-shrink:0}
+  .shop-row.picked .sh-tag{display:inline-block}
+  .shop-row.picked .sh-fppg{color:#fbbf24}
+  .shop-cap{margin-top:10px;font-family:var(--fn);font-size:11.5px;font-weight:700;color:var(--dim);text-align:center}
+  .shop-cap b{color:#fbbf24}
+  .market-out{border-radius:10px;border:1px dashed var(--line-2);background:rgba(239,68,68,.05);
+    padding:9px 12px;margin-bottom:8px;font-size:12.5px;color:var(--dim);line-height:1.4}
+  .market-out b{color:var(--ink)}
+  .market-out .mo-lbl{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--red);margin-right:6px}
+  .tp-delta{font-family:var(--fn);font-size:11px;font-weight:700}
+  .tp-delta .up{color:#22c55e}
+  .tp-delta .dn{color:var(--red)}
+  .tp-from{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--dim-2);margin-bottom:6px}
   /* Live trade preview: the row coming in, and the slot a 2-for-1 leaves open. */
   .rp-row.incoming{background:rgba(34,197,94,.10);border-radius:8px;
     box-shadow:inset 0 0 0 1px rgba(34,197,94,.35);margin:2px 0;padding:8px 8px}
@@ -3141,22 +3176,32 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   </div>
 
   <!-- TRADE WINDOW: Proposal-based trade offers from rival GMs -->
+  <!-- TRADE FINDER: pick who to shop, then the league answers with offers -->
   <div class="screen" id="s-trade">
     <div class="eyebrow" id="tw-eye" style="color:#fbbf24">Trade window</div>
-    <h2 class="display" style="font-size:22px;margin:4px 0 4px" id="tw-title">Proposals</h2>
-    <p class="dim" style="font-size:13px;margin:0 0 6px" id="tw-sub">Accept one, or pass.</p>
-    <details class="roster-panel" id="trade-roster">
-      <summary><span class="rp-eye">Your roster</span>
-        <span class="rp-cap" id="trade-rp-cap"></span>
-        <span class="rp-caret">&#9662;</span></summary>
-      <div class="rp-body" id="trade-rp-body"></div>
-    </details>
-    <div class="trade-proposals" id="tw-list" style="margin-top:10px"></div>
-    <div style="margin-top:6px">
-      <button class="btn" id="b-tw-accept" disabled>Accept trade</button>
+    <h2 class="display" style="font-size:22px;margin:4px 0 4px" id="tw-title">Trade finder</h2>
+    <p class="dim" style="font-size:13px;margin:0 0 8px" id="tw-sub">Pick one or two players to shop.</p>
+
+    <!-- STEP 1: choose the player(s) to put on the block -->
+    <div id="tw-shop">
+      <div class="shop-list" id="tw-shop-list"></div>
+      <div class="shop-cap" id="tw-shop-cap"></div>
+      <div style="margin-top:12px"><button class="btn" id="b-tw-find" disabled>Find offers</button></div>
+      <div style="margin-top:8px"><button class="btn ghost sm" id="b-tw-pass">Pass and keep my roster</button></div>
     </div>
-    <div style="margin-top:8px">
-      <button class="btn ghost sm" id="b-tw-pass">Pass &mdash; keep my roster</button>
+
+    <!-- STEP 2: the market's offers for that package -->
+    <div id="tw-market" style="display:none">
+      <div class="market-out" id="tw-market-out"></div>
+      <details class="roster-panel" id="trade-roster">
+        <summary><span class="rp-eye">Your roster</span>
+          <span class="rp-cap" id="trade-rp-cap"></span>
+          <span class="rp-caret">&#9662;</span></summary>
+        <div class="rp-body" id="trade-rp-body"></div>
+      </details>
+      <div class="trade-proposals" id="tw-list" style="margin-top:10px"></div>
+      <div style="margin-top:6px"><button class="btn" id="b-tw-accept" disabled>Accept trade</button></div>
+      <div style="margin-top:8px"><button class="btn ghost sm" id="b-tw-back">Shop different players</button></div>
     </div>
   </div>
 
@@ -3409,7 +3454,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=36"></script>
-<script src="run.js?v=40"></script>
+<script src="run.js?v=41"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -5584,90 +5629,140 @@ function paintSquadSidebar(){
 }
 
 let tradeResumeStep=null;
-let currentProposals=null;
-let selectedProposal=null;
+let shopSel=[];          // roster indices the GM has put on the block (max 2)
+let currentOffers=[];    // the market's returns for that package
+let selectedOffer=null;
 let revealTimers=[];
 function clearRevealTimers(){ revealTimers.forEach(clearTimeout); revealTimers=[]; }
 
+/* THE TRADE FINDER opens on the shop: your roster, tap up to two players to put on the
+   block. Nothing is offered until you choose who leaves, which is the whole point — you
+   run the team, the league reacts to you. */
 function openTradeWindow(step){
   R.inflateContracts(run);
   run.tradeWindows=(run.tradeWindows||0)+1;
-  currentProposals=R.generateProposals(run,DATA,CTX);
-  selectedProposal=null;
-  const w=run.season.week;
-  $('tw-eye').textContent='Trade window • Week '+w;
-  $('tw-title').textContent=currentProposals.length?'Proposals':'No offers';
-  $('tw-sub').textContent=currentProposals.length
-    ?'Pick a deal, or pass on all of them.'
-    :'No GMs are interested this window.';
   tradeResumeStep=step;
-  paintProposals();
-  paintTradePreview(null);
+  shopSel=[]; currentOffers=[]; selectedOffer=null;
+  $('tw-eye').textContent='Trade window · Week '+run.season.week;
+  $('tw-title').textContent='Trade finder';
+  $('tw-sub').textContent='Put one or two players on the block, then see what the league offers.';
+  $('tw-market').style.display='none';
+  $('tw-shop').style.display='';
+  paintShopList();
+  $('b-tw-find').onclick=enterMarket;
+  $('b-tw-pass').onclick=()=>{ show('s-season'); simTimer=setTimeout(tradeResumeStep,400); };
+  $('b-tw-back').onclick=backToShop;
+  show('s-trade');
+}
+
+function backToShop(){
+  selectedOffer=null;
+  $('tw-market').style.display='none';
+  $('tw-shop').style.display='';
+  $('tw-title').textContent='Trade finder';
+  $('tw-sub').textContent='Put one or two players on the block, then see what the league offers.';
+  paintShopList();
+}
+
+/* The block: every player is a tappable row. Tapping toggles him on; a third tap swaps
+   out the one you picked first, so you never fight a hard cap of two. */
+function paintShopList(){
+  const el=$('tw-shop-list'); el.innerHTML='';
+  const order=run.roster.map((p,i)=>({p,i,slot:run.slotIndex[i]})).sort((a,b)=>a.slot-b.slot);
+  order.forEach(({p,i,slot})=>{
+    const row=document.createElement('div');
+    row.className='shop-row'+(shopSel.includes(i)?' picked':'');
+    row.dataset.i=i;
+    row.innerHTML=
+      '<span class="sh-pos" style="'+posPaint(p.position)+'">'+esc(slotsNow()[slot])+'</span>'+
+      '<div style="min-width:0"><div class="sh-name-row"><span class="sh-name">'+esc(p.name)+'</span>'+
+        '<span class="sh-tag">On block</span></div>'+
+        '<div class="sh-sub">'+tcPlate(p.franchise,p.season)+' '+p.season+' &middot; $'+p.price_musd.toFixed(1)+'M</div></div>'+
+      '<div class="sh-nums"><div class="sh-fppg">'+p.ppr_ppg_mean.toFixed(1)+'</div><div class="sh-money">FPPG</div></div>';
+    row.onclick=()=>toggleShop(i);
+    el.appendChild(row);
+  });
+  updateShopState();
+}
+
+function toggleShop(i){
+  const at=shopSel.indexOf(i);
+  if(at>=0) shopSel.splice(at,1);
+  else { if(shopSel.length>=2) shopSel.shift(); shopSel.push(i); }
+  $('tw-shop-list').querySelectorAll('.shop-row').forEach(r=>r.classList.toggle('picked',shopSel.includes(+r.dataset.i)));
+  updateShopState();
+}
+
+function updateShopState(){
+  const btn=$('b-tw-find');
+  btn.disabled=shopSel.length===0;
+  const names=shopSel.map(i=>lastName(run.roster[i].name)).join(' + ');
+  btn.textContent=shopSel.length?'Find offers for '+names:'Find offers';
+  const capEl=$('tw-shop-cap');
+  if(!shopSel.length){ capEl.innerHTML='The more you put on the block, the better the return.'; return; }
+  const outVal=shopSel.reduce((t,i)=>t+run.roster[i].ppr_ppg_mean,0);
+  const outSal=shopSel.reduce((t,i)=>t+run.roster[i].price_musd,0);
+  capEl.innerHTML='Shopping <b>'+outVal.toFixed(1)+' FPPG</b> and <b>$'+outSal.toFixed(1)+'M</b>'+
+    (shopSel.length===2?' for one player, plus a free agent to fill the open spot.':'.');
+}
+
+/* Ask the league. R.findOffers returns the market for exactly the package you chose. */
+function enterMarket(){
+  if(!shopSel.length) return;
+  currentOffers=R.findOffers(run,DATA,CTX,shopSel.slice());
+  selectedOffer=null;
+  const outNames=shopSel.map(i=>{const p=run.roster[i];
+    return '<b>'+esc(p.name)+'</b> ('+esc(p.position)+', '+p.ppr_ppg_mean.toFixed(1)+')';}).join(' and ');
+  $('tw-market-out').innerHTML='<span class="mo-lbl">You give</span>'+outNames+
+    (shopSel.length===2?'. One player comes back and a free agent fills the other spot.':'.');
+  $('tw-title').textContent='Offers';
+  $('tw-sub').textContent=currentOffers.length?'Tap an offer to preview it, then accept.'
+    :'Nobody is biting on that package.';
+  $('tw-shop').style.display='none';
+  $('tw-market').style.display='';
   const tr=$('trade-roster'); if(tr) tr.open=true;
+  paintOffers();
+  paintTradePreview(null);
   $('b-tw-accept').disabled=true;
   $('b-tw-accept').onclick=()=>{
-    if(selectedProposal===null)return;
-    const prop=currentProposals[selectedProposal];
+    if(selectedOffer===null) return;
+    const prop=currentOffers[selectedOffer];
     R.acceptTrade(run,prop,DATA,CTX);
     drawField($('field2'),false);
     paintSquadSidebar();
     paintRosterPanel('season-rp-body','season-rp-cap');
     toast('Trade accepted');
-    if(prop.type==='2for1'&&run.pendingFreeAgency){
-      openFreeAgency();
-      return;
-    }
-    show('s-season');
-    simTimer=setTimeout(tradeResumeStep,600);
+    if(prop.type==='2for1'&&run.pendingFreeAgency){ openFreeAgency(); return; }
+    show('s-season'); simTimer=setTimeout(tradeResumeStep,600);
   };
-  $('b-tw-pass').onclick=()=>{
-    show('s-season');
-    simTimer=setTimeout(tradeResumeStep,400);
-  };
-  show('s-trade');
 }
 
-/* The archetype tag's accent: green for the deals that help the books or gamble cheap,
-   gold for the win-now/star moves, blue for a change of shape. Purely cosmetic — the
-   engine sets the tag, this only colours it. */
-function tagClass(tag){
-  if(tag==='Cap relief'||tag==='Buy-low flier') return ' good';
-  if(tag==='Position swap'||tag==='Two-for-one') return ' swap';
-  return ' big';
-}
-function paintProposals(){
-  const el=$('tw-list');el.innerHTML='';
-  if(!currentProposals||!currentProposals.length){
-    el.innerHTML='<p class="dim" style="font-size:13px;text-align:center;padding:16px 0">The phone isn\'t ringing.</p>';
+/* The returns, ranked best-first. Each card is the incoming player and the concrete
+   trade-off against what you gave up: production gained or lost, and the cap swing.
+   Numbers, not labels, so you read the deal rather than a canned tag. */
+function paintOffers(){
+  const el=$('tw-list'); el.innerHTML='';
+  if(!currentOffers.length){
+    el.innerHTML='<p class="dim" style="font-size:13px;text-align:center;padding:16px 0">'+
+      'No team is biting on that package. Shop someone else, or pass.</p>';
     $('b-tw-accept').style.display='none';
     return;
   }
   $('b-tw-accept').style.display='';
-  currentProposals.forEach((prop,i)=>{
+  currentOffers.forEach((o,i)=>{
+    const inP=o.inPlayer, vs=o.netVal, cs=o.netCap;
     const card=document.createElement('div');
     card.className='tprop';
-    let html=prop.tag?'<div class="tp-tag'+tagClass(prop.tag)+'">'+esc(prop.tag)+'</div>':'';
-    html+='<div class="tp-pitch">'+esc(prop.pitch)+'</div>';
-    if(prop.type==='1for1'){
-      html+=playerRow('out',prop.outPlayer)+playerRow('in',prop.inPlayer);
-    }else{
-      html+=playerRow('out',prop.outPlayers[0])+playerRow('out',prop.outPlayers[1])+
-        playerRow('in',prop.inPlayer);
-    }
-    const net=prop.netCap;
-    const sign=net>0?'+':'';
-    const cls=net>0?' dn':net<0?' up':'';
-    html+='<div class="tp-cap">Cap impact: <span class="'+cls.trim()+'">'+sign+'$'+Math.abs(net).toFixed(1)+'M</span></div>';
-    card.innerHTML=html;
+    card.innerHTML=
+      '<div class="tp-from">From the '+esc(inP.season+' '+E.nickname(inP.franchise))+'</div>'+
+      playerRow('in',inP)+
+      '<div class="tp-cap">Production <span class="'+(vs>=0?'up':'dn')+'">'+(vs>0?'+':'')+vs.toFixed(1)+'</span>'+
+        '&nbsp;&nbsp;&middot;&nbsp;&nbsp;Cap <span class="'+(cs>0?'dn':'up')+'">'+(cs>0?'+':'')+'$'+Math.abs(cs).toFixed(1)+'M</span></div>';
     card.onclick=()=>{
-      /* Tap again to deselect and drop back to the current roster, so a player can
-         compare a proposed lineup against what they already have. */
-      const reselect=selectedProposal===i;
-      selectedProposal=reselect?null:i;
-      el.querySelectorAll('.tprop').forEach((c,j)=>c.classList.toggle('selected',j===selectedProposal));
-      $('b-tw-accept').disabled=selectedProposal===null;
-      const tr=$('trade-roster'); if(tr) tr.open=true;
-      paintTradePreview(selectedProposal===null?null:currentProposals[selectedProposal]);
+      const re=selectedOffer===i; selectedOffer=re?null:i;
+      el.querySelectorAll('.tprop').forEach((c,j)=>c.classList.toggle('selected',j===selectedOffer));
+      $('b-tw-accept').disabled=selectedOffer===null;
+      paintTradePreview(selectedOffer===null?null:currentOffers[selectedOffer]);
     };
     el.appendChild(card);
   });

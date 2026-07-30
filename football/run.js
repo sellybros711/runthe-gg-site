@@ -879,71 +879,6 @@ function capSign(run, player) {
    Auto-draft a 60-72 rated roster, play game by game with trade windows
    at weeks 4, 8, 12 and 15 where rival GMs offer proposals. */
 
-/* TRADE ARCHETYPES. The roster is six fixed slots and only the flex takes more than
-   one position, so five of six one-for-ones are structurally same-position. What makes
-   a window interesting is not the position but the KIND of deal: a win-now upgrade that
-   costs cap, a value swap that frees it, a buy-low flier, a blockbuster that reshapes
-   the team, or an actual position change at the flex. Each archetype sets its own
-   rating band (as a factor of the outgoing player) and its own salary rule, and each
-   carries a tag the UI shows so the character of the offer reads at a glance.
-
-   salary:
-     'fit'         any incoming that still fits under the cap
-     'cheaper'     at least $3M less than the man leaving — real cap relief
-     'muchCheaper' a salary dump: ~40% off or more
-   cross: true     the flex only — the incoming must be a DIFFERENT position than the
-                   man leaving, so the offense actually changes shape. */
-const TRADE_ARCHES = {
-  upgrade: {
-    tag: 'Win-now upgrade', rLo: 1.05, rHi: 1.65, salary: 'fit',
-    pitches: [
-      'A clear step up at the spot. Costs you, but it wins games.',
-      "Win-now move — he plays above the man you're moving.",
-      'You want better right here? This is the deal.',
-    ],
-  },
-  splash: {
-    // Absolute band, not relative: a blockbuster is a genuine star whatever the man
-    // you send out, so it plugs your worst hole with a difference-maker (cap allowing).
-    tag: 'Blockbuster', abs: [15, 45], salary: 'fit',
-    pitches: [
-      'A real difference-maker. Championship tax applies.',
-      "Everyone's calling about him. Go all in.",
-      'The headliner. He changes what this offense can be.',
-    ],
-  },
-  value: {
-    tag: 'Cap relief', rLo: 0.92, rHi: 1.2, salary: 'cheaper',
-    pitches: [
-      'Same kind of production, lighter on the books.',
-      'Frees up cap for another move this window.',
-      'Smart value — barely a step back, real savings.',
-    ],
-  },
-  buylow: {
-    tag: 'Buy-low flier', rLo: 0.65, rHi: 1.0, salary: 'muchCheaper',
-    pitches: [
-      'Buy low. Cheap now, room to grow.',
-      'A reclamation flier — high ceiling if it clicks.',
-      'Dumps salary and hands you a lottery ticket.',
-    ],
-  },
-  swap: {
-    tag: 'Position swap', rLo: 0.85, rHi: 1.5, salary: 'fit', cross: true,
-    pitches: [
-      'Reshape the flex — a different kind of weapon.',
-      'Change the look of your offense at the flex.',
-      'New position in the flex, new problems for the defense.',
-    ],
-  },
-};
-
-const TWO_FOR_ONE_PITCHES = [
-  'Two of yours for one of ours. Consolidate the talent.',
-  'Package deal — one player better than both you send out.',
-  'Trade two role players, get a difference-maker back.',
-];
-
 function autoDraftTrade(run, data, ctx) {
   let accepted = false;
   for (let attempt = 0; attempt < 500; attempt++) {
@@ -1001,127 +936,107 @@ function inflateContracts(run) {
   }
 }
 
-function generateProposals(run, data, ctx) {
-  const rng = rngFor(run);
-  const gamesPlayed = run.season.wins + run.season.losses;
-  const winRate = gamesPlayed > 0 ? run.season.wins / gamesPlayed : 0.5;
-  /* The record sets the mood: a losing team's rivals are sellers, so their offers run
-     a touch richer (a higher ceiling for the money); a first-place team pays a premium,
-     so its offers run a touch leaner. Kept small on purpose — the deadline should tempt,
-     not hand the season over. */
-  let tier;
-  if (winRate <= 0.25) tier = 'fire_sale';
-  else if (winRate <= 0.50) tier = 'retooling';
-  else if (winRate <= 0.75) tier = 'buyers';
-  else tier = 'contender';
-  const bump = tier === 'fire_sale' ? 0.12 : tier === 'retooling' ? 0.06
-    : tier === 'contender' ? -0.03 : 0;
+/* THE TRADE FINDER. There is no menu of pre-built deals any more. The GM picks the one
+   or two players to shop, and this returns the market for exactly that package: a spread
+   of incoming players the rest of the league would give back, ranked by production, that
+   still fit under the cap. You choose who leaves; the league answers.
 
-  const numProposals = run.season.week === 15 ? 4 : 3;
+   The incoming has to be eligible for a slot the package vacates, so shopping a receiver
+   returns receivers and shopping the flex returns any of RB/WR/TE. A two-for-one returns
+   a single player who fills one vacated slot; the other opens for a free agent, exactly
+   as before. The band is a fair-ish market centered on the value you give up, with a
+   two-for-one paying a consolidation discount (one good player for two lesser ones).
+
+   Offers are drawn from a LOCAL rng seeded by (seed, week, selection), so they are stable
+   for a given package within a window (no reroll-until-jackpot) and never disturb the
+   game's own seeded stream. */
+function offerRng(run, outIdxs) {
+  const key = run.seed + run.season.week * 97
+    + outIdxs.slice().sort((a, b) => a - b).reduce((a, b) => a * 31 + b, 7) * 131;
+  return E.createSeededRNG(key);
+}
+
+function buildOffer(run, slots, outIdxs, inPlayer) {
+  const outPlayers = outIdxs.map((i) => run.roster[i]);
+  const outSalary = outPlayers.reduce((t, p) => t + p.price_musd, 0);
+  const outValue = outPlayers.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+  const netCap = Math.round((inPlayer.price_musd - outSalary) * 100) / 100;
+  const netVal = Math.round((inPlayer.ppr_ppg_mean - outValue) * 10) / 10;
+  if (outIdxs.length === 1) {
+    return { type: '1for1', outIdx: outIdxs[0], outPlayer: outPlayers[0], inPlayer,
+      netCap, netVal };
+  }
+  // Two-for-one: the incoming fills the slot he is eligible for (a dedicated match first,
+  // otherwise a flex), and the other slot opens for a free agent.
+  let fillPos = outIdxs.findIndex((i) => slots[run.slotIndex[i]] === inPlayer.position);
+  if (fillPos === -1) {
+    fillPos = outIdxs.findIndex((i) => E.SLOT_ELIGIBILITY[slots[run.slotIndex[i]]].includes(inPlayer.position));
+  }
+  if (fillPos === -1) return null;
+  const emptyPos = fillPos === 0 ? 1 : 0;
+  const fillIdx = outIdxs[fillPos], emptyIdx = outIdxs[emptyPos];
+  return { type: '2for1', outIdx: [fillIdx, emptyIdx],
+    outPlayers: [run.roster[fillIdx], run.roster[emptyIdx]], inPlayer,
+    emptySlot: run.slotIndex[emptyIdx], netCap, netVal };
+}
+
+function findOffers(run, data, ctx, outIdxs) {
+  if (!outIdxs || !outIdxs.length || outIdxs.length > 2) return [];
+  const rng = offerRng(run, outIdxs);
+  const slots = slotsOf(run);
   const CAP = E.CONSTANTS.CAP_MUSD;
   const currentSalary = run.roster.reduce((t, p) => t + p.price_musd, 0);
-  // Every team-season, not drawable(): a mid-season roster is full, so drawable()
-  // (scoped to open draft slots and remaining budget) returns nothing. Trades pull an
-  // incoming player from the whole league.
   const pool = data.teamSeasons;
-  const slots = slotsOf(run);
-  // Grows as offers are built, so no two proposals in a window offer the same player.
   const excludeIds = run.roster.map((p) => p.player_id);
+  const outPlayers = outIdxs.map((i) => run.roster[i]);
+  const outValue = outPlayers.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+  const outSalary = outPlayers.reduce((t, p) => t + p.price_musd, 0);
+  const twoFor = outIdxs.length === 2;
 
-  function findIncoming(positions, minRating, maxRating, maxSalary) {
-    const candidates = [];
-    for (const ts of pool) {
-      const players = data.playersByTeamSeason[ts.team_season_id] ?? [];
-      for (const p of players) {
-        if (!positions.includes(p.position)) continue;
-        if (excludeIds.includes(p.player_id)) continue;
-        if (p.ppr_ppg_mean < minRating || p.ppr_ppg_mean > maxRating) continue;
-        if (maxSalary != null && p.price_musd > maxSalary) continue;
-        candidates.push(p);
-      }
+  // Which positions can come back: the union of eligibility over the vacated slots.
+  const eligible = new Set();
+  outIdxs.forEach((i) => E.SLOT_ELIGIBILITY[slots[run.slotIndex[i]]].forEach((pos) => eligible.add(pos)));
+
+  // A fair-ish market band around what you give up. A two-for-one consolidates, so the
+  // single return is worth most (not all) of the pair.
+  const lo = twoFor ? outValue * 0.60 : outValue * 0.78;
+  const hi = twoFor ? outValue * 1.00 : outValue * 1.32;
+  // Most the incoming can earn and still fit the cap (a two-for-one keeps $3M for the FA).
+  const headroom = twoFor
+    ? CAP - (currentSalary - outSalary) - 3
+    : CAP - (currentSalary - outSalary);
+
+  const cand = [];
+  for (const ts of pool) {
+    const players = data.playersByTeamSeason[ts.team_season_id] ?? [];
+    for (const p of players) {
+      if (!eligible.has(p.position)) continue;
+      if (excludeIds.includes(p.player_id)) continue;
+      if (p.ppr_ppg_mean < lo || p.ppr_ppg_mean > hi) continue;
+      if (p.price_musd > headroom) continue;
+      cand.push(p);
     }
-    if (!candidates.length) return null;
-    return candidates[Math.floor(rng() * candidates.length)];
   }
+  if (!cand.length) return [];
 
-  function build1for1(targetIdx, arch) {
-    if (targetIdx == null || targetIdx < 0) return null;
-    const target = run.roster[targetIdx];
-    let positions = E.SLOT_ELIGIBILITY[slots[run.slotIndex[targetIdx]]].slice();
-    if (arch.cross) {
-      positions = positions.filter((pos) => pos !== target.position);
-      if (!positions.length) return null; // not a flex slot — nothing to swap to
-    }
-    const minR = arch.abs ? arch.abs[0] : target.ppr_ppg_mean * arch.rLo;
-    const maxR = arch.abs ? arch.abs[1] : target.ppr_ppg_mean * (arch.rHi + bump);
-    const capFit = CAP - currentSalary + target.price_musd; // most the incoming can earn
-    let maxSalary = capFit;
-    if (arch.salary === 'cheaper') maxSalary = Math.min(capFit, target.price_musd - 3);
-    else if (arch.salary === 'muchCheaper') {
-      maxSalary = Math.min(capFit, target.price_musd - 6, target.price_musd * 0.6);
-    }
-    if (maxSalary < 0.5) return null;
-    const incoming = findIncoming(positions, minR, maxR, maxSalary);
-    if (!incoming) return null;
-    excludeIds.push(incoming.player_id);
-    return { type: '1for1', outIdx: targetIdx, outPlayer: target, inPlayer: incoming,
-      netCap: incoming.price_musd - target.price_musd, tag: arch.tag,
-      pitch: arch.pitches[Math.floor(rng() * arch.pitches.length)] };
+  // Spread across the value range so the choice is real: sort by rating, sample one from
+  // each even slice (with jitter), then keep them ranked best-first.
+  cand.sort((a, b) => a.ppr_ppg_mean - b.ppr_ppg_mean);
+  const MAX = 6;
+  const n = Math.min(MAX, cand.length);
+  const seen = new Set();
+  const picks = [];
+  for (let k = 0; k < n; k++) {
+    const start = Math.floor((k / n) * cand.length);
+    const end = Math.floor(((k + 1) / n) * cand.length);
+    const span = Math.max(1, end - start);
+    const p = cand[start + Math.floor(rng() * span)];
+    if (p && !seen.has(p.player_id)) { seen.add(p.player_id); picks.push(p); }
   }
-
-  function build2for1() {
-    const idx1 = byWeak[0];
-    const others = run.roster.map((_, i) => i).filter((i) => i !== idx1);
-    if (!others.length) return null;
-    const idx2 = others[Math.floor(rng() * others.length)];
-    const p1 = run.roster[idx1], p2 = run.roster[idx2];
-    const combined = p1.ppr_ppg_mean + p2.ppr_ppg_mean;
-    const minR = combined * 0.70, maxR = combined * (0.92 + bump);
-    const positions = E.SLOT_ELIGIBILITY[slots[run.slotIndex[idx1]]].slice();
-    // Leave $3M under the cap so the free agent who fills the empty slot is affordable.
-    const maxSalary = CAP - (currentSalary - p1.price_musd - p2.price_musd) - 3;
-    const incoming = findIncoming(positions, minR, maxR, maxSalary);
-    if (!incoming) return null;
-    excludeIds.push(incoming.player_id);
-    return { type: '2for1', outIdx: [idx1, idx2], outPlayers: [p1, p2], inPlayer: incoming,
-      netCap: incoming.price_musd - p1.price_musd - p2.price_musd, emptySlot: run.slotIndex[idx2],
-      tag: 'Two-for-one', pitch: TWO_FOR_ONE_PITCHES[Math.floor(rng() * TWO_FOR_ONE_PITCHES.length)] };
-  }
-
-  const byWeak = run.roster.map((_, i) => i).sort((a, b) => run.roster[a].ppr_ppg_mean - run.roster[b].ppr_ppg_mean);
-  const byRich = run.roster.map((_, i) => i).sort((a, b) => run.roster[b].price_musd - run.roster[a].price_musd);
-  const flexIdx = run.roster.findIndex((_, i) => slots[run.slotIndex[i]] === 'FLEX');
-
-  /* A deliberately diverse deck: upgrade the weak spot, consolidate two into one, free
-     cap off the priciest contract, change the flex's shape, gamble on a buy-low, or make
-     a splash. Shuffled so the same kind of deal never leads every window, then realized
-     in order until the window is full. Any archetype that finds no player is skipped. */
-  const deck = [
-    () => build1for1(byWeak[0], TRADE_ARCHES.upgrade),
-    () => build2for1(),
-    () => build1for1(byRich[0], TRADE_ARCHES.value),
-    () => build1for1(flexIdx, TRADE_ARCHES.swap),
-    () => build1for1(byRich[1] != null ? byRich[1] : byRich[0], TRADE_ARCHES.buylow),
-    () => build1for1(byWeak[1] != null ? byWeak[1] : byWeak[0], TRADE_ARCHES.splash),
-  ];
-  for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    const tmp = deck[i]; deck[i] = deck[j]; deck[j] = tmp;
-  }
-
-  const proposals = [];
-  for (const make of deck) {
-    if (proposals.length >= numProposals) break;
-    const p = make();
-    if (p) proposals.push(p);
-  }
-  // Backfill with plain upgrades on random slots if archetypes came up short.
-  let guard = 0;
-  while (proposals.length < numProposals && guard++ < 25) {
-    const p = build1for1(Math.floor(rng() * run.roster.length), TRADE_ARCHES.upgrade);
-    if (p) proposals.push(p);
-  }
-  return proposals;
+  return picks
+    .map((inPlayer) => buildOffer(run, slots, outIdxs, inPlayer))
+    .filter(Boolean)
+    .sort((a, b) => b.inPlayer.ppr_ppg_mean - a.inPlayer.ppr_ppg_mean);
 }
 
 function generateFreeAgents(run, data, position) {
@@ -1591,7 +1506,7 @@ const api = {
   boardFrom, blockFor, BLOCK, drawable,
   openSlots, openSlotNames, slotForPlayer, TUNING,
   inflateCap, capCut, capSpin, capSign,
-  autoDraftTrade, isTradeWindow, inflateContracts, generateProposals,
+  autoDraftTrade, isTradeWindow, inflateContracts, findOffers,
   generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating,
 };
 
