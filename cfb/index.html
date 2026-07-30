@@ -95,6 +95,17 @@
   /* "College" sits between Perfect and Season, in gold, so the wordmark itself
      reads PERFECT COLLEGE SEASON — white, gold, green. */
   .brand .clg{color:var(--gold);font-style:normal}
+  /* The three-word wordmark is longer than the old two; on phones it has to give
+     ground to the pill beside it or "Season" clips. Shrink the type (and the
+     pill a touch) as the screen narrows so all three words always fit. */
+  @media(max-width:480px){
+    .brand{font-size:14px;letter-spacing:.02em}
+    .pill{font-size:10px;padding:5px 9px;letter-spacing:.08em}
+  }
+  @media(max-width:380px){
+    .brand{font-size:12px;letter-spacing:.01em}
+    .mark{width:26px;height:23px;margin-right:7px}
+  }
   .hdr-r{display:flex;align-items:center;gap:8px;min-width:0;margin-left:auto}
   .pill{display:inline-flex;align-items:center;padding:5px 10px;border-radius:99px;
     font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.12em;
