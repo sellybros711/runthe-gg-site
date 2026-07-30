@@ -92,14 +92,9 @@
   .brand{flex:0 1 auto;min-width:0;font-family:var(--fd);font-size:16px;letter-spacing:.06em;
     text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .brand i{color:var(--green)}
-  /* The gold tag marking this as the collegiate cut of the game. Kept short so the
-     wordmark beside it never has to truncate; the hero carries the full "College
-     Edition". Steps out of the way only on the very narrowest screens. */
-  .edition{flex:0 0 auto;margin-left:8px;font-family:var(--fn);font-size:8.5px;font-weight:800;
-    letter-spacing:.12em;text-transform:uppercase;color:#0a1508;background:var(--grad-gold);
-    padding:3px 6px 2px;border-radius:5px;white-space:nowrap;
-    box-shadow:0 1px 3px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.4)}
-  @media(max-width:339px){.edition{display:none}}
+  /* "College" sits between Perfect and Season, in gold, so the wordmark itself
+     reads PERFECT COLLEGE SEASON — white, gold, green. */
+  .brand .clg{color:var(--gold);font-style:normal}
   .hdr-r{display:flex;align-items:center;gap:8px;min-width:0;margin-left:auto}
   .pill{display:inline-flex;align-items:center;padding:5px 10px;border-radius:99px;
     font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.12em;
@@ -108,15 +103,19 @@
   .pill:hover{border-color:rgba(255,255,255,.22)}
   .pill i{color:var(--green)}
 
-  /* ── hero/intro ─────────────────────────────────────────────── */
+  /* ── hero/intro ─────────────────────────────────────────────────
+     The title is sized to sit inside the 600px column, not overrun it: at 70px
+     "The Perfect Season" is wider than the wrap and used to spill off the right
+     edge, which pushed the eyebrow off with it. Capped so it fits on one line,
+     and allowed to wrap rather than overflow if a font ever renders wider. */
   .hero{text-align:center;margin-bottom:16px}
-  .hero h1{font-family:var(--fd);font-size:min(11vw,70px);line-height:.9;
-    letter-spacing:.005em;text-transform:uppercase;white-space:nowrap}
+  .hero h1{font-family:var(--fd);font-size:clamp(30px,8.6vw,56px);line-height:.92;
+    letter-spacing:.01em;text-transform:uppercase;overflow-wrap:break-word}
   .hero .sub{font-family:var(--fn);font-size:11px;font-weight:700;
-    letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin:0 0 6px}
+    letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin:0 0 6px;
+    overflow:hidden;text-overflow:ellipsis}
   .hero p{color:var(--dim);font-size:14px;line-height:1.45;margin:14px 0 0;max-width:420px;
     margin-left:auto;margin-right:auto}
-  @media(max-width:420px){.hero h1{font-size:36px}}
 
   /* ── reels ──────────────────────────────────────────────────── */
   .reels{display:grid;grid-template-columns:106px 1fr;gap:9px;margin-top:11px}
@@ -998,8 +997,7 @@ or endorsed by the NCAA, the CFP or any school.
   <header>
     <a class="lockup" id="b-home" href="." aria-label="College Football Perfect Season, back to the start">
       <img class="mark" src="mark.png?v=2" alt="" width="30" height="27" decoding="async">
-      <span class="brand">Perfect<i> Season</i></span>
-      <span class="edition">College</span>
+      <span class="brand">Perfect <em class="clg">College</em><i> Season</i></span>
     </a>
     <div class="hdr-r">
       <a class="pill site" href="https://runthe.gg">RunThe<i>.GG</i></a>
