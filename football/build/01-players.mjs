@@ -254,26 +254,67 @@ async function main() {
   const bio = await loadBio();
 
   // Eligibility: enough games for the weekly variance estimate to mean anything.
-  const eligible = raw
-    .filter((p) => p.weeks.length >= MIN_GAMES)
-    .map((p) => {
-      const code = Object.entries(p.teams).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-      // Normalize immediately: the raw code is not a reliable key (see lib.mjs).
-      const franchise = code ? franchiseId(code) : null;
-      return {
-        player_id: p.player_id,
-        name: p.name,
-        season: p.season,
-        franchise,
-        team_season_id: franchise ? `${franchise}-${p.season}` : null,
-        position: p.position,
-        games_played: p.weeks.length,
-        ppr_ppg_mean: mean(p.weeks),
-        ppr_ppg_sd: stdev(p.weeks),
-        tot: p.tot,
-        multi_team: Object.keys(p.teams).length > 1,
-      };
-    });
+  const shape = (p) => {
+    const code = Object.entries(p.teams).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    // Normalize immediately: the raw code is not a reliable key (see lib.mjs).
+    const franchise = code ? franchiseId(code) : null;
+    return {
+      player_id: p.player_id,
+      name: p.name,
+      season: p.season,
+      franchise,
+      team_season_id: franchise ? `${franchise}-${p.season}` : null,
+      position: p.position,
+      games_played: p.weeks.length,
+      ppr_ppg_mean: mean(p.weeks),
+      ppr_ppg_sd: stdev(p.weeks),
+      tot: p.tot,
+      multi_team: Object.keys(p.teams).length > 1,
+    };
+  };
+  const eligible = raw.filter((p) => p.weeks.length >= MIN_GAMES).map(shape);
+
+  /* EVERY TEAM-SEASON HAS TO BE ABLE TO FIELD A QUARTERBACK, and a tight end.
+     MIN_GAMES is there so a weekly spread means something, and it is right for almost
+     everyone -- but ten team-seasons came out of it with no quarterback at all, because the
+     club used two or three across the year and none of them reached eight games. The 2014
+     Titans split Locker, Mettenberger and Whitehurst; the 2016 Bears split Cutler, Hoyer and
+     Barkley. Three team-seasons came out with no tight end the same way.
+
+     That matters because the wheel can land on any team-season and QB and TE are DEDICATED
+     slots: those seasons could never fill them, and a board with no quarterback on it reads
+     as a broken game rather than as history. So the club's primary man at the missing
+     position -- most games, then most production -- is admitted even though he is short of
+     the threshold. His weekly spread is a noisier estimate than everyone else's, and that is
+     the honest cost of the seat existing at all. Nothing hides it: games_played ships as it
+     always did, and the player sheet already prints it, so a seven-game season says so.
+
+     Measured cost of admitting the thirteen: no existing player's points or spread move at
+     all, and pricing shifts by at most $0.20M on a $3M-$48M scale (median one rounding step),
+     because the season baseline and the vor anchors are quantiles that barely feel thirteen
+     rows. The pool's total value moves 0.35%. */
+  const DEDICATED_SLOTS = ['QB', 'TE'];
+  const covered = new Set(eligible.map((p) => `${p.team_season_id}|${p.position}`));
+  const spares = raw.filter((p) => p.weeks.length < MIN_GAMES).map(shape)
+    .filter((p) => p.team_season_id && DEDICATED_SLOTS.includes(p.position));
+  const rescued = new Map();
+  for (const p of spares) {
+    const key = `${p.team_season_id}|${p.position}`;
+    if (covered.has(key)) continue;
+    const cur = rescued.get(key);
+    const better = !cur || p.games_played > cur.games_played
+      || (p.games_played === cur.games_played && p.ppr_ppg_mean > cur.ppr_ppg_mean);
+    if (better) rescued.set(key, p);
+  }
+  for (const p of rescued.values()) eligible.push(p);
+  if (rescued.size) {
+    process.stderr.write(`admitted ${rescued.size} primary starters below ${MIN_GAMES} games so no `
+      + `team-season lacks a dedicated position:\n`);
+    for (const p of rescued.values()) {
+      process.stderr.write(`  ${p.team_season_id} ${p.position} ${p.name} `
+        + `(${p.games_played} games, ${p.ppr_ppg_mean.toFixed(1)} ppg)\n`);
+    }
+  }
 
   // Baseline per season, pooled across positions, in absolute PPG.
   const baseline = new Map();
