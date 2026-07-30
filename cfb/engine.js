@@ -382,6 +382,20 @@ function washColors(color, altColor) {
   return { bg, accent };
 }
 
+// The wheel wants the team's real colors, not paint-on-grass. Boost dull colors
+// up to a saturation floor (already-vivid ones keep their own), and set a lightness
+// that stays dark enough for the white landed text while reading as the true hue.
+function wheelColor(hex, minS, targetL) {
+  const [h, s] = hexToHsl(hex);
+  return hslToHex(h, Math.min(100, Math.max(s, minS)), targetL);
+}
+
+function wheelColors(color, altColor) {
+  const bg = wheelColor(color || '#334155', 55, 26);
+  const accent = wheelColor(altColor || color || '#94a3b8', 70, 55);
+  return { bg, accent };
+}
+
 function teamColors(team) {
   return {
     color: team.color || '#333333',
@@ -623,7 +637,7 @@ function coachReport(roster, chemResult) {
 
 // ─── slots ──────────────────────────────────────────────────────────────────
 
-const SLOTS = ['QB', 'RB', 'WR', 'TE', 'FLEX'];
+const SLOTS = ['QB', 'RB', 'WR', 'WR', 'TE', 'FLEX'];
 const SLOT_ELIGIBILITY = {
   QB: ['QB'], RB: ['RB'], WR: ['WR'], TE: ['TE'], FLEX: ['RB', 'WR', 'TE'],
 };
@@ -1075,7 +1089,7 @@ const publicAPI = {
   seedFromRecord,
   respinCost, respinFees,
   scoringScript, scoreParts, SCORE_KINDS,
-  contrast, teamColors, washColors, teamButton, teamInk,
+  contrast, teamColors, washColors, wheelColors, teamButton, teamInk,
   LINK_TIERS, linkTier,
   rosterStructure, STRUCTURE, coachReport,
   selectBowl, BOWL_ARCHETYPES, GENERIC_BOWL_NAMES,
