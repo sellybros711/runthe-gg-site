@@ -4181,15 +4181,14 @@ function modeMenu(){
           : '<button class="btn ghost sm" id="b-mc-era">Pick a decade</button>')+
       '</div>'+
       (function(){
-        var tradeAllow=['runnyj','malikwillislover'];
-        var canTrade=!locked&&authState.name&&tradeAllow.indexOf(authState.name.toLowerCase())>=0;
-        return '<div class="modecard mc-trade'+(canTrade?'':' mc-soon')+'">'+
+        var ct=canPlayTrade();
+        return '<div class="modecard mc-trade'+(ct?'':' mc-soon')+'">'+
           '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
             '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>'+
             '<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'+
-            '</svg></div><div class="mc-title">The Trade Machine'+(canTrade?'':' <span class="mc-soon-tag">Coming Soon</span>')+'</div></div>'+
+            '</svg></div><div class="mc-title">The Trade Machine'+(ct?'':' <span class="mc-soon-tag">Coming Soon</span>')+'</div></div>'+
           '<p>You\'re handed a roster mid-season. Make trades at four windows to build a contender.</p>'+
-          (canTrade
+          (ct
             ? '<button class="btn ghost sm" id="b-mc-trade">Start as GM</button>'
             : '<button class="btn ghost sm" disabled>Coming Soon</button>')+
         '</div>';
