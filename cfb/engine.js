@@ -93,7 +93,14 @@ function scoreParts(total, rng) {
   if (left === 0) return [];
   const comps = compositionsFor(left);
   if (!comps.length) return [{ points: 7, kind: 'TOUCHDOWN' }];
-  const c = comps[Math.floor(rng() * comps.length)];
+  // A real game is touchdowns and field goals, the odd missed PAT or two-point
+  // try, and safeties almost never. Picking a composition uniformly buried the
+  // realistic ones under a pile of all-safety decompositions, so a box score
+  // read as ten safeties. Weight the draw the way points are actually scored.
+  const weight = (c) => Math.pow(1.95, c[0]) * Math.pow(0.05, c[3]) * Math.pow(0.4, c[2]) * Math.pow(0.5, c[4]);
+  let totalW = 0; for (const cc of comps) totalW += weight(cc);
+  let pick = rng() * totalW, c = comps[comps.length - 1];
+  for (const cc of comps) { pick -= weight(cc); if (pick <= 0) { c = cc; break; } }
   const out = [];
   for (let i = 0; i < c[0]; i++) out.push({ points: 7, kind: 'TOUCHDOWN' });
   for (let i = 0; i < c[1]; i++) out.push({ points: 3, kind: 'FIELD GOAL' });
