@@ -923,8 +923,14 @@ window.GA_ID='G-L29P5MRWKE';
     padding:10px 12px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
   .tprop:hover{border-color:rgba(251,191,36,.45)}
   .tprop.selected{border-color:#fbbf24;box-shadow:0 0 0 1px #fbbf24}
-  .tp-pitch{font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.06em;
-    text-transform:uppercase;color:#fbbf24;margin-bottom:6px}
+  .tp-tag{display:inline-block;font-family:var(--fn);font-size:9px;font-weight:800;
+    letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:5px;margin-bottom:7px;
+    background:rgba(251,191,36,.16);color:#fbbf24}
+  .tp-tag.good{background:rgba(34,197,94,.16);color:#22c55e}
+  .tp-tag.swap{background:rgba(96,165,250,.16);color:#60a5fa}
+  .tp-tag.big{background:rgba(251,191,36,.16);color:#fbbf24}
+  .tp-pitch{font-family:var(--fb);font-size:12.5px;font-weight:500;line-height:1.35;
+    color:var(--dim);margin-bottom:8px;font-style:italic}
   .tp-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
   .tp-dir{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.06em;
     text-transform:uppercase;width:28px;flex-shrink:0}
@@ -3373,7 +3379,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=36"></script>
-<script src="run.js?v=38"></script>
+<script src="run.js?v=39"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -5509,6 +5515,14 @@ function openTradeWindow(step){
   show('s-trade');
 }
 
+/* The archetype tag's accent: green for the deals that help the books or gamble cheap,
+   gold for the win-now/star moves, blue for a change of shape. Purely cosmetic — the
+   engine sets the tag, this only colours it. */
+function tagClass(tag){
+  if(tag==='Cap relief'||tag==='Buy-low flier') return ' good';
+  if(tag==='Position swap'||tag==='Two-for-one') return ' swap';
+  return ' big';
+}
 function paintProposals(){
   const el=$('tw-list');el.innerHTML='';
   if(!currentProposals||!currentProposals.length){
@@ -5520,7 +5534,8 @@ function paintProposals(){
   currentProposals.forEach((prop,i)=>{
     const card=document.createElement('div');
     card.className='tprop';
-    let html='<div class="tp-pitch">'+esc(prop.pitch)+'</div>';
+    let html=prop.tag?'<div class="tp-tag'+tagClass(prop.tag)+'">'+esc(prop.tag)+'</div>':'';
+    html+='<div class="tp-pitch">'+esc(prop.pitch)+'</div>';
     if(prop.type==='1for1'){
       html+=playerRow('out',prop.outPlayer)+playerRow('in',prop.inPlayer);
     }else{
