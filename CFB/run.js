@@ -11,6 +11,7 @@
  */
 
 'use strict';
+(function(){
 
 const E = (typeof require !== 'undefined')
   ? require('./engine.js')
@@ -710,3 +711,4 @@ const api = {
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 if (typeof window !== 'undefined') window.PS_CFB_RUN = api;
+})();

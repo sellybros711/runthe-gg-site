@@ -14,6 +14,7 @@
  */
 
 'use strict';
+(function(){
 
 const ENGINE_API_VERSION = 1;
 
@@ -86,24 +87,93 @@ function compositionsFor(n) {
   return results.length ? results : [[0, 0, 0, 0, 0]];
 }
 
-function scoreParts(n, rng) {
-  const comps = compositionsFor(n);
+function scoreParts(total, rng) {
+  let left = Math.max(0, Math.round(total));
+  if (left === 1) left = 2;
+  if (left === 0) return [];
+  const comps = compositionsFor(left);
+  if (!comps.length) return [{ points: 7, kind: 'TOUCHDOWN' }];
   const c = comps[Math.floor(rng() * comps.length)];
-  return { td: c[0], fg: c[1], missed: c[2], safety: c[3], twoPt: c[4] };
+  const out = [];
+  for (let i = 0; i < c[0]; i++) out.push({ points: 7, kind: 'TOUCHDOWN' });
+  for (let i = 0; i < c[1]; i++) out.push({ points: 3, kind: 'FIELD GOAL' });
+  for (let i = 0; i < c[2]; i++) out.push({ points: 6, kind: 'TOUCHDOWN', note: 'missed PAT' });
+  for (let i = 0; i < c[3]; i++) out.push({ points: 2, kind: 'SAFETY' });
+  for (let i = 0; i < c[4]; i++) out.push({ points: 8, kind: 'TOUCHDOWN', note: 'two-point conversion' });
+  return out;
 }
 
-function scoringScript(youScore, oppScore, won, rng) {
-  const you = scoreParts(youScore, rng);
-  const them = scoreParts(oppScore, rng);
-  const lines = [];
-  const half1You = Math.floor(youScore * (0.4 + rng() * 0.2));
-  const half1Them = Math.floor(oppScore * (0.4 + rng() * 0.2));
-  lines.push(`Halftime: ${won ? half1You : half1Them}-${won ? half1Them : half1You}`);
-  if (Math.abs(youScore - oppScore) <= 7) {
-    const plays = ['a late touchdown drive', 'a clutch field goal', 'a fourth-quarter stand'];
-    lines.push(`Decided by ${plays[Math.floor(rng() * plays.length)]}.`);
+function scoringScript(you, them, won, rng) {
+  const QUARTERS = 4, QSEC = 15 * 60, GAME = QUARTERS * QSEC;
+  const yParts = scoreParts(you, rng).map((k) => ({ ...k, team: 'you' }));
+  const tParts = scoreParts(them, rng).map((k) => ({ ...k, team: 'them' }));
+  if (!yParts.length && !tParts.length) return [];
+
+  const margin = you - them;
+  const winner = margin >= 0 ? 'you' : 'them';
+  let clincher = null;
+  if (margin !== 0 && Math.abs(margin) <= 8) {
+    clincher = (winner === 'you' ? yParts : tParts).pop();
   }
-  return { you, them, lines };
+
+  const y = yParts.slice(), t = tParts.slice(), order = [];
+  while (y.length || t.length) {
+    const a = order.length;
+    const twoSame = a >= 2 && order[a - 1].team === order[a - 2].team ? order[a - 1].team : null;
+    let takeYou;
+    if (!t.length) takeYou = true;
+    else if (!y.length) takeYou = false;
+    else if (twoSame === 'you') takeYou = false;
+    else if (twoSame === 'them') takeYou = true;
+    else takeYou = y.length >= t.length;
+    order.push((takeYou ? y : t).shift());
+  }
+  if (clincher) order.push(clincher);
+
+  const n = order.length;
+  const el = [];
+  for (let i = 0; i < n; i++) {
+    if (clincher && i === n - 1) { el.push(GAME - (25 + Math.floor(rng() * (5 * 60)))); continue; }
+    const lo = (i / n) * GAME, span = GAME / n;
+    el.push(lo + span * (0.15 + rng() * 0.7));
+  }
+
+  const quarterOf = (t0) => Math.min(QUARTERS - 1, Math.floor(t0 / QSEC));
+  const badLateFG = () => {
+    const idx = order.map((e, i) => i).sort((a, b) => el[a] - el[b]);
+    let ry = 0, rt = 0;
+    for (const i of idx) {
+      const e = order[i];
+      const behind = e.team === 'you' ? rt - ry : ry - rt;
+      if (e.kind === 'FIELD GOAL' && quarterOf(el[i]) === QUARTERS - 1 && behind > 3) return i;
+      if (e.team === 'you') ry += e.points; else rt += e.points;
+    }
+    return -1;
+  };
+  for (let guard = 0; guard < n + 4; guard++) {
+    const bad = badLateFG();
+    if (bad < 0) break;
+    el[bad] = Math.floor(rng() * (3 * QSEC));
+  }
+
+  const idx = order.map((e, i) => i).sort((a, b) => el[a] - el[b]);
+  const secs = idx.map((i) => Math.max(1, Math.min(GAME - 1, Math.floor(el[i]))));
+  for (let i = 1; i < secs.length; i++) if (secs[i] <= secs[i - 1]) secs[i] = Math.min(GAME - 1, secs[i - 1] + 1);
+
+  let ry = 0, rt = 0;
+  return idx.map((i, k) => {
+    const e = order[i];
+    const t0 = secs[k];
+    const q = quarterOf(t0);
+    const sec = Math.max(1, Math.min(QSEC - 1, QSEC - (t0 - q * QSEC)));
+    if (e.team === 'you') ry += e.points; else rt += e.points;
+    return {
+      q: q + 1, sec,
+      clock: Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'),
+      team: e.team, kind: e.kind, note: e.note || null, points: e.points,
+      you: ry, them: rt,
+    };
+  });
 }
 
 // ─── playoff / bowl structure ───────────────────────────────────────────────
@@ -1018,3 +1088,4 @@ const publicAPI = {
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
 if (typeof window !== 'undefined') window.PS_CFB_ENGINE = publicAPI;
+})();
