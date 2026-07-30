@@ -986,33 +986,60 @@ window.GA_ID='G-L29P5MRWKE';
   .th-detail .th-in{color:#22c55e}
 
   /* ---- Trade Machine: team reveal + GM scouting report ---- */
-  @keyframes rvpop{0%{opacity:0;transform:translateY(10px) scale(.96)}
-    60%{transform:translateY(-2px) scale(1.01)}100%{opacity:1;transform:none}}
+  @keyframes rvpop{0%{opacity:0;transform:translateY(14px) scale(.9)}
+    55%{transform:translateY(-3px) scale(1.03)}100%{opacity:1;transform:none}}
   @keyframes rvfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  /* The card's colour flashes up as it lands, then settles — the little hit per player. */
+  @keyframes rvflash{0%{box-shadow:0 0 0 0 var(--rvglow),0 0 22px 2px var(--rvglow)}
+    100%{box-shadow:0 0 0 0 transparent,0 0 0 0 transparent}}
+  @keyframes rvgradeIn{0%{opacity:0;transform:scale(.4) rotate(-12deg)}
+    55%{transform:scale(1.18) rotate(4deg)}100%{opacity:1;transform:none}}
   #s-reveal .rv-head{display:flex;align-items:center;gap:14px;margin:2px 0 12px}
-  .rv-grade{flex-shrink:0;width:78px;height:78px;border-radius:16px;display:grid;
-    place-content:center;text-align:center;border:2px solid var(--line-2);
-    background:linear-gradient(160deg,rgba(251,191,36,.12),rgba(19,26,43,.4))}
-  .rv-grade .g{font-family:var(--fd);font-size:38px;font-weight:700;line-height:.9;color:#fbbf24}
+  .rv-grade{flex-shrink:0;width:82px;height:82px;border-radius:16px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    text-align:center;border:2px solid var(--line-2);
+    background:linear-gradient(160deg,rgba(251,191,36,.12),rgba(19,26,43,.4));
+    transition:border-color .3s}
+  .rv-grade .g{font-family:var(--fd);font-size:42px;font-weight:700;line-height:1;color:#fbbf24}
   .rv-grade .l{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--dim);margin-top:3px}
-  .rv-head .rv-verdict{font-family:var(--fb);font-size:14px;line-height:1.4;color:var(--ink)}
+    text-transform:uppercase;color:var(--dim)}
+  .rv-grade.mystery{border-color:var(--line-2)}
+  .rv-grade.mystery .g{color:var(--dim-2)}
+  .rv-grade.graded{border-color:rgba(251,191,36,.55)}
+  .rv-grade.graded .g{animation:rvgradeIn .55s cubic-bezier(.2,.7,.3,1)}
+  .rv-head .rv-verdict{font-family:var(--fb);font-size:13.5px;line-height:1.45;color:var(--ink)}
   .rv-head .rv-verdict b{color:#fbbf24}
   .rv-roster{display:flex;flex-direction:column;gap:6px;margin-top:10px}
   .rv-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;
     align-items:center;padding:9px 11px;border-radius:10px;border:1.5px solid var(--line-2);
-    background:var(--panel);opacity:0;animation:rvpop .42s cubic-bezier(.2,.7,.3,1) forwards}
+    background:var(--panel);--rvglow:rgba(96,165,250,.4)}
+  .rv-card.in{animation:rvpop .5s cubic-bezier(.2,.7,.3,1) both, rvflash .9s ease-out .12s both}
   .rv-card .rv-pos{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.04em;
     text-transform:uppercase;padding:4px 7px;border-radius:6px;color:#fff;min-width:34px;text-align:center}
   .rv-card .rv-name{font-family:var(--fp);font-size:16px;font-weight:700;color:var(--ink);
     line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .rv-card .rv-team{font-size:11px;color:var(--dim);line-height:1.2;display:flex;align-items:center;gap:5px}
+  .rv-card .rv-nm-row{display:flex;align-items:center;gap:6px;min-width:0}
+  .rv-card .rv-team{font-size:11px;color:var(--dim);line-height:1.25;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .rv-card .rv-nums{text-align:right;white-space:nowrap}
-  .rv-card .rv-fppg{font-family:var(--fd);font-size:18px;color:var(--ink);line-height:1}
+  .rv-card .rv-fppg{font-family:var(--fd);font-size:19px;color:var(--ink);line-height:1}
   .rv-card .rv-money{font-size:10.5px;color:var(--dim)}
+  .rv-award{font-family:var(--fn);font-size:8.5px;font-weight:800;letter-spacing:.04em;
+    text-transform:uppercase;padding:2px 5px;border-radius:4px;background:rgba(251,191,36,.18);
+    color:#fbbf24;flex-shrink:0}
+  /* The best player on the board gets the star treatment as he lands. */
+  .rv-card.top{border-color:rgba(251,191,36,.55);--rvglow:rgba(251,191,36,.5);
+    background:linear-gradient(150deg,rgba(251,191,36,.08),var(--panel))}
+  .rv-card.top .rv-fppg{color:#fbbf24}
+  .rv-star{font-family:var(--fn);font-size:8.5px;font-weight:800;letter-spacing:.05em;
+    text-transform:uppercase;padding:2px 5px;border-radius:4px;background:#fbbf24;color:#111827;flex-shrink:0}
+  .rv-skip{display:block;margin:12px auto 0;color:var(--dim);font-size:12px;
+    text-decoration:underline;text-underline-offset:3px}
+  #field-rv .chip.rv-hidden{opacity:0}
+  .rv-payoff{margin-top:6px}
+  .rv-payoff #s-reveal .rv-head,.rv-payoff .rv-head{margin-top:8px}
   .gm-report{margin-top:14px;border-radius:12px;border:1.5px solid var(--line-2);
-    background:linear-gradient(180deg,rgba(251,191,36,.05),transparent);padding:13px 14px;
-    opacity:0;animation:rvfade .5s ease forwards}
+    background:linear-gradient(180deg,rgba(251,191,36,.05),transparent);padding:13px 14px}
   .gm-report .gm-eye{font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.1em;
     text-transform:uppercase;color:#fbbf24;margin-bottom:9px;display:flex;align-items:center;gap:7px}
   .gm-report .gm-eye::before{content:"";width:16px;height:2px;background:#fbbf24;border-radius:2px}
@@ -3035,17 +3062,20 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
   <!-- TRADE MACHINE: the team reveal + GM scouting report before kickoff -->
   <div class="screen" id="s-reveal">
-    <div class="eyebrow" style="color:#fbbf24">You're the GM &mdash; Week 1</div>
+    <div class="eyebrow" id="rv-eye" style="color:#fbbf24">Trade Machine: Week 1</div>
     <h2 class="display" style="font-size:26px;margin:4px 0 4px" id="rv-title">Your inherited roster</h2>
-    <p class="dim" style="font-size:13px;margin:0 0 10px" id="rv-sub">Six players. One season. Trade your way to a title.</p>
-    <div class="rv-head">
-      <div class="rv-grade"><div class="g" id="rv-grade-g">C</div><div class="l">Team grade</div></div>
-      <div class="rv-verdict" id="rv-verdict"></div>
-    </div>
+    <p class="dim" style="font-size:13px;margin:0 0 10px" id="rv-sub">Meet the six players you've been handed.</p>
     <div class="field" id="field-rv" style="aspect-ratio:1/0.62"></div>
     <div class="rv-roster" id="rv-roster"></div>
-    <div class="gm-report" id="rv-report" style="display:none"></div>
-    <div style="margin-top:16px"><button class="btn blue" id="b-rv-start">Start the season</button></div>
+    <button class="btn-text rv-skip" id="rv-skip" style="display:none">Reveal the whole roster</button>
+    <div class="rv-payoff" id="rv-payoff" style="display:none">
+      <div class="rv-head">
+        <div class="rv-grade mystery" id="rv-grade"><div class="g" id="rv-grade-g">?</div><div class="l">Team grade</div></div>
+        <div class="rv-verdict" id="rv-verdict"></div>
+      </div>
+      <div class="gm-report" id="rv-report"></div>
+    </div>
+    <div id="rv-start-wrap" style="margin-top:16px;display:none"><button class="btn blue" id="b-rv-start">Start the season</button></div>
   </div>
 
   <div class="screen" id="s-season">
@@ -5347,53 +5377,105 @@ function beginTradeMachine(){
   openTeamReveal();
 }
 
-/* THE REVEAL. The roster is auto-drafted and the schedule is already set, so before a
-   single game is played the GM meets the team: the six spots pop onto the field, the
-   cards cascade in one at a time, and only then does the scouting report — grade,
-   strength, soft spot, chemistry, cap — land as the coach's verdict. It is the one
-   beat in the mode where you are handed something rather than choosing it, so it is
-   worth a moment before the season starts moving. */
+/* A number that counts up to a one-decimal value, so a player's rating lands rather
+   than just appears. Snaps straight to the value when motion is reduced. */
+function countToFixed(el,to,ms){
+  if(!el) return;
+  if(HERO_REDUCE||ms<=0){ el.textContent=to.toFixed(1); return; }
+  const t0=performance.now();
+  const tick=(now)=>{
+    const k=Math.min(1,(now-t0)/ms), e=1-Math.pow(1-k,3);
+    el.textContent=(to*e).toFixed(1);
+    if(k<1) requestAnimationFrame(tick); else el.textContent=to.toFixed(1);
+  };
+  requestAnimationFrame(tick);
+}
+
+/* The inside of one reveal card. Carries the player's team, season and stat line so the
+   card actually says something ("threw for 4,557") rather than a bare number, plus his
+   top award or a TOP flag on the best man. */
+function rvCardHTML(p,slot,isTop){
+  const aw=topAward(p);
+  const chip=aw?'<span class="rv-award">'+esc(aw)+'</span>'
+    :(isTop?'<span class="rv-star">Top</span>':'');
+  const sub=tcPlate(p.franchise,p.season)+' '+esc(E.nickname(p.franchise))+' '+p.season
+    +(p.stat_line?' &middot; '+esc(p.stat_line):'');
+  return '<span class="rv-pos" style="'+posPaint(p.position)+'">'+esc(slotsNow()[slot])+'</span>'+
+    '<div style="min-width:0"><div class="rv-nm-row"><span class="rv-name">'+esc(p.name)+'</span>'+chip+'</div>'+
+      '<div class="rv-team">'+sub+'</div></div>'+
+    '<div class="rv-nums"><div class="rv-fppg">0.0</div>'+
+      '<div class="rv-money">$'+p.price_musd.toFixed(1)+'M</div></div>';
+}
+
+/* THE REVEAL, ONE PLAYER AT A TIME. The roster is auto-drafted and the schedule is
+   already set, so before a game is played the GM meets the team the slow way: each
+   card drops in on its own beat with its rating counting up and its field chip popping
+   in beside it, so nobody is flooded with six players at once. Only after the last man
+   lands does the mystery grade flip over and the scouting report slide in as the payoff.
+   The whole build can be skipped, and reduced-motion gets it all at once. */
 function openTeamReveal(){
-  drawField($('field-rv'),false);
   const rep=gmScoutingReport(run);
-  /* Grade and verdict are held back until the cards have all landed, so the reveal
-     reads players-first, verdict-second, the way a scout would deliver it. */
-  $('rv-grade-g').textContent='…';
+  const grade=$('rv-grade'), gEl=$('rv-grade-g');
+  grade.classList.add('mystery'); grade.classList.remove('graded');
+  gEl.textContent='?';
   $('rv-verdict').innerHTML='';
-  $('rv-report').style.display='none';
+  $('rv-payoff').style.display='none';
+  $('rv-start-wrap').style.display='none';
+
+  drawField($('field-rv'),false);
+  const chipBySlot={};
+  [...$('field-rv').querySelectorAll('.chip')].forEach((c)=>{
+    chipBySlot[+c.dataset.i]=c; c.classList.remove('pop'); c.classList.add('rv-hidden');
+  });
 
   const order=run.roster.map((p,i)=>({p,i,slot:run.slotIndex[i]})).sort((a,b)=>a.slot-b.slot);
+  const topId=run.roster.reduce((a,b)=>b.ppr_ppg_mean>a.ppr_ppg_mean?b:a).player_id;
   const el=$('rv-roster'); el.innerHTML='';
-  const STAGGER=0.12;
-  order.forEach(({p,i,slot},n)=>{
-    const card=document.createElement('div');
-    card.className='rv-card';
-    card.style.animationDelay=(n*STAGGER)+'s';
-    card.dataset.i=i;
-    card.innerHTML=
-      '<span class="rv-pos" style="'+posPaint(p.position)+'">'+esc(slotsNow()[slot])+'</span>'+
-      '<div style="min-width:0"><div class="rv-name">'+esc(p.name)+'</div>'+
-        '<div class="rv-team">'+tcPlate(p.franchise,p.season)+' '+esc(E.nickname(p.franchise))+' '+p.season+'</div></div>'+
-      '<div class="rv-nums"><div class="rv-fppg">'+p.ppr_ppg_mean.toFixed(1)+'</div>'+
-        '<div class="rv-money">$'+p.price_musd.toFixed(1)+'M</div></div>';
-    el.appendChild(card);
-  });
   el.onclick=(e)=>{const c=e.target.closest('.rv-card');if(!c)return;
     const p=run.roster[+c.dataset.i];if(p)sheet(p);};
 
-  const revealMs=order.length*STAGGER*1000+360;
-  clearTimeout(revealTimer);
-  revealTimer=setTimeout(()=>{
-    $('rv-grade-g').textContent=rep.grade;
-    const gb=document.querySelector('#s-reveal .rv-grade');
-    if(gb){gb.style.animation='none';void gb.offsetWidth;gb.style.animation='rvpop .45s cubic-bezier(.2,.7,.3,1)';}
-    $('rv-verdict').innerHTML=rep.verdict;
-    const r=$('rv-report');
-    r.innerHTML=rep.html; r.style.display='';
-    r.style.animation='none';void r.offsetWidth;r.style.animation='rvfade .5s ease';
-  },revealMs);
+  const showPlayer=(o)=>{
+    const isTop=o.p.player_id===topId;
+    const card=document.createElement('div');
+    card.className='rv-card in'+(isTop?' top':'');
+    card.dataset.i=o.i;
+    card.innerHTML=rvCardHTML(o.p,o.slot,isTop);
+    el.appendChild(card);
+    countToFixed(card.querySelector('.rv-fppg'),o.p.ppr_ppg_mean,520);
+    const chip=chipBySlot[o.slot];
+    if(chip){ chip.classList.remove('rv-hidden','pop'); void chip.offsetWidth; chip.classList.add('pop'); }
+  };
 
-  $('b-rv-start').onclick=()=>{ clearTimeout(revealTimer); startTradeSeason(); };
+  let done=false;
+  const finish=()=>{
+    if(done) return; done=true;
+    $('rv-skip').style.display='none';
+    const pay=$('rv-payoff'); pay.style.display='';
+    pay.style.animation='none'; void pay.offsetWidth; pay.style.animation='rvfade .45s ease';
+    grade.classList.remove('mystery'); grade.classList.add('graded');
+    gEl.textContent=rep.grade;
+    $('rv-verdict').innerHTML=rep.verdict;
+    $('rv-report').innerHTML=rep.html;
+    const sw=$('rv-start-wrap'); sw.style.display='';
+    if(!HERO_REDUCE) afterPaint(()=>pay.scrollIntoView({block:'nearest',behavior:'smooth'}));
+  };
+
+  clearRevealTimers();
+  if(HERO_REDUCE){
+    order.forEach(showPlayer); finish();
+  }else{
+    $('rv-skip').style.display=''; $('rv-skip').textContent='Reveal the whole roster';
+    $('rv-skip').onclick=()=>{
+      clearRevealTimers();
+      for(let n=el.querySelectorAll('.rv-card').length;n<order.length;n++) showPlayer(order[n]);
+      finish();
+    };
+    const INT=660;
+    order.forEach((o,n)=>revealTimers.push(setTimeout(()=>showPlayer(o),n*INT)));
+    revealTimers.push(setTimeout(finish,order.length*INT+340));
+  }
+
+  $('b-rv-start').onclick=()=>{ clearRevealTimers(); startTradeSeason(); };
   show('s-reveal');
 }
 
@@ -5413,33 +5495,48 @@ function startTradeSeason(){
 /* The GM's take on the inherited roster: a grade off the starting rating, the best
    piece, the soft spot, where the chemistry sits, and how much cap is free. All
    presentation off numbers the engine already decided. */
+/* The GM's take, built off THIS roster rather than a template: it names the quarterback
+   and his production, the top skill weapon, the shape it grades out to, and the mandate.
+   No em dashes. The four report lines carry the structured details (best man and any
+   hardware, the first spot to fix, chemistry, and cap room). */
 function gmScoutingReport(run){
-  const roster=run.roster;
+  const roster=run.roster.slice();
   const rating=run.startRating;
   const chem=run.season.chemistry;
   const room=E.CONSTANTS.CAP_MUSD-run.startSalary;
-  let grade,tier,tail;
-  if(rating>=70){grade='B';tier='a genuine contender core';tail='The bones are here — a sharp deadline could push you into the hunt.';}
-  else if(rating>=68){grade='B-';tier='a playoff-caliber base';tail='Close to real. A move or two and this team plays in January.';}
-  else if(rating>=66){grade='C+';tier='a solid middle-of-the-pack roster';tail='It can hang around .500. The windows are how you climb higher.';}
-  else if(rating>=64){grade='C';tier='a middling roster with clear holes';tail='It won’t win as-is — the trade windows are how you fix it.';}
-  else if(rating>=62){grade='C-';tier='a team that needs work';tail='Plenty to fix. Every window matters.';}
-  else{grade='D+';tier='a full rebuild';tail='Bare cupboard. You’ll have to build this one deal by deal.';}
+  const qb=roster.find((p)=>p.position==='QB');
   const best=roster.reduce((a,b)=>b.ppr_ppg_mean>a.ppr_ppg_mean?b:a);
   const worst=roster.reduce((a,b)=>b.ppr_ppg_mean<a.ppr_ppg_mean?b:a);
-  const verdict='You inherit <b>'+tier+'</b>. '+tail;
+  const skill=roster.filter((p)=>p.position!=='QB');
+  const bestSkill=skill.length?skill.reduce((a,b)=>b.ppr_ppg_mean>a.ppr_ppg_mean?b:a):null;
+
+  let grade,shape;
+  if(rating>=70){grade='B';shape='a genuine contender core';}
+  else if(rating>=68){grade='B-';shape='a playoff-caliber base';}
+  else if(rating>=66){grade='C+';shape='a solid, middle-of-the-pack roster';}
+  else if(rating>=64){grade='C';shape='a middling roster with clear holes';}
+  else if(rating>=62){grade='C-';shape='a roster with a lot of work to do';}
+  else{grade='D+';shape='close to a full rebuild';}
+
+  const parts=[];
+  if(qb) parts.push('<b>'+esc(qb.name)+'</b> runs the offense at '+qb.ppr_ppg_mean.toFixed(1)+' a game');
+  if(bestSkill&&bestSkill!==qb) parts.push('with <b>'+esc(bestSkill.name)+'</b> ('+esc(bestSkill.position)+') the top weapon at '+bestSkill.ppr_ppg_mean.toFixed(1));
+  const lead=parts.length?parts.join(', ')+'. ':'';
+  const verdict=lead+'It grades out as '+shape+'. You get four trade windows to make your moves.';
+
   const lines=[];
-  lines.push({cls:'good',k:'Strength',v:'<b>'+esc(best.name)+'</b> ('+esc(best.position)+') is your best piece at '+best.ppr_ppg_mean.toFixed(1)+' FPPG.'});
-  lines.push({cls:'bad',k:'Soft spot',v:'<b>'+esc(worst.name)+'</b> ('+esc(worst.position)+') is the weak link at '+worst.ppr_ppg_mean.toFixed(1)+' FPPG — a prime spot to upgrade.'});
+  const aw=topAward(best);
+  lines.push({cls:'good',k:'Best',v:'<b>'+esc(best.name)+'</b> ('+esc(best.position)+') at '+best.ppr_ppg_mean.toFixed(1)+' FPPG'+(aw?', '+esc(aw):'')+'.'});
+  lines.push({cls:'bad',k:'Weak spot',v:'<b>'+esc(worst.name)+'</b> ('+esc(worst.position)+') at '+worst.ppr_ppg_mean.toFixed(1)+' FPPG. The first spot to upgrade.'});
   const cp=chem-1;
-  if(cp>0.005) lines.push({cls:'good',k:'Chemistry',v:'The group already clicks: <b>+'+(cp*100).toFixed(1)+'%</b>. Trades break up links, so weigh every deal.'});
-  else if(cp<-0.005) lines.push({cls:'bad',k:'Chemistry',v:'Little history together: <b>'+(cp*100).toFixed(1)+'%</b>. The right add can build it.'});
-  else lines.push({cls:'',k:'Chemistry',v:'Strangers so far — roughly <b>neutral</b> chemistry. Deals can only help.'});
-  lines.push({cls:'',k:'Cap room',v:'<b>$'+room.toFixed(1)+'M</b> of $'+E.CONSTANTS.CAP_MUSD+'M free to work the phones. Contracts inflate 6% each window.'});
+  if(cp>0.005) lines.push({cls:'good',k:'Chemistry',v:'They already click, worth <b>+'+(cp*100).toFixed(1)+'%</b>. Trades break links, so weigh every deal.'});
+  else if(cp<-0.005) lines.push({cls:'bad',k:'Chemistry',v:'Little history together, <b>'+(cp*100).toFixed(1)+'%</b>. The right addition builds it.'});
+  else lines.push({cls:'',k:'Chemistry',v:'No history together yet, roughly <b>neutral</b>. Deals can only help.'});
+  lines.push({cls:'',k:'Cap',v:'<b>$'+room.toFixed(1)+'M</b> of $'+E.CONSTANTS.CAP_MUSD+'M free. Contracts rise 6% each window.'});
   const html='<div class="gm-eye">GM scouting report</div>'+
     lines.map(l=>'<div class="gm-line'+(l.cls?' '+l.cls:'')+'">'+
       '<span class="gk">'+l.k+'</span><span class="gv">'+l.v+'</span></div>').join('');
-  return {grade,tier,verdict,html};
+  return {grade,shape,verdict,html};
 }
 
 /* One roster, painted into any panel (the season screen, the trade window). Rows sit in
@@ -5489,7 +5586,8 @@ function paintSquadSidebar(){
 let tradeResumeStep=null;
 let currentProposals=null;
 let selectedProposal=null;
-let revealTimer=null;
+let revealTimers=[];
+function clearRevealTimers(){ revealTimers.forEach(clearTimeout); revealTimers=[]; }
 
 function openTradeWindow(step){
   R.inflateContracts(run);
