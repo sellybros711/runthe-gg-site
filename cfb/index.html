@@ -1043,7 +1043,8 @@
     .wrap:has(#s-seed.on),
     .wrap:has(#s-over.on){max-width:860px}
     /* Field, lineup pips and the wheel: one centred column, wider than before. */
-    .dcol:first-child,.dcol:last-child .reels{max-width:680px;margin-left:auto;margin-right:auto}
+    .dcol:first-child,.dcol:last-child .reels,
+    .dcol:last-child #d-respin{max-width:680px;margin-left:auto;margin-right:auto}
     .dcol:last-child .reels{margin-top:14px}
     /* The options use the full width below, as many columns as fit. */
     .opts{grid-template-columns:repeat(auto-fill,minmax(228px,1fr))}
@@ -1211,9 +1212,9 @@ or endorsed by the NCAA, the CFP or any school.
             <div class="reel-strip" id="reel-t"></div>
           </div>
         </div>
+        <div id="d-respin"></div>
         <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
         <div class="opts" id="opts"></div>
-        <div id="d-respin"></div>
       </div>
     </div>
   </div>
