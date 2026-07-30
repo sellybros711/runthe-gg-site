@@ -16,6 +16,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Big+Shoulders+Display:wght@600;700&family=Archivo:wght@500;600;700;800&family=Barlow+Condensed:wght@700;800&family=Graduate&family=Orbitron:wght@700;900&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
 <style>
   *,*:before,*:after{box-sizing:border-box;margin:0;padding:0}
+  /* Stop iOS Safari inflating text past the sizes set here, which was blowing the
+     wordmark wider than the header and clipping "Season". */
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   :root{
     --bg:#080b14;--panel:#131a2b;--panel-2:#1a2337;
     --line:rgba(255,255,255,.10);--line-2:rgba(255,255,255,.18);
@@ -90,8 +93,11 @@
   .mark{flex:0 0 auto;width:30px;height:27px;margin-right:9px}
   .lockup{display:flex;align-items:center;text-decoration:none;color:inherit;
     flex:0 1 auto;min-width:0;border-radius:10px}
-  .brand{flex:0 1 auto;min-width:0;font-family:var(--fd);font-size:clamp(11px,3.4vw,16px);
-    letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Sized to fit on one line on any phone, and — the belt-and-braces guarantee —
+     allowed to WRAP rather than clip if a wide fallback font or an enlarged view
+     ever pushes it past the header. "Season" can never be cut off again. */
+  .brand{flex:0 1 auto;min-width:0;font-family:var(--fd);font-size:clamp(10px,3vw,15px);
+    letter-spacing:.02em;text-transform:uppercase;line-height:1.02}
   .brand i{color:var(--green)}
   /* "College" sits between Perfect and Season, in gold, so the wordmark itself
      reads PERFECT COLLEGE SEASON — white, gold, green. */
@@ -142,13 +148,18 @@
      the house green and gold. Everything past kickoff keeps the CFB palette. */
   body.themed:has(#s-intro.on),
   body.themed:has(#s-draft.on){
-    --green:var(--th-a);--green-2:var(--th-a2);
+    /* --green and --gold are used as TEXT (the wordmark, eyebrows, pills), so they
+       take the lifted, readable ink; the gradients that sit BEHIND white text keep
+       the team's true, deeper colours. That stops dark navies and maroons turning
+       the banner text invisible on the dark header. */
+    --green:var(--th-ink-a);--green-2:var(--th-ink-a);
     --grad-green:linear-gradient(135deg,var(--th-a),var(--th-a2));
-    --gold:var(--th-b);--gold-2:var(--th-b2);
+    --gold:var(--th-ink-b);--gold-2:var(--th-ink-b);
     --grad-gold:linear-gradient(135deg,var(--th-b),var(--th-b2));
     background-image:radial-gradient(1000px 600px at 50% -8%,var(--th-glowa),transparent 70%),
                      radial-gradient(800px 500px at 100% 100%,var(--th-glowb),transparent 70%);
   }
+  body.themed:has(#s-intro.on) .hero .sub{background:var(--th-glowb);border-color:var(--th-edgeb)}
 
   /* ── school picker (sheet) ──────────────────────────────────────── */
   .schoolacc{margin-top:4px}
@@ -183,9 +194,12 @@
   .hero{text-align:center;margin-bottom:16px}
   .hero h1{font-family:var(--fd);font-size:clamp(30px,8.6vw,56px);line-height:.92;
     letter-spacing:.01em;text-transform:uppercase;overflow-wrap:break-word}
-  .hero .sub{font-family:var(--fn);font-size:11px;font-weight:700;
-    letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin:0 0 6px;
-    overflow:hidden;text-overflow:ellipsis}
+  /* "College Edition" sits on its own little pill so it reads as a badge, not
+     loose text — a faint tint of the accent colour with a matching hairline. */
+  .hero .sub{display:inline-block;font-family:var(--fn);font-size:11px;font-weight:700;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin:0 0 10px;
+    padding:5px 15px 4px;border-radius:99px;background:rgba(245,158,11,.13);
+    border:1px solid rgba(245,158,11,.34);max-width:100%;overflow:hidden;text-overflow:ellipsis}
   .hero p{color:var(--dim);font-size:14px;line-height:1.45;margin:14px 0 0;max-width:420px;
     margin-left:auto;margin-right:auto}
 
@@ -1695,11 +1709,15 @@ function shade(hex,pct){ const [r,g,b]=_hx(hex);
   return '#'+h(f(r))+h(f(g))+h(f(b)); }
 const hexA=(hex,a)=>{const [r,g,b]=_hx(hex);return 'rgba('+r+','+g+','+b+','+a+')';};
 const lumOf=(hex)=>{const [r,g,b]=_hx(hex);return (0.299*r+0.587*g+0.114*b)/255;};
+/* A version of a team colour light enough to read as TEXT on the near-black
+   header — dark navies, maroons and blacks get lifted until they stand out. */
+const textSafe=(hex)=>{ let c=hex; for(let i=0;i<12 && lumOf(c)<0.5;i++) c=shade(c,0.15); return c; };
 
 let selectedSchool=null;
 function applyTheme(t){
   const root=document.documentElement, body=document.body;
-  if(!t){ ['--th-a','--th-a2','--th-b','--th-b2','--th-glowa','--th-glowb','--pfp','--pfp-ink']
+  if(!t){ ['--th-a','--th-a2','--th-b','--th-b2','--th-ink-a','--th-ink-b',
+      '--th-glowa','--th-glowb','--th-edgeb','--pfp','--pfp-ink']
       .forEach(v=>root.style.removeProperty(v));
     body.classList.remove('themed'); selectedSchool=null;
     try{localStorage.removeItem('cfb_school');}catch(e){} updateAvatar(); return; }
@@ -1710,8 +1728,12 @@ function applyTheme(t){
   root.style.setProperty('--th-a2',shade(a,-0.3));
   root.style.setProperty('--th-b',b);
   root.style.setProperty('--th-b2',shade(b,0.22));
+  // Text uses lifted, readable versions; backgrounds keep the true colours.
+  root.style.setProperty('--th-ink-a',textSafe(a));
+  root.style.setProperty('--th-ink-b',textSafe(b));
   root.style.setProperty('--th-glowa',hexA(a,0.14));
-  root.style.setProperty('--th-glowb',hexA(b,0.10));
+  root.style.setProperty('--th-glowb',hexA(b,0.13));
+  root.style.setProperty('--th-edgeb',hexA(textSafe(b),0.38));
   root.style.setProperty('--pfp','linear-gradient(135deg,'+a+','+shade(a,-0.32)+')');
   root.style.setProperty('--pfp-ink',lumOf(a)>0.62?'#111':'#fff');
   body.classList.add('themed');
