@@ -979,6 +979,71 @@ window.GA_ID='G-L29P5MRWKE';
   .th-detail .th-out{color:var(--red)}
   .th-detail .th-in{color:#22c55e}
 
+  /* ---- Trade Machine: team reveal + GM scouting report ---- */
+  @keyframes rvpop{0%{opacity:0;transform:translateY(10px) scale(.96)}
+    60%{transform:translateY(-2px) scale(1.01)}100%{opacity:1;transform:none}}
+  @keyframes rvfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  #s-reveal .rv-head{display:flex;align-items:center;gap:14px;margin:2px 0 12px}
+  .rv-grade{flex-shrink:0;width:78px;height:78px;border-radius:16px;display:grid;
+    place-content:center;text-align:center;border:2px solid var(--line-2);
+    background:linear-gradient(160deg,rgba(251,191,36,.12),rgba(19,26,43,.4))}
+  .rv-grade .g{font-family:var(--fd);font-size:38px;font-weight:700;line-height:.9;color:#fbbf24}
+  .rv-grade .l{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim);margin-top:3px}
+  .rv-head .rv-verdict{font-family:var(--fb);font-size:14px;line-height:1.4;color:var(--ink)}
+  .rv-head .rv-verdict b{color:#fbbf24}
+  .rv-roster{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+  .rv-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;
+    align-items:center;padding:9px 11px;border-radius:10px;border:1.5px solid var(--line-2);
+    background:var(--panel);opacity:0;animation:rvpop .42s cubic-bezier(.2,.7,.3,1) forwards}
+  .rv-card .rv-pos{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.04em;
+    text-transform:uppercase;padding:4px 7px;border-radius:6px;color:#fff;min-width:34px;text-align:center}
+  .rv-card .rv-name{font-family:var(--fp);font-size:16px;font-weight:700;color:var(--ink);
+    line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rv-card .rv-team{font-size:11px;color:var(--dim);line-height:1.2;display:flex;align-items:center;gap:5px}
+  .rv-card .rv-nums{text-align:right;white-space:nowrap}
+  .rv-card .rv-fppg{font-family:var(--fd);font-size:18px;color:var(--ink);line-height:1}
+  .rv-card .rv-money{font-size:10.5px;color:var(--dim)}
+  .gm-report{margin-top:14px;border-radius:12px;border:1.5px solid var(--line-2);
+    background:linear-gradient(180deg,rgba(251,191,36,.05),transparent);padding:13px 14px;
+    opacity:0;animation:rvfade .5s ease forwards}
+  .gm-report .gm-eye{font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:#fbbf24;margin-bottom:9px;display:flex;align-items:center;gap:7px}
+  .gm-report .gm-eye::before{content:"";width:16px;height:2px;background:#fbbf24;border-radius:2px}
+  .gm-line{display:flex;gap:9px;align-items:baseline;padding:5px 0;font-size:13px;line-height:1.4}
+  .gm-line+.gm-line{border-top:1px solid rgba(148,163,184,.12)}
+  .gm-line .gk{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--dim-2);width:64px;flex-shrink:0;padding-top:2px}
+  .gm-line .gv{color:var(--ink);flex:1}
+  .gm-line .gv b{color:var(--ink)}
+  .gm-line.good .gk{color:#22c55e}
+  .gm-line.bad .gk{color:var(--red)}
+
+  /* Roster panel shown during the sim and while weighing trades. */
+  .roster-panel{border-radius:12px;border:1.5px solid var(--line-2);background:var(--panel);
+    overflow:hidden;margin-top:12px}
+  .roster-panel>summary{list-style:none;cursor:pointer;padding:10px 13px;display:flex;
+    align-items:center;gap:8px;user-select:none}
+  .roster-panel>summary::-webkit-details-marker{display:none}
+  .roster-panel>summary .rp-eye{font-family:var(--fn);font-size:11px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
+  .roster-panel>summary .rp-cap{margin-left:auto;font-family:var(--fn);font-size:11px;font-weight:700}
+  .roster-panel>summary .rp-cap .rp-spent{color:#fbbf24}
+  .roster-panel>summary .rp-cap .rp-room{color:var(--dim);margin-left:5px}
+  .roster-panel>summary .rp-caret{transition:transform .18s;color:var(--dim-2);font-size:11px}
+  .roster-panel[open]>summary .rp-caret{transform:rotate(180deg)}
+  .roster-panel .rp-body{padding:0 10px 10px}
+  .rp-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;
+    padding:8px 4px;cursor:pointer}
+  .rp-row+.rp-row{border-top:1px solid rgba(148,163,184,.12)}
+  .rp-row .rp-pos{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.04em;
+    text-transform:uppercase;padding:3px 6px;border-radius:5px;color:#fff;min-width:32px;text-align:center}
+  .rp-row .rp-name{font-family:var(--fp);font-size:14px;font-weight:700;color:var(--ink);line-height:1.1;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rp-row .rp-sub{font-size:10.5px;color:var(--dim);line-height:1.2}
+  .rp-row .rp-fppg{font-family:var(--fd);font-size:15px;color:var(--ink);text-align:right;white-space:nowrap}
+  .rp-row .rp-fppg span{font-size:9.5px;color:var(--dim);display:block;font-family:var(--fn)}
+
   .squad-split{display:block}
   .squad-right{display:none}
   body.trade-mode .squad-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
@@ -2951,6 +3016,21 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div style="margin-top:15px"><button class="btn blue" id="b-play">Play the season</button></div>
   </div>
 
+  <!-- TRADE MACHINE: the team reveal + GM scouting report before kickoff -->
+  <div class="screen" id="s-reveal">
+    <div class="eyebrow" style="color:#fbbf24">You're the GM &mdash; Week 1</div>
+    <h2 class="display" style="font-size:26px;margin:4px 0 4px" id="rv-title">Your inherited roster</h2>
+    <p class="dim" style="font-size:13px;margin:0 0 10px" id="rv-sub">Six players. One season. Trade your way to a title.</p>
+    <div class="rv-head">
+      <div class="rv-grade"><div class="g" id="rv-grade-g">C</div><div class="l">Team grade</div></div>
+      <div class="rv-verdict" id="rv-verdict"></div>
+    </div>
+    <div class="field" id="field-rv" style="aspect-ratio:1/0.62"></div>
+    <div class="rv-roster" id="rv-roster"></div>
+    <div class="gm-report" id="rv-report" style="display:none"></div>
+    <div style="margin-top:16px"><button class="btn blue" id="b-rv-start">Start the season</button></div>
+  </div>
+
   <div class="screen" id="s-season">
     <div class="gamecard">
       <!-- The same score bug the playoff screen uses, so a week and a round are the
@@ -2979,6 +3059,13 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
     </div>
     <div style="margin-top:12px"><button class="btn blue" id="b-sim">Skip to the end</button></div>
+    <!-- Trade Machine: your roster, on hand all season. Hidden in other modes. -->
+    <details class="roster-panel" id="season-roster" style="display:none">
+      <summary><span class="rp-eye">Your roster</span>
+        <span class="rp-cap" id="season-rp-cap"></span>
+        <span class="rp-caret">&#9662;</span></summary>
+      <div class="rp-body" id="season-rp-body"></div>
+    </details>
     <!-- The whole season laid out in order, weeks first, playoff rounds after. -->
     <div class="caleye"><span>The season</span><b id="v-calrec">0-0</b></div>
     <div class="cal" id="v-list"></div>
@@ -3011,7 +3098,13 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="eyebrow" id="tw-eye" style="color:#fbbf24">Trade window</div>
     <h2 class="display" style="font-size:22px;margin:4px 0 4px" id="tw-title">Proposals</h2>
     <p class="dim" style="font-size:13px;margin:0 0 6px" id="tw-sub">Accept one, or pass.</p>
-    <div class="trade-proposals" id="tw-list"></div>
+    <details class="roster-panel" id="trade-roster">
+      <summary><span class="rp-eye">Your roster</span>
+        <span class="rp-cap" id="trade-rp-cap"></span>
+        <span class="rp-caret">&#9662;</span></summary>
+      <div class="rp-body" id="trade-rp-body"></div>
+    </details>
+    <div class="trade-proposals" id="tw-list" style="margin-top:10px"></div>
     <div style="margin-top:6px">
       <button class="btn" id="b-tw-accept" disabled>Accept trade</button>
     </div>
@@ -4047,14 +4140,8 @@ function beginDraft(opts){
     if(!canPlayTrade()) return;
     R.autoDraftTrade(run,DATA,CTX);
     R.startSeason(run,DATA,CTX);
-    drawField($('field2'),false);
-    paintSquadSidebar();
     $('b-sim').style.display='none';
-    ga('season_started',{mode:'trade'});
-    paintNext(); paintUpcomingBug(); paintCalendar();
-    $('v-you').textContent='0'; $('v-them').textContent='0';
-    $('v-byou').classList.add('lead'); $('v-bthem').classList.add('lead');
-    show('s-season'); runSim();
+    openTeamReveal();
     return;
   }
   show('s-draft'); nextSpin();
@@ -5044,6 +5131,7 @@ function paintCapTracker(inf){
 }
 function startSeason(){
   ga('season_started',{mode:runMode(),club:run&&run.franchise||null});
+  const sp=$('season-roster'); if(sp) sp.style.display='none';
   paintNext(); paintUpcomingBug(); paintCalendar();
   $('v-you').textContent='0'; $('v-them').textContent='0';
   $('v-byou').classList.add('lead'); $('v-bthem').classList.add('lead');
@@ -5224,14 +5312,127 @@ function beginTradeMachine(){
   ga('game_started',{mode:'trade'});
   R.autoDraftTrade(run,DATA,CTX);
   R.startSeason(run,DATA,CTX);
+  $('b-sim').style.display='none';
+  openTeamReveal();
+}
+
+/* THE REVEAL. The roster is auto-drafted and the schedule is already set, so before a
+   single game is played the GM meets the team: the six spots pop onto the field, the
+   cards cascade in one at a time, and only then does the scouting report — grade,
+   strength, soft spot, chemistry, cap — land as the coach's verdict. It is the one
+   beat in the mode where you are handed something rather than choosing it, so it is
+   worth a moment before the season starts moving. */
+function openTeamReveal(){
+  drawField($('field-rv'),false);
+  const rep=gmScoutingReport(run);
+  /* Grade and verdict are held back until the cards have all landed, so the reveal
+     reads players-first, verdict-second, the way a scout would deliver it. */
+  $('rv-grade-g').textContent='…';
+  $('rv-verdict').innerHTML='';
+  $('rv-report').style.display='none';
+
+  const order=run.roster.map((p,i)=>({p,i,slot:run.slotIndex[i]})).sort((a,b)=>a.slot-b.slot);
+  const el=$('rv-roster'); el.innerHTML='';
+  const STAGGER=0.12;
+  order.forEach(({p,i,slot},n)=>{
+    const card=document.createElement('div');
+    card.className='rv-card';
+    card.style.animationDelay=(n*STAGGER)+'s';
+    card.dataset.i=i;
+    card.innerHTML=
+      '<span class="rv-pos" style="'+posPaint(p.position)+'">'+esc(E.SLOTS[slot])+'</span>'+
+      '<div style="min-width:0"><div class="rv-name">'+esc(p.name)+'</div>'+
+        '<div class="rv-team">'+tcPlate(p.franchise,p.season)+' '+esc(E.nickname(p.franchise))+' '+p.season+'</div></div>'+
+      '<div class="rv-nums"><div class="rv-fppg">'+p.ppr_ppg_mean.toFixed(1)+'</div>'+
+        '<div class="rv-money">$'+p.price_musd.toFixed(1)+'M</div></div>';
+    el.appendChild(card);
+  });
+  el.onclick=(e)=>{const c=e.target.closest('.rv-card');if(!c)return;
+    const p=run.roster[+c.dataset.i];if(p)sheet(p);};
+
+  const revealMs=order.length*STAGGER*1000+360;
+  clearTimeout(revealTimer);
+  revealTimer=setTimeout(()=>{
+    $('rv-grade-g').textContent=rep.grade;
+    const gb=document.querySelector('#s-reveal .rv-grade');
+    if(gb){gb.style.animation='none';void gb.offsetWidth;gb.style.animation='rvpop .45s cubic-bezier(.2,.7,.3,1)';}
+    $('rv-verdict').innerHTML=rep.verdict;
+    const r=$('rv-report');
+    r.innerHTML=rep.html; r.style.display='';
+    r.style.animation='none';void r.offsetWidth;r.style.animation='rvfade .5s ease';
+  },revealMs);
+
+  $('b-rv-start').onclick=()=>{ clearTimeout(revealTimer); startTradeSeason(); };
+  show('s-reveal');
+}
+
+/* Shared by the reveal's Start button: paint the season screen and begin the sim. */
+function startTradeSeason(){
   drawField($('field2'),false);
   paintSquadSidebar();
-  $('b-sim').style.display='none';
+  const sp=$('season-roster'); if(sp) sp.style.display='';
+  paintRosterPanel('season-rp-body','season-rp-cap');
   ga('season_started',{mode:'trade'});
   paintNext(); paintUpcomingBug(); paintCalendar();
   $('v-you').textContent='0'; $('v-them').textContent='0';
   $('v-byou').classList.add('lead'); $('v-bthem').classList.add('lead');
   show('s-season'); runSim();
+}
+
+/* The GM's take on the inherited roster: a grade off the starting rating, the best
+   piece, the soft spot, where the chemistry sits, and how much cap is free. All
+   presentation off numbers the engine already decided. */
+function gmScoutingReport(run){
+  const roster=run.roster;
+  const rating=run.startRating;
+  const chem=run.season.chemistry;
+  const room=E.CONSTANTS.CAP_MUSD-run.startSalary;
+  let grade,tier,tail;
+  if(rating>=70){grade='B';tier='a genuine contender core';tail='The bones are here — a sharp deadline could push you into the hunt.';}
+  else if(rating>=68){grade='B-';tier='a playoff-caliber base';tail='Close to real. A move or two and this team plays in January.';}
+  else if(rating>=66){grade='C+';tier='a solid middle-of-the-pack roster';tail='It can hang around .500. The windows are how you climb higher.';}
+  else if(rating>=64){grade='C';tier='a middling roster with clear holes';tail='It won’t win as-is — the trade windows are how you fix it.';}
+  else if(rating>=62){grade='C-';tier='a team that needs work';tail='Plenty to fix. Every window matters.';}
+  else{grade='D+';tier='a full rebuild';tail='Bare cupboard. You’ll have to build this one deal by deal.';}
+  const best=roster.reduce((a,b)=>b.ppr_ppg_mean>a.ppr_ppg_mean?b:a);
+  const worst=roster.reduce((a,b)=>b.ppr_ppg_mean<a.ppr_ppg_mean?b:a);
+  const verdict='You inherit <b>'+tier+'</b>. '+tail;
+  const lines=[];
+  lines.push({cls:'good',k:'Strength',v:'<b>'+esc(best.name)+'</b> ('+esc(best.position)+') is your best piece at '+best.ppr_ppg_mean.toFixed(1)+' FPPG.'});
+  lines.push({cls:'bad',k:'Soft spot',v:'<b>'+esc(worst.name)+'</b> ('+esc(worst.position)+') is the weak link at '+worst.ppr_ppg_mean.toFixed(1)+' FPPG — a prime spot to upgrade.'});
+  const cp=chem-1;
+  if(cp>0.005) lines.push({cls:'good',k:'Chemistry',v:'The group already clicks: <b>+'+(cp*100).toFixed(1)+'%</b>. Trades break up links, so weigh every deal.'});
+  else if(cp<-0.005) lines.push({cls:'bad',k:'Chemistry',v:'Little history together: <b>'+(cp*100).toFixed(1)+'%</b>. The right add can build it.'});
+  else lines.push({cls:'',k:'Chemistry',v:'Strangers so far — roughly <b>neutral</b> chemistry. Deals can only help.'});
+  lines.push({cls:'',k:'Cap room',v:'<b>$'+room.toFixed(1)+'M</b> of $'+E.CONSTANTS.CAP_MUSD+'M free to work the phones. Contracts inflate 6% each window.'});
+  const html='<div class="gm-eye">GM scouting report</div>'+
+    lines.map(l=>'<div class="gm-line'+(l.cls?' '+l.cls:'')+'">'+
+      '<span class="gk">'+l.k+'</span><span class="gv">'+l.v+'</span></div>').join('');
+  return {grade,tier,verdict,html};
+}
+
+/* One roster, painted into any panel (the season screen, the trade window). Rows sit in
+   slot order so it always reads QB RB WR WR TE FLEX, and each row opens the player sheet. */
+function paintRosterPanel(bodyId,capId){
+  const total=Math.round(run.roster.reduce((s,p)=>s+p.price_musd,0)*10)/10;
+  const room=Math.round((E.CONSTANTS.CAP_MUSD-total)*10)/10;
+  const capEl=$(capId);
+  if(capEl) capEl.innerHTML='<span class="rp-spent">$'+total.toFixed(1)+'M</span>'+
+    '<span class="rp-room">$'+room.toFixed(1)+'M free</span>';
+  const order=run.roster.map((p,i)=>({p,i,slot:run.slotIndex[i]})).sort((a,b)=>a.slot-b.slot);
+  let h='';
+  order.forEach(({p,i,slot})=>{
+    h+='<div class="rp-row" data-i="'+i+'">'+
+      '<span class="rp-pos" style="'+posPaint(p.position)+'">'+esc(E.SLOTS[slot])+'</span>'+
+      '<div style="min-width:0"><div class="rp-name">'+esc(p.name)+'</div>'+
+        '<div class="rp-sub">'+tcPlate(p.franchise,p.season)+' '+p.season+' &middot; $'+p.price_musd.toFixed(1)+'M</div></div>'+
+      '<span class="rp-fppg">'+p.ppr_ppg_mean.toFixed(1)+'<span>FPPG</span></span></div>';
+  });
+  const body=$(bodyId);
+  if(!body) return;
+  body.innerHTML=h;
+  body.onclick=(e)=>{const r=e.target.closest('.rp-row');if(!r)return;
+    const p=run.roster[+r.dataset.i];if(p)sheet(p);};
 }
 
 function paintSquadSidebar(){
@@ -5257,6 +5458,7 @@ function paintSquadSidebar(){
 let tradeResumeStep=null;
 let currentProposals=null;
 let selectedProposal=null;
+let revealTimer=null;
 
 function openTradeWindow(step){
   R.inflateContracts(run);
@@ -5271,6 +5473,8 @@ function openTradeWindow(step){
     :'No GMs are interested this window.';
   tradeResumeStep=step;
   paintProposals();
+  paintRosterPanel('trade-rp-body','trade-rp-cap');
+  const tr=$('trade-roster'); if(tr) tr.open=false;
   $('b-tw-accept').disabled=true;
   $('b-tw-accept').onclick=()=>{
     if(selectedProposal===null)return;
@@ -5278,6 +5482,7 @@ function openTradeWindow(step){
     R.acceptTrade(run,prop,DATA,CTX);
     drawField($('field2'),false);
     paintSquadSidebar();
+    paintRosterPanel('season-rp-body','season-rp-cap');
     toast('Trade accepted');
     if(prop.type==='2for1'&&run.pendingFreeAgency){
       openFreeAgency();
@@ -5376,6 +5581,7 @@ function openFreeAgency(){
     R.signFreeAgent(run,selectedFAPlayer,CTX);
     drawField($('field2'),false);
     paintSquadSidebar();
+    paintRosterPanel('season-rp-body','season-rp-cap');
     toast('Signed '+selectedFAPlayer.name);
     show('s-season');
     simTimer=setTimeout(tradeResumeStep,600);
