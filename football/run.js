@@ -890,7 +890,6 @@ const TRADE_PITCHES = {
 };
 
 function autoDraftTrade(run, data, ctx) {
-  const savedRngCalls = run.rngCalls;
   let accepted = false;
   for (let attempt = 0; attempt < 500; attempt++) {
     run.roster = [];
@@ -899,7 +898,11 @@ function autoDraftTrade(run, data, ctx) {
     run.usedTeamSeasons = [];
     run.draws = [];
     run.currentDraw = null;
-    run.rngCalls = savedRngCalls;
+    // Back to DRAFT each attempt: sign() flips the phase to SEASON once the sixth
+    // player lands, so without this the next attempt's spin() throws "not drafting".
+    // The RNG is NOT rewound between attempts, so each retry draws a genuinely
+    // different roster while the whole sequence stays a pure function of the seed.
+    run.phase = PHASES.DRAFT;
     for (let pick = 0; pick < E.SLOTS.length; pick++) {
       spin(run, data);
       const rng = rngFor(run);
@@ -962,7 +965,10 @@ function generateProposals(run, data, ctx) {
     }
   }
   const currentSalary = run.roster.reduce((t, p) => t + p.price_musd, 0);
-  const pool = drawable(run, data, 999);
+  // Every team-season, not drawable(): a mid-season roster is full, so drawable()
+  // (which is scoped to open draft slots and remaining budget) returns nothing.
+  // Trades pull an incoming player from the whole league.
+  const pool = data.teamSeasons;
   function findIncoming(position, minRating, maxRating, excludeIds) {
     const candidates = [];
     for (const ts of pool) {
@@ -1045,7 +1051,8 @@ function generateProposals(run, data, ctx) {
 
 function generateFreeAgents(run, data, position) {
   const rng = rngFor(run);
-  const pool = drawable(run, data, 999);
+  // Whole league, not drawable() — see generateProposals: the roster is full here.
+  const pool = data.teamSeasons;
   const candidates = [];
   for (const ts of pool) {
     const players = data.playersByTeamSeason[ts.team_season_id] ?? [];
