@@ -2129,6 +2129,42 @@ window.GA_ID='G-L29P5MRWKE';
   .g .opp{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
   .g .sc{flex:0 0 58px;text-align:right;font-family:var(--fn);font-size:14px;white-space:nowrap}
   .g.po{background:linear-gradient(90deg,rgba(168,85,247,.20),var(--panel))}
+  /* A finished game opens its box score, so the row has to look tappable. */
+  .g.tap{cursor:pointer;transition:border-color .12s,background .12s}
+  .g.tap:hover{border-color:rgba(96,165,250,.55)}
+  .g .gchev{flex:0 0 10px;color:var(--dim-2);font-size:11px;margin-left:2px}
+  .g.tap:hover .gchev{color:var(--ink)}
+  /* ---- box score ---- */
+  .bx-score{display:flex;align-items:center;justify-content:center;gap:14px;margin:2px 0 10px}
+  .bx-score .bs{font-family:var(--fd);font-size:44px;line-height:1;color:var(--dim-2)}
+  .bx-score .bs.win{color:#22c55e}
+  .bx-score .bs.lose{color:var(--red)}
+  .bx-score .bd{font-family:var(--fn);font-size:15px;color:var(--dim-2)}
+  .bx-matchup{display:flex;gap:8px;margin:0 0 12px}
+  .bx-cell{flex:1;border:1px solid var(--line-2);border-radius:9px;padding:7px 9px;background:var(--panel)}
+  .bx-cell .k{font-family:var(--fn);font-size:8.5px;font-weight:800;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .bx-cell .v{font-family:var(--fd);font-size:17px;color:var(--ink);line-height:1.15;margin-top:2px}
+  .bx-cell .n{font-size:10px;color:var(--dim);line-height:1.25}
+  .bx-row{display:grid;grid-template-columns:34px minmax(0,1fr) 52px 46px;gap:8px;align-items:center;
+    padding:7px 0;border-top:1px solid rgba(148,163,184,.14);font-size:13px}
+  .bx-row.hd{border-top:none;font-family:var(--fn);font-size:8.5px;font-weight:800;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--dim-2);padding-bottom:3px}
+  .bx-row .bp{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.04em;
+    text-transform:uppercase;padding:3px 0;border-radius:5px;color:#fff;text-align:center}
+  .bx-row .bn{min-width:0}
+  .bx-row .bn b{font-family:var(--fb);font-weight:600;color:var(--ink);display:block;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bx-row .bn span{font-size:10px;color:var(--dim)}
+  .bx-row .bpts{font-family:var(--fd);font-size:17px;color:var(--ink);text-align:right}
+  .bx-row .bvs{font-family:var(--fn);font-size:11px;font-weight:700;text-align:right}
+  .bx-row .bvs.up{color:#22c55e}
+  .bx-row .bvs.dn{color:var(--red)}
+  .bx-row.tot{border-top:1.5px solid var(--line-2);margin-top:3px;font-weight:700}
+  .bx-row.tot .bn b{font-family:var(--fn);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--dim)}
+  .bx-row.tot .bpts{color:#fbbf24}
+  .bx-row .star{color:#fbbf24;font-size:10px;margin-left:3px}
 
   /* THE SCORE BUG
      Two tiers, the way a broadcast builds one. On top, a plate per team painted in
@@ -3493,8 +3529,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="headline" id="headline"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=36"></script>
-<script src="run.js?v=43"></script>
+<script src="engine.js?v=37"></script>
+<script src="run.js?v=44"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -3636,7 +3672,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=36;
+const NEED_VERSION=37;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -5130,12 +5166,70 @@ function paintSquad(){
 $('b-play').onclick=()=>{ if(pendingChallenge) playBowl(); else startSeason(); };
 
 /* ---------- season, revealed game by game ---------- */
-function pushGame(r,el){
-  el.insertAdjacentHTML('afterbegin','<div class="g new'+(r.playoff?' po':'')+'">'+
+/* THE BOX SCORE for one finished game. The score on the row is a football score (a
+   calibrated view of the fantasy total), so the sheet shows both: the scoreline as the
+   headline, and underneath it the fantasy production that actually decided the game,
+   broken out man by man. Each line is compared with that player's season average, which
+   is the interesting part of a box score -- who beat his number and who did not.
+
+   The lineup is the one that PLAYED that week, snapshotted at the time, so a game from
+   week 4 still shows the players you had in week 4 rather than whoever is on the roster
+   after the trade deadline. No opponent line-up is invented: a historic opponent is
+   modelled as a team, not as players, so its side stays a team total. */
+function boxScore(r){
+  if(!r||!r.lines||!r.lines.length) return;
+  const when=r.playoff?(ROUND_SHORT[r.round]||String(r.round||'Playoffs').toUpperCase()):('Week '+r.week);
+  const total=r.lines.reduce((t,l)=>t+l.pts,0);
+  const avgTotal=r.lines.reduce((t,l)=>t+l.avg,0);
+  /* Opponent defence, from the same ratio the sim used: above 1 means they gave up more
+     than a league-average defence, so a high-scoring day was partly the matchup. */
+  const dm=r.defMod||1;
+  const dTxt=dm>=1.08?'Generous':dm>=0.96?'Average':dm>=0.88?'Stingy':'Elite';
+  const best=r.lines.reduce((a,b)=>b.pts>a.pts?b:a);
+  const order=r.lines.slice().sort((a,b)=>b.pts-a.pts);
+  const row=(l)=>{
+    const d=Math.round((l.pts-l.avg)*10)/10;
+    return '<div class="bx-row">'+
+      '<span class="bp" style="'+posPaint(l.pos)+'">'+esc(l.slot||l.pos)+'</span>'+
+      '<span class="bn"><b>'+esc(l.name)+(l===best?'<span class="star">&#9733;</span>':'')+'</b>'+
+        '<span>'+tcPlate(l.franchise,l.season)+' '+l.season+'</span></span>'+
+      '<span class="bpts">'+l.pts.toFixed(1)+'</span>'+
+      '<span class="bvs '+(d>=0?'up':'dn')+'">'+(d>0?'+':'')+d.toFixed(1)+'</span></div>';
+  };
+  $('sheet-in').innerHTML=
+    '<div class="eyebrow" style="color:'+(r.won?'#22c55e':'var(--red)')+'">'+
+      esc(when)+' &middot; '+(r.won?'Win':'Loss')+'</div>'+
+    '<h2 class="display" style="font-size:21px;margin:4px 0 2px">'+esc(r.opponent)+'</h2>'+
+    '<div class="bx-score"><span class="bs '+(r.won?'win':'lose')+'">'+r.shownYou+'</span>'+
+      '<span class="bd">&ndash;</span><span class="bs">'+r.shownThem+'</span></div>'+
+    '<div class="bx-matchup">'+
+      '<div class="bx-cell"><div class="k">Fantasy output</div>'+
+        '<div class="v">'+total.toFixed(1)+'</div>'+
+        '<div class="n">'+(total>=avgTotal?'above':'below')+' your '+avgTotal.toFixed(1)+' average</div></div>'+
+      '<div class="bx-cell"><div class="k">Opponent defense</div>'+
+        '<div class="v">'+dTxt+'</div>'+
+        '<div class="n">'+(dm>=1?'+':'')+Math.round((dm-1)*100)+'% vs league average</div></div>'+
+    '</div>'+
+    '<div class="bx-row hd"><span>Spot</span><span>Player</span>'+
+      '<span style="text-align:right">Pts</span><span style="text-align:right">vs avg</span></div>'+
+    order.map(row).join('')+
+    '<div class="bx-row tot"><span></span><span class="bn"><b>Team total</b></span>'+
+      '<span class="bpts">'+total.toFixed(1)+'</span><span class="bvs"></span></div>'+
+    '<div style="margin-top:14px"><button class="btn ghost sm" id="b-bx-x">Close</button></div>';
+  $('sheet-in').dataset.kind='box';
+  const x=$('b-bx-x'); if(x) x.onclick=closeSheet;
+  openSheet();
+}
+
+function pushGame(r,el,idx){
+  const tap=idx!=null&&r.lines&&r.lines.length;
+  el.insertAdjacentHTML('afterbegin','<div class="g new'+(r.playoff?' po':'')+(tap?' tap':'')+'"'+
+    (tap?' data-gi="'+idx+'"':'')+'>'+
     '<span class="wk">'+(r.playoff?(ROUND_TAG[r.round]||'PO'):'WK '+r.week)+'</span>'+
     '<span class="res '+(r.won?'w':'l')+'">'+(r.won?'W':'L')+'</span>'+
     '<span class="opp">'+esc(r.opponent)+'</span>'+
-    '<span class="sc">'+r.shownYou+'-'+r.shownThem+'</span></div>');
+    '<span class="sc">'+r.shownYou+'-'+r.shownThem+'</span>'+
+    (tap?'<span class="gchev">&#9656;</span>':'')+'</div>');
 }
 
 /* THE CALENDAR under the score bug. Rebuilt whole from the season's own state every
@@ -6719,7 +6813,10 @@ function paintOver(){
     '<span>Working out the best you could have drafted</span></div>';
 
   const list=$('o-list');
-  list.innerHTML=''; s.results.forEach(r=>pushGame(r,list));
+  list.innerHTML=''; s.results.forEach((r,i)=>pushGame(r,list,i));
+  /* Delegated, so it survives every repaint of the list. */
+  list.onclick=(e)=>{ const row=e.target.closest('.g[data-gi]'); if(!row) return;
+    const r=run.season.results[+row.dataset.gi]; if(r) boxScore(r); };
   $('o-gcount').textContent=' \u00b7 '+s.results.length+' games';
   /* Back to the default tab. The class is on the markup, but it moves as soon as
      anyone taps, and a new season should not open on the pane the last one ended on. */
