@@ -4044,6 +4044,7 @@ function beginDraft(opts){
   const m=runMode();
   ga('game_started',{mode:m,club:(opts&&opts.franchise)||null,era:(opts&&opts.era)||null});
   if(opts&&opts.tradeMachine){
+    if(!canPlayTrade()) return;
     R.autoDraftTrade(run,DATA,CTX);
     R.startSeason(run,DATA,CTX);
     drawField($('field2'),false);
@@ -4179,16 +4180,20 @@ function modeMenu(){
           ? '<button class="btn ghost sm" id="b-mc-era" disabled>Sign in to play</button>'
           : '<button class="btn ghost sm" id="b-mc-era">Pick a decade</button>')+
       '</div>'+
-      '<div class="modecard mc-trade">'+
-        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
-          '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>'+
-          '<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'+
-          '</svg></div><div class="mc-title">The Trade Machine</div></div>'+
-        '<p>You\'re handed a roster mid-season. Make trades at four windows to build a contender.</p>'+
-        (locked
-          ? '<button class="btn ghost sm" id="b-mc-trade" disabled>Sign in to play</button>'
-          : '<button class="btn ghost sm" id="b-mc-trade">Start as GM</button>')+
-      '</div>'+
+      (function(){
+        var tradeAllow=['runnyj','malikwillislover'];
+        var canTrade=!locked&&authState.name&&tradeAllow.indexOf(authState.name.toLowerCase())>=0;
+        return '<div class="modecard mc-trade'+(canTrade?'':' mc-soon')+'">'+
+          '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
+            '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>'+
+            '<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'+
+            '</svg></div><div class="mc-title">The Trade Machine'+(canTrade?'':' <span class="mc-soon-tag">Coming Soon</span>')+'</div></div>'+
+          '<p>You\'re handed a roster mid-season. Make trades at four windows to build a contender.</p>'+
+          (canTrade
+            ? '<button class="btn ghost sm" id="b-mc-trade">Start as GM</button>'
+            : '<button class="btn ghost sm" disabled>Coming Soon</button>')+
+        '</div>';
+      })()+
     '</div>'+
     (locked&&authState.ready
       ? '<div style="margin-top:14px"><button class="btn" id="b-mc-signin">'+
@@ -5207,7 +5212,12 @@ function openCapReplace(cutPlayer,resumeStep){
 }
 
 /* ---------- THE TRADE MACHINE ---------- */
+function canPlayTrade(){
+  var allow=['runnyj','malikwillislover'];
+  return !!(authState.name&&allow.indexOf(authState.name.toLowerCase())>=0);
+}
 function beginTradeMachine(){
+  if(!canPlayTrade()) return;
   if(!oneTeamReady()) return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking');
   replaceCtx=null;
   newRun({tradeMachine:true});
