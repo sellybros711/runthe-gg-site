@@ -95,17 +95,6 @@
   /* "College" sits between Perfect and Season, in gold, so the wordmark itself
      reads PERFECT COLLEGE SEASON — white, gold, green. */
   .brand .clg{color:var(--gold);font-style:normal}
-  /* The three-word wordmark is longer than the old two; on phones it has to give
-     ground to the pill beside it or "Season" clips. Shrink the type (and the
-     pill a touch) as the screen narrows so all three words always fit. */
-  @media(max-width:480px){
-    .brand{font-size:14px;letter-spacing:.02em}
-    .pill{font-size:10px;padding:5px 9px;letter-spacing:.08em}
-  }
-  @media(max-width:380px){
-    .brand{font-size:12px;letter-spacing:.01em}
-    .mark{width:26px;height:23px;margin-right:7px}
-  }
   .hdr-r{display:flex;align-items:center;gap:8px;min-width:0;margin-left:auto}
   .pill{display:inline-flex;align-items:center;padding:5px 10px;border-radius:99px;
     font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.12em;
@@ -113,6 +102,78 @@
     border:1px solid var(--line-2);white-space:nowrap;transition:border-color .15s}
   .pill:hover{border-color:rgba(255,255,255,.22)}
   .pill i{color:var(--green)}
+  /* ── profile bubble ─────────────────────────────────────────────
+     The way in to picking a school's colors, styled like the NFL game's. Empty
+     it shows a neutral head; once a school is chosen it fills with that team's
+     colors and carries its abbreviation. */
+  .avatar{flex:0 0 40px;width:40px;height:40px;border-radius:50%;padding:0;position:relative;
+    display:grid;place-items:center;cursor:pointer;background:none;
+    border:1px solid var(--line-2);transition:border-color .15s,transform .1s}
+  .avatar:before{content:'';position:absolute;inset:4px;border-radius:50%;
+    background:rgba(255,255,255,.04);transition:background .2s}
+  .avatar>*{position:relative;z-index:1}
+  .avatar svg{width:18px;height:18px;fill:none;stroke:var(--dim);stroke-width:1.7;
+    stroke-linecap:round;stroke-linejoin:round}
+  .avatar .ab{display:none;font-family:var(--fd);font-size:12px;letter-spacing:.02em;
+    color:var(--pfp-ink,#fff);text-shadow:0 1px 2px rgba(0,0,0,.5)}
+  .avatar:hover{border-color:rgba(255,255,255,.28)}
+  .avatar:active{transform:scale(.94)}
+  .avatar.signed{border-color:transparent}
+  .avatar.signed:before{background:var(--pfp,var(--grad-green));inset:2px;
+    box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.28)}
+  .avatar.signed svg{display:none}
+  .avatar.signed .ab{display:block}
+  /* The three-word wordmark is longer than the old two; on phones it gives ground
+     so "Season" never clips. Below 480 the RunThe.GG pill steps aside for the
+     profile bubble, and the type shrinks as the screen narrows. */
+  @media(max-width:480px){
+    .brand{font-size:14px;letter-spacing:.02em}
+    .pill.site{display:none}
+  }
+  @media(max-width:360px){
+    .brand{font-size:12px;letter-spacing:.01em}
+    .mark{width:26px;height:23px;margin-right:7px}
+    .avatar{flex-basis:34px;width:34px;height:34px}
+  }
+
+  /* ── school theme ───────────────────────────────────────────────
+     A chosen school recolours the front door: the home screen, the draft and
+     the header while you're on them take the team's own two colours in place of
+     the house green and gold. Everything past kickoff keeps the CFB palette. */
+  body.themed:has(#s-intro.on),
+  body.themed:has(#s-draft.on){
+    --green:var(--th-a);--green-2:var(--th-a2);
+    --grad-green:linear-gradient(135deg,var(--th-a),var(--th-a2));
+    --gold:var(--th-b);--gold-2:var(--th-b2);
+    --grad-gold:linear-gradient(135deg,var(--th-b),var(--th-b2));
+    background-image:radial-gradient(1000px 600px at 50% -8%,var(--th-glowa),transparent 70%),
+                     radial-gradient(800px 500px at 100% 100%,var(--th-glowb),transparent 70%);
+  }
+
+  /* ── school picker (sheet) ──────────────────────────────────────── */
+  .schoolacc{margin-top:4px}
+  .schoolacc details{border:1px solid var(--line);border-radius:11px;margin-bottom:7px;
+    overflow:hidden;background:var(--panel)}
+  .schoolacc summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;
+    align-items:center;gap:8px;font-family:var(--fn);font-weight:700;font-size:14px}
+  .schoolacc summary::-webkit-details-marker{display:none}
+  .schoolacc summary .cnt{margin-left:auto;font-size:11px;color:var(--dim-2);font-weight:600}
+  .schoolacc summary:after{content:'';width:7px;height:7px;flex:0 0 auto;
+    border-right:2px solid var(--dim);border-bottom:2px solid var(--dim);
+    transform:rotate(45deg);transition:transform .2s}
+  .schoolacc details[open] summary:after{transform:rotate(-135deg)}
+  .schoolgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:6px;
+    padding:2px 10px 12px}
+  .swatch{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:9px;cursor:pointer;
+    border:1px solid var(--line);background:var(--panel-2);text-align:left;
+    transition:border-color .12s,transform .08s}
+  .swatch:hover{border-color:var(--line-2)}
+  .swatch:active{transform:scale(.97)}
+  .swatch.on{border-color:#fff;box-shadow:0 0 0 1px #fff}
+  .swatch .dot{flex:0 0 22px;width:22px;height:22px;border-radius:50%;background:var(--sc1);
+    box-shadow:inset 0 0 0 3px var(--sc2),0 1px 3px rgba(0,0,0,.55)}
+  .swatch .nm{font-family:var(--fn);font-size:12px;font-weight:600;color:var(--ink);
+    min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
   /* ── hero/intro ─────────────────────────────────────────────────
      The title is sized to sit inside the 600px column, not overrun it: at 70px
@@ -1047,6 +1108,11 @@ or endorsed by the NCAA, the CFP or any school.
     </a>
     <div class="hdr-r">
       <a class="pill site" href="https://runthe.gg">RunThe<i>.GG</i></a>
+      <button class="avatar" id="b-profile" aria-label="Choose your school colors">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.6" r="4"/>
+          <path d="M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4"/></svg>
+        <span class="ab"></span>
+      </button>
     </div>
   </header>
 
@@ -1588,6 +1654,94 @@ function bindBoxScore(id){
   });
 }
 bindBoxScore('v-list'); bindBoxScore('o-list');
+
+/* ── school colours (profile bubble) ─────────────────────────────
+   Pick a school and the front door takes its colours. Schools are grouped by
+   their current conference — the four power leagues each get their own list and
+   everyone else shares one — and each carries the team's real primary and alt
+   colours drawn straight from the data. */
+const POWER_CONFS=['SEC','Big Ten','Big 12','ACC'];
+let schoolGroupsCache=null;
+function schoolGroups(){
+  if(schoolGroupsCache) return schoolGroupsCache;
+  const bySchool={};
+  for(const t of DATA.teamSeasons){ const c=bySchool[t.school]; if(!c||t.season>c.season) bySchool[t.school]=t; }
+  const order=[...POWER_CONFS,'Group of 5 & Other'];
+  const groups={}; for(const g of order) groups[g]=[];
+  for(const s in bySchool){ const t=bySchool[s];
+    const g=POWER_CONFS.includes(t.conference)?t.conference:'Group of 5 & Other';
+    groups[g].push({school:s,color:t.color||'#556070',alt:t.alt_color||'#ffffff',abbr:E.teamColors(t).abbreviation}); }
+  for(const g of order) groups[g].sort((a,b)=>a.school.localeCompare(b.school));
+  schoolGroupsCache=order.map(g=>({name:g,teams:groups[g]})).filter(x=>x.teams.length);
+  return schoolGroupsCache;
+}
+const _hx=(hex)=>{const n=parseInt(hex.slice(1),16);return [(n>>16)&255,(n>>8)&255,n&255];};
+function shade(hex,pct){ const [r,g,b]=_hx(hex);
+  const f=(c)=>pct<0?Math.round(c*(1+pct)):Math.round(c+(255-c)*pct);
+  const h=(c)=>Math.max(0,Math.min(255,c)).toString(16).padStart(2,'0');
+  return '#'+h(f(r))+h(f(g))+h(f(b)); }
+const hexA=(hex,a)=>{const [r,g,b]=_hx(hex);return 'rgba('+r+','+g+','+b+','+a+')';};
+const lumOf=(hex)=>{const [r,g,b]=_hx(hex);return (0.299*r+0.587*g+0.114*b)/255;};
+
+let selectedSchool=null;
+function applyTheme(t){
+  const root=document.documentElement, body=document.body;
+  if(!t){ ['--th-a','--th-a2','--th-b','--th-b2','--th-glowa','--th-glowb','--pfp','--pfp-ink']
+      .forEach(v=>root.style.removeProperty(v));
+    body.classList.remove('themed'); selectedSchool=null;
+    try{localStorage.removeItem('cfb_school');}catch(e){} updateAvatar(); return; }
+  const a=t.color;
+  let b=t.alt; const bl=lumOf(b);            // a near-white/black alt makes a poor accent
+  if(bl>0.85||bl<0.06) b=shade(a,bl>0.5?0.42:0.5);
+  root.style.setProperty('--th-a',a);
+  root.style.setProperty('--th-a2',shade(a,-0.3));
+  root.style.setProperty('--th-b',b);
+  root.style.setProperty('--th-b2',shade(b,0.22));
+  root.style.setProperty('--th-glowa',hexA(a,0.14));
+  root.style.setProperty('--th-glowb',hexA(b,0.10));
+  root.style.setProperty('--pfp','linear-gradient(135deg,'+a+','+shade(a,-0.32)+')');
+  root.style.setProperty('--pfp-ink',lumOf(a)>0.62?'#111':'#fff');
+  body.classList.add('themed');
+  selectedSchool=t; try{localStorage.setItem('cfb_school',JSON.stringify(t));}catch(e){}
+  updateAvatar();
+}
+function updateAvatar(){
+  const av=$('b-profile'); if(!av) return;
+  const ab=av.querySelector('.ab');
+  if(selectedSchool){ av.classList.add('signed'); ab.textContent=selectedSchool.abbr;
+    av.setAttribute('aria-label','Your school: '+selectedSchool.school+'. Change it'); }
+  else{ av.classList.remove('signed'); ab.textContent='';
+    av.setAttribute('aria-label','Choose your school colors'); }
+}
+function openSchoolPicker(){
+  if(!DATA){ return; }
+  const cur=selectedSchool?selectedSchool.school:null;
+  const acc=schoolGroups().map(g=>{
+    const open=g.teams.some(t=>t.school===cur)?' open':'';
+    const sw=g.teams.map(t=>'<button class="swatch'+(t.school===cur?' on':'')+'" data-school="'+esc(t.school)+'" '+
+      'style="--sc1:'+t.color+';--sc2:'+t.alt+'"><span class="dot"></span>'+
+      '<span class="nm">'+esc(t.school)+'</span></button>').join('');
+    return '<details'+open+'><summary>'+esc(g.name)+'<span class="cnt">'+g.teams.length+'</span></summary>'+
+      '<div class="schoolgrid">'+sw+'</div></details>';
+  }).join('');
+  $('sheet-in').innerHTML=
+    '<div class="eyebrow green">Your school</div>'+
+    '<h2 class="display" style="font-size:22px;margin:4px 0 3px">Pick your colors</h2>'+
+    '<p class="dim" style="font-size:13px;margin:0 0 12px">Themes the home and draft screens in your team&rsquo;s colors.</p>'+
+    '<div class="schoolacc">'+acc+'</div>'+
+    '<div style="margin-top:12px;display:flex;gap:8px">'+
+      '<button class="btn ghost sm" id="sp-default" style="flex:1">Default colors</button>'+
+      '<button class="btn ghost sm" id="sp-x" style="flex:1">Close</button></div>';
+  openSheet();
+  $('sheet-in').querySelectorAll('.swatch').forEach(btn=>btn.onclick=()=>{
+    const t=schoolGroups().flatMap(g=>g.teams).find(x=>x.school===btn.dataset.school);
+    if(t) applyTheme(t); closeSheet();
+  });
+  $('sp-default').onclick=()=>{ applyTheme(null); closeSheet(); };
+  $('sp-x').onclick=closeSheet;
+}
+$('b-profile').onclick=openSchoolPicker;
+try{ const saved=localStorage.getItem('cfb_school'); if(saved) applyTheme(JSON.parse(saved)); }catch(e){}
 
 /* ── boot ────────────────────────────────────────────────────── */
 async function boot(){
