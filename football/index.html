@@ -3955,9 +3955,13 @@ function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clear
 
 async function boot(){
   try{
-    /* v5: player_seasons.json now carries awards. Bumped so a returning visitor is not
-       served last week's copy from cache, which would silently have no hardware in it. */
-    const j=(f)=>fetch(f+'?v=5').then(r=>{if(!r.ok)throw new Error(f);return r.json();});
+    /* v6: every team-season can now field a quarterback and a tight end. Thirteen clubs that
+       split a season between two or three starters had nobody clear the games threshold, so
+       the wheel could land on the 2014 Titans and show no quarterback at all. Bumped so a
+       returning visitor is not served last week's copy, which would still have the holes and
+       could not resolve a challenge link naming one of the newly admitted men.
+       v5 was when player_seasons.json started carrying awards. */
+    const j=(f)=>fetch(f+'?v=6').then(r=>{if(!r.ok)throw new Error(f);return r.json();});
     const [pl,tm,bat,co,cu,lg,cal]=await Promise.all([
       j('data/player_seasons.json'),j('data/team_seasons.json'),j('data/battery.json'),
       j('data/coaches.json'),j('data/curated.json'),j('data/league_context.json'),
