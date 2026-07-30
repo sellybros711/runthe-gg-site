@@ -6987,6 +6987,23 @@ function shareDare(o){
   return o.perfect?'Can you go unbeaten?':'Can you draft a better team?';
 }
 
+/* WHAT A CHALLENGE ACTUALLY SAYS. The old line was "My team went 14-6. Think you can draft a
+   better team? Beat mine:" followed by the link inline, which said "team" three times and
+   buried the link mid-sentence. This names the game once, states the result, and ends on one
+   dare, with the link on its own line so the message reads before the URL does. */
+function challengeText(){
+  const o=run.outcome||{};
+  const mode=run.franchise?' ('+E.cityLabel(run.franchise)+' only)'
+    :run.era?' ('+run.era+' era)':'';
+  const lead=o.record
+    ? 'I went '+o.record+' in The Perfect Season'+mode+'.'
+    : 'Here is my roster in The Perfect Season'+mode+'.';
+  const dare=o.perfect?'Go unbeaten and match it.'
+    :o.titleWon?'Draft your six and take the title off me.'
+    :'Draft your six and beat it.';
+  return lead+' '+dare;
+}
+
 function shareLines(){
   const o=run.outcome;
   const what=o.perfect?'Perfect season.'
@@ -7192,7 +7209,14 @@ function drawShareCard(){
     x.fillText(tag,PAD+cw/2-x.measureText(tag).width/2,y-2);
     // name, shrunk only if it would collide with the right column
     const right=CARD.W-PAD;
-    N('500',24); x.fillStyle='rgba(255,255,255,.5)';
+    N('500',24);
+    /* THE YEAR AND CITY IN THAT PLAYER'S OWN CLUB COLOUR, which is the whole reason
+       teamInk exists: it takes the club's primary and lifts its lightness until it clears
+       4.5:1 on a near-black ground, so the fourteen clubs whose primary is itself nearly
+       black get a legible lifted variant rather than an invisible one. Checked against the
+       worst case on this card -- a row sitting under the club's own wash at full strength --
+       and all thirty-two clear 3.8:1 or better, so no row needs a hand-picked exception. */
+    x.fillStyle=E.teamInk(p.franchise);
     /* The city and not the nickname, on every row, in both modes. This is a graphic that
        gets posted somewhere we do not control, so no mascot name appears on it at all. */
     const meta=p.season+' '+E.city(p.franchise);
@@ -7319,7 +7343,49 @@ function teamBlob(){
     f:run.franchise||'', e:run.era||'',
     n:((authState&&authState.name)||'').slice(0,24) };
 }
-function decodeTeam(str){ const j=b64urlDec(str); if(!j) return null; let o; try{o=JSON.parse(j);}catch(_){return null;}
+/* THE LINK, MADE SHORT ENOUGH TO PASTE. The v1 payload was JSON carrying full GSIS ids and
+   slot names, which base64s into a ~300 character tail that swamps any message it lands in.
+   Two facts about the data make it compressible: every player_id in the set is exactly
+   "00-00" plus five digits, and every season is 1999-2025. So a pick fits in six characters
+   (five digits, then the season as one base36 offset) with no separator needed, a slot fits
+   in one digit, and the payload becomes a short pipe-delimited string instead of JSON. That
+   is about a quarter of the old length.
+
+   v1 links keep working: anything already shared decodes on the JSON path below. */
+const CH_EPOCH=1999;
+function encTeam(t){
+  const n=E.SLOTS.length;
+  let picks='';
+  for(const k of t.p){
+    const i=k.lastIndexOf(':');
+    const id=k.slice(0,i), yr=Number(k.slice(i+1));
+    if(id.slice(0,5)!=='00-00'||id.length!==10) return null;   // unexpected shape: use v1
+    const off=yr-CH_EPOCH;
+    if(!(off>=0&&off<36)) return null;
+    picks+=id.slice(5)+off.toString(36);
+  }
+  if(picks.length!==n*6) return null;
+  const slots=t.s.map((sn)=>Math.max(0,E.SLOTS.indexOf(sn))).join('');
+  return ['2',picks,slots,t.c,t.f||'',t.e||'',t.n||''].join('|');
+}
+function decTeamV2(raw){
+  const f=String(raw).split('|');
+  if(f[0]!=='2'||f.length<7) return null;
+  const n=E.SLOTS.length;
+  if(f[1].length!==n*6||f[2].length!==n) return null;
+  const p=[], sl=[];
+  for(let i=0;i<n;i++){
+    const seg=f[1].slice(i*6,i*6+6);
+    if(!/^\d{5}[0-9a-z]$/.test(seg)) return null;
+    const yr=CH_EPOCH+parseInt(seg[5],36);
+    p.push('00-00'+seg.slice(0,5)+':'+yr);
+    sl.push(E.SLOTS[+f[2][i]]||E.SLOTS[0]);
+  }
+  return { v:1, p, s:sl, c:Number(f[3])||0, f:f[4]||'', e:f[5]||'', n:f.slice(6).join('|') };
+}
+function decodeTeam(str){ const j=b64urlDec(str); if(!j) return null;
+  const v2=decTeamV2(j); if(v2) return v2;
+  let o; try{o=JSON.parse(j);}catch(_){return null;}
   if(!o||o.v!==1||!Array.isArray(o.p)||o.p.length!==E.SLOTS.length) return null; return o; }
 function decodeCR(str){ const j=b64urlDec(str); if(!j) return null; let o; try{o=JSON.parse(j);}catch(_){return null;}
   if(!o||o.v!==1||!o.a||!o.b) return null; return o; }
@@ -7535,9 +7601,9 @@ if($('b-bowl-share')) $('b-bowl-share').onclick=()=>{ if(!challengeTeam||!lastBo
 if($('b-challenge')) $('b-challenge').onclick=async()=>{
   if(!run||!run.roster||run.roster.length<E.SLOTS.length) return;
   const t=teamBlob();
-  const link=CHALLENGE_URL+'?c='+b64urlEnc(JSON.stringify(t));
-  const rec=run.outcome&&run.outcome.record;
-  const text=(rec?'My team went '+rec+'. ':'')+'Think you can draft a better team? Beat mine: '+link;
+  const packed=encTeam(t);
+  const link=CHALLENGE_URL+'?c='+b64urlEnc(packed||JSON.stringify(t));
+  const text=challengeText()+'\n'+link;
   ga('challenge_created',{mode:runMode(),club:run&&run.franchise||null});
   let file=null; try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready;
     const blob=await canvasBlob(drawShareCard()); if(blob) file=new File([blob],'challenge.png',{type:'image/png'}); }catch(_){}
