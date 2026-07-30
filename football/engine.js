@@ -1573,8 +1573,16 @@ function playoffOpponent(playoffs, rounds, roundIndex) {
  * systematically mis-rate one era against the other.
  */
 function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rng, constants = CONSTANTS, advantage = 1) {
+  /* The per-man samples are kept, not just their sum, so a game can be shown as a box
+     score afterwards. Collecting them changes no rng call and no arithmetic, so every
+     existing seed plays out exactly as before. */
+  const samples = [];
   let raw = 0;
-  for (const p of roster) raw += sampleGamma(p.ppr_ppg_mean, p.ppr_ppg_sd, rng);
+  for (const p of roster) {
+    const s = sampleGamma(p.ppr_ppg_mean, p.ppr_ppg_sd, rng);
+    samples.push(s);
+    raw += s;
+  }
 
   const C = constants.CONSISTENCY || 0;
   if (C > 0) {
@@ -1594,7 +1602,14 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
   else if (yourScore < oppScore) won = false;
   else won = rng() < 0.5;   // overtime coin flip
 
-  return { won, yourScore, oppScore, defenseModifier };
+  /* WHAT EACH MAN CONTRIBUTED, and it adds up. Every sample takes the same CONSISTENCY
+     blend and the same three multipliers the team total takes, so the column sums to
+     yourScore exactly rather than approximately: sum(s*(1-C) + mean*C) is raw by
+     construction, and raw * teamMul is the score. */
+  const teamMul = chemistryMultiplier * structure * defenseModifier;
+  const lines = samples.map((v, i) => (v * (1 - C) + roster[i].ppr_ppg_mean * C) * teamMul);
+
+  return { won, yourScore, oppScore, defenseModifier, lines };
 }
 
 /*
@@ -1919,7 +1934,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 36;
+const ENGINE_API_VERSION = 37;
 
 /*
  * The three-letter code a team actually wore in a given season.

@@ -748,6 +748,7 @@ function advanceWeek(run, data, leagueContext, displayCal) {
       * Math.max(0, s.regularWins - E.CONSTANTS.PLAYOFF_WINS)
       / (E.CONSTANTS.REGULAR_SEASON_GAMES - E.CONSTANTS.PLAYOFF_WINS)
     : 1;
+  const gameSlots = slotsOf(run);
   const r = E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 21.5, rng, E.CONSTANTS, advantage);
   const shown = displayCal ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal) : null;
 
@@ -764,6 +765,20 @@ function advanceWeek(run, data, leagueContext, displayCal) {
     oppScore: Math.round(r.oppScore * 10) / 10,
     shownYou: shown ? shown.you : null,
     shownThem: shown ? shown.them : null,
+    /* THE LINEUP THAT PLAYED, snapshotted. The roster changes mid-season in the Trade
+       Machine, so a box score has to remember who was actually on the field that week
+       rather than reading today's roster. Each man's season average rides along so the
+       box score can show who beat his number and who did not. */
+    lines: r.lines ? run.roster.map((p, i) => ({
+      slot: gameSlots[run.slotIndex[i]],
+      pos: p.position,
+      name: p.name,
+      season: p.season,
+      franchise: p.franchise,
+      pts: Math.round(r.lines[i] * 10) / 10,
+      avg: Math.round(p.ppr_ppg_mean * 10) / 10,
+    })) : null,
+    defMod: Math.round((r.defenseModifier || 1) * 1000) / 1000,
   };
   s.results.push(result);
 
@@ -1681,7 +1696,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 36;
+const RUN_API_VERSION = 37;
 
 const api = {
   API_VERSION: RUN_API_VERSION,
