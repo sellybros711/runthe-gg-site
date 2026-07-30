@@ -732,6 +732,48 @@
   .bug.ranked{box-shadow:0 18px 38px -16px #000,0 0 22px -10px rgba(255,210,58,.5),
     inset 0 1px 0 rgba(255,255,255,.20),inset 0 -3px 9px rgba(0,0,0,.7)}
 
+  /* ── the varsity board (regular season) ─────────────────────────
+     Saturday afternoon in an ordinary stadium: a black box in a silver frame,
+     HOME and GUEST painted on in white, and the score in big white bulbs. The
+     broadcast housing above is kept for the playoff and the bowls, where the
+     game is on television and looks the part. */
+  .bug.varsity{background:#0c0e12;border:2px solid rgba(214,224,238,.42);
+    border-radius:9px;padding:0;
+    box-shadow:0 16px 34px -16px #000,inset 0 0 0 1px rgba(0,0,0,.9)}
+  .bug.varsity:before{display:none}
+  .bug.varsity .btop{gap:0}
+  .bug.varsity .bt{border-radius:0;background:none;background-image:none;box-shadow:none;
+    filter:none;padding:11px 8px 9px;
+    grid-template-columns:auto auto;justify-content:center;justify-items:center;
+    align-items:center;column-gap:7px;row-gap:3px;text-align:center}
+  .bug.varsity .bt.them{border-left:2px solid rgba(214,224,238,.35);text-align:center}
+  /* Label on top, bulbs in the middle, rank and record painted underneath. */
+  .bug.varsity .bt .cd,.bug.varsity .bt.them .cd{grid-row:1;grid-column:1/3;align-self:center}
+  .bug.varsity .bt .sc,.bug.varsity .bt.them .sc{grid-row:2;grid-column:1/3;
+    justify-self:center;align-self:center}
+  .bug.varsity .bt .rk,.bug.varsity .bt.them .rk{grid-row:3;grid-column:1}
+  .bug.varsity .bt .rc,.bug.varsity .bt.them .rc{grid-row:3;grid-column:2}
+  .bug.varsity .bt:after{top:auto;bottom:0;left:14%;right:14%;width:auto;height:3px}
+  .bug.varsity .bt.them:after{left:14%;right:14%}
+  .bug.varsity .bt .cd{font-family:var(--fc);font-size:clamp(13px,3.9vw,18px);
+    letter-spacing:.1em;color:#f2f6fb;text-shadow:none}
+  /* White bulbs, the way the numerals on a school board are lit. */
+  .bug.varsity .bt .sc,.bug.varsity.big .bt .sc{background:none;box-shadow:none;padding:1px 0 0;
+    font-family:var(--fled);font-weight:700;font-size:clamp(34px,11vw,50px);line-height:1;
+    color:rgba(255,255,255,.78);
+    text-shadow:0 0 14px rgba(255,255,255,.32),0 0 3px rgba(255,255,255,.5)}
+  .bug.varsity .bt.lead .sc{color:#fff;
+    text-shadow:0 0 20px rgba(255,255,255,.6),0 0 4px rgba(255,255,255,.85)}
+  .bug.varsity .bt .rc{font-size:11px;color:rgba(255,255,255,.66)}
+  .bug.varsity .bt .rk{font-size:11.5px}
+  /* The strip along the bottom, ruled off like the down and distance row. */
+  .bug.varsity .bbot{border-top:2px solid rgba(214,224,238,.35);margin:0;padding:8px 11px 7px}
+  .bug.varsity .bbot .q.name{color:#dfe6f0}
+  .bug.varsity .bbot .rd{background:#05070b;color:#f2f6fb;
+    border:1.5px solid rgba(214,224,238,.4);box-shadow:none;padding:5px 11px 4px}
+  .bug.varsity.ranked{box-shadow:0 16px 34px -16px #000,0 0 20px -10px rgba(255,210,58,.45),
+    inset 0 0 0 1px rgba(0,0,0,.9)}
+
   /* ── playoff call + log ─────────────────────────────────────── */
   .pocap{min-height:56px;margin-top:13px;display:flex;align-items:center;justify-content:center}
   .pocap .call{text-align:center;padding:9px 15px;border-radius:11px;
@@ -1327,7 +1369,7 @@ or endorsed by the NCAA, the CFP or any school.
   <div class="screen" id="s-season">
     <div class="gamecard">
       <div class="gameday" id="v-gameday"><span id="v-gdtext">Gameday</span></div>
-      <div class="bug big" id="v-bug">
+      <div class="bug big varsity" id="v-bug">
         <div class="btop">
           <div class="bt you lead" id="v-byou" style="--tcol:#0e7a4f;--tcol2:#6ee7b7">
             <span class="rk"></span><span class="cd">YOU</span><span class="rc" id="v-rec">0-0</span>
@@ -2570,7 +2612,7 @@ function startSeason(){
   paintNext(); paintUpcomingBug(); paintCalendar();
   $('v-you').textContent='0'; $('v-them').textContent='0';
   $('v-byou').classList.add('lead'); $('v-bthem').classList.add('lead');
-  $('v-bug').className='bug big';
+  $('v-bug').className='bug big varsity';
   show('s-season'); runSim();
 }
 
