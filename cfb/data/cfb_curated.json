@@ -1,0 +1,128 @@
+{
+  "family": [
+    {
+      "a": "Peyton Manning",
+      "b": "Eli Manning",
+      "kind": "brothers",
+      "label": "Manning brothers"
+    },
+    {
+      "a": "Peyton Manning",
+      "b": "Arch Manning",
+      "kind": "uncle/nephew",
+      "label": "Manning family"
+    },
+    {
+      "a": "Eli Manning",
+      "b": "Arch Manning",
+      "kind": "uncle/nephew",
+      "label": "Manning family"
+    },
+    {
+      "a": "Travis Etienne",
+      "b": "D'Joun Etienne",
+      "kind": "brothers",
+      "label": "Etienne brothers"
+    },
+    {
+      "a": "Brock Bowers",
+      "b": "Brayden Bowers",
+      "kind": "brothers",
+      "label": "Bowers brothers"
+    },
+    {
+      "a": "Trey Lance",
+      "b": "Bryce Lance",
+      "kind": "brothers",
+      "label": "Lance brothers"
+    },
+    {
+      "a": "Ja'Marr Chase",
+      "b": "Ja'Lynn Polk",
+      "kind": "cousins",
+      "label": "Chase & Polk cousins"
+    }
+  ],
+  "rivalry": [
+    {
+      "a": "Alabama",
+      "b": "Auburn",
+      "label": "Iron Bowl"
+    },
+    {
+      "a": "Michigan",
+      "b": "Ohio State",
+      "label": "The Game"
+    },
+    {
+      "a": "Texas",
+      "b": "Oklahoma",
+      "label": "Red River Rivalry"
+    },
+    {
+      "a": "USC",
+      "b": "UCLA",
+      "label": "LA Crosstown Rivalry"
+    },
+    {
+      "a": "Notre Dame",
+      "b": "USC",
+      "label": "Notre Dame vs USC"
+    },
+    {
+      "a": "Florida",
+      "b": "Georgia",
+      "label": "World's Largest Outdoor Cocktail Party"
+    },
+    {
+      "a": "Florida",
+      "b": "Florida State",
+      "label": "Florida vs Florida State"
+    },
+    {
+      "a": "Clemson",
+      "b": "South Carolina",
+      "label": "Palmetto Bowl"
+    },
+    {
+      "a": "Georgia",
+      "b": "Georgia Tech",
+      "label": "Clean, Old-Fashioned Hate"
+    },
+    {
+      "a": "LSU",
+      "b": "Alabama",
+      "label": "LSU-Alabama"
+    },
+    {
+      "a": "Oregon",
+      "b": "Oregon State",
+      "label": "Civil War"
+    },
+    {
+      "a": "Oklahoma",
+      "b": "Oklahoma State",
+      "label": "Bedlam"
+    },
+    {
+      "a": "Army",
+      "b": "Navy",
+      "label": "Army-Navy"
+    },
+    {
+      "a": "Miami",
+      "b": "Florida State",
+      "label": "Miami-FSU"
+    },
+    {
+      "a": "Penn State",
+      "b": "Ohio State",
+      "label": "Penn State-Ohio State"
+    },
+    {
+      "a": "Wisconsin",
+      "b": "Minnesota",
+      "label": "Paul Bunyan's Axe"
+    }
+  ]
+}
