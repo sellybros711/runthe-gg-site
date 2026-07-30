@@ -488,6 +488,40 @@
   .g .sc{flex:0 0 58px;text-align:right;font-family:var(--fn);font-size:14px;white-space:nowrap}
   .g.po{background:linear-gradient(90deg,rgba(168,85,247,.20),var(--panel))}
   .g.bowl{background:linear-gradient(90deg,rgba(168,85,247,.12),var(--panel))}
+  /* A game you played opens its box score. */
+  .g.clickable{cursor:pointer;transition:background .12s}
+  .g.clickable:hover{background:rgba(255,255,255,.055)}
+  .g.clickable:after{content:'\203A';flex:0 0 auto;color:var(--dim-2);font-size:18px;
+    line-height:1;margin:-2px -2px 0 -3px}
+  .cw.clickable{cursor:pointer}
+  .cw.clickable:hover{border-color:var(--line-2);background:rgba(255,255,255,.03)}
+
+  /* ── box score (game sheet) ─────────────────────────────────────
+     The line score and the scoring summary, the way a broadcast graphic or a
+     newspaper agate line would carry a college game. */
+  .boxscore{width:100%;border-collapse:collapse;margin:2px 0 6px;font-variant-numeric:tabular-nums}
+  .boxscore th,.boxscore td{padding:7px 4px;text-align:center;font-family:var(--fn);font-size:14px}
+  .boxscore thead th{font-size:10px;letter-spacing:.1em;color:var(--dim-2);font-weight:700;
+    border-bottom:1px solid var(--line)}
+  .boxscore tbody th{text-align:left;font-family:var(--fd);font-size:17px;letter-spacing:.02em;
+    color:var(--ink);width:36%}
+  .boxscore tr.you th{color:#6ee7b7}
+  .boxscore tbody td{color:var(--dim)}
+  .boxscore td.tot{font-family:var(--fd);font-size:20px}
+  .boxscore tr.win td.tot{color:#fff}
+  .boxscore tr.win th:after{content:'';display:inline-block;width:6px;height:6px;margin-left:6px;
+    border-radius:50%;background:var(--gold);vertical-align:middle}
+  .bssum{margin-top:4px;border-top:1px solid var(--line);padding-top:6px;max-height:44vh;overflow-y:auto}
+  .bsq{font-family:var(--fn);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--dim-2);margin:9px 0 3px}
+  .bsp{display:grid;grid-template-columns:46px 42px 1fr auto;align-items:center;gap:8px;padding:4px 0;
+    font-size:13px;border-top:1px solid rgba(255,255,255,.04)}
+  .bsp .bsc{color:var(--dim-2);font-size:12px;font-variant-numeric:tabular-nums}
+  .bsp .bsw{font-family:var(--fn);font-size:12px;font-weight:800}
+  .bsp.you .bsw{color:#6ee7b7} .bsp.them .bsw{color:#cbd5e1}
+  .bsp .bsk{color:var(--ink)}
+  .bsp .bss{color:var(--dim);font-size:12px;font-variant-numeric:tabular-nums}
+  .bsnone{font-size:13px;color:var(--dim);text-align:center;padding:14px 0}
 
   /* ── score bug ──────────────────────────────────────────────── */
   .bug{border-radius:16px;overflow:hidden;padding:5px;
@@ -1288,7 +1322,7 @@ or endorsed by the NCAA, the CFP or any school.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=2"></script>
+<script src="engine.js?v=3"></script>
 <script src="run.js?v=2"></script>
 <script>
 (function(){
@@ -1533,6 +1567,15 @@ function closeSheet(){$('sheet').classList.remove('on');}
 $('sheet').addEventListener('click',(e)=>{
   if(e.target===$('sheet')) closeSheet();
 });
+/* Tap any played game — in the season calendar or the results recap — for its box score. */
+function bindBoxScore(id){
+  const el=$(id); if(!el) return;
+  el.addEventListener('click',(e)=>{
+    const g=e.target.closest('[data-gi]'); if(!g||!run||!run.season) return;
+    openBoxScore(run.season.results[+g.dataset.gi]);
+  });
+}
+bindBoxScore('v-list'); bindBoxScore('o-list');
 
 /* ── boot ────────────────────────────────────────────────────── */
 async function boot(){
@@ -1713,6 +1756,54 @@ function sheet(p){
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet();
   $('sh-x').onclick=closeSheet;
+}
+
+/* Regenerate a played game's box score from the same seeded script the live
+   broadcast used, so a regular-season sim, a playoff, or a bowl all open the
+   same line score and scoring summary every time. */
+function openBoxScore(r){
+  if(!r||!run) return;
+  const o=r.opponent_id?DATA.byTeamSeasonId[r.opponent_id]:null;
+  const oppAbbr=o?E.teamColors(o).abbreviation:'OPP';
+  const key=r.playoff?run.seed+'|'+(r.round||'Playoffs')+'|'+r.shownYou+'-'+r.shownThem
+    :r.bowl?run.seed+'|bowl|'+r.shownYou+'-'+r.shownThem
+    :run.seed+'|w'+r.week+'|'+r.shownYou+'-'+r.shownThem;
+  const script=E.scoringScript(r.shownYou,r.shownThem,r.won,E.createSeededRNG(E.hashSeed(key)));
+  const yq=[0,0,0,0],tq=[0,0,0,0];
+  for(const p of script){ const q=Math.min(4,Math.max(1,p.q))-1;
+    if(p.team==='you') yq[q]+=p.points; else tq[q]+=p.points; }
+  const youWin=r.shownYou>=r.shownThem;
+  const oppRk=teamRank(r.opponent_id);
+  const label=r.playoff?(ROUND_SHORT[r.round]||'Playoff')
+    :r.bowl?(run.bowlInfo?run.bowlInfo.name:'Bowl Game')
+    :'Week '+r.week;
+  const cells=(arr)=>arr.map(v=>'<td>'+v+'</td>').join('');
+  const KIND={'TOUCHDOWN':'TD','FIELD GOAL':'FG','SAFETY':'Safety'};
+  let summary='',curQ=0;
+  for(const p of script){
+    if(p.q!==curQ){ curQ=p.q; summary+='<div class="bsq">'+(QNAME[curQ-1]||curQ+'TH')+' Quarter</div>'; }
+    summary+='<div class="bsp '+(p.team==='you'?'you':'them')+'">'+
+      '<span class="bsc">'+p.clock+'</span>'+
+      '<span class="bsw">'+esc(p.team==='you'?'YOU':oppAbbr)+'</span>'+
+      '<span class="bsk">'+(KIND[p.kind]||p.kind)+(p.note?' &middot; '+esc(p.note):'')+'</span>'+
+      '<span class="bss">'+p.you+'&ndash;'+p.them+'</span></div>';
+  }
+  if(!summary) summary='<div class="bsnone">A defensive slugfest &mdash; nobody found the end zone.</div>';
+  $('sheet-in').innerHTML=
+    '<div class="eyebrow'+(r.won?' green':'')+'">'+esc(label)+' &middot; '+(r.won?'Win':'Loss')+'</div>'+
+    '<h2 class="display" style="font-size:22px;margin:5px 0 2px">'+
+      (oppRk?'<span style="color:#ffd23a">#'+oppRk+'</span> ':'')+esc(r.opponent)+'</h2>'+
+    '<p class="dim" style="font-size:12px;margin:0 0 12px">'+
+      (o&&o.conference?esc(o.conference):'')+(o&&o.record?' &middot; '+esc(o.record):'')+'</p>'+
+    '<table class="boxscore"><thead><tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th>'+
+      '<th class="tot">T</th></tr></thead><tbody>'+
+    '<tr class="you'+(youWin?' win':'')+'"><th>YOU</th>'+cells(yq)+'<td class="tot">'+r.shownYou+'</td></tr>'+
+    '<tr class="them'+(!youWin?' win':'')+'"><th>'+esc(oppAbbr)+'</th>'+cells(tq)+'<td class="tot">'+r.shownThem+'</td></tr>'+
+    '</tbody></table>'+
+    '<div class="bssum">'+summary+'</div>'+
+    '<div style="margin-top:14px"><button class="btn ghost" id="bs-x">Close</button></div>';
+  openSheet();
+  $('bs-x').onclick=closeSheet;
 }
 
 /* ── new run / begin draft ───────────────────────────────────── */
@@ -2064,9 +2155,10 @@ function paintSquad(){
 $('b-play').onclick=()=>startSeason();
 
 /* ── season simulation ───────────────────────────────────────── */
-function pushGame(r,el){
+function pushGame(r,el,gi){
   const tag=r.playoff?'PO':(r.bowl?'BOWL':'WK '+r.week);
-  el.insertAdjacentHTML('afterbegin','<div class="g new'+(r.playoff?' po':'')+(r.bowl?' bowl':'')+'">'+
+  el.insertAdjacentHTML('afterbegin','<div class="g clickable new'+(r.playoff?' po':'')+(r.bowl?' bowl':'')+'"'+
+    (gi!=null?' data-gi="'+gi+'"':'')+'>'+
     '<span class="wk">'+tag+'</span>'+
     '<span class="res '+(r.won?'w':'l')+'">'+(r.won?'W':'L')+'</span>'+
     '<span class="opp">'+esc(r.opponent)+'</span>'+
@@ -2091,7 +2183,8 @@ function paintCalendar(justPlayed){
     const theId=r?r.opponent_id:oppId;
     const rk=theId?teamRank(theId):0;
     return '<div class="cw'+(r?(r.won?' w':' l'):' todo')+(extra?' '+extra:'')+
-      (rk?' ranked':'')+(r&&r===justPlayed?' now':'')+'">'+
+      (rk?' ranked':'')+(r&&r===justPlayed?' now':'')+(r?' clickable':'')+'"'+
+      (r?' data-gi="'+run.season.results.indexOf(r)+'"':'')+'>'+
       (rk?'<span class="rkflag">#'+rk+'</span>':'')+
       '<span class="t">'+tag+'</span>'+
       '<span class="o">'+(r?esc(DATA.byTeamSeasonId[r.opponent_id]?
@@ -2969,7 +3062,7 @@ function paintOver(){
   $('o-miss').innerHTML='<div style="text-align:center;padding:12px 0;color:var(--dim);font-size:13px"><div class="dots" style="margin-bottom:8px"><i></i><i></i><i></i></div>Working out the best you could have drafted</div>';
 
   const list=$('o-list');
-  list.innerHTML=''; s.results.forEach(r=>pushGame(r,list));
+  list.innerHTML=''; s.results.forEach((r,i)=>pushGame(r,list,i));
   $('o-gcount').textContent=' · '+s.results.length+' games';
   setOverTab('perfect');
   show('s-over');
