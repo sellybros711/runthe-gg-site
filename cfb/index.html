@@ -957,23 +957,24 @@
 
   /* ── draft columns ──────────────────────────────────────────────
      One column on a phone and on into the tablet range, so the page reads
-     field → reels → tabs → options with nothing stranded beside it. Only a
-     genuine desktop (≥920px) splits into two, and only the draft — the screen
-     that actually wants the width — grows the wrap. The formation stays left,
-     everything you touch goes right, and the options fan out to three columns
-     so the right side no longer towers over an empty left. */
+     field → reels → tabs → options with nothing stranded beside it. On a real
+     desktop (≥920px) the draft grows the wrap and the roster becomes the
+     centrepiece: the field and the wheel sit as a wide, centred block up top,
+     and the player options fan out to fill the whole width beneath them — no
+     narrow column with an empty half beside it. */
   .dcols{display:block}
   .dcol{min-width:0}
   @media(min-width:920px){
-    .wrap:has(#s-draft.on){max-width:1040px}
+    .wrap:has(#s-draft.on){max-width:1080px}
     .wrap:has(#s-squad.on),
     .wrap:has(#s-season.on),
     .wrap:has(#s-seed.on),
     .wrap:has(#s-over.on){max-width:860px}
-    .dcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-      column-gap:24px;align-items:start}
-    .opts{grid-template-columns:repeat(3,minmax(0,1fr))}
-    .reels{margin-top:0}
+    /* Field, lineup pips and the wheel: one centred column, wider than before. */
+    .dcol:first-child,.dcol:last-child .reels{max-width:680px;margin-left:auto;margin-right:auto}
+    .dcol:last-child .reels{margin-top:14px}
+    /* The options use the full width below, as many columns as fit. */
+    .opts{grid-template-columns:repeat(auto-fill,minmax(228px,1fr))}
   }
 
   /* ── footer ─────────────────────────────────────────────────── */
