@@ -1,6 +1,6 @@
 /* Stage 1, cfb_player_seasons.
  *
- *   CFBD_KEY=... node CFB/build/01-players.mjs
+ *   CFBD_KEY=... node cfb/build/01-players.mjs
  *
  * Fetches per-game player stats from the CFBD API, computes PPR fantasy points
  * per game, aggregates to season-level mean/SD, and prices via a VOR curve

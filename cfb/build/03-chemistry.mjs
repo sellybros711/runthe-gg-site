@@ -1,6 +1,6 @@
 /* Stage 3, chemistry source data.
  *
- *   CFBD_KEY=... node CFB/build/03-chemistry.mjs      (run 01 and 02 first)
+ *   CFBD_KEY=... node cfb/build/03-chemistry.mjs      (run 01 and 02 first)
  *
  * Same approach as football/build/03-chemistry.mjs: everything derivable from
  * a player's own attributes is derived at runtime. Only what cannot be derived

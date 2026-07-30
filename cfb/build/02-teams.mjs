@@ -1,6 +1,6 @@
 /* Stage 2, cfb_team_seasons (the opponent table).
  *
- *   CFBD_KEY=... node CFB/build/02-teams.mjs        (run 01-players.mjs first)
+ *   CFBD_KEY=... node cfb/build/02-teams.mjs        (run 01-players.mjs first)
  *
  * Produces data/cfb_team_seasons.{json,csv}: one row per drawable team-season,
  * with scoring/defense distributions, strength z-scores, per-slot eligible

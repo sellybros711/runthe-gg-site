@@ -1,6 +1,6 @@
 /* Stage 5, awards.
  *
- *   node CFB/build/05-awards.mjs
+ *   node cfb/build/05-awards.mjs
  *
  * Joins data/raw/cfb_awards.csv onto data/cfb_player_seasons.json, writing an
  * `awards` array on every player-season that won something. Idempotent.

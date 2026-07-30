@@ -1,6 +1,6 @@
 /* Stage 4, display-score calibration.
  *
- *   node CFB/build/04-display.mjs        (run 01 and 02 first)
+ *   node cfb/build/04-display.mjs        (run 01 and 02 first)
  *
  * Same approach as football/build/04-display.mjs: maps internal fantasy-point
  * margins onto real college football scorelines via paired quantile tables.
