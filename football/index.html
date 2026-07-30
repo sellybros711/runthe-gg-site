@@ -3186,7 +3186,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
       <div class="gm-report" id="rv-report"></div>
     </div>
-    <div id="rv-start-wrap" style="margin-top:16px;display:none"><button class="btn blue" id="b-rv-start">Start the season</button></div>
+    <div id="rv-start-wrap" style="margin-top:16px;display:none"><button class="btn blue" id="b-rv-start">Work the phones</button></div>
   </div>
 
   <div class="screen" id="s-season">
@@ -3530,7 +3530,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=37"></script>
-<script src="run.js?v=44"></script>
+<script src="run.js?v=45"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -5643,7 +5643,12 @@ function openTeamReveal(){
     revealTimers.push(setTimeout(finish,order.length*INT+340));
   }
 
-  $('b-rv-start').onclick=()=>{ clearRevealTimers(); startTradeSeason(); };
+  $('b-rv-start').onclick=()=>{
+    clearRevealTimers();
+    /* Straight from meeting the team into the one window that exists before kickoff. Passing
+       there starts the season, so nobody is forced to deal. */
+    openTradeWindow(startTradeSeason,{preseason:true});
+  };
   show('s-reveal');
 }
 
@@ -5690,7 +5695,8 @@ function gmScoutingReport(run){
   if(qb) parts.push('<b>'+esc(qb.name)+'</b> runs the offense at '+qb.ppr_ppg_mean.toFixed(1)+' a game');
   if(bestSkill&&bestSkill!==qb) parts.push('with <b>'+esc(bestSkill.name)+'</b> ('+esc(bestSkill.position)+') the top weapon at '+bestSkill.ppr_ppg_mean.toFixed(1));
   const lead=parts.length?parts.join(', ')+'. ':'';
-  const verdict=lead+'It grades out as '+shape+'. You get four trade windows to make your moves.';
+  const verdict=lead+'It grades out as '+shape+'. You get four trade windows: one now, then '+
+    'after weeks '+R.TRADE_WEEKS.slice(0,-1).join(', ')+' and '+R.TRADE_DEADLINE_WEEK+'.';
 
   const lines=[];
   const aw=topAward(best);
@@ -5752,6 +5758,15 @@ function paintSquadSidebar(){
 }
 
 let tradeResumeStep=null;
+let preseasonWindow=false;
+/* Every way out of a trade window goes through here. Mid-season it stages the season screen
+   and resumes the sim; before kickoff there is no sim yet, so it hands straight to the caller
+   (which paints the season screen and starts it). */
+function leaveTradeWindow(delay){
+  if(preseasonWindow){ preseasonWindow=false; const go=tradeResumeStep; if(go) go(); return; }
+  show('s-season');
+  simTimer=setTimeout(tradeResumeStep,delay);
+}
 let shopSel=[];          // roster indices the GM has put on the block (max 2)
 let currentOffers=[];    // the market's returns for that package
 let selectedOffer=null;
@@ -5761,23 +5776,29 @@ function clearRevealTimers(){ revealTimers.forEach(clearTimeout); revealTimers=[
 /* THE TRADE FINDER opens on the shop: your roster, tap up to two players to put on the
    block. Nothing is offered until you choose who leaves, which is the whole point — you
    run the team, the league reacts to you. */
-function openTradeWindow(step){
-  R.inflateContracts(run);
+function openTradeWindow(step,opts){
+  preseasonWindow=!!(opts&&opts.preseason);
+  /* The preseason window does not inflate: nobody gets a raise before week one. */
+  if(!preseasonWindow) R.inflateContracts(run);
   run.tradeWindows=(run.tradeWindows||0)+1;
   tradeResumeStep=step;
   shopSel=[]; currentOffers=[]; selectedOffer=null;
-  const deadline=run.season.week>=15;
-  $('tw-eye').textContent=(deadline?'Trade deadline':'Trade window')+' · Week '+run.season.week;
+  const deadline=!preseasonWindow&&run.season.week>=R.TRADE_DEADLINE_WEEK;
+  $('tw-eye').textContent=preseasonWindow?'Preseason · Before week 1'
+    :(deadline?'Trade deadline · Week '+run.season.week:'Trade window · Week '+run.season.week);
   $('tw-title').textContent='Trade finder';
-  $('tw-sub').textContent=deadline
-    ?'Last chance to deal. Put one or two players on the block.'
+  $('tw-sub').textContent=preseasonWindow
+    ?'Fix the roster before kickoff. Put one or two players on the block.'
+    :deadline
+    ?'Last window of the year. After this you ride out the season with what you have.'
     :'Put one or two players on the block, then see what the league offers.';
   $('tw-market').style.display='none';
   $('tw-shop').style.display='';
   paintShopList();
   $('b-tw-find').onclick=enterMarket;
-  $('b-tw-pass').onclick=()=>{ show('s-season'); simTimer=setTimeout(tradeResumeStep,400); };
+  $('b-tw-pass').onclick=()=>{ leaveTradeWindow(400); };
   $('b-tw-back').onclick=backToShop;
+  $('b-tw-pass').textContent=preseasonWindow?'No deal, start the season':'Pass and keep my roster';
   show('s-trade');
 }
 
@@ -5864,7 +5885,7 @@ function enterMarket(){
     paintRosterPanel('season-rp-body','season-rp-cap');
     toast('Acquired '+got);
     if(run.pendingFreeAgency){ openFreeAgency(); return; }
-    show('s-season'); simTimer=setTimeout(tradeResumeStep,600);
+    leaveTradeWindow(600);
   };
 }
 
@@ -5997,7 +6018,7 @@ let selectedFAPlayer=null;
 
 function openFreeAgency(){
   const pending=run.pendingFreeAgency;
-  if(!pending){show('s-season');simTimer=setTimeout(tradeResumeStep,400);return;}
+  if(!pending){leaveTradeWindow(400);return;}
   const position=pending.position;
   const agents=R.generateFreeAgents(run,DATA,position);
   selectedFAPlayer=null;
@@ -6007,7 +6028,7 @@ function openFreeAgency(){
   if(!agents.length){
     el.innerHTML='<p class="dim" style="font-size:13px;text-align:center;padding:16px 0">No free agents available.</p>';
     $('b-fa-sign').style.display='none';
-    setTimeout(()=>{show('s-season');simTimer=setTimeout(tradeResumeStep,400);},1200);
+    setTimeout(()=>leaveTradeWindow(400),1200);
     return;
   }
   $('b-fa-sign').style.display='';
@@ -6033,8 +6054,7 @@ function openFreeAgency(){
     paintSquadSidebar();
     paintRosterPanel('season-rp-body','season-rp-cap');
     toast('Signed '+selectedFAPlayer.name);
-    show('s-season');
-    simTimer=setTimeout(tradeResumeStep,600);
+    leaveTradeWindow(600);
   };
   show('s-fa');
 }
