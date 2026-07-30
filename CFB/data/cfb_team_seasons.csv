@@ -1,0 +1,1381 @@
+team_season_id,school,season,display,conference,abbreviation,mascot,color,alt_color,games,record,pts_scored_mean,pts_scored_sd,pts_allowed_mean,pts_allowed_sd,point_diff_pg,strength_z,eligible_qb,eligible_rb,eligible_wr,eligible_te
+Alabama-2005,Alabama,2005,2005 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,11,9-2,22.73,10.06,10.73,8.7,12,0.67,1,4,5,0
+Arizona-2005,Arizona,2005,2005 Arizona,Pac-10,ARIZ,Wildcats,#0c234b,#ab0520,11,3-8,22.91,12.72,26.36,9.05,-3.455,-0.711,0,2,4,0
+Arizona State-2005,Arizona State,2005,2005 Arizona State,Pac-10,ASU,Sun Devils,#8e0c3a,#ffc72c,11,6-5,36.09,13.37,29,10.38,7.091,0.232,1,2,6,0
+Arkansas-2005,Arkansas,2005,2005 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,11,4-7,25.73,13.74,24.64,16.52,1.091,-0.305,1,4,2,0
+Auburn-2005,Auburn,2005,2005 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,11,9-2,34.18,14.46,14.73,10.24,19.455,1.337,1,3,5,0
+Baylor-2005,Baylor,2005,2005 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,11,5-6,21.45,15.53,26.45,14.81,-5,-0.849,2,2,3,0
+Boise State-2005,Boise State,2005,2005 Boise State,Western Athletic,BOIS,Broncos,#0033a0,#fa4616,12,9-3,37.33,18.36,24.17,12.47,13.167,0.775,1,4,5,0
+Boston College-2005,Boston College,2005,2005 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,11,8-3,25.73,11,15.45,10.42,10.273,0.516,2,3,6,0
+California-2005,California,2005,2005 California,Pac-10,CAL,Golden Bears,#031522,#ffc423,11,7-4,32.73,13.11,20.55,15.39,12.182,0.687,1,2,5,0
+Clemson-2005,Clemson,2005,2005 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,11,7-4,27,11.81,18.27,9.58,8.727,0.378,1,3,4,0
+Colorado-2005,Colorado,2005,2005 Colorado,Big 12,COLO,Buffaloes,#CFB87C,#000000,12,7-5,24.58,15.91,24,19.02,0.583,-0.35,1,3,6,0
+Duke-2005,Duke,2005,2005 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,11,1-10,16.09,11.34,37.09,13.26,-21,-2.279,1,3,5,0
+Florida-2005,Florida,2005,2005 Florida,SEC,FLA,Gators,#0021a5,#fa4616,11,8-3,28.36,15.07,18.36,12.75,10,0.492,1,4,3,0
+Florida State-2005,Florida State,2005,2005 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,12,8-4,29.42,17.47,21.67,8.65,7.75,0.291,2,2,5,0
+Georgia-2005,Georgia,2005,2005 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,12,10-2,29.08,12.43,14.58,6.37,14.5,0.894,1,3,6,0
+Georgia Tech-2005,Georgia Tech,2005,2005 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,11,7-4,19.27,9.8,18.45,12.02,0.818,-0.329,1,2,5,0
+Illinois-2005,Illinois,2005,2005 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,11,2-9,17,12.06,39.55,12.6,-22.545,-2.417,1,2,6,0
+Indiana-2005,Indiana,2005,2005 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,11,4-7,22.55,9.74,32.82,13.02,-10.273,-1.32,1,2,5,0
+Iowa-2005,Iowa,2005,2005 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,11,7-4,30.55,17.32,19,9.67,11.545,0.63,1,3,5,1
+Iowa State-2005,Iowa State,2005,2005 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,11,7-4,28.64,9.8,18.45,7.41,10.182,0.508,1,3,5,0
+Kansas-2005,Kansas,2005,2005 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,11,6-5,20.64,12.98,22.82,18.07,-2.182,-0.597,1,2,5,0
+Kansas State-2005,Kansas State,2005,2005 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,11,5-6,26.27,11.7,27.73,16.43,-1.455,-0.532,1,2,6,0
+Kentucky-2005,Kentucky,2005,2005 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,11,3-8,21.73,13.36,34.09,14.22,-12.364,-1.507,2,2,4,0
+LSU-2005,LSU,2005,2005 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,12,10-2,28.58,12.21,15.17,11.42,13.417,0.797,1,3,7,0
+Maryland-2005,Maryland,2005,2005 Maryland,ACC,MD,Terrapins,#D5002B,#ffcd00,11,5-6,24.55,10.69,25,9.07,-0.455,-0.443,1,3,4,0
+Miami-2005,Miami,2005,2005 Miami,ACC,MIA,Hurricanes,#005030,#f47321,11,9-2,29.27,13.62,11.91,7.97,17.364,1.15,1,3,6,0
+Michigan-2005,Michigan,2005,2005 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,11,7-4,28.82,12.26,19.27,8.04,9.545,0.451,1,4,6,0
+Michigan State-2005,Michigan State,2005,2005 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,11,5-6,33.82,15.3,28.73,12.74,5.091,0.053,1,3,6,0
+Minnesota-2005,Minnesota,2005,2005 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,11,7-4,36.18,11.69,28.55,15.04,7.636,0.28,1,3,5,0
+Mississippi State-2005,Mississippi State,2005,2005 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,11,3-8,13.91,12.72,23.55,11.89,-9.636,-1.263,2,2,4,0
+Missouri-2005,Missouri,2005,2005 Missouri,Big 12,MIZ,Tigers,#f1b82d,#000000,11,6-5,30.09,14.34,29,12.73,1.091,-0.305,2,3,7,0
+NC State-2005,NC State,2005,2005 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,11,6-5,21.36,11.81,19.27,9.38,2.091,-0.215,2,3,5,0
+Nebraska-2005,Nebraska,2005,2005 Nebraska,Big 12,NEB,Cornhuskers,#d00000,#ffffff,11,7-4,24,7.24,20.36,14.7,3.636,-0.077,1,3,5,0
+North Carolina-2005,North Carolina,2005,2005 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,11,5-6,18,10.32,26.18,16.79,-8.182,-1.133,1,3,6,0
+Northwestern-2005,Northwestern,2005,2005 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,11,7-4,31.82,13.26,32.45,13.2,-0.636,-0.459,1,3,6,0
+Notre Dame-2005,Notre Dame,2005,2005 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,11,9-2,38.18,8.95,23.64,10.16,14.545,0.898,1,3,4,0
+Ohio State-2005,Ohio State,2005,2005 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,11,9-2,32.55,11.13,14.82,9.47,17.727,1.182,2,2,4,0
+Oklahoma-2005,Oklahoma,2005,2005 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,11,7-4,27.82,11.44,23.91,12.18,3.909,-0.053,1,5,6,0
+Oklahoma State-2005,Oklahoma State,2005,2005 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,11,4-7,20.18,9.88,31.27,18.61,-11.091,-1.393,2,2,5,0
+Ole Miss-2005,Ole Miss,2005,2005 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,11,3-8,13.45,6.89,22.27,12.04,-8.818,-1.19,1,2,5,0
+Oregon-2005,Oregon,2005,2005 Oregon,Pac-10,ORE,Ducks,#007030,#fee11a,11,10-1,36.36,11.72,23.73,9.42,12.636,0.727,2,3,5,0
+Oregon State-2005,Oregon State,2005,2005 Oregon State,Pac-10,ORST,Beavers,#231f20,#d73f09,11,5-6,26.64,9.32,33.18,17.65,-6.545,-0.987,2,1,5,0
+Penn State-2005,Penn State,2005,2005 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,11,10-1,35.18,12.36,16.45,8.04,18.727,1.272,1,2,4,0
+Purdue-2005,Purdue,2005,2005 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,11,5-6,30,10.3,28.09,12.83,1.909,-0.231,2,3,7,0
+South Carolina-2005,South Carolina,2005,2005 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,11,7-4,23,13.59,21.91,11.51,1.091,-0.305,1,4,4,0
+Stanford-2005,Stanford,2005,2005 Stanford,Pac-10,STAN,Cardinal,#8c1515,#ffffff,11,5-6,24.45,11.54,30.64,11.58,-6.182,-0.954,1,4,4,0
+TCU-2005,TCU,2005,2005 TCU,Mountain West,TCU,Horned Frogs,#4d1979,#f1f2f3,11,10-1,33.73,14.69,18.09,12.86,15.636,0.995,1,2,4,0
+Tennessee-2005,Tennessee,2005,2005 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,11,5-6,18.64,8.5,18.64,10.82,0,-0.402,2,2,7,0
+Texas-2005,Texas,2005,2005 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,12,12-0,50.92,12.5,14.58,9.5,36.333,2.845,1,4,5,0
+Texas A&M-2005,Texas A&M,2005,2005 Texas A&M,Big 12,TA&M,Aggies,#500000,#ffffff,11,5-6,32,17.97,31.18,13.83,0.818,-0.329,2,2,5,0
+Texas Tech-2005,Texas Tech,2005,2005 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,11,9-2,42.09,21.4,19.36,14.26,22.727,1.629,1,2,7,0
+UCLA-2005,UCLA,2005,2005 UCLA,Pac-10,UCLA,Bruins,#2774ae,#f2a900,11,9-2,38.09,15.15,33.82,14.99,4.273,-0.02,1,3,5,1
+USC-2005,USC,2005,2005 USC,Pac-10,USC,Trojans,#9e2237,#ffcc00,12,12-0,50,11.93,21.33,8.96,28.667,2.16,1,2,5,0
+Utah-2005,Utah,2005,2005 Utah,Mountain West,UTAH,Utes,#ea002a,#ffffff,11,6-5,29.27,10.34,25.36,8.94,3.909,-0.053,1,2,5,0
+Vanderbilt-2005,Vanderbilt,2005,2005 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,11,5-6,27.18,11.37,29.18,11.89,-2,-0.581,1,2,6,0
+Virginia-2005,Virginia,2005,2005 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,11,6-5,26,12.62,22.55,15.23,3.455,-0.093,1,4,6,0
+Virginia Tech-2005,Virginia Tech,2005,2005 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,12,10-2,33.75,13.62,12,9.08,21.75,1.542,1,4,6,0
+Wake Forest-2005,Wake Forest,2005,2005 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,11,4-7,24.45,12.61,28.73,11.14,-4.273,-0.784,2,2,5,0
+Washington-2005,Washington,2005,2005 Washington,Pac-10,WASH,Huskies,#33006f,#e8d3a2,11,2-9,21.55,8.07,30.64,16.56,-9.091,-1.214,1,3,5,0
+Washington State-2005,Washington State,2005,2005 Washington State,Pac-10,WSU,Cougars,#981e32,#ffffff,11,4-7,33.45,12.24,31.45,13.74,2,-0.223,1,1,4,0
+Wisconsin-2005,Wisconsin,2005,2005 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,12,9-3,35.17,17.3,24.92,14.3,10.25,0.514,1,2,3,0
+Alabama-2006,Alabama,2006,2006 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,12,6-6,22.25,9.99,18,8.22,4.25,-0.042,1,3,6,0
+Arizona-2006,Arizona,2006,2006 Arizona,Pac-10,ARIZ,Wildcats,#0c234b,#ab0520,12,6-6,16.58,10.77,19.58,10.33,-3,-0.745,2,2,4,0
+Arizona State-2006,Arizona State,2006,2006 Arizona State,Pac-10,ASU,Sun Devils,#8e0c3a,#ffc72c,12,7-5,27,13.58,23.75,15.98,3.25,-0.139,1,4,6,0
+Arkansas-2006,Arkansas,2006,2006 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,13,10-3,30,12.49,18.38,14.29,11.615,0.672,2,3,3,1
+Auburn-2006,Auburn,2006,2006 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,10-2,25.42,10.93,13.92,10.82,11.5,0.661,1,3,4,2
+Baylor-2006,Baylor,2006,2006 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,4-8,23.58,11.56,32.58,20.16,-9,-1.327,1,2,7,0
+Boise State-2006,Boise State,2006,2006 Boise State,Western Athletic,BOIS,Broncos,#0033a0,#fa4616,12,12-0,39.42,10.44,15.58,10.41,23.833,1.856,1,3,5,0
+Boston College-2006,Boston College,2006,2006 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,9-3,26.08,9.16,15,10.39,11.083,0.62,1,2,8,0
+California-2006,California,2006,2006 California,Pac-10,CAL,Golden Bears,#031522,#ffc423,12,9-3,31.83,12.8,20.08,7.81,11.75,0.685,1,2,4,0
+Clemson-2006,Clemson,2006,2006 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,12,8-4,33.75,17.6,15.17,10.45,18.583,1.347,1,3,5,0
+Colorado-2006,Colorado,2006,2006 Colorado,Big 12,COLO,Buffaloes,#CFB87C,#000000,12,2-10,16.33,10.3,22.25,9.47,-5.917,-1.028,1,3,4,1
+Duke-2006,Duke,2006,2006 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,0-12,14.92,13.06,33.83,13.05,-18.917,-2.289,1,3,7,0
+Florida-2006,Florida,2006,2006 Florida,SEC,FLA,Gators,#0021a5,#fa4616,13,12-1,28.85,12.6,13.46,8.82,15.385,1.037,2,3,4,0
+Florida State-2006,Florida State,2006,2006 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,12,6-6,25.08,15.45,19.25,9.14,5.833,0.111,2,3,5,0
+Georgia-2006,Georgia,2006,2006 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,12,8-4,24.67,11.15,17.08,13.59,7.583,0.281,1,4,5,0
+Georgia Tech-2006,Georgia Tech,2006,2006 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,13,9-4,24.15,14.36,16.85,9.2,7.308,0.254,1,2,2,0
+Illinois-2006,Illinois,2006,2006 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,2-10,19.58,11.8,26.75,7.64,-7.167,-1.149,0,2,4,0
+Indiana-2006,Indiana,2006,2006 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,5-7,23.08,13.86,32.83,14.18,-9.75,-1.4,1,4,6,0
+Iowa-2006,Iowa,2006,2006 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,6-6,23.83,11.79,20.25,9.99,3.583,-0.107,1,2,4,1
+Iowa State-2006,Iowa State,2006,2006 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,4-8,18.83,10.2,30.75,10.09,-11.917,-1.61,1,3,7,0
+Kansas-2006,Kansas,2006,2006 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,6-6,29,11.15,25.5,12.83,3.5,-0.115,1,3,6,0
+Kansas State-2006,Kansas State,2006,2006 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,7-5,23.83,14.5,22.67,13.33,1.167,-0.341,2,2,6,1
+Kentucky-2006,Kentucky,2006,2006 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,7-5,26.58,14.75,29.08,14.93,-2.5,-0.697,1,3,4,0
+LSU-2006,LSU,2006,2006 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,12,10-2,33.08,15.47,12.5,9.26,20.583,1.541,1,6,3,0
+Maryland-2006,Maryland,2006,2006 Maryland,ACC,MD,Terrapins,#D5002B,#ffcd00,12,8-4,21.67,5.71,23.08,12.09,-1.417,-0.592,1,3,5,0
+Miami-2006,Miami,2006,2006 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,6-6,19.5,13.05,15.08,8.6,4.417,-0.026,2,4,3,0
+Michigan-2006,Michigan,2006,2006 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,11-1,30.17,9.46,14.58,11.1,15.583,1.056,1,3,4,0
+Michigan State-2006,Michigan State,2006,2006 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,4-8,25.17,13.83,28.42,10.27,-3.25,-0.77,2,3,5,0
+Minnesota-2006,Minnesota,2006,2006 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,6-6,27.92,20.03,24.5,15.83,3.417,-0.123,1,3,5,0
+Mississippi State-2006,Mississippi State,2006,2006 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,3-9,18.42,11.02,25.75,13.32,-7.333,-1.165,2,4,4,0
+Missouri-2006,Missouri,2006,2006 Missouri,Big 12,MIZ,Tigers,#f1b82d,#000000,12,8-4,29.42,11.52,17.92,8.58,11.5,0.661,1,4,7,0
+NC State-2006,NC State,2006,2006 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,3-9,17.5,5.54,21.83,7.4,-4.333,-0.875,2,2,5,0
+Nebraska-2006,Nebraska,2006,2006 Nebraska,Big 12,NEB,Cornhuskers,#d00000,#ffffff,13,9-4,31.85,15.64,18.38,11.9,13.462,0.851,1,4,6,0
+North Carolina-2006,North Carolina,2006,2006 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,3-9,18,15.11,30.5,14.35,-12.5,-1.666,2,2,3,0
+Northwestern-2006,Northwestern,2006,2006 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,4-8,16.5,9.78,26.17,16.15,-9.667,-1.392,1,2,5,0
+Notre Dame-2006,Notre Dame,2006,2006 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,10-2,32.42,10.18,22.42,13.3,10,0.515,1,2,4,0
+Ohio State-2006,Ohio State,2006,2006 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,12,12-0,36.33,9.85,10.42,9.97,25.917,2.058,1,3,6,0
+Oklahoma-2006,Oklahoma,2006,2006 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,13,11-2,29.38,11.93,15.31,9.98,14.077,0.91,1,3,4,1
+Oklahoma State-2006,Oklahoma State,2006,2006 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,6-6,35.33,15.41,25.17,10.67,10.167,0.531,2,4,3,0
+Ole Miss-2006,Ole Miss,2006,2006 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,4-8,15.67,8.63,22.92,9.44,-7.25,-1.157,1,3,4,0
+Oregon-2006,Oregon,2006,2006 Oregon,Pac-10,ORE,Ducks,#007030,#fee11a,12,7-5,31.25,14.07,25.58,11.66,5.667,0.095,2,2,5,0
+Oregon State-2006,Oregon State,2006,2006 Oregon State,Pac-10,ORST,Beavers,#231f20,#d73f09,13,9-4,26.92,14.93,21,13.24,5.923,0.12,2,2,4,0
+Penn State-2006,Penn State,2006,2006 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,8-4,22.5,13.73,14.75,12.31,7.75,0.297,2,2,3,1
+Purdue-2006,Purdue,2006,2006 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,13,8-5,27.46,16.27,26.92,11.38,0.538,-0.402,1,2,5,0
+South Carolina-2006,South Carolina,2006,2006 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,7-5,25.17,13.82,17.25,9.45,7.917,0.313,2,2,2,0
+Stanford-2006,Stanford,2006,2006 Stanford,Pac-10,STAN,Cardinal,#8c1515,#ffffff,12,1-11,10.58,9.48,31.42,11.54,-20.833,-2.474,2,2,2,1
+TCU-2006,TCU,2006,2006 TCU,Mountain West,TCU,Horned Frogs,#4d1979,#f1f2f3,12,10-2,28.58,14.29,12.75,8.88,15.833,1.081,2,3,6,0
+Tennessee-2006,Tennessee,2006,2006 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,9-3,29.33,11.4,19.5,9.64,9.833,0.499,1,3,6,0
+Texas-2006,Texas,2006,2006 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,12,9-3,36.75,18.48,17.83,12.63,18.917,1.38,1,3,6,0
+Texas A&M-2006,Texas A&M,2006,2006 Texas A&M,Big 12,TA&M,Aggies,#500000,#ffffff,12,9-3,29.33,11.08,18.5,9.63,10.833,0.596,1,3,7,0
+Texas Tech-2006,Texas Tech,2006,2006 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,7-5,31.5,17.27,23.75,12.64,7.75,0.297,1,1,8,0
+UCLA-2006,UCLA,2006,2006 UCLA,Pac-10,UCLA,Bruins,#2774ae,#f2a900,12,7-5,22.67,5.9,17.92,12.72,4.75,0.006,1,3,5,1
+USC-2006,USC,2006,2006 USC,Pac-10,USC,Trojans,#9e2237,#ffcc00,12,10-2,30.33,11.21,14.92,9.41,15.417,1.04,1,3,5,0
+Vanderbilt-2006,Vanderbilt,2006,2006 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,4-8,22,13.49,23.67,9.55,-1.667,-0.616,1,2,5,0
+Virginia-2006,Virginia,2006,2006 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,5-7,15.08,10.69,17.83,13,-2.75,-0.721,1,2,5,0
+Virginia Tech-2006,Virginia Tech,2006,2006 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,12,10-2,26,10.18,9.33,11.17,16.667,1.161,1,3,5,1
+Wake Forest-2006,Wake Forest,2006,2006 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,13,11-2,22.23,9.24,14.69,8.76,7.538,0.276,1,5,4,0
+Washington-2006,Washington,2006,2006 Washington,Pac-10,WASH,Huskies,#33006f,#e8d3a2,12,5-7,21.83,8.8,25.92,7.59,-4.083,-0.85,2,2,5,0
+Washington State-2006,Washington State,2006,2006 Washington State,Pac-10,WSU,Cougars,#981e32,#ffffff,12,6-6,24.58,14.65,23.08,12.82,1.5,-0.309,1,3,6,0
+Wisconsin-2006,Wisconsin,2006,2006 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,12,11-1,30.25,13.14,11.92,8.94,18.333,1.323,1,3,4,0
+Alabama-2007,Alabama,2007,2007 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,12,6-6,26.83,13.32,21.83,10.08,5,0.023,1,3,5,0
+Arizona-2007,Arizona,2007,2007 Arizona,Pac-10,ARIZ,Wildcats,#0c234b,#ab0520,12,5-7,28,14.01,26.83,8.47,1.167,-0.355,1,2,5,1
+Arizona State-2007,Arizona State,2007,2007 Arizona State,Pac-10,ASU,Sun Devils,#8e0c3a,#ffc72c,12,10-2,32.17,9.43,20.08,12.12,12.083,0.722,1,3,7,0
+Arkansas-2007,Arkansas,2007,2007 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,8-4,39.83,17.11,25.58,15.08,14.25,0.936,1,4,5,0
+Auburn-2007,Auburn,2007,2007 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,8-4,24.33,12.28,16.67,12.44,7.667,0.286,1,3,5,1
+Baylor-2007,Baylor,2007,2007 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,3-9,18.17,12.79,37,13.02,-18.833,-2.329,1,3,5,2
+Boise State-2007,Boise State,2007,2007 Boise State,Western Athletic,BOIS,Broncos,#0033a0,#fa4616,12,10-2,42.75,17.04,20,18.91,22.75,1.775,1,3,5,1
+Boston College-2007,Boston College,2007,2007 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,13,10-3,28.62,11.52,20.31,9.34,8.308,0.35,1,2,7,0
+California-2007,California,2007,2007 California,Pac-10,CAL,Golden Bears,#031522,#ffc423,12,6-6,28.25,11.14,26,6.99,2.25,-0.248,1,1,6,0
+Clemson-2007,Clemson,2007,2007 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,12,9-3,34.17,17.78,18.33,8.75,15.833,1.092,1,2,5,2
+Colorado-2007,Colorado,2007,2007 Colorado,Big 12,COLO,Buffaloes,#CFB87C,#000000,12,6-6,27.58,16.71,29.42,15.62,-1.833,-0.651,1,4,6,1
+Duke-2007,Duke,2007,2007 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,1-11,17.92,11.31,33.17,11.75,-15.25,-1.975,1,3,4,1
+Florida-2007,Florida,2007,2007 Florida,SEC,FLA,Gators,#0021a5,#fa4616,12,9-3,43.08,14.42,24.17,10.63,18.917,1.397,1,3,4,0
+Florida State-2007,Florida State,2007,2007 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,12,7-5,22.92,6.04,21.92,13.04,1,-0.372,1,3,4,0
+Georgia-2007,Georgia,2007,2007 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,12,10-2,31.92,12.54,21,7.76,10.917,0.607,1,2,5,0
+Georgia Tech-2007,Georgia Tech,2007,2007 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,12,7-5,26.08,17.35,19.25,9.99,6.833,0.204,2,3,5,1
+Illinois-2007,Illinois,2007,2007 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,9-3,28.75,10.82,19.5,9.73,9.25,0.443,0,2,5,0
+Indiana-2007,Indiana,2007,2007 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,7-5,31.58,13.49,26.75,10.96,4.833,0.007,1,2,5,0
+Iowa-2007,Iowa,2007,2007 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,6-6,18.5,9.72,18.75,11.8,-0.25,-0.495,1,2,5,0
+Iowa State-2007,Iowa State,2007,2007 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,3-9,18.17,10.64,31.75,13,-13.583,-1.811,2,2,4,1
+Kansas-2007,Kansas,2007,2007 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,11-1,44.33,17.67,16,12.78,28.333,2.326,1,2,5,0
+Kansas State-2007,Kansas State,2007,2007 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,5-7,35.17,13.55,30.83,18.4,4.333,-0.043,1,2,4,1
+Kentucky-2007,Kentucky,2007,2007 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,7-5,36.67,14.25,29.75,12.23,6.917,0.212,1,3,4,0
+LSU-2007,LSU,2007,2007 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,13,11-2,38.69,10.27,19.62,15.58,19.077,1.412,2,5,5,1
+Maryland-2007,Maryland,2007,2007 Maryland,ACC,MD,Terrapins,#D5002B,#ffcd00,12,6-6,24.92,9.7,21.58,10.27,3.333,-0.141,2,3,6,0
+Miami-2007,Miami,2007,2007 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,5-7,20.58,10.66,26,15.57,-5.417,-1.005,2,3,4,0
+Michigan-2007,Michigan,2007,2007 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,8-4,26.08,12.95,20.25,11.86,5.833,0.105,2,3,4,0
+Michigan State-2007,Michigan State,2007,2007 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,7-5,34.08,12.73,26.83,10.35,7.25,0.245,1,2,5,0
+Minnesota-2007,Minnesota,2007,2007 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,1-11,26.25,12.97,36.67,8.25,-10.417,-1.498,1,3,5,0
+Mississippi State-2007,Mississippi State,2007,2007 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,7-5,22.42,10.39,24.83,13.62,-2.417,-0.709,1,3,5,0
+Missouri-2007,Missouri,2007,2007 Missouri,Big 12,MIZ,Tigers,#f1b82d,#000000,13,11-2,40,9.53,24.54,10.98,15.462,1.056,1,3,7,0
+NC State-2007,NC State,2007,2007 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,5-7,20.75,11.03,28.25,8.6,-7.5,-1.211,2,2,6,0
+Nebraska-2007,Nebraska,2007,2007 Nebraska,Big 12,NEB,Cornhuskers,#d00000,#ffffff,12,5-7,33.42,19.25,37.92,19.48,-4.5,-0.914,1,3,6,0
+North Carolina-2007,North Carolina,2007,2007 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,4-8,21.17,9.43,24.5,8.97,-3.333,-0.799,1,3,6,0
+Northwestern-2007,Northwestern,2007,2007 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,6-6,25.83,13.22,31,15.47,-5.167,-0.98,1,3,7,0
+Notre Dame-2007,Notre Dame,2007,2007 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,3-9,16.42,12.67,28.75,13.06,-12.333,-1.687,2,4,6,0
+Ohio State-2007,Ohio State,2007,2007 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,12,11-1,32,12.68,10.67,7.9,21.333,1.635,1,3,4,1
+Oklahoma-2007,Oklahoma,2007,2007 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,13,11-2,43.38,17.09,18.15,9.06,25.231,2.02,2,4,4,1
+Oklahoma State-2007,Oklahoma State,2007,2007 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,6-6,33.42,11.94,29.25,16.22,4.167,-0.059,1,4,3,0
+Ole Miss-2007,Ole Miss,2007,2007 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,3-9,20.08,9.09,28.5,13.17,-8.417,-1.301,2,2,6,0
+Oregon-2007,Oregon,2007,2007 Oregon,Pac-10,ORE,Ducks,#007030,#fee11a,12,8-4,36.67,16.97,23.83,10.46,12.833,0.796,2,3,4,1
+Oregon State-2007,Oregon State,2007,2007 Oregon State,Pac-10,ORST,Beavers,#231f20,#d73f09,12,8-4,28.42,17.28,23.33,12.57,5.083,0.031,2,2,5,1
+Penn State-2007,Penn State,2007,2007 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,8-4,30.83,13.13,17.58,13.16,13.25,0.837,1,2,4,1
+Purdue-2007,Purdue,2007,2007 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,7-5,32.92,13.88,24.75,13.26,8.167,0.336,1,3,5,0
+South Carolina-2007,South Carolina,2007,2007 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,6-6,26.08,10.51,23.5,13.99,2.583,-0.215,2,2,5,1
+Stanford-2007,Stanford,2007,2007 Stanford,Pac-10,STAN,Cardinal,#8c1515,#ffffff,12,4-8,19.58,11.04,28.25,15.03,-8.667,-1.326,2,3,6,0
+TCU-2007,TCU,2007,2007 TCU,Mountain West,TCU,Horned Frogs,#4d1979,#f1f2f3,12,7-5,26.58,9.74,19.17,13,7.417,0.262,2,4,7,0
+Tennessee-2007,Tennessee,2007,2007 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,13,9-4,33.38,13.51,28.08,15.75,5.308,0.054,2,4,7,0
+Texas-2007,Texas,2007,2007 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,12,9-3,36,14.21,24.58,13.56,11.417,0.656,1,2,6,0
+Texas A&M-2007,Texas A&M,2007,2007 Texas A&M,Big 12,TA&M,Aggies,#500000,#ffffff,12,7-5,28.83,14.76,26.08,13.27,2.75,-0.199,1,2,6,0
+Texas Tech-2007,Texas Tech,2007,2007 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,8-4,41.75,16.11,25.75,17.45,16,1.109,1,3,6,0
+UCLA-2007,UCLA,2007,2007 UCLA,Pac-10,UCLA,Bruins,#2774ae,#f2a900,12,6-6,22.92,14.9,22.75,11.03,0.167,-0.454,1,3,4,1
+USC-2007,USC,2007,2007 USC,Pac-10,USC,Trojans,#9e2237,#ffcc00,12,10-2,31.25,11.24,15.92,9.71,15.333,1.043,2,3,6,0
+Vanderbilt-2007,Vanderbilt,2007,2007 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,5-7,21.67,9.35,22.58,12.17,-0.917,-0.561,2,3,3,0
+Virginia-2007,Virginia,2007,2007 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,9-3,24.08,11.99,18.75,8.4,5.333,0.056,2,4,6,0
+Virginia Tech-2007,Virginia Tech,2007,2007 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,13,11-2,29.31,13.12,15.46,11.79,13.846,0.896,2,3,4,1
+Wake Forest-2007,Wake Forest,2007,2007 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,8-4,28.17,10.78,23.25,10.81,4.917,0.015,2,2,5,0
+Washington-2007,Washington,2007,2007 Washington,Pac-10,WASH,Huskies,#33006f,#e8d3a2,13,4-9,29.23,8.36,31.62,15.03,-2.385,-0.706,2,3,5,0
+Washington State-2007,Washington State,2007,2007 Washington State,Pac-10,WSU,Cougars,#981e32,#ffffff,12,5-7,25.67,12.76,32.42,15.8,-6.75,-1.136,1,3,6,0
+Wisconsin-2007,Wisconsin,2007,2007 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,12,9-3,30.5,12.7,23.33,12.89,7.167,0.237,1,3,4,1
+Alabama-2008,Alabama,2008,2008 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,13,12-1,31.15,9.49,13,10.05,18.154,1.006,1,4,4,0
+Arizona-2008,Arizona,2008,2008 Arizona,Pac-10,ARIZ,Wildcats,#0c234b,#ab0520,12,7-5,37.08,17.26,21.33,14.3,15.75,0.821,2,3,3,1
+Arizona State-2008,Arizona State,2008,2008 Arizona State,Pac-10,ASU,Sun Devils,#8e0c3a,#ffc72c,12,5-7,22.83,12.73,22.67,13.34,0.167,-0.383,1,4,5,0
+Arkansas-2008,Arkansas,2008,2008 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,5-7,21.92,7.98,31.17,10.43,-9.25,-1.111,1,3,5,1
+Auburn-2008,Auburn,2008,2008 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,5-7,17.33,11.5,18,11.1,-0.667,-0.448,1,4,6,1
+Baylor-2008,Baylor,2008,2008 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,4-8,28,13.58,29.33,13.4,-1.333,-0.499,1,4,3,1
+Boise State-2008,Boise State,2008,2008 Boise State,Western Athletic,BOIS,Broncos,#0033a0,#fa4616,12,12-0,39.42,12.03,12.25,10.6,27.167,1.703,1,4,4,3
+Boston College-2008,Boston College,2008,2008 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,13,9-4,25.54,8.69,18.54,13.72,7,0.145,1,3,7,1
+California-2008,California,2008,2008 California,Pac-10,CAL,Golden Bears,#031522,#ffc423,12,8-4,33.33,15.8,20.17,12.54,13.167,0.621,2,2,6,0
+Clemson-2008,Clemson,2008,2008 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,12,7-5,25.5,13.96,16.58,12.01,8.917,0.293,2,3,3,1
+Colorado-2008,Colorado,2008,2008 Colorado,Big 12,COLO,Buffaloes,#CFB87C,#000000,12,5-7,20.17,10.29,29.25,12.95,-9.083,-1.098,1,3,5,2
+Duke-2008,Duke,2008,2008 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,4-8,20.08,13.04,23.42,13.32,-3.333,-0.654,1,4,7,1
+Florida-2008,Florida,2008,2008 Florida,SEC,FLA,Gators,#0021a5,#fa4616,13,12-1,45.15,13.87,12.85,8.13,32.308,2.1,2,5,5,1
+Florida State-2008,Florida State,2008,2008 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,12,8-4,32.67,17.07,20.75,13.92,11.917,0.525,1,4,6,0
+Georgia-2008,Georgia,2008,2008 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,12,9-3,32.08,15.1,25.58,15.32,6.5,0.106,1,3,6,0
+Georgia Tech-2008,Georgia Tech,2008,2008 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,12,9-3,26.17,12.91,18.83,11.36,7.333,0.17,2,3,1,0
+Illinois-2008,Illinois,2008,2008 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,5-7,28.67,14.6,26.58,10.26,2.083,-0.235,1,3,6,1
+Indiana-2008,Indiana,2008,2008 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,3-9,20.5,12.17,35.25,18.72,-14.75,-1.536,2,3,4,0
+Iowa-2008,Iowa,2008,2008 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,8-4,30.25,14.07,13.25,9.5,17,0.917,2,3,4,1
+Iowa State-2008,Iowa State,2008,2008 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,2-10,25.33,13.99,35.83,12.85,-10.5,-1.208,1,3,5,2
+Kansas-2008,Kansas,2008,2008 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,7-5,32.67,11.04,29.5,17.99,3.167,-0.152,1,3,4,0
+Kansas State-2008,Kansas State,2008,2008 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,5-7,34.92,14.71,35.83,18.55,-0.917,-0.467,2,1,5,1
+Kentucky-2008,Kentucky,2008,2008 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,6-6,22.42,11.64,21.67,17.83,0.75,-0.338,1,4,7,2
+LSU-2008,LSU,2008,2008 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,13,8-5,31.15,9.37,24.92,14.71,6.231,0.085,2,5,3,1
+Maryland-2008,Maryland,2008,2008 Maryland,ACC,MD,Terrapins,#D5002B,#ffcd00,12,7-5,20.08,13.79,21.42,10.26,-1.333,-0.499,1,4,6,0
+Miami-2008,Miami,2008,2008 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,7-5,27.92,14.59,24.17,11.98,3.75,-0.107,2,3,6,1
+Michigan-2008,Michigan,2008,2008 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,3-9,20.25,9.35,28.92,15.25,-8.667,-1.066,2,3,4,0
+Michigan State-2008,Michigan State,2008,2008 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,9-3,26.17,11.2,21.92,15.76,4.25,-0.068,1,2,5,1
+Minnesota-2008,Minnesota,2008,2008 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,7-5,23.42,12.8,23.33,14.56,0.083,-0.39,1,2,4,1
+Mississippi State-2008,Mississippi State,2008,2008 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,4-8,15.25,12.17,24.67,12.64,-9.417,-1.124,2,3,5,0
+Missouri-2008,Missouri,2008,2008 Missouri,Big 12,MIZ,Tigers,#f1b82d,#000000,13,9-4,43.15,14.25,27.54,18.39,15.615,0.81,1,3,5,1
+NC State-2008,NC State,2008,2008 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,6-6,23.5,12.54,26.08,8.87,-2.583,-0.596,1,2,5,1
+Nebraska-2008,Nebraska,2008,2008 Nebraska,Big 12,NEB,Cornhuskers,#d00000,#ffffff,12,8-4,36.17,10.12,29.17,16.85,7,0.145,1,3,4,2
+North Carolina-2008,North Carolina,2008,2008 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,8-4,27.5,11.8,20.33,8.84,7.167,0.157,2,2,3,0
+Northwestern-2008,Northwestern,2008,2008 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,9-3,24.5,9.6,19.33,11.73,5.167,0.003,2,2,6,0
+Notre Dame-2008,Notre Dame,2008,2008 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,6-6,22.67,12.79,22.25,8.86,0.417,-0.364,1,3,4,1
+Ohio State-2008,Ohio State,2008,2008 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,12,10-2,28.17,14.65,13.08,9.4,15.083,0.769,1,4,4,0
+Oklahoma-2008,Oklahoma,2008,2008 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,13,12-1,54,10.41,24.54,12.18,29.462,1.88,1,3,4,1
+Oklahoma State-2008,Oklahoma State,2008,2008 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,9-3,41.58,14.44,26.92,16.94,14.667,0.737,1,3,4,0
+Ole Miss-2008,Ole Miss,2008,2008 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,8-4,30.83,12.52,17.75,11.36,13.083,0.615,1,4,4,0
+Oregon-2008,Oregon,2008,2008 Oregon,Pac-10,ORE,Ducks,#007030,#fee11a,12,9-3,41.92,18.91,28,11.08,13.917,0.679,1,3,4,1
+Oregon State-2008,Oregon State,2008,2008 Oregon State,Pac-10,ORST,Beavers,#231f20,#d73f09,12,8-4,32.83,13.28,25,17.13,7.833,0.209,1,2,4,2
+Penn State-2008,Penn State,2008,2008 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,11-1,40.17,15.34,12.42,7.13,27.75,1.748,1,3,5,0
+Purdue-2008,Purdue,2008,2008 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,4-8,24.67,18.7,25.08,12.36,-0.417,-0.429,1,2,7,0
+South Carolina-2008,South Carolina,2008,2008 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,7-5,21.67,9.58,20.25,14.16,1.417,-0.287,2,3,5,1
+Stanford-2008,Stanford,2008,2008 Stanford,Pac-10,STAN,Cardinal,#8c1515,#ffffff,12,5-7,26.25,12.12,27.42,12.62,-1.167,-0.487,1,3,3,1
+TCU-2008,TCU,2008,2008 TCU,Mountain West,TCU,Horned Frogs,#4d1979,#f1f2f3,12,10-2,35,18.07,10.92,8.31,24.083,1.465,2,5,7,1
+Tennessee-2008,Tennessee,2008,2008 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,5-7,17.33,10.65,16.75,10.32,0.583,-0.351,2,3,6,1
+Texas-2008,Texas,2008,2008 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,12,11-1,43.92,8.85,18.58,11.18,25.333,1.561,1,5,6,0
+Texas A&M-2008,Texas A&M,2008,2008 Texas A&M,Big 12,TA&M,Aggies,#500000,#ffffff,12,4-8,25,9.73,37.42,16.1,-12.417,-1.356,3,4,2,1
+Texas Tech-2008,Texas Tech,2008,2008 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,11-1,44.58,12.18,26.25,14.21,18.333,1.02,1,2,7,0
+UCLA-2008,UCLA,2008,2008 UCLA,Pac-10,UCLA,Bruins,#2774ae,#f2a900,12,4-8,17.67,10.57,29,14.83,-11.333,-1.272,1,4,3,1
+USC-2008,USC,2008,2008 USC,Pac-10,USC,Trojans,#9e2237,#ffcc00,12,11-1,37.5,16.36,7.75,8.85,29.75,1.903,2,5,4,1
+Utah-2008,Utah,2008,2008 Utah,Mountain West,UTAH,Utes,#ea002a,#ffffff,12,12-0,37.42,15.94,17.25,6.94,20.167,1.162,1,3,8,0
+Vanderbilt-2008,Vanderbilt,2008,2008 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,6-6,19.42,10.33,20.08,8.26,-0.667,-0.448,2,2,5,1
+Virginia-2008,Virginia,2008,2008 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,5-7,16.08,10.05,21.67,15.76,-5.583,-0.828,1,2,6,0
+Virginia Tech-2008,Virginia Tech,2008,2008 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,13,9-4,22.23,5.97,17.46,8.75,4.769,-0.028,2,3,4,1
+Wake Forest-2008,Wake Forest,2008,2008 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,7-5,20.33,11.4,18.25,8.68,2.083,-0.235,1,4,4,1
+Washington-2008,Washington,2008,2008 Washington,Pac-10,WASH,Huskies,#33006f,#e8d3a2,12,0-12,13.25,8.23,38.58,12.06,-25.333,-2.354,1,3,6,0
+Washington State-2008,Washington State,2008,2008 Washington State,Pac-10,WSU,Cougars,#981e32,#ffffff,13,2-11,12.69,13.51,43.85,21.24,-31.154,-2.804,1,3,5,0
+Wisconsin-2008,Wisconsin,2008,2008 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,12,7-5,28.67,14.84,25.25,11.18,3.417,-0.132,2,3,5,1
+Alabama-2009,Alabama,2009,2009 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,13,13-0,31.69,11.06,11,7.56,20.692,1.52,1,3,3,1
+Arizona-2009,Arizona,2009,2009 Arizona,Pac-10,ARIZ,Wildcats,#0c234b,#ab0520,12,8-4,29.67,11.13,23.17,12.38,6.5,0.072,2,4,6,1
+Arizona State-2009,Arizona State,2009,2009 Arizona State,Pac-10,ASU,Sun Devils,#8e0c3a,#ffc72c,12,4-8,22.33,11.52,21.08,10.53,1.25,-0.464,2,3,4,0
+Arkansas-2009,Arkansas,2009,2009 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,7-5,37.33,16.52,25.75,10.9,11.583,0.591,1,5,5,1
+Auburn-2009,Auburn,2009,2009 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,7-5,32.92,16.35,26.92,7.81,6,0.021,1,4,3,1
+Baylor-2009,Baylor,2009,2009 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,4-8,20.75,18.46,27.25,10.1,-6.5,-1.255,2,3,4,2
+Boise State-2009,Boise State,2009,2009 Boise State,Western Athletic,BOIS,Broncos,#0033a0,#fa4616,13,13-0,44.15,11.55,17.69,11.56,26.462,2.109,1,3,5,3
+Boston College-2009,Boston College,2009,2009 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,8-4,25.75,15.14,19.42,12.51,6.333,0.055,1,2,3,2
+California-2009,California,2009,2009 California,Pac-10,CAL,Golden Bears,#031522,#ffc423,12,8-4,29.25,19.41,24.5,10.83,4.75,-0.107,1,3,4,2
+Cincinnati-2009,Cincinnati,2009,2009 Cincinnati,Big East,CIN,Bearcats,#E00122,#000000,12,12-0,39.83,12.93,20.75,13.8,19.083,1.356,2,2,3,3
+Clemson-2009,Clemson,2009,2009 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,13,8-5,31.92,11.22,21,12.23,10.923,0.523,2,3,4,2
+Colorado-2009,Colorado,2009,2009 Colorado,Big 12,COLO,Buffaloes,#CFB87C,#000000,12,3-9,22.25,10.14,28.83,13.22,-6.583,-1.264,2,2,2,2
+Duke-2009,Duke,2009,2009 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,5-7,25.17,14.26,28.33,12.71,-3.167,-0.915,1,2,5,3
+Florida-2009,Florida,2009,2009 Florida,SEC,FLA,Gators,#0021a5,#fa4616,13,12-1,34.69,16.96,11.54,8.8,23.154,1.772,2,3,4,1
+Florida State-2009,Florida State,2009,2009 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,12,6-6,29.83,14.47,30.75,11.11,-0.917,-0.685,2,4,6,1
+Georgia-2009,Georgia,2009,2009 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,12,7-5,27.67,12.46,26.42,13.67,1.25,-0.464,1,4,4,2
+Georgia Tech-2009,Georgia Tech,2009,2009 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,13,11-2,35.31,11.43,24.85,11.12,10.462,0.476,1,6,2,0
+Illinois-2009,Illinois,2009,2009 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,3-9,24.17,16.24,30.17,12.01,-6,-1.204,1,3,7,1
+Indiana-2009,Indiana,2009,2009 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,4-8,23.5,8.28,29.5,10.83,-6,-1.204,1,4,4,1
+Iowa-2009,Iowa,2009,2009 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,10-2,23.08,9.41,15.5,8.84,7.583,0.182,1,2,3,2
+Iowa State-2009,Iowa State,2009,2009 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,6-6,21.08,11.52,22.58,12.55,-1.5,-0.745,1,2,5,2
+Kansas-2009,Kansas,2009,2009 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,5-7,29.42,12.92,28.42,14.71,1,-0.49,1,2,5,1
+Kansas State-2009,Kansas State,2009,2009 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,6-6,23,16.94,23.33,17.42,-0.333,-0.626,2,2,3,1
+Kentucky-2009,Kentucky,2009,2009 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,7-5,27.17,9.46,22.83,12.25,4.333,-0.149,3,4,3,0
+LSU-2009,LSU,2009,2009 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,12,9-3,25.5,10,16,9.62,9.5,0.378,2,3,5,1
+Maryland-2009,Maryland,2009,2009 Maryland,ACC,MD,Terrapins,#D5002B,#ffcd00,12,2-10,21.33,10.17,31.25,10.56,-9.917,-1.604,2,3,4,1
+Miami-2009,Miami,2009,2009 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,9-3,31.67,11.96,22.33,10.4,9.333,0.361,1,5,5,3
+Michigan-2009,Michigan,2009,2009 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,5-7,29.5,15.6,27.5,12.43,2,-0.388,2,4,6,1
+Michigan State-2009,Michigan State,2009,2009 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,6-6,29.58,10.93,25.08,13.29,4.5,-0.132,1,3,6,3
+Minnesota-2009,Minnesota,2009,2009 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,6-6,21.58,13.84,24.58,9.61,-3,-0.898,2,3,4,1
+Mississippi State-2009,Mississippi State,2009,2009 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,5-7,25.58,11.15,26.75,14.78,-1.167,-0.711,2,4,5,1
+Missouri-2009,Missouri,2009,2009 Missouri,Big 12,MIZ,Tigers,#f1b82d,#000000,12,8-4,30.33,12.81,24.58,11.45,5.75,-0.005,1,3,4,0
+NC State-2009,NC State,2009,2009 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,5-7,30.33,16.63,31.17,15.41,-0.833,-0.677,2,2,6,1
+Nebraska-2009,Nebraska,2009,2009 Nebraska,Big 12,NEB,Cornhuskers,#d00000,#ffffff,13,9-4,24.54,15.34,11.23,8.51,13.308,0.767,2,3,4,2
+North Carolina-2009,North Carolina,2009,2009 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,8-4,24.33,12.4,16.92,8.1,7.417,0.165,1,3,4,0
+Northwestern-2009,Northwestern,2009,2009 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,8-4,25.17,9.91,23.33,10.19,1.833,-0.405,2,4,6,0
+Notre Dame-2009,Notre Dame,2009,2009 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,6-6,30.08,7.09,25.92,12.08,4.167,-0.166,1,4,4,1
+Ohio State-2009,Ohio State,2009,2009 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,12,10-2,29.25,8.8,12.17,9.96,17.083,1.152,1,3,4,1
+Oklahoma-2009,Oklahoma,2009,2009 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,12,7-5,31.08,20.17,13.5,12.45,17.583,1.203,1,3,5,0
+Oklahoma State-2009,Oklahoma State,2009,2009 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,9-3,30.17,13.91,21.75,13.16,8.417,0.267,1,3,5,1
+Ole Miss-2009,Ole Miss,2009,2009 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,8-4,30.25,15.23,18.58,10.09,11.667,0.599,1,4,6,0
+Oregon-2009,Oregon,2009,2009 Oregon,Pac-10,ORE,Ducks,#007030,#fee11a,12,10-2,37.67,11.87,23.58,14.39,14.083,0.846,1,3,4,2
+Oregon State-2009,Oregon State,2009,2009 Oregon State,Pac-10,ORST,Beavers,#231f20,#d73f09,12,8-4,32.42,8.21,23.42,11.15,9,0.327,1,2,5,1
+Penn State-2009,Penn State,2009,2009 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,10-2,29.67,12.54,11.83,7.59,17.833,1.228,2,4,5,1
+Purdue-2009,Purdue,2009,2009 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,5-7,27.83,13.27,29.08,8.5,-1.25,-0.719,2,3,3,1
+South Carolina-2009,South Carolina,2009,2009 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,7-5,21.75,12.35,20.42,11,1.333,-0.456,1,3,5,1
+Stanford-2009,Stanford,2009,2009 Stanford,Pac-10,STAN,Cardinal,#8c1515,#ffffff,12,8-4,36.17,11.13,26.17,11.92,10,0.429,1,3,2,2
+TCU-2009,TCU,2009,2009 TCU,Mountain West,TCU,Horned Frogs,#4d1979,#f1f2f3,12,12-0,40.67,13.63,12.42,7.29,28.25,2.292,2,3,8,0
+Tennessee-2009,Tennessee,2009,2009 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,7-5,30.58,16.92,21,9.08,9.583,0.386,1,3,6,1
+Texas-2009,Texas,2009,2009 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,13,13-0,40.69,14.59,15.15,9.22,25.538,2.015,2,5,6,0
+Texas A&M-2009,Texas A&M,2009,2009 Texas A&M,Big 12,TA&M,Aggies,#500000,#ffffff,12,6-6,33.92,13.9,32.67,20.67,1.25,-0.464,2,2,5,1
+Texas Tech-2009,Texas Tech,2009,2009 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,8-4,36.67,14.62,21.75,12.53,14.917,0.931,1,3,8,0
+UCLA-2009,UCLA,2009,2009 UCLA,Pac-10,UCLA,Bruins,#2774ae,#f2a900,12,6-6,21.33,9.92,21.25,10.43,0.083,-0.583,3,5,3,2
+USC-2009,USC,2009,2009 USC,Pac-10,USC,Trojans,#9e2237,#ffcc00,12,8-4,26.67,12.63,20.42,17.48,6.25,0.046,1,3,4,1
+Utah-2009,Utah,2009,2009 Utah,Mountain West,UTAH,Utes,#ea002a,#ffffff,12,9-3,29.25,7.42,19.67,12.85,9.583,0.386,1,2,5,0
+Vanderbilt-2009,Vanderbilt,2009,2009 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,2-10,16.33,13.56,23.33,13.65,-7,-1.306,2,3,5,1
+Virginia-2009,Virginia,2009,2009 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,3-9,19.33,10.86,26.33,15.14,-7,-1.306,3,2,4,1
+Virginia Tech-2009,Virginia Tech,2009,2009 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,12,9-3,31.42,12.4,15.75,9.38,15.667,1.007,1,3,3,1
+Wake Forest-2009,Wake Forest,2009,2009 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,5-7,26.33,11.82,26.25,10.04,0.083,-0.583,1,3,5,1
+Washington-2009,Washington,2009,2009 Washington,Pac-10,WASH,Huskies,#33006f,#e8d3a2,12,5-7,26.08,9.82,26.67,13.96,-0.583,-0.651,1,1,5,1
+Washington State-2009,Washington State,2009,2009 Washington State,Pac-10,WSU,Cougars,#981e32,#ffffff,12,1-11,12,7.93,38.5,8.98,-26.5,-3.297,2,3,4,0
+Wisconsin-2009,Wisconsin,2009,2009 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,12,9-3,32.75,12.05,22.42,10.09,10.333,0.463,1,3,3,3
+Alabama-2010,Alabama,2010,2010 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,12,9-3,34.58,15.37,14.08,10.34,20.5,1.245,2,3,3,2
+Arizona-2010,Arizona,2010,2010 Arizona,Pac-10,ARIZ,Wildcats,#0c234b,#ab0520,12,7-5,29.75,11.73,21.58,14.56,8.167,0.197,2,3,7,1
+Arizona State-2010,Arizona State,2010,2010 Arizona State,Pac-10,ASU,Sun Devils,#8e0c3a,#ffc72c,12,6-6,32.25,13.6,25,14.28,7.25,0.12,1,3,6,0
+Arkansas-2010,Arkansas,2010,2010 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,10-2,37.33,10.67,22.75,15.42,14.583,0.742,2,3,4,1
+Auburn-2010,Auburn,2010,2010 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,13,13-0,42.69,15.53,24.46,10.07,18.231,1.052,1,3,4,1
+Baylor-2010,Baylor,2010,2010 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,7-5,32.58,11.16,29.83,19.31,2.75,-0.263,1,3,5,2
+Boise State-2010,Boise State,2010,2010 Boise State,Western Athletic,BOIS,Broncos,#0033a0,#fa4616,12,11-1,46.67,9,13.58,11.64,33.083,2.314,3,4,5,1
+Boston College-2010,Boston College,2010,2010 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,7-5,18.92,8.83,19.5,10.26,-0.583,-0.546,1,3,4,2
+California-2010,California,2010,2010 California,Pac-10,CAL,Golden Bears,#031522,#ffc423,12,5-7,25.83,17.44,22.58,18,3.25,-0.22,2,2,4,1
+Clemson-2010,Clemson,2010,2010 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,12,6-6,23.83,13.98,17.75,7.81,6.083,0.02,2,3,4,1
+Colorado-2010,Colorado,2010,2010 Colorado,Big 12,COLO,Buffaloes,#CFB87C,#000000,12,5-7,24.17,13.9,30.75,15.67,-6.583,-1.056,2,1,5,2
+Duke-2010,Duke,2010,2010 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,3-9,25.25,15.42,35.42,13.5,-10.167,-1.36,2,4,4,1
+Florida-2010,Florida,2010,2010 Florida,SEC,FLA,Gators,#0021a5,#fa4616,12,7-5,29.25,17.2,21.08,10.25,8.167,0.197,1,4,6,1
+Florida State-2010,Florida State,2010,2010 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,13,9-4,31.77,11.29,19.85,14.81,11.923,0.516,2,3,5,1
+Georgia-2010,Georgia,2010,2010 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,12,6-6,34.25,15.4,23.08,14.27,11.167,0.452,1,3,4,1
+Georgia Tech-2010,Georgia Tech,2010,2010 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,12,6-6,27.58,9.79,26.17,10.48,1.417,-0.376,2,6,2,0
+Illinois-2010,Illinois,2010,2010 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,6-6,32.08,16.84,24.25,16.35,7.833,0.169,1,3,3,1
+Indiana-2010,Indiana,2010,2010 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,5-7,27.17,12.77,34,18.4,-6.833,-1.077,1,4,4,1
+Iowa-2010,Iowa,2010,2010 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,7-5,29.08,9.37,16.42,11.87,12.667,0.58,1,2,3,1
+Iowa State-2010,Iowa State,2010,2010 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,5-7,21.67,14.68,28.83,18.73,-7.167,-1.105,1,3,5,1
+Kansas-2010,Kansas,2010,2010 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,3-9,17.08,15.73,34.42,16.33,-17.333,-1.969,2,3,5,1
+Kansas State-2010,Kansas State,2010,2010 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,7-5,33.58,14.65,28.5,14.39,5.083,-0.065,2,3,4,0
+Kentucky-2010,Kentucky,2010,2010 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,6-6,33,14.98,28.5,11.84,4.5,-0.114,1,3,4,2
+LSU-2010,LSU,2010,2010 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,12,10-2,28.75,10.29,17.75,11.52,11,0.438,2,4,3,1
+Maryland-2010,Maryland,2010,2010 Maryland,ACC,MD,Terrapins,#D5002B,#ffcd00,12,8-4,30.67,18.28,22.33,8.97,8.333,0.212,2,3,6,0
+Miami-2010,Miami,2010,2010 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,7-5,27.08,8.38,19.67,13.36,7.417,0.134,1,4,4,0
+Michigan-2010,Michigan,2010,2010 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,7-5,34.33,17.52,33.83,14.8,0.5,-0.454,2,3,5,1
+Michigan State-2010,Michigan State,2010,2010 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,11-1,31.33,9.35,20.08,10.28,11.25,0.459,1,3,5,2
+Minnesota-2010,Minnesota,2010,2010 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,3-9,23.17,9.19,33,8.91,-9.833,-1.332,2,2,3,1
+Mississippi State-2010,Mississippi State,2010,2010 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,8-4,27.08,15.28,20.33,9.44,6.75,0.077,2,3,4,1
+Missouri-2010,Missouri,2010,2010 Missouri,Big 12,MIZ,Tigers,#f1b82d,#000000,12,10-2,30.33,12.18,15.17,11.16,15.167,0.792,2,4,4,1
+NC State-2010,NC State,2010,2010 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,8-4,32.58,9.71,22.5,11.56,10.083,0.36,1,3,6,1
+Nebraska-2010,Nebraska,2010,2010 Nebraska,Big 12,NEB,Cornhuskers,#d00000,#ffffff,13,10-3,32.69,16.41,17.23,10.51,15.462,0.817,2,2,2,2
+North Carolina-2010,North Carolina,2010,2010 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,7-5,24.92,11.05,22.92,8.49,2,-0.326,1,3,6,1
+Northwestern-2010,Northwestern,2010,2010 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,7-5,25.42,5.6,27.67,17.77,-2.25,-0.687,1,6,7,0
+Notre Dame-2010,Notre Dame,2010,2010 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,7-5,25.75,7.76,20.5,11.87,5.25,-0.05,2,4,4,2
+Ohio State-2010,Ohio State,2010,2010 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,12,11-1,39.42,15.13,13.33,8.55,26.083,1.719,2,5,2,1
+Oklahoma-2010,Oklahoma,2010,2010 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,13,11-2,36.38,11.72,21.92,11.64,14.462,0.732,1,4,6,2
+Oklahoma State-2010,Oklahoma State,2010,2010 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,10-2,44.92,12.77,27.75,12.85,17.167,0.962,1,3,8,0
+Ole Miss-2010,Ole Miss,2010,2010 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,4-8,30.58,14.46,35.17,12.47,-4.583,-0.886,1,4,5,0
+Oregon-2010,Oregon,2010,2010 Oregon,Pac-10,ORE,Ducks,#007030,#fee11a,12,12-0,49.33,15.01,18.42,11.32,30.917,2.13,2,3,4,1
+Oregon State-2010,Oregon State,2010,2010 Oregon State,Pac-10,ORST,Beavers,#231f20,#d73f09,12,5-7,24.42,11.11,26.83,10.92,-2.417,-0.702,1,1,3,1
+Penn State-2010,Penn State,2010,2010 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,7-5,24.58,14.42,22.58,10.15,2,-0.326,3,4,5,0
+Purdue-2010,Purdue,2010,2010 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,4-8,19.67,9.87,28.75,11.13,-9.083,-1.268,2,4,4,1
+South Carolina-2010,South Carolina,2010,2010 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,13,9-4,32,13.88,22.92,14.79,9.077,0.275,2,3,5,0
+Stanford-2010,Stanford,2010,2010 Stanford,Pac-10,STAN,Cardinal,#8c1515,#ffffff,12,11-1,40.33,12.27,17.83,15.41,22.5,1.415,1,6,4,3
+TCU-2010,TCU,2010,2010 TCU,Mountain West,TCU,Horned Frogs,#4d1979,#f1f2f3,12,12-0,43.33,11.85,11.42,10.7,31.917,2.215,2,4,6,0
+Tennessee-2010,Tennessee,2010,2010 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,6-6,27,15.54,24.67,15.24,2.333,-0.298,2,3,5,2
+Texas-2010,Texas,2010,2010 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,12,5-7,23.75,11,23.67,9.91,0.083,-0.489,1,4,5,2
+Texas A&M-2010,Texas A&M,2010,2010 Texas A&M,Big 12,TA&M,Aggies,#500000,#ffffff,12,9-3,31.83,14.56,20.33,9.9,11.5,0.481,2,3,4,2
+Texas Tech-2010,Texas Tech,2010,2010 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,7-5,32.08,16.33,30.33,12.11,1.75,-0.348,2,4,8,0
+UCLA-2010,UCLA,2010,2010 UCLA,Pac-10,UCLA,Bruins,#2774ae,#f2a900,12,4-8,20.17,12.91,30.33,15.04,-10.167,-1.36,1,3,5,1
+USC-2010,USC,2010,2010 USC,Pac-10,USC,Trojans,#9e2237,#ffcc00,13,8-5,31,13.09,26.69,12.06,4.308,-0.13,2,4,7,1
+Utah-2010,Utah,2010,2010 Utah,Mountain West,UTAH,Utes,#ea002a,#ffffff,12,10-2,35.58,20.96,19.83,13.13,15.75,0.842,2,2,5,2
+Vanderbilt-2010,Vanderbilt,2010,2010 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,2-10,16.92,13.67,31.17,14.54,-14.25,-1.707,2,4,5,1
+Virginia-2010,Virginia,2010,2010 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,4-8,25.33,15.44,28.25,14.65,-2.917,-0.744,2,3,3,1
+Virginia Tech-2010,Virginia Tech,2010,2010 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,13,11-2,35.54,11.44,19.08,10.52,16.462,0.902,1,3,5,0
+Wake Forest-2010,Wake Forest,2010,2010 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,3-9,22.75,17.29,35.83,18.09,-13.083,-1.608,1,3,5,1
+Washington-2010,Washington,2010,2010 Washington,Pac-10,WASH,Huskies,#33006f,#e8d3a2,12,6-6,22.08,11.73,31.17,15.16,-9.083,-1.268,1,2,4,0
+Washington State-2010,Washington State,2010,2010 Washington State,Pac-10,WSU,Cougars,#981e32,#ffffff,12,2-10,19.58,9.4,35.83,14.28,-16.25,-1.877,1,4,5,0
+Wisconsin-2010,Wisconsin,2010,2010 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,12,11-1,43.33,20.46,20.5,8.28,22.833,1.443,1,4,4,2
+Alabama-2011,Alabama,2011,2011 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,12,11-1,36,12.36,8.83,5.89,27.167,1.832,1,3,4,2
+Arizona-2011,Arizona,2011,2011 Arizona,Pac-12,ARIZ,Wildcats,#0c234b,#ab0520,12,4-8,30.75,11.81,35.42,13.69,-4.667,-0.845,1,3,8,0
+Arizona State-2011,Arizona State,2011,2011 Arizona State,Pac-12,ASU,Sun Devils,#8e0c3a,#ffc72c,12,6-6,33.92,9.92,26.33,11.28,7.583,0.185,1,2,8,1
+Arkansas-2011,Arkansas,2011,2011 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,10-2,37.42,12.49,22.75,13.07,14.667,0.781,2,3,6,1
+Auburn-2011,Auburn,2011,2011 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,7-5,24.25,12.99,29.33,14.02,-5.083,-0.88,2,4,4,1
+Baylor-2011,Baylor,2011,2011 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,9-3,43.5,12.17,35.67,15.62,7.833,0.206,1,3,4,2
+Boise State-2011,Boise State,2011,2011 Boise State,Mountain West,BOIS,Broncos,#0033a0,#fa4616,12,11-1,43.25,10,18.25,10.71,25,1.65,3,3,7,2
+Boston College-2011,Boston College,2011,2011 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,4-8,18.17,10.78,23.5,8.74,-5.333,-0.901,1,3,3,2
+BYU-2011,BYU,2011,2011 BYU,FBS Independents,BYU,Cougars,#003da5,#ffffff,12,9-3,30.58,13.64,20.33,14.36,10.25,0.409,2,4,6,1
+California-2011,California,2011,2011 California,Pac-12,CAL,Golden Bears,#031522,#ffc423,12,7-5,29.83,15.04,24.42,12.72,5.417,0.003,1,2,3,1
+Clemson-2011,Clemson,2011,2011 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,13,10-3,33.62,14.51,26.15,11.96,7.462,0.175,1,3,5,2
+Colorado-2011,Colorado,2011,2011 Colorado,Pac-12,COLO,Buffaloes,#CFB87C,#000000,13,3-10,19.77,12.39,36.54,12.2,-16.769,-1.863,1,2,5,1
+Duke-2011,Duke,2011,2011 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,3-9,22.5,10.23,31.17,10.68,-8.667,-1.182,2,3,5,1
+Florida-2011,Florida,2011,2011 Florida,SEC,FLA,Gators,#0021a5,#fa4616,12,6-6,25.58,17.01,20.58,12.57,5,-0.032,1,3,5,2
+Florida State-2011,Florida State,2011,2011 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,12,8-4,31.67,13.61,15.17,11.62,16.5,0.935,1,4,7,1
+Georgia-2011,Georgia,2011,2011 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,13,10-3,32.15,15.89,19.62,13.85,12.538,0.602,1,3,5,2
+Georgia Tech-2011,Georgia Tech,2011,2011 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,12,8-4,34.92,18.21,25.75,6.73,9.167,0.318,1,7,2,0
+Houston-2011,Houston,2011,2011 Houston,Conference USA,HOU,Cougars,#c92a39,#ffffff,13,12-1,50.77,14.02,23.08,15.26,27.692,1.877,2,4,8,0
+Illinois-2011,Illinois,2011,2011 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,6-6,22.83,15.78,20.08,9.14,2.75,-0.221,2,3,4,2
+Indiana-2011,Indiana,2011,2011 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,1-11,21.42,11.06,37.33,14.68,-15.917,-1.792,2,3,8,2
+Iowa-2011,Iowa,2011,2011 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,7-5,28.67,13.96,23.25,10.32,5.417,0.003,1,1,3,3
+Iowa State-2011,Iowa State,2011,2011 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,6-6,23.5,11.75,29.58,14.11,-6.083,-0.964,2,3,6,2
+Kansas-2011,Kansas,2011,2011 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,2-10,22.33,14.14,43.75,18.14,-21.417,-2.254,1,4,5,1
+Kansas State-2011,Kansas State,2011,2011 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,10-2,33.08,14.97,27.83,18.35,5.25,-0.011,1,2,4,2
+Kentucky-2011,Kentucky,2011,2011 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,5-7,15.83,10.56,24.67,16.24,-8.833,-1.196,2,4,2,1
+LSU-2011,LSU,2011,2011 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,13,13-0,38.46,11.93,10.54,7.1,27.923,1.896,2,4,4,1
+Maryland-2011,Maryland,2011,2011 Maryland,ACC,MD,Terrapins,#D5002B,#ffcd00,12,2-10,23.08,12.21,34.25,14.91,-11.167,-1.392,2,3,5,1
+Miami-2011,Miami,2011,2011 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,6-6,26.5,11.89,20.08,11.13,6.417,0.087,1,3,5,2
+Michigan-2011,Michigan,2011,2011 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,10-2,34.17,11.98,17.17,11.1,17,0.977,2,4,4,1
+Michigan State-2011,Michigan State,2011,2011 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,13,10-3,30.85,14.84,17.46,12.73,13.385,0.673,1,3,3,1
+Minnesota-2011,Minnesota,2011,2011 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,3-9,18.42,7.91,31.67,13.75,-13.25,-1.567,1,2,3,2
+Mississippi State-2011,Mississippi State,2011,2011 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,6-6,25.5,17.42,19.92,12.52,5.583,0.017,2,3,6,1
+Missouri-2011,Missouri,2011,2011 Missouri,Big 12,MIZ,Tigers,#f1b82d,#000000,12,7-5,32.17,15.6,23.5,15.64,8.667,0.276,1,3,5,1
+NC State-2011,NC State,2011,2011 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,7-5,28,16.01,24.75,14.62,3.25,-0.179,1,2,6,1
+Nebraska-2011,Nebraska,2011,2011 Nebraska,Big Ten,NEB,Cornhuskers,#d00000,#ffffff,12,9-3,30.5,11.87,22.83,15.27,7.667,0.192,1,3,5,2
+North Carolina-2011,North Carolina,2011,2011 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,7-5,28.33,13.23,23.5,13.69,4.833,-0.046,1,3,3,3
+Northwestern-2011,Northwestern,2011,2011 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,6-6,29.5,11.88,27.25,11.83,2.25,-0.263,3,4,6,0
+Notre Dame-2011,Notre Dame,2011,2011 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,8-4,30.5,15.92,20.92,8.91,9.583,0.353,1,3,4,1
+Ohio State-2011,Ohio State,2011,2011 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,12,6-6,25.08,11.84,20.75,11.3,4.333,-0.088,2,3,2,1
+Oklahoma-2011,Oklahoma,2011,2011 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,12,9-3,40.25,15.16,22.75,13.96,17.5,1.019,1,4,7,3
+Oklahoma State-2011,Oklahoma State,2011,2011 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,11-1,49.33,13.73,25.83,11.34,23.5,1.524,1,2,9,0
+Ole Miss-2011,Ole Miss,2011,2011 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,2-10,16.08,13.08,32.08,11.09,-16,-1.799,2,4,4,1
+Oregon-2011,Oregon,2011,2011 Oregon,Pac-12,ORE,Ducks,#007030,#fee11a,13,11-2,46.15,11.05,23.62,11.32,22.538,1.443,2,4,3,1
+Oregon State-2011,Oregon State,2011,2011 Oregon State,Pac-12,ORST,Beavers,#231f20,#d73f09,12,3-9,21.83,13.71,30.83,8.36,-9,-1.21,1,4,4,2
+Penn State-2011,Penn State,2011,2011 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,9-3,19.75,10.99,15.67,11.82,4.083,-0.109,2,5,3,1
+Purdue-2011,Purdue,2011,2011 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,6-6,26.08,13.85,26.42,15.05,-0.333,-0.481,2,4,5,2
+South Carolina-2011,South Carolina,2011,2011 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,10-2,30.08,15.68,18.83,14.75,11.25,0.494,1,3,6,1
+Stanford-2011,Stanford,2011,2011 Stanford,Pac-12,STAN,Cardinal,#8c1515,#ffffff,12,11-1,43.58,11.58,20.33,15.53,23.25,1.503,1,4,4,3
+TCU-2011,TCU,2011,2011 TCU,Mountain West,TCU,Horned Frogs,#4d1979,#f1f2f3,12,10-2,41.67,12.56,21.25,14.42,20.417,1.265,1,3,6,1
+Tennessee-2011,Tennessee,2011,2011 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,5-7,20.33,15.6,22.58,14.16,-2.25,-0.642,2,3,3,1
+Texas-2011,Texas,2011,2011 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,12,7-5,28.67,14.68,23.25,16.02,5.417,0.003,2,6,3,1
+Texas A&M-2011,Texas A&M,2011,2011 Texas A&M,Big 12,TA&M,Aggies,#500000,#ffffff,12,6-6,39.58,11.83,28.67,14.87,10.917,0.466,1,3,3,3
+Texas Tech-2011,Texas Tech,2011,2011 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,5-7,33.83,16.26,39.25,17.33,-5.417,-0.908,1,3,10,0
+UCLA-2011,UCLA,2011,2011 UCLA,Pac-12,UCLA,Bruins,#2774ae,#f2a900,13,6-7,23.77,12.19,32.23,15.34,-8.462,-1.164,2,3,6,0
+USC-2011,USC,2011,2011 USC,Pac-12,USC,Trojans,#9e2237,#ffcc00,12,10-2,35.75,10.7,23.58,16.35,12.167,0.571,1,3,4,3
+Utah-2011,Utah,2011,2011 Utah,Pac-12,UTAH,Utes,#ea002a,#ffffff,12,7-5,24.58,12.43,19.67,10.38,4.917,-0.039,1,2,5,2
+Vanderbilt-2011,Vanderbilt,2011,2011 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,6-6,26.92,14.54,20.83,9.93,6.083,0.059,2,4,3,1
+Virginia-2011,Virginia,2011,2011 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,8-4,23.17,10.85,22.25,9.55,0.917,-0.376,2,3,5,2
+Virginia Tech-2011,Virginia Tech,2011,2011 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,13,11-2,28.54,16.11,17.23,11.02,11.308,0.498,1,2,4,1
+Wake Forest-2011,Wake Forest,2011,2011 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,6-6,26.75,10.41,27.75,12.66,-1,-0.537,1,2,4,1
+Washington-2011,Washington,2011,2011 Washington,Pac-12,WASH,Huskies,#33006f,#e8d3a2,12,7-5,31.5,11,33.33,13.98,-1.833,-0.607,1,3,5,1
+Washington State-2011,Washington State,2011,2011 Washington State,Pac-12,WSU,Cougars,#981e32,#ffffff,12,4-8,29.83,16.7,31.75,11.14,-1.917,-0.614,1,2,6,0
+Wisconsin-2011,Wisconsin,2011,2011 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,13,11-2,44.62,11.54,17,12.23,27.615,1.87,1,4,3,1
+Alabama-2012,Alabama,2012,2012 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,13,12-1,38.46,9.38,10.69,9.94,27.769,1.938,2,3,4,1
+Arizona-2012,Arizona,2012,2012 Arizona,Pac-12,ARIZ,Wildcats,#0c234b,#ab0520,12,7-5,37.25,18.69,34.25,18.03,3,-0.184,1,2,8,0
+Arizona State-2012,Arizona State,2012,2012 Arizona State,Pac-12,ASU,Sun Devils,#8e0c3a,#ffc72c,12,7-5,36.42,14.24,24,14.59,12.417,0.623,2,2,4,1
+Arkansas-2012,Arkansas,2012,2012 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,4-8,23.5,14.59,30.42,16.56,-6.917,-1.034,2,3,5,1
+Auburn-2012,Auburn,2012,2012 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,3-9,18.67,15.85,28.33,17.09,-9.667,-1.27,1,4,3,1
+Baylor-2012,Baylor,2012,2012 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,7-5,44.08,13.32,38.17,15.86,5.917,0.066,1,3,5,1
+Boston College-2012,Boston College,2012,2012 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,2-10,19.83,10.22,29.67,13.17,-9.833,-1.284,1,2,4,1
+BYU-2012,BYU,2012,2012 BYU,FBS Independents,BYU,Cougars,#003da5,#ffffff,12,7-5,29.17,17.3,14.67,11.14,14.5,0.801,2,4,4,2
+California-2012,California,2012,2012 California,Pac-12,CAL,Golden Bears,#031522,#ffc423,12,3-9,23,13.76,33.08,15.54,-10.083,-1.306,1,3,4,0
+Clemson-2012,Clemson,2012,2012 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,12,10-2,42.33,12.29,24.92,13.49,17.417,1.051,1,3,6,2
+Colorado-2012,Colorado,2012,2012 Colorado,Pac-12,COLO,Buffaloes,#CFB87C,#000000,12,1-11,17.83,12.02,46,14.53,-28.167,-2.855,3,4,3,3
+Duke-2012,Duke,2012,2012 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,6-6,31.33,14.53,35,14.98,-3.667,-0.756,3,4,4,1
+Florida-2012,Florida,2012,2012 Florida,SEC,FLA,Gators,#0021a5,#fa4616,12,11-1,26.75,11.09,12.92,8.22,13.833,0.744,1,3,5,2
+Florida State-2012,Florida State,2012,2012 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,13,11-2,39.92,15.55,15.08,12.15,24.846,1.688,2,4,7,1
+Georgia-2012,Georgia,2012,2012 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,13,11-2,37.23,13.82,18.77,12.9,18.462,1.141,1,3,5,2
+Georgia Tech-2012,Georgia Tech,2012,2012 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,13,6-7,34.54,18.03,29.92,15.71,4.615,-0.046,2,8,2,0
+Illinois-2012,Illinois,2012,2012 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,2-10,16.67,11.53,32.08,17.81,-15.417,-1.763,2,3,5,2
+Indiana-2012,Indiana,2012,2012 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,4-8,30.75,9.95,35.25,17.56,-4.5,-0.827,2,3,7,1
+Iowa-2012,Iowa,2012,2012 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,4-8,19.33,8.13,22.92,10.61,-3.583,-0.749,1,3,3,1
+Iowa State-2012,Iowa State,2012,2012 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,6-6,25.17,14.22,23.33,9.91,1.833,-0.284,2,3,8,0
+Kansas-2012,Kansas,2012,2012 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,1-11,18.25,8.93,36.08,15.71,-17.833,-1.97,2,3,6,1
+Kansas State-2012,Kansas State,2012,2012 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,11-1,40.67,13.42,21.08,11.55,19.583,1.237,2,2,4,1
+Kentucky-2012,Kentucky,2012,2012 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,2-10,17.92,14.04,31,12.2,-13.083,-1.563,2,3,6,1
+LSU-2012,LSU,2012,2012 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,12,10-2,30.25,16.01,16.92,7.82,13.333,0.701,1,5,5,0
+Maryland-2012,Maryland,2012,2012 Maryland,ACC,MD,Terrapins,#D5002B,#ffcd00,12,4-8,20.08,9.53,27.17,12.29,-7.083,-1.048,1,4,3,1
+Miami-2012,Miami,2012,2012 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,7-5,31.42,15.25,30.5,14.63,0.917,-0.363,1,3,5,1
+Michigan-2012,Michigan,2012,2012 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,8-4,30,17.64,18.75,10.95,11.25,0.523,2,3,4,0
+Michigan State-2012,Michigan State,2012,2012 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,6-6,20.25,9.85,16.33,7.2,3.917,-0.106,1,3,4,1
+Minnesota-2012,Minnesota,2012,2012 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,6-6,21.33,12.23,23.92,11.78,-2.583,-0.663,3,2,5,2
+Mississippi State-2012,Mississippi State,2012,2012 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,8-4,30.25,14.4,22.42,13.91,7.833,0.23,2,4,5,1
+Missouri-2012,Missouri,2012,2012 Missouri,SEC,MIZ,Tigers,#f1b82d,#000000,12,5-7,25.75,16.62,28.42,16.17,-2.667,-0.67,2,3,7,0
+NC State-2012,NC State,2012,2012 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,7-5,28.42,14.26,24.58,18.34,3.833,-0.113,1,3,5,2
+Nebraska-2012,Nebraska,2012,2012 Nebraska,Big Ten,NEB,Cornhuskers,#d00000,#ffffff,13,10-3,35.08,14.42,26.23,19.96,8.846,0.317,1,4,4,2
+North Carolina-2012,North Carolina,2012,2012 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,8-4,40.58,14.53,25.67,19.86,14.917,0.837,2,3,3,2
+Northern Illinois-2012,Northern Illinois,2012,2012 Northern Illinois,Mid-American,NIU,Huskies,#F1122C,#cc0000,13,12-1,40.77,11.91,19,13.3,21.769,1.424,1,3,5,1
+Northwestern-2012,Northwestern,2012,2012 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,9-3,31.5,9.69,22.75,11.9,8.75,0.308,2,3,6,0
+Notre Dame-2012,Notre Dame,2012,2012 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,12-0,26.75,11.13,10.33,7.24,16.417,0.965,2,3,5,1
+Ohio State-2012,Ohio State,2012,2012 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,12,12-0,37.17,14.88,22.83,11.05,14.333,0.787,1,2,3,3
+Oklahoma-2012,Oklahoma,2012,2012 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,12,10-2,40.25,17.7,24.17,13.9,16.083,0.937,1,3,6,1
+Oklahoma State-2012,Oklahoma State,2012,2012 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,7-5,44.67,18.1,29.42,18.24,15.25,0.865,2,2,7,0
+Ole Miss-2012,Ole Miss,2012,2012 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,6-6,30.92,11.22,28.5,16.27,2.417,-0.234,2,4,4,1
+Oregon-2012,Oregon,2012,2012 Oregon,Pac-12,ORE,Ducks,#007030,#fee11a,12,11-1,50.83,14.31,22,12.35,28.833,2.029,2,4,6,1
+Oregon State-2012,Oregon State,2012,2012 Oregon State,Pac-12,ORST,Beavers,#231f20,#d73f09,12,9-3,33,19.62,19.75,13.38,13.25,0.694,2,3,3,2
+Penn State-2012,Penn State,2012,2012 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,8-4,29.08,9.72,19.08,9.52,10,0.415,1,3,4,3
+Purdue-2012,Purdue,2012,2012 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,6-6,29.92,17.45,29,12.37,0.917,-0.363,3,4,3,3
+South Carolina-2012,South Carolina,2012,2012 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,10-2,31.42,11.81,17.42,11.8,14,0.758,2,3,3,2
+Stanford-2012,Stanford,2012,2012 Stanford,Pac-12,STAN,Cardinal,#8c1515,#ffffff,13,11-2,28.46,14.02,17.46,11.44,11,0.501,2,5,4,2
+TCU-2012,TCU,2012,2012 TCU,Big 12,TCU,Horned Frogs,#4d1979,#f1f2f3,12,7-5,29.33,15.84,23.08,16.26,6.25,0.094,1,3,5,0
+Tennessee-2012,Tennessee,2012,2012 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,5-7,36.17,13.66,35.67,13.23,0.5,-0.399,1,4,6,2
+Texas-2012,Texas,2012,2012 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,12,8-4,36.08,15.51,29.42,18.88,6.667,0.13,2,5,5,1
+Texas A&M-2012,Texas A&M,2012,2012 Texas A&M,SEC,TA&M,Aggies,#500000,#ffffff,12,10-2,44.75,17.87,22.5,13.47,22.25,1.465,2,3,6,0
+Texas Tech-2012,Texas Tech,2012,2012 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,7-5,37.75,14.52,31.83,19.89,5.917,0.066,2,3,7,1
+UCLA-2012,UCLA,2012,2012 UCLA,Pac-12,UCLA,Bruins,#2774ae,#f2a900,13,9-4,35.08,14.69,25.92,12,9.154,0.343,1,4,6,0
+USC-2012,USC,2012,2012 USC,Pac-12,USC,Trojans,#9e2237,#ffcc00,12,7-5,34.17,13.13,24.58,15.98,9.583,0.38,1,3,3,2
+Utah-2012,Utah,2012,2012 Utah,Pac-12,UTAH,Utes,#ea002a,#ffffff,12,5-7,26.67,15.28,25.08,12.12,1.583,-0.306,2,2,6,2
+Vanderbilt-2012,Vanderbilt,2012,2012 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,8-4,29.33,18.49,18.25,13.38,11.083,0.508,1,3,5,0
+Virginia-2012,Virginia,2012,2012 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,4-8,22.75,12.59,28.92,14.85,-6.167,-0.97,2,3,4,4
+Virginia Tech-2012,Virginia Tech,2012,2012 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,12,6-6,26.08,10.34,23.92,13.43,2.167,-0.256,1,4,4,2
+Wake Forest-2012,Wake Forest,2012,2012 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,5-7,18.5,13.78,31.83,14.6,-13.333,-1.584,1,2,6,0
+Washington-2012,Washington,2012,2012 Washington,Pac-12,WASH,Huskies,#33006f,#e8d3a2,12,7-5,23.83,12.71,23.83,16.47,0,-0.441,1,1,5,1
+Washington State-2012,Washington State,2012,2012 Washington State,Pac-12,WSU,Cougars,#981e32,#ffffff,12,3-9,20.42,12.15,33.67,11.24,-13.25,-1.577,2,2,8,0
+West Virginia-2012,West Virginia,2012,2012 West Virginia,Big 12,WVU,Mountaineers,#002855,#eaaa00,12,7-5,41.58,18.52,38.08,17.78,3.5,-0.142,1,3,4,0
+Wisconsin-2012,Wisconsin,2012,2012 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,13,8-5,30.77,18.64,19.08,6.91,11.692,0.56,2,3,4,2
+Alabama-2013,Alabama,2013,2013 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,12,11-1,38.75,10.79,11.33,13.52,27.417,1.753,2,6,5,1
+Arizona-2013,Arizona,2013,2013 Arizona,Pac-12,ARIZ,Wildcats,#0c234b,#ab0520,12,7-5,32.75,12.48,24.67,14.64,8.083,0.19,1,2,5,0
+Arizona State-2013,Arizona State,2013,2013 Arizona State,Pac-12,ASU,Sun Devils,#8e0c3a,#ffc72c,13,10-3,41,15.9,25.85,12.38,15.154,0.762,2,3,5,2
+Arkansas-2013,Arkansas,2013,2013 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,3-9,20.67,10.72,30.75,14.57,-10.083,-1.279,1,3,3,1
+Auburn-2013,Auburn,2013,2013 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,13,12-1,40.15,12.88,24,12.51,16.154,0.842,1,3,4,0
+Baylor-2013,Baylor,2013,2013 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,11-1,53.25,19.38,21.17,15.75,32.083,2.131,2,4,7,0
+Boston College-2013,Boston College,2013,2013 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,7-5,28.42,13.39,27.83,10.21,0.583,-0.417,1,3,2,3
+BYU-2013,BYU,2013,2013 BYU,FBS Independents,BYU,Cougars,#003da5,#ffffff,12,8-4,31.33,14.52,21.33,9.09,10,0.345,1,4,5,1
+California-2013,California,2013,2013 California,Pac-12,CAL,Golden Bears,#031522,#ffc423,12,1-11,23,8.57,45.92,10.6,-22.917,-2.317,2,4,8,1
+Clemson-2013,Clemson,2013,2013 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,12,10-2,40.17,16.16,21.08,13.77,19.083,1.079,2,3,5,2
+Colorado-2013,Colorado,2013,2013 Colorado,Pac-12,COLO,Buffaloes,#CFB87C,#000000,12,4-8,25.42,12.52,38.25,15.82,-12.833,-1.502,2,3,4,1
+Duke-2013,Duke,2013,2013 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,13,10-3,31.62,14.17,24.69,15.98,6.923,0.096,2,4,5,1
+Florida-2013,Florida,2013,2013 Florida,SEC,FLA,Gators,#0021a5,#fa4616,12,4-8,18.83,7.81,21.08,10.69,-2.25,-0.646,1,2,5,0
+Florida State-2013,Florida State,2013,2013 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,13,13-0,53,11.68,10.69,8.74,42.308,2.958,2,3,6,1
+Georgia-2013,Georgia,2013,2013 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,12,8-4,38.17,10.03,29.42,11.34,8.75,0.244,1,3,5,2
+Georgia Tech-2013,Georgia Tech,2013,2013 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,12,7-5,36.58,18.45,22.67,18.26,13.917,0.662,2,9,3,0
+Illinois-2013,Illinois,2013,2013 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,4-8,29.67,13.46,35.42,15.58,-5.75,-0.929,2,2,6,2
+Indiana-2013,Indiana,2013,2013 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,5-7,38.42,18.8,38.83,13.12,-0.417,-0.498,2,3,6,1
+Iowa-2013,Iowa,2013,2013 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,8-4,27.33,13.12,18.75,9.62,8.583,0.23,1,4,5,2
+Iowa State-2013,Iowa State,2013,2013 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,3-9,24.83,13.77,36,18.81,-11.167,-1.367,2,5,6,1
+Kansas-2013,Kansas,2013,2013 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,3-9,15.33,8.91,31.83,14.81,-16.5,-1.798,2,3,5,1
+Kansas State-2013,Kansas State,2013,2013 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,7-5,33.42,9.24,23.67,11.75,9.75,0.325,2,1,4,0
+Kentucky-2013,Kentucky,2013,2013 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,2-10,20.5,13.36,31.17,14.86,-10.667,-1.327,2,4,5,0
+LSU-2013,LSU,2013,2013 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,12,9-3,37,13.7,22.67,11.15,14.333,0.695,2,4,3,0
+Maryland-2013,Maryland,2013,2013 Maryland,ACC,MD,Terrapins,#D5002B,#ffcd00,12,7-5,26.67,15.29,24.83,16.24,1.833,-0.316,2,3,6,1
+Miami-2013,Miami,2013,2013 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,9-3,35.92,16.94,26,13.23,9.917,0.338,1,4,4,1
+Michigan-2013,Michigan,2013,2013 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,7-5,33.75,17.17,26.5,12.17,7.25,0.122,1,2,4,1
+Michigan State-2013,Michigan State,2013,2013 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,13,12-1,29.77,12.79,12.69,9.66,17.077,0.917,1,3,6,1
+Minnesota-2013,Minnesota,2013,2013 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,8-4,26.42,16.58,22.33,9.69,4.083,-0.134,2,3,4,1
+Mississippi State-2013,Mississippi State,2013,2013 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,6-6,26.33,17.28,24.33,16.29,2,-0.302,2,4,4,1
+Missouri-2013,Missouri,2013,2013 Missouri,SEC,MIZ,Tigers,#f1b82d,#000000,13,11-2,39,10.34,22.46,13.26,16.538,0.874,2,3,6,0
+NC State-2013,NC State,2013,2013 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,3-9,22.83,11.11,30.17,11.33,-7.333,-1.057,3,3,8,1
+Nebraska-2013,Nebraska,2013,2013 Nebraska,Big Ten,NEB,Cornhuskers,#d00000,#ffffff,12,8-4,32.58,14.44,25.33,11.83,7.25,0.122,2,3,3,2
+North Carolina-2013,North Carolina,2013,2013 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,6-6,32.17,17.97,25.08,11.12,7.083,0.109,2,4,5,1
+Northwestern-2013,Northwestern,2013,2013 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,5-7,26.17,14.65,27.08,7.29,-0.917,-0.538,2,2,8,0
+Notre Dame-2013,Notre Dame,2013,2013 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,8-4,27.08,9.42,22.92,11.98,4.167,-0.127,1,4,3,1
+Ohio State-2013,Ohio State,2013,2013 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,13,12-1,46.31,14.41,21.31,13.57,25,1.558,2,4,5,1
+Oklahoma-2013,Oklahoma,2013,2013 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,12,10-2,31.83,12.42,21.33,12.03,10.5,0.385,1,3,5,1
+Oklahoma State-2013,Oklahoma State,2013,2013 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,10-2,39.75,14.94,20,12.62,19.75,1.133,2,3,7,0
+Ole Miss-2013,Ole Miss,2013,2013 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,7-5,30.42,17.61,24.25,8.13,6.167,0.035,2,3,5,1
+Oregon-2013,Oregon,2013,2013 Oregon,Pac-12,ORE,Ducks,#007030,#fee11a,12,10-2,46.75,16.2,21.58,11.87,25.167,1.571,2,4,5,2
+Oregon State-2013,Oregon State,2013,2013 Oregon State,Pac-12,ORST,Beavers,#231f20,#d73f09,12,6-6,34.5,14.47,32.08,16.3,2.417,-0.269,1,2,6,4
+Penn State-2013,Penn State,2013,2013 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,7-5,28.67,11.65,26.17,17.04,2.5,-0.262,1,3,4,3
+Pittsburgh-2013,Pittsburgh,2013,2013 Pittsburgh,ACC,PITT,Panthers,#003263,#231f20,12,6-6,26,15.46,27.17,13.74,-1.167,-0.558,1,3,4,2
+Purdue-2013,Purdue,2013,2013 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,1-11,14.92,10.74,38,15.29,-23.083,-2.331,1,3,6,2
+South Carolina-2013,South Carolina,2013,2013 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,10-2,34.08,14.06,20,9.58,14.083,0.675,2,3,4,2
+Stanford-2013,Stanford,2013,2013 Stanford,Pac-12,STAN,Cardinal,#8c1515,#ffffff,13,11-2,33.23,13.63,18.62,6.19,14.615,0.718,1,5,5,0
+Syracuse-2013,Syracuse,2013,2013 Syracuse,ACC,SYR,Orange,#ff6500,#000e54,12,6-6,22.83,16.91,26.08,22.02,-3.25,-0.727,2,4,5,2
+TCU-2013,TCU,2013,2013 TCU,Big 12,TCU,Horned Frogs,#4d1979,#f1f2f3,12,4-8,25.08,12.68,25.25,8.64,-0.167,-0.478,2,3,6,0
+Tennessee-2013,Tennessee,2013,2013 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,5-7,23.83,14.51,29,17.39,-5.167,-0.882,1,2,4,2
+Texas-2013,Texas,2013,2013 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,12,8-4,31.17,13.32,25.5,13.28,5.667,-0.006,1,3,5,0
+Texas A&M-2013,Texas A&M,2013,2013 Texas A&M,SEC,TA&M,Aggies,#500000,#ffffff,12,8-4,43.58,15.31,30.92,12.24,12.667,0.56,1,4,7,0
+Texas Tech-2013,Texas Tech,2013,2013 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,7-5,35.67,12.86,31.17,18.09,4.5,-0.1,2,3,5,1
+UCF-2013,UCF,2013,2013 UCF,American Athletic,UCF,Knights,#ba9b37,#000000,12,11-1,33.17,12.48,19.58,11.06,13.583,0.635,1,2,5,1
+UCLA-2013,UCLA,2013,2013 UCLA,Pac-12,UCLA,Bruins,#2774ae,#f2a900,12,9-3,36.5,14.59,24.08,9.65,12.417,0.54,1,4,7,0
+USC-2013,USC,2013,2013 USC,Pac-12,USC,Trojans,#9e2237,#ffcc00,13,9-4,28.54,16,21.31,15.7,7.231,0.121,1,5,3,1
+Utah-2013,Utah,2013,2013 Utah,Pac-12,UTAH,Utes,#ea002a,#ffffff,12,5-7,29.17,16.75,28,14.45,1.167,-0.37,2,3,5,1
+Vanderbilt-2013,Vanderbilt,2013,2013 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,8-4,29.17,9.78,24.67,17.61,4.5,-0.1,2,3,4,1
+Virginia-2013,Virginia,2013,2013 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,2-10,19.75,12.48,33.25,18.92,-13.5,-1.556,2,3,4,2
+Virginia Tech-2013,Virginia Tech,2013,2013 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,12,8-4,23.42,11.34,17.42,10.75,6,0.021,1,3,5,1
+Wake Forest-2013,Wake Forest,2013,2013 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,4-8,18.33,11.02,24.08,16.98,-5.75,-0.929,1,3,4,1
+Washington-2013,Washington,2013,2013 Washington,Pac-12,WASH,Huskies,#33006f,#e8d3a2,12,8-4,38.5,14.95,23.42,16.6,15.083,0.756,2,4,5,1
+Washington State-2013,Washington State,2013,2013 Washington State,Pac-12,WSU,Cougars,#981e32,#ffffff,12,6-6,29.83,13.54,31.25,21.02,-1.417,-0.579,1,3,8,0
+West Virginia-2013,West Virginia,2013,2013 West Virginia,Big 12,WVU,Mountaineers,#002855,#eaaa00,12,4-8,26.33,14.52,33.33,18.08,-7,-1.03,2,3,6,1
+Wisconsin-2013,Wisconsin,2013,2013 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,12,9-3,35.75,12.06,14.83,13.12,20.917,1.228,1,3,3,1
+Alabama-2014,Alabama,2014,2014 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,13,12-1,37.08,14.74,16.62,11.15,20.462,1.415,1,4,3,1
+Arizona-2014,Arizona,2014,2014 Arizona,Pac-12,ARIZ,Wildcats,#0c234b,#ab0520,13,10-3,34.85,15.59,27.46,11.98,7.385,0.173,1,2,8,0
+Arizona State-2014,Arizona State,2014,2014 Arizona State,Pac-12,ASU,Sun Devils,#8e0c3a,#ffc72c,12,9-3,37,13.05,27.67,15.02,9.333,0.358,2,3,5,2
+Arkansas-2014,Arkansas,2014,2014 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,6-6,32,19.24,20.25,15.37,11.75,0.587,1,4,6,2
+Auburn-2014,Auburn,2014,2014 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,8-4,35.83,13.86,26.08,15.14,9.75,0.397,2,3,5,1
+Baylor-2014,Baylor,2014,2014 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,11-1,48.83,13.37,24.17,17.5,24.667,1.814,2,3,5,0
+Boise State-2014,Boise State,2014,2014 Boise State,Mountain West,BOIS,Broncos,#0033a0,#fa4616,13,11-2,39.85,15.77,26.54,11.87,13.308,0.735,1,3,5,2
+Boston College-2014,Boston College,2014,2014 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,7-5,25.92,8.37,20.5,10.32,5.417,-0.014,1,5,5,0
+BYU-2014,BYU,2014,2014 BYU,FBS Independents,BYU,Cougars,#003da5,#ffffff,12,8-4,36.17,11.42,25.25,16.49,10.917,0.508,1,5,5,1
+California-2014,California,2014,2014 California,Pac-12,CAL,Golden Bears,#031522,#ffc423,12,5-7,38.25,16.13,39.75,14.08,-1.5,-0.671,1,5,6,2
+Clemson-2014,Clemson,2014,2014 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,12,9-3,30.08,18.23,17.58,13.77,12.5,0.659,2,4,4,2
+Colorado-2014,Colorado,2014,2014 Colorado,Pac-12,COLO,Buffaloes,#CFB87C,#000000,12,2-10,28.5,12.34,39,11.76,-10.5,-1.526,1,4,6,1
+Duke-2014,Duke,2014,2014 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,9-3,32.5,14.15,20.58,13.45,11.917,0.603,2,4,4,1
+Florida-2014,Florida,2014,2014 Florida,SEC,FLA,Gators,#0021a5,#fa4616,11,6-5,30.45,16.8,21.18,14.45,9.273,0.352,2,3,4,1
+Florida State-2014,Florida State,2014,2014 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,13,13-0,34.77,9.6,23,10.2,11.769,0.589,1,3,3,1
+Georgia-2014,Georgia,2014,2014 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,12,9-3,41.67,14.27,21.25,14.26,20.417,1.411,1,4,4,1
+Georgia Tech-2014,Georgia Tech,2014,2014 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,13,10-3,37,10.2,25.08,11.53,11.923,0.604,2,7,3,0
+Illinois-2014,Illinois,2014,2014 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,6-6,26.58,11.84,33.92,11.68,-7.333,-1.225,2,2,5,2
+Indiana-2014,Indiana,2014,2014 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,4-8,25.08,12.25,32.83,14.75,-7.75,-1.265,2,3,3,0
+Iowa-2014,Iowa,2014,2014 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,7-5,28.25,10.58,24,13.01,4.25,-0.125,2,3,4,2
+Iowa State-2014,Iowa State,2014,2014 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,2-10,23.17,11.5,38.83,11.81,-15.667,-2.017,1,3,5,1
+Kansas-2014,Kansas,2014,2014 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,3-9,17.83,11.41,33.25,14.43,-15.417,-1.993,2,2,4,1
+Kansas State-2014,Kansas State,2014,2014 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,9-3,35.83,14.85,21.75,11.7,14.083,0.809,2,2,4,1
+Kentucky-2014,Kentucky,2014,2014 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,5-7,29.17,16.73,31.25,19.03,-2.083,-0.726,1,4,7,0
+Louisville-2014,Louisville,2014,2014 Louisville,ACC,LOU,Cardinals,#c9001f,#000000,12,9-3,32.58,12.96,20.5,12.07,12.083,0.619,1,5,4,2
+LSU-2014,LSU,2014,2014 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,12,8-4,27.58,19.04,16.42,13.46,11.167,0.532,2,4,4,1
+Marshall-2014,Marshall,2014,2014 Marshall,Conference USA,MRSH,Thundering Herd,#00ae42,#be854c,13,12-1,45.08,12.55,20.85,14.83,24.231,1.773,2,3,6,2
+Maryland-2014,Maryland,2014,2014 Maryland,Big Ten,MD,Terrapins,#D5002B,#ffcd00,12,7-5,29.08,12.4,28.92,15.27,0.167,-0.513,1,3,4,0
+Miami-2014,Miami,2014,2014 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,6-6,29.92,13.59,24.33,11.63,5.583,0.002,1,3,5,1
+Michigan-2014,Michigan,2014,2014 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,5-7,20.92,14.22,22.42,11.07,-1.5,-0.671,1,4,4,1
+Michigan State-2014,Michigan State,2014,2014 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,10-2,43.08,13.41,19.92,14.73,23.167,1.672,1,3,5,1
+Minnesota-2014,Minnesota,2014,2014 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,8-4,29.33,11.28,23.42,9.28,5.917,0.033,1,3,4,1
+Mississippi State-2014,Mississippi State,2014,2014 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,10-2,37.17,12.76,19.42,13.06,17.75,1.157,1,4,6,1
+Missouri-2014,Missouri,2014,2014 Missouri,SEC,MIZ,Tigers,#f1b82d,#000000,13,10-3,27.38,13.09,21.38,9.86,6,0.041,1,3,3,1
+NC State-2014,NC State,2014,2014 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,7-5,29.83,14.99,27,17.8,2.833,-0.26,1,3,5,1
+Nebraska-2014,Nebraska,2014,2014 Nebraska,Big Ten,NEB,Cornhuskers,#d00000,#ffffff,12,9-3,37.42,11.1,24.83,13.33,12.583,0.667,1,3,4,0
+North Carolina-2014,North Carolina,2014,2014 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,6-6,34.25,14.23,38.92,13.78,-4.667,-0.972,2,3,6,2
+Northwestern-2014,Northwestern,2014,2014 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,5-7,23,11.12,25.17,15.37,-2.167,-0.734,1,3,8,0
+Notre Dame-2014,Notre Dame,2014,2014 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,7-5,33,11.75,29.25,17.07,3.75,-0.172,1,4,4,1
+Ohio State-2014,Ohio State,2014,2014 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,13,12-1,45.23,13.08,21.15,11.46,24.077,1.758,2,2,6,2
+Oklahoma-2014,Oklahoma,2014,2014 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,12,8-4,38.92,11.94,24.75,13.63,14.167,0.817,2,3,3,1
+Oklahoma State-2014,Oklahoma State,2014,2014 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,6-6,27.42,14.04,32,11.43,-4.583,-0.964,1,3,5,0
+Ole Miss-2014,Ole Miss,2014,2014 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,9-3,30.42,15.67,13.83,10.99,16.583,1.047,2,5,5,1
+Oregon-2014,Oregon,2014,2014 Oregon,Pac-12,ORE,Ducks,#007030,#fee11a,13,12-1,46.31,9.35,22.46,9.37,23.846,1.736,1,3,6,1
+Oregon State-2014,Oregon State,2014,2014 Oregon State,Pac-12,ORST,Beavers,#231f20,#d73f09,12,5-7,25.67,9.65,31.58,11.67,-5.917,-1.091,1,3,3,3
+Penn State-2014,Penn State,2014,2014 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,6-6,19.75,11.35,17.67,10.2,2.083,-0.331,1,3,3,3
+Pittsburgh-2014,Pittsburgh,2014,2014 Pittsburgh,ACC,PITT,Panthers,#003263,#231f20,12,6-6,31.67,14.19,25.58,16.33,6.083,0.049,1,4,3,1
+Purdue-2014,Purdue,2014,2014 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,3-9,23.83,12.04,31.67,8.74,-7.833,-1.273,1,3,4,2
+Rutgers-2014,Rutgers,2014,2014 Rutgers,Big Ten,RUTG,Scarlet Knights,#d21034,#ffffff,12,7-5,25.58,15.22,30.92,14.22,-5.333,-1.035,1,3,5,1
+South Carolina-2014,South Carolina,2014,2014 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,6-6,33.33,9.48,31.17,13.76,2.167,-0.323,1,3,4,2
+Stanford-2014,Stanford,2014,2014 Stanford,Pac-12,STAN,Cardinal,#8c1515,#ffffff,12,7-5,25.67,12.4,16,11.79,9.667,0.39,1,5,5,1
+Syracuse-2014,Syracuse,2014,2014 Syracuse,ACC,SYR,Orange,#ff6500,#000e54,12,3-9,17.08,10.92,24.33,10.53,-7.25,-1.217,1,4,5,0
+TCU-2014,TCU,2014,2014 TCU,Big 12,TCU,Horned Frogs,#4d1979,#f1f2f3,12,11-1,46.83,14.67,20.33,17.09,26.5,1.988,1,4,9,0
+Tennessee-2014,Tennessee,2014,2014 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,6-6,27.58,15.52,23.92,12.02,3.667,-0.18,1,2,4,2
+Texas-2014,Texas,2014,2014 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,12,6-6,22.58,14.61,23.25,15.73,-0.667,-0.592,1,2,4,2
+Texas A&M-2014,Texas A&M,2014,2014 Texas A&M,SEC,TA&M,Aggies,#500000,#ffffff,12,7-5,34.42,19.89,27.33,16.9,7.083,0.144,2,3,7,0
+Texas Tech-2014,Texas Tech,2014,2014 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,4-8,30.5,9.82,41.25,15.53,-10.75,-1.55,2,3,9,0
+UCLA-2014,UCLA,2014,2014 UCLA,Pac-12,UCLA,Bruins,#2774ae,#f2a900,12,9-3,32.92,13.94,27.5,9.85,5.417,-0.014,1,4,6,1
+USC-2014,USC,2014,2014 USC,Pac-12,USC,Trojans,#9e2237,#ffcc00,12,8-4,35.08,13.44,23.75,10.78,11.333,0.548,1,2,5,2
+Utah-2014,Utah,2014,2014 Utah,Pac-12,UTAH,Utes,#ea002a,#ffffff,12,8-4,30.17,14.61,26.17,11.75,4,-0.149,2,1,5,1
+Vanderbilt-2014,Vanderbilt,2014,2014 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,3-9,17.17,13.35,33.25,11.14,-16.083,-2.056,2,3,4,2
+Virginia-2014,Virginia,2014,2014 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,5-7,25.83,11.01,24.08,9.32,1.75,-0.362,2,3,6,1
+Virginia Tech-2014,Virginia Tech,2014,2014 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,12,6-6,23.33,11.17,20.42,8.16,2.917,-0.252,1,2,5,2
+Wake Forest-2014,Wake Forest,2014,2014 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,3-9,14.83,7.59,26.42,13.45,-11.583,-1.629,1,3,3,1
+Washington-2014,Washington,2014,2014 Washington,Pac-12,WASH,Huskies,#33006f,#e8d3a2,13,8-5,30.85,13.97,24.38,14.05,6.462,0.085,1,4,7,1
+Washington State-2014,Washington State,2014,2014 Washington State,Pac-12,WSU,Cougars,#981e32,#ffffff,12,3-9,31.83,15.83,38.58,13.03,-6.75,-1.17,1,3,7,0
+West Virginia-2014,West Virginia,2014,2014 West Virginia,Big 12,WVU,Mountaineers,#002855,#eaaa00,12,7-5,33.17,10.24,26.17,12.61,7,0.136,1,5,4,1
+Wisconsin-2014,Wisconsin,2014,2014 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,13,10-3,34.62,18.03,20,14.94,14.615,0.86,2,3,4,2
+Alabama-2015,Alabama,2015,2015 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,13,12-1,34.08,8.74,14.38,10.37,19.692,1.446,1,3,3,1
+Arizona-2015,Arizona,2015,2015 Arizona,Pac-12,ARIZ,Wildcats,#0c234b,#ab0520,12,6-6,36.75,17.59,35.67,16.44,1.083,-0.415,2,2,5,0
+Arizona State-2015,Arizona State,2015,2015 Arizona State,Pac-12,ASU,Sun Devils,#8e0c3a,#ffc72c,12,6-6,34,14.19,32.67,14.41,1.333,-0.39,1,3,4,1
+Arkansas-2015,Arkansas,2015,2015 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,7-5,35.17,17.41,27.75,15.76,7.417,0.218,1,3,4,2
+Auburn-2015,Auburn,2015,2015 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,6-6,27.17,13.84,27.33,12.2,-0.167,-0.54,2,4,5,0
+Baylor-2015,Baylor,2015,2015 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,9-3,48,18.61,27.5,10.06,20.5,1.527,2,4,5,1
+Boston College-2015,Boston College,2015,2015 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,3-9,17.17,19.88,15.25,10.26,1.917,-0.332,0,6,5,0
+BYU-2015,BYU,2015,2015 BYU,FBS Independents,BYU,Cougars,#003da5,#ffffff,12,9-3,34.17,18.96,21.83,9.25,12.333,0.71,1,4,6,0
+California-2015,California,2015,2015 California,Pac-12,CAL,Golden Bears,#031522,#ffc423,12,7-5,36.5,15.75,30.25,12.22,6.25,0.102,1,4,6,2
+Clemson-2015,Clemson,2015,2015 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,13,13-0,38.46,11.95,20.23,11.76,18.231,1.3,2,5,7,1
+Colorado-2015,Colorado,2015,2015 Colorado,Pac-12,COLO,Buffaloes,#CFB87C,#000000,13,4-9,24.62,13.09,27.46,13.53,-2.846,-0.808,1,4,4,1
+Duke-2015,Duke,2015,2015 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,7-5,30.5,14.37,24.08,19.49,6.417,0.118,2,3,4,3
+Florida-2015,Florida,2015,2015 Florida,SEC,FLA,Gators,#0021a5,#fa4616,13,10-3,24.46,14.63,16.54,10.62,7.923,0.269,2,3,3,2
+Florida State-2015,Florida State,2015,2015 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,12,10-2,32.33,14.85,15.75,7.77,16.583,1.135,2,2,3,1
+Georgia-2015,Georgia,2015,2015 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,12,9-3,26.5,16.84,16.92,11.92,9.583,0.435,1,4,4,2
+Georgia Tech-2015,Georgia Tech,2015,2015 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,12,3-9,29.25,18.54,25.75,12.12,3.5,-0.173,2,6,4,0
+Houston-2015,Houston,2015,2015 Houston,American Athletic,HOU,Cougars,#c92a39,#ffffff,13,12-1,40.62,12.99,20.46,10.74,20.154,1.493,2,3,4,1
+Illinois-2015,Illinois,2015,2015 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,5-7,22.67,17.06,23.25,13.94,-0.583,-0.582,2,3,4,0
+Indiana-2015,Indiana,2015,2015 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,6-6,36.17,13.49,37.08,10.98,-0.917,-0.615,1,3,4,2
+Iowa-2015,Iowa,2015,2015 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,13,12-1,32.08,12.91,18.46,7.4,13.615,0.839,1,4,3,2
+Iowa State-2015,Iowa State,2015,2015 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,3-9,25,9.09,32.67,18.96,-7.667,-1.291,2,2,7,0
+Kansas-2015,Kansas,2015,2015 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,0-12,15.25,9.68,46.08,14.44,-30.833,-3.608,1,3,8,2
+Kansas State-2015,Kansas State,2015,2015 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,6-6,30.5,14.25,30.33,19.08,0.167,-0.507,1,3,5,0
+Kentucky-2015,Kentucky,2015,2015 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,5-7,24.67,14.51,27.42,12.54,-2.75,-0.799,1,3,5,1
+Louisville-2015,Louisville,2015,2015 Louisville,ACC,LOU,Cardinals,#c9001f,#000000,12,7-5,28.83,10.13,24.33,12.35,4.5,-0.073,2,4,6,2
+LSU-2015,LSU,2015,2015 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,11,8-3,30.73,13.52,24,8,6.727,0.149,1,3,2,1
+Maryland-2015,Maryland,2015,2015 Maryland,Big Ten,MD,Terrapins,#D5002B,#ffcd00,12,3-9,24.67,15.44,34.42,11.2,-9.75,-1.499,2,4,5,1
+Miami-2015,Miami,2015,2015 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,8-4,28.92,12,28.83,16.35,0.083,-0.515,2,2,4,2
+Michigan-2015,Michigan,2015,2015 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,9-3,30.58,10.83,17.17,15.07,13.417,0.819,1,5,2,2
+Michigan State-2015,Michigan State,2015,2015 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,13,12-1,32.08,11.69,20.46,8.52,11.615,0.638,2,4,3,3
+Minnesota-2015,Minnesota,2015,2015 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,5-7,22.58,11.26,26.08,10.9,-3.5,-0.874,1,3,4,1
+Mississippi State-2015,Mississippi State,2015,2015 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,8-4,33,16.55,22.83,12.1,10.167,0.494,2,4,6,1
+Missouri-2015,Missouri,2015,2015 Missouri,SEC,MIZ,Tigers,#f1b82d,#000000,12,5-7,13.58,10.41,16.17,8.71,-2.583,-0.782,1,3,5,2
+NC State-2015,NC State,2015,2015 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,7-5,33.67,14.97,23.75,15.76,9.917,0.469,1,4,6,1
+Nebraska-2015,Nebraska,2015,2015 Nebraska,Big Ten,NEB,Cornhuskers,#d00000,#ffffff,12,5-7,32.5,11.29,27.75,12.46,4.75,-0.048,1,4,6,1
+North Carolina-2015,North Carolina,2015,2015 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,13,11-2,40.92,14.77,22.62,10.11,18.308,1.308,2,3,5,2
+Northwestern-2015,Northwestern,2015,2015 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,10-2,20.67,10.41,16.42,13.39,4.25,-0.098,1,2,8,0
+Notre Dame-2015,Notre Dame,2015,2015 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,10-2,34.75,11.6,22.42,9.92,12.333,0.71,1,2,5,0
+Ohio State-2015,Ohio State,2015,2015 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,12,11-1,35,10.8,14,8.85,21,1.577,3,2,3,1
+Oklahoma-2015,Oklahoma,2015,2015 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,12,11-1,45.75,14.13,20.75,11.96,25,1.978,2,3,4,1
+Oklahoma State-2015,Oklahoma State,2015,2015 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,10-2,41.17,16.39,29,16.51,12.167,0.694,2,4,7,1
+Ole Miss-2015,Ole Miss,2015,2015 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,9-3,40.25,20.16,22.83,16.06,17.417,1.219,1,3,5,1
+Oregon-2015,Oregon,2015,2015 Oregon,Pac-12,ORE,Ducks,#007030,#fee11a,12,9-3,43.17,14.06,36.75,12.79,6.417,0.118,1,3,4,1
+Oregon State-2015,Oregon State,2015,2015 Oregon State,Pac-12,ORST,Beavers,#231f20,#d73f09,12,2-10,19,13.16,37,15.71,-18,-2.324,2,3,4,1
+Penn State-2015,Penn State,2015,2015 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,7-5,23.67,9.71,21.67,15.58,2,-0.324,1,4,4,2
+Pittsburgh-2015,Pittsburgh,2015,2015 Pittsburgh,ACC,PITT,Panthers,#003263,#231f20,12,8-4,28.25,8.94,24.58,10.51,3.667,-0.157,2,3,3,2
+Purdue-2015,Purdue,2015,2015 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,2-10,25.08,13.44,36.5,12.92,-11.417,-1.666,1,2,6,2
+Rutgers-2015,Rutgers,2015,2015 Rutgers,Big Ten,RUTG,Scarlet Knights,#d21034,#ffffff,12,4-8,27.08,18.84,34.92,14.07,-7.833,-1.307,1,4,4,2
+San Diego State-2015,San Diego State,2015,2015 San Diego State,Mountain West,SDSU,Aztecs,#c41230,#000000,13,10-3,31.38,12.01,17.15,11.87,14.231,0.9,1,5,3,1
+South Carolina-2015,South Carolina,2015,2015 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,3-9,21.92,6.54,27.5,12.79,-5.583,-1.082,1,3,3,1
+Stanford-2015,Stanford,2015,2015 Stanford,Pac-12,STAN,Cardinal,#8c1515,#ffffff,13,11-2,37.23,12.43,23.08,10.09,14.154,0.892,1,4,4,2
+Syracuse-2015,Syracuse,2015,2015 Syracuse,ACC,SYR,Orange,#ff6500,#000e54,12,4-8,27.25,8.5,31,14.33,-3.75,-0.899,2,4,5,1
+TCU-2015,TCU,2015,2015 TCU,Big 12,TCU,Horned Frogs,#4d1979,#f1f2f3,12,10-2,41.67,15.32,26.08,16.22,15.583,1.035,1,3,7,0
+Tennessee-2015,Tennessee,2015,2015 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,8-4,34.33,16.19,21.17,10.14,13.167,0.794,1,2,4,1
+Texas-2015,Texas,2015,2015 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,12,5-7,26.42,18.22,30.33,13.47,-3.917,-0.915,1,3,5,2
+Texas A&M-2015,Texas A&M,2015,2015 Texas A&M,SEC,TA&M,Aggies,#500000,#ffffff,12,8-4,28.33,15.91,21.58,9.57,6.75,0.152,2,2,5,0
+Texas Tech-2015,Texas Tech,2015,2015 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,7-5,46.58,15.41,42.58,17.55,4,-0.123,1,2,6,0
+UCLA-2015,UCLA,2015,2015 UCLA,Pac-12,UCLA,Bruins,#2774ae,#f2a900,12,8-4,32.5,10.79,25.08,16.25,7.417,0.218,1,4,6,1
+USC-2015,USC,2015,2015 USC,Pac-12,USC,Trojans,#9e2237,#ffcc00,13,8-5,34.92,12.96,25.92,13.38,9,0.377,1,3,6,2
+Utah-2015,Utah,2015,2015 Utah,Pac-12,UTAH,Utes,#ea002a,#ffffff,12,9-3,30.25,13.27,21.83,9.2,8.417,0.318,1,2,4,2
+Vanderbilt-2015,Vanderbilt,2015,2015 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,4-8,15.17,12.82,21,13.95,-5.833,-1.107,1,3,4,1
+Virginia-2015,Virginia,2015,2015 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,4-8,25.75,10.49,32.17,9.38,-6.417,-1.166,1,4,4,2
+Virginia Tech-2015,Virginia Tech,2015,2015 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,12,6-6,29,10.86,24.17,12.76,4.833,-0.04,2,4,2,2
+Wake Forest-2015,Wake Forest,2015,2015 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,3-9,17.42,9.37,24.58,13.87,-7.167,-1.241,1,3,5,1
+Washington-2015,Washington,2015,2015 Washington,Pac-12,WASH,Huskies,#33006f,#e8d3a2,12,6-6,29.5,15.07,17.75,11.63,11.75,0.652,1,3,5,2
+Washington State-2015,Washington State,2015,2015 Washington State,Pac-12,WSU,Cougars,#981e32,#ffffff,12,8-4,32.42,11.93,28.83,11.74,3.583,-0.165,1,3,8,0
+West Virginia-2015,West Virginia,2015,2015 West Virginia,Big 12,WVU,Mountaineers,#002855,#eaaa00,12,7-5,33.25,11.31,23.17,19.17,10.083,0.485,1,2,5,1
+Wisconsin-2015,Wisconsin,2015,2015 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,12,9-3,27.08,14.8,13.08,10.55,14,0.877,1,3,7,2
+Alabama-2016,Alabama,2016,2016 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,13,13-0,40.54,12.64,11.77,12.36,28.769,2.161,1,4,5,1
+Arizona-2016,Arizona,2016,2016 Arizona,Pac-12,ARIZ,Wildcats,#0c234b,#ab0520,12,3-9,24.75,14.49,38.33,13.73,-13.583,-1.629,2,1,6,1
+Arizona State-2016,Arizona State,2016,2016 Arizona State,Pac-12,ASU,Sun Devils,#8e0c3a,#ffc72c,12,5-7,33.33,15.11,39.83,13.68,-6.5,-0.995,1,3,4,1
+Arkansas-2016,Arkansas,2016,2016 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,7-5,30.83,16.02,30.75,16.95,0.083,-0.406,1,3,5,2
+Auburn-2016,Auburn,2016,2016 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,8-4,32.25,19.45,15.58,9.88,16.667,1.078,1,3,7,0
+Baylor-2016,Baylor,2016,2016 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,6-6,34.92,11.33,30.42,18.96,4.5,-0.011,2,3,5,1
+Boston College-2016,Boston College,2016,2016 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,6-6,19.08,12.5,24.58,20.53,-5.5,-0.906,2,6,2,1
+BYU-2016,BYU,2016,2016 BYU,FBS Independents,BYU,Cougars,#003da5,#ffffff,12,8-4,30,12.64,19.42,13.87,10.583,0.534,1,3,5,3
+California-2016,California,2016,2016 California,Pac-12,CAL,Golden Bears,#031522,#ffc423,12,5-7,37.08,10.9,42.58,14.95,-5.5,-0.906,1,3,7,1
+Clemson-2016,Clemson,2016,2016 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,13,12-1,40.15,13.25,18.38,14.53,21.769,1.535,1,4,6,1
+Colorado-2016,Colorado,2016,2016 Colorado,Pac-12,COLO,Buffaloes,#CFB87C,#000000,13,10-3,32.85,15.23,20.46,13.84,12.385,0.695,2,3,4,0
+Duke-2016,Duke,2016,2016 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,4-8,23.33,11.79,28.17,13.97,-4.833,-0.846,1,3,4,3
+Florida-2016,Florida,2016,2016 Florida,SEC,FLA,Gators,#0021a5,#fa4616,12,8-4,23.42,11.1,17.92,16.54,5.5,0.079,2,4,4,2
+Florida State-2016,Florida State,2016,2016 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,12,9-3,35.25,13.14,24.42,17.08,10.833,0.556,1,2,5,2
+Georgia-2016,Georgia,2016,2016 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,12,7-5,24,8.45,24.08,9.6,-0.083,-0.421,1,3,4,2
+Georgia Tech-2016,Georgia Tech,2016,2016 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,12,8-4,27.83,9.64,25,12.2,2.833,-0.16,2,5,2,0
+Houston-2016,Houston,2016,2016 Houston,American Athletic,HOU,Cougars,#c92a39,#ffffff,12,9-3,38,11.19,22.58,15.65,15.417,0.966,2,3,4,1
+Illinois-2016,Illinois,2016,2016 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,3-9,19.67,14.3,31.92,14.37,-12.25,-1.51,1,3,4,0
+Indiana-2016,Indiana,2016,2016 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,6-6,25.92,9.12,27.33,9.09,-1.417,-0.54,2,4,5,0
+Iowa-2016,Iowa,2016,2016 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,8-4,26.75,14.32,17.92,13.92,8.833,0.377,1,2,2,2
+Iowa State-2016,Iowa State,2016,2016 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,3-9,27.67,17.19,31.33,12.72,-3.667,-0.742,2,4,6,0
+Kansas-2016,Kansas,2016,2016 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,2-10,20.25,13.13,37.33,14.97,-17.083,-1.942,3,4,5,1
+Kansas State-2016,Kansas State,2016,2016 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,8-4,32.17,13.99,21.83,13.44,10.333,0.511,1,5,4,0
+Kentucky-2016,Kentucky,2016,2016 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,7-5,31,16.76,31.17,13.89,-0.167,-0.428,1,3,4,1
+Louisville-2016,Louisville,2016,2016 Louisville,ACC,LOU,Cardinals,#c9001f,#000000,12,9-3,45.33,17.91,23.33,11.89,22,1.555,1,4,5,1
+LSU-2016,LSU,2016,2016 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,11,7-4,28.27,17.18,16.36,8.78,11.909,0.652,1,3,3,1
+Maryland-2016,Maryland,2016,2016 Maryland,Big Ten,MD,Terrapins,#D5002B,#ffcd00,12,6-6,25.42,17.68,29,18.18,-3.583,-0.734,2,5,3,0
+Miami-2016,Miami,2016,2016 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,8-4,34.58,16.08,18.92,9.61,15.667,0.989,1,3,4,2
+Michigan-2016,Michigan,2016,2016 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,10-2,41,20.42,12.5,9.82,28.5,2.137,2,5,6,1
+Michigan State-2016,Michigan State,2016,2016 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,3-9,24.08,12.58,27.75,13.97,-3.667,-0.742,2,3,3,2
+Minnesota-2016,Minnesota,2016,2016 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,8-4,30.33,13.42,22.92,7.86,7.417,0.25,1,3,4,1
+Mississippi State-2016,Mississippi State,2016,2016 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,5-7,31.5,16.71,33.08,13.19,-1.583,-0.555,1,3,5,1
+Missouri-2016,Missouri,2016,2016 Missouri,SEC,MIZ,Tigers,#f1b82d,#000000,12,4-8,31.42,21.21,31.5,16.46,-0.083,-0.421,2,2,5,2
+NC State-2016,NC State,2016,2016 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,6-6,25.83,13.54,23.25,12.16,2.583,-0.182,2,4,5,0
+Nebraska-2016,Nebraska,2016,2016 Nebraska,Big Ten,NEB,Cornhuskers,#d00000,#ffffff,12,9-3,26.75,13.29,22.75,15.43,4,-0.055,2,4,5,1
+North Carolina-2016,North Carolina,2016,2016 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,8-4,33.08,14.8,24.92,9.59,8.167,0.317,1,2,5,1
+Northwestern-2016,Northwestern,2016,2016 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,6-6,25.58,15.66,22.08,8.54,3.5,-0.1,1,2,7,0
+Notre Dame-2016,Notre Dame,2016,2016 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,4-8,30.92,13.92,27.83,14.31,3.083,-0.138,2,3,6,1
+Ohio State-2016,Ohio State,2016,2016 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,12,11-1,42.67,19.1,14.17,9.88,28.5,2.137,1,2,5,1
+Oklahoma-2016,Oklahoma,2016,2016 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,12,10-2,44.67,13.72,29.67,15.59,15,0.929,1,3,7,1
+Oklahoma State-2016,Oklahoma State,2016,2016 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,9-3,38.67,11.66,28.08,12.29,10.583,0.534,1,4,4,2
+Ole Miss-2016,Ole Miss,2016,2016 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,5-7,32.58,10.09,34,12.75,-1.417,-0.54,1,2,6,2
+Oregon-2016,Oregon,2016,2016 Oregon,Pac-12,ORE,Ducks,#007030,#fee11a,12,4-8,35.42,12.11,41.42,13.08,-6,-0.95,2,4,3,3
+Oregon State-2016,Oregon State,2016,2016 Oregon State,Pac-12,ORST,Beavers,#231f20,#d73f09,12,4-8,26.17,12.32,30.5,12.16,-4.333,-0.801,2,3,5,0
+Penn State-2016,Penn State,2016,2016 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,13,11-2,36.69,12.13,23.38,13.24,13.308,0.778,2,4,4,1
+Pittsburgh-2016,Pittsburgh,2016,2016 Pittsburgh,ACC,PITT,Panthers,#003263,#231f20,12,8-4,42.33,13.03,35.58,14.83,6.75,0.191,1,4,6,1
+Purdue-2016,Purdue,2016,2016 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,3-9,24.58,10.34,38.25,13.92,-13.667,-1.637,1,4,4,2
+Rutgers-2016,Rutgers,2016,2016 Rutgers,Big Ten,RUTG,Scarlet Knights,#d21034,#ffffff,12,2-10,15.67,17.36,37.5,18.48,-21.833,-2.368,3,4,3,0
+South Carolina-2016,South Carolina,2016,2016 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,6-6,19.25,11.72,24.83,11.54,-5.583,-0.913,2,3,2,2
+Stanford-2016,Stanford,2016,2016 Stanford,Pac-12,STAN,Cardinal,#8c1515,#ffffff,12,9-3,26.42,14.66,20.17,12.66,6.25,0.146,2,3,3,1
+Syracuse-2016,Syracuse,2016,2016 Syracuse,ACC,SYR,Orange,#ff6500,#000e54,12,4-8,25.67,15.26,38.58,20.33,-12.917,-1.57,2,3,4,0
+TCU-2016,TCU,2016,2016 TCU,Big 12,TCU,Horned Frogs,#4d1979,#f1f2f3,12,6-6,31.67,18.85,27.75,13.73,3.917,-0.063,2,5,10,0
+Tennessee-2016,Tennessee,2016,2016 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,8-4,36.25,15.3,29.25,14.39,7,0.213,1,3,4,2
+Texas-2016,Texas,2016,2016 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,12,5-7,31.92,12.46,31.5,15.16,0.417,-0.376,2,2,8,0
+Texas A&M-2016,Texas A&M,2016,2016 Texas A&M,SEC,TA&M,Aggies,#500000,#ffffff,12,8-4,35.42,14.72,23.83,15,11.583,0.623,2,3,5,0
+Texas Tech-2016,Texas Tech,2016,2016 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,5-7,43.67,18.28,43.5,17.57,0.167,-0.399,1,3,10,0
+UCLA-2016,UCLA,2016,2016 UCLA,Pac-12,UCLA,Bruins,#2774ae,#f2a900,12,4-8,24.92,13.75,27.5,10.06,-2.583,-0.645,2,3,6,3
+USC-2016,USC,2016,2016 USC,Pac-12,USC,Trojans,#9e2237,#ffcc00,12,9-3,32.92,14.65,22.17,11.68,10.75,0.549,2,4,5,3
+Utah-2016,Utah,2016,2016 Utah,Pac-12,UTAH,Utes,#ea002a,#ffffff,12,8-4,30.17,10.9,23.92,10.93,6.25,0.146,1,3,5,2
+Vanderbilt-2016,Vanderbilt,2016,2016 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,6-6,23.5,14.85,22.58,8.16,0.917,-0.331,1,4,5,2
+Virginia-2016,Virginia,2016,2016 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,2-10,22.5,11.38,33.75,10.68,-11.25,-1.42,1,2,5,0
+Virginia Tech-2016,Virginia Tech,2016,2016 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,13,9-4,35,11.76,22.69,14.37,12.308,0.688,1,3,3,1
+Wake Forest-2016,Wake Forest,2016,2016 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,6-6,19.25,10.42,21.83,11.52,-2.583,-0.645,1,3,4,1
+Washington-2016,Washington,2016,2016 Washington,Pac-12,WASH,Huskies,#33006f,#e8d3a2,13,12-1,44.46,14.82,17.23,7.95,27.231,2.024,1,3,5,2
+Washington State-2016,Washington State,2016,2016 Washington State,Pac-12,WSU,Cougars,#981e32,#ffffff,12,8-4,40.33,15.41,27.17,13.13,13.167,0.765,1,3,8,0
+West Virginia-2016,West Virginia,2016,2016 West Virginia,Big 12,WVU,Mountaineers,#002855,#eaaa00,12,10-2,32.58,11.26,23.42,12.79,9.167,0.407,1,3,5,1
+Western Michigan-2016,Western Michigan,2016,2016 Western Michigan,Mid-American,WMU,Broncos,#532e1f,#8b7f79,13,13-0,43.54,12.29,19.46,11.46,24.077,1.741,2,4,4,0
+Wisconsin-2016,Wisconsin,2016,2016 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,13,10-3,28.69,14.03,15.54,9.74,13.154,0.764,2,4,3,2
+Alabama-2017,Alabama,2017,2017 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,12,11-1,39.08,15.81,11.5,9.26,27.583,2.034,2,4,6,1
+Arizona-2017,Arizona,2017,2017 Arizona,Pac-12,ARIZ,Wildcats,#0c234b,#ab0520,12,7-5,41.83,15.31,34.08,11.18,7.75,0.276,2,3,4,1
+Arizona State-2017,Arizona State,2017,2017 Arizona State,Pac-12,ASU,Sun Devils,#8e0c3a,#ffc72c,12,7-5,31.92,10.82,31.25,13.46,0.667,-0.352,1,3,3,0
+Arkansas-2017,Arkansas,2017,2017 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,4-8,28.75,15.49,36.17,13.11,-7.417,-1.069,2,4,4,3
+Auburn-2017,Auburn,2017,2017 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,13,10-3,34.38,15.67,17.31,7.06,17.077,1.103,2,3,5,0
+Baylor-2017,Baylor,2017,2017 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,1-11,24.33,12.7,35.92,14.16,-11.583,-1.438,2,4,4,0
+Boston College-2017,Boston College,2017,2017 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,7-5,26.17,14.01,22.5,14.29,3.667,-0.086,2,4,3,2
+BYU-2017,BYU,2017,2017 BYU,FBS Independents,BYU,Cougars,#003da5,#ffffff,13,4-9,17.08,11.69,24.69,9.94,-7.615,-1.087,2,5,6,1
+California-2017,California,2017,2017 California,Pac-12,CAL,Golden Bears,#031522,#ffc423,12,5-7,27.75,10.49,28.42,13.22,-0.667,-0.471,1,3,6,0
+Clemson-2017,Clemson,2017,2017 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,13,12-1,35.38,13.05,12.77,9.15,22.615,1.594,3,4,8,1
+Colorado-2017,Colorado,2017,2017 Colorado,Pac-12,COLO,Buffaloes,#CFB87C,#000000,12,5-7,26.42,14.25,28.17,13.48,-1.75,-0.567,1,1,6,1
+Duke-2017,Duke,2017,2017 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,6-6,25.75,16.92,20.75,6.15,5,0.032,2,3,3,2
+Florida-2017,Florida,2017,2017 Florida,SEC,FLA,Gators,#0021a5,#fa4616,11,4-7,22.09,9.25,27.27,11.52,-5.182,-0.871,1,3,6,1
+Florida State-2017,Florida State,2017,2017 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,12,6-6,26.67,19.49,21.92,9.15,4.75,0.01,1,3,3,1
+Georgia-2017,Georgia,2017,2017 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,13,12-1,34.92,10.67,13.23,10.75,21.692,1.512,1,5,4,1
+Georgia Tech-2017,Georgia Tech,2017,2017 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,11,5-6,28.09,11.55,26.55,12.67,1.545,-0.274,1,6,1,0
+Illinois-2017,Illinois,2017,2017 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,2-10,15.42,6.4,31.5,13.01,-16.083,-1.837,2,3,5,1
+Indiana-2017,Indiana,2017,2017 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,5-7,26.83,12.47,25.33,17.23,1.5,-0.278,2,5,4,2
+Iowa-2017,Iowa,2017,2017 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,7-5,28.33,17.31,19.92,10.84,8.417,0.335,1,3,3,2
+Iowa State-2017,Iowa State,2017,2017 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,7-5,29.92,13.39,21,14.31,8.917,0.379,1,4,6,0
+Kansas-2017,Kansas,2017,2017 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,1-11,18.67,13.2,43.42,12.84,-24.75,-2.606,2,4,7,1
+Kansas State-2017,Kansas State,2017,2017 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,7-5,32.08,16.16,25.83,11.31,6.25,0.143,2,3,4,0
+Kentucky-2017,Kentucky,2017,2017 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,7-5,25.75,10.54,28.58,11.52,-2.833,-0.663,1,2,6,1
+Louisville-2017,Louisville,2017,2017 Louisville,ACC,LOU,Cardinals,#c9001f,#000000,12,8-4,39,10.88,27.08,14.92,11.917,0.645,1,2,4,2
+LSU-2017,LSU,2017,2017 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,12,9-3,28.08,12.57,18.75,9.91,9.333,0.416,2,2,3,2
+Maryland-2017,Maryland,2017,2017 Maryland,Big Ten,MD,Terrapins,#D5002B,#ffcd00,12,4-8,24.08,19.01,37.08,15.07,-13,-1.564,1,3,4,0
+Miami-2017,Miami,2017,2017 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,10-2,29.5,13.53,19.92,9.59,9.583,0.438,1,2,5,1
+Michigan-2017,Michigan,2017,2017 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,8-4,25.75,9.96,18.25,9.77,7.5,0.253,1,3,4,2
+Michigan State-2017,Michigan State,2017,2017 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,9-3,23.08,10.45,20.25,14.55,2.833,-0.16,1,3,4,1
+Minnesota-2017,Minnesota,2017,2017 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,5-7,22.08,17.01,22.83,11.32,-0.75,-0.478,2,3,2,0
+Mississippi State-2017,Mississippi State,2017,2017 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,8-4,32.08,15.23,20.42,13.77,11.667,0.623,1,4,5,2
+Missouri-2017,Missouri,2017,2017 Missouri,SEC,MIZ,Tigers,#f1b82d,#000000,12,7-5,39.33,21.56,31.75,14.75,7.583,0.261,1,3,5,1
+NC State-2017,NC State,2017,2017 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,8-4,30.58,9.56,24.75,8.07,5.833,0.106,1,3,5,0
+Nebraska-2017,Nebraska,2017,2017 Nebraska,Big Ten,NEB,Cornhuskers,#d00000,#ffffff,12,4-8,25.75,10.35,36.42,17.1,-10.667,-1.357,1,2,4,1
+North Carolina-2017,North Carolina,2017,2017 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,3-9,26,18.31,31.25,12.64,-5.25,-0.877,2,2,4,2
+Northwestern-2017,Northwestern,2017,2017 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,9-3,29.67,12.32,19.83,12.63,9.833,0.46,1,4,6,0
+Notre Dame-2017,Notre Dame,2017,2017 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,9-3,35.33,14.74,21.83,10.55,13.5,0.785,2,4,4,2
+Ohio State-2017,Ohio State,2017,2017 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,13,11-2,42.46,14.4,19.92,14.83,22.538,1.587,2,3,7,1
+Oklahoma-2017,Oklahoma,2017,2017 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,13,12-1,44.92,11.17,25,14.12,19.923,1.355,2,3,7,1
+Oklahoma State-2017,Oklahoma State,2017,2017 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,9-3,46.25,13.78,30.08,16.78,16.167,1.022,1,3,6,0
+Ole Miss-2017,Ole Miss,2017,2017 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,6-6,32.83,15.64,34.58,11.99,-1.75,-0.567,2,2,4,2
+Oregon-2017,Oregon,2017,2017 Oregon,Pac-12,ORE,Ducks,#007030,#fee11a,12,7-5,36.67,23.95,28.25,11.21,8.417,0.335,2,5,4,1
+Oregon State-2017,Oregon State,2017,2017 Oregon State,Pac-12,ORST,Beavers,#231f20,#d73f09,12,1-11,20.67,9.42,43,13.71,-22.333,-2.391,1,4,4,2
+Penn State-2017,Penn State,2017,2017 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,10-2,41.58,13.84,15.5,14.52,26.083,1.901,2,2,5,1
+Pittsburgh-2017,Pittsburgh,2017,2017 Pittsburgh,ACC,PITT,Panthers,#003263,#231f20,12,5-7,23.92,8.23,26.58,13.64,-2.667,-0.648,2,4,5,2
+Purdue-2017,Purdue,2017,2017 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,6-6,24.17,11.06,19.33,8.54,4.833,0.017,2,3,5,2
+Rutgers-2017,Rutgers,2017,2017 Rutgers,Big Ten,RUTG,Scarlet Knights,#d21034,#ffffff,12,4-8,18,18.23,28.33,14.82,-10.333,-1.328,2,4,1,3
+South Carolina-2017,South Carolina,2017,2017 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,8-4,24.08,12.07,20.83,7.58,3.25,-0.123,1,4,3,1
+Stanford-2017,Stanford,2017,2017 Stanford,Pac-12,STAN,Cardinal,#8c1515,#ffffff,13,9-4,32,15.63,21.46,10.08,10.538,0.523,3,3,4,3
+Syracuse-2017,Syracuse,2017,2017 Syracuse,ACC,SYR,Orange,#ff6500,#000e54,12,4-8,27.42,11.8,32.17,15.79,-4.75,-0.833,2,3,4,1
+TCU-2017,TCU,2017,2017 TCU,Big 12,TCU,Horned Frogs,#4d1979,#f1f2f3,13,10-3,33.15,16.05,17.62,15.13,15.538,0.966,1,3,8,1
+Tennessee-2017,Tennessee,2017,2017 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,4-8,19.83,12.95,29.08,14.96,-9.25,-1.231,2,4,4,1
+Texas-2017,Texas,2017,2017 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,12,6-6,29.17,14.52,21.67,14.11,7.5,0.253,2,4,9,1
+Texas A&M-2017,Texas A&M,2017,2017 Texas A&M,SEC,TA&M,Aggies,#500000,#ffffff,12,7-5,31.08,13.79,28.67,12.59,2.417,-0.197,2,3,5,0
+Texas Tech-2017,Texas Tech,2017,2017 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,6-6,34.33,17.41,31.75,12.51,2.583,-0.182,1,4,5,0
+UCF-2017,UCF,2017,2017 UCF,American Athletic,UCF,Knights,#ba9b37,#000000,12,12-0,49.42,13.32,25.17,12.65,24.25,1.738,2,5,6,1
+UCLA-2017,UCLA,2017,2017 UCLA,Pac-12,UCLA,Bruins,#2774ae,#f2a900,12,6-6,33.75,11.47,36.75,13.42,-3,-0.677,1,5,5,2
+USC-2017,USC,2017,2017 USC,Pac-12,USC,Trojans,#9e2237,#ffcc00,13,11-2,34.54,10.54,26.31,9.35,8.231,0.318,1,4,6,1
+Utah-2017,Utah,2017,2017 Utah,Pac-12,UTAH,Utes,#ea002a,#ffffff,12,6-6,29.5,12.49,23.92,9.16,5.583,0.084,2,3,6,0
+Vanderbilt-2017,Vanderbilt,2017,2017 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,5-7,24.58,12.33,31.33,20.19,-6.75,-1.01,1,3,5,3
+Virginia-2017,Virginia,2017,2017 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,6-6,23.83,12.68,26.67,12.18,-2.833,-0.663,1,2,6,1
+Virginia Tech-2017,Virginia Tech,2017,2017 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,12,9-3,28.75,17.24,13.5,11.91,15.25,0.941,1,5,5,2
+Wake Forest-2017,Wake Forest,2017,2017 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,7-5,33.67,14.96,26.33,13.17,7.333,0.239,1,3,6,1
+Washington-2017,Washington,2017,2017 Washington,Pac-12,WASH,Huskies,#33006f,#e8d3a2,12,10-2,36.92,13.75,14.5,8.94,22.417,1.576,1,3,3,2
+Washington State-2017,Washington State,2017,2017 Washington State,Pac-12,WSU,Cougars,#981e32,#ffffff,12,9-3,31.42,13.71,24.42,18.26,7,0.209,2,3,8,0
+West Virginia-2017,West Virginia,2017,2017 West Virginia,Big 12,WVU,Mountaineers,#002855,#eaaa00,12,7-5,36.25,15.25,31.58,12.92,4.667,0.002,1,3,5,0
+Wisconsin-2017,Wisconsin,2017,2017 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,13,12-1,33.77,11.2,13.15,7.14,20.615,1.416,1,6,4,2
+Alabama-2018,Alabama,2018,2018 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,13,13-0,47.92,12.76,14.85,9.87,33.077,2.585,2,4,4,1
+Arizona-2018,Arizona,2018,2018 Arizona,Pac-12,ARIZ,Wildcats,#0c234b,#ab0520,12,5-7,31.33,14.14,32.58,15.49,-1.25,-0.557,2,2,6,0
+Arizona State-2018,Arizona State,2018,2018 Arizona State,Pac-12,ASU,Sun Devils,#8e0c3a,#ffc72c,12,7-5,30.75,12.92,25.08,9.1,5.667,0.076,1,2,4,1
+Arkansas-2018,Arkansas,2018,2018 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,2-10,21.67,15.29,34.75,16.72,-13.083,-1.64,2,4,5,2
+Auburn-2018,Auburn,2018,2018 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,7-5,28.25,15.84,19.58,13.79,8.667,0.351,1,4,6,0
+Baylor-2018,Baylor,2018,2018 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,6-6,28.25,13.12,31.17,16.8,-2.917,-0.709,2,4,5,0
+Boston College-2018,Boston College,2018,2018 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,7-5,32,16.65,25.67,8.58,6.333,0.137,1,4,3,2
+BYU-2018,BYU,2018,2018 BYU,FBS Independents,BYU,Cougars,#003da5,#ffffff,12,6-6,25.42,13.32,21.67,12.2,3.75,-0.099,2,4,7,2
+California-2018,California,2018,2018 California,Pac-12,CAL,Golden Bears,#031522,#ffc423,12,7-5,22.75,13.29,21.25,10.04,1.5,-0.305,2,2,6,1
+Clemson-2018,Clemson,2018,2018 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,13,13-0,45.38,15.27,13.69,9.71,31.692,2.458,2,5,8,0
+Colorado-2018,Colorado,2018,2018 Colorado,Pac-12,COLO,Buffaloes,#CFB87C,#000000,12,5-7,27.08,13.43,27.25,9.63,-0.167,-0.458,1,2,6,0
+Duke-2018,Duke,2018,2018 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,7-5,27.17,16,27.42,16.66,-0.25,-0.465,2,2,4,3
+Florida-2018,Florida,2018,2018 Florida,SEC,FLA,Gators,#0021a5,#fa4616,12,9-3,34.5,16.56,20.42,11.39,14.083,0.847,1,3,6,3
+Florida State-2018,Florida State,2018,2018 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,12,5-7,21.92,12.24,31.5,12.9,-9.583,-1.319,1,2,5,1
+Georgia-2018,Georgia,2018,2018 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,13,11-2,39.15,12.09,18.54,10.78,20.615,1.445,2,4,5,2
+Georgia Tech-2018,Georgia Tech,2018,2018 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,12,7-5,35.58,16.97,28.92,13.95,6.667,0.168,1,6,2,0
+Illinois-2018,Illinois,2018,2018 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,4-8,26,14.86,39.42,18.87,-13.417,-1.67,2,3,4,0
+Indiana-2018,Indiana,2018,2018 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,5-7,26.42,7.42,29.92,11.2,-3.5,-0.763,1,3,6,1
+Iowa-2018,Iowa,2018,2018 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,8-4,31.5,15.32,17.42,13.28,14.083,0.847,1,3,4,2
+Iowa State-2018,Iowa State,2018,2018 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,8-4,26.83,13.07,22.5,12.22,4.333,-0.046,1,4,5,1
+Kansas-2018,Kansas,2018,2018 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,3-9,23.83,14.1,30,14.45,-6.167,-1.007,1,3,5,0
+Kansas State-2018,Kansas State,2018,2018 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,5-7,22.5,11.58,25.42,13.68,-2.917,-0.709,2,2,3,1
+Kentucky-2018,Kentucky,2018,2018 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,9-3,26.58,14.72,16.25,8.21,10.333,0.503,1,2,4,1
+Louisville-2018,Louisville,2018,2018 Louisville,ACC,LOU,Cardinals,#c9001f,#000000,12,2-10,19.75,9.69,44.08,20.79,-24.333,-2.669,2,4,6,1
+LSU-2018,LSU,2018,2018 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,12,9-3,31.75,17.71,20.92,18.77,10.833,0.549,1,2,6,2
+Maryland-2018,Maryland,2018,2018 Maryland,Big Ten,MD,Terrapins,#D5002B,#ffcd00,12,5-7,28.5,20.46,28.67,13.08,-0.167,-0.458,2,4,6,1
+Miami-2018,Miami,2018,2018 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,7-5,30.92,19.24,18.17,10.19,12.75,0.725,2,3,4,1
+Michigan-2018,Michigan,2018,2018 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,10-2,36.83,12.17,17.58,15.56,19.25,1.32,1,3,5,4
+Michigan State-2018,Michigan State,2018,2018 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,7-5,19.75,11.05,18,8.4,1.75,-0.282,2,2,6,2
+Minnesota-2018,Minnesota,2018,2018 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,6-6,28.5,11.42,27.92,18.13,0.583,-0.389,2,2,3,1
+Mississippi State-2018,Mississippi State,2018,2018 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,8-4,29.08,21.9,12,7.99,17.083,1.121,1,3,4,2
+Missouri-2018,Missouri,2018,2018 Missouri,SEC,MIZ,Tigers,#f1b82d,#000000,12,8-4,36.92,15.11,24.42,13.47,12.5,0.702,1,3,5,2
+NC State-2018,NC State,2018,2018 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,9-3,35.58,13.92,22.67,13.85,12.917,0.74,1,3,5,0
+Nebraska-2018,Nebraska,2018,2018 Nebraska,Big Ten,NEB,Cornhuskers,#d00000,#ffffff,12,4-8,30,14.59,31.25,13.71,-1.25,-0.557,1,2,5,1
+North Carolina-2018,North Carolina,2018,2018 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,11,2-9,27.36,11.5,34.55,8.05,-7.182,-1.1,1,4,6,2
+Northwestern-2018,Northwestern,2018,2018 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,13,8-5,23.69,8.19,23.46,10.45,0.231,-0.421,1,3,9,0
+Notre Dame-2018,Notre Dame,2018,2018 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,12-0,33.75,11.55,17.25,6.02,16.5,1.068,2,2,6,2
+Ohio State-2018,Ohio State,2018,2018 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,13,12-1,43.46,15.95,25.69,15.42,17.769,1.184,2,2,9,2
+Oklahoma-2018,Oklahoma,2018,2018 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,13,12-1,49.46,10.56,32.38,13.79,17.077,1.121,1,3,5,1
+Oklahoma State-2018,Oklahoma State,2018,2018 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,6-6,38.42,14.56,32.42,11.34,6,0.107,1,3,4,1
+Ole Miss-2018,Ole Miss,2018,2018 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,5-7,33.92,23,36.17,12.18,-2.25,-0.648,1,2,5,1
+Oregon-2018,Oregon,2018,2018 Oregon,Pac-12,ORE,Ducks,#007030,#fee11a,12,8-4,37.17,15.02,27,8.94,10.167,0.488,1,4,4,2
+Oregon State-2018,Oregon State,2018,2018 Oregon State,Pac-12,ORST,Beavers,#231f20,#d73f09,12,2-10,26.08,12.36,45.67,13.67,-19.583,-2.235,2,4,4,0
+Penn State-2018,Penn State,2018,2018 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,9-3,34.58,17.95,20,12.82,14.583,0.892,2,2,4,1
+Pittsburgh-2018,Pittsburgh,2018,2018 Pittsburgh,ACC,PITT,Panthers,#003263,#231f20,13,7-6,26.62,16.98,28.85,14.66,-2.231,-0.646,1,2,5,0
+Purdue-2018,Purdue,2018,2018 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,6-6,31.92,12.96,27.25,12.09,4.667,-0.015,1,2,5,2
+Rutgers-2018,Rutgers,2018,2018 Rutgers,Big Ten,RUTG,Scarlet Knights,#d21034,#ffffff,12,1-11,13.5,8.26,31.42,15.13,-17.917,-2.082,2,3,3,1
+South Carolina-2018,South Carolina,2018,2018 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,7-5,32.58,12.51,27.17,15.63,5.417,0.054,1,4,4,2
+Stanford-2018,Stanford,2018,2018 Stanford,Pac-12,STAN,Cardinal,#8c1515,#ffffff,12,8-4,29.58,11.4,23.75,14.29,5.833,0.092,1,3,4,2
+Syracuse-2018,Syracuse,2018,2018 Syracuse,ACC,SYR,Orange,#ff6500,#000e54,12,9-3,40.75,16.27,27.75,12.32,13,0.748,2,3,5,1
+TCU-2018,TCU,2018,2018 TCU,Big 12,TCU,Horned Frogs,#4d1979,#f1f2f3,12,6-6,24.67,13.25,24.42,15.23,0.25,-0.419,2,3,6,0
+Tennessee-2018,Tennessee,2018,2018 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,5-7,22.75,12.7,27.92,20.41,-5.167,-0.915,1,4,5,1
+Texas-2018,Texas,2018,2018 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,13,9-4,31.31,8.54,26.23,12.54,5.077,0.022,1,3,4,1
+Texas A&M-2018,Texas A&M,2018,2018 Texas A&M,SEC,TA&M,Aggies,#500000,#ffffff,12,8-4,34.67,18.01,26.33,17.53,8.333,0.32,1,2,4,1
+Texas Tech-2018,Texas Tech,2018,2018 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,5-7,37.33,19.49,31.08,16.7,6.25,0.13,2,4,6,0
+UCF-2018,UCF,2018,2018 UCF,American Athletic,UCF,Knights,#ba9b37,#000000,12,12-0,44.17,9.14,21.25,13.1,22.917,1.655,2,5,4,1
+UCLA-2018,UCLA,2018,2018 UCLA,Pac-12,UCLA,Bruins,#2774ae,#f2a900,12,3-9,24.58,9.91,34.08,11.56,-9.5,-1.312,2,3,4,2
+USC-2018,USC,2018,2018 USC,Pac-12,USC,Trojans,#9e2237,#ffcc00,12,5-7,26.08,12.12,27,9.39,-0.917,-0.526,1,3,4,0
+Utah-2018,Utah,2018,2018 Utah,Pac-12,UTAH,Utes,#ea002a,#ffffff,13,9-4,28.69,13.47,18.54,10.27,10.154,0.487,2,3,6,3
+Vanderbilt-2018,Vanderbilt,2018,2018 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,6-6,27.67,12.29,25.08,11.63,2.583,-0.206,1,3,4,1
+Virginia-2018,Virginia,2018,2018 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,7-5,28.5,11.09,21.75,9.79,6.75,0.176,1,2,5,1
+Virginia Tech-2018,Virginia Tech,2018,2018 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,12,6-6,29.75,12.58,30.67,16.14,-0.917,-0.526,1,4,6,1
+Wake Forest-2018,Wake Forest,2018,2018 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,6-6,32.5,18.74,33.25,16.15,-0.75,-0.511,1,3,4,2
+Washington-2018,Washington,2018,2018 Washington,Pac-12,WASH,Huskies,#33006f,#e8d3a2,13,10-3,26.62,10.66,15.46,8.76,11.154,0.579,1,4,4,2
+Washington State-2018,Washington State,2018,2018 Washington State,Pac-12,WSU,Cougars,#981e32,#ffffff,12,10-2,38.33,16.1,23.08,12.21,15.25,0.953,1,3,8,0
+West Virginia-2018,West Virginia,2018,2018 West Virginia,Big 12,WVU,Mountaineers,#002855,#eaaa00,11,8-3,42.27,11.96,26.55,16.71,15.727,0.997,1,3,6,2
+Wisconsin-2018,Wisconsin,2018,2018 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,12,7-5,29.25,14.06,24.25,11.57,5,0.015,1,4,3,1
+Alabama-2019,Alabama,2019,2019 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,12,10-2,48.25,9.56,18.83,16.16,29.417,2.008,2,3,5,1
+Arizona-2019,Arizona,2019,2019 Arizona,Pac-12,ARIZ,Wildcats,#0c234b,#ab0520,12,4-8,26.92,16.5,35.75,12.83,-8.833,-1.169,2,5,7,0
+Arizona State-2019,Arizona State,2019,2019 Arizona State,Pac-12,ASU,Sun Devils,#8e0c3a,#ffc72c,12,7-5,25.17,10.2,23.08,12.52,2.083,-0.262,1,2,4,1
+Arkansas-2019,Arkansas,2019,2019 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,2-10,21.42,12.05,36.83,13.69,-15.417,-1.715,2,2,3,2
+Auburn-2019,Auburn,2019,2019 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,9-3,34,16.93,18.58,11.22,15.417,0.845,1,5,6,1
+Baylor-2019,Baylor,2019,2019 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,13,11-2,35.15,15.82,19.31,8.84,15.846,0.881,2,3,6,0
+Boise State-2019,Boise State,2019,2019 Boise State,Mountain West,BOIS,Broncos,#0033a0,#fa4616,13,12-1,36.85,13.67,20.62,11.25,16.231,0.913,3,3,5,2
+Boston College-2019,Boston College,2019,2019 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,6-6,30.92,15.01,31.67,13.75,-0.75,-0.497,2,4,2,3
+BYU-2019,BYU,2019,2019 BYU,FBS Independents,BYU,Cougars,#003da5,#ffffff,12,7-5,28,14.23,24.42,9.2,3.583,-0.138,1,2,5,1
+California-2019,California,2019,2019 California,Pac-12,CAL,Golden Bears,#031522,#ffc423,12,7-5,20.08,9.38,22.08,7.99,-2,-0.601,2,3,4,2
+Clemson-2019,Clemson,2019,2019 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,13,13-0,46.54,12.84,10.62,5.12,35.923,2.548,2,5,9,1
+Colorado-2019,Colorado,2019,2019 Colorado,Pac-12,COLO,Buffaloes,#CFB87C,#000000,12,5-7,23.5,13.37,31.83,10.13,-8.333,-1.127,1,3,4,1
+Duke-2019,Duke,2019,2019 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,5-7,25.25,15.66,29.17,13.9,-3.917,-0.76,1,2,5,1
+Florida-2019,Florida,2019,2019 Florida,SEC,FLA,Gators,#0021a5,#fa4616,12,10-2,33,11,14.42,13.21,18.583,1.108,2,3,7,1
+Florida State-2019,Florida State,2019,2019 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,12,6-6,29.08,12.26,28.5,11.37,0.583,-0.387,1,2,5,3
+Georgia-2019,Georgia,2019,2019 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,13,11-2,31.15,16.57,12.46,10.26,18.692,1.117,1,4,5,2
+Georgia Tech-2019,Georgia Tech,2019,2019 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,12,3-9,16.67,10.24,32.42,13.34,-15.75,-1.743,0,4,4,1
+Illinois-2019,Illinois,2019,2019 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,6-6,27.25,10.86,25.42,13.79,1.833,-0.283,1,4,4,2
+Indiana-2019,Indiana,2019,2019 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,8-4,32.58,11.55,24.5,18.33,8.083,0.236,2,4,5,1
+Iowa-2019,Iowa,2019,2019 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,9-3,23.83,11.63,13.17,8.61,10.667,0.451,1,4,3,0
+Iowa State-2019,Iowa State,2019,2019 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,7-5,34.08,15.74,25.33,7.55,8.75,0.292,1,3,5,3
+Kansas-2019,Kansas,2019,2019 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,3-9,23.5,14.81,36.08,14.51,-12.583,-1.48,1,2,4,0
+Kansas State-2019,Kansas State,2019,2019 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,8-4,30.67,13.56,21.5,10.68,9.167,0.326,1,3,5,1
+Kentucky-2019,Kentucky,2019,2019 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,7-5,26.33,15.9,18.42,7.32,7.917,0.222,1,3,4,1
+Louisville-2019,Louisville,2019,2019 Louisville,ACC,LOU,Cardinals,#c9001f,#000000,12,7-5,32.67,16.14,33.83,16.26,-1.167,-0.532,2,2,3,1
+LSU-2019,LSU,2019,2019 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,13,13-0,47.77,12.26,21.15,13.73,26.615,1.775,2,4,5,1
+Maryland-2019,Maryland,2019,2019 Maryland,Big Ten,MD,Terrapins,#D5002B,#ffcd00,12,3-9,25.25,24.83,34.67,22.19,-9.417,-1.217,2,3,3,2
+Memphis-2019,Memphis,2019,2019 Memphis,American Athletic,MEM,Tigers,#004991,#8e908f,13,12-1,40.54,11.82,24.38,12.09,16.154,0.906,1,3,5,1
+Miami-2019,Miami,2019,2019 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,6-6,27.83,15.06,20.75,11.94,7.083,0.153,2,2,5,1
+Michigan-2019,Michigan,2019,2019 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,9-3,33,13.38,19.5,15.49,13.5,0.686,1,4,5,2
+Michigan State-2019,Michigan State,2019,2019 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,6-6,22,15.61,22.67,14.39,-0.667,-0.49,1,3,4,2
+Minnesota-2019,Minnesota,2019,2019 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,10-2,34.33,9.68,22.42,10.62,11.917,0.555,1,3,4,1
+Mississippi State-2019,Mississippi State,2019,2019 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,6-6,27.58,14.29,28.08,14.7,-0.5,-0.477,2,3,6,1
+Missouri-2019,Missouri,2019,2019 Missouri,SEC,MIZ,Tigers,#f1b82d,#000000,12,6-6,25.33,16.02,19.42,10.58,5.917,0.056,1,3,5,2
+Navy-2019,Navy,2019,2019 Navy,American Athletic,NAVY,Midshipmen,#00225b,#b5a67c,12,10-2,38.58,11.28,22.75,16.09,15.833,0.88,1,6,3,0
+NC State-2019,NC State,2019,2019 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,4-8,22.08,10.65,30.08,17.34,-8,-1.099,3,3,5,2
+Nebraska-2019,Nebraska,2019,2019 Nebraska,Big Ten,NEB,Cornhuskers,#d00000,#ffffff,12,5-7,28,14.67,27.75,13.4,0.25,-0.414,1,3,3,2
+North Carolina-2019,North Carolina,2019,2019 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,6-6,31.25,11.11,24.58,10.94,6.667,0.119,1,3,4,0
+Northwestern-2019,Northwestern,2019,2019 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,3-9,16.33,13.57,23.58,13.26,-7.25,-1.037,2,1,5,0
+Notre Dame-2019,Notre Dame,2019,2019 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,10-2,37.08,15.39,18.67,11.52,18.417,1.094,2,3,6,2
+Ohio State-2019,Ohio State,2019,2019 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,13,13-0,48.69,14.41,12.54,8.29,36.154,2.567,2,3,6,1
+Oklahoma-2019,Oklahoma,2019,2019 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,13,12-1,43.23,11.76,24.54,10.85,18.692,1.117,1,3,5,2
+Oklahoma State-2019,Oklahoma State,2019,2019 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,8-4,33.42,11.67,27,12.25,6.417,0.098,1,2,5,1
+Ole Miss-2019,Ole Miss,2019,2019 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,4-8,26.58,10.3,26.5,17.74,0.083,-0.428,2,3,4,2
+Oregon-2019,Oregon,2019,2019 Oregon,Pac-12,ORE,Ducks,#007030,#fee11a,13,11-2,35.92,16.3,15.69,12.08,20.231,1.245,1,4,6,2
+Oregon State-2019,Oregon State,2019,2019 Oregon State,Pac-12,ORST,Beavers,#231f20,#d73f09,12,5-7,31.17,17.44,32.5,14.79,-1.333,-0.546,1,3,4,1
+Penn State-2019,Penn State,2019,2019 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,10-2,34.33,18.64,14.08,10.14,20.25,1.247,2,4,3,2
+Pittsburgh-2019,Pittsburgh,2019,2019 Pittsburgh,ACC,PITT,Panthers,#003263,#231f20,12,7-5,20.08,10.66,21.83,8.34,-1.75,-0.58,1,3,5,2
+Purdue-2019,Purdue,2019,2019 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,4-8,25.83,12.53,30.58,9.32,-4.75,-0.83,2,2,4,2
+Rutgers-2019,Rutgers,2019,2019 Rutgers,Big Ten,RUTG,Scarlet Knights,#d21034,#ffffff,12,2-10,13.25,16.69,36.67,10.87,-23.417,-2.38,0,3,4,1
+SMU-2019,SMU,2019,2019 SMU,American Athletic,SMU,Mustangs,#354ca1,#cc0035,12,10-2,43,8.22,31.83,11.89,11.167,0.492,1,3,6,1
+South Carolina-2019,South Carolina,2019,2019 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,4-8,22.42,17.24,26.08,13.92,-3.667,-0.74,1,3,5,2
+Stanford-2019,Stanford,2019,2019 Stanford,Pac-12,STAN,Cardinal,#8c1515,#ffffff,12,4-8,21.67,8.93,29.83,14.1,-8.167,-1.113,1,4,4,1
+Syracuse-2019,Syracuse,2019,2019 Syracuse,ACC,SYR,Orange,#ff6500,#000e54,12,5-7,28.25,14.82,30.67,21.55,-2.417,-0.636,1,3,4,2
+TCU-2019,TCU,2019,2019 TCU,Big 12,TCU,Horned Frogs,#4d1979,#f1f2f3,12,5-7,30.33,10.12,26.42,11.94,3.917,-0.11,2,2,5,2
+Tennessee-2019,Tennessee,2019,2019 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,7-5,24.25,11.86,21.67,13.95,2.583,-0.221,2,3,3,1
+Texas-2019,Texas,2019,2019 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,12,7-5,35,12.66,28.92,10.88,6.083,0.07,1,2,4,2
+Texas A&M-2019,Texas A&M,2019,2019 Texas A&M,SEC,TA&M,Aggies,#500000,#ffffff,12,7-5,30,16.76,22.67,14.99,7.333,0.174,1,2,5,1
+Texas Tech-2019,Texas Tech,2019,2019 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,4-8,30.5,10.11,30.33,14.75,0.167,-0.421,1,3,6,2
+UCLA-2019,UCLA,2019,2019 UCLA,Pac-12,UCLA,Bruins,#2774ae,#f2a900,12,4-8,26.67,17.14,34.75,16.39,-8.083,-1.106,2,2,3,2
+USC-2019,USC,2019,2019 USC,Pac-12,USC,Trojans,#9e2237,#ffcc00,12,8-4,33.17,10.3,27.75,10.81,5.417,0.015,1,4,4,1
+Utah-2019,Utah,2019,2019 Utah,Pac-12,UTAH,Utes,#ea002a,#ffffff,13,11-2,34,10.67,13.23,11.97,20.769,1.29,2,5,6,2
+Vanderbilt-2019,Vanderbilt,2019,2019 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,3-9,16.5,12.54,31.75,17.84,-15.25,-1.702,2,2,6,1
+Virginia-2019,Virginia,2019,2019 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,13,9-4,32.38,13.87,26.46,12.78,5.923,0.057,1,3,5,1
+Virginia Tech-2019,Virginia Tech,2019,2019 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,12,8-4,30.92,10.11,23.67,15.23,7.25,0.167,1,2,3,2
+Wake Forest-2019,Wake Forest,2019,2019 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,8-4,32.75,15.32,29.25,16.35,3.5,-0.144,1,3,4,2
+Washington-2019,Washington,2019,2019 Washington,Pac-12,WASH,Huskies,#33006f,#e8d3a2,12,7-5,31.5,14.17,20.42,8.21,11.083,0.485,1,4,4,2
+Washington State-2019,Washington State,2019,2019 Washington State,Pac-12,WSU,Cougars,#981e32,#ffffff,12,6-6,39.17,17.8,31.42,17.21,7.75,0.208,1,2,7,0
+West Virginia-2019,West Virginia,2019,2019 West Virginia,Big 12,WVU,Mountaineers,#002855,#eaaa00,12,5-7,20.58,10.11,28.83,12.34,-8.25,-1.12,1,3,8,0
+Wisconsin-2019,Wisconsin,2019,2019 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,13,10-3,34.62,14.51,16.08,13,18.538,1.104,1,4,5,1
+Alabama-2020,Alabama,2020,2020 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,11,11-0,49.73,8.65,19.45,15.92,30.273,2.35,2,2,3,1
+Arizona-2020,Arizona,2020,2020 Arizona,Pac-12,ARIZ,Wildcats,#0c234b,#ab0520,5,0-5,17.4,10.41,39.8,18.55,-22.4,-1.923,0,0,0,0
+Arizona State-2020,Arizona State,2020,2020 Arizona State,Pac-12,ASU,Sun Devils,#8e0c3a,#ffc72c,4,2-2,40.25,23.01,23.25,11.32,17,1.274,0,0,0,0
+Arkansas-2020,Arkansas,2020,2020 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,10,3-7,25.7,12.74,34.9,16.87,-9.2,-0.852,1,2,4,1
+Auburn-2020,Auburn,2020,2020 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,10,6-4,25.7,11.69,23.7,10.46,2,0.057,1,3,3,0
+Baylor-2020,Baylor,2020,2020 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,9,2-7,23.33,12.52,29.22,8.15,-5.889,-0.583,1,1,3,1
+Boston College-2020,Boston College,2020,2020 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,11,6-5,27.82,9.3,28.36,12.09,-0.545,-0.15,1,3,4,1
+BYU-2020,BYU,2020,2020 BYU,FBS Independents,BYU,Cougars,#003da5,#ffffff,11,10-1,43,14.17,14.64,6.59,28.364,2.196,1,2,4,2
+California-2020,California,2020,2020 California,Pac-12,CAL,Golden Bears,#031522,#ffc423,4,1-3,20.25,7.27,26.5,7.59,-6.25,-0.613,0,0,0,0
+Clemson-2020,Clemson,2020,2020 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,11,10-1,44.91,11,17.55,12.54,27.364,2.114,2,5,5,3
+Coastal Carolina-2020,Coastal Carolina,2020,2020 Coastal Carolina,Sun Belt,CCU,Chanticleers,#007073,#876447,11,11-0,37.45,10.88,18.73,10.3,18.727,1.414,1,3,4,1
+Colorado-2020,Colorado,2020,2020 Colorado,Pac-12,COLO,Buffaloes,#CFB87C,#000000,5,4-1,29.6,11.89,27,14.63,2.6,0.105,0,0,0,0
+Duke-2020,Duke,2020,2020 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,11,2-9,24.82,15.28,38.09,13.94,-13.273,-1.182,2,3,5,2
+Florida-2020,Florida,2020,2020 Florida,SEC,FLA,Gators,#0021a5,#fa4616,11,8-3,41.64,9.16,28.64,12.58,13,0.949,2,3,4,1
+Florida State-2020,Florida State,2020,2020 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,9,3-6,25.78,14.88,36,11.59,-10.222,-0.935,1,3,2,1
+Georgia-2020,Georgia,2020,2020 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,9,7-2,33.22,11.42,19.89,14.45,13.333,0.976,1,4,3,0
+Georgia Tech-2020,Georgia Tech,2020,2020 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,10,3-7,23.9,15.47,36.8,16.65,-12.9,-1.152,1,4,4,1
+Illinois-2020,Illinois,2020,2020 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,8,2-6,20.13,10.51,34.88,12.02,-14.75,-1.302,0,2,3,1
+Indiana-2020,Indiana,2020,2020 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,7,6-1,30.14,8.9,19.43,15.2,10.714,0.764,1,1,2,1
+Iowa-2020,Iowa,2020,2020 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,8,6-2,31.75,10.19,16,7.54,15.75,1.172,1,3,3,2
+Iowa State-2020,Iowa State,2020,2020 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,11,8-3,32.82,11.81,21.82,10.92,11,0.787,1,2,3,3
+Kansas-2020,Kansas,2020,2020 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,9,0-9,15.78,5.93,46,14.02,-30.222,-2.557,2,2,3,0
+Kansas State-2020,Kansas State,2020,2020 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,10,4-6,26.6,15.28,32.2,16.65,-5.6,-0.56,1,3,3,1
+Kentucky-2020,Kentucky,2020,2020 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,10,4-6,21.7,15.69,26.4,18.13,-4.7,-0.487,1,4,3,2
+Louisville-2020,Louisville,2020,2020 Louisville,ACC,LOU,Cardinals,#c9001f,#000000,11,4-7,29.55,11.95,26.64,14.87,2.909,0.13,1,3,3,1
+LSU-2020,LSU,2020,2020 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,10,5-5,32,16.15,34.9,15.53,-2.9,-0.341,1,3,6,1
+Maryland-2020,Maryland,2020,2020 Maryland,Big Ten,MD,Terrapins,#D5002B,#ffcd00,5,2-3,23.6,17.11,32,11,-8.4,-0.787,0,0,0,0
+Miami-2020,Miami,2020,2020 Miami,ACC,MIA,Hurricanes,#005030,#f47321,10,8-2,34,12.76,26,18.6,8,0.544,1,3,3,2
+Michigan-2020,Michigan,2020,2020 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,6,2-4,28.33,16.22,34.5,10.01,-6.167,-0.606,1,3,1,0
+Michigan State-2020,Michigan State,2020,2020 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,7,2-5,18,11.55,35.14,12.76,-17.143,-1.496,1,2,2,0
+Minnesota-2020,Minnesota,2020,2020 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,7,3-4,27.29,13.24,30.14,13.77,-2.857,-0.337,1,2,1,0
+Mississippi State-2020,Mississippi State,2020,2020 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,10,3-7,20.7,16.59,28.3,6.99,-7.6,-0.722,2,2,5,0
+Missouri-2020,Missouri,2020,2020 Missouri,SEC,MIZ,Tigers,#f1b82d,#000000,10,5-5,26.7,14.06,32.3,18.57,-5.6,-0.56,1,2,5,1
+NC State-2020,NC State,2020,2020 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,11,8-3,31.09,9.43,29.73,12.96,1.364,0.005,1,3,4,1
+Nebraska-2020,Nebraska,2020,2020 Nebraska,Big Ten,NEB,Cornhuskers,#d00000,#ffffff,8,3-5,23.13,8.03,29.38,11.17,-6.25,-0.613,1,1,4,1
+North Carolina-2020,North Carolina,2020,2020 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,11,8-3,43,15.34,28.36,14.62,14.636,1.082,1,2,4,1
+Northwestern-2020,Northwestern,2020,2020 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,8,6-2,23.38,9.72,15.5,8.7,7.875,0.533,1,3,3,1
+Notre Dame-2020,Notre Dame,2020,2020 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,11,10-1,35.18,14.25,18.64,13.03,16.545,1.237,1,2,4,2
+Ohio State-2020,Ohio State,2020,2020 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,6,6-0,42.5,11.52,21,9.65,21.5,1.639,1,2,1,0
+Oklahoma-2020,Oklahoma,2020,2020 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,10,8-2,41.8,13.67,21.9,14.56,19.9,1.509,1,2,5,3
+Oklahoma State-2020,Oklahoma State,2020,2020 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,10,7-3,29.5,13.08,22.4,15.5,7.1,0.47,1,3,4,1
+Ole Miss-2020,Ole Miss,2020,2020 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,9,4-5,40.67,12.73,40.33,13.76,0.333,-0.078,1,2,4,1
+Oregon-2020,Oregon,2020,2020 Oregon,Pac-12,ORE,Ducks,#007030,#fee11a,6,4-2,33.67,9.07,27.33,9.77,6.333,0.408,1,1,2,0
+Oregon State-2020,Oregon State,2020,2020 Oregon State,Pac-12,ORST,Beavers,#231f20,#d73f09,7,2-5,28.86,6.82,33.29,7.48,-4.429,-0.465,0,2,3,2
+Penn State-2020,Penn State,2020,2020 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,9,4-5,29.78,11.81,27.67,11.25,2.111,0.066,2,3,3,1
+Pittsburgh-2020,Pittsburgh,2020,2020 Pittsburgh,ACC,PITT,Panthers,#003263,#231f20,11,6-5,29,14.8,24.55,15.19,4.455,0.256,1,4,6,0
+Purdue-2020,Purdue,2020,2020 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,6,2-4,27.17,4.45,29.83,7.19,-2.667,-0.322,0,1,2,1
+Rutgers-2020,Rutgers,2020,2020 Rutgers,Big Ten,RUTG,Scarlet Knights,#d21034,#ffffff,9,3-6,26.67,10.99,32.11,10.25,-5.444,-0.547,1,3,3,1
+South Carolina-2020,South Carolina,2020,2020 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,10,2-8,23.5,12.44,36,16.54,-12.5,-1.12,1,2,3,1
+Stanford-2020,Stanford,2020,2020 Stanford,Pac-12,STAN,Cardinal,#8c1515,#ffffff,6,4-2,29.33,11.2,31.67,9.2,-2.333,-0.295,0,2,1,0
+Syracuse-2020,Syracuse,2020,2020 Syracuse,ACC,SYR,Orange,#ff6500,#000e54,11,1-10,17.82,10.57,32.73,10.19,-14.909,-1.315,1,3,3,1
+TCU-2020,TCU,2020,2020 TCU,Big 12,TCU,Horned Frogs,#4d1979,#f1f2f3,10,6-4,30.8,16.52,24.2,7.79,6.6,0.43,1,4,4,1
+Tennessee-2020,Tennessee,2020,2020 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,10,3-7,21.5,11.03,30.1,11.01,-8.6,-0.803,2,3,5,1
+Texas-2020,Texas,2020,2020 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,9,6-3,41.33,19.1,29.11,17.63,12.222,0.886,1,3,4,2
+Texas A&M-2020,Texas A&M,2020,2020 Texas A&M,SEC,TA&M,Aggies,#500000,#ffffff,9,8-1,31.67,10.55,21.11,16.07,10.556,0.751,1,1,2,1
+Texas Tech-2020,Texas Tech,2020,2020 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,10,4-6,29.1,13.3,36.7,16.46,-7.6,-0.722,2,2,6,1
+UCLA-2020,UCLA,2020,2020 UCLA,Pac-12,UCLA,Bruins,#2774ae,#f2a900,7,3-4,35.43,7.81,30.71,17.42,4.714,0.277,0,2,1,1
+USC-2020,USC,2020,2020 USC,Pac-12,USC,Trojans,#9e2237,#ffcc00,6,5-1,33.33,6.8,26,9.34,7.333,0.489,1,1,4,0
+Utah-2020,Utah,2020,2020 Utah,Pac-12,UTAH,Utes,#ea002a,#ffffff,5,3-2,30.2,11.61,26,4.64,4.2,0.235,0,0,0,0
+Vanderbilt-2020,Vanderbilt,2020,2020 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,9,0-9,14.78,10.06,37.33,10.79,-22.556,-1.935,1,1,4,1
+Virginia-2020,Virginia,2020,2020 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,10,5-5,30.7,13.78,29.6,10.71,1.1,-0.016,1,2,4,1
+Virginia Tech-2020,Virginia Tech,2020,2020 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,11,5-6,31.09,12.91,32.09,13.5,-1,-0.187,1,3,2,2
+Wake Forest-2020,Wake Forest,2020,2020 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,8,4-4,37,17.57,31.63,17.22,5.375,0.331,1,2,4,0
+Washington-2020,Washington,2020,2020 Washington,Pac-12,WASH,Huskies,#33006f,#e8d3a2,4,3-1,30.25,9.25,25,4.9,5.25,0.32,0,0,0,0
+Washington State-2020,Washington State,2020,2020 Washington State,Pac-12,WSU,Cougars,#981e32,#ffffff,4,1-3,27,10.36,38.5,7.59,-11.5,-1.038,0,0,0,0
+West Virginia-2020,West Virginia,2020,2020 West Virginia,Big 12,WVU,Mountaineers,#002855,#eaaa00,9,5-4,26.78,15.43,20.44,11.95,6.333,0.408,1,2,5,0
+Wisconsin-2020,Wisconsin,2020,2020 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,6,3-3,22.33,19.84,15.67,7.15,6.667,0.435,1,0,0,1
+Alabama-2021,Alabama,2021,2021 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,13,12-1,42.54,12.45,20.23,10.61,22.308,1.671,1,3,4,2
+Arizona-2021,Arizona,2021,2021 Arizona,Pac-12,ARIZ,Wildcats,#0c234b,#ab0520,12,1-11,17.17,8.5,31.42,11.93,-14.25,-1.769,1,4,5,0
+Arizona State-2021,Arizona State,2021,2021 Arizona State,Pac-12,ASU,Sun Devils,#8e0c3a,#ffc72c,12,8-4,29.67,10.28,20.92,9.1,8.75,0.395,1,3,4,1
+Arkansas-2021,Arkansas,2021,2021 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,8-4,31.5,14.51,24,15.23,7.5,0.278,1,4,5,1
+Auburn-2021,Auburn,2021,2021 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,6-6,29.58,17.88,22.17,10.77,7.417,0.27,2,3,5,1
+Baylor-2021,Baylor,2021,2021 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,13,11-2,32.46,13.52,19.15,7.78,13.308,0.824,1,2,4,2
+Boston College-2021,Boston College,2021,2021 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,6-6,24.67,16.06,22.17,13.46,2.5,-0.193,2,3,4,2
+BYU-2021,BYU,2021,2021 BYU,FBS Independents,BYU,Cougars,#003da5,#ffffff,12,10-2,33.5,14.83,24.25,10.59,9.25,0.442,1,2,4,4
+California-2021,California,2021,2021 California,Pac-12,CAL,Golden Bears,#031522,#ffc423,12,5-7,23.75,13.03,22.25,11.25,1.5,-0.287,1,3,4,1
+Cincinnati-2021,Cincinnati,2021,2021 Cincinnati,American Athletic,CIN,Bearcats,#E00122,#000000,13,13-0,39.23,10.29,16.08,6.91,23.154,1.75,1,4,5,2
+Clemson-2021,Clemson,2021,2021 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,12,9-3,26.83,14.41,15,9.77,11.833,0.685,1,3,4,1
+Colorado-2021,Colorado,2021,2021 Colorado,Pac-12,COLO,Buffaloes,#CFB87C,#000000,12,4-8,18.75,12.66,26.67,15.53,-7.917,-1.173,1,3,5,1
+Duke-2021,Duke,2021,2021 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,3-9,22.83,15.66,39.75,13.19,-16.917,-2.02,2,3,7,2
+Florida-2021,Florida,2021,2021 Florida,SEC,FLA,Gators,#0021a5,#fa4616,12,6-6,31.83,16.93,26.58,15.23,5.25,0.066,2,3,5,1
+Florida State-2021,Florida State,2021,2021 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,12,5-7,27.58,12.78,26.5,9.28,1.083,-0.326,2,3,6,2
+Georgia-2021,Georgia,2021,2021 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,13,12-1,39.38,14.03,9.54,10.87,29.846,2.38,1,5,4,3
+Georgia Tech-2021,Georgia Tech,2021,2021 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,12,3-9,24,15.77,33.5,14.2,-9.5,-1.322,2,3,5,1
+Illinois-2021,Illinois,2021,2021 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,5-7,20.17,12.03,21.92,10.61,-1.75,-0.593,1,4,3,2
+Indiana-2021,Indiana,2021,2021 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,2-10,17.25,16.7,33.25,10.75,-16,-1.933,0,3,4,3
+Iowa-2021,Iowa,2021,2021 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,13,10-3,23.92,13.07,19.15,9.41,4.769,0.021,2,4,4,1
+Iowa State-2021,Iowa State,2021,2021 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,7-5,32.83,13.31,20.58,12.65,12.25,0.724,1,2,4,2
+Kansas-2021,Kansas,2021,2021 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,2-10,20.75,14.91,42.17,13.07,-21.417,-2.443,1,3,5,1
+Kansas State-2021,Kansas State,2021,2021 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,7-5,26.33,8.4,21.08,9.27,5.25,0.066,1,2,5,2
+Kentucky-2021,Kentucky,2021,2021 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,9-3,33.33,14.58,22.08,10.19,11.25,0.63,1,3,3,3
+Louisville-2021,Louisville,2021,2021 Louisville,ACC,LOU,Cardinals,#c9001f,#000000,12,6-6,31.92,12.49,27,14.97,4.917,0.034,1,3,5,1
+LSU-2021,LSU,2021,2021 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,12,6-6,27.08,12,25.33,11.08,1.75,-0.263,1,4,6,0
+Maryland-2021,Maryland,2021,2021 Maryland,Big Ten,MD,Terrapins,#D5002B,#ffcd00,12,6-6,27.25,14.61,32.42,19.42,-5.167,-0.914,1,4,6,2
+Miami-2021,Miami,2021,2021 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,7-5,34.08,14.72,28.42,12.92,5.667,0.105,1,4,4,1
+Michigan-2021,Michigan,2021,2021 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,13,12-1,37.69,12.93,16.08,9.8,21.615,1.605,2,3,6,2
+Michigan State-2021,Michigan State,2021,2021 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,10-2,31.92,11.2,25.67,12.69,6.25,0.16,1,3,4,1
+Minnesota-2021,Minnesota,2021,2021 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,8-4,26.08,10.31,18.25,11.04,7.833,0.309,2,3,4,1
+Mississippi State-2021,Mississippi State,2021,2021 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,7-5,30.92,12.21,25.25,12.57,5.667,0.105,1,3,8,0
+Missouri-2021,Missouri,2021,2021 Missouri,SEC,MIZ,Tigers,#f1b82d,#000000,12,6-6,29.67,14.53,34.67,10.62,-5,-0.899,1,4,8,2
+NC State-2021,NC State,2021,2021 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,9-3,33.08,9.81,19.67,12.59,13.417,0.834,1,3,6,2
+Nebraska-2021,Nebraska,2021,2021 Nebraska,Big Ten,NEB,Cornhuskers,#d00000,#ffffff,12,3-9,27.92,12.88,22.67,10.84,5.25,0.066,2,4,4,2
+North Carolina-2021,North Carolina,2021,2021 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,6-6,36.42,16.04,31.58,14.79,4.833,0.027,1,2,3,2
+Northwestern-2021,Northwestern,2021,2021 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,3-9,16.58,8.48,29,16.59,-12.417,-1.596,2,3,3,2
+Notre Dame-2021,Notre Dame,2021,2021 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,11-1,35.25,10.81,18.25,12.42,17,1.171,1,2,6,1
+Ohio State-2021,Ohio State,2021,2021 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,12,10-2,45.5,14.19,20.92,11.8,24.583,1.885,1,3,3,1
+Oklahoma-2021,Oklahoma,2021,2021 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,12,10-2,38.42,17.96,25.25,12.56,13.167,0.811,2,2,5,3
+Oklahoma State-2021,Oklahoma State,2021,2021 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,13,11-2,30.62,13.83,16.77,9.64,13.846,0.875,1,3,5,0
+Ole Miss-2021,Ole Miss,2021,2021 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,10-2,35.92,13.37,25,11.22,10.917,0.599,2,3,4,0
+Oregon-2021,Oregon,2021,2021 Oregon,Pac-12,ORE,Ducks,#007030,#fee11a,13,10-3,31.38,13.2,25.46,8.92,5.923,0.129,1,2,6,3
+Oregon State-2021,Oregon State,2021,2021 Oregon State,Pac-12,ORST,Beavers,#231f20,#d73f09,12,7-5,32.75,8.93,25.92,12.14,6.833,0.215,1,4,6,2
+Penn State-2021,Penn State,2021,2021 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,7-5,26.25,8.48,16.75,10.21,9.5,0.466,1,4,3,3
+Pittsburgh-2021,Pittsburgh,2021,2021 Pittsburgh,ACC,PITT,Panthers,#003263,#231f20,13,11-2,43,13.95,23.08,12.72,19.923,1.446,1,3,7,2
+Purdue-2021,Purdue,2021,2021 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,8-4,27.5,12.73,20.5,15.53,7,0.23,3,3,5,2
+Rutgers-2021,Rutgers,2021,2021 Rutgers,Big Ten,RUTG,Scarlet Knights,#d21034,#ffffff,12,5-7,20.5,18.23,24.58,16.41,-4.083,-0.812,2,3,5,1
+South Carolina-2021,South Carolina,2021,2021 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,6-6,21.33,12.49,24.25,13.77,-2.917,-0.703,2,5,2,2
+Stanford-2021,Stanford,2021,2021 Stanford,Pac-12,STAN,Cardinal,#8c1515,#ffffff,12,3-9,20.42,12.87,32.42,9.79,-12,-1.557,2,3,3,1
+Syracuse-2021,Syracuse,2021,2021 Syracuse,ACC,SYR,Orange,#ff6500,#000e54,12,5-7,24.92,16.35,26.33,12.43,-1.417,-0.561,1,2,5,0
+TCU-2021,TCU,2021,2021 TCU,Big 12,TCU,Horned Frogs,#4d1979,#f1f2f3,12,5-7,28.67,12.24,34.92,15.07,-6.25,-1.016,1,3,5,0
+Tennessee-2021,Tennessee,2021,2021 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,7-5,38.83,16.22,27.5,15.98,11.333,0.638,2,4,4,2
+Texas-2021,Texas,2021,2021 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,12,5-7,35.25,18.87,31.08,15.65,4.167,-0.036,2,3,4,1
+Texas A&M-2021,Texas A&M,2021,2021 Texas A&M,SEC,TA&M,Aggies,#500000,#ffffff,12,8-4,29.33,13.75,15.92,12.09,13.417,0.834,1,2,4,1
+Texas Tech-2021,Texas Tech,2021,2021 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,6-6,30,13.53,32.08,17.18,-2.083,-0.624,2,2,6,2
+UCLA-2021,UCLA,2021,2021 UCLA,Pac-12,UCLA,Bruins,#2774ae,#f2a900,12,8-4,36.5,10.99,26.75,11.69,9.75,0.489,1,3,4,1
+USC-2021,USC,2021,2021 USC,Pac-12,USC,Trojans,#9e2237,#ffcc00,12,4-8,28.67,9.82,31.75,15.43,-3.083,-0.718,2,3,4,3
+Utah-2021,Utah,2021,2021 Utah,Pac-12,UTAH,Utes,#ea002a,#ffffff,13,10-3,35.46,9.03,20.62,10.66,14.846,0.969,1,4,4,3
+Vanderbilt-2021,Vanderbilt,2021,2021 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,2-10,15.75,10.77,35.83,12.1,-20.083,-2.318,2,2,4,1
+Virginia-2021,Virginia,2021,2021 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,6-6,34.58,14.03,31.83,20.55,2.75,-0.169,1,3,5,1
+Virginia Tech-2021,Virginia Tech,2021,2021 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,12,6-6,24.83,12.39,22.92,10.44,1.917,-0.248,1,4,3,1
+Wake Forest-2021,Wake Forest,2021,2021 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,13,10-3,41.23,12.02,30.31,18.63,10.923,0.6,1,5,5,2
+Washington-2021,Washington,2021,2021 Washington,Pac-12,WASH,Huskies,#33006f,#e8d3a2,12,4-8,21.5,12.01,22.67,10.36,-1.167,-0.538,1,3,4,2
+Washington State-2021,Washington State,2021,2021 Washington State,Pac-12,WSU,Cougars,#981e32,#ffffff,12,7-5,28.42,10.98,24.25,10.39,4.167,-0.036,1,3,6,0
+West Virginia-2021,West Virginia,2021,2021 West Virginia,Big 12,WVU,Mountaineers,#002855,#eaaa00,12,6-6,26.83,15.64,24.33,11.04,2.5,-0.193,2,2,5,0
+Wisconsin-2021,Wisconsin,2021,2021 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,12,8-4,25.83,12.19,16.42,13.42,9.417,0.458,1,4,3,1
+Alabama-2022,Alabama,2022,2022 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,12,10-2,40.75,14.1,18,15.6,22.75,1.667,2,3,6,1
+Arizona-2022,Arizona,2022,2022 Arizona,Pac-12,ARIZ,Wildcats,#0c234b,#ab0520,12,5-7,30.83,8.89,36.5,11.04,-5.667,-0.974,1,4,4,1
+Arizona State-2022,Arizona State,2022,2022 Arizona State,Pac-12,ASU,Sun Devils,#8e0c3a,#ffc72c,12,3-9,26.08,12.93,31.42,12.27,-5.333,-0.943,2,2,5,2
+Arkansas-2022,Arkansas,2022,2022 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,6-6,30.67,12.79,28.75,9.29,1.917,-0.269,1,3,5,1
+Auburn-2022,Auburn,2022,2022 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,5-7,24.75,11.14,29.5,14.91,-4.75,-0.889,1,3,3,1
+Baylor-2022,Baylor,2022,2022 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,6-6,33.58,15.93,26.58,11.1,7,0.203,1,3,4,2
+Boston College-2022,Boston College,2022,2022 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,3-9,17.75,12.54,30.33,10.74,-12.583,-1.617,2,4,6,1
+BYU-2022,BYU,2022,2022 BYU,FBS Independents,BYU,Cougars,#003da5,#ffffff,12,7-5,31.92,11.78,30,9.57,1.917,-0.269,1,3,4,2
+California-2022,California,2022,2022 California,Pac-12,CAL,Golden Bears,#031522,#ffc423,12,4-8,23.92,11.63,27.83,9.94,-3.917,-0.811,1,3,4,3
+Clemson-2022,Clemson,2022,2022 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,13,11-2,34.69,9.53,20.08,11.92,14.615,0.911,2,4,4,2
+Colorado-2022,Colorado,2022,2022 Colorado,Pac-12,COLO,Buffaloes,#CFB87C,#000000,12,1-11,15.42,7.81,44.5,12.23,-29.083,-3.15,1,5,6,1
+Duke-2022,Duke,2022,2022 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,8-4,33.08,8.54,22.83,11.1,10.25,0.505,1,3,5,1
+Florida-2022,Florida,2022,2022 Florida,SEC,FLA,Gators,#0021a5,#fa4616,12,6-6,31.75,10,28.75,12.16,3,-0.168,1,3,3,2
+Florida State-2022,Florida State,2022,2022 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,12,9-3,36.17,11.04,19.67,11.98,16.5,1.086,2,3,6,2
+Georgia-2022,Georgia,2022,2022 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,13,13-0,39.15,11.16,12.77,9.44,26.385,2.005,1,4,5,2
+Georgia Tech-2022,Georgia Tech,2022,2022 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,12,5-7,17.17,9.76,28.42,10.28,-11.25,-1.493,2,2,4,2
+Illinois-2022,Illinois,2022,2022 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,8-4,25.42,9.48,12.25,9.75,13.167,0.777,1,2,5,3
+Indiana-2022,Indiana,2022,2022 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,4-8,23.25,9.63,33.92,10.59,-10.667,-1.438,1,3,5,1
+Iowa-2022,Iowa,2022,2022 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,7-5,17.42,9.28,14.42,14.76,3,-0.168,1,3,2,2
+Iowa State-2022,Iowa State,2022,2022 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,4-8,20.17,12.33,20.25,15.15,-0.083,-0.455,1,4,4,2
+Kansas-2022,Kansas,2022,2022 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,6-6,34.17,14.17,33.83,15.34,0.333,-0.416,2,4,5,2
+Kansas State-2022,Kansas State,2022,2022 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,13,10-3,33.23,12.59,20.08,13.84,13.154,0.775,2,2,3,2
+Kentucky-2022,Kentucky,2022,2022 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,7-5,22.08,9.68,19.08,10.26,3,-0.168,1,4,3,2
+Louisville-2022,Louisville,2022,2022 Louisville,ACC,LOU,Cardinals,#c9001f,#000000,12,7-5,27.17,11.93,20.17,11.01,7,0.203,2,4,3,1
+LSU-2022,LSU,2022,2022 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,13,9-4,32.31,14.59,23.69,14.27,8.615,0.354,2,4,6,1
+Maryland-2022,Maryland,2022,2022 Maryland,Big Ten,MD,Terrapins,#D5002B,#ffcd00,12,7-5,29.17,13.87,24.08,11.83,5.083,0.025,2,4,5,2
+Miami-2022,Miami,2022,2022 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,5-7,23.58,17.51,26.75,15.45,-3.167,-0.741,3,4,6,2
+Michigan-2022,Michigan,2022,2022 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,13,13-0,40.08,12.25,13.38,8.08,26.692,2.034,1,5,4,2
+Michigan State-2022,Michigan State,2022,2022 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,5-7,24.42,12.99,27.42,13.46,-3,-0.726,1,3,3,3
+Minnesota-2022,Minnesota,2022,2022 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,8-4,28.25,15.97,13.33,12.68,14.917,0.939,3,3,4,1
+Mississippi State-2022,Mississippi State,2022,2022 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,8-4,32.67,15.61,24.17,10.03,8.5,0.343,1,3,7,0
+Missouri-2022,Missouri,2022,2022 Missouri,SEC,MIZ,Tigers,#f1b82d,#000000,12,6-6,25.5,12.5,25,15.15,0.5,-0.401,1,3,5,0
+NC State-2022,NC State,2022,2022 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,8-4,25.33,12.79,19.42,7.53,5.917,0.103,2,5,5,1
+Nebraska-2022,Nebraska,2022,2022 Nebraska,Big Ten,NEB,Cornhuskers,#d00000,#ffffff,12,4-8,22.58,13.1,27.58,12.62,-5,-0.912,2,3,4,2
+North Carolina-2022,North Carolina,2022,2022 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,13,9-4,35,14.21,31,12.56,4,-0.075,1,5,5,3
+Northwestern-2022,Northwestern,2022,2022 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,1-11,13.75,9.46,28.33,8.72,-14.583,-1.802,1,4,5,1
+Notre Dame-2022,Notre Dame,2022,2022 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,8-4,30.67,11.94,21.75,9.96,8.917,0.382,1,2,4,1
+Ohio State-2022,Ohio State,2022,2022 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,12,11-1,44.5,16.36,19.25,11.32,25.25,1.899,2,3,3,2
+Oklahoma-2022,Oklahoma,2022,2022 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,12,6-6,32.92,14.74,29.58,18.23,3.333,-0.137,1,3,5,1
+Oklahoma State-2022,Oklahoma State,2022,2022 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,7-5,31.75,18.67,29.33,12.68,2.417,-0.222,1,4,5,0
+Ole Miss-2022,Ole Miss,2022,2022 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,8-4,34.17,13.1,24.17,14.08,10,0.482,1,2,5,1
+Oregon-2022,Oregon,2022,2022 Oregon,Pac-12,ORE,Ducks,#007030,#fee11a,12,9-3,39.67,16.44,27.42,11.87,12.25,0.691,1,4,5,4
+Oregon State-2022,Oregon State,2022,2022 Oregon State,Pac-12,ORST,Beavers,#231f20,#d73f09,12,9-3,32.42,14.34,21.42,11.43,11,0.575,1,4,4,1
+Penn State-2022,Penn State,2022,2022 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,10-2,35.83,11.45,18,13.55,17.833,1.21,2,2,4,3
+Pittsburgh-2022,Pittsburgh,2022,2022 Pittsburgh,ACC,PITT,Panthers,#003263,#231f20,12,8-4,30.83,11.14,23.42,10.45,7.417,0.242,1,5,3,1
+Purdue-2022,Purdue,2022,2022 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,13,8-5,28.08,12.59,24.62,12.65,3.462,-0.125,1,4,5,2
+Rutgers-2022,Rutgers,2022,2022 Rutgers,Big Ten,RUTG,Scarlet Knights,#d21034,#ffffff,12,4-8,17.42,17.14,29.25,16.02,-11.833,-1.547,2,3,4,1
+SMU-2022,SMU,2022,2022 SMU,American Athletic,SMU,Mustangs,#354ca1,#cc0035,12,7-5,38.42,15.26,34.67,15.46,3.75,-0.099,1,4,6,2
+South Carolina-2022,South Carolina,2022,2022 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,8-4,31.67,18.49,27.5,12.35,4.167,-0.06,1,3,5,2
+Stanford-2022,Stanford,2022,2022 Stanford,Pac-12,STAN,Cardinal,#8c1515,#ffffff,12,3-9,21.33,9.13,32.17,13.59,-10.833,-1.454,2,3,5,1
+Syracuse-2022,Syracuse,2022,2022 Syracuse,ACC,SYR,Orange,#ff6500,#000e54,12,7-5,28.33,15.23,22.67,14.05,5.667,0.08,2,2,4,2
+TCU-2022,TCU,2022,2022 TCU,Big 12,TCU,Horned Frogs,#4d1979,#f1f2f3,13,12-1,40.31,12.66,25,9.07,15.308,0.976,1,4,6,2
+Tennessee-2022,Tennessee,2022,2022 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,10-2,47.33,15.77,23.5,18.54,23.833,1.768,2,3,5,2
+Texas-2022,Texas,2022,2022 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,12,8-4,35.67,13.28,21.17,11.11,14.5,0.9,2,3,2,1
+Texas A&M-2022,Texas A&M,2022,2022 Texas A&M,SEC,TA&M,Aggies,#500000,#ffffff,12,5-7,22.75,7.51,21.17,13.56,1.583,-0.3,1,2,2,1
+Texas Tech-2022,Texas Tech,2022,2022 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,7-5,33.58,15.52,29.5,13.35,4.083,-0.068,3,2,8,2
+Tulane-2022,Tulane,2022,2022 Tulane,American Athletic,TULN,Green Wave,#006547,#468ac9,13,11-2,35.23,12.57,20.46,10.94,14.769,0.925,1,3,5,1
+UCLA-2022,UCLA,2022,2022 UCLA,Pac-12,UCLA,Bruins,#2774ae,#f2a900,12,9-3,39.58,7,28.33,12.56,11.25,0.598,1,3,6,2
+USC-2022,USC,2022,2022 USC,Pac-12,USC,Trojans,#9e2237,#ffcc00,13,11-2,41.08,12.58,27.92,12.4,13.154,0.775,1,4,6,1
+Utah-2022,Utah,2022,2022 Utah,Pac-12,UTAH,Utes,#ea002a,#ffffff,13,10-3,40,15.6,20.38,11.71,19.615,1.376,1,4,4,2
+Vanderbilt-2022,Vanderbilt,2022,2022 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,5-7,24.58,18.6,36,16.4,-11.417,-1.508,2,2,3,2
+Virginia-2022,Virginia,2022,2022 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,10,3-7,17,9.08,24,10.5,-7,-1.098,1,3,3,1
+Virginia Tech-2022,Virginia Tech,2022,2022 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,11,3-8,19.27,8.04,24.73,11.6,-5.455,-0.954,1,3,4,2
+Wake Forest-2022,Wake Forest,2022,2022 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,7-5,36.83,9.21,29.25,13.49,7.583,0.258,1,3,5,1
+Washington-2022,Washington,2022,2022 Washington,Pac-12,WASH,Huskies,#33006f,#e8d3a2,12,10-2,40.75,9.72,26.33,12.45,14.417,0.893,1,4,5,2
+Washington State-2022,Washington State,2022,2022 Washington State,Pac-12,WSU,Cougars,#981e32,#ffffff,12,7-5,27.75,12.27,22.42,13.34,5.333,0.049,1,2,7,1
+West Virginia-2022,West Virginia,2022,2022 West Virginia,Big 12,WVU,Mountaineers,#002855,#eaaa00,12,5-7,30.58,14.73,32.92,15.58,-2.333,-0.664,2,3,6,0
+Wisconsin-2022,Wisconsin,2022,2022 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,12,6-6,26.5,16.5,20.5,14.58,6,0.11,1,3,4,1
+Alabama-2023,Alabama,2023,2023 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,13,12-1,35.08,14.63,18.38,8.79,16.692,1.084,1,3,5,2
+Arizona-2023,Arizona,2023,2023 Arizona,Pac-12,ARIZ,Wildcats,#0c234b,#ab0520,12,9-3,34.33,10.99,20.83,12.05,13.5,0.786,1,4,4,1
+Arizona State-2023,Arizona State,2023,2023 Arizona State,Pac-12,ASU,Sun Devils,#8e0c3a,#ffc72c,12,3-9,17.75,10.91,31.83,16.04,-14.083,-1.78,1,2,5,2
+Arkansas-2023,Arkansas,2023,2023 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,4-8,26.58,14.92,27.92,14.36,-1.333,-0.594,1,4,5,0
+Auburn-2023,Auburn,2023,2023 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,6-6,27.25,15.74,21.92,11.41,5.333,0.026,2,4,3,1
+Baylor-2023,Baylor,2023,2023 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,3-9,23.08,9.36,33.33,12.92,-10.25,-1.424,2,3,4,3
+Boston College-2023,Boston College,2023,2023 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,6-6,25,6.28,29.5,13.65,-4.5,-0.889,1,2,4,1
+BYU-2023,BYU,2023,2023 BYU,Big 12,BYU,Cougars,#003da5,#ffffff,12,5-7,23.08,12.49,29.83,13.56,-6.75,-1.098,1,3,5,1
+California-2023,California,2023,2023 California,Pac-12,CAL,Golden Bears,#031522,#ffc423,12,6-6,31.58,14.13,32.67,19.46,-1.083,-0.571,1,4,5,1
+Cincinnati-2023,Cincinnati,2023,2023 Cincinnati,Big 12,CIN,Bearcats,#E00122,#000000,12,3-9,24.08,15.15,30,11.64,-5.917,-1.02,2,3,5,2
+Clemson-2023,Clemson,2023,2023 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,12,8-4,29.17,16.4,19.92,7.32,9.25,0.391,1,3,3,1
+Colorado-2023,Colorado,2023,2023 Colorado,Pac-12,COLO,Buffaloes,#CFB87C,#000000,12,4-8,28.17,13.51,34.83,12.31,-6.667,-1.09,1,3,4,1
+Duke-2023,Duke,2023,2023 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,7-5,27.75,12.91,19.75,13.47,8,0.275,1,3,3,1
+Florida-2023,Florida,2023,2023 Florida,SEC,FLA,Gators,#0021a5,#fa4616,12,5-7,28.42,12,27.58,14.6,0.833,-0.392,1,3,3,2
+Florida State-2023,Florida State,2023,2023 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,13,13-0,37,13.95,15.92,7.63,21.077,1.492,2,4,2,3
+Georgia-2023,Georgia,2023,2023 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,13,12-1,38.38,10.35,16.62,6.85,21.769,1.556,2,3,7,2
+Georgia Tech-2023,Georgia Tech,2023,2023 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,12,6-6,31.17,9.96,30.5,12.2,0.667,-0.408,1,3,5,3
+Houston-2023,Houston,2023,2023 Houston,Big 12,HOU,Cougars,#c92a39,#ffffff,12,4-8,23.67,12.77,31.5,12.71,-7.833,-1.199,1,3,6,1
+Illinois-2023,Illinois,2023,2023 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,5-7,24.5,11.89,29.42,10.59,-4.917,-0.927,2,2,3,2
+Indiana-2023,Indiana,2023,2023 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,3-9,22.17,12.68,29.92,13.48,-7.75,-1.191,2,4,5,0
+Iowa-2023,Iowa,2023,2023 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,13,10-3,16.62,10.98,13.23,8.04,3.385,-0.155,1,3,4,2
+Iowa State-2023,Iowa State,2023,2023 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,7-5,26.25,11.36,21.67,12.25,4.583,-0.043,1,4,4,2
+James Madison-2023,James Madison,2023,2023 James Madison,Sun Belt,JMU,Dukes,#450084,#b5a068,12,11-1,35.17,11.63,18.5,11.2,16.667,1.081,1,3,4,1
+Kansas-2023,Kansas,2023,2023 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,8-4,33.58,12.35,25.75,8.39,7.833,0.259,1,3,3,2
+Kansas State-2023,Kansas State,2023,2023 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,8-4,37.83,9.96,21.17,13.99,16.667,1.081,2,3,5,1
+Kentucky-2023,Kentucky,2023,2023 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,7-5,28.58,10.66,24.83,16.15,3.75,-0.121,1,4,3,0
+Liberty-2023,Liberty,2023,2023 Liberty,Conference USA,LIB,Flames,#071740,#a61f21,13,13-0,40.77,9.93,22.69,9.4,18.077,1.212,1,3,6,2
+Louisville-2023,Louisville,2023,2023 Louisville,ACC,LOU,Cardinals,#c9001f,#000000,13,10-3,30.92,14.69,19.69,13.8,11.231,0.575,1,3,6,2
+LSU-2023,LSU,2023,2023 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,12,9-3,46.42,13.75,27.75,16.5,18.667,1.267,1,5,5,1
+Maryland-2023,Maryland,2023,2023 Maryland,Big Ten,MD,Terrapins,#D5002B,#ffcd00,12,7-5,29.58,11.18,23.25,13.28,6.333,0.12,2,3,4,2
+Miami-2023,Miami,2023,2023 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,7-5,32.08,12.75,22.08,12.07,10,0.461,1,5,3,0
+Michigan-2023,Michigan,2023,2023 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,13,13-0,36.69,9.89,9.46,7.76,27.231,2.064,1,3,3,2
+Michigan State-2023,Michigan State,2023,2023 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,4-8,15.92,13.61,28.33,12.53,-12.417,-1.625,1,2,6,1
+Minnesota-2023,Minnesota,2023,2023 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,5-7,20.17,10.52,26.92,15.31,-6.75,-1.098,1,3,2,1
+Mississippi State-2023,Mississippi State,2023,2023 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,5-7,21.83,15.57,26.58,14.09,-4.75,-0.912,2,3,4,0
+Missouri-2023,Missouri,2023,2023 Missouri,SEC,MIZ,Tigers,#f1b82d,#000000,12,10-2,34.08,7.17,22.33,11.55,11.75,0.624,1,2,5,1
+NC State-2023,NC State,2023,2023 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,9-3,26.83,13.22,20.17,12.8,6.667,0.151,1,4,6,1
+Nebraska-2023,Nebraska,2023,2023 Nebraska,Big Ten,NEB,Cornhuskers,#d00000,#ffffff,12,5-7,18,9.02,18.25,11.48,-0.25,-0.493,0,2,4,2
+North Carolina-2023,North Carolina,2023,2023 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,8-4,36.58,11.31,27.08,13.59,9.5,0.414,1,2,4,3
+Northwestern-2023,Northwestern,2023,2023 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,7-5,22.75,13.12,23.83,12.73,-1.083,-0.571,3,3,3,2
+Notre Dame-2023,Notre Dame,2023,2023 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,9-3,39.08,15.58,16.58,10.2,22.5,1.624,2,5,6,2
+Ohio State-2023,Ohio State,2023,2023 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,12,11-1,32.83,12.49,11,7.73,21.833,1.562,1,3,5,1
+Oklahoma-2023,Oklahoma,2023,2023 Oklahoma,Big 12,OU,Sooners,#a32036,#ffffff,12,10-2,43.17,19.05,22.25,12.86,20.917,1.477,1,4,6,1
+Oklahoma State-2023,Oklahoma State,2023,2023 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,13,9-4,29.46,13.76,29,11.38,0.462,-0.427,1,2,4,1
+Ole Miss-2023,Ole Miss,2023,2023 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,10-2,34.83,17.62,22.33,16.09,12.5,0.693,2,3,3,1
+Oregon-2023,Oregon,2023,2023 Oregon,Pac-12,ORE,Ducks,#007030,#fee11a,13,11-2,44.15,14.61,17.31,11.54,26.846,2.028,1,4,4,3
+Oregon State-2023,Oregon State,2023,2023 Oregon State,Pac-12,ORST,Beavers,#231f20,#d73f09,12,8-4,33.83,16.35,21.5,11.14,12.333,0.678,2,3,4,1
+Penn State-2023,Penn State,2023,2023 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,10-2,37.17,16.24,11.42,8.85,25.75,1.926,2,3,3,2
+Pittsburgh-2023,Pittsburgh,2023,2023 Pittsburgh,ACC,PITT,Panthers,#003263,#231f20,12,3-9,20.17,11.97,27.33,13.45,-7.167,-1.137,2,3,4,2
+Purdue-2023,Purdue,2023,2023 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,4-8,23.92,13.56,30.42,8.8,-6.5,-1.075,1,3,4,1
+Rutgers-2023,Rutgers,2023,2023 Rutgers,Big Ten,RUTG,Scarlet Knights,#d21034,#ffffff,12,6-6,22.58,14.95,21,11.99,1.583,-0.323,1,4,4,1
+South Carolina-2023,South Carolina,2023,2023 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,5-7,26,14.45,26.33,10.65,-0.333,-0.501,1,3,5,2
+Stanford-2023,Stanford,2023,2023 Stanford,Pac-12,STAN,Cardinal,#8c1515,#ffffff,12,3-9,20.58,12.6,37.67,16.31,-17.083,-2.06,2,4,4,2
+Syracuse-2023,Syracuse,2023,2023 Syracuse,ACC,SYR,Orange,#ff6500,#000e54,12,6-6,25.5,18.44,23.75,13.49,1.75,-0.307,2,2,3,1
+TCU-2023,TCU,2023,2023 TCU,Big 12,TCU,Horned Frogs,#4d1979,#f1f2f3,12,5-7,31.33,13.3,27.83,17.7,3.5,-0.144,2,4,9,2
+Tennessee-2023,Tennessee,2023,2023 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,8-4,31.5,17,22,11.06,9.5,0.414,1,3,5,2
+Texas-2023,Texas,2023,2023 Texas,Big 12,TEX,Longhorns,#c15d26,#ffffff,13,12-1,36.15,8.56,17.54,9.57,18.615,1.262,1,5,4,2
+Texas A&M-2023,Texas A&M,2023,2023 Texas A&M,SEC,TA&M,Aggies,#500000,#ffffff,12,7-5,34.17,11.75,21.33,14.49,12.833,0.724,1,3,5,2
+Texas Tech-2023,Texas Tech,2023,2023 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,6-6,26.83,13.02,27,14.19,-0.167,-0.485,1,2,6,2
+UCF-2023,UCF,2023,2023 UCF,Big 12,UCF,Knights,#ba9b37,#000000,12,6-6,32.5,11.49,25.42,15.49,7.083,0.189,2,3,3,2
+UCLA-2023,UCLA,2023,2023 UCLA,Pac-12,UCLA,Bruins,#2774ae,#f2a900,12,7-5,25.75,16.29,18.08,9.47,7.667,0.244,3,4,6,2
+USC-2023,USC,2023,2023 USC,Pac-12,USC,Trojans,#9e2237,#ffcc00,12,7-5,41.83,14.65,34.92,13.15,6.917,0.174,1,2,8,1
+Utah-2023,Utah,2023,2023 Utah,Pac-12,UTAH,Utes,#ea002a,#ffffff,12,8-4,24.5,13.45,19.75,13.07,4.75,-0.028,1,3,5,1
+Vanderbilt-2023,Vanderbilt,2023,2023 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,2-10,22.83,12.26,36.17,9.52,-13.333,-1.711,2,3,5,3
+Virginia-2023,Virginia,2023,2023 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,3-9,23.25,7.01,33.75,11.97,-10.5,-1.447,2,3,4,0
+Virginia Tech-2023,Virginia Tech,2023,2023 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,12,6-6,28.58,15.15,24.25,9.51,4.333,-0.067,1,2,4,1
+Wake Forest-2023,Wake Forest,2023,2023 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,4-8,20.25,10.56,27.17,9.39,-6.917,-1.114,1,3,4,1
+Washington-2023,Washington,2023,2023 Washington,Pac-12,WASH,Huskies,#33006f,#e8d3a2,13,13-0,37.69,13.13,23.62,10.94,14.077,0.84,1,3,3,2
+Washington State-2023,Washington State,2023,2023 Washington State,Pac-12,WSU,Cougars,#981e32,#ffffff,12,5-7,31.67,18.45,28.08,11.07,3.583,-0.136,2,4,5,2
+West Virginia-2023,West Virginia,2023,2023 West Virginia,Big 12,WVU,Mountaineers,#002855,#eaaa00,12,8-4,31.58,12.44,27.5,16.53,4.083,-0.09,2,4,6,1
+Wisconsin-2023,Wisconsin,2023,2023 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,12,7-5,22.83,11.01,18.92,5.33,3.917,-0.105,1,1,5,2
+Alabama-2024,Alabama,2024,2024 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,12,9-3,35.5,15.71,17.25,12.55,18.25,1.225,1,3,4,3
+Arizona-2024,Arizona,2024,2024 Arizona,Big 12,ARIZ,Wildcats,#0c234b,#ab0520,12,4-8,21.75,14.72,31.75,16.83,-10,-1.543,1,2,5,2
+Arizona State-2024,Arizona State,2024,2024 Arizona State,Big 12,ASU,Sun Devils,#8e0c3a,#ffc72c,13,11-2,33.08,10.61,21.31,8.14,11.769,0.59,1,3,4,1
+Arkansas-2024,Arkansas,2024,2024 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,6-6,30.25,18.26,24.92,15.85,5.333,-0.04,1,4,5,1
+Army-2024,Army,2024,2024 Army,American Athletic,ARMY,Black Knights,#ce9c00,#231f20,13,11-2,31.38,13.09,16.23,13.39,15.154,0.922,2,4,4,0
+Auburn-2024,Auburn,2024,2024 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,5-7,27.75,19.95,21.33,10.03,6.417,0.066,1,3,4,1
+Baylor-2024,Baylor,2024,2024 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,8-4,34.67,13.53,25.25,13.9,9.417,0.36,1,3,4,1
+Boise State-2024,Boise State,2024,2024 Boise State,Mountain West,BOIS,Broncos,#0033a0,#fa4616,13,12-1,39.08,14.83,21.92,10.97,17.154,1.118,1,3,6,2
+Boston College-2024,Boston College,2024,2024 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,7-5,29.25,11.36,24.08,11.18,5.167,-0.057,1,3,3,2
+BYU-2024,BYU,2024,2024 BYU,Big 12,BYU,Cougars,#003da5,#ffffff,12,10-2,30.75,9.49,20.08,7.48,10.667,0.482,1,2,5,2
+California-2024,California,2024,2024 California,ACC,CAL,Golden Bears,#031522,#ffc423,12,6-6,26.08,12.67,22.17,11.56,3.917,-0.179,2,3,4,2
+Cincinnati-2024,Cincinnati,2024,2024 Cincinnati,Big 12,CIN,Bearcats,#E00122,#000000,12,5-7,25.17,8.86,24.58,12.94,0.583,-0.506,1,2,5,1
+Clemson-2024,Clemson,2024,2024 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,13,10-3,35.54,18.53,22.31,8.97,13.231,0.733,2,3,5,3
+Colorado-2024,Colorado,2024,2024 Colorado,Big 12,COLO,Buffaloes,#CFB87C,#000000,12,9-3,34.5,12.18,22,11.07,12.5,0.662,1,4,5,1
+Duke-2024,Duke,2024,2024 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,12,9-3,26.83,7.38,22.17,11.68,4.667,-0.106,1,2,5,0
+Florida-2024,Florida,2024,2024 Florida,SEC,FLA,Gators,#0021a5,#fa4616,12,7-5,27.92,11.72,24.33,12.86,3.583,-0.212,1,3,3,2
+Florida State-2024,Florida State,2024,2024 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,12,2-10,15.42,9.08,28,12.8,-12.583,-1.796,2,4,4,2
+Georgia-2024,Georgia,2024,2024 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,13,11-2,33.15,13.4,20.38,12.37,12.769,0.688,1,4,4,3
+Georgia Tech-2024,Georgia Tech,2024,2024 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,12,7-5,29.08,14.1,24.83,10.51,4.25,-0.147,2,3,5,1
+Houston-2024,Houston,2024,2024 Houston,Big 12,HOU,Cougars,#c92a39,#ffffff,12,4-8,14,10.97,22.92,9.53,-8.917,-1.437,2,4,5,1
+Illinois-2024,Illinois,2024,2024 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,9-3,28.92,13.73,22.08,13.67,6.833,0.106,1,3,4,1
+Indiana-2024,Indiana,2024,2024 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,12,11-1,43.33,17.98,14.67,10.91,28.667,2.246,1,4,5,1
+Iowa-2024,Iowa,2024,2024 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,8-4,28,12.32,17.08,9.56,10.917,0.507,2,4,2,3
+Iowa State-2024,Iowa State,2024,2024 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,13,10-3,30.23,10.17,21.54,14.15,8.692,0.289,1,3,3,1
+Kansas-2024,Kansas,2024,2024 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,5-7,29.67,11.16,26,12.12,3.667,-0.204,1,3,4,2
+Kansas State-2024,Kansas State,2024,2024 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,8-4,29.75,11.79,21.92,9.29,7.833,0.204,1,3,4,3
+Kentucky-2024,Kentucky,2024,2024 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,4-8,20.58,12.89,22.08,14.6,-1.5,-0.71,2,2,4,1
+Louisville-2024,Louisville,2024,2024 Louisville,ACC,LOU,Cardinals,#c9001f,#000000,12,8-4,36.58,11.19,23.25,14.08,13.333,0.743,1,4,4,2
+LSU-2024,LSU,2024,2024 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,12,8-4,29.33,10.1,23.75,10.31,5.583,-0.016,1,3,4,2
+Maryland-2024,Maryland,2024,2024 Maryland,Big Ten,MD,Terrapins,#D5002B,#ffcd00,12,4-8,23.67,12.11,30.42,12.52,-6.75,-1.224,2,3,4,2
+Miami-2024,Miami,2024,2024 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,10-2,44.17,10.72,23.92,14.32,20.25,1.421,1,4,4,3
+Michigan-2024,Michigan,2024,2024 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,7-5,22.25,11.45,20.5,9.21,1.75,-0.392,2,2,5,2
+Michigan State-2024,Michigan State,2024,2024 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,5-7,19.33,9.77,26.08,13.63,-6.75,-1.224,1,3,4,2
+Minnesota-2024,Minnesota,2024,2024 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,7-5,26.33,10.79,17.5,10.33,8.833,0.302,1,2,4,2
+Mississippi State-2024,Mississippi State,2024,2024 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,2-10,25.83,13.07,34.08,12.89,-8.25,-1.371,1,2,4,2
+Missouri-2024,Missouri,2024,2024 Missouri,SEC,MIZ,Tigers,#f1b82d,#000000,12,9-3,29.08,14.13,20.08,13.45,9,0.319,2,4,5,1
+NC State-2024,NC State,2024,2024 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,6-6,29.17,12.47,30.5,12.56,-1.333,-0.694,1,3,6,1
+Nebraska-2024,Nebraska,2024,2024 Nebraska,Big Ten,NEB,Cornhuskers,#d00000,#ffffff,12,6-6,23.83,11.5,19.83,14.87,4,-0.171,1,4,5,2
+North Carolina-2024,North Carolina,2024,2024 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,6-6,32.33,10.11,28.17,17.18,4.167,-0.155,2,2,5,2
+Northwestern-2024,Northwestern,2024,2024 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,4-8,17.83,11.42,26.33,14.24,-8.5,-1.396,1,3,3,2
+Notre Dame-2024,Notre Dame,2024,2024 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,11-1,39.83,15.01,13.58,8.97,26.25,2.009,2,4,6,1
+Ohio State-2024,Ohio State,2024,2024 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,12,10-2,35.5,13.88,10.92,8.66,24.583,1.846,2,3,4,1
+Oklahoma-2024,Oklahoma,2024,2024 Oklahoma,SEC,OU,Sooners,#a32036,#ffffff,12,6-6,24.33,16.58,21.58,11.76,2.75,-0.294,2,4,3,2
+Oklahoma State-2024,Oklahoma State,2024,2024 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,3-9,27.17,15.09,35.58,13.12,-8.417,-1.388,1,3,3,1
+Ole Miss-2024,Ole Miss,2024,2024 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,9-3,37.5,19.06,13.92,10.31,23.583,1.748,1,5,4,2
+Oregon-2024,Oregon,2024,2024 Oregon,Big Ten,ORE,Ducks,#007030,#fee11a,13,13-0,35.92,9.25,17.77,10.59,18.154,1.216,1,3,4,3
+Oregon State-2024,Oregon State,2024,2024 Oregon State,Pac-12,ORST,Beavers,#231f20,#d73f09,12,5-7,24.25,14.16,29.92,13.61,-5.667,-1.118,2,3,4,1
+Penn State-2024,Penn State,2024,2024 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,13,11-2,33.62,11.46,16.38,12.44,17.231,1.125,2,2,4,2
+Pittsburgh-2024,Pittsburgh,2024,2024 Pittsburgh,ACC,PITT,Panthers,#003263,#231f20,12,7-5,31.83,17.95,26.75,10.06,5.083,-0.065,2,3,5,2
+Purdue-2024,Purdue,2024,2024 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,1-11,15.75,17.16,39.92,18.89,-24.167,-2.931,2,3,4,2
+Rutgers-2024,Rutgers,2024,2024 Rutgers,Big Ten,RUTG,Scarlet Knights,#d21034,#ffffff,12,7-5,27.92,13.15,23.83,12.11,4.083,-0.163,1,2,5,1
+SMU-2024,SMU,2024,2024 SMU,ACC,SMU,Mustangs,#354ca1,#cc0035,13,11-2,38.54,13.36,20.85,11.28,17.692,1.17,1,2,5,2
+South Carolina-2024,South Carolina,2024,2024 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,9-3,31.58,14.36,17.83,10.24,13.75,0.784,2,3,6,2
+Stanford-2024,Stanford,2024,2024 Stanford,ACC,STAN,Cardinal,#8c1515,#ffffff,12,3-9,22.83,11.4,33.67,13.17,-10.833,-1.624,2,3,4,1
+Syracuse-2024,Syracuse,2024,2024 Syracuse,ACC,SYR,Orange,#ff6500,#000e54,12,9-3,32.58,9.07,28.67,9.07,3.917,-0.179,1,2,4,2
+TCU-2024,TCU,2024,2024 TCU,Big 12,TCU,Horned Frogs,#4d1979,#f1f2f3,12,8-4,33.42,10.87,26.42,17.22,7,0.123,1,4,4,2
+Tennessee-2024,Tennessee,2024,2024 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,10-2,37.25,19.71,13.92,9.34,23.333,1.723,1,3,5,3
+Texas-2024,Texas,2024,2024 Texas,SEC,TEX,Longhorns,#c15d26,#ffffff,13,11-2,33.62,14.32,12.46,8.92,21.154,1.51,2,3,5,2
+Texas A&M-2024,Texas A&M,2024,2024 Texas A&M,SEC,TA&M,Aggies,#500000,#ffffff,12,8-4,30.33,13.12,21.17,12.17,9.167,0.335,2,3,5,2
+Texas Tech-2024,Texas Tech,2024,2024 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,12,8-4,38.58,15.23,34.5,14.07,4.083,-0.163,1,2,5,3
+UCF-2024,UCF,2024,2024 UCF,Big 12,UCF,Knights,#ba9b37,#000000,12,4-8,30.42,15.7,26.92,12.92,3.5,-0.22,2,3,4,1
+UCLA-2024,UCLA,2024,2024 UCLA,Big Ten,UCLA,Bruins,#2774ae,#f2a900,12,5-7,18.42,6.79,25.25,9.38,-6.833,-1.233,1,3,4,3
+UNLV-2024,UNLV,2024,2024 UNLV,Mountain West,UNLV,Rebels,#b10202,#ffffff,13,10-3,36.23,16.95,21.92,9.89,14.308,0.839,1,4,5,1
+USC-2024,USC,2024,2024 USC,Big Ten,USC,Trojans,#9e2237,#ffcc00,12,6-6,29.75,9.44,23.5,11.66,6.25,0.049,2,2,6,1
+Utah-2024,Utah,2024,2024 Utah,Big 12,UTAH,Utes,#ea002a,#ffffff,12,5-7,23.58,11.58,20.67,11.98,2.917,-0.277,1,4,2,1
+Vanderbilt-2024,Vanderbilt,2024,2024 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,6-6,26.67,12.46,23.08,11.89,3.583,-0.212,1,4,5,2
+Virginia-2024,Virginia,2024,2024 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,12,5-7,22.67,10.5,28.75,10.69,-6.083,-1.159,3,3,4,2
+Virginia Tech-2024,Virginia Tech,2024,2024 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,12,6-6,29.67,7.74,22.75,11.06,6.917,0.115,2,3,5,1
+Wake Forest-2024,Wake Forest,2024,2024 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,4-8,25.67,11.55,32.5,11.21,-6.833,-1.233,1,2,5,2
+Washington-2024,Washington,2024,2024 Washington,Big Ten,WASH,Huskies,#33006f,#e8d3a2,12,6-6,22.5,7.97,22.83,13.99,-0.333,-0.596,2,3,4,2
+Washington State-2024,Washington State,2024,2024 Washington State,Pac-12,WSU,Cougars,#981e32,#ffffff,12,8-4,36.75,15.45,28.08,13.42,8.667,0.286,1,3,5,1
+West Virginia-2024,West Virginia,2024,2024 West Virginia,Big 12,WVU,Mountaineers,#002855,#eaaa00,12,6-6,28.5,11.02,31.08,12.75,-2.583,-0.816,2,2,5,2
+Wisconsin-2024,Wisconsin,2024,2024 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,12,5-7,22.58,13.63,23.08,15.34,-0.5,-0.612,1,3,5,2
+Alabama-2025,Alabama,2025,2025 Alabama,SEC,ALA,Crimson Tide,#9e1632,#ffffff,13,10-3,31.23,17.21,17.38,9.66,13.846,0.761,1,3,5,2
+Arizona-2025,Arizona,2025,2025 Arizona,Big 12,ARIZ,Wildcats,#0c234b,#ab0520,12,9-3,32.58,11.57,18.92,11.21,13.667,0.744,1,3,6,1
+Arizona State-2025,Arizona State,2025,2025 Arizona State,Big 12,ASU,Sun Devils,#8e0c3a,#ffc72c,12,8-4,24.67,10.46,23,6.73,1.667,-0.343,2,3,3,1
+Arkansas-2025,Arkansas,2025,2025 Arkansas,SEC,ARK,Razorbacks,#a41f35,#ffffff,12,2-10,32.92,13.01,33.83,14.33,-0.917,-0.577,1,2,3,2
+Auburn-2025,Auburn,2025,2025 Auburn,SEC,AUB,Tigers,#002b5c,#f26522,12,5-7,26.75,16.91,20.67,10.29,6.083,0.057,1,2,4,2
+Baylor-2025,Baylor,2025,2025 Baylor,Big 12,BAY,Bears,#154734,#ffb81c,12,5-7,31.08,10.09,32.58,15.11,-1.5,-0.63,1,3,4,1
+Boston College-2025,Boston College,2025,2025 Boston College,ACC,BC,Eagles,#8c2232,#dbcca6,12,2-10,25.42,16.56,32.75,12.21,-7.333,-1.159,2,2,3,2
+BYU-2025,BYU,2025,2025 BYU,Big 12,BYU,Cougars,#003da5,#ffffff,13,11-2,31.92,16.21,19,10.02,12.923,0.677,1,2,3,1
+California-2025,California,2025,2025 California,ACC,CAL,Golden Bears,#031522,#ffc423,12,7-5,24.83,11.11,26.5,12.33,-1.667,-0.645,1,2,5,1
+Cincinnati-2025,Cincinnati,2025,2025 Cincinnati,Big 12,CIN,Bearcats,#E00122,#000000,12,7-5,31.75,16.62,24.83,13.11,6.917,0.133,1,3,5,1
+Clemson-2025,Clemson,2025,2025 Clemson,ACC,CLEM,Tigers,#f56600,#522d80,12,7-5,28.67,11.12,20.42,11.96,8.25,0.254,1,2,6,3
+Colorado-2025,Colorado,2025,2025 Colorado,Big 12,COLO,Buffaloes,#CFB87C,#000000,12,3-9,20.92,7.66,30.5,13.8,-9.583,-1.363,1,2,5,1
+Duke-2025,Duke,2025,2025 Duke,ACC,DUKE,Blue Devils,#013088,#ffffff,13,8-5,34,11.62,28.69,11.67,5.308,-0.013,1,3,4,2
+Florida-2025,Florida,2025,2025 Florida,SEC,FLA,Gators,#0021a5,#fa4616,12,4-8,21.58,14.29,24,10.02,-2.417,-0.713,1,2,5,2
+Florida State-2025,Florida State,2025,2025 Florida State,ACC,FSU,Seminoles,#782f40,#ceb888,12,5-7,33,20.93,22,13.17,11,0.503,1,4,4,1
+Georgia-2025,Georgia,2025,2025 Georgia,SEC,UGA,Bulldogs,#ba0c2f,#000000,13,12-1,31.92,9.83,15.92,11.72,16,0.956,1,5,6,2
+Georgia Tech-2025,Georgia Tech,2025,2025 Georgia Tech,ACC,GT,Yellow Jackets,#003057,#b3a369,12,9-3,33.08,12.32,25,11.13,8.083,0.238,1,2,6,2
+Houston-2025,Houston,2025,2025 Houston,Big 12,HOU,Cougars,#c92a39,#ffffff,12,9-3,28.33,8.56,21.83,11.72,6.5,0.095,1,3,3,1
+Illinois-2025,Illinois,2025,2025 Illinois,Big Ten,ILL,Fighting Illini,#ff5f05,#13294b,12,8-4,29.33,13.93,23.25,18.16,6.083,0.057,1,3,4,2
+Indiana-2025,Indiana,2025,2025 Indiana,Big Ten,IU,Hoosiers,#990000,#edebeb,13,13-0,41.92,18.74,10.85,6.53,31.077,2.322,2,3,5,1
+Iowa-2025,Iowa,2025,2025 Iowa,Big Ten,IOWA,Hawkeyes,#000000,#FFCD00,12,8-4,28.92,11.84,15.17,9.08,13.75,0.752,1,5,5,3
+Iowa State-2025,Iowa State,2025,2025 Iowa State,Big 12,ISU,Cyclones,#822433,#fdca2f,12,8-4,27.42,11.51,20.17,10.28,7.25,0.163,1,2,4,2
+Kansas-2025,Kansas,2025,2025 Kansas,Big 12,KU,Jayhawks,#0051ba,#e8000d,12,5-7,28.08,10.44,26.75,13.8,1.333,-0.373,3,2,5,1
+Kansas State-2025,Kansas State,2025,2025 Kansas State,Big 12,KSU,Wildcats,#3c0969,#e2e3e4,12,6-6,29.42,11.16,26.67,12.62,2.75,-0.245,1,2,2,2
+Kentucky-2025,Kentucky,2025,2025 Kentucky,SEC,UK,Wildcats,#0033a0,#ffffff,12,5-7,23,14.61,26.42,16.56,-3.417,-0.804,1,3,6,2
+Louisville-2025,Louisville,2025,2025 Louisville,ACC,LOU,Cardinals,#c9001f,#000000,12,8-4,30.17,11.71,21.08,9.66,9.083,0.329,2,3,5,2
+LSU-2025,LSU,2025,2025 LSU,SEC,LSU,Tigers,#461d7c,#fdd023,12,7-5,21.83,11.85,18.33,12.16,3.5,-0.177,3,2,6,2
+Maryland-2025,Maryland,2025,2025 Maryland,Big Ten,MD,Terrapins,#D5002B,#ffcd00,12,4-8,23.5,10.99,26.5,15.13,-3,-0.766,1,3,4,1
+Miami-2025,Miami,2025,2025 Miami,ACC,MIA,Hurricanes,#005030,#f47321,12,10-2,34.08,9.56,13.83,8.28,20.25,1.341,1,4,4,2
+Michigan-2025,Michigan,2025,2025 Michigan,Big Ten,MICH,Wolverines,#00274c,#ffcb05,12,9-3,27.58,14.98,18.67,8.53,8.917,0.314,1,3,4,2
+Michigan State-2025,Michigan State,2025,2025 Michigan State,Big Ten,MSU,Spartans,#18453b,#ffffff,12,4-8,24.58,11.21,29.92,10.82,-5.333,-0.977,2,3,3,2
+Minnesota-2025,Minnesota,2025,2025 Minnesota,Big Ten,MINN,Golden Gophers,#5e0a2f,#fab41c,12,7-5,23.25,16.76,23.42,15.29,-0.167,-0.509,1,3,4,2
+Mississippi State-2025,Mississippi State,2025,2025 Mississippi State,SEC,MSST,Bulldogs,#5d1725,#c1c6c8,12,5-7,30.5,13.75,29.17,15.16,1.333,-0.373,2,3,3,1
+Missouri-2025,Missouri,2025,2025 Missouri,SEC,MIZ,Tigers,#f1b82d,#000000,12,8-4,32.17,17.24,19.42,9.85,12.75,0.661,2,2,4,1
+NC State-2025,NC State,2025,2025 NC State,ACC,NCSU,Wolfpack,#cc0000,#ffffff,12,7-5,30.17,14.97,28.83,13.71,1.333,-0.373,2,2,5,1
+Nebraska-2025,Nebraska,2025,2025 Nebraska,Big Ten,NEB,Cornhuskers,#d00000,#ffffff,12,7-5,29.25,18.63,23,11.47,6.25,0.072,2,3,4,2
+North Carolina-2025,North Carolina,2025,2025 North Carolina,ACC,UNC,Tar Heels,#7bafd4,#13294b,12,4-8,19.25,8.79,24.5,14.69,-5.25,-0.97,1,4,3,1
+Northwestern-2025,Northwestern,2025,2025 Northwestern,Big Ten,NU,Wildcats,#582c83,#ffffff,12,6-6,22.5,12.13,20.92,12.06,1.583,-0.351,2,2,3,2
+Notre Dame-2025,Notre Dame,2025,2025 Notre Dame,FBS Independents,ND,Fighting Irish,#0c2340,#c99700,12,10-2,42,14.18,17.58,10.94,24.417,1.719,1,2,3,1
+Ohio State-2025,Ohio State,2025,2025 Ohio State,Big Ten,OSU,Buckeyes,#ce1141,#505056,13,12-1,34.92,15.16,8.15,4.95,26.769,1.932,2,4,3,2
+Oklahoma-2025,Oklahoma,2025,2025 Oklahoma,SEC,OU,Sooners,#a32036,#ffffff,12,10-2,26.42,10.82,13.92,10.71,12.5,0.639,1,2,4,1
+Oklahoma State-2025,Oklahoma State,2025,2025 Oklahoma State,Big 12,OKST,Cowboys,#FF7300,#000000,12,1-11,14.17,8.48,33.33,17.99,-19.167,-2.231,1,4,6,0
+Ole Miss-2025,Ole Miss,2025,2025 Ole Miss,SEC,MISS,Rebels,#13294b,#c8102e,12,11-1,37.25,11.11,20.08,11.77,17.167,1.062,1,2,5,1
+Oregon-2025,Oregon,2025,2025 Oregon,Big Ten,ORE,Ducks,#007030,#fee11a,12,11-1,38.17,16.52,14.83,8.3,23.333,1.62,2,5,5,2
+Oregon State-2025,Oregon State,2025,2025 Oregon State,Pac-12,ORST,Beavers,#231f20,#d73f09,12,2-10,18.17,10.5,29.42,11.27,-11.25,-1.514,2,3,5,2
+Penn State-2025,Penn State,2025,2025 Penn State,Big Ten,PSU,Nittany Lions,#041E42,#FFFFFF,12,6-6,31.75,11.14,21.42,13.8,10.333,0.442,2,2,3,3
+Pittsburgh-2025,Pittsburgh,2025,2025 Pittsburgh,ACC,PITT,Panthers,#003263,#231f20,12,8-4,35.08,15.7,24.92,11.16,10.167,0.427,2,3,5,3
+Purdue-2025,Purdue,2025,2025 Purdue,Big Ten,PUR,Boilermakers,#000000,#ceb888,12,2-10,18.75,10.98,31.83,16.94,-13.083,-1.68,2,3,5,0
+Rutgers-2025,Rutgers,2025,2025 Rutgers,Big Ten,RUTG,Scarlet Knights,#d21034,#ffffff,12,5-7,28.67,14.92,31.83,12.58,-3.167,-0.781,1,2,3,2
+SMU-2025,SMU,2025,2025 SMU,ACC,SMU,Mustangs,#354ca1,#cc0035,12,8-4,32.92,9.55,20.67,13.11,12.25,0.616,1,3,4,2
+South Carolina-2025,South Carolina,2025,2025 South Carolina,SEC,SC,Gamecocks,#73000a,#ffffff,12,4-8,22.67,13.67,22.08,9.3,0.583,-0.441,1,3,6,2
+Stanford-2025,Stanford,2025,2025 Stanford,ACC,STAN,Cardinal,#8c1515,#ffffff,12,4-8,18.83,8.98,29.17,12.83,-10.333,-1.43,2,3,5,2
+Syracuse-2025,Syracuse,2025,2025 Syracuse,ACC,SYR,Orange,#ff6500,#000e54,12,3-9,20.17,17.02,34.92,13.57,-14.75,-1.831,1,3,3,1
+TCU-2025,TCU,2025,2025 TCU,Big 12,TCU,Horned Frogs,#4d1979,#f1f2f3,12,8-4,30.75,12.05,25.17,10.04,5.583,0.012,1,5,4,2
+Tennessee-2025,Tennessee,2025,2025 Tennessee,SEC,TENN,Volunteers,#ff8200,#58595b,12,8-4,40.75,15.08,28.75,11.74,12,0.593,1,4,3,2
+Texas-2025,Texas,2025,2025 Texas,SEC,TEX,Longhorns,#c15d26,#ffffff,12,9-3,29.58,15.62,19.75,13.48,9.833,0.397,1,3,4,2
+Texas A&M-2025,Texas A&M,2025,2025 Texas A&M,SEC,TA&M,Aggies,#500000,#ffffff,12,11-1,36.33,11.02,21.92,12.33,14.417,0.812,1,5,4,2
+Texas Tech-2025,Texas Tech,2025,2025 Texas Tech,Big 12,TTU,Red Raiders,#CC0000,#000000,13,12-1,42.46,12.46,10.92,7.39,31.538,2.364,2,3,3,1
+UCF-2025,UCF,2025,2025 UCF,Big 12,UCF,Knights,#ba9b37,#000000,12,5-7,24.33,17.73,23.58,13.45,0.75,-0.426,2,2,5,2
+UCLA-2025,UCLA,2025,2025 UCLA,Big Ten,UCLA,Bruins,#2774ae,#f2a900,12,3-9,18.17,11.46,33.42,13.68,-15.25,-1.876,1,4,4,2
+USC-2025,USC,2025,2025 USC,Big Ten,USC,Trojans,#9e2237,#ffcc00,12,9-3,36.5,15.46,22.42,10.24,14.083,0.782,1,4,4,2
+Utah-2025,Utah,2025,2025 Utah,Big 12,UTAH,Utes,#ea002a,#ffffff,12,10-2,41.08,15.24,18.67,12.59,22.417,1.537,2,3,4,2
+Vanderbilt-2025,Vanderbilt,2025,2025 Vanderbilt,SEC,VAN,Commodores,#866d4b,#000000,12,10-2,39.42,15.62,21.92,11.29,17.5,1.092,1,4,4,2
+Virginia-2025,Virginia,2025,2025 Virginia,ACC,UVA,Cavaliers,#232d4b,#f84c1e,13,10-3,32.15,13.75,20.54,9.31,11.615,0.558,1,3,5,1
+Virginia Tech-2025,Virginia Tech,2025,2025 Virginia Tech,ACC,VT,Hokies,#630031,#cf4520,12,3-9,21.42,10.22,30.17,10.44,-8.75,-1.287,1,3,5,2
+Wake Forest-2025,Wake Forest,2025,2025 Wake Forest,ACC,WAKE,Demon Deacons,#9E7E38,#000000,12,8-4,26.83,13.64,21.5,13.96,5.333,-0.011,2,3,5,2
+Washington-2025,Washington,2025,2025 Washington,Big Ten,WASH,Huskies,#33006f,#e8d3a2,12,8-4,33.75,21.38,19.42,5.57,14.333,0.805,1,3,5,1
+Washington State-2025,Washington State,2025,2025 Washington State,Pac-12,WSU,Cougars,#981e32,#ffffff,12,6-6,21.58,8.7,20.17,19.58,1.417,-0.366,2,4,5,1
+West Virginia-2025,West Virginia,2025,2025 West Virginia,Big 12,WVU,Mountaineers,#002855,#eaaa00,12,4-8,21.75,13.93,30.83,14.09,-9.083,-1.317,2,3,5,2
+Wisconsin-2025,Wisconsin,2025,2025 Wisconsin,Big Ten,WIS,Badgers,#c4012f,#ffffff,12,4-8,12.83,11.75,21.58,12.34,-8.75,-1.287,2,4,5,2
