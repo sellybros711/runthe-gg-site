@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Scoreboard numeral preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Graduate&family=Orbitron:wght@700;900&family=Doto:wght@700;900&family=Silkscreen:wght@400;700&family=DotGothic16&family=Jersey+25&family=Share+Tech+Mono&family=Archivo:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @font-face{font-family:'DSEG7';src:url('fonts/DSEG7Classic-Bold.woff2') format('woff2');
+    font-weight:700;font-style:normal;font-display:swap}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#080b14;color:#eef2f9;font-family:'Archivo',system-ui,sans-serif;
+    line-height:1.45;padding:18px 14px 60px}
+  .wrap{max-width:620px;margin:0 auto}
+  h1{font-family:'Graduate',serif;font-size:22px;letter-spacing:.04em;margin-bottom:6px}
+  .lede{color:#94a3b8;font-size:13.5px;margin-bottom:20px}
+  .row{margin-bottom:22px}
+  .name{font-family:'Graduate',serif;font-size:13px;letter-spacing:.1em;color:#ffd23a;margin-bottom:2px}
+  .note{font-size:12px;color:#7d8fa8;margin-bottom:8px}
+
+  /* the varsity board, exactly as the game draws it */
+  .board{background:#0c0e12;border:2px solid rgba(214,224,238,.42);border-radius:9px;
+    box-shadow:0 16px 34px -16px #000,inset 0 0 0 1px rgba(0,0,0,.9);overflow:hidden}
+  .top{display:flex}
+  .side{flex:1 1 0;display:grid;grid-template-columns:auto auto;justify-content:center;
+    justify-items:center;align-items:center;column-gap:7px;row-gap:3px;padding:11px 8px 9px;
+    position:relative;text-align:center}
+  .side + .side{border-left:2px solid rgba(214,224,238,.35)}
+  .side .lbl{grid-row:1;grid-column:1/3;font-family:'Graduate',serif;font-size:17px;
+    letter-spacing:.1em;color:#f2f6fb}
+  .side .num{grid-row:2;grid-column:1/3;position:relative;line-height:1;color:#fff;
+    font-size:48px;font-variant-numeric:tabular-nums}
+  .side .meta{grid-row:3;grid-column:1/3;font-size:11px;color:rgba(255,255,255,.66);
+    font-family:'Archivo',sans-serif;font-weight:700}
+  .side .stripe{position:absolute;left:14%;right:14%;bottom:0;height:3px;background:#10b981}
+  .side + .side .stripe{background:#8a97a8}
+  .bot{border-top:2px solid rgba(214,224,238,.35);display:flex;align-items:center;
+    gap:10px;padding:8px 11px 7px}
+  .bot .opp{flex:1;font-size:13px;color:#dfe6f0;font-weight:600;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .bot .clk{font-size:19px;color:#fff;font-variant-numeric:tabular-nums}
+  .bot .wk{font-family:'Graduate',serif;font-size:11.5px;letter-spacing:.11em;color:#f2f6fb;
+    background:#05070b;border:1.5px solid rgba(214,224,238,.4);border-radius:6px;padding:5px 11px 4px}
+
+  /* per-font hooks */
+  .f-dseg  .num,.f-dseg  .clk{font-family:'DSEG7',monospace}
+  .f-orb   .num,.f-orb   .clk{font-family:'Orbitron',sans-serif;font-weight:700}
+  .f-doto  .num,.f-doto  .clk{font-family:'Doto',sans-serif;font-weight:900}
+  .f-silk  .num,.f-silk  .clk{font-family:'Silkscreen',monospace;font-weight:700}
+  .f-dot16 .num,.f-dot16 .clk{font-family:'DotGothic16',sans-serif}
+  .f-jers  .num,.f-jers  .clk{font-family:'Jersey 25',sans-serif}
+  .f-stm   .num,.f-stm   .clk{font-family:'Share Tech Mono',monospace}
+
+  /* DSEG only: the dark segments still show on a real board, so a ghost 88 sits
+     behind the number the way it does on the unit in the stadium. */
+  .ghost .num{min-width:2ch;text-align:right}
+  .ghost .num:before{content:'88';position:absolute;right:0;top:0;color:rgba(255,255,255,.09)}
+  .ghost .clk{position:relative}
+  .ghost .clk:before{content:'88:88';position:absolute;right:0;top:0;color:rgba(255,255,255,.09)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Scoreboard numerals</h1>
+  <p class="lede">The same varsity board in each candidate. The first is a true seven-segment face,
+    the kind the board in the stadium actually uses. Tell me which one you want.</p>
+  <div id="out"></div>
+  <p class="lede" style="margin-top:26px">Nothing in the game has changed yet. This is a scratch page.</p>
+</div>
+<script>
+  const FONTS = [
+    ['f-dseg ghost', 'DSEG7 Classic', 'A real seven-segment face, with the unlit segments ghosted behind the number the way the board does it.'],
+    ['f-dseg', 'DSEG7 Classic, no ghost', 'The same face with the dark segments left out.'],
+    ['f-doto', 'Doto', 'A dot-matrix face, like the newer LED boards built out of bulbs.'],
+    ['f-jers', 'Jersey 25', 'Pixel athletic numerals, closer to a jersey than a board.'],
+    ['f-silk', 'Silkscreen', 'Coarse pixel bulbs, an older matrix board.'],
+    ['f-dot16', 'DotGothic16', 'A finer dot matrix.'],
+    ['f-stm', 'Share Tech Mono', 'Not segmented, just a clean technical face.'],
+    ['f-orb', 'Orbitron (current)', 'What is on the board now.'],
+  ];
+  document.getElementById('out').innerHTML = FONTS.map(([cls, name, note]) => `
+    <div class="row">
+      <div class="name">${name}</div>
+      <div class="note">${note}</div>
+      <div class="board ${cls}">
+        <div class="top">
+          <div class="side"><span class="lbl">HOME</span><span class="num">28</span>
+            <span class="meta">11-1</span><span class="stripe"></span></div>
+          <div class="side"><span class="lbl">ORST</span><span class="num">7</span>
+            <span class="meta">13-1</span><span class="stripe"></span></div>
+        </div>
+        <div class="bot"><span class="opp">2012 Oregon State</span>
+          <span class="clk">2:48</span><span class="wk">Week 8</span></div>
+      </div>
+    </div>`).join('');
+</script>
+</body>
+</html>
