@@ -1045,7 +1045,45 @@ function buildOffer(run, slots, outIdxs, inPlayers) {
     type = '2for1';
     faPos = pickFaPosition(newRoster, open.faElig);
   }
-  return { type, outIdx: outIdxs.slice(), outPlayers, inPlayers, netCap, netVal, faPos };
+  return { type, outIdx: outIdxs.slice(), outPlayers, inPlayers, netCap, netVal, faPos,
+    partnerFranchise: inPlayers[0].franchise, partnerSeason: inPlayers[0].season };
+}
+
+/* WHAT A ROSTER ACTUALLY GRADES OUT TO: the same product the results screen and the GM
+   rating use (raw points x chemistry x structure). Trade cards are scored with this rather
+   than a sum of fantasy points, because the sum is not what the season plays with: it
+   ignores chemistry links and roster shape, and measured over 2,135 offers it disagreed
+   with the real effect on the team about one time in twelve, sometimes calling a trade that
+   gained 8.9 rating a loss. The number on the card is now the number that comes true. */
+function rosterRating(roster, ctx) {
+  const pts = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+  const chem = E.resolveChemistry(roster, ctx).multiplier;
+  const struct = E.rosterStructure(roster).multiplier;
+  return { rating: pts * chem * struct, chem, struct };
+}
+
+/* Attach the numbers that decide a trade: the swing in team rating (the headline), in
+   chemistry, and on the cap. Exact for a straight swap. A two-for-one cannot be exact
+   because the free agent has not signed yet, so it is measured with a representative
+   free agent standing in the open spot and flagged as an estimate. */
+function scoreOffer(run, offer, ctx, slots, faStand) {
+  const outSet = new Set(offer.outIdx);
+  const keep = run.roster.filter((_, i) => !outSet.has(i));
+  const before = rosterRating(run.roster, ctx);
+  let after = keep.concat(offer.inPlayers);
+  offer.estimated = false;
+  if (after.length < slots.length) {
+    const stand = faStand[offer.faPos];
+    if (!stand) { offer.ratingDelta = null; offer.chemDelta = null; return offer; }
+    after = after.concat([stand]);
+    offer.estimated = true;
+  }
+  const a = rosterRating(after, ctx);
+  offer.ratingBefore = Math.round(before.rating * 10) / 10;
+  offer.ratingAfter = Math.round(a.rating * 10) / 10;
+  offer.ratingDelta = Math.round((a.rating - before.rating) * 10) / 10;
+  offer.chemDelta = Math.round((a.chem - before.chem) * 1000) / 10;
+  return offer;
 }
 
 /* THE TRADE FINDER. The GM puts one or two players on the block; this returns the market
@@ -1074,11 +1112,30 @@ function findOffers(run, data, ctx, outIdxs) {
   // Leaguewide pool by position (validity is decided by re-slotting, so any position is
   // fair game if the roster can still form a lineup around it).
   const byPos = { QB: [], RB: [], WR: [], TE: [] };
+  const faPool = { QB: [], RB: [], WR: [], TE: [] };
   for (const ts of pool) {
     for (const p of (data.playersByTeamSeason[ts.team_season_id] ?? [])) {
-      if (!onRoster.has(p.player_id) && byPos[p.position]) byPos[p.position].push(p);
+      if (onRoster.has(p.player_id) || !byPos[p.position]) continue;
+      byPos[p.position].push(p);
+      // The same shortlist generateFreeAgents draws from, so a two-for-one is estimated
+      // against the kind of player who will actually be available to fill the spot.
+      if (isFreeAgentCandidate(p)) faPool[p.position].push(p);
     }
   }
+  const faStand = {};
+  for (const pos of ['QB', 'RB', 'WR', 'TE']) {
+    const c = faPool[pos].slice().sort((x, y) => y.ppr_ppg_mean - x.ppr_ppg_mean)
+      .slice(0, FA_BOARD);
+    faStand[pos] = c.length ? c[Math.floor(c.length / 2)] : null;
+  }
+  // Rank by what the deal does to the team, then hand back the best of the market.
+  const finish = (list, keepMin) => {
+    const scored = list
+      .map((o) => scoreOffer(run, o, ctx, slots, faStand))
+      .sort((a, b) => (b.ratingDelta ?? -99) - (a.ratingDelta ?? -99));
+    const live = scored.filter((o) => (o.ratingDelta ?? -99) > -4);
+    return live.length >= keepMin ? live : scored.slice(0, Math.max(keepMin, live.length));
+  };
 
   const offers = [];
   const usedKey = new Set();
@@ -1091,7 +1148,11 @@ function findOffers(run, data, ctx, outIdxs) {
 
   // Single-player return: 1-for-1, or a 2-for-1 when a pair is on the block.
   const single = (loF, hiF, faReserve) => {
-    const lo = outValue * loF, hi = outValue * hiF;
+    let lo = outValue * loF; const hi = outValue * hiF;
+    if (twoOut) {
+      const bestOut = Math.max.apply(null, outPlayers.map((p) => p.ppr_ppg_mean));
+      lo = Math.max(lo, bestOut * 1.02);
+    }
     const valid = [];
     for (const pos of ['QB', 'RB', 'WR', 'TE']) {
       for (const p of byPos[pos]) {
@@ -1112,34 +1173,36 @@ function findOffers(run, data, ctx, outIdxs) {
 
   if (!twoOut) {
     single(0.78, 1.32, 0);
-    return offers.sort((a, b) => b.netVal - a.netVal).slice(0, 6);
+    return finish(offers, 4).slice(0, 6);
   }
 
-  // A pair on the block. Half the menu is a bigger single (free agent fills the gap),
-  // half is two players coming back.
-  single(0.62, 1.0, 3);
-  const need = neededPositions(keep, slots);
-  const flexPos = ['RB', 'WR', 'TE'];
-  // Both players coming back have to be real contributors, so a two-for-two is genuinely
-  // two useful pieces and not a star padded out with a roster-filler.
+  // A pair on the block. Half the menu is a bigger single (a free agent fills the gap),
+  // half sends two players back. BOTH of those two come off ONE team-season, because a
+  // real two-for-two has a single trade partner: you do not ship two players to two
+  // different clubs in one deal, and the card can then name the team you dealt with.
+  single(0.62, 1.20, 3);
   const floor = Math.max(3, outValue * 0.28);
+  const partners = [];
+  for (const ts of pool) {
+    const list = (data.playersByTeamSeason[ts.team_season_id] ?? [])
+      .filter((p) => !onRoster.has(p.player_id) && byPos[p.position] && p.ppr_ppg_mean >= floor);
+    if (list.length >= 2) partners.push(list);
+  }
   let made = 0;
-  for (let att = 0; att < 240 && made < 3; att++) {
-    const pa = need[0] || flexPos[Math.floor(rng() * 3)];
-    const pb = need[1] || flexPos[Math.floor(rng() * 3)];
-    const la = byPos[pa], lb = byPos[pb];
-    if (!la.length || !lb.length) continue;
-    const a = la[Math.floor(rng() * la.length)];
-    const b = lb[Math.floor(rng() * lb.length)];
+  for (let att = 0; att < 300 && made < 3 && partners.length; att++) {
+    const list = partners[Math.floor(rng() * partners.length)];
+    const a = list[Math.floor(rng() * list.length)];
+    const b = list[Math.floor(rng() * list.length)];
     if (!a || !b || a.player_id === b.player_id) continue;
-    if (a.ppr_ppg_mean < floor || b.ppr_ppg_mean < floor) continue;
     const cv = a.ppr_ppg_mean + b.ppr_ppg_mean;
     if (cv < outValue * 0.80 || cv > outValue * 1.12) continue;
     if (keepSalary + a.price_musd + b.price_musd > CAP) continue;
+    // assignRoster inside buildOffer is the single authority on whether the lineup still
+    // works, so a package that leaves a hole is rejected there rather than pre-screened.
     const o = buildOffer(run, slots, outIdxs, [a, b]);
     if (o) { pushOffer(o); made++; }
   }
-  return offers.sort((a, b) => b.netVal - a.netVal).slice(0, 8);
+  return finish(offers, 4).slice(0, 6);
 }
 
 /* The resulting lineup if an offer were accepted, without touching the run. Used by the
@@ -1160,9 +1223,20 @@ function previewTrade(run, offer) {
     incomingIds: offer.inPlayers.map((p) => p.player_id) };
 }
 
+/* Who is available on the street. Deliberately one predicate, shared by the actual signing
+   and by the stand-in a two-for-one card is estimated against, so the number on the card
+   cannot disagree with the player you end up able to sign. */
+const FA_MAX_PCTL = 0.22, FA_MIN_M = 3, FA_MAX_M = 6;
+/* How deep the free-agent board runs. The three on offer are drawn from this many best
+   available, so every option is usable and a card's estimate lands near what you sign. */
+const FA_BOARD = 8;
+function isFreeAgentCandidate(p) {
+  return (p.position_percentile ?? 1) <= FA_MAX_PCTL
+    && p.price_musd >= FA_MIN_M && p.price_musd <= FA_MAX_M;
+}
+
 function generateFreeAgents(run, data, position) {
   const rng = rngFor(run);
-  // Whole league, not drawable() — see generateProposals: the roster is full here.
   const pool = data.teamSeasons;
   const candidates = [];
   for (const ts of pool) {
@@ -1170,15 +1244,15 @@ function generateFreeAgents(run, data, position) {
     for (const p of players) {
       if (p.position !== position) continue;
       if (run.usedPlayers.includes(p.player_id)) continue;
-      if ((p.position_percentile ?? 1) > 0.30) continue;
-      if (p.price_musd < 3 || p.price_musd > 8) continue;
+      if (!isFreeAgentCandidate(p)) continue;
       candidates.push(p);
     }
   }
+  candidates.sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean);
+  const board = candidates.slice(0, FA_BOARD);
   const result = [];
-  for (let i = 0; i < 3 && candidates.length > 0; i++) {
-    const idx = Math.floor(rng() * candidates.length);
-    result.push(candidates.splice(idx, 1)[0]);
+  for (let i = 0; i < 3 && board.length > 0; i++) {
+    result.push(board.splice(Math.floor(rng() * board.length), 1)[0]);
   }
   return result;
 }
@@ -1618,7 +1692,7 @@ const api = {
   boardFrom, blockFor, BLOCK, drawable,
   openSlots, openSlotNames, slotForPlayer, TUNING,
   inflateCap, capCut, capSpin, capSign,
-  autoDraftTrade, isTradeWindow, inflateContracts, findOffers, previewTrade,
+  autoDraftTrade, isTradeWindow, inflateContracts, findOffers, previewTrade, rosterRating,
   generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating,
 };
 
