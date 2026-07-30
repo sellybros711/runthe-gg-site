@@ -13,7 +13,7 @@
 <meta property="og:url" content="https://runthe.gg/cfb/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Big+Shoulders+Display:wght@600;700&family=Archivo:wght@500;600;700;800&family=Barlow+Condensed:wght@700;800&family=Orbitron:wght@700;900&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Big+Shoulders+Display:wght@600;700&family=Archivo:wght@500;600;700;800&family=Barlow+Condensed:wght@700;800&family=Graduate&family=Orbitron:wght@700;900&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
 <style>
   *,*:before,*:after{box-sizing:border-box;margin:0;padding:0}
   :root{
@@ -34,6 +34,7 @@
     --fb:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
     --fbar:'Barlow Condensed',Impact,sans-serif;
     --fled:'Orbitron','Barlow Condensed',sans-serif;
+    --fc:'Graduate','Barlow Condensed',Impact,sans-serif;
     --qb:#ff0a3b;--rb:#22c55e;--wr:#0f93ff;--te:#eb9500;--flex:#ba22f1;
     --blue:#10b981;--red:#ef4444;--red-2:#dc2626;
   }
@@ -1080,6 +1081,17 @@
     color:var(--dim);cursor:pointer;white-space:nowrap;transition:border-color .15s,color .15s}
   .overtab.on{color:#fff;border-color:rgba(255,255,255,.3)}
   .overpane{display:none}.overpane.on{display:block}
+
+  /* ── collegiate accents (Graduate) ──────────────────────────────
+     Varsity block letters, but only on the short display text: eyebrows and
+     labels, the broadcast ribbons, and bowl/round names. Never on anything read
+     in quantity, so nothing gets harder to read. Graduate ships a single, heavy
+     weight, so we drop the faux-bold and lean on letter-spacing; the two
+     smallest labels get a point back for legibility at Graduate's blockier cut. */
+  .eyebrow,.hero .sub,.caprow .lbl,.reelbox .lbl,.caleye span,
+  .gameday span,.bug .bbot .rd,#bowl-title{font-family:var(--fc);font-weight:400}
+  .gameday span{letter-spacing:.13em}
+  .reelbox .lbl{font-size:10px} .caleye span{font-size:10px}
 </style>
 </head>
 <body>
