@@ -3292,9 +3292,9 @@ function paintOver(){
           '<div class="pl">Of the strongest team your six spins allowed. '+spots+'</div>'+
         '</div></div>'+
         swapRows(best)+comparison(best)+
-        '<p class="caveat">Points a game includes chemistry and how the five fit. The projected '+
-        'records replay each roster against your 12 regular-season opponents hundreds of times &mdash; '+
-        'each team&rsquo;s usual season, not the one result you just played.</p>';
+        '<p class="caveat">Points a game includes chemistry and how the five fit. Your record is '+
+        'this season&rsquo;s result; the best roster&rsquo;s is a projection &mdash; it never played &mdash; '+
+        'from replaying it against your 12 opponents hundreds of times.</p>';
     }
   });
 }
@@ -3326,7 +3326,7 @@ function comparison(best){
   return '<div class="vs-tbl">'+
     '<div class="vs-row"><span class="k"></span><span class="h">YOURS</span><span class="h b">BEST</span></div>'+
     vs('Fantasy points a game',mineRating.toFixed(1),bestRating.toFixed(1),true)+
-    vs('Projected record',mine.typicalRecord,theirs.typicalRecord,true)+
+    vs('Record',run.outcome.record,theirs.typicalRecord,true)+
     vs('Money spent',M(best.yourSpend),M(best.spend))+
     vs('Makes the playoffs',P(mine.playoffRate),P(theirs.playoffRate))+
     vs('Wins the title',P(mine.titleRate),P(theirs.titleRate))+
