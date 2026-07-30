@@ -14,6 +14,18 @@ const E = (typeof require !== 'undefined')
   ? require('./engine.js')
   : window.PS_ENGINE;
 
+/* ROSTER SHAPE, PER RUN. Every mode but one runs the engine's default six spots,
+   QB RB WR WR TE FLEX. The Trade Machine runs QB RB WR TE FLEX FLEX instead: a second
+   flex in place of the second receiver, so two of six spots take any of RB/WR/TE and
+   trades can actually change the shape of the offense rather than only swap like for
+   like. The COUNT is six either way and SLOT_ELIGIBILITY is keyed by slot NAME (which
+   is unchanged), so this one array is the whole difference — the engine's rating math,
+   which reads player positions, needs nothing. slotsOf() prefers the run's own array
+   and falls back by mode so a run restored from storage without it still resolves. */
+const TRADE_SLOTS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'FLEX'];
+const slotsOf = (run) => (run && run.slots)
+  || (run && run.tradeMachine ? TRADE_SLOTS : E.SLOTS);
+
 /* PICK_FRANCHISE is gone. There is no favourite club to choose, so a run opens on the draft:
    the schedule is 17 random historic team-seasons and the playoffs are a fixed difficulty
    ladder, neither of which depends on who you support. */
@@ -139,7 +151,8 @@ function assignedFloors(run) {
   const spent = {};
   for (const id of run.usedTeamSeasons) spent[id] = (spent[id] || 0) + 1;
   const reachable = (c) => (spent[c.ts] || 0) < TUNING.MAX_DRAWS_PER_TEAM_SEASON;
-  const open = openSlots(run).map((i) => E.SLOTS[i])
+  const slots = slotsOf(run);
+  const open = openSlots(run).map((i) => slots[i])
     .sort((a, b) => E.SLOT_ELIGIBILITY[a].length - E.SLOT_ELIGIBILITY[b].length);
   const out = [];
   for (const slot of open) {
@@ -392,9 +405,11 @@ function createRun(opts) {
     era,
     capSurvivor,
     tradeMachine,
+    // The Trade Machine runs a second flex in place of the second receiver.
+    slots: tradeMachine ? TRADE_SLOTS.slice() : E.SLOTS.slice(),
     seed,
     rngCalls: 0,
-    phase: tradeMachine ? PHASES.DRAFT : PHASES.DRAFT,
+    phase: PHASES.DRAFT,
     roster: [],
     slotIndex: [],
     usedPlayers: [],
@@ -456,25 +471,27 @@ function rngFor(run) {
  * always fill something, so a bad draw costs you value rather than stranding you.
  */
 
-/** Slot indexes still empty, in E.SLOTS order. */
+/** Slot indexes still empty, in slot order. */
 function openSlots(run) {
   const taken = new Set(run.slotIndex);
-  return E.SLOTS.map((_, i) => i).filter((i) => !taken.has(i));
+  return slotsOf(run).map((_, i) => i).filter((i) => !taken.has(i));
 }
 
 /** Which empty slot this player would fill, or null if none can take him. */
 function slotForPlayer(run, player) {
+  const slots = slotsOf(run);
   const open = openSlots(run);
   // Prefer a dedicated slot for his own position before spending FLEX on him.
-  const dedicated = open.find((i) => E.SLOTS[i] === player.position);
+  const dedicated = open.find((i) => slots[i] === player.position);
   if (dedicated !== undefined) return dedicated;
-  const flex = open.find((i) => E.SLOT_ELIGIBILITY[E.SLOTS[i]].includes(player.position));
+  const flex = open.find((i) => E.SLOT_ELIGIBILITY[slots[i]].includes(player.position));
   return flex === undefined ? null : flex;
 }
 
 /** Names of the spots still to fill, for display. */
 function openSlotNames(run) {
-  return openSlots(run).map((i) => E.SLOTS[i]);
+  const slots = slotsOf(run);
+  return openSlots(run).map((i) => slots[i]);
 }
 
 /*
@@ -666,7 +683,7 @@ function sign(run, player) {
   run.usedTeamSeasons.push(run.currentDraw.team_season_id);
   // Which team-season filled which spot. Needed for the post-run reveal, which
   // can only consider the team-seasons the wheel actually gave you.
-  run.draws.push({ slot: E.SLOTS[slot], team_season_id: run.currentDraw.team_season_id });
+  run.draws.push({ slot: slotsOf(run)[slot], team_season_id: run.currentDraw.team_season_id });
   run.currentDraw = null;
 
   if (run.roster.length === E.SLOTS.length) run.phase = PHASES.SEASON;
@@ -1007,6 +1024,7 @@ function generateProposals(run, data, ctx) {
   // (scoped to open draft slots and remaining budget) returns nothing. Trades pull an
   // incoming player from the whole league.
   const pool = data.teamSeasons;
+  const slots = slotsOf(run);
   // Grows as offers are built, so no two proposals in a window offer the same player.
   const excludeIds = run.roster.map((p) => p.player_id);
 
@@ -1029,7 +1047,7 @@ function generateProposals(run, data, ctx) {
   function build1for1(targetIdx, arch) {
     if (targetIdx == null || targetIdx < 0) return null;
     const target = run.roster[targetIdx];
-    let positions = E.SLOT_ELIGIBILITY[E.SLOTS[run.slotIndex[targetIdx]]].slice();
+    let positions = E.SLOT_ELIGIBILITY[slots[run.slotIndex[targetIdx]]].slice();
     if (arch.cross) {
       positions = positions.filter((pos) => pos !== target.position);
       if (!positions.length) return null; // not a flex slot — nothing to swap to
@@ -1059,7 +1077,7 @@ function generateProposals(run, data, ctx) {
     const p1 = run.roster[idx1], p2 = run.roster[idx2];
     const combined = p1.ppr_ppg_mean + p2.ppr_ppg_mean;
     const minR = combined * 0.70, maxR = combined * (0.92 + bump);
-    const positions = E.SLOT_ELIGIBILITY[E.SLOTS[run.slotIndex[idx1]]].slice();
+    const positions = E.SLOT_ELIGIBILITY[slots[run.slotIndex[idx1]]].slice();
     // Leave $3M under the cap so the free agent who fills the empty slot is affordable.
     const maxSalary = CAP - (currentSalary - p1.price_musd - p2.price_musd) - 3;
     const incoming = findIncoming(positions, minR, maxR, maxSalary);
@@ -1072,7 +1090,7 @@ function generateProposals(run, data, ctx) {
 
   const byWeak = run.roster.map((_, i) => i).sort((a, b) => run.roster[a].ppr_ppg_mean - run.roster[b].ppr_ppg_mean);
   const byRich = run.roster.map((_, i) => i).sort((a, b) => run.roster[b].price_musd - run.roster[a].price_musd);
-  const flexIdx = run.roster.findIndex((_, i) => E.SLOTS[run.slotIndex[i]] === 'FLEX');
+  const flexIdx = run.roster.findIndex((_, i) => slots[run.slotIndex[i]] === 'FLEX');
 
   /* A deliberately diverse deck: upgrade the weak spot, consolidate two into one, free
      cap off the priciest contract, change the flex's shape, gamble on a buy-low, or make
@@ -1317,7 +1335,8 @@ function bestPossibleSquad(run, data, ctx) {
   const pool = run.draws.map((d) => (data.playersByTeamSeason[d.team_season_id] ?? []));
   if (pool.some((list) => !list.length)) return null;
 
-  const fits = (p, slot) => E.SLOT_ELIGIBILITY[E.SLOTS[slot]].includes(p.position);
+  const bpSlots = slotsOf(run);
+  const fits = (p, slot) => E.SLOT_ELIGIBILITY[bpSlots[slot]].includes(p.position);
   const popcount = (m) => { let c = 0; while (m) { c += m & 1; m >>= 1; } return c; };
 
   const NEG = -1e9;
@@ -1493,7 +1512,7 @@ function bestPossibleSquad(run, data, ctx) {
     yourProjected: yourPts * run.season.chemistry * E.rosterStructure(run.roster).multiplier,
     bestProjected: bestScore,
     /* One row per spot, so it always says who replaces whom. */
-    lineup: E.SLOTS.map((slot, s) => {
+    lineup: bpSlots.map((slot, s) => {
       const had = yourBySlot[s], could = best[s];
       const same = had && could && had.player_id === could.player_id && had.season === could.season;
       return {
