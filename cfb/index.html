@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>College Football: Perfect Season | Free Roster Draft Game</title>
-<meta name="description" content="Spin a wheel for a year and a college football team, sign one player off each of five draws, and build a roster out of every season from 2005 to 2025 under a $14M NIL budget. Then play all 12 games and chase a perfect season.">
+<meta name="description" content="Spin a wheel for a year and a college football team, sign one player off each of six draws, and build a roster out of every season from 2005 to 2025 under a $14M NIL budget. Then play all 12 games and chase a perfect season.">
 <meta name="theme-color" content="#080b14">
 <link rel="canonical" href="https://runthe.gg/cfb/">
 <meta property="og:title" content="College Football: Perfect Season">
-<meta property="og:description" content="Five spins, five players, one shot at a perfect college football season. Free, no download, playable in your browser.">
+<meta property="og:description" content="Six spins, six players, one shot at a perfect college football season. Free, no download, playable in your browser.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://runthe.gg/cfb/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -246,7 +246,7 @@
     background:var(--tcbg,#334155);color:var(--tcon,#fff)}
 
   /* ── connection rail ────────────────────────────────────────── */
-  .rail{display:grid;grid-template-columns:repeat(5,1fr);margin:0 0 8px;position:relative;
+  .rail{display:grid;grid-template-columns:repeat(6,1fr);margin:0 0 8px;position:relative;
     min-height:60px;padding:0 8px}
   .rnode{display:flex;flex-direction:column;align-items:center;gap:3px;padding-top:20px;
     position:relative;z-index:2}
@@ -898,7 +898,7 @@
 <main style="max-width:640px;margin:0 auto;padding:24px;font-family:system-ui,sans-serif;
   color:#eef2f9;background:#080b14">
 <h1>College Football: Perfect Season</h1>
-<p>Spin a wheel for a year and a college football team, sign one player off each of five draws,
+<p>Spin a wheel for a year and a college football team, sign one player off each of six draws,
 and build a roster out of every season from 2005 to 2025 under a $14M NIL budget.</p>
 <p>Then play all 12 games and chase a perfect season. Every player is priced and scored from
 his actual statistics. Free, no download, playable in your browser.</p>
@@ -913,7 +913,7 @@ or endorsed by the NCAA, the CFP or any school.
 <div class="wrap">
   <header>
     <a class="lockup" id="b-home" href="." aria-label="College Football Perfect Season, back to the start">
-      <img class="mark" src="mark.png" alt="" width="30" height="27">
+      <img class="mark" src="mark.png?v=2" alt="" width="30" height="27" decoding="async">
       <span class="brand">Perfect<i> Season</i></span>
     </a>
     <div class="hdr-r">
@@ -932,7 +932,7 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="hero">
       <div class="sub">College Football</div>
       <h1>The Perfect Season</h1>
-      <p>Spin a wheel for a year and a college team. Sign one player off each of five draws.
+      <p>Spin a wheel for a year and a college team. Sign one player off each of six draws.
         Build a roster from 2005 to 2025 under a $14M NIL budget. Play all 12 games and
         chase a perfect season.</p>
     </div>
@@ -974,7 +974,7 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="capwrap">
       <div class="caprow">
         <span class="lbl">NIL Budget</span>
-        <span id="d-count" style="font-family:var(--fn);font-size:12px;font-weight:600;color:var(--dim)">Spin 1 of 5</span>
+        <span id="d-count" style="font-family:var(--fn);font-size:12px;font-weight:600;color:var(--dim)">Spin 1 of 6</span>
       </div>
       <div style="display:flex;align-items:baseline;gap:8px;margin:4px 0">
         <span id="c-amt" class="num" style="font-family:var(--fd);font-size:28px;line-height:1">$14.0M</span>
@@ -1200,8 +1200,8 @@ or endorsed by the NCAA, the CFP or any school.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=1"></script>
-<script src="run.js?v=1"></script>
+<script src="engine.js?v=2"></script>
+<script src="run.js?v=2"></script>
 <script>
 (function(){
 'use strict';
@@ -1227,7 +1227,7 @@ const NEED_VERSION=1;
 const $=(id)=>document.getElementById(id);
 function ga(){}
 const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const M=(v)=>'$'+v.toFixed(1)+'M';
+const M=(v)=>(v>0&&v<1)?'$'+Math.round(v*1000)+'K':'$'+v.toFixed(1)+'M';
 const M0=(v)=>'$'+Math.round(v)+'M';
 const pc=(v)=>(v>=0?'+':'')+(v*100).toFixed(1)+'%';
 const SUFFIX=/^(jr|sr|ii|iii|iv|v)\.?$/i;
@@ -1263,9 +1263,10 @@ function dressInTeamColors(teamSeasonId){
     const t=DATA.byTeamSeasonId[teamSeasonId];
     if(!t) return;
     const c=E.teamColors(t);
-    const w=E.washColors(c.color,c.alt_color);
+    const w=E.wheelColors(c.color,c.alt_color);
     box.style.setProperty('--c1',w.bg);
     box.style.setProperty('--c2',w.accent);
+    box.style.setProperty('--on','#ffffff');
     box.classList.add('clubbed');
   };
 }
@@ -1330,14 +1331,18 @@ window.addEventListener('error',(ev)=>{
 });
 
 /* ── 5 position spots ────────────────────────────────────────── */
+/* Where each spot sits on the field, in E.SLOTS order: QB, RB, WR, WR, TE, FLEX.
+   The field is laid out by the POSITIONS you actually signed, not by slot order, so a
+   back drafted into the flex lines up in the backfield and the four men on the line of
+   scrimmage share one row (two chips on the same line can never collide vertically). */
 const SPOTS={
   QB:[{x:50,y:44}],
-  RB:[[{x:30,y:66}],[{x:30,y:66},{x:70,y:66}]],
-  WR:[[],[{x:12,y:24}],[{x:12,y:24},{x:88,y:24}]],
-  TE:[[],[{x:72,y:24}]],
-  FLEX:{x:50,y:24},
+  RB:[[{x:28,y:64}],[{x:28,y:64},{x:72,y:64}]],
+  WR:[[],[{x:50,y:24}],[{x:12,y:24},{x:88,y:24}],[{x:12,y:24},{x:88,y:24},{x:32,y:24}]],
+  TE:[[],[{x:68,y:24}],[{x:68,y:24},{x:32,y:24}]],
+  FLEX:{x:32,y:24},
 };
-const SPOT_FALLBACK=[{x:50,y:44},{x:30,y:66},{x:12,y:24},{x:72,y:24},{x:50,y:24}];
+const SPOT_FALLBACK=[{x:50,y:44},{x:28,y:64},{x:12,y:24},{x:88,y:24},{x:68,y:24},{x:32,y:24}];
 
 function layoutFor(){
   const n=E.SLOTS.length;
@@ -1408,7 +1413,7 @@ function fieldMarkings(){
   const pct=(yd)=>100*yd/FIELD_YARDS;
   const goal=pct(FIELD_EZ_YARDS);
   out.push('<div class="ez" style="height:'+goal+'%"></div>',
-    '<div class="ezmark" style="height:'+goal+'%"><img src="wordmark.png" alt="RunThe.GG"></div>',
+    '<div class="ezmark" style="height:'+goal+'%"><img src="wordmark.png?v=2" alt="" decoding="async"></div>',
     '<div class="goal" style="top:'+goal+'%"></div>');
   for(let y=FIELD_EZ_YARDS;y<=FIELD_YARDS;y++){
     const top=pct(y);
@@ -1593,7 +1598,7 @@ function paintTop(){
   if(left>1&&rem-floor<0.8){n.style.display='block';n.textContent='Keep at least '+M(floor)+' back or you cannot fill the rest of your team.';}
   else if(left===1&&rem>2.5){n.style.display='block';n.textContent='You still have '+M(rem)+' left and this is the last spot to spend it on.';}
   else n.style.display='none';
-  $('d-count').textContent='Spin '+Math.min(5,run.roster.length+1)+' of 5';
+  $('d-count').textContent='Spin '+Math.min(E.SLOTS.length,run.roster.length+1)+' of '+E.SLOTS.length;
 }
 
 /* ── reels ───────────────────────────────────────────────────── */
@@ -2771,7 +2776,7 @@ function paintOver(){
       $('o-miss').innerHTML=
         '<div class="pgauge"><div class="pv '+band+'">'+share+'%</div><div class="pr">'+
           '<div class="ptrack"><i style="width:'+share+'%;background:'+sband+'"></i></div>'+
-          '<div class="pl">Of the strongest team your five spins allowed. '+spots+'</div>'+
+          '<div class="pl">Of the strongest team your six spins allowed. '+spots+'</div>'+
         '</div></div>'+
         swapRows(best)+comparison(best)+
         '<p class="caveat">Points a game includes chemistry and how the five fit. Both records '+
@@ -2871,7 +2876,7 @@ function drawShareCard(){
   N('600',30);x.fillStyle='rgba(255,255,255,.55)';x.letterSpacing='6px';
   centered('THE PERFECT SEASON',CARD.TITLE);x.letterSpacing='0px';
   B('400',25);x.fillStyle='rgba(255,255,255,.42)';
-  centered('College Football. Five spins, five players, 2005 to 2025.',CARD.TAG);
+  centered('College Football. Six spins, six players, 2005 to 2025.',CARD.TAG);
 
   const tone=o.perfect?'#fcd34d':(o.titleWon?'#93c5fd':'#ffffff');
   if(o.perfect||o.titleWon){
@@ -2977,10 +2982,11 @@ $('b-share').onclick=async()=>{
 const HERO={year:820,stagger:300,team:970,land:320,sign:760,hold:2300,clear:520,gap:190};
 const HERO_SPOTS=[
   {label:'QB',left:50,top:44},
-  {label:'RB',left:30,top:66},
+  {label:'RB',left:28,top:64},
   {label:'WR',left:12,top:24},
   {label:'WR',left:88,top:24},
-  {label:'FLEX',left:50,top:24},
+  {label:'TE',left:68,top:24},
+  {label:'FLEX',left:32,top:24},
 ];
 const HERO_TOP_N=20;
 let heroPoolCache=null;
@@ -3139,14 +3145,14 @@ function howToPlay(){
   const cap=M0(E.CONSTANTS.CAP_MUSD);
   const R1=E.CONSTANTS.RESPIN_LADDER_MUSD.map(M0).join(', then ');
   $('sheet-in').innerHTML='<div class="eyebrow">How to play</div>'+
-    '<h2 class="display" style="font-size:25px;margin:4px 0 12px">Five spins, one season</h2>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 12px">Six spins, one season</h2>'+
     '<ul style="margin:0;padding-left:18px;list-style:none;counter-reset:n">'+
     '<li style="margin:10px 0;font-size:14px;line-height:1.5;counter-increment:n;position:relative;padding-left:26px">'+
       '<span style="position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.08);display:grid;place-items:center;font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim)">' +
       '1</span>A wheel gives you a <b>year</b> and a <b>college team</b>. Sign one player off it.</li>'+
     '<li style="margin:10px 0;font-size:14px;line-height:1.5;counter-increment:n;position:relative;padding-left:26px">'+
       '<span style="position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.08);display:grid;place-items:center;font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim)">' +
-      '2</span>Five spins fill five spots, and you have <b>'+cap+'</b> NIL budget. Not spending it is its own mistake.</li>'+
+      '2</span>Six spins fill six spots, and you have <b>'+cap+'</b> NIL budget. Not spending it is its own mistake.</li>'+
     '<li style="margin:10px 0;font-size:14px;line-height:1.5;counter-increment:n;position:relative;padding-left:26px">'+
       '<span style="position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.08);display:grid;place-items:center;font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim)">' +
       '3</span>Re-spin the year or the team for '+R1+', off your budget.</li>'+
