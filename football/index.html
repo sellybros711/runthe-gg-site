@@ -3379,7 +3379,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=36"></script>
-<script src="run.js?v=39"></script>
+<script src="run.js?v=40"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -3389,6 +3389,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 (function(){
 'use strict';
 const E=window.PS_ENGINE, R=window.PS_RUN;
+/* The current run's slot layout. Every mode but the Trade Machine is the engine default
+   (QB RB WR WR TE FLEX); the Trade Machine swaps the second receiver for a second flex.
+   Used only for slot LABELS on screen — the count is six either way. */
+const slotsNow=()=>(run&&run.slots)||(run&&run.tradeMachine
+  ?['QB','RB','WR','TE','FLEX','FLEX']:E.SLOTS);
 
 /* board.js is OPTIONAL, unlike the engine. A blocked script, an ad blocker that
    does not like the word "board", or a stale cached copy at the wrong version
@@ -3733,8 +3738,17 @@ const SPOTS = {
    back kept clipping after the fallback said it should not. */
 const SPOT_FALLBACK=[{x:50,y:44},{x:28,y:64},{x:12,y:24},{x:88,y:24},{x:68,y:24},{x:32,y:24}];
 
+/* THE TRADE MACHINE'S FIELD IS LAID OUT BY SLOT, NOT BY POSITION. Its QB RB WR TE FLEX
+   FLEX format can put three of one position on the field (three backs, three tight ends),
+   which the position-based formation above tops out below and would stack on one spot. Six
+   fixed, collision-free spots by index sidestep that entirely: QB in the pocket, two backs
+   split in the backfield (RB + a flex), a receiver wide left, a tight end inline right, and
+   the other flex wide right. Every chip still carries the player's real position on its face. */
+const SPOT_TRADE=[{x:50,y:44},{x:28,y:64},{x:12,y:24},{x:70,y:24},{x:88,y:24},{x:72,y:64}];
+
 /** Target coordinate for every slot index, given who is currently signed. */
 function layoutFor(){
+  if(run&&run.tradeMachine) return SPOT_TRADE.map((c)=>({...c}));
   const n=E.SLOTS.length;
   const bySlot=new Array(n).fill(null);
   if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
@@ -4878,7 +4892,7 @@ function paintSquad(){
       '<span class="sr-cap-room">$'+room.toFixed(1)+'M room</span></div>';
     run.roster.forEach((p,i)=>{
       h+='<div class="sr-row" data-i="'+i+'">'+
-        '<span class="sr-pos" style="'+posPaint(p.position)+'">'+esc(E.SLOTS[run.slotIndex[i]])+'</span>'+
+        '<span class="sr-pos" style="'+posPaint(p.position)+'">'+esc(slotsNow()[run.slotIndex[i]])+'</span>'+
         '<div><div class="sr-name">'+esc(p.name)+'</div>'+
         '<div class="sr-sub">'+tcPlate(p.franchise,p.season)+' '+p.season+'</div></div>'+
         '<span class="sr-price">$'+p.price_musd.toFixed(1)+'M</span></div>';
@@ -5357,7 +5371,7 @@ function openTeamReveal(){
     card.style.animationDelay=(n*STAGGER)+'s';
     card.dataset.i=i;
     card.innerHTML=
-      '<span class="rv-pos" style="'+posPaint(p.position)+'">'+esc(E.SLOTS[slot])+'</span>'+
+      '<span class="rv-pos" style="'+posPaint(p.position)+'">'+esc(slotsNow()[slot])+'</span>'+
       '<div style="min-width:0"><div class="rv-name">'+esc(p.name)+'</div>'+
         '<div class="rv-team">'+tcPlate(p.franchise,p.season)+' '+esc(E.nickname(p.franchise))+' '+p.season+'</div></div>'+
       '<div class="rv-nums"><div class="rv-fppg">'+p.ppr_ppg_mean.toFixed(1)+'</div>'+
@@ -5440,7 +5454,7 @@ function paintRosterPanel(bodyId,capId){
   let h='';
   order.forEach(({p,i,slot})=>{
     h+='<div class="rp-row" data-i="'+i+'">'+
-      '<span class="rp-pos" style="'+posPaint(p.position)+'">'+esc(E.SLOTS[slot])+'</span>'+
+      '<span class="rp-pos" style="'+posPaint(p.position)+'">'+esc(slotsNow()[slot])+'</span>'+
       '<div style="min-width:0"><div class="rp-name">'+esc(p.name)+'</div>'+
         '<div class="rp-sub">'+tcPlate(p.franchise,p.season)+' '+p.season+' &middot; $'+p.price_musd.toFixed(1)+'M</div></div>'+
       '<span class="rp-fppg">'+p.ppr_ppg_mean.toFixed(1)+'<span>FPPG</span></span></div>';
@@ -5462,7 +5476,7 @@ function paintSquadSidebar(){
     '<span class="sr-cap-room">$'+room.toFixed(1)+'M room</span></div>';
   run.roster.forEach((p,i)=>{
     h+='<div class="sr-row" data-i="'+i+'">'+
-      '<span class="sr-pos" style="'+posPaint(p.position)+'">'+esc(E.SLOTS[run.slotIndex[i]])+'</span>'+
+      '<span class="sr-pos" style="'+posPaint(p.position)+'">'+esc(slotsNow()[run.slotIndex[i]])+'</span>'+
       '<div><div class="sr-name">'+esc(p.name)+'</div>'+
       '<div class="sr-sub">'+tcPlate(p.franchise,p.season)+' '+p.season+'</div></div>'+
       '<span class="sr-price">$'+p.price_musd.toFixed(1)+'M</span></div>';
@@ -5596,7 +5610,7 @@ function paintTradePreview(prop){
   bySlot.forEach((e,slot)=>{
     if(!e){
       tradePreviewPlayers.push(null);
-      h+='<div class="rp-row empty"><span class="rp-pos">'+esc(E.SLOTS[slot])+'</span>'+
+      h+='<div class="rp-row empty"><span class="rp-pos">'+esc(slotsNow()[slot])+'</span>'+
         '<div style="min-width:0"><div class="rp-name">Open slot</div>'+
           '<div class="rp-sub">A free agent fills this after the trade</div></div>'+
         '<span class="rp-fppg" style="color:var(--dim-2)">&mdash;</span></div>';
@@ -5605,7 +5619,7 @@ function paintTradePreview(prop){
     const p=e.p;
     tradePreviewPlayers.push(p);
     h+='<div class="rp-row'+(e.incoming?' incoming':'')+'" data-r="'+(tradePreviewPlayers.length-1)+'">'+
-      '<span class="rp-pos" style="'+posPaint(p.position)+'">'+esc(E.SLOTS[slot])+'</span>'+
+      '<span class="rp-pos" style="'+posPaint(p.position)+'">'+esc(slotsNow()[slot])+'</span>'+
       '<div style="min-width:0"><div class="rp-name">'+esc(p.name)+(e.incoming?'<span class="rp-in">IN</span>':'')+'</div>'+
         '<div class="rp-sub">'+tcPlate(p.franchise,p.season)+' '+p.season+' &middot; $'+p.price_musd.toFixed(1)+'M</div></div>'+
       '<span class="rp-fppg">'+p.ppr_ppg_mean.toFixed(1)+'<span>FPPG</span></span></div>';
@@ -6436,11 +6450,11 @@ function paintOver(){
   drawField($('field3'),false);
   const bySlot=new Array(E.SLOTS.length).fill(null);
   run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
-  /* ALWAYS QB, RB, WR, WR, TE, then the flex last, which is what walking E.SLOTS gives.
-     The flex row is labelled with the position the player actually plays rather than the word
-     FLEX, because "FLEX" tells you about the slot and you want to know about the player. Which
-     row was the flex is still visible: it is the sixth one, and it carries a small marker. */
-  $('o-rost').innerHTML=E.SLOTS.map((slot,i)=>{
+  /* Walks the run's own slot order (QB RB WR WR TE FLEX for most modes; QB RB WR TE
+     FLEX FLEX in the Trade Machine). The flex row is labelled with the position the
+     player actually plays rather than the word FLEX, because "FLEX" tells you about the
+     slot and you want to know about the player; slotTag still marks which rows are flex. */
+  $('o-rost').innerHTML=slotsNow().map((slot,i)=>{
     const p=bySlot[i]; if(!p) return '';
     const a=topAward(p);
     return '<div class="rrow">'+slotTag(slot,p.position)+
@@ -6529,7 +6543,7 @@ function paintOver(){
    player and a number. */
 function swapRows(best){
   return '<div class="swaps">'+best.lineup.map((r,i)=>{
-    const sp='<span class="sp" style="'+posPaint(E.SLOTS[i])+'">'+r.slot+'</span>';
+    const sp='<span class="sp" style="'+posPaint(slotsNow()[i])+'">'+r.slot+'</span>';
     const nm=(p)=>p?esc(p.name)+' <span class="dim">'+p.season+', '+M(p.price_musd)+'</span>':'-';
     if(r.same){
       return '<div class="cmp">'+sp+'<span class="side"><b>'+nm(r.had)+'</b></span>'+
