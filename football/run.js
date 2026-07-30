@@ -956,87 +956,208 @@ function offerRng(run, outIdxs) {
   return E.createSeededRNG(key);
 }
 
-function buildOffer(run, slots, outIdxs, inPlayer) {
-  const outPlayers = outIdxs.map((i) => run.roster[i]);
-  const outSalary = outPlayers.reduce((t, p) => t + p.price_musd, 0);
-  const outValue = outPlayers.reduce((t, p) => t + p.ppr_ppg_mean, 0);
-  const netCap = Math.round((inPlayer.price_musd - outSalary) * 100) / 100;
-  const netVal = Math.round((inPlayer.ppr_ppg_mean - outValue) * 10) / 10;
-  if (outIdxs.length === 1) {
-    return { type: '1for1', outIdx: outIdxs[0], outPlayer: outPlayers[0], inPlayer,
-      netCap, netVal };
-  }
-  // Two-for-one: the incoming fills the slot he is eligible for (a dedicated match first,
-  // otherwise a flex), and the other slot opens for a free agent.
-  let fillPos = outIdxs.findIndex((i) => slots[run.slotIndex[i]] === inPlayer.position);
-  if (fillPos === -1) {
-    fillPos = outIdxs.findIndex((i) => E.SLOT_ELIGIBILITY[slots[run.slotIndex[i]]].includes(inPlayer.position));
-  }
-  if (fillPos === -1) return null;
-  const emptyPos = fillPos === 0 ? 1 : 0;
-  const fillIdx = outIdxs[fillPos], emptyIdx = outIdxs[emptyPos];
-  return { type: '2for1', outIdx: [fillIdx, emptyIdx],
-    outPlayers: [run.roster[fillIdx], run.roster[emptyIdx]], inPlayer,
-    emptySlot: run.slotIndex[emptyIdx], netCap, netVal };
+/* Can this exact set of players fill these slots, one per slot, each eligible for his?
+   A small backtracking match, most-constrained slot first. Returns the slot index for
+   every player (aligned to the players array) or null if no lineup is possible. This is
+   what lets the finder move players around: an incoming man only has to make SOME whole
+   lineup work, not slot into the exact spot the outgoing man left. */
+function assignRoster(players, slots) {
+  if (players.length !== slots.length) return null;
+  const order = slots.map((sn, i) => ({ sn, i }))
+    .sort((a, b) => E.SLOT_ELIGIBILITY[a.sn].length - E.SLOT_ELIGIBILITY[b.sn].length);
+  const assign = new Array(players.length).fill(-1);
+  const used = new Array(players.length).fill(false);
+  const bt = (k) => {
+    if (k === order.length) return true;
+    const elig = E.SLOT_ELIGIBILITY[order[k].sn];
+    for (let pl = 0; pl < players.length; pl++) {
+      if (used[pl] || !elig.includes(players[pl].position)) continue;
+      used[pl] = true; assign[pl] = order[k].i;
+      if (bt(k + 1)) return true;
+      used[pl] = false; assign[pl] = -1;
+    }
+    return false;
+  };
+  return bt(0) ? assign : null;
 }
 
+/* One player short (a two-for-one before the free agent signs): find an assignment that
+   fills every slot but one, leaving an opening a free agent can take. Returns the slot
+   indexes for the players present, the open slot, and the positions eligible for it. */
+function assignRosterOpen(players, slots) {
+  if (players.length !== slots.length - 1) return null;
+  for (let e = 0; e < slots.length; e++) {
+    const subSlots = slots.filter((_, i) => i !== e);
+    const subIdx = slots.map((_, i) => i).filter((i) => i !== e);
+    const a = assignRoster(players, subSlots);
+    if (a) {
+      return { assign: a.map((si) => subIdx[si]), emptySlot: e,
+        faElig: E.SLOT_ELIGIBILITY[slots[e]] };
+    }
+  }
+  return null;
+}
+
+/* The dedicated positions a set of kept players is still missing, so a package deal knows
+   which positions it MUST bring back (e.g. shop your only tight end and one return has to
+   be a tight end). Positions already covered are free to vary. */
+function neededPositions(keep, slots) {
+  const dedicated = {}; 
+  slots.forEach((sn) => { const e = E.SLOT_ELIGIBILITY[sn]; if (e.length === 1) dedicated[e[0]] = (dedicated[e[0]] || 0) + 1; });
+  const have = {}; keep.forEach((p) => { have[p.position] = (have[p.position] || 0) + 1; });
+  const need = [];
+  for (const pos in dedicated) {
+    for (let d = 0; d < dedicated[pos] - (have[pos] || 0); d++) need.push(pos);
+  }
+  return need;
+}
+
+/* For a free-agent opening, the eligible position the roster is thinnest at. */
+function pickFaPosition(players, elig) {
+  let best = elig[0], bestN = Infinity;
+  for (const pos of elig) {
+    const n = players.filter((p) => p.position === pos).length;
+    if (n < bestN) { bestN = n; best = pos; }
+  }
+  return best;
+}
+
+/* Build one offer from a chosen outgoing package and one or two incoming players, if the
+   result can form a legal lineup. type is 1for1, 2for2, or 2for1 (one back plus a free
+   agent for the opening). Carries the cap and production swing versus what you give up. */
+function buildOffer(run, slots, outIdxs, inPlayers) {
+  const outPlayers = outIdxs.map((i) => run.roster[i]);
+  const keep = run.roster.filter((_, i) => !outIdxs.includes(i));
+  const newRoster = keep.concat(inPlayers);
+  const outSalary = outPlayers.reduce((t, p) => t + p.price_musd, 0);
+  const outValue = outPlayers.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+  const inSalary = inPlayers.reduce((t, p) => t + p.price_musd, 0);
+  const inValue = inPlayers.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+  const netCap = Math.round((inSalary - outSalary) * 100) / 100;
+  const netVal = Math.round((inValue - outValue) * 10) / 10;
+  let type, faPos = null;
+  if (newRoster.length === slots.length) {
+    if (!assignRoster(newRoster, slots)) return null;
+    type = outIdxs.length === 1 ? '1for1' : '2for2';
+  } else {
+    const open = assignRosterOpen(newRoster, slots);
+    if (!open) return null;
+    type = '2for1';
+    faPos = pickFaPosition(newRoster, open.faElig);
+  }
+  return { type, outIdx: outIdxs.slice(), outPlayers, inPlayers, netCap, netVal, faPos };
+}
+
+/* THE TRADE FINDER. The GM puts one or two players on the block; this returns the market
+   for exactly that package. A single player gets a spread of one-for-one returns across a
+   fair-value band, and because the finder re-slots the roster, the return can be a
+   DIFFERENT position whenever the rest of the roster can absorb it. A pair gets a mix:
+   some deals where one bigger player comes back and a free agent fills the opening
+   (two-for-one), and some where two players come back (two-for-two). Every offer is
+   validated by re-slotting, so nothing that breaks the lineup is ever shown.
+
+   Offers come off a LOCAL rng seeded by (seed, week, selection): stable for a package
+   within a window (no reroll-for-jackpot) and never touching the game's own stream. */
 function findOffers(run, data, ctx, outIdxs) {
   if (!outIdxs || !outIdxs.length || outIdxs.length > 2) return [];
   const rng = offerRng(run, outIdxs);
   const slots = slotsOf(run);
   const CAP = E.CONSTANTS.CAP_MUSD;
-  const currentSalary = run.roster.reduce((t, p) => t + p.price_musd, 0);
   const pool = data.teamSeasons;
-  const excludeIds = run.roster.map((p) => p.player_id);
+  const onRoster = new Set(run.roster.map((p) => p.player_id));
+  const keep = run.roster.filter((_, i) => !outIdxs.includes(i));
+  const keepSalary = keep.reduce((t, p) => t + p.price_musd, 0);
   const outPlayers = outIdxs.map((i) => run.roster[i]);
   const outValue = outPlayers.reduce((t, p) => t + p.ppr_ppg_mean, 0);
-  const outSalary = outPlayers.reduce((t, p) => t + p.price_musd, 0);
-  const twoFor = outIdxs.length === 2;
+  const twoOut = outIdxs.length === 2;
 
-  // Which positions can come back: the union of eligibility over the vacated slots.
-  const eligible = new Set();
-  outIdxs.forEach((i) => E.SLOT_ELIGIBILITY[slots[run.slotIndex[i]]].forEach((pos) => eligible.add(pos)));
-
-  // A fair-ish market band around what you give up. A two-for-one consolidates, so the
-  // single return is worth most (not all) of the pair.
-  const lo = twoFor ? outValue * 0.60 : outValue * 0.78;
-  const hi = twoFor ? outValue * 1.00 : outValue * 1.32;
-  // Most the incoming can earn and still fit the cap (a two-for-one keeps $3M for the FA).
-  const headroom = twoFor
-    ? CAP - (currentSalary - outSalary) - 3
-    : CAP - (currentSalary - outSalary);
-
-  const cand = [];
+  // Leaguewide pool by position (validity is decided by re-slotting, so any position is
+  // fair game if the roster can still form a lineup around it).
+  const byPos = { QB: [], RB: [], WR: [], TE: [] };
   for (const ts of pool) {
-    const players = data.playersByTeamSeason[ts.team_season_id] ?? [];
-    for (const p of players) {
-      if (!eligible.has(p.position)) continue;
-      if (excludeIds.includes(p.player_id)) continue;
-      if (p.ppr_ppg_mean < lo || p.ppr_ppg_mean > hi) continue;
-      if (p.price_musd > headroom) continue;
-      cand.push(p);
+    for (const p of (data.playersByTeamSeason[ts.team_season_id] ?? [])) {
+      if (!onRoster.has(p.player_id) && byPos[p.position]) byPos[p.position].push(p);
     }
   }
-  if (!cand.length) return [];
 
-  // Spread across the value range so the choice is real: sort by rating, sample one from
-  // each even slice (with jitter), then keep them ranked best-first.
-  cand.sort((a, b) => a.ppr_ppg_mean - b.ppr_ppg_mean);
-  const MAX = 6;
-  const n = Math.min(MAX, cand.length);
-  const seen = new Set();
-  const picks = [];
-  for (let k = 0; k < n; k++) {
-    const start = Math.floor((k / n) * cand.length);
-    const end = Math.floor(((k + 1) / n) * cand.length);
-    const span = Math.max(1, end - start);
-    const p = cand[start + Math.floor(rng() * span)];
-    if (p && !seen.has(p.player_id)) { seen.add(p.player_id); picks.push(p); }
+  const offers = [];
+  const usedKey = new Set();
+  const pushOffer = (o) => {
+    if (!o) return;
+    const key = o.inPlayers.map((p) => p.player_id).sort().join(',');
+    if (usedKey.has(key)) return;
+    usedKey.add(key); offers.push(o);
+  };
+
+  // Single-player return: 1-for-1, or a 2-for-1 when a pair is on the block.
+  const single = (loF, hiF, faReserve) => {
+    const lo = outValue * loF, hi = outValue * hiF;
+    const valid = [];
+    for (const pos of ['QB', 'RB', 'WR', 'TE']) {
+      for (const p of byPos[pos]) {
+        if (p.ppr_ppg_mean < lo || p.ppr_ppg_mean > hi) continue;
+        if (keepSalary + p.price_musd > CAP - faReserve) continue;
+        const o = buildOffer(run, slots, outIdxs, [p]);
+        if (o) valid.push(o);
+      }
+    }
+    valid.sort((a, b) => a.inPlayers[0].ppr_ppg_mean - b.inPlayers[0].ppr_ppg_mean);
+    const n = Math.min(6, valid.length);
+    for (let k = 0; k < n; k++) {
+      const s = Math.floor((k / n) * valid.length);
+      const e = Math.floor(((k + 1) / n) * valid.length);
+      pushOffer(valid[s + Math.floor(rng() * Math.max(1, e - s))]);
+    }
+  };
+
+  if (!twoOut) {
+    single(0.78, 1.32, 0);
+    return offers.sort((a, b) => b.netVal - a.netVal).slice(0, 6);
   }
-  return picks
-    .map((inPlayer) => buildOffer(run, slots, outIdxs, inPlayer))
-    .filter(Boolean)
-    .sort((a, b) => b.inPlayer.ppr_ppg_mean - a.inPlayer.ppr_ppg_mean);
+
+  // A pair on the block. Half the menu is a bigger single (free agent fills the gap),
+  // half is two players coming back.
+  single(0.62, 1.0, 3);
+  const need = neededPositions(keep, slots);
+  const flexPos = ['RB', 'WR', 'TE'];
+  // Both players coming back have to be real contributors, so a two-for-two is genuinely
+  // two useful pieces and not a star padded out with a roster-filler.
+  const floor = Math.max(3, outValue * 0.28);
+  let made = 0;
+  for (let att = 0; att < 240 && made < 3; att++) {
+    const pa = need[0] || flexPos[Math.floor(rng() * 3)];
+    const pb = need[1] || flexPos[Math.floor(rng() * 3)];
+    const la = byPos[pa], lb = byPos[pb];
+    if (!la.length || !lb.length) continue;
+    const a = la[Math.floor(rng() * la.length)];
+    const b = lb[Math.floor(rng() * lb.length)];
+    if (!a || !b || a.player_id === b.player_id) continue;
+    if (a.ppr_ppg_mean < floor || b.ppr_ppg_mean < floor) continue;
+    const cv = a.ppr_ppg_mean + b.ppr_ppg_mean;
+    if (cv < outValue * 0.80 || cv > outValue * 1.12) continue;
+    if (keepSalary + a.price_musd + b.price_musd > CAP) continue;
+    const o = buildOffer(run, slots, outIdxs, [a, b]);
+    if (o) { pushOffer(o); made++; }
+  }
+  return offers.sort((a, b) => b.netVal - a.netVal).slice(0, 8);
+}
+
+/* The resulting lineup if an offer were accepted, without touching the run. Used by the
+   live preview: which players end up where, who is incoming, and any open slot. */
+function previewTrade(run, offer) {
+  const outSet = new Set(offer.outIdx);
+  const keep = run.roster.filter((_, i) => !outSet.has(i));
+  const newRoster = keep.concat(offer.inPlayers);
+  const slots = slotsOf(run);
+  let slotIndex = null, emptySlot = null;
+  if (newRoster.length === slots.length) {
+    slotIndex = assignRoster(newRoster, slots);
+  } else {
+    const open = assignRosterOpen(newRoster, slots);
+    if (open) { slotIndex = open.assign; emptySlot = open.emptySlot; }
+  }
+  return { roster: newRoster, slotIndex, emptySlot,
+    incomingIds: offer.inPlayers.map((p) => p.player_id) };
 }
 
 function generateFreeAgents(run, data, position) {
@@ -1062,35 +1183,25 @@ function generateFreeAgents(run, data, position) {
   return result;
 }
 
-function acceptTrade(run, proposal, data, ctx) {
-  if (proposal.type === '1for1') {
-    const idx = proposal.outIdx;
-    const slot = run.slotIndex[idx];
-    run.roster.splice(idx, 1);
-    run.slotIndex.splice(idx, 1);
-    const pid = proposal.outPlayer.player_id;
-    const pidIdx = run.usedPlayers.indexOf(pid);
-    if (pidIdx !== -1) run.usedPlayers.splice(pidIdx, 1);
-    run.roster.push(proposal.inPlayer);
-    run.slotIndex.push(slot);
-    run.usedPlayers.push(proposal.inPlayer.player_id);
+function acceptTrade(run, offer, data, ctx) {
+  const outSet = new Set(offer.outIdx);
+  const keep = run.roster.filter((_, i) => !outSet.has(i));
+  offer.outPlayers.forEach((p) => {
+    const k = run.usedPlayers.indexOf(p.player_id);
+    if (k !== -1) run.usedPlayers.splice(k, 1);
+  });
+  const newRoster = keep.concat(offer.inPlayers);
+  offer.inPlayers.forEach((p) => run.usedPlayers.push(p.player_id));
+  const slots = slotsOf(run);
+  if (newRoster.length === slots.length) {
+    run.roster = newRoster;
+    run.slotIndex = assignRoster(newRoster, slots);
+    run.pendingFreeAgency = null;
   } else {
-    const [idx1, idx2] = proposal.outIdx;
-    const slot1 = run.slotIndex[idx1];
-    const slot2 = run.slotIndex[idx2];
-    const sortedIdxs = [idx1, idx2].sort((a, b) => b - a);
-    for (const idx of sortedIdxs) {
-      const pid = run.roster[idx].player_id;
-      run.roster.splice(idx, 1);
-      run.slotIndex.splice(idx, 1);
-      const pidIdx = run.usedPlayers.indexOf(pid);
-      if (pidIdx !== -1) run.usedPlayers.splice(pidIdx, 1);
-    }
-    run.roster.push(proposal.inPlayer);
-    run.slotIndex.push(slot1);
-    run.usedPlayers.push(proposal.inPlayer.player_id);
-    const secondOutgoing = proposal.outPlayers[1];
-    run.pendingFreeAgency = { position: secondOutgoing.position, slotIndex: slot2 };
+    const open = assignRosterOpen(newRoster, slots);
+    run.roster = newRoster;
+    run.slotIndex = open.assign;
+    run.pendingFreeAgency = { position: offer.faPos, slotIndex: open.emptySlot };
   }
   const chem = E.resolveChemistry(run.roster, ctx);
   run.season.chemistry = chem.multiplier;
@@ -1099,9 +1210,10 @@ function acceptTrade(run, proposal, data, ctx) {
   run.tradeHistory = run.tradeHistory || [];
   run.tradeHistory.push({
     week: run.season.week,
-    type: proposal.type,
-    out: proposal.type === '2for1' ? proposal.outPlayers.map((p) => p.name) : [proposal.outPlayer.name],
-    in: proposal.inPlayer.name,
+    type: offer.type,
+    out: offer.outPlayers.map((p) => p.name),
+    in: offer.inPlayers.map((p) => p.name).join(', ')
+      + (offer.type === '2for1' ? ' + free agent' : ''),
   });
   return run;
 }
@@ -1506,7 +1618,7 @@ const api = {
   boardFrom, blockFor, BLOCK, drawable,
   openSlots, openSlotNames, slotForPlayer, TUNING,
   inflateCap, capCut, capSpin, capSign,
-  autoDraftTrade, isTradeWindow, inflateContracts, findOffers,
+  autoDraftTrade, isTradeWindow, inflateContracts, findOffers, previewTrade,
   generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating,
 };
 
