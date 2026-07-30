@@ -1111,6 +1111,8 @@ window.GA_ID='G-L29P5MRWKE';
   .tp-delta .dn{color:var(--red)}
   .tp-from{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
     color:var(--dim-2);margin-bottom:6px}
+  .tp-from~.tp-from{margin-top:8px}
+  .tp-fa-note{font-size:11px;color:var(--dim);font-style:italic;margin-top:5px}
   /* Live trade preview: the row coming in, and the slot a 2-for-1 leaves open. */
   .rp-row.incoming{background:rgba(34,197,94,.10);border-radius:8px;
     box-shadow:inset 0 0 0 1px rgba(34,197,94,.35);margin:2px 0;padding:8px 8px}
@@ -3454,7 +3456,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=36"></script>
-<script src="run.js?v=41"></script>
+<script src="run.js?v=42"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -5714,7 +5716,7 @@ function enterMarket(){
   const outNames=shopSel.map(i=>{const p=run.roster[i];
     return '<b>'+esc(p.name)+'</b> ('+esc(p.position)+', '+p.ppr_ppg_mean.toFixed(1)+')';}).join(' and ');
   $('tw-market-out').innerHTML='<span class="mo-lbl">You give</span>'+outNames+
-    (shopSel.length===2?'. One player comes back and a free agent fills the other spot.':'.');
+    (shopSel.length===2?'. Some deals send one player back with a free agent for the open spot; others send two.':'.');
   $('tw-title').textContent='Offers';
   $('tw-sub').textContent=currentOffers.length?'Tap an offer to preview it, then accept.'
     :'Nobody is biting on that package.';
@@ -5732,7 +5734,7 @@ function enterMarket(){
     paintSquadSidebar();
     paintRosterPanel('season-rp-body','season-rp-cap');
     toast('Trade accepted');
-    if(prop.type==='2for1'&&run.pendingFreeAgency){ openFreeAgency(); return; }
+    if(run.pendingFreeAgency){ openFreeAgency(); return; }
     show('s-season'); simTimer=setTimeout(tradeResumeStep,600);
   };
 }
@@ -5750,14 +5752,18 @@ function paintOffers(){
   }
   $('b-tw-accept').style.display='';
   currentOffers.forEach((o,i)=>{
-    const inP=o.inPlayer, vs=o.netVal, cs=o.netCap;
+    const vs=o.netVal, cs=o.netCap;
     const card=document.createElement('div');
     card.className='tprop';
-    card.innerHTML=
-      '<div class="tp-from">From the '+esc(inP.season+' '+E.nickname(inP.franchise))+'</div>'+
-      playerRow('in',inP)+
-      '<div class="tp-cap">Production <span class="'+(vs>=0?'up':'dn')+'">'+(vs>0?'+':'')+vs.toFixed(1)+'</span>'+
-        '&nbsp;&nbsp;&middot;&nbsp;&nbsp;Cap <span class="'+(cs>0?'dn':'up')+'">'+(cs>0?'+':'')+'$'+Math.abs(cs).toFixed(1)+'M</span></div>';
+    let html='';
+    o.inPlayers.forEach((inP)=>{
+      html+='<div class="tp-from">From the '+esc(inP.season+' '+E.nickname(inP.franchise))+'</div>'+
+        playerRow('in',inP);
+    });
+    if(o.type==='2for1') html+='<div class="tp-fa-note">plus a free agent for the open spot</div>';
+    html+='<div class="tp-cap">Production <span class="'+(vs>=0?'up':'dn')+'">'+(vs>0?'+':'')+vs.toFixed(1)+'</span>'+
+      '&nbsp;&nbsp;&middot;&nbsp;&nbsp;Cap <span class="'+(cs>0?'dn':'up')+'">'+(cs>0?'+':'')+'$'+Math.abs(cs).toFixed(1)+'M</span></div>';
+    card.innerHTML=html;
     card.onclick=()=>{
       const re=selectedOffer===i; selectedOffer=re?null:i;
       el.querySelectorAll('.tprop').forEach((c,j)=>c.classList.toggle('selected',j===selectedOffer));
@@ -5768,55 +5774,53 @@ function paintOffers(){
   });
 }
 
-/* THE LIVE PREVIEW. The roster panel on the trade screen shows the lineup you would
-   have IF you accepted the highlighted proposal: the incoming player drops into his
-   slot in green, a 2-for-1 leaves its second slot open (a free agent fills it after),
-   and the cap header re-totals with the change. prop === null paints the roster as it
-   stands, so tapping a proposal off returns the panel to the truth. */
+/* THE LIVE PREVIEW. Shows the lineup you would have IF you accepted the highlighted
+   offer, with the engine's own re-slotting applied: incoming players land in green (and
+   an existing player may quietly shift slots to make room), a 2-for-1 leaves one slot
+   open for a free agent, and the cap header re-totals. offer === null paints the roster
+   as it stands, so tapping an offer off returns the panel to the truth. */
 let tradePreviewPlayers=[];
-function paintTradePreview(prop){
-  const bySlot=new Array(E.SLOTS.length).fill(null);
-  run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]={p,incoming:false}; });
-  if(prop){
-    if(prop.type==='1for1'){
-      bySlot[run.slotIndex[prop.outIdx]]={p:prop.inPlayer,incoming:true};
-    }else{
-      const [i1,i2]=prop.outIdx;
-      bySlot[run.slotIndex[i1]]={p:prop.inPlayer,incoming:true};
-      bySlot[run.slotIndex[i2]]=null;
-    }
-  }
-  let total=0; bySlot.forEach(e=>{ if(e) total+=e.p.price_musd; });
-  total=Math.round(total*10)/10;
+function paintTradePreview(offer){
+  const slots=slotsNow();
+  const pv=offer
+    ? R.previewTrade(run,offer)
+    : { roster:run.roster, slotIndex:run.slotIndex, emptySlot:null, incomingIds:[] };
+  const inc=new Set(pv.incomingIds);
+  const bySlot=new Array(slots.length).fill(null);
+  if(pv.slotIndex) pv.roster.forEach((p,i)=>{ bySlot[pv.slotIndex[i]]={p,incoming:inc.has(p.player_id)}; });
+
+  const total=Math.round(pv.roster.reduce((s,p)=>s+p.price_musd,0)*10)/10;
   const room=Math.round((E.CONSTANTS.CAP_MUSD-total)*10)/10;
   const base=Math.round(run.roster.reduce((s,p)=>s+p.price_musd,0)*10)/10;
   const delta=Math.round((total-base)*10)/10;
-  const dtxt=prop&&Math.abs(delta)>=0.05
+  const dtxt=offer&&Math.abs(delta)>=0.05
     ?' <span class="rp-delta '+(delta<0?'up':'dn')+'">'+(delta>0?'+':'')+'$'+delta.toFixed(1)+'M</span>':'';
   const capEl=$('trade-rp-cap');
   if(capEl) capEl.innerHTML='<span class="rp-spent">$'+total.toFixed(1)+'M</span>'+
     '<span class="rp-room">$'+room.toFixed(1)+'M free</span>'+dtxt;
   const eye=document.querySelector('#trade-roster .rp-eye');
-  if(eye) eye.textContent=prop?'If you accept':'Your roster';
+  if(eye) eye.textContent=offer?'If you accept':'Your roster';
+
   tradePreviewPlayers=[];
   let h='';
-  bySlot.forEach((e,slot)=>{
+  for(let slot=0;slot<slots.length;slot++){
+    const e=bySlot[slot];
     if(!e){
       tradePreviewPlayers.push(null);
-      h+='<div class="rp-row empty"><span class="rp-pos">'+esc(slotsNow()[slot])+'</span>'+
+      h+='<div class="rp-row empty"><span class="rp-pos">'+esc(slots[slot])+'</span>'+
         '<div style="min-width:0"><div class="rp-name">Open slot</div>'+
           '<div class="rp-sub">A free agent fills this after the trade</div></div>'+
         '<span class="rp-fppg" style="color:var(--dim-2)">&mdash;</span></div>';
-      return;
+      continue;
     }
     const p=e.p;
     tradePreviewPlayers.push(p);
     h+='<div class="rp-row'+(e.incoming?' incoming':'')+'" data-r="'+(tradePreviewPlayers.length-1)+'">'+
-      '<span class="rp-pos" style="'+posPaint(p.position)+'">'+esc(slotsNow()[slot])+'</span>'+
+      '<span class="rp-pos" style="'+posPaint(p.position)+'">'+esc(slots[slot])+'</span>'+
       '<div style="min-width:0"><div class="rp-name">'+esc(p.name)+(e.incoming?'<span class="rp-in">IN</span>':'')+'</div>'+
         '<div class="rp-sub">'+tcPlate(p.franchise,p.season)+' '+p.season+' &middot; $'+p.price_musd.toFixed(1)+'M</div></div>'+
       '<span class="rp-fppg">'+p.ppr_ppg_mean.toFixed(1)+'<span>FPPG</span></span></div>';
-  });
+  }
   const body=$('trade-rp-body');
   if(!body) return;
   body.innerHTML=h;
