@@ -7,8 +7,8 @@
  * player lists, and team colorway data.
  *
  * Also produces:
- *   cfb_team_season_rosters.json — full eligible player lists per slot per team
- *   cfb_league_context.json      — per-season league average points allowed
+ *   cfb_team_season_rosters.json, full eligible player lists per slot per team
+ *   cfb_league_context.json, per-season league average points allowed
  */
 
 import fs from 'node:fs';

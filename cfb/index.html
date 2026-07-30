@@ -93,14 +93,14 @@
   .mark{flex:0 0 auto;width:30px;height:27px;margin-right:9px}
   .lockup{display:flex;align-items:center;text-decoration:none;color:inherit;
     flex:0 1 auto;min-width:0;border-radius:10px}
-  /* Sized to fit on one line on any phone, and — the belt-and-braces guarantee —
+  /* Sized to fit on one line on any phone, and, the belt-and-braces guarantee, 
      allowed to WRAP rather than clip if a wide fallback font or an enlarged view
      ever pushes it past the header. "Season" can never be cut off again. */
   .brand{flex:0 1 auto;min-width:0;font-family:var(--fd);font-size:clamp(10px,3vw,15px);
     letter-spacing:.02em;text-transform:uppercase;line-height:1.02}
   .brand i{color:var(--green);font-style:normal}
   /* "College" sits between Perfect and Season, in gold, so the wordmark itself
-     reads PERFECT COLLEGE SEASON — white, gold, green. */
+     reads PERFECT COLLEGE SEASON, white, gold, green. */
   .brand .clg{color:var(--gold);font-style:normal}
   .hdr-r{display:flex;align-items:center;gap:8px;min-width:0;margin-left:auto}
   .pill{display:inline-flex;align-items:center;padding:5px 10px;border-radius:99px;
@@ -131,7 +131,7 @@
   .avatar.signed svg{display:none}
   .avatar.signed .ab{display:block}
   /* The three-word wordmark is longer than the old two, and Anton can be slow to
-     arrive — iOS falls back to the wider Impact — so the type is sized in vw and
+     arrive, iOS falls back to the wider Impact, so the type is sized in vw and
      scales with the screen rather than clipping. Below 480 the RunThe.GG pill
      also steps aside for the profile bubble. */
   @media(max-width:480px){
@@ -195,7 +195,7 @@
   .hero h1{font-family:var(--fd);font-size:clamp(30px,8.6vw,56px);line-height:.92;
     letter-spacing:.01em;text-transform:uppercase;overflow-wrap:break-word}
   /* "College Edition" sits on its own little pill so it reads as a badge, not
-     loose text — a faint tint of the accent colour with a matching hairline. */
+     loose text, a faint tint of the accent colour with a matching hairline. */
   .hero .sub{display:inline-block;font-family:var(--fn);font-size:11px;font-weight:700;
     letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin:0 0 10px;
     padding:5px 15px 4px;border-radius:99px;background:rgba(245,158,11,.13);
@@ -468,8 +468,8 @@
 
   /* ── gameday ribbon ─────────────────────────────────────────────
      The broadcast title strip over the score bug. It reads the stakes of the
-     game — a ranked-opponent showdown, the rivalry-week finale, or plain
-     gameday — the way a college broadcast frames every kickoff. */
+     game, a ranked-opponent showdown, the rivalry-week finale, or plain
+     gameday, the way a college broadcast frames every kickoff. */
   .gameday{display:flex;justify-content:center;margin:0 0 11px}
   .gameday span{position:relative;font-family:var(--fn);font-size:10.5px;font-weight:800;
     letter-spacing:.2em;text-transform:uppercase;color:#08130d;padding:5px 15px 4px;
@@ -515,7 +515,7 @@
   .streak.on{opacity:1}
   .streak.w{color:#4ade80} .streak.l{color:#f87171}
   .streak.clinch{font-size:14px;letter-spacing:.18em;animation:clinchPop .5s ease both}
-  /* A signature win — beating a ranked team — is called out in poll gold. */
+  /* A signature win, beating a ranked team, is called out in poll gold. */
   .streak.sig{color:#ffd23a;font-size:13px;letter-spacing:.14em;animation:clinchPop .5s ease both}
   @keyframes clinchPop{0%{transform:scale(.7);opacity:0}50%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
   @keyframes tickpop{0%{transform:scaleY(.4)}55%{transform:scaleY(1.35)}100%{transform:scaleY(1)}}
@@ -529,7 +529,7 @@
   .cal{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:5px;margin-top:9px}
   .cw{position:relative;border-radius:9px;padding:7px 5px 6px;text-align:center;min-width:0;overflow:hidden;
     background:var(--panel);border:1px solid var(--line)}
-  /* A gold rank flag on games against ranked teams — the poll follows you all
+  /* A gold rank flag on games against ranked teams, the poll follows you all
      season, on the schedule as well as the score bug. */
   .cw .rkflag{position:absolute;top:3px;right:4px;font-family:var(--fd);font-size:9px;line-height:1;
     color:#ffd23a;text-shadow:0 1px 1px rgba(0,0,0,.7)}
@@ -1046,7 +1046,7 @@
      field → reels → tabs → options with nothing stranded beside it. On a real
      desktop (≥920px) the draft grows the wrap and the roster becomes the
      centrepiece: the field and the wheel sit as a wide, centred block up top,
-     and the player options fan out to fill the whole width beneath them — no
+     and the player options fan out to fill the whole width beneath them, no
      narrow column with an empty half beside it. */
   .dcols{display:block}
   .dcol{min-width:0}
@@ -1533,8 +1533,8 @@ function yourRank(){
   if(score<3) return 0;
   return Math.max(1,Math.min(25,Math.round(26-score*2.1)));
 }
-/* The conference your roster most belongs to — the schools your signed players
-   actually came from — so a title run can be framed the way a real one is. */
+/* The conference your roster most belongs to, the schools your signed players
+   actually came from, so a title run can be framed the way a real one is. */
 function yourConference(){
   if(!run||!run.roster||!DATA) return null;
   const count={};
@@ -1672,7 +1672,7 @@ function closeSheet(){$('sheet').classList.remove('on');}
 $('sheet').addEventListener('click',(e)=>{
   if(e.target===$('sheet')) closeSheet();
 });
-/* Tap any played game — in the season calendar or the results recap — for its box score. */
+/* Tap any played game, in the season calendar or the results recap, for its box score. */
 function bindBoxScore(id){
   const el=$(id); if(!el) return;
   el.addEventListener('click',(e)=>{
@@ -1684,8 +1684,8 @@ bindBoxScore('v-list'); bindBoxScore('o-list');
 
 /* ── school colours (profile bubble) ─────────────────────────────
    Pick a school and the front door takes its colours. Schools are grouped by
-   their current conference — the four power leagues each get their own list and
-   everyone else shares one — and each carries the team's real primary and alt
+   their current conference, the four power leagues each get their own list and
+   everyone else shares one, and each carries the team's real primary and alt
    colours drawn straight from the data. */
 const POWER_CONFS=['SEC','Big Ten','Big 12','ACC'];
 let schoolGroupsCache=null;
@@ -1710,7 +1710,7 @@ function shade(hex,pct){ const [r,g,b]=_hx(hex);
 const hexA=(hex,a)=>{const [r,g,b]=_hx(hex);return 'rgba('+r+','+g+','+b+','+a+')';};
 const lumOf=(hex)=>{const [r,g,b]=_hx(hex);return (0.299*r+0.587*g+0.114*b)/255;};
 /* A version of a team colour light enough to read as TEXT on the near-black
-   header — dark navies, maroons and blacks get lifted until they stand out. */
+   header, dark navies, maroons and blacks get lifted until they stand out. */
 const textSafe=(hex)=>{ let c=hex; for(let i=0;i<12 && lumOf(c)<0.5;i++) c=shade(c,0.15); return c; };
 
 let selectedSchool=null;
@@ -1823,7 +1823,7 @@ function fieldMarkings(){
                  '<div class="fnum r" style="top:'+top+'%">'+pair+'<span class="ar"></span></div>');
       }
     }else{
-      /* College hash marks sit 60 ft off each sideline on a 160-ft field — 37.5% and
+      /* College hash marks sit 60 ft off each sideline on a 160-ft field, 37.5% and
          62.5%, farther apart than the NFL's, a real difference between the two games. */
       out.push('<div class="tick" style="top:'+top+'%;left:37.5%"></div>',
                '<div class="tick" style="top:'+top+'%;left:62.5%"></div>',
@@ -1989,7 +1989,7 @@ function openBoxScore(r){
       '<span class="bsk">'+(KIND[p.kind]||p.kind)+(p.note?' &middot; '+esc(p.note):'')+'</span>'+
       '<span class="bss">'+p.you+'&ndash;'+p.them+'</span></div>';
   }
-  if(!summary) summary='<div class="bsnone">A defensive slugfest &mdash; nobody found the end zone.</div>';
+  if(!summary) summary='<div class="bsnone">A defensive slugfest. Nobody found the end zone.</div>';
   $('sheet-in').innerHTML=
     '<div class="eyebrow'+(r.won?' green':'')+'">'+esc(label)+' &middot; '+(r.won?'Win':'Loss')+'</div>'+
     '<h2 class="display" style="font-size:22px;margin:5px 0 2px">'+
@@ -2533,11 +2533,11 @@ function runSim(){
     void card.offsetWidth;
     card.classList.add(r.won?'won':'lost');
     paintNext(true); paintCalendar(r);
-    // A win over a ranked team is a signature win — call it out the moment it lands.
+    // A win over a ranked team is a signature win, call it out the moment it lands.
     if(run.phase===R.PHASES.SEASON){
       const beat=r.won?teamRank(r.opponent_id):0;
       if(beat){ const sEl=$('v-streak');
-        if(sEl){ sEl.className='streak w on sig'; sEl.textContent='Signature win — beat #'+beat+'!'; } }
+        if(sEl){ sEl.className='streak w on sig'; sEl.textContent='Signature win over #'+beat+'!'; } }
     }
     if(run.phase!==R.PHASES.SEASON){
       const made=run.playoffSeed&&run.playoffSeed.made;
@@ -3293,7 +3293,7 @@ function paintOver(){
         '</div></div>'+
         swapRows(best)+comparison(best)+
         '<p class="caveat">Points a game includes chemistry and how the five fit. Your record is '+
-        'this season&rsquo;s result; the best roster&rsquo;s is a projection &mdash; it never played &mdash; '+
+        'this season&rsquo;s result; the best roster&rsquo;s is a projection (it never played) '+
         'from replaying it against your 12 opponents hundreds of times.</p>';
     }
   });

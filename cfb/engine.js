@@ -1,4 +1,4 @@
-/* CFB Perfect Season — game engine.
+/* CFB Perfect Season, game engine.
  *
  * Headless, dependency-free. Works in Node (module.exports) and in the browser
  * (window.PS_CFB_ENGINE). All game logic lives here: roster evaluation,

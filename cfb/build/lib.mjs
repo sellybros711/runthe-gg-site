@@ -84,7 +84,7 @@ export async function cfbdFetchRetry(endpoint, params, cacheName, retries = 3) {
 /*
  * Power conferences across the 2005-2025 window. Conference realignment means
  * a program's conference changes over time; the API returns the conference as
- * it was that season, so we don't need to track historical membership here —
+ * it was that season, so we don't need to track historical membership here, 
  * we just need to know which conference NAMES count as "power".
  *
  * Notable G5 programs are individually allowlisted for seasons where they had
