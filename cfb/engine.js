@@ -27,10 +27,15 @@ const CONSTANTS = {
   MAX_RESPINS: 3,
   MIN_RESERVE_PER_SLOT_MUSD: 0.3,
   REGULAR_SEASON_GAMES: 12,
-  BYE_WINS: 12,
-  PLAYOFF_WINS: 11,
-  PLAYOFF_ROUNDS_WITH_BYE: 2,
-  PLAYOFF_ROUNDS_NO_BYE: 3,
+  /* The 12-team College Football Playoff. You are not measured against a win
+     total any more, you are ranked against the country: the top 12 get in, and
+     the top 4 seeds sit out the first round. FIELD_SIZE is how many teams the
+     country holds, so a percentile in the team data becomes a national ranking. */
+  PLAYOFF_TEAMS: 12,
+  PLAYOFF_BYES: 4,
+  FIELD_SIZE: 134,
+  PLAYOFF_ROUNDS_WITH_BYE: 3,
+  PLAYOFF_ROUNDS_NO_BYE: 4,
   NY6_MAX_LOSSES: 3,
   BOWL_MAX_LOSSES: 5,
   MINOR_BOWL_MAX_LOSSES: 6,
@@ -191,33 +196,86 @@ function scoringScript(you, them, won, rng) {
 
 // ─── playoff / bowl structure ───────────────────────────────────────────────
 
-const PLAYOFF_ROUND_NAMES_BYE = ['CFP Semifinal', 'CFP Championship'];
-const PLAYOFF_ROUND_NAMES_NO_BYE = ['CFP First Round', 'CFP Semifinal', 'CFP Championship'];
+/* The bracket, deepest first. Seeds 5 to 12 play all four rounds; the top four
+   skip the first and enter at the quarterfinal, so their names are the tail of
+   this list. */
+const PLAYOFF_ROUND_NAMES = ['CFP First Round', 'CFP Quarterfinal', 'CFP Semifinal', 'CFP Championship'];
 
 function playoffRoundNames(rounds) {
-  return rounds === 2 ? PLAYOFF_ROUND_NAMES_BYE : PLAYOFF_ROUND_NAMES_NO_BYE;
+  const n = Math.max(1, Math.min(PLAYOFF_ROUND_NAMES.length, rounds || PLAYOFF_ROUND_NAMES.length));
+  return PLAYOFF_ROUND_NAMES.slice(PLAYOFF_ROUND_NAMES.length - n);
 }
 
-function seedFromRecord(wins) {
-  if (wins >= CONSTANTS.BYE_WINS) {
-    return { made: true, bye: true, rounds: CONSTANTS.PLAYOFF_ROUNDS_WITH_BYE,
-      label: 'CFP top seed (bye)' };
-  }
-  if (wins >= CONSTANTS.PLAYOFF_WINS) {
-    return { made: true, bye: false, rounds: CONSTANTS.PLAYOFF_ROUNDS_NO_BYE,
-      label: 'CFP qualifier' };
+/* WHAT THE COMMITTEE WEIGHS. Wins and losses dominate, the way they do in life,
+   then how good the team looked (scoring margin as a z-score) and who it played.
+   Records are normalised to a 12-game season so a team that played fourteen is
+   not rewarded for the extra chances. */
+const RESUME = { WIN: 3.6, LOSS: 3.9, Z: 1.8, SOS: 1.8 };
+
+function resumeScore(wins, losses, z, sos) {
+  const played = wins + losses;
+  const games = CONSTANTS.REGULAR_SEASON_GAMES;
+  const w = played > 0 ? games * wins / played : 0;
+  return RESUME.WIN * w - RESUME.LOSS * (games - w) + RESUME.Z * z + RESUME.SOS * sos;
+}
+
+/* Where a resume lands in the country, 1 to FIELD_SIZE. The team data is the
+   landscape: about a tenth of its seasons win eleven or more, which is what a
+   real year looks like, so a percentile inside it is a national ranking. */
+function nationalRank(resume, prepared) {
+  const table = prepared && prepared.resumeTable;
+  if (!table || !table.length) return CONSTANTS.FIELD_SIZE;
+  let lo = 0, hi = table.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (table[mid] > resume) lo = mid + 1; else hi = mid; }
+  return Math.max(1, Math.min(CONSTANTS.FIELD_SIZE,
+    1 + Math.floor(lo / table.length * CONSTANTS.FIELD_SIZE)));
+}
+
+/* A finished regular season turned into a ranking. The margin arrives in engine
+   points, so it is divided by SCALE back into real points and then standardised
+   on the same scale the team data's strength_z uses. */
+function rankSeason(wins, losses, marginPerGame, oppZs, prepared) {
+  const mu = prepared && prepared.pointDiffMean != null ? prepared.pointDiffMean : 0;
+  const sd = prepared && prepared.pointDiffSd ? prepared.pointDiffSd : 1;
+  const z = (marginPerGame - mu) / sd;
+  const sos = oppZs && oppZs.length ? oppZs.reduce((a, b) => a + b, 0) / oppZs.length : 0;
+  const resume = resumeScore(wins, losses, z, sos);
+  return { z, sos, resume, rank: nationalRank(resume, prepared) };
+}
+
+/* Ranking to postseason. Top 12 play for the title, top 4 of those get the week
+   off; everyone else is sorted into bowls by how many games they lost. */
+function seedFromRanking(rank, wins) {
+  if (rank <= CONSTANTS.PLAYOFF_TEAMS) {
+    const bye = rank <= CONSTANTS.PLAYOFF_BYES;
+    return { made: true, seed: rank, rank, bye,
+      rounds: bye ? CONSTANTS.PLAYOFF_ROUNDS_WITH_BYE : CONSTANTS.PLAYOFF_ROUNDS_NO_BYE,
+      label: bye ? 'No. ' + rank + ' seed, first-round bye' : 'No. ' + rank + ' seed' };
   }
   const losses = CONSTANTS.REGULAR_SEASON_GAMES - wins;
+  const out = { made: false, seed: null, rank, bye: false };
   if (losses <= CONSTANTS.NY6_MAX_LOSSES) {
-    return { made: false, bowl: 'ny6', rounds: 1, label: 'New Year\'s Six Bowl' };
+    return { ...out, bowl: 'ny6', rounds: 1, label: 'New Year\'s Six Bowl' };
   }
   if (losses <= CONSTANTS.BOWL_MAX_LOSSES) {
-    return { made: false, bowl: 'bowl', rounds: 1, label: 'Bowl Game' };
+    return { ...out, bowl: 'bowl', rounds: 1, label: 'Bowl Game' };
   }
   if (losses <= CONSTANTS.MINOR_BOWL_MAX_LOSSES) {
-    return { made: false, bowl: 'minor', rounds: 1, label: 'Minor Bowl' };
+    return { ...out, bowl: 'minor', rounds: 1, label: 'Minor Bowl' };
   }
-  return { made: false, bowl: null, rounds: 0, label: 'Season over' };
+  return { ...out, bowl: null, rounds: 0, label: 'Season over' };
+}
+
+/* Seeding is worth something. The top seeds host the first round and are the
+   higher seed after it, so their path is easier; by the semifinal it is a
+   neutral field and the bracket stops helping anybody. */
+function seedAdvantage(seed, roundName, constants = CONSTANTS) {
+  const H = constants.PLAYOFF_HOME_FIELD || 0;
+  if (!seed) return 1;
+  const edge = 1 - (seed - 1) / Math.max(1, constants.PLAYOFF_TEAMS - 1);
+  const factor = roundName === 'CFP First Round' ? 1
+    : roundName === 'CFP Quarterfinal' ? 0.5 : 0;
+  return 1 + H * edge * factor;
 }
 
 // ─── bowl theming ───────────────────────────────────────────────────────────
@@ -860,20 +918,28 @@ function pickFrom(pool, rng) {
   return pool[Math.floor(rng() * pool.length)];
 }
 
+/* The four opponents a bracket can put in front of you, weakest first: a nine or
+   ten win team in the first round, then a conference winner, then two of the
+   best seasons in the game. A top-four seed never meets the first of them. */
 function generatePlayoffs(data, rng, opts = {}) {
-  const count = opts.count ?? CONSTANTS.PLAYOFF_ROUNDS_NO_BYE;
   const { goodPool, greatPool, elitePool } = data;
-
-  const ladder = [];
-  if (count >= 3) ladder.push(pickFrom(goodPool, rng));
-  ladder.push(pickFrom(greatPool, rng));
-  ladder.push(pickFrom(elitePool.length ? elitePool : greatPool, rng));
-
-  return ladder.slice(ladder.length - Math.min(count, ladder.length));
+  const elite = elitePool.length ? elitePool : greatPool;
+  const ladder = [
+    pickFrom(goodPool.length ? goodPool : greatPool, rng),
+    pickFrom(greatPool.length ? greatPool : goodPool, rng),
+    pickFrom(elite, rng),
+    pickFrom(elite, rng),
+  ];
+  const count = opts.count;
+  return count ? ladder.slice(ladder.length - Math.min(count, ladder.length)) : ladder;
 }
 
+/* Read the ladder from the back, so a team playing three rounds starts at the
+   quarterfinal and a team playing four starts at the first round. */
 function playoffOpponent(playoffs, rounds, roundIdx) {
-  return playoffs[Math.min(roundIdx, playoffs.length - 1)];
+  if (!playoffs || !playoffs.length) return null;
+  const start = Math.max(0, playoffs.length - (rounds || playoffs.length));
+  return playoffs[Math.min(start + roundIdx, playoffs.length - 1)];
 }
 
 function generateBowlOpponent(data, rng, tier) {
@@ -983,7 +1049,7 @@ function legacyFootballScore(marginTarget, won, rng, cal) {
 
 // ─── play a run ─────────────────────────────────────────────────────────────
 
-function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext, rng, constants = CONSTANTS) {
+function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext, rng, prepared, constants = CONSTANTS) {
   const results = [];
   let wins = 0, losses = 0;
 
@@ -1001,24 +1067,27 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
 
   const regularWins = wins;
   const regularLosses = losses;
-  const seed = seedFromRecord(regularWins);
+
+  /* SELECTION. The season becomes a resume: the record, the scoring margin in
+     real points, and the strength of the twelve teams played. That resume is
+     ranked against the country and the top twelve get in. */
+  const margin = results.reduce((t, r) => t + (r.yourScore - r.oppScore), 0)
+    / Math.max(1, results.length) / (constants.SCALE || 1);
+  const ranking = rankSeason(regularWins, regularLosses, margin,
+    schedule.map(t => t.strength_z || 0), prepared);
+  const seed = seedFromRanking(ranking.rank, regularWins);
 
   let titleWon = false;
   let exitRound = null;
   let bowlResult = null;
 
   if (seed.made) {
-    const advantage = 1 + (constants.PLAYOFF_HOME_FIELD || 0)
-      * Math.max(0, regularWins - constants.PLAYOFF_WINS)
-      / (constants.REGULAR_SEASON_GAMES - constants.PLAYOFF_WINS);
-
     const names = playoffRoundNames(seed.rounds);
     for (let i = 0; i < seed.rounds; i++) {
       const opp = playoffOpponent(playoffs, seed.rounds, i);
       const leagueAvg = leagueContext[opp.season] ?? 25;
-      const isFinal = i === seed.rounds - 1;
       const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
-        isFinal ? 1 : advantage);
+        seedAdvantage(seed.seed, names[i], constants));
       results.push({ opponent: opp.display, opponent_id: opp.team_season_id,
         week: schedule.length + i + 1, playoff: true, bowl: false, round: names[i], ...r });
       if (r.won) wins++; else { losses++; exitRound = names[i]; break; }
@@ -1037,6 +1106,7 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
     regularRecord: `${regularWins}-${regularLosses}`,
     record: `${wins}-${losses}`,
     seed,
+    ranking,
     titleWon,
     exitRound,
     bowlResult,
@@ -1079,6 +1149,29 @@ function prepareData(teamSeasons) {
   const index = {};
   for (const t of teamSeasons) index[t.team_season_id] = t;
 
+  /* THE NATIONAL LANDSCAPE, built once. Every team-season is scored on the same
+     resume the player will be scored on, using its conference that year as its
+     strength of schedule. Sorted, the list becomes the ranking a season is
+     measured against. */
+  const confSum = {}, confCount = {};
+  for (const t of teamSeasons) {
+    const k = t.season + '|' + t.conference;
+    confSum[k] = (confSum[k] || 0) + t.strength_z;
+    confCount[k] = (confCount[k] || 0) + 1;
+  }
+  const resumeTable = teamSeasons.map((t) => {
+    const parts = String(t.record).split('-');
+    const w = Number(parts[0]) || 0, l = Number(parts[1]) || 0;
+    const k = t.season + '|' + t.conference;
+    const sos = confCount[k] ? confSum[k] / confCount[k] : 0;
+    return resumeScore(w, l, t.strength_z, sos);
+  }).sort((a, b) => b - a);
+
+  const diffs = teamSeasons.map(t => t.point_diff_pg || 0);
+  const pointDiffMean = diffs.reduce((a, b) => a + b, 0) / (diffs.length || 1);
+  const pointDiffSd = Math.sqrt(
+    diffs.reduce((s, d) => s + (d - pointDiffMean) * (d - pointDiffMean), 0) / (diffs.length || 1)) || 1;
+
   const meanZ = zs.reduce((a, b) => a + b, 0) / zs.length;
   return {
     byProgram,
@@ -1087,6 +1180,9 @@ function prepareData(teamSeasons) {
     greatPool,
     elitePool,
     bowlPool,
+    resumeTable,
+    pointDiffMean,
+    pointDiffSd,
     byId: (id) => index[id],
     meanScheduleStrength: meanZ * CONSTANTS.REGULAR_SEASON_GAMES,
   };
@@ -1102,7 +1198,7 @@ const publicAPI = {
   generateSchedule, generatePlayoffs, generateBowlOpponent,
   resolveGame, playRun, playBowlGame, prepareData, toFootballScore,
   playoffOpponent, playoffRoundNames,
-  seedFromRecord,
+  resumeScore, nationalRank, rankSeason, seedFromRanking, seedAdvantage,
   respinCost, respinFees,
   scoringScript, scoreParts, SCORE_KINDS,
   contrast, teamColors, washColors, wheelColors, teamButton, teamInk,

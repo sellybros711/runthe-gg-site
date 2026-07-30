@@ -609,77 +609,128 @@
   .bsp .bss{color:var(--dim);font-size:12px;font-variant-numeric:tabular-nums}
   .bsnone{font-size:13px;color:var(--dim);text-align:center;padding:14px 0}
 
-  /* ── score bug ──────────────────────────────────────────────── */
-  .bug{border-radius:16px;overflow:hidden;padding:5px;
-    background:linear-gradient(180deg,#3a4457,#12161f);
-    box-shadow:0 16px 34px -14px #000,inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 6px rgba(0,0,0,.6)}
-  .bug .btop{display:flex;align-items:stretch;gap:5px}
-  .bug .bt{flex:1 1 0;min-width:0;position:relative;border-radius:12px;overflow:hidden;
-    display:flex;align-items:center;gap:8px;padding:11px 14px;
+  /* ── score bug: the stadium scoreboard ──────────────────────────
+     Built to read like the board at the open end of the stadium rather than a
+     television graphic: a steel housing bolted at the corners, a painted panel
+     in each team's colours, and the numbers burning out of recessed bulb
+     windows. Every hook the script writes into (.cd .rc .rk .sc .q .ck .rd) is
+     unchanged, so only the look moves. */
+  .bug{position:relative;border-radius:13px;overflow:hidden;padding:9px 9px 4px;
+    background:linear-gradient(180deg,#2b3241 0%,#1a2030 45%,#0e121b 100%);
+    border:1px solid rgba(255,255,255,.09);
+    box-shadow:0 18px 38px -16px #000,inset 0 1px 0 rgba(255,255,255,.20),
+      inset 0 -3px 9px rgba(0,0,0,.7)}
+  /* Four bolts holding the housing together. */
+  .bug:before{content:'';position:absolute;inset:0;z-index:4;pointer-events:none;
+    background-image:radial-gradient(circle at 50% 40%,#93a0b5,#333a48 60%,#222833 100%),
+      radial-gradient(circle at 50% 40%,#93a0b5,#333a48 60%,#222833 100%),
+      radial-gradient(circle at 50% 40%,#93a0b5,#333a48 60%,#222833 100%),
+      radial-gradient(circle at 50% 40%,#93a0b5,#333a48 60%,#222833 100%);
+    background-size:5px 5px;background-repeat:no-repeat;
+    background-position:5px 5px,calc(100% - 5px) 5px,5px calc(100% - 5px),calc(100% - 5px) calc(100% - 5px)}
+  .bug .btop{display:flex;align-items:stretch;gap:6px}
+  /* THE PAINTED TEAM PANEL. The school's own colour, bevelled like sheet metal,
+     with its second colour as the stripe down the outside edge. */
+  /* Laid out like the board itself: the rank stencilled outside, the school's
+     letters with the record tucked underneath, and the bulb window at the inner
+     edge. Stacking the record under the letters is what buys the numbers enough
+     room to never be clipped on a phone. */
+  .bug .bt{flex:1 1 0;min-width:0;position:relative;border-radius:8px;overflow:hidden;
+    display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+    align-items:center;column-gap:7px;row-gap:2px;padding:10px 12px;
     background-color:var(--tcol,#334155);
-    background-image:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.10) 46%,
-      rgba(0,0,0,.10) 54%,rgba(0,0,0,.32));
+    background-image:linear-gradient(180deg,rgba(255,255,255,.19),rgba(255,255,255,.03) 46%,
+      rgba(0,0,0,.14) 54%,rgba(0,0,0,.34));
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.11),inset 0 -3px 7px rgba(0,0,0,.4);
     transition:filter .2s ease}
-  .bug .bt.them{flex-direction:row-reverse;text-align:right}
-  .bug .bt:before{content:'';position:absolute;left:6px;right:6px;top:4px;height:42%;
-    border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.04));
-    pointer-events:none}
-  .bug .bt:after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;
-    background:var(--tcol2,rgba(255,255,255,.3))}
-  .bug .bt .cd{position:relative;font-family:var(--fbar);font-weight:800;font-size:22px;
-    line-height:1;letter-spacing:.01em;color:#fff;white-space:nowrap;
-    text-shadow:0 1px 2px rgba(0,0,0,.5)}
-  .bug .bt .rc{position:relative;font-family:var(--fbar);font-weight:800;font-size:13px;
-    line-height:1;color:rgba(255,255,255,.88);white-space:nowrap;font-variant-numeric:tabular-nums}
-  .bug .bt .sc{position:relative;margin-left:auto;font-family:var(--fbar);font-weight:800;
-    font-size:30px;line-height:.9;padding:2px 10px 3px;border-radius:8px;color:#12161f;
-    font-variant-numeric:tabular-nums;
-    background:linear-gradient(180deg,#fff,#cdd6e2);
-    box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.4)}
-  .bug .bt.them .sc{margin-left:0;margin-right:auto}
-  .bug .bt{filter:saturate(.66) brightness(.68)}
+  /* The school's letters take the whole width above, with the rank and record
+     sharing the line beneath, so a four-letter code always fits. Mirrored on the
+     visitor's side so the two bulb windows sit either side of the seam. */
+  .bug .bt .cd{grid-row:1;grid-column:1/3}
+  .bug .bt .rk{grid-row:2;grid-column:1}
+  .bug .bt .rc{grid-row:2;grid-column:2}
+  .bug .bt .sc{grid-row:1/3;grid-column:3}
+  .bug .bt.them{text-align:right}
+  .bug .bt.them .sc{grid-row:1/3;grid-column:1}
+  .bug .bt.them .cd{grid-row:1;grid-column:2/4}
+  .bug .bt.them .rc{grid-row:2;grid-column:2}
+  .bug .bt.them .rk{grid-row:2;grid-column:3}
+  .bug .bt:after{content:'';position:absolute;top:0;bottom:0;left:0;width:4px;
+    background:var(--tcol2,rgba(255,255,255,.35))}
+  .bug .bt.them:after{left:auto;right:0}
+  /* The team's letters give way before the score does: the numbers are the one
+     thing on a scoreboard that must never be clipped. */
+  .bug .bt .cd{position:relative;min-width:0;align-self:end;
+    font-family:var(--fc);font-weight:400;font-size:clamp(13px,4vw,20px);
+    line-height:1;letter-spacing:.03em;color:#fff;white-space:nowrap;
+    overflow:hidden;text-overflow:clip;text-shadow:0 2px 3px rgba(0,0,0,.6)}
+  .bug .bt .rc{position:relative;min-width:0;align-self:start;overflow:hidden;
+    font-family:var(--fn);font-weight:700;font-size:11px;
+    line-height:1;color:rgba(255,255,255,.78);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .bug .bt .rc:empty{display:none}
+  /* THE BULB WINDOW. Recessed into the panel, numerals lit warm the way an
+     incandescent board reads from the far end of the field. */
+  .bug .bt .sc{position:relative;justify-self:end;align-self:center;
+    font-family:var(--fled);font-weight:700;font-size:26px;line-height:1;letter-spacing:0;
+    padding:5px 9px 4px;border-radius:5px;color:#ffc84a;font-variant-numeric:tabular-nums;
+    background:linear-gradient(180deg,#0b0e15,#05070c);
+    box-shadow:inset 0 2px 6px rgba(0,0,0,.95),inset 0 0 0 1px rgba(255,255,255,.07);
+    text-shadow:0 0 10px rgba(255,190,55,.8),0 0 3px rgba(255,225,150,.9)}
+  .bug .bt.them .sc{justify-self:start}
+  .bug .bt{filter:saturate(.7) brightness(.7)}
   .bug .bt.lead{filter:none}
   .bug .bt.scored .sc{animation:scorepop .5s cubic-bezier(.2,1.5,.35,1)}
   @keyframes scorepop{0%{transform:scale(1)}35%{transform:scale(1.42)}100%{transform:scale(1)}}
   .bug .bt.scored{filter:brightness(1.22)}
-  .bug .bbot{display:flex;align-items:center;gap:10px;padding:8px 13px 6px;
-    font-family:var(--fbar);font-weight:800}
-  .bug .bbot .q{font-size:15px;letter-spacing:.04em;color:#cbd5e1;flex:0 0 auto;line-height:1}
-  .bug .bbot .ck{font-size:20px;line-height:1;color:#fff;flex:0 0 auto;
-    font-variant-numeric:tabular-nums}
+  /* The strip along the bottom of the housing: period, clock, and what game
+     this is. */
+  .bug .bbot{display:flex;align-items:center;gap:10px;padding:9px 5px 6px}
+  .bug .bbot .q{font-family:var(--fc);font-weight:400;font-size:12px;letter-spacing:.15em;
+    color:#94a2b6;flex:0 0 auto;line-height:1}
+  .bug .bbot .ck{font-family:var(--fled);font-weight:700;font-size:17px;line-height:1;
+    color:#ffc84a;flex:0 0 auto;font-variant-numeric:tabular-nums;
+    text-shadow:0 0 9px rgba(255,190,55,.65)}
   .bug .bbot .ck:empty{display:none}
-  .bug .bbot .rd{margin-left:auto;font-size:14px;letter-spacing:.05em;line-height:1;
-    white-space:nowrap;color:#e6edf6;background:linear-gradient(180deg,#586479,#333c4c);
-    padding:5px 12px;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
-  .bug .bbot .q.name{flex:1 1 auto;min-width:0;color:#e2e8f0;white-space:nowrap;
+  .bug .bbot .rd{margin-left:auto;font-family:var(--fc);font-weight:400;font-size:11.5px;
+    letter-spacing:.11em;line-height:1;white-space:nowrap;color:#e6edf6;
+    background:linear-gradient(180deg,#4c576b,#2c3446);
+    padding:6px 12px 5px;border-radius:6px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 1px 2px rgba(0,0,0,.5)}
+  .bug .bbot .q.name{flex:1 1 auto;min-width:0;font-family:var(--fb);font-weight:600;
+    font-size:13px;letter-spacing:0;color:#dde5f0;white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis}
-  .bug.urgent .bbot .ck{color:#fca5a5}
-  .bug.final .bbot .ck{font-size:14px;letter-spacing:.06em}
+  .bug.urgent .bbot .ck{color:#ff6b6b;text-shadow:0 0 9px rgba(255,80,80,.7)}
+  .bug.final .bbot .ck{font-size:13px;letter-spacing:.1em}
   .bug.r-first .bbot .rd{color:#08172e;background:linear-gradient(180deg,#bcd6ff,#4f8de0)}
+  .bug.r-quarter .bbot .rd{color:#0b2418;background:linear-gradient(180deg,#a7e8c8,#3f9d74)}
   .bug.r-semi .bbot .rd{color:#12161f;background:linear-gradient(180deg,#f8fafc,#aab4c4)}
   .bug.r-champ{box-shadow:0 18px 40px -14px #000,0 0 28px -8px rgba(245,158,11,.4),
-    inset 0 1px 0 rgba(255,228,155,.4),inset 0 -2px 6px rgba(0,0,0,.6)}
+    inset 0 1px 0 rgba(255,228,155,.35),inset 0 -3px 9px rgba(0,0,0,.7)}
   .bug.r-champ .bbot .rd{color:#3a2600;background:linear-gradient(180deg,#ffe08a,#e0a423)}
-  .bug.big .bt{padding:13px 16px}
-  .bug.big .bt .cd{font-size:26px}
-  .bug.big .bt .rc{font-size:14px}
-  .bug.big .bt .sc{font-size:44px}
-  .bug.big .bbot .ck{font-size:22px}
+  .bug.big .bt{padding:12px 12px}
+  .bug.big .bt .cd{font-size:clamp(13px,3.7vw,20px)}
+  .bug.big .bt .rc{font-size:12px}
+  .bug.big .bt .sc{font-size:clamp(24px,7vw,32px);padding:6px 10px 5px}
+  @media(max-width:379px){
+    .bug .bt{column-gap:5px;padding:10px 8px}
+    .bug .bt .sc{padding:5px 7px 4px}
+  }
+  .bug.big .bbot .ck{font-size:20px}
   .bug.big .bbot .q.name{font-size:14px}
-  /* AP-poll rank badge, college football's signature. A gold number tucked
-     against the team code, the way a ranked side is called on a broadcast. */
-  .bug .bt .rk{position:relative;flex:0 0 auto;align-self:center;
-    font-family:var(--fd);font-size:12px;line-height:1;letter-spacing:.01em;
-    color:#ffd23a;text-shadow:0 1px 2px rgba(0,0,0,.65)}
+  /* AP-poll rank, college football's signature: a gold number stencilled on the
+     line under the school's letters, beside the record. */
+  .bug .bt .rk{position:relative;align-self:start;
+    font-family:var(--fd);font-size:11.5px;line-height:1;letter-spacing:.01em;
+    color:#ffd23a;text-shadow:0 1px 2px rgba(0,0,0,.7)}
   .bug .bt .rk:empty{display:none}
-  .bug.big .bt .rk{font-size:15px}
+  .bug.big .bt .rk{font-size:14px}
   /* Opponent line: rank in gold, conference in a quiet tag. */
   .bug .bbot .oppr{color:#ffd23a;font-weight:800;margin-right:5px}
   .bug .bbot .oppc{margin-left:7px;font-size:11px;font-weight:700;letter-spacing:.07em;
     color:#aeb9c9;text-transform:uppercase}
-  /* A ranked matchup lights the whole bug with a faint poll-gold rail. */
-  .bug.ranked{box-shadow:0 16px 34px -14px #000,0 0 22px -10px rgba(255,210,58,.5),
-    inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 6px rgba(0,0,0,.6)}
+  /* A ranked matchup lights the housing with a faint poll-gold rail. */
+  .bug.ranked{box-shadow:0 18px 38px -16px #000,0 0 22px -10px rgba(255,210,58,.5),
+    inset 0 1px 0 rgba(255,255,255,.20),inset 0 -3px 9px rgba(0,0,0,.7)}
 
   /* ── playoff call + log ─────────────────────────────────────── */
   .pocap{min-height:56px;margin-top:13px;display:flex;align-items:center;justify-content:center}
@@ -1427,8 +1478,8 @@ or endorsed by the NCAA, the CFP or any school.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=4"></script>
-<script src="run.js?v=2"></script>
+<script src="engine.js?v=5"></script>
+<script src="run.js?v=3"></script>
 <script>
 (function(){
 'use strict';
@@ -2367,9 +2418,14 @@ function pushGame(r,el,gi){
 }
 
 /* Playoff round display helpers */
-const ROUND_CLASS={'CFP First Round':'r-first','CFP Semifinal':'r-semi','CFP Championship':'r-champ'};
-const ROUND_SHORT={'CFP First Round':'FIRST ROUND','CFP Semifinal':'SEMIFINAL','CFP Championship':'CHAMPIONSHIP'};
-const ROUND_TAG={'CFP First Round':'1ST','CFP Semifinal':'SEMI','CFP Championship':'TITLE'};
+const ROUND_CLASS={'CFP First Round':'r-first','CFP Quarterfinal':'r-quarter',
+  'CFP Semifinal':'r-semi','CFP Championship':'r-champ'};
+const ROUND_SHORT={'CFP First Round':'FIRST ROUND','CFP Quarterfinal':'QUARTERFINAL',
+  'CFP Semifinal':'SEMIFINAL','CFP Championship':'CHAMPIONSHIP'};
+const ROUND_TAG={'CFP First Round':'R1','CFP Quarterfinal':'QF','CFP Semifinal':'SEMI',
+  'CFP Championship':'TITLE'};
+/* The committee's line on your season, used above the seeding panel. */
+function rankLine(rk){ return rk&&rk.rank?'You finished No. '+rk.rank+' in the country.':''; }
 
 function paintCalendar(justPlayed){
   const s=run.season, cells=[];
@@ -2595,15 +2651,18 @@ function paintSeed(){
     c.className='seed-panel '+(sd.bye?'gold':'win');
     const conf=yourConference();
     const confBadge=conf?'<span class="seed-badge conf">'+esc(conf)+' Champions</span>':'';
+    const seedBadge='<span class="seed-badge '+(sd.bye?'gold':'blue')+'">No. '+sd.seed+' seed</span>';
     if(sd.bye){
-      badges.innerHTML=confBadge+'<span class="seed-badge gold"><svg viewBox="0 0 16 16"><path d="M8 1l2.2 4.5 5 .7-3.6 3.5.9 5L8 12.5 3.5 14.7l.9-5L.8 6.2l5-.7z" fill="currentColor" stroke="none"/></svg>Top Seed</span>'+
-        '<span class="seed-badge gold">First-round bye</span>';
+      badges.innerHTML=confBadge+seedBadge+
+        '<span class="seed-badge gold"><svg viewBox="0 0 16 16"><path d="M8 1l2.2 4.5 5 .7-3.6 3.5.9 5L8 12.5 3.5 14.7l.9-5L.8 6.2l5-.7z" fill="currentColor" stroke="none"/></svg>First-round bye</span>';
     }else{
-      badges.innerHTML=confBadge+'<span class="seed-badge blue">CFP Qualifier</span>';
+      badges.innerHTML=confBadge+seedBadge+'<span class="seed-badge blue">CFP Qualifier</span>';
     }
-    $('sd-sub').textContent=sd.bye
-      ? 'You earned a first-round bye. Two wins from a national championship.'
-      : 'You are in the College Football Playoff. Three wins from a national championship.';
+    const togo=sd.rounds===1?'One win':sd.rounds===2?'Two wins':sd.rounds===3?'Three wins':'Four wins';
+    $('sd-sub').textContent=(sd.bye
+      ? 'The No. '+sd.seed+' seed sits out the first round. '
+      : 'You are the No. '+sd.seed+' seed in the College Football Playoff. ')+
+      togo+' from a national championship.';
 
     /* Playoff tracker */
     const roundNames=sd.roundNames;
@@ -2620,9 +2679,8 @@ function paintSeed(){
     });
 
     const nextRound=sd.roundNames[0];
-    if(nextRound==='CFP First Round') $('b-po').textContent='Play First Round game';
-    else if(nextRound==='CFP Semifinal') $('b-po').textContent='Play Semifinal';
-    else $('b-po').textContent='Start the playoffs';
+    $('b-po').textContent=nextRound?'Play the '+nextRound.replace('CFP ','')
+      .replace('Championship','National Championship'):'Start the playoffs';
     $('b-po').hidden=false;
     $('b-po-skip').hidden=false;
   }else if(sd.bowl){
@@ -2640,7 +2698,8 @@ function paintSeed(){
     /* Season over */
     c.className='seed-panel';
     badges.innerHTML='<span class="seed-badge">Season over</span>';
-    $('sd-sub').textContent='It takes '+E.CONSTANTS.PLAYOFF_WINS+' wins to make the playoffs.';
+    $('sd-sub').textContent=rankLine(run.ranking)+' Only the top '+E.CONSTANTS.PLAYOFF_TEAMS+
+      ' in the country make the playoff.';
     $('sd-tracker').innerHTML='';
     $('b-po').hidden=true;
     $('b-po-skip').hidden=true;
@@ -3188,12 +3247,18 @@ function paintOver(){
   }else if(o.bowlGame&&!o.bowlWon){c.classList.add('out');
     $('o-title').textContent='Bowl loss';
     $('o-sub').textContent='Made the bowl game but could not win it.';
+  }else if(o.eliminatedIn==='CFP Championship'){c.classList.add('out');
+    $('o-title').textContent='National Runner-Up';
+    $('o-sub').textContent='One game from the title'+(o.seed?' as the No. '+o.seed+' seed':'')+
+      '. Everything but the last win.';
   }else if(o.eliminatedIn){c.classList.add('out');
     $('o-title').textContent='Out in the '+o.eliminatedIn.replace('CFP ','');
-    $('o-sub').textContent=o.undefeatedRegular?'Undefeated right up to the playoffs.':'One loss ends it once you are there.';
+    $('o-sub').textContent=(o.seed?'The No. '+o.seed+' seed. ':'')+
+      (o.undefeatedRegular?'Undefeated right up to the playoff.':'One loss ends it once you are there.');
   }else{c.classList.add('out');
     $('o-title').textContent='Missed the playoffs';
-    $('o-sub').textContent='It takes '+E.CONSTANTS.PLAYOFF_WINS+' wins to get in.';
+    $('o-sub').textContent=(o.nationalRank?'You finished No. '+o.nationalRank+' in the country. ':'')+
+      'Only the top '+E.CONSTANTS.PLAYOFF_TEAMS+' make the playoff.';
   }
 
   const spendUsed=run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed);

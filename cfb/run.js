@@ -345,16 +345,12 @@ function advanceWeek(run, data, leagueContext, displayCal) {
     : run.schedule[s.week];
   const opp = data.byTeamSeasonId[oppId];
   const rng = rngFor(run);
-  const isFinal = playoff && s.playoffRound === run.playoffSeed.rounds - 1;
-  const advantage = playoff && !isFinal
-    ? 1 + (E.CONSTANTS.PLAYOFF_HOME_FIELD || 0)
-      * Math.max(0, s.regularWins - E.CONSTANTS.PLAYOFF_WINS)
-      / (E.CONSTANTS.REGULAR_SEASON_GAMES - E.CONSTANTS.PLAYOFF_WINS)
-    : 1;
+  const roundName = playoff ? run.playoffSeed.roundNames[s.playoffRound] : null;
+  // Seeding carries into the bracket: the top seeds host early and are the
+  // higher seed after that, and by the semifinal the field is neutral.
+  const advantage = playoff ? E.seedAdvantage(run.playoffSeed.seed, roundName) : 1;
   const r = E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 25, rng, E.CONSTANTS, advantage);
   const shown = displayCal ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal) : null;
-
-  const roundName = playoff ? run.playoffSeed.roundNames[s.playoffRound] : null;
   if (r.won) s.wins++; else s.losses++;
   const result = {
     week: playoff ? null : s.week + 1,
@@ -380,7 +376,16 @@ function advanceWeek(run, data, leagueContext, displayCal) {
   } else {
     s.week++;
     if (s.week >= run.schedule.length) {
-      const seed = E.seedFromRecord(s.wins);
+      /* SELECTION SUNDAY. The twelve games become a resume: record, scoring
+         margin in real points, and how strong the schedule was. That is ranked
+         against the country, and the top twelve are the playoff. */
+      const reg = s.results.filter((x) => !x.playoff && !x.bowl);
+      const margin = reg.reduce((t, x) => t + (x.yourScore - x.oppScore), 0)
+        / Math.max(1, reg.length) / (E.CONSTANTS.SCALE || 1);
+      const oppZs = run.schedule.map((id) => (data.byTeamSeasonId[id] || {}).strength_z || 0);
+      const ranking = E.rankSeason(s.wins, s.losses, margin, oppZs, data.prepared);
+      const seed = E.seedFromRanking(ranking.rank, s.wins);
+      run.ranking = ranking;
       run.playoffSeed = {
         ...seed,
         roundNames: seed.made ? E.playoffRoundNames(seed.rounds) : [],
@@ -457,6 +462,8 @@ function finish(run, how) {
     losses: s.losses,
     madePlayoffs: !!run.playoffSeed && run.playoffSeed.made,
     seedLabel: run.playoffSeed ? run.playoffSeed.label : 'Season over',
+    seed: run.playoffSeed ? run.playoffSeed.seed || null : null,
+    nationalRank: run.ranking ? run.ranking.rank : null,
     titleWon: !!how.titleWon,
     eliminatedIn: how.eliminatedIn || null,
     missedPlayoffs: !!how.missedPlayoffs,
@@ -673,7 +680,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
 
   for (let i = 0; i < trials; i++) {
     const rng = E.createSeededRNG(E.hashSeed(`project|${run.seed}|${i}`));
-    const out = E.playRun(roster, chemistry, schedule, playoffs, leagueContext, rng);
+    const out = E.playRun(roster, chemistry, schedule, playoffs, leagueContext, rng, data.prepared);
     wins.push(out.regularWins);
     if (out.seed.made) madePlayoffs++;
     if (out.seed.bye) bye++;
