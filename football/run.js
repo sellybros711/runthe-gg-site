@@ -1335,6 +1335,35 @@ function signFreeAgent(run, player, ctx) {
   return run;
 }
 
+/* THE GM RATING, and what it measures.
+
+   Four parts, and the weights say what the mode thinks matters: did you win (40%), did you
+   make the roster better (30%), did you get value for the money (20%), did you beat what the
+   roster you were handed should have won (10%).
+
+   Two of these used to measure inflation rather than skill, which is why a near-perfect run
+   topped out around 59 and a 95 was unreachable:
+
+   - RESULT was divided by 64, which is a 17-0 season AND a title. Nobody reaches that, so 40%
+     of the rating sat near half however well you played: a 13-win championship scored 80. The
+     divisor is 52 now, so winning it all scores about 100 and the part rewards winning rather
+     than perfection.
+   - EFFICIENCY was mostly "how much cap did you leave unspent", wanting $20M free. Contracts
+     inflate whatever you do and improving costs money, so the average run finished with $3.6M
+     spare and collected 2 of the 12 points going. Worse, it rewarded the wrong thing: in a
+     win-now mode, sitting on $20M is not good management, it is failing to use your
+     resources. It measures value now -- rating gained per $M spent BEYOND the payroll you
+     would have carried making no trades at all, so unavoidable inflation is not charged to
+     you -- and only penalises actually going over the cap.
+
+   Measured over 40 seasons per policy: never trading lands about 18, trading at random about
+   27, playing every window well about 77 with a p90 of 88. A perfect season still reaches the
+   top of the scale. */
+const GM_RESULT_DEN = 52;      // a championship season, not a flawless one
+const GM_IMPROVE_REF = 25;     // rating gained for full marks
+const GM_VALUE_REF = 2;        // rating per $M beyond no-trade payroll for full marks
+const GM_OVERCAP_PER_M = 8;    // how fast going over the cap eats the efficiency mark
+
 function computeGMRating(run) {
   const regularWins = run.season.regularWins ?? run.season.wins;
   let playoffBonus = 0;
@@ -1342,23 +1371,47 @@ function computeGMRating(run) {
   const playoffWins = run.season.results.filter((r) => r.playoff && r.won).length;
   playoffBonus += playoffWins * 5;
   if (run.outcome.titleWon) playoffBonus += 5;
-  const regularPts = regularWins * 2;
-  const resultScore = Math.min(100, (regularPts + playoffBonus) / 64 * 100);
+  const clamp100 = (v) => Math.max(0, Math.min(100, v));
+
+  const resultScore = clamp100((regularWins * 2 + playoffBonus) / GM_RESULT_DEN * 100);
+
   const finalRating = run.roster.reduce((t, p) => t + p.ppr_ppg_mean, 0)
     * run.season.chemistry * E.rosterStructure(run.roster).multiplier;
-  const improvementScore = Math.max(0, Math.min(100, (finalRating - run.startRating) / 25 * 100));
+  const ratingGain = finalRating - run.startRating;
+  const improvementScore = clamp100(ratingGain / GM_IMPROVE_REF * 100);
+
   const totalSalary = run.roster.reduce((t, p) => t + p.price_musd, 0);
   const capRemaining = E.CONSTANTS.CAP_MUSD - totalSalary;
-  const capScore = Math.max(0, Math.min(100, capRemaining / 20 * 100));
-  const salaryIncrease = Math.max(0, totalSalary - run.startSalary);
-  const ratingGain = Math.max(0, finalRating - run.startRating);
-  const valueScore = salaryIncrease <= 0 ? 100
-    : Math.max(0, Math.min(100, (ratingGain / Math.max(1, salaryIncrease)) / 2 * 100));
-  const efficiencyScore = capScore * 0.6 + valueScore * 0.4;
+  /* The payroll you would have carried having made no trades at all: every in-season window
+     raises it whether you deal or not, so only spending ABOVE this is your doing. */
+  const noTradePayroll = run.startSalary * Math.pow(CONTRACT_INFLATION, TRADE_WEEKS.length);
+  const addedSalary = Math.max(0, totalSalary - noTradePayroll);
+  /* No cliff at zero: prices round per player, so "spent nothing" was a coin flip between
+     full marks and none. Gain drives it, so improving nothing earns nothing however little
+     was spent. */
+  const valueScore = clamp100(Math.max(0, ratingGain) / Math.max(1, addedSalary)
+    / GM_VALUE_REF * 100);
+  const underCapScore = capRemaining >= 0
+    ? 100 : clamp100(100 + capRemaining * GM_OVERCAP_PER_M);
+  const efficiencyScore = valueScore * 0.7 + underCapScore * 0.3;
+
   const expectedWins = 6 + (run.startRating - 60) * (5 / 12);
-  const overScore = Math.max(0, Math.min(100, (regularWins - expectedWins) / 6 * 100));
-  const raw = resultScore * 0.40 + improvementScore * 0.30 + efficiencyScore * 0.20 + overScore * 0.10;
+  const overScore = clamp100((regularWins - expectedWins) / 6 * 100);
+
+  const raw = resultScore * 0.40 + improvementScore * 0.30
+    + efficiencyScore * 0.20 + overScore * 0.10;
   run.outcome.gmRating = Math.max(0, Math.min(99.99, Math.round(raw * 100) / 100));
+  /* Kept so the results screen can show the working rather than just a number. */
+  const r1 = (v) => Math.round(v * 10) / 10;
+  run.outcome.gmParts = {
+    result: r1(resultScore), improvement: r1(improvementScore),
+    efficiency: r1(efficiencyScore), over: r1(overScore),
+    value: r1(valueScore), underCap: r1(underCapScore),
+    regularWins, playoffWins,
+    ratingGain: r1(ratingGain), startRating: r1(run.startRating), finalRating: r1(finalRating),
+    addedSalary: r1(addedSalary), noTradePayroll: r1(noTradePayroll),
+    capRemaining: r1(capRemaining), expectedWins: r1(expectedWins),
+  };
   return run.outcome.gmRating;
 }
 
@@ -1723,7 +1776,7 @@ const api = {
   openSlots, openSlotNames, slotForPlayer, TUNING,
   inflateCap, capCut, capSpin, capSign,
   autoDraftTrade, isTradeWindow, inflateContracts, findOffers, previewTrade, rosterRating,
-  TRADE_WEEKS, TRADE_DEADLINE_WEEK,
+  TRADE_WEEKS, TRADE_DEADLINE_WEEK, CONTRACT_INFLATION,
   generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating,
 };
 

@@ -1017,6 +1017,24 @@ window.GA_ID='G-L29P5MRWKE';
   .gm-badge .gm-lbl{font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.1em;
     text-transform:uppercase;color:var(--dim);margin-top:2px}
 
+  .gmp-top{display:flex;align-items:baseline;gap:8px;margin:2px 0 10px}
+  .gmp-num{font-family:var(--fd);font-size:34px;font-weight:700;color:#fbbf24;line-height:1}
+  .gmp-cap{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .gmp-row{padding:8px 0}
+  .gmp-row+.gmp-row{border-top:1px solid rgba(148,163,184,.12)}
+  .gmp-head{display:flex;align-items:baseline;gap:8px}
+  .gmp-k{font-family:var(--fn);font-size:11.5px;font-weight:800;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--ink)}
+  .gmp-w{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .gmp-v{margin-left:auto;font-family:var(--fd);font-size:19px;line-height:1}
+  .gmp-v.hi{color:#22c55e} .gmp-v.mid{color:#fbbf24} .gmp-v.lo{color:var(--red)}
+  .gmp-bar{height:5px;border-radius:3px;background:rgba(148,163,184,.16);margin:5px 0 4px;overflow:hidden}
+  .gmp-bar i{display:block;height:100%;border-radius:3px}
+  .gmp-bar i.hi{background:#22c55e} .gmp-bar i.mid{background:#fbbf24} .gmp-bar i.lo{background:var(--red)}
+  .gmp-why{font-size:11.5px;color:var(--dim);line-height:1.35}
+  .gmp-note{font-size:11.5px;color:var(--red);margin:8px 0 0}
   .trade-hist-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;
     padding:8px 0;border-bottom:1px solid var(--line-2)}
   .trade-hist-row:last-child{border-bottom:none}
@@ -1119,6 +1137,9 @@ window.GA_ID='G-L29P5MRWKE';
   .rp-row .rp-fppg span{font-size:9.5px;color:var(--dim);display:block;font-family:var(--fn)}
 
   /* Trade finder: the shopping list (tap up to two), and the market header. */
+  .tw-rise{border-radius:9px;border:1px solid rgba(251,191,36,.28);background:rgba(251,191,36,.07);
+    padding:8px 11px;margin:0 0 10px;font-size:12px;line-height:1.4;color:var(--dim)}
+  .tw-rise b{color:#fbbf24}
   .shop-list{display:flex;flex-direction:column;gap:6px}
   .shop-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;
     padding:10px 11px;border-radius:10px;border:1.5px solid var(--line-2);background:var(--panel);
@@ -3257,6 +3278,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="eyebrow" id="tw-eye" style="color:#fbbf24">Trade window</div>
     <h2 class="display" style="font-size:22px;margin:4px 0 4px" id="tw-title">Trade finder</h2>
     <p class="dim" style="font-size:13px;margin:0 0 8px" id="tw-sub">Pick one or two players to shop.</p>
+    <div class="tw-rise" id="tw-rise" style="display:none"></div>
 
     <!-- STEP 1: choose the player(s) to put on the block -->
     <div id="tw-shop">
@@ -3387,12 +3409,16 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <button class="tab" data-ot="ranks">Where it ranks</button>
       <button class="tab" data-ot="stats">Season stats</button>
       <button class="tab" data-ot="games">Schedule</button>
-      <button class="tab" data-ot="trades" style="display:none" id="ot-trades-tab">Trades</button>
+      <button class="tab" data-ot="trades" style="display:none" id="ot-trades-tab">GM report</button>
     </div></div>
 
     <div class="otab" id="ot-trades">
       <div class="panel" style="margin-top:11px">
-        <div class="eyebrow">Trade history</div>
+        <div class="eyebrow">How your GM rating was scored</div>
+        <div id="o-gm-parts"></div>
+      </div>
+      <div class="panel" style="margin-top:11px">
+        <div class="eyebrow">Every move you made</div>
         <div id="o-trade-hist"></div>
       </div>
     </div>
@@ -3530,7 +3556,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=37"></script>
-<script src="run.js?v=45"></script>
+<script src="run.js?v=46"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -5706,11 +5732,58 @@ function gmScoutingReport(run){
   if(cp>0.005) lines.push({cls:'good',k:'Chemistry',v:'They already click, worth <b>+'+(cp*100).toFixed(1)+'%</b>. Trades break links, so weigh every deal.'});
   else if(cp<-0.005) lines.push({cls:'bad',k:'Chemistry',v:'Little history together, <b>'+(cp*100).toFixed(1)+'%</b>. The right addition builds it.'});
   else lines.push({cls:'',k:'Chemistry',v:'No history together yet, roughly <b>neutral</b>. Deals can only help.'});
-  lines.push({cls:'',k:'Cap',v:'<b>$'+room.toFixed(1)+'M</b> of $'+E.CONSTANTS.CAP_MUSD+'M free. Contracts rise 6% each window.'});
+  const infl=Math.round((R.CONTRACT_INFLATION-1)*100);
+  const nWin=R.TRADE_WEEKS.length;
+  const projected=run.startSalary*Math.pow(R.CONTRACT_INFLATION,nWin);
+  lines.push({cls:'',k:'Cap',v:'<b>$'+room.toFixed(1)+'M</b> of $'+E.CONSTANTS.CAP_MUSD+'M free. '+
+    'Every player\u2019s price rises <b>'+infl+'%</b> at each of the '+nWin+' in-season windows, so '+
+    'standing pat still takes this roster to about <b>$'+projected.toFixed(0)+'M</b> by week '+
+    R.TRADE_DEADLINE_WEEK+'.'});
   const html='<div class="gm-eye">GM scouting report</div>'+
     lines.map(l=>'<div class="gm-line'+(l.cls?' '+l.cls:'')+'">'+
       '<span class="gk">'+l.k+'</span><span class="gv">'+l.v+'</span></div>').join('');
   return {grade,shape,verdict,html};
+}
+
+/* THE RATING'S WORKING, SHOWN. A GM who finishes on 58 should be able to see which of the
+   four parts cost them, and each row carries the fact behind the score rather than only the
+   score: not "Winning 38.5" but "10-6, missed the playoffs". The bar is the part's own mark
+   out of 100; the weight beside it says how much of the total it can move. */
+function paintGmParts(p,gm){
+  const el=$('o-gm-parts'); if(!el) return;
+  if(!p){ el.innerHTML='<p class="dim" style="font-size:12.5px">No breakdown available.</p>'; return; }
+  const rec=p.regularWins+'-'+(E.CONSTANTS.REGULAR_SEASON_GAMES-p.regularWins);
+  const rows=[
+    {k:'Winning',w:40,v:p.result,
+     why:rec+(p.playoffWins?', '+p.playoffWins+' playoff win'+(p.playoffWins===1?'':'s'):'')+
+       (run.outcome.titleWon?', won the title':(run.outcome.madePlayoffs?', made the playoffs':', missed the playoffs'))},
+    {k:'Improvement',w:30,v:p.improvement,
+     why:'team '+p.startRating.toFixed(1)+' → '+p.finalRating.toFixed(1)+
+       ' ('+(p.ratingGain>=0?'+':'')+p.ratingGain.toFixed(1)+'). Full marks at +'+25},
+    {k:'Value',w:20,v:p.efficiency,
+     why:p.addedSalary>0
+       ? '+'+p.ratingGain.toFixed(1)+' rating for $'+p.addedSalary.toFixed(1)+'M spent above the no-trade payroll'
+       : 'gained without spending past the no-trade payroll of $'+p.noTradePayroll.toFixed(1)+'M'},
+    {k:'Beat expectation',w:10,v:p.over,
+     why:'won '+p.regularWins+'; the '+p.startRating.toFixed(1)+' roster you inherited was worth about '+
+       p.expectedWins.toFixed(1)},
+  ];
+  let h='<div class="gmp-top"><span class="gmp-num">'+Number(gm).toFixed(2)+'</span>'+
+    '<span class="gmp-cap">out of 100</span></div>';
+  rows.forEach(r=>{
+    const cls=r.v>=75?'hi':(r.v>=45?'mid':'lo');
+    h+='<div class="gmp-row">'+
+      '<div class="gmp-head"><span class="gmp-k">'+r.k+'</span>'+
+        '<span class="gmp-w">'+r.w+'% of rating</span>'+
+        '<span class="gmp-v '+cls+'">'+r.v.toFixed(0)+'</span></div>'+
+      '<div class="gmp-bar"><i class="'+cls+'" style="width:'+Math.max(1,Math.min(100,r.v))+'%"></i></div>'+
+      '<div class="gmp-why">'+esc(r.why)+'</div></div>';
+  });
+  if(p.capRemaining<0){
+    h+='<p class="gmp-note">You finished $'+Math.abs(p.capRemaining).toFixed(1)+
+      'M over the cap, which costs part of the Value mark.</p>';
+  }
+  el.innerHTML=h;
 }
 
 /* One roster, painted into any panel (the season screen, the trade window). Rows sit in
@@ -5799,6 +5872,21 @@ function openTradeWindow(step,opts){
   $('b-tw-pass').onclick=()=>{ leaveTradeWindow(400); };
   $('b-tw-back').onclick=backToShop;
   $('b-tw-pass').textContent=preseasonWindow?'No deal, start the season':'Pass and keep my roster';
+  /* The raise happened a line of code ago and it moves every price on this screen, so it is
+     stated here rather than left to be inferred from numbers that quietly grew. */
+  const rise=$('tw-rise');
+  if(rise){
+    if(preseasonWindow){
+      rise.style.display='';
+      rise.innerHTML='<b>No raises yet.</b> Prices rise '+Math.round((R.CONTRACT_INFLATION-1)*100)+
+        '% at each of the '+R.TRADE_WEEKS.length+' in-season windows, so a deal is cheaper now than later.';
+    }else{
+      rise.style.display='';
+      rise.innerHTML='<b>Every price just rose '+Math.round((R.CONTRACT_INFLATION-1)*100)+'%.</b> '+
+        'Your payroll is now <b>$'+run.roster.reduce((t,p)=>t+p.price_musd,0).toFixed(1)+'M</b> of $'+
+        E.CONSTANTS.CAP_MUSD+'M'+(deadline?'. Last window to do anything about it.':'.');
+    }
+  }
   show('s-trade');
 }
 
@@ -6741,17 +6829,21 @@ function paintOver(){
   }
 
   const tradesTab=$('ot-trades-tab');
-  if(run.tradeMachine&&run.tradeHistory&&run.tradeHistory.length){
+  if(run.tradeMachine){
+    /* Shown whether or not anything was traded: a GM who stood pat still deserves to see why
+       the number came out where it did. */
     tradesTab.style.display='';
-    let th='';
-    run.tradeHistory.forEach(t=>{
-      th+='<div class="trade-hist-row"><span class="th-week">Wk '+t.week+'</span>'+
-        '<div class="th-detail">'+
-          '<span class="th-out">Sent '+esc(t.out.join(', '))+'</span> &rarr; '+
-          '<span class="th-in">Got '+esc(t.in)+'</span>'+
-        '</div></div>';
-    });
-    $('o-trade-hist').innerHTML=th;
+    paintGmParts(o.gmParts,o.gmRating);
+    const hist=run.tradeHistory||[];
+    $('o-trade-hist').innerHTML=hist.length
+      ? hist.map(t=>'<div class="trade-hist-row"><span class="th-week">'+
+          (t.week?'Wk '+t.week:'Pre')+'</span>'+
+          '<div class="th-detail">'+
+            '<span class="th-out">Sent '+esc(t.out.join(', '))+'</span> &rarr; '+
+            '<span class="th-in">Got '+esc(t.in)+'</span>'+
+          '</div></div>').join('')
+      : '<p class="dim" style="font-size:12.5px;margin:8px 0 0">You stood pat all season. '
+        +'Improvement is 30% of the rating, so a window passed is marks left on the table.</p>';
   }else{
     tradesTab.style.display='none';
   }
