@@ -89,8 +89,8 @@
   .mark{flex:0 0 auto;width:30px;height:27px;margin-right:9px}
   .lockup{display:flex;align-items:center;text-decoration:none;color:inherit;
     flex:0 1 auto;min-width:0;border-radius:10px}
-  .brand{flex:0 1 auto;min-width:0;font-family:var(--fd);font-size:16px;letter-spacing:.06em;
-    text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand{flex:0 1 auto;min-width:0;font-family:var(--fd);font-size:clamp(11px,3.4vw,16px);
+    letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .brand i{color:var(--green)}
   /* "College" sits between Perfect and Season, in gold, so the wordmark itself
      reads PERFECT COLLEGE SEASON — white, gold, green. */
@@ -123,15 +123,14 @@
     box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.28)}
   .avatar.signed svg{display:none}
   .avatar.signed .ab{display:block}
-  /* The three-word wordmark is longer than the old two; on phones it gives ground
-     so "Season" never clips. Below 480 the RunThe.GG pill steps aside for the
-     profile bubble, and the type shrinks as the screen narrows. */
+  /* The three-word wordmark is longer than the old two, and Anton can be slow to
+     arrive — iOS falls back to the wider Impact — so the type is sized in vw and
+     scales with the screen rather than clipping. Below 480 the RunThe.GG pill
+     also steps aside for the profile bubble. */
   @media(max-width:480px){
-    .brand{font-size:14px;letter-spacing:.02em}
     .pill.site{display:none}
   }
   @media(max-width:360px){
-    .brand{font-size:12px;letter-spacing:.01em}
     .mark{width:26px;height:23px;margin-right:7px}
     .avatar{flex-basis:34px;width:34px;height:34px}
   }
