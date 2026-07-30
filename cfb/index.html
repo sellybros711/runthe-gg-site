@@ -430,6 +430,8 @@
   .streak.on{opacity:1}
   .streak.w{color:#4ade80} .streak.l{color:#f87171}
   .streak.clinch{font-size:14px;letter-spacing:.18em;animation:clinchPop .5s ease both}
+  /* A signature win — beating a ranked team — is called out in poll gold. */
+  .streak.sig{color:#ffd23a;font-size:13px;letter-spacing:.14em;animation:clinchPop .5s ease both}
   @keyframes clinchPop{0%{transform:scale(.7);opacity:0}50%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
   @keyframes tickpop{0%{transform:scaleY(.4)}55%{transform:scaleY(1.35)}100%{transform:scaleY(1)}}
 
@@ -620,6 +622,7 @@
   .seed-badge.gold{border-color:rgba(245,178,40,.45);color:#fde68a;background:rgba(245,158,11,.14)}
   .seed-badge.blue{border-color:rgba(96,165,250,.4);color:#bfdbfe;background:rgba(59,130,246,.12)}
   .seed-badge.purple{border-color:rgba(168,85,247,.4);color:#d8b4fe;background:rgba(168,85,247,.12)}
+  .seed-badge.conf{border-color:rgba(16,185,129,.5);color:#6ee7b7;background:rgba(16,185,129,.14)}
   .seed-badge svg{width:13px;height:13px;flex:0 0 auto}
   @media(prefers-reduced-motion:no-preference){
     .seed-badge{animation:badgePop .3s .2s ease both}
@@ -919,12 +922,26 @@
   .hr{height:1px;background:var(--line);margin:14px 0}
   .dim{color:var(--dim)}
 
-  /* ── draft columns ──────────────────────────────────────────── */
+  /* ── draft columns ──────────────────────────────────────────────
+     One column on a phone and on into the tablet range, so the page reads
+     field → reels → tabs → options with nothing stranded beside it. Only a
+     genuine desktop (≥920px) splits into two, and only the draft — the screen
+     that actually wants the width — grows the wrap. The formation stays left,
+     everything you touch goes right, and the options fan out to three columns
+     so the right side no longer towers over an empty left. */
   .dcols{display:block}
-  @media(min-width:640px){
-    .dcols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  }
   .dcol{min-width:0}
+  @media(min-width:920px){
+    .wrap:has(#s-draft.on){max-width:1040px}
+    .wrap:has(#s-squad.on),
+    .wrap:has(#s-season.on),
+    .wrap:has(#s-seed.on),
+    .wrap:has(#s-over.on){max-width:860px}
+    .dcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      column-gap:24px;align-items:start}
+    .opts{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .reels{margin-top:0}
+  }
 
   /* ── footer ─────────────────────────────────────────────────── */
   .legal{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);
@@ -935,6 +952,20 @@
   .follow a{color:var(--dim-2);text-decoration:none;font-family:var(--fn);font-size:11px;
     font-weight:600;letter-spacing:.06em;text-transform:uppercase;transition:color .15s}
   .follow a:hover{color:var(--ink)}
+
+  /* ── résumé strip (results) ─────────────────────────────────────
+     The season's collegiate calling cards: your conference (or conference
+     title), where you finished in the poll, and the ranked teams you beat. */
+  .resume{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 0;align-items:center}
+  .resume .rchip{display:inline-flex;align-items:center;padding:5px 11px;border-radius:99px;
+    font-family:var(--fn);font-size:11.5px;font-weight:700;letter-spacing:.04em;
+    background:var(--panel-2);border:1px solid var(--line-2);color:var(--ink)}
+  .resume .rchip.conf{color:var(--green);border-color:rgba(16,185,129,.4)}
+  .resume .rchip.rank{background:var(--grad-gold);color:#1a1206;border-color:transparent}
+  .resume .rchip.champ{background:linear-gradient(135deg,#fde047,#f59e0b);color:#1a1206;
+    border-color:transparent;box-shadow:0 2px 10px -3px rgba(245,158,11,.6)}
+  .resume .sigwins{flex-basis:100%;font-size:12px;line-height:1.4;color:var(--dim);margin-top:2px}
+  .resume .sigwins b{color:#ffd23a;font-weight:800}
 
   /* ── over tabs ──────────────────────────────────────────────── */
   .overtabs{display:flex;gap:5px;margin:14px 0 8px;overflow-x:auto;scrollbar-width:none}
@@ -1215,6 +1246,8 @@ or endorsed by the NCAA, the CFP or any school.
 
     <div class="splits" id="o-splits"></div>
 
+    <div class="resume" id="o-resume"></div>
+
     <div class="overtabs" id="o-tabs">
       <button class="overtab on" data-t="perfect">How close</button>
       <button class="overtab" data-t="stats">Stats</button>
@@ -1348,6 +1381,47 @@ function teamRank(id){
   return RANKS[id]||0;
 }
 const rankStr=(id)=>{ const r=teamRank(id); return r?'#'+r:''; };
+
+/* Your own place in the poll, driven by record and the quality of who you've
+   beaten. It climbs as you win and jumps when you knock off a ranked team, so
+   the number on your own plate moves the way a real team's does. */
+function yourRank(){
+  if(!run||!run.season) return 0;
+  const reg=run.season.results.filter(r=>!r.playoff&&!r.bowl);
+  const w=reg.filter(r=>r.won).length, l=reg.length-w;
+  if(w+l<3) return 0;
+  let quality=0;
+  for(const r of reg){ if(r.won){ const rk=teamRank(r.opponent_id); if(rk) quality+=(26-rk); } }
+  const score=w - l*1.6 + quality*0.06;
+  if(score<3) return 0;
+  return Math.max(1,Math.min(25,Math.round(26-score*2.1)));
+}
+/* The conference your roster most belongs to — the schools your signed players
+   actually came from — so a title run can be framed the way a real one is. */
+function yourConference(){
+  if(!run||!run.roster||!DATA) return null;
+  const count={};
+  run.roster.forEach((p,i)=>{
+    const ts=run.draws[i]?.team_season_id;
+    const t=ts?DATA.byTeamSeasonId[ts]:null;
+    if(t&&t.conference) count[t.conference]=(count[t.conference]||0)+1;
+  });
+  let best=null,bestN=0;
+  for(const c in count){ if(count[c]>bestN){bestN=count[c];best=c;} }
+  return best;
+}
+/* Every ranked team you beat this season, best win first. */
+function signatureWins(){
+  if(!run||!run.season) return [];
+  const out=[];
+  for(const r of run.season.results){
+    if(!r.won) continue;
+    const rk=teamRank(r.opponent_id);
+    if(rk){ const o=DATA.byTeamSeasonId[r.opponent_id];
+      out.push({rk,name:o?o.display:r.opponent,score:r.shownYou+'-'+r.shownThem}); }
+  }
+  return out.sort((a,b)=>a.rk-b.rk);
+}
 
 /* ── chemistry tier display ──────────────────────────────────── */
 const TIER={
@@ -2076,7 +2150,8 @@ function paintSeasonBug(oppId,label){
   const mine=youColors();
   $('v-byou').style.setProperty('--tcol',mine.bg);
   $('v-byou').style.setProperty('--tcol2',mine.accent);
-  $('v-byou').querySelector('.rk').textContent='';
+  const yr=yourRank();
+  $('v-byou').querySelector('.rk').textContent=yr?'#'+yr:'';
   if(o){
     const w=E.washColors(o.color||'#8a97a8',o.alt_color);
     $('v-bthem').style.setProperty('--tcol',w.bg);
@@ -2166,6 +2241,12 @@ function runSim(){
     void card.offsetWidth;
     card.classList.add(r.won?'won':'lost');
     paintNext(true); paintCalendar(r);
+    // A win over a ranked team is a signature win — call it out the moment it lands.
+    if(run.phase===R.PHASES.SEASON){
+      const beat=r.won?teamRank(r.opponent_id):0;
+      if(beat){ const sEl=$('v-streak');
+        if(sEl){ sEl.className='streak w on sig'; sEl.textContent='Signature win — beat #'+beat+'!'; } }
+    }
     if(run.phase!==R.PHASES.SEASON){
       const made=run.playoffSeed&&run.playoffSeed.made;
       const hasBowl=run.playoffSeed&&run.playoffSeed.bowl;
@@ -2220,11 +2301,13 @@ function paintSeed(){
   if(sd.made){
     /* Playoff */
     c.className='seed-panel '+(sd.bye?'gold':'win');
+    const conf=yourConference();
+    const confBadge=conf?'<span class="seed-badge conf">'+esc(conf)+' Champions</span>':'';
     if(sd.bye){
-      badges.innerHTML='<span class="seed-badge gold"><svg viewBox="0 0 16 16"><path d="M8 1l2.2 4.5 5 .7-3.6 3.5.9 5L8 12.5 3.5 14.7l.9-5L.8 6.2l5-.7z" fill="currentColor" stroke="none"/></svg>Top Seed</span>'+
+      badges.innerHTML=confBadge+'<span class="seed-badge gold"><svg viewBox="0 0 16 16"><path d="M8 1l2.2 4.5 5 .7-3.6 3.5.9 5L8 12.5 3.5 14.7l.9-5L.8 6.2l5-.7z" fill="currentColor" stroke="none"/></svg>Top Seed</span>'+
         '<span class="seed-badge gold">First-round bye</span>';
     }else{
-      badges.innerHTML='<span class="seed-badge blue">CFP Qualifier</span>';
+      badges.innerHTML=confBadge+'<span class="seed-badge blue">CFP Qualifier</span>';
     }
     $('sd-sub').textContent=sd.bye
       ? 'You earned a first-round bye. Two wins from a national championship.'
@@ -2837,6 +2920,22 @@ function paintOver(){
     split(pc(run.season.chemistry-1),'Chemistry')+
     split(M0(spendUsed),'Spent')+
     split(o.seedLabel.replace(/^Season.*/,'None'),'Postseason');
+
+  /* Résumé: conference (or conference title), final poll ranking, signature wins. */
+  const conf=yourConference();
+  const champ=!!(run.playoffSeed&&run.playoffSeed.made);
+  let finalRank=yourRank();
+  if(o.perfect||o.titleWon) finalRank=1;
+  else if(finalRank===1) finalRank=2;   // only a champion finishes #1
+  const sig=signatureWins();
+  let resumeHtml='';
+  if(conf) resumeHtml+='<span class="rchip '+(champ?'champ':'conf')+'">'+esc(conf)+(champ?' Champions':'')+'</span>';
+  if(finalRank) resumeHtml+='<span class="rchip rank">Final ranking #'+finalRank+'</span>';
+  if(sig.length){
+    const top=sig.slice(0,3).map(x=>'<b>#'+x.rk+'</b> '+esc(x.name.replace(/^\d{4}\s+/,''))).join(', ');
+    resumeHtml+='<span class="sigwins">Signature wins: '+top+(sig.length>3?' and '+(sig.length-3)+' more':'')+'</span>';
+  }
+  $('o-resume').innerHTML=resumeHtml;
 
   const pts=(arr,f)=>arr.reduce((t,r)=>t+f(r),0)/Math.max(1,arr.length);
   const forPG=pts(s.results,r=>r.shownYou??r.yourScore);
