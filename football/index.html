@@ -874,8 +874,19 @@ window.GA_ID='G-L29P5MRWKE';
   /* Sheet heading override — Archivo instead of Anton for a bolder, more legible title. */
   .display.mtitle{font-family:var(--fn);font-weight:800;letter-spacing:0}
   .modecards{display:grid;gap:14px;margin-top:6px}
-  .modecard{padding:16px 18px;border-radius:14px;border:1.5px solid var(--line-2);
-    background:var(--grad-panel)}
+  /* Each mode IS the button: the whole card is tappable, no separate play button. */
+  .modecard{display:block;width:100%;text-align:left;font-family:inherit;
+    padding:16px 18px;border-radius:14px;border:1.5px solid var(--line-2);
+    background:var(--grad-panel);cursor:pointer;-webkit-appearance:none;appearance:none;
+    -webkit-tap-highlight-color:transparent;
+    transition:transform .1s ease,box-shadow .15s ease}
+  .modecard:not(:disabled):hover{box-shadow:0 10px 26px -14px #000,inset 0 0 0 1px rgba(255,255,255,.08)}
+  .modecard:not(:disabled):active{transform:scale(.985)}
+  .modecard:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  .modecard:disabled{cursor:default;opacity:.5}
+  .modecard .mc-arrow{margin-left:auto;width:20px;height:20px;fill:none;stroke:var(--dim-2);
+    stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+  .modecard:not(:disabled):hover .mc-arrow{stroke:var(--ink)}
   /* The One Franchise card themes to the player's own profile team colour (--mc-a / --mc-a2
      / --mc-bd set in modeMenu). The red here is the fallback for signed-out players and
      anyone who has not chosen a club. */
@@ -1161,8 +1172,7 @@ window.GA_ID='G-L29P5MRWKE';
     background:var(--panel);margin-bottom:5px;cursor:pointer;transition:border-color .12s}
   .cr-board-tile:hover{border-color:rgba(96,165,250,.6)}
   .cr-board-tile.off{opacity:.35;pointer-events:none}
-  .modecard p{font-size:13px;line-height:1.4;color:var(--dim);margin:0 0 12px}
-  .modecard .btn{width:100%}
+  .modecard p{font-size:13px;line-height:1.4;color:var(--dim);margin:0}
   .eragrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
   .erabtn{font-size:16px;padding:16px 10px}
   .clubgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
@@ -4353,41 +4363,36 @@ function modeMenu(){
     : (authState.signedIn
       ? 'Pick a username to unlock these modes. Every run is listed under a name.'
       : 'These modes need a free account so your runs show up on the leaderboard.');
+  /* THE MODE IS THE BUTTON. Each card is a <button> you tap to launch straight into the
+     mode, with a chevron for the affordance. Locked (signed-out) cards are disabled and a
+     sign-in button sits below; the Trade Machine is disabled and marked Coming Soon for
+     anyone off the early-access list. */
+  const arrow='<svg class="mc-arrow" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>';
+  const ct=canPlayTrade();
+  const tradeLocked=locked||!ct;
   $('sheet-in').innerHTML=
     '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">More ways to play</h2>'+
     (locked?'<p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 12px">'+esc(lockNote)+'</p>':'')+
     '<div class="modecards">'+
-      '<div class="modecard mc-club">'+
+      '<button class="modecard mc-club" id="b-mc-club"'+(locked?' disabled':'')+'>'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
           '<path d="M12 2L3 7v6c0 5.25 3.75 10.13 9 11.25C17.25 23.13 21 18.25 21 13V7L12 2z"/>'+
-          '</svg></div><div class="mc-title">One Franchise</div></div>'+
+          '</svg></div><div class="mc-title">One Franchise</div>'+arrow+'</div>'+
         '<p>Select one of 32 franchises and build an offense exclusively from that team\'s history.</p>'+
-        (locked
-          ? '<button class="btn ghost sm" id="b-mc-club" disabled>Sign in to play</button>'
-          : '<button class="btn ghost sm" id="b-mc-club">Pick a franchise</button>')+
-      '</div>'+
-      '<div class="modecard mc-era">'+
+      '</button>'+
+      '<button class="modecard mc-era" id="b-mc-era"'+(locked?' disabled':'')+'>'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
           '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'+
-          '</svg></div><div class="mc-title">Eras Draft</div></div>'+
+          '</svg></div><div class="mc-title">Eras Draft</div>'+arrow+'</div>'+
         '<p>Pick the 2000s, 2010s, or 2020s and build an offense exclusively from that era\'s players and teams.</p>'+
-        (locked
-          ? '<button class="btn ghost sm" id="b-mc-era" disabled>Sign in to play</button>'
-          : '<button class="btn ghost sm" id="b-mc-era">Pick a decade</button>')+
-      '</div>'+
-      (function(){
-        var ct=canPlayTrade();
-        return '<div class="modecard mc-trade'+(ct?'':' mc-soon')+'">'+
-          '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
-            '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>'+
-            '<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'+
-            '</svg></div><div class="mc-title">The Trade Machine'+(ct?'':' <span class="mc-soon-tag">Coming Soon</span>')+'</div></div>'+
-          '<p>You\'re handed a roster mid-season. Make trades at four windows to build a contender.</p>'+
-          (ct
-            ? '<button class="btn ghost sm" id="b-mc-trade">Start as GM</button>'
-            : '<button class="btn ghost sm" disabled>Coming Soon</button>')+
-        '</div>';
-      })()+
+      '</button>'+
+      '<button class="modecard mc-trade'+(ct?'':' mc-soon')+'" id="b-mc-trade"'+(tradeLocked?' disabled':'')+'>'+
+        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
+          '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>'+
+          '<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'+
+          '</svg></div><div class="mc-title">The Trade Machine'+(ct?'':' <span class="mc-soon-tag">Coming Soon</span>')+'</div>'+(ct?arrow:'')+'</div>'+
+        '<p>You are thrown into a season as the GM. Win with the team you\'re dealt, or trade your way to the top.</p>'+
+      '</button>'+
     '</div>'+
     (locked&&authState.ready
       ? '<div style="margin-top:14px"><button class="btn" id="b-mc-signin">'+
@@ -4398,12 +4403,10 @@ function modeMenu(){
   openSheet();
   /* Theme the One Franchise card to the player's own profile club. avatarOf resolves the
      same key the header disc uses — the club they chose, or the one their name lands on —
-     so the card always matches the colour they see on their avatar. The icon and button run
-     a gradient across BOTH of the club's colours: the primary into the secondary, each
-     darkened only as far as it needs to go for white artwork and text to read on it, so both
-     hues stay distinct rather than collapsing to one. The title takes teamInk (the primary
-     lifted bright enough for text on the dark card) and the border takes the secondary as an
-     accent. Signed-out / no-name players keep the red CSS fallback. */
+     so the card always matches the colour they see on their avatar. The icon runs a gradient
+     across BOTH of the club's colours, the title takes teamInk (the primary lifted bright
+     enough for text on the dark card) and the border takes the secondary as an accent.
+     Signed-out / no-name players keep the red CSS fallback. */
   const av=avatarOf(authState.name,myAvatar.color,myAvatar.initials);
   const teamKey=(av&&!av.anon)?av.key:null;
   const clubCard=$('sheet-in').querySelector('.modecard.mc-club');
@@ -4414,12 +4417,6 @@ function modeMenu(){
     clubCard.style.setProperty('--mc-a2',b);
     clubCard.style.setProperty('--mc-ink',ink);
     clubCard.style.setProperty('--mc-bd',hexRGBA(tc.secondary,.55));
-    const cb=$('b-mc-club');
-    if(cb&&!cb.disabled){
-      cb.style.background='linear-gradient(135deg,'+a+' 0%,'+b+' 100%)';
-      cb.style.borderColor='transparent'; cb.style.color='#fff';
-      cb.style.textShadow='0 1px 2px rgba(0,0,0,.45)';
-    }
   }
   const x=$('b-mc-x'); if(x) x.onclick=closeSheet;
   const si=$('b-mc-signin');
@@ -4428,10 +4425,8 @@ function modeMenu(){
   if(club&&!locked) club.onclick=()=>{ closeSheet(); clubPicker(); };
   const era=$('b-mc-era');
   if(era&&!locked) era.onclick=()=>{ closeSheet(); eraPicker(); };
-  const cap=$('b-mc-cap');
-  if(cap&&!locked) cap.onclick=()=>{ closeSheet(); beginDraft({capSurvivor:true}); };
   const trade=$('b-mc-trade');
-  if(trade&&!locked) trade.onclick=()=>{ closeSheet(); beginTradeMachine(); };
+  if(trade&&!locked&&canPlayTrade()) trade.onclick=()=>{ closeSheet(); beginTradeMachine(); };
 }
 
 let wantModes=false;
