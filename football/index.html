@@ -6977,7 +6977,14 @@ function comparison(best){
    every share: a redirect hop on each one, and two URLs for the same page for anything
    that counts links. */
 const SHARE_URL='https://runthe.gg/football/?utm_source=native_share&utm_medium=social&utm_campaign=football';
-const CHALLENGE_URL='https://runthe.gg/football/challenge/';
+/* /c/ rather than /challenge/, purely for length: it serves the same challenge preview card.
+   /challenge/ is still published so links shared before this keep working.
+
+   NO utm tail on this one, deliberately, unlike SHARE_URL above. A challenge link already
+   carries a payload and the whole point of it is to be short enough to paste into a message;
+   fifty-eight characters of campaign tracking would undo that. The challenge is tracked by
+   its own ga('challenge_created') / ga('challenge_opened') events instead. */
+const CHALLENGE_URL='https://runthe.gg/football/c/';
 
 /* THE LINE THAT MAKES IT A DARE RATHER THAN A SCOREBOARD.
    A shared result with no invitation in it gives the person reading nothing to do. Which
@@ -6987,21 +6994,15 @@ function shareDare(o){
   return o.perfect?'Can you go unbeaten?':'Can you draft a better team?';
 }
 
-/* WHAT A CHALLENGE ACTUALLY SAYS. The old line was "My team went 14-6. Think you can draft a
-   better team? Beat mine:" followed by the link inline, which said "team" three times and
-   buried the link mid-sentence. This names the game once, states the result, and ends on one
-   dare, with the link on its own line so the message reads before the URL does. */
+/* WHAT A CHALLENGE SAYS. Two sentences and a question, with the link on its own line, so the
+   message reads before the URL does. The card carries the record and the roster and the
+   landing page names the mode, so none of that is repeated here. */
 function challengeText(){
-  const o=run.outcome||{};
-  const mode=run.franchise?' ('+E.cityLabel(run.franchise)+' only)'
-    :run.era?' ('+run.era+' era)':'';
-  const lead=o.record
-    ? 'I went '+o.record+' in The Perfect Season'+mode+'.'
-    : 'Here is my roster in The Perfect Season'+mode+'.';
-  const dare=o.perfect?'Go unbeaten and match it.'
-    :o.titleWon?'Draft your six and take the title off me.'
-    :'Draft your six and beat it.';
-  return lead+' '+dare;
+  const rec=(run.outcome&&run.outcome.record)||'';
+  const lead=rec
+    ? 'I went '+rec+' in The Perfect Season, and want to see if you can beat my score.'
+    : 'I built a team in The Perfect Season, and want to see if you can beat my score.';
+  return lead+'\n\nDo you have what it takes?';
 }
 
 function shareLines(){
@@ -7339,6 +7340,9 @@ function teamBlob(){
   return { v:1,
     p:run.roster.map(pickKey),
     s:run.roster.map((p,i)=>E.SLOTS[run.slotIndex[i]]),
+    /* The real slot indexes as well as their names. E.SLOTS lists WR twice, so a name alone
+       cannot say WHICH receiver spot a man filled; v3 links carry these and are lossless. */
+    si:run.slotIndex.slice(),
     c:Math.round((run.season.chemistry-1)*1000)/10,
     f:run.franchise||'', e:run.era||'',
     n:((authState&&authState.name)||'').slice(0,24) };
@@ -7353,6 +7357,68 @@ function teamBlob(){
 
    v1 links keep working: anything already shared decodes on the JSON path below. */
 const CH_EPOCH=1999;
+/* THE SHORTEST LINK THIS CAN BE. v2 still base64'd its payload, and base64 inflates by a
+   third for nothing: the payload is already made of digits and letters, which are legal in a
+   query string as they stand. v3 drops the encode step and packs each field into fixed-width
+   base36 instead:
+
+     pick   (id * 27 + season offset) in base36, 5 chars   -- 99999*27+26 fits in 36^5
+     slots  six 0-5 values as one base6 number, 3 chars    -- 6^6-1 is exactly 36^3-1
+     chem   tenths of a percent, offset, 2 chars
+     club   0 for none, else its index in the sorted list, 1 char
+     era    0 for none, else its index, 1 char
+     name   the tail, percent-encoded
+
+   Thirty-seven characters plus a name, against seventy for v2. It rides on ?k= rather than
+   ?c= so there is no guessing which format a link is: ?c= is always base64 (v1 JSON or v2),
+   ?k= is always this. Both are read on load, so every link ever shared still opens. */
+const CH_CLUBS=Object.keys(E.TEAM_COLORS).sort();
+const CH_ERAS=Object.keys(E.ERAS).sort();
+const b36=(n,w)=>{ let t=Math.max(0,Math.round(n)).toString(36); while(t.length<w) t='0'+t; return t; };
+function encTeamK(t){
+  const n=E.SLOTS.length;
+  let picks='';
+  for(const k of t.p){
+    const i=k.lastIndexOf(':');
+    const id=k.slice(0,i), yr=Number(k.slice(i+1));
+    if(id.slice(0,5)!=='00-00'||id.length!==10) return null;
+    const num=Number(id.slice(5)), off=yr-CH_EPOCH;
+    if(!(num>=0&&num<=99999)||!(off>=0&&off<27)) return null;
+    const v=num*27+off;
+    const c=b36(v,5); if(c.length!==5) return null;
+    picks+=c;
+  }
+  let slotNum=0;
+  for(let i=0;i<n;i++){
+    const raw=(t.si&&t.si[i]!=null)?t.si[i]:E.SLOTS.indexOf(t.s[i]);
+    slotNum=slotNum*6+Math.max(0,Math.min(5,raw));
+  }
+  const chem=b36(Math.max(0,Math.min(1295,Math.round(Number(t.c)*10)+600)),2);
+  const club=b36(t.f?Math.max(0,CH_CLUBS.indexOf(t.f))+1:0,1);
+  const era=b36(t.e?Math.max(0,CH_ERAS.indexOf(t.e))+1:0,1);
+  return picks+b36(slotNum,3)+chem+club+era+encodeURIComponent((t.n||'').slice(0,16));
+}
+function decTeamK(raw){
+  const n=E.SLOTS.length, head=n*5;
+  if(!raw||raw.length<head+7) return null;
+  const p=[], sl=[];
+  for(let i=0;i<n;i++){
+    const seg=raw.slice(i*5,i*5+5);
+    if(!/^[0-9a-z]{5}$/.test(seg)) return null;
+    const v=parseInt(seg,36); if(!(v>=0)) return null;
+    const num=Math.floor(v/27), off=v%27;
+    p.push('00-00'+String(num).padStart(5,'0')+':'+(CH_EPOCH+off));
+  }
+  let slotNum=parseInt(raw.slice(head,head+3),36);
+  if(!(slotNum>=0)) return null;
+  const si=[];
+  for(let i=n-1;i>=0;i--){ si[i]=slotNum%6; sl[i]=E.SLOTS[si[i]]||E.SLOTS[0]; slotNum=Math.floor(slotNum/6); }
+  const chem=(parseInt(raw.slice(head+3,head+5),36)-600)/10;
+  const ci=parseInt(raw.slice(head+5,head+6),36), ei=parseInt(raw.slice(head+6,head+7),36);
+  let nm=''; try{ nm=decodeURIComponent(raw.slice(head+7)); }catch(_){ nm=raw.slice(head+7); }
+  return { v:1, p, s:sl, si, c:isFinite(chem)?chem:0,
+    f:ci>0?(CH_CLUBS[ci-1]||''):'', e:ei>0?(CH_ERAS[ei-1]||''):'', n:nm };
+}
 function encTeam(t){
   const n=E.SLOTS.length;
   let picks='';
@@ -7393,9 +7459,24 @@ function decodeCR(str){ const j=b64urlDec(str); if(!j) return null; let o; try{o
 /* Rebuild a playable roster from a blob against THIS browser's player data. Null if any pick
    cannot be resolved (the sender had newer data), which the caller degrades to a normal game. */
 function rosterFromBlob(t){
-  const roster=[], slotIndex=[];
-  for(let i=0;i<t.p.length;i++){ const pl=fromPickKey(t.p[i]); if(!pl) return null;
-    roster.push(pl); slotIndex.push(Math.max(0,E.SLOTS.indexOf((t.s&&t.s[i])||''))); }
+  const roster=[], slotIndex=[], used=new Set();
+  /* ONE MAN PER SPOT. Slot names are ambiguous because E.SLOTS lists WR twice, so
+     indexOf('WR') is always the first of the two: a roster with two receivers used to assign
+     both to the same index, and the later one overwrote the earlier when the preview was
+     drawn by slot, showing five players instead of six. A name is now matched to the next
+     UNUSED slot of that name, so older links render whole too, and v3 links skip the guess
+     entirely by carrying the real indexes. */
+  const spotFor=(name,i)=>{
+    if(t.si&&t.si[i]!=null&&!used.has(t.si[i])) return t.si[i];
+    for(let k=0;k<E.SLOTS.length;k++) if(E.SLOTS[k]===name&&!used.has(k)) return k;
+    for(let k=0;k<E.SLOTS.length;k++) if(!used.has(k)) return k;
+    return 0;
+  };
+  for(let i=0;i<t.p.length;i++){
+    const pl=fromPickKey(t.p[i]); if(!pl) return null;
+    const sl=spotFor((t.s&&t.s[i])||'',i);
+    used.add(sl); roster.push(pl); slotIndex.push(sl);
+  }
   return { roster, slotIndex, chemistry:1+(Number(t.c)||0)/100 };
 }
 const challengeModeLabel=(t)=> t.f?('One Franchise · '+E.nickname(t.f)) : t.e?(t.e+' era') : 'Classic Mode';
@@ -7420,7 +7501,7 @@ let lastBowl=null;          // {youWon, shownYou, shownThem, themName} for the r
 
 function stopBowl(){ clearTimeout(poTimer); cancelAnimationFrame(poRaf); poSkip=null; }
 function clearChallenge(){ challengeTeam=null; pendingChallenge=false; stopBowl(); }
-function stripChallengeParams(){ try{ const u=new URL(location.href); u.searchParams.delete('c'); u.searchParams.delete('cr');
+function stripChallengeParams(){ try{ const u=new URL(location.href); u.searchParams.delete('c'); u.searchParams.delete('cr'); u.searchParams.delete('k');
   history.replaceState(null,'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():'')+u.hash); }catch(_){} }
 function goHome(){ clearChallenge(); stripChallengeParams(); document.querySelectorAll('.confetti-cv').forEach(c=>c.remove()); show('s-intro'); }
 
@@ -7428,6 +7509,7 @@ function goHome(){ clearChallenge(); stripChallengeParams(); document.querySelec
 function routeChallenge(){
   let params; try{ params=new URLSearchParams(location.search); }catch(_){ return false; }
   const cr=params.get('cr'); if(cr){ const o=decodeCR(cr); if(o){ showBowlResultView(o.a,o.b); return true; } }
+  const k=params.get('k'); if(k){ const t=decTeamK(k); if(t){ enterChallengeAccept(t); return true; } }
   const c=params.get('c'); if(c){ const t=decodeTeam(c); if(t){ enterChallengeAccept(t); return true; } }
   return false;
 }
@@ -7601,8 +7683,9 @@ if($('b-bowl-share')) $('b-bowl-share').onclick=()=>{ if(!challengeTeam||!lastBo
 if($('b-challenge')) $('b-challenge').onclick=async()=>{
   if(!run||!run.roster||run.roster.length<E.SLOTS.length) return;
   const t=teamBlob();
-  const packed=encTeam(t);
-  const link=CHALLENGE_URL+'?c='+b64urlEnc(packed||JSON.stringify(t));
+  const k=encTeamK(t);
+  const link=k ? CHALLENGE_URL+'?k='+k
+    : CHALLENGE_URL+'?c='+b64urlEnc(encTeam(t)||JSON.stringify(t));
   const text=challengeText()+'\n'+link;
   ga('challenge_created',{mode:runMode(),club:run&&run.franchise||null});
   let file=null; try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready;
