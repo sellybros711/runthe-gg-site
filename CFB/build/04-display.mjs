@@ -80,7 +80,7 @@ function sampleGamma(mu, sd, rng) {
 // ─── CFB game constants ──────────────────────────────────────────────────────
 
 const CAP_MUSD = 14;
-const SCALE = 3.05;
+const SCALE = 2.2;
 const SLOTS = ['QB', 'RB', 'WR', 'TE', 'FLEX'];
 const SLOT_ELIGIBILITY = {
   QB: ['QB'], RB: ['RB'], WR: ['WR'], TE: ['TE'], FLEX: ['RB', 'WR', 'TE'],
