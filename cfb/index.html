@@ -89,9 +89,17 @@
   .mark{flex:0 0 auto;width:30px;height:27px;margin-right:9px}
   .lockup{display:flex;align-items:center;text-decoration:none;color:inherit;
     flex:0 1 auto;min-width:0;border-radius:10px}
-  .brand{font-family:var(--fd);font-size:16px;letter-spacing:.06em;text-transform:uppercase;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand{flex:0 1 auto;min-width:0;font-family:var(--fd);font-size:16px;letter-spacing:.06em;
+    text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .brand i{color:var(--green)}
+  /* The gold tag marking this as the collegiate cut of the game. Kept short so the
+     wordmark beside it never has to truncate; the hero carries the full "College
+     Edition". Steps out of the way only on the very narrowest screens. */
+  .edition{flex:0 0 auto;margin-left:8px;font-family:var(--fn);font-size:8.5px;font-weight:800;
+    letter-spacing:.12em;text-transform:uppercase;color:#0a1508;background:var(--grad-gold);
+    padding:3px 6px 2px;border-radius:5px;white-space:nowrap;
+    box-shadow:0 1px 3px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.4)}
+  @media(max-width:339px){.edition{display:none}}
   .hdr-r{display:flex;align-items:center;gap:8px;min-width:0;margin-left:auto}
   .pill{display:inline-flex;align-items:center;padding:5px 10px;border-radius:99px;
     font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.12em;
@@ -104,8 +112,8 @@
   .hero{text-align:center;margin-bottom:16px}
   .hero h1{font-family:var(--fd);font-size:min(11vw,70px);line-height:.9;
     letter-spacing:.005em;text-transform:uppercase;white-space:nowrap}
-  .hero .sub{font-family:var(--fn);font-size:11px;font-weight:600;
-    letter-spacing:.24em;text-transform:uppercase;color:var(--green);margin:0 0 6px}
+  .hero .sub{font-family:var(--fn);font-size:11px;font-weight:700;
+    letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin:0 0 6px}
   .hero p{color:var(--dim);font-size:14px;line-height:1.45;margin:14px 0 0;max-width:420px;
     margin-left:auto;margin-right:auto}
   @media(max-width:420px){.hero h1{font-size:36px}}
@@ -506,6 +514,20 @@
   .bug.big .bt .sc{font-size:44px}
   .bug.big .bbot .ck{font-size:22px}
   .bug.big .bbot .q.name{font-size:14px}
+  /* AP-poll rank badge, college football's signature. A gold number tucked
+     against the team code, the way a ranked side is called on a broadcast. */
+  .bug .bt .rk{position:relative;flex:0 0 auto;align-self:center;
+    font-family:var(--fd);font-size:12px;line-height:1;letter-spacing:.01em;
+    color:#ffd23a;text-shadow:0 1px 2px rgba(0,0,0,.65)}
+  .bug .bt .rk:empty{display:none}
+  .bug.big .bt .rk{font-size:15px}
+  /* Opponent line: rank in gold, conference in a quiet tag. */
+  .bug .bbot .oppr{color:#ffd23a;font-weight:800;margin-right:5px}
+  .bug .bbot .oppc{margin-left:7px;font-size:11px;font-weight:700;letter-spacing:.07em;
+    color:#aeb9c9;text-transform:uppercase}
+  /* A ranked matchup lights the whole bug with a faint poll-gold rail. */
+  .bug.ranked{box-shadow:0 16px 34px -14px #000,0 0 22px -10px rgba(255,210,58,.5),
+    inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 6px rgba(0,0,0,.6)}
 
   /* ── playoff call + log ─────────────────────────────────────── */
   .pocap{min-height:56px;margin-top:13px;display:flex;align-items:center;justify-content:center}
@@ -915,6 +937,7 @@ or endorsed by the NCAA, the CFP or any school.
     <a class="lockup" id="b-home" href="." aria-label="College Football Perfect Season, back to the start">
       <img class="mark" src="mark.png?v=2" alt="" width="30" height="27" decoding="async">
       <span class="brand">Perfect<i> Season</i></span>
+      <span class="edition">College</span>
     </a>
     <div class="hdr-r">
       <a class="pill site" href="https://runthe.gg">RunThe<i>.GG</i></a>
@@ -930,7 +953,7 @@ or endorsed by the NCAA, the CFP or any school.
   <!-- s-intro -->
   <div class="screen" id="s-intro">
     <div class="hero">
-      <div class="sub">College Football</div>
+      <div class="sub">College Edition</div>
       <h1>The Perfect Season</h1>
       <p>Spin a wheel for a year and a college team. Sign one player off each of six draws.
         Build a roster from 2005 to 2025 under a $14M NIL budget. Play all 12 games and
@@ -1055,12 +1078,12 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="gamecard">
       <div class="bug big" id="v-bug">
         <div class="btop">
-          <div class="bt you lead" id="v-byou" style="--tcol:#1f5fc4;--tcol2:#93c5fd">
-            <span class="cd">YOU</span><span class="rc" id="v-rec">0-0</span>
+          <div class="bt you lead" id="v-byou" style="--tcol:#0e7a4f;--tcol2:#6ee7b7">
+            <span class="rk"></span><span class="cd">YOU</span><span class="rc" id="v-rec">0-0</span>
             <b class="sc" id="v-you">0</b>
           </div>
           <div class="bt them lead" id="v-bthem">
-            <span class="cd">OPP</span><span class="rc"></span>
+            <span class="rk"></span><span class="cd">OPP</span><span class="rc"></span>
             <b class="sc" id="v-them">0</b>
           </div>
         </div>
@@ -1103,9 +1126,9 @@ or endorsed by the NCAA, the CFP or any school.
     <h2 class="display" style="font-size:22px;margin:5px 0 10px" id="po-opp">Opponent</h2>
     <div class="bug" id="po-bug">
       <div class="btop">
-        <div class="bt you" id="po-you"><span class="cd">YOU</span><span class="rc"></span>
+        <div class="bt you" id="po-you"><span class="rk"></span><span class="cd">YOU</span><span class="rc"></span>
           <b class="sc">0</b></div>
-        <div class="bt them" id="po-them"><span class="cd">OPP</span><span class="rc"></span>
+        <div class="bt them" id="po-them"><span class="rk"></span><span class="cd">OPP</span><span class="rc"></span>
           <b class="sc">0</b></div>
       </div>
       <div class="bbot"><span class="q" id="po-q">1ST</span>
@@ -1127,9 +1150,9 @@ or endorsed by the NCAA, the CFP or any school.
     <p class="dim" style="font-size:13px;margin:0 0 10px" id="bowl-tagline"></p>
     <div class="bug" id="bowl-bug">
       <div class="btop">
-        <div class="bt you" id="bowl-you"><span class="cd">YOU</span><span class="rc"></span>
+        <div class="bt you" id="bowl-you"><span class="rk"></span><span class="cd">YOU</span><span class="rc"></span>
           <b class="sc">0</b></div>
-        <div class="bt them" id="bowl-them"><span class="cd">OPP</span><span class="rc"></span>
+        <div class="bt them" id="bowl-them"><span class="rk"></span><span class="cd">OPP</span><span class="rc"></span>
           <b class="sc">0</b></div>
       </div>
       <div class="bbot"><span class="q" id="bowl-q">1ST</span>
@@ -1270,6 +1293,27 @@ function dressInTeamColors(teamSeasonId){
     box.classList.add('clubbed');
   };
 }
+
+/* ── AP-style rankings ─────────────────────────────────────────
+   College football lives and dies by the poll. Every team-season is ranked
+   within its own year by team strength, top 25, so an opponent carries a real
+   "#4" the way a broadcast would call it. Built once, lazily, from the data. */
+let RANKS=null;
+function buildRanks(){
+  RANKS={};
+  const bySeason={};
+  for(const t of DATA.teamSeasons)(bySeason[t.season]??=[]).push(t);
+  for(const yr in bySeason){
+    bySeason[yr].sort((a,b)=>(b.strength_z||0)-(a.strength_z||0));
+    bySeason[yr].slice(0,25).forEach((t,i)=>{ RANKS[t.team_season_id]=i+1; });
+  }
+}
+function teamRank(id){
+  if(!id||!DATA) return 0;
+  if(!RANKS) buildRanks();
+  return RANKS[id]||0;
+}
+const rankStr=(id)=>{ const r=teamRank(id); return r?'#'+r:''; };
 
 /* ── chemistry tier display ──────────────────────────────────── */
 const TIER={
@@ -1429,8 +1473,10 @@ function fieldMarkings(){
                  '<div class="fnum r" style="top:'+top+'%">'+pair+'<span class="ar"></span></div>');
       }
     }else{
-      out.push('<div class="tick" style="top:'+top+'%;left:29.6%"></div>',
-               '<div class="tick" style="top:'+top+'%;left:70.4%"></div>',
+      /* College hash marks sit 60 ft off each sideline on a 160-ft field — 37.5% and
+         62.5%, farther apart than the NFL's, a real difference between the two games. */
+      out.push('<div class="tick" style="top:'+top+'%;left:37.5%"></div>',
+               '<div class="tick" style="top:'+top+'%;left:62.5%"></div>',
                '<div class="tick edge" style="top:'+top+'%;left:0"></div>',
                '<div class="tick edge" style="top:'+top+'%;right:0"></div>');
     }
@@ -1961,27 +2007,34 @@ function paintCalendar(justPlayed){
   $('v-calrec').textContent=w+'-'+(s.results.length-w);
 }
 
-const YOU_BLUE={bg:'#1f5fc4',accent:'#93c5fd'};
-function youColors(){return YOU_BLUE;}
+const YOU_GREEN={bg:'#0e7a4f',accent:'#6ee7b7'};
+function youColors(){return YOU_GREEN;}
 
 function paintSeasonBug(oppId,label){
   const o=oppId?DATA.byTeamSeasonId[oppId]:null;
   const mine=youColors();
   $('v-byou').style.setProperty('--tcol',mine.bg);
   $('v-byou').style.setProperty('--tcol2',mine.accent);
+  $('v-byou').querySelector('.rk').textContent='';
   if(o){
     const w=E.washColors(o.color||'#8a97a8',o.alt_color);
+    const rk=teamRank(oppId);
     $('v-bthem').style.setProperty('--tcol',w.bg);
     $('v-bthem').style.setProperty('--tcol2',w.accent);
     $('v-bthem').querySelector('.cd').textContent=E.teamColors(o).abbreviation;
     $('v-bthem').querySelector('.rc').textContent=o.record||'';
-    $('v-opp').textContent=o.display;
+    $('v-bthem').querySelector('.rk').textContent=rk?'#'+rk:'';
+    $('v-opp').innerHTML=(rk?'<span class="oppr">#'+rk+'</span>':'')+esc(o.display)+
+      (o.conference?'<span class="oppc">'+esc(o.conference)+'</span>':'');
+    $('v-bug').classList.toggle('ranked',!!rk);
   }else{
     $('v-bthem').style.setProperty('--tcol','#8a97a8');
     $('v-bthem').style.setProperty('--tcol2','rgba(255,255,255,.3)');
     $('v-bthem').querySelector('.cd').textContent='OPP';
     $('v-bthem').querySelector('.rc').textContent='';
+    $('v-bthem').querySelector('.rk').textContent='';
     $('v-opp').textContent='';
+    $('v-bug').classList.remove('ranked');
   }
   $('v-round').textContent=label;
 }
@@ -2380,14 +2433,17 @@ function playPlayoffGame(r,afterFn){
   youEl.style.setProperty('--tcol2',me.accent);
   themEl.style.setProperty('--tcol',them.bg);
   themEl.style.setProperty('--tcol2',them.accent||'rgba(255,255,255,.3)');
+  const poRk=teamRank(r.opponent_id);
   youEl.querySelector('.cd').textContent='YOU';
   themEl.querySelector('.cd').textContent=opp?E.teamColors(opp).abbreviation:'OPP';
+  youEl.querySelector('.rk').textContent='';
+  themEl.querySelector('.rk').textContent=poRk?'#'+poRk:'';
   youEl.querySelector('.rc').textContent=recordBefore(r);
   themEl.querySelector('.rc').textContent=opp?opp.record:'';
   youEl.querySelector('.sc').textContent='0';
   themEl.querySelector('.sc').textContent='0';
   youEl.className='bt you'; themEl.className='bt them';
-  bug.className='bug '+rcls;
+  bug.className='bug '+rcls+(poRk?' ranked':'');
   $('po-q').textContent=QNAME[0];
   $('po-ck').textContent='15:00';
   $('po-rd').textContent=ROUND_SHORT[round]||round.toUpperCase();
@@ -2512,12 +2568,15 @@ function playBowlBroadcast(){
   const youEl=$('bowl-you'), themEl=$('bowl-them'), bug=$('bowl-bug');
   youEl.style.setProperty('--tcol',me.bg);youEl.style.setProperty('--tcol2',me.accent);
   themEl.style.setProperty('--tcol',them.bg);themEl.style.setProperty('--tcol2',them.accent||'rgba(255,255,255,.3)');
+  const bowlRk=teamRank(r.opponent_id);
   youEl.querySelector('.cd').textContent='YOU';
   themEl.querySelector('.cd').textContent=opp?E.teamColors(opp).abbreviation:'OPP';
+  youEl.querySelector('.rk').textContent='';
+  themEl.querySelector('.rk').textContent=bowlRk?'#'+bowlRk:'';
   youEl.querySelector('.rc').textContent='';themEl.querySelector('.rc').textContent=opp?opp.record:'';
   youEl.querySelector('.sc').textContent='0';themEl.querySelector('.sc').textContent='0';
   youEl.className='bt you';themEl.className='bt them';
-  bug.className='bug';
+  bug.className='bug'+(bowlRk?' ranked':'');
   $('bowl-q').textContent=QNAME[0];$('bowl-ck').textContent='15:00';$('bowl-rd').textContent='BOWL';
   $('bowl-cap').innerHTML='';$('bowl-log').innerHTML='';
   $('bowl-fastwrap').hidden=false;
