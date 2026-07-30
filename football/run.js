@@ -940,14 +940,29 @@ function autoDraftTrade(run, data, ctx) {
   return run;
 }
 
+/* WHEN THE PHONES ARE OPEN. Four windows: one before kickoff, then after weeks 3, 6 and 9.
+
+   Week 9 is the deadline because that is where the real one sits, and because a window at
+   week 15 defused it -- if a roster can always be fixed late, no moment carries any weight.
+   Ending the market at 9 means the back eight weeks are ridden out with whatever you built,
+   which is what makes the deadline a deadline. The preseason window is the other half of
+   that: most real roster building happens before a season, not at the deadline, and without
+   it a GM watched a quarter of the year with a team nobody let them touch. */
+const TRADE_WEEKS = [3, 6, 9];
+const TRADE_DEADLINE_WEEK = 9;
 function isTradeWindow(run) {
-  const w = run.season.week;
-  return w === 4 || w === 8 || w === 12 || w === 15;
+  return TRADE_WEEKS.indexOf(run.season.week) !== -1;
 }
 
+/* Contracts get dearer every time the market opens. 8% rather than the old 6% because the
+   market now opens three times in-season instead of four (the preseason window deliberately
+   does not inflate -- a raise before week one makes no sense): 1.08^3 is 1.26x, the same
+   cumulative pressure the old 1.06^4 applied, just concentrated into the first nine weeks
+   where the decisions now live. */
+const CONTRACT_INFLATION = 1.08;
 function inflateContracts(run) {
   for (const p of run.roster) {
-    p.price_musd = Math.round(p.price_musd * 1.06 * 100) / 100;
+    p.price_musd = Math.round(p.price_musd * CONTRACT_INFLATION * 100) / 100;
   }
 }
 
@@ -1708,6 +1723,7 @@ const api = {
   openSlots, openSlotNames, slotForPlayer, TUNING,
   inflateCap, capCut, capSpin, capSign,
   autoDraftTrade, isTradeWindow, inflateContracts, findOffers, previewTrade, rosterRating,
+  TRADE_WEEKS, TRADE_DEADLINE_WEEK,
   generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating,
 };
 
