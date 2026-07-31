@@ -1437,6 +1437,33 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid rgba(16,185,129,.4);background:rgba(16,185,129,.1);color:#6ee7b7;
     font-family:var(--fn);font-size:11px;font-weight:700}
 
+  /* ── what an account buys, shown rather than described ───────────
+     Two tabs put this up: the colors, and the trophy case. One set of rules, so
+     they cannot drift into looking like two different products. */
+  .gate{margin-top:14px;padding:15px 14px;border-radius:12px;text-align:center;
+    border:1px solid rgba(16,185,129,.32);
+    background:linear-gradient(160deg,rgba(16,185,129,.10),rgba(16,185,129,.02))}
+  .gate .gl{display:grid;place-items:center;margin-bottom:6px}
+  .gate .gt{margin:0;font-family:var(--fc);font-size:13px;letter-spacing:.06em;
+    text-transform:uppercase;color:#6ee7b7}
+  .gate .gs{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:var(--dim)}
+  .gate .btn{width:100%}
+  /* A strip of real school colours, not clickable. The reward, legible before the
+     ask, rather than a padlock that says nothing about what is behind it. */
+  .peekrow{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;padding:4px 0 2px}
+  .peekdot{width:30px;height:30px;border-radius:50%;background:var(--sc1);
+    box-shadow:inset 0 0 0 4px var(--sc2),0 2px 5px rgba(0,0,0,.5)}
+  /* BLURRED, NOT HIDDEN. A badge you cannot read is still a badge you can see is
+     there, which is the whole point of a peek. user-select off so the words cannot
+     be recovered by dragging across them, which would make the blur decorative. */
+  .achlist.peek{position:relative}
+  .ach.blur{user-select:none}
+  .ach.blur .ach-n,.ach.blur .ach-d{filter:blur(4px);pointer-events:none}
+  @supports not (filter:blur(4px)){
+    /* No blur filter: hide the words outright rather than leave them readable. */
+    .ach.blur .ach-n,.ach.blur .ach-d{color:transparent;text-shadow:0 0 9px var(--dim)}
+  }
+
   /* ── the account panel, in the profile sheet ────────────────── */
   .acct-row{display:flex;align-items:center;gap:11px;margin:2px 0 12px}
   .acct-row .pfp{flex:0 0 44px;width:44px;height:44px;border-radius:50%;display:grid;
@@ -2280,13 +2307,19 @@ const lumOf=(hex)=>{const [r,g,b]=_hx(hex);return (0.299*r+0.587*g+0.114*b)/255;
 const textSafe=(hex)=>{ let c=hex; for(let i=0;i<12 && lumOf(c)<0.5;i++) c=shade(c,0.15); return c; };
 
 let selectedSchool=null;
-function applyTheme(t){
+/* remember=false drops the theme from the page WITHOUT forgetting which school it
+   was. That is what signing out does: the colours go back to default because they
+   are an account feature, and signing back in brings the same school back rather
+   than making somebody pick it again. Only the Default colors button forgets. */
+function applyTheme(t,remember){
+  if(remember===undefined) remember=true;
   const root=document.documentElement, body=document.body;
   if(!t){ ['--th-a','--th-a2','--th-b','--th-b2','--th-ink-a','--th-ink-b',
       '--th-glowa','--th-glowb','--th-edgeb','--pfp','--pfp-ink']
       .forEach(v=>root.style.removeProperty(v));
     body.classList.remove('themed'); selectedSchool=null;
-    try{localStorage.removeItem('cfb_school');}catch(e){} updateAvatar(); return; }
+    if(remember){ savedSchool=null; try{localStorage.removeItem('cfb_school');}catch(e){} }
+    updateAvatar(); return; }
   const a=t.color;
   let b=t.alt; const bl=lumOf(b);            // a near-white/black alt makes a poor accent
   if(bl>0.85||bl<0.06) b=shade(a,bl>0.5?0.42:0.5);
@@ -2303,8 +2336,20 @@ function applyTheme(t){
   root.style.setProperty('--pfp','linear-gradient(135deg,'+a+','+shade(a,-0.32)+')');
   root.style.setProperty('--pfp-ink',lumOf(a)>0.62?'#111':'#fff');
   body.classList.add('themed');
-  selectedSchool=t; try{localStorage.setItem('cfb_school',JSON.stringify(t));}catch(e){}
+  selectedSchool=t;
+  if(remember){ savedSchool=t; try{localStorage.setItem('cfb_school',JSON.stringify(t));}catch(e){} }
   updateAvatar();
+}
+
+/* THE SCHOOL YOU PICKED, WHETHER OR NOT IT IS IN FORCE. Colours are a signed-in
+   feature, so the pick is remembered here and only painted while there is an
+   account behind it. */
+let savedSchool=null;
+try{ const raw=localStorage.getItem('cfb_school'); if(raw) savedSchool=JSON.parse(raw); }catch(e){}
+function syncTheme(){
+  if(authState.signedIn&&savedSchool) applyTheme(savedSchool,false);
+  else if(selectedSchool) applyTheme(null,false);
+  else updateAvatar();
 }
 /* THE BUBBLE SHOWS THE SCHOOL FIRST AND THE ACCOUNT SECOND, because the school is
    what the player chose to look at and the account is a fact about them. With a
@@ -2347,11 +2392,18 @@ function openProfile(tab){
   openSheet();
   if(profileTab==='account') wireAccount();
   box.querySelectorAll('.achtabs button').forEach(b=>b.onclick=()=>openProfile(b.dataset.tab));
+  /* THE GATE IS NOT DECORATION. There are no .swatch buttons in the markup at all
+     while signed out, so a colour cannot be picked by reaching past the panel, and
+     these handlers simply find nothing to bind to. */
   box.querySelectorAll('.swatch').forEach(btn=>btn.onclick=()=>{
+    if(!authState.signedIn) return;
     const t=schoolGroups().flatMap(g=>g.teams).find(x=>x.school===btn.dataset.school);
     if(t){applyTheme(t);ga('school_selected',{school:t.school});} closeSheet();
   });
   const def=$('sp-default'); if(def) def.onclick=()=>{ applyTheme(null); closeSheet(); };
+  /* Straight to the Account tab, which is the one thing the gate is asking for. */
+  const gin=box.querySelector('#gate-in');
+  if(gin) gin.onclick=()=>{ ga('gate_clicked',{from:profileTab}); openProfile('account'); };
   $('sp-x').onclick=closeSheet;
 }
 /* ── accounts ─────────────────────────────────────────────────────
@@ -2363,7 +2415,12 @@ function openProfile(tab){
    before with seasons recorded anonymously. Nothing here is ever a gate. */
 const A=()=>window.PS_CFB_AUTH||null;
 const B=window.PS_CFB_BOARD||null;
-let authState={ready:false,signedIn:false};
+/* WAITING, NOT OFFLINE, UNTIL AUTH SAYS OTHERWISE. This started as
+   {ready:false,signedIn:false}, which has no `waiting` key at all, so every gate
+   read it as undefined and went straight to "accounts are offline" in the seconds
+   before the library had a chance to land. The first thing a player saw on a slow
+   connection was an apology for something that was about to work. */
+let authState={ready:false,waiting:true,signedIn:false};
 let authMode='in';        // 'in' | 'up', which form the panel is showing
 let authBusy=false;
 let authMsg=null;         // {err} or {ok}
@@ -2374,7 +2431,10 @@ let authMsg=null;         // {err} or {ok}
 let pendingClaim=null;
 
 function bootAuth(){
-  const a=A(); if(!a) return;
+  const a=A();
+  /* auth.js itself did not load, so nothing is coming. Say so now rather than
+     leaving every gate spinning forever. */
+  if(!a){ authState={ready:false,waiting:false,signedIn:false}; return; }
   a.onChange((st)=>{
     const wasId=authState.userId;
     authState=st;
@@ -2387,6 +2447,8 @@ function bootAuth(){
     /* A different account, or none, means the cabinet on screen belongs to somebody
        else. Drop it rather than show one player's badges to another. */
     if(st.userId!==wasId) careerRows=null;
+    /* Colours follow the account: on when signed in, default when not. */
+    syncTheme();
     if($('sheet').classList.contains('on')&&profileTab==='account') openProfile('account');
   });
   a.boot();
@@ -2505,7 +2567,46 @@ function wireAccount(){
     await a.signOut(); careerRows=null; authMsg=null; openProfile('account'); authBusy=false; };
 }
 
+/* THE GATE, ONE FUNCTION, because two tabs put it up and they must not drift.
+   Three states and not two: signed in, signed out, and accounts not available at
+   all. The third is the one worth getting right, because "sign in" is useless
+   advice to somebody whose browser is blocking the sign-in library. */
+/* Two whole lines rather than one noun to slot into a sentence: "School colors"
+   and "The full trophy case" do not take the same verb, and a template that
+   pretends they do produces "your school colors comes with an account". */
+function gateCard(lines){
+  const st=authState;
+  if(st.waiting) return '<div class="gate"><div class="gl">'+
+    '<div class="dots"><i></i><i></i><i></i></div></div>'+
+    '<p class="gt">Checking your account</p></div>';
+  if(!st.ready) return '<div class="gate"><p class="gt">Accounts are offline</p>'+
+    '<p class="gs">'+esc(lines.needs)+' The sign-in script did not load, usually an ad '+
+    'blocker. Everything else about the game works.</p></div>';
+  return '<div class="gate"><p class="gt">'+esc(lines.with)+'</p>'+
+    '<p class="gs">Free, and it takes about ten seconds.</p>'+
+    '<button class="btn sm" id="gate-in" style="margin-top:11px">Sign in or create one</button></div>';
+}
+
 function schoolPickerHtml(){
+  /* COLOURS ARE A SIGNED-IN FEATURE. Signed out this shows what it would look like
+     rather than a locked door: a strip of real school colours, dimmed and not
+     clickable, so the reward is legible before the ask. */
+  if(!authState.signedIn){
+    const teams=schoolGroups().flatMap(g=>g.teams);
+    const peek=[];
+    /* Spread across the conferences rather than the first twelve alphabetically, so
+       the strip reads as "every school" instead of "the As". */
+    const step=Math.max(1,Math.floor(teams.length/12));
+    for(let i=0;i<teams.length&&peek.length<12;i+=step) peek.push(teams[i]);
+    return '<p class="dim" style="font-size:13px;margin:0 0 10px">Play in your school&rsquo;s '+
+      'colors. They theme the home and draft screens, and the profile bubble up top.</p>'+
+      '<div class="peekrow">'+peek.map(t=>'<span class="peekdot" '+
+        'style="--sc1:'+t.color+';--sc2:'+t.alt+'"></span>').join('')+'</div>'+
+      '<p class="dim" style="font-size:11.5px;margin:9px 0 0;text-align:center">'+
+        teams.length+' schools</p>'+
+      gateCard({with:'School colors come with an account',
+                needs:'School colors need an account.'});
+  }
   const cur=selectedSchool?selectedSchool.school:null;
   const acc=schoolGroups().map(g=>{
     const open=g.teams.some(t=>t.school===cur)?' open':'';
@@ -2530,13 +2631,32 @@ function trophyCaseHtml(){
      than paint a case out of local history and then swap it for a different one a
      moment later, which reads as badges being taken away, say it is loading and
      repaint once. */
-  if(authState.signedIn&&!careerRows){
+  /* AND IF THE FETCH FAILS, THIS FALLS BACK RATHER THAN SPINNING. Without the
+     careerFailed guard a board that cannot answer left the case on "Fetching your
+     seasons" for good: careerRows stayed null, so every repaint asked again, showed
+     the spinner again, and there was no state in which it ever stopped. Found by
+     stopping the database under a signed-in session. */
+  if(authState.signedIn&&!careerRows&&!careerFailed){
     careerLoad().then(()=>{ if($('sheet').classList.contains('on')&&profileTab==='case') openProfile('case'); });
     return '<div style="text-align:center;padding:24px 0;color:var(--dim);font-size:13px">'+
       '<div class="dots" style="margin-bottom:8px"><i></i><i></i><i></i></div>'+
       'Fetching your seasons</div>';
   }
-  const res=achState(authState.signedIn?careerRows:null);
+  const stale=authState.signedIn&&!careerRows;
+  /* Signed in but the board did not answer: derive from what this browser still
+     has, and say the number may be short rather than presenting it as the truth. */
+  const res=achState(careerRows||null);
+  const staleNote=stale
+    ? '<p class="dim" style="font-size:11.5px;margin:11px 0 0;line-height:1.4">Your account'+
+      '&rsquo;s seasons could not be fetched just now, so this is what this browser has. '+
+      'Nothing has been lost.</p>' : '';
+  /* SIGNED OUT, THIS IS A SNEAK PEEK AND NOT THE CASE.
+     Not a locked door, because a locked door tells you nothing about what is behind
+     it. Everything you have actually earned is shown in full, so nothing is being
+     taken away from somebody who has been playing; what is held back is the rest of
+     the catalogue, blurred so the shape of it reads without the words. That is the
+     part an account buys, along with keeping any of it when this browser is cleared. */
+  if(!authState.signedIn) return peekCaseHtml(res);
   const s=res.stats;
   if(!s.runs) return '<p class="dim" style="font-size:13.5px;margin:0 0 4px">'+
     'No seasons yet. Finish one and this fills up.</p>'+
@@ -2563,9 +2683,58 @@ function trophyCaseHtml(){
   const where=authState.signedIn
     ? 'Your seasons are kept on your account, so this case follows you to any device you sign in on.'
     : 'Your seasons are kept in this browser. Clearing its data clears them. Sign in and they follow you instead.';
-  return career+streaks+achShelves(res)+
+  return career+streaks+achShelves(res)+staleNote+
     '<p class="dim" style="font-size:11px;margin:12px 0 0;line-height:1.4">'+where+'</p>';
 }
+/* The peek. Earned badges in full, then a blurred taste of what is left, then the
+   ask. PEEK_LOCKED is small on purpose: enough to read as a wall of more, few
+   enough that scrolling past it is not the experience. */
+const PEEK_LOCKED=6;
+function peekCaseHtml(res){
+  const s=res.stats, A=window.PS_CFB_ACH;
+  const chip=(a,got)=>'<div class="ach '+a.tier+(got?'':' off blur')+'">'+
+    '<div class="ach-n">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div>';
+
+  let head;
+  if(!s.runs){
+    head='<p class="dim" style="font-size:13.5px;margin:0 0 10px">Finish a season and '+
+      'this starts filling up. There are <b style="color:var(--ink)">'+res.total+
+      '</b> badges in here, from reaching a bowl to winning the title from the 9 seed.</p>';
+  }else{
+    const cell=(v,k)=>'<div class="cc"><b>'+v+'</b><span>'+k+'</span></div>';
+    head='<p class="shsec" style="margin-top:0">Your career</p><div class="careerrow">'+
+      cell(s.runs,'seasons')+cell(s.titles,'titles')+cell(s.playoffs,'playoffs')+
+      cell(s.bestRank?'#'+s.bestRank:'--','best rank')+'</div>';
+  }
+
+  /* Earned first and in full. A player who has been going a while should see their
+     own badges here, not a teaser of somebody else's. */
+  const got=res.earned.slice().sort((a,b)=>A.TIER_ORDER[b.tier]-A.TIER_ORDER[a.tier]);
+  const gotHtml=got.length
+    ? '<p class="shsec">Earned <span class="cnt">'+got.length+' of '+res.total+'</span></p>'+
+      '<div class="achlist">'+got.map(a=>chip(a,true)).join('')+'</div>'
+    : '';
+
+  /* And a blurred taste of the rest. Highest tier first, so what is behind the blur
+     is the interesting end of the catalogue. */
+  const rest=res.locked.slice().sort((a,b)=>A.TIER_ORDER[b.tier]-A.TIER_ORDER[a.tier]);
+  const peek=rest.slice(0,PEEK_LOCKED);
+  const more=rest.length-peek.length;
+  const peekHtml=peek.length
+    ? '<p class="shsec">Still out there <span class="cnt">'+rest.length+' more</span></p>'+
+      '<div class="achlist peek">'+peek.map(a=>chip(a,false)).join('')+'</div>'+
+      (more?'<p class="dim" style="font-size:11.5px;margin:8px 0 0;text-align:center">'+
+        'and '+more+' more</p>':'')
+    : '';
+
+  return head+gotHtml+peekHtml+
+    gateCard({with:'The full trophy case comes with an account',
+              needs:'Keeping your trophy case needs an account.'})+
+    '<p class="dim" style="font-size:11px;margin:11px 0 0;line-height:1.4">Right now these '+
+    'are kept in this browser, so clearing its data clears them. An account keeps them '+
+    'for good and carries them to any device you sign in on.</p>';
+}
+
 function achShelves(res){
   const A=window.PS_CFB_ACH;
   let h='<p class="shsec">Achievements <span class="cnt">'+res.earned.length+' of '+res.total+'</span></p>';
@@ -2582,7 +2751,10 @@ function achShelves(res){
   return h;
 }
 $('b-profile').onclick=()=>openProfile();
-try{ const saved=localStorage.getItem('cfb_school'); if(saved) applyTheme(JSON.parse(saved)); }catch(e){}
+/* NOT APPLIED HERE ANY MORE. The saved school is read at the top of applyTheme's
+   block; whether it is painted is decided by syncTheme() once the auth state is
+   known, because school colours are a signed-in feature. Applying it here and
+   removing it a moment later would flash somebody's colours and take them away. */
 
 /* ── run history ─────────────────────────────────────────────── */
 /* WHAT GETS WRITTEN DOWN IS THE SEASON, NEVER THE TROPHY. Each finished run
@@ -2616,17 +2788,18 @@ function achResolve(key){ return BYKEY?(BYKEY.get(key)||null):null; }
    Fetched once per sign-in and held, because the cabinet is opened far more often
    than it changes and forty badge tests walking a re-fetched list is forty walks
    plus a round trip. Cleared on any change of account by bootAuth(). */
-let careerRows=null, careerLoading=null;
+let careerRows=null, careerLoading=null, careerFailed=false;
 function careerLoad(){
-  if(!authState.signedIn||!authState.userId||!B) return Promise.resolve(null);
+  if(!authState.signedIn||!authState.userId||!B){ careerFailed=true; return Promise.resolve(null); }
   if(careerRows) return Promise.resolve(careerRows);
   if(careerLoading) return careerLoading;
+  careerFailed=false;
   careerLoading=B.mine(authState.userId,500).then((r)=>{
     careerLoading=null;
-    if(!r||!Array.isArray(r.rows)) return null;
+    if(!r||!Array.isArray(r.rows)){ careerFailed=true; return null; }
     careerRows=r.rows.map(rowFromBoard);
     return careerRows;
-  }).catch(()=>{ careerLoading=null; return null; });
+  }).catch(()=>{ careerLoading=null; careerFailed=true; return null; });
   return careerLoading;
 }
 

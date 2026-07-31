@@ -27,6 +27,7 @@ account and then as another.
 | `test_leaderboard.sql` | Every rule `cfb_submit_run()` claims to enforce, with a case that passes and a case that is refused. Plus ownership, claiming, renaming, idempotency, the ordering key, and that all four board queries are index scans at 200,000 rows. 49 assertions. |
 | `test_score_parity.mjs` | `board.js`'s `scoreOf()` computes exactly what the generated `score` column computes, across all 27,217 results the game can produce. |
 | `test_board_e2e.mjs` | Real seasons played in Chromium, submitted through the real validator, listed on the real board. Guest and signed-in. Plus: a board that is not there leaves the results screen intact. |
+| `test_gates.mjs` | What an account is for. School colours and the full trophy case signed in, signed out, and with the sign-in library blocked entirely. |
 | `postgrest_stub.mjs` | Not a test. A PostgREST-shaped front end for the real database, so the browser talks to something that parses its URLs independently. |
 
 ```
@@ -35,9 +36,10 @@ node cfb/build/test/test_score_parity.mjs cfbtest
 (nohup python3 -m http.server 8080 &)
 (nohup node cfb/build/test/postgrest_stub.mjs 5555 cfbtest &)
 node cfb/build/test/test_board_e2e.mjs
+node cfb/build/test/test_gates.mjs
 ```
 
-## Two bugs these caught, so far
+## Four bugs these caught, so far
 
 **`scoreOf()` disagreed with the column on every negative half.** `Math.round` rounds a
 half toward positive infinity; Postgres `round()` rounds a half away from zero. 6,800 of
@@ -47,3 +49,13 @@ counted against a score their row does not have. Found by the sweep, not by read
 **The first version of that sweep reported everything green** because it fed the client
 the value Postgres had already rounded. Rounding was the step under test, so it tested
 nothing. The fix is why `score_parity` keeps `raw_diff` alongside `point_diff`.
+
+**A signed-in trophy case spun forever when the board could not answer.** `careerRows`
+stayed null on a failed fetch, so every repaint asked again and showed the spinner again,
+and there was no state in which it stopped. Found by stopping Postgres underneath a
+signed-in session, which is the accident worth having.
+
+**Every gate said "accounts are offline" before the library had a chance to load.** The
+game's initial auth state had no `waiting` key, so the gates read `undefined` and went
+straight to the apology. On a slow connection the first thing a player saw was a message
+about something that was about to work.

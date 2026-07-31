@@ -32,17 +32,54 @@
   let session = null;
   let profile = null;          // { username }
   const listeners = [];
+  /* Whether the library is still expected to turn up. Three states, not two: not
+     here yet is a different thing from not coming, and the difference is what the
+     UI needs to decide between a spinner and an apology. */
+  let waiting = true;
+  let waitTimer = null;
 
   /* Overridable so a test can point the whole module at a local stand-in. */
   const url = () => window.PS_CFB_BOARD_URL || SB_URL;
 
+  /* THE LIBRARY IS DEFERRED, AND boot() USED TO BE ONE SHOT.
+     supabase-js is loaded with `defer`, so it executes after the document is parsed.
+     boot() is called from the game's own boot, which is async and normally spends
+     long enough fetching player data for the library to have landed. NORMALLY. On a
+     repeat visit the data comes out of the browser cache in a few milliseconds while
+     the script is still in flight over a slow connection, and boot() then found no
+     window.supabase, returned false, and NOTHING EVER TRIED AGAIN: accounts were
+     permanently offline for that page load, on exactly the connections where they
+     were most likely to be wanted.
+
+     So it retries. Cheap poll, because there is no load event to hang this on that
+     is not also the thing being waited for, and a deadline, because a genuinely
+     blocked CDN has to end as a clear "not available" rather than a spinner that
+     never stops. */
+  const RETRY_MS = 150, GIVE_UP_MS = 15000;
   function boot() {
+    if (sb) return true;
+    if (start()) return true;
+    if (waitTimer) return false;       // already waiting
+    const deadline = Date.now() + GIVE_UP_MS;
+    waitTimer = setInterval(() => {
+      if (start()) { clearInterval(waitTimer); waitTimer = null; return; }
+      if (Date.now() > deadline) {
+        clearInterval(waitTimer); waitTimer = null;
+        waiting = false;               // it is not coming
+        fire();
+      }
+    }, RETRY_MS);
+    return false;
+  }
+
+  function start() {
     if (!(window.supabase && window.supabase.createClient)) return false;
     try {
       sb = window.supabase.createClient(url(), SB_ANON, {
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
       });
-    } catch (e) { sb = null; return false; }
+    } catch (e) { sb = null; waiting = false; fire(); return false; }
+    waiting = false;
     sb.auth.onAuthStateChange((evt, s) => {
       session = s || null;
       if (session) loadProfile().then(fire); else { profile = null; fire(); }
@@ -58,6 +95,9 @@
   const fire = () => listeners.forEach((f) => { try { f(state()); } catch (e) {} });
   const state = () => ({
     ready: !!sb,
+    /* True while the library might still arrive. `ready` false and `waiting` true is
+       "checking"; both false is "accounts are not available". */
+    waiting: waiting && !sb,
     signedIn: !!session,
     email: session && session.user && session.user.email,
     userId: session && session.user && session.user.id,
