@@ -1031,12 +1031,56 @@ window.GA_ID='G-L29P5MRWKE';
   .stk-s{font-size:10.5px;color:var(--dim-2);margin-top:3px}
   .achcount{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.06em;
     color:var(--dim-2);margin-left:6px;text-transform:none}
-  .achgrp{margin-top:10px}
-  .achgrp-h{display:flex;align-items:baseline;font-family:var(--fn);font-size:10px;font-weight:800;
-    letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
-  .achgrp-h span{margin-left:auto;color:var(--dim-2)}
+  /* One bar for the cabinet and one per group, same element, so "how far in am I" reads the
+     same at both altitudes. */
+  .achbar{height:4px;border-radius:3px;background:rgba(148,163,184,.16);overflow:hidden;
+    margin:6px 0 2px}
+  .achbar i{display:block;height:100%;border-radius:3px;
+    background:linear-gradient(90deg,#c98b52,#fbbf24)}
+  .achshelf-h{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim-2);margin:11px 0 5px}
+  .achgrp{margin-top:7px;border-top:1px solid var(--line-2)}
+  .achgrp-h{display:grid;grid-template-columns:1fr auto 54px 14px;align-items:center;gap:8px;
+    font-family:var(--fn);font-size:10.5px;font-weight:800;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--dim);padding:10px 0;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .achgrp-h:hover .achgrp-n{color:var(--ink)}
+  .achgrp-h:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
+  .achgrp.open .achgrp-n{color:var(--ink)}
+  .achgrp-c{font-size:10px;color:var(--dim-2);letter-spacing:.04em}
+  .achgrp-h .achbar{margin:0}
+  /* A chevron rather than a plus, rotated on open: it is the one affordance that reads as
+     "there is more under here" without a word of label. */
+  .achchev{width:0;height:0;border-left:4.5px solid transparent;border-right:4.5px solid transparent;
+    border-top:5.5px solid var(--dim-2);justify-self:end;transition:transform .16s ease}
+  .achgrp.open .achchev{transform:rotate(180deg)}
+  .achbody{display:none;padding-bottom:10px}
+  .achgrp.open .achbody{display:block}
   .achlist{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .achlist+.achtiles{margin-top:6px}
   @media(max-width:420px){ .achlist{grid-template-columns:1fr} }
+  /* THE COLLECTIONS. A year or a club name needs no description line, so these are tiles and
+     the requirement lives in the title attribute. Thirty-two of these fit in the space eight
+     cards would take. */
+  /* EACH TILE IS AS WIDE AS ITS OWN LABEL, which is why this wraps rather than grids. A fixed
+     column width has to be set by the longest name in the family, and the names run from
+     "1999" to "Commanders" and "Michigan State": narrow columns truncated ten of them
+     ("Michigan St…"), and columns wide enough for the longest wasted half the row on the
+     years. A wrapping row of chips fits every label whole at its natural size. */
+  .achtiles{display:flex;flex-wrap:wrap;gap:5px}
+  .acht{flex:0 0 auto;border-radius:7px;border:1.5px solid var(--line-2);background:var(--panel);
+    padding:6px 10px;text-align:center;font-family:var(--fn);font-size:10px;font-weight:800;
+    letter-spacing:.02em;color:var(--ink);line-height:1.15;white-space:nowrap}
+  .acht.bronze{border-color:rgba(180,120,70,.55);color:#c98b52;
+    background:linear-gradient(150deg,rgba(201,139,82,.13),var(--panel))}
+  .acht.silver{border-color:rgba(203,213,225,.55);color:#e2e8f0;
+    background:linear-gradient(150deg,rgba(203,213,225,.11),var(--panel))}
+  .acht.gold{border-color:rgba(251,191,36,.55);color:#fbbf24;
+    background:linear-gradient(150deg,rgba(251,191,36,.13),var(--panel))}
+  .acht.legend{border-color:rgba(168,85,247,.6);color:#c084fc;
+    background:linear-gradient(150deg,rgba(168,85,247,.15),var(--panel))}
+  .acht.off{border-color:var(--line-2);background:rgba(148,163,184,.05);color:var(--dim-2);
+    opacity:.5}
   .ach{border-radius:9px;border:1.5px solid var(--line-2);background:var(--panel);padding:7px 9px}
   .ach-n{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.02em;
     color:var(--ink);line-height:1.2}
@@ -3603,7 +3647,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=15"></script>
-<script src="achievements.js?v=1"></script>
+<script src="achievements.js?v=2"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
@@ -8603,9 +8647,17 @@ function achResolve(k){
   const i=k.lastIndexOf(':');
   return BYKEY.get(k.slice(0,i)+'|'+k.slice(i+1))||null;
 }
+/* The chemistry badges ask who on a roster is connected to whom, and only the engine can
+   answer that. The board row keeps the chemistry PERCENTAGE but not the links behind it, so
+   the pair function is handed in and the links are recomputed off the six resolved players.
+   sameClub mirrors what the run itself did: One Franchise suppresses the club and coach links,
+   so counting them here would credit a connection the mode never gave. */
+function achPairLinks(a,b,sameClub){
+  try{ return E.pairLinks(a,b,CTX,sameClub?{sameClub:true}:undefined); }catch(_){ return []; }
+}
 function achEvaluate(rows){
   if(!ACH) return null;
-  try{ return ACH.evaluate(rows,achResolve); }catch(_){ return null; }
+  try{ return ACH.evaluate(rows,achResolve,{pairLinks:achPairLinks}); }catch(_){ return null; }
 }
 
 /* The two streaks, side by side. The play streak leads with the state that motivates: if
@@ -8631,22 +8683,85 @@ function streakBlock(res){
 /* Earned first, because a cabinet is for showing what you have. Locked ones stay visible
    (greyed, with their requirement) because an unearned badge is only interesting if you can
    read what it is asking for. */
+/* THE CABINET, AT THREE HUNDRED BADGES.
+   The first version of this listed every badge open, which was fine at fifty and is a wall of
+   text at three hundred and sixteen. So the shelf reads top-down as a summary that gets more
+   detailed the further in you go:
+
+     - one count and one bar for the whole cabinet, which is the number people quote;
+     - a TROPHY SHELF of the best things earned, because the point of a cabinet is showing off
+       and nobody scrolls fourteen groups to find their rarest badge;
+     - then the groups, each a tappable row with its own count and bar, closed by default.
+
+   Collection groups (the 27 seasons, the 32 clubs, the colleges) draw as small tiles rather
+   than name-and-description cards: for those the name IS the description, and 32 full cards
+   is the wall all over again. The requirement still travels in the tile's title attribute. */
 function achBlock(res){
   const earned=res.earned,locked=res.locked;
-  let h='<p class="shsec">Achievements <span class="achcount">'+earned.length+' of '+res.total+'</span></p>';
+  const pct=(n,d)=>d?Math.round(n/d*100):0;
+  const bar=(n,d)=>'<div class="achbar"><i style="width:'+pct(n,d)+'%"></i></div>';
   const chip=(a,got)=>'<div class="ach '+a.tier+(got?'':' off')+'">'+
     '<div class="ach-n">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div>';
-  for(const g of ACH.GROUPS){
-    const gotG=earned.filter(a=>a.group===g), offG=locked.filter(a=>a.group===g);
-    if(!gotG.length&&!offG.length) continue;
-    gotG.sort((a,b)=>ACH.TIER_ORDER[b.tier]-ACH.TIER_ORDER[a.tier]);
-    h+='<div class="achgrp"><div class="achgrp-h">'+esc(g)+
-      '<span>'+gotG.length+'/'+(gotG.length+offG.length)+'</span></div><div class="achlist">';
-    gotG.forEach(a=>{h+=chip(a,true);});
-    offG.forEach(a=>{h+=chip(a,false);});
-    h+='</div></div>';
+  const tile=(a,got)=>'<div class="acht '+a.tier+(got?'':' off')+'" title="'+esc(a.desc)+'">'+
+    esc(a.name)+'</div>';
+
+  let h='<p class="shsec">Achievements <span class="achcount">'+earned.length+' of '+res.total+
+    '</span></p>'+bar(earned.length,res.total);
+
+  /* Rarest first, and only the top two tiers: a shelf of bronzes is not a trophy shelf. */
+  const showcase=earned.filter(a=>a.tier==='legend'||a.tier==='gold')
+    .sort((a,b)=>ACH.TIER_ORDER[b.tier]-ACH.TIER_ORDER[a.tier]).slice(0,6);
+  if(showcase.length){
+    h+='<div class="achshelf-h">Your best</div><div class="achlist achshelf">';
+    showcase.forEach(a=>{h+=chip(a,true);});
+    h+='</div>';
   }
+
+  ACH.GROUPS.forEach((g,gi)=>{
+    const gotG=earned.filter(a=>a.group===g), offG=locked.filter(a=>a.group===g);
+    const n=gotG.length+offG.length;
+    if(!n) return;
+    gotG.sort((a,b)=>ACH.TIER_ORDER[b.tier]-ACH.TIER_ORDER[a.tier]);
+    h+='<div class="achgrp" data-g="'+gi+'">'+
+      '<div class="achgrp-h" role="button" tabindex="0" aria-expanded="false">'+
+        '<span class="achgrp-n">'+esc(g)+'</span>'+
+        '<span class="achgrp-c">'+gotG.length+'/'+n+'</span>'+
+        bar(gotG.length,n)+'<span class="achchev"></span></div>';
+    /* Cards for the written badges, tiles for the collection. Earned before locked in both,
+       so an expanded group opens on what you have rather than on what you have not. */
+    const cards=gotG.filter(a=>!a.compact).concat(offG.filter(a=>!a.compact));
+    const tiles=gotG.filter(a=>a.compact).concat(offG.filter(a=>a.compact));
+    const gotSet=new Set(gotG.map(a=>a.id));
+    h+='<div class="achbody">';
+    if(cards.length){
+      h+='<div class="achlist">';
+      cards.forEach(a=>{h+=chip(a,gotSet.has(a.id));});
+      h+='</div>';
+    }
+    if(tiles.length){
+      h+='<div class="achtiles">';
+      tiles.forEach(a=>{h+=tile(a,gotSet.has(a.id));});
+      h+='</div>';
+    }
+    h+='</div></div>';
+  });
   return h;
+}
+
+/* Delegated once on the panel rather than bound per header, because careerPaint replaces the
+   whole block on every repaint and per-row handlers would be re-bound each time. */
+function achWire(root){
+  if(!root) return;
+  root.addEventListener('click',(e)=>{
+    const head=e.target.closest('.achgrp-h'); if(!head||!root.contains(head)) return;
+    const grp=head.parentNode, open=grp.classList.toggle('open');
+    head.setAttribute('aria-expanded',open?'true':'false');
+  });
+  root.addEventListener('keydown',(e)=>{
+    if(e.key!=='Enter'&&e.key!==' ') return;
+    const head=e.target.closest&&e.target.closest('.achgrp-h'); if(!head) return;
+    e.preventDefault(); head.click();
+  });
 }
 
 async function careerPaint(userId){
@@ -8665,7 +8780,7 @@ async function careerPaint(userId){
   }
   const res=achEvaluate(c.rows);
   now.innerHTML=careerBlock(c)+(res?streakBlock(res)+achBlock(res):'');
-  if(res) achAnnounce(userId,res,true);
+  if(res){ achWire(now); achAnnounce(userId,res,true); }
   /* Delegated on the list rather than bound per row, and the row index is looked up in the
      same sorted list the markup came from, so the run a tap opens is the run it shows. */
   const list=now.querySelector('.bestlist');
