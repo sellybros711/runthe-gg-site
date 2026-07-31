@@ -1,0 +1,93 @@
+name: Apply a Perfect Season SQL file
+
+# Applies one file from supabase/ to the live database.
+#
+# THE DRY RUN IS A REAL RUN. Leave "apply" unchecked and the file is executed
+# inside a transaction that is then ROLLED BACK: Postgres parses every statement,
+# checks it against the actual schema, validates every constraint against every
+# existing row, and reports anything wrong -- then throws the changes away. That
+# catches the mistakes a local check cannot, like a check constraint that is fine
+# in principle and fails on a row somebody recorded last week.
+#
+# A migration here is expected to be re-runnable. These files are written with
+# IF NOT EXISTS / OR REPLACE / guarded DO blocks throughout, so applying one twice
+# is not an error, which is what makes "dry run, then apply" safe rather than a
+# sequence that has to be got right first time.
+#
+# Uses the SAME SUPABASE_DB_URL secret as the other Supabase workflows. No new secret.
+#
+# Run it from Actions -> "Apply a Perfect Season SQL file" -> Run workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: 'File under supabase/ to run, e.g. 61_football_trade_machine.sql'
+        required: true
+        type: string
+      apply:
+        description: 'Commit the changes? Unchecked = parse, execute and ROLL BACK.'
+        type: boolean
+        default: false
+
+concurrency:
+  group: apply-football-sql
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the postgres client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          psql --version
+
+      - name: Run the file
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          FILE: ${{ inputs.file }}
+          APPLY: ${{ inputs.apply }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not set — add it under Settings → Secrets → Actions."
+            exit 1
+          fi
+
+          # No path separators and no traversal: this input names a file in supabase/,
+          # it does not point anywhere on the runner.
+          case "$FILE" in
+            */*|*..*|"") echo "::error::file must be a bare name inside supabase/, got '$FILE'"; exit 1 ;;
+          esac
+          SQL="supabase/$FILE"
+          if [ ! -f "$SQL" ]; then
+            echo "::error::$SQL does not exist on this branch."
+            exit 1
+          fi
+
+          echo "File:  $SQL"
+          echo "Lines: $(wc -l < "$SQL")"
+          echo ""
+
+          if [ "$APPLY" != "true" ]; then
+            echo "DRY RUN — executing inside a transaction that will be rolled back."
+            echo ""
+            # -1 wraps the file in one transaction; the appended rollback discards it.
+            # ON_ERROR_STOP makes any failure a non-zero exit, so a broken file fails the job.
+            { cat "$SQL"; echo ""; echo "rollback;"; } > /tmp/dry.sql
+            psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -1 -f /tmp/dry.sql
+            echo ""
+            echo "DRY RUN PASSED — the file is valid against the live schema and nothing was written."
+            echo "Re-run with 'apply' checked to commit it."
+            exit 0
+          fi
+
+          echo "APPLYING in a single transaction — any error rolls the whole file back."
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -1 -f "$SQL"
+          echo ""
+          echo "Applied $SQL."
