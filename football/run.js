@@ -38,6 +38,9 @@ const PHASES = {
 };
 
 const pkey = (p) => `${p.player_id}|${p.season}`;
+/* The other spelling of the same thing. pkey's pipe is for this file's own maps; a colon is
+   what ps_runs.picks has always stored and therefore what a recorded trade has to use. */
+const runKey = (p) => `${p.player_id}:${p.season}`;
 
 /**
  * What chemistry needs to know about the mode. One field, but it goes to five
@@ -1318,6 +1321,12 @@ function acceptTrade(run, offer, data, ctx) {
     out: offer.outPlayers.map((p) => p.name),
     in: offer.inPlayers.map((p) => p.name).join(', ')
       + (offer.type === '2for1' ? ' + free agent' : ''),
+    /* THE SAME MOVE, IN IDS, so it can be recorded and read back. The names above are
+       for the GM report to print; these are what ps_runs.trade_moves stores, spelled the
+       way the picks column spells a player, because the badge cabinet resolves both
+       through one lookup. Week 0 is the window before kickoff. */
+    outKeys: offer.outPlayers.map(runKey),
+    inKeys: offer.inPlayers.map(runKey),
   });
   return run;
 }
@@ -1329,6 +1338,11 @@ function signFreeAgent(run, player, ctx) {
   run.slotIndex.push(pending.slotIndex);
   run.usedPlayers.push(player.player_id);
   run.pendingFreeAgency = null;
+  /* Hung on the trade that opened the hole rather than logged as a move of its own. A
+     pending signing only ever follows a two-for-one, whose printed line already ends
+     "+ free agent", so a separate row would say the same thing twice in the GM report. */
+  const last = (run.tradeHistory || [])[(run.tradeHistory || []).length - 1];
+  if (last) last.faKey = runKey(player);
   const chem = E.resolveChemistry(run.roster, ctx);
   run.season.chemistry = chem.multiplier;
   run.season.chemistryLinks = chem.links;

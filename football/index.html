@@ -3642,12 +3642,12 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=37"></script>
-<script src="run.js?v=46"></script>
+<script src="run.js?v=47"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=15"></script>
-<script src="achievements.js?v=3"></script>
+<script src="board.js?v=16"></script>
+<script src="achievements.js?v=4"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
@@ -9206,6 +9206,22 @@ function runPayload(){
        an expensive search and there is no reason to run it twice. Null until then,
        and null forever if it could not be solved. */
     perfectPct:lastPerfectShare,
+    /* ---- THE TWO TRADE MACHINE FIELDS, and null for every other mode ----
+       paintOver has already run computeGMRating by the time a run is recorded, so this
+       reads the stored number rather than recomputing it: two calls could not disagree,
+       but the one the player was shown is the one that should be on the board.
+
+       The moves are the only thing here that is NOT derivable after the fact. `picks` is
+       the roster a run FINISHED with, so nothing in it can say who left, when, or what
+       came back; without this a badge about dealing has no way to ask. Free-agent
+       signings ride on the trade that opened the hole, flagged rather than listed, which
+       is the same shape acceptTrade records. */
+    gmRating:run.tradeMachine?(o.gmRating??null):null,
+    tradeMoves:run.tradeMachine?(run.tradeHistory||[]).map(h=>{
+      const m={w:h.week||0,t:h.type,out:h.outKeys||[],in:(h.inKeys||[]).slice()};
+      if(h.faKey){ m.in.push(h.faKey); m.fa=1; }
+      return m;
+    }):null,
   };
 }
 
