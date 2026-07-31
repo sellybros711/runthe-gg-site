@@ -2265,6 +2265,20 @@ window.GA_ID='G-L29P5MRWKE';
   .streak.on{opacity:1}
   .streak.w{color:#4ade80} .streak.l{color:#f87171}
   .streak.clinch{font-size:14px;letter-spacing:.18em;animation:clinchPop .5s ease both}
+  /* THE BYE CHASE, GM mode. Reads as a scoreboard line, not a notification: the pips
+     are the last eight games, filled for a win. Gold once it is clinched. */
+  .seedchase{margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;
+    font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--dim)}
+  .seedchase[hidden]{display:none}
+  .sc-pips{display:flex;gap:3px}
+  .sc-pip{width:7px;height:7px;border-radius:2px;background:var(--line)}
+  .sc-pip.w{background:#4ade80}
+  .sc-pip.l{background:#f87171;opacity:.55}
+  .seedchase.live{color:#e5e7eb}
+  .seedchase.got{color:#fbbf24}
+  .seedchase.got .sc-pip.w{background:#fbbf24}
+  .seedchase.gone{opacity:.5}
   .cap-tracker{margin:10px 0 0;padding:10px 14px;border-radius:10px;
     background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25)}
   .cap-tracker.danger{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.35)}
@@ -3416,6 +3430,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            was telling you when you were on one. Height is reserved so the card does not jump
            when it appears. -->
       <div class="streak" id="v-streak"></div>
+      <!-- GM mode only. The bye can be won with a hot finish, so the chase is shown
+           while it is still live rather than revealed at seeding. -->
+      <div class="seedchase" id="v-chase" hidden></div>
     </div>
     <div class="cap-tracker" id="cap-tracker" hidden>
       <div class="cap-bar"><div class="cap-fill" id="cap-fill"></div></div>
@@ -3757,8 +3774,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="headline" id="headline"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=37"></script>
-<script src="run.js?v=50"></script>
+<script src="engine.js?v=38"></script>
+<script src="run.js?v=51"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -5624,6 +5641,38 @@ function paintNext(live){
     sEl.className='streak'+(st?(st.won?' w on':' l on'):'');
     sEl.textContent=st?(st.n+(st.won?' straight wins':' straight losses')):'';
   }
+  paintSeedChase();
+}
+
+/* THE BYE CHASE. GM mode earns the #1 seed either on record or by winning
+   LATE_BYE_WINS of its last LATE_BYE_GAMES, and a mechanic nobody can see is a
+   mechanic nobody plays for. This shows the window as soon as it opens -- the game
+   at which the last eight begin -- and keeps showing it until it is won or lost. */
+function paintSeedChase(){
+  const el=$('v-chase');
+  if(!el) return;
+  const s=run&&run.season;
+  if(!run||!run.tradeMachine||!s||run.phase===R.PHASES.PLAYOFFS){ el.hidden=true; return; }
+  const N=E.CONSTANTS.LATE_BYE_GAMES, NEED=E.CONSTANTS.LATE_BYE_WINS;
+  const total=E.CONSTANTS.REGULAR_SEASON_GAMES;
+  const reg=s.results.filter(r=>!r.playoff);
+  if(reg.length<total-N){ el.hidden=true; return; }   // window not open yet
+  /* Sliced from the front of the window, not the back of the list: at the moment the
+     window opens no late games have been played yet, and slice(-N) would show the
+     eight before it instead of the eight to come. */
+  const late=reg.slice(total-N);
+  const won=late.filter(r=>r.won).length;
+  const left=total-reg.length;
+  const clinched=won>=NEED;
+  const dead=won+left<NEED;
+  el.hidden=false;
+  el.className='seedchase '+(clinched?'got':dead?'gone':'live');
+  const pips=late.map(r=>'<span class="sc-pip '+(r.won?'w':'l')+'"></span>').join('')
+    +Array.from({length:left},()=>'<span class="sc-pip"></span>').join('');
+  const text=clinched?'#1 seed &amp; a bye'
+    :dead?'Bye out of reach'
+    :won+' of '+NEED+' &middot; bye on the line';
+  el.innerHTML='<span class="sc-pips">'+pips+'</span><span>'+text+'</span>';
 }
 function paintCapTracker(inf){
   const el=$('cap-tracker');
@@ -6014,7 +6063,8 @@ function paintGmParts(p,gm){
   const rec=p.regularWins+'-'+(E.CONSTANTS.REGULAR_SEASON_GAMES-p.regularWins);
   const rows=[
     {k:'Winning',w:35,v:p.result,
-     why:rec+(p.playoffWins?', '+p.playoffWins+' playoff win'+(p.playoffWins===1?'':'s'):'')+
+     why:rec+(p.bye?', top seed and a bye':'')+
+       (p.playoffWins?', '+p.playoffWins+' playoff win'+(p.playoffWins===1?'':'s'):'')+
        (run.outcome.titleWon?', won the title':(run.outcome.madePlayoffs?', made the playoffs':', missed the playoffs'))},
     {k:'Improvement',w:25,v:p.improvement,
      why:'team '+p.startRating.toFixed(1)+' → '+p.finalRating.toFixed(1)+
@@ -6634,10 +6684,15 @@ function paintSeed(){
     badges.innerHTML='<span class="seed-badge blue">Wild Card</span>';
   }
 
-  /* Description */
-  $('sd-sub').textContent=sd.bye
-    ? 'You earned a first-round bye. Three wins from a championship.'
-    : 'You are in. Four wins from a championship.';
+  /* Description. In GM mode the bye can be earned by finishing hot rather than by
+     record, and if that is how you got it the screen says so -- otherwise a 13-4 team
+     sitting on the #1 seed reads as a bug. */
+  $('sd-sub').textContent=sd.byeRoute==='finish'
+    ? 'Hottest team in the league: '+sd.lateWins+' wins in your last '+sd.lateGames
+      +'. That earns the bye. Three wins from a championship.'
+    : sd.bye
+      ? 'You earned a first-round bye. Three wins from a championship.'
+      : 'You are in. Four wins from a championship.';
 
   /* Playoff progress tracker */
   const allRounds=['Wild Card','Divisional','Conf.','Title'];

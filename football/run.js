@@ -707,7 +707,9 @@ function startSeason(run, data, ctx) {
   if (run.era) schedOpts.era = run.era;
   const sched = E.generateSchedule(data.prepared, rng, schedOpts);
   run.schedule = sched.games.map((g) => g.team_season_id);
-  const poOpts = run.era ? { era: run.era } : {};
+  /* GM mode draws a bracket of real contenders instead of the legends ladder; every
+     other mode keeps the Patriots and the Dolphins waiting at the end. */
+  const poOpts = run.era ? { era: run.era } : (run.tradeMachine ? { contenders: true } : {});
   run.playoffs = E.generatePlayoffs(data.prepared, rng, poOpts).map((g) => g.team_season_id);
   run.season = {
     chemistry: chem.multiplier,
@@ -800,11 +802,20 @@ function advanceWeek(run, data, leagueContext, displayCal) {
     s.week++;
     if (s.week >= run.schedule.length) {
       // Record is final. Work out the seed and pause so it can be shown.
-      const seed = E.seedFromRecord(s.wins);
+      /* GM mode also seeds on the finish, so a turnaround can earn the bye that 15 wins
+         puts out of reach. Only the regular-season results count, and only in this mode. */
+      const seedOpts = {};
+      if (run.tradeMachine) {
+        const late = s.results.filter((r) => !r.playoff).slice(-E.CONSTANTS.LATE_BYE_GAMES);
+        seedOpts.lateWins = late.filter((r) => r.won).length;
+        seedOpts.lateGames = late.length;
+      }
+      const seed = E.seedFromRecord(s.wins, seedOpts);
       run.playoffSeed = {
         ...seed,
         roundNames: seed.made ? E.playoffRoundNames(seed.rounds) : [],
         regularRecord: s.wins + '-' + s.losses,
+        ...(run.tradeMachine ? { lateWins: seedOpts.lateWins, lateGames: seedOpts.lateGames } : {}),
       };
       s.regularWins = s.wins;
       s.regularLosses = s.losses;
@@ -835,7 +846,7 @@ function inflateCap(run) {
     if (run.roster[i].price_musd > run.roster[maxIdx].price_musd) maxIdx = i;
   }
   const old = run.roster[maxIdx].price_musd;
-  run.roster[maxIdx].price_musd = money(old * 1.10);
+  reprice(run, maxIdx, money(old * 1.10));
   const total = money(run.roster.reduce((s, p) => s + p.price_musd, 0));
   const cap = E.CONSTANTS.CAP_MUSD;
   run.capHistory.push({
@@ -967,9 +978,28 @@ function isTradeWindow(run) {
    cumulative pressure the old 1.06^4 applied, just concentrated into the first nine weeks
    where the decisions now live. */
 const CONTRACT_INFLATION = 1.08;
+
+/*
+ * Re-price one roster spot WITHOUT touching the shared pool.
+ *
+ * A roster entry is a reference straight into the indexed player data, which is
+ * built once at boot and reused by every run and every mode. Writing price_musd
+ * through that reference therefore did not raise one GM's contract, it raised
+ * that player's price for the rest of the page: a second trade season drafted
+ * from an already-inflated pool, and the free mode's cap arithmetic drifted with
+ * it. Both re-pricers go through here so the copy cannot be forgotten in one of
+ * them.
+ */
+function reprice(run, idx, price) {
+  const p = run.roster[idx];
+  run.roster[idx] = { ...p, price_musd: price };
+  return run.roster[idx];
+}
+
 function inflateContracts(run) {
-  for (const p of run.roster) {
-    p.price_musd = Math.round(p.price_musd * CONTRACT_INFLATION * 100) / 100;
+  for (let i = 0; i < run.roster.length; i++) {
+    const p = run.roster[i];
+    reprice(run, i, Math.round(p.price_musd * CONTRACT_INFLATION * 100) / 100);
   }
 }
 
@@ -1566,7 +1596,11 @@ function computeGMRating(run) {
   let playoffBonus = 0;
   if (run.outcome.madePlayoffs) playoffBonus += 5;
   const playoffWins = run.season.results.filter((r) => r.playoff && r.won).length;
-  playoffBonus += playoffWins * 5;
+  /* A BYE IS A ROUND CLEARED, not a round missed. Paying only for games played meant the
+     top seed reached the title having banked 5 fewer points than a wild card that won the
+     same trophy, so the better seed scored worse. The week off counts. */
+  const roundsCleared = playoffWins + (run.playoffSeed && run.playoffSeed.bye ? 1 : 0);
+  playoffBonus += roundsCleared * 5;
   if (run.outcome.titleWon) playoffBonus += 5;
   const clamp100 = (v) => Math.max(0, Math.min(100, v));
 
@@ -1622,7 +1656,7 @@ function computeGMRating(run) {
   run.outcome.gmParts = {
     result: r1(resultScore), improvement: r1(improvementScore),
     value: r1(valueScore), cap: r1(capScore), over: r1(overScore),
-    regularWins, playoffWins,
+    regularWins, playoffWins, bye: !!(run.playoffSeed && run.playoffSeed.bye),
     ratingGain: r1(ratingGain), startRating: r1(run.startRating), finalRating: r1(finalRating),
     addedSalary: r1(addedSalary), noTradePayroll: r1(noTradePayroll),
     capRemaining: r1(capRemaining), overCapBy: r1(overCapBy), idleCap: r1(idleCap),
