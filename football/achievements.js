@@ -228,7 +228,7 @@
        is not zero, which is the rule the whole of this file follows. */
     const moveRuns = [];
     const moveTypes = new Set();
-    const dealtOut = [], dealtIn = [], cutPlayers = [];
+    const dealtOut = [], dealtIn = [], cutPlayers = [], askedPlayers = [];
     let bestGm = null, totalTrades = 0;
     for (const r of asc) {
       if (r.run_mode !== 'trade') continue;
@@ -240,7 +240,7 @@
       const res = (k) => (resolve ? resolve(k) : null);
       const priced = (list) => list.reduce((t, p) => t + Number((p && p.price_musd) || 0), 0);
       const moves = [], windows = new Set(), outKeys = new Set();
-      let trades = 0, fa = 0, cuts = 0;
+      let trades = 0, fa = 0, cuts = 0, askedFor = 0;
       for (const mv of r.trade_moves) {
         if (!mv || typeof mv !== 'object') continue;
         const outK = Array.isArray(mv.out) ? mv.out : [];
@@ -256,18 +256,30 @@
         /* A RELEASED PLAYER IS IN `out` AS WELL, because he did leave in this move, so the
            two lists overlap by design: "traded away a 20-point man" and "released a 20-point
            man" are different badges and `cut` is what tells them apart. */
-        if (mv.cut) {
+        /* `cuts` is the full list when a deal released more than one man; `cut` is the first
+           of them and the only key rows written before three-for-ones existed carry. Reading
+           the list when it is there and falling back to the single key otherwise keeps every
+           older row counting exactly as it did. */
+        const cutKeys = Array.isArray(mv.cuts) && mv.cuts.length ? mv.cuts
+          : (mv.cut ? [mv.cut] : []);
+        for (const ck of cutKeys) {
           cuts++;
-          const cp = res(mv.cut);
+          const cp = res(ck);
           if (cp) cutPlayers.push(cp);
+        }
+        if (mv.ask) {
+          askedFor++;
+          const ap = res(mv.ask);
+          if (ap) askedPlayers.push(ap);
         }
         outP.forEach((p) => dealtOut.push(p));
         inP.forEach((p) => dealtIn.push(p));
         moves.push({ w, t: mv.t, outPlayers: outP, inPlayers: inP,
-          outMusd: priced(outP), inMusd: priced(inP) });
+          outMusd: priced(outP), inMusd: priced(inP),
+          cutCount: cutKeys.length, asked: mv.ask || null });
       }
       totalTrades += trades;
-      moveRuns.push({ row: r, moves, windows, outKeys, trades, fa, cuts,
+      moveRuns.push({ row: r, moves, windows, outKeys, trades, fa, cuts, askedFor,
         outPlayers: moves.reduce((a, m) => a.concat(m.outPlayers), []),
         inPlayers: moves.reduce((a, m) => a.concat(m.inPlayers), []) });
     }
@@ -291,7 +303,7 @@
       clubsPlayed, clubTitles, clubBanners, modesPlayed, modeTitles,
       seasonsDrafted, clubsDrafted, collegesDrafted, awardsDrafted, linkTypesEver,
       months, weekdays, monthDays, hours,
-      moveRuns, moveTypes, dealtOut, dealtIn, cutPlayers, bestGm, totalTrades,
+      moveRuns, moveTypes, dealtOut, dealtIn, cutPlayers, askedPlayers, bestGm, totalTrades,
       hasLinks: !!pairLinks,
       best: (col) => {
         const vals = asc.map((r) => num(r[col])).filter((v) => v !== null);
@@ -832,6 +844,32 @@
     'Make all four shapes of trade: one-for-one, one-for-two, two-for-one and two-for-two.',
     'gold', 'Front office',
     (c) => ['1for1', '1for2', '2for1', '2for2'].every((t) => c.moveTypes.has(t))));
+  /* The shapes the rebuilt market added: three men back, and the deal where the league asks
+     for somebody you never put up. */
+  add(A('deal_1for3', 'Fire sale', 'Trade one player for three, and release two to fit them in.',
+    'gold', 'Front office', (c) => c.moveTypes.has('1for3')));
+  add(A('deal_2for3', 'Restocked', 'Send two players out and bring three back.',
+    'silver', 'Front office', (c) => c.moveTypes.has('2for3')));
+  add(A('deal_all_shapes', 'Every shape there is',
+    'Make all six shapes of trade, up to a three-for-one and a two-for-three.',
+    'legend', 'Front office',
+    (c) => ['1for1', '1for2', '1for3', '2for1', '2for2', '2for3']
+      .every((t) => c.moveTypes.has(t))));
+  add(A('gave_them_more', 'They asked, you paid',
+    'Take a deal where the other GM wanted a second player you had not offered.',
+    'silver', 'Front office', (c) => c.moveRuns.some((m) => m.askedFor >= 1)));
+  add(A('asked_for_the_best', 'Priced out of a favourite',
+    'Give up a 15-point-a-game player the other GM asked for on top of the deal.',
+    'gold', 'Front office',
+    (c) => c.askedPlayers.some((p) => Number(p.ppr_ppg_mean) >= 15)));
+  add(A('held_the_line', 'Held the line',
+    'Win a Trade Machine title in a season where you never gave up a player you had not offered.',
+    'gold', 'Front office',
+    (c) => c.moveRuns.some((m) => m.askedFor === 0 && m.trades >= 2
+      && isTrue(m.row.title_won))));
+  add(A('double_release', 'Two off the books',
+    'Release two players in a single trade.', 'silver', 'Front office',
+    (c) => c.moveRuns.some((m) => m.moves.some((v) => v.cutCount >= 2))));
 
   /* WHAT WAS ACTUALLY DEALT. These are the questions the column was added for: they need
      the players who LEFT, and no other column has ever kept them. */
