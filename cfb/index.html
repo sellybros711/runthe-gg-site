@@ -927,13 +927,27 @@ window.GA_ID='G-L29P5MRWKE';
      text-shadow is an inherited property, so without standing it down here the
      unlit segments picked up the lit ones' glow and burned just as brightly: a 7
      over a ghosted 8 came out as an unreadable 8. The dark segments must stay
-     dark. */
-  .bug .bt .sc{text-align:right;min-width:2ch}
+     dark.
+
+     THE WINDOW IS TWO DIGITS WIDE WHATEVER THE SCORE, which is what min-width is
+     for, and box-sizing is what makes it true. Everything on this page is
+     border-box, so `min-width:2ch` on a cell with 9px of padding either side was
+     reserving two digits of room and then spending 18px of it on padding: the
+     window came out 14px short and the ghost's tens digit was sliced off down the
+     middle at every single-digit score. content-box makes the 2ch mean two
+     digits of digits. It costs nothing on the varsity board, whose score cell has
+     no side padding, which is why that board always looked right and only the
+     playoff and bowl boards showed the clipping.
+
+     1ch is the advance of "0", and in a seven-segment face every digit has the
+     same advance, so 2ch is exactly "88" and stays exactly "88" if the webfont
+     fails and the fallback takes over. */
+  .bug .bt .sc{text-align:right;min-width:2ch;box-sizing:content-box}
   .bug .bt .sc:before{content:'88';position:absolute;inset:0;padding:inherit;
-    text-align:right;color:rgba(255,200,74,.13);text-shadow:none;pointer-events:none}
-  .bug .bbot .ck{position:relative;min-width:5ch;text-align:right}
+    text-align:right;color:rgba(255,200,74,.07);text-shadow:none;pointer-events:none}
+  .bug .bbot .ck{position:relative;min-width:5ch;text-align:right;box-sizing:content-box}
   .bug:not(.final) .bbot .ck:before{content:'88:88';position:absolute;inset:0;
-    text-align:right;color:rgba(255,200,74,.13);text-shadow:none;pointer-events:none}
+    text-align:right;color:rgba(255,200,74,.07);text-shadow:none;pointer-events:none}
   /* At full time the clock carries words, which a seven-segment face cannot set,
      so it hands over to the collegiate face and the ghost stands down. */
   .bug.final .bbot .ck{font-family:var(--fc);min-width:0}
@@ -1004,7 +1018,7 @@ window.GA_ID='G-L29P5MRWKE';
   .bug.varsity .bt .cd{font-family:var(--fc);font-size:clamp(13px,3.9vw,18px);
     letter-spacing:.1em;color:#f2f6fb;text-shadow:none}
   /* White bulbs, the way the numerals on a school board are lit. */
-  .bug.varsity .bt .sc:before{color:rgba(255,255,255,.10);text-shadow:none}
+  .bug.varsity .bt .sc:before{color:rgba(255,255,255,.055);text-shadow:none}
   .bug.varsity .bt .sc,.bug.varsity.big .bt .sc{background:none;box-shadow:none;padding:1px 0 0;
     font-family:var(--fled);font-weight:700;font-size:clamp(34px,11vw,50px);line-height:1;
     color:rgba(255,255,255,.74);
