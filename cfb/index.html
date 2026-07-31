@@ -266,8 +266,6 @@
     background:linear-gradient(180deg,#05080f 2%,rgba(5,8,15,.15) 33%,rgba(5,8,15,.15) 67%,#05080f 98%)}
   .reelbox.clubbed:after{background:linear-gradient(180deg,rgba(0,0,0,.72) 2%,rgba(0,0,0,.10) 34%,
     rgba(0,0,0,.10) 66%,rgba(0,0,0,.72) 98%)}
-  .reelbox .lbl{position:absolute;top:7px;left:11px;font-family:var(--fn);font-size:9px;
-    font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2);z-index:4}
   .reel-strip{position:absolute;left:0;right:0;top:0;z-index:1;will-change:transform,filter}
   .reel-win{position:absolute;left:5px;right:5px;top:50%;height:38px;margin-top:-19px;z-index:3;
     border-radius:9px;border:1px solid rgba(255,255,255,.13);pointer-events:none;
@@ -1265,11 +1263,11 @@
      in quantity, so nothing gets harder to read. Graduate ships a single, heavy
      weight, so we drop the faux-bold and lean on letter-spacing; the two
      smallest labels get a point back for legibility at Graduate's blockier cut. */
-  .eyebrow,.hero .sub,.caprow .lbl,.reelbox .lbl,.caleye span,
+  .eyebrow,.hero .sub,.caprow .lbl,.caleye span,
   .gameday span,.bug .bbot .rd,#bowl-title,#d-count,
   .seed-badge,.po-step,.resume .rchip{font-family:var(--fc);font-weight:400}
   .gameday span{letter-spacing:.13em}
-  .reelbox .lbl{font-size:10px} .caleye span{font-size:10px}
+  .caleye span{font-size:10px}
 </style>
 </head>
 <body>
@@ -1326,14 +1324,15 @@ or endorsed by the NCAA, the CFP or any school.
          say what the game is faster than a paragraph can, so the words underneath
          only have to name it. -->
     <div class="stage">
+      <!-- No "Year" or "Team" written on the wheels. A column of years and a column
+           of schools says which is which, and the words only sat on top of the
+           numbers. The names stay for anyone listening rather than looking. -->
       <div class="reels" id="h-reels">
-        <div class="reelbox year waiting" id="h-box-y">
-          <span class="lbl">Year</span>
+        <div class="reelbox year waiting" id="h-box-y" aria-label="Year">
           <div class="reel-win"></div>
           <div class="reel-strip" id="h-reel-y"></div>
         </div>
-        <div class="reelbox team waiting" id="h-box-t">
-          <span class="lbl">Team</span>
+        <div class="reelbox team waiting" id="h-box-t" aria-label="Team">
           <div class="reel-win"></div>
           <div class="reel-strip" id="h-reel-t"></div>
         </div>
@@ -1391,13 +1390,11 @@ or endorsed by the NCAA, the CFP or any school.
       </div>
       <div class="dcol">
         <div class="reels" style="margin:0">
-          <div class="reelbox year waiting" id="box-y">
-            <span class="lbl">Year</span>
+          <div class="reelbox year waiting" id="box-y" aria-label="Year">
             <div class="reel-win"></div>
             <div class="reel-strip" id="reel-y"></div>
           </div>
-          <div class="reelbox team waiting" id="box-t">
-            <span class="lbl">Team</span>
+          <div class="reelbox team waiting" id="box-t" aria-label="Team">
             <div class="reel-win"></div>
             <div class="reel-strip" id="reel-t"></div>
           </div>
