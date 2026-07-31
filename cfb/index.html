@@ -727,7 +727,7 @@
     padding:5px 9px 4px;border-radius:5px;color:#ffc84a;font-variant-numeric:tabular-nums;
     background:linear-gradient(180deg,#0b0e15,#05070c);
     box-shadow:inset 0 2px 6px rgba(0,0,0,.95),inset 0 0 0 1px rgba(255,255,255,.07);
-    text-shadow:0 0 10px rgba(255,190,55,.8),0 0 3px rgba(255,225,150,.9)}
+    text-shadow:0 0 6px rgba(255,185,50,.4)}
   .bug .bt.them .sc{justify-self:start}
   .bug .bt{filter:saturate(.7) brightness(.7)}
   .bug .bt.lead{filter:none}
@@ -741,19 +741,24 @@
     color:#94a2b6;flex:0 0 auto;line-height:1}
   .bug .bbot .ck{font-family:var(--fled);font-weight:700;font-size:17px;line-height:1;
     color:#ffc84a;flex:0 0 auto;font-variant-numeric:tabular-nums;
-    text-shadow:0 0 9px rgba(255,190,55,.65)}
+    text-shadow:0 0 5px rgba(255,185,50,.35)}
   .bug .bbot .ck:empty{display:none}
   /* THE DARK SEGMENTS. A board shows every segment of every digit whether it is
      lit or not, so a ghosted 88 sits behind the score and 88:88 behind the clock.
      A 7 then reads with its tens place dark, which is the tell that says this is
      a scoreboard and not a number in a box. The ghost takes the same padding as
-     the real digits, so the two line up exactly. */
+     the real digits, so the two line up exactly.
+
+     text-shadow is an inherited property, so without standing it down here the
+     unlit segments picked up the lit ones' glow and burned just as brightly: a 7
+     over a ghosted 8 came out as an unreadable 8. The dark segments must stay
+     dark. */
   .bug .bt .sc{text-align:right;min-width:2ch}
   .bug .bt .sc:before{content:'88';position:absolute;inset:0;padding:inherit;
-    text-align:right;color:rgba(255,200,74,.16);pointer-events:none}
+    text-align:right;color:rgba(255,200,74,.13);text-shadow:none;pointer-events:none}
   .bug .bbot .ck{position:relative;min-width:5ch;text-align:right}
   .bug:not(.final) .bbot .ck:before{content:'88:88';position:absolute;inset:0;
-    text-align:right;color:rgba(255,200,74,.16);pointer-events:none}
+    text-align:right;color:rgba(255,200,74,.13);text-shadow:none;pointer-events:none}
   /* At full time the clock carries words, which a seven-segment face cannot set,
      so it hands over to the collegiate face and the ghost stands down. */
   .bug.final .bbot .ck{font-family:var(--fc);min-width:0}
@@ -824,13 +829,12 @@
   .bug.varsity .bt .cd{font-family:var(--fc);font-size:clamp(13px,3.9vw,18px);
     letter-spacing:.1em;color:#f2f6fb;text-shadow:none}
   /* White bulbs, the way the numerals on a school board are lit. */
-  .bug.varsity .bt .sc:before{color:rgba(255,255,255,.11)}
+  .bug.varsity .bt .sc:before{color:rgba(255,255,255,.10);text-shadow:none}
   .bug.varsity .bt .sc,.bug.varsity.big .bt .sc{background:none;box-shadow:none;padding:1px 0 0;
     font-family:var(--fled);font-weight:700;font-size:clamp(34px,11vw,50px);line-height:1;
-    color:rgba(255,255,255,.78);
-    text-shadow:0 0 14px rgba(255,255,255,.32),0 0 3px rgba(255,255,255,.5)}
-  .bug.varsity .bt.lead .sc{color:#fff;
-    text-shadow:0 0 20px rgba(255,255,255,.6),0 0 4px rgba(255,255,255,.85)}
+    color:rgba(255,255,255,.74);
+    text-shadow:0 0 8px rgba(255,255,255,.20)}
+  .bug.varsity .bt.lead .sc{color:#fff;text-shadow:0 0 10px rgba(255,255,255,.3)}
   .bug.varsity .bt .rc{font-size:11px;color:rgba(255,255,255,.66)}
   .bug.varsity .bt .rk{font-size:11.5px}
   /* The strip along the bottom, ruled off like the down and distance row. */
