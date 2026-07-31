@@ -1012,6 +1012,19 @@ window.GA_ID='G-L29P5MRWKE';
   .tt-cap .tc-room.over{color:#fca5a5;font-weight:700}
   .tt-cap .tc-d{font-weight:700}
   .tt-cap .tc-d.up{color:#4ade80} .tt-cap .tc-d.dn{color:#fca5a5}
+  /* The ceiling the deal would leave you on, when cash is changing hands. Amber, the colour
+     this mode uses for money going out that does not come back. */
+  .tt-cap .tc-cash{color:#fbbf24;font-weight:700}
+
+  /* CASH ON TOP. Its own row on the deal, not a footer number, because it is a permanent
+     charge against the ceiling rather than another line of payroll. */
+  .deal-cash{display:flex;align-items:baseline;gap:8px;margin:7px 10px 0;padding:7px 9px;
+    border-radius:8px;font-size:11.5px;line-height:1.35;color:#fde68a;
+    background:linear-gradient(180deg,rgba(245,158,11,.16),rgba(245,158,11,.07));
+    border:1px solid rgba(245,158,11,.5)}
+  .deal-cash .dcash-n{flex:0 0 auto;font-family:var(--fd);font-size:17px;font-weight:700;
+    color:#fcd34d;line-height:1}
+  .deal-cash b{color:#fcd34d}
   .tt-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px}
   .tt-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;
     gap:6px;padding:3px 4px;border-radius:7px;min-width:0;
@@ -3832,13 +3845,13 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="headline" id="headline"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=38"></script>
-<script src="run.js?v=52"></script>
+<script src="engine.js?v=39"></script>
+<script src="run.js?v=53"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=17"></script>
-<script src="achievements.js?v=6"></script>
+<script src="achievements.js?v=7"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
@@ -4947,7 +4960,7 @@ function paintTop(){
   else if(left===1) per.textContent=M(rem)+' for the last spot';
   else per.textContent=M(rem/left)+' per open spot, '+left+' left';
   per.classList.toggle('low',left>0&&rem/Math.max(1,left)<E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD*2);
-  const b=$('c-bar'); b.style.width=Math.max(0,Math.min(100,rem/E.CONSTANTS.CAP_MUSD*100))+'%';
+  const b=$('c-bar'); b.style.width=Math.max(0,Math.min(100,rem/CAP()*100))+'%';
   b.classList.toggle('low',low);
   const chem=run.roster.length>1?E.resolveChemistry(run.roster,CTX,chemOpts()).multiplier:1;
   /* Signed when there is something to sign, because a bare "2.7%" does not say which way
@@ -5385,7 +5398,7 @@ function paintSquad(){
   const rl=$('q-roster-list');
   if(run.tradeMachine){
     const total=Math.round(run.roster.reduce((s,p)=>s+p.price_musd,0)*10)/10;
-    const cap=E.CONSTANTS.CAP_MUSD;
+    const cap=CAP();
     const room=Math.round((cap-total)*10)/10;
     let h='<div class="sr-cap"><span class="sr-cap-total">$'+total.toFixed(1)+'M</span>'+
       '<span class="sr-cap-limit" style="color:var(--dim-2)">/ $'+cap+'M</span>'+
@@ -5737,7 +5750,7 @@ function paintCapTracker(inf){
   if(!run.capSurvivor){el.hidden=true;return;}
   el.hidden=false;
   const total=Math.round(run.roster.reduce((s,p)=>s+p.price_musd,0)*10)/10;
-  const cap=E.CONSTANTS.CAP_MUSD;
+  const cap=CAP();
   const pct=Math.min(100,Math.round(total/cap*100));
   const danger=total>cap*0.92;
   el.classList.toggle('danger',danger);
@@ -6068,7 +6081,7 @@ function gmScoutingReport(run){
   const roster=run.roster.slice();
   const rating=run.startRating;
   const chem=run.season.chemistry;
-  const room=E.CONSTANTS.CAP_MUSD-run.startSalary;
+  const room=CAP()-run.startSalary;
   const qb=roster.find((p)=>p.position==='QB');
   const best=roster.reduce((a,b)=>b.ppr_ppg_mean>a.ppr_ppg_mean?b:a);
   const worst=roster.reduce((a,b)=>b.ppr_ppg_mean<a.ppr_ppg_mean?b:a);
@@ -6101,7 +6114,7 @@ function gmScoutingReport(run){
   const infl=Math.round((R.CONTRACT_INFLATION-1)*100);
   const nWin=R.TRADE_WEEKS.length;
   const projected=run.startSalary*Math.pow(R.CONTRACT_INFLATION,nWin);
-  lines.push({cls:'',k:'Cap',v:'<b>$'+room.toFixed(1)+'M</b> of $'+E.CONSTANTS.CAP_MUSD+'M free. '+
+  lines.push({cls:'',k:'Cap',v:'<b>$'+room.toFixed(1)+'M</b> of $'+CAP()+'M free. '+
     'Every player\u2019s price rises <b>'+infl+'%</b> at each of the '+nWin+' in-season windows, so '+
     'standing pat still takes this roster to about <b>$'+projected.toFixed(0)+'M</b> by week '+
     R.TRADE_DEADLINE_WEEK+'.'});
@@ -6134,11 +6147,20 @@ function paintGmParts(p,gm){
     /* THE CAP, ON ITS OWN LINE AND WORTH SAYING OUT LOUD. It was a third of the Value mark
        and 6% of the rating, mentioned only in a footnote after the fact. */
     {k:'Cap management',w:15,v:p.cap,
-     why:p.overCapBy>0
-       ? 'finished $'+p.overCapBy.toFixed(1)+'M OVER the $'+E.CONSTANTS.CAP_MUSD+'M cap'
+     /* THE CEILING HAS TO BE NAMED, because cash paid in trades moves it. "Finished $4M over
+        the cap" against an unstated $140M would be wrong by however much was paid out, and
+        the line has to account for where the missing room went or it reads as a bug. */
+     why:(p.overCapBy>0
+       ? 'finished $'+p.overCapBy.toFixed(1)+'M OVER a $'+(p.capMusd??CAP()).toFixed(1)+'M cap'
        : p.idleCap>10
-       ? '$'+p.idleCap.toFixed(1)+'M of cap left unspent, which is a resource you did not use'
-       : 'payroll $'+p.totalSalary.toFixed(1)+'M, inside the cap with $'+p.idleCap.toFixed(1)+'M spare'},
+       ? '$'+p.idleCap.toFixed(1)+'M of a $'+(p.capMusd??CAP()).toFixed(1)+
+         'M cap left unspent, which is a resource you did not use'
+       : 'payroll $'+p.totalSalary.toFixed(1)+'M against a $'+(p.capMusd??CAP()).toFixed(1)+
+         'M cap, inside it with $'+p.idleCap.toFixed(1)+'M spare')+
+       (p.cashPaid>0
+         ? '. $'+p.cashPaid.toFixed(1)+'M of the original $'+E.CONSTANTS.CAP_MUSD+
+           'M went out as cash in trades'
+         : '')},
     {k:'Beat expectation',w:10,v:p.over,
      why:'won '+p.regularWins+'; the '+p.startRating.toFixed(1)+' roster you inherited was worth about '+
        p.expectedWins.toFixed(1)},
@@ -6169,9 +6191,13 @@ function paintGmParts(p,gm){
 
 /* One roster, painted into any panel (the season screen, the trade window). Rows sit in
    slot order so it always reads QB RB WR WR TE FLEX, and each row opens the player sheet. */
+/* THIS RUN'S CAP. Not the constant: GM mode's ceiling falls as cash goes out in trades, so
+   every screen that draws a cap figure asks the run rather than the rulebook. */
+function CAP(){ return R.capOf(run); }
+
 function paintRosterPanel(bodyId,capId){
   const total=Math.round(run.roster.reduce((s,p)=>s+p.price_musd,0)*10)/10;
-  const room=Math.round((E.CONSTANTS.CAP_MUSD-total)*10)/10;
+  const room=Math.round((CAP()-total)*10)/10;
   const capEl=$(capId);
   /* "$-11.1M free" is not a sentence. An over-cap roster says OVER, in red, on every screen
      that carries this line, so the state is visible outside a trade window too. */
@@ -6198,7 +6224,7 @@ function paintRosterPanel(bodyId,capId){
 function paintSquadSidebar(){
   const rl=$('q-roster-list');
   const total=Math.round(run.roster.reduce((s,p)=>s+p.price_musd,0)*10)/10;
-  const cap=E.CONSTANTS.CAP_MUSD;
+  const cap=CAP();
   const room=Math.round((cap-total)*10)/10;
   let h='<div class="sr-cap"><span class="sr-cap-total">$'+total.toFixed(1)+'M</span>'+
     '<span class="sr-cap-limit" style="color:var(--dim-2)">/ $'+cap+'M</span>'+
@@ -6263,7 +6289,7 @@ function openTradeWindow(step,opts){
      comfortable sentence to tap, and it was the button that walked somebody $11M over the cap
      into the results screen. It names the consequence instead, so staying over is a decision
      rather than the default. */
-  const passOver=R.capMark(run.roster.reduce((t,p)=>t+p.price_musd,0));
+  const passOver=R.capMark(run.roster.reduce((t,p)=>t+p.price_musd,0),run);
   $('b-tw-pass').textContent=passOver.overBy>0
     ? 'Stay $'+passOver.overBy.toFixed(1)+'M over the cap'
     : (preseasonWindow?'No deal, start the season':'Pass and keep my roster');
@@ -6279,13 +6305,13 @@ function openTradeWindow(step,opts){
   const rise=$('tw-rise');
   if(rise){
     const payroll=run.roster.reduce((t,p)=>t+p.price_musd,0);
-    const cap=R.capMark(payroll);
+    const cap=R.capMark(payroll,run);
     const risePct=Math.round((R.CONTRACT_INFLATION-1)*100);
     rise.style.display='';
     rise.classList.toggle('over',cap.overBy>0);
     if(cap.overBy>0){
       rise.innerHTML='<b>$'+cap.overBy.toFixed(1)+'M OVER THE SALARY CAP.</b> '+
-        'Payroll <b>$'+payroll.toFixed(1)+'M</b> against a $'+E.CONSTANTS.CAP_MUSD+'M cap'+
+        'Payroll <b>$'+payroll.toFixed(1)+'M</b> against a $'+CAP()+'M cap'+
         (preseasonWindow?'':', after the '+risePct+'% raises')+'. '+
         'Finish here and it costs you <b>'+cap.costs.toFixed(1)+' points</b> of your GM rating. '+
         (deadline?'This is the last window to shed salary.'
@@ -6295,7 +6321,7 @@ function openTradeWindow(step,opts){
         '% at each of the '+R.TRADE_WEEKS.length+' in-season windows, so a deal is cheaper now than later.';
     }else{
       rise.innerHTML='<b>Every price just rose '+risePct+'%.</b> '+
-        'Your payroll is now <b>$'+payroll.toFixed(1)+'M</b> of $'+E.CONSTANTS.CAP_MUSD+'M, '+
+        'Your payroll is now <b>$'+payroll.toFixed(1)+'M</b> of $'+CAP()+'M, '+
         '<b>$'+cap.remaining.toFixed(1)+'M</b> to spend'+
         (deadline?'. Last window to use it.':'.');
     }
@@ -6347,7 +6373,7 @@ function updateShopState(){
   const names=shopSel.map(i=>lastName(run.roster[i].name)).join(' + ');
   btn.textContent=shopSel.length?'Find offers for '+names:'Select a player to shop';
   const capEl=$('tw-shop-cap');
-  const cap=R.capMark(run.roster.reduce((t,p)=>t+p.price_musd,0));
+  const cap=R.capMark(run.roster.reduce((t,p)=>t+p.price_musd,0),run);
   if(!shopSel.length){
     /* Over the cap, this line stops being a tip about how the screen works and starts being
        the number that matters: how much salary has to leave. */
@@ -6502,9 +6528,9 @@ function paintDeal(dir){
     '<span class="df-hint">'+(cs>0?'costs':'frees')+'</span></span>';
   /* While over the cap the only thing that matters about a deal's money is whether it fixes
      the problem, and "-$4.2M frees" does not answer that on its own. */
-  if(payNow>E.CONSTANTS.CAP_MUSD){
+  if(payNow>CAP()){
     const after=payNow+cs+(o.faPos?R.FA_TYPICAL_MUSD:0)-guaranteedRelease(o);
-    const stillOver=after-E.CONSTANTS.CAP_MUSD;
+    const stillOver=after-CAP();
     foot+=stillOver<=0
       ? '<span class="tp-fix">Gets you under the cap</span>'
       : '<span class="tp-still">Still $'+stillOver.toFixed(1)+'M over</span>';
@@ -6539,6 +6565,16 @@ function paintDeal(dir){
       (o.askedFor
         ? '<div class="deal-ask">They want <b>'+esc(o.askedFor.name)+'</b> in it too'+
           ' &middot; '+o.askedFor.ppr_ppg_mean.toFixed(1)+' FPPG</div>'
+        : '')+
+      /* CASH IS NOT SALARY, so it does not sit in the footer with the payroll swing. Nobody
+         hands over a better player for nothing: this is what they want on top, and unlike a
+         contract it never comes back -- the ceiling itself drops and stays down. Said in full,
+         with the cap it leaves you on, because a cost you only notice two windows later is a
+         cost the game hid from you. */
+      (o.cashMusd>0
+        ? '<div class="deal-cash"><span class="dcash-n">$'+o.cashMusd.toFixed(1)+'M</span>'+
+          '<span>cash on top. Your cap drops to <b>$'+(CAP()-o.cashMusd).toFixed(1)+'M</b>'+
+          ' for the rest of the season.</span></div>'
         : '')+
       '<div class="deal-cols">'+
         '<div class="dc"><div class="dc-head out">You give</div>'+
@@ -6610,18 +6646,30 @@ function paintTradePreview(offer){
   if(pv.slotIndex) pv.roster.forEach((p,i)=>{ bySlot[pv.slotIndex[i]]={p,incoming:inc.has(p.player_id)}; });
 
   const total=Math.round(pv.roster.reduce((s,p)=>s+p.price_musd,0)*10)/10;
-  const room=Math.round((E.CONSTANTS.CAP_MUSD-total)*10)/10;
+  const room=Math.round((CAP()-total)*10)/10;
   const base=Math.round(run.roster.reduce((s,p)=>s+p.price_musd,0)*10)/10;
   const delta=Math.round((total-base)*10)/10;
+  /* Room measured against the ceiling THIS DEAL would leave, not today's: a deal costing
+     cash lowers the cap at the same moment it raises the payroll, and showing the old
+     ceiling would overstate what you have left by exactly the cash. */
+  const cash=offer&&offer.cashMusd>0?offer.cashMusd:0;
+  const capAfter=Math.round((CAP()-cash)*10)/10;
+  const roomAfter=Math.round((capAfter-total)*10)/10;
   const capEl=$('tw-team-cap');
   if(capEl) capEl.innerHTML='<span class="tc-spent">$'+total.toFixed(1)+'M</span>'+
-    (room<0
-      ? '<span class="tc-room over">$'+Math.abs(room).toFixed(1)+'M over</span>'
-      : '<span class="tc-room">$'+room.toFixed(1)+'M free</span>')+
-    (offer&&Math.abs(delta)>=0.05
-      ? '<span class="tc-d '+(delta<0?'up':'dn')+'">'+(delta>0?'+':'\u2212')+'$'+
-        Math.abs(delta).toFixed(1)+'M</span>'
-      : '');
+    (roomAfter<0
+      ? '<span class="tc-room over">$'+Math.abs(roomAfter).toFixed(1)+'M over</span>'
+      : '<span class="tc-room">$'+roomAfter.toFixed(1)+'M free</span>')+
+    /* One trailing figure, not two. Spent and free already imply the ceiling, and the deal
+       card states it in words underneath, so this slot carries whichever swing matters more:
+       the ceiling moving when cash is involved -- that is the permanent one -- and the
+       payroll swing otherwise. Three figures fit the row; four wrapped the label. */
+    (cash>0
+      ? '<span class="tc-cash">\u2212$'+cash.toFixed(1)+'M cap</span>'
+      : (offer&&Math.abs(delta)>=0.05
+        ? '<span class="tc-d '+(delta<0?'up':'dn')+'">'+(delta>0?'+':'\u2212')+'$'+
+          Math.abs(delta).toFixed(1)+'M</span>'
+        : ''));
   const wrap=$('tw-team');
   if(wrap) wrap.classList.toggle('changed',!!offer);
   const eye=$('tw-team-eye');
@@ -6793,7 +6841,7 @@ function paintCutPreview(offer,cutIdx){
   const el=$('cut-list'); if(!el) return;
   const capEl=$('cut-sub'); if(!capEl) return;
   const total=pv.roster.reduce((s,p)=>s+p.price_musd,0);
-  const cap=R.capMark(total);
+  const cap=R.capMark(total,run);
   const tail=cap.overBy>0
     ? ' <span class="cut-over">Payroll $'+total.toFixed(1)+'M, $'+cap.overBy.toFixed(1)+'M over the cap.</span>'
     : ' Payroll $'+total.toFixed(1)+'M, $'+cap.remaining.toFixed(1)+'M free.';
@@ -9859,6 +9907,9 @@ function runPayload(){
       if(h.cutKeys&&h.cutKeys.length>1) m.cuts=h.cutKeys;
       /* Whether the league asked for a man you had not put on the block. */
       if(h.askedFor) m.ask=h.askedFor;
+      /* Cash paid on top, which came off the cap ceiling. Only written when there was some,
+         so rows for cash-free deals are no bigger than they were. */
+      if(h.cashMusd>0) m.cash=h.cashMusd;
       return m;
     }):null,
   };

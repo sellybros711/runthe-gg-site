@@ -71,10 +71,25 @@ const chemOpts = (run) => ({ sameClub: !!(run && run.franchise) });
  */
 const money = (v) => Math.round(v * 100) / 100;
 
+/*
+ * THIS RUN'S CAP, which is not a constant any more.
+ *
+ * In GM mode a deal that upgrades your talent costs cash on top of salary, and the cash
+ * comes off the ceiling for the rest of the season -- see CONSTANTS.TRADE_CASH_*. So the
+ * cap is per-run state, and every place that used to read the constant reads this instead.
+ * One accessor rather than a field read at each site, because a run created before the cash
+ * mechanic existed (a season in progress in an open tab) has no capMusd and must still
+ * answer $140M rather than undefined.
+ */
+function capOf(run) {
+  const c = run && run.capMusd;
+  return typeof c === 'number' && isFinite(c) ? c : E.CONSTANTS.CAP_MUSD;
+}
+
 function remaining(run) {
   const spent = run.roster.reduce((s, p) => s + p.price_musd, 0);
   const fees = E.respinFees(run.respinsUsed);
-  return money(E.CONSTANTS.CAP_MUSD - spent - fees);
+  return money(capOf(run) - spent - fees);
 }
 
 /** Slots still to fill, including the current one. */
@@ -412,6 +427,10 @@ function createRun(opts) {
     slots: tradeMachine ? TRADE_SLOTS.slice() : E.SLOTS.slice(),
     seed,
     rngCalls: 0,
+    /* The ceiling for THIS run. Only GM mode moves it, and only downward, as cash goes out
+       the door in trades -- see capOf() and CONSTANTS.TRADE_CASH_*. */
+    capMusd: E.CONSTANTS.CAP_MUSD,
+    cashPaid: 0,
     phase: PHASES.DRAFT,
     roster: [],
     slotIndex: [],
@@ -872,7 +891,7 @@ function inflateCap(run) {
   const old = run.roster[maxIdx].price_musd;
   reprice(run, maxIdx, money(old * 1.10));
   const total = money(run.roster.reduce((s, p) => s + p.price_musd, 0));
-  const cap = E.CONSTANTS.CAP_MUSD;
+  const cap = capOf(run);
   run.capHistory.push({
     week: run.season.week,
     player: run.roster[maxIdx].name,
@@ -964,7 +983,7 @@ function autoDraftTrade(run, data, ctx) {
     const structMult = E.rosterStructure(run.roster).multiplier;
     const rating = rawPts * chemMult * structMult;
     const totalSalary = run.roster.reduce((t, p) => t + p.price_musd, 0);
-    if (rating >= 60 && rating <= 72 && totalSalary <= E.CONSTANTS.CAP_MUSD) {
+    if (rating >= 60 && rating <= 72 && totalSalary <= capOf(run)) {
       run.startRating = rating;
       run.startSalary = totalSalary;
       accepted = true;
@@ -1191,9 +1210,47 @@ function buildOffer(run, slots, outIdxs, inPlayers) {
     if (!open) return null;
     faPos = pickFaPosition(newRoster, open.faElig);
   }
+  /* WHAT THE DEAL ACTUALLY ADDS TO THE FIELD, which is not inValue - outValue when men have
+     to be released to fit the arrivals. Netted against the LIGHTEST legal release, because
+     that is the most a careful GM keeps, and a free agent's typical production stands in for
+     the slot a consolidation leaves open. This is what the cash demand is priced on: charging
+     on the raw incoming total would bill you for a deal that leaves you worse off. */
+  let fieldGain = netVal;
+  if (over > 0) {
+    let lightest = Infinity;
+    for (const g of cutGroups) {
+      lightest = Math.min(lightest, g.reduce((t, i) => t + newRoster[i].ppr_ppg_mean, 0));
+    }
+    if (lightest < Infinity) fieldGain -= lightest;
+  } else if (over < 0) {
+    fieldGain += FA_TYPICAL_FPPG * (-over);
+  }
+  fieldGain = Math.round(fieldGain * 10) / 10;
+
   return { type, outIdx: outIdxs.slice(), outPlayers, inPlayers, netCap, netVal, faPos,
-    cutIdxs, cutGroups, cutCount: Math.max(0, over),
+    cutIdxs, cutGroups, cutCount: Math.max(0, over), fieldGain,
+    cashMusd: cashFor(run, fieldGain),
     partnerFranchise: inPlayers[0].franchise, partnerSeason: inPlayers[0].season };
+}
+
+/*
+ * WHAT THE OTHER CLUB WANTS IN CASH, and why anything at all.
+ *
+ * A deal that hands you more production than it takes is a club selling you talent, and
+ * nobody does that out of goodwill. The price is on the PRODUCTION GAINED rather than on
+ * salary, because production is the thing being sold -- and it is charged against the cap
+ * CEILING rather than the payroll, so it narrows every window after this one. Upgrading
+ * becomes a resource you spend instead of a thing you simply do. See CONSTANTS.TRADE_CASH_*.
+ *
+ * GM mode only; the other modes have no trades.
+ */
+function cashFor(run, fieldGain) {
+  if (!run.tradeMachine) return 0;
+  const C = E.CONSTANTS;
+  if (!(fieldGain > C.TRADE_CASH_MIN_GAIN)) return 0;
+  /* The gate is a gate, not a deductible: the whole gain is billed once it clears. */
+  const raw = fieldGain * C.TRADE_CASH_PER_FPPG;
+  return Math.min(C.TRADE_CASH_MAX_MUSD, Math.round(raw * 2) / 2);
 }
 
 /* WHAT A ROSTER ACTUALLY GRADES OUT TO: the same product the results screen and the GM
@@ -1296,7 +1353,7 @@ function findOffers(run, data, ctx, outIdxs) {
   if (!outIdxs || !outIdxs.length || outIdxs.length > 2) return [];
   const rng = offerRng(run, outIdxs);
   const slots = slotsOf(run);
-  const CAP = E.CONSTANTS.CAP_MUSD;
+  const CAP = capOf(run);
   const pool = data.teamSeasons;
   const onRoster = new Set(run.roster.map((p) => p.player_id));
   const twoOut = outIdxs.length === 2;
@@ -1375,16 +1432,25 @@ function findOffers(run, data, ctx, outIdxs) {
   const fits = (c, inPlayers) => {
     const held = c.keep.concat(inPlayers);
     const over = held.length - slots.length;
-    let freed = 0;
+    let freed = 0, lightestFppg = 0;
     if (over > 0) {
       const groups = cutSets(held, slots, over);
       if (!groups.length) return false;
       freed = Math.min.apply(null, groups.map(
         (g) => g.reduce((t, i) => t + held[i].price_musd, 0)));
+      lightestFppg = Math.min.apply(null, groups.map(
+        (g) => g.reduce((t, i) => t + held[i].ppr_ppg_mean, 0)));
     }
     const inSalary = inPlayers.reduce((t, p) => t + p.price_musd, 0);
+    const inValue = inPlayers.reduce((t, p) => t + p.ppr_ppg_mean, 0);
     const reserve = held.length < slots.length ? FA_TYPICAL_MUSD : 0;
-    return c.keepSalary + inSalary - freed + reserve <= CAP;
+    /* THE CASH IS PART OF WHAT THE DEAL COSTS. It comes off the ceiling, so a deal only fits
+       if the payroll clears the cap the deal itself would leave you with -- otherwise the
+       market could offer an upgrade that puts you over the moment you took it. */
+    let gain = inValue - c.outValue - lightestFppg;
+    if (held.length < slots.length) gain += FA_TYPICAL_FPPG * (slots.length - held.length);
+    const cash = cashFor(run, Math.round(gain * 10) / 10);
+    return c.keepSalary + inSalary - freed + reserve <= CAP - cash;
   };
 
   /* ── ONE MAN BACK, from anywhere in the league ─────────────────────────────────── */
@@ -1635,6 +1701,13 @@ const FA_MAX_PCTL = 0.22, FA_MIN_M = 3, FA_MAX_M = 6;
    the free agent filling the hole is part of that. Exported so the card and the signing cannot
    drift apart if the band ever moves. */
 const FA_TYPICAL_MUSD = (FA_MIN_M + FA_MAX_M) / 2;
+/* And what one is worth ON THE FIELD, for the one place that has to price a consolidation's
+   gain BEFORE the signing happens: the cash demand.
+   MEASURED, not assumed. Over 5,760 free agents actually offered across 120 seasons of
+   windows the median is 3.96 FPPG and even the best man on a board averages 4.01, because
+   isFreeAgentCandidate draws from the bottom fifth of the pool. A first guess of 6.5 here
+   overstated a two-for-one's gain by 2.5 FPPG and billed those deals about $2.75M too much. */
+const FA_TYPICAL_FPPG = 4;
 /* How deep the free-agent board runs. The three on offer are drawn from this many best
    available, so every option is usable and a card's estimate lands near what you sign. */
 const FA_BOARD = 8;
@@ -1721,6 +1794,15 @@ function acceptTrade(run, offer, data, ctx, opts) {
     run.slotIndex = open.assign;
     run.pendingFreeAgency = { position: offer.faPos, slotIndex: open.emptySlot };
   }
+  /* THE CASH LEAVES THE CEILING, not the payroll. Salary is what the players cost; this is
+     what the other club charged for handing you better ones, and it is gone for the rest of
+     the season. Floored at a payroll's worth of room so a run can never be handed a
+     negative cap by arithmetic. */
+  const cash = Math.max(0, offer.cashMusd || 0);
+  if (cash > 0) {
+    run.capMusd = money(Math.max(0, capOf(run) - cash));
+    run.cashPaid = money((run.cashPaid || 0) + cash);
+  }
   const chem = E.resolveChemistry(run.roster, ctx);
   run.season.chemistry = chem.multiplier;
   run.season.chemistryLinks = chem.links;
@@ -1735,6 +1817,7 @@ function acceptTrade(run, offer, data, ctx, opts) {
     /* Whether the league asked for a man you had not put up, so the GM report can say so
        and a badge can find it. */
     askedFor: offer.askedFor ? runKey(offer.askedFor) : null,
+    cashMusd: cash || 0,
     /* THE SAME MOVE, IN IDS, so it can be recorded and read back. The names above are
        for the GM report to print; these are what ps_runs.trade_moves stores, spelled the
        way the picks column spells a player, because the badge cabinet resolves both
@@ -1821,8 +1904,8 @@ const GM_IDLE_PER_M = 2;       // each $1M idle beyond that, off the cap mark
    computeGMRating uses, in one place, so the warning during a trade window and the mark
    afterwards can never disagree. `costs` is in points off the final GM rating. */
 const GM_CAP_WEIGHT = 0.15;
-function capMark(payroll) {
-  const remaining = E.CONSTANTS.CAP_MUSD - payroll;
+function capMark(payroll, run) {
+  const remaining = capOf(run) - payroll;
   const overBy = Math.max(0, -remaining);
   const idle = Math.max(0, remaining);
   const clamp100 = (v) => Math.max(0, Math.min(100, v));
@@ -1856,7 +1939,7 @@ function computeGMRating(run) {
   const improvementScore = clamp100(ratingGain / GM_IMPROVE_REF * 100);
 
   const totalSalary = run.roster.reduce((t, p) => t + p.price_musd, 0);
-  const capRemaining = E.CONSTANTS.CAP_MUSD - totalSalary;
+  const capRemaining = capOf(run) - totalSalary;
   /* The payroll you would have carried having made no trades at all: every in-season window
      raises it whether you deal or not, so only spending ABOVE this is your doing. */
   const noTradePayroll = run.startSalary * Math.pow(CONTRACT_INFLATION, TRADE_WEEKS.length);
@@ -1901,6 +1984,9 @@ function computeGMRating(run) {
     result: r1(resultScore), improvement: r1(improvementScore),
     value: r1(valueScore), cap: r1(capScore), over: r1(overScore),
     regularWins, playoffWins, bye: !!(run.playoffSeed && run.playoffSeed.bye),
+    /* The ceiling this run finished with and what shrank it, so the results screen can say
+       "$127M cap" and account for the missing $13M rather than looking like a bug. */
+    capMusd: capOf(run), cashPaid: r1(run.cashPaid || 0),
     ratingGain: r1(ratingGain), startRating: r1(run.startRating), finalRating: r1(finalRating),
     addedSalary: r1(addedSalary), noTradePayroll: r1(noTradePayroll),
     capRemaining: r1(capRemaining), overCapBy: r1(overCapBy), idleCap: r1(idleCap),
@@ -2004,7 +2090,7 @@ function indexData(players, teamSeasons) {
  */
 function bestPossibleSquad(run, data, ctx) {
   const BUCKET = 0.5;
-  const budget = E.CONSTANTS.CAP_MUSD - E.respinFees(run.respinsUsed);
+  const budget = capOf(run) - E.respinFees(run.respinsUsed);
   const NB = Math.round(budget / BUCKET) + 1;
   const nSlots = E.SLOTS.length;
   const FULL = (1 << nSlots) - 1;
@@ -2272,7 +2358,7 @@ const api = {
   autoDraftTrade, isTradeWindow, inflateContracts, findOffers, previewTrade, rosterRating,
   TRADE_WEEKS, TRADE_DEADLINE_WEEK, CONTRACT_INFLATION,
   generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating, capMark, FA_TYPICAL_MUSD,
-  cutOptions, cutSets, legalCutSet, MAX_OFFERS,
+  cutOptions, cutSets, legalCutSet, MAX_OFFERS, capOf,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;

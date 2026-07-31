@@ -241,6 +241,7 @@
       const priced = (list) => list.reduce((t, p) => t + Number((p && p.price_musd) || 0), 0);
       const moves = [], windows = new Set(), outKeys = new Set();
       let trades = 0, fa = 0, cuts = 0, askedFor = 0;
+      let cashDeals = 0, cashSpent = 0, biggestCash = 0;
       for (const mv of r.trade_moves) {
         if (!mv || typeof mv !== 'object') continue;
         const outK = Array.isArray(mv.out) ? mv.out : [];
@@ -272,14 +273,19 @@
           const ap = res(mv.ask);
           if (ap) askedPlayers.push(ap);
         }
+        /* Cash paid on top of a deal, which comes off the cap ceiling and never comes back.
+           Absent on every row written before the mechanic existed, so it reads as zero. */
+        const cashM = Number(mv.cash) || 0;
+        if (cashM > 0) { cashDeals++; cashSpent += cashM; biggestCash = Math.max(biggestCash, cashM); }
         outP.forEach((p) => dealtOut.push(p));
         inP.forEach((p) => dealtIn.push(p));
         moves.push({ w, t: mv.t, outPlayers: outP, inPlayers: inP,
           outMusd: priced(outP), inMusd: priced(inP),
-          cutCount: cutKeys.length, asked: mv.ask || null });
+          cutCount: cutKeys.length, asked: mv.ask || null, cash: cashM });
       }
       totalTrades += trades;
       moveRuns.push({ row: r, moves, windows, outKeys, trades, fa, cuts, askedFor,
+        cashDeals, cashSpent: Math.round(cashSpent * 10) / 10, biggestCash,
         outPlayers: moves.reduce((a, m) => a.concat(m.outPlayers), []),
         inPlayers: moves.reduce((a, m) => a.concat(m.inPlayers), []) });
     }
@@ -870,6 +876,26 @@
   add(A('double_release', 'Two off the books',
     'Release two players in a single trade.', 'silver', 'Front office',
     (c) => c.moveRuns.some((m) => m.moves.some((v) => v.cutCount >= 2))));
+  /* CASH CONSIDERATION. Nobody hands over a better player for free, and what you pay comes
+     off the cap ceiling for the rest of the season. */
+  add(A('paid_cash', 'Cash considerations',
+    'Pay money on top of a trade to get the better player.', 'bronze', 'Front office',
+    (c) => c.moveRuns.some((m) => m.cashDeals >= 1)));
+  add(A('paid_big', 'Wrote the cheque',
+    'Give up $7M or more of cap ceiling in a single deal.', 'silver', 'Front office',
+    (c) => c.moveRuns.some((m) => m.biggestCash >= 7)));
+  add(A('spent_the_ceiling', 'Mortgaged the season',
+    'Pay $20M of cap ceiling in cash across one season.', 'gold', 'Front office',
+    (c) => c.moveRuns.some((m) => m.cashSpent >= 20)));
+  add(A('no_cash_ring', 'Not a penny more',
+    'Win a Trade Machine title without paying a cent of cash in any deal.',
+    'gold', 'Front office',
+    (c) => c.moveRuns.some((m) => m.cashDeals === 0 && m.trades >= 2
+      && isTrue(m.row.title_won))));
+  add(A('cash_ring', 'Bought a ring',
+    'Win a Trade Machine title in a season where you paid cash for an upgrade.',
+    'silver', 'Front office',
+    (c) => c.moveRuns.some((m) => m.cashDeals >= 1 && isTrue(m.row.title_won))));
 
   /* WHAT WAS ACTUALLY DEALT. These are the questions the column was added for: they need
      the players who LEFT, and no other column has ever kept them. */
