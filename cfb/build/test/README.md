@@ -27,6 +27,7 @@ account and then as another.
 | `test_leaderboard.sql` | Every rule `cfb_submit_run()` claims to enforce, with a case that passes and a case that is refused. Plus ownership, claiming, renaming, idempotency, the ordering key, and that all four board queries are index scans at 200,000 rows. 49 assertions. |
 | `test_score_parity.mjs` | `board.js`'s `scoreOf()` computes exactly what the generated `score` column computes, across all 27,217 results the game can produce. |
 | `test_board_e2e.mjs` | Real seasons played in Chromium, submitted through the real validator, listed on the real board. Guest and signed-in. Plus: a board that is not there leaves the results screen intact. |
+| `test_conference.mjs` | Conference Draft: that the wheel never once leaves the conference (checked against the conference each team was in *that season*), that the run records which competition it belongs to, and that the six boards stay apart. |
 | `test_gates.mjs` | What an account is for. School colours and the full trophy case signed in, signed out, and with the sign-in library blocked entirely. |
 | `render_school_colors.mjs` | Draws all 83 schools' landed reel tiles onto one sheet, and reports any trim that cannot be told from its background. "Are the colours right" is a question you answer by looking. |
 | `postgrest_stub.mjs` | Not a test. A PostgREST-shaped front end for the real database, so the browser talks to something that parses its URLs independently. |
@@ -38,10 +39,11 @@ node cfb/build/test/test_score_parity.mjs cfbtest
 (nohup node cfb/build/test/postgrest_stub.mjs 5555 cfbtest &)
 node cfb/build/test/test_board_e2e.mjs
 node cfb/build/test/test_gates.mjs
+node cfb/build/test/test_conference.mjs
 node cfb/build/test/render_school_colors.mjs   # then look at the sheet
 ```
 
-## Five bugs these caught, so far
+## Seven bugs these caught, so far
 
 **`scoreOf()` disagreed with the column on every negative half.** `Math.round` rounds a
 half toward positive infinity; Postgres `round()` rounds a half away from zero. 6,800 of
@@ -68,3 +70,13 @@ report, and the wheel then forced a saturation floor onto it. White came back `#
 and black came back `#671e1e`: Kentucky is blue and white and was drawn with a red border,
 Iowa is black and gold and was drawn on dark red. Reported from a phone, not caught here,
 which is why `render_school_colors.mjs` now exists.
+
+**A conference run recorded itself as free play.** The PostgREST stand-in passes arguments
+positionally, so the mode parameter added to `cfb_submit_run()` had to be added there too;
+missing, it silently took its default. Worth keeping as a lesson about the stub: a new
+parameter needs adding in two places, and the failure is quiet.
+
+**Adding an argument to the test helper broke sixteen unrelated tests.** `create or replace
+function` only replaces a function with the *same* argument list. A new parameter creates a
+second overload beside the old one, and then every call that fits both is ambiguous. The
+suite now drops every overload of its helpers before defining them.

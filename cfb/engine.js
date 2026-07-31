@@ -49,6 +49,32 @@ const CONSTANTS = {
   PLAYOFF_HOME_FIELD: 0.35,
 };
 
+// ─── conferences ────────────────────────────────────────────────────────────
+
+/* THE CONFERENCE ON A TEAM SEASON IS THE ONE THAT TEAM WAS IN THAT YEAR, not the
+   one that school is in now, and a conference draft is far better for it: pick the
+   Pac-12 and you get Pac-12 Oregon, USC, Washington and Stanford, as they were,
+   rather than whichever four leagues those four ended up in.
+   The one thing that needs saying out loud is the Pac-10, which is not a different
+   conference from the Pac-12: it is the same one before Colorado and Utah arrived in
+   2011. Left as two names it would split the league in half at 2011 and offer a
+   ten-team draft nobody asked for. */
+const CONFERENCE_LINEAGE = { 'Pac-10': 'Pac-12' };
+const conferenceOf = (conf) => CONFERENCE_LINEAGE[conf] || conf || null;
+
+/* The five a conference draft can be played in, with the years each one covers in
+   this game's data. Held here rather than derived at runtime so the menu is stable:
+   a conference that lost its last team season to a data change should disappear from
+   the menu deliberately, not silently. */
+const POWER_CONFERENCES = [
+  { key: 'SEC',     name: 'SEC' },
+  { key: 'Big Ten', name: 'Big Ten' },
+  { key: 'Big 12',  name: 'Big 12' },
+  { key: 'ACC',     name: 'ACC' },
+  { key: 'Pac-12',  name: 'Pac-12' },
+];
+const isPowerConference = (key) => POWER_CONFERENCES.some((c) => c.key === key);
+
 // ─── respin ─────────────────────────────────────────────────────────────────
 
 function respinCost(used) {
@@ -1240,6 +1266,7 @@ const publicAPI = {
   respinCost, respinFees,
   scoringScript, scoreParts, SCORE_KINDS,
   contrast, teamColors, washColors, wheelColors, teamButton, teamInk,
+  CONFERENCE_LINEAGE, conferenceOf, POWER_CONFERENCES, isPowerConference,
   LINK_TIERS, linkTier,
   rosterStructure, STRUCTURE, coachReport,
   selectBowl, BOWL_ARCHETYPES, GENERIC_BOWL_NAMES,

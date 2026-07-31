@@ -183,9 +183,18 @@ function previewSigning(run, player, ctx) {
 
 function createRun(opts) {
   const seed = opts.seed ?? E.hashSeed(String(Math.random()));
+  /* THE CONFERENCE IS SET ONCE, AT THE START, AND NEVER CHANGES. Everything that
+     offers you a team goes through drawable() below, so this one field is the whole
+     of conference mode: the wheel, both re-spins and the best-possible comparison
+     all narrow together and none of them has to be told separately. Ignored unless
+     it names one of the five, so a stale or hand-edited value cannot quietly produce
+     a draft from a conference that does not exist. */
+  const conference = opts.conference && E.isPowerConference(opts.conference)
+    ? opts.conference : null;
   return {
     version: 1,
     seed,
+    conference,
     rngCalls: 0,
     phase: PHASES.DRAFT,
     roster: [],
@@ -235,7 +244,13 @@ function drawable(run, data, limit) {
   const drawn = {};
   for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
   const canFill = (t) => someAffordable(run, t.team_season_id, data.playersByTeamSeason);
+  /* Matched on the conference the team was in THAT SEASON, which is what makes a
+     Pac-12 draft the actual Pac-12 rather than wherever its members ended up. */
+  const inConf = run.conference
+    ? (t) => E.conferenceOf(t.conference) === run.conference
+    : () => true;
   return data.teamSeasons
+    .filter(inConf)
     .filter((t) => (drawn[t.team_season_id] || 0) < (limit ?? TUNING.MAX_DRAWS_PER_TEAM_SEASON))
     .filter(canFill);
 }

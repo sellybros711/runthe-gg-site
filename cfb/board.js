@@ -45,7 +45,14 @@
      stay small and adding a column to the table does not silently grow every board
      request. No player-supplied text is among them: the roster comes back as ids and
      is rendered against the client's own copy of the player data. */
-  const COLS = 'id,created_at,display_name,regular_wins,playoff_wins,wins,losses,games,' +
+  /* SIX COMPETITIONS, NOT ONE BOARD WITH A FILTER ON IT. Six spins restricted to
+     the SEC and six over the whole country do not produce comparable rosters, and
+     neither does the SEC against the Pac-12. Every query below carries a mode.
+     See supabase/63_cfb_run_mode.sql. */
+  const MODES = ['free', 'conf:SEC', 'conf:Big Ten', 'conf:Big 12', 'conf:ACC', 'conf:Pac-12'];
+  const modeOf = (m) => (MODES.indexOf(m) >= 0 ? m : 'free');
+
+  const COLS = 'id,created_at,display_name,run_mode,regular_wins,playoff_wins,wins,losses,games,' +
     'national_rank,playoff_seed,made_playoffs,title_won,perfect,eliminated_in,bowl,' +
     'bowl_won,seed_label,point_diff,chemistry_pct,spend_musd,respins,sig_wins,' +
     'best_win_rank,squad_fppg,structure_mult,team_rating,overall,perfect_pct,picks,slots';
@@ -229,7 +236,11 @@
   function scope(opts) {
     const win = (opts && opts.window) || 'all';
     const cut = cutoffISO(win);
-    return cut ? '&created_at=gte.' + encodeURIComponent(cut) : '';
+    /* The mode is an equality and leads every index, so it goes on every query
+       including the counts: a place counted against the wrong competition is worse
+       than no place at all. */
+    return '&run_mode=eq.' + encodeURIComponent(modeOf(opts && opts.mode)) +
+      (cut ? '&created_at=gte.' + encodeURIComponent(cut) : '');
   }
 
   /* ---------------- submit ----------------
@@ -263,6 +274,7 @@
       p_team_rating:   p.teamRating == null ? null : round2(p.teamRating),
       p_overall:       p.overall == null ? null : round2(p.overall),
       p_perfect_pct:   p.perfectPct == null ? null : Math.round(p.perfectPct),
+      p_run_mode:      modeOf(p.runMode),
     };
     try {
       const res = await timed(base() + 'rpc/cfb_submit_run', {
@@ -330,9 +342,9 @@
 
   /* How many perfect seasons exist, which is the one number worth stating in absolute
      terms rather than as a rank. */
-  async function perfectCount() {
+  async function perfectCount(opts) {
     try {
-      const q = base() + TABLE + '?select=id&limit=1&perfect=is.true';
+      const q = base() + TABLE + '?select=id&limit=1&perfect=is.true' + scope(opts);
       const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
       if (!res.ok) return await fail('perfect', res);
       return countOf(res);
@@ -342,10 +354,10 @@
   /* The three windows in one go, for the results screen. Parallel rather than
      sequential: three round trips one after another is most of a second on a phone,
      and they do not depend on each other. */
-  async function ranks(score) {
+  async function ranks(score, mode) {
     const wins = ['today', 'week', 'all'];
     const out = await Promise.all(wins.map(async (w) => {
-      const opts = { window: w === 'today' ? 'day' : w };
+      const opts = { window: w === 'today' ? 'day' : w, mode };
       const [place, count] = await Promise.all([
         placeIn(opts, 'record', score), total(opts),
       ]);
@@ -423,7 +435,7 @@
   window.PS_CFB_BOARD = {
     API_VERSION: 1,
     submit, probe, ranks, placeIn, total, perfectCount, top, mine, byId, scoreOf,
-    cutoffISO, SORTS, DIR,
+    cutoffISO, SORTS, DIR, MODES,
     get offline() { return offline; },
     get lastError() { return lastError; },
     get needsMigration() { return needsMigration; },

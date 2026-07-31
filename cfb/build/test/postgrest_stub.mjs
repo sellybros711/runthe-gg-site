@@ -89,6 +89,10 @@ createServer(async (req, res) => {
     if (req.method === 'POST' && url.pathname === '/rest/v1/rpc/cfb_submit_run') {
       let raw = ''; for await (const c of req) raw += c;
       const p = JSON.parse(raw || '{}');
+      /* POSITIONAL ARGUMENTS, so a parameter added to the function has to be added
+         here too. PostgREST passes them by name and would not care; this cannot,
+         and a missing one silently takes its default, which is exactly how a
+         conference run recorded itself as free play the first time. */
       const arr = (a) => a == null ? 'null'
         : 'array[' + a.map(lit).join(',') + ']::text[]';
       const num = (v) => v == null ? 'null' : Number(v);
@@ -101,6 +105,7 @@ createServer(async (req, res) => {
         p.p_rng_seed == null ? 'null' : lit(p.p_rng_seed), num(p.p_rng_calls),
         num(p.p_squad_fppg), num(p.p_structure_mult), num(p.p_team_rating),
         num(p.p_overall), num(p.p_perfect_pct),
+        p.p_run_mode == null ? lit('free') : lit(p.p_run_mode),
       ].join(',');
       return send(200, Number(asUser(`select cfb_submit_run(${args})`)));
     }

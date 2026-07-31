@@ -24,19 +24,33 @@ begin
   raise notice '%  %', case when ok then '  ok  ' else ' FAIL ' end, name;
 end $$;
 
+-- EVERY OVERLOAD OF t_submit, DROPPED FIRST. `create or replace` only replaces a
+-- function with the SAME argument list; adding a parameter creates a second
+-- overload beside the old one, and then every call that fits both is ambiguous:
+--   ERROR: function t_submit(integer, integer, integer, boolean, text[]) is not unique
+-- Which is how adding the mode argument broke sixteen tests that had nothing to do
+-- with it.
+do $$ declare r record; begin
+  for r in select oid::regprocedure as sig from pg_proc where proname = 't_submit' loop
+    execute 'drop function ' || r.sig;
+  end loop;
+end $$;
+
 -- Runs the function and reports whether it raised, and with what.
 create or replace function t_submit(
   p_reg int, p_rank int, p_po int default 0, p_bowl_won boolean default false,
   p_picks text[] default array['a1:2019','b2:2020','c3:2021','d4:2015','e5:2011','f6:2008'],
   p_diff numeric default 10.0, p_chem numeric default 5.0, p_spend numeric default 12.5,
   p_sig int default 0, p_best int default null, p_respins int default 0,
-  p_slots text[] default array['QB','RB','WR','WR','TE','FLEX']
+  p_slots text[] default array['QB','RB','WR','WR','TE','FLEX'],
+  p_mode text default 'free'
 ) returns text
 language plpgsql as $$
 declare v_id bigint;
 begin
   select cfb_submit_run(p_reg, p_rank, p_po, p_bowl_won, p_diff, p_chem, p_spend,
-    p_respins, p_sig, p_best, p_picks, p_slots, 'seed', 100, 90.0, 1.05, 100.0, 74.0, 80)
+    p_respins, p_sig, p_best, p_picks, p_slots, 'seed', 100, 90.0, 1.05, 100.0, 74.0, 80,
+    p_mode)
     into v_id;
   return 'id:' || v_id;
 exception when others then
@@ -152,6 +166,47 @@ select t_ok('a point differential no game could produce',
     99.0) like 'ERR:%differential out of range%');
 
 \echo ''
+\echo '=== which competition a season belongs to ==='
+
+-- Six boards, and only six. A typo in a future client must fail loudly rather than
+-- quietly creating a seventh board nobody can find.
+--
+-- SUBMIT AND READ BACK IN ONE FUNCTION, because t_submit is volatile and a volatile
+-- function in a WHERE clause is re-evaluated once per candidate row: written as
+-- `where id = t_submit(...)` it inserted a fresh row for every row it compared
+-- against, so nothing ever matched its own id and two tests failed for a reason
+-- that had nothing to do with what they were testing.
+create or replace function t_mode(p_mode text, p_rank int, p_prefix text) returns text
+language plpgsql as $$
+declare v text; v_id bigint;
+begin
+  v := t_submit(9, p_rank, 0, false,
+    array[p_prefix||'1:2016',p_prefix||'2:2007',p_prefix||'3:2014',
+          p_prefix||'4:2014',p_prefix||'5:2009',p_prefix||'6:2017'],
+    10.0, 5.0, 12.5, 0, null, 0, array['QB','RB','WR','WR','TE','FLEX'], p_mode);
+  if v not like 'id:%' then return v; end if;
+  v_id := replace(v, 'id:', '')::bigint;
+  return (select run_mode from cfb_runs where id = v_id);
+end $$;
+
+select t_ok('a free run records as free play', t_mode('free', 40, 'mode') = 'free');
+select t_ok('a conference run records its conference',
+  t_mode('conf:Pac-12', 41, 'mq') = 'conf:Pac-12');
+select t_ok('a conference this game does not have is refused',
+  t_submit(9, 42, 0, false, array['mr1:2016','mr2:2007','mr3:2014','mr4:2014','mr5:2009','mr6:2017'],
+    10.0, 5.0, 12.5, 0, null, 0, array['QB','RB','WR','WR','TE','FLEX'], 'conf:Sun Belt')
+    like 'ERR:%unknown run mode%');
+select t_ok('and so is anything else',
+  t_submit(9, 43, 0, false, array['ms1:2016','ms2:2007','ms3:2014','ms4:2014','ms5:2009','ms6:2017'],
+    10.0, 5.0, 12.5, 0, null, 0, array['QB','RB','WR','WR','TE','FLEX'], '<script>')
+    like 'ERR:%unknown run mode%');
+-- The same roster in two competitions is two seasons, not one retried.
+select t_ok('the same roster in two competitions is two seasons',
+  t_submit(8, 50, 0, false, array['mt1:2016','mt2:2007','mt3:2014','mt4:2014','mt5:2009','mt6:2017'])
+  <> t_submit(8, 50, 0, false, array['mt1:2016','mt2:2007','mt3:2014','mt4:2014','mt5:2009','mt6:2017'],
+      10.0, 5.0, 12.5, 0, null, 0, array['QB','RB','WR','WR','TE','FLEX'], 'conf:ACC'));
+
+\echo ''
 \echo '=== who owns a row ==='
 
 select set_config('test.uid', '', false);
@@ -217,7 +272,7 @@ select t_ok('within the same win total, margin breaks the tie',
 insert into cfb_runs (
   regular_wins, playoff_wins, wins, losses, games, national_rank, playoff_seed,
   made_playoffs, title_won, perfect, bowl_won, seed_label,
-  point_diff, chemistry_pct, spend_musd, overall, picks
+  point_diff, chemistry_pct, spend_musd, overall, picks, run_mode
 )
 select
   g % 13, 0, g % 13, 12 - (g % 13), 12,
@@ -225,7 +280,10 @@ select
   (g % 134) < 12, false, false, false, 'bulk',
   round((((g * 7) % 800) / 10.0 - 40)::numeric, 1), 5.0, 12.0,
   round((30 + ((g * 13) % 700) / 10.0)::numeric, 2),
-  array['bulk' || g || ':2016','b2:2007','b3:2014','b4:2014','b5:2009','b6:2017']
+  array['bulk' || g || ':2016','b2:2007','b3:2014','b4:2014','b5:2009','b6:2017'],
+  /* Spread across the six competitions, so the plan tests below are asking the
+     question a real board asks: find one mode's rows among five others'. */
+  (array['free','conf:SEC','conf:Big Ten','conf:Big 12','conf:ACC','conf:Pac-12'])[1 + g % 6]
 from generate_series(1, 200000) g;
 update cfb_runs set user_id='11111111-1111-1111-1111-111111111111'
  where id % 997 = 0;
@@ -240,14 +298,21 @@ begin
   for r in execute 'explain ' || q loop v := v || r || E'\n'; end loop;
   return v;
 end $$;
-select t_ok('the record board uses cfb_runs_score_idx',
-  t_plan('select id from cfb_runs order by score desc, created_at asc limit 50') like '%cfb_runs_score_idx%');
-select t_ok('the overall board uses cfb_runs_overall_idx',
-  t_plan('select id from cfb_runs where overall is not null order by overall desc, created_at asc limit 50')
-    like '%cfb_runs_overall_idx%');
-select t_ok('the ranking board uses cfb_runs_rank_idx',
-  t_plan('select id from cfb_runs order by national_rank asc, created_at asc limit 50')
-    like '%cfb_runs_rank_idx%');
+-- EVERY BOARD QUERY CARRIES A MODE now, so every index has to lead with one: a
+-- leading equality followed by the sort column is what lets Postgres satisfy the
+-- filter and the order from a single scan.
+select t_ok('the record board uses cfb_runs_mode_score_idx',
+  t_plan('select id from cfb_runs where run_mode = ''free'' order by score desc, created_at asc limit 50')
+    like '%cfb_runs_mode_score_idx%');
+select t_ok('the overall board uses cfb_runs_mode_overall_idx',
+  t_plan('select id from cfb_runs where run_mode = ''free'' and overall is not null order by overall desc, created_at asc limit 50')
+    like '%cfb_runs_mode_overall_idx%');
+select t_ok('the ranking board uses cfb_runs_mode_rank_idx',
+  t_plan('select id from cfb_runs where run_mode = ''free'' order by national_rank asc, created_at asc limit 50')
+    like '%cfb_runs_mode_rank_idx%');
+select t_ok('a conference board is an index scan too',
+  t_plan('select id from cfb_runs where run_mode = ''conf:SEC'' order by score desc, created_at asc limit 50')
+    like '%cfb_runs_mode_score_idx%');
 select t_ok('a player''s own history uses cfb_runs_user_idx',
   t_plan('select id from cfb_runs where user_id = ''11111111-1111-1111-1111-111111111111'' order by created_at desc limit 50')
     like '%cfb_runs_user_idx%');

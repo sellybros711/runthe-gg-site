@@ -1388,6 +1388,19 @@ window.GA_ID='G-L29P5MRWKE';
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .seg button+button{border-left:1px solid var(--line)}
   .seg button.on{color:var(--ink);background:rgba(16,185,129,.14)}
+  .lbmode{margin:11px 0 0}
+  .lbmode select{-webkit-appearance:none;appearance:none;width:100%;
+    padding:12px 34px 12px 13px;border-radius:11px;border:1px solid var(--line);
+    background:var(--panel);color:var(--ink);font-family:var(--fn);font-size:14px;
+    font-weight:700;cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),
+      linear-gradient(135deg,var(--dim) 50%,transparent 50%);
+    background-position:calc(100% - 18px) 50%,calc(100% - 12px) 50%;
+    background-size:6px 6px,6px 6px;background-repeat:no-repeat}
+  .lbmode select:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+  /* A conference board wears the mode's colour, so which one you are looking at is
+     legible without reading the select. */
+  .lbmode.isconf select{border-color:rgba(245,158,11,.5);color:#fbbf24}
   .lbcount{margin:12px 0 0;font-family:var(--fn);font-size:11px;font-weight:700;
     letter-spacing:.07em;text-transform:uppercase;color:var(--dim-2)}
   .lb{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:9px}
@@ -1436,6 +1449,72 @@ window.GA_ID='G-L29P5MRWKE';
   .placebox button{flex:0 0 auto;padding:8px 12px;border-radius:9px;
     border:1px solid rgba(16,185,129,.4);background:rgba(16,185,129,.1);color:#6ee7b7;
     font-family:var(--fn);font-size:11px;font-weight:700}
+
+  /* ── more ways to play ──────────────────────────────────────────
+     The same cards the NFL game uses, in this game's colours. THE MODE IS THE
+     BUTTON: the whole card is tappable with a chevron for the affordance, rather
+     than a card with a play button inside it. */
+  .display.mtitle{font-family:var(--fn);font-weight:800;letter-spacing:0}
+  .modecards{display:grid;gap:14px;margin-top:6px}
+  .modecard{display:block;width:100%;text-align:left;font-family:inherit;
+    padding:16px 18px;border-radius:14px;border:1.5px solid var(--line-2);
+    background:var(--grad-panel);cursor:pointer;-webkit-appearance:none;appearance:none;
+    -webkit-tap-highlight-color:transparent;
+    transition:transform .1s ease,box-shadow .15s ease}
+  .modecard:not(:disabled):hover{box-shadow:0 10px 26px -14px #000,inset 0 0 0 1px rgba(255,255,255,.08)}
+  .modecard:not(:disabled):active{transform:scale(.985)}
+  .modecard:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+  .modecard:disabled{cursor:default;opacity:.5}
+  .modecard p{font-size:13px;line-height:1.4;color:var(--dim);margin:0}
+  .modecard .mc-arrow{margin-left:auto;width:20px;height:20px;fill:none;stroke:var(--dim-2);
+    stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+  .modecard:not(:disabled):hover .mc-arrow{stroke:var(--ink)}
+  .modecard .mc-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .modecard .mc-icon{width:32px;height:32px;border-radius:8px;display:flex;
+    align-items:center;justify-content:center;flex:0 0 auto}
+  .modecard .mc-icon svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round}
+  .modecard .mc-title{font-family:var(--fn);font-size:17px;font-weight:800;
+    letter-spacing:.01em;text-transform:uppercase;color:var(--ink);line-height:1.15}
+  .modecard.mc-conf{border-color:rgba(245,158,11,.38)}
+  .modecard.mc-conf .mc-icon{background:linear-gradient(135deg,#f59e0b 0%,#b45309 100%)}
+  .modecard.mc-conf .mc-title{color:#fbbf24}
+
+  /* ---- THE CROSS-PROMO SECTION ----
+     Its own block under the modes rather than another mode card: the pro game is a
+     different game on a different page, and dropping it into the same list would
+     read as another way to play this one. The rule and the heading separate them.
+     The NFL game carries the mirror image of this block pointing back here. */
+  .xpromo{margin-top:20px;padding-top:16px;border-top:1px solid var(--line-2)}
+  .xpromo .xp-h{font-family:var(--fn);font-size:12.5px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim);margin:0 0 10px}
+  /* Red, which is the NFL game's colour on the RunThe.GG home page and on its own
+     pages. Borrowed on purpose: somebody who has seen it before should recognise it. */
+  .modecard.mc-nfl{border-color:rgba(220,60,60,.38)}
+  .modecard.mc-nfl .mc-icon{background:linear-gradient(135deg,#ef5350 0%,#c0272b 100%)}
+  .modecard.mc-nfl .mc-title{color:#f0918e}
+  .modecard.mc-nfl{text-decoration:none}
+
+  /* The five conferences, once the card is tapped. */
+  .confgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+  .confbtn{padding:15px 10px;border-radius:12px;border:1.5px solid var(--line);
+    background:var(--panel);cursor:pointer;text-align:center;
+    transition:border-color .12s ease,transform .08s ease}
+  .confbtn:hover{border-color:var(--gold)}
+  .confbtn:active{transform:scale(.97)}
+  .confbtn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .confbtn b{display:block;font-family:var(--fn);font-size:15px;font-weight:800;color:var(--ink)}
+  .confbtn span{display:block;font-size:11px;color:var(--dim-2);margin-top:3px}
+  /* An odd count leaves a gap, so the last one takes the full width rather than
+     sitting alone in a half column. */
+  .confgrid .confbtn:last-child:nth-child(odd){grid-column:1 / -1}
+
+  /* WHICH COMPETITION A SEASON BELONGS TO, on the draft and results screens. A
+     conference run that does not say so anywhere is a run somebody will later
+     wonder why the free board has never heard of. */
+  .modetag{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;
+    font-family:var(--fc);font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+    border:1px solid rgba(245,158,11,.4);background:rgba(245,158,11,.11);color:#fbbf24}
 
   /* ── what an account buys, shown rather than described ───────────
      Two tabs put this up: the colors, and the trophy case. One set of rules, so
@@ -1693,6 +1772,9 @@ or endorsed by the NCAA, the CFP or any school.
     <div>
       <button class="btn" id="b-play-intro">Draft your team</button>
     </div>
+    <div style="margin-top:9px">
+      <button class="btn ghost" id="b-modes">More ways to play</button>
+    </div>
     <div style="margin-top:9px;display:grid;grid-template-columns:1fr 1fr;gap:9px">
       <button class="btn ghost sm" id="b-lb-intro">Leaderboard</button>
       <button class="btn ghost sm" id="b-how">How to play</button>
@@ -1727,6 +1809,7 @@ or endorsed by the NCAA, the CFP or any school.
       <div id="c-note" style="font-size:11px;color:#fca5a5;margin-top:4px;display:none"></div>
     </div>
 
+    <div id="d-mode" style="text-align:center;margin-bottom:10px"></div>
     <div class="dcols">
       <div class="dcol">
         <div class="field" id="field" style="margin:0"></div>
@@ -1903,6 +1986,10 @@ or endorsed by the NCAA, the CFP or any school.
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
+    <!-- WHICH COMPETITION, then which window. Two questions, and a select rather
+         than six more tabs: the windows are three and stay tabs, the competitions
+         are six and would not fit on a phone. -->
+    <div class="lbmode"><select id="lb-comp" aria-label="Which leaderboard"></select></div>
     <div class="tabwrap"><div class="tabs" id="lb-tabs">
       <button class="tab on" data-lb="day">Today</button>
       <button class="tab" data-lb="week">This week</button>
@@ -1934,6 +2021,7 @@ or endorsed by the NCAA, the CFP or any school.
   </div>
 
   <div class="screen" id="s-over">
+    <div id="o-mode" style="text-align:center;margin-bottom:9px"></div>
     <div class="verdict" id="o-card">
       <div class="emblem" id="o-emblem" hidden></div>
       <div class="hero-rec">
@@ -2406,6 +2494,102 @@ function openProfile(tab){
   if(gin) gin.onclick=()=>{ ga('gate_clicked',{from:profileTab}); openProfile('account'); };
   $('sp-x').onclick=closeSheet;
 }
+/* ── more ways to play ────────────────────────────────────────────
+   Two things under one heading: the other way to play this game, and a signpost
+   to the other game. Kept apart by a rule, because a link to a different game on
+   a different page is not a third mode of this one. The NFL game carries the
+   mirror image of this pointing back here. */
+const ARROW='<svg class="mc-arrow" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>';
+
+function modeMenu(){
+  ga('modes_opened');
+  $('sheet-in').innerHTML=
+    '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">More ways to play</h2>'+
+    '<div class="modecards">'+
+      '<button class="modecard mc-conf" id="b-mc-conf">'+
+        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
+          /* ONE PENNANT ON A POLE. Three small ones read as a squiggle at 18px,
+             which is the size this actually draws at; one big one reads as a
+             pennant, and a pennant is what a conference looks like. */
+          '<path d="M6 3v18"/><path d="M6 4.5h13l-3.2 4 3.2 4H6z"/>'+
+        '</svg></div><div class="mc-title">Conference Draft</div>'+ARROW+'</div>'+
+        '<p>Pick one of the Power 5 and build a roster from that conference alone. '+
+        'Teams are matched to the conference they were in that season, so the Pac-12 '+
+        'is the real Pac-12.</p>'+
+      '</button>'+
+    '</div>'+
+    '<div class="xpromo">'+
+      '<p class="xp-h">Love pro football?</p>'+
+      /* An anchor and not a button: it goes to another page, so it should behave
+         like a link does, middle-click and all. Styled as a card so it matches the
+         one above it. */
+      '<a class="modecard mc-nfl" href="/football/" id="b-mc-nfl">'+
+        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
+          '<g transform="rotate(-30 12 12)">'+
+            '<path d="M2.5 12c0-3 4.2-5.5 9.5-5.5S21.5 9 21.5 12s-4.2 5.5-9.5 5.5S2.5 15 2.5 12z"/>'+
+            '<path d="M8.5 12h7"/><path d="M10.5 10.4v3.2"/><path d="M13 10.4v3.2"/>'+
+          '</g>'+
+        '</svg></div><div class="mc-title">The Perfect Season</div>'+ARROW+'</div>'+
+        '<p>The same game in the NFL. Spin for a year and a team, sign six all-time '+
+        'legends under the $140M cap, then play all 17 games and the playoffs.</p>'+
+      '</a>'+
+    '</div>'+
+    '<div style="margin-top:14px"><button class="btn ghost sm" id="mm-x" style="width:100%">Close</button></div>';
+  openSheet();
+  $('b-mc-conf').onclick=conferenceMenu;
+  $('b-mc-nfl').onclick=()=>ga('crosspromo_clicked',{to:'football'});
+  $('mm-x').onclick=closeSheet;
+}
+
+/* THE FIVE, WITH THE YEARS EACH ONE COVERS. The years matter: a Pac-12 draft ends
+   in 2023 because the conference did, and somebody who picks it and then sees no
+   2025 teams should have been told first rather than left to work it out. */
+function conferenceMenu(){
+  const spans=confSpans();
+  $('sheet-in').innerHTML=
+    '<div class="eyebrow" style="color:#fbbf24">Conference Draft</div>'+
+    '<h2 class="display mtitle" style="font-size:23px;margin:4px 0 6px">Pick a conference</h2>'+
+    '<p class="dim" style="font-size:13px;margin:0 0 2px">Every spin comes from that '+
+    'conference, and from the teams that were actually in it that season.</p>'+
+    '<div class="confgrid">'+
+      E.POWER_CONFERENCES.map(c=>{
+        const sp=spans[c.key];
+        return '<button class="confbtn" data-conf="'+esc(c.key)+'"><b>'+esc(c.name)+'</b>'+
+          '<span>'+(sp?sp.schools+' schools &middot; '+sp.from+'-'+sp.to:'&nbsp;')+'</span></button>';
+      }).join('')+
+    '</div>'+
+    '<div style="margin-top:12px;display:flex;gap:8px">'+
+      '<button class="btn ghost sm" id="cm-back" style="flex:1">Back</button>'+
+      '<button class="btn ghost sm" id="cm-x" style="flex:1">Close</button></div>';
+  $('sheet-in').querySelectorAll('.confbtn').forEach(b=>b.onclick=()=>{
+    closeSheet();
+    ga('conference_chosen',{conference:b.dataset.conf});
+    beginDraft(b.dataset.conf);
+  });
+  $('cm-back').onclick=modeMenu;
+  $('cm-x').onclick=closeSheet;
+}
+
+/* How many schools each conference has in this game's data, and the years it
+   covers. Computed once from the team seasons rather than written down, so it
+   cannot drift from what the wheel will actually offer. */
+let confSpansCache=null;
+function confSpans(){
+  if(confSpansCache) return confSpansCache;
+  const out={};
+  for(const t of DATA.teamSeasons){
+    const k=E.conferenceOf(t.conference);
+    if(!E.isPowerConference(k)) continue;
+    const e=out[k]||(out[k]={schools:new Set(),from:t.season,to:t.season});
+    e.schools.add(t.school);
+    if(t.season<e.from) e.from=t.season;
+    if(t.season>e.to) e.to=t.season;
+  }
+  for(const k in out) out[k].schools=out[k].schools.size;
+  confSpansCache=out;
+  return out;
+}
+
 /* ── accounts ─────────────────────────────────────────────────────
    THERE IS NO NEW ACCOUNT SYSTEM HERE. auth.js uses the site's own: one RunThe.GG
    account signs you in on every game. This is the panel in front of it.
@@ -2858,17 +3042,29 @@ function recordRun(row){
    than throwing, and a null shows as "the board is not reachable" rather than as a
    made-up number. Somebody with an ad blocker, a dead network or a project where
    62_cfb_leaderboard.sql has not been run plays exactly the same game. */
-let lbWindow='day', lbSort='record', lbBusy=false, lbFrom='s-intro';
+let lbWindow='day', lbSort='record', lbBusy=false, lbFrom='s-intro', lbMode='free';
 /* The row id the board gave back for the season on screen, so the results screen
    can highlight it and a late sign-in can claim it. */
 let myRunId=null, myPlace=null;
 
-function openBoard(){
+function openBoard(mode){
   const cur=document.querySelector('.screen.on');
   if(cur&&cur.id!=='s-board') lbFrom=cur.id;
-  ga('board_opened',{window:lbWindow,sort:lbSort});
+  /* Opened from a finished season, the board opens on THAT season's competition:
+     coming off a Pac-12 run to a free-play board you are not on is the wrong
+     answer to "where did I come?". */
+  if(mode&&B&&B.MODES.indexOf(mode)>=0) lbMode=mode;
+  paintCompSelect();
+  ga('board_opened',{window:lbWindow,sort:lbSort,mode:lbMode});
   show('s-board');
   paintBoard();
+}
+
+function paintCompSelect(){
+  const sel=$('lb-comp'); if(!sel||!B) return;
+  sel.innerHTML=B.MODES.map(m=>'<option value="'+esc(m)+'"'+(m===lbMode?' selected':'')+'>'+
+    esc(modeLabel(m))+'</option>').join('');
+  sel.parentNode.classList.toggle('isconf',lbMode!=='free');
 }
 
 async function paintBoard(){
@@ -2882,7 +3078,7 @@ async function paintBoard(){
   $('lb-count').textContent='Loading';
   $('lb-rows').innerHTML='<div style="text-align:center;padding:26px 0;color:var(--dim);font-size:13px">'+
     '<div class="dots"><i></i><i></i><i></i></div></div>';
-  const opts={window:lbWindow};
+  const opts={window:lbWindow,mode:lbMode};
   const [rows,count]=await Promise.all([B.top(opts,100,lbSort),B.total(opts)]);
   lbBusy=false;
   if(!rows){
@@ -2897,8 +3093,11 @@ async function paintBoard(){
   const label={day:'today',week:'this week',all:'all time'}[lbWindow];
   $('lb-count').textContent=count===null?'' :
     (count===1?'1 season '+label:count.toLocaleString()+' seasons '+label);
-  $('lb-blurb').textContent='Every finished season lands here. Today and This week reset at '+
-    'midnight Eastern; the week starts Monday.';
+  $('lb-blurb').textContent=(lbMode==='free'
+      ? 'Every free-play season lands here. '
+      : 'Only '+lbMode.replace(/^conf:/,'')+' drafts land here, because six spins from one '+
+        'conference and six from the whole country are not the same competition. ')+
+    'Today and This week reset at midnight Eastern; the week starts Monday.';
   if(!rows.length){
     $('lb-rows').innerHTML='<div class="lbempty">No seasons '+label+' yet. Yours could be the first.</div>';
     return;
@@ -2959,6 +3158,7 @@ async function submitRun(o,finalRank,stats){
     teamRating:stats.rating,
     overall:stats.overall,
     perfectPct:null,
+    runMode:runMode(run),
   };
   const id=await B.submit(payload);
   if(id){ myRunId=id; pendingClaim=authState.signedIn?null:id;
@@ -2989,8 +3189,12 @@ async function paintPlace(){
   const o=run.outcome;
   const stats=run.boardStats; if(!stats) return;
   const score=B.scoreOf(o.wins,stats.pointDiff);
+  /* Counted against the competition this season was played in, not against every
+     season ever recorded. A Pac-12 run ranked among free-play runs is a number
+     that means nothing. */
+  const opts={window:'week',mode:runMode(run)};
   const [place,count]=await Promise.all([
-    B.placeIn({window:'week'},'record',score), B.total({window:'week'}),
+    B.placeIn(opts,'record',score), B.total(opts),
   ]);
   if(place===null){
     el.innerHTML='<div class="placebox"><div class="pl">The leaderboard is not reachable '+
@@ -3002,12 +3206,14 @@ async function paintPlace(){
       return n+({1:'st',2:'nd',3:'rd'}[n%10]||'th');};
     const nameLine=authState.signedIn
       ? '' : ' <b>Sign in</b> to put your name on it.';
+    const which=run.conference?' '+esc(run.conference)+' draft':'';
     el.innerHTML='<div class="placebox">'+
       '<div class="pv'+(place===1?' gold':'')+'">'+ord(place)+'</div>'+
-      '<div class="pl">of '+(count===null?'the':count.toLocaleString())+' seasons this week.'+nameLine+'</div>'+
+      '<div class="pl">of '+(count===null?'the':count.toLocaleString())+which+
+        ' seasons this week.'+nameLine+'</div>'+
       '<button id="o-lb">Board</button></div>';
   }
-  const b=$('o-lb'); if(b) b.onclick=openBoard;
+  const b=$('o-lb'); if(b) b.onclick=()=>openBoard(runMode(run));
 }
 
 function paintNewBadges(){
@@ -3265,17 +3471,46 @@ function openBoxScore(r){
 }
 
 /* ── new run / begin draft ───────────────────────────────────── */
+/* WHICH COMPETITION THE NEXT RUN BELONGS TO. Held between runs so Draft again
+   keeps you in the conference you were playing rather than quietly dropping you
+   back into free play, which is the one thing that would make the mode feel like
+   it had not stuck. */
+let nextConference=null;
+
 function newRun(){
-  run=R.createRun({seed:E.hashSeed(String(Date.now())+Math.random())});
+  run=R.createRun({seed:E.hashSeed(String(Date.now())+Math.random()),
+    conference:nextConference});
   lastChem=1;
 }
 
-function beginDraft(){
+/* The competition a run belongs to, in the shape the board stores it. Read off
+   the run itself rather than off nextConference, because the run on screen is the
+   one being described and the two can differ the moment somebody picks a
+   different mode. */
+const runMode=(r)=>(r&&r.conference)?('conf:'+r.conference):'free';
+const modeLabel=(m)=>m==='free'?'Free play':m.replace(/^conf:/,'')+' draft';
+
+function beginDraft(conference){
+  if(conference!==undefined) nextConference=conference&&E.isPowerConference(conference)?conference:null;
   newRun();
-  ga('game_started');
+  ga('game_started',{mode:runMode(run)});
   paintTop(); drawField($('field'),true);
+  paintModeTag();
   show('s-draft');
   nextSpin();
+}
+
+/* The badge that says which competition this is, on the draft screen and the
+   results screen. Free play says nothing: the unmarked case is the common one and
+   a badge reading "Free play" on every screen is noise. */
+function paintModeTag(){
+  const conf=run&&run.conference;
+  for(const id of ['d-mode','o-mode']){
+    const el=$(id); if(!el) continue;
+    el.innerHTML=conf
+      ? '<span class="modetag">'+esc(conf)+' draft</span>'
+      : '';
+  }
 }
 
 /* ── paint budget HUD ────────────────────────────────────────── */
@@ -4598,6 +4833,7 @@ function paintOver(){
       record:o.record,national_rank:finalRank||null,overall:Math.round(overall*10)/10});
     lastEarned.forEach(a=>ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group}));
   }else if(run.boardStats){ paintPlace(); }
+  paintModeTag();
   paintNewBadges();
 
   const pts=(arr,f)=>arr.reduce((t,r)=>t+f(r),0)/Math.max(1,arr.length);
@@ -5092,7 +5328,14 @@ function howToPlay(){
 /* ── wire up buttons ─────────────────────────────────────────── */
 $('b-play-intro').onclick=()=>beginDraft();
 $('b-how').onclick=()=>{ga('how_to_play_opened');howToPlay();};
-$('b-lb-intro').onclick=openBoard;
+$('b-modes').onclick=modeMenu;
+$('b-lb-intro').onclick=()=>openBoard();
+$('lb-comp').onchange=(e)=>{
+  lbMode=e.target.value;
+  $('lb-comp').parentNode.classList.toggle('isconf',lbMode!=='free');
+  ga('board_competition',{mode:lbMode});
+  paintBoard();
+};
 $('b-board-x').onclick=()=>show(lbFrom);
 $('b-board-back').onclick=()=>show(lbFrom);
 $('lb-tabs').addEventListener('click',(e)=>{
@@ -5119,8 +5362,12 @@ $('b-diag').onclick=async()=>{
       (e?' ('+e.where+' '+(e.status||e.code)+': '+e.message+')':'');
 };
 $('b-again').onclick=()=>beginDraft();
-$('b-home').onclick=(e)=>{e.preventDefault();show('s-intro');};
-$('b-home2').onclick=()=>show('s-intro');
+/* Home is where a competition is chosen, so going there clears the one you were
+   in. Draft again does not: it keeps you where you were, which is the whole point
+   of having picked. */
+const goHome=()=>{ nextConference=null; show('s-intro'); };
+$('b-home').onclick=(e)=>{e.preventDefault();goHome();};
+$('b-home2').onclick=goHome;
 
 /* ── kick off ────────────────────────────────────────────────── */
 boot();
