@@ -272,6 +272,9 @@ window.GA_ID='G-L29P5MRWKE';
   #b-teams{padding-left:10px;padding-right:10px}
   .btn.ghost{background:transparent;box-shadow:none;border:1.5px solid var(--line-2);font-size:14.5px}
   .btn.ghost:before{display:none}
+  /* A ghost button whose action carries a cost. Still the quiet option of the two on screen,
+     because it IS the quiet option, but no longer indistinguishable from a free one. */
+  .btn.ghost.warn{border-color:rgba(239,68,68,.55);color:#fca5a5;background:rgba(239,68,68,.07)}
   .btn.sm{padding:11px 14px;font-size:13.5px;border-radius:10px}
   .hp-start{padding:18px 18px;font-size:19px;background:#c62828;box-shadow:0 2px 8px rgba(0,0,0,.35);
     border-radius:12px}
@@ -1008,6 +1011,12 @@ window.GA_ID='G-L29P5MRWKE';
   .tp-cap .dn{color:var(--red)}
   .tp-cap .tp-hint{font-weight:600;color:var(--dim-2);margin-left:4px;font-size:9.5px;
     text-transform:uppercase;letter-spacing:.05em}
+  /* The verdict on a deal's money while over the cap. A chip rather than more small print,
+     because on this screen it is the thing being looked for. */
+  .tp-cap .tp-fix,.tp-cap .tp-still{font-family:var(--fn);font-size:9.5px;font-weight:800;
+    letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:5px}
+  .tp-cap .tp-fix{color:#052e16;background:#4ade80}
+  .tp-cap .tp-still{color:#fecaca;background:rgba(239,68,68,.22)}
 
   .fa-cards{display:flex;flex-direction:column;gap:8px}
   .fa-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;
@@ -1141,7 +1150,11 @@ window.GA_ID='G-L29P5MRWKE';
   .gmp-bar i{display:block;height:100%;border-radius:3px}
   .gmp-bar i.hi{background:#22c55e} .gmp-bar i.mid{background:#fbbf24} .gmp-bar i.lo{background:var(--red)}
   .gmp-why{font-size:11.5px;color:var(--dim);line-height:1.35}
-  .gmp-note{font-size:11.5px;color:var(--red);margin:8px 0 0}
+  /* Two notes now, and only one of them is a failure: unspent cap is a missed opportunity
+     rather than a breach, so the red is reserved for actually going over. */
+  .gmp-note{font-size:11.5px;color:var(--dim);margin:8px 0 0}
+  .gmp-note b{color:var(--ink)}
+  .gmp-note.over{color:#fca5a5} .gmp-note.over b{color:#fecaca}
   .trade-hist-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;
     padding:8px 0;border-bottom:1px solid var(--line-2)}
   .trade-hist-row:last-child{border-bottom:none}
@@ -1229,6 +1242,7 @@ window.GA_ID='G-L29P5MRWKE';
   .roster-panel>summary .rp-cap{margin-left:auto;font-family:var(--fn);font-size:11px;font-weight:700}
   .roster-panel>summary .rp-cap .rp-spent{color:#fbbf24}
   .roster-panel>summary .rp-cap .rp-room{color:var(--dim);margin-left:5px}
+  .rp-room.over{color:#fca5a5;font-weight:800}
   .roster-panel>summary .rp-caret{transition:transform .18s;color:var(--dim-2);font-size:11px}
   .roster-panel[open]>summary .rp-caret{transform:rotate(180deg)}
   .roster-panel .rp-body{padding:0 10px 10px}
@@ -1247,6 +1261,13 @@ window.GA_ID='G-L29P5MRWKE';
   .tw-rise{border-radius:9px;border:1px solid rgba(251,191,36,.28);background:rgba(251,191,36,.07);
     padding:8px 11px;margin:0 0 10px;font-size:12px;line-height:1.4;color:var(--dim)}
   .tw-rise b{color:#fbbf24}
+  /* OVER THE CAP READS AS OVER THE CAP. A thicker left rule, red rather than amber, and the
+     figures in red: at a glance it is a different KIND of message from "prices went up",
+     which is what it always was and never looked like. */
+  .tw-rise.over{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.10);
+    box-shadow:inset 3px 0 0 var(--red);color:#f2d3d3}
+  .tw-rise.over b{color:#fca5a5}
+  .tw-rise.over b:first-child{color:#fecaca;letter-spacing:.02em}
   .shop-list{display:flex;flex-direction:column;gap:6px}
   .shop-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;
     padding:10px 11px;border-radius:10px;border:1.5px solid var(--line-2);background:var(--panel);
@@ -1270,6 +1291,9 @@ window.GA_ID='G-L29P5MRWKE';
   .shop-row.picked .sh-fppg{color:#fbbf24}
   .shop-cap{margin-top:10px;font-family:var(--fn);font-size:11.5px;font-weight:700;color:var(--dim);text-align:center}
   .shop-cap b{color:#fbbf24}
+  /* Cap trouble is red wherever it is mentioned, so the colour means one thing across the
+     whole mode rather than being decoration on each screen. */
+  .shop-cap .over{color:#fca5a5} .shop-cap .over b{color:#fecaca}
   .market-out{border-radius:10px;border:1px dashed var(--line-2);background:rgba(239,68,68,.05);
     padding:9px 12px;margin-bottom:8px;font-size:12.5px;color:var(--dim);line-height:1.4}
   .market-out b{color:var(--ink)}
@@ -3666,7 +3690,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=37"></script>
-<script src="run.js?v=47"></script>
+<script src="run.js?v=48"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -5881,16 +5905,24 @@ function paintGmParts(p,gm){
   if(!p){ el.innerHTML='<p class="dim" style="font-size:12.5px">No breakdown available.</p>'; return; }
   const rec=p.regularWins+'-'+(E.CONSTANTS.REGULAR_SEASON_GAMES-p.regularWins);
   const rows=[
-    {k:'Winning',w:40,v:p.result,
+    {k:'Winning',w:35,v:p.result,
      why:rec+(p.playoffWins?', '+p.playoffWins+' playoff win'+(p.playoffWins===1?'':'s'):'')+
        (run.outcome.titleWon?', won the title':(run.outcome.madePlayoffs?', made the playoffs':', missed the playoffs'))},
-    {k:'Improvement',w:30,v:p.improvement,
+    {k:'Improvement',w:25,v:p.improvement,
      why:'team '+p.startRating.toFixed(1)+' → '+p.finalRating.toFixed(1)+
        ' ('+(p.ratingGain>=0?'+':'')+p.ratingGain.toFixed(1)+'). Full marks at +'+25},
-    {k:'Value',w:20,v:p.efficiency,
+    {k:'Value',w:15,v:p.value,
      why:p.addedSalary>0
        ? '+'+p.ratingGain.toFixed(1)+' rating for $'+p.addedSalary.toFixed(1)+'M spent above the no-trade payroll'
        : 'gained without spending past the no-trade payroll of $'+p.noTradePayroll.toFixed(1)+'M'},
+    /* THE CAP, ON ITS OWN LINE AND WORTH SAYING OUT LOUD. It was a third of the Value mark
+       and 6% of the rating, mentioned only in a footnote after the fact. */
+    {k:'Cap management',w:15,v:p.cap,
+     why:p.overCapBy>0
+       ? 'finished $'+p.overCapBy.toFixed(1)+'M OVER the $'+E.CONSTANTS.CAP_MUSD+'M cap'
+       : p.idleCap>10
+       ? '$'+p.idleCap.toFixed(1)+'M of cap left unspent, which is a resource you did not use'
+       : 'payroll $'+p.totalSalary.toFixed(1)+'M, inside the cap with $'+p.idleCap.toFixed(1)+'M spare'},
     {k:'Beat expectation',w:10,v:p.over,
      why:'won '+p.regularWins+'; the '+p.startRating.toFixed(1)+' roster you inherited was worth about '+
        p.expectedWins.toFixed(1)},
@@ -5906,9 +5938,15 @@ function paintGmParts(p,gm){
       '<div class="gmp-bar"><i class="'+cls+'" style="width:'+Math.max(1,Math.min(100,r.v))+'%"></i></div>'+
       '<div class="gmp-why">'+esc(r.why)+'</div></div>';
   });
-  if(p.capRemaining<0){
-    h+='<p class="gmp-note">You finished $'+Math.abs(p.capRemaining).toFixed(1)+
-      'M over the cap, which costs part of the Value mark.</p>';
+  /* The cost stated as a number rather than as "costs part of a mark", which was true and
+     told nobody anything. Cap management is 15% of the rating, so the points lost are
+     exactly that share of the mark that went missing. */
+  if(p.overCapBy>0){
+    h+='<p class="gmp-note over">Finishing $'+p.overCapBy.toFixed(1)+'M over the cap cost you <b>'+
+      ((100-p.cap)*0.15).toFixed(1)+' points</b> of this rating.</p>';
+  }else if(p.idleCap>10){
+    h+='<p class="gmp-note">Leaving $'+p.idleCap.toFixed(1)+'M of cap unspent cost you <b>'+
+      ((100-p.cap)*0.15).toFixed(1)+' points</b>. A win-now roster is supposed to use its money.</p>';
   }
   el.innerHTML=h;
 }
@@ -5919,8 +5957,12 @@ function paintRosterPanel(bodyId,capId){
   const total=Math.round(run.roster.reduce((s,p)=>s+p.price_musd,0)*10)/10;
   const room=Math.round((E.CONSTANTS.CAP_MUSD-total)*10)/10;
   const capEl=$(capId);
+  /* "$-11.1M free" is not a sentence. An over-cap roster says OVER, in red, on every screen
+     that carries this line, so the state is visible outside a trade window too. */
   if(capEl) capEl.innerHTML='<span class="rp-spent">$'+total.toFixed(1)+'M</span>'+
-    '<span class="rp-room">$'+room.toFixed(1)+'M free</span>';
+    (room<0
+      ? '<span class="rp-room over">$'+Math.abs(room).toFixed(1)+'M over cap</span>'
+      : '<span class="rp-room">$'+room.toFixed(1)+'M free</span>');
   const order=run.roster.map((p,i)=>({p,i,slot:run.slotIndex[i]})).sort((a,b)=>a.slot-b.slot);
   let h='';
   order.forEach(({p,i,slot})=>{
@@ -5998,20 +6040,45 @@ function openTradeWindow(step,opts){
   $('b-tw-find').onclick=enterMarket;
   $('b-tw-pass').onclick=()=>{ leaveTradeWindow(400); };
   $('b-tw-back').onclick=backToShop;
-  $('b-tw-pass').textContent=preseasonWindow?'No deal, start the season':'Pass and keep my roster';
+  /* PASSING WHILE OVER THE CAP HAS TO SAY SO. "Pass and keep my roster" is a perfectly
+     comfortable sentence to tap, and it was the button that walked somebody $11M over the cap
+     into the results screen. It names the consequence instead, so staying over is a decision
+     rather than the default. */
+  const passOver=R.capMark(run.roster.reduce((t,p)=>t+p.price_musd,0));
+  $('b-tw-pass').textContent=passOver.overBy>0
+    ? 'Stay $'+passOver.overBy.toFixed(1)+'M over the cap'
+    : (preseasonWindow?'No deal, start the season':'Pass and keep my roster');
+  $('b-tw-pass').classList.toggle('warn',passOver.overBy>0);
   /* The raise happened a line of code ago and it moves every price on this screen, so it is
      stated here rather than left to be inferred from numbers that quietly grew. */
+  /* OVER THE CAP IS ITS OWN BANNER, not a clause in the inflation notice.
+     It used to read "Your payroll is now $151.1M of $140M" in the same amber box, at the same
+     weight, as the sentence about prices rising: two numbers to compare and subtract before
+     anything was wrong. Being over is now a red banner that says the overage as a figure and
+     says what it will cost, because a penalty nobody is told about is not a rule, it is a
+     trap. */
   const rise=$('tw-rise');
   if(rise){
-    if(preseasonWindow){
-      rise.style.display='';
-      rise.innerHTML='<b>No raises yet.</b> Prices rise '+Math.round((R.CONTRACT_INFLATION-1)*100)+
+    const payroll=run.roster.reduce((t,p)=>t+p.price_musd,0);
+    const cap=R.capMark(payroll);
+    const risePct=Math.round((R.CONTRACT_INFLATION-1)*100);
+    rise.style.display='';
+    rise.classList.toggle('over',cap.overBy>0);
+    if(cap.overBy>0){
+      rise.innerHTML='<b>$'+cap.overBy.toFixed(1)+'M OVER THE SALARY CAP.</b> '+
+        'Payroll <b>$'+payroll.toFixed(1)+'M</b> against a $'+E.CONSTANTS.CAP_MUSD+'M cap'+
+        (preseasonWindow?'':', after the '+risePct+'% raises')+'. '+
+        'Finish here and it costs you <b>'+cap.costs.toFixed(1)+' points</b> of your GM rating. '+
+        (deadline?'This is the last window to shed salary.'
+          :'Trade someone away for less money to get back under.');
+    }else if(preseasonWindow){
+      rise.innerHTML='<b>No raises yet.</b> Prices rise '+risePct+
         '% at each of the '+R.TRADE_WEEKS.length+' in-season windows, so a deal is cheaper now than later.';
     }else{
-      rise.style.display='';
-      rise.innerHTML='<b>Every price just rose '+Math.round((R.CONTRACT_INFLATION-1)*100)+'%.</b> '+
-        'Your payroll is now <b>$'+run.roster.reduce((t,p)=>t+p.price_musd,0).toFixed(1)+'M</b> of $'+
-        E.CONSTANTS.CAP_MUSD+'M'+(deadline?'. Last window to do anything about it.':'.');
+      rise.innerHTML='<b>Every price just rose '+risePct+'%.</b> '+
+        'Your payroll is now <b>$'+payroll.toFixed(1)+'M</b> of $'+E.CONSTANTS.CAP_MUSD+'M, '+
+        '<b>$'+cap.remaining.toFixed(1)+'M</b> to spend'+
+        (deadline?'. Last window to use it.':'.');
     }
   }
   show('s-trade');
@@ -6061,14 +6128,26 @@ function updateShopState(){
   const names=shopSel.map(i=>lastName(run.roster[i].name)).join(' + ');
   btn.textContent=shopSel.length?'Find offers for '+names:'Select a player to shop';
   const capEl=$('tw-shop-cap');
+  const cap=R.capMark(run.roster.reduce((t,p)=>t+p.price_musd,0));
   if(!shopSel.length){
-    capEl.innerHTML='Tap a player to put him on the block. Shop two and the return can be one bigger player or two.';
+    /* Over the cap, this line stops being a tip about how the screen works and starts being
+       the number that matters: how much salary has to leave. */
+    capEl.innerHTML=cap.overBy>0
+      ? '<span class="over">You need to shed <b>$'+cap.overBy.toFixed(1)+'M</b> to get back under '+
+        'the cap.</span> Put the man you are willing to lose on the block.'
+      : 'Tap a player to put him on the block. Shop two and the return can be one bigger player or two.';
     return;
   }
   const outVal=shopSel.reduce((t,i)=>t+run.roster[i].ppr_ppg_mean,0);
   const outSal=shopSel.reduce((t,i)=>t+run.roster[i].price_musd,0);
   capEl.innerHTML='On the block: <b>'+outVal.toFixed(1)+' FPPG</b> and <b>$'+outSal.toFixed(1)+'M</b> of cap'+
-    (shopSel.length===2?'. Offers come back as one player plus a free agent, or as two players.':'.');
+    (shopSel.length===2?'. Offers come back as one player plus a free agent, or as two players.':'.')+
+    /* What this package would have to bring back to clear the cap, which is the one thing a
+       GM shedding salary actually needs to know while choosing who to shop. */
+    (cap.overBy>0
+      ? ' <span class="over">Take back under <b>$'+Math.max(0,outSal-cap.overBy).toFixed(1)+
+        'M</b> and you are under the cap.</span>'
+      : '');
 }
 
 /* Ask the league. R.findOffers returns the market for exactly the package you chose. */
@@ -6131,6 +6210,7 @@ function paintOffers(){
     return;
   }
   $('b-tw-accept').style.display='';
+  const payNow=run.roster.reduce((t,p)=>t+p.price_musd,0);
   currentOffers.forEach((o,i)=>{
     const rd=o.ratingDelta, cs=o.netCap, cd=o.chemDelta;
     const cls=rd===null?'flat':(rd>0.05?'up':(rd<-0.05?'dn':'flat'));
@@ -6158,6 +6238,17 @@ function paintOffers(){
     const capTxt=(cs>0?'+$':'\u2212$')+Math.abs(cs).toFixed(1)+'M';
     html+='<div class="tp-cap"><span>Cap <span class="'+(cs>0?'dn':'up')+'">'+capTxt+'</span>'+
         '<span class="tp-hint">'+(cs>0?'costs':'frees')+'</span></span>';
+    /* WHILE OVER THE CAP, THE ONLY THING THAT MATTERS ABOUT A DEAL'S MONEY IS WHETHER IT
+       FIXES THE PROBLEM. "-$4.2M frees" does not answer that on its own: you have to hold the
+       overage in your head and subtract. So each card says which side of the cap it leaves
+       you on, and the ones that do not solve it say by how much they fall short. */
+    if(payNow>E.CONSTANTS.CAP_MUSD){
+      const after=payNow+cs+(o.type==='2for1'?R.FA_TYPICAL_MUSD:0);
+      const stillOver=after-E.CONSTANTS.CAP_MUSD;
+      html+=stillOver<=0
+        ? '<span class="tp-fix">Gets you under the cap</span>'
+        : '<span class="tp-still">Still $'+stillOver.toFixed(1)+'M over</span>';
+    }
     if(cd!==null&&Math.abs(cd)>=0.1){
       html+='<span>Chemistry <span class="'+(cd>0?'up':'dn')+'">'+(cd>0?'+':'')+cd.toFixed(1)+'%</span></span>';
     }

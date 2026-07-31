@@ -1260,6 +1260,11 @@ function previewTrade(run, offer) {
    and by the stand-in a two-for-one card is estimated against, so the number on the card
    cannot disagree with the player you end up able to sign. */
 const FA_MAX_PCTL = 0.22, FA_MIN_M = 3, FA_MAX_M = 6;
+/* The middle of the free-agent band, for the one place that has to price a signing BEFORE it
+   is drawn: an offer card for a two-for-one has to say what the deal does to the payroll, and
+   the free agent filling the hole is part of that. Exported so the card and the signing cannot
+   drift apart if the band ever moves. */
+const FA_TYPICAL_MUSD = (FA_MIN_M + FA_MAX_M) / 2;
 /* How deep the free-agent board runs. The three on offer are drawn from this many best
    available, so every option is usable and a card's estimate lands near what you sign. */
 const FA_BOARD = 8;
@@ -1376,7 +1381,45 @@ function signFreeAgent(run, player, ctx) {
 const GM_RESULT_DEN = 52;      // a championship season, not a flawless one
 const GM_IMPROVE_REF = 25;     // rating gained for full marks
 const GM_VALUE_REF = 2;        // rating per $M beyond no-trade payroll for full marks
-const GM_OVERCAP_PER_M = 8;    // how fast going over the cap eats the efficiency mark
+
+/* ---- CAP MANAGEMENT, ITS OWN MARK RATHER THAN A THIRD OF THE EFFICIENCY ONE ----
+ *
+ * It used to be 30% of a 20% component, so the whole of the cap was 6% of the rating and
+ * going $11M over cost about five points on a hundred-point scale. That is not a
+ * consequence, it is a rounding error, and nothing on screen ever mentioned it.
+ *
+ * It reads BOTH WAYS now, which is what "how well did you use the cap" has to mean:
+ *
+ *   OVER      falls fast. Going over is a real choice with a real price, not a soft nudge.
+ *   IDLE      falls slowly. Unspent cap in a win-now mode is a resource you did not use.
+ *             A cushion is fine, which is why the first slice is free -- a GM who happens
+ *             to finish $6M light has not done anything wrong.
+ *
+ * Deliberately NOT the old "reward unspent cap" rule, which wanted you $20M clear and made
+ * hoarding the optimal play. This wants the cap SPENT and not exceeded.
+ */
+const GM_OVERCAP_PER_M = 6;    // each $1M over the cap, off the cap mark
+const GM_IDLE_FREE_M = 10;     // spare change this far under is not a mistake
+const GM_IDLE_PER_M = 2;       // each $1M idle beyond that, off the cap mark
+
+/* WHAT A PAYROLL IS WORTH ON THE CAP MARK, so the game can tell you the price BEFORE the
+   season ends rather than presenting it as a surprise on the results screen. Same arithmetic
+   computeGMRating uses, in one place, so the warning during a trade window and the mark
+   afterwards can never disagree. `costs` is in points off the final GM rating. */
+const GM_CAP_WEIGHT = 0.15;
+function capMark(payroll) {
+  const remaining = E.CONSTANTS.CAP_MUSD - payroll;
+  const overBy = Math.max(0, -remaining);
+  const idle = Math.max(0, remaining);
+  const clamp100 = (v) => Math.max(0, Math.min(100, v));
+  const score = overBy > 0
+    ? clamp100(100 - overBy * GM_OVERCAP_PER_M)
+    : clamp100(100 - Math.max(0, idle - GM_IDLE_FREE_M) * GM_IDLE_PER_M);
+  return {
+    remaining, overBy, idle, score,
+    costs: Math.round((100 - score) * GM_CAP_WEIGHT * 10) / 10,
+  };
+}
 
 function computeGMRating(run) {
   const regularWins = run.season.regularWins ?? run.season.wins;
@@ -1405,26 +1448,33 @@ function computeGMRating(run) {
      was spent. */
   const valueScore = clamp100(Math.max(0, ratingGain) / Math.max(1, addedSalary)
     / GM_VALUE_REF * 100);
-  const underCapScore = capRemaining >= 0
-    ? 100 : clamp100(100 + capRemaining * GM_OVERCAP_PER_M);
-  const efficiencyScore = valueScore * 0.7 + underCapScore * 0.3;
+  const overCapBy = Math.max(0, -capRemaining);
+  const idleCap = Math.max(0, capRemaining);
+  const capScore = overCapBy > 0
+    ? clamp100(100 - overCapBy * GM_OVERCAP_PER_M)
+    : clamp100(100 - Math.max(0, idleCap - GM_IDLE_FREE_M) * GM_IDLE_PER_M);
 
   const expectedWins = 6 + (run.startRating - 60) * (5 / 12);
   const overScore = clamp100((regularWins - expectedWins) / 6 * 100);
 
-  const raw = resultScore * 0.40 + improvementScore * 0.30
-    + efficiencyScore * 0.20 + overScore * 0.10;
+  /* FIVE MARKS, and the cap is one of them rather than a third of a quarter of one. The
+     weights say what the mode thinks matters: did you win (35), did you make the roster
+     better (25), did you get value for the money (15), did you manage the cap (15), did you
+     beat what you were handed (10). Cap went from 6% of the rating to 15%, which turns $11M
+     over from a five point shrug into a ten point cost. */
+  const raw = resultScore * 0.35 + improvementScore * 0.25
+    + valueScore * 0.15 + capScore * 0.15 + overScore * 0.10;
   run.outcome.gmRating = Math.max(0, Math.min(99.99, Math.round(raw * 100) / 100));
   /* Kept so the results screen can show the working rather than just a number. */
   const r1 = (v) => Math.round(v * 10) / 10;
   run.outcome.gmParts = {
     result: r1(resultScore), improvement: r1(improvementScore),
-    efficiency: r1(efficiencyScore), over: r1(overScore),
-    value: r1(valueScore), underCap: r1(underCapScore),
+    value: r1(valueScore), cap: r1(capScore), over: r1(overScore),
     regularWins, playoffWins,
     ratingGain: r1(ratingGain), startRating: r1(run.startRating), finalRating: r1(finalRating),
     addedSalary: r1(addedSalary), noTradePayroll: r1(noTradePayroll),
-    capRemaining: r1(capRemaining), expectedWins: r1(expectedWins),
+    capRemaining: r1(capRemaining), overCapBy: r1(overCapBy), idleCap: r1(idleCap),
+    totalSalary: r1(totalSalary), expectedWins: r1(expectedWins),
   };
   return run.outcome.gmRating;
 }
@@ -1791,7 +1841,7 @@ const api = {
   inflateCap, capCut, capSpin, capSign,
   autoDraftTrade, isTradeWindow, inflateContracts, findOffers, previewTrade, rosterRating,
   TRADE_WEEKS, TRADE_DEADLINE_WEEK, CONTRACT_INFLATION,
-  generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating,
+  generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating, capMark, FA_TYPICAL_MUSD,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
