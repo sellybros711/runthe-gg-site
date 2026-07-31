@@ -1564,10 +1564,14 @@ or endorsed by the NCAA, the CFP or any school.
 
     <div class="resume" id="o-resume"></div>
 
+    <!-- THE TEAM YOU BUILT IS NOT A TAB. It is the thing the whole run was about,
+         so it sits in the open under the résumé and the rest goes behind tabs. -->
+    <div class="field" id="field3"></div>
+    <div class="rost" id="o-rost"></div>
+
     <div class="overtabs" id="o-tabs">
       <button class="overtab on" data-t="perfect">How close</button>
       <button class="overtab" data-t="stats">Stats</button>
-      <button class="overtab" data-t="lineup">Lineup</button>
       <button class="overtab" data-t="sched">Schedule</button>
     </div>
 
@@ -1577,10 +1581,6 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="overpane" id="op-stats" data-t="stats">
       <div class="stat4" id="o-stats"></div>
       <div class="squadline" id="o-squadline"></div>
-    </div>
-    <div class="overpane" id="op-lineup" data-t="lineup">
-      <div class="field" id="field3"></div>
-      <div class="rost" id="o-rost"></div>
     </div>
     <div class="overpane" id="op-sched" data-t="sched">
       <div class="glist" id="o-list"></div>
@@ -1711,20 +1711,6 @@ function yourRank(){
   const score=w - l*1.6 + quality*0.06;
   if(score<3) return 0;
   return Math.max(1,Math.min(25,Math.round(26-score*2.1)));
-}
-/* The conference your roster most belongs to, the schools your signed players
-   actually came from, so a title run can be framed the way a real one is. */
-function yourConference(){
-  if(!run||!run.roster||!DATA) return null;
-  const count={};
-  run.roster.forEach((p,i)=>{
-    const ts=run.draws[i]?.team_season_id;
-    const t=ts?DATA.byTeamSeasonId[ts]:null;
-    if(t&&t.conference) count[t.conference]=(count[t.conference]||0)+1;
-  });
-  let best=null,bestN=0;
-  for(const c in count){ if(count[c]>bestN){bestN=count[c];best=c;} }
-  return best;
 }
 /* Every ranked team you beat this season, best win first. */
 function signatureWins(){
@@ -2798,8 +2784,10 @@ function paintSeed(){
   if(sd.made){
     /* Playoff */
     c.className='seed-panel '+(sd.bye?'gold':'win');
-    const conf=yourConference();
-    const confBadge=conf?'<span class="seed-badge conf">'+esc(conf)+' Champions</span>':'';
+    /* No conference is named. The roster is drawn from schools all over the
+       country, so claiming one league's title would be inventing something the
+       run never had; that you won a conference to get here is enough. */
+    const confBadge='<span class="seed-badge conf">Conference Champion</span>';
     const seedBadge='<span class="seed-badge '+(sd.bye?'gold':'blue')+'">No. '+sd.seed+' seed</span>';
     if(sd.bye){
       badges.innerHTML=confBadge+seedBadge+
@@ -3367,6 +3355,13 @@ function teamRating(roster,chemistry){
   const fppg=roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
   return fppg*chemistry*E.rosterStructure(roster).multiplier;
 }
+/* TEAM OVERALL IS A RATING OUT OF 100, not the points total it started as. The
+   raw number is points a game, and a good roster clears 100 of them, so a team
+   that lost in the first round was being handed a 106 and it read like a
+   perfect score. Divided down against the best a full budget can buy, so an
+   outstanding squad lands in the high nineties and nothing prints past 100. */
+const RATING_CEILING=116;
+const overallOf=(raw)=>Math.min(99.9,raw*100/RATING_CEILING);
 function fitPct(mult){const n=Math.round((mult-1)*100);return(n>0?'+':'')+n+'%';}
 function schemeTail(st){
   if(!st||!st.scheme) return '';
@@ -3402,8 +3397,9 @@ function paintOver(){
       '. Everything but the last win.';
   }else if(o.eliminatedIn){c.classList.add('out');
     $('o-title').textContent='Out in the '+o.eliminatedIn.replace('CFP ','');
-    $('o-sub').textContent=(o.seed?'The No. '+o.seed+' seed. ':'')+
-      (o.undefeatedRegular?'Undefeated right up to the playoff.':'One loss ends it once you are there.');
+    $('o-sub').textContent=o.undefeatedRegular
+      ? 'Undefeated all the way to the playoff, then out in one game.'
+      : (o.seed?'In as the No. '+o.seed+' seed, out in one game.':'Out in one game.');
   }else{c.classList.add('out');
     $('o-title').textContent='Missed the playoffs';
     $('o-sub').textContent=(o.nationalRank?'You finished No. '+o.nationalRank+' in the country. ':'')+
@@ -3414,12 +3410,13 @@ function paintOver(){
   const squadFppg=run.roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
   const st=E.rosterStructure(run.roster);
   const rating=teamRating(run.roster,run.season.chemistry);
-  const rband=rating>=75?'#22c55e':(rating>=50?'#fbbf24':'#ef4444');
+  const overall=overallOf(rating);
+  const rband=overall>=80?'#22c55e':(overall>=55?'#fbbf24':'#ef4444');
   const bigcell=(k,v,pctFill,color)=>'<div><div class="k">'+k+'</div>'+
     '<div class="v" style="color:'+color+'">'+v+'</div>'+
     '<div class="t"><i style="width:'+pctFill+'%;background:'+color+'"></i></div></div>';
   $('o-ovr').innerHTML=
-    bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
+    bigcell('Team overall',overall.toFixed(1),Math.max(2,overall),rband)+
     bigcell('Best possible','...',0,'#94a3b8');
   const split=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
   $('o-splits').innerHTML=
@@ -3427,15 +3424,27 @@ function paintOver(){
     split(M0(spendUsed),'Spent')+
     split(o.seedLabel.replace(/^Season.*/,'None'),'Postseason');
 
-  /* Résumé: conference (or conference title), final poll ranking, signature wins. */
-  const conf=yourConference();
+  /* Résumé: the conference title, the final ranking, the signature wins. The
+     league itself is never named, for the same reason the seeding screen does
+     not name it: this roster does not belong to one. */
   const champ=!!(run.playoffSeed&&run.playoffSeed.made);
-  let finalRank=yourRank();
+  /* THE FINAL RANKING IS SETTLED ON THE FIELD, which is why the poll waits for
+     the bracket. You are seeded on your season and then ranked on how far you
+     went: the champion first, the team it beat second, the losing semifinalists
+     next, and so on down. Miss the playoff and you finish where you were
+     ranked. Without this a No. 12 seed knocked out in the first round could
+     still be handed a final ranking of second. */
+  const band=(lo,hi)=>Math.min(hi,Math.max(lo,o.seed||hi));
+  let finalRank=o.nationalRank||yourRank();
   if(o.perfect||o.titleWon) finalRank=1;
-  else if(finalRank===1) finalRank=2;   // only a champion finishes #1
+  else if(o.eliminatedIn==='CFP Championship') finalRank=2;
+  else if(o.eliminatedIn==='CFP Semifinal') finalRank=band(3,4);
+  else if(o.eliminatedIn==='CFP Quarterfinal') finalRank=band(5,8);
+  else if(o.eliminatedIn==='CFP First Round') finalRank=band(9,12);
+  else if(finalRank===1) finalRank=2;   // only a champion finishes first
   const sig=signatureWins();
   let resumeHtml='';
-  if(conf) resumeHtml+='<span class="rchip '+(champ?'champ':'conf')+'">'+esc(conf)+(champ?' Champions':'')+'</span>';
+  if(champ) resumeHtml+='<span class="rchip champ">Conference Champion</span>';
   if(finalRank) resumeHtml+='<span class="rchip rank">Final ranking #'+finalRank+'</span>';
   if(sig.length){
     const top=sig.slice(0,3).map(x=>'<b>#'+x.rk+'</b> '+esc(x.name.replace(/^\d{4}\s+/,''))).join(', ');
@@ -3491,7 +3500,7 @@ function paintOver(){
     if(share!==null&&kept<5) share=Math.min(share,99);
     const sband=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
     $('o-ovr').innerHTML=
-      bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
+      bigcell('Team overall',overall.toFixed(1),Math.max(2,overall),rband)+
       bigcell('Best possible',share===null?'--':share+'%',
         share===null?0:Math.max(2,share),share===null?'#94a3b8':sband);
     if(!best){$('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>';}
