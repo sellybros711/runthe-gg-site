@@ -2137,7 +2137,7 @@ or endorsed by the NCAA, the CFP or any school.
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="engine.js?v=6"></script>
 <script src="run.js?v=4"></script>
-<script src="achievements.js?v=2"></script>
+<script src="achievements.js?v=3"></script>
 <script src="auth.js?v=1"></script>
 <script src="board.js?v=1"></script>
 <script>
@@ -4734,23 +4734,34 @@ function teamRating(roster,chemistry){
    is points a game and any decent roster clears 100 of them, so a team knocked
    out in the first round was handed a 106 and it read like a perfect score.
 
-   A hundred is pinned to the best lineup the game can physically produce. Found
-   by hill climbing over every player in the data against the full budget,
-   maximising this formula: the best found is 2016 Lamar Jackson with two of his
-   own team-mates around him, 107 points a game at +11.8% chemistry and a +3.0%
-   scheme, which comes to 125. Four independent searches landed at 125.1, 123.1,
-   121.8 and 117.7, so 126 is the hundred.
+   A HUNDRED IS THE BEST TEAM A PLAYER CAN DRAFT, not the best team that exists.
+   That distinction is the whole of this number and it was wrong once already.
 
-   IT WAS 141 UNTIL THE CAP CAME DOWN to $11M. A tighter budget buys a smaller
-   best team, so the ceiling had to be measured again; it was 135 before that,
-   under the old rating formula. None of the three are comparable to each other
-   and neither are ratings recorded under them, which costs nothing here because
-   nothing has launched and the board is empty.
+   The ceiling used to come from a hill climb over all 14,000 players against the
+   full budget: 125, a lineup built by picking any six men in the data. Nobody can
+   ever draft it. The wheel shows one school at a time and gives six draws, so the
+   reachable best is far lower, and pinning the hundred to the unreachable one
+   pushed the whole game into the bottom three quarters of its own scale. A season
+   that went 13-2, reached the national championship game and took the BEST SIX
+   AVAILABLE off every one of its draws scored 76.7. Nothing about that reads like
+   what it was.
 
-   Nothing clamps the number: clearing it is possible, but it takes a roster
-   within a point of the best that could ever be drafted, which is what going past
-   a hundred should mean. */
-const RATING_CEILING=126;
+   Measured instead over 500 seasons drafted by taking the highest scorer on every
+   board, and over the best six that could have come off those same draws:
+
+     what a player drafts     p50  91.5   p90  98.1   p99 103.5   best 106.7
+     the best six available   p50  97.0   p90 102.5   p99 110.5   best 114.6
+
+   112 is the hundred. A well-drafted team lands in the eighties, an exceptional
+   one in the low nineties, and clearing 100 needs a roster better than the 99th
+   percentile of perfect hindsight: about one draft in two hundred. That is what
+   "one of the best lineups anyone could ever create" should mean when the wheel,
+   and not a spreadsheet, is handing out the players.
+
+   Nothing clamps it. The predecessors were 126, 141 and 135; none of the four are
+   comparable, and neither are ratings recorded under them, which costs nothing
+   because nothing has launched and the board is empty. */
+const RATING_CEILING=112;
 const overallOf=(raw)=>raw*100/RATING_CEILING;
 /* The scheme half of the rating sentence. It NAMES the scheme rather than
    repeating the percentage, because the sentence has already printed that
@@ -4809,7 +4820,10 @@ function paintOver(){
   const st=E.rosterStructure(run.roster);
   const rating=teamRating(run.roster,run.season.chemistry);
   const overall=overallOf(rating);
-  const rband=overall>=70?'#22c55e':(overall>=50?'#fbbf24':'#ef4444');
+  /* Green at 80, amber at 65, measured against what the bands are worth: a team
+     in the eighties makes the playoff half the time, one in the seventies about
+     one time in seven, and one below seventy is not in the conversation. */
+  const rband=overall>=80?'#22c55e':(overall>=65?'#fbbf24':'#ef4444');
   const bigcell=(k,v,pctFill,color)=>'<div><div class="k">'+k+'</div>'+
     '<div class="v" style="color:'+color+'">'+v+'</div>'+
     '<div class="t"><i style="width:'+pctFill+'%;background:'+color+'"></i></div></div>';

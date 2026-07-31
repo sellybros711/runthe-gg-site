@@ -206,14 +206,19 @@
       (c) => c.any((r) => isTrue(r.made_playoffs))),
 
     /* --- roster craft --- */
-    A('rating_80', 'Loaded', 'Build a team rated 80 or better.', 'silver', 'Roster craft',
-      (c) => (c.best('overall') || 0) >= 80),
-    /* 88, not 95. A hundred is the best six that could ever be assembled from the
-       whole data set at the cap; the best of four hundred seasons drafted by always
-       taking the highest scorer on the board was 84, so 95 could not be reached off
-       a wheel that only ever shows you one team at a time. */
-    A('rating_88', 'Video game numbers', 'Build a team rated 88 or better.', 'legend', 'Roster craft',
-      (c) => (c.best('overall') || 0) >= 88),
+    /* THE IDS NO LONGER CARRY THE NUMBER. These two thresholds have moved twice
+       already, once when the cap came down and again when the hundred was
+       re-anchored to the best team a player can actually draft, and each move
+       orphaned an id. They are named for what they mean instead, so the next
+       re-tune is a number and not a rename.
+       Measured over 500 seasons drafted by taking the highest scorer on every
+       board: p50 82, p90 88, p99 92, best 95. So 85 is a well-drafted team and
+       95 is the best one in a few hundred. */
+    A('rating_loaded', 'Loaded', 'Build a team rated 85 or better.', 'silver', 'Roster craft',
+      (c) => (c.best('overall') || 0) >= 85),
+    A('rating_videogame', 'Video game numbers', 'Build a team rated 95 or better.',
+      'legend', 'Roster craft',
+      (c) => (c.best('overall') || 0) >= 95),
     A('chem_10', 'They just click', 'Finish a season with +10% chemistry or better.', 'gold', 'Roster craft',
       (c) => (c.best('chemistry_pct') || 0) >= 10),
     A('chem_negative_ring', 'Strangers with rings', 'Win the title with negative chemistry.',
