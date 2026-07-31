@@ -1017,6 +1017,48 @@ window.GA_ID='G-L29P5MRWKE';
   .gm-badge .gm-lbl{font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.1em;
     text-transform:uppercase;color:var(--dim);margin-top:2px}
 
+  /* ---- streaks and the badge cabinet, in the profile sheet ---- */
+  .stkrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .stk{border-radius:11px;border:1.5px solid var(--line-2);background:var(--panel);
+    padding:10px 12px;text-align:center}
+  .stk.on{border-color:rgba(34,197,94,.5);background:linear-gradient(160deg,rgba(34,197,94,.09),var(--panel))}
+  .stk.gold{border-color:rgba(251,191,36,.5);background:linear-gradient(160deg,rgba(251,191,36,.09),var(--panel))}
+  .stk-v{font-family:var(--fd);font-size:31px;line-height:1;color:var(--ink)}
+  .stk.on .stk-v{color:#22c55e}
+  .stk.gold .stk-v{color:#fbbf24}
+  .stk-l{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--dim);margin-top:3px}
+  .stk-s{font-size:10.5px;color:var(--dim-2);margin-top:3px}
+  .achcount{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.06em;
+    color:var(--dim-2);margin-left:6px;text-transform:none}
+  .achgrp{margin-top:10px}
+  .achgrp-h{display:flex;align-items:baseline;font-family:var(--fn);font-size:10px;font-weight:800;
+    letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
+  .achgrp-h span{margin-left:auto;color:var(--dim-2)}
+  .achlist{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  @media(max-width:420px){ .achlist{grid-template-columns:1fr} }
+  .ach{border-radius:9px;border:1.5px solid var(--line-2);background:var(--panel);padding:7px 9px}
+  .ach-n{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.02em;
+    color:var(--ink);line-height:1.2}
+  .ach-d{font-size:10px;color:var(--dim);line-height:1.3;margin-top:2px}
+  /* Every earned tier gets its colour in the FILL as well as the border. Border alone was
+     not enough: silver on a dark panel read as greyed-out, so an earned badge could be
+     mistaken for a locked one at a glance, which defeats the point of a cabinet. */
+  .ach.bronze{border-color:rgba(180,120,70,.55);
+    background:linear-gradient(150deg,rgba(201,139,82,.11),var(--panel))}
+  .ach.bronze .ach-n{color:#c98b52}
+  .ach.silver{border-color:rgba(203,213,225,.55);
+    background:linear-gradient(150deg,rgba(203,213,225,.10),var(--panel))}
+  .ach.silver .ach-n{color:#e2e8f0}
+  .ach.gold{border-color:rgba(251,191,36,.55);
+    background:linear-gradient(150deg,rgba(251,191,36,.11),var(--panel))}
+  .ach.gold .ach-n{color:#fbbf24}
+  .ach.legend{border-color:rgba(168,85,247,.6);
+    background:linear-gradient(150deg,rgba(168,85,247,.13),var(--panel))}
+  .ach.legend .ach-n{color:#c084fc}
+  /* Locked stays readable: an unearned badge is only interesting if you can read what it wants. */
+  .ach.off{border-color:var(--line-2);background:rgba(148,163,184,.05);opacity:.55}
+  .ach.off .ach-n{color:var(--dim)}
   .gmp-top{display:flex;align-items:baseline;gap:8px;margin:2px 0 10px}
   .gmp-num{font-family:var(--fd);font-size:34px;font-weight:700;color:#fbbf24;line-height:1}
   .gmp-cap{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.09em;
@@ -3561,11 +3603,28 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=15"></script>
+<script src="achievements.js?v=1"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
 'use strict';
 const E=window.PS_ENGINE, R=window.PS_RUN;
+/* Optional, exactly like the board: a blocked script costs the badge cabinet and nothing
+   else, so every call site checks before using it. */
+const ACH=window.PS_ACH||null;
+/* The ONLY thing about achievements that is stored: which ids this browser has already
+   announced, so a new one can be toasted once. Losing it costs a toast, never a badge,
+   because the badges themselves are derived from run history every time. */
+const ACH_SEEN_KEY='ps_ach_seen_v1';
+function achSeen(userId){
+  try{ const all=JSON.parse(localStorage.getItem(ACH_SEEN_KEY)||'{}');
+    return new Set(all[userId||'anon']||[]); }catch(_){ return new Set(); }
+}
+function achMarkSeen(userId,ids){
+  try{ const all=JSON.parse(localStorage.getItem(ACH_SEEN_KEY)||'{}');
+    all[userId||'anon']=Array.from(new Set((all[userId||'anon']||[]).concat(ids)));
+    localStorage.setItem(ACH_SEEN_KEY,JSON.stringify(all)); }catch(_){}
+}
 /* The current run's slot layout. Every mode but the Trade Machine is the engine default
    (QB RB WR WR TE FLEX); the Trade Machine swaps the second receiver for a second flex.
    Used only for slot LABELS on screen — the count is six either way. */
@@ -8501,6 +8560,90 @@ function careerBlock(c){
 /* Filled in after the sheet is already on screen, because reading your history is a
    network call and the profile must open at once. The placeholder is replaced in place, so
    nothing else in the sheet repaints and the name field keeps whatever you had typed. */
+/* NEW BADGES, ANNOUNCED ONCE. The set of ids this browser has already shown is the only
+   stored state; anything earned but unseen is new. On the profile they are simply marked as
+   seen (you are looking straight at them), and after a run they get the headline treatment,
+   one at a time, because that is the moment they were earned. */
+function achAnnounce(userId,res,silent){
+  if(!res) return [];
+  const seen=achSeen(userId);
+  const fresh=res.earned.filter(a=>!seen.has(a.id));
+  if(!fresh.length) return [];
+  const firstSighting=seen.size===0;
+  achMarkSeen(userId,res.earned.map(a=>a.id));
+  /* A player whose cabinet was already full before this shipped would otherwise get fifty
+     toasts at once. The first sighting is recorded quietly; only later ones celebrate. */
+  if(silent||firstSighting) return fresh;
+  fresh.slice(0,3).forEach((a,i)=>setTimeout(()=>{
+    showAchHeadline('Achievement: '+a.name);
+  },900+i*2100));
+  fresh.forEach(a=>ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group}));
+  return fresh;
+}
+/* showHeadline takes a fixed set of canned keys; a badge name is arbitrary text, so this
+   drives the same banner element directly. */
+function showAchHeadline(text){
+  const el=$('headline'); if(!el) return;
+  el.textContent=text;
+  el.className='headline on big';
+  clearTimeout(el._h);
+  el._h=setTimeout(()=>el.classList.remove('on'),2400);
+}
+
+/* ---------- THE BADGE CABINET AND THE TWO STREAKS ----------
+   Everything here is derived from the run rows careerLoad already fetched, so opening the
+   profile costs no extra request and a returning player finds their cabinet already filled. */
+function achResolve(k){
+  if(!BYKEY) return null;
+  const i=k.lastIndexOf(':');
+  return BYKEY.get(k.slice(0,i)+'|'+k.slice(i+1))||null;
+}
+function achEvaluate(rows){
+  if(!ACH) return null;
+  try{ return ACH.evaluate(rows,achResolve); }catch(_){ return null; }
+}
+
+/* The two streaks, side by side. The play streak leads with the state that motivates: if
+   today has not been played yet it says so, because that is the day the number is at risk. */
+function streakBlock(res){
+  const p=res.play,t=res.title;
+  const alive=p.current>0&&!p.playedToday;
+  const cell=(v,lbl,sub,cls)=>'<div class="stk'+(cls?' '+cls:'')+'">'+
+    '<div class="stk-v">'+v+'</div><div class="stk-l">'+lbl+'</div>'+
+    (sub?'<div class="stk-s">'+esc(sub)+'</div>':'')+'</div>';
+  return '<p class="shsec">Your streaks</p><div class="stkrow">'+
+    cell(p.current,'day streak',
+      p.current===0?'play today to start one'
+      :alive?'play today to keep it'
+      :'best '+p.best,
+      p.current>0?'on':'')+
+    cell(t.current,'titles in a row',
+      t.current===0?(t.best?'best '+t.best:'win one to start'):'best '+t.best,
+      t.current>0?'gold':'')+
+  '</div>';
+}
+
+/* Earned first, because a cabinet is for showing what you have. Locked ones stay visible
+   (greyed, with their requirement) because an unearned badge is only interesting if you can
+   read what it is asking for. */
+function achBlock(res){
+  const earned=res.earned,locked=res.locked;
+  let h='<p class="shsec">Achievements <span class="achcount">'+earned.length+' of '+res.total+'</span></p>';
+  const chip=(a,got)=>'<div class="ach '+a.tier+(got?'':' off')+'">'+
+    '<div class="ach-n">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div>';
+  for(const g of ACH.GROUPS){
+    const gotG=earned.filter(a=>a.group===g), offG=locked.filter(a=>a.group===g);
+    if(!gotG.length&&!offG.length) continue;
+    gotG.sort((a,b)=>ACH.TIER_ORDER[b.tier]-ACH.TIER_ORDER[a.tier]);
+    h+='<div class="achgrp"><div class="achgrp-h">'+esc(g)+
+      '<span>'+gotG.length+'/'+(gotG.length+offG.length)+'</span></div><div class="achlist">';
+    gotG.forEach(a=>{h+=chip(a,true);});
+    offG.forEach(a=>{h+=chip(a,false);});
+    h+='</div></div>';
+  }
+  return h;
+}
+
 async function careerPaint(userId){
   const slot=$('sh-career'); if(!slot) return;
   const c=await careerLoad(userId);
@@ -8515,7 +8658,9 @@ async function careerPaint(userId){
       'be read just now. Nothing has been lost.</p>';
     return;
   }
-  now.innerHTML=careerBlock(c);
+  const res=achEvaluate(c.rows);
+  now.innerHTML=careerBlock(c)+(res?streakBlock(res)+achBlock(res):'');
+  if(res) achAnnounce(userId,res,true);
   /* Delegated on the list rather than bound per row, and the row index is looked up in the
      same sorted list the markup came from, so the run a tap opens is the run it shows. */
   const list=now.querySelector('.bestlist');
@@ -8969,6 +9114,17 @@ async function recordRun(){
      profile shows a history one run out of date immediately after the run people most want
      to see in it. */
   if(submitted&&submitted!=='guest') careerClear();
+  /* The run that just landed can be the one that earns a badge, so the cabinet is
+     re-derived here and anything newly earned is announced over the results screen. Fetched
+     fresh (careerClear above dropped the cache) and never awaited by the caller: a badge is
+     decoration, so a slow or failed read must not hold up recording the run. */
+  if(submitted&&submitted!=='guest'&&ACH){
+    careerLoad(authState.userId).then((c)=>{
+      if(!c) return;
+      const res=achEvaluate(c.rows);
+      if(res) achAnnounce(authState.userId,res,false);
+    }).catch(()=>{});
+  }
   return submitted;
 }
 
