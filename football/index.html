@@ -980,6 +980,28 @@ window.GA_ID='G-L29P5MRWKE';
      card reads in the right order anyway: the news first, then what it is called. */
   .modecard .mc-flag{display:block;margin-bottom:9px}
   .modecard .mc-flag .mc-soon-tag{margin-left:0}
+
+  /* ---- AND WHILE IT IS NOT OUT YET, IT IS GREY ----
+     The emerald border and the teal title above are the college game's own colours, and
+     wearing them made an unclickable card look like a live one -- a coloured frame around a
+     coloured heading is what every other control on this screen uses to say "press me".
+     So the identity waits: in preview state the frame, the heading and the icon all go
+     neutral, and the frame goes DASHED, which is the one border style nothing clickable in
+     this game uses. The colours come back on their own when CFB_LIVE flips, because
+     .mc-preview is only applied while it is false.
+     Written after the .mc-cfb rules and with a class more than they carry, so it wins on
+     both counts rather than relying on either.
+     The gold badge is untouched, and deliberately: it is the whole point of the card, it is
+     the one thing here meant to catch the eye, and greying it would leave nothing saying the
+     game is coming at all. Which is also why none of this is done with opacity on the card
+     -- see the note above .modecard.mc-preview. */
+  .modecard.mc-cfb.mc-preview{border-style:dashed;border-color:rgba(148,163,184,.32)}
+  .modecard.mc-cfb.mc-preview .mc-title{color:var(--dim);opacity:1}
+  .modecard.mc-cfb.mc-preview .mc-icon{background:linear-gradient(135deg,#475569,#1e293b);
+    opacity:.55;filter:grayscale(1)}
+  .modecard.mc-cfb.mc-preview>p{color:var(--dim-2);opacity:1}
+  /* Full strength, restated here so nothing above or below can dim it by accident. */
+  .modecard.mc-cfb.mc-preview .mc-soon-tag.gold{opacity:1;filter:none}
   .cc-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;
     align-items:center;padding:11px 12px;border-radius:10px;border:1.5px solid var(--line-2);
     background:var(--panel);margin-bottom:6px;cursor:pointer;transition:border-color .12s}
