@@ -1368,6 +1368,103 @@ window.GA_ID='G-L29P5MRWKE';
     font-weight:700;font-size:14px;opacity:0;transition:all .25s ease;pointer-events:none}
   .toast.on{transform:translateX(-50%);opacity:1}
   .confetti-cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:58}
+  /* ── the leaderboard ────────────────────────────────────────────
+     One list, three windows and three axes. Deliberately plainer than the football
+     game's board, which carries thirty-three competitions and a podium: this game
+     has one competition, so the screen is the list and the two questions above it. */
+  .lbtop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+    margin-bottom:10px}
+  .closex{flex:0 0 auto;width:36px;height:36px;margin-top:2px;border-radius:50%;
+    display:grid;place-items:center;background:var(--panel);border:1px solid var(--line);
+    color:var(--dim)}
+  .closex svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2.2;
+    stroke-linecap:round}
+  .closex:hover,.closex:focus-visible{color:var(--ink);background:var(--panel-2)}
+  .sortbar{display:flex;align-items:center;gap:8px;margin-top:9px}
+  .seg{display:flex;flex:1;min-width:0;border-radius:10px;overflow:hidden;
+    border:1px solid var(--line);background:var(--panel)}
+  .seg button{flex:1;min-width:0;padding:11px 6px;font-family:var(--fn);font-size:12px;
+    font-weight:700;letter-spacing:.02em;color:var(--dim);background:none;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .seg button+button{border-left:1px solid var(--line)}
+  .seg button.on{color:var(--ink);background:rgba(16,185,129,.14)}
+  .lbcount{margin:12px 0 0;font-family:var(--fn);font-size:11px;font-weight:700;
+    letter-spacing:.07em;text-transform:uppercase;color:var(--dim-2)}
+  .lb{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:9px}
+  .lbr{display:flex;align-items:center;gap:10px;min-width:0;padding:9px 11px;
+    border-radius:10px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
+  /* Your own season, wherever it lands in the list. */
+  .lbr.me{border-color:rgba(16,185,129,.55);background:rgba(16,185,129,.09)}
+  .lbr .rk{flex:0 0 28px;font-family:var(--fn);font-size:14px;font-weight:600;
+    color:var(--dim-2);text-align:right}
+  .lbr.top1 .rk{color:#fbbf24} .lbr.top2 .rk{color:#e2e8f0} .lbr.top3 .rk{color:#c98b52}
+  .lbr .who{flex:1;min-width:0}
+  .lbr .who b{display:block;font-family:var(--fn);font-size:13px;font-weight:700;
+    color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lbr .who span{display:block;font-size:11px;color:var(--dim-2);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lbr .val{flex:0 0 auto;text-align:right}
+  .lbr .val b{display:block;font-family:var(--fd);font-size:19px;line-height:1;color:var(--ink)}
+  .lbr .val b.gold{color:#fbbf24}
+  .lbr .val span{display:block;font-family:var(--fn);font-size:9.5px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--dim-2);margin-top:3px}
+  .lbempty{margin:11px 0 0;padding:18px 12px;border-radius:12px;text-align:center;
+    border:1px dashed var(--line);color:var(--dim);font-size:13px}
+  .notlive{margin:11px 0 0;padding:10px 12px;border-radius:10px;font-size:12px;
+    line-height:1.45;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.07);
+    color:#fca5a5}
+  /* THE PINNED FOOT. The list runs to a hundred rows and the way out would otherwise
+     be a hundred rows down. Sat above the fixed ad strip rather than under it: sticky
+     offsets are measured from the scrollport, so bottom:0 is the viewport edge, which
+     is exactly where the strip is. */
+  .lbfoot{position:sticky;bottom:var(--adstrip,0px);z-index:3;display:grid;
+    grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;padding:10px 0 6px;
+    background:linear-gradient(180deg,rgba(8,11,20,0),var(--bg) 32%)}
+  /* The last thing before the foot has to clear it. A sticky element still occupies
+     its place in the flow, but only at the point it was declared, so anything ABOVE
+     it that is still on screen when it pins gets covered: the fine print under the
+     list was sitting behind the two buttons. This is the foot's own height. */
+  #s-board{padding-bottom:66px}
+
+  /* ── your place, on the results screen ──────────────────────── */
+  .placebox{margin:12px 0 0;border:1px solid var(--line);border-radius:12px;
+    background:var(--panel);padding:11px 13px;display:flex;align-items:center;gap:12px}
+  .placebox .pv{font-family:var(--fd);font-size:26px;line-height:1;color:var(--ink)}
+  .placebox .pv.gold{color:#fbbf24}
+  .placebox .pl{flex:1;min-width:0;font-size:12px;line-height:1.4;color:var(--dim)}
+  .placebox .pl b{color:var(--ink)}
+  .placebox button{flex:0 0 auto;padding:8px 12px;border-radius:9px;
+    border:1px solid rgba(16,185,129,.4);background:rgba(16,185,129,.1);color:#6ee7b7;
+    font-family:var(--fn);font-size:11px;font-weight:700}
+
+  /* ── the account panel, in the profile sheet ────────────────── */
+  .acct-row{display:flex;align-items:center;gap:11px;margin:2px 0 12px}
+  .acct-row .pfp{flex:0 0 44px;width:44px;height:44px;border-radius:50%;display:grid;
+    place-items:center;font-family:var(--fn);font-size:16px;font-weight:800;
+    background:var(--pfp,linear-gradient(135deg,#10b981,#047857));color:var(--pfp-ink,#fff)}
+  .acct-row .pfp.anon{background:none;border:1px dashed var(--line);color:var(--dim)}
+  .acct-row .who{flex:1;min-width:0}
+  .acct-row .who b{display:block;font-family:var(--fn);font-size:15px;color:var(--ink);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .acct-row .who span{display:block;font-size:12px;color:var(--dim-2);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fld{width:100%;padding:12px 13px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel);color:var(--ink);font-family:var(--fb);font-size:15px;
+    margin-top:8px}
+  .fld:focus-visible{outline:2px solid var(--green);outline-offset:1px}
+  .autherr{margin:9px 0 0;font-size:12.5px;color:#fca5a5;line-height:1.4}
+  .authok{margin:9px 0 0;font-size:12.5px;color:#6ee7b7;line-height:1.4}
+  .authswap{margin:11px 0 0;font-size:12.5px;color:var(--dim);text-align:center}
+  .authswap button{color:var(--green);font-weight:700;text-decoration:underline}
+  .gbtn{width:100%;margin-top:9px;padding:12px;border-radius:10px;background:#fff;
+    color:#1f2937;font-family:var(--fn);font-size:14px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;gap:9px}
+  .gbtn svg{width:17px;height:17px;flex:0 0 auto}
+  .orline{display:flex;align-items:center;gap:10px;margin:13px 0 2px;
+    font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .orline:before,.orline:after{content:'';flex:1;height:1px;background:var(--line)}
+
   /* ── ads ────────────────────────────────────────────────────────
      Two side rails on a wide desktop and one fixed strip on a phone, both manual and
      both non-responsive, so a unit can never grow up over a game button. */
@@ -1569,7 +1666,8 @@ or endorsed by the NCAA, the CFP or any school.
     <div>
       <button class="btn" id="b-play-intro">Draft your team</button>
     </div>
-    <div style="margin-top:9px">
+    <div style="margin-top:9px;display:grid;grid-template-columns:1fr 1fr;gap:9px">
+      <button class="btn ghost sm" id="b-lb-intro">Leaderboard</button>
       <button class="btn ghost sm" id="b-how">How to play</button>
     </div>
 
@@ -1764,6 +1862,50 @@ or endorsed by the NCAA, the CFP or any school.
   </div>
 
   <!-- s-over -->
+  <!-- s-board: the leaderboard -->
+  <div class="screen" id="s-board">
+    <!-- The title and the way out. An X in the top corner is where everybody looks for
+         one, and it goes back to the screen the board was opened FROM rather than to a
+         fixed screen, so opening the board mid-season returns you to the season. -->
+    <div class="lbtop">
+      <div>
+        <div class="eyebrow green">The country</div>
+        <h2 class="display" style="font-size:26px;margin:5px 0 0">Leaderboard</h2>
+      </div>
+      <button class="closex" id="b-board-x" aria-label="Close the leaderboard">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="tabwrap"><div class="tabs" id="lb-tabs">
+      <button class="tab on" data-lb="day">Today</button>
+      <button class="tab" data-lb="week">This week</button>
+      <button class="tab" data-lb="all">All time</button>
+    </div></div>
+    <!-- THREE AXES, AND ONE OF THEM RUNS THE OTHER WAY. Record and team overall are
+         high-to-low; the national ranking is low-to-best, because No. 1 in the country
+         is first. board.js carries the direction per axis so no caller has to
+         remember which. -->
+    <div class="sortbar">
+      <div class="seg" id="lb-sort">
+        <button class="on" data-sort="record">Record</button>
+        <button data-sort="overall">Team overall</button>
+        <button data-sort="rank">Final ranking</button>
+      </div>
+    </div>
+    <!-- The count LABELS the board, so it sits above it rather than reading as a
+         footnote to the rows. -->
+    <p class="lbcount" id="lb-count"></p>
+    <div class="lb" id="lb-rows"></div>
+    <p class="notlive" id="lb-note" style="display:none"></p>
+    <p class="dim" id="lb-blurb" style="font-size:11.5px;margin:14px 0 0"></p>
+    <!-- PINNED, because the list runs to a hundred rows and the way out would
+         otherwise be a hundred rows down. -->
+    <div class="lbfoot">
+      <button class="btn ghost sm" id="b-board-back">Back</button>
+      <button class="btn ghost sm" id="b-diag">Check the connection</button>
+    </div>
+  </div>
+
   <div class="screen" id="s-over">
     <div class="verdict" id="o-card">
       <div class="emblem" id="o-emblem" hidden></div>
@@ -1783,6 +1925,10 @@ or endorsed by the NCAA, the CFP or any school.
     <!-- Badges this season earned, and only this season's. Right under the
          résumé because that is where the season is being read. -->
     <div id="o-newach"></div>
+
+    <!-- Where this season sits on the board. Filled in after the screen has
+         painted, and left empty if the board is not reachable. -->
+    <div id="o-place"></div>
 
     <!-- THE TEAM YOU BUILT IS NOT A TAB. It is the thing the whole run was about,
          so it sits in the open under the résumé and the rest goes behind tabs. -->
@@ -1845,9 +1991,17 @@ or endorsed by the NCAA, the CFP or any school.
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
+<!-- supabase-js, for accounts only. Deferred and OPTIONAL: if the CDN is blocked
+     auth.js answers "not signed in" to everything and the game runs exactly as it did
+     before, recording seasons anonymously. An account is a way to put your name on a
+     season, not a gate in front of playing one. board.js does not use this library at
+     all; it talks to PostgREST with fetch. -->
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="engine.js?v=5"></script>
 <script src="run.js?v=3"></script>
 <script src="achievements.js?v=1"></script>
+<script src="auth.js?v=1"></script>
+<script src="board.js?v=1"></script>
 <script>
 (function(){
 'use strict';
@@ -2152,36 +2306,46 @@ function applyTheme(t){
   selectedSchool=t; try{localStorage.setItem('cfb_school',JSON.stringify(t));}catch(e){}
   updateAvatar();
 }
+/* THE BUBBLE SHOWS THE SCHOOL FIRST AND THE ACCOUNT SECOND, because the school is
+   what the player chose to look at and the account is a fact about them. With a
+   school it is that school's letters; signed in without one it is their initials;
+   with neither it is empty. The label carries both facts either way, so a screen
+   reader gets what the letters cannot say. */
 function updateAvatar(){
   const av=$('b-profile'); if(!av) return;
   const ab=av.querySelector('.ab');
-  if(selectedSchool){ av.classList.add('signed'); ab.textContent=selectedSchool.abbr;
-    av.setAttribute('aria-label','Your school: '+selectedSchool.school+'. Change it'); }
-  else{ av.classList.remove('signed'); ab.textContent='';
-    av.setAttribute('aria-label','Choose your school colors'); }
+  const who=authState.signedIn?(authState.name||'your account'):null;
+  if(selectedSchool){ av.classList.add('signed'); ab.textContent=selectedSchool.abbr; }
+  else if(authState.name){ av.classList.add('signed'); ab.textContent=initialsOf(authState.name); }
+  else{ av.classList.remove('signed'); ab.textContent=''; }
+  av.setAttribute('aria-label',
+    (selectedSchool?'Your school: '+selectedSchool.school+'. ':'')+
+    (who?'Signed in as '+who+'. ':'Not signed in. ')+'Open your profile');
 }
-/* THE PROFILE SHEET holds two things, on two tabs: the colors you play in, and
-   what you have done in them. Tabs rather than one long scroll because the
-   school list is a hundred buttons deep and would bury the trophy case under
-   it. Which tab opens is remembered for the session, so somebody chasing a
+/* THE PROFILE SHEET holds three things, on three tabs: who you are, the colors
+   you play in, and what you have done in them. Tabs rather than one long scroll
+   because the school list is a hundred buttons deep and would bury the other two
+   under it. Which tab opens is remembered for the session, so somebody chasing a
    badge does not walk past the school list every time. */
-let profileTab='school';
+let profileTab='account';
+const TAB_TITLE={account:'Your account',school:'Pick your colors',case:'Trophy case'};
 function openProfile(tab){
   if(!DATA) return;
   profileTab=tab||profileTab;
   const box=$('sheet-in');
+  const t=(k,label)=>'<button data-tab="'+k+'"'+(profileTab===k?' class="on"':'')+'>'+label+'</button>';
   const head=
     '<div class="eyebrow green">Your profile</div>'+
-    '<h2 class="display" style="font-size:22px;margin:4px 0 10px">'+
-      (profileTab==='school'?'Pick your colors':'Trophy case')+'</h2>'+
-    '<div class="achtabs">'+
-      '<button data-tab="school"'+(profileTab==='school'?' class="on"':'')+'>School colors</button>'+
-      '<button data-tab="case"'+(profileTab==='case'?' class="on"':'')+'>Trophy case</button>'+
+    '<h2 class="display" style="font-size:22px;margin:4px 0 10px">'+TAB_TITLE[profileTab]+'</h2>'+
+    '<div class="achtabs" style="grid-template-columns:1fr 1fr 1fr">'+
+      t('account','Account')+t('school','Colors')+t('case','Trophy case')+
     '</div>';
-  ga(profileTab==='case'?'career_viewed':'school_picker_opened');
-  box.innerHTML=head+(profileTab==='school'?schoolPickerHtml():trophyCaseHtml())+
+  ga(profileTab==='case'?'career_viewed':profileTab==='account'?'account_opened':'school_picker_opened');
+  box.innerHTML=head+
+    (profileTab==='account'?accountHtml():profileTab==='school'?schoolPickerHtml():trophyCaseHtml())+
     '<div style="margin-top:12px"><button class="btn ghost sm" id="sp-x" style="width:100%">Close</button></div>';
   openSheet();
+  if(profileTab==='account') wireAccount();
   box.querySelectorAll('.achtabs button').forEach(b=>b.onclick=()=>openProfile(b.dataset.tab));
   box.querySelectorAll('.swatch').forEach(btn=>btn.onclick=()=>{
     const t=schoolGroups().flatMap(g=>g.teams).find(x=>x.school===btn.dataset.school);
@@ -2190,6 +2354,157 @@ function openProfile(tab){
   const def=$('sp-default'); if(def) def.onclick=()=>{ applyTheme(null); closeSheet(); };
   $('sp-x').onclick=closeSheet;
 }
+/* ── accounts ─────────────────────────────────────────────────────
+   THERE IS NO NEW ACCOUNT SYSTEM HERE. auth.js uses the site's own: one RunThe.GG
+   account signs you in on every game. This is the panel in front of it.
+
+   OPTIONAL THROUGHOUT. If the supabase library is blocked, authState.ready stays
+   false, this panel says accounts are offline, and the game plays exactly as it did
+   before with seasons recorded anonymously. Nothing here is ever a gate. */
+const A=()=>window.PS_CFB_AUTH||null;
+const B=window.PS_CFB_BOARD||null;
+let authState={ready:false,signedIn:false};
+let authMode='in';        // 'in' | 'up', which form the panel is showing
+let authBusy=false;
+let authMsg=null;         // {err} or {ok}
+
+/* The season just recorded, so it can be claimed the moment somebody signs in
+   having already finished it. Cleared once claimed, so a later sign-in on a later
+   day cannot re-claim a row that is no longer the one on screen. */
+let pendingClaim=null;
+
+function bootAuth(){
+  const a=A(); if(!a) return;
+  a.onChange((st)=>{
+    const wasId=authState.userId;
+    authState=st;
+    updateAvatar();
+    /* Signing in with a finished season on screen takes it over. */
+    if(st.signedIn&&pendingClaim){
+      const id=pendingClaim;
+      a.claim(id).then((got)=>{ if(got){ pendingClaim=null; ga('run_claimed'); paintPlace(); } });
+    }
+    /* A different account, or none, means the cabinet on screen belongs to somebody
+       else. Drop it rather than show one player's badges to another. */
+    if(st.userId!==wasId) careerRows=null;
+    if($('sheet').classList.contains('on')&&profileTab==='account') openProfile('account');
+  });
+  a.boot();
+}
+
+const initialsOf=(name)=>{
+  const parts=String(name||'').trim().split(/[\s_.-]+/).filter(Boolean);
+  if(!parts.length) return '';
+  return (parts[0][0]+(parts[1]?parts[1][0]:'')).toUpperCase();
+};
+
+const G_ICON='<svg viewBox="0 0 24 24" aria-hidden="true">'+
+  '<path fill="#4285F4" d="M23 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.2a5.3 5.3 0 01-2.3 3.5v2.9h3.7c2.2-2 3.4-5 3.4-8.6z"/>'+
+  '<path fill="#34A853" d="M12 24c3.1 0 5.7-1 7.6-2.8l-3.7-2.9c-1 .7-2.3 1.1-3.9 1.1-3 0-5.5-2-6.4-4.7H1.8v3C3.7 21.4 7.6 24 12 24z"/>'+
+  '<path fill="#FBBC05" d="M5.6 14.7a7.2 7.2 0 010-4.6v-3H1.8a12 12 0 000 10.6l3.8-3z"/>'+
+  '<path fill="#EA4335" d="M12 4.8c1.7 0 3.2.6 4.4 1.7l3.3-3.3C17.7 1.2 15.1 0 12 0 7.6 0 3.7 2.6 1.8 6.1l3.8 3C6.5 6.7 9 4.8 12 4.8z"/></svg>';
+
+function accountHtml(){
+  const st=authState;
+  const msg=authMsg&&authMsg.err?'<p class="autherr">'+esc(authMsg.err)+'</p>'
+    :authMsg&&authMsg.ok?'<p class="authok">'+esc(authMsg.ok)+'</p>':'';
+
+  /* The library did not load, which is a blocked CDN or an ad blocker. Say that,
+     rather than showing a form that cannot submit. */
+  if(!A()||!st.ready){
+    return '<p class="dim" style="font-size:13.5px;margin:0 0 4px">Accounts are offline right '+
+      'now, usually a blocked script. Your seasons are still recorded and still ranked, '+
+      'without a name on them.</p>';
+  }
+
+  if(st.signedIn){
+    const nameless=!st.name;
+    const av=nameless
+      ? '<span class="pfp anon">?</span>'
+      : '<span class="pfp">'+esc(initialsOf(st.name))+'</span>';
+    let body='<div class="acct-row">'+av+'<div class="who"><b>'+
+      esc(st.name||'Pick a name')+'</b><span>'+esc(st.email||'')+'</span></div></div>';
+    if(nameless){
+      /* The normal state straight after a Google sign-in: an account with no
+         username yet. Until one is chosen the board has nothing to put on a row. */
+      body+='<p class="dim" style="font-size:13px;margin:0 0 2px">Choose the name the '+
+        'leaderboard will show. It fixes every season you have already recorded.</p>'+
+        '<input class="fld" id="ac-name" placeholder="Your name" autocomplete="username" maxlength="20">'+
+        '<button class="btn sm" id="ac-setname" style="margin-top:9px">Save the name</button>'+msg;
+    }else{
+      body+='<p class="dim" style="font-size:13px;margin:0">Every season you finish is '+
+        'recorded under this name, on this device and any other you sign in on.</p>'+msg+
+        '<button class="btn ghost sm" id="ac-out" style="margin-top:12px;width:100%">Sign out</button>';
+    }
+    return body;
+  }
+
+  /* Signed out. The value proposition first, in one line, then the form. */
+  const up=authMode==='up';
+  return '<p class="dim" style="font-size:13.5px;margin:0 0 4px">Free, and optional. An '+
+    'account puts your name on the leaderboard and keeps your trophy case if you clear '+
+    'this browser or pick up another phone.</p>'+
+    '<button class="gbtn" id="ac-google">'+G_ICON+'Continue with Google</button>'+
+    '<div class="orline">or</div>'+
+    '<input class="fld" id="ac-email" type="email" placeholder="Email" autocomplete="email">'+
+    (up?'<input class="fld" id="ac-user" placeholder="Your name on the board" autocomplete="username" maxlength="20">':'')+
+    '<input class="fld" id="ac-pass" type="password" placeholder="Password" autocomplete="'+
+      (up?'new-password':'current-password')+'">'+
+    '<button class="btn sm" id="ac-go" style="margin-top:10px">'+
+      (up?'Create the account':'Sign in')+'</button>'+msg+
+    '<p class="authswap">'+(up?'Already have one? ':'New here? ')+
+      '<button id="ac-swap">'+(up?'Sign in':'Create an account')+'</button></p>';
+}
+
+function wireAccount(){
+  const box=$('sheet-in'), a=A();
+  const done=(r,okMsg)=>{
+    authBusy=false;
+    authMsg=r&&r.error?{err:r.error}:(okMsg?{ok:okMsg}:null);
+    openProfile('account');
+  };
+  const busy=(id,label)=>{ const b=$(id); if(b){b.disabled=true;b.textContent=label;} authBusy=true; };
+
+  const swap=box.querySelector('#ac-swap');
+  if(swap) swap.onclick=()=>{ authMode=authMode==='up'?'in':'up'; authMsg=null; openProfile('account'); };
+
+  const g=box.querySelector('#ac-google');
+  if(g) g.onclick=async()=>{ if(authBusy)return; busy('ac-google','Opening Google...');
+    ga('sign_in_started',{method:'google'});
+    const r=await a.signInGoogle(); if(r&&r.error) done(r); };
+
+  const go=box.querySelector('#ac-go');
+  if(go) go.onclick=async()=>{
+    if(authBusy) return;
+    const email=(box.querySelector('#ac-email')||{}).value||'';
+    const pass=(box.querySelector('#ac-pass')||{}).value||'';
+    const user=((box.querySelector('#ac-user')||{}).value||'').trim();
+    if(!email.trim()||!pass) return done({error:'Email and password, please.'});
+    if(authMode==='up'&&!user) return done({error:'Pick the name the board will show.'});
+    busy('ac-go',authMode==='up'?'Creating...':'Signing in...');
+    ga('sign_in_started',{method:authMode==='up'?'signup':'password'});
+    const r=authMode==='up'?await a.signUp(email,pass,user):await a.signIn(email,pass);
+    /* Sign-up with email confirmation on returns no session, so say what happens
+       next rather than leaving a form that looks like it did nothing. */
+    done(r,r&&!r.error&&authMode==='up'?'Check your email to confirm the account.':null);
+  };
+
+  const setn=box.querySelector('#ac-setname');
+  if(setn) setn.onclick=async()=>{
+    if(authBusy) return;
+    const v=((box.querySelector('#ac-name')||{}).value||'').trim();
+    if(!v) return done({error:'Type a name first.'});
+    busy('ac-setname','Saving...');
+    const r=await a.setName(v);
+    if(!r.error) ga('username_set');
+    done(r);
+  };
+
+  const out=box.querySelector('#ac-out');
+  if(out) out.onclick=async()=>{ if(authBusy)return; busy('ac-out','Signing out...');
+    await a.signOut(); careerRows=null; authMsg=null; openProfile('account'); authBusy=false; };
+}
+
 function schoolPickerHtml(){
   const cur=selectedSchool?selectedSchool.school:null;
   const acc=schoolGroups().map(g=>{
@@ -2211,7 +2526,17 @@ function trophyCaseHtml(){
   const A=window.PS_CFB_ACH;
   if(!A) return '<p class="dim" style="font-size:13px;margin:0">The trophy case could not load. '+
     'Your seasons are still being kept.</p>';
-  const res=achState();
+  /* SIGNED IN, THE ROWS COME OFF THE BOARD, and they may not be here yet. Rather
+     than paint a case out of local history and then swap it for a different one a
+     moment later, which reads as badges being taken away, say it is loading and
+     repaint once. */
+  if(authState.signedIn&&!careerRows){
+    careerLoad().then(()=>{ if($('sheet').classList.contains('on')&&profileTab==='case') openProfile('case'); });
+    return '<div style="text-align:center;padding:24px 0;color:var(--dim);font-size:13px">'+
+      '<div class="dots" style="margin-bottom:8px"><i></i><i></i><i></i></div>'+
+      'Fetching your seasons</div>';
+  }
+  const res=achState(authState.signedIn?careerRows:null);
   const s=res.stats;
   if(!s.runs) return '<p class="dim" style="font-size:13.5px;margin:0 0 4px">'+
     'No seasons yet. Finish one and this fills up.</p>'+
@@ -2233,9 +2558,13 @@ function trophyCaseHtml(){
     stk(t.current,'titles in a row',
       t.current===0?(t.best?'best '+t.best:'win one to start'):'best '+t.best,
       t.current>0?'gold':'')+'</div>';
+  /* Where the rows came from, said plainly, because the honest limit of the guest
+     case is the one thing a player would otherwise find out by losing it. */
+  const where=authState.signedIn
+    ? 'Your seasons are kept on your account, so this case follows you to any device you sign in on.'
+    : 'Your seasons are kept in this browser. Clearing its data clears them. Sign in and they follow you instead.';
   return career+streaks+achShelves(res)+
-    '<p class="dim" style="font-size:11px;margin:12px 0 0;line-height:1.4">Your seasons are kept '+
-    'in this browser. Clearing its data clears them.</p>';
+    '<p class="dim" style="font-size:11px;margin:12px 0 0;line-height:1.4">'+where+'</p>';
 }
 function achShelves(res){
   const A=window.PS_CFB_ACH;
@@ -2261,9 +2590,12 @@ try{ const saved=localStorage.getItem('cfb_school'); if(saved) applyTheme(JSON.p
    out what has been earned. Deriving rather than storing means a badge can
    never drift out of step with the seasons it claims to describe, and a badge
    added later lights up retroactively for seasons already played.
-   The NFL game keeps its rows against an account. This game has none, so the
-   rows sit in local storage: they are this browser's, and clearing it clears
-   them. */
+   TWO PLACES THE ROWS CAN LIVE, and which one is in force depends on whether
+   anybody is signed in. Signed out they sit in local storage, so a guest still
+   gets a trophy case and it is still derived rather than stored. Signed in they
+   come off the board, where they survive a cleared browser and a new phone.
+   careerRows() below is the only thing that has to know the difference; every
+   badge test downstream reads the same row shape either way. */
 const HIST_KEY='cfb_history', HIST_MAX=400;
 function loadHistory(){
   try{ const raw=localStorage.getItem(HIST_KEY); const a=raw?JSON.parse(raw):[];
@@ -2276,9 +2608,56 @@ function saveHistory(rows){
    season costs a few hundred bytes instead of a few thousand and a later fix to
    the player data reaches badges already earned. */
 function achResolve(key){ return BYKEY?(BYKEY.get(key)||null):null; }
-function achState(){
+/* THE SEASONS THE TROPHY CASE IS DERIVED FROM.
+   Signed in, these are board rows and they are authoritative: they are what the
+   server recorded, they survive this browser, and they follow the account to
+   another device. Signed out, they are the local ones.
+
+   Fetched once per sign-in and held, because the cabinet is opened far more often
+   than it changes and forty badge tests walking a re-fetched list is forty walks
+   plus a round trip. Cleared on any change of account by bootAuth(). */
+let careerRows=null, careerLoading=null;
+function careerLoad(){
+  if(!authState.signedIn||!authState.userId||!B) return Promise.resolve(null);
+  if(careerRows) return Promise.resolve(careerRows);
+  if(careerLoading) return careerLoading;
+  careerLoading=B.mine(authState.userId,500).then((r)=>{
+    careerLoading=null;
+    if(!r||!Array.isArray(r.rows)) return null;
+    careerRows=r.rows.map(rowFromBoard);
+    return careerRows;
+  }).catch(()=>{ careerLoading=null; return null; });
+  return careerLoading;
+}
+
+/* A BOARD ROW, IN THE SHAPE achievements.js READS. Three real differences, and
+   every one of them would silently cost badges rather than throw:
+     bowl is a TIER ('ny6' | 'bowl' | 'minor') on the board and a boolean to the
+       badge tests, so isTrue('ny6') is false and "Bowl eligible" would never light;
+     reg_losses is not stored, because it is 12 minus the wins and the server does
+       not keep what it can derive;
+     a pick is "id:season" on the board and "id|season" locally, so resolve() would
+       return null for all six and every roster badge would read as unearned. */
+function rowFromBoard(r){
+  return {
+    created_at:r.created_at,
+    wins:r.wins, losses:r.losses,
+    reg_wins:r.regular_wins, reg_losses:E.CONSTANTS.REGULAR_SEASON_GAMES-r.regular_wins,
+    title_won:r.title_won, perfect:r.perfect, made_playoffs:r.made_playoffs,
+    seed:r.playoff_seed, national_rank:r.national_rank, eliminated_in:r.eliminated_in,
+    bowl:!!r.bowl, bowl_won:r.bowl_won,
+    chemistry_pct:r.chemistry_pct==null?null:Number(r.chemistry_pct),
+    spend_musd:r.spend_musd==null?null:Number(r.spend_musd),
+    overall:r.overall==null?null:Number(r.overall),
+    perfect_pct:r.perfect_pct, respins:r.respins,
+    sig_wins:r.sig_wins, best_win_rank:r.best_win_rank,
+    picks:(r.picks||[]).map(k=>k.replace(':','|')),
+  };
+}
+
+function achState(rows){
   if(!window.PS_CFB_ACH) return null;
-  return window.PS_CFB_ACH.evaluate(loadHistory(),achResolve,new Date().toISOString());
+  return window.PS_CFB_ACH.evaluate(rows||loadHistory(),achResolve,new Date().toISOString());
 }
 
 /* Badges the season just finished is responsible for, held for the results
@@ -2300,6 +2679,164 @@ function recordRun(row){
    case already and saying so again would make every one of them feel routine.
    Capped, because a first season can trip a dozen at once and a wall of them
    reads as a bug rather than a reward. */
+/* ── the leaderboard ──────────────────────────────────────────────
+   THE BOARD IS NEVER IN THE WAY OF A FINISHED SEASON. The results screen paints
+   first and asks the board afterwards, every board call resolves to null rather
+   than throwing, and a null shows as "the board is not reachable" rather than as a
+   made-up number. Somebody with an ad blocker, a dead network or a project where
+   62_cfb_leaderboard.sql has not been run plays exactly the same game. */
+let lbWindow='day', lbSort='record', lbBusy=false, lbFrom='s-intro';
+/* The row id the board gave back for the season on screen, so the results screen
+   can highlight it and a late sign-in can claim it. */
+let myRunId=null, myPlace=null;
+
+function openBoard(){
+  const cur=document.querySelector('.screen.on');
+  if(cur&&cur.id!=='s-board') lbFrom=cur.id;
+  ga('board_opened',{window:lbWindow,sort:lbSort});
+  show('s-board');
+  paintBoard();
+}
+
+async function paintBoard(){
+  if(!B){ $('lb-rows').innerHTML=''; $('lb-note').style.display='';
+    $('lb-note').textContent='The leaderboard did not load.'; return; }
+  if(lbBusy) return;
+  lbBusy=true;
+  $('lb-tabs').querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.lb===lbWindow));
+  $('lb-sort').querySelectorAll('button').forEach(t=>t.classList.toggle('on',t.dataset.sort===lbSort));
+  $('lb-note').style.display='none';
+  $('lb-count').textContent='Loading';
+  $('lb-rows').innerHTML='<div style="text-align:center;padding:26px 0;color:var(--dim);font-size:13px">'+
+    '<div class="dots"><i></i><i></i><i></i></div></div>';
+  const opts={window:lbWindow};
+  const [rows,count]=await Promise.all([B.top(opts,100,lbSort),B.total(opts)]);
+  lbBusy=false;
+  if(!rows){
+    $('lb-count').textContent='';
+    $('lb-rows').innerHTML='';
+    $('lb-note').style.display='';
+    $('lb-note').textContent=B.needsMigration
+      ? 'The leaderboard is not set up on the server yet.'
+      : 'The leaderboard is not reachable right now. Your seasons are still being recorded.';
+    return;
+  }
+  const label={day:'today',week:'this week',all:'all time'}[lbWindow];
+  $('lb-count').textContent=count===null?'' :
+    (count===1?'1 season '+label:count.toLocaleString()+' seasons '+label);
+  $('lb-blurb').textContent='Every finished season lands here. Today and This week reset at '+
+    'midnight Eastern; the week starts Monday.';
+  if(!rows.length){
+    $('lb-rows').innerHTML='<div class="lbempty">No seasons '+label+' yet. Yours could be the first.</div>';
+    return;
+  }
+  $('lb-rows').innerHTML=rows.map((r,i)=>lbRow(r,i+1)).join('');
+}
+
+/* One row. THE VALUE COLUMN CHANGES WITH THE AXIS, because a board sorted by
+   something it does not show is a board you cannot check. */
+function lbRow(r,pos){
+  const mine=myRunId&&r.id===myRunId;
+  const who=r.display_name?esc(r.display_name):'Anonymous';
+  const rec=r.wins+'-'+r.losses;
+  const what=r.perfect?'Perfect season'
+    :r.title_won?'National champions'
+    :r.eliminated_in?'Out in the '+esc(r.eliminated_in.replace('CFP ',''))
+    :r.bowl_won?'Bowl champions'
+    :r.bowl?'Bowl loss'
+    :'Missed the playoffs';
+  let v,k,gold=false;
+  if(lbSort==='overall'){ v=r.overall==null?'--':Number(r.overall).toFixed(1); k='overall'; }
+  else if(lbSort==='rank'){ v='#'+r.national_rank; k='in the country'; gold=r.national_rank===1; }
+  else { v=rec; k=r.perfect?'perfect':'record'; gold=!!r.perfect; }
+  return '<div class="lbr'+(mine?' me':'')+(pos<=3?' top'+pos:'')+'">'+
+    '<span class="rk">'+pos+'</span>'+
+    '<span class="who"><b>'+who+(mine?' (you)':'')+'</b><span>'+
+      (lbSort==='record'?what:rec+' &middot; '+what)+'</span></span>'+
+    '<span class="val"><b'+(gold?' class="gold"':'')+'>'+v+'</b><span>'+k+'</span></span></div>';
+}
+
+/* ── submitting a finished season ─────────────────────────────────
+   FOUR NUMBERS AND NOTHING ELSE about the result: regular wins, the national
+   ranking, playoff wins and whether a bowl was won. Every other field on the row
+   is derived by cfb_submit_run(), which is what makes a 5-7 national champion
+   impossible rather than merely unlikely. See the header of
+   supabase/62_cfb_leaderboard.sql.
+
+   Called from paintOver AFTER the screen has painted, and its result is only ever
+   used to fill in a line that says "still working this out" until it arrives. */
+async function submitRun(o,finalRank,stats){
+  if(!B||!run) return null;
+  const sig=stats.sig;
+  const payload={
+    regularWins:o.regularWins,
+    nationalRank:finalRank,
+    playoffWins:o.madePlayoffs?playoffWinsOf(o):0,
+    bowlWon:!!o.bowlWon,
+    pointDiff:stats.pointDiff,
+    chemistryPct:(run.season.chemistry-1)*100,
+    spendMusd:stats.spend,
+    respins:run.respinsUsed,
+    sigWins:sig.length,
+    bestWinRank:sig.length?sig[0].rk:null,
+    picks:run.roster.map(p=>p.player_id+':'+p.season),
+    slots:E.SLOTS.slice(),
+    squadFppg:run.roster.reduce((t,p)=>t+p.ppr_ppg_mean,0),
+    structureMult:E.rosterStructure(run.roster).multiplier,
+    teamRating:stats.rating,
+    overall:stats.overall,
+    perfectPct:null,
+  };
+  const id=await B.submit(payload);
+  if(id){ myRunId=id; pendingClaim=authState.signedIn?null:id;
+    if(authState.signedIn) ga('run_recorded',{signed_in:true}); else ga('run_recorded',{signed_in:false}); }
+  return id;
+}
+
+/* HOW MANY PLAYOFF GAMES WERE WON, which the outcome records as a round name
+   rather than a count. One loss ends it, so a team that went out in round N won
+   N-1 and a champion won them all. */
+function playoffWinsOf(o){
+  if(!o.madePlayoffs) return 0;
+  const seed=o.seed||12;
+  const rounds=seed<=E.CONSTANTS.PLAYOFF_BYES
+    ? E.CONSTANTS.PLAYOFF_ROUNDS_WITH_BYE : E.CONSTANTS.PLAYOFF_ROUNDS_NO_BYE;
+  if(o.titleWon) return rounds;
+  const names=E.playoffRoundNames(rounds);
+  const i=names.indexOf(o.eliminatedIn);
+  return i<0?0:i;
+}
+
+/* Your place on the board, worked out locally from the same arithmetic the stored
+   score column uses, so it can be shown without waiting for the row to come back.
+   Repainted when a sign-in claims the season. */
+async function paintPlace(){
+  const el=$('o-place'); if(!el||!run||!run.outcome) return;
+  if(!B){ el.innerHTML=''; return; }
+  const o=run.outcome;
+  const stats=run.boardStats; if(!stats) return;
+  const score=B.scoreOf(o.wins,stats.pointDiff);
+  const [place,count]=await Promise.all([
+    B.placeIn({window:'week'},'record',score), B.total({window:'week'}),
+  ]);
+  if(place===null){
+    el.innerHTML='<div class="placebox"><div class="pl">The leaderboard is not reachable '+
+      'right now. This season is still yours; it just is not ranked yet.</div>'+
+      '<button id="o-lb">Board</button></div>';
+  }else{
+    myPlace=place;
+    const ord=(n)=>{const t=n%100;if(t>=11&&t<=13)return n+'th';
+      return n+({1:'st',2:'nd',3:'rd'}[n%10]||'th');};
+    const nameLine=authState.signedIn
+      ? '' : ' <b>Sign in</b> to put your name on it.';
+    el.innerHTML='<div class="placebox">'+
+      '<div class="pv'+(place===1?' gold':'')+'">'+ord(place)+'</div>'+
+      '<div class="pl">of '+(count===null?'the':count.toLocaleString())+' seasons this week.'+nameLine+'</div>'+
+      '<button id="o-lb">Board</button></div>';
+  }
+  const b=$('o-lb'); if(b) b.onclick=openBoard;
+}
+
 function paintNewBadges(){
   const el=$('o-newach'); if(!el) return;
   const list=(run&&run.newBadges)||[];
@@ -2338,6 +2875,7 @@ async function boot(){
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     $('h-field').innerHTML=fieldMarkings();
     buildTicker();
+    bootAuth();
     ga('game_loaded');
     show('s-intro');
   }catch(e){
@@ -3869,11 +4407,24 @@ function paintOver(){
     });
     run.newBadges=lastEarned.slice();
     run.hadBadges=lastBefore;
+
+    /* THE BOARD IS ASKED AFTER THE SCREEN IS PAINTED, never before. Everything
+       above has already been written to the page; this is the one part that can
+       fail, and when it does the results screen is untouched and the place line
+       says so. Computed here rather than reusing the stats block further down
+       because that block runs after this one and the submit cannot wait for it. */
+    const avg=(f)=>s.results.reduce((t,r)=>t+f(r),0)/Math.max(1,s.results.length);
+    run.boardStats={
+      pointDiff:avg(r=>r.shownYou??r.yourScore)-avg(r=>r.shownThem??r.oppScore),
+      spend:spendUsed, rating:rating, overall:overall, sig:sig,
+    };
+    myRunId=null; myPlace=null;
+    submitRun(o,finalRank,run.boardStats).then(()=>paintPlace());
     ga('run_complete',{outcome:o.perfect?'perfect':o.titleWon?'champion'
         :o.eliminatedIn?'eliminated':o.bowlGame?'bowl':'missed_playoffs',
       record:o.record,national_rank:finalRank||null,overall:Math.round(overall*10)/10});
     lastEarned.forEach(a=>ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group}));
-  }
+  }else if(run.boardStats){ paintPlace(); }
   paintNewBadges();
 
   const pts=(arr,f)=>arr.reduce((t,r)=>t+f(r),0)/Math.max(1,arr.length);
@@ -4368,6 +4919,32 @@ function howToPlay(){
 /* ── wire up buttons ─────────────────────────────────────────── */
 $('b-play-intro').onclick=()=>beginDraft();
 $('b-how').onclick=()=>{ga('how_to_play_opened');howToPlay();};
+$('b-lb-intro').onclick=openBoard;
+$('b-board-x').onclick=()=>show(lbFrom);
+$('b-board-back').onclick=()=>show(lbFrom);
+$('lb-tabs').addEventListener('click',(e)=>{
+  const t=e.target.closest('.tab'); if(!t||t.dataset.lb===lbWindow) return;
+  lbWindow=t.dataset.lb; ga('board_window',{window:lbWindow}); paintBoard();
+});
+$('lb-sort').addEventListener('click',(e)=>{
+  const t=e.target.closest('button'); if(!t||t.dataset.sort===lbSort) return;
+  lbSort=t.dataset.sort; ga('board_sort',{sort:lbSort}); paintBoard();
+});
+/* WHY THE BOARD IS OFFLINE, when it is. Two very different reasons look identical
+   from the outside: the migration has not been run, or the request did not get
+   there. The player does not need this, and whoever is deploying does. */
+$('b-diag').onclick=async()=>{
+  const el=$('lb-note'); el.style.display='';
+  el.textContent='Checking...';
+  const ok=await B.probe();
+  const e=B.lastError;
+  el.textContent=ok
+    ? 'The leaderboard is reachable.'
+    : (B.needsMigration
+        ? 'The leaderboard table is not there. Run supabase/62_cfb_leaderboard.sql.'
+        : 'Could not reach the leaderboard.')+
+      (e?' ('+e.where+' '+(e.status||e.code)+': '+e.message+')':'');
+};
 $('b-again').onclick=()=>beginDraft();
 $('b-home').onclick=(e)=>{e.preventDefault();show('s-intro');};
 $('b-home2').onclick=()=>show('s-intro');
