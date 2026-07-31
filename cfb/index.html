@@ -1202,12 +1202,11 @@
   .dim{color:var(--dim)}
 
   /* ── draft columns ──────────────────────────────────────────────
-     One column on a phone and on into the tablet range, so the page reads
-     field → reels → tabs → options with nothing stranded beside it. On a real
-     desktop (≥920px) the draft grows the wrap and the roster becomes the
-     centrepiece: the field and the wheel sit as a wide, centred block up top,
-     and the player options fan out to fill the whole width beneath them, no
-     narrow column with an empty half beside it. */
+     A phone and a tablet read straight down: field, wheel, re-spins, players.
+     A desktop (≥920px) puts the formation on the left and everything you turn
+     on the right, then runs the players the full width underneath both. That is
+     the shape the NFL game uses, and it is what keeps the top of the page from
+     being one tall column with air either side of it. */
   .dcols{display:block}
   .dcol{min-width:0}
   @media(min-width:920px){
@@ -1216,12 +1215,12 @@
     .wrap:has(#s-season.on),
     .wrap:has(#s-seed.on),
     .wrap:has(#s-over.on){max-width:860px}
-    /* Field, lineup pips and the wheel: one centred column, wider than before. */
-    .dcol:first-child,.dcol:last-child .reels,
-    .dcol:last-child #d-respin{max-width:680px;margin-left:auto;margin-right:auto}
-    .dcol:last-child .reels{margin-top:14px}
-    /* The options use the full width below, as many columns as fit. */
-    .opts{grid-template-columns:repeat(auto-fill,minmax(228px,1fr))}
+    .dcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      column-gap:24px;align-items:start}
+    /* The wheel is the top of its own column, so it lines up with the field
+       rather than sitting a row below it. */
+    .dcol .reels{margin-top:0}
+    .opts{grid-template-columns:repeat(3,minmax(0,1fr))}
   }
 
   /* ── footer ─────────────────────────────────────────────────── */
@@ -1400,10 +1399,13 @@ or endorsed by the NCAA, the CFP or any school.
           </div>
         </div>
         <div id="d-respin"></div>
-        <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
-        <div class="opts" id="opts"></div>
       </div>
     </div>
+    <!-- The players sit under both columns rather than inside the right one, so
+         on a desktop they run the full width and on a phone they simply follow
+         on in the single column, which is the order they were already in. -->
+    <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
+    <div class="opts" id="opts"></div>
   </div>
 
   <!-- s-squad -->
