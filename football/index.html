@@ -993,73 +993,144 @@ window.GA_ID='G-L29P5MRWKE';
     text-align:right;white-space:nowrap}
   .cc-row .cr-price.hot{color:var(--red)}
 
-  .trade-proposals{display:flex;flex-direction:column;gap:8px}
-  /* AN OFFER CARD IS THE WHOLE TRADE. Both halves of the exchange are on the card (what
-     leaves and what arrives), and the one number that decides it -- what the deal does to
-     the team rating -- is a badge in the corner rather than fine print, because that is
-     the thing that must not be missed. */
-  .tprop{border:1.5px solid var(--line-2);border-radius:12px;background:var(--panel);
-    padding:0;overflow:hidden;cursor:pointer;transition:border-color .15s,box-shadow .15s}
-  .tprop:hover{border-color:rgba(251,191,36,.45)}
-  .tprop.selected{border-color:#fbbf24;box-shadow:0 0 0 1px #fbbf24}
-  .tp-head{display:flex;align-items:center;gap:10px;padding:9px 12px;
-    background:rgba(255,255,255,.03);border-bottom:1px solid var(--line-2)}
-  .tp-partner{min-width:0;flex:1}
-  .tp-partner .tp-club{font-family:var(--fp);font-size:14.5px;font-weight:700;color:var(--ink);
-    line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .tp-partner .tp-plbl{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.09em;
-    text-transform:uppercase;color:var(--dim-2)}
-  /* WHERE THE GRADE USED TO BE. The shape of the deal, which says what kind of proposition
-     this is without saying whether it is a good one. Deliberately neutral in colour: the
-     old badge was green or red and that alone decided the trade from across the room. */
-  .tp-shape{flex:0 0 auto;text-align:center;border-radius:9px;padding:5px 9px;min-width:62px;
-    border:1.5px solid rgba(148,163,184,.28);background:rgba(148,163,184,.09)}
-  .tp-shape .ts-num{font-family:var(--fd);font-size:17px;font-weight:700;line-height:1.05;
-    color:var(--ink);white-space:nowrap}
-  .tp-shape .ts-lbl{font-family:var(--fn);font-size:7.5px;font-weight:800;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--dim);margin-top:1px}
-  /* THE COUNTER-ASK. Amber, because it is neither good news nor bad news -- it is a
-     condition, and it belongs above the exchange it changes the meaning of. */
-  .tp-ask{margin:0 0 8px;padding:6px 9px;border-radius:8px;font-size:11.5px;line-height:1.35;
-    color:#fde68a;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4)}
-  .tp-ask b{color:#fcd34d}
-  .tp-give .g1.asked .gn{color:#fcd34d}
-  .tp-body{padding:9px 12px 10px}
-  /* GIVE / GET, labelled, so the exchange reads in one pass. */
-  .tp-side{font-family:var(--fn);font-size:8.5px;font-weight:800;letter-spacing:.1em;
-    text-transform:uppercase;margin:0 0 4px}
-  .tp-side.out{color:var(--red)}
-  .tp-side.in{color:#22c55e;margin-top:8px}
-  .tp-give{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:11.5px;
-    color:var(--dim);line-height:1.3}
-  .tp-give .g1{display:flex;align-items:center;gap:5px;min-width:0}
-  .tp-give .gn{color:var(--ink);font-weight:600}
-  .tp-give .gv{font-family:var(--fn);font-size:10.5px}
-  .tp-row{display:flex;align-items:center;gap:8px;padding:3px 0}
-  .tp-player{display:flex;align-items:center;gap:7px;flex:1;min-width:0}
-  .tp-player .tp-name{font-family:var(--fb);font-size:13.5px;font-weight:600;color:var(--ink);
+  /* ─── THE TEAM, AS THE DEAL WOULD LEAVE IT ──────────────────────────────────────────
+     Three rows of two rather than six rows of one, and one line per man instead of two.
+     It is the same information the roster panel carried; it is laid out this way because
+     it now has to share a screen with the deal below it, and a lineup you have to scroll
+     to finish reading cannot be compared to anything. */
+  .tt{border:1px solid var(--line-2);border-radius:12px;background:var(--panel);
+    padding:8px 10px 9px;margin-top:8px}
+  .tt-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+    margin-bottom:7px}
+  .tt-eye{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.11em;
+    text-transform:uppercase;color:var(--dim)}
+  .tt.changed .tt-eye{color:#fbbf24}
+  .tt-cap{font-family:var(--fn);font-size:11px;display:flex;align-items:baseline;gap:6px;
+    white-space:nowrap}
+  .tt-cap .tc-spent{color:var(--ink);font-weight:600}
+  .tt-cap .tc-room{color:var(--dim-2)}
+  .tt-cap .tc-room.over{color:#fca5a5;font-weight:700}
+  .tt-cap .tc-d{font-weight:700}
+  .tt-cap .tc-d.up{color:#4ade80} .tt-cap .tc-d.dn{color:#fca5a5}
+  .tt-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px}
+  .tt-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;
+    gap:6px;padding:3px 4px;border-radius:7px;min-width:0;
+    border:1px solid transparent;background:transparent;text-align:left;cursor:pointer}
+  .tt-row .tr-pos{flex:0 0 auto;min-width:30px;text-align:center;padding:2px 0;border-radius:5px;
+    color:#fff;font-family:var(--fn);font-size:9px;font-weight:700;letter-spacing:.05em}
+  .tt-row .tr-nm{font-family:var(--fb);font-size:12.5px;font-weight:600;color:var(--ink);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .tp-player .tp-sub{font-size:10.5px;color:var(--dim);white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis}
-  .tp-stat{flex:0 0 auto;text-align:right;white-space:nowrap}
-  .tp-stat b{font-family:var(--fd);font-size:15px;color:var(--ink);display:block;line-height:1}
-  .tp-stat span{font-size:9.5px;color:var(--dim)}
-  .pos-chip{font-family:var(--fn);font-size:9px;font-weight:700;letter-spacing:.06em;
-    padding:2px 5px;border-radius:4px;text-transform:uppercase;flex-shrink:0}
-  /* Secondary numbers, on their own footer line. */
-  .tp-cap{display:flex;gap:14px;align-items:baseline;margin-top:9px;padding-top:8px;
-    border-top:1px solid rgba(148,163,184,.14);
-    font-family:var(--fn);font-size:11px;font-weight:600;color:var(--dim)}
-  .tp-cap .up{color:#22c55e}
-  .tp-cap .dn{color:var(--red)}
-  .tp-cap .tp-hint{font-weight:600;color:var(--dim-2);margin-left:4px;font-size:9.5px;
-    text-transform:uppercase;letter-spacing:.05em}
-  /* The verdict on a deal's money while over the cap. A chip rather than more small print,
-     because on this screen it is the thing being looked for. */
-  .tp-cap .tp-fix,.tp-cap .tp-still{font-family:var(--fn);font-size:9.5px;font-weight:800;
+  .tt-row .tr-pts{font-family:var(--fn);font-size:11.5px;font-weight:600;color:var(--dim)}
+  /* Arriving, leaving, and staying, told by colour AND by a mark, so the three states are
+     not carried by hue alone. */
+  .tt-row.in{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.45)}
+  .tt-row.in .tr-nm{color:#bbf7d0}
+  .tt-row.in .tr-pts{color:#4ade80}
+  .tt-row.open{background:rgba(148,163,184,.07);border-color:rgba(148,163,184,.3);
+    border-style:dashed}
+  .tt-row.open .tr-nm{color:var(--dim-2);font-style:italic}
+  /* Its own cell, never inside the name's ellipsis clip. */
+  .tt-mark{flex:0 0 auto;font-family:var(--fn);font-size:8px;font-weight:800;letter-spacing:.07em;
+    padding:1px 3px;border-radius:3px;background:#22c55e;color:#04240f}
+  /* One column on a narrow phone. Two columns cost about 70px of height and it is worth
+     paying: at 320px the cells left roughly 50px for a name, which turned Roethlisberger
+     into "Roet..." and clipped the IN chip into a green square. */
+  @media (max-width:369px){
+    .tt-grid{grid-template-columns:1fr}
+    /* The label and the money stop competing for one line and take one each. */
+    .tt-head{display:block}
+    .tt-cap{margin-top:3px}
+  }
+  .tt-note{margin-top:7px;padding-top:6px;border-top:1px solid var(--line-2);
+    font-size:11px;line-height:1.35;color:#fcd34d}
+  .tt-note b{color:#fde68a}
+
+  /* ─── ONE DEAL AT A TIME ─────────────────────────────────────────────────────────────
+     Four offers used to be four stacked cards, which meant scrolling past three deals to
+     see the fourth and holding all of them in your head to compare. They are a carousel
+     now: one offer filling the panel, moved through with prev and next, with the lineup
+     above re-drawing on every step. The comparison happens on screen instead of in memory. */
+  .deal{margin-top:8px;border:1.5px solid var(--line-2);border-radius:13px;
+    background:var(--panel);overflow:hidden}
+  .deal-nav{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;
+    gap:8px;padding:7px 8px;background:rgba(255,255,255,.03);
+    border-bottom:1px solid var(--line-2)}
+  .dn-btn{width:34px;height:34px;flex:0 0 auto;border-radius:9px;border:1px solid var(--line-2);
+    background:rgba(255,255,255,.05);color:var(--ink);font-size:19px;line-height:1;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:background .12s,border-color .12s,transform .1s}
+  .dn-btn:hover:not(:disabled){background:rgba(251,191,36,.14);border-color:rgba(251,191,36,.5)}
+  .dn-btn:active:not(:disabled){transform:scale(.92)}
+  .dn-btn:disabled{opacity:.28;cursor:default}
+  .dn-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  .dn-mid{min-width:0;text-align:center}
+  .dn-count{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.12em;
+    text-transform:uppercase;color:#fbbf24}
+  .dn-partner{font-family:var(--fp);font-size:14px;font-weight:700;color:var(--ink);
+    line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dn-shape{font-family:var(--fn);font-size:10px;color:var(--dim-2);letter-spacing:.04em}
+  /* Which of the four you are on, at a glance, without reading the counter. */
+  .deal-dots{display:flex;justify-content:center;gap:5px;padding:6px 0 0}
+  .deal-dots i{width:6px;height:6px;border-radius:50%;background:rgba(148,163,184,.35);
+    transition:background .15s,transform .15s}
+  .deal-dots i.on{background:#fbbf24;transform:scale(1.35)}
+  .deal-ask{margin:7px 10px 0;padding:6px 9px;border-radius:8px;font-size:11.5px;
+    line-height:1.35;color:#fde68a;background:rgba(245,158,11,.12);
+    border:1px solid rgba(245,158,11,.4)}
+  .deal-ask b{color:#fcd34d}
+  /* GIVE ON THE LEFT, GET ON THE RIGHT, always, however many men are on each side. */
+  .deal-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 10px 0}
+  .dc{min-width:0;display:flex;flex-direction:column;gap:5px}
+  .dc .dc-tiles{flex:1}
+  .dc-head{font-family:var(--fn);font-size:8.5px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase}
+  .dc-head.out{color:var(--red)} .dc-head.in{color:#22c55e}
+  .dc-tiles{display:flex;flex-direction:column;justify-content:center;gap:5px;height:100%}
+  /* THE DRAFT BOARD'S CARD, SHRUNK -- same class, same background, border, chip and FPPG
+     treatment, so a player recognises it from the draft. Only the type scale changes,
+     because two of these now sit side by side in half the width one had. */
+  .tile.mini{padding:7px 8px;border-radius:10px;gap:0}
+  .tile.mini .pos{min-width:27px;font-size:9px;padding:2px 0}
+  .tile.mini .pr{font-size:11.5px}
+  .tile.mini .nm{margin-top:5px;font-size:14px;line-height:1.12;-webkit-line-clamp:2}
+  .tile.mini .sn{margin-top:2px;font-size:9.5px}
+  .tile.mini .tf{padding-top:6px;gap:3px}
+  .tile.mini .pts b{font-size:15px}
+  .tile.mini .pts i{font-size:8.5px;letter-spacing:.08em}
+  .tile.mini .awdrow,.tile.mini .bdg{display:none}
+  /* Leaving, so it reads as a loss without needing a label. */
+  .tile.mini.going{border-color:rgba(239,68,68,.4);background:linear-gradient(180deg,rgba(239,68,68,.07),rgba(0,0,0,.25))}
+  .tile.mini.going .nm{color:#fecaca}
+  .tile.mini.asked{border-color:rgba(245,158,11,.6)}
+  .tile.mini.asked .nm{color:#fcd34d}
+  .tile.mini.coming{border-color:rgba(34,197,94,.4);background:linear-gradient(180deg,rgba(34,197,94,.07),rgba(0,0,0,.25))}
+  .tile.mini.coming .nm{color:#bbf7d0}
+  /* The free agent a consolidation leaves you to sign: a slot, not a player, so it is drawn
+     as an outline rather than a card that looks like somebody. */
+  .tile.mini.ghost{border-style:dashed;border-color:rgba(148,163,184,.4);background:rgba(255,255,255,.02)}
+  .tile.mini.ghost .nm{color:var(--dim-2);font-style:italic}
+  .deal-foot{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;
+    margin:9px 10px 0;padding-top:8px;border-top:1px solid var(--line-2);
+    font-family:var(--fn);font-size:11px;color:var(--dim)}
+  .deal-foot .up{color:#4ade80;font-weight:700} .deal-foot .dn{color:#fca5a5;font-weight:700}
+  .deal-foot .df-hint{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim-2)}
+  .deal-cut{margin:7px 10px 10px;font-size:11px;line-height:1.35;color:var(--dim)}
+  .deal-empty{padding:22px 14px;text-align:center;font-size:13px;color:var(--dim)}
+  /* The panel is swipeable, and a short slide on each step says which way you moved. */
+  @keyframes dealInR{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+  @keyframes dealInL{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+  .deal-body.fwd{animation:dealInR .18s ease-out both}
+  .deal-body.back{animation:dealInL .18s ease-out both}
+  @media (prefers-reduced-motion:reduce){
+    .deal-body.fwd,.deal-body.back{animation:none}
+  }
+  /* THE VERDICT ON A DEAL'S MONEY while over the cap. A chip rather than more small print,
+     because on this screen it is the thing being looked for. Scoped to the deal footer now
+     that the stacked offer cards it used to live on are gone. */
+  .deal-foot .tp-fix,.deal-foot .tp-still{font-family:var(--fn);font-size:9.5px;font-weight:800;
     letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:5px}
-  .tp-cap .tp-fix{color:#052e16;background:#4ade80}
-  .tp-cap .tp-still{color:#fecaca;background:rgba(239,68,68,.22)}
+  .deal-foot .tp-fix{color:#052e16;background:#4ade80}
+  .deal-foot .tp-still{color:#fecaca;background:rgba(239,68,68,.22)}
 
   .fa-cards{display:flex;flex-direction:column;gap:8px}
   .fa-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;
@@ -1346,32 +1417,11 @@ window.GA_ID='G-L29P5MRWKE';
   /* Cap trouble is red wherever it is mentioned, so the colour means one thing across the
      whole mode rather than being decoration on each screen. */
   .shop-cap .over{color:#fca5a5} .shop-cap .over b{color:#fecaca}
-  .market-out{border-radius:10px;border:1px dashed var(--line-2);background:rgba(239,68,68,.05);
-    padding:9px 12px;margin-bottom:8px;font-size:12.5px;color:var(--dim);line-height:1.4}
-  .market-out b{color:var(--ink)}
-  .market-out .mo-lbl{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.06em;
-    text-transform:uppercase;color:var(--red);margin-right:6px}
-  .tp-fa-note{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim);
-    margin-top:4px;padding:3px 0 0}
-  .tp-fa-note::before{content:"+";font-family:var(--fd);font-size:13px;color:#22c55e}
-  /* A minus rather than a plus, because this line is somebody leaving. */
-  .tp-cut-note{display:flex;align-items:baseline;gap:6px;font-size:11px;color:var(--dim);
-    margin-top:4px;padding:3px 0 0;line-height:1.35}
-  .tp-cut-note::before{content:"\2212";font-family:var(--fd);font-size:13px;color:var(--red)}
-  .tp-cut-note b{color:var(--ink)}
-  .tp-est{font-family:var(--fn);font-size:8px;font-weight:700;letter-spacing:.06em;
-    text-transform:uppercase;color:var(--dim-2)}
-  /* Live trade preview: the row coming in, and the slot a 2-for-1 leaves open. */
-  .rp-row.incoming{background:rgba(34,197,94,.10);border-radius:8px;
-    box-shadow:inset 0 0 0 1px rgba(34,197,94,.35);margin:2px 0;padding:8px 8px}
-  .rp-row.incoming+.rp-row{border-top:none}
+  /* The market title names who is on the block, so the man leaving is emphasised there. */
+  #tw-title b{color:#fbbf24}
+  /* Kept from the old live preview: the cut screen still marks an arriving player NEW. */
   .rp-in{font-family:var(--fn);font-size:8.5px;font-weight:800;letter-spacing:.06em;
     background:#22c55e;color:#04210f;padding:1px 5px;border-radius:4px;margin-left:6px;vertical-align:middle}
-  .rp-row.empty .rp-name{color:var(--dim)}
-  .rp-row.empty .rp-pos{background:rgba(148,163,184,.22)!important;color:var(--dim)}
-  .rp-cap .rp-delta{margin-left:6px;font-weight:700}
-  .rp-cap .rp-delta.up{color:#22c55e}
-  .rp-cap .rp-delta.dn{color:var(--red)}
 
   .squad-split{display:block}
   .squad-right{display:none}
@@ -3496,18 +3546,23 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div style="margin-top:8px"><button class="btn ghost sm" id="b-tw-pass">Pass and keep my roster</button></div>
     </div>
 
-    <!-- STEP 2: the market's offers for that package -->
+    <!-- STEP 2: the market's offers, ONE AT A TIME.
+         The team you would field sits at the top and re-draws as you move through the
+         offers, so the question is never "what does this deal give me" in the abstract --
+         it is "is that lineup better than the one I have". Under it, the deal itself: what
+         leaves on the left, what arrives on the right, drawn with the same player cards the
+         draft board uses. -->
     <div id="tw-market" style="display:none">
-      <div class="market-out" id="tw-market-out"></div>
-      <details class="roster-panel" id="trade-roster">
-        <summary><span class="rp-eye">Your roster</span>
-          <span class="rp-cap" id="trade-rp-cap"></span>
-          <span class="rp-caret">&#9662;</span></summary>
-        <div class="rp-body" id="trade-rp-body"></div>
-        <div class="rp-cut" id="trade-rp-cut" style="display:none"></div>
-      </details>
-      <div class="trade-proposals" id="tw-list" style="margin-top:10px"></div>
-      <div style="margin-top:6px"><button class="btn" id="b-tw-accept" disabled>Accept trade</button></div>
+      <div class="tt" id="tw-team">
+        <div class="tt-head">
+          <span class="tt-eye" id="tw-team-eye">Your roster</span>
+          <span class="tt-cap" id="tw-team-cap"></span>
+        </div>
+        <div class="tt-grid" id="tw-team-grid"></div>
+        <div class="tt-note" id="tw-team-note" style="display:none"></div>
+      </div>
+      <div class="deal" id="tw-deal"></div>
+      <div style="margin-top:8px"><button class="btn" id="b-tw-accept" disabled>Accept trade</button></div>
       <div style="margin-top:8px"><button class="btn ghost sm" id="b-tw-back">Shop different players</button></div>
     </div>
   </div>
@@ -4235,7 +4290,7 @@ async function boot(){
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     $('h-field').innerHTML=fieldMarkings();
-    authBoot(); watchTabs();
+    authBoot(); watchTabs(); wireDealNav();
     /* A challenge link (?c=) or a result link (?cr=) takes over the first screen; otherwise
        the normal intro. routeChallenge falls back to false on anything it cannot decode. */
     if(!routeChallenge()) show('s-intro');
@@ -6172,7 +6227,10 @@ function leaveTradeWindow(delay){
 }
 let shopSel=[];          // roster indices the GM has put on the block (max 2)
 let currentOffers=[];    // the market's returns for that package
-let selectedOffer=null;
+let selectedOffer=null;  // which one is on screen; the board is a carousel, not a list
+/* The lineup drawn in the team strip, in slot order, so tapping a row can open that man's
+   sheet. Holds null for a slot the deal leaves open. */
+let tradePreviewPlayers=[];
 let revealTimers=[];
 function clearRevealTimers(){ revealTimers.forEach(clearTimeout); revealTimers=[]; }
 
@@ -6315,25 +6373,26 @@ function updateShopState(){
 function enterMarket(){
   if(!shopSel.length) return;
   currentOffers=R.findOffers(run,DATA,CTX,shopSel.slice());
-  selectedOffer=null;
+  /* Opens on the first offer rather than on nothing selected. There is one deal on screen at
+     a time now, so there is no "pick a card" step to get through before you can read one --
+     you are already looking at an offer, and Accept applies the one you can see. */
+  selectedOffer=currentOffers.length?0:null;
   const outNames=shopSel.map(i=>esc(lastName(run.roster[i].name))).join(' + ');
   /* NO GRADE, AND NO RANKING. The board used to arrive sorted best-first with the rating
      swing printed on every card, which made the decision "tap the top one". The numbers on
      the cards are now the ones a GM actually gets -- production, price, position, what it
      does to the payroll -- and what they add up to is the player's read. */
-  $('tw-market-out').innerHTML='<span class="mo-lbl">Shopping</span><b>'+outNames+'</b>'+
-    '. Read the deals. Nobody grades them for you.';
-  $('tw-title').textContent=currentOffers.length?currentOffers.length+' offer'+(currentOffers.length===1?'':'s')
-    :'No offers';
-  $('tw-sub').textContent=currentOffers.length?'In no particular order. Tap one to see the lineup it leaves you.'
+  /* The header IS the shopping line now. It used to be a dashed box under a title that said
+     "4 offers" over a subtitle that explained the arrows, which is three elements and about a
+     third of a phone screen spent before the first deal is visible. */
+  $('tw-title').innerHTML=currentOffers.length?'Shopping <b>'+outNames+'</b>':'No offers';
+  $('tw-sub').textContent=currentOffers.length
+    ?currentOffers.length+(currentOffers.length===1?' offer. ':' offers, in no order. ')
+      +'Nobody grades them.'
     :'Nobody is biting on that package.';
   $('tw-shop').style.display='none';
   $('tw-market').style.display='';
-  const tr=$('trade-roster'); if(tr) tr.open=true;
-  paintOffers();
-  paintTradePreview(null);
-  $('b-tw-accept').disabled=true;
-  $('b-tw-accept').textContent='Accept trade';
+  paintDeal();
   $('b-tw-accept').onclick=()=>{
     if(selectedOffer===null) return;
     /* One tap is one trade. Disabled the moment it fires, for the same reason the cut screen
@@ -6356,27 +6415,36 @@ function enterMarket(){
   };
 }
 
-/* THE MARKET, ranked by what each deal does to your team. Every card carries the WHOLE
-   exchange -- who leaves and who arrives -- plus the trade partner it came from, so a deal
-   can be judged without cross-referencing the header. The rating swing is a badge in the
-   corner because it is the number that decides the trade; cap and chemistry sit under a
-   rule as supporting detail. */
-function offerPlayerRow(p){
-  const posColor=posPaint(p.position).replace('background:','');
-  return '<div class="tp-row">'+
-    '<div class="tp-player">'+
-      '<span class="pos-chip" style="background:'+posColor+';color:#fff">'+esc(p.position)+'</span>'+
-      '<div style="min-width:0"><div class="tp-name">'+esc(p.name)+'</div>'+
-        '<div class="tp-sub">'+esc(p.season+' '+E.nickname(p.franchise))+
-          (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</div></div>'+
-    '</div>'+
-    '<div class="tp-stat"><b>'+p.ppr_ppg_mean.toFixed(1)+'</b><span>$'+p.price_musd.toFixed(1)+'M</span></div>'+
-  '</div>';
+/* THE DRAFT BOARD'S PLAYER CARD, at the size a trade panel can afford.
+   Deliberately the same .tile class the draft uses -- same background, border, radius,
+   position chip and FPPG treatment -- with a .mini modifier that only touches the type
+   scale. A player who has drafted a roster recognises these on sight, which is the point:
+   one card for one player, everywhere in the game. */
+function dealTile(p,mode){
+  const head='<span class="pos" style="'+posPaint(p.position)+'">'+esc(p.position)+'</span>'+
+    '<span class="pr">'+M(p.price_musd)+'</span>';
+  return '<button class="tile mini '+mode+'" data-k="'+esc(p.player_id+'|'+p.season)+'">'+
+    '<span class="th">'+head+'</span>'+
+    '<span class="nm">'+esc(p.name)+'</span>'+
+    '<span class="sn">'+p.season+' '+esc(E.nickname(p.franchise))+'</span>'+
+    '<span class="tf"><span class="pts"><b>'+p.ppr_ppg_mean.toFixed(1)+'</b><i>FPPG</i></span></span>'+
+  '</button>';
 }
 
-/* The LEAST salary a deal's release can free, for the over-the-cap line on the card. The
-   least, not the most, so "gets you under the cap" is a promise that holds whoever you end
-   up releasing rather than a best case that your own cut can break. Zero when nobody goes. */
+/* The slot a consolidation leaves open. Drawn as an outline, because it is a hole and not
+   a person, and the player it becomes is chosen two screens from here. */
+function ghostTile(pos){
+  return '<div class="tile mini ghost">'+
+    '<span class="th"><span class="pos" style="'+posPaint(pos)+'">'+esc(pos)+'</span>'+
+      '<span class="pr">~'+M(R.FA_TYPICAL_MUSD)+'</span></span>'+
+    '<span class="nm">Free agent</span>'+
+    '<span class="sn">You sign him after the trade</span>'+
+    '<span class="tf"><span class="pts"><b>&mdash;</b><i>FPPG</i></span></span></div>';
+}
+
+/* The LEAST salary a deal's release can free, for the over-the-cap line. The least, not the
+   most, so "gets you under the cap" is a promise that holds whoever you end up releasing
+   rather than a best case your own cut can break. Zero when nobody goes. */
 function guaranteedRelease(o){
   if(!o.cutCount) return 0;
   const outSet=new Set(o.outIdx);
@@ -6387,111 +6455,156 @@ function guaranteedRelease(o){
   return Math.min.apply(null,groups.map(g=>g.reduce((t,i)=>t+held[i].price_musd,0)));
 }
 
-function paintOffers(){
-  const el=$('tw-list'); el.innerHTML='';
-  if(!currentOffers.length){
-    el.innerHTML='<p class="dim" style="font-size:13px;text-align:center;padding:16px 0">'+
-      'No team is biting on that package. Shop someone else, or pass.</p>';
-    $('b-tw-accept').style.display='none';
-    return;
-  }
-  $('b-tw-accept').style.display='';
-  const payNow=run.roster.reduce((t,p)=>t+p.price_musd,0);
-  currentOffers.forEach((o,i)=>{
-    const cs=o.netCap;
-    const card=document.createElement('div');
-    card.className='tprop';
-    /* The head carries the SHAPE of the deal where the grade used to be: what kind of
-       proposition this is, with no hint as to whether it is a good one. Written
-       DIRECTIONALLY -- "2 → 3" is two out and three back -- because "3 for 2" reads as
-       either side depending on which trade idiom you grew up with. */
-    const shapeTxt=o.outPlayers.length+' &rarr; '+(o.inPlayers.length+(o.faPos?1:0));
-    let html=
-      '<div class="tp-head">'+
-        '<div class="tp-partner"><div class="tp-club">'+
-          esc(o.partnerSeason+' '+E.nickname(o.partnerFranchise))+'</div>'+
-          '<div class="tp-plbl">Trade partner</div></div>'+
-        '<div class="tp-shape"><div class="ts-num">'+shapeTxt+'</div>'+
-          '<div class="ts-lbl">Out / in</div></div>'+
-      '</div>'+
-      '<div class="tp-body">';
-    /* THEY ASKED FOR SOMEBODY YOU DID NOT OFFER. Said before the players, because it changes
-       what the whole card means: a deal that reads like a clear win on production can still
-       be one you refuse once you notice who else is walking out. */
-    if(o.askedFor){
-      html+='<div class="tp-ask">They want <b>'+esc(o.askedFor.name)+'</b> in it too'+
-        ' &middot; '+o.askedFor.ppr_ppg_mean.toFixed(1)+' FPPG</div>';
-    }
-    html+='<div class="tp-side out">You give</div><div class="tp-give">'+
-        o.outPlayers.map(p=>'<span class="g1'+(o.askedFor&&o.askedFor.player_id===p.player_id?' asked':'')+'">'+
-          '<span class="pos-chip" style="background:'+posPaint(p.position).replace('background:','')+';color:#fff">'+
-          esc(p.position)+'</span><span class="gn">'+esc(lastName(p.name))+'</span>'+
-          '<span class="gv">'+p.ppr_ppg_mean.toFixed(1)+' &middot; $'+p.price_musd.toFixed(1)+'M</span></span>').join('')+
-        '</div>';
-    html+='<div class="tp-side in">You get</div>';
-    o.inPlayers.forEach(p=>{ html+=offerPlayerRow(p); });
-    if(o.faPos) html+='<div class="tp-fa-note">a free agent to fill the open '+esc(o.faPos)+' spot</div>';
-    /* THE CUT IS PART OF THE DEAL AND HAS TO BE ON THE CARD -- how many have to go, but NOT
-       who, because naming the best one to release is half of grading the trade. Who goes is
-       the player's decision on the next screen. */
-    if(o.cutCount>0){
-      const n=o.cutCount;
-      html+='<div class="tp-cut-note">Roster goes to '+(6+n)+' &mdash; you release '+
-        (n===1?'one player':n+' players')+' to get back to six. Your call.</div>';
-    }
-    const capTxt=(cs>0?'+$':'\u2212$')+Math.abs(cs).toFixed(1)+'M';
-    html+='<div class="tp-cap"><span>Cap <span class="'+(cs>0?'dn':'up')+'">'+capTxt+'</span>'+
-        '<span class="tp-hint">'+(cs>0?'costs':'frees')+'</span></span>';
-    /* WHILE OVER THE CAP, THE ONLY THING THAT MATTERS ABOUT A DEAL'S MONEY IS WHETHER IT
-       FIXES THE PROBLEM. "-$4.2M frees" does not answer that on its own: you have to hold the
-       overage in your head and subtract. So each card says which side of the cap it leaves
-       you on, and the ones that do not solve it say by how much they fall short. */
-    if(payNow>E.CONSTANTS.CAP_MUSD){
-      /* Priced on the release that frees the LEAST -- the same conservative reading the market
-         used to decide the offer fits at all, so the chip cannot promise what your own choice
-         of who to release then breaks. */
-      const after=payNow+cs+(o.faPos?R.FA_TYPICAL_MUSD:0)-guaranteedRelease(o);
-      const stillOver=after-E.CONSTANTS.CAP_MUSD;
-      html+=stillOver<=0
-        ? '<span class="tp-fix">Gets you under the cap</span>'
-        : '<span class="tp-still">Still $'+stillOver.toFixed(1)+'M over</span>';
-    }
-    /* CHEMISTRY STAYS ON THE CARD, and it is not the grade coming back. The grade was the
-       answer; this is one of the three things the answer is made of -- production, chemistry,
-       and the shape of the lineup, which the preview panel shows when you tap a card. All
-       three are on screen and none of them is the verdict, so the deal is derivable by a
-       player who does the work and invisible to one who does not. Measured, a GM reading only
-       the points lands 18 rating short of the best board; reading the points and the
-       chemistry closes most of that, which is the gap skill is supposed to live in. */
-    if(o.chemDelta!==null&&Math.abs(o.chemDelta)>=0.1){
-      html+='<span>Chemistry <span class="'+(o.chemDelta>0?'up':'dn')+'">'+
-        (o.chemDelta>0?'+':'')+o.chemDelta.toFixed(1)+'%</span></span>';
-    }
-    html+='</div></div>';
-    card.innerHTML=html;
-    card.onclick=()=>{
-      const re=selectedOffer===i; selectedOffer=re?null:i;
-      el.querySelectorAll('.tprop').forEach((c,j)=>c.classList.toggle('selected',j===selectedOffer));
-      $('b-tw-accept').disabled=selectedOffer===null;
-      $('b-tw-accept').textContent=selectedOffer===null?'Accept trade'
-        :'Accept trade with '+E.nickname(currentOffers[selectedOffer].partnerFranchise);
-      paintTradePreview(selectedOffer===null?null:currentOffers[selectedOffer]);
-    };
-    el.appendChild(card);
-  });
+/* Move through the board. Wraps, because four offers in a ring is quicker to compare than
+   four in a line, and the counter says where you are. */
+function stepDeal(by){
+  if(!currentOffers.length) return;
+  const n=currentOffers.length;
+  selectedOffer=((selectedOffer==null?0:selectedOffer)+by+n)%n;
+  paintDeal(by>0?'fwd':'back');
 }
 
-/* THE LIVE PREVIEW. Shows the lineup you would have IF you accepted the highlighted
-   offer, with the engine's own re-slotting applied: incoming players land in green (and
-   an existing player may quietly shift slots to make room), a 2-for-1 leaves one slot
-   open for a free agent, and the cap header re-totals. offer === null paints the roster
-   as it stands, so tapping an offer off returns the panel to the truth. */
-let tradePreviewPlayers=[];
+/*
+ * ONE OFFER, FILLING THE PANEL.
+ *
+ * The board used to be four stacked cards. Reading the fourth meant scrolling past three,
+ * and comparing them meant holding all four in your head at once. So it is a carousel: one
+ * deal at a time, prev and next, and the lineup above re-draws on every step so the
+ * comparison is on the screen rather than in memory.
+ *
+ * What leaves is on the left and what arrives is on the right, always, whatever the shape of
+ * the deal. No grade and no ranking -- see the market header. `dir` is which way you moved,
+ * purely so the panel slides that way.
+ */
+function paintDeal(dir){
+  const el=$('tw-deal');
+  if(!el) return;
+  if(!currentOffers.length){
+    el.innerHTML='<div class="deal-empty">No team is biting on that package.<br>'+
+      'Shop someone else, or pass.</div>';
+    $('b-tw-accept').style.display='none';
+    paintTradePreview(null);
+    return;
+  }
+  if(selectedOffer==null) selectedOffer=0;
+  const o=currentOffers[selectedOffer];
+  const n=currentOffers.length;
+  const many=n>1;
+
+  const asked=o.askedFor?o.askedFor.player_id:null;
+  const gives=o.outPlayers.map(p=>dealTile(p,asked&&p.player_id===asked?'going asked':'going')).join('');
+  const gets=o.inPlayers.map(p=>dealTile(p,'coming')).join('')+(o.faPos?ghostTile(o.faPos):'');
+
+  const cs=o.netCap;
+  const capTxt=(cs>0?'+$':'−$')+Math.abs(cs).toFixed(1)+'M';
+  const payNow=run.roster.reduce((t,p)=>t+p.price_musd,0);
+  let foot='<span>Cap <span class="'+(cs>0?'dn':'up')+'">'+capTxt+'</span> '+
+    '<span class="df-hint">'+(cs>0?'costs':'frees')+'</span></span>';
+  /* While over the cap the only thing that matters about a deal's money is whether it fixes
+     the problem, and "-$4.2M frees" does not answer that on its own. */
+  if(payNow>E.CONSTANTS.CAP_MUSD){
+    const after=payNow+cs+(o.faPos?R.FA_TYPICAL_MUSD:0)-guaranteedRelease(o);
+    const stillOver=after-E.CONSTANTS.CAP_MUSD;
+    foot+=stillOver<=0
+      ? '<span class="tp-fix">Gets you under the cap</span>'
+      : '<span class="tp-still">Still $'+stillOver.toFixed(1)+'M over</span>';
+  }
+  /* Chemistry stays, and it is not the grade coming back. Team overall is production times
+     chemistry times the shape of the lineup: this is one of the three, the production is on
+     the cards, and the shape is the lineup drawn above. All three on screen, none of them
+     the verdict. */
+  if(o.chemDelta!==null&&Math.abs(o.chemDelta)>=0.1){
+    foot+='<span>Chemistry <span class="'+(o.chemDelta>0?'up':'dn')+'">'+
+      (o.chemDelta>0?'+':'')+o.chemDelta.toFixed(1)+'%</span></span>';
+  }
+
+  el.innerHTML=
+    '<div class="deal-nav">'+
+      '<button class="dn-btn" id="b-deal-prev" aria-label="Previous offer"'+
+        (many?'':' disabled')+'>&lsaquo;</button>'+
+      '<div class="dn-mid">'+
+        '<div class="dn-count">Offer '+(selectedOffer+1)+' of '+n+'</div>'+
+        '<div class="dn-partner">'+esc(o.partnerSeason+' '+E.nickname(o.partnerFranchise))+'</div>'+
+        '<div class="dn-shape">'+o.outPlayers.length+' out &middot; '+
+          (o.inPlayers.length+(o.faPos?1:0))+' in</div>'+
+      '</div>'+
+      '<button class="dn-btn" id="b-deal-next" aria-label="Next offer"'+
+        (many?'':' disabled')+'>&rsaquo;</button>'+
+    '</div>'+
+    '<div class="deal-body'+(dir==='fwd'?' fwd':dir==='back'?' back':'')+'">'+
+      (many?'<div class="deal-dots">'+currentOffers.map((_,i)=>
+        '<i class="'+(i===selectedOffer?'on':'')+'"></i>').join('')+'</div>':'')+
+      /* THEY ASKED FOR SOMEBODY YOU DID NOT OFFER, said above the exchange, because it
+         changes what the whole deal means. */
+      (o.askedFor
+        ? '<div class="deal-ask">They want <b>'+esc(o.askedFor.name)+'</b> in it too'+
+          ' &middot; '+o.askedFor.ppr_ppg_mean.toFixed(1)+' FPPG</div>'
+        : '')+
+      '<div class="deal-cols">'+
+        '<div class="dc"><div class="dc-head out">You give</div>'+
+          '<div class="dc-tiles">'+gives+'</div></div>'+
+        '<div class="dc"><div class="dc-head in">You get</div>'+
+          '<div class="dc-tiles">'+gets+'</div></div>'+
+      '</div>'+
+      '<div class="deal-foot">'+foot+'</div>'+
+      (o.cutCount>0
+        ? '<div class="deal-cut">Roster goes to '+(E.SLOTS.length+o.cutCount)+' &mdash; you release '+
+          (o.cutCount===1?'one player':o.cutCount+' players')+' to get back to six. Your call.</div>'
+        : '')+
+    '</div>';
+
+  $('b-deal-prev').onclick=()=>stepDeal(-1);
+  $('b-deal-next').onclick=()=>stepDeal(1);
+  /* Any card on the panel opens that player's sheet, the same as everywhere else. */
+  el.querySelectorAll('.tile.mini[data-k]').forEach(t=>{
+    t.onclick=()=>{ const p=BYKEY.get(t.dataset.k); if(p) sheet(p); };
+  });
+  $('b-tw-accept').style.display='';
+  $('b-tw-accept').disabled=false;
+  $('b-tw-accept').textContent='Accept trade with '+E.nickname(o.partnerFranchise);
+  paintTradePreview(o);
+}
+
+/* Left and right move through the offers, and a horizontal drag does the same on a phone.
+   Bound once at boot; both no-op unless the market is the screen you are on. */
+function wireDealNav(){
+  document.addEventListener('keydown',(e)=>{
+    if(!$('s-trade').classList.contains('on')) return;
+    if($('tw-market').style.display==='none') return;
+    if(e.target&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    if(e.key==='ArrowLeft'){ e.preventDefault(); stepDeal(-1); }
+    else if(e.key==='ArrowRight'){ e.preventDefault(); stepDeal(1); }
+  });
+  const el=$('tw-deal');
+  if(!el) return;
+  let x0=null,y0=null;
+  el.addEventListener('touchstart',(e)=>{
+    const t=e.touches[0]; x0=t.clientX; y0=t.clientY;
+  },{passive:true});
+  el.addEventListener('touchend',(e)=>{
+    if(x0===null) return;
+    const t=e.changedTouches[0];
+    const dx=t.clientX-x0, dy=t.clientY-y0;
+    x0=null;
+    /* Horizontal, and clearly more horizontal than vertical, so a swipe never fights the
+       page scroll. */
+    if(Math.abs(dx)>46&&Math.abs(dx)>Math.abs(dy)*1.7) stepDeal(dx<0?1:-1);
+  },{passive:true});
+}
+
+/*
+ * THE TEAM AS THE DEAL WOULD LEAVE IT, above the deal, re-drawn on every step.
+ *
+ * Three rows of two, one line per man, with arrivals marked. It carries the same
+ * information the tall roster panel did; it is laid out this way because it now shares a
+ * screen with the deal below it, and a lineup you have to scroll to finish reading cannot
+ * be compared to anything. offer === null paints the roster as it stands.
+ */
 function paintTradePreview(offer){
   const slots=slotsNow();
   const pv=offer
     ? R.previewTrade(run,offer)
-    : { roster:run.roster, slotIndex:run.slotIndex, emptySlot:null, incomingIds:[] };
+    : { roster:run.roster, slotIndex:run.slotIndex, emptySlot:null, incomingIds:[], cutPlayers:[] };
   const inc=new Set(pv.incomingIds);
   const bySlot=new Array(slots.length).fill(null);
   if(pv.slotIndex) pv.roster.forEach((p,i)=>{ bySlot[pv.slotIndex[i]]={p,incoming:inc.has(p.player_id)}; });
@@ -6500,22 +6613,19 @@ function paintTradePreview(offer){
   const room=Math.round((E.CONSTANTS.CAP_MUSD-total)*10)/10;
   const base=Math.round(run.roster.reduce((s,p)=>s+p.price_musd,0)*10)/10;
   const delta=Math.round((total-base)*10)/10;
-  const dtxt=offer&&Math.abs(delta)>=0.05
-    ?' <span class="rp-delta '+(delta<0?'up':'dn')+'">'+(delta>0?'+':'')+'$'+delta.toFixed(1)+'M</span>':'';
-  const capEl=$('trade-rp-cap');
-  if(capEl) capEl.innerHTML='<span class="rp-spent">$'+total.toFixed(1)+'M</span>'+
-    '<span class="rp-room">$'+room.toFixed(1)+'M free</span>'+dtxt;
-  const eye=document.querySelector('#trade-roster .rp-eye');
+  const capEl=$('tw-team-cap');
+  if(capEl) capEl.innerHTML='<span class="tc-spent">$'+total.toFixed(1)+'M</span>'+
+    (room<0
+      ? '<span class="tc-room over">$'+Math.abs(room).toFixed(1)+'M over</span>'
+      : '<span class="tc-room">$'+room.toFixed(1)+'M free</span>')+
+    (offer&&Math.abs(delta)>=0.05
+      ? '<span class="tc-d '+(delta<0?'up':'dn')+'">'+(delta>0?'+':'\u2212')+'$'+
+        Math.abs(delta).toFixed(1)+'M</span>'
+      : '');
+  const wrap=$('tw-team');
+  if(wrap) wrap.classList.toggle('changed',!!offer);
+  const eye=$('tw-team-eye');
   if(eye) eye.textContent=offer?'If you accept':'Your roster';
-  /* The preview shows six, so the seventh man has to be accounted for in words or he simply
-     vanishes from a panel that claims to be the roster you would have. */
-  const cutEl=$('trade-rp-cut');
-  if(cutEl){
-    cutEl.innerHTML=pv.cutPlayer
-      ? 'Cutting <b>'+esc(pv.cutPlayer.name)+'</b> to get back to six. You pick who at the next step.'
-      : '';
-    cutEl.style.display=pv.cutPlayer?'':'none';
-  }
 
   tradePreviewPlayers=[];
   let h='';
@@ -6523,25 +6633,38 @@ function paintTradePreview(offer){
     const e=bySlot[slot];
     if(!e){
       tradePreviewPlayers.push(null);
-      h+='<div class="rp-row empty"><span class="rp-pos">'+esc(slots[slot])+'</span>'+
-        '<div style="min-width:0"><div class="rp-name">Open slot</div>'+
-          '<div class="rp-sub">A free agent fills this after the trade</div></div>'+
-        '<span class="rp-fppg" style="color:var(--dim-2)">&mdash;</span></div>';
+      h+='<div class="tt-row open"><span class="tr-pos">'+esc(slots[slot])+'</span>'+
+        '<span class="tr-nm">Free agent</span><span></span>'+
+        '<span class="tr-pts">&mdash;</span></div>';
       continue;
     }
     const p=e.p;
     tradePreviewPlayers.push(p);
-    h+='<div class="rp-row'+(e.incoming?' incoming':'')+'" data-r="'+(tradePreviewPlayers.length-1)+'">'+
-      '<span class="rp-pos" style="'+posPaint(p.position)+'">'+esc(slots[slot])+'</span>'+
-      '<div style="min-width:0"><div class="rp-name">'+esc(p.name)+(e.incoming?'<span class="rp-in">IN</span>':'')+'</div>'+
-        '<div class="rp-sub">'+tcPlate(p.franchise,p.season)+' '+p.season+' &middot; $'+p.price_musd.toFixed(1)+'M</div></div>'+
-      '<span class="rp-fppg">'+p.ppr_ppg_mean.toFixed(1)+'<span>FPPG</span></span></div>';
+    h+='<button class="tt-row'+(e.incoming?' in':'')+'" data-r="'+(tradePreviewPlayers.length-1)+'">'+
+      '<span class="tr-pos" style="'+posPaint(p.position)+'">'+esc(slots[slot])+'</span>'+
+      '<span class="tr-nm">'+esc(lastName(p.name))+'</span>'+
+      (e.incoming?'<span class="tt-mark">IN</span>':'<span></span>')+
+      '<span class="tr-pts">'+p.ppr_ppg_mean.toFixed(1)+'</span></button>';
   }
-  const body=$('trade-rp-body');
-  if(!body) return;
-  body.innerHTML=h;
-  body.onclick=(e)=>{const r=e.target.closest('.rp-row');if(!r||r.dataset.r===undefined)return;
-    const p=tradePreviewPlayers[+r.dataset.r];if(p)sheet(p);};
+  const grid=$('tw-team-grid');
+  if(grid){
+    grid.innerHTML=h;
+    grid.onclick=(e)=>{const r=e.target.closest('.tt-row');if(!r||r.dataset.r===undefined)return;
+      const p=tradePreviewPlayers[+r.dataset.r];if(p)sheet(p);};
+  }
+  /* The lineup shows six, so anyone the deal pushes off it has to be accounted for in words
+     or he simply vanishes from a panel that claims to be the team you would field. */
+  const note=$('tw-team-note');
+  if(note){
+    const cuts=pv.cutPlayers&&pv.cutPlayers.length?pv.cutPlayers:(pv.cutPlayer?[pv.cutPlayer]:[]);
+    /* Each name escaped on its own and THEN joined with the markup. Escaping the joined
+       string ate the tags and printed "Tre Mason</b>, <b>Benny Cunningham" on screen. */
+    note.innerHTML=cuts.length
+      ? 'Not shown: '+cuts.map(p=>'<b>'+esc(p.name)+'</b>').join(', ')+
+        ' &mdash; released to get back to six. You pick who at the next step.'
+      : '';
+    note.style.display=cuts.length?'':'none';
+  }
 }
 
 /* ---------- THE CUT ----------
