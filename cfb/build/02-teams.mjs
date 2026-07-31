@@ -18,6 +18,7 @@ import {
   cfbdFetchRetry, isDrawable,
   mean, stdev, round, writePair,
 } from './lib.mjs';
+import { correctColors } from './school-colors.mjs';
 
 const SLOTS = ['QB', 'RB', 'WR', 'TE', 'FLEX'];
 const SLOT_ELIGIBILITY = {
@@ -145,8 +146,9 @@ async function main() {
       conference: conf,
       abbreviation: colors.abbreviation || school.slice(0, 4).toUpperCase(),
       mascot: colors.mascot || '',
-      color: colors.color || '#333333',
-      alt_color: colors.alternateColor || '#ffffff',
+      /* CFBD's palette, with the handful of schools it gets wrong corrected. See
+         school-colors.mjs for which and why. */
+      ...correctColors(school, colors.color || '#333333', colors.alternateColor || '#ffffff'),
       games: gp,
       record: `${e.w}-${e.l}`,
       pts_scored_mean: round(mean(e.scored), 2),

@@ -28,6 +28,7 @@ account and then as another.
 | `test_score_parity.mjs` | `board.js`'s `scoreOf()` computes exactly what the generated `score` column computes, across all 27,217 results the game can produce. |
 | `test_board_e2e.mjs` | Real seasons played in Chromium, submitted through the real validator, listed on the real board. Guest and signed-in. Plus: a board that is not there leaves the results screen intact. |
 | `test_gates.mjs` | What an account is for. School colours and the full trophy case signed in, signed out, and with the sign-in library blocked entirely. |
+| `render_school_colors.mjs` | Draws all 83 schools' landed reel tiles onto one sheet, and reports any trim that cannot be told from its background. "Are the colours right" is a question you answer by looking. |
 | `postgrest_stub.mjs` | Not a test. A PostgREST-shaped front end for the real database, so the browser talks to something that parses its URLs independently. |
 
 ```
@@ -37,9 +38,10 @@ node cfb/build/test/test_score_parity.mjs cfbtest
 (nohup node cfb/build/test/postgrest_stub.mjs 5555 cfbtest &)
 node cfb/build/test/test_board_e2e.mjs
 node cfb/build/test/test_gates.mjs
+node cfb/build/test/render_school_colors.mjs   # then look at the sheet
 ```
 
-## Four bugs these caught, so far
+## Five bugs these caught, so far
 
 **`scoreOf()` disagreed with the column on every negative half.** `Math.round` rounds a
 half toward positive infinity; Postgres `round()` rounds a half away from zero. 6,800 of
@@ -59,3 +61,10 @@ signed-in session, which is the accident worth having.
 game's initial auth state had no `waiting` key, so the gates read `undefined` and went
 straight to the apology. On a slow connection the first thing a player saw was a message
 about something that was about to work.
+
+**Half the schools were drawn in a colour they do not play in.** `hexToHsl` reports hue 0
+for anything achromatic, because that is what the formula returns when there is no hue to
+report, and the wheel then forced a saturation floor onto it. White came back `#dd3c3c`
+and black came back `#671e1e`: Kentucky is blue and white and was drawn with a red border,
+Iowa is black and gold and was drawn on dark red. Reported from a phone, not caught here,
+which is why `render_school_colors.mjs` now exists.

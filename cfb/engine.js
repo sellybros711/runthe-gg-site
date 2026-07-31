@@ -453,17 +453,55 @@ function washColors(color, altColor) {
   return { bg, accent };
 }
 
-// The wheel wants the team's real colors, not paint-on-grass. Boost dull colors
-// up to a saturation floor (already-vivid ones keep their own), and set a lightness
+// HOW FAR FROM GREY A COLOR HAS TO BE BEFORE IT HAS A HUE AT ALL, as a 0..255
+// spread between its brightest and darkest channel. White, black, silver and
+// charcoal are all below this, and for all of them hexToHsl reports hue 0, which is
+// not a fact about the colour: it is what the formula returns when there is no hue
+// to report.
+const CHROMA_FLOOR = 20;
+function chromaOf(hex) {
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16),
+        b = parseInt(hex.slice(5, 7), 16);
+  return Math.max(r, g, b) - Math.min(r, g, b);
+}
+
+// The wheel wants the team's real colors, not paint-on-grass. Boost dull colors up
+// to a saturation floor (already-vivid ones keep their own), and set a lightness
 // that stays dark enough for the white landed text while reading as the true hue.
-function wheelColor(hex, minS, targetL) {
+//
+// A GREY IS NOT A DULL RED. This used to force the saturation floor onto every
+// input, and hexToHsl reports hue 0 for anything achromatic, so #ffffff came back
+// as #dd3c3c and #000000 as #671e1e. Kentucky is blue and white and was drawn with
+// a red border; Iowa is black and gold and was drawn on dark red. About half the
+// schools in the game have a white, black or silver in their pair, so about half
+// were wrong. Below the chroma floor the colour keeps its neutrality and only its
+// lightness is set.
+function wheelColor(hex, minS, targetL, neutralL) {
+  if (chromaOf(hex) < CHROMA_FLOOR) return hslToHex(0, 0, neutralL === undefined ? targetL : neutralL);
   const [h, s] = hexToHsl(hex);
   return hslToHex(h, Math.min(100, Math.max(s, minS)), targetL);
 }
 
 function wheelColors(color, altColor) {
-  const bg = wheelColor(color || '#334155', 55, 26);
-  const accent = wheelColor(altColor || color || '#94a3b8', 70, 55);
+  const primary = color || '#334155';
+  const secondary = altColor || color || '#94a3b8';
+  // A neutral primary lands near black rather than at mid grey, because a black
+  // helmet school should read black: Iowa, Purdue, Oregon State.
+  const bg = wheelColor(primary, 55, 26, 13);
+  // A DARK NEUTRAL TRIM CANNOT BE DRAWN AS ITSELF. The accent is the box's border,
+  // and Georgia's black on Georgia's red is a border nobody can see. A light neutral
+  // would be a lie in the other direction, so a dark achromatic secondary falls back
+  // to the school's OWN colour lifted off the background: still the school's palette,
+  // and actually visible. A light neutral is kept as one, which is the white trim on
+  // Kentucky, Alabama and Penn State and the whole point of this.
+  let accent;
+  if (chromaOf(secondary) < CHROMA_FLOOR) {
+    const [, , l] = hexToHsl(secondary);
+    accent = l >= 50 ? wheelColor(secondary, 70, 55, 86)
+                     : wheelColor(primary, 55, 58, 62);
+  } else {
+    accent = wheelColor(secondary, 70, 55);
+  }
   return { bg, accent };
 }
 
