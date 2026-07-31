@@ -163,6 +163,55 @@ const CONSTANTS = {
    * dominant record, the playoffs respect it.
    */
   PLAYOFF_HOME_FIELD: 0.35,
+
+  /*
+   * ─── THE GM MODE POSTSEASON ────────────────────────────────────────────────
+   *
+   * Trade Machine only. The other modes keep the ladder above untouched.
+   *
+   * Everywhere else the goal is a perfect record, so the last two rounds are the
+   * 2007 Patriots and the 1972 Dolphins and beating them is the whole point. In
+   * GM mode the goal is different: you inherit a bad roster and try to turn the
+   * season around. Measured against the shipped ladder, a GM who did exactly that
+   * — finishing at a 94 rating, up thirty points — won the title 1.5% of the time,
+   * because a title still meant beating both legends. The story the mode tells and
+   * the ending it allows did not match.
+   *
+   * Two things change, and only for this mode.
+   *
+   * The bracket (generateContenderPlayoffs) is real playoff teams instead of two of
+   * them plus the two myths: the weakest team in, then the ordinary playoff field,
+   * then a top-decile season in the final. Still a gauntlet — the team you meet for
+   * the title is one of the best seasons since 1999 — but a bracket a contender can
+   * come through.
+   *
+   * LATE_BYE_*: the bye is also reachable. On record alone it never was — the
+   * first six weeks are played with the roster you were handed, so 15 wins is out
+   * of reach no matter how well you trade, and over 200 measured seasons a
+   * deliberate GM earned it 14 times. So GM mode adds a second route: win
+   * LATE_BYE_WINS of your last LATE_BYE_GAMES and you are the hottest team going
+   * in, and you get the week off. It rewards precisely what the mode is about, it
+   * gives the eight weeks after the deadline something to play for, and it
+   * discriminates hard — a team winning 70% of its games clears it about a
+   * quarter of the time, a .500 team about one time in thirty.
+   *
+   * GM_FINAL_HOME_FIELD: how much of that seeding edge survives into the final,
+   * GM mode only. Everywhere else the answer is none, and measured on the new
+   * bracket that made the Super Bowl unwinnable by construction: a top seed rated
+   * 100 was still a 7.7-point underdog in it, because the two hardest things about
+   * the game — a top-decile opponent and no home-field — landed on the same night.
+   * Home-field here is not a crowd, it is the stated reward for the regular season,
+   * so on neutral ground it is halved rather than erased. At 0.5 a juggernaut plays
+   * the final about even (+0.8 at a 100 rating) and a merely good team is still a
+   * clear underdog (-11.7 at 85), which is the shape the mode wants: the last game
+   * is the hardest thing in it, and being high overall is what makes it winnable.
+   *
+   * Measured title odds for a top seed, at 0.5: 7.2% at an 80 rating, 10.6% at 85,
+   * 15.1% at 90, 20.9% at 95, 27.1% at 100. From a wild card, 1.1% to 7.6%.
+   */
+  GM_FINAL_HOME_FIELD: 0.5,
+  LATE_BYE_GAMES: 8,
+  LATE_BYE_WINS: 7,
 };
 
 const ERAS = {
@@ -387,10 +436,24 @@ function scoringScript(you, them, rng) {
 /** Round names, counting back from the final. */
 const PLAYOFF_ROUND_NAMES = ['Wild Card', 'Divisional', 'Conference Championship', 'Super Bowl'];
 
-/** Where a regular-season record leaves you. Wins only, deliberately. */
-function seedFromRecord(wins) {
-  if (wins >= CONSTANTS.BYE_SEED_WINS) {
-    return { made: true, bye: true, rounds: CONSTANTS.PLAYOFF_ROUNDS_WITH_BYE, label: 'Top seed' };
+/**
+ * Where a regular-season record leaves you. Wins only, deliberately.
+ *
+ * `opts.lateWins` is how many of the last LATE_BYE_GAMES games were won, and it is
+ * only ever passed in GM mode. Given it, a hot finish earns the bye even without
+ * the 15-win record — see CONSTANTS.LATE_BYE_*. The three labels are unchanged in
+ * every mode, because badges and the leaderboard read them.
+ */
+function seedFromRecord(wins, opts = {}) {
+  const bye = wins >= CONSTANTS.BYE_SEED_WINS
+    || (opts.lateWins != null && opts.lateWins >= CONSTANTS.LATE_BYE_WINS
+      && wins >= CONSTANTS.PLAYOFF_WINS);
+  if (bye) {
+    return {
+      made: true, bye: true, rounds: CONSTANTS.PLAYOFF_ROUNDS_WITH_BYE, label: 'Top seed',
+      /* Which route got you here, so the seeding screen can say so. */
+      byeRoute: wins >= CONSTANTS.BYE_SEED_WINS ? 'record' : 'finish',
+    };
   }
   if (wins >= CONSTANTS.PLAYOFF_WINS) {
     return { made: true, bye: false, rounds: CONSTANTS.PLAYOFF_ROUNDS_WILD_CARD, label: 'Wild card' };
@@ -1522,20 +1585,74 @@ function generatePlayoffs(data, rng, opts = {}) {
   const count = opts.count ?? CONSTANTS.PLAYOFF_ROUNDS_WILD_CARD;
   const era = opts.era ?? null;
   if (era) return generateEraPlayoffs(data, rng, era, count);
+  if (opts.contenders) return generateContenderPlayoffs(data, rng, count);
 
   const ladder = [pickFrom(data.goodPool, rng), pickFrom(data.greatPool, rng),
     data.byId(LEGEND_IDS.PATRIOTS_2007), data.byId(LEGEND_IDS.DOLPHINS_1972)];
   return ladder.slice(ladder.length - Math.min(count, ladder.length));
 }
 
+/*
+ * GM mode's bracket: four real playoff teams, no legends. See CONSTANTS.
+ *
+ * The last CONTENDER_BRACKET_ELITE_ROUNDS rungs come from the top decile by
+ * strength, so the two games that decide a title are against the best seasons in
+ * the data rather than the best seasons ever played. The elite filter falls back
+ * to the whole great pool if the data were ever sliced thin enough to empty it.
+ */
+/*
+ * GM mode's bracket is built to LENGTH, not sliced from a fixed four.
+ *
+ * The legends ladder is sliced off the front because a bye must never let you skip
+ * the Dolphins. Applied here that was backwards: the last two rungs were both
+ * top-decile draws, so slicing the front meant the reward for the #1 seed was
+ * skipping the WEAKEST team and then playing both of the strongest — the opposite
+ * of a real bracket, where the top seed hosts the lowest remaining seed. Measured,
+ * that made the bye worth less than nothing: 1.8% of byes won the title against
+ * 3.3% of wild cards.
+ *
+ * So the rungs are generated for the number of rounds actually being played. The
+ * final is always a top-decile season; the opener is the weakest team in; anything
+ * between comes from the ordinary playoff field. A bye removes one middle round,
+ * which is exactly what a bye does.
+ */
+function generateContenderPlayoffs(data, rng, count) {
+  const elite = data.greatPool.filter((t) => t.strength_z >= data.eliteThreshold);
+  const top = elite.length ? elite : data.greatPool;
+  const pools = [];
+  for (let i = 0; i < count; i++) {
+    pools.push(i === count - 1 ? top : (i === 0 ? data.goodPool : data.greatPool));
+  }
+  return drawLadder(pools, rng, count);
+}
+
 function generateEraPlayoffs(data, rng, era, count) {
   const src = eraSlice(data, era);
-  const ladder = [
-    pickFrom(src.goodPool, rng),
-    pickFrom(src.greatPool, rng),
-    pickFrom(src.greatPool, rng),
-    pickFrom(src.greatPool, rng),
-  ];
+  return drawLadder([src.goodPool, src.greatPool, src.greatPool, src.greatPool], rng, count);
+}
+
+/*
+ * One team per rung, NEVER THE SAME TEAM TWICE.
+ *
+ * The era ladder drew three times from one pool and could hand you the 2013 Broncos
+ * in the Divisional round and again in the Conference Championship, which reads as a
+ * bug even though the sim plays it happily. Both generated ladders come through here
+ * so neither can regrow the problem. The draw falls back to allowing a repeat only if
+ * a pool is too thin to avoid one, which no shipped pool is.
+ */
+function drawLadder(pools, rng, count) {
+  const ladder = [];
+  const seen = new Set();
+  for (const pool of pools) {
+    let t = null;
+    for (let tries = 0; tries < 40 && !t; tries++) {
+      const c = pickFrom(pool, rng);
+      if (!seen.has(c.team_season_id)) t = c;
+    }
+    t ??= pickFrom(pool, rng);
+    seen.add(t.team_season_id);
+    ladder.push(t);
+  }
   return ladder.slice(ladder.length - Math.min(count, ladder.length));
 }
 
