@@ -752,11 +752,7 @@ function advanceWeek(run, data, leagueContext, displayCal) {
   const opp = data.byTeamSeasonId[oppId];
   const rng = rngFor(run);
   const isFinal = playoff && s.playoffRound === run.playoffSeed.rounds - 1;
-  const advantage = playoff && !isFinal
-    ? 1 + (E.CONSTANTS.PLAYOFF_HOME_FIELD || 0)
-      * Math.max(0, s.regularWins - E.CONSTANTS.PLAYOFF_WINS)
-      / (E.CONSTANTS.REGULAR_SEASON_GAMES - E.CONSTANTS.PLAYOFF_WINS)
-    : 1;
+  const advantage = playoff ? homeField(run, s.regularWins, isFinal) : 1;
   const gameSlots = slotsOf(run);
   const r = E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 21.5, rng, E.CONSTANTS, advantage);
   const shown = displayCal ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal) : null;
@@ -824,6 +820,34 @@ function advanceWeek(run, data, leagueContext, displayCal) {
     }
   }
   return result;
+}
+
+/*
+ * Home-field for one playoff round, as a divisor on the opponent's score.
+ *
+ * Scales from no advantage at the playoff cut to the full PLAYOFF_HOME_FIELD at 17-0,
+ * because a dominant regular season should be worth something in January.
+ *
+ * THE TOP SEED HOSTS, whatever record earned it. That used to be automatic: the seed
+ * required 15 wins, so seed and record moved together. GM mode decoupled them by
+ * letting a hot finish earn the bye, and on wins alone a 13-4 top seed came out with
+ * a 3% edge where a 15-2 one got 21% -- the #1 seed in name with none of what the #1
+ * seed means. Reading the floor off BYE_SEED_WINS keeps the two tied: earning the
+ * seed is worth at least what the record route was worth, and winning more still
+ * adds on top.
+ *
+ * The final is neutral ground everywhere except GM mode, where the edge is halved
+ * rather than erased -- see CONSTANTS.GM_FINAL_HOME_FIELD.
+ */
+function homeField(run, regularWins, isFinal) {
+  const C = E.CONSTANTS;
+  let k = C.PLAYOFF_HOME_FIELD || 0;
+  if (isFinal) k *= run.tradeMachine ? (C.GM_FINAL_HOME_FIELD || 0) : 0;
+  if (!k) return 1;
+  const bye = !!(run.playoffSeed && run.playoffSeed.bye);
+  const wins = bye ? Math.max(regularWins, C.BYE_SEED_WINS) : regularWins;
+  const share = Math.max(0, wins - C.PLAYOFF_WINS) / (C.REGULAR_SEASON_GAMES - C.PLAYOFF_WINS);
+  return 1 + k * Math.min(1, share);
 }
 
 /** Leave SEEDING and start the playoffs. */

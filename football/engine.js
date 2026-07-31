@@ -179,26 +179,37 @@ const CONSTANTS = {
    *
    * Two things change, and only for this mode.
    *
-   * CONTENDER_BRACKET: the field is four real playoff teams from the pool instead
-   * of two of them plus the two myths, escalating, with the last two rounds drawn
-   * from the top decile by strength. It is still a gauntlet — you have to beat two
-   * of the best seasons since 1999 back to back — but it is a bracket a contender
-   * can actually come through. Measured title odds at a 95 rating: 5.0% from the
-   * wild card and 19.0% from the top seed, against 0.9% and 3.9% before.
+   * The bracket (generateContenderPlayoffs) is real playoff teams instead of two of
+   * them plus the two myths: the weakest team in, then the ordinary playoff field,
+   * then a top-decile season in the final. Still a gauntlet — the team you meet for
+   * the title is one of the best seasons since 1999 — but a bracket a contender can
+   * come through.
    *
    * LATE_BYE_*: the bye is also reachable. On record alone it never was — the
    * first six weeks are played with the roster you were handed, so 15 wins is out
    * of reach no matter how well you trade, and over 200 measured seasons a
-   * deliberate GM earned it twice. So GM mode adds a second route: win
+   * deliberate GM earned it 14 times. So GM mode adds a second route: win
    * LATE_BYE_WINS of your last LATE_BYE_GAMES and you are the hottest team going
    * in, and you get the week off. It rewards precisely what the mode is about, it
    * gives the eight weeks after the deadline something to play for, and it
    * discriminates hard — a team winning 70% of its games clears it about a
    * quarter of the time, a .500 team about one time in thirty.
    *
-   * The Super Bowl stays neutral: no home-field in the final, as in every mode.
+   * GM_FINAL_HOME_FIELD: how much of that seeding edge survives into the final,
+   * GM mode only. Everywhere else the answer is none, and measured on the new
+   * bracket that made the Super Bowl unwinnable by construction: a top seed rated
+   * 100 was still a 7.7-point underdog in it, because the two hardest things about
+   * the game — a top-decile opponent and no home-field — landed on the same night.
+   * Home-field here is not a crowd, it is the stated reward for the regular season,
+   * so on neutral ground it is halved rather than erased. At 0.5 a juggernaut plays
+   * the final about even (+0.8 at a 100 rating) and a merely good team is still a
+   * clear underdog (-11.7 at 85), which is the shape the mode wants: the last game
+   * is the hardest thing in it, and being high overall is what makes it winnable.
+   *
+   * Measured title odds for a top seed, at 0.5: 7.2% at an 80 rating, 10.6% at 85,
+   * 15.1% at 90, 20.9% at 95, 27.1% at 100. From a wild card, 1.1% to 7.6%.
    */
-  CONTENDER_BRACKET_ELITE_ROUNDS: 2,
+  GM_FINAL_HOME_FIELD: 0.5,
   LATE_BYE_GAMES: 8,
   LATE_BYE_WINS: 7,
 };
@@ -1589,16 +1600,28 @@ function generatePlayoffs(data, rng, opts = {}) {
  * the data rather than the best seasons ever played. The elite filter falls back
  * to the whole great pool if the data were ever sliced thin enough to empty it.
  */
+/*
+ * GM mode's bracket is built to LENGTH, not sliced from a fixed four.
+ *
+ * The legends ladder is sliced off the front because a bye must never let you skip
+ * the Dolphins. Applied here that was backwards: the last two rungs were both
+ * top-decile draws, so slicing the front meant the reward for the #1 seed was
+ * skipping the WEAKEST team and then playing both of the strongest — the opposite
+ * of a real bracket, where the top seed hosts the lowest remaining seed. Measured,
+ * that made the bye worth less than nothing: 1.8% of byes won the title against
+ * 3.3% of wild cards.
+ *
+ * So the rungs are generated for the number of rounds actually being played. The
+ * final is always a top-decile season; the opener is the weakest team in; anything
+ * between comes from the ordinary playoff field. A bye removes one middle round,
+ * which is exactly what a bye does.
+ */
 function generateContenderPlayoffs(data, rng, count) {
   const elite = data.greatPool.filter((t) => t.strength_z >= data.eliteThreshold);
   const top = elite.length ? elite : data.greatPool;
-  const rungs = CONSTANTS.PLAYOFF_ROUNDS_WILD_CARD;
-  const n = CONSTANTS.CONTENDER_BRACKET_ELITE_ROUNDS;
-  /* Four rungs, aligned to the final: the last n from the top decile, the earlier ones
-     from the ordinary playoff field, easiest first. */
   const pools = [];
-  for (let i = 0; i < rungs; i++) {
-    pools.push(i >= rungs - n ? top : (i === 0 ? data.goodPool : data.greatPool));
+  for (let i = 0; i < count; i++) {
+    pools.push(i === count - 1 ? top : (i === 0 ? data.goodPool : data.greatPool));
   }
   return drawLadder(pools, rng, count);
 }
