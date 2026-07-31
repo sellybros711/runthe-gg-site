@@ -294,7 +294,12 @@
     'September', 'October', 'November', 'December'];
   const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-  const MODES = ['free', 'club', 'era', 'trade', 'capsurvivor'];
+  /* The modes "tried everything" and "wins anywhere" have to agree with. Salary Cap Survivor
+     is deliberately absent: the mode is not launching, and leaving it in this list would make
+     both of those badges impossible to earn rather than merely hard. The engine still writes
+     'capsurvivor' as a run_mode, so an old row from testing stays on the leaderboard and is
+     simply not counted toward either. */
+  const MODES = ['free', 'club', 'era', 'trade'];
 
   /* Positions counted on a roster, and the price/production readings the shape badges use. */
   const posCount = (ros, pos) => ros.filter((p) => p.position === pos).length;
@@ -662,8 +667,6 @@
     (c) => c.modesPlayed.has('era')));
   add(A('mode_trade', 'Take the wheel', 'Finish a Trade Machine season.', 'bronze', 'Modes',
     (c) => c.modesPlayed.has('trade')));
-  add(A('mode_cap', 'Cap Survivor', 'Finish a Salary Cap Survivor season.', 'bronze', 'Modes',
-    (c) => c.modesPlayed.has('capsurvivor')));
   add(A('mode_all', 'Tried everything', 'Finish a season in every mode.', 'gold', 'Modes',
     (c) => MODES.every((m) => c.modesPlayed.has(m))));
   add(A('ring_every_mode', 'Wins anywhere', 'Win a title in every mode.', 'legend', 'Modes',
@@ -697,8 +700,6 @@
   add(A('trade_perfect', 'Immaculate front office',
     'Go perfect in the Trade Machine.', 'legend', 'Modes',
     (c) => c.any((r) => r.run_mode === 'trade' && isTrue(r.perfect))));
-  add(A('cap_ring', 'Survived the cap', 'Win a title in Salary Cap Survivor.', 'gold', 'Modes',
-    (c) => c.modeTitles.has('capsurvivor')));
 
   /* ===================== CALENDAR ===================== */
   MONTHS.forEach((m, i) => {
