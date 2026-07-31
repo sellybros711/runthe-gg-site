@@ -1,6 +1,6 @@
-/* Stage 8, the share card.
+/* Stage 6, the share card.
  *
- *   (nohup python3 -m http.server 8080 &) ; node cfb/build/08-og.mjs
+ *   (nohup python3 -m http.server 8080 &) ; node cfb/build/06-og.mjs
  *
  * Renders cfb/og-source.html to cfb/og.png at 1200x630, the size every platform crops a
    share preview from. Run from the repo root with a static server on :8080:
