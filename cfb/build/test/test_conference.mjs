@@ -155,7 +155,14 @@ console.log('\n=== a conference season, all the way through ===');
     /not the same competition/.test(await page.textContent('#lb-blurb')));
   await page.screenshot({ path: SS + 'conf_board.png', fullPage: true });
   await page.selectOption('#lb-comp', 'free'); await page.waitForTimeout(2200);
-  ok('and it is not on the free-play board', (await page.$$eval('.lbr', (e) => e.length)) === 0);
+  /* Asked as "this row is not there", not as "nothing is there". The free-play
+     board legitimately holds every free-play season anyone has finished, so an
+     empty-board assertion only passed while the table happened to be empty and
+     went red the moment another test left a free-play row behind. */
+  const onFree = await page.evaluate((id) => fetch('http://localhost:5555/rest/v1/cfb_runs?select=id&run_mode=eq.free&id=eq.' + id)
+    .then((r) => r.json()).then((a) => a.length), row.id);
+  ok('and it is not on the free-play board', onFree === 0 &&
+    (await page.$$eval('.lbr.me', (e) => e.length)) === 0);
   ok('every competition is selectable',
     (await page.$$eval('#lb-comp option', (e) => e.length)) === 6);
   await page.close();

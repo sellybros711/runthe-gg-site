@@ -4687,28 +4687,59 @@ const EMBLEM_TROPHY='<svg viewBox="0 0 48 48" aria-hidden="true">'+
   '<rect x="12" y="40" width="24" height="4.4" rx="2.2" fill="url(#emtro)" stroke="#a55b06" stroke-width="1"/></svg>';
 
 /* ── results ─────────────────────────────────────────────────── */
+/* THE RATING IS THREE THINGS A PLAYER CAN SEE ON THE SCREEN IN FRONT OF THEM:
+   what the six score, plus the two bonuses the results page already prints as
+   percentages. Nothing else goes in, which means the number can be checked by
+   hand, and a player who does not like it can tell exactly which of the three to
+   go and change.
+
+     rating = summed FPPG x (chemistry + the offensive scheme's bonus)
+
+   WHAT THIS DROPPED, and it is worth writing down rather than discovering later.
+   It used to be `fppg x chemistry x rosterStructure().multiplier`, and that
+   multiplier bundles the scheme bonus together with four SHAPE terms: whether the
+   quarterback throws well enough to feed the receivers, the run/pass balance,
+   whether one player is carrying everything, and whether the bottom two are dead
+   weight. Those four are gone from the rating. They are NOT gone from the game:
+   resolveGame still scores every week with the full multiplier, so shape still
+   decides matches. See the note on RATING_CEILING for what that costs. */
 function teamRating(roster,chemistry){
   const fppg=roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
-  return fppg*chemistry*E.rosterStructure(roster).multiplier;
+  return fppg*(chemistry+E.rosterStructure(roster).schemeBonus);
 }
 /* TEAM OVERALL IS A RATING, not the points total it started as. The raw number
    is points a game and any decent roster clears 100 of them, so a team knocked
    out in the first round was handed a 106 and it read like a perfect score.
 
-   A hundred is pinned to the best lineup the game can physically produce. Every
-   player in the data was run through a knapsack against the full budget, and the
-   strongest six that fit come to 130 points a game, 135 once the shape of the
-   roster is counted. So 135 is the hundred. Nothing clamps the number: clearing
-   it is possible, but it takes a roster within a point or two of the best that
-   could ever be drafted, which is what going past a hundred should mean. */
-const RATING_CEILING=135;
+   A hundred is pinned to the best lineup the game can physically produce. Found
+   by hill climbing over every player in the data against the full budget,
+   maximising this formula: the best found is about 123 points a game with +11.5%
+   chemistry and a +2.3% scheme, which comes to 140. Four independent searches
+   landed between 139.4 and 140.9, so 141 is the hundred.
+
+   THE OLD CEILING WAS 135, under the old formula. The two numbers are not
+   comparable and neither are ratings recorded under them, which is fine here
+   because nothing has launched and the board is empty.
+
+   Nothing clamps the number: clearing it is possible, but it takes a roster
+   within a point of the best that could ever be drafted, which is what going past
+   a hundred should mean. */
+const RATING_CEILING=141;
 const overallOf=(raw)=>raw*100/RATING_CEILING;
-function fitPct(mult){const n=Math.round((mult-1)*100);return(n>0?'+':'')+n+'%';}
-function schemeTail(st){
-  if(!st||!st.scheme) return '';
-  const nm=E.SCHEME_NAMES[st.scheme];
-  const sp=Math.max(1,Math.round((st.schemeBonus||0)*100));
-  return ' The '+esc(nm)+' scheme is +'+sp+'% of that.';
+/* The scheme half of the rating sentence. It NAMES the scheme rather than
+   repeating the percentage, because the sentence has already printed that
+   number and saying it twice reads like two separate bonuses. Six that fit no
+   scheme add nothing, and the line says so instead of printing "+0.0%". */
+function schemePhrase(st){
+  if(!st||!st.scheme) return 'nothing from a scheme';
+  return pc(st.schemeBonus)+' from the '+esc(E.SCHEME_NAMES[st.scheme]);
+}
+/* "an 80.9 team", "a 72.7 team". The rating is read aloud in the head, so the
+   article follows the sound of the first word: eight and eighteen and eleven
+   take "an", and a hundred and eighteen does not. */
+function artNum(s){
+  const n=String(s).split('.')[0];
+  return (n.charAt(0)==='8'||n==='11'||n==='18')?'an ':'a ';
 }
 
 function paintOver(){
@@ -4848,10 +4879,17 @@ function paintOver(){
     tile(agPG.toFixed(1),'Points allowed')+
     tile((diff>=0?'+':'')+diff.toFixed(1),'Difference',diff>=0?'up':'dn')+
     tile(bestStreak,'Longest streak');
+  /* THE SENTENCE IS THE SUM, so the rating can be checked by hand off this line.
+     It used to name the shape multiplier, which is no longer in the rating.
+     BOTH numbers are printed on purpose: the raw one is what the three terms
+     multiply out to, and the overall is what the big cell above says. Printing
+     only the raw one, which is what this line did first, left a player reading
+     105.6 here and 74.9 a centimetre higher with no way to connect them. */
   $('o-squadline').innerHTML='<span>'+squadFppg.toFixed(0)+' squad FPPG, '+
-    pc(run.season.chemistry-1)+' chemistry and '+fitPct(st.multiplier)+
-    ' for how the six fit together, which is a <b>'+rating.toFixed(1)+'</b> team overall. '+
-    'You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.'+schemeTail(st)+'</span>';
+    pc(run.season.chemistry-1)+' chemistry and '+schemePhrase(st)+
+    ' multiply out to '+rating.toFixed(1)+', which is '+artNum(overall.toFixed(1))+
+    '<b>'+overall.toFixed(1)+'</b> team overall. '+
+    'You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.</span>';
 
   drawField($('field3'),false);
   const bySlot=new Array(E.SLOTS.length).fill(null);
@@ -4942,11 +4980,16 @@ function comparison(best){
   const P=(v)=>(v*100).toFixed(v>0&&v<0.1?1:0)+'%';
   const vs=(k,a,c,hi)=>'<div class="vs-row'+(hi?' hi':'')+'"><span class="k">'+k+'</span>'+
     '<span class="a">'+a+'</span><span class="c">'+c+'</span></div>';
-  const mineRating=teamRating(run.roster,best.yourChemistry);
-  const bestRating=teamRating(best.squad,best.chemistry);
+  /* THE OVERALL, not the raw rating. The raw number stopped being points a game
+     when the rating stopped being a multiplication the sim also does, and the
+     row was still labelled as points. Showing the overall also makes the right
+     column mean something: the best possible squad is what a hundred is set
+     from, so it lands on about a hundred. */
+  const mineRating=overallOf(teamRating(run.roster,best.yourChemistry));
+  const bestRating=overallOf(teamRating(best.squad,best.chemistry));
   return '<div class="vs-tbl">'+
     '<div class="vs-row"><span class="k"></span><span class="h">YOURS</span><span class="h b">BEST</span></div>'+
-    vs('Fantasy points a game',mineRating.toFixed(1),bestRating.toFixed(1),true)+
+    vs('Team overall',mineRating.toFixed(1),bestRating.toFixed(1),true)+
     vs('Record',run.outcome.record,theirs.typicalRecord,true)+
     vs('Money spent',M(best.yourSpend),M(best.spend))+
     vs('Makes the playoffs',P(mine.playoffRate),P(theirs.playoffRate))+

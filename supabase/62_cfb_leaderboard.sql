@@ -108,19 +108,23 @@ create table if not exists cfb_runs (
 
   -- The roster's own strength, the board's second sort axis.
   --
-  -- team_rating is not a made-up composite. resolveGame() scores a week as
+  -- team_rating is the three things the results screen already prints:
+  --   sum(ppr_ppg_mean) * (chemistry + the offensive scheme's bonus)
+  -- so a player can add it up off their own screen. It deliberately leaves out
+  -- the four SHAPE terms (quarterback support, run/pass balance, concentration,
+  -- the floor). Those still decide games: resolveGame() scores a week as
   --   sum(ppr_ppg_mean) * chemistry * structure * defenseModifier
-  -- so dropping the per-opponent term leaves the points a roster is expected to
-  -- put up against an average defense.
+  -- where `structure` carries shape and scheme together. structure_mult is
+  -- stored so the shape a roster played under is still on the record.
   --
-  -- overall is that same number divided by the game's ceiling and multiplied by
-  -- 100, which is what every screen in the game actually displays. BOTH are
-  -- stored and the board sorts on `overall`, because a board column has to be
-  -- the number the player saw on their own results screen or they cannot find
+  -- overall is team_rating divided by the game's ceiling and multiplied by 100,
+  -- which is what every screen in the game actually displays. BOTH are stored
+  -- and the board sorts on `overall`, because a board column has to be the
+  -- number the player saw on their own results screen or they cannot find
   -- themselves on it.
   squad_fppg     numeric(5,1),   -- summed ppr_ppg_mean, before any multiplier
-  structure_mult numeric(4,3),   -- rosterStructure().multiplier
-  team_rating    numeric(6,2),   -- squad_fppg * chemistry * structure
+  structure_mult numeric(4,3),   -- rosterStructure().multiplier, the sim's term
+  team_rating    numeric(6,2),   -- squad_fppg * (chemistry + scheme bonus)
   overall        numeric(6,2),   -- team_rating scaled to the displayed 0..100+
   perfect_pct    smallint,       -- yourProjected / bestProjected, as a percentage
 

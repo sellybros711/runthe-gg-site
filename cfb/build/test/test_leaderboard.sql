@@ -328,3 +328,13 @@ select count(*) from (select id from cfb_runs order by score desc, created_at as
 select count(*) from cfb_runs where score > 130000;
 select count(*) from (select id from cfb_runs where overall is not null order by overall desc, created_at asc limit 50) t;
 \timing off
+
+-- The bulk rows have done their job, so they go. They exist to make the planner
+-- choose a real board's plan, and nothing after this file wants them: the browser
+-- tests run against this same database, and 200,000 synthetic near-perfect seasons
+-- buried the one season those tests had just played, so "the board marks the row
+-- as yours" failed for a reason that had nothing to do with the board.
+delete from cfb_runs where seed_label = 'bulk';
+analyze cfb_runs;
+\echo ''
+select 'bulk rows cleared, real rows left: ' || count(*) from cfb_runs;
