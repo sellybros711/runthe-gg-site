@@ -200,8 +200,29 @@
     letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin:0 0 10px;
     padding:5px 15px 4px;border-radius:99px;background:rgba(245,158,11,.13);
     border:1px solid rgba(245,158,11,.34);max-width:100%;overflow:hidden;text-overflow:ellipsis}
-  .hero p{color:var(--dim);font-size:14px;line-height:1.45;margin:14px 0 0;max-width:420px;
+  .hero p{color:var(--dim);font-size:14px;line-height:1.45;margin:12px 0 0;max-width:380px;
     margin-left:auto;margin-right:auto}
+  /* The banner catches the light the way bunting on a stadium rail does. */
+  .hero .sub{position:relative;overflow:hidden}
+  .hero .sub:after{content:'';position:absolute;top:0;bottom:0;width:45%;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.30),transparent);
+    animation:banner 4.6s ease-in-out infinite}
+  @keyframes banner{0%{left:-55%}55%{left:105%}100%{left:105%}}
+
+  /* ── the stage: the wheel and the formation, above the words ──── */
+  .stage{margin-bottom:20px}
+  .stage .reels{margin-top:0}
+  .stage .field{margin:11px 0 0}
+  .hnote{margin:11px 0 0;text-align:center;font-family:var(--fn);font-size:12.5px;
+    font-weight:600;color:var(--dim-2);letter-spacing:.01em}
+  /* STADIUM LIGHTS. A slow band of light crossing the turf, which is what a night
+     game looks like from the stands. Sits over the markings and under the players,
+     and the global reduced-motion rule stands it down. */
+  #h-field:after{content:'';position:absolute;top:-25%;bottom:-25%;left:0;width:38%;
+    z-index:2;pointer-events:none;transform:skewX(-14deg);
+    background:linear-gradient(90deg,transparent,rgba(190,222,255,.09),transparent);
+    animation:lights 9s ease-in-out infinite}
+  @keyframes lights{0%{left:-45%}50%{left:105%}100%{left:-45%}}
 
   /* ── reels ──────────────────────────────────────────────────── */
   .reels{display:grid;grid-template-columns:106px 1fr;gap:9px;margin-top:11px}
@@ -1244,39 +1265,44 @@ or endorsed by the NCAA, the CFP or any school.
 
   <!-- s-intro -->
   <div class="screen" id="s-intro">
+    <!-- THE GAME ITSELF GOES FIRST. The wheel turning and the formation filling in
+         say what the game is faster than a paragraph can, so the words underneath
+         only have to name it. -->
+    <div class="stage">
+      <div class="reels" id="h-reels">
+        <div class="reelbox year waiting" id="h-box-y">
+          <span class="lbl">Year</span>
+          <div class="reel-win"></div>
+          <div class="reel-strip" id="h-reel-y"></div>
+        </div>
+        <div class="reelbox team waiting" id="h-box-t">
+          <span class="lbl">Team</span>
+          <div class="reel-win"></div>
+          <div class="reel-strip" id="h-reel-t"></div>
+        </div>
+      </div>
+      <div class="field" id="h-field"></div>
+      <p class="hnote">Six spins, six signings, one shot at all of them.</p>
+    </div>
+
     <div class="hero">
       <div class="sub">College Edition</div>
       <h1>The Perfect Season</h1>
-      <p>Spin a wheel for a year and a college team. Sign one player off each of six draws.
-        Build a roster from 2005 to 2025 under a $14M NIL budget. Play all 12 games and
-        chase a perfect season.</p>
+      <p>Draft six college legends, 2005 to 2025. Chase a perfect season.</p>
     </div>
 
-    <div class="reels" id="h-reels">
-      <div class="reelbox year waiting" id="h-box-y">
-        <span class="lbl">Year</span>
-        <div class="reel-win"></div>
-        <div class="reel-strip" id="h-reel-y"></div>
-      </div>
-      <div class="reelbox team waiting" id="h-box-t">
-        <span class="lbl">Team</span>
-        <div class="reel-win"></div>
-        <div class="reel-strip" id="h-reel-t"></div>
-      </div>
-    </div>
-
-    <div class="field" id="h-field"></div>
-
-    <div style="margin-top:18px">
+    <div>
       <button class="btn" id="b-play-intro">Draft your team</button>
     </div>
     <div style="margin-top:9px">
       <button class="btn ghost sm" id="b-how">How to play</button>
     </div>
 
+    <!-- The attribution and the disclaimer both have to stay, so they are set as one
+         quiet line rather than three stacked paragraphs. -->
     <div class="legal" style="margin-top:28px">
-      <p>Player data from <a href="https://collegefootballdata.com" target="_blank" rel="noopener">CollegeFootballData.com</a>.</p>
-      <p>An unofficial fan project. Not affiliated with or endorsed by the NCAA, the CFP or any school.</p>
+      <p>Player data from <a href="https://collegefootballdata.com" target="_blank" rel="noopener">CollegeFootballData.com</a>.
+        An unofficial fan project, not affiliated with or endorsed by the NCAA, the CFP or any school.</p>
       <p><a href="/privacy.html">Privacy</a> &middot; <a href="/terms.html">Terms</a> &middot; <a href="/disclaimer.html">Disclaimer</a></p>
       <div class="follow">
         <a href="https://runthe.gg">RunThe.GG</a>
