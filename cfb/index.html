@@ -10,7 +10,7 @@
 <title>College Football Draft Game: Perfect Season | RunThe.GG</title>
 <!-- DESCRIPTION: written as the sentence that earns the click rather than as a summary.
      Leads with the verb, names the constraint that makes it a game, ends on the goal. -->
-<meta name="description" content="Spin for a year and a school, sign six players off six draws under a $14M NIL budget, then play all 12 games and chase a perfect college football season. Free, no download, new every run.">
+<meta name="description" content="Spin for a year and a school, sign six players off six draws under an $11M NIL budget, then play all 12 games and chase a perfect college football season. Free, no download, new every run.">
 <meta name="keywords" content="college football game, CFB draft game, free online college football game, college football roster builder, college football simulation game, perfect season">
 <meta name="theme-color" content="#080b14">
 <link rel="canonical" href="https://runthe.gg/cfb/">
@@ -34,7 +34,7 @@
      unfurls as a bare line of text in iMessage, WhatsApp, Discord and Slack, which is
      the worst place for a game spread by sharing to have a gap. -->
 <meta property="og:title" content="College Football: Perfect Season">
-<meta property="og:description" content="Spin for a year and a school, sign six players under a $14M NIL budget, then play all 12 games and chase a perfect college football season.">
+<meta property="og:description" content="Spin for a year and a school, sign six players under an $11M NIL budget, then play all 12 games and chase a perfect college football season.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/cfb/">
@@ -42,12 +42,12 @@
 <meta property="og:image" content="https://runthe.gg/cfb/og.png?v=1">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="College Football: Perfect Season. Spin for a year and a school, sign six players under a $14M NIL budget and play a full season. The six roster spots shown as QB, RB, WR, WR, TE and FLEX.">
+<meta property="og:image:alt" content="College Football: Perfect Season. Spin for a year and a school, sign six players under an $11M NIL budget and play a full season. The six roster spots shown as QB, RB, WR, WR, TE and FLEX.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="College Football: Perfect Season">
-<meta name="twitter:description" content="Draft a college football roster from every season since 2005 under a $14M NIL budget, then play all 12 games and chase a perfect season.">
+<meta name="twitter:description" content="Draft a college football roster from every season since 2005 under an $11M NIL budget, then play all 12 games and chase a perfect season.">
 <meta name="twitter:image" content="https://runthe.gg/cfb/og.png?v=1">
-<meta name="twitter:image:alt" content="College Football: Perfect Season. Draft six players under a $14M NIL budget and play a full season.">
+<meta name="twitter:image:alt" content="College Football: Perfect Season. Draft six players under an $11M NIL budget and play a full season.">
 <!-- Structured data, so a search result can carry the game's name and category rather
      than only a blue link. VideoGame is the type Google documents for this; the offer
      says free, which is the fact most likely to earn the click. -->
@@ -57,7 +57,7 @@
   "@type": "VideoGame",
   "name": "College Football: Perfect Season",
   "url": "https://runthe.gg/cfb/",
-  "description": "Spin for a year and a school, sign one player off each of six draws under a $14M NIL budget, then play all 12 games and chase a perfect college football season.",
+  "description": "Spin for a year and a school, sign one player off each of six draws under an $11M NIL budget, then play all 12 games and chase a perfect college football season.",
   "image": "https://runthe.gg/cfb/og.png",
   "genre": ["Sports", "Simulation", "Strategy"],
   "gamePlatform": ["Web browser", "Android", "iOS"],
@@ -1698,7 +1698,7 @@ window.GA_ID='G-L29P5MRWKE';
   color:#eef2f9;background:#080b14">
 <h1>College Football: Perfect Season</h1>
 <p>Spin a wheel for a year and a college football team, sign one player off each of six draws,
-and build a roster out of every season from 2005 to 2025 under a $14M NIL budget.</p>
+and build a roster out of every season from 2005 to 2025 under an $11M NIL budget.</p>
 <p>Then play all 12 games and chase a perfect season. Every player is priced and scored from
 his actual statistics. Free, no download, playable in your browser.</p>
 <p><strong>This game needs JavaScript to play.</strong> Please turn it on and reload.</p>
@@ -4713,18 +4713,21 @@ function teamRating(roster,chemistry){
 
    A hundred is pinned to the best lineup the game can physically produce. Found
    by hill climbing over every player in the data against the full budget,
-   maximising this formula: the best found is about 123 points a game with +11.5%
-   chemistry and a +2.3% scheme, which comes to 140. Four independent searches
-   landed between 139.4 and 140.9, so 141 is the hundred.
+   maximising this formula: the best found is 2016 Lamar Jackson with two of his
+   own team-mates around him, 107 points a game at +11.8% chemistry and a +3.0%
+   scheme, which comes to 125. Four independent searches landed at 125.1, 123.1,
+   121.8 and 117.7, so 126 is the hundred.
 
-   THE OLD CEILING WAS 135, under the old formula. The two numbers are not
-   comparable and neither are ratings recorded under them, which is fine here
-   because nothing has launched and the board is empty.
+   IT WAS 141 UNTIL THE CAP CAME DOWN to $11M. A tighter budget buys a smaller
+   best team, so the ceiling had to be measured again; it was 135 before that,
+   under the old rating formula. None of the three are comparable to each other
+   and neither are ratings recorded under them, which costs nothing here because
+   nothing has launched and the board is empty.
 
    Nothing clamps the number: clearing it is possible, but it takes a roster
    within a point of the best that could ever be drafted, which is what going past
    a hundred should mean. */
-const RATING_CEILING=141;
+const RATING_CEILING=126;
 const overallOf=(raw)=>raw*100/RATING_CEILING;
 /* The scheme half of the rating sentence. It NAMES the scheme rather than
    repeating the percentage, because the sentence has already printed that
@@ -5359,7 +5362,7 @@ function howToPlay(){
       '4</span>Players who shared a program, a state or a conference build <b>chemistry</b>.</li>'+
     '<li style="margin:10px 0;font-size:14px;line-height:1.5;counter-increment:n;position:relative;padding-left:26px">'+
       '<span style="position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.08);display:grid;place-items:center;font-family:var(--fn);font-size:11px;font-weight:700;color:var(--dim)">' +
-      '5</span>Play all <b>12 games</b>. Win 11 and you are in the College Football Playoff. Win all 12 and you get a bye.</li>'+
+      '5</span>Play all <b>12 games</b>. Finish in the <b>top 12</b> of the country and you are in the Playoff. Win big, not just often: margin is what separates two teams with the same record.</li>'+
     '</ul>'+
     '<p class="dim" style="font-size:12.5px;margin:13px 0 0">Win everything and you finish undefeated. Nobody has ever done it.</p>'+
     '<p style="font-size:12.5px;margin:9px 0 0"><a href="/cfb/how-to-play.html" style="color:var(--green);font-weight:700;text-decoration:none">Read the full guide &rarr;</a></p>'+

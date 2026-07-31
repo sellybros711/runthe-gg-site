@@ -4,7 +4,7 @@
  *
  * Fetches per-game player stats from the CFBD API, computes PPR fantasy points
  * per game, aggregates to season-level mean/SD, and prices via a VOR curve
- * scaled to the $14M NIL budget.
+ * scaled to the $11M NIL budget.
  *
  * PRICING: same value-over-replacement approach as the NFL game, scaled 10×
  * smaller to fit the NIL budget. See football/build/01-players.mjs for the
@@ -548,7 +548,7 @@ async function main() {
     taken.add(`${c.player_id}|${c.season}`);
     dream += c.price_musd;
   }
-  console.log(`\nall-best roster costs $${dream.toFixed(1)}M against the $14M cap, ` +
+  console.log(`\nall-best roster costs $${dream.toFixed(1)}M against the $11M cap, ` +
               `${dream > 14 ? 'choices forced' : 'CAP DOES NOT BIND'}`);
 
   console.log('\nmost expensive player-seasons:');

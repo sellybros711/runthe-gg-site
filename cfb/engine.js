@@ -5,7 +5,7 @@
  * chemistry, scheduling, game resolution, display score mapping.
  *
  * Mirrors football/engine.js in architecture but tuned for college football:
- *   - NIL budget ($14M cap vs NFL $140M)
+ *   - NIL budget ($11M cap vs NFL $140M)
  *   - 12-game regular season
  *   - 12-team CFP (bye for 12-0, first round for 11-1)
  *   - Bowl games for non-playoff teams, themed by roster identity
@@ -21,8 +21,19 @@ const ENGINE_API_VERSION = 1;
 // ─── constants ──────────────────────────────────────────────────────────────
 
 const CONSTANTS = {
-  SCALE: 2.2,
-  CAP_MUSD: 14,
+  /* SCALE turns an opponent's real points a game into engine points, which is
+     the only place the two sides of a scoreline meet. It is therefore the whole
+     difficulty dial: raise it and every opponent is harder. It was 2.2, and came
+     down when the cap did, so that a smaller budget did not quietly turn into a
+     losing season, and settled at 2.0: a squad drafted best-available wins 76%
+     of its games, goes 12-0 in 7% of seasons and reaches the playoff in 33%. */
+  SCALE: 2.0,
+  /* THE BUDGET HAS TO SAY NO, or there is no decision in the draft. At $14M it
+     almost never did: drafting the highest scorer on every board spent 90% of it
+     and ran into the price on 9% of picks. The NFL game, which is the same six
+     slots and the same price curve at ten times the numbers, spends 98% and is
+     priced out on 29%. $11M puts this game on that number. */
+  CAP_MUSD: 11,
   RESPIN_LADDER_MUSD: [0.5, 1.0, 1.5],
   MAX_RESPINS: 3,
   MIN_RESERVE_PER_SLOT_MUSD: 0.3,
@@ -34,6 +45,8 @@ const CONSTANTS = {
   PLAYOFF_TEAMS: 12,
   PLAYOFF_BYES: 4,
   FIELD_SIZE: 134,
+  // How a percentile inside the team data becomes a national rank. See nationalRank.
+  POOL_GAMMA: 1.18,
   PLAYOFF_ROUNDS_WITH_BYE: 3,
   PLAYOFF_ROUNDS_NO_BYE: 4,
   NY6_MAX_LOSSES: 3,
@@ -47,6 +60,8 @@ const CONSTANTS = {
   CONSISTENCY: 0.40,
   OPP_CONSISTENCY: 0.40,
   PLAYOFF_HOME_FIELD: 0.35,
+  // How much of an opponent's defence is applied to your offence. See resolveGame.
+  DEFENCE_WEIGHT: 0.65,
 };
 
 // ─── conferences ────────────────────────────────────────────────────────────
@@ -232,11 +247,17 @@ function playoffRoundNames(rounds) {
   return PLAYOFF_ROUND_NAMES.slice(PLAYOFF_ROUND_NAMES.length - n);
 }
 
-/* WHAT THE COMMITTEE WEIGHS. Wins and losses dominate, the way they do in life,
+/* WHAT THE COMMITTEE WEIGHS. Wins and losses first, the way they do in life,
    then how good the team looked (scoring margin as a z-score) and who it played.
    Records are normalised to a 12-game season so a team that played fourteen is
-   not rewarded for the extra chances. */
-const RESUME = { WIN: 3.6, LOSS: 3.9, Z: 1.8, SOS: 1.8 };
+   not rewarded for the extra chances.
+   Z went from 1.8 to 4.5 so that margin can actually bridge a loss. At 1.8 one
+   loss cost 7.5 resume points while the whole spread of margins inside a record
+   was worth about 1.8, so being dominant was arithmetically incapable of making
+   up for losing once, and the playoff was a cliff at eleven wins.
+   Only WIN + LOSS matters for ordering, not the split: the formula is
+   (WIN + LOSS) * w - LOSS * games, and the second term is the same for everyone. */
+const RESUME = { WIN: 3.6, LOSS: 3.9, Z: 4.5, SOS: 1.8 };
 
 function resumeScore(wins, losses, z, sos) {
   const played = wins + losses;
@@ -245,25 +266,50 @@ function resumeScore(wins, losses, z, sos) {
   return RESUME.WIN * w - RESUME.LOSS * (games - w) + RESUME.Z * z + RESUME.SOS * sos;
 }
 
-/* Where a resume lands in the country, 1 to FIELD_SIZE. The team data is the
-   landscape: about a tenth of its seasons win eleven or more, which is what a
-   real year looks like, so a percentile inside it is a national ranking. */
+/* Where a resume lands in the country, 1 to FIELD_SIZE.
+   THE TEAM DATA IS NOT THE COUNTRY. It is the Power 5 plus the notable Group of
+   5: about 66 programmes a season out of the 134 that play FBS football, and
+   they are the better half. Treating a percentile inside it as a national
+   ranking straight, which is what this used to do, quietly assumed the other 68
+   teams did not exist. The effect was severe at the top: teams with one loss or
+   none are 8.6% of the pool, so they filled the top 12 exactly, and a two-loss
+   team could not be ranked twelfth however well it played. That is the whole
+   reason a 10-2 season used to be worth nothing.
+   POOL_GAMMA is the correction, one exponent: rank = FIELD_SIZE * p^gamma, so
+   the top of the pool is compressed the way it is in a real poll (the best teams
+   in the country are all in this pool, packed into its first few percent) while
+   the bottom still stretches out to last. Fitted so that the records the real
+   12-team field is made of land where they land in life: every unbeaten and
+   one-loss team in, about 45% of 11-2s, about 27% of 10-2s, next to none below. */
 function nationalRank(resume, prepared) {
   const table = prepared && prepared.resumeTable;
   if (!table || !table.length) return CONSTANTS.FIELD_SIZE;
   let lo = 0, hi = table.length;
   while (lo < hi) { const mid = (lo + hi) >> 1; if (table[mid] > resume) lo = mid + 1; else hi = mid; }
+  const p = lo / table.length;
   return Math.max(1, Math.min(CONSTANTS.FIELD_SIZE,
-    1 + Math.floor(lo / table.length * CONSTANTS.FIELD_SIZE)));
+    1 + Math.floor(Math.pow(p, CONSTANTS.POOL_GAMMA) * CONSTANTS.FIELD_SIZE)));
 }
 
 /* A finished regular season turned into a ranking. The margin arrives in engine
    points, so it is divided by SCALE back into real points and then standardised
-   on the same scale the team data's strength_z uses. */
+   on the same scale the team data's strength_z uses.
+   MARGIN_GAIN finishes that standardisation. Your margin is not a real point
+   differential: it is your fantasy total against an opponent's real points, so
+   the units on the two sides of the subtraction do not match and the z that
+   falls out is flatter than a real team's. Measured over 17,000 seasons at every
+   record from 6-6 to 12-0, a real team's strength_z is 1.30 times yours, with an
+   intercept of 0.008 and an R2 of 0.974. Multiplying by that puts your season on
+   the same scale as the teams it is being ranked against, which it was not
+   before: without it you look better than a real team at 6-6 and worse at 12-0.
+   Re-measure it with cfb/build/test/probe_economy.mjs if SCALE, the cap or
+   DEFENCE_WEIGHT move, because all three change what a margin looks like. */
+const MARGIN_GAIN = 1.30;
+
 function rankSeason(wins, losses, marginPerGame, oppZs, prepared) {
   const mu = prepared && prepared.pointDiffMean != null ? prepared.pointDiffMean : 0;
   const sd = prepared && prepared.pointDiffSd ? prepared.pointDiffSd : 1;
-  const z = (marginPerGame - mu) / sd;
+  const z = (marginPerGame - mu) / sd * MARGIN_GAIN;
   const sos = oppZs && oppZs.length ? oppZs.reduce((a, b) => a + b, 0) / oppZs.length : 0;
   const resume = resumeScore(wins, losses, z, sos);
   return { z, sos, resume, rank: nationalRank(resume, prepared) };
@@ -988,10 +1034,17 @@ function pickFrom(pool, rng) {
 function generatePlayoffs(data, rng, opts = {}) {
   const { goodPool, greatPool, elitePool } = data;
   const elite = elitePool.length ? elitePool : greatPool;
+  /* THE BRACKET RAMPS, IT DOES NOT WALL OFF. It used to draw the semifinal and
+     the final from the same elite pool, which meant a team that went undefeated
+     and earned the bye still had to beat two all-time seasons back to back and
+     won the title 2% of the time. A semifinal opponent is an eleven-win team,
+     not a thirteen-win one; only the last team standing is drawn from the very
+     best seasons in the data. */
+  const great = greatPool.length ? greatPool : goodPool;
   const ladder = [
     pickFrom(goodPool.length ? goodPool : greatPool, rng),
-    pickFrom(greatPool.length ? greatPool : goodPool, rng),
-    pickFrom(elite, rng),
+    pickFrom(great, rng),
+    pickFrom(great, rng),
     pickFrom(elite, rng),
   ];
   const count = opts.count;
@@ -1025,7 +1078,15 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
   }
 
   const structure = rosterStructure(roster).multiplier;
-  const defenseModifier = opponent.pts_allowed_mean / leagueAvgAllowed;
+  /* THE DEFENCE DAMPS YOUR OFFENCE, IT DOES NOT SCALE IT. The raw ratio treats a
+     defence as if it multiplied your whole output: the best defences in the data
+     allow 17 points against a league average of 27, so a straight ratio cut your
+     scoring by 37% before a snap was played. That is more than any real defence
+     does, and it is why the last two playoff rounds used to be 25-point losses
+     rather than games. DEFENCE_WEIGHT pulls the ratio toward 1, keeping the sign
+     and the ordering while making the elasticity believable. */
+  const defenseModifier = 1 +
+    (opponent.pts_allowed_mean / leagueAvgAllowed - 1) * (constants.DEFENCE_WEIGHT ?? 1);
   const yourScore = raw * chemistryMultiplier * structure * defenseModifier;
 
   let oppRaw = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng);

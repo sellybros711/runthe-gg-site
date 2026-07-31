@@ -184,8 +184,12 @@
       (c) => c.any((r) => isTrue(r.title_won) && has(r.seed) && Number(r.seed) >= 9)),
     A('bye_ring', 'Rested and ready', 'Win the title as a top-four seed.', 'gold', 'Winning',
       (c) => c.any((r) => isTrue(r.title_won) && has(r.seed) && Number(r.seed) <= 4)),
-    A('snubbed', 'Snubbed', 'Win 11 or more and miss the playoff.', 'silver', 'Winning',
-      (c) => c.any((r) => has(r.reg_wins) && Number(r.reg_wins) >= 11 && !isTrue(r.made_playoffs))),
+    /* Eleven wins is now always enough, so the old wording could never be earned.
+       Thirteenth is the seat right outside the room. */
+    A('snubbed', 'Snubbed', 'Finish 13th or 14th in the country and miss the playoff.',
+      'silver', 'Winning',
+      (c) => c.any((r) => has(r.national_rank) && !isTrue(r.made_playoffs)
+        && Number(r.national_rank) >= 13 && Number(r.national_rank) <= 14)),
 
     /* --- the poll --- */
     A('ranked_first', 'Ranked', 'Finish a season inside the top 25.', 'bronze', 'The poll',
@@ -204,8 +208,12 @@
     /* --- roster craft --- */
     A('rating_80', 'Loaded', 'Build a team rated 80 or better.', 'silver', 'Roster craft',
       (c) => (c.best('overall') || 0) >= 80),
-    A('rating_95', 'Video game numbers', 'Build a team rated 95 or better.', 'legend', 'Roster craft',
-      (c) => (c.best('overall') || 0) >= 95),
+    /* 88, not 95. A hundred is the best six that could ever be assembled from the
+       whole data set at the cap; the best of four hundred seasons drafted by always
+       taking the highest scorer on the board was 84, so 95 could not be reached off
+       a wheel that only ever shows you one team at a time. */
+    A('rating_88', 'Video game numbers', 'Build a team rated 88 or better.', 'legend', 'Roster craft',
+      (c) => (c.best('overall') || 0) >= 88),
     A('chem_10', 'They just click', 'Finish a season with +10% chemistry or better.', 'gold', 'Roster craft',
       (c) => (c.best('chemistry_pct') || 0) >= 10),
     A('chem_negative_ring', 'Strangers with rings', 'Win the title with negative chemistry.',
@@ -213,11 +221,15 @@
       (c) => c.any((r) => isTrue(r.title_won) && has(r.chemistry_pct) && Number(r.chemistry_pct) < 0)),
     A('perfect_draft', 'Nothing left on the board', 'Draft the best possible roster from your six spins.',
       'legend', 'Roster craft', (c) => (c.best('perfect_pct') || 0) >= 100),
-    A('bargain_ring', 'Collective on a budget', 'Win the title spending under $11M.',
+    /* Both of these are a share of the budget, and the budget came down to $11M,
+       so both came down with it. Under the old $14M cap they were 79% and 57% of
+       it; $8.5M and $6.5M are the same two fractions of $11M. Left as they were,
+       "under $11M" would have been every title ever won. */
+    A('bargain_ring', 'Collective on a budget', 'Win the title spending under $8.5M.',
       'gold', 'Roster craft',
-      (c) => c.any((r) => isTrue(r.title_won) && has(r.spend_musd) && Number(r.spend_musd) < 11)),
-    A('shoestring', 'Walk-ons', 'Finish a season having spent under $8M.', 'silver', 'Roster craft',
-      (c) => c.any((r) => has(r.spend_musd) && Number(r.spend_musd) < 8)),
+      (c) => c.any((r) => isTrue(r.title_won) && has(r.spend_musd) && Number(r.spend_musd) < 8.5)),
+    A('shoestring', 'Walk-ons', 'Finish a season having spent under $6.5M.', 'silver', 'Roster craft',
+      (c) => c.any((r) => has(r.spend_musd) && Number(r.spend_musd) < 6.5)),
     A('no_respin_ring', 'Took what it gave', 'Win the title without a single re-spin.',
       'gold', 'Roster craft',
       (c) => c.any((r) => isTrue(r.title_won) && has(r.respins) && Number(r.respins) === 0)),

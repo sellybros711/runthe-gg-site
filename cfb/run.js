@@ -4,7 +4,7 @@
  *
  * Mirrors football/run.js in architecture but tuned for college football:
  *   - 5 roster slots (QB, RB, WR, TE, FLEX)
- *   - $14M NIL cap
+ *   - $11M NIL cap
  *   - 12-game regular season
  *   - 12-0: CFP bye (2 wins to title), 11-1: CFP (3 wins to title)
  *   - Below 11 wins: bowl game or season over

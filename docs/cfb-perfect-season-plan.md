@@ -90,7 +90,7 @@ and `auth.js` independent.
 `['QB', 'RB', 'WR', 'WR', 'TE', 'FLEX']`. FLEX accepts RB/WR/TE. College uses the same
 offensive skill positions, so the draft loop ports directly.
 
-### Budget — NIL budget ($14M)
+### Budget — NIL budget ($11M)
 Replaces the $140M salary cap. Player "prices" become NIL deal values derived from
 production (same VOR pricing curve, scaled down ~10×). Re-spin ladder scales to
 `[0.5, 1.0, 1.5]` ($M). All floor-enforcement logic (`reserveFloor`, `assignedFloors`,

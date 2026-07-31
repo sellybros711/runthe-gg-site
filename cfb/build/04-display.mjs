@@ -79,8 +79,12 @@ function sampleGamma(mu, sd, rng) {
 
 // ─── CFB game constants ──────────────────────────────────────────────────────
 
-const CAP_MUSD = 14;
-const SCALE = 2.2;
+/* These mirror cfb/engine.js. They are duplicated because this stage runs
+   before the engine is loadable, so when a constant moves there it has to move
+   here too or the scorelines drift away from the games that produce them. */
+const CAP_MUSD = 11;
+const SCALE = 2.0;
+const DEFENCE_WEIGHT = 0.65;
 const SLOTS = ['QB', 'RB', 'WR', 'TE', 'FLEX'];
 const SLOT_ELIGIBILITY = {
   QB: ['QB'], RB: ['RB'], WR: ['WR'], TE: ['TE'], FLEX: ['RB', 'WR', 'TE'],
@@ -156,7 +160,7 @@ async function main() {
 
     let raw = 0;
     for (const p of roster) raw += sampleGamma(p.ppr_ppg_mean, p.ppr_ppg_sd, rng);
-    const defMod = opp.pts_allowed_mean / (lc[opp.season] ?? 25);
+    const defMod = 1 + (opp.pts_allowed_mean / (lc[opp.season] ?? 25) - 1) * DEFENCE_WEIGHT;
     const yourScore = raw * chem * defMod;
     const oppScore = sampleGamma(opp.pts_scored_mean, opp.pts_scored_sd, rng) * SCALE;
 
