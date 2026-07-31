@@ -1056,14 +1056,14 @@ window.GA_ID='G-L29P5MRWKE';
     overflow:hidden;border:1px solid var(--line);background:var(--grad-panel)}
   .seed-panel.gold{border-color:rgba(245,158,11,.34);
     background:linear-gradient(170deg,rgba(40,32,8,.65),rgba(18,14,6,.85))}
-  .seed-panel.win{border-color:rgba(59,130,246,.34);
-    background:linear-gradient(170deg,rgba(12,30,60,.6),rgba(10,18,32,.85))}
+  .seed-panel.win{border-color:rgba(16,185,129,.34);
+    background:linear-gradient(170deg,rgba(9,45,34,.6),rgba(8,24,19,.85))}
   .seed-panel.bowl{border-color:rgba(168,85,247,.34);
     background:linear-gradient(170deg,rgba(40,20,60,.6),rgba(18,10,30,.85))}
   .seed-panel:after{content:'';position:absolute;left:12%;right:12%;top:0;height:1.5px;
     pointer-events:none;background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent)}
   .seed-panel.gold:after{background:linear-gradient(90deg,transparent,rgba(253,230,138,.6),transparent)}
-  .seed-panel.win:after{background:linear-gradient(90deg,transparent,rgba(147,197,253,.5),transparent)}
+  .seed-panel.win:after{background:linear-gradient(90deg,transparent,rgba(110,231,183,.5),transparent)}
   .seed-panel.bowl:after{background:linear-gradient(90deg,transparent,rgba(192,132,252,.5),transparent)}
   .seed-panel>*{position:relative;z-index:1}
   @media(max-width:599px){.seed-panel{padding:16px 18px 18px}}
@@ -1073,7 +1073,7 @@ window.GA_ID='G-L29P5MRWKE';
     text-transform:uppercase;border:1px solid rgba(255,255,255,.15);
     background:rgba(255,255,255,.08);color:var(--ink)}
   .seed-badge.gold{border-color:rgba(245,178,40,.45);color:#fde68a;background:rgba(245,158,11,.14)}
-  .seed-badge.blue{border-color:rgba(96,165,250,.4);color:#bfdbfe;background:rgba(59,130,246,.12)}
+  .seed-badge.blue{border-color:rgba(226,232,240,.34);color:#e2e8f0;background:rgba(226,232,240,.10)}
   .seed-badge.purple{border-color:rgba(168,85,247,.4);color:#d8b4fe;background:rgba(168,85,247,.12)}
   .seed-badge.conf{border-color:rgba(16,185,129,.5);color:#6ee7b7;background:rgba(16,185,129,.14)}
   .seed-badge svg{width:13px;height:13px;flex:0 0 auto}
@@ -1111,7 +1111,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* ── seed CTA ───────────────────────────────────────────────── */
   .seed-cta{margin-top:16px;padding:15px 18px;font-size:17px;border-radius:13px;
-    background:linear-gradient(170deg,#ef4444,#c62828);box-shadow:0 4px 16px -4px rgba(0,0,0,.5)}
+    background:linear-gradient(170deg,#10b981,#047857);box-shadow:0 4px 16px -4px rgba(0,0,0,.5)}
   .seed-cta:before{height:30%;background:linear-gradient(180deg,rgba(255,255,255,.1),transparent)}
   .seed-cta:hover{filter:brightness(1.06);transform:translateY(-1px)}
   @media(max-width:599px){.seed-cta{padding:14px 16px;font-size:16px}}
@@ -1125,11 +1125,14 @@ window.GA_ID='G-L29P5MRWKE';
   .next-panel{margin-top:20px;padding:20px 0 0;border-top:1px solid var(--line)}
   .next-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   @media(max-width:479px){.next-pair{grid-template-columns:1fr;gap:10px}}
-  .next-primary{background:linear-gradient(170deg,#ef4444,#c62828);padding:14px 12px;
+  /* Green and gold, like every other button in this game. These two carried the NFL
+     game's red and navy across with the rest of the panel, which put the loudest
+     button on the results screen in a colour the game uses nowhere else. */
+  .next-primary{background:linear-gradient(170deg,#10b981,#047857);padding:14px 12px;
     font-size:15px;border-radius:12px;box-shadow:0 4px 16px -4px rgba(0,0,0,.5)}
   .next-primary:before{height:28%;background:linear-gradient(180deg,rgba(255,255,255,.1),transparent)}
   .next-primary:hover{filter:brightness(1.06);transform:translateY(-1px)}
-  .next-secondary{background:linear-gradient(170deg,#2a4a80,#1a3468);padding:14px 12px;
+  .next-secondary{background:linear-gradient(170deg,#b8801a,#8a5c0d);padding:14px 12px;
     font-size:15px;border-radius:12px;box-shadow:0 4px 16px -4px rgba(0,0,0,.5)}
   .next-secondary:before{height:28%;background:linear-gradient(180deg,rgba(255,255,255,.08),transparent)}
   .next-secondary:hover{filter:brightness(1.08);transform:translateY(-1px)}
@@ -1147,14 +1150,14 @@ window.GA_ID='G-L29P5MRWKE';
   .verdict{border-radius:16px;padding:12px 18px 22px;text-align:center;border:1px solid var(--line);
     background:var(--grad-panel)}
   .verdict.gold{background:linear-gradient(160deg,#3b2f0a,#181305);border-color:rgba(245,158,11,.42)}
-  .verdict.win{background:linear-gradient(160deg,#0c2a4d,#0a1526);border-color:rgba(59,130,246,.42)}
+  .verdict.win{background:linear-gradient(160deg,#0a3327,#08170f);border-color:rgba(16,185,129,.42)}
   .verdict.out{background:linear-gradient(160deg,#3a1114,#1a0a0c);border-color:rgba(239,68,68,.34)}
   .verdict.bowl-win{background:linear-gradient(160deg,#2a1a40,#140d20);border-color:rgba(168,85,247,.42)}
   .verdict.gold,.verdict.win{position:relative;overflow:hidden}
   .verdict.gold:before,.verdict.win:before{content:'';position:absolute;left:50%;top:-30%;
     width:130%;height:150%;transform:translateX(-50%);pointer-events:none;z-index:0;
     background:radial-gradient(60% 46% at 50% 34%,var(--glow,rgba(245,158,11,.28)),transparent 72%)}
-  .verdict.win:before{--glow:rgba(59,130,246,.26)}
+  .verdict.win:before{--glow:rgba(16,185,129,.28)}
   .verdict.gold:after,.verdict.win:after{content:'';position:absolute;left:14%;right:14%;top:0;
     height:2px;pointer-events:none;
     background:linear-gradient(90deg,transparent,rgba(253,230,138,.9),transparent)}
@@ -1273,7 +1276,7 @@ window.GA_ID='G-L29P5MRWKE';
   .hero-rec .big.gold{background:linear-gradient(110deg,#fbbf24 0%,#fde68a 30%,#fffbeb 46%,#fde68a 62%,#d97706 100%);
     background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
     animation:recsheen 3.4s ease-in-out infinite}
-  .hero-rec .big.win{background:linear-gradient(110deg,#3b82f6 0%,#bfdbfe 30%,#f8fbff 46%,#bfdbfe 62%,#2563eb 100%);
+  .hero-rec .big.win{background:linear-gradient(110deg,#10b981 0%,#a7f3d0 30%,#f4fffb 46%,#a7f3d0 62%,#047857 100%);
     background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
     animation:recsheen 3.4s ease-in-out infinite}
   @keyframes recsheen{0%{background-position:190% 0}100%{background-position:-90% 0}}
@@ -1570,7 +1573,7 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="legal" style="margin-top:28px">
       <p>Player data from <a href="https://collegefootballdata.com" target="_blank" rel="noopener">CollegeFootballData.com</a>.
         An unofficial fan project, not affiliated with or endorsed by the NCAA, the CFP or any school.</p>
-      <p><a href="/privacy.html">Privacy</a> &middot; <a href="/terms.html">Terms</a> &middot; <a href="/disclaimer.html">Disclaimer</a></p>
+      <p><a href="/cfb/how-to-play.html">How to play</a> &middot; <a href="/privacy.html">Privacy</a> &middot; <a href="/terms.html">Terms</a> &middot; <a href="/disclaimer.html">Disclaimer</a></p>
       <div class="follow">
         <a href="https://runthe.gg">RunThe.GG</a>
       </div>
@@ -3661,7 +3664,7 @@ const perfNow=()=>(window.performance||Date).now();
 
 function confettiTheme(perfect){
   if(perfect) return {colors:['#fde68a','#fcd34d','#f59e0b','#fffbeb','#ffffff'],count:200,duration:4200};
-  return {colors:['#ef4444','#3b82f6','#fcd34d','#ffffff'],count:150,duration:3400};
+  return {colors:['#10b981','#34d399','#fcd34d','#ffffff'],count:150,duration:3400};
 }
 
 function fireConfetti(opts){
@@ -4005,21 +4008,30 @@ function shareLines(){
     :o.bowlGame&&o.bowlWon?'Bowl champions.'
     :o.eliminatedIn?'Out in the '+o.eliminatedIn.replace('CFP ','')+'.'
     :'Missed the playoffs.';
-  const rating=teamRating(run.roster,run.season.chemistry);
+  const rating=overallOf(teamRating(run.roster,run.season.chemistry));
   const head='College Football Perfect Season: '+o.record+'. '+what;
-  return {head,text:head+' Team rating '+rating.toFixed(1)+'.\nCan you draft a better team?\n'+SHARE_URL};
+  return {head,text:head+' Team overall '+rating.toFixed(1)+'.\nCan you draft a better team?\n'+SHARE_URL};
 }
 
 /* ── share card (1080x1350) ──────────────────────────────────── */
+/* THE VERTICAL LAYOUT, AS ONE TABLE, because every number below depends on the one
+   above it. Laid out for SIX roster rows: it was still carrying the five-slot spacing
+   from before the FLEX spot was added, which put the sixth player's chip straight
+   through the rule and into the stat line underneath.
+   Six rows from ROWS at ROW apart end at 982, and each chip is drawn from y-38 to
+   y+14, so the last one clears RULE2 at 1024 by 28px. */
 const CARD={W:1080,H:1350,PAD:76,TITLE:92,TAG:120,REC:360,VERDICT:422,RULE1:466,
-  ROWS:528,ROW:110,RULE2:1080,STAT:1150,STAT_LABEL:1192,DARE:1260,LINK_T:1284,LINK_H:52,KEEL:10};
+  ROWS:522,ROW:92,RULE2:1024,STAT:1104,STAT_LABEL:1146,DARE:1216,LINK_T:1244,LINK_H:52,KEEL:10};
 
 function drawShareCard(){
   const c=document.createElement('canvas');
   c.width=CARD.W;c.height=CARD.H;
   const x=c.getContext('2d');
   const o=run.outcome;
-  const tc={primary:'#b91c1c',secondary:'#1d4ed8',ink:'#f87171'};
+  /* THE CARD'S OWN THREE COLOURS: the wash behind the record, the keel along the
+     bottom edge, and the ink the rules and the link are drawn in. Green and gold,
+     because this card had been painting in the NFL game's red and blue. */
+  const tc={primary:'#047857',secondary:'#f59e0b',ink:'#34d399'};
   const at=(hex,a)=>{const h=hex.replace('#','');const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16);
     return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';};
   const PAD=CARD.PAD,mid=CARD.W/2;
@@ -4041,15 +4053,15 @@ function drawShareCard(){
   const centered=(t,y)=>x.fillText(t,mid-x.measureText(t).width/2,y);
 
   N('600',30);x.fillStyle='rgba(255,255,255,.55)';x.letterSpacing='6px';
-  centered('THE PERFECT SEASON',CARD.TITLE);x.letterSpacing='0px';
+  centered('COLLEGE FOOTBALL: PERFECT SEASON',CARD.TITLE);x.letterSpacing='0px';
   B('400',25);x.fillStyle='rgba(255,255,255,.42)';
-  centered('College Football. Six spins, six players, 2005 to 2025.',CARD.TAG);
+  centered('Six spins, six players, 2005 to 2025.',CARD.TAG);
 
-  const tone=o.perfect?'#fcd34d':(o.titleWon?'#93c5fd':'#ffffff');
+  const tone=o.perfect?'#fcd34d':(o.titleWon?'#6ee7b7':'#ffffff');
   if(o.perfect||o.titleWon){
     const warm=o.perfect;
     const glow=x.createRadialGradient(mid,300,20,mid,300,560);
-    glow.addColorStop(0,warm?'rgba(245,158,11,.36)':'rgba(59,130,246,.32)');
+    glow.addColorStop(0,warm?'rgba(245,158,11,.36)':'rgba(16,185,129,.34)');
     glow.addColorStop(1,'rgba(7,11,19,0)');
     x.fillStyle=glow;x.fillRect(0,70,CARD.W,520);
     x.globalAlpha=1;
@@ -4058,8 +4070,8 @@ function drawShareCard(){
   if(o.perfect){const gg=x.createLinearGradient(0,150,0,CARD.REC);
     gg.addColorStop(0,'#fffbeb');gg.addColorStop(.5,'#fcd34d');gg.addColorStop(1,'#e0870a');recFill=gg;}
   else if(o.titleWon){const gg=x.createLinearGradient(0,150,0,CARD.REC);
-    gg.addColorStop(0,'#eff6ff');gg.addColorStop(.5,'#93c5fd');gg.addColorStop(1,'#2563eb');recFill=gg;}
-  if(o.perfect||o.titleWon){x.shadowColor=o.perfect?'rgba(245,158,11,.55)':'rgba(59,130,246,.5)';x.shadowBlur=36;}
+    gg.addColorStop(0,'#ecfdf5');gg.addColorStop(.5,'#6ee7b7');gg.addColorStop(1,'#059669');recFill=gg;}
+  if(o.perfect||o.titleWon){x.shadowColor=o.perfect?'rgba(245,158,11,.55)':'rgba(16,185,129,.5)';x.shadowBlur=36;}
   D(250);x.fillStyle=recFill;centered(o.record,CARD.REC);
   x.shadowBlur=0;x.shadowColor='transparent';
   D(52);x.fillStyle='rgba(255,255,255,.92)';
@@ -4075,7 +4087,10 @@ function drawShareCard(){
   E.SLOTS.forEach((slot,i)=>{
     const p=bySlot[i];if(!p) return;
     const cw=88,ch=52;const tag=slot||p.position;
-    x.fillStyle=COLS[p.position]||'#64748b';
+    /* Painted by the SLOT, not the player, so the FLEX chip is the FLEX colour whoever
+       is standing in it. Coloured by position it came out green under a running back
+       and blue under a receiver, which reads as a second RB rather than a flex. */
+    x.fillStyle=COLS[slot]||COLS[p.position]||'#64748b';
     roundRect(x,PAD,y-38,cw,ch,12);x.fill();
     N('700',26);x.fillStyle='#ffffff';
     x.fillText(tag,PAD+cw/2-x.measureText(tag).width/2,y-2);
@@ -4094,15 +4109,20 @@ function drawShareCard(){
 
   const spend=run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed);
   const chem=(run.season.chemistry-1)*100;
-  const rating=teamRating(run.roster,run.season.chemistry);
+  /* THE SAME NUMBER THE RESULTS SCREEN SHOWS. teamRating returns the raw points
+     figure; the screen divides it by the ceiling to get the overall, and the card was
+     printing the raw one. A player reading 73.3 on screen and 98.9 on the card they
+     just shared has no way to tell which is their team. */
+  const rating=overallOf(teamRating(run.roster,run.season.chemistry));
   const stat=(label,val,cx2,color,size)=>{
     D(size||62);x.fillStyle=color;
     x.fillText(val,cx2-x.measureText(val).width/2,CARD.STAT);
     N('500',22);x.fillStyle='rgba(255,255,255,.5)';x.letterSpacing='3px';
     x.fillText(label,cx2-x.measureText(label).width/2,CARD.STAT_LABEL);x.letterSpacing='0px';
   };
-  const rb2=(v)=>v>=75?'#4ade80':(v>=50?'#fbbf24':'#f87171');
-  stat('TEAM RATING',rating.toFixed(1),CARD.W*0.22,rb2(rating),70);
+  /* Banded at 70 and 50, the same two thresholds the results screen bands at. */
+  const rb2=(v)=>v>=70?'#4ade80':(v>=50?'#fbbf24':'#f87171');
+  stat('TEAM OVERALL',rating.toFixed(1),CARD.W*0.22,rb2(rating),70);
   stat('CHEMISTRY',(chem>=0?'+':'')+chem.toFixed(1)+'%',CARD.W*0.5,chem>0.05?'#4ade80':'#e2e8f0');
   stat('SPENT','$'+spend.toFixed(0)+'M',CARD.W*0.78,'#e2e8f0');
   B('600',30);x.fillStyle='rgba(255,255,255,.62)';
@@ -4334,6 +4354,7 @@ function howToPlay(){
       '5</span>Play all <b>12 games</b>. Win 11 and you are in the College Football Playoff. Win all 12 and you get a bye.</li>'+
     '</ul>'+
     '<p class="dim" style="font-size:12.5px;margin:13px 0 0">Win everything and you finish undefeated. Nobody has ever done it.</p>'+
+    '<p style="font-size:12.5px;margin:9px 0 0"><a href="/cfb/how-to-play.html" style="color:var(--green);font-weight:700;text-decoration:none">Read the full guide &rarr;</a></p>'+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet();
   $('sh-x').onclick=closeSheet;
