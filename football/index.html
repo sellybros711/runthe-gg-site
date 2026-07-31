@@ -682,8 +682,25 @@ window.GA_ID='G-L29P5MRWKE';
      Two axes and a direction, on one line. The axis is a segmented control because
      the two are exclusive; the direction is a button because it is a toggle, and a
      third tab reading "low to high" would have implied it was a third board. */
-  .sortbar{display:flex;align-items:center;gap:8px;margin-top:9px}
-  .seg{display:flex;flex:1;min-width:0;border-radius:10px;overflow:hidden;
+  /* WRAPS AT THREE AXES. Two axes and the direction button fit one line; the Trade Machine
+     adds a third and the segment started truncating its own labels ("TEAM RA...", "GM
+     RATI..."), which is the one thing a control that names a quantity must not do. The
+     direction button drops to its own line instead, and only when there is a third axis,
+     so every other board looks exactly as it did. */
+  .sortbar{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap}
+  .sortbar.three .seg{flex:1 0 100%}
+  .sortbar.three .dirbtn{margin-left:auto}
+  /* Three axes on a 320px screen leave 97px a button, and "Team rating" wants about 100.
+     One step down in size and letter-spacing rather than an abbreviation, because the
+     labels name quantities and a shortened quantity is a guess. */
+  @media(max-width:365px){
+    .sortbar.three .seg button{font-size:10.5px;letter-spacing:.03em;padding:12px 3px}
+  }
+  /* A BASIS OF 240px SO THE DIRECTION BUTTON WRAPS INSTEAD OF SQUEEZING THE LABELS. With a
+     plain flex:1 the segment gave up whatever width the row was short of, and at 360px that
+     was enough to turn "Team rating" into "Team ra..." on the free board, which has been
+     shipping for a while. Above ~430px the two still share one line exactly as before. */
+  .seg{display:flex;flex:1 1 240px;min-width:0;border-radius:10px;overflow:hidden;
     border:1px solid var(--line-2);background:rgba(255,255,255,.03)}
   /* 12px of vertical padding rather than 8, which takes these from 33px to 41 and
      with the 1px border to 43. The row cannot go to a full 44 without the sort
@@ -720,6 +737,10 @@ window.GA_ID='G-L29P5MRWKE';
      you read the name of it. Set from script, because there are thirty-two of them. */
   .lbmode.isclub select{border-color:var(--c1);
     box-shadow:inset 3px 0 0 var(--c2),inset 0 0 0 1px transparent}
+  /* The Trade Machine board, marked the same way a club board is but with the mode's own
+     colour rather than a team's, so it reads as its own competition at a glance. */
+  .lbmode.istrade select{border-color:rgba(56,189,248,.55);
+    box-shadow:inset 3px 0 0 #38bdf8,inset 0 0 0 1px transparent}
   /* A window tab the current axis cannot answer. Visibly out of play rather than
      removed, so the row does not reflow when you switch axis. */
   .tab[disabled]{opacity:.32}
@@ -3125,6 +3146,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="seg" id="lb-sort">
         <button class="on" data-sort="record">Record</button>
         <button data-sort="rating">Team rating</button>
+        <!-- The Trade Machine's own axis. Hidden on every other board: gm_rating is null
+             outside that mode, so the button would only ever produce an empty table. -->
+        <button data-sort="gm" id="b-lb-gm" hidden>GM rating</button>
       </div>
       <button class="dirbtn" id="b-lb-dir" aria-label="Reverse the order">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M12 20l-6-6M12 20l6-6"/></svg>
@@ -3646,7 +3670,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=16"></script>
+<script src="board.js?v=17"></script>
 <script src="achievements.js?v=4"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
@@ -8252,6 +8276,16 @@ function authBoot(){
       closeSheet();
       modeMenu();
     }
+    /* THE TRADE BOARD FOLLOWS ELIGIBILITY, IN BOTH DIRECTIONS.
+       Losing it while that board is on screen has to put the board back on free play, and
+       reload rather than merely reset, or the trade rows would be left sitting under a
+       free-play heading. Gaining it has to add the competition to the picker, which is a
+       repaint and not a reload: the board showing is still the right board, it just has a
+       new entry in its select. Both matter because the username usually arrives one auth
+       change AFTER signing in, which is exactly when somebody might have the board open. */
+    if($('s-board').classList.contains('on')){
+      if(tradeBoardOff()) loadBoard(); else paintComp();
+    }
     if($('sheet').classList.contains('on')&&$('sheet-in').dataset.kind==='profile')
       profileSheet();
   });
@@ -9715,6 +9749,19 @@ let lbWin='day', lbSort='record', lbDir='desc', lbRows=null, lbBusy=false;
    rather than being all-time only. */
 let lbClub=null;
 let lbEra=null;
+/* THE TRADE MACHINE BOARD, AND WHY IT IS GATED ON THE SAME THING THE MODE IS.
+   The board exists and works; it is simply not offered to anybody who cannot play the mode,
+   which is canPlayTrade() and nothing else. One switch rather than two: when the mode opens
+   up, its board opens with it, and there is no second flag left behind to forget about.
+
+   Everything below treats "not eligible" as "this competition does not exist": the option is
+   not in the select, lbScope() cannot return it, and tradeBoardOff() puts the board back on
+   free play if eligibility is ever lost mid-session (a sign-out, or a rename). */
+let lbTrade=false;
+function tradeBoardOff(){
+  if(lbTrade&&!canPlayTrade()){ lbTrade=false; if(lbSort==='gm') lbSort='rating'; return true; }
+  return false;
+}
 /* Where this run sits on the board currently showing, on ITS axis and in ITS direction,
    which is not the same number as any of the three record ranks on the results page.
    Read once per board load, cleared on the way in so a stale place from the last tab can
@@ -9741,6 +9788,10 @@ let lbMyPlace=null;
    the whole time. Nothing needed to change in board.js either: scope() already appends
    the window to any sort. */
 function lbScope(){
+  /* Asked here as well as at the paint, because this is the call that actually reaches the
+     database and it must never read a board the viewer is not entitled to. */
+  tradeBoardOff();
+  if(lbTrade) return {mode:'trade',win:lbWin};
   if(lbEra) return {mode:'era',era:lbEra,win:lbWin};
   return lbClub
     ? {mode:'club',franchise:lbClub,win:lbWin}
@@ -9752,8 +9803,16 @@ function lbScope(){
    only its value moves after that: rebuilding a select that is open closes it. */
 function paintComp(){
   const sel=$('lb-comp');
-  if(!sel.options.length){
+  /* REBUILT WHEN ELIGIBILITY MOVES, not only when the select is empty. Auth resolves after
+     the first paint, so the Trade Machine entry has to be able to appear (and disappear on
+     sign-out) rather than being decided once and frozen. dataset.tm records which of the two
+     shapes is currently rendered, so the select is only ever rebuilt when it actually has to
+     be: rebuilding a select that is open closes it. */
+  const wantTrade=canPlayTrade()?'1':'0';
+  if(!sel.options.length||sel.dataset.tm!==wantTrade){
+    sel.dataset.tm=wantTrade;
     sel.innerHTML='<option value="">Perfect Season - Classic Mode</option>'+
+      (canPlayTrade()?'<option value="trade">The Trade Machine</option>':'')+
       '<optgroup label="Eras Draft">'+
         Object.keys(E.ERAS).map(e=>'<option value="era:'+e+'">'+esc(e)+'</option>').join('')+
       '</optgroup>'+
@@ -9762,11 +9821,12 @@ function paintComp(){
         .map(c=>'<option value="'+c+'">'+esc(E.nickname(c))+'</option>').join('')+
       '</optgroup>';
   }
-  sel.value=lbEra?'era:'+lbEra:(lbClub||'');
+  sel.value=lbTrade?'trade':lbEra?'era:'+lbEra:(lbClub||'');
   const wrap=sel.parentElement;
-  wrap.classList.toggle('isclub',!!lbClub&&!lbEra);
-  wrap.classList.toggle('isera',!!lbEra);
-  if(lbClub&&!lbEra){
+  wrap.classList.toggle('isclub',!!lbClub&&!lbEra&&!lbTrade);
+  wrap.classList.toggle('isera',!!lbEra&&!lbTrade);
+  wrap.classList.toggle('istrade',!!lbTrade);
+  if(lbClub&&!lbEra&&!lbTrade){
     const tc=E.teamColors(lbClub);
     wrap.style.setProperty('--c1',tc.primary);
     wrap.style.setProperty('--c2',tc.secondary);
@@ -9777,12 +9837,22 @@ function paintComp(){
 }
 $('lb-comp').addEventListener('change',()=>{
   const v=$('lb-comp').value||'';
-  if(v.startsWith('era:')){
-    lbEra=v.slice(4); lbClub=null;
+  /* Checked again rather than trusted: the option is only rendered for an eligible viewer,
+     but the value arrives from the DOM and the DOM is not the authority on that. */
+  if(v==='trade'&&canPlayTrade()){
+    lbTrade=true; lbEra=null; lbClub=null;
+    /* Land on the axis the mode is about. Record and team rating both mostly describe the
+       roster you were handed; the GM rating is the season's work. */
+    lbSort='gm';
+  }else if(v.startsWith('era:')){
+    lbTrade=false; lbEra=v.slice(4); lbClub=null;
+    if(lbSort==='gm') lbSort='rating';
   }else{
-    lbEra=null; lbClub=v||null;
+    lbTrade=false; lbEra=null; lbClub=v||null;
+    if(lbSort==='gm') lbSort='rating';
   }
-  ga('board_competition',{mode:lbEra?'era':lbClub?'club':'free',club:lbClub,era:lbEra});
+  ga('board_competition',{mode:lbTrade?'trade':lbEra?'era':lbClub?'club':'free',
+    club:lbClub,era:lbEra});
   loadBoard();
 });
 
@@ -9794,16 +9864,23 @@ const SORT_META={
      ranks you, so it cannot be small gray text in a subtitle. */
   rating:{label:'Team rating', of:(r)=>ratingCell(r)},
   record:{label:'Record', of:(r)=>recordCell(r)},
+  gm:{label:'GM rating', of:(r)=>gmCell(r)},
 };
 
 /* Coming off a run, open the board that run is actually on. Landing a One Franchise Dolphins
    player on the free board would show them a table they are not in. */
 function openBoard(){
   if(run&&run.outcome){
-    lbEra=run.era||null;
-    lbClub=lbEra?null:(run.franchise||null);
+    /* A Trade Machine season is on the trade board, so that is the one to open. Gated the
+       same way as everything else: somebody who has just played the mode can necessarily
+       play it, so this cannot show a board the viewer is not entitled to. */
+    lbTrade=!!(run.tradeMachine&&canPlayTrade());
+    lbEra=lbTrade?null:(run.era||null);
+    lbClub=(lbTrade||lbEra)?null:(run.franchise||null);
+    if(lbTrade) lbSort='gm'; else if(lbSort==='gm') lbSort='rating';
   }
-  const m=lbEra?'era':lbClub?'club':'free';
+  tradeBoardOff();
+  const m=lbTrade?'trade':lbEra?'era':lbClub?'club':'free';
   ga('board_opened',{mode:m,club:lbClub||null,era:lbEra||null});
   show('s-board'); loadBoard();
 }
@@ -9824,9 +9901,25 @@ async function loadBoard(){
   $('lb-dir-label').textContent=lbDir==='asc'?'Low to high':'High to low';
   /* No tab is ever disabled now. Both axes answer every window. */
   [...document.querySelectorAll('#lb-tabs .tab')].forEach(t=>{ t.disabled=false; });
+  /* The GM axis is only offered where the column has values. Hiding rather than disabling,
+     because on every other board it is not a choice somebody is being denied, it is a
+     quantity that does not apply. */
+  const gmBtn=$('b-lb-gm');
+  if(gmBtn){
+    gmBtn.hidden=!lbTrade;
+    const bar=gmBtn.closest('.sortbar');
+    if(bar) bar.classList.toggle('three',!!lbTrade);
+  }
   paintComp();
   const clock='Today resets at midnight Eastern, and the week starts Monday.';
-  $('lb-blurb').textContent=lbEra
+  $('lb-blurb').textContent=lbTrade
+    ? 'Every Trade Machine season. Ranked apart from the draft modes, because the roster is '+
+      'dealt to you and the season is what you did with it. '+
+      (lbSort==='gm'
+        ? 'GM rating weighs the result, how much better the roster got, what it cost and '+
+          'whether you beat what you were handed. '
+        : '')+clock
+    : lbEra
     ? 'Every Eras Draft run from the '+lbEra+'. Ranked apart from other decades. '+clock
     : lbClub
     ? 'Every One Franchise run anybody has played with the '+E.nickname(lbClub)+'. Ranked '+
@@ -9891,10 +9984,17 @@ function paintPodium(rows){
   el.innerHTML='<div class="podrow">'+order.map((i)=>{
     const row=rows[i], place=i+1;
     const mine=submitted&&row.id===submitted;
-    const fig=lbSort==='rating'
+    /* THE PODIUM SHOWS WHAT THE BOARD IS RANKED ON, whichever axis that is. It used to ask
+       only whether the axis was rating and otherwise print the record, which put the record
+       on the steps of a board sorted by GM rating: three figures that had nothing to do with
+       the order they were standing in. */
+    const fig=lbSort==='gm'
+      ? ((row.gm_rating===null||row.gm_rating===undefined)?'--':Number(row.gm_rating).toFixed(1))
+      : lbSort==='rating'
       ? (row.team_rating===null?'--':Number(row.team_rating).toFixed(1))
       : row.wins+'-'+row.losses;
-    const sub=lbSort==='rating'?'rating'
+    const sub=lbSort==='gm'?'GM rating'
+      :lbSort==='rating'?'rating'
       :(row.perfect?'perfect':row.seed_label.toLowerCase());
     const pf=avatarOf(row.display_name,row.display_color,row.display_initials);
     return '<div class="pod p'+place+(mine?' mine':'')+'" data-i="'+i+'">'+
@@ -9913,7 +10013,8 @@ function paintBoard(){
     $('lb-podium').className='podium'; $('lb-podium').innerHTML='';
     $('lb-rows').innerHTML='<div class="lbempty">'+
       (lbWin==='all'
-        ?(lbClub?'Nobody has drafted a One Franchise '+esc(E.nickname(lbClub))+' run yet. '+
+        ?(lbTrade?'Nobody has finished a Trade Machine season yet. Play one and you are first.'
+          :lbClub?'Nobody has drafted a One Franchise '+esc(E.nickname(lbClub))+' run yet. '+
             'Play one and you are first.'
           :'No runs recorded yet. Play one and you are first.')
         :'Nobody has finished a run in this window yet. Play one and you are first.')+
@@ -9990,8 +10091,12 @@ function runDetail(row,back){
      is why runKindOf reads that and not this. Both are worth a colour on the sheet; only
      the One Franchise ones get the sentence. */
   const club=mine?(run&&run.franchise)||null:row.franchise;
+  /* YOUR OWN RUN IS NAMED FROM THE RUN, not from the row, because the row may not be back
+     from the server yet. It goes through runMode() so the two branches cannot drift: this
+     used to spell out club-or-free by hand and called a Trade Machine season a free run,
+     and an Eras Draft season a free run with it. */
   const kind=mine
-    ? (run&&run.franchise?'One Franchise, '+E.nickname(run.franchise):'free run')
+    ? runKindOf({run_mode:runMode(),franchise:run&&run.franchise,era:run&&run.era})
     : runKindOf(row);
 
   const tile=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
@@ -10158,6 +10263,16 @@ function ratingCell(row){
     '<span>'+esc(row.wins+'-'+row.losses)+(row.perfect?' perfect':'')+'</span>';
 }
 
+/* The GM rating, with the record under it the way the other axes carry their second line.
+   A dash rather than a zero for a null: a Trade Machine run recorded before the column
+   existed has no rating, and printing 0.00 would rank it as the worst season ever played
+   instead of saying it is not known. */
+function gmCell(row){
+  const g=(row.gm_rating===null||row.gm_rating===undefined)?null:Number(row.gm_rating);
+  return '<b class="big'+(g!==null&&g>=90?' gold':'')+'">'+(g===null?'--':g.toFixed(2))+'</b>'+
+    '<span>'+esc(row.wins+'-'+row.losses)+'</span>';
+}
+
 /* What kind of run a board row was, in words. Reads `run_mode` and not the presence of a
    franchise: rows from the first version of the game are free runs that carry whatever team
    the player said they supported, and calling those One Franchise runs would be wrong about
@@ -10165,6 +10280,8 @@ function ratingCell(row){
    what they were. */
 function runKindOf(row){
   if(row&&row.run_mode==='club'&&row.franchise) return 'One Franchise, '+E.nickname(row.franchise);
+  if(row&&row.run_mode==='trade') return 'Trade Machine';
+  if(row&&row.run_mode==='era'&&row.era) return 'Eras Draft, '+row.era;
   if(row&&row.run_mode==='daily') return 'daily puzzle';
   return 'free run';
 }
@@ -10199,9 +10316,19 @@ function rosterLine(picks){
    a number there would be a row from a different table. */
 function myPlaceValue(){
   if(!run||!run.outcome) return null;
-  if((lbEra||null)!==(run.era||null)) return null;
-  if(!lbEra&&(lbClub||null)!==(run.franchise||null)) return null;
+  /* The run has to be ON the board being shown or there is no place to find. A trade run and
+     a free run are different competitions, so the mode has to match first: without this a
+     Trade Machine season would be placed against the free board and pinned at a rank it does
+     not hold. */
+  if(lbTrade!==!!run.tradeMachine) return null;
+  if(!lbTrade){
+    if((lbEra||null)!==(run.era||null)) return null;
+    if(!lbEra&&(lbClub||null)!==(run.franchise||null)) return null;
+  }
   const p=runPayload();
+  if(lbSort==='gm'){
+    return (p.gmRating===null||p.gmRating===undefined)?null:Number(p.gmRating);
+  }
   if(lbSort==='rating'){
     return (p.teamRating===null||p.teamRating===undefined)?null:Number(p.teamRating);
   }
