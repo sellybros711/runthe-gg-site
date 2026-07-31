@@ -228,7 +228,7 @@
        is not zero, which is the rule the whole of this file follows. */
     const moveRuns = [];
     const moveTypes = new Set();
-    const dealtOut = [], dealtIn = [];
+    const dealtOut = [], dealtIn = [], cutPlayers = [];
     let bestGm = null, totalTrades = 0;
     for (const r of asc) {
       if (r.run_mode !== 'trade') continue;
@@ -240,7 +240,7 @@
       const res = (k) => (resolve ? resolve(k) : null);
       const priced = (list) => list.reduce((t, p) => t + Number((p && p.price_musd) || 0), 0);
       const moves = [], windows = new Set(), outKeys = new Set();
-      let trades = 0, fa = 0;
+      let trades = 0, fa = 0, cuts = 0;
       for (const mv of r.trade_moves) {
         if (!mv || typeof mv !== 'object') continue;
         const outK = Array.isArray(mv.out) ? mv.out : [];
@@ -253,13 +253,21 @@
         outK.forEach((k) => outKeys.add(k));
         if (mv.fa) fa++;
         if (mv.t) moveTypes.add(String(mv.t));
+        /* A RELEASED PLAYER IS IN `out` AS WELL, because he did leave in this move, so the
+           two lists overlap by design: "traded away a 20-point man" and "released a 20-point
+           man" are different badges and `cut` is what tells them apart. */
+        if (mv.cut) {
+          cuts++;
+          const cp = res(mv.cut);
+          if (cp) cutPlayers.push(cp);
+        }
         outP.forEach((p) => dealtOut.push(p));
         inP.forEach((p) => dealtIn.push(p));
         moves.push({ w, t: mv.t, outPlayers: outP, inPlayers: inP,
           outMusd: priced(outP), inMusd: priced(inP) });
       }
       totalTrades += trades;
-      moveRuns.push({ row: r, moves, windows, outKeys, trades, fa,
+      moveRuns.push({ row: r, moves, windows, outKeys, trades, fa, cuts,
         outPlayers: moves.reduce((a, m) => a.concat(m.outPlayers), []),
         inPlayers: moves.reduce((a, m) => a.concat(m.inPlayers), []) });
     }
@@ -283,7 +291,7 @@
       clubsPlayed, clubTitles, clubBanners, modesPlayed, modeTitles,
       seasonsDrafted, clubsDrafted, collegesDrafted, awardsDrafted, linkTypesEver,
       months, weekdays, monthDays, hours,
-      moveRuns, moveTypes, dealtOut, dealtIn, bestGm, totalTrades,
+      moveRuns, moveTypes, dealtOut, dealtIn, cutPlayers, bestGm, totalTrades,
       hasLinks: !!pairLinks,
       best: (col) => {
         const vals = asc.map((r) => num(r[col])).filter((v) => v !== null);
@@ -809,13 +817,21 @@
     (c) => c.moveTypes.has('1for1')));
   add(A('deal_2for2', 'Blockbuster', 'Make a two-for-two trade.', 'silver', 'Front office',
     (c) => c.moveTypes.has('2for2')));
+  add(A('deal_1for2', 'Two for one', 'Trade one player for two, and cut somebody to fit them in.',
+    'silver', 'Front office', (c) => c.moveTypes.has('1for2')));
+  add(A('cut_someone', 'Hard part of the job', 'Release a player to get back to six.',
+    'bronze', 'Front office', (c) => c.moveRuns.some((m) => m.cuts >= 1)));
+  add(A('cut_a_starter', 'Nobody is safe',
+    'Release a player averaging 10 points a game or more.', 'gold', 'Front office',
+    (c) => c.cutPlayers.some((p) => Number(p.ppr_ppg_mean) >= 10)));
   add(A('deal_2for1', 'Consolidation', 'Package two players for one.', 'silver', 'Front office',
     (c) => c.moveTypes.has('2for1')));
   add(A('deal_fa', 'Filled the hole', 'Fill a roster hole from free agency.', 'bronze', 'Front office',
     (c) => c.moveRuns.some((m) => m.fa >= 1)));
   add(A('deal_all_types', 'Every kind of deal',
-    'Make a one-for-one, a two-for-two and a two-for-one.', 'gold', 'Front office',
-    (c) => ['1for1', '2for2', '2for1'].every((t) => c.moveTypes.has(t))));
+    'Make all four shapes of trade: one-for-one, one-for-two, two-for-one and two-for-two.',
+    'gold', 'Front office',
+    (c) => ['1for1', '1for2', '2for1', '2for2'].every((t) => c.moveTypes.has(t))));
 
   /* WHAT WAS ACTUALLY DEALT. These are the questions the column was added for: they need
      the players who LEFT, and no other column has ever kept them. */

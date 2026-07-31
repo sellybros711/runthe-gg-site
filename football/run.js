@@ -535,6 +535,10 @@ function openSlotNames(run) {
  */
 const TUNING = {
   MAX_DRAWS_PER_TEAM_SEASON: 2,
+  /* How much better than your weakest player a man has to be before the league will offer two
+     back for him. Below this the "pair" is two players smaller than the one you gave up, which
+     is not depth, it is a downgrade wearing a bigger number. */
+  ONE_FOR_TWO_MIN_RATIO: 1.6,
 };
 
 /**
@@ -1058,6 +1062,20 @@ function pickFaPosition(players, elig) {
 /* Build one offer from a chosen outgoing package and one or two incoming players, if the
    result can form a legal lineup. type is 1for1, 2for2, or 2for1 (one back plus a free
    agent for the opening). Carries the cap and production swing versus what you give up. */
+/* WHO CAN BE CUT FROM AN OVERFULL ROSTER, and it is not "anybody". Seven men for six spots
+   means one has to go, but only cuts that leave an assignable lineup behind are legal: take a
+   receiver off a squad carrying two quarterbacks and the remaining six still cannot line up,
+   because there is one quarterback slot. assignRoster is the single authority on that here as
+   everywhere else. Returns the indices INTO `players`, so the caller can offer exactly those. */
+function cutOptions(players, slots) {
+  const out = [];
+  for (let i = 0; i < players.length; i++) {
+    const rest = players.filter((_, k) => k !== i);
+    if (rest.length === slots.length && assignRoster(rest, slots)) out.push(i);
+  }
+  return out;
+}
+
 function buildOffer(run, slots, outIdxs, inPlayers) {
   const outPlayers = outIdxs.map((i) => run.roster[i]);
   const keep = run.roster.filter((_, i) => !outIdxs.includes(i));
@@ -1068,17 +1086,24 @@ function buildOffer(run, slots, outIdxs, inPlayers) {
   const inValue = inPlayers.reduce((t, p) => t + p.ppr_ppg_mean, 0);
   const netCap = Math.round((inSalary - outSalary) * 100) / 100;
   const netVal = Math.round((inValue - outValue) * 10) / 10;
-  let type, faPos = null;
+  let type, faPos = null, cutIdxs = null;
   if (newRoster.length === slots.length) {
     if (!assignRoster(newRoster, slots)) return null;
     type = outIdxs.length === 1 ? '1for1' : '2for2';
+  } else if (newRoster.length > slots.length) {
+    /* ONE GOOD PLAYER OUT, TWO BACK, AND SOMEBODY HAS TO GO. The roster is one over, so this
+       offer carries the list of legal cuts with it: an offer nobody could legally cut down to
+       six is not an offer, and it is rejected here rather than presented and then refused. */
+    cutIdxs = cutOptions(newRoster, slots);
+    if (!cutIdxs.length) return null;
+    type = '1for2';
   } else {
     const open = assignRosterOpen(newRoster, slots);
     if (!open) return null;
     type = '2for1';
     faPos = pickFaPosition(newRoster, open.faElig);
   }
-  return { type, outIdx: outIdxs.slice(), outPlayers, inPlayers, netCap, netVal, faPos,
+  return { type, outIdx: outIdxs.slice(), outPlayers, inPlayers, netCap, netVal, faPos, cutIdxs,
     partnerFranchise: inPlayers[0].franchise, partnerSeason: inPlayers[0].season };
 }
 
@@ -1110,6 +1135,21 @@ function scoreOffer(run, offer, ctx, slots, faStand) {
     if (!stand) { offer.ratingDelta = null; offer.chemDelta = null; return offer; }
     after = after.concat([stand]);
     offer.estimated = true;
+  } else if (after.length > slots.length) {
+    /* SCORED ON THE SIX YOU WOULD FIELD, not the seven you would briefly hold. A rating for an
+       overfull roster is a number the season never plays with, and it would flatter every
+       one-for-two on the board. The best legal cut is assumed, because that is the cut a player
+       who reads the card will make, and it is remembered so the card and the cut screen can
+       name the same man. */
+    let best = null;
+    for (const i of (offer.cutIdxs || [])) {
+      const r = rosterRating(after.filter((_, k) => k !== i), ctx);
+      if (!best || r.rating > best.r.rating) best = { i, r };
+    }
+    if (!best) { offer.ratingDelta = null; offer.chemDelta = null; return offer; }
+    offer.bestCutIdx = best.i;
+    offer.bestCutPlayer = after[best.i];
+    after = after.filter((_, k) => k !== best.i);
   }
   const a = rosterRating(after, ctx);
   offer.ratingBefore = Math.round(before.rating * 10) / 10;
@@ -1204,8 +1244,59 @@ function findOffers(run, data, ctx, outIdxs) {
     }
   };
 
+  /* A PAIR COMING BACK FOR ONE MAN, off a single team-season, same as the two-for-two: one
+     deal has one trade partner. You give up quality and get quantity, then cut somebody, so
+     the honest comparison is not against the man leaving alone -- it is against him PLUS the
+     weakest player you are keeping, because that pair is what the two arrivals replace once
+     the cut is made. A band around that is what makes the deal worth considering rather than
+     obviously good or obviously bad.
+
+     Only offered for a man who is genuinely better than your worst, because "two for one" only
+     means anything if the one is worth two. Shopping a fringe player would otherwise return two
+     even smaller ones and call it depth. */
+  const twoBack = () => {
+    const weakest = keep.length ? Math.min.apply(null, keep.map((p) => p.ppr_ppg_mean)) : 0;
+    if (outValue < weakest * TUNING.ONE_FOR_TWO_MIN_RATIO) return;
+    /* THE PAIR IS WORTH SLIGHTLY LESS THAN WHAT LEAVES, ON PURPOSE. At an even band the deal
+       gave you the same points AND a better-balanced roster, which measured out at a median of
+       +3.6 rating against +0.6 for a one-for-one: strictly the best move on the board every
+       time, which is not a decision. Priced under, the arrivals cost you a little at the top
+       and the gain has to come from the shape of the roster, so "give up peak for balance" is
+       the trade rather than a free upgrade. */
+    const target = outValue + weakest;
+    const lo = target * 0.74, hi = target * 0.98;
+    const floor = Math.max(3, weakest * 0.6);
+    const partners = [];
+    for (const ts of pool) {
+      const list = (data.playersByTeamSeason[ts.team_season_id] ?? [])
+        .filter((p) => !onRoster.has(p.player_id) && byPos[p.position] && p.ppr_ppg_mean >= floor);
+      if (list.length >= 2) partners.push(list);
+    }
+    let made = 0;
+    for (let att = 0; att < 300 && made < 3 && partners.length; att++) {
+      const list = partners[Math.floor(rng() * partners.length)];
+      const a = list[Math.floor(rng() * list.length)];
+      const b = list[Math.floor(rng() * list.length)];
+      if (!a || !b || a.player_id === b.player_id) continue;
+      const cv = a.ppr_ppg_mean + b.ppr_ppg_mean;
+      if (cv < lo || cv > hi) continue;
+      /* Priced on the SIX that survive the cut, not the seven held for a moment: the cheapest
+         legal cut is the most room the deal can free, so this is the kindest honest reading of
+         whether it fits. Going over the cap stays a choice the player makes on purpose, not
+         something the market does to them. */
+      const seven = keep.concat([a, b]);
+      const cuts = cutOptions(seven, slots);
+      if (!cuts.length) continue;
+      const cheapestCut = Math.min.apply(null, cuts.map((i) => seven[i].price_musd));
+      if (keepSalary + a.price_musd + b.price_musd - cheapestCut > CAP) continue;
+      const o = buildOffer(run, slots, outIdxs, [a, b]);
+      if (o) { pushOffer(o); made++; }
+    }
+  };
+
   if (!twoOut) {
     single(0.78, 1.32, 0);
+    twoBack();
     return finish(offers, 4).slice(0, 6);
   }
 
@@ -1240,19 +1331,30 @@ function findOffers(run, data, ctx, outIdxs) {
 
 /* The resulting lineup if an offer were accepted, without touching the run. Used by the
    live preview: which players end up where, who is incoming, and any open slot. */
-function previewTrade(run, offer) {
+function previewTrade(run, offer, cutIdx) {
   const outSet = new Set(offer.outIdx);
   const keep = run.roster.filter((_, i) => !outSet.has(i));
-  const newRoster = keep.concat(offer.inPlayers);
+  let newRoster = keep.concat(offer.inPlayers);
   const slots = slotsOf(run);
-  let slotIndex = null, emptySlot = null;
+  let slotIndex = null, emptySlot = null, cutPlayer = null;
+  if (newRoster.length > slots.length) {
+    /* SHOWN AS THE SIX YOU WOULD FIELD. The preview draws a lineup, and a lineup is six; the
+       seventh man has no spot to be drawn in. The cut shown is the caller's choice if it made
+       one, otherwise the best one, which is the same man the card was scored against. */
+    const legal = offer.cutIdxs || cutOptions(newRoster, slots);
+    let idx = (cutIdx !== undefined && cutIdx !== null) ? cutIdx
+      : (offer.bestCutIdx !== undefined ? offer.bestCutIdx : legal[0]);
+    if (legal.indexOf(idx) === -1) idx = legal[0];
+    cutPlayer = newRoster[idx];
+    newRoster = newRoster.filter((_, k) => k !== idx);
+  }
   if (newRoster.length === slots.length) {
     slotIndex = assignRoster(newRoster, slots);
   } else {
     const open = assignRosterOpen(newRoster, slots);
     if (open) { slotIndex = open.assign; emptySlot = open.emptySlot; }
   }
-  return { roster: newRoster, slotIndex, emptySlot,
+  return { roster: newRoster, slotIndex, emptySlot, cutPlayer,
     incomingIds: offer.inPlayers.map((p) => p.player_id) };
 }
 
@@ -1295,16 +1397,42 @@ function generateFreeAgents(run, data, position) {
   return result;
 }
 
-function acceptTrade(run, offer, data, ctx) {
+/*
+ * `opts.cutIdx` is required for a one-for-two and ignored otherwise: it is an index into the
+ * SEVEN-man roster the deal would create (keep, then the two arrivals, in that order), which
+ * is the same list cutIdxs and bestCutIdx are indices into.
+ *
+ * THE CUT IS TAKEN AS AN ARGUMENT RATHER THAN LEFT PENDING, deliberately. A pending free agent
+ * works because the roster is one SHORT and every screen can draw five men and a gap; a
+ * pending cut would leave the roster one LONG, and the field, the sidebar and the slot map all
+ * assume six. Resolving it here means the run is never in a state the rest of the game cannot
+ * paint.
+ */
+function acceptTrade(run, offer, data, ctx, opts) {
   const outSet = new Set(offer.outIdx);
   const keep = run.roster.filter((_, i) => !outSet.has(i));
   offer.outPlayers.forEach((p) => {
     const k = run.usedPlayers.indexOf(p.player_id);
     if (k !== -1) run.usedPlayers.splice(k, 1);
   });
-  const newRoster = keep.concat(offer.inPlayers);
+  let newRoster = keep.concat(offer.inPlayers);
   offer.inPlayers.forEach((p) => run.usedPlayers.push(p.player_id));
   const slots = slotsOf(run);
+  let cutPlayer = null;
+  if (newRoster.length > slots.length) {
+    const legal = offer.cutIdxs || cutOptions(newRoster, slots);
+    let idx = opts && opts.cutIdx !== undefined && opts.cutIdx !== null
+      ? opts.cutIdx
+      : (offer.bestCutIdx !== undefined ? offer.bestCutIdx : legal[0]);
+    /* An illegal or missing choice falls back to a legal one rather than throwing: the caller
+       asking to cut a man whose removal breaks the lineup is a bug, and losing somebody's
+       season to it would be a worse answer than making the nearest lawful cut. */
+    if (legal.indexOf(idx) === -1) idx = legal[0];
+    cutPlayer = newRoster[idx];
+    newRoster = newRoster.filter((_, k) => k !== idx);
+    const j = run.usedPlayers.indexOf(cutPlayer.player_id);
+    if (j !== -1) run.usedPlayers.splice(j, 1);
+  }
   if (newRoster.length === slots.length) {
     run.roster = newRoster;
     run.slotIndex = assignRoster(newRoster, slots);
@@ -1323,15 +1451,19 @@ function acceptTrade(run, offer, data, ctx) {
   run.tradeHistory.push({
     week: run.season.week,
     type: offer.type,
-    out: offer.outPlayers.map((p) => p.name),
+    out: offer.outPlayers.map((p) => p.name).concat(cutPlayer ? [cutPlayer.name + ' (cut)'] : []),
     in: offer.inPlayers.map((p) => p.name).join(', ')
       + (offer.type === '2for1' ? ' + free agent' : ''),
     /* THE SAME MOVE, IN IDS, so it can be recorded and read back. The names above are
        for the GM report to print; these are what ps_runs.trade_moves stores, spelled the
        way the picks column spells a player, because the badge cabinet resolves both
        through one lookup. Week 0 is the window before kickoff. */
-    outKeys: offer.outPlayers.map(runKey),
+    /* The cut man rides with the players sent out, because that is what happened to him as far
+       as the roster is concerned: he left in this move. `cutKey` names him separately so a
+       badge can tell "traded away" from "released" without parsing a label. */
+    outKeys: offer.outPlayers.map(runKey).concat(cutPlayer ? [runKey(cutPlayer)] : []),
     inKeys: offer.inPlayers.map(runKey),
+    cutKey: cutPlayer ? runKey(cutPlayer) : null,
   });
   return run;
 }
@@ -1841,7 +1973,7 @@ const api = {
   inflateCap, capCut, capSpin, capSign,
   autoDraftTrade, isTradeWindow, inflateContracts, findOffers, previewTrade, rosterRating,
   TRADE_WEEKS, TRADE_DEADLINE_WEEK, CONTRACT_INFLATION,
-  generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating, capMark, FA_TYPICAL_MUSD,
+  generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating, capMark, FA_TYPICAL_MUSD, cutOptions,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
