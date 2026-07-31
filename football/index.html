@@ -8053,10 +8053,34 @@ function drawShareCard(){
   const tone=o.perfect?'#fcd34d':(o.titleWon?'#93c5fd':'#ffffff');
   if(o.perfect||o.titleWon){
     const warm=o.perfect;
-    const glow=x.createRadialGradient(mid,300,20,mid,300,560);
+    /*
+     * THE BLOOM IS AN ELLIPSE, AND IT FADES OUT INSIDE THE AREA IT IS PAINTED INTO.
+     *
+     * It used to be a circle of radius 560 centred on the record and painted into
+     * fillRect(0,70,W,520), which clipped it at y=70 and y=590 while its alpha was still
+     * 0.196 and 0.160. Those are hard horizontal edges in the middle of the card -- the
+     * gradient was being cut, not faded, and both cuts were plainly visible against the
+     * dark wash.
+     *
+     * The fill cannot simply be widened: the glow has to be gone by the first roster row at
+     * ROWS, and any rectangle whose bottom lands above that row cuts a gradient that has not
+     * reached zero. So the gradient is squashed instead. Scaling y by GLOW_SQUASH turns the
+     * circle into an ellipse reaching zero 220px above and below the record -- clear of the
+     * confetti band at the top and of the rule and rows underneath -- and the rect is drawn
+     * in the ellipse's own space at exactly the radius where alpha hits zero. Nothing is
+     * clipped anywhere, so there is no edge to see.
+     *
+     * The left and right still meet the canvas at alpha ~0.05, which is not an artifact: an
+     * edge only reads as a cut when there is card on the other side of it.
+     */
+    const GLOW_R=620, GLOW_SQUASH=0.355;   // 620 x 0.355 = 220px of vertical reach
+    x.save();
+    x.translate(mid,300); x.scale(1,GLOW_SQUASH);
+    const glow=x.createRadialGradient(0,0,30,0,0,GLOW_R);
     glow.addColorStop(0,warm?'rgba(245,158,11,.36)':'rgba(59,130,246,.32)');
     glow.addColorStop(1,'rgba(7,11,19,0)');
-    x.fillStyle=glow; x.fillRect(0,70,CARD.W,520);
+    x.fillStyle=glow; x.fillRect(-GLOW_R,-GLOW_R,GLOW_R*2,GLOW_R*2);
+    x.restore();
     const rng=E.createSeededRNG(E.hashSeed((run.seed||'x')+'|card'));
     const palette=warm
       ? ['#fde68a','#fcd34d','#f59e0b','#ffffff','#fffbeb']
