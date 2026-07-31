@@ -39,14 +39,14 @@
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/cfb/">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://runthe.gg/cfb/og.png?v=1">
+<meta property="og:image" content="https://runthe.gg/cfb/og.png?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="College Football: Perfect Season. Spin for a year and a school, sign six players under an $11M NIL budget and play a full season. The six roster spots shown as QB, RB, WR, WR, TE and FLEX.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="College Football: Perfect Season">
 <meta name="twitter:description" content="Draft a college football roster from every season since 2005 under an $11M NIL budget, then play all 12 games and chase a perfect season.">
-<meta name="twitter:image" content="https://runthe.gg/cfb/og.png?v=1">
+<meta name="twitter:image" content="https://runthe.gg/cfb/og.png?v=2">
 <meta name="twitter:image:alt" content="College Football: Perfect Season. Draft six players under an $11M NIL budget and play a full season.">
 <!-- Structured data, so a search result can carry the game's name and category rather
      than only a blue link. VideoGame is the type Google documents for this; the offer
@@ -2125,10 +2125,19 @@ or endorsed by the NCAA, the CFP or any school.
      before, recording seasons anonymously. An account is a way to put your name on a
      season, not a gate in front of playing one. board.js does not use this library at
      all; it talks to PostgREST with fetch. -->
+<!-- ?v= IS THE ONLY THING THAT SHIPS A CHANGE TO SOMEONE WHO HAS ALREADY PLAYED.
+     These files are served with an ordinary cache header, so a returning browser
+     reuses whatever it holds under this exact URL and never asks whether the file
+     moved. The HTML updates, the scripts do not, and the game runs old rules under
+     new copy: after the cap went to $11M the page said $11M everywhere while the
+     draft still handed out $14M, because engine.js was still ?v=5 in the browser.
+     BUMP THE NUMBER IN THE SAME COMMIT THAT EDITS THE FILE. The data files are
+     versioned too, in the fetch at the bottom of this file, and the share card is
+     versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=5"></script>
-<script src="run.js?v=3"></script>
-<script src="achievements.js?v=1"></script>
+<script src="engine.js?v=6"></script>
+<script src="run.js?v=4"></script>
+<script src="achievements.js?v=2"></script>
 <script src="auth.js?v=1"></script>
 <script src="board.js?v=1"></script>
 <script>
@@ -3255,7 +3264,7 @@ function patchLastRun(patch){
 /* ── boot ────────────────────────────────────────────────────── */
 async function boot(){
   try{
-    const j=(f)=>fetch(f+'?v=1').then(r=>{if(!r.ok)throw new Error(f);return r.json();});
+    const j=(f)=>fetch(f+'?v=2').then(r=>{if(!r.ok)throw new Error(f);return r.json();});
     const [pl,tm,bat,co,cu,lg,cal]=await Promise.all([
       j('data/cfb_player_seasons.json'),j('data/cfb_team_seasons.json'),
       j('data/cfb_battery.json'),j('data/cfb_coaches.json'),
