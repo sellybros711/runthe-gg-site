@@ -192,6 +192,89 @@
   .swatch .nm{font-family:var(--fn);font-size:12px;font-weight:600;color:var(--ink);
     min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
+  /* ── the trophy case (sheet) ────────────────────────────────────
+     Career line, the two streaks, then the badges by shelf. */
+  .shsec{font-family:var(--fc);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--dim);margin:18px 0 6px}
+  .shsec .cnt{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.06em;
+    color:var(--dim-2);margin-left:6px;text-transform:none}
+  .careerrow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .careerrow .cc{border:1px solid var(--line);border-radius:10px;background:var(--panel);
+    padding:9px 6px;text-align:center;min-width:0}
+  .careerrow .cc b{display:block;font-family:var(--fd);font-size:22px;line-height:1;color:var(--ink)}
+  .careerrow .cc span{display:block;font-family:var(--fn);font-size:9px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--dim-2);margin-top:4px}
+  .stkrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stk{border-radius:11px;border:1.5px solid var(--line);background:var(--panel);
+    padding:10px 12px;text-align:center}
+  .stk.on{border-color:rgba(34,197,94,.5);background:linear-gradient(160deg,rgba(34,197,94,.09),var(--panel))}
+  .stk.gold{border-color:rgba(251,191,36,.5);background:linear-gradient(160deg,rgba(251,191,36,.09),var(--panel))}
+  .stk-v{font-family:var(--fd);font-size:31px;line-height:1;color:var(--ink)}
+  .stk.on .stk-v{color:#22c55e}
+  .stk.gold .stk-v{color:#fbbf24}
+  .stk-l{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--dim);margin-top:3px}
+  .stk-s{font-size:10.5px;color:var(--dim-2);margin-top:3px}
+  .achgrp{margin-top:10px}
+  .achgrp-h{display:flex;align-items:baseline;font-family:var(--fn);font-size:10px;font-weight:800;
+    letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
+  .achgrp-h span{margin-left:auto;color:var(--dim-2)}
+  .achlist{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  @media(max-width:420px){ .achlist{grid-template-columns:1fr} }
+  .ach{border-radius:9px;border:1.5px solid var(--line);background:var(--panel);padding:7px 9px}
+  .ach-n{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.02em;
+    color:var(--ink);line-height:1.2}
+  .ach-d{font-size:10px;color:var(--dim);line-height:1.3;margin-top:2px}
+  /* Every earned tier gets its colour in the FILL as well as the border. Border
+     alone is not enough: silver on a dark panel reads as greyed out, so an
+     earned badge can be taken for a locked one at a glance, which is the one
+     thing a trophy case must never do. */
+  .ach.bronze{border-color:rgba(180,120,70,.55);
+    background:linear-gradient(150deg,rgba(201,139,82,.11),var(--panel))}
+  .ach.bronze .ach-n{color:#c98b52}
+  .ach.silver{border-color:rgba(203,213,225,.55);
+    background:linear-gradient(150deg,rgba(203,213,225,.10),var(--panel))}
+  .ach.silver .ach-n{color:#e2e8f0}
+  .ach.gold{border-color:rgba(251,191,36,.55);
+    background:linear-gradient(150deg,rgba(251,191,36,.11),var(--panel))}
+  .ach.gold .ach-n{color:#fbbf24}
+  .ach.legend{border-color:rgba(168,85,247,.6);
+    background:linear-gradient(150deg,rgba(168,85,247,.13),var(--panel))}
+  .ach.legend .ach-n{color:#c084fc}
+  /* Locked stays readable: an unearned badge is only interesting if you can
+     read what it is asking you to do. */
+  .ach.off{border-color:var(--line);background:rgba(148,163,184,.05);opacity:.55}
+  .ach.off .ach-n{color:var(--dim)}
+  .achtabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:2px 0 4px}
+  .achtabs button{padding:9px 8px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel);color:var(--dim);cursor:pointer;
+    font-family:var(--fn);font-size:11.5px;font-weight:700;letter-spacing:.04em}
+  .achtabs button.on{border-color:var(--green);color:var(--ink);background:rgba(34,197,94,.10)}
+
+  /* ── new badges, called out on the results screen ───────────────
+     Gold enough to be noticed on a screen that is already busy, quiet enough
+     that it does not fight the verdict for the eye. */
+  .newach{margin:12px 0 0;border:1px solid rgba(251,191,36,.4);border-radius:12px;
+    background:linear-gradient(150deg,rgba(251,191,36,.10),rgba(251,191,36,.02));padding:11px 12px}
+  .newach .nh{font-family:var(--fc);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:#fbbf24;margin-bottom:7px}
+  .newach .nl{display:flex;flex-wrap:wrap;gap:6px}
+  .newach .na{display:flex;align-items:baseline;gap:6px;padding:5px 9px;border-radius:8px;
+    border:1px solid rgba(251,191,36,.32);background:rgba(0,0,0,.24);
+    animation:achpop .42s cubic-bezier(.2,.7,.3,1) backwards}
+  .newach .na b{font-family:var(--fn);font-size:11.5px;font-weight:800;color:#fbbf24}
+  .newach .na i{font-style:normal;font-size:10.5px;color:var(--dim)}
+  /* Tier reads on the chip too, so a legend badge does not land looking like
+     the bronze one next to it. */
+  .newach .na.bronze{border-color:rgba(201,139,82,.42)} .newach .na.bronze b{color:#c98b52}
+  .newach .na.silver{border-color:rgba(203,213,225,.42)} .newach .na.silver b{color:#e2e8f0}
+  .newach .na.legend{border-color:rgba(168,85,247,.5)} .newach .na.legend b{color:#c084fc}
+  @keyframes achpop{from{opacity:0;transform:translateY(7px) scale(.94)}to{opacity:1;transform:none}}
+  .acase{margin-top:9px;width:100%;padding:8px;border-radius:8px;cursor:pointer;
+    border:1px solid rgba(251,191,36,.3);background:rgba(0,0,0,.2);color:#fbbf24;
+    font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.05em}
+  .acase:hover{border-color:rgba(251,191,36,.55)}
+
   /* ── hero/intro ─────────────────────────────────────────────────
      The title is sized to sit inside the 600px column, not overrun it: at 70px
      "The Perfect Season" is wider than the wrap and used to spill off the right
@@ -1564,6 +1647,10 @@ or endorsed by the NCAA, the CFP or any school.
 
     <div class="resume" id="o-resume"></div>
 
+    <!-- Badges this season earned, and only this season's. Right under the
+         résumé because that is where the season is being read. -->
+    <div id="o-newach"></div>
+
     <!-- THE TEAM YOU BUILT IS NOT A TAB. It is the thing the whole run was about,
          so it sits in the open under the résumé and the rest goes behind tabs. -->
     <div class="field" id="field3"></div>
@@ -1608,6 +1695,7 @@ or endorsed by the NCAA, the CFP or any school.
 
 <script src="engine.js?v=5"></script>
 <script src="run.js?v=3"></script>
+<script src="achievements.js?v=1"></script>
 <script>
 (function(){
 'use strict';
@@ -1913,8 +2001,36 @@ function updateAvatar(){
   else{ av.classList.remove('signed'); ab.textContent='';
     av.setAttribute('aria-label','Choose your school colors'); }
 }
-function openSchoolPicker(){
-  if(!DATA){ return; }
+/* THE PROFILE SHEET holds two things, on two tabs: the colors you play in, and
+   what you have done in them. Tabs rather than one long scroll because the
+   school list is a hundred buttons deep and would bury the trophy case under
+   it. Which tab opens is remembered for the session, so somebody chasing a
+   badge does not walk past the school list every time. */
+let profileTab='school';
+function openProfile(tab){
+  if(!DATA) return;
+  profileTab=tab||profileTab;
+  const box=$('sheet-in');
+  const head=
+    '<div class="eyebrow green">Your profile</div>'+
+    '<h2 class="display" style="font-size:22px;margin:4px 0 10px">'+
+      (profileTab==='school'?'Pick your colors':'Trophy case')+'</h2>'+
+    '<div class="achtabs">'+
+      '<button data-tab="school"'+(profileTab==='school'?' class="on"':'')+'>School colors</button>'+
+      '<button data-tab="case"'+(profileTab==='case'?' class="on"':'')+'>Trophy case</button>'+
+    '</div>';
+  box.innerHTML=head+(profileTab==='school'?schoolPickerHtml():trophyCaseHtml())+
+    '<div style="margin-top:12px"><button class="btn ghost sm" id="sp-x" style="width:100%">Close</button></div>';
+  openSheet();
+  box.querySelectorAll('.achtabs button').forEach(b=>b.onclick=()=>openProfile(b.dataset.tab));
+  box.querySelectorAll('.swatch').forEach(btn=>btn.onclick=()=>{
+    const t=schoolGroups().flatMap(g=>g.teams).find(x=>x.school===btn.dataset.school);
+    if(t) applyTheme(t); closeSheet();
+  });
+  const def=$('sp-default'); if(def) def.onclick=()=>{ applyTheme(null); closeSheet(); };
+  $('sp-x').onclick=closeSheet;
+}
+function schoolPickerHtml(){
   const cur=selectedSchool?selectedSchool.school:null;
   const acc=schoolGroups().map(g=>{
     const open=g.teams.some(t=>t.school===cur)?' open':'';
@@ -1924,24 +2040,127 @@ function openSchoolPicker(){
     return '<details'+open+'><summary>'+esc(g.name)+'<span class="cnt">'+g.teams.length+'</span></summary>'+
       '<div class="schoolgrid">'+sw+'</div></details>';
   }).join('');
-  $('sheet-in').innerHTML=
-    '<div class="eyebrow green">Your school</div>'+
-    '<h2 class="display" style="font-size:22px;margin:4px 0 3px">Pick your colors</h2>'+
-    '<p class="dim" style="font-size:13px;margin:0 0 12px">Themes the home and draft screens in your team&rsquo;s colors.</p>'+
+  return '<p class="dim" style="font-size:13px;margin:0 0 10px">Themes the home and draft screens in your team&rsquo;s colors.</p>'+
     '<div class="schoolacc">'+acc+'</div>'+
-    '<div style="margin-top:12px;display:flex;gap:8px">'+
-      '<button class="btn ghost sm" id="sp-default" style="flex:1">Default colors</button>'+
-      '<button class="btn ghost sm" id="sp-x" style="flex:1">Close</button></div>';
-  openSheet();
-  $('sheet-in').querySelectorAll('.swatch').forEach(btn=>btn.onclick=()=>{
-    const t=schoolGroups().flatMap(g=>g.teams).find(x=>x.school===btn.dataset.school);
-    if(t) applyTheme(t); closeSheet();
-  });
-  $('sp-default').onclick=()=>{ applyTheme(null); closeSheet(); };
-  $('sp-x').onclick=closeSheet;
+    '<div style="margin-top:10px"><button class="btn ghost sm" id="sp-default" style="width:100%">Default colors</button></div>';
 }
-$('b-profile').onclick=openSchoolPicker;
+/* Earned first, because a case is for showing what you have. Locked ones stay
+   on the shelf, greyed, with what they want, because that is the only part of
+   an unearned badge worth reading. */
+function trophyCaseHtml(){
+  const A=window.PS_CFB_ACH;
+  if(!A) return '<p class="dim" style="font-size:13px;margin:0">The trophy case could not load. '+
+    'Your seasons are still being kept.</p>';
+  const res=achState();
+  const s=res.stats;
+  if(!s.runs) return '<p class="dim" style="font-size:13.5px;margin:0 0 4px">'+
+    'No seasons yet. Finish one and this fills up.</p>'+
+    '<p class="dim" style="font-size:11.5px;margin:8px 0 0">There are '+res.total+
+    ' badges waiting, from reaching a bowl to a perfect season.</p>'+achShelves(res);
+  const cell=(v,k)=>'<div class="cc"><b>'+v+'</b><span>'+k+'</span></div>';
+  const career='<p class="shsec" style="margin-top:0">Your career</p><div class="careerrow">'+
+    cell(s.runs,'seasons')+cell(s.titles,'titles')+cell(s.playoffs,'playoffs')+
+    cell(s.bestRank?'#'+s.bestRank:'--','best rank')+'</div>';
+  const p=res.play,t=res.title;
+  const alive=p.current>0&&!p.playedToday;
+  const stk=(v,lbl,sub,cls)=>'<div class="stk'+(cls?' '+cls:'')+'">'+
+    '<div class="stk-v">'+v+'</div><div class="stk-l">'+lbl+'</div>'+
+    (sub?'<div class="stk-s">'+esc(sub)+'</div>':'')+'</div>';
+  const streaks='<p class="shsec">Your streaks</p><div class="stkrow">'+
+    stk(p.current,'day streak',
+      p.current===0?'play today to start one':(alive?'play today to keep it':'best '+p.best),
+      p.current>0?'on':'')+
+    stk(t.current,'titles in a row',
+      t.current===0?(t.best?'best '+t.best:'win one to start'):'best '+t.best,
+      t.current>0?'gold':'')+'</div>';
+  return career+streaks+achShelves(res)+
+    '<p class="dim" style="font-size:11px;margin:12px 0 0;line-height:1.4">Your seasons are kept '+
+    'in this browser. Clearing its data clears them.</p>';
+}
+function achShelves(res){
+  const A=window.PS_CFB_ACH;
+  let h='<p class="shsec">Achievements <span class="cnt">'+res.earned.length+' of '+res.total+'</span></p>';
+  const chip=(a,got)=>'<div class="ach '+a.tier+(got?'':' off')+'">'+
+    '<div class="ach-n">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div>';
+  for(const g of A.GROUPS){
+    const got=res.earned.filter(a=>a.group===g), off=res.locked.filter(a=>a.group===g);
+    if(!got.length&&!off.length) continue;
+    got.sort((a,b)=>A.TIER_ORDER[b.tier]-A.TIER_ORDER[a.tier]);
+    h+='<div class="achgrp"><div class="achgrp-h">'+esc(g)+
+      '<span>'+got.length+'/'+(got.length+off.length)+'</span></div><div class="achlist">'+
+      got.map(a=>chip(a,true)).join('')+off.map(a=>chip(a,false)).join('')+'</div></div>';
+  }
+  return h;
+}
+$('b-profile').onclick=()=>openProfile();
 try{ const saved=localStorage.getItem('cfb_school'); if(saved) applyTheme(JSON.parse(saved)); }catch(e){}
+
+/* ── run history ─────────────────────────────────────────────── */
+/* WHAT GETS WRITTEN DOWN IS THE SEASON, NEVER THE TROPHY. Each finished run
+   leaves one compact row here and achievements.js reads the rows back to work
+   out what has been earned. Deriving rather than storing means a badge can
+   never drift out of step with the seasons it claims to describe, and a badge
+   added later lights up retroactively for seasons already played.
+   The NFL game keeps its rows against an account. This game has none, so the
+   rows sit in local storage: they are this browser's, and clearing it clears
+   them. */
+const HIST_KEY='cfb_history', HIST_MAX=400;
+function loadHistory(){
+  try{ const raw=localStorage.getItem(HIST_KEY); const a=raw?JSON.parse(raw):[];
+    return Array.isArray(a)?a:[]; }catch(e){ return []; }
+}
+function saveHistory(rows){
+  try{ localStorage.setItem(HIST_KEY,JSON.stringify(rows.slice(-HIST_MAX))); }catch(e){}
+}
+/* Rows keep a pick as "player_id|season" rather than the whole player, so a
+   season costs a few hundred bytes instead of a few thousand and a later fix to
+   the player data reaches badges already earned. */
+function achResolve(key){ return BYKEY?(BYKEY.get(key)||null):null; }
+function achState(){
+  if(!window.PS_CFB_ACH) return null;
+  return window.PS_CFB_ACH.evaluate(loadHistory(),achResolve,new Date().toISOString());
+}
+
+/* Badges the season just finished is responsible for, held for the results
+   screen. Worked out by evaluating the cabinet on either side of the new row,
+   so a badge already earned in some earlier season is not announced twice. */
+let lastEarned=[], lastBefore=new Set();
+function recordRun(row){
+  const A=window.PS_CFB_ACH;
+  const rows=loadHistory();
+  lastBefore=A?new Set(A.evaluate(rows,achResolve,row.created_at).earned.map(a=>a.id)):new Set();
+  rows.push(row); saveHistory(rows);
+  lastEarned=A
+    ? A.evaluate(loadHistory(),achResolve,row.created_at).earned.filter(a=>!lastBefore.has(a.id))
+    : [];
+  return lastEarned;
+}
+/* Badges the season just finished put in the case, called out on the results
+   screen. Only what this season earned: a badge won three seasons ago is in the
+   case already and saying so again would make every one of them feel routine.
+   Capped, because a first season can trip a dozen at once and a wall of them
+   reads as a bug rather than a reward. */
+function paintNewBadges(){
+  const el=$('o-newach'); if(!el) return;
+  const list=(run&&run.newBadges)||[];
+  if(!list.length){ el.innerHTML=''; return; }
+  const show=list.slice(0,6), more=list.length-show.length;
+  el.innerHTML='<div class="newach"><div class="nh">'+
+    (list.length===1?'Badge earned':list.length+' badges earned')+'</div><div class="nl">'+
+    show.map((a,i)=>'<div class="na '+a.tier+'" style="animation-delay:'+(i*70)+'ms">'+
+      '<b>'+esc(a.name)+'</b><i>'+esc(a.desc)+'</i></div>').join('')+
+    (more?'<div class="na" style="animation-delay:'+(show.length*70)+'ms"><b>and '+more+' more</b></div>':'')+
+    '</div><button class="acase" id="o-case">See your trophy case</button></div>';
+  $('o-case').onclick=()=>openProfile('case');
+}
+
+/* The best-possible share is not known until the search behind the results
+   screen finishes, a moment after the row is written. Patch it in rather than
+   hold the whole row back, because everything else is known now. */
+function patchLastRun(patch){
+  const rows=loadHistory(); if(!rows.length) return;
+  Object.assign(rows[rows.length-1],patch); saveHistory(rows);
+}
 
 /* ── boot ────────────────────────────────────────────────────── */
 async function boot(){
@@ -2490,7 +2709,7 @@ function paintSquad(){
       '<p class="take">'+esc(cr.verdict)+'</p>'+
       '<p class="fit">'+(fitPct===0
         ? 'These five neither help nor hold each other back.'
-        : 'Because of how these five fit together, they score '+strong+fitPct+'% '+
+        : 'Because of how these six fit together, they score '+strong+fitPct+'% '+
           (st.multiplier>1?'more':'less')+'</b> than their own numbers add up to.')+'</p>';
   }
   $('q-meters').innerHTML=
@@ -3457,6 +3676,31 @@ function paintOver(){
   }
   $('o-resume').innerHTML=resumeHtml;
 
+  /* One row for the season, written once. paintOver can run again for the same
+     run (leaving and coming back to the results screen), so the run itself
+     carries the flag that says it has already been filed. */
+  if(!run.recorded){
+    run.recorded=true;
+    const regParts=(o.regularRecord||o.record).split('-');
+    recordRun({
+      created_at:new Date().toISOString(),
+      wins:o.wins, losses:o.losses,
+      reg_wins:Number(regParts[0]), reg_losses:Number(regParts[1]),
+      title_won:!!o.titleWon, perfect:!!o.perfect, made_playoffs:!!o.madePlayoffs,
+      seed:o.seed||null, national_rank:finalRank||null, eliminated_in:o.eliminatedIn||null,
+      bowl:!!o.bowlGame, bowl_won:!!o.bowlWon,
+      chemistry_pct:Math.round((run.season.chemistry-1)*1000)/10,
+      spend_musd:Math.round(spendUsed*100)/100,
+      overall:Math.round(overall*10)/10,
+      respins:run.respinsUsed,
+      sig_wins:sig.length, best_win_rank:sig.length?sig[0].rk:null,
+      picks:run.roster.map(p=>p.player_id+'|'+p.season),
+    });
+    run.newBadges=lastEarned.slice();
+    run.hadBadges=lastBefore;
+  }
+  paintNewBadges();
+
   const pts=(arr,f)=>arr.reduce((t,r)=>t+f(r),0)/Math.max(1,arr.length);
   const forPG=pts(s.results,r=>r.shownYou??r.yourScore);
   const agPG=pts(s.results,r=>r.shownThem??r.oppScore);
@@ -3471,7 +3715,7 @@ function paintOver(){
     tile(bestStreak,'Longest streak');
   $('o-squadline').innerHTML='<span>'+squadFppg.toFixed(0)+' squad FPPG, '+
     pc(run.season.chemistry-1)+' chemistry and '+fitPct(st.multiplier)+
-    ' for how the five fit together, which is a <b>'+rating.toFixed(1)+'</b> team overall. '+
+    ' for how the six fit together, which is a <b>'+rating.toFixed(1)+'</b> team overall. '+
     'You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.'+schemeTail(st)+'</span>';
 
   drawField($('field3'),false);
@@ -3502,7 +3746,21 @@ function paintOver(){
     const best=R.bestPossibleSquad(run,DATA,CTX);
     const kept=best?best.lineup.filter(r=>r.same).length:0;
     let share=best?Math.round(100*Math.min(1,best.yourProjected/best.bestProjected)):null;
-    if(share!==null&&kept<5) share=Math.min(share,99);
+    if(share!==null&&kept<E.SLOTS.length) share=Math.min(share,99);
+    /* The perfect-draft badge cannot be known until this moment, so the row is
+       patched and the case re-read. Anything that turns up now joins the list
+       the results screen is already showing rather than replacing it. */
+    if(share!==null){
+      patchLastRun({perfect_pct:share});
+      const A=window.PS_CFB_ACH;
+      if(A&&run.newBadges){
+        const have=new Set(run.newBadges.map(a=>a.id));
+        const had=run.hadBadges||new Set();
+        const fresh=A.evaluate(loadHistory(),achResolve,new Date().toISOString()).earned
+          .filter(a=>!have.has(a.id)&&!had.has(a.id));
+        if(fresh.length){ run.newBadges=run.newBadges.concat(fresh); paintNewBadges(); }
+      }
+    }
     const sband=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
     $('o-ovr').innerHTML=
       bigcell('Team overall',overall.toFixed(1),Math.max(2,Math.min(100,overall)),rband)+
@@ -3511,8 +3769,8 @@ function paintOver(){
     if(!best){$('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>';}
     else{
       const band=share>=90?'pgood':(share>=70?'pmid':'pbad');
-      const spots=kept===5?'You picked the best available player at every spot.'
-        :kept?'You had '+kept+' of the 5 spots exactly right.'
+      const spots=kept===E.SLOTS.length?'You picked the best available player at every spot.'
+        :kept?'You had '+kept+' of the '+E.SLOTS.length+' spots exactly right.'
         :'You matched none of the best picks.';
       $('o-miss').innerHTML=
         '<div class="pgauge"><div class="pv '+band+'">'+share+'%</div><div class="pr">'+
@@ -3520,7 +3778,7 @@ function paintOver(){
           '<div class="pl">Of the strongest team your six spins allowed. '+spots+'</div>'+
         '</div></div>'+
         swapRows(best)+comparison(best)+
-        '<p class="caveat">Points a game includes chemistry and how the five fit. Your record is '+
+        '<p class="caveat">Points a game includes chemistry and how the six fit. Your record is '+
         'this season&rsquo;s result; the best roster&rsquo;s is a projection (it never played) '+
         'from replaying it against your 12 opponents hundreds of times.</p>';
     }

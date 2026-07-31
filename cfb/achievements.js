@@ -1,0 +1,316 @@
+/*
+ * achievements.js - the trophy case for College Football: Perfect Season.
+ *
+ * DERIVED, NEVER STORED. No badge is written down. Every one is recomputed from the rows
+ * the game keeps for finished runs, which buys two things worth having: a badge cannot
+ * drift out of step with the history it claims to describe, and adding a new one to the
+ * catalogue lights it up retroactively for seasons already played.
+ *
+ * WHERE THE ROWS LIVE, AND THE HONEST LIMIT OF IT. The NFL game derives its cabinet from
+ * leaderboard rows tied to an account, so a badge survives a cleared browser or a new
+ * phone. This game has no account, so the rows sit in local storage instead. That is the
+ * one real difference and it cuts the way you would expect: clear the browser and the
+ * history goes with it. Everything downstream of the rows is the same design, so if an
+ * account ever arrives here the rows can move and nothing else has to change.
+ *
+ * ROWS HAVE HOLES. Fields have been added over time, so a test that reads one has to treat
+ * a missing value as "not known" rather than as zero. has() below is the guard, and a test
+ * that cannot know its answer returns false rather than guessing.
+ *
+ * Headless and dependency-free, so the catalogue can be tested in node against real rows.
+ * Browser: window.PS_CFB_ACH. Node: require('./achievements.js').
+ */
+(function () {
+  'use strict';
+
+  /* ---------------- small helpers ---------------- */
+
+  const has = (v) => v !== null && v !== undefined;
+  const num = (v) => (has(v) ? Number(v) : null);
+  const isTrue = (v) => v === true || v === 1 || v === 't' || v === 'true';
+
+  /* A local calendar day, as YYYY-MM-DD. Local rather than UTC on purpose: a streak is a
+     human habit, so "today" has to mean the player's today and not Greenwich's. */
+  function dayKey(iso) {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    const p = (n) => (n < 10 ? '0' + n : String(n));
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+  const dayNumber = (key) => {
+    const parts = key.split('-').map(Number);
+    return Math.floor(Date.UTC(parts[0], parts[1] - 1, parts[2]) / 86400000);
+  };
+  const decadeOf = (season) => Math.floor(Number(season) / 10) * 10;
+
+  /* ---------------- streaks ---------------- */
+
+  /*
+   * DAILY PLAY STREAK, counted in days on which at least one season was finished rather
+   * than in seasons, so five runs in one evening is one day and cannot be farmed.
+   *
+   * The streak stays alive through today until a whole day is missed: if the last day
+   * played was yesterday it still stands and today is the day to keep it. Counting only
+   * from today would read zero every morning until you played, which teaches a player that
+   * the number is noise.
+   */
+  function playStreak(dayKeys, todayKey) {
+    if (!dayKeys.length) return { current: 0, best: 0, lastPlayed: null, playedToday: false };
+    const days = dayKeys.slice().sort();
+    const nums = days.map(dayNumber);
+    let best = 1, run = 1;
+    for (let i = 1; i < nums.length; i++) {
+      run = nums[i] === nums[i - 1] + 1 ? run + 1 : 1;
+      if (run > best) best = run;
+    }
+    const today = dayNumber(todayKey);
+    const last = nums[nums.length - 1];
+    let current = 0;
+    if (last === today || last === today - 1) {
+      current = 1;
+      for (let i = nums.length - 1; i > 0; i--) {
+        if (nums[i - 1] === nums[i] - 1) current++; else break;
+      }
+    }
+    return { current, best, lastPlayed: days[days.length - 1], playedToday: last === today };
+  }
+
+  /* Titles back to back, counted in seasons rather than days. Rows arrive oldest first, so
+     "current" is the tail of the list. */
+  function titleStreak(rowsAsc) {
+    let best = 0, run = 0;
+    for (const r of rowsAsc) {
+      if (isTrue(r.title_won)) { run++; if (run > best) best = run; } else run = 0;
+    }
+    return { current: run, best };
+  }
+
+  /* ---------------- the context every test reads ---------------- */
+
+  /*
+   * Built once and handed to every test, because forty tests each walking the row list is
+   * forty walks. `resolve` turns a stored pick ("id|season") back into that player so a
+   * roster test can ask about schools, seasons, positions and hardware. With no player data
+   * to hand the roster-shaped fields come back empty and those tests answer false rather
+   * than throwing.
+   */
+  function buildContext(rows, resolve, nowIso) {
+    const asc = rows.slice().sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+    const todayKey = dayKey(nowIso || new Date().toISOString()) || '1970-01-01';
+    const dayKeys = [];
+    const seenDays = Object.create(null);
+    for (const r of asc) {
+      const k = r.created_at ? dayKey(r.created_at) : null;
+      if (k && !seenDays[k]) { seenDays[k] = 1; dayKeys.push(k); }
+    }
+
+    const runs = asc.map((r) => {
+      let roster = [];
+      if (resolve && Array.isArray(r.picks)) {
+        roster = r.picks.map((k) => resolve(k)).filter(Boolean);
+        if (roster.length !== r.picks.length) roster = [];
+      }
+      return { row: r, roster };
+    });
+
+    const titles = asc.filter((r) => isTrue(r.title_won));
+    const awardsOf = (p) => (Array.isArray(p.awards) ? p.awards : []);
+    const badgesOf = (p) => (Array.isArray(p.badges) ? p.badges : []);
+
+    return {
+      rows: asc,
+      runs,
+      total: rows.length,
+      titles,
+      dayKeys,
+      todayKey,
+      play: playStreak(dayKeys, todayKey),
+      title: titleStreak(asc),
+      best: (col) => {
+        const vals = asc.map((r) => num(r[col])).filter((v) => v !== null);
+        return vals.length ? Math.max.apply(null, vals) : null;
+      },
+      least: (col) => {
+        const vals = asc.map((r) => num(r[col])).filter((v) => v !== null);
+        return vals.length ? Math.min.apply(null, vals) : null;
+      },
+      any: (fn) => asc.some(fn),
+      count: (fn) => asc.filter(fn).length,
+      anyRoster: (fn) => runs.some((x) => x.roster.length > 0 && fn(x.roster, x.row)),
+      countRoster: (fn) => runs.filter((x) => x.roster.length > 0 && fn(x.roster, x.row)).length,
+      awardsOf,
+      badgesOf,
+      has, isTrue, num,
+    };
+  }
+
+  /* ---------------- the catalogue ----------------
+     tier drives the colour only: bronze, silver, gold, legend.
+     group drives which shelf it sits on in the trophy case. */
+  const A = (id, name, desc, tier, group, test) => ({ id, name, desc, tier, group, test });
+
+  const CATALOGUE = [
+    /* --- getting started --- */
+    A('first_run', 'Signing day', 'Finish your first season.', 'bronze', 'Milestones',
+      (c) => c.total >= 1),
+    A('runs_10', 'Regular', 'Finish 10 seasons.', 'bronze', 'Milestones', (c) => c.total >= 10),
+    A('runs_50', 'Tenured', 'Finish 50 seasons.', 'silver', 'Milestones', (c) => c.total >= 50),
+    A('runs_100', 'Century of seasons', 'Finish 100 seasons.', 'gold', 'Milestones', (c) => c.total >= 100),
+    A('runs_250', 'Lifer', 'Finish 250 seasons.', 'legend', 'Milestones', (c) => c.total >= 250),
+
+    /* --- winning --- */
+    A('bowl_first', 'Bowl eligible', 'Reach a bowl game.', 'bronze', 'Winning',
+      (c) => c.any((r) => isTrue(r.bowl))),
+    A('bowl_win', 'Bowl champions', 'Win a bowl game.', 'bronze', 'Winning',
+      (c) => c.any((r) => isTrue(r.bowl_won))),
+    A('playoff_first', 'In the field', 'Make the College Football Playoff.', 'silver', 'Winning',
+      (c) => c.any((r) => isTrue(r.made_playoffs))),
+    A('title_first', 'National champions', 'Win the national championship.', 'silver', 'Winning',
+      (c) => c.titles.length >= 1),
+    A('title_5', 'Dynasty', 'Win 5 national championships.', 'gold', 'Winning',
+      (c) => c.titles.length >= 5),
+    A('title_25', 'Bear Bryant numbers', 'Win 25 national championships.', 'legend', 'Winning',
+      (c) => c.titles.length >= 25),
+    A('perfect', 'Perfect season', 'Go unbeaten and win it all.', 'legend', 'Winning',
+      (c) => c.any((r) => isTrue(r.perfect))),
+    A('perfect_2', 'Twice untouchable', 'Put together two perfect seasons.', 'legend', 'Winning',
+      (c) => c.count((r) => isTrue(r.perfect)) >= 2),
+    A('runner_up', 'One game short', 'Lose the national championship game.', 'silver', 'Winning',
+      (c) => c.any((r) => String(r.eliminated_in || '') === 'CFP Championship')),
+    A('undefeated_no_ring', 'Unbeaten, uncrowned',
+      'Go unbeaten in the regular season and still not win it all.', 'gold', 'Winning',
+      (c) => c.any((r) => has(r.reg_losses) && Number(r.reg_losses) === 0 && !isTrue(r.perfect))),
+    A('cinderella', 'Cinderella', 'Win the title from the 9 seed or lower.', 'legend', 'Winning',
+      (c) => c.any((r) => isTrue(r.title_won) && has(r.seed) && Number(r.seed) >= 9)),
+    A('bye_ring', 'Rested and ready', 'Win the title as a top-four seed.', 'gold', 'Winning',
+      (c) => c.any((r) => isTrue(r.title_won) && has(r.seed) && Number(r.seed) <= 4)),
+    A('snubbed', 'Snubbed', 'Win 11 or more and miss the playoff.', 'silver', 'Winning',
+      (c) => c.any((r) => has(r.reg_wins) && Number(r.reg_wins) >= 11 && !isTrue(r.made_playoffs))),
+
+    /* --- the poll --- */
+    A('ranked_first', 'Ranked', 'Finish a season inside the top 25.', 'bronze', 'The poll',
+      (c) => c.any((r) => has(r.national_rank) && Number(r.national_rank) <= 25)),
+    A('rank_one', 'Number one', 'Finish a season ranked first in the country.', 'gold', 'The poll',
+      (c) => c.any((r) => has(r.national_rank) && Number(r.national_rank) === 1)),
+    A('sig_win', 'Signature win', 'Beat a ranked team.', 'bronze', 'The poll',
+      (c) => c.any((r) => has(r.sig_wins) && Number(r.sig_wins) >= 1)),
+    A('sig_4', 'Gauntlet', 'Beat four ranked teams in one season.', 'gold', 'The poll',
+      (c) => c.any((r) => has(r.sig_wins) && Number(r.sig_wins) >= 4)),
+    A('giant_killer', 'Giant killer', 'Beat a team ranked in the top five.', 'gold', 'The poll',
+      (c) => c.any((r) => has(r.best_win_rank) && Number(r.best_win_rank) <= 5)),
+    A('conf_champ', 'Conference champions', 'Win a conference title.', 'silver', 'The poll',
+      (c) => c.any((r) => isTrue(r.made_playoffs))),
+
+    /* --- roster craft --- */
+    A('rating_80', 'Loaded', 'Build a team rated 80 or better.', 'silver', 'Roster craft',
+      (c) => (c.best('overall') || 0) >= 80),
+    A('rating_95', 'Video game numbers', 'Build a team rated 95 or better.', 'legend', 'Roster craft',
+      (c) => (c.best('overall') || 0) >= 95),
+    A('chem_10', 'They just click', 'Finish a season with +10% chemistry or better.', 'gold', 'Roster craft',
+      (c) => (c.best('chemistry_pct') || 0) >= 10),
+    A('chem_negative_ring', 'Strangers with rings', 'Win the title with negative chemistry.',
+      'gold', 'Roster craft',
+      (c) => c.any((r) => isTrue(r.title_won) && has(r.chemistry_pct) && Number(r.chemistry_pct) < 0)),
+    A('perfect_draft', 'Nothing left on the board', 'Draft the best possible roster from your six spins.',
+      'legend', 'Roster craft', (c) => (c.best('perfect_pct') || 0) >= 100),
+    A('bargain_ring', 'Collective on a budget', 'Win the title spending under $11M.',
+      'gold', 'Roster craft',
+      (c) => c.any((r) => isTrue(r.title_won) && has(r.spend_musd) && Number(r.spend_musd) < 11)),
+    A('shoestring', 'Walk-ons', 'Finish a season having spent under $8M.', 'silver', 'Roster craft',
+      (c) => c.any((r) => has(r.spend_musd) && Number(r.spend_musd) < 8)),
+    A('no_respin_ring', 'Took what it gave', 'Win the title without a single re-spin.',
+      'gold', 'Roster craft',
+      (c) => c.any((r) => isTrue(r.title_won) && has(r.respins) && Number(r.respins) === 0)),
+    A('all_respin_ring', 'Worth every penny', 'Win the title after using every re-spin.',
+      'gold', 'Roster craft',
+      (c) => c.any((r) => isTrue(r.title_won) && has(r.respins) && Number(r.respins) >= 3)),
+
+    /* --- who you signed, read off the six players themselves --- */
+    A('heisman', 'Heisman winner', 'Sign a Heisman Trophy winner.', 'gold', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => c.awardsOf(p).some((a) => /heisman/i.test(a))))),
+    A('heisman_2', 'Two of them', 'Field two Heisman winners at once.', 'legend', 'The roster',
+      (c) => c.anyRoster((ros) =>
+        ros.filter((p) => c.awardsOf(p).some((a) => /heisman/i.test(a))).length >= 2)),
+    A('led_fbs', 'Led the nation', 'Sign a player who led FBS in something.', 'silver', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => c.badgesOf(p).some((b) => /^led fbs/i.test(b))))),
+    A('one_school', 'Company men', 'Field six players from a single school.', 'gold', 'The roster',
+      (c) => c.anyRoster((ros) => new Set(ros.map((p) => p.school)).size === 1)),
+    A('six_schools', 'Six different helmets', 'Field six players from six different schools.',
+      'silver', 'The roster',
+      (c) => c.anyRoster((ros) => new Set(ros.map((p) => p.school)).size === 6)),
+    A('same_team_season', 'Reunion', 'Field two players from the very same team and season.',
+      'silver', 'The roster',
+      (c) => c.anyRoster((ros) => {
+        const seen = Object.create(null);
+        for (const p of ros) {
+          const k = p.school + '|' + p.season;
+          if (seen[k]) return true;
+          seen[k] = 1;
+        }
+        return false;
+      })),
+    A('one_decade', 'Period piece', 'Field six players from a single decade.', 'silver', 'The roster',
+      (c) => c.anyRoster((ros) => new Set(ros.map((p) => decadeOf(p.season))).size === 1)),
+    A('three_decades', 'Across the ages', 'Field players from three different decades.',
+      'gold', 'The roster',
+      (c) => c.anyRoster((ros) => new Set(ros.map((p) => decadeOf(p.season))).size >= 3)),
+    A('one_season', 'Class of one year', 'Field six players from the same season.', 'gold', 'The roster',
+      (c) => c.anyRoster((ros) => new Set(ros.map((p) => Number(p.season))).size === 1)),
+    A('six_states', 'National recruiting', 'Field six players from six different home states.',
+      'gold', 'The roster',
+      (c) => c.anyRoster((ros) => {
+        const st = ros.map((p) => p.home_state).filter(Boolean);
+        return st.length === ros.length && new Set(st).size === 6;
+      })),
+    A('founding_class', 'Founding class', 'Sign a player from the 2005 season.', 'bronze', 'The roster',
+      (c) => c.anyRoster((ros) => ros.some((p) => Number(p.season) === 2005))),
+
+    /* --- streaks --- */
+    A('streak_3', 'Getting into it', 'Play on 3 days in a row.', 'bronze', 'Streaks',
+      (c) => c.play.best >= 3),
+    A('streak_7', 'Every day this week', 'Play on 7 days in a row.', 'silver', 'Streaks',
+      (c) => c.play.best >= 7),
+    A('streak_30', 'A month straight', 'Play on 30 days in a row.', 'legend', 'Streaks',
+      (c) => c.play.best >= 30),
+    A('btb', 'Back to back', 'Win the title in two straight seasons.', 'gold', 'Streaks',
+      (c) => c.title.best >= 2),
+    A('three_peat', 'Three-peat', 'Win the title in three straight seasons.', 'legend', 'Streaks',
+      (c) => c.title.best >= 3),
+  ];
+
+  const TIER_ORDER = { bronze: 0, silver: 1, gold: 2, legend: 3 };
+  const GROUPS = ['Milestones', 'Winning', 'The poll', 'Roster craft', 'The roster', 'Streaks'];
+
+  /*
+   * Evaluate the whole catalogue. A test that throws counts as not earned rather than
+   * taking the trophy case down with it: a badge is decoration, and a broken one must not
+   * cost somebody the whole panel.
+   */
+  function evaluate(rows, resolve, nowIso) {
+    const list = Array.isArray(rows) ? rows : [];
+    const ctx = buildContext(list, resolve, nowIso);
+    const earned = [], locked = [];
+    for (const a of CATALOGUE) {
+      let ok = false;
+      try { ok = !!a.test(ctx); } catch (e) { ok = false; }
+      (ok ? earned : locked).push(a);
+    }
+    return {
+      earned, locked, total: CATALOGUE.length,
+      play: ctx.play, title: ctx.title,
+      stats: {
+        runs: ctx.total,
+        titles: ctx.titles.length,
+        playoffs: ctx.count((r) => isTrue(r.made_playoffs)),
+        bestRank: (function () {
+          const vals = ctx.rows.map((r) => num(r.national_rank)).filter((v) => v !== null);
+          return vals.length ? Math.min.apply(null, vals) : null;
+        })(),
+      },
+    };
+  }
+
+  const api = { CATALOGUE, GROUPS, TIER_ORDER, evaluate, playStreak, titleStreak, dayKey };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  if (typeof window !== 'undefined') window.PS_CFB_ACH = api;
+})();
