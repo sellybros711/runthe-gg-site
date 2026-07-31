@@ -221,6 +221,49 @@
       }
     }
 
+    /* ---- THE TRADE MACHINE, off the two columns 61 adds ----
+       Resolved once here, same as the rosters above, because a dozen badges ask about the
+       same handful of facts. A trade run recorded before those columns existed has null in
+       both and contributes nothing rather than counting as a season with no trades: absent
+       is not zero, which is the rule the whole of this file follows. */
+    const moveRuns = [];
+    const moveTypes = new Set();
+    const dealtOut = [], dealtIn = [];
+    let bestGm = null, totalTrades = 0;
+    for (const r of asc) {
+      if (r.run_mode !== 'trade') continue;
+      if (has(r.gm_rating)) {
+        const g = Number(r.gm_rating);
+        if (bestGm === null || g > bestGm) bestGm = g;
+      }
+      if (!Array.isArray(r.trade_moves)) continue;
+      const res = (k) => (resolve ? resolve(k) : null);
+      const priced = (list) => list.reduce((t, p) => t + Number((p && p.price_musd) || 0), 0);
+      const moves = [], windows = new Set(), outKeys = new Set();
+      let trades = 0, fa = 0;
+      for (const mv of r.trade_moves) {
+        if (!mv || typeof mv !== 'object') continue;
+        const outK = Array.isArray(mv.out) ? mv.out : [];
+        const inK = Array.isArray(mv.in) ? mv.in : [];
+        const outP = outK.map(res).filter(Boolean);
+        const inP = inK.map(res).filter(Boolean);
+        const w = Number(mv.w) || 0;
+        trades++;
+        windows.add(w);
+        outK.forEach((k) => outKeys.add(k));
+        if (mv.fa) fa++;
+        if (mv.t) moveTypes.add(String(mv.t));
+        outP.forEach((p) => dealtOut.push(p));
+        inP.forEach((p) => dealtIn.push(p));
+        moves.push({ w, t: mv.t, outPlayers: outP, inPlayers: inP,
+          outMusd: priced(outP), inMusd: priced(inP) });
+      }
+      totalTrades += trades;
+      moveRuns.push({ row: r, moves, windows, outKeys, trades, fa,
+        outPlayers: moves.reduce((a, m) => a.concat(m.outPlayers), []),
+        inPlayers: moves.reduce((a, m) => a.concat(m.inPlayers), []) });
+    }
+
     const titles = asc.filter((r) => isTrue(r.title_won));
     const modeOf = (r) => r.run_mode || null;
     const clubsPlayed = new Set(asc.map((r) => r.franchise).filter(Boolean));
@@ -240,6 +283,7 @@
       clubsPlayed, clubTitles, clubBanners, modesPlayed, modeTitles,
       seasonsDrafted, clubsDrafted, collegesDrafted, awardsDrafted, linkTypesEver,
       months, weekdays, monthDays, hours,
+      moveRuns, moveTypes, dealtOut, dealtIn, bestGm, totalTrades,
       hasLinks: !!pairLinks,
       best: (col) => {
         const vals = asc.map((r) => num(r[col])).filter((v) => v !== null);
@@ -300,6 +344,11 @@
      'capsurvivor' as a run_mode, so an old row from testing stays on the leaderboard and is
      simply not counted toward either. */
   const MODES = ['free', 'club', 'era', 'trade'];
+
+  /* The last trade window of a season, which must match run.js TRADE_DEADLINE_WEEK: a
+     "deadline deal" badge that names a different week than the game's deadline would never
+     fire. Week 0 is the window before kickoff. */
+  const TRADE_DEADLINE_WEEK = 9;
 
   /* Positions counted on a roster, and the price/production readings the shape badges use. */
   const posCount = (ros, pos) => ros.filter((p) => p.position === pos).length;
@@ -701,6 +750,101 @@
     'Go perfect in the Trade Machine.', 'legend', 'Modes',
     (c) => c.any((r) => r.run_mode === 'trade' && isTrue(r.perfect))));
 
+  /* ===================== THE FRONT OFFICE =====================
+   *
+   * THE ONE GROUP THAT IS NOT RETROACTIVE, and it is worth being plain about why. Every
+   * other badge is derived from columns that already existed, so a returning player finds
+   * them already earned. These read ps_runs.gm_rating and ps_runs.trade_moves, which
+   * 61_football_trade_machine.sql adds, because nothing in the old row can answer them:
+   * `picks` is the roster a run FINISHED with, so it cannot say who was dealt, when, or
+   * what came back, and the GM rating was shown to the player and then thrown away.
+   *
+   * So these start locked for everybody, including runs played yesterday, and are earned
+   * from here forward. That is the honest price of the column and it is the reason the rest
+   * of the cabinet was built the other way.
+   *
+   * THE GM LADDER IS MEASURED, TOP TO BOTTOM. Over machine-played seasons: never trading
+   * scores about 19, trading at random about 29, and taking the best rating-positive offer
+   * in every window scores a median of 62 and a best of 88 -- all of those with NO title,
+   * and result is 40% of the rating.
+   *
+   * A championship maxes that component outright: the bonus is 5 for getting in, 5 a
+   * playoff win and 5 more for the ring, so 14 wins and a title score (28+30)/52 which
+   * clamps at 100. Run through the shipped formula, a title plus the +25 rating gain good
+   * trading normally produces plus $8M of added salary comes to exactly 95.0. So every rung
+   * here is one I can show is reachable, and there is no rung above 95 because that would
+   * need all four components at once.
+   */
+  [[40, 'Front office job', 'bronze'], [55, 'Competent GM', 'silver'],
+   [70, 'Executive of the year', 'gold'], [80, 'Best in the business', 'gold'],
+   [90, 'Rebuilt the franchise', 'legend'],
+   [95, 'Executive of the decade', 'legend']].forEach(([n, name, tier]) => {
+    add(A('gm_' + n, name, 'Finish a Trade Machine season with a GM rating of ' + n + ' or better.',
+      tier, 'Front office', (c) => (c.bestGm || 0) >= n));
+  });
+
+  add(A('deal_first', 'First deal', 'Make a trade.', 'bronze', 'Front office',
+    (c) => c.moveRuns.some((m) => m.trades >= 1)));
+  add(A('deal_25', 'Wheeler dealer', 'Make 25 trades across your career.', 'silver', 'Front office',
+    (c) => c.totalTrades >= 25));
+  add(A('deal_100', 'Never off the phone', 'Make 100 trades across your career.', 'gold', 'Front office',
+    (c) => c.totalTrades >= 100));
+  /* Four windows exist: before kickoff and weeks 3, 6 and 9. */
+  add(A('deal_every_window', 'Active all year', 'Trade in all four windows of one season.',
+    'gold', 'Front office', (c) => c.moveRuns.some((m) => m.windows.size >= 4)));
+  add(A('deal_preseason', 'Before kickoff', 'Make a trade in the window before week 1.',
+    'bronze', 'Front office', (c) => c.moveRuns.some((m) => m.windows.has(0))));
+  add(A('deal_deadline', 'Deadline deal', 'Make a trade in the final window of a season.',
+    'silver', 'Front office',
+    (c) => c.moveRuns.some((m) => m.windows.has(TRADE_DEADLINE_WEEK))));
+  add(A('stood_pat', 'Stood pat', 'Win a Trade Machine title without making a single trade.',
+    'gold', 'Front office',
+    (c) => c.moveRuns.some((m) => m.trades === 0 && isTrue(m.row.title_won))));
+
+  add(A('deal_1for1', 'Straight swap', 'Make a one-for-one trade.', 'bronze', 'Front office',
+    (c) => c.moveTypes.has('1for1')));
+  add(A('deal_2for2', 'Blockbuster', 'Make a two-for-two trade.', 'silver', 'Front office',
+    (c) => c.moveTypes.has('2for2')));
+  add(A('deal_2for1', 'Consolidation', 'Package two players for one.', 'silver', 'Front office',
+    (c) => c.moveTypes.has('2for1')));
+  add(A('deal_fa', 'Filled the hole', 'Fill a roster hole from free agency.', 'bronze', 'Front office',
+    (c) => c.moveRuns.some((m) => m.fa >= 1)));
+  add(A('deal_all_types', 'Every kind of deal',
+    'Make a one-for-one, a two-for-two and a two-for-one.', 'gold', 'Front office',
+    (c) => ['1for1', '2for2', '2for1'].every((t) => c.moveTypes.has(t))));
+
+  /* WHAT WAS ACTUALLY DEALT. These are the questions the column was added for: they need
+     the players who LEFT, and no other column has ever kept them. */
+  add(A('sold_the_star', 'Sold the star',
+    'Trade away a player averaging 20 points a game or more.', 'silver', 'Front office',
+    (c) => c.dealtOut.some((p) => Number(p.ppr_ppg_mean) >= 20)));
+  add(A('sold_the_star_ring', 'Nobody was untouchable',
+    'Win a title in a season where you traded away a 20-point-a-game player.',
+    'legend', 'Front office',
+    (c) => c.moveRuns.some((m) => isTrue(m.row.title_won)
+      && m.outPlayers.some((p) => Number(p.ppr_ppg_mean) >= 20))));
+  add(A('bought_a_star', 'Big splash',
+    'Trade FOR a player averaging 20 points a game or more.', 'silver', 'Front office',
+    (c) => c.dealtIn.some((p) => Number(p.ppr_ppg_mean) >= 20)));
+  add(A('bought_hardware', 'Deadline splash',
+    'Trade for a player who won an award that season.', 'gold', 'Front office',
+    (c) => c.dealtIn.some((p) => (p.awards || []).length > 0)));
+  add(A('bought_mvp', 'Got the MVP', 'Trade for a league MVP.', 'legend', 'Front office',
+    (c) => c.dealtIn.some((p) => (p.awards || []).some((a) => /^MVP$/i.test(a)))));
+  add(A('salary_dump', 'Salary dump',
+    'Make a trade that sheds money, sending out more salary than comes back.',
+    'silver', 'Front office',
+    (c) => c.moveRuns.some((m) => m.moves.some((mv) => mv.outMusd - mv.inMusd >= 5))));
+  add(A('took_on_salary', 'Whatever it takes',
+    'Take on $15M or more of salary in a single trade.', 'gold', 'Front office',
+    (c) => c.moveRuns.some((m) => m.moves.some((mv) => mv.inMusd - mv.outMusd >= 15))));
+  add(A('turnover_4', 'New look',
+    'Trade away four different players in one season.', 'gold', 'Front office',
+    (c) => c.moveRuns.some((m) => m.outKeys.size >= 4)));
+  add(A('turnover_6', 'Blew it up',
+    'Trade away six different players in one season.', 'legend', 'Front office',
+    (c) => c.moveRuns.some((m) => m.outKeys.size >= 6)));
+
   /* ===================== CALENDAR ===================== */
   MONTHS.forEach((m, i) => {
     add(T('month_' + (i + 1), m, 'Play in ' + m + '.', 'bronze', 'Calendar',
@@ -787,7 +931,8 @@
 
   const TIER_ORDER = { bronze: 0, silver: 1, gold: 2, legend: 3 };
   const GROUPS = ['Milestones', 'Winning', 'Roster craft', 'Chemistry', 'Shapes', 'History',
-    'The vintages', 'The 32', 'Banners', 'Recruiting', 'Hardware', 'Modes', 'Calendar', 'Streaks'];
+    'The vintages', 'The 32', 'Banners', 'Recruiting', 'Hardware', 'Modes', 'Front office',
+    'Calendar', 'Streaks'];
 
   /*
    * Evaluate the whole catalogue. A test that throws is treated as not earned rather than
@@ -818,12 +963,14 @@
         clubsDrafted: ctx.clubsDrafted.size,
         collegesDrafted: ctx.collegesDrafted.size,
         banners: ctx.clubBanners.size,
+        bestGm: ctx.bestGm,
+        trades: ctx.totalTrades,
       },
     };
   }
 
   const api = {
-    CATALOGUE, GROUPS, TIER_ORDER, CLUBS, SEASONS, COLLEGES, CAP,
+    CATALOGUE, GROUPS, TIER_ORDER, CLUBS, SEASONS, COLLEGES, CAP, TRADE_DEADLINE_WEEK,
     evaluate, playStreak, titleStreak, dayKey, analyseLinks,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

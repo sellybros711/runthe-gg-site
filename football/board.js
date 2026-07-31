@@ -75,14 +75,21 @@
      the name column drops that too. */
   let namesColumn = true;          // until the database says otherwise
   let avatarColumns = true;
+  /* A THIRD DROPPABLE SET, for the same reason as the other two: these arrive with
+     61_football_trade_machine.sql, and until it is run a project is in a real state where
+     the names and avatars are there and these are not. Only the badge cabinet reads them,
+     so losing them costs a few Trade Machine badges rather than the board. */
+  let tradeColumns = true;
   const rowCols = () => BASE_COLS + (namesColumn ? ',display_name' : '') +
-    (avatarColumns ? ',display_color,display_initials' : '');
+    (avatarColumns ? ',display_color,display_initials' : '') +
+    (tradeColumns ? ',gm_rating,trade_moves' : '');
   const missingCol = (body, re) => {
     const m = (body && body.message) || '';
     return re.test(m) && /does not exist/i.test(m);
   };
   const missingAvatarColumn = (body) => missingCol(body, /display_color|display_initials/);
   const missingNameColumn = (body) => missingCol(body, /display_name/);
+  const missingTradeColumn = (body) => missingCol(body, /gm_rating|trade_moves/);
   /* Not retried, only remembered, for the reason above BASE_COLS. Set so the connection
      check can say which file to run instead of "the board cannot be read".
 
@@ -355,7 +362,7 @@
      a widening gap. A 4xx is deterministic: the payload is wrong and no number of
      retries changes that, so it fails straight through with the server's reason kept. */
   async function submit(payload) {
-    const body = JSON.stringify({
+    const args = {
       p_regular_wins: payload.regularWins,
       p_playoff_wins: payload.playoffWins,
       p_point_diff: round1(payload.pointDiff),
@@ -364,7 +371,13 @@
       p_respins: payload.respins || 0,
       p_franchise: payload.franchise || null,
       p_era: payload.era || null,
-      p_mode: payload.mode === 'era' ? 'era' : payload.mode === 'club' ? 'club' : 'free',
+      /* WHITELISTED, NOT PASSED THROUGH, so an unknown mode records as free play rather
+         than being rejected by the server's check and losing the run. 'trade' was missing
+         from this list, which is why every Trade Machine season until now went onto the
+         free-play board: a different game, ranked against six-pick drafts. */
+      p_mode: payload.mode === 'era' ? 'era'
+        : payload.mode === 'club' ? 'club'
+        : payload.mode === 'trade' ? 'trade' : 'free',
       p_picks: payload.picks,
       p_slots: payload.slots || null,
       p_seed: payload.seed || null,
@@ -373,7 +386,16 @@
       p_structure_mult: payload.structureMult ?? null,
       p_team_rating: payload.teamRating ?? null,
       p_perfect_pct: payload.perfectPct ?? null,
-    });
+    };
+    /* ADDED ONLY WHEN THERE IS SOMETHING TO SAY, which is a compatibility decision and not
+       a tidiness one. PostgREST resolves an RPC by the set of keys in the body, so sending
+       a parameter the installed function does not have is a 404 rather than an ignored
+       field: naming these unconditionally would break EVERY submit on a database that has
+       not run 61_football_trade_machine.sql. Sent only for a Trade Machine run, the worst
+       case is that trade runs fail there, which is what they already do today. */
+    if (payload.gmRating != null) args.p_gm_rating = payload.gmRating;
+    if (payload.tradeMoves != null) args.p_trade_moves = payload.tradeMoves;
+    const body = JSON.stringify(args);
     const ATTEMPTS = 3;
     for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
       try {
@@ -562,13 +584,15 @@
       (col !== 'score' ? '&' + col + '=not.is.null' : '');
     try {
       let res = await timed(url(), { headers: headers() });
-      /* UP TO TWO RETRIES, one per optional set, narrowest first. Each pass reads the body
-         before deciding, so a genuinely broken query still surfaces as itself rather than
-         being mistaken for a schema one file behind. The loop cannot run away: each branch
-         permanently clears the flag that let it in. */
-      for (let pass = 0; pass < 2 && !res.ok && res.status === 400; pass++) {
+      /* UP TO THREE RETRIES, one per optional set, narrowest first. Each pass reads the
+         body before deciding, so a genuinely broken query still surfaces as itself rather
+         than being mistaken for a schema one file behind. The loop cannot run away: each
+         branch permanently clears the flag that let it in. */
+      for (let pass = 0; pass < 3 && !res.ok && res.status === 400; pass++) {
         const body = await res.json().catch(() => null);
-        if (avatarColumns && missingAvatarColumn(body)) {
+        if (tradeColumns && missingTradeColumn(body)) {
+          tradeColumns = false;
+        } else if (avatarColumns && missingAvatarColumn(body)) {
           avatarColumns = false;
           needsAvatarMigration = true;
         } else if (namesColumn && missingNameColumn(body)) {
@@ -633,15 +657,28 @@
      one ordering that is already an index scan.
 
      BASE_COLS, without display_name: these are your own runs and the panel never prints a
-     name on them, which also means this call needs none of the pre-migration retry dance
-     that top() does. */
+     name on them.
+
+     ONE RETRY, and only for the trade pair. It used to need none, and that is no longer
+     true: these are the rows the badge cabinet is derived from, so gm_rating and
+     trade_moves have to come back here or every Trade Machine badge reads as unearned on a
+     database that has them. Nothing else in this call is optional, so a 400 that is not
+     about those two columns is still a plain failure. */
   async function mine(userId, limit) {
     if (!userId) return null;
     try {
-      const q = base() + TABLE + '?select=' + BASE_COLS +
+      const cols = () => BASE_COLS + (tradeColumns ? ',gm_rating,trade_moves' : '');
+      const q = () => base() + TABLE + '?select=' + cols() +
         '&user_id=eq.' + encodeURIComponent(userId) +
         '&order=created_at.desc&limit=' + (limit || 500);
-      const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
+      let res = await timed(q(), { headers: headers({ Prefer: 'count=exact' }) });
+      if (!res.ok && res.status === 400 && tradeColumns) {
+        const body = await res.json().catch(() => null);
+        if (missingTradeColumn(body)) {
+          tradeColumns = false;
+          res = await timed(q(), { headers: headers({ Prefer: 'count=exact' }) });
+        }
+      }
       if (!res.ok) return await fail('mine', res);
       const rows = await res.json().catch(() => null);
       if (!Array.isArray(rows)) {
