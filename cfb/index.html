@@ -3355,13 +3355,18 @@ function teamRating(roster,chemistry){
   const fppg=roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
   return fppg*chemistry*E.rosterStructure(roster).multiplier;
 }
-/* TEAM OVERALL IS A RATING OUT OF 100, not the points total it started as. The
-   raw number is points a game, and a good roster clears 100 of them, so a team
-   that lost in the first round was being handed a 106 and it read like a
-   perfect score. Divided down against the best a full budget can buy, so an
-   outstanding squad lands in the high nineties and nothing prints past 100. */
-const RATING_CEILING=116;
-const overallOf=(raw)=>Math.min(99.9,raw*100/RATING_CEILING);
+/* TEAM OVERALL IS A RATING, not the points total it started as. The raw number
+   is points a game and any decent roster clears 100 of them, so a team knocked
+   out in the first round was handed a 106 and it read like a perfect score.
+
+   A hundred is pinned to the best lineup the game can physically produce. Every
+   player in the data was run through a knapsack against the full budget, and the
+   strongest six that fit come to 130 points a game, 135 once the shape of the
+   roster is counted. So 135 is the hundred. Nothing clamps the number: clearing
+   it is possible, but it takes a roster within a point or two of the best that
+   could ever be drafted, which is what going past a hundred should mean. */
+const RATING_CEILING=135;
+const overallOf=(raw)=>raw*100/RATING_CEILING;
 function fitPct(mult){const n=Math.round((mult-1)*100);return(n>0?'+':'')+n+'%';}
 function schemeTail(st){
   if(!st||!st.scheme) return '';
@@ -3411,12 +3416,12 @@ function paintOver(){
   const st=E.rosterStructure(run.roster);
   const rating=teamRating(run.roster,run.season.chemistry);
   const overall=overallOf(rating);
-  const rband=overall>=80?'#22c55e':(overall>=55?'#fbbf24':'#ef4444');
+  const rband=overall>=70?'#22c55e':(overall>=50?'#fbbf24':'#ef4444');
   const bigcell=(k,v,pctFill,color)=>'<div><div class="k">'+k+'</div>'+
     '<div class="v" style="color:'+color+'">'+v+'</div>'+
     '<div class="t"><i style="width:'+pctFill+'%;background:'+color+'"></i></div></div>';
   $('o-ovr').innerHTML=
-    bigcell('Team overall',overall.toFixed(1),Math.max(2,overall),rband)+
+    bigcell('Team overall',overall.toFixed(1),Math.max(2,Math.min(100,overall)),rband)+
     bigcell('Best possible','...',0,'#94a3b8');
   const split=(v,k)=>'<div><b>'+v+'</b><span>'+k+'</span></div>';
   $('o-splits').innerHTML=
@@ -3500,7 +3505,7 @@ function paintOver(){
     if(share!==null&&kept<5) share=Math.min(share,99);
     const sband=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
     $('o-ovr').innerHTML=
-      bigcell('Team overall',overall.toFixed(1),Math.max(2,overall),rband)+
+      bigcell('Team overall',overall.toFixed(1),Math.max(2,Math.min(100,overall)),rband)+
       bigcell('Best possible',share===null?'--':share+'%',
         share===null?0:Math.max(2,share),share===null?'#94a3b8':sband);
     if(!best){$('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>';}
