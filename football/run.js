@@ -1295,7 +1295,15 @@ function findOffers(run, data, ctx, outIdxs) {
   };
 
   if (!twoOut) {
-    single(0.78, 1.32, 0);
+    /* THE TOP OF THE BAND IS WHERE THE MODE LIVES. At 1.32 the best a window could offer was
+       about +6 rating, so four windows took a dealt 65 to about 89 -- which the measured win
+       curve says is a 63% playoff team before the season's first third is even played on it.
+       Widened to 1.55, so a well-chosen shop can actually climb. It is not free: every offer
+       still has to clear the cap check, still gets scored honestly against the resulting
+       lineup, and finish() still throws out anything worse than -4. Taking offers at random
+       measures WORSE than never trading at all, which is the sign that the choice still is
+       one. */
+    single(0.78, 1.55, 0);
     twoBack();
     return finish(offers, 4).slice(0, 6);
   }
@@ -1304,7 +1312,7 @@ function findOffers(run, data, ctx, outIdxs) {
   // half sends two players back. BOTH of those two come off ONE team-season, because a
   // real two-for-two has a single trade partner: you do not ship two players to two
   // different clubs in one deal, and the card can then name the team you dealt with.
-  single(0.62, 1.20, 3);
+  single(0.62, 1.42, 3);
   const floor = Math.max(3, outValue * 0.28);
   const partners = [];
   for (const ts of pool) {
@@ -1319,7 +1327,7 @@ function findOffers(run, data, ctx, outIdxs) {
     const b = list[Math.floor(rng() * list.length)];
     if (!a || !b || a.player_id === b.player_id) continue;
     const cv = a.ppr_ppg_mean + b.ppr_ppg_mean;
-    if (cv < outValue * 0.80 || cv > outValue * 1.12) continue;
+    if (cv < outValue * 0.80 || cv > outValue * 1.30) continue;
     if (keepSalary + a.price_musd + b.price_musd > CAP) continue;
     // assignRoster inside buildOffer is the single authority on whether the lineup still
     // works, so a package that leaves a hole is rejected there rather than pre-screened.
@@ -1586,7 +1594,19 @@ function computeGMRating(run) {
     ? clamp100(100 - overCapBy * GM_OVERCAP_PER_M)
     : clamp100(100 - Math.max(0, idleCap - GM_IDLE_FREE_M) * GM_IDLE_PER_M);
 
-  const expectedWins = 6 + (run.startRating - 60) * (5 / 12);
+  /* WHAT THE ROSTER YOU WERE HANDED SHOULD HAVE WON, and this line was badly wrong. It read
+     6 + (startRating - 60) * 5/12, one win per 2.4 rating points. Measured against the sim --
+     one fixed roster per rating, forty seasons each, nothing changed mid-year -- the truth is
+     one win per 6.5 points:
+
+       rating   60    70    80    85    90    95   100
+       wins     7.3   9.5  11.1  12.1  11.9  13.0  13.8
+
+     The old slope fits that with an RMS error of 4.8 wins and, past about rating 86, expects
+     more wins than there are games: at 90 it wanted 18.5 of 17. Nothing beats an impossible
+     expectation, so this mark collapsed to zero for any strong roster. The least-squares fit to
+     the measured curve has an RMS error of 0.34. */
+  const expectedWins = 7.8 + (run.startRating - 60) * 0.153;
   const overScore = clamp100((regularWins - expectedWins) / 6 * 100);
 
   /* FIVE MARKS, and the cap is one of them rather than a third of a quarter of one. The
