@@ -763,17 +763,21 @@
    * from here forward. That is the honest price of the column and it is the reason the rest
    * of the cabinet was built the other way.
    *
-   * THE GM LADDER IS MEASURED, TOP TO BOTTOM. Over machine-played seasons: never trading
-   * scores about 19, trading at random about 29, and taking the best rating-positive offer
-   * in every window scores a median of 62 and a best of 88 -- all of those with NO title,
-   * and result is 40% of the rating.
+   * THE GM LADDER IS MEASURED, TOP TO BOTTOM. Over machine-played seasons a bot taking the
+   * best rating-positive offer in every window scores a median of 67, a p90 of 77 and a best
+   * of 83 -- all with NO title, and winning is 35% of the rating. Never trading scores about
+   * 19 and trading at random about 29.
    *
-   * A championship maxes that component outright: the bonus is 5 for getting in, 5 a
-   * playoff win and 5 more for the ring, so 14 wins and a title score (28+30)/52 which
-   * clamps at 100. Run through the shipped formula, a title plus the +25 rating gain good
-   * trading normally produces plus $8M of added salary comes to exactly 95.0. So every rung
-   * here is one I can show is reachable, and there is no rung above 95 because that would
-   * need all four components at once.
+   * A championship maxes the winning component outright: the bonus is 5 for getting in, 5 a
+   * playoff win and 5 more for the ring, so 14 wins and a title score (28+30)/52 which clamps
+   * at 100. Run through the shipped formula, a title plus the +25 rating gain good trading
+   * normally produces, plus $8M of added salary and a payroll inside the cap, comes to 95.0.
+   * So every rung here is one I can show is reachable, and there is no rung above 95 because
+   * that would need all five marks at once.
+   *
+   * Re-measured after cap management became its own 15% component. The rungs did not need to
+   * move: 40 and 55 are what trading at all gets you, 70 and 80 are a well-run season, and 90
+   * and 95 now need a clean payroll as well as a ring.
    */
   [[40, 'Front office job', 'bronze'], [55, 'Competent GM', 'silver'],
    [70, 'Executive of the year', 'gold'], [80, 'Best in the business', 'gold'],
