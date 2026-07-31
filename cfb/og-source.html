@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<!-- Internal build asset (renders the 1200x630 share image). Never a reader-facing page,
+     so keep it out of search and out of any AdSense crawl. -->
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@600;700;800&family=Graduate&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* 1200x630, the size every platform crops a share preview from.
+     Same visual language as the game: the dark field, the green and gold wash, Graduate
+     on the eyebrow because that is the collegiate face the game sets its ribbons in, and
+     the six roster spots in the position colors the draft screen uses. */
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1200px;height:630px;overflow:hidden;background:#080b14;color:#eef2f9;
+    font-family:'Inter',system-ui,sans-serif;position:relative;
+    background-image:
+      radial-gradient(900px 540px at 50% -12%, rgba(16,185,129,.20), transparent 70%),
+      radial-gradient(760px 470px at 100% 110%, rgba(245,158,11,.17), transparent 70%);}
+  /* the yard lines, faint, off the game's own field panel */
+  .lines{position:absolute;inset:0;
+    background-image:repeating-linear-gradient(90deg,
+      rgba(255,255,255,.05) 0 1px, transparent 1px 100px);}
+  /* the hash marks, which is the one thing a college field has more of than a pro one */
+  .hash{position:absolute;left:0;right:0;top:50%;height:2px;
+    background-image:repeating-linear-gradient(90deg,
+      rgba(255,255,255,.07) 0 12px, transparent 12px 50px);}
+  .wrap{position:relative;height:100%;display:flex;flex-direction:column;
+    justify-content:center;padding:0 74px 46px}
+  .eyebrow{font-family:'Graduate',serif;font-size:23px;letter-spacing:.2em;
+    text-transform:uppercase;color:#94a3b8;margin-bottom:14px}
+  .eyebrow b{color:#10b981}
+  h1{font-family:'Anton',Impact,sans-serif;font-weight:400;
+    text-transform:uppercase;font-size:112px;line-height:.86;letter-spacing:.008em}
+  h1 span{display:block}
+  h1 .two{background:linear-gradient(135deg,#34d399 0%,#059669 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  p{font-size:28px;line-height:1.34;color:#cbd5e1;margin-top:24px;max-width:700px}
+  p b{color:#eef2f9;font-weight:700}
+  /* the six spots, in the game's own position colors */
+  .slots{display:flex;gap:11px;margin-top:32px}
+  .slot{font-family:'Anton',sans-serif;font-weight:400;font-size:26px;
+    letter-spacing:.1em;padding:12px 20px;border-radius:12px;color:#fff;
+    box-shadow:0 10px 26px -10px rgba(0,0,0,.8)}
+  .qb{background:linear-gradient(180deg,#ff0a3b,#a3072a)}
+  .rb{background:linear-gradient(180deg,#33e66e,#178943)}
+  .wr{background:linear-gradient(180deg,#2aa5ff,#0b5fa8)}
+  .te{background:linear-gradient(180deg,#ffab1f,#a35f00)}
+  .fx{background:linear-gradient(180deg,#c74dff,#7c1bab)}
+  .url{position:absolute;right:74px;bottom:52px;text-align:right;
+    font-family:'Anton',sans-serif;font-weight:400;font-size:30px;
+    letter-spacing:.14em;color:#64748b}
+  .url b{color:#eef2f9}
+  .url b i{color:#10b981;font-style:normal}
+  /* The mark, top right, clear of the type. The bare SVG rather than a plated PNG:
+     a plate would draw its own dark square against a background that already has one,
+     and at 232px the facemask reads with room to spare. */
+  .mark{position:absolute;right:66px;top:74px;width:232px;display:block}
+</style></head>
+<body>
+  <div class="lines"></div>
+  <div class="hash"></div>
+  <div class="wrap">
+    <img class="mark" src="brand/mark.svg" alt="">
+    <div class="eyebrow">Free &middot; No download &middot; Six spins, <b>one season</b></div>
+    <h1><span>College Football</span><span class="two">Perfect Season</span></h1>
+    <p>Spin for a year and a school. Sign one player off each of six draws, under a
+       <b>$14M NIL budget</b>. Then play all 12 games and chase the national title.</p>
+    <div class="slots">
+      <span class="slot qb">QB</span><span class="slot rb">RB</span>
+      <span class="slot wr">WR</span><span class="slot wr">WR</span>
+      <span class="slot te">TE</span><span class="slot fx">FLEX</span>
+    </div>
+  </div>
+  <div class="url"><b>RUNTHE<i>.GG</i></b>/CFB</div>
+</body></html>

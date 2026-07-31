@@ -3,14 +3,101 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>College Football: Perfect Season | Free Roster Draft Game</title>
-<meta name="description" content="Spin a wheel for a year and a college football team, sign one player off each of six draws, and build a roster out of every season from 2005 to 2025 under a $14M NIL budget. Then play all 12 games and chase a perfect season.">
+<!-- TITLE: the words people actually type come first and the name of the game rides
+     along with them. Nobody searches "Perfect Season", they search for a college
+     football game they can play without downloading anything. Under 60 characters so
+     Google shows all of it. -->
+<title>College Football Draft Game: Perfect Season | RunThe.GG</title>
+<!-- DESCRIPTION: written as the sentence that earns the click rather than as a summary.
+     Leads with the verb, names the constraint that makes it a game, ends on the goal. -->
+<meta name="description" content="Spin for a year and a school, sign six players off six draws under a $14M NIL budget, then play all 12 games and chase a perfect college football season. Free, no download, new every run.">
+<meta name="keywords" content="college football game, CFB draft game, free online college football game, college football roster builder, college football simulation game, perfect season">
 <meta name="theme-color" content="#080b14">
 <link rel="canonical" href="https://runthe.gg/cfb/">
+<link rel="manifest" href="manifest.webmanifest">
+<!-- THE MARK: ONE PICTURE, EVERYWHERE. The family puzzle helmet in this game's green and
+     gold, on a #111827 plate at every size. The tradeoff is written down in
+     brand/README.md rather than left to be rediscovered: at 16px the facemask is a
+     handful of grey pixels and reads as texture, at 32 (what a retina tab actually
+     draws) it reads properly, and what that buys is one mark instead of two. -->
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=1">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png?v=1">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=1">
+<!-- THE SHARE CARD. Every finished season offers a share whose text ends in this page's
+     URL, so this block is what a player's friends actually see. Without an og:image it
+     unfurls as a bare line of text in iMessage, WhatsApp, Discord and Slack, which is
+     the worst place for a game spread by sharing to have a gap. -->
 <meta property="og:title" content="College Football: Perfect Season">
-<meta property="og:description" content="Six spins, six players, one shot at a perfect college football season. Free, no download, playable in your browser.">
+<meta property="og:description" content="Spin for a year and a school, sign six players under a $14M NIL budget, then play all 12 games and chase a perfect college football season.">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/cfb/">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://runthe.gg/cfb/og.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="College Football: Perfect Season. Spin for a year and a school, sign six players under a $14M NIL budget and play a full season. The six roster spots shown as QB, RB, WR, WR, TE and FLEX.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="College Football: Perfect Season">
+<meta name="twitter:description" content="Draft a college football roster from every season since 2005 under a $14M NIL budget, then play all 12 games and chase a perfect season.">
+<meta name="twitter:image" content="https://runthe.gg/cfb/og.png?v=1">
+<meta name="twitter:image:alt" content="College Football: Perfect Season. Draft six players under a $14M NIL budget and play a full season.">
+<!-- Structured data, so a search result can carry the game's name and category rather
+     than only a blue link. VideoGame is the type Google documents for this; the offer
+     says free, which is the fact most likely to earn the click. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  "name": "College Football: Perfect Season",
+  "url": "https://runthe.gg/cfb/",
+  "description": "Spin for a year and a school, sign one player off each of six draws under a $14M NIL budget, then play all 12 games and chase a perfect college football season.",
+  "image": "https://runthe.gg/cfb/og.png",
+  "genre": ["Sports", "Simulation", "Strategy"],
+  "gamePlatform": ["Web browser", "Android", "iOS"],
+  "applicationCategory": "Game",
+  "playMode": "SinglePlayer",
+  "inLanguage": "en",
+  "isAccessibleForFree": true,
+  "publisher": { "@type": "Organization", "name": "RunThe.GG", "url": "https://runthe.gg/" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD",
+    "availability": "https://schema.org/InStock" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "RunThe.GG", "item": "https://runthe.gg/" },
+    { "@type": "ListItem", "position": 2, "name": "College Football: Perfect Season",
+      "item": "https://runthe.gg/cfb/" }
+  ]
+}
+</script>
+<!-- CONSENT MODE DEFAULTS, before any ad or analytics tag, so nothing is stored until
+     Google's certified CMP answers. The same block the rest of runthe.gg runs; it is what
+     makes privacy.html's promise true rather than aspirational. -->
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<!-- GA4, same property as the rest of runthe.gg. The consent defaults above gate it. -->
+<script>
+window.GA_ID='G-L29P5MRWKE';
+(function(){var id=window.GA_ID;if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id))return;
+  window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments);};
+  gtag('js',new Date());gtag('config',id);
+  var s=document.createElement('script');s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+  document.head.appendChild(s);})();
+</script>
+<!-- Google AdSense, same publisher as the rest of the site. The unit is manual and sits
+     at the foot of the body; Auto Ads stays off in the dashboard, which is what keeps an
+     ad from being injected into the middle of a game screen. -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Big+Shoulders+Display:wght@600;700&family=Archivo:wght@500;600;700;800&family=Barlow+Condensed:wght@700;800&family=Graduate&family=Orbitron:wght@700;900&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
@@ -1273,6 +1360,44 @@
     font-weight:700;font-size:14px;opacity:0;transition:all .25s ease;pointer-events:none}
   .toast.on{transform:translateX(-50%);opacity:1}
   .confetti-cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:58}
+  /* ── ads ────────────────────────────────────────────────────────
+     Two side rails on a wide desktop and one fixed strip on a phone, both manual and
+     both non-responsive, so a unit can never grow up over a game button. */
+  .rtp-ad-rail{position:fixed;top:50%;transform:translateY(-50%);z-index:50;display:none}
+  .rtp-ad-left{left:24px} .rtp-ad-right{right:24px}
+  /* Side rails only where there is genuinely room beside the 600px column. */
+  @media (min-width:1200px){ .rtp-ad-rail{display:block} }
+
+  /* HOW MUCH OF THE BOTTOM EDGE THE FIXED STRIP OWNS, as one number, because two things
+     need it: the page padding that keeps content clear of it, and anything sticky that
+     wants to sit just above it. Kept as a variable so the two cannot drift apart. */
+  :root{--adstrip:0px}
+  @media (max-width:1199px){ :root{--adstrip:calc(54px + env(safe-area-inset-bottom,0px))} }
+  body.rtp-hide-ads{--adstrip:0px}
+
+  .rtp-ad-mobile-bottom{position:fixed;left:0;right:0;bottom:0;height:50px;z-index:40;
+    display:none;overflow:hidden;text-align:center;background:transparent;
+    /* AN EMPTY CONTAINER MUST NOT SWALLOW TAPS. It is transparent and 50px tall across
+       the whole width whether or not AdSense ever serves into it, and at z-index 40 it
+       wins every hit test in that band: a button under it would look perfectly normal
+       and do nothing. Taps pass through until a real ad is in there to receive them. */
+    pointer-events:none}
+  /* Framed ONLY once a real ad has filled it, so before AdSense serves, or when it
+     returns nothing, the empty container is invisible rather than an empty bar. */
+  .rtp-ad-mobile-bottom:has(ins[data-ad-status="filled"]){
+    background:#0b1220;border-top:1px solid var(--line);pointer-events:auto}
+  .rtp-ad-mobile-bottom .adsbygoogle{display:inline-block;width:320px;height:50px}
+  @media (max-width:1199px){
+    .rtp-ad-mobile-bottom{display:block}
+    .rtp-ad-rail{display:none !important}
+    body{padding-bottom:var(--adstrip)}
+  }
+  /* THE SCREENS THAT GET NO ADS: the ones where a game is being played out. They run a
+     live scoreboard near the bottom edge and are the one part of this that asks for
+     undivided attention. The strip goes and its reserved space goes with it. */
+  body.rtp-hide-ads .rtp-ad-mobile-bottom{display:none !important}
+  @media (max-width:1199px){ body.rtp-hide-ads{padding-bottom:0 !important} }
+
   .sheet{position:fixed;inset:0;background:rgba(0,0,0,0);display:flex;z-index:60;
     align-items:flex-end;justify-content:center;padding:14px;
     visibility:hidden;pointer-events:none;transition:background .3s ease,visibility 0s .3s}
@@ -1689,6 +1814,25 @@ or endorsed by the NCAA, the CFP or any school.
   </div>
 </div>
 
+<!-- ===== AdSense units. Manual, and placed before the overlays so the sheet, the toast
+     and the crash banner all paint above them. The slot ids are placeholders until the
+     units are created in the dashboard; the initialiser at the foot of this file refuses
+     to start a unit whose slot is still a placeholder, rather than reporting this game's
+     traffic against another game's unit. ===== -->
+<div class="rtp-ad-rail rtp-ad-left">
+  <ins class="adsbygoogle" style="display:block;width:160px;height:600px"
+       data-ad-client="ca-pub-5952069078178257" data-ad-slot="0000000000"></ins>
+</div>
+<div class="rtp-ad-rail rtp-ad-right">
+  <ins class="adsbygoogle" style="display:block;width:160px;height:600px"
+       data-ad-client="ca-pub-5952069078178257" data-ad-slot="0000000000"></ins>
+</div>
+<!-- Fixed 320x50, deliberately not responsive: a responsive unit here can grow over a button. -->
+<div class="rtp-ad-mobile-bottom">
+  <ins class="adsbygoogle" style="display:inline-block;width:320px;height:50px"
+       data-ad-client="ca-pub-5952069078178257" data-ad-slot="0000000000"></ins>
+</div>
+
 <div class="crash" id="crash"></div>
 <div class="toast" id="toast"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
@@ -1719,7 +1863,9 @@ const NEED_VERSION=1;
 
 /* ── global helpers ──────────────────────────────────────────── */
 const $=(id)=>document.getElementById(id);
-function ga(){}
+/* One event helper, wrapped, because a blocked analytics tag is the common case and not
+   the edge case: an ad blocker must cost a measurement and never the game. */
+function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(e){}}
 const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const M=(v)=>(v>0&&v<1)?'$'+Math.round(v*1000)+'K':'$'+v.toFixed(1)+'M';
 const M0=(v)=>'$'+Math.round(v)+'M';
@@ -1910,10 +2056,15 @@ function layoutFor(){
 /* ── state ───────────────────────────────────────────────────── */
 let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,simTimer=null,lastChem=1;
 
+/* The screens a game is actually being played out on. They run a live scoreboard near the
+   bottom edge, which is where the fixed ad strip sits, and they are the one part of this
+   that asks for undivided attention. */
+const NO_ADS=['s-load','s-season','s-po','s-bowl'];
 function show(id){
   document.querySelectorAll('.confetti-cv').forEach(cv=>cv.remove());
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   $(id).classList.add('on');window.scrollTo({top:0});
+  document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
   if(typeof heroSync==='function') heroSync();
 }
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');
@@ -2019,13 +2170,14 @@ function openProfile(tab){
       '<button data-tab="school"'+(profileTab==='school'?' class="on"':'')+'>School colors</button>'+
       '<button data-tab="case"'+(profileTab==='case'?' class="on"':'')+'>Trophy case</button>'+
     '</div>';
+  ga(profileTab==='case'?'career_viewed':'school_picker_opened');
   box.innerHTML=head+(profileTab==='school'?schoolPickerHtml():trophyCaseHtml())+
     '<div style="margin-top:12px"><button class="btn ghost sm" id="sp-x" style="width:100%">Close</button></div>';
   openSheet();
   box.querySelectorAll('.achtabs button').forEach(b=>b.onclick=()=>openProfile(b.dataset.tab));
   box.querySelectorAll('.swatch').forEach(btn=>btn.onclick=()=>{
     const t=schoolGroups().flatMap(g=>g.teams).find(x=>x.school===btn.dataset.school);
-    if(t) applyTheme(t); closeSheet();
+    if(t){applyTheme(t);ga('school_selected',{school:t.school});} closeSheet();
   });
   const def=$('sp-default'); if(def) def.onclick=()=>{ applyTheme(null); closeSheet(); };
   $('sp-x').onclick=closeSheet;
@@ -2178,6 +2330,7 @@ async function boot(){
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     $('h-field').innerHTML=fieldMarkings();
     buildTicker();
+    ga('game_loaded');
     show('s-intro');
   }catch(e){
     $('s-load').innerHTML='<div class="load"><h3 class="display">Could not load the data</h3>'+
@@ -2400,6 +2553,7 @@ function newRun(){
 
 function beginDraft(){
   newRun();
+  ga('game_started');
   paintTop(); drawField($('field'),true);
   show('s-draft');
   nextSpin();
@@ -2504,7 +2658,10 @@ function nextSpin(){
   $('opts').innerHTML=''; $('tabs').innerHTML=''; $('d-respin').innerHTML='';
   activeTab=null;
   const draw=R.spin(run,DATA);
-  spinBoth(draw,()=>{paintOpts(draw);});
+  spinBoth(draw,()=>{
+    ga('spin_completed',{spin_n:(run.roster||[]).length+1,year:draw.season,team:draw.teamName});
+    paintOpts(draw);
+  });
 }
 
 /* ── tabs and options ────────────────────────────────────────── */
@@ -2642,6 +2799,7 @@ function paintRespins(){
   el.querySelectorAll('button.respin').forEach(b=>{
     b.onclick=()=>{
       $('opts').innerHTML='';$('tabs').innerHTML='';el.innerHTML='';
+      ga('respin_used',{kind:b.dataset.kind,respins_used:(run.respinsUsed||0)+1});
       const d=R.respin(run,DATA,b.dataset.kind);
       paintTop();spinBoth(d,()=>paintOpts(d));
     };
@@ -2658,7 +2816,11 @@ $('opts').addEventListener('click',e=>{
   const b=e.target.closest('.tile'); if(!b||b.classList.contains('off'))return;
   const p=BYKEY.get(b.dataset.k);
   try{R.sign(run,p);}catch(err){toast(err.message);return;}
+  ga('player_signed',{spin_n:run.roster.length,position:p&&p.position,
+    season:p&&p.season,price_musd:p&&p.price_musd});
   if(run.phase===R.PHASES.SEASON){
+    ga('roster_complete',{total_spend:Math.round((run.roster.reduce((t,x)=>t+(x.price_musd||0),0)
+      +E.respinFees(run.respinsUsed))*10)/10,respins_used:run.respinsUsed});
     paintSquad();
   }else nextSpin();
 });
@@ -2666,6 +2828,7 @@ $('opts').addEventListener('click',e=>{
 /* ── squad screen ────────────────────────────────────────────── */
 function paintSquad(){
   R.startSeason(run,DATA,CTX);
+  ga('season_started');
   drawField($('field2'),false);
 
   const p=run.season.chemistry-1, el=$('q-chem');
@@ -3698,6 +3861,10 @@ function paintOver(){
     });
     run.newBadges=lastEarned.slice();
     run.hadBadges=lastBefore;
+    ga('run_complete',{outcome:o.perfect?'perfect':o.titleWon?'champion'
+        :o.eliminatedIn?'eliminated':o.bowlGame?'bowl':'missed_playoffs',
+      record:o.record,national_rank:finalRank||null,overall:Math.round(overall*10)/10});
+    lastEarned.forEach(a=>ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group}));
   }
   paintNewBadges();
 
@@ -3960,6 +4127,9 @@ function roundRect(x,l,t,w,h,r){
 const canvasBlob=(c)=>new Promise((res)=>c.toBlob(res,'image/png'));
 
 $('b-share').onclick=async()=>{
+  const o=run&&run.outcome;
+  ga('result_shared',{outcome:!o?null:o.perfect?'perfect':o.titleWon?'champion'
+    :o.eliminatedIn?'eliminated':o.bowlGame?'bowl':'missed_playoffs'});
   const {text}=shareLines();
   let file=null;
   try{if(document.fonts&&document.fonts.ready) await document.fonts.ready;
@@ -4171,7 +4341,7 @@ function howToPlay(){
 
 /* ── wire up buttons ─────────────────────────────────────────── */
 $('b-play-intro').onclick=()=>beginDraft();
-$('b-how').onclick=()=>howToPlay();
+$('b-how').onclick=()=>{ga('how_to_play_opened');howToPlay();};
 $('b-again').onclick=()=>beginDraft();
 $('b-home').onclick=(e)=>{e.preventDefault();show('s-intro');};
 $('b-home2').onclick=()=>show('s-intro');
@@ -4180,6 +4350,27 @@ $('b-home2').onclick=()=>show('s-intro');
 boot();
 
 })();
+</script>
+<script>
+  /* Start each AdSense unit exactly once.
+     Wrapped so a missing, blocked or slow adsbygoogle.js can never throw and take the
+     game with it: an ad blocker is the common case, not the edge case.
+
+     A unit whose slot is still the placeholder is SKIPPED. This game's units do not
+     exist in the dashboard yet, and pushing a placeholder either serves nothing or,
+     worse, could be pointed at another game's slot by a careless copy and report the
+     wrong game's traffic. Paste the real slot ids into the three ins elements above and
+     they start on their own. */
+  (function(){
+    try{
+      var units=document.querySelectorAll('ins.adsbygoogle');
+      for(var i=0;i<units.length;i++){
+        var slot=units[i].getAttribute('data-ad-slot');
+        if(!slot||/^0+$/.test(slot)) continue;
+        (adsbygoogle=window.adsbygoogle||[]).push({});
+      }
+    }catch(e){}
+  })();
 </script>
 </body>
 </html>
