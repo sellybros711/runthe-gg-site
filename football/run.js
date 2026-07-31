@@ -1130,6 +1130,35 @@ function cutOptions(players, slots) {
   return out;
 }
 
+/*
+ * The same question when MORE THAN ONE has to go: three men arriving for one leaving
+ * puts the roster at eight, and two have to be released. Returns legal groups of
+ * exactly `n` indices, not n separate legal single cuts -- releasing two men who are
+ * each individually safe can still leave six who cannot line up.
+ *
+ * Enumerated rather than searched: n is 1 or 2 and the roster is at most eight, so
+ * the whole space is 28 combinations at worst.
+ */
+function cutSets(players, slots, n) {
+  /* CUTTING NOBODY IS ONLY AN OPTION IF THE SQUAD ALREADY LINES UP. Returning [[]] flat, as
+     this first did, made "can the remaining cuts still be made?" answer yes unconditionally,
+     and the cut screen used that to offer a release that left no legal lineup a step later --
+     six men and no quarterback. acceptTrade then rejected the choice and substituted its own,
+     so the player released one man and lost a different one. */
+  if (n <= 0) {
+    return players.length === slots.length && assignRoster(players, slots) ? [[]] : [];
+  }
+  if (n === 1) return cutOptions(players, slots).map((i) => [i]);
+  const out = [];
+  for (let i = 0; i < players.length; i++) {
+    for (let j = i + 1; j < players.length; j++) {
+      const rest = players.filter((_, k) => k !== i && k !== j);
+      if (rest.length === slots.length && assignRoster(rest, slots)) out.push([i, j]);
+    }
+  }
+  return out;
+}
+
 function buildOffer(run, slots, outIdxs, inPlayers) {
   const outPlayers = outIdxs.map((i) => run.roster[i]);
   const keep = run.roster.filter((_, i) => !outIdxs.includes(i));
@@ -1140,24 +1169,30 @@ function buildOffer(run, slots, outIdxs, inPlayers) {
   const inValue = inPlayers.reduce((t, p) => t + p.ppr_ppg_mean, 0);
   const netCap = Math.round((inSalary - outSalary) * 100) / 100;
   const netVal = Math.round((inValue - outValue) * 10) / 10;
-  let type, faPos = null, cutIdxs = null;
-  if (newRoster.length === slots.length) {
+  /* THE NAME OF THE SHAPE IS THE SHAPE: two out and three back is '2for3'. The four
+     original names ('1for1', '1for2', '2for1', '2for2') come out of this unchanged,
+     which matters because badges are keyed on them. */
+  const type = outIdxs.length + 'for' + inPlayers.length;
+  const over = newRoster.length - slots.length;
+  let faPos = null, cutIdxs = null, cutGroups = null;
+  if (over === 0) {
     if (!assignRoster(newRoster, slots)) return null;
-    type = outIdxs.length === 1 ? '1for1' : '2for2';
-  } else if (newRoster.length > slots.length) {
-    /* ONE GOOD PLAYER OUT, TWO BACK, AND SOMEBODY HAS TO GO. The roster is one over, so this
-       offer carries the list of legal cuts with it: an offer nobody could legally cut down to
-       six is not an offer, and it is rejected here rather than presented and then refused. */
-    cutIdxs = cutOptions(newRoster, slots);
-    if (!cutIdxs.length) return null;
-    type = '1for2';
+  } else if (over > 0) {
+    /* MORE COMING BACK THAN LEAVING, SO SOMEBODY HAS TO GO. The offer carries the legal
+       cuts with it: one nobody could lawfully cut down to six is not an offer, and it is
+       rejected here rather than presented and then refused. */
+    cutGroups = cutSets(newRoster, slots, over);
+    if (!cutGroups.length) return null;
+    /* Flat list of first cuts too, because the cut screen releases one man at a time. */
+    cutIdxs = Array.from(new Set(cutGroups.map((g) => g[0]).concat(
+      over === 1 ? [] : cutGroups.map((g) => g[1]))));
   } else {
     const open = assignRosterOpen(newRoster, slots);
     if (!open) return null;
-    type = '2for1';
     faPos = pickFaPosition(newRoster, open.faElig);
   }
-  return { type, outIdx: outIdxs.slice(), outPlayers, inPlayers, netCap, netVal, faPos, cutIdxs,
+  return { type, outIdx: outIdxs.slice(), outPlayers, inPlayers, netCap, netVal, faPos,
+    cutIdxs, cutGroups, cutCount: Math.max(0, over),
     partnerFranchise: inPlayers[0].franchise, partnerSeason: inPlayers[0].season };
 }
 
@@ -1190,20 +1225,25 @@ function scoreOffer(run, offer, ctx, slots, faStand) {
     after = after.concat([stand]);
     offer.estimated = true;
   } else if (after.length > slots.length) {
-    /* SCORED ON THE SIX YOU WOULD FIELD, not the seven you would briefly hold. A rating for an
-       overfull roster is a number the season never plays with, and it would flatter every
-       one-for-two on the board. The best legal cut is assumed, because that is the cut a player
-       who reads the card will make, and it is remembered so the card and the cut screen can
-       name the same man. */
+    /* SCORED ON THE SIX YOU WOULD FIELD, not the seven or eight you would briefly hold. A
+       rating for an overfull roster is a number the season never plays with, and it would
+       flatter every deal that brings back more than it sends. The best legal set of cuts is
+       assumed, because that is the cut a player who reads the card will make, and it is
+       remembered so the card and the cut screen name the same men. */
     let best = null;
-    for (const i of (offer.cutIdxs || [])) {
-      const r = rosterRating(after.filter((_, k) => k !== i), ctx);
-      if (!best || r.rating > best.r.rating) best = { i, r };
+    for (const g of (offer.cutGroups || [])) {
+      const drop = new Set(g);
+      const r = rosterRating(after.filter((_, k) => !drop.has(k)), ctx);
+      if (!best || r.rating > best.r.rating) best = { g, r };
     }
     if (!best) { offer.ratingDelta = null; offer.chemDelta = null; return offer; }
-    offer.bestCutIdx = best.i;
-    offer.bestCutPlayer = after[best.i];
-    after = after.filter((_, k) => k !== best.i);
+    offer.bestCutIdxs = best.g.slice();
+    offer.bestCutPlayers = best.g.map((i) => after[i]);
+    /* Singular aliases kept for the one-cut case, which every existing caller reads. */
+    offer.bestCutIdx = best.g[0];
+    offer.bestCutPlayer = after[best.g[0]];
+    const drop = new Set(best.g);
+    after = after.filter((_, k) => !drop.has(k));
   }
   const a = rosterRating(after, ctx);
   offer.ratingBefore = Math.round(before.rating * 10) / 10;
@@ -1213,16 +1253,45 @@ function scoreOffer(run, offer, ctx, slots, faStand) {
   return offer;
 }
 
-/* THE TRADE FINDER. The GM puts one or two players on the block; this returns the market
-   for exactly that package. A single player gets a spread of one-for-one returns across a
-   fair-value band, and because the finder re-slots the roster, the return can be a
-   DIFFERENT position whenever the rest of the roster can absorb it. A pair gets a mix:
-   some deals where one bigger player comes back and a free agent fills the opening
-   (two-for-one), and some where two players come back (two-for-two). Every offer is
-   validated by re-slotting, so nothing that breaks the lineup is ever shown.
+/* ─── THE TRADE FINDER ───────────────────────────────────────────────────────────────
+   The GM puts one or two players on the block and the league answers. What comes back
+   is a SHORT, MIXED, UNSORTED board: at most MAX_OFFERS cards, deliberately spread
+   across deal shapes and across how good they are, in an order that tells you nothing.
 
-   Offers come off a LOCAL rng seeded by (seed, week, selection): stable for a package
-   within a window (no reroll-for-jackpot) and never touching the game's own stream. */
+   That is a rewrite of what this used to be, and the reason is that the old board
+   answered itself. It returned up to six offers sorted best-first with the exact rating
+   swing printed on each card, so the decision was to tap the top one -- measured, a
+   player who did that beat a player who picked the median card by about 4 rating a
+   window without ever reading a name. The information is still all there, but it is the
+   information a GM actually gets: who is coming, what they produce, what they cost,
+   what it does to your money. What that adds up to for your team is yours to work out.
+
+   WHAT THE BOARD CAN CONTAIN, for one man on the block:
+
+     1for1   a straight swap, anywhere in a fair band, and not necessarily his position
+     1for2   quantity for quality: often a WORSE MAN AT HIS OWN POSITION plus a body
+             elsewhere, which is what a real return for a star looks like
+     1for3   three back, and two of yours have to go
+     2for2 / 2for3   THE COUNTER-ASK -- they will do it, but they want somebody else of
+             yours too, and they pay a premium for the privilege of asking
+
+   For a pair on the block: 2for1 (one bigger man back, a free agent fills the hole),
+   2for2 and 2for3.
+
+   Every offer is validated by re-slotting, so nothing that breaks the lineup is shown,
+   and every offer fits under the cap after its cheapest legal cut, so the market never
+   forces you over. Offers come off a LOCAL rng seeded by (seed, week, selection):
+   stable for a package within a window, so there is no rerolling for a jackpot, and it
+   never touches the game's own stream. */
+
+/* Four, not six. A board you can hold in your head is a board you can read; six cards
+   with a number on each was a sorted list, and a sorted list is a single choice. */
+const MAX_OFFERS = 4;
+
+/* How often the league comes back wanting a second player of yours, when it has
+   somebody worth asking for. Not always: a counter-ask every window is just a tax. */
+const COUNTER_ASK_RATE = 0.55;
+
 function findOffers(run, data, ctx, outIdxs) {
   if (!outIdxs || !outIdxs.length || outIdxs.length > 2) return [];
   const rng = offerRng(run, outIdxs);
@@ -1230,24 +1299,24 @@ function findOffers(run, data, ctx, outIdxs) {
   const CAP = E.CONSTANTS.CAP_MUSD;
   const pool = data.teamSeasons;
   const onRoster = new Set(run.roster.map((p) => p.player_id));
-  const keep = run.roster.filter((_, i) => !outIdxs.includes(i));
-  const keepSalary = keep.reduce((t, p) => t + p.price_musd, 0);
-  const outPlayers = outIdxs.map((i) => run.roster[i]);
-  const outValue = outPlayers.reduce((t, p) => t + p.ppr_ppg_mean, 0);
   const twoOut = outIdxs.length === 2;
 
   // Leaguewide pool by position (validity is decided by re-slotting, so any position is
   // fair game if the roster can still form a lineup around it).
   const byPos = { QB: [], RB: [], WR: [], TE: [] };
   const faPool = { QB: [], RB: [], WR: [], TE: [] };
+  const partnerLists = [];
   for (const ts of pool) {
+    const list = [];
     for (const p of (data.playersByTeamSeason[ts.team_season_id] ?? [])) {
       if (onRoster.has(p.player_id) || !byPos[p.position]) continue;
       byPos[p.position].push(p);
+      list.push(p);
       // The same shortlist generateFreeAgents draws from, so a two-for-one is estimated
       // against the kind of player who will actually be available to fill the spot.
       if (isFreeAgentCandidate(p)) faPool[p.position].push(p);
     }
+    if (list.length >= 2) partnerLists.push(list);
   }
   const faStand = {};
   for (const pos of ['QB', 'RB', 'WR', 'TE']) {
@@ -1255,141 +1324,260 @@ function findOffers(run, data, ctx, outIdxs) {
       .slice(0, FA_BOARD);
     faStand[pos] = c.length ? c[Math.floor(c.length / 2)] : null;
   }
-  // Rank by what the deal does to the team, then hand back the best of the market.
-  const finish = (list, keepMin) => {
-    const scored = list
-      .map((o) => scoreOffer(run, o, ctx, slots, faStand))
-      .sort((a, b) => (b.ratingDelta ?? -99) - (a.ratingDelta ?? -99));
-    const live = scored.filter((o) => (o.ratingDelta ?? -99) > -4);
-    return live.length >= keepMin ? live : scored.slice(0, Math.max(keepMin, live.length));
-  };
 
   const offers = [];
   const usedKey = new Set();
-  const pushOffer = (o) => {
+  const pushOffer = (o, tag) => {
     if (!o) return;
-    const key = o.inPlayers.map((p) => p.player_id).sort().join(',');
+    /* Keyed on BOTH sides. A counter-ask returns the same men for a different package,
+       and collapsing those onto one key would silently hide the version that costs you
+       an extra player -- or the version that does not. */
+    const key = o.outIdx.slice().sort().join('/') + '>'
+      + o.inPlayers.map((p) => p.player_id).sort().join(',');
     if (usedKey.has(key)) return;
-    usedKey.add(key); offers.push(o);
+    usedKey.add(key);
+    o.shape = tag;
+    offers.push(o);
   };
 
-  // Single-player return: 1-for-1, or a 2-for-1 when a pair is on the block.
-  const single = (loF, hiF, faReserve) => {
-    let lo = outValue * loF; const hi = outValue * hiF;
-    if (twoOut) {
-      const bestOut = Math.max.apply(null, outPlayers.map((p) => p.ppr_ppg_mean));
-      lo = Math.max(lo, bestOut * 1.02);
+  /* ── what the numbers are measured against ──────────────────────────────────────
+     Everything is priced against a specific outgoing package, because the counter-ask
+     changes what leaves. So the cost model is a function of the package, not a
+     closed-over constant. */
+  const ctxFor = (idxs) => {
+    const outs = idxs.map((i) => run.roster[i]);
+    const kept = run.roster.filter((_, i) => idxs.indexOf(i) === -1);
+    const means = kept.map((p) => p.ppr_ppg_mean).sort((a, b) => a - b);
+    return {
+      outs,
+      keep: kept,
+      keepSalary: kept.reduce((t, p) => t + p.price_musd, 0),
+      outValue: outs.reduce((t, p) => t + p.ppr_ppg_mean, 0),
+      weakest: means.length ? means[0] : 0,
+      weakest2: means.length > 1 ? means[0] + means[1] : (means[0] || 0),
+    };
+  };
+
+  /*
+   * Does a package fit under the cap NO MATTER WHO YOU RELEASE?
+   *
+   * Priced on the release that frees the LEAST money, not the most. The other way round
+   * looks kinder and is a trap: a deal is offered as affordable, the player releases the
+   * man who leaves the best lineup rather than the biggest contract, and the payroll lands
+   * over the cap. Measured, a GM taking the best card on every board finished $13.6M over
+   * while every card it took had said it fit.
+   *
+   * So the guarantee is unconditional: if the market offers it, it fits, whichever legal
+   * release you make. Going over the cap stays something the player chooses on purpose --
+   * by holding a squad through three rounds of raises -- not something the market does to
+   * them in a deal that promised otherwise.
+   */
+  const fits = (c, inPlayers) => {
+    const held = c.keep.concat(inPlayers);
+    const over = held.length - slots.length;
+    let freed = 0;
+    if (over > 0) {
+      const groups = cutSets(held, slots, over);
+      if (!groups.length) return false;
+      freed = Math.min.apply(null, groups.map(
+        (g) => g.reduce((t, i) => t + held[i].price_musd, 0)));
+    }
+    const inSalary = inPlayers.reduce((t, p) => t + p.price_musd, 0);
+    const reserve = held.length < slots.length ? FA_TYPICAL_MUSD : 0;
+    return c.keepSalary + inSalary - freed + reserve <= CAP;
+  };
+
+  /* ── ONE MAN BACK, from anywhere in the league ─────────────────────────────────── */
+  const single = (idxs, loF, hiF) => {
+    const c = ctxFor(idxs);
+    let lo = c.outValue * loF;
+    const hi = c.outValue * hiF;
+    if (idxs.length === 2) {
+      // A pair only goes out for somebody better than the better half of it.
+      lo = Math.max(lo, Math.max.apply(null, c.outs.map((p) => p.ppr_ppg_mean)) * 1.02);
     }
     const valid = [];
-    for (const pos of ['QB', 'RB', 'WR', 'TE']) {
-      for (const p of byPos[pos]) {
-        if (p.ppr_ppg_mean < lo || p.ppr_ppg_mean > hi) continue;
-        if (keepSalary + p.price_musd > CAP - faReserve) continue;
-        const o = buildOffer(run, slots, outIdxs, [p]);
-        if (o) valid.push(o);
-      }
+    for (const p of [].concat(byPos.QB, byPos.RB, byPos.WR, byPos.TE)) {
+      if (p.ppr_ppg_mean < lo || p.ppr_ppg_mean > hi) continue;
+      if (!fits(c, [p])) continue;
+      const o = buildOffer(run, slots, idxs, [p]);
+      if (o) valid.push(o);
     }
+    /* Sampled across the whole band rather than skimmed off the top, so the board is not
+       four versions of the same deal. */
     valid.sort((a, b) => a.inPlayers[0].ppr_ppg_mean - b.inPlayers[0].ppr_ppg_mean);
-    const n = Math.min(6, valid.length);
+    const n = Math.min(5, valid.length);
     for (let k = 0; k < n; k++) {
       const s = Math.floor((k / n) * valid.length);
       const e = Math.floor(((k + 1) / n) * valid.length);
-      pushOffer(valid[s + Math.floor(rng() * Math.max(1, e - s))]);
+      pushOffer(valid[s + Math.floor(rng() * Math.max(1, e - s))], 'single');
     }
   };
 
-  /* A PAIR COMING BACK FOR ONE MAN, off a single team-season, same as the two-for-two: one
-     deal has one trade partner. You give up quality and get quantity, then cut somebody, so
-     the honest comparison is not against the man leaving alone -- it is against him PLUS the
-     weakest player you are keeping, because that pair is what the two arrivals replace once
-     the cut is made. A band around that is what makes the deal worth considering rather than
-     obviously good or obviously bad.
+  /* ── SEVERAL BACK, all off ONE team-season ─────────────────────────────────────────
+     A real multi-player deal has a single trade partner: you do not ship one man to two
+     clubs at once, and the card can then name who you dealt with.
 
-     Only offered for a man who is genuinely better than your worst, because "two for one" only
-     means anything if the one is worth two. Shopping a fringe player would otherwise return two
-     even smaller ones and call it depth. */
-  const twoBack = () => {
-    const weakest = keep.length ? Math.min.apply(null, keep.map((p) => p.ppr_ppg_mean)) : 0;
-    if (outValue < weakest * TUNING.ONE_FOR_TWO_MIN_RATIO) return;
-    /* THE PAIR IS WORTH SLIGHTLY LESS THAN WHAT LEAVES, ON PURPOSE. At an even band the deal
-       gave you the same points AND a better-balanced roster, which measured out at a median of
-       +3.6 rating against +0.6 for a one-for-one: strictly the best move on the board every
-       time, which is not a decision. Priced under, the arrivals cost you a little at the top
-       and the gain has to come from the shape of the roster, so "give up peak for balance" is
-       the trade rather than a free upgrade. */
-    const target = outValue + weakest;
-    const lo = target * 0.74, hi = target * 0.98;
-    const floor = Math.max(3, weakest * 0.6);
-    const partners = [];
-    for (const ts of pool) {
-      const list = (data.playersByTeamSeason[ts.team_season_id] ?? [])
-        .filter((p) => !onRoster.has(p.player_id) && byPos[p.position] && p.ppr_ppg_mean >= floor);
-      if (list.length >= 2) partners.push(list);
-    }
+     `anchor` is what makes a return for a star look like a return for a star. Given it,
+     one of the incoming men must play the shopped man's position and be WORSE than him,
+     which is the shape of a genuine offer -- a lesser starter plus something you need
+     elsewhere -- rather than an assortment. */
+  const bundle = (idxs, count, loF, hiF, baseKey, anchor, want) => {
+    const c = ctxFor(idxs);
+    const base = baseKey === 'out' ? c.outValue
+      : baseKey === 'out+1' ? c.outValue + c.weakest
+        : c.outValue + c.weakest2;
+    const lo = base * loF, hi = base * hiF;
+    const floor = Math.max(3, c.weakest * 0.55);
     let made = 0;
-    for (let att = 0; att < 300 && made < 3 && partners.length; att++) {
-      const list = partners[Math.floor(rng() * partners.length)];
-      const a = list[Math.floor(rng() * list.length)];
-      const b = list[Math.floor(rng() * list.length)];
-      if (!a || !b || a.player_id === b.player_id) continue;
-      const cv = a.ppr_ppg_mean + b.ppr_ppg_mean;
+    for (let att = 0; att < 420 && made < want && partnerLists.length; att++) {
+      const list = partnerLists[Math.floor(rng() * partnerLists.length)];
+      const picked = [];
+      if (anchor) {
+        const downs = list.filter((p) => p.position === anchor.pos
+          && p.ppr_ppg_mean <= anchor.max && p.ppr_ppg_mean >= anchor.min);
+        if (!downs.length) continue;
+        picked.push(downs[Math.floor(rng() * downs.length)]);
+      }
+      let guard = 0;
+      while (picked.length < count && guard++ < 40) {
+        const p = list[Math.floor(rng() * list.length)];
+        if (p.ppr_ppg_mean < floor) continue;
+        if (picked.some((q) => q.player_id === p.player_id)) continue;
+        picked.push(p);
+      }
+      if (picked.length < count) continue;
+      const cv = picked.reduce((t, p) => t + p.ppr_ppg_mean, 0);
       if (cv < lo || cv > hi) continue;
-      /* Priced on the SIX that survive the cut, not the seven held for a moment: the cheapest
-         legal cut is the most room the deal can free, so this is the kindest honest reading of
-         whether it fits. Going over the cap stays a choice the player makes on purpose, not
-         something the market does to them. */
-      const seven = keep.concat([a, b]);
-      const cuts = cutOptions(seven, slots);
-      if (!cuts.length) continue;
-      const cheapestCut = Math.min.apply(null, cuts.map((i) => seven[i].price_musd));
-      if (keepSalary + a.price_musd + b.price_musd - cheapestCut > CAP) continue;
-      const o = buildOffer(run, slots, outIdxs, [a, b]);
-      if (o) { pushOffer(o); made++; }
+      if (!fits(c, picked)) continue;
+      const o = buildOffer(run, slots, idxs, picked);
+      if (o) { pushOffer(o, anchor ? 'swapdown' : 'bundle'); made++; }
+    }
+  };
+
+  /* ── THE COUNTER-ASK ───────────────────────────────────────────────────────────────
+     "We like him. We'll also need one of these." A real GM chasing somebody on your
+     roster asks for a second piece, and because THEY opened the conversation they pay a
+     little over the odds for it: the return is priced at a premium on the pair leaving,
+     not a discount. What makes it a decision is that the second man is not one you
+     offered, so the deal can be a clear production win and still hurt -- the extra body
+     is depth or a chemistry link you were not counting.
+
+     Who they ask for is weighted toward your better players, because that is who a rival
+     wants. Never the man you already put up, and never someone whose exit leaves no
+     legal lineup -- buildOffer settles that. */
+  const counterAsk = (idx) => {
+    if (rng() > COUNTER_ASK_RATE) return;
+    const cands = run.roster
+      .map((p, i) => ({ p, i }))
+      .filter((x) => x.i !== idx)
+      .sort((a, b) => b.p.ppr_ppg_mean - a.p.ppr_ppg_mean);
+    if (!cands.length) return;
+    /* Top half, so the ask stings. Weighted, not always the very best man. */
+    const reach = Math.max(1, Math.ceil(cands.length / 2));
+    const asked = cands[Math.floor(rng() * reach)];
+    const idxs = [idx, asked.i].sort((a, b) => a - b);
+    /* Two back at a premium, or three back priced against the pair plus your weakest. */
+    const before = offers.length;
+    bundle(idxs, 2, 0.95, 1.20, 'out', null, 1);
+    if (rng() < 0.5) bundle(idxs, 3, 0.80, 1.02, 'out+1', null, 1);
+    /* Tagged as its own shape, not as another bundle. chooseBoard fills one seat per shape,
+       so sharing the 'bundle' tag made the counter-ask compete with ordinary multi-player
+       returns for the same seat and it reached only 3% of cards. It is a distinct
+       proposition and it gets a distinct seat. */
+    for (let k = before; k < offers.length; k++) {
+      offers[k].askedFor = asked.p;
+      offers[k].askedIdx = asked.i;
+      offers[k].shape = 'ask';
     }
   };
 
   if (!twoOut) {
-    /* THE TOP OF THE BAND IS WHERE THE MODE LIVES. At 1.32 the best a window could offer was
-       about +6 rating, so four windows took a dealt 65 to about 89 -- which the measured win
-       curve says is a 63% playoff team before the season's first third is even played on it.
-       Widened to 1.55, so a well-chosen shop can actually climb. It is not free: every offer
-       still has to clear the cap check, still gets scored honestly against the resulting
-       lineup, and finish() still throws out anything worse than -4. Taking offers at random
-       measures WORSE than never trading at all, which is the sign that the choice still is
-       one. */
-    single(0.78, 1.55, 0);
-    twoBack();
-    return finish(offers, 4).slice(0, 6);
+    const only = outIdxs[0];
+    const man = run.roster[only];
+    /* THE TOP OF THE BAND IS WHERE THE MODE LIVES. Measured, 1.32 capped a window at about
+       +6 rating, which took a dealt 65 to only about 89 over four windows. 1.55 lets a
+       well-chosen shop actually climb, and it is not free: every offer still clears the cap,
+       is still scored honestly against the resulting lineup, and taking offers at random
+       still measures WORSE than never trading at all. */
+    single(outIdxs, 0.78, 1.55);
+    /* Quantity for quality, in two flavours: an assortment, and the one that looks like a
+       real offer for a star -- a lesser man at his own position plus a body elsewhere. */
+    bundle(outIdxs, 2, 0.74, 0.98, 'out+1', null, 2);
+    bundle(outIdxs, 2, 0.74, 1.02, 'out+1',
+      { pos: man.position, max: man.ppr_ppg_mean * 0.92, min: man.ppr_ppg_mean * 0.45 }, 2);
+    /* Three back only for somebody genuinely worth three, and it costs two of yours. */
+    if (man.ppr_ppg_mean >= (ctxFor(outIdxs).weakest || 0) * TUNING.ONE_FOR_TWO_MIN_RATIO) {
+      bundle(outIdxs, 3, 0.70, 0.94, 'out+2', null, 1);
+    }
+    counterAsk(only);
+  } else {
+    single(outIdxs, 0.62, 1.42);
+    bundle(outIdxs, 2, 0.80, 1.30, 'out', null, 3);
+    bundle(outIdxs, 3, 0.74, 0.98, 'out+1', null, 1);
   }
-
-  // A pair on the block. Half the menu is a bigger single (a free agent fills the gap),
-  // half sends two players back. BOTH of those two come off ONE team-season, because a
-  // real two-for-two has a single trade partner: you do not ship two players to two
-  // different clubs in one deal, and the card can then name the team you dealt with.
-  single(0.62, 1.42, 3);
-  const floor = Math.max(3, outValue * 0.28);
-  const partners = [];
-  for (const ts of pool) {
-    const list = (data.playersByTeamSeason[ts.team_season_id] ?? [])
-      .filter((p) => !onRoster.has(p.player_id) && byPos[p.position] && p.ppr_ppg_mean >= floor);
-    if (list.length >= 2) partners.push(list);
-  }
-  let made = 0;
-  for (let att = 0; att < 300 && made < 3 && partners.length; att++) {
-    const list = partners[Math.floor(rng() * partners.length)];
-    const a = list[Math.floor(rng() * list.length)];
-    const b = list[Math.floor(rng() * list.length)];
-    if (!a || !b || a.player_id === b.player_id) continue;
-    const cv = a.ppr_ppg_mean + b.ppr_ppg_mean;
-    if (cv < outValue * 0.80 || cv > outValue * 1.30) continue;
-    if (keepSalary + a.price_musd + b.price_musd > CAP) continue;
-    // assignRoster inside buildOffer is the single authority on whether the lineup still
-    // works, so a package that leaves a hole is rejected there rather than pre-screened.
-    const o = buildOffer(run, slots, outIdxs, [a, b]);
-    if (o) { pushOffer(o); made++; }
-  }
-  return finish(offers, 4).slice(0, 6);
+  return chooseBoard(offers, run, ctx, slots, faStand, rng);
 }
+
+/*
+ * WHICH FOUR, AND IN WHAT ORDER.
+ *
+ * Two jobs, and the second one matters as much as the first.
+ *
+ * Pick for VARIETY, so the board is a set of genuinely different propositions rather
+ * than four near-identical swaps: one card per shape first, in a random shape order, then
+ * fill the rest from what is left, preferring offers that are far apart in what they do.
+ * Anything catastrophic is dropped -- there is no point spending a card on a deal nobody
+ * would take -- but merely bad offers are kept on purpose, because if every card is an
+ * upgrade then reading them is a formality.
+ *
+ * Then SHUFFLE. The board used to arrive sorted best-first, which meant position on the
+ * card list was the answer to the question the cards were asking. Order now carries no
+ * information at all.
+ */
+function chooseBoard(offers, run, ctx, slots, faStand, rng) {
+  const scored = offers.map((o) => scoreOffer(run, o, ctx, slots, faStand))
+    .filter((o) => (o.ratingDelta ?? -99) > -9);
+  if (scored.length <= MAX_OFFERS) return shuffle(scored, rng);
+
+  const byShape = new Map();
+  for (const o of scored) {
+    if (!byShape.has(o.shape)) byShape.set(o.shape, []);
+    byShape.get(o.shape).push(o);
+  }
+  const shapes = shuffle(Array.from(byShape.keys()), rng);
+  const board = [];
+  for (const s of shapes) {
+    if (board.length >= MAX_OFFERS) break;
+    const list = byShape.get(s);
+    board.push(list[Math.floor(rng() * list.length)]);
+  }
+  /* Fill any remaining seats with whatever is FURTHEST from what is already on the board,
+     measured on what the deal does, so the four cards span a real range instead of
+     clustering. */
+  const rest = scored.filter((o) => board.indexOf(o) === -1);
+  while (board.length < MAX_OFFERS && rest.length) {
+    let bestI = 0, bestD = -1;
+    for (let i = 0; i < rest.length; i++) {
+      const d = Math.min.apply(null, board.map(
+        (b) => Math.abs((rest[i].ratingDelta ?? 0) - (b.ratingDelta ?? 0))));
+      if (d > bestD) { bestD = d; bestI = i; }
+    }
+    board.push(rest.splice(bestI, 1)[0]);
+  }
+  return shuffle(board, rng);
+}
+
+/* Fisher-Yates on the offer rng, so a package's board is stable within a window. */
+function shuffle(list, rng) {
+  const a = list.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
 
 /* The resulting lineup if an offer were accepted, without touching the run. Used by the
    live preview: which players end up where, who is incoming, and any open slot. */
@@ -1398,17 +1586,25 @@ function previewTrade(run, offer, cutIdx) {
   const keep = run.roster.filter((_, i) => !outSet.has(i));
   let newRoster = keep.concat(offer.inPlayers);
   const slots = slotsOf(run);
-  let slotIndex = null, emptySlot = null, cutPlayer = null;
+  let slotIndex = null, emptySlot = null, cutPlayer = null, cutPlayers = [];
   if (newRoster.length > slots.length) {
-    /* SHOWN AS THE SIX YOU WOULD FIELD. The preview draws a lineup, and a lineup is six; the
-       seventh man has no spot to be drawn in. The cut shown is the caller's choice if it made
-       one, otherwise the best one, which is the same man the card was scored against. */
-    const legal = offer.cutIdxs || cutOptions(newRoster, slots);
-    let idx = (cutIdx !== undefined && cutIdx !== null) ? cutIdx
-      : (offer.bestCutIdx !== undefined ? offer.bestCutIdx : legal[0]);
-    if (legal.indexOf(idx) === -1) idx = legal[0];
-    cutPlayer = newRoster[idx];
-    newRoster = newRoster.filter((_, k) => k !== idx);
+    /* SHOWN AS THE SIX YOU WOULD FIELD. The preview draws a lineup, and a lineup is six; a
+       seventh or eighth man has no spot to be drawn in. The cuts shown are the caller's
+       choice if it made one, otherwise the best set, which is what the card was scored
+       against. `cutIdx` takes a single index or a list, because the cut screen releases one
+       man at a time and there can be two to release. */
+    const want = newRoster.length - slots.length;
+    let idxs = cutIdx === undefined || cutIdx === null ? null
+      : (Array.isArray(cutIdx) ? cutIdx.slice() : [cutIdx]);
+    if (!idxs || idxs.length !== want || !legalCutSet(newRoster, slots, idxs)) {
+      idxs = offer.bestCutIdxs && offer.bestCutIdxs.length === want
+        ? offer.bestCutIdxs.slice()
+        : ((offer.cutGroups || cutSets(newRoster, slots, want))[0] || []);
+    }
+    const drop = new Set(idxs);
+    cutPlayers = idxs.map((i) => newRoster[i]);
+    cutPlayer = cutPlayers[0] || null;
+    newRoster = newRoster.filter((_, k) => !drop.has(k));
   }
   if (newRoster.length === slots.length) {
     slotIndex = assignRoster(newRoster, slots);
@@ -1416,8 +1612,18 @@ function previewTrade(run, offer, cutIdx) {
     const open = assignRosterOpen(newRoster, slots);
     if (open) { slotIndex = open.assign; emptySlot = open.emptySlot; }
   }
-  return { roster: newRoster, slotIndex, emptySlot, cutPlayer,
+  return { roster: newRoster, slotIndex, emptySlot, cutPlayer, cutPlayers,
     incomingIds: offer.inPlayers.map((p) => p.player_id) };
+}
+
+/* Would releasing exactly these men leave a lineup? The one authority the cut screen and
+   both re-slotters share, so "you may cut him" and "the lineup still works" cannot drift. */
+function legalCutSet(players, slots, idxs) {
+  const drop = new Set(idxs);
+  if (drop.size !== idxs.length) return false;
+  if (idxs.some((i) => i < 0 || i >= players.length)) return false;
+  const rest = players.filter((_, k) => !drop.has(k));
+  return rest.length === slots.length && !!assignRoster(rest, slots);
 }
 
 /* Who is available on the street. Deliberately one predicate, shared by the actual signing
@@ -1480,20 +1686,30 @@ function acceptTrade(run, offer, data, ctx, opts) {
   let newRoster = keep.concat(offer.inPlayers);
   offer.inPlayers.forEach((p) => run.usedPlayers.push(p.player_id));
   const slots = slotsOf(run);
-  let cutPlayer = null;
+  let cutPlayer = null, cutPlayers = [];
   if (newRoster.length > slots.length) {
-    const legal = offer.cutIdxs || cutOptions(newRoster, slots);
-    let idx = opts && opts.cutIdx !== undefined && opts.cutIdx !== null
-      ? opts.cutIdx
-      : (offer.bestCutIdx !== undefined ? offer.bestCutIdx : legal[0]);
+    const want = newRoster.length - slots.length;
+    /* `cutIdxs` (a list) is the general form; `cutIdx` (one index) is still accepted because
+       every one-cut caller passes it. */
+    const asked = opts && opts.cutIdxs != null ? opts.cutIdxs
+      : (opts && opts.cutIdx != null ? [opts.cutIdx] : null);
+    let idxs = asked ? asked.slice() : null;
     /* An illegal or missing choice falls back to a legal one rather than throwing: the caller
-       asking to cut a man whose removal breaks the lineup is a bug, and losing somebody's
+       asking to cut men whose removal breaks the lineup is a bug, and losing somebody's
        season to it would be a worse answer than making the nearest lawful cut. */
-    if (legal.indexOf(idx) === -1) idx = legal[0];
-    cutPlayer = newRoster[idx];
-    newRoster = newRoster.filter((_, k) => k !== idx);
-    const j = run.usedPlayers.indexOf(cutPlayer.player_id);
-    if (j !== -1) run.usedPlayers.splice(j, 1);
+    if (!idxs || idxs.length !== want || !legalCutSet(newRoster, slots, idxs)) {
+      idxs = offer.bestCutIdxs && offer.bestCutIdxs.length === want
+        ? offer.bestCutIdxs.slice()
+        : ((offer.cutGroups || cutSets(newRoster, slots, want))[0] || []);
+    }
+    const drop = new Set(idxs);
+    cutPlayers = idxs.map((i) => newRoster[i]);
+    cutPlayer = cutPlayers[0] || null;
+    newRoster = newRoster.filter((_, k) => !drop.has(k));
+    for (const c of cutPlayers) {
+      const j = run.usedPlayers.indexOf(c.player_id);
+      if (j !== -1) run.usedPlayers.splice(j, 1);
+    }
   }
   if (newRoster.length === slots.length) {
     run.roster = newRoster;
@@ -1513,9 +1729,12 @@ function acceptTrade(run, offer, data, ctx, opts) {
   run.tradeHistory.push({
     week: run.season.week,
     type: offer.type,
-    out: offer.outPlayers.map((p) => p.name).concat(cutPlayer ? [cutPlayer.name + ' (cut)'] : []),
+    out: offer.outPlayers.map((p) => p.name).concat(cutPlayers.map((c) => c.name + ' (cut)')),
     in: offer.inPlayers.map((p) => p.name).join(', ')
       + (offer.type === '2for1' ? ' + free agent' : ''),
+    /* Whether the league asked for a man you had not put up, so the GM report can say so
+       and a badge can find it. */
+    askedFor: offer.askedFor ? runKey(offer.askedFor) : null,
     /* THE SAME MOVE, IN IDS, so it can be recorded and read back. The names above are
        for the GM report to print; these are what ps_runs.trade_moves stores, spelled the
        way the picks column spells a player, because the badge cabinet resolves both
@@ -1523,9 +1742,10 @@ function acceptTrade(run, offer, data, ctx, opts) {
     /* The cut man rides with the players sent out, because that is what happened to him as far
        as the roster is concerned: he left in this move. `cutKey` names him separately so a
        badge can tell "traded away" from "released" without parsing a label. */
-    outKeys: offer.outPlayers.map(runKey).concat(cutPlayer ? [runKey(cutPlayer)] : []),
+    outKeys: offer.outPlayers.map(runKey).concat(cutPlayers.map(runKey)),
     inKeys: offer.inPlayers.map(runKey),
     cutKey: cutPlayer ? runKey(cutPlayer) : null,
+    cutKeys: cutPlayers.map(runKey),
   });
   return run;
 }
@@ -2051,7 +2271,8 @@ const api = {
   inflateCap, capCut, capSpin, capSign,
   autoDraftTrade, isTradeWindow, inflateContracts, findOffers, previewTrade, rosterRating,
   TRADE_WEEKS, TRADE_DEADLINE_WEEK, CONTRACT_INFLATION,
-  generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating, capMark, FA_TYPICAL_MUSD, cutOptions,
+  generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating, capMark, FA_TYPICAL_MUSD,
+  cutOptions, cutSets, legalCutSet, MAX_OFFERS,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;

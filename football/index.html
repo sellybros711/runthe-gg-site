@@ -1009,18 +1009,21 @@ window.GA_ID='G-L29P5MRWKE';
     line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tp-partner .tp-plbl{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.09em;
     text-transform:uppercase;color:var(--dim-2)}
-  /* The headline metric. Sized and coloured to be read first. */
-  .tp-grade{flex:0 0 auto;text-align:center;border-radius:9px;padding:5px 9px;min-width:62px;
-    border:1.5px solid transparent}
-  .tp-grade .tg-num{font-family:var(--fd);font-size:21px;font-weight:700;line-height:1}
-  .tp-grade .tg-lbl{font-family:var(--fn);font-size:7.5px;font-weight:800;letter-spacing:.1em;
+  /* WHERE THE GRADE USED TO BE. The shape of the deal, which says what kind of proposition
+     this is without saying whether it is a good one. Deliberately neutral in colour: the
+     old badge was green or red and that alone decided the trade from across the room. */
+  .tp-shape{flex:0 0 auto;text-align:center;border-radius:9px;padding:5px 9px;min-width:62px;
+    border:1.5px solid rgba(148,163,184,.28);background:rgba(148,163,184,.09)}
+  .tp-shape .ts-num{font-family:var(--fd);font-size:17px;font-weight:700;line-height:1.05;
+    color:var(--ink);white-space:nowrap}
+  .tp-shape .ts-lbl{font-family:var(--fn);font-size:7.5px;font-weight:800;letter-spacing:.1em;
     text-transform:uppercase;color:var(--dim);margin-top:1px}
-  .tp-grade.up{background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.5)}
-  .tp-grade.up .tg-num{color:#22c55e}
-  .tp-grade.dn{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.45)}
-  .tp-grade.dn .tg-num{color:var(--red)}
-  .tp-grade.flat{background:rgba(148,163,184,.12);border-color:rgba(148,163,184,.35)}
-  .tp-grade.flat .tg-num{color:var(--dim)}
+  /* THE COUNTER-ASK. Amber, because it is neither good news nor bad news -- it is a
+     condition, and it belongs above the exchange it changes the meaning of. */
+  .tp-ask{margin:0 0 8px;padding:6px 9px;border-radius:8px;font-size:11.5px;line-height:1.35;
+    color:#fde68a;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4)}
+  .tp-ask b{color:#fcd34d}
+  .tp-give .g1.asked .gn{color:#fcd34d}
   .tp-body{padding:9px 12px 10px}
   /* GIVE / GET, labelled, so the exchange reads in one pass. */
   .tp-side{font-family:var(--fn);font-size:8.5px;font-weight:800;letter-spacing:.1em;
@@ -3516,7 +3519,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   <div class="screen" id="s-cut">
     <div class="eyebrow" style="color:var(--red)">Roster limit</div>
     <h2 class="display" style="font-size:22px;margin:4px 0 4px">Cut a player</h2>
-    <p class="dim" style="font-size:13px;margin:0 0 6px" id="cut-sub">Seven men, six spots.</p>
+    <p class="dim" style="font-size:13px;margin:0 0 6px" id="cut-sub">More men than spots.</p>
     <div class="fa-cards" id="cut-list"></div>
     <div style="margin-top:6px">
       <button class="btn" id="b-cut-do" disabled>Release player</button>
@@ -3775,12 +3778,12 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=38"></script>
-<script src="run.js?v=51"></script>
+<script src="run.js?v=52"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=17"></script>
-<script src="achievements.js?v=5"></script>
+<script src="achievements.js?v=6"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
@@ -6314,11 +6317,15 @@ function enterMarket(){
   currentOffers=R.findOffers(run,DATA,CTX,shopSel.slice());
   selectedOffer=null;
   const outNames=shopSel.map(i=>esc(lastName(run.roster[i].name))).join(' + ');
+  /* NO GRADE, AND NO RANKING. The board used to arrive sorted best-first with the rating
+     swing printed on every card, which made the decision "tap the top one". The numbers on
+     the cards are now the ones a GM actually gets -- production, price, position, what it
+     does to the payroll -- and what they add up to is the player's read. */
   $('tw-market-out').innerHTML='<span class="mo-lbl">Shopping</span><b>'+outNames+'</b>'+
-    '. Rating is what each deal does to your team overall, the number that decides it.';
+    '. Read the deals. Nobody grades them for you.';
   $('tw-title').textContent=currentOffers.length?currentOffers.length+' offer'+(currentOffers.length===1?'':'s')
     :'No offers';
-  $('tw-sub').textContent=currentOffers.length?'Best for your team first. Tap one to preview it.'
+  $('tw-sub').textContent=currentOffers.length?'In no particular order. Tap one to see the lineup it leaves you.'
     :'Nobody is biting on that package.';
   $('tw-shop').style.display='none';
   $('tw-market').style.display='';
@@ -6329,11 +6336,15 @@ function enterMarket(){
   $('b-tw-accept').textContent='Accept trade';
   $('b-tw-accept').onclick=()=>{
     if(selectedOffer===null) return;
+    /* One tap is one trade. Disabled the moment it fires, for the same reason the cut screen
+       guards itself: the button outlives the screen by however long the next one takes to
+       arrive, and a second tap would run the deal again. */
+    $('b-tw-accept').disabled=true;
     const prop=currentOffers[selectedOffer];
-    /* A one-for-two is not finished when you accept it: the roster is at seven and a man has to
-       go. The cut screen owns the rest of the move, including the call to acceptTrade, so the
-       run is never left holding seven. */
-    if(prop.type==='1for2'){ openCutScreen(prop); return; }
+    /* A deal that brings back more than it sends is not finished when you accept it: the
+       roster is over and somebody has to go. The cut screen owns the rest of the move,
+       including the call to acceptTrade, so the run is never left holding seven or eight. */
+    if(prop.cutCount>0){ openCutScreen(prop); return; }
     const got=prop.inPlayers.map(p=>lastName(p.name)).join(' and ');
     R.acceptTrade(run,prop,DATA,CTX);
     drawField($('field2'),false);
@@ -6363,6 +6374,19 @@ function offerPlayerRow(p){
   '</div>';
 }
 
+/* The LEAST salary a deal's release can free, for the over-the-cap line on the card. The
+   least, not the most, so "gets you under the cap" is a promise that holds whoever you end
+   up releasing rather than a best case that your own cut can break. Zero when nobody goes. */
+function guaranteedRelease(o){
+  if(!o.cutCount) return 0;
+  const outSet=new Set(o.outIdx);
+  const held=run.roster.filter((_,i)=>!outSet.has(i)).concat(o.inPlayers);
+  const groups=o.cutGroups&&o.cutGroups.length?o.cutGroups
+    :R.cutSets(held,slotsNow(),o.cutCount);
+  if(!groups.length) return 0;
+  return Math.min.apply(null,groups.map(g=>g.reduce((t,i)=>t+held[i].price_musd,0)));
+}
+
 function paintOffers(){
   const el=$('tw-list'); el.innerHTML='';
   if(!currentOffers.length){
@@ -6374,36 +6398,46 @@ function paintOffers(){
   $('b-tw-accept').style.display='';
   const payNow=run.roster.reduce((t,p)=>t+p.price_musd,0);
   currentOffers.forEach((o,i)=>{
-    const rd=o.ratingDelta, cs=o.netCap, cd=o.chemDelta;
-    const cls=rd===null?'flat':(rd>0.05?'up':(rd<-0.05?'dn':'flat'));
-    const rtxt=rd===null?'--':(rd>0?'+':'')+rd.toFixed(1);
+    const cs=o.netCap;
     const card=document.createElement('div');
     card.className='tprop';
+    /* The head carries the SHAPE of the deal where the grade used to be: what kind of
+       proposition this is, with no hint as to whether it is a good one. Written
+       DIRECTIONALLY -- "2 → 3" is two out and three back -- because "3 for 2" reads as
+       either side depending on which trade idiom you grew up with. */
+    const shapeTxt=o.outPlayers.length+' &rarr; '+(o.inPlayers.length+(o.faPos?1:0));
     let html=
       '<div class="tp-head">'+
         '<div class="tp-partner"><div class="tp-club">'+
           esc(o.partnerSeason+' '+E.nickname(o.partnerFranchise))+'</div>'+
           '<div class="tp-plbl">Trade partner</div></div>'+
-        '<div class="tp-grade '+cls+'"><div class="tg-num">'+(o.estimated?'~':'')+rtxt+'</div>'+
-          '<div class="tg-lbl">Rating</div></div>'+
+        '<div class="tp-shape"><div class="ts-num">'+shapeTxt+'</div>'+
+          '<div class="ts-lbl">Out / in</div></div>'+
       '</div>'+
-      '<div class="tp-body">'+
-        '<div class="tp-side out">You give</div><div class="tp-give">'+
-        o.outPlayers.map(p=>'<span class="g1">'+
+      '<div class="tp-body">';
+    /* THEY ASKED FOR SOMEBODY YOU DID NOT OFFER. Said before the players, because it changes
+       what the whole card means: a deal that reads like a clear win on production can still
+       be one you refuse once you notice who else is walking out. */
+    if(o.askedFor){
+      html+='<div class="tp-ask">They want <b>'+esc(o.askedFor.name)+'</b> in it too'+
+        ' &middot; '+o.askedFor.ppr_ppg_mean.toFixed(1)+' FPPG</div>';
+    }
+    html+='<div class="tp-side out">You give</div><div class="tp-give">'+
+        o.outPlayers.map(p=>'<span class="g1'+(o.askedFor&&o.askedFor.player_id===p.player_id?' asked':'')+'">'+
           '<span class="pos-chip" style="background:'+posPaint(p.position).replace('background:','')+';color:#fff">'+
           esc(p.position)+'</span><span class="gn">'+esc(lastName(p.name))+'</span>'+
           '<span class="gv">'+p.ppr_ppg_mean.toFixed(1)+' &middot; $'+p.price_musd.toFixed(1)+'M</span></span>').join('')+
         '</div>';
     html+='<div class="tp-side in">You get</div>';
     o.inPlayers.forEach(p=>{ html+=offerPlayerRow(p); });
-    if(o.type==='2for1') html+='<div class="tp-fa-note">a free agent to fill the open '+esc(o.faPos)+' spot</div>';
-    /* THE CUT IS PART OF THE DEAL AND HAS TO BE ON THE CARD. Two men arriving for one leaving
-       puts the roster at seven, and the card names who the rating was scored against so the
-       number is not a surprise; the actual choice is the player's at the next step. */
-    if(o.type==='1for2'&&o.bestCutPlayer){
-      html+='<div class="tp-cut-note">Roster goes to seven &mdash; you cut one. '+
-        'Rated on cutting <b>'+esc(o.bestCutPlayer.name)+'</b> ('+
-        o.bestCutPlayer.ppr_ppg_mean.toFixed(1)+' FPPG), your call after you accept.</div>';
+    if(o.faPos) html+='<div class="tp-fa-note">a free agent to fill the open '+esc(o.faPos)+' spot</div>';
+    /* THE CUT IS PART OF THE DEAL AND HAS TO BE ON THE CARD -- how many have to go, but NOT
+       who, because naming the best one to release is half of grading the trade. Who goes is
+       the player's decision on the next screen. */
+    if(o.cutCount>0){
+      const n=o.cutCount;
+      html+='<div class="tp-cut-note">Roster goes to '+(6+n)+' &mdash; you release '+
+        (n===1?'one player':n+' players')+' to get back to six. Your call.</div>';
     }
     const capTxt=(cs>0?'+$':'\u2212$')+Math.abs(cs).toFixed(1)+'M';
     html+='<div class="tp-cap"><span>Cap <span class="'+(cs>0?'dn':'up')+'">'+capTxt+'</span>'+
@@ -6413,14 +6447,25 @@ function paintOffers(){
        overage in your head and subtract. So each card says which side of the cap it leaves
        you on, and the ones that do not solve it say by how much they fall short. */
     if(payNow>E.CONSTANTS.CAP_MUSD){
-      const after=payNow+cs+(o.type==='2for1'?R.FA_TYPICAL_MUSD:0);
+      /* Priced on the release that frees the LEAST -- the same conservative reading the market
+         used to decide the offer fits at all, so the chip cannot promise what your own choice
+         of who to release then breaks. */
+      const after=payNow+cs+(o.faPos?R.FA_TYPICAL_MUSD:0)-guaranteedRelease(o);
       const stillOver=after-E.CONSTANTS.CAP_MUSD;
       html+=stillOver<=0
         ? '<span class="tp-fix">Gets you under the cap</span>'
         : '<span class="tp-still">Still $'+stillOver.toFixed(1)+'M over</span>';
     }
-    if(cd!==null&&Math.abs(cd)>=0.1){
-      html+='<span>Chemistry <span class="'+(cd>0?'up':'dn')+'">'+(cd>0?'+':'')+cd.toFixed(1)+'%</span></span>';
+    /* CHEMISTRY STAYS ON THE CARD, and it is not the grade coming back. The grade was the
+       answer; this is one of the three things the answer is made of -- production, chemistry,
+       and the shape of the lineup, which the preview panel shows when you tap a card. All
+       three are on screen and none of them is the verdict, so the deal is derivable by a
+       player who does the work and invisible to one who does not. Measured, a GM reading only
+       the points lands 18 rating short of the best board; reading the points and the
+       chemistry closes most of that, which is the gap skill is supposed to live in. */
+    if(o.chemDelta!==null&&Math.abs(o.chemDelta)>=0.1){
+      html+='<span>Chemistry <span class="'+(o.chemDelta>0?'up':'dn')+'">'+
+        (o.chemDelta>0?'+':'')+o.chemDelta.toFixed(1)+'%</span></span>';
     }
     html+='</div></div>';
     card.innerHTML=html;
@@ -6509,26 +6554,58 @@ function paintTradePreview(offer){
    offering a choice the game then has to refuse. */
 let cutCtx=null;
 
+/* ONE AT A TIME, because a deal can now bring back three for one and leave TWO to release.
+   Choosing a pair from a grid is a worse decision than making one cut, seeing the lineup it
+   leaves, and then making the next -- and it keeps this screen the same screen it was for a
+   one-for-two. Held men are tracked by identity, not index, since the list shrinks under it. */
+const heldKey=(p)=>p.player_id+'|'+p.season;
+
 function openCutScreen(offer){
+  cutCtx={offer,chosen:[],pick:null};
+  paintCutStep();
+}
+
+function paintCutStep(){
   const slots=slotsNow();
+  const offer=cutCtx.offer;
   const outSet=new Set(offer.outIdx);
-  const seven=run.roster.filter((_,i)=>!outSet.has(i)).concat(offer.inPlayers);
-  const legal=offer.cutIdxs&&offer.cutIdxs.length?offer.cutIdxs:R.cutOptions(seven,slots);
+  /* The full squad the deal leaves you holding, in the same order acceptTrade builds it, so
+     the indices handed back at the end mean the same thing there. */
+  const held=run.roster.filter((_,i)=>!outSet.has(i)).concat(offer.inPlayers);
+  const gone=new Set(cutCtx.chosen.map(heldKey));
+  const pool=held.filter(p=>!gone.has(heldKey(p)));
+  const need=pool.length-slots.length;
+  if(need<=0){ commitCuts(); return; }
+  /* A first cut is legal only if the cuts still to come after it are also possible. Asking
+     R.cutSets whether the REST can be solved is what stops the screen offering a release that
+     strands you one man short of a lineup two steps later. */
+  const legal=pool.map((_,i)=>i).filter(i=>{
+    const rest=pool.filter((_,k)=>k!==i);
+    return R.cutSets(rest,slots,need-1).length>0;
+  });
+  if(!legal.length){ commitCuts(); return; }
   const incoming=new Set(offer.inPlayers.map(p=>p.player_id));
-  if(!legal.length){ finishAcceptTrade(offer,null); return; }
-  cutCtx={offer,seven,legal,pick:null};
-  $('cut-sub').innerHTML='Taking <b>'+esc(offer.inPlayers.map(p=>lastName(p.name)).join(' and '))+
-    '</b> puts you at seven. Release one to get back to six'+
-    (legal.length<seven.length?' — only these keep a legal lineup.':'.');
+  const got=esc(offer.inPlayers.map(p=>lastName(p.name)).join(', '));
+  const already=cutCtx.chosen.length
+    ? ' You released <b>'+esc(cutCtx.chosen.map(p=>lastName(p.name)).join(', '))+'</b>.' : '';
+  const sub=$('cut-sub');
+  delete sub.dataset.base;
+  sub.innerHTML='Taking <b>'+got+'</b> puts you at '+pool.length+'.'+already+
+    ' Release '+(need===1?'one more':need+' more')+' to get back to six'+
+    (legal.length<pool.length?' — only these keep a legal lineup.':'.');
   const el=$('cut-list'); el.innerHTML='';
+  cutCtx.pool=pool; cutCtx.pick=null;
   $('b-cut-do').disabled=true;
   $('b-cut-do').textContent='Release player';
-  /* Ordered worst first, because that is the cut nearly everybody is looking for, and the
-     rating each choice leaves you on is shown so the decision is not guesswork. */
-  const rows=legal.map(i=>({i,p:seven[i],
-    rating:R.rosterRating(seven.filter((_,k)=>k!==i),CTX).rating}))
+  /* Ordered by the lineup each choice leaves behind, best first, because that is the cut
+     nearly everybody is looking for. This is not the trade grade coming back in by the side
+     door: the trade is already accepted by the time this screen opens, and which of your own
+     men to release is a different and smaller question. */
+  const rows=legal.map(i=>({i,p:pool[i],
+    rating:R.rosterRating(pool.filter((_,k)=>k!==i),CTX).rating}))
     .sort((a,b)=>b.rating-a.rating);
   const best=rows.length?rows[0].rating:0;
+  const showRating=need===1;   // with more still to go, the interim number is not a lineup
   rows.forEach((r,n)=>{
     const card=document.createElement('div');
     card.className='fa-card'+(incoming.has(r.p.player_id)?' isin':'');
@@ -6539,25 +6616,52 @@ function openCutScreen(offer){
         (incoming.has(r.p.player_id)?'<span class="rp-in">NEW</span>':'')+'</div>'+
         '<div class="fa-sub">'+esc(r.p.franchise)+' '+r.p.season+' &middot; '+
         r.p.ppr_ppg_mean.toFixed(1)+' FPPG &middot; $'+r.p.price_musd.toFixed(1)+'M</div></div>'+
-      '<span class="fa-price">'+r.rating.toFixed(1)+
-        '<span class="cut-d">'+(n===0?'best':diff.toFixed(1))+'</span></span>';
+      (showRating
+        ? '<span class="fa-price">'+r.rating.toFixed(1)+
+            '<span class="cut-d">'+(n===0?'best':diff.toFixed(1))+'</span></span>'
+        : '<span class="fa-price">$'+r.p.price_musd.toFixed(1)+'M<span class="cut-d">frees</span></span>');
     card.onclick=()=>{
       cutCtx.pick=r.i;
       el.querySelectorAll('.fa-card').forEach((c,j)=>c.classList.toggle('selected',j===n));
       $('b-cut-do').disabled=false;
       $('b-cut-do').textContent='Release '+lastName(r.p.name);
       /* The panel behind follows the choice, so the lineup you are about to field is the one
-         on screen while you decide. */
-      paintCutPreview(cutCtx.offer,r.i);
+         on screen while you decide. Only meaningful on the last cut, when what is left IS a
+         lineup. */
+      if(need===1) paintCutPreview(offer,heldIdxs(offer,cutCtx.chosen.concat([r.p])));
     };
     el.appendChild(card);
   });
   $('b-cut-do').onclick=()=>{
-    if(cutCtx.pick===null) return;
-    const p=cutCtx.seven[cutCtx.pick];
-    finishAcceptTrade(cutCtx.offer,cutCtx.pick,p);
+    if(!cutCtx||cutCtx.done||cutCtx.pick===null) return;
+    cutCtx.chosen.push(cutCtx.pool[cutCtx.pick]);
+    paintCutStep();
   };
   show('s-cut');
+}
+
+/* The chosen men as indices into the squad acceptTrade will build, which is the only form it
+   and previewTrade accept. */
+function heldIdxs(offer,players){
+  const outSet=new Set(offer.outIdx);
+  const held=run.roster.filter((_,i)=>!outSet.has(i)).concat(offer.inPlayers);
+  const want=new Set(players.map(heldKey));
+  const out=[];
+  held.forEach((p,i)=>{ if(want.has(heldKey(p))) out.push(i); });
+  return out;
+}
+
+/* ONCE, AND ONLY ONCE. The cut screen stays up for the moment it takes the next screen to
+   come in, and its Release button stays bound to this context, so a second tap used to run
+   the deal a second time: the roster took the incoming players twice, assignRoster could not
+   draw a lineup out of the result, and the next kickoff threw on a null slot map. The flag is
+   on the context rather than the button because the button is rebound every step. */
+function commitCuts(){
+  if(!cutCtx||cutCtx.done) return;
+  cutCtx.done=true;
+  const {offer,chosen}=cutCtx;
+  $('b-cut-do').disabled=true;
+  finishAcceptTrade(offer,heldIdxs(offer,chosen),chosen);
 }
 
 /* The trade preview panel, repointed at a specific cut while the cut screen is open. */
@@ -6574,13 +6678,17 @@ function paintCutPreview(offer,cutIdx){
   capEl.innerHTML=capEl.dataset.base+tail;
 }
 
-function finishAcceptTrade(offer,cutIdx,cutPlayer){
-  R.acceptTrade(run,offer,DATA,CTX,{cutIdx:cutIdx});
+function finishAcceptTrade(offer,cutIdxs,cutPlayers){
+  const list=cutIdxs==null?null:(Array.isArray(cutIdxs)?cutIdxs:[cutIdxs]);
+  const cuts=cutPlayers==null?[]:(Array.isArray(cutPlayers)?cutPlayers:[cutPlayers]);
+  R.acceptTrade(run,offer,DATA,CTX,{cutIdxs:list});
   drawField($('field2'),false);
   paintSquadSidebar();
   paintRosterPanel('season-rp-body','season-rp-cap');
   const got=offer.inPlayers.map(p=>lastName(p.name)).join(' and ');
-  toast(cutPlayer?('Acquired '+got+', released '+lastName(cutPlayer.name)):('Acquired '+got));
+  toast(cuts.length
+    ? 'Acquired '+got+', released '+cuts.map(p=>lastName(p.name)).join(' and ')
+    : 'Acquired '+got);
   const sub=$('cut-sub'); if(sub) delete sub.dataset.base;
   if(run.pendingFreeAgency){ openFreeAgency(); return; }
   leaveTradeWindow(600);
@@ -6594,7 +6702,7 @@ function openFreeAgency(){
   const position=pending.position;
   const agents=R.generateFreeAgents(run,DATA,position);
   selectedFAPlayer=null;
-  $('fa-sub').textContent='Your 2-for-1 trade left an empty '+position+' slot. Sign a free agent.';
+  $('fa-sub').textContent='The trade left an empty '+position+' slot. Sign a free agent.';
   const el=$('fa-list');el.innerHTML='';
   $('b-fa-sign').disabled=true;
   if(!agents.length){
@@ -9620,6 +9728,14 @@ function runPayload(){
          a badge can tell a release from a trade. ps_trade_moves_ok bounds the shape by array
          length and total size rather than by an allowed key list, so this needed no migration. */
       if(h.cutKey) m.cut=h.cutKey;
+      /* A three-for-one releases TWO men, so `cut` alone no longer tells the whole story.
+         `cuts` carries the full list and `cut` stays the first of them, because rows written
+         before this exist and every badge already reads `cut`. Both keys are inside the
+         validator's size bound -- it constrains `out` and `in` by length and the whole move
+         list by bytes, not by an allowed key list, so no migration was needed. */
+      if(h.cutKeys&&h.cutKeys.length>1) m.cuts=h.cutKeys;
+      /* Whether the league asked for a man you had not put on the block. */
+      if(h.askedFor) m.ask=h.askedFor;
       return m;
     }):null,
   };
