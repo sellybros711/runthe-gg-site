@@ -14,6 +14,7 @@
  *   record   what each regular-season record is worth
  *   rounds   the per-game win rate, regular season and each playoff round
  *   nfl      the same headline numbers for the NFL game, as a yardstick
+ *   bands    what each overall band is rare enough to be, and worth
  */
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -212,6 +213,96 @@ if (want('nfl')) {
       + '   playoffs ' + (mean(A.po) * 100).toFixed(0) + '%'
       + '   title ' + (mean(A.ti) * 100).toFixed(1) + '%'
       + '   perfect ' + (mean(A.pf) * 100).toFixed(2) + '%');
+  }
+  console.log('');
+}
+
+/* What the displayed overall is worth, band by band, and how often a draft lands
+   in each one. Answers two questions the number itself cannot: is a 90 rare, and
+   is it worth anything. The second half is the known cost of the rating formula:
+   it counts chemistry and the scheme, and the simulation also counts the four
+   SHAPE terms it leaves out, so two teams showing the same number can be worth
+   different seasons. This measures how different. */
+if (want('bands')) {
+  const { E, R, data, league } = CFB;
+  const CTX = { league };
+  const CEIL = 112;   /* keep in step with RATING_CEILING in cfb/index.html */
+  const rate = (r, c) => r.reduce((t, p) => t + p.ppr_ppg_mean, 0)
+    * (c + E.rosterStructure(r).schemeBonus);
+
+  console.log('=== how often a draft lands in each band ===');
+  const drafted = [], hindsight = [], teams = [];
+  for (let i = 0; i < 700; i++) {
+    const run = draft(CFB, STRATS.greedy);
+    if (!run) continue;
+    const ov = rate(run.roster, run.season.chemistry) * 100 / CEIL;
+    drafted.push(ov);
+    teams.push({ roster: run.roster, chem: run.season.chemistry, run, ov });
+    try {
+      const bp = R.bestPossibleSquad(run, data, CTX);
+      if (bp && bp.squad) {
+        const bov = rate(bp.squad, bp.chemistry) * 100 / CEIL;
+        hindsight.push(bov);
+        teams.push({ roster: bp.squad, chem: bp.chemistry, run, ov: bov });
+      }
+    } catch (e) { /* not always computable */ }
+  }
+  const BANDS = [[0, 70], [70, 80], [80, 85], [85, 90], [90, 95], [95, 100], [100, 999]];
+  const label = ([lo, hi]) => (hi === 999 ? '100+' : lo + '-' + hi);
+  const share = (a) => BANDS.map((b) =>
+    (a.filter((v) => v >= b[0] && v < b[1]).length * 100 / a.length).toFixed(1).padStart(6) + '%').join('');
+  console.log('  band          ' + BANDS.map((b) => label(b).padStart(7)).join(''));
+  console.log('  you draft it  ' + share(drafted) + '   (n=' + drafted.length + ')');
+  console.log('  best possible ' + share(hindsight) + '   (n=' + hindsight.length + ')');
+
+  console.log('\n=== what each band is worth ===');
+  const acc = BANDS.map(() => ({ teams: 0, n: 0, wins: 0, po: 0, bye: 0, fin: 0, title: 0, perfect: 0 }));
+  const shaped = [];
+  for (const t of teams) {
+    const bi = BANDS.findIndex((b) => t.ov >= b[0] && t.ov < b[1]);
+    if (bi < 0) continue;
+    const b = acc[bi];
+    if (b.teams >= 40) continue;
+    b.teams++;
+    const schedule = t.run.schedule.map((id) => data.byTeamSeasonId[id]);
+    const playoffs = t.run.playoffs.map((id) => data.byTeamSeasonId[id]);
+    let w = 0, po = 0, ti = 0;
+    for (let i = 0; i < 300; i++) {
+      const rng = E.createSeededRNG(E.hashSeed('band|' + t.run.seed + '|' + t.ov.toFixed(2) + '|' + i));
+      const out = E.playRun(t.roster, t.chem, schedule, playoffs, league, rng, data.prepared);
+      b.n++; b.wins += out.regularWins; w += out.regularWins;
+      if (out.seed.made) { b.po++; po++; }
+      if (out.seed.bye) b.bye++;
+      if (out.titleWon) { b.title++; ti++; }
+      if (out.perfect) b.perfect++;
+      if (out.titleWon || out.eliminatedIn === 'CFP Championship') b.fin++;
+    }
+    if (t.ov >= 85) shaped.push({ ov: t.ov, mult: E.rosterStructure(t.roster).multiplier,
+      wins: w / 300, po: po / 300, ti: ti / 300 });
+  }
+  console.log('  band       teams   seasons   wins   playoff    bye   final   title  perfect');
+  BANDS.forEach((bd, i) => {
+    const b = acc[i];
+    if (!b.n) return;
+    const pc = (v) => (v * 100 / b.n).toFixed(1).padStart(6) + '%';
+    console.log('  ' + label(bd).padEnd(11) + String(b.teams).padStart(5) + String(b.n).padStart(10)
+      + (b.wins / b.n).toFixed(1).padStart(7) + pc(b.po) + pc(b.bye) + pc(b.fin) + pc(b.title) + pc(b.perfect));
+  });
+
+  console.log('\n=== the same number, different shape (teams rated 85 or better) ===');
+  shaped.sort((a, b) => a.mult - b.mult);
+  const third = Math.max(1, Math.floor(shaped.length / 3));
+  for (const [name, g] of [['worst shaped third', shaped.slice(0, third)],
+    ['middle third', shaped.slice(third, 2 * third)],
+    ['best shaped third', shaped.slice(2 * third)]]) {
+    if (!g.length) continue;
+    const m = (f) => g.reduce((t, x) => t + f(x), 0) / g.length;
+    console.log('  ' + name.padEnd(20) + String(g.length).padStart(3)
+      + '   shape x' + m((x) => x.mult).toFixed(3)
+      + '   showing ' + m((x) => x.ov).toFixed(1)
+      + '   ' + m((x) => x.wins).toFixed(1) + ' wins'
+      + '   playoff ' + (m((x) => x.po) * 100).toFixed(0) + '%'
+      + '   title ' + (m((x) => x.ti) * 100).toFixed(1) + '%');
   }
   console.log('');
 }
