@@ -91,6 +91,41 @@ const CONSTANTS = {
    * changes future game outcomes only; recorded runs and their ratings are untouched. */
   SCALE: 3.05,
   CAP_MUSD: 140,
+
+  /*
+   * ─── CASH CONSIDERATION ────────────────────────────────────────────────────
+   *
+   * GM mode only. Nobody hands over a better player for a worse one out of
+   * goodwill: when a deal is a straight upgrade in talent, the other club wants
+   * money on top, and that money comes off YOUR CAP for the rest of the season.
+   *
+   * The salary difference is already a cost -- taking Brady for Tua costs $10.3M
+   * of room because Brady is paid more. Cash is a separate and permanent one: the
+   * ceiling itself drops, so every upgrade narrows what you can afford later. It
+   * makes climbing a resource you spend rather than a thing you simply do, and it
+   * gives the value mark on the GM rating something real to measure.
+   *
+   * Priced on PRODUCTION GAINED, not on salary, because production is what the
+   * other GM is selling. TRADE_CASH_MIN_GAIN is a GATE, not a deductible: under it
+   * the deal is close enough to even that nobody asks, and over it the whole gain
+   * is billed. So the schedule has a step in it -- any real upgrade starts around
+   * $2M -- which is how a person would quote a price rather than how a formula
+   * would ramp one. The ceiling stops one blockbuster wrecking a season's cap.
+   *
+   * Measured, the price barely moves the outcome: sweeping it across a range that
+   * changed a season's total cash from $9M to $11.5M left a careful GM's playoff
+   * odds at 49%, 48% and 52% and the GM rating mean at 70.5, 70.3 and 70.6. The
+   * cost lands as FEWER BIG DEALS ON THE BOARD rather than as a worse team, because
+   * the market already refuses to offer a deal you could not afford after paying
+   * for it. So this is set for how the demand reads, not to hit a difficulty
+   * target: a 3.7-point upgrade -- Tua for Brady -- costs $5M.
+   *
+   * Rounded to the nearest half million, because a demand of $4.37M reads as
+   * arithmetic and $4.5M reads as a number a person said out loud.
+   */
+  TRADE_CASH_MIN_GAIN: 1.5,     // FPPG of net gain before anyone asks at all
+  TRADE_CASH_PER_FPPG: 1.35,    // $M per FPPG gained, on the whole gain once asked
+  TRADE_CASH_MAX_MUSD: 9,       // most any single deal can cost you off the cap
   /*
    * Re-spins are two separate levers now, one per wheel, and they get dearer as
    * you lean on them: $5M, then $10M, then $15M, whichever wheel you spin.
