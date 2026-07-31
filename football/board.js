@@ -108,6 +108,14 @@
   const SORTS = {
     record: 'score',
     rating: 'team_rating',
+    /* THE TRADE MACHINE'S OWN AXIS, and the only reason it is worth a third entry: record and
+       team rating both describe the roster you finished with, which in that mode is largely
+       the roster you were handed. The GM rating is the one number that measures the season's
+       actual work. Null on every other mode, and the board query already appends
+       `<col>=not.is.null` for any axis that is not score, so pointing another competition at
+       this axis returns an empty board rather than a wrong one.
+       ps_runs_trade_gm_idx is (gm_rating desc, created_at asc) where run_mode='trade'. */
+    gm: 'gm_rating',
   };
 
   /* THE TIEBREAK REVERSES WITH THE SORT, and that is a performance decision as much
@@ -327,7 +335,10 @@
     opts = opts || {};
     const club = opts.mode === 'club' && opts.franchise;
     const eraMode = opts.mode === 'era' && opts.era;
-    let f = '&run_mode=eq.' + (eraMode ? 'era' : club ? 'club' : 'free');
+    /* The Trade Machine needs no second field the way club and era do: the mode IS the
+       competition, so one board serves it. */
+    const trade = opts.mode === 'trade';
+    let f = '&run_mode=eq.' + (trade ? 'trade' : eraMode ? 'era' : club ? 'club' : 'free');
     if (club) f += '&franchise=eq.' + encodeURIComponent(opts.franchise);
     if (eraMode) f += '&era=eq.' + encodeURIComponent(opts.era);
     /* NAMED RUNS ONLY, when asked for. A guest run is a real draft and counts towards how
@@ -527,7 +538,11 @@
   async function ranksBatch(score, mode, franchise, era) {
     if (!batchSupported) return null;
     try {
-      const m = (mode === 'era' && era) ? 'era' : (mode === 'club' && franchise) ? 'club' : 'free';
+      /* WHITELISTED, same as p_mode on submit. ps_rank_windows filters on run_mode and never
+         validated it, so 'trade' needed no SQL change to be countable here. */
+      const m = mode === 'trade' ? 'trade'
+        : (mode === 'era' && era) ? 'era'
+        : (mode === 'club' && franchise) ? 'club' : 'free';
       const res = await timed(base() + 'rpc/ps_rank_windows', {
         method: 'POST',
         headers: headers(),
@@ -551,6 +566,7 @@
     const batch = await ranksBatch(score, mode, franchise, era);
     if (batch) return batch;
     const of = (win) => {
+      if (mode === 'trade') return { mode: 'trade', win, named: true };
       if (mode === 'era' && era) return { mode: 'era', era, win, named: true };
       if (mode === 'club' && franchise) return { mode: 'club', franchise, win, named: true };
       return { mode: 'free', win, named: true };
@@ -632,7 +648,10 @@
   async function placeIn(opts, sort, dir, value) {
     if (value === null || value === undefined || !Number.isFinite(Number(value))) return null;
     const col = SORTS[sort] || SORTS.record;
-    const v = col === 'team_rating' ? round2(value) : value;
+    /* Rounded to match what the column HOLDS, or the comparison is against a precision the
+       stored rows do not have and the place comes back one out. ps_submit_run rounds both of
+       these to two places on the way in. */
+    const v = (col === 'team_rating' || col === 'gm_rating') ? round2(value) : value;
     try {
       const q = base() + TABLE + '?select=id&limit=1' +
         '&' + col + '=' + (dir === 'asc' ? 'lt.' : 'gt.') + encodeURIComponent(v) +
