@@ -19,6 +19,12 @@
   /* Stop iOS Safari inflating text past the sizes set here, which was blowing the
      wordmark wider than the header and clipping "Season". */
   html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  /* DSEG7 Classic, the open seven-segment face a real scoreboard is built from.
+     Self-hosted rather than pulled off a font CDN, so the numbers cannot arrive
+     late or not at all. SIL Open Font License 1.1; the licence sits beside it in
+     fonts/DSEG-LICENSE.txt. */
+  @font-face{font-family:'DSEG7';src:url('fonts/DSEG7Classic-Bold.woff2') format('woff2');
+    font-weight:700;font-style:normal;font-display:swap}
   :root{
     --bg:#080b14;--panel:#131a2b;--panel-2:#1a2337;
     --line:rgba(255,255,255,.10);--line-2:rgba(255,255,255,.18);
@@ -36,7 +42,7 @@
     --fn:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
     --fb:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
     --fbar:'Barlow Condensed',Impact,sans-serif;
-    --fled:'Orbitron','Barlow Condensed',sans-serif;
+    --fled:'DSEG7','Orbitron','Barlow Condensed',sans-serif;
     --fc:'Graduate','Barlow Condensed',Impact,sans-serif;
     --qb:#ff0a3b;--rb:#22c55e;--wr:#0f93ff;--te:#eb9500;--flex:#ba22f1;
     --blue:#10b981;--red:#ef4444;--red-2:#dc2626;
@@ -712,6 +718,20 @@
     color:#ffc84a;flex:0 0 auto;font-variant-numeric:tabular-nums;
     text-shadow:0 0 9px rgba(255,190,55,.65)}
   .bug .bbot .ck:empty{display:none}
+  /* THE DARK SEGMENTS. A board shows every segment of every digit whether it is
+     lit or not, so a ghosted 88 sits behind the score and 88:88 behind the clock.
+     A 7 then reads with its tens place dark, which is the tell that says this is
+     a scoreboard and not a number in a box. The ghost takes the same padding as
+     the real digits, so the two line up exactly. */
+  .bug .bt .sc{text-align:right;min-width:2ch}
+  .bug .bt .sc:before{content:'88';position:absolute;inset:0;padding:inherit;
+    text-align:right;color:rgba(255,200,74,.16);pointer-events:none}
+  .bug .bbot .ck{position:relative;min-width:5ch;text-align:right}
+  .bug:not(.final) .bbot .ck:before{content:'88:88';position:absolute;inset:0;
+    text-align:right;color:rgba(255,200,74,.16);pointer-events:none}
+  /* At full time the clock carries words, which a seven-segment face cannot set,
+     so it hands over to the collegiate face and the ghost stands down. */
+  .bug.final .bbot .ck{font-family:var(--fc);min-width:0}
   .bug .bbot .rd{margin-left:auto;font-family:var(--fc);font-weight:400;font-size:11.5px;
     letter-spacing:.11em;line-height:1;white-space:nowrap;color:#e6edf6;
     background:linear-gradient(180deg,#4c576b,#2c3446);
@@ -779,6 +799,7 @@
   .bug.varsity .bt .cd{font-family:var(--fc);font-size:clamp(13px,3.9vw,18px);
     letter-spacing:.1em;color:#f2f6fb;text-shadow:none}
   /* White bulbs, the way the numerals on a school board are lit. */
+  .bug.varsity .bt .sc:before{color:rgba(255,255,255,.11)}
   .bug.varsity .bt .sc,.bug.varsity.big .bt .sc{background:none;box-shadow:none;padding:1px 0 0;
     font-family:var(--fled);font-weight:700;font-size:clamp(34px,11vw,50px);line-height:1;
     color:rgba(255,255,255,.78);
