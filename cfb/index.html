@@ -215,6 +215,33 @@
     animation:banner 4.6s ease-in-out infinite}
   @keyframes banner{0%{left:-55%}55%{left:105%}100%{left:105%}}
 
+  /* ── the poll ticker ────────────────────────────────────────────
+     The strip a college broadcast runs the rankings along. Quiet enough to read
+     as furniture rather than something you have to stop and read, and it only
+     lives on the front page. */
+  .ticker{display:flex;align-items:stretch;margin:0 0 14px;border-radius:8px;overflow:hidden;
+    background:linear-gradient(180deg,#141b28,#0b1019);border:1px solid var(--line)}
+  .tk-label{flex:0 0 auto;display:flex;align-items:center;padding:7px 11px 6px;white-space:nowrap;
+    font-family:var(--fc);font-weight:400;font-size:10.5px;letter-spacing:.13em;
+    color:#140d02;background:var(--grad-gold)}
+  .tk-win{position:relative;flex:1 1 auto;min-width:0;overflow:hidden;display:flex;align-items:center}
+  /* Two copies of the poll run past, so the loop closes on itself with no seam. */
+  .tk-track{display:flex;white-space:nowrap;will-change:transform;
+    animation:tick 52s linear infinite}
+  @keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .tk-item{display:inline-flex;align-items:baseline;gap:6px;padding:7px 13px;
+    font-family:var(--fn);font-size:12px;font-weight:600}
+  .tk-item b{font-family:var(--fd);font-size:12px;color:#ffd23a}
+  .tk-item .tm{color:#e2e9f3}
+  .tk-item .rc{color:var(--dim-2);font-size:11px;font-variant-numeric:tabular-nums}
+  .tk-win:after{content:'';position:absolute;right:0;top:0;bottom:0;width:24px;pointer-events:none;
+    background:linear-gradient(90deg,transparent,#0b1019)}
+  /* Standing still, it becomes something you can push along by hand instead. */
+  @media(prefers-reduced-motion:reduce){
+    .tk-track{animation-name:none}
+    .tk-win{overflow-x:auto}
+  }
+
   /* ── the stage: the wheel and the formation, above the words ──── */
   .stage{margin-bottom:20px}
   .stage .reels{margin-top:0}
@@ -1286,6 +1313,15 @@ or endorsed by the NCAA, the CFP or any school.
 
   <!-- s-intro -->
   <div class="screen" id="s-intro">
+    <!-- THE POLL, running across the top the way a broadcast carries one. The
+         rankings are the game's own, worked out from how far each team outscored
+         its year, so it is labelled by season rather than borrowing a real poll's
+         name. Filled in once the data lands. -->
+    <div class="ticker" id="h-ticker" hidden aria-hidden="true">
+      <span class="tk-label" id="h-tk-label">Top 25</span>
+      <div class="tk-win"><div class="tk-track" id="h-tk-track"></div></div>
+    </div>
+
     <!-- THE GAME ITSELF GOES FIRST. The wheel turning and the formation filling in
          say what the game is faster than a paragraph can, so the words underneath
          only have to name it. -->
@@ -1933,6 +1969,7 @@ async function boot(){
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     $('h-field').innerHTML=fieldMarkings();
+    buildTicker();
     show('s-intro');
   }catch(e){
     $('s-load').innerHTML='<div class="load"><h3 class="display">Could not load the data</h3>'+
@@ -2515,6 +2552,26 @@ const ROUND_TAG={'CFP First Round':'R1','CFP Quarterfinal':'QF','CFP Semifinal':
   'CFP Championship':'TITLE'};
 /* The committee's line on your season, used above the seeding panel. */
 function rankLine(rk){ return rk&&rk.rank?'You finished No. '+rk.rank+' in the country.':''; }
+
+/* THE POLL TICKER. One season's top 25, picked at random so the front page is not
+   the same every visit, ordered the way the game ranks teams: by how far they
+   outscored the year they played in. The list is written twice so the strip can
+   loop without a seam. */
+function buildTicker(){
+  const wrap=$('h-ticker'); if(!wrap||!DATA) return;
+  const bySeason={};
+  for(const t of DATA.teamSeasons)(bySeason[t.season]??=[]).push(t);
+  const seasons=Object.keys(bySeason).filter(y=>bySeason[y].length>=25);
+  if(!seasons.length) return;
+  const year=seasons[Math.floor(Math.random()*seasons.length)];
+  const top=bySeason[year].slice().sort((a,b)=>(b.strength_z||0)-(a.strength_z||0)).slice(0,25);
+  const html=top.map((t,i)=>'<span class="tk-item"><b>'+(i+1)+'</b>'+
+    '<span class="tm">'+esc(t.school)+'</span>'+
+    (t.record?'<span class="rc">'+esc(t.record)+'</span>':'')+'</span>').join('');
+  $('h-tk-track').innerHTML=html+html;
+  $('h-tk-label').textContent=year+' Top 25';
+  wrap.hidden=false;
+}
 
 function paintCalendar(justPlayed){
   const s=run.season, cells=[];
