@@ -555,9 +555,9 @@ function tcPlate(team,season){
 /* ─── diamond coordinates ─── */
 /* SLOTS: C,1B,2B,3B,SS, LF,CF,RF, DH, SP1,SP2,CL */
 const DIAMOND_SPOTS=[
-  {x:50,y:84},{x:63,y:58},{x:64,y:40},{x:37,y:58},{x:36,y:40},
+  {x:50,y:84},{x:67,y:55},{x:63,y:37},{x:33,y:55},{x:37,y:37},
   {x:14,y:25},{x:50,y:10},{x:86,y:25},{x:13,y:89},
-  {x:50,y:61},{x:50,y:61},{x:50,y:61},
+  {x:50,y:57},{x:50,y:57},{x:50,y:57},
 ];
 
 /* ─── reel system ─── */
@@ -665,8 +665,8 @@ function diamondMarkings(sfx){
   const wh='rgba(255,255,255,';
   const wallH=20,fpL=3,fpR=97;
   const hx=50,hy=92;
-  const bY=61,bL=29.8,bR=70.2;
-  const tY=30;
+  const bY=57,bL=27.2,bR=72.8;
+  const tY=22;
   const wallBot='M 0,'+wallH+' Q 50,'+(wallH-18)+' 100,'+wallH;
   return '<div class="turf"></div><div class="lit"></div>'+
     '<svg class="diamond-svg" viewBox="0 0 100 100" preserveAspectRatio="none">'+
@@ -685,7 +685,7 @@ function diamondMarkings(sfx){
     '<circle cx="'+fpL+'" cy="0.8" r="1" fill="#e8c820"/>'+
     '<line x1="'+fpR+'" y1="0" x2="'+fpR+'" y2="'+wallH+'" stroke="#e8c820" stroke-width="1.5"/>'+
     '<circle cx="'+fpR+'" cy="0.8" r="1" fill="#e8c820"/>'+
-    '<path d="M 50,94.5 L 28.3,'+bY+' L 50,28 L 71.7,'+bY+' Z" fill="url(#dirtg-'+sfx+')"/>'+
+    '<path d="M 50,94.5 L 25.8,'+bY+' L 50,20 L 74.2,'+bY+' Z" fill="url(#dirtg-'+sfx+')"/>'+
     '<ellipse cx="'+hx+'" cy="'+hy+'" rx="4.2" ry="6.2" fill="url(#dirtg-'+sfx+')"/>'+
     '<ellipse cx="50" cy="'+bY+'" rx="5" ry="7.35" fill="#b18b50" stroke="'+wh+'.5)" stroke-width="0.45"/>'+
     '<path d="M '+hx+','+hy+' L '+bL+','+bY+' L 50,'+tY+' L '+bR+','+bY+' Z" '+
