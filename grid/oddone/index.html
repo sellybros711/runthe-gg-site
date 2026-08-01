@@ -174,8 +174,11 @@
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Day streak</div></div>
     </div>
     <div class="rcta">
+      <button class="abtn gold" id="mAgain" type="button">Play again</button>
+    </div>
+    <div class="rcta">
       <button class="abtn" id="mShare" type="button">Share</button>
-      <a class="abtn gold" href="/grid/" style="text-decoration:none">More puzzles</a>
+      <a class="abtn" href="/grid/" style="text-decoration:none">More games</a>
     </div>
     <div class="countdown" id="mCountdown"></div>
   </div>
@@ -184,6 +187,7 @@
 
 <script src="../match/entities.js?v=12"></script>
 <script src="/grid/sfx.js"></script>
+<script src="/grid/tokens.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
 <script>
@@ -255,7 +259,7 @@
   }
   var SEQ=buildRounds();
 
-  var idx=0, run=0, done=false, busy=false, started=false, startTs=0, elapsed=0;
+  var idx=0, run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, charged=false, attemptFirst=false;
   var choicesEl=document.getElementById('choices');
 
   function renderRound(){
@@ -282,8 +286,26 @@
     }
   }
 
-  function startIfNeeded(){ if(started||done) return; started=true; startTs=performance.now(); }
+  function startIfNeeded(){ if(started||done) return;
+    if(!charged){ var r=(window.RTGTokens?RTGTokens.startAttempt(GAME):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); }
+    started=true; startTs=performance.now(); }
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+
+  function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
+    var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
+    h.textContent='Tap the name that doesn’t belong.'+lbl; }
+  function beginAttempt(){
+    idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
+    document.getElementById('runN').textContent='0';
+    var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
+    choicesEl.style.pointerEvents=''; choicesEl.style.opacity='';
+    renderRound(); updateHint();
+  }
+  function updateAgainBtn(){
+    var b=document.getElementById('mAgain'); if(!b) return;
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ b.textContent='No plays left today'; b.disabled=true; b.style.opacity='.55'; b.style.cursor='default'; }
+    else { b.textContent='Play again'; b.disabled=false; b.style.opacity=''; b.style.cursor='pointer'; }
+  }
   function shiftDay(iso,d){ var x=new Date(iso+'T00:00:00'); x.setDate(x.getDate()+d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
   function load(){ try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
   function save(s){ try{ LS.setItem(SAVE_KEY,JSON.stringify(s)); }catch(e){} }
@@ -295,7 +317,7 @@
     if(s.lastDone!==today){ s.streak=(s.lastDone===y)?(s.streak||0)+1:1; }
     s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, run); s.last={ run:run, seconds:Math.round(elapsed) };
     save(s); showEnd(s, false);
-    if(run>0 && window.RTG_BOARD){
+    if(run>0 && attemptFirst && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:run }).then(function(res){
         if(res&&res.streak){ document.getElementById('streakN').textContent=res.streak; document.getElementById('mStreak').textContent=res.streak; }
         renderRealBoard();
@@ -309,13 +331,18 @@
     document.getElementById('mRun').textContent=run;
     document.getElementById('mBest').textContent=s.bestRun||0;
     document.getElementById('mStreak').textContent=s.streak||0;
-    document.getElementById('mSub').textContent = locked ? 'Your run today' : (run>=SEQ.length?'You cleared them all!':'Your run ended');
+    document.getElementById('mSub').textContent = locked ? 'Your run today' : (!attemptFirst ? 'Practice run — not ranked' : (run>=SEQ.length?'You cleared them all!':'Your run ended'));
     document.getElementById('yourTm').textContent = run+' in a row';
     document.getElementById('yourBest').textContent = s.bestRun||0;
-    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && run>=5){ confetti(run>=15?120:70, run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
+    updateAgainBtn();
+    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && run>=5){ confetti(run>=15?120:70, run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
   }
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
+  document.getElementById('mAgain').addEventListener('click', function(){
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); return; }
+    beginAttempt();
+  });
   document.getElementById('mShare').addEventListener('click', function(){
     var txt='RunTheGrid · Odd One Out\n🎯 '+run+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/grid/';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
@@ -362,8 +389,11 @@
   // ---- boot ----
   var saved=load(); document.getElementById('streakN').textContent=saved.streak||0;
   if(saved.bestRun){ document.getElementById('bestRun').textContent=saved.bestRun; document.getElementById('yourBest').textContent=saved.bestRun; }
-  if(saved.lastDone===DATE && saved.last){ done=true; run=saved.last.run; document.getElementById('hintline').textContent='You’ve already played today — come back tomorrow.'; choicesEl.style.pointerEvents='none'; choicesEl.style.opacity='.5'; showEnd(saved, true); }
-  else { renderRound(); }
+  if(window.RTGTokens && !RTGTokens.canPlay(GAME)){
+    done=true; choicesEl.style.pointerEvents='none'; choicesEl.style.opacity='.5';
+    document.getElementById('hintline').textContent='No plays left — back tomorrow.';
+    if(saved.last){ run=saved.last.run||0; showEnd(saved, true); } else { renderRound(); }
+  } else { beginAttempt(); }
   if(window.RTG_BOARD){
     RTG_BOARD.boot();
     RTG_BOARD.onChange(function(st){

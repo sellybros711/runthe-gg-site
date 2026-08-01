@@ -208,8 +208,11 @@
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Streak</div></div>
     </div>
     <div class="rcta">
+      <button class="abtn gold" id="mAgain" type="button">Play again</button>
+    </div>
+    <div class="rcta">
       <button class="abtn" id="mShare" type="button">Share</button>
-      <a class="abtn gold" href="/grid/" style="text-decoration:none">More puzzles</a>
+      <a class="abtn" href="/grid/" style="text-decoration:none">More games</a>
     </div>
     <div class="countdown" id="mCountdown"></div>
   </div>
@@ -218,6 +221,7 @@
 
 <script src="../match/entities.js?v=12"></script>
 <script src="/grid/sfx.js"></script>
+<script src="/grid/tokens.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
 <script>
@@ -263,7 +267,7 @@
     return out;
   }
 
-  var guesses=[], done=false, won=false, started=false, startTs=0, tick=null, elapsed=0;
+  var guesses=[], done=false, won=false, started=false, startTs=0, tick=null, elapsed=0, charged=false, attemptFirst=false;
   var qEl=document.getElementById('q'), goEl=document.getElementById('go'), acEl=document.getElementById('ac');
 
   // ---- autocomplete ----
@@ -320,8 +324,31 @@
   }
 
   // ---- timer ----
-  function startIfNeeded(){ if(started||done) return; started=true; startTs=performance.now(); tick=setInterval(function(){ elapsed=(performance.now()-startTs)/1000; },500); }
+  function startIfNeeded(){ if(started||done) return;
+    if(!charged){ var r=(window.RTGTokens?RTGTokens.startAttempt('guess'):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); }
+    started=true; startTs=performance.now(); tick=setInterval(function(){ elapsed=(performance.now()-startTs)/1000; },500); }
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+
+  function updateLead(){
+    var v=document.querySelector('.lead .v'); if(!v) return;
+    var lbl = window.RTGTokens ? (' · '+RTGTokens.label('guess')+' today') : '';
+    v.innerHTML='Guess the athlete in <b>8 tries</b>. Every guess shows how close you are on each trait.'+esc(lbl);
+  }
+  function beginAttempt(){
+    guesses=[]; done=false; won=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
+    if(tick){ clearInterval(tick); tick=null; }
+    document.getElementById('guesses').innerHTML='';
+    document.getElementById('guessesLeft').textContent=MAX+' guesses left';
+    qEl.value=''; qEl.disabled=false; goEl.disabled=true; qEl.placeholder="Type a player's name…";
+    acEl.classList.remove('on'); acEl.innerHTML=''; acItems=[]; acHi=-1;
+    var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
+    updateLead();
+  }
+  function updateAgainBtn(){
+    var b=document.getElementById('mAgain'); if(!b) return;
+    if(window.RTGTokens && !RTGTokens.canPlay('guess')){ b.textContent='No plays left today'; b.disabled=true; b.style.opacity='.55'; b.style.cursor='default'; }
+    else { b.textContent='Play again'; b.disabled=false; b.style.opacity=''; b.style.cursor='pointer'; }
+  }
 
   // ---- finish ----
   function shiftDay(iso,d){ var x=new Date(iso+'T00:00:00'); x.setDate(x.getDate()+d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
@@ -343,7 +370,7 @@
     var wrong = guesses.length-(w?1:0);
     // modal
     var tt=document.getElementById('mTitle'); tt.textContent=w?'SOLVED':'SO CLOSE'; tt.className=w?'win':'lose';
-    document.getElementById('mSub').textContent = w ? ('In '+guesses.length+' guess'+(guesses.length===1?'':'es')) : ('The answer was');
+    document.getElementById('mSub').textContent = !attemptFirst ? 'Practice — not ranked' : (w ? ('In '+guesses.length+' guess'+(guesses.length===1?'':'es')) : ('The answer was'));
     document.getElementById('mName').textContent=TARGET.name;
     document.getElementById('mMeta').textContent=[TARGET.sport, TARGET.pos, (TARGET.t&&TARGET.t[0])].filter(Boolean).join(' · ');
     document.getElementById('mGuesses').textContent=w?guesses.length:'—';
@@ -352,16 +379,21 @@
     document.getElementById('yourTm').textContent = w ? (guesses.length+' · '+fmt(elapsed)) : 'X';
     document.getElementById('yourBest').textContent = s.bestStreak||0;
 
-    if(w && window.RTG_BOARD){
+    if(w && attemptFirst && window.RTG_BOARD){
       RTG_BOARD.submit('guess', DATE, { seconds:Math.round(elapsed), mistakes:wrong, reveals:0 }).then(function(res){
         if(res&&res.streak){ document.getElementById('streakN').textContent=res.streak; document.getElementById('mStreak').textContent=res.streak; }
         renderRealBoard();
       });
     }
+    updateAgainBtn();
     setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(w){ confetti(wrong===0?120:80, wrong===0); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 350);
   }
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
+  document.getElementById('mAgain').addEventListener('click', function(){
+    if(window.RTGTokens && !RTGTokens.canPlay('guess')){ toast('No plays left today'); updateAgainBtn(); return; }
+    beginAttempt();
+  });
   document.getElementById('mShare').addEventListener('click', function(){
     var grid=guesses.map(function(g){ return cmp(g).map(function(c){ return c.st==='hit'?'🟩':(c.st==='close'?'🟨':'⬛'); }).join(''); }).join('\n');
     var head='RunTheGrid · Guess the Player\n'+(won?(guesses.length+'/'+MAX):'X/'+MAX)+' · '+fmt(elapsed)+'\n';
@@ -410,7 +442,7 @@
   // ---- already played today? lock it (one attempt per day, protects the board) ----
   function lockToday(sv){
     done=true; qEl.disabled=true; goEl.disabled=true; qEl.placeholder='Come back tomorrow';
-    document.getElementById('guessesLeft').textContent='You’ve already played today';
+    document.getElementById('guessesLeft').textContent='No plays left — back tomorrow.';
     var w=sv.last.won;
     var tt=document.getElementById('mTitle'); tt.textContent=w?'SOLVED':'SO CLOSE'; tt.className=w?'win':'lose';
     document.getElementById('mSub').textContent = w ? ('In '+sv.last.guesses+' guess'+(sv.last.guesses===1?'':'es')) : 'The answer was';
@@ -420,13 +452,18 @@
     document.getElementById('mTime').textContent=fmt(sv.last.seconds||0);
     document.getElementById('mStreak').textContent=sv.streak||0;
     document.getElementById('yourTm').textContent = w ? (sv.last.guesses+' · '+fmt(sv.last.seconds||0)) : 'X';
+    updateAgainBtn();
     document.getElementById('scrim').classList.remove('hidden'); startCountdown();
   }
 
   // ---- boot ----
   var saved=load(); document.getElementById('streakN').textContent=saved.streak||0;
   if(saved.bestStreak){ document.getElementById('yourBest').textContent=saved.bestStreak; }
-  if(saved.lastDone===DATE && saved.last){ lockToday(saved); }
+  if(saved.lastDone===DATE && saved.last && window.RTGTokens && !RTGTokens.canPlay('guess')){
+    lockToday(saved);           // out of plays → locked review
+  } else {
+    beginAttempt();             // fresh playable game (same daily target); charge only on first guess
+  }
   if(window.RTG_BOARD){
     RTG_BOARD.boot();
     RTG_BOARD.onChange(function(st){

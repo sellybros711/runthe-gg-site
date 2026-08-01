@@ -178,8 +178,11 @@
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Streak</div></div>
     </div>
     <div class="rcta">
+      <button class="abtn gold" id="mAgain" type="button">Play again</button>
+    </div>
+    <div class="rcta">
       <button class="abtn" id="mShare" type="button">Share</button>
-      <a class="abtn gold" href="/grid/" style="text-decoration:none">More puzzles</a>
+      <a class="abtn" href="/grid/" style="text-decoration:none">More games</a>
     </div>
     <div class="countdown" id="mCountdown"></div>
   </div>
@@ -188,6 +191,7 @@
 
 <script src="../match/entities.js?v=12"></script>
 <script src="/grid/sfx.js"></script>
+<script src="/grid/tokens.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
 <script>
@@ -223,7 +227,7 @@
   var order=shuffle(ANSWER);                      // current arrangement
   if(order.map(function(e){return e.id;}).join()===ANSWER.map(function(e){return e.id;}).join()) order=shuffle(ANSWER);
 
-  var checks=0, done=false, started=false, startTs=0, elapsed=0, lastCheck=null;
+  var checks=0, done=false, started=false, startTs=0, elapsed=0, lastCheck=null, charged=false, attemptFirst=false;
   var rowsEl=document.getElementById('rows');
 
   function eraLabel(e){ return "'"+String(primaryDecade(e)).slice(2)+"s"; }
@@ -261,11 +265,31 @@
     toast(right+' of '+COUNT+' in the right spot');
   }
 
-  function startIfNeeded(){ if(started||done) return; started=true; startTs=performance.now(); }
+  function startIfNeeded(){ if(started||done) return;
+    if(!charged){ var r=(window.RTGTokens?RTGTokens.startAttempt('rankit'):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); }
+    started=true; startTs=performance.now(); }
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
   function shiftDay(iso,d){ var x=new Date(iso+'T00:00:00'); x.setDate(x.getDate()+d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
   function load(){ try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
   function save(s){ try{ LS.setItem(SAVE_KEY,JSON.stringify(s)); }catch(e){} }
+
+  function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
+    var lbl = window.RTGTokens ? (' · '+RTGTokens.label('rankit')+' today') : '';
+    h.textContent='Use the arrows to reorder, then check.'+lbl; }
+  function beginAttempt(){
+    order=shuffle(ANSWER);
+    if(order.map(function(e){return e.id;}).join()===ANSWER.map(function(e){return e.id;}).join()) order=shuffle(ANSWER);
+    checks=0; done=false; started=false; startTs=0; elapsed=0; lastCheck=null; charged=false; attemptFirst=false;
+    document.getElementById('checkInfo').textContent='';
+    document.getElementById('checkBtn').disabled=false;
+    var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
+    render(); updateHint();
+  }
+  function updateAgainBtn(){
+    var b=document.getElementById('mAgain'); if(!b) return;
+    if(window.RTGTokens && !RTGTokens.canPlay('rankit')){ b.textContent='No plays left today'; b.disabled=true; b.style.opacity='.55'; b.style.cursor='default'; }
+    else { b.textContent='Play again'; b.disabled=false; b.style.opacity=''; b.style.cursor='pointer'; }
+  }
 
   function finish(){
     if(done) return; done=true;
@@ -276,7 +300,7 @@
     if(s.lastDone!==today){ s.streak=(s.lastDone===y)?(s.streak||0)+1:1; s.best=Math.min(s.best||1e9, Math.round(elapsed)); s.solves=(s.solves||0)+1; }
     s.lastDone=today; s.last={ seconds:Math.round(elapsed), checks:checks }; save(s);
     showEnd(s, false);
-    if(window.RTG_BOARD){
+    if(attemptFirst && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:checks, reveals:0 }).then(function(res){
         if(res&&res.streak){ document.getElementById('streakN').textContent=res.streak; document.getElementById('mStreak').textContent=res.streak; }
         renderRealBoard();
@@ -286,18 +310,23 @@
   function showEnd(s, locked){
     document.getElementById('streakN').textContent=s.streak||0;
     document.getElementById('checkBtn').disabled=true;
-    document.getElementById('hintline').textContent = locked ? 'You’ve already played today — come back tomorrow.' : 'Nicely ranked!';
+    document.getElementById('hintline').textContent = locked ? 'No plays left — back tomorrow.' : 'Nicely ranked!';
     var sc = locked ? (s.last?s.last.checks:0) : checks, sec = locked ? (s.last?s.last.seconds:0) : Math.round(elapsed);
     document.getElementById('mTime').textContent=fmt(sec);
     document.getElementById('mChecks').textContent=sc;
     document.getElementById('mStreak').textContent=s.streak||0;
-    document.getElementById('mSub').textContent = sc===0 ? 'Perfect — first try!' : 'Solved';
+    document.getElementById('mSub').textContent = locked ? 'You’ve already played today' : (!attemptFirst ? 'Practice run — not ranked' : (sc===0 ? 'Perfect — first try!' : 'Solved'));
     document.getElementById('yourTm').textContent=fmt(sec);
     document.getElementById('yourBest').textContent=fmt(s.best||sec);
-    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked){ confetti(sc===0?120:70, sc===0); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
+    updateAgainBtn();
+    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst){ confetti(sc===0?120:70, sc===0); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
   }
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
+  document.getElementById('mAgain').addEventListener('click', function(){
+    if(window.RTGTokens && !RTGTokens.canPlay('rankit')){ toast('No plays left today'); updateAgainBtn(); return; }
+    beginAttempt();
+  });
   document.getElementById('mShare').addEventListener('click', function(){
     var sv=load().last||{seconds:Math.round(elapsed),checks:checks};
     var txt='RunTheGrid · Rank It\n📊 '+fmt(sv.seconds)+' · '+sv.checks+' check'+(sv.checks===1?'':'s')+'\nrunthe.gg/grid/';
@@ -345,8 +374,11 @@
   // ---- boot ----
   var saved=load(); document.getElementById('streakN').textContent=saved.streak||0;
   if(saved.best){ document.getElementById('yourBest').textContent=fmt(saved.best); }
-  if(saved.lastDone===DATE && saved.last){ done=true; order=ANSWER.slice(); lastCheck=null; render(); showEnd(saved, true); }
-  else { render(); }
+  if(window.RTGTokens && !RTGTokens.canPlay('rankit')){
+    done=true; document.getElementById('checkBtn').disabled=true;
+    document.getElementById('hintline').textContent='No plays left — back tomorrow.';
+    if(saved.last){ order=ANSWER.slice(); lastCheck=null; render(); showEnd(saved, true); } else { render(); }
+  } else { beginAttempt(); }
   if(window.RTG_BOARD){
     RTG_BOARD.boot();
     RTG_BOARD.onChange(function(st){

@@ -220,8 +220,11 @@
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Streak</div></div>
     </div>
     <div class="rcta">
+      <button class="abtn gold" id="mAgain" type="button">Play again</button>
+    </div>
+    <div class="rcta">
       <button class="abtn" id="mShare" type="button">Share</button>
-      <a class="abtn gold" href="/grid/" style="text-decoration:none">More puzzles</a>
+      <a class="abtn" href="/grid/" style="text-decoration:none">More games</a>
     </div>
     <div class="countdown" id="mCountdown"></div>
   </div>
@@ -231,6 +234,7 @@
 
 <script src="../match/entities.js?v=12"></script>
 <script src="/grid/sfx.js"></script>
+<script src="/grid/tokens.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
 <script>
@@ -317,7 +321,7 @@
   P.words=built.placed.map(function(p){ return p.word; });  // only words that actually placed
   var GRID=built.grid, PLACED=built.placed;
   var foundSet={}, foundCount=0, colorFor={};
-  var done=false, hints=0, started=false, startTs=0, tick=null, elapsed=0;
+  var done=false, hints=0, started=false, startTs=0, tick=null, elapsed=0, charged=false, attemptFirst=false;
 
   // ---- render ----
   var gridEl=document.getElementById('grid');
@@ -347,15 +351,17 @@
     document.getElementById('progN').textContent=foundCount+' / '+PLACED.length;
   }
   document.getElementById('themeName').textContent=P.theme;
-  (function(){
+  function updWordsLab(){
     var n=PLACED.length, name=P.theme, kind=P.kind, phrase;
     if(kind==='t') phrase=n+' current or former '+name;
     else if(kind==='nat') phrase=n+' players who represented '+name;
     else if(kind==='pos') phrase=n+' '+name;
     else if(kind==='aw') phrase=n+' '+name;
     else phrase=n+' '+name;
-    var el=document.getElementById('wordsLab'); if(el) el.textContent='Find '+phrase+'. Names reveal as you spot them.';
-  })();
+    var lbl = window.RTGTokens ? (' · '+RTGTokens.label('wordsearch')+' today') : '';
+    var el=document.getElementById('wordsLab'); if(el) el.textContent='Find '+phrase+'. Names reveal as you spot them.'+lbl;
+  }
+  updWordsLab();
 
   // ---- selection (pointer, works for mouse + touch) ----
   var selStart=null, selPath=[];
@@ -371,7 +377,7 @@
   function showSel(path){ clearSel(); selPath=path||[]; selPath.forEach(function(i){ cellEls[i].classList.add('sel'); }); }
   function pathStr(path){ return path.map(function(i){ return GRID[Math.floor(i/N)][i%N]; }).join(''); }
 
-  function onDown(e){ if(done) return; var t=e.touches?e.touches[0]:e; var i=cellFromPoint(t.clientX,t.clientY); if(i==null) return; e.preventDefault(); selStart=i; showSel([i]); }
+  function onDown(e){ if(done) return; var t=e.touches?e.touches[0]:e; var i=cellFromPoint(t.clientX,t.clientY); if(i==null) return; e.preventDefault(); startIfNeeded(); selStart=i; showSel([i]); }
   function onMove(e){ if(done||selStart==null) return; var t=e.touches?e.touches[0]:e; var i=cellFromPoint(t.clientX,t.clientY); if(i==null) return; var ln=lineCells(selStart,i); if(ln){ e.preventDefault(); showSel(ln); } }
   function onUp(){
     if(done||selStart==null){ selStart=null; return; }
@@ -398,7 +404,9 @@
   document.addEventListener('touchend', onUp);
 
   // ---- timer ----
-  function startIfNeeded(){ if(started||done) return; started=true; startTs=performance.now(); tick=setInterval(updTimer,250); }
+  function startIfNeeded(){ if(started||done) return;
+    if(!charged){ var r=(window.RTGTokens?RTGTokens.startAttempt('wordsearch'):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); }
+    started=true; startTs=performance.now(); tick=setInterval(updTimer,250); }
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
   function updTimer(){ if(!started) return; elapsed=(performance.now()-startTs)/1000; document.getElementById('timerN').textContent=fmt(elapsed); }
 
@@ -416,6 +424,25 @@
   function shiftDay(iso,delta){ var d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+delta); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function load(){ try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
   function save(s){ try{ LS.setItem(SAVE_KEY, JSON.stringify(s)); }catch(e){} }
+
+  // ---- restart the SAME daily grid with an empty found-list (Play again) ----
+  function beginAttempt(){
+    if(tick){ clearInterval(tick); tick=null; }
+    foundSet={}; foundCount=0; colorFor={};
+    done=false; hints=0; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
+    selStart=null; selPath=[];
+    cellEls.forEach(function(el){ el.classList.remove('found','sel','hintflash'); el.style.background=''; });
+    gridEl.style.pointerEvents=''; gridEl.style.opacity='';
+    document.getElementById('timerN').textContent='0:00';
+    var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
+    renderWords(); updWordsLab();
+  }
+  function updateAgainBtn(){
+    var b=document.getElementById('mAgain'); if(!b) return;
+    if(window.RTGTokens && !RTGTokens.canPlay('wordsearch')){ b.textContent='No plays left today'; b.disabled=true; b.style.opacity='.55'; b.style.cursor='default'; }
+    else { b.textContent='Play again'; b.disabled=false; b.style.opacity=''; b.style.cursor='pointer'; }
+  }
+
   function finish(){
     if(done) return; done=true; if(tick) clearInterval(tick);
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
@@ -433,7 +460,10 @@
     document.getElementById('yourTm').textContent=fmt(elapsed);
     document.getElementById('yourBest').textContent=fmt(s.best||elapsed);
 
-    if(window.RTG_BOARD){
+    document.getElementById('mSub').textContent = attemptFirst ? 'You found every name' : 'Practice — not ranked';
+    updateAgainBtn();
+
+    if(attemptFirst && window.RTG_BOARD){
       RTG_BOARD.submit('wordsearch', P.id, { seconds:Math.round(elapsed), mistakes:0, reveals:hints }).then(function(res){
         if(res&&res.streak){ document.getElementById('streakN').textContent=res.streak; document.getElementById('mStreak').textContent=res.streak; }
         renderRealBoard();
@@ -448,6 +478,10 @@
   }
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
+  document.getElementById('mAgain').addEventListener('click', function(){
+    if(window.RTGTokens && !RTGTokens.canPlay('wordsearch')){ toast('No plays left today'); updateAgainBtn(); return; }
+    beginAttempt();
+  });
   document.getElementById('mShare').addEventListener('click', shareResult);
   function shareResult(){
     var txt='RunTheGrid Word Search — '+P.theme+'\n⏱ '+fmt(elapsed)+(hints?(' · '+hints+' hint'+(hints>1?'s':'')):' · flawless')+'\nrunthe.gg/grid/';
@@ -504,7 +538,14 @@
   // ---- boot ----
   var saved=load(); document.getElementById('streakN').textContent=saved.streak||0;
   if(saved.best){ document.getElementById('yourBest').textContent=fmt(saved.best); }
-  renderWords();
+  if(window.RTGTokens && !RTGTokens.canPlay('wordsearch')){
+    done=true;
+    gridEl.style.pointerEvents='none'; gridEl.style.opacity='.5';
+    renderWords();
+    var wl=document.getElementById('wordsLab'); if(wl) wl.textContent='No plays left — back tomorrow.';
+  } else {
+    beginAttempt();   // fresh playable board; does NOT charge until first interaction
+  }
   if(window.RTG_BOARD){
     RTG_BOARD.boot();
     RTG_BOARD.onChange(function(st){

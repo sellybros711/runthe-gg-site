@@ -519,6 +519,9 @@
       <div class="countdown" id="resCountdown"></div>
       <div class="reportline"><a href="mailto:sellybros711@gmail.com?subject=RunTheGrid%20data%20error">Spot a data error? Tell us</a></div>
       <div class="rcta">
+        <button class="btn primary" id="mAgain" type="button">Play again</button>
+      </div>
+      <div class="rcta">
         <button class="btn primary" id="resShare" type="button">Share</button>
         <button class="btn" id="resStats" type="button">Stats</button>
         <button class="btn" id="resDone" type="button">Done</button>
@@ -558,6 +561,7 @@
   <script src="entities.js?v=12"></script>
   <script src="generator.js?v=12"></script>
   <script src="/grid/sfx.js"></script>
+  <script src="/grid/tokens.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="/grid/board.js"></script>
   <script>
@@ -631,6 +635,7 @@
     var poolOrder = [];                // tileId display order in the pool (shuffleable)
     var mistakes = 0, penalty = 0, started = false, startTs = 0, tick = null;
     var selected = null, done = false, revealedCats = {};   // revealedCats: catId -> true (from hints)
+    var charged = false, attemptFirst = false;   // play-token economy: one token per attempt, first===ranked
     var lastMissIds = {};              // laneIndex -> 'id,id,id,id' of the last wrong check (disables re-checking the same four)
 
     var laneById = {};                 // catId -> lane meta (color etc.)
@@ -908,6 +913,8 @@
     // ---- timer ----
     function startIfNeeded() {
       if (started || done) return;
+      // charge one play-token the first time this attempt truly begins (first tile placement/move)
+      if (!charged) { var r = (window.RTGTokens ? RTGTokens.startAttempt('match') : { ok: true, first: true }); charged = true; attemptFirst = !!(r && r.first); }
       started = true; startTs = Date.now();
       tick = setInterval(updateTimer, 250);
       updateTimer();
@@ -1129,14 +1136,14 @@
 
       // ---- cloud: post the run on a win (signed-in only; fail-open). Raw solve
       // time only; the server score formula adds its own per-mistake penalty. ----
-      if (won && window.RTG_BOARD) {
+      if (won && attemptFirst && window.RTG_BOARD) {
         var raw = Math.max(0, Math.round(finalTime - penalty));
         RTG_BOARD.submit('match', DATE, { seconds: raw, mistakes: mistakes, reveals: 0 }).then(function (res) {
           if (res && res.streak) document.getElementById('streakVal').textContent = res.streak;
           if (typeof renderMatchBoard === 'function') renderMatchBoard();
         });
       }
-      setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, streak: s, celebrate: true, milestone: milestone }); }, won ? 350 : 1100);
+      setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, streak: s, celebrate: true, milestone: milestone, practice: !attemptFirst }); }, won ? 350 : 1100);
     }
 
     function autoSolveReveal() {
@@ -1206,12 +1213,15 @@
       });
       // flawless ribbon (win with zero misses)
       document.getElementById('resFlawless').classList.toggle('on', !!r.won && r.mistakes === 0);
-      // streak milestone banner
+      // streak milestone banner (or a "practice — not ranked" note on bonus replays)
       var ms = document.getElementById('resMilestone');
-      if (r.milestone) { ms.textContent = r.milestone; ms.classList.add('on'); } else { ms.textContent = ''; ms.classList.remove('on'); }
+      if (r.milestone) { ms.textContent = r.milestone; ms.classList.add('on'); }
+      else if (r.practice) { ms.textContent = 'Practice — not ranked'; ms.classList.add('on'); }
+      else { ms.textContent = ''; ms.classList.remove('on'); }
       // live countdown to tomorrow's board (real plays only)
       if (r.tester) { document.getElementById('resCountdown').innerHTML = ''; }
       else { startCountdown('resCountdown'); }
+      updateAgainBtn();
       document.getElementById('resultModal').hidden = false;
       window._lastResult = r;
       // celebration: confetti on a fresh win (denser + gold-heavy when flawless / milestone)
@@ -1417,6 +1427,34 @@
     });
     document.getElementById('resStats').addEventListener('click', openStats);
 
+    // ---- play-token economy: main subtitle label + Play again ----
+    function updateExplain() {
+      var ex = document.querySelector('.explain'); if (!ex) return;
+      var base = 'Sort 20 sports names into five hidden groups of four.';
+      ex.textContent = base + (window.RTGTokens ? (' · ' + RTGTokens.label('match') + ' today') : '');
+    }
+    function updateAgainBtn() {
+      var b = document.getElementById('mAgain'); if (!b) return;
+      if (window.RTGTokens && !RTGTokens.canPlay('match')) { b.textContent = 'No plays left today'; b.disabled = true; b.style.opacity = '.55'; b.style.cursor = 'default'; }
+      else { b.textContent = 'Play again'; b.disabled = false; b.style.opacity = ''; b.style.cursor = 'pointer'; }
+    }
+    function beginAttempt() {
+      // fresh solve state for TODAY's deterministic puzzle; no token charged until first interaction
+      charged = false; attemptFirst = false;
+      resetState();
+      var rm = document.getElementById('resultModal'); if (rm) rm.hidden = true;
+      var sm = document.getElementById('statsModal'); if (sm) sm.hidden = true;
+      stopCountdown();
+      boardEl.style.pointerEvents = ''; boardEl.style.opacity = '';
+      poolEl.style.pointerEvents = ''; poolEl.style.opacity = '';
+      render(); updateTimer();
+      updateExplain();
+    }
+    document.getElementById('mAgain').addEventListener('click', function () {
+      if (window.RTGTokens && !RTGTokens.canPlay('match')) { toast('No plays left today'); updateAgainBtn(); return; }
+      beginAttempt();
+    });
+
     // ---- stats modal buttons + streak-chip entry point ----
     function closeStatsAndSettle() { closeStats(); if (bothModalsClosed()) stopCountdown(); }
     document.getElementById('stClose').addEventListener('click', closeStatsAndSettle);
@@ -1479,12 +1517,27 @@
 
     // ---- boot a board ----
     function boot() {
-      resetState();
-      render(); updateTimer();
-      if (!TESTER) {                       // once-a-day lock only outside tester mode
-        var saved = savedResult();
-        if (saved) replaySaved(saved);
+      if (TESTER) {                        // tester mode: always a fresh, unlimited board
+        resetState(); render(); updateTimer(); updateExplain();
+        return;
       }
+      var saved = savedResult();
+      // out of plays for today -> keep the locked / review state
+      if (window.RTGTokens && !RTGTokens.canPlay('match')) {
+        resetState(); render(); updateTimer(); updateExplain();
+        if (saved) {
+          replaySaved(saved);
+          document.getElementById('resCoins').textContent = 'No plays left — back tomorrow.';
+        } else {
+          done = true;
+          boardEl.style.pointerEvents = 'none'; boardEl.style.opacity = '.5';
+          poolEl.style.pointerEvents = 'none'; poolEl.style.opacity = '.5';
+          var ex = document.querySelector('.explain'); if (ex) ex.textContent = 'No plays left — back tomorrow.';
+        }
+        return;
+      }
+      // plays remaining (or tokens unavailable / fail-open) -> a fresh playable board; no charge on boot
+      beginAttempt();
     }
     function replaySaved(saved) {
       // reconstruct a completed board view from the truth, then show the result card
