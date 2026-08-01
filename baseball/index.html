@@ -36,16 +36,16 @@ document.head.appendChild(s);})();
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bitter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Archivo:wght@500;600;700;800&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0c1a0f;--panel:#14231a;--panel-2:#1a2e22;
-  --line:rgba(255,255,255,.08);--line-2:rgba(255,255,255,.14);
-  --ink:#f0ebe3;--dim:#a09882;--dim-2:#7d7564;
+  --bg:#0c1a0f;--panel:#16271c;--panel-2:#1c3224;
+  --line:rgba(255,255,255,.10);--line-2:rgba(255,255,255,.16);
+  --ink:#f0ebe3;--dim:#b8a88e;--dim-2:#9a8d78;
   --red:#c0392b;--green:#2e7d32;--blue:#3b82f6;--gold:#c8a24e;--orange:#d4772c;--purple:#8e6aad;
   --cream:#f0ebe3;--tan:#c8b898;--leather:#8b6d4c;--dirt:#6b523a;
   --grad-red:linear-gradient(135deg,#c0392b 0%,#8b1a1a 100%);
   --grad-blue:linear-gradient(135deg,#2e5a88 0%,#1a3d5c 100%);
   --grad-green:linear-gradient(135deg,#2e7d32 0%,#1b5e20 100%);
   --grad-gold:linear-gradient(135deg,#c8a24e 0%,#a07d2e 100%);
-  --grad-panel:linear-gradient(180deg,#182a1e 0%,#0f1d13 100%);
+  --grad-panel:linear-gradient(180deg,#1c3024 0%,#132118 100%);
   --shadow:0 18px 40px -14px rgba(0,0,0,.75),0 3px 10px -4px rgba(0,0,0,.5);
   --fd:'Bebas Neue','Anton',Impact,sans-serif;
   --fp:'Bitter',Georgia,'Times New Roman',serif;
@@ -130,7 +130,7 @@ h1,h2,h3{margin:0}
   font-family:var(--fd);text-transform:uppercase;letter-spacing:.06em;
   line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .reelbox.year .reel-i{font-size:24px;font-weight:400}
-.reelbox.team .reel-i{font-size:15px;font-weight:400}
+.reelbox.team .reel-i{font-size:13px;font-weight:400}
 .reel-i.land{font-weight:400}
 .reelbox.year.spin{border-color:rgba(200,162,78,.50)}
 .reelbox.team.spin{border-color:rgba(200,162,78,.40)}
@@ -246,7 +246,7 @@ h1,h2,h3{margin:0}
 .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:11px}
 .opts .tile{animation:optin .24s ease-out both}
 .tile{display:flex;flex-direction:column;gap:0;padding:10px;border-radius:10px;min-width:0;
-  background:var(--grad-panel);border:1px solid rgba(200,184,152,.10);text-align:left;cursor:pointer;
+  background:var(--grad-panel);border:1px solid rgba(200,184,152,.18);text-align:left;cursor:pointer;
   transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease}
 .tile:active{transform:scale(.975)}
 .tile.hot{border-color:rgba(46,125,50,.50);box-shadow:0 0 0 1px rgba(46,125,50,.20)}
@@ -598,6 +598,28 @@ function reel(el,faces,target,ms,done,onLand){
   el._raf=requestAnimationFrame(step);
 }
 
+const TEAM_NAMES={
+  ARI:'Arizona Diamondbacks',ATL:'Atlanta Braves',BAL:'Baltimore Orioles',
+  BOS:'Boston Red Sox',CHC:'Chicago Cubs',CHW:'Chicago White Sox',
+  CIN:'Cincinnati Reds',CLE:'Cleveland Guardians',COL:'Colorado Rockies',
+  DET:'Detroit Tigers',HOU:'Houston Astros',KCR:'Kansas City Royals',
+  LAA:'Los Angeles Angels',LAD:'Los Angeles Dodgers',MIA:'Miami Marlins',
+  MIL:'Milwaukee Brewers',MIN:'Minnesota Twins',NYM:'New York Mets',
+  NYY:'New York Yankees',OAK:'Oakland Athletics',PHI:'Philadelphia Phillies',
+  PIT:'Pittsburgh Pirates',SDP:'San Diego Padres',SFG:'San Francisco Giants',
+  SEA:'Seattle Mariners',STL:'St. Louis Cardinals',TBR:'Tampa Bay Rays',
+  TEX:'Texas Rangers',TOR:'Toronto Blue Jays',WSN:'Washington Nationals',
+  BRO:'Brooklyn Dodgers',NYG:'New York Giants',PHO:'Philadelphia Athletics',
+  MLN:'Milwaukee Braves',MON:'Montreal Expos',BSN:'Boston Braves',
+  WSH:'Washington Senators',SLB:'St. Louis Browns',
+  FLA:'Florida Marlins',CAL:'California Angels',ANA:'Anaheim Angels',
+  MLA:'Milwaukee Braves',TB:'Tampa Bay Devil Rays',
+  PS:'Pittsburgh Crawfords',CAG:'Chicago American Giants',KCM:'Kansas City Monarchs',
+  HG:'Homestead Grays',NLG:'Negro League Stars',
+  TOT:'Multiple Teams',
+};
+function teamFullName(code){return TEAM_NAMES[code]||code;}
+
 function dressInTeamColors(team){
   return box=>{
     const tc=E.teamColors(team);
@@ -617,9 +639,10 @@ function spinBoth(draw,done){
   const rm=reduceMotion();
   const dur=faces=>(rm||new Set(faces).size<=1)?(rm?195:390):null;
   const years=draw.yearOptions||[String(draw.season)];
-  const teams=draw.teamOptions||[draw.team];
+  const teams=(draw.teamOptions||[draw.team]).map(teamFullName);
+  const target=teamFullName(draw.team);
   reel(yEl,years.map(String),String(draw.season),dur(years)??860,()=>{
-    setTimeout(()=>reel(tEl,teams,draw.team,dur(teams)??940,done,dressInTeamColors(draw.team)),rm?68:195);
+    setTimeout(()=>reel(tEl,teams,target,dur(teams)??940,done,dressInTeamColors(draw.team)),rm?68:195);
   });
 }
 
@@ -739,9 +762,10 @@ const heroNap=ms=>new Promise(r=>setTimeout(r,ms));
 const heroSpin=(el,faces,target,ms,onLand)=>new Promise(res=>reel(el,faces,target,ms,res,onLand));
 
 function heroFaces(){
-  if(!DATA) return{years:['1927','1954','1966','1972','1908','2004'],teams:['NYY','NYG','LAD','CIN','PIT']};
+  if(!DATA) return{years:['1927','1954','1966','1972','1908','2004'],
+    teams:['New York Yankees','New York Giants','Los Angeles Dodgers','Cincinnati Reds','Pittsburgh Pirates']};
   const years=[...new Set(DATA.teamSeasons.map(t=>String(t.season)))].sort();
-  const teams=[...new Set(DATA.teamSeasons.map(t=>t.team))];
+  const teams=[...new Set(DATA.teamSeasons.map(t=>teamFullName(t.team)))];
   return{years,teams};
 }
 
@@ -796,7 +820,7 @@ async function heroLoop(seq){
       if(!live()) return;
       $('h-box-t').className='reelbox team';
       $('h-box-t').removeAttribute('style');
-      const spinTeam=heroSpin($('h-reel-t'),faces.teams,pk.team,HERO.team,dressInTeamColors(pk.team));
+      const spinTeam=heroSpin($('h-reel-t'),faces.teams,teamFullName(pk.team),HERO.team,dressInTeamColors(pk.team));
       await Promise.all([spinYear,spinTeam]);
       if(!live()) return;
       await heroNap(HERO.land);
@@ -920,7 +944,7 @@ function buildDrawExtras(draw){
   const era=RUN.era?E.ERAS[RUN.era]:null;
   const pool=era?ts.filter(t=>t.season>=era[0]&&t.season<=era[1]):ts;
   draw.yearOptions=[...new Set(pool.map(t=>String(t.season)))].sort();
-  draw.teamOptions=[...new Set(pool.filter(t=>t.season===draw.season).map(t=>t.team))];
+  draw.teamOptions=[...new Set(pool.map(t=>t.team))];
   if(!draw.teamOptions.length) draw.teamOptions=[draw.team];
 }
 
