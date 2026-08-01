@@ -377,30 +377,31 @@ window.GA_ID='G-L29P5MRWKE';
      edge, which pushed the eyebrow off with it. Capped so it fits on one line,
      and allowed to wrap rather than overflow if a font ever renders wider. */
   .hero{text-align:center;margin-bottom:16px}
-  /* ONE LINE, ALWAYS. nowrap holds the three words together so the headline
-     shrinks to fit rather than breaking, and "The" came off the front to buy
-     room. 7.4vw is the size the line wants at phone widths in Anton; the
-     script at the foot of the page trims it if whatever font is actually
-     drawn runs wider than the page. 58px is the ceiling on a wide desktop,
-     where the line is wider than the column it sits in. A centred line that
-     outgrows its box spills to the right only, which would hang the whole
-     headline off to one side, so the box is sized to the text and its middle
-     pinned to the column's middle, which is also the page's. */
-  .hero h1{font-family:var(--fd);line-height:1.06;
-    font-size:clamp(18px,7.4vw,58px);
+  /* THREE STACKED LINES. Stacking buys size: the width to beat is now the
+     longest single word rather than all three laid end to end, so the type runs
+     roughly two and a half times bigger on a phone than it did on one line.
+     The box is sized to the text and its middle pinned to the column's middle,
+     which is also the page's, so that on a wide screen the words can be wider
+     than the column without hanging off to one side. The script at the foot of
+     the page trims the size if whatever font actually gets drawn runs wider
+     than the page. */
+  .hero h1{font-family:var(--fd);line-height:.84;
+    font-size:clamp(30px,19vw,110px);
     letter-spacing:.01em;text-transform:uppercase;white-space:nowrap;
     position:relative;left:50%;transform:translateX(-50%);width:max-content;max-width:none}
+  .hero h1 .ln{display:block}
   /* COLLEGE is set the way a wrestling tee sets the middle word: a jagged face
      laid OVER the block caps either side rather than typed between them. Metal
      Mania is the closest thing in the library to that torn-brush lettering.
-     The overlap is negative margin, so the word eats into its neighbours on both
-     sides and its strokes cross theirs; z-index puts it on top; the tilt keeps
-     it from reading as part of the same line of type. Bigger than the caps
-     around it, the way the middle word on a tee always is. */
-  .hero h1 .freak{font-family:'Metal Mania',var(--fd);display:inline-block;
-    transform:rotate(-5deg);font-size:1.12em;line-height:.9;
-    margin:0 -.13em;position:relative;z-index:2;vertical-align:baseline;
-    color:var(--green);text-shadow:0 0 14px rgba(0,0,0,.85),0 3px 0 rgba(0,0,0,.6)}
+     Stacked, the overlap runs up and down instead of left and right: negative
+     margin top and bottom pulls it into the line above and the line below so its
+     strokes cross theirs, z-index puts it on top, and the dark halo behind it
+     keeps the crossing readable as layering rather than collision. Wider than
+     the two words it sits between, the way the middle word on a tee always is. */
+  .hero h1 .freak{font-family:'Metal Mania',var(--fd);display:block;
+    transform:rotate(-4deg);font-size:1.34em;line-height:.78;
+    margin:-.13em 0 -.11em;position:relative;z-index:2;
+    color:var(--green);text-shadow:0 0 16px rgba(0,0,0,.9),0 3px 0 rgba(0,0,0,.65)}
 
   /* ── the poll ticker ────────────────────────────────────────────
      The strip a college broadcast runs the rankings along. Quiet enough to read
@@ -1794,7 +1795,7 @@ or endorsed by the NCAA, the CFP or any school.
          the next move. The description still reaches search and the noscript
          page, which is where it earns its keep. -->
     <div class="hero">
-      <h1>Perfect<span class="freak">College</span>Season</h1>
+      <h1><span class="ln">Perfect</span><span class="freak">College</span><span class="ln">Season</span></h1>
     </div>
 
     <div>
