@@ -4948,15 +4948,21 @@ function paintOver(){
     tile(agPG.toFixed(1),'Points allowed')+
     tile((diff>=0?'+':'')+diff.toFixed(1),'Difference',diff>=0?'up':'dn')+
     tile(bestStreak,'Longest streak');
-  /* THE SENTENCE IS THE SUM, so the rating can be checked by hand off this line.
-     BOTH numbers are printed on purpose: the raw one is what the three terms
-     multiply out to, and the overall is what the big cell above says. Printing
-     only the raw one, which is what this line did first, left a player reading
-     105.6 here and 74.9 a centimetre higher with no way to connect them. */
-  $('o-squadline').innerHTML='<span>'+squadFppg.toFixed(0)+' squad FPPG, '+
+  /* THE SENTENCE IS THE SUM, so the rating can be checked by hand off this line,
+     and BOTH STEPS have to be on it or the second one looks like a fudge. It
+     used to read "multiply out to 88.3, which is an 82.5 team overall", which
+     invites exactly one question: why did 88.3 become 82.5? They are the same
+     quantity in two units. 88.3 is points a game; 82.5 is those points against
+     the 107 the best draftable team would score. Naming the unit and printing
+     the ceiling makes the division visible instead of mysterious.
+     squadFppg is printed to one decimal for the same reason: rounded to a whole
+     number it did not reconcile, because 86.5 shows as 87 and 87 x 1.087 x 0.939
+     is 88.8 rather than the 88.3 on the same line. */
+  $('o-squadline').innerHTML='<span>'+squadFppg.toFixed(1)+' squad FPPG, '+
     pc(run.season.chemistry-1)+' chemistry and '+fitPhrase(st)+
-    ' multiply out to '+rating.toFixed(1)+', which is '+artNum(overall.toFixed(1))+
-    '<b>'+overall.toFixed(1)+'</b> team overall. '+
+    ' multiply out to '+rating.toFixed(1)+' points a game. Out of the '+
+    RATING_CEILING+' the best team the wheel can give would score, that is '+
+    artNum(overall.toFixed(1))+'<b>'+overall.toFixed(1)+'</b> team overall. '+
     'You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.'+schemeShare(st)+'</span>';
 
   drawField($('field3'),false);
