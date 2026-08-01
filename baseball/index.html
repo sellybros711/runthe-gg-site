@@ -33,7 +33,7 @@ document.head.appendChild(s);})();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bitter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Archivo:wght@500;600;700;800&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bitter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Archivo:wght@500;600;700;800&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&family=Righteous&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#e8dcc8;--panel:#f5f0e6;--panel-2:#ece4d4;
@@ -90,14 +90,14 @@ h1,h2,h3{margin:0}
 /* ─── intro / hero ─── */
 .hero{margin-bottom:16px}
 .hero-reels{margin-top:0}
-.field.hero-field{aspect-ratio:1/0.68}
+.field.hero-field{aspect-ratio:1/0.82}
 .hero-field{margin-top:10px}
 .hero-field .chip{cursor:default}
 .hero-field .chip.pop .who,.hero-field .chip.pop .yr{animation:signin .34s ease-out .1s both}
 @keyframes signin{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .hero-field.clearing .chip{transition:opacity .32s ease;opacity:0}
 .htitle{text-align:center;margin-bottom:16px}
-.htitle h1{font-family:var(--fd);font-size:clamp(32px,9vw,48px);text-transform:uppercase;letter-spacing:.06em;line-height:1.05}
+.htitle h1{font-family:'Righteous',var(--fd);font-size:clamp(34px,10vw,52px);text-transform:uppercase;letter-spacing:.03em;line-height:1.05}
 .htitle p{color:var(--dim);font-size:14px;margin:8px 0 0}
 .htitle .kicker{font-family:var(--fn);font-size:11px;font-weight:600;letter-spacing:.24em;
   text-transform:uppercase;color:var(--gold)}
@@ -155,16 +155,17 @@ h1,h2,h3{margin:0}
 @keyframes clubwash{0%{opacity:0;transform:scale(.86)}45%{opacity:.9;transform:scale(1.05)}100%{opacity:0;transform:scale(1)}}
 
 /* ─── diamond field ─── */
-.field{position:relative;width:100%;aspect-ratio:1/0.68;border-radius:14px;overflow:hidden;
-  background:#4a8c3f;
-  border:1px solid rgba(0,0,0,.15)}
-.field .turf{position:absolute;inset:0;background:repeating-linear-gradient(180deg,
-  rgba(0,0,0,.03) 0 25%,transparent 25% 50%)}
+.field{position:relative;width:100%;aspect-ratio:1/0.82;border-radius:14px;overflow:hidden;
+  background:#3d7a34;
+  border:1px solid rgba(0,0,0,.18)}
+.field .turf{position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.018) 0 3px,transparent 3px 6px)}
 .field .lit{position:absolute;inset:0;
-  background:radial-gradient(50% 42% at 50% 72%,#c4a96a 0%,#b89e60 30%,transparent 58%)}
+  background:radial-gradient(48% 32% at 50% 68%,#b89860 0%,#a8894e 28%,transparent 50%),
+  radial-gradient(80% 55% at 50% 0%,#357a2e 0%,transparent 70%)}
 .field .diamond-svg{position:absolute;inset:0;z-index:0;pointer-events:none}
 .field .vig{position:absolute;inset:0;pointer-events:none;
-  box-shadow:inset 0 0 40px 10px rgba(0,0,0,.12)}
+  box-shadow:inset 0 0 30px 8px rgba(0,0,0,.10)}
 
 /* ─── chips ─── */
 .chip{--discr:17px;position:absolute;transform:translate(-50%,calc(-1 * var(--discr)));
@@ -356,7 +357,7 @@ h1,h2,h3{margin:0}
   .dcols .opts{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-height:800px){
-  .field.hero-field{aspect-ratio:auto;height:170px}
+  .field.hero-field{aspect-ratio:auto;height:200px}
   .hero{margin-bottom:10px}
   .hnote{margin-top:7px;font-size:11.5px}
 }
@@ -546,9 +547,9 @@ function tcPlate(team,season){
 /* ─── diamond coordinates ─── */
 /* SLOTS: C,1B,2B,3B,SS, LF,CF,RF, DH, SP1,SP2,CL */
 const DIAMOND_SPOTS=[
-  {x:50,y:86},{x:82,y:52},{x:66,y:38},{x:18,y:52},{x:34,y:38},
-  {x:14,y:20},{x:50,y:6},{x:86,y:20},{x:16,y:94},
-  {x:50,y:62},{x:50,y:62},{x:50,y:62},
+  {x:50,y:84},{x:80,y:52},{x:64,y:38},{x:20,y:52},{x:36,y:38},
+  {x:12,y:18},{x:50,y:5},{x:88,y:18},{x:14,y:94},
+  {x:50,y:60},{x:50,y:60},{x:50,y:60},
 ];
 
 /* ─── reel system ─── */
@@ -648,22 +649,22 @@ function spinBoth(draw,done){
 
 /* ─── diamond field ─── */
 function diamondMarkings(){
-  const h50=50,h1B=76,h2B=50,h3B=24;
-  const v_home=80,v_base=52,v_2B=26,v_mound=58;
-  const foulStroke='rgba(255,255,255,.55)';
-  const arcStroke='rgba(255,255,255,.40)';
+  const h50=50,h1B=74,h2B=50,h3B=26;
+  const v_home=78,v_base=52,v_2B=28,v_mound=57;
+  const wh='rgba(255,255,255,';
   return '<div class="turf"></div><div class="lit"></div>'+
     '<svg class="diamond-svg" viewBox="0 0 100 100" preserveAspectRatio="none">'+
-    '<line x1="'+h50+'" y1="'+v_home+'" x2="3" y2="3" stroke="'+foulStroke+'" stroke-width="0.4"/>'+
-    '<line x1="'+h50+'" y1="'+v_home+'" x2="97" y2="3" stroke="'+foulStroke+'" stroke-width="0.4"/>'+
-    '<path d="M 3,3 Q 50,-6 97,3" fill="none" stroke="'+arcStroke+'" stroke-width="0.4"/>'+
-    '<polyline points="'+h50+','+v_home+' '+h1B+','+v_base+' '+h2B+','+v_2B+' '+h3B+','+v_base+' '+h50+','+v_home+'" '+
-      'fill="none" stroke="rgba(255,255,255,.50)" stroke-width="0.5" stroke-linejoin="round"/>'+
-    '<circle cx="'+h50+'" cy="'+v_mound+'" r="2.5" fill="rgba(196,169,106,.6)" stroke="rgba(255,255,255,.30)" stroke-width="0.3"/>'+
-    '<rect x="'+(h50-1.2)+'" y="'+(v_home-1.2)+'" width="2.4" height="2.4" transform="rotate(45 '+h50+' '+v_home+')" fill="rgba(255,255,255,.7)"/>'+
-    '<rect x="'+(h1B-1)+'" y="'+(v_base-1)+'" width="2" height="2" transform="rotate(45 '+h1B+' '+v_base+')" fill="rgba(255,255,255,.5)"/>'+
-    '<rect x="'+(h2B-1)+'" y="'+(v_2B-1)+'" width="2" height="2" transform="rotate(45 '+h2B+' '+v_2B+')" fill="rgba(255,255,255,.5)"/>'+
-    '<rect x="'+(h3B-1)+'" y="'+(v_base-1)+'" width="2" height="2" transform="rotate(45 '+h3B+' '+v_base+')" fill="rgba(255,255,255,.5)"/>'+
+    '<path d="M 4,6 Q 50,-4 96,6" fill="none" stroke="'+wh+'.22)" stroke-width="0.6"/>'+
+    '<path d="M '+h50+','+v_home+' L '+h3B+','+v_base+' L '+h2B+','+v_2B+' L '+h1B+','+v_base+' Z" '+
+      'fill="none" stroke="'+wh+'.60)" stroke-width="0.6" stroke-linejoin="round"/>'+
+    '<line x1="'+h50+'" y1="'+v_home+'" x2="5" y2="5" stroke="'+wh+'.50)" stroke-width="0.5"/>'+
+    '<line x1="'+h50+'" y1="'+v_home+'" x2="95" y2="5" stroke="'+wh+'.50)" stroke-width="0.5"/>'+
+    '<circle cx="'+h50+'" cy="'+v_mound+'" r="2.8" fill="rgba(168,137,78,.5)" stroke="'+wh+'.25)" stroke-width="0.3"/>'+
+    '<rect x="'+(h50-1.4)+'" y="'+(v_home-1.4)+'" width="2.8" height="2.8" rx=".3" transform="rotate(45 '+h50+' '+v_home+')" fill="'+wh+'.75)"/>'+
+    '<rect x="'+(h1B-1)+'" y="'+(v_base-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h1B+' '+v_base+')" fill="'+wh+'.50)"/>'+
+    '<rect x="'+(h2B-1)+'" y="'+(v_2B-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h2B+' '+v_2B+')" fill="'+wh+'.50)"/>'+
+    '<rect x="'+(h3B-1)+'" y="'+(v_base-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h3B+' '+v_base+')" fill="'+wh+'.50)"/>'+
+    '<path d="M '+(h50-3)+','+(v_home+1)+' L '+(h50-5)+','+(v_home+5)+' M '+(h50+3)+','+(v_home+1)+' L '+(h50+5)+','+(v_home+5)+'" stroke="'+wh+'.30)" stroke-width="0.3" fill="none"/>'+
     '</svg><div class="vig"></div>';
 }
 
