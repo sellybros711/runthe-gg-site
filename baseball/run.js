@@ -143,7 +143,7 @@ function drawable(run, data) {
   const drawn = {};
   for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
 
-  const currentSlot = E.SLOTS[run.roster.length];
+  const open = openSlots(run).map(i => E.SLOTS[i]);
 
   return data.teamSeasons
     .filter(t => {
@@ -155,13 +155,12 @@ function drawable(run, data) {
     })
     .filter(t => (drawn[t.team_season_id] || 0) < TUNING.MAX_DRAWS_PER_TEAM_SEASON)
     .filter(t => {
-      // Must have at least one affordable, eligible player for the current slot
       const players = data.byTeamSeason[t.team_season_id];
       if (!players) return false;
       return players.some(p => {
         if (run.usedPlayers.includes(p.i)) return false;
         if (p.p > spendable(run)) return false;
-        return E.canFillSlot(p, currentSlot);
+        return open.some(slot => E.canFillSlot(p, slot));
       });
     });
 }
@@ -175,12 +174,16 @@ function spin(run, data) {
   if (!available.length) throw new Error('nothing left you can afford');
 
   const t = available[Math.floor(rng() * available.length)];
-  const currentSlot = E.SLOTS[run.roster.length];
+  const open = openSlots(run).map(i => E.SLOTS[i]);
 
-  // Build the board: all players from this team-season
+  // Build the board: all players from this team-season who can fill ANY open slot
   const allPlayers = data.byTeamSeason[t.team_season_id] || [];
   const board = allPlayers
-    .map(p => ({ player: p, block: blockFor(run, p), canFill: E.canFillSlot(p, currentSlot) }))
+    .map(p => ({
+      player: p,
+      block: blockFor(run, p),
+      canFill: open.some(slot => E.canFillSlot(p, slot)),
+    }))
     .filter(r => r.canFill)
     .sort((a, b) => b.player.w - a.player.w);
 
@@ -189,7 +192,7 @@ function spin(run, data) {
     team_season_id: t.team_season_id,
     team: t.team,
     display: t.display,
-    slot: currentSlot,
+    openSlots: open,
     board: board.map(r => ({ key: pkey(r.player), block: r.block })),
     options: board.filter(r => r.block === null).map(r => pkey(r.player)),
   };
