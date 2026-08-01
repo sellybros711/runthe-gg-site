@@ -105,7 +105,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Big+Shoulders+Display:wght@600;700&family=Archivo:wght@500;600;700;800&family=Barlow+Condensed:wght@700;800&family=Graduate&family=Orbitron:wght@700;900&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Metal+Mania&family=Big+Shoulders+Display:wght@600;700&family=Archivo:wght@500;600;700;800&family=Barlow+Condensed:wght@700;800&family=Graduate&family=Orbitron:wght@700;900&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
 <style>
   *,*:before,*:after{box-sizing:border-box;margin:0;padding:0}
   /* Stop iOS Safari inflating text past the sizes set here, which was blowing the
@@ -375,6 +375,20 @@ window.GA_ID='G-L29P5MRWKE';
   .hero{text-align:center;margin-bottom:16px}
   .hero h1{font-family:var(--fd);font-size:clamp(30px,8.6vw,56px);line-height:.92;
     letter-spacing:.01em;text-transform:uppercase;overflow-wrap:break-word}
+  /* COLLEGE is set the way a wrestling tee sets the middle word: a jagged face
+     against the block caps either side, tilted a few degrees off the baseline so
+     it reads as applied over the top rather than typed in line with them. Metal
+     Mania is the closest thing in the library to that torn-brush lettering.
+     It stays inline rather than absolutely placed, so the headline still wraps
+     on a narrow screen instead of colliding with itself. */
+  .hero h1 .freak{font-family:'Metal Mania',var(--fd);display:inline-block;
+    transform:rotate(-3.5deg);font-size:.94em;line-height:1;margin:0 .04em;
+    color:var(--gold);text-shadow:0 3px 0 rgba(0,0,0,.55)}
+  /* The break is forced so the shape is always the tee's: block caps, then the
+     jagged word leading the line under them. Left to itself the headline broke
+     wherever the width happened to run out, which put COLLEGE at the end of the
+     first line and SEASON alone underneath. */
+  .hero h1 .l1{display:block}
   /* "College Football" sits on its own little pill so it reads as a badge, not
      loose text, a faint tint of the accent colour with a matching hairline. */
   .hero .sub{display:inline-block;font-family:var(--fn);font-size:11px;font-weight:700;
@@ -1779,7 +1793,7 @@ or endorsed by the NCAA, the CFP or any school.
 
     <div class="hero">
       <div class="sub">College Football</div>
-      <h1>The Perfect Season</h1>
+      <h1><span class="l1">The Perfect</span> <span class="freak">College</span> Season</h1>
       <p>Draft six college legends, 2005 to 2025. Chase a perfect season.</p>
     </div>
 
