@@ -25,8 +25,11 @@ const CONSTANTS = {
      the only place the two sides of a scoreline meet. It is therefore the whole
      difficulty dial: raise it and every opponent is harder. It was 2.2, and came
      down when the cap did, so that a smaller budget did not quietly turn into a
-     losing season, and settled at 2.0: a squad drafted best-available wins 76%
-     of its games, goes 12-0 in 7% of seasons and reaches the playoff in 33%. */
+     losing season. At 2.0, with two marquee games on the schedule, a squad
+     drafted best-available wins 68% of its games, goes 12-0 in 2.2% of seasons
+     and reaches the playoff in a quarter of them. It was 76%, 7% and 33% before
+     the marquee games went in; that difficulty is the price of an unbeaten
+     season being rare, and the two move together. */
   SCALE: 2.0,
   /* THE BUDGET HAS TO SAY NO, or there is no decision in the draft. At $14M it
      almost never did: drafting the highest scorer on every board spent 90% of it
@@ -49,6 +52,8 @@ const CONSTANTS = {
   POOL_GAMMA: 1.18,
   PLAYOFF_ROUNDS_WITH_BYE: 3,
   PLAYOFF_ROUNDS_NO_BYE: 4,
+  // How many of the twelve come from the eleven-win pool. See generateSchedule.
+  MARQUEE_GAMES: 2,
   NY6_MAX_LOSSES: 3,
   BOWL_MAX_LOSSES: 5,
   MINOR_BOWL_MAX_LOSSES: 6,
@@ -987,34 +992,86 @@ function orderSchedule(games, rng) {
   return ordered;
 }
 
+/* THE MARQUEE GAMES ARE WHY AN UNBEATEN SEASON IS RARE. Three of the twelve are
+   drawn from the eleven-win pool: the rivalry games and the conference gauntlet a
+   real perfect season has to survive. They REPLACE ordinary opponents rather than
+   lengthening the season, so a team still plays twelve.
+
+   This is aimed at one thing the playoff cannot reach. Going unbeaten and winning
+   the title are the same run of games, so making the bracket harder makes both
+   rarer together: measured, a championship opponent severe enough to stop an 87
+   going perfect also drops a 92's title odds from 17% to 5%, which is the wall
+   this game already had once. A hard game in September is different. It costs a
+   merely good team its unbeaten record without costing it the title, because a
+   team that loses in week three can still win everything from the 6 seed.
+
+   Measured over 40 teams a band, 400 seasons each, this cut perfect seasons by
+   62% at 85-90 and 55% at 95-100 while leaving 100+ within 4% of where it was,
+   and left every band's title odds roughly alone.
+
+   The nine ordinary games are still balanced to an average schedule, against a
+   target scaled to nine, so the three hard ones are a deliberate addition and not
+   an accident of a loose tolerance. */
 function generateSchedule(data, rng, opts = {}) {
   const tolerance = opts.tolerance ?? 0.05;
   const maxElite = opts.maxElite ?? 3;
   const maxAttempts = opts.maxAttempts ?? 400;
   const count = opts.games ?? CONSTANTS.REGULAR_SEASON_GAMES;
+  const marquee = Math.min(opts.marquee ?? CONSTANTS.MARQUEE_GAMES ?? 0, count);
 
   const { byProgram, eliteThreshold, meanScheduleStrength } = data;
   const programs = Object.keys(byProgram);
+  const hard = (data.greatPool && data.greatPool.length) ? data.greatPool : null;
+  const ordinary = count - (hard ? marquee : 0);
+  const target = meanScheduleStrength * ordinary / count;
 
   let best = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const used = new Set();
     const unordered = [];
     let guard = 0;
-    while (unordered.length < count && guard++ < 500) {
+    while (unordered.length < ordinary && guard++ < 500) {
       const p = programs[Math.floor(rng() * programs.length)];
       if (used.has(p)) continue;
       used.add(p);
       const pool = byProgram[p];
       unordered.push(pool[Math.floor(rng() * pool.length)]);
     }
-    if (unordered.length < count) continue;
+    if (unordered.length < ordinary) continue;
+    /* Balance is judged on the ordinary games only. The marquee ones are meant to
+       be above average, so folding them in would just push the check to reject
+       every schedule and fall through to the relaxed branch every time. */
+    const ordTotal = unordered.reduce((sum, g) => sum + g.strength_z, 0);
+    if (hard) {
+      let hguard = 0;
+      while (unordered.length < count && hguard++ < 500) {
+        const g = hard[Math.floor(rng() * hard.length)];
+        if (used.has(g.school)) continue;
+        used.add(g.school);
+        unordered.push(g);
+      }
+      /* If the pool could not supply enough distinct programmes, fill the rest
+         the ordinary way rather than returning a short season. */
+      while (unordered.length < count && guard++ < 900) {
+        const p = programs[Math.floor(rng() * programs.length)];
+        if (used.has(p)) continue;
+        used.add(p);
+        const pool = byProgram[p];
+        unordered.push(pool[Math.floor(rng() * pool.length)]);
+      }
+      if (unordered.length < count) continue;
+    }
     const ordered = orderSchedule(unordered, rng);
     const total = ordered.reduce((sum, g) => sum + g.strength_z, 0);
     const elite = ordered.filter(g => g.strength_z >= eliteThreshold).length;
-    const drift = Math.abs(total - meanScheduleStrength);
-    const ok = drift <= Math.abs(meanScheduleStrength * tolerance) + tolerance * count
-      && elite <= maxElite;
+    /* Both tests are on the ordinary games. Judging the whole twelve would fail
+       every schedule, because the marquee three are above average and several of
+       them are elite by construction, and the loop would spend four hundred
+       attempts before falling through to the least bad one it saw. */
+    const ordElite = unordered.slice(0, ordinary).filter(g => g.strength_z >= eliteThreshold).length;
+    const drift = Math.abs(ordTotal - target);
+    const ok = drift <= Math.abs(target * tolerance) + tolerance * ordinary
+      && ordElite <= maxElite;
     if (ok) return { games: ordered, total, elite, attempts: attempt + 1 };
     if (!best || drift < best.drift) best = { games: ordered, total, elite, drift, attempts: attempt + 1 };
   }
