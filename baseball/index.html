@@ -666,7 +666,7 @@ function diamondMarkings(sfx){
   const wallH=20,fpL=3,fpR=97;
   const hx=50,hy=92;
   const bY=57,bL=27.2,bR=72.8;
-  const tY=22;
+  const tY=28;
   const wallBot='M 0,'+wallH+' Q 50,'+(wallH-18)+' 100,'+wallH;
   return '<div class="turf"></div><div class="lit"></div>'+
     '<svg class="diamond-svg" viewBox="0 0 100 100" preserveAspectRatio="none">'+
@@ -685,13 +685,15 @@ function diamondMarkings(sfx){
     '<circle cx="'+fpL+'" cy="0.8" r="1" fill="#e8c820"/>'+
     '<line x1="'+fpR+'" y1="0" x2="'+fpR+'" y2="'+wallH+'" stroke="#e8c820" stroke-width="1.5"/>'+
     '<circle cx="'+fpR+'" cy="0.8" r="1" fill="#e8c820"/>'+
-    '<path d="M 50,94.5 L 25.8,'+bY+' L 50,20 L 74.2,'+bY+' Z" fill="url(#dirtg-'+sfx+')"/>'+
+    '<path d="M 24.5,52.8 Q 50,-23 75.5,52.8 L '+bR+','+bY+' L 50,'+tY+' L '+bL+','+bY+' Z" fill="url(#dirtg-'+sfx+')"/>'+
+    '<path d="M '+hx+','+hy+' L '+bL+','+bY+' L 50,'+tY+' L '+bR+','+bY+' Z" '+
+      'fill="none" stroke="url(#dirtg-'+sfx+')" stroke-width="3.4" stroke-linejoin="round"/>'+
     '<ellipse cx="'+hx+'" cy="'+hy+'" rx="4.2" ry="6.2" fill="url(#dirtg-'+sfx+')"/>'+
     '<ellipse cx="50" cy="'+bY+'" rx="5" ry="7.35" fill="#b18b50" stroke="'+wh+'.5)" stroke-width="0.45"/>'+
-    '<path d="M '+hx+','+hy+' L '+bL+','+bY+' L 50,'+tY+' L '+bR+','+bY+' Z" '+
-      'fill="none" stroke="'+wh+'.85)" stroke-width="0.55" stroke-linejoin="round"/>'+
-    '<line x1="'+bL+'" y1="'+bY+'" x2="'+fpL+'" y2="'+wallH+'" stroke="'+wh+'.85)" stroke-width="0.5"/>'+
-    '<line x1="'+bR+'" y1="'+bY+'" x2="'+fpR+'" y2="'+wallH+'" stroke="'+wh+'.85)" stroke-width="0.5"/>'+
+    '<line x1="'+hx+'" y1="'+hy+'" x2="'+fpL+'" y2="'+wallH+'" stroke="'+wh+'.85)" stroke-width="0.5"/>'+
+    '<line x1="'+hx+'" y1="'+hy+'" x2="'+fpR+'" y2="'+wallH+'" stroke="'+wh+'.85)" stroke-width="0.5"/>'+
+    '<rect x="45.9" y="89.4" width="1.7" height="5" fill="none" stroke="'+wh+'.65)" stroke-width="0.35"/>'+
+    '<rect x="52.4" y="89.4" width="1.7" height="5" fill="none" stroke="'+wh+'.65)" stroke-width="0.35"/>'+
     '<rect x="'+(hx-1.4)+'" y="'+(hy-1.4)+'" width="2.8" height="2.8" rx=".3" transform="rotate(45 '+hx+' '+hy+')" fill="'+wh+'.92)"/>'+
     '<rect x="'+(bL-1.1)+'" y="'+(bY-1.1)+'" width="2.2" height="2.2" rx=".2" transform="rotate(45 '+bL+' '+bY+')" fill="'+wh+'.92)"/>'+
     '<rect x="'+(bR-1.1)+'" y="'+(bY-1.1)+'" width="2.2" height="2.2" rx=".2" transform="rotate(45 '+bR+' '+bY+')" fill="'+wh+'.92)"/>'+
