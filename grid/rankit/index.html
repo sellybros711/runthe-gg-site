@@ -215,10 +215,16 @@
   // Build: five recognisable athletes, each from a DISTINCT decade, so ordering
   // by era is strict and verifiable.
   function buildDay(){
-    var stars = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.decade && e.decade.length && (e.f||0)>=4; });
+    // recognisable modern athletes only (>=1960s) so ordering is a knowledge test,
+    // not obscure history.
+    var stars = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.decade && e.decade.length && (e.f||0)>=4 && primaryDecade(e)>=1960; });
     var byDec={}; stars.forEach(function(e){ var d=primaryDecade(e); (byDec[d]=byDec[d]||[]).push(e); });
     var decs=Object.keys(byDec).map(Number).filter(function(d){ return byDec[d].length>=2; }).sort(function(a,b){ return a-b; });
-    var chosenDecs=shuffle(decs).slice(0,COUNT).sort(function(a,b){ return a-b; });
+    // pick FIVE CONSECUTIVE decades so the eras sit close together — telling
+    // adjacent decades apart from names alone is the hard part.
+    var chosenDecs;
+    if(decs.length>COUNT){ var start=ri(decs.length-COUNT+1); chosenDecs=decs.slice(start, start+COUNT); }
+    else { chosenDecs=decs.slice(0,COUNT); }
     var answer=chosenDecs.map(function(d){ var arr=byDec[d]; return arr[ri(arr.length)]; });   // earliest -> latest
     return { answer:answer };
   }
