@@ -373,22 +373,23 @@ window.GA_ID='G-L29P5MRWKE';
      edge, which pushed the eyebrow off with it. Capped so it fits on one line,
      and allowed to wrap rather than overflow if a font ever renders wider. */
   .hero{text-align:center;margin-bottom:16px}
-  .hero h1{font-family:var(--fd);font-size:clamp(30px,8.6vw,56px);line-height:.92;
-    letter-spacing:.01em;text-transform:uppercase;overflow-wrap:break-word}
+  /* ONE LINE, ALWAYS. The size is driven off the viewport rather than clamped to
+     a comfortable maximum, and nowrap holds the three words together, so the
+     headline shrinks to fit instead of breaking. "The" came off the front to buy
+     the room that costs. */
+  .hero h1{font-family:var(--fd);font-size:clamp(21px,7.4vw,58px);line-height:1.06;
+    letter-spacing:.01em;text-transform:uppercase;white-space:nowrap}
   /* COLLEGE is set the way a wrestling tee sets the middle word: a jagged face
-     against the block caps either side, tilted a few degrees off the baseline so
-     it reads as applied over the top rather than typed in line with them. Metal
+     laid OVER the block caps either side rather than typed between them. Metal
      Mania is the closest thing in the library to that torn-brush lettering.
-     It stays inline rather than absolutely placed, so the headline still wraps
-     on a narrow screen instead of colliding with itself. */
+     The overlap is negative margin, so the word eats into its neighbours on both
+     sides and its strokes cross theirs; z-index puts it on top; the tilt keeps
+     it from reading as part of the same line of type. Bigger than the caps
+     around it, the way the middle word on a tee always is. */
   .hero h1 .freak{font-family:'Metal Mania',var(--fd);display:inline-block;
-    transform:rotate(-3.5deg);font-size:.94em;line-height:1;margin:0 .04em;
-    color:var(--gold);text-shadow:0 3px 0 rgba(0,0,0,.55)}
-  /* The break is forced so the shape is always the tee's: block caps, then the
-     jagged word leading the line under them. Left to itself the headline broke
-     wherever the width happened to run out, which put COLLEGE at the end of the
-     first line and SEASON alone underneath. */
-  .hero h1 .l1{display:block}
+    transform:rotate(-5deg);font-size:1.12em;line-height:.9;
+    margin:0 -.13em;position:relative;z-index:2;vertical-align:baseline;
+    color:var(--gold);text-shadow:0 0 14px rgba(0,0,0,.85),0 3px 0 rgba(0,0,0,.6)}
   /* "College Football" sits on its own little pill so it reads as a badge, not
      loose text, a faint tint of the accent colour with a matching hairline. */
   .hero .sub{display:inline-block;font-family:var(--fn);font-size:11px;font-weight:700;
@@ -1793,7 +1794,7 @@ or endorsed by the NCAA, the CFP or any school.
 
     <div class="hero">
       <div class="sub">College Football</div>
-      <h1><span class="l1">The Perfect</span> <span class="freak">College</span> Season</h1>
+      <h1>Perfect<span class="freak">College</span>Season</h1>
       <p>Draft six college legends, 2005 to 2025. Chase a perfect season.</p>
     </div>
 
