@@ -70,10 +70,12 @@ h1,h2,h3{margin:0}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
   font-family:var(--fd);font-size:18px;font-weight:400;text-transform:uppercase;
   letter-spacing:.06em;padding:16px 28px;border:none;border-radius:10px;cursor:pointer;
-  background:linear-gradient(135deg,#c0392b 0%,#922b21 100%);color:#f0ebe3;width:100%;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#8b4513 0%,#6b3410 40%,#5a2d0e 100%);color:#f0ebe3;width:100%;position:relative;overflow:hidden;
+  border-bottom:3px solid #3d1a06;
   transition:transform .1s ease,filter .1s ease}
 .btn::before{content:'';position:absolute;inset:0;
-  background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,transparent 40%);pointer-events:none}
+  background:linear-gradient(180deg,rgba(255,255,255,.14) 0%,transparent 35%),
+  repeating-linear-gradient(90deg,rgba(0,0,0,.03) 0 2px,transparent 2px 6px);pointer-events:none}
 .btn:active{transform:translateY(1px) scale(.995);filter:brightness(1.08)}
 .btn.ghost{background:transparent;border:1.5px solid rgba(0,0,0,.18);color:var(--dim);font-size:14px;padding:12px 18px;box-shadow:none}
 .btn.ghost::before{display:none}
@@ -100,7 +102,9 @@ h1,h2,h3{margin:0}
 .htitle h1{font-family:'Righteous',var(--fd);font-size:clamp(34px,10vw,52px);text-transform:uppercase;letter-spacing:.03em;line-height:1.05}
 .htitle p{color:var(--dim);font-size:14px;margin:8px 0 0}
 .htitle .kicker{font-family:var(--fn);font-size:11px;font-weight:600;letter-spacing:.24em;
-  text-transform:uppercase;color:var(--gold)}
+  text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:center;gap:8px}
+.htitle .kicker::before,.htitle .kicker::after{content:'';display:inline-block;width:32px;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent)}
 .hnote{margin:11px 0 0;text-align:center;font-size:12.5px;color:var(--dim-2)}
 .hp-start{margin-bottom:10px}
 .hp-secondary{margin-bottom:10px}
@@ -108,77 +112,82 @@ h1,h2,h3{margin:0}
 .hp-util-btn{width:auto;flex:1}
 
 /* ─── reels ─── */
-.reels{display:grid;grid-template-columns:106px 1fr;gap:9px;margin-top:11px}
+.reels{display:grid;grid-template-columns:120px 1fr;gap:10px;margin-top:11px}
 .reelcol{min-width:0}
-.rlabel{display:block;margin:0 0 5px 3px;font-family:var(--fn);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2)}
-.reelbox{position:relative;height:114px;overflow:hidden;border-radius:12px;
-  background:linear-gradient(180deg,#2d5a1e,#1e4a14 55%,#174010);
-  border:1px solid rgba(0,0,0,.25);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
-.reelbox:after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
-  background:linear-gradient(180deg,#174010 2%,rgba(23,64,16,.15) 33%,rgba(23,64,16,.15) 67%,#174010 98%)}
+.rlabel{display:block;margin:0 0 5px 0;font-family:var(--fn);font-size:9px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim-2);text-align:center}
+.reelbox{position:relative;height:114px;overflow:hidden;border-radius:8px;
+  border:2px solid rgba(0,0,0,.20);box-shadow:inset 0 2px 6px rgba(0,0,0,.25),0 2px 4px rgba(0,0,0,.08)}
+.reelbox.year{background:linear-gradient(180deg,#2a5e1a,#1e4a14 50%,#174010)}
+.reelbox.team{background:linear-gradient(180deg,#8b3a2a,#6d2c1e 50%,#5a2418)}
+.reelbox:after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none}
+.reelbox.year:after{background:linear-gradient(180deg,#174010 2%,rgba(23,64,16,.12) 30%,rgba(23,64,16,.12) 70%,#174010 98%)}
+.reelbox.team:after{background:linear-gradient(180deg,#5a2418 2%,rgba(90,36,24,.12) 30%,rgba(90,36,24,.12) 70%,#5a2418 98%)}
 .reelbox.clubbed:after{background:linear-gradient(180deg,rgba(0,0,0,.72) 2%,rgba(0,0,0,.10) 34%,
   rgba(0,0,0,.10) 66%,rgba(0,0,0,.72) 98%)}
 .reelbox .strip{position:absolute;left:0;right:0;top:0;z-index:1;will-change:transform,filter}
 .reelbox .wash{display:none}
 .reelbox.clubbed .wash{display:block}
-.reelbox .band{position:absolute;left:5px;right:5px;top:50%;height:38px;margin-top:-19px;z-index:3;
-  border-radius:9px;border:1px solid rgba(255,255,255,.13);pointer-events:none;
+.reelbox .band{position:absolute;left:6px;right:6px;top:50%;height:38px;margin-top:-19px;z-index:3;
+  border-radius:7px;border:1.5px solid rgba(255,255,255,.18);pointer-events:none;
   transition:border-color .2s ease,box-shadow .2s ease,background .2s ease}
+.reelbox.year .band{border-color:rgba(200,180,80,.40);background:rgba(200,180,80,.06)}
+.reelbox.team .band{border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.04)}
 .reel-i{height:38px;display:grid;place-items:center;padding:0 9px;text-align:center;
-  font-family:var(--fd);text-transform:uppercase;letter-spacing:.06em;
+  font-family:var(--fd);text-transform:uppercase;letter-spacing:.06em;color:#fff;
   line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .reelbox.year .reel-i{font-size:24px;font-weight:400}
 .reelbox.team .reel-i{font-size:13px;font-weight:400}
 .reel-i.land{font-weight:400}
-.reelbox.year.spin{border-color:rgba(200,162,78,.50)}
-.reelbox.team.spin{border-color:rgba(200,162,78,.40)}
-.reelbox.year.spin .band{border-color:rgba(200,162,78,.45)}
-.reelbox.team.spin .band{border-color:rgba(200,162,78,.35)}
+.reelbox.year.spin{border-color:rgba(200,180,80,.60)}
+.reelbox.team.spin{border-color:rgba(255,200,160,.50)}
+.reelbox.year.spin .band{border-color:rgba(200,180,80,.55)}
+.reelbox.team.spin .band{border-color:rgba(255,200,160,.45)}
 .reelbox.waiting{opacity:.42}
 .reelbox.waiting .band{border-color:rgba(255,255,255,.07)}
 .reelbox.hit .band{animation:bandhit .5s ease-out}
-.reelbox.year.hit .band{border-color:rgba(200,162,78,.85)}
-.reelbox.team.hit .band{border-color:rgba(200,184,152,.75)}
+.reelbox.year.hit .band{border-color:rgba(200,180,80,.90)}
+.reelbox.team.hit .band{border-color:rgba(255,220,180,.80)}
 .reelbox.hit .reel-i.land{animation:facehit .42s cubic-bezier(.2,1.5,.35,1)}
 @keyframes bandhit{0%{box-shadow:0 0 0 0 rgba(255,255,255,.42),0 0 18px 2px rgba(255,255,255,.22)}
   100%{box-shadow:0 0 0 7px rgba(255,255,255,0),0 0 0 0 rgba(255,255,255,0)}}
 @keyframes facehit{0%{transform:scale(1)}40%{transform:scale(1.13)}100%{transform:scale(1)}}
-.reelbox.done:not(.clubbed){border-color:var(--line-2)}
-.reelbox.year.done:not(.clubbed) .band{border-color:rgba(200,162,78,.38);background:rgba(200,162,78,.06)}
-.reelbox.team.done:not(.clubbed) .band{border-color:rgba(200,184,152,.32);background:rgba(200,184,152,.05)}
+.reelbox.done:not(.clubbed){border-color:rgba(0,0,0,.20)}
+.reelbox.year.done:not(.clubbed) .band{border-color:rgba(200,180,80,.45);background:rgba(200,180,80,.08)}
+.reelbox.team.done:not(.clubbed) .band{border-color:rgba(255,220,180,.35);background:rgba(255,220,180,.06)}
 .reelbox.clubbed,.reelbox.clubbed.done{border-color:var(--c2);background:var(--c1)}
 .reelbox.clubbed .reel-i{color:var(--on,#fff);opacity:.34}
 .reelbox.clubbed .reel-i.land{opacity:1;font-weight:900;letter-spacing:.03em}
 .reelbox.clubbed .band,.reelbox.clubbed.done .band{border-color:var(--c2);border-width:1.5px;background:rgba(255,255,255,.13)}
-.reelbox.clubbed .wash{position:absolute;left:5px;right:5px;top:50%;height:38px;margin-top:-19px;
-  border-radius:9px;z-index:0;background:var(--c1);opacity:0;pointer-events:none;animation:clubwash .5s ease-out}
+.reelbox.clubbed .wash{position:absolute;left:6px;right:6px;top:50%;height:38px;margin-top:-19px;
+  border-radius:7px;z-index:0;background:var(--c1);opacity:0;pointer-events:none;animation:clubwash .5s ease-out}
 @keyframes clubwash{0%{opacity:0;transform:scale(.86)}45%{opacity:.9;transform:scale(1.05)}100%{opacity:0;transform:scale(1)}}
 
 /* ─── diamond field ─── */
 .field{position:relative;width:100%;aspect-ratio:1/0.82;border-radius:14px;overflow:hidden;
-  background:#3d7a34;
-  border:1px solid rgba(0,0,0,.18)}
+  background:#3d8a2e;
+  border:3px solid #1b4a12;box-shadow:0 4px 16px rgba(0,0,0,.18),inset 0 0 0 1px rgba(255,255,255,.08)}
 .field .turf{position:absolute;inset:0;
-  background:repeating-linear-gradient(0deg,rgba(0,0,0,.018) 0 3px,transparent 3px 6px)}
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.014) 0 4px,transparent 4px 8px)}
 .field .lit{position:absolute;inset:0;
-  background:radial-gradient(48% 32% at 50% 68%,#b89860 0%,#a8894e 28%,transparent 50%),
-  radial-gradient(80% 55% at 50% 0%,#357a2e 0%,transparent 70%)}
+  background:radial-gradient(44% 30% at 50% 70%,#c4a45c 0%,#a88c48 25%,transparent 48%),
+  radial-gradient(80% 55% at 50% 0%,#3a8c2e 0%,transparent 65%)}
 .field .diamond-svg{position:absolute;inset:0;z-index:0;pointer-events:none}
 .field .vig{position:absolute;inset:0;pointer-events:none;
-  box-shadow:inset 0 0 30px 8px rgba(0,0,0,.10)}
+  box-shadow:inset 0 0 30px 8px rgba(0,0,0,.12)}
 
 /* ─── chips ─── */
 .chip{--discr:17px;position:absolute;transform:translate(-50%,calc(-1 * var(--discr)));
   display:flex;flex-direction:column;width:62px;text-align:center;cursor:pointer;z-index:4}
-.chip .disc{position:relative;width:34px;height:34px;margin:0 auto;border-radius:50%;display:grid;place-items:center;
-  font-family:var(--fn);font-size:10px;font-weight:700;color:#fff;border:2px solid rgba(0,0,0,.3);
-  box-shadow:0 4px 10px -4px rgba(0,0,0,.45)}
+.chip .disc{position:relative;width:36px;height:36px;margin:0 auto;border-radius:50%;display:grid;place-items:center;
+  font-family:var(--fn);font-size:10px;font-weight:700;color:#fff;border:2px solid rgba(0,0,0,.25);
+  box-shadow:0 3px 8px -3px rgba(0,0,0,.40)}
 .chip .disc .dl{display:block;line-height:1}
 .chip.filled .disc{color:#fff}
 .chip.filled .disc:after{content:'';position:absolute;inset:-5px;border-radius:50%;
   border:1px solid rgba(255,255,255,.17);pointer-events:none}
-.chip.empty .disc{background:rgba(255,255,255,.45);border:1.5px dashed rgba(0,0,0,.30);
-  color:#5a5040;box-shadow:none}
+.chip.empty .disc{background:linear-gradient(180deg,#f5f0e6,#e8dcc8);border:2px solid rgba(0,0,0,.18);
+  color:#5a4a30;box-shadow:inset 0 1px 2px rgba(255,255,255,.5),0 2px 6px -2px rgba(0,0,0,.25)}
 .chip.now .disc{border-color:#fff;animation:chipulse 1.6s ease-in-out infinite}
 @keyframes chipulse{0%,100%{box-shadow:0 0 0 4px rgba(255,255,255,.14),0 6px 16px -4px #000}
   50%{box-shadow:0 0 0 10px rgba(255,255,255,.04),0 6px 16px -4px #000}}
@@ -388,16 +397,16 @@ h1,h2,h3{margin:0}
         <div class="reelbox team waiting" id="h-box-t"><div class="strip" id="h-reel-t"></div><span class="band"></span><span class="wash"></span></div></div>
     </div>
     <div class="field hero-field" id="h-field"></div>
-    <p class="hnote">Twelve spins, twelve spots, one shot at all of them.</p>
+    <p class="hnote">&starf; Twelve spins, twelve spots, one shot at all of them. &starf;</p>
   </div>
 
   <div class="htitle">
-    <div class="kicker">1901 to 2025</div>
+    <div class="kicker">&starf; 1901 to 2025 &starf;</div>
     <h1>Run The Diamond</h1>
     <p>Draft twelve MLB legends. Build your lineup. Win the World Series.</p>
   </div>
 
-  <button class="btn hp-start" id="b-start">Start a run</button>
+  <button class="btn hp-start" id="b-start">&#9918; Start a run &#9918;</button>
   <button class="btn ghost hp-secondary" id="b-era">Eras Mode</button>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">How to play</button>
@@ -654,17 +663,26 @@ function diamondMarkings(){
   const wh='rgba(255,255,255,';
   return '<div class="turf"></div><div class="lit"></div>'+
     '<svg class="diamond-svg" viewBox="0 0 100 100" preserveAspectRatio="none">'+
-    '<path d="M 4,6 Q 50,-4 96,6" fill="none" stroke="'+wh+'.22)" stroke-width="0.6"/>'+
+    '<defs><linearGradient id="wallg" x1="0" y1="0" x2="0" y2="1">'+
+      '<stop offset="0%" stop-color="#5a3a1e"/><stop offset="40%" stop-color="#4a2e14"/>'+
+      '<stop offset="100%" stop-color="#3a2210"/></linearGradient></defs>'+
+    '<path d="M 0,8 Q 50,-5 100,8 L 100,0 L 0,0 Z" fill="url(#wallg)"/>'+
+    '<path d="M 0,8 Q 50,-5 100,8" fill="none" stroke="#2a1808" stroke-width="0.5"/>'+
+    '<path d="M 0,7.5 Q 50,-5.5 100,7.5" fill="none" stroke="rgba(200,160,80,.35)" stroke-width="0.3"/>'+
+    '<line x1="2" y1="0" x2="2" y2="7.6" stroke="#e8c820" stroke-width="1.2"/>'+
+    '<circle cx="2" cy="0.5" r="0.8" fill="#e8c820"/>'+
+    '<line x1="98" y1="0" x2="98" y2="7.6" stroke="#e8c820" stroke-width="1.2"/>'+
+    '<circle cx="98" cy="0.5" r="0.8" fill="#e8c820"/>'+
     '<path d="M '+h50+','+v_home+' L '+h3B+','+v_base+' L '+h2B+','+v_2B+' L '+h1B+','+v_base+' Z" '+
-      'fill="none" stroke="'+wh+'.60)" stroke-width="0.6" stroke-linejoin="round"/>'+
-    '<line x1="'+h50+'" y1="'+v_home+'" x2="5" y2="5" stroke="'+wh+'.50)" stroke-width="0.5"/>'+
-    '<line x1="'+h50+'" y1="'+v_home+'" x2="95" y2="5" stroke="'+wh+'.50)" stroke-width="0.5"/>'+
-    '<circle cx="'+h50+'" cy="'+v_mound+'" r="2.8" fill="rgba(168,137,78,.5)" stroke="'+wh+'.25)" stroke-width="0.3"/>'+
-    '<rect x="'+(h50-1.4)+'" y="'+(v_home-1.4)+'" width="2.8" height="2.8" rx=".3" transform="rotate(45 '+h50+' '+v_home+')" fill="'+wh+'.75)"/>'+
-    '<rect x="'+(h1B-1)+'" y="'+(v_base-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h1B+' '+v_base+')" fill="'+wh+'.50)"/>'+
-    '<rect x="'+(h2B-1)+'" y="'+(v_2B-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h2B+' '+v_2B+')" fill="'+wh+'.50)"/>'+
-    '<rect x="'+(h3B-1)+'" y="'+(v_base-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h3B+' '+v_base+')" fill="'+wh+'.50)"/>'+
-    '<path d="M '+(h50-3)+','+(v_home+1)+' L '+(h50-5)+','+(v_home+5)+' M '+(h50+3)+','+(v_home+1)+' L '+(h50+5)+','+(v_home+5)+'" stroke="'+wh+'.30)" stroke-width="0.3" fill="none"/>'+
+      'fill="none" stroke="'+wh+'.55)" stroke-width="0.6" stroke-linejoin="round"/>'+
+    '<line x1="'+h50+'" y1="'+v_home+'" x2="2" y2="7.5" stroke="'+wh+'.45)" stroke-width="0.4"/>'+
+    '<line x1="'+h50+'" y1="'+v_home+'" x2="98" y2="7.5" stroke="'+wh+'.45)" stroke-width="0.4"/>'+
+    '<circle cx="'+h50+'" cy="'+v_mound+'" r="2.8" fill="rgba(168,137,78,.45)" stroke="'+wh+'.22)" stroke-width="0.3"/>'+
+    '<rect x="'+(h50-1.4)+'" y="'+(v_home-1.4)+'" width="2.8" height="2.8" rx=".3" transform="rotate(45 '+h50+' '+v_home+')" fill="'+wh+'.70)"/>'+
+    '<rect x="'+(h1B-1)+'" y="'+(v_base-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h1B+' '+v_base+')" fill="'+wh+'.45)"/>'+
+    '<rect x="'+(h2B-1)+'" y="'+(v_2B-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h2B+' '+v_2B+')" fill="'+wh+'.45)"/>'+
+    '<rect x="'+(h3B-1)+'" y="'+(v_base-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h3B+' '+v_base+')" fill="'+wh+'.45)"/>'+
+    '<path d="M '+(h50-3)+','+(v_home+1)+' L '+(h50-5)+','+(v_home+5)+' M '+(h50+3)+','+(v_home+1)+' L '+(h50+5)+','+(v_home+5)+'" stroke="'+wh+'.25)" stroke-width="0.3" fill="none"/>'+
     '</svg><div class="vig"></div>';
 }
 
