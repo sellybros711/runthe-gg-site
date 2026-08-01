@@ -169,7 +169,13 @@ window.GA_ID='G-L29P5MRWKE';
   .btn:disabled{opacity:.4;cursor:default}
   .btn.ghost{background:transparent;box-shadow:none;border:1.5px solid var(--line-2);font-size:14.5px}
   .btn.ghost:before{display:none}
-  .btn.gold{background:var(--grad-gold)}
+  /* The one call to action on the front page, in the same amber the headline
+     tears COLLEGE across. Dark ink on it rather than white: white on amber is
+     about a 2:1 contrast and goes soft outdoors on a phone, dark is nearer 8:1.
+     Held at a fixed amber rather than the themed gold so that picking a school
+     with a dark secondary colour cannot leave the button unreadable. */
+  .btn.gold{background:linear-gradient(135deg,#fbbf24 0%,#f0930c 100%);color:#22160a;
+    text-shadow:0 1px 0 rgba(255,255,255,.18)}
   .btn.sm{padding:11px 14px;font-size:13.5px;border-radius:10px}
   .btn.xs{padding:8px 12px;font-size:11.5px;border-radius:8px}
 
@@ -196,10 +202,15 @@ window.GA_ID='G-L29P5MRWKE';
      ever pushes it past the header. "Season" can never be cut off again. */
   .brand{flex:0 1 auto;min-width:0;font-family:var(--fd);font-size:clamp(10px,3vw,15px);
     letter-spacing:.02em;text-transform:uppercase;line-height:1.02}
-  .brand i{color:var(--green);font-style:normal}
-  /* "College" sits between Perfect and Season, in gold, so the wordmark itself
-     reads PERFECT COLLEGE SEASON, white, gold, green. */
-  .brand .clg{color:var(--gold);font-style:normal}
+  .brand i{font-style:normal}
+  /* The wordmark is the headline in miniature: Perfect and Season in the block
+     face, College torn across the middle of them in Metal Mania. The overlap is
+     pulled back from the headline's because the type is a sixth of the size and
+     the letters would otherwise sit on top of one another rather than beside. */
+  .brand .clg{font-family:'Metal Mania',var(--fd);color:var(--gold);font-style:normal;
+    display:inline-block;transform:rotate(-4deg);font-size:1.16em;line-height:.9;
+    margin:0 -.07em;position:relative;z-index:2;vertical-align:baseline;
+    text-shadow:0 0 8px rgba(0,0,0,.85),0 2px 0 rgba(0,0,0,.5)}
   .hdr-r{display:flex;align-items:center;gap:8px;min-width:0;margin-left:auto}
   .pill{display:inline-flex;align-items:center;padding:5px 10px;border-radius:99px;
     font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.12em;
@@ -396,8 +407,6 @@ window.GA_ID='G-L29P5MRWKE';
     transform:rotate(-5deg);font-size:1.12em;line-height:.9;
     margin:0 -.13em;position:relative;z-index:2;vertical-align:baseline;
     color:var(--gold);text-shadow:0 0 14px rgba(0,0,0,.85),0 3px 0 rgba(0,0,0,.6)}
-  .hero p{color:var(--dim);font-size:14px;line-height:1.45;margin:12px 0 0;max-width:380px;
-    margin-left:auto;margin-right:auto}
 
   /* ── the poll ticker ────────────────────────────────────────────
      The strip a college broadcast runs the rankings along. Quiet enough to read
@@ -1736,7 +1745,7 @@ or endorsed by the NCAA, the CFP or any school.
   <header>
     <a class="lockup" id="b-home" href="." aria-label="College Football Perfect Season, back to the start">
       <img class="mark" src="mark.png?v=2" alt="" width="30" height="27" decoding="async">
-      <span class="brand">Perfect <em class="clg">College</em><i> Season</i></span>
+      <span class="brand">Perfect<em class="clg">College</em><i>Season</i></span>
     </a>
     <div class="hdr-r">
       <a class="pill site" href="https://runthe.gg">RunThe<i>.GG</i></a>
@@ -1786,13 +1795,16 @@ or endorsed by the NCAA, the CFP or any school.
       <p class="hnote">Six spins, six signings, one shot at all of them.</p>
     </div>
 
+    <!-- One line of copy, above the headline. The line that used to sit under it
+         said the same thing twice over, and the button underneath already names
+         the next move. The description still reaches search and the noscript
+         page, which is where it earns its keep. -->
     <div class="hero">
       <h1>Perfect<span class="freak">College</span>Season</h1>
-      <p>Draft six college legends, 2005 to 2025. Chase a perfect season.</p>
     </div>
 
     <div>
-      <button class="btn" id="b-play-intro">Draft your team</button>
+      <button class="btn gold" id="b-play-intro">Draft your team</button>
     </div>
     <div style="margin-top:9px">
       <button class="btn ghost" id="b-modes">More ways to play</button>
@@ -5516,6 +5528,10 @@ boot();
     var h=document.querySelector('.hero h1');
     if(!h) return;
     function fit(){
+      /* A hidden element measures zero, and this script runs while the app is
+         still deciding which screen to show, so a measurement taken then would
+         be meaningless. Leave whatever size is set and wait to be called again. */
+      if(!h.offsetParent) return;
       h.style.fontSize='';
       var size=parseFloat(getComputedStyle(h).fontSize);
       var room=document.documentElement.clientWidth-24;
@@ -5523,8 +5539,16 @@ boot();
       if(line>room&&line>0) h.style.fontSize=(size*room/line).toFixed(2)+'px';
     }
     fit();
-    try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fit); }catch(e){}
+    addEventListener('load',fit);
     addEventListener('resize',fit);
+    try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fit); }catch(e){}
+    /* The moment the front page is actually put on screen is the first moment
+       the headline can be measured at all, so watch for it. */
+    try{
+      var scr=h.closest('.screen');
+      if(scr&&window.MutationObserver)
+        new MutationObserver(fit).observe(scr,{attributes:true,attributeFilter:['class']});
+    }catch(e){}
   })();
 </script>
 </body>
