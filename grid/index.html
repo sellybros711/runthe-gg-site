@@ -132,16 +132,18 @@
     background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:transform .16s ease, box-shadow .16s ease;}
   .tile:hover{transform:translateY(-4px); box-shadow:0 26px 50px -26px rgba(0,0,0,.6);}
   .tile.match{--c:var(--blue);}
-  .tile.cross{--c:var(--violet);}
+  .tile.cross{--c:#AAB6C4;}   /* black-and-white / newsprint, distinct from violet Odd One Out */
   .tile.word{--c:var(--teal);}
   .tile.guess{--c:var(--coral);}
   .tile.table{--c:var(--gold);}
   .tile.oddone{--c:var(--violet);}
   .tile.career{--c:var(--green);}
-  .tile.table .play, .tile.career .play{color:#071426;}
+  .tile.rankit{--c:var(--pink);}
+  .tile.table .play{color:#071426;}
+  .tile.rankit .play{color:#20101a;}
   /* display order (independent of DOM, so the play-state JS is untouched) */
   .tile.table{order:1;} .tile.match{order:2;} .tile.career{order:3;} .tile.oddone{order:4;}
-  .tile.guess{order:5;} .tile.cross{order:6;} .tile.word{order:7;}
+  .tile.guess{order:5;} .tile.cross{order:6;} .tile.word{order:7;} .tile.rankit{order:8;}
   /* colored header cap with the game motif */
   .tile .cap{position:relative; height:118px; display:grid; place-items:center; overflow:hidden;
     background:linear-gradient(150deg, color-mix(in srgb, var(--c) 34%, var(--card)) 0%, color-mix(in srgb, var(--c) 14%, var(--card)) 100%);
@@ -160,8 +162,7 @@
   .tile .desc{color:var(--mut); font-size:13px; line-height:1.5; margin:9px 0 16px;}
   .tile .play{margin-top:auto; border-radius:13px; min-height:48px; display:flex; align-items:center; justify-content:center; gap:8px;
     font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:#fff; background:var(--c); transition:filter .12s;}
-  .tile.cross .play{color:#071426;}
-  .tile.word .play{color:#071426;}
+  .tile.cross .play{color:#071426;}   /* dark text on the grayscale crossword accent */
   .tile:hover .play{filter:brightness(1.08);}
   .tile .play .arw{font-size:19px; transition:transform .16s;}
   .tile:hover .play .arw{transform:translateX(4px);}
@@ -242,7 +243,7 @@
       <main>
         <div class="zone-head">
           <span class="day">Today's Puzzles</span>
-          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipM"></span><span class="pip" id="pipC"></span><span class="pip" id="pipW"></span><span class="pip" id="pipG"></span><span class="pip" id="pipT"></span><span class="pip" id="pipO"></span><span class="pip" id="pipR"></span></span><span id="dprogT">0 / 7 played</span></span>
+          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipM"></span><span class="pip" id="pipC"></span><span class="pip" id="pipW"></span><span class="pip" id="pipG"></span><span class="pip" id="pipT"></span><span class="pip" id="pipO"></span><span class="pip" id="pipR"></span><span class="pip" id="pipK"></span></span><span id="dprogT">0 / 8 played</span></span>
         </div>
 
         <div class="tiles">
@@ -268,21 +269,21 @@
               <svg viewBox="0 0 56 56">
                 <defs><clipPath id="cwico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs>
                 <g clip-path="url(#cwico)">
-                  <rect x="4" y="4" width="48" height="48" fill="#F4EEFE"/>
+                  <rect x="4" y="4" width="48" height="48" fill="#F4F7FB"/>
                   <!-- blocked cells cap the two answers; kept 180-degree symmetric -->
-                  <rect x="40" y="4" width="12" height="12" fill="#2a1c47"/>
-                  <rect x="4" y="40" width="12" height="12" fill="#2a1c47"/>
+                  <rect x="40" y="4" width="12" height="12" fill="#12202F"/>
+                  <rect x="4" y="40" width="12" height="12" fill="#12202F"/>
                   <!-- grid lines -->
-                  <g stroke="#D7C7F4" stroke-width="1">
+                  <g stroke="#CBD5E1" stroke-width="1">
                     <path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/>
                   </g>
                   <!-- clue numbers -->
-                  <g font-family="Archivo, sans-serif" font-size="5" font-weight="800" fill="#8a7bd8">
+                  <g font-family="Archivo, sans-serif" font-size="5" font-weight="800" fill="#93A1B2">
                     <text x="6.2" y="9.4">1</text>
                     <text x="42.2" y="21.4">2</text>
                   </g>
                   <!-- 1-Across 'RUN' along the top; 2-Down 'THE' down the right column (no gibberish crossings) -->
-                  <g font-family="Archivo, sans-serif" font-size="9" font-weight="900" fill="#3A2B63" text-anchor="middle">
+                  <g font-family="Archivo, sans-serif" font-size="9" font-weight="900" fill="#16273B" text-anchor="middle">
                     <text x="10" y="13.2">R</text>
                     <text x="22" y="13.2">U</text>
                     <text x="34" y="13.2">N</text>
@@ -291,7 +292,7 @@
                     <text x="46" y="49.2">E</text>
                   </g>
                 </g>
-                <rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#8a7bd8" stroke-width="2"/>
+                <rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#93A1B2" stroke-width="2"/>
               </svg>
             </span>
             <span class="body">
@@ -397,6 +398,22 @@
               <span class="play" id="playR">PLAY <span class="arw">→</span></span>
             </span>
           </a>
+
+          <a class="tile rankit" id="cardRank" href="/grid/rankit/">
+            <span class="cap" aria-hidden="true">
+              <span class="badge">New</span><span class="status" id="stK">Ready</span>
+              <svg viewBox="0 0 56 56">
+                <rect x="10" y="13" width="20" height="8" rx="3" fill="#F65C9C" opacity=".5"/>
+                <rect x="10" y="25" width="30" height="8" rx="3" fill="#F65C9C" opacity=".78"/>
+                <rect x="10" y="37" width="40" height="8" rx="3" fill="#F65C9C"/>
+              </svg>
+            </span>
+            <span class="body">
+              <span class="nm">Rank It</span>
+              <span class="desc">Put five athletes in order by the era they starred in. Fewest checks wins.</span>
+              <span class="play" id="playK">PLAY <span class="arw">→</span></span>
+            </span>
+          </a>
         </div>
 
         <div class="double" id="double">
@@ -424,6 +441,7 @@
     <a href="/grid/oddone/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>Odd One</a>
     <a href="/grid/guess/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.9.5-1.6 1-1.6 2.1M12 17.5v.01"/></svg>Guess</a>
     <a href="/grid/crossword/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 3v18M3 9h18"/></svg>Crossword</a>
+    <a href="/grid/rankit/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M4 12h13M4 17h6"/></svg>Rank It</a>
     <a href="/grid/wordsearch/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Word Search</a>
   </nav>
 </div>
@@ -472,7 +490,8 @@
   var ts = {}; try { ts = JSON.parse(g('rtg:table:v1', '{}')) || {}; } catch (e) {}
   var os = {}; try { os = JSON.parse(g('rtg:oddone:v1', '{}')) || {}; } catch (e) {}
   var rs = {}; try { rs = JSON.parse(g('rtg:career:v1', '{}')) || {}; } catch (e) {}
-  cur = Math.max(cur, cw.streak | 0, ws.streak | 0, gs.streak | 0, ts.streak | 0, os.streak | 0, rs.streak | 0);
+  var ks = {}; try { ks = JSON.parse(g('rtg:rankit:v1', '{}')) || {}; } catch (e) {}
+  cur = Math.max(cur, cw.streak | 0, ws.streak | 0, gs.streak | 0, ts.streak | 0, os.streak | 0, rs.streak | 0, ks.streak | 0);
   best = Math.max(best, cur, cw.bestStreak | 0);
   document.getElementById('curStreak').textContent = cur;
   document.getElementById('bestStreak').textContent = best;
@@ -506,6 +525,7 @@
   var tDone = (ts.lastDone === t);
   var oDone = (os.lastDone === t);
   var rDone = (rs.lastDone === t);
+  var kDone = (ks.lastDone === t);
 
   var cardM = document.getElementById('cardMatch'), cardC = document.getElementById('cardCross');
   if (mDone) {
@@ -556,9 +576,18 @@
   runTile('cardOdd', 'pipO', 'stO', 'playO', os, oDone);
   runTile('cardCareer', 'pipR', 'stR', 'playR', rs, rDone);
 
-  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (wDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0);
-  document.getElementById('dprogT').textContent = n + ' / 7 played';
-  if (n === 7) {
+  // Rank It (time-scored, solved-or-not)
+  var cardK = document.getElementById('cardRank');
+  if (kDone) {
+    cardK.classList.add('solved');
+    var stK = document.getElementById('stK'); stK.className = 'status done'; stK.textContent = 'Solved';
+    document.getElementById('playK').innerHTML = '✓ DONE';
+    document.getElementById('pipK').classList.add('done');
+  } else { cardK.classList.add('unplayed'); document.getElementById('stK').className = 'status ready'; }
+
+  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (wDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0) + (kDone ? 1 : 0);
+  document.getElementById('dprogT').textContent = n + ' / 8 played';
+  if (n === 8) {
     document.getElementById('dprog').classList.add('all');
     document.getElementById('double').classList.add('on');
   }
