@@ -108,14 +108,12 @@ create table if not exists cfb_runs (
 
   -- The roster's own strength, the board's second sort axis.
   --
-  -- team_rating is the three things the results screen already prints:
-  --   sum(ppr_ppg_mean) * (chemistry + the offensive scheme's bonus)
-  -- so a player can add it up off their own screen. It deliberately leaves out
-  -- the four SHAPE terms (quarterback support, run/pass balance, concentration,
-  -- the floor). Those still decide games: resolveGame() scores a week as
-  --   sum(ppr_ppg_mean) * chemistry * structure * defenseModifier
-  -- where `structure` carries shape and scheme together. structure_mult is
-  -- stored so the shape a roster played under is still on the record.
+  -- team_rating is exactly what resolveGame() scores a week with, minus the
+  -- per-opponent term:
+  --   sum(ppr_ppg_mean) * chemistry * structure
+  -- where `structure` carries roster shape and the offensive scheme together.
+  -- It left shape out for a while, which made two rosters showing the same
+  -- number worth different seasons; it does not any more.
   --
   -- overall is team_rating divided by the game's ceiling and multiplied by 100,
   -- which is what every screen in the game actually displays. BOTH are stored
@@ -123,8 +121,8 @@ create table if not exists cfb_runs (
   -- number the player saw on their own results screen or they cannot find
   -- themselves on it.
   squad_fppg     numeric(5,1),   -- summed ppr_ppg_mean, before any multiplier
-  structure_mult numeric(4,3),   -- rosterStructure().multiplier, the sim's term
-  team_rating    numeric(6,2),   -- squad_fppg * (chemistry + scheme bonus)
+  structure_mult numeric(4,3),   -- rosterStructure().multiplier, the third term
+  team_rating    numeric(6,2),   -- squad_fppg * chemistry * structure_mult
   overall        numeric(6,2),   -- team_rating scaled to the displayed 0..100+
   perfect_pct    smallint,       -- yourProjected / bestProjected, as a percentage
 

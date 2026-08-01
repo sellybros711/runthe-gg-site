@@ -2137,7 +2137,7 @@ or endorsed by the NCAA, the CFP or any school.
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="engine.js?v=7"></script>
 <script src="run.js?v=4"></script>
-<script src="achievements.js?v=3"></script>
+<script src="achievements.js?v=4"></script>
 <script src="auth.js?v=1"></script>
 <script src="board.js?v=1"></script>
 <script>
@@ -4710,25 +4710,31 @@ const EMBLEM_TROPHY='<svg viewBox="0 0 48 48" aria-hidden="true">'+
   '<rect x="12" y="40" width="24" height="4.4" rx="2.2" fill="url(#emtro)" stroke="#a55b06" stroke-width="1"/></svg>';
 
 /* ── results ─────────────────────────────────────────────────── */
-/* THE RATING IS THREE THINGS A PLAYER CAN SEE ON THE SCREEN IN FRONT OF THEM:
-   what the six score, plus the two bonuses the results page already prints as
-   percentages. Nothing else goes in, which means the number can be checked by
-   hand, and a player who does not like it can tell exactly which of the three to
-   go and change.
+/* THE RATING IS WHAT THE SIMULATION SCORES A WEEK WITH, exactly:
 
-     rating = summed FPPG x (chemistry + the offensive scheme's bonus)
+     rating = summed FPPG x chemistry x rosterStructure().multiplier
 
-   WHAT THIS DROPPED, and it is worth writing down rather than discovering later.
-   It used to be `fppg x chemistry x rosterStructure().multiplier`, and that
-   multiplier bundles the scheme bonus together with four SHAPE terms: whether the
-   quarterback throws well enough to feed the receivers, the run/pass balance,
-   whether one player is carrying everything, and whether the bottom two are dead
-   weight. Those four are gone from the rating. They are NOT gone from the game:
-   resolveGame still scores every week with the full multiplier, so shape still
-   decides matches. See the note on RATING_CEILING for what that costs. */
+   which is resolveGame's line with the per-opponent term taken off, so it is
+   what a roster is worth against an average defence. The NFL game's rating is
+   the same three terms.
+
+   IT LEFT SHAPE OUT FOR A WHILE and the number paid for it. The rating was
+   `fppg x (chemistry + schemeBonus)`, which is legible: three things printed on
+   the results screen, addable by hand. But the multiplier bundles the scheme
+   bonus together with four SHAPE terms, and those four still decided games while
+   never appearing in the number. Measured three ways, that leak was not small:
+   teams showing the SAME rating won the title 9% or 27% of the time depending on
+   how they were shaped, a 95 could go 9-6, and the odds curve sagged backwards
+   at two or three points in every run of twelve because a bucket holding a few
+   badly shaped rosters fell below the bucket beneath it.
+
+   Putting shape back in costs the neat three-term sentence and buys a number
+   that means one thing. The sentence still adds up, it just has the fit in it:
+   see o-squadline, which prints the fit as a percentage the way the NFL game
+   does, and names the scheme's share of it after. */
 function teamRating(roster,chemistry){
   const fppg=roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
-  return fppg*(chemistry+E.rosterStructure(roster).schemeBonus);
+  return fppg*chemistry*E.rosterStructure(roster).multiplier;
 }
 /* TEAM OVERALL IS A RATING, not the points total it started as. The raw number
    is points a game and any decent roster clears 100 of them, so a team knocked
@@ -4746,30 +4752,43 @@ function teamRating(roster,chemistry){
    AVAILABLE off every one of its draws scored 76.7. Nothing about that reads like
    what it was.
 
-   Measured instead over 500 seasons drafted by taking the highest scorer on every
-   board, and over the best six that could have come off those same draws:
+   Measured over 900 seasons drafted by taking the highest scorer on every board,
+   and over the best six that could have come off those same draws, under the
+   rating as it now stands:
 
-     what a player drafts     p50  91.5   p90  98.1   p99 103.5   best 106.7
-     the best six available   p50  97.0   p90 102.5   p99 110.5   best 114.6
+     what a player drafts     p50  84.3   p90  97.9   p99 104.7   best 108.9
+     the best six available   p50  97.0   p90 104.0   p99 108.3   best 110.6
 
-   112 is the hundred. A well-drafted team lands in the eighties, an exceptional
-   one in the low nineties, and clearing 100 needs a roster better than the 99th
-   percentile of perfect hindsight: about one draft in two hundred. That is what
-   "one of the best lineups anyone could ever create" should mean when the wheel,
-   and not a spreadsheet, is handing out the players.
+   107 is the hundred. A well-drafted team lands in the eighties, an exceptional
+   one around ninety, and clearing 100 needs a roster at the 99th percentile of
+   perfect hindsight: about one draft in a hundred and fifty. That is what "one of
+   the best lineups anyone could ever create" should mean when the wheel, and not
+   a spreadsheet, is handing out the players.
 
-   Nothing clamps it. The predecessors were 126, 141 and 135; none of the four are
-   comparable, and neither are ratings recorded under them, which costs nothing
-   because nothing has launched and the board is empty. */
-const RATING_CEILING=112;
+   IT MOVED FROM 112 WHEN SHAPE WENT BACK INTO THE RATING, because the formula
+   changed and so did its scale. The predecessors were 112, 126, 141 and 135; none
+   of the five are comparable, and neither are ratings recorded under them, which
+   costs nothing because nothing has launched and the board is empty. */
+const RATING_CEILING=107;
 const overallOf=(raw)=>raw*100/RATING_CEILING;
-/* The scheme half of the rating sentence. It NAMES the scheme rather than
-   repeating the percentage, because the sentence has already printed that
-   number and saying it twice reads like two separate bonuses. Six that fit no
-   scheme add nothing, and the line says so instead of printing "+0.0%". */
-function schemePhrase(st){
-  if(!st||!st.scheme) return 'nothing from a scheme';
-  return pc(st.schemeBonus)+' from the '+esc(E.SCHEME_NAMES[st.scheme]);
+/* THE FIT IS THE WHOLE MULTIPLIER, shape and scheme together, so the sentence
+   must not label it as the scheme alone: that read as if a 2% scheme were worth
+   the whole +8%. This prints the total, and schemeShare() names the scheme's own
+   part of it afterwards. Same split the NFL game uses. */
+function fitPhrase(st){
+  const n=(st&&st.multiplier!=null)?st.multiplier-1:0;
+  return pc(n)+' for how the six fit together';
+}
+function schemeShare(st){
+  if(!st||!st.scheme) return '';
+  const sp=Math.max(1,Math.round((st.schemeBonus||0)*100));
+  const nm=esc(E.SCHEME_NAMES[st.scheme]);
+  /* "+2% of that" is nonsense when the fit came out negative, and a badly shaped
+     roster is exactly when a player wants to know which half hurt. So when the
+     total is under water the line says the scheme was the part pulling up. */
+  if(st.multiplier<1) return ' The '+nm+' scheme adds +'+sp+
+    '%; the shape of the six takes back more.';
+  return ' The '+nm+' scheme is +'+sp+'% of that.';
 }
 /* "an 80.9 team", "a 72.7 team". The rating is read aloud in the head, so the
    article follows the sound of the first word: eight and eighteen and eleven
@@ -4820,10 +4839,11 @@ function paintOver(){
   const st=E.rosterStructure(run.roster);
   const rating=teamRating(run.roster,run.season.chemistry);
   const overall=overallOf(rating);
-  /* Green at 80, amber at 65, measured against what the bands are worth: a team
-     in the eighties makes the playoff half the time, one in the seventies about
-     one time in seven, and one below seventy is not in the conversation. */
-  const rband=overall>=80?'#22c55e':(overall>=65?'#fbbf24':'#ef4444');
+  /* Green at 88, amber at 78, measured against what the number is now worth: 88
+     makes the playoff two times in five and 90 more than half the time, 78 about
+     one time in twelve, and below that it is a bowl season. Both moved down the
+     scale when shape went into the rating and the ceiling came to 107. */
+  const rband=overall>=88?'#22c55e':(overall>=78?'#fbbf24':'#ef4444');
   const bigcell=(k,v,pctFill,color)=>'<div><div class="k">'+k+'</div>'+
     '<div class="v" style="color:'+color+'">'+v+'</div>'+
     '<div class="t"><i style="width:'+pctFill+'%;background:'+color+'"></i></div></div>';
@@ -4920,16 +4940,15 @@ function paintOver(){
     tile((diff>=0?'+':'')+diff.toFixed(1),'Difference',diff>=0?'up':'dn')+
     tile(bestStreak,'Longest streak');
   /* THE SENTENCE IS THE SUM, so the rating can be checked by hand off this line.
-     It used to name the shape multiplier, which is no longer in the rating.
      BOTH numbers are printed on purpose: the raw one is what the three terms
      multiply out to, and the overall is what the big cell above says. Printing
      only the raw one, which is what this line did first, left a player reading
      105.6 here and 74.9 a centimetre higher with no way to connect them. */
   $('o-squadline').innerHTML='<span>'+squadFppg.toFixed(0)+' squad FPPG, '+
-    pc(run.season.chemistry-1)+' chemistry and '+schemePhrase(st)+
+    pc(run.season.chemistry-1)+' chemistry and '+fitPhrase(st)+
     ' multiply out to '+rating.toFixed(1)+', which is '+artNum(overall.toFixed(1))+
     '<b>'+overall.toFixed(1)+'</b> team overall. '+
-    'You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.</span>';
+    'You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.'+schemeShare(st)+'</span>';
 
   drawField($('field3'),false);
   const bySlot=new Array(E.SLOTS.length).fill(null);

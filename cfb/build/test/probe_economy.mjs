@@ -227,9 +227,9 @@ if (want('nfl')) {
 if (want('bands')) {
   const { E, R, data, league } = CFB;
   const CTX = { league };
-  const CEIL = 112;   /* keep in step with RATING_CEILING in cfb/index.html */
+  const CEIL = 107;   /* keep in step with RATING_CEILING in cfb/index.html */
   const rate = (r, c) => r.reduce((t, p) => t + p.ppr_ppg_mean, 0)
-    * (c + E.rosterStructure(r).schemeBonus);
+    * c * E.rosterStructure(r).multiplier;
 
   console.log('=== how often a draft lands in each band ===');
   const drafted = [], hindsight = [], teams = [];
@@ -314,10 +314,10 @@ if (want('bands')) {
 if (want('curve')) {
   const { E, R, data, league } = CFB;
   const CTX = { league };
-  const CEIL = 112;   /* keep in step with RATING_CEILING in cfb/index.html */
+  const CEIL = 107;   /* keep in step with RATING_CEILING in cfb/index.html */
   const rate = (r, c) => r.reduce((t, p) => t + p.ppr_ppg_mean, 0)
-    * (c + E.rosterStructure(r).schemeBonus);
-  const LO = 74, HI = 104, W = 2;
+    * c * E.rosterStructure(r).multiplier;
+  const LO = 66, HI = 104, W = 2;
   const nbins = Math.ceil((HI - LO) / W);
   const bins = Array.from({ length: nbins }, () => []);
   for (let i = 0; i < 2600; i++) {
