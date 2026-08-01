@@ -792,14 +792,54 @@ function watchFold(){
 
 /* ─── hero loop ─── */
 const HERO={year:820,stagger:300,team:970,land:320,sign:760,hold:2300,clear:520,gap:190};
+/* One legend per current MLB franchise; each cycle shows a random six. */
 const HERO_PICKS=[
-  {name:'Babe Ruth',season:1927,team:'NYY',at:7,pos:'RF'},
-  {name:'Willie Mays',season:1954,team:'NYG',at:6,pos:'CF'},
-  {name:'Sandy Koufax',season:1966,team:'LAD',at:9,pos:'SP'},
+  {name:'Randy Johnson',season:2001,team:'ARI',at:9,pos:'SP'},
+  {name:'Chipper Jones',season:1999,team:'ATL',at:3,pos:'3B'},
+  {name:'Cal Ripken',season:1991,team:'BAL',at:4,pos:'SS'},
+  {name:'Ted Williams',season:1941,team:'BOS',at:5,pos:'LF'},
+  {name:'Ernie Banks',season:1959,team:'CHC',at:4,pos:'SS'},
+  {name:'Frank Thomas',season:1994,team:'CHW',at:1,pos:'1B'},
   {name:'Johnny Bench',season:1972,team:'CIN',at:0,pos:'C'},
+  {name:'Bob Feller',season:1946,team:'CLE',at:9,pos:'SP'},
+  {name:'Larry Walker',season:1997,team:'COL',at:7,pos:'RF'},
+  {name:'Ty Cobb',season:1911,team:'DET',at:6,pos:'CF'},
+  {name:'Jeff Bagwell',season:1994,team:'HOU',at:1,pos:'1B'},
+  {name:'George Brett',season:1980,team:'KCR',at:3,pos:'3B'},
+  {name:'Mike Trout',season:2016,team:'LAA',at:6,pos:'CF'},
+  {name:'Sandy Koufax',season:1966,team:'LAD',at:9,pos:'SP'},
+  {name:'Giancarlo Stanton',season:2017,team:'MIA',at:7,pos:'RF'},
+  {name:'Robin Yount',season:1982,team:'MIL',at:4,pos:'SS'},
+  {name:'Kirby Puckett',season:1988,team:'MIN',at:6,pos:'CF'},
+  {name:'Tom Seaver',season:1969,team:'NYM',at:9,pos:'SP'},
+  {name:'Babe Ruth',season:1927,team:'NYY',at:7,pos:'RF'},
+  {name:'Rickey Henderson',season:1990,team:'OAK',at:5,pos:'LF'},
+  {name:'Mike Schmidt',season:1980,team:'PHI',at:3,pos:'3B'},
   {name:'Honus Wagner',season:1908,team:'PIT',at:4,pos:'SS'},
-  {name:'Mariano Rivera',season:2004,team:'NYY',at:11,pos:'CL'},
+  {name:'Tony Gwynn',season:1994,team:'SDP',at:7,pos:'RF'},
+  {name:'Ken Griffey',season:1997,team:'SEA',at:6,pos:'CF'},
+  {name:'Barry Bonds',season:2001,team:'SFG',at:5,pos:'LF'},
+  {name:'Stan Musial',season:1948,team:'STL',at:5,pos:'LF'},
+  {name:'Evan Longoria',season:2010,team:'TBR',at:3,pos:'3B'},
+  {name:'Ivan Rodriguez',season:1999,team:'TEX',at:0,pos:'C'},
+  {name:'Roberto Alomar',season:1993,team:'TOR',at:2,pos:'2B'},
+  {name:'Bryce Harper',season:2015,team:'WSN',at:7,pos:'RF'},
 ];
+function heroCycle(){
+  const pool=[...HERO_PICKS];
+  for(let i=pool.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [pool[i],pool[j]]=[pool[j],pool[i]];
+  }
+  const used=new Set(),out=[];
+  for(const pk of pool){
+    const k=PITCHER_SLOTS.includes(pk.at)?'P':pk.at;
+    if(used.has(k)) continue;
+    used.add(k);out.push(pk);
+    if(out.length>=6) break;
+  }
+  return out;
+}
 let heroRun=0,heroRunning=false,heroFilled=[];
 
 const heroNap=ms=>new Promise(r=>setTimeout(r,ms));
@@ -857,7 +897,7 @@ async function heroLoop(seq){
   while(live()){
     heroFilled=[];heroChips();heroReset();
     await heroNap(HERO.gap);
-    for(const pk of HERO_PICKS){
+    for(const pk of heroCycle()){
       if(!live()) return;
       const spinYear=heroSpin($('h-reel-y'),faces.years,String(pk.season),HERO.year);
       await heroNap(HERO.stagger);
