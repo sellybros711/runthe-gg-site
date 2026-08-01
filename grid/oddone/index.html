@@ -66,7 +66,10 @@
   .runbar .best .n{font-family:var(--hero); font-weight:400; font-size:22px; color:var(--mut); line-height:1;}
   .runbar .best .c{display:block; font-size:8.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
   .prompt{text-align:center; font-weight:900; font-size:16px; color:var(--ink); margin:2px 0 4px;}
-  .subprompt{text-align:center; font-size:12px; font-weight:700; color:var(--mut); margin:0 0 12px; min-height:16px;}
+  .subprompt{text-align:center; font-size:12px; font-weight:700; color:var(--mut); margin:0 0 12px; min-height:16px; transition:font-size .15s;}
+  .subprompt.big{font-size:16px; font-weight:800; color:var(--ink); min-height:24px; margin:2px 0 14px;}
+  .subprompt .ok{color:var(--greenT);} .subprompt .no{color:var(--red);} .subprompt .team{color:var(--violetT);}
+  .choice.mypick{box-shadow:0 0 0 2px var(--red) inset;}
   .choices{display:flex; flex-direction:column; gap:9px;}
   .choice{border:1px solid var(--line2); border-radius:13px; background:var(--card); box-shadow:var(--shadow); padding:15px 16px; font-weight:900; font-size:16.5px; color:var(--ink); cursor:pointer; text-align:left; transition:transform .08s, border-color .15s, background .15s;}
   .choice:hover{border-color:var(--violet);}
@@ -188,6 +191,7 @@
 <script src="../match/entities.js?v=12"></script>
 <script src="/grid/sfx.js"></script>
 <script src="/grid/tokens.js"></script>
+<script src="/grid/archive.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
 <script>
@@ -199,10 +203,15 @@
   var TEAM_SPORTS={NBA:1,NFL:1,MLB:1,NHL:1,Soccer:1,WNBA:1};
 
   function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-  var DATE=todayStr();
+  var ARCHIVE=!!(window.RTGArchive && RTGArchive.active());   // past-day practice mode
+  var DATE=(window.RTGArchive?RTGArchive.date():todayStr());
   function xmur3(s){ var h=1779033703^s.length; for(var i=0;i<s.length;i++){ h=Math.imul(h^s.charCodeAt(i),3432918353); h=h<<13|h>>>19; } return function(){ h=Math.imul(h^h>>>16,2246822507); h=Math.imul(h^h>>>13,3266489909); return (h^=h>>>16)>>>0; }; }
   function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
-  var rng=mulberry32(xmur3('oddone-'+DATE)());
+  // First (ranked) play uses the daily seed; replays reseed randomly for fresh rounds.
+  var rng, servedDaily=false;
+  function seedDaily(){ rng=mulberry32(xmur3('oddone-'+DATE)()); }
+  function seedRandom(){ rng=mulberry32(((Math.random()*4294967296)>>>0)||1); }
+  seedDaily();
   function ri(n){ return Math.floor(rng()*n); }
   function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=ri(i+1); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
@@ -269,7 +278,7 @@
 
   function renderRound(){
     if(idx>=SEQ.length){ finish(); return; }
-    document.getElementById('subprompt').textContent='';
+    var sp=document.getElementById('subprompt'); sp.textContent=''; sp.classList.remove('big');
     var r=SEQ[idx];
     choicesEl.innerHTML=r.five.map(function(id){ return '<button class="choice" type="button" data-id="'+id+'">'+esc(byId[id].name)+'</button>'; }).join('');
     [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ pick(bt.dataset.id, bt); }); });
@@ -279,27 +288,36 @@
     var r=SEQ[idx];
     var right = id===r.odd;
     var btns=choicesEl.querySelectorAll('.choice');
-    [].forEach.call(btns, function(b){ if(b.dataset.id===r.odd) b.classList.add('correct'); else b.classList.add('dim'); });
-    if(!right){ bt.classList.remove('dim'); bt.classList.add('wrong'); }
-    document.getElementById('subprompt').textContent='The four share: '+r.team;
+    // The four that belong light green; the odd one lights red.
+    [].forEach.call(btns, function(b){
+      b.classList.remove('dim');
+      if(b.dataset.id===r.odd){ b.classList.add('wrong'); } else { b.classList.add('correct'); }
+    });
+    if(!right){ bt.classList.add('mypick'); }   // you tapped one of the four
+    var conn=document.getElementById('subprompt');
+    conn.classList.add('big');
+    conn.innerHTML=(right?'<b class="ok">✓ Correct!</b> ':'<b class="no">✗ Not quite.</b> ')+'The four all share <b class="team">'+esc(r.team)+'</b>.';
     if(right){
       run++; document.getElementById('runN').textContent=run; if(window.RTGSound) RTGSound.lock(); idx++;
-      setTimeout(function(){ busy=false; renderRound(); }, 900);
+      setTimeout(function(){ busy=false; renderRound(); }, 1250);
     } else {
       if(window.RTGSound) RTGSound.wrong();
-      setTimeout(function(){ finish(); }, 1100);
+      setTimeout(function(){ finish(); }, 1600);
     }
   }
 
   function startIfNeeded(){ if(started||done) return;
-    if(!charged){ var r=(window.RTGTokens?RTGTokens.startAttempt(GAME):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); }
+    if(!charged){ if(ARCHIVE){ charged=true; attemptFirst=false; } else { var r=(window.RTGTokens?RTGTokens.startAttempt(GAME):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); } }
     started=true; startTs=performance.now(); }
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
+    if(ARCHIVE){ h.textContent='Tap the name that doesn’t belong. · Archive practice'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
     h.textContent='Tap the name that doesn’t belong.'+lbl; }
   function beginAttempt(){
+    var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
+    if(isReplay){ seedRandom(); SEQ=buildRounds(); } else { seedDaily(); SEQ=buildRounds(); servedDaily=true; }
     idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
     document.getElementById('runN').textContent='0';
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
@@ -312,8 +330,8 @@
     else { b.textContent='Play again'; b.disabled=false; b.style.opacity=''; b.style.cursor='pointer'; }
   }
   function shiftDay(iso,d){ var x=new Date(iso+'T00:00:00'); x.setDate(x.getDate()+d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
-  function load(){ try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
-  function save(s){ try{ LS.setItem(SAVE_KEY,JSON.stringify(s)); }catch(e){} }
+  function load(){ if(ARCHIVE) return {}; try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
+  function save(s){ if(ARCHIVE) return; try{ LS.setItem(SAVE_KEY,JSON.stringify(s)); }catch(e){} }   // archive plays never touch saved progress
 
   function finish(){
     if(done) return; done=true;
@@ -394,7 +412,7 @@
   // ---- boot ----
   var saved=load(); document.getElementById('streakN').textContent=saved.streak||0;
   if(saved.bestRun){ document.getElementById('bestRun').textContent=saved.bestRun; document.getElementById('yourBest').textContent=saved.bestRun; }
-  if(window.RTGTokens && !RTGTokens.canPlay(GAME)){
+  if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
     done=true; choicesEl.style.pointerEvents='none'; choicesEl.style.opacity='.5';
     document.getElementById('hintline').textContent='No plays left — back tomorrow.';
     if(saved.last){ run=saved.last.run||0; showEnd(saved, true); } else { renderRound(); }

@@ -65,7 +65,9 @@
 
   .axis{display:flex; align-items:center; justify-content:space-between; font-size:10px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:0 4px 8px;}
   .rows{display:flex; flex-direction:column; gap:9px;}
-  .rrow{display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line2); border-radius:13px; box-shadow:var(--shadow); padding:12px 12px 12px 14px; transition:border-color .15s, background .15s;}
+  .rrow{display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line2); border-radius:13px; box-shadow:var(--shadow); padding:12px 12px 12px 14px; transition:border-color .15s, background .15s, transform .12s; cursor:grab; touch-action:none;}
+  .rrow.dragging{cursor:grabbing; z-index:5; box-shadow:0 16px 34px -10px rgba(0,0,0,.6); border-color:var(--pink); transition:none; opacity:.98;}
+  .rrow .ctrl button{cursor:pointer;}
   .rrow .ord{flex:0 0 auto; width:26px; height:26px; border-radius:8px; background:var(--card2); color:var(--mut); font-family:var(--hero); font-weight:400; font-size:15px; display:flex; align-items:center; justify-content:center;}
   .rrow .nm{flex:1; min-width:0; font-weight:900; font-size:16.5px; color:var(--ink);}
   .rrow .era{flex:0 0 auto; font-size:11px; font-weight:900; letter-spacing:.04em; color:var(--pinkT); opacity:0; transition:opacity .2s; margin-right:2px;}
@@ -147,7 +149,7 @@
   <div class="rows" id="rows"></div>
 
   <div class="actions"><button class="checkbtn" id="checkBtn" type="button">Check order</button></div>
-  <div class="hintline" id="hintline">Use the arrows to reorder, then check.</div>
+  <div class="hintline" id="hintline">Drag a row or use the arrows to reorder, then check.</div>
 
   <div class="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
@@ -192,6 +194,7 @@
 <script src="../match/entities.js?v=12"></script>
 <script src="/grid/sfx.js"></script>
 <script src="/grid/tokens.js"></script>
+<script src="/grid/archive.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
 <script>
@@ -203,10 +206,16 @@
   var TEAM_SPORTS={NBA:1,NFL:1,MLB:1,NHL:1,Soccer:1,WNBA:1};
 
   function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-  var DATE=todayStr();
+  var ARCHIVE=!!(window.RTGArchive && RTGArchive.active());   // past-day practice mode
+  var DATE=(window.RTGArchive?RTGArchive.date():todayStr());
   function xmur3(s){ var h=1779033703^s.length; for(var i=0;i<s.length;i++){ h=Math.imul(h^s.charCodeAt(i),3432918353); h=h<<13|h>>>19; } return function(){ h=Math.imul(h^h>>>16,2246822507); h=Math.imul(h^h>>>13,3266489909); return (h^=h>>>16)>>>0; }; }
   function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
-  var rng=mulberry32(xmur3('rankit-'+DATE)());
+  // First (ranked) play uses the deterministic daily seed so everyone gets the
+  // same board for the leaderboard. Replays reseed randomly for a fresh board.
+  var rng, servedDaily=false;
+  function seedDaily(){ rng=mulberry32(xmur3('rankit-'+DATE)()); }
+  function seedRandom(){ rng=mulberry32(((Math.random()*4294967296)>>>0)||1); }
+  seedDaily();
   function ri(n){ return Math.floor(rng()*n); }
   function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=ri(i+1); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
@@ -249,6 +258,39 @@
       '</div>';
     }).join('');
     [].forEach.call(rowsEl.querySelectorAll('button[data-mv]'), function(b){ b.addEventListener('click', function(){ move(+b.dataset.mv, +b.dataset.dir); }); });
+    attachDrag();
+  }
+  // drag-to-reorder (pointer + touch), with the arrow buttons as a fallback
+  function attachDrag(){
+    if(done) return;
+    var rows=[].slice.call(rowsEl.querySelectorAll('.rrow'));
+    rows.forEach(function(row){
+      row.addEventListener('pointerdown', function(e){
+        if(done || e.button===2 || e.target.closest('.ctrl')) return;   // let arrows work
+        e.preventDefault();
+        var fromIdx=rows.indexOf(row), startY=e.clientY, step=row.offsetHeight+9, target=fromIdx;
+        try{ row.setPointerCapture(e.pointerId); }catch(_){}
+        row.classList.add('dragging'); startIfNeeded();
+        function mv(ev){
+          var dy=ev.clientY-startY; row.style.transform='translateY('+dy+'px)';
+          var ni=Math.max(0, Math.min(order.length-1, fromIdx+Math.round(dy/step)));
+          if(ni!==target){ target=ni;
+            rows.forEach(function(r,i){ if(r===row) return; var sh=0;
+              if(fromIdx<target && i>fromIdx && i<=target) sh=-step;
+              else if(fromIdx>target && i<fromIdx && i>=target) sh=step;
+              r.style.transform= sh? 'translateY('+sh+'px)':''; });
+          }
+        }
+        function up(){
+          try{ row.releasePointerCapture(e.pointerId); }catch(_){}
+          row.removeEventListener('pointermove',mv); row.removeEventListener('pointerup',up); row.removeEventListener('pointercancel',up);
+          rows.forEach(function(r){ r.style.transform=''; }); row.classList.remove('dragging');
+          if(target!==fromIdx){ var it=order.splice(fromIdx,1)[0]; order.splice(target,0,it); lastCheck=null; if(window.RTGSound) RTGSound.place(); }
+          render();
+        }
+        row.addEventListener('pointermove',mv); row.addEventListener('pointerup',up); row.addEventListener('pointercancel',up);
+      });
+    });
   }
   function move(i, dir){
     if(done) return; var j=i+dir; if(j<0||j>=order.length) return;
@@ -272,17 +314,21 @@
   }
 
   function startIfNeeded(){ if(started||done) return;
-    if(!charged){ var r=(window.RTGTokens?RTGTokens.startAttempt('rankit'):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); }
+    if(!charged){ if(ARCHIVE){ charged=true; attemptFirst=false; } else { var r=(window.RTGTokens?RTGTokens.startAttempt(GAME):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); } }
     started=true; startTs=performance.now(); }
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
   function shiftDay(iso,d){ var x=new Date(iso+'T00:00:00'); x.setDate(x.getDate()+d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
-  function load(){ try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
-  function save(s){ try{ LS.setItem(SAVE_KEY,JSON.stringify(s)); }catch(e){} }
+  function load(){ if(ARCHIVE) return {}; try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
+  function save(s){ if(ARCHIVE) return; try{ LS.setItem(SAVE_KEY,JSON.stringify(s)); }catch(e){} }   // archive plays never touch saved progress
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
+    if(ARCHIVE){ h.textContent='Drag a row or use the arrows to reorder, then check. · Archive practice'; return; }
     var lbl = window.RTGTokens ? (' · '+RTGTokens.label('rankit')+' today') : '';
-    h.textContent='Use the arrows to reorder, then check.'+lbl; }
+    h.textContent='Drag a row or use the arrows to reorder, then check.'+lbl; }
   function beginAttempt(){
+    // Ranked first play = the daily board; every replay is a fresh random board.
+    var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
+    if(isReplay){ seedRandom(); DAY=buildDay(); ANSWER=DAY.answer; } else { seedDaily(); DAY=buildDay(); ANSWER=DAY.answer; servedDaily=true; }
     order=shuffle(ANSWER);
     if(order.map(function(e){return e.id;}).join()===ANSWER.map(function(e){return e.id;}).join()) order=shuffle(ANSWER);
     checks=0; done=false; started=false; startTs=0; elapsed=0; lastCheck=null; charged=false; attemptFirst=false;
@@ -380,7 +426,7 @@
   // ---- boot ----
   var saved=load(); document.getElementById('streakN').textContent=saved.streak||0;
   if(saved.best){ document.getElementById('yourBest').textContent=fmt(saved.best); }
-  if(window.RTGTokens && !RTGTokens.canPlay('rankit')){
+  if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('rankit')){
     done=true; document.getElementById('checkBtn').disabled=true;
     document.getElementById('hintline').textContent='No plays left — back tomorrow.';
     if(saved.last){ order=ANSWER.slice(); lastCheck=null; render(); showEnd(saved, true); } else { render(); }
