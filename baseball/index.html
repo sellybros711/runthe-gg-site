@@ -249,6 +249,15 @@ h1,h2,h3{margin:0}
 .tab.full{opacity:.35;order:99}
 .tab .n{margin-left:4px;font-weight:800;opacity:.6}
 
+/* ─── sort row ─── */
+.sortrow{display:flex;gap:5px;align-items:center;margin-top:8px}
+.sortrow .sl{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--dim-2);margin-right:2px}
+.sbtn{padding:6px 11px;border-radius:8px;border:1px solid rgba(0,0,0,.10);
+  background:var(--panel);color:var(--dim);font-family:var(--fn);font-size:11px;
+  font-weight:700;letter-spacing:.04em;cursor:pointer;white-space:nowrap;transition:border-color .15s}
+.sbtn.on{border-color:var(--gold);background:var(--gold);color:#fff}
+
 /* ─── player tiles ─── */
 .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:11px}
 .opts .tile{animation:optin .24s ease-out both}
@@ -469,6 +478,7 @@ h1,h2,h3{margin:0}
   <div id="d-respin"></div>
 
   <div id="tabs" class="tabs"></div>
+  <div id="sortrow" class="sortrow"></div>
   <div id="opts" class="opts"></div>
 
   <div style="margin-top:14px"><button class="btn ghost sm" id="b-quit">Quit this run</button></div>
@@ -528,6 +538,7 @@ h1,h2,h3{margin:0}
 
 const E=window.RTD_ENGINE, R=window.RTD_RUN;
 let DATA=null, RUN=null, activeTab='ALL', lastChem=1;
+let sortKey='war', sortAsc=false;
 
 const $=id=>document.getElementById(id);
 const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML;};
@@ -1071,7 +1082,25 @@ function paintOpts(draw){
     });
   });
 
-  const visible=groups.get(activeTab)||board;
+  const SORTS=[{k:'war',label:'WAR'},{k:'price',label:'Price'}];
+  $('sortrow').innerHTML='<span class="sl">Sort</span>'+SORTS.map(s=>{
+    const on=s.k===sortKey;
+    return '<button class="sbtn'+(on?' on':'')+'" data-s="'+s.k+'">'+s.label+
+      (on?(sortAsc?' &#8593;':' &#8595;'):'')+'</button>';
+  }).join('');
+  $('sortrow').querySelectorAll('.sbtn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(btn.dataset.s===sortKey) sortAsc=!sortAsc;
+      else{sortKey=btn.dataset.s;sortAsc=false;}
+      paintOpts(draw);
+    });
+  });
+
+  const val=r=>sortKey==='war'?r.p.w:r.p.p;
+  const visible=[...(groups.get(activeTab)||board)].sort((a,b)=>{
+    if(!a.block!==!b.block) return a.block?1:-1;
+    return sortAsc?val(a)-val(b):val(b)-val(a);
+  });
   $('opts').innerHTML=visible.map((r,i)=>optTile(r,i)).join('');
 
   $('opts').querySelectorAll('.tile:not(.off)').forEach(tile=>{
