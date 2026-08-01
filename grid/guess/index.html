@@ -65,6 +65,10 @@
   .lead .k{display:block; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
   .lead .v{display:block; font-size:13.5px; line-height:1.45; color:var(--ink); margin-top:4px;}
   .lead .v b{color:var(--blue);}
+  /* The sport is a given, not a guess. It rides on the label so it reads as a
+     fact about today's puzzle rather than another thing to work out. */
+  .lead .sportbadge{display:inline-block; margin-left:7px; font-size:10px; font-weight:900;
+    letter-spacing:.1em; color:#fff; background:var(--blue); border-radius:999px; padding:2px 8px;}
 
   /* guess input */
   .searchwrap{position:relative; margin-bottom:8px;}
@@ -81,24 +85,42 @@
   .ac .s{font-size:10px; font-weight:900; letter-spacing:.06em; color:var(--mut); flex:0 0 auto; border:1px solid var(--line2); border-radius:5px; padding:2px 6px;}
   .guessesLeft{text-align:center; font-size:11.5px; font-weight:800; letter-spacing:.04em; color:var(--mut); margin:2px 0 14px;}
 
-  /* comparison rows */
-  .collab{display:grid; grid-template-columns:repeat(6,1fr); gap:5px; margin-bottom:6px; padding:0 1px;}
+  /* the board.
+     All eight rows are on the page from the first moment, empty, the way a
+     crossword shows you its squares before you write in any. You can see how
+     many guesses the game is worth without having to spend one to find out. */
+  .board{background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:12px 12px 6px; box-shadow:var(--shadow);}
+  .collab{display:grid; grid-template-columns:repeat(5,1fr); gap:5px; margin-bottom:6px; padding:0 1px;}
   .collab span{font-size:8.5px; font-weight:900; letter-spacing:.03em; text-transform:uppercase; color:var(--mut); text-align:center;}
-  .guess{margin-bottom:9px; animation:gin .25s ease;}
+  .guess{margin-bottom:9px;}
+  .guess.filled{animation:gin .25s ease;}
   @keyframes gin{from{opacity:0; transform:translateY(-6px);}to{opacity:1; transform:none;}}
-  .guess .nm{font-weight:900; font-size:13.5px; margin:0 1px 5px; color:var(--ink);}
-  .guess .row{display:grid; grid-template-columns:repeat(6,1fr); gap:5px;}
+  .guess .nm{font-weight:900; font-size:13.5px; margin:0 1px 5px; color:var(--ink); min-height:18px;}
+  .guess .row{display:grid; grid-template-columns:repeat(5,1fr); gap:5px;}
   .tile{aspect-ratio:1/1.02; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:3px; text-align:center; background:var(--miss); color:#fff; overflow:hidden;}
   .tile.hit{background:var(--hit);} .tile.close{background:var(--close);}
+  /* An empty square reads as somewhere to write, not as a miss, so it is an
+     outline rather than the grey a wrong answer earns. */
+  .tile.blank{background:transparent; border:1.5px dashed var(--line2);}
+  .guess:not(.filled) .nm{color:var(--dim); font-weight:800; font-size:11.5px;}
   :root[data-theme="light"] .tile.miss{color:#33445A;}
-  .tile .tv{font-size:10px; font-weight:900; line-height:1.05; overflow-wrap:anywhere;}
+  /* break-word, not anywhere: a two-word team name should break at the space
+     before it breaks a word in half. "Connecticut Sun" was reading "Connecticu
+     t Sun". Long single words still break as a last resort. */
+  .tile .tv{font-size:10px; font-weight:900; line-height:1.05; overflow-wrap:break-word;}
+  /* A long value gets smaller type rather than a word snapped in half. */
+  .tile .tv.long{font-size:8.4px; letter-spacing:-.01em;}
   .tile .ta{font-size:13px; font-weight:900; line-height:1;}
 
   .legend{display:flex; justify-content:center; gap:14px; margin:8px 0 16px; font-size:10.5px; color:var(--mut); font-weight:700; flex-wrap:wrap;}
   .legend i{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:5px; vertical-align:-1px;}
 
-  /* leaderboard */
-  .lb{background:var(--card); border:1px solid var(--line2); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin-bottom:14px;}
+  /* leaderboard.
+     It belongs under the game, not beside it. Nobody arrives wanting to read a
+     ranking; they arrive wanting to play, and the board is what you look at
+     after. The gap above is deliberate and large. */
+  .lb{background:var(--card); border:1px solid var(--line2); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin:30px 0 14px;}
   .lb h3{font-family:var(--hero); font-weight:400; letter-spacing:.03em; text-transform:uppercase; font-size:14px; color:var(--coralT); margin:0 0 12px; display:flex; align-items:center; gap:8px;}
   .lb-pill{font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--coralT); border:1px solid var(--coralT); border-radius:999px; padding:2px 8px;}
   .lb-you{display:flex; gap:9px; margin-bottom:12px;}
@@ -162,7 +184,7 @@
     <div class="chip"><span class="n" id="streakN">0</span><span class="l">Streak</span></div>
   </div>
 
-  <div class="lead"><span class="k">Today's mystery player</span><span class="v">Guess the athlete in <b>8 tries</b>. Every guess shows how close you are on each trait.</span></div>
+  <div class="lead"><span class="k">Today's mystery player<b class="sportbadge" id="sportBadge">—</b></span><span class="v">Guess the athlete in <b>8 tries</b>. Every guess shows how close you are on each trait.</span></div>
 
   <div class="searchwrap">
     <div class="search">
@@ -173,8 +195,10 @@
   </div>
   <div class="guessesLeft" id="guessesLeft">8 guesses left</div>
 
-  <div class="collab"><span>Sport</span><span>Team</span><span>Pos</span><span>Nat</span><span>Era</span><span>No.</span></div>
-  <div id="guesses"></div>
+  <div class="board">
+    <div class="collab"><span>Team</span><span>Pos</span><span>Nat</span><span>Era</span><span>No.</span></div>
+    <div id="guesses"></div>
+  </div>
 
   <div class="legend"><span><i style="background:var(--hit)"></i>Match</span><span><i style="background:var(--close)"></i>Close</span><span><i style="background:var(--miss)"></i>Miss</span><span>↑ higher · ↓ lower</span></div>
 
@@ -256,17 +280,28 @@
   var TARGETS = GUESSABLE.filter(function(e){ return (e.f||0)>=4; });
   if(TARGETS.length<20) TARGETS = GUESSABLE.filter(function(e){ return (e.f||0)>=5; });
   if(!TARGETS.length) TARGETS = GUESSABLE;
-  var TARGET;
-  function pickTarget(){ TARGET = TARGETS[Math.floor(rng()*TARGETS.length)] || TARGETS[0]; }
+  /* THE SPORT IS GIVEN. Without it the first guess or two go on working out
+     whether this is a hockey player or a point guard, which is not the puzzle.
+     Naming it up front means every guess spends itself on team, position,
+     nationality, era and number, and it is why the sport column is gone: it
+     would be a match on all eight rows. The pool you can guess from narrows to
+     that sport too, so a guess cannot be wasted on someone who was never in it.
+     All three are picked together, because a replay draws a fresh target and
+     the sport on screen has to be that target's, not the one before it. */
+  var TARGET, SPORT, POOL, byId={};
+  function pickTarget(){
+    TARGET = TARGETS[Math.floor(rng()*TARGETS.length)] || TARGETS[0];
+    SPORT = TARGET.sport;
+    POOL = GUESSABLE.filter(function(e){ return e.sport===SPORT; });
+    byId={}; POOL.forEach(function(e){ byId[e.id]=e; });
+  }
   pickTarget();
-  var byId={}; GUESSABLE.forEach(function(e){ byId[e.id]=e; });
 
   // ---- comparison ----
   function setEq(a,b){ if(a.length!==b.length) return false; var s={}; a.forEach(function(x){s[x]=1;}); return b.every(function(x){return s[x];}); }
   function intersect(a,b){ var s={}; a.forEach(function(x){s[x]=1;}); return b.some(function(x){return s[x];}); }
   function cmp(g){
     var t=TARGET, out=[];
-    out.push({ st: g.sport===t.sport?'hit':'miss', v:g.sport });                                              // sport
     out.push({ st: setEq(g.t,t.t)?'hit':(intersect(g.t,t.t)?'close':'miss'), v:g.t[0]+(g.t.length>1?' +'+(g.t.length-1):'') }); // team
     out.push({ st: g.pos===t.pos?'hit':(posFam(g.pos)===posFam(t.pos)?'close':'miss'), v:g.pos });            // pos
     out.push({ st: g.nat===t.nat?'hit':'miss', v:g.nat });                                                    // nat
@@ -289,17 +324,19 @@
     acItems=[]; acHi=-1;
     if(q.length>=2){
       var used={}; guesses.forEach(function(x){ used[x.id]=1; });
-      acItems=GUESSABLE.filter(function(e){ return !used[e.id] && e.name.toLowerCase().indexOf(q)>=0; })
+      acItems=POOL.filter(function(e){ return !used[e.id] && e.name.toLowerCase().indexOf(q)>=0; })
         .sort(function(a,b){ var ai=a.name.toLowerCase().indexOf(q), bi=b.name.toLowerCase().indexOf(q); if(ai!==bi) return ai-bi; return (b.f||0)-(a.f||0); })
         .slice(0,7);
     }
     if(!acItems.length){ acEl.classList.remove('on'); acEl.innerHTML=''; goEl.disabled=!exactMatch(); return; }
-    acEl.innerHTML=acItems.map(function(e,i){ return '<button type="button" data-i="'+i+'"><span style="flex:1">'+esc(e.name)+'</span><span class="s">'+esc(e.sport)+'</span></button>'; }).join('');
+    /* No sport tag on these rows any more: every name in the list is from the
+       sport named at the top, so the tag would say the same thing eight times. */
+    acEl.innerHTML=acItems.map(function(e,i){ return '<button type="button" data-i="'+i+'"><span style="flex:1">'+esc(e.name)+'</span></button>'; }).join('');
     acEl.classList.add('on');
     goEl.disabled=!exactMatch() && acItems.length!==1 ? !exactMatch() : false;
     goEl.disabled=!(exactMatch()||acItems.length>=1);
   }
-  function exactMatch(){ var q=qEl.value.trim().toLowerCase(); return GUESSABLE.find(function(e){ return e.name.toLowerCase()===q; }); }
+  function exactMatch(){ var q=qEl.value.trim().toLowerCase(); return POOL.find(function(e){ return e.name.toLowerCase()===q; }); }
   qEl.addEventListener('input', refreshAc);
   qEl.addEventListener('keydown', function(e){
     if(!acEl.classList.contains('on')){ if(e.key==='Enter'){ e.preventDefault(); submitTop(); } return; }
@@ -325,14 +362,30 @@
     else { if(window.RTGSound) RTGSound.soft(); }
     qEl.focus();
   }
+  /* Lay out all eight rows empty. Guesses fill them from the top rather than
+     being appended, so the board never changes height and you can see from the
+     start how much rope you have. */
+  function buildBoard(){
+    var host=document.getElementById('guesses'), html='';
+    for(var r=0;r<MAX;r++){
+      html+='<div class="guess"><div class="nm">'+(r+1)+'</div><div class="row">';
+      for(var c=0;c<5;c++) html+='<div class="tile blank"></div>';
+      html+='</div></div>';
+    }
+    host.innerHTML=html;
+  }
   function renderGuess(e){
-    var cells=cmp(e), wrap=document.createElement('div'); wrap.className='guess';
-    var arrows={up:'↑',down:'↓'};
+    var slot=document.querySelector('#guesses .guess:not(.filled)');
+    if(!slot) return;
+    var cells=cmp(e), arrows={up:'↑',down:'↓'};
     var html='<div class="nm">'+esc(e.name)+'</div><div class="row">';
-    cells.forEach(function(c){ html+='<div class="tile '+c.st+'"><span class="tv">'+esc(c.v)+'</span>'+(c.a?'<span class="ta">'+arrows[c.a]+'</span>':'')+'</div>'; });
+    cells.forEach(function(c){
+      var longest=String(c.v).split(/\s+/).reduce(function(m,w){ return Math.max(m,w.length); },0);
+      html+='<div class="tile '+c.st+'"><span class="tv'+(longest>9?' long':'')+'">'+esc(c.v)+'</span>'+(c.a?'<span class="ta">'+arrows[c.a]+'</span>':'')+'</div>';
+    });
     html+='</div>';
-    wrap.innerHTML=html;
-    document.getElementById('guesses').appendChild(wrap);
+    slot.innerHTML=html;
+    slot.classList.add('filled');
   }
 
   // ---- timer ----
@@ -342,9 +395,12 @@
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
   function updateLead(){
+    var b=document.getElementById('sportBadge'); if(b) b.textContent=SPORT;
     var v=document.querySelector('.lead .v'); if(!v) return;
     var lbl = ARCHIVE ? ' · Archive practice' : (window.RTGTokens ? (' · '+RTGTokens.label('guess')+' today') : '');
-    v.innerHTML='Guess the athlete in <b>8 tries</b>. Every guess shows how close you are on each trait.'+esc(lbl);
+    /* "This player", not "today's": a replay or an archive round is not today's. */
+    v.innerHTML='This player is from the <b>'+esc(SPORT)+'</b>. Name them in <b>8 tries</b>. '+
+      'Every guess shows how close you are on team, position, nationality, era and number.'+esc(lbl);
   }
   function beginAttempt(){
     // Ranked first play = the daily target; every replay picks a fresh random target.
@@ -353,7 +409,7 @@
     pickTarget();
     guesses=[]; done=false; won=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
     if(tick){ clearInterval(tick); tick=null; }
-    document.getElementById('guesses').innerHTML='';
+    buildBoard();
     document.getElementById('guessesLeft').textContent=MAX+' guesses left';
     qEl.value=''; qEl.disabled=false; goEl.disabled=true; qEl.placeholder="Type a player's name…";
     acEl.classList.remove('on'); acEl.innerHTML=''; acItems=[]; acHi=-1;
@@ -457,6 +513,7 @@
 
   // ---- already played today? lock it (one attempt per day, protects the board) ----
   function lockToday(sv){
+    buildBoard(); updateLead();
     done=true; qEl.disabled=true; goEl.disabled=true; qEl.placeholder='Come back tomorrow';
     document.getElementById('guessesLeft').textContent='No plays left — back tomorrow.';
     var w=sv.last.won;
