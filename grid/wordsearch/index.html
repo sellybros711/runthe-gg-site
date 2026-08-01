@@ -89,10 +89,13 @@
   @keyframes hintflash{0%,100%{box-shadow:0 0 0 0 transparent;}50%{box-shadow:0 0 0 3px var(--gold);}}
 
   /* word list */
-  .words{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:14px;}
+  .wordslab{text-align:center; font-size:12.5px; font-weight:800; color:var(--ink); margin:2px 0 10px;}
+  .words{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:14px; justify-content:center; min-height:32px;}
   .word{font-size:12.5px; font-weight:800; letter-spacing:.02em; padding:6px 11px; border-radius:999px;
     border:1px solid var(--line2); background:var(--card); color:var(--ink); transition:all .15s;}
-  .word.done{color:#071426; border-color:transparent; text-decoration:line-through; opacity:.92;}
+  .word.done{color:#071426; border-color:transparent; text-decoration:line-through; opacity:.92; animation:wpop .3s ease;}
+  .word.hidden{color:var(--dim); background:var(--card2); border-style:dashed; min-width:34px; text-align:center;}
+  @keyframes wpop{0%{transform:scale(.7); opacity:0;}100%{transform:scale(1); opacity:.92;}}
 
   /* actions */
   .actions{display:flex; gap:9px; margin-bottom:16px;}
@@ -178,6 +181,7 @@
 
   <div class="board"><div class="grid" id="grid"></div></div>
 
+  <div class="wordslab" id="wordsLab"></div>
   <div class="words" id="wordList"></div>
 
   <div class="actions">
@@ -280,7 +284,7 @@
     var byFame=pick.words.slice().sort(function(a,b){ return pick.fames[b]-pick.fames[a]; });
     var pool=byFame.slice(0, Math.min(byFame.length, 16));
     var words=shuffle(pool).slice(0, MAX_WORDS);
-    return { id:DATE, theme:pick.name, words:words };
+    return { id:DATE, theme:pick.name, kind:pick.key.split(':')[0], words:words };
   }
 
   // ---- place words in the grid ----
@@ -329,16 +333,29 @@
       p.cells.forEach(function(ci){ var el=cellEls[ci]; el.classList.add('found'); el.style.background=colorFor[p.word]; });
     });
   }
+  // names stay hidden until found — you're told the theme and how many, not who
   function renderWords(){
     var wl=document.getElementById('wordList'); wl.innerHTML='';
-    PLACED.slice().sort(function(a,b){ return a.word<b.word?-1:1; }).forEach(function(p){
-      var s=document.createElement('span'); s.className='word'+(foundSet[p.word]?' done':''); s.textContent=p.word;
-      if(foundSet[p.word]) s.style.background=colorFor[p.word];
+    var found=PLACED.filter(function(p){ return foundSet[p.word]; }).sort(function(a,b){ return a.word<b.word?-1:1; });
+    found.forEach(function(p){
+      var s=document.createElement('span'); s.className='word done'; s.textContent=p.word; s.style.background=colorFor[p.word];
       wl.appendChild(s);
     });
+    for(var i=0;i<PLACED.length-found.length;i++){
+      var h=document.createElement('span'); h.className='word hidden'; h.textContent='?'; wl.appendChild(h);
+    }
     document.getElementById('progN').textContent=foundCount+' / '+PLACED.length;
   }
   document.getElementById('themeName').textContent=P.theme;
+  (function(){
+    var n=PLACED.length, name=P.theme, kind=P.kind, phrase;
+    if(kind==='t') phrase=n+' current or former '+name;
+    else if(kind==='nat') phrase=n+' players who represented '+name;
+    else if(kind==='pos') phrase=n+' '+name;
+    else if(kind==='aw') phrase=n+' '+name;
+    else phrase=n+' '+name;
+    var el=document.getElementById('wordsLab'); if(el) el.textContent='Find '+phrase+'. Names reveal as you spot them.';
+  })();
 
   // ---- selection (pointer, works for mouse + touch) ----
   var selStart=null, selPath=[];
