@@ -664,8 +664,8 @@ function drawField(el,live){
     const justFilled=!!p&&!wasFilled;
     c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1)?' now':'')+(justFilled?' pop':'');
     const disc=c.querySelector('.disc');
-    disc.querySelector('.dl').textContent=p?(p.pp||E.SLOTS[i]):E.SLOTS[i];
-    disc.style.cssText=p?posPaint(p.pp||E.SLOTS[i]):'';
+    disc.querySelector('.dl').textContent=E.SLOTS[i];
+    disc.style.cssText=p?posPaint(E.SLOTS[i]):'';
     c.querySelector('.who').textContent=p?lastName(p.n):'';
     c.querySelector('.yr').innerHTML=p?tcPlate(p.t,p.s)+' '+p.s:'';
     const pip=c.querySelector('.pip');
@@ -686,7 +686,7 @@ function drawPips(bySlot){
   el.innerHTML=E.SLOTS.map((slot,i)=>{
     const p=bySlot[i];
     if(!p) return '<i>'+esc(slot)+'</i>';
-    return '<i class="on" style="'+posPaint(p.pp||slot)+'"><b>'+esc(slot)+'</b></i>';
+    return '<i class="on" style="'+posPaint(slot)+'"><b>'+esc(slot)+'</b></i>';
   }).join('');
 }
 
