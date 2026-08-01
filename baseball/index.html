@@ -92,7 +92,7 @@ h1,h2,h3{margin:0}
 /* ─── intro / hero ─── */
 .hero{margin-bottom:16px}
 .hero-reels{margin-top:0}
-.field.hero-field{aspect-ratio:1/0.82}
+.field.hero-field{aspect-ratio:1/0.95}
 .hero-field{margin-top:10px}
 .hero-field .chip{cursor:default}
 .hero-field .chip.pop .who,.hero-field .chip.pop .yr{animation:signin .34s ease-out .1s both}
@@ -164,7 +164,7 @@ h1,h2,h3{margin:0}
 @keyframes clubwash{0%{opacity:0;transform:scale(.86)}45%{opacity:.9;transform:scale(1.05)}100%{opacity:0;transform:scale(1)}}
 
 /* ─── diamond field ─── */
-.field{position:relative;width:100%;aspect-ratio:1/0.82;border-radius:14px;overflow:hidden;
+.field{position:relative;width:100%;aspect-ratio:1/0.95;border-radius:14px;overflow:hidden;
   background:#3d8a2e;
   border:3px solid #2a5a18;box-shadow:0 4px 16px rgba(0,0,0,.18),inset 0 0 0 2px rgba(120,180,60,.25)}
 .field .turf{position:absolute;inset:0;
@@ -366,7 +366,7 @@ h1,h2,h3{margin:0}
   .dcols .opts{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-height:800px){
-  .field.hero-field{aspect-ratio:auto;height:200px}
+  .field.hero-field{aspect-ratio:auto;height:280px}
   .hero{margin-bottom:10px}
   .hnote{margin-top:7px;font-size:11.5px}
 }
@@ -662,6 +662,8 @@ function diamondMarkings(){
   const v_home=78,v_base=52,v_2B=28,v_mound=57;
   const wh='rgba(255,255,255,';
   const wallH=14;
+  const fpL=2;
+  const fpR=98;
   const wallBot='M 0,'+wallH+' Q 50,'+(wallH-18)+' 100,'+wallH;
   return '<div class="turf"></div><div class="lit"></div>'+
     '<svg class="diamond-svg" viewBox="0 0 100 100" preserveAspectRatio="none">'+
@@ -674,14 +676,14 @@ function diamondMarkings(){
     '<path d="'+wallBot+' L 100,0 L 0,0 Z" fill="url(#planks)"/>'+
     '<path d="M 0,'+(wallH-0.3)+' Q 50,'+(wallH-18.3)+' 100,'+(wallH-0.3)+'" fill="none" stroke="rgba(200,160,80,.25)" stroke-width="0.4"/>'+
     '<path d="'+wallBot+'" fill="none" stroke="#2a1808" stroke-width="0.7"/>'+
-    '<line x1="1.5" y1="0" x2="1.5" y2="'+(wallH)+'" stroke="#e8c820" stroke-width="1.5"/>'+
-    '<circle cx="1.5" cy="0.8" r="1" fill="#e8c820"/>'+
-    '<line x1="98.5" y1="0" x2="98.5" y2="'+(wallH)+'" stroke="#e8c820" stroke-width="1.5"/>'+
-    '<circle cx="98.5" cy="0.8" r="1" fill="#e8c820"/>'+
+    '<line x1="'+fpL+'" y1="0" x2="'+fpL+'" y2="'+(wallH)+'" stroke="#e8c820" stroke-width="1.5"/>'+
+    '<circle cx="'+fpL+'" cy="0.8" r="1" fill="#e8c820"/>'+
+    '<line x1="'+fpR+'" y1="0" x2="'+fpR+'" y2="'+(wallH)+'" stroke="#e8c820" stroke-width="1.5"/>'+
+    '<circle cx="'+fpR+'" cy="0.8" r="1" fill="#e8c820"/>'+
     '<path d="M '+h50+','+v_home+' L '+h3B+','+v_base+' L '+h2B+','+v_2B+' L '+h1B+','+v_base+' Z" '+
       'fill="rgba(194,163,100,.35)" stroke="'+wh+'.55)" stroke-width="0.6" stroke-linejoin="round"/>'+
-    '<line x1="'+h50+'" y1="'+v_home+'" x2="1.5" y2="'+wallH+'" stroke="'+wh+'.40)" stroke-width="0.4"/>'+
-    '<line x1="'+h50+'" y1="'+v_home+'" x2="98.5" y2="'+wallH+'" stroke="'+wh+'.40)" stroke-width="0.4"/>'+
+    '<line x1="'+h50+'" y1="'+v_home+'" x2="'+fpL+'" y2="'+wallH+'" stroke="'+wh+'.40)" stroke-width="0.4"/>'+
+    '<line x1="'+h50+'" y1="'+v_home+'" x2="'+fpR+'" y2="'+wallH+'" stroke="'+wh+'.40)" stroke-width="0.4"/>'+
     '<circle cx="'+h50+'" cy="'+v_mound+'" r="2.2" fill="rgba(168,137,78,.35)" stroke="'+wh+'.18)" stroke-width="0.3"/>'+
     '<rect x="'+(h50-1.4)+'" y="'+(v_home-1.4)+'" width="2.8" height="2.8" rx=".3" transform="rotate(45 '+h50+' '+v_home+')" fill="'+wh+'.70)"/>'+
     '<rect x="'+(h1B-1)+'" y="'+(v_base-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h1B+' '+v_base+')" fill="'+wh+'.50)"/>'+
