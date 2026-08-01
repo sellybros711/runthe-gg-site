@@ -257,7 +257,6 @@ window.GA_ID='G-L29P5MRWKE';
     background-image:radial-gradient(1000px 600px at 50% -8%,var(--th-glowa),transparent 70%),
                      radial-gradient(800px 500px at 100% 100%,var(--th-glowb),transparent 70%);
   }
-  body.themed:has(#s-intro.on) .hero .sub{background:var(--th-glowb);border-color:var(--th-edgeb)}
 
   /* ── school picker (sheet) ──────────────────────────────────────── */
   .schoolacc{margin-top:4px}
@@ -373,12 +372,19 @@ window.GA_ID='G-L29P5MRWKE';
      edge, which pushed the eyebrow off with it. Capped so it fits on one line,
      and allowed to wrap rather than overflow if a font ever renders wider. */
   .hero{text-align:center;margin-bottom:16px}
-  /* ONE LINE, ALWAYS. The size is driven off the viewport rather than clamped to
-     a comfortable maximum, and nowrap holds the three words together, so the
-     headline shrinks to fit instead of breaking. "The" came off the front to buy
-     the room that costs. */
-  .hero h1{font-family:var(--fd);font-size:clamp(21px,7.4vw,58px);line-height:1.06;
-    letter-spacing:.01em;text-transform:uppercase;white-space:nowrap}
+  /* ONE LINE, ALWAYS. nowrap holds the three words together so the headline
+     shrinks to fit rather than breaking, and "The" came off the front to buy
+     room. 7.4vw is the size the line wants at phone widths in Anton; the
+     script at the foot of the page trims it if whatever font is actually
+     drawn runs wider than the page. 58px is the ceiling on a wide desktop,
+     where the line is wider than the column it sits in. A centred line that
+     outgrows its box spills to the right only, which would hang the whole
+     headline off to one side, so the box is sized to the text and its middle
+     pinned to the column's middle, which is also the page's. */
+  .hero h1{font-family:var(--fd);line-height:1.06;
+    font-size:clamp(18px,7.4vw,58px);
+    letter-spacing:.01em;text-transform:uppercase;white-space:nowrap;
+    position:relative;left:50%;transform:translateX(-50%);width:max-content;max-width:none}
   /* COLLEGE is set the way a wrestling tee sets the middle word: a jagged face
      laid OVER the block caps either side rather than typed between them. Metal
      Mania is the closest thing in the library to that torn-brush lettering.
@@ -390,20 +396,8 @@ window.GA_ID='G-L29P5MRWKE';
     transform:rotate(-5deg);font-size:1.12em;line-height:.9;
     margin:0 -.13em;position:relative;z-index:2;vertical-align:baseline;
     color:var(--gold);text-shadow:0 0 14px rgba(0,0,0,.85),0 3px 0 rgba(0,0,0,.6)}
-  /* "College Football" sits on its own little pill so it reads as a badge, not
-     loose text, a faint tint of the accent colour with a matching hairline. */
-  .hero .sub{display:inline-block;font-family:var(--fn);font-size:11px;font-weight:700;
-    letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin:0 0 10px;
-    padding:5px 15px 4px;border-radius:99px;background:rgba(245,158,11,.13);
-    border:1px solid rgba(245,158,11,.34);max-width:100%;overflow:hidden;text-overflow:ellipsis}
   .hero p{color:var(--dim);font-size:14px;line-height:1.45;margin:12px 0 0;max-width:380px;
     margin-left:auto;margin-right:auto}
-  /* The banner catches the light the way bunting on a stadium rail does. */
-  .hero .sub{position:relative;overflow:hidden}
-  .hero .sub:after{content:'';position:absolute;top:0;bottom:0;width:45%;
-    background:linear-gradient(100deg,transparent,rgba(255,255,255,.30),transparent);
-    animation:banner 4.6s ease-in-out infinite}
-  @keyframes banner{0%{left:-55%}55%{left:105%}100%{left:105%}}
 
   /* ── the poll ticker ────────────────────────────────────────────
      The strip a college broadcast runs the rankings along. Quiet enough to read
@@ -1714,7 +1708,7 @@ window.GA_ID='G-L29P5MRWKE';
      in quantity, so nothing gets harder to read. Graduate ships a single, heavy
      weight, so we drop the faux-bold and lean on letter-spacing; the two
      smallest labels get a point back for legibility at Graduate's blockier cut. */
-  .eyebrow,.hero .sub,.caprow .lbl,.caleye span,
+  .eyebrow,.caprow .lbl,.caleye span,
   .gameday span,.bug .bbot .rd,#bowl-title,#d-count,
   .seed-badge,.po-step,.resume .rchip{font-family:var(--fc);font-weight:400}
   .gameday span{letter-spacing:.13em}
@@ -1793,7 +1787,6 @@ or endorsed by the NCAA, the CFP or any school.
     </div>
 
     <div class="hero">
-      <div class="sub">College Football</div>
       <h1>Perfect<span class="freak">College</span>Season</h1>
       <p>Draft six college legends, 2005 to 2025. Chase a perfect season.</p>
     </div>
@@ -5509,6 +5502,29 @@ boot();
         (adsbygoogle=window.adsbygoogle||[]).push({});
       }
     }catch(e){}
+  })();
+</script>
+<!-- The headline is one line of three words in two display faces that arrive
+     over the network, so how wide it runs is not knowable from the stylesheet:
+     until Anton and Metal Mania land the browser is drawing something else, and
+     a fallback can be a good deal wider. The CSS sizes it for the common case;
+     this measures what actually got drawn and shrinks it if the line is wider
+     than the page, which is the one outcome that must never happen. It runs
+     again when the fonts arrive and when the window changes. -->
+<script>
+  (function(){
+    var h=document.querySelector('.hero h1');
+    if(!h) return;
+    function fit(){
+      h.style.fontSize='';
+      var size=parseFloat(getComputedStyle(h).fontSize);
+      var room=document.documentElement.clientWidth-24;
+      var line=h.scrollWidth;
+      if(line>room&&line>0) h.style.fontSize=(size*room/line).toFixed(2)+'px';
+    }
+    fit();
+    try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fit); }catch(e){}
+    addEventListener('resize',fit);
   })();
 </script>
 </body>
