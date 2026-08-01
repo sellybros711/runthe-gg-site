@@ -22,7 +22,9 @@ const PHASES = {
   OVER: 'over',
 };
 
-const pkey = (p) => `${p.i}|${p.s}`;
+/* Role is part of the key so two-way players' batter and pitcher rows
+ * (same id + season) never collide. Must match engine indexData. */
+const pkey = (p) => `${p.i}|${p.s}|${p.r}`;
 
 const money = (v) => Math.round(v * 100) / 100;
 
@@ -253,7 +255,8 @@ function previewSigning(run, player) {
 function playSeason(run) {
   if (run.phase !== PHASES.SEASON) throw new Error('not in season phase');
   const rng = rngFor(run);
-  const result = E.playRun(run.roster, rng);
+  const slotNames = run.slotIndex.map(i => E.SLOTS[i]);
+  const result = E.playRun(run.roster, rng, slotNames);
 
   run.season = result.season;
   run.schedule = result.schedule;
@@ -283,9 +286,11 @@ function playSeason(run) {
 /* Simulate one game at a time (for animated season display). */
 function advanceGame(run, gameIndex) {
   if (!run._simState) {
-    // Initialize simulation state
+    // Initialize simulation state. Players draft in random order, so tag
+    // each with their ACTUAL slot from slotIndex — the sim reads SP1/SP2/CL
+    // from these tags.
     const rng = rngFor(run);
-    const tagged = run.roster.map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
+    const tagged = run.roster.map((p, k) => ({ ...p, _slot: E.SLOTS[run.slotIndex[k]] }));
     const chem = E.resolveChemistry(tagged);
     const offense = E.rosterOffense(tagged, chem.multiplier, 1.0);
     const defense = E.rosterRunPrevention(tagged, chem.multiplier);
@@ -304,7 +309,8 @@ function advanceGame(run, gameIndex) {
   if (gameIndex >= st.schedule.length) return null;
 
   const game = st.schedule[gameIndex];
-  const result = E.resolveGame(st.offense, game.oppRunsAllowed, st.savePct, st.rng);
+  const means = E.gameMeans(st.offense, st.defense, game);
+  const result = E.resolveGame(means.runsFor, means.runsAgainst, st.savePct, st.rng);
   st.results.push({ game: game.game, ...result });
   if (result.won) st.wins++; else st.losses++;
   st.totalRS += result.yourRuns;

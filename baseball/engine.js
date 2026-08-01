@@ -28,25 +28,34 @@ const CONSTANTS = {
   /* Pythagorean exponent for baseball (empirical ~1.83). */
   PYTH_EXP: 1.83,
 
-  /* Opponent strength: how many runs/game the average opposing team scores.
-   * The league baseline — a typical all-time MLB team. */
+  /* League-average normalizer: what an average MLB team scores/allows per
+   * game. Opponent quality factors below are expressed relative to this. */
   OPP_RUNS_MEAN: 4.5,
   OPP_RUNS_SD: 1.8,
+
+  /* Your opponents are OTHER all-time rosters, not league-average teams.
+   * They score more (OPP_OFF_MEAN) and allow less (OPP_DEF_MEAN) than the
+   * league baseline. These two numbers are the primary difficulty knobs. */
+  OPP_OFF_MEAN: 5.25,
+  OPP_DEF_MEAN: 3.98,
 
   /* Consistency: how much each side's runs are pulled toward expected value.
    * At 0 pure variance; at 1 deterministic. */
   CONSISTENCY: 0.10,
 
   /* Playoff home-field advantage, same concept as football. */
-  PLAYOFF_HOME_FIELD: 0.25,
+  PLAYOFF_HOME_FIELD: 0.15,
+
+  /* Playoff opponents get this much tougher each round. */
+  PLAYOFF_ROUND_STEP: 0.12,
 
   /* The record to chase. */
   RECORD_WINS: 116,
   GOAT_WINS: 117,
 
   /* Closer save conversion rate — base rate for an average closer. */
-  CLOSER_BASE_SAVE_PCT: 0.65,
-  CLOSER_WAR_SCALE: 0.04,
+  CLOSER_BASE_SAVE_PCT: 0.80,
+  CLOSER_WAR_SCALE: 0.02,
 
   /* League-average filler for rotation depth behind SP1/SP2. */
   FILLER_ERA: 4.50,
@@ -201,7 +210,10 @@ function indexData(players) {
 
   for (const p of players) {
     const tsId = teamSeasonId(p.t, p.s);
-    const key = `${p.i}|${p.s}`;
+    /* Role is part of the key: two-way players (e.g. 1919 Ruth) have both
+     * a batter and a pitcher row for the same season, and they must not
+     * collide or the board can resolve a click to the wrong row. */
+    const key = `${p.i}|${p.s}|${p.r}`;
     allPlayers[key] = p;
 
     if (!byTeamSeason[tsId]) byTeamSeason[tsId] = [];
@@ -248,7 +260,7 @@ function buildCheapBy(players) {
     for (const pos of positions) {
       if (!byPos[pos]) byPos[pos] = [];
       byPos[pos].push({
-        id: `${p.i}|${p.s}`,
+        id: `${p.i}|${p.s}|${p.r}`,
         ts: teamSeasonId(p.t, p.s),
         price: p.p,
       });
@@ -269,7 +281,9 @@ const CHEMISTRY = {
     franchise: 0.04,
     dp_combo:  0.06,
     battery:   0.07,
-    era:       0.02,
+    /* Era is a weak ambient link — kept small so the deliberate links
+     * (reunion/battery/DP) are what actually move the needle. */
+    era:       0.005,
   },
   MIN: -0.10,
   MAX: 0.15,
@@ -401,11 +415,12 @@ function rosterRunPrevention(roster, chemMultiplier) {
   const closer = roster.find(p => p._slot === 'CL');
   const fielders = roster.filter(p => p.r === 'b');
 
-  // SP ERA estimate from WAR: higher WAR = lower ERA
-  // Replacement pitcher ~5.0 ERA; each WAR ≈ -0.3 ERA per 200 IP
+  // SP ERA estimate from WAR: higher WAR = lower ERA.
+  // Replacement pitcher ~5.0 ERA; floor of 1.60 keeps historic aces great
+  // without making a two-ace staff untouchable.
   const spEra = (sp) => {
     if (!sp) return CONSTANTS.FILLER_ERA;
-    return Math.max(1.0, 5.0 - sp.w * 0.35);
+    return Math.max(1.6, 5.0 - sp.w * 0.32);
   };
 
   const sp1Era = spEra(sp1);
@@ -496,9 +511,10 @@ function generateSchedule(rng, games) {
   const count = games || CONSTANTS.REGULAR_SEASON_GAMES;
   const schedule = [];
   for (let i = 0; i < count; i++) {
-    // Generate opponent strength (runs scored and allowed)
-    const oppOff = Math.max(2, CONSTANTS.OPP_RUNS_MEAN + normal(rng) * 0.8);
-    const oppDef = Math.max(2, CONSTANTS.OPP_RUNS_MEAN + normal(rng) * 0.8);
+    // Opponent strength: how they hit (oppRunsScored) and how they pitch
+    // (oppRunsAllowed), sampled around the all-time-roster baselines.
+    const oppOff = Math.max(2.5, CONSTANTS.OPP_OFF_MEAN + normal(rng) * 0.8);
+    const oppDef = Math.max(2.5, CONSTANTS.OPP_DEF_MEAN + normal(rng) * 0.7);
     schedule.push({
       game: i + 1,
       oppRunsScored: Math.round(oppOff * 100) / 100,
@@ -506,6 +522,18 @@ function generateSchedule(rng, games) {
     });
   }
   return schedule;
+}
+
+/* Per-game expected runs for both sides.
+ * Your scoring scales with the opponent's pitching (oppRunsAllowed);
+ * their scoring scales YOUR run prevention by their offense quality —
+ * this is where SP1/SP2/defense enter every regular-season game. */
+function gameMeans(offense, defense, game) {
+  const N = CONSTANTS.OPP_RUNS_MEAN;
+  return {
+    runsFor: offense * (game.oppRunsAllowed / N),
+    runsAgainst: defense * (game.oppRunsScored / N),
+  };
 }
 
 // ─── playoffs ────────────────────────────────────────────────────────────────
@@ -570,20 +598,26 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins)
     Math.min(1, Math.max(0, (regularWins - CONSTANTS.WILD_CARD_WINS) /
       (CONSTANTS.REGULAR_SEASON_GAMES - CONSTANTS.WILD_CARD_WINS)));
 
+  // Same opponent-quality scaling as the regular season: playoff teams hit
+  // like all-time offenses and pitch like all-time staffs.
+  const N = CONSTANTS.OPP_RUNS_MEAN;
+  const offAdj = runsFor * (CONSTANTS.OPP_DEF_MEAN / N);
+  const defAdj = runsAgainst * (CONSTANTS.OPP_OFF_MEAN / N);
+
   for (let i = 0; i < rounds.length; i++) {
     if (!alive) break;
 
     const roundName = rounds[i];
     // Opponents get tougher each round
-    const roundDifficulty = 1 + i * 0.08;
-    const oppRA = runsAgainst * roundDifficulty;
+    const roundDifficulty = 1 + i * CONSTANTS.PLAYOFF_ROUND_STEP;
+    const oppRA = defAdj * roundDifficulty;
 
     // Best-of-5 for WC and LDS, best-of-7 for LCS and WS
     const bestOf = (roundName === 'Wild Card' || roundName === 'Division Series') ? 5 : 7;
 
     const adv = seed.bye ? baseAdv : Math.max(1, baseAdv * 0.85);
 
-    const series = playoffSeries(runsFor, oppRA, savePct, rng, bestOf, adv);
+    const series = playoffSeries(offAdj, oppRA, savePct, rng, bestOf, adv);
     results.push({
       round: roundName,
       ...series,
@@ -600,9 +634,11 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins)
 
 // ─── full season play ────────────────────────────────────────────────────────
 
-function playRun(roster, rng) {
-  // Tag each player with their slot for reference
-  const tagged = roster.map((p, i) => ({ ...p, _slot: SLOTS[i] }));
+function playRun(roster, rng, slotNames) {
+  // Tag each player with their actual slot. slotNames maps roster order to
+  // slot names (players draft in random order); without it, fall back to
+  // assuming the roster is already in SLOTS order.
+  const tagged = roster.map((p, i) => ({ ...p, _slot: (slotNames && slotNames[i]) || SLOTS[i] }));
 
   const chem = resolveChemistry(tagged);
   const offense = rosterOffense(tagged, chem.multiplier, 1.0);
@@ -616,7 +652,8 @@ function playRun(roster, rng) {
   let totalRS = 0, totalRA = 0;
 
   for (const game of schedule) {
-    const result = resolveGame(offense, game.oppRunsAllowed, savePct, rng);
+    const means = gameMeans(offense, defense, game);
+    const result = resolveGame(means.runsFor, means.runsAgainst, savePct, rng);
     seasonGames.push({
       game: game.game,
       ...result,
@@ -689,7 +726,7 @@ const publicAPI = {
   playerPositions, canFillSlot, teamSeasonId,
   indexData, buildCheapBy,
   pairLinks, resolveChemistry,
-  generateSchedule, generatePlayoffs,
+  generateSchedule, generatePlayoffs, gameMeans,
   resolveGame, playoffSeries, playRun,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
   respinCost, respinFees,
