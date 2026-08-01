@@ -16,6 +16,7 @@
  *   nfl      the same headline numbers for the NFL game, as a yardstick
  *   bands    what each overall band is rare enough to be, and worth
  *   curve    the same thing two points at a time, to show it scales
+ *   far      how far a season gets, by overall: where it ends
  */
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -274,7 +275,7 @@ if (want('bands')) {
       if (out.seed.bye) b.bye++;
       if (out.titleWon) { b.title++; ti++; }
       if (out.perfect) b.perfect++;
-      if (out.titleWon || out.eliminatedIn === 'CFP Championship') b.fin++;
+      if (out.titleWon || out.exitRound === 'CFP Championship') b.fin++;
     }
     if (t.ov >= 85) shaped.push({ ov: t.ov, mult: E.rosterStructure(t.roster).multiplier,
       wins: w / 300, po: po / 300, ti: ti / 300 });
@@ -364,5 +365,68 @@ if (want('curve')) {
   const dips = (k) => rows.slice(1).filter((r, i) => r[k] < rows[i][k] - 0.004).length;
   console.log('  steps that go backwards, out of ' + (rows.length - 1)
     + ':   playoff ' + dips('po') + '   title ' + dips('ti') + '   perfect ' + dips('pf'));
+  console.log('');
+}
+
+
+/* HOW FAR A SEASON GETS, by overall. The curve above says how often a team wins
+   things; this says where its season ENDS, which is what a player watches
+   happen. Every column should move one way as the rating climbs: less "missed
+   it", more "won it", and the exits in between sliding later. */
+if (want('far')) {
+  const { E, R, data, league } = CFB;
+  const CTX = { league };
+  const LO = 74, HI = 106, W = 4;
+  const nbins = Math.ceil((HI - LO) / W);
+  const bins = Array.from({ length: nbins }, () => []);
+  for (let i = 0; i < 2600; i++) {
+    const run = draft(CFB, STRATS.greedy);
+    if (!run) continue;
+    const cands = [{ roster: run.roster, chem: run.season.chemistry, run }];
+    try {
+      const bp = R.bestPossibleSquad(run, data, CTX);
+      if (bp && bp.squad) cands.push({ roster: bp.squad, chem: bp.chemistry, run });
+    } catch (e) { /* not always computable */ }
+    for (const c of cands) {
+      const ov = E.teamOverall(c.roster, c.chem);
+      const bi = Math.floor((ov - LO) / W);
+      if (bi >= 0 && bi < nbins && bins[bi].length < 26) bins[bi].push({ ...c, ov });
+    }
+    if (bins.every((b) => b.length >= 26)) break;
+  }
+  const COLS = ['missed', 'bowl', 'first round', 'quarter', 'semi', 'final', 'WON IT'];
+  console.log('=== where a season ends, by overall ===');
+  console.log('  overall   teams' + COLS.map((c) => c.padStart(13)).join(''));
+  const rows = [];
+  for (let bi = 0; bi < nbins; bi++) {
+    const list = bins[bi];
+    if (list.length < 6) continue;
+    const c = COLS.map(() => 0);
+    let n = 0;
+    for (const t of list) {
+      const schedule = t.run.schedule.map((id) => data.byTeamSeasonId[id]);
+      const playoffs = t.run.playoffs.map((id) => data.byTeamSeasonId[id]);
+      for (let i = 0; i < 300; i++) {
+        const rng = E.createSeededRNG(E.hashSeed('far|' + t.run.seed + '|' + t.ov.toFixed(2) + '|' + i));
+        const o = E.playRun(t.roster, t.chem, schedule, playoffs, league, rng, data.prepared);
+        n++;
+        if (o.titleWon) c[6]++;
+        else if (o.exitRound === 'CFP Championship') c[5]++;
+        else if (o.exitRound === 'CFP Semifinal') c[4]++;
+        else if (o.exitRound === 'CFP Quarterfinal') c[3]++;
+        else if (o.exitRound === 'CFP First Round') c[2]++;
+        else if (o.bowlResult) c[1]++;
+        else c[0]++;
+      }
+    }
+    console.log('  ' + ((LO + bi * W) + '-' + (LO + bi * W + W)).padEnd(10) + String(list.length).padStart(4)
+      + c.map((v) => (v * 100 / n).toFixed(1).padStart(12) + '%').join(''));
+    rows.push(c.map((v) => v / n));
+  }
+  /* missed should only fall and WON IT should only rise, all the way up */
+  const dips = (i, up) => rows.slice(1).filter((r, k) =>
+    up ? r[i] < rows[k][i] - 0.01 : r[i] > rows[k][i] + 0.01).length;
+  console.log('  steps the wrong way, out of ' + (rows.length - 1)
+    + ':   missed ' + dips(0, false) + '   won it ' + dips(6, true));
   console.log('');
 }

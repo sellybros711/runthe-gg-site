@@ -64,11 +64,20 @@ const CONSTANTS = {
      factor any more: see teamOverall(). */
   TITLE_FLOOR: 88,
   PERFECT_FLOOR: 90,
-  TITLE_EDGE_MAX: 3.20,
-  TITLE_EDGE_MIN: 0.66,
-  TITLE_EDGE_PIVOT: 97,
-  TITLE_EDGE_SLOPE: 0.075,
-  // Extra, per point below TITLE_FLOOR, on top of the ordinary slope.
+  ROUND_EDGE_MAX: 3.20,
+  ROUND_EDGE_MIN: 0.86,
+  ROUND_EDGE_SLOPE: 0.075,
+  /* THE BAR RISES ROUND BY ROUND. One pivot each: the overall at which that
+     round is an even game. A first-round opponent is beatable by a team that
+     scraped into the field; the team waiting in the final is not. This is what
+     makes how FAR a season goes track the roster rather than the draw. */
+  ROUND_EDGE_PIVOT: {
+    'CFP First Round': 82,
+    'CFP Quarterfinal': 88,
+    'CFP Semifinal': 93,
+    'CFP Championship': 97,
+  },
+  // Extra, per point below TITLE_FLOOR, on top of the ordinary slope. Final only.
   TITLE_EDGE_CLIFF: 0.16,
   NY6_MAX_LOSSES: 3,
   BOWL_MAX_LOSSES: 5,
@@ -377,16 +386,25 @@ function teamOverall(roster, chemistryMultiplier) {
    rating by construction: every point of overall makes the last game easier, all
    the way up. Below TITLE_FLOOR the factor is large enough that no scoreline the
    engine can roll gets there. */
+function roundEdge(overall, roundName, constants = CONSTANTS) {
+  const pivot = (constants.ROUND_EDGE_PIVOT || {})[roundName];
+  if (pivot == null) return 1;
+  let raw = 1 + (pivot - overall) * constants.ROUND_EDGE_SLOPE;
+  /* THE CLIFF IS ON THE LAST GAME ONLY. Below the floor the gap there opens much
+     faster, so that "cannot win it" is what the scoreboard actually says rather
+     than something rounded to zero in a table. It is still a slope and not a
+     switch, so the ordering holds through it: an 87 is behind by less than an
+     84, both by more than they can cover. The earlier rounds have no cliff,
+     because a team is meant to be able to reach them and lose. */
+  if (roundName === 'CFP Championship') {
+    const under = constants.TITLE_FLOOR - overall;
+    if (under > 0) raw += under * constants.TITLE_EDGE_CLIFF;
+  }
+  return Math.min(constants.ROUND_EDGE_MAX, Math.max(constants.ROUND_EDGE_MIN, raw));
+}
+/* Kept as a name because the final is the one with a floor under it. */
 function titleEdge(overall, constants = CONSTANTS) {
-  const pivot = constants.TITLE_EDGE_PIVOT;
-  let raw = 1 + (pivot - overall) * constants.TITLE_EDGE_SLOPE;
-  /* Below the floor the gap opens much faster, so that "cannot win it" is what
-     the scoreboard actually says rather than something rounded to zero in a
-     table. It is still a slope and not a switch, so the ordering holds through
-     it: an 87 is behind by less than an 84, both by more than they can cover. */
-  const under = constants.TITLE_FLOOR - overall;
-  if (under > 0) raw += under * constants.TITLE_EDGE_CLIFF;
-  return Math.min(constants.TITLE_EDGE_MAX, Math.max(constants.TITLE_EDGE_MIN, raw));
+  return roundEdge(overall, 'CFP Championship', constants);
 }
 
 /* Ranking to postseason. Top 12 play for the title, top 4 of those get the week
@@ -1342,12 +1360,13 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
     for (let i = 0; i < seed.rounds; i++) {
       const opp = playoffOpponent(playoffs, seed.rounds, i);
       const leagueAvg = leagueContext[opp.season] ?? 25;
-      /* The championship opponent is scaled to the roster in front of them; every
-         other round is the bracket as drawn. advantage divides the opponent's
-         score, so dividing it by the edge multiplies their score by it. */
+      /* EVERY ROUND is scaled to the roster in front of it, on its own pivot, so
+         how far a season goes tracks the team rather than the draw. advantage
+         divides the opponent's score, so dividing it by the edge multiplies
+         their score by it. */
       const isFinal = names[i] === 'CFP Championship';
-      const ovr = isFinal ? teamOverall(roster, chemistryMultiplier, constants) : 0;
-      const edge = isFinal ? titleEdge(ovr, constants) : 1;
+      const ovr = teamOverall(roster, chemistryMultiplier, constants);
+      const edge = roundEdge(ovr, names[i], constants);
       const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
         seedAdvantage(seed.seed, names[i], constants) / edge);
       /* Under the floor the edge already wins this game about 999 times in 1000.
@@ -1474,7 +1493,7 @@ const publicAPI = {
   resolveGame, playRun, playBowlGame, prepareData, toFootballScore,
   playoffOpponent, playoffRoundNames,
   resumeScore, nationalRank, rankSeason, seedFromRanking, seedAdvantage,
-  teamRating, teamOverall, titleEdge,
+  teamRating, teamOverall, titleEdge, roundEdge,
   respinCost, respinFees,
   scoringScript, scoreParts, SCORE_KINDS,
   contrast, teamColors, washColors, wheelColors, teamButton, teamInk,
