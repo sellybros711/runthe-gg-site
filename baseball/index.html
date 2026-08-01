@@ -166,11 +166,11 @@ h1,h2,h3{margin:0}
 /* ─── diamond field ─── */
 .field{position:relative;width:100%;aspect-ratio:1/0.82;border-radius:14px;overflow:hidden;
   background:#3d8a2e;
-  border:3px solid #1b4a12;box-shadow:0 4px 16px rgba(0,0,0,.18),inset 0 0 0 1px rgba(255,255,255,.08)}
+  border:3px solid #2a5a18;box-shadow:0 4px 16px rgba(0,0,0,.18),inset 0 0 0 2px rgba(120,180,60,.25)}
 .field .turf{position:absolute;inset:0;
-  background:repeating-linear-gradient(0deg,rgba(0,0,0,.014) 0 4px,transparent 4px 8px)}
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.012) 0 5px,transparent 5px 10px)}
 .field .lit{position:absolute;inset:0;
-  background:radial-gradient(44% 30% at 50% 70%,#c4a45c 0%,#a88c48 25%,transparent 48%),
+  background:radial-gradient(42% 28% at 50% 68%,#c8a860 0%,#b89850 22%,transparent 46%),
   radial-gradient(80% 55% at 50% 0%,#3a8c2e 0%,transparent 65%)}
 .field .diamond-svg{position:absolute;inset:0;z-index:0;pointer-events:none}
 .field .vig{position:absolute;inset:0;pointer-events:none;
@@ -391,9 +391,9 @@ h1,h2,h3{margin:0}
 <div class="screen" id="s-intro">
   <div class="hero" id="hero">
     <div class="reels hero-reels">
-      <div class="reelcol"><span class="rlabel">Year</span>
+      <div class="reelcol"><span class="rlabel">&starf; Year &starf;</span>
         <div class="reelbox year waiting" id="h-box-y"><div class="strip" id="h-reel-y"></div><span class="band"></span><span class="wash"></span></div></div>
-      <div class="reelcol"><span class="rlabel">Team</span>
+      <div class="reelcol"><span class="rlabel">&starf; Team &starf;</span>
         <div class="reelbox team waiting" id="h-box-t"><div class="strip" id="h-reel-t"></div><span class="band"></span><span class="wash"></span></div></div>
     </div>
     <div class="field hero-field" id="h-field"></div>
@@ -401,7 +401,7 @@ h1,h2,h3{margin:0}
   </div>
 
   <div class="htitle">
-    <div class="kicker">&starf; 1901 to 2025 &starf;</div>
+    <div class="kicker">1901 to 2025</div>
     <h1>Run The Diamond</h1>
     <p>Draft twelve MLB legends. Build your lineup. Win the World Series.</p>
   </div>
@@ -462,9 +462,9 @@ h1,h2,h3{margin:0}
   <div class="field" id="field"></div>
 
   <div class="reels" id="reels">
-    <div class="reelcol"><span class="rlabel">Year</span>
+    <div class="reelcol"><span class="rlabel">&starf; Year &starf;</span>
       <div class="reelbox year" id="box-y"><div class="strip" id="reel-y"></div><span class="band"></span><span class="wash"></span></div></div>
-    <div class="reelcol"><span class="rlabel">Team</span>
+    <div class="reelcol"><span class="rlabel">&starf; Team &starf;</span>
       <div class="reelbox team" id="box-t"><div class="strip" id="reel-t"></div><span class="band"></span><span class="wash"></span></div></div>
   </div>
   <div id="d-respin"></div>
@@ -661,27 +661,32 @@ function diamondMarkings(){
   const h50=50,h1B=74,h2B=50,h3B=26;
   const v_home=78,v_base=52,v_2B=28,v_mound=57;
   const wh='rgba(255,255,255,';
+  const wallH=14;
+  const wallBot='M 0,'+wallH+' Q 50,'+(wallH-18)+' 100,'+wallH;
   return '<div class="turf"></div><div class="lit"></div>'+
     '<svg class="diamond-svg" viewBox="0 0 100 100" preserveAspectRatio="none">'+
     '<defs><linearGradient id="wallg" x1="0" y1="0" x2="0" y2="1">'+
-      '<stop offset="0%" stop-color="#5a3a1e"/><stop offset="40%" stop-color="#4a2e14"/>'+
-      '<stop offset="100%" stop-color="#3a2210"/></linearGradient></defs>'+
-    '<path d="M 0,8 Q 50,-5 100,8 L 100,0 L 0,0 Z" fill="url(#wallg)"/>'+
-    '<path d="M 0,8 Q 50,-5 100,8" fill="none" stroke="#2a1808" stroke-width="0.5"/>'+
-    '<path d="M 0,7.5 Q 50,-5.5 100,7.5" fill="none" stroke="rgba(200,160,80,.35)" stroke-width="0.3"/>'+
-    '<line x1="2" y1="0" x2="2" y2="7.6" stroke="#e8c820" stroke-width="1.2"/>'+
-    '<circle cx="2" cy="0.5" r="0.8" fill="#e8c820"/>'+
-    '<line x1="98" y1="0" x2="98" y2="7.6" stroke="#e8c820" stroke-width="1.2"/>'+
-    '<circle cx="98" cy="0.5" r="0.8" fill="#e8c820"/>'+
+      '<stop offset="0%" stop-color="#5a3a1e"/><stop offset="30%" stop-color="#4a2e14"/>'+
+      '<stop offset="70%" stop-color="#3d2410"/><stop offset="100%" stop-color="#352010"/></linearGradient>'+
+    '<pattern id="planks" width="4" height="100" patternUnits="userSpaceOnUse">'+
+      '<line x1="2" y1="0" x2="2" y2="100" stroke="rgba(0,0,0,.12)" stroke-width="0.3"/></pattern></defs>'+
+    '<path d="'+wallBot+' L 100,0 L 0,0 Z" fill="url(#wallg)"/>'+
+    '<path d="'+wallBot+' L 100,0 L 0,0 Z" fill="url(#planks)"/>'+
+    '<path d="M 0,'+(wallH-0.3)+' Q 50,'+(wallH-18.3)+' 100,'+(wallH-0.3)+'" fill="none" stroke="rgba(200,160,80,.25)" stroke-width="0.4"/>'+
+    '<path d="'+wallBot+'" fill="none" stroke="#2a1808" stroke-width="0.7"/>'+
+    '<line x1="1.5" y1="0" x2="1.5" y2="'+(wallH)+'" stroke="#e8c820" stroke-width="1.5"/>'+
+    '<circle cx="1.5" cy="0.8" r="1" fill="#e8c820"/>'+
+    '<line x1="98.5" y1="0" x2="98.5" y2="'+(wallH)+'" stroke="#e8c820" stroke-width="1.5"/>'+
+    '<circle cx="98.5" cy="0.8" r="1" fill="#e8c820"/>'+
     '<path d="M '+h50+','+v_home+' L '+h3B+','+v_base+' L '+h2B+','+v_2B+' L '+h1B+','+v_base+' Z" '+
-      'fill="none" stroke="'+wh+'.55)" stroke-width="0.6" stroke-linejoin="round"/>'+
-    '<line x1="'+h50+'" y1="'+v_home+'" x2="2" y2="7.5" stroke="'+wh+'.45)" stroke-width="0.4"/>'+
-    '<line x1="'+h50+'" y1="'+v_home+'" x2="98" y2="7.5" stroke="'+wh+'.45)" stroke-width="0.4"/>'+
-    '<circle cx="'+h50+'" cy="'+v_mound+'" r="2.8" fill="rgba(168,137,78,.45)" stroke="'+wh+'.22)" stroke-width="0.3"/>'+
+      'fill="rgba(194,163,100,.35)" stroke="'+wh+'.55)" stroke-width="0.6" stroke-linejoin="round"/>'+
+    '<line x1="'+h50+'" y1="'+v_home+'" x2="1.5" y2="'+wallH+'" stroke="'+wh+'.40)" stroke-width="0.4"/>'+
+    '<line x1="'+h50+'" y1="'+v_home+'" x2="98.5" y2="'+wallH+'" stroke="'+wh+'.40)" stroke-width="0.4"/>'+
+    '<circle cx="'+h50+'" cy="'+v_mound+'" r="2.2" fill="rgba(168,137,78,.35)" stroke="'+wh+'.18)" stroke-width="0.3"/>'+
     '<rect x="'+(h50-1.4)+'" y="'+(v_home-1.4)+'" width="2.8" height="2.8" rx=".3" transform="rotate(45 '+h50+' '+v_home+')" fill="'+wh+'.70)"/>'+
-    '<rect x="'+(h1B-1)+'" y="'+(v_base-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h1B+' '+v_base+')" fill="'+wh+'.45)"/>'+
-    '<rect x="'+(h2B-1)+'" y="'+(v_2B-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h2B+' '+v_2B+')" fill="'+wh+'.45)"/>'+
-    '<rect x="'+(h3B-1)+'" y="'+(v_base-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h3B+' '+v_base+')" fill="'+wh+'.45)"/>'+
+    '<rect x="'+(h1B-1)+'" y="'+(v_base-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h1B+' '+v_base+')" fill="'+wh+'.50)"/>'+
+    '<rect x="'+(h2B-1)+'" y="'+(v_2B-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h2B+' '+v_2B+')" fill="'+wh+'.50)"/>'+
+    '<rect x="'+(h3B-1)+'" y="'+(v_base-1)+'" width="2" height="2" rx=".2" transform="rotate(45 '+h3B+' '+v_base+')" fill="'+wh+'.50)"/>'+
     '<path d="M '+(h50-3)+','+(v_home+1)+' L '+(h50-5)+','+(v_home+5)+' M '+(h50+3)+','+(v_home+1)+' L '+(h50+5)+','+(v_home+5)+'" stroke="'+wh+'.25)" stroke-width="0.3" fill="none"/>'+
     '</svg><div class="vig"></div>';
 }
