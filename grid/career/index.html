@@ -226,10 +226,17 @@
       var t=POOL[ri(POOL.length)];
       if(t.id===last) continue;
       var tpath=(t.t||[]).join('>');
+      var tteams=(t.t||[]);
       // distractors: same sport, and NOT the same exact team path (no second correct answer)
       var others=(bySport[t.sport]||[]).filter(function(e){ return e.id!==t.id && (e.t||[]).join('>')!==tpath; });
       if(others.length<3) continue;
-      var distract=shuffle(others).slice(0,3);
+      // Prefer decoys that SHARE at least one team with the target — "he also
+      // played for the Lakers" is a far more tempting wrong answer than a random
+      // name. Still fair: only the target has the exact full chronological path.
+      var overlap=others.filter(function(e){ return (e.t||[]).some(function(x){ return tteams.indexOf(x)>=0; }); });
+      var pickIds={}, distract=[];
+      shuffle(overlap).forEach(function(e){ if(distract.length<3 && !pickIds[e.id]){ pickIds[e.id]=1; distract.push(e); } });
+      if(distract.length<3){ shuffle(others).forEach(function(e){ if(distract.length<3 && !pickIds[e.id]){ pickIds[e.id]=1; distract.push(e); } }); }
       var opts=shuffle([t].concat(distract)).map(function(e){ return e.id; });
       out.push({ target:t.id, opts:opts }); last=t.id;
     }

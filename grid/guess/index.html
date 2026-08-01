@@ -244,7 +244,10 @@
 
   // pools: team-sport athletes with the traits we compare
   var GUESSABLE = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.pos && e.t && e.t.length && e.decade && e.decade.length && (e.f||0)>=3; });
-  var TARGETS = GUESSABLE.filter(function(e){ return (e.f||0)>=5; });
+  // fame>=4 (recognisable to fans, not just household names) makes the daily
+  // deduction genuinely hard while the clue trail keeps it fair.
+  var TARGETS = GUESSABLE.filter(function(e){ return (e.f||0)>=4; });
+  if(TARGETS.length<20) TARGETS = GUESSABLE.filter(function(e){ return (e.f||0)>=5; });
   if(!TARGETS.length) TARGETS = GUESSABLE;
   var TARGET = TARGETS[Math.floor(rng()*TARGETS.length)];
   var byId={}; GUESSABLE.forEach(function(e){ byId[e.id]=e; });

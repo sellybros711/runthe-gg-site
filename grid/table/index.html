@@ -236,10 +236,16 @@
   // deterministic daily sequence of higher/lower pairs (distinct numbers, min gap)
   function buildRounds(){
     var out=[], last=null, guard=0;
-    while(out.length<ROUNDS && guard<8000){ guard++;
+    while(out.length<ROUNDS && guard<12000){ guard++;
       var a=POOL[ri(POOL.length)], b=POOL[ri(POOL.length)];
       if(!a||!b||a.id===b.id) continue;
-      if(Math.abs(jn(a)-jn(b))<GAP) continue;
+      // The run gets harder as it grows: early pairs are far apart (easy call),
+      // later pairs are forced CLOSE together (a real gut check). We cap the
+      // allowed number gap and shrink that cap as the streak climbs.
+      var d=Math.abs(jn(a)-jn(b)); if(d<1) continue;
+      var n=out.length;
+      var maxGap = n<8 ? 99 : n<16 ? 45 : n<24 ? 28 : n<32 ? 16 : 9;
+      if(d>maxGap) continue;
       if(last && (a.id===last||b.id===last)) continue;
       out.push([a,b]); last=b.id;
     }

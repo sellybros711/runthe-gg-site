@@ -247,9 +247,14 @@
       if(four.length<4) continue;
       var sport4=four[0].sport;
       var odd=null;
-      for(var tries=0;tries<50;tries++){ var cand=oddPool[ri(oddPool.length)];
-        if(cand.sport===sport4) continue; if((cand.t||[]).indexOf(tk)>=0) continue;
-        if(four.some(function(f){return f.id===cand.id;})) continue; odd=cand; break; }
+      // Prefer a SAME-SPORT odd (a real roster test — you can't just spot the
+      // different sport). Fall back to a cross-sport odd if no fair same-sport
+      // one turns up. fairOdd() below still guarantees a single defensible answer.
+      for(var tries=0;tries<90;tries++){ var cand=oddPool[ri(oddPool.length)];
+        if((cand.t||[]).indexOf(tk)>=0) continue;
+        if(four.some(function(f){return f.id===cand.id;})) continue;
+        if(tries<55 && cand.sport!==sport4) continue;   // first pass: same sport only
+        odd=cand; break; }
       if(!odd) continue;
       var five=four.concat([odd]);
       if(!fairOdd(five, odd.id)) continue;               // reject ambiguous rounds
