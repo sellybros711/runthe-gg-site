@@ -1,0 +1,4 @@
+# Raw data files fetched by the pipeline
+data/
+out/
+*.zip

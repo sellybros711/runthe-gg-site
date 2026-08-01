@@ -1,0 +1,376 @@
+/* Run The Diamond — draft loop and run state.
+ *
+ * Headless and dependency-free. Browser: window.RTD_RUN. Node: require.
+ *
+ * Mirrors The Perfect Season's run.js: a plain serializable run object
+ * with a seeded RNG, 12-slot roster (C/1B/2B/3B/SS/LF/CF/RF/DH/SP1/SP2/CL),
+ * spin draft, $245M cap, season sim, playoffs.
+ */
+
+'use strict';
+(function() {
+
+const E = (typeof require !== 'undefined')
+  ? require('./engine.js')
+  : window.RTD_ENGINE;
+
+const PHASES = {
+  DRAFT: 'draft',
+  SEASON: 'season',
+  SEEDING: 'seeding',
+  PLAYOFFS: 'playoffs',
+  OVER: 'over',
+};
+
+const pkey = (p) => `${p.i}|${p.s}`;
+
+const money = (v) => Math.round(v * 100) / 100;
+
+const TUNING = {
+  MAX_DRAWS_PER_TEAM_SEASON: 2,
+  SPIN_OPTIONS: 3,
+};
+
+function capOf(run) {
+  return typeof run.capMusd === 'number' && isFinite(run.capMusd)
+    ? run.capMusd : E.CONSTANTS.CAP_MUSD;
+}
+
+function remaining(run) {
+  const spent = run.roster.reduce((s, p) => s + p.p, 0);
+  const fees = E.respinFees(run.respinsUsed);
+  return money(capOf(run) - spent - fees);
+}
+
+const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
+
+function reserveFloor(run) {
+  return Math.max(0, slotsLeft(run) - 1) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
+}
+
+function fullFloor(run) {
+  return slotsLeft(run) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
+}
+
+function spendable(run) {
+  return money(remaining(run) - reserveFloor(run));
+}
+
+function canRespin(run) {
+  const cost = E.respinCost(run.respinsUsed);
+  if (run.phase !== PHASES.DRAFT) return { ok: false, reason: 'not drafting', cost };
+  if (run.respinsUsed >= E.CONSTANTS.MAX_RESPINS)
+    return { ok: false, reason: 'no re-spins left', cost };
+
+  run.respinsUsed++;
+  let short = false;
+  try {
+    short = remaining(run) < fullFloor(run);
+  } finally {
+    run.respinsUsed--;
+  }
+  if (short) return { ok: false, reason: 'would leave too little to fill your roster', cost };
+  return { ok: true, cost };
+}
+
+const BLOCK = { DRAFTED: 'drafted', NO_SPOT: 'no_spot', PRICE: 'price' };
+
+function blockFor(run, player) {
+  if (run.usedPlayers.includes(player.i)) return BLOCK.DRAFTED;
+  if (slotForPlayer(run, player) === null) return BLOCK.NO_SPOT;
+  if (player.p > spendable(run)) return BLOCK.PRICE;
+  return null;
+}
+
+function openSlots(run) {
+  const taken = new Set(run.slotIndex);
+  return E.SLOTS.map((_, i) => i).filter(i => !taken.has(i));
+}
+
+function slotForPlayer(run, player) {
+  const open = openSlots(run);
+  // Prefer a dedicated slot first
+  const dedicated = open.find(i => E.canFillSlot(player, E.SLOTS[i]) && !isDhOrFlex(E.SLOTS[i]));
+  if (dedicated !== undefined) return dedicated;
+  // Then try DH and any remaining slots
+  const any = open.find(i => E.canFillSlot(player, E.SLOTS[i]));
+  return any === undefined ? null : any;
+}
+
+function isDhOrFlex(slot) {
+  return slot === 'DH';
+}
+
+function openSlotNames(run) {
+  return openSlots(run).map(i => E.SLOTS[i]);
+}
+
+function createRun(opts) {
+  const era = opts.era ?? null;
+  if (era !== null && !E.ERAS[era]) throw new Error(`unknown era ${era}`);
+  const seed = opts.seed ?? E.hashSeed(String(Math.random()));
+  return {
+    version: 1,
+    era,
+    seed,
+    rngCalls: 0,
+    capMusd: E.CONSTANTS.CAP_MUSD,
+    phase: PHASES.DRAFT,
+    roster: [],
+    slotIndex: [],
+    usedPlayers: [],
+    usedTeamSeasons: [],
+    draws: [],
+    respinsUsed: 0,
+    currentDraw: null,
+    currentSlotIndex: 0,
+    schedule: null,
+    playoffs: null,
+    season: null,
+    playoffSeed: null,
+    outcome: null,
+  };
+}
+
+function rngFor(run) {
+  const rng = E.createSeededRNG(run.seed);
+  for (let i = 0; i < run.rngCalls; i++) rng();
+  return () => { run.rngCalls++; return rng(); };
+}
+
+/* What team-seasons can the wheel land on right now? */
+function drawable(run, data) {
+  const drawn = {};
+  for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
+
+  const currentSlot = E.SLOTS[run.roster.length];
+
+  return data.teamSeasons
+    .filter(t => {
+      if (run.era) {
+        const r = E.ERAS[run.era];
+        return t.season >= r[0] && t.season <= r[1];
+      }
+      return true;
+    })
+    .filter(t => (drawn[t.team_season_id] || 0) < TUNING.MAX_DRAWS_PER_TEAM_SEASON)
+    .filter(t => {
+      // Must have at least one affordable, eligible player for the current slot
+      const players = data.byTeamSeason[t.team_season_id];
+      if (!players) return false;
+      return players.some(p => {
+        if (run.usedPlayers.includes(p.i)) return false;
+        if (p.p > spendable(run)) return false;
+        return E.canFillSlot(p, currentSlot);
+      });
+    });
+}
+
+/* Spin the draft: draw a team-season and build the board. */
+function spin(run, data) {
+  if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
+  const rng = rngFor(run);
+
+  const available = drawable(run, data);
+  if (!available.length) throw new Error('nothing left you can afford');
+
+  const t = available[Math.floor(rng() * available.length)];
+  const currentSlot = E.SLOTS[run.roster.length];
+
+  // Build the board: all players from this team-season
+  const allPlayers = data.byTeamSeason[t.team_season_id] || [];
+  const board = allPlayers
+    .map(p => ({ player: p, block: blockFor(run, p), canFill: E.canFillSlot(p, currentSlot) }))
+    .filter(r => r.canFill)
+    .sort((a, b) => b.player.w - a.player.w);
+
+  run.currentDraw = {
+    season: t.season,
+    team_season_id: t.team_season_id,
+    team: t.team,
+    display: t.display,
+    slot: currentSlot,
+    board: board.map(r => ({ key: pkey(r.player), block: r.block })),
+    options: board.filter(r => r.block === null).map(r => pkey(r.player)),
+  };
+  return run.currentDraw;
+}
+
+/* Re-spin: pay the fee and draw again. */
+function respin(run, data) {
+  const check = canRespin(run);
+  if (!check.ok) throw new Error(`cannot re-spin: ${check.reason}`);
+  const draw = run.currentDraw;
+  run.respinsUsed++;
+  if (draw) run.usedTeamSeasons.push(draw.team_season_id);
+  run.currentDraw = null;
+  return spin(run, data);
+}
+
+/* Sign a player from the current draw. */
+function sign(run, player) {
+  if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
+  if (!run.currentDraw) throw new Error('nothing drawn');
+  const key = pkey(player);
+  if (!run.currentDraw.options.includes(key)) throw new Error('not an option');
+
+  const slot = slotForPlayer(run, player);
+  if (slot === null) throw new Error('no slot');
+
+  run.roster.push(player);
+  run.slotIndex.push(slot);
+  run.usedPlayers.push(player.i);
+  run.usedTeamSeasons.push(run.currentDraw.team_season_id);
+  run.draws.push({
+    team_season_id: run.currentDraw.team_season_id,
+    player: key,
+    slot: E.SLOTS[slot],
+  });
+  run.currentDraw = null;
+
+  // Draft complete?
+  if (run.roster.length >= E.SLOTS.length) {
+    run.phase = PHASES.SEASON;
+  }
+}
+
+/* Preview chemistry if you were to sign this player. */
+function previewSigning(run, player) {
+  const before = E.resolveChemistry(run.roster);
+  const after = E.resolveChemistry(run.roster.concat([player]));
+  const seen = new Set(before.links.map(l => l.a + '|' + l.b + '|' + l.type));
+  return {
+    multiplier: after.multiplier,
+    delta: after.multiplier - before.multiplier,
+    newLinks: after.links.filter(l => !seen.has(l.a + '|' + l.b + '|' + l.type)),
+  };
+}
+
+/* Play the full season. Returns the complete result. */
+function playSeason(run) {
+  if (run.phase !== PHASES.SEASON) throw new Error('not in season phase');
+  const rng = rngFor(run);
+  const result = E.playRun(run.roster, rng);
+
+  run.season = result.season;
+  run.schedule = result.schedule;
+  run.playoffs = result.playoffs;
+  run.playoffSeed = result.seed;
+
+  run.outcome = {
+    record: result.record,
+    wins: result.record.wins,
+    losses: result.record.losses,
+    madePlayoffs: result.seed.made,
+    seedLabel: result.seed.label,
+    titleWon: result.titleWon,
+    isGOAT: result.isGOAT,
+    beatRecord: result.beatRecord,
+    totalRS: result.totalRS,
+    totalRA: result.totalRA,
+    chemistry: result.chemistry,
+    offense: result.offense,
+    defense: result.defense,
+    savePct: result.savePct,
+  };
+  run.phase = PHASES.OVER;
+  return run.outcome;
+}
+
+/* Simulate one game at a time (for animated season display). */
+function advanceGame(run, gameIndex) {
+  if (!run._simState) {
+    // Initialize simulation state
+    const rng = rngFor(run);
+    const tagged = run.roster.map((p, i) => ({ ...p, _slot: E.SLOTS[i] }));
+    const chem = E.resolveChemistry(tagged);
+    const offense = E.rosterOffense(tagged, chem.multiplier, 1.0);
+    const defense = E.rosterRunPrevention(tagged, chem.multiplier);
+    const savePct = E.closerSavePct(tagged);
+    const schedule = E.generateSchedule(rng, E.CONSTANTS.REGULAR_SEASON_GAMES);
+
+    run._simState = {
+      rng, tagged, chem, offense, defense, savePct, schedule,
+      results: [],
+      wins: 0, losses: 0,
+      totalRS: 0, totalRA: 0,
+    };
+  }
+
+  const st = run._simState;
+  if (gameIndex >= st.schedule.length) return null;
+
+  const game = st.schedule[gameIndex];
+  const result = E.resolveGame(st.offense, game.oppRunsAllowed, st.savePct, st.rng);
+  st.results.push({ game: game.game, ...result });
+  if (result.won) st.wins++; else st.losses++;
+  st.totalRS += result.yourRuns;
+  st.totalRA += result.oppRuns;
+
+  return {
+    game: gameIndex + 1,
+    ...result,
+    record: { wins: st.wins, losses: st.losses },
+  };
+}
+
+/* Finalize the season after all 162 games have been advanced. */
+function finalizeSeason(run) {
+  const st = run._simState;
+  if (!st) throw new Error('no sim state');
+
+  const seed = E.seedFromRecord(st.wins);
+  const playoffs = E.generatePlayoffs(seed, st.offense, st.defense, st.savePct, st.rng, st.wins);
+  const titleWon = playoffs && playoffs.won;
+  const isGOAT = st.wins >= E.CONSTANTS.GOAT_WINS;
+  const beatRecord = st.wins >= E.CONSTANTS.RECORD_WINS;
+
+  run.season = st.results;
+  run.schedule = st.schedule;
+  run.playoffs = playoffs;
+  run.playoffSeed = seed;
+
+  run.outcome = {
+    record: { wins: st.wins, losses: st.losses },
+    wins: st.wins,
+    losses: st.losses,
+    madePlayoffs: seed.made,
+    seedLabel: seed.label,
+    titleWon,
+    isGOAT,
+    beatRecord,
+    totalRS: st.totalRS,
+    totalRA: st.totalRA,
+    chemistry: st.chem,
+    offense: Math.round(st.offense * 100) / 100,
+    defense: Math.round(st.defense * 100) / 100,
+    savePct: Math.round(st.savePct * 1000) / 1000,
+  };
+  run.phase = PHASES.OVER;
+  delete run._simState;
+  return run.outcome;
+}
+
+/* Index the raw player data for draft use. */
+function indexData(players) {
+  return E.indexData(players);
+}
+
+// ─── exports ─────────────────────────────────────────────────────────────────
+
+const publicAPI = {
+  API_VERSION: 1,
+  PHASES,
+  createRun,
+  spin, respin, sign,
+  playSeason, advanceGame, finalizeSeason,
+  previewSigning,
+  indexData,
+  remaining, reserveFloor, spendable, canRespin,
+  openSlots, openSlotNames, slotForPlayer, slotsLeft,
+  capOf, money, blockFor, BLOCK,
+};
+
+if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
+if (typeof window !== 'undefined') window.RTD_RUN = publicAPI;
+})();
