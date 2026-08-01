@@ -29,7 +29,7 @@ create table if not exists grid_runs (
   id           bigserial primary key,
   created_at   timestamptz not null default now(),
   user_id      uuid not null,
-  game         text not null check (game in ('match','crossword','wordsearch')),
+  game         text not null check (game in ('match','crossword','wordsearch','guess')),
   puzzle_date  date not null,
 
   -- raw, client-reported inputs
@@ -73,7 +73,7 @@ grant select on grid_runs to anon, authenticated;
 -- ---------------------------------------------------------------------------
 create table if not exists grid_streaks (
   user_id     uuid not null,
-  game        text not null check (game in ('match','crossword','wordsearch')),
+  game        text not null check (game in ('match','crossword','wordsearch','guess')),
   streak      integer not null default 0,
   best_streak integer not null default 0,
   last_date   date,
@@ -107,7 +107,7 @@ declare
   v_id     bigint;
 begin
   if v_uid is null then raise exception 'sign in to post a score'; end if;
-  if p_game not in ('match','crossword','wordsearch') then raise exception 'unknown game'; end if;
+  if p_game not in ('match','crossword','wordsearch','guess') then raise exception 'unknown game'; end if;
   if p_seconds is null or p_seconds < 0 or p_seconds >= 86400 then raise exception 'bad time'; end if;
   p_mistakes := greatest(0, least(20, coalesce(p_mistakes, 0)));
   p_reveals  := greatest(0, least(60, coalesce(p_reveals,  0)));
