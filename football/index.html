@@ -3868,7 +3868,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=40"></script>
-<script src="run.js?v=53"></script>
+<script src="run.js?v=54"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -6144,13 +6144,20 @@ function gmScoutingReport(run){
   if(cp>0.005) lines.push({cls:'good',k:'Chemistry',v:'They already click, worth <b>+'+(cp*100).toFixed(1)+'%</b>. Trades break links, so weigh every deal.'});
   else if(cp<-0.005) lines.push({cls:'bad',k:'Chemistry',v:'Little history together, <b>'+(cp*100).toFixed(1)+'%</b>. The right addition builds it.'});
   else lines.push({cls:'',k:'Chemistry',v:'No history together yet, roughly <b>neutral</b>. Deals can only help.'});
+  /* WHAT EATS THE ROOM. It used to be contract inflation, and this line warned about it.
+     With raises retired the only thing that costs you cap is cash in a trade, so that is
+     what it says. Both branches are kept because one constant brings inflation back. */
   const infl=Math.round((R.CONTRACT_INFLATION-1)*100);
   const nWin=R.TRADE_WEEKS.length;
-  const projected=run.startSalary*Math.pow(R.CONTRACT_INFLATION,nWin);
   lines.push({cls:'',k:'Cap',v:'<b>$'+room.toFixed(1)+'M</b> of $'+CAP()+'M free. '+
-    'Every player\u2019s price rises <b>'+infl+'%</b> at each of the '+nWin+' in-season windows, so '+
-    'standing pat still takes this roster to about <b>$'+projected.toFixed(0)+'M</b> by week '+
-    R.TRADE_DEADLINE_WEEK+'.'});
+    (infl>0
+      ? 'Every player\u2019s price rises <b>'+infl+'%</b> at each of the '+nWin+
+        ' in-season windows, so standing pat still takes this roster to about <b>$'+
+        (run.startSalary*Math.pow(R.CONTRACT_INFLATION,nWin)).toFixed(0)+'M</b> by week '+
+        R.TRADE_DEADLINE_WEEK+'.'
+      : 'Nobody gets a raise, so this payroll only moves when you move it. What does cost '+
+        'you is cash: a deal that upgrades your talent wants money on top, and that comes '+
+        'off the cap for the rest of the season.')});
   const html='<div class="gm-eye">GM scouting report</div>'+
     lines.map(l=>'<div class="gm-line'+(l.cls?' '+l.cls:'')+'">'+
       '<span class="gk">'+l.k+'</span><span class="gv">'+l.v+'</span></div>').join('');
@@ -6342,20 +6349,33 @@ function openTradeWindow(step,opts){
     const risePct=Math.round((R.CONTRACT_INFLATION-1)*100);
     rise.style.display='';
     rise.classList.toggle('over',cap.overBy>0);
+    const cashOut=Math.round(((E.CONSTANTS.CAP_MUSD-CAP()))*10)/10;
     if(cap.overBy>0){
       rise.innerHTML='<b>$'+cap.overBy.toFixed(1)+'M OVER THE SALARY CAP.</b> '+
         'Payroll <b>$'+payroll.toFixed(1)+'M</b> against a $'+CAP()+'M cap'+
-        (preseasonWindow?'':', after the '+risePct+'% raises')+'. '+
+        (risePct>0&&!preseasonWindow?', after the '+risePct+'% raises':'')+
+        (cashOut>0?' — $'+cashOut.toFixed(1)+'M of it went out as cash':'')+'. '+
         'Finish here and it costs you <b>'+cap.costs.toFixed(1)+' points</b> of your GM rating. '+
         (deadline?'This is the last window to shed salary.'
           :'Trade someone away for less money to get back under.');
-    }else if(preseasonWindow){
-      rise.innerHTML='<b>No raises yet.</b> Prices rise '+risePct+
-        '% at each of the '+R.TRADE_WEEKS.length+' in-season windows, so a deal is cheaper now than later.';
-    }else{
-      rise.innerHTML='<b>Every price just rose '+risePct+'%.</b> '+
-        'Your payroll is now <b>$'+payroll.toFixed(1)+'M</b> of $'+CAP()+'M, '+
+    }else if(risePct>0){
+      /* Contract inflation is retired; these two read only if it is switched back on. */
+      rise.innerHTML=preseasonWindow
+        ? '<b>No raises yet.</b> Prices rise '+risePct+'% at each of the '+R.TRADE_WEEKS.length+
+          ' in-season windows, so a deal is cheaper now than later.'
+        : '<b>Every price just rose '+risePct+'%.</b> Your payroll is now <b>$'+
+          payroll.toFixed(1)+'M</b> of $'+CAP()+'M, <b>$'+cap.remaining.toFixed(1)+'M</b> to spend'+
+          (deadline?'. Last window to use it.':'.');
+    }else if(cashOut>0){
+      /* The one thing that has taken cap room off you, and what is left of it. */
+      rise.innerHTML='<b>$'+cashOut.toFixed(1)+'M of your cap is gone</b>, paid out as cash in '+
+        'trades. Payroll <b>$'+payroll.toFixed(1)+'M</b> against what is left of $'+CAP()+'M, '+
         '<b>$'+cap.remaining.toFixed(1)+'M</b> to spend'+
+        (deadline?'. Last window to use it.':'.');
+    }else{
+      rise.innerHTML='<b>Nobody gets a raise.</b> This payroll only moves when you move it — '+
+        'but a deal that upgrades your talent wants cash on top, and that comes off your cap '+
+        'for the rest of the season. <b>$'+cap.remaining.toFixed(1)+'M</b> to spend'+
         (deadline?'. Last window to use it.':'.');
     }
   }
