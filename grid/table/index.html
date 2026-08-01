@@ -39,7 +39,9 @@
   body{font-family:var(--f); color:var(--ink); background:var(--bg); min-height:100dvh; -webkit-font-smoothing:antialiased;}
   a{color:inherit; text-decoration:none;}
   :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
-  .wrap{width:100%; max-width:560px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 14px 40px;}
+  .wrap{width:100%; max-width:920px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 14px 40px;}
+  /* the play area fills the screen; the leaderboard sits below the fold */
+  .playzone{display:flex; flex-direction:column; min-height:calc(100dvh - 150px);}
 
   .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
@@ -69,26 +71,26 @@
   .runbar .best .n{font-family:var(--hero); font-weight:400; font-size:22px; color:var(--mut); line-height:1;}
   .runbar .best .c{display:block; font-size:8.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
 
-  .prompt{text-align:center; font-weight:900; font-size:16px; color:var(--ink); margin:2px 0 12px; letter-spacing:.01em;}
+  .prompt{text-align:center; font-weight:900; font-size:clamp(16px,2.6vh,23px); color:var(--ink); margin:2px 0 clamp(12px,2vh,20px); letter-spacing:.01em;}
 
-  /* versus cards */
-  .versus{display:grid; grid-template-columns:1fr; gap:12px; position:relative;}
-  .pcard{position:relative; border:1px solid var(--line2); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:18px 16px; text-align:center; cursor:pointer; transition:transform .1s, border-color .15s, background .15s; overflow:hidden; min-height:118px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;}
+  /* versus cards — fill the tall playzone */
+  .versus{display:grid; grid-template-columns:1fr; gap:clamp(12px,2vh,18px); position:relative; flex:1 1 auto; grid-auto-rows:minmax(0,1fr);}
+  .pcard{position:relative; border:1px solid var(--line2); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:clamp(18px,3.5vh,44px) 16px; text-align:center; cursor:pointer; transition:transform .1s, border-color .15s, background .15s; overflow:hidden; min-height:118px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(6px,1.4vh,12px);}
   .pcard:hover{border-color:var(--gold);}
   .pcard:active{transform:scale(.99);}
   .pcard.correct{border-color:var(--green); background:color-mix(in srgb, var(--green) 16%, var(--card));}
   .pcard.wrong{border-color:var(--red); background:color-mix(in srgb, var(--red) 15%, var(--card));}
   .pcard.dim{opacity:.55;}
-  .pcard .nm{font-weight:900; font-size:19px; line-height:1.1; color:var(--ink);}
-  .pcard .meta{font-size:11.5px; font-weight:800; letter-spacing:.03em; color:var(--mut); text-transform:uppercase;}
-  .pcard .num{font-family:var(--hero); font-weight:400; font-size:34px; line-height:1; color:var(--goldT); height:0; opacity:0; transition:opacity .2s, height .2s;}
-  .pcard.revealed .num{height:38px; opacity:1; margin-top:2px;}
-  .pcard .tap{font-size:10.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim);}
+  .pcard .nm{font-weight:900; font-size:clamp(19px,3.4vh,32px); line-height:1.1; color:var(--ink);}
+  .pcard .meta{font-size:clamp(11.5px,1.8vh,15px); font-weight:800; letter-spacing:.03em; color:var(--mut); text-transform:uppercase;}
+  .pcard .num{font-family:var(--hero); font-weight:400; font-size:clamp(34px,6vh,60px); line-height:1; color:var(--goldT); height:0; opacity:0; transition:opacity .2s, height .2s;}
+  .pcard.revealed .num{height:auto; opacity:1; margin-top:2px;}
+  .pcard .tap{font-size:clamp(10.5px,1.6vh,13px); font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim);}
   .pcard.revealed .tap{display:none;}
-  .vs{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:2; width:40px; height:40px; border-radius:50%; background:var(--gold); color:#071426; font-family:var(--hero); font-weight:400; font-size:16px; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px -6px rgba(0,0,0,.6);}
-  @media (min-width:520px){ .versus{grid-template-columns:1fr 1fr; gap:14px;} .pcard{min-height:150px;} }
+  .vs{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:2; width:clamp(40px,6vh,54px); height:clamp(40px,6vh,54px); border-radius:50%; background:var(--gold); color:#071426; font-family:var(--hero); font-weight:400; font-size:clamp(16px,2.4vh,20px); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px -6px rgba(0,0,0,.6);}
+  @media (min-width:520px){ .versus{grid-template-columns:1fr 1fr; grid-auto-rows:auto; gap:clamp(14px,2vh,22px);} .pcard{min-height:150px;} }
 
-  .hintline{text-align:center; font-size:11.5px; color:var(--mut); margin:14px 0 2px; font-weight:700;}
+  .hintline{text-align:center; font-size:12px; color:var(--mut); margin:clamp(14px,2vh,22px) 0 2px; font-weight:700; flex:0 0 auto;}
 
   /* leaderboard */
   .lb{background:var(--card); border:1px solid var(--line2); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin:18px 0 14px;}
@@ -160,9 +162,11 @@
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
-  <div class="prompt">Who wore the higher jersey number?</div>
-  <div class="versus" id="versus"></div>
-  <div class="hintline" id="hintline">Tap the player you think wore the higher number.</div>
+  <div class="playzone">
+    <div class="prompt">Who wore the higher jersey number?</div>
+    <div class="versus" id="versus"></div>
+    <div class="hintline" id="hintline">Tap the player you think wore the higher number.</div>
+  </div>
 
   <div class="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
@@ -193,8 +197,11 @@
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Day streak</div></div>
     </div>
     <div class="rcta">
+      <button class="abtn gold" id="mAgain" type="button">Play again</button>
+    </div>
+    <div class="rcta">
       <button class="abtn" id="mShare" type="button">Share</button>
-      <a class="abtn gold" href="/grid/" style="text-decoration:none">More puzzles</a>
+      <a class="abtn" href="/grid/" style="text-decoration:none">More games</a>
     </div>
     <div class="countdown" id="mCountdown"></div>
   </div>
@@ -203,6 +210,7 @@
 
 <script src="../match/entities.js?v=12"></script>
 <script src="/grid/sfx.js"></script>
+<script src="/grid/tokens.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
 <script>
@@ -239,7 +247,7 @@
   }
   var SEQ=buildRounds();
 
-  var idx=0, run=0, done=false, busy=false, started=false, startTs=0, elapsed=0;
+  var idx=0, run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, charged=false, attemptFirst=false;
   var vs=document.getElementById('versus');
 
   function metaLine(e){ return [e.sport, (e.t&&e.t[0])].filter(Boolean).join(' · '); }
@@ -272,8 +280,26 @@
     }
   }
 
-  function startIfNeeded(){ if(started||done) return; started=true; startTs=performance.now(); }
+  function startIfNeeded(){ if(started||done) return;
+    if(!charged){ var r=(window.RTGTokens?RTGTokens.startAttempt(GAME):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); }
+    started=true; startTs=performance.now(); }
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+
+  function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
+    var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
+    h.textContent='Tap the player you think wore the higher number.'+lbl; }
+  function beginAttempt(){
+    idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
+    document.getElementById('runN').textContent='0';
+    var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
+    vs.style.pointerEvents=''; vs.style.opacity='';
+    renderRound(); updateHint();
+  }
+  function updateAgainBtn(){
+    var b=document.getElementById('mAgain'); if(!b) return;
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ b.textContent='No plays left today'; b.disabled=true; b.style.opacity='.55'; b.style.cursor='default'; }
+    else { b.textContent='Play again'; b.disabled=false; b.style.opacity=''; b.style.cursor='pointer'; }
+  }
 
   function shiftDay(iso,d){ var x=new Date(iso+'T00:00:00'); x.setDate(x.getDate()+d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
   function load(){ try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
@@ -289,7 +315,7 @@
     s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, run); s.last={ run:run, seconds:Math.round(elapsed) };
     save(s);
     showEnd(s, false);
-    if(run>0 && window.RTG_BOARD){
+    if(run>0 && attemptFirst && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:run }).then(function(res){
         if(res&&res.streak){ document.getElementById('streakN').textContent=res.streak; document.getElementById('mStreak').textContent=res.streak; }
         renderRealBoard();
@@ -303,14 +329,19 @@
     document.getElementById('mRun').textContent=run;
     document.getElementById('mBest').textContent=s.bestRun||0;
     document.getElementById('mStreak').textContent=s.streak||0;
-    document.getElementById('mSub').textContent = locked ? 'Your run today' : (run>=SEQ.length?'You cleared the whole table!':'Your run ended');
-    document.getElementById('mTitle').textContent = run===1?'IN A ROW':'IN A ROW';
+    document.getElementById('mSub').textContent = locked ? 'Your run today' : (!attemptFirst ? 'Practice run — not ranked' : (run>=SEQ.length?'You cleared the whole table!':'Your run ended'));
+    document.getElementById('mTitle').textContent = 'IN A ROW';
     document.getElementById('yourTm').textContent = run+' in a row';
     document.getElementById('yourBest').textContent = s.bestRun||0;
-    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && run>=5){ confetti(run>=15?120:70, run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
+    updateAgainBtn();
+    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && run>=5){ confetti(run>=15?120:70, run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
   }
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
+  document.getElementById('mAgain').addEventListener('click', function(){
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); return; }
+    beginAttempt();
+  });
   document.getElementById('mShare').addEventListener('click', function(){
     var txt='RunTheGrid · Run The Table\n🔥 '+run+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/grid/';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
@@ -357,8 +388,11 @@
   // ---- boot ----
   var saved=load(); document.getElementById('streakN').textContent=saved.streak||0;
   if(saved.bestRun){ document.getElementById('bestRun').textContent=saved.bestRun; document.getElementById('yourBest').textContent=saved.bestRun; }
-  if(saved.lastDone===DATE && saved.last){ done=true; run=saved.last.run; document.getElementById('hintline').textContent='You’ve already played today — come back tomorrow.'; vs.style.pointerEvents='none'; vs.style.opacity='.5'; showEnd(saved, true); }
-  else { renderRound(); }
+  if(window.RTGTokens && !RTGTokens.canPlay(GAME)){
+    done=true; vs.style.pointerEvents='none'; vs.style.opacity='.5';
+    document.getElementById('hintline').textContent='No plays left — new tables tomorrow.';
+    if(saved.last){ run=saved.last.run||0; showEnd(saved, true); } else { renderRound(); }
+  } else { beginAttempt(); }
   if(window.RTG_BOARD){
     RTG_BOARD.boot();
     RTG_BOARD.onChange(function(st){

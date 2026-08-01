@@ -169,6 +169,8 @@
   .tile.unplayed .play{animation:playpulse 2.2s ease-in-out infinite;}
   @keyframes playpulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--c) 45%, transparent);}55%{box-shadow:0 0 0 9px transparent;}}
   .tile.solved .play{background:var(--card2); color:var(--greenT); border:1.5px solid var(--green); animation:none;}
+  .tile.spent .play{background:var(--card2); color:var(--mut); border:1.5px solid var(--line2); animation:none; font-style:normal; letter-spacing:.06em; font-size:12px;}
+  .tile.spent .play .arw{display:none;}
 
   /* ---- daily double banner (both solved) ---- */
   .double{display:none; align-items:center; gap:12px; margin-top:16px; padding:14px 18px; border-radius:16px;
@@ -214,7 +216,7 @@
         <div class="hud-hd">
           <span class="av"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
           <span class="who"><b>Guest</b><span id="dateShort">Today</span></span>
-          <span class="coins"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 0 5"/></svg><span id="coinValH">0</span></span>
+          <span class="coins" id="playsChip" title="Daily plays: 1 per game + 2 bonus"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg><span id="coinValH">10</span><span style="font-weight:700;opacity:.7;margin-left:1px">/10</span></span>
         </div>
 
         <div class="hud-streak">
@@ -234,7 +236,7 @@
         </div>
 
         <div class="hud-cta">
-          <p>Playing as a <b>guest</b>. Sign in to save your streak, coins and rank across every game.</p>
+          <p>Playing as a <b>guest</b>. Sign in to save your streak and rank across every game. <b>Pro</b> unlocks unlimited plays and past-day puzzles.</p>
           <a class="btn" href="/">Sign in / Sign up</a>
         </div>
       </aside>
@@ -446,10 +448,12 @@
   </nav>
 </div>
 
+<script src="/grid/tokens.js"></script>
 <script>
 (function () {
   var LS = window.localStorage;
   function g(k, d) { try { return LS.getItem(k) || d; } catch (e) { return d; } }
+  var TOK = window.RTGTokens || null;
 
   // ---- theme toggle (shared suite preference) ----
   function applyThemeMeta() {
@@ -480,8 +484,15 @@
   }
   tickCd(); setInterval(tickCd, 1000);
 
-  // ---- wallet + streaks ----
-  document.getElementById('coinValH').textContent = parseInt(g('runthegrid_coins', '0'), 10) || 0;
+  // ---- daily plays wallet + streaks ----
+  (function(){
+    var chip=document.getElementById('playsChip'), val=document.getElementById('coinValH');
+    if(!TOK){ return; }
+    if(TOK.isPro && TOK.isPro()){ val.textContent='∞'; var slash=chip&&chip.querySelector('span:last-child'); if(slash) slash.remove(); chip.setAttribute('title','Pro · unlimited plays'); return; }
+    var rem=TOK.remaining();
+    val.textContent = rem;
+    if(rem<=0){ chip.style.color='var(--mut)'; }
+  })();
   var cur = parseInt(g('grid_match_streak', '0'), 10) || 0;
   var best = parseInt(g('grid_best_streak', '0'), 10) || 0;
   var cw = {}; try { cw = JSON.parse(g('rtg:cw:v1', '{}')) || {}; } catch (e) {}
@@ -527,63 +538,42 @@
   var rDone = (rs.lastDone === t);
   var kDone = (ks.lastDone === t);
 
-  var cardM = document.getElementById('cardMatch'), cardC = document.getElementById('cardCross');
-  if (mDone) {
-    cardM.classList.add('solved');
-    var stM = document.getElementById('stM');
-    stM.className = 'status done';
-    stM.textContent = mRes && mRes.grade ? ('Solved · ' + mRes.grade) : 'Solved';
-    document.getElementById('playM').innerHTML = '✓ DONE';
-    document.getElementById('pipM').classList.add('done');
-  } else { cardM.classList.add('unplayed'); document.getElementById('stM').className = 'status ready'; }
-  if (cDone) {
-    cardC.classList.add('solved');
-    var stC = document.getElementById('stC');
-    stC.className = 'status done'; stC.textContent = 'Solved';
-    document.getElementById('playC').innerHTML = '✓ DONE';
-    document.getElementById('pipC').classList.add('done');
-  } else { cardC.classList.add('unplayed'); document.getElementById('stC').className = 'status ready'; }
-  var cardW = document.getElementById('cardWord');
-  if (wDone) {
-    cardW.classList.add('solved');
-    var stW = document.getElementById('stW');
-    stW.className = 'status done'; stW.textContent = 'Solved';
-    document.getElementById('playW').innerHTML = '✓ DONE';
-    document.getElementById('pipW').classList.add('done');
-  } else { cardW.classList.add('unplayed'); document.getElementById('stW').className = 'status ready'; }
-  var cardG = document.getElementById('cardGuess');
-  if (gDone) {
-    cardG.classList.add('solved');
-    var stG = document.getElementById('stG');
-    stG.className = 'status done';
-    stG.textContent = (gs.last && gs.last.won === false) ? 'Missed' : 'Solved';
-    document.getElementById('playG').innerHTML = (gs.last && gs.last.won === false) ? '✓ DONE' : '✓ DONE';
-    document.getElementById('pipG').classList.add('done');
-  } else { cardG.classList.add('unplayed'); document.getElementById('stG').className = 'status ready'; }
-
-  // run games (played-or-not; status shows the run)
-  function runTile(cardId, pipId, stId, playId, sv, done) {
+  // Tiles always stay playable: PLAY when unplayed, PLAY AGAIN once the ranked
+  // run is in (tokens permitting), NO PLAYS LEFT only when the daily budget is spent.
+  function triesLeft(key) { return TOK ? TOK.triesLeft(key) : 1; }
+  var ARW = ' <span class="arw">→</span>';
+  function mark(cardId, pipId, stId, playId, done, statusText, key) {
     var card = document.getElementById(cardId);
+    var st = document.getElementById(stId);
+    var play = document.getElementById(playId);
     if (done) {
       card.classList.add('solved');
-      var st = document.getElementById(stId); st.className = 'status done';
-      st.textContent = (sv.last && sv.last.run != null) ? (sv.last.run + ' in a row') : 'Played';
-      document.getElementById(playId).innerHTML = '✓ DONE';
+      st.className = 'status done'; st.textContent = statusText || 'Solved';
       document.getElementById(pipId).classList.add('done');
-    } else { card.classList.add('unplayed'); document.getElementById(stId).className = 'status ready'; }
+    } else {
+      card.classList.add('unplayed');
+      st.className = 'status ready';
+    }
+    var left = triesLeft(key);
+    if (TOK && left <= 0) {
+      play.innerHTML = 'NO PLAYS LEFT';
+      card.classList.add('spent'); card.classList.remove('unplayed');
+    } else if (done) {
+      play.innerHTML = 'PLAY AGAIN' + ARW;
+    } else {
+      play.innerHTML = 'PLAY' + ARW;
+    }
   }
-  runTile('cardTable', 'pipT', 'stT', 'playT', ts, tDone);
-  runTile('cardOdd', 'pipO', 'stO', 'playO', os, oDone);
-  runTile('cardCareer', 'pipR', 'stR', 'playR', rs, rDone);
+  function runText(sv) { return (sv.last && sv.last.run != null) ? (sv.last.run + ' in a row') : 'Played'; }
 
-  // Rank It (time-scored, solved-or-not)
-  var cardK = document.getElementById('cardRank');
-  if (kDone) {
-    cardK.classList.add('solved');
-    var stK = document.getElementById('stK'); stK.className = 'status done'; stK.textContent = 'Solved';
-    document.getElementById('playK').innerHTML = '✓ DONE';
-    document.getElementById('pipK').classList.add('done');
-  } else { cardK.classList.add('unplayed'); document.getElementById('stK').className = 'status ready'; }
+  mark('cardMatch', 'pipM', 'stM', 'playM', mDone, (mRes && mRes.grade) ? ('Solved · ' + mRes.grade) : 'Solved', 'match');
+  mark('cardCross', 'pipC', 'stC', 'playC', cDone, 'Solved', 'crossword');
+  mark('cardWord',  'pipW', 'stW', 'playW', wDone, 'Solved', 'wordsearch');
+  mark('cardGuess', 'pipG', 'stG', 'playG', gDone, (gs.last && gs.last.won === false) ? 'Missed' : 'Solved', 'guess');
+  mark('cardTable', 'pipT', 'stT', 'playT', tDone, runText(ts), 'table');
+  mark('cardOdd',   'pipO', 'stO', 'playO', oDone, runText(os), 'oddone');
+  mark('cardCareer','pipR', 'stR', 'playR', rDone, runText(rs), 'career');
+  mark('cardRank',  'pipK', 'stK', 'playK', kDone, 'Solved', 'rankit');
 
   var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (wDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0) + (kDone ? 1 : 0);
   document.getElementById('dprogT').textContent = n + ' / 8 played';

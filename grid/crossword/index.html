@@ -343,6 +343,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <div class="share-grid" id="mShareGrid"></div>
     <div class="milestone" id="mMilestone"></div>
     <div class="countdown" id="mCountdown"></div>
+    <button class="btn gold" id="mAgain">Play again</button>
     <button class="btn gold" id="mShare">Share result</button>
     <button class="btn ghost" id="mStats">Stats</button>
     <button class="btn ghost" id="mClose">Close</button>
@@ -370,6 +371,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <!-- cache-busted: bump ?v= whenever the puzzle bank changes -->
 <script src="puzzles.js?v=7"></script>
 <script src="/grid/sfx.js"></script>
+<script src="/grid/tokens.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
 <script>
@@ -444,6 +446,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   // ---- state ----------------------------------------------------------------
   var sel = { r:0, c:0, dir:'A' };
   var startedAt = null, elapsed = 0, tick = null, done = false;
+  var charged = false, attemptFirst = false;
 
   // pick first white cell
   (function(){ outer:
@@ -533,6 +536,14 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   // ---- input ----------------------------------------------------------------
   function ensureStarted(){
     if(startedAt || done) return;
+    // charge one play the moment the attempt truly begins (first cell entry /
+    // first typed letter). Never twice per attempt; never on reload. TESTER
+    // mode stays outside the economy so internal cycling isn't billed.
+    if(!charged){
+      charged = true;
+      if(TESTER){ attemptFirst = false; }
+      else { var r = (window.RTGTokens ? RTGTokens.startAttempt('crossword') : {ok:true, first:true}); attemptFirst = !!(r && r.first); }
+    }
     startedAt = performance.now();
     tick = setInterval(updateTimer, 250);
   }
@@ -648,6 +659,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   });
   document.getElementById('btnReveal').addEventListener('click', function(){
     var cell=cells[sel.r][sel.c]; if(cell.block) return;
+    ensureStarted();
     cell.val=cell.ans; cell.revealed=true; cell.checked=false;
     render(); checkSolved();
   });
@@ -716,9 +728,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     document.getElementById('yourTm').textContent = fmt(elapsed);
     document.getElementById('yourBest').textContent = fmt(s.best || elapsed);
     document.getElementById('mFlawless').classList.toggle('on', flawless);
+    // ranked = the day's first (ranked) attempt; extra plays are practice only
+    document.getElementById('mSub').textContent = attemptFirst ? 'Nice grid. Your streak lives another day.' : 'Practice — not ranked';
+    updateAgainBtn();
 
     // ---- cloud: post the run (signed-in only; fail-open). Cloud streak wins. ----
-    if(window.RTG_BOARD && !TESTER){
+    if(window.RTG_BOARD && !TESTER && attemptFirst){
       var revealed=0; for(var rr=0;rr<N;rr++) for(var cc=0;cc<N;cc++){ if(!cells[rr][cc].block && cells[rr][cc].revealed) revealed++; }
       RTG_BOARD.submit('crossword', P.id, { seconds:Math.round(elapsed), mistakes:0, reveals:revealed }).then(function(res){
         if(res && res.streak){
@@ -756,6 +771,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     return out.join('\n');
   }
 
+  document.getElementById('mAgain').addEventListener('click', function(){
+    if(!TESTER && window.RTGTokens && !RTGTokens.canPlay('crossword')){ toast('No plays left today'); updateAgainBtn(); return; }
+    beginAttempt();
+  });
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); if(bothClosed()) stopCountdown(); });
   function shareTextCW(){ return 'RunTheGrid — Daily Crossword '+P.date+'\n'+N+'×'+N+' in '+fmt(elapsed)+'\n\n'+buildShareGrid()+'\n\nrunthe.gg/grid/crossword'; }
   document.getElementById('mShare').addEventListener('click', shareCrosswordImage);
@@ -951,6 +970,61 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     });
   })();
 
+  // ---- daily play-token economy ---------------------------------------------
+  // main info/subtitle line gains the remaining-plays label on a fresh attempt
+  function updateHint(){
+    var seg=document.getElementById('dateSeg'); if(!seg) return;
+    var lbl = window.RTGTokens ? (' · '+RTGTokens.label('crossword')+' today') : '';
+    seg.innerHTML = fmtDate(P.date)+' <small>Daily'+lbl+'</small>';
+  }
+  function updateAgainBtn(){
+    var b=document.getElementById('mAgain'); if(!b) return;
+    if(!TESTER && window.RTGTokens && !RTGTokens.canPlay('crossword')){
+      b.textContent='No plays left today'; b.disabled=true; b.style.opacity='.55'; b.style.cursor='default';
+    } else {
+      b.textContent='Play again'; b.disabled=false; b.style.opacity=''; b.style.cursor='pointer';
+    }
+  }
+  // clear this puzzle's entries and start a fresh attempt on the SAME daily grid
+  function beginAttempt(){
+    for(var br=0;br<N;br++) for(var bc=0;bc<N;bc++){
+      var cl=cells[br][bc]; if(cl.block) continue;
+      cl.val=''; cl.checked=false; cl.revealed=false;
+    }
+    filledEntries={}; announcedFull=false;
+    done=false; charged=false; attemptFirst=false;
+    if(tick){ clearInterval(tick); tick=null; }
+    startedAt=null; elapsed=0;
+    document.getElementById('timerN').textContent='0:00';
+    // reset the cursor to the first white cell
+    (function(){ outer:
+      for(var r=0;r<N;r++) for(var c=0;c<N;c++) if(!cells[r][c].block){ sel.r=r; sel.c=c; sel.dir='A'; break outer; }
+    })();
+    var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden');
+    var b=document.getElementById('board'); if(b){ b.style.pointerEvents=''; b.style.opacity=''; }
+    stopCountdown();
+    render();
+    updateHint();
+  }
+  // out of plays: lock the board and show the previous result in review state
+  function showLocked(saved){
+    done=true; if(tick){ clearInterval(tick); tick=null; }
+    var b=document.getElementById('board'); if(b){ b.style.pointerEvents='none'; b.style.opacity='.55'; }
+    var seg=document.getElementById('dateSeg'); if(seg) seg.innerHTML = fmtDate(P.date)+' <small>No plays left — back tomorrow.</small>';
+    var bestStr = (saved.best && saved.best<1e9) ? fmt(saved.best) : '—';
+    document.getElementById('mTitle').textContent='No plays left';
+    document.getElementById('mSub').textContent='No plays left — back tomorrow.';
+    document.getElementById('mTime').textContent=bestStr;
+    document.getElementById('mStreak').textContent=saved.streak||0;
+    document.getElementById('mBest').textContent=bestStr;
+    document.getElementById('mShareGrid').textContent='';
+    document.getElementById('mFlawless').classList.remove('on');
+    var mm=document.getElementById('mMilestone'); if(mm){ mm.textContent=''; mm.classList.remove('on'); }
+    updateAgainBtn();
+    startCountdown('mCountdown');
+    document.getElementById('scrim').classList.remove('hidden');
+  }
+
   // ---- boot -----------------------------------------------------------------
   document.getElementById('dateSeg').innerHTML = fmtDate(P.date)+' <small>Daily</small>';
   document.getElementById('sizeSeg').textContent = N+' × '+N;
@@ -991,7 +1065,15 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
 
   buildLists();
-  render();
+  // token gate: out of plays -> locked review (streak bookkeeping already
+  // advances only once/day via the `already` flag); else a fresh playable
+  // puzzle. beginAttempt does NOT charge — the charge lands on first entry.
+  if(!TESTER && window.RTGTokens && !RTGTokens.canPlay('crossword')){
+    render();
+    showLocked(saved);
+  } else {
+    beginAttempt();
+  }
 })();
 </script>
 </body>
