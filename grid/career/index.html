@@ -221,7 +221,9 @@
     while(out.length<ROUNDS && guard<8000){ guard++;
       var t=POOL[ri(POOL.length)];
       if(t.id===last) continue;
-      var others=(bySport[t.sport]||[]).filter(function(e){ return e.id!==t.id; });
+      var tpath=(t.t||[]).join('>');
+      // distractors: same sport, and NOT the same exact team path (no second correct answer)
+      var others=(bySport[t.sport]||[]).filter(function(e){ return e.id!==t.id && (e.t||[]).join('>')!==tpath; });
       if(others.length<3) continue;
       var distract=shuffle(others).slice(0,3);
       var opts=shuffle([t].concat(distract)).map(function(e){ return e.id; });

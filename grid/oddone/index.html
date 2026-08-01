@@ -212,9 +212,32 @@
   // Fair by construction: four are on one team; the odd one is a DIFFERENT sport
   // (so it shares no team with the four), and is not on that team. Names only,
   // so it's a knowledge test, not a spot-the-sport giveaway.
+  function posFam(p){ if(!p) return ''; var w=String(p).trim().split(/\s+/); return w[w.length-1]; }
+  // FAIRNESS: the intended odd must be the ONLY defensible odd-one. Any salient
+  // category (a team, a position family, a nationality) that exactly 4 of the 5
+  // share implies a different "odd" — reject the round unless every such category
+  // points at the same intended odd. Protects against e.g. "4 are American, the
+  // 5th isn't" giving a second correct answer.
+  function fairOdd(five, oddId){
+    var cats={};
+    five.forEach(function(e){
+      (e.t||[]).forEach(function(t){ (cats['t:'+t]=cats['t:'+t]||[]).push(e.id); });
+      if(e.pos) (cats['p:'+posFam(e.pos)]=cats['p:'+posFam(e.pos)]||[]).push(e.id);
+      if(e.nat) (cats['n:'+e.nat]=cats['n:'+e.nat]||[]).push(e.id);
+    });
+    var ids=five.map(function(e){return e.id;});
+    for(var k in cats){
+      if(cats[k].length===4){
+        var missing=ids.filter(function(id){ return cats[k].indexOf(id)<0; })[0];
+        if(missing!==oddId) return false;   // a different player is "the odd one" too
+      }
+    }
+    return true;
+  }
+
   function buildRounds(){
-    var out=[], guard=0, usedTeam={};
-    while(out.length<ROUNDS && guard<8000){ guard++;
+    var out=[], guard=0;
+    while(out.length<ROUNDS && guard<12000){ guard++;
       var tk=teamKeys[ri(teamKeys.length)];
       var four=shuffle(teams[tk]).slice(0,4);
       if(four.length<4) continue;
@@ -224,8 +247,9 @@
         if(cand.sport===sport4) continue; if((cand.t||[]).indexOf(tk)>=0) continue;
         if(four.some(function(f){return f.id===cand.id;})) continue; odd=cand; break; }
       if(!odd) continue;
-      var five=shuffle(four.concat([odd]));
-      out.push({ team:tk, odd:odd.id, five:five.map(function(e){return e.id;}) });
+      var five=four.concat([odd]);
+      if(!fairOdd(five, odd.id)) continue;               // reject ambiguous rounds
+      out.push({ team:tk, odd:odd.id, five:shuffle(five).map(function(e){return e.id;}) });
     }
     return out;
   }
