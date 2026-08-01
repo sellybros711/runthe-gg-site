@@ -227,22 +227,20 @@ if (want('nfl')) {
 if (want('bands')) {
   const { E, R, data, league } = CFB;
   const CTX = { league };
-  const CEIL = 107;   /* keep in step with RATING_CEILING in cfb/index.html */
-  const rate = (r, c) => r.reduce((t, p) => t + p.ppr_ppg_mean, 0)
-    * c * E.rosterStructure(r).multiplier;
+  const rate = (r, c) => E.teamOverall(r, c);
 
   console.log('=== how often a draft lands in each band ===');
   const drafted = [], hindsight = [], teams = [];
   for (let i = 0; i < 700; i++) {
     const run = draft(CFB, STRATS.greedy);
     if (!run) continue;
-    const ov = rate(run.roster, run.season.chemistry) * 100 / CEIL;
+    const ov = rate(run.roster, run.season.chemistry);
     drafted.push(ov);
     teams.push({ roster: run.roster, chem: run.season.chemistry, run, ov });
     try {
       const bp = R.bestPossibleSquad(run, data, CTX);
       if (bp && bp.squad) {
-        const bov = rate(bp.squad, bp.chemistry) * 100 / CEIL;
+        const bov = rate(bp.squad, bp.chemistry);
         hindsight.push(bov);
         teams.push({ roster: bp.squad, chem: bp.chemistry, run, ov: bov });
       }
@@ -314,10 +312,9 @@ if (want('bands')) {
 if (want('curve')) {
   const { E, R, data, league } = CFB;
   const CTX = { league };
-  const CEIL = 107;   /* keep in step with RATING_CEILING in cfb/index.html */
-  const rate = (r, c) => r.reduce((t, p) => t + p.ppr_ppg_mean, 0)
-    * c * E.rosterStructure(r).multiplier;
-  const LO = 66, HI = 104, W = 2;
+  /* The overall IS the rating now: no divisor, no ceiling. */
+  const rate = (r, c) => E.teamOverall(r, c);
+  const LO = 66, HI = 112, W = 2;
   const nbins = Math.ceil((HI - LO) / W);
   const bins = Array.from({ length: nbins }, () => []);
   for (let i = 0; i < 2600; i++) {
@@ -329,7 +326,7 @@ if (want('curve')) {
       if (bp && bp.squad) cands.push({ roster: bp.squad, chem: bp.chemistry, run });
     } catch (e) { /* not always computable */ }
     for (const c of cands) {
-      const ov = rate(c.roster, c.chem) * 100 / CEIL;
+      const ov = rate(c.roster, c.chem);
       const bi = Math.floor((ov - LO) / W);
       if (bi >= 0 && bi < nbins && bins[bi].length < 22) bins[bi].push({ ...c, ov });
     }

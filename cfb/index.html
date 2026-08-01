@@ -2135,9 +2135,9 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=8"></script>
+<script src="engine.js?v=9"></script>
 <script src="run.js?v=5"></script>
-<script src="achievements.js?v=4"></script>
+<script src="achievements.js?v=5"></script>
 <script src="auth.js?v=1"></script>
 <script src="board.js?v=1"></script>
 <script>
@@ -4745,41 +4745,19 @@ const EMBLEM_TROPHY='<svg viewBox="0 0 48 48" aria-hidden="true">'+
 /* One definition, and it lives in the engine, because playRun needs it too: the
    championship game is decided partly on this number. A copy here would drift. */
 const teamRating=(roster,chemistry)=>E.teamRating(roster,chemistry);
-/* TEAM OVERALL IS A RATING, not the points total it started as. The raw number
-   is points a game and any decent roster clears 100 of them, so a team knocked
-   out in the first round was handed a 106 and it read like a perfect score.
+/* TEAM OVERALL IS THE RATING, in points a game, with nothing done to it.
 
-   A HUNDRED IS THE BEST TEAM A PLAYER CAN DRAFT, not the best team that exists.
-   That distinction is the whole of this number and it was wrong once already.
+   IT USED TO BE DIVIDED BY A CEILING measured from the best roster the wheel
+   could ever hand anybody. That was wrong twice over. A rating built out of
+   points a game has no reason to have a maximum, and once the division was
+   there the results screen had to explain it for its own arithmetic to add up,
+   which meant printing the best draft in the game on the screen of somebody
+   still trying to find one. The ceiling is gone and so is the explanation.
 
-   The ceiling used to come from a hill climb over all 14,000 players against the
-   full budget: 125, a lineup built by picking any six men in the data. Nobody can
-   ever draft it. The wheel shows one school at a time and gives six draws, so the
-   reachable best is far lower, and pinning the hundred to the unreachable one
-   pushed the whole game into the bottom three quarters of its own scale. A season
-   that went 13-2, reached the national championship game and took the BEST SIX
-   AVAILABLE off every one of its draws scored 76.7. Nothing about that reads like
-   what it was.
-
-   Measured over 900 seasons drafted by taking the highest scorer on every board,
-   and over the best six that could have come off those same draws, under the
-   rating as it now stands:
-
-     what a player drafts     p50  84.3   p90  97.9   p99 104.7   best 108.9
-     the best six available   p50  97.0   p90 104.0   p99 108.3   best 110.6
-
-   107 is the hundred. A well-drafted team lands in the eighties, an exceptional
-   one around ninety, and clearing 100 needs a roster at the 99th percentile of
-   perfect hindsight: about one draft in a hundred and fifty. That is what "one of
-   the best lineups anyone could ever create" should mean when the wheel, and not
-   a spreadsheet, is handing out the players.
-
-   IT MOVED FROM 112 WHEN SHAPE WENT BACK INTO THE RATING, because the formula
-   changed and so did its scale. The predecessors were 112, 126, 141 and 135; none
-   of the five are comparable, and neither are ratings recorded under them, which
-   costs nothing because nothing has launched and the board is empty. */
-const RATING_CEILING=E.CONSTANTS.RATING_CEILING;
-const overallOf=(raw)=>raw*100/RATING_CEILING;
+   What the number means now: a median roster is in the middle eighties, a good
+   one in the nineties, and clearing a hundred takes a draft most seasons will
+   not give you. Nothing clamps it and nothing ever will. */
+const overallOf=(raw)=>raw;
 /* THE FIT IS THE WHOLE MULTIPLIER, shape and scheme together, so the sentence
    must not label it as the scheme alone: that read as if a 2% scheme were worth
    the whole +8%. This prints the total, and schemeShare() names the scheme's own
@@ -4848,11 +4826,10 @@ function paintOver(){
   const st=E.rosterStructure(run.roster);
   const rating=teamRating(run.roster,run.season.chemistry);
   const overall=overallOf(rating);
-  /* Green at 88, amber at 78, measured against what the number is now worth: 88
-     makes the playoff two times in five and 90 more than half the time, 78 about
-     one time in twelve, and below that it is a bowl season. Both moved down the
-     scale when shape went into the rating and the ceiling came to 107. */
-  const rband=overall>=88?'#22c55e':(overall>=78?'#fbbf24':'#ef4444');
+  /* Green at 90, amber at 80, measured against what the number is worth on the
+     scale it is now on: 90 makes the playoff more than half the time, 84 about
+     three times in ten, 80 about one in six, and below that it is a bowl season. */
+  const rband=overall>=90?'#22c55e':(overall>=80?'#fbbf24':'#ef4444');
   const bigcell=(k,v,pctFill,color)=>'<div><div class="k">'+k+'</div>'+
     '<div class="v" style="color:'+color+'">'+v+'</div>'+
     '<div class="t"><i style="width:'+pctFill+'%;background:'+color+'"></i></div></div>';
@@ -4948,21 +4925,16 @@ function paintOver(){
     tile(agPG.toFixed(1),'Points allowed')+
     tile((diff>=0?'+':'')+diff.toFixed(1),'Difference',diff>=0?'up':'dn')+
     tile(bestStreak,'Longest streak');
-  /* THE SENTENCE IS THE SUM, so the rating can be checked by hand off this line,
-     and BOTH STEPS have to be on it or the second one looks like a fudge. It
-     used to read "multiply out to 88.3, which is an 82.5 team overall", which
-     invites exactly one question: why did 88.3 become 82.5? They are the same
-     quantity in two units. 88.3 is points a game; 82.5 is those points against
-     the 107 the best draftable team would score. Naming the unit and printing
-     the ceiling makes the division visible instead of mysterious.
-     squadFppg is printed to one decimal for the same reason: rounded to a whole
-     number it did not reconcile, because 86.5 shows as 87 and 87 x 1.087 x 0.939
-     is 88.8 rather than the 88.3 on the same line. */
+  /* THE SENTENCE IS THE SUM, and now it is one step rather than two. Three terms
+     multiply and the answer IS the overall, so there is no second number to
+     explain and no ceiling to give away.
+     squadFppg is printed to one decimal because rounded to a whole number it did
+     not reconcile: 86.5 shows as 87, and 87 times the two percentages misses the
+     total sitting on the same line. */
   $('o-squadline').innerHTML='<span>'+squadFppg.toFixed(1)+' squad FPPG, '+
     pc(run.season.chemistry-1)+' chemistry and '+fitPhrase(st)+
-    ' multiply out to '+rating.toFixed(1)+' points a game. Out of the '+
-    RATING_CEILING+' the best team the wheel can give would score, that is '+
-    artNum(overall.toFixed(1))+'<b>'+overall.toFixed(1)+'</b> team overall. '+
+    ' multiply out to '+artNum(overall.toFixed(1))+'<b>'+overall.toFixed(1)+
+    '</b> team overall. '+
     'You spent '+M(spendUsed)+' of '+M(E.CONSTANTS.CAP_MUSD)+'.'+schemeShare(st)+'</span>';
 
   drawField($('field3'),false);

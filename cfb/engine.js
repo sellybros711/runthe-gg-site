@@ -52,16 +52,20 @@ const CONSTANTS = {
   POOL_GAMMA: 1.18,
   PLAYOFF_ROUNDS_WITH_BYE: 3,
   PLAYOFF_ROUNDS_NO_BYE: 4,
-  // How many of the twelve come from the eleven-win pool. See generateSchedule.
-  MARQUEE_GAMES: 2,
-  /* THE RATING, AND THE TWO FLOORS UNDER THE TITLE. See teamRating() and
-     titleEdge(). RATING_CEILING is what a rating is divided by to get the 0..100
-     overall every screen shows. */
-  RATING_CEILING: 107,
+  /* OFF, AND LEFT IN PLACE. Two of the twelve used to come from the eleven-win
+     pool, to stop a merely good roster running the table. PERFECT_FLOOR does
+     that job exactly now, and the marquee games were doing it by making the
+     whole season harder for everybody: they cost eight points of win rate and
+     took the top of the scale down with the bottom. At 0 the schedule is
+     balanced the way it always was. See generateSchedule. */
+  MARQUEE_GAMES: 0,
+  /* THE TWO FLOORS UNDER THE TITLE. See teamRating() and titleEdge(). They are
+     in rating points, which is what the screens show, because there is no scale
+     factor any more: see teamOverall(). */
   TITLE_FLOOR: 88,
   PERFECT_FLOOR: 90,
   TITLE_EDGE_MAX: 3.20,
-  TITLE_EDGE_MIN: 0.84,
+  TITLE_EDGE_MIN: 0.66,
   TITLE_EDGE_PIVOT: 97,
   TITLE_EDGE_SLOPE: 0.075,
   // Extra, per point below TITLE_FLOOR, on top of the ordinary slope.
@@ -340,8 +344,16 @@ function teamRating(roster, chemistryMultiplier) {
   const fppg = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
   return fppg * chemistryMultiplier * rosterStructure(roster).multiplier;
 }
-function teamOverall(roster, chemistryMultiplier, constants = CONSTANTS) {
-  return teamRating(roster, chemistryMultiplier) * 100 / constants.RATING_CEILING;
+/* THE OVERALL IS THE RATING. There is no divisor and no maximum.
+   It used to be divided by a constant measured from the best roster the wheel
+   could ever hand somebody, which did two things wrong at once. It put a cap on
+   a number that has no reason to have one, and the results screen had to explain
+   the cap to make its own arithmetic add up, which meant printing the best draft
+   in the game on the screen of somebody still trying to find it. Points a game
+   needs no explaining and gives nothing away: a good roster is in the nineties,
+   an exceptional one clears a hundred, and there is no number it cannot pass. */
+function teamOverall(roster, chemistryMultiplier) {
+  return teamRating(roster, chemistryMultiplier);
 }
 
 /* THE LAST GAME IS AGAINST THE BEST TEAM IN THE COUNTRY, and how far above you
@@ -507,18 +519,23 @@ function selectBowl(roster, chemResult, rng) {
 
 // ─── chemistry ──────────────────────────────────────────────────────────────
 
+/* HALVED. Chemistry was worth +4.9% to a median roster and +11.5% at the top,
+   which made "six men who happened to share a state" a bigger lever than most of
+   what a player actually decides. It is a garnish on a roster, not the roster.
+   Every link is worth half what it was and the asymptote came down with them, so
+   a median team now gets about +2.5% and the very best about +6%. */
 const CHEMISTRY = {
   VALUES: {
-    battery: 0.10,
-    teammates: 0.05,
-    program: 0.03,
-    family: 0.03,
-    home_state: 0.02,
-    conference: 0.02,
-    coach: 0.02,
+    battery: 0.05,
+    teammates: 0.025,
+    program: 0.015,
+    family: 0.015,
+    home_state: 0.01,
+    conference: 0.01,
+    coach: 0.01,
   },
-  MIN: -0.10,
-  MAX: 0.15,
+  MIN: -0.06,
+  MAX: 0.08,
 };
 
 // ─── color utilities ────────────────────────────────────────────────────────

@@ -211,15 +211,15 @@
        re-anchored to the best team a player can actually draft, and each move
        orphaned an id. They are named for what they mean instead, so the next
        re-tune is a number and not a rename.
-       Measured over 900 seasons drafted by taking the highest scorer on every
-       board, with shape in the rating and the ceiling at 107: p50 79, p90 91,
-       p99 98, best 102. So 88 is a well-drafted team and 98 is the best one in a
-       hundred. */
-    A('rating_loaded', 'Loaded', 'Build a team rated 88 or better.', 'silver', 'Roster craft',
-      (c) => (c.best('overall') || 0) >= 88),
-    A('rating_videogame', 'Video game numbers', 'Build a team rated 98 or better.',
+       Measured over 500 seasons drafted by taking the highest scorer on every
+       board, on the rating with no ceiling under it: p50 80, p75 89, p90 94,
+       p99 101, best 103. So 90 is better than three drafts in four and 100 is
+       better than ninety-eight of them. */
+    A('rating_loaded', 'Loaded', 'Build a team rated 90 or better.', 'silver', 'Roster craft',
+      (c) => (c.best('overall') || 0) >= 90),
+    A('rating_videogame', 'Video game numbers', 'Build a team rated 100 or better.',
       'legend', 'Roster craft',
-      (c) => (c.best('overall') || 0) >= 98),
+      (c) => (c.best('overall') || 0) >= 100),
     A('chem_10', 'They just click', 'Finish a season with +10% chemistry or better.', 'gold', 'Roster craft',
       (c) => (c.best('chemistry_pct') || 0) >= 10),
     A('chem_negative_ring', 'Strangers with rings', 'Win the title with negative chemistry.',
