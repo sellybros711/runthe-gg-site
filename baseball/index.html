@@ -92,7 +92,7 @@ h1,h2,h3{margin:0}
 /* ─── intro / hero ─── */
 .hero{margin-bottom:16px}
 .hero-reels{margin-top:0}
-.field.hero-field{aspect-ratio:1/0.78}
+.field.hero-field{aspect-ratio:1/0.68}
 .hero-field{margin-top:10px}
 .hero-field .chip{cursor:default}
 .hero-field .chip.pop .who,.hero-field .chip.pop .yr{animation:signin .34s ease-out .1s both}
@@ -157,7 +157,7 @@ h1,h2,h3{margin:0}
 @keyframes clubwash{0%{opacity:0;transform:scale(.86)}45%{opacity:.9;transform:scale(1.05)}100%{opacity:0;transform:scale(1)}}
 
 /* ─── diamond field ─── */
-.field{position:relative;width:100%;aspect-ratio:1/0.78;border-radius:14px;overflow:hidden;
+.field{position:relative;width:100%;aspect-ratio:1/0.68;border-radius:14px;overflow:hidden;
   background:radial-gradient(130% 90% at 50% -10%,#1a3320 0%,#0f1f14 52%,#0a150d 100%);
   border:1px solid rgba(255,255,255,.08)}
 .field .turf{position:absolute;inset:0;background:repeating-linear-gradient(180deg,
@@ -356,7 +356,7 @@ h1,h2,h3{margin:0}
   .dcols .opts{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-height:800px){
-  .field.hero-field{aspect-ratio:auto;height:180px}
+  .field.hero-field{aspect-ratio:auto;height:170px}
   .hero{margin-bottom:10px}
   .hnote{margin-top:7px;font-size:11.5px}
 }
@@ -544,10 +544,11 @@ function tcPlate(team,season){
 }
 
 /* ─── diamond coordinates ─── */
+/* SLOTS: C,1B,2B,3B,SS, LF,CF,RF, DH, SP1,SP2,CL */
 const DIAMOND_SPOTS=[
-  {x:50,y:88},{x:82,y:56},{x:66,y:42},{x:18,y:56},{x:34,y:42},
-  {x:16,y:26},{x:50,y:10},{x:84,y:26},{x:18,y:88},
-  {x:40,y:68},{x:60,y:68},{x:82,y:88},
+  {x:50,y:86},{x:82,y:52},{x:66,y:38},{x:18,y:52},{x:34,y:38},
+  {x:14,y:20},{x:50,y:6},{x:86,y:20},{x:16,y:94},
+  {x:50,y:62},{x:50,y:62},{x:50,y:62},
 ];
 
 /* ─── reel system ─── */
@@ -624,10 +625,15 @@ function spinBoth(draw,done){
 
 /* ─── diamond field ─── */
 function diamondMarkings(){
-  const h50=50,h1B=78,h2B=50,h3B=22;
-  const v_home=85,v_base=55,v_2B=28,v_mound=60;
+  const h50=50,h1B=76,h2B=50,h3B=24;
+  const v_home=80,v_base=52,v_2B=26,v_mound=58;
+  const foulStroke='rgba(200,184,152,.10)';
+  const arcStroke='rgba(200,184,152,.08)';
   return '<div class="turf"></div><div class="lit"></div>'+
     '<svg class="diamond-svg" viewBox="0 0 100 100" preserveAspectRatio="none">'+
+    '<line x1="'+h50+'" y1="'+v_home+'" x2="3" y2="3" stroke="'+foulStroke+'" stroke-width="0.35"/>'+
+    '<line x1="'+h50+'" y1="'+v_home+'" x2="97" y2="3" stroke="'+foulStroke+'" stroke-width="0.35"/>'+
+    '<path d="M 3,3 Q 50,-6 97,3" fill="none" stroke="'+arcStroke+'" stroke-width="0.35"/>'+
     '<polyline points="'+h50+','+v_home+' '+h1B+','+v_base+' '+h2B+','+v_2B+' '+h3B+','+v_base+' '+h50+','+v_home+'" '+
       'fill="none" stroke="rgba(200,184,152,.14)" stroke-width="0.4" stroke-linejoin="round"/>'+
     '<circle cx="'+h50+'" cy="'+v_mound+'" r="2.5" fill="none" stroke="rgba(200,184,152,.10)" stroke-width="0.3"/>'+
@@ -635,7 +641,6 @@ function diamondMarkings(){
     '<rect x="'+(h1B-.8)+'" y="'+(v_base-.8)+'" width="1.6" height="1.6" transform="rotate(45 '+h1B+' '+v_base+')" fill="rgba(200,184,152,.12)"/>'+
     '<rect x="'+(h2B-.8)+'" y="'+(v_2B-.8)+'" width="1.6" height="1.6" transform="rotate(45 '+h2B+' '+v_2B+')" fill="rgba(200,184,152,.12)"/>'+
     '<rect x="'+(h3B-.8)+'" y="'+(v_base-.8)+'" width="1.6" height="1.6" transform="rotate(45 '+h3B+' '+v_base+')" fill="rgba(200,184,152,.12)"/>'+
-    '<path d="M 10,8 Q 50,-8 90,8" fill="none" stroke="rgba(200,184,152,.07)" stroke-width="0.3"/>'+
     '</svg><div class="vig"></div>';
 }
 
@@ -652,6 +657,7 @@ function fieldState(el){
 const MOVE_MS=520;
 const easeOut=t=>1-Math.pow(1-t,3);
 
+const PITCHER_SLOTS=[9,10,11];
 function drawField(el,live){
   const st=fieldState(el);
   const bySlot=new Array(E.SLOTS.length).fill(null);
@@ -659,13 +665,22 @@ function drawField(el,live){
   const openCount=E.SLOTS.length-(RUN?RUN.roster.length:0);
   if(el.id==='field') drawPips(bySlot);
 
+  const pitchersFilled=PITCHER_SLOTS.filter(i=>bySlot[i]);
+  const pitchersOpen=PITCHER_SLOTS.filter(i=>!bySlot[i]);
+  const activePitcher=pitchersOpen.length>0?pitchersOpen[0]:
+    pitchersFilled.length>0?pitchersFilled[pitchersFilled.length-1]:9;
+
   st.chips.forEach((c,i)=>{
     const p=bySlot[i];
+    const isPitcher=PITCHER_SLOTS.includes(i);
+    if(isPitcher&&i!==activePitcher){c.style.display='none';return;}
+    if(isPitcher) c.style.display='';
     const wasFilled=c.classList.contains('filled');
     const justFilled=!!p&&!wasFilled;
     c.className='chip '+(p?'filled':'empty')+((live&&!p&&openCount===1)?' now':'')+(justFilled?' pop':'');
     const disc=c.querySelector('.disc');
-    disc.querySelector('.dl').textContent=E.SLOTS[i];
+    const pitcherLabel=isPitcher&&!p?(i===11?'CP':'SP'):E.SLOTS[i];
+    disc.querySelector('.dl').textContent=isPitcher&&!p?pitcherLabel:E.SLOTS[i];
     disc.style.cssText=p?posPaint(E.SLOTS[i]):'';
     c.querySelector('.who').textContent=p?lastName(p.n):'';
     c.querySelector('.yr').innerHTML=p?tcPlate(p.t,p.s)+' '+p.s:'';
@@ -682,12 +697,14 @@ function drawField(el,live){
 }
 
 /* ─── pips in cap bar ─── */
+const PIP_LABELS={SP1:'SP',SP2:'SP',CL:'CP'};
 function drawPips(bySlot){
   const el=$('d-pips');if(!el) return;
   el.innerHTML=E.SLOTS.map((slot,i)=>{
     const p=bySlot[i];
-    if(!p) return '<i>'+esc(slot)+'</i>';
-    return '<i class="on" style="'+posPaint(slot)+'"><b>'+esc(slot)+'</b></i>';
+    const label=PIP_LABELS[slot]||slot;
+    if(!p) return '<i>'+esc(label)+'</i>';
+    return '<i class="on" style="'+posPaint(slot)+'"><b>'+esc(label)+'</b></i>';
   }).join('');
 }
 
@@ -744,13 +761,21 @@ function heroChips(){
   const f=$('h-field');
   f.querySelectorAll('.chip').forEach(c=>c.remove());
   if(!f.querySelector('.turf')) f.innerHTML=diamondMarkings();
+  const filledPitchers=PITCHER_SLOTS.filter(i=>heroFilled.find(x=>x.at===i));
+  const openPitchers=PITCHER_SLOTS.filter(i=>!heroFilled.find(x=>x.at===i));
+  const activeP=openPitchers.length>0?openPitchers[0]:
+    filledPitchers.length>0?filledPitchers[filledPitchers.length-1]:9;
   DIAMOND_SPOTS.forEach((sp,i)=>{
+    const isPitcher=PITCHER_SLOTS.includes(i);
+    if(isPitcher&&i!==activeP) return;
     const on=heroFilled.find(x=>x.at===i);
     const el=document.createElement('div');
     el.className='chip '+(on?'filled':'empty')+(on&&on.fresh?' pop':'');
     el.style.left=sp.x+'%';el.style.top=sp.y+'%';
     const style=on?' style="'+posPaint(on.pos)+'"':'';
-    el.innerHTML='<div class="disc"'+style+'><span class="dl">'+(on?on.pos:E.SLOTS[i])+'</span></div>'+
+    const label=isPitcher&&!on?(i===11?'CP':'SP'):
+      (on?on.pos:E.SLOTS[i]);
+    el.innerHTML='<div class="disc"'+style+'><span class="dl">'+label+'</span></div>'+
       (on?'<div class="lab"><div class="who">'+esc(lastName(on.name))+'</div><div class="yr">'+
       tcPlate(on.team,on.season)+' '+on.season+'</div></div>':'');
     f.appendChild(el);
