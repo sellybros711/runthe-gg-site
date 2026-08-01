@@ -197,7 +197,6 @@ function teamSeasonId(team, season) {
 function indexData(players) {
   const byTeamSeason = {};
   const teamSeasons = [];
-  const teamSeasonSet = new Set();
   const allPlayers = {};
 
   for (const p of players) {
@@ -207,16 +206,21 @@ function indexData(players) {
 
     if (!byTeamSeason[tsId]) byTeamSeason[tsId] = [];
     byTeamSeason[tsId].push(p);
+  }
 
-    if (!teamSeasonSet.has(tsId)) {
-      teamSeasonSet.add(tsId);
-      teamSeasons.push({
-        team_season_id: tsId,
-        team: p.t,
-        season: p.s,
-        display: `${p.s} ${p.t}`,
-      });
-    }
+  // Only real rosters are spinnable: skip TOT (Baseball-Reference's
+  // multi-team season totals, not an actual club) and team-seasons with
+  // too few players to make a meaningful draw.
+  const MIN_SPIN_ROSTER = 10;
+  for (const roster of Object.values(byTeamSeason)) {
+    const first = roster[0];
+    if (first.t === 'TOT' || roster.length < MIN_SPIN_ROSTER) continue;
+    teamSeasons.push({
+      team_season_id: teamSeasonId(first.t, first.s),
+      team: first.t,
+      season: first.s,
+      display: `${first.s} ${first.t}`,
+    });
   }
 
   // Sort each team-season's players cheapest first (for floor calculations)
