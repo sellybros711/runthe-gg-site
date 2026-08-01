@@ -135,6 +135,10 @@
   .tile.cross{--c:var(--violet);}
   .tile.word{--c:var(--teal);}
   .tile.guess{--c:var(--coral);}
+  .tile.table{--c:var(--gold);}
+  .tile.oddone{--c:var(--violet);}
+  .tile.career{--c:var(--green);}
+  .tile.table .play, .tile.career .play{color:#071426;}
   /* colored header cap with the game motif */
   .tile .cap{position:relative; height:118px; display:grid; place-items:center; overflow:hidden;
     background:linear-gradient(150deg, color-mix(in srgb, var(--c) 34%, var(--card)) 0%, color-mix(in srgb, var(--c) 14%, var(--card)) 100%);
@@ -172,9 +176,10 @@
   .double .sub{display:block; font-weight:600; font-size:12px; color:var(--mut); margin-top:2px;}
 
   /* ---- bottom nav ---- */
-  .nav{position:fixed; left:0; right:0; bottom:0; z-index:20; display:flex; justify-content:space-around; align-items:center;
+  .nav{position:fixed; left:0; right:0; bottom:0; z-index:20; display:flex; justify-content:flex-start; align-items:center; overflow-x:auto; scrollbar-width:none;
     padding:8px 6px calc(8px + env(safe-area-inset-bottom,0)); background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(10px); border-top:1px solid var(--line);}
-  .nav a{display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--dim); font-size:9.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:4px 8px; flex:1; text-align:center;}
+  .nav::-webkit-scrollbar{display:none;}
+  .nav a{display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--dim); font-size:9.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:4px 6px; flex:1 0 auto; min-width:60px; text-align:center;}
   .nav a svg{width:21px; height:21px;}
   .nav a.on{color:var(--coralT);}
   .nav a.soon{opacity:.5;}
@@ -234,7 +239,7 @@
       <main>
         <div class="zone-head">
           <span class="day">Today's Puzzles</span>
-          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipM"></span><span class="pip" id="pipC"></span><span class="pip" id="pipW"></span><span class="pip" id="pipG"></span></span><span id="dprogT">0 / 4 played</span></span>
+          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipM"></span><span class="pip" id="pipC"></span><span class="pip" id="pipW"></span><span class="pip" id="pipG"></span><span class="pip" id="pipT"></span><span class="pip" id="pipO"></span><span class="pip" id="pipR"></span></span><span id="dprogT">0 / 7 played</span></span>
         </div>
 
         <div class="tiles">
@@ -343,11 +348,57 @@
               <span class="play" id="playG">PLAY <span class="arw">→</span></span>
             </span>
           </a>
+
+          <a class="tile table" id="cardTable" href="/grid/table/">
+            <span class="cap" aria-hidden="true">
+              <span class="badge">New</span><span class="status" id="stT">Ready</span>
+              <svg viewBox="0 0 56 56">
+                <rect x="9" y="28" width="13" height="20" rx="3" fill="#F2B632" opacity=".5"/>
+                <rect x="27" y="16" width="13" height="32" rx="3" fill="#F2B632"/>
+                <g fill="none" stroke="#F2B632" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M43 15h8M47 11v8"/><path d="M43 21l4-4 4 4"/></g>
+              </svg>
+            </span>
+            <span class="body">
+              <span class="nm">Run The Table</span>
+              <span class="desc">Higher or lower? Tap the bigger number and see how many you can run in a row.</span>
+              <span class="play" id="playT">PLAY <span class="arw">→</span></span>
+            </span>
+          </a>
+
+          <a class="tile oddone" id="cardOdd" href="/grid/oddone/">
+            <span class="cap" aria-hidden="true">
+              <span class="badge">New</span><span class="status" id="stO">Ready</span>
+              <svg viewBox="0 0 56 56">
+                <circle cx="16" cy="16" r="7.5" fill="#A982F3"/><circle cx="40" cy="16" r="7.5" fill="#A982F3"/><circle cx="16" cy="40" r="7.5" fill="#A982F3"/>
+                <rect x="32.5" y="32.5" width="15" height="15" rx="3.5" fill="#F06A5F"/>
+              </svg>
+            </span>
+            <span class="body">
+              <span class="nm">Odd One Out</span>
+              <span class="desc">Four names share a connection, one doesn't. Spot it, keep the streak going.</span>
+              <span class="play" id="playO">PLAY <span class="arw">→</span></span>
+            </span>
+          </a>
+
+          <a class="tile career" id="cardCareer" href="/grid/career/">
+            <span class="cap" aria-hidden="true">
+              <span class="badge">New</span><span class="status" id="stR">Ready</span>
+              <svg viewBox="0 0 56 56">
+                <g fill="none" stroke="#48D17A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 44 L22 24 L34 34 L46 12"/></g>
+                <g fill="#48D17A"><circle cx="12" cy="44" r="4.2"/><circle cx="22" cy="24" r="4.2"/><circle cx="34" cy="34" r="4.2"/><circle cx="46" cy="12" r="4.2"/></g>
+              </svg>
+            </span>
+            <span class="body">
+              <span class="nm">Career Path</span>
+              <span class="desc">Name the athlete from their team-by-team journey. How many in a row?</span>
+              <span class="play" id="playR">PLAY <span class="arw">→</span></span>
+            </span>
+          </a>
         </div>
 
         <div class="double" id="double">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <span>Clean sweep!<span class="sub">You played all four of today's puzzles. New ones drop in <b id="cdT2">--</b>.</span></span>
+          <span>Clean sweep!<span class="sub">You played all seven of today's puzzles. New ones drop in <b id="cdT2">--</b>.</span></span>
         </div>
       </main>
     </div>
@@ -368,6 +419,9 @@
     <a href="/grid/crossword/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 3v18M3 9h18"/></svg>Crossword</a>
     <a href="/grid/wordsearch/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Word Search</a>
     <a href="/grid/guess/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.9.5-1.6 1-1.6 2.1M12 17.5v.01"/></svg>Guess</a>
+    <a href="/grid/table/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="12" width="6" height="8" rx="1"/><rect x="14" y="6" width="6" height="14" rx="1"/></svg>Table</a>
+    <a href="/grid/oddone/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>Odd One</a>
+    <a href="/grid/career/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 L10 10 L15 15 L20 4"/></svg>Career</a>
   </nav>
 </div>
 
@@ -412,7 +466,10 @@
   var cw = {}; try { cw = JSON.parse(g('rtg:cw:v1', '{}')) || {}; } catch (e) {}
   var ws = {}; try { ws = JSON.parse(g('rtg:ws:v1', '{}')) || {}; } catch (e) {}
   var gs = {}; try { gs = JSON.parse(g('rtg:guess:v1', '{}')) || {}; } catch (e) {}
-  cur = Math.max(cur, cw.streak | 0, ws.streak | 0, gs.streak | 0);
+  var ts = {}; try { ts = JSON.parse(g('rtg:table:v1', '{}')) || {}; } catch (e) {}
+  var os = {}; try { os = JSON.parse(g('rtg:oddone:v1', '{}')) || {}; } catch (e) {}
+  var rs = {}; try { rs = JSON.parse(g('rtg:career:v1', '{}')) || {}; } catch (e) {}
+  cur = Math.max(cur, cw.streak | 0, ws.streak | 0, gs.streak | 0, ts.streak | 0, os.streak | 0, rs.streak | 0);
   best = Math.max(best, cur, cw.bestStreak | 0);
   document.getElementById('curStreak').textContent = cur;
   document.getElementById('bestStreak').textContent = best;
@@ -443,6 +500,9 @@
   var cDone = (cw.lastDone === t);
   var wDone = (ws.lastDone === t);
   var gDone = (gs.lastDone === t);
+  var tDone = (ts.lastDone === t);
+  var oDone = (os.lastDone === t);
+  var rDone = (rs.lastDone === t);
 
   var cardM = document.getElementById('cardMatch'), cardC = document.getElementById('cardCross');
   if (mDone) {
@@ -478,9 +538,24 @@
     document.getElementById('pipG').classList.add('done');
   } else { cardG.classList.add('unplayed'); document.getElementById('stG').className = 'status ready'; }
 
-  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (wDone ? 1 : 0) + (gDone ? 1 : 0);
-  document.getElementById('dprogT').textContent = n + ' / 4 played';
-  if (n === 4) {
+  // run games (played-or-not; status shows the run)
+  function runTile(cardId, pipId, stId, playId, sv, done) {
+    var card = document.getElementById(cardId);
+    if (done) {
+      card.classList.add('solved');
+      var st = document.getElementById(stId); st.className = 'status done';
+      st.textContent = (sv.last && sv.last.run != null) ? (sv.last.run + ' in a row') : 'Played';
+      document.getElementById(playId).innerHTML = '✓ DONE';
+      document.getElementById(pipId).classList.add('done');
+    } else { card.classList.add('unplayed'); document.getElementById(stId).className = 'status ready'; }
+  }
+  runTile('cardTable', 'pipT', 'stT', 'playT', ts, tDone);
+  runTile('cardOdd', 'pipO', 'stO', 'playO', os, oDone);
+  runTile('cardCareer', 'pipR', 'stR', 'playR', rs, rDone);
+
+  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (wDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0);
+  document.getElementById('dprogT').textContent = n + ' / 7 played';
+  if (n === 7) {
     document.getElementById('dprog').classList.add('all');
     document.getElementById('double').classList.add('on');
   }
