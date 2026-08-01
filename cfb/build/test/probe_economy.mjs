@@ -15,6 +15,7 @@
  *   rounds   the per-game win rate, regular season and each playoff round
  *   nfl      the same headline numbers for the NFL game, as a yardstick
  *   bands    what each overall band is rare enough to be, and worth
+ *   curve    the same thing two points at a time, to show it scales
  */
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -304,5 +305,67 @@ if (want('bands')) {
       + '   playoff ' + (m((x) => x.po) * 100).toFixed(0) + '%'
       + '   title ' + (m((x) => x.ti) * 100).toFixed(1) + '%');
   }
+  console.log('');
+}
+
+/* Does the number scale inside a band, or does it step? Two-point buckets, so a
+   90 and a 95 can be told apart. The wide bands elsewhere in this file are
+   measurement buckets, not thresholds: nothing in the game reads a band. */
+if (want('curve')) {
+  const { E, R, data, league } = CFB;
+  const CTX = { league };
+  const CEIL = 112;   /* keep in step with RATING_CEILING in cfb/index.html */
+  const rate = (r, c) => r.reduce((t, p) => t + p.ppr_ppg_mean, 0)
+    * (c + E.rosterStructure(r).schemeBonus);
+  const LO = 74, HI = 104, W = 2;
+  const nbins = Math.ceil((HI - LO) / W);
+  const bins = Array.from({ length: nbins }, () => []);
+  for (let i = 0; i < 2600; i++) {
+    const run = draft(CFB, STRATS.greedy);
+    if (!run) continue;
+    const cands = [{ roster: run.roster, chem: run.season.chemistry, run }];
+    try {
+      const bp = R.bestPossibleSquad(run, data, CTX);
+      if (bp && bp.squad) cands.push({ roster: bp.squad, chem: bp.chemistry, run });
+    } catch (e) { /* not always computable */ }
+    for (const c of cands) {
+      const ov = rate(c.roster, c.chem) * 100 / CEIL;
+      const bi = Math.floor((ov - LO) / W);
+      if (bi >= 0 && bi < nbins && bins[bi].length < 22) bins[bi].push({ ...c, ov });
+    }
+    if (bins.every((b) => b.length >= 22)) break;
+  }
+  console.log('=== the curve, two points at a time ===');
+  console.log('  overall   teams  seasons   wins   playoff     bye    title  perfect');
+  const rows = [];
+  for (let bi = 0; bi < nbins; bi++) {
+    const list = bins[bi];
+    if (list.length < 4) continue;
+    let n = 0, w = 0, po = 0, bye = 0, ti = 0, pf = 0;
+    for (const t of list) {
+      const schedule = t.run.schedule.map((id) => data.byTeamSeasonId[id]);
+      const playoffs = t.run.playoffs.map((id) => data.byTeamSeasonId[id]);
+      for (let i = 0; i < 320; i++) {
+        const rng = E.createSeededRNG(E.hashSeed('cv|' + t.run.seed + '|' + t.ov.toFixed(2) + '|' + i));
+        const o = E.playRun(t.roster, t.chem, schedule, playoffs, league, rng, data.prepared);
+        n++; w += o.regularWins;
+        if (o.seed.made) po++;
+        if (o.seed.bye) bye++;
+        if (o.titleWon) ti++;
+        if (o.perfect) pf++;
+      }
+    }
+    const pc = (v) => (v * 100 / n).toFixed(1).padStart(8) + '%';
+    console.log('  ' + ((LO + bi * W) + '-' + (LO + bi * W + W)).padEnd(9)
+      + String(list.length).padStart(5) + String(n).padStart(9)
+      + (w / n).toFixed(1).padStart(7) + pc(po) + pc(bye) + pc(ti)
+      + (pf * 100 / n).toFixed(2).padStart(8) + '%');
+    rows.push({ po: po / n, ti: ti / n, pf: pf / n });
+  }
+  /* Any step that goes backwards is roster shape, which the number leaves out:
+     a bucket holding a few badly shaped teams sags below the one beneath it. */
+  const dips = (k) => rows.slice(1).filter((r, i) => r[k] < rows[i][k] - 0.004).length;
+  console.log('  steps that go backwards, out of ' + (rows.length - 1)
+    + ':   playoff ' + dips('po') + '   title ' + dips('ti') + '   perfect ' + dips('pf'));
   console.log('');
 }
