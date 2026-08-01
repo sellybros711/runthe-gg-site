@@ -2247,19 +2247,30 @@ function teamRank(id){
 }
 const rankStr=(id)=>{ const r=teamRank(id); return r?'#'+r:''; };
 
-/* Your own place in the poll, driven by record and the quality of who you've
-   beaten. It climbs as you win and jumps when you knock off a ranked team, so
-   the number on your own plate moves the way a real team's does. */
+/* YOUR PLACE IN THE POLL, AND IT IS THE ONE THAT DECIDES THE PLAYOFF.
+   This used to be its own formula: wins, minus losses times 1.6, plus a bonus
+   for ranked scalps, mapped onto 1 to 25. It had nothing to do with
+   E.rankSeason, which is what actually gets read on selection Sunday, and the
+   two disagreed badly. A 10-2 that beat the 5th, 12th and 20th ranked teams
+   showed 7th here while the selection ranking had it well outside the twelve,
+   because the selection ranking also weighs scoring margin and strength of
+   schedule against the resume table for the whole country. Finishing 8th on
+   screen and then missing the playoff was that gap, not a bug in the bracket.
+   So the number on your plate is now the real one, computed the same way, off
+   the games played so far. Ranked in the country, not out of 25: it is capped
+   at the display only, so a team outside the poll shows nothing rather than a
+   made-up 25th. */
 function yourRank(){
-  if(!run||!run.season) return 0;
+  if(!run||!run.season||!DATA||!DATA.prepared) return 0;
   const reg=run.season.results.filter(r=>!r.playoff&&!r.bowl);
+  if(reg.length<3) return 0;
   const w=reg.filter(r=>r.won).length, l=reg.length-w;
-  if(w+l<3) return 0;
-  let quality=0;
-  for(const r of reg){ if(r.won){ const rk=teamRank(r.opponent_id); if(rk) quality+=(26-rk); } }
-  const score=w - l*1.6 + quality*0.06;
-  if(score<3) return 0;
-  return Math.max(1,Math.min(25,Math.round(26-score*2.1)));
+  const margin=reg.reduce((t,x)=>t+(x.yourScore-x.oppScore),0)/reg.length/(E.CONSTANTS.SCALE||1);
+  /* Only the games played, so the ranking answers "where would this stand
+     today" rather than assuming the rest of the schedule. */
+  const oppZs=reg.map(r=>(DATA.byTeamSeasonId[r.opponent_id]||{}).strength_z||0);
+  const rk=E.rankSeason(w,l,margin,oppZs,DATA.prepared).rank;
+  return rk<=25?rk:0;
 }
 /* Every ranked team you beat this season, best win first. */
 function signatureWins(){
