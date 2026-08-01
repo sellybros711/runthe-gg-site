@@ -17,8 +17,9 @@
 -- streak, and the display name (read from profiles for auth.uid(); never sent by the
 -- client). Writes are signed-in only; reads are public.
 --
--- BOARD SHAPE: one row per (user, game, puzzle_date). Two independent per-game
--- boards (Match, Crossword), each ranked by score ascending (lower = better).
+-- BOARD SHAPE: one row per (user, game, puzzle_date). Independent per-game
+-- boards (Match, Crossword, Word Search), each ranked by score ascending (lower
+-- = better).
 -- ----------------------------------------------------------------------------
 
 -- ---------------------------------------------------------------------------
@@ -28,7 +29,7 @@ create table if not exists grid_runs (
   id           bigserial primary key,
   created_at   timestamptz not null default now(),
   user_id      uuid not null,
-  game         text not null check (game in ('match','crossword')),
+  game         text not null check (game in ('match','crossword','wordsearch')),
   puzzle_date  date not null,
 
   -- raw, client-reported inputs
@@ -72,7 +73,7 @@ grant select on grid_runs to anon, authenticated;
 -- ---------------------------------------------------------------------------
 create table if not exists grid_streaks (
   user_id     uuid not null,
-  game        text not null check (game in ('match','crossword')),
+  game        text not null check (game in ('match','crossword','wordsearch')),
   streak      integer not null default 0,
   best_streak integer not null default 0,
   last_date   date,
@@ -106,7 +107,7 @@ declare
   v_id     bigint;
 begin
   if v_uid is null then raise exception 'sign in to post a score'; end if;
-  if p_game not in ('match','crossword') then raise exception 'unknown game'; end if;
+  if p_game not in ('match','crossword','wordsearch') then raise exception 'unknown game'; end if;
   if p_seconds is null or p_seconds < 0 or p_seconds >= 86400 then raise exception 'bad time'; end if;
   p_mistakes := greatest(0, least(20, coalesce(p_mistakes, 0)));
   p_reveals  := greatest(0, least(60, coalesce(p_reveals,  0)));
