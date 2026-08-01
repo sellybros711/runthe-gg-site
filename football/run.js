@@ -1015,12 +1015,34 @@ function isTradeWindow(run) {
   return TRADE_WEEKS.indexOf(run.season.week) !== -1;
 }
 
-/* Contracts get dearer every time the market opens. 8% rather than the old 6% because the
-   market now opens three times in-season instead of four (the preseason window deliberately
-   does not inflate -- a raise before week one makes no sense): 1.08^3 is 1.26x, the same
-   cumulative pressure the old 1.06^4 applied, just concentrated into the first nine weeks
-   where the decisions now live. */
-const CONTRACT_INFLATION = 1.08;
+/*
+ * ─── CONTRACT INFLATION, RETIRED ─────────────────────────────────────────────────────
+ *
+ * Contracts used to get 8% dearer every time the market opened, compounding to 1.26x across
+ * the three in-season windows. It is off, and the reason is that cash considerations do the
+ * same job better.
+ *
+ * The two squeeze the same room from opposite ends: inflation pushed the PAYROLL up toward a
+ * fixed ceiling, cash pulls the CEILING down toward a payroll you chose. Running both meant
+ * the pressure compounded from two directions at once, and it meant watching two different
+ * numbers move for two different reasons.
+ *
+ * Cash is the better of the pair on every count that matters. It is a CHOICE, quoted before
+ * you take it -- "$5M, your cap drops to $135M" -- where inflation was a tax levied whether
+ * you traded or not, on a roster you might have been perfectly happy with. And it charges you
+ * for the thing you actually gained, which is what makes it a decision rather than weather.
+ *
+ * What inflation did carry was urgency: a deal was cheaper now than later. The deadline at
+ * week 9 already supplies that, and it does it by closing the market rather than by taxing
+ * you for thinking.
+ *
+ * Left as a constant rather than torn out, the way TARGET_CONFLICT_ENABLED and CFB_LIVE are
+ * handled elsewhere here: one number brings it back. At 1 the re-pricer is a no-op and
+ * noTradePayroll below collapses to the starting payroll on its own, which is what that line
+ * always meant -- the 1.26x baseline existed only to avoid charging a GM for inflation they
+ * could not prevent, and with no inflation there is nothing to excuse.
+ */
+const CONTRACT_INFLATION = 1;
 
 /*
  * Re-price one roster spot WITHOUT touching the shared pool.
@@ -1040,6 +1062,10 @@ function reprice(run, idx, price) {
 }
 
 function inflateContracts(run) {
+  /* Nothing to do when there are no raises, and returning early matters rather than being
+     tidy: reprice() copies every roster entry, and doing that three times a season to
+     multiply by one would churn the objects the box score holds for no reason. */
+  if (!(CONTRACT_INFLATION > 1)) return;
   for (let i = 0; i < run.roster.length; i++) {
     const p = run.roster[i];
     reprice(run, i, Math.round(p.price_musd * CONTRACT_INFLATION * 100) / 100);
@@ -1940,8 +1966,9 @@ function computeGMRating(run) {
 
   const totalSalary = run.roster.reduce((t, p) => t + p.price_musd, 0);
   const capRemaining = capOf(run) - totalSalary;
-  /* The payroll you would have carried having made no trades at all: every in-season window
-     raises it whether you deal or not, so only spending ABOVE this is your doing. */
+  /* The payroll you would have carried having made no trades at all, which with contract
+     inflation retired is simply the one you started with. The formula is kept in terms of
+     CONTRACT_INFLATION so that turning raises back on re-excuses them in the same breath. */
   const noTradePayroll = run.startSalary * Math.pow(CONTRACT_INFLATION, TRADE_WEEKS.length);
   const addedSalary = Math.max(0, totalSalary - noTradePayroll);
   /* No cliff at zero: prices round per player, so "spent nothing" was a coin flip between
