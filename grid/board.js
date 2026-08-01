@@ -97,7 +97,8 @@
       p_game: game, p_date: dateStr,
       p_seconds: Math.max(0, Math.round(opts.seconds || 0)),
       p_mistakes: opts.mistakes || 0,
-      p_reveals: opts.reveals || 0
+      p_reveals: opts.reveals || 0,
+      p_run_len: (opts.runLen == null ? null : Math.max(0, Math.round(opts.runLen)))
     });
     return withTimeout(
       fetch(REST + 'rpc/grid_submit_run', { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: body })
@@ -110,7 +111,7 @@
     var q = REST + 'grid_runs?game=eq.' + encodeURIComponent(game) +
       '&puzzle_date=eq.' + encodeURIComponent(dateStr) +
       '&order=score.asc,created_at.asc&limit=' + (limit || 5) +
-      '&select=display_name,base_seconds,mistakes,reveals,score,flawless';
+      '&select=display_name,base_seconds,mistakes,reveals,run_len,score,flawless';
     return withTimeout(
       fetch(q, { headers: headers() })
         .then(function (res) { if (!res.ok) return fail('leaderboard', res); offline = false; return res.json(); })
