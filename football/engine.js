@@ -534,6 +534,11 @@ const CHEMISTRY = {
    */
   MIN: -0.10,
   MAX: 0.15,
+  /*
+   * The hub bonus, worth about what the battery link itself is worth. See qbHubBonus.
+   * One bonus per roster however many of the shapes hold.
+   */
+  QB_HUB: { VALUE: 0.08 },
   /* "Same era" was undefined in the GDD; fixed as within this many seasons. */
   TARGET_CONFLICT_ERA_YEARS: 3,
   TARGET_CONFLICT_PERCENTILE: 0.95,
@@ -1362,6 +1367,80 @@ function pairLinks(a, b, ctx, opts) {
  * `opts.sameClub` says every man on this roster plays for the same club because
  * the mode said so, which suppresses the franchise link. See pairLinks.
  */
+/*
+ * ─── THE QUARTERBACK AS A HUB ────────────────────────────────────────────────────────
+ *
+ * Everything above is pairwise, and pairwise cannot see the one arrangement football talks
+ * about more than any other: a quarterback with a rapport with his receiving corps. Two
+ * unrelated links to the same man are worth exactly what two links between anybody are, so
+ * the passer's central role scored as nothing special. This pays for the SHAPE.
+ *
+ * Two shapes, and one bonus however many hold, because a roster does not get paid twice for
+ * one idea:
+ *
+ *   both_wrs  the quarterback is connected to two of your wide receivers
+ *   rb_and_te the quarterback is connected to your back and your tight end
+ *
+ * Read by POSITION, not by roster slot: a receiver in the flex is still a receiver, and the
+ * Trade Machine only carries one WR slot, so a slot reading would have made the first shape
+ * impossible in that mode.
+ *
+ * ANY positive link counts, not only battery. A quarterback and receiver who were teammates,
+ * came out of the same draft, went to the same school or are brothers all have a reason to be
+ * on the same page; restricting this to men who literally threw to each other would have made
+ * a rare thing rarer.
+ *
+ * AND IT IS RARE. Measured over 3,600 drafts before it was built: the first shape lands in
+ * 0.7-1.0% of rosters, the second in 0.3-1.0%, and a player deliberately chasing links gets
+ * to about 3%. It is deliberately a jackpot rather than a routine bonus -- the draw rules
+ * allow at most two men from one team-season, so a passer and two of his targets can never
+ * come from a single year and the link has to be assembled across seasons. What makes it
+ * worth having anyway is that the draft board already prices every option's chemistry swing,
+ * so a GM one link away can see it and go and get it.
+ *
+ * The bonus runs through the same saturation curve as everything else rather than sitting
+ * outside it, which means it is worth most to a roster that has little else going on and
+ * least to one already near the ceiling. That is the behaviour every other link has here.
+ */
+function qbHubBonus(roster, links) {
+  const V = CHEMISTRY.QB_HUB;
+  if (!V || !V.VALUE) return null;
+  const qb = roster.find((p) => p.position === 'QB');
+  if (!qb) return null;
+  /* Who the quarterback is positively connected to, by name, which is how links report. */
+  const linked = new Set();
+  for (const l of links) {
+    if (!l || (l.value || 0) <= 0) continue;
+    if (l.a === qb.name) linked.add(l.b);
+    else if (l.b === qb.name) linked.add(l.a);
+  }
+  if (linked.size < 2) return null;
+  const at = (pos) => roster.filter((p) => p !== qb && p.position === pos && linked.has(p.name));
+  const wrs = at('WR');
+  const rb = at('RB');
+  const te = at('TE');
+  let names = null, label = null, shape = null;
+  if (wrs.length >= 2) {
+    shape = 'both_wrs';
+    names = [wrs[0].name, wrs[1].name];
+    label = `${lastWord(qb.name)} has a connection with both receivers`;
+  } else if (rb.length >= 1 && te.length >= 1) {
+    shape = 'rb_and_te';
+    names = [rb[0].name, te[0].name];
+    label = `${lastWord(qb.name)} has a connection with the back and the tight end`;
+  }
+  if (!shape) return null;
+  return {
+    type: 'qb_hub', shape, value: V.VALUE,
+    a: qb.name, b: names.join(' and '),
+    label, short: shape === 'both_wrs' ? 'Both his receivers' : 'His back and tight end',
+  };
+}
+
+/* The last word of a name, for a label that says "Manning" rather than "Peyton Manning"
+   inside a sentence that already names two other players. */
+const lastWord = (name) => String(name || '').trim().split(/\s+/).pop();
+
 function resolveChemistry(roster, ctx, opts) {
   const links = [];
   for (let i = 0; i < roster.length; i++) {
@@ -1370,6 +1449,10 @@ function resolveChemistry(roster, ctx, opts) {
       if (best) links.push({ ...best, a: roster[i].name, b: roster[j].name });
     }
   }
+  /* THE QUARTERBACK AS A HUB, on top of the pairs. See CHEMISTRY.QB_HUB. */
+  const hub = qbHubBonus(roster, links);
+  if (hub) links.push(hub);
+
   const positives = links.filter((l) => l.value > 0).sort((a, b) => b.value - a.value);
   const negatives = links.filter((l) => l.value < 0);
 
