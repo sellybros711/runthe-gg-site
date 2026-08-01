@@ -92,7 +92,7 @@ h1,h2,h3{margin:0}
 /* ─── intro / hero ─── */
 .hero{margin-bottom:16px}
 .hero-reels{margin-top:0}
-.field.hero-field{aspect-ratio:1/0.95}
+.field.hero-field{aspect-ratio:1/0.75}
 .hero-field{margin-top:10px}
 .hero-field .chip{cursor:default}
 .hero-field .chip.pop .who,.hero-field .chip.pop .yr{animation:signin .34s ease-out .1s both}
@@ -164,14 +164,14 @@ h1,h2,h3{margin:0}
 @keyframes clubwash{0%{opacity:0;transform:scale(.86)}45%{opacity:.9;transform:scale(1.05)}100%{opacity:0;transform:scale(1)}}
 
 /* ─── diamond field ─── */
-.field{position:relative;width:100%;aspect-ratio:1/0.95;border-radius:14px;overflow:hidden;
+.field{position:relative;width:100%;aspect-ratio:1/0.75;border-radius:14px;overflow:hidden;
   background:#3d8a2e;
   border:3px solid #2a5a18;box-shadow:0 4px 16px rgba(0,0,0,.18),inset 0 0 0 2px rgba(120,180,60,.25)}
 .field .turf{position:absolute;inset:0;
   background:repeating-linear-gradient(0deg,rgba(0,0,0,.012) 0 5px,transparent 5px 10px)}
 .field .lit{position:absolute;inset:0;
   background:radial-gradient(80% 55% at 50% 0%,#3a8c2e 0%,transparent 65%)}
-.field .diamond-svg{position:absolute;inset:0;z-index:0;pointer-events:none}
+.field .diamond-svg{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
 .field .vig{position:absolute;inset:0;pointer-events:none;
   box-shadow:inset 0 0 30px 8px rgba(0,0,0,.12)}
 
@@ -555,9 +555,9 @@ function tcPlate(team,season){
 /* ─── diamond coordinates ─── */
 /* SLOTS: C,1B,2B,3B,SS, LF,CF,RF, DH, SP1,SP2,CL */
 const DIAMOND_SPOTS=[
-  {x:50,y:87},{x:64,y:53},{x:64,y:36},{x:36,y:53},{x:36,y:36},
-  {x:13,y:21},{x:50,y:7},{x:87,y:21},{x:13,y:90},
-  {x:50,y:55},{x:50,y:55},{x:50,y:55},
+  {x:50,y:85},{x:64,y:50},{x:64,y:33},{x:36,y:50},{x:36,y:33},
+  {x:13,y:20},{x:50,y:7},{x:87,y:20},{x:13,y:88},
+  {x:50,y:52},{x:50,y:52},{x:50,y:52},
 ];
 
 /* ─── reel system ─── */
@@ -664,9 +664,9 @@ function diamondMarkings(sfx){
   sfx=sfx||'f';
   const wh='rgba(255,255,255,';
   const wallH=14,fpL=2,fpR=98;
-  const hx=50,hy=80;
-  const bY=55,bL=31.8,bR=68.2;
-  const tY=30;
+  const hx=50,hy=78;
+  const bY=52,bL=30.5,bR=69.5;
+  const tY=26;
   const wallBot='M 0,'+wallH+' Q 50,'+(wallH-18)+' 100,'+wallH;
   return '<div class="turf"></div><div class="lit"></div>'+
     '<svg class="diamond-svg" viewBox="0 0 100 100" preserveAspectRatio="none">'+
@@ -685,9 +685,9 @@ function diamondMarkings(sfx){
     '<circle cx="'+fpL+'" cy="0.8" r="1" fill="#e8c820"/>'+
     '<line x1="'+fpR+'" y1="0" x2="'+fpR+'" y2="'+wallH+'" stroke="#e8c820" stroke-width="1.5"/>'+
     '<circle cx="'+fpR+'" cy="0.8" r="1" fill="#e8c820"/>'+
-    '<path d="M 50,84.5 L 29.5,'+bY+' L 50,25.5 L 70.5,'+bY+' Z" fill="url(#dirtg-'+sfx+')"/>'+
-    '<ellipse cx="'+hx+'" cy="'+hy+'" rx="4.6" ry="4.85" fill="url(#dirtg-'+sfx+')"/>'+
-    '<ellipse cx="50" cy="'+bY+'" rx="5.5" ry="5.8" fill="#b18b50" stroke="'+wh+'.5)" stroke-width="0.45"/>'+
+    '<path d="M 50,82 L 28.3,'+bY+' L 50,22.5 L 71.7,'+bY+' Z" fill="url(#dirtg-'+sfx+')"/>'+
+    '<ellipse cx="'+hx+'" cy="'+hy+'" rx="4.6" ry="6.1" fill="url(#dirtg-'+sfx+')"/>'+
+    '<ellipse cx="50" cy="'+bY+'" rx="5.5" ry="7.3" fill="#b18b50" stroke="'+wh+'.5)" stroke-width="0.45"/>'+
     '<path d="M '+hx+','+hy+' L '+bL+','+bY+' L 50,'+tY+' L '+bR+','+bY+' Z" '+
       'fill="none" stroke="'+wh+'.85)" stroke-width="0.55" stroke-linejoin="round"/>'+
     '<line x1="'+bL+'" y1="'+bY+'" x2="'+fpL+'" y2="'+wallH+'" stroke="'+wh+'.85)" stroke-width="0.5"/>'+
