@@ -4437,7 +4437,14 @@ function playPlayoffGame(r,afterFn){
   const poRk=teamRank(r.opponent_id);
   youEl.querySelector('.cd').textContent='YOU';
   themEl.querySelector('.cd').textContent=opp?E.teamColors(opp).abbreviation:'OPP';
-  youEl.querySelector('.rk').textContent='';
+  /* YOUR SEED GOES NEXT TO YOUR RECORD, the way the opponent's ranking does. It
+     was blank, so the bug read "YOU 12-1" against "ORE 12-0 #3" and the one thing
+     a player wants to know in the bracket, where they are seeded, was the one
+     thing missing. seedFromRanking() makes the seed and the national ranking the
+     same number for anybody in the field, so this sits under the same # as the
+     other side and means both at once. */
+  const mySeed=run.playoffSeed&&run.playoffSeed.made?run.playoffSeed.seed:0;
+  youEl.querySelector('.rk').textContent=mySeed?'#'+mySeed:'';
   themEl.querySelector('.rk').textContent=poRk?'#'+poRk:'';
   youEl.querySelector('.rc').textContent=recordBefore(r);
   themEl.querySelector('.rc').textContent=opp?opp.record:'';
@@ -4573,9 +4580,14 @@ function playBowlBroadcast(){
   const bowlRk=teamRank(r.opponent_id);
   youEl.querySelector('.cd').textContent='YOU';
   themEl.querySelector('.cd').textContent=opp?E.teamColors(opp).abbreviation:'OPP';
-  youEl.querySelector('.rk').textContent='';
+  /* Same omission on the bowl board, and the same fix: you are not seeded here,
+     but you are ranked, and the other side has been showing its ranking all
+     along. The record was blank too. */
+  const myRk=yourRank();
+  youEl.querySelector('.rk').textContent=myRk?'#'+myRk:'';
   themEl.querySelector('.rk').textContent=bowlRk?'#'+bowlRk:'';
-  youEl.querySelector('.rc').textContent='';themEl.querySelector('.rc').textContent=opp?opp.record:'';
+  youEl.querySelector('.rc').textContent=recordBefore(r);
+  themEl.querySelector('.rc').textContent=opp?opp.record:'';
   youEl.querySelector('.sc').textContent='0';themEl.querySelector('.sc').textContent='0';
   youEl.className='bt you';themEl.className='bt them';
   bug.className='bug'+(bowlRk?' ranked':'');
