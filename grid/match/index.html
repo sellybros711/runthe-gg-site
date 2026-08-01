@@ -562,6 +562,7 @@
   <script src="generator.js?v=12"></script>
   <script src="/grid/sfx.js"></script>
   <script src="/grid/tokens.js"></script>
+  <script src="/grid/archive.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="/grid/board.js"></script>
   <script>
@@ -581,7 +582,8 @@
       var d = new Date();
       return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }
-    var DATE = todayStr();
+    var ARCHIVE = !!(window.RTGArchive && RTGArchive.active());   // past-day practice mode (Pro + ?date=)
+    var DATE = (window.RTGArchive ? RTGArchive.date() : todayStr());   // seeds the generator AND the board/result key
 
     // ---- tester mode: unlimited plays + fresh boards (for RunnyJ / CSel8) ----
     // Enable with ?test=1 (persists); disable with ?test=0. Site is hidden, so
@@ -597,7 +599,11 @@
       } catch (e) { return false; }
     })();
     var boardNo = 0;                                   // which tester board we're on
-    function boardSeed() { return TESTER ? (DATE + '#' + boardNo) : DATE; }
+    // First (ranked) play uses the deterministic daily seed so everyone gets the
+    // same board for the leaderboard. Replays reseed randomly for a fresh board.
+    var servedDaily = false;                           // true once the daily board has been served this session
+    var replaySeed = null;                             // when set, the generator seeds from this random string instead of DATE
+    function boardSeed() { return TESTER ? (DATE + '#' + boardNo) : (replaySeed || DATE); }
 
     // ---- wallet / streak ----
     // Coins are the RunTheGrid suite wallet (shared with the Daily Crossword);
@@ -658,7 +664,7 @@
 
     // ---- persistence of today's result so a refresh doesn't replay ----
     function resultKey() { return 'grid_match_result_' + DATE; }
-    function savedResult() { try { return JSON.parse(LS.getItem(resultKey())); } catch (e) { return null; } }
+    function savedResult() { if (ARCHIVE) return null; try { return JSON.parse(LS.getItem(resultKey())); } catch (e) { return null; } }   // archive: always a fresh play
 
     // ---- reset play state ----
     function resetState() {
@@ -914,7 +920,7 @@
     function startIfNeeded() {
       if (started || done) return;
       // charge one play-token the first time this attempt truly begins (first tile placement/move)
-      if (!charged) { var r = (window.RTGTokens ? RTGTokens.startAttempt('match') : { ok: true, first: true }); charged = true; attemptFirst = !!(r && r.first); }
+      if (!charged) { if (ARCHIVE) { charged = true; attemptFirst = false; } else { var r = (window.RTGTokens ? RTGTokens.startAttempt('match') : { ok: true, first: true }); charged = true; attemptFirst = !!(r && r.first); } }
       started = true; startTs = Date.now();
       tick = setInterval(updateTimer, 250);
       updateTimer();
@@ -1107,10 +1113,11 @@
         return;
       }
 
-      // streak: completion-based (win or lose), one per calendar day
+      // streak: completion-based (win or lose), one per calendar day.
+      // ARCHIVE plays are practice: never touch streak/stats/coins/result save.
       var last = LS.getItem('grid_match_lastplayed');
       var s = streakGet();
-      var freshDay = (last !== DATE);
+      var freshDay = (!ARCHIVE && last !== DATE);
       if (freshDay) {
         var y = new Date(DATE + 'T00:00:00'); y.setDate(y.getDate() - 1);
         var ystr = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
@@ -1129,21 +1136,22 @@
       var milestone = freshDay && won ? streakMilestone(s) : '';
 
       var coins = coinsFor(won, finalTime, par, mistakes);
-      walletSet(walletGet() + coins);
-
-      LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, order: solveOrder.slice() }));
-      renderWallet();
+      if (!ARCHIVE) {
+        walletSet(walletGet() + coins);
+        LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, order: solveOrder.slice() }));
+        renderWallet();
+      }
 
       // ---- cloud: post the run on a win (signed-in only; fail-open). Raw solve
       // time only; the server score formula adds its own per-mistake penalty. ----
-      if (won && attemptFirst && window.RTG_BOARD) {
+      if (won && attemptFirst && !ARCHIVE && window.RTG_BOARD) {
         var raw = Math.max(0, Math.round(finalTime - penalty));
         RTG_BOARD.submit('match', DATE, { seconds: raw, mistakes: mistakes, reveals: 0 }).then(function (res) {
           if (res && res.streak) document.getElementById('streakVal').textContent = res.streak;
           if (typeof renderMatchBoard === 'function') renderMatchBoard();
         });
       }
-      setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, streak: s, celebrate: true, milestone: milestone, practice: !attemptFirst }); }, won ? 350 : 1100);
+      setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, streak: s, celebrate: true, milestone: milestone, practice: !attemptFirst, archive: ARCHIVE }); }, won ? 350 : 1100);
     }
 
     function autoSolveReveal() {
@@ -1204,7 +1212,7 @@
       document.getElementById('resTime').textContent = fmt(r.time);
       document.getElementById('resMiss').textContent = r.mistakes;
       document.getElementById('resStreak').textContent = r.streak;
-      document.getElementById('resCoins').textContent = r.tester ? 'Tester — not counted' : ('+' + r.coins + ' coins');
+      document.getElementById('resCoins').textContent = r.archive ? 'Archive practice — not counted' : (r.tester ? 'Tester — not counted' : ('+' + r.coins + ' coins'));
       document.getElementById('resDone').textContent = r.tester ? 'Next board →' : 'Done';
       var strip = document.getElementById('resStrip'); strip.innerHTML = '';
       solveOrder.forEach(function (idx) {
@@ -1431,16 +1439,23 @@
     function updateExplain() {
       var ex = document.querySelector('.explain'); if (!ex) return;
       var base = 'Sort 20 sports names into five hidden groups of four.';
+      if (ARCHIVE) { ex.textContent = base + ' · Archive practice'; return; }
       ex.textContent = base + (window.RTGTokens ? (' · ' + RTGTokens.label('match') + ' today') : '');
     }
     function updateAgainBtn() {
       var b = document.getElementById('mAgain'); if (!b) return;
-      if (window.RTGTokens && !RTGTokens.canPlay('match')) { b.textContent = 'No plays left today'; b.disabled = true; b.style.opacity = '.55'; b.style.cursor = 'default'; }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { b.textContent = 'No plays left today'; b.disabled = true; b.style.opacity = '.55'; b.style.cursor = 'default'; }
       else { b.textContent = 'Play again'; b.disabled = false; b.style.opacity = ''; b.style.cursor = 'pointer'; }
     }
     function beginAttempt() {
-      // fresh solve state for TODAY's deterministic puzzle; no token charged until first interaction
+      // Ranked first play = the daily board; every replay is a fresh random board.
+      var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf('match') > 0);
+      if (isReplay) { replaySeed = 'match-replay-' + (((Math.random() * 4294967296) >>> 0) || 1); }
+      else { replaySeed = null; servedDaily = true; }
+      // fresh solve state; no token charged until first interaction. Rebuild the
+      // board so the (daily or random) seed above actually takes effect.
       charged = false; attemptFirst = false;
+      buildDay();
       resetState();
       var rm = document.getElementById('resultModal'); if (rm) rm.hidden = true;
       var sm = document.getElementById('statsModal'); if (sm) sm.hidden = true;
@@ -1451,7 +1466,7 @@
       updateExplain();
     }
     document.getElementById('mAgain').addEventListener('click', function () {
-      if (window.RTGTokens && !RTGTokens.canPlay('match')) { toast('No plays left today'); updateAgainBtn(); return; }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { toast('No plays left today'); updateAgainBtn(); return; }
       beginAttempt();
     });
 
@@ -1522,8 +1537,9 @@
         return;
       }
       var saved = savedResult();
-      // out of plays for today -> keep the locked / review state
-      if (window.RTGTokens && !RTGTokens.canPlay('match')) {
+      // out of plays for today -> keep the locked / review state.
+      // ARCHIVE always starts a fresh playable past-day board (no lock, no restore).
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) {
         resetState(); render(); updateTimer(); updateExplain();
         if (saved) {
           replaySaved(saved);

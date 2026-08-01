@@ -372,6 +372,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <script src="puzzles.js?v=7"></script>
 <script src="/grid/sfx.js"></script>
 <script src="/grid/tokens.js"></script>
+<script src="/grid/archive.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
 <script>
@@ -391,7 +392,24 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   } catch(e){}
   var LIST = (window.RTG_PUZZLES && window.RTG_PUZZLES.puzzles) || [];
   var PZI = parseInt(QS.get('pz') || '-1', 10);
+
+  // ---- archive / past-day practice mode -------------------------------------
+  // When ?date=YYYY-MM-DD names a valid past day and the user is Pro, RTGArchive
+  // is active. Archive plays are PRACTICE: no daily save, no streak, no token
+  // charge, no board submit. DATE is the effective date this page runs (the
+  // archive day when active, else today) — used to pick the SAME daily puzzle
+  // that was/will be shown on that date.
+  var ARCHIVE = !!(window.RTGArchive && RTGArchive.active());
+  var DATE = (window.RTGArchive ? RTGArchive.date() : new Date().toISOString().slice(0,10));
+  // daily pick: crossword serves the puzzle whose id === the date string
+  // (matches window.RTG_PUZZLES.daily's logic), falling back to the first.
+  function dailyFor(dateStr){
+    for(var i=0;i<LIST.length;i++){ if(LIST[i].id===dateStr) return LIST[i]; }
+    return LIST[0] || null;
+  }
+
   var P = (TESTER && PZI >= 0 && LIST[PZI]) ? LIST[PZI]
+        : ARCHIVE ? dailyFor(DATE)
         : ((window.RTG_PUZZLES && window.RTG_PUZZLES.daily) || null);
   if(!P){ document.getElementById('board').textContent = 'No puzzle for today.'; return; }
 
@@ -541,7 +559,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     // mode stays outside the economy so internal cycling isn't billed.
     if(!charged){
       charged = true;
-      if(TESTER){ attemptFirst = false; }
+      if(TESTER || ARCHIVE){ attemptFirst = false; }   // archive/tester stay outside the token economy; never ranked
       else { var r = (window.RTGTokens ? RTGTokens.startAttempt('crossword') : {ok:true, first:true}); attemptFirst = !!(r && r.first); }
     }
     startedAt = performance.now();
@@ -665,8 +683,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   });
 
   // ---- win check + persistence ---------------------------------------------
-  function load(){ try{ return JSON.parse(localStorage.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
-  function save(s){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(s)); }catch(e){} }
+  // archive plays never read or write the daily save (protects streak/best/already)
+  function load(){ if(ARCHIVE) return {}; try{ return JSON.parse(localStorage.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
+  function save(s){ if(ARCHIVE) return; try{ localStorage.setItem(SAVE_KEY, JSON.stringify(s)); }catch(e){} }
 
   var announcedFull=false;
   function gridFull(){ for(var r=0;r<N;r++) for(var c=0;c<N;c++){ if(!cells[r][c].block && cells[r][c].val==='') return false; } return true; }
@@ -733,7 +752,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     updateAgainBtn();
 
     // ---- cloud: post the run (signed-in only; fail-open). Cloud streak wins. ----
-    if(window.RTG_BOARD && !TESTER && attemptFirst){
+    if(window.RTG_BOARD && !TESTER && !ARCHIVE && attemptFirst){
       var revealed=0; for(var rr=0;rr<N;rr++) for(var cc=0;cc<N;cc++){ if(!cells[rr][cc].block && cells[rr][cc].revealed) revealed++; }
       RTG_BOARD.submit('crossword', P.id, { seconds:Math.round(elapsed), mistakes:0, reveals:revealed }).then(function(res){
         if(res && res.streak){
@@ -772,7 +791,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
 
   document.getElementById('mAgain').addEventListener('click', function(){
-    if(!TESTER && window.RTGTokens && !RTGTokens.canPlay('crossword')){ toast('No plays left today'); updateAgainBtn(); return; }
+    if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){ toast('No plays left today'); updateAgainBtn(); return; }
     beginAttempt();
   });
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); if(bothClosed()) stopCountdown(); });
@@ -974,12 +993,13 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   // main info/subtitle line gains the remaining-plays label on a fresh attempt
   function updateHint(){
     var seg=document.getElementById('dateSeg'); if(!seg) return;
-    var lbl = window.RTGTokens ? (' · '+RTGTokens.label('crossword')+' today') : '';
+    // archive practice shows its own label (the archive.js banner carries the date); no token label
+    var lbl = ARCHIVE ? ' · Archive practice' : (window.RTGTokens ? (' · '+RTGTokens.label('crossword')+' today') : '');
     seg.innerHTML = fmtDate(P.date)+' <small>Daily'+lbl+'</small>';
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
-    if(!TESTER && window.RTGTokens && !RTGTokens.canPlay('crossword')){
+    if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){
       b.textContent='No plays left today'; b.disabled=true; b.style.opacity='.55'; b.style.cursor='default';
     } else {
       b.textContent='Play again'; b.disabled=false; b.style.opacity=''; b.style.cursor='pointer';
@@ -1068,7 +1088,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   // token gate: out of plays -> locked review (streak bookkeeping already
   // advances only once/day via the `already` flag); else a fresh playable
   // puzzle. beginAttempt does NOT charge — the charge lands on first entry.
-  if(!TESTER && window.RTGTokens && !RTGTokens.canPlay('crossword')){
+  if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){
     render();
     showLocked(saved);
   } else {

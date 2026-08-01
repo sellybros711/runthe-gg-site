@@ -235,6 +235,7 @@
 <script src="../match/entities.js?v=12"></script>
 <script src="/grid/sfx.js"></script>
 <script src="/grid/tokens.js"></script>
+<script src="/grid/archive.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
 <script>
@@ -252,10 +253,16 @@
 
   // ---- date + seeded RNG (deterministic per day) ----
   function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-  var DATE = todayStr();
+  var ARCHIVE=!!(window.RTGArchive && RTGArchive.active());   // past-day practice mode
+  var DATE = (window.RTGArchive?RTGArchive.date():todayStr());  // archive date seeds grid AND board key (P.id=DATE)
   function xmur3(str){ var h=1779033703^str.length; for(var i=0;i<str.length;i++){ h=Math.imul(h^str.charCodeAt(i),3432918353); h=h<<13|h>>>19; } return function(){ h=Math.imul(h^h>>>16,2246822507); h=Math.imul(h^h>>>13,3266489909); return (h^=h>>>16)>>>0; }; }
   function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
-  var rng = mulberry32(xmur3('ws-'+DATE)());
+  // First (ranked) play uses the deterministic daily seed so everyone gets the
+  // same board for the leaderboard. Replays reseed randomly for a fresh board.
+  var rng, servedDaily=false;
+  function seedDaily(){ rng=mulberry32(xmur3('ws-'+DATE)()); }
+  function seedRandom(){ rng=mulberry32(((Math.random()*4294967296)>>>0)||1); }
+  seedDaily();
   function ri(n){ return Math.floor(rng()*n); }
   function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=ri(i+1); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
 
@@ -316,22 +323,31 @@
     return { grid:g, placed:placed };
   }
 
-  var P=buildDay();
-  var built=placeAll(P.words);
-  P.words=built.placed.map(function(p){ return p.word; });  // only words that actually placed
-  var GRID=built.grid, PLACED=built.placed;
+  var P, built, GRID, PLACED;
+  function buildBoard(){
+    P=buildDay();
+    built=placeAll(P.words);
+    P.words=built.placed.map(function(p){ return p.word; });  // only words that actually placed
+    GRID=built.grid; PLACED=built.placed;
+  }
+  buildBoard();
   var foundSet={}, foundCount=0, colorFor={};
   var done=false, hints=0, started=false, startTs=0, tick=null, elapsed=0, charged=false, attemptFirst=false;
 
   // ---- render ----
   var gridEl=document.getElementById('grid');
-  gridEl.style.gridTemplateColumns='repeat('+N+',1fr)';
   var cellEls=[];
-  for(var idx=0; idx<N*N; idx++){
-    var d=document.createElement('div'); d.className='cell'; d.dataset.i=idx;
-    d.textContent=GRID[Math.floor(idx/N)][idx%N];
-    gridEl.appendChild(d); cellEls.push(d);
+  function renderGrid(){
+    gridEl.style.gridTemplateColumns='repeat('+N+',1fr)';
+    gridEl.innerHTML='';
+    cellEls=[];
+    for(var idx=0; idx<N*N; idx++){
+      var d=document.createElement('div'); d.className='cell'; d.dataset.i=idx;
+      d.textContent=GRID[Math.floor(idx/N)][idx%N];
+      gridEl.appendChild(d); cellEls.push(d);
+    }
   }
+  renderGrid();
   function paintFound(){
     PLACED.forEach(function(p,pi){ if(!foundSet[p.word]) return;
       p.cells.forEach(function(ci){ var el=cellEls[ci]; el.classList.add('found'); el.style.background=colorFor[p.word]; });
@@ -358,7 +374,7 @@
     else if(kind==='pos') phrase=n+' '+name;
     else if(kind==='aw') phrase=n+' '+name;
     else phrase=n+' '+name;
-    var lbl = window.RTGTokens ? (' · '+RTGTokens.label('wordsearch')+' today') : '';
+    var lbl = ARCHIVE ? ' · Archive practice' : (window.RTGTokens ? (' · '+RTGTokens.label('wordsearch')+' today') : '');
     var el=document.getElementById('wordsLab'); if(el) el.textContent='Find '+phrase+'. Names reveal as you spot them.'+lbl;
   }
   updWordsLab();
@@ -405,7 +421,7 @@
 
   // ---- timer ----
   function startIfNeeded(){ if(started||done) return;
-    if(!charged){ var r=(window.RTGTokens?RTGTokens.startAttempt('wordsearch'):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); }
+    if(!charged){ if(ARCHIVE){ charged=true; attemptFirst=false; } else { var r=(window.RTGTokens?RTGTokens.startAttempt('wordsearch'):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); } }
     started=true; startTs=performance.now(); tick=setInterval(updTimer,250); }
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
   function updTimer(){ if(!started) return; elapsed=(performance.now()-startTs)/1000; document.getElementById('timerN').textContent=fmt(elapsed); }
@@ -422,18 +438,21 @@
 
   // ---- finish ----
   function shiftDay(iso,delta){ var d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+delta); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-  function load(){ try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
-  function save(s){ try{ LS.setItem(SAVE_KEY, JSON.stringify(s)); }catch(e){} }
+  function load(){ if(ARCHIVE) return {}; try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
+  function save(s){ if(ARCHIVE) return; try{ LS.setItem(SAVE_KEY, JSON.stringify(s)); }catch(e){} }   // archive plays never touch streak/lastDone
 
-  // ---- restart the SAME daily grid with an empty found-list (Play again) ----
+  // ---- first/ranked play = the daily grid; every replay = a fresh random grid ----
   function beginAttempt(){
+    var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf('wordsearch')>0);
+    if(isReplay){ seedRandom(); buildBoard(); } else { seedDaily(); buildBoard(); servedDaily=true; }
     if(tick){ clearInterval(tick); tick=null; }
     foundSet={}; foundCount=0; colorFor={};
     done=false; hints=0; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
     selStart=null; selPath=[];
-    cellEls.forEach(function(el){ el.classList.remove('found','sel','hintflash'); el.style.background=''; });
+    renderGrid();   // draw the (possibly brand-new) letter grid from the current GRID
     gridEl.style.pointerEvents=''; gridEl.style.opacity='';
     document.getElementById('timerN').textContent='0:00';
+    document.getElementById('themeName').textContent=P.theme;
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
     renderWords(); updWordsLab();
   }
@@ -538,7 +557,7 @@
   // ---- boot ----
   var saved=load(); document.getElementById('streakN').textContent=saved.streak||0;
   if(saved.best){ document.getElementById('yourBest').textContent=fmt(saved.best); }
-  if(window.RTGTokens && !RTGTokens.canPlay('wordsearch')){
+  if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('wordsearch')){
     done=true;
     gridEl.style.pointerEvents='none'; gridEl.style.opacity='.5';
     renderWords();
