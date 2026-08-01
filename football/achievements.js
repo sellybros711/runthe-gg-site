@@ -117,10 +117,17 @@
    */
   function analyseLinks(roster, pairLinks, sameClub) {
     const n = roster.length;
-    const out = { types: new Set(), pairs: 0, connected: false, allPairs: false, biggest: 0 };
+    const out = { types: new Set(), pairs: 0, connected: false, allPairs: false, biggest: 0,
+      qbBothWrs: false, qbRbAndTe: false };
     if (!pairLinks || n < 2) return out;
     const parent = roster.map((_, i) => i);
     const find = (i) => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+    /* WHO THE QUARTERBACK IS CONNECTED TO, for the hub shapes below. Derived here rather than
+       read off the engine because the engine adds that bonus in resolveChemistry, which works
+       from a live roster, and this file only ever has a finished row to work from. Same rule
+       either way: any positive link counts, and positions are read off the player. */
+    const qbIdx = roster.findIndex((p) => p && p.position === 'QB');
+    const qbLinked = new Set();
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
         let links = [];
@@ -128,10 +135,17 @@
         const pos = links.filter((l) => l && l.value > 0);
         for (const l of links) if (l && l.type) out.types.add(l.type);
         if (!pos.length) continue;
+        if (i === qbIdx) qbLinked.add(j);
+        else if (j === qbIdx) qbLinked.add(i);
         out.pairs++;
         const a = find(i), b = find(j);
         if (a !== b) parent[a] = b;
       }
+    }
+    if (qbIdx !== -1) {
+      const at = (want) => [...qbLinked].filter((k) => roster[k] && roster[k].position === want).length;
+      out.qbBothWrs = at('WR') >= 2;
+      out.qbRbAndTe = at('RB') >= 1 && at('TE') >= 1;
     }
     const sizes = Object.create(null);
     let big = 0;
@@ -415,6 +429,21 @@
       : 'Put together ' + n + ' perfect seasons.', tier, 'Winning',
       (c) => c.count((r) => isTrue(r.perfect)) >= n));
   });
+  /* THE QUARTERBACK AS A HUB. Measured before the bonus existed, these shapes turn up in
+     about 1% of rosters drafted normally and 3-4% when somebody goes looking, which is why
+     they are rated where they are: rarer than most golds and genuinely hard to build, because
+     the draw rules never allow a passer and two of his targets out of one team-season. */
+  add(A('qb_both_wrs', 'On the same page',
+    'Draft a quarterback with a connection to both of your wide receivers.',
+    'legend', 'Chemistry', (c) => c.anyRun((x) => x.links.qbBothWrs)));
+  add(A('qb_rb_and_te', 'Spread it around',
+    'Draft a quarterback with a connection to both your running back and your tight end.',
+    'gold', 'Chemistry', (c) => c.anyRun((x) => x.links.qbRbAndTe)));
+  add(A('qb_hub_ring', 'His guys',
+    'Win a title with a quarterback connected to two of his own targets.',
+    'legend', 'Chemistry',
+    (c) => c.anyRun((x) => isTrue(x.row.title_won) && (x.links.qbBothWrs || x.links.qbRbAndTe))));
+
   add(A('wildcard_ring', 'Wild card run', 'Win the title from a wild card seed.', 'gold', 'Winning',
     (c) => c.any((r) => isTrue(r.title_won) && /wild/i.test(String(r.seed_label || '')))));
   /* The engine writes exactly three seed labels: 'Top seed', 'Wild card', 'Missed the

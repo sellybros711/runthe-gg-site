@@ -3867,13 +3867,13 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="headline" id="headline"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=39"></script>
+<script src="engine.js?v=40"></script>
 <script src="run.js?v=53"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=17"></script>
-<script src="achievements.js?v=7"></script>
+<script src="achievements.js?v=8"></script>
 <script defer src="auth.js?v=1"></script>
 <script>
 (function(){
@@ -5250,17 +5250,28 @@ function optTile(row){
   }
 
   const pv=R.previewSigning(run,p,CTX), g=pv.delta;
-  const top=pv.newLinks[0];
+  /* THE HUB HEADLINES ITSELF WHEN IT IS THERE. Links are otherwise listed strongest first,
+     which meant the signing that completed a quarterback's set of targets got announced as
+     "Threw to him" -- the battery link is worth more, so it won the headline and the rarest
+     thing on the board went unnamed behind a "+2". A bonus nobody can see coming is just
+     variance; this is the one line that turns it into something a GM can go and get. */
+  const top=pv.newLinks.find((l)=>l.type==='qb_hub')||pv.newLinks[0];
   const tier=top?E.linkTier(top.value):null;
   /* Names the man on your roster it connects to, then why. "+1.5% Boise State"
      stated a fact about nobody in particular. */
   const mate=top?lastName(partnerOf(top,p.name)):'';
   const extra=pv.newLinks.length>1?' +'+(pv.newLinks.length-1):'';
+  /* THE HUB BONUS NAMES EVERYBODY ITSELF. Every other link is between two men, so the tag
+     reads "+1.5% Rice, Same college" -- the partner, then the reason. The quarterback hub is
+     not a pair, so prefixing a partner produced either the passer's name twice over or
+     "Higbee, Both his receivers", which names one of the two receivers and then says both.
+     Its short text stands alone. */
+  const why=top?esc(top.short||top.label):'';
   const tag=Math.abs(g)>0.0005&&top
     ? '<span class="chemtag" style="'+(g>0
         ? 'background:'+TIER[tier].color+'22;color:'+TIER[tier].color
-        : 'background:rgba(239,68,68,.14);color:#fca5a5')+'">'+pc(g)+' '+esc(mate)+
-      ', '+esc(top.short||top.label)+extra+'</span>'
+        : 'background:rgba(239,68,68,.14);color:#fca5a5')+'">'+pc(g)+' '+
+      (top.type==='qb_hub'?why:esc(mate)+', '+why)+extra+'</span>'
     : '';
   const badge=(p.badges||[])[0];
   const bcls=badge?(/^Led the NFL/.test(badge)?'bdg led':(/^\d/.test(badge)?'bdg':'bdg mile')):'';
