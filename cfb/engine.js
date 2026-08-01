@@ -54,6 +54,18 @@ const CONSTANTS = {
   PLAYOFF_ROUNDS_NO_BYE: 4,
   // How many of the twelve come from the eleven-win pool. See generateSchedule.
   MARQUEE_GAMES: 2,
+  /* THE RATING, AND THE TWO FLOORS UNDER THE TITLE. See teamRating() and
+     titleEdge(). RATING_CEILING is what a rating is divided by to get the 0..100
+     overall every screen shows. */
+  RATING_CEILING: 107,
+  TITLE_FLOOR: 88,
+  PERFECT_FLOOR: 90,
+  TITLE_EDGE_MAX: 3.20,
+  TITLE_EDGE_MIN: 0.84,
+  TITLE_EDGE_PIVOT: 97,
+  TITLE_EDGE_SLOPE: 0.075,
+  // Extra, per point below TITLE_FLOOR, on top of the ordinary slope.
+  TITLE_EDGE_CLIFF: 0.16,
   NY6_MAX_LOSSES: 3,
   BOWL_MAX_LOSSES: 5,
   MINOR_BOWL_MAX_LOSSES: 6,
@@ -318,6 +330,51 @@ function rankSeason(wins, losses, marginPerGame, oppZs, prepared) {
   const sos = oppZs && oppZs.length ? oppZs.reduce((a, b) => a + b, 0) / oppZs.length : 0;
   const resume = resumeScore(wins, losses, z, sos);
   return { z, sos, resume, rank: nationalRank(resume, prepared) };
+}
+
+/* THE RATING, owned here rather than by the page, because playRun needs it: the
+   championship game is decided partly on it. It is resolveGame's own line with
+   the per-opponent term removed, so it is what a roster is worth against an
+   average defence. */
+function teamRating(roster, chemistryMultiplier) {
+  const fppg = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+  return fppg * chemistryMultiplier * rosterStructure(roster).multiplier;
+}
+function teamOverall(roster, chemistryMultiplier, constants = CONSTANTS) {
+  return teamRating(roster, chemistryMultiplier) * 100 / constants.RATING_CEILING;
+}
+
+/* THE LAST GAME IS AGAINST THE BEST TEAM IN THE COUNTRY, and how far above you
+   they are depends on how good you are. This returns the factor the championship
+   opponent's score is multiplied by, so a roster short of championship calibre
+   meets a team it cannot live with, and a roster at the top of the scale meets
+   one it can.
+
+   IT IS A RULE, not something that fell out of the simulation, and it is worth
+   being straight about why. A title takes three or four wins, and the whole span
+   from an 88 team to a 100 team is 11% of scoring. Eleven percent moves a single
+   game from about a third to about two thirds, which compounds to 4% and 27%
+   over three games, not to nothing and to plenty. Every attempt to get the low
+   end to zero by hardening the bracket took the high end with it: a final that
+   holds an 88 to 0.5% holds a 92 to the same, because they are nearly the same
+   team. Taking the noise out of the game instead made the result depend on which
+   opponent the bracket happened to draw, which broke the ordering the rating was
+   just fixed to have.
+
+   So the difference is put in on purpose, smoothly, and it is monotone in the
+   rating by construction: every point of overall makes the last game easier, all
+   the way up. Below TITLE_FLOOR the factor is large enough that no scoreline the
+   engine can roll gets there. */
+function titleEdge(overall, constants = CONSTANTS) {
+  const pivot = constants.TITLE_EDGE_PIVOT;
+  let raw = 1 + (pivot - overall) * constants.TITLE_EDGE_SLOPE;
+  /* Below the floor the gap opens much faster, so that "cannot win it" is what
+     the scoreboard actually says rather than something rounded to zero in a
+     table. It is still a slope and not a switch, so the ordering holds through
+     it: an 87 is behind by less than an 84, both by more than they can cover. */
+  const under = constants.TITLE_FLOOR - overall;
+  if (under > 0) raw += under * constants.TITLE_EDGE_CLIFF;
+  return Math.min(constants.TITLE_EDGE_MAX, Math.max(constants.TITLE_EDGE_MIN, raw));
 }
 
 /* Ranking to postseason. Top 12 play for the title, top 4 of those get the week
@@ -1268,8 +1325,22 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
     for (let i = 0; i < seed.rounds; i++) {
       const opp = playoffOpponent(playoffs, seed.rounds, i);
       const leagueAvg = leagueContext[opp.season] ?? 25;
+      /* The championship opponent is scaled to the roster in front of them; every
+         other round is the bracket as drawn. advantage divides the opponent's
+         score, so dividing it by the edge multiplies their score by it. */
+      const isFinal = names[i] === 'CFP Championship';
+      const ovr = isFinal ? teamOverall(roster, chemistryMultiplier, constants) : 0;
+      const edge = isFinal ? titleEdge(ovr, constants) : 1;
       const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
-        seedAdvantage(seed.seed, names[i], constants));
+        seedAdvantage(seed.seed, names[i], constants) / edge);
+      /* Under the floor the edge already wins this game about 999 times in 1000.
+         This is the thousandth. The opponent's score is lifted past yours rather
+         than the result being overturned afterwards, so the scoreline a player
+         reads still explains the result it is printed next to. */
+      if (isFinal && ovr < constants.TITLE_FLOOR && r.won) {
+        r.oppScore = r.yourScore * 1.04;
+        r.won = false;
+      }
       results.push({ opponent: opp.display, opponent_id: opp.team_season_id,
         week: schedule.length + i + 1, playoff: true, bowl: false, round: names[i], ...r });
       if (r.won) wins++; else { losses++; exitRound = names[i]; break; }
@@ -1292,7 +1363,12 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
     titleWon,
     exitRound,
     bowlResult,
-    perfect: losses === 0 && titleWon,
+    /* A perfect season is unbeaten AND champion AND a roster that belongs in the
+       conversation. The first two are played out; the third is PERFECT_FLOOR,
+       which sits two points above the title floor because the game's own name is
+       on this outcome. */
+    perfect: losses === 0 && titleWon
+      && teamOverall(roster, chemistryMultiplier, constants) >= constants.PERFECT_FLOOR,
     undefeatedRegular: regularLosses === 0,
   };
 }
@@ -1381,6 +1457,7 @@ const publicAPI = {
   resolveGame, playRun, playBowlGame, prepareData, toFootballScore,
   playoffOpponent, playoffRoundNames,
   resumeScore, nationalRank, rankSeason, seedFromRanking, seedAdvantage,
+  teamRating, teamOverall, titleEdge,
   respinCost, respinFees,
   scoringScript, scoreParts, SCORE_KINDS,
   contrast, teamColors, washColors, wheelColors, teamButton, teamInk,

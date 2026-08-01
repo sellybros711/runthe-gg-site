@@ -329,6 +329,25 @@ select count(*) from cfb_runs where score > 130000;
 select count(*) from (select id from cfb_runs where overall is not null order by overall desc, created_at asc limit 50) t;
 \timing off
 
+-- ---------------------------------------------------------------------------
+-- The ranking a season is submitted with is the SELECTION one, not the final one
+-- ---------------------------------------------------------------------------
+-- These two are the same season told two ways, and they are here because the
+-- game told it the wrong way. The final ranking is settled on the field, so a
+-- champion finishes first however they were seeded; the selection ranking is
+-- what the twelve games earned and is the one seedFromRanking() ties the seed
+-- to. Sending the final one meant every title won from outside the top four
+-- seeds arrived as "No. 1 seed, four playoff wins" and was refused, which is the
+-- exact set of seasons most worth having on a board.
+\echo ''
+select t_ok('a 9 seed that won the title records on its selection ranking',
+  t_submit(11, 9, 4) like 'id:%');
+select t_ok('  ...and keeps the seed, the wins and the trophy',
+  (select playoff_seed = 9 and playoff_wins = 4 and title_won and not perfect
+     from cfb_runs order by id desc limit 1));
+select t_ok('the same season sent as the final ranking is refused',
+  t_submit(11, 1, 4) like 'ERR:%0..3 for the No. 1 seed%');
+
 -- The bulk rows have done their job, so they go. They exist to make the planner
 -- choose a real board's plan, and nothing after this file wants them: the browser
 -- tests run against this same database, and 200,000 synthetic near-perfect seasons

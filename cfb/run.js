@@ -364,7 +364,19 @@ function advanceWeek(run, data, leagueContext, displayCal) {
   // Seeding carries into the bracket: the top seeds host early and are the
   // higher seed after that, and by the semifinal the field is neutral.
   const advantage = playoff ? E.seedAdvantage(run.playoffSeed.seed, roundName) : 1;
-  const r = E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 25, rng, E.CONSTANTS, advantage);
+  /* THE CHAMPIONSHIP GAME IS SCALED TO THE ROSTER PLAYING IT, the same way
+     playRun does it for the projected odds. This is the path a real season takes
+     and playRun is not, so leaving it out here would have meant the floors under
+     the title showed up in the "wins the title" percentage and nowhere else. */
+  const isFinal = playoff && roundName === 'CFP Championship';
+  const ovr = isFinal ? E.teamOverall(run.roster, s.chemistry) : 0;
+  const edge = isFinal ? E.titleEdge(ovr) : 1;
+  const r = E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 25,
+    rng, E.CONSTANTS, advantage / edge);
+  if (isFinal && ovr < E.CONSTANTS.TITLE_FLOOR && r.won) {
+    r.oppScore = r.yourScore * 1.04;
+    r.won = false;
+  }
   const shown = displayCal ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal) : null;
   if (r.won) s.wins++; else s.losses++;
   const result = {
@@ -486,7 +498,11 @@ function finish(run, how) {
     bowlWon: !!how.bowlWon,
     bowlInfo: run.bowlInfo || null,
     undefeatedRegular: (s.regularLosses ?? s.losses) === 0,
-    perfect: !!how.titleWon && s.losses === 0,
+    /* Unbeaten, champions, AND a roster the game is willing to put its own name
+       on. The third test is PERFECT_FLOOR; playRun applies the same one, so the
+       projected rate and the season a player actually plays agree. */
+    perfect: !!how.titleWon && s.losses === 0
+      && E.teamOverall(run.roster, s.chemistry) >= E.CONSTANTS.PERFECT_FLOOR,
   };
   return run;
 }

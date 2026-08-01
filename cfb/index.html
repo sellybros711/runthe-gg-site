@@ -2135,8 +2135,8 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=7"></script>
-<script src="run.js?v=4"></script>
+<script src="engine.js?v=8"></script>
+<script src="run.js?v=5"></script>
 <script src="achievements.js?v=4"></script>
 <script src="auth.js?v=1"></script>
 <script src="board.js?v=1"></script>
@@ -3160,12 +3160,22 @@ function lbRow(r,pos){
 
    Called from paintOver AFTER the screen has painted, and its result is only ever
    used to fill in a line that says "still working this out" until it arrives. */
-async function submitRun(o,finalRank,stats){
+/* THE BOARD GETS THE SELECTION RANKING, NOT THE FINAL ONE. They are different
+   numbers and only one of them is checkable. The selection ranking is what the
+   twelve games earned, and seedFromRanking() sets seed = rank exactly when the
+   rank is twelve or better, which is the identity the server uses to prove a
+   season is internally coherent. The final ranking is settled on the field
+   afterwards, so a champion is first however they were seeded.
+   Sending the final one meant a 9 seed that won the title submitted rank 1 with
+   four playoff wins, and the server rejected it: a No. 1 seed has a bye and
+   plays three. Every title won from outside the top four seeds was being thrown
+   away, which is exactly the set of seasons most worth recording. */
+async function submitRun(o,selectionRank,stats){
   if(!B||!run) return null;
   const sig=stats.sig;
   const payload={
     regularWins:o.regularWins,
-    nationalRank:finalRank,
+    nationalRank:selectionRank,
     playoffWins:o.madePlayoffs?playoffWinsOf(o):0,
     bowlWon:!!o.bowlWon,
     pointDiff:stats.pointDiff,
@@ -4732,10 +4742,9 @@ const EMBLEM_TROPHY='<svg viewBox="0 0 48 48" aria-hidden="true">'+
    that means one thing. The sentence still adds up, it just has the fit in it:
    see o-squadline, which prints the fit as a percentage the way the NFL game
    does, and names the scheme's share of it after. */
-function teamRating(roster,chemistry){
-  const fppg=roster.reduce((t,p)=>t+p.ppr_ppg_mean,0);
-  return fppg*chemistry*E.rosterStructure(roster).multiplier;
-}
+/* One definition, and it lives in the engine, because playRun needs it too: the
+   championship game is decided partly on this number. A copy here would drift. */
+const teamRating=(roster,chemistry)=>E.teamRating(roster,chemistry);
 /* TEAM OVERALL IS A RATING, not the points total it started as. The raw number
    is points a game and any decent roster clears 100 of them, so a team knocked
    out in the first round was handed a 106 and it read like a perfect score.
@@ -4769,7 +4778,7 @@ function teamRating(roster,chemistry){
    changed and so did its scale. The predecessors were 112, 126, 141 and 135; none
    of the five are comparable, and neither are ratings recorded under them, which
    costs nothing because nothing has launched and the board is empty. */
-const RATING_CEILING=107;
+const RATING_CEILING=E.CONSTANTS.RATING_CEILING;
 const overallOf=(raw)=>raw*100/RATING_CEILING;
 /* THE FIT IS THE WHOLE MULTIPLIER, shape and scheme together, so the sentence
    must not label it as the scheme alone: that read as if a 2% scheme were worth
@@ -4918,7 +4927,7 @@ function paintOver(){
       spend:spendUsed, rating:rating, overall:overall, sig:sig,
     };
     myRunId=null; myPlace=null;
-    submitRun(o,finalRank,run.boardStats).then(()=>paintPlace());
+    submitRun(o,o.nationalRank||yourRank(),run.boardStats).then(()=>paintPlace());
     ga('run_complete',{outcome:o.perfect?'perfect':o.titleWon?'champion'
         :o.eliminatedIn?'eliminated':o.bowlGame?'bowl':'missed_playoffs',
       record:o.record,national_rank:finalRank||null,overall:Math.round(overall*10)/10});
