@@ -705,8 +705,18 @@ window.GA_ID='G-L29P5MRWKE';
   .dh-meta{font-size:13px; color:var(--muted)}
   .dh-verdict{margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,.09)}
   .dh-verdict>b{font-size:16px}
-  .dresult-head{max-width:560px; margin:0 auto 12px; text-align:center}
+  .dresult-head{max-width:560px; margin:0 auto 10px; text-align:center}
   .dresult-head.won .dh-eyebrow{color:#35d6a0}
+  /* Featured beat-the-pro verdict (owner: the whole point of Play 18 is to beat the pro, so make it the hero) */
+  .dh-bigverdict{max-width:560px; margin:0 auto 14px; border-radius:18px; padding:16px 18px 17px; text-align:center; position:relative; overflow:hidden;
+    background:radial-gradient(130% 92% at 50% -12%, var(--bv-glow), transparent 58%), linear-gradient(178deg, rgba(27,63,42,.86), rgba(9,30,19,.92));
+    border:1px solid var(--bv-bd); box-shadow:0 16px 38px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.07);
+    --bv-glow:rgba(53,214,160,.22); --bv-bd:rgba(53,214,160,.55)}
+  .dh-bigverdict.miss{--bv-glow:rgba(233,162,59,.13); --bv-bd:rgba(233,162,59,.38)}
+  .dh-bv-title{font-family:var(--display); font-weight:400; text-transform:uppercase; letter-spacing:.02em; line-height:1.02; font-size:clamp(27px,8.4vw,40px); color:#35d6a0}
+  .dh-bigverdict.miss .dh-bv-title{color:#e9a23b; font-size:clamp(20px,6vw,30px)}
+  .dh-bv-sub{font-size:13px; color:var(--muted); margin-top:9px}
+  .dh-bv-cta{font-size:13px; color:#35d6a0; font-weight:700; margin-top:7px}
 
   /* ---- draft ---- */
   .draftbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px}
@@ -21494,11 +21504,13 @@ function scrDailyResult(){
     <div class="dh-eyebrow"${practice?' style="color:#16b5a6"':(r.isLegend?' style="color:#ffd76a"':'')}>${eyebrow}</div>
     <div class="dh-course" style="margin-top:5px">${esc(c.v)}</div>
     <div class="dh-meta" style="margin-top:3px">Par ${c.par} · OVR ${r.ovr}${dCondLabel(r.cond)?' · '+dCondLabel(r.cond):''}</div>
-    <div style="margin-top:8px">
-      ${wonDay?`<b style="color:#35d6a0;font-size:16px">🏁 You beat the pro!</b>`:`<b style="color:var(--oncard);font-size:16px">Short of the tour average</b>`}
-      <div class="small muted" style="margin-top:2px">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}</div>
-      ${(wonDay&&left>0&&!practice&&!r.isLegend)?`<div class="small" style="margin-top:5px;color:#35d6a0;font-weight:700">Challenge cleared. Use your ${left} remaining attempt${left>1?'s':''} to go even lower and chase the course record.</div>`:''}
-    </div></div>`));
+  </div>`));
+  // The point of Play 18 is to beat the pro, so it is the featured hero (the score lives in the "Your best today" bubble below).
+  add($(`<div class="dh-bigverdict${wonDay?'':' miss'}">
+    <div class="dh-bv-title">${wonDay?'🏁 You beat the pro!':'Short of the tour average'}</div>
+    <div class="dh-bv-sub">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}</div>
+    ${(wonDay&&left>0&&!practice&&!r.isLegend)?`<div class="dh-bv-cta">Challenge cleared. Use your ${left} remaining attempt${left>1?'s':''} to go even lower and chase the course record.</div>`:''}
+  </div>`));
   // CS237: a FREE Legend (created-golfer) play - focused result (no draft attempts / streak / weekly / claim
   // sections apply), then back into the Daily. Scores live on the separate Career Golfers board.
   if(r.isLegend){
