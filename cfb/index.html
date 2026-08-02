@@ -403,6 +403,13 @@ window.GA_ID='G-L29P5MRWKE';
     margin:-.13em 0 -.11em;position:relative;z-index:2;
     color:var(--green);text-shadow:0 0 16px rgba(0,0,0,.9),0 3px 0 rgba(0,0,0,.65)}
 
+  /* The bowl / championship title, said once and said loud. It was printed twice,
+     a small eyebrow over an identical heading; now it is one heading in the block
+     face, centred, in the house gold, sized to be the thing you read first. */
+  .bowltitle{font-family:var(--fd);text-transform:uppercase;text-align:center;
+    font-size:clamp(24px,7vw,34px);line-height:1.02;letter-spacing:.02em;
+    margin:6px 0 6px;color:var(--gold);text-shadow:0 2px 0 rgba(0,0,0,.55)}
+
   /* ── the poll ticker ────────────────────────────────────────────
      The strip a college broadcast runs the rankings along. Quiet enough to read
      as furniture rather than something you have to stop and read, and it only
@@ -589,20 +596,31 @@ window.GA_ID='G-L29P5MRWKE';
     font-size:8.5px;font-weight:700;letter-spacing:.04em;
     background:var(--tcbg,#334155);color:var(--tcon,#fff)}
 
-  /* ── connection rail ────────────────────────────────────────── */
-  .rail{display:grid;grid-template-columns:repeat(6,1fr);margin:0 0 8px;position:relative;
-    min-height:60px;padding:0 8px}
-  .rnode{display:flex;flex-direction:column;align-items:center;gap:3px;padding-top:20px;
-    position:relative;z-index:2}
-  .rnode .rd{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
+  /* ── connection rail ──────────────────────────────────────────
+     An arc diagram, the same one the NFL game uses. Every spot is a node in one
+     row and every link is an arc hanging BELOW that row, so an arc can never
+     cross a player: players on the line, arcs under it. Arc depth grows with the
+     span it covers, so a long arc sits outside a short one. Tap a node to keep
+     only its arcs and answer "who is THIS guy tied to". */
+  .rail{position:relative;margin:2px 0 0;height:38px;transition:height .28s ease}
+  .rail.off{height:0;margin:0;overflow:hidden;opacity:0}
+  .rail.empty .rarcs{opacity:0}
+  .rnodes{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));position:relative;z-index:2}
+  .rnode{background:none;border:0;padding:0;display:flex;flex-direction:column;align-items:center;
+    gap:3px;cursor:pointer;position:relative;opacity:.5;transition:opacity .15s ease}
+  .rnode.on{opacity:1}
+  .rnode:after{content:'';position:absolute;left:0;right:0;top:-4px;bottom:-12px}
+  .rnode .rdot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
     border:1.5px solid rgba(255,255,255,.15);
     background:linear-gradient(160deg,rgba(100,116,139,.7),rgba(30,41,59,.6));
     font-family:var(--fn);font-size:8px;font-weight:700;color:#fff}
-  .rnode.filled .rd{border-color:rgba(255,255,255,.3)}
-  .rnode .rn{font-family:var(--fn);font-size:9px;color:var(--dim-2);
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:58px;text-align:center}
-  .rail svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
-  .rail svg path{fill:none;stroke-linecap:round}
+  .rnode.on .rdot{border-color:rgba(255,255,255,.28)}
+  .rnode.focus .rdot{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.18)}
+  .rnode .rnm{font-family:var(--fn);font-size:9px;font-weight:700;color:var(--dim-2);
+    max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+  .rnode.focus .rnm{color:var(--ink)}
+  .rarcs{position:absolute;left:0;right:0;top:38px;width:100%;height:48px;overflow:visible;pointer-events:none}
+  .railnote{font-size:10.5px;color:var(--dim-2);text-align:center;margin:5px 0 8px;min-height:13px}
 
   /* ── tabs ────────────────────────────────────────────────────── */
   .tabwrap{position:relative;overflow:hidden}
@@ -1870,6 +1888,7 @@ or endorsed by the NCAA, the CFP or any school.
       <div class="dcol">
         <div class="field" id="field" style="margin:0"></div>
         <div class="rail" id="rail"></div>
+        <p class="railnote"></p>
       </div>
       <div class="dcol">
         <div class="reels" style="margin:0">
@@ -1897,6 +1916,7 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="eyebrow" style="margin-bottom:6px">Your team</div>
     <div class="field" id="field2"></div>
     <div class="rail" id="rail2"></div>
+    <p class="railnote"></p>
 
     <div class="panel schemepanel" id="q-panel">
       <div class="stripe"></div>
@@ -2005,9 +2025,8 @@ or endorsed by the NCAA, the CFP or any school.
 
   <!-- s-bowl (bowl game broadcast) -->
   <div class="screen" id="s-bowl">
-    <div class="eyebrow" style="color:#d8b4fe" id="bowl-eyebrow">Bowl Game</div>
-    <h2 class="display" style="font-size:22px;margin:5px 0 4px" id="bowl-title">Bowl Game</h2>
-    <p class="dim" style="font-size:13px;margin:0 0 10px" id="bowl-tagline"></p>
+    <h2 class="display bowltitle" id="bowl-title">Bowl Game</h2>
+    <p class="dim" style="font-size:13px;margin:0 0 12px;text-align:center" id="bowl-tagline"></p>
     <div class="gameday" id="bowl-gameday" style="display:none"><span id="bowl-gdtext"></span></div>
     <div class="bug" id="bowl-bug">
       <div class="btop">
@@ -2177,7 +2196,7 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=12"></script>
+<script src="engine.js?v=13"></script>
 <script src="run.js?v=7"></script>
 <script src="achievements.js?v=5"></script>
 <script src="auth.js?v=1"></script>
@@ -3452,44 +3471,82 @@ function drawField(el,interactive){
 }
 
 /* ── rail (arc diagram) ──────────────────────────────────────── */
-const RAIL={nodeR:11,padT:6,padB:30,arcMin:24,arcStep:8};
+/* THE CONNECTION RAIL, matched to the NFL game. Arcs hang below the node row and
+   grow deeper with the span they cover; tapping a node keeps only its arcs. */
+const RAIL={ NODE_BLOCK:38, MIN_DEPTH:11, PER_SPAN:8, MAX_DEPTH:44, PAD:4 };
+
+function railState(el){
+  if(el._rs) return el._rs;
+  el.innerHTML='<div class="rnodes">'+E.SLOTS.map((slot,i)=>
+    '<button class="rnode" data-i="'+i+'"><span class="rdot">'+slot+'</span>'+
+    '<span class="rnm"></span></button>').join('')+
+    '</div><svg class="rarcs" preserveAspectRatio="none"></svg>';
+  el._rs={ svg:el.querySelector('.rarcs'), nodes:[...el.querySelectorAll('.rnode')],
+    focus:null, redraw:null };
+  el.addEventListener('click',(e)=>{
+    const nd=e.target.closest('.rnode'); if(!nd) return;
+    const st=el._rs; const i=+nd.dataset.i;
+    st.focus=st.focus===i?null:i;
+    if(st.redraw) st.redraw();
+  });
+  return el._rs;
+}
 
 function drawRail(el){
   if(!el) return;
-  const links=run&&run.roster.length>1
-    ?E.resolveChemistry(run.roster,CTX).links:[];
+  const st=railState(el);
+  st.redraw=()=>drawRail(el);
   const n=E.SLOTS.length;
   const bySlot=new Array(n).fill(null);
   if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
-  let nodes='';
-  for(let i=0;i<n;i++){
+  const links=(run&&run.roster.length>1)?E.resolveChemistry(run.roster,CTX).links:[];
+  const at=new Map();
+  if(run) run.roster.forEach((p,i)=>at.set(p.name,run.slotIndex[i]));
+
+  st.nodes.forEach((node,i)=>{
     const p=bySlot[i];
-    const filled=!!p;
-    nodes+='<div class="rnode'+(filled?' filled':'')+'">'+
-      '<div class="rd" style="'+(filled?posPaint(p.position):'')+'">'+
-      (filled?p.position:E.SLOTS[i])+'</div>'+
-      '<div class="rn">'+esc(filled?lastName(p.name):E.SLOTS[i])+'</div></div>';
-  }
-  let arcs='';
-  if(links.length&&run){
-    const step=100/n;
-    for(const l of links){
-      const ai=run.roster.findIndex(p=>p.name===l.a);
-      const bi=run.roster.findIndex(p=>p.name===l.b);
-      if(ai<0||bi<0) continue;
-      const si=run.slotIndex[ai], ei=run.slotIndex[bi];
-      const x1=step*(si+0.5), x2=step*(ei+0.5);
-      const span=Math.abs(si-ei);
-      const h=RAIL.arcMin+span*RAIL.arcStep;
-      const tier=E.linkTier(l.value);
-      const T=TIER[tier];
-      if(!T) continue;
-      arcs+='<path d="M '+x1+' 20 A '+(h)+' '+(h)+' 0 0 '+(x1<x2?'1':'0')+' '+x2+' 20" '+
-        'stroke="'+T.color+'" stroke-width="'+T.w+'" opacity="'+T.op+'"'+
-        (T.dash!=='none'?' stroke-dasharray="'+T.dash+'"':'')+' fill="none"/>';
+    node.className='rnode'+(p?' on':'')+(st.focus===i?' focus':'');
+    const dot=node.querySelector('.rdot');
+    dot.textContent=p?p.position:E.SLOTS[i];
+    dot.style.cssText=p?posPaint(p.position):'';
+    node.querySelector('.rnm').textContent=p?lastName(p.name):'';
+  });
+
+  const arcs=links.filter(l=>at.has(l.a)&&at.has(l.b)).map(l=>{
+    const a=Math.min(at.get(l.a),at.get(l.b)), b=Math.max(at.get(l.a),at.get(l.b));
+    return {a,b,l,t:TIER[E.linkTier(l.value)]};
+  }).filter(c=>c.t).sort((x,y)=>(x.b-x.a)-(y.b-y.a));
+
+  const cx=(i)=>((i+0.5)/n)*100;
+  const depth=(span)=>Math.min(RAIL.MAX_DEPTH,RAIL.MIN_DEPTH+(span-1)*RAIL.PER_SPAN);
+  const deepest=arcs.length?Math.max(...arcs.map(c=>depth(c.b-c.a))):0;
+  const signedNow=bySlot.filter(Boolean).length;
+  const off=signedNow<2;
+  el.classList.toggle('off',off);
+  el.style.height=off?'0px':(RAIL.NODE_BLOCK+(arcs.length?deepest+RAIL.PAD:0))+'px';
+  st.svg.style.height=(deepest+RAIL.PAD)+'px';
+  st.svg.setAttribute('viewBox','0 0 100 '+(deepest+RAIL.PAD));
+  st.svg.innerHTML=arcs.map((c)=>{
+    const d=depth(c.b-c.a);
+    const dim=st.focus!==null&&st.focus!==c.a&&st.focus!==c.b;
+    return '<path d="M '+cx(c.a).toFixed(2)+' 0 Q '+
+      ((cx(c.a)+cx(c.b))/2).toFixed(2)+' '+(d*2)+' '+cx(c.b).toFixed(2)+' 0" fill="none" stroke="'+
+      c.t.color+'" stroke-width="'+(c.t.w*0.5).toFixed(2)+'" stroke-linecap="round"'+
+      ' vector-effect="non-scaling-stroke" opacity="'+(dim?0.1:c.t.op)+'"/>';
+  }).join('');
+
+  el.classList.toggle('empty',!arcs.length);
+  const note=el.parentElement.querySelector('.railnote');
+  if(note){
+    if(!arcs.length){ note.textContent=signedNow>1?'No connections yet':''; }
+    else if(st.focus!==null&&bySlot[st.focus]){
+      const mine=arcs.filter(c=>c.a===st.focus||c.b===st.focus).length;
+      const who=lastName(bySlot[st.focus].name);
+      note.textContent=mine?who+', '+mine+' of '+arcs.length:who+' is not connected to anyone';
+    }else{
+      note.textContent=arcs.length+(arcs.length===1?' connection':' connections')+', tap a player';
     }
   }
-  el.innerHTML=nodes+'<svg viewBox="0 0 100 60" preserveAspectRatio="none">'+arcs+'</svg>';
 }
 
 /* ── sheet (player detail) ───────────────────────────────────── */
@@ -4707,7 +4764,6 @@ function playConfChampBroadcast(){
 function playFeatureBroadcast(cfg){
   const r=cfg.play();
   const bowlName=cfg.title||r.round||'Bowl Game';
-  $('bowl-eyebrow').textContent=cfg.eyebrow||r.round||bowlName;
   $('bowl-title').textContent=bowlName;
   $('bowl-tagline').textContent=cfg.tagline!=null?cfg.tagline:(r.bowlTagline||'');
 

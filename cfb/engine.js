@@ -687,14 +687,28 @@ function hslToHex(h, s, l) {
   return '#' + toHex(r) + toHex(g) + toHex(b);
 }
 
-function washColor(hex, targetL) {
+function washColor(hex, targetL, satCap = 40) {
   const [h, s, l] = hexToHsl(hex);
-  return hslToHex(h, Math.min(s, 40), targetL);
+  return hslToHex(h, Math.min(s, satCap), targetL);
 }
 
+/* THE OPPONENT'S REAL COLOUR, dark enough for the white scoreboard text but not
+   washed to mud. It used to be pinned at lightness 15 with saturation capped at
+   40, which turned a crimson like Georgia's #ba0c2f into a maroon; your own side
+   sits near lightness 27 at full saturation, so the two never matched. The panel
+   fill now lands at 30 with the cap at 64, which reads as the team's true hue and
+   still carries white text, and a genuine grey or black (no hue to boost) stays
+   grey rather than being invented into a dull red. */
 function washColors(color, altColor) {
-  const bg = washColor(color || '#333333', 15);
-  const accent = washColor(altColor || color || '#666666', 30);
+  const primary = color || '#333333';
+  const bg = washColor(primary, 30, 64);
+  /* The accent is the alternate colour, but only if it actually has a hue: a lot
+     of teams pair a bright primary with black or white, and a black alt washed
+     out to a grey stripe next to a red panel. When the alt is achromatic, lift
+     the primary instead so the stripe is a lighter shade of the team's own red or
+     blue rather than a grey seam. */
+  const altHasHue = altColor && chromaOf(altColor) >= CHROMA_FLOOR;
+  const accent = washColor(altHasHue ? altColor : primary, altHasHue ? 46 : 52, 64);
   return { bg, accent };
 }
 
