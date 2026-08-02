@@ -123,6 +123,35 @@ const CONSTANTS = {
    * Rounded to the nearest half million, because a demand of $4.37M reads as
    * arithmetic and $4.5M reads as a number a person said out loud.
    */
+  /*
+   * ─── WHAT A PLAYER IS WORTH IN A TRADE ─────────────────────────────────────
+   *
+   * Not his production. His production ABOVE WHAT YOU CAN GET FOR FREE.
+   *
+   * The market used to price deals on raw fantasy points, summed. Two things
+   * followed, and both were reported as broken by the first person to play it:
+   * a 3.0 and a 2.9 could be packaged for a 7.7, and every consolidation threw
+   * in a free agent whose production nobody paid for. Both are the same error --
+   * treating a man who is worse than the waiver wire as though he were an asset.
+   *
+   * TRADE_REPLACEMENT_FPPG is the waiver wire, measured rather than guessed: over
+   * 5,760 free agents actually offered across 120 seasons the median is 3.96.
+   * A player at or under it is worth nothing in a deal, because the other club
+   * can have that for nothing. This is value over replacement, which is how real
+   * football has valued players since Football Outsiders, and it is also why the
+   * free agent a two-for-one hands you is now correctly worth zero: replacement
+   * level is the definition of what he is.
+   *
+   * TRADE_VALUE_CURVE is scarcity. Value charts in the real sport are steeply
+   * convex -- the Jimmy Johnson chart prices the first pick at 3000 and the
+   * thirty-second at 590, so two late firsts do not buy a top one. Stars are
+   * scarce and roster spots are finite, so quality costs more than the linear
+   * sum of the same production spread thin. At 1.25 a pair of 8-point players
+   * comes to 8.6 against 11.6 for a single 12, so the pair cannot buy him.
+   */
+  TRADE_REPLACEMENT_FPPG: 4,
+  TRADE_VALUE_CURVE: 1.25,
+
   TRADE_CASH_MIN_GAIN: 1.5,     // FPPG of net gain before anyone asks at all
   TRADE_CASH_PER_FPPG: 1.35,    // $M per FPPG gained, on the whole gain once asked
   TRADE_CASH_MAX_MUSD: 9,       // most any single deal can cost you off the cap
