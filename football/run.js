@@ -431,6 +431,13 @@ function createRun(opts) {
        the door in trades -- see capOf() and CONSTANTS.TRADE_CASH_*. */
     capMusd: E.CONSTANTS.CAP_MUSD,
     cashPaid: 0,
+    /* EVERYONE WHO HAS LEFT THIS ROSTER, traded or released, and they do not come back.
+       usedPlayers cannot answer this: acceptTrade takes departing men OUT of it, because it
+       tracks who is on the roster now. The effect was that trading a man away returned him to
+       the pool -- he could turn up on the free-agent board you were sent moments later, or be
+       offered back to you in the next window, which reads as the game losing track of a deal
+       you just made. */
+    departed: [],
     phase: PHASES.DRAFT,
     roster: [],
     slotIndex: [],
@@ -1367,6 +1374,29 @@ function scoreOffer(run, offer, ctx, slots, faStand) {
    stable for a package within a window, so there is no rerolling for a jackpot, and it
    never touches the game's own stream. */
 
+/*
+ * WHAT A PLAYER IS WORTH TO ANOTHER CLUB, which is not what he scores.
+ *
+ * Production above replacement, raised to a scarcity curve. See
+ * CONSTANTS.TRADE_REPLACEMENT_FPPG and TRADE_VALUE_CURVE for why. Two consequences carry
+ * most of the weight of this market:
+ *
+ *   A man at or below the waiver wire is worth NOTHING, so two of them cannot be packaged
+ *   into somebody good. Under the old raw-points pricing a 3.0 and a 2.9 bought a 7.7.
+ *
+ *   The free agent a two-for-one leaves you to sign is worth nothing either, by the same
+ *   definition, so consolidations stop quietly handing over a body nobody paid for.
+ *
+ * And because the curve is convex, quantity does not add up to quality: two eight-point
+ * players come to 8.6 against 11.6 for a single twelve.
+ */
+function tradeValue(p) {
+  const C = E.CONSTANTS;
+  const over = (p.ppr_ppg_mean || 0) - C.TRADE_REPLACEMENT_FPPG;
+  return over <= 0 ? 0 : Math.pow(over, C.TRADE_VALUE_CURVE);
+}
+const sumValue = (list) => list.reduce((t, p) => t + tradeValue(p), 0);
+
 /* Four, not six. A board you can hold in your head is a board you can read; six cards
    with a number on each was a sorted list, and a sorted list is a single choice. */
 const MAX_OFFERS = 4;
@@ -1381,7 +1411,11 @@ function findOffers(run, data, ctx, outIdxs) {
   const slots = slotsOf(run);
   const CAP = capOf(run);
   const pool = data.teamSeasons;
+  /* Nobody you already have, and nobody you have already moved on from: a man you traded
+     away last window turning up in this window's offers reads as the league forgetting the
+     deal. See run.departed. */
   const onRoster = new Set(run.roster.map((p) => p.player_id));
+  for (const id of (run.departed || [])) onRoster.add(id);
   const twoOut = outIdxs.length === 2;
 
   // Leaguewide pool by position (validity is decided by re-slotting, so any position is
@@ -1438,6 +1472,15 @@ function findOffers(run, data, ctx, outIdxs) {
       outValue: outs.reduce((t, p) => t + p.ppr_ppg_mean, 0),
       weakest: means.length ? means[0] : 0,
       weakest2: means.length > 1 ? means[0] + means[1] : (means[0] || 0),
+      /* The same three in TRADE VALUE, which is what the bands price against. Raw points
+         stay above because the cash demand and the fieldGain are about what lands on the
+         field, and those are different questions from what a rival will pay. */
+      outVal: sumValue(outs),
+      weakestVal: kept.length ? Math.min.apply(null, kept.map(tradeValue)) : 0,
+      weakest2Val: (() => {
+        const v = kept.map(tradeValue).sort((a, b) => a - b);
+        return v.length > 1 ? v[0] + v[1] : (v[0] || 0);
+      })(),
     };
   };
 
@@ -1482,15 +1525,21 @@ function findOffers(run, data, ctx, outIdxs) {
   /* ── ONE MAN BACK, from anywhere in the league ─────────────────────────────────── */
   const single = (idxs, loF, hiF) => {
     const c = ctxFor(idxs);
-    let lo = c.outValue * loF;
-    const hi = c.outValue * hiF;
+    let lo = c.outVal * loF;
+    const hi = c.outVal * hiF;
     if (idxs.length === 2) {
-      // A pair only goes out for somebody better than the better half of it.
-      lo = Math.max(lo, Math.max.apply(null, c.outs.map((p) => p.ppr_ppg_mean)) * 1.02);
+      /* A pair only goes out for somebody clearly better than the better half of it --
+         otherwise "consolidation" is two men for a man you already had. */
+      lo = Math.max(lo, Math.max.apply(null, c.outs.map(tradeValue)) * 1.05);
     }
+    /* Nothing to sell means nothing to buy. Packaging two waiver-wire men used to return a
+       starter because their points summed; their VALUE sums to zero, so the market has
+       nothing to offer and says so. */
+    if (hi <= 0) return;
     const valid = [];
     for (const p of [].concat(byPos.QB, byPos.RB, byPos.WR, byPos.TE)) {
-      if (p.ppr_ppg_mean < lo || p.ppr_ppg_mean > hi) continue;
+      const v = tradeValue(p);
+      if (v < lo || v > hi) continue;
       if (!fits(c, [p])) continue;
       const o = buildOffer(run, slots, idxs, [p]);
       if (o) valid.push(o);
@@ -1516,18 +1565,29 @@ function findOffers(run, data, ctx, outIdxs) {
      elsewhere -- rather than an assortment. */
   const bundle = (idxs, count, loF, hiF, baseKey, anchor, want) => {
     const c = ctxFor(idxs);
-    const base = baseKey === 'out' ? c.outValue
-      : baseKey === 'out+1' ? c.outValue + c.weakest
-        : c.outValue + c.weakest2;
+    /* Priced against what LEAVES THE FIELD. A deal that brings back more men than it sends
+       pushes somebody off the six, so the honest base is the shopped package plus the man
+       (or two) the arrivals displace -- in value, not in points. */
+    const base = baseKey === 'out' ? c.outVal
+      : baseKey === 'out+1' ? c.outVal + c.weakestVal
+        : c.outVal + c.weakest2Val;
     const lo = base * loF, hi = base * hiF;
-    const floor = Math.max(3, c.weakest * 0.55);
+    if (hi <= 0) return;
+    /* NOBODY IS SENT A PLAYER WORTH NOTHING. A man at or under the waiver wire adds no
+       value to a package, so including him is padding -- and being offered a 2.9 alongside
+       something real is what made these boards read as unserious. */
+    const floor = Math.max(E.CONSTANTS.TRADE_REPLACEMENT_FPPG + 0.5, c.weakest * 0.55);
     let made = 0;
     for (let att = 0; att < 420 && made < want && partnerLists.length; att++) {
       const list = partnerLists[Math.floor(rng() * partnerLists.length)];
       const picked = [];
       if (anchor) {
+        /* The floor binds here too. anchor.min is a fraction of the shopped man's production,
+           which for anyone under about nine points a game dips below the waiver wire -- so the
+           "lesser starter at his own position" could arrive as somebody worth nothing, which is
+           not a lesser starter, it is padding with a position chip on it. */
         const downs = list.filter((p) => p.position === anchor.pos
-          && p.ppr_ppg_mean <= anchor.max && p.ppr_ppg_mean >= anchor.min);
+          && p.ppr_ppg_mean <= anchor.max && p.ppr_ppg_mean >= Math.max(anchor.min, floor));
         if (!downs.length) continue;
         picked.push(downs[Math.floor(rng() * downs.length)]);
       }
@@ -1539,7 +1599,7 @@ function findOffers(run, data, ctx, outIdxs) {
         picked.push(p);
       }
       if (picked.length < count) continue;
-      const cv = picked.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+      const cv = sumValue(picked);
       if (cv < lo || cv > hi) continue;
       if (!fits(c, picked)) continue;
       const o = buildOffer(run, slots, idxs, picked);
@@ -1571,8 +1631,8 @@ function findOffers(run, data, ctx, outIdxs) {
     const idxs = [idx, asked.i].sort((a, b) => a - b);
     /* Two back at a premium, or three back priced against the pair plus your weakest. */
     const before = offers.length;
-    bundle(idxs, 2, 0.95, 1.20, 'out', null, 1);
-    if (rng() < 0.5) bundle(idxs, 3, 0.80, 1.02, 'out+1', null, 1);
+    bundle(idxs, 2, 1.00, 1.30, 'out', null, 1);
+    if (rng() < 0.5) bundle(idxs, 3, 0.90, 1.15, 'out+1', null, 1);
     /* Tagged as its own shape, not as another bundle. chooseBoard fills one seat per shape,
        so sharing the 'bundle' tag made the counter-ask compete with ordinary multi-player
        returns for the same seat and it reached only 3% of cards. It is a distinct
@@ -1592,21 +1652,21 @@ function findOffers(run, data, ctx, outIdxs) {
        well-chosen shop actually climb, and it is not free: every offer still clears the cap,
        is still scored honestly against the resulting lineup, and taking offers at random
        still measures WORSE than never trading at all. */
-    single(outIdxs, 0.78, 1.55);
+    single(outIdxs, 0.80, 1.70);
     /* Quantity for quality, in two flavours: an assortment, and the one that looks like a
        real offer for a star -- a lesser man at his own position plus a body elsewhere. */
-    bundle(outIdxs, 2, 0.74, 0.98, 'out+1', null, 2);
-    bundle(outIdxs, 2, 0.74, 1.02, 'out+1',
+    bundle(outIdxs, 2, 0.85, 1.15, 'out+1', null, 2);
+    bundle(outIdxs, 2, 0.85, 1.18, 'out+1',
       { pos: man.position, max: man.ppr_ppg_mean * 0.92, min: man.ppr_ppg_mean * 0.45 }, 2);
     /* Three back only for somebody genuinely worth three, and it costs two of yours. */
     if (man.ppr_ppg_mean >= (ctxFor(outIdxs).weakest || 0) * TUNING.ONE_FOR_TWO_MIN_RATIO) {
-      bundle(outIdxs, 3, 0.70, 0.94, 'out+2', null, 1);
+      bundle(outIdxs, 3, 0.80, 1.10, 'out+2', null, 1);
     }
     counterAsk(only);
   } else {
-    single(outIdxs, 0.62, 1.42);
-    bundle(outIdxs, 2, 0.80, 1.30, 'out', null, 3);
-    bundle(outIdxs, 3, 0.74, 0.98, 'out+1', null, 1);
+    single(outIdxs, 0.60, 1.05);
+    bundle(outIdxs, 2, 0.85, 1.25, 'out', null, 3);
+    bundle(outIdxs, 3, 0.80, 1.10, 'out+1', null, 1);
   }
   return chooseBoard(offers, run, ctx, slots, faStand, rng);
 }
@@ -1751,6 +1811,7 @@ function generateFreeAgents(run, data, position) {
     for (const p of players) {
       if (p.position !== position) continue;
       if (run.usedPlayers.includes(p.player_id)) continue;
+      if (run.departed && run.departed.indexOf(p.player_id) !== -1) continue;
       if (!isFreeAgentCandidate(p)) continue;
       candidates.push(p);
     }
@@ -1778,9 +1839,11 @@ function generateFreeAgents(run, data, position) {
 function acceptTrade(run, offer, data, ctx, opts) {
   const outSet = new Set(offer.outIdx);
   const keep = run.roster.filter((_, i) => !outSet.has(i));
+  run.departed = run.departed || [];
   offer.outPlayers.forEach((p) => {
     const k = run.usedPlayers.indexOf(p.player_id);
     if (k !== -1) run.usedPlayers.splice(k, 1);
+    run.departed.push(p.player_id);
   });
   let newRoster = keep.concat(offer.inPlayers);
   offer.inPlayers.forEach((p) => run.usedPlayers.push(p.player_id));
@@ -1808,6 +1871,7 @@ function acceptTrade(run, offer, data, ctx, opts) {
     for (const c of cutPlayers) {
       const j = run.usedPlayers.indexOf(c.player_id);
       if (j !== -1) run.usedPlayers.splice(j, 1);
+      run.departed.push(c.player_id);
     }
   }
   if (newRoster.length === slots.length) {
