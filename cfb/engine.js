@@ -48,8 +48,13 @@ const CONSTANTS = {
   PLAYOFF_TEAMS: 12,
   PLAYOFF_BYES: 4,
   FIELD_SIZE: 134,
-  // How a percentile inside the team data becomes a national rank. See nationalRank.
-  POOL_GAMMA: 1.18,
+  /* How a percentile inside the team data becomes a national rank. See
+     nationalRank. Raised from 1.18 to widen the playoff field on purpose: a
+     larger exponent compresses the top of the poll harder, so more good-not-great
+     seasons rank inside the top twelve and more drafts reach the bracket. Making
+     the field is meant to be common; winning it is not, and that half is the
+     round pivots below, not this. */
+  POOL_GAMMA: 1.35,
   PLAYOFF_ROUNDS_WITH_BYE: 3,
   PLAYOFF_ROUNDS_NO_BYE: 4,
   /* OFF, AND LEFT IN PLACE. Two of the twelve used to come from the eleven-win
@@ -70,12 +75,19 @@ const CONSTANTS = {
   /* THE BAR RISES ROUND BY ROUND. One pivot each: the overall at which that
      round is an even game. A first-round opponent is beatable by a team that
      scraped into the field; the team waiting in the final is not. This is what
-     makes how FAR a season goes track the roster rather than the draw. */
+     makes how FAR a season goes track the roster rather than the draw.
+     The last two are set high on purpose so that winning it all is rare even
+     with the field widened: the semifinal at 98 thins who reaches the final to
+     near-elite rosters, and the championship at 99 needs a roster near the very
+     top of what the wheel can hand you. 99 sits just under the best draftable
+     overall (about 102), which is the floor: pushed to 100 the final becomes
+     unwinnable for every reachable roster and a perfect season turns
+     mathematically impossible, so 99 is deliberate, not round. */
   ROUND_EDGE_PIVOT: {
     'CFP First Round': 82,
     'CFP Quarterfinal': 88,
-    'CFP Semifinal': 93,
-    'CFP Championship': 97,
+    'CFP Semifinal': 98,
+    'CFP Championship': 99,
   },
   // Extra, per point below TITLE_FLOOR, on top of the ordinary slope. Final only.
   TITLE_EDGE_CLIFF: 0.16,
@@ -317,9 +329,9 @@ function resumeScore(wins, losses, z, sos) {
    POOL_GAMMA is the correction, one exponent: rank = FIELD_SIZE * p^gamma, so
    the top of the pool is compressed the way it is in a real poll (the best teams
    in the country are all in this pool, packed into its first few percent) while
-   the bottom still stretches out to last. Fitted so that the records the real
-   12-team field is made of land where they land in life: every unbeaten and
-   one-loss team in, about 45% of 11-2s, about 27% of 10-2s, next to none below. */
+   the bottom still stretches out to last. It is set to widen the field on
+   purpose: more good seasons rank inside the top twelve, so making the playoff
+   is common, while winning it stays rare through the round pivots. */
 function nationalRank(resume, prepared) {
   const table = prepared && prepared.resumeTable;
   if (!table || !table.length) return CONSTANTS.FIELD_SIZE;
