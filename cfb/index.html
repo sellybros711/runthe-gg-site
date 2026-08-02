@@ -213,9 +213,8 @@ window.GA_ID='G-L29P5MRWKE';
   .pill:hover{border-color:rgba(255,255,255,.22)}
   .pill i{color:var(--green)}
   /* ── profile bubble ─────────────────────────────────────────────
-     The way in to picking a school's colors, styled like the NFL game's. Empty
-     it shows a neutral head; once a school is chosen it fills with that team's
-     colors and carries its abbreviation. */
+     Your profile, styled like the NFL game's: a neutral head when signed out,
+     and once you are in, your initials on the colours of the school you picked. */
   .avatar{flex:0 0 40px;width:40px;height:40px;border-radius:50%;padding:0;position:relative;
     display:grid;place-items:center;cursor:pointer;background:none;
     border:1px solid var(--line-2);transition:border-color .15s,transform .1s}
@@ -2505,21 +2504,20 @@ function syncTheme(){
   else if(selectedSchool) applyTheme(null,false);
   else updateAvatar();
 }
-/* THE BUBBLE SHOWS THE SCHOOL FIRST AND THE ACCOUNT SECOND, because the school is
-   what the player chose to look at and the account is a fact about them. With a
-   school it is that school's letters; signed in without one it is their initials;
-   with neither it is empty. The label carries both facts either way, so a screen
-   reader gets what the letters cannot say. */
+/* THE BUBBLE IS THE PLAYER, IN THEIR SCHOOL'S COLOURS, the same as the NFL game.
+   It carries your initials, not the school's letters: picking a school sets the
+   colour the circle fills with (--pfp), the letters are always your account's. A
+   signed-out player, or one with no readable name yet, gets the neutral head. */
 function updateAvatar(){
   const av=$('b-profile'); if(!av) return;
   const ab=av.querySelector('.ab');
-  const who=authState.signedIn?(authState.name||'your account'):null;
-  if(selectedSchool){ av.classList.add('signed'); ab.textContent=selectedSchool.abbr; }
-  else if(authState.name){ av.classList.add('signed'); ab.textContent=initialsOf(authState.name); }
+  const name=authState.signedIn?authState.name:null;
+  const ini=name?initialsOf(name):'';
+  if(ini){ av.classList.add('signed'); ab.textContent=ini; }
   else{ av.classList.remove('signed'); ab.textContent=''; }
   av.setAttribute('aria-label',
-    (selectedSchool?'Your school: '+selectedSchool.school+'. ':'')+
-    (who?'Signed in as '+who+'. ':'Not signed in. ')+'Open your profile');
+    (name?'Signed in as '+name+'. ':'Not signed in. ')+
+    (selectedSchool?'Colors: '+selectedSchool.school+'. ':'')+'Open your profile');
 }
 /* THE PROFILE SHEET holds three things, on three tabs: who you are, the colors
    you play in, and what you have done in them. Tabs rather than one long scroll

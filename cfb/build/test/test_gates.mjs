@@ -107,7 +107,9 @@ console.log('\n=== signed in ===');
   await p.waitForTimeout(300);
   await p.click('.swatch[data-school="Alabama"]'); await p.waitForTimeout(700);
   ok('picking one themes the page', await p.evaluate(()=>document.body.classList.contains('themed')));
-  ok('and the bubble shows the school', (await p.$eval('#b-profile .ab',e=>e.textContent))==='ALA');
+  ok('and the bubble shows your initials in the school colors',
+    (await p.$eval('#b-profile .ab',e=>e.textContent))==='C'
+    && (await p.evaluate(()=>/gradient/i.test(getComputedStyle(document.documentElement).getPropertyValue('--pfp')))));
   await p.screenshot({path:SS+'gate_signedin_themed.png'});
   await p.click('#b-profile'); await p.waitForTimeout(500);
   await p.click('.achtabs button[data-tab="case"]'); await p.waitForTimeout(6000);
@@ -167,8 +169,9 @@ console.log('\n=== a saved school survives a sign-out and comes back ===');
   await q.waitForTimeout(2800);
   ok('signed in, it comes back on its own',
     await q.evaluate(()=>document.body.classList.contains('themed')));
-  ok('and the bubble shows it again',
-    (await q.$eval('#b-profile .ab',e=>e.textContent))==='ALA');
+  ok('and the bubble shows your initials in the school colors again',
+    (await q.$eval('#b-profile .ab',e=>e.textContent))==='C'
+    && (await q.evaluate(()=>/gradient/i.test(getComputedStyle(document.documentElement).getPropertyValue('--pfp')))));
   console.log('  errors:', errs.length?errs:'none');
   if(errs.length) bad++;
   await q.close();
