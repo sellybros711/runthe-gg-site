@@ -4823,7 +4823,13 @@ function modeMenu(){
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
           '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>'+
           '<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'+
-          '</svg></div><div class="mc-title">The Trade Machine'+(ct?'':' <span class="mc-soon-tag">Coming Soon</span>')+'</div>'+(ct?arrow:'')+'</div>'+
+          /* BETA FOR THE PEOPLE WHO CAN PLAY IT, Coming Soon for everyone else. The mode is
+             in early access on a short allowlist and it is still moving under them, so the
+             card says so rather than presenting it as finished. One tag or the other, never
+             both: they answer the same question. */
+          '</svg></div><div class="mc-title">The Trade Machine'+
+          (ct?' <span class="mc-beta">Beta</span>':' <span class="mc-soon-tag">Coming Soon</span>')+
+          '</div>'+(ct?arrow:'')+'</div>'+
         '<p>You are thrown into a season as the GM. Win with the team you\'re dealt, or trade your way to the top.</p>'+
       '</button>'+
     '</div>'+
