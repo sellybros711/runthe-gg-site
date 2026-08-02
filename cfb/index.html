@@ -687,11 +687,22 @@ window.GA_ID='G-L29P5MRWKE';
   /* ── budget bar ─────────────────────────────────────────────── */
   .capwrap{padding:14px 16px;border-radius:14px;border:1px solid var(--line);
     background:var(--grad-panel);margin-bottom:10px}
-  .caprow{display:flex;align-items:baseline;justify-content:space-between}
-  .caprow .lbl{font-family:var(--fn);font-size:10px;font-weight:600;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--dim-2)}
+  /* Budget hero on the left, two mini-stats on the right, their value baselines
+     aligned so the whole row settles on one line. */
+  .cap-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px}
+  .capwrap .lbl{display:block;font-family:var(--fn);font-size:9.5px;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--dim-2)}
+  .cap-budget{min-width:0}
+  .capamt{display:block;font-family:var(--fd);font-size:30px;line-height:1;margin-top:4px}
+  .capamt.low{color:var(--red)}
+  .cap-meta{display:flex;gap:20px;flex:0 0 auto}
+  .mstat{display:flex;flex-direction:column;align-items:flex-end}
+  .mstat .lbl{margin-bottom:4px}
+  .mstat b{font-family:var(--fn);font-size:15px;font-weight:800;line-height:1;
+    font-variant-numeric:tabular-nums;color:var(--ink)}
+  #d-count{color:var(--dim)}
   .capbar{height:5px;border-radius:99px;background:rgba(255,255,255,.08);
-    overflow:hidden;margin:7px 0 6px}
+    overflow:hidden;margin:10px 0 6px}
   .capbar i{display:block;height:100%;border-radius:99px;background:#22c55e;
     transition:width .4s ease}
   .capbar i.low{background:var(--red)}
@@ -1730,8 +1741,8 @@ window.GA_ID='G-L29P5MRWKE';
      in quantity, so nothing gets harder to read. Graduate ships a single, heavy
      weight, so we drop the faux-bold and lean on letter-spacing; the two
      smallest labels get a point back for legibility at Graduate's blockier cut. */
-  .eyebrow,.caprow .lbl,.caleye span,
-  .gameday span,.bug .bbot .rd,#bowl-title,#d-count,
+  .eyebrow,.capwrap .lbl,.caleye span,
+  .gameday span,.bug .bbot .rd,#bowl-title,
   .seed-badge,.po-step,.resume .rchip{font-family:var(--fc);font-weight:400}
   .gameday span{letter-spacing:.13em}
   .caleye span{font-size:10px}
@@ -1839,14 +1850,20 @@ or endorsed by the NCAA, the CFP or any school.
   <!-- s-draft -->
   <div class="screen" id="s-draft">
     <div class="capwrap">
-      <div class="caprow">
-        <span class="lbl">NIL Budget</span>
-        <span id="d-count" style="font-family:var(--fc);font-size:12.5px;font-weight:400;letter-spacing:.04em;color:var(--dim)">Spin 1 of 6</span>
-      </div>
-      <div style="display:flex;align-items:baseline;gap:8px;margin:4px 0">
-        <span id="c-amt" class="num" style="font-family:var(--fd);font-size:28px;line-height:1">$14.0M</span>
-        <span class="lbl" style="margin-left:auto">Chemistry</span>
-        <span id="c-chem" class="chemval num zero">None</span>
+      <!-- The budget is the hero stat on the left; the spin count and the
+           chemistry ride on the right as two matched label-over-value tiles, so
+           the three read as one clean row instead of a big number with a small
+           label hung off its baseline. -->
+      <div class="cap-head">
+        <div class="cap-budget">
+          <span class="lbl">NIL Budget</span>
+          <span id="c-amt" class="capamt num">$11.0M</span>
+        </div>
+        <div class="cap-meta">
+          <div class="mstat"><span class="lbl">Spin</span><b id="d-count">1 of 6</b></div>
+          <div class="mstat"><span class="lbl">Chemistry</span>
+            <b id="c-chem" class="chemval num zero">None</b></div>
+        </div>
       </div>
       <div class="capbar"><i id="c-bar" style="width:100%"></i></div>
       <div id="c-per" style="font-size:11px;color:var(--dim-2)"></div>
@@ -3646,7 +3663,7 @@ function paintTop(){
   if(left>1&&rem-floor<0.8){n.style.display='block';n.textContent='Keep at least '+M(floor)+' back or you cannot fill the rest of your team.';}
   else if(left===1&&rem>2.5){n.style.display='block';n.textContent='You still have '+M(rem)+' left and this is the last spot to spend it on.';}
   else n.style.display='none';
-  $('d-count').textContent='Spin '+Math.min(E.SLOTS.length,run.roster.length+1)+' of '+E.SLOTS.length;
+  $('d-count').textContent=Math.min(E.SLOTS.length,run.roster.length+1)+' of '+E.SLOTS.length;
 }
 
 /* ── reels ───────────────────────────────────────────────────── */
