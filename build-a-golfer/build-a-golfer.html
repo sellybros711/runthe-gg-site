@@ -715,6 +715,7 @@ window.GA_ID='G-L29P5MRWKE';
   .dh-bigverdict.miss{--bv-glow:rgba(233,162,59,.13); --bv-bd:rgba(233,162,59,.38)}
   .dh-bv-title{font-family:var(--display); font-weight:400; text-transform:uppercase; letter-spacing:.02em; line-height:1.02; font-size:clamp(27px,8.4vw,40px); color:#35d6a0}
   .dh-bigverdict.miss .dh-bv-title{color:#e9a23b; font-size:clamp(20px,6vw,30px)}
+  .dh-bv-fig{display:flex; justify-content:center; margin-top:10px}
   .dh-bv-sub{font-size:13px; color:var(--muted); margin-top:9px}
   .dh-bv-cta{font-size:13px; color:#35d6a0; font-weight:700; margin-top:7px}
 
@@ -21508,6 +21509,7 @@ function scrDailyResult(){
   // The point of Play 18 is to beat the pro, so it is the featured hero (the score lives in the "Your best today" bubble below).
   add($(`<div class="dh-bigverdict${wonDay?'':' miss'}">
     <div class="dh-bv-title">${wonDay?'You beat the pro!':'Short of the tour average'}</div>
+    <div class="dh-bv-fig">${pxFigureHTML(S.look, 78)}</div>
     <div class="dh-bv-sub">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}</div>
     ${(wonDay&&left>0&&!practice&&!r.isLegend)?`<div class="dh-bv-cta">Challenge cleared. Use your ${left} remaining attempt${left>1?'s':''} to go even lower and chase the course record.</div>`:''}
   </div>`));
