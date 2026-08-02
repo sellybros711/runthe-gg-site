@@ -92,6 +92,15 @@ const CONSTANTS = {
   PLAYOFF_HOME_FIELD: 0.35,
   // How much of an opponent's defence is applied to your offence. See resolveGame.
   DEFENCE_WEIGHT: 0.65,
+  /* CONFERENCE PLAY. When you represent a conference, this many of the twelve are
+     against that conference and decide your standing in it; the rest are the
+     non-conference slate. Eight is what a real Power 5 team plays. The top two in
+     the final standings meet for the conference title, and winning it is an
+     automatic playoff berth however the national ranking came out. */
+  CONFERENCE_GAMES: 8,
+  CONFERENCE_CHAMP_TOP: 2,
+  // How many teams the standings table holds, you included.
+  CONFERENCE_FIELD: 12,
 };
 
 // ─── conferences ────────────────────────────────────────────────────────────
@@ -409,12 +418,21 @@ function titleEdge(overall, constants = CONSTANTS) {
 
 /* Ranking to postseason. Top 12 play for the title, top 4 of those get the week
    off; everyone else is sorted into bowls by how many games they lost. */
-function seedFromRanking(rank, wins) {
+function seedFromRanking(rank, wins, conferenceChampion = false) {
   if (rank <= CONSTANTS.PLAYOFF_TEAMS) {
     const bye = rank <= CONSTANTS.PLAYOFF_BYES;
-    return { made: true, seed: rank, rank, bye,
+    return { made: true, seed: rank, rank, bye, conferenceChampion,
       rounds: bye ? CONSTANTS.PLAYOFF_ROUNDS_WITH_BYE : CONSTANTS.PLAYOFF_ROUNDS_NO_BYE,
       label: bye ? 'No. ' + rank + ' seed, first-round bye' : 'No. ' + rank + ' seed' };
+  }
+  /* THE AUTOMATIC BID. A conference champion is in however the national ranking
+     came out, and it takes the last seed and the four-round road, because a bye
+     is earned by ranking in the top four and a champ ranked outside the top
+     twelve did not earn one. */
+  if (conferenceChampion) {
+    return { made: true, seed: CONSTANTS.PLAYOFF_TEAMS, rank, bye: false, conferenceChampion: true, autoBid: true,
+      rounds: CONSTANTS.PLAYOFF_ROUNDS_NO_BYE,
+      label: 'Conference champion, No. ' + CONSTANTS.PLAYOFF_TEAMS + ' seed' };
   }
   const losses = CONSTANTS.REGULAR_SEASON_GAMES - wins;
   const out = { made: false, seed: null, rank, bye: false };
@@ -428,6 +446,52 @@ function seedFromRanking(rank, wins) {
     return { ...out, bowl: 'minor', rounds: 1, label: 'Minor Bowl' };
   }
   return { ...out, bowl: null, rounds: 0, label: 'Season over' };
+}
+
+/* THE CONFERENCE TABLE at the end of the regular season. You against the league
+   you represent: your eight conference games are a real record, and every other
+   member's is simulated once from its strength that year, a coin weighted by
+   how good the team was, over the same eight games. Sorted on conference wins,
+   ties broken by season quality. The top two play for the title; if you are one
+   of them, the other is your opponent, a real team season the championship game
+   is played against. Deterministic in the rng it is handed, so it is computed
+   once on selection day and kept. */
+function conferenceStandings(conference, yourConfWins, yourZ, prepared, rng, constants = CONSTANTS) {
+  const confN = constants.CONFERENCE_GAMES;
+  const field = constants.CONFERENCE_FIELD || 12;
+  const pool = (prepared && prepared.byConference && prepared.byConference[conference]) || [];
+  const bySchool = {};
+  for (const t of pool) (bySchool[t.school] ??= []).push(t);
+  const schools = Object.keys(bySchool);
+  /* Fisher-Yates on the rng so the rivals are a stable draw for this run. */
+  for (let i = schools.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [schools[i], schools[j]] = [schools[j], schools[i]];
+  }
+  const rivalSchools = schools.slice(0, Math.max(1, Math.min(field - 1, schools.length)));
+  const sigmoid = (z) => 1 / (1 + Math.exp(-0.9 * z));
+  const rivals = rivalSchools.map((s) => {
+    const list = bySchool[s];
+    const t = list[Math.floor(rng() * list.length)];
+    const p = sigmoid(t.strength_z);
+    let w = 0;
+    for (let i = 0; i < confN; i++) if (rng() < p) w++;
+    return { name: t.school, id: t.team_season_id, team: t, wins: w, z: t.strength_z, you: false };
+  });
+  const me = { name: 'You', wins: Math.max(0, Math.min(confN, yourConfWins)), z: yourZ, you: true };
+  const table = [...rivals, me].sort((a, b) => (b.wins - a.wins) || (b.z - a.z));
+  const myPos = table.findIndex((r) => r.you) + 1;
+  const top = constants.CONFERENCE_CHAMP_TOP;
+  const inChampGame = myPos <= top;
+  const other = inChampGame ? table.slice(0, top).find((r) => !r.you) : null;
+  return {
+    conference,
+    table: table.map((r, i) => ({ pos: i + 1, name: r.name, wins: r.wins, losses: confN - r.wins, you: r.you })),
+    myPos,
+    inChampGame,
+    opponent: other ? other.team : null,
+    opponentName: other ? other.name : null,
+  };
 }
 
 /* Seeding is worth something. The top seeds host the first round and are the
@@ -1104,7 +1168,71 @@ function orderSchedule(games, rng) {
    The nine ordinary games are still balanced to an average schedule, against a
    target scaled to nine, so the three hard ones are a deliberate addition and not
    an accident of a loose tolerance. */
+/* A SCHEDULE FOR A TEAM THAT REPRESENTS A CONFERENCE. Eight of the twelve are
+   against that conference, the members as they were that year, and they are the
+   games the standing in the conference is read from; the other four are an
+   ordinary non-conference slate drawn from anywhere. The eight are chosen to sit
+   near the league's own average strength rather than stacking its best or its
+   worst, so the conference race is fair, and the whole twelve is still nudged
+   toward the same overall target the national schedule uses so ranking and the
+   economy do not move. Returns the same shape as generateSchedule plus a Set of
+   the team-season ids that are the conference games. */
+function generateConferenceSchedule(data, rng, conference, opts = {}) {
+  const { byProgram, byConference, meanScheduleStrength } = data;
+  const count = opts.games ?? CONSTANTS.REGULAR_SEASON_GAMES;
+  const confN = Math.min(opts.conferenceGames ?? CONSTANTS.CONFERENCE_GAMES, count);
+  const pool = (byConference && byConference[conference]) || [];
+  /* One team season per school, so a conference game is against a distinct
+     programme; without enough of them the conference cannot fill a slate and the
+     caller falls back to a normal schedule. */
+  const bySchool = {};
+  for (const t of pool) (bySchool[t.school] ??= []).push(t);
+  const schools = Object.keys(bySchool);
+  if (schools.length < confN) return null;
+
+  const programs = Object.keys(byProgram);
+  const overallTarget = meanScheduleStrength / count;
+
+  let best = null;
+  for (let attempt = 0; attempt < (opts.maxAttempts ?? 300); attempt++) {
+    const used = new Set();
+    const conf = [];
+    let guard = 0;
+    while (conf.length < confN && guard++ < 400) {
+      const s = schools[Math.floor(rng() * schools.length)];
+      if (used.has(s)) continue;
+      used.add(s);
+      const list = bySchool[s];
+      conf.push(list[Math.floor(rng() * list.length)]);
+    }
+    if (conf.length < confN) return null;
+    const nonN = count - confN;
+    const non = [];
+    let g2 = 0;
+    while (non.length < nonN && g2++ < 600) {
+      const p = programs[Math.floor(rng() * programs.length)];
+      if (used.has(p)) continue;
+      used.add(p);
+      non.push(byProgram[p][Math.floor(rng() * byProgram[p].length)]);
+    }
+    if (non.length < nonN) continue;
+    const all = conf.concat(non);
+    const total = all.reduce((s, g) => s + g.strength_z, 0);
+    const drift = Math.abs(total / count - overallTarget);
+    if (!best || drift < best.drift) best = { conf, non, all, total, drift };
+    if (drift <= 0.04) break;
+  }
+  if (!best) return null;
+  const conferenceIds = new Set(best.conf.map((g) => g.team_season_id));
+  const games = orderSchedule(best.all, rng);
+  return { games, total: best.total, conferenceIds, conference };
+}
+
 function generateSchedule(data, rng, opts = {}) {
+  if (opts.conference) {
+    const cs = generateConferenceSchedule(data, rng, opts.conference, opts);
+    if (cs) return cs;
+  }
   const tolerance = opts.tolerance ?? 0.05;
   const maxElite = opts.maxElite ?? 3;
   const maxAttempts = opts.maxAttempts ?? 400;
@@ -1429,6 +1557,16 @@ function prepareData(teamSeasons) {
   const byProgram = {};
   for (const t of teamSeasons) (byProgram[t.school] ??= []).push(t);
 
+  /* Every team season filed under the conference it played in that year, lineage
+     folded in (Pac-10 into Pac-12), so a conference schedule can be drawn from
+     the league as it actually was and the standings can be built from its real
+     members. */
+  const byConference = {};
+  for (const t of teamSeasons) {
+    const c = conferenceOf(t.conference);
+    if (c) (byConference[c] ??= []).push(t);
+  }
+
   const zs = teamSeasons.map(t => t.strength_z).sort((a, b) => a - b);
   const q = (p) => zs[Math.min(zs.length - 1, Math.max(0, Math.round(p * (zs.length - 1))))];
   const eliteThreshold = q(0.90);
@@ -1469,6 +1607,7 @@ function prepareData(teamSeasons) {
   const meanZ = zs.reduce((a, b) => a + b, 0) / zs.length;
   return {
     byProgram,
+    byConference,
     eliteThreshold,
     goodPool,
     greatPool,
@@ -1489,9 +1628,9 @@ const publicAPI = {
   CONSTANTS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
   hashSeed, createSeededRNG, sampleGamma,
   pairLinks, resolveChemistry,
-  generateSchedule, generatePlayoffs, generateBowlOpponent,
+  generateSchedule, generateConferenceSchedule, generatePlayoffs, generateBowlOpponent,
   resolveGame, playRun, playBowlGame, prepareData, toFootballScore,
-  playoffOpponent, playoffRoundNames,
+  playoffOpponent, playoffRoundNames, conferenceStandings,
   resumeScore, nationalRank, rankSeason, seedFromRanking, seedAdvantage,
   teamRating, teamOverall, titleEdge, roundEdge,
   respinCost, respinFees,

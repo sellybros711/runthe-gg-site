@@ -407,6 +407,17 @@ window.GA_ID='G-L29P5MRWKE';
      The strip a college broadcast runs the rankings along. Quiet enough to read
      as furniture rather than something you have to stop and read, and it only
      lives on the front page. */
+  /* The conference picker on the intro. A quiet row, not a headline act: it sits
+     under the title and reads as a setting on the season you are about to draft. */
+  .confpick{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 12px}
+  .confpick-l{font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim)}
+  .confpick-sel{font-family:var(--fn);font-size:13px;font-weight:700;color:var(--ink);
+    background:var(--panel);border:1px solid var(--line-2);border-radius:9px;padding:8px 30px 8px 12px;
+    cursor:pointer;-webkit-appearance:none;appearance:none;max-width:70%;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237c8da3' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 11px center}
+  .confpick-sel:focus{outline:none;border-color:var(--green)}
   .ticker{display:flex;align-items:stretch;margin:0 0 14px;border-radius:8px;overflow:hidden;
     background:linear-gradient(180deg,#141b28,#0b1019);border:1px solid var(--line)}
   .tk-label{flex:0 0 auto;display:flex;align-items:center;padding:7px 11px 6px;white-space:nowrap;
@@ -749,6 +760,11 @@ window.GA_ID='G-L29P5MRWKE';
   #v-rec b{font-family:inherit;font-weight:inherit;display:inline-block}
   #v-rec i{font-style:normal;color:rgba(255,255,255,.6);margin:0 1px}
   #v-rec b.bump{animation:recbump .42s cubic-bezier(.2,1.5,.4,1) both}
+  /* The conference record trails the overall one, smaller and quieter, so the
+     overall stays the number the eye lands on. */
+  #v-rec .v-conf{font-size:.6em;color:rgba(255,255,255,.55);margin-left:.4em;
+    letter-spacing:.01em;vertical-align:.06em}
+  #v-rec .v-conf i{color:rgba(255,255,255,.4)}
   @keyframes recbump{0%{transform:scale(1)}38%{transform:scale(1.34)}100%{transform:scale(1)}}
   .streak{height:17px;margin-top:7px;text-align:center;font-family:var(--fn);font-size:11px;
     font-weight:600;letter-spacing:.13em;text-transform:uppercase;opacity:0;transition:opacity .25s ease}
@@ -1798,6 +1814,17 @@ or endorsed by the NCAA, the CFP or any school.
       <h1><span class="ln">Perfect</span><span class="freak">College</span><span class="ln">Season</span></h1>
     </div>
 
+    <!-- The conference you represent. Your roster is drawn from everywhere, but you
+         play a conference schedule and chase its title, and winning it is a ticket
+         to the playoff on its own. "Independent" keeps the old national-ranking
+         season for anyone who would rather not. -->
+    <div class="confpick">
+      <label class="confpick-l" for="home-conf">Play for</label>
+      <select id="home-conf" class="confpick-sel" aria-label="Conference to represent">
+        <option value="">Independent (ranking only)</option>
+      </select>
+    </div>
+
     <div>
       <button class="btn" id="b-play-intro">Draft your team</button>
     </div>
@@ -2150,8 +2177,8 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=10"></script>
-<script src="run.js?v=6"></script>
+<script src="engine.js?v=11"></script>
+<script src="run.js?v=7"></script>
 <script src="achievements.js?v=5"></script>
 <script src="auth.js?v=1"></script>
 <script src="board.js?v=1"></script>
@@ -3535,10 +3562,16 @@ function openBoxScore(r){
    back into free play, which is the one thing that would make the mode feel like
    it had not stuck. */
 let nextConference=null;
+/* The conference a FREE-PLAY run represents, chosen on the intro. Separate from
+   nextConference, which is the constrained Conference Draft; a Conference Draft
+   already plays for its own league, so it does not need this. Remembered so Draft
+   again keeps you in the same league's race. */
+let nextHomeConference=null;
 
 function newRun(){
   run=R.createRun({seed:E.hashSeed(String(Date.now())+Math.random()),
-    conference:nextConference});
+    conference:nextConference,
+    homeConference:nextHomeConference});
   lastChem=1;
 }
 
@@ -4063,17 +4096,39 @@ function paintUpcomingBug(){
   }
 }
 
+/* Your record in the conference games played so far. Only the regular-season
+   conference slate counts: the playoff, a bowl and the title game itself are not
+   conference play. Null when you are not representing one. */
+function confRecordSoFar(){
+  if(!run||!run.homeConference||!run.scheduleConferenceIds||!run.season) return null;
+  const ids=new Set(run.scheduleConferenceIds);
+  let w=0,l=0;
+  for(const r of run.season.results){
+    if(r.playoff||r.bowl||r.confChamp) continue;
+    if(ids.has(r.opponent_id)){ if(r.won) w++; else l++; }
+  }
+  return {w,l};
+}
+
 function paintNext(live){
   const s=run.season;
   const rec=$('v-rec');
-  if(!rec.dataset.split){
-    rec.innerHTML='<b id="v-w">0</b><i>-</i><b id="v-l">0</b>';
-    rec.dataset.split='1';
+  const conf=confRecordSoFar();
+  const wantConf=conf?'1':'0';
+  if(rec.dataset.split!=='1'||rec.dataset.conf!==wantConf){
+    /* The overall record leads, in the full size; the conference record rides
+       behind it in parentheses, smaller and dimmer, so the two read as one line
+       with a clear primary. Rebuilt only when the conference slot appears or
+       disappears, so the per-game count-up animations are left alone. */
+    rec.innerHTML='<b id="v-w">0</b><i>-</i><b id="v-l">0</b>'+
+      (conf?'<span class="v-conf">(<b id="v-cw">0</b><i>-</i><b id="v-cl">0</b>)</span>':'');
+    rec.dataset.split='1'; rec.dataset.conf=wantConf;
   }
   const wEl=$('v-w'), lEl=$('v-l');
   const bumped=live&&(Number(wEl.textContent)!==s.wins?wEl:(Number(lEl.textContent)!==s.losses?lEl:null));
   countTo(wEl,s.wins,live?300:0);
   countTo(lEl,s.losses,live?300:0);
+  if(conf){ const cw=$('v-cw'), cl=$('v-cl'); if(cw) cw.textContent=conf.w; if(cl) cl.textContent=conf.l; }
   if(bumped){bumped.classList.remove('bump');void bumped.offsetWidth;bumped.classList.add('bump');}
   const st=streakOf(s.results);
   const sEl=$('v-streak');
@@ -4126,12 +4181,13 @@ function runSim(){
         if(sEl){ sEl.className='streak w on sig'; sEl.textContent='Signature win over #'+beat+'!'; } }
     }
     if(run.phase!==R.PHASES.SEASON){
+      const confTitle=run.phase===R.PHASES.CONF_CHAMP;
       const made=run.playoffSeed&&run.playoffSeed.made;
       const hasBowl=run.playoffSeed&&run.playoffSeed.bowl;
       const sEl=$('v-streak');
       if(sEl){
-        sEl.className='streak'+(made?' w on':(hasBowl?' w on':' l on'))+' clinch';
-        sEl.textContent=made?'Clinched the playoffs!':(hasBowl?'Bowl game!':'Season over');
+        sEl.className='streak'+(confTitle||made||hasBowl?' w on':' l on')+' clinch';
+        sEl.textContent=confTitle?'Conference title game!':(made?'Clinched the playoffs!':(hasBowl?'Bowl game!':'Season over'));
       }
       simTimer=setTimeout(after,1800);
       return;
@@ -4160,7 +4216,9 @@ $('b-sim').onclick=()=>fastForward();
 
 function after(){
   clearTimeout(simTimer); clearTimeout(poTimer); cancelAnimationFrame(poRaf);
-  if(run.phase===R.PHASES.SEEDING){
+  if(run.phase===R.PHASES.CONF_CHAMP){
+    paintConfChamp();
+  }else if(run.phase===R.PHASES.SEEDING){
     paintSeed();
   }else if(run.phase===R.PHASES.OVER){
     paintOver();
@@ -4179,19 +4237,25 @@ function paintSeed(){
   if(sd.made){
     /* Playoff */
     c.className='seed-panel '+(sd.bye?'gold':'win');
-    /* No conference is named. The roster is drawn from schools all over the
-       country, so claiming one league's title would be inventing something the
-       run never had; that you won a conference to get here is enough. */
-    const confBadge='<span class="seed-badge conf">Conference Champion</span>';
+    /* The conference badge now says something true: it shows only when you
+       actually won the league you played for. A run that made the field on its
+       national ranking without a conference does not claim a title it never won. */
+    const confBadge=sd.conferenceChampion
+      ? '<span class="seed-badge conf">'+esc(run.homeConference||'Conference')+' Champion</span>' : '';
     const seedBadge='<span class="seed-badge '+(sd.bye?'gold':'blue')+'">No. '+sd.seed+' seed</span>';
+    const qual=sd.autoBid
+      ? '<span class="seed-badge blue">Automatic bid</span>'
+      : '<span class="seed-badge blue">CFP Qualifier</span>';
     if(sd.bye){
       badges.innerHTML=confBadge+seedBadge+
         '<span class="seed-badge gold"><svg viewBox="0 0 16 16"><path d="M8 1l2.2 4.5 5 .7-3.6 3.5.9 5L8 12.5 3.5 14.7l.9-5L.8 6.2l5-.7z" fill="currentColor" stroke="none"/></svg>First-round bye</span>';
     }else{
-      badges.innerHTML=confBadge+seedBadge+'<span class="seed-badge blue">CFP Qualifier</span>';
+      badges.innerHTML=confBadge+seedBadge+qual;
     }
     const togo=sd.rounds===1?'One win':sd.rounds===2?'Two wins':sd.rounds===3?'Three wins':'Four wins';
-    $('sd-sub').textContent=(sd.bye
+    $('sd-sub').textContent=(sd.autoBid
+      ? 'Conference champions are in. You take the No. '+sd.seed+' seed. '
+      : sd.bye
       ? 'The No. '+sd.seed+' seed sits out the first round. '
       : 'You are the No. '+sd.seed+' seed in the College Football Playoff. ')+
       togo+' from a national championship.';
@@ -4241,6 +4305,10 @@ function paintSeed(){
 }
 
 $('b-po').onclick=()=>{
+  if(run.phase===R.PHASES.CONF_CHAMP){
+    playConfChampBroadcast();
+    return;
+  }
   const sd=run.playoffSeed;
   if(sd.made){
     R.startPlayoffs(run);
@@ -4255,6 +4323,27 @@ $('b-po-skip').onclick=()=>{
   show('s-season');
   fastForward();
 };
+
+/* THE CONFERENCE TITLE GAME, offered on the seeding screen before selection is
+   read. You are one of the top two in the league you played for; win this and the
+   playoff bid is automatic, lose it and you are back on your national ranking. */
+function paintConfChamp(){
+  const st=run.conferenceStandings, cc=run.conferenceChampGame;
+  const opp=cc?DATA.byTeamSeasonId[cc.opponentId]:null;
+  const conf=run.homeConference||'Conference';
+  const confW=st?(st.table.find(r=>r.you)||{}).wins:null;
+  const c=$('sd-card'); c.className='seed-panel gold';
+  $('sd-rec').textContent=(confW!=null?confW+'-'+(E.CONSTANTS.CONFERENCE_GAMES-confW):run.season.regularWins+'-'+run.season.regularLosses);
+  $('sd-badges').innerHTML='<span class="seed-badge gold">'+esc(conf)+' Championship</span>'+
+    (st?'<span class="seed-badge blue">No. '+st.myPos+' in the '+esc(conf)+'</span>':'');
+  $('sd-sub').textContent='You reached the '+conf+' Championship'+
+    (opp?' against '+opp.display:'')+'. Win it and you are in the playoff, whatever the rankings say.';
+  $('sd-tracker').innerHTML='';
+  $('b-po').textContent='Play the '+conf+' Championship';
+  $('b-po').hidden=false;
+  $('b-po-skip').hidden=true;
+  show('s-seed');
+}
 
 /* ── playoff broadcast ───────────────────────────────────────── */
 const PACE={
@@ -4589,13 +4678,38 @@ function runPlayoffs(){
 
 $('b-po-fast').onclick=()=>{if(poSkip) poSkip();};
 
-/* ── bowl game broadcast ─────────────────────────────────────── */
+/* ── bowl / conference-championship broadcast ────────────────────
+   One broadcast, two games. The bowl and the conference championship are both a
+   single neutral-site game on the same screen; only the game that gets played,
+   the titles, the winning call and where the whistle sends you afterward differ,
+   so those are the parameters and everything between is shared. */
 function playBowlBroadcast(){
-  const r=R.playBowlGame(run,DATA,LEAGUE,CAL);
-  const bowlName=r.round||'Bowl Game';
-  $('bowl-eyebrow').textContent=bowlName;
+  playFeatureBroadcast({
+    play: () => R.playBowlGame(run, DATA, LEAGUE, CAL),
+    winCall: 'BOWL CHAMPIONS', loseCall: 'SEASON OVER',
+    onDone: () => { poTimer = setTimeout(() => { paintOver(); show('s-over'); }, 1600); },
+    celebrateOnWin: true,
+  });
+}
+function playConfChampBroadcast(){
+  playFeatureBroadcast({
+    play: () => R.playConferenceChampGame(run, DATA, LEAGUE, CAL),
+    eyebrow: (run.homeConference || '') + ' Championship',
+    title: (run.homeConference || '') + ' Championship',
+    tagline: 'Win it and you are in the playoff, whatever the rankings say.',
+    winCall: 'CONFERENCE CHAMPIONS', loseCall: 'FELL SHORT',
+    /* Not the end of the road either way: a win is an automatic bid and a loss
+       falls back on the national ranking, so both roll on to selection. */
+    onDone: () => { poTimer = setTimeout(() => { after(); }, 1500); },
+    celebrateOnWin: true,
+  });
+}
+function playFeatureBroadcast(cfg){
+  const r=cfg.play();
+  const bowlName=cfg.title||r.round||'Bowl Game';
+  $('bowl-eyebrow').textContent=cfg.eyebrow||r.round||bowlName;
   $('bowl-title').textContent=bowlName;
-  $('bowl-tagline').textContent=r.bowlTagline||'';
+  $('bowl-tagline').textContent=cfg.tagline!=null?cfg.tagline:(r.bowlTagline||'');
 
   const opp=DATA.byTeamSeasonId[r.opponent_id];
   const me=youColors();
@@ -4618,7 +4732,7 @@ function playBowlBroadcast(){
   youEl.className='bt you';themEl.className='bt them';
   bug.className='bug'+(bowlRk?' ranked':'');
   setShowdown('bowl-gameday','bowl-gdtext',bowlRk);
-  $('bowl-q').textContent=QNAME[0];$('bowl-ck').textContent='15:00';$('bowl-rd').textContent='BOWL';
+  $('bowl-q').textContent=QNAME[0];$('bowl-ck').textContent='15:00';$('bowl-rd').textContent=cfg.rd||'BOWL';
   $('bowl-cap').innerHTML='';$('bowl-log').innerHTML='';
   $('bowl-fastwrap').hidden=false;
   show('s-bowl');
@@ -4644,12 +4758,12 @@ function playBowlBroadcast(){
     $('bowl-q').textContent='FINAL';$('bowl-ck').textContent=r.won?'YOU WIN':'YOU LOSE';
     $('bowl-log').innerHTML='';script.forEach(logScore);
     $('bowl-cap').innerHTML='<div class="call '+(r.won?'you':'them')+'"><b>'+
-      (r.won?'BOWL CHAMPIONS':'SEASON OVER')+'</b><span>'+
+      (r.won?cfg.winCall:cfg.loseCall)+'</b><span>'+
       esc(r.opponent)+' '+r.shownThem+', you '+r.shownYou+'</span></div>';
     $('bowl-fastwrap').hidden=true;
-    if(r.won) afterPaint(()=>fireConfetti(confettiTheme(false)));
+    if(r.won&&cfg.celebrateOnWin) afterPaint(()=>fireConfetti(confettiTheme(false)));
     paintCalendar(r);
-    poTimer=setTimeout(()=>{paintOver();show('s-over');},1600);
+    (cfg.onDone||(()=>{paintOver();show('s-over');}))();
   };
   poSkip=finish;
   $('b-bowl-fast').onclick=()=>{if(poSkip)poSkip();};
@@ -5453,6 +5567,21 @@ function howToPlay(){
 }
 
 /* ── wire up buttons ─────────────────────────────────────────── */
+/* Fill the intro conference picker and remember the last choice. Written before
+   the button handlers so the select is populated the moment the page settles. */
+(function(){
+  const sel=$('home-conf'); if(!sel) return;
+  (E.POWER_CONFERENCES||[]).forEach(c=>{
+    const o=document.createElement('option'); o.value=c.key; o.textContent=c.name; sel.appendChild(o);
+  });
+  let saved=''; try{ saved=localStorage.getItem('ps_cfb_home_conf')||''; }catch(e){}
+  if(saved&&E.isPowerConference(saved)){ sel.value=saved; nextHomeConference=saved; }
+  sel.onchange=()=>{
+    nextHomeConference=E.isPowerConference(sel.value)?sel.value:null;
+    try{ localStorage.setItem('ps_cfb_home_conf',nextHomeConference||''); }catch(e){}
+    ga('home_conference_chosen',{conference:nextHomeConference||'independent'});
+  };
+})();
 $('b-play-intro').onclick=()=>beginDraft();
 $('b-how').onclick=()=>{ga('how_to_play_opened');howToPlay();};
 $('b-modes').onclick=modeMenu;
