@@ -18310,6 +18310,14 @@ function hvGeom(seedN, par, yds, courseKey, holeIdx){
       const tw=g.t(g.water.y), wsx=HV_W/2 + g.water.x*g.sx*tw, wr=g.water.rx*g.sx*tw;      // the pond's sea-facing edge
       const inner=oside>0?wsx+wr:wsx-wr, shoreX=oside>0?HV_W-ow2:ow2;
       if(oside>0 ? inner>shoreX-10 : inner<shoreX+10) g.water=null; } }   // any pond reaching the shore is dropped
+  // ocean band (coastal/links): mirror the terrain renderer's shore EXACTLY (same seed + hash args) so hvPlots
+  // can keep a resting/landing ball OUT of the sea - a side-miss shouldn't render sitting in the ocean and read
+  // like a normal lie (owner: "it didn't read this as OB"). The ocean is drawn only in the renderer, so hvGeom
+  // otherwise has no idea where it is.
+  if(courseKey!=null){ const _B=hvBiome(courseKey);
+    if(_B && _B.ocean){ const ow=_B.oceanW||[52,76], oside=hh(70)<0.5?-1:1, owid=ow[0]+hh(71)*(ow[1]-ow[0]);
+      const oex=[]; for(let k=0;k<=11;k++){ const w=owid+(hvHash(seedN,80+k,3)-0.5)*24; oex.push(oside>0?HV_W-w:w); }
+      g.ocean={side:oside, edge:(sy)=>{ const t=Math.max(0,Math.min(1,sy/HV_H))*11, i=Math.min(10,Math.floor(t)), f=t-i; return oex[i]+(oex[i+1]-oex[i])*f; }}; } }
   // bunkers: greenside ring + fairway bunkers, scaled by the course's sand character
   const gx=g.gcx;
   if(!g.island){
@@ -18366,6 +18374,8 @@ function hvOutOfWater(g, pt){
       else { const k=1.06/d; x=w.x+(x-w.x)*k; y=w.y+(y-w.y)*k; } } }
   if(g.creek){ const cy=g.creek.y, band=8;
     if(Math.abs(y-cy)<band) y=(y>=cy?cy+band:cy-band); }   // nudge to the near side of the crossing creek
+  if(g.ocean){ const P=hvProj(g,x,y), shore=g.ocean.edge(P[1]), m=8, side=g.ocean.side;   // never draw a dry-lie ball out in the sea
+    if(side>0 ? P[0]>shore-m : P[0]<shore+m){ const tx=side>0?shore-m:shore+m, denom=g.sx*g.t(y)||1; x=(tx-HV_W/2)/denom; } }
   return [x,y];
 }
 function hvPlots(g, shots, seedN){
@@ -18448,7 +18458,7 @@ function hvPlots(g, shots, seedN){
       } }
     // dry lie (not water/drop) that overlaps a pond/creek → push the resting ball onto land so it's never
     // drawn in the water when the shot didn't find it. (Green shots are handled by the carry safety below.)
-    if(rest && !p.onGreen && s.lie!=='water' && s.lie!=='drop' && (g.water||g.creek)) rest=hvOutOfWater(g,rest);
+    if(rest && !p.onGreen && s.lie!=='water' && s.lie!=='drop' && (g.water||g.creek||g.ocean)) rest=hvOutOfWater(g,rest);
     p.rest=rest;
     p.dist=hvDistYds(rest,p.from);
     // landing = a bit short of rest (the ball bounces + rolls out); putts/drops roll only
@@ -18469,7 +18479,7 @@ function hvPlots(g, shots, seedN){
       if(u[1]>0.001){ const maxRoll=(rest[1]-frontY)/u[1]; if(maxRoll<roll) roll=Math.max(0,maxRoll); }   // clamp so the landing sits on the green
     }
     p.land=[rest[0]-u[0]*roll, rest[1]-u[1]*roll];
-    if(!p.onGreen && s.lie!=='water' && s.lie!=='drop' && (g.water||g.creek)) p.land=hvOutOfWater(g,p.land);   // touchdown can't be on water either
+    if(!p.onGreen && s.lie!=='water' && s.lie!=='drop' && (g.water||g.creek||g.ocean)) p.land=hvOutOfWater(g,p.land);   // touchdown can't be on water either
     // final safety: if a green-ending shot's landing still dips into a fronting water body while the
     // rest is on dry green, walk it forward toward the rest until it clears the water - the ball must
     // carry the hazard fully and land on the surface, it can never touch down on the water.
@@ -19246,8 +19256,23 @@ function hvRevealPaths(p){
   if(tg){tg.style.strokeDasharray='none';tg.style.strokeDashoffset='0';}
   if(r){r.style.strokeDasharray=(p&&p.k==='pen')?'3 4':'none';r.style.strokeDashoffset='0';}
 }
+// a re-render for an ALREADY-completed shot rebuilds hv-ball at the shot's START (hvLiveShot draws it at
+// the from-point), but the animator won't run again - so the ball would sit at the origin. Snap it to its
+// FINAL resting state (owner: a "make" was showing the ball beside the cup, because the post-hole re-render
+// re-created the ball at the putt/chip origin and hvKick's done-branch only revealed the tracer). A holed
+// shot's rest is the pin → radius 0 = in the cup; any other completed shot sits at its true rest.
+function hvSettle(g,p){
+  hvRevealPaths(p);
+  if(!p) return;
+  const b=document.getElementById('hv-ball'); if(!b) return;
+  const sv=document.getElementById('hv-svg');
+  let bs=1; if(sv){ const w=parseFloat((sv.getAttribute('viewBox')||'').split(' ')[2])||HV_W; bs=Math.max(0.42,Math.min(1,(w/HV_W)*1.55)); }
+  const R=hvProj(g,p.rest[0],p.rest[1]);
+  const rr=p.hole?0:((p.k==='putt'||p.k==='hole'||p.onGreen)?HV_GBALL:(HV_GROUND*bs));
+  b.setAttribute('cx',R[0]); b.setAttribute('cy',R[1]); b.setAttribute('r',(+rr).toFixed(2)); b.setAttribute('opacity','1');
+}
 function hvKick(key, g, p, pPrev, reduce, opts){
-  if(_hvA.key===key){ if(_hvA.done) hvRevealPaths(p); return; }
+  if(_hvA.key===key){ if(_hvA.done) hvSettle(g,p); return; }
   _hvA.key=key; _hvA.done=false; _hvA.splashed=false; if(_hvA.raf) cancelAnimationFrame(_hvA.raf);
   if(!p) return;
   opts=opts||{};
