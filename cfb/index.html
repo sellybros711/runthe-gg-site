@@ -386,7 +386,7 @@ window.GA_ID='G-L29P5MRWKE';
      the page trims the size if whatever font actually gets drawn runs wider
      than the page. */
   .hero h1{font-family:var(--fd);line-height:.84;
-    font-size:clamp(30px,19vw,110px);
+    font-size:clamp(26px,14.5vw,84px);
     letter-spacing:.01em;text-transform:uppercase;white-space:nowrap;
     position:relative;left:50%;transform:translateX(-50%);width:max-content;max-width:none}
   .hero h1 .ln{display:block}
@@ -399,8 +399,8 @@ window.GA_ID='G-L29P5MRWKE';
      keeps the crossing readable as layering rather than collision. Wider than
      the two words it sits between, the way the middle word on a tee always is. */
   .hero h1 .freak{font-family:'Metal Mania',var(--fd);display:block;
-    transform:rotate(-4deg);font-size:1.34em;line-height:.78;
-    margin:-.13em 0 -.11em;position:relative;z-index:2;
+    transform:rotate(-4deg);font-size:1.2em;line-height:.82;
+    margin:-.05em 0 -.04em;position:relative;z-index:2;
     color:var(--green);text-shadow:0 0 16px rgba(0,0,0,.9),0 3px 0 rgba(0,0,0,.65)}
 
   /* The bowl / championship title, said once and said loud. It was printed twice,
@@ -482,10 +482,11 @@ window.GA_ID='G-L29P5MRWKE';
   .reelbox.year .reel-i{font-size:23px;font-weight:800}
   .reelbox.team .reel-i{font-size:14.5px;font-weight:800}
   .reel-i.land{font-weight:900}
-  .reelbox.year.spin{border-color:rgba(16,185,129,.55)}
-  .reelbox.team.spin{border-color:rgba(245,158,11,.55)}
-  .reelbox.year.spin .reel-win{border-color:rgba(16,185,129,.5)}
-  .reelbox.team.spin .reel-win{border-color:rgba(245,158,11,.5)}
+  /* WHITE WHILE IT IS SPINNING. In motion the reel is neutral; it only takes the
+     team's colour (green for the year, gold for the school) once it has landed,
+     so the colour reads as a result rather than as decoration on a blur. */
+  .reelbox.year.spin,.reelbox.team.spin{border-color:rgba(255,255,255,.7)}
+  .reelbox.year.spin .reel-win,.reelbox.team.spin .reel-win{border-color:rgba(255,255,255,.65)}
   .reelbox.waiting{opacity:.42}
   .reelbox.waiting .reel-win{border-color:rgba(255,255,255,.07)}
   .reelbox.hit .reel-win{animation:bandhit .5s ease-out}
