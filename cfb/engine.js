@@ -91,9 +91,18 @@ const CONSTANTS = {
   },
   // Extra, per point below TITLE_FLOOR, on top of the ordinary slope. Final only.
   TITLE_EDGE_CLIFF: 0.16,
-  NY6_MAX_LOSSES: 3,
-  BOWL_MAX_LOSSES: 5,
-  MINOR_BOWL_MAX_LOSSES: 6,
+  /* BOWL ELIGIBILITY IS SIX WINS, the way it is in real college football: win half
+     your games and you have earned a bowl. Which bowl is set by where you finish
+     in the country, not by your record, so a strong team that just missed the
+     twelve gets a New Year's Six and a 6-6 team gets a lower one. The cutoffs are
+     national ranks: outside the top twelve, the best non-playoff teams down to
+     BOWL_NY6_RANK land in the six biggest, the next tier down to BOWL_MAJOR_RANK
+     in the marquee bowls, and everyone else 6-win-eligible in the rest. */
+  BOWL_MIN_WINS: 6,
+  BOWL_NY6_RANK: 18,
+  BOWL_MAJOR_RANK: 40,
+  // How often, out of every bowl, the assignment is the house's own RunThe.GG Bowl.
+  RUNTHE_BOWL_CHANCE: 0.05,
   // How much each side's score is pulled toward its true mean each game. Higher
   // means less week-to-week noise, so roster strength wins out and better teams go
   // farther. The opponent used to be fully random (OPP_CONSISTENCY effectively 0),
@@ -104,15 +113,6 @@ const CONSTANTS = {
   PLAYOFF_HOME_FIELD: 0.35,
   // How much of an opponent's defence is applied to your offence. See resolveGame.
   DEFENCE_WEIGHT: 0.65,
-  /* CONFERENCE PLAY. When you represent a conference, this many of the twelve are
-     against that conference and decide your standing in it; the rest are the
-     non-conference slate. Eight is what a real Power 5 team plays. The top two in
-     the final standings meet for the conference title, and winning it is an
-     automatic playoff berth however the national ranking came out. */
-  CONFERENCE_GAMES: 8,
-  CONFERENCE_CHAMP_TOP: 2,
-  // How many teams the standings table holds, you included.
-  CONFERENCE_FIELD: 12,
 };
 
 // ─── conferences ────────────────────────────────────────────────────────────
@@ -428,82 +428,29 @@ function titleEdge(overall, constants = CONSTANTS) {
   return roundEdge(overall, 'CFP Championship', constants);
 }
 
-/* Ranking to postseason. Top 12 play for the title, top 4 of those get the week
-   off; everyone else is sorted into bowls by how many games they lost. */
-function seedFromRanking(rank, wins, conferenceChampion = false) {
+/* Ranking to postseason. The top twelve play for the title, the top four of those
+   get the week off. Everyone else who won at least six games goes bowling, and
+   which bowl is set by where they finished in the country: the best of the teams
+   left out get a New Year's Six, the next tier the marquee bowls, the rest one of
+   the many. Under six wins there is no bowl. */
+function seedFromRanking(rank, wins) {
   if (rank <= CONSTANTS.PLAYOFF_TEAMS) {
     const bye = rank <= CONSTANTS.PLAYOFF_BYES;
-    return { made: true, seed: rank, rank, bye, conferenceChampion,
+    return { made: true, seed: rank, rank, bye,
       rounds: bye ? CONSTANTS.PLAYOFF_ROUNDS_WITH_BYE : CONSTANTS.PLAYOFF_ROUNDS_NO_BYE,
       label: bye ? 'No. ' + rank + ' seed, first-round bye' : 'No. ' + rank + ' seed' };
   }
-  /* THE AUTOMATIC BID. A conference champion is in however the national ranking
-     came out, and it takes the last seed and the four-round road, because a bye
-     is earned by ranking in the top four and a champ ranked outside the top
-     twelve did not earn one. */
-  if (conferenceChampion) {
-    return { made: true, seed: CONSTANTS.PLAYOFF_TEAMS, rank, bye: false, conferenceChampion: true, autoBid: true,
-      rounds: CONSTANTS.PLAYOFF_ROUNDS_NO_BYE,
-      label: 'Conference champion, No. ' + CONSTANTS.PLAYOFF_TEAMS + ' seed' };
-  }
-  const losses = CONSTANTS.REGULAR_SEASON_GAMES - wins;
   const out = { made: false, seed: null, rank, bye: false };
-  if (losses <= CONSTANTS.NY6_MAX_LOSSES) {
+  if (wins < CONSTANTS.BOWL_MIN_WINS) {
+    return { ...out, bowl: null, rounds: 0, label: 'Season over' };
+  }
+  if (rank <= CONSTANTS.BOWL_NY6_RANK) {
     return { ...out, bowl: 'ny6', rounds: 1, label: 'New Year\'s Six Bowl' };
   }
-  if (losses <= CONSTANTS.BOWL_MAX_LOSSES) {
-    return { ...out, bowl: 'bowl', rounds: 1, label: 'Bowl Game' };
+  if (rank <= CONSTANTS.BOWL_MAJOR_RANK) {
+    return { ...out, bowl: 'major', rounds: 1, label: 'Bowl Game' };
   }
-  if (losses <= CONSTANTS.MINOR_BOWL_MAX_LOSSES) {
-    return { ...out, bowl: 'minor', rounds: 1, label: 'Minor Bowl' };
-  }
-  return { ...out, bowl: null, rounds: 0, label: 'Season over' };
-}
-
-/* THE CONFERENCE TABLE at the end of the regular season. You against the league
-   you represent: your eight conference games are a real record, and every other
-   member's is simulated once from its strength that year, a coin weighted by
-   how good the team was, over the same eight games. Sorted on conference wins,
-   ties broken by season quality. The top two play for the title; if you are one
-   of them, the other is your opponent, a real team season the championship game
-   is played against. Deterministic in the rng it is handed, so it is computed
-   once on selection day and kept. */
-function conferenceStandings(conference, yourConfWins, yourZ, prepared, rng, constants = CONSTANTS) {
-  const confN = constants.CONFERENCE_GAMES;
-  const field = constants.CONFERENCE_FIELD || 12;
-  const pool = (prepared && prepared.byConference && prepared.byConference[conference]) || [];
-  const bySchool = {};
-  for (const t of pool) (bySchool[t.school] ??= []).push(t);
-  const schools = Object.keys(bySchool);
-  /* Fisher-Yates on the rng so the rivals are a stable draw for this run. */
-  for (let i = schools.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [schools[i], schools[j]] = [schools[j], schools[i]];
-  }
-  const rivalSchools = schools.slice(0, Math.max(1, Math.min(field - 1, schools.length)));
-  const sigmoid = (z) => 1 / (1 + Math.exp(-0.9 * z));
-  const rivals = rivalSchools.map((s) => {
-    const list = bySchool[s];
-    const t = list[Math.floor(rng() * list.length)];
-    const p = sigmoid(t.strength_z);
-    let w = 0;
-    for (let i = 0; i < confN; i++) if (rng() < p) w++;
-    return { name: t.school, id: t.team_season_id, team: t, wins: w, z: t.strength_z, you: false };
-  });
-  const me = { name: 'You', wins: Math.max(0, Math.min(confN, yourConfWins)), z: yourZ, you: true };
-  const table = [...rivals, me].sort((a, b) => (b.wins - a.wins) || (b.z - a.z));
-  const myPos = table.findIndex((r) => r.you) + 1;
-  const top = constants.CONFERENCE_CHAMP_TOP;
-  const inChampGame = myPos <= top;
-  const other = inChampGame ? table.slice(0, top).find((r) => !r.you) : null;
-  return {
-    conference,
-    table: table.map((r, i) => ({ pos: i + 1, name: r.name, wins: r.wins, losses: confN - r.wins, you: r.you })),
-    myPos,
-    inChampGame,
-    opponent: other ? other.team : null,
-    opponentName: other ? other.name : null,
-  };
+  return { ...out, bowl: 'minor', rounds: 1, label: 'Bowl Game' };
 }
 
 /* Seeding is worth something. The top seeds host the first round and are the
@@ -518,97 +465,78 @@ function seedAdvantage(seed, roundName, constants = CONSTANTS) {
   return 1 + H * edge * factor;
 }
 
-// ─── bowl theming ───────────────────────────────────────────────────────────
+// ─── the bowl system ────────────────────────────────────────────────────────
 
-const BOWL_ARCHETYPES = [
-  {
-    key: 'air_raid',
-    name: 'Air Raid Bowl',
-    detect(roster) {
-      const qb = roster.find(p => p.position === 'QB');
-      if (!qb || (qb.pass_ppg || 0) < 14) return -1;
-      const wrs = roster.filter(p => p.position === 'WR');
-      const totalRec = wrs.reduce((s, p) => s + (p.rec_ppg || 0), 0);
-      if (totalRec < 12) return -1;
-      return clamp(((qb.pass_ppg || 0) - 14) / 10 + (totalRec - 12) / 10, 0, 1);
-    },
-    tagline: 'The passing game was the whole show.',
-  },
-  {
-    key: 'ground_pound',
-    name: 'Ground & Pound Bowl',
-    detect(roster) {
-      const rbs = roster.filter(p => p.position === 'RB');
-      const totalRush = rbs.reduce((s, p) => s + (p.rush_ppg || 0), 0);
-      if (totalRush < 10) return -1;
-      return clamp((totalRush - 10) / 8, 0, 1);
-    },
-    tagline: 'They never stopped running.',
-  },
-  {
-    key: 'brotherhood',
-    name: 'Brotherhood Bowl',
-    detect(roster, chemResult) {
-      if (!chemResult || chemResult.net < 0.08) return -1;
-      return clamp((chemResult.net - 0.08) / 0.07, 0, 1);
-    },
-    tagline: 'These players knew each other, and it showed.',
-  },
-  {
-    key: 'one_man_army',
-    name: 'One Man Army Bowl',
-    detect(roster) {
-      const total = roster.reduce((s, p) => s + p.ppr_ppg_mean, 0);
-      if (!total) return -1;
-      const topShare = Math.max(...roster.map(p => p.ppr_ppg_mean)) / total;
-      if (topShare < 0.35) return -1;
-      return clamp((topShare - 0.35) / 0.15, 0, 1);
-    },
-    tagline: 'One player carried this team on his back.',
-  },
-  {
-    key: 'cinderella',
-    name: 'Cinderella Bowl',
-    detect(roster) {
-      const spend = roster.reduce((s, p) => s + p.price_musd, 0);
-      if (spend > CONSTANTS.CAP_MUSD * 0.6) return -1;
-      return clamp((CONSTANTS.CAP_MUSD * 0.6 - spend) / (CONSTANTS.CAP_MUSD * 0.3), 0, 1);
-    },
-    tagline: 'Nobody expected this team to be here.',
-  },
-  {
-    key: 'home_state',
-    name: 'Home State Bowl',
-    detect(roster) {
-      const states = roster.map(p => p.home_state).filter(Boolean);
-      if (states.length < 3) return -1;
-      const counts = {};
-      for (const s of states) counts[s] = (counts[s] || 0) + 1;
-      const max = Math.max(...Object.values(counts));
-      if (max < 3) return -1;
-      return clamp((max - 3) / 2, 0, 1);
-    },
-    tagline: 'They all grew up in the same backyard.',
-  },
-];
+/* THE REAL BOWLS, in three tiers the ranking sorts you into. The names are the
+   actual ones, sponsor silliness and all, because that is half the fun of bowl
+   season, and each carries a line about where it is played and what it means.
+   Which tier you land in is set in seedFromRanking by your national rank; the
+   name inside the tier is a seeded pick, so the same run always draws the same
+   bowl. See BOWLS_HOUSE for the one that is not real. */
+const BOWLS = {
+  ny6: [
+    { name: 'Rose Bowl', tagline: 'The Granddaddy of Them All, under the San Gabriel mountains.' },
+    { name: 'Sugar Bowl', tagline: 'New Orleans, and about the biggest stage a bowl can offer.' },
+    { name: 'Orange Bowl', tagline: 'Miami at night, for the best team left out of the twelve.' },
+    { name: 'Cotton Bowl', tagline: 'Eighty thousand deep in Arlington, a New Year\'s Six crown on the line.' },
+    { name: 'Fiesta Bowl', tagline: 'The Arizona desert\'s marquee, and a top-tier payout.' },
+    { name: 'Peach Bowl', tagline: 'Atlanta, a near-playoff field one seed short of the bracket.' },
+  ],
+  major: [
+    { name: 'Citrus Bowl', tagline: 'Orlando on New Year\'s, the pick of the teams just outside the six.' },
+    { name: 'Gator Bowl', tagline: 'Jacksonville, a proud old bowl with a good name to beat.' },
+    { name: 'Sun Bowl', tagline: 'El Paso, the second-oldest bowl there is, played in the shadow of the Franklins.' },
+    { name: 'Alamo Bowl', tagline: 'San Antonio, routinely the best matchup of the non-playoff slate.' },
+    { name: 'Music City Bowl', tagline: 'Nashville, Nissan Stadium, and a downtown that does not sleep.' },
+    { name: 'Las Vegas Bowl', tagline: 'Allegiant Stadium on the Strip, the brightest lights in bowl season.' },
+    { name: 'Holiday Bowl', tagline: 'San Diego, Petco Park, palm trees and a December kickoff.' },
+    { name: 'ReliaQuest Bowl', tagline: 'Tampa on New Year\'s Day, the bowl everyone still calls the Outback.' },
+    { name: 'Pop-Tarts Bowl', tagline: 'Orlando, an edible mascot, and the most fun thirty seconds on the schedule.' },
+    { name: 'Duke\'s Mayo Bowl', tagline: 'Charlotte, and a jar of mayonnaise poured on the winning coach.' },
+    { name: 'Texas Bowl', tagline: 'Houston, NRG Stadium, an SEC-Big 12 tradition under the roof.' },
+    { name: 'Pinstripe Bowl', tagline: 'Yankee Stadium in the cold, football in the Bronx.' },
+    { name: 'Cheez-It Bowl', tagline: 'Orlando, orange dust everywhere, and nobody minds a bit.' },
+  ],
+  minor: [
+    { name: 'Gasparilla Bowl', tagline: 'Tampa, named for a pirate festival, and it plays like one.' },
+    { name: 'Birmingham Bowl', tagline: 'Protective Stadium, the heart of it all in Alabama.' },
+    { name: 'Armed Forces Bowl', tagline: 'Fort Worth, a salute to the services at midfield.' },
+    { name: 'Frisco Bowl', tagline: 'North Texas, a small stadium and a big December night.' },
+    { name: 'Cure Bowl', tagline: 'Orlando, playing for breast-cancer research and a trophy.' },
+    { name: 'Camellia Bowl', tagline: 'Montgomery, Alabama, a bowl with a flower and a following.' },
+    { name: 'New Mexico Bowl', tagline: 'Albuquerque, a mile up, where the ball flies a little farther.' },
+    { name: 'Boca Raton Bowl', tagline: 'South Florida in December, which is its own reward.' },
+    { name: 'LA Bowl', tagline: 'SoFi Stadium, the fanciest building any six-win team will ever see.' },
+    { name: 'Myrtle Beach Bowl', tagline: 'Conway, South Carolina, the boardwalk a short drive away.' },
+    { name: 'First Responder Bowl', tagline: 'Dallas, the Cotton Bowl stadium, honoring the ones who run toward it.' },
+    { name: 'Famous Idaho Potato Bowl', tagline: 'Boise, on the blue turf, with a spud for a mascot.' },
+    { name: '68 Ventures Bowl', tagline: 'Mobile, Alabama, a bay-side send-off to the season.' },
+    { name: 'Hawai\'i Bowl', tagline: 'Honolulu, the last flight of the year and the best one.' },
+    { name: 'Independence Bowl', tagline: 'Shreveport, one of the oldest names on the board.' },
+    { name: 'Fenway Bowl', tagline: 'Football at Fenway Park, the Green Monster in the background.' },
+    { name: 'Bahamas Bowl', tagline: 'Nassau, palm trees past the end zone, a passport for a bowl trip.' },
+    { name: 'Military Bowl', tagline: 'Annapolis, Navy\'s backyard, a tribute at the coin toss.' },
+  ],
+};
 
-const GENERIC_BOWL_NAMES = [
-  'Independence Bowl', 'Sun Bowl', 'Liberty Bowl', 'Music City Bowl',
-  'Gator Bowl', 'Citrus Bowl', 'Alamo Bowl', 'Holiday Bowl',
-  'Las Vegas Bowl', 'Texas Bowl', 'Duke\'s Mayo Bowl', 'Pinstripe Bowl',
-];
+const BOWLS_HOUSE = {
+  name: 'RunThe.GG Bowl',
+  tagline: 'The house bowl. No sponsor, no tie-in, just a trophy with our name on it and a team good enough to take it.',
+};
 
-function selectBowl(roster, chemResult, rng) {
-  let best = null, bestFit = -1;
-  for (const arch of BOWL_ARCHETYPES) {
-    const fit = arch.detect(roster, chemResult);
-    if (fit > bestFit) { bestFit = fit; best = arch; }
+/* Which bowl, given the tier the ranking chose. A small share of every bowl is
+   the house's own RunThe.GG Bowl, a rare draw at any tier; the rest is a seeded
+   pick from that tier's real bowls. The roster and chemistry are kept in the
+   signature so callers do not have to change, though the pick no longer reads
+   them: a bowl is where your season ranked, not what your offence looked like. */
+function selectBowl(roster, chemResult, rng, tier = 'major') {
+  const list = BOWLS[tier] || BOWLS.major;
+  if (rng() < (CONSTANTS.RUNTHE_BOWL_CHANCE || 0)) {
+    return { key: 'runthegg', name: BOWLS_HOUSE.name, tagline: BOWLS_HOUSE.tagline, tier, house: true };
   }
-  if (best && bestFit >= 0) {
-    return { key: best.key, name: best.name, tagline: best.tagline, fit: bestFit };
-  }
-  const name = GENERIC_BOWL_NAMES[Math.floor(rng() * GENERIC_BOWL_NAMES.length)];
-  return { key: 'generic', name, tagline: 'A solid season deserves one more game.', fit: 0 };
+  const b = list[Math.floor(rng() * list.length)];
+  const key = b.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  return { key, name: b.name, tagline: b.tagline, tier };
 }
 
 // ─── chemistry ──────────────────────────────────────────────────────────────
@@ -1194,71 +1122,7 @@ function orderSchedule(games, rng) {
    The nine ordinary games are still balanced to an average schedule, against a
    target scaled to nine, so the three hard ones are a deliberate addition and not
    an accident of a loose tolerance. */
-/* A SCHEDULE FOR A TEAM THAT REPRESENTS A CONFERENCE. Eight of the twelve are
-   against that conference, the members as they were that year, and they are the
-   games the standing in the conference is read from; the other four are an
-   ordinary non-conference slate drawn from anywhere. The eight are chosen to sit
-   near the league's own average strength rather than stacking its best or its
-   worst, so the conference race is fair, and the whole twelve is still nudged
-   toward the same overall target the national schedule uses so ranking and the
-   economy do not move. Returns the same shape as generateSchedule plus a Set of
-   the team-season ids that are the conference games. */
-function generateConferenceSchedule(data, rng, conference, opts = {}) {
-  const { byProgram, byConference, meanScheduleStrength } = data;
-  const count = opts.games ?? CONSTANTS.REGULAR_SEASON_GAMES;
-  const confN = Math.min(opts.conferenceGames ?? CONSTANTS.CONFERENCE_GAMES, count);
-  const pool = (byConference && byConference[conference]) || [];
-  /* One team season per school, so a conference game is against a distinct
-     programme; without enough of them the conference cannot fill a slate and the
-     caller falls back to a normal schedule. */
-  const bySchool = {};
-  for (const t of pool) (bySchool[t.school] ??= []).push(t);
-  const schools = Object.keys(bySchool);
-  if (schools.length < confN) return null;
-
-  const programs = Object.keys(byProgram);
-  const overallTarget = meanScheduleStrength / count;
-
-  let best = null;
-  for (let attempt = 0; attempt < (opts.maxAttempts ?? 300); attempt++) {
-    const used = new Set();
-    const conf = [];
-    let guard = 0;
-    while (conf.length < confN && guard++ < 400) {
-      const s = schools[Math.floor(rng() * schools.length)];
-      if (used.has(s)) continue;
-      used.add(s);
-      const list = bySchool[s];
-      conf.push(list[Math.floor(rng() * list.length)]);
-    }
-    if (conf.length < confN) return null;
-    const nonN = count - confN;
-    const non = [];
-    let g2 = 0;
-    while (non.length < nonN && g2++ < 600) {
-      const p = programs[Math.floor(rng() * programs.length)];
-      if (used.has(p)) continue;
-      used.add(p);
-      non.push(byProgram[p][Math.floor(rng() * byProgram[p].length)]);
-    }
-    if (non.length < nonN) continue;
-    const all = conf.concat(non);
-    const total = all.reduce((s, g) => s + g.strength_z, 0);
-    const drift = Math.abs(total / count - overallTarget);
-    if (!best || drift < best.drift) best = { conf, non, all, total, drift };
-    if (drift <= 0.04) break;
-  }
-  if (!best) return null;
-  const conferenceIds = new Set(best.conf.map((g) => g.team_season_id));
-  const games = orderSchedule(best.all, rng);
-  return { games, total: best.total, conferenceIds, conference };
-}
-
 function generateSchedule(data, rng, opts = {}) {
-  if (opts.conference) {
-    const cs = generateConferenceSchedule(data, rng, opts.conference, opts);
-    if (cs) return cs;
-  }
   const tolerance = opts.tolerance ?? 0.05;
   const maxElite = opts.maxElite ?? 3;
   const maxAttempts = opts.maxAttempts ?? 400;
@@ -1364,7 +1228,7 @@ function playoffOpponent(playoffs, rounds, roundIdx) {
 
 function generateBowlOpponent(data, rng, tier) {
   if (tier === 'ny6') return pickFrom(data.greatPool.length ? data.greatPool : data.goodPool, rng);
-  if (tier === 'bowl') return pickFrom(data.goodPool.length ? data.goodPool : data.bowlPool, rng);
+  if (tier === 'major') return pickFrom(data.goodPool.length ? data.goodPool : data.bowlPool, rng);
   return pickFrom(data.bowlPool.length ? data.bowlPool : data.goodPool, rng);
 }
 
@@ -1583,16 +1447,6 @@ function prepareData(teamSeasons) {
   const byProgram = {};
   for (const t of teamSeasons) (byProgram[t.school] ??= []).push(t);
 
-  /* Every team season filed under the conference it played in that year, lineage
-     folded in (Pac-10 into Pac-12), so a conference schedule can be drawn from
-     the league as it actually was and the standings can be built from its real
-     members. */
-  const byConference = {};
-  for (const t of teamSeasons) {
-    const c = conferenceOf(t.conference);
-    if (c) (byConference[c] ??= []).push(t);
-  }
-
   const zs = teamSeasons.map(t => t.strength_z).sort((a, b) => a - b);
   const q = (p) => zs[Math.min(zs.length - 1, Math.max(0, Math.round(p * (zs.length - 1))))];
   const eliteThreshold = q(0.90);
@@ -1633,7 +1487,6 @@ function prepareData(teamSeasons) {
   const meanZ = zs.reduce((a, b) => a + b, 0) / zs.length;
   return {
     byProgram,
-    byConference,
     eliteThreshold,
     goodPool,
     greatPool,
@@ -1654,9 +1507,9 @@ const publicAPI = {
   CONSTANTS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
   hashSeed, createSeededRNG, sampleGamma,
   pairLinks, resolveChemistry,
-  generateSchedule, generateConferenceSchedule, generatePlayoffs, generateBowlOpponent,
+  generateSchedule, generatePlayoffs, generateBowlOpponent,
   resolveGame, playRun, playBowlGame, prepareData, toFootballScore,
-  playoffOpponent, playoffRoundNames, conferenceStandings,
+  playoffOpponent, playoffRoundNames,
   resumeScore, nationalRank, rankSeason, seedFromRanking, seedAdvantage,
   teamRating, teamOverall, titleEdge, roundEdge,
   respinCost, respinFees,
@@ -1665,7 +1518,7 @@ const publicAPI = {
   CONFERENCE_LINEAGE, conferenceOf, POWER_CONFERENCES, isPowerConference,
   LINK_TIERS, linkTier,
   rosterStructure, STRUCTURE, coachReport,
-  selectBowl, BOWL_ARCHETYPES, GENERIC_BOWL_NAMES,
+  selectBowl, BOWLS,
   SCHEME_NAMES: Object.fromEntries(SCHEMES.map(s => [s.key, s.name])),
   SCHEME_TAGLINES: Object.fromEntries(SCHEMES.map(s => {
     const cut = s.strength.indexOf('. ');

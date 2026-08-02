@@ -202,7 +202,7 @@
       (c) => c.any((r) => has(r.sig_wins) && Number(r.sig_wins) >= 4)),
     A('giant_killer', 'Giant killer', 'Beat a team ranked in the top five.', 'gold', 'The poll',
       (c) => c.any((r) => has(r.best_win_rank) && Number(r.best_win_rank) <= 5)),
-    A('conf_champ', 'Conference champions', 'Win a conference title.', 'silver', 'The poll',
+    A('conf_champ', 'Playoff bound', 'Reach the College Football Playoff.', 'silver', 'The poll',
       (c) => c.any((r) => isTrue(r.made_playoffs))),
 
     /* --- roster craft --- */

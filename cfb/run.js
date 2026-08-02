@@ -20,7 +20,6 @@ const E = (typeof require !== 'undefined')
 const PHASES = {
   DRAFT: 'draft',
   SEASON: 'season',
-  CONF_CHAMP: 'conf_champ',
   SEEDING: 'seeding',
   PLAYOFFS: 'playoffs',
   BOWL: 'bowl',
@@ -192,19 +191,10 @@ function createRun(opts) {
      a draft from a conference that does not exist. */
   const conference = opts.conference && E.isPowerConference(opts.conference)
     ? opts.conference : null;
-  /* THE CONFERENCE YOU REPRESENT, which is a different thing from the one above.
-     `conference` narrows the DRAFT to one league; this one leaves the draft alone
-     and only decides which league you play for in the standings and the title
-     race. A Conference Draft is automatically playing for its own league, so it
-     represents that; a normal draft represents whichever league was picked at the
-     start, or none, in which case the season is the old pure-ranking one. */
-  const homeConference = conference
-    || (opts.homeConference && E.isPowerConference(opts.homeConference) ? opts.homeConference : null);
   return {
     version: 1,
     seed,
     conference,
-    homeConference,
     rngCalls: 0,
     phase: PHASES.DRAFT,
     roster: [],
@@ -215,9 +205,6 @@ function createRun(opts) {
     respinsUsed: 0,
     currentDraw: null,
     schedule: null,
-    scheduleConferenceIds: null,
-    conferenceStandings: null,
-    conferenceChampGame: null,
     playoffs: null,
     season: null,
     playoffSeed: null,
@@ -343,13 +330,8 @@ function startSeason(run, data, ctx) {
   if (run.phase !== PHASES.SEASON) throw new Error('draft not finished');
   const rng = rngFor(run);
   const chem = E.resolveChemistry(run.roster, ctx);
-  const sched = E.generateSchedule(data.prepared, rng,
-    run.homeConference ? { conference: run.homeConference } : {});
+  const sched = E.generateSchedule(data.prepared, rng);
   run.schedule = sched.games.map((g) => g.team_season_id);
-  /* The subset of the schedule that counts toward the conference standing. Held
-     as ids so the season save stays plain data, and by id because each schedule
-     slot is a distinct programme. Null when there is no conference to play for. */
-  run.scheduleConferenceIds = sched.conferenceIds ? [...sched.conferenceIds] : null;
   run.playoffs = E.generatePlayoffs(data.prepared, rng).map((g) => g.team_season_id);
   run.season = {
     chemistry: chem.multiplier,
@@ -433,87 +415,23 @@ function advanceWeek(run, data, leagueContext, displayCal) {
       s.regularWins = s.wins;
       s.regularLosses = s.losses;
 
-      /* THE CONFERENCE TABLE, if you are playing for one. Your record in the
-         eight conference games against everyone else's, and if that puts you in
-         the top two you get a title game before selection is settled. Winning it
-         is an automatic bid, so seeding waits until that game is played. */
-      if (run.homeConference) {
-        const confWins = reg.filter((x) => run.scheduleConferenceIds
-          && run.scheduleConferenceIds.includes(x.opponent_id) && x.won).length;
+      const seed = E.seedFromRanking(ranking.rank, s.wins);
+      run.playoffSeed = {
+        ...seed,
+        roundNames: seed.made ? E.playoffRoundNames(seed.rounds) : [],
+        regularRecord: s.wins + '-' + s.losses,
+      };
+      run.phase = PHASES.SEEDING;
+      if (!seed.made && !seed.bowl) {
+        finish(run, { missedPlayoffs: true });
+      } else if (!seed.made && seed.bowl) {
         const rng2 = rngFor(run);
-        const standings = E.conferenceStandings(run.homeConference, confWins, ranking.z, data.prepared, rng2);
-        run.conferenceStandings = standings;
-        if (standings && standings.inChampGame && standings.opponent) {
-          run.conferenceChampGame = {
-            opponentId: standings.opponent.team_season_id,
-            opponentName: standings.opponentName,
-            played: false, won: null,
-          };
-          run.phase = PHASES.CONF_CHAMP;
-          return result;
-        }
+        const bowlOpp = E.generateBowlOpponent(data.prepared, rng2, seed.bowl);
+        run.bowlOpponentId = bowlOpp.team_season_id;
+        run.bowlInfo = E.selectBowl(run.roster, run.season.chemistryResult, rng2, seed.bowl);
       }
-      finalizeSeeding(run, data, false);
     }
   }
-  return result;
-}
-
-/* Ranking to postseason, shared by the plain path and the one that has just come
-   through a conference title game. The national ranking was fixed on selection
-   day from the twelve regular games and does not move; a conference title only
-   adds the automatic bid. The seed is read off the regular-season win total, not
-   the running one, so a title-game result does not shift which bowl a team that
-   missed the playoff drops into. */
-function finalizeSeeding(run, data, conferenceChampion) {
-  const s = run.season;
-  const seed = E.seedFromRanking(run.ranking.rank, s.regularWins, conferenceChampion);
-  run.playoffSeed = {
-    ...seed,
-    roundNames: seed.made ? E.playoffRoundNames(seed.rounds) : [],
-    regularRecord: s.regularWins + '-' + s.regularLosses,
-  };
-  run.phase = PHASES.SEEDING;
-  if (!seed.made && !seed.bowl) {
-    finish(run, { missedPlayoffs: true });
-  } else if (!seed.made && seed.bowl) {
-    const rng2 = rngFor(run);
-    const bowlOpp = E.generateBowlOpponent(data.prepared, rng2, seed.bowl);
-    run.bowlOpponentId = bowlOpp.team_season_id;
-    run.bowlInfo = E.selectBowl(run.roster, run.season.chemistryResult, rng2);
-  }
-}
-
-/* THE CONFERENCE CHAMPIONSHIP. One game against the other of the top two, played
-   the way a bowl is. Winning it is the automatic bid; losing it leaves you on
-   your national ranking, which may still be enough. The game counts in the record
-   on screen the same way a bowl does, but seeding is off the regular-season total,
-   so this cannot change which bowl a non-playoff team lands in. */
-function playConferenceChampGame(run, data, leagueContext, displayCal) {
-  if (run.phase !== PHASES.CONF_CHAMP) throw new Error('not in conference championship');
-  const s = run.season;
-  const opp = data.byTeamSeasonId[run.conferenceChampGame.opponentId];
-  const rng = rngFor(run);
-  const r = E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 25, rng);
-  const shown = displayCal ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal) : null;
-  if (r.won) s.wins++; else s.losses++;
-  const result = {
-    week: null,
-    round: run.homeConference + ' Championship',
-    playoff: false,
-    confChamp: true,
-    opponent: opp.display,
-    opponent_id: run.conferenceChampGame.opponentId,
-    won: r.won,
-    yourScore: Math.round(r.yourScore * 10) / 10,
-    oppScore: Math.round(r.oppScore * 10) / 10,
-    shownYou: shown ? shown.you : null,
-    shownThem: shown ? shown.them : null,
-  };
-  s.results.push(result);
-  run.conferenceChampGame.played = true;
-  run.conferenceChampGame.won = r.won;
-  finalizeSeeding(run, data, r.won);
   return result;
 }
 
@@ -574,11 +492,6 @@ function finish(run, how) {
     seedLabel: run.playoffSeed ? run.playoffSeed.label : 'Season over',
     seed: run.playoffSeed ? run.playoffSeed.seed || null : null,
     nationalRank: run.ranking ? run.ranking.rank : null,
-    homeConference: run.homeConference || null,
-    conferenceStandings: run.conferenceStandings || null,
-    playedConfChamp: !!(run.conferenceChampGame && run.conferenceChampGame.played),
-    wonConfChamp: !!(run.conferenceChampGame && run.conferenceChampGame.won),
-    autoBid: !!(run.playoffSeed && run.playoffSeed.autoBid),
     titleWon: !!how.titleWon,
     eliminatedIn: how.eliminatedIn || null,
     missedPlayoffs: !!how.missedPlayoffs,
@@ -827,7 +740,7 @@ const RUN_API_VERSION = 1;
 const api = {
   API_VERSION: RUN_API_VERSION,
   PHASES, createRun, spin, respin, sign,
-  startSeason, advanceWeek, startPlayoffs, startBowl, playBowlGame, playConferenceChampGame,
+  startSeason, advanceWeek, startPlayoffs, startBowl, playBowlGame,
   indexData, bestPossibleSquad, projectSeason,
   previewSigning,
   remaining, reserveFloor, spendable, canRespin, slotsLeft, affordableFrom,
