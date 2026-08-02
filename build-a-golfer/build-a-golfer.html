@@ -21507,7 +21507,7 @@ function scrDailyResult(){
   </div>`));
   // The point of Play 18 is to beat the pro, so it is the featured hero (the score lives in the "Your best today" bubble below).
   add($(`<div class="dh-bigverdict${wonDay?'':' miss'}">
-    <div class="dh-bv-title">${wonDay?'🏁 You beat the pro!':'Short of the tour average'}</div>
+    <div class="dh-bv-title">${wonDay?'You beat the pro!':'Short of the tour average'}</div>
     <div class="dh-bv-sub">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}</div>
     ${(wonDay&&left>0&&!practice&&!r.isLegend)?`<div class="dh-bv-cta">Challenge cleared. Use your ${left} remaining attempt${left>1?'s':''} to go even lower and chase the course record.</div>`:''}
   </div>`));
