@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>RunTheGrid — Scoreboard Concept</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#0e100f" />
+<meta name="description" content="Design prototype — RunTheGrid hub in a dark scoreboard theme." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230e100f'/%3E%3Crect x='8' y='8' width='16' height='16' rx='2' fill='%23d9a441'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0e100f;
+    --panel:#17191b;
+    --panel2:#202422;
+    --navbg:#131514;
+    --line:#2a2d2b;
+    --hair:#232624;
+    --ink:#ecedea;
+    --mut:#9aa09b;
+    --gold:#d9a441;
+    --green:#7fbf4d;
+    /* game accents — dots + icon tints ONLY */
+    --a-table:#F2B632; --a-match:#2F6BFF; --a-career:#48D17A; --a-odd:#A982F3;
+    --a-rank:#F65C9C; --a-guess:#F06A5F; --a-cross:#AAB6C4; --a-word:#37C5D5;
+    --cond:'Barlow Condensed', 'Arial Narrow', sans-serif;
+    --body:'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --shadow:0 10px 26px -18px rgba(0,0,0,.85);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--body);
+    font-size:14px; line-height:1.5; min-height:100dvh;
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  /* very subtle grain — fine repeating gradients, no images */
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.03;
+    background:
+      repeating-linear-gradient(0deg,  #fff 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, #fff 0 1px, transparent 1px 4px);
+  }
+  a{color:inherit; text-decoration:none;}
+  :focus-visible{outline:2px solid var(--gold); outline-offset:2px; border-radius:4px;}
+  .cond{font-family:var(--cond);}
+
+  .stage{position:relative; z-index:1; min-height:100dvh; padding-bottom:88px;}
+  .wrap{width:100%; max-width:1180px; margin:0 auto; padding:18px 20px 48px;}
+
+  /* ---------- dismissible preview banner (checkbox hack) ---------- */
+  #dismissBanner{position:absolute; left:-9999px;}
+  .banner{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    background:var(--panel); border-bottom:1px solid var(--line);
+    padding:9px 44px 9px 16px; position:relative;
+    font-family:var(--cond); font-weight:600; font-size:13px;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--mut); text-align:center;
+  }
+  .banner b{color:var(--gold); font-weight:700; letter-spacing:.14em;}
+  .banner a{color:var(--ink); border-bottom:1px solid var(--line); padding-bottom:1px;}
+  .banner a:hover{border-color:var(--gold); color:var(--gold);}
+  .banner label{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    width:26px; height:26px; display:grid; place-items:center; cursor:pointer;
+    color:var(--mut); border:1px solid var(--line); border-radius:7px; font-size:12px;
+  }
+  .banner label:hover{color:var(--ink); border-color:var(--mut);}
+  #dismissBanner:checked ~ .banner{display:none;}
+
+  /* ---------- page header ---------- */
+  .top{
+    display:flex; align-items:flex-end; justify-content:space-between; gap:14px;
+    margin:8px 0 26px; flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:baseline; gap:10px;}
+  .brand .sq{width:12px; height:12px; background:var(--gold); border-radius:2px; align-self:center; flex:0 0 auto;}
+  .brand h1{
+    margin:0; font-family:var(--cond); font-weight:800; font-size:34px; line-height:1;
+    letter-spacing:.02em; text-transform:uppercase; color:var(--ink);
+  }
+  .brand .sub{
+    font-family:var(--cond); font-weight:600; font-size:12px; letter-spacing:.32em;
+    text-transform:uppercase; color:var(--mut); margin-left:2px;
+  }
+  .played{
+    display:flex; align-items:center; gap:10px;
+    font-family:var(--cond); font-weight:700; font-size:14px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--mut);
+  }
+  .played .pips{display:flex; gap:5px;}
+  .played .pip{width:9px; height:9px; border-radius:50%; border:1.5px solid var(--line); background:transparent;}
+
+  /* ---------- board layout ---------- */
+  .board{display:grid; grid-template-columns:320px minmax(0,1fr); gap:24px; align-items:start;}
+  @media (max-width:900px){ .board{grid-template-columns:1fr; gap:20px;} }
+
+  /* ---------- HUD (left rail) ---------- */
+  .hud{
+    position:sticky; top:16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  @media (max-width:900px){ .hud{position:static;} }
+  .hud .sec{padding:18px 20px;}
+  .hud .div{height:1px; background:var(--hair); margin:0 20px;}
+
+  /* header row */
+  .hud-hd{display:flex; align-items:center; gap:12px;}
+  .hud-hd .av{
+    flex:0 0 auto; width:44px; height:44px; border-radius:50%;
+    background:var(--panel2); border:1.5px solid #6a6f51;
+    display:grid; place-items:center; color:var(--mut);
+  }
+  .hud-hd .who{min-width:0; line-height:1.15;}
+  .hud-hd .who b{
+    display:block; font-family:var(--cond); font-weight:800; font-size:24px;
+    letter-spacing:.05em; text-transform:uppercase; color:var(--ink);
+  }
+  .hud-hd .who span{
+    display:block; font-family:var(--cond); font-weight:600; font-size:12px;
+    letter-spacing:.22em; text-transform:uppercase; color:var(--mut); margin-top:2px;
+  }
+  .hud-hd .plays{
+    margin-left:auto; text-align:center; border:1px solid var(--line); border-radius:10px;
+    padding:8px 12px; background:var(--bg); line-height:1.1;
+  }
+  .hud-hd .plays .lab{
+    display:block; font-family:var(--cond); font-weight:600; font-size:10px;
+    letter-spacing:.18em; text-transform:uppercase; color:var(--mut);
+  }
+  .hud-hd .plays .n{
+    display:block; font-family:var(--cond); font-weight:800; font-size:22px;
+    font-variant-numeric:tabular-nums; color:var(--mut); margin-top:2px;
+  }
+  .hud-hd .plays .n b{color:var(--green); font-weight:800;}
+
+  /* streak block */
+  .hud-streak{display:flex; align-items:center; gap:14px;}
+  .hud-streak .hex{
+    flex:0 0 auto; width:52px; height:58px; display:grid; place-items:center;
+    clip-path:polygon(50% 0%, 96% 25%, 96% 75%, 50% 100%, 4% 75%, 4% 25%);
+    background:linear-gradient(180deg, #2c2415, #241e12); color:var(--gold);
+  }
+  .hud-streak .big{line-height:1;}
+  .hud-streak .big .n{
+    font-family:var(--cond); font-weight:800; font-size:52px; color:var(--ink);
+    font-variant-numeric:tabular-nums; letter-spacing:.01em;
+  }
+  .hud-streak .big .cap{
+    display:block; font-family:var(--cond); font-weight:700; font-size:12px;
+    letter-spacing:.26em; text-transform:uppercase; color:var(--gold); margin-top:5px;
+  }
+  .hud-streak .best{
+    margin-left:auto; padding-left:16px; text-align:center; line-height:1;
+    border-left:1px dotted var(--line); align-self:stretch;
+    display:flex; flex-direction:column; justify-content:center;
+  }
+  .hud-streak .best .n{
+    font-family:var(--cond); font-weight:800; font-size:26px; color:var(--ink);
+    font-variant-numeric:tabular-nums;
+  }
+  .hud-streak .best .cap{
+    display:block; font-family:var(--cond); font-weight:600; font-size:11px;
+    letter-spacing:.22em; text-transform:uppercase; color:var(--mut); margin-top:4px;
+  }
+
+  /* milestone progress */
+  .hud-mile .lab{
+    display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+    font-family:var(--cond); font-weight:600; font-size:12px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--mut); margin-bottom:9px;
+  }
+  .hud-mile .lab b{color:var(--green); font-weight:700; letter-spacing:.16em;}
+  .hud-mile .bar{
+    height:8px; border-radius:999px; background:var(--bg);
+    border:1px solid var(--hair); overflow:hidden;
+  }
+  .hud-mile .bar i{
+    display:block; height:100%; width:66%; border-radius:999px;
+    background:
+      repeating-linear-gradient(135deg, rgba(0,0,0,.18) 0 5px, transparent 5px 10px),
+      var(--green);
+    animation:fillbar .6s ease both;
+  }
+  @keyframes fillbar{from{width:0;}to{width:66%;}}
+
+  /* next drop */
+  .hud-drop{display:flex; align-items:center; gap:10px;}
+  .hud-drop .clock{color:var(--green); display:grid; place-items:center; flex:0 0 auto;}
+  .hud-drop .lbl{
+    font-family:var(--cond); font-weight:600; font-size:12px; letter-spacing:.24em;
+    text-transform:uppercase; color:var(--mut);
+  }
+  .hud-drop .t{
+    margin-left:auto; font-family:var(--cond); font-weight:800; font-size:30px;
+    color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:.04em; line-height:1;
+  }
+
+  /* explainer + CTAs */
+  .hud-cta p{margin:0 0 14px; color:var(--mut); font-size:12.5px; line-height:1.6;}
+  .hud-cta p b{color:var(--green); font-weight:600;}
+  .btn-gold{
+    display:flex; align-items:center; justify-content:center; gap:12px;
+    padding:13px 16px; border-radius:11px;
+    background:linear-gradient(180deg, #e0ad4e, #d9a441 55%, #cd9838);
+    color:#171205; box-shadow:0 8px 18px -10px rgba(0,0,0,.7);
+    font-family:var(--cond); font-weight:800; font-size:17px;
+    letter-spacing:.12em; text-transform:uppercase; line-height:1;
+  }
+  .btn-gold:hover{filter:brightness(1.05);}
+  .btn-gold .bar{width:1px; height:18px; background:rgba(23,18,5,.35); flex:0 0 auto;}
+  .btn-gold svg{flex:0 0 auto;}
+  .btn-ghost{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    margin-top:10px; padding:11px 16px; border-radius:999px;
+    border:1px solid var(--line); color:var(--ink);
+    font-family:var(--cond); font-weight:700; font-size:14px;
+    letter-spacing:.14em; text-transform:uppercase; line-height:1;
+  }
+  .btn-ghost:hover{border-color:var(--mut);}
+  .btn-ghost .arw{color:var(--green); font-family:var(--body); font-weight:600;}
+
+  /* ---------- main: today's slate ---------- */
+  .slate-lab{
+    font-family:var(--cond); font-weight:600; font-size:13px; letter-spacing:.3em;
+    text-transform:uppercase; color:var(--mut); margin:4px 2px 14px;
+  }
+  .slate{display:grid; grid-template-columns:1fr; gap:16px;}
+  @media (min-width:700px){ .slate{grid-template-columns:repeat(2, minmax(0,1fr));} }
+  @media (min-width:1100px){ .slate{grid-template-columns:repeat(3, minmax(0,1fr));} }
+
+  .card{
+    display:flex; flex-direction:column;
+    background:var(--panel); border:1px solid var(--line); border-radius:15px;
+    padding:18px 18px 16px; box-shadow:var(--shadow);
+    transition:transform .16s ease, border-color .16s ease;
+  }
+  .card:hover{transform:translateY(-2px); border-color:#343835;}
+  .card .row1{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:14px;}
+  .card .motif{width:40px; height:40px; flex:0 0 auto;}
+  .card .motif svg{width:40px; height:40px; display:block;}
+  .card .ready{
+    font-family:var(--cond); font-weight:600; font-size:11px; letter-spacing:.2em;
+    text-transform:uppercase; color:var(--mut);
+    border:1px solid var(--line); border-radius:999px; padding:4px 10px; line-height:1;
+  }
+  .card h2{
+    margin:0 0 7px; font-family:var(--cond); font-weight:700; font-size:22px;
+    letter-spacing:.04em; text-transform:uppercase; color:var(--ink); line-height:1.05;
+  }
+  .card .desc{
+    color:var(--mut); font-size:12.5px; line-height:1.55; margin:0 0 16px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .card .foot{
+    margin-top:auto; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    border-top:1px solid var(--hair); padding-top:13px;
+  }
+  .card .cat{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:var(--cond); font-weight:600; font-size:11.5px; letter-spacing:.22em;
+    text-transform:uppercase; color:var(--mut);
+  }
+  .card .dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto;}
+  .card .play{
+    font-family:var(--cond); font-weight:700; font-size:13px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--ink); line-height:1;
+    background:var(--panel2); border:1px solid var(--line); border-radius:9px;
+    padding:8px 16px; transition:background .14s ease, color .14s ease, border-color .14s ease;
+  }
+  .card:hover .play{background:var(--gold); border-color:var(--gold); color:#171205;}
+
+  /* per-game accent (dot + subtle icon tint) */
+  .card.g-table  {--a:var(--a-table);}
+  .card.g-match  {--a:var(--a-match);}
+  .card.g-career {--a:var(--a-career);}
+  .card.g-odd    {--a:var(--a-odd);}
+  .card.g-rank   {--a:var(--a-rank);}
+  .card.g-guess  {--a:var(--a-guess);}
+  .card.g-cross  {--a:var(--a-cross);}
+  .card.g-word   {--a:var(--a-word);}
+  .card .dot{background:var(--a);}
+
+  /* ---------- bottom nav ---------- */
+  .nav{
+    position:fixed; left:0; right:0; bottom:0; z-index:30;
+    display:flex; align-items:stretch; justify-content:flex-start;
+    overflow-x:auto; scrollbar-width:none;
+    background:var(--navbg); border-top:1px solid var(--hair);
+    padding:8px 8px calc(8px + env(safe-area-inset-bottom,0));
+  }
+  .nav::-webkit-scrollbar{display:none;}
+  .nav a{
+    position:relative; flex:1 0 auto; min-width:62px;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    padding:5px 7px 7px; color:var(--mut); text-align:center;
+    font-family:var(--cond); font-weight:600; font-size:10px;
+    letter-spacing:.12em; text-transform:uppercase; line-height:1;
+  }
+  .nav a svg{width:18px; height:18px;}
+  .nav a:hover{color:var(--ink);}
+  .nav a.on{color:var(--ink);}
+  .nav a.on::after{
+    content:""; position:absolute; left:50%; transform:translateX(-50%);
+    bottom:1px; width:18px; height:2px; border-radius:2px; background:var(--gold);
+  }
+
+  /* ---------- mobile ---------- */
+  @media (max-width:640px){
+    .wrap{padding:14px 16px 40px;}
+    .brand h1{font-size:28px;}
+    .brand .sub{display:none;}
+    .hud .sec{padding:15px 16px;}
+    .hud .div{margin:0 16px;}
+    .hud-cta p{display:none;}
+    .hud-drop .t{font-size:26px;}
+    .banner{font-size:11px; letter-spacing:.1em;}
+  }
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important;} }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <input type="checkbox" id="dismissBanner" />
+  <div class="banner">
+    <span><b>Design preview</b> — dark scoreboard concept &middot; <a href="/grid/">back to today's hub</a></span>
+    <label for="dismissBanner" aria-label="Dismiss preview banner" title="Dismiss">&#10005;</label>
+  </div>
+
+  <div class="wrap">
+
+    <!-- header -->
+    <header class="top">
+      <div class="brand">
+        <span class="sq" aria-hidden="true"></span>
+        <div>
+          <h1>RunTheGrid</h1>
+          <div class="sub">Daily sports puzzles</div>
+        </div>
+      </div>
+      <div class="played" aria-label="0 of 8 played today">
+        <span class="pips" aria-hidden="true"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></span>
+        <span>0 / 8 played</span>
+      </div>
+    </header>
+
+    <div class="board">
+
+      <!-- HUD rail -->
+      <aside class="hud" aria-label="Player HUD">
+        <div class="sec hud-hd">
+          <span class="av" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8.2" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg>
+          </span>
+          <span class="who"><b>Guest</b><span id="dateShort">Mon, Aug 3</span></span>
+          <span class="plays"><span class="lab">Plays left</span><span class="n"><b>10</b>/10</span></span>
+        </div>
+
+        <div class="div"></div>
+
+        <div class="sec hud-streak">
+          <span class="hex" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>
+          </span>
+          <span class="big"><span class="n">2</span><span class="cap">Day streak</span></span>
+          <span class="best"><span class="n">2</span><span class="cap">Best</span></span>
+        </div>
+
+        <div class="div"></div>
+
+        <div class="sec hud-mile">
+          <div class="lab"><span>3-day streak badge</span><b>1 day to go</b></div>
+          <div class="bar"><i></i></div>
+        </div>
+
+        <div class="div"></div>
+
+        <div class="sec hud-drop">
+          <span class="clock" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 1.9"/></svg>
+          </span>
+          <span class="lbl">Next drop</span>
+          <span class="t" id="cdT">22:35:06</span>
+        </div>
+
+        <div class="div"></div>
+
+        <div class="sec hud-cta">
+          <p>One free play per game, every day. Sign in to save your streak and rank — <b>Pro</b> unlocks unlimited plays and every past day's puzzles.</p>
+          <a class="btn-gold" href="/">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 3.5v5.2c0 5-3.4 9.3-8 11.3-4.6-2-8-6.3-8-11.3V5.5z"/><rect x="9" y="10.5" width="6" height="5" rx="1"/><path d="M10.4 10.5V9a1.6 1.6 0 0 1 3.2 0v1.5"/></svg>
+            <span class="bar" aria-hidden="true"></span>
+            <span>Sign in to save streak</span>
+          </a>
+          <a class="btn-ghost" href="/grid/archive/"><span>Play past days</span><span class="arw" aria-hidden="true">&rarr;</span></a>
+        </div>
+      </aside>
+
+      <!-- today's slate -->
+      <main>
+        <div class="slate-lab">Today's slate</div>
+        <div class="slate">
+
+          <a class="card g-table" href="/grid/table/">
+            <span class="row1">
+              <span class="motif" aria-hidden="true">
+                <svg viewBox="0 0 56 56">
+                  <rect x="9" y="28" width="13" height="20" rx="3" fill="#3c403d"/>
+                  <rect x="27" y="16" width="13" height="32" rx="3" fill="#565c57"/>
+                  <g fill="none" stroke="var(--a)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity=".65"><path d="M43 15h8M47 11v8"/><path d="M43 21l4-4 4 4"/></g>
+                </svg>
+              </span>
+              <span class="ready">Ready</span>
+            </span>
+            <h2>Run The Table</h2>
+            <p class="desc">Higher or lower? Tap the bigger number and see how many you can run in a row.</p>
+            <span class="foot">
+              <span class="cat"><span class="dot" aria-hidden="true"></span>Streak</span>
+              <span class="play">Play</span>
+            </span>
+          </a>
+
+          <a class="card g-match" href="/grid/match/">
+            <span class="row1">
+              <span class="motif" aria-hidden="true">
+                <svg viewBox="0 0 56 56">
+                  <rect x="2" y="2" width="15" height="15" rx="3" fill="#3c403d"/><rect x="20.5" y="2" width="15" height="15" rx="3" fill="#565c57"/><rect x="39" y="2" width="15" height="15" rx="3" fill="#3c403d"/>
+                  <rect x="2" y="20.5" width="15" height="15" rx="3" fill="#565c57"/><rect x="20.5" y="20.5" width="15" height="15" rx="3" fill="var(--a)" opacity=".6"/><rect x="39" y="20.5" width="15" height="15" rx="3" fill="#3c403d"/>
+                  <rect x="2" y="39" width="15" height="15" rx="3" fill="#3c403d"/><rect x="20.5" y="39" width="15" height="15" rx="3" fill="#565c57"/><rect x="39" y="39" width="15" height="15" rx="3" fill="var(--a)" opacity=".4"/>
+                </svg>
+              </span>
+              <span class="ready">Ready</span>
+            </span>
+            <h2>Daily Match</h2>
+            <p class="desc">Sort 20 sports names into five hidden groups of four. Find them all before six misses.</p>
+            <span class="foot">
+              <span class="cat"><span class="dot" aria-hidden="true"></span>Grid</span>
+              <span class="play">Play</span>
+            </span>
+          </a>
+
+          <a class="card g-career" href="/grid/career/">
+            <span class="row1">
+              <span class="motif" aria-hidden="true">
+                <svg viewBox="0 0 56 56">
+                  <path d="M12 44 L22 24 L34 34 L46 12" fill="none" stroke="#565c57" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <g fill="#3c403d"><circle cx="12" cy="44" r="4.2"/><circle cx="22" cy="24" r="4.2"/><circle cx="34" cy="34" r="4.2"/></g>
+                  <circle cx="46" cy="12" r="4.2" fill="var(--a)" opacity=".7"/>
+                </svg>
+              </span>
+              <span class="ready">Ready</span>
+            </span>
+            <h2>Career Path</h2>
+            <p class="desc">Name the athlete from their team-by-team journey. How many in a row?</p>
+            <span class="foot">
+              <span class="cat"><span class="dot" aria-hidden="true"></span>Path</span>
+              <span class="play">Play</span>
+            </span>
+          </a>
+
+          <a class="card g-odd" href="/grid/oddone/">
+            <span class="row1">
+              <span class="motif" aria-hidden="true">
+                <svg viewBox="0 0 56 56">
+                  <circle cx="16" cy="16" r="7.5" fill="#3c403d"/><circle cx="40" cy="16" r="7.5" fill="#3c403d"/><circle cx="16" cy="40" r="7.5" fill="#3c403d"/>
+                  <rect x="32.5" y="32.5" width="15" height="15" rx="3.5" fill="var(--a)" opacity=".6"/>
+                </svg>
+              </span>
+              <span class="ready">Ready</span>
+            </span>
+            <h2>Odd One Out</h2>
+            <p class="desc">Four names share a connection, one doesn't. Spot it, keep the streak going.</p>
+            <span class="foot">
+              <span class="cat"><span class="dot" aria-hidden="true"></span>Logic</span>
+              <span class="play">Play</span>
+            </span>
+          </a>
+
+          <a class="card g-rank" href="/grid/rankit/">
+            <span class="row1">
+              <span class="motif" aria-hidden="true">
+                <svg viewBox="0 0 56 56">
+                  <rect x="10" y="13" width="20" height="8" rx="3" fill="#3c403d"/>
+                  <rect x="10" y="25" width="30" height="8" rx="3" fill="#565c57"/>
+                  <rect x="10" y="37" width="40" height="8" rx="3" fill="var(--a)" opacity=".6"/>
+                </svg>
+              </span>
+              <span class="ready">Ready</span>
+            </span>
+            <h2>Rank It</h2>
+            <p class="desc">Put five athletes in order by the era they starred in. Fewest checks wins.</p>
+            <span class="foot">
+              <span class="cat"><span class="dot" aria-hidden="true"></span>Order</span>
+              <span class="play">Play</span>
+            </span>
+          </a>
+
+          <a class="card g-guess" href="/grid/guess/">
+            <span class="row1">
+              <span class="motif" aria-hidden="true">
+                <svg viewBox="0 0 56 56">
+                  <rect x="4.4" y="10.6" width="10" height="10" rx="2.4" fill="#2b2e2c"/><rect x="16.8" y="10.6" width="10" height="10" rx="2.4" fill="#565c57"/><rect x="29.2" y="10.6" width="10" height="10" rx="2.4" fill="#2b2e2c"/><rect x="41.6" y="10.6" width="10" height="10" rx="2.4" fill="var(--a)" opacity=".55"/>
+                  <rect x="4.4" y="23" width="10" height="10" rx="2.4" fill="#565c57"/><rect x="16.8" y="23" width="10" height="10" rx="2.4" fill="#2b2e2c"/><rect x="29.2" y="23" width="10" height="10" rx="2.4" fill="#2b2e2c"/><rect x="41.6" y="23" width="10" height="10" rx="2.4" fill="#565c57"/>
+                  <rect x="4.4" y="35.4" width="10" height="10" rx="2.4" fill="#2b2e2c"/><rect x="16.8" y="35.4" width="10" height="10" rx="2.4" fill="var(--a)" opacity=".35"/><rect x="29.2" y="35.4" width="10" height="10" rx="2.4" fill="#565c57"/><rect x="41.6" y="35.4" width="10" height="10" rx="2.4" fill="#2b2e2c"/>
+                </svg>
+              </span>
+              <span class="ready">Ready</span>
+            </span>
+            <h2>Guess the Player</h2>
+            <p class="desc">One mystery athlete a day. Crack it in eight guesses from the clues.</p>
+            <span class="foot">
+              <span class="cat"><span class="dot" aria-hidden="true"></span>Mystery</span>
+              <span class="play">Play</span>
+            </span>
+          </a>
+
+          <a class="card g-cross" href="/grid/crossword/">
+            <span class="row1">
+              <span class="motif" aria-hidden="true">
+                <svg viewBox="0 0 56 56">
+                  <rect x="4" y="4" width="48" height="48" rx="6" fill="#1d201e"/>
+                  <rect x="40" y="5" width="11" height="11" fill="#565c57"/>
+                  <rect x="5" y="40" width="11" height="11" fill="#565c57"/>
+                  <g stroke="#3c403d" stroke-width="1.4"><path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/></g>
+                  <rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="var(--a)" stroke-width="2" opacity=".55"/>
+                </svg>
+              </span>
+              <span class="ready">Ready</span>
+            </span>
+            <h2>Daily Crossword</h2>
+            <p class="desc">A sports mini crossword, fresh every day. Beat the clock for a flawless solve.</p>
+            <span class="foot">
+              <span class="cat"><span class="dot" aria-hidden="true"></span>Grid</span>
+              <span class="play">Play</span>
+            </span>
+          </a>
+
+          <a class="card g-word" href="/grid/wordsearch/">
+            <span class="row1">
+              <span class="motif" aria-hidden="true">
+                <svg viewBox="0 0 56 56">
+                  <rect x="4" y="4" width="48" height="48" rx="6" fill="#1d201e"/>
+                  <g stroke="#3c403d" stroke-width="1.4"><path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/></g>
+                  <rect x="4" y="4" width="12" height="12" rx="3" fill="var(--a)" opacity=".55"/>
+                  <rect x="16" y="16" width="12" height="12" rx="3" fill="var(--a)" opacity=".55"/>
+                  <rect x="28" y="28" width="12" height="12" rx="3" fill="var(--a)" opacity=".55"/>
+                  <rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#565c57" stroke-width="2"/>
+                </svg>
+              </span>
+              <span class="ready">Ready</span>
+            </span>
+            <h2>Daily Word Search</h2>
+            <p class="desc">Find every hidden name from today's theme. Beat the clock for a flawless run.</p>
+            <span class="foot">
+              <span class="cat"><span class="dot" aria-hidden="true"></span>Search</span>
+              <span class="play">Play</span>
+            </span>
+          </a>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- bottom nav -->
+  <nav class="nav" aria-label="Games">
+    <a class="on" href="/grid/scoreboard-preview/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</a>
+    <a href="/grid/table/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="12" width="6" height="8" rx="1"/><rect x="14" y="6" width="6" height="14" rx="1"/></svg>Table</a>
+    <a href="/grid/match/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Match</a>
+    <a href="/grid/career/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 L10 10 L15 15 L20 4"/></svg>Career</a>
+    <a href="/grid/oddone/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>Odd One</a>
+    <a href="/grid/rankit/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M4 12h13M4 17h6"/></svg>Rank It</a>
+    <a href="/grid/guess/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.9.5-1.6 1-1.6 2.1M12 17.5v.01"/></svg>Guess</a>
+    <a href="/grid/crossword/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 3v18M3 9h18"/></svg>Crossword</a>
+    <a href="/grid/wordsearch/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Word Search</a>
+    <a href="/grid/archive/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Archive</a>
+  </nav>
+</div>
+
+<script>
+/* tiny: today's date + live countdown to local midnight */
+(function () {
+  function pad(n) { return String(n).padStart(2, '0'); }
+  var d = new Date();
+  document.getElementById('dateShort').textContent =
+    d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
+  function tick() {
+    var n = new Date();
+    var ms = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 0, 0) - n;
+    var s = Math.max(0, Math.floor(ms / 1000));
+    document.getElementById('cdT').textContent =
+      pad(Math.floor(s / 3600)) + ':' + pad(Math.floor((s % 3600) / 60)) + ':' + pad(s % 60);
+  }
+  tick(); setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>
