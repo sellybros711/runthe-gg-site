@@ -196,9 +196,11 @@
 <script src="/grid/history.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
+<script src="/grid/howto.js"></script>
 <script>
 (function(){
   'use strict';
+  if(window.RTGHowto) RTGHowto.init('oddone');
   var ENT = window.GRID_ENTITIES || [];
   var LS = window.localStorage;
   var SAVE_KEY='rtg:oddone:v1', GAME='oddone', ROUNDS=30;
