@@ -39,6 +39,13 @@ const CONSTANTS = {
   CAP_MUSD: 11,
   RESPIN_LADDER_MUSD: [0.5, 1.0, 1.5],
   MAX_RESPINS: 3,
+  /* HOW MANY OF ONE POSITION A ROSTER MAY HOLD. With two flex spots open to a
+     running back, a roster could otherwise stack three of them, which is not a
+     real offence. Two is the limit: one in the dedicated back spot and at most
+     one more in a flex. Quarterbacks are capped at one by having a single slot
+     and no flex eligibility; receivers and tight ends are left uncapped so an
+     all-receiver Air Raid stays a legal choice. */
+  POSITION_MAX: { RB: 2 },
   MIN_RESERVE_PER_SLOT_MUSD: 0.3,
   REGULAR_SEASON_GAMES: 12,
   /* The 12-team College Football Playoff. You are not measured against a win
@@ -67,8 +74,8 @@ const CONSTANTS = {
   /* THE TWO FLOORS UNDER THE TITLE. See teamRating() and titleEdge(). They are
      in rating points, which is what the screens show, because there is no scale
      factor any more: see teamOverall(). */
-  TITLE_FLOOR: 88,
-  PERFECT_FLOOR: 90,
+  TITLE_FLOOR: 89,
+  PERFECT_FLOOR: 92,
   ROUND_EDGE_MAX: 3.20,
   ROUND_EDGE_MIN: 0.86,
   ROUND_EDGE_SLOPE: 0.075,
@@ -77,17 +84,23 @@ const CONSTANTS = {
      scraped into the field; the team waiting in the final is not. This is what
      makes how FAR a season goes track the roster rather than the draw.
      The last two are set high on purpose so that winning it all is rare even
-     with the field widened: the semifinal at 98 thins who reaches the final to
-     near-elite rosters, and the championship at 99 needs a roster near the very
-     top of what the wheel can hand you. 99 sits just under the best draftable
-     overall (about 102), which is the floor: pushed to 100 the final becomes
-     unwinnable for every reachable roster and a perfect season turns
-     mathematically impossible, so 99 is deliberate, not round. */
+     with the field widened: the semifinal thins who reaches the final to
+     near-elite rosters, and the championship needs a roster near the very top
+     of what the wheel can hand you. RE-ANCHORED when the tight-end slot became
+     a second flex: dropping the forced weak TE lifted the best draftable overall
+     from about 102 to about 111 (p95 of the best-possible draft is ~104), which
+     pulled title and perfect rates up by roughly half again. The semifinal and
+     championship pivots move up with the ceiling to hold those rates where they
+     were, and rose once more when the two-back cap landed: forbidding a third
+     running back pushes the greedy drafter into a receiver, which the balance
+     factor rewards, so the average roster got stronger and titles crept up
+     again. Both still sit a clear eight-plus points under the 111 max, so a
+     perfect season stays reachable rather than mathematically impossible. */
   ROUND_EDGE_PIVOT: {
     'CFP First Round': 82,
-    'CFP Quarterfinal': 88,
-    'CFP Semifinal': 98,
-    'CFP Championship': 99,
+    'CFP Quarterfinal': 90,
+    'CFP Semifinal': 100,
+    'CFP Championship': 102,
   },
   // Extra, per point below TITLE_FLOOR, on top of the ordinary slope. Final only.
   TITLE_EDGE_CLIFF: 0.16,
@@ -769,14 +782,27 @@ const SCHEMES = [
     key: 'air_raid',
     name: 'Air Raid',
     detect(roster) {
+      /* THE NO-TIGHT-END IDENTITY. With the TE slot gone, skipping the tight
+         end for a third receiver is a real choice, and this is its reward: a
+         big-arm quarterback and a deep receiver room, no in-line tight end,
+         everything spread wide. A roster that signed a TE is not an Air Raid;
+         it falls through to Pro Style or Power Run below. */
+      if (roster.some(p => p.position === 'TE')) return -1;
       const qb = roster.find(p => p.position === 'QB');
       if (!qb || (qb.pass_ppg || 0) < 16) return -1;
       const wrs = roster.filter(p => p.position === 'WR' && (p.rec_ppg || 0) >= 8)
         .sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0));
       if (wrs.length < 2) return -1;
-      return fitAvg(over(qb.pass_ppg, 16, 7), over(wrs[0].rec_ppg, 8, 7), over(wrs[1].rec_ppg, 8, 7));
+      /* A third receiving threat (the flex, usually a WR) deepens the room and
+         lifts the fit, so a true three-wide set reads as a fuller Air Raid than
+         a two-man one. */
+      const third = roster.filter(p => (p.rec_ppg || 0) >= 6 && p !== wrs[0] && p !== wrs[1])
+        .sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
+      const parts = [over(qb.pass_ppg, 16, 7), over(wrs[0].rec_ppg, 8, 7), over(wrs[1].rec_ppg, 8, 7)];
+      if (third) parts.push(over(third.rec_ppg, 6, 7));
+      return fitAvg(...parts);
     },
-    strength: 'Air Raid. The passing game can carry this team.',
+    strength: 'Air Raid. No tight end, all receivers, the pass game carries it.',
   },
   {
     key: 'pro_style',
@@ -933,7 +959,16 @@ function coachReport(roster, chemResult) {
 
 // ─── slots ──────────────────────────────────────────────────────────────────
 
-const SLOTS = ['QB', 'RB', 'WR', 'WR', 'TE', 'FLEX'];
+/* NO DEDICATED TIGHT END SLOT. Only 73% of team-seasons field a TE at all, and
+   the position's ceiling is far below WR and RB (its best season scores 24 to
+   their 35), so a forced TE spot made every roster carry the pool's weakest
+   position and quietly locked out most of the early-2000s teams that have no TE
+   to draft. The tight end now competes for a FLEX spot instead, which turns him
+   into a CHOICE: sign one for a balanced, two-way front (the Pro Style and Power
+   Run schemes reward a real TE beside a real RB), or skip him for a third
+   receiver and let the Air Raid carry you through the air. The TE entry stays in
+   the eligibility map so a tight end is still FLEX-eligible. */
+const SLOTS = ['QB', 'RB', 'WR', 'WR', 'FLEX', 'FLEX'];
 const SLOT_ELIGIBILITY = {
   QB: ['QB'], RB: ['RB'], WR: ['WR'], TE: ['TE'], FLEX: ['RB', 'WR', 'TE'],
 };

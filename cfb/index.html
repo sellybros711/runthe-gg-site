@@ -39,14 +39,14 @@
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/cfb/">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://runthe.gg/cfb/og.png?v=2">
+<meta property="og:image" content="https://runthe.gg/cfb/og.png?v=3">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="College Football: Perfect Season. Spin for a year and a school, sign six players under an $11M NIL budget and play a full season. The six roster spots shown as QB, RB, WR, WR, TE and FLEX.">
+<meta property="og:image:alt" content="College Football: Perfect Season. Spin for a year and a school, sign six players under an $11M NIL budget and play a full season. The six roster spots shown as QB, RB, WR, WR, FLEX and FLEX.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="College Football: Perfect Season">
 <meta name="twitter:description" content="Draft a college football roster from every season since 2005 under an $11M NIL budget, then play all 12 games and chase a perfect season.">
-<meta name="twitter:image" content="https://runthe.gg/cfb/og.png?v=2">
+<meta name="twitter:image" content="https://runthe.gg/cfb/og.png?v=3">
 <meta name="twitter:image:alt" content="College Football: Perfect Season. Draft six players under an $11M NIL budget and play a full season.">
 <!-- Structured data, so a search result can carry the game's name and category rather
      than only a blue link. VideoGame is the type Google documents for this; the offer
@@ -2338,8 +2338,8 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=15"></script>
-<script src="run.js?v=8"></script>
+<script src="engine.js?v=16"></script>
+<script src="run.js?v=9"></script>
 <script src="achievements.js?v=7"></script>
 <script src="auth.js?v=1"></script>
 <script src="board.js?v=1"></script>
@@ -2537,14 +2537,22 @@ window.addEventListener('error',(ev)=>{
    The field is laid out by the POSITIONS you actually signed, not by slot order, so a
    back drafted into the flex lines up in the backfield and the four men on the line of
    scrimmage share one row (two chips on the same line can never collide vertically). */
+/* Formation coordinates by how many of a position are on the field. With the TE
+   slot gone the maxima moved: two dedicated WR plus two flex can put FOUR
+   receivers out wide, one dedicated RB plus a flex can put two in the backfield,
+   and either flex can hold a TE, so those rows gained an entry. The one- and
+   two-of cases keep their old coordinates so a typical roster looks unchanged;
+   FLEX is now a table like the rest so two empty flex spots sit apart instead of
+   stacking on one point. */
 const SPOTS={
   QB:[{x:50,y:44}],
-  RB:[[{x:28,y:64}],[{x:28,y:64},{x:72,y:64}]],
-  WR:[[],[{x:50,y:24}],[{x:12,y:24},{x:88,y:24}],[{x:12,y:24},{x:88,y:24},{x:32,y:24}]],
-  TE:[[],[{x:68,y:24}],[{x:68,y:24},{x:32,y:24}]],
-  FLEX:{x:32,y:24},
+  RB:[[],[{x:28,y:64}],[{x:28,y:64},{x:72,y:64}],[{x:22,y:64},{x:50,y:64},{x:78,y:64}]],
+  WR:[[],[{x:50,y:24}],[{x:12,y:24},{x:88,y:24}],[{x:12,y:24},{x:88,y:24},{x:32,y:24}],
+    [{x:10,y:22},{x:90,y:22},{x:30,y:27},{x:70,y:27}]],
+  TE:[[],[{x:68,y:24}],[{x:66,y:24},{x:34,y:24}]],
+  FLEX:[[],[{x:32,y:24}],[{x:30,y:26},{x:70,y:26}]],
 };
-const SPOT_FALLBACK=[{x:50,y:44},{x:28,y:64},{x:12,y:24},{x:88,y:24},{x:68,y:24},{x:32,y:24}];
+const SPOT_FALLBACK=[{x:50,y:44},{x:28,y:64},{x:12,y:24},{x:88,y:24},{x:70,y:26},{x:32,y:26}];
 
 function layoutFor(){
   const n=E.SLOTS.length;
@@ -2559,10 +2567,10 @@ function layoutFor(){
     const row=table[Math.min(list.length,table.length-1)]||table[table.length-1];
     list.forEach((i,k)=>{ out[i]=row[Math.min(k,row.length-1)]; });
   };
-  place('RB',[SPOTS.RB[0],SPOTS.RB[0],SPOTS.RB[1]]);
+  place('RB',SPOTS.RB);
   place('WR',SPOTS.WR);
   place('TE',SPOTS.TE);
-  for(const i of slotsOf('FLEX')) out[i]=SPOTS.FLEX;
+  place('FLEX',SPOTS.FLEX);
   out.forEach((v,i)=>{ if(!v) out[i]=SPOT_FALLBACK[i]; });
   return out;
 }
@@ -6070,7 +6078,7 @@ const HERO_SPOTS=[
   {label:'RB',left:28,top:64},
   {label:'WR',left:12,top:24},
   {label:'WR',left:88,top:24},
-  {label:'TE',left:68,top:24},
+  {label:'FLEX',left:68,top:24},
   {label:'FLEX',left:32,top:24},
 ];
 const HERO_TOP_N=20;

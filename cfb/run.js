@@ -225,6 +225,12 @@ function openSlots(run) {
 }
 
 function slotForPlayer(run, player) {
+  /* A position cap blocks the pick outright, whatever slot is open: two running
+     backs is the limit, so a third has nowhere to go even with a flex free. */
+  const cap = (E.CONSTANTS.POSITION_MAX || {})[player.position];
+  if (cap != null && run.roster.filter((p) => p.position === player.position).length >= cap) {
+    return null;
+  }
   const open = openSlots(run);
   const dedicated = open.find((i) => E.SLOTS[i] === player.position);
   if (dedicated !== undefined) return dedicated;
@@ -560,51 +566,68 @@ function bestPossibleSquad(run, data, ctx) {
   const masksByCount = Array.from({ length: nSlots + 1 }, () => []);
   for (let m = 0; m <= FULL; m++) masksByCount[popcount(m)].push(m);
 
+  /* THE RUNNING-BACK CAP RIDES A THIRD DP AXIS. Slots and budget cannot express
+     "at most two of one position" on their own, so the state carries how many
+     backs are already on the roster (0..RCAP) and a third one is never placed.
+     Without this the best-possible squad the results screen shows, and the
+     perfect-draft badge measured against it, could be a three-back team the
+     player is not allowed to draft. RB is the only capped position, so one small
+     axis covers it. */
+  const RCAP = (E.CONSTANTS.POSITION_MAX || {}).RB ?? nSlots;
+  const RN = RCAP + 1;
+  const at = (mask, b, r) => (mask * NB + b) * RN + r;
+
   function solve(banned) {
     const lists = pool.map((list, i) => (banned[i].size
       ? list.filter((p) => !banned[i].has(p.player_id)) : list));
     if (lists.some((list) => !list.length)) return null;
-    const dp = new Float64Array((FULL + 1) * NB).fill(NEG);
-    const from = new Int32Array((FULL + 1) * NB).fill(-1);
-    dp[0] = 0;
+    const dp = new Float64Array((FULL + 1) * NB * RN).fill(NEG);
+    const from = new Int32Array((FULL + 1) * NB * RN).fill(-1);
+    dp[at(0, 0, 0)] = 0;
 
     for (let i = 0; i < nSlots; i++) {
       for (const mask of masksByCount[i]) {
-        const base = mask * NB;
         for (let b = 0; b < NB; b++) {
-          const cur = dp[base + b];
-          if (cur <= NEG) continue;
-          const list = lists[i];
-          for (let pi = 0; pi < list.length; pi++) {
-            const p = list[pi];
-            const cost = Math.ceil(p.price_musd / BUCKET);
-            const nb = b + cost;
-            if (nb >= NB) continue;
-            for (let s = 0; s < nSlots; s++) {
-              if (mask & (1 << s)) continue;
-              if (!fits(p, s)) continue;
-              const nm = mask | (1 << s);
-              const idx = nm * NB + nb;
-              const val = cur + p.ppr_ppg_mean;
-              if (val > dp[idx]) { dp[idx] = val; from[idx] = pi * 8 + s; }
+          for (let r = 0; r < RN; r++) {
+            const cur = dp[at(mask, b, r)];
+            if (cur <= NEG) continue;
+            const list = lists[i];
+            for (let pi = 0; pi < list.length; pi++) {
+              const p = list[pi];
+              const isRB = p.position === 'RB';
+              if (isRB && r >= RCAP) continue;
+              const cost = Math.ceil(p.price_musd / BUCKET);
+              const nb = b + cost;
+              if (nb >= NB) continue;
+              const nr = isRB ? r + 1 : r;
+              for (let s = 0; s < nSlots; s++) {
+                if (mask & (1 << s)) continue;
+                if (!fits(p, s)) continue;
+                const nm = mask | (1 << s);
+                const idx = at(nm, nb, nr);
+                const val = cur + p.ppr_ppg_mean;
+                if (val > dp[idx]) { dp[idx] = val; from[idx] = pi * 8 + s; }
+              }
             }
           }
         }
       }
     }
 
-    let bestB = -1, bestVal = NEG;
+    let bestB = -1, bestR = -1, bestVal = NEG;
     for (let b = 0; b < NB; b++) {
-      const v = dp[FULL * NB + b];
-      if (v > bestVal) { bestVal = v; bestB = b; }
+      for (let r = 0; r < RN; r++) {
+        const v = dp[at(FULL, b, r)];
+        if (v > bestVal) { bestVal = v; bestB = b; bestR = r; }
+      }
     }
     if (bestB < 0) return null;
 
     const bySlot = new Array(nSlots).fill(null);
     const drawOfSlot = new Array(nSlots).fill(-1);
-    let mask = FULL, b = bestB;
+    let mask = FULL, b = bestB, r = bestR;
     for (let i = nSlots - 1; i >= 0; i--) {
-      const packed = from[mask * NB + b];
+      const packed = from[at(mask, b, r)];
       if (packed < 0) return null;
       const pi = Math.floor(packed / 8), s = packed % 8;
       const p = lists[i][pi];
@@ -612,6 +635,7 @@ function bestPossibleSquad(run, data, ctx) {
       drawOfSlot[s] = i;
       mask &= ~(1 << s);
       b -= Math.ceil(p.price_musd / BUCKET);
+      if (p.position === 'RB') r -= 1;
     }
     return { bySlot, drawOfSlot, value: bestVal };
   }
@@ -647,6 +671,12 @@ function bestPossibleSquad(run, data, ctx) {
       * E.resolveChemistry(arr, ctx).multiplier
       * E.rosterStructure(arr).multiplier;
   };
+  /* The climb starts from a cap-legal squad and must stay one: a swap that would
+     put a third running back on the field is rejected however much it scores, the
+     same rule the draft enforces. */
+  const CAPS = E.CONSTANTS.POSITION_MAX || {};
+  const withinCaps = (arr) => Object.keys(CAPS).every((pos) =>
+    arr.filter((p) => p.position === pos).length <= CAPS[pos]);
   const climb = (start, ofSlot) => {
     let cur = start.slice(), curScore = score(cur);
     for (let pass = 0; pass < 3; pass++) {
@@ -657,6 +687,7 @@ function bestPossibleSquad(run, data, ctx) {
           if (cur.some((p, j) => j !== s && p.player_id === cand.player_id)) continue;
           const trial = cur.slice();
           trial[s] = cand;
+          if (!withinCaps(trial)) continue;
           const sc = score(trial);
           if (sc > curScore + 1e-9) { cur = trial; curScore = sc; improved = true; }
         }
