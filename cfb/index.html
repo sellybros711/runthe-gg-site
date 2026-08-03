@@ -685,8 +685,34 @@ window.GA_ID='G-L29P5MRWKE';
   .bdg.mile{background:rgba(56,189,248,.14);color:#7dd3fc;border-color:rgba(56,189,248,.28)}
 
   /* ── budget bar ─────────────────────────────────────────────── */
-  .capwrap{padding:14px 16px;border-radius:14px;border:1px solid var(--line);
-    background:var(--grad-panel);margin-bottom:10px}
+  /* THE HUD STAYS. It pins just under the header so the budget, the spin count and
+     your lineup are on screen the whole way down the player list. It is an opaque
+     card the same width as the cards below it, so content scrolling behind it is
+     covered; a scrim above it hides the sliver between it and the header. */
+  .capwrap{position:sticky;top:var(--hdr);z-index:30;
+    padding:14px 16px;border-radius:14px;border:1px solid var(--line);
+    background:var(--panel);margin-bottom:10px}
+  .capwrap:before{content:'';position:absolute;left:-1px;right:-1px;top:-10px;height:12px;
+    background:var(--bg);z-index:-1}
+  /* THE LINEUP PIPS, revealed as the field scrolls off. --sq runs 0 to 1 with how
+     much of the fold has gone; the row's height is reserved at every value and only
+     opacity moves, so nothing shifts under the finger as it appears. */
+  #s-draft{--sq:0}
+  /* The row unfurls with the scroll rather than reserving dead space in the card:
+     its height and top margin scale with --sq, so at the top it is nothing and by
+     the time the field is gone it is a full 34px. Because the field it is measured
+     against sits ABOVE this row in the page, growing the row cannot push the field
+     and feed back on itself. */
+  .dpips{display:flex;gap:5px;justify-content:center;align-items:center;flex-wrap:nowrap;
+    height:calc(34px * var(--sq));margin-top:calc(9px * var(--sq));overflow:hidden;
+    opacity:var(--sq);pointer-events:none}
+  .dpips i{flex:0 1 auto;min-width:26px;max-width:82px;height:32px;padding:0 6px;border-radius:7px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    font-family:var(--fn);font-size:9.5px;font-weight:600;line-height:1.05;letter-spacing:.03em;
+    font-style:normal;background:rgba(255,255,255,.05);border:1px dashed var(--line-2);color:var(--dim-2)}
+  .dpips i.on{border-style:solid;border-color:transparent;color:#fff}
+  .dpips i.on b{font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dpips i.on span{font-size:8px;font-weight:600;letter-spacing:.02em;opacity:.72}
   /* Budget hero on the left, two mini-stats on the right, their value baselines
      aligned so the whole row settles on one line. */
   .cap-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px}
@@ -1868,14 +1894,23 @@ or endorsed by the NCAA, the CFP or any school.
       <div class="capbar"><i id="c-bar" style="width:100%"></i></div>
       <div id="c-per" style="font-size:11px;color:var(--dim-2)"></div>
       <div id="c-note" style="font-size:11px;color:#fca5a5;margin-top:4px;display:none"></div>
+      <!-- THE LINEUP, carried in the pinned HUD once the field has scrolled off, so
+           your roster and what each spot cost stay in view while you read the player
+           list below. Height is held at every scroll position and only the opacity
+           moves, so the page never shifts under your finger as it fades in. -->
+      <div class="dpips" id="d-pips" aria-hidden="true"></div>
     </div>
 
     <div id="d-mode" style="text-align:center;margin-bottom:10px"></div>
     <div class="dcols">
       <div class="dcol">
-        <div class="field" id="field" style="margin:0"></div>
-        <div class="rail" id="rail"></div>
-        <p class="railnote"></p>
+        <!-- The fold: the field and its rail, OUTSIDE the sticky HUD so they scroll
+             away like anything else. When they leave, the pips in the HUD fade in. -->
+        <div id="d-fold">
+          <div class="field" id="field" style="margin:0"></div>
+          <div class="rail" id="rail"></div>
+          <p class="railnote"></p>
+        </div>
       </div>
       <div class="dcol">
         <div class="reels" style="margin:0">
@@ -3452,8 +3487,46 @@ function drawField(el,interactive){
     }
   });
 
-  if(interactive) drawRail($('rail'));
+  if(interactive){
+    drawRail($('rail'));
+    const bySlot=new Array(E.SLOTS.length).fill(null);
+    if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
+    drawPips(bySlot);
+    watchFold();
+  }
   else drawRail($('rail2'));
+}
+
+/* THE LINEUP PIPS in the pinned HUD: the same six slots the field shows, in the
+   same order, each filled one carrying the player's last name and what he cost.
+   Kept in sync by drawField so it never drifts from the formation above it. */
+function drawPips(bySlot){
+  const el=$('d-pips'); if(!el) return;
+  el.innerHTML=E.SLOTS.map((slot,i)=>{
+    const p=bySlot[i];
+    if(!p) return '<i>'+esc(slot)+'</i>';
+    return '<i class="on" style="'+posPaint(p.position)+'"><b>'+esc(lastName(p.name))+'</b>'+
+      '<span>'+M(p.price_musd)+'</span></i>';
+  }).join('');
+}
+
+/* Fades the pips in as the field scrolls out of view. --sq is 0 with the field
+   fully on screen and 1 once it has gone; the 1.4 brings the pips to full a little
+   before the field has completely left, so the handover overlaps rather than
+   snapping. Without an observer it just shows the pips. */
+let foldObs=null;
+function watchFold(){
+  const f=$('d-fold'), scr=$('s-draft');
+  if(!f||!scr) return;
+  if(typeof IntersectionObserver!=='function'){ scr.style.setProperty('--sq','1'); return; }
+  if(foldObs) foldObs.disconnect();
+  foldObs=new IntersectionObserver((entries)=>{
+    for(const e of entries){
+      const sq=Math.max(0,Math.min(1,(1-e.intersectionRatio)*1.4));
+      scr.style.setProperty('--sq',sq.toFixed(3));
+    }
+  },{threshold:Array.from({length:21},(_,i)=>i/20)});
+  foldObs.observe(f);
 }
 
 /* ── rail (arc diagram) ──────────────────────────────────────── */
