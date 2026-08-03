@@ -229,6 +229,34 @@ const CONSTANTS = {
   PLAYOFF_HOME_FIELD: 0.35,
 
   /*
+   * ─── WHAT AN ELITE ROSTER IS OWED IN JANUARY ────────────────────────────────────
+   *
+   * Seeding and home field read the RECORD, and for the very best teams in the game that
+   * produced a strange result. Measured over 3,000 seasons a side: a 103-overall roster
+   * averaged 13.9 wins, earned a bye only 32% of the time, and won the title 2.8% of the
+   * time. It was being asked to win four straight elimination games with a 7% edge in
+   * three of them and none in the final. A juggernaut that dropped four coin-flips in
+   * September is still the most dangerous team in the field, and the game said otherwise.
+   *
+   * So strength gets a vote alongside the record. ELITE_FLOOR is where that vote starts and
+   * ELITE_FULL is where it is worth as much as a 17-0 record; ELITE_BYE_RATING with
+   * ELITE_BYE_WINS is the door to a bye for a team the record alone would have sent down
+   * the four-game gauntlet.
+   *
+   * THE PERFECT SEASON IS UNTOUCHED, BY CONSTRUCTION RATHER THAN BY TUNING. Both levers
+   * only ever fire for a team the record UNDERSOLD: the bye is already owned outright at
+   * 15 wins, and the home-field share takes whichever of record and strength is HIGHER,
+   * which at 17-0 is always the record. A 17-0 roster therefore plays a byte-identical
+   * postseason before and after, so the odds of a perfect season cannot move. Verified at
+   * 3,000 seasons a band: the perfect-season COUNT is identical either way (9 and 9 at
+   * rating 103, 16 and 16 at 110) while titles went 2.8% -> 5.3% and 5.8% -> 10.8%.
+   */
+  ELITE_FLOOR: 95,
+  ELITE_FULL: 105,
+  ELITE_BYE_RATING: 100,
+  ELITE_BYE_WINS: 13,
+
+  /*
    * ─── THE GM MODE POSTSEASON ────────────────────────────────────────────────
    *
    * Trade Machine only. The other modes keep the ladder above untouched.
@@ -500,23 +528,50 @@ function scoringScript(you, them, rng) {
 /** Round names, counting back from the final. */
 const PLAYOFF_ROUND_NAMES = ['Wild Card', 'Divisional', 'Conference Championship', 'Super Bowl'];
 
+/*
+ * HOW MUCH THE POSTSEASON RESPECTS YOU, from 0 to 1.
+ *
+ * The record's claim is where it always was: nothing at PLAYOFF_WINS, everything at 17-0.
+ * An elite roster gets a second claim on the same scale and the HIGHER of the two wins.
+ * That ordering is the whole guarantee that a perfect season gets no easier: at 17-0 the
+ * record already scores 1, so strength can never add to it.
+ *
+ * `rating` is optional, and without it this is exactly the old record-only arithmetic —
+ * which is what keeps callers with no rating to hand honest rather than quietly generous.
+ */
+function playoffShare(wins, rating) {
+  const byRecord = Math.max(0, wins - CONSTANTS.PLAYOFF_WINS)
+    / (CONSTANTS.REGULAR_SEASON_GAMES - CONSTANTS.PLAYOFF_WINS);
+  if (!(rating > 0)) return Math.min(1, byRecord);
+  const span = CONSTANTS.ELITE_FULL - CONSTANTS.ELITE_FLOOR;
+  const byStrength = span > 0
+    ? Math.max(0, Math.min(1, (rating - CONSTANTS.ELITE_FLOOR) / span)) : 0;
+  return Math.min(1, Math.max(byRecord, byStrength));
+}
+
 /**
- * Where a regular-season record leaves you. Wins only, deliberately.
+ * Where a regular-season record leaves you.
  *
  * `opts.lateWins` is how many of the last LATE_BYE_GAMES games were won, and it is
  * only ever passed in GM mode. Given it, a hot finish earns the bye even without
  * the 15-win record — see CONSTANTS.LATE_BYE_*. The three labels are unchanged in
  * every mode, because badges and the leaderboard read them.
+ *
+ * `opts.rating` is the team overall, and given it an elite roster (ELITE_BYE_RATING) that
+ * cleared ELITE_BYE_WINS is seeded on top too. The 15-win route is checked FIRST so a team
+ * that earned the bye outright still reports byeRoute 'record'.
  */
 function seedFromRecord(wins, opts = {}) {
-  const bye = wins >= CONSTANTS.BYE_SEED_WINS
-    || (opts.lateWins != null && opts.lateWins >= CONSTANTS.LATE_BYE_WINS
-      && wins >= CONSTANTS.PLAYOFF_WINS);
-  if (bye) {
+  const byRecord = wins >= CONSTANTS.BYE_SEED_WINS;
+  const byFinish = opts.lateWins != null && opts.lateWins >= CONSTANTS.LATE_BYE_WINS
+    && wins >= CONSTANTS.PLAYOFF_WINS;
+  const byStrength = opts.rating > 0 && opts.rating >= CONSTANTS.ELITE_BYE_RATING
+    && wins >= CONSTANTS.ELITE_BYE_WINS;
+  if (byRecord || byFinish || byStrength) {
     return {
       made: true, bye: true, rounds: CONSTANTS.PLAYOFF_ROUNDS_WITH_BYE, label: 'Top seed',
       /* Which route got you here, so the seeding screen can say so. */
-      byeRoute: wins >= CONSTANTS.BYE_SEED_WINS ? 'record' : 'finish',
+      byeRoute: byRecord ? 'record' : (byFinish ? 'finish' : 'strength'),
     };
   }
   if (wins >= CONSTANTS.PLAYOFF_WINS) {
@@ -2096,11 +2151,16 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
 
   const regularWins = wins;
   const regularLosses = losses;
-  const seed = seedFromRecord(regularWins);
-
+  /* The same team overall the results screen prints, so seeding and home field are decided
+     by the number the player is shown rather than by a second opinion. */
+  const teamRating = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0)
+    * chemistryMultiplier * rosterStructure(roster).multiplier;
+  const seed = seedFromRecord(regularWins, { rating: teamRating });
+  /* A bye means you were seeded on top, so the share is read at no less than the record
+     that route normally takes — the same floor run.js applies in the live game. */
+  const byeWins = seed.bye ? Math.max(regularWins, constants.BYE_SEED_WINS) : regularWins;
   const advantage = 1 + (constants.PLAYOFF_HOME_FIELD || 0)
-    * Math.max(0, regularWins - constants.PLAYOFF_WINS)
-    / (constants.REGULAR_SEASON_GAMES - constants.PLAYOFF_WINS);
+    * playoffShare(byeWins, teamRating);
 
   let titleWon = false;
   let exitRound = null;
@@ -2259,7 +2319,7 @@ const publicAPI = {
   buildDivisionMap, generateSchedule, generatePlayoffs,
   resolveGame, resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
-  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES,
+  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare,
   respinCost, respinFees, scoringScript, scoreParts, SCORE_KINDS,
   eraCode, ERA_CODES,
   NICKNAMES, nickname, CITIES, city, cityLabel, TEAM_COLORS, teamColors, washColors,

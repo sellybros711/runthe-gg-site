@@ -827,7 +827,9 @@ function advanceWeek(run, data, leagueContext, displayCal) {
       // Record is final. Work out the seed and pause so it can be shown.
       /* GM mode also seeds on the finish, so a turnaround can earn the bye that 15 wins
          puts out of reach. Only the regular-season results count, and only in this mode. */
-      const seedOpts = {};
+      /* Strength is a third route to the bye, in every mode: a roster this good does not
+         get sent down the four-game gauntlet on the strength of four September losses. */
+      const seedOpts = { rating: liveRating(run) };
       if (run.tradeMachine) {
         const late = s.results.filter((r) => !r.playoff).slice(-E.CONSTANTS.LATE_BYE_GAMES);
         seedOpts.lateWins = late.filter((r) => r.won).length;
@@ -873,8 +875,25 @@ function homeField(run, regularWins, isFinal) {
   if (!k) return 1;
   const bye = !!(run.playoffSeed && run.playoffSeed.bye);
   const wins = bye ? Math.max(regularWins, C.BYE_SEED_WINS) : regularWins;
-  const share = Math.max(0, wins - C.PLAYOFF_WINS) / (C.REGULAR_SEASON_GAMES - C.PLAYOFF_WINS);
-  return 1 + k * Math.min(1, share);
+  /* Strength gets a vote next to the record, and the higher of the two carries. An elite
+     roster that lost a few coin-flips still walks into January with a real edge; a 17-0
+     roster is already at the top of the record scale, so this can add nothing to it. */
+  return 1 + k * E.playoffShare(wins, liveRating(run));
+}
+
+/*
+ * THIS TEAM'S OVERALL, RIGHT NOW: raw points times chemistry times shape.
+ *
+ * Deliberately the same product the results screen prints and the GM rating scores with,
+ * read off the live season's chemistry rather than recomputed from ctx, so seeding and home
+ * field can never disagree with the number on screen. Zero before a season exists, which
+ * makes playoffShare fall back to the record-only rule.
+ */
+function liveRating(run) {
+  const s = run && run.season;
+  if (!s || !run.roster || !run.roster.length) return 0;
+  const pts = run.roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+  return pts * (s.chemistry || 1) * E.rosterStructure(run.roster).multiplier;
 }
 
 /** Leave SEEDING and start the playoffs. */
