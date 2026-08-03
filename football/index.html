@@ -3960,8 +3960,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="headline" id="headline"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=42"></script>
-<script src="run.js?v=60"></script>
+<script src="engine.js?v=43"></script>
+<script src="run.js?v=61"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -7322,12 +7322,16 @@ function paintSeed(){
     badges.innerHTML='<span class="seed-badge blue">Wild Card</span>';
   }
 
-  /* Description. In GM mode the bye can be earned by finishing hot rather than by
-     record, and if that is how you got it the screen says so -- otherwise a 13-4 team
-     sitting on the #1 seed reads as a bug. */
+  /* Description. The bye has three routes and the screen names whichever one you took,
+     because a 13-4 team sitting on the #1 seed otherwise reads as a bug: by record (15
+     wins), by finishing hot (GM mode), or by being the most dangerous roster in the
+     league whatever the record says. */
   $('sd-sub').textContent=sd.byeRoute==='finish'
     ? 'Hottest team in the league: '+sd.lateWins+' wins in your last '+sd.lateGames
       +'. That earns the bye. Three wins from a championship.'
+    : sd.byeRoute==='strength'
+    ? 'Nobody wants to play you: at '+teamRating(run.roster,run.season.chemistry).toFixed(1)+
+      ' overall you are seeded on top whatever the record says. Three wins from a championship.'
     : sd.bye
       ? 'You earned a first-round bye. Three wins from a championship.'
       : 'You are in. Four wins from a championship.';
