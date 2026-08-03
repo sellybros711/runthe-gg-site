@@ -1793,6 +1793,34 @@ window.GA_ID='G-L29P5MRWKE';
     color:var(--dim);cursor:pointer;white-space:nowrap;transition:border-color .15s,color .15s}
   .overtab.on{color:#fff;border-color:rgba(255,255,255,.3)}
   .overpane{display:none}.overpane.on{display:block}
+  /* WHERE IT RANKS, the NFL game's cells verbatim. Three windows across, the
+     number big enough to be the point of the panel and the field size under it
+     in small type: the number is what people screenshot, the denominator is
+     what makes it mean anything. Until launch the cells are drawn dead. */
+  .r3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:9px}
+  .rcell{min-width:0;text-align:center;padding:10px 4px 9px;border-radius:12px;
+    background:rgba(255,255,255,.035);border:1px solid var(--line)}
+  .rcell .rw{display:block;font-family:var(--fn);font-size:9px;letter-spacing:.15em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .rcell .rn{display:block;font-family:var(--fd);font-size:31px;
+    line-height:1;margin:5px 0 3px;letter-spacing:-.01em}
+  .rcell .rof{display:block;font-size:10px;color:var(--dim-2);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .rcell.top1{border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.08)}
+  .rcell.top1 .rn{background:linear-gradient(180deg,#fde68a,#d97706);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .rcell.top10{border-color:rgba(59,130,246,.45);background:rgba(59,130,246,.08)}
+  .rcell.top10 .rn{color:#93c5fd}
+  .rcell.dead .rn{color:var(--dim-2);font-size:22px}
+  .rankfoot{margin:10px 0 0;font-size:12.5px;color:var(--dim);line-height:1.45}
+  .rankwho{margin:7px 0 0;font-size:11.5px;color:var(--dim-2);line-height:1.4}
+  .rload{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;
+    color:var(--dim)}
+  .rload i{width:7px;height:7px;border-radius:50%;background:var(--dim-2);
+    animation:rl .9s ease-in-out infinite}
+  .rload i:nth-child(2){animation-delay:.15s}
+  .rload i:nth-child(3){animation-delay:.3s}
+  @keyframes rl{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
 
   /* ── collegiate accents (Graduate) ──────────────────────────────
      Varsity block letters, but only on the short display text: eyebrows and
@@ -2228,12 +2256,16 @@ or endorsed by the NCAA, the CFP or any school.
 
     <div class="overtabs" id="o-tabs">
       <button class="overtab on" data-t="perfect">How close</button>
+      <button class="overtab" data-t="ranks">Where it ranks</button>
       <button class="overtab" data-t="stats">Stats</button>
       <button class="overtab" data-t="sched">Schedule</button>
     </div>
 
     <div class="overpane on" id="op-perfect" data-t="perfect">
       <div id="o-miss"></div>
+    </div>
+    <div class="overpane" id="op-ranks" data-t="ranks">
+      <div id="o-ranks"></div>
     </div>
     <div class="overpane" id="op-stats" data-t="stats">
       <div class="stat4" id="o-stats"></div>
@@ -3420,6 +3452,54 @@ async function paintPlace(){
       '<button id="o-lb">Board</button></div>';
   }
   const b=$('o-lb'); if(b) b.onclick=()=>openBoard(runMode(run));
+}
+
+/* ── Where it ranks: the three-window placings tab ─────────────────
+   THE LAUNCH SWITCH. board.js can already answer this (ranks() asks the same
+   PostgREST view the place line above reads), but the production Supabase
+   project is not stood up until launch, so until then the tab is an honest
+   placeholder: the same three windows, drawn dead, saying when they fill in.
+   RIGHT BEFORE GOING LIVE flip this to `true` (a test can set
+   window.PS_CFB_RANKS_LIVE=true instead, which is why the global is read)
+   and the identical cells fill from the board with nothing else to write. */
+const RANKS_LIVE=window.PS_CFB_RANKS_LIVE===true;
+const RANK_WINDOWS=[['today','Today'],['week','This week'],['all','All time']];
+function rankCell(label,w){
+  if(!w||w.place==null) return '<div class="rcell dead"><span class="rw">'+label+
+    '</span><span class="rn">--</span><span class="rof">'+
+    (RANKS_LIVE?'not available':'at launch')+'</span></div>';
+  const cls=w.place===1?' top1':(w.place<=10?' top10':'');
+  return '<div class="rcell'+cls+'"><span class="rw">'+label+'</span>'+
+    '<span class="rn">#'+w.place.toLocaleString()+'</span>'+
+    '<span class="rof">of '+(w.total==null?'?':w.total.toLocaleString())+'</span></div>';
+}
+async function paintRanksTab(){
+  const el=$('o-ranks'); if(!el||!run||!run.outcome) return;
+  const who='Where this season places among every '+
+    (run.conference?esc(run.conference)+' draft':'free play')+
+    ' season recorded: today, this week, all time.';
+  if(!RANKS_LIVE||!B||!run.boardStats){
+    el.innerHTML='<p class="rankwho">'+who+'</p>'+
+      '<div class="r3">'+RANK_WINDOWS.map(([k,l])=>rankCell(l,null)).join('')+'</div>'+
+      '<p class="rankfoot">Placements switch on at launch, when everyone starts counting '+
+      'on the same board. This season is saved and goes into the standings the moment '+
+      'the board opens.</p>';
+    return;
+  }
+  el.innerHTML='<p class="rankwho">'+who+'</p>'+
+    '<div class="rload"><i></i><i></i><i></i><span>Reading the board</span></div>';
+  const score=B.scoreOf(run.outcome.wins,run.boardStats.pointDiff);
+  let r=null; try{ r=await B.ranks(score,runMode(run)); }catch(_){}
+  const any=r&&RANK_WINDOWS.some(([k])=>r[k]&&r[k].place!=null);
+  if(!any){
+    el.innerHTML='<p class="rankwho">'+who+'</p>'+
+      '<p class="rankfoot">The leaderboard could not be read just now, so there is no '+
+      'placing to show. Nothing else about your season changes.</p>';
+    return;
+  }
+  el.innerHTML='<p class="rankwho">'+who+'</p>'+
+    '<div class="r3">'+RANK_WINDOWS.map(([k,l])=>rankCell(l,r[k])).join('')+'</div>'+
+    (authState.signedIn?'':'<p class="rankfoot"><b>Sign in</b> to put your name on it.</p>');
 }
 
 function paintNewBadges(){
@@ -5247,6 +5327,7 @@ function paintOver(){
     lastEarned.forEach(a=>ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group}));
   }else if(run.boardStats){ paintPlace(); }
   paintModeTag();
+  paintRanksTab();
   paintNewBadges();
 
   const pts=(arr,f)=>arr.reduce((t,r)=>t+f(r),0)/Math.max(1,arr.length);
