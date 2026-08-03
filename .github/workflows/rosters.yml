@@ -1,0 +1,25 @@
+name: Refresh rosters
+on:
+  schedule:
+    - cron: '0 10 * * 1'   # Mondays 10:00 UTC
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/fetch-rosters.mjs
+      - name: Commit if changed
+        run: |
+          git config user.name "roster-bot"
+          git config user.email "noreply@anthropic.com"
+          git add arcade/rosters.js
+          git diff --cached --quiet && echo "no changes" || {
+            git commit -m "Refresh NBA/NFL/MLB rosters from ESPN"
+            git push
+          }
