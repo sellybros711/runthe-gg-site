@@ -933,9 +933,11 @@ window.GA_ID='G-L29P5MRWKE';
   .modecard.mc-cap .mc-title{color:#4ade80}
   .modecard.mc-trade{border-color:rgba(217,119,6,.35)}
   .modecard.mc-trade .mc-title{color:#fbbf24}
-  .mc-beta{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-    padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.12);color:var(--dim);
-    vertical-align:middle;margin-left:6px}
+  /* NEW wears launch green: the quiet grey of the Beta chip said "still cooking", and a
+     launch tag should say the opposite. */
+  .mc-new{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    padding:2px 6px;border-radius:4px;background:rgba(34,197,94,.16);color:#4ade80;
+    border:1px solid rgba(34,197,94,.45);vertical-align:middle;margin-left:6px}
   .modecard.mc-soon{opacity:.45;pointer-events:none;filter:grayscale(.5)}
   .mc-soon-tag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
     padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.10);color:var(--dim-2);
@@ -4905,12 +4907,10 @@ function modeMenu(){
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
           '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>'+
           '<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'+
-          /* BETA FOR THE PEOPLE WHO CAN PLAY IT, Coming Soon for everyone else. The mode is
-             in early access on a short allowlist and it is still moving under them, so the
-             card says so rather than presenting it as finished. One tag or the other, never
-             both: they answer the same question. */
+          /* NEW at launch, Coming Soon only if the switch is ever turned back off. One tag
+             or the other, never both: they answer the same question. */
           '</svg></div><div class="mc-title">The Trade Machine'+
-          (ct?' <span class="mc-beta">Beta</span>':' <span class="mc-soon-tag">Coming Soon</span>')+
+          (ct?' <span class="mc-new">New</span>':' <span class="mc-soon-tag">Coming Soon</span>')+
           '</div>'+(ct?arrow:'')+'</div>'+
         '<p>You are thrown into a season as the GM. Win with the team you\'re dealt, or trade your way to the top.</p>'+
       '</button>'+
@@ -6054,9 +6054,13 @@ function openCapReplace(cutPlayer,resumeStep){
 }
 
 /* ---------- THE TRADE MACHINE ---------- */
+/* LAUNCHED. This was the early-access allowlist; it is now the one switch that has the
+   Trade Machine open, everywhere it is asked about (the mode card, the launch paths, the
+   GM leaderboard view). The account requirement is NOT here and never was: the modes sheet
+   disables every card for guests and beginTradeMachine walls through oneTeamReady(), so
+   only signed-in players with a username can actually play. */
 function canPlayTrade(){
-  var allow=['runnyj','malikwillislover'];
-  return !!(authState.name&&allow.indexOf(authState.name.toLowerCase())>=0);
+  return true;
 }
 function beginTradeMachine(){
   if(!canPlayTrade()) return;
