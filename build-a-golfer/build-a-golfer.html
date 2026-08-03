@@ -23494,7 +23494,7 @@ function overlayCourseRecords(screen){
       <div style="font:800 10px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">All-time course record${tab==='legend'?' · Legend':''}</div>
       ${inner}</div>`));
   }
-  ov.appendChild($(`<div><h2 style="margin:12px 0 8px">Today · ${esc(dShort(DAILY_COURSES[today].v))}</h2>
+  ov.appendChild($(`<div><div style="margin:16px 0 4px;font-family:var(--display);font-size:clamp(19px,5vw,24px);line-height:1.1"><span style="color:var(--gold)">Today</span> at ${esc(dShort(DAILY_COURSES[today].v))}</div>
     <p class="lede" style="margin:0 0 8px;font-size:12.5px">${tab==='legend'?'Legend-token rounds posted today only. Beat the all-time record above to take it.':'Rounds posted today only, lowest wins the day. Beat the all-time record above to take it.'}</p></div>`));
   const boardWrap=$(`<div></div>`); boardWrap.innerHTML=emojifyIcons(boardHTML); ov.appendChild(boardWrap);
   if(tab==='legend'){
