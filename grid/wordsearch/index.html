@@ -219,6 +219,7 @@
       <div class="rstat"><div class="v" id="mHints">0</div><div class="l">Hints</div></div>
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Streak</div></div>
     </div>
+    <div id="rtgHist"></div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
     </div>
@@ -236,6 +237,7 @@
 <script src="/grid/sfx.js"></script>
 <script src="/grid/tokens.js"></script>
 <script src="/grid/archive.js"></script>
+<script src="/grid/history.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
 <script>
@@ -333,6 +335,7 @@
   buildBoard();
   var foundSet={}, foundCount=0, colorFor={};
   var done=false, hints=0, started=false, startTs=0, tick=null, elapsed=0, charged=false, attemptFirst=false;
+  var hintsUsed=0;   // free players get 1 hint per play; Pro is unlimited
 
   // ---- render ----
   var gridEl=document.getElementById('grid');
@@ -426,14 +429,30 @@
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
   function updTimer(){ if(!started) return; elapsed=(performance.now()-startTs)/1000; document.getElementById('timerN').textContent=fmt(elapsed); }
 
+  // ---- hint gating: FREE players get 1 hint per play; PRO is unlimited ----
+  function isProHints(){ return !!(window.RTGTokens && RTGTokens.isPro()); }
+  function updateHintBtn(){
+    var b=document.getElementById('btnHint'); if(!b) return;
+    var lab=b.querySelector('span');
+    if(!isProHints() && hintsUsed>=1){
+      if(lab) lab.textContent='Hint used — Pro for more';
+      b.disabled=true; b.style.opacity='.55'; b.style.cursor='default';
+    } else {
+      if(lab) lab.textContent='Hint';
+      b.disabled=false; b.style.opacity=''; b.style.cursor='';
+    }
+  }
   // ---- hint: flash a random unfound word's first cell (costs a hint) ----
   document.getElementById('btnHint').addEventListener('click', function(){
     if(done) return; startIfNeeded();
+    // FREE players are capped at 1 hint per play; PRO is never blocked
+    if(!isProHints() && hintsUsed>=1){ toast('1 hint per play — Pro gets unlimited'); updateHintBtn(); return; }
     var rem=PLACED.filter(function(p){ return !foundSet[p.word]; }); if(!rem.length) return;
-    var p=rem[ri(rem.length)]; hints++;
+    var p=rem[ri(rem.length)]; hints++; hintsUsed++;
     var el=cellEls[p.cells[0]]; el.classList.remove('hintflash'); void el.offsetWidth; el.classList.add('hintflash');
     if(window.RTGSound) RTGSound.key();
-    toast('First letter of ' + p.word.charAt(0) + '… flashed');
+    toast('Hint: a name starting with “' + p.word.charAt(0) + '” — its square is highlighted');
+    updateHintBtn();
   });
 
   // ---- finish ----
@@ -447,14 +466,14 @@
     if(isReplay){ seedRandom(); buildBoard(); } else { seedDaily(); buildBoard(); servedDaily=true; }
     if(tick){ clearInterval(tick); tick=null; }
     foundSet={}; foundCount=0; colorFor={};
-    done=false; hints=0; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
+    done=false; hints=0; hintsUsed=0; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
     selStart=null; selPath=[];
     renderGrid();   // draw the (possibly brand-new) letter grid from the current GRID
     gridEl.style.pointerEvents=''; gridEl.style.opacity='';
     document.getElementById('timerN').textContent='0:00';
     document.getElementById('themeName').textContent=P.theme;
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
-    renderWords(); updWordsLab();
+    renderWords(); updWordsLab(); updateHintBtn();
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
@@ -472,6 +491,7 @@
       s.best=Math.min(s.best||1e9, Math.round(elapsed));
       s.solves=(s.solves||0)+1; save(s);
     }
+    if(!ARCHIVE && window.RTGHistory) RTGHistory.push('wordsearch', Math.round(elapsed), true);
     document.getElementById('streakN').textContent=s.streak||0;
     document.getElementById('mTime').textContent=fmt(elapsed);
     document.getElementById('mHints').textContent=hints;
@@ -481,6 +501,7 @@
 
     document.getElementById('mSub').textContent = attemptFirst ? 'You found every name' : 'Practice — not ranked';
     updateAgainBtn();
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'wordsearch');
 
     if(attemptFirst && window.RTG_BOARD){
       RTG_BOARD.submit('wordsearch', P.id, { seconds:Math.round(elapsed), mistakes:0, reveals:hints }).then(function(res){

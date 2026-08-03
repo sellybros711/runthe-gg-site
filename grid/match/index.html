@@ -518,6 +518,7 @@
       <div class="coinline" id="resCoins">+0 coins</div>
       <div class="countdown" id="resCountdown"></div>
       <div class="reportline"><a href="mailto:sellybros711@gmail.com?subject=RunTheGrid%20data%20error">Spot a data error? Tell us</a></div>
+      <div id="rtgHist"></div>
       <div class="rcta">
         <button class="btn primary" id="mAgain" type="button">Play again</button>
       </div>
@@ -563,6 +564,7 @@
   <script src="/grid/sfx.js"></script>
   <script src="/grid/tokens.js"></script>
   <script src="/grid/archive.js"></script>
+  <script src="/grid/history.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="/grid/board.js"></script>
   <script>
@@ -1141,6 +1143,7 @@
         LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, order: solveOrder.slice() }));
         renderWallet();
       }
+      if (!ARCHIVE && window.RTGHistory) RTGHistory.push('match', won ? Math.round(finalTime) : null, won);
 
       // ---- cloud: post the run on a win (signed-in only; fail-open). Raw solve
       // time only; the server score formula adds its own per-mistake penalty. ----
@@ -1230,6 +1233,7 @@
       if (r.tester) { document.getElementById('resCountdown').innerHTML = ''; }
       else { startCountdown('resCountdown'); }
       updateAgainBtn();
+      if (window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'match');
       document.getElementById('resultModal').hidden = false;
       window._lastResult = r;
       // celebration: confetti on a fresh win (denser + gold-heavy when flawless / milestone)

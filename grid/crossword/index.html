@@ -343,6 +343,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <div class="share-grid" id="mShareGrid"></div>
     <div class="milestone" id="mMilestone"></div>
     <div class="countdown" id="mCountdown"></div>
+    <div id="rtgHist"></div>
     <button class="btn gold" id="mAgain">Play again</button>
     <button class="btn gold" id="mShare">Share result</button>
     <button class="btn ghost" id="mStats">Stats</button>
@@ -373,6 +374,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <script src="/grid/sfx.js"></script>
 <script src="/grid/tokens.js"></script>
 <script src="/grid/archive.js"></script>
+<script src="/grid/history.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
 <script>
@@ -465,6 +467,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   var sel = { r:0, c:0, dir:'A' };
   var startedAt = null, elapsed = 0, tick = null, done = false;
   var charged = false, attemptFirst = false;
+  var hintsUsed = 0;   // free players get 1 reveal per play; Pro (and tester/archive) unlimited
 
   // pick first white cell
   (function(){ outer:
@@ -675,11 +678,26 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     entryCells(act).forEach(function(p){ var cell=cells[p[0]][p[1]]; if(cell.val) cell.checked=true; });
     render();
   });
+  // ---- reveal gating: FREE players get 1 reveal per play; PRO/TESTER unlimited ----
+  function revealUnlimited(){ return TESTER || !!(window.RTGTokens && RTGTokens.isPro()); }
+  function updateRevealBtn(){
+    var b=document.getElementById('btnReveal'); if(!b) return;
+    if(!revealUnlimited() && hintsUsed>=1){
+      if(b.lastChild) b.lastChild.nodeValue=' Reveal used — Pro for more';
+      b.disabled=true; b.style.opacity='.55'; b.style.cursor='default';
+    } else {
+      if(b.lastChild) b.lastChild.nodeValue=' Reveal';
+      b.disabled=false; b.style.opacity=''; b.style.cursor='';
+    }
+  }
   document.getElementById('btnReveal').addEventListener('click', function(){
     var cell=cells[sel.r][sel.c]; if(cell.block) return;
+    // FREE players are capped at 1 reveal per play; PRO/TESTER never blocked
+    if(!revealUnlimited() && hintsUsed>=1){ toast('1 reveal per play — Pro gets unlimited'); updateRevealBtn(); return; }
     ensureStarted();
     cell.val=cell.ans; cell.revealed=true; cell.checked=false;
-    render(); checkSolved();
+    hintsUsed++;
+    render(); checkSolved(); updateRevealBtn();
   });
 
   // ---- win check + persistence ---------------------------------------------
@@ -737,6 +755,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       save(s);
       milestone = streakMilestone(s.streak);
     }
+    if(!ARCHIVE && !TESTER && window.RTGHistory) RTGHistory.push('crossword', Math.round(elapsed), true);
     document.getElementById('streakN').textContent = s.streak||0;
 
     // fill modal
@@ -750,6 +769,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     // ranked = the day's first (ranked) attempt; extra plays are practice only
     document.getElementById('mSub').textContent = attemptFirst ? 'Nice grid. Your streak lives another day.' : 'Practice — not ranked';
     updateAgainBtn();
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'crossword');
 
     // ---- cloud: post the run (signed-in only; fail-open). Cloud streak wins. ----
     if(window.RTG_BOARD && !TESTER && !ARCHIVE && attemptFirst){
@@ -1012,7 +1032,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       cl.val=''; cl.checked=false; cl.revealed=false;
     }
     filledEntries={}; announcedFull=false;
-    done=false; charged=false; attemptFirst=false;
+    done=false; charged=false; attemptFirst=false; hintsUsed=0;
     if(tick){ clearInterval(tick); tick=null; }
     startedAt=null; elapsed=0;
     document.getElementById('timerN').textContent='0:00';
@@ -1025,6 +1045,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     stopCountdown();
     render();
     updateHint();
+    updateRevealBtn();
   }
   // out of plays: lock the board and show the previous result in review state
   function showLocked(saved){
@@ -1041,6 +1062,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     document.getElementById('mFlawless').classList.remove('on');
     var mm=document.getElementById('mMilestone'); if(mm){ mm.textContent=''; mm.classList.remove('on'); }
     updateAgainBtn();
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'crossword');
     startCountdown('mCountdown');
     document.getElementById('scrim').classList.remove('hidden');
   }
