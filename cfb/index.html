@@ -4356,14 +4356,6 @@ function setGameday(rk,label){
   $('v-gameday').className='gameday'+(g.cls?' '+g.cls:'');
   $('v-gdtext').textContent=g.text;
 }
-/* Playoff and bowl broadcasts already carry a round/bowl title, so their ribbon
-   only lights up for the drama that title can't say: a ranked-opponent showdown. */
-function setShowdown(boxId,txtId,rk){
-  const box=$(boxId);
-  if(rk&&rk<=10){box.className='gameday showdown';box.style.display='';$(txtId).textContent='Top 10 Showdown';}
-  else if(rk){box.className='gameday ranked';box.style.display='';$(txtId).textContent='Ranked Matchup';}
-  else{box.style.display='none';}
-}
 
 function paintSeasonBug(oppId,label){
   const o=oppId?DATA.byTeamSeasonId[oppId]:null;
@@ -5063,7 +5055,10 @@ function playFeatureBroadcast(cfg){
   youEl.querySelector('.sc').textContent='0';themEl.querySelector('.sc').textContent='0';
   youEl.className='bt you';themEl.className='bt them';
   bug.className='bug'+(bowlRk?' ranked':'');
-  setShowdown('bowl-gameday','bowl-gdtext',bowlRk);
+  /* NO RIBBON ON A BOWL. The bowl name is already the big title with its tagline
+     under it, so "Ranked Matchup" was a third label saying less than the two
+     above it. The opponent's ranking still shows as the # on the scorebug. */
+  $('bowl-gameday').style.display='none';
   $('bowl-q').textContent=QNAME[0];$('bowl-ck').textContent='15:00';$('bowl-rd').textContent=cfg.rd||'BOWL';
   $('bowl-cap').innerHTML='';$('bowl-log').innerHTML='';
   $('bowl-fastwrap').hidden=false;
