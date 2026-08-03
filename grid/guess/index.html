@@ -231,6 +231,7 @@
       <div class="rstat"><div class="v" id="mTime">0:00</div><div class="l">Time</div></div>
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Streak</div></div>
     </div>
+    <div id="rtgHist"></div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
     </div>
@@ -247,6 +248,7 @@
 <script src="/grid/sfx.js"></script>
 <script src="/grid/tokens.js"></script>
 <script src="/grid/archive.js"></script>
+<script src="/grid/history.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
 <script>
@@ -438,6 +440,7 @@
     }
     s.lastDone=today; s.last={ won:w, guesses:guesses.length, seconds:Math.round(elapsed) };
     save(s);
+    if(!ARCHIVE && window.RTGHistory) RTGHistory.push('guess', w?guesses.length:null, w);
     document.getElementById('streakN').textContent=s.streak||0;
     var wrong = guesses.length-(w?1:0);
     // modal
@@ -458,6 +461,7 @@
       });
     }
     updateAgainBtn();
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'guess');
     setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(w){ confetti(wrong===0?120:80, wrong===0); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 350);
   }
 
@@ -526,6 +530,7 @@
     document.getElementById('mStreak').textContent=sv.streak||0;
     document.getElementById('yourTm').textContent = w ? (sv.last.guesses+' · '+fmt(sv.last.seconds||0)) : 'X';
     updateAgainBtn();
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'guess');
     document.getElementById('scrim').classList.remove('hidden'); startCountdown();
   }
 

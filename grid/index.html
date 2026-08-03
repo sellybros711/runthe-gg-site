@@ -29,7 +29,7 @@
     --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
     --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
     --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A; --pink:#F65C9C;
-    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A;
+    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A; --violetT:#B79BF6; --pinkT:#F778AE; --blueT:#5C8CFF;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --hero:'Anton', Impact, sans-serif;
@@ -38,7 +38,7 @@
     --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA;
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
-    --coralT:#D8452F; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A;
+    --coralT:#D8452F; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --violetT:#6D3BD6; --pinkT:#C43C7C; --blueT:#2358E0;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
@@ -141,8 +141,15 @@
   .tile.oddone{--c:var(--violet);}
   .tile.career{--c:var(--green);}
   .tile.rankit{--c:var(--pink);}
-  .tile.table .play{color:#071426;}
-  .tile.rankit .play{color:#20101a;}
+  /* each game's name carries its own readable accent shade */
+  .tile.match .nm{color:var(--blueT);}
+  .tile.cross .nm{color:var(--ink);}
+  .tile.word .nm{color:var(--tealT);}
+  .tile.guess .nm{color:var(--coralT);}
+  .tile.table .nm{color:var(--goldT);}
+  .tile.oddone .nm{color:var(--violetT);}
+  .tile.career .nm{color:var(--greenT);}
+  .tile.rankit .nm{color:var(--pinkT);}
   /* display order (independent of DOM, so the play-state JS is untouched) */
   .tile.table{order:1;} .tile.match{order:2;} .tile.career{order:3;} .tile.oddone{order:4;}
   .tile.rankit{order:5;} .tile.guess{order:6;} .tile.cross{order:7;} .tile.word{order:8;}
@@ -163,8 +170,8 @@
   .tile .nm{font-weight:900; font-style:italic; font-size:22px; line-height:1; letter-spacing:-.01em; color:var(--ink);}
   .tile .desc{color:var(--mut); font-size:13px; line-height:1.5; margin:9px 0 16px;}
   .tile .play{margin-top:auto; border-radius:13px; min-height:48px; display:flex; align-items:center; justify-content:center; gap:8px;
-    font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:#fff; background:var(--c); transition:filter .12s;}
-  .tile.cross .play{color:#071426;}   /* dark text on the grayscale crossword accent */
+    font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:#fff; background:var(--c); transition:filter .12s;
+    text-shadow:0 1px 2px rgba(0,0,0,.28);}   /* white PLAY on every tile, shadow keeps it legible on light accents */
   .tile:hover .play{filter:brightness(1.08);}
   .tile .play .arw{font-size:19px; transition:transform .16s;}
   .tile:hover .play .arw{transform:translateX(4px);}

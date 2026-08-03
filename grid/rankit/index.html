@@ -65,11 +65,16 @@
 
   .axis{display:flex; align-items:center; justify-content:space-between; font-size:10px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:0 4px 8px;}
   .rows{display:flex; flex-direction:column; gap:9px;}
-  .rrow{display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line2); border-radius:13px; box-shadow:var(--shadow); padding:12px 12px 12px 14px; transition:border-color .15s, background .15s, transform .12s; cursor:grab; touch-action:none;}
-  .rrow.dragging{cursor:grabbing; z-index:5; box-shadow:0 16px 34px -10px rgba(0,0,0,.6); border-color:var(--pink); transition:none; opacity:.98;}
+  /* a rank slot = a detached number block on the left + the draggable card */
+  .ritem{display:flex; align-items:stretch; gap:10px; cursor:grab; touch-action:none; transition:transform .12s;}
+  .ritem.dragging{cursor:grabbing; z-index:5; transition:none;}
+  .rord{flex:0 0 auto; width:40px; align-self:stretch; display:flex; align-items:center; justify-content:center; border-radius:11px; background:var(--card2); border:1px solid var(--line2); font-family:var(--hero); font-weight:400; font-size:19px; color:var(--mut);}
+  .rrow{flex:1; min-width:0; display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line2); border-radius:13px; box-shadow:var(--shadow); padding:11px 12px; transition:border-color .15s, background .15s;}
+  .ritem.dragging .rrow{box-shadow:0 16px 34px -10px rgba(0,0,0,.6); border-color:var(--pink); opacity:.98;}
   .rrow .ctrl button{cursor:pointer;}
-  .rrow .ord{flex:0 0 auto; width:26px; height:26px; border-radius:8px; background:var(--card2); color:var(--mut); font-family:var(--hero); font-weight:400; font-size:15px; display:flex; align-items:center; justify-content:center;}
-  .rrow .nm{flex:1; min-width:0; font-weight:900; font-size:16.5px; color:var(--ink);}
+  .rmeta{flex:1; min-width:0; text-align:center;}
+  .rmeta .nm{display:block; font-weight:900; font-size:16px; color:var(--ink); line-height:1.15; overflow:hidden; text-overflow:ellipsis;}
+  .rmeta .sub{display:block; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--mut); margin-top:3px;}
   .rrow .era{flex:0 0 auto; font-size:11px; font-weight:900; letter-spacing:.04em; color:var(--pinkT); opacity:0; transition:opacity .2s; margin-right:2px;}
   .rrow.show-era .era{opacity:1;}
   .rrow .ctrl{flex:0 0 auto; display:flex; flex-direction:column; gap:3px;}
@@ -179,6 +184,7 @@
       <div class="rstat"><div class="v" id="mChecks">0</div><div class="l">Checks</div></div>
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Streak</div></div>
     </div>
+    <div id="rtgHist"></div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
     </div>
@@ -195,6 +201,7 @@
 <script src="/grid/sfx.js"></script>
 <script src="/grid/tokens.js"></script>
 <script src="/grid/archive.js"></script>
+<script src="/grid/history.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
 <script>
@@ -246,15 +253,18 @@
   var rowsEl=document.getElementById('rows');
 
   function eraLabel(e){ return "'"+String(primaryDecade(e)).slice(2)+"s"; }
+  function metaLine(e){ return [e.sport, (e.t&&e.t[0])].filter(Boolean).join(' · '); }
   function render(){
     rowsEl.innerHTML = order.map(function(e,i){
       var cls='rrow'+(lastCheck?(lastCheck[i]?' correct':' wrong'):'')+(done?' show-era':'');
-      return '<div class="'+cls+'">'+
-        '<span class="ord">'+(i+1)+'</span>'+
-        '<span class="nm">'+esc(e.name)+'</span>'+
-        '<span class="era">'+eraLabel(e)+'</span>'+
-        '<span class="ctrl"><button data-mv="'+i+'" data-dir="-1" '+(i===0||done?'disabled':'')+' aria-label="Move up">▲</button>'+
-        '<button data-mv="'+i+'" data-dir="1" '+(i===order.length-1||done?'disabled':'')+' aria-label="Move down">▼</button></span>'+
+      return '<div class="ritem">'+
+        '<span class="rord">'+(i+1)+'</span>'+
+        '<div class="'+cls+'">'+
+          '<div class="rmeta"><span class="nm">'+esc(e.name)+'</span><span class="sub">'+esc(metaLine(e))+'</span></div>'+
+          '<span class="era">'+eraLabel(e)+'</span>'+
+          '<span class="ctrl"><button data-mv="'+i+'" data-dir="-1" '+(i===0||done?'disabled':'')+' aria-label="Move up">▲</button>'+
+          '<button data-mv="'+i+'" data-dir="1" '+(i===order.length-1||done?'disabled':'')+' aria-label="Move down">▼</button></span>'+
+        '</div>'+
       '</div>';
     }).join('');
     [].forEach.call(rowsEl.querySelectorAll('button[data-mv]'), function(b){ b.addEventListener('click', function(){ move(+b.dataset.mv, +b.dataset.dir); }); });
@@ -263,32 +273,32 @@
   // drag-to-reorder (pointer + touch), with the arrow buttons as a fallback
   function attachDrag(){
     if(done) return;
-    var rows=[].slice.call(rowsEl.querySelectorAll('.rrow'));
-    rows.forEach(function(row){
-      row.addEventListener('pointerdown', function(e){
+    var items=[].slice.call(rowsEl.querySelectorAll('.ritem'));
+    items.forEach(function(item){
+      item.addEventListener('pointerdown', function(e){
         if(done || e.button===2 || e.target.closest('.ctrl')) return;   // let arrows work
         e.preventDefault();
-        var fromIdx=rows.indexOf(row), startY=e.clientY, step=row.offsetHeight+9, target=fromIdx;
-        try{ row.setPointerCapture(e.pointerId); }catch(_){}
-        row.classList.add('dragging'); startIfNeeded();
+        var fromIdx=items.indexOf(item), startY=e.clientY, step=item.offsetHeight+9, target=fromIdx;
+        try{ item.setPointerCapture(e.pointerId); }catch(_){}
+        item.classList.add('dragging'); startIfNeeded();
         function mv(ev){
-          var dy=ev.clientY-startY; row.style.transform='translateY('+dy+'px)';
+          var dy=ev.clientY-startY; item.style.transform='translateY('+dy+'px)';
           var ni=Math.max(0, Math.min(order.length-1, fromIdx+Math.round(dy/step)));
           if(ni!==target){ target=ni;
-            rows.forEach(function(r,i){ if(r===row) return; var sh=0;
+            items.forEach(function(r,i){ if(r===item) return; var sh=0;
               if(fromIdx<target && i>fromIdx && i<=target) sh=-step;
               else if(fromIdx>target && i<fromIdx && i>=target) sh=step;
               r.style.transform= sh? 'translateY('+sh+'px)':''; });
           }
         }
         function up(){
-          try{ row.releasePointerCapture(e.pointerId); }catch(_){}
-          row.removeEventListener('pointermove',mv); row.removeEventListener('pointerup',up); row.removeEventListener('pointercancel',up);
-          rows.forEach(function(r){ r.style.transform=''; }); row.classList.remove('dragging');
+          try{ item.releasePointerCapture(e.pointerId); }catch(_){}
+          item.removeEventListener('pointermove',mv); item.removeEventListener('pointerup',up); item.removeEventListener('pointercancel',up);
+          items.forEach(function(r){ r.style.transform=''; }); item.classList.remove('dragging');
           if(target!==fromIdx){ var it=order.splice(fromIdx,1)[0]; order.splice(target,0,it); lastCheck=null; if(window.RTGSound) RTGSound.place(); }
           render();
         }
-        row.addEventListener('pointermove',mv); row.addEventListener('pointerup',up); row.addEventListener('pointercancel',up);
+        item.addEventListener('pointermove',mv); item.addEventListener('pointerup',up); item.addEventListener('pointercancel',up);
       });
     });
   }
@@ -351,6 +361,7 @@
     var s=load(), today=DATE, y=shiftDay(today,-1);
     if(s.lastDone!==today){ s.streak=(s.lastDone===y)?(s.streak||0)+1:1; s.best=Math.min(s.best||1e9, Math.round(elapsed)); s.solves=(s.solves||0)+1; }
     s.lastDone=today; s.last={ seconds:Math.round(elapsed), checks:checks }; save(s);
+    if(!ARCHIVE && window.RTGHistory) RTGHistory.push('rankit', Math.round(elapsed), true);
     showEnd(s, false);
     if(attemptFirst && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:checks, reveals:0 }).then(function(res){
@@ -371,6 +382,7 @@
     document.getElementById('yourTm').textContent=fmt(sec);
     document.getElementById('yourBest').textContent=fmt(s.best||sec);
     updateAgainBtn();
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'rankit');
     setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst){ confetti(sc===0?120:70, sc===0); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
   }
 
