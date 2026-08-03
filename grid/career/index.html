@@ -295,6 +295,7 @@
     if(!right){ bt.classList.remove('dim'); bt.classList.add('wrong'); document.getElementById('subprompt').textContent='It was '+byId[r.target].name+'.'; }
     if(right){
       run++; document.getElementById('runN').textContent=run; if(window.RTGSound) RTGSound.lock(); idx++;
+      saveResume();
       setTimeout(function(){ busy=false; renderRound(); }, 820);
     } else {
       if(window.RTGSound) RTGSound.wrong();
@@ -313,6 +314,7 @@
     h.textContent='Tap the athlete who took this path.'+lbl; }
   function beginAttempt(){
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
+    if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
     if(isReplay){ seedRandom(); SEQ=buildRounds(); } else { seedDaily(); SEQ=buildRounds(); servedDaily=true; }
     idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
     document.getElementById('runN').textContent='0';
@@ -320,6 +322,21 @@
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
     choicesEl.style.pointerEvents=''; choicesEl.style.opacity='';
     renderRound(); updateHint();
+  }
+  // Resume an interrupted ranked run: rebuild today's deterministic rounds and
+  // fast-forward to the saved position without re-charging a token, replaying
+  // animations or sounds. Rounds before idx are simply skipped — SEQ is
+  // deterministic, so the board is consistent with what was already played.
+  function resumeAttempt(r){
+    seedDaily(); SEQ=buildRounds(); servedDaily=true;
+    idx=Math.max(0, Math.min(SEQ.length, r.idx|0));
+    run=Math.max(0, r.run|0);
+    done=false; busy=false; charged=true; attemptFirst=true; started=true;
+    startTs=performance.now()-Math.max(0, r.elapsed|0)*1000;
+    document.getElementById('runN').textContent=run;
+    var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden');
+    renderRound(); updateHint();
+    toast('Resumed your run');
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
@@ -330,8 +347,18 @@
   function load(){ if(ARCHIVE) return {}; try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
   function save(s){ if(ARCHIVE) return; try{ LS.setItem(SAVE_KEY,JSON.stringify(s)); }catch(e){} }   // archive plays never touch saved progress
 
+  // ---- mid-run reload protection: persist the in-progress RANKED attempt so a
+  // refresh doesn't burn the daily token. Only the first (ranked) play is saved;
+  // archive practice and replays never are.
+  var RESUME_KEY='rtg:resume:career';
+  function loadResume(){ try{ var r=JSON.parse(LS.getItem(RESUME_KEY)); return (r&&typeof r==='object')?r:null; }catch(e){ return null; } }
+  function saveResume(){ if(ARCHIVE||!attemptFirst||done) return;
+    try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), idx:idx, run:run })); }catch(e){} }
+  function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
+
   function finish(){
     if(done) return; done=true;
+    if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
     var s=load(), today=DATE, y=shiftDay(today,-1);
     if(s.lastDone!==today){ s.streak=(s.lastDone===y)?(s.streak||0)+1:1; }
@@ -412,7 +439,13 @@
   // ---- boot ----
   var saved=load(); document.getElementById('streakN').textContent=saved.streak||0;
   if(saved.bestRun){ document.getElementById('bestRun').textContent=saved.bestRun; document.getElementById('yourBest').textContent=saved.bestRun; }
-  if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('career')){
+  // A mid-run snapshot from TODAY, with the token already spent (playsOf>0) but
+  // the run never finished (lastDone!==DATE) → resume instead of lockout/replay.
+  var RES=loadResume();
+  var canResume = !ARCHIVE && RES && RES.d===DATE && saved.lastDone!==DATE && window.RTGTokens && RTGTokens.playsOf(GAME)>0;
+  if(!ARCHIVE && RES && !canResume) clearResume();   // stale or invalid snapshot
+  if(canResume){ resumeAttempt(RES); }
+  else if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('career')){
     done=true; choicesEl.style.pointerEvents='none'; choicesEl.style.opacity='.5';
     document.getElementById('hintline').textContent='No plays left — back tomorrow.';
     if(saved.last){ run=saved.last.run||0; showEnd(saved, true); } else { renderRound(); }
