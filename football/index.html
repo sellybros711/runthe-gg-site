@@ -6083,7 +6083,7 @@ function tradeRulesHTML(cta){
     row('The phones','Four trade windows: before kickoff, then after weeks 3, 6 and 9. '+
       'The last one is the deadline. You can make up to one move per window.')+
     row('The money','Buying an upgrade costs cash and shrinks your cap; selling talent '+
-      'brings cash in and grows it — for the rest of the season. Who you deal with sets '+
+      'brings cash in and grows it for the rest of the season. Who you deal with sets '+
       'the price: rebuilding clubs sell cheap and even cover part of a salary, contenders '+
       'pay up for your stars, most of all at the deadline.')+
     row('The push','Push any offer once for a better deal. They sweeten, or they walk.')+
@@ -6519,7 +6519,7 @@ function openTradeWindow(step,opts){
       rise.innerHTML='<b>$'+cap.overBy.toFixed(1)+'M OVER THE SALARY CAP.</b> '+
         'Payroll <b>$'+payroll.toFixed(1)+'M</b> against a $'+CAP()+'M cap'+
         (risePct>0&&!preseasonWindow?', after the '+risePct+'% raises':'')+
-        (cashOut>0?' — $'+cashOut.toFixed(1)+'M of it went out as cash':'')+'. '+
+        (cashOut>0?' ($'+cashOut.toFixed(1)+'M of it went out as cash)':'')+'. '+
         'Finish here and it costs you <b>'+cap.costs.toFixed(1)+' points</b> of your GM rating. '+
         (deadline?'This is the last window to shed salary.'
           :'Trade someone away for less money to get back under.');
@@ -6545,7 +6545,7 @@ function openTradeWindow(step,opts){
         payroll.toFixed(1)+'M</b>, <b>$'+cap.remaining.toFixed(1)+'M</b> to spend'+
         (deadline?'. Last window to use it.':'.');
     }else{
-      rise.innerHTML='<b>Nobody gets a raise.</b> This payroll only moves when you move it — '+
+      rise.innerHTML='<b>Nobody gets a raise.</b> This payroll only moves when you move it, '+
         'but a deal that upgrades your talent wants cash on top, and that comes off your cap '+
         'for the rest of the season. <b>$'+cap.remaining.toFixed(1)+'M</b> to spend'+
         (deadline?'. Last window to use it.':'.');
@@ -7073,7 +7073,7 @@ function paintCutStep(){
   delete sub.dataset.base;
   sub.innerHTML='Taking <b>'+got+'</b> puts you at '+pool.length+'.'+already+
     ' Release '+(need===1?'one more':need+' more')+' to get back to six'+
-    (legal.length<pool.length?' — only these keep a legal lineup.':'.');
+    (legal.length<pool.length?'. Only these keep a legal lineup.':'.');
   const el=$('cut-list'); el.innerHTML='';
   cutCtx.pool=pool; cutCtx.pick=null;
   $('b-cut-do').disabled=true;
@@ -8759,7 +8759,7 @@ function paintChallengeIntro(t){
   const rating=rb?teamRating(rb.roster,rb.chemistry):null;
   $('ch-title').textContent = t.n ? (t.n+'’s team') : 'Beat this team';
   $('ch-sub').textContent = (t.n?(t.n+' drafted a team. '):'Someone drafted a team. ')+
-    'Build your own six to beat it in the Challenge Bowl — then take your team into a full ranked season.';
+    'Build your own six to beat it in the Challenge Bowl, then take your team into a full ranked season.';
   $('ch-mode').textContent = challengeModeLabel(t);
   const c=$('ch-card'); c.className='verdict'+(rating!=null&&rating>=75?' gold':(rating!=null&&rating>=50?' win':''));
   const draftBtn=$('b-ch-draft');
@@ -8767,7 +8767,7 @@ function paintChallengeIntro(t){
     if(draftBtn) draftBtn.textContent='Draft your team'; }
   else { $('ch-rating').textContent='--';
     $('ch-rost').innerHTML='<p class="dim" style="font-size:12.5px;margin:8px 0 0">This team was built with newer '+
-      'player data than this page has, so it can\u2019t be shown here — you can still play a normal game.</p>';
+      'player data than this page has, so it can\u2019t be shown here. You can still play a normal game.</p>';
     if(draftBtn) draftBtn.textContent='Play a normal game'; }
 }
 
@@ -8916,7 +8916,7 @@ if($('b-bowl-share')) $('b-bowl-share').onclick=()=>{ if(!challengeTeam||!lastBo
   const link=location.origin+location.pathname+'?cr='+b64urlEnc(JSON.stringify(cr));
   const who=(challengeTeam.n||'your friend');
   const text=(lastBowl.youWon?('I beat '+who+' '+lastBowl.shownYou+'–'+lastBowl.shownThem+' in the Challenge Bowl. See it: ')
-    :('The Challenge Bowl vs '+who+' — see how it went: '))+link;
+    :('The Challenge Bowl vs '+who+', see how it went: '))+link;
   ga('challenge_result_shared',{won:lastBowl.youWon}); shareTextFile(text,null,'bowl.png'); };
 if($('b-challenge')) $('b-challenge').onclick=async()=>{
   if(!run||!run.roster||run.roster.length<E.SLOTS.length) return;
