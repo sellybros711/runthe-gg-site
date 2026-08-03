@@ -64,4 +64,16 @@ if (!fonts.anton || !fonts.graduate || !fonts.inter) {
 
 await page.screenshot({ path: 'cfb/og.png', type: 'png' });
 console.log('wrote cfb/og.png');
+
+/* The challenge card: the same art with the dare on it, for /cfb/c/ links.
+   Text is swapped in place so the two cards can never drift apart in style. */
+await page.evaluate(() => {
+  const eb = document.querySelector('.eyebrow');
+  if (eb) eb.innerHTML = 'A friend drafted a team &middot; <b>Beat it</b>';
+  const h1 = document.querySelector('h1');
+  if (h1) h1.innerHTML = '<span>You’ve been</span><span class="two">Challenged</span>';
+});
+await page.waitForTimeout(150);
+await page.screenshot({ path: 'cfb/og-challenge.png', type: 'png' });
+console.log('wrote cfb/og-challenge.png');
 await browser.close();

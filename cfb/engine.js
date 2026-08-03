@@ -1269,6 +1269,51 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
   return { won, yourScore, oppScore, defenseModifier };
 }
 
+/* ─── the Challenge Bowl ──────────────────────────────────────────────────────
+ * Two DRAFTED rosters against each other, which resolveGame cannot do: its
+ * opponent is a real team season with a defence, and here both sides live in
+ * fantasy space. Same shape as the NFL game's resolver.
+ *
+ * A single game is naturally a coin flip, which would reward luck over
+ * roster-building, so the Bowl damps variance harder than a regular game via a
+ * stronger consistency blend: the better-built roster wins the large majority
+ * of the time, with upsets still possible for drama.
+ *
+ * Scoring is in a FIXED order (a then b) so the result is identical for
+ * everyone who recomputes it from the same seed: the challenger, the friend,
+ * and anyone they show it to. Callers always pass a = challenger, b = friend;
+ * the UI decides which side is labelled "you". */
+const BOWL_CONSISTENCY = 0.62;
+
+function teamOffense(roster, chemistryMultiplier, rng, consistency) {
+  let raw = 0;
+  for (const p of roster) raw += sampleGamma(p.ppr_ppg_mean, p.ppr_ppg_sd, rng);
+  const C = consistency || 0;
+  if (C > 0) {
+    const expected = roster.reduce((s, p) => s + p.ppr_ppg_mean, 0);
+    raw = raw * (1 - C) + expected * C;
+  }
+  return raw * chemistryMultiplier * rosterStructure(roster).multiplier;
+}
+
+function resolveHeadToHead(a, b, rng, cal, constants = CONSTANTS) {
+  const C = constants.BOWL_CONSISTENCY ?? BOWL_CONSISTENCY;
+  const aPts = teamOffense(a.roster, a.chemistry ?? 1, rng, C);
+  const bPts = teamOffense(b.roster, b.chemistry ?? 1, rng, C);
+  let aWon;
+  if (aPts > bPts) aWon = true;
+  else if (aPts < bPts) aWon = false;
+  else aWon = rng() < 0.5;
+  const shown = cal ? toFootballScore(aPts, bPts, aWon, rng, cal) : null;
+  return {
+    aPts: Math.round(aPts * 10) / 10,
+    bPts: Math.round(bPts * 10) / 10,
+    aWon,
+    shownA: shown ? shown.you : null,
+    shownB: shown ? shown.them : null,
+  };
+}
+
 // ─── display scores ─────────────────────────────────────────────────────────
 
 function percentileIn(table, v) {
@@ -1508,7 +1553,7 @@ const publicAPI = {
   hashSeed, createSeededRNG, sampleGamma,
   pairLinks, resolveChemistry,
   generateSchedule, generatePlayoffs, generateBowlOpponent,
-  resolveGame, playRun, playBowlGame, prepareData, toFootballScore,
+  resolveGame, resolveHeadToHead, playRun, playBowlGame, prepareData, toFootballScore,
   playoffOpponent, playoffRoundNames,
   resumeScore, nationalRank, rankSeason, seedFromRanking, seedAdvantage,
   teamRating, teamOverall, titleEdge, roundEdge,
