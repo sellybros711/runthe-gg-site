@@ -1724,7 +1724,14 @@ function findOffers(run, data, ctx, outIdxs) {
     /* THE CASH IS PART OF WHAT THE DEAL COSTS. It comes off the ceiling, so a deal only fits
        if the payroll clears the cap the deal itself would leave you with -- otherwise the
        market could offer an upgrade that puts you over the moment you took it. */
-    let gain = inValue - c.outValue - lightestFppg;
+    /* EXACTLY buildOffer's arithmetic, rounding for rounding: the in-minus-out is rounded
+       to a tenth BEFORE the release comes off, because that is how fieldGain is built.
+       Computed as one expression here, the two could land a twentieth apart, and cashFor
+       steps in half-millions -- so once in ~5,800 boards the card quoted $0.5M more cash
+       than this check cleared, and the accepted deal finished $0.2M over the cap. "The
+       market never puts you over" is a promise, not a percentile. */
+    let gain = Math.round((inValue - c.outValue) * 10) / 10;
+    gain -= lightestFppg;
     if (held.length < slots.length) gain += FA_TYPICAL_FPPG * (slots.length - held.length);
     const cash = cashFor(run, Math.round(gain * 10) / 10);
     return c.keepSalary + inSalary - freed + reserve <= CAP - cash;
@@ -1879,10 +1886,16 @@ function findOffers(run, data, ctx, outIdxs) {
     const idxs = [idx, asked.i].sort((a, b) => a - b);
     /* Two back at a premium, or three back priced against the pair plus your weakest.
        Contenders first: the club that opens the conversation about your star is the club
-       one man short of a ring. */
+       one man short of a ring.
+
+       The premium is real but MODEST, and the tops here were retuned off a bot that
+       accepted nothing but counter-asks: at 1.30/1.15 it out-scored diligent honest play
+       by ten GM points, which is a meta, not a flavour. At these tops the ask is still
+       usually the best card on its board -- that is the point of being courted -- but a
+       season of only saying yes to the phone no longer beats a season of reading. */
     const before = offers.length;
-    bundle(idxs, 2, 1.00, 1.30, 'out', null, 1, 'contender');
-    if (rng() < 0.5) bundle(idxs, 3, 0.90, 1.15, 'out+1', null, 1, 'contender');
+    bundle(idxs, 2, 1.00, 1.16, 'out', null, 1, 'contender');
+    if (rng() < 0.5) bundle(idxs, 3, 0.90, 1.06, 'out+1', null, 1, 'contender');
     /* Tagged as its own shape, not as another bundle. chooseBoard fills one seat per shape,
        so sharing the 'bundle' tag made the counter-ask compete with ordinary multi-player
        returns for the same seat and it reached only 3% of cards. It is a distinct

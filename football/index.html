@@ -3916,7 +3916,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=42"></script>
-<script src="run.js?v=58"></script>
+<script src="run.js?v=59"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -7841,9 +7841,21 @@ function paintOver(){
   const bigcell=(k,v,pctFill,color)=>'<div><div class="k">'+k+'</div>'+
     '<div class="v" style="color:'+color+'">'+v+'</div>'+
     '<div class="t"><i style="width:'+pctFill+'%;background:'+color+'"></i></div></div>';
+  /* THE SECOND TILE IS THE MODE'S OWN HEADLINE. In the draft modes that is "Best
+     possible" -- how close you came to the strongest team your spins allowed. A GM run
+     did not come from spins: it came from a deliberately mediocre hand and a season of
+     trades, so grading its final six against a draft-day optimum measures a bar nobody
+     set. The GM's second number is IMPROVEMENT, start rating to final, the same +25 the
+     report gives full marks for. No optimiser behind it, so it paints immediately. */
+  const impCell=()=>{
+    const g=rating-(run.startRating||rating);
+    const gc=g>=18.75?'#22c55e':(g>=11.25?'#fbbf24':'#ef4444');
+    return bigcell('Improvement',(g>=0?'+':'')+g.toFixed(1),
+      Math.max(2,Math.min(100,g/25*100)),gc);
+  };
   $('o-ovr').innerHTML=
     bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
-    bigcell('Best possible','…',0,'#94a3b8');
+    (run.tradeMachine?impCell():bigcell('Best possible','…',0,'#94a3b8'));
 
   /* THE STRIP. Top row is what the roster cost you and where it finished; bottom row
      is where the run placed, and each of those three opens the board on that window
@@ -7939,8 +7951,8 @@ function paintOver(){
     const sband=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
     $('o-ovr').innerHTML=
       bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
-      bigcell('Best possible',share===null?'--':share+'%',
-        share===null?0:Math.max(2,share),share===null?'#94a3b8':sband);
+      (run.tradeMachine?impCell():bigcell('Best possible',share===null?'--':share+'%',
+        share===null?0:Math.max(2,share),share===null?'#94a3b8':sband));
     if(!best){ $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>'; }
     else{
       const band=share>=90?'pgood':(share>=70?'pmid':'pbad');
