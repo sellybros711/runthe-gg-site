@@ -117,6 +117,16 @@
     const awardsOf = (p) => (Array.isArray(p.awards) ? p.awards : []);
     const badgesOf = (p) => (Array.isArray(p.badges) ? p.badges : []);
 
+    /* Everyone ever signed, across every season, for the collection badges.
+       Built once here because three tests reading it is three walks otherwise. */
+    const careerSchools = new Set(), careerStates = new Set();
+    for (const x of runs) {
+      for (const p of x.roster) {
+        if (p.school) careerSchools.add(p.school);
+        if (p.home_state) careerStates.add(p.home_state);
+      }
+    }
+
     return {
       rows: asc,
       runs,
@@ -138,6 +148,8 @@
       count: (fn) => asc.filter(fn).length,
       anyRoster: (fn) => runs.some((x) => x.roster.length > 0 && fn(x.roster, x.row)),
       countRoster: (fn) => runs.filter((x) => x.roster.length > 0 && fn(x.roster, x.row)).length,
+      careerSchools,
+      careerStates,
       awardsOf,
       badgesOf,
       has, isTrue, num,
@@ -190,6 +202,56 @@
       'silver', 'Winning',
       (c) => c.any((r) => has(r.national_rank) && !isTrue(r.made_playoffs)
         && Number(r.national_rank) >= 13 && Number(r.national_rank) <= 14)),
+    A('title_10', 'Blue blood', 'Win 10 national championships.', 'gold', 'Winning',
+      (c) => c.titles.length >= 10),
+    A('perfect_5', 'Era of fear', 'Put together five perfect seasons.', 'legend', 'Winning',
+      (c) => c.count((r) => isTrue(r.perfect)) >= 5),
+    A('playoff_10', 'Fixture in the field', 'Make the playoff 10 times.', 'silver', 'Winning',
+      (c) => c.count((r) => isTrue(r.made_playoffs)) >= 10),
+    A('playoff_25', 'Playoff mainstay', 'Make the playoff 25 times.', 'gold', 'Winning',
+      (c) => c.count((r) => isTrue(r.made_playoffs)) >= 25),
+    A('reg_perfect', 'Won out', 'Finish the regular season 12-0.', 'silver', 'Winning',
+      (c) => c.any((r) => has(r.reg_losses) && Number(r.reg_losses) === 0)),
+    A('seed_one', 'The favorite', 'Enter the playoff as the No. 1 seed.', 'silver', 'Winning',
+      (c) => c.any((r) => isTrue(r.made_playoffs) && has(r.seed) && Number(r.seed) === 1)),
+    A('seed_12_ring', 'Last team in', 'Win the title as the No. 12 seed.', 'legend', 'Winning',
+      (c) => c.any((r) => isTrue(r.title_won) && has(r.seed) && Number(r.seed) === 12)),
+
+    /* --- bowl season ---
+       The tier rides on every row; WHICH bowl is only on rows written locally,
+       because the board does not record the name. A named-bowl badge therefore
+       lights from seasons played on this device, which the has() guard makes an
+       honest "not known" rather than a wrong "no" for older rows. */
+    A('bowl_ny6_win', 'New Year\'s kings', 'Win a New Year\'s Six bowl.', 'gold', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_tier === 'ny6')),
+    A('bowl_major_win', 'January hardware', 'Win a major bowl.', 'silver', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_tier === 'major')),
+    A('bowl_minor_win', 'Any given December', 'Win a minor bowl.', 'bronze', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_tier === 'minor')),
+    A('bowl_rose', 'The Granddaddy', 'Win the Rose Bowl.', 'gold', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_key === 'rose_bowl')),
+    A('bowl_sugar', 'Sweet finish', 'Win the Sugar Bowl.', 'gold', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_key === 'sugar_bowl')),
+    A('bowl_orange', 'Orange crush', 'Win the Orange Bowl.', 'gold', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_key === 'orange_bowl')),
+    A('bowl_cotton', 'King Cotton', 'Win the Cotton Bowl.', 'gold', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_key === 'cotton_bowl')),
+    A('bowl_fiesta', 'Desert crown', 'Win the Fiesta Bowl.', 'gold', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_key === 'fiesta_bowl')),
+    A('bowl_peach', 'Peach state', 'Win the Peach Bowl.', 'gold', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_key === 'peach_bowl')),
+    A('ny6_sweep', 'The full six', 'Win all six New Year\'s Six bowls across your seasons.',
+      'legend', 'Bowls',
+      (c) => new Set(c.rows.filter((r) => isTrue(r.bowl_won) && r.bowl_tier === 'ny6'
+        && r.bowl_key && r.bowl_key !== 'runthegg').map((r) => r.bowl_key)).size >= 6),
+    A('house_bowl', 'House invitation', 'Play in the RunThe.GG Bowl.', 'gold', 'Bowls',
+      (c) => c.any((r) => r.bowl_key === 'runthegg')),
+    A('house_bowl_win', 'House money', 'Win the RunThe.GG Bowl.', 'legend', 'Bowls',
+      (c) => c.any((r) => isTrue(r.bowl_won) && r.bowl_key === 'runthegg')),
+    A('bowl_wins_5', 'Trophy shelf', 'Win 5 bowl games.', 'silver', 'Bowls',
+      (c) => c.count((r) => isTrue(r.bowl_won)) >= 5),
+    A('bowl_wins_15', 'Bowl dynasty', 'Win 15 bowl games.', 'gold', 'Bowls',
+      (c) => c.count((r) => isTrue(r.bowl_won)) >= 15),
 
     /* --- the poll --- */
     A('ranked_first', 'Ranked', 'Finish a season inside the top 25.', 'bronze', 'The poll',
@@ -204,6 +266,33 @@
       (c) => c.any((r) => has(r.best_win_rank) && Number(r.best_win_rank) <= 5)),
     A('conf_champ', 'Playoff bound', 'Reach the College Football Playoff.', 'silver', 'The poll',
       (c) => c.any((r) => isTrue(r.made_playoffs))),
+    A('rank_top10', 'Top ten finish', 'Finish a season ranked in the top ten.', 'silver', 'The poll',
+      (c) => c.any((r) => has(r.national_rank) && Number(r.national_rank) <= 10)),
+    A('sig_6', 'Murderers\' row', 'Beat six ranked teams in one season.', 'legend', 'The poll',
+      (c) => c.any((r) => has(r.sig_wins) && Number(r.sig_wins) >= 6)),
+    A('giant_no1', 'Kingslayer', 'Beat the No. 1 team in the country.', 'legend', 'The poll',
+      (c) => c.any((r) => has(r.best_win_rank) && Number(r.best_win_rank) === 1)),
+
+    /* --- the conferences ---
+       run_mode is 'free' or 'conf:SEC' and so on, the same string the board
+       stores, so these light whether the rows are local or the account's. */
+    A('conf_season', 'League play', 'Finish a conference draft season.', 'bronze', 'The conferences',
+      (c) => c.any((r) => /^conf:/.test(String(r.run_mode || '')))),
+    A('conf_title', 'League and country', 'Win the title in a conference draft.', 'gold', 'The conferences',
+      (c) => c.any((r) => isTrue(r.title_won) && /^conf:/.test(String(r.run_mode || '')))),
+    A('conf_sec', 'SEC crown', 'Win the title in an SEC draft.', 'gold', 'The conferences',
+      (c) => c.any((r) => isTrue(r.title_won) && r.run_mode === 'conf:SEC')),
+    A('conf_bigten', 'Big Ten crown', 'Win the title in a Big Ten draft.', 'gold', 'The conferences',
+      (c) => c.any((r) => isTrue(r.title_won) && r.run_mode === 'conf:Big Ten')),
+    A('conf_big12', 'Big 12 crown', 'Win the title in a Big 12 draft.', 'gold', 'The conferences',
+      (c) => c.any((r) => isTrue(r.title_won) && r.run_mode === 'conf:Big 12')),
+    A('conf_acc', 'ACC crown', 'Win the title in an ACC draft.', 'gold', 'The conferences',
+      (c) => c.any((r) => isTrue(r.title_won) && r.run_mode === 'conf:ACC')),
+    A('conf_pac12', 'Pac-12 crown', 'Win the title in a Pac-12 draft.', 'gold', 'The conferences',
+      (c) => c.any((r) => isTrue(r.title_won) && r.run_mode === 'conf:Pac-12')),
+    A('conf_grand', 'Every league', 'Win the title in all five conference drafts.', 'legend', 'The conferences',
+      (c) => new Set(c.rows.filter((r) => isTrue(r.title_won) && /^conf:/.test(String(r.run_mode || '')))
+        .map((r) => r.run_mode)).size >= 5),
 
     /* --- roster craft --- */
     /* THE IDS NO LONGER CARRY THE NUMBER. These two thresholds have moved twice
@@ -242,6 +331,14 @@
     A('all_respin_ring', 'Worth every penny', 'Win the title after using every re-spin.',
       'gold', 'Roster craft',
       (c) => c.any((r) => isTrue(r.title_won) && has(r.respins) && Number(r.respins) >= 3)),
+    A('no_chem_playoff', 'Six strangers', 'Make the playoff with zero chemistry.',
+      'silver', 'Roster craft',
+      (c) => c.any((r) => isTrue(r.made_playoffs) && has(r.chemistry_pct) && Number(r.chemistry_pct) === 0)),
+    A('splash', 'Splash signing', 'Sign a player who cost $4M or more.', 'bronze', 'Roster craft',
+      (c) => c.anyRoster((ros) => ros.some((p) => Number(p.price_musd) >= 4))),
+    A('bargain_six', 'Bargain bin', 'Field six players who each cost $1.5M or less.',
+      'silver', 'Roster craft',
+      (c) => c.anyRoster((ros) => ros.every((p) => Number(p.price_musd) <= 1.5))),
 
     /* --- who you signed, read off the six players themselves --- */
     A('heisman', 'Heisman winner', 'Sign a Heisman Trophy winner.', 'gold', 'The roster',
@@ -282,6 +379,34 @@
       })),
     A('founding_class', 'Founding class', 'Sign a player from the 2005 season.', 'bronze', 'The roster',
       (c) => c.anyRoster((ros) => ros.some((p) => Number(p.season) === 2005))),
+    A('heisman_ring', 'Heisman house', 'Win the title with a Heisman winner on the roster.',
+      'gold', 'The roster',
+      (c) => c.anyRoster((ros, row) => isTrue(row.title_won)
+        && ros.some((p) => c.awardsOf(p).some((a) => /heisman/i.test(a))))),
+    A('one_conference', 'League loyal', 'Field six players all from one conference.',
+      'silver', 'The roster',
+      (c) => c.anyRoster((ros) => {
+        const cf = ros.map((p) => p.conference).filter(Boolean);
+        return cf.length === ros.length && new Set(cf).size === 1;
+      })),
+    A('five_conferences', 'Coast to coast', 'Field players from five different conferences at once.',
+      'gold', 'The roster',
+      (c) => c.anyRoster((ros) => new Set(ros.map((p) => p.conference).filter(Boolean)).size >= 5)),
+    A('decade_2000s', 'Mid-2000s mixtape', 'Field six players all from the 2000s.',
+      'silver', 'The roster',
+      (c) => c.anyRoster((ros) => ros.every((p) => decadeOf(p.season) === 2000))),
+    A('decade_2010s', 'The 2010s squad', 'Field six players all from the 2010s.',
+      'silver', 'The roster',
+      (c) => c.anyRoster((ros) => ros.every((p) => decadeOf(p.season) === 2010))),
+    A('decade_2020s', 'Modern era', 'Field six players all from the 2020s.',
+      'silver', 'The roster',
+      (c) => c.anyRoster((ros) => ros.every((p) => decadeOf(p.season) === 2020))),
+    A('schools_25', 'Recruiting footprint', 'Sign players from 25 different schools across your seasons.',
+      'silver', 'The roster', (c) => c.careerSchools.size >= 25),
+    A('schools_75', 'Everywhere man', 'Sign players from 75 different schools across your seasons.',
+      'gold', 'The roster', (c) => c.careerSchools.size >= 75),
+    A('states_20', 'All-American map', 'Sign players from 20 different home states across your seasons.',
+      'gold', 'The roster', (c) => c.careerStates.size >= 20),
 
     /* --- streaks --- */
     A('streak_3', 'Getting into it', 'Play on 3 days in a row.', 'bronze', 'Streaks',
@@ -294,10 +419,22 @@
       (c) => c.title.best >= 2),
     A('three_peat', 'Three-peat', 'Win the title in three straight seasons.', 'legend', 'Streaks',
       (c) => c.title.best >= 3),
+    A('streak_14', 'A fortnight', 'Play on 14 days in a row.', 'gold', 'Streaks',
+      (c) => c.play.best >= 14),
+    A('triple_day', 'Triple header', 'Finish three seasons in one day.', 'bronze', 'Streaks',
+      (c) => {
+        const per = Object.create(null);
+        for (const r of c.rows) {
+          const k = r.created_at ? dayKey(r.created_at) : null;
+          if (k && (per[k] = (per[k] || 0) + 1) >= 3) return true;
+        }
+        return false;
+      }),
   ];
 
   const TIER_ORDER = { bronze: 0, silver: 1, gold: 2, legend: 3 };
-  const GROUPS = ['Milestones', 'Winning', 'The poll', 'Roster craft', 'The roster', 'Streaks'];
+  const GROUPS = ['Milestones', 'Winning', 'Bowls', 'The poll', 'The conferences',
+    'Roster craft', 'The roster', 'Streaks'];
 
   /*
    * Evaluate the whole catalogue. A test that throws counts as not earned rather than

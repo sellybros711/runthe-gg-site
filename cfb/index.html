@@ -2338,7 +2338,7 @@ or endorsed by the NCAA, the CFP or any school.
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="engine.js?v=15"></script>
 <script src="run.js?v=8"></script>
-<script src="achievements.js?v=6"></script>
+<script src="achievements.js?v=7"></script>
 <script src="auth.js?v=1"></script>
 <script src="board.js?v=1"></script>
 <script>
@@ -3237,6 +3237,13 @@ function rowFromBoard(r){
     title_won:r.title_won, perfect:r.perfect, made_playoffs:r.made_playoffs,
     seed:r.playoff_seed, national_rank:r.national_rank, eliminated_in:r.eliminated_in,
     bowl:!!r.bowl, bowl_won:r.bowl_won,
+    /* The server stores the tier as 'ny6' | 'bowl' | 'minor' and the game says
+       'major' for the middle one. WHICH bowl inside the tier is not stored at
+       all, so bowl_key stays null here and the named-bowl badges read local
+       rows only until the board learns the column. */
+    bowl_tier:r.bowl==='bowl'?'major':(r.bowl||null),
+    bowl_key:null, bowl_name:null,
+    run_mode:r.run_mode||null,
     chemistry_pct:r.chemistry_pct==null?null:Number(r.chemistry_pct),
     spend_musd:r.spend_musd==null?null:Number(r.spend_musd),
     overall:r.overall==null?null:Number(r.overall),
@@ -5329,6 +5336,10 @@ function paintOver(){
       title_won:!!o.titleWon, perfect:!!o.perfect, made_playoffs:!!o.madePlayoffs,
       seed:o.seed||null, national_rank:finalRank||null, eliminated_in:o.eliminatedIn||null,
       bowl:!!o.bowlGame, bowl_won:!!o.bowlWon,
+      bowl_tier:o.bowlInfo?o.bowlInfo.tier:null,
+      bowl_key:o.bowlInfo?o.bowlInfo.key:null,
+      bowl_name:o.bowlInfo?o.bowlInfo.name:null,
+      run_mode:runMode(run),
       chemistry_pct:Math.round((run.season.chemistry-1)*1000)/10,
       spend_musd:Math.round(spendUsed*100)/100,
       overall:Math.round(overall*10)/10,
