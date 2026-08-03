@@ -10443,8 +10443,12 @@ async function showMyRowOnBoard(){
      opened and scrolled underneath a full-screen sheet: the one thing they asked to see,
      behind the thing they used to ask for it. */
   closeSheet();
-  lbClub=(run&&run.franchise)||null;
-  lbWin='day'; lbSort='record'; lbDir='desc';
+  /* The board this run is actually on, then the axis that board leads with. Setting the club
+     alone used to send a Trade Machine season to the free board sorted by record: a table it
+     has no row in, on an axis the mode is not scored on, when the whole point of this path is
+     to show the player their own row. */
+  boardFromRun();
+  lbWin='day'; lbSort=defaultSort(); lbDir='desc';
   show('s-board');
   await loadBoard();
   /* Your actual row, which the 500-row list will hold unless five hundred people beat
@@ -10955,14 +10959,28 @@ const SORT_META={
 
 /* Coming off a run, open the board that run is actually on. Landing a One Franchise Dolphins
    player on the free board would show them a table they are not in. */
+/* WHICH BOARD A RUN IS ON. Extracted because more than one entry point has to answer this
+   and only one of them used to: "show my row" set the club and left the trade flag alone, so
+   a Trade Machine season could open the FREE board, where it has no row to show.
+
+   Gated the same way as everything else: somebody who has just played the mode can
+   necessarily play it, so this cannot show a board the viewer is not entitled to. */
+function boardFromRun(){
+  if(!run||!run.outcome) return;
+  lbTrade=!!(run.tradeMachine&&canPlayTrade());
+  lbEra=lbTrade?null:(run.era||null);
+  lbClub=(lbTrade||lbEra)?null:(run.franchise||null);
+}
+
+/* THE AXIS A BOARD LEADS WITH. The Trade Machine is scored on the GM rating, so that is the
+   tab its board opens on; record and team rating both mostly describe the roster you were
+   handed, while the GM rating is the season's work. Every other competition leads with the
+   record. */
+function defaultSort(){ return lbTrade?'gm':'record'; }
+
 function openBoard(){
   if(run&&run.outcome){
-    /* A Trade Machine season is on the trade board, so that is the one to open. Gated the
-       same way as everything else: somebody who has just played the mode can necessarily
-       play it, so this cannot show a board the viewer is not entitled to. */
-    lbTrade=!!(run.tradeMachine&&canPlayTrade());
-    lbEra=lbTrade?null:(run.era||null);
-    lbClub=(lbTrade||lbEra)?null:(run.franchise||null);
+    boardFromRun();
     if(lbTrade) lbSort='gm'; else if(lbSort==='gm') lbSort='rating';
   }
   tradeBoardOff();
