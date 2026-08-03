@@ -221,7 +221,7 @@
   'use strict';
   var ENT = window.GRID_ENTITIES || [];
   var LS = window.localStorage;
-  var SAVE_KEY='rtg:table:v1', GAME='table', ROUNDS=40, GAP=2;
+  var SAVE_KEY='rtg:table:v1', GAME='table', ROUNDS=40;
   var TEAM_SPORTS={NBA:1,NFL:1,MLB:1,NHL:1,Soccer:1,WNBA:1};
 
   function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -255,8 +255,8 @@
       var n=out.length;
       var maxGap = n<8 ? 99 : n<16 ? 45 : n<24 ? 28 : n<32 ? 16 : 9;
       if(d>maxGap) continue;
-      if(last && (a.id===last||b.id===last)) continue;
-      out.push([a,b]); last=b.id;
+      if(last && (a.id===last[0]||a.id===last[1]||b.id===last[0]||b.id===last[1])) continue;
+      out.push([a,b]); last=[a.id,b.id];
     }
     return out;
   }
@@ -335,7 +335,7 @@
     save(s);
     if(!ARCHIVE && window.RTGHistory) RTGHistory.push(GAME, run, true);
     showEnd(s, false);
-    if(run>0 && attemptFirst && window.RTG_BOARD){
+    if(run>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:run }).then(function(res){
         if(res&&res.streak){ document.getElementById('streakN').textContent=res.streak; document.getElementById('mStreak').textContent=res.streak; }
         renderRealBoard();

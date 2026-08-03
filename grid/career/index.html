@@ -233,10 +233,10 @@
   var bySport={}; ENT.forEach(function(e){ if(TEAM_SPORTS[e.sport]&&(e.f||0)>=3){ (bySport[e.sport]=bySport[e.sport]||[]).push(e); } });
 
   function buildRounds(){
-    var out=[], guard=0, last=null;
+    var out=[], guard=0, seen={};
     while(out.length<ROUNDS && guard<8000){ guard++;
       var t=POOL[ri(POOL.length)];
-      if(t.id===last) continue;
+      if(seen[t.id]) continue;   // each athlete stars at most once per day
       var tpath=(t.t||[]).join('>');
       var tteams=(t.t||[]);
       // distractors: same sport, and NOT the same exact team path (no second correct answer)
@@ -250,7 +250,7 @@
       shuffle(overlap).forEach(function(e){ if(distract.length<3 && !pickIds[e.id]){ pickIds[e.id]=1; distract.push(e); } });
       if(distract.length<3){ shuffle(others).forEach(function(e){ if(distract.length<3 && !pickIds[e.id]){ pickIds[e.id]=1; distract.push(e); } }); }
       var opts=shuffle([t].concat(distract)).map(function(e){ return e.id; });
-      out.push({ target:t.id, opts:opts }); last=t.id;
+      out.push({ target:t.id, opts:opts }); seen[t.id]=1;
     }
     return out;
   }

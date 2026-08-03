@@ -246,8 +246,9 @@
   }
   var DAY=buildDay();
   var ANSWER=DAY.answer;                          // correct order (earliest -> latest)
+  function isSolved(o){ return o.map(function(e){return e.id;}).join()===ANSWER.map(function(e){return e.id;}).join(); }
   var order=shuffle(ANSWER);                      // current arrangement
-  if(order.map(function(e){return e.id;}).join()===ANSWER.map(function(e){return e.id;}).join()) order=shuffle(ANSWER);
+  for(var sg=0; sg<20 && isSolved(order); sg++) order=shuffle(ANSWER);   // never start pre-solved
 
   var checks=0, done=false, started=false, startTs=0, elapsed=0, lastCheck=null, charged=false, attemptFirst=false;
   var rowsEl=document.getElementById('rows');
@@ -340,7 +341,7 @@
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay){ seedRandom(); DAY=buildDay(); ANSWER=DAY.answer; } else { seedDaily(); DAY=buildDay(); ANSWER=DAY.answer; servedDaily=true; }
     order=shuffle(ANSWER);
-    if(order.map(function(e){return e.id;}).join()===ANSWER.map(function(e){return e.id;}).join()) order=shuffle(ANSWER);
+    for(var sg2=0; sg2<20 && isSolved(order); sg2++) order=shuffle(ANSWER);   // never start pre-solved
     checks=0; done=false; started=false; startTs=0; elapsed=0; lastCheck=null; charged=false; attemptFirst=false;
     document.getElementById('checkInfo').textContent='';
     document.getElementById('checkBtn').disabled=false;
@@ -363,7 +364,7 @@
     s.lastDone=today; s.last={ seconds:Math.round(elapsed), checks:checks }; save(s);
     if(!ARCHIVE && window.RTGHistory) RTGHistory.push('rankit', Math.round(elapsed), true);
     showEnd(s, false);
-    if(attemptFirst && window.RTG_BOARD){
+    if(attemptFirst && !ARCHIVE && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:checks, reveals:0 }).then(function(res){
         if(res&&res.streak){ document.getElementById('streakN').textContent=res.streak; document.getElementById('mStreak').textContent=res.streak; }
         renderRealBoard();

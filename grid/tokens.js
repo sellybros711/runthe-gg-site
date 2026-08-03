@@ -1,20 +1,19 @@
 /* RunTheGrid — daily play economy (shared)
- * FREE tier: 10 plays/day = 1 play per game (8 games) + 2 shared bonus plays.
- *   - Each game's first play is its ranked daily attempt.
- *   - Extra plays on any game draw from a shared pool of 2 bonus plays.
- *   - Resets at local midnight.
- * PRO tier (future, paid): unlimited plays + past-day challenges.
- *   - Toggled by localStorage 'runthegrid_pro' === '1' (hook reserved; billing later).
+ * FREE tier: ONE ranked play per game per day (8 games = 8 plays), resetting
+ *   at local midnight. That first play is the day's leaderboard attempt.
+ * PRO tier (subscription): unlimited plays + the full past-day archive.
+ *   - Entitlement flag: localStorage 'runthegrid_pro' === '1'. board.js syncs
+ *     it from the server for signed-in subscribers; the archive page's
+ *     preview unlock can also set it during rollout.
  * Fail-safe: pure localStorage, no network. window.RTGTokens.
  */
 (function(){
   'use strict';
   var LS = window.localStorage;
-  var KEY = 'runthegrid_tokens_v2';
+  var KEY = 'runthegrid_tokens_v3';
   var GAMES = ['table','match','career','oddone','rankit','guess','crossword','wordsearch'];
-  var PER_GAME = 1;     // ranked play per game
-  var BONUS = 2;        // shared wildcard plays
-  var DAILY = GAMES.length*PER_GAME + BONUS;   // = 10
+  var PER_GAME = 1;                       // ranked play per game per day
+  var DAILY = GAMES.length*PER_GAME;      // = 8
 
   function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function isPro(){ try{ return LS.getItem('runthegrid_pro')==='1'; }catch(e){ return false; } }
@@ -24,58 +23,45 @@
     var s;
     try{ s=JSON.parse(LS.getItem(KEY)); }catch(e){ s=null; }
     if(!s || typeof s!=='object') s=fresh();
-    if(s.date!==todayStr()) s=fresh();           // new day → full refill
+    if(s.date!==todayStr()) s=fresh();           // new day → refill
     if(!s.plays || typeof s.plays!=='object') s.plays={};
     return s;
   }
   function write(s){ try{ LS.setItem(KEY, JSON.stringify(s)); }catch(e){} return s; }
 
   function totalPlays(s){ var n=0; for(var k in s.plays){ if(s.plays.hasOwnProperty(k)) n+=s.plays[k]||0; } return n; }
-  function bonusUsed(s){ var n=0; for(var k in s.plays){ if(s.plays.hasOwnProperty(k)) n+=Math.max(0,(s.plays[k]||0)-PER_GAME); } return n; }
-  function bonusLeft(s){ return Math.max(0, BONUS - bonusUsed(s)); }
   function playsOf(game){ return read().plays[game]||0; }
-
-  function remaining(){ if(isPro()) return Infinity; var s=read(); return Math.max(0, DAILY - totalPlays(s)); }
-  function bonusRemaining(){ if(isPro()) return Infinity; return bonusLeft(read()); }
-
-  function triesLeft(game){
-    if(isPro()) return Infinity;
-    var s=read();
-    var reg = (s.plays[game]?0:PER_GAME);        // own ranked play, if unused
-    return reg + bonusLeft(s);
-  }
+  function remaining(){ if(isPro()) return Infinity; return Math.max(0, DAILY - Math.min(DAILY, totalPlays(read()))); }
+  function triesLeft(game){ if(isPro()) return Infinity; return Math.max(0, PER_GAME - playsOf(game)); }
   function canPlay(game){ return triesLeft(game)>0; }
 
-  // Spend one play for `game`. Returns
-  // { ok, tryNo, first, bonus, left } — first=true on the ranked attempt.
+  // Spend the day's play for `game`. { ok, tryNo, first, bonus, left } —
+  // first=true marks the ranked attempt (pro replays are practice).
   function startAttempt(game){
-    if(isPro()){ var sp=read(); sp.plays[game]=(sp.plays[game]||0)+1; write(sp);
-      return { ok:true, tryNo:sp.plays[game], first:(sp.plays[game]===1), bonus:(sp.plays[game]>PER_GAME), left:Infinity }; }
-    if(triesLeft(game)<=0) return { ok:false, tryNo:0, first:false, bonus:false, left:0 };
     var s=read(), before=s.plays[game]||0;
-    var bonus = (before>=PER_GAME);
+    if(isPro()){
+      s.plays[game]=before+1; write(s);
+      return { ok:true, tryNo:before+1, first:(before===0), bonus:(before>0), left:Infinity };
+    }
+    if(before>=PER_GAME) return { ok:false, tryNo:before, first:false, bonus:false, left:0 };
     s.plays[game]=before+1; write(s);
-    return { ok:true, tryNo:s.plays[game], first:(before===0), bonus:bonus, left:triesLeft(game) };
+    return { ok:true, tryNo:before+1, first:(before===0), bonus:false, left:0 };
   }
 
   window.RTGTokens = {
-    DAILY:DAILY, PER_GAME:PER_GAME, BONUS:BONUS, GAMES:GAMES.slice(),
+    DAILY:DAILY, PER_GAME:PER_GAME, BONUS:0, GAMES:GAMES.slice(),
     today:todayStr,
     isPro:isPro,
     remaining:remaining,
-    bonusRemaining:bonusRemaining,
+    bonusRemaining:function(){ return isPro()?Infinity:0; },
     playsOf:playsOf,
     triesLeft:triesLeft,
     canPlay:canPlay,
     startAttempt:startAttempt,
-    /* short label for buttons/tiles */
+    /* short label for hints/tiles */
     label:function(game){
-      if(isPro()) return 'Unlimited';
-      var n=triesLeft(game);
-      if(n<=0) return 'No plays left';
-      var played=playsOf(game)>0;
-      if(played) return bonusRemaining()+' bonus left';
-      return bonusRemaining()>0 ? ('1 play + '+bonusRemaining()+' bonus') : '1 play';
+      if(isPro()) return 'Pro · unlimited';
+      return playsOf(game)>0 ? 'No plays left' : '1 free play';
     }
   };
 })();

@@ -254,6 +254,7 @@
     var out=[], guard=0;
     while(out.length<ROUNDS && guard<12000){ guard++;
       var tk=teamKeys[ri(teamKeys.length)];
+      if(out.length && tk===out[out.length-1].team) continue;   // never the same team twice in a row
       var four=shuffle(teams[tk]).slice(0,4);
       if(four.length<4) continue;
       var sport4=four[0].sport;
@@ -344,7 +345,7 @@
     save(s);
     if(!ARCHIVE && window.RTGHistory) RTGHistory.push(GAME, run, true);
     showEnd(s, false);
-    if(run>0 && attemptFirst && window.RTG_BOARD){
+    if(run>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
       RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:run }).then(function(res){
         if(res&&res.streak){ document.getElementById('streakN').textContent=res.streak; document.getElementById('mStreak').textContent=res.streak; }
         renderRealBoard();

@@ -51,14 +51,36 @@
     } catch (e) { sb = null; offline = true; return false; }
     sb.auth.onAuthStateChange(function (_evt, s) {
       session = s || null;
-      if (session) loadName().then(fire); else { name = null; fire(); }
+      if (session) { syncPro(); loadName().then(fire); } else { name = null; fire(); }
     });
     sb.auth.getSession().then(function (r) {
       session = (r && r.data && r.data.session) || null;
-      if (session) return loadName().then(fire);
+      if (session) { syncPro(); return loadName().then(fire); }
       fire();
     }).catch(fire);
     return true;
+  }
+
+  // Pro entitlement: server truth for signed-in subscribers. Reads the
+  // `subscriptions` row written by the Stripe webhook and mirrors it into
+  // localStorage 'runthegrid_pro' (which tokens.js/archive.js read). Fails
+  // open: on any error we leave the local flag as-is (so the rollout preview
+  // unlock keeps working and a flaky network never strips a paying user).
+  function syncPro() {
+    if (!sb || !session) return;
+    sb.from('subscriptions').select('status,current_period_end').eq('user_id', session.user.id).maybeSingle()
+      .then(function (r) {
+        if (!r || r.error) return;                     // table missing / RLS → leave as-is
+        var row = r.data;
+        var active = !!row && (row.status === 'active' || row.status === 'trialing') &&
+          (!row.current_period_end || new Date(row.current_period_end).getTime() > Date.now() - 86400000);
+        try {
+          if (active) localStorage.setItem('runthegrid_pro', '1');
+          else if (row) localStorage.removeItem('runthegrid_pro');   // known-lapsed only
+        } catch (e) {}
+        fire();
+      })
+      .catch(function () {});
   }
 
   function loadName() {

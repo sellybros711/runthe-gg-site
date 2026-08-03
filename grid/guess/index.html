@@ -11,7 +11,7 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Guess the mystery athlete in RunTheGrid. Each guess reveals how close you are on sport, team, position, nationality, era and number." />
+<meta name="description" content="Guess the mystery athlete in RunTheGrid. Each guess reveals how close you are on team, position, era, number and more." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -275,13 +275,21 @@
   function primaryDecade(e){ return (e.decade&&e.decade.length)?Math.min.apply(null,e.decade):null; }
   function posFam(p){ if(!p) return ''; var w=String(p).trim().split(/\s+/); return w[w.length-1]; }
 
-  // pools: team-sport athletes with the traits we compare
+  // pools: team-sport athletes with the traits we compare. GUESSABLE is what
+  // you can type (all team sports, retired included — guessing a legend at an
+  // active target is fair play); TARGETS is what the game answers with.
   var GUESSABLE = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.pos && e.t && e.t.length && e.decade && e.decade.length && (e.f||0)>=3; });
-  // fame>=4 (recognisable to fans, not just household names) makes the daily
-  // deduction genuinely hard while the clue trail keeps it fair.
-  var TARGETS = GUESSABLE.filter(function(e){ return (e.f||0)>=4; });
-  if(TARGETS.length<20) TARGETS = GUESSABLE.filter(function(e){ return (e.f||0)>=5; });
-  if(!TARGETS.length) TARGETS = GUESSABLE;
+  // Targets: ACTIVE players (act:1) from the big three US leagues only, at
+  // fame>=4 (recognisable to fans, not just household names) so the daily
+  // deduction is genuinely hard while the clue trail keeps it fair.
+  var TARGET_SPORTS = {NBA:1,NFL:1,MLB:1};
+  function targetsFor(fMin, requireAct){
+    return GUESSABLE.filter(function(e){ return (!requireAct || e.act===1) && TARGET_SPORTS[e.sport] && (e.f||0)>=fMin; });
+  }
+  var TARGETS = targetsFor(4,true);
+  if(TARGETS.length<20) TARGETS = targetsFor(3,true);   // thin corpus: relax fame first
+  if(!TARGETS.length) TARGETS = targetsFor(3,false);    // still nothing: drop the active requirement
+  if(!TARGETS.length) TARGETS = GUESSABLE;              // absolute last resort
   /* THE SPORT IS GIVEN. Without it the first guess or two go on working out
      whether this is a hockey player or a point guard, which is not the puzzle.
      Naming it up front means every guess spends itself on team, position,
@@ -302,18 +310,46 @@
   // ---- comparison ----
   function setEq(a,b){ if(a.length!==b.length) return false; var s={}; a.forEach(function(x){s[x]=1;}); return b.every(function(x){return s[x];}); }
   function intersect(a,b){ var s={}; a.forEach(function(x){s[x]=1;}); return b.some(function(x){return s[x];}); }
-  function cmp(g){
-    var t=TARGET, out=[];
-    out.push({ st: setEq(g.t,t.t)?'hit':(intersect(g.t,t.t)?'close':'miss'), v:g.t[0]+(g.t.length>1?' +'+(g.t.length-1):'') }); // team
-    out.push({ st: g.pos===t.pos?'hit':(posFam(g.pos)===posFam(t.pos)?'close':'miss'), v:g.pos });            // pos
-    out.push({ st: g.nat===t.nat?'hit':'miss', v:g.nat });                                                    // nat
+  /* Which side of the ball an NFL position plays. Derived by keyword because
+     the pos strings are prose ("Defensive Lineman", "Cornerback"): defensive
+     keywords first, then special teams, and everything left is offense —
+     quarterback, running back, receiver, tight end, linemen, fullback all
+     land there without needing their own list. */
+  function sideOf(pos){
+    var p=String(pos||'').toLowerCase();
+    if(/defensive|linebacker|cornerback|safety/.test(p)) return 'Defense';
+    if(/kicker|punter|long snapper|returner/.test(p)) return 'Special';
+    return 'Offense';
+  }
+  /* COLUMNS ADAPT TO THE SPORT. Nationality carries real signal in the NBA
+     and MLB; in the NFL nearly everyone is from the United States, so that
+     column would be a green tile on every row and teach nothing. The NFL
+     swaps it for Side (offense / defense / special teams), which is the axis
+     football minds actually sort players on. Each column knows its label and
+     how to compare a guess against the target; the header row and cmp() both
+     read from whichever set is active, so they can never disagree. */
+  var colTeam = { label:'Team', cell:function(g,t){ return { st: setEq(g.t,t.t)?'hit':(intersect(g.t,t.t)?'close':'miss'), v:g.t[0]+(g.t.length>1?' +'+(g.t.length-1):'') }; } };
+  var colPos  = { label:'Pos',  cell:function(g,t){ return { st: g.pos===t.pos?'hit':(posFam(g.pos)===posFam(t.pos)?'close':'miss'), v:g.pos }; } };
+  var colNat  = { label:'Nat',  cell:function(g,t){ return { st: g.nat===t.nat?'hit':'miss', v:g.nat }; } };
+  var colSide = { label:'Side', cell:function(g,t){ var gs=sideOf(g.pos); return { st: gs===sideOf(t.pos)?'hit':'miss', v:gs }; } };
+  var colEra  = { label:'Era',  cell:function(g,t){
     var gd=primaryDecade(g), td=primaryDecade(t);
     var eSt = gd===td?'hit':(intersect(g.decade,t.decade)?'close':'miss');
-    out.push({ st:eSt, v:(gd!=null?("'"+String(gd).slice(2)+"s"):'—'), a:(td>gd?'up':(td<gd?'down':null)) }); // era
+    return { st:eSt, v:(gd!=null?("'"+String(gd).slice(2)+"s"):'—'), a:(td>gd?'up':(td<gd?'down':null)) };
+  } };
+  var colNo   = { label:'No.',  cell:function(g,t){
     var gj=(g.j&&g.j.length)?g.j[0]:null, tj=(t.j&&t.j.length)?t.j[0]:null, jSt, jA=null;
     if(gj==null||tj==null){ jSt='miss'; } else if(gj===tj){ jSt='hit'; } else { jSt=(intersect(g.j||[],t.j||[])?'close':'miss'); jA=tj>gj?'up':'down'; }
-    out.push({ st:jSt, v:(gj!=null?('#'+gj):'—'), a:jA });                                                    // number
-    return out;
+    return { st:jSt, v:(gj!=null?('#'+gj):'—'), a:jA };
+  } };
+  var COL_SETS = {
+    NFL:     [colTeam, colPos, colSide, colEra, colNo],
+    DEFAULT: [colTeam, colPos, colNat,  colEra, colNo]
+  };
+  function activeCols(){ return COL_SETS[SPORT] || COL_SETS.DEFAULT; }
+  function cmp(g){
+    var t=TARGET;
+    return activeCols().map(function(c){ return c.cell(g,t); });
   }
 
   var guesses=[], done=false, won=false, started=false, startTs=0, tick=null, elapsed=0, charged=false, attemptFirst=false;
@@ -335,7 +371,6 @@
        sport named at the top, so the tag would say the same thing eight times. */
     acEl.innerHTML=acItems.map(function(e,i){ return '<button type="button" data-i="'+i+'"><span style="flex:1">'+esc(e.name)+'</span></button>'; }).join('');
     acEl.classList.add('on');
-    goEl.disabled=!exactMatch() && acItems.length!==1 ? !exactMatch() : false;
     goEl.disabled=!(exactMatch()||acItems.length>=1);
   }
   function exactMatch(){ var q=qEl.value.trim().toLowerCase(); return POOL.find(function(e){ return e.name.toLowerCase()===q; }); }
@@ -368,6 +403,10 @@
      being appended, so the board never changes height and you can see from the
      start how much rope you have. */
   function buildBoard(){
+    /* The header labels come from the active column set, so an NFL day reads
+       Team · Pos · Side · Era · No. and an NBA/MLB day keeps Nat. */
+    var head=document.querySelector('.board .collab');
+    if(head) head.innerHTML=activeCols().map(function(c){ return '<span>'+esc(c.label)+'</span>'; }).join('');
     var host=document.getElementById('guesses'), html='';
     for(var r=0;r<MAX;r++){
       html+='<div class="guess"><div class="nm">'+(r+1)+'</div><div class="row">';
@@ -401,8 +440,10 @@
     var v=document.querySelector('.lead .v'); if(!v) return;
     var lbl = ARCHIVE ? ' · Archive practice' : (window.RTGTokens ? (' · '+RTGTokens.label('guess')+' today') : '');
     /* "This player", not "today's": a replay or an archive round is not today's. */
+    var traits = SPORT==='NFL' ? 'team, position, side of the ball, era and number'
+                               : 'team, position, nationality, era and number';
     v.innerHTML='This player is from the <b>'+esc(SPORT)+'</b>. Name them in <b>8 tries</b>. '+
-      'Every guess shows how close you are on team, position, nationality, era and number.'+esc(lbl);
+      'Every guess shows how close you are on '+traits+'.'+esc(lbl);
   }
   function beginAttempt(){
     // Ranked first play = the daily target; every replay picks a fresh random target.

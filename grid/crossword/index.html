@@ -370,7 +370,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 </div>
 
 <!-- cache-busted: bump ?v= whenever the puzzle bank changes -->
-<script src="puzzles.js?v=7"></script>
+<script src="puzzles.js?v=8"></script>
 <script src="/grid/sfx.js"></script>
 <script src="/grid/tokens.js"></script>
 <script src="/grid/archive.js"></script>
@@ -403,16 +403,19 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   // that was/will be shown on that date.
   var ARCHIVE = !!(window.RTGArchive && RTGArchive.active());
   var DATE = (window.RTGArchive ? RTGArchive.date() : new Date().toISOString().slice(0,10));
-  // daily pick: crossword serves the puzzle whose id === the date string
-  // (matches window.RTG_PUZZLES.daily's logic), falling back to the first.
+  // daily pick: exact id match first (launch week), else the deterministic
+  // date rotation in puzzles.js — every date maps to a stable puzzle.
+  // NOTE: with rotation P.id is the puzzle's own id, NOT the served date;
+  // anything date-keyed (board submit/leaderboard, streak save) uses DATE.
   function dailyFor(dateStr){
+    if(window.RTG_PUZZLES && typeof RTG_PUZZLES.forDate === 'function'){
+      return RTG_PUZZLES.forDate(dateStr) || null;
+    }
     for(var i=0;i<LIST.length;i++){ if(LIST[i].id===dateStr) return LIST[i]; }
     return LIST[0] || null;
   }
 
-  var P = (TESTER && PZI >= 0 && LIST[PZI]) ? LIST[PZI]
-        : ARCHIVE ? dailyFor(DATE)
-        : ((window.RTG_PUZZLES && window.RTG_PUZZLES.daily) || null);
+  var P = (TESTER && PZI >= 0 && LIST[PZI]) ? LIST[PZI] : dailyFor(DATE);
   if(!P){ document.getElementById('board').textContent = 'No puzzle for today.'; return; }
 
   if (TESTER) {
@@ -738,8 +741,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     var flawless=true;
     for(var fr=0;fr<N;fr++) for(var fc=0;fc<N;fc++){ if(!cells[fr][fc].block && cells[fr][fc].revealed) flawless=false; }
 
-    // streak logic: consecutive calendar days completed
-    var s=load(); var today=P.id;
+    // streak logic: consecutive calendar days completed. Keyed off the served
+    // DATE (with rotation, P.id is the puzzle's id, not today's date).
+    var s=load(); var today=DATE;
     var yesterday = shiftDay(today,-1);
     var already = s.lastDone===today;
     var milestone='';
@@ -774,7 +778,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     // ---- cloud: post the run (signed-in only; fail-open). Cloud streak wins. ----
     if(window.RTG_BOARD && !TESTER && !ARCHIVE && attemptFirst){
       var revealed=0; for(var rr=0;rr<N;rr++) for(var cc=0;cc<N;cc++){ if(!cells[rr][cc].block && cells[rr][cc].revealed) revealed++; }
-      RTG_BOARD.submit('crossword', P.id, { seconds:Math.round(elapsed), mistakes:0, reveals:revealed }).then(function(res){
+      RTG_BOARD.submit('crossword', DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:revealed }).then(function(res){
         if(res && res.streak){
           document.getElementById('streakN').textContent = res.streak;
           var msn=document.getElementById('mStreak'); if(msn) msn.textContent = res.streak;
@@ -795,8 +799,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
 
   function shiftDay(iso, delta){
+    // parse AND format in local time (toISOString here shifted the date by a
+    // day in UTC+ timezones, silently resetting streaks)
     var d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+delta);
-    return d.toISOString().slice(0,10);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   }
 
   // emoji share grid — 🟨 revealed, 🟩 solved cleanly, ⬛ black
@@ -815,7 +821,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     beginAttempt();
   });
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); if(bothClosed()) stopCountdown(); });
-  function shareTextCW(){ return 'RunTheGrid — Daily Crossword '+P.date+'\n'+N+'×'+N+' in '+fmt(elapsed)+'\n\n'+buildShareGrid()+'\n\nrunthe.gg/grid/crossword'; }
+  function shareTextCW(){ return 'RunTheGrid — Daily Crossword '+DATE+'\n'+N+'×'+N+' in '+fmt(elapsed)+'\n\n'+buildShareGrid()+'\n\nrunthe.gg/grid/crossword'; }
   document.getElementById('mShare').addEventListener('click', shareCrosswordImage);
   function flashShare(){ var b=document.getElementById('mShare'); var t=b.textContent; b.textContent='Copied to clipboard ✓'; setTimeout(function(){ b.textContent=t; }, 1400); }
 
@@ -891,7 +897,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       if(cell.block){ row.push('block'); } else if(cell.revealed){ row.push('revealed'); flawless=false; } else { row.push('solved'); }
     } rows.push(row); }
     var card={
-      dateStr:(function(){ try{ return new Date(P.date+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return P.date; } })(),
+      dateStr:(function(){ try{ return new Date(DATE+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return DATE; } })(),
       timeStr:fmt(elapsed), streak:(s.streak||1), bestStr:fmt(s.best && s.best<1e9 ? s.best : Math.round(elapsed)),
       flawless:flawless, rows:rows
     };
@@ -1015,7 +1021,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     var seg=document.getElementById('dateSeg'); if(!seg) return;
     // archive practice shows its own label (the archive.js banner carries the date); no token label
     var lbl = ARCHIVE ? ' · Archive practice' : (window.RTGTokens ? (' · '+RTGTokens.label('crossword')+' today') : '');
-    seg.innerHTML = fmtDate(P.date)+' <small>Daily'+lbl+'</small>';
+    seg.innerHTML = fmtDate(DATE)+' <small>Daily'+lbl+'</small>';
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
@@ -1051,7 +1057,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   function showLocked(saved){
     done=true; if(tick){ clearInterval(tick); tick=null; }
     var b=document.getElementById('board'); if(b){ b.style.pointerEvents='none'; b.style.opacity='.55'; }
-    var seg=document.getElementById('dateSeg'); if(seg) seg.innerHTML = fmtDate(P.date)+' <small>No plays left — back tomorrow.</small>';
+    var seg=document.getElementById('dateSeg'); if(seg) seg.innerHTML = fmtDate(DATE)+' <small>No plays left — back tomorrow.</small>';
     var bestStr = (saved.best && saved.best<1e9) ? fmt(saved.best) : '—';
     document.getElementById('mTitle').textContent='No plays left';
     document.getElementById('mSub').textContent='No plays left — back tomorrow.';
@@ -1068,7 +1074,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
 
   // ---- boot -----------------------------------------------------------------
-  document.getElementById('dateSeg').innerHTML = fmtDate(P.date)+' <small>Daily</small>';
+  document.getElementById('dateSeg').innerHTML = fmtDate(DATE)+' <small>Daily</small>';
   document.getElementById('sizeSeg').textContent = N+' × '+N;
   var saved=load(); document.getElementById('streakN').textContent = saved.streak||0;
   if(saved.best){ var yb=document.getElementById('yourBest'); if(yb) yb.textContent = fmt(saved.best); }
@@ -1078,7 +1084,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   function lbEsc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function renderRealBoard(){
     if(!window.RTG_BOARD) return;
-    RTG_BOARD.leaderboard('crossword', P.id, 5).then(function(rows){
+    RTG_BOARD.leaderboard('crossword', DATE, 5).then(function(rows){
       if(rows===null) return;                        // offline: keep the Sample board untouched
       var lb=document.querySelector('.lb'); if(!lb) return;
       var pill=lb.querySelector('.pill'); if(pill) pill.textContent='Live';
