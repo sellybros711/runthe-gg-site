@@ -4496,24 +4496,45 @@ function buildTimeline(script,pace){
 }
 
 function generateDrives(script,rng){
-  const GAME=3600,drives=[];
+  const GAME=3600,HALFTIME=1800,drives=[];
   const ticks=[];
   for(const e of script) ticks.push({sec:(e.q-1)*900+(900-e.sec),team:e.team,kind:e.kind,points:e.points});
-  let pos='you',at=20+Math.floor(rng()*10),t=0;
+  /* HALFTIME IS A REAL EVENT ON THIS CHART, because a football game is two
+     halves and not one long stretch. It rides in the tick list as a marker, so
+     whatever drive is running stops at the whistle rather than carrying through
+     the break, and the second half opens with a kickoff to the side that did
+     NOT receive the opening one, the way every real game does it.
+     Pushed last and sorted stably, so a score on the final play of the half is
+     still ordered before the whistle rather than after it. */
+  ticks.push({sec:HALFTIME,kind:'HALFTIME'});
+  ticks.sort((a,b)=>a.sec-b.sec);
+  const OPENING='you';
+  const SECOND_HALF=OPENING==='you'?'them':'you';
+  let pos=OPENING,at=20+Math.floor(rng()*10),t=0;
   const flip=()=>{pos=pos==='you'?'them':'you';};
   const youKO=()=>18+Math.floor(rng()*12);
   const themKO=()=>82-Math.floor(rng()*12);
+  /* The second-half kickoff, the same shape as any other kickoff. */
+  let justKicked=false;
+  const kickToSecondHalf=()=>{pos=SECOND_HALF;at=pos==='you'?youKO():themKO();justKicked=true;};
   for(let i=0;i<=ticks.length;i++){
     const ns=i<ticks.length?ticks[i]:null;
+    const isHalf=!!ns&&ns.kind==='HALFTIME';
     const tE=ns?ns.sec:GAME,gap=tE-t;
-    if(gap<5){
-      if(ns){
+    /* The shortcut below credits a score too fast to have had a drive, which is
+       right after another score but wrong straight after a kickoff: it would
+       hand the ball back before the receiving team ever appeared with it. A
+       score in the opening seconds of the second half still gets its drive
+       charted, however short, so the possession chain stays honest. */
+    if(gap<5&&!justKicked){
+      if(isHalf) kickToSecondHalf();
+      else if(ns){
         if(ns.kind==='SAFETY'){pos=ns.team;at=ns.team==='you'?youKO()+12:themKO()-12;}
         else{pos=ns.team==='you'?'them':'you';at=pos==='you'?youKO():themKO();}
       }
       t=tE;continue;
     }
-    const scorePoss=ns?(ns.kind==='SAFETY'?(ns.team==='you'?'them':'you'):ns.team):null;
+    const scorePoss=(ns&&!isHalf)?(ns.kind==='SAFETY'?(ns.team==='you'?'them':'you'):ns.team):null;
     let filler=Math.max(0,Math.round(gap/220)-1+(rng()<0.45?1:0));
     if(scorePoss){
       const af=filler%2===0?pos:(pos==='you'?'them':'you');
@@ -4559,6 +4580,8 @@ function generateDrives(script,rng){
         flip();
       }
     }
+    /* The whistle. Whoever had it when the half ran out does not keep it. */
+    if(isHalf) kickToSecondHalf(); else justKicked=false;
     t=tE;
   }
   return drives;
