@@ -825,6 +825,7 @@ window.GA_ID='G-L29P5MRWKE';
   .streak.clinch{font-size:14px;letter-spacing:.18em;animation:clinchPop .5s var(--ezs) both}
   /* A signature win, beating a ranked team, is called out in poll gold. */
   .streak.sig{color:#ffd23a;font-size:13px;letter-spacing:.14em;animation:clinchPop .5s var(--ezs) both}
+  .streak.poll{color:#6ee7b7;font-size:13px;letter-spacing:.14em;animation:clinchPop .5s var(--ezs) both}
   @keyframes clinchPop{0%{transform:scale(.7);opacity:0}50%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
   @keyframes tickpop{0%{transform:scaleY(.4)}55%{transform:scaleY(1.35)}100%{transform:scaleY(1)}}
 
@@ -1200,6 +1201,7 @@ window.GA_ID='G-L29P5MRWKE';
   @media(prefers-reduced-motion:no-preference){
     .seed-badge{animation:badgePop .3s .2s ease both}
     .seed-badge:nth-child(2){animation-delay:.3s}
+    .seed-badge:nth-child(3){animation-delay:.4s}
     @keyframes badgePop{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:none}}
   }
   .seed-desc{margin:12px 0 0;color:var(--dim);font-family:var(--fb);font-size:14.5px;line-height:1.4}
@@ -4483,6 +4485,8 @@ function runSim(){
   const card=document.querySelector('#s-season .gamecard');
   const step=()=>{
     if(run.phase!==R.PHASES.SEASON){after();return;}
+    /* Where the poll had you before this week, for the callout after it. */
+    const prevRank=yourRank();
     const r=R.advanceWeek(run,DATA,LEAGUE,CAL);
     paintSeasonBug(r.opponent_id,'Week '+r.week);
     $('v-you').textContent='0'; $('v-them').textContent='0';
@@ -4502,9 +4506,21 @@ function runSim(){
       card.classList.add(r.won?'won':'lost');
       paintNext(true); paintCalendar(r);
       if(!seasonOver){
+        /* THE POLL MOMENTS. Cracking the top 25 for the first time and a real
+           climb both get called, and a poll moment outranks a signature win on
+           the strip: beating No. 19 is how you got to No. 22, and the ranking
+           is the story. Dropping out is left unsaid; the bug's missing #
+           already says it, and the strip is for moments worth having. */
+        const nowRank=yourRank();
         const beat=r.won?teamRank(r.opponent_id):0;
-        if(beat){ const sEl=$('v-streak');
-          if(sEl){ sEl.className='streak w on sig'; sEl.textContent='Signature win over #'+beat+'!'; } }
+        const sEl=$('v-streak');
+        let poll=null;
+        if(nowRank&&!prevRank) poll='Into the poll at #'+nowRank+'!';
+        else if(nowRank&&prevRank&&nowRank<prevRank
+          &&((prevRank-nowRank>=3)||(nowRank<=10&&prevRank>10)))
+          poll='Up to #'+nowRank+' in the poll!';
+        if(poll&&sEl){ sEl.className='streak w on poll'; sEl.textContent=poll; }
+        else if(beat&&sEl){ sEl.className='streak w on sig'; sEl.textContent='Signature win over #'+beat+'!'; }
       }else{
         const made=run.playoffSeed&&run.playoffSeed.made;
         const hasBowl=run.playoffSeed&&run.playoffSeed.bowl;
@@ -4596,12 +4612,22 @@ function paintSeed(){
     $('b-po').hidden=false;
     $('b-po-skip').hidden=false;
   }else if(sd.bowl){
-    /* Bowl game */
+    /* Bowl game. THE TIER IS NAMED WITH THE RANK THAT EARNED IT, so the line
+       reads as a verdict on the season: ranked No. 14, and that is a New
+       Year's Six bid. Without it a Rose Bowl and a Frisco Bowl land with the
+       same one purple chip and nobody learns what their ranking bought. */
     c.className='seed-panel bowl';
     const bowlName=run.bowlInfo?run.bowlInfo.name:'Bowl Game';
     const bowlTag=run.bowlInfo?run.bowlInfo.tagline:'';
-    badges.innerHTML='<span class="seed-badge purple">'+esc(bowlName)+'</span>';
-    $('sd-sub').textContent=bowlTag||'A strong season earns one more game.';
+    const rk=(run.ranking&&run.ranking.rank)||0;
+    const tierChip=sd.bowl==='ny6'?'<span class="seed-badge gold">New Year\'s Six</span>'
+      :sd.bowl==='major'?'<span class="seed-badge blue">Major bowl</span>':'';
+    badges.innerHTML=(rk?'<span class="seed-badge">Ranked #'+rk+'</span>':'')+
+      tierChip+'<span class="seed-badge purple">'+esc(bowlName)+'</span>';
+    const bid=sd.bowl==='ny6'?'a New Year\'s Six bid'
+      :sd.bowl==='major'?'a major bowl bid':'a bowl bid';
+    $('sd-sub').textContent=(rk?'Ranked No. '+rk+' in the country, and that is '+bid+'. ':'')+
+      (bowlTag||'A strong season earns one more game.');
     $('sd-tracker').innerHTML='';
     $('b-po').textContent='Play the '+bowlName;
     $('b-po').hidden=false;
@@ -5530,9 +5556,13 @@ $('o-tabs').addEventListener('click',e=>{
 const SHARE_URL='https://runthe.gg/cfb/';
 function shareLines(){
   const o=run.outcome;
+  /* THE BOWL IS NAMED. "Bowl champions" could be any of thirty-seven games;
+     "Fiesta Bowl champions" is a story, and the RunThe.GG Bowl advertises
+     itself every time somebody wins it. */
   const what=o.perfect?'Perfect season.'
     :o.titleWon?'National Champions.'
-    :o.bowlGame&&o.bowlWon?'Bowl champions.'
+    :o.bowlGame&&o.bowlWon?((o.bowlInfo?o.bowlInfo.name:'Bowl')+' champions.'
+    ):o.bowlGame?('Lost the '+(o.bowlInfo?o.bowlInfo.name:'bowl game')+'.')
     :o.eliminatedIn?'Out in the '+o.eliminatedIn.replace('CFP ','')+'.'
     :'Missed the playoffs.';
   const rating=overallOf(teamRating(run.roster,run.season.chemistry));
@@ -5601,9 +5631,15 @@ function drawShareCard(){
   if(o.perfect||o.titleWon){x.shadowColor=o.perfect?'rgba(245,158,11,.55)':'rgba(16,185,129,.5)';x.shadowBlur=36;}
   D(250);x.fillStyle=recFill;centered(o.record,CARD.REC);
   x.shadowBlur=0;x.shadowColor='transparent';
-  D(52);x.fillStyle='rgba(255,255,255,.92)';
+  x.fillStyle='rgba(255,255,255,.92)';
+  /* The bowl by name here too, and the line shrinks to fit: the Famous Idaho
+     Potato Bowl earns its full title on the card or it is not worth having. */
   const what=(o.perfect?'PERFECT SEASON':o.titleWon?'NATIONAL CHAMPIONS':
-    o.bowlGame&&o.bowlWon?'BOWL CHAMPIONS':o.eliminatedIn?'OUT IN THE '+o.eliminatedIn.replace('CFP ','').toUpperCase():'MISSED THE PLAYOFFS');
+    o.bowlGame&&o.bowlWon?((o.bowlInfo?o.bowlInfo.name.toUpperCase():'BOWL')+' CHAMPIONS'):
+    o.bowlGame?('LOST THE '+(o.bowlInfo?o.bowlInfo.name.toUpperCase():'BOWL GAME')):
+    o.eliminatedIn?'OUT IN THE '+o.eliminatedIn.replace('CFP ','').toUpperCase():'MISSED THE PLAYOFFS');
+  let vsz=52;D(vsz);
+  while(x.measureText(what).width>CARD.W-PAD*2&&vsz>30){vsz-=2;D(vsz);}
   centered(what,CARD.VERDICT);
   x.fillStyle=at(tc.ink,.34);x.fillRect(PAD,CARD.RULE1,CARD.W-PAD*2,2);
 
