@@ -1248,17 +1248,20 @@ window.GA_ID='G-L29P5MRWKE';
   .next-panel{margin-top:20px;padding:20px 0 0;border-top:1px solid var(--line)}
   .next-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   @media(max-width:479px){.next-pair{grid-template-columns:1fr;gap:10px}}
-  /* Green and gold, like every other button in this game. These two carried the NFL
-     game's red and navy across with the rest of the panel, which put the loudest
-     button on the results screen in a colour the game uses nowhere else. */
+  /* GREEN PRIMARY, SLATE SECONDARY. This game has no gold buttons: green is the
+     one action colour, so the loudest button here is green and the quieter one
+     next to it is a neutral slate rather than a second bright colour competing
+     for the eye. (These two used to carry the NFL game's red and navy, then a
+     gold that the game used nowhere else.) */
   .next-primary{background:linear-gradient(170deg,#10b981,#047857);padding:14px 12px;
     font-size:15px;border-radius:12px;box-shadow:0 4px 16px -4px rgba(0,0,0,.5)}
   .next-primary:before{height:28%;background:linear-gradient(180deg,rgba(255,255,255,.1),transparent)}
   .next-primary:hover{filter:brightness(1.06);transform:translateY(-1px)}
-  .next-secondary{background:linear-gradient(170deg,#b8801a,#8a5c0d);padding:14px 12px;
-    font-size:15px;border-radius:12px;box-shadow:0 4px 16px -4px rgba(0,0,0,.5)}
-  .next-secondary:before{height:28%;background:linear-gradient(180deg,rgba(255,255,255,.08),transparent)}
-  .next-secondary:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .next-secondary{background:linear-gradient(170deg,#37435a,#222c3c);padding:14px 12px;
+    font-size:15px;border-radius:12px;box-shadow:0 4px 16px -4px rgba(0,0,0,.5);
+    border:1px solid rgba(255,255,255,.07)}
+  .next-secondary:before{height:28%;background:linear-gradient(180deg,rgba(255,255,255,.07),transparent)}
+  .next-secondary:hover{filter:brightness(1.12);transform:translateY(-1px)}
   .next-share{margin-top:10px;background:transparent;box-shadow:none;border:1.5px solid var(--line-2);
     padding:12px 14px;font-size:14px;border-radius:11px}
   .next-share:before{display:none}
@@ -2533,44 +2536,45 @@ window.addEventListener('error',(ev)=>{
 });
 
 /* ── 5 position spots ────────────────────────────────────────── */
-/* Where each spot sits on the field, in E.SLOTS order: QB, RB, WR, WR, TE, FLEX.
-   The field is laid out by the POSITIONS you actually signed, not by slot order, so a
-   back drafted into the flex lines up in the backfield and the four men on the line of
-   scrimmage share one row (two chips on the same line can never collide vertically). */
-/* Formation coordinates by how many of a position are on the field. With the TE
-   slot gone the maxima moved: two dedicated WR plus two flex can put FOUR
-   receivers out wide, one dedicated RB plus a flex can put two in the backfield,
-   and either flex can hold a TE, so those rows gained an entry. The one- and
-   two-of cases keep their old coordinates so a typical roster looks unchanged;
-   FLEX is now a table like the rest so two empty flex spots sit apart instead of
-   stacking on one point. */
+/* THE FIELD IS LAID OUT IN THREE ROWS, NOT BY POSITION GROUP. The old version
+   placed quarterbacks, backs, receivers, tight ends and empty flex spots each
+   from their own table, and nothing stopped two of those tables from naming the
+   same point: a receiver drafted into a flex made three wideouts, whose third
+   coordinate was the very spot the still-open flex also wanted, and the two
+   chips stacked. So the row is the unit now. The quarterback sits mid, the backs
+   fill the backfield, and EVERYONE ELSE (receivers, tight ends, and whatever
+   flex is still open) shares the line of scrimmage, laid out together by how
+   many there are, so no two chips can ever be handed the same coordinate. */
 const SPOTS={
-  QB:[{x:50,y:44}],
-  RB:[[],[{x:28,y:64}],[{x:28,y:64},{x:72,y:64}],[{x:22,y:64},{x:50,y:64},{x:78,y:64}]],
-  WR:[[],[{x:50,y:24}],[{x:12,y:24},{x:88,y:24}],[{x:12,y:24},{x:88,y:24},{x:32,y:24}],
-    [{x:10,y:22},{x:90,y:22},{x:30,y:27},{x:70,y:27}]],
-  TE:[[],[{x:68,y:24}],[{x:66,y:24},{x:34,y:24}]],
-  FLEX:[[],[{x:32,y:24}],[{x:30,y:26},{x:70,y:26}]],
+  QB: [{ x: 50, y: 44 }],
+  RB: [[], [{ x: 28, y: 64 }], [{ x: 28, y: 64 }, { x: 72, y: 64 }]],
 };
-const SPOT_FALLBACK=[{x:50,y:44},{x:28,y:64},{x:12,y:24},{x:88,y:24},{x:70,y:26},{x:32,y:26}];
+/* The line of scrimmage, spread by how many are on it (1 through 4). */
+const REC = [
+  [],
+  [{ x: 50, y: 24 }],
+  [{ x: 16, y: 24 }, { x: 84, y: 24 }],
+  [{ x: 12, y: 24 }, { x: 50, y: 22 }, { x: 88, y: 24 }],
+  [{ x: 9, y: 23 }, { x: 37, y: 27 }, { x: 63, y: 27 }, { x: 91, y: 23 }],
+];
+const SPOT_FALLBACK=[{x:50,y:44},{x:28,y:64},{x:12,y:24},{x:88,y:24},{x:37,y:27},{x:63,y:27}];
 
 function layoutFor(){
   const n=E.SLOTS.length;
   const bySlot=new Array(n).fill(null);
   if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
-  const eff=E.SLOTS.map((slot,i)=>bySlot[i]?bySlot[i].position:(slot==='FLEX'?'FLEX':slot));
-  const slotsOf=(pos)=>eff.map((e,i)=>e===pos?i:-1).filter(i=>i>=0);
+  /* Each slot's effective position: the player's own if signed, else the slot. */
+  const eff=E.SLOTS.map((slot,i)=>bySlot[i]?bySlot[i].position:slot);
+  const idxOf=(test)=>eff.map((e,i)=>test(e)?i:-1).filter(i=>i>=0);
   const out=new Array(n).fill(null);
-  for(const i of slotsOf('QB')) out[i]=SPOTS.QB[0];
-  const place=(pos,table)=>{
-    const list=slotsOf(pos); if(!list.length) return;
-    const row=table[Math.min(list.length,table.length-1)]||table[table.length-1];
-    list.forEach((i,k)=>{ out[i]=row[Math.min(k,row.length-1)]; });
+  const row=(idxs,table)=>{
+    if(!idxs.length) return;
+    const r=table[Math.min(idxs.length,table.length-1)]||table[table.length-1]||[];
+    idxs.forEach((i,k)=>{ out[i]=r[Math.min(k,r.length-1)]; });
   };
-  place('RB',SPOTS.RB);
-  place('WR',SPOTS.WR);
-  place('TE',SPOTS.TE);
-  place('FLEX',SPOTS.FLEX);
+  idxOf((e)=>e==='QB').forEach((i)=>{ out[i]=SPOTS.QB[0]; });
+  row(idxOf((e)=>e==='RB'),SPOTS.RB);
+  row(idxOf((e)=>e!=='QB'&&e!=='RB'),REC);
   out.forEach((v,i)=>{ if(!v) out[i]=SPOT_FALLBACK[i]; });
   return out;
 }
