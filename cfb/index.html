@@ -218,6 +218,10 @@ window.GA_ID='G-L29P5MRWKE';
     text-decoration:none;text-transform:uppercase;color:var(--dim);
     border:1px solid var(--line-2);white-space:nowrap;transition:border-color .15s}
   .pill:hover{border-color:rgba(255,255,255,.22)}
+  /* The ".GG" is the team colour. In the house look it is the green; once a school
+     is themed it takes the school's SECONDARY colour (see the themed block below),
+     so the banner carries both of a team's colours at once: the torn "College" in
+     the primary, the ".GG" in the secondary. */
   .pill i{color:var(--green)}
   /* ── profile bubble ─────────────────────────────────────────────
      Your profile, styled like the NFL game's: a neutral head when signed out,
@@ -235,16 +239,20 @@ window.GA_ID='G-L29P5MRWKE';
   .avatar:hover{border-color:rgba(255,255,255,.28)}
   .avatar:active{transform:scale(.94)}
   .avatar.signed{border-color:transparent}
+  /* Primary fill, SECONDARY ring, like the NFL bubble: the school's two colours on
+     the one element you carry through every screen. Falls back to a white hairline
+     when there is no themed school (the house green bubble). */
   .avatar.signed:before{background:var(--pfp,var(--grad-green));inset:2px;
-    box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.28)}
+    box-shadow:inset 0 0 0 2px var(--pfpring,rgba(255,255,255,.28))}
   .avatar.signed svg{display:none}
   .avatar.signed .ab{display:block}
   /* The three-word wordmark is longer than the old two, and Anton can be slow to
      arrive, iOS falls back to the wider Impact, so the type is sized in vw and
-     scales with the screen rather than clipping. Below 480 the RunThe.GG pill
-     also steps aside for the profile bubble. */
+     scales with the screen rather than clipping. On a phone the RunThe.GG pill
+     stays on the banner (the NFL game keeps it too) but shrinks so the wordmark
+     keeps its room; the wordmark may wrap before it ever clips. */
   @media(max-width:480px){
-    .pill.site{display:none}
+    .pill.site{font-size:9.5px;padding:5px 8px;letter-spacing:.1em}
   }
   @media(max-width:360px){
     .mark{width:26px;height:23px;margin-right:7px}
@@ -268,6 +276,11 @@ window.GA_ID='G-L29P5MRWKE';
     background-image:radial-gradient(1000px 600px at 50% -8%,var(--th-glowa),transparent 70%),
                      radial-gradient(800px 500px at 100% 100%,var(--th-glowb),transparent 70%);
   }
+  /* THE ".GG" TAKES THE SECOND COLOUR. The torn "College" already carries the
+     primary; putting the ".GG" on the secondary means the banner shows both of a
+     school's colours instead of the primary twice. */
+  body.themed:has(#s-intro.on) .pill.site i,
+  body.themed:has(#s-draft.on) .pill.site i{ color:var(--th-ink-b); }
 
   /* ── school picker (sheet) ──────────────────────────────────────── */
   .schoolacc{margin-top:4px}
@@ -2652,7 +2665,7 @@ function applyTheme(t,remember){
   if(remember===undefined) remember=true;
   const root=document.documentElement, body=document.body;
   if(!t){ ['--th-a','--th-a2','--th-b','--th-b2','--th-ink-a','--th-ink-b',
-      '--th-glowa','--th-glowb','--th-edgeb','--pfp','--pfp-ink']
+      '--th-glowa','--th-glowb','--th-edgeb','--pfp','--pfp-ink','--pfpring']
       .forEach(v=>root.style.removeProperty(v));
     body.classList.remove('themed'); selectedSchool=null;
     if(remember){ savedSchool=null; try{localStorage.removeItem('cfb_school');}catch(e){} }
@@ -2671,6 +2684,8 @@ function applyTheme(t,remember){
   root.style.setProperty('--th-glowb',hexA(b,0.13));
   root.style.setProperty('--th-edgeb',hexA(textSafe(b),0.38));
   root.style.setProperty('--pfp','linear-gradient(135deg,'+a+','+shade(a,-0.32)+')');
+  /* The ring is the SECOND colour, lifted to stay visible on the primary fill. */
+  root.style.setProperty('--pfpring',textSafe(b));
   root.style.setProperty('--pfp-ink',lumOf(a)>0.62?'#111':'#fff');
   body.classList.add('themed');
   selectedSchool=t;
