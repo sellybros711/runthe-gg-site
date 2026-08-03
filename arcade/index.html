@@ -73,7 +73,7 @@
   @media (max-width:640px){ .mStreak{display:inline-flex;} .mProf{display:grid;} }
 
   /* ============================================================
-     DASHBOARD LAYOUT — left sticky HUD rail, right puzzle cards.
+     DASHBOARD LAYOUT · left sticky HUD rail, right puzzle cards.
      ============================================================ */
   .board{display:grid; grid-template-columns:332px minmax(0,1fr); gap:22px; align-items:start; margin-top:4px;}
   @media (max-width:880px){ .board{grid-template-columns:minmax(0,1fr); gap:16px;} }
@@ -303,7 +303,7 @@
     <div class="top">
       <a class="gg" href="/arcade/" aria-label="Run The Arcade home"><img src="/arcade/assets/runthearcade-logo.png" alt="Run The Arcade" width="900" height="521" /></a>
       <span class="topR">
-        <span class="mStreak" title="Day streak" aria-label="Day streak">🔥 <b id="mStreakVal">0</b></span>
+        <span class="mStreak" title="Day streak" aria-label="Day streak"> <b id="mStreakVal">0</b></span>
         <a class="mProf" href="/" aria-label="Sign in"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></a>
         <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
           <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
@@ -328,9 +328,9 @@
             <span class="flame"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg></span>
             <span class="big"><span class="n" id="curStreak">0</span><span class="cap">Day streak</span></span>
             <span class="best"><span class="n" id="bestStreak">0</span><span class="cap">Best</span></span>
-            <span class="m-gift" aria-hidden="true">🎁</span>
+            <span class="m-gift" aria-hidden="true"></span>
           </div>
-          <p class="smsg"><span class="fy" aria-hidden="true">🔥</span><span id="streakMsg">Play a game to start your streak!</span></p>
+          <p class="smsg"><span class="fy" aria-hidden="true"></span><span id="streakMsg">Play a game to start your streak!</span></p>
         </div>
 
         <!-- 3 · NEXT GOAL panel -->
@@ -338,7 +338,7 @@
           <span class="g-lab">Next goal</span>
           <div class="g-row">
             <span class="g-main"><b id="mileLab">3 Day Streak</b><span id="mileTo">3 more days to unlock</span></span>
-            <span class="g-gift" aria-hidden="true">🎁</span>
+            <span class="g-gift" aria-hidden="true"></span>
           </div>
           <div class="g-barrow">
             <div class="bar"><i id="mileBar"></i></div>
@@ -390,13 +390,13 @@
 
         <!-- 6 · gold note -->
         <div class="hud-notewrap">
-          <div class="hud-note">⭐ <b>Small steps today, big wins tomorrow.</b> Play daily. Build streaks. Earn rewards.</div>
+          <div class="hud-note"><b>Small steps today, big wins tomorrow.</b> Play daily. Build streaks. Earn rewards.</div>
         </div>
 
         <!-- 7 · CTA stack -->
         <div class="hud-cta">
-          <a class="btn" id="ctaKeep" href="/arcade/table/">🔥 Keep streak alive</a>
-          <a class="btn ghost" href="#puzzles">⊞ Play more puzzles</a>
+          <a class="btn" id="ctaKeep" href="/arcade/table/">Keep streak alive</a>
+          <a class="btn ghost" href="#puzzles">Play more puzzles</a>
           <div class="cta-links">
             <a href="/">Sign in to save your streak →</a>
             <a href="/arcade/archive/">Play past days →</a>

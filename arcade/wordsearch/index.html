@@ -50,8 +50,8 @@
   .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
-  .brand.logo img{height:26px; width:auto; display:block;}
-  .brand.logo .sub{display:block; font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--mut); margin-top:5px; margin-left:2px; white-space:nowrap;}
+  .brand.logo img{height:44px; width:auto; display:block;}
+  .brand.logo .sub{display:block; font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--mut); margin-top:4px; margin-left:2px; white-space:nowrap;}
   .spacer{flex:1;}
   .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card);
     color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0; flex:0 0 auto;}
@@ -102,8 +102,9 @@
   .abtn{flex:1; appearance:none; border:1px solid var(--line2); background:var(--card); color:var(--ink);
     font-weight:800; font-size:13px; border-radius:11px; padding:11px; min-height:46px; display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer; box-shadow:var(--shadow);}
   .abtn:hover{border-color:var(--teal);}
-  .abtn.gold{background:var(--gold); color:#071426; border-color:transparent;}
+  .abtn.gold{background:var(--teal); color:#071426; border-color:transparent;}
   .abtn:disabled{opacity:.5; cursor:default;}
+  .abtn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
 
   /* leaderboard (honest: your numbers are the hero; sample is illustrative) */
   .lb{background:var(--card); border:1px solid var(--line2); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin-bottom:14px;}
@@ -184,7 +185,7 @@
   </div>
 
   <div class="infobar">
-    <div class="th"><span class="k">Today's theme</span><span class="v" id="themeName">—</span></div>
+    <div class="th"><span class="k">Today's theme</span><span class="v" id="themeName">–</span></div>
     <div class="prog"><span id="progN">0 / 0</span><small>Found</small></div>
   </div>
 
@@ -203,8 +204,8 @@
   <div class="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Your time today</span><span class="big" id="yourTm">—</span></div>
-      <div class="box"><span class="cap">Your best</span><span class="big" id="yourBest">—</span></div>
+      <div class="box me"><span class="cap">Your time today</span><span class="big" id="yourTm">–</span></div>
+      <div class="box"><span class="cap">Your best</span><span class="big" id="yourBest">–</span></div>
     </div>
     <div class="lb-sample" id="lbSample">
       <div class="lb-samplab">Illustrative ranking</div>
@@ -228,7 +229,6 @@
       <div class="rstat"><div class="v" id="mHints">0</div><div class="l">Hints</div></div>
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Streak</div></div>
     </div>
-    <div id="rtgHist"></div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
     </div>
@@ -246,7 +246,6 @@
 <script src="/arcade/sfx.js"></script>
 <script src="/arcade/tokens.js"></script>
 <script src="/arcade/archive.js"></script>
-<script src="/arcade/history.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js"></script>
 <script src="/arcade/teamcolors.js"></script>
@@ -520,7 +519,7 @@
     var b=document.getElementById('btnHint'); if(!b) return;
     var lab=b.querySelector('span');
     if(!isProHints() && hintsUsed>=1){
-      if(lab) lab.textContent='Hint used — Pro for more';
+      if(lab) lab.textContent='Hint used. Pro for more';
       b.disabled=true; b.style.opacity='.55'; b.style.cursor='default';
     } else {
       if(lab) lab.textContent='Hint';
@@ -531,12 +530,12 @@
   document.getElementById('btnHint').addEventListener('click', function(){
     if(done) return; startIfNeeded();
     // FREE players are capped at 1 hint per play; PRO is never blocked
-    if(!isProHints() && hintsUsed>=1){ toast('1 hint per play — Pro gets unlimited'); updateHintBtn(); return; }
+    if(!isProHints() && hintsUsed>=1){ toast('1 hint per play. Pro gets unlimited'); updateHintBtn(); return; }
     var rem=PLACED.filter(function(p){ return !foundSet[p.word]; }); if(!rem.length) return;
     var p=rem[ri(rem.length)]; hints++; hintsUsed++;
     var el=cellEls[p.cells[0]]; el.classList.remove('hintflash'); void el.offsetWidth; el.classList.add('hintflash');
     if(window.RTGSound) RTGSound.key();
-    toast('Hint: a name starting with “' + p.word.charAt(0) + '” — its square is highlighted');
+    toast('Hint: a name starting with “' + p.word.charAt(0) + '”. Its square is highlighted');
     updateHintBtn();
     resumeSave();
   });
@@ -564,8 +563,8 @@
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
-    if(window.RTGTokens && !RTGTokens.canPlay('wordsearch')){ b.textContent='No plays left today'; b.disabled=true; b.style.opacity='.55'; b.style.cursor='default'; }
-    else { b.textContent='Play again'; b.disabled=false; b.style.opacity=''; b.style.cursor='pointer'; }
+    if(window.RTGTokens && !RTGTokens.canPlay('wordsearch')){ b.textContent='No plays left today'; b.disabled=true; b.classList.add('spent'); }
+    else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
   }
 
   function finish(){
@@ -579,7 +578,6 @@
       s.best=Math.min(s.best||1e9, Math.round(elapsed));
       s.solves=(s.solves||0)+1; save(s);
     }
-    if(!ARCHIVE && window.RTGHistory) RTGHistory.push('wordsearch', Math.round(elapsed), true);
     document.getElementById('streakN').textContent=s.streak||0;
     document.getElementById('mTime').textContent=fmt(elapsed);
     document.getElementById('mHints').textContent=hints;
@@ -587,9 +585,8 @@
     document.getElementById('yourTm').textContent=fmt(elapsed);
     document.getElementById('yourBest').textContent=fmt(s.best||elapsed);
 
-    document.getElementById('mSub').textContent = attemptFirst ? 'You found every name' : 'Practice — not ranked';
+    document.getElementById('mSub').textContent = attemptFirst ? 'You found every name' : 'Practice, not ranked';
     updateAgainBtn();
-    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'wordsearch');
 
     if(attemptFirst && window.RTG_BOARD){
       RTG_BOARD.submit('wordsearch', P.id, { seconds:Math.round(elapsed), mistakes:0, reveals:hints }).then(function(res){
@@ -612,7 +609,7 @@
   });
   document.getElementById('mShare').addEventListener('click', shareResult);
   function shareResult(){
-    var txt='Run The Arcade Word Search — '+P.theme+'\n⏱ '+fmt(elapsed)+(hints?(' · '+hints+' hint'+(hints>1?'s':'')):' · flawless')+'\nrunthe.gg/arcade/';
+    var txt='Run The Arcade Word Search: '+P.theme+'\n'+fmt(elapsed)+(hints?(' · '+hints+' hint'+(hints>1?'s':'')):' · flawless')+'\nrunthe.gg/arcade/';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }).catch(function(){ toast('Copy failed'); }); }
     else toast('Sharing not supported');
@@ -693,7 +690,7 @@
     done=true;
     gridEl.style.pointerEvents='none'; gridEl.style.opacity='.5';
     renderWords();
-    var wl=document.getElementById('wordsLab'); if(wl) wl.textContent='No plays left — back tomorrow.';
+    var wl=document.getElementById('wordsLab'); if(wl) wl.textContent='No plays left. Back tomorrow.';
   } else {
     beginAttempt();   // fresh playable board; does NOT charge until first interaction
   }

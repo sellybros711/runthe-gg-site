@@ -39,7 +39,7 @@
       +'padding:7px 14px; font-family:var(--f,system-ui); font-weight:800; font-size:12px; letter-spacing:.01em; '
       +'color:#20140a; background:linear-gradient(90deg,var(--gold,#F2B632),color-mix(in srgb,var(--gold,#F2B632) 78%, #fff)); '
       +'box-shadow:0 2px 10px -4px rgba(0,0,0,.5);';
-    bar.innerHTML='<span aria-hidden="true">📅</span><span>Archive · '+pretty(raw)+' · <b>practice run — not ranked</b></span>'
+    bar.innerHTML='<span>Archive · '+pretty(raw)+' · <b>practice run, not ranked</b></span>'
       +'<a href="/arcade/archive/" style="color:#20140a; text-decoration:underline; font-weight:900;">Back to archive</a>';
     var host=document.body;
     if(host){ host.insertBefore(bar, host.firstChild); }

@@ -9,42 +9,42 @@
   var CONTENT = {
     table: [
       'Two athletes, one question: who wore the higher jersey number?',
-      'Tap your pick — the numbers reveal instantly.',
+      'Tap your pick and the numbers reveal instantly.',
       'Every correct pick extends your run. You get one 🛡 save; a second miss ends it.',
       'The run gets tougher: later pairs wear closer numbers.'
     ],
     career: [
       "We show a career's team stops, in order, first to last.",
-      'Four names — tap the athlete who took that exact path.',
+      'Four names. Tap the athlete who took that exact path.',
       'Each correct answer extends your run; one wrong ends it.',
       'Decoys get sneakier the deeper you go.'
     ],
     oddone: [
-      'Five names. Four share a connection — a team, a position, a decade, or the Hall of Fame.',
+      'Five names. Four share a connection: a team, a position, a decade, or the Hall of Fame.',
       "Tap the one that doesn't belong.",
       'Right: the four light green and your run grows. Wrong: run over.',
       'The connection is revealed either way.'
     ],
     rankit: [
-      'Five athletes, one category — era, career points, home runs, or passing TDs.',
+      'Five athletes, one category: era, career points, home runs, or passing TDs.',
       'Drag (or arrow) them into order, then hit Check.',
       'All five right clears the set and deals a new one. Any wrong ends the run.',
       'Real values reveal after every check.'
     ],
     guess: [
-      'One mystery player from the NBA, NFL, or MLB — the sport is given.',
+      'One mystery player from the NBA, NFL, or MLB. The sport is given.',
       'Type any player from that sport; tiles show how close you are on team, position, era and number.',
       'Green = match, yellow = close, arrows point higher or lower.',
       'Eight guesses. Stuck? Burn a 🎭 clue.'
     ],
     crossword: [
-      'A quick sports mini — type into the grid.',
+      'A quick sports mini. Type into the grid.',
       'Tap a cell to switch across/down; clues sit below.',
       'Fastest clean solve tops the board.',
       'Free players get one Reveal; Pro gets unlimited.'
     ],
     wordsearch: [
-      "Find the hidden names — today's theme tells you who they are.",
+      "Find the hidden names. Today's theme tells you who they are.",
       'Drag across letters in any direction, including diagonals and backwards.',
       'Names only reveal as you find them.',
       'One Hint highlights a first letter (Pro: unlimited).'
@@ -65,7 +65,7 @@
       '.rtgHowto-list{margin:0 0 18px;padding:0 0 0 18px;text-align:left;color:var(--mut);font-size:13px;line-height:1.55;}' +
       '.rtgHowto-list li{margin:0 0 8px;}' +
       '.rtgHowto-list li:last-child{margin-bottom:0;}' +
-      '.rtgHowto-ok{display:block;width:100%;appearance:none;border:0;border-radius:11px;padding:13px;min-height:46px;background:var(--gold);color:#071426;font-family:var(--f,inherit);font-weight:800;font-size:13px;cursor:pointer;}';
+      '.rtgHowto-ok{display:block;width:100%;appearance:none;border:0;border-radius:11px;padding:13px;min-height:46px;background:var(--coral,#F06A5F);color:#fff;font-family:var(--f,inherit);font-weight:800;font-size:13px;cursor:pointer;}';
     // Pages without a --hero display font (e.g. the crossword) fall back to the
     // body font — bump the title weight there so it still reads as a heading.
     var hero = '';

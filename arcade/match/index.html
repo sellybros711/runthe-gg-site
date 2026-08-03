@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-<title>Daily Match — Run The Arcade | Sports Matching Puzzle</title>
+<title>Daily Match | Run The Arcade Sports Matching Puzzle</title>
 <meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
@@ -17,7 +17,7 @@
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
-<meta name="description" content="Sort 20 sports names into five hidden groups of four before you run out of guesses — a daily sports matching puzzle on RunThe.GG." />
+<meta name="description" content="Sort 20 sports names into five hidden groups of four before you run out of guesses, a daily sports matching puzzle on RunThe.GG." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2337C5D5'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2337C5D5'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -82,8 +82,8 @@
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto; text-decoration:none;}
   .icon-btn:hover{color:var(--ink);}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0; text-decoration:none;}
-  .brand.logo img{height:26px; width:auto; display:block;}
-  .brand.logo .sub{display:block; font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--mut); margin-top:5px; margin-left:2px; white-space:nowrap;}
+  .brand.logo img{height:44px; width:auto; display:block;}
+  .brand.logo .sub{display:block; font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--mut); margin-top:4px; margin-left:2px; white-space:nowrap;}
   .spacer{flex:1;}
   .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card);
     color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0; flex:0 0 auto;}
@@ -146,7 +146,8 @@
   .abtn:disabled{opacity:.45; cursor:default;}
   .abtn svg{flex:0 0 auto;}
   .abtn .cost{font-size:11px; font-weight:900; color:rgba(7,20,38,.65);}
-  .abtn.gold{background:var(--gold); color:#071426; border-color:transparent;}
+  .abtn.gold{background:var(--blue); color:#fff; border-color:transparent;}
+  .abtn.gold .cost{color:rgba(255,255,255,.8);}
   .abtn.gold:hover{filter:brightness(1.06);}
   .abtn.gold:disabled{filter:none;}
   .abtn.ghost:hover{border-color:var(--teal);}
@@ -266,7 +267,7 @@
     background:var(--card2); color:var(--ink); font-size:15px; line-height:1;}
   .rgrade{text-align:center; margin:2px 0 6px;}
   .rgrade .lbl{font-size:11px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--mut);}
-  .rgrade .g{font-family:var(--hero); font-weight:400; font-size:74px; line-height:.9; letter-spacing:.02em; margin-top:2px;}
+  .rgrade .g{font-family:var(--hero); font-weight:400; font-size:clamp(34px,9.5vw,48px); line-height:1.02; letter-spacing:.02em; margin-top:2px;}
   .rgrade .verdict{font-weight:900; font-size:15px; margin-top:2px; color:var(--ink);}
   .rstats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:16px 0 4px;}
   .rstat{background:var(--card2); border:1px solid var(--line); border-radius:var(--r-md); padding:11px 6px; text-align:center;}
@@ -283,8 +284,9 @@
     gap:7px; justify-content:center; transition:filter .12s, border-color .12s, transform .08s;}
   .btn:active{transform:translateY(1px);}
   .btn:hover{border-color:var(--teal);}
-  .btn.primary{background:var(--coral); color:#071426; border-color:transparent;}
+  .btn.primary{background:var(--blue); color:#fff; border-color:transparent;}
   .btn.primary:hover{filter:brightness(1.05);}
+  .btn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0;
     background:var(--inv-bg); color:var(--inv-ink); font-weight:800; font-size:13px;
     padding:11px 16px; border-radius:var(--r-md); z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.8);}
@@ -373,7 +375,6 @@
     .slot{min-height:48px;}
     .pool{grid-template-columns:repeat(2,1fr);}
     .pool .tile{min-height:56px; font-size:13px;}
-    .rgrade .g{font-size:62px;}
     .statgrid .rstat .v{font-size:20px;}
   }
   /* very narrow phones: the coins chip is the one non-uniform extra — drop it
@@ -406,9 +407,9 @@
 
   <div class="app">
     <main class="gameCol">
-      <div class="lead"><span class="k">Today's board · <span id="datep">—</span></span><span class="v explain">Sort 20 sports names into five hidden groups of four.</span></div>
+      <div class="lead"><span class="k">Today's board · <span id="datep">–</span></span><span class="v explain">Sort 20 sports names into five hidden groups of four.</span></div>
 
-      <div class="tester-banner" id="testerBanner" hidden><b>Tester mode</b> — unlimited plays. Use <b>New board</b> in the sidebar for a fresh puzzle.</div>
+      <div class="tester-banner" id="testerBanner" hidden><b>Tester mode</b>: unlimited plays. Use <b>New board</b> in the sidebar for a fresh puzzle.</div>
 
       <!-- compact sticky status (mobile only) -->
       <div class="mstatus" aria-hidden="false">
@@ -479,7 +480,7 @@
       <div class="card mlb">
         <h3 class="mlb-h">Daily Leaderboard <span class="mlb-pill">Sample</span></h3>
         <div class="lb-you">
-          <div class="box me"><span class="cap">Your time today</span><span class="big" id="mYourTm">—</span></div>
+          <div class="box me"><span class="cap">Your time today</span><span class="big" id="mYourTm">–</span></div>
           <div class="box"><span class="cap">Your streak</span><span class="big" id="mYourStreak">0</span></div>
         </div>
         <div class="lb-sample" id="mlbSample">
@@ -496,11 +497,10 @@
   <div class="modal" id="resultModal" hidden>
     <div class="sheet">
       <button class="x" id="resClose" type="button" aria-label="Close">✕</button>
-      <div class="flawless" id="resFlawless"><span class="rib"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg> Flawless — zero misses</span></div>
+      <div class="flawless" id="resFlawless"><span class="rib"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg> Flawless: zero misses</span></div>
       <div class="rgrade">
-        <div class="lbl">Draft Grade</div>
-        <div class="g" id="resGrade">A</div>
-        <div class="verdict" id="resVerdict">Solid board.</div>
+        <div class="g" id="resGrade">BOARD CLEARED!</div>
+        <div class="verdict" id="resVerdict"></div>
       </div>
       <div class="rstats">
         <div class="rstat"><div class="v" id="resTime">0:00</div><div class="l">Time</div></div>
@@ -508,12 +508,11 @@
         <div class="rstat"><div class="v" id="resStreak">1</div><div class="l">Streak</div></div>
       </div>
       <div class="strip" id="resStrip"></div>
-      <div class="strip-cap">Solve order — no answers leaked</div>
+      <div class="strip-cap">Solve order, no answers leaked</div>
       <div class="milestone" id="resMilestone"></div>
       <div class="coinline" id="resCoins">+0 coins</div>
       <div class="countdown" id="resCountdown"></div>
       <div class="reportline"><a href="mailto:sellybros711@gmail.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a></div>
-      <div id="rtgHist"></div>
       <div class="rcta">
         <button class="btn primary" id="mAgain" type="button">Play again</button>
       </div>
@@ -537,10 +536,6 @@
         <div class="rstat"><div class="v" id="stBest">0</div><div class="l">Best</div></div>
       </div>
       <div class="perfline" id="stPerf">0 flawless solves</div>
-      <div class="dist" id="stDistWrap">
-        <h4>Grade distribution</h4>
-        <div id="stDist"></div>
-      </div>
       <div class="empty-stats" id="stEmpty" hidden>Play today's board to start your streak.<br>Your grades and win rate show up here.</div>
       <div class="countdown" id="stCountdown"></div>
       <div class="rcta">
@@ -559,7 +554,6 @@
   <script src="/arcade/sfx.js"></script>
   <script src="/arcade/tokens.js"></script>
   <script src="/arcade/archive.js"></script>
-  <script src="/arcade/history.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="/arcade/board.js"></script>
   <script>
@@ -986,10 +980,10 @@
         var fact = lane ? null : sharedFactLabel(ids);
         if (lane) {
           freeMiss(laneIdx, ids, revealedCats[lane.id]
-            ? ('True — all four fit "' + lane.name + '." But this board needs one of them in a different group. No guess used.')
-            : 'Those four do share something real — but this board needs one of them in a different group. No guess used.');
+            ? ('True: all four fit "' + lane.name + '." But this board needs one of them in a different group. No guess used.')
+            : 'Those four do share something real, but this board needs one of them in a different group. No guess used.');
         } else if (fact) {
-          freeMiss(laneIdx, ids, 'True — all four ' + fact + '. But that isn\'t one of today\'s five groups. No guess used.');
+          freeMiss(laneIdx, ids, 'True: all four ' + fact + '. But that isn\'t one of today\'s five groups. No guess used.');
         } else {
           registerMiss(laneIdx, ids);
         }
@@ -1102,7 +1096,7 @@
         note.className = 'lane-note ' + (close ? 'close' : 'miss');
         note.setAttribute('role', 'status');
         note.textContent = close
-          ? 'One away — 3 of these 4 belong together.'
+          ? 'One away: 3 of these 4 belong together.'
           : 'Not a group. Swap a name and try again. (−1 guess)';
         laneEl.appendChild(note);
         setTimeout(function () { if (note.parentNode) note.parentNode.removeChild(note); }, 2800);
@@ -1166,7 +1160,6 @@
         LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, order: solveOrder.slice() }));
         renderWallet();
       }
-      if (!ARCHIVE && window.RTGHistory) RTGHistory.push('match', won ? Math.round(finalTime) : null, won);
 
       // ---- cloud: post the run on a win (signed-in only; fail-open). Raw solve
       // time only; the server score formula adds its own per-mistake penalty. ----
@@ -1199,7 +1192,7 @@
         var idx = +laneEl.dataset.idx;
         if (locked[idx] === 'auto') {
           laneEl.querySelectorAll('.tile').forEach(function (tl) { tl.classList.remove('locked'); tl.classList.add('solvefill'); });
-          var chk = laneEl.querySelector('.lane-check'); if (chk) chk.textContent = '— answer';
+          var chk = laneEl.querySelector('.lane-check'); if (chk) chk.textContent = 'Answer';
         }
       });
     }
@@ -1228,17 +1221,21 @@
       return { '#37C5D5': '🟩', '#F2B632': '🟨', '#F06A5F': '🟥', '#A982F3': '🟪', '#2F6BFF': '🟦' }[hex] || '⬛';
     }
     function showResult(r) {
-      document.getElementById('resGrade').textContent = r.grade;
       var lightUI = document.documentElement.getAttribute('data-theme') === 'light';
-      var col = (lightUI
-        ? { 'A+': '#17A34A', 'A': '#17A34A', 'B': '#0E7C89', 'C': '#A87508', 'D': '#A87508', 'F': '#C4372C' }
-        : { 'A+': '#48D17A', 'A': '#48D17A', 'B': '#37C5D5', 'C': '#F2B632', 'D': '#F2B632', 'F': '#FF625F' })[r.grade];
-      document.getElementById('resGrade').style.color = col;
-      document.getElementById('resVerdict').textContent = VERDICTS[r.grade] || '';
+      var head = document.getElementById('resGrade');
+      if (r.won) {
+        head.textContent = 'BOARD CLEARED!';
+        head.style.color = lightUI ? '#17A34A' : '#48D17A';
+        document.getElementById('resVerdict').textContent = 'All 5 groups · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es');
+      } else {
+        head.textContent = 'OUT OF GUESSES';
+        head.style.color = lightUI ? '#D8452F' : '#F06A5F';
+        document.getElementById('resVerdict').textContent = solveOrder.length + ' of 5 groups found';
+      }
       document.getElementById('resTime').textContent = fmt(r.time);
       document.getElementById('resMiss').textContent = r.mistakes;
       document.getElementById('resStreak').textContent = r.streak;
-      document.getElementById('resCoins').textContent = r.archive ? 'Archive practice — not counted' : (r.tester ? 'Tester — not counted' : ('+' + r.coins + ' coins'));
+      document.getElementById('resCoins').textContent = r.archive ? 'Archive practice, not counted' : (r.tester ? 'Tester, not counted' : ('+' + r.coins + ' coins'));
       document.getElementById('resDone').textContent = r.tester ? 'Next board →' : 'Done';
       var strip = document.getElementById('resStrip'); strip.innerHTML = '';
       solveOrder.forEach(function (idx) {
@@ -1250,13 +1247,12 @@
       // streak milestone banner (or a "practice — not ranked" note on bonus replays)
       var ms = document.getElementById('resMilestone');
       if (r.milestone) { ms.textContent = r.milestone; ms.classList.add('on'); }
-      else if (r.practice) { ms.textContent = 'Practice — not ranked'; ms.classList.add('on'); }
+      else if (r.practice) { ms.textContent = 'Practice, not ranked'; ms.classList.add('on'); }
       else { ms.textContent = ''; ms.classList.remove('on'); }
       // live countdown to tomorrow's board (real plays only)
       if (r.tester) { document.getElementById('resCountdown').innerHTML = ''; }
       else { startCountdown('resCountdown'); }
       updateAgainBtn();
-      if (window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'match');
       document.getElementById('resultModal').hidden = false;
       window._lastResult = r;
       // celebration: confetti on a fresh win (denser + gold-heavy when flawless / milestone)
@@ -1268,8 +1264,11 @@
     function shareText(r) {
       var strip = solveOrder.map(function (idx) { return colorEmoji(laneById[laneCat[idx]].color); }).join('');
       var dstr = new Date(DATE + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-      return '🟩 Run The Arcade — Daily Match — ' + dstr + '\n\n' +
-        '   GRADE:  ' + r.grade + '\n   TIME:   ' + fmt(r.time) + '\n   MISSES: ' + r.mistakes + '\n   STREAK: ' + r.streak + ' 🔥\n' +
+      var resLine = r.won
+        ? ('5/5 groups · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
+        : (solveOrder.length + '/5 groups');
+      return 'Run The Arcade Daily Match, ' + dstr + '\n\n' +
+        '   ' + resLine + '\n   STREAK: ' + r.streak + '\n' +
         (strip ? '   ' + strip + '\n' : '') + '\n   runthe.gg/grid';
     }
 
@@ -1306,7 +1305,7 @@
         var rw = 460, rh = 66, rx = W / 2 - rw / 2;
         var rg = g.createLinearGradient(rx, 0, rx + rw, 0); rg.addColorStop(0, '#FF5A3C'); rg.addColorStop(1, '#EBA61F');
         g.fillStyle = rg; rr(rx, cy, rw, rh, 33); g.fill();
-        g.fillStyle = '#fff'; g.font = '900 27px Archivo, sans-serif'; ls('3px'); g.fillText('⭐ FLAWLESS', W / 2, cy + 43); ls('0px');
+        g.fillStyle = '#fff'; g.font = '900 27px Archivo, sans-serif'; ls('3px'); g.fillText('FLAWLESS', W / 2, cy + 43); ls('0px');
         cy += 96;
       } else { cy += 20; }
 
@@ -1359,7 +1358,7 @@
           if (!blob) { textShareFallback(txt); return; }
           var file = new File([blob], 'runthegrid-match.png', { type: 'image/png' });
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            navigator.share({ files: [file], text: txt, title: 'Run The Arcade — Daily Match' })
+            navigator.share({ files: [file], text: txt, title: 'Run The Arcade Daily Match' })
               .catch(function (e) { if (e && e.name === 'AbortError') return; downloadBlob(blob, txt); });
           } else { downloadBlob(blob, txt); }
         });
@@ -1472,8 +1471,8 @@
     }
     function updateAgainBtn() {
       var b = document.getElementById('mAgain'); if (!b) return;
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { b.textContent = 'No plays left today'; b.disabled = true; b.style.opacity = '.55'; b.style.cursor = 'default'; }
-      else { b.textContent = 'Play again'; b.disabled = false; b.style.opacity = ''; b.style.cursor = 'pointer'; }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { b.textContent = 'No plays left today'; b.disabled = true; b.classList.add('spent'); }
+      else { b.textContent = 'Play again'; b.disabled = false; b.classList.remove('spent'); }
     }
     function beginAttempt() {
       // Ranked first play = the daily board; every replay is a fresh random board.
@@ -1578,12 +1577,12 @@
         resetState(); render(); updateTimer(); updateExplain();
         if (saved) {
           replaySaved(saved);
-          document.getElementById('resCoins').textContent = 'No plays left — back tomorrow.';
+          document.getElementById('resCoins').textContent = 'No plays left. Back tomorrow.';
         } else {
           done = true;
           boardEl.style.pointerEvents = 'none'; boardEl.style.opacity = '.5';
           poolEl.style.pointerEvents = 'none'; poolEl.style.opacity = '.5';
-          var ex = document.querySelector('.explain'); if (ex) ex.textContent = 'No plays left — back tomorrow.';
+          var ex = document.querySelector('.explain'); if (ex) ex.textContent = 'No plays left. Back tomorrow.';
         }
         return;
       }
@@ -1684,8 +1683,8 @@
 
     // ---- dopamine: streak milestones ----
     function streakMilestone(s) {
-      var map = { 3: '🔥 3-day streak — you\'re rolling!', 5: '🔥 5 in a row!', 7: '🔥 One-week streak!',
-        14: '🔥 Two weeks strong!', 30: '🏆 30-day streak — elite!', 50: '🏆 50 days. Unreal.', 100: '👑 100-day streak!' };
+      var map = { 3: '3-day streak. You\'re rolling!', 5: '5 in a row!', 7: 'One-week streak!',
+        14: 'Two weeks strong!', 30: '30-day streak. Elite!', 50: '50 days. Unreal.', 100: '100-day streak!' };
       return map[s] || '';
     }
 
@@ -1723,24 +1722,9 @@
       document.getElementById('stPerf').textContent = st.perfects + ' flawless solve' + (st.perfects === 1 ? '' : 's');
       var hasData = st.played > 0;
       document.getElementById('stEmpty').hidden = hasData;
-      document.getElementById('stDistWrap').style.display = hasData ? '' : 'none';
       document.getElementById('stPerf').style.display = hasData ? '' : 'none';
-      if (hasData) renderDist(st);
       startCountdown('stCountdown');
       document.getElementById('statsModal').hidden = false;
-    }
-    function renderDist(st) {
-      var max = 1;
-      GRADE_KEYS.forEach(function (g) { if ((st.grades[g] | 0) > max) max = st.grades[g] | 0; });
-      var wrap = document.getElementById('stDist'); wrap.innerHTML = '';
-      GRADE_KEYS.forEach(function (g) {
-        var n = st.grades[g] | 0;
-        var row = document.createElement('div'); row.className = 'distrow';
-        row.innerHTML = '<span class="k">' + g + '</span><div class="distbar"><span></span></div><span class="c">' + n + '</span>';
-        wrap.appendChild(row);
-        var bar = row.querySelector('.distbar span');
-        setTimeout(function () { bar.style.width = Math.round(n / max * 100) + '%'; }, 40);
-      });
     }
     function closeStats() { document.getElementById('statsModal').hidden = true; }
 

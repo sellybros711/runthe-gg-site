@@ -46,8 +46,8 @@
   .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
-  .brand.logo img{height:26px; width:auto; display:block;}
-  .brand.logo .sub{display:block; font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--mut); margin-top:5px; margin-left:2px; white-space:nowrap;}
+  .brand.logo img{height:44px; width:auto; display:block;}
+  .brand.logo .sub{display:block; font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--mut); margin-top:4px; margin-left:2px; white-space:nowrap;}
   .spacer{flex:1;}
   .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card); color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0; flex:0 0 auto;}
   .themeBtn:hover{color:var(--ink);}
@@ -164,7 +164,8 @@
   .rstat .l{font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); margin-top:5px;}
   .rcta{display:flex; gap:9px; margin-top:16px;}
   .abtn{flex:1; appearance:none; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-weight:800; font-size:13px; border-radius:11px; padding:12px; min-height:46px; display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer;}
-  .abtn.gold{background:var(--gold); color:#071426; border-color:transparent;}
+  .abtn.gold{background:var(--blue); color:#fff; border-color:transparent;}
+  .abtn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
   .countdown{margin-top:14px; font-size:12px; font-weight:800; color:var(--mut);} .countdown b{color:var(--ink); font-variant-numeric:tabular-nums;}
 
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0; background:#0B1A2E; color:#F4F7FB; font-weight:800; font-size:13px; padding:11px 16px; border-radius:11px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.8);}
@@ -192,7 +193,7 @@
     <div class="chip"><span class="n" id="streakN">0</span><span class="l">Streak</span></div>
   </div>
 
-  <div class="lead"><span class="k">Today's mystery player<b class="sportbadge" id="sportBadge">—</b></span><span class="v">Guess the athlete in <b>8 tries</b>. Every guess shows how close you are on each trait.</span></div>
+  <div class="lead"><span class="k">Today's mystery player<b class="sportbadge" id="sportBadge">–</b></span><span class="v">Guess the athlete in <b>8 tries</b>. Every guess shows how close you are on each trait.</span></div>
 
   <div class="searchwrap">
     <div class="search">
@@ -204,7 +205,7 @@
   <div class="guessesLeft" id="guessesLeft">8 guesses left</div>
 
   <div class="cluewrap">
-    <button class="cluebtn" id="btnClue" type="button">🎭 Clue</button>
+    <button class="cluebtn" id="btnClue" type="button">Clue</button>
     <div id="clues"></div>
   </div>
 
@@ -218,8 +219,8 @@
   <div class="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Today</span><span class="big" id="yourTm">—</span></div>
-      <div class="box"><span class="cap">Best streak</span><span class="big" id="yourBest">—</span></div>
+      <div class="box me"><span class="cap">Today</span><span class="big" id="yourTm">–</span></div>
+      <div class="box"><span class="cap">Best streak</span><span class="big" id="yourBest">–</span></div>
     </div>
     <div class="lb-sample" id="lbSample">
       <div class="lb-samplab">Illustrative ranking</div>
@@ -238,13 +239,12 @@
     <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
     <h2 id="mTitle" class="win">SOLVED</h2>
     <div class="sub-h" id="mSub"></div>
-    <div class="revcard"><div style="flex:1"><div class="rn" id="mName">—</div><div class="rs" id="mMeta">—</div></div></div>
+    <div class="revcard"><div style="flex:1"><div class="rn" id="mName">–</div><div class="rs" id="mMeta">–</div></div></div>
     <div class="rstats">
       <div class="rstat"><div class="v" id="mGuesses">1</div><div class="l">Guesses</div></div>
       <div class="rstat"><div class="v" id="mTime">0:00</div><div class="l">Time</div></div>
       <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Streak</div></div>
     </div>
-    <div id="rtgHist"></div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
     </div>
@@ -258,10 +258,10 @@
 <div class="toast" id="toast"></div>
 
 <script src="../match/entities.js?v=12"></script>
+<script src="/arcade/rosters.js"></script>
 <script src="/arcade/sfx.js"></script>
 <script src="/arcade/tokens.js"></script>
 <script src="/arcade/archive.js"></script>
-<script src="/arcade/history.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js"></script>
 <script src="/arcade/howto.js"></script>
@@ -290,16 +290,40 @@
   function primaryDecade(e){ return (e.decade&&e.decade.length)?Math.min.apply(null,e.decade):null; }
   function posFam(p){ if(!p) return ''; var w=String(p).trim().split(/\s+/); return w[w.length-1]; }
 
+  /* ---- live rosters (generated /arcade/rosters.js; the file may not exist).
+     window.RTG_ROSTERS = {updated, count, divisions:{team:division},
+     players:[{n,s,t,p,j}]}. Everything below is guarded so a missing or
+     broken file leaves the game exactly as it was without rosters. ---- */
+  var ROSTERS = (window.RTG_ROSTERS && Array.isArray(window.RTG_ROSTERS.players) && window.RTG_ROSTERS.players.length) ? window.RTG_ROSTERS : null;
+  var rosterByKey = {};
+  if(ROSTERS){ ROSTERS.players.forEach(function(p){ if(p && p.n && p.s) rosterByKey[p.n+'|'+p.s]=p; }); }
+  function rosterOf(e){ return ROSTERS ? (rosterByKey[e.name+'|'+e.sport]||null) : null; }
+  // ONE current team per player: the roster's team when known, else the last
+  // (most recent) team in the corpus career list.
+  function curTeamOf(e){ var r=rosterOf(e); if(r && r.t) return r.t; return (e.t&&e.t.length)?e.t[e.t.length-1]:null; }
+  function jerseyOf(e){ var r=rosterOf(e); if(r && r.j!=null) return r.j; return (e.j&&e.j.length)?e.j[0]:null; }
+  function divisionOf(e){ var tm=curTeamOf(e); return (tm && ROSTERS && ROSTERS.divisions) ? (ROSTERS.divisions[tm]||null) : null; }
+
   // pools: team-sport athletes with the traits we compare. GUESSABLE is what
   // you can type (all team sports, retired included — guessing a legend at an
   // active target is fair play); TARGETS is what the game answers with.
   var GUESSABLE = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.pos && e.t && e.t.length && e.decade && e.decade.length && (e.f||0)>=3; });
-  // Targets: ACTIVE players (act:1) from the big three US leagues only, at
-  // fame>=4 (recognisable to fans, not just household names) so the daily
-  // deduction is genuinely hard while the clue trail keeps it fair.
+  // With a live roster file, both the guessable pool and the target pool are
+  // corpus entities that match a roster entry by exact name+sport (i.e. players
+  // on a current NBA/NFL/MLB roster). A thin or broken file falls back wholesale
+  // to the corpus-only behavior.
+  if(ROSTERS){
+    var live=GUESSABLE.filter(function(e){ return !!rosterOf(e); });
+    if(live.length>=20) GUESSABLE=live; else ROSTERS=null;
+  }
+  var HAS_DIV = !!(ROSTERS && ROSTERS.divisions && Object.keys(ROSTERS.divisions).length);
+  // Targets: ACTIVE players from the big three US leagues only, at fame>=4
+  // (recognisable to fans, not just household names) so the daily deduction is
+  // genuinely hard while the clue trail keeps it fair. With rosters, roster
+  // membership IS the active test; without them, the corpus act flag is.
   var TARGET_SPORTS = {NBA:1,NFL:1,MLB:1};
   function targetsFor(fMin, requireAct){
-    return GUESSABLE.filter(function(e){ return (!requireAct || e.act===1) && TARGET_SPORTS[e.sport] && (e.f||0)>=fMin; });
+    return GUESSABLE.filter(function(e){ return (ROSTERS ? true : (!requireAct || e.act===1)) && TARGET_SPORTS[e.sport] && (e.f||0)>=fMin; });
   }
   var TARGETS = targetsFor(4,true);
   if(TARGETS.length<20) TARGETS = targetsFor(3,true);   // thin corpus: relax fame first
@@ -343,25 +367,46 @@
      football minds actually sort players on. Each column knows its label and
      how to compare a guess against the target; the header row and cmp() both
      read from whichever set is active, so they can never disagree. */
-  var colTeam = { label:'Team', cell:function(g,t){ return { st: setEq(g.t,t.t)?'hit':(intersect(g.t,t.t)?'close':'miss'), v:g.t[0]+(g.t.length>1?' +'+(g.t.length-1):'') }; } };
+  // Team = the ONE current team. hit: same current team; close: the guess's
+  // current team appears anywhere in the target's career list (or vice versa).
+  var colTeam = { label:'Team', cell:function(g,t){
+    var gc=curTeamOf(g), tc=curTeamOf(t);
+    var st = (gc && tc && gc===tc) ? 'hit'
+           : (((gc && (t.t||[]).indexOf(gc)>=0) || (tc && (g.t||[]).indexOf(tc)>=0)) ? 'close' : 'miss');
+    return { st:st, v:(gc||'–') };
+  } };
   var colPos  = { label:'Pos',  cell:function(g,t){ return { st: g.pos===t.pos?'hit':(posFam(g.pos)===posFam(t.pos)?'close':'miss'), v:g.pos }; } };
   var colNat  = { label:'Nat',  cell:function(g,t){ return { st: g.nat===t.nat?'hit':'miss', v:g.nat }; } };
   var colSide = { label:'Side', cell:function(g,t){ var gs=sideOf(g.pos); return { st: gs===sideOf(t.pos)?'hit':'miss', v:gs }; } };
   var colEra  = { label:'Era',  cell:function(g,t){
     var gd=primaryDecade(g), td=primaryDecade(t);
     var eSt = gd===td?'hit':(intersect(g.decade,t.decade)?'close':'miss');
-    return { st:eSt, v:(gd!=null?("'"+String(gd).slice(2)+"s"):'—'), a:(td>gd?'up':(td<gd?'down':null)) };
+    return { st:eSt, v:(gd!=null?("'"+String(gd).slice(2)+"s"):'–'), a:(td>gd?'up':(td<gd?'down':null)) };
   } };
+  // Jersey: prefer the live roster number for display and compare; the corpus
+  // number list still powers the "close" (wore it at some point) state.
   var colNo   = { label:'No.',  cell:function(g,t){
-    var gj=(g.j&&g.j.length)?g.j[0]:null, tj=(t.j&&t.j.length)?t.j[0]:null, jSt, jA=null;
+    var gj=jerseyOf(g), tj=jerseyOf(t), jSt, jA=null;
     if(gj==null||tj==null){ jSt='miss'; } else if(gj===tj){ jSt='hit'; } else { jSt=(intersect(g.j||[],t.j||[])?'close':'miss'); jA=tj>gj?'up':'down'; }
-    return { st:jSt, v:(gj!=null?('#'+gj):'—'), a:jA };
+    return { st:jSt, v:(gj!=null?('#'+gj):'–'), a:jA };
+  } };
+  // Division of the current team (e.g. "NFC East"). hit: same division;
+  // close: same conference (first word matches). Only offered when the roster
+  // file ships a divisions map.
+  var colDiv  = { label:'Div',  cell:function(g,t){
+    var gd=divisionOf(g), td=divisionOf(t), st='miss';
+    if(gd && td){ st = gd===td ? 'hit' : (gd.split(' ')[0]===td.split(' ')[0] ? 'close' : 'miss'); }
+    return { st:st, v:(gd||'–') };
   } };
   var COL_SETS = {
     NFL:     [colTeam, colPos, colSide, colEra, colNo],
     DEFAULT: [colTeam, colPos, colNat,  colEra, colNo]
   };
-  function activeCols(){ return COL_SETS[SPORT] || COL_SETS.DEFAULT; }
+  var COL_SETS_DIV = {
+    NFL:     [colTeam, colPos, colSide, colDiv, colEra, colNo],
+    DEFAULT: [colTeam, colPos, colDiv,  colEra, colNo]
+  };
+  function activeCols(){ var m=HAS_DIV?COL_SETS_DIV:COL_SETS; return m[SPORT] || m.DEFAULT; }
   function cmp(g){
     var t=TARGET;
     return activeCols().map(function(c){ return c.cell(g,t); });
@@ -395,14 +440,14 @@
   function isProClues(){ return !!(window.RTGTokens && RTGTokens.isPro()); }
   function updateClueBtn(){
     var b=document.getElementById('btnClue'); if(!b) return;
-    if(!isProClues() && cluesUsed>=1){ b.textContent='Clue used — Pro for more'; b.disabled=true; }
+    if(!isProClues() && cluesUsed>=1){ b.textContent='Clue used. Pro for more'; b.disabled=true; }
     else if(cluesUsed>=CLUES.length){ b.textContent='No more clues'; b.disabled=true; }
-    else { b.textContent='🎭 Clue'; b.disabled=false; }
+    else { b.textContent='Clue'; b.disabled=false; }
   }
   document.getElementById('btnClue').addEventListener('click', function(){
     if(done) return;
     // FREE players are capped at 1 clue per play; PRO is never blocked
-    if(!isProClues() && cluesUsed>=1){ toast('1 clue per play — Pro gets unlimited'); updateClueBtn(); return; }
+    if(!isProClues() && cluesUsed>=1){ toast('1 clue per play. Pro gets unlimited'); updateClueBtn(); return; }
     if(cluesUsed>=CLUES.length){ toast('No more clues'); updateClueBtn(); return; }
     startIfNeeded();
     var d=document.createElement('div');
@@ -468,12 +513,13 @@
   function buildBoard(){
     /* The header labels come from the active column set, so an NFL day reads
        Team · Pos · Side · Era · No. and an NBA/MLB day keeps Nat. */
+    var cols=activeCols(), n=cols.length;
     var head=document.querySelector('.board .collab');
-    if(head) head.innerHTML=activeCols().map(function(c){ return '<span>'+esc(c.label)+'</span>'; }).join('');
+    if(head){ head.innerHTML=cols.map(function(c){ return '<span>'+esc(c.label)+'</span>'; }).join(''); head.style.gridTemplateColumns='repeat('+n+',1fr)'; }
     var host=document.getElementById('guesses'), html='';
     for(var r=0;r<MAX;r++){
-      html+='<div class="guess"><div class="nm">'+(r+1)+'</div><div class="row">';
-      for(var c=0;c<5;c++) html+='<div class="tile blank"></div>';
+      html+='<div class="guess"><div class="nm">'+(r+1)+'</div><div class="row" style="grid-template-columns:repeat('+n+',1fr)">';
+      for(var c=0;c<n;c++) html+='<div class="tile blank"></div>';
       html+='</div></div>';
     }
     host.innerHTML=html;
@@ -482,7 +528,7 @@
     var slot=document.querySelector('#guesses .guess:not(.filled)');
     if(!slot) return;
     var cells=cmp(e), arrows={up:'↑',down:'↓'};
-    var html='<div class="nm">'+esc(e.name)+'</div><div class="row">';
+    var html='<div class="nm">'+esc(e.name)+'</div><div class="row" style="grid-template-columns:repeat('+cells.length+',1fr)">';
     cells.forEach(function(c){
       var longest=String(c.v).split(/\s+/).reduce(function(m,w){ return Math.max(m,w.length); },0);
       html+='<div class="tile '+c.st+'"><span class="tv'+(longest>9?' long':'')+'">'+esc(c.v)+'</span>'+(c.a?'<span class="ta">'+arrows[c.a]+'</span>':'')+'</div>';
@@ -503,8 +549,9 @@
     var v=document.querySelector('.lead .v'); if(!v) return;
     var lbl = ARCHIVE ? ' · Archive practice' : (window.RTGTokens ? (' · '+RTGTokens.label('guess')+' today') : '');
     /* "This player", not "today's": a replay or an archive round is not today's. */
-    var traits = SPORT==='NFL' ? 'team, position, side of the ball, era and number'
-                               : 'team, position, nationality, era and number';
+    var traits = SPORT==='NFL'
+      ? (HAS_DIV ? 'team, position, side of the ball, division, era and number' : 'team, position, side of the ball, era and number')
+      : (HAS_DIV ? 'team, position, division, era and number' : 'team, position, nationality, era and number');
     v.innerHTML='This player is from the <b>'+esc(SPORT)+'</b>. Name them in <b>8 tries</b>. '+
       'Every guess shows how close you are on '+traits+'.'+esc(lbl);
   }
@@ -563,8 +610,8 @@
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
-    if(window.RTGTokens && !RTGTokens.canPlay('guess')){ b.textContent='No plays left today'; b.disabled=true; b.style.opacity='.55'; b.style.cursor='default'; }
-    else { b.textContent='Play again'; b.disabled=false; b.style.opacity=''; b.style.cursor='pointer'; }
+    if(window.RTGTokens && !RTGTokens.canPlay('guess')){ b.textContent='No plays left today'; b.disabled=true; b.classList.add('spent'); }
+    else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
   }
 
   // ---- finish ----
@@ -594,15 +641,14 @@
     }
     s.lastDone=today; s.last={ won:w, guesses:guesses.length, seconds:Math.round(elapsed) };
     save(s);
-    if(!ARCHIVE && window.RTGHistory) RTGHistory.push('guess', w?guesses.length:null, w);
     document.getElementById('streakN').textContent=s.streak||0;
     var wrong = guesses.length-(w?1:0);
     // modal
     var tt=document.getElementById('mTitle'); tt.textContent=w?'SOLVED':'SO CLOSE'; tt.className=w?'win':'lose';
-    document.getElementById('mSub').textContent = !attemptFirst ? 'Practice — not ranked' : (w ? ('In '+guesses.length+' guess'+(guesses.length===1?'':'es')) : ('The answer was'));
+    document.getElementById('mSub').textContent = !attemptFirst ? 'Practice, not ranked' : (w ? ('In '+guesses.length+' guess'+(guesses.length===1?'':'es')) : ('The answer was'));
     document.getElementById('mName').textContent=TARGET.name;
-    document.getElementById('mMeta').textContent=[TARGET.sport, TARGET.pos, (TARGET.t&&TARGET.t[0])].filter(Boolean).join(' · ');
-    document.getElementById('mGuesses').textContent=w?guesses.length:'—';
+    document.getElementById('mMeta').textContent=[TARGET.sport, TARGET.pos, curTeamOf(TARGET)].filter(Boolean).join(' · ');
+    document.getElementById('mGuesses').textContent=w?guesses.length:'–';
     document.getElementById('mTime').textContent=fmt(elapsed);
     document.getElementById('mStreak').textContent=s.streak||0;
     document.getElementById('yourTm').textContent = w ? (guesses.length+' · '+fmt(elapsed)) : 'X';
@@ -615,7 +661,6 @@
       });
     }
     updateAgainBtn();
-    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'guess');
     setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(w){ confetti(wrong===0?120:80, wrong===0); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 350);
   }
 
@@ -665,7 +710,7 @@
           samp.innerHTML=h;
         }
       }
-      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board — fewest guesses, then fastest time. Sign in on RunThe.GG to post yours.';
+      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board: fewest guesses, then fastest time. Sign in on RunThe.GG to post yours.';
     });
   }
 
@@ -673,19 +718,18 @@
   function lockToday(sv){
     buildBoard(); updateLead();
     done=true; qEl.disabled=true; goEl.disabled=true; qEl.placeholder='Come back tomorrow';
-    document.getElementById('guessesLeft').textContent='No plays left — back tomorrow.';
+    document.getElementById('guessesLeft').textContent='No plays left. Back tomorrow.';
     var cb=document.getElementById('btnClue'); if(cb) cb.disabled=true;
     var w=sv.last.won;
     var tt=document.getElementById('mTitle'); tt.textContent=w?'SOLVED':'SO CLOSE'; tt.className=w?'win':'lose';
     document.getElementById('mSub').textContent = w ? ('In '+sv.last.guesses+' guess'+(sv.last.guesses===1?'':'es')) : 'The answer was';
     document.getElementById('mName').textContent=TARGET.name;
-    document.getElementById('mMeta').textContent=[TARGET.sport,TARGET.pos,(TARGET.t&&TARGET.t[0])].filter(Boolean).join(' · ');
-    document.getElementById('mGuesses').textContent=w?sv.last.guesses:'—';
+    document.getElementById('mMeta').textContent=[TARGET.sport,TARGET.pos,curTeamOf(TARGET)].filter(Boolean).join(' · ');
+    document.getElementById('mGuesses').textContent=w?sv.last.guesses:'–';
     document.getElementById('mTime').textContent=fmt(sv.last.seconds||0);
     document.getElementById('mStreak').textContent=sv.streak||0;
     document.getElementById('yourTm').textContent = w ? (sv.last.guesses+' · '+fmt(sv.last.seconds||0)) : 'X';
     updateAgainBtn();
-    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'guess');
     document.getElementById('scrim').classList.remove('hidden'); startCountdown();
   }
 

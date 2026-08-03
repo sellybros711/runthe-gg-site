@@ -11,7 +11,7 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Play any past day's Run The Arcade puzzles — a Pro feature." />
+<meta name="description" content="Play any past day's Run The Arcade puzzles, a Pro feature." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -43,8 +43,8 @@
   .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 14px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
-  .brand.logo img{height:26px; width:auto; display:block;}
-  .brand.logo .sub{display:block; font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--mut); margin-top:5px; margin-left:2px; white-space:nowrap;}
+  .brand.logo img{height:44px; width:auto; display:block;}
+  .brand.logo .sub{display:block; font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--mut); margin-top:4px; margin-left:2px; white-space:nowrap;}
   .spacer{flex:1;}
   .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card); color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0; flex:0 0 auto;}
   .themeBtn:hover{color:var(--ink);}
@@ -59,13 +59,13 @@
 
   /* pro upsell */
   .gate{background:var(--card); border:1px solid var(--line2); border-radius:18px; box-shadow:var(--shadow); padding:24px 20px; text-align:center; max-width:460px; margin:8px auto;}
-  .gate .crown{width:56px; height:56px; border-radius:16px; margin:0 auto 14px; display:flex; align-items:center; justify-content:center; background:linear-gradient(150deg,var(--gold),#F5A623); box-shadow:0 10px 26px -10px rgba(242,182,50,.8);}
+  .gate .crown{width:56px; height:56px; border-radius:16px; margin:0 auto 14px; display:flex; align-items:center; justify-content:center; background:linear-gradient(150deg,var(--coral),#D8452F); box-shadow:0 10px 26px -10px rgba(240,106,95,.8);}
   .gate h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:22px; margin:0 0 6px;}
   .gate p{font-size:13px; color:var(--mut); margin:0 0 16px; line-height:1.55;}
   .gate ul{list-style:none; padding:0; margin:0 0 20px; text-align:left; display:inline-block;}
   .gate li{font-size:13.5px; font-weight:700; color:var(--ink); margin:9px 0; display:flex; gap:9px; align-items:flex-start;}
   .gate li svg{flex:0 0 auto; margin-top:1px; color:var(--greenT);}
-  .btn{appearance:none; border:0; cursor:pointer; font-family:var(--f); font-weight:900; font-size:15px; border-radius:13px; padding:15px 20px; min-height:52px; width:100%; background:var(--gold); color:#20140a; box-shadow:var(--shadow);}
+  .btn{appearance:none; border:0; cursor:pointer; font-family:var(--f); font-weight:900; font-size:15px; border-radius:13px; padding:15px 20px; min-height:52px; width:100%; background:var(--coral); color:#fff; box-shadow:var(--shadow);}
   .btn:hover{filter:brightness(1.06);}
   .gate .fine{font-size:11px; color:var(--dim); margin:12px 0 0; font-weight:600;}
 
@@ -106,7 +106,7 @@
 
   <div class="hero">
     <h1>The Archive</h1>
-    <p>Missed a day? Replay any past Run The Arcade puzzle. Archive runs are just for fun — they don't touch your streak or the daily leaderboard.</p>
+    <p>Missed a day? Replay any past Run The Arcade puzzle. Archive runs are just for fun. They don't touch your streak or the daily leaderboard.</p>
   </div>
 
   <div id="content"></div>
@@ -150,7 +150,7 @@
         '<p>Go back and play any puzzle you missed, from any of the eight games.</p>'+
         '<ul>'+
           '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Replay every past day, all eight games</span></li>'+
-          '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Unlimited plays — no daily token limit</span></li>'+
+          '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Unlimited plays, no daily token limit</span></li>'+
           '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Your streak and today’s leaderboard stay untouched</span></li>'+
         '</ul>'+
         '<button class="btn" id="goPro">Get Pro</button>'+
@@ -173,11 +173,11 @@
       }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
         .then(function(res){
           if(res.ok && res.d && res.d.url){ location.href=res.d.url; return; }
-          document.getElementById('gateFine').textContent='Checkout isn’t live yet — use the preview unlock below for now.';
+          document.getElementById('gateFine').textContent='Checkout isn’t live yet. Use the preview unlock below for now.';
           btn.disabled=false; btn.textContent='Get Pro';
         })
         .catch(function(){
-          document.getElementById('gateFine').textContent='Checkout isn’t live yet — use the preview unlock below for now.';
+          document.getElementById('gateFine').textContent='Checkout isn’t live yet. Use the preview unlock below for now.';
           btn.disabled=false; btn.textContent='Get Pro';
         });
     });
