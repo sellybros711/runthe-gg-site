@@ -1047,6 +1047,21 @@ window.GA_ID='G-L29P5MRWKE';
   .deal-cash .dcash-n{flex:0 0 auto;font-family:var(--fd);font-size:17px;font-weight:700;
     color:#fcd34d;line-height:1}
   .deal-cash b{color:#fcd34d}
+  /* Retained salary (a seller eating a slice of the contract) and a market gone cold on a
+     re-shopped man. Quieter than cash: notes on the deal, not charges against the ceiling. */
+  .deal-retain{margin:7px 10px 0;padding:6px 9px;border-radius:8px;font-size:11.5px;
+    line-height:1.35;color:#bbf7d0;background:rgba(34,197,94,.09);
+    border:1px solid rgba(34,197,94,.4)}
+  .deal-retain b{color:#4ade80}
+  .deal-cold{margin:7px 10px 0;padding:6px 9px;border-radius:8px;font-size:11.5px;
+    line-height:1.35;color:var(--dim);background:rgba(148,163,184,.07);
+    border:1px dashed rgba(148,163,184,.35)}
+  /* Who you are dealing with, under the club name: their record, and which way it points
+     them. A contender pays up; a rebuilder sells and retains. */
+  .dn-stance{font-family:var(--fn);font-size:10px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--dim-2);margin-top:1px}
+  .dn-stance.contender{color:#fbbf24}
+  .dn-stance.rebuilding{color:#94a3b8}
   .tt-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px}
   .tt-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;
     gap:6px;padding:3px 4px;border-radius:7px;min-width:0;
@@ -3868,7 +3883,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=41"></script>
-<script src="run.js?v=55"></script>
+<script src="run.js?v=56"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -6178,6 +6193,8 @@ function paintGmParts(p,gm){
   const el=$('o-gm-parts'); if(!el) return;
   if(!p){ el.innerHTML='<p class="dim" style="font-size:12.5px">No breakdown available.</p>'; return; }
   const rec=p.regularWins+'-'+(E.CONSTANTS.REGULAR_SEASON_GAMES-p.regularWins);
+  /* Older saved runs carry a `cap` mark instead of `deal`; they still have to render. */
+  const legacy=p.deal==null;
   const rows=[
     {k:'Winning',w:35,v:p.result,
      why:rec+(p.bye?', top seed and a bye':'')+
@@ -6186,31 +6203,28 @@ function paintGmParts(p,gm){
     {k:'Improvement',w:25,v:p.improvement,
      why:'team '+p.startRating.toFixed(1)+' → '+p.finalRating.toFixed(1)+
        ' ('+(p.ratingGain>=0?'+':'')+p.ratingGain.toFixed(1)+'). Full marks at +'+25},
+    /* THE MODE'S OWN SKILL, ON ITS OWN LINE. Every accepted deal is graded against the
+       best card on the board it came from, and every release against the best legal
+       release. This replaced a cap mark that everyone maxed by showing up. */
+    legacy?null:{k:'Dealmaking',w:20,v:p.deal,
+     why:!p.dealsMade
+       ? 'no trades all season — the mode grades dealmaking, and there was none to grade'
+       : p.leftOnTable>0.05
+       ? 'across '+p.dealsMade+' deal'+(p.dealsMade===1?'':'s')+' you left '+
+         p.leftOnTable.toFixed(1)+' team rating on the table — a stronger card or a '+
+         'better release was sitting on a board you accepted from'
+       : 'you took the strongest version of every deal you accepted, '+
+         p.dealsMade+' of '+p.dealsMade},
     {k:'Value',w:15,v:p.value,
-     why:p.addedSalary>0
-       ? '+'+p.ratingGain.toFixed(1)+' rating for $'+p.addedSalary.toFixed(1)+'M spent above the no-trade payroll'
-       : 'gained without spending past the no-trade payroll of $'+p.noTradePayroll.toFixed(1)+'M'},
-    /* THE CAP, ON ITS OWN LINE AND WORTH SAYING OUT LOUD. It was a third of the Value mark
-       and 6% of the rating, mentioned only in a footnote after the fact. */
-    {k:'Cap management',w:15,v:p.cap,
-     /* THE CEILING HAS TO BE NAMED, because cash paid in trades moves it. "Finished $4M over
-        the cap" against an unstated $140M would be wrong by however much was paid out, and
-        the line has to account for where the missing room went or it reads as a bug. */
-     why:(p.overCapBy>0
-       ? 'finished $'+p.overCapBy.toFixed(1)+'M OVER a $'+(p.capMusd??CAP()).toFixed(1)+'M cap'
-       : p.idleCap>10
-       ? '$'+p.idleCap.toFixed(1)+'M of a $'+(p.capMusd??CAP()).toFixed(1)+
-         'M cap left unspent, which is a resource you did not use'
-       : 'payroll $'+p.totalSalary.toFixed(1)+'M against a $'+(p.capMusd??CAP()).toFixed(1)+
-         'M cap, inside it with $'+p.idleCap.toFixed(1)+'M spare')+
-       (p.cashPaid>0
-         ? '. $'+p.cashPaid.toFixed(1)+'M of the original $'+E.CONSTANTS.CAP_MUSD+
-           'M went out as cash in trades'
-         : '')},
-    {k:'Beat expectation',w:10,v:p.over,
+     why:(p.spentTotal??p.addedSalary)>0.05
+       ? '+'+p.ratingGain.toFixed(1)+' rating for $'+(p.spentTotal??p.addedSalary).toFixed(1)+
+         'M committed — salary added'+(p.cashPaid>0?' plus $'+p.cashPaid.toFixed(1)+'M cash':'')
+       : 'gained without committing money past your starting payroll',
+     },
+    {k:'Beat expectation',w:legacy?10:5,v:p.over,
      why:'won '+p.regularWins+'; the '+p.startRating.toFixed(1)+' roster you inherited was worth about '+
        p.expectedWins.toFixed(1)},
-  ];
+  ].filter(Boolean);
   let h='<div class="gmp-top"><span class="gmp-num">'+Number(gm).toFixed(2)+'</span>'+
     '<span class="gmp-cap">out of 100</span></div>';
   rows.forEach(r=>{
@@ -6222,15 +6236,12 @@ function paintGmParts(p,gm){
       '<div class="gmp-bar"><i class="'+cls+'" style="width:'+Math.max(1,Math.min(100,r.v))+'%"></i></div>'+
       '<div class="gmp-why">'+esc(r.why)+'</div></div>';
   });
-  /* The cost stated as a number rather than as "costs part of a mark", which was true and
-     told nobody anything. Cap management is 15% of the rating, so the points lost are
-     exactly that share of the mark that went missing. */
+  /* GOING OVER THE CAP IS A FINE, NOT A MARK: the market refuses deals that break the cap,
+     so finishing over it is a deliberate act and comes straight off the total. */
   if(p.overCapBy>0){
-    h+='<p class="gmp-note over">Finishing $'+p.overCapBy.toFixed(1)+'M over the cap cost you <b>'+
-      ((100-p.cap)*0.15).toFixed(1)+' points</b> of this rating.</p>';
-  }else if(p.idleCap>10){
-    h+='<p class="gmp-note">Leaving $'+p.idleCap.toFixed(1)+'M of cap unspent cost you <b>'+
-      ((100-p.cap)*0.15).toFixed(1)+' points</b>. A win-now roster is supposed to use its money.</p>';
+    h+='<p class="gmp-note over">Finishing $'+p.overCapBy.toFixed(1)+'M over the cap took <b>'+
+      (p.overCapPenalty!=null?p.overCapPenalty.toFixed(1):((100-(p.cap||0))*0.15).toFixed(1))+
+      ' points</b> straight off this rating.</p>';
   }
   el.innerHTML=h;
 }
@@ -6323,7 +6334,8 @@ function openTradeWindow(step,opts){
   $('tw-sub').textContent=preseasonWindow
     ?'Fix the roster before kickoff. Put one or two players on the block.'
     :deadline
-    ?'Last window of the year. After this you ride out the season with what you have.'
+    ?'Last window of the year. Contenders pay a premium for stars, sellers want more cash '+
+      '— after this you ride with what you have.'
     :'Put one or two players on the block, then see what the league offers.';
   $('tw-market').style.display='none';
   $('tw-shop').style.display='';
@@ -6610,6 +6622,14 @@ function paintDeal(dir){
       '<div class="dn-mid">'+
         '<div class="dn-count">Offer '+(selectedOffer+1)+' of '+n+'</div>'+
         '<div class="dn-partner">'+esc(o.partnerSeason+' '+E.nickname(o.partnerFranchise))+'</div>'+
+        /* WHO YOU ARE TALKING TO. The record is the motive: a 12-4 club is buying, a 4-12
+           club is selling, and the difference is priced into the offer, so it is said on
+           the card rather than left as a hidden modifier. */
+        (o.partnerRecord
+          ? '<div class="dn-stance'+(o.stance?' '+o.stance:'')+'">'+esc(o.partnerRecord)+
+            (o.stance==='contender'?' &middot; contending'
+              :o.stance==='rebuilding'?' &middot; rebuilding':'')+'</div>'
+          : '')+
         '<div class="dn-shape">'+o.outPlayers.length+' out &middot; '+
           (o.inPlayers.length+(o.faPos?1:0))+' in</div>'+
       '</div>'+
@@ -6634,6 +6654,19 @@ function paintDeal(dir){
         ? '<div class="deal-cash"><span class="dcash-n">$'+o.cashMusd.toFixed(1)+'M</span>'+
           '<span>cash on top. Your cap drops to <b>$'+(CAP()-o.cashMusd).toFixed(1)+'M</b>'+
           ' for the rest of the season.</span></div>'
+        : '')+
+      /* A rebuilding club eats part of the contract to move it, the way real sellers
+         retain salary. The tiles already show the price you pay; this names why it is
+         lower than the man's real number. */
+      (o.retainedMusd>0
+        ? '<div class="deal-retain">They retain <b>$'+o.retainedMusd.toFixed(1)+'M</b> of the '+
+          'salary to move the deal &mdash; the prices shown are what you pay.</div>'
+        : '')+
+      /* The league remembers a man it has already been offered. Said on the card, so
+         window shopping has a stated price instead of a hidden one. */
+      (o.marketCold>0
+        ? '<div class="deal-cold">The league has seen this package shopped before &mdash; '+
+          'offers run a little lighter the second time around.</div>'
         : '')+
       '<div class="deal-cols">'+
         '<div class="dc"><div class="dc-head out">You give</div>'+
@@ -10001,6 +10034,13 @@ function runPayload(){
       /* Cash paid on top, which came off the cap ceiling. Only written when there was some,
          so rows for cash-free deals are no bigger than they were. */
       if(h.cashMusd>0) m.cash=h.cashMusd;
+      /* Who the deal was with (a contender buying or a rebuilder selling), the salary they
+         retained, and the dealmaking ledger for the move. Written only when present, same
+         size discipline as `cash`; the validator bounds by bytes, not keys. */
+      if(h.stance) m.stance=h.stance;
+      if(h.retainedMusd>0) m.retained=h.retainedMusd;
+      if(h.dealEdge) m.edge=h.dealEdge;
+      if(h.cutLoss) m.cutLoss=h.cutLoss;
       return m;
     }):null,
   };

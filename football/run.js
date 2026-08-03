@@ -1263,6 +1263,10 @@ function buildOffer(run, slots, outIdxs, inPlayers) {
   return { type, outIdx: outIdxs.slice(), outPlayers, inPlayers, netCap, netVal, faPos,
     cutIdxs, cutGroups, cutCount: Math.max(0, over), fieldGain,
     cashMusd: cashFor(run, fieldGain),
+    /* Salary the sending club keeps paying, summed across the deal. Nonzero only when a
+       rebuilding club is moving contracts; the tiles already show the reduced prices, and
+       this is the figure the card names as the reason they are reduced. */
+    retainedMusd: money(inPlayers.reduce((t, p) => t + (p.retainedMusd || 0), 0)),
     partnerFranchise: inPlayers[0].franchise, partnerSeason: inPlayers[0].season };
 }
 
@@ -1281,8 +1285,10 @@ function cashFor(run, fieldGain) {
   if (!run.tradeMachine) return 0;
   const C = E.CONSTANTS;
   if (!(fieldGain > C.TRADE_CASH_MIN_GAIN)) return 0;
-  /* The gate is a gate, not a deductible: the whole gain is billed once it clears. */
-  const raw = fieldGain * C.TRADE_CASH_PER_FPPG;
+  /* The gate is a gate, not a deductible: the whole gain is billed once it clears. At the
+     deadline the seller knows exactly how badly a buyer wants it, and the price says so. */
+  const raw = fieldGain * C.TRADE_CASH_PER_FPPG
+    * (isDeadlineWindow(run) ? DEADLINE_CASH_MULT : 1);
   return Math.min(C.TRADE_CASH_MAX_MUSD, Math.round(raw * 2) / 2);
 }
 
@@ -1405,12 +1411,89 @@ const MAX_OFFERS = 4;
    somebody worth asking for. Not always: a counter-ask every window is just a tax. */
 const COUNTER_ASK_RATE = 0.55;
 
+/* ─── WHO IS ON THE OTHER END OF THE PHONE ──────────────────────────────────────────────
+ *
+ * Every club in the pool played a real season and finished with a real record, and the
+ * record is the motive. A 12-4 club is CONTENDING: it will not sell its good players, and
+ * it pays over the odds for yours, because it is one man short of a ring and knows it. A
+ * 4-12 club is REBUILDING: its veterans are for sale, and it will eat a slice of a contract
+ * to move one, the way real sellers retain salary. Everyone in between is just a club.
+ *
+ * This is the layer that makes WHO you deal with a decision. The same package fetches more
+ * from the right kind of partner, and the card says which kind you are talking to -- the
+ * record is printed on it -- so reading the room is a skill the market pays, not a hidden
+ * modifier. Cut on strength_z rather than raw wins so an 11-win season in a weak year and
+ * one in a murderous year land on the same side of the line: z of ±0.6 is roughly the
+ * 12-win class and the 4-win class, about a quarter of the pool each.
+ */
+const STANCE_CONTEND_Z = 0.6;
+const STANCE_REBUILD_Z = -0.6;
+const REBUILD_SELL_BONUS = 1.10;   // a seller's player comes a shade cheaper: band top, their men only
+const CONTEND_SELL_CUT = 0.92;     // a contender's good men are not for sale
+const CONTEND_BUY_PREMIUM = 1.06;  // what a contender pays when it wants YOUR man
+const DEADLINE_BUY_PREMIUM = 1.12; // ...and at the deadline, when it is now or never
+const DEADLINE_CASH_MULT = 1.25;   // sellers know a deadline buyer is desperate
+/* Salary retention: the seller keeps paying part of the contract, exactly as real clubs
+   retain salary to move a veteran. Applied as a copy -- the shared pool is never touched,
+   for the same reason reprice() exists. Capped per DEAL, not per man, so a three-man return
+   cannot stack three retentions. */
+const RETAIN_SHARE = 0.25;
+const RETAIN_MAX_MUSD = 3;
+/* THE LEAGUE REMEMBERS. Shop a man, keep him, and shop him again two weeks later: everyone
+   knows he is available and nobody bids against themselves. The top of his market drops a
+   few percent per prior window he was dangled in, said on the card so the cost of window
+   shopping is a rule and not a trap. Decisiveness is worth money; fishing costs it. */
+const SHOPPED_DECAY = 0.04;
+const SHOPPED_DECAY_CAP = 2;
+
+function stanceOfZ(z) {
+  if (typeof z !== 'number') return null;
+  if (z >= STANCE_CONTEND_Z) return 'contender';
+  if (z <= STANCE_REBUILD_Z) return 'rebuilding';
+  return null;
+}
+
+/* The deadline is a market condition, not just a label on the header: contenders pay more
+   and cash demands rise. Preseason has no week yet, and weeks past the deadline have no
+   market at all, so the check is exact equality with the last trading week. */
+function isDeadlineWindow(run) {
+  return !!(run && run.season && run.season.week >= TRADE_DEADLINE_WEEK);
+}
+
+/* A rebuilding club retains salary on the men it sends, up to RETAIN_MAX_MUSD across the
+   whole deal. Copies, never the pool objects: a retained contract is a fact about THIS
+   trade, not about the player. */
+function applyRetention(list) {
+  let budget = RETAIN_MAX_MUSD;
+  return list.map((p) => {
+    if (budget <= 0.01) return p;
+    const cut = Math.min(budget, money(p.price_musd * RETAIN_SHARE));
+    if (cut < 0.1) return p;
+    budget = money(budget - cut);
+    return { ...p, price_musd: money(p.price_musd - cut), retainedMusd: cut };
+  });
+}
+
 function findOffers(run, data, ctx, outIdxs) {
   if (!outIdxs || !outIdxs.length || outIdxs.length > 2) return [];
   const rng = offerRng(run, outIdxs);
   const slots = slotsOf(run);
   const CAP = capOf(run);
   const pool = data.teamSeasons;
+  const deadline = isDeadlineWindow(run);
+  /* Market memory. Count the windows this package's men were ALREADY shopped in, then
+     record this one. The count feeds a small haircut on the top of every band; recording
+     after counting means re-opening the same package inside one window costs nothing. */
+  run.shopped = run.shopped || {};
+  const wk = (run.season && run.season.week) || 0;
+  let priorShops = 0;
+  for (const i of outIdxs) {
+    const id = run.roster[i].player_id;
+    const seen = run.shopped[id] = run.shopped[id] || [];
+    priorShops = Math.max(priorShops, seen.filter((w) => w !== wk).length);
+    if (seen.indexOf(wk) === -1) seen.push(wk);
+  }
+  const coldMult = 1 - SHOPPED_DECAY * Math.min(SHOPPED_DECAY_CAP, priorShops);
   /* Nobody you already have, and nobody you have already moved on from: a man you traded
      away last window turning up in this window's offers reads as the league forgetting the
      deal. See run.departed. */
@@ -1419,11 +1502,15 @@ function findOffers(run, data, ctx, outIdxs) {
   const twoOut = outIdxs.length === 2;
 
   // Leaguewide pool by position (validity is decided by re-slotting, so any position is
-  // fair game if the roster can still form a lineup around it).
+  // fair game if the roster can still form a lineup around it). Each player carries his
+  // club's stance via tsStance, and multi-player partners carry theirs on the entry.
   const byPos = { QB: [], RB: [], WR: [], TE: [] };
   const faPool = { QB: [], RB: [], WR: [], TE: [] };
   const partnerLists = [];
+  const tsStance = {}, tsRecord = {};
   for (const ts of pool) {
+    tsStance[ts.team_season_id] = stanceOfZ(ts.strength_z);
+    tsRecord[ts.team_season_id] = ts.record || null;
     const list = [];
     for (const p of (data.playersByTeamSeason[ts.team_season_id] ?? [])) {
       if (onRoster.has(p.player_id) || !byPos[p.position]) continue;
@@ -1433,8 +1520,15 @@ function findOffers(run, data, ctx, outIdxs) {
       // against the kind of player who will actually be available to fill the spot.
       if (isFreeAgentCandidate(p)) faPool[p.position].push(p);
     }
-    if (list.length >= 2) partnerLists.push(list);
+    if (list.length >= 2) {
+      partnerLists.push({ list, stance: tsStance[ts.team_season_id], ts: ts.team_season_id });
+    }
   }
+  const stampPartner = (o, tsId) => {
+    o.stance = tsStance[tsId] || null;
+    o.partnerRecord = tsRecord[tsId] || null;
+    return o;
+  };
   const faStand = {};
   for (const pos of ['QB', 'RB', 'WR', 'TE']) {
     const c = faPool[pos].slice().sort((x, y) => y.ppr_ppg_mean - x.ppr_ppg_mean)
@@ -1522,11 +1616,15 @@ function findOffers(run, data, ctx, outIdxs) {
     return c.keepSalary + inSalary - freed + reserve <= CAP - cash;
   };
 
-  /* ── ONE MAN BACK, from anywhere in the league ─────────────────────────────────── */
+  /* ── ONE MAN BACK, from anywhere in the league ───────────────────────────────────
+     The band top moves with who is selling: a rebuilding club stretches a little higher
+     for the same package (their veterans are FOR sale, and they retain salary to move
+     them), a contending club stops short of it (their good men are not). The market
+     memory haircut sits on top of both. */
   const single = (idxs, loF, hiF) => {
     const c = ctxFor(idxs);
     let lo = c.outVal * loF;
-    const hi = c.outVal * hiF;
+    const hi = c.outVal * hiF * coldMult;
     if (idxs.length === 2) {
       /* A pair only goes out for somebody clearly better than the better half of it --
          otherwise "consolidation" is two men for a man you already had. */
@@ -1537,12 +1635,16 @@ function findOffers(run, data, ctx, outIdxs) {
        nothing to offer and says so. */
     if (hi <= 0) return;
     const valid = [];
-    for (const p of [].concat(byPos.QB, byPos.RB, byPos.WR, byPos.TE)) {
-      const v = tradeValue(p);
-      if (v < lo || v > hi) continue;
+    for (const p0 of [].concat(byPos.QB, byPos.RB, byPos.WR, byPos.TE)) {
+      const st = tsStance[p0.team_season_id] || null;
+      const v = tradeValue(p0);
+      const hiEff = hi * (st === 'rebuilding' ? REBUILD_SELL_BONUS
+        : st === 'contender' ? CONTEND_SELL_CUT : 1);
+      if (v < lo || v > hiEff) continue;
+      const p = st === 'rebuilding' ? applyRetention([p0])[0] : p0;
       if (!fits(c, [p])) continue;
       const o = buildOffer(run, slots, idxs, [p]);
-      if (o) valid.push(o);
+      if (o) valid.push(stampPartner(o, p0.team_season_id));
     }
     /* Sampled across the whole band rather than skimmed off the top, so the board is not
        four versions of the same deal. */
@@ -1563,7 +1665,7 @@ function findOffers(run, data, ctx, outIdxs) {
      one of the incoming men must play the shopped man's position and be WORSE than him,
      which is the shape of a genuine offer -- a lesser starter plus something you need
      elsewhere -- rather than an assortment. */
-  const bundle = (idxs, count, loF, hiF, baseKey, anchor, want) => {
+  const bundle = (idxs, count, loF, hiF, baseKey, anchor, want, pref) => {
     const c = ctxFor(idxs);
     /* Priced against what LEAVES THE FIELD. A deal that brings back more men than it sends
        pushes somebody off the six, so the honest base is the shopped package plus the man
@@ -1571,15 +1673,29 @@ function findOffers(run, data, ctx, outIdxs) {
     const base = baseKey === 'out' ? c.outVal
       : baseKey === 'out+1' ? c.outVal + c.weakestVal
         : c.outVal + c.weakest2Val;
-    const lo = base * loF, hi = base * hiF;
-    if (hi <= 0) return;
+    if (base * hiF <= 0) return;
     /* NOBODY IS SENT A PLAYER WORTH NOTHING. A man at or under the waiver wire adds no
        value to a package, so including him is padding -- and being offered a 2.9 alongside
        something real is what made these boards read as unserious. */
     const floor = Math.max(E.CONSTANTS.TRADE_REPLACEMENT_FPPG + 0.5, c.weakest * 0.55);
+    /* A counter-ask comes from a club CHASING somebody, and the chasers are the
+       contenders. When any exist they get the phone first. */
+    const src = pref ? (partnerLists.filter((x) => x.stance === pref)
+      .concat(partnerLists.filter((x) => x.stance !== pref))) : partnerLists;
+    const fromPref = pref ? partnerLists.filter((x) => x.stance === pref).length : 0;
     let made = 0;
-    for (let att = 0; att < 420 && made < want && partnerLists.length; att++) {
-      const list = partnerLists[Math.floor(rng() * partnerLists.length)];
+    for (let att = 0; att < 420 && made < want && src.length; att++) {
+      /* Preferred partners get three of every four dials when there are any. */
+      const useN = (fromPref && rng() < 0.75) ? fromPref : src.length;
+      const entry = src[Math.floor(rng() * useN)];
+      const list = entry.list;
+      /* WHAT THIS PARTNER PAYS. A contender buying your man pays a premium on the whole
+         band -- more at the deadline -- and a rebuilder is not buying at all, so its
+         rare multi-man offers run light. The market memory haircut applies to everyone. */
+      const m = coldMult * (entry.stance === 'contender'
+        ? (deadline ? DEADLINE_BUY_PREMIUM : CONTEND_BUY_PREMIUM)
+        : entry.stance === 'rebuilding' ? 0.95 : 1);
+      const lo = base * loF * m, hi = base * hiF * m;
       const picked = [];
       if (anchor) {
         /* The floor binds here too. anchor.min is a fraction of the shopped man's production,
@@ -1601,9 +1717,10 @@ function findOffers(run, data, ctx, outIdxs) {
       if (picked.length < count) continue;
       const cv = sumValue(picked);
       if (cv < lo || cv > hi) continue;
-      if (!fits(c, picked)) continue;
-      const o = buildOffer(run, slots, idxs, picked);
-      if (o) { pushOffer(o, anchor ? 'swapdown' : 'bundle'); made++; }
+      const sent = entry.stance === 'rebuilding' ? applyRetention(picked) : picked;
+      if (!fits(c, sent)) continue;
+      const o = buildOffer(run, slots, idxs, sent);
+      if (o) { stampPartner(o, entry.ts); pushOffer(o, anchor ? 'swapdown' : 'bundle'); made++; }
     }
   };
 
@@ -1629,10 +1746,12 @@ function findOffers(run, data, ctx, outIdxs) {
     const reach = Math.max(1, Math.ceil(cands.length / 2));
     const asked = cands[Math.floor(rng() * reach)];
     const idxs = [idx, asked.i].sort((a, b) => a - b);
-    /* Two back at a premium, or three back priced against the pair plus your weakest. */
+    /* Two back at a premium, or three back priced against the pair plus your weakest.
+       Contenders first: the club that opens the conversation about your star is the club
+       one man short of a ring. */
     const before = offers.length;
-    bundle(idxs, 2, 1.00, 1.30, 'out', null, 1);
-    if (rng() < 0.5) bundle(idxs, 3, 0.90, 1.15, 'out+1', null, 1);
+    bundle(idxs, 2, 1.00, 1.30, 'out', null, 1, 'contender');
+    if (rng() < 0.5) bundle(idxs, 3, 0.90, 1.15, 'out+1', null, 1, 'contender');
     /* Tagged as its own shape, not as another bundle. chooseBoard fills one seat per shape,
        so sharing the 'bundle' tag made the counter-ask compete with ordinary multi-player
        returns for the same seat and it reached only 3% of cards. It is a distinct
@@ -1648,11 +1767,13 @@ function findOffers(run, data, ctx, outIdxs) {
     const only = outIdxs[0];
     const man = run.roster[only];
     /* THE TOP OF THE BAND IS WHERE THE MODE LIVES. Measured, 1.32 capped a window at about
-       +6 rating, which took a dealt 65 to only about 89 over four windows. 1.55 lets a
-       well-chosen shop actually climb, and it is not free: every offer still clears the cap,
-       is still scored honestly against the resulting lineup, and taking offers at random
-       still measures WORSE than never trading at all. */
-    single(outIdxs, 0.80, 1.70);
+       +6 rating, which took a dealt 65 to only about 89 over four windows, so it was raised
+       until a well-chosen shop could actually climb. Part of that headroom now belongs to
+       the stance layer instead of the base: 1.58 for anybody, times REBUILD_SELL_BONUS for
+       a seller, lands where the old 1.70 top did -- the same ceiling, but reaching it means
+       finding the club with a reason to deal, not just shopping the right man. Every offer
+       still clears the cap and is still scored honestly against the resulting lineup. */
+    single(outIdxs, 0.80, 1.58);
     /* Quantity for quality, in two flavours: an assortment, and the one that looks like a
        real offer for a star -- a lesser man at his own position plus a body elsewhere. */
     bundle(outIdxs, 2, 0.85, 1.15, 'out+1', null, 2);
@@ -1668,7 +1789,21 @@ function findOffers(run, data, ctx, outIdxs) {
     bundle(outIdxs, 2, 0.85, 1.25, 'out', null, 3);
     bundle(outIdxs, 3, 0.80, 1.10, 'out+1', null, 1);
   }
-  return chooseBoard(offers, run, ctx, slots, faStand, rng);
+  const board = chooseBoard(offers, run, ctx, slots, faStand, rng);
+  /* THE BOARD KNOWS ITS OWN BEST, and every card remembers it. Nothing on screen shows
+     this -- it is what the Dealmaking mark grades an accepted deal against: of the four
+     propositions you were actually looking at, did you take the strongest? Stamped after
+     chooseBoard because only these cards were ever seen. marketCold rides along so the
+     card can say WHY a lighter market is lighter. */
+  let best = -Infinity;
+  for (const o of board) {
+    if (o.ratingDelta != null && o.ratingDelta > best) best = o.ratingDelta;
+  }
+  for (const o of board) {
+    o.boardBest = best === -Infinity ? null : best;
+    o.marketCold = priorShops;
+  }
+  return board;
 }
 
 /*
@@ -1848,7 +1983,7 @@ function acceptTrade(run, offer, data, ctx, opts) {
   let newRoster = keep.concat(offer.inPlayers);
   offer.inPlayers.forEach((p) => run.usedPlayers.push(p.player_id));
   const slots = slotsOf(run);
-  let cutPlayer = null, cutPlayers = [];
+  let cutPlayer = null, cutPlayers = [], cutLoss = 0;
   if (newRoster.length > slots.length) {
     const want = newRoster.length - slots.length;
     /* `cutIdxs` (a list) is the general form; `cutIdx` (one index) is still accepted because
@@ -1867,6 +2002,17 @@ function acceptTrade(run, offer, data, ctx, opts) {
     const drop = new Set(idxs);
     cutPlayers = idxs.map((i) => newRoster[i]);
     cutPlayer = cutPlayers[0] || null;
+    /* HOW MUCH THE RELEASE CHOICE COST, in team rating, against the best legal release.
+       The card was scored assuming the best cut; a GM who releases somebody else pays the
+       difference, and the Dealmaking mark charges it as part of this deal. Zero when the
+       chosen cut IS the best one, and zero when there was nothing to cut. */
+    if (offer.bestCutIdxs && offer.bestCutIdxs.length === want && ctx) {
+      const bs = new Set(offer.bestCutIdxs);
+      const bestSquad = newRoster.filter((_, k) => !bs.has(k));
+      const actualSquad = newRoster.filter((_, k) => !drop.has(k));
+      cutLoss = Math.max(0, Math.round((rosterRating(bestSquad, ctx).rating
+        - rosterRating(actualSquad, ctx).rating) * 10) / 10);
+    }
     newRoster = newRoster.filter((_, k) => !drop.has(k));
     for (const c of cutPlayers) {
       const j = run.usedPlayers.indexOf(c.player_id);
@@ -1908,6 +2054,15 @@ function acceptTrade(run, offer, data, ctx, opts) {
        and a badge can find it. */
     askedFor: offer.askedFor ? runKey(offer.askedFor) : null,
     cashMusd: cash || 0,
+    /* THE DEALMAKING LEDGER. dealEdge is this card's honest score against the best card
+       on the board it came from (zero or negative -- taking the best available is zero).
+       cutLoss is what the release choice cost against the best legal release. Together
+       they are what the Dealmaking mark reads back: rating left on the table, per deal. */
+    dealEdge: (offer.ratingDelta != null && offer.boardBest != null)
+      ? Math.round((offer.ratingDelta - offer.boardBest) * 10) / 10 : 0,
+    cutLoss: cutLoss || 0,
+    stance: offer.stance || null,
+    retainedMusd: offer.retainedMusd || 0,
     /* THE SAME MOVE, IN IDS, so it can be recorded and read back. The names above are
        for the GM report to print; these are what ps_runs.trade_moves stores, spelled the
        way the picks column spells a player, because the badge cabinet resolves both
@@ -1943,68 +2098,47 @@ function signFreeAgent(run, player, ctx) {
 
 /* THE GM RATING, and what it measures.
 
-   Four parts, and the weights say what the mode thinks matters: did you win (40%), did you
-   make the roster better (30%), did you get value for the money (20%), did you beat what the
-   roster you were handed should have won (10%).
+   Five marks. The weights say what the mode thinks a GM is: OUTCOME is forty points (did
+   you win, 35, plus did you beat the hand you were dealt, 5), SKILL is forty-five (did you
+   make the roster better, 25, and when you dealt, did you take the best version of the
+   deal in front of you, 20), and CHOICES are fifteen (what did the improvement cost in
+   salary and cash). Going over the cap is not a mark, it is a fine, taken straight off the
+   total at GM_OVERCAP_DIRECT points per million.
 
-   Two of these used to measure inflation rather than skill, which is why a near-perfect run
-   topped out around 59 and a 95 was unreachable:
+   Two marks from the previous scale died and were replaced:
 
-   - RESULT was divided by 64, which is a 17-0 season AND a title. Nobody reaches that, so 40%
-     of the rating sat near half however well you played: a 13-win championship scored 80. The
-     divisor is 52 now, so winning it all scores about 100 and the part rewards winning rather
-     than perfection.
-   - EFFICIENCY was mostly "how much cap did you leave unspent", wanting $20M free. Contracts
-     inflate whatever you do and improving costs money, so the average run finished with $3.6M
-     spare and collected 2 of the 12 points going. Worse, it rewarded the wrong thing: in a
-     win-now mode, sitting on $20M is not good management, it is failing to use your
-     resources. It measures value now -- rating gained per $M spent BEYOND the payroll you
-     would have carried making no trades at all, so unavoidable inflation is not charged to
-     you -- and only penalises actually going over the cap.
-
-   Measured over 40 seasons per policy: never trading lands about 18, trading at random about
-   27, playing every window well about 77 with a p90 of 88. A perfect season still reaches the
-   top of the scale. */
+   - CAP MANAGEMENT scored within a point or two of 100 for anyone competent, because the
+     market itself refuses deals that break the cap -- fits() guarantees every card clears
+     it. A mark everyone maxes by showing up measures nothing; 15% of the rating was noise.
+   - Its seat now belongs to DEALMAKING, the one skill the mode is named after and the one
+     nothing measured: every accepted deal is graded against the best card on the board it
+     came from, and every release against the best legal release. Take the strongest
+     version of every deal you accept and this is 100. A GM who grabs the shiniest raw
+     points, ignoring chemistry, structure, and who really leaves the field, bleeds here --
+     measured, that reading gap is worth about one rating point in twelve cards, and it is
+     precisely the skill the cards stopped printing when the grade came off them. No trades
+     all season scores zero: the mode grades trading, and declining to play is not mastery.
+   - VALUE now counts CASH. It read rating gained per $M of payroll added, so the $27M a
+     good run sends out the door as cash considerations was invisible to every mark on the
+     sheet. The denominator is now everything committed: salary above the starting payroll
+     plus every dollar of ceiling spent. */
 const GM_RESULT_DEN = 52;      // a championship season, not a flawless one
 const GM_IMPROVE_REF = 25;     // rating gained for full marks
-const GM_VALUE_REF = 2;        // rating per $M beyond no-trade payroll for full marks
+const GM_DEAL_PER_PT = 9;      // Dealmaking points off, per team-rating point left on the table
+const GM_VALUE_REF = 1.3;      // rating gained per $M committed, for full marks
+const GM_SPEND_FLOOR_M = 5;    // below this the ratio explodes; a $2M season is not 10x a $20M one
+const GM_OVERCAP_DIRECT = 1.5; // GM points straight off the total, per $M over the cap
 
-/* ---- CAP MANAGEMENT, ITS OWN MARK RATHER THAN A THIRD OF THE EFFICIENCY ONE ----
- *
- * It used to be 30% of a 20% component, so the whole of the cap was 6% of the rating and
- * going $11M over cost about five points on a hundred-point scale. That is not a
- * consequence, it is a rounding error, and nothing on screen ever mentioned it.
- *
- * It reads BOTH WAYS now, which is what "how well did you use the cap" has to mean:
- *
- *   OVER      falls fast. Going over is a real choice with a real price, not a soft nudge.
- *   IDLE      falls slowly. Unspent cap in a win-now mode is a resource you did not use.
- *             A cushion is fine, which is why the first slice is free -- a GM who happens
- *             to finish $6M light has not done anything wrong.
- *
- * Deliberately NOT the old "reward unspent cap" rule, which wanted you $20M clear and made
- * hoarding the optimal play. This wants the cap SPENT and not exceeded.
- */
-const GM_OVERCAP_PER_M = 6;    // each $1M over the cap, off the cap mark
-const GM_IDLE_FREE_M = 10;     // spare change this far under is not a mistake
-const GM_IDLE_PER_M = 2;       // each $1M idle beyond that, off the cap mark
-
-/* WHAT A PAYROLL IS WORTH ON THE CAP MARK, so the game can tell you the price BEFORE the
-   season ends rather than presenting it as a surprise on the results screen. Same arithmetic
-   computeGMRating uses, in one place, so the warning during a trade window and the mark
+/* WHAT BEING OVER THE CAP COSTS, so the game can tell you the price BEFORE the season ends
+   rather than presenting it as a surprise on the results screen. Same arithmetic
+   computeGMRating uses, in one place, so the warning during a trade window and the fine
    afterwards can never disagree. `costs` is in points off the final GM rating. */
-const GM_CAP_WEIGHT = 0.15;
 function capMark(payroll, run) {
   const remaining = capOf(run) - payroll;
   const overBy = Math.max(0, -remaining);
-  const idle = Math.max(0, remaining);
-  const clamp100 = (v) => Math.max(0, Math.min(100, v));
-  const score = overBy > 0
-    ? clamp100(100 - overBy * GM_OVERCAP_PER_M)
-    : clamp100(100 - Math.max(0, idle - GM_IDLE_FREE_M) * GM_IDLE_PER_M);
   return {
-    remaining, overBy, idle, score,
-    costs: Math.round((100 - score) * GM_CAP_WEIGHT * 10) / 10,
+    remaining, overBy, idle: Math.max(0, remaining),
+    costs: Math.round(overBy * GM_OVERCAP_DIRECT * 10) / 10,
   };
 }
 
@@ -2035,16 +2169,28 @@ function computeGMRating(run) {
      CONTRACT_INFLATION so that turning raises back on re-excuses them in the same breath. */
   const noTradePayroll = run.startSalary * Math.pow(CONTRACT_INFLATION, TRADE_WEEKS.length);
   const addedSalary = Math.max(0, totalSalary - noTradePayroll);
-  /* No cliff at zero: prices round per player, so "spent nothing" was a coin flip between
-     full marks and none. Gain drives it, so improving nothing earns nothing however little
-     was spent. */
-  const valueScore = clamp100(Math.max(0, ratingGain) / Math.max(1, addedSalary)
-    / GM_VALUE_REF * 100);
+  /* EVERYTHING COMMITTED: payroll added, plus the ceiling spent as cash. Cash used to be
+     invisible to every mark; it is half of what a heavy-spending run pays. Floored so a
+     nearly-free season is not scored on a division by loose change. */
+  const spentTotal = addedSalary + (run.cashPaid || 0);
+  const valueScore = clamp100(Math.max(0, ratingGain)
+    / Math.max(GM_SPEND_FLOOR_M, spentTotal) / GM_VALUE_REF * 100);
+
+  /* THE DEALMAKING LEDGER, summed. Each accepted deal recorded how far it sat below the
+     best card on its own board and what the release choice cost against the best legal
+     release. Zero left on the table is a hundred; the scale is GM_DEAL_PER_PT. A season
+     with no deals scores nothing here -- the mode grades trading. */
+  const trades = run.tradeHistory || [];
+  let leftOnTable = 0;
+  for (const t of trades) {
+    leftOnTable += Math.max(0, -(t.dealEdge || 0)) + (t.cutLoss || 0);
+  }
+  leftOnTable = Math.round(leftOnTable * 10) / 10;
+  const dealScore = trades.length
+    ? clamp100(100 - leftOnTable * GM_DEAL_PER_PT) : 0;
+
   const overCapBy = Math.max(0, -capRemaining);
   const idleCap = Math.max(0, capRemaining);
-  const capScore = overCapBy > 0
-    ? clamp100(100 - overCapBy * GM_OVERCAP_PER_M)
-    : clamp100(100 - Math.max(0, idleCap - GM_IDLE_FREE_M) * GM_IDLE_PER_M);
 
   /* WHAT THE ROSTER YOU WERE HANDED SHOULD HAVE WON, and this line was badly wrong. It read
      6 + (startRating - 60) * 5/12, one win per 2.4 rating points. Measured against the sim --
@@ -2061,19 +2207,21 @@ function computeGMRating(run) {
   const expectedWins = 7.8 + (run.startRating - 60) * 0.153;
   const overScore = clamp100((regularWins - expectedWins) / 6 * 100);
 
-  /* FIVE MARKS, and the cap is one of them rather than a third of a quarter of one. The
-     weights say what the mode thinks matters: did you win (35), did you make the roster
-     better (25), did you get value for the money (15), did you manage the cap (15), did you
-     beat what you were handed (10). Cap went from 6% of the rating to 15%, which turns $11M
-     over from a five point shrug into a ten point cost. */
+  /* FIVE MARKS AND A FINE. Winning 35, improvement 25, dealmaking 20, value 15, beating
+     the hand you were dealt 5 -- and going over the cap comes straight off the total,
+     because with a market that refuses illegal deals it is a deliberate act, not a grade. */
+  const overCapPenalty = Math.round(overCapBy * GM_OVERCAP_DIRECT * 10) / 10;
   const raw = resultScore * 0.35 + improvementScore * 0.25
-    + valueScore * 0.15 + capScore * 0.15 + overScore * 0.10;
+    + dealScore * 0.20 + valueScore * 0.15 + overScore * 0.05
+    - overCapPenalty;
   run.outcome.gmRating = Math.max(0, Math.min(99.99, Math.round(raw * 100) / 100));
   /* Kept so the results screen can show the working rather than just a number. */
   const r1 = (v) => Math.round(v * 10) / 10;
   run.outcome.gmParts = {
     result: r1(resultScore), improvement: r1(improvementScore),
-    value: r1(valueScore), cap: r1(capScore), over: r1(overScore),
+    deal: r1(dealScore), value: r1(valueScore), over: r1(overScore),
+    dealsMade: trades.length, leftOnTable: r1(leftOnTable),
+    spentTotal: r1(spentTotal), overCapPenalty,
     regularWins, playoffWins, bye: !!(run.playoffSeed && run.playoffSeed.bye),
     /* The ceiling this run finished with and what shrank it, so the results screen can say
        "$127M cap" and account for the missing $13M rather than looking like a bug. */
