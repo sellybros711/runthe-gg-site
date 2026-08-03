@@ -267,7 +267,7 @@
     background:var(--card2); color:var(--ink); font-size:15px; line-height:1;}
   .rgrade{text-align:center; margin:2px 0 6px;}
   .rgrade .lbl{font-size:11px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--mut);}
-  .rgrade .g{font-family:var(--hero); font-weight:400; font-size:74px; line-height:.9; letter-spacing:.02em; margin-top:2px;}
+  .rgrade .g{font-family:var(--hero); font-weight:400; font-size:clamp(34px,9.5vw,48px); line-height:1.02; letter-spacing:.02em; margin-top:2px;}
   .rgrade .verdict{font-weight:900; font-size:15px; margin-top:2px; color:var(--ink);}
   .rstats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:16px 0 4px;}
   .rstat{background:var(--card2); border:1px solid var(--line); border-radius:var(--r-md); padding:11px 6px; text-align:center;}
@@ -375,7 +375,6 @@
     .slot{min-height:48px;}
     .pool{grid-template-columns:repeat(2,1fr);}
     .pool .tile{min-height:56px; font-size:13px;}
-    .rgrade .g{font-size:62px;}
     .statgrid .rstat .v{font-size:20px;}
   }
   /* very narrow phones: the coins chip is the one non-uniform extra — drop it
@@ -500,9 +499,8 @@
       <button class="x" id="resClose" type="button" aria-label="Close">✕</button>
       <div class="flawless" id="resFlawless"><span class="rib"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg> Flawless — zero misses</span></div>
       <div class="rgrade">
-        <div class="lbl">Draft Grade</div>
-        <div class="g" id="resGrade">A</div>
-        <div class="verdict" id="resVerdict">Solid board.</div>
+        <div class="g" id="resGrade">BOARD CLEARED!</div>
+        <div class="verdict" id="resVerdict"></div>
       </div>
       <div class="rstats">
         <div class="rstat"><div class="v" id="resTime">0:00</div><div class="l">Time</div></div>
@@ -538,10 +536,6 @@
         <div class="rstat"><div class="v" id="stBest">0</div><div class="l">Best</div></div>
       </div>
       <div class="perfline" id="stPerf">0 flawless solves</div>
-      <div class="dist" id="stDistWrap">
-        <h4>Grade distribution</h4>
-        <div id="stDist"></div>
-      </div>
       <div class="empty-stats" id="stEmpty" hidden>Play today's board to start your streak.<br>Your grades and win rate show up here.</div>
       <div class="countdown" id="stCountdown"></div>
       <div class="rcta">
@@ -1227,13 +1221,17 @@
       return { '#37C5D5': '🟩', '#F2B632': '🟨', '#F06A5F': '🟥', '#A982F3': '🟪', '#2F6BFF': '🟦' }[hex] || '⬛';
     }
     function showResult(r) {
-      document.getElementById('resGrade').textContent = r.grade;
       var lightUI = document.documentElement.getAttribute('data-theme') === 'light';
-      var col = (lightUI
-        ? { 'A+': '#17A34A', 'A': '#17A34A', 'B': '#0E7C89', 'C': '#A87508', 'D': '#A87508', 'F': '#C4372C' }
-        : { 'A+': '#48D17A', 'A': '#48D17A', 'B': '#37C5D5', 'C': '#F2B632', 'D': '#F2B632', 'F': '#FF625F' })[r.grade];
-      document.getElementById('resGrade').style.color = col;
-      document.getElementById('resVerdict').textContent = VERDICTS[r.grade] || '';
+      var head = document.getElementById('resGrade');
+      if (r.won) {
+        head.textContent = 'BOARD CLEARED!';
+        head.style.color = lightUI ? '#17A34A' : '#48D17A';
+        document.getElementById('resVerdict').textContent = 'All 5 groups · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es');
+      } else {
+        head.textContent = 'OUT OF GUESSES';
+        head.style.color = lightUI ? '#D8452F' : '#F06A5F';
+        document.getElementById('resVerdict').textContent = solveOrder.length + ' of 5 groups found';
+      }
       document.getElementById('resTime').textContent = fmt(r.time);
       document.getElementById('resMiss').textContent = r.mistakes;
       document.getElementById('resStreak').textContent = r.streak;
@@ -1266,8 +1264,11 @@
     function shareText(r) {
       var strip = solveOrder.map(function (idx) { return colorEmoji(laneById[laneCat[idx]].color); }).join('');
       var dstr = new Date(DATE + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      var resLine = r.won
+        ? ('✅ 5/5 groups · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
+        : ('❌ ' + solveOrder.length + '/5 groups');
       return '🟩 Run The Arcade — Daily Match — ' + dstr + '\n\n' +
-        '   GRADE:  ' + r.grade + '\n   TIME:   ' + fmt(r.time) + '\n   MISSES: ' + r.mistakes + '\n   STREAK: ' + r.streak + ' 🔥\n' +
+        '   ' + resLine + '\n   STREAK: ' + r.streak + ' 🔥\n' +
         (strip ? '   ' + strip + '\n' : '') + '\n   runthe.gg/grid';
     }
 
@@ -1721,24 +1722,9 @@
       document.getElementById('stPerf').textContent = st.perfects + ' flawless solve' + (st.perfects === 1 ? '' : 's');
       var hasData = st.played > 0;
       document.getElementById('stEmpty').hidden = hasData;
-      document.getElementById('stDistWrap').style.display = hasData ? '' : 'none';
       document.getElementById('stPerf').style.display = hasData ? '' : 'none';
-      if (hasData) renderDist(st);
       startCountdown('stCountdown');
       document.getElementById('statsModal').hidden = false;
-    }
-    function renderDist(st) {
-      var max = 1;
-      GRADE_KEYS.forEach(function (g) { if ((st.grades[g] | 0) > max) max = st.grades[g] | 0; });
-      var wrap = document.getElementById('stDist'); wrap.innerHTML = '';
-      GRADE_KEYS.forEach(function (g) {
-        var n = st.grades[g] | 0;
-        var row = document.createElement('div'); row.className = 'distrow';
-        row.innerHTML = '<span class="k">' + g + '</span><div class="distbar"><span></span></div><span class="c">' + n + '</span>';
-        wrap.appendChild(row);
-        var bar = row.querySelector('.distbar span');
-        setTimeout(function () { bar.style.width = Math.round(n / max * 100) + '%'; }, 40);
-      });
     }
     function closeStats() { document.getElementById('statsModal').hidden = true; }
 
