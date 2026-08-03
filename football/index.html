@@ -1344,6 +1344,14 @@ window.GA_ID='G-L29P5MRWKE';
      with the placings in the hero strip rather than holding this panel hostage. */
   .gmp-rank{margin-left:auto;font-family:var(--fn);font-size:11px;font-weight:600;
     letter-spacing:.04em;color:var(--dim);white-space:nowrap}
+  /* The first-time rules sheet: the scouting report's label-then-sentence shape, because
+     that is the layout a new GM is about to spend a season reading. */
+  .tmi-row{display:grid;grid-template-columns:74px minmax(0,1fr);gap:10px;padding:8px 0;
+    border-top:1px solid rgba(148,163,184,.14);font-size:12.5px;line-height:1.5;color:var(--ink)}
+  .tmi-row:first-of-type{border-top:0}
+  .tmi-k{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.07em;
+    text-transform:uppercase;color:#fbbf24;padding-top:2px}
+  .tmi-row b{color:#fcd34d}
   .gmp-rank b{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--ink)}
   .gmp-rank b.first{color:#fbbf24}
   .gmp-cap{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.09em;
@@ -4702,7 +4710,7 @@ function sheet(p){
   $('sheet').classList.add('on');
   $('sh-x').onclick=()=>$('sheet').classList.remove('on');
 }
-$('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))$('sheet').classList.remove('on');});
+$('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))closeSheet();});
 
 /* EVERY run starts here.
    `submitted` and `myRanks` belong to one run, and nothing was clearing them, so
@@ -4742,7 +4750,7 @@ function beginDraft(opts){
     R.autoDraftTrade(run,DATA,CTX);
     R.startSeason(run,DATA,CTX);
     $('b-sim').style.display='none';
-    openTeamReveal();
+    tradeIntro(openTeamReveal);
     return;
   }
   show('s-draft'); nextSpin();
@@ -6046,7 +6054,40 @@ function beginTradeMachine(){
   R.autoDraftTrade(run,DATA,CTX);
   R.startSeason(run,DATA,CTX);
   $('b-sim').style.display='none';
-  openTeamReveal();
+  tradeIntro(openTeamReveal);
+}
+
+/* THE RULES, ONCE. The first time somebody opens the Trade Machine they are about to be
+   handed a D-grade roster with no warning that EVERYBODY gets one, and the mode's other
+   rules (the deadline, cash, the push) are otherwise learned mid-deal. One sheet, one
+   read, never again -- and however it is dismissed the reveal proceeds, because a rules
+   popup that can strand a run is worse than no rules at all. */
+function tradeIntro(go){
+  let seen=false;
+  try{ seen=localStorage.getItem('ps_tmintro')==='1'; }catch(e){ seen=!!window.__tmIntro; }
+  if(seen){ go(); return; }
+  window.__tmIntro=true;
+  try{ localStorage.setItem('ps_tmintro','1'); }catch(e){}
+  const row=(k,t)=>'<div class="tmi-row"><span class="tmi-k">'+k+'</span><span>'+t+'</span></div>';
+  $('sheet-in').innerHTML=
+    '<h3 class="display" style="font-size:20px;margin:0 0 4px">Welcome to the front office</h3>'+
+    '<p class="dim" style="font-size:12px;margin:0 0 10px">How the Trade Machine works, once. '+
+      'Everything here is also said on the cards as you go.</p>'+
+    row('The deal','Every GM starts with a rebuild. The league only deals rosters graded '+
+      'about 60 to 72 overall, so nobody opens with a contender. Your rating grades what '+
+      'you <b>build</b>.')+
+    row('The phones','Four trade windows: before kickoff, then after weeks 3, 6 and 9. '+
+      'The last one is the deadline. One deal per window.')+
+    row('The money','Rebuilding clubs sell and retain salary. Contenders pay up for your '+
+      'stars, more at the deadline. Upgrades want cash on top, selling brings cash back, '+
+      'and all of it moves your cap for the rest of the season.')+
+    row('The push','Push any offer once for a better deal. They sweeten, or they walk.')+
+    row('The grade','Winning 35%, improvement 25%, dealmaking 20% (every deal is graded '+
+      'against the best version of itself), value 15%, beating expectation 5%.')+
+    '<button class="btn" id="b-tmi-go" style="width:100%;margin-top:12px">Deal me a team</button>';
+  sheetOnClose=go;
+  $('sheet').classList.add('on');
+  $('b-tmi-go').onclick=closeSheet;
 }
 
 /* A number that counts up to a one-decimal value, so a player's rating lands rather
@@ -10097,7 +10138,15 @@ const openSheet=()=>{
 /* Closing was written inline in five places as
    $('sheet').classList.remove('on'). Named here because a sheet with its own buttons, like
    the club picker's, has to close itself from a handler that is not the Close button. */
-function closeSheet(){ $('sheet').classList.remove('on'); }
+/* A sheet can carry ONE continuation, run however it is dismissed. The trade intro uses
+   this: the game must proceed to the reveal whether the player taps the button or the
+   backdrop, because a popup that can strand a run behind it is worse than no popup. */
+let sheetOnClose=null;
+function closeSheet(){
+  $('sheet').classList.remove('on');
+  const f=sheetOnClose; sheetOnClose=null;
+  if(f) f();
+}
 /* A button that has been pressed says so, because a sign-in round trip is long
    enough that a silent button reads as a dead one. */
 function busy(id,label){
