@@ -2562,13 +2562,18 @@ const SPOTS={
   QB: [{ x: 50, y: 44 }],
   RB: [[], [{ x: 28, y: 64 }], [{ x: 28, y: 64 }, { x: 72, y: 64 }]],
 };
-/* The line of scrimmage, spread by how many are on it (1 through 4). */
+/* The line of scrimmage, spread by how many are on it (1 through 4). NOTHING SITS
+   IN THE CENTRE COLUMN. The quarterback is at x50 one row down, and this field is
+   short (aspect 1/0.54), so a receiver at x50 would drop its name-and-team label
+   straight onto the quarterback's disc. Every spot here stays clear of the x45-55
+   band the quarterback and its label occupy, so a three-receiver set slots the
+   third man off to the side rather than dead centre. */
 const REC = [
   [],
-  [{ x: 50, y: 24 }],
+  [{ x: 32, y: 24 }],
   [{ x: 16, y: 24 }, { x: 84, y: 24 }],
-  [{ x: 12, y: 24 }, { x: 50, y: 22 }, { x: 88, y: 24 }],
-  [{ x: 9, y: 23 }, { x: 37, y: 27 }, { x: 63, y: 27 }, { x: 91, y: 23 }],
+  [{ x: 12, y: 24 }, { x: 88, y: 24 }, { x: 32, y: 24 }],
+  [{ x: 9, y: 23 }, { x: 33, y: 26 }, { x: 67, y: 26 }, { x: 91, y: 23 }],
 ];
 const SPOT_FALLBACK=[{x:50,y:44},{x:28,y:64},{x:12,y:24},{x:88,y:24},{x:37,y:27},{x:63,y:27}];
 
