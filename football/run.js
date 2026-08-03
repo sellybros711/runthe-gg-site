@@ -431,6 +431,7 @@ function createRun(opts) {
        the door in trades -- see capOf() and CONSTANTS.TRADE_CASH_*. */
     capMusd: E.CONSTANTS.CAP_MUSD,
     cashPaid: 0,
+    cashReceived: 0,
     /* EVERYONE WHO HAS LEFT THIS ROSTER, traded or released, and they do not come back.
        usedPlayers cannot answer this: acceptTrade takes departing men OUT of it, because it
        tracks who is on the roster now. The effect was that trading a man away returned him to
@@ -1446,6 +1447,116 @@ const RETAIN_MAX_MUSD = 3;
 const SHOPPED_DECAY = 0.04;
 const SHOPPED_DECAY_CAP = 2;
 
+/* ─── CASH COMES BACK WHEN YOU SELL ─────────────────────────────────────────────────────
+ *
+ * The mirror of cashFor: a deal that clearly takes production OFF your field is you
+ * selling talent, and talent is paid for. The money lands on your CEILING -- the cap
+ * grows and stays grown -- which is what makes selling a strategy instead of a defeat:
+ * give up a man in one window, spend the room he raised in the next.
+ *
+ * The market keeps a spread. Selling pays $0.9M per point given up against the $1.35M a
+ * point costs to buy (and more at the deadline), so a round trip always loses money --
+ * measured, sell-then-rebuy leaks even on the friendliest pairing of partners. Contenders
+ * pay the most (they are buying a ring), rebuilders the least (they are not buying), and
+ * a deadline buyer is desperate enough to pay a fifth over. */
+const CASH_BACK_MIN_LOSS = 2.0;   // FPPG the deal must clearly give up before anyone pays
+const CASH_BACK_PER_FPPG = 0.9;   // under cashFor's 1.35: the spread that kills churning
+const CASH_BACK_MAX_MUSD = 8;
+function cashBackFor(run, fieldGain, stance) {
+  if (!run.tradeMachine) return 0;
+  if (!(fieldGain < -CASH_BACK_MIN_LOSS)) return 0;
+  const mult = (stance === 'contender' ? 1.2 : stance === 'rebuilding' ? 0.75 : 1)
+    * (isDeadlineWindow(run) ? 1.2 : 1);
+  const raw = -fieldGain * CASH_BACK_PER_FPPG * mult;
+  return Math.min(CASH_BACK_MAX_MUSD, Math.round(raw * 2) / 2);
+}
+
+/* ─── THE PUSH-BACK ─────────────────────────────────────────────────────────────────────
+ *
+ * Once per offer you can push for more, and the other GM either sweetens the deal or
+ * walks. The outcome is drawn when the board is built, off the same seeded rng as the
+ * offers, so it is a fact about the deal you were sent rather than a slot machine --
+ * closing and reopening the market cannot re-roll it.
+ *
+ * Every sweetener is MONEY, never a different player, so a sweetened deal can never
+ * break a lineup that was legal: the cash demand shrinks, a rebuilder retains more of
+ * the contract, or cash lands on the deal. Who blinks tracks who needs it: a contender
+ * chasing your man rarely walks and pays up properly (still less at the deadline, when
+ * it cannot afford to lose the deal), while everyone else has less patience -- and at
+ * the deadline nobody has time to haggle at all.
+ *
+ * The risk is real and it is scored: a walked offer leaves the board but stays in
+ * boardBest, so pushing away the strongest card and settling for another is exactly
+ * "rating left on the table" in the Dealmaking mark. Greed has a price tag. */
+/* Measured with policy bots: pushing every deal costs about 3.6 GM points a season (walks
+   eat the best card), pushing only when the next-best card is close is worth about half a
+   point. The button is a real gamble that pays judgment, not a free spin. */
+const PUSH_WALK = { contender: 0.20, contenderDeadline: 0.10, rebuilding: 0.35, base: 0.40,
+  deadline: 0.45 };
+function planPushback(run, o, rng) {
+  const deadline = isDeadlineWindow(run);
+  const walkP = o.stance === 'contender'
+    ? (deadline ? PUSH_WALK.contenderDeadline : PUSH_WALK.contender)
+    : deadline ? PUSH_WALK.deadline
+      : o.stance === 'rebuilding' ? PUSH_WALK.rebuilding : PUSH_WALK.base;
+  const walks = rng() < walkP;
+  /* Sized before the walk decision is known, so the rng stream stays fixed-length. */
+  const scale = (o.stance === 'contender' ? (deadline ? 1.5 : 1.25) : 1) * (0.7 + rng() * 0.6);
+  let sweeten;
+  if (o.cashMusd > 0) {
+    sweeten = { kind: 'cashcut',
+      musd: Math.min(o.cashMusd, Math.max(1, Math.round(o.cashMusd * 0.55 * scale * 2) / 2)) };
+  } else if (o.stance === 'rebuilding' && o.inPlayers.some((p) => p.price_musd > 1.5)) {
+    sweeten = { kind: 'retain', musd: Math.round((1 + rng() * 1.5) * scale * 2) / 2 };
+  } else {
+    sweeten = { kind: 'cashback', musd: Math.round((1 + rng() * 1.5) * scale * 2) / 2 };
+  }
+  return { walks, sweeten };
+}
+
+/* Apply a push. Mutates the offer per its precomputed plan and reports what happened so
+   the card can say it. A walked offer is dead: it stays on the board as a corpse (the
+   lesson reads better than a vanishing card) and acceptTrade will not take it. */
+function pushBack(run, offer) {
+  if (!offer || offer.pushed || offer.walked) return { done: false };
+  offer.pushed = true;
+  const plan = offer.pushback || { walks: true };
+  if (plan.walks) {
+    offer.walked = true;
+    return { done: true, walked: true };
+  }
+  const s = plan.sweeten;
+  let kind = s.kind, applied = 0;
+  if (kind === 'cashcut') {
+    applied = Math.min(offer.cashMusd, s.musd);
+    offer.cashMusd = money(offer.cashMusd - applied);
+  } else if (kind === 'retain') {
+    let k = 0;
+    for (let i = 1; i < offer.inPlayers.length; i++) {
+      if (offer.inPlayers[i].price_musd > offer.inPlayers[k].price_musd) k = i;
+    }
+    const p = offer.inPlayers[k];
+    applied = Math.min(s.musd, Math.max(0, money(p.price_musd - 0.5)));
+    if (applied >= 0.5) {
+      offer.inPlayers[k] = { ...p, price_musd: money(p.price_musd - applied),
+        retainedMusd: money((p.retainedMusd || 0) + applied) };
+      offer.retainedMusd = money((offer.retainedMusd || 0) + applied);
+      offer.netCap = money(offer.netCap - applied);
+    } else {
+      /* Nothing left to retain: they put a little cash on it instead. */
+      kind = 'cashback';
+      applied = Math.max(1, Math.round(s.musd * 2) / 2);
+      offer.cashBackMusd = money((offer.cashBackMusd || 0) + applied);
+    }
+  } else {
+    applied = s.musd;
+    offer.cashBackMusd = money((offer.cashBackMusd || 0) + applied);
+  }
+  offer.pushGain = money((offer.pushGain || 0) + applied);
+  offer.pushKind = kind;
+  return { done: true, walked: false, kind, musd: applied };
+}
+
 function stanceOfZ(z) {
   if (typeof z !== 'number') return null;
   if (z >= STANCE_CONTEND_Z) return 'contender';
@@ -1527,6 +1638,9 @@ function findOffers(run, data, ctx, outIdxs) {
   const stampPartner = (o, tsId) => {
     o.stance = tsStance[tsId] || null;
     o.partnerRecord = tsRecord[tsId] || null;
+    /* Selling pays, and WHO you sell to sets the price -- so this waits until the partner
+       is known rather than living in buildOffer with the cash demand. */
+    o.cashBackMusd = cashBackFor(run, o.fieldGain, o.stance);
     return o;
   };
   const faStand = {};
@@ -1802,6 +1916,7 @@ function findOffers(run, data, ctx, outIdxs) {
   for (const o of board) {
     o.boardBest = best === -Infinity ? null : best;
     o.marketCold = priorShops;
+    o.pushback = planPushback(run, o, rng);
   }
   return board;
 }
@@ -1972,6 +2087,8 @@ function generateFreeAgents(run, data, position) {
  * paint.
  */
 function acceptTrade(run, offer, data, ctx, opts) {
+  /* A walked deal is off the table, whatever a stale button thinks. */
+  if (offer && offer.walked) throw new Error('offer withdrawn');
   const outSet = new Set(offer.outIdx);
   const keep = run.roster.filter((_, i) => !outSet.has(i));
   run.departed = run.departed || [];
@@ -2039,6 +2156,14 @@ function acceptTrade(run, offer, data, ctx, opts) {
     run.capMusd = money(Math.max(0, capOf(run) - cash));
     run.cashPaid = money((run.cashPaid || 0) + cash);
   }
+  /* AND CASH COMES IN THE OTHER WAY. Selling talent raises the ceiling and it stays
+     raised -- above the league's base cap if you sell enough, which is the war chest a
+     seller is supposed to end up holding. */
+  const back = Math.max(0, offer.cashBackMusd || 0);
+  if (back > 0) {
+    run.capMusd = money(capOf(run) + back);
+    run.cashReceived = money((run.cashReceived || 0) + back);
+  }
   const chem = E.resolveChemistry(run.roster, ctx);
   run.season.chemistry = chem.multiplier;
   run.season.chemistryLinks = chem.links;
@@ -2063,6 +2188,11 @@ function acceptTrade(run, offer, data, ctx, opts) {
     cutLoss: cutLoss || 0,
     stance: offer.stance || null,
     retainedMusd: offer.retainedMusd || 0,
+    cashBackMusd: back || 0,
+    /* Whether this deal was pushed and what the push was worth, so the GM report can
+       credit a negotiation that landed. */
+    pushed: !!offer.pushed && !offer.walked,
+    pushGainMusd: offer.pushGain || 0,
     /* THE SAME MOVE, IN IDS, so it can be recorded and read back. The names above are
        for the GM report to print; these are what ps_runs.trade_moves stores, spelled the
        way the picks column spells a player, because the badge cabinet resolves both
@@ -2169,10 +2299,13 @@ function computeGMRating(run) {
      CONTRACT_INFLATION so that turning raises back on re-excuses them in the same breath. */
   const noTradePayroll = run.startSalary * Math.pow(CONTRACT_INFLATION, TRADE_WEEKS.length);
   const addedSalary = Math.max(0, totalSalary - noTradePayroll);
-  /* EVERYTHING COMMITTED: payroll added, plus the ceiling spent as cash. Cash used to be
-     invisible to every mark; it is half of what a heavy-spending run pays. Floored so a
-     nearly-free season is not scored on a division by loose change. */
-  const spentTotal = addedSalary + (run.cashPaid || 0);
+  /* EVERYTHING COMMITTED: payroll added, plus the NET ceiling burned as cash. Cash used
+     to be invisible to every mark; it is half of what a heavy-spending run pays. Cash
+     received selling talent nets against it -- the production sold already cost the
+     Improvement mark, so charging the ceiling too would bill the same sale twice.
+     Floored so a nearly-free season is not scored on a division by loose change. */
+  const spentTotal = addedSalary
+    + Math.max(0, (run.cashPaid || 0) - (run.cashReceived || 0));
   const valueScore = clamp100(Math.max(0, ratingGain)
     / Math.max(GM_SPEND_FLOOR_M, spentTotal) / GM_VALUE_REF * 100);
 
@@ -2226,6 +2359,9 @@ function computeGMRating(run) {
     /* The ceiling this run finished with and what shrank it, so the results screen can say
        "$127M cap" and account for the missing $13M rather than looking like a bug. */
     capMusd: capOf(run), cashPaid: r1(run.cashPaid || 0),
+    cashReceived: r1(run.cashReceived || 0),
+    pushWins: trades.filter((t) => t.pushed).length,
+    pushGainMusd: r1(trades.reduce((t, h) => t + (h.pushGainMusd || 0), 0)),
     ratingGain: r1(ratingGain), startRating: r1(run.startRating), finalRating: r1(finalRating),
     addedSalary: r1(addedSalary), noTradePayroll: r1(noTradePayroll),
     capRemaining: r1(capRemaining), overCapBy: r1(overCapBy), idleCap: r1(idleCap),
@@ -2595,6 +2731,7 @@ const api = {
   openSlots, openSlotNames, slotForPlayer, TUNING,
   inflateCap, capCut, capSpin, capSign,
   autoDraftTrade, isTradeWindow, inflateContracts, findOffers, previewTrade, rosterRating,
+  pushBack,
   TRADE_WEEKS, TRADE_DEADLINE_WEEK, CONTRACT_INFLATION,
   generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating, capMark, FA_TYPICAL_MUSD,
   cutOptions, cutSets, legalCutSet, MAX_OFFERS, capOf,
