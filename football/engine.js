@@ -1027,6 +1027,30 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const over = (v, min, span) => clamp(((v || 0) - min) / span, 0, 1);
 const fitAvg = (...xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
+/*
+ * HOW A PLAYER'S SEASON ACTUALLY ARRIVED, week to week. resolveGame draws every man's
+ * game from sampleGamma(mean, sd), so two players with the same average are NOT the same
+ * player: the steady one shows up every Sunday, the boom-bust one wins you a shootout and
+ * loses you a Tuesday. That difference has always been in the sim; this names it so a GM
+ * can trade on it.
+ *
+ * Cut on the coefficient of variation (sd over mean), because a 15-point man swinging +/-8
+ * is wild and a 30-point man swinging +/-8 is a metronome. Thresholds are the measured
+ * quartiles of every tradeable season in the pool (mean >= 6 FPPG, n=5,364): the calmest
+ * quarter is STEADY, the wildest quarter is BOOM-BUST, and the middle half is just a
+ * football player. Under 6 FPPG nobody gets a tag -- the waiver wire swings by nature, and
+ * a chip on a 3-point man would be noise dressed as insight.
+ */
+const VOLATILITY = { MIN_FPPG: 6, STEADY_CV: 0.50, BOOM_CV: 0.74 };
+function volatility(p) {
+  const m = (p && p.ppr_ppg_mean) || 0;
+  if (m < VOLATILITY.MIN_FPPG) return null;
+  const cv = ((p.ppr_ppg_sd || 0)) / m;
+  if (cv <= VOLATILITY.STEADY_CV) return 'steady';
+  if (cv >= VOLATILITY.BOOM_CV) return 'boombust';
+  return null;
+}
+
 /**
  * Read a roster's shape. Returns the multiplier plus the parts that produced it,
  * so the coach breakdown can explain itself instead of showing a bare number.
@@ -2240,6 +2264,7 @@ const publicAPI = {
   eraCode, ERA_CODES,
   NICKNAMES, nickname, CITIES, city, cityLabel, TEAM_COLORS, teamColors, washColors,
   teamInk, teamButton, contrast, LINK_TIERS, linkTier, rosterStructure, STRUCTURE, coachReport,
+  volatility, VOLATILITY,
   SCHEME_NAMES: Object.fromEntries(SCHEMES.map(s => [s.key, s.name])),
   /* The scheme's one-line description, taken from its strength note with the leading
      name stripped off, so the panel can show it as a tagline under the scheme name. */

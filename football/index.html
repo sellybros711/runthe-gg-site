@@ -1062,6 +1062,33 @@ window.GA_ID='G-L29P5MRWKE';
     text-transform:uppercase;color:var(--dim-2);margin-top:1px}
   .dn-stance.contender{color:#fbbf24}
   .dn-stance.rebuilding{color:#94a3b8}
+  /* Cash coming IN: the seller's mirror of .deal-cash, green because it grows the ceiling. */
+  .deal-cashin{display:flex;align-items:baseline;gap:8px;margin:7px 10px 0;padding:7px 9px;
+    border-radius:8px;font-size:11.5px;line-height:1.35;color:#bbf7d0;
+    background:linear-gradient(180deg,rgba(34,197,94,.15),rgba(34,197,94,.06));
+    border:1px solid rgba(34,197,94,.5)}
+  .deal-cashin .dcash-n{flex:0 0 auto;font-family:var(--fd);font-size:17px;font-weight:700;
+    color:#4ade80;line-height:1}
+  .deal-cashin b{color:#4ade80}
+  /* Week-to-week character chips. Steady is cool, boom/bust runs hot. */
+  .vtag{flex:0 0 auto;font-family:var(--fn);font-size:8.5px;font-weight:700;
+    letter-spacing:.05em;text-transform:uppercase;padding:2px 5px;border-radius:5px}
+  .vtag.steady{color:#7dd3fc;background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.4)}
+  .vtag.boombust{color:#fdba74;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.45)}
+  /* The push-back: one shot at a better deal, and its two endings. */
+  .deal-push{display:block;margin:9px 10px 0;padding:8px 12px;width:calc(100% - 20px);
+    border-radius:9px;font-family:var(--fn);font-size:11.5px;font-weight:700;
+    letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
+    color:#c4b5fd;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.45)}
+  .deal-push:active{transform:translateY(1px)}
+  .deal-sweet{margin:7px 10px 0;padding:6px 9px;border-radius:8px;font-size:11.5px;
+    line-height:1.35;color:#c4b5fd;background:rgba(139,92,246,.09);
+    border:1px solid rgba(139,92,246,.4)}
+  .deal-sweet b{color:#a78bfa}
+  .deal-walknote{margin:7px 10px 0;padding:6px 9px;border-radius:8px;font-size:11.5px;
+    line-height:1.35;color:#fca5a5;background:rgba(239,68,68,.08);
+    border:1px solid rgba(239,68,68,.4)}
+  .deal-body.dead .deal-cols{opacity:.35;filter:saturate(.4)}
   .tt-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px}
   .tt-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;
     gap:6px;padding:3px 4px;border-radius:7px;min-width:0;
@@ -3882,8 +3909,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="headline" id="headline"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=41"></script>
-<script src="run.js?v=56"></script>
+<script src="engine.js?v=42"></script>
+<script src="run.js?v=57"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -6218,7 +6245,10 @@ function paintGmParts(p,gm){
     {k:'Value',w:15,v:p.value,
      why:(p.spentTotal??p.addedSalary)>0.05
        ? '+'+p.ratingGain.toFixed(1)+' rating for $'+(p.spentTotal??p.addedSalary).toFixed(1)+
-         'M committed — salary added'+(p.cashPaid>0?' plus $'+p.cashPaid.toFixed(1)+'M cash':'')
+         'M committed — salary added'+(p.cashPaid>0?' plus $'+p.cashPaid.toFixed(1)+'M cash':'')+
+         (p.cashReceived>0?', net of $'+p.cashReceived.toFixed(1)+'M cash you were paid':'')
+       : p.cashReceived>0
+       ? 'gained while being PAID — $'+p.cashReceived.toFixed(1)+'M came in selling talent'
        : 'gained without committing money past your starting payroll',
      },
     {k:'Beat expectation',w:legacy?10:5,v:p.over,
@@ -6236,6 +6266,12 @@ function paintGmParts(p,gm){
       '<div class="gmp-bar"><i class="'+cls+'" style="width:'+Math.max(1,Math.min(100,r.v))+'%"></i></div>'+
       '<div class="gmp-why">'+esc(r.why)+'</div></div>';
   });
+  /* Negotiation gets a line when it earned one: pushes that landed are money that no
+     mark charges for, which is the definition of found money. */
+  if(p.pushWins>0){
+    h+='<p class="gmp-note">You pushed back and won '+p.pushWins+' time'+(p.pushWins===1?'':'s')+
+      ' — <b>$'+p.pushGainMusd.toFixed(1)+'M</b> more than the opening offers.</p>';
+  }
   /* GOING OVER THE CAP IS A FINE, NOT A MARK: the market refuses deals that break the cap,
      so finishing over it is a deliberate act and comes straight off the total. */
   if(p.overCapBy>0){
@@ -6390,6 +6426,13 @@ function openTradeWindow(step,opts){
         'trades. Payroll <b>$'+payroll.toFixed(1)+'M</b> against what is left of $'+CAP()+'M, '+
         '<b>$'+cap.remaining.toFixed(1)+'M</b> to spend'+
         (deadline?'. Last window to use it.':'.');
+    }else if(cashOut<0){
+      /* The other direction: selling talent grew the ceiling, and the war chest is the
+         point of having sold. Said plainly so the bigger number reads as earned, not odd. */
+      rise.innerHTML='<b>Your cap has grown to $'+CAP().toFixed(1)+'M</b> &mdash; $'+
+        (-cashOut).toFixed(1)+'M of it is cash from selling talent. Payroll <b>$'+
+        payroll.toFixed(1)+'M</b>, <b>$'+cap.remaining.toFixed(1)+'M</b> to spend'+
+        (deadline?'. Last window to use it.':'.');
     }else{
       rise.innerHTML='<b>Nobody gets a raise.</b> This payroll only moves when you move it — '+
         'but a deal that upgrades your talent wants cash on top, and that comes off your cap '+
@@ -6421,6 +6464,8 @@ function paintShopList(){
     row.innerHTML=
       '<span class="sh-pos" style="'+posPaint(p.position)+'">'+esc(slotsNow()[slot])+'</span>'+
       '<div style="min-width:0"><div class="sh-name-row"><span class="sh-name">'+esc(p.name)+'</span>'+
+        (E.volatility(p)?'<span class="vtag '+E.volatility(p)+'">'+
+          (E.volatility(p)==='steady'?'Steady':'Boom/bust')+'</span>':'')+
         '<span class="sh-tag">On block</span></div>'+
         '<div class="sh-sub">'+tcPlate(p.franchise,p.season)+' '+p.season+' &middot; $'+p.price_musd.toFixed(1)+'M</div></div>'+
       '<div class="sh-nums"><div class="sh-fppg">'+p.ppr_ppg_mean.toFixed(1)+'</div><div class="sh-money">FPPG</div></div>';
@@ -6492,11 +6537,12 @@ function enterMarket(){
   paintDeal();
   $('b-tw-accept').onclick=()=>{
     if(selectedOffer===null) return;
+    const prop=currentOffers[selectedOffer];
+    if(!prop||prop.walked) return;
     /* One tap is one trade. Disabled the moment it fires, for the same reason the cut screen
        guards itself: the button outlives the screen by however long the next one takes to
        arrive, and a second tap would run the deal again. */
     $('b-tw-accept').disabled=true;
-    const prop=currentOffers[selectedOffer];
     /* A deal that brings back more than it sends is not finished when you accept it: the
        roster is over and somebody has to go. The cut screen owns the rest of the move,
        including the call to acceptTrade, so the run is never left holding seven or eight. */
@@ -6520,11 +6566,17 @@ function enterMarket(){
 function dealTile(p,mode){
   const head='<span class="pos" style="'+posPaint(p.position)+'">'+esc(p.position)+'</span>'+
     '<span class="pr">'+M(p.price_musd)+'</span>';
+  /* Week-to-week character, from the same sd the sim draws his games with. A second
+     axis to trade on: the steady man shows up every Sunday, the boom-bust man wins
+     shootouts and loses Tuesdays. Only the calmest and wildest quarters get a chip. */
+  const vol=E.volatility(p);
   return '<button class="tile mini '+mode+'" data-k="'+esc(p.player_id+'|'+p.season)+'">'+
     '<span class="th">'+head+'</span>'+
     '<span class="nm">'+esc(p.name)+'</span>'+
     '<span class="sn">'+p.season+' '+esc(E.nickname(p.franchise))+'</span>'+
-    '<span class="tf"><span class="pts"><b>'+p.ppr_ppg_mean.toFixed(1)+'</b><i>FPPG</i></span></span>'+
+    '<span class="tf"><span class="pts"><b>'+p.ppr_ppg_mean.toFixed(1)+'</b><i>FPPG</i></span>'+
+      (vol?'<span class="vtag '+vol+'">'+(vol==='steady'?'Steady':'Boom/bust')+'</span>':'')+
+    '</span>'+
   '</button>';
 }
 
@@ -6615,6 +6667,19 @@ function paintDeal(dir){
       (o.chemDelta>0?'+':'')+o.chemDelta.toFixed(1)+'%</span></span>';
   }
 
+  /* One shot at a better deal per offer. The outcome was drawn with the board, so this
+     only reveals it: they sweeten (always in money, never a different player) or they
+     walk and the card dies where it stands -- and the best card walking away is still
+     the best card you were offered, as far as the Dealmaking mark is concerned. */
+  const pushBits=o.walked
+    ? '<div class="deal-walknote">You pushed, and they pulled out. The deal is off the table.</div>'
+    : o.pushed
+    ? '<div class="deal-sweet">You pushed and they moved: '+
+      (o.pushKind==='cashcut'?'<b>$'+o.pushGain.toFixed(1)+'M off the cash demand</b>.'
+        :o.pushKind==='retain'?'they retain <b>another $'+o.pushGain.toFixed(1)+'M</b> of the salary.'
+        :'<b>$'+o.pushGain.toFixed(1)+'M cash</b> lands on the deal.')+'</div>'
+    : '<button class="deal-push" id="b-deal-push">Push for a better deal &middot; they may walk</button>';
+
   el.innerHTML=
     '<div class="deal-nav">'+
       '<button class="dn-btn" id="b-deal-prev" aria-label="Previous offer"'+
@@ -6636,7 +6701,7 @@ function paintDeal(dir){
       '<button class="dn-btn" id="b-deal-next" aria-label="Next offer"'+
         (many?'':' disabled')+'>&rsaquo;</button>'+
     '</div>'+
-    '<div class="deal-body'+(dir==='fwd'?' fwd':dir==='back'?' back':'')+'">'+
+    '<div class="deal-body'+(dir==='fwd'?' fwd':dir==='back'?' back':'')+(o.walked?' dead':'')+'">'+
       (many?'<div class="deal-dots">'+currentOffers.map((_,i)=>
         '<i class="'+(i===selectedOffer?'on':'')+'"></i>').join('')+'</div>':'')+
       /* THEY ASKED FOR SOMEBODY YOU DID NOT OFFER, said above the exchange, because it
@@ -6654,6 +6719,13 @@ function paintDeal(dir){
         ? '<div class="deal-cash"><span class="dcash-n">$'+o.cashMusd.toFixed(1)+'M</span>'+
           '<span>cash on top. Your cap drops to <b>$'+(CAP()-o.cashMusd).toFixed(1)+'M</b>'+
           ' for the rest of the season.</span></div>'
+        : '')+
+      /* SELLING PAYS. The mirror of the cash demand: this deal takes real production off
+         your field, and the buyer pays for it -- onto the ceiling, where it stays. */
+      (o.cashBackMusd>0
+        ? '<div class="deal-cashin"><span class="dcash-n">$'+o.cashBackMusd.toFixed(1)+'M</span>'+
+          '<span>cash coming to you. Your cap grows to <b>$'+(CAP()+o.cashBackMusd).toFixed(1)+
+          'M</b> for the rest of the season.</span></div>'
         : '')+
       /* A rebuilding club eats part of the contract to move it, the way real sellers
          retain salary. The tiles already show the price you pay; this names why it is
@@ -6679,18 +6751,32 @@ function paintDeal(dir){
         ? '<div class="deal-cut">Roster goes to '+(E.SLOTS.length+o.cutCount)+' &mdash; you release '+
           (o.cutCount===1?'one player':o.cutCount+' players')+' to get back to six. Your call.</div>'
         : '')+
+      pushBits+
     '</div>';
 
   $('b-deal-prev').onclick=()=>stepDeal(-1);
   $('b-deal-next').onclick=()=>stepDeal(1);
+  const pb=$('b-deal-push');
+  if(pb) pb.onclick=()=>{
+    pb.disabled=true;
+    const res=R.pushBack(run,o);
+    if(!res.done) return;
+    toast(res.walked?'They pulled out of the deal'
+      :res.kind==='cashcut'?'They cut the cash demand by $'+res.musd.toFixed(1)+'M'
+      :res.kind==='retain'?'They retain another $'+res.musd.toFixed(1)+'M of salary'
+      :'They put $'+res.musd.toFixed(1)+'M cash on the deal');
+    paintDeal();
+  };
   /* Any card on the panel opens that player's sheet, the same as everywhere else. */
   el.querySelectorAll('.tile.mini[data-k]').forEach(t=>{
     t.onclick=()=>{ const p=BYKEY.get(t.dataset.k); if(p) sheet(p); };
   });
-  $('b-tw-accept').style.display='';
-  $('b-tw-accept').disabled=false;
+  /* A walked deal keeps its place in the ring as a corpse -- the lesson reads better than
+     a card that vanishes -- but there is nothing left to accept on it. */
+  $('b-tw-accept').style.display=o.walked?'none':'';
+  $('b-tw-accept').disabled=!!o.walked;
   $('b-tw-accept').textContent='Accept trade with '+E.nickname(o.partnerFranchise);
-  paintTradePreview(o);
+  paintTradePreview(o.walked?null:o);
 }
 
 /* Left and right move through the offers, and a horizontal drag does the same on a phone.
@@ -10041,6 +10127,9 @@ function runPayload(){
       if(h.retainedMusd>0) m.retained=h.retainedMusd;
       if(h.dealEdge) m.edge=h.dealEdge;
       if(h.cutLoss) m.cutLoss=h.cutLoss;
+      /* Cash that came IN selling talent, and a push-back that landed. */
+      if(h.cashBackMusd>0) m.cashin=h.cashBackMusd;
+      if(h.pushed) m.push=h.pushGainMusd||0;
       return m;
     }):null,
   };
