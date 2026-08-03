@@ -2150,6 +2150,7 @@ or endorsed by the NCAA, the CFP or any school.
         <span class="ck" id="bowl-ck">15:00</span>
         <span class="rd" id="bowl-rd">BOWL</span></div>
     </div>
+    <div class="pofield" id="bowl-field"><canvas id="bowl-fcanvas"></canvas></div>
     <div class="pocap" id="bowl-cap"></div>
     <div class="polog" id="bowl-log"></div>
     <div style="margin-top:14px;text-align:center" id="bowl-fastwrap">
@@ -5100,6 +5101,18 @@ function playFeatureBroadcast(cfg){
   const seedStr=run.seed+'|bowl|'+r.shownYou+'-'+r.shownThem;
   const script=E.scoringScript(r.shownYou,r.shownThem,r.won,E.createSeededRNG(E.hashSeed(seedStr)));
   const segs=buildTimeline(script,pace);
+  /* THE SAME DRIVE CHART THE PLAYOFF PLAYS ON. A bowl is a full game, so it gets
+     the field: possession moving down the yardlines, a kickoff to open, and a
+     fresh kickoff at the half to whichever side did not receive the first one.
+     generateDrives already does the halftime flip; the bowl just had no field to
+     show it on until now. */
+  const driveRng=E.createSeededRNG(E.hashSeed(seedStr+'|drives'));
+  const drives=generateDrives(script,driveRng);
+  $('bowl-field').hidden=false;   // unhide before measuring, or the canvas sizes to nothing
+  const fieldCtx=initFieldCanvas('bowl-fcanvas');
+  const fcv=$('bowl-fcanvas');
+  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,them.bg):()=>{};
+  paintField(0);
   const setLead=(y,t)=>{youEl.classList.toggle('lead',y>=t);themEl.classList.toggle('lead',t>=y);};
   setLead(0,0);
   const logScore=(e)=>{
@@ -5116,6 +5129,7 @@ function playFeatureBroadcast(cfg){
     bug.className='bug final';
     $('bowl-q').textContent='FINAL';$('bowl-ck').textContent=r.won?'YOU WIN':'YOU LOSE';
     $('bowl-log').innerHTML='';script.forEach(logScore);
+    paintField(3600);
     $('bowl-cap').innerHTML='<div class="call '+(r.won?'you':'them')+'"><b>'+
       (r.won?cfg.winCall:cfg.loseCall)+'</b><span>'+
       esc(r.opponent)+' '+r.shownThem+', you '+r.shownYou+'</span></div>';
@@ -5136,6 +5150,7 @@ function playFeatureBroadcast(cfg){
       const t0=(window.performance||Date).now();
       const stepf=()=>{const k=Math.min(1,((window.performance||Date).now()-t0)/seg.ms);
         const sec=seg.from+(seg.to-seg.from)*k;$('bowl-ck').textContent=clockText(sec);
+        paintField((seg.q-1)*900+(900-sec));
         bug.classList.toggle('urgent',seg.q===4&&sec<=120);
         if(k<1){poRaf=requestAnimationFrame(stepf);return;}next();};
       poRaf=requestAnimationFrame(stepf);return;
@@ -5144,6 +5159,7 @@ function playFeatureBroadcast(cfg){
       const e=seg.e;const cell=e.team==='you'?youEl:themEl;
       cell.querySelector('.sc').textContent=e.team==='you'?e.you:e.them;setLead(e.you,e.them);
       cell.classList.add('scored');setTimeout(()=>cell.classList.remove('scored'),620);
+      paintField((e.q-1)*900+(900-e.sec));
       $('bowl-cap').innerHTML='<div class="call '+e.team+'"><b>'+e.kind+'</b><span>'+
         (e.team==='you'?'You':esc(opp?E.teamColors(opp).abbreviation:'OPP'))+
         (e.note?', '+esc(e.note):'')+'   '+e.you+'-'+e.them+'</span></div>';
@@ -5959,6 +5975,14 @@ function bowlBroadcast(cfg){
   const rng=E.createSeededRNG(E.hashSeed('chbowl|'+cfg.shownYou+'-'+cfg.shownThem+'|'+(cfg.themName||'')));
   const script=E.scoringScript(cfg.shownYou,cfg.shownThem,cfg.youWon,rng);
   const segs=buildTimeline(script,pace);
+  /* The Challenge Bowl plays on the same field as the real ones, halftime
+     kickoff and all. */
+  const drives=generateDrives(script,E.createSeededRNG(E.hashSeed('chbowl-drives|'+cfg.shownYou+'-'+cfg.shownThem+'|'+(cfg.themName||''))));
+  $('bowl-field').hidden=false;   // unhide before measuring, or the canvas sizes to nothing
+  const fieldCtx=initFieldCanvas('bowl-fcanvas');
+  const fcv=$('bowl-fcanvas');
+  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,themWash.bg):()=>{};
+  paintField(0);
   const setLead=(y,t)=>{ youEl.classList.toggle('lead',y>=t); themEl.classList.toggle('lead',t>=y); };
   setLead(0,0);
   const logScore=(e)=>{ const who=e.team==='you'?'You':(cfg.themName||'Them');
@@ -5984,6 +6008,8 @@ function bowlBroadcast(cfg){
     setRow('bw-season',play); setRow('bw-new',play); setRow('bw-share',play);
     setRow('bw-play',!play); setRow('bw-home',true);
     if($('b-bowl-share')) $('b-bowl-share').textContent='Send the result to '+(cfg.themName||'your friend');
+    /* The result panel takes over in place, so the live field steps aside. */
+    $('bowl-field').hidden=true;
     $('bowl-fastwrap').hidden=true; $('bowl-result').hidden=false;
     if(cfg.youWon) afterPaint(()=>fireConfetti(confettiTheme(false)));
   };
@@ -5997,6 +6023,7 @@ function bowlBroadcast(cfg){
       const t0=(window.performance||Date).now();
       const stepf=()=>{ const k=Math.min(1,((window.performance||Date).now()-t0)/seg.ms);
         const sec=seg.from+(seg.to-seg.from)*k; $('bowl-ck').textContent=clockText(sec);
+        paintField((seg.q-1)*900+(900-sec));
         bug.classList.toggle('urgent',seg.q===4&&sec<=120);
         if(k<1){ poRaf=requestAnimationFrame(stepf); return; } next(); };
       poRaf=requestAnimationFrame(stepf); return;
@@ -6005,6 +6032,7 @@ function bowlBroadcast(cfg){
       const e=seg.e; const cell=e.team==='you'?youEl:themEl;
       cell.querySelector('.sc').textContent=e.team==='you'?e.you:e.them; setLead(e.you,e.them);
       cell.classList.add('scored'); setTimeout(()=>cell.classList.remove('scored'),620);
+      paintField((e.q-1)*900+(900-e.sec));
       $('bowl-cap').innerHTML='<div class="call '+e.team+'"><b>'+e.kind+'</b><span>'+
         (e.team==='you'?'You':esc(cfg.themName||'Them'))+(e.note?', '+esc(e.note):'')+'   '+e.you+'-'+e.them+'</span></div>';
       logScore(e); poTimer=setTimeout(next,seg.ms); return;
