@@ -1,4 +1,4 @@
-/* RunTheGrid Pro — Stripe webhook (Cloudflare Pages Function)
+/* Run The Arcade Pro — Stripe webhook (Cloudflare Pages Function)
  *
  * POST /api/stripe/webhook — point a Stripe webhook endpoint here with events:
  *   checkout.session.completed

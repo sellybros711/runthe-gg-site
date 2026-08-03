@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Run The Arcade: Run The Table | RunThe.GG</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#071426" id="themeMeta" />
+<script>
+(function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
+  if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; }
+  document.documentElement.setAttribute('data-theme',t); })();
+</script>
+<meta name="description" content="Run The Table: a daily higher-or-lower sports streak game. Tap who wore the higher number and see how many you can get in a row." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
+    --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
+    --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
+    --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A; --red:#FF625F;
+    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A;
+    --shadow:0 6px 18px -10px rgba(0,0,0,.55);
+    --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --hero:'Anton', Impact, sans-serif; --pix:'Press Start 2P', monospace;
+  }
+  :root[data-theme="light"]{
+    --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
+    --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
+    --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
+    --coralT:#D8452F; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --red:#C4372C;
+    --shadow:0 6px 18px -12px rgba(13,27,44,.25);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{font-family:var(--f); color:var(--ink); background:var(--bg); min-height:100dvh; -webkit-font-smoothing:antialiased;}
+  a{color:inherit; text-decoration:none;}
+  :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
+  .wrap{width:100%; max-width:920px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 14px 40px;}
+  /* the play area fills the screen; the leaderboard sits below the fold */
+  .playzone{display:flex; flex-direction:column; min-height:calc(100dvh - 150px);}
+
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
+  .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
+  .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
+  .brand.logo img{height:26px; width:auto; display:block;}
+  .brand.logo .sub{display:block; font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--mut); margin-top:5px; margin-left:2px; white-space:nowrap;}
+  .spacer{flex:1;}
+  .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card); color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0; flex:0 0 auto;}
+  .themeBtn:hover{color:var(--ink);}
+  .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
+  :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
+  :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
+  .sndBtn .ic-snd-on{display:none;} .sndBtn .ic-snd-off{display:block;}
+  .sndBtn.snd-on{color:var(--tealT); border-color:var(--teal);}
+  .sndBtn.snd-on .ic-snd-on{display:block;} .sndBtn.snd-on .ic-snd-off{display:none;}
+  .chip{display:inline-flex; flex-direction:column; align-items:center; justify-content:center; min-width:48px; padding:5px 8px; border:1px solid var(--line2); border-radius:9px; background:var(--card); box-shadow:var(--shadow); flex:0 0 auto;}
+  .chip .n{font-family:var(--hero); font-weight:400; font-size:17px; line-height:1; color:var(--coralT); font-variant-numeric:tabular-nums;}
+  .chip .l{font-size:8px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); margin-top:4px;}
+
+  /* run banner */
+  .runbar{display:flex; align-items:center; gap:14px; background:var(--card); border:1px solid var(--line); border-left:5px solid var(--gold); border-radius:14px; padding:12px 16px; box-shadow:var(--shadow); margin-bottom:14px;}
+  .runbar .big{font-family:var(--hero); font-weight:400; font-size:40px; line-height:.9; color:var(--goldT); font-variant-numeric:tabular-nums;}
+  .runbar .rl{min-width:0; flex:1;}
+  .runbar .rl .k{display:block; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
+  .runbar .rl .v{display:block; font-size:13px; color:var(--ink); margin-top:3px; font-weight:700;}
+  .shieldpill{flex:0 0 auto; font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--goldT); border:1px solid var(--goldT); border-radius:999px; padding:3px 9px; white-space:nowrap;}
+  .shieldpill.used{color:var(--dim); border-color:var(--line2); opacity:.6;}
+  .runbar .best{flex:0 0 auto; text-align:right;}
+  .runbar .best .n{font-family:var(--hero); font-weight:400; font-size:22px; color:var(--mut); line-height:1;}
+  .runbar .best .c{display:block; font-size:8.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
+
+  .prompt{text-align:center; font-weight:900; font-size:clamp(16px,2.6vh,23px); color:var(--ink); margin:2px 0 clamp(12px,2vh,20px); letter-spacing:.01em;}
+
+  /* versus cards — fill the tall playzone */
+  .versus{display:grid; grid-template-columns:1fr; gap:clamp(12px,2vh,18px); position:relative; flex:1 1 auto; grid-auto-rows:minmax(0,1fr);}
+  .pcard{position:relative; border:1px solid var(--line2); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:clamp(18px,3.5vh,44px) 16px; text-align:center; cursor:pointer; transition:transform .1s, border-color .15s, background .15s; overflow:hidden; min-height:118px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(6px,1.4vh,12px);}
+  .pcard:hover{border-color:var(--gold);}
+  .pcard:active{transform:scale(.99);}
+  .pcard.correct{border-color:var(--green); background:color-mix(in srgb, var(--green) 16%, var(--card));}
+  .pcard.wrong{border-color:var(--red); background:color-mix(in srgb, var(--red) 15%, var(--card));}
+  .pcard.dim{opacity:.55;}
+  .pcard .nm{font-weight:900; font-size:clamp(19px,3.4vh,32px); line-height:1.1; color:var(--ink);}
+  .pcard .meta{font-size:clamp(11.5px,1.8vh,15px); font-weight:800; letter-spacing:.03em; color:var(--mut); text-transform:uppercase;}
+  .pcard .num{font-family:var(--hero); font-weight:400; font-size:clamp(34px,6vh,60px); line-height:1; color:var(--goldT); height:0; opacity:0; transition:opacity .2s, height .2s;}
+  .pcard.revealed .num{height:auto; opacity:1; margin-top:2px;}
+  .pcard .tap{font-size:clamp(10.5px,1.6vh,13px); font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim);}
+  .pcard.revealed .tap{display:none;}
+  .vs{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:2; width:clamp(40px,6vh,54px); height:clamp(40px,6vh,54px); border-radius:50%; background:var(--gold); color:#071426; font-family:var(--hero); font-weight:400; font-size:clamp(16px,2.4vh,20px); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px -6px rgba(0,0,0,.6);}
+  @media (min-width:520px){ .versus{grid-template-columns:1fr 1fr; grid-auto-rows:auto; gap:clamp(14px,2vh,22px);} .pcard{min-height:150px;} }
+
+  .hintline{text-align:center; font-size:12px; color:var(--mut); margin:clamp(14px,2vh,22px) 0 2px; font-weight:700; flex:0 0 auto;}
+
+  /* leaderboard */
+  .lb{background:var(--card); border:1px solid var(--line2); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin:18px 0 14px;}
+  .lb h3{font-family:var(--hero); font-weight:400; letter-spacing:.03em; text-transform:uppercase; font-size:14px; color:var(--coralT); margin:0 0 12px; display:flex; align-items:center; gap:8px;}
+  .lb-pill{font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--coralT); border:1px solid var(--coralT); border-radius:999px; padding:2px 8px;}
+  .lb-you{display:flex; gap:9px; margin-bottom:12px;}
+  .lb-you .box{flex:1; background:var(--card2); border:1px solid var(--line2); border-radius:10px; padding:10px 12px;}
+  .lb-you .box.me{border-color:var(--coralT); background:color-mix(in srgb, var(--coralT) 12%, var(--card2));}
+  .lb-you .cap{display:block; font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);}
+  .lb-you .big{display:block; font-family:var(--hero); font-weight:400; font-size:20px; line-height:1.2; margin-top:5px; color:var(--ink);}
+  .lb-you .box.me .big{color:var(--coralT);}
+  .lb-sample{opacity:.62;}
+  .lb-samplab{font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin:2px 0 4px;}
+  .lb .row{display:flex; align-items:center; gap:10px; padding:5px 0; font-size:13px; border-top:1px solid var(--line); color:var(--ink);}
+  .lb .row:first-of-type{border-top:0;}
+  .lb .row.you{color:var(--coralT);}
+  .lb .rk{font-family:var(--hero); font-weight:400; color:var(--mut); width:20px;}
+  .lb .who{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .lb .tm{font-variant-numeric:tabular-nums; color:var(--coralT); font-weight:700;}
+  .lb .note{font-size:11px; color:var(--mut); margin-top:8px;}
+
+  .foot{text-align:center; color:var(--dim); font-size:11.5px; padding:6px 0 2px;}
+  .foot a{color:var(--coralT);}
+
+  .scrim{position:fixed; inset:0; background:rgba(3,9,18,.66); backdrop-filter:blur(4px); z-index:50; display:flex; align-items:flex-start; justify-content:center; padding:max(24px,env(safe-area-inset-top)) 16px 24px; overflow:auto;}
+  .scrim.hidden{display:none;}
+  .sheet{width:100%; max-width:380px; background:var(--card); border:1px solid var(--line2); border-radius:16px; padding:22px 20px; position:relative; box-shadow:0 30px 80px -20px rgba(0,0,0,.7); margin:auto 0; text-align:center;}
+  .sheet .x{position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-size:14px; cursor:pointer;}
+  .sheet .runbig{font-family:var(--hero); font-weight:400; font-size:60px; line-height:.9; color:var(--goldT); margin:4px 0 0;}
+  .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:18px; margin:2px 0 2px; color:var(--ink);}
+  .sheet .sub-h{font-size:12px; font-weight:800; color:var(--mut); margin-bottom:6px;}
+  .rstats{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:14px 0 4px;}
+  .rstat{background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:11px 6px;}
+  .rstat .v{font-family:var(--hero); font-weight:400; font-size:24px; line-height:1; color:var(--ink);}
+  .rstat .l{font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); margin-top:5px;}
+  .rcta{display:flex; gap:9px; margin-top:16px;}
+  .abtn{flex:1; appearance:none; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-weight:800; font-size:13px; border-radius:11px; padding:12px; min-height:46px; display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer;}
+  .abtn.gold{background:var(--gold); color:#071426; border-color:transparent;}
+  .countdown{margin-top:14px; font-size:12px; font-weight:800; color:var(--mut);} .countdown b{color:var(--ink); font-variant-numeric:tabular-nums;}
+
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0; background:#0B1A2E; color:#F4F7FB; font-weight:800; font-size:13px; padding:11px 16px; border-radius:11px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.8);}
+  .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
+  .confetti{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden;}
+  .confetti i{position:absolute; top:-16px; width:9px; height:14px; border-radius:2px; opacity:.96; animation:cfall linear forwards;}
+  @keyframes cfall{0%{transform:translateY(-20px) rotate(0);}100%{transform:translateY(106vh) rotate(680deg);}}
+  @media (prefers-reduced-motion:reduce){ *{animation:none !important; transition:none !important;} .confetti{display:none;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
+    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><img src="/arcade/assets/runthearcade-logo.png" alt="Run The Arcade" width="900" height="521" /><span class="sub">RUN THE TABLE</span></a>
+    <div class="spacer"></div>
+    <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
+      <svg class="ic-snd-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+      <svg class="ic-snd-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M22 9l-5 6M17 9l5 6"/></svg>
+    </button>
+    <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
+      <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+    </button>
+    <div class="chip"><span class="n" id="streakN">0</span><span class="l">Streak</span></div>
+  </div>
+
+  <div class="runbar">
+    <div class="big" id="runN">0</div>
+    <div class="rl"><span class="k">In a row today</span><span class="v" id="runSub">One save per run — a second miss ends it.</span></div>
+    <span class="shieldpill" id="shieldPill">🛡 save ready</span>
+    <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
+  </div>
+
+  <div class="playzone">
+    <div class="prompt">Who wore the higher jersey number?</div>
+    <div class="versus" id="versus"></div>
+    <div class="hintline" id="hintline">Tap the player you think wore the higher number.</div>
+  </div>
+
+  <div class="lb">
+    <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
+    <div class="lb-you">
+      <div class="box me"><span class="cap">Your run today</span><span class="big" id="yourTm">—</span></div>
+      <div class="box"><span class="cap">Best run</span><span class="big" id="yourBest">—</span></div>
+    </div>
+    <div class="lb-sample" id="lbSample">
+      <div class="lb-samplab">Illustrative ranking</div>
+      <div class="row"><span class="rk">1</span><span class="who">gridiron_gary</span><span class="tm">21 in a row</span></div>
+      <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">17 in a row</span></div>
+      <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">14 in a row</span></div>
+    </div>
+    <div class="note" id="lbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your run.</div>
+  </div>
+
+  <div class="foot">A daily streak game inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:sellybros711@gmail.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a></div>
+</div>
+
+<div class="scrim hidden" id="scrim">
+  <div class="sheet">
+    <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
+    <div class="sub-h" id="mSub">Your run ended</div>
+    <div class="runbig" id="mRun">0</div>
+    <h2 id="mTitle">IN A ROW</h2>
+    <div class="rstats">
+      <div class="rstat"><div class="v" id="mBest">0</div><div class="l">Best ever</div></div>
+      <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Day streak</div></div>
+    </div>
+    <div id="rtgHist"></div>
+    <div class="rcta">
+      <button class="abtn gold" id="mAgain" type="button">Play again</button>
+    </div>
+    <div class="rcta">
+      <button class="abtn" id="mShare" type="button">Share</button>
+      <a class="abtn" href="/arcade/" style="text-decoration:none">More games</a>
+    </div>
+    <div class="countdown" id="mCountdown"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="../match/entities.js?v=12"></script>
+<script src="/arcade/sfx.js"></script>
+<script src="/arcade/tokens.js"></script>
+<script src="/arcade/archive.js"></script>
+<script src="/arcade/history.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/arcade/board.js"></script>
+<script src="/arcade/howto.js"></script>
+<script>
+(function(){
+  'use strict';
+  if(window.RTGHowto) RTGHowto.init('table');
+  var ENT = window.GRID_ENTITIES || [];
+  var LS = window.localStorage;
+  var SAVE_KEY='rtg:table:v1', GAME='table', ROUNDS=40;
+  var TEAM_SPORTS={NBA:1,NFL:1,MLB:1,NHL:1,Soccer:1,WNBA:1};
+
+  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  var ARCHIVE=!!(window.RTGArchive && RTGArchive.active());   // past-day practice mode
+  var DATE=(window.RTGArchive?RTGArchive.date():todayStr());
+  function xmur3(s){ var h=1779033703^s.length; for(var i=0;i<s.length;i++){ h=Math.imul(h^s.charCodeAt(i),3432918353); h=h<<13|h>>>19; } return function(){ h=Math.imul(h^h>>>16,2246822507); h=Math.imul(h^h>>>13,3266489909); return (h^=h>>>16)>>>0; }; }
+  function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  // First (ranked) play uses the deterministic daily seed so everyone gets the
+  // same board for the leaderboard. Replays reseed randomly for a fresh board.
+  var rng, servedDaily=false;
+  function seedDaily(){ rng=mulberry32(xmur3('table-'+DATE)()); }
+  function seedRandom(){ rng=mulberry32(((Math.random()*4294967296)>>>0)||1); }
+  seedDaily();
+  function ri(n){ return Math.floor(rng()*n); }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  // pool: recognisable team-sport athletes with a jersey number
+  var POOL = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.j && e.j.length && (e.f||0)>=3; });
+  function jn(e){ return e.j[0]; }
+
+  // deterministic daily sequence of higher/lower pairs (distinct numbers, min gap)
+  function buildRounds(){
+    var out=[], last=null, guard=0;
+    while(out.length<ROUNDS && guard<12000){ guard++;
+      var a=POOL[ri(POOL.length)], b=POOL[ri(POOL.length)];
+      if(!a||!b||a.id===b.id) continue;
+      // The run gets harder as it grows: early pairs are far apart (easy call),
+      // later pairs are forced CLOSE together (a real gut check). We cap the
+      // allowed number gap and shrink that cap as the streak climbs.
+      var d=Math.abs(jn(a)-jn(b)); if(d<1) continue;
+      var n=out.length;
+      var maxGap = n<8 ? 99 : n<16 ? 45 : n<24 ? 28 : n<32 ? 16 : 9;
+      if(d>maxGap) continue;
+      if(last && (a.id===last[0]||a.id===last[1]||b.id===last[0]||b.id===last[1])) continue;
+      out.push([a,b]); last=[a.id,b.id];
+    }
+    return out;
+  }
+  var SEQ=buildRounds();
+
+  var idx=0, run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, charged=false, attemptFirst=false;
+  var shield=true;   // arcade second chance: first wrong pick is forgiven once per run
+  var vs=document.getElementById('versus');
+  function updateShieldPill(){ var p=document.getElementById('shieldPill'); if(!p) return;
+    if(shield){ p.textContent='🛡 save ready'; p.classList.remove('used'); }
+    else { p.textContent='🛡 save used'; p.classList.add('used'); } }
+
+  function metaLine(e){ return [e.sport, (e.t&&e.t[0])].filter(Boolean).join(' · '); }
+  function renderRound(){
+    if(idx>=SEQ.length){ finish(); return; }
+    var pair=SEQ[idx];
+    vs.innerHTML =
+      '<div class="pcard" data-s="0"><span class="nm">'+esc(pair[0].name)+'</span><span class="meta">'+esc(metaLine(pair[0]))+'</span><span class="num" id="n0"></span><span class="tap">Higher ▲</span></div>'+
+      '<div class="vs">VS</div>'+
+      '<div class="pcard" data-s="1"><span class="nm">'+esc(pair[1].name)+'</span><span class="meta">'+esc(metaLine(pair[1]))+'</span><span class="num" id="n1"></span><span class="tap">Higher ▲</span></div>';
+    [].forEach.call(vs.querySelectorAll('.pcard'), function(c){ c.addEventListener('click', function(){ pick(+c.dataset.s); }); });
+  }
+  function pick(side){
+    if(done||busy) return; busy=true; startIfNeeded();
+    var pair=SEQ[idx], ja=jn(pair[0]), jb=jn(pair[1]);
+    var correct = ja>jb ? 0 : 1;   // gap guarantees ja!==jb
+    var cards=vs.querySelectorAll('.pcard');
+    document.getElementById('n0').textContent='#'+ja; document.getElementById('n1').textContent='#'+jb;
+    cards[0].classList.add('revealed'); cards[1].classList.add('revealed');
+    var right = side===correct;
+    cards[correct].classList.add('correct'); if(!right) cards[side].classList.add('wrong'); else cards[side===0?1:0].classList.add('dim');
+    if(right){
+      run++; document.getElementById('runN').textContent=run;
+      if(window.RTGSound) RTGSound.lock();
+      idx++;
+      saveResume();
+      setTimeout(function(){ busy=false; renderRound(); }, 720);
+    } else if(shield){
+      // Second chance: the shield eats this miss. Numbers stay revealed so the
+      // player can read them, then the run continues. The missed pair simply
+      // doesn't count — run total is untouched.
+      shield=false; updateShieldPill();
+      if(window.RTGSound) RTGSound.soft();
+      toast('🛡 Saved — one miss forgiven');
+      idx++;
+      saveResume();
+      setTimeout(function(){ busy=false; renderRound(); }, 1400);
+    } else {
+      if(window.RTGSound) RTGSound.wrong();
+      setTimeout(function(){ finish(); }, 950);
+    }
+  }
+
+  function startIfNeeded(){ if(started||done) return;
+    if(!charged){ if(ARCHIVE){ charged=true; attemptFirst=false; } else { var r=(window.RTGTokens?RTGTokens.startAttempt(GAME):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); } }
+    started=true; startTs=performance.now(); }
+  function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+
+  function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
+    if(ARCHIVE){ h.textContent='Tap the player you think wore the higher number. · Archive practice'; return; }
+    var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
+    h.textContent='Tap the player you think wore the higher number.'+lbl; }
+  function beginAttempt(){
+    // Ranked first play = the daily board; every replay is a fresh random board.
+    var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
+    if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
+    if(isReplay){ seedRandom(); SEQ=buildRounds(); } else { seedDaily(); SEQ=buildRounds(); servedDaily=true; }
+    idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
+    shield=true; updateShieldPill();
+    document.getElementById('runN').textContent='0';
+    var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
+    vs.style.pointerEvents=''; vs.style.opacity='';
+    renderRound(); updateHint();
+  }
+  // Resume an interrupted ranked run: rebuild today's deterministic board and
+  // fast-forward to the saved position without re-charging a token, replaying
+  // animations or sounds. Pairs before idx are simply skipped — SEQ is
+  // deterministic, so the board is consistent with what was already played.
+  function resumeAttempt(r){
+    seedDaily(); SEQ=buildRounds(); servedDaily=true;
+    idx=Math.max(0, Math.min(SEQ.length, r.idx|0));
+    run=Math.max(0, r.run|0);
+    shield=(r.shield!==false); updateShieldPill();
+    done=false; busy=false; charged=true; attemptFirst=true; started=true;
+    startTs=performance.now()-Math.max(0, r.elapsed|0)*1000;
+    document.getElementById('runN').textContent=run;
+    var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden');
+    renderRound(); updateHint();
+    toast('Resumed your run');
+  }
+  function updateAgainBtn(){
+    var b=document.getElementById('mAgain'); if(!b) return;
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ b.textContent='No plays left today'; b.disabled=true; b.style.opacity='.55'; b.style.cursor='default'; }
+    else { b.textContent='Play again'; b.disabled=false; b.style.opacity=''; b.style.cursor='pointer'; }
+  }
+
+  function shiftDay(iso,d){ var x=new Date(iso+'T00:00:00'); x.setDate(x.getDate()+d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
+  function load(){ if(ARCHIVE) return {}; try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
+  function save(s){ if(ARCHIVE) return; try{ LS.setItem(SAVE_KEY,JSON.stringify(s)); }catch(e){} }   // archive plays never touch saved progress
+
+  // ---- mid-run reload protection: persist the in-progress RANKED attempt so a
+  // refresh doesn't burn the daily token. Only the first (ranked) play is saved;
+  // archive practice and replays never are.
+  var RESUME_KEY='rtg:resume:table';
+  function loadResume(){ try{ var r=JSON.parse(LS.getItem(RESUME_KEY)); return (r&&typeof r==='object')?r:null; }catch(e){ return null; } }
+  function saveResume(){ if(ARCHIVE||!attemptFirst||done) return;
+    try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), idx:idx, run:run, shield:shield })); }catch(e){} }
+  function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
+
+  function finish(){
+    if(done) return; done=true;
+    if(!ARCHIVE) clearResume();
+    elapsed = started ? (performance.now()-startTs)/1000 : 0;
+    var s=load(), today=DATE, y=shiftDay(today,-1);
+    if(s.lastDone!==today){
+      s.streak=(s.lastDone===y)?(s.streak||0)+1:1;   // day-streak: played today
+    }
+    s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, run); s.last={ run:run, seconds:Math.round(elapsed) };
+    save(s);
+    if(!ARCHIVE && window.RTGHistory) RTGHistory.push(GAME, run, true);
+    showEnd(s, false);
+    if(run>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
+      RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:run }).then(function(res){
+        if(res&&res.streak){ document.getElementById('streakN').textContent=res.streak; document.getElementById('mStreak').textContent=res.streak; }
+        renderRealBoard();
+      });
+    }
+  }
+  function showEnd(s, locked){
+    document.getElementById('streakN').textContent=s.streak||0;
+    document.getElementById('runN').textContent=run;
+    document.getElementById('bestRun').textContent=s.bestRun||0;
+    document.getElementById('mRun').textContent=run;
+    document.getElementById('mBest').textContent=s.bestRun||0;
+    document.getElementById('mStreak').textContent=s.streak||0;
+    var sub = locked ? 'Your run today' : (!attemptFirst ? 'Practice run — not ranked' : (run>=SEQ.length?'You cleared the whole table!':'Your run ended'));
+    if(!locked && !shield) sub += ' · used your save';
+    document.getElementById('mSub').textContent = sub;
+    document.getElementById('mTitle').textContent = 'IN A ROW';
+    document.getElementById('yourTm').textContent = run+' in a row';
+    document.getElementById('yourBest').textContent = s.bestRun||0;
+    updateAgainBtn();
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), GAME);
+    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && run>=5){ confetti(run>=15?120:70, run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
+  }
+
+  document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
+  document.getElementById('mAgain').addEventListener('click', function(){
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); return; }
+    beginAttempt();
+  });
+  document.getElementById('mShare').addEventListener('click', function(){
+    var txt='Run The Arcade · Run The Table\n🔥 '+run+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/';
+    if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
+    else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
+    else toast('Sharing not supported');
+  });
+
+  var cdT=null;
+  function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }
+  function stopCountdown(){ if(cdT){ clearInterval(cdT); cdT=null; } }
+  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New table in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m</b>'; }
+
+  var CFC=['#F06A5F','#37C5D5','#F2B632','#A982F3','#48D17A','#2F6BFF'];
+  function confetti(count,gold){ try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
+    var pal=gold?['#F2B632','#F5A623','#FFD24D','#F06A5F']:CFC, wrap=document.createElement('div'); wrap.className='confetti';
+    for(var i=0;i<count;i++){ var p=document.createElement('i'); p.style.left=(Math.random()*100).toFixed(2)+'%'; p.style.background=pal[i%pal.length]; p.style.animationDuration=(2.2+Math.random()*1.7).toFixed(2)+'s'; p.style.animationDelay=(Math.random()*0.4).toFixed(2)+'s'; if(Math.random()<0.45){ p.style.width='8px'; p.style.height='8px'; p.style.borderRadius='50%'; } wrap.appendChild(p); }
+    document.body.appendChild(wrap); setTimeout(function(){ wrap.remove(); },4200);
+  }
+  var toastT=null; function toast(m){ var el=document.getElementById('toast'); el.textContent=m; el.classList.add('on'); if(toastT) clearTimeout(toastT); toastT=setTimeout(function(){ el.classList.remove('on'); },2400); }
+
+  function applyThemeMeta(){ var t=document.documentElement.getAttribute('data-theme'); var m=document.getElementById('themeMeta'); if(m) m.setAttribute('content', t==='light'?'#EEF2F7':'#071426'); }
+  applyThemeMeta();
+  document.getElementById('themeBtn').addEventListener('click', function(){ var next=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light'; document.documentElement.setAttribute('data-theme',next); try{ LS.setItem('runthegrid_theme',next); }catch(e){} applyThemeMeta(); });
+
+  function lbEsc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function renderRealBoard(){
+    if(!window.RTG_BOARD) return;
+    RTG_BOARD.leaderboard(GAME, DATE, 5).then(function(rows){
+      if(rows===null) return;
+      var lb=document.querySelector('.lb'); if(!lb) return;
+      var pill=lb.querySelector('.lb-pill'); if(pill) pill.textContent='Live';
+      var samp=document.getElementById('lbSample'); if(samp){ samp.style.opacity='1';
+        if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to post a run today.</div>'; }
+        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Longest runs today</div>';
+          for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
+            h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+' in a row</span></div>'; }
+          samp.innerHTML=h;
+        }
+      }
+      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board — longest run today wins, ties broken by time. Sign in on RunThe.GG to post yours.';
+    });
+  }
+
+  // ---- boot ----
+  var saved=load(); document.getElementById('streakN').textContent=saved.streak||0;
+  if(saved.bestRun){ document.getElementById('bestRun').textContent=saved.bestRun; document.getElementById('yourBest').textContent=saved.bestRun; }
+  // A mid-run snapshot from TODAY, with the token already spent (playsOf>0) but
+  // the run never finished (lastDone!==DATE) → resume instead of lockout/replay.
+  var RES=loadResume();
+  var canResume = !ARCHIVE && RES && RES.d===DATE && saved.lastDone!==DATE && window.RTGTokens && RTGTokens.playsOf(GAME)>0;
+  if(!ARCHIVE && RES && !canResume) clearResume();   // stale or invalid snapshot
+  if(canResume){ resumeAttempt(RES); }
+  else if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
+    done=true; vs.style.pointerEvents='none'; vs.style.opacity='.5';
+    document.getElementById('hintline').textContent='No plays left — new tables tomorrow.';
+    if(saved.last){ run=saved.last.run||0; showEnd(saved, true); } else { renderRound(); }
+  } else { beginAttempt(); }
+  if(window.RTG_BOARD){
+    RTG_BOARD.boot();
+    RTG_BOARD.onChange(function(st){
+      if(st.signedIn){ RTG_BOARD.streakOf(GAME).then(function(cs){ if(cs) document.getElementById('streakN').textContent=cs.streak||0; }); }
+      renderRealBoard();
+    });
+  }
+})();
+</script>
+</body>
+</html>

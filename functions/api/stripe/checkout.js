@@ -1,4 +1,4 @@
-/* RunTheGrid Pro — Stripe Checkout (Cloudflare Pages Function)
+/* Run The Arcade Pro — Stripe Checkout (Cloudflare Pages Function)
  *
  * POST /api/stripe/checkout   body: { user_id: "<supabase auth uid>", email?: string }
  * → { url: "https://checkout.stripe.com/..." }
@@ -29,8 +29,8 @@ export async function onRequestPost(context) {
     client_reference_id: userId,
     'metadata[supabase_user_id]': userId,
     'subscription_data[metadata][supabase_user_id]': userId,
-    success_url: site + '/grid/archive/?checkout=success',
-    cancel_url: site + '/grid/archive/?checkout=cancelled',
+    success_url: site + '/arcade/archive/?checkout=success',
+    cancel_url: site + '/arcade/archive/?checkout=cancelled',
     allow_promotion_codes: 'true'
   });
   if (body.email) form.set('customer_email', body.email);
