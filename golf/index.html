@@ -23473,8 +23473,29 @@ function overlayCourseRecords(screen){
     else { boardHTML='<div class="small muted center" style="padding:10px 8px">Today’s online board is unavailable right now.</div>'; }
   } else { boardHTML='<div class="small muted center" style="padding:10px 8px">Sign in on RunThe.GG to see the global daily board.</div>'; }
   if(tab==='legend') ov.appendChild($(`<p class="small muted center" style="margin:8px 0 0">The Career Golfers board, free rounds played as your created career (Legend) golfers, kept separate from everyday drafted golfers.</p>`));
+  // owner ("it says the course record is -9 but when you click it, it shows -4"): the preview's record link
+  // lands HERE, so the ALL-TIME course record must be the first thing you see. Today's board below only
+  // lists rounds posted TODAY, which is a different (usually higher) number.
+  { const c=DAILY_COURSES[today]||{};
+    const rec=(tab==='legend'?courseRecordsLegend():courseRecords())[today];
+    const recLooks=(rec&&rec.looks&&rec.looks.length)?rec.looks.map(l=>l||DEFLOOK):[ (rec&&rec.look)||DEFLOOK ];
+    const recNames=(rec&&rec.names&&rec.names.length)?rec.names.slice():(rec?[rec.name||'—']:[]);
+    const inner = rec
+      ? `<div style="display:flex;align-items:center;justify-content:center;gap:11px;margin-top:6px">
+          <div style="flex:0 0 auto">${crCycleFigureHTML(recLooks,48,recNames)}</div>
+          <div style="text-align:left;min-width:0">
+            <div style="font-family:var(--display);font-size:26px;line-height:1;color:var(--gold)">${dTot(rec.toPar, c.par)}</div>
+            ${recNames.length>1?`<div class="small muted" style="font-size:10px;margin-top:3px">${recNames.length}-way tie</div>`:''}
+          </div></div>
+        <div class="small" style="font-size:10.5px;margin-top:5px;color:#dfeae2">The lowest round ever posted at this course, any day it was in the rotation</div>`
+      : `<div style="font-family:var(--display);font-size:22px;color:var(--muted);margin-top:8px">-</div>
+        <div class="small muted" style="font-size:10.5px;margin-top:4px">Unclaimed · be the first to set it</div>`;
+    ov.appendChild($(`<div class="scout" style="text-align:center;border-color:rgba(241,208,74,.55);margin:10px 0 2px">
+      <div style="font:800 10px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">All-time course record${tab==='legend'?' · Legend':''}</div>
+      ${inner}</div>`));
+  }
   ov.appendChild($(`<div><h2 style="margin:12px 0 8px">Today · ${esc(dShort(DAILY_COURSES[today].v))}</h2>
-    <p class="lede" style="margin:0 0 8px;font-size:12.5px">${tab==='legend'?'The global leaderboard for legend-token rounds at today’s course.':'The global leaderboard for today’s course. Lowest round wins the day.'}</p></div>`));
+    <p class="lede" style="margin:0 0 8px;font-size:12.5px">${tab==='legend'?'Legend-token rounds posted today only. Beat the all-time record above to take it.':'Rounds posted today only, lowest wins the day. Beat the all-time record above to take it.'}</p></div>`));
   const boardWrap=$(`<div></div>`); boardWrap.innerHTML=emojifyIcons(boardHTML); ov.appendChild(boardWrap);
   if(tab==='legend'){
     // the legend tier keeps its own all-time records here (the ALL COURSES tab holds the human records)
