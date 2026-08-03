@@ -3647,6 +3647,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="deal" id="tw-deal"></div>
       <div style="margin-top:8px"><button class="btn" id="b-tw-accept" disabled>Accept trade</button></div>
       <div style="margin-top:8px"><button class="btn ghost sm" id="b-tw-back">Shop different players</button></div>
+      <!-- The way OUT, from the market itself. Declining everything used to mean walking
+           back to the shop screen to find the pass button, which read as if saying no was
+           not allowed from here. All three answers to an offer sheet -- yes, show me other
+           deals, no deals at all -- now sit on one screen. -->
+      <div style="margin-top:8px"><button class="btn ghost sm" id="b-tw-pass-mkt">Decline all, play on</button></div>
     </div>
   </div>
 
@@ -6389,12 +6394,22 @@ function openTradeWindow(step,opts){
   /* PASSING WHILE OVER THE CAP HAS TO SAY SO. "Pass and keep my roster" is a perfectly
      comfortable sentence to tap, and it was the button that walked somebody $11M over the cap
      into the results screen. It names the consequence instead, so staying over is a decision
-     rather than the default. */
+     rather than the default. The market screen carries the same exit with the same label,
+     so declining every offer does not require a detour through the shop. */
   const passOver=R.capMark(run.roster.reduce((t,p)=>t+p.price_musd,0),run);
-  $('b-tw-pass').textContent=passOver.overBy>0
+  const passLabel=passOver.overBy>0
     ? 'Stay $'+passOver.overBy.toFixed(1)+'M over the cap'
-    : (preseasonWindow?'No deal, start the season':'Pass and keep my roster');
+    : (preseasonWindow?'No deal, start the season'
+      :deadline?'Decline all, ride with this roster':'Decline all, play on');
+  $('b-tw-pass').textContent=passOver.overBy>0?passLabel
+    :(preseasonWindow?'No deal, start the season':'Pass and keep my roster');
   $('b-tw-pass').classList.toggle('warn',passOver.overBy>0);
+  const passMkt=$('b-tw-pass-mkt');
+  if(passMkt){
+    passMkt.onclick=()=>{ leaveTradeWindow(400); };
+    passMkt.textContent=passLabel;
+    passMkt.classList.toggle('warn',passOver.overBy>0);
+  }
   /* The raise happened a line of code ago and it moves every price on this screen, so it is
      stated here rather than left to be inferred from numbers that quietly grew. */
   /* OVER THE CAP IS ITS OWN BANNER, not a clause in the inflation notice.
