@@ -1352,6 +1352,12 @@ window.GA_ID='G-L29P5MRWKE';
   .tmi-k{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.07em;
     text-transform:uppercase;color:#fbbf24;padding-top:2px}
   .tmi-row b{color:#fcd34d}
+  /* "Remember the rules": an inline link on the reveal sub-line, so a returning GM who no
+     longer gets the popup can still pull it up. Quiet -- it is a footnote, not an action. */
+  .rv-rules{display:inline;padding:0;margin-left:6px;border:0;background:none;cursor:pointer;
+    font:inherit;font-size:12px;font-weight:700;color:#fbbf24;text-decoration:underline;
+    text-underline-offset:2px}
+  .rv-rules:hover{color:#fcd34d}
   .gmp-rank b{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--ink)}
   .gmp-rank b.first{color:#fbbf24}
   .gmp-cap{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.09em;
@@ -3549,7 +3555,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   <div class="screen" id="s-reveal">
     <div class="eyebrow" id="rv-eye" style="color:#fbbf24">Trade Machine: Week 1</div>
     <h2 class="display" style="font-size:26px;margin:4px 0 4px" id="rv-title">Your inherited roster</h2>
-    <p class="dim" style="font-size:13px;margin:0 0 10px" id="rv-sub">Meet the six players you've been handed.</p>
+    <p class="dim" style="font-size:13px;margin:0 0 10px" id="rv-sub">Meet the six players you've been handed.
+      <button type="button" class="rv-rules" id="b-rv-rules">Remember the rules</button></p>
     <div class="field" id="field-rv" style="aspect-ratio:1/0.62"></div>
     <div class="rv-roster" id="rv-roster"></div>
     <button class="btn-text rv-skip" id="rv-skip" style="display:none">Reveal the whole roster</button>
@@ -6062,16 +6069,13 @@ function beginTradeMachine(){
    rules (the deadline, cash, the push) are otherwise learned mid-deal. One sheet, one
    read, never again -- and however it is dismissed the reveal proceeds, because a rules
    popup that can strand a run is worse than no rules at all. */
-function tradeIntro(go){
-  let seen=false;
-  try{ seen=localStorage.getItem('ps_tmintro')==='1'; }catch(e){ seen=!!window.__tmIntro; }
-  if(seen){ go(); return; }
-  window.__tmIntro=true;
-  try{ localStorage.setItem('ps_tmintro','1'); }catch(e){}
+/* The rules, as sheet markup. One source, two callers: the first-time intro (with a
+   continuation into the reveal) and the "Remember the rules" link on the reveal (a plain
+   read, no continuation). `cta` is the button label. */
+function tradeRulesHTML(cta){
   const row=(k,t)=>'<div class="tmi-row"><span class="tmi-k">'+k+'</span><span>'+t+'</span></div>';
-  $('sheet-in').innerHTML=
-    '<h3 class="display" style="font-size:20px;margin:0 0 4px">Welcome to the front office</h3>'+
-    '<p class="dim" style="font-size:12px;margin:0 0 10px">How the Trade Machine works, once. '+
+  return '<h3 class="display" style="font-size:20px;margin:0 0 4px">Welcome to the front office</h3>'+
+    '<p class="dim" style="font-size:12px;margin:0 0 10px">How the Trade Machine works. '+
       'Everything here is also said on the cards as you go.</p>'+
     row('The deal','Every GM starts with a rebuild. The league only deals rosters graded '+
       'about 60 to 72 overall, so nobody opens with a contender. Your rating grades what '+
@@ -6083,10 +6087,26 @@ function tradeIntro(go){
       'the price: rebuilding clubs sell cheap and even cover part of a salary, contenders '+
       'pay up for your stars, most of all at the deadline.')+
     row('The push','Push any offer once for a better deal. They sweeten, or they walk.')+
-    row('The grade','Winning 35%, improvement 25%, dealmaking 20% (every deal is graded '+
-      'against the best version of itself), value 15%, beating expectation 5%.')+
-    '<button class="btn" id="b-tmi-go" style="width:100%;margin-top:12px">Deal me a team</button>';
+    row('The grade','Winning 30%, improvement 25%, dealmaking 25% (every deal is graded '+
+      'against the best version of itself), value 20%. Going over the cap is a fine on top.')+
+    '<button class="btn" id="b-tmi-go" style="width:100%;margin-top:12px">'+esc(cta)+'</button>';
+}
+function tradeIntro(go){
+  let seen=false;
+  try{ seen=localStorage.getItem('ps_tmintro')==='1'; }catch(e){ seen=!!window.__tmIntro; }
+  if(seen){ go(); return; }
+  window.__tmIntro=true;
+  try{ localStorage.setItem('ps_tmintro','1'); }catch(e){}
+  $('sheet-in').innerHTML=tradeRulesHTML('Deal me a team');
   sheetOnClose=go;
+  $('sheet').classList.add('on');
+  $('b-tmi-go').onclick=closeSheet;
+}
+/* The rules on demand, from the reveal's "Remember the rules" link. No continuation: it
+   just closes back to wherever you were. */
+function reviewTradeRules(){
+  $('sheet-in').innerHTML=tradeRulesHTML('Got it');
+  sheetOnClose=null;
   $('sheet').classList.add('on');
   $('b-tmi-go').onclick=closeSheet;
 }
@@ -6128,6 +6148,9 @@ function rvCardHTML(p,slot,isTop){
    lands does the mystery grade flip over and the scouting report slide in as the payoff.
    The whole build can be skipped, and reduced-motion gets it all at once. */
 function openTeamReveal(){
+  /* The way back to the rules once the first-time popup has retired itself. Bound here so
+     it survives every reveal, and it only reads -- it never advances the run. */
+  const rr=$('b-rv-rules'); if(rr) rr.onclick=reviewTradeRules;
   const rep=gmScoutingReport(run);
   const grade=$('rv-grade'), gEl=$('rv-grade-g');
   grade.classList.add('mystery'); grade.classList.remove('graded');
