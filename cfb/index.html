@@ -690,6 +690,12 @@ window.GA_ID='G-L29P5MRWKE';
     white-space:nowrap}
   .bdg.led{background:rgba(251,191,36,.22);color:#fcd34d}
   .bdg.mile{background:rgba(56,189,248,.14);color:#7dd3fc;border-color:rgba(56,189,248,.28)}
+  /* Award and badge chips side by side on the player sheet. */
+  .badges{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+  .badges .bdg{margin-top:0}
+  /* Tappable players: the field chips and the lineup rows that open the sheet. */
+  .chip.filled{cursor:pointer}
+  #o-rost .rrow,#ch-rost .rrow{cursor:pointer}
 
   /* ── budget bar ─────────────────────────────────────────────── */
   /* THE HUD STAYS. It pins just under the header so the budget, the spin count and
@@ -3638,12 +3644,15 @@ function drawField(el,interactive){
         pip.textContent=linkCount[i];
         pip.style.background=TIER[bestTier[i]]?TIER[bestTier[i]].color:'#64748b';
       }
+      /* Same as the NFL game: any signed player on any field opens his sheet. */
+      c.onclick=()=>sheet(p);
     }else{
       c.className='chip empty';
       c.querySelector('.dl').textContent=E.SLOTS[i];
       c.querySelector('.disc').removeAttribute('style');
       c.querySelector('.who').textContent='';
       c.querySelector('.yr').textContent='';
+      c.onclick=null;
     }
   });
 
@@ -3769,16 +3778,37 @@ function drawRail(el){
 }
 
 /* ── sheet (player detail) ───────────────────────────────────── */
+/* THE SAME CARD EVERYWHERE, matching the NFL game's: tapping a player on the
+   field, in a lineup list or on the results screen opens this one sheet. The
+   two numbers under the price are the ones a draft decision actually turns on
+   and neither was shown before: how much his scoring moves week to week, and
+   how many games that season the average is built on. A 20 FPPG built on four
+   games is a different purchase from one built on thirteen. */
 function sheet(p){
-  const all=p.awards||[];
+  const ts=DATA.byTeamSeasonId[p.team_season_id];
+  const inRun=!!(run&&run.roster.includes(p));
+  const links=inRun&&run.roster.length>1
+    ? E.resolveChemistry(run.roster,CTX).links.filter(l=>l.a===p.name||l.b===p.name):[];
   $('sheet-in').innerHTML=
-    '<div class="eyebrow">'+esc(p.position)+'</div>'+
-    '<h2 class="display" style="font-size:24px;margin:4px 0 4px">'+esc(p.name)+'</h2>'+
-    '<p class="dim" style="font-size:13px;margin:0 0 10px">'+p.season+' '+esc(p.school||'')+'</p>'+
-    (p.stat_line?'<p style="font-size:13px;color:var(--dim);margin:0 0 8px">'+esc(p.stat_line)+'</p>':'')+
-    '<div class="kv"><span>Fantasy PPG</span><b>'+p.fppg.toFixed(1)+'</b></div>'+
-    '<div class="kv"><span>Price</span><b>'+M(p.price_musd)+'</b></div>'+
-    (all.length?'<div style="margin-top:8px">'+all.map(a=>awardChip(a,false)).join(' ')+'</div>':'')+
+    '<div class="eyebrow">'+esc(ts?ts.display:(p.season+' '+(p.school||'')))+'</div>'+
+    '<h2 class="display" style="font-size:24px;margin:4px 0 10px">'+esc(p.name)+'</h2>'+
+    '<div class="kv"><span class="dim">Spot</span><b>'+esc(p.position)+'</b></div>'+
+    '<div class="kv"><span class="dim">Cost</span><b>'+M(p.price_musd)+'</b></div>'+
+    (p.stat_line?'<p style="margin:10px 0 0;font-size:13px;color:var(--dim)">'+esc(p.stat_line)+'</p>':'')+
+    ((p.awards||[]).length||(p.badges||[]).length?'<div class="badges" style="margin:9px 0 2px">'+
+      (p.awards||[]).map(a=>awardChip(a,false)).join('')+
+      (p.badges||[]).map(t=>'<span class="'+
+        (/^Led /.test(t)?'bdg led':(/^\d/.test(t)?'bdg':'bdg mile'))+'">'+esc(t)+'</span>').join('')+
+      '</div>':'')+
+    '<div class="kv" style="margin-top:8px"><span class="dim">Fantasy points per game</span><b>'+
+      p.fppg.toFixed(1)+' FPPG</b></div>'+
+    '<div class="kv"><span class="dim">Swing week to week</span><b>'+
+      (p.ppr_ppg_sd!=null?p.ppr_ppg_sd.toFixed(1):'--')+'</b></div>'+
+    '<div class="kv"><span class="dim">Games that year</span><b>'+
+      (p.games_played!=null?p.games_played:'--')+'</b></div>'+
+    (p.home_state?'<div class="kv"><span class="dim">Home state</span><b>'+esc(p.home_state)+'</b></div>':'')+
+    (links.length?'<div class="eyebrow" style="margin-top:13px">Chemistry</div>'+
+      links.map(l=>linkRow(l,p.name)).join(''):'')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet();
   $('sh-x').onclick=closeSheet;
@@ -5361,12 +5391,15 @@ function paintOver(){
     const p=bySlot[i]; if(!p) return '';
     const a=topAward(p);
     const tsId=run.draws[run.roster.indexOf(p)]?.team_season_id;
-    return '<div class="rrow">'+slotTag(slot,p.position)+
+    return '<div class="rrow" data-si="'+i+'">'+slotTag(slot,p.position)+
       '<span class="nm"><b>'+esc(p.name)+'</b><span>'+p.season+' '+esc(p.school||'')+
         (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</span></span>'+
       (a?'<span class="awdcol">'+awardChip(a,true)+'</span>':'')+
       '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
   }).join('');
+  $('o-rost').querySelectorAll('.rrow').forEach(rw=>{
+    rw.onclick=()=>{ const p=bySlot[+rw.dataset.si]; if(p) sheet(p); };
+  });
 
   $('o-miss').innerHTML='<div style="text-align:center;padding:12px 0;color:var(--dim);font-size:13px"><div class="dots" style="margin-bottom:8px"><i></i><i></i><i></i></div>Working out the best you could have drafted</div>';
 
@@ -5765,12 +5798,17 @@ function renderRosterRows(el,roster,slotIndex){
   roster.forEach((p,i)=>{ bySlot[slotIndex[i]]=p; });
   el.innerHTML=E.SLOTS.map((slot,i)=>{ const p=bySlot[i]; if(!p) return '';
     const a=topAward(p);
-    return '<div class="rrow">'+slotTag(slot,p.position)+
+    return '<div class="rrow" data-si="'+i+'">'+slotTag(slot,p.position)+
       '<span class="nm"><b>'+esc(p.name)+'</b><span>'+p.season+' '+esc(p.school||'')+
         (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</span></span>'+
       (a?'<span class="awdcol">'+awardChip(a,true)+'</span>':'')+
       '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
   }).join('');
+  /* These rows can hold a team you did not draft, and the sheet knows that:
+     with no run behind the player it simply leaves the chemistry section off. */
+  el.querySelectorAll('.rrow').forEach(rw=>{
+    rw.onclick=()=>{ const p=bySlot[+rw.dataset.si]; if(p) sheet(p); };
+  });
 }
 
 let challengeTeam=null;     // the sender's decoded blob while accepting a challenge
