@@ -59,6 +59,7 @@ players.forEach(function (p) {
   if (nat) e.nat = nat;
 
   if (first(a.hall_of_fame) === true) e.hof = true;
+  if (p.active === true) e.act = 1;   // currently-active player (for "active only" pools)
 
   var na = arr(a.name_is_also).filter(Boolean);
   if (na.length) e.na = na;

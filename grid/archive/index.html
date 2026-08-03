@@ -116,6 +116,8 @@
 
 <script src="/grid/tokens.js"></script>
 <script src="/grid/archive.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/grid/board.js"></script>
 <script>
 (function(){
   'use strict';
@@ -151,10 +153,36 @@
           '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Unlimited plays — no daily token limit</span></li>'+
           '<li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg><span>Your streak and today’s leaderboard stay untouched</span></li>'+
         '</ul>'+
-        '<button class="btn" id="unlock">Unlock Pro (preview)</button>'+
-        '<p class="fine">Preview unlock — no charge. Real billing is coming soon.</p>'+
+        '<button class="btn" id="goPro">Get Pro</button>'+
+        '<p class="fine" id="gateFine">Unlimited plays + every past day. Cancel anytime.</p>'+
+        '<p class="fine"><a href="#" id="unlock" style="color:var(--dim); text-decoration:underline;">Preview unlock (testing)</a></p>'+
       '</div>';
-    document.getElementById('unlock').addEventListener('click', function(){
+    // Stripe checkout — needs a signed-in RunThe.GG account so the
+    // subscription can be tied to it. Falls back gracefully pre-config.
+    document.getElementById('goPro').addEventListener('click', function(){
+      var btn=this; btn.disabled=true; btn.textContent='Opening checkout…';
+      var st=(window.RTG_BOARD && RTG_BOARD.state()) || {};
+      if(!st.signedIn){
+        document.getElementById('gateFine').textContent='Sign in with your RunThe.GG account first, then tap Get Pro.';
+        btn.disabled=false; btn.textContent='Get Pro';
+        return;
+      }
+      fetch('/api/stripe/checkout', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ user_id: st.userId })
+      }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+        .then(function(res){
+          if(res.ok && res.d && res.d.url){ location.href=res.d.url; return; }
+          document.getElementById('gateFine').textContent='Checkout isn’t live yet — use the preview unlock below for now.';
+          btn.disabled=false; btn.textContent='Get Pro';
+        })
+        .catch(function(){
+          document.getElementById('gateFine').textContent='Checkout isn’t live yet — use the preview unlock below for now.';
+          btn.disabled=false; btn.textContent='Get Pro';
+        });
+    });
+    document.getElementById('unlock').addEventListener('click', function(ev){
+      ev.preventDefault();
       try{ LS.setItem('runthegrid_pro','1'); }catch(e){}
       location.reload();
     });

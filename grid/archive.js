@@ -14,7 +14,7 @@
  */
 (function(){
   'use strict';
-  var LAUNCH='2026-06-01';   // earliest playable archive day
+  var LAUNCH='2026-07-22';   // the day RunTheGrid launched — earliest archive day
   function today(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function isPro(){ return !!(window.RTGTokens && window.RTGTokens.isPro && window.RTGTokens.isPro()); }
   function param(){ try{ return new URLSearchParams(location.search).get('date'); }catch(e){ return null; } }

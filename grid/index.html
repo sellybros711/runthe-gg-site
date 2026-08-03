@@ -225,7 +225,7 @@
         <div class="hud-hd">
           <span class="av"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
           <span class="who"><b>Guest</b><span id="dateShort">Today</span></span>
-          <span class="coins" id="playsChip" title="Daily plays: 1 per game + 2 bonus"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg><span id="coinValH">10</span><span style="font-weight:700;opacity:.7;margin-left:1px">/10</span></span>
+          <span class="coins" id="playsChip" title="One free play per game each day"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg><span id="coinValH">8</span><span id="coinMax" style="font-weight:700;opacity:.7;margin-left:1px">/8</span></span>
         </div>
 
         <div class="hud-streak">
@@ -245,7 +245,7 @@
         </div>
 
         <div class="hud-cta">
-          <p>Playing as a <b>guest</b>. Sign in to save your streak and rank across every game. <b>Pro</b> unlocks unlimited plays and past-day puzzles.</p>
+          <p>One free play per game, every day. Sign in to save your streak and rank — <b>Pro</b> unlocks unlimited plays and every past day's puzzles.</p>
           <a class="btn" href="/">Sign in / Sign up</a>
           <a class="btn ghost" href="/grid/archive/">Play past days →</a>
         </div>
@@ -497,11 +497,12 @@
 
   // ---- daily plays wallet + streaks ----
   (function(){
-    var chip=document.getElementById('playsChip'), val=document.getElementById('coinValH');
+    var chip=document.getElementById('playsChip'), val=document.getElementById('coinValH'), mx=document.getElementById('coinMax');
     if(!TOK){ return; }
-    if(TOK.isPro && TOK.isPro()){ val.textContent='∞'; var slash=chip&&chip.querySelector('span:last-child'); if(slash) slash.remove(); chip.setAttribute('title','Pro · unlimited plays'); return; }
+    if(TOK.isPro && TOK.isPro()){ val.textContent='∞'; if(mx) mx.remove(); chip.setAttribute('title','Pro · unlimited plays'); return; }
     var rem=TOK.remaining();
     val.textContent = rem;
+    if(mx) mx.textContent = '/'+TOK.DAILY;
     if(rem<=0){ chip.style.color='var(--mut)'; }
   })();
   var cur = parseInt(g('grid_match_streak', '0'), 10) || 0;
@@ -549,8 +550,8 @@
   var rDone = (rs.lastDone === t);
   var kDone = (ks.lastDone === t);
 
-  // Tiles always stay playable: PLAY when unplayed, PLAY AGAIN once the ranked
-  // run is in (tokens permitting), NO PLAYS LEFT only when the daily budget is spent.
+  // One free ranked play per game per day. Unplayed → PLAY. Played:
+  // Pro sees PLAY AGAIN (practice); free sees ✓ DONE until tomorrow.
   function triesLeft(key) { return TOK ? TOK.triesLeft(key) : 1; }
   var ARW = ' <span class="arw">→</span>';
   function mark(cardId, pipId, stId, playId, done, statusText, key) {
@@ -566,13 +567,12 @@
       st.className = 'status ready';
     }
     var left = triesLeft(key);
-    if (TOK && left <= 0) {
-      play.innerHTML = 'NO PLAYS LEFT';
-      card.classList.add('spent'); card.classList.remove('unplayed');
-    } else if (done) {
-      play.innerHTML = 'PLAY AGAIN' + ARW;
-    } else {
+    if (!done) {
       play.innerHTML = 'PLAY' + ARW;
+    } else if (TOK && left > 0) {
+      play.innerHTML = 'PLAY AGAIN' + ARW;   // Pro: unlimited practice
+    } else {
+      play.innerHTML = '✓ DONE';             // free: come back tomorrow
     }
   }
   function runText(sv) { return (sv.last && sv.last.run != null) ? (sv.last.run + ' in a row') : 'Played'; }

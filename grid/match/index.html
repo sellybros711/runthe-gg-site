@@ -22,7 +22,7 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2337C5D5'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
 <style>
   /* ---------------- design tokens (dark default + light override) ---------------- */
   :root{
@@ -37,6 +37,7 @@
     --line:rgba(244,247,251,.08);
     --line2:rgba(244,247,251,.15);
     --teal:#37C5D5; --violet:#A982F3; --gold:#F2B632; --coral:#F06A5F;
+    --blue:#2F6BFF;
     --green:#48D17A; --red:#FF625F;
     /* text-safe accent variants (meet contrast on the current surface) */
     --tealT:#37C5D5; --goldT:#F2B632; --coralT:#F06A5F; --redT:#FF625F;
@@ -49,6 +50,7 @@
     --sp-1:12px; --sp-2:16px; --sp-3:24px;
     --hero:'Anton', Impact, sans-serif;
     --body:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --pix:'Press Start 2P', monospace;
   }
   :root[data-theme="light"]{
     --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
@@ -74,30 +76,17 @@
   :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
   .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;}
 
-  /* ---------------- header ---------------- */
-  .siteHead{border-bottom:1px solid var(--line); background:var(--bg); padding-top:env(safe-area-inset-top,0);}
-  .headIn{max-width:1160px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; gap:14px;}
-  .home{color:var(--mut); text-decoration:none; font-size:20px; line-height:1; padding:8px 6px; border-radius:var(--r-sm); flex:0 0 auto;}
-  .home:hover{color:var(--ink);}
-  .brand{min-width:0; flex:1;}
-  .brand .suite{display:block; font-size:10.5px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--coralT); margin-bottom:1px;}
-  .brand .suite a{color:inherit; text-decoration:none;}
-  .brand .suite.logo{display:inline-flex; align-items:center; line-height:0; margin-bottom:5px;}
-  .brand .suite.logo img{height:26px; width:auto; display:block;}
-  .titleRow{display:flex; align-items:center; gap:9px; flex-wrap:wrap; row-gap:2px;}
-  .brand .game{font-family:var(--hero); font-weight:400; letter-spacing:.02em; font-size:24px; color:var(--ink); line-height:1.05;}
-  .datep{font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
-  .explain{font-size:12.5px; color:var(--mut); font-weight:600; margin-top:2px;}
-  .helpBtn{width:22px; height:22px; border-radius:50%; border:1px solid var(--line2); background:var(--card2);
-    color:var(--mut); font-size:12px; font-weight:900; line-height:1; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto;}
-  .helpBtn:hover{color:var(--ink); border-color:var(--teal);}
-  .stat{display:flex; align-items:center; gap:7px; background:var(--card); flex:0 0 auto;
-    border:1px solid var(--line2); border-radius:var(--r-sm); padding:8px 11px; font-weight:900; font-size:13px; box-shadow:var(--shadow);}
-  .stat svg{flex:0 0 auto;}
-  .stat.coins{color:var(--goldT);} .stat.streak{color:var(--coralT);}
-  .stat.tap{cursor:pointer;} .stat.tap:active{transform:translateY(1px);}
-  .themeBtn{width:38px; height:38px; border-radius:var(--r-sm); border:1px solid var(--line2); background:var(--card);
-    color:var(--mut); display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; box-shadow:var(--shadow);}
+  /* ---------------- topbar (uniform across RunTheGrid games) ---------------- */
+  .topwrap{max-width:1160px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 20px 0;}
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
+  .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto; text-decoration:none;}
+  .icon-btn:hover{color:var(--ink);}
+  .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0; text-decoration:none;}
+  .brand.logo img{height:26px; width:auto; display:block;}
+  .brand.logo .sub{display:block; font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--mut); margin-top:5px; margin-left:2px; white-space:nowrap;}
+  .spacer{flex:1;}
+  .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card);
+    color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0; flex:0 0 auto;}
   .themeBtn:hover{color:var(--ink); border-color:var(--teal);}
   /* show the icon of the theme you'd switch TO */
   .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
@@ -106,6 +95,19 @@
   .sndBtn .ic-snd-on{display:none;} .sndBtn .ic-snd-off{display:block;}
   .sndBtn.snd-on{color:var(--tealT); border-color:var(--teal);}
   .sndBtn.snd-on .ic-snd-on{display:block;} .sndBtn.snd-on .ic-snd-off{display:none;}
+  .helpBtn{font-weight:900; font-size:15px; line-height:1;}
+  .chip{display:inline-flex; flex-direction:column; align-items:center; justify-content:center; min-width:48px; padding:5px 8px;
+    border:1px solid var(--line2); border-radius:9px; background:var(--card); box-shadow:var(--shadow); flex:0 0 auto;}
+  .chip .n{font-family:var(--hero); font-weight:400; font-size:17px; line-height:1; color:var(--coralT); font-variant-numeric:tabular-nums;}
+  .chip .l{font-size:8px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); margin-top:4px;}
+  .chip.tap{cursor:pointer;} .chip.tap:active{transform:translateY(1px);}
+  .chip.coins .n{color:var(--goldT);}
+
+  /* ---------------- lead card (description, below the topbar) ---------------- */
+  .lead{background:var(--card); border:1px solid var(--line); border-left:5px solid var(--blue); border-radius:14px;
+    padding:11px 15px; box-shadow:var(--shadow); margin:0 0 var(--sp-2);}
+  .lead .k{display:block; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
+  .lead .v{display:block; font-size:13.5px; line-height:1.45; color:var(--ink); margin-top:4px; font-weight:600;}
 
   /* ---------------- app shell ---------------- */
   .app{max-width:1160px; margin:0 auto; padding:var(--sp-3) 20px 48px;
@@ -352,9 +354,7 @@
   }
   @media (max-width:760px){
     .app{display:block; padding:var(--sp-2) 14px 40px;}
-    .headIn{padding:10px 14px; gap:10px;}
-    .brand .game{font-size:21px;}
-    .explain{display:none;}
+    .topwrap{padding-left:14px; padding-right:14px;}
     .side{position:static; margin-top:var(--sp-3);}
     .statusCard{display:none;}
     .mstatus{display:flex; align-items:center; justify-content:space-between; gap:12px;
@@ -376,22 +376,21 @@
     .rgrade .g{font-size:62px;}
     .statgrid .rstat .v{font-size:20px;}
   }
+  /* very narrow phones: the coins chip is the one non-uniform extra — drop it
+     before the topbar can overflow (coins still show in the result modal) */
+  @media (max-width:480px){
+    .chip.coins{display:none;}
+  }
   @media (prefers-reduced-motion: reduce){ *{animation:none !important;} .confetti{display:none;} }
 </style>
 </head>
 <body>
-  <header class="siteHead">
-    <div class="headIn">
-      <a class="home" href="/grid/" aria-label="Back to RunTheGrid puzzles">←</a>
-      <div class="brand">
-        <a class="suite logo" href="/grid/" aria-label="RunTheGrid home"><img src="/grid/assets/runthegrid-logo.png" alt="RunTheGrid" width="871" height="303" /></a>
-        <div class="titleRow">
-          <span class="game">Daily Match</span>
-          <button class="helpBtn" id="helpBtn" type="button" aria-label="How to play">?</button>
-          <span class="datep" id="datep">—</span>
-        </div>
-        <div class="explain">Sort 20 sports names into five hidden groups of four.</div>
-      </div>
+  <div class="topwrap">
+    <div class="topbar">
+      <a class="icon-btn" href="/grid/" aria-label="Back to RunTheGrid">‹</a>
+      <a class="brand logo" href="/grid/" aria-label="RunTheGrid home"><img src="/grid/assets/runthegrid-logo.png" alt="RunTheGrid" width="575" height="200" /><span class="sub">DAILY MATCH</span></a>
+      <div class="spacer"></div>
+      <button class="themeBtn helpBtn" id="helpBtn" type="button" aria-label="How to play" title="How to play">?</button>
       <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
         <svg class="ic-snd-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
         <svg class="ic-snd-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M22 9l-5 6M17 9l5 6"/></svg>
@@ -400,19 +399,15 @@
         <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
       </button>
-      <div class="stat streak tap" id="streakStat" role="button" tabindex="0" title="Your stats" aria-label="Open your stats">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9zM12.5 19c-1.8 0-3.2-1.4-3.2-3.2 0-1.5 1-2.5 2-3.5.7-.7 1.4-1.5 1.8-2.4 1.5 1.3 2.7 3.5 2.7 5.9 0 1.8-1.5 3.2-3.3 3.2z"/></svg>
-        <span id="streakVal">0</span>
-      </div>
-      <div class="stat coins" id="coinStat" aria-label="Coins">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
-        <span id="coinVal">0</span>
-      </div>
+      <div class="chip tap" id="streakStat" role="button" tabindex="0" title="Your stats" aria-label="Open your stats"><span class="n" id="streakVal">0</span><span class="l">Streak</span></div>
+      <div class="chip coins" id="coinStat" aria-label="Coins"><span class="n" id="coinVal">0</span><span class="l">Coins</span></div>
     </div>
-  </header>
+  </div>
 
   <div class="app">
     <main class="gameCol">
+      <div class="lead"><span class="k">Today's board · <span id="datep">—</span></span><span class="v explain">Sort 20 sports names into five hidden groups of four.</span></div>
+
       <div class="tester-banner" id="testerBanner" hidden><b>Tester mode</b> — unlimited plays. Use <b>New board</b> in the sidebar for a fresh puzzle.</div>
 
       <!-- compact sticky status (mobile only) -->

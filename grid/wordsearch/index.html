@@ -153,6 +153,15 @@
   .confetti{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden;}
   .confetti i{position:absolute; top:-16px; width:9px; height:14px; border-radius:2px; opacity:.96; animation:cfall linear forwards;}
   @keyframes cfall{0%{transform:translateY(-20px) rotate(0);}100%{transform:translateY(106vh) rotate(680deg);}}
+  /* team skin: applied only when the daily theme is a known team (html.teamskin).
+     --tk-p/--tk-s = team primary/secondary; --tk-accent = luminance-safe accent for
+     the current light/dark theme; --tk-btn-ink = auto-contrast text on primary. */
+  .teamskin .infobar{border-left-color:var(--tk-p);}
+  .teamskin .infobar .th .v{color:var(--tk-accent);}
+  .teamskin .infobar .prog{color:var(--tk-accent);}
+  .teamskin .chip .n{color:var(--tk-accent);}
+  .teamskin .abtn.gold{background:var(--tk-p); color:var(--tk-btn-ink);}
+  .teamStripe{height:4px; border-radius:999px; margin:0 auto 8px; max-width:520px;}
   @media (prefers-reduced-motion:reduce){ *{animation:none !important; transition:none !important;} .confetti{display:none;} }
 </style>
 </head>
@@ -240,6 +249,7 @@
 <script src="/grid/history.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/grid/board.js"></script>
+<script src="/grid/teamcolors.js"></script>
 <script>
 (function(){
   'use strict';
@@ -382,6 +392,56 @@
   }
   updWordsLab();
 
+  // ---- team skin: when today's theme is a known team, dress the page in its colors ----
+  // Visual-only; guarded so non-team themes / unknown teams see zero change.
+  var SKIN=null, SKIN_PAL=null;
+  function hexLum(hex){ // relative luminance 0..1 (sRGB)
+    var m=/^#?([0-9a-f]{6})$/i.exec(String(hex||'')); if(!m) return 0;
+    var n=parseInt(m[1],16), ch=[(n>>16)&255,(n>>8)&255,n&255].map(function(c){ c/=255; return c<=0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4); });
+    return 0.2126*ch[0]+0.7152*ch[1]+0.0722*ch[2];
+  }
+  function mixHex(a,b,t){ // blend a->b by t (0..1)
+    function px(h){ var n=parseInt(String(h).replace('#',''),16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+    var A=px(a), B=px(b), o=A.map(function(v,i){ return Math.round(v+(B[i]-v)*t); });
+    return '#'+o.map(function(v){ return ('0'+v.toString(16)).slice(-2); }).join('').toUpperCase();
+  }
+  function readable(c){ // found cells/chips use dark #071426 text — lighten dark team shades
+    return hexLum(c)<0.35 ? mixHex(c,'#FFFFFF',0.5) : c;
+  }
+  function applySkin(){
+    var root=document.documentElement;
+    var tc=(P && P.kind==='t' && window.RTG_TEAMCOLORS && typeof RTG_TEAMCOLORS.get==='function') ? RTG_TEAMCOLORS.get(P.theme) : null;
+    var stripe=document.getElementById('teamStripe');
+    if(!tc || !tc.p || !tc.s){ // non-team theme or unknown team: default look
+      SKIN=null; SKIN_PAL=null;
+      root.classList.remove('teamskin');
+      ['--tk-p','--tk-s','--tk-accent','--tk-btn-ink'].forEach(function(v){ root.style.removeProperty(v); });
+      if(stripe) stripe.remove();
+      return;
+    }
+    SKIN=tc;
+    var p=tc.p, s=tc.s, dark=root.getAttribute('data-theme')!=='light';
+    // accent (theme title, timer, found counter): primary, unless too dark for a dark
+    // background (lum(p) < .25) -> fall back to secondary; lighten if still too dark.
+    var accent;
+    if(dark){ accent = hexLum(p)>=0.25 ? p : (hexLum(s)>hexLum(p) ? s : p); if(hexLum(accent)<0.18) accent=mixHex(accent,'#FFFFFF',0.5); }
+    else { accent = hexLum(p)<=0.45 ? p : (hexLum(s)<hexLum(p) ? s : p); if(hexLum(accent)>0.30) accent=mixHex(accent,'#0D1B2C',0.35); }
+    // Hint button ink: whichever of white / #0D1B2C contrasts more against the primary
+    var lp=hexLum(p), btnInk = ((1.0+0.05)/(lp+0.05) >= (lp+0.05)/(0.012+0.05)) ? '#FFFFFF' : '#0D1B2C';
+    root.style.setProperty('--tk-p',p);
+    root.style.setProperty('--tk-s',s);
+    root.style.setProperty('--tk-accent',accent);
+    root.style.setProperty('--tk-btn-ink', btnInk);
+    root.classList.add('teamskin');
+    // found-word palette: shades of primary + secondary (kept light enough for dark text)
+    SKIN_PAL=[readable(p), readable(s), readable(mixHex(p,s,0.5)), mixHex(readable(p),'#FFFFFF',0.3), mixHex(readable(s),'#FFFFFF',0.3), readable(mixHex(p,s,0.25)), readable(mixHex(p,s,0.75)), mixHex(readable(p),'#FFFFFF',0.55), mixHex(readable(s),'#FFFFFF',0.55), readable(mixHex(p,s,0.4))];
+    // 4px p->s stripe on the grid card so the skin is felt immediately
+    var board=document.querySelector('.board');
+    if(!stripe && board){ stripe=document.createElement('div'); stripe.id='teamStripe'; stripe.className='teamStripe'; board.insertBefore(stripe, board.firstChild); }
+    if(stripe) stripe.style.background='linear-gradient(90deg,'+p+','+s+')';
+  }
+  applySkin();
+
   // ---- selection (pointer, works for mouse + touch) ----
   var selStart=null, selPath=[];
   function cellFromPoint(x,y){ var el=document.elementFromPoint(x,y); if(el&&el.classList.contains('cell')) return parseInt(el.dataset.i,10); return null; }
@@ -406,7 +466,9 @@
     var hit=null;
     for(var i=0;i<PLACED.length;i++){ var w=PLACED[i].word; if(foundSet[w]) continue; if(w===s||w===sr){ hit=PLACED[i]; break; } }
     if(hit){
-      foundSet[hit.word]=true; foundCount++; colorFor[hit.word]=FOUND_COLORS[(foundCount-1)%FOUND_COLORS.length];
+      foundSet[hit.word]=true; foundCount++;
+      var pal=(SKIN&&SKIN_PAL)?SKIN_PAL:FOUND_COLORS; // team skin recolors found words in team shades
+      colorFor[hit.word]=pal[(foundCount-1)%pal.length];
       clearSel(); paintFound(); renderWords();
       if(window.RTGSound) RTGSound.lock();
       startIfNeeded();
@@ -472,6 +534,7 @@
     gridEl.style.pointerEvents=''; gridEl.style.opacity='';
     document.getElementById('timerN').textContent='0:00';
     document.getElementById('themeName').textContent=P.theme;
+    applySkin();   // replays can land on a different theme — re-skin (or un-skin) to match
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
     renderWords(); updWordsLab(); updateHintBtn();
   }
@@ -553,7 +616,7 @@
   // ---- theme + sound toggles ----
   function applyThemeMeta(){ var t=document.documentElement.getAttribute('data-theme'); var m=document.getElementById('themeMeta'); if(m) m.setAttribute('content', t==='light'?'#EEF2F7':'#071426'); }
   applyThemeMeta();
-  document.getElementById('themeBtn').addEventListener('click', function(){ var next=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light'; document.documentElement.setAttribute('data-theme',next); try{ LS.setItem('runthegrid_theme',next); }catch(e){} applyThemeMeta(); });
+  document.getElementById('themeBtn').addEventListener('click', function(){ var next=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light'; document.documentElement.setAttribute('data-theme',next); try{ LS.setItem('runthegrid_theme',next); }catch(e){} applyThemeMeta(); applySkin(); });
 
   // ---- cloud board (fail-open) ----
   function lbEsc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
