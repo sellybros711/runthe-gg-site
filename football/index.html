@@ -3936,7 +3936,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=42"></script>
-<script src="run.js?v=59"></script>
+<script src="run.js?v=60"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -6293,7 +6293,7 @@ function paintGmParts(p,gm){
   /* Older saved runs carry a `cap` mark instead of `deal`; they still have to render. */
   const legacy=p.deal==null;
   const rows=[
-    {k:'Winning',w:35,v:p.result,
+    {k:'Winning',w:legacy?35:30,v:p.result,
      why:rec+(p.bye?', top seed and a bye':'')+
        (p.playoffWins?', '+p.playoffWins+' playoff win'+(p.playoffWins===1?'':'s'):'')+
        (run.outcome.titleWon?', won the title':(run.outcome.madePlayoffs?', made the playoffs':', missed the playoffs'))},
@@ -6302,8 +6302,9 @@ function paintGmParts(p,gm){
        ' ('+(p.ratingGain>=0?'+':'')+p.ratingGain.toFixed(1)+'). Full marks at +'+25},
     /* THE MODE'S OWN SKILL, ON ITS OWN LINE. Every accepted deal is graded against the
        best card on the board it came from, and every release against the best legal
-       release. This replaced a cap mark that everyone maxed by showing up. */
-    legacy?null:{k:'Dealmaking',w:20,v:p.deal,
+       release. This replaced a cap mark that everyone maxed by showing up, and it is now
+       tied for the second-heaviest mark. */
+    legacy?null:{k:'Dealmaking',w:25,v:p.deal,
      why:!p.dealsMade
        ? 'no trades all season. The mode grades dealmaking, and there was none to grade'
        : p.leftOnTable>0.05
@@ -6313,18 +6314,21 @@ function paintGmParts(p,gm){
          ' team rating short of that board’s strongest card and release'
        : 'you took the strongest version of every deal you accepted, '+
          p.dealsMade+' of '+p.dealsMade},
-    {k:'Value',w:15,v:p.value,
+    {k:'Value',w:legacy?15:20,v:p.value,
      why:(p.spentTotal??p.addedSalary)>0.05
        ? '+'+p.ratingGain.toFixed(1)+' rating for $'+(p.spentTotal??p.addedSalary).toFixed(1)+
          'M committed: salary added'+(p.cashPaid>0?' plus $'+p.cashPaid.toFixed(1)+'M cash':'')+
          (p.cashReceived>0?', net of $'+p.cashReceived.toFixed(1)+'M cash you were paid':'')
        : p.cashReceived>0
-       ? 'gained while being PAID — $'+p.cashReceived.toFixed(1)+'M came in selling talent'
+       ? 'gained while being PAID: $'+p.cashReceived.toFixed(1)+'M came in selling talent'
        : 'gained without committing money past your starting payroll',
      },
-    {k:'Beat expectation',w:legacy?10:5,v:p.over,
+    /* Beat-expectation was retired for new runs (it was wins-based, so it duplicated the
+       luck already in Winning). Legacy runs still show it, because their stored rating was
+       computed with it and the breakdown has to add up to the number on the card. */
+    legacy?{k:'Beat expectation',w:10,v:p.over,
      why:'won '+p.regularWins+'; the '+p.startRating.toFixed(1)+' roster you inherited was worth about '+
-       p.expectedWins.toFixed(1)},
+       p.expectedWins.toFixed(1)}:null,
   ].filter(Boolean);
   let h='<div class="gmp-top"><span class="gmp-num">'+Number(gm).toFixed(2)+'</span>'+
     '<span class="gmp-cap">out of 100</span>'+
