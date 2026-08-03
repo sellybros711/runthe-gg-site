@@ -1191,7 +1191,13 @@ window.GA_ID='G-L29P5MRWKE';
     font-family:var(--fn);font-size:11px;color:var(--dim)}
   .deal-foot .up{color:#4ade80;font-weight:700} .deal-foot .dn{color:#fca5a5;font-weight:700}
   .deal-foot .df-hint{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim-2)}
-  .deal-cut{margin:7px 10px 10px;font-size:11px;line-height:1.35;color:var(--dim)}
+  /* The release warning, at the size of a consequence. It was an 11px dim afterthought and
+     players accepted three-for-two deals without registering that a man they liked was the
+     price. Red family, not amber: cash is a cost, this is a person. */
+  .deal-release{margin:9px 10px 0;padding:8px 10px;border-radius:8px;font-size:12.5px;
+    line-height:1.5;color:#fecdd3;background:rgba(244,63,94,.09);
+    border:1px solid rgba(244,63,94,.45)}
+  .deal-release b{color:#fda4af}
   .deal-empty{padding:22px 14px;text-align:center;font-size:13px;color:var(--dim)}
   /* The panel is swipeable, and a short slide on each step says which way you moved. */
   @keyframes dealInR{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
@@ -3910,7 +3916,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=42"></script>
-<script src="run.js?v=57"></script>
+<script src="run.js?v=58"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -6235,17 +6241,18 @@ function paintGmParts(p,gm){
        release. This replaced a cap mark that everyone maxed by showing up. */
     legacy?null:{k:'Dealmaking',w:20,v:p.deal,
      why:!p.dealsMade
-       ? 'no trades all season — the mode grades dealmaking, and there was none to grade'
+       ? 'no trades all season. The mode grades dealmaking, and there was none to grade'
        : p.leftOnTable>0.05
-       ? 'across '+p.dealsMade+' deal'+(p.dealsMade===1?'':'s')+' you left '+
-         p.leftOnTable.toFixed(1)+' team rating on the table — a stronger card or a '+
-         'better release was sitting on a board you accepted from'
+       ? 'every deal is graded against the best version of itself, then averaged. Your '+
+         'costliest was '+(p.worstDeal&&p.worstDeal.week>0?'the week '+p.worstDeal.week+' deal':
+         'the preseason deal')+', '+(p.worstDeal?p.worstDeal.miss.toFixed(1):p.leftOnTable.toFixed(1))+
+         ' team rating short of that board’s strongest card and release'
        : 'you took the strongest version of every deal you accepted, '+
          p.dealsMade+' of '+p.dealsMade},
     {k:'Value',w:15,v:p.value,
      why:(p.spentTotal??p.addedSalary)>0.05
        ? '+'+p.ratingGain.toFixed(1)+' rating for $'+(p.spentTotal??p.addedSalary).toFixed(1)+
-         'M committed — salary added'+(p.cashPaid>0?' plus $'+p.cashPaid.toFixed(1)+'M cash':'')+
+         'M committed: salary added'+(p.cashPaid>0?' plus $'+p.cashPaid.toFixed(1)+'M cash':'')+
          (p.cashReceived>0?', net of $'+p.cashReceived.toFixed(1)+'M cash you were paid':'')
        : p.cashReceived>0
        ? 'gained while being PAID — $'+p.cashReceived.toFixed(1)+'M came in selling talent'
@@ -6270,7 +6277,7 @@ function paintGmParts(p,gm){
      mark charges for, which is the definition of found money. */
   if(p.pushWins>0){
     h+='<p class="gmp-note">You pushed back and won '+p.pushWins+' time'+(p.pushWins===1?'':'s')+
-      ' — <b>$'+p.pushGainMusd.toFixed(1)+'M</b> more than the opening offers.</p>';
+      ', worth <b>$'+p.pushGainMusd.toFixed(1)+'M</b> more than the opening offers.</p>';
   }
   /* GOING OVER THE CAP IS A FINE, NOT A MARK: the market refuses deals that break the cap,
      so finishing over it is a deliberate act and comes straight off the total. */
@@ -6370,8 +6377,8 @@ function openTradeWindow(step,opts){
   $('tw-sub').textContent=preseasonWindow
     ?'Fix the roster before kickoff. Put one or two players on the block.'
     :deadline
-    ?'Last window of the year. Contenders pay a premium for stars, sellers want more cash '+
-      '— after this you ride with what you have.'
+    ?'Last window of the year. Contenders pay a premium for stars and sellers want more '+
+      'cash. After this you ride with what you have.'
     :'Put one or two players on the block, then see what the league offers.';
   $('tw-market').style.display='none';
   $('tw-shop').style.display='';
@@ -6667,6 +6674,30 @@ function paintDeal(dir){
       (o.chemDelta>0?'+':'')+o.chemDelta.toFixed(1)+'%</span></span>';
   }
 
+  /* A DEAL THAT OVERFILLS THE ROSTER SAYS WHO PAYS FOR IT, loudly and by name. This was a
+     dim one-liner ("roster goes to 7, you release one player") and it buried the whole
+     point: taking three men for two means somebody you may care about gets released, and
+     which somebody is knowable RIGHT NOW -- the offer carries its legal cuts. So the card
+     names every man a lawful release could take, position first, before you accept. */
+  let releaseNote='';
+  if(o.cutCount>0){
+    const outSet=new Set(o.outIdx);
+    const held=run.roster.filter((_,i)=>!outSet.has(i)).concat(o.inPlayers);
+    const cutIdx=(o.cutIdxs&&o.cutIdxs.length?o.cutIdxs
+      :Array.from(new Set((o.cutGroups||[]).flat())));
+    let names=cutIdx.map(i=>held[i]).filter(Boolean)
+      .map(p=>'<b>'+esc(p.position+' '+p.name)+'</b>');
+    let more='';
+    if(names.length>4){ more=' or '+(names.length-3)+' others'; names=names.slice(0,3); }
+    const list=more?names.join(', ')+more
+      :names.length>1?names.slice(0,-1).join(', ')+' or '+names[names.length-1]
+      :names[0]||'';
+    releaseNote='<div class="deal-release"><b>'+
+      (o.cutCount===1?'Somebody has to go.':'Two have to go.')+'</b> This deal leaves you '+
+      'holding '+(E.SLOTS.length+o.cutCount)+' men for six spots. At the next step you release '+
+      (o.cutCount===1?'one':'two')+' of: '+list+'.</div>';
+  }
+
   /* One shot at a better deal per offer. The outcome was drawn with the board, so this
      only reveals it: they sweeten (always in money, never a different player) or they
      walk and the card dies where it stands -- and the best card walking away is still
@@ -6732,12 +6763,12 @@ function paintDeal(dir){
          lower than the man's real number. */
       (o.retainedMusd>0
         ? '<div class="deal-retain">They retain <b>$'+o.retainedMusd.toFixed(1)+'M</b> of the '+
-          'salary to move the deal &mdash; the prices shown are what you pay.</div>'
+          'salary to move the deal. The prices shown are what you pay.</div>'
         : '')+
       /* The league remembers a man it has already been offered. Said on the card, so
          window shopping has a stated price instead of a hidden one. */
       (o.marketCold>0
-        ? '<div class="deal-cold">The league has seen this package shopped before &mdash; '+
+        ? '<div class="deal-cold">The league has seen this package shopped before, and '+
           'offers run a little lighter the second time around.</div>'
         : '')+
       '<div class="deal-cols">'+
@@ -6747,10 +6778,7 @@ function paintDeal(dir){
           '<div class="dc-tiles">'+gets+'</div></div>'+
       '</div>'+
       '<div class="deal-foot">'+foot+'</div>'+
-      (o.cutCount>0
-        ? '<div class="deal-cut">Roster goes to '+(E.SLOTS.length+o.cutCount)+' &mdash; you release '+
-          (o.cutCount===1?'one player':o.cutCount+' players')+' to get back to six. Your call.</div>'
-        : '')+
+      releaseNote+
       pushBits+
     '</div>';
 

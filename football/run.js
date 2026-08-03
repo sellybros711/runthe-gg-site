@@ -1834,7 +1834,24 @@ function findOffers(run, data, ctx, outIdxs) {
       const sent = entry.stance === 'rebuilding' ? applyRetention(picked) : picked;
       if (!fits(c, sent)) continue;
       const o = buildOffer(run, slots, idxs, sent);
-      if (o) { stampPartner(o, entry.ts); pushOffer(o, anchor ? 'swapdown' : 'bundle'); made++; }
+      if (!o) continue;
+      /* THE DISPLACEMENT HAS TO BE REAL. The 'out+1' base assumes the extra arrival pushes
+         your weakest kept man off the six, and prices the bundle as if his value were part
+         of what the partner receives. But the LEGAL cuts decide who actually leaves, and
+         when the only lawful release is one of the arrivals themselves, nothing of yours
+         was displaced at all -- the base was paying for a man who stays. Measured, that
+         gap was the whole of the old exploit's sequel: two waiver men fetched three real
+         starters because the band borrowed a starter's value the cut never surrendered.
+         So the built offer is re-checked against what a lawful release can actually give
+         up: the shopped men plus the cheapest legal cut, in VALUE, under the same band
+         ceiling. A bundle no cut can pay for is not an offer. */
+      if (o.cutCount > 0) {
+        const held = c.keep.concat(sent);
+        const cutVal = Math.min.apply(null, (o.cutGroups || [[]]).map(
+          (g) => g.reduce((t, k) => t + tradeValue(held[k]), 0)));
+        if (sumValue(sent) > (c.outVal + cutVal) * hiF * m) continue;
+      }
+      stampPartner(o, entry.ts); pushOffer(o, anchor ? 'swapdown' : 'bundle'); made++;
     }
   };
 
@@ -2254,7 +2271,14 @@ function signFreeAgent(run, player, ctx) {
      plus every dollar of ceiling spent. */
 const GM_RESULT_DEN = 52;      // a championship season, not a flawless one
 const GM_IMPROVE_REF = 25;     // rating gained for full marks
-const GM_DEAL_PER_PT = 9;      // Dealmaking points off, per team-rating point left on the table
+/* Dealmaking points off PER DEAL, per team-rating point that deal sat below the best
+   version available (best card on its board, best legal release). Each deal is graded on
+   its own and the season takes the AVERAGE -- the first cut of this mark SUMMED the
+   misses and multiplied, which punished making more deals and cliffed to zero: a player
+   who took a 60-rated team to the Super Bowl scored 0 on dealmaking, indistinguishable
+   from accepting at random. Measured, a careful reader misses by ~0.8 a deal (about 90
+   here), a surface reader by ~1-2, and random accepting by ~7 (about 15). */
+const GM_DEAL_PER_PT = 12;
 const GM_VALUE_REF = 1.3;      // rating gained per $M committed, for full marks
 const GM_SPEND_FLOOR_M = 5;    // below this the ratio explodes; a $2M season is not 10x a $20M one
 const GM_OVERCAP_DIRECT = 1.5; // GM points straight off the total, per $M over the cap
@@ -2309,18 +2333,24 @@ function computeGMRating(run) {
   const valueScore = clamp100(Math.max(0, ratingGain)
     / Math.max(GM_SPEND_FLOOR_M, spentTotal) / GM_VALUE_REF * 100);
 
-  /* THE DEALMAKING LEDGER, summed. Each accepted deal recorded how far it sat below the
-     best card on its own board and what the release choice cost against the best legal
-     release. Zero left on the table is a hundred; the scale is GM_DEAL_PER_PT. A season
-     with no deals scores nothing here -- the mode grades trading. */
+  /* THE DEALMAKING LEDGER, averaged. Each accepted deal is graded alone -- how far it sat
+     below the best card on its own board, plus what the release choice cost against the
+     best legal release -- and the mark is the mean of the per-deal grades, so making more
+     deals is more chances to show skill rather than more chances to bleed. The worst deal
+     is remembered by week so the report can point at it instead of waving at a total. A
+     season with no deals still scores nothing here: the mode grades trading. */
   const trades = run.tradeHistory || [];
-  let leftOnTable = 0;
+  let leftOnTable = 0, dealSum = 0, worstDeal = null;
   for (const t of trades) {
-    leftOnTable += Math.max(0, -(t.dealEdge || 0)) + (t.cutLoss || 0);
+    const miss = Math.max(0, -(t.dealEdge || 0)) + (t.cutLoss || 0);
+    leftOnTable += miss;
+    dealSum += clamp100(100 - miss * GM_DEAL_PER_PT);
+    if (!worstDeal || miss > worstDeal.miss) {
+      worstDeal = { week: t.week, miss: Math.round(miss * 10) / 10 };
+    }
   }
   leftOnTable = Math.round(leftOnTable * 10) / 10;
-  const dealScore = trades.length
-    ? clamp100(100 - leftOnTable * GM_DEAL_PER_PT) : 0;
+  const dealScore = trades.length ? dealSum / trades.length : 0;
 
   const overCapBy = Math.max(0, -capRemaining);
   const idleCap = Math.max(0, capRemaining);
@@ -2353,7 +2383,7 @@ function computeGMRating(run) {
   run.outcome.gmParts = {
     result: r1(resultScore), improvement: r1(improvementScore),
     deal: r1(dealScore), value: r1(valueScore), over: r1(overScore),
-    dealsMade: trades.length, leftOnTable: r1(leftOnTable),
+    dealsMade: trades.length, leftOnTable: r1(leftOnTable), worstDeal,
     spentTotal: r1(spentTotal), overCapPenalty,
     regularWins, playoffWins, bye: !!(run.playoffSeed && run.playoffSeed.bye),
     /* The ceiling this run finished with and what shrank it, so the results screen can say
