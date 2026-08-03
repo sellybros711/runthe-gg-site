@@ -18521,6 +18521,10 @@ function hvShotMs(s){
   if(s.k==='putt') return Math.min(2400, 700+Math.min(70,(s.ft||10))*13)+680;
   if(s.k==='hole') return Math.min(2600, 750+Math.min(70,(s.ft||8))*13)+1000;
   const d=Math.max(15,(s.fromY||60)-(s.toY||0));
+  // owner: a holed CHIP/pitch/bunker hole-out plays swing → fly → roll → SINK into the cup. The dwell must
+  // cover the whole thing (incl. the 640ms swing + 460ms drop) so the round never advances mid-sink,
+  // leaving the ball frozen at the lip. Regular full shots keep the tighter pacing.
+  if(s.holeout) return Math.min(3400, 640+Math.round(650+d*3.4)+340+560);
   return Math.min(2600, Math.round(650+d*3.4)+520+340);
 }
 function hvFlightMs(d){ return Math.max(700,Math.min(2000,Math.round(650+d*3.4))); }
@@ -19363,6 +19367,16 @@ function hvKick(key, g, p, pPrev, reduce, opts){
         const pf=q('hv-puff'), pt=(elF-flyMs)/300;   // touchdown puff ring at the landing spot
         if(pf){ if(pt<=1){ pf.setAttribute('cx',B[0]);pf.setAttribute('cy',B[1]);pf.setAttribute('r',(2+pt*7).toFixed(1));pf.setAttribute('opacity',(0.5*(1-pt)).toFixed(2)); } else pf.setAttribute('opacity','0'); }
         if(rollEl) rollEl.style.strokeDashoffset=rollLen*(1-te);
+      } else if(p.hole){
+        // owner: a holed CHIP/pitch/bunker hole-out must clearly DROP INTO the cup, not just vanish after
+        // rolling up to it (which looks like the ball resting beside the hole). After the roll reaches the
+        // pin, run the same sink drop a putt uses so it unmistakably reads as a make.
+        const st=Math.min(1,(elF-flyMs-groundMs)/460);
+        ball.setAttribute('cx',R[0].toFixed(1)); ball.setAttribute('cy',R[1].toFixed(1)); ball.setAttribute('r',(HV_GBALL*(1-st)).toFixed(2));
+        if(sh) sh.setAttribute('opacity','0');
+        const sk=q('hv-sink'); if(sk){ sk.setAttribute('cx',R[0]);sk.setAttribute('cy',R[1]);sk.setAttribute('r',(HV_CUP_RX*0.7+st*3).toFixed(1));sk.setAttribute('stroke-width','1');sk.setAttribute('opacity',(0.9*(1-st)).toFixed(2)); }
+        if(rollEl) rollEl.style.strokeDashoffset='0';
+        if(st>=1){ setFinal(); _hvA.raf=0; return; }
       } else { setFinal(); _hvA.raf=0; return; }
     } else if(p.k==='pen'){
       const t=Math.min(1,el/penMs);
