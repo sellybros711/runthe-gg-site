@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>RunTheGrid — Arcade Concept</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="description" content="Design prototype: a neon retro-arcade take on the RunTheGrid daily games hub. Visual concept only." />
+<meta name="theme-color" content="#0a0618" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230a0618'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2329E6FF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23FF3D9A'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Audiowide&family=Press+Start+2P&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg0:#0a0618; --bg1:#150a2e;
+    --ink:#F2EEFF; --mut:#B9A8D9; --dim:#7d6ba3;
+    --cyan:#29E6FF; --pink:#FF3D9A; --hotpink:#FF2E88; --orange:#FF8A3D; --red:#FF4949;
+    --gold:#F2B632; --blue:#2F6BFF; --green:#48D17A; --violet:#A982F3;
+    --rpink:#F65C9C; --coral:#F06A5F; --silver:#E8EEF7; --teal:#37C5D5;
+    --panel:rgba(16,9,38,.78); --panel2:rgba(24,13,52,.85);
+    --disp:'Orbitron','Audiowide',sans-serif;
+    --wide:'Audiowide','Orbitron',sans-serif;
+    --px:'Press Start 2P',monospace;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:var(--disp); color:var(--ink); min-height:100dvh;
+    background:
+      radial-gradient(1200px 800px at 50% -10%, #1d0f42 0%, transparent 60%),
+      radial-gradient(900px 700px at 85% 20%, rgba(255,46,136,.10) 0%, transparent 55%),
+      radial-gradient(900px 700px at 12% 30%, rgba(41,230,255,.08) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 40%, var(--bg1) 0%, var(--bg0) 75%);
+    background-attachment:fixed;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  a{color:inherit; text-decoration:none;}
+  :focus-visible{outline:2px solid var(--cyan); outline-offset:2px; border-radius:4px;}
+
+  /* ================= ROOM ATMOSPHERE ================= */
+  .floor{
+    position:fixed; left:-25vw; right:-25vw; bottom:-6vh; height:46vh; z-index:0; pointer-events:none;
+    background:
+      repeating-linear-gradient(90deg, rgba(255,46,136,.55) 0 2px, transparent 2px 72px),
+      repeating-linear-gradient(0deg,  rgba(255,46,136,.45) 0 2px, transparent 2px 56px),
+      linear-gradient(180deg, rgba(255,46,136,.05), rgba(255,46,136,.14));
+    transform:perspective(520px) rotateX(62deg);
+    transform-origin:50% 100%;
+    -webkit-mask-image:linear-gradient(180deg, transparent 0%, #000 55%);
+            mask-image:linear-gradient(180deg, transparent 0%, #000 55%);
+  }
+  .floorglow{
+    position:fixed; left:0; right:0; bottom:0; height:26vh; z-index:0; pointer-events:none;
+    background:radial-gradient(60% 130% at 50% 115%, rgba(255,46,136,.28), transparent 70%);
+  }
+  .vignette{
+    position:fixed; inset:0; z-index:4; pointer-events:none;
+    background:radial-gradient(120% 95% at 50% 42%, transparent 55%, rgba(3,1,10,.55) 100%);
+  }
+  .crt{
+    position:fixed; inset:0; z-index:5; pointer-events:none; opacity:.5; mix-blend-mode:overlay;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 3px);
+    animation:flick 4.2s steps(1) infinite;
+  }
+  @keyframes flick{
+    0%,100%{opacity:.5;} 7%{opacity:.42;} 8%{opacity:.55;} 31%{opacity:.47;}
+    32%{opacity:.55;} 60%{opacity:.5;} 61%{opacity:.44;} 62%{opacity:.53;}
+  }
+
+  /* vertical wall signs */
+  .sign{
+    position:fixed; top:50%; transform:translateY(-50%); z-index:1; pointer-events:none;
+    writing-mode:vertical-rl; text-orientation:mixed;
+    font-family:var(--wide); font-size:30px; letter-spacing:.42em; text-transform:uppercase;
+    padding:26px 10px; border-radius:10px;
+  }
+  .sign.l{
+    left:14px; color:#c8f9ff; border:2px solid rgba(41,230,255,.5);
+    text-shadow:0 0 6px #29E6FF, 0 0 18px #29E6FF, 0 0 42px rgba(41,230,255,.75), 0 0 80px rgba(41,230,255,.4);
+    box-shadow:0 0 14px rgba(41,230,255,.35), inset 0 0 14px rgba(41,230,255,.18);
+    animation:buzzc 3.6s ease-in-out infinite;
+  }
+  .sign.r{
+    right:14px; color:#ffd7ec; border:2px solid rgba(255,61,154,.5);
+    text-shadow:0 0 6px #FF3D9A, 0 0 18px #FF3D9A, 0 0 42px rgba(255,61,154,.75), 0 0 80px rgba(255,61,154,.4);
+    box-shadow:0 0 14px rgba(255,61,154,.35), inset 0 0 14px rgba(255,61,154,.18);
+    animation:buzzp 4.4s ease-in-out infinite;
+  }
+  @keyframes buzzc{0%,100%{opacity:1;} 48%{opacity:.85;} 50%{opacity:1;} 52%{opacity:.9;} 54%{opacity:1;}}
+  @keyframes buzzp{0%,100%{opacity:1;} 30%{opacity:.86;} 32%{opacity:1;} 71%{opacity:.9;} 73%{opacity:1;}}
+  @media (max-width:1199px){ .sign{display:none;} }
+
+  /* ================= PREVIEW BANNER (CSS-only dismiss) ================= */
+  #zap{position:absolute; opacity:0; pointer-events:none;}
+  .banner{
+    position:relative; z-index:7; display:flex; align-items:center; justify-content:center; gap:10px;
+    padding:8px 44px 8px 14px; font-family:var(--px); font-size:8px; line-height:1.7; text-align:center;
+    color:#c8f9ff; background:rgba(10,6,24,.92); border-bottom:1px solid rgba(41,230,255,.45);
+    box-shadow:0 0 18px rgba(41,230,255,.25);
+    text-shadow:0 0 6px rgba(41,230,255,.8);
+  }
+  .banner a{color:var(--pink); text-decoration:underline; text-shadow:0 0 6px rgba(255,61,154,.8);}
+  .banner label{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer;
+    width:22px; height:22px; display:grid; place-items:center; border:1px solid rgba(41,230,255,.5);
+    border-radius:5px; color:var(--cyan); font-family:var(--disp); font-size:12px; font-weight:700;
+  }
+  .banner label:hover{box-shadow:0 0 10px rgba(41,230,255,.6);}
+  #zap:checked ~ .banner{display:none;}
+
+  /* ================= LAYOUT ================= */
+  .stage{position:relative; z-index:2; padding-bottom:104px;}
+  .wrap{width:100%; max-width:1120px; margin:0 auto; padding:20px 20px 40px;}
+
+  /* header */
+  .hdr{display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:26px; flex-wrap:wrap;}
+  .mark{transform:skewX(-6deg); line-height:.92; flex:0 0 auto;}
+  .mark .l1,.mark .l2{
+    display:block; font-family:var(--disp); font-weight:900; font-style:italic; text-transform:uppercase;
+    background:linear-gradient(100deg, #FF2E88 10%, #FF5F5F 55%, #FF8A3D 95%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    -webkit-text-stroke:1px rgba(255,255,255,.32);
+    filter:drop-shadow(0 0 2px rgba(255,46,136,.9)) drop-shadow(0 0 10px rgba(41,230,255,.65)) drop-shadow(0 0 26px rgba(41,230,255,.4));
+  }
+  .mark .l1{font-size:22px; letter-spacing:.22em;}
+  .mark .l2{font-size:44px; letter-spacing:.06em;}
+  .mark .by{display:block; margin-top:7px; font-family:var(--px); font-size:7px; color:var(--dim); letter-spacing:.12em; text-shadow:0 0 8px rgba(169,130,243,.5);}
+  .attract{
+    flex:1 1 auto; align-self:center; text-align:center; min-width:260px;
+    font-family:var(--disp); font-weight:800; font-style:italic; font-size:clamp(13px,1.6vw,19px);
+    letter-spacing:.3em; text-transform:uppercase; color:#d9ecff;
+    text-shadow:0 0 4px #7fc4ff, 0 0 14px #3a8bff, 0 0 34px rgba(58,139,255,.8), 0 0 66px rgba(41,230,255,.4);
+  }
+  .hdrR{display:flex; align-items:center; gap:14px; flex:0 0 auto;}
+  .moon{
+    width:42px; height:42px; border-radius:11px; cursor:pointer; padding:0;
+    background:rgba(21,10,46,.8); color:#c8f9ff; border:1px solid rgba(41,230,255,.45);
+    display:grid; place-items:center; box-shadow:0 0 12px rgba(41,230,255,.3), inset 0 0 8px rgba(41,230,255,.12);
+  }
+  .moon:hover{box-shadow:0 0 20px rgba(41,230,255,.55), inset 0 0 10px rgba(41,230,255,.2);}
+  .played{display:flex; flex-direction:column; align-items:flex-end; gap:6px;}
+  .played .pips{display:flex; gap:5px;}
+  .played .pip{width:10px; height:10px; border-radius:50%; border:1.5px solid rgba(41,230,255,.55); box-shadow:0 0 6px rgba(41,230,255,.35), inset 0 0 3px rgba(41,230,255,.25);}
+  .played .t{font-family:var(--px); font-size:7px; color:var(--mut); letter-spacing:.1em; text-shadow:0 0 8px rgba(41,230,255,.4);}
+
+  .board{display:grid; grid-template-columns:320px 1fr; gap:24px; align-items:start;}
+  @media (max-width:920px){ .board{grid-template-columns:1fr;} }
+
+  /* ================= HUD ================= */
+  .hud{
+    position:sticky; top:16px; border-radius:18px; overflow:hidden;
+    background:var(--panel); backdrop-filter:blur(6px);
+    border:1px solid rgba(41,230,255,.55);
+    box-shadow:0 0 3px rgba(41,230,255,.7), 0 0 18px rgba(41,230,255,.28), 0 0 52px rgba(47,107,255,.22), inset 0 0 22px rgba(41,230,255,.06);
+  }
+  @media (max-width:920px){ .hud{position:static;} }
+  .hud-hd{display:flex; align-items:center; gap:13px; padding:16px 18px; border-bottom:1px solid rgba(41,230,255,.22);
+    background:linear-gradient(115deg, rgba(41,230,255,.1), transparent 65%);}
+  .pixav{flex:0 0 auto; width:32px; height:32px; position:relative; image-rendering:pixelated;}
+  .pixav i{
+    position:absolute; left:0; top:0; width:4px; height:4px; background:transparent;
+    box-shadow:
+      8px 0 var(--cyan),12px 0 var(--cyan),16px 0 var(--cyan),20px 0 var(--cyan),
+      4px 4px var(--cyan),8px 4px var(--cyan),12px 4px var(--cyan),16px 4px var(--cyan),20px 4px var(--cyan),24px 4px var(--cyan),
+      0 8px var(--cyan),4px 8px var(--cyan),8px 8px var(--pink),12px 8px var(--cyan),16px 8px var(--cyan),20px 8px var(--pink),24px 8px var(--cyan),28px 8px var(--cyan),
+      0 12px var(--cyan),4px 12px var(--cyan),8px 12px var(--cyan),12px 12px var(--cyan),16px 12px var(--cyan),20px 12px var(--cyan),24px 12px var(--cyan),28px 12px var(--cyan),
+      8px 16px var(--cyan),20px 16px var(--cyan),
+      4px 20px var(--cyan),12px 20px var(--cyan),16px 20px var(--cyan),24px 20px var(--cyan),
+      0 24px var(--cyan),8px 24px var(--cyan),20px 24px var(--cyan),28px 24px var(--cyan),
+      4px 28px var(--cyan),24px 28px var(--cyan);
+    filter:drop-shadow(0 0 6px rgba(41,230,255,.8));
+  }
+  .hud-hd .who{min-width:0; line-height:1.25;}
+  .hud-hd .who b{display:block; font-family:var(--wide); font-weight:400; font-size:15px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink); text-shadow:0 0 8px rgba(41,230,255,.55);}
+  .hud-hd .who span{display:block; font-family:var(--px); font-size:7px; color:var(--dim); margin-top:4px; letter-spacing:.08em;}
+  .chip{
+    margin-left:auto; display:inline-flex; align-items:center; gap:6px; padding:7px 11px; border-radius:999px;
+    font-family:var(--px); font-size:8px; color:#ffe9b0;
+    border:1px solid rgba(242,182,50,.55); background:rgba(242,182,50,.08);
+    box-shadow:0 0 10px rgba(242,182,50,.3), inset 0 0 8px rgba(242,182,50,.12);
+    text-shadow:0 0 6px rgba(242,182,50,.8);
+  }
+  .hud-streak{display:flex; align-items:center; gap:16px; padding:20px 18px 14px;}
+  .flame{
+    flex:0 0 auto; width:52px; height:52px; border-radius:13px; display:grid; place-items:center;
+    color:#ff6a3d; border:1px solid rgba(255,73,73,.55); background:rgba(255,73,73,.08);
+    box-shadow:0 0 4px rgba(255,73,73,.6), 0 0 16px rgba(255,106,61,.4), inset 0 0 12px rgba(255,106,61,.15);
+  }
+  .flame svg{filter:drop-shadow(0 0 5px rgba(255,106,61,.9)) drop-shadow(0 0 14px rgba(255,73,73,.6));}
+  .hud-streak .big .n{
+    font-family:var(--disp); font-weight:900; font-size:46px; line-height:.9; font-variant-numeric:tabular-nums; color:#fff;
+    text-shadow:0 0 4px #FF6A3D, 0 0 14px #FF4949, 0 0 34px rgba(255,73,73,.7), 0 0 64px rgba(255,138,61,.4);
+  }
+  .hud-streak .big .cap{display:block; font-family:var(--px); font-size:7px; letter-spacing:.14em; color:#ffb199; margin-top:7px; text-shadow:0 0 8px rgba(255,106,61,.7);}
+  .hud-streak .best{margin-left:auto; text-align:right;}
+  .hud-streak .best .n{font-family:var(--disp); font-weight:800; font-size:24px; color:var(--mut); line-height:1; text-shadow:0 0 10px rgba(185,168,217,.4);}
+  .hud-streak .best .cap{display:block; font-family:var(--px); font-size:6px; letter-spacing:.12em; color:var(--dim); margin-top:5px;}
+  .hud-mile{padding:2px 18px 18px;}
+  .hud-mile .lab{display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-family:var(--px); font-size:6.5px; letter-spacing:.1em; color:var(--mut); margin-bottom:8px; text-transform:uppercase;}
+  .hud-mile .lab b{color:#ffd28a; text-shadow:0 0 8px rgba(242,182,50,.7);}
+  .hud-mile .bar{height:10px; border-radius:999px; background:rgba(0,0,0,.5); border:1px solid rgba(255,73,73,.4); overflow:hidden; box-shadow:inset 0 0 8px rgba(0,0,0,.7);}
+  .hud-mile .bar i{
+    display:block; height:100%; width:66%; border-radius:999px;
+    background:linear-gradient(90deg, var(--red), var(--orange));
+    box-shadow:0 0 8px rgba(255,73,73,.8), 0 0 18px rgba(255,138,61,.5);
+  }
+  .hud-drop{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 18px;
+    border-top:1px solid rgba(41,230,255,.22); background:rgba(8,4,20,.55);
+  }
+  .hud-drop .lbl{font-family:var(--px); font-size:7px; letter-spacing:.14em; color:var(--mut); text-transform:uppercase;}
+  .hud-drop .t{
+    font-family:var(--disp); font-weight:800; font-size:24px; letter-spacing:.1em; line-height:1;
+    font-variant-numeric:tabular-nums; color:#b9f6ff;
+    text-shadow:0 0 4px #29E6FF, 0 0 14px #29E6FF, 0 0 34px rgba(41,230,255,.7), 0 0 60px rgba(41,230,255,.35);
+  }
+  .hud-cta{padding:16px 18px 18px; border-top:1px solid rgba(41,230,255,.22);}
+  .hud-cta p{margin:0 0 13px; color:var(--mut); font-family:'Segoe UI',system-ui,sans-serif; font-size:12.5px; line-height:1.55;}
+  .hud-cta p b{color:var(--ink); text-shadow:0 0 8px rgba(41,230,255,.4);}
+  .pill{
+    display:block; text-align:center; border-radius:999px; padding:13px 14px; text-transform:uppercase;
+    font-family:var(--wide); font-weight:400; font-size:12.5px; letter-spacing:.1em; transition:filter .14s, box-shadow .14s;
+  }
+  .pill.solid{
+    color:#12041d; background:linear-gradient(120deg, var(--hotpink), #ff5fae);
+    box-shadow:0 0 4px rgba(255,46,136,.8), 0 0 18px rgba(255,46,136,.55), 0 0 46px rgba(255,46,136,.3);
+  }
+  .pill.solid:hover{filter:brightness(1.12); box-shadow:0 0 6px rgba(255,46,136,.9), 0 0 26px rgba(255,46,136,.7), 0 0 60px rgba(255,46,136,.4);}
+  .pill.ghost{
+    margin-top:10px; color:#c8f9ff; border:1.5px solid rgba(41,230,255,.6); background:rgba(41,230,255,.05);
+    box-shadow:0 0 10px rgba(41,230,255,.25), inset 0 0 10px rgba(41,230,255,.08);
+    text-shadow:0 0 8px rgba(41,230,255,.6);
+  }
+  .pill.ghost:hover{box-shadow:0 0 18px rgba(41,230,255,.5), inset 0 0 12px rgba(41,230,255,.14);}
+
+  /* ================= CABINETS ================= */
+  .cabs{display:grid; grid-template-columns:repeat(3, 1fr); gap:22px;}
+  @media (max-width:1120px){ .cabs{grid-template-columns:repeat(2, 1fr);} }
+  @media (max-width:640px){ .cabs{grid-template-columns:1fr;} }
+
+  .cab{
+    --c:var(--gold); --glo:rgba(242,182,50,.5);
+    position:relative; display:flex; flex-direction:column;
+    transition:transform .18s ease;
+  }
+  .cab:hover{transform:translateY(-5px);}
+  .cab .shell{
+    display:flex; flex-direction:column; flex:1; border-radius:14px 14px 8px 8px; overflow:hidden;
+    background:var(--panel2); backdrop-filter:blur(4px);
+    border:1px solid var(--c);
+    box-shadow:0 0 3px var(--glo), 0 0 16px var(--glo), 0 14px 44px -18px var(--glo), inset 0 0 18px color-mix(in srgb, var(--c) 10%, transparent);
+    transition:box-shadow .18s ease;
+  }
+  .cab:hover .shell{box-shadow:0 0 5px var(--glo), 0 0 28px var(--glo), 0 20px 60px -18px var(--glo), inset 0 0 24px color-mix(in srgb, var(--c) 14%, transparent);}
+  .cab .marquee{
+    display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 11px;
+    background:linear-gradient(180deg, color-mix(in srgb, var(--c) 22%, rgba(10,6,24,.9)), rgba(10,6,24,.85));
+    border-bottom:1px solid color-mix(in srgb, var(--c) 45%, transparent);
+  }
+  .cab .new{
+    font-family:var(--px); font-size:6.5px; letter-spacing:.12em; padding:5px 8px 4px; border-radius:5px;
+    color:#0a0618; background:var(--c); box-shadow:0 0 8px var(--glo), 0 0 18px var(--glo);
+  }
+  .cab .ready{
+    font-family:var(--px); font-size:6.5px; letter-spacing:.12em; padding:5px 8px 4px; border-radius:999px;
+    color:var(--c); border:1px solid color-mix(in srgb, var(--c) 70%, transparent);
+    text-shadow:0 0 6px var(--glo); box-shadow:0 0 8px color-mix(in srgb, var(--c) 25%, transparent);
+    animation:readyblink 2.4s steps(1) infinite;
+  }
+  @keyframes readyblink{0%,100%{opacity:1;} 82%{opacity:1;} 88%{opacity:.35;} 94%{opacity:1;}}
+  .cab .screen{
+    position:relative; height:128px; display:grid; place-items:center;
+    background:
+      radial-gradient(130px 90px at 50% 42%, color-mix(in srgb, var(--c) 14%, transparent), transparent 75%),
+      linear-gradient(180deg, #05030e, #0b0620);
+    border-bottom:1px solid color-mix(in srgb, var(--c) 35%, transparent);
+    box-shadow:inset 0 0 30px rgba(0,0,0,.85);
+  }
+  .cab .screen:after{ /* screen scanlines + glass shine */
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:
+      linear-gradient(115deg, rgba(255,255,255,.07) 0%, transparent 28%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.045) 0 1px, transparent 1px 3px);
+  }
+  .cab .screen svg{width:68px; height:68px; filter:drop-shadow(0 0 6px var(--glo)) drop-shadow(0 0 18px var(--glo));}
+  .cab .bodyc{display:flex; flex-direction:column; flex:1; padding:15px 15px 16px;}
+  .cab .nm{
+    font-family:var(--wide); font-weight:400; font-size:16.5px; letter-spacing:.06em; text-transform:uppercase; line-height:1.15; color:var(--c);
+    text-shadow:0 0 3px var(--glo), 0 0 12px var(--glo), 0 0 30px var(--glo);
+  }
+  .cab .desc{color:var(--mut); font-family:'Segoe UI',system-ui,sans-serif; font-size:12.5px; line-height:1.5; margin:9px 0 15px;}
+  .cab .playbtn{
+    margin-top:auto; border-radius:999px; min-height:44px; display:flex; align-items:center; justify-content:center; gap:9px;
+    font-family:var(--wide); font-size:14px; letter-spacing:.14em; color:#0a0618; background:var(--c);
+    box-shadow:0 0 4px var(--glo), 0 0 16px var(--glo), 0 6px 22px -8px var(--glo);
+    transition:filter .14s, box-shadow .14s;
+  }
+  .cab .playbtn .arw{transition:transform .16s;}
+  .cab:hover .playbtn{filter:brightness(1.14); box-shadow:0 0 6px var(--glo), 0 0 26px var(--glo), 0 10px 30px -8px var(--glo);}
+  .cab:hover .playbtn .arw{transform:translateX(4px);}
+  .cab .deck{
+    display:flex; align-items:center; justify-content:space-between; padding:10px 20px 12px;
+    background:linear-gradient(180deg, rgba(20,10,42,.95), rgba(12,6,26,.95));
+    border-top:1px solid color-mix(in srgb, var(--c) 30%, transparent);
+  }
+  .joy{position:relative; width:34px; height:26px; flex:0 0 auto;}
+  .joy:before{ /* stick */
+    content:""; position:absolute; left:50%; bottom:5px; transform:translateX(-50%);
+    width:4px; height:16px; border-radius:2px;
+    background:linear-gradient(90deg,#3a2f55,#8f84b3 45%,#3a2f55);
+  }
+  .joy:after{ /* red ball */
+    content:""; position:absolute; left:50%; top:-4px; transform:translateX(-50%);
+    width:14px; height:14px; border-radius:50%;
+    background:radial-gradient(circle at 34% 30%, #ff9b9b, #ff2424 55%, #7a0505);
+    box-shadow:0 0 8px rgba(255,36,36,.7);
+  }
+  .joy i{ /* base plate */
+    position:absolute; left:50%; bottom:0; transform:translateX(-50%);
+    width:30px; height:7px; border-radius:50%;
+    background:radial-gradient(circle at 50% 30%, #241740, #0c0620);
+    border:1px solid rgba(255,255,255,.12);
+  }
+  .dbtns{display:flex; gap:9px;}
+  .dbtns i{
+    width:15px; height:15px; border-radius:50%;
+    border:1px solid rgba(255,255,255,.16);
+    box-shadow:inset 0 -3px 5px rgba(0,0,0,.55), 0 0 8px var(--bglo);
+  }
+  .dbtns i.b1{--bglo:rgba(255,73,73,.55); background:radial-gradient(circle at 35% 30%, #ff8f8f, #e11d1d 60%, #6d0707);}
+  .dbtns i.b2{--bglo:rgba(41,230,255,.55); background:radial-gradient(circle at 35% 30%, #a6f4ff, #10b9d8 60%, #045060);}
+  .dbtns i.b3{--bglo:rgba(242,182,50,.55); background:radial-gradient(circle at 35% 30%, #ffe3a1, #e2a41f 60%, #6d4b04);}
+  .cab .base{
+    height:26px; margin:0 6px;
+    clip-path:polygon(6% 0, 94% 0, 100% 100%, 0 100%);
+    background:linear-gradient(180deg, color-mix(in srgb, var(--c) 26%, rgba(10,6,24,.9)), transparent 92%);
+    -webkit-mask-image:linear-gradient(180deg, #000 0%, transparent 100%);
+            mask-image:linear-gradient(180deg, #000 0%, transparent 100%);
+  }
+
+  /* per-game accents */
+  .cab.table {--c:var(--gold);   --glo:rgba(242,182,50,.5);}
+  .cab.match {--c:var(--blue);   --glo:rgba(47,107,255,.55);}
+  .cab.career{--c:var(--green);  --glo:rgba(72,209,122,.5);}
+  .cab.oddone{--c:var(--violet); --glo:rgba(169,130,243,.55);}
+  .cab.rankit{--c:var(--rpink);  --glo:rgba(246,92,156,.55);}
+  .cab.guess {--c:var(--coral);  --glo:rgba(240,106,95,.55);}
+  .cab.cross {--c:var(--silver); --glo:rgba(210,224,242,.45);}
+  .cab.word  {--c:var(--teal);   --glo:rgba(55,197,213,.5);}
+
+  /* ================= BOTTOM NAV ================= */
+  .nav{
+    position:fixed; left:0; right:0; bottom:0; z-index:8;
+    display:flex; align-items:stretch; justify-content:flex-start; overflow-x:auto; scrollbar-width:none;
+    padding:9px 8px calc(9px + env(safe-area-inset-bottom,0));
+    background:rgba(8,4,20,.86); backdrop-filter:blur(12px);
+    border-top:1px solid rgba(255,46,136,.5);
+    box-shadow:0 -2px 14px rgba(255,46,136,.22), 0 -1px 0 rgba(41,230,255,.2);
+  }
+  .nav::-webkit-scrollbar{display:none;}
+  .nav a{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    flex:1 0 auto; min-width:66px; padding:5px 9px; text-align:center;
+    font-family:var(--px); font-size:8px; letter-spacing:.04em; text-transform:uppercase; color:var(--dim);
+    border-right:1px solid rgba(185,168,217,.14);
+  }
+  .nav a:last-child{border-right:none;}
+  .nav a svg{width:18px; height:18px;}
+  .nav a:hover{color:var(--mut);}
+  .nav a.on{
+    color:#ffc2dd; position:relative;
+    text-shadow:0 0 5px #FF3D9A, 0 0 14px rgba(255,61,154,.8), 0 0 30px rgba(255,73,73,.5);
+  }
+  .nav a.on svg{filter:drop-shadow(0 0 5px rgba(255,61,154,.9)) drop-shadow(0 0 14px rgba(255,61,154,.5));}
+  .nav a.on:after{
+    content:""; position:absolute; left:16%; right:16%; bottom:-2px; height:2px; border-radius:2px;
+    background:linear-gradient(90deg, var(--pink), var(--red));
+    box-shadow:0 0 8px rgba(255,61,154,.9), 0 0 18px rgba(255,61,154,.5);
+  }
+
+  @media (max-width:640px){
+    .hdr{justify-content:center; text-align:center;}
+    .mark{width:100%; display:flex; flex-direction:column; align-items:center;}
+    .attract{order:3; width:100%;}
+    .hdrR{order:2; width:100%; justify-content:center;}
+    .played{align-items:center;}
+    .stage{padding-bottom:96px;}
+  }
+  @media (prefers-reduced-motion:reduce){ *{animation:none !important; transition:none !important;} }
+</style>
+</head>
+<body>
+
+<div class="floor" aria-hidden="true"></div>
+<div class="floorglow" aria-hidden="true"></div>
+<div class="sign l" aria-hidden="true">Game&nbsp;On</div>
+<div class="sign r" aria-hidden="true">High&nbsp;Score</div>
+
+<input type="checkbox" id="zap" />
+<div class="banner">
+  <span>DESIGN PREVIEW — the live hub is unchanged · <a href="/grid/">back to today's hub</a></span>
+  <label for="zap" title="Dismiss" aria-label="Dismiss preview banner">×</label>
+</div>
+
+<div class="stage">
+  <div class="wrap">
+
+    <header class="hdr">
+      <a class="mark" href="/grid/" aria-label="RunTheGrid Arcade home">
+        <span class="l1">Run The</span>
+        <span class="l2">Arcade</span>
+        <span class="by">by RunTheGrid</span>
+      </a>
+      <div class="attract">/// Today's Attractions ///</div>
+      <div class="hdrR">
+        <button class="moon" type="button" aria-label="Toggle theme (decorative)" title="Light / dark">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+        <div class="played" aria-label="0 of 8 played today">
+          <span class="pips" aria-hidden="true"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></span>
+          <span class="t">0 / 8 PLAYED</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="board">
+
+      <!-- LEFT: player HUD -->
+      <aside class="hud">
+        <div class="hud-hd">
+          <span class="pixav" aria-hidden="true"><i></i></span>
+          <span class="who"><b>Guest</b><span>MON, AUG 3</span></span>
+          <span class="chip" title="One free play per game each day">&#9654; 10/10</span>
+        </div>
+
+        <div class="hud-streak">
+          <span class="flame" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>
+          </span>
+          <span class="big"><span class="n">2</span><span class="cap">DAY STREAK</span></span>
+          <span class="best"><span class="n">2</span><span class="cap">BEST</span></span>
+        </div>
+
+        <div class="hud-mile">
+          <div class="lab"><span>3-Day Streak Badge</span><b>1 day to go</b></div>
+          <div class="bar"><i></i></div>
+        </div>
+
+        <div class="hud-drop">
+          <span class="lbl">Next Drop</span>
+          <span class="t">22:35:06</span>
+        </div>
+
+        <div class="hud-cta">
+          <p>One free play per game, every day. Sign in to save your streak and rank — <b>Pro</b> unlocks unlimited plays and every past day's puzzles.</p>
+          <a class="pill solid" href="/">Sign In / Sign Up</a>
+          <a class="pill ghost" href="/grid/archive/">Play Past Days &rarr;</a>
+        </div>
+      </aside>
+
+      <!-- RIGHT: cabinets -->
+      <main class="cabs">
+
+        <article class="cab table">
+          <div class="shell">
+            <div class="marquee"><span class="new">NEW</span><span class="ready">READY</span></div>
+            <div class="screen" aria-hidden="true">
+              <svg viewBox="0 0 56 56">
+                <rect x="9" y="28" width="13" height="20" rx="3" fill="#F2B632" opacity=".5"/>
+                <rect x="27" y="16" width="13" height="32" rx="3" fill="#F2B632"/>
+                <g fill="none" stroke="#F2B632" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M43 15h8M47 11v8"/><path d="M43 21l4-4 4 4"/></g>
+              </svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Run The Table</h3>
+              <p class="desc">Higher or lower? Tap the bigger number and see how many you can run in a row.</p>
+              <a class="playbtn" href="/grid/table/">PLAY <span class="arw">&rarr;</span></a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b1"></i><i class="b3"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+        <article class="cab match">
+          <div class="shell">
+            <div class="marquee"><span class="new">NEW</span><span class="ready">READY</span></div>
+            <div class="screen" aria-hidden="true">
+              <svg viewBox="0 0 56 56"><g>
+                <rect x="2" y="2" width="15" height="15" rx="3" fill="#2F6BFF"/><rect x="20.5" y="2" width="15" height="15" rx="3" fill="#F2B632"/><rect x="39" y="2" width="15" height="15" rx="3" fill="#F06A5F"/>
+                <rect x="2" y="20.5" width="15" height="15" rx="3" fill="#F06A5F"/><rect x="20.5" y="20.5" width="15" height="15" rx="3" fill="#A982F3"/><rect x="39" y="20.5" width="15" height="15" rx="3" fill="#2F6BFF"/>
+                <rect x="2" y="39" width="15" height="15" rx="3" fill="#F2B632"/><rect x="20.5" y="39" width="15" height="15" rx="3" fill="#F65C9C"/><rect x="39" y="39" width="15" height="15" rx="3" fill="#F06A5F"/>
+              </g></svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Daily Match</h3>
+              <p class="desc">Sort 20 sports names into five hidden groups of four. Find them all before six misses.</p>
+              <a class="playbtn" href="/grid/match/">PLAY <span class="arw">&rarr;</span></a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b2"></i><i class="b1"></i><i class="b3"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+        <article class="cab career">
+          <div class="shell">
+            <div class="marquee"><span class="new">NEW</span><span class="ready">READY</span></div>
+            <div class="screen" aria-hidden="true">
+              <svg viewBox="0 0 56 56">
+                <g fill="none" stroke="#48D17A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 44 L22 24 L34 34 L46 12"/></g>
+                <g fill="#48D17A"><circle cx="12" cy="44" r="4.2"/><circle cx="22" cy="24" r="4.2"/><circle cx="34" cy="34" r="4.2"/><circle cx="46" cy="12" r="4.2"/></g>
+              </svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Career Path</h3>
+              <p class="desc">Name the athlete from their team-by-team journey. How many in a row?</p>
+              <a class="playbtn" href="/grid/career/">PLAY <span class="arw">&rarr;</span></a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b1"></i><i class="b2"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+        <article class="cab oddone">
+          <div class="shell">
+            <div class="marquee"><span class="new">NEW</span><span class="ready">READY</span></div>
+            <div class="screen" aria-hidden="true">
+              <svg viewBox="0 0 56 56">
+                <circle cx="16" cy="16" r="7.5" fill="#A982F3"/><circle cx="40" cy="16" r="7.5" fill="#A982F3"/><circle cx="16" cy="40" r="7.5" fill="#A982F3"/>
+                <rect x="32.5" y="32.5" width="15" height="15" rx="3.5" fill="#F06A5F"/>
+              </svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Odd One Out</h3>
+              <p class="desc">Four names share a connection, one doesn't. Spot it, keep the streak going.</p>
+              <a class="playbtn" href="/grid/oddone/">PLAY <span class="arw">&rarr;</span></a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b3"></i><i class="b1"></i><i class="b2"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+        <article class="cab rankit">
+          <div class="shell">
+            <div class="marquee"><span class="new">NEW</span><span class="ready">READY</span></div>
+            <div class="screen" aria-hidden="true">
+              <svg viewBox="0 0 56 56">
+                <rect x="10" y="13" width="20" height="8" rx="3" fill="#F65C9C" opacity=".5"/>
+                <rect x="10" y="25" width="30" height="8" rx="3" fill="#F65C9C" opacity=".78"/>
+                <rect x="10" y="37" width="40" height="8" rx="3" fill="#F65C9C"/>
+              </svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Rank It</h3>
+              <p class="desc">Put five athletes in order by the era they starred in. Fewest checks wins.</p>
+              <a class="playbtn" href="/grid/rankit/">PLAY <span class="arw">&rarr;</span></a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b2"></i><i class="b3"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+        <article class="cab guess">
+          <div class="shell">
+            <div class="marquee"><span class="new">NEW</span><span class="ready">READY</span></div>
+            <div class="screen" aria-hidden="true">
+              <svg viewBox="0 0 56 56">
+                <g>
+                  <rect x="4.4" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="16.8" y="10.6" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="29.2" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="41.6" y="10.6" width="10" height="10" rx="2.4" fill="#2FA968"/>
+                  <rect x="4.4" y="23" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="16.8" y="23" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="29.2" y="23" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="41.6" y="23" width="10" height="10" rx="2.4" fill="#0E2438"/>
+                  <rect x="4.4" y="35.4" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="16.8" y="35.4" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="29.2" y="35.4" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="41.6" y="35.4" width="10" height="10" rx="2.4" fill="#2FA968"/>
+                </g>
+              </svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Guess the Player</h3>
+              <p class="desc">One mystery athlete a day. Crack it in eight guesses from the clues.</p>
+              <a class="playbtn" href="/grid/guess/">PLAY <span class="arw">&rarr;</span></a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b1"></i><i class="b3"></i><i class="b2"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+        <article class="cab cross">
+          <div class="shell">
+            <div class="marquee"><span class="new">NEW</span><span class="ready">READY</span></div>
+            <div class="screen" aria-hidden="true">
+              <svg viewBox="0 0 56 56">
+                <defs><clipPath id="cwico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs>
+                <g clip-path="url(#cwico)">
+                  <rect x="4" y="4" width="48" height="48" fill="#F4F7FB"/>
+                  <rect x="40" y="4" width="12" height="12" fill="#12202F"/>
+                  <rect x="4" y="40" width="12" height="12" fill="#12202F"/>
+                  <g stroke="#CBD5E1" stroke-width="1">
+                    <path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/>
+                  </g>
+                  <g font-family="Archivo, sans-serif" font-size="5" font-weight="800" fill="#93A1B2">
+                    <text x="6.2" y="9.4">1</text>
+                    <text x="42.2" y="21.4">2</text>
+                  </g>
+                  <g font-family="Archivo, sans-serif" font-size="9" font-weight="900" fill="#16273B" text-anchor="middle">
+                    <text x="10" y="13.2">R</text>
+                    <text x="22" y="13.2">U</text>
+                    <text x="34" y="13.2">N</text>
+                    <text x="46" y="25.2">T</text>
+                    <text x="46" y="37.2">H</text>
+                    <text x="46" y="49.2">E</text>
+                  </g>
+                </g>
+                <rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#93A1B2" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Daily Crossword</h3>
+              <p class="desc">A sports mini crossword, fresh every day. Beat the clock for a flawless solve.</p>
+              <a class="playbtn" href="/grid/crossword/">PLAY <span class="arw">&rarr;</span></a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b2"></i><i class="b1"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+        <article class="cab word">
+          <div class="shell">
+            <div class="marquee"><span class="new">NEW</span><span class="ready">READY</span></div>
+            <div class="screen" aria-hidden="true">
+              <svg viewBox="0 0 56 56">
+                <defs><clipPath id="wsico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs>
+                <g clip-path="url(#wsico)">
+                  <rect x="4" y="4" width="48" height="48" fill="#E9F7F4"/>
+                  <g stroke="#B9E3DC" stroke-width="1"><path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/></g>
+                  <rect x="4" y="4" width="12" height="12" rx="3" fill="#37C5D5"/>
+                  <rect x="16" y="16" width="12" height="12" rx="3" fill="#37C5D5"/>
+                  <rect x="28" y="28" width="12" height="12" rx="3" fill="#37C5D5"/>
+                  <g font-family="Archivo, sans-serif" font-size="8.5" font-weight="900" text-anchor="middle">
+                    <text x="10" y="13" fill="#06333A">W</text>
+                    <text x="22" y="25" fill="#06333A">I</text>
+                    <text x="34" y="37" fill="#06333A">N</text>
+                    <g fill="#7FA8B0">
+                      <text x="34" y="13">R</text><text x="46" y="13">T</text>
+                      <text x="10" y="37">S</text><text x="46" y="37">E</text>
+                      <text x="10" y="49">A</text><text x="22" y="49">D</text><text x="34" y="49">L</text><text x="46" y="49">O</text>
+                    </g>
+                  </g>
+                </g>
+                <rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#37C5D5" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Daily Word Search</h3>
+              <p class="desc">Find every hidden name from today's theme. Beat the clock for a flawless run.</p>
+              <a class="playbtn" href="/grid/wordsearch/">PLAY <span class="arw">&rarr;</span></a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b3"></i><i class="b2"></i><i class="b1"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+      </main>
+    </div>
+  </div>
+</div>
+
+<nav class="nav" aria-label="Games">
+  <a class="on" href="/grid/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 13v4"/><circle cx="12" cy="7" r="3.5"/><path d="M6 20h12"/><path d="M9 17h6"/></svg>Home</a>
+  <a href="/grid/table/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="12" width="6" height="8" rx="1"/><rect x="14" y="6" width="6" height="14" rx="1"/></svg>Table</a>
+  <a href="/grid/match/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Match</a>
+  <a href="/grid/career/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 L10 10 L15 15 L20 4"/></svg>Career</a>
+  <a href="/grid/oddone/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>Odd One</a>
+  <a href="/grid/rankit/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M4 12h13M4 17h6"/></svg>Rank It</a>
+  <a href="/grid/guess/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.9.5-1.6 1-1.6 2.1M12 17.5v.01"/></svg>Guess</a>
+  <a href="/grid/crossword/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 3v18M3 9h18"/></svg>Crossword</a>
+  <a href="/grid/wordsearch/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Word Search</a>
+  <a href="/grid/archive/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Archive</a>
+</nav>
+
+</body>
+</html>
