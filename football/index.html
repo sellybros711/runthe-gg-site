@@ -7880,19 +7880,29 @@ function schemeTail(st){
   return ' The '+esc(nm)+' scheme is +'+sp+'% of that.';
 }
 
-/* Four rows, not seven. Money and chemistry already have their own place in the
-   stats above, and a title-odds row on a team that missed the playoffs was noise. */
+/*
+ * Three rows, and deliberately no odds.
+ *
+ * This table used to end with "Makes the playoffs" and "Wins the title" as percentages, and
+ * both are gone. Every row here is now something that HAPPENED or something you can count:
+ * points a game, the record those points typically produce, money spent. A percentage is a
+ * different kind of claim — it tells you what the simulation thinks of you rather than what
+ * you did, and "wins the title 0.3%" is a number nobody is better off having seen. It also
+ * put the game's own internals on screen, which is not what this screen is for.
+ *
+ * The typical record stays because it is the same information in the form a fan actually
+ * uses. 12-5 against a best of 13-4 says what 60% against 74% said, and says it as football.
+ */
 function comparison(best){
   const mine=R.projectSeason(run.roster,best.yourChemistry,run,DATA,LEAGUE);
   /* If the best squad IS your squad, the two columns have to read the same. They did
      not: resolveGame() draws each player's week in roster order, so the identical six
      men in a different order simulate slightly differently, and a player who had
-     nailed every pick was shown BEST making the playoffs 84% of the time against his
-     own 83%. Nothing was missed, so nothing should look missed. */
+     nailed every pick was shown a BEST record a game better than his own. Nothing
+     was missed, so nothing should look missed. */
   const samePlayers=best.lineup.every((r)=>r.same);
   const theirs=samePlayers?mine
     :R.projectSeason(best.squad,best.chemistry,run,DATA,LEAGUE);
-  const P=(v)=>(v*100).toFixed(v>0&&v<0.1?1:0)+'%';
   const vs=(k,a,c,hi)=>'<div class="vs-row'+(hi?' hi':'')+'"><span class="k">'+k+'</span>'+
     '<span class="a">'+a+'</span><span class="c">'+c+'</span></div>';
   /* The ceiling, in the row above the record it produces. Deliberately the rating
@@ -7906,8 +7916,6 @@ function comparison(best){
     vs('Fantasy points a game',mineRating.toFixed(1),bestRating.toFixed(1),true)+
     vs('Typical record',mine.typicalRecord,theirs.typicalRecord,true)+
     vs('Money spent',M(best.yourSpend),M(best.spend))+
-    vs('Makes the playoffs',P(mine.playoffRate),P(theirs.playoffRate))+
-    vs('Wins the title',P(mine.titleRate),P(theirs.titleRate))+
   '</div>';
 }
 
