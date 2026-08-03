@@ -1339,6 +1339,13 @@ window.GA_ID='G-L29P5MRWKE';
   .ach.off .ach-n{color:var(--dim)}
   .gmp-top{display:flex;align-items:baseline;gap:8px;margin:2px 0 10px}
   .gmp-num{font-family:var(--fd);font-size:34px;font-weight:700;color:#fbbf24;line-height:1}
+  /* Where this GM rating sits among every GM rating ever posted, on the same line as the
+     number it ranks. Filled in by paintRankStrip when the board answers, so it appears
+     with the placings in the hero strip rather than holding this panel hostage. */
+  .gmp-rank{margin-left:auto;font-family:var(--fn);font-size:11px;font-weight:600;
+    letter-spacing:.04em;color:var(--dim);white-space:nowrap}
+  .gmp-rank b{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--ink)}
+  .gmp-rank b.first{color:#fbbf24}
   .gmp-cap{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.09em;
     text-transform:uppercase;color:var(--dim-2)}
   .gmp-row{padding:8px 0}
@@ -6227,6 +6234,16 @@ function gmScoutingReport(run){
    four parts cost them, and each row carries the fact behind the score rather than only the
    score: not "Winning 38.5" but "10-6, missed the playoffs". The bar is the part's own mark
    out of 100; the weight beside it says how much of the total it can move. */
+/* "#3 of 41 all time", or nothing while the board has not answered. Reads myRanks rather
+   than taking a parameter so the GM report and the strip can never show different
+   placings for the same run. */
+function gmRankChip(){
+  const w=myRanks&&myRanks.all;
+  if(!w||!w.rank) return '';
+  return '<b'+(w.rank===1?' class="first"':'')+'>#'+w.rank.toLocaleString()+'</b> of '+
+    w.total.toLocaleString()+' all time';
+}
+
 function paintGmParts(p,gm){
   const el=$('o-gm-parts'); if(!el) return;
   if(!p){ el.innerHTML='<p class="dim" style="font-size:12.5px">No breakdown available.</p>'; return; }
@@ -6268,7 +6285,10 @@ function paintGmParts(p,gm){
        p.expectedWins.toFixed(1)},
   ].filter(Boolean);
   let h='<div class="gmp-top"><span class="gmp-num">'+Number(gm).toFixed(2)+'</span>'+
-    '<span class="gmp-cap">out of 100</span></div>';
+    '<span class="gmp-cap">out of 100</span>'+
+    /* The all-time placing, on the same line as the number it places. Empty until the
+       board answers; paintRankStrip fills it alongside the hero strip's cells. */
+    '<span class="gmp-rank" id="gmp-rank">'+gmRankChip()+'</span></div>';
   rows.forEach(r=>{
     const cls=r.v>=75?'hi':(r.v>=45?'mid':'lo');
     h+='<div class="gmp-row">'+
@@ -10387,6 +10407,11 @@ function paintRankStrip(r){
     tmp.innerHTML=rankCell(k,label,r&&r[k]?r[k]:false);
     at.replaceWith(tmp.firstChild);
   });
+  /* The GM report carries the all-time placing beside its headline number, and it is
+     filled here for the same reason the cells above are: the board answers after the
+     panel paints. */
+  const gr=$('gmp-rank');
+  if(gr) gr.innerHTML=gmRankChip();
 }
 
 /* Tapping a placing opens the board on that window, sorted by record rather than by
@@ -11446,11 +11471,13 @@ $('b-same').onclick=()=>{
   const wasTrade=run&&run.tradeMachine;
   const club=(run&&run.franchise)||null;
   if(wasCap||wasTrade){
-    const label=wasCap?'Salary Cap Survivor':'The Trade Machine';
+    const label=wasCap?'Salary Cap Survivor':'the Trade Machine';
+    /* Verbs, not nouns. "The Trade Machine again / Classic run" read as two things rather
+       than two actions, and the second gave no hint it LEAVES the mode you are in. */
     $('sheet-in').innerHTML=
       '<h3 class="display" style="font-size:20px;margin:0 0 10px">Play again?</h3>'+
-      '<button class="btn ghost sm" id="b-ra-mode" style="width:100%;margin-bottom:8px">'+esc(label)+' again</button>'+
-      '<button class="btn ghost sm" id="b-ra-classic" style="width:100%">Classic run</button>';
+      '<button class="btn ghost sm" id="b-ra-mode" style="width:100%;margin-bottom:8px">Re-run '+esc(label)+'</button>'+
+      '<button class="btn ghost sm" id="b-ra-classic" style="width:100%">Switch to Classic Mode</button>';
     $('sheet').classList.add('on');
     $('b-ra-mode').onclick=()=>{
       closeSheet();endRun();
