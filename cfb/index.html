@@ -5183,7 +5183,7 @@ function paintOver(){
           '<div class="pl">Of the strongest team your six spins allowed. '+spots+'</div>'+
         '</div></div>'+
         swapRows(best)+comparison(best)+
-        '<p class="caveat">Points a game includes chemistry and how the six fit. Your record is '+
+        '<p class="caveat">Team overall includes chemistry and how the six fit. Your record is '+
         'this season&rsquo;s result; the best roster&rsquo;s is a projection (it never played) '+
         'from replaying it against your 12 opponents hundreds of times.</p>';
     }
@@ -5205,11 +5205,25 @@ function swapRows(best){
   }).join('')+'</div>';
 }
 
+/*
+ * Three rows, and deliberately no odds.
+ *
+ * This table used to end with "Makes the playoffs" and "Wins the title" as
+ * percentages, and both are gone, the same way they went in the NFL game. Every
+ * row here is now something that HAPPENED or something you can count: team
+ * overall, the record, money spent. A percentage is a different kind of claim: it
+ * tells you what the simulation thinks of you rather than what you did, and "wins
+ * the title 0.8%" is a number nobody is better off having seen. It also put the
+ * game's own internals on screen, which is not what this screen is for.
+ *
+ * The record stays because it is the same information in the form a fan actually
+ * uses. 11-3 against a best of 11-1 says what 88% against 90% said, and says it
+ * as football.
+ */
 function comparison(best){
   const mine=R.projectSeason(run.roster,best.yourChemistry,run,DATA,LEAGUE);
   const samePlayers=best.lineup.every((r)=>r.same);
   const theirs=samePlayers?mine:R.projectSeason(best.squad,best.chemistry,run,DATA,LEAGUE);
-  const P=(v)=>(v*100).toFixed(v>0&&v<0.1?1:0)+'%';
   const vs=(k,a,c,hi)=>'<div class="vs-row'+(hi?' hi':'')+'"><span class="k">'+k+'</span>'+
     '<span class="a">'+a+'</span><span class="c">'+c+'</span></div>';
   /* THE OVERALL, not the raw rating. The raw number stopped being points a game
@@ -5224,8 +5238,6 @@ function comparison(best){
     vs('Team overall',mineRating.toFixed(1),bestRating.toFixed(1),true)+
     vs('Record',run.outcome.record,theirs.typicalRecord,true)+
     vs('Money spent',M(best.yourSpend),M(best.spend))+
-    vs('Makes the playoffs',P(mine.playoffRate),P(theirs.playoffRate))+
-    vs('Wins the title',P(mine.titleRate),P(theirs.titleRate))+
   '</div>';
 }
 
