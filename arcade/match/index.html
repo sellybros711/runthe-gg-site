@@ -82,8 +82,8 @@
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto; text-decoration:none;}
   .icon-btn:hover{color:var(--ink);}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0; text-decoration:none;}
-  .brand.logo img{height:26px; width:auto; display:block;}
-  .brand.logo .sub{display:block; font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--mut); margin-top:5px; margin-left:2px; white-space:nowrap;}
+  .brand.logo img{height:44px; width:auto; display:block;}
+  .brand.logo .sub{display:block; font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--mut); margin-top:4px; margin-left:2px; white-space:nowrap;}
   .spacer{flex:1;}
   .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card);
     color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0; flex:0 0 auto;}
@@ -146,7 +146,8 @@
   .abtn:disabled{opacity:.45; cursor:default;}
   .abtn svg{flex:0 0 auto;}
   .abtn .cost{font-size:11px; font-weight:900; color:rgba(7,20,38,.65);}
-  .abtn.gold{background:var(--gold); color:#071426; border-color:transparent;}
+  .abtn.gold{background:var(--blue); color:#fff; border-color:transparent;}
+  .abtn.gold .cost{color:rgba(255,255,255,.8);}
   .abtn.gold:hover{filter:brightness(1.06);}
   .abtn.gold:disabled{filter:none;}
   .abtn.ghost:hover{border-color:var(--teal);}
@@ -283,8 +284,9 @@
     gap:7px; justify-content:center; transition:filter .12s, border-color .12s, transform .08s;}
   .btn:active{transform:translateY(1px);}
   .btn:hover{border-color:var(--teal);}
-  .btn.primary{background:var(--coral); color:#071426; border-color:transparent;}
+  .btn.primary{background:var(--blue); color:#fff; border-color:transparent;}
   .btn.primary:hover{filter:brightness(1.05);}
+  .btn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0;
     background:var(--inv-bg); color:var(--inv-ink); font-weight:800; font-size:13px;
     padding:11px 16px; border-radius:var(--r-md); z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.8);}
@@ -513,7 +515,6 @@
       <div class="coinline" id="resCoins">+0 coins</div>
       <div class="countdown" id="resCountdown"></div>
       <div class="reportline"><a href="mailto:sellybros711@gmail.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a></div>
-      <div id="rtgHist"></div>
       <div class="rcta">
         <button class="btn primary" id="mAgain" type="button">Play again</button>
       </div>
@@ -559,7 +560,6 @@
   <script src="/arcade/sfx.js"></script>
   <script src="/arcade/tokens.js"></script>
   <script src="/arcade/archive.js"></script>
-  <script src="/arcade/history.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <script src="/arcade/board.js"></script>
   <script>
@@ -1166,7 +1166,6 @@
         LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, order: solveOrder.slice() }));
         renderWallet();
       }
-      if (!ARCHIVE && window.RTGHistory) RTGHistory.push('match', won ? Math.round(finalTime) : null, won);
 
       // ---- cloud: post the run on a win (signed-in only; fail-open). Raw solve
       // time only; the server score formula adds its own per-mistake penalty. ----
@@ -1256,7 +1255,6 @@
       if (r.tester) { document.getElementById('resCountdown').innerHTML = ''; }
       else { startCountdown('resCountdown'); }
       updateAgainBtn();
-      if (window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'match');
       document.getElementById('resultModal').hidden = false;
       window._lastResult = r;
       // celebration: confetti on a fresh win (denser + gold-heavy when flawless / milestone)
@@ -1472,8 +1470,8 @@
     }
     function updateAgainBtn() {
       var b = document.getElementById('mAgain'); if (!b) return;
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { b.textContent = 'No plays left today'; b.disabled = true; b.style.opacity = '.55'; b.style.cursor = 'default'; }
-      else { b.textContent = 'Play again'; b.disabled = false; b.style.opacity = ''; b.style.cursor = 'pointer'; }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { b.textContent = 'No plays left today'; b.disabled = true; b.classList.add('spent'); }
+      else { b.textContent = 'Play again'; b.disabled = false; b.classList.remove('spent'); }
     }
     function beginAttempt() {
       // Ranked first play = the daily board; every replay is a fresh random board.

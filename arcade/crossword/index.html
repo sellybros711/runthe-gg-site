@@ -34,6 +34,8 @@
   --coralT:#F06A5F; --goldT:#F2B632; --redT:#FF625F;
   /* inverse chrome (toast) */
   --inv-bg:#F4F7FB; --inv-ink:#071426;
+  /* primary modal button: steel accent (theme-aware) */
+  --btnP:#DCE3EC; --btnP-ink:#0D1B2C;
   /* text aliases (kept for existing rules) */
   --cream:#F4F7FB; --cream-dim:#A9B8CB; --gold-bright:#F06A5F;
   /* ---- crossword grid cells: constant in BOTH themes (paper-white grid) ---- */
@@ -53,6 +55,7 @@
   --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
   --coralT:#D8452F; --goldT:#A87508; --redT:#C4372C;
   --inv-bg:#0D1B2C; --inv-ink:#F4F7FB;
+  --btnP:#33475C; --btnP-ink:#FFFFFF;
   --cream:#0D1B2C; --cream-dim:#51637A; --gold-bright:#D8452F;
   --shadow:0 6px 18px -12px rgba(13,27,44,.25);
 }
@@ -79,8 +82,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .brand .b2{color:var(--coralT);}
 .brand .sub{display:block; font-family:var(--pix); font-size:8px; font-style:normal; letter-spacing:2px; color:var(--mut); margin-top:3px; font-weight:800;}
 .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; text-decoration:none;}
-.brand.logo img{height:26px; width:auto; display:block;}
-.brand.logo .sub{margin-top:5px; margin-left:2px;}
+.brand.logo img{height:44px; width:auto; display:block;}
+.brand.logo .sub{margin-top:4px; margin-left:2px;}
 .spacer{flex:1;}
 .chip{display:flex; flex-direction:column; align-items:center; gap:1px; background:var(--card); flex:0 0 auto;
   border:1px solid var(--line2); border-radius:10px; padding:5px 10px; box-shadow:var(--shadow); min-width:54px;}
@@ -185,7 +188,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .statgrid .k{font-size:9px; letter-spacing:1px; color:var(--mut); text-transform:uppercase; margin-top:4px; font-weight:700;}
 .modal .btn{width:100%; border:0; border-radius:12px; padding:13px; font-family:var(--pix); font-weight:800; font-size:14px;
   letter-spacing:.5px; margin-top:8px; box-shadow:var(--shadow); color:var(--ink);}
-.modal .btn.gold{background:var(--coral); color:#071426; box-shadow:0 12px 24px -14px var(--coral);}
+.modal .btn.gold{background:var(--btnP); color:var(--btnP-ink); box-shadow:0 12px 24px -14px var(--btnP);}
+.modal .btn.spent{background:var(--panel2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; opacity:1;}
 .modal .btn.ghost{background:var(--card); border:1px solid var(--line2); color:var(--ink); box-shadow:none;}
 .share-grid{font-family:monospace; font-size:22px; line-height:1.05; letter-spacing:2px; margin:2px 0 16px;}
 
@@ -343,7 +347,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     <div class="share-grid" id="mShareGrid"></div>
     <div class="milestone" id="mMilestone"></div>
     <div class="countdown" id="mCountdown"></div>
-    <div id="rtgHist"></div>
     <button class="btn gold" id="mAgain">Play again</button>
     <button class="btn gold" id="mShare">Share result</button>
     <button class="btn ghost" id="mStats">Stats</button>
@@ -379,7 +382,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 <script src="/arcade/sfx.js"></script>
 <script src="/arcade/tokens.js"></script>
 <script src="/arcade/archive.js"></script>
-<script src="/arcade/history.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js"></script>
 <script src="/arcade/howto.js"></script>
@@ -802,7 +804,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       save(s);
       milestone = streakMilestone(s.streak);
     }
-    if(!ARCHIVE && !TESTER && window.RTGHistory) RTGHistory.push('crossword', Math.round(elapsed), true);
     document.getElementById('streakN').textContent = s.streak||0;
 
     // fill modal
@@ -816,7 +817,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     // ranked = the day's first (ranked) attempt; extra plays are practice only
     document.getElementById('mSub').textContent = attemptFirst ? 'Nice grid. Your streak lives another day.' : 'Practice — not ranked';
     updateAgainBtn();
-    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'crossword');
 
     // ---- cloud: post the run (signed-in only; fail-open). Cloud streak wins. ----
     if(window.RTG_BOARD && !TESTER && !ARCHIVE && attemptFirst){
@@ -1069,9 +1069,9 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
     if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){
-      b.textContent='No plays left today'; b.disabled=true; b.style.opacity='.55'; b.style.cursor='default';
+      b.textContent='No plays left today'; b.disabled=true; b.classList.add('spent');
     } else {
-      b.textContent='Play again'; b.disabled=false; b.style.opacity=''; b.style.cursor='pointer';
+      b.textContent='Play again'; b.disabled=false; b.classList.remove('spent');
     }
   }
   // clear this puzzle's entries and start a fresh attempt on the SAME daily grid
@@ -1140,7 +1140,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     document.getElementById('mFlawless').classList.remove('on');
     var mm=document.getElementById('mMilestone'); if(mm){ mm.textContent=''; mm.classList.remove('on'); }
     updateAgainBtn();
-    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'crossword');
     startCountdown('mCountdown');
     document.getElementById('scrim').classList.remove('hidden');
   }
