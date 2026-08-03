@@ -4749,6 +4749,7 @@ $('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))closeSheet();})
 function newRun(opts){
   submitted=null;
   myRanks=null;
+  myGmRank=null;
   lastPerfectShare=null;
   pendingChallenge=false;   // any new run cancels a pending Challenge Bowl; the challenge
                             // draft re-arms it immediately after beginDraft().
@@ -6352,10 +6353,39 @@ function gmScoutingReport(run){
    than taking a parameter so the GM report and the strip can never show different
    placings for the same run. */
 function gmRankChip(){
-  const w=myRanks&&myRanks.all;
+  const w=myGmRank;
   if(!w||!w.rank) return '';
   return '<b'+(w.rank===1?' class="first"':'')+'>#'+w.rank.toLocaleString()+'</b> of '+
     w.total.toLocaleString()+' all time';
+}
+
+/*
+ * WHERE THIS GM RATING PLACES, on the GM-rating axis.
+ *
+ * Its own query, because none of the three placings on the results page answers this: they
+ * are record ranks, and the GM rating is a different axis with a different order (a 14-6
+ * season can out-rank a 9-8 on the record and lose to it here). Read against the all-time
+ * trade board, named rows only, which is the same population the leaderboard places you in.
+ *
+ * Fired and left to settle rather than awaited: it is one number in a chip, and the report
+ * around it must not wait on a network call. Fails soft to nothing, like every other read
+ * here -- a missing chip says less than a wrong one.
+ */
+async function loadGmRank(){
+  myGmRank=null;
+  if(!run||!run.tradeMachine||!run.outcome) return;
+  const v=run.outcome.gmRating;
+  if(v===null||v===undefined) return;
+  const sc={mode:'trade',win:'all',named:true};
+  try{
+    const [place,total]=await Promise.all([B.placeIn(sc,'gm','desc',Number(v)),B.total(sc)]);
+    if(place===null||total===null) return;
+    myGmRank={rank:place,total:Math.max(total,place)};
+  }catch(e){ return; }
+  /* Repaint just the chip. The report is already on screen by now and nothing else in it
+     depends on this. */
+  const gr=$('gmp-rank');
+  if(gr) gr.innerHTML=gmRankChip();
 }
 
 function paintGmParts(p,gm){
@@ -10346,6 +10376,12 @@ let lastPerfectShare=null;
 /* Submitted once per run, however many times the results page repaints. */
 let submitted=null;      // the row id, or false once a submit has failed
 let myRanks=null;
+/* The GM-rating placing, which is NOT one of the three in myRanks. Those come from
+   B.ranks(B.scoreOf(...)), a RECORD rank, in every mode including this one — so showing one
+   beside the GM rating would have read as "your GM rating ranks 3rd" while actually saying
+   "your record ranks 3rd". Fetched on its own axis instead. Null until it lands, or when the
+   run has no GM rating to place. */
+let myGmRank=null;
 
 /* THE BOARD IS FOR SIGNED-IN PLAYERS.
    Guest runs used to go on it as "Anonymous", which is a leaderboard nobody can be proud of
@@ -10541,11 +10577,8 @@ function paintRankStrip(r){
     tmp.innerHTML=rankCell(k,label,r&&r[k]?r[k]:false);
     at.replaceWith(tmp.firstChild);
   });
-  /* The GM report carries the all-time placing beside its headline number, and it is
-     filled here for the same reason the cells above are: the board answers after the
-     panel paints. */
-  const gr=$('gmp-rank');
-  if(gr) gr.innerHTML=gmRankChip();
+  /* The GM report's chip is NOT filled from here. These three cells are record ranks and
+     that chip is a GM-rating rank, so it has its own read: see loadGmRank(). */
 }
 
 /* Tapping a placing opens the board on that window, sorted by record rather than by
@@ -10588,6 +10621,9 @@ async function paintRanks(){
      painted the instant the READ returns, and when the submit lands it repaints only the
      parts that depend on it. */
   const submitP=recordRun();
+  /* The GM-rating placing is a separate axis and a separate read, so it goes out alongside
+     rather than after, and is not awaited: the panel below must not wait on a chip. */
+  loadGmRank();
   const r=await B.ranks(score,runMode(),run.franchise||null,run.era||null);
   myRanks=r;
 
@@ -11600,7 +11636,7 @@ $('b-lb-dir').onclick=()=>{ lbDir=lbDir==='asc'?'desc':'asc'; ga('board_sort',{s
 function endRun(){
   clearTimeout(simTimer); clearTimeout(poTimer); cancelAnimationFrame(poRaf); poSkip=null;
   run=null; lastChem=1;
-  submitted=null; myRanks=null; lastPerfectShare=null;
+  submitted=null; myRanks=null; myGmRank=null; lastPerfectShare=null;
   /* After run=null, so it reads the absence of a run rather than the team that just left. */
   dressTeam();
 }
