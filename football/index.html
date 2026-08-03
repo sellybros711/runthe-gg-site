@@ -1026,7 +1026,7 @@ window.GA_ID='G-L29P5MRWKE';
     margin-bottom:7px}
   .tt-eye{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.11em;
     text-transform:uppercase;color:var(--dim)}
-  .tt.changed .tt-eye{color:#fbbf24}
+  .tt.changed .tt-eye{color:var(--ink)}
   .tt-cap{font-family:var(--fn);font-size:11px;display:flex;align-items:baseline;gap:6px;
     white-space:nowrap}
   .tt-cap .tc-spent{color:var(--ink);font-weight:600}
@@ -1036,17 +1036,17 @@ window.GA_ID='G-L29P5MRWKE';
   .tt-cap .tc-d.up{color:#4ade80} .tt-cap .tc-d.dn{color:#fca5a5}
   /* The ceiling the deal would leave you on, when cash is changing hands. Amber, the colour
      this mode uses for money going out that does not come back. */
-  .tt-cap .tc-cash{color:#fbbf24;font-weight:700}
+  .tt-cap .tc-cash{color:var(--ink);font-weight:700}
 
   /* CASH ON TOP. Its own row on the deal, not a footer number, because it is a permanent
      charge against the ceiling rather than another line of payroll. */
   .deal-cash{display:flex;align-items:baseline;gap:8px;margin:7px 10px 0;padding:7px 9px;
-    border-radius:8px;font-size:11.5px;line-height:1.35;color:#fde68a;
-    background:linear-gradient(180deg,rgba(245,158,11,.16),rgba(245,158,11,.07));
-    border:1px solid rgba(245,158,11,.5)}
+    border-radius:8px;font-size:11.5px;line-height:1.35;color:var(--ink);
+    background:linear-gradient(180deg,rgba(148,163,184,.16),rgba(148,163,184,.07));
+    border:1px solid rgba(148,163,184,.5)}
   .deal-cash .dcash-n{flex:0 0 auto;font-family:var(--fd);font-size:17px;font-weight:700;
-    color:#fcd34d;line-height:1}
-  .deal-cash b{color:#fcd34d}
+    color:var(--ink);line-height:1}
+  .deal-cash b{color:var(--ink)}
   /* Retained salary (a seller eating a slice of the contract) and a market gone cold on a
      re-shopped man. Quieter than cash: notes on the deal, not charges against the ceiling. */
   .deal-retain{margin:7px 10px 0;padding:6px 9px;border-radius:8px;font-size:11.5px;
@@ -1060,7 +1060,7 @@ window.GA_ID='G-L29P5MRWKE';
      them. A contender pays up; a rebuilder sells and retains. */
   .dn-stance{font-family:var(--fn);font-size:10px;font-weight:600;letter-spacing:.06em;
     text-transform:uppercase;color:var(--dim-2);margin-top:1px}
-  .dn-stance.contender{color:#fbbf24}
+  .dn-stance.contender{color:var(--ink)}
   .dn-stance.rebuilding{color:#94a3b8}
   /* Cash coming IN: the seller's mirror of .deal-cash, green because it grows the ceiling. */
   .deal-cashin{display:flex;align-items:baseline;gap:8px;margin:7px 10px 0;padding:7px 9px;
@@ -1119,8 +1119,8 @@ window.GA_ID='G-L29P5MRWKE';
     .tt-cap{margin-top:3px}
   }
   .tt-note{margin-top:7px;padding-top:6px;border-top:1px solid var(--line-2);
-    font-size:11px;line-height:1.35;color:#fcd34d}
-  .tt-note b{color:#fde68a}
+    font-size:11px;line-height:1.35;color:var(--ink)}
+  .tt-note b{color:var(--ink)}
 
   /* ─── ONE DEAL AT A TIME ─────────────────────────────────────────────────────────────
      Four offers used to be four stacked cards, which meant scrolling past three deals to
@@ -1136,13 +1136,13 @@ window.GA_ID='G-L29P5MRWKE';
     background:rgba(255,255,255,.05);color:var(--ink);font-size:19px;line-height:1;
     display:flex;align-items:center;justify-content:center;cursor:pointer;
     transition:background .12s,border-color .12s,transform .1s}
-  .dn-btn:hover:not(:disabled){background:rgba(251,191,36,.14);border-color:rgba(251,191,36,.5)}
+  .dn-btn:hover:not(:disabled){background:rgba(148,163,184,.14);border-color:rgba(148,163,184,.5)}
   .dn-btn:active:not(:disabled){transform:scale(.92)}
   .dn-btn:disabled{opacity:.28;cursor:default}
   .dn-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
   .dn-mid{min-width:0;text-align:center}
   .dn-count{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.12em;
-    text-transform:uppercase;color:#fbbf24}
+    text-transform:uppercase;color:var(--ink)}
   .dn-partner{font-family:var(--fp);font-size:14px;font-weight:700;color:var(--ink);
     line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .dn-shape{font-family:var(--fn);font-size:10px;color:var(--dim-2);letter-spacing:.04em}
@@ -1150,11 +1150,11 @@ window.GA_ID='G-L29P5MRWKE';
   .deal-dots{display:flex;justify-content:center;gap:5px;padding:6px 0 0}
   .deal-dots i{width:6px;height:6px;border-radius:50%;background:rgba(148,163,184,.35);
     transition:background .15s,transform .15s}
-  .deal-dots i.on{background:#fbbf24;transform:scale(1.35)}
+  .deal-dots i.on{background:var(--ink);transform:scale(1.35)}
   .deal-ask{margin:7px 10px 0;padding:6px 9px;border-radius:8px;font-size:11.5px;
-    line-height:1.35;color:#fde68a;background:rgba(245,158,11,.12);
-    border:1px solid rgba(245,158,11,.4)}
-  .deal-ask b{color:#fcd34d}
+    line-height:1.35;color:var(--ink);background:rgba(148,163,184,.12);
+    border:1px solid rgba(148,163,184,.4)}
+  .deal-ask b{color:var(--ink)}
   /* GIVE ON THE LEFT, GET ON THE RIGHT, always, however many men are on each side. */
   .deal-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 10px 0}
   .dc{min-width:0;display:flex;flex-direction:column;gap:5px}
@@ -1178,8 +1178,8 @@ window.GA_ID='G-L29P5MRWKE';
   /* Leaving, so it reads as a loss without needing a label. */
   .tile.mini.going{border-color:rgba(239,68,68,.4);background:linear-gradient(180deg,rgba(239,68,68,.07),rgba(0,0,0,.25))}
   .tile.mini.going .nm{color:#fecaca}
-  .tile.mini.asked{border-color:rgba(245,158,11,.6)}
-  .tile.mini.asked .nm{color:#fcd34d}
+  .tile.mini.asked{border-color:rgba(148,163,184,.6)}
+  .tile.mini.asked .nm{color:var(--ink)}
   .tile.mini.coming{border-color:rgba(34,197,94,.4);background:linear-gradient(180deg,rgba(34,197,94,.07),rgba(0,0,0,.25))}
   .tile.mini.coming .nm{color:#bbf7d0}
   /* The free agent a consolidation leaves you to sign: a slot, not a player, so it is drawn
@@ -1243,11 +1243,11 @@ window.GA_ID='G-L29P5MRWKE';
   .headline.on{opacity:1}
   .headline.hot{color:#22c55e;border-color:rgba(34,197,94,.4)}
   .headline.cold{color:var(--red);border-color:rgba(239,68,68,.4)}
-  .headline.big{color:#fbbf24;border-color:rgba(251,191,36,.4)}
+  .headline.big{color:var(--ink);border-color:rgba(148,163,184,.4)}
   .headline.neutral{color:var(--dim)}
 
   .gm-badge{margin-top:12px;text-align:center}
-  .gm-badge .gm-val{font-family:var(--fd);font-size:36px;font-weight:700;color:#fbbf24}
+  .gm-badge .gm-val{font-family:var(--fd);font-size:36px;font-weight:700;color:var(--ink)}
   .gm-badge .gm-lbl{font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.1em;
     text-transform:uppercase;color:var(--dim);margin-top:2px}
 
@@ -1338,7 +1338,7 @@ window.GA_ID='G-L29P5MRWKE';
   .ach.off{border-color:var(--line-2);background:rgba(148,163,184,.05);opacity:.55}
   .ach.off .ach-n{color:var(--dim)}
   .gmp-top{display:flex;align-items:baseline;gap:8px;margin:2px 0 10px}
-  .gmp-num{font-family:var(--fd);font-size:34px;font-weight:700;color:#fbbf24;line-height:1}
+  .gmp-num{font-family:var(--fd);font-size:34px;font-weight:700;color:var(--ink);line-height:1}
   /* Where this GM rating sits among every GM rating ever posted, on the same line as the
      number it ranks. Filled in by paintRankStrip when the board answers, so it appears
      with the placings in the hero strip rather than holding this panel hostage. */
@@ -1349,17 +1349,20 @@ window.GA_ID='G-L29P5MRWKE';
   .tmi-row{display:grid;grid-template-columns:74px minmax(0,1fr);gap:10px;padding:8px 0;
     border-top:1px solid rgba(148,163,184,.14);font-size:12.5px;line-height:1.5;color:var(--ink)}
   .tmi-row:first-of-type{border-top:0}
+  /* Rules accent follows the player's club (teamInk, lightened to clear the dark card),
+     falling back to plain ink when no club is chosen. The rest of the Trade Machine stays
+     neutral; only this sheet wears your colours. */
   .tmi-k{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.07em;
-    text-transform:uppercase;color:#fbbf24;padding-top:2px}
-  .tmi-row b{color:#fcd34d}
+    text-transform:uppercase;color:var(--rules-accent,var(--ink));padding-top:2px}
+  .tmi-row b{color:var(--rules-accent,var(--ink))}
   /* "Remember the rules": an inline link on the reveal sub-line, so a returning GM who no
      longer gets the popup can still pull it up. Quiet -- it is a footnote, not an action. */
   .rv-rules{display:inline;padding:0;margin-left:6px;border:0;background:none;cursor:pointer;
-    font:inherit;font-size:12px;font-weight:700;color:#fbbf24;text-decoration:underline;
+    font:inherit;font-size:12px;font-weight:700;color:var(--ink);text-decoration:underline;
     text-underline-offset:2px}
-  .rv-rules:hover{color:#fcd34d}
+  .rv-rules:hover{color:var(--ink)}
   .gmp-rank b{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--ink)}
-  .gmp-rank b.first{color:#fbbf24}
+  .gmp-rank b.first{color:var(--ink)}
   .gmp-cap{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.09em;
     text-transform:uppercase;color:var(--dim-2)}
   .gmp-row{padding:8px 0}
@@ -1370,10 +1373,10 @@ window.GA_ID='G-L29P5MRWKE';
   .gmp-w{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.05em;
     text-transform:uppercase;color:var(--dim-2)}
   .gmp-v{margin-left:auto;font-family:var(--fd);font-size:19px;line-height:1}
-  .gmp-v.hi{color:#22c55e} .gmp-v.mid{color:#fbbf24} .gmp-v.lo{color:var(--red)}
+  .gmp-v.hi{color:#22c55e} .gmp-v.mid{color:var(--dim)} .gmp-v.lo{color:var(--red)}
   .gmp-bar{height:5px;border-radius:3px;background:rgba(148,163,184,.16);margin:5px 0 4px;overflow:hidden}
   .gmp-bar i{display:block;height:100%;border-radius:3px}
-  .gmp-bar i.hi{background:#22c55e} .gmp-bar i.mid{background:#fbbf24} .gmp-bar i.lo{background:var(--red)}
+  .gmp-bar i.hi{background:#22c55e} .gmp-bar i.mid{background:var(--dim)} .gmp-bar i.lo{background:var(--red)}
   .gmp-why{font-size:11.5px;color:var(--dim);line-height:1.35}
   /* Two notes now, and only one of them is a failure: unspent cap is a missed opportunity
      rather than a breach, so the red is reserved for actually going over. */
@@ -1384,7 +1387,7 @@ window.GA_ID='G-L29P5MRWKE';
     padding:8px 0;border-bottom:1px solid var(--line-2)}
   .trade-hist-row:last-child{border-bottom:none}
   .th-week{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.06em;
-    text-transform:uppercase;color:#fbbf24;white-space:nowrap;padding-top:2px}
+    text-transform:uppercase;color:var(--ink);white-space:nowrap;padding-top:2px}
   .th-detail{font-size:12.5px;color:var(--ink);line-height:1.4}
   .th-detail .th-out{color:var(--red)}
   .th-detail .th-in{color:#22c55e}
@@ -1402,17 +1405,17 @@ window.GA_ID='G-L29P5MRWKE';
   .rv-grade{flex-shrink:0;width:82px;height:82px;border-radius:16px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
     text-align:center;border:2px solid var(--line-2);
-    background:linear-gradient(160deg,rgba(251,191,36,.12),rgba(19,26,43,.4));
+    background:linear-gradient(160deg,rgba(148,163,184,.12),rgba(19,26,43,.4));
     transition:border-color .3s}
-  .rv-grade .g{font-family:var(--fd);font-size:42px;font-weight:700;line-height:1;color:#fbbf24}
+  .rv-grade .g{font-family:var(--fd);font-size:42px;font-weight:700;line-height:1;color:var(--ink)}
   .rv-grade .l{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.1em;
     text-transform:uppercase;color:var(--dim)}
   .rv-grade.mystery{border-color:var(--line-2)}
   .rv-grade.mystery .g{color:var(--dim-2)}
-  .rv-grade.graded{border-color:rgba(251,191,36,.55)}
+  .rv-grade.graded{border-color:rgba(148,163,184,.55)}
   .rv-grade.graded .g{animation:rvgradeIn .55s cubic-bezier(.2,.7,.3,1)}
   .rv-head .rv-verdict{font-family:var(--fb);font-size:13.5px;line-height:1.45;color:var(--ink)}
-  .rv-head .rv-verdict b{color:#fbbf24}
+  .rv-head .rv-verdict b{color:var(--ink)}
   .rv-roster{display:flex;flex-direction:column;gap:6px;margin-top:10px}
   .rv-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;
     align-items:center;padding:9px 11px;border-radius:10px;border:1.5px solid var(--line-2);
@@ -1429,24 +1432,24 @@ window.GA_ID='G-L29P5MRWKE';
   .rv-card .rv-fppg{font-family:var(--fd);font-size:19px;color:var(--ink);line-height:1}
   .rv-card .rv-money{font-size:10.5px;color:var(--dim)}
   .rv-award{font-family:var(--fn);font-size:8.5px;font-weight:800;letter-spacing:.04em;
-    text-transform:uppercase;padding:2px 5px;border-radius:4px;background:rgba(251,191,36,.18);
-    color:#fbbf24;flex-shrink:0}
+    text-transform:uppercase;padding:2px 5px;border-radius:4px;background:rgba(148,163,184,.18);
+    color:var(--ink);flex-shrink:0}
   /* The best player on the board gets the star treatment as he lands. */
-  .rv-card.top{border-color:rgba(251,191,36,.55);--rvglow:rgba(251,191,36,.5);
-    background:linear-gradient(150deg,rgba(251,191,36,.08),var(--panel))}
-  .rv-card.top .rv-fppg{color:#fbbf24}
+  .rv-card.top{border-color:rgba(148,163,184,.55);--rvglow:rgba(148,163,184,.5);
+    background:linear-gradient(150deg,rgba(148,163,184,.08),var(--panel))}
+  .rv-card.top .rv-fppg{color:var(--ink)}
   .rv-star{font-family:var(--fn);font-size:8.5px;font-weight:800;letter-spacing:.05em;
-    text-transform:uppercase;padding:2px 5px;border-radius:4px;background:#fbbf24;color:#111827;flex-shrink:0}
+    text-transform:uppercase;padding:2px 5px;border-radius:4px;background:var(--ink);color:#111827;flex-shrink:0}
   .rv-skip{display:block;margin:12px auto 0;color:var(--dim);font-size:12px;
     text-decoration:underline;text-underline-offset:3px}
   #field-rv .chip.rv-hidden{opacity:0}
   .rv-payoff{margin-top:6px}
   .rv-payoff #s-reveal .rv-head,.rv-payoff .rv-head{margin-top:8px}
   .gm-report{margin-top:14px;border-radius:12px;border:1.5px solid var(--line-2);
-    background:linear-gradient(180deg,rgba(251,191,36,.05),transparent);padding:13px 14px}
+    background:linear-gradient(180deg,rgba(148,163,184,.05),transparent);padding:13px 14px}
   .gm-report .gm-eye{font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.1em;
-    text-transform:uppercase;color:#fbbf24;margin-bottom:9px;display:flex;align-items:center;gap:7px}
-  .gm-report .gm-eye::before{content:"";width:16px;height:2px;background:#fbbf24;border-radius:2px}
+    text-transform:uppercase;color:var(--ink);margin-bottom:9px;display:flex;align-items:center;gap:7px}
+  .gm-report .gm-eye::before{content:"";width:16px;height:2px;background:var(--ink);border-radius:2px}
   .gm-line{display:flex;gap:9px;align-items:baseline;padding:5px 0;font-size:13px;line-height:1.4}
   .gm-line+.gm-line{border-top:1px solid rgba(148,163,184,.12)}
   .gm-line .gk{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.06em;
@@ -1465,7 +1468,7 @@ window.GA_ID='G-L29P5MRWKE';
   .roster-panel>summary .rp-eye{font-family:var(--fn);font-size:11px;font-weight:700;
     letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
   .roster-panel>summary .rp-cap{margin-left:auto;font-family:var(--fn);font-size:11px;font-weight:700}
-  .roster-panel>summary .rp-cap .rp-spent{color:#fbbf24}
+  .roster-panel>summary .rp-cap .rp-spent{color:var(--ink)}
   .roster-panel>summary .rp-cap .rp-room{color:var(--dim);margin-left:5px}
   .rp-room.over{color:#fca5a5;font-weight:800}
   .rp-cut{font-size:11.5px;color:#fca5a5;padding:8px 11px 2px;line-height:1.35}
@@ -1485,9 +1488,9 @@ window.GA_ID='G-L29P5MRWKE';
   .rp-row .rp-fppg span{font-size:9.5px;color:var(--dim);display:block;font-family:var(--fn)}
 
   /* Trade finder: the shopping list (tap up to two), and the market header. */
-  .tw-rise{border-radius:9px;border:1px solid rgba(251,191,36,.28);background:rgba(251,191,36,.07);
+  .tw-rise{border-radius:9px;border:1px solid rgba(148,163,184,.28);background:rgba(148,163,184,.07);
     padding:8px 11px;margin:0 0 10px;font-size:12px;line-height:1.4;color:var(--dim)}
-  .tw-rise b{color:#fbbf24}
+  .tw-rise b{color:var(--ink)}
   /* OVER THE CAP READS AS OVER THE CAP. A thicker left rule, red rather than amber, and the
      figures in red: at a glance it is a different KIND of message from "prices went up",
      which is what it always was and never looked like. */
@@ -1499,9 +1502,9 @@ window.GA_ID='G-L29P5MRWKE';
   .shop-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;
     padding:10px 11px;border-radius:10px;border:1.5px solid var(--line-2);background:var(--panel);
     cursor:pointer;transition:border-color .12s,box-shadow .12s}
-  .shop-row:hover{border-color:rgba(251,191,36,.4)}
-  .shop-row.picked{border-color:#fbbf24;box-shadow:inset 0 0 0 1px #fbbf24;
-    background:linear-gradient(150deg,rgba(251,191,36,.08),var(--panel))}
+  .shop-row:hover{border-color:rgba(148,163,184,.4)}
+  .shop-row.picked{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);
+    background:linear-gradient(150deg,rgba(148,163,184,.08),var(--panel))}
   .shop-row .sh-pos{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.04em;
     text-transform:uppercase;padding:4px 7px;border-radius:6px;color:#fff;min-width:34px;text-align:center}
   .shop-row .sh-name-row{display:flex;align-items:center;gap:6px;min-width:0}
@@ -1512,17 +1515,17 @@ window.GA_ID='G-L29P5MRWKE';
   .shop-row .sh-fppg{font-family:var(--fd);font-size:16px;color:var(--ink);line-height:1}
   .shop-row .sh-money{font-size:9.5px;color:var(--dim);font-family:var(--fn);letter-spacing:.04em}
   .shop-row .sh-tag{display:none;font-family:var(--fn);font-size:8px;font-weight:800;
-    letter-spacing:.06em;text-transform:uppercase;background:#fbbf24;color:#111827;padding:2px 5px;border-radius:4px;
+    letter-spacing:.06em;text-transform:uppercase;background:var(--ink);color:#111827;padding:2px 5px;border-radius:4px;
     flex-shrink:0}
   .shop-row.picked .sh-tag{display:inline-block}
-  .shop-row.picked .sh-fppg{color:#fbbf24}
+  .shop-row.picked .sh-fppg{color:var(--ink)}
   .shop-cap{margin-top:10px;font-family:var(--fn);font-size:11.5px;font-weight:700;color:var(--dim);text-align:center}
-  .shop-cap b{color:#fbbf24}
+  .shop-cap b{color:var(--ink)}
   /* Cap trouble is red wherever it is mentioned, so the colour means one thing across the
      whole mode rather than being decoration on each screen. */
   .shop-cap .over{color:#fca5a5} .shop-cap .over b{color:#fecaca}
   /* The market title names who is on the block, so the man leaving is emphasised there. */
-  #tw-title b{color:#fbbf24}
+  #tw-title b{color:var(--ink)}
   /* Kept from the old live preview: the cut screen still marks an arriving player NEW. */
   .rp-in{font-family:var(--fn);font-size:8.5px;font-weight:800;letter-spacing:.06em;
     background:#22c55e;color:#04210f;padding:1px 5px;border-radius:4px;margin-left:6px;vertical-align:middle}
@@ -1547,7 +1550,7 @@ window.GA_ID='G-L29P5MRWKE';
   body.trade-mode .squad-right .sr-price{font-family:var(--fd);font-size:14px;color:var(--ink);text-align:right}
   body.trade-mode .squad-right .sr-cap{display:flex;align-items:baseline;gap:3px;
     font-family:var(--fn);font-size:12px;font-weight:700;margin-bottom:6px;padding:0 2px}
-  body.trade-mode .squad-right .sr-cap-total{color:#fbbf24}
+  body.trade-mode .squad-right .sr-cap-total{color:var(--ink)}
   body.trade-mode .squad-right .sr-cap-limit{color:var(--dim-2)}
   body.trade-mode .squad-right .sr-cap-room{margin-left:auto;font-size:10px;font-weight:600;color:var(--dim)}
   body.trade-mode #s-squad .eyebrow{display:none}
@@ -3553,7 +3556,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
   <!-- TRADE MACHINE: the team reveal + GM scouting report before kickoff -->
   <div class="screen" id="s-reveal">
-    <div class="eyebrow" id="rv-eye" style="color:#fbbf24">Trade Machine: Week 1</div>
+    <div class="eyebrow" id="rv-eye" style="color:var(--ink)">Trade Machine: Week 1</div>
     <h2 class="display" style="font-size:26px;margin:4px 0 4px" id="rv-title">Your inherited roster</h2>
     <p class="dim" style="font-size:13px;margin:0 0 10px" id="rv-sub">Meet the six players you've been handed.
       <button type="button" class="rv-rules" id="b-rv-rules">Remember the rules</button></p>
@@ -3638,7 +3641,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   <!-- TRADE WINDOW: Proposal-based trade offers from rival GMs -->
   <!-- TRADE FINDER: pick who to shop, then the league answers with offers -->
   <div class="screen" id="s-trade">
-    <div class="eyebrow" id="tw-eye" style="color:#fbbf24">Trade window</div>
+    <div class="eyebrow" id="tw-eye" style="color:var(--ink)">Trade window</div>
     <h2 class="display" style="font-size:22px;margin:4px 0 4px" id="tw-title">Trade finder</h2>
     <p class="dim" style="font-size:13px;margin:0 0 8px" id="tw-sub">Pick one or two players to shop.</p>
     <div class="tw-rise" id="tw-rise" style="display:none"></div>
@@ -3692,7 +3695,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   </div>
 
   <div class="screen" id="s-fa">
-    <div class="eyebrow" style="color:#fbbf24">Free agency</div>
+    <div class="eyebrow" style="color:var(--ink)">Free agency</div>
     <h2 class="display" style="font-size:22px;margin:4px 0 4px">Sign a free agent</h2>
     <p class="dim" style="font-size:13px;margin:0 0 6px" id="fa-sub">Pick one to fill your empty roster spot.</p>
     <div class="fa-cards" id="fa-list"></div>
@@ -6074,7 +6077,12 @@ function beginTradeMachine(){
    read, no continuation). `cta` is the button label. */
 function tradeRulesHTML(cta){
   const row=(k,t)=>'<div class="tmi-row"><span class="tmi-k">'+k+'</span><span>'+t+'</span></div>';
-  return '<h3 class="display" style="font-size:20px;margin:0 0 4px">Welcome to the front office</h3>'+
+  /* The player's club sets the accent, if they have picked one for their profile. teamInk
+     is already lightened to stay legible on this card, so no team lands unreadable. */
+  const club=(typeof myClubCode==='function'&&myClubCode())||null;
+  const accent=club?E.teamInk(club):null;
+  return '<div'+(accent?' style="--rules-accent:'+accent+'"':'')+'>'+
+    '<h3 class="display" style="font-size:20px;margin:0 0 4px">Welcome to the front office</h3>'+
     '<p class="dim" style="font-size:12px;margin:0 0 10px">How the Trade Machine works. '+
       'Everything here is also said on the cards as you go.</p>'+
     row('The deal','Every GM starts with a rebuild. The league only deals rosters graded '+
@@ -6089,7 +6097,8 @@ function tradeRulesHTML(cta){
     row('The push','Push any offer once for a better deal. They sweeten, or they walk.')+
     row('The grade','Winning 30%, improvement 25%, dealmaking 25% (every deal is graded '+
       'against the best version of itself), value 20%. Going over the cap is a fine on top.')+
-    '<button class="btn" id="b-tmi-go" style="width:100%;margin-top:12px">'+esc(cta)+'</button>';
+    '<button class="btn" id="b-tmi-go" style="width:100%;margin-top:12px">'+esc(cta)+'</button>'+
+  '</div>';
 }
 function tradeIntro(go){
   let seen=false;
