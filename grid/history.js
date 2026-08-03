@@ -17,7 +17,7 @@
     table:     { unit:'in a row', fmt:idv,     accent:'var(--goldT,#F2B632)' },
     oddone:    { unit:'in a row', fmt:idv,     accent:'var(--violetT,#A982F3)' },
     career:    { unit:'in a row', fmt:idv,     accent:'var(--greenT,#48D17A)' },
-    rankit:    { unit:'time',     fmt:fmtTime, accent:'var(--pinkT,#F65C9C)' },
+    rankit:    { unit:'sets',     fmt:idv,     accent:'var(--pinkT,#F65C9C)' },
     crossword: { unit:'time',     fmt:fmtTime, accent:'var(--ink,#0D1B2C)' },
     wordsearch:{ unit:'time',     fmt:fmtTime, accent:'var(--tealT,#37C5D5)' },
     match:     { unit:'time',     fmt:fmtTime, accent:'var(--blue,#2F6BFF)' },

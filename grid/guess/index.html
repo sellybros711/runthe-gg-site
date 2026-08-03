@@ -83,7 +83,15 @@
   .ac button:last-child{border-bottom:0;}
   .ac button:hover,.ac button.hi{background:var(--card2);}
   .ac .s{font-size:10px; font-weight:900; letter-spacing:.06em; color:var(--mut); flex:0 0 auto; border:1px solid var(--line2); border-radius:5px; padding:2px 6px;}
-  .guessesLeft{text-align:center; font-size:11.5px; font-weight:800; letter-spacing:.04em; color:var(--mut); margin:2px 0 14px;}
+  .guessesLeft{text-align:center; font-size:11.5px; font-weight:800; letter-spacing:.04em; color:var(--mut); margin:2px 0 8px;}
+
+  /* clue: a compact cousin of .abtn that lives by the guesses-left line.
+     Revealed clues stack beneath it as quoted, muted lines. */
+  .cluewrap{text-align:center; margin:0 0 14px;}
+  .cluebtn{appearance:none; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-family:var(--f); font-weight:800; font-size:11.5px; border-radius:9px; padding:6px 12px; min-height:30px; display:inline-flex; align-items:center; justify-content:center; gap:5px; cursor:pointer; box-shadow:var(--shadow);}
+  .cluebtn:disabled{opacity:.55; cursor:default;}
+  #clues{margin-top:7px;}
+  #clues .clue{font-style:italic; font-size:12.5px; font-weight:600; color:var(--mut); line-height:1.45; margin-top:4px; animation:gin .25s ease;}
 
   /* the board.
      All eight rows are on the page from the first moment, empty, the way a
@@ -194,6 +202,11 @@
     <div class="ac" id="ac"></div>
   </div>
   <div class="guessesLeft" id="guessesLeft">8 guesses left</div>
+
+  <div class="cluewrap">
+    <button class="cluebtn" id="btnClue" type="button">🎭 Clue</button>
+    <div id="clues"></div>
+  </div>
 
   <div class="board">
     <div class="collab"><span>Team</span><span>Pos</span><span>Nat</span><span>Era</span><span>No.</span></div>
@@ -352,6 +365,52 @@
     return activeCols().map(function(c){ return c.cell(g,t); });
   }
 
+  /* ---- Clues: Masked-Singer-vague hints built from the target's own data.
+     Deliberately foggy — a clue never names a team, position or number value,
+     because earning those is what the five columns are for. Ordered vaguest
+     first; each press reveals the next one down. FREE players get 1 clue per
+     play; PRO is unlimited (same gating pattern as wordsearch's hint). */
+  function buildClues(t){
+    var c=[];
+    if(t.na && t.na.length) c.push("The name doubles as something you might find outside a stadium.");
+    if(t.decade && t.decade.length>=3) c.push("Longevity is part of the legend.");
+    if(t.hof) c.push("This player has a plaque in a very famous building.");
+    if(t.aw && t.aw.length && /mvp/i.test(t.aw.join(' '))) c.push("There's serious hardware on this player's shelf.");
+    if(t.ml && t.ml.length) c.push("Member of one of the most exclusive clubs in the sport.");
+    if(t.t && t.t.length===1) c.push("A one-uniform kind of career.");
+    else if(t.t && t.t.length>=4) c.push("This player's suitcase has seen a lot of team shops.");
+    if(t.dp===1) c.push("On draft night, this player's name was called before anyone else's.");
+    if(t.j && t.j.length && t.j[0]<=9) c.push("Wears a single digit.");
+    else if(t.j && t.j.length && t.j[0]>=90) c.push("The number on the jersey is way up there.");
+    // Always at least two clues. The era is already a column on the board, so
+    // pointing at the decade gives away nothing a first guess wouldn't.
+    var pd=primaryDecade(t);
+    if(c.length<2 && pd!=null) c.push("Fans of the '"+String(pd).slice(2)+"s know this one well.");
+    if(c.length<2) c.push("A name that comes up when fans argue about the greats.");
+    return c;
+  }
+  var CLUES=[], cluesUsed=0;
+  function isProClues(){ return !!(window.RTGTokens && RTGTokens.isPro()); }
+  function updateClueBtn(){
+    var b=document.getElementById('btnClue'); if(!b) return;
+    if(!isProClues() && cluesUsed>=1){ b.textContent='Clue used — Pro for more'; b.disabled=true; }
+    else if(cluesUsed>=CLUES.length){ b.textContent='No more clues'; b.disabled=true; }
+    else { b.textContent='🎭 Clue'; b.disabled=false; }
+  }
+  document.getElementById('btnClue').addEventListener('click', function(){
+    if(done) return;
+    // FREE players are capped at 1 clue per play; PRO is never blocked
+    if(!isProClues() && cluesUsed>=1){ toast('1 clue per play — Pro gets unlimited'); updateClueBtn(); return; }
+    if(cluesUsed>=CLUES.length){ toast('No more clues'); updateClueBtn(); return; }
+    startIfNeeded();
+    var d=document.createElement('div');
+    d.className='clue'; d.textContent='“'+CLUES[cluesUsed]+'”';
+    document.getElementById('clues').appendChild(d);
+    cluesUsed++;
+    if(window.RTGSound) RTGSound.key();
+    updateClueBtn();
+  });
+
   var guesses=[], done=false, won=false, started=false, startTs=0, tick=null, elapsed=0, charged=false, attemptFirst=false;
   var qEl=document.getElementById('q'), goEl=document.getElementById('go'), acEl=document.getElementById('ac');
 
@@ -451,6 +510,10 @@
     if(isReplay){ seedRandom(); } else { seedDaily(); servedDaily=true; }
     pickTarget();
     guesses=[]; done=false; won=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
+    // fresh target → fresh clue trail (replays and archive rounds included)
+    CLUES=buildClues(TARGET); cluesUsed=0;
+    var cl=document.getElementById('clues'); if(cl) cl.innerHTML='';
+    updateClueBtn();
     if(tick){ clearInterval(tick); tick=null; }
     buildBoard();
     document.getElementById('guessesLeft').textContent=MAX+' guesses left';
@@ -561,6 +624,7 @@
     buildBoard(); updateLead();
     done=true; qEl.disabled=true; goEl.disabled=true; qEl.placeholder='Come back tomorrow';
     document.getElementById('guessesLeft').textContent='No plays left — back tomorrow.';
+    var cb=document.getElementById('btnClue'); if(cb) cb.disabled=true;
     var w=sv.last.won;
     var tt=document.getElementById('mTitle'); tt.textContent=w?'SOLVED':'SO CLOSE'; tt.className=w?'win':'lose';
     document.getElementById('mSub').textContent = w ? ('In '+sv.last.guesses+' guess'+(sv.last.guesses===1?'':'es')) : 'The answer was';

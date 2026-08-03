@@ -11,7 +11,7 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Rank It: a daily sports ordering puzzle. Put five athletes in order by the era they starred in, earliest to most recent." />
+<meta name="description" content="Rank It: a daily sports ranking streak game. Put five athletes in the right order by era or career stats — clear the set, get a new one. One wrong order ends your run." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -57,6 +57,16 @@
   .chip{display:inline-flex; flex-direction:column; align-items:center; justify-content:center; min-width:48px; padding:5px 8px; border:1px solid var(--line2); border-radius:9px; background:var(--card); box-shadow:var(--shadow); flex:0 0 auto;}
   .chip .n{font-family:var(--hero); font-weight:400; font-size:17px; line-height:1; color:var(--coralT); font-variant-numeric:tabular-nums;}
   .chip .l{font-size:8px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); margin-top:4px;}
+
+  /* run banner */
+  .runbar{display:flex; align-items:center; gap:14px; background:var(--card); border:1px solid var(--line); border-left:5px solid var(--pink); border-radius:14px; padding:11px 15px; box-shadow:var(--shadow); margin-bottom:12px;}
+  .runbar .big{font-family:var(--hero); font-weight:400; font-size:38px; line-height:.9; color:var(--pinkT); font-variant-numeric:tabular-nums;}
+  .runbar .rl{min-width:0; flex:1;}
+  .runbar .rl .k{display:block; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
+  .runbar .rl .v{display:block; font-size:12.5px; color:var(--ink); margin-top:3px; font-weight:700;}
+  .runbar .best{flex:0 0 auto; text-align:right;}
+  .runbar .best .n{font-family:var(--hero); font-weight:400; font-size:22px; color:var(--mut); line-height:1;}
+  .runbar .best .c{display:block; font-size:8.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
 
   .lead{background:var(--card); border:1px solid var(--line); border-left:5px solid var(--pink); border-radius:14px; padding:12px 15px; box-shadow:var(--shadow); margin-bottom:14px;}
   .lead .k{display:block; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
@@ -113,9 +123,10 @@
   .scrim.hidden{display:none;}
   .sheet{width:100%; max-width:380px; background:var(--card); border:1px solid var(--line2); border-radius:16px; padding:22px 20px; position:relative; box-shadow:0 30px 80px -20px rgba(0,0,0,.7); margin:auto 0; text-align:center;}
   .sheet .x{position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-size:14px; cursor:pointer;}
-  .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:26px; margin:2px 0 2px; color:var(--greenT);}
+  .sheet .runbig{font-family:var(--hero); font-weight:400; font-size:60px; line-height:.9; color:var(--pinkT); margin:4px 0 0;}
+  .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:18px; margin:2px 0 2px; color:var(--ink);}
   .sheet .sub-h{font-size:12px; font-weight:800; color:var(--mut); margin-bottom:6px;}
-  .rstats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:14px 0 4px;}
+  .rstats{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:14px 0 4px;}
   .rstat{background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:11px 6px;}
   .rstat .v{font-family:var(--hero); font-weight:400; font-size:24px; line-height:1; color:var(--ink);}
   .rstat .l{font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); margin-top:5px;}
@@ -148,41 +159,47 @@
     <div class="chip"><span class="n" id="streakN">0</span><span class="l">Streak</span></div>
   </div>
 
-  <div class="lead"><span class="k" id="axisLabel">Today's order</span><span class="v" id="prompt">Put these five in order by the era they starred in.</span></div>
+  <div class="runbar">
+    <div class="big" id="runN">0</div>
+    <div class="rl"><span class="k">Sets cleared today</span><span class="v" id="runSub">Rank all five right to clear the set. One wrong order ends your run.</span></div>
+    <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
+  </div>
 
-  <div class="axis"><span>↑ Earliest</span><span id="checkInfo"></span><span>Most recent ↓</span></div>
+  <div class="lead"><span class="k" id="axisLabel">Set 1</span><span class="v" id="prompt">Rank by the era they starred in — <b>earliest</b> era at the top.</span></div>
+
+  <div class="axis"><span id="axTop">↑ Earliest</span><span id="axBot">Most recent ↓</span></div>
   <div class="rows" id="rows"></div>
 
   <div class="actions"><button class="checkbtn" id="checkBtn" type="button">Check order</button></div>
-  <div class="hintline" id="hintline">Drag a row or use the arrows to reorder, then check.</div>
+  <div class="hintline" id="hintline">Drag a row or use the arrows to reorder, then check. One wrong order ends your run.</div>
 
   <div class="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Your time today</span><span class="big" id="yourTm">—</span></div>
-      <div class="box"><span class="cap">Your best</span><span class="big" id="yourBest">—</span></div>
+      <div class="box me"><span class="cap">Your run today</span><span class="big" id="yourTm">—</span></div>
+      <div class="box"><span class="cap">Best run</span><span class="big" id="yourBest">—</span></div>
     </div>
     <div class="lb-sample" id="lbSample">
       <div class="lb-samplab">Illustrative ranking</div>
-      <div class="row"><span class="rk">1</span><span class="who">gridiron_gary</span><span class="tm">0:24</span></div>
-      <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">0:41</span></div>
-      <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">1:03</span></div>
+      <div class="row"><span class="rk">1</span><span class="who">gridiron_gary</span><span class="tm">11 sets</span></div>
+      <div class="row"><span class="rk">2</span><span class="who">hoops_hana</span><span class="tm">8 sets</span></div>
+      <div class="row"><span class="rk">3</span><span class="who">puckluck</span><span class="tm">5 sets</span></div>
     </div>
-    <div class="note" id="lbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your time.</div>
+    <div class="note" id="lbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your run.</div>
   </div>
 
-  <div class="foot">A daily ordering puzzle inside <b>RunTheGrid</b> · <a href="/">RunThe.GG</a> · <a href="mailto:sellybros711@gmail.com?subject=RunTheGrid%20data%20error">Spot a data error? Tell us</a></div>
+  <div class="foot">A daily ranking streak game inside <b>RunTheGrid</b> · <a href="/">RunThe.GG</a> · <a href="mailto:sellybros711@gmail.com?subject=RunTheGrid%20data%20error">Spot a data error? Tell us</a></div>
 </div>
 
 <div class="scrim hidden" id="scrim">
   <div class="sheet">
     <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
-    <h2 id="mTitle">RANKED</h2>
-    <div class="sub-h" id="mSub">Perfect order</div>
+    <div class="sub-h" id="mSub">Your run ended</div>
+    <div class="runbig" id="mRun">0</div>
+    <h2 id="mTitle">SETS CLEARED</h2>
     <div class="rstats">
-      <div class="rstat"><div class="v" id="mTime">0:00</div><div class="l">Time</div></div>
-      <div class="rstat"><div class="v" id="mChecks">0</div><div class="l">Checks</div></div>
-      <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Streak</div></div>
+      <div class="rstat"><div class="v" id="mBest">0</div><div class="l">Best ever</div></div>
+      <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Day streak</div></div>
     </div>
     <div id="rtgHist"></div>
     <div class="rcta">
@@ -198,6 +215,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="../match/entities.js?v=12"></script>
+<script src="/grid/stats.js"></script>
 <script src="/grid/sfx.js"></script>
 <script src="/grid/tokens.js"></script>
 <script src="/grid/archive.js"></script>
@@ -208,8 +226,9 @@
 (function(){
   'use strict';
   var ENT = window.GRID_ENTITIES || [];
+  var STATS = window.RTG_STATS || {};
   var LS = window.localStorage;
-  var SAVE_KEY='rtg:rankit:v1', GAME='rankit', COUNT=5;
+  var SAVE_KEY='rtg:rankit:v2', GAME='rankit', COUNT=5, TOTAL_SETS=20;
   var TEAM_SPORTS={NBA:1,NFL:1,MLB:1,NHL:1,Soccer:1,WNBA:1};
 
   function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -218,7 +237,7 @@
   function xmur3(s){ var h=1779033703^s.length; for(var i=0;i<s.length;i++){ h=Math.imul(h^s.charCodeAt(i),3432918353); h=h<<13|h>>>19; } return function(){ h=Math.imul(h^h>>>16,2246822507); h=Math.imul(h^h>>>13,3266489909); return (h^=h>>>16)>>>0; }; }
   function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
   // First (ranked) play uses the deterministic daily seed so everyone gets the
-  // same board for the leaderboard. Replays reseed randomly for a fresh board.
+  // same run of sets for the leaderboard. Replays reseed randomly for a fresh run.
   var rng, servedDaily=false;
   function seedDaily(){ rng=mulberry32(xmur3('rankit-'+DATE)()); }
   function seedRandom(){ rng=mulberry32(((Math.random()*4294967296)>>>0)||1); }
@@ -228,43 +247,98 @@
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function primaryDecade(e){ return Math.min.apply(null, e.decade); }
 
-  // Build: five recognisable athletes, each from a DISTINCT decade, so ordering
-  // by era is strict and verifiable.
-  function buildDay(){
-    // recognisable modern athletes only (>=1960s) so ordering is a knowledge test,
-    // not obscure history.
-    var stars = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.decade && e.decade.length && (e.f||0)>=4 && primaryDecade(e)>=1960; });
-    var byDec={}; stars.forEach(function(e){ var d=primaryDecade(e); (byDec[d]=byDec[d]||[]).push(e); });
-    var decs=Object.keys(byDec).map(Number).filter(function(d){ return byDec[d].length>=2; }).sort(function(a,b){ return a-b; });
-    // pick FIVE CONSECUTIVE decades so the eras sit close together — telling
-    // adjacent decades apart from names alone is the hard part.
-    var chosenDecs;
-    if(decs.length>COUNT){ var start=ri(decs.length-COUNT+1); chosenDecs=decs.slice(start, start+COUNT); }
-    else { chosenDecs=decs.slice(0,COUNT); }
-    var answer=chosenDecs.map(function(d){ var arr=byDec[d]; return arr[ri(arr.length)]; });   // earliest -> latest
-    return { answer:answer };
-  }
-  var DAY=buildDay();
-  var ANSWER=DAY.answer;                          // correct order (earliest -> latest)
-  function isSolved(o){ return o.map(function(e){return e.id;}).join()===ANSWER.map(function(e){return e.id;}).join(); }
-  var order=shuffle(ANSWER);                      // current arrangement
-  for(var sg=0; sg<20 && isSolved(order); sg++) order=shuffle(ANSWER);   // never start pre-solved
+  // ---- pools ----
+  var byId={}; ENT.forEach(function(e){ byId[e.id]=e; });
+  // recognisable modern athletes only (>=1960s) for era sets
+  var STARS = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.decade && e.decade.length && (e.f||0)>=4 && primaryDecade(e)>=1960; });
+  // stat categories: hand-curated retired-player totals from grid/stats.js,
+  // kept only where the id resolves to a corpus entity that is not active.
+  var STAT_CATS=['nba_points','mlb_hr','nfl_passtd'].filter(function(c){ return STATS[c] && STATS[c].vals; });
+  var statPool={};
+  STAT_CATS=STAT_CATS.filter(function(c){
+    var ids=Object.keys(STATS[c].vals).filter(function(id){ var e=byId[id]; return e && e.act!==1; });
+    statPool[c]=ids; return ids.length>=COUNT;
+  });
 
-  var checks=0, done=false, started=false, startTs=0, elapsed=0, lastCheck=null, charged=false, attemptFirst=false;
+  // ---- set builders ----
+  // Era set: five athletes from five distinct decades, ordered earliest -> latest.
+  // easy=true spreads the decades far apart (span >= 40 years); otherwise the
+  // decades are consecutive, which is much harder to call from names alone.
+  function buildEraSet(easy){
+    var byDec={}; STARS.forEach(function(e){ var d=primaryDecade(e); (byDec[d]=byDec[d]||[]).push(e); });
+    var decs=Object.keys(byDec).map(Number).sort(function(a,b){ return a-b; });
+    var chosen=null;
+    if(easy && decs.length>COUNT){
+      for(var g=0; g<60 && !chosen; g++){
+        var pick=shuffle(decs).slice(0,COUNT).sort(function(a,b){ return a-b; });
+        if(pick[COUNT-1]-pick[0]>=40) chosen=pick;
+      }
+    }
+    if(!chosen){
+      if(decs.length>COUNT){ var st=ri(decs.length-COUNT+1); chosen=decs.slice(st, st+COUNT); }
+      else chosen=decs.slice(0,COUNT);
+    }
+    var answer=chosen.map(function(d){ var arr=byDec[d]; return arr[ri(arr.length)]; });   // earliest -> latest
+    return {
+      cat:'era', answer:answer,
+      lead:'Rank by the era they starred in — <b>earliest</b> era at the top.',
+      axisTop:'Earliest', axisBot:'Most recent',
+      val:function(e){ return "'"+String(primaryDecade(e)).slice(2)+"s"; }
+    };
+  }
+  // Stat set: five retired players from one category, ordered lowest -> highest.
+  // Adjacent totals must differ by >=5% so the ordering is never ambiguous.
+  function buildStatSet(cat){
+    var cfg=STATS[cat], pool=statPool[cat];
+    if(!cfg || !pool || pool.length<COUNT) return null;
+    for(var g=0; g<250; g++){
+      var picked=shuffle(pool).slice(0,COUNT).map(function(id){ return { e:byId[id], v:cfg.vals[id] }; })
+        .sort(function(a,b){ return a.v-b.v; });
+      var ok=true;
+      for(var i=1;i<COUNT;i++){ if(picked[i].v < picked[i-1].v*1.05){ ok=false; break; } }
+      if(!ok) continue;
+      var vmap={}; picked.forEach(function(p){ vmap[p.e.id]=p.v; });
+      return {
+        cat:cat, answer:picked.map(function(p){ return p.e; }),
+        lead:'Rank by '+cfg.label+' — <b>fewest</b> at the top.',
+        axisTop:'Fewest', axisBot:'Most',
+        val:function(e){ return Number(vmap[e.id]).toLocaleString('en-US')+' '+cfg.unit; }
+      };
+    }
+    return null;
+  }
+  // The whole run, built deterministically from the current seed: sets 1-2 are
+  // easy far-apart era sets, then stat categories rotate with tighter era sets.
+  function buildRun(){
+    var sets=[ buildEraSet(true), buildEraSet(true) ], k=0;
+    while(sets.length<TOTAL_SETS){
+      var slot=(sets.length-2)%3, S=null;
+      if(slot===2 || !STAT_CATS.length){ S=buildEraSet(false); }
+      else { S=buildStatSet(STAT_CATS[k%STAT_CATS.length]) || buildEraSet(false); k++; }
+      sets.push(S);
+    }
+    return sets;
+  }
+  var SETS=buildRun();
+
+  var run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, lastCheck=null, reveal=false, charged=false, attemptFirst=false;
+  var order=[];
   var rowsEl=document.getElementById('rows');
 
-  function eraLabel(e){ return "'"+String(primaryDecade(e)).slice(2)+"s"; }
+  function isSolvedFor(S,o){ return o.map(function(e){return e.id;}).join()===S.answer.map(function(e){return e.id;}).join(); }
   function metaLine(e){ return [e.sport, (e.t&&e.t[0])].filter(Boolean).join(' · '); }
+  function curSet(){ return SETS[Math.min(run, SETS.length-1)]; }
   function render(){
+    var S=curSet();
     rowsEl.innerHTML = order.map(function(e,i){
-      var cls='rrow'+(lastCheck?(lastCheck[i]?' correct':' wrong'):'')+(done?' show-era':'');
+      var cls='rrow'+(lastCheck?(lastCheck[i]?' correct':' wrong'):'')+(reveal?' show-era':'');
       return '<div class="ritem">'+
         '<span class="rord">'+(i+1)+'</span>'+
         '<div class="'+cls+'">'+
           '<div class="rmeta"><span class="nm">'+esc(e.name)+'</span><span class="sub">'+esc(metaLine(e))+'</span></div>'+
-          '<span class="era">'+eraLabel(e)+'</span>'+
-          '<span class="ctrl"><button data-mv="'+i+'" data-dir="-1" '+(i===0||done?'disabled':'')+' aria-label="Move up">▲</button>'+
-          '<button data-mv="'+i+'" data-dir="1" '+(i===order.length-1||done?'disabled':'')+' aria-label="Move down">▼</button></span>'+
+          '<span class="era">'+esc(S.val(e))+'</span>'+
+          '<span class="ctrl"><button data-mv="'+i+'" data-dir="-1" '+(i===0||done||busy?'disabled':'')+' aria-label="Move up">▲</button>'+
+          '<button data-mv="'+i+'" data-dir="1" '+(i===order.length-1||done||busy?'disabled':'')+' aria-label="Move down">▼</button></span>'+
         '</div>'+
       '</div>';
     }).join('');
@@ -273,11 +347,11 @@
   }
   // drag-to-reorder (pointer + touch), with the arrow buttons as a fallback
   function attachDrag(){
-    if(done) return;
+    if(done||busy) return;
     var items=[].slice.call(rowsEl.querySelectorAll('.ritem'));
     items.forEach(function(item){
       item.addEventListener('pointerdown', function(e){
-        if(done || e.button===2 || e.target.closest('.ctrl')) return;   // let arrows work
+        if(done || busy || e.button===2 || e.target.closest('.ctrl')) return;   // let arrows work
         e.preventDefault();
         var fromIdx=items.indexOf(item), startY=e.clientY, step=item.offsetHeight+9, target=fromIdx;
         try{ item.setPointerCapture(e.pointerId); }catch(_){}
@@ -304,97 +378,130 @@
     });
   }
   function move(i, dir){
-    if(done) return; var j=i+dir; if(j<0||j>=order.length) return;
+    if(done||busy) return; var j=i+dir; if(j<0||j>=order.length) return;
     startIfNeeded();
     var t=order[i]; order[i]=order[j]; order[j]=t;
     lastCheck=null;                                // clear stale feedback after a move
     if(window.RTGSound) RTGSound.place();
     render();
   }
+
+  function startSet(){
+    var S=curSet();
+    order=shuffle(S.answer);
+    for(var sg=0; sg<20 && isSolvedFor(S,order); sg++) order=shuffle(S.answer);   // never start pre-solved
+    lastCheck=null; reveal=false;
+    document.getElementById('axisLabel').textContent='Set '+(Math.min(run,SETS.length-1)+1)+' of '+SETS.length;
+    document.getElementById('prompt').innerHTML=S.lead;
+    document.getElementById('axTop').textContent='↑ '+S.axisTop;
+    document.getElementById('axBot').textContent=S.axisBot+' ↓';
+    render();
+  }
+
   document.getElementById('checkBtn').addEventListener('click', check);
   function check(){
-    if(done) return; startIfNeeded();
-    var correct=order.map(function(e,i){ return e.id===ANSWER[i].id; });
-    var right=correct.filter(Boolean).length;
-    lastCheck=correct; render();
-    if(right===COUNT){ finish(); return; }
-    checks++;
-    document.getElementById('checkInfo').textContent=right+' / '+COUNT+' in place';
-    if(window.RTGSound) RTGSound.wrong();
-    toast(right+' of '+COUNT+' in the right spot');
+    if(done||busy) return; startIfNeeded();
+    var S=curSet();
+    var correct=order.map(function(e,i){ return e.id===S.answer[i].id; });
+    var allRight=correct.every(Boolean);
+    lastCheck=correct; reveal=true; busy=true; render();
+    if(allRight){
+      // set cleared — count it and serve the next one
+      run++;
+      document.getElementById('runN').textContent=run;
+      if(window.RTGSound) RTGSound.lock();
+      toast('Set cleared!');
+      setTimeout(function(){
+        busy=false;
+        if(run>=SETS.length){ finish(); return; }   // cleared the whole run
+        startSet();
+      }, 1100);
+    } else {
+      // any wrong slot ends the run: reveal the values, then the correct order
+      if(window.RTGSound) RTGSound.wrong();
+      setTimeout(function(){
+        order=S.answer.slice();
+        lastCheck=order.map(function(){ return true; });
+        render();
+        setTimeout(function(){ busy=false; finish(); }, 900);
+      }, 1500);
+    }
   }
 
   function startIfNeeded(){ if(started||done) return;
     if(!charged){ if(ARCHIVE){ charged=true; attemptFirst=false; } else { var r=(window.RTGTokens?RTGTokens.startAttempt(GAME):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); } }
     started=true; startTs=performance.now(); }
-  function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
   function shiftDay(iso,d){ var x=new Date(iso+'T00:00:00'); x.setDate(x.getDate()+d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
   function load(){ if(ARCHIVE) return {}; try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
   function save(s){ if(ARCHIVE) return; try{ LS.setItem(SAVE_KEY,JSON.stringify(s)); }catch(e){} }   // archive plays never touch saved progress
 
   function updateHint(){ var h=document.getElementById('hintline'); if(!h) return;
     if(ARCHIVE){ h.textContent='Drag a row or use the arrows to reorder, then check. · Archive practice'; return; }
-    var lbl = window.RTGTokens ? (' · '+RTGTokens.label('rankit')+' today') : '';
-    h.textContent='Drag a row or use the arrows to reorder, then check.'+lbl; }
+    var lbl = window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '';
+    h.textContent='Drag a row or use the arrows to reorder, then check. One wrong order ends your run.'+lbl; }
   function beginAttempt(){
-    // Ranked first play = the daily board; every replay is a fresh random board.
+    // Ranked first play = the daily run of sets; every replay is a fresh random run.
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
-    if(isReplay){ seedRandom(); DAY=buildDay(); ANSWER=DAY.answer; } else { seedDaily(); DAY=buildDay(); ANSWER=DAY.answer; servedDaily=true; }
-    order=shuffle(ANSWER);
-    for(var sg2=0; sg2<20 && isSolved(order); sg2++) order=shuffle(ANSWER);   // never start pre-solved
-    checks=0; done=false; started=false; startTs=0; elapsed=0; lastCheck=null; charged=false; attemptFirst=false;
-    document.getElementById('checkInfo').textContent='';
+    if(isReplay){ seedRandom(); } else { seedDaily(); servedDaily=true; }
+    SETS=buildRun();
+    run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; lastCheck=null; reveal=false; charged=false; attemptFirst=false;
+    document.getElementById('runN').textContent='0';
     document.getElementById('checkBtn').disabled=false;
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
-    render(); updateHint();
+    startSet(); updateHint();
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
-    if(window.RTGTokens && !RTGTokens.canPlay('rankit')){ b.textContent='No plays left today'; b.disabled=true; b.style.opacity='.55'; b.style.cursor='default'; }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ b.textContent='No plays left today'; b.disabled=true; b.style.opacity='.55'; b.style.cursor='default'; }
     else { b.textContent='Play again'; b.disabled=false; b.style.opacity=''; b.style.cursor='pointer'; }
   }
 
   function finish(){
-    if(done) return; done=true;
+    if(done) return; done=true; busy=false;
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
-    if(window.RTGSound) RTGSound.lock();
-    render();
+    document.getElementById('checkBtn').disabled=true;
     var s=load(), today=DATE, y=shiftDay(today,-1);
-    if(s.lastDone!==today){ s.streak=(s.lastDone===y)?(s.streak||0)+1:1; s.best=Math.min(s.best||1e9, Math.round(elapsed)); s.solves=(s.solves||0)+1; }
-    s.lastDone=today; s.last={ seconds:Math.round(elapsed), checks:checks }; save(s);
-    if(!ARCHIVE && window.RTGHistory) RTGHistory.push('rankit', Math.round(elapsed), true);
+    if(s.lastDone!==today){
+      s.streak=(s.lastDone===y)?(s.streak||0)+1:1;   // day-streak: played today
+    }
+    s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, run); s.last={ run:run, seconds:Math.round(elapsed) };
+    save(s);
+    if(!ARCHIVE && window.RTGHistory) RTGHistory.push(GAME, run, true);
     showEnd(s, false);
-    if(attemptFirst && !ARCHIVE && window.RTG_BOARD){
-      RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:checks, reveals:0 }).then(function(res){
+    if(run>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
+      RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:run }).then(function(res){
         if(res&&res.streak){ document.getElementById('streakN').textContent=res.streak; document.getElementById('mStreak').textContent=res.streak; }
         renderRealBoard();
       });
     }
   }
   function showEnd(s, locked){
+    var r = locked ? (s.last?s.last.run:0) : run;
     document.getElementById('streakN').textContent=s.streak||0;
     document.getElementById('checkBtn').disabled=true;
-    document.getElementById('hintline').textContent = locked ? 'No plays left — back tomorrow.' : 'Nicely ranked!';
-    var sc = locked ? (s.last?s.last.checks:0) : checks, sec = locked ? (s.last?s.last.seconds:0) : Math.round(elapsed);
-    document.getElementById('mTime').textContent=fmt(sec);
-    document.getElementById('mChecks').textContent=sc;
+    document.getElementById('runN').textContent=r;
+    document.getElementById('bestRun').textContent=s.bestRun||0;
+    document.getElementById('mRun').textContent=r;
+    document.getElementById('mBest').textContent=s.bestRun||0;
     document.getElementById('mStreak').textContent=s.streak||0;
-    document.getElementById('mSub').textContent = locked ? 'You’ve already played today' : (!attemptFirst ? 'Practice run — not ranked' : (sc===0 ? 'Perfect — first try!' : 'Solved'));
-    document.getElementById('yourTm').textContent=fmt(sec);
-    document.getElementById('yourBest').textContent=fmt(s.best||sec);
+    document.getElementById('mSub').textContent = locked ? 'Your run today' : (!attemptFirst ? 'Practice run — not ranked' : (r>=SETS.length ? 'You cleared every set!' : 'Your run ended'));
+    document.getElementById('mTitle').textContent = 'SETS CLEARED';
+    document.getElementById('hintline').textContent = locked ? 'No plays left — back tomorrow.' : 'Run over — '+r+' set'+(r===1?'':'s')+' cleared.';
+    document.getElementById('yourTm').textContent = r+' set'+(r===1?'':'s');
+    document.getElementById('yourBest').textContent = (s.bestRun||0)+' sets';
     updateAgainBtn();
-    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), 'rankit');
-    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst){ confetti(sc===0?120:70, sc===0); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
+    if(window.RTGHistory) RTGHistory.render(document.getElementById('rtgHist'), GAME);
+    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && r>=3){ confetti(r>=8?120:70, r>=8); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
   }
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
   document.getElementById('mAgain').addEventListener('click', function(){
-    if(window.RTGTokens && !RTGTokens.canPlay('rankit')){ toast('No plays left today'); updateAgainBtn(); return; }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); return; }
     beginAttempt();
   });
   document.getElementById('mShare').addEventListener('click', function(){
-    var sv=load().last||{seconds:Math.round(elapsed),checks:checks};
-    var txt='RunTheGrid · Rank It\n📊 '+fmt(sv.seconds)+' · '+sv.checks+' check'+(sv.checks===1?'':'s')+'\nrunthe.gg/grid/';
+    var sv=load(), r=(sv.last&&typeof sv.last.run==='number')?sv.last.run:run;
+    var txt='RunTheGrid · Rank It\n🏆 '+r+' set'+(r===1?'':'s')+' cleared'+(sv.bestRun?(' · best '+sv.bestRun):'')+'\nrunthe.gg/grid/';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
     else toast('Sharing not supported');
@@ -403,7 +510,7 @@
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }
   function stopCountdown(){ if(cdT){ clearInterval(cdT); cdT=null; } }
-  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New order in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m</b>'; }
+  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New run in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m</b>'; }
 
   var CFC=['#F65C9C','#37C5D5','#F2B632','#A982F3','#48D17A','#2F6BFF'];
   function confetti(count,gold){ try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
@@ -425,24 +532,26 @@
       var lb=document.querySelector('.lb'); if(!lb) return;
       var pill=lb.querySelector('.lb-pill'); if(pill) pill.textContent='Live';
       var samp=document.getElementById('lbSample'); if(samp){ samp.style.opacity='1';
-        if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to rank it today.</div>'; }
-        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Fewest checks, then fastest</div>';
+        if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Be the first to post a run today.</div>'; }
+        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Longest runs today</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
-            h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+RTG_BOARD.fmtTime(r.base_seconds)+'</span></div>'; }
+            h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+(r.run_len||0)+' sets</span></div>'; }
           samp.innerHTML=h;
         }
       }
-      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board — fewest checks, then fastest time. Sign in on RunThe.GG to post yours.';
+      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board — most sets cleared today wins, ties broken by time. Sign in on RunThe.GG to post yours.';
     });
   }
 
   // ---- boot ----
   var saved=load(); document.getElementById('streakN').textContent=saved.streak||0;
-  if(saved.best){ document.getElementById('yourBest').textContent=fmt(saved.best); }
-  if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('rankit')){
-    done=true; document.getElementById('checkBtn').disabled=true;
+  if(saved.bestRun){ document.getElementById('bestRun').textContent=saved.bestRun; document.getElementById('yourBest').textContent=saved.bestRun+' sets'; }
+  if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
+    done=true;
+    document.getElementById('checkBtn').disabled=true;
     document.getElementById('hintline').textContent='No plays left — back tomorrow.';
-    if(saved.last){ order=ANSWER.slice(); lastCheck=null; render(); showEnd(saved, true); } else { render(); }
+    startSet();                                  // show today's first set, locked
+    if(saved.last){ showEnd(saved, true); }
   } else { beginAttempt(); }
   if(window.RTG_BOARD){
     RTG_BOARD.boot();

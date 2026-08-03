@@ -67,6 +67,8 @@
   .runbar .rl{min-width:0; flex:1;}
   .runbar .rl .k{display:block; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
   .runbar .rl .v{display:block; font-size:13px; color:var(--ink); margin-top:3px; font-weight:700;}
+  .shieldpill{flex:0 0 auto; font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--goldT); border:1px solid var(--goldT); border-radius:999px; padding:3px 9px; white-space:nowrap;}
+  .shieldpill.used{color:var(--dim); border-color:var(--line2); opacity:.6;}
   .runbar .best{flex:0 0 auto; text-align:right;}
   .runbar .best .n{font-family:var(--hero); font-weight:400; font-size:22px; color:var(--mut); line-height:1;}
   .runbar .best .c{display:block; font-size:8.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
@@ -158,7 +160,8 @@
 
   <div class="runbar">
     <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">In a row today</span><span class="v" id="runSub">One wrong ends your run. How far can you go?</span></div>
+    <div class="rl"><span class="k">In a row today</span><span class="v" id="runSub">One save per run — a second miss ends it.</span></div>
+    <span class="shieldpill" id="shieldPill">🛡 save ready</span>
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
@@ -263,7 +266,11 @@
   var SEQ=buildRounds();
 
   var idx=0, run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, charged=false, attemptFirst=false;
+  var shield=true;   // arcade second chance: first wrong pick is forgiven once per run
   var vs=document.getElementById('versus');
+  function updateShieldPill(){ var p=document.getElementById('shieldPill'); if(!p) return;
+    if(shield){ p.textContent='🛡 save ready'; p.classList.remove('used'); }
+    else { p.textContent='🛡 save used'; p.classList.add('used'); } }
 
   function metaLine(e){ return [e.sport, (e.t&&e.t[0])].filter(Boolean).join(' · '); }
   function renderRound(){
@@ -289,6 +296,15 @@
       if(window.RTGSound) RTGSound.lock();
       idx++;
       setTimeout(function(){ busy=false; renderRound(); }, 720);
+    } else if(shield){
+      // Second chance: the shield eats this miss. Numbers stay revealed so the
+      // player can read them, then the run continues. The missed pair simply
+      // doesn't count — run total is untouched.
+      shield=false; updateShieldPill();
+      if(window.RTGSound) RTGSound.soft();
+      toast('🛡 Saved — one miss forgiven');
+      idx++;
+      setTimeout(function(){ busy=false; renderRound(); }, 1400);
     } else {
       if(window.RTGSound) RTGSound.wrong();
       setTimeout(function(){ finish(); }, 950);
@@ -309,6 +325,7 @@
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay){ seedRandom(); SEQ=buildRounds(); } else { seedDaily(); SEQ=buildRounds(); servedDaily=true; }
     idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
+    shield=true; updateShieldPill();
     document.getElementById('runN').textContent='0';
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
     vs.style.pointerEvents=''; vs.style.opacity='';
@@ -349,7 +366,9 @@
     document.getElementById('mRun').textContent=run;
     document.getElementById('mBest').textContent=s.bestRun||0;
     document.getElementById('mStreak').textContent=s.streak||0;
-    document.getElementById('mSub').textContent = locked ? 'Your run today' : (!attemptFirst ? 'Practice run — not ranked' : (run>=SEQ.length?'You cleared the whole table!':'Your run ended'));
+    var sub = locked ? 'Your run today' : (!attemptFirst ? 'Practice run — not ranked' : (run>=SEQ.length?'You cleared the whole table!':'Your run ended'));
+    if(!locked && !shield) sub += ' · used your save';
+    document.getElementById('mSub').textContent = sub;
     document.getElementById('mTitle').textContent = 'IN A ROW';
     document.getElementById('yourTm').textContent = run+' in a row';
     document.getElementById('yourBest').textContent = s.bestRun||0;

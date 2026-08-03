@@ -245,10 +245,24 @@
       // Prefer decoys that SHARE at least one team with the target — "he also
       // played for the Lakers" is a far more tempting wrong answer than a random
       // name. Still fair: only the target has the exact full chronological path.
-      var overlap=others.filter(function(e){ return (e.t||[]).some(function(x){ return tteams.indexOf(x)>=0; }); });
+      // Progressive difficulty by round number (out.length = rounds built so far):
+      //   rounds 1-9   (out.length<9):  overlap decoys preferred, fill from others
+      //   rounds 10-19 (out.length<19): all three decoys must share >=1 team when the
+      //                                 overlap pool allows; fall back for the remainder
+      //   rounds 20+:                   rank by shared-team COUNT (>=2 first, then >=1,
+      //                                 then others) and take the top 3; ties broken by
+      //                                 the seeded shuffle so boards stay deterministic
+      function sharedCount(e){ var n=0,ts=e.t||[]; for(var k=0;k<ts.length;k++){ if(tteams.indexOf(ts[k])>=0) n++; } return n; }
       var pickIds={}, distract=[];
-      shuffle(overlap).forEach(function(e){ if(distract.length<3 && !pickIds[e.id]){ pickIds[e.id]=1; distract.push(e); } });
-      if(distract.length<3){ shuffle(others).forEach(function(e){ if(distract.length<3 && !pickIds[e.id]){ pickIds[e.id]=1; distract.push(e); } }); }
+      function takeFrom(list){ list.forEach(function(e){ if(distract.length<3 && !pickIds[e.id]){ pickIds[e.id]=1; distract.push(e); } }); }
+      if(out.length>=19){
+        // shuffle first, then stable-sort by shared count desc: equals stay shuffled
+        takeFrom(shuffle(others).sort(function(a,b){ return sharedCount(b)-sharedCount(a); }));
+      } else {
+        var overlap=others.filter(function(e){ return sharedCount(e)>0; });
+        takeFrom(shuffle(overlap));
+        if(distract.length<3){ takeFrom(shuffle(others)); }
+      }
       var opts=shuffle([t].concat(distract)).map(function(e){ return e.id; });
       out.push({ target:t.id, opts:opts }); seen[t.id]=1;
     }
