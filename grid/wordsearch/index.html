@@ -260,6 +260,7 @@
   var N = 12;                 // grid size
   var MIN_WORDS = 8, MAX_WORDS = 10;
   var SAVE_KEY = 'rtg:ws:v1';
+  var RESUME_KEY = 'rtg:resume:wordsearch';
   var FOUND_COLORS = ['#37C5D5','#F2B632','#F06A5F','#A982F3','#2F6BFF','#48D17A','#F65C9C','#5CC8FF','#FF9F45','#9C6BFF'];
 
   var POS_LABEL = {"Quarterback":"Quarterbacks","Running Back":"Running Backs","Wide Receiver":"Wide Receivers","Tight End":"Tight Ends","Defensive Back":"Defensive Backs","Fullback":"Fullbacks","Offensive Lineman":"Offensive Linemen","Defensive Lineman":"Defensive Linemen","Linebacker":"Linebackers","Cornerback":"Cornerbacks","Safety":"Safeties","Kicker":"Kickers","Punter":"Punters","Point Guard":"Point Guards","Shooting Guard":"Shooting Guards","Small Forward":"Small Forwards","Power Forward":"Power Forwards","Guard":"Guards","Forward":"Forwards","Center":"Centers","Pitcher":"Pitchers","Catcher":"Catchers","Shortstop":"Shortstops","First Baseman":"First Basemen","Second Baseman":"Second Basemen","Third Baseman":"Third Basemen","Outfielder":"Outfielders","Designated Hitter":"Designated Hitters","Left Wing":"Left Wings","Right Wing":"Right Wings","Winger":"Wingers","Defenseman":"Defensemen","Goaltender":"Goaltenders"};
@@ -348,6 +349,24 @@
   var foundSet={}, foundCount=0, colorFor={};
   var done=false, hints=0, started=false, startTs=0, tick=null, elapsed=0, charged=false, attemptFirst=false;
   var hintsUsed=0;   // free players get 1 hint per play; Pro is unlimited
+
+  // ---- mid-attempt resume: a refresh during the RANKED daily attempt must not burn it.
+  // Snapshot only during the charged first (ranked) play; never in archive practice. ----
+  function resumeSave(){
+    if(ARCHIVE || !attemptFirst || done) return;
+    try{ LS.setItem(RESUME_KEY, JSON.stringify({
+      d:DATE,
+      found:Object.keys(foundSet),
+      hints:hints,
+      hintsUsed:hintsUsed,
+      elapsed: started ? (performance.now()-startTs)/1000 : 0
+    })); }catch(e){}
+  }
+  function resumeClear(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
+  function resumeLoad(){
+    if(ARCHIVE) return null;
+    try{ var r=JSON.parse(LS.getItem(RESUME_KEY)); return (r && r.d===DATE) ? r : null; }catch(e){ return null; }
+  }
 
   // ---- render ----
   var gridEl=document.getElementById('grid');
@@ -474,6 +493,7 @@
       clearSel(); paintFound(); renderWords();
       if(window.RTGSound) RTGSound.lock();
       startIfNeeded();
+      resumeSave();
       if(foundCount===PLACED.length) finish();
     } else {
       clearSel(); if(window.RTGSound) RTGSound.soft();
@@ -489,7 +509,8 @@
   // ---- timer ----
   function startIfNeeded(){ if(started||done) return;
     if(!charged){ if(ARCHIVE){ charged=true; attemptFirst=false; } else { var r=(window.RTGTokens?RTGTokens.startAttempt('wordsearch'):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); } }
-    started=true; startTs=performance.now(); tick=setInterval(updTimer,250); }
+    started=true; startTs=performance.now(); tick=setInterval(updTimer,250);
+    resumeSave(); }
   function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
   function updTimer(){ if(!started) return; elapsed=(performance.now()-startTs)/1000; document.getElementById('timerN').textContent=fmt(elapsed); }
 
@@ -517,6 +538,7 @@
     if(window.RTGSound) RTGSound.key();
     toast('Hint: a name starting with “' + p.word.charAt(0) + '” — its square is highlighted');
     updateHintBtn();
+    resumeSave();
   });
 
   // ---- finish ----
@@ -527,7 +549,7 @@
   // ---- first/ranked play = the daily grid; every replay = a fresh random grid ----
   function beginAttempt(){
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf('wordsearch')>0);
-    if(isReplay){ seedRandom(); buildBoard(); } else { seedDaily(); buildBoard(); servedDaily=true; }
+    if(isReplay){ resumeClear(); seedRandom(); buildBoard(); } else { seedDaily(); buildBoard(); servedDaily=true; }
     if(tick){ clearInterval(tick); tick=null; }
     foundSet={}; foundCount=0; colorFor={};
     done=false; hints=0; hintsUsed=0; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
@@ -548,6 +570,7 @@
 
   function finish(){
     if(done) return; done=true; if(tick) clearInterval(tick);
+    resumeClear();   // attempt is over — nothing left to resume
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
     document.getElementById('timerN').textContent=fmt(elapsed);
     var s=load(), today=P.id, y=shiftDay(today,-1);
@@ -643,7 +666,30 @@
   // ---- boot ----
   var saved=load(); document.getElementById('streakN').textContent=saved.streak||0;
   if(saved.best){ document.getElementById('yourBest').textContent=fmt(saved.best); }
-  if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('wordsearch')){
+  var resume=resumeLoad();
+  if(resume && !ARCHIVE && saved.lastDone!==DATE && window.RTGTokens && RTGTokens.playsOf('wordsearch')>0){
+    // refresh landed mid-way through the charged ranked attempt: rebuild the
+    // deterministic daily board and pick up exactly where the player left off.
+    seedDaily(); buildBoard(); servedDaily=true;
+    renderGrid();
+    document.getElementById('themeName').textContent=P.theme;
+    applySkin();
+    var rpal=(SKIN&&SKIN_PAL)?SKIN_PAL:FOUND_COLORS;
+    (Array.isArray(resume.found)?resume.found:[]).forEach(function(w){
+      if(foundSet[w]) return;
+      for(var ri2=0;ri2<PLACED.length;ri2++){
+        if(PLACED[ri2].word===w){ foundSet[w]=true; foundCount++; colorFor[w]=rpal[(foundCount-1)%rpal.length]; break; }
+      }
+    });
+    paintFound(); renderWords(); updWordsLab();
+    hints=resume.hints||0; hintsUsed=resume.hintsUsed||0; updateHintBtn();
+    charged=true; attemptFirst=true; done=false;
+    elapsed=Math.max(0,(+resume.elapsed||0));
+    started=true; startTs=performance.now()-elapsed*1000;
+    tick=setInterval(updTimer,250); updTimer();
+    toast('Resumed');
+    if(foundCount===PLACED.length) finish();   // saved state was already complete
+  } else if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('wordsearch')){
     done=true;
     gridEl.style.pointerEvents='none'; gridEl.style.opacity='.5';
     renderWords();

@@ -371,6 +371,11 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
 <!-- cache-busted: bump ?v= whenever the puzzle bank changes -->
 <script src="puzzles.js?v=8"></script>
+<!-- entities corpus + daily generator: entities.js MUST come first (gen.js
+     reads window.GRID_ENTITIES). Together they make the crossword infinitely
+     daily; the authored bank above still wins on exact launch-week dates. -->
+<script src="../match/entities.js?v=12"></script>
+<script src="gen.js?v=1"></script>
 <script src="/grid/sfx.js"></script>
 <script src="/grid/tokens.js"></script>
 <script src="/grid/archive.js"></script>
@@ -405,15 +410,19 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   // that was/will be shown on that date.
   var ARCHIVE = !!(window.RTGArchive && RTGArchive.active());
   var DATE = (window.RTGArchive ? RTGArchive.date() : new Date().toISOString().slice(0,10));
-  // daily pick: exact id match first (launch week), else the deterministic
-  // date rotation in puzzles.js — every date maps to a stable puzzle.
-  // NOTE: with rotation P.id is the puzzle's own id, NOT the served date;
-  // anything date-keyed (board submit/leaderboard, streak save) uses DATE.
+  // daily pick: exact id match first (preserves the hand-authored launch
+  // week), else the deterministic per-date GENERATOR (gen.js, seeded from the
+  // date — infinitely daily), else the bank's date rotation as a fallback.
+  // NOTE: with generator/rotation P.id is the puzzle's own id, NOT the served
+  // date; anything date-keyed (board submit/leaderboard, streak save) uses DATE.
   function dailyFor(dateStr){
+    for(var i=0;i<LIST.length;i++){ if(LIST[i].id===dateStr) return LIST[i]; }
+    if(window.RTG_CWGEN){
+      try{ var g = RTG_CWGEN.forDate(dateStr); if(g) return g; }catch(e){}
+    }
     if(window.RTG_PUZZLES && typeof RTG_PUZZLES.forDate === 'function'){
       return RTG_PUZZLES.forDate(dateStr) || null;
     }
-    for(var i=0;i<LIST.length;i++){ if(LIST[i].id===dateStr) return LIST[i]; }
     return LIST[0] || null;
   }
 
@@ -592,6 +601,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     render();
     maybeWordFill(tr,tc);
     checkSolved();
+    saveResume();
   }
   // micro-animation: pulse a word's cells the moment it becomes fully filled
   // (fill only — not correctness — so the no-autocheck design is preserved)
@@ -620,6 +630,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     else { retreat(); cells[sel.r][sel.c].val=''; cells[sel.r][sel.c].checked=false; }
     announcedFull=false;   // grid no longer full — allow a fresh announce on refill
     render();
+    saveResume();
   }
   function advance(){
     var act=activeEntry(); if(!act) return;
@@ -703,12 +714,41 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     cell.val=cell.ans; cell.revealed=true; cell.checked=false;
     hintsUsed++;
     render(); checkSolved(); updateRevealBtn();
+    saveResume();
   });
 
   // ---- win check + persistence ---------------------------------------------
   // archive plays never read or write the daily save (protects streak/best/already)
   function load(){ if(ARCHIVE) return {}; try{ return JSON.parse(localStorage.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
   function save(s){ if(ARCHIVE) return; try{ localStorage.setItem(SAVE_KEY, JSON.stringify(s)); }catch(e){} }
+
+  // ---- mid-solve reload protection (RANKED attempt only) --------------------
+  // The ranked (first, charged) attempt persists to RESUME_KEY on every input
+  // so an accidental reload doesn't burn the day's play. Practice replays,
+  // archive and tester runs never write it; finish() and any practice replay
+  // clear it.
+  var RESUME_KEY = 'rtg:resume:crossword';
+  function readResume(){ try{ var o=JSON.parse(localStorage.getItem(RESUME_KEY)); return (o&&typeof o==='object')?o:null; }catch(e){ return null; } }
+  function clearResume(){ try{ localStorage.removeItem(RESUME_KEY); }catch(e){} }
+  var resumeT=null, resumeLast=0;
+  function saveResume(){
+    if(TESTER || ARCHIVE || done || !charged || !attemptFirst) return;
+    var now=Date.now();
+    if(now-resumeLast<800){   // throttle: trailing write keeps the last letter
+      if(!resumeT) resumeT=setTimeout(function(){ resumeT=null; saveResume(); }, 850-(now-resumeLast));
+      return;
+    }
+    resumeLast=now;
+    var letters=[];
+    for(var r=0;r<N;r++) for(var c=0;c<N;c++){
+      var cl=cells[r][c];
+      if(!cl.block && (cl.val || cl.revealed)) letters.push([r,c,cl.val,cl.revealed?1:0]);
+    }
+    var el = startedAt ? (performance.now()-startedAt)/1000 : elapsed;
+    try{ localStorage.setItem(RESUME_KEY, JSON.stringify({
+      date:DATE, letters:letters, elapsed:Math.round(el*10)/10, hintsUsed:hintsUsed
+    })); }catch(e){}
+  }
 
   var announcedFull=false;
   function gridFull(){ for(var r=0;r<N;r++) for(var c=0;c<N;c++){ if(!cells[r][c].block && cells[r][c].val==='') return false; } return true; }
@@ -736,6 +776,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
   function finish(){
     done=true; if(tick) clearInterval(tick);
+    clearResume();   // attempt is over — nothing left to restore
     elapsed = startedAt ? (performance.now()-startedAt)/1000 : 0;
     document.getElementById('timerN').textContent = fmt(elapsed);
 
@@ -1035,6 +1076,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
   // clear this puzzle's entries and start a fresh attempt on the SAME daily grid
   function beginAttempt(){
+    clearResume();   // a fresh (practice) attempt begins — drop any mid-solve state
     for(var br=0;br<N;br++) for(var bc=0;bc<N;bc++){
       var cl=cells[br][bc]; if(cl.block) continue;
       cl.val=''; cl.checked=false; cl.revealed=false;
@@ -1054,6 +1096,34 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     render();
     updateHint();
     updateRevealBtn();
+  }
+  // resume the interrupted RANKED attempt after a reload: restore letters,
+  // reveals, hint count and the running clock. The play was already charged on
+  // the original load, so charged=true / attemptFirst=true WITHOUT calling
+  // RTGTokens.startAttempt again — no re-charge.
+  function restoreAttempt(rs){
+    done=false; filledEntries={}; announcedFull=false;
+    charged=true; attemptFirst=true;
+    hintsUsed = rs.hintsUsed|0;
+    (rs.letters||[]).forEach(function(L){
+      var r=L[0]|0, c=L[1]|0;
+      if(r<0||c<0||r>=N||c>=N) return;
+      var cl=cells[r][c]; if(!cl || cl.block) return;
+      cl.revealed = !!L[3];
+      cl.val = cl.revealed ? cl.ans : String(L[2]||'').toUpperCase().slice(0,1).replace(/[^A-Z]/,'');
+    });
+    // words already filled shouldn't re-pulse on the next keystroke
+    P.entries.forEach(function(e){ if(entryFilled(e)) filledEntries[e.dir+e.num]=true; });
+    // timer resumes where it left off: startTs offset back by elapsed
+    elapsed = Math.max(0, +rs.elapsed||0);
+    startedAt = performance.now() - elapsed*1000;
+    if(tick) clearInterval(tick);
+    tick = setInterval(updateTimer, 250);
+    updateTimer();
+    var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden');
+    render(); updateHint(); updateRevealBtn();
+    resumeLast=0; saveResume();   // key survives another immediate reload
+    toast('Welcome back — your attempt resumed.');
   }
   // out of plays: lock the board and show the previous result in review state
   function showLocked(saved){
@@ -1115,10 +1185,22 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   }
 
   buildLists();
+  // resume check BEFORE the token gate: a mid-solve reload of the ranked
+  // attempt has playsOf>0 (charged) but nothing finished — without this a
+  // free player who reloads would land on the "no plays left" lock screen.
+  var RES = null;
+  if(!TESTER && !ARCHIVE){
+    var rs = readResume();
+    if(rs && rs.date===DATE && saved.lastDone!==DATE &&
+       window.RTGTokens && RTGTokens.playsOf('crossword')>0){ RES = rs; }
+    else if(rs){ clearResume(); }   // stale (old date / already finished)
+  }
   // token gate: out of plays -> locked review (streak bookkeeping already
   // advances only once/day via the `already` flag); else a fresh playable
   // puzzle. beginAttempt does NOT charge — the charge lands on first entry.
-  if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){
+  if(RES){
+    restoreAttempt(RES);
+  } else if(!TESTER && !ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('crossword')){
     render();
     showLocked(saved);
   } else {

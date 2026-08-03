@@ -663,6 +663,29 @@
     function resultKey() { return 'grid_match_result_' + DATE; }
     function savedResult() { if (ARCHIVE) return null; try { return JSON.parse(LS.getItem(resultKey())); } catch (e) { return null; } }   // archive: always a fresh play
 
+    // ---- mid-attempt resume: a refresh during the RANKED daily attempt must not burn it.
+    // Snapshot only during the charged first (ranked) play; never in archive or tester mode. ----
+    var RESUME_KEY = 'rtg:resume:match';
+    function resumeSave() {
+      if (ARCHIVE || TESTER || !attemptFirst || done) return;
+      try {
+        LS.setItem(RESUME_KEY, JSON.stringify({
+          d: DATE,
+          place: place,                                    // tileId -> laneIndex | null
+          solved: { laneCat: laneCat, order: solveOrder }, // solved lanes + solve order (locked derives from laneCat)
+          mistakes: mistakes,
+          penalty: penalty,
+          revealedCats: Object.keys(revealedCats),
+          elapsed: started ? (Date.now() - startTs) / 1000 : 0   // raw timer, penalty stored separately
+        }));
+      } catch (e) {}
+    }
+    function resumeClear() { try { LS.removeItem(RESUME_KEY); } catch (e) {} }
+    function resumeLoad() {
+      if (ARCHIVE || TESTER) return null;
+      try { var r = JSON.parse(LS.getItem(RESUME_KEY)); return (r && r.d === DATE) ? r : null; } catch (e) { return null; }
+    }
+
     // ---- reset play state ----
     function resetState() {
       place = {}; laneCat = {}; locked = {}; solveOrder = []; lastMissIds = {};
@@ -795,7 +818,7 @@
             clr.addEventListener('click', function (e) {
               e.stopPropagation();
               day.tiles.forEach(function (t) { if (place[t.id] === idx) place[t.id] = null; });
-              delete lastMissIds[idx]; selected = null; render();
+              delete lastMissIds[idx]; selected = null; render(); resumeSave();
             });
           })(i);
           head.appendChild(clr);
@@ -867,7 +890,7 @@
       if (done) return;
       var laneIdx = place[tid];
       if (laneIdx != null && locked[laneIdx]) return;         // can't move locked tiles
-      if (laneIdx != null) { place[tid] = null; selected = null; startIfNeeded(); render(); return; } // tap placed tile -> pool
+      if (laneIdx != null) { place[tid] = null; selected = null; startIfNeeded(); render(); resumeSave(); return; } // tap placed tile -> pool
       selected = (selected === tid) ? null : tid;             // toggle selection in pool
       render();
     }
@@ -879,6 +902,7 @@
       place[tid] = laneIdx; selected = null;
       if (window.RTGSound) RTGSound.place();
       render();
+      resumeSave();
       var pe = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"] .tile[data-tid="' + tid + '"]');
       if (pe) pe.classList.add('settle');
     }
@@ -909,7 +933,7 @@
       poolEl.addEventListener('drop', function (e) {
         e.preventDefault(); poolEl.classList.remove('drop');
         var tid = e.dataTransfer.getData('text/plain');
-        if (tid && place[tid] != null && !locked[place[tid]]) { place[tid] = null; render(); }
+        if (tid && place[tid] != null && !locked[place[tid]]) { place[tid] = null; render(); resumeSave(); }
       });
     }
 
@@ -921,6 +945,7 @@
       started = true; startTs = Date.now();
       tick = setInterval(updateTimer, 250);
       updateTimer();
+      resumeSave();   // protect the just-charged ranked attempt from an immediate refresh
     }
     function elapsedSec() { return started ? (Date.now() - startTs) / 1000 + penalty : 0; }
     function fmt(sec) { sec = Math.max(0, Math.floor(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
@@ -946,6 +971,7 @@
         locked[laneIdx] = true; laneCat[laneIdx] = matchCat; solveOrder.push(laneIdx);
         delete lastMissIds[laneIdx];
         render();
+        resumeSave();
         playLockAnim(laneIdx);
         // four down -> the fifth is forced. Auto-solve it (no busywork), then win.
         if (solveOrder.length === CATS - 1) autoSolveLast();
@@ -1089,6 +1115,7 @@
       popDot(mistakes - 1);
       updateTimer();
       updateHintBtn();
+      resumeSave();
       if (mistakes >= MISTAKE_LIMIT) { setTimeout(function () { finish(false); }, 650); }
     }
     function usedCat(cid) { for (var k in laneCat) { if (locked[k] && laneCat[k] === cid) return true; } return false; }
@@ -1097,6 +1124,7 @@
     function finish(won) {
       if (done) return;
       done = true; if (tick) { clearInterval(tick); tick = null; }
+      resumeClear();   // attempt is over — nothing left to resume
       var finalTime = elapsedSec();
 
       if (!won) autoSolveReveal();
@@ -1374,6 +1402,7 @@
       popDot(mistakes - 1);
       popup('Group revealed', pick.name);
       updateHintBtn();
+      resumeSave();
     }
     hintBtn.addEventListener('click', function () {
       if (done) return;
@@ -1397,7 +1426,7 @@
     document.getElementById('btnClear').addEventListener('click', function () {
       if (done) return;
       day.tiles.forEach(function (t) { if (place[t.id] != null && !locked[place[t.id]]) place[t.id] = null; });
-      selected = null; render();
+      selected = null; render(); resumeSave();
     });
 
     // ---- shuffle the unplaced names (display order only; nothing about the puzzle changes) ----
@@ -1449,7 +1478,7 @@
     function beginAttempt() {
       // Ranked first play = the daily board; every replay is a fresh random board.
       var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf('match') > 0);
-      if (isReplay) { replaySeed = 'match-replay-' + (((Math.random() * 4294967296) >>> 0) || 1); }
+      if (isReplay) { resumeClear(); replaySeed = 'match-replay-' + (((Math.random() * 4294967296) >>> 0) || 1); }
       else { replaySeed = null; servedDaily = true; }
       // fresh solve state; no token charged until first interaction. Rebuild the
       // board so the (daily or random) seed above actually takes effect.
@@ -1536,6 +1565,13 @@
         return;
       }
       var saved = savedResult();
+      // refresh landed mid-way through the charged ranked attempt: restore it
+      // instead of burning the play (only when today isn't already finished).
+      var resume = resumeLoad();
+      if (resume && !saved && window.RTGTokens && RTGTokens.playsOf('match') > 0) {
+        if (restoreAttempt(resume)) return;
+        resumeClear();   // stale / corrupt snapshot: fall through to the normal flow
+      }
       // out of plays for today -> keep the locked / review state.
       // ARCHIVE always starts a fresh playable past-day board (no lock, no restore).
       if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) {
@@ -1554,6 +1590,57 @@
       // plays remaining (or tokens unavailable / fail-open) -> a fresh playable board; no charge on boot
       beginAttempt();
     }
+    // rebuild the daily board and re-apply a mid-attempt snapshot. Returns false
+    // (leaving state for beginAttempt to reset) if the snapshot can't be trusted.
+    function restoreAttempt(r) {
+      try {
+        replaySeed = null; servedDaily = true;   // the resumed attempt IS the daily board
+        buildDay();
+        resetState();
+        var sv = (r.solved && typeof r.solved === 'object') ? r.solved : {};
+        var lc = (sv.laneCat && typeof sv.laneCat === 'object') ? sv.laneCat : {};
+        var order = Array.isArray(sv.order) ? sv.order : [];
+        if (order.length >= CATS || (r.mistakes | 0) >= MISTAKE_LIMIT) return false;   // that game already ended
+        // hint reveals (resetState already granted the free first reveal)
+        (Array.isArray(r.revealedCats) ? r.revealedCats : []).forEach(function (cid) {
+          if (laneById[cid]) revealedCats[cid] = true;
+        });
+        // solved lanes: laneCat + locked (live snapshots never contain 'auto' locks)
+        Object.keys(lc).forEach(function (k) {
+          var i = +k, cid = lc[k];
+          if (i >= 0 && i < CATS && day.solution[cid]) { laneCat[i] = cid; locked[i] = true; }
+        });
+        solveOrder = order.filter(function (i) { return locked[i]; });
+        // tile placements (only valid lane indices; everything else back to the pool)
+        var pl = (r.place && typeof r.place === 'object') ? r.place : {};
+        day.tiles.forEach(function (t) {
+          var v = pl[t.id];
+          place[t.id] = (typeof v === 'number' && v >= 0 && v < CATS) ? v : null;
+        });
+        // a solved lane must hold exactly its true four — repair from the solution if not
+        for (var li = 0; li < CATS; li++) {
+          if (!locked[li]) continue;
+          var ids = day.tiles.filter(function (t) { return place[t.id] === li; }).map(function (t) { return t.id; }).sort();
+          if (!setsEqual(ids, day.solution[laneCat[li]].slice().sort())) {
+            (function (idx) {
+              day.tiles.forEach(function (t) { if (place[t.id] === idx) place[t.id] = null; });
+              day.solution[laneCat[idx]].forEach(function (tid) { place[tid] = idx; });
+            })(li);
+          }
+        }
+        mistakes = Math.max(0, r.mistakes | 0);
+        penalty = Math.max(0, r.penalty | 0);
+        charged = true; attemptFirst = true; done = false;   // the token was already spent pre-refresh
+        started = true; startTs = Date.now() - Math.max(0, (+r.elapsed || 0)) * 1000;
+        tick = setInterval(updateTimer, 250);
+        var rm = document.getElementById('resultModal'); if (rm) rm.hidden = true;
+        var sm = document.getElementById('statsModal'); if (sm) sm.hidden = true;
+        render(); updateTimer(); updateExplain();
+        toast('Resumed');
+        return true;
+      } catch (e) { return false; }
+    }
+
     function replaySaved(saved) {
       // reconstruct a completed board view from the truth, then show the result card
       done = true;
