@@ -31,17 +31,21 @@ for (const lg of LEAGUES) {
       else if (det.team && det.team.standingSummary) divisions[t.displayName] = det.team.standingSummary.replace(/^\d+\w* in /, '');
     } catch (e) { /* division optional */ }
     const ros = await j(BASE + lg.path + '/teams/' + t.id + '/roster');
-    const groups = ros.athletes || [];
-    for (const g of groups) {
-      for (const a of (g.items || [])) {
-        players.push({
-          n: a.fullName,
-          s: lg.sport,
-          t: t.displayName,
-          p: (a.position && (a.position.displayName || a.position.name)) || null,
-          j: a.jersey != null && a.jersey !== '' ? Number(a.jersey) : null,
-        });
-      }
+    // ESPN returns two shapes: NFL/MLB group athletes under athletes[].items
+    // (offense/defense, pitchers/catchers); NBA returns a flat athletes[] array.
+    const raw = ros.athletes || [];
+    const athletes = raw.length && raw[0] && Array.isArray(raw[0].items)
+      ? raw.flatMap(g => g.items || [])
+      : raw;
+    for (const a of athletes) {
+      if (!a || !a.fullName) continue;
+      players.push({
+        n: a.fullName,
+        s: lg.sport,
+        t: t.displayName,
+        p: (a.position && (a.position.displayName || a.position.name)) || null,
+        j: a.jersey != null && a.jersey !== '' ? Number(a.jersey) : null,
+      });
     }
     await new Promise(res => setTimeout(res, 150)); // be polite
   }
