@@ -282,6 +282,7 @@
     var answer=chosen.map(function(d){ var arr=byDec[d]; return arr[ri(arr.length)]; });   // earliest -> latest
     return {
       cat:'era', answer:answer,
+      key:function(e){ return primaryDecade(e); },
       lead:'Rank by the era they starred in, <b>earliest</b> era at the top.',
       axisTop:'Earliest', axisBot:'Most recent',
       val:function(e){ return "'"+String(primaryDecade(e)).slice(2)+"s"; }
@@ -301,6 +302,7 @@
       var vmap={}; picked.forEach(function(p){ vmap[p.e.id]=p.v; });
       return {
         cat:cat, answer:picked.map(function(p){ return p.e; }),
+        key:function(e){ return vmap[e.id]; },
         lead:'Rank by '+cfg.label+', <b>fewest</b> at the top.',
         axisTop:'Fewest', axisBot:'Most',
         val:function(e){ return Number(vmap[e.id]).toLocaleString('en-US')+' '+cfg.unit; }
@@ -324,13 +326,15 @@
 
   var run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, lastCheck=null, reveal=false, charged=false, attemptFirst=false;
   var order=[];
+  var CUR=null;    // the set actually dealt on screen; check() always compares against THIS object
+  var drag=null;   // in-flight drag gesture; committed on release or right before a check
   var rowsEl=document.getElementById('rows');
 
   function isSolvedFor(S,o){ return o.map(function(e){return e.id;}).join()===S.answer.map(function(e){return e.id;}).join(); }
   function metaLine(e){ return [e.sport, (e.t&&e.t[0])].filter(Boolean).join(' · '); }
   function curSet(){ return SETS[Math.min(run, SETS.length-1)]; }
   function render(){
-    var S=curSet();
+    var S=CUR||curSet();
     rowsEl.innerHTML = order.map(function(e,i){
       var cls='rrow'+(lastCheck?(lastCheck[i]?' correct':' wrong'):'')+(reveal?' show-era':'');
       return '<div class="ritem">'+
@@ -346,32 +350,45 @@
     [].forEach.call(rowsEl.querySelectorAll('button[data-mv]'), function(b){ b.addEventListener('click', function(){ move(+b.dataset.mv, +b.dataset.dir); }); });
     attachDrag();
   }
-  // drag-to-reorder (pointer + touch), with the arrow buttons as a fallback
+  // drag-to-reorder (pointer + touch), with the arrow buttons as a fallback.
+  // The gesture lives in `drag` and is committed into `order` in exactly one
+  // place (commitDrag) so the model can never diverge from what's on screen:
+  // a check while a row is still held commits the row where it visually sits.
+  function commitDrag(){
+    if(!drag) return false;
+    var d=drag; drag=null;
+    d.items.forEach(function(r){ r.style.transform=''; });
+    d.item.classList.remove('dragging');
+    if(d.target!==d.fromIdx){ var it=order.splice(d.fromIdx,1)[0]; order.splice(d.target,0,it); lastCheck=null; return true; }
+    return false;
+  }
   function attachDrag(){
     if(done||busy) return;
     var items=[].slice.call(rowsEl.querySelectorAll('.ritem'));
     items.forEach(function(item){
       item.addEventListener('pointerdown', function(e){
-        if(done || busy || e.button===2 || e.target.closest('.ctrl')) return;   // let arrows work
+        if(done || busy || drag || e.button===2 || e.target.closest('.ctrl')) return;   // one gesture at a time; let arrows work
         e.preventDefault();
-        var fromIdx=items.indexOf(item), startY=e.clientY, step=item.offsetHeight+9, target=fromIdx;
+        var fromIdx=items.indexOf(item), startY=e.clientY, step=item.offsetHeight+9;
+        drag={ items:items, item:item, fromIdx:fromIdx, target:fromIdx };
         try{ item.setPointerCapture(e.pointerId); }catch(_){}
         item.classList.add('dragging'); startIfNeeded();
         function mv(ev){
+          if(!drag || drag.item!==item) return;
           var dy=ev.clientY-startY; item.style.transform='translateY('+dy+'px)';
           var ni=Math.max(0, Math.min(order.length-1, fromIdx+Math.round(dy/step)));
-          if(ni!==target){ target=ni;
+          if(ni!==drag.target){ drag.target=ni;
             items.forEach(function(r,i){ if(r===item) return; var sh=0;
-              if(fromIdx<target && i>fromIdx && i<=target) sh=-step;
-              else if(fromIdx>target && i<fromIdx && i>=target) sh=step;
+              if(fromIdx<drag.target && i>fromIdx && i<=drag.target) sh=-step;
+              else if(fromIdx>drag.target && i<fromIdx && i>=drag.target) sh=step;
               r.style.transform= sh? 'translateY('+sh+'px)':''; });
           }
         }
         function up(){
           try{ item.releasePointerCapture(e.pointerId); }catch(_){}
           item.removeEventListener('pointermove',mv); item.removeEventListener('pointerup',up); item.removeEventListener('pointercancel',up);
-          items.forEach(function(r){ r.style.transform=''; }); item.classList.remove('dragging');
-          if(target!==fromIdx){ var it=order.splice(fromIdx,1)[0]; order.splice(target,0,it); lastCheck=null; if(window.RTGSound) RTGSound.place(); }
+          var moved=commitDrag();
+          if(moved && window.RTGSound) RTGSound.place();
           render();
         }
         item.addEventListener('pointermove',mv); item.addEventListener('pointerup',up); item.addEventListener('pointercancel',up);
@@ -379,7 +396,7 @@
     });
   }
   function move(i, dir){
-    if(done||busy) return; var j=i+dir; if(j<0||j>=order.length) return;
+    if(done||busy||drag) return; var j=i+dir; if(j<0||j>=order.length) return;
     startIfNeeded();
     var t=order[i]; order[i]=order[j]; order[j]=t;
     lastCheck=null;                                // clear stale feedback after a move
@@ -388,7 +405,7 @@
   }
 
   function startSet(){
-    var S=curSet();
+    var S=CUR=curSet();
     order=shuffle(S.answer);
     for(var sg=0; sg<20 && isSolvedFor(S,order); sg++) order=shuffle(S.answer);   // never start pre-solved
     lastCheck=null; reveal=false;
@@ -402,8 +419,12 @@
   document.getElementById('checkBtn').addEventListener('click', check);
   function check(){
     if(done||busy) return; startIfNeeded();
-    var S=curSet();
-    var correct=order.map(function(e,i){ return e.id===S.answer[i].id; });
+    commitDrag();   // a row still being held counts exactly where it visually sits
+    var S=CUR||curSet();
+    // Judge by the ranking VALUE in each slot, against the dealt set itself.
+    // A board that reads correct along the asked axis always clears.
+    var keys=S.answer.map(function(e){ return S.key(e); });
+    var correct=order.map(function(e,i){ return S.key(e)===keys[i]; });
     var allRight=correct.every(Boolean);
     lastCheck=correct; reveal=true; busy=true; render();
     if(allRight){
