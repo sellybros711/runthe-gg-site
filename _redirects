@@ -1,0 +1,2 @@
+/grid /arcade 301
+/grid/* /arcade/:splat 301

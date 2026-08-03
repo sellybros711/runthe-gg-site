@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Run The Arcade — Arcade Concept</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="description" content="Design prototype: a neon retro-arcade take on the Run The Arcade daily games hub. Visual concept only." />
+<meta name="theme-color" content="#11142a" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2311142a'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2329E6FF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23FF3D9A'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Audiowide&family=Press+Start+2P&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg0:#11142a;
+    --ink:#e8eaf6; --mut:#B9A8D9; --dim:#7d6ba3;
+    --cyan:#29E6FF; --pink:#FF3D9A; --hotpink:#FF2E88; --orange:#FF8A3D; --red:#FF4949;
+    --gold:#F2B632; --blue:#2F6BFF; --green:#48D17A; --violet:#A982F3;
+    --rpink:#F65C9C; --amber:#F59E0B; --teal:#37C5D5; --lime:#A3E635;
+    --panel:rgba(18,21,48,.82); --panel2:rgba(21,24,54,.86);
+    --disp:'Orbitron','Audiowide',sans-serif;
+    --wide:'Audiowide','Orbitron',sans-serif;
+    --px:'Press Start 2P',monospace;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:var(--disp); color:var(--ink); min-height:100dvh;
+    background:var(--bg0);
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  a{color:inherit; text-decoration:none;}
+  :focus-visible{outline:2px solid var(--cyan); outline-offset:2px; border-radius:4px;}
+
+  /* ================= ROOM ATMOSPHERE ================= */
+  .vignette{
+    position:fixed; inset:0; z-index:4; pointer-events:none;
+    background:radial-gradient(125% 100% at 50% 45%, transparent 62%, rgba(3,4,14,.34) 100%);
+  }
+  .crt{
+    position:fixed; inset:0; z-index:5; pointer-events:none; opacity:.24; mix-blend-mode:overlay;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 3px);
+  }
+
+  /* ================= PREVIEW BANNER (CSS-only dismiss) ================= */
+  #zap{position:absolute; opacity:0; pointer-events:none;}
+  .banner{
+    position:relative; z-index:7; display:flex; align-items:center; justify-content:center; gap:10px;
+    padding:8px 44px 8px 14px; font-family:var(--px); font-size:8px; line-height:1.7; text-align:center;
+    color:#c2edf8; background:rgba(12,14,34,.92); border-bottom:1px solid rgba(41,230,255,.34);
+    box-shadow:0 0 12px rgba(41,230,255,.16);
+    text-shadow:0 0 5px rgba(41,230,255,.5);
+  }
+  .banner a{color:var(--pink); text-decoration:underline; text-shadow:0 0 5px rgba(255,61,154,.55);}
+  .banner label{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer;
+    width:22px; height:22px; display:grid; place-items:center; border:1px solid rgba(41,230,255,.4);
+    border-radius:5px; color:var(--cyan); font-family:var(--disp); font-size:12px; font-weight:700;
+  }
+  .banner label:hover{box-shadow:0 0 8px rgba(41,230,255,.45);}
+  #zap:checked ~ .banner{display:none;}
+
+  /* ================= LAYOUT ================= */
+  .stage{position:relative; z-index:2; padding-bottom:100px;}
+  .wrap{width:100%; max-width:1680px; margin:0 auto; padding:18px 20px 32px;}
+
+  /* header */
+  .hdr{display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:20px; flex-wrap:wrap;}
+  .mark{transform:skewX(-4deg); line-height:.95; flex:0 0 auto; display:flex; flex-direction:column; align-items:center;}
+  .mark .row{display:flex; align-items:center; gap:9px;}
+  .mark .dash{
+    flex:0 0 auto; width:15px; height:3px; border-radius:2px;
+    background:linear-gradient(90deg, var(--red), var(--orange), var(--pink));
+    box-shadow:0 -6px 0 -1px var(--orange), 0 0 6px rgba(255,110,60,.4);
+  }
+  .mark .row.r2 .dash{width:20px; height:4px; box-shadow:0 -7px 0 -1px var(--orange), 0 0 6px rgba(255,110,60,.4);}
+  .mark .l1,.mark .l2{
+    display:block; font-family:var(--disp); font-weight:900; font-style:italic; text-transform:uppercase;
+    background:linear-gradient(100deg, var(--red) 5%, var(--orange) 50%, var(--pink) 95%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    -webkit-text-stroke:1px rgba(255,255,255,.28);
+    filter:drop-shadow(0 0 2px rgba(255,73,73,.55)) drop-shadow(0 0 9px rgba(255,110,60,.32)) drop-shadow(0 0 20px rgba(255,46,136,.2));
+  }
+  .mark .l1{font-size:15px; letter-spacing:.3em; padding-left:.3em;}
+  .mark .l2{font-size:40px; letter-spacing:.05em;}
+  .mark .by{display:block; margin-top:7px; font-family:var(--px); font-size:7px; color:var(--dim); letter-spacing:.12em; text-shadow:0 0 6px rgba(255,110,60,.25);}
+  .attract{
+    flex:1 1 auto; align-self:center; text-align:center; min-width:260px;
+    font-family:var(--disp); font-weight:800; font-style:italic; font-size:clamp(13px,1.6vw,19px);
+    letter-spacing:.28em; text-transform:uppercase; color:var(--ink);
+    text-shadow:0 0 8px rgba(255,255,255,.2), 0 0 18px rgba(255,255,255,.09);
+  }
+  .attract .sl{
+    background:linear-gradient(90deg, var(--pink), var(--red));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 0 5px rgba(255,61,154,.5));
+  }
+  .attract-m{display:none;}
+  .hdrR{display:flex; align-items:center; gap:14px; flex:0 0 auto;}
+  .moon{
+    width:42px; height:42px; border-radius:11px; cursor:pointer; padding:0;
+    background:rgba(21,24,54,.8); color:#c2edf8; border:1px solid rgba(41,230,255,.34);
+    display:grid; place-items:center; box-shadow:0 0 9px rgba(41,230,255,.2), inset 0 0 6px rgba(41,230,255,.09);
+  }
+  .moon:hover{box-shadow:0 0 14px rgba(41,230,255,.4), inset 0 0 8px rgba(41,230,255,.15);}
+  .played{display:flex; flex-direction:column; align-items:flex-end; gap:6px;}
+  .played .pips{display:flex; gap:5px;}
+  .played .pip{width:10px; height:10px; border-radius:50%; border:1.5px solid rgba(41,230,255,.42); box-shadow:0 0 5px rgba(41,230,255,.25), inset 0 0 3px rgba(41,230,255,.18);}
+  .played .t{font-family:var(--px); font-size:7px; color:var(--mut); letter-spacing:.1em;}
+  .played .t b{font-weight:400; color:var(--cyan); text-shadow:0 0 6px rgba(41,230,255,.55);}
+
+  .board{display:grid; grid-template-columns:300px 1fr; gap:22px; align-items:start;}
+  @media (max-width:920px){ .board{grid-template-columns:1fr;} }
+
+  /* ================= HUD — PLAYER 1 profile card ================= */
+  .hud{
+    position:sticky; top:16px; border-radius:18px; overflow:hidden;
+    background:var(--panel); backdrop-filter:blur(6px);
+    border:1px solid rgba(41,230,255,.4);
+    box-shadow:0 0 2px rgba(41,230,255,.5), 0 0 13px rgba(41,230,255,.2), 0 0 38px rgba(47,107,255,.15), inset 0 0 18px rgba(41,230,255,.05);
+  }
+  @media (max-width:920px){ .hud{position:static;} }
+  .hud-hd{display:flex; align-items:center; flex-wrap:wrap; gap:11px; padding:14px 15px; border-bottom:1px solid rgba(41,230,255,.18);
+    background:linear-gradient(115deg, rgba(41,230,255,.08), transparent 65%);}
+  .pixav{flex:0 0 auto; width:32px; height:32px; position:relative; image-rendering:pixelated;}
+  .pixav i{
+    position:absolute; left:0; top:0; width:4px; height:4px; background:transparent;
+    box-shadow:
+      8px 0 #6b4a2b,12px 0 #6b4a2b,16px 0 #6b4a2b,20px 0 #6b4a2b,
+      4px 4px var(--red),8px 4px var(--red),12px 4px var(--red),16px 4px var(--red),20px 4px var(--red),24px 4px var(--red),
+      4px 8px #ffd9a8,8px 8px #ffd9a8,12px 8px #ffd9a8,16px 8px #ffd9a8,20px 8px #ffd9a8,24px 8px #ffd9a8,
+      4px 12px #ffd9a8,8px 12px #1a0f2e,12px 12px #ffd9a8,16px 12px #ffd9a8,20px 12px #1a0f2e,24px 12px #ffd9a8,
+      4px 16px #ffd9a8,8px 16px #ffd9a8,12px 16px #e8a76f,16px 16px #e8a76f,20px 16px #ffd9a8,24px 16px #ffd9a8,
+      12px 20px #ffd9a8,16px 20px #ffd9a8,
+      0 24px var(--cyan),4px 24px var(--cyan),8px 24px var(--cyan),12px 24px var(--cyan),16px 24px var(--cyan),20px 24px var(--cyan),24px 24px var(--cyan),28px 24px var(--cyan),
+      4px 28px var(--cyan),8px 28px var(--cyan),12px 28px var(--cyan),16px 28px var(--cyan),20px 28px var(--cyan),24px 28px var(--cyan);
+    filter:drop-shadow(0 0 4px rgba(255,73,73,.35));
+  }
+  .hud-hd .who{min-width:0; line-height:1.25;}
+  .hud-hd .who .p1{
+    display:block; font-family:var(--px); font-size:6.5px; letter-spacing:.16em; color:#9beefc;
+    text-shadow:0 0 6px rgba(41,230,255,.45); margin-bottom:4px;
+  }
+  .hud-hd .who .p1 .cur{display:inline-block; font-style:normal; margin-left:2px; animation:blink 1.1s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0;}}
+  .hud-hd .who b{display:block; font-family:var(--wide); font-weight:400; font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink); text-shadow:0 0 6px rgba(41,230,255,.4);}
+  .hud-hd .who span.date{display:block; font-family:var(--px); font-size:6.5px; color:var(--dim); margin-top:4px; letter-spacing:.08em;}
+  .chip{
+    margin-left:auto; display:inline-flex; align-items:center; gap:6px; padding:6px 9px; border-radius:999px;
+    font-family:var(--px); font-size:6.5px; letter-spacing:.06em; color:#f4dfa4;
+    border:1px solid rgba(242,182,50,.42); background:rgba(242,182,50,.07);
+    box-shadow:0 0 8px rgba(242,182,50,.2), inset 0 0 6px rgba(242,182,50,.09);
+    text-shadow:0 0 5px rgba(242,182,50,.55);
+    white-space:nowrap;
+  }
+  .chip .coin{
+    flex:0 0 auto; width:10px; height:10px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #ffe9a8, #F2B632 60%, #8a5f07);
+    box-shadow:0 0 5px rgba(242,182,50,.6);
+  }
+  .hud-streak{display:flex; align-items:center; gap:16px; padding:17px 15px 12px;}
+  .flame{
+    flex:0 0 auto; width:50px; height:50px; border-radius:13px; display:grid; place-items:center;
+    color:#ff6a3d; border:1px solid rgba(255,73,73,.42); background:rgba(255,73,73,.07);
+    box-shadow:0 0 3px rgba(255,73,73,.42), 0 0 12px rgba(255,106,61,.28), inset 0 0 9px rgba(255,106,61,.11);
+  }
+  .flame svg{filter:drop-shadow(0 0 4px rgba(255,106,61,.65)) drop-shadow(0 0 10px rgba(255,73,73,.42));}
+  .hud-streak .big .n{
+    position:relative; display:inline-block;
+    font-family:var(--disp); font-weight:900; font-size:44px; line-height:.9; letter-spacing:.06em;
+    font-variant-numeric:tabular-nums; color:var(--ink);
+    text-shadow:0 0 3px rgba(255,106,61,.8), 0 0 10px rgba(255,73,73,.55), 0 0 24px rgba(255,73,73,.4), 0 0 46px rgba(255,138,61,.24);
+  }
+  .hud-streak .big .n .ghost{ /* unlit LED segments behind the digit */
+    position:absolute; inset:0; font-style:normal; color:rgba(255,120,90,.13); text-shadow:none; pointer-events:none;
+  }
+  .hud-streak .big .cap{display:block; font-family:var(--px); font-size:7px; letter-spacing:.14em; color:#f0a68c; margin-top:7px; text-shadow:0 0 6px rgba(255,106,61,.5);}
+  .hud-streak .best{margin-left:auto; text-align:right;}
+  .hud-streak .best .n{font-family:var(--disp); font-weight:800; font-size:24px; color:var(--mut); line-height:1; text-shadow:0 0 8px rgba(185,168,217,.28);}
+  .hud-streak .best .cap{display:block; font-family:var(--px); font-size:6px; letter-spacing:.12em; color:var(--dim); margin-top:5px;}
+  .hud-mile{padding:2px 15px 16px;}
+  .hud-mile .lab{font-family:var(--px); font-size:6.5px; letter-spacing:.1em; color:var(--mut); margin-bottom:8px; text-transform:uppercase;}
+  .hud-mile .lab b{font-weight:400; color:#f0c988; text-shadow:0 0 6px rgba(242,182,50,.5);}
+  .hud-mile .bar{position:relative; height:10px; border-radius:999px; background:rgba(0,0,0,.45); border:1px solid rgba(255,73,73,.3); overflow:hidden; box-shadow:inset 0 0 7px rgba(0,0,0,.6);}
+  .hud-mile .bar i{
+    display:block; height:100%; width:66%; border-radius:999px;
+    background:linear-gradient(90deg, var(--red), var(--orange));
+    box-shadow:0 0 6px rgba(255,73,73,.55), 0 0 13px rgba(255,138,61,.35);
+  }
+  .hud-mile .bar:after{ /* XP tick notches every third */
+    content:""; position:absolute; inset:0; border-radius:999px; pointer-events:none;
+    background:
+      linear-gradient(90deg,
+        transparent calc(33.33% - 1px), rgba(6,7,18,.75) calc(33.33% - 1px) calc(33.33% + 1px),
+        transparent calc(33.33% + 1px) calc(66.66% - 1px), rgba(6,7,18,.75) calc(66.66% - 1px) calc(66.66% + 1px),
+        transparent calc(66.66% + 1px));
+  }
+  .hud-drop{ /* NEXT DROP marquee ticker strip */
+    position:relative; overflow:hidden;
+    display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px 15px;
+    border-top:1px solid rgba(41,230,255,.18);
+    background:rgba(5,6,17,.72);
+    box-shadow:inset 0 2px 10px rgba(0,0,0,.55), inset 0 -2px 8px rgba(0,0,0,.4);
+  }
+  .hud-drop:before{ /* shimmer sweep */
+    content:""; position:absolute; top:0; bottom:0; left:-45%; width:36%; transform:skewX(-18deg); pointer-events:none;
+    background:linear-gradient(90deg, transparent, rgba(140,220,255,.07), transparent);
+    animation:sweep 3.8s linear infinite;
+  }
+  @keyframes sweep{to{left:118%;}}
+  .hud-drop .lbl{font-family:var(--px); font-size:7px; letter-spacing:.14em; color:var(--mut); text-transform:uppercase;}
+  .hud-drop .t{
+    font-family:var(--disp); font-weight:800; font-size:24px; letter-spacing:.12em; line-height:1;
+    font-variant-numeric:tabular-nums; color:#a9e9f6;
+    text-shadow:0 0 3px rgba(41,230,255,.8), 0 0 10px rgba(41,230,255,.6), 0 0 24px rgba(41,230,255,.45);
+  }
+  .hud-cta{padding:14px 15px 14px; border-top:1px solid rgba(41,230,255,.18);}
+  .hud-cta p{margin:0 0 12px; color:var(--dim); font-family:'Segoe UI',system-ui,sans-serif; font-size:11.5px; line-height:1.5;}
+  .hud-cta p b{color:var(--mut); text-shadow:0 0 6px rgba(41,230,255,.28);}
+  .pill{
+    display:block; text-align:center; border-radius:999px; padding:12px 14px; text-transform:uppercase;
+    font-family:var(--wide); font-weight:400; font-size:12.5px; letter-spacing:.1em; transition:filter .14s, box-shadow .14s;
+  }
+  .pill.solid{ /* PRESS START style pulse */
+    color:#12041d; background:linear-gradient(120deg, #e62a7c, #ef579f);
+    box-shadow:0 0 3px rgba(255,46,136,.55), 0 0 13px rgba(255,46,136,.4), 0 0 34px rgba(255,46,136,.2);
+    animation:startpulse 1.6s ease-in-out infinite;
+  }
+  @keyframes startpulse{
+    0%,100%{filter:brightness(1); box-shadow:0 0 3px rgba(255,46,136,.55), 0 0 13px rgba(255,46,136,.4), 0 0 34px rgba(255,46,136,.2);}
+    50%{filter:brightness(.85); box-shadow:0 0 2px rgba(255,46,136,.4), 0 0 9px rgba(255,46,136,.28), 0 0 24px rgba(255,46,136,.13);}
+  }
+  .pill.solid:hover{animation-play-state:paused; filter:brightness(1.06);}
+  .pill.ghost{
+    margin-top:10px; color:#c2edf8; border:1.5px solid rgba(41,230,255,.45); background:rgba(41,230,255,.04);
+    box-shadow:0 0 8px rgba(41,230,255,.18), inset 0 0 8px rgba(41,230,255,.06);
+    text-shadow:0 0 6px rgba(41,230,255,.42);
+  }
+  .pill.ghost:hover{box-shadow:0 0 13px rgba(41,230,255,.36), inset 0 0 9px rgba(41,230,255,.1);}
+  .coincap{
+    display:block; margin-top:13px; text-align:center;
+    font-family:var(--px); font-size:6px; letter-spacing:.32em; color:var(--dim); opacity:.65;
+  }
+
+  /* ================= CABINETS ================= */
+  .cabs{display:grid; grid-template-columns:repeat(2, 1fr); gap:12px;}
+  @media (min-width:700px){ .cabs{gap:16px;} }
+  @media (min-width:1000px){ .cabs{grid-template-columns:repeat(3, 1fr);} }
+  @media (min-width:1280px){ .cabs{grid-template-columns:repeat(4, 1fr);} }
+
+  .cab{
+    --c:var(--gold); --glo:rgba(242,182,50,.36);
+    position:relative; display:flex; flex-direction:column;
+    transition:transform .18s ease;
+  }
+  .cab:hover{transform:translateY(-4px);}
+  .cab .shell{
+    display:flex; flex-direction:column; flex:1; border-radius:12px 12px 7px 7px; overflow:hidden;
+    background:var(--panel2); backdrop-filter:blur(4px);
+    border:1px solid color-mix(in srgb, var(--c) 68%, transparent);
+    box-shadow:0 0 2px var(--glo), 0 0 10px var(--glo), 0 10px 30px -18px var(--glo), inset 0 0 13px color-mix(in srgb, var(--c) 8%, transparent);
+    transition:box-shadow .18s ease;
+  }
+  .cab:hover .shell{box-shadow:0 0 4px var(--glo), 0 0 18px var(--glo), 0 14px 42px -18px var(--glo), inset 0 0 18px color-mix(in srgb, var(--c) 11%, transparent);}
+  .cab .ico{
+    height:90px; display:grid; place-items:center; padding-top:12px;
+  }
+  .cab .ico svg{width:58px; height:58px; filter:drop-shadow(0 0 4px var(--glo)) drop-shadow(0 0 12px var(--glo));}
+  .cab .bodyc{display:flex; flex-direction:column; flex:1; padding:10px 13px 12px;}
+  .cab .nm{
+    margin:0; font-family:var(--wide); font-weight:400; font-size:14.5px; letter-spacing:.05em; text-transform:uppercase; line-height:1.15;
+    color:color-mix(in srgb, var(--c) 92%, #fff);
+    text-shadow:0 0 2px var(--glo), 0 0 8px var(--glo), 0 0 19px var(--glo);
+  }
+  .cab .desc{color:var(--mut); font-family:'Segoe UI',system-ui,sans-serif; font-size:11.5px; line-height:1.45; margin:7px 0 11px; min-height:50px;}
+  .cab .playbtn{
+    margin-top:auto; border-radius:999px; min-height:36px; display:flex; align-items:center; justify-content:center;
+    font-family:var(--wide); font-size:12.5px; letter-spacing:.16em; color:#101228;
+    background:color-mix(in srgb, var(--c) 88%, #000);
+    box-shadow:0 0 3px var(--glo), 0 0 10px var(--glo), 0 4px 14px -8px var(--glo);
+    transition:filter .14s, box-shadow .14s;
+  }
+  .cab:hover .playbtn{filter:brightness(1.07); box-shadow:0 0 4px var(--glo), 0 0 16px var(--glo), 0 6px 20px -8px var(--glo);}
+  .cab .deck{
+    display:flex; align-items:center; justify-content:space-between; padding:7px 16px 8px;
+    background:linear-gradient(180deg, rgba(18,21,48,.95), rgba(11,13,32,.95));
+    border-top:1px solid color-mix(in srgb, var(--c) 26%, transparent);
+  }
+  .joy{position:relative; width:28px; height:21px; flex:0 0 auto;}
+  .joy:before{ /* stick */
+    content:""; position:absolute; left:50%; bottom:4px; transform:translateX(-50%);
+    width:3px; height:13px; border-radius:2px;
+    background:linear-gradient(90deg,#333c66,#8a92be 45%,#333c66);
+  }
+  .joy:after{ /* red ball */
+    content:""; position:absolute; left:50%; top:-4px; transform:translateX(-50%);
+    width:12px; height:12px; border-radius:50%;
+    background:radial-gradient(circle at 34% 30%, #ff9b9b, #ff2424 55%, #7a0505);
+    box-shadow:0 0 5px rgba(255,36,36,.5);
+  }
+  .joy i{ /* base plate */
+    position:absolute; left:50%; bottom:0; transform:translateX(-50%);
+    width:25px; height:6px; border-radius:50%;
+    background:radial-gradient(circle at 50% 30%, #1d2246, #0d0f26);
+    border:1px solid rgba(255,255,255,.12);
+  }
+  .dbtns{display:flex; gap:8px;}
+  .dbtns i{
+    width:12px; height:12px; border-radius:50%;
+    border:1px solid rgba(255,255,255,.16);
+    box-shadow:inset 0 -2px 4px rgba(0,0,0,.55), 0 0 5px var(--bglo);
+  }
+  .dbtns i.b1{--bglo:rgba(255,73,73,.4); background:radial-gradient(circle at 35% 30%, #ff8f8f, #e11d1d 60%, #6d0707);}
+  .dbtns i.b2{--bglo:rgba(41,230,255,.4); background:radial-gradient(circle at 35% 30%, #a6f4ff, #10b9d8 60%, #045060);}
+  .dbtns i.b3{--bglo:rgba(242,182,50,.4); background:radial-gradient(circle at 35% 30%, #ffe3a1, #e2a41f 60%, #6d4b04);}
+  .cab .base{
+    height:16px; margin:0 6px;
+    clip-path:polygon(6% 0, 94% 0, 100% 100%, 0 100%);
+    background:linear-gradient(180deg, color-mix(in srgb, var(--c) 22%, rgba(13,15,34,.9)), transparent 92%);
+    -webkit-mask-image:linear-gradient(180deg, #000 0%, transparent 100%);
+            mask-image:linear-gradient(180deg, #000 0%, transparent 100%);
+  }
+
+  /* per-game accents */
+  .cab.table {--c:var(--gold);   --glo:rgba(242,182,50,.36);}
+  .cab.match {--c:var(--blue);   --glo:rgba(47,107,255,.4);}
+  .cab.career{--c:var(--green);  --glo:rgba(72,209,122,.36);}
+  .cab.oddone{--c:var(--violet); --glo:rgba(169,130,243,.4);}
+  .cab.rankit{--c:var(--rpink);  --glo:rgba(246,92,156,.4);}
+  .cab.guess {--c:var(--amber);  --glo:rgba(245,158,11,.36);}
+  .cab.cross {--c:var(--teal);   --glo:rgba(55,197,213,.36);}
+  .cab.word  {--c:var(--lime);   --glo:rgba(163,230,53,.33);}
+
+  /* ================= BOTTOM NAV ================= */
+  .nav{
+    position:fixed; left:0; right:0; bottom:0; z-index:8;
+    display:flex; align-items:stretch; justify-content:flex-start; overflow-x:auto; scrollbar-width:none;
+    padding:9px 8px calc(9px + env(safe-area-inset-bottom,0));
+    background:rgba(10,12,30,.88); backdrop-filter:blur(12px);
+    border-top:1px solid rgba(255,46,136,.38);
+    box-shadow:0 -2px 10px rgba(255,46,136,.16), 0 -1px 0 rgba(41,230,255,.14);
+  }
+  .nav::-webkit-scrollbar{display:none;}
+  .nav a{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    flex:1 0 auto; min-width:66px; padding:5px 9px; text-align:center;
+    font-family:var(--px); font-size:8px; letter-spacing:.04em; text-transform:uppercase; color:var(--dim);
+    border-right:1px solid rgba(185,168,217,.12);
+  }
+  .nav a:last-child{border-right:none;}
+  .nav a svg{width:18px; height:18px; color:#dde1f2;}
+  .nav a:hover{color:var(--mut);}
+  .nav a.on{
+    color:#f8b8d6; position:relative;
+    text-shadow:0 0 4px rgba(255,61,154,.7), 0 0 10px rgba(255,61,154,.55), 0 0 22px rgba(255,73,73,.35);
+  }
+  .nav a.on svg{color:#f8b8d6; filter:drop-shadow(0 0 4px rgba(255,61,154,.65)) drop-shadow(0 0 10px rgba(255,61,154,.35));}
+  .nav a.on:after{
+    content:""; position:absolute; left:16%; right:16%; bottom:-2px; height:2px; border-radius:2px;
+    background:linear-gradient(90deg, var(--pink), var(--red));
+    box-shadow:0 0 6px rgba(255,61,154,.65), 0 0 13px rgba(255,61,154,.35);
+  }
+
+  /* ================= MOBILE ================= */
+  @media (max-width:640px){
+    .wrap{padding:14px 14px 26px;}
+    .stage{padding-bottom:92px;}
+
+    /* header: wordmark left, moon + pips + played stacked top-right */
+    .hdr{flex-wrap:nowrap; align-items:flex-start; gap:12px; margin-bottom:14px;}
+    .mark{align-items:flex-start;}
+    .mark .l1{font-size:12px;}
+    .mark .l2{font-size:30px;}
+    .mark .row.r2 .dash{width:15px;}
+    .hdrR{flex-direction:column; align-items:flex-end; gap:8px;}
+    .played{align-items:flex-end; gap:5px;}
+    .played .pip{width:8px; height:8px;}
+
+    /* attractions heading moves below the HUD */
+    .hdr .attract{display:none;}
+    .attract-m{display:block; text-align:center; margin:2px 0 4px; min-width:0;
+      font-family:var(--disp); font-weight:800; font-style:italic; font-size:13px;
+      letter-spacing:.24em; text-transform:uppercase; color:var(--ink);
+      text-shadow:0 0 8px rgba(255,255,255,.2), 0 0 18px rgba(255,255,255,.09);}
+    .board{gap:14px;}
+
+    /* HUD condenses: top strip + streak + XP bar only */
+    .hud-drop{display:none;}
+    .hud-cta{display:none;}
+    .hud-streak{padding:14px 15px 10px;}
+    .hud-mile{padding:0 15px 14px;}
+
+    /* compact cabinets: icon + title + PLAY only */
+    .cab .ico{height:64px; padding-top:8px;}
+    .cab .ico svg{width:42px; height:42px;}
+    .cab .bodyc{padding:8px 10px 10px;}
+    .cab .nm{font-size:12px;}
+    .cab .desc{display:none;}
+    .cab .playbtn{margin-top:9px; min-height:32px; font-size:11px;}
+    .cab .deck{display:none;}
+    .cab .base{display:none;}
+    .cab .shell{border-radius:11px;}
+
+    /* nav: all 9 items in one row */
+    .nav{padding:7px 3px calc(7px + env(safe-area-inset-bottom,0));}
+    .nav a{flex:1 1 auto; min-width:0; padding:4px 2px; gap:4px;
+      font-size:6px; letter-spacing:0; line-height:1.35; white-space:normal; overflow-wrap:break-word;}
+    .nav a svg{width:15px; height:15px;}
+    .nav a{border-right:1px solid rgba(185,168,217,.08);}
+  }
+  @media (prefers-reduced-motion:reduce){ *{animation:none !important; transition:none !important;} }
+</style>
+</head>
+<body>
+
+<div class="vignette" aria-hidden="true"></div>
+<div class="crt" aria-hidden="true"></div>
+
+<input type="checkbox" id="zap" />
+<div class="banner">
+  <span>DESIGN PREVIEW — the live hub is unchanged · <a href="/arcade/">back to today's hub</a></span>
+  <label for="zap" title="Dismiss" aria-label="Dismiss preview banner">×</label>
+</div>
+
+<div class="stage">
+  <div class="wrap">
+
+    <header class="hdr">
+      <a class="mark" href="/arcade/" aria-label="Run The Arcade home">
+        <span class="row r1"><i class="dash" aria-hidden="true"></i><span class="l1">Run The</span><i class="dash" aria-hidden="true"></i></span>
+        <span class="row r2"><i class="dash" aria-hidden="true"></i><span class="l2">Arcade</span><i class="dash" aria-hidden="true"></i></span>
+        <span class="by">by RunThe.GG</span>
+      </a>
+      <div class="attract"><span class="sl">///</span> Today's Attractions <span class="sl">///</span></div>
+      <div class="hdrR">
+        <button class="moon" type="button" aria-label="Toggle theme (decorative)" title="Light / dark">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+        <div class="played" aria-label="0 of 8 played today">
+          <span class="pips" aria-hidden="true"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></span>
+          <span class="t"><b>0</b> / 8 PLAYED</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="board">
+
+      <!-- LEFT: PLAYER 1 profile card -->
+      <aside class="hud">
+        <div class="hud-hd">
+          <span class="pixav" aria-hidden="true"><i></i></span>
+          <span class="who">
+            <span class="p1">PLAYER 1<i class="cur" aria-hidden="true">_</i></span>
+            <b>Guest</b>
+            <span class="date">MON, AUG 3</span>
+          </span>
+          <span class="chip" title="One free play per game each day"><i class="coin" aria-hidden="true"></i>CREDITS 10/10</span>
+        </div>
+
+        <div class="hud-streak">
+          <span class="flame" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>
+          </span>
+          <span class="big"><span class="n"><i class="ghost" aria-hidden="true">8</i>2</span><span class="cap">DAY STREAK</span></span>
+          <span class="best"><span class="n">2</span><span class="cap">BEST</span></span>
+        </div>
+
+        <div class="hud-mile">
+          <div class="lab">3-DAY BADGE — <b>1 DAY TO GO</b></div>
+          <div class="bar"><i></i></div>
+        </div>
+
+        <div class="hud-drop">
+          <span class="lbl">Next Drop</span>
+          <span class="t">22:35:06</span>
+        </div>
+
+        <div class="hud-cta">
+          <p>One free play per game, every day. Sign in to save your streak and rank — <b>Pro</b> unlocks unlimited plays and every past day's puzzles.</p>
+          <a class="pill solid" href="/">Sign In / Sign Up</a>
+          <a class="pill ghost" href="/arcade/archive/">Play Past Days &rarr;</a>
+          <span class="coincap" aria-hidden="true">INSERT COIN</span>
+        </div>
+      </aside>
+
+      <!-- mobile-only heading (shown below the HUD at phone widths) -->
+      <div class="attract-m"><span class="sl">///</span> Today's Attractions <span class="sl">///</span></div>
+
+      <!-- RIGHT: cabinets -->
+      <main class="cabs">
+
+        <article class="cab table">
+          <div class="shell">
+            <div class="ico" aria-hidden="true">
+              <svg viewBox="0 0 56 56">
+                <path d="M28 1l2.4 4.9 5.4.8-3.9 3.8.9 5.4L28 13.3l-4.8 2.6.9-5.4-3.9-3.8 5.4-.8z" fill="#F2B632"/>
+                <rect x="7" y="37" width="12" height="16" rx="2" fill="#F2B632" opacity=".45"/>
+                <rect x="22" y="30" width="12" height="23" rx="2" fill="#F2B632" opacity=".7"/>
+                <rect x="37" y="22" width="12" height="31" rx="2" fill="#F2B632"/>
+              </svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Run The Table</h3>
+              <p class="desc">Higher or lower? Keep the streak alive by picking the bigger sports number.</p>
+              <a class="playbtn" href="/arcade/table/">PLAY</a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b1"></i><i class="b3"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+        <article class="cab match">
+          <div class="shell">
+            <div class="ico" aria-hidden="true">
+              <svg viewBox="0 0 56 56"><g>
+                <rect x="2" y="2" width="15" height="15" rx="3" fill="#2F6BFF"/><rect x="20.5" y="2" width="15" height="15" rx="3" fill="#F2B632"/><rect x="39" y="2" width="15" height="15" rx="3" fill="#F06A5F"/>
+                <rect x="2" y="20.5" width="15" height="15" rx="3" fill="#F06A5F"/><rect x="20.5" y="20.5" width="15" height="15" rx="3" fill="#A982F3"/><rect x="39" y="20.5" width="15" height="15" rx="3" fill="#2F6BFF"/>
+                <rect x="2" y="39" width="15" height="15" rx="3" fill="#F2B632"/><rect x="20.5" y="39" width="15" height="15" rx="3" fill="#F65C9C"/><rect x="39" y="39" width="15" height="15" rx="3" fill="#F06A5F"/>
+              </g></svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Daily Match</h3>
+              <p class="desc">Sort sports names into hidden groups of four before you run out of misses.</p>
+              <a class="playbtn" href="/arcade/match/">PLAY</a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b2"></i><i class="b1"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+        <article class="cab career">
+          <div class="shell">
+            <div class="ico" aria-hidden="true">
+              <svg viewBox="0 0 56 56">
+                <g fill="none" stroke="#48D17A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 44 L22 24 L34 34 L46 12"/></g>
+                <g fill="#48D17A"><circle cx="12" cy="44" r="4.2"/><circle cx="22" cy="24" r="4.2"/><circle cx="34" cy="34" r="4.2"/><circle cx="46" cy="12" r="4.2"/></g>
+              </svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Career Path</h3>
+              <p class="desc">Trace the athlete's team-by-team journey. How many can you get in a row?</p>
+              <a class="playbtn" href="/arcade/career/">PLAY</a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b1"></i><i class="b2"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+        <article class="cab oddone">
+          <div class="shell">
+            <div class="ico" aria-hidden="true">
+              <svg viewBox="0 0 56 56">
+                <g fill="none" stroke="#A982F3" stroke-width="2.4"><path d="M14 13h22M14 13v22M36 13v22M14 35h22"/></g>
+                <g fill="#A982F3"><circle cx="14" cy="13" r="5.5"/><circle cx="36" cy="13" r="5.5"/><circle cx="14" cy="35" r="5.5"/><circle cx="36" cy="35" r="5.5"/></g>
+                <circle cx="48" cy="47" r="5.5" fill="#F06A5F"/>
+              </svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Odd One Out</h3>
+              <p class="desc">Four names connect. One doesn't. Find the miss and keep rolling.</p>
+              <a class="playbtn" href="/arcade/oddone/">PLAY</a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b3"></i><i class="b1"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+        <article class="cab rankit">
+          <div class="shell">
+            <div class="ico" aria-hidden="true">
+              <svg viewBox="0 0 56 56">
+                <g font-family="Orbitron, sans-serif" font-size="8.5" font-weight="800" fill="#F65C9C">
+                  <text x="4" y="10.5">1</text><text x="4" y="21">2</text><text x="4" y="31.5">3</text><text x="4" y="42">4</text><text x="4" y="52.5">5</text>
+                </g>
+                <g fill="#F65C9C">
+                  <rect x="13" y="3.5" width="39" height="7" rx="3.5"/>
+                  <rect x="13" y="14" width="30" height="7" rx="3.5" opacity=".85"/>
+                  <rect x="13" y="24.5" width="35" height="7" rx="3.5" opacity=".7"/>
+                  <rect x="13" y="35" width="24" height="7" rx="3.5" opacity=".55"/>
+                  <rect x="13" y="45.5" width="28" height="7" rx="3.5" opacity=".42"/>
+                </g>
+              </svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Rank It</h3>
+              <p class="desc">Put five athletes, teams, or moments in the right order with the fewest checks.</p>
+              <a class="playbtn" href="/arcade/rankit/">PLAY</a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b2"></i><i class="b3"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+        <article class="cab guess">
+          <div class="shell">
+            <div class="ico" aria-hidden="true">
+              <svg viewBox="0 0 56 56">
+                <path d="M12 6 L3 11.5 L7 18.5 L10.5 16.5 L10.5 42 L29.5 42 L29.5 16.5 L33 18.5 L37 11.5 L28 6 C26 8 23 9 20 9 C17 9 14 8 12 6 Z" fill="none" stroke="#F59E0B" stroke-width="2.6" stroke-linejoin="round"/>
+                <text x="20" y="31" text-anchor="middle" font-family="Orbitron, sans-serif" font-size="11.5" font-weight="800" fill="#F59E0B">23</text>
+                <rect x="43" y="8" width="10" height="10" rx="2" fill="#2FA968"/>
+                <rect x="43" y="22" width="10" height="10" rx="2" fill="#F59E0B"/>
+                <rect x="43" y="36" width="10" height="10" rx="2" fill="none" stroke="#F59E0B" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Guess the Player</h3>
+              <p class="desc">Use the clues to identify today's mystery athlete in eight guesses.</p>
+              <a class="playbtn" href="/arcade/guess/">PLAY</a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b1"></i><i class="b3"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+        <article class="cab cross">
+          <div class="shell">
+            <div class="ico" aria-hidden="true">
+              <svg viewBox="0 0 56 56">
+                <g fill="#E8ECF5">
+                  <rect x="21" y="5" width="14" height="14" rx="3"/>
+                  <rect x="21" y="21" width="14" height="14" rx="3"/>
+                  <rect x="37" y="21" width="14" height="14" rx="3"/>
+                </g>
+                <g fill="none" stroke="#E8ECF5" stroke-width="2">
+                  <rect x="5" y="21" width="14" height="14" rx="3"/>
+                  <rect x="21" y="37" width="14" height="14" rx="3"/>
+                </g>
+              </svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Daily Crossword</h3>
+              <p class="desc">A fast sports mini crossword with a clean, arcade-inspired look.</p>
+              <a class="playbtn" href="/arcade/crossword/">PLAY</a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b2"></i><i class="b1"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+        <article class="cab word">
+          <div class="shell">
+            <div class="ico" aria-hidden="true">
+              <svg viewBox="0 0 56 56">
+                <g fill="#A3E635"><rect x="4" y="28" width="12" height="12" rx="2.5"/><rect x="16" y="28" width="12" height="12" rx="2.5"/><rect x="28" y="28" width="12" height="12" rx="2.5"/></g>
+                <g fill="none" stroke="#A3E635" stroke-width="1" opacity=".35"><path d="M4 16h48M4 28h48M4 40h48M16 4v48M28 4v48M40 4v48"/><rect x="4" y="4" width="48" height="48" rx="4"/></g>
+                <g font-family="Orbitron, sans-serif" font-size="8" font-weight="700" text-anchor="middle" fill="#E7F5CF">
+                  <text x="10" y="13">S</text><text x="22" y="13">P</text><text x="34" y="13">O</text><text x="46" y="13">R</text>
+                  <text x="10" y="25">T</text><text x="22" y="25">A</text><text x="34" y="25">L</text><text x="46" y="25">S</text>
+                  <text x="10" y="37" fill="#1a2405">G</text><text x="22" y="37" fill="#1a2405">O</text><text x="34" y="37" fill="#1a2405">A</text><text x="46" y="37">L</text>
+                  <text x="10" y="49">M</text><text x="22" y="49">V</text><text x="34" y="49">P</text><text x="46" y="49">X</text>
+                </g>
+              </svg>
+            </div>
+            <div class="bodyc">
+              <h3 class="nm">Daily Word Search</h3>
+              <p class="desc">Find the hidden sports names from today's theme before time runs out.</p>
+              <a class="playbtn" href="/arcade/wordsearch/">PLAY</a>
+            </div>
+            <div class="deck"><span class="joy"><i></i></span><span class="dbtns"><i class="b3"></i><i class="b2"></i></span></div>
+          </div>
+          <div class="base" aria-hidden="true"></div>
+        </article>
+
+      </main>
+    </div>
+  </div>
+</div>
+
+<nav class="nav" aria-label="Games">
+  <a class="on" href="/arcade/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 12h2v-2h2V8h2V6h4v2h2v2h2v2h2"/><path d="M6 12v8h12v-8"/><path d="M10 20v-4h4v4"/></svg>Home</a>
+  <a href="/arcade/match/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8l3.6 2.6-1.4 4.2h-4.4L8.4 10.6z"/><path d="M12 8V3.6M15.6 10.6l4.2-1.3M14.2 14.8l2.6 3.6M9.8 14.8l-2.6 3.6M8.4 10.6 4.2 9.3"/></svg>Match</a>
+  <a href="/arcade/career/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 16V5h4c.6 3 2.2 5 5 6 3 1.1 6.4 1.5 7 4.2V16H4z"/><path d="M5.5 19v1.5M10 19v1.5M14.5 19v1.5M19 19v1.5" stroke-linecap="round"/></svg>Career</a>
+  <a href="/arcade/oddone/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="7" cy="7" r="2.6"/><circle cx="17" cy="7" r="2.6"/><circle cx="7" cy="17" r="2.6"/><path d="M9.6 7h4.8M7 9.6v4.8"/><circle cx="17.5" cy="17.5" r="2.6"/></svg>Odd One</a>
+  <a href="/arcade/rankit/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M4 12h13M4 17h6"/></svg>Rank It</a>
+  <a href="/arcade/guess/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M9 3 5 5.5l1.7 3 1.6-.9V20h7.4V7.6l1.6.9 1.7-3L15 3c-.8.9-1.8 1.4-3 1.4S9.8 3.9 9 3z"/><text x="12" y="15.5" text-anchor="middle" font-family="Orbitron, sans-serif" font-size="6.5" font-weight="700" fill="currentColor" stroke="none">23</text></svg>Guess</a>
+  <a href="/arcade/crossword/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1.5"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/><rect x="15" y="3" width="6" height="6" fill="currentColor" stroke="none"/><rect x="3" y="15" width="6" height="6" fill="currentColor" stroke="none"/></svg>Crossword</a>
+  <a href="/arcade/wordsearch/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1.5"/><path d="M12 3v18M3 12h18"/><g fill="currentColor" stroke="none" font-family="Orbitron, sans-serif" font-size="6" font-weight="700" text-anchor="middle"><text x="7.5" y="9.8">A</text><text x="16.5" y="9.8">B</text><text x="7.5" y="18.8">C</text><text x="16.5" y="18.8">D</text></g></svg>Word Search</a>
+  <a href="/arcade/archive/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18v5H3z"/><path d="M5 11v9h14v-9"/><path d="M10 14.5h4" stroke-linecap="round"/></svg>Archive</a>
+</nav>
+
+</body>
+</html>
