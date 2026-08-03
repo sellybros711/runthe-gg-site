@@ -224,21 +224,45 @@
   var teamKeys=Object.keys(teams).filter(function(t){ return teams[t].length>=4; });
   var oddPool=ENT.filter(function(e){ return (e.f||0)>=4 && TEAM_SPORTS[e.sport]; });
 
-  // Fair by construction: four are on one team; the odd one is a DIFFERENT sport
-  // (so it shares no team with the four), and is not on that team. Names only,
-  // so it's a knowledge test, not a spot-the-sport giveaway.
   function posFam(p){ if(!p) return ''; var w=String(p).trim().split(/\s+/); return w[w.length-1]; }
+  function famPlural(f){ return /man$/i.test(f) ? f.slice(0,-3)+'men' : f+'s'; }
+  // "'90s" style for 1950–1990; full year ("1920s", "2000s") elsewhere so e.g.
+  // the 1900s can't be misread as the 2000s.
+  function decLabel(d){ return (d>=1950&&d<2000) ? '’'+String(d).slice(2)+'s' : d+'s'; }
+  function farFromDecade(e,d){ var ds=e.decade||[]; if(!ds.length) return false;
+    for(var i=0;i<ds.length;i++){ if(Math.abs(ds[i]-d)<20) return false; } return true; }
+
+  // Pools for the non-team round types. All members are famous (f>=4) so e.g. the
+  // non-Hall-of-Famer in an 'h' round is never an obscure pull.
+  var posPools={}, decPools={}, hofPools={}, nonHofPools={};
+  oddPool.forEach(function(e){
+    var s=e.sport, pf=posFam(e.pos);
+    if(pf){ posPools[s]=posPools[s]||{}; (posPools[s][pf]=posPools[s][pf]||[]).push(e); }
+    (e.decade||[]).forEach(function(d){ decPools[s]=decPools[s]||{}; (decPools[s][d]=decPools[s][d]||[]).push(e); });
+    if(e.hof) (hofPools[s]=hofPools[s]||[]).push(e); else (nonHofPools[s]=nonHofPools[s]||[]).push(e);
+  });
+  var posKeys=[]; Object.keys(posPools).forEach(function(s){ var fams=Object.keys(posPools[s]);
+    if(fams.length<2) return;
+    fams.forEach(function(f){ if(posPools[s][f].length>=4) posKeys.push({sport:s,fam:f}); }); });
+  var decKeys=[]; Object.keys(decPools).forEach(function(s){ Object.keys(decPools[s]).forEach(function(d){ d=+d;
+    if(decPools[s][d].length>=4 && oddPool.some(function(e){ return e.sport===s && farFromDecade(e,d); })) decKeys.push({sport:s,dec:d}); }); });
+  var hofKeys=Object.keys(hofPools).filter(function(s){ return hofPools[s].length>=4 && (nonHofPools[s]||[]).length>0; });
+
   // FAIRNESS: the intended odd must be the ONLY defensible odd-one. Any salient
-  // category (a team, a position family, a nationality) that exactly 4 of the 5
-  // share implies a different "odd" — reject the round unless every such category
-  // points at the same intended odd. Protects against e.g. "4 are American, the
-  // 5th isn't" giving a second correct answer.
+  // category (a team, a position family, a nationality, HOF status, a decade)
+  // that exactly 4 of the 5 share implies a different "odd" — reject the round
+  // unless every such category points at the same intended odd. Protects against
+  // e.g. "4 are American, the 5th isn't" giving a second correct answer, and
+  // applies uniformly to every round type below.
   function fairOdd(five, oddId){
     var cats={};
+    function put(k,id){ (cats[k]=cats[k]||[]).push(id); }
     five.forEach(function(e){
-      (e.t||[]).forEach(function(t){ (cats['t:'+t]=cats['t:'+t]||[]).push(e.id); });
-      if(e.pos) (cats['p:'+posFam(e.pos)]=cats['p:'+posFam(e.pos)]||[]).push(e.id);
-      if(e.nat) (cats['n:'+e.nat]=cats['n:'+e.nat]||[]).push(e.id);
+      (e.t||[]).forEach(function(t){ put('t:'+t, e.id); });
+      if(e.pos) put('p:'+posFam(e.pos), e.id);
+      if(e.nat) put('n:'+e.nat, e.id);
+      put(e.hof?'h:1':'h:0', e.id);
+      (e.decade||[]).forEach(function(d){ put('d:'+d, e.id); });
     });
     var ids=five.map(function(e){return e.id;});
     for(var k in cats){
@@ -250,27 +274,80 @@
     return true;
   }
 
+  // Each round type builds four + one odd, then passes the same fairness gate.
+  // Round objects carry: type, ckey (connection identity, used by the
+  // no-repeat guard), conn (display text for the reveal), team (t-rounds only).
+  function finishRound(type, four, odd, ckey, conn, team){
+    var five=four.concat([odd]);
+    if(!fairOdd(five, odd.id)) return null;              // reject ambiguous rounds
+    return { type:type, team:team||'', conn:conn, ckey:ckey, odd:odd.id, five:shuffle(five).map(function(e){return e.id;}) };
+  }
+  // 't': four share a team. Prefer a SAME-SPORT odd (a real roster test — you
+  // can't just spot the different sport); fall back to cross-sport if needed.
+  function buildT(){
+    var tk=teamKeys[ri(teamKeys.length)];
+    var four=shuffle(teams[tk]).slice(0,4);
+    if(four.length<4) return null;
+    var sport4=four[0].sport, odd=null;
+    for(var tries=0;tries<90;tries++){ var cand=oddPool[ri(oddPool.length)];
+      if((cand.t||[]).indexOf(tk)>=0) continue;
+      if(four.some(function(f){return f.id===cand.id;})) continue;
+      if(tries<55 && cand.sport!==sport4) continue;   // first pass: same sport only
+      odd=cand; break; }
+    if(!odd) return null;
+    return finishRound('t', four, odd, 't:'+tk, tk, tk);
+  }
+  // 'p': four share a position family; the odd plays a different position in the
+  // SAME sport (e.g. 4 Quarterbacks + 1 Wide Receiver).
+  function buildP(){
+    if(!posKeys.length) return null;
+    var k=posKeys[ri(posKeys.length)];
+    var four=shuffle(posPools[k.sport][k.fam]).slice(0,4), odd=null;
+    for(var tries=0;tries<90;tries++){ var cand=oddPool[ri(oddPool.length)];
+      if(cand.sport!==k.sport) continue;
+      var cf=posFam(cand.pos); if(!cf||cf===k.fam) continue;
+      odd=cand; break; }
+    if(!odd) return null;
+    return finishRound('p', four, odd, 'p:'+k.fam, famPlural(k.fam), '');
+  }
+  // 'd': four starred in the same decade; the odd's whole career sits at least
+  // 20 years away — same sport, so eras are actually comparable.
+  function buildD(){
+    if(!decKeys.length) return null;
+    var k=decKeys[ri(decKeys.length)];
+    var four=shuffle(decPools[k.sport][k.dec]).slice(0,4), odd=null;
+    for(var tries=0;tries<90;tries++){ var cand=oddPool[ri(oddPool.length)];
+      if(cand.sport!==k.sport) continue;
+      if(!farFromDecade(cand,k.dec)) continue;
+      odd=cand; break; }
+    if(!odd) return null;
+    return finishRound('d', four, odd, 'd:'+k.dec, 'the '+decLabel(k.dec), '');
+  }
+  // 'h': four Hall of Famers + one famous (f>=4) non-Hall-of-Famer, same sport.
+  function buildH(){
+    if(!hofKeys.length) return null;
+    var s=hofKeys[ri(hofKeys.length)];
+    var four=shuffle(hofPools[s]).slice(0,4);
+    var pool=nonHofPools[s], odd=pool[ri(pool.length)];
+    return finishRound('h', four, odd, 'h:hof', 'Hall of Famers', '');
+  }
+
   function buildRounds(){
-    var out=[], guard=0;
-    while(out.length<ROUNDS && guard<12000){ guard++;
-      var tk=teamKeys[ri(teamKeys.length)];
-      if(out.length && tk===out[out.length-1].team) continue;   // never the same team twice in a row
-      var four=shuffle(teams[tk]).slice(0,4);
-      if(four.length<4) continue;
-      var sport4=four[0].sport;
-      var odd=null;
-      // Prefer a SAME-SPORT odd (a real roster test — you can't just spot the
-      // different sport). Fall back to a cross-sport odd if no fair same-sport
-      // one turns up. fairOdd() below still guarantees a single defensible answer.
-      for(var tries=0;tries<90;tries++){ var cand=oddPool[ri(oddPool.length)];
-        if((cand.t||[]).indexOf(tk)>=0) continue;
-        if(four.some(function(f){return f.id===cand.id;})) continue;
-        if(tries<55 && cand.sport!==sport4) continue;   // first pass: same sport only
-        odd=cand; break; }
-      if(!odd) continue;
-      var five=four.concat([odd]);
-      if(!fairOdd(five, odd.id)) continue;               // reject ambiguous rounds
-      out.push({ team:tk, odd:odd.id, five:shuffle(five).map(function(e){return e.id;}) });
+    // Deterministic type schedule from the daily rng: every block of six is
+    // t,?,t,?,t,? with p/d/h shuffled into the gaps — team rounds stay most
+    // common (15 of 30) and two special rounds are never adjacent.
+    var plan=[];
+    while(plan.length<ROUNDS){ var sp3=shuffle(['p','d','h']); plan.push('t',sp3[0],'t',sp3[1],'t',sp3[2]); }
+    plan=plan.slice(0,ROUNDS);
+    var out=[], guard=0, slotTries=0;
+    while(out.length<ROUNDS && guard<24000){ guard++;
+      var type=slotTries>200?'t':plan[out.length];   // if a slot's type keeps failing, fall back to a team round
+      var r = type==='p'?buildP() : type==='d'?buildD() : type==='h'?buildH() : buildT();
+      if(!r){ slotTries++; continue; }
+      // never the same connection VALUE twice in a row (same team, same
+      // position family, same decade, back-to-back HOF rounds, ...)
+      if(out.length && r.ckey===out[out.length-1].ckey){ slotTries++; continue; }
+      out.push(r); slotTries=0;
     }
     return out;
   }
@@ -299,7 +376,12 @@
     if(!right){ bt.classList.add('mypick'); }   // you tapped one of the four
     var conn=document.getElementById('subprompt');
     conn.classList.add('big');
-    conn.innerHTML=(right?'<b class="ok">✓ Correct!</b> ':'<b class="no">✗ Not quite.</b> ')+'The four all share <b class="team">'+esc(r.team)+'</b>.';
+    var msg;
+    if(r.type==='p'){ msg='The four are all <b class="team">'+esc(r.conn)+'</b>.'; }
+    else if(r.type==='d'){ msg='The four all starred in <b class="team">'+esc(r.conn)+'</b>.'; }
+    else if(r.type==='h'){ msg='The four are all <b class="team">Hall of Famers</b>.'; }
+    else { msg='The four all share <b class="team">'+esc(r.team)+'</b>.'; }
+    conn.innerHTML=(right?'<b class="ok">✓ Correct!</b> ':'<b class="no">✗ Not quite.</b> ')+msg;
     if(right){
       run++; document.getElementById('runN').textContent=run; if(window.RTGSound) RTGSound.lock(); idx++;
       setTimeout(function(){ busy=false; renderRound(); }, 1250);
