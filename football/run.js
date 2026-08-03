@@ -2383,12 +2383,23 @@ function computeGMRating(run) {
   const expectedWins = 7.8 + (run.startRating - 60) * 0.153;
   const overScore = clamp100((regularWins - expectedWins) / 6 * 100);
 
-  /* FIVE MARKS AND A FINE. Winning 35, improvement 25, dealmaking 20, value 15, beating
-     the hand you were dealt 5 -- and going over the cap comes straight off the total,
-     because with a market that refuses illegal deals it is a deliberate act, not a grade. */
+  /* FOUR MARKS AND A FINE. Winning 30, improvement 25, dealmaking 25, value 20 -- and going
+     over the cap comes straight off the total, because with a market that refuses illegal
+     deals it is a deliberate act, not a grade.
+
+     Beat-expectation was retired here, from 10% to 5% to gone. It was wins-based, so it
+     carried real season-to-season luck, and it measured the same axis Winning already does
+     (both are "how many did you win"), so a fifth line on the card bought noise and
+     redundancy. Its weight went where the mode's own signal is: dealmaking (20->25, the one
+     luck-free mark, now tied for second) and value (15->20). Measured over 60 seasons a
+     policy, this tightened the luck band on fixed skill (sd 11.7->10.8) and widened the gap
+     between a careful GM and a sloppy one, at the cost of a little compression at the very
+     top -- exactly the trade of leaning on the skill marks over the wins ones. expectedWins
+     is still computed and stored, because the report still tells you what your roster was
+     worth; it just no longer scores. */
   const overCapPenalty = Math.round(overCapBy * GM_OVERCAP_DIRECT * 10) / 10;
-  const raw = resultScore * 0.35 + improvementScore * 0.25
-    + dealScore * 0.20 + valueScore * 0.15 + overScore * 0.05
+  const raw = resultScore * 0.30 + improvementScore * 0.25
+    + dealScore * 0.25 + valueScore * 0.20
     - overCapPenalty;
   run.outcome.gmRating = Math.max(0, Math.min(99.99, Math.round(raw * 100) / 100));
   /* Kept so the results screen can show the working rather than just a number. */
