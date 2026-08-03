@@ -480,55 +480,55 @@ function seedAdvantage(seed, roundName, constants = CONSTANTS) {
 
 // ─── the bowl system ────────────────────────────────────────────────────────
 
-/* THE REAL BOWLS, in three tiers the ranking sorts you into. The names are the
-   actual ones, sponsor silliness and all, because that is half the fun of bowl
-   season, and each carries a line about where it is played and what it means.
-   Which tier you land in is set in seedFromRanking by your national rank; the
-   name inside the tier is a seeded pick, so the same run always draws the same
-   bowl. See BOWLS_HOUSE for the one that is not real. */
+/* THE BOWLS, in three tiers the ranking sorts you into. The names are FICTIONAL,
+   each one inspired by a real bowl but not the real thing: the geography and the
+   flavour are kept, the trademarked names, sponsors and branded stadiums are
+   invented around. Which tier you land in is set in seedFromRanking by your
+   national rank; the name inside the tier is a seeded pick, so the same run
+   always draws the same bowl. See BOWLS_HOUSE for the house's own. */
 const BOWLS = {
   ny6: [
-    { name: 'Rose Bowl', tagline: 'The Granddaddy of Them All, under the San Gabriel mountains.' },
-    { name: 'Sugar Bowl', tagline: 'New Orleans, and about the biggest stage a bowl can offer.' },
-    { name: 'Orange Bowl', tagline: 'Miami at night, for the best team left out of the twelve.' },
-    { name: 'Cotton Bowl', tagline: 'Eighty thousand deep in Arlington, a New Year\'s Six crown on the line.' },
-    { name: 'Fiesta Bowl', tagline: 'The Arizona desert\'s marquee, and a top-tier payout.' },
-    { name: 'Peach Bowl', tagline: 'Atlanta, a near-playoff field one seed short of the bracket.' },
+    { name: 'Garland Bowl', tagline: 'The granddaddy of them all, under the San Gabriel mountains.' },
+    { name: 'Cane Bowl', tagline: 'New Orleans, and about the biggest stage a bowl can offer.' },
+    { name: 'Sunshine Bowl', tagline: 'Miami at night, for the best team left out of the twelve.' },
+    { name: 'Prairie Bowl', tagline: 'Eighty thousand deep outside Dallas, a big-six crown on the line.' },
+    { name: 'Mesa Bowl', tagline: 'The Arizona desert\'s marquee, and a top-tier payout.' },
+    { name: 'Orchard Bowl', tagline: 'Atlanta, a near-playoff field one seed short of the bracket.' },
   ],
   major: [
-    { name: 'Citrus Bowl', tagline: 'Orlando on New Year\'s, the pick of the teams just outside the six.' },
-    { name: 'Gator Bowl', tagline: 'Jacksonville, a proud old bowl with a good name to beat.' },
-    { name: 'Sun Bowl', tagline: 'El Paso, the second-oldest bowl there is, played in the shadow of the Franklins.' },
-    { name: 'Alamo Bowl', tagline: 'San Antonio, routinely the best matchup of the non-playoff slate.' },
-    { name: 'Music City Bowl', tagline: 'Nashville, Nissan Stadium, and a downtown that does not sleep.' },
-    { name: 'Las Vegas Bowl', tagline: 'Allegiant Stadium on the Strip, the brightest lights in bowl season.' },
-    { name: 'Holiday Bowl', tagline: 'San Diego, Petco Park, palm trees and a December kickoff.' },
-    { name: 'ReliaQuest Bowl', tagline: 'Tampa on New Year\'s Day, the bowl everyone still calls the Outback.' },
-    { name: 'Pop-Tarts Bowl', tagline: 'Orlando, an edible mascot, and the most fun thirty seconds on the schedule.' },
-    { name: 'Duke\'s Mayo Bowl', tagline: 'Charlotte, and a jar of mayonnaise poured on the winning coach.' },
-    { name: 'Texas Bowl', tagline: 'Houston, NRG Stadium, an SEC-Big 12 tradition under the roof.' },
-    { name: 'Pinstripe Bowl', tagline: 'Yankee Stadium in the cold, football in the Bronx.' },
-    { name: 'Cheez-It Bowl', tagline: 'Orlando, orange dust everywhere, and nobody minds a bit.' },
+    { name: 'Grove Bowl', tagline: 'Orlando on New Year\'s, the pick of the teams just outside the six.' },
+    { name: 'Landing Bowl', tagline: 'Jacksonville, a proud old bowl with a good name to beat.' },
+    { name: 'Frontera Bowl', tagline: 'El Paso, one of the oldest bowls there is, played in the shadow of the Franklins.' },
+    { name: 'Mission Bowl', tagline: 'San Antonio, routinely the best matchup of the non-playoff slate.' },
+    { name: 'Melody Bowl', tagline: 'Nashville, and a downtown that does not sleep.' },
+    { name: 'Neon Bowl', tagline: 'The Las Vegas Strip, the brightest lights in bowl season.' },
+    { name: 'Yuletide Bowl', tagline: 'San Diego, palm trees and a December kickoff.' },
+    { name: 'Bayshore Bowl', tagline: 'Tampa on New Year\'s Day, a bowl older than most in the room.' },
+    { name: 'Sunrise Bowl', tagline: 'Orlando, a mascot you could eat, the most fun thirty seconds on the schedule.' },
+    { name: 'Queen City Bowl', tagline: 'Charlotte, and a jar of something poured on the winning coach.' },
+    { name: 'Lone Star Bowl', tagline: 'Houston, under the roof, a Southern tradition.' },
+    { name: 'Ballpark Bowl', tagline: 'A ballpark in the Bronx, football played in the cold.' },
+    { name: 'Crumb Bowl', tagline: 'Orlando, orange crumbs everywhere, and nobody minds a bit.' },
   ],
   minor: [
-    { name: 'Gasparilla Bowl', tagline: 'Tampa, named for a pirate festival, and it plays like one.' },
-    { name: 'Birmingham Bowl', tagline: 'Protective Stadium, the heart of it all in Alabama.' },
-    { name: 'Armed Forces Bowl', tagline: 'Fort Worth, a salute to the services at midfield.' },
-    { name: 'Frisco Bowl', tagline: 'North Texas, a small stadium and a big December night.' },
-    { name: 'Cure Bowl', tagline: 'Orlando, playing for breast-cancer research and a trophy.' },
-    { name: 'Camellia Bowl', tagline: 'Montgomery, Alabama, a bowl with a flower and a following.' },
-    { name: 'New Mexico Bowl', tagline: 'Albuquerque, a mile up, where the ball flies a little farther.' },
-    { name: 'Boca Raton Bowl', tagline: 'South Florida in December, which is its own reward.' },
-    { name: 'LA Bowl', tagline: 'SoFi Stadium, the fanciest building any six-win team will ever see.' },
-    { name: 'Myrtle Beach Bowl', tagline: 'Conway, South Carolina, the boardwalk a short drive away.' },
-    { name: 'First Responder Bowl', tagline: 'Dallas, the Cotton Bowl stadium, honoring the ones who run toward it.' },
-    { name: 'Famous Idaho Potato Bowl', tagline: 'Boise, on the blue turf, with a spud for a mascot.' },
-    { name: '68 Ventures Bowl', tagline: 'Mobile, Alabama, a bay-side send-off to the season.' },
-    { name: 'Hawai\'i Bowl', tagline: 'Honolulu, the last flight of the year and the best one.' },
-    { name: 'Independence Bowl', tagline: 'Shreveport, one of the oldest names on the board.' },
-    { name: 'Fenway Bowl', tagline: 'Football at Fenway Park, the Green Monster in the background.' },
-    { name: 'Bahamas Bowl', tagline: 'Nassau, palm trees past the end zone, a passport for a bowl trip.' },
-    { name: 'Military Bowl', tagline: 'Annapolis, Navy\'s backyard, a tribute at the coin toss.' },
+    { name: 'Buccaneer Bowl', tagline: 'Tampa, named for a pirate festival, and it plays like one.' },
+    { name: 'Magic City Bowl', tagline: 'Birmingham, the heart of it all in Alabama.' },
+    { name: 'Garrison Bowl', tagline: 'Fort Worth, a salute to the services at midfield.' },
+    { name: 'Frontier Bowl', tagline: 'North Texas, a small stadium and a big December night.' },
+    { name: 'Hope Bowl', tagline: 'Orlando, playing for cancer research and a trophy.' },
+    { name: 'Magnolia Bowl', tagline: 'Montgomery, Alabama, a bowl with a flower and a following.' },
+    { name: 'Rio Grande Bowl', tagline: 'Albuquerque, a mile up, where the ball flies a little farther.' },
+    { name: 'Coral Bowl', tagline: 'South Florida in December, which is its own reward.' },
+    { name: 'Pacific Bowl', tagline: 'Los Angeles, the fanciest building any six-win team will ever see.' },
+    { name: 'Boardwalk Bowl', tagline: 'Conway, South Carolina, the boardwalk a short drive away.' },
+    { name: 'Sentinel Bowl', tagline: 'Dallas, honoring the ones who run toward it.' },
+    { name: 'Spud Bowl', tagline: 'Boise, on the blue turf, with a potato for a mascot.' },
+    { name: 'Bayside Bowl', tagline: 'Mobile, Alabama, a bay-side send-off to the season.' },
+    { name: 'Diamond Head Bowl', tagline: 'Honolulu, the last flight of the year and the best one.' },
+    { name: 'Republic Bowl', tagline: 'Shreveport, one of the oldest names on the board.' },
+    { name: 'Commonwealth Bowl', tagline: 'Football at an old ballpark in Boston, a big green wall in the background.' },
+    { name: 'Paradise Bowl', tagline: 'Nassau, palm trees past the end zone, a passport for a bowl trip.' },
+    { name: 'Salute Bowl', tagline: 'Annapolis, the Navy\'s backyard, a tribute at the coin toss.' },
   ],
 };
 
@@ -539,7 +539,7 @@ const BOWLS_HOUSE = {
 
 /* Which bowl, given the tier the ranking chose. A small share of every bowl is
    the house's own RunThe.GG Bowl, a rare draw at any tier; the rest is a seeded
-   pick from that tier's real bowls. The roster and chemistry are kept in the
+   pick from that tier's fictional bowls. The roster and chemistry are kept in the
    signature so callers do not have to change, though the pick no longer reads
    them: a bowl is where your season ranked, not what your offence looked like. */
 function selectBowl(roster, chemResult, rng, tier = 'major') {

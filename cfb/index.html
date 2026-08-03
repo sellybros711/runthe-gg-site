@@ -2338,9 +2338,9 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=16"></script>
+<script src="engine.js?v=17"></script>
 <script src="run.js?v=9"></script>
-<script src="achievements.js?v=7"></script>
+<script src="achievements.js?v=8"></script>
 <script src="auth.js?v=1"></script>
 <script src="board.js?v=1"></script>
 <script>
@@ -4614,8 +4614,8 @@ function paintSeed(){
   }else if(sd.bowl){
     /* Bowl game. THE TIER IS NAMED WITH THE RANK THAT EARNED IT, so the line
        reads as a verdict on the season: ranked No. 14, and that is a New
-       Year's Six bid. Without it a Rose Bowl and a Frisco Bowl land with the
-       same one purple chip and nobody learns what their ranking bought. */
+       Year's Six bid. Without it a Garland Bowl and a Frontier Bowl land with
+       the same one purple chip and nobody learns what their ranking bought. */
     c.className='seed-panel bowl';
     const bowlName=run.bowlInfo?run.bowlInfo.name:'Bowl Game';
     const bowlTag=run.bowlInfo?run.bowlInfo.tagline:'';
@@ -5565,7 +5565,7 @@ const SHARE_URL='https://runthe.gg/cfb/';
 function shareLines(){
   const o=run.outcome;
   /* THE BOWL IS NAMED. "Bowl champions" could be any of thirty-seven games;
-     "Fiesta Bowl champions" is a story, and the RunThe.GG Bowl advertises
+     "Mesa Bowl champions" is a story, and the RunThe.GG Bowl advertises
      itself every time somebody wins it. */
   const what=o.perfect?'Perfect season.'
     :o.titleWon?'National Champions.'
