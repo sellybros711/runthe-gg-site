@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-<title>Daily Match — Run The Arcade | Sports Matching Puzzle</title>
+<title>Daily Match | Run The Arcade Sports Matching Puzzle</title>
 <meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
@@ -17,7 +17,7 @@
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
-<meta name="description" content="Sort 20 sports names into five hidden groups of four before you run out of guesses — a daily sports matching puzzle on RunThe.GG." />
+<meta name="description" content="Sort 20 sports names into five hidden groups of four before you run out of guesses, a daily sports matching puzzle on RunThe.GG." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2337C5D5'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2337C5D5'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -407,9 +407,9 @@
 
   <div class="app">
     <main class="gameCol">
-      <div class="lead"><span class="k">Today's board · <span id="datep">—</span></span><span class="v explain">Sort 20 sports names into five hidden groups of four.</span></div>
+      <div class="lead"><span class="k">Today's board · <span id="datep">–</span></span><span class="v explain">Sort 20 sports names into five hidden groups of four.</span></div>
 
-      <div class="tester-banner" id="testerBanner" hidden><b>Tester mode</b> — unlimited plays. Use <b>New board</b> in the sidebar for a fresh puzzle.</div>
+      <div class="tester-banner" id="testerBanner" hidden><b>Tester mode</b>: unlimited plays. Use <b>New board</b> in the sidebar for a fresh puzzle.</div>
 
       <!-- compact sticky status (mobile only) -->
       <div class="mstatus" aria-hidden="false">
@@ -480,7 +480,7 @@
       <div class="card mlb">
         <h3 class="mlb-h">Daily Leaderboard <span class="mlb-pill">Sample</span></h3>
         <div class="lb-you">
-          <div class="box me"><span class="cap">Your time today</span><span class="big" id="mYourTm">—</span></div>
+          <div class="box me"><span class="cap">Your time today</span><span class="big" id="mYourTm">–</span></div>
           <div class="box"><span class="cap">Your streak</span><span class="big" id="mYourStreak">0</span></div>
         </div>
         <div class="lb-sample" id="mlbSample">
@@ -497,7 +497,7 @@
   <div class="modal" id="resultModal" hidden>
     <div class="sheet">
       <button class="x" id="resClose" type="button" aria-label="Close">✕</button>
-      <div class="flawless" id="resFlawless"><span class="rib"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg> Flawless — zero misses</span></div>
+      <div class="flawless" id="resFlawless"><span class="rib"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg> Flawless: zero misses</span></div>
       <div class="rgrade">
         <div class="g" id="resGrade">BOARD CLEARED!</div>
         <div class="verdict" id="resVerdict"></div>
@@ -508,7 +508,7 @@
         <div class="rstat"><div class="v" id="resStreak">1</div><div class="l">Streak</div></div>
       </div>
       <div class="strip" id="resStrip"></div>
-      <div class="strip-cap">Solve order — no answers leaked</div>
+      <div class="strip-cap">Solve order, no answers leaked</div>
       <div class="milestone" id="resMilestone"></div>
       <div class="coinline" id="resCoins">+0 coins</div>
       <div class="countdown" id="resCountdown"></div>
@@ -980,10 +980,10 @@
         var fact = lane ? null : sharedFactLabel(ids);
         if (lane) {
           freeMiss(laneIdx, ids, revealedCats[lane.id]
-            ? ('True — all four fit "' + lane.name + '." But this board needs one of them in a different group. No guess used.')
-            : 'Those four do share something real — but this board needs one of them in a different group. No guess used.');
+            ? ('True: all four fit "' + lane.name + '." But this board needs one of them in a different group. No guess used.')
+            : 'Those four do share something real, but this board needs one of them in a different group. No guess used.');
         } else if (fact) {
-          freeMiss(laneIdx, ids, 'True — all four ' + fact + '. But that isn\'t one of today\'s five groups. No guess used.');
+          freeMiss(laneIdx, ids, 'True: all four ' + fact + '. But that isn\'t one of today\'s five groups. No guess used.');
         } else {
           registerMiss(laneIdx, ids);
         }
@@ -1096,7 +1096,7 @@
         note.className = 'lane-note ' + (close ? 'close' : 'miss');
         note.setAttribute('role', 'status');
         note.textContent = close
-          ? 'One away — 3 of these 4 belong together.'
+          ? 'One away: 3 of these 4 belong together.'
           : 'Not a group. Swap a name and try again. (−1 guess)';
         laneEl.appendChild(note);
         setTimeout(function () { if (note.parentNode) note.parentNode.removeChild(note); }, 2800);
@@ -1192,7 +1192,7 @@
         var idx = +laneEl.dataset.idx;
         if (locked[idx] === 'auto') {
           laneEl.querySelectorAll('.tile').forEach(function (tl) { tl.classList.remove('locked'); tl.classList.add('solvefill'); });
-          var chk = laneEl.querySelector('.lane-check'); if (chk) chk.textContent = '— answer';
+          var chk = laneEl.querySelector('.lane-check'); if (chk) chk.textContent = 'Answer';
         }
       });
     }
@@ -1235,7 +1235,7 @@
       document.getElementById('resTime').textContent = fmt(r.time);
       document.getElementById('resMiss').textContent = r.mistakes;
       document.getElementById('resStreak').textContent = r.streak;
-      document.getElementById('resCoins').textContent = r.archive ? 'Archive practice — not counted' : (r.tester ? 'Tester — not counted' : ('+' + r.coins + ' coins'));
+      document.getElementById('resCoins').textContent = r.archive ? 'Archive practice, not counted' : (r.tester ? 'Tester, not counted' : ('+' + r.coins + ' coins'));
       document.getElementById('resDone').textContent = r.tester ? 'Next board →' : 'Done';
       var strip = document.getElementById('resStrip'); strip.innerHTML = '';
       solveOrder.forEach(function (idx) {
@@ -1247,7 +1247,7 @@
       // streak milestone banner (or a "practice — not ranked" note on bonus replays)
       var ms = document.getElementById('resMilestone');
       if (r.milestone) { ms.textContent = r.milestone; ms.classList.add('on'); }
-      else if (r.practice) { ms.textContent = 'Practice — not ranked'; ms.classList.add('on'); }
+      else if (r.practice) { ms.textContent = 'Practice, not ranked'; ms.classList.add('on'); }
       else { ms.textContent = ''; ms.classList.remove('on'); }
       // live countdown to tomorrow's board (real plays only)
       if (r.tester) { document.getElementById('resCountdown').innerHTML = ''; }
@@ -1265,10 +1265,10 @@
       var strip = solveOrder.map(function (idx) { return colorEmoji(laneById[laneCat[idx]].color); }).join('');
       var dstr = new Date(DATE + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       var resLine = r.won
-        ? ('✅ 5/5 groups · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
-        : ('❌ ' + solveOrder.length + '/5 groups');
-      return '🟩 Run The Arcade — Daily Match — ' + dstr + '\n\n' +
-        '   ' + resLine + '\n   STREAK: ' + r.streak + ' 🔥\n' +
+        ? ('5/5 groups · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
+        : (solveOrder.length + '/5 groups');
+      return 'Run The Arcade Daily Match, ' + dstr + '\n\n' +
+        '   ' + resLine + '\n   STREAK: ' + r.streak + '\n' +
         (strip ? '   ' + strip + '\n' : '') + '\n   runthe.gg/grid';
     }
 
@@ -1305,7 +1305,7 @@
         var rw = 460, rh = 66, rx = W / 2 - rw / 2;
         var rg = g.createLinearGradient(rx, 0, rx + rw, 0); rg.addColorStop(0, '#FF5A3C'); rg.addColorStop(1, '#EBA61F');
         g.fillStyle = rg; rr(rx, cy, rw, rh, 33); g.fill();
-        g.fillStyle = '#fff'; g.font = '900 27px Archivo, sans-serif'; ls('3px'); g.fillText('⭐ FLAWLESS', W / 2, cy + 43); ls('0px');
+        g.fillStyle = '#fff'; g.font = '900 27px Archivo, sans-serif'; ls('3px'); g.fillText('FLAWLESS', W / 2, cy + 43); ls('0px');
         cy += 96;
       } else { cy += 20; }
 
@@ -1358,7 +1358,7 @@
           if (!blob) { textShareFallback(txt); return; }
           var file = new File([blob], 'runthegrid-match.png', { type: 'image/png' });
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            navigator.share({ files: [file], text: txt, title: 'Run The Arcade — Daily Match' })
+            navigator.share({ files: [file], text: txt, title: 'Run The Arcade Daily Match' })
               .catch(function (e) { if (e && e.name === 'AbortError') return; downloadBlob(blob, txt); });
           } else { downloadBlob(blob, txt); }
         });
@@ -1577,12 +1577,12 @@
         resetState(); render(); updateTimer(); updateExplain();
         if (saved) {
           replaySaved(saved);
-          document.getElementById('resCoins').textContent = 'No plays left — back tomorrow.';
+          document.getElementById('resCoins').textContent = 'No plays left. Back tomorrow.';
         } else {
           done = true;
           boardEl.style.pointerEvents = 'none'; boardEl.style.opacity = '.5';
           poolEl.style.pointerEvents = 'none'; poolEl.style.opacity = '.5';
-          var ex = document.querySelector('.explain'); if (ex) ex.textContent = 'No plays left — back tomorrow.';
+          var ex = document.querySelector('.explain'); if (ex) ex.textContent = 'No plays left. Back tomorrow.';
         }
         return;
       }
@@ -1683,8 +1683,8 @@
 
     // ---- dopamine: streak milestones ----
     function streakMilestone(s) {
-      var map = { 3: '🔥 3-day streak — you\'re rolling!', 5: '🔥 5 in a row!', 7: '🔥 One-week streak!',
-        14: '🔥 Two weeks strong!', 30: '🏆 30-day streak — elite!', 50: '🏆 50 days. Unreal.', 100: '👑 100-day streak!' };
+      var map = { 3: '3-day streak. You\'re rolling!', 5: '5 in a row!', 7: 'One-week streak!',
+        14: 'Two weeks strong!', 30: '30-day streak. Elite!', 50: '50 days. Unreal.', 100: '100-day streak!' };
       return map[s] || '';
     }
 

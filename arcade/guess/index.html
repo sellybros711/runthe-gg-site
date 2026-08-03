@@ -193,7 +193,7 @@
     <div class="chip"><span class="n" id="streakN">0</span><span class="l">Streak</span></div>
   </div>
 
-  <div class="lead"><span class="k">Today's mystery player<b class="sportbadge" id="sportBadge">—</b></span><span class="v">Guess the athlete in <b>8 tries</b>. Every guess shows how close you are on each trait.</span></div>
+  <div class="lead"><span class="k">Today's mystery player<b class="sportbadge" id="sportBadge">–</b></span><span class="v">Guess the athlete in <b>8 tries</b>. Every guess shows how close you are on each trait.</span></div>
 
   <div class="searchwrap">
     <div class="search">
@@ -205,7 +205,7 @@
   <div class="guessesLeft" id="guessesLeft">8 guesses left</div>
 
   <div class="cluewrap">
-    <button class="cluebtn" id="btnClue" type="button">🎭 Clue</button>
+    <button class="cluebtn" id="btnClue" type="button">Clue</button>
     <div id="clues"></div>
   </div>
 
@@ -219,8 +219,8 @@
   <div class="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Today</span><span class="big" id="yourTm">—</span></div>
-      <div class="box"><span class="cap">Best streak</span><span class="big" id="yourBest">—</span></div>
+      <div class="box me"><span class="cap">Today</span><span class="big" id="yourTm">–</span></div>
+      <div class="box"><span class="cap">Best streak</span><span class="big" id="yourBest">–</span></div>
     </div>
     <div class="lb-sample" id="lbSample">
       <div class="lb-samplab">Illustrative ranking</div>
@@ -239,7 +239,7 @@
     <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
     <h2 id="mTitle" class="win">SOLVED</h2>
     <div class="sub-h" id="mSub"></div>
-    <div class="revcard"><div style="flex:1"><div class="rn" id="mName">—</div><div class="rs" id="mMeta">—</div></div></div>
+    <div class="revcard"><div style="flex:1"><div class="rn" id="mName">–</div><div class="rs" id="mMeta">–</div></div></div>
     <div class="rstats">
       <div class="rstat"><div class="v" id="mGuesses">1</div><div class="l">Guesses</div></div>
       <div class="rstat"><div class="v" id="mTime">0:00</div><div class="l">Time</div></div>
@@ -349,12 +349,12 @@
   var colEra  = { label:'Era',  cell:function(g,t){
     var gd=primaryDecade(g), td=primaryDecade(t);
     var eSt = gd===td?'hit':(intersect(g.decade,t.decade)?'close':'miss');
-    return { st:eSt, v:(gd!=null?("'"+String(gd).slice(2)+"s"):'—'), a:(td>gd?'up':(td<gd?'down':null)) };
+    return { st:eSt, v:(gd!=null?("'"+String(gd).slice(2)+"s"):'–'), a:(td>gd?'up':(td<gd?'down':null)) };
   } };
   var colNo   = { label:'No.',  cell:function(g,t){
     var gj=(g.j&&g.j.length)?g.j[0]:null, tj=(t.j&&t.j.length)?t.j[0]:null, jSt, jA=null;
     if(gj==null||tj==null){ jSt='miss'; } else if(gj===tj){ jSt='hit'; } else { jSt=(intersect(g.j||[],t.j||[])?'close':'miss'); jA=tj>gj?'up':'down'; }
-    return { st:jSt, v:(gj!=null?('#'+gj):'—'), a:jA };
+    return { st:jSt, v:(gj!=null?('#'+gj):'–'), a:jA };
   } };
   var COL_SETS = {
     NFL:     [colTeam, colPos, colSide, colEra, colNo],
@@ -394,14 +394,14 @@
   function isProClues(){ return !!(window.RTGTokens && RTGTokens.isPro()); }
   function updateClueBtn(){
     var b=document.getElementById('btnClue'); if(!b) return;
-    if(!isProClues() && cluesUsed>=1){ b.textContent='Clue used — Pro for more'; b.disabled=true; }
+    if(!isProClues() && cluesUsed>=1){ b.textContent='Clue used. Pro for more'; b.disabled=true; }
     else if(cluesUsed>=CLUES.length){ b.textContent='No more clues'; b.disabled=true; }
-    else { b.textContent='🎭 Clue'; b.disabled=false; }
+    else { b.textContent='Clue'; b.disabled=false; }
   }
   document.getElementById('btnClue').addEventListener('click', function(){
     if(done) return;
     // FREE players are capped at 1 clue per play; PRO is never blocked
-    if(!isProClues() && cluesUsed>=1){ toast('1 clue per play — Pro gets unlimited'); updateClueBtn(); return; }
+    if(!isProClues() && cluesUsed>=1){ toast('1 clue per play. Pro gets unlimited'); updateClueBtn(); return; }
     if(cluesUsed>=CLUES.length){ toast('No more clues'); updateClueBtn(); return; }
     startIfNeeded();
     var d=document.createElement('div');
@@ -597,10 +597,10 @@
     var wrong = guesses.length-(w?1:0);
     // modal
     var tt=document.getElementById('mTitle'); tt.textContent=w?'SOLVED':'SO CLOSE'; tt.className=w?'win':'lose';
-    document.getElementById('mSub').textContent = !attemptFirst ? 'Practice — not ranked' : (w ? ('In '+guesses.length+' guess'+(guesses.length===1?'':'es')) : ('The answer was'));
+    document.getElementById('mSub').textContent = !attemptFirst ? 'Practice, not ranked' : (w ? ('In '+guesses.length+' guess'+(guesses.length===1?'':'es')) : ('The answer was'));
     document.getElementById('mName').textContent=TARGET.name;
     document.getElementById('mMeta').textContent=[TARGET.sport, TARGET.pos, (TARGET.t&&TARGET.t[0])].filter(Boolean).join(' · ');
-    document.getElementById('mGuesses').textContent=w?guesses.length:'—';
+    document.getElementById('mGuesses').textContent=w?guesses.length:'–';
     document.getElementById('mTime').textContent=fmt(elapsed);
     document.getElementById('mStreak').textContent=s.streak||0;
     document.getElementById('yourTm').textContent = w ? (guesses.length+' · '+fmt(elapsed)) : 'X';
@@ -662,7 +662,7 @@
           samp.innerHTML=h;
         }
       }
-      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board — fewest guesses, then fastest time. Sign in on RunThe.GG to post yours.';
+      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board: fewest guesses, then fastest time. Sign in on RunThe.GG to post yours.';
     });
   }
 
@@ -670,14 +670,14 @@
   function lockToday(sv){
     buildBoard(); updateLead();
     done=true; qEl.disabled=true; goEl.disabled=true; qEl.placeholder='Come back tomorrow';
-    document.getElementById('guessesLeft').textContent='No plays left — back tomorrow.';
+    document.getElementById('guessesLeft').textContent='No plays left. Back tomorrow.';
     var cb=document.getElementById('btnClue'); if(cb) cb.disabled=true;
     var w=sv.last.won;
     var tt=document.getElementById('mTitle'); tt.textContent=w?'SOLVED':'SO CLOSE'; tt.className=w?'win':'lose';
     document.getElementById('mSub').textContent = w ? ('In '+sv.last.guesses+' guess'+(sv.last.guesses===1?'':'es')) : 'The answer was';
     document.getElementById('mName').textContent=TARGET.name;
     document.getElementById('mMeta').textContent=[TARGET.sport,TARGET.pos,(TARGET.t&&TARGET.t[0])].filter(Boolean).join(' · ');
-    document.getElementById('mGuesses').textContent=w?sv.last.guesses:'—';
+    document.getElementById('mGuesses').textContent=w?sv.last.guesses:'–';
     document.getElementById('mTime').textContent=fmt(sv.last.seconds||0);
     document.getElementById('mStreak').textContent=sv.streak||0;
     document.getElementById('yourTm').textContent = w ? (sv.last.guesses+' · '+fmt(sv.last.seconds||0)) : 'X';

@@ -185,7 +185,7 @@
   </div>
 
   <div class="infobar">
-    <div class="th"><span class="k">Today's theme</span><span class="v" id="themeName">—</span></div>
+    <div class="th"><span class="k">Today's theme</span><span class="v" id="themeName">–</span></div>
     <div class="prog"><span id="progN">0 / 0</span><small>Found</small></div>
   </div>
 
@@ -204,8 +204,8 @@
   <div class="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Your time today</span><span class="big" id="yourTm">—</span></div>
-      <div class="box"><span class="cap">Your best</span><span class="big" id="yourBest">—</span></div>
+      <div class="box me"><span class="cap">Your time today</span><span class="big" id="yourTm">–</span></div>
+      <div class="box"><span class="cap">Your best</span><span class="big" id="yourBest">–</span></div>
     </div>
     <div class="lb-sample" id="lbSample">
       <div class="lb-samplab">Illustrative ranking</div>
@@ -519,7 +519,7 @@
     var b=document.getElementById('btnHint'); if(!b) return;
     var lab=b.querySelector('span');
     if(!isProHints() && hintsUsed>=1){
-      if(lab) lab.textContent='Hint used — Pro for more';
+      if(lab) lab.textContent='Hint used. Pro for more';
       b.disabled=true; b.style.opacity='.55'; b.style.cursor='default';
     } else {
       if(lab) lab.textContent='Hint';
@@ -530,12 +530,12 @@
   document.getElementById('btnHint').addEventListener('click', function(){
     if(done) return; startIfNeeded();
     // FREE players are capped at 1 hint per play; PRO is never blocked
-    if(!isProHints() && hintsUsed>=1){ toast('1 hint per play — Pro gets unlimited'); updateHintBtn(); return; }
+    if(!isProHints() && hintsUsed>=1){ toast('1 hint per play. Pro gets unlimited'); updateHintBtn(); return; }
     var rem=PLACED.filter(function(p){ return !foundSet[p.word]; }); if(!rem.length) return;
     var p=rem[ri(rem.length)]; hints++; hintsUsed++;
     var el=cellEls[p.cells[0]]; el.classList.remove('hintflash'); void el.offsetWidth; el.classList.add('hintflash');
     if(window.RTGSound) RTGSound.key();
-    toast('Hint: a name starting with “' + p.word.charAt(0) + '” — its square is highlighted');
+    toast('Hint: a name starting with “' + p.word.charAt(0) + '”. Its square is highlighted');
     updateHintBtn();
     resumeSave();
   });
@@ -585,7 +585,7 @@
     document.getElementById('yourTm').textContent=fmt(elapsed);
     document.getElementById('yourBest').textContent=fmt(s.best||elapsed);
 
-    document.getElementById('mSub').textContent = attemptFirst ? 'You found every name' : 'Practice — not ranked';
+    document.getElementById('mSub').textContent = attemptFirst ? 'You found every name' : 'Practice, not ranked';
     updateAgainBtn();
 
     if(attemptFirst && window.RTG_BOARD){
@@ -609,7 +609,7 @@
   });
   document.getElementById('mShare').addEventListener('click', shareResult);
   function shareResult(){
-    var txt='Run The Arcade Word Search — '+P.theme+'\n⏱ '+fmt(elapsed)+(hints?(' · '+hints+' hint'+(hints>1?'s':'')):' · flawless')+'\nrunthe.gg/arcade/';
+    var txt='Run The Arcade Word Search: '+P.theme+'\n'+fmt(elapsed)+(hints?(' · '+hints+' hint'+(hints>1?'s':'')):' · flawless')+'\nrunthe.gg/arcade/';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }).catch(function(){ toast('Copy failed'); }); }
     else toast('Sharing not supported');
@@ -690,7 +690,7 @@
     done=true;
     gridEl.style.pointerEvents='none'; gridEl.style.opacity='.5';
     renderWords();
-    var wl=document.getElementById('wordsLab'); if(wl) wl.textContent='No plays left — back tomorrow.';
+    var wl=document.getElementById('wordsLab'); if(wl) wl.textContent='No plays left. Back tomorrow.';
   } else {
     beginAttempt();   // fresh playable board; does NOT charge until first interaction
   }

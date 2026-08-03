@@ -11,7 +11,7 @@
   if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
-<meta name="description" content="Rank It: a daily sports ranking streak game. Put five athletes in the right order by era or career stats — clear the set, get a new one. One wrong order ends your run." />
+<meta name="description" content="Rank It: a daily sports ranking streak game. Put five athletes in the right order by era or career stats. Clear the set, get a new one. One wrong order ends your run." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -166,7 +166,7 @@
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
-  <div class="lead"><span class="k" id="axisLabel">Set 1</span><span class="v" id="prompt">Rank by the era they starred in — <b>earliest</b> era at the top.</span></div>
+  <div class="lead"><span class="k" id="axisLabel">Set 1</span><span class="v" id="prompt">Rank by the era they starred in, <b>earliest</b> era at the top.</span></div>
 
   <div class="axis"><span id="axTop">↑ Earliest</span><span id="axBot">Most recent ↓</span></div>
   <div class="rows" id="rows"></div>
@@ -177,8 +177,8 @@
   <div class="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Your run today</span><span class="big" id="yourTm">—</span></div>
-      <div class="box"><span class="cap">Best run</span><span class="big" id="yourBest">—</span></div>
+      <div class="box me"><span class="cap">Your run today</span><span class="big" id="yourTm">–</span></div>
+      <div class="box"><span class="cap">Best run</span><span class="big" id="yourBest">–</span></div>
     </div>
     <div class="lb-sample" id="lbSample">
       <div class="lb-samplab">Illustrative ranking</div>
@@ -282,7 +282,7 @@
     var answer=chosen.map(function(d){ var arr=byDec[d]; return arr[ri(arr.length)]; });   // earliest -> latest
     return {
       cat:'era', answer:answer,
-      lead:'Rank by the era they starred in — <b>earliest</b> era at the top.',
+      lead:'Rank by the era they starred in, <b>earliest</b> era at the top.',
       axisTop:'Earliest', axisBot:'Most recent',
       val:function(e){ return "'"+String(primaryDecade(e)).slice(2)+"s"; }
     };
@@ -301,7 +301,7 @@
       var vmap={}; picked.forEach(function(p){ vmap[p.e.id]=p.v; });
       return {
         cat:cat, answer:picked.map(function(p){ return p.e; }),
-        lead:'Rank by '+cfg.label+' — <b>fewest</b> at the top.',
+        lead:'Rank by '+cfg.label+', <b>fewest</b> at the top.',
         axisTop:'Fewest', axisBot:'Most',
         val:function(e){ return Number(vmap[e.id]).toLocaleString('en-US')+' '+cfg.unit; }
       };
@@ -515,9 +515,9 @@
     document.getElementById('mRun').textContent=r;
     document.getElementById('mBest').textContent=s.bestRun||0;
     document.getElementById('mStreak').textContent=s.streak||0;
-    document.getElementById('mSub').textContent = locked ? 'Your run today' : (!attemptFirst ? 'Practice run — not ranked' : (r>=SETS.length ? 'You cleared every set!' : 'Your run ended'));
+    document.getElementById('mSub').textContent = locked ? 'Your run today' : (!attemptFirst ? 'Practice run, not ranked' : (r>=SETS.length ? 'You cleared every set!' : 'Your run ended'));
     document.getElementById('mTitle').textContent = 'SETS CLEARED';
-    document.getElementById('hintline').textContent = locked ? 'No plays left — back tomorrow.' : 'Run over — '+r+' set'+(r===1?'':'s')+' cleared.';
+    document.getElementById('hintline').textContent = locked ? 'No plays left. Back tomorrow.' : 'Run over. '+r+' set'+(r===1?'':'s')+' cleared.';
     document.getElementById('yourTm').textContent = r+' set'+(r===1?'':'s');
     document.getElementById('yourBest').textContent = (s.bestRun||0)+' sets';
     updateAgainBtn();
@@ -531,7 +531,7 @@
   });
   document.getElementById('mShare').addEventListener('click', function(){
     var sv=load(), r=(sv.last&&typeof sv.last.run==='number')?sv.last.run:run;
-    var txt='Run The Arcade · Rank It\n🏆 '+r+' set'+(r===1?'':'s')+' cleared'+(sv.bestRun?(' · best '+sv.bestRun):'')+'\nrunthe.gg/arcade/';
+    var txt='Run The Arcade · Rank It\n'+r+' set'+(r===1?'':'s')+' cleared'+(sv.bestRun?(' · best '+sv.bestRun):'')+'\nrunthe.gg/arcade/';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
     else toast('Sharing not supported');
@@ -569,7 +569,7 @@
           samp.innerHTML=h;
         }
       }
-      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board — most sets cleared today wins, ties broken by time. Sign in on RunThe.GG to post yours.';
+      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board: most sets cleared today wins, ties broken by time. Sign in on RunThe.GG to post yours.';
     });
   }
 
@@ -585,7 +585,7 @@
   else if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
     done=true;
     document.getElementById('checkBtn').disabled=true;
-    document.getElementById('hintline').textContent='No plays left — back tomorrow.';
+    document.getElementById('hintline').textContent='No plays left. Back tomorrow.';
     startSet();                                  // show today's first set, locked
     if(saved.last){ showEnd(saved, true); }
   } else { beginAttempt(); }

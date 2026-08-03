@@ -162,8 +162,8 @@
   <div class="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Your run today</span><span class="big" id="yourTm">—</span></div>
-      <div class="box"><span class="cap">Best run</span><span class="big" id="yourBest">—</span></div>
+      <div class="box me"><span class="cap">Your run today</span><span class="big" id="yourTm">–</span></div>
+      <div class="box"><span class="cap">Best run</span><span class="big" id="yourBest">–</span></div>
     </div>
     <div class="lb-sample" id="lbSample">
       <div class="lb-samplab">Illustrative ranking</div>
@@ -378,7 +378,7 @@
     document.getElementById('mRun').textContent=run;
     document.getElementById('mBest').textContent=s.bestRun||0;
     document.getElementById('mStreak').textContent=s.streak||0;
-    document.getElementById('mSub').textContent = locked ? 'Your run today' : (!attemptFirst ? 'Practice run — not ranked' : (run>=SEQ.length?'You named them all!':'Your run ended'));
+    document.getElementById('mSub').textContent = locked ? 'Your run today' : (!attemptFirst ? 'Practice run, not ranked' : (run>=SEQ.length?'You named them all!':'Your run ended'));
     document.getElementById('yourTm').textContent = run+' in a row';
     document.getElementById('yourBest').textContent = s.bestRun||0;
     updateAgainBtn();
@@ -391,7 +391,7 @@
     beginAttempt();
   });
   document.getElementById('mShare').addEventListener('click', function(){
-    var txt='Run The Arcade · Career Path\n🧭 '+run+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/';
+    var txt='Run The Arcade · Career Path\n'+run+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
     else toast('Sharing not supported');
@@ -429,7 +429,7 @@
           samp.innerHTML=h;
         }
       }
-      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board — longest run today wins, ties broken by time. Sign in on RunThe.GG to post yours.';
+      var note=document.getElementById('lbNote'); if(note) note.textContent='Live board: longest run today wins, ties broken by time. Sign in on RunThe.GG to post yours.';
     });
   }
 
@@ -444,7 +444,7 @@
   if(canResume){ resumeAttempt(RES); }
   else if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('career')){
     done=true; choicesEl.style.pointerEvents='none'; choicesEl.style.opacity='.5';
-    document.getElementById('hintline').textContent='No plays left — back tomorrow.';
+    document.getElementById('hintline').textContent='No plays left. Back tomorrow.';
     if(saved.last){ run=saved.last.run||0; showEnd(saved, true); } else { renderRound(); }
   } else { beginAttempt(); }
   if(window.RTG_BOARD){
