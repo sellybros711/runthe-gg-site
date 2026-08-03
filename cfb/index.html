@@ -793,6 +793,7 @@ window.GA_ID='G-L29P5MRWKE';
     50%{box-shadow:0 5px 14px -5px rgba(0,0,0,.7),0 0 18px 3px rgba(220,38,38,.55),
       inset 0 1px 0 rgba(255,255,255,.3)}}
   .gameday.ranked span{background:var(--grad-gold);color:#1a1206}
+  .gameday.playoff span{background:linear-gradient(135deg,#fb7185,#dc2626);color:#fff}
   .gameday.showdown span{background:linear-gradient(135deg,#fde047,#f59e0b);color:#1a1206;
     animation:gdpulse 1.8s ease-in-out infinite}
   @keyframes gdpulse{0%,100%{box-shadow:0 5px 14px -5px rgba(0,0,0,.7),0 0 0 0 rgba(245,158,11,.55),
@@ -2092,8 +2093,7 @@ or endorsed by the NCAA, the CFP or any school.
 
   <!-- s-po (playoff broadcast) -->
   <div class="screen" id="s-po">
-    <div class="eyebrow red" id="po-round">Playoffs</div>
-    <h2 class="display" style="font-size:22px;margin:5px 0 10px" id="po-opp">Opponent</h2>
+    <h2 class="display" style="font-size:22px;margin:0 0 10px" id="po-opp">Opponent</h2>
     <div class="gameday" id="po-gameday" style="display:none"><span id="po-gdtext"></span></div>
     <div class="bug" id="po-bug">
       <div class="btop">
@@ -4883,7 +4883,6 @@ function playPlayoffGame(r,afterFn){
   const youEl=$('po-you'), themEl=$('po-them'), bug=$('po-bug');
   const rcls=ROUND_CLASS[round]||'r-first';
 
-  $('po-round').textContent=round;
   $('po-opp').textContent=r.opponent;
   youEl.style.setProperty('--tcol',me.bg);
   youEl.style.setProperty('--tcol2',me.accent);
@@ -4907,7 +4906,13 @@ function playPlayoffGame(r,afterFn){
   themEl.querySelector('.sc').textContent='0';
   youEl.className='bt you'; themEl.className='bt them';
   bug.className='bug '+rcls+(poRk?' ranked':'');
-  setShowdown('po-gameday','po-gdtext',poRk);
+  /* THE ROUND IS THE RIBBON. Saying CFP Semifinal up top and Ranked Matchup
+     under it was two labels on one game, and in the playoff every opponent is
+     ranked, so the ribbon says the thing that matters: which round this is.
+     The opponent's ranking still shows as the # on the bug. */
+  $('po-gameday').className='gameday '+(round==='CFP Championship'?'rivalry':'playoff');
+  $('po-gameday').style.display='';
+  $('po-gdtext').textContent=round==='CFP Championship'?'National Championship':round;
   $('po-q').textContent=QNAME[0];
   $('po-ck').textContent='15:00';
   $('po-rd').textContent=ROUND_SHORT[round]||round.toUpperCase();
