@@ -67,11 +67,11 @@ function buildToBudget(rng, targetSpendFraction) {
       remaining - reserve,
       (budget * targetSpendFraction) / slots.length * (1 + 0.9 * (rng() - 0.5) * 2),
     );
-    const pool = players.filter((p) => allowed.includes(p.position)
+    const pool = players.filter((p) => E.fillsSlot(slot, p)
       && p.price_musd <= Math.max(constants.MIN_RESERVE_PER_SLOT_MUSD, spendCap)
       && !used.has(`${p.player_id}|${p.season}`));
     if (!pool.length) {
-      const fallback = players.filter((p) => allowed.includes(p.position)
+      const fallback = players.filter((p) => E.fillsSlot(slot, p)
         && p.price_musd <= remaining - reserve && !used.has(`${p.player_id}|${p.season}`));
       const c = fallback.sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
       roster.push(c); used.add(`${c.player_id}|${c.season}`); remaining -= c.price_musd;
@@ -90,9 +90,8 @@ function buildRandom(rng) {
   const used = new Set();
   let remaining = constants.CAP_MUSD;
   for (let i = 0; i < E.SLOTS.length; i++) {
-    const allowed = E.SLOT_ELIGIBILITY[E.SLOTS[i]];
     const reserve = (E.SLOTS.length - i - 1) * constants.MIN_RESERVE_PER_SLOT_MUSD;
-    const pool = players.filter((p) => allowed.includes(p.position)
+    const pool = players.filter((p) => E.fillsSlot(E.SLOTS[i], p)
       && p.price_musd <= remaining - reserve && !used.has(`${p.player_id}|${p.season}`));
     const c = pool[Math.floor(rng() * pool.length)];
     roster.push(c); used.add(`${c.player_id}|${c.season}`); remaining -= c.price_musd;
@@ -111,11 +110,10 @@ function buildStacked(rng) {
     let remaining = constants.CAP_MUSD;
     let ok = true;
     for (let i = 0; i < E.SLOTS.length; i++) {
-      const allowed = E.SLOT_ELIGIBILITY[E.SLOTS[i]];
       const reserve = (E.SLOTS.length - i - 1) * constants.MIN_RESERVE_PER_SLOT_MUSD;
-      const local = from.filter((p) => allowed.includes(p.position)
+      const local = from.filter((p) => E.fillsSlot(E.SLOTS[i], p)
         && p.price_musd <= remaining - reserve && !used.has(`${p.player_id}|${p.season}`));
-      const pool = local.length ? local : players.filter((p) => allowed.includes(p.position)
+      const pool = local.length ? local : players.filter((p) => E.fillsSlot(E.SLOTS[i], p)
         && p.price_musd <= remaining - reserve && !used.has(`${p.player_id}|${p.season}`));
       if (!pool.length) { ok = false; break; }
       const c = pool.sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
@@ -204,7 +202,7 @@ function buildOptimal(budgetMusd = constants.CAP_MUSD) {
     // Duplicate guard: the DP ignores identity, and WR/WR/FLEX can collide.
     if (used.has(`${cand.player_id}|${cand.season}`)) {
       const alt = players
-        .filter((p) => E.SLOT_ELIGIBILITY[E.SLOTS[i]].includes(p.position)
+        .filter((p) => E.fillsSlot(E.SLOTS[i], p)
           && p.price_musd <= spend * BUCKET && !used.has(`${p.player_id}|${p.season}`))
         .sort((x, y) => y.ppr_ppg_mean - x.ppr_ppg_mean)[0];
       if (alt) cand = alt;
@@ -236,9 +234,8 @@ function buildOptimalWithChemistry(rng) {
     for (let i = 0; i < roster.length; i++) {
       const spent = roster.reduce((s, p, j) => s + (j === i ? 0 : p.price_musd), 0);
       const room = constants.CAP_MUSD - spent;
-      const allowed = E.SLOT_ELIGIBILITY[E.SLOTS[i]];
       const mates = new Set(roster.filter((_, j) => j !== i).map((p) => p.team_season_id));
-      const cands = players.filter((p) => allowed.includes(p.position)
+      const cands = players.filter((p) => E.fillsSlot(E.SLOTS[i], p)
         && p.price_musd <= room
         && mates.has(p.team_season_id)
         && !roster.some((q, j) => j !== i && q.player_id === p.player_id && q.season === p.season));
@@ -485,7 +482,7 @@ function draftReport(n) {
       // Spots are chosen by the player now, so check each signing against the
       // slot it actually took (run.slotIndex), not its position in the roster.
       const shapeOk = run.roster.every((p, idx) =>
-        E.SLOT_ELIGIBILITY[E.SLOTS[run.slotIndex[idx]]].includes(p.position))
+        E.fillsSlot(E.SLOTS[run.slotIndex[idx]], p))
         && new Set(run.slotIndex).size === run.slotIndex.length;
       // A team-season may now appear twice in a run (that is what makes the
       // Teammates and Battery links reachable at all), but never more than twice.

@@ -512,9 +512,11 @@ function slotForPlayer(run, player) {
   const slots = slotsOf(run);
   const open = openSlots(run);
   // Prefer a dedicated slot for his own position before spending FLEX on him.
-  const dedicated = open.find((i) => slots[i] === player.position);
+  /* His own position first, and for a two-position man either of them, before FLEX. */
+  const positions = E.positionsOf(player);
+  const dedicated = open.find((i) => positions.includes(slots[i]));
   if (dedicated !== undefined) return dedicated;
-  const flex = open.find((i) => E.SLOT_ELIGIBILITY[slots[i]].includes(player.position));
+  const flex = open.find((i) => E.fillsSlot(slots[i], player));
   return flex === undefined ? null : flex;
 }
 
@@ -1139,9 +1141,9 @@ function assignRoster(players, slots) {
   const used = new Array(players.length).fill(false);
   const bt = (k) => {
     if (k === order.length) return true;
-    const elig = E.SLOT_ELIGIBILITY[order[k].sn];
+    const sn = order[k].sn;
     for (let pl = 0; pl < players.length; pl++) {
-      if (used[pl] || !elig.includes(players[pl].position)) continue;
+      if (used[pl] || !E.fillsSlot(sn, players[pl])) continue;
       used[pl] = true; assign[pl] = order[k].i;
       if (bt(k + 1)) return true;
       used[pl] = false; assign[pl] = -1;
@@ -1174,7 +1176,22 @@ function assignRosterOpen(players, slots) {
 function neededPositions(keep, slots) {
   const dedicated = {}; 
   slots.forEach((sn) => { const e = E.SLOT_ELIGIBILITY[sn]; if (e.length === 1) dedicated[e[0]] = (dedicated[e[0]] || 0) + 1; });
-  const have = {}; keep.forEach((p) => { have[p.position] = (have[p.position] || 0) + 1; });
+  /* Count a two-position man against whichever dedicated spot is still short, so shopping
+     your only tight end does not demand a tight end back when Taysom Hill is already on the
+     roster and can slide over. Greedy by scarcity, which is enough: the dedicated counts here
+     are one apiece. */
+  const have = {};
+  const flexible = [];
+  keep.forEach((p) => {
+    const positions = E.positionsOf(p);
+    if (positions.length > 1) { flexible.push(positions); return; }
+    have[p.position] = (have[p.position] || 0) + 1;
+  });
+  for (const positions of flexible) {
+    const short = positions.find((pos) => (dedicated[pos] || 0) > (have[pos] || 0));
+    const pick = short ?? positions[0];
+    have[pick] = (have[pick] || 0) + 1;
+  }
   const need = [];
   for (const pos in dedicated) {
     for (let d = 0; d < dedicated[pos] - (have[pos] || 0); d++) need.push(pos);
@@ -2504,9 +2521,13 @@ function indexData(players, teamSeasons) {
      numbers. */
   const FLOOR_DEPTH = 48;
   const cheapBy = {};
+  /* A two-position man belongs in both of his lists, or drawable() would promise a slot
+     it cannot fill (or refuse one it can). See E.positionsOf. */
   const add = (key, p) => {
-    const at = ((cheapBy[key] ??= {})[p.position] ??= []);
-    at.push({ id: p.player_id, price: p.price_musd, ts: p.team_season_id });
+    for (const pos of E.positionsOf(p)) {
+      const at = ((cheapBy[key] ??= {})[pos] ??= []);
+      at.push({ id: p.player_id, price: p.price_musd, ts: p.team_season_id });
+    }
   };
   for (const p of players) {
     if (!p.position) continue;
@@ -2555,7 +2576,7 @@ function bestPossibleSquad(run, data, ctx) {
   if (pool.some((list) => !list.length)) return null;
 
   const bpSlots = slotsOf(run);
-  const fits = (p, slot) => E.SLOT_ELIGIBILITY[bpSlots[slot]].includes(p.position);
+  const fits = (p, slot) => E.fillsSlot(bpSlots[slot], p);
   const popcount = (m) => { let c = 0; while (m) { c += m & 1; m >>= 1; } return c; };
 
   const NEG = -1e9;

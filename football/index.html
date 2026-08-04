@@ -4021,8 +4021,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="headline" id="headline"></div>
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=48"></script>
-<script src="run.js?v=66"></script>
+<script src="engine.js?v=49"></script>
+<script src="run.js?v=67"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -4779,7 +4779,7 @@ function sheet(p){
   const ts=DATA.byTeamSeasonId[p.team_season_id];
   $('sheet-in').innerHTML='<div class="eyebrow">'+esc(ts?ts.display:p.season+' '+E.nickname(p.franchise))+'</div>'+
     '<h2 class="display" style="font-size:26px;margin:4px 0 10px">'+esc(p.name)+'</h2>'+
-    '<div class="kv"><span class="dim">Spot</span><b>'+p.position+'</b></div>'+
+    '<div class="kv"><span class="dim">Spot</span><b>'+esc(E.positionLabel(p))+'</b></div>'+
     '<div class="kv"><span class="dim">Cost</span><b>'+M(p.price_musd)+'</b></div>'+
     (p.stat_line?'<p style="margin:0 0 10px;font-size:13px;color:var(--dim)">'+esc(p.stat_line)+'</p>':'')+
     ((p.awards||[]).length?'<div class="badges" style="margin-bottom:9px">'+
@@ -5381,8 +5381,12 @@ function optionGroups(draw){
   const all=[];
   for(const row of draw.board){
     const p=BYKEY.get(row.key);
-    if(!groups.has(p.position)) groups.set(p.position,[]);
-    groups.get(p.position).push({p,block:row.block});
+    /* Under BOTH tabs for a two-position man, or nobody looking for a quarterback on the
+       2020 Saints would ever find Taysom Hill. ALL still lists him once. */
+    for(const pos of E.positionsOf(p)){
+      if(!groups.has(pos)) groups.set(pos,[]);
+      groups.get(pos).push({p,block:row.block});
+    }
     all.push({p,block:row.block});
   }
   // Signable first, then blocked, each half still best-first.
@@ -5419,7 +5423,7 @@ const stagger=(i)=>Math.min(220,(i||0)*28);
 function optTile(row){
   const p=row.p, i=row.i;
   const head='<span class="pos" style="'+posPaint(p.position)+'">'+
-    p.position+'</span><span class="pr">'+M(p.price_musd)+'</span>';
+    esc(E.positionLabel(p))+'</span><span class="pr">'+M(p.price_musd)+'</span>';
   const who='<span class="nm">'+esc(p.name)+'</span>'+
     '<span class="sn">'+p.season+' '+esc(E.nickname(p.franchise))+'</span>';
   const pts='<span class="pts"><b>'+p.fppg.toFixed(1)+'</b><i>FPPG</i></span>';
@@ -6824,7 +6828,7 @@ function enterMarket(){
    scale. A player who has drafted a roster recognises these on sight, which is the point:
    one card for one player, everywhere in the game. */
 function dealTile(p,mode){
-  const head='<span class="pos" style="'+posPaint(p.position)+'">'+esc(p.position)+'</span>'+
+  const head='<span class="pos" style="'+posPaint(p.position)+'">'+esc(E.positionLabel(p))+'</span>'+
     '<span class="pr">'+M(p.price_musd)+'</span>';
   /* Week-to-week character, from the same sd the sim draws his games with. A second
      axis to trade on: the steady man shows up every Sunday, the boom-bust man wins

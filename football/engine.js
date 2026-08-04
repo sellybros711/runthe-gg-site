@@ -1311,7 +1311,13 @@ function rosterStructure(roster) {
     return { multiplier: 1, qbSupport: 1, balance: 1, concentration: 1, rushShare: 0, topShare: 0, qbPass: 0 };
   }
 
-  const qb = roster.find((p) => p.position === 'QB');
+  /* WHOEVER IS ACTUALLY PLAYING QUARTERBACK. A listed quarterback first, and failing that a
+     two-position man who can play there, because a roster whose QB spot is filled by Taysom
+     Hill has a quarterback: a bad one. Reading only p.position found nobody and floored the
+     support term as though the position were empty, which is a different and wronger claim
+     than "he threw for 928 yards". No roster without a two-position man changes at all. */
+  const qb = roster.find((p) => p.position === 'QB')
+    || roster.find((p) => positionsOf(p).includes('QB'));
   const qbPass = qb ? (qb.pass_ppg || 0) : 0;
   const qbSupport = clamp(
     0.55 + 0.45 * (qbPass / S.QB_BASELINE_PASS_PPG),
@@ -1468,6 +1474,101 @@ const SLOTS = ['QB', 'RB', 'WR', 'WR', 'TE', 'FLEX'];
 const SLOT_ELIGIBILITY = {
   QB: ['QB'], RB: ['RB'], WR: ['WR'], TE: ['TE'], FLEX: ['RB', 'WR', 'TE'],
 };
+
+/*
+ * ─── MEN WHO PLAYED TWO POSITIONS ───────────────────────────────────────────────────
+ *
+ * The data gives every player-season exactly one position, because nflverse gives every
+ * player one position. For almost everybody that is the truth. For a handful it is not:
+ * Taysom Hill is listed at tight end for seasons in which he started games at quarterback,
+ * and the game would not let you play him there.
+ *
+ * So these player-seasons carry a SECOND position, and every eligibility question in the
+ * game answers yes to both. The first position stays primary: it is what the card shows
+ * first, and crucially it is what the PRICE was computed against, since price is value over
+ * that position's replacement level. Nothing about the money moves.
+ *
+ * That pricing detail is also why this cannot be exploited in the direction you would
+ * expect. Hill's 2020 season costs $11.9M because 9.8 points a game is a fine tight end.
+ * As a quarterback 9.8 is dreadful, and he is priced as though he were good, so playing him
+ * at quarterback is a real decision with a real cost rather than a loophole. The same holds
+ * for Deebo Samuel at running back.
+ *
+ * THE BAR FOR BEING ON THIS LIST is that the player genuinely lined up as a regular at both
+ * positions that season. Not a gadget snap, not a trick pass. Plenty of men clear a
+ * statistical filter without clearing this one: Antwaan Randle El and Mohamed Sanu threw
+ * more career passes than some backups, Tavon Austin and Percy Harvin and Tyreek Hill's
+ * rookie year all carried the ball a lot, Brad Smith took Wildcat snaps for the Jets. All of
+ * them were a wide receiver who did something else occasionally, which is a different thing
+ * from a second job, and none of them are here.
+ *
+ * Keyed by player_id so a rebuild of player_seasons.json cannot silently drop it.
+ */
+const DUAL_POSITIONS = [
+  {
+    /* Taysom Hill, the whole reason this list exists. Listed TE by nflverse throughout,
+       started games at QB in 2020 and 2021, threw passes in most of the others, and lined
+       up at tight end, quarterback and running back in the same game more than once. */
+    player_id: '00-0033357', name: 'Taysom Hill', add: 'QB',
+    seasons: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
+  },
+  {
+    /* Terrelle Pryor, 2013 only, and this one is a mislabel rather than a hybrid: he was
+       Oakland's STARTING QUARTERBACK that season, 1,798 passing yards, and caught nothing.
+       nflverse files him at receiver because that is what he became three years later. His
+       2016 receiving season is left alone, because by then it was true. */
+    player_id: '00-0028825', name: 'Terrelle Pryor', add: 'QB', seasons: [2013],
+  },
+  {
+    /* Deebo Samuel, the wide back. Eight rushing touchdowns in 2021, more than most starting
+       running backs had, off real carries out of the backfield rather than end-arounds. */
+    player_id: '00-0035719', name: 'Deebo Samuel Sr.', add: 'RB', seasons: [2021, 2022, 2023],
+  },
+  {
+    /* Ty Montgomery, converted from receiver to running back in the middle of 2016 and
+       played there. Still listed WR. */
+    player_id: '00-0032200', name: 'Ty Montgomery', add: 'RB', seasons: [2016, 2017, 2018],
+  },
+  {
+    /* Cordarrelle Patterson's Atlanta years, where he was the lead back and a receiver in
+       the same offence. Listed RB, so the second position is the receiver half. */
+    player_id: '00-0030578', name: 'Cordarrelle Patterson', add: 'WR', seasons: [2021, 2022],
+  },
+];
+
+/* player_id|season -> the second position. Built once; the list above is the source. */
+const DUAL_BY_KEY = new Map();
+for (const d of DUAL_POSITIONS) {
+  for (const season of d.seasons) DUAL_BY_KEY.set(`${d.player_id}|${season}`, d.add);
+}
+
+/**
+ * Every position a player-season may be played at, primary first.
+ *
+ * One-element array for almost everybody, so callers can treat this as the general case
+ * without paying for it. Tolerates a missing player_id or season, which the archetype
+ * builders in the harness rely on.
+ */
+function positionsOf(player) {
+  if (!player || !player.position) return [];
+  const second = player.player_id != null && player.season != null
+    ? DUAL_BY_KEY.get(`${player.player_id}|${player.season}`) : undefined;
+  return second && second !== player.position ? [player.position, second] : [player.position];
+}
+
+/** Can this player-season be played in this drafted slot? The one eligibility question. */
+function fillsSlot(slot, player) {
+  const allowed = SLOT_ELIGIBILITY[slot];
+  if (!allowed) return false;
+  const positions = positionsOf(player);
+  for (const pos of positions) if (allowed.includes(pos)) return true;
+  return false;
+}
+
+/** 'TE' for almost everybody, 'TE/QB' for the two-position men. For labels and badges. */
+function positionLabel(player) {
+  return positionsOf(player).join('/');
+}
 
 // ─── randomness ──────────────────────────────────────────────────────────────
 
@@ -2518,6 +2619,7 @@ function eraCode(franchise, season) {
 const publicAPI = {
   API_VERSION: ENGINE_API_VERSION,
   CONSTANTS, ERAS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
+  DUAL_POSITIONS, positionsOf, fillsSlot, positionLabel,
   hashSeed, createSeededRNG, sampleGamma,
   pairLinks, resolveChemistry,
   buildDivisionMap, generateSchedule, generatePlayoffs,
