@@ -2363,8 +2363,8 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=18"></script>
-<script src="run.js?v=9"></script>
+<script src="engine.js?v=19"></script>
+<script src="run.js?v=10"></script>
 <script src="achievements.js?v=8"></script>
 <script src="auth.js?v=1"></script>
 <script src="board.js?v=1"></script>
@@ -3583,7 +3583,7 @@ function patchLastRun(patch){
 /* ── boot ────────────────────────────────────────────────────── */
 async function boot(){
   try{
-    const j=(f)=>fetch(f+'?v=2').then(r=>{if(!r.ok)throw new Error(f);return r.json();});
+    const j=(f)=>fetch(f+'?v=3').then(r=>{if(!r.ok)throw new Error(f);return r.json();});
     const [pl,tm,bat,co,cu,lg,cal]=await Promise.all([
       j('data/cfb_player_seasons.json'),j('data/cfb_team_seasons.json'),
       j('data/cfb_battery.json'),j('data/cfb_coaches.json'),
@@ -3847,7 +3847,7 @@ function sheet(p){
   $('sheet-in').innerHTML=
     '<div class="eyebrow">'+esc(ts?ts.display:(p.season+' '+(p.school||'')))+'</div>'+
     '<h2 class="display" style="font-size:24px;margin:4px 0 10px">'+esc(p.name)+'</h2>'+
-    '<div class="kv"><span class="dim">Spot</span><b>'+esc(p.position)+'</b></div>'+
+    '<div class="kv"><span class="dim">Spot</span><b>'+esc(posLabel(p))+'</b></div>'+
     '<div class="kv"><span class="dim">Cost</span><b>'+M(p.price_musd)+'</b></div>'+
     (p.stat_line?'<p style="margin:10px 0 0;font-size:13px;color:var(--dim)">'+esc(p.stat_line)+'</p>':'')+
     ((p.awards||[]).length||(p.badges||[]).length?'<div class="badges" style="margin:9px 0 2px">'+
@@ -4111,10 +4111,14 @@ function blockNote(p,block){
 
 const stagger=(i)=>Math.min(220,(i||0)*28);
 
+/* A man who played two positions says so wherever his position is named, so it
+   is obvious before you sign him that he can fill either spot. */
+const posLabel=(p)=>p&&p.alt_position?p.position+'/'+p.alt_position:(p?p.position:'');
+
 function optTile(row){
   const p=row.p, i=row.i;
   const head='<span class="pos" style="'+posPaint(p.position)+'">'+
-    p.position+'</span><span class="pr">'+M(p.price_musd)+'</span>';
+    esc(posLabel(p))+'</span><span class="pr">'+M(p.price_musd)+'</span>';
   const who='<span class="nm">'+esc(p.name)+'</span>'+
     '<span class="sn">'+p.season+' '+esc(p.school||'')+'</span>';
   const pts='<span class="pts"><b>'+p.fppg.toFixed(1)+'</b><i>FPPG</i></span>';

@@ -20,6 +20,7 @@ import {
   cfbdFetchRetry, isDrawable,
   mean, stdev, quantileSorted, round, writePair,
 } from './lib.mjs';
+import { secondPosition } from './dual-positions.mjs';
 
 // ─── pricing constants (NIL scale, 10× smaller than NFL) ────────────────────
 
@@ -491,7 +492,13 @@ async function main() {
       stat_line: statLine(p.position, p.tot),
       badges: p._badges.map((x) => x.text),
       home_state: p.home_state,
-    }));
+    }))
+    /* A second position for the men who played two. CFBD carries one position
+       per player and applies it to every season of their career, so this is
+       derived from what they actually did: see cfb/build/dual-positions.mjs,
+       which owns the rule and can also be run on its own against the built
+       file. Applied last, because it reads the per-phase splits above. */
+    .map((r) => { const alt = secondPosition(r); return alt ? { ...r, alt_position: alt } : r; });
 
   const csvRows = rows.map((r, i) => ({
     ...r,

@@ -225,17 +225,28 @@ function openSlots(run) {
 }
 
 function slotForPlayer(run, player) {
-  /* A position cap blocks the pick outright, whatever slot is open: two running
-     backs is the limit, so a third has nowhere to go even with a flex free. */
-  const cap = (E.CONSTANTS.POSITION_MAX || {})[player.position];
-  if (cap != null && run.roster.filter((p) => p.position === player.position).length >= cap) {
-    return null;
-  }
+  /* A man who played two positions is offered at either, his primary first: a
+     receiver who also carried the ball takes a receiver spot while one is open
+     and slides to running back when one is not. A position cap still blocks the
+     pick outright at that position, so a third back has nowhere to go even with
+     a flex free, but a hybrid can still be signed at the OTHER position he
+     played. */
+  const caps = E.CONSTANTS.POSITION_MAX || {};
+  const held = (pos) => run.roster.filter((p) => p.position === pos).length;
+  const allowed = E.positionsOf(player)
+    .filter((pos) => { const c = caps[pos]; return c == null || held(pos) < c; });
+  if (!allowed.length) return null;
+
   const open = openSlots(run);
-  const dedicated = open.find((i) => E.SLOTS[i] === player.position);
-  if (dedicated !== undefined) return dedicated;
-  const flex = open.find((i) => E.SLOT_ELIGIBILITY[E.SLOTS[i]].includes(player.position));
-  return flex === undefined ? null : flex;
+  for (const pos of allowed) {
+    const dedicated = open.find((i) => E.SLOTS[i] === pos);
+    if (dedicated !== undefined) return dedicated;
+  }
+  for (const pos of allowed) {
+    const flex = open.find((i) => E.SLOT_ELIGIBILITY[E.SLOTS[i]].includes(pos));
+    if (flex !== undefined) return flex;
+  }
+  return null;
 }
 
 function openSlotNames(run) {
@@ -559,7 +570,9 @@ function bestPossibleSquad(run, data, ctx) {
   const pool = run.draws.map((d) => (data.playersByTeamSeason[d.team_season_id] ?? []));
   if (pool.some((list) => !list.length)) return null;
 
-  const fits = (p, slot) => E.SLOT_ELIGIBILITY[E.SLOTS[slot]].includes(p.position);
+  /* Both of a hybrid's positions count here too, or the best-possible squad the
+     results screen shows could be one the player was never allowed to draft. */
+  const fits = (p, slot) => E.canFillSlot(p, E.SLOTS[slot]);
   const popcount = (m) => { let c = 0; while (m) { c += m & 1; m >>= 1; } return c; };
 
   const NEG = -1e9;

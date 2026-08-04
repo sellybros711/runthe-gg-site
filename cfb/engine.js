@@ -786,12 +786,23 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const over = (v, min, span) => clamp(((v || 0) - min) / span, 0, 1);
 const fitAvg = (...xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
+/* WHO IS TAKING THE SNAPS. A roster's quarterback is normally the man listed at
+   the position, but the quarterback slot can also be filled by somebody who
+   played both, so a roster can have a quarterback without anyone whose PRIMARY
+   position is one. Falling back to the best passer among the men who played the
+   position keeps that roster from reading as having nobody under centre. */
+function findQB(roster) {
+  return roster.find(p => p.position === 'QB')
+    || roster.filter(p => p.alt_position === 'QB')
+      .sort((a, b) => (b.pass_ppg || 0) - (a.pass_ppg || 0))[0];
+}
+
 const SCHEMES = [
   {
     key: 'spread',
     name: 'Spread Offense',
     detect(roster) {
-      const qb = roster.find(p => p.position === 'QB');
+      const qb = findQB(roster);
       if (!qb || (qb.pass_ppg || 0) < 13 || (qb.rush_ppg || 0) < 3) return -1;
       const wrs = roster.filter(p => p.position === 'WR' && (p.rec_ppg || 0) >= 6);
       if (wrs.length < 2) return -1;
@@ -810,7 +821,7 @@ const SCHEMES = [
          everything spread wide. A roster that signed a TE is not an Air Raid;
          it falls through to Pro Style or Power Run below. */
       if (roster.some(p => p.position === 'TE')) return -1;
-      const qb = roster.find(p => p.position === 'QB');
+      const qb = findQB(roster);
       if (!qb || (qb.pass_ppg || 0) < 16) return -1;
       const wrs = roster.filter(p => p.position === 'WR' && (p.rec_ppg || 0) >= 8)
         .sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0));
@@ -830,7 +841,7 @@ const SCHEMES = [
     key: 'pro_style',
     name: 'Pro Style',
     detect(roster) {
-      const qb = roster.find(p => p.position === 'QB');
+      const qb = findQB(roster);
       if (!qb || (qb.pass_ppg || 0) < 12) return -1;
       const te = roster.filter(p => p.position === 'TE').sort((a, b) => (b.rec_ppg || 0) - (a.rec_ppg || 0))[0];
       if (!te || (te.rec_ppg || 0) < 5) return -1;
@@ -856,7 +867,7 @@ const SCHEMES = [
     key: 'rpo',
     name: 'RPO',
     detect(roster) {
-      const qb = roster.find(p => p.position === 'QB');
+      const qb = findQB(roster);
       if (!qb || (qb.rush_ppg || 0) < 4 || (qb.pass_ppg || 0) < 10) return -1;
       const rb = roster.filter(p => p.position === 'RB').sort((a, b) => (b.rush_ppg || 0) - (a.rush_ppg || 0))[0];
       if (!rb || (rb.rush_ppg || 0) < 7) return -1;
@@ -868,7 +879,7 @@ const SCHEMES = [
     key: 'dual_threat',
     name: 'Dual Threat',
     detect(roster) {
-      const qb = roster.find(p => p.position === 'QB');
+      const qb = findQB(roster);
       if (!qb || (qb.rush_ppg || 0) < 4) return -1;
       return over(qb.rush_ppg, 4, 6);
     },
@@ -893,7 +904,7 @@ function rosterStructure(roster) {
       rushShare: 0, topShare: 0, qbPass: 0 };
   }
 
-  const qb = roster.find(p => p.position === 'QB');
+  const qb = findQB(roster);
   const qbPass = qb ? (qb.pass_ppg || 0) : 0;
   const qbSupport = clamp(
     0.55 + 0.45 * (qbPass / S.QB_BASELINE_PASS_PPG),
@@ -994,6 +1005,24 @@ const SLOTS = ['QB', 'RB', 'WR', 'WR', 'FLEX', 'FLEX'];
 const SLOT_ELIGIBILITY = {
   QB: ['QB'], RB: ['RB'], WR: ['WR'], TE: ['TE'], FLEX: ['RB', 'WR', 'TE'],
 };
+
+/* EVERY POSITION A MAN ACTUALLY PLAYED. Most players have one. The ones who
+   genuinely lined up at two carry alt_position, set by the production in
+   cfb/build/dual-positions.mjs, and they can be signed at either: Dexter
+   McCluster at receiver or at back, Kerry Meier at receiver or under centre.
+   position stays the primary, so anything that wants a single answer (the chip
+   colour, the scheme detector) keeps reading the same field it always did. */
+function positionsOf(player) {
+  return player && player.alt_position
+    ? [player.position, player.alt_position]
+    : [player ? player.position : null];
+}
+/** Can this player fill this slot, at any of the positions he played? */
+function canFillSlot(player, slot) {
+  const allow = SLOT_ELIGIBILITY[slot];
+  if (!allow) return false;
+  return positionsOf(player).some((pos) => allow.includes(pos));
+}
 
 // ─── randomness ─────────────────────────────────────────────────────────────
 
@@ -1606,7 +1635,7 @@ function prepareData(teamSeasons) {
 
 const publicAPI = {
   API_VERSION: ENGINE_API_VERSION,
-  CONSTANTS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
+  CONSTANTS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY, positionsOf, canFillSlot, findQB,
   hashSeed, createSeededRNG, sampleGamma,
   pairLinks, resolveChemistry,
   generateSchedule, generatePlayoffs, generateBowlOpponent,
