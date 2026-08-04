@@ -289,8 +289,13 @@ async function buildNBA() {
     const cats = d && d.categories;
     if (cats) for (const c of cats) for (const L of (c.leaders || [])) {
       const ref = L.athlete && L.athlete.$ref; if (!ref) continue;
-      let e = acc.get(ref);
-      if (!e) { e = { seasons: {}, ns: 0, teamRefs: {} }; acc.set(ref, e); }
+      // The athlete $ref is SEASON-SCOPED (.../seasons/2015/athletes/1966), so
+      // key by the athlete id, not the ref, or every season looks like a new
+      // player and nobody ever reaches two seasons.
+      const m = ref.match(/\/athletes\/(\d+)/); if (!m) continue;
+      const aid = m[1];
+      let e = acc.get(aid);
+      if (!e) { e = { seasons: {}, ns: 0, teamRefs: {} }; acc.set(aid, e); }
       if (!e.seasons[y]) { e.seasons[y] = 1; e.ns++; }
       const tref = L.team && L.team.$ref;
       if (tref && (e.teamRefs[tref] == null || y < e.teamRefs[tref])) e.teamRefs[tref] = y;
@@ -299,9 +304,9 @@ async function buildNBA() {
   }
 
   const players = [];
-  for (const [ref, e] of acc) {
+  for (const [aid, e] of acc) {
     if (e.ns < 2) continue;                        // >=2 leader seasons
-    const a = await j(ref); await sleep(30);
+    const a = await j(`${NBA_BASE}/athletes/${aid}`); await sleep(30);
     if (!a) continue;
     const name = (a.displayName || a.fullName || ((a.firstName || '') + ' ' + (a.lastName || ''))).trim();
     if (!name) continue;
@@ -311,7 +316,7 @@ async function buildNBA() {
     const jn = (a.jersey != null && a.jersey !== '') ? Number(a.jersey) : null;
     let f = 3; if (e.ns >= 6) f = 4;
     players.push({
-      id: 'former:nba:' + (a.id || name), name, sport: 'NBA', f, t: teams,
+      id: 'former:nba:' + aid, name, sport: 'NBA', f, t: teams,
       j: (jn != null && !isNaN(jn)) ? [jn] : [], pos: await resolvePos(a),
       decade: decadesFromSeasons(Object.keys(e.seasons).map(Number)),
       nat: normNat(a.birthPlace && a.birthPlace.country), ns: e.ns, hp: 0
