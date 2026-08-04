@@ -1608,6 +1608,13 @@ window.GA_ID='G-L29P5MRWKE';
   /* The champion mark: a small gilded crown or trophy on a title/perfect run's row.
      Sits before the name so a long name can never truncate it away. */
   .champbadge{display:inline-flex;align-items:center;vertical-align:-2px;margin-right:5px;flex:0 0 auto}
+  /* THE BADGE SITS INSIDE .who, WHICH ALREADY CLAIMS EVERY SPAN AS A BLOCK.
+     `.lbr .who span` scores (0,2,1) against `.champbadge`'s (0,1,0), so on a board row the
+     mark was winning the markup and losing the cascade: it computed to display:block, took
+     the full 219px width, and pushed the name onto a second line -- a champion's row was
+     the only one 39px tall with the trophy stranded above the name. Same two classes plus
+     the element it lives in, which is enough to win it back. */
+  .lbr .who b .champbadge{display:inline-flex;width:auto}
   .champbadge .champ-svg{width:14px;height:14px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
   .display .champbadge{margin-right:0;margin-left:8px;vertical-align:0}
   .display .champbadge .champ-svg{width:22px;height:22px}
