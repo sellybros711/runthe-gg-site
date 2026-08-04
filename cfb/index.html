@@ -4855,11 +4855,12 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
     else{ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=0.5*dpr;}
     ctx.beginPath();ctx.moveTo(x,ft);ctx.lineTo(x,ft+fh);ctx.stroke();
   }
-  /* The midfield logo, faint, under the drives the way a painted logo sits under
-     the players. */
+  /* The midfield logo: a SMALL mark at the 50, drawn here so every drive bar lands
+     fully on top of it the way players cover a painted logo. Kept compact so it
+     reads as a field mark rather than a backdrop the drives have to fight. */
   if(fieldLogo.complete&&fieldLogo.naturalWidth){
-    const lh=fh*0.78, lw=lh*(fieldLogo.naturalWidth/fieldLogo.naturalHeight);
-    ctx.globalAlpha=0.11;
+    const lh=fh*0.34, lw=lh*(fieldLogo.naturalWidth/fieldLogo.naturalHeight);
+    ctx.globalAlpha=0.13;
     ctx.drawImage(fieldLogo,pfL+pfW/2-lw/2,ft+fh/2-lh/2,lw,lh);
     ctx.globalAlpha=1;
   }
