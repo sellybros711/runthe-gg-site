@@ -987,6 +987,11 @@ window.GA_ID='G-L29P5MRWKE';
     font-family:var(--fc);font-weight:400;font-size:clamp(13px,4vw,20px);
     line-height:1;letter-spacing:.03em;color:#fff;white-space:nowrap;
     overflow:hidden;text-overflow:clip;text-shadow:0 2px 3px rgba(0,0,0,.6)}
+  /* The season in front of the letters: smaller and quieter, so "2012 LSU" reads
+     as one name with the school still the loud part, and the pair stays inside
+     the cell on the narrowest phone. */
+  .bug .bt .cd .yr{font-style:normal;font-size:.66em;opacity:.7;margin-right:.32em;
+    letter-spacing:.01em;font-variant-numeric:tabular-nums}
   .bug .bt .rc{position:relative;min-width:0;align-self:start;overflow:hidden;
     font-family:var(--fn);font-weight:700;font-size:11px;
     line-height:1;color:rgba(255,255,255,.78);white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -2113,7 +2118,6 @@ or endorsed by the NCAA, the CFP or any school.
 
   <!-- s-po (playoff broadcast) -->
   <div class="screen" id="s-po">
-    <h2 class="display" style="font-size:22px;margin:0 0 10px" id="po-opp">Opponent</h2>
     <div class="gameday" id="po-gameday" style="display:none"><span id="po-gdtext"></span></div>
     <div class="bug" id="po-bug">
       <div class="btop">
@@ -4394,6 +4398,19 @@ function setGameday(rk,label){
   $('v-gdtext').textContent=g.text;
 }
 
+/* THE TEAM'S YEAR RIDES THE SCOREBUG. Every opponent in this game is a
+   team-SEASON, so the year is half of who they are: 2012 LSU is a different
+   team from 2019 LSU. It used to live in a heading above the bug; now it sits
+   with the school's letters, small and dimmer so the code still reads first and
+   the line cannot outgrow the cell. Your own side has no year, being six players
+   from six different ones. */
+function setTeamCode(cell,code,season){
+  const el=cell.querySelector('.cd'); if(!el) return;
+  el.innerHTML='';
+  if(season){ const y=document.createElement('i'); y.className='yr'; y.textContent=season; el.appendChild(y); }
+  el.appendChild(document.createTextNode(code));
+}
+
 function paintSeasonBug(oppId,label){
   const o=oppId?DATA.byTeamSeasonId[oppId]:null;
   const rk=o?teamRank(oppId):0;
@@ -4406,7 +4423,7 @@ function paintSeasonBug(oppId,label){
     const w=E.washColors(o.color||'#8a97a8',o.alt_color);
     $('v-bthem').style.setProperty('--tcol',w.bg);
     $('v-bthem').style.setProperty('--tcol2',w.accent);
-    $('v-bthem').querySelector('.cd').textContent=E.teamColors(o).abbreviation;
+    setTeamCode($('v-bthem'),E.teamColors(o).abbreviation,o.season);
     $('v-bthem').querySelector('.rc').textContent=o.record||'';
     $('v-bthem').querySelector('.rk').textContent=rk?'#'+rk:'';
     const oppEl=$('v-opp');
@@ -4417,7 +4434,7 @@ function paintSeasonBug(oppId,label){
   }else{
     $('v-bthem').style.setProperty('--tcol','#8a97a8');
     $('v-bthem').style.setProperty('--tcol2','rgba(255,255,255,.3)');
-    $('v-bthem').querySelector('.cd').textContent='OPP';
+    setTeamCode($('v-bthem'),'OPP',null);
     $('v-bthem').querySelector('.rc').textContent='';
     $('v-bthem').querySelector('.rk').textContent='';
     $('v-opp').textContent='';
@@ -4939,14 +4956,13 @@ function playPlayoffGame(r,afterFn){
   const youEl=$('po-you'), themEl=$('po-them'), bug=$('po-bug');
   const rcls=ROUND_CLASS[round]||'r-first';
 
-  $('po-opp').textContent=r.opponent;
   youEl.style.setProperty('--tcol',me.bg);
   youEl.style.setProperty('--tcol2',me.accent);
   themEl.style.setProperty('--tcol',them.bg);
   themEl.style.setProperty('--tcol2',them.accent||'rgba(255,255,255,.3)');
   const poRk=teamRank(r.opponent_id);
-  youEl.querySelector('.cd').textContent='YOU';
-  themEl.querySelector('.cd').textContent=opp?E.teamColors(opp).abbreviation:'OPP';
+  setTeamCode(youEl,'YOU',null);
+  setTeamCode(themEl,opp?E.teamColors(opp).abbreviation:'OPP',opp?opp.season:null);
   /* YOUR SEED GOES NEXT TO YOUR RECORD, the way the opponent's ranking does. It
      was blank, so the bug read "YOU 12-1" against "ORE 12-0 #3" and the one thing
      a player wants to know in the bracket, where they are seeded, was the one
@@ -5106,8 +5122,8 @@ function playFeatureBroadcast(cfg){
   youEl.style.setProperty('--tcol',me.bg);youEl.style.setProperty('--tcol2',me.accent);
   themEl.style.setProperty('--tcol',them.bg);themEl.style.setProperty('--tcol2',them.accent||'rgba(255,255,255,.3)');
   const bowlRk=teamRank(r.opponent_id);
-  youEl.querySelector('.cd').textContent='YOU';
-  themEl.querySelector('.cd').textContent=opp?E.teamColors(opp).abbreviation:'OPP';
+  setTeamCode(youEl,'YOU',null);
+  setTeamCode(themEl,opp?E.teamColors(opp).abbreviation:'OPP',opp?opp.season:null);
   /* Same omission on the bowl board, and the same fix: you are not seeded here,
      but you are ranked, and the other side has been showing its ranking all
      along. The record was blank too. */
@@ -5989,8 +6005,11 @@ function bowlBroadcast(cfg){
   $('bowl-tagline').textContent='The Challenge Bowl. One game, winner brags.';
   youEl.style.setProperty('--tcol',me.bg); youEl.style.setProperty('--tcol2',me.accent);
   themEl.style.setProperty('--tcol',themWash.bg); themEl.style.setProperty('--tcol2',themWash.accent);
-  youEl.querySelector('.cd').textContent='YOU';
-  themEl.querySelector('.cd').textContent=(cfg.themName?cfg.themName.replace(/[^A-Za-z0-9]/g,'').slice(0,4).toUpperCase()||'OPP':'OPP');
+  /* No year on either side here: a Challenge Bowl is two DRAFTED teams, and
+     neither belongs to one season. Routed through the helper so a year left on
+     the cell by a real bowl is cleared rather than inherited. */
+  setTeamCode(youEl,'YOU',null);
+  setTeamCode(themEl,(cfg.themName?cfg.themName.replace(/[^A-Za-z0-9]/g,'').slice(0,4).toUpperCase()||'OPP':'OPP'),null);
   youEl.querySelector('.rc').textContent=''; themEl.querySelector('.rc').textContent='';
   youEl.querySelector('.rk').textContent=''; themEl.querySelector('.rk').textContent='';
   youEl.querySelector('.sc').textContent='0'; themEl.querySelector('.sc').textContent='0';
