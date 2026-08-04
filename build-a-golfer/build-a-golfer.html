@@ -3437,7 +3437,7 @@ const SOCIAL_TAG='@RunTheGG #golf #RunTheTour';   // kept for a possible dedicat
 // tags would just spam a friend getting the text in Messages; the owner wants simple, challenging captions.
 function withSocial(t){ return t||''; }
 async function shareText(text){ text=withSocial(text); recordAchEvent({set:{shared:1}}); evaluateAch(); try{questDaily('share');}catch(e){}
-  try{ if(navigator.share){ await navigator.share({text}); return; } }catch(e){ if(e&&e.name==='AbortError')return; }
+  try{ if(navigator.share){ await navigator.share({text,url:'https://runthe.gg/golf/?utm_source=native_share&utm_medium=social&utm_campaign=golf'}); return; } }catch(e){ if(e&&e.name==='AbortError')return; }
   try{ await navigator.clipboard.writeText(text); toast('Copied! Paste it anywhere'); }catch(_){ toast('Could not copy'); } }
 /* ---------- ROUND RATING: a secondary "how you played" grade (S/A/B/C/D), distinct from the raw
    score. Rewards the SHAPE of the round (birdies, eagles, hole-outs, bogey-free, beating the field)
@@ -11311,7 +11311,10 @@ function hvSwingMarkup(g,p,look){
   const W=PXG_DIR8_W, H=PXG_DIR8_H+(useSw4?SW4_HR:0);
   if(useSw4) anch=[anch[0], anch[1]+SW4_HR];
   // putt plays under the tight green close-up → size to that frame; full/chip use a fixed small size.
-  const bodyGH = kind==='putt' ? Math.max(13, Math.min(21, cam[3]*0.16)) : 22;
+  // putt plays under the tight green close-up → size to that frame; a HOLE-OUT now zooms too (hvCamFor2),
+  // so scale to that camera as well or the golfer would balloon; a normal full/chip shot keeps the fixed size.
+  const bodyGH = kind==='putt' ? Math.max(13, Math.min(21, cam[3]*0.16))
+    : (cam[3] < HV_H ? Math.max(15, Math.min(22, cam[3]*0.15)) : 22);
   const GH = bodyGH*H/PXG_DIR8_H;
   const GW=GH*W/H;
   const x0=A[0]-GW*(anch[0]/W), y0=A[1]-GH*(anch[1]/H);   // place the ball-anchor at the shot origin A; NO rotation
@@ -16354,7 +16357,7 @@ function shareCard(cv,text,name,suffix){
     if(!b){toast('Could not build the image, copy the text instead');return;}
     const file=new File([b],((name||'golfer').replace(/\s+/g,'-'))+'-'+(suffix||'season')+'.png',{type:'image/png'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
-      try{await navigator.share({files:[file],text}); return;}catch(e){if(e&&e.name==='AbortError')return;}
+      try{await navigator.share({files:[file],text,url:'https://runthe.gg/golf/?utm_source=native_share&utm_medium=social&utm_campaign=golf'}); return;}catch(e){if(e&&e.name==='AbortError')return;}
     }
     const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=file.name; a.click(); URL.revokeObjectURL(u);
     toast('Card saved. Attach it to your post');
@@ -18533,15 +18536,34 @@ function hvSpeed(d){ return Math.round(Math.max(56,Math.min(184, 46+d*0.43))); }
 function hvApex(d){ return Math.round(Math.max(18,Math.min(132, 12+d*0.36))); }
 function hvCamFor(g, plots, idx){ return hvCamFor2(g, plots[idx]); }
 function hvCamFor2(g, p){   // camera: full hole, or the green close-up for the putting phase
-  if(p && (p.k==='putt'||p.k==='hole')){
+  const isPutt = !!(p && (p.k==='putt'||p.k==='hole'));
+  // owner: "when a hole out is about to happen, could we have the camera zoom in to fit the golfer and
+  // the hole for a more cinematic shot? It's so zoomed out when it happens it's easy to miss." A HOLED
+  // chip/pitch/bunker shot (p.hole on a flying shot) now gets the same adaptive close-up a putt does,
+  // framed so BOTH the golfer at the shot origin and the cup stay in view for the whole flight.
+  const holeOut = !!(p && p.hole && !isPutt);
+  if(p && (isPutt||holeOut)){
     // ADAPTIVE close-up: frame the ball AND the cup with a margin, zooming as tight as the putt
     // allows - a tap-in gets a much closer camera than a 40-footer, so short putts finally read.
     const P=hvProj(g,g.pin[0],g.pin[1]), A=hvProj(g,p.from[0],p.from[1]);
     const AR=(HV_W+2*HV_EX)/HV_H;   // match the on-screen box so nothing gets sliced off
     // tighter framing than before (owner/Jordo: "the green can be bigger - an 8ft putt is not right on
     // top of the hole"): less padding + a smaller floor so the green fills the frame and putt distance reads.
-    let w=Math.max(60, Math.abs(A[0]-P[0])+40, (Math.abs(A[1]-P[1])+54)*AR);
-    w=Math.min(w, 210);
+    let w;
+    if(holeOut){
+      // a hole-out arcs THROUGH the air, so pad for the flight curve's bulge (hvCtrl caps the control
+      // offset at 22% of the shot line) and for the golfer sprite standing at the origin. It only zooms
+      // as far as it can while still showing the whole shot; a long fairway hole-out or an ace can't fit
+      // both in a tight frame, so it keeps the full hole rather than losing the ball off-screen.
+      const len=Math.hypot(A[0]-P[0], A[1]-P[1]);
+      w=Math.max(90, Math.abs(A[0]-P[0])+62+len*0.3, (Math.abs(A[1]-P[1])+74+len*0.3)*AR);
+      // stay on the same close-up threshold the renderer uses (markers draw to scale + the high-density
+      // detail tile kicks in below HV_W*0.6), so a hole-out either gets a true close-up or the full hole.
+      if(w >= HV_W*0.6) return HV_CAM;
+    } else {
+      w=Math.max(60, Math.abs(A[0]-P[0])+40, (Math.abs(A[1]-P[1])+54)*AR);
+      w=Math.min(w, 210);
+    }
     const h=w/AR;
     const cx=(A[0]+P[0])/2, cy=(A[1]+P[1])/2-h*0.04;
     const x=Math.max(-HV_EX,Math.min(HV_W+HV_EX-w,cx-w/2)), y=Math.max(0,Math.min(HV_H-h,cy-h/2));

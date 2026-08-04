@@ -14084,3 +14084,35 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   13 for account creation; the personalized-ads threshold is 18 (const in the head gate + `adsAgeRefresh`).
   NOTE: one-club is already live on /golf (shipped in a prior session) - flagged to the owner that this
   deploy touched ONLY the age gate, nothing else.
+
+- **Cinematic HOLE-OUT camera: the tracer now zooms to fit the golfer and the cup (deployed to /golf).**
+  Owner: "When a hole out is about to happen on tour tracer, could we have the camera zoom in to fit the
+  golfer and the hole to have a more cinematic shot of the hole out? It's so zoomed out when it happens
+  it's easy to miss." Root cause: `hvCamFor2` picked the adaptive green close-up ONLY by shot KIND
+  (`p.k==='putt'||p.k==='hole'`), while a holed chip/pitch/bunker/approach is flagged on the PLOT
+  (`p.hole`, from the `lie:'hole'` case in `hvPlots`) with its kind still `chip`/`app`/`tee` - so the
+  hole-out (and the sink drop added the commit before) played at the full-hole camera where the ball is
+  ~0.4% of the frame and the make is easy to miss. Fix: `hvCamFor2` now treats a HOLED flying shot like a
+  putt - same adaptive close-up framing the shot origin (where the golfer stands) AND the cup - with
+  hole-out-specific padding for the flight arc's bulge (hvCtrl caps the control offset at 22% of the shot
+  line) plus room for the golfer sprite. It only zooms as far as it can while still showing the whole
+  shot: if the required frame is wider than `HV_W*0.6` (the same threshold the renderer uses for
+  scaled markers + the high-density detail tile) it returns the full hole, so a long fairway hole-out or
+  an ace never loses the ball off-screen and never magnifies the coarse base pixel tile. `hvSwingMarkup`'s
+  `bodyGH` now scales full/chip golfers to a zoomed camera (`cam[3]*0.15`, clamped 15-22) so the golfer
+  doesn't balloon at 4x zoom; a normal (non-holed) shot keeps the fixed 22 and the full-hole camera, so
+  nothing else moved. The existing `hvKick` camera tween does the rest: the camera glides in over ~460ms
+  while the golfer swings (640ms), so the ball launches into an already-settled close-up.
+  Verified in Playwright against the LIVE generator (no fixtures): hunted real `dShotSeq` hole-outs and
+  measured `hvCamFor2` - chip-ins zoom **3-5x** (camW 90-152) with the golfer, the cup AND the flight
+  control point all inside the frame and the detail tile active; short holed approaches zoom ~2.2-2.5x;
+  long approaches + par-3 aces correctly stay full-hole; a normal round's tee/approach shots are
+  unchanged at 464 and putts unchanged at 60. Live animation sampling on a real chip-in: the previous
+  shot renders full-hole `-52 0 464 560`, then the hole-out tweens 252 -> 163 -> 115 -> 90 wide and holds,
+  with the ball shrinking to the green size on the roll and to r=0 (in the cup) at the sink. Full 18-hole
+  quick-mode practice round completes to `dailyresult` (33 close-up frames) and the H2H multi-ball
+  `hvNode` path builds cleanly with a holed sequence - **0 page errors** everywhere; `node --check` clean.
+  Screenshots confirm the framing (golfer + green + flag + chip tracer arcing into the cup).
+  Also ADOPTED the parallel workstream's UTM share links (main `dfcc9bd` edited `golf/index.html`
+  directly) into `build-a-golfer.html` first, so this deploy preserves them instead of clobbering them.
+  Tunable: the hole-out padding constants + the `HV_W*0.6` bail in `hvCamFor2`, the zoomed `bodyGH` curve.
