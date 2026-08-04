@@ -329,48 +329,46 @@ const CONSTANTS = {
    * A regular-season game had no notion of who the better team was beyond the two score
    * distributions, and over seventeen of them that read wrong at the top. Measured on
    * rosters drafted off the real wheel, a 91 overall averaged 12.6 wins and finished with
-   * FIVE OR MORE LOSSES in 48.5% of its seasons. A 94 did it 38.8% of the time. These are
-   * the best teams anybody can build under the cap, and half of them were finishing 12-5.
+   * FIVE OR MORE LOSSES in 48% of its seasons. A 94 did it 39% of the time. These are the
+   * best teams anybody can build under the cap and half of them were finishing 12-5, because
+   * the sim samples every week from scratch, so a great roster is only ever a favourite by
+   * its mean and never by its class.
    *
-   * The reason is that the sim samples every week from scratch, so a great roster is only
-   * ever a favourite by its mean and never by its class. Real teams that good are not
-   * losing five times: they lose the games they play badly, and they win the ones they
-   * should because depth and talent show up over a season even when the sampling does not.
+   * So above CLASS_FLOOR the opponent's score is divided down, climbing linearly to
+   * CLASS_EDGE at CLASS_FULL. That is the whole rule. It is worth reading the history of
+   * what it is NOT, because two earlier versions of this constant were both wrong in ways
+   * that are easy to talk yourself into.
    *
-   * So above CLASS_FLOOR the opponent's score is divided down, and it is a STEP PLUS A RAMP:
-   * CLASS_BASE the moment you clear 90, then climbing by CLASS_EDGE on top of that up to
-   * CLASS_FULL. Below 90 nothing changes at all, which makes this a reward for building an
-   * elite roster rather than a tax on everyone else.
+   * IT IS NOT A THRESHOLD AT 90. The first shipped version gave a flat 10% the moment a
+   * roster cleared 90 and scaled from there, on the reasoning that a ramp anchored at 90
+   * hands a 91 one twelfth of the effect and therefore does nothing. Measured, that step
+   * bought two points of overall (88.9 to 90.9) A FULL WIN AND A SIXTEENTH, while the next
+   * SEVEN points bought 0.99 between them. An 89.8 roster and a 90.2 roster are the same
+   * football team and the game was treating them as different species. The defence for it
+   * was that reaching 90 is rare, which is an argument about how hard the DRAFT is, not
+   * about how good the TEAM is, and outcomes here answer to the second.
    *
-   * The step is deliberate and it was not the first design. A pure ramp anchored at 90 gives
-   * a 91 one twelfth of the effect, so measured, a 91 went from 12.55 wins to 12.69 and
-   * still finished with five losses 45% of the time: it honoured the letter of "scales from
-   * 90" and did nothing whatsoever about the problem. Ninety is a threshold in this game, so
-   * clearing it buys something, and every point after it buys more.
+   * IT IS NOT SIZED SO THAT EVERY BAND GAINS. Starting the ramp at 84 means an 87 gains a
+   * little too. That is the honest price of a curve with no cliff in it, and it is the right
+   * price: an 87 sitting between an 85 and an 89 is the shape being bought.
    *
-   *     overall            88     91     94     98
-   *     wins, before    12.07  12.55  12.90  13.29
-   *     wins, after     12.07  13.63  14.11  14.65
-   *     5+ losses, before  58%    49%    39%    29%
-   *     5+ losses, after   58%    23%    13%     7%
+   *     overall            85     87     89     91     93     94.5     98
+   *     wins, before    11.6   12.0   12.3   12.6   12.9    13.0    13.3
+   *     wins, after     11.9   12.4   12.9   13.3   13.6    14.0    14.5
+   *     5+ losses before  68%    60%    54%    48%    42%     39%     29%
+   *     5+ losses after   64%    52%    40%    31%    23%     15%      8%
    *
-   * WHO IT REACHES. Almost nobody, which is the point. A player who taps the best affordable
-   * man every single time comes out of the wheel at a median 78 overall and clears 90 in 4.6%
-   * of drafts; 96 is essentially unreachable without deliberately banking money early. The
-   * tier this rewards is rare by construction.
+   * Every two points of overall is now worth about four tenths of a win, the whole way up.
    *
    * WHAT IT COSTS. Winning more regular-season games makes 17-0 more reachable, and 17-0 is
-   * the gate on a perfect season, so this cannot be free. Priced rather than dodged: an
-   * undefeated regular season goes from 0.39% to 1.91% at a 91 and from 1.28% to 6.92% at a
-   * 98. Weighted by how often anyone actually drafts those rosters, a perfect season goes
-   * from roughly one draft in 130,000 to one in 24,000. Era mode compounds it hardest,
-   * because its bracket never had the legends at the end: there a 98 goes from 0.20% to
-   * 1.16%. CLASS_BASE and CLASS_EDGE are the dials if that ever reads too cheap.
+   * the gate on a perfect season, so this cannot be free. An undefeated regular season runs
+   * 1.10% at a 91 and 5.16% at a 98, against 0.39% and 1.28% before any of this. That is
+   * priced rather than dodged, and weeklyEdgeVs below is what keeps it from being worse.
+   * CLASS_EDGE is the dial if it ever reads too cheap.
    */
-  CLASS_FLOOR: 90,
+  CLASS_FLOOR: 84,
   CLASS_FULL: 100,
-  CLASS_BASE: 0.10,
-  CLASS_EDGE: 0.08,
+  CLASS_EDGE: 0.19,
   /* Where the edge fades out against a strong opponent. See weeklyEdgeVs. */
   CLASS_FOE_LOW: 1.0,
   CLASS_FOE_HIGH: 1.9,
@@ -675,11 +673,10 @@ function playoffShare(wins, rating) {
  */
 function weeklyEdge(rating, constants = CONSTANTS) {
   const C = constants;
-  const base = C.CLASS_BASE || 0, top = C.CLASS_EDGE || 0;
-  if (!(rating > C.CLASS_FLOOR) || !(base > 0 || top > 0)) return 1;
+  if (!(rating > C.CLASS_FLOOR) || !(C.CLASS_EDGE > 0)) return 1;
   const span = C.CLASS_FULL - C.CLASS_FLOOR;
   const t = span > 0 ? Math.min(1, (rating - C.CLASS_FLOOR) / span) : 1;
-  return 1 + base + top * t;
+  return 1 + C.CLASS_EDGE * t;
 }
 
 /*
