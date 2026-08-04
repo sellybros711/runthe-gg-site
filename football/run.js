@@ -865,13 +865,15 @@ function advanceWeek(run, data, leagueContext, displayCal) {
  * seed is worth at least what the record route was worth, and winning more still
  * adds on top.
  *
- * The final is neutral ground everywhere except GM mode, where the edge is halved
- * rather than erased -- see CONSTANTS.GM_FINAL_HOME_FIELD.
+ * The final asks a different question. In GM mode the seeding edge is halved rather than
+ * erased (CONSTANTS.GM_FINAL_HOME_FIELD); everywhere else the record stops mattering there
+ * and the ROSTER is what tilts the game, up or down (CONSTANTS.FINAL_EDGE_*).
  */
 function homeField(run, regularWins, isFinal) {
   const C = E.CONSTANTS;
+  if (isFinal && !run.tradeMachine) return E.finalEdge(liveRating(run));
   let k = C.PLAYOFF_HOME_FIELD || 0;
-  if (isFinal) k *= run.tradeMachine ? (C.GM_FINAL_HOME_FIELD || 0) : 0;
+  if (isFinal) k *= C.GM_FINAL_HOME_FIELD || 0;
   if (!k) return 1;
   const bye = !!(run.playoffSeed && run.playoffSeed.bye);
   const wins = bye ? Math.max(regularWins, C.BYE_SEED_WINS) : regularWins;
@@ -2759,7 +2761,8 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
 
   for (let i = 0; i < trials; i++) {
     const rng = E.createSeededRNG(E.hashSeed(`project|${run.seed}|${i}`));
-    const out = E.playRun(roster, chemistry, schedule, playoffs, leagueContext, rng);
+    const out = E.playRun(roster, chemistry, schedule, playoffs, leagueContext, rng,
+      E.CONSTANTS, { gm: !!run.tradeMachine });
     wins.push(out.regularWins);
     if (out.seed.made) madePlayoffs++;
     if (out.seed.bye) bye++;

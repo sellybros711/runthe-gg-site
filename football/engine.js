@@ -257,6 +257,57 @@ const CONSTANTS = {
   ELITE_BYE_WINS: 13,
 
   /*
+   * ─── WHAT THE LAST GAME ASKS OF YOUR ROSTER ─────────────────────────────────
+   *
+   * Every other playoff round can be tilted by the record: win enough and the opponent's
+   * score is divided by as much as 1.35. The final was left deliberately neutral, on the
+   * reasoning that a Super Bowl is played on neutral ground, and that had a consequence
+   * nobody chose. Against the 1972 Dolphins the break-even overall is 148, so EVERY roster
+   * in this game is an underdog in that game and the winner is decided out in the tails.
+   * Tails are not fussy about how good you are. Measured over 3,360 seasons a band, a
+   * roster rated 84 that reached the final won it 8% of the time and a roster rated 96 won
+   * it 16%: twelve points of overall bought a factor of two, and teams the game itself
+   * grades a C were lifting the trophy.
+   *
+   * So the final reads the ROSTER where the other rounds read the record. Below
+   * FINAL_EDGE_LOW the opponent's score is multiplied up, reaching FINAL_EDGE_PENALTY at
+   * FINAL_EDGE_FLOOR; above FINAL_EDGE_HIGH it is divided down, reaching FINAL_EDGE_BONUS
+   * at FINAL_EDGE_CEIL. Between LOW and HIGH nothing happens at all, so the band the game
+   * calls a good team plays exactly the final it always played, and the change is a
+   * rotation about that band rather than a thumb on the scale.
+   *
+   * A 100-plus roster is effectively undraftable under the cap (4,500 rosters drafted off
+   * the real wheel topped out at 99.2), which is why CEIL sits at 102 rather than out past
+   * the legends: the bonus has to be substantially paid by the time the best reachable team
+   * gets there or it is decoration.
+   *
+   * WHAT IT DOES. Win rate in the final, per band, before and after, measured on those
+   * drafted rosters over 25,000 finals a band:
+   *
+   *     overall   80    84    88    91    94    98
+   *     before   8.4   9.9  12.2  13.8  15.3  17.3
+   *     after    1.6   3.2   8.6  13.8  15.3  21.6
+   *
+   * The whole range used to be worth a factor of two. It is now worth a factor of
+   * thirteen, which is what it should have been worth all along in a game about how good
+   * your roster is.
+   *
+   * NOTHING HERE TOUCHES GETTING THERE. Seeding, home field and the first three rounds are
+   * exactly as they were, so a C-plus team still reaches the Super Bowl as often as it ever
+   * did. It just has to beat the Dolphins to keep the trophy, and now it usually cannot.
+   *
+   * GM mode keeps its own arrangement. Its final already carries a home-field term
+   * (GM_FINAL_HOME_FIELD) sized against a different bracket, and there the roster you
+   * finish with is a thing you built out of one you were handed.
+   */
+  FINAL_EDGE_FLOOR: 82,
+  FINAL_EDGE_LOW: 90,
+  FINAL_EDGE_HIGH: 95,
+  FINAL_EDGE_CEIL: 102,
+  FINAL_EDGE_PENALTY: 0.30,
+  FINAL_EDGE_BONUS: 0.18,
+
+  /*
    * ─── THE GM MODE POSTSEASON ────────────────────────────────────────────────
    *
    * Trade Machine only. The other modes keep the ladder above untouched.
@@ -547,6 +598,32 @@ function playoffShare(wins, rating) {
   const byStrength = span > 0
     ? Math.max(0, Math.min(1, (rating - CONSTANTS.ELITE_FLOOR) / span)) : 0;
   return Math.min(1, Math.max(byRecord, byStrength));
+}
+
+/*
+ * THE TITLE GAME'S OPINION OF YOUR ROSTER, as a divisor on the opponent's score.
+ *
+ * 1 means the neutral final every mode used to play. Under FINAL_EDGE_LOW it falls toward
+ * 1 - PENALTY, over FINAL_EDGE_HIGH it climbs toward 1 + BONUS, and in between it is
+ * exactly 1. Ramps are linear because the reason for them is legible and a curve would
+ * only make the same argument less clearly. See CONSTANTS.FINAL_EDGE_*.
+ *
+ * No rating means no opinion: callers with nothing to hand get the old neutral game.
+ */
+function finalEdge(rating, constants = CONSTANTS) {
+  if (!(rating > 0)) return 1;
+  const C = constants;
+  if (rating < C.FINAL_EDGE_LOW) {
+    const span = C.FINAL_EDGE_LOW - C.FINAL_EDGE_FLOOR;
+    const t = span > 0 ? Math.min(1, (C.FINAL_EDGE_LOW - rating) / span) : 1;
+    return 1 - C.FINAL_EDGE_PENALTY * t;
+  }
+  if (rating > C.FINAL_EDGE_HIGH) {
+    const span = C.FINAL_EDGE_CEIL - C.FINAL_EDGE_HIGH;
+    const t = span > 0 ? Math.min(1, (rating - C.FINAL_EDGE_HIGH) / span) : 1;
+    return 1 + C.FINAL_EDGE_BONUS * t;
+  }
+  return 1;
 }
 
 /**
@@ -2133,7 +2210,7 @@ function legacyFootballScore(yourScore, oppScore, won, rng, cal) {
  * Play a whole run: all 17 regular-season games, then the playoffs if the record
  * earned them. One playoff loss ends the run.
  */
-function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext, rng, constants = CONSTANTS) {
+function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext, rng, constants = CONSTANTS, opts = {}) {
   const results = [];
   let wins = 0, losses = 0;
 
@@ -2161,6 +2238,14 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
   const byeWins = seed.bye ? Math.max(regularWins, constants.BYE_SEED_WINS) : regularWins;
   const advantage = 1 + (constants.PLAYOFF_HOME_FIELD || 0)
     * playoffShare(byeWins, teamRating);
+  /* The final is its own question. Everywhere but GM mode it is decided by the roster
+     (finalEdge); in GM mode half the seeding edge follows you onto neutral ground, which
+     is what the live game does there and what this has to agree with to be a projection
+     of it rather than of a different game. */
+  const finalAdvantage = opts.gm
+    ? 1 + (constants.PLAYOFF_HOME_FIELD || 0) * (constants.GM_FINAL_HOME_FIELD || 0)
+      * playoffShare(byeWins, teamRating)
+    : finalEdge(teamRating, constants);
 
   let titleWon = false;
   let exitRound = null;
@@ -2170,7 +2255,8 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
       const opp = playoffOpponent(playoffs, seed.rounds, i);
       const leagueAvg = leagueContext[opp.season] ?? 21.5;
       const isFinal = i === seed.rounds - 1;
-      const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants, isFinal ? 1 : advantage);
+      const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
+        isFinal ? finalAdvantage : advantage);
       results.push({ opponent: opp.display, opponent_id: opp.team_season_id,
         week: schedule.length + i + 1, playoff: true, round: names[i], ...r });
       if (r.won) wins++; else { losses++; exitRound = names[i]; break; }
@@ -2319,7 +2405,7 @@ const publicAPI = {
   buildDivisionMap, generateSchedule, generatePlayoffs,
   resolveGame, resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
-  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare,
+  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge,
   respinCost, respinFees, scoringScript, scoreParts, SCORE_KINDS,
   eraCode, ERA_CODES,
   NICKNAMES, nickname, CITIES, city, cityLabel, TEAM_COLORS, teamColors, washColors,
