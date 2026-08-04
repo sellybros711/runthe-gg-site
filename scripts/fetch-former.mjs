@@ -82,6 +82,17 @@ function normNat(c) {
   return c;
 }
 
+// statsapi position names -> the corpus's convention, so MLB former players
+// match current/corpus players in the games (position column, Match lanes).
+const MLB_POS = {
+  'Outfielder': 'Outfielder', 'Outfield': 'Outfielder', 'Left Field': 'Outfielder',
+  'Center Field': 'Outfielder', 'Right Field': 'Outfielder',
+  'First Base': 'First Baseman', 'Second Base': 'Second Baseman', 'Third Base': 'Third Baseman',
+  'Shortstop': 'Shortstop', 'Catcher': 'Catcher', 'Pitcher': 'Pitcher',
+  'Designated Hitter': 'Designated Hitter', 'Infielder': 'Infielder'
+};
+function posMLB(p) { if (!p) return null; return MLB_POS[p] || p; }
+
 /* ----------------------------- MLB (statsapi) --------------------------- */
 const MLB_START = 1920;             // deep enough for fan lore, recent enough to be recognizable
 const MLB_DRAFT_START = 1965;       // MLB draft began in 1965
@@ -123,10 +134,12 @@ async function buildMLB() {
     await sleep(120);
   }
 
-  // Candidates: >=2 notable seasons OR a first-round pick.
+  // Candidates: >=2 qualified seasons. Unlike the NBA/NFL, MLB first-round
+  // draft picks are mostly unknown prospects (many never reach the majors), so
+  // a high pick ALONE does not qualify — the player must have actually produced
+  // two qualified seasons. This drops the no-team draft-bust noise entirely.
   const candidates = [];
-  for (const [id, e] of acc) if (e.ns >= 2 || highPick.has(id)) candidates.push(id);
-  for (const [id] of highPick) if (!acc.has(id)) candidates.push(id);   // pick with no qualified season
+  for (const [id, e] of acc) if (e.ns >= 2) candidates.push(id);
 
   // Batch-fetch people detail (position, jersey, birth country, debut).
   const detail = new Map();
@@ -160,7 +173,7 @@ async function buildMLB() {
       f,
       t: teams,
       j: (p.primaryNumber != null && p.primaryNumber !== '') ? [Number(p.primaryNumber)] : [],
-      pos: (p.primaryPosition && (p.primaryPosition.name)) || null,
+      pos: posMLB((p.primaryPosition && p.primaryPosition.name) || null),
       decade,
       nat: normNat(p.birthCountry),
       ns, hp: hp ? 1 : 0
@@ -184,7 +197,10 @@ const NFL_TEAMS = {
   MIA:'Miami Dolphins', MIN:'Minnesota Vikings', NE:'New England Patriots', NO:'New Orleans Saints',
   NYG:'New York Giants', NYJ:'New York Jets', PHI:'Philadelphia Eagles', PIT:'Pittsburgh Steelers',
   SF:'San Francisco 49ers', SEA:'Seattle Seahawks', TB:'Tampa Bay Buccaneers', TEN:'Tennessee Titans',
-  WAS:'Washington Commanders', WSH:'Washington Commanders'
+  WAS:'Washington Commanders', WSH:'Washington Commanders',
+  // nflverse/GSIS abbreviation variants
+  ARZ:'Arizona Cardinals', BLT:'Baltimore Ravens', CLV:'Cleveland Browns', HST:'Houston Texans',
+  SL:'St. Louis Rams'
 };
 const NFL_POS = {
   QB:'Quarterback', RB:'Running Back', FB:'Fullback', HB:'Running Back', WR:'Wide Receiver',
