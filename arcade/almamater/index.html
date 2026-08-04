@@ -112,7 +112,7 @@
   .rstat .l{font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); margin-top:5px;}
   .rcta{display:flex; gap:9px; margin-top:16px;}
   .abtn{flex:1; appearance:none; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-weight:800; font-size:13px; border-radius:11px; padding:12px; min-height:46px; display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer;}
-  .abtn.gold{background:var(--gold); color:#20180a; border-color:transparent;}
+  .abtn.gold{background:var(--gold); color:var(--onAccent,#20180a); border-color:transparent;}
   .abtn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
   .countdown{margin-top:14px; font-size:12px; font-weight:800; color:var(--mut);} .countdown b{color:var(--ink); font-variant-numeric:tabular-nums;}
   .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); opacity:0; background:#0B1A2E; color:#F4F7FB; font-weight:800; font-size:13px; padding:11px 16px; border-radius:11px; z-index:80; transition:opacity .2s, transform .2s; pointer-events:none; box-shadow:0 12px 30px -12px rgba(0,0,0,.8);}
@@ -199,6 +199,7 @@
 <script src="/arcade/sfx.js"></script>
 <script src="/arcade/tokens.js"></script>
 <script src="/arcade/archive.js"></script>
+<script src="/arcade/favteam.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js"></script>
 <script src="/arcade/howto.js"></script>
@@ -403,16 +404,29 @@
   function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, x=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New players in <b>'+Math.floor(x/3600)+'h '+String(Math.floor((x%3600)/60)).padStart(2,'0')+'m</b>'; }
 
   var CFC=['#F2B632','#37C5D5','#F06A5F','#A982F3','#48D17A','#2F6BFF'];
+  function goldPalette(){ var t=window.RTGFavTeam?RTGFavTeam.resolved():null;
+    return t ? [t.primary, RTGFavTeam.mix(t.primary,'#FFFFFF',0.4), t.secondary, '#48D17A'] : ['#F2B632','#FFD873','#F0913C','#48D17A']; }
   function confetti(count,gold){ try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
-    var pal=gold?['#F2B632','#FFD873','#F0913C','#48D17A']:CFC, wrap=document.createElement('div'); wrap.className='confetti';
+    var pal=gold?goldPalette():CFC, wrap=document.createElement('div'); wrap.className='confetti';
     for(var i=0;i<count;i++){ var p=document.createElement('i'); p.style.left=(Math.random()*100).toFixed(2)+'%'; p.style.background=pal[i%pal.length]; p.style.animationDuration=(2.2+Math.random()*1.7).toFixed(2)+'s'; p.style.animationDelay=(Math.random()*0.4).toFixed(2)+'s'; if(Math.random()<0.45){ p.style.width='8px'; p.style.height='8px'; p.style.borderRadius='50%'; } wrap.appendChild(p); }
     document.body.appendChild(wrap); setTimeout(function(){ wrap.remove(); },4200);
   }
   var toastT=null; function toast(m){ var el=document.getElementById('toast'); el.textContent=m; el.classList.add('on'); if(toastT) clearTimeout(toastT); toastT=setTimeout(function(){ el.classList.remove('on'); },2400); }
 
   function applyThemeMeta(){ var t=document.documentElement.getAttribute('data-theme'); var m=document.getElementById('themeMeta'); if(m) m.setAttribute('content', t==='light'?'#EEF2F7':'#071426'); }
-  applyThemeMeta();
-  document.getElementById('themeBtn').addEventListener('click', function(){ var next=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light'; document.documentElement.setAttribute('data-theme',next); try{ LS.setItem('runthegrid_theme',next); }catch(e){} applyThemeMeta(); });
+  // Skin the whole game in the user's favorite college team colors (set by the
+  // College Football game), falling back to the maroon default. Overrides the
+  // gold accent vars; text-on-accent and the theme-legible accent text are
+  // computed so any team's palette stays readable in light and dark.
+  function applyFav(){
+    if(!window.RTGFavTeam) return;
+    var t=RTGFavTeam.resolved(), theme=document.documentElement.getAttribute('data-theme'), rs=document.documentElement.style;
+    rs.setProperty('--gold', t.primary);
+    rs.setProperty('--goldT', RTGFavTeam.readable(t.primary, theme));
+    rs.setProperty('--onAccent', RTGFavTeam.onColor(t.primary));
+  }
+  applyThemeMeta(); applyFav();
+  document.getElementById('themeBtn').addEventListener('click', function(){ var next=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light'; document.documentElement.setAttribute('data-theme',next); try{ LS.setItem('runthegrid_theme',next); }catch(e){} applyThemeMeta(); applyFav(); });
 
   function lbEsc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function renderRealBoard(){
@@ -460,6 +474,7 @@
   if(window.RTG_BOARD){
     RTG_BOARD.boot();
     RTG_BOARD.onChange(function(st){
+      applyFav();   // account's favorite team may have just loaded → re-skin
       if(st.signedIn){ RTG_BOARD.streakOf(GAME).then(function(cs){ if(cs) document.getElementById('streakN').textContent=cs.streak||0; }); }
       renderRealBoard();
     });
