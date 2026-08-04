@@ -250,11 +250,11 @@
 
   // ---- pools ----
   var byId={}; ENT.forEach(function(e){ byId[e.id]=e; });
-  // recognisable modern athletes only (>=1960s) for era sets
-  var STARS = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.decade && e.decade.length && (e.f||0)>=4 && primaryDecade(e)>=1960; });
-  // stat categories: hand-curated retired-player totals from grid/stats.js,
-  // kept only where the id resolves to a corpus entity that is not active.
-  var STAT_CATS=['nba_points','mlb_hr','nfl_passtd'].filter(function(c){ return STATS[c] && STATS[c].vals; });
+  // stat categories: hand-curated retired-player career totals from stats.js
+  // (points/rebounds/assists/blocks/steals/3PM, passing/rushing/receiving
+  // yards, receptions, sacks, hits/RBI/SB/wins/K/saves). A category is kept
+  // only where at least COUNT ids resolve to a non-active corpus entity.
+  var STAT_CATS=Object.keys(STATS).filter(function(c){ return STATS[c] && STATS[c].vals; });
   var statPool={};
   STAT_CATS=STAT_CATS.filter(function(c){
     var ids=Object.keys(STATS[c].vals).filter(function(id){ var e=byId[id]; return e && e.act!==1; });
@@ -262,32 +262,6 @@
   });
 
   // ---- set builders ----
-  // Era set: five athletes from five distinct decades, ordered earliest -> latest.
-  // easy=true spreads the decades far apart (span >= 40 years); otherwise the
-  // decades are consecutive, which is much harder to call from names alone.
-  function buildEraSet(easy){
-    var byDec={}; STARS.forEach(function(e){ var d=primaryDecade(e); (byDec[d]=byDec[d]||[]).push(e); });
-    var decs=Object.keys(byDec).map(Number).sort(function(a,b){ return a-b; });
-    var chosen=null;
-    if(easy && decs.length>COUNT){
-      for(var g=0; g<60 && !chosen; g++){
-        var pick=shuffle(decs).slice(0,COUNT).sort(function(a,b){ return a-b; });
-        if(pick[COUNT-1]-pick[0]>=40) chosen=pick;
-      }
-    }
-    if(!chosen){
-      if(decs.length>COUNT){ var st=ri(decs.length-COUNT+1); chosen=decs.slice(st, st+COUNT); }
-      else chosen=decs.slice(0,COUNT);
-    }
-    var answer=chosen.map(function(d){ var arr=byDec[d]; return arr[ri(arr.length)]; });   // earliest -> latest
-    return {
-      cat:'era', answer:answer,
-      key:function(e){ return primaryDecade(e); },
-      lead:'Rank by the era they starred in, <b>earliest</b> era at the top.',
-      axisTop:'Earliest', axisBot:'Most recent',
-      val:function(e){ return "'"+String(primaryDecade(e)).slice(2)+"s"; }
-    };
-  }
   // Stat set: five retired players from one category, ordered lowest -> highest.
   // Adjacent totals must differ by >=5% so the ordering is never ambiguous.
   function buildStatSet(cat){
@@ -310,15 +284,19 @@
     }
     return null;
   }
-  // The whole run, built deterministically from the current seed: sets 1-2 are
-  // easy far-apart era sets, then stat categories rotate with tighter era sets.
+  // The whole run, built deterministically from the current seed. Every set is
+  // a stat-ranking set; categories are drawn in a reshuffled cycle so a day
+  // mixes leagues and stat types instead of clustering one category.
   function buildRun(){
-    var sets=[ buildEraSet(true), buildEraSet(true) ], k=0;
-    while(sets.length<TOTAL_SETS){
-      var slot=(sets.length-2)%3, S=null;
-      if(slot===2 || !STAT_CATS.length){ S=buildEraSet(false); }
-      else { S=buildStatSet(STAT_CATS[k%STAT_CATS.length]) || buildEraSet(false); k++; }
-      sets.push(S);
+    var sets=[];
+    if(!STAT_CATS.length) return sets;
+    var guard=0;
+    while(sets.length<TOTAL_SETS && guard++<TOTAL_SETS*20){
+      var bag=shuffle(STAT_CATS);
+      for(var i=0;i<bag.length && sets.length<TOTAL_SETS;i++){
+        var S=buildStatSet(bag[i]);
+        if(S) sets.push(S);
+      }
     }
     return sets;
   }

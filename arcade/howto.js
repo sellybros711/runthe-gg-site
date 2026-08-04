@@ -26,7 +26,7 @@
       'The connection is revealed either way.'
     ],
     rankit: [
-      'Five athletes, one category: era, career points, home runs, or passing TDs.',
+      'Five retired NBA, NFL or MLB players, one career stat: points, rebounds, home runs, passing yards, sacks, saves and more.',
       'Drag (or arrow) them into order, then hit Check.',
       'All five right clears the set and deals a new one. Any wrong ends the run.',
       'Real values reveal after every check.'
