@@ -37,6 +37,12 @@
       'Green = match, yellow = close, arrows point higher or lower.',
       'Eight guesses. Stuck? Burn a 🎭 clue.'
     ],
+    almamater: [
+      'One NBA, NFL or MLB player at a time. Where did they go to college?',
+      'Tap the right school from four choices.',
+      'Each correct pick extends your run; one wrong ends it.',
+      'Famous names start you off; the deeper you go, the tougher the picks.'
+    ],
     crossword: [
       'A quick sports mini. Type into the grid.',
       'Tap a cell to switch across/down; clues sit below.',

@@ -221,6 +221,7 @@
   .tile.oddone{--c:var(--violet);}
   .tile.career{--c:var(--green);}
   .tile.rankit{--c:var(--pink);}
+  .tile.alma{--c:var(--gold);}
   /* each game's name carries its own readable accent shade */
   .tile.match .nm{color:var(--blueT);}
   .tile.cross .nm{color:var(--ink);}
@@ -230,9 +231,10 @@
   .tile.oddone .nm{color:var(--violetT);}
   .tile.career .nm{color:var(--greenT);}
   .tile.rankit .nm{color:var(--pinkT);}
+  .tile.alma .nm{color:var(--goldT);}
   /* display order (independent of DOM, so the play-state JS is untouched) */
   .tile.table{order:1;} .tile.match{order:2;} .tile.career{order:3;} .tile.oddone{order:4;}
-  .tile.rankit{order:5;} .tile.guess{order:6;} .tile.cross{order:7;} .tile.word{order:8;}
+  .tile.rankit{order:5;} .tile.alma{order:6;} .tile.guess{order:7;} .tile.cross{order:8;} .tile.word{order:9;}
   /* pastel tinted header cap with the game motif */
   .tile .cap{position:relative; height:112px; display:grid; place-items:center; overflow:hidden;
     background:color-mix(in srgb, var(--c) 14%, var(--card));
@@ -319,7 +321,7 @@
         <div class="hud-hd">
           <span class="av"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
           <span class="who"><b>Guest</b><span id="dateShort">Today</span></span>
-          <span class="coins" id="playsChip" title="One free play per game each day"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg><span id="coinValH">8</span><span id="coinMax" style="font-weight:700;opacity:.7;margin-left:1px">/8</span></span>
+          <span class="coins" id="playsChip" title="One free play per game each day"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg><span id="coinValH">9</span><span id="coinMax" style="font-weight:700;opacity:.7;margin-left:1px">/9</span></span>
         </div>
 
         <!-- 2 · streak block -->
@@ -408,7 +410,7 @@
       <main id="puzzles">
         <div class="zone-head">
           <span class="day">Today's Puzzles</span>
-          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipM"></span><span class="pip" id="pipC"></span><span class="pip" id="pipW"></span><span class="pip" id="pipG"></span><span class="pip" id="pipT"></span><span class="pip" id="pipO"></span><span class="pip" id="pipR"></span><span class="pip" id="pipK"></span></span><span id="dprogT">0 / 8 played</span></span>
+          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipM"></span><span class="pip" id="pipC"></span><span class="pip" id="pipW"></span><span class="pip" id="pipG"></span><span class="pip" id="pipT"></span><span class="pip" id="pipO"></span><span class="pip" id="pipR"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span></span><span id="dprogT">0 / 9 played</span></span>
         </div>
 
         <div class="tiles">
@@ -579,11 +581,28 @@
               <span class="play" id="playK">PLAY <span class="arw">→</span></span>
             </span>
           </a>
+
+          <a class="tile alma" id="cardAlma" href="/arcade/almamater/">
+            <span class="cap" aria-hidden="true">
+              <span class="badge">New</span><span class="status" id="stA">Ready</span>
+              <svg viewBox="0 0 56 56">
+                <path d="M28 12 L52 22 L28 32 L4 22 Z" fill="#F2B632"/>
+                <path d="M16 27 v9 c0 3.3 5.4 6 12 6 s12 -2.7 12 -6 v-9 L28 32 Z" fill="#F2B632" opacity=".55"/>
+                <path d="M52 22 v11" fill="none" stroke="#F2B632" stroke-width="2.4" stroke-linecap="round"/>
+                <circle cx="52" cy="35" r="2.6" fill="#F2B632"/>
+              </svg>
+            </span>
+            <span class="body">
+              <span class="nm">Alma Mater</span>
+              <span class="desc">Name the college each player came from. Four choices, one right. How far can you run?</span>
+              <span class="play" id="playA">PLAY <span class="arw">→</span></span>
+            </span>
+          </a>
         </div>
 
         <div class="double" id="double">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <span>Clean sweep!<span class="sub">You played all seven of today's puzzles. New ones drop in <b id="cdT2">--</b>.</span></span>
+          <span>Clean sweep!<span class="sub">You played all nine of today's puzzles. New ones drop in <b id="cdT2">--</b>.</span></span>
         </div>
 
         <div class="m-links">
@@ -610,6 +629,7 @@
     <a href="/arcade/career/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 L10 10 L15 15 L20 4"/></svg>Career</a>
     <a href="/arcade/oddone/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>Odd One</a>
     <a href="/arcade/rankit/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M4 12h13M4 17h6"/></svg>Rank It</a>
+    <a href="/arcade/almamater/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-4 10 4-10 4z"/><path d="M6 11v4c0 1.5 2.7 3 6 3s6-1.5 6-3v-4"/><path d="M22 9v5"/></svg>Alma Mater</a>
     <a href="/arcade/guess/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.9.5-1.6 1-1.6 2.1M12 17.5v.01"/></svg>Guess</a>
     <a href="/arcade/crossword/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 3v18M3 9h18"/></svg>Crossword</a>
     <a href="/arcade/wordsearch/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Word Search</a>
@@ -672,7 +692,8 @@
   var os = {}; try { os = JSON.parse(g('rtg:oddone:v1', '{}')) || {}; } catch (e) {}
   var rs = {}; try { rs = JSON.parse(g('rtg:career:v1', '{}')) || {}; } catch (e) {}
   var ks = {}; try { ks = JSON.parse(g('rtg:rankit:v1', '{}')) || {}; } catch (e) {}
-  cur = Math.max(cur, cw.streak | 0, ws.streak | 0, gs.streak | 0, ts.streak | 0, os.streak | 0, rs.streak | 0, ks.streak | 0);
+  var as = {}; try { as = JSON.parse(g('rtg:almamater:v1', '{}')) || {}; } catch (e) {}
+  cur = Math.max(cur, cw.streak | 0, ws.streak | 0, gs.streak | 0, ts.streak | 0, os.streak | 0, rs.streak | 0, ks.streak | 0, as.streak | 0);
   best = Math.max(best, cur, cw.bestStreak | 0);
   document.getElementById('curStreak').textContent = cur;
   document.getElementById('bestStreak').textContent = best;
@@ -735,6 +756,7 @@
   var oDone = (os.lastDone === t);
   var rDone = (rs.lastDone === t);
   var kDone = (ks.lastDone === t);
+  var aDone = (as.lastDone === t);
 
   // One free ranked play per game per day. Unplayed → PLAY. Played:
   // Pro sees PLAY AGAIN (practice); free sees ✓ DONE until tomorrow.
@@ -771,6 +793,7 @@
   mark('cardOdd',   'pipO', 'stO', 'playO', oDone, runText(os), 'oddone');
   mark('cardCareer','pipR', 'stR', 'playR', rDone, runText(rs), 'career');
   mark('cardRank',  'pipK', 'stK', 'playK', kDone, 'Solved', 'rankit');
+  mark('cardAlma',  'pipA', 'stA', 'playA', aDone, runText(as), 'almamater');
 
   // "Keep streak alive" CTA → first unplayed game today (display order)
   (function () {
@@ -782,6 +805,7 @@
       [rDone, '/arcade/career/'],
       [oDone, '/arcade/oddone/'],
       [kDone, '/arcade/rankit/'],
+      [aDone, '/arcade/almamater/'],
       [gDone, '/arcade/guess/'],
       [cDone, '/arcade/crossword/'],
       [wDone, '/arcade/wordsearch/']
@@ -791,9 +815,9 @@
     keep.setAttribute('href', href);
   })();
 
-  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (wDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0) + (kDone ? 1 : 0);
-  document.getElementById('dprogT').textContent = n + ' / 8 played';
-  if (n === 8) {
+  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (wDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0) + (kDone ? 1 : 0) + (aDone ? 1 : 0);
+  document.getElementById('dprogT').textContent = n + ' / 9 played';
+  if (n === 9) {
     document.getElementById('dprog').classList.add('all');
     document.getElementById('double').classList.add('on');
   }

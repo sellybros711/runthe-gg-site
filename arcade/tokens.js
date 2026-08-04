@@ -11,7 +11,7 @@
   'use strict';
   var LS = window.localStorage;
   var KEY = 'runthegrid_tokens_v3';
-  var GAMES = ['table','match','career','oddone','rankit','guess','crossword','wordsearch'];
+  var GAMES = ['table','match','career','oddone','rankit','guess','almamater','crossword','wordsearch'];
   var PER_GAME = 1;                       // ranked play per game per day
   var DAILY = GAMES.length*PER_GAME;      // = 8
 
