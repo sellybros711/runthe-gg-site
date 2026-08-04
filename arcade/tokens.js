@@ -15,8 +15,14 @@
   var PER_GAME = 1;                       // ranked play per game per day
   var DAILY = GAMES.length*PER_GAME;      // = 8
 
+  // TESTING: unlimited plays for everyone while we run through the games.
+  // FLIP TO false (or delete) before public launch to restore 1 free play/day
+  // + Pro-for-unlimited. Nothing else references this.
+  var TESTING = true;
+
   function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function isPro(){ try{ return LS.getItem('runthegrid_pro')==='1'; }catch(e){ return false; } }
+  function unlimited(){ return TESTING || isPro(); }   // no daily cap
 
   function fresh(){ return { date:todayStr(), plays:{} }; }
   function read(){
@@ -31,15 +37,15 @@
 
   function totalPlays(s){ var n=0; for(var k in s.plays){ if(s.plays.hasOwnProperty(k)) n+=s.plays[k]||0; } return n; }
   function playsOf(game){ return read().plays[game]||0; }
-  function remaining(){ if(isPro()) return Infinity; return Math.max(0, DAILY - Math.min(DAILY, totalPlays(read()))); }
-  function triesLeft(game){ if(isPro()) return Infinity; return Math.max(0, PER_GAME - playsOf(game)); }
+  function remaining(){ if(unlimited()) return Infinity; return Math.max(0, DAILY - Math.min(DAILY, totalPlays(read()))); }
+  function triesLeft(game){ if(unlimited()) return Infinity; return Math.max(0, PER_GAME - playsOf(game)); }
   function canPlay(game){ return triesLeft(game)>0; }
 
   // Spend the day's play for `game`. { ok, tryNo, first, bonus, left } —
   // first=true marks the ranked attempt (pro replays are practice).
   function startAttempt(game){
     var s=read(), before=s.plays[game]||0;
-    if(isPro()){
+    if(unlimited()){
       s.plays[game]=before+1; write(s);
       return { ok:true, tryNo:before+1, first:(before===0), bonus:(before>0), left:Infinity };
     }
@@ -53,7 +59,7 @@
     today:todayStr,
     isPro:isPro,
     remaining:remaining,
-    bonusRemaining:function(){ return isPro()?Infinity:0; },
+    bonusRemaining:function(){ return unlimited()?Infinity:0; },
     playsOf:playsOf,
     triesLeft:triesLeft,
     canPlay:canPlay,
@@ -61,6 +67,7 @@
     /* short label for hints/tiles */
     label:function(game){
       if(isPro()) return 'Pro · unlimited';
+      if(TESTING) return 'Testing · unlimited';
       return playsOf(game)>0 ? 'No plays left' : '1 free play';
     }
   };
