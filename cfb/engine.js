@@ -559,15 +559,29 @@ function selectBowl(roster, chemResult, rng, tier = 'major') {
    what a player actually decides. It is a garnish on a roster, not the roster.
    Every link is worth half what it was and the asymptote came down with them, so
    a median team now gets about +2.5% and the very best about +6%. */
+/* THE LADDER HAS TO BE A LADDER. These were nearly flat: a shared conference, a
+   shared home state and a shared coach were all worth exactly the same 0.01,
+   which said that having played in the same league is the same bond as having
+   played for the same man. It also made 93% of every roster's links identical,
+   so the chemistry rail drew every arc in one colour and the tiers below could
+   not tell them apart. They are spread now, in the order the bonds actually
+   rank: same league at the bottom, then the same state, the same coach, the same
+   school, then blood, then genuine teammates, then a quarterback and the man he
+   threw to. The frequency-weighted average is held near where it was (about
+   +3%), so this is a re-shaping and not a buff: see the chemistry numbers in the
+   commit that made it. */
 const CHEMISTRY = {
   VALUES: {
     battery: 0.05,
-    teammates: 0.025,
-    program: 0.015,
-    family: 0.015,
-    home_state: 0.01,
-    conference: 0.01,
-    coach: 0.01,
+    teammates: 0.032,
+    family: 0.026,
+    program: 0.022,
+    coach: 0.018,
+    home_state: 0.014,
+    /* Seven links in ten are this one, so it sets the average on its own: it is
+       trimmed to hold total chemistry exactly where it was before the ladder
+       spread, which is what makes this a re-shaping rather than a buff. */
+    conference: 0.008,
   },
   MIN: -0.06,
   MAX: 0.08,
@@ -730,10 +744,18 @@ function teamInk(team) {
 
 // ─── link tiers ─────────────────────────────────────────────────────────────
 
+/* WHAT EACH TIER MEANS ON SCREEN, and the thresholds sit between the real link
+   values rather than above them. The old floors wanted 0.08 for a strong link
+   when the best link in the game is worth 0.05, so STRONG COULD NEVER BE EARNED
+   and every arc on the chemistry rail drew in the weak colour. Now:
+     strong, gold  they actually played together, or are family, or are a
+                   quarterback and his receiver
+     good,   green they shared a school, a coach or a home state
+     weak,   blue  they shared a conference, the loosest bond there is */
 const LINK_TIERS = [
-  { min: 0.08, label: 'strong' },
-  { min: 0.04, label: 'good' },
-  { min: 0.01, label: 'weak' },
+  { min: 0.025, label: 'strong' },
+  { min: 0.012, label: 'good' },
+  { min: 0.005, label: 'weak' },
 ];
 
 function linkTier(value) {

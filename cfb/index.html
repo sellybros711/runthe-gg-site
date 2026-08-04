@@ -2363,7 +2363,7 @@ or endorsed by the NCAA, the CFP or any school.
      versioned too, in the fetch at the bottom of this file, and the share card is
      versioned on its og:image. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="engine.js?v=17"></script>
+<script src="engine.js?v=18"></script>
 <script src="run.js?v=9"></script>
 <script src="achievements.js?v=8"></script>
 <script src="auth.js?v=1"></script>
@@ -3807,9 +3807,14 @@ function drawRail(el){
   st.svg.innerHTML=arcs.map((c)=>{
     const d=depth(c.b-c.a);
     const dim=st.focus!==null&&st.focus!==c.a&&st.focus!==c.b;
+    /* Colour, weight AND dash all carry the tier, so the strength of a bond is
+       still legible if the colours are hard to tell apart: a real duo draws a
+       thick solid gold, a shared school a dashed green, a shared conference a
+       thin dotted blue. */
     return '<path d="M '+cx(c.a).toFixed(2)+' 0 Q '+
       ((cx(c.a)+cx(c.b))/2).toFixed(2)+' '+(d*2)+' '+cx(c.b).toFixed(2)+' 0" fill="none" stroke="'+
       c.t.color+'" stroke-width="'+(c.t.w*0.5).toFixed(2)+'" stroke-linecap="round"'+
+      (c.t.dash&&c.t.dash!=='none'?' stroke-dasharray="'+c.t.dash+'"':'')+
       ' vector-effect="non-scaling-stroke" opacity="'+(dim?0.1:c.t.op)+'"/>';
   }).join('');
 
