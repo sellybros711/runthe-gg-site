@@ -16,9 +16,8 @@
  * adapter: {id,name,sport,f,t:[teams chrono],j:[jerseys],pos,decade:[...],nat}.
  * Extra fields (ns = notable seasons, hp = high pick) are ignored by games.
  *
- * Covers MLB (statsapi.mlb.com) and NFL (nflverse CSVs), both keyless. NBA
- * (ESPN core) follows the same season-accumulation pattern and lands next;
- * until then NBA former players come from the curated corpus.
+ * Covers all three leagues, all keyless: MLB (statsapi.mlb.com), NFL
+ * (nflverse CSVs) and NBA (ESPN core season leaders).
  */
 import { writeFileSync } from 'fs';
 
@@ -258,10 +257,75 @@ async function buildNFL() {
   return players;
 }
 
+/* ----------------------------- NBA (ESPN core) -------------------------- */
+// Season statistical leaders are inherently the recognizable players, so a
+// player who leads any category in >=2 seasons clears the bar. ESPN's core API
+// is $ref-heavy; athlete/team/position refs are resolved once and cached.
+const NBA_START = 1980;                 // 3-point era onward = recognizable
+const NBA_BASE = 'https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba';
+
+async function buildNBA() {
+  const acc = new Map();                // athleteRef -> { seasons:{}, ns, teamRefs:{} }
+  const teamName = new Map(), posName = new Map();
+  async function resolveTeam(ref) {
+    if (!ref) return null;
+    if (teamName.has(ref)) return teamName.get(ref);
+    const d = await j(ref); const nm = (d && (d.displayName || d.name)) || null;
+    teamName.set(ref, nm); await sleep(30); return nm;
+  }
+  async function resolvePos(a) {
+    const p = a && a.position; if (!p) return null;
+    if (p.displayName || p.name) return p.displayName || p.name;
+    if (p.$ref) {
+      if (posName.has(p.$ref)) return posName.get(p.$ref);
+      const d = await j(p.$ref); const nm = (d && (d.displayName || d.name)) || null;
+      posName.set(p.$ref, nm); await sleep(30); return nm;
+    }
+    return null;
+  }
+
+  for (let y = NBA_START; y <= NOW_YEAR; y++) {
+    const d = await j(`${NBA_BASE}/seasons/${y}/types/2/leaders`);
+    const cats = d && d.categories;
+    if (cats) for (const c of cats) for (const L of (c.leaders || [])) {
+      const ref = L.athlete && L.athlete.$ref; if (!ref) continue;
+      let e = acc.get(ref);
+      if (!e) { e = { seasons: {}, ns: 0, teamRefs: {} }; acc.set(ref, e); }
+      if (!e.seasons[y]) { e.seasons[y] = 1; e.ns++; }
+      const tref = L.team && L.team.$ref;
+      if (tref && (e.teamRefs[tref] == null || y < e.teamRefs[tref])) e.teamRefs[tref] = y;
+    }
+    await sleep(80);
+  }
+
+  const players = [];
+  for (const [ref, e] of acc) {
+    if (e.ns < 2) continue;                        // >=2 leader seasons
+    const a = await j(ref); await sleep(30);
+    if (!a) continue;
+    const name = (a.displayName || a.fullName || ((a.firstName || '') + ' ' + (a.lastName || ''))).trim();
+    if (!name) continue;
+    const teamRefs = Object.keys(e.teamRefs).sort((x, z) => e.teamRefs[x] - e.teamRefs[z]);
+    const teams = [];
+    for (const tr of teamRefs) { const nm = await resolveTeam(tr); if (nm && teams.indexOf(nm) < 0) teams.push(nm); }
+    const jn = (a.jersey != null && a.jersey !== '') ? Number(a.jersey) : null;
+    let f = 3; if (e.ns >= 6) f = 4;
+    players.push({
+      id: 'former:nba:' + (a.id || name), name, sport: 'NBA', f, t: teams,
+      j: (jn != null && !isNaN(jn)) ? [jn] : [], pos: await resolvePos(a),
+      decade: decadesFromSeasons(Object.keys(e.seasons).map(Number)),
+      nat: normNat(a.birthPlace && a.birthPlace.country), ns: e.ns, hp: 0
+    });
+  }
+  console.log('NBA former:', players.length, 'from', acc.size, 'leader athletes');
+  return players;
+}
+
 /* --------------------------------- main -------------------------------- */
 const players = [];
 try { players.push(...await buildMLB()); } catch (e) { console.error('MLB build failed:', e.message); }
 try { players.push(...await buildNFL()); } catch (e) { console.error('NFL build failed:', e.message); }
+try { players.push(...await buildNBA()); } catch (e) { console.error('NBA build failed:', e.message); }
 
 // De-dupe by name+sport, keeping the entry with more team history.
 const byKey = new Map();
