@@ -2617,6 +2617,13 @@ window.GA_ID='G-L29P5MRWKE';
     background:var(--tcol2,rgba(255,255,255,.3))}
   .bug .bt .cd{position:relative;font-family:var(--fbar);font-weight:800;font-size:22px;line-height:1;
     letter-spacing:.01em;color:#fff;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+  /* THE SEASON, ON THE SCORE BUG. A 2013 Lions and a 2019 Lions are different opponents and
+     the bug was calling both LIONS, with the year only on the strip underneath. Inline inside
+     the code so it rides the same flex cell and cannot disturb the score's column: smaller and
+     dimmer than the letters, the way a broadcast dates a throwback. */
+  .bug .bt .cd .yr{font-size:.52em;font-weight:800;letter-spacing:.04em;
+    color:rgba(255,255,255,.72);margin-right:.34em;vertical-align:.18em}
+  .bug .bt .cd .yr:empty{display:none}
   .bug .bt .rc{position:relative;font-family:var(--fbar);font-weight:800;font-size:13px;line-height:1;
     color:rgba(255,255,255,.88);white-space:nowrap;font-variant-numeric:tabular-nums}
   .bug .bt .sc{position:relative;margin-left:auto;font-family:var(--fbar);font-weight:800;font-size:30px;
@@ -5842,7 +5849,10 @@ function paintSeasonBug(oppId,label){
   $('v-byou').style.setProperty('--tcol2',mine.b);
   themEl.style.setProperty('--tcol',w?w.a:'#8a97a8');
   themEl.style.setProperty('--tcol2',w?w.b:'rgba(255,255,255,.3)');
-  themEl.querySelector('.cd').textContent=o?E.eraCode(o.franchise,o.season):'OPP';
+  /* The year leads the letters, because which 2013 Lions is the whole point of the opponent. */
+  themEl.querySelector('.cd').innerHTML=o
+    ? '<i class="yr">'+o.season+'</i>'+esc(E.eraCode(o.franchise,o.season))
+    : 'OPP';
   themEl.querySelector('.rc').textContent=o?o.record:'';
   $('v-opp').textContent=o?o.season+' '+E.nickname(o.franchise):'';
   $('v-round').textContent=label;
@@ -7540,7 +7550,13 @@ function generateDrives(script,rng){
   return drives;
 }
 
-function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor){
+/* The RunThe.GG "R", keyed off its navy to a transparent glyph, painted at midfield the way
+   a real field carries a logo. Preloaded once and only drawn once it has arrived, so the
+   synchronous chart never waits on it. Shared with the college game, which is where the
+   treatment came from. */
+const fieldLogo=new Image(); fieldLogo.src='field-r.png?v=1';
+
+function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName){
   if(!ctx)return;
   const dpr=window.devicePixelRatio||1;
   ctx.save();ctx.clearRect(0,0,w,h);
@@ -7563,6 +7579,20 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor){
   ctx.fillStyle=themColor;ctx.fillRect(fl+fw-ezW,ft,ezW,fh);
   ctx.globalAlpha=1;
 
+  /* TEAM NAMES PAINTED IN THE END ZONES, turned to read up the field the way they are on a
+     real one: yours on the left, the opponent on the right. */
+  const endName=(cx,txt,dir)=>{
+    if(!txt) return;
+    ctx.save();ctx.translate(cx,ft+fh/2);ctx.rotate(dir*Math.PI/2);
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font='700 '+(9*dpr)+'px sans-serif';
+    ctx.fillStyle='rgba(255,255,255,.62)';
+    ctx.fillText(String(txt).toUpperCase().slice(0,10),0,0);
+    ctx.restore();
+  };
+  endName(fl+ezW/2,youName,-1);
+  endName(fl+fw-ezW/2,themName,1);
+
   /* goal lines */
   ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1.2*dpr;
   ctx.beginPath();ctx.moveTo(pfL,ft);ctx.lineTo(pfL,ft+fh);ctx.stroke();
@@ -7574,6 +7604,15 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor){
     if(yd===50){ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1*dpr;}
     else{ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=0.5*dpr;}
     ctx.beginPath();ctx.moveTo(x,ft);ctx.lineTo(x,ft+fh);ctx.stroke();
+  }
+
+  /* The midfield logo, faint, under the drives the way a painted logo sits under the
+     players. Drawn after the yard lines so the lines read through it. */
+  if(fieldLogo.complete&&fieldLogo.naturalWidth){
+    const lh=fh*0.78, lw=lh*(fieldLogo.naturalWidth/fieldLogo.naturalHeight);
+    ctx.globalAlpha=0.11;
+    ctx.drawImage(fieldLogo,pfL+pfW/2-lw/2,ft+fh/2-lh/2,lw,lh);
+    ctx.globalAlpha=1;
   }
 
   /* yard labels */
@@ -7723,7 +7762,9 @@ function playPlayoffGame(r,after){
   themEl.style.setProperty('--tcol2',them.b||'rgba(255,255,255,.3)');
   /* Their code is the one they wore that year, so the 1994 Rams read LA and not LAR. */
   youEl.querySelector('.cd').textContent='YOU';
-  themEl.querySelector('.cd').textContent=opp?E.eraCode(opp.franchise,opp.season):'OPP';
+  themEl.querySelector('.cd').innerHTML=opp
+    ? '<i class="yr">'+opp.season+'</i>'+esc(E.eraCode(opp.franchise,opp.season))
+    : 'OPP';
   /* Records, as a broadcast carries them: yours is what you have done in this run so
      far, theirs is what that team really did that season. advanceWeek has already
      pushed this game, so your own record counts everything before it. */
@@ -7766,7 +7807,8 @@ function playPlayoffGame(r,after){
     const sat=Math.max(cr,cg,cb)-Math.min(cr,cg,cb);
     if(sat<50)dcT='#e87461';
   }
-  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,dcY,dcT):()=>{};
+  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,
+    dcY,dcT,'YOU',opp?E.eraCode(opp.franchise,opp.season):'OPP'):()=>{};
   paintField(0);
 
   const setLead=(y,t)=>{
