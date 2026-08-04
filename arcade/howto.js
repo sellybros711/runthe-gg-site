@@ -26,14 +26,14 @@
       'The connection is revealed either way.'
     ],
     rankit: [
-      'Five athletes, one category: era, career points, home runs, or passing TDs.',
+      'Five retired NBA, NFL or MLB players, one career stat: points, rebounds, home runs, passing yards, sacks, saves and more.',
       'Drag (or arrow) them into order, then hit Check.',
       'All five right clears the set and deals a new one. Any wrong ends the run.',
       'Real values reveal after every check.'
     ],
     guess: [
-      'One mystery player from the NBA, NFL, or MLB. The sport is given.',
-      'Type any player from that sport; tiles show how close you are on team, position, era and number.',
+      'One current NBA, NFL, or MLB player. The sport is given.',
+      'Type any player from that sport; tiles show how close you are on team, position, age and number.',
       'Green = match, yellow = close, arrows point higher or lower.',
       'Eight guesses. Stuck? Burn a 🎭 clue.'
     ],

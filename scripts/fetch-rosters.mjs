@@ -39,12 +39,19 @@ for (const lg of LEAGUES) {
       : raw;
     for (const a of athletes) {
       if (!a || !a.fullName) continue;
+      var bp = a.birthPlace || {};
       players.push({
         n: a.fullName,
         s: lg.sport,
         t: t.displayName,
         p: (a.position && (a.position.displayName || a.position.name)) || null,
         j: a.jersey != null && a.jersey !== '' ? Number(a.jersey) : null,
+        // Enrichment for Guess the Player (all null-safe; older files without
+        // these fields keep working via graceful fallback in the game):
+        age: (typeof a.age === 'number') ? a.age : null,
+        exp: (a.experience && typeof a.experience.years === 'number') ? a.experience.years : null,
+        nat: bp.country || null,
+        st: (a.status && (a.status.name || a.status.type)) || null,
       });
     }
     await new Promise(res => setTimeout(res, 150)); // be polite

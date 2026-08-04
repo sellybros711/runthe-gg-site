@@ -71,6 +71,15 @@
     if (parts.length < 2) return null;
     return norm(parts[parts.length - 1]) || null;
   }
+  // the given-name portion shown in a clue ("Barry" for "Barry Sanders",
+  // "Tony La" for "Tony La Russa"), original case preserved; suffixes dropped.
+  // The answer is the SURNAME, so naming the given part never leaks it.
+  function givenOf(name) {
+    var parts = String(name || '').trim().split(/\s+/);
+    while (parts.length > 1 && SUFFIX[norm(parts[parts.length - 1])]) parts.pop();
+    if (parts.length < 2) return null;
+    return parts.slice(0, -1).join(' ');
+  }
 
   /* ---- clue building ------------------------------------------------------- */
   var MULTI_NICKS = ['Red Sox', 'White Sox', 'Blue Jays', 'Red Wings', 'Maple Leafs',
@@ -130,20 +139,37 @@
   // clue for a pool word. rng picks among templates (pass null for a
   // deterministic eligibility probe — succeeds iff ANY template works, so a
   // word that passes the probe always clues at build time too).
+  //
+  // Every clue is anchored on the player's GIVEN name and ends in "___", the
+  // standard crossword convention for a surname answer ("Lions great Barry
+  // ___" -> SANDERS). The given name is not the answer, so it never leaks the
+  // fill; it does make the clue specific instead of "NFL star of the '80s".
   function clueFor(word, rng) {
-    var e = word.e, rivals = word.rivals;
+    var e = word.e;
+    var fn = givenOf(e.name);
+    if (!fn) return null;
+    // Only players who share BOTH names are genuine rivals for a named clue;
+    // a different first name already tells the solver who is meant.
+    var fnKey = norm(fn);
+    var rivals = (word.rivals || []).filter(function (r) { return norm(givenOf(r.name) || '') === fnKey; });
     var tn = (e.t && e.t[0]) ? nick(e.t[0]) : null;
     var jersey = (e.j && e.j.length) ? e.j[e.j.length - 1] : null;
     var dec = primaryDecade(e);
     var era = dec != null ? eraStr(dec) : null;
-    var cands = [];
-    if (e.hof && tn) cands.push({ t: e.sport + ' Hall of Famer, ' + tn, used: { sport: e.sport, hof: true, team: tn } });
-    if (tn && jersey != null) cands.push({ t: tn + ' legend — #' + jersey, used: { team: tn, jersey: jersey } });
-    if (e.pos && era) cands.push({ t: e.sport + ' ' + e.pos + ' of the ' + era, used: { sport: e.sport, pos: e.pos, era: dec } });
-    if (tn && e.pos) cands.push({ t: tn + ' ' + e.pos, used: { team: tn, pos: e.pos } });
-    if (era) cands.push({ t: e.sport + ' star of the ' + era, used: { sport: e.sport, era: dec } });
-    if (!cands.length) return null;
-    var order = rng ? shuffle(cands, rng) : cands;
+    var pos = e.pos ? e.pos.toLowerCase() : null;
+    // Rich, team-anchored clues first (shuffled for variety across a grid);
+    // the generic "star of the era / standout" wordings are a last resort,
+    // right for individual-sport athletes (boxing, tennis, F1) with no team.
+    var rich = [];
+    if (e.hof && tn) rich.push({ t: tn + ' Hall of Famer ' + fn + ' ___', used: { sport: e.sport, hof: true, team: tn } });
+    if (tn && pos) rich.push({ t: tn + ' ' + pos + ' ' + fn + ' ___', used: { team: tn, pos: e.pos } });
+    if (pos && era) rich.push({ t: fn + ' ___, ' + e.sport + ' ' + pos + ' of the ' + era, used: { sport: e.sport, pos: e.pos, era: dec } });
+    if (tn) rich.push({ t: tn + ' great ' + fn + ' ___', used: { team: tn } });
+    if (e.hof) rich.push({ t: e.sport + ' Hall of Famer ' + fn + ' ___', used: { sport: e.sport, hof: true } });
+    var lean = [];
+    if (era) lean.push({ t: fn + ' ___, ' + e.sport + ' star of the ' + era, used: { sport: e.sport, era: dec } });
+    lean.push({ t: e.sport + ' standout ' + fn + ' ___', used: { sport: e.sport } });
+    var order = (rng ? shuffle(rich, rng) : rich).concat(lean);
     for (var i = 0; i < order.length; i++) {
       var got = tryDisambig(order[i], e, rivals, word.w);
       if (got) return got;
