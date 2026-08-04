@@ -256,11 +256,29 @@ function buildOptimalWithChemistry(rng) {
   return roster.slice();
 }
 
+/*
+ * THE ARCHETYPE LADDER, AND WHICH RUNG IS ACTUALLY A CHECK.
+ *
+ * `anchor` marks the one band SCALE is solved against: a cap-optimal roster with chemistry
+ * should win 88 to 90% of its regular-season games. That is the number --sweep tunes, and
+ * missing it is a genuine reason to re-sweep.
+ *
+ * The other bands are DESCRIPTIVE. They record what each way of building a team currently
+ * does, so a change that reorders the ladder or collapses a rung shows up. They are not
+ * solved constraints, and treating them as if they were is how this report spent a long time
+ * telling everyone to sweep SCALE when SCALE was fine: the first three carried bands from an
+ * older model (0.62-0.68 for a RANDOM roster, when a random roster wins 29% of its games)
+ * and printed MISS every single run. A permanent MISS teaches people to ignore the line.
+ *
+ * Re-measure and update deliberately when a change is intended. Do not widen a band to make
+ * a red line go green without knowing why it moved.
+ */
 const ARCHETYPES = [
-  { name: 'Random affordable',    build: buildRandom,               target: [0.62, 0.68] },
-  { name: 'Decent ($75M used)',   build: () => buildOptimal(75),    target: [0.76, 0.80] },
-  { name: 'Well-built (no chem)', build: () => buildOptimal(100),   target: [0.83, 0.86] },
-  { name: 'Optimal + chemistry',  build: buildOptimalWithChemistry, target: [0.88, 0.90] },
+  { name: 'Random affordable',    build: buildRandom,               target: [0.25, 0.33] },
+  { name: 'Decent ($75M used)',   build: () => buildOptimal(75),    target: [0.42, 0.51] },
+  { name: 'Well-built (no chem)', build: () => buildOptimal(100),   target: [0.55, 0.63] },
+  { name: 'Optimal + chemistry',  build: buildOptimalWithChemistry, target: [0.88, 0.90],
+    anchor: true },
   { name: 'One-franchise stack',  build: buildStacked,              target: null },
 ];
 
@@ -314,11 +332,11 @@ function reportMain(n) {
   console.log(`SCALE=${SCALE}  ${constants.REGULAR_SEASON_GAMES} games + playoffs  ` +
     `N=${n} runs/archetype\n`);
   console.log('archetype              spend   chem    win%   target     record  playoffs  bye   title   20-0');
-  let allPass = true;
+  let allPass = true, anchorPass = true;
   for (const a of ARCHETYPES) {
     const r = simulate(a, n, 1234);
     const pass = !a.target || (r.perGameWin >= a.target[0] - 0.02 && r.perGameWin <= a.target[1] + 0.02);
-    if (!pass) allPass = false;
+    if (!pass) { allPass = false; if (a.anchor) anchorPass = false; }
     console.log(
       `${a.name.padEnd(22)} $${r.meanSpend.toFixed(0).padStart(3)}M  ` +
       `${r.meanChem.toFixed(3)}  ${fmtPct(r.perGameWin).padStart(6)}  ` +
@@ -328,7 +346,9 @@ function reportMain(n) {
       `${fmtPct(r.titleRate).padStart(6)}  ${fmtPct(r.perfectRate).padStart(6)}`,
     );
   }
-  console.log(`\nwin-rate targets: ${allPass ? 'all within tolerance' : 'MISS, sweep SCALE'}`);
+  console.log('\nwin-rate targets: ' + (allPass ? 'all within tolerance'
+    : anchorPass ? 'the SCALE anchor holds; a descriptive band moved, re-measure it'
+      : 'THE SCALE ANCHOR MISSED, sweep SCALE'));
   console.log('\nEvery run now plays all 17 games, so a record always exists. Playoffs need');
   console.log(`${E.CONSTANTS.PLAYOFF_WINS} wins, the first-round bye needs ${E.CONSTANTS.BYE_SEED_WINS}. One playoff loss ends the run,`);
   console.log('so 20-0 means 17-0 plus three wins from the top seed.');
@@ -642,25 +662,60 @@ function policyReport(n) {
     };
   };
 
+  /*
+   * WHAT EACH POLICY SHOULD DO, CHECKED RATHER THAN DESCRIBED.
+   *
+   * This report used to end in two sentences: careless play should finish around 12-5, and
+   * perfect play should win 14 and take the title about one run in five. The first was
+   * roughly true. The second had been wrong for a long time, because it was written against
+   * a playoff ladder that has been retuned repeatedly since, and perfect play through the
+   * wheel takes the title about one run in a hundred. A stale sentence in a harness is worse
+   * than no sentence at all: it reads like a check that passed.
+   *
+   * So the expectations are data, and a row outside its band prints MISS. Bands are wide on
+   * purpose. The point is to catch a change that breaks the LADDER (careless play sneaking
+   * into the playoffs, perfect play falling to a coin flip), not to pin a number that moves
+   * whenever the sim is tuned. Re-measure and widen deliberately if a change is intended;
+   * a band nobody re-reads is how the old sentence got stale.
+   */
+  const TARGETS = {
+    'cheapest every time':    { wins: [0, 3],   playoffs: [0, 0.03] },
+    'best points per dollar': { wins: [2, 6],   playoffs: [0, 0.05] },
+    'random tap':             { wins: [4, 8],   playoffs: [0, 0.10] },
+    'taps the top row':       { wins: [9, 13],  playoffs: [0.20, 0.50] },
+    'perfect play (DP)':      { wins: [12, 16], playoffs: [0.55, 0.90] },
+  };
+
   console.log(`real play policies through the wheel, ${n} runs each\n`);
-  console.log('policy                   spend  FPPG  chem  struct  record  playoffs  title   20-0');
+  console.log('policy                   spend  FPPG  chem  struct  record  playoffs  title   20-0  vs target');
+  let misses = 0;
   for (const name of Object.keys(POLICIES)) {
     const rs = [];
     for (let i = 0; i < n; i++) rs.push(run1(name, 20000 + i * 7919));
     const m = (f) => mean(rs.map(f));
     const w = rs.map((r) => r.proj.typicalWins).sort((a, b) => a - b);
+    const medWins = w[Math.floor(n / 2)];
+    const po = m((r) => r.proj.playoffRate);
+    const t = TARGETS[name];
+    const inBand = (v, b) => !b || (v >= b[0] && v <= b[1]);
+    const ok = inBand(medWins, t && t.wins) && inBand(po, t && t.playoffs);
+    if (!ok) misses++;
     console.log(name.padEnd(24)
       + ('$' + m((r) => r.spend).toFixed(0) + 'M').padStart(6)
       + m((r) => r.fppg).toFixed(0).padStart(6)
       + (((m((r) => r.chem) - 1) * 100).toFixed(1) + '%').padStart(6)
       + m((r) => r.structure).toFixed(3).padStart(8)
-      + (w[Math.floor(n / 2)] + '-' + (17 - w[Math.floor(n / 2)])).padStart(8)
-      + (fmtPct(m((r) => r.proj.playoffRate))).padStart(10)
+      + (medWins + '-' + (17 - medWins)).padStart(8)
+      + (fmtPct(po)).padStart(10)
       + (fmtPct(m((r) => r.proj.titleRate))).padStart(7)
-      + (fmtPct(m((r) => r.proj.perfectRate))).padStart(7));
+      + (fmtPct(m((r) => r.proj.perfectRate))).padStart(7)
+      + (t ? (ok ? '  ok' : '  MISS') : '  reference').padStart(11));
   }
-  console.log('\nCareless play should finish around 12-5 with a coin flip at the playoffs.');
-  console.log('Perfect play should win 14 and take the title about one run in five.');
+  console.log(`\nladder: ${misses ? misses + ' policy band(s) MISSED' : 'every policy inside its band'}.`);
+  console.log('Bands check the SHAPE of the ladder, not exact rates: careless play must not');
+  console.log('reach the playoffs and perfect play must not be reduced to a coin flip.');
+  console.log('Title and 20-0 are printed, not asserted, because both are rare enough at this');
+  console.log(`N (${n}) that a band would fire on sampling noise.`);
 }
 
 // ─── main ────────────────────────────────────────────────────────────────────

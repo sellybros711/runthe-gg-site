@@ -779,11 +779,12 @@ function advanceWeek(run, data, leagueContext, displayCal) {
   const opp = data.byTeamSeasonId[oppId];
   const rng = rngFor(run);
   const isFinal = playoff && s.playoffRound === run.playoffSeed.rounds - 1;
-  /* An ordinary Sunday reads the roster too: past CLASS_FLOOR the best teams in the game
-     get a weekly edge that scales with how good they are. */
+  /* An ordinary Sunday reads the roster too: past CLASS_FLOOR the best teams in the game get
+     a weekly edge that scales with how good they are, and fades against the two or three
+     real tests on the schedule. */
   const advantage = playoff
     ? homeField(run, s.regularWins, isFinal)
-    : E.weeklyEdge(liveRating(run));
+    : E.weeklyEdgeVs(liveRating(run), opp);
   const gameSlots = slotsOf(run);
   const r = E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 21.5, rng, E.CONSTANTS, advantage);
   const shown = displayCal ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal) : null;

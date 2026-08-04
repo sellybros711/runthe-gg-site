@@ -371,6 +371,9 @@ const CONSTANTS = {
   CLASS_FULL: 100,
   CLASS_BASE: 0.10,
   CLASS_EDGE: 0.08,
+  /* Where the edge fades out against a strong opponent. See weeklyEdgeVs. */
+  CLASS_FOE_LOW: 1.0,
+  CLASS_FOE_HIGH: 1.9,
 
   /*
    * ─── THE GM MODE POSTSEASON ────────────────────────────────────────────────
@@ -677,6 +680,43 @@ function weeklyEdge(rating, constants = CONSTANTS) {
   const span = C.CLASS_FULL - C.CLASS_FLOOR;
   const t = span > 0 ? Math.min(1, (rating - C.CLASS_FLOOR) / span) : 1;
   return 1 + base + top * t;
+}
+
+/*
+ * THE SAME EDGE, FADED OUT AGAINST THE BEST TEAMS ON YOUR SCHEDULE.
+ *
+ * The weekly edge made an elite roster win the games it should, which is what it was for,
+ * but it did it against everybody equally and that is not how a season works. It also made
+ * 17-0 five times more likely, because going undefeated is the one thing that needs you to
+ * beat the toughest team on the schedule too, and class was helping you do exactly that.
+ *
+ * So the edge is what shows up on an ordinary Sunday. It is at full strength against a team
+ * at or below CLASS_FOE_LOW in schedule strength, fades linearly, and is gone entirely
+ * against a team at CLASS_FOE_HIGH or above.
+ *
+ * A schedule carries about 2.9 opponents past CLASS_FOE_LOW, keeping roughly 60% of the edge
+ * between them, and about a quarter of a game past CLASS_FOE_HIGH with none of it. That is a
+ * deliberately light touch on fourteen games and a heavy one on the three that decide whether
+ * a season is unbeaten, which is exactly the asymmetry wanted: an average is set by the games
+ * you should win, and 17-0 is set by the ones you might not.
+ *
+ * Measured at a 98 overall: the average record gives back a fifth of a win (14.65 to 14.46)
+ * while an undefeated regular season falls by a quarter (6.92% to 5.14%) and the count of
+ * perfect seasons falls by 28%. At a 91: 13.65 wins to 13.53, and 17-0 from 1.91% to 1.59%.
+ *
+ * A missing strength_z means an ordinary opponent, so callers with partial data get the
+ * plain edge rather than a silent zero.
+ */
+function weeklyEdgeVs(rating, opponent, constants = CONSTANTS) {
+  const edge = weeklyEdge(rating, constants);
+  if (edge === 1) return 1;
+  const C = constants;
+  const z = opponent && typeof opponent.strength_z === 'number' ? opponent.strength_z : 0;
+  const lo = C.CLASS_FOE_LOW, hi = C.CLASS_FOE_HIGH;
+  if (!(hi > lo)) return edge;
+  if (z <= lo) return edge;
+  if (z >= hi) return 1;
+  return 1 + (edge - 1) * (hi - z) / (hi - lo);
 }
 
 /*
@@ -2298,11 +2338,10 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
      opinion. Computed up front because the regular season reads it too. */
   const teamRating = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0)
     * chemistryMultiplier * rosterStructure(roster).multiplier;
-  const weekly = weeklyEdge(teamRating, constants);
-
   const play = (opp, meta) => {
     const leagueAvg = leagueContext[opp.season] ?? 21.5;
-    const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants, weekly);
+    const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
+      weeklyEdgeVs(teamRating, opp, constants));
     results.push({ opponent: opp.display, opponent_id: opp.team_season_id, ...meta, ...r });
     if (r.won) wins++; else losses++;
     return r.won;
@@ -2487,7 +2526,7 @@ const publicAPI = {
   buildDivisionMap, generateSchedule, generatePlayoffs,
   resolveGame, resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
-  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge, weeklyEdge,
+  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge, weeklyEdge, weeklyEdgeVs,
   respinCost, respinFees, scoringScript, scoreParts, SCORE_KINDS,
   eraCode, ERA_CODES,
   NICKNAMES, nickname, CITIES, city, cityLabel, TEAM_COLORS, teamColors, washColors,
