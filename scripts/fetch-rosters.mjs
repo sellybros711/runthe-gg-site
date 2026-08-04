@@ -52,6 +52,7 @@ for (const lg of LEAGUES) {
         exp: (a.experience && typeof a.experience.years === 'number') ? a.experience.years : null,
         nat: bp.country || null,
         st: (a.status && (a.status.name || a.status.type)) || null,
+        col: (a.college && (a.college.name || a.college.shortName)) || null,   // for Alma Mater
       });
     }
     await new Promise(res => setTimeout(res, 150)); // be polite

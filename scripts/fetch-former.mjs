@@ -221,13 +221,14 @@ async function buildNFL() {
       const name = (r.full_name || '').trim(); if (!name) continue;
       const k = keyOf((r.gsis_id || '').trim(), name);
       let e = acc.get(k);
-      if (!e) { e = { name, teams: {}, seasons: {}, jerseys: {}, pos: null }; acc.set(k, e); }
+      if (!e) { e = { name, teams: {}, seasons: {}, jerseys: {}, pos: null, col: null }; acc.set(k, e); }
       const tn = NFL_TEAMS[r.team] || r.team || null;
       if (tn && (e.teams[tn] == null || y < e.teams[tn])) e.teams[tn] = y;
       e.seasons[y] = 1;
       const jn = (r.jersey_number != null && r.jersey_number !== '') ? Number(r.jersey_number) : null;
       if (jn != null && !isNaN(jn)) e.jerseys[jn] = 1;
       if (r.position) e.pos = r.position;        // ascending years -> latest wins
+      if (r.college && !e.col) e.col = r.college;   // college for Alma Mater
     }
     await sleep(150);
   }
@@ -247,7 +248,7 @@ async function buildNFL() {
     const teams = Object.keys(e.teams).sort((a, b) => e.teams[a] - e.teams[b]);
     let f = 3; if (nseason >= 8 || (hp && pick && pick <= 15)) f = 4;
     players.push({
-      id: 'former:nfl:' + k, name: e.name, sport: 'NFL', f, t: teams,
+      id: 'former:nfl:' + k, name: e.name, sport: 'NFL', f, t: teams, col: e.col || null,
       j: Object.keys(e.jerseys).map(Number).sort((a, b) => a - b).slice(0, 4),
       pos: posNFL(e.pos), decade: decadesFromSeasons(Object.keys(e.seasons).map(Number)),
       nat: null, ns: nseason, hp: hp ? 1 : 0
@@ -319,7 +320,8 @@ async function buildNBA() {
       id: 'former:nba:' + aid, name, sport: 'NBA', f, t: teams,
       j: (jn != null && !isNaN(jn)) ? [jn] : [], pos: await resolvePos(a),
       decade: decadesFromSeasons(Object.keys(e.seasons).map(Number)),
-      nat: normNat(a.birthPlace && a.birthPlace.country), ns: e.ns, hp: 0
+      nat: normNat(a.birthPlace && a.birthPlace.country),
+      col: (a.college && (a.college.name || a.college.shortName)) || null, ns: e.ns, hp: 0
     });
   }
   console.log('NBA former:', players.length, 'from', acc.size, 'leader athletes');
