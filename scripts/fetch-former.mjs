@@ -16,8 +16,9 @@
  * adapter: {id,name,sport,f,t:[teams chrono],j:[jerseys],pos,decade:[...],nat}.
  * Extra fields (ns = notable seasons, hp = high pick) are ignored by games.
  *
- * v1 covers MLB (statsapi.mlb.com, keyless). NFL (nflverse) and NBA (ESPN
- * core) follow the same season-accumulation pattern and land next.
+ * Covers MLB (statsapi.mlb.com) and NFL (nflverse CSVs), both keyless. NBA
+ * (ESPN core) follows the same season-accumulation pattern and lands next;
+ * until then NBA former players come from the curated corpus.
  */
 import { writeFileSync } from 'fs';
 
@@ -34,6 +35,38 @@ async function j(url, tries = 3) {
     await sleep(400 * (i + 1));
   }
   return null;
+}
+
+async function csv(url, tries = 3) {
+  for (let i = 0; i < tries; i++) {
+    try {
+      const r = await fetch(url, { headers: { 'User-Agent': 'runthe-arcade/1.0' } });
+      if (r.ok) return parseCSV(await r.text());
+      if (r.status === 404) return null;
+    } catch (e) { /* retry */ }
+    await sleep(400 * (i + 1));
+  }
+  return null;
+}
+// minimal RFC-4180-ish CSV -> array of row objects keyed by header
+function parseCSV(text) {
+  const rows = []; let field = '', row = [], inq = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inq) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else inq = false; }
+      else field += c;
+    } else if (c === '"') inq = true;
+    else if (c === ',') { row.push(field); field = ''; }
+    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+    else if (c !== '\r') field += c;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  if (!rows.length) return [];
+  const head = rows[0];
+  return rows.slice(1).filter((r) => r.length > 1).map((r) => {
+    const o = {}; head.forEach((h, idx) => { o[h] = r[idx]; }); return o;
+  });
 }
 
 function decadesFromSeasons(seasons) {
@@ -137,9 +170,82 @@ async function buildMLB() {
   return players;
 }
 
+/* ----------------------------- NFL (nflverse) --------------------------- */
+// From 1995 on the team abbreviations are unambiguous (no LA Raiders / LA Rams
+// clash), which keeps team names clean and recognizable.
+const NFL_START = 1995;
+const NFL_TEAMS = {
+  ARI:'Arizona Cardinals', ATL:'Atlanta Falcons', BAL:'Baltimore Ravens', BUF:'Buffalo Bills',
+  CAR:'Carolina Panthers', CHI:'Chicago Bears', CIN:'Cincinnati Bengals', CLE:'Cleveland Browns',
+  DAL:'Dallas Cowboys', DEN:'Denver Broncos', DET:'Detroit Lions', GB:'Green Bay Packers',
+  HOU:'Houston Texans', IND:'Indianapolis Colts', JAX:'Jacksonville Jaguars', JAC:'Jacksonville Jaguars',
+  KC:'Kansas City Chiefs', LV:'Las Vegas Raiders', OAK:'Oakland Raiders', LAC:'Los Angeles Chargers',
+  SD:'San Diego Chargers', LAR:'Los Angeles Rams', STL:'St. Louis Rams', LA:'Los Angeles Rams',
+  MIA:'Miami Dolphins', MIN:'Minnesota Vikings', NE:'New England Patriots', NO:'New Orleans Saints',
+  NYG:'New York Giants', NYJ:'New York Jets', PHI:'Philadelphia Eagles', PIT:'Pittsburgh Steelers',
+  SF:'San Francisco 49ers', SEA:'Seattle Seahawks', TB:'Tampa Bay Buccaneers', TEN:'Tennessee Titans',
+  WAS:'Washington Commanders', WSH:'Washington Commanders'
+};
+const NFL_POS = {
+  QB:'Quarterback', RB:'Running Back', FB:'Fullback', HB:'Running Back', WR:'Wide Receiver',
+  TE:'Tight End', T:'Offensive Lineman', OT:'Offensive Lineman', G:'Offensive Lineman',
+  OG:'Offensive Lineman', C:'Offensive Lineman', OL:'Offensive Lineman', DE:'Defensive Lineman',
+  DT:'Defensive Lineman', NT:'Defensive Lineman', DL:'Defensive Lineman', EDGE:'Defensive Lineman',
+  LB:'Linebacker', ILB:'Linebacker', OLB:'Linebacker', MLB:'Linebacker', CB:'Cornerback',
+  DB:'Cornerback', S:'Safety', SS:'Safety', FS:'Safety', K:'Kicker', PK:'Kicker', P:'Punter', LS:'Long Snapper'
+};
+function posNFL(p) { if (!p) return null; return NFL_POS[String(p).toUpperCase()] || p; }
+
+async function buildNFL() {
+  const acc = new Map();                        // gsis||name -> record
+  const keyOf = (id, name) => id || ('nm:' + name);
+  for (let y = NFL_START; y <= NOW_YEAR; y++) {
+    const rows = await csv(`https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_${y}.csv`);
+    if (!rows) { await sleep(150); continue; }
+    for (const r of rows) {
+      const name = (r.full_name || '').trim(); if (!name) continue;
+      const k = keyOf((r.gsis_id || '').trim(), name);
+      let e = acc.get(k);
+      if (!e) { e = { name, teams: {}, seasons: {}, jerseys: {}, pos: null }; acc.set(k, e); }
+      const tn = NFL_TEAMS[r.team] || r.team || null;
+      if (tn && (e.teams[tn] == null || y < e.teams[tn])) e.teams[tn] = y;
+      e.seasons[y] = 1;
+      const jn = (r.jersey_number != null && r.jersey_number !== '') ? Number(r.jersey_number) : null;
+      if (jn != null && !isNaN(jn)) e.jerseys[jn] = 1;
+      if (r.position) e.pos = r.position;        // ascending years -> latest wins
+    }
+    await sleep(150);
+  }
+  const highPick = new Map();
+  const draft = await csv('https://github.com/nflverse/nflverse-data/releases/download/draft_picks/draft_picks.csv');
+  if (draft) for (const d of draft) {
+    const overall = Number(d.pick || d.overall || 0);
+    if (!overall || overall > 64) continue;      // rounds 1-2 = high pick
+    const k = keyOf((d.gsis_id || '').trim(), (d.pfr_player_name || d.player_name || d.full_name || '').trim());
+    if (!highPick.has(k)) highPick.set(k, overall);
+  }
+  const players = [];
+  for (const [k, e] of acc) {
+    const nseason = Object.keys(e.seasons).length;
+    const hp = highPick.has(k), pick = hp ? highPick.get(k) : null;
+    if (nseason < 3 && !hp) continue;            // notable: 3+ seasons OR high pick
+    const teams = Object.keys(e.teams).sort((a, b) => e.teams[a] - e.teams[b]);
+    let f = 3; if (nseason >= 8 || (hp && pick && pick <= 15)) f = 4;
+    players.push({
+      id: 'former:nfl:' + k, name: e.name, sport: 'NFL', f, t: teams,
+      j: Object.keys(e.jerseys).map(Number).sort((a, b) => a - b).slice(0, 4),
+      pos: posNFL(e.pos), decade: decadesFromSeasons(Object.keys(e.seasons).map(Number)),
+      nat: null, ns: nseason, hp: hp ? 1 : 0
+    });
+  }
+  console.log('NFL former:', players.length, 'from', acc.size, 'rostered +', highPick.size, 'high picks');
+  return players;
+}
+
 /* --------------------------------- main -------------------------------- */
 const players = [];
 try { players.push(...await buildMLB()); } catch (e) { console.error('MLB build failed:', e.message); }
+try { players.push(...await buildNFL()); } catch (e) { console.error('NFL build failed:', e.message); }
 
 // De-dupe by name+sport, keeping the entry with more team history.
 const byKey = new Map();
