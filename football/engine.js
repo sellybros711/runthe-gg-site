@@ -195,8 +195,17 @@ const CONSTANTS = {
    * separates: a random roster makes the playoffs 32% of the time and a
    * cap-optimal one earns the bye 78% of the time. Both are still records a real
    * team would post.
+   *
+   * THE BYE MOVED TO 16 WHEN CLASS_* ARRIVED, and for the same reason the tiers were set
+   * from the distribution in the first place. Fifteen wins was scarce when a 97 overall
+   * averaged 13.3 of them. Once the weekly edge lifted that average to 14.65, fifteen
+   * became routine and the bye rate at the top of the game went from 22% to 57%, which
+   * dragged Super Bowl odds up with it: a bye is a round skipped and a home-field floor,
+   * so it is the single biggest multiplier on a title. At 16 the top of the game is back
+   * to earning the week off 27% of the time, on records that are genuinely better than the
+   * ones that used to earn it at 15.
    */
-  BYE_SEED_WINS: 15,
+  BYE_SEED_WINS: 16,
   PLAYOFF_WINS: 12,
   PLAYOFF_ROUNDS_WITH_BYE: 3,
   PLAYOFF_ROUNDS_WILD_CARD: 4,
@@ -305,7 +314,14 @@ const CONSTANTS = {
   FINAL_EDGE_HIGH: 95,
   FINAL_EDGE_CEIL: 102,
   FINAL_EDGE_PENALTY: 0.30,
-  FINAL_EDGE_BONUS: 0.18,
+  /*
+   * Trimmed from 0.18 once the weekly edge landed. The bonus was sized against a top of the
+   * game that reached the final 9.8% of the time; better records took that to 15.8%, so the
+   * same bonus was being paid out on half again as many finals. Halving it leaves the elite
+   * clearly better off in the last game than they were this morning without the title
+   * arriving twice as often as it used to.
+   */
+  FINAL_EDGE_BONUS: 0.09,
 
   /*
    * ─── CLASS, OVER SEVENTEEN WEEKS ────────────────────────────────────────────
