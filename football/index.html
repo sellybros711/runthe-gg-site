@@ -2602,13 +2602,35 @@ window.GA_ID='G-L29P5MRWKE';
     background:linear-gradient(180deg,#3a4457,#12161f);
     box-shadow:0 16px 34px -14px #000,inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 6px rgba(0,0,0,.6)}
   .bug .btop{display:flex;align-items:stretch;gap:5px}
+  /*
+   * ONE TEAM'S PLATE, AS A GRID RATHER THAN A ROW.
+   *
+   * It was a single flex line -- code, record, score -- and the visitor's plate reversed it
+   * with row-reverse so the two scores met at the seam. That put four things on one line and
+   * read badly the moment the code carried a year: reversed, the year landed hard against the
+   * record and "10-7 2022 LAC" ran together as one number-ish blob, with the year on the
+   * wrong side of its own team.
+   *
+   * Identity now stacks over the record in its own column, with the score beside it spanning
+   * both rows, and the visitor's plate MIRRORS BY GRID PLACEMENT instead of by reversing the
+   * flow. So the scores still meet in the middle the way a broadcast wants, but each plate
+   * reads outside-in in its own natural order, and the year sits with the letters it belongs
+   * to. The DOM order never changes, which is what lets every painter stay as it is.
+   */
   .bug .bt{flex:1 1 0;min-width:0;position:relative;border-radius:12px;overflow:hidden;
-    display:flex;align-items:center;gap:8px;padding:11px 14px;
+    display:grid;grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;column-gap:9px;row-gap:3px;padding:9px 14px;
     background-color:var(--tcol,#334155);
     background-image:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.10) 46%,
       rgba(0,0,0,.10) 54%,rgba(0,0,0,.32));
     transition:filter .2s ease}
-  .bug .bt.them{flex-direction:row-reverse;text-align:right}
+  .bug .bt .cd{grid-row:1;grid-column:1;align-self:end}
+  .bug .bt .rc{grid-row:2;grid-column:1;align-self:start}
+  .bug .bt .sc{grid-row:1/3;grid-column:2}
+  .bug .bt.them{text-align:right;grid-template-columns:auto minmax(0,1fr)}
+  .bug .bt.them .cd{grid-column:2}
+  .bug .bt.them .rc{grid-column:2}
+  .bug .bt.them .sc{grid-row:1/3;grid-column:1}
   /* The wet sheen across the top half, the whole point of the look. */
   .bug .bt:before{content:'';position:absolute;left:6px;right:6px;top:4px;height:42%;border-radius:10px;
     background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.04));pointer-events:none}
@@ -2621,18 +2643,31 @@ window.GA_ID='G-L29P5MRWKE';
      the bug was calling both LIONS, with the year only on the strip underneath. Inline inside
      the code so it rides the same flex cell and cannot disturb the score's column: smaller and
      dimmer than the letters, the way a broadcast dates a throwback. */
-  .bug .bt .cd .yr{font-size:.52em;font-weight:800;letter-spacing:.04em;
-    color:rgba(255,255,255,.72);margin-right:.34em;vertical-align:.18em}
-  .bug .bt .cd .yr:empty{display:none}
+  .bug .bt .rc .yr{font-style:normal;font-weight:800;letter-spacing:.02em;
+    color:rgba(255,255,255,.62);margin-right:.45em}
+  .bug .bt .rc .yr:empty{display:none}
   .bug .bt .rc{position:relative;font-family:var(--fbar);font-weight:800;font-size:13px;line-height:1;
     color:rgba(255,255,255,.88);white-space:nowrap;font-variant-numeric:tabular-nums}
-  .bug .bt .sc{position:relative;margin-left:auto;font-family:var(--fbar);font-weight:800;font-size:30px;
+  .bug .bt .sc{position:relative;font-family:var(--fbar);font-weight:800;font-size:30px;
     line-height:.9;padding:2px 10px 3px;border-radius:8px;color:#12161f;font-variant-numeric:tabular-nums;
     background:linear-gradient(180deg,#fff,#cdd6e2);box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.4)}
-  .bug .bt.them .sc{margin-left:0;margin-right:auto}
   /* The trailing side sits back, so you read who leads without reading the numbers. */
   .bug .bt{filter:saturate(.66) brightness(.68)}
   .bug .bt.lead{filter:none}
+  /* THE RESULT IS NOT A MATTER OF SHADE.
+     Every score the season screen shows is a finished game, and a 27-24 win read as two plates
+     one shade apart -- a coin still in the air. The winning score now takes its own light and
+     the losing plate falls further back.
+
+     Keyed off the gamecard's own won/lost class rather than a state on the bug, because that
+     is the flag the sim actually sets (and clears) per game. `.bug.final` looked like the hook
+     for this and is not: nothing has ever added it. Scoped to the season card, so the playoff
+     broadcast keeps its own treatment. */
+  .gamecard.won .bug .bt.you .sc,
+  .gamecard.lost .bug .bt.them .sc{box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.4),
+    0 0 0 2px rgba(255,255,255,.92),0 0 16px -2px rgba(255,255,255,.5)}
+  .gamecard.won .bug .bt.them,
+  .gamecard.lost .bug .bt.you{filter:saturate(.34) brightness(.46)}
   .bug .bt.scored .sc{animation:scorepop .5s cubic-bezier(.2,1.5,.35,1)}
   @keyframes scorepop{0%{transform:scale(1)}35%{transform:scale(1.42)}100%{transform:scale(1)}}
   .bug .bt.scored{filter:brightness(1.22)}
@@ -2693,6 +2728,12 @@ window.GA_ID='G-L29P5MRWKE';
     text-shadow:0 0 8px rgba(90,240,90,.7)}
   .bug.led .bbot .rd{font-family:var(--fled);font-weight:900;font-size:11px;letter-spacing:.06em;color:#ffcf3f;
     background:none;box-shadow:none;padding:0;text-shadow:0 0 6px rgba(255,180,20,.6)}
+  /* The winner's mark, in the jumbotron's own language. The gloss bug rings the winning score
+     in white, which on a board built entirely out of glow reads as a box drawn around a bulb.
+     Here the bulb simply burns hotter. */
+  .gamecard.won .bug.led .bt.you .sc,
+  .gamecard.lost .bug.led .bt.them .sc{box-shadow:none;
+    text-shadow:0 0 6px #fff3c4,0 0 16px rgba(255,196,40,1),0 0 34px rgba(255,170,20,.75)}
   .bug.led.big .bt .cd{font-size:22px}
   .bug.led.big .bt .sc{font-size:40px}
   .bug.led.big .bbot .ck{font-size:20px}
@@ -5849,12 +5890,17 @@ function paintSeasonBug(oppId,label){
   $('v-byou').style.setProperty('--tcol2',mine.b);
   themEl.style.setProperty('--tcol',w?w.a:'#8a97a8');
   themEl.style.setProperty('--tcol2',w?w.b:'rgba(255,255,255,.3)');
-  /* The year leads the letters, because which 2013 Lions is the whole point of the opponent. */
-  themEl.querySelector('.cd').innerHTML=o
-    ? '<i class="yr">'+o.season+'</i>'+esc(E.eraCode(o.franchise,o.season))
-    : 'OPP';
-  themEl.querySelector('.rc').textContent=o?o.record:'';
-  $('v-opp').textContent=o?o.season+' '+E.nickname(o.franchise):'';
+  /* THE LETTERS ALONE ON THE BIG LINE, the year down with the record. The year rode up here
+     with the code at first and pushed a four-letter club past the edge of its own plate: at
+     26px "2022 LAC" plus the score slab does not fit, and the C was being sliced in half. The
+     small line has room for both, and which 2013 Lions is still answered on the plate. */
+  themEl.querySelector('.cd').textContent=o?E.eraCode(o.franchise,o.season):'OPP';
+  themEl.querySelector('.rc').innerHTML=o
+    ? '<i class="yr">'+o.season+'</i>'+esc(o.record) : '';
+  /* THE CLUB, WITHOUT THE YEAR. The plate above now carries "2022 LAC", so printing
+     "2022 Chargers" an inch below it said the year twice in the same breath. The full
+     nickname still earns its place here, because LAC is a code and Chargers is a team. */
+  $('v-opp').textContent=o?E.nickname(o.franchise):'';
   $('v-round').textContent=label;
 }
 /* The game on the clock next, for the bug before a season starts. Once one is played,
@@ -7766,14 +7812,13 @@ function playPlayoffGame(r,after){
   themEl.style.setProperty('--tcol2',them.b||'rgba(255,255,255,.3)');
   /* Their code is the one they wore that year, so the 1994 Rams read LA and not LAR. */
   youEl.querySelector('.cd').textContent='YOU';
-  themEl.querySelector('.cd').innerHTML=opp
-    ? '<i class="yr">'+opp.season+'</i>'+esc(E.eraCode(opp.franchise,opp.season))
-    : 'OPP';
+  themEl.querySelector('.cd').textContent=opp?E.eraCode(opp.franchise,opp.season):'OPP';
   /* Records, as a broadcast carries them: yours is what you have done in this run so
      far, theirs is what that team really did that season. advanceWeek has already
      pushed this game, so your own record counts everything before it. */
   youEl.querySelector('.rc').textContent=recordBefore(r);
-  themEl.querySelector('.rc').textContent=opp?opp.record:'';
+  themEl.querySelector('.rc').innerHTML=opp
+    ? '<i class="yr">'+opp.season+'</i>'+esc(opp.record) : '';
   youEl.querySelector('.sc').textContent='0';
   themEl.querySelector('.sc').textContent='0';
   youEl.className='bt you'; themEl.className='bt them';
