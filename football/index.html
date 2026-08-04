@@ -4810,7 +4810,7 @@ $('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))closeSheet();})
 function newRun(opts){
   submitted=null;
   myRanks=null;
-  myGmRank=null;
+  myGmRank=null; ranksP=null; gmRankP=null;
   lastPerfectShare=null;
   pendingChallenge=false;   // any new run cancels a pending Challenge Bowl; the challenge
                             // draft re-arms it immediately after beginDraft().
@@ -6440,6 +6440,7 @@ function gmRankChip(){
  * around it must not wait on a network call. Fails soft to nothing, like every other read
  * here -- a missing chip says less than a wrong one.
  */
+function startGmRank(){ return gmRankP||(gmRankP=loadGmRank()); }
 async function loadGmRank(){
   myGmRank=null;
   if(!run||!run.tradeMachine||!run.outcome) return;
@@ -8125,6 +8126,21 @@ function paintOver(){
     gmEl.style.display='none';
   }
 
+  /*
+   * THE BOARD READ GOES OUT NOW, NOT AFTER THE SOLVE.
+   *
+   * The three placings used to sit on "reading" for a second or more, and the network was not
+   * the reason. paintRanks() was called at the END of the heavy afterPaint block, so the
+   * request could not leave until the best-possible optimiser and two 400-season projections
+   * had finished: a phone spent all that CPU with the socket idle, then started waiting.
+   *
+   * The read needs none of that. It is keyed on B.scoreOf(wins, pointDiff), both known the
+   * moment the season ended -- only the SUBMIT needs the optimiser, because the payload
+   * carries perfectPct. So the read is fired here and the strip paints itself the instant the
+   * answer lands, while the solve is still running. The submit stays where it was.
+   */
+  startBoardReads();
+
   const tradesTab=$('ot-trades-tab');
   if(run.tradeMachine){
     /* Shown whether or not anything was traded: a GM who stood pat still deserves to see why
@@ -8261,7 +8277,27 @@ function paintOver(){
      record and the numbers appear at once instead of behind a solve. The run is SENT
      from in here, after the best-possible figure it carries has been worked out, and
      the placings are read at the same time. */
-  afterPaint(()=>{
+  afterPaint(async ()=>{
+    /*
+     * LET THE PLACINGS IN FIRST.
+     *
+     * Starting the read early (startBoardReads) got the request out at 38ms instead of 557ms
+     * on a throttled phone, and the strip still filled at 853ms -- because the answer came
+     * back at ~290ms into a main thread that this block had already seized for the optimiser
+     * and the two 400-season projections. A promise callback cannot repaint anything while
+     * synchronous work is running, so the request was early and the pixels were not.
+     *
+     * So the heavy work waits for the read it was starving. Whichever comes first: the
+     * placings land (and paint themselves), or half a second passes and the solve stops
+     * being polite. The best-possible tile has a designed "…" state for exactly this gap,
+     * and it sits below the strip the player is looking at.
+     */
+    await Promise.race([ranksP,new Promise((r)=>setTimeout(r,500))]).catch(()=>{});
+    /* AND LET THE BROWSER ACTUALLY DRAW THEM. Updating the strip's DOM is not the same as the
+       player seeing it: the compositor cannot produce a frame while this thread is busy, so
+       without this the numbers were in the document at ~290ms and on the glass at ~720ms,
+       behind the solve. One frame of patience buys the whole difference. */
+    await new Promise((r)=>afterPaint(r));
     const best=R.bestPossibleSquad(run,DATA,CTX);
     const kept=best?best.lineup.filter(r=>r.same).length:0;
     let share=best?Math.round(100*Math.min(1,best.yourProjected/best.bestProjected)):null;
@@ -10518,6 +10554,10 @@ let myRanks=null;
    "your record ranks 3rd". Fetched on its own axis instead. Null until it lands, or when the
    run has no GM rating to place. */
 let myGmRank=null;
+/* THE BOARD READS, IN FLIGHT. Held as promises so the request can leave long before the
+   panel that draws it is ready, and so the paths that repaint the panel (signing in, picking
+   a username) reuse the answer instead of asking again. Cleared with the run. */
+let ranksP=null, gmRankP=null;
 
 /* THE BOARD IS FOR SIGNED-IN PLAYERS.
    Guest runs used to go on it as "Anonymous", which is a leaderboard nobody can be proud of
@@ -10745,6 +10785,24 @@ $('b-save-retry').onclick=async()=>{
   btn.disabled=false; btn.textContent='Try again';
 };
 
+/* Fire both board reads and let the strip draw itself the moment the placings arrive, rather
+   than waiting for paintRanks() to be reached. Idempotent: a second call reuses the promises. */
+function startBoardReads(){
+  if(!run||!run.outcome) return;
+  startGmRank();
+  if(ranksP) return;
+  const score=B.scoreOf(run.outcome.wins,runPayload().pointDiff);
+  ranksP=B.ranks(score,runMode(),run.franchise||null,run.era||null);
+  ranksP.then((r)=>{
+    if(!r) return;
+    myRanks=r;
+    /* Only the cells. The prompt under them reads the SUBMIT state, which is still in flight
+       at this point, so painting the whole panel here would flash a sign-in nudge at somebody
+       whose run is about to land. paintRanks() renders that part when it knows. */
+    if($('s-over').classList.contains('on')) paintRankStrip(r);
+  }).catch(()=>{});
+}
+
 async function paintRanks(){
   const el=$('o-ranks');
   el.innerHTML='<div class="rload"><i></i><i></i><i></i><span>Reading the board</span></div>';
@@ -10758,9 +10816,13 @@ async function paintRanks(){
      parts that depend on it. */
   const submitP=recordRun();
   /* The GM-rating placing is a separate axis and a separate read, so it goes out alongside
-     rather than after, and is not awaited: the panel below must not wait on a chip. */
-  loadGmRank();
-  const r=await B.ranks(score,runMode(),run.franchise||null,run.era||null);
+     rather than after, and is not awaited: the panel below must not wait on a chip. Memoised,
+     so the prefetch below and this call are one request. */
+  startGmRank();
+  /* THE READ WAS ALREADY SENT. startBoardReads() fires it the moment the outcome is known, so
+     by here it is usually answered and this awaits a settled promise. The fallback covers the
+     repaint paths, which reach this without a prefetch of their own. */
+  const r=await (ranksP||(ranksP=B.ranks(score,runMode(),run.franchise||null,run.era||null)));
   myRanks=r;
 
   /* Everything from here reads the submit state (the banner, the strip prompt, the
@@ -11773,7 +11835,7 @@ $('b-lb-dir').onclick=()=>{ lbDir=lbDir==='asc'?'desc':'asc'; ga('board_sort',{s
 function endRun(){
   clearTimeout(simTimer); clearTimeout(poTimer); cancelAnimationFrame(poRaf); poSkip=null;
   run=null; lastChem=1;
-  submitted=null; myRanks=null; myGmRank=null; lastPerfectShare=null;
+  submitted=null; myRanks=null; myGmRank=null; ranksP=null; gmRankP=null; lastPerfectShare=null;
   /* After run=null, so it reads the absence of a run rather than the team that just left. */
   dressTeam();
 }
