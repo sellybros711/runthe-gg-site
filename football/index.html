@@ -7609,7 +7609,11 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName)
   /* The midfield logo, faint, under the drives the way a painted logo sits under the
      players. Drawn after the yard lines so the lines read through it. */
   if(fieldLogo.complete&&fieldLogo.naturalWidth){
-    const lh=fh*0.78, lw=lh*(fieldLogo.naturalWidth/fieldLogo.naturalHeight);
+    /* 0.44 of the field's height, not the 0.78 this arrived with. The glyph is very nearly
+       square (352x325), so at 0.78 it stood almost the full height of the field and read as a
+       watermark laid over the play rather than a logo painted at midfield. A real one sits
+       inside the middle third. */
+    const lh=fh*0.44, lw=lh*(fieldLogo.naturalWidth/fieldLogo.naturalHeight);
     ctx.globalAlpha=0.11;
     ctx.drawImage(fieldLogo,pfL+pfW/2-lw/2,ft+fh/2-lh/2,lw,lh);
     ctx.globalAlpha=1;
