@@ -32,8 +32,8 @@
       'Real values reveal after every check.'
     ],
     guess: [
-      'One mystery player from the NBA, NFL, or MLB. The sport is given.',
-      'Type any player from that sport; tiles show how close you are on team, position, era and number.',
+      'One current NBA, NFL, or MLB player. The sport is given.',
+      'Type any player from that sport; tiles show how close you are on team, position, age and number.',
       'Green = match, yellow = close, arrows point higher or lower.',
       'Eight guesses. Stuck? Burn a 🎭 clue.'
     ],

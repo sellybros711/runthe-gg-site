@@ -304,40 +304,66 @@
   function jerseyOf(e){ var r=rosterOf(e); if(r && r.j!=null) return r.j; return (e.j&&e.j.length)?e.j[0]:null; }
   function divisionOf(e){ var tm=curTeamOf(e); return (tm && ROSTERS && ROSTERS.divisions) ? (ROSTERS.divisions[tm]||null) : null; }
 
-  // pools: team-sport athletes with the traits we compare. GUESSABLE is what
-  // you can type (all team sports, retired included — guessing a legend at an
-  // active target is fair play); TARGETS is what the game answers with.
-  var GUESSABLE = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.pos && e.t && e.t.length && e.decade && e.decade.length && (e.f||0)>=3; });
-  // With a live roster file, both the guessable pool and the target pool are
-  // corpus entities that match a roster entry by exact name+sport (i.e. players
-  // on a current NBA/NFL/MLB roster). A thin or broken file falls back wholesale
-  // to the corpus-only behavior.
-  if(ROSTERS){
-    var live=GUESSABLE.filter(function(e){ return !!rosterOf(e); });
-    if(live.length>=20) GUESSABLE=live; else ROSTERS=null;
+  var TARGET_SPORTS = {NBA:1,NFL:1,MLB:1};
+  // Is the roster file the ENRICHED kind (age / experience / nationality per
+  // player)? Old thin files lack these keys, so we fall back to the corpus.
+  var ROS_RICH = !!(ROSTERS && ROSTERS.players[0] && ('exp' in ROSTERS.players[0] || 'age' in ROSTERS.players[0] || 'nat' in ROSTERS.players[0]));
+
+  /* pools: GUESSABLE is what you can type; TARGETS is what the game answers
+     with. In ROSTER MODE both are built from the live, self-updating roster
+     feed (every current NBA/NFL/MLB player), so the pool is ~1,500 names and
+     grows with each roster refresh — rookies included. Without an enriched
+     feed we fall back to the curated corpus behavior. */
+  var GUESSABLE, TARGETS, ROSTER_MODE = false, byId = {};
+  if(ROS_RICH){
+    ROSTER_MODE = true;
+    // corpus fame by name+sport, so daily answers can prefer household names
+    var corpF = {}; ENT.forEach(function(e){ if(TEAM_SPORTS[e.sport]) corpF[e.name+'|'+e.sport]=(e.f||0); });
+    var mk = {};
+    ROSTERS.players.forEach(function(p){
+      if(!p || !p.n || !TEAM_SPORTS[p.s] || !p.p) return;
+      var id = 'ros:'+p.n+'|'+p.s;
+      if(mk[id]) return;                       // one synthetic entity per player
+      mk[id] = { id:id, name:p.n, sport:p.s, pos:p.p, t:(p.t?[p.t]:[]),
+                 j:(p.j!=null?[p.j]:[]), nat:(p.nat||null), age:(p.age!=null?p.age:null),
+                 exp:(p.exp!=null?p.exp:null), st:(p.st||null), decade:[],
+                 f:(corpF[p.n+'|'+p.s]||0), act:1 };
+    });
+    GUESSABLE = Object.keys(mk).map(function(k){ return mk[k]; });
+    // You can GUESS any current player, but the daily ANSWER should be someone
+    // fans can name. With no fame signal for role players, experience is the
+    // proxy: keep each team's established core (its most-tenured ~16) plus any
+    // corpus household name (young stars included). ~15 answers/team, so the
+    // answer skews recognizable while the guess pool stays huge.
+    var activeish = function(e){ return !e.st || /active/i.test(e.st); };
+    var pool = GUESSABLE.filter(activeish);
+    var K = 16, byTeam = {};
+    pool.forEach(function(e){ var k=e.sport+'|'+(e.t[0]||''); (byTeam[k]=byTeam[k]||[]).push(e); });
+    var core = {};
+    Object.keys(byTeam).forEach(function(k){
+      byTeam[k].sort(function(a,b){ return (b.exp||0)-(a.exp||0) || (b.f||0)-(a.f||0) || (a.name<b.name?-1:1); });
+      byTeam[k].slice(0,K).forEach(function(e){ core[e.id]=1; });
+    });
+    TARGETS = pool.filter(function(e){ return core[e.id] || e.f>=3; });
+    if(TARGETS.length<60) TARGETS = pool;
+    if(TARGETS.length<60) TARGETS = GUESSABLE.slice();
+  } else {
+    // ---- curated-corpus fallback (thin/absent roster file) -----------------
+    GUESSABLE = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.pos && e.t && e.t.length && e.decade && e.decade.length && (e.f||0)>=3; });
+    if(ROSTERS){ var live=GUESSABLE.filter(function(e){ return !!rosterOf(e); }); if(live.length>=20) GUESSABLE=live; else ROSTERS=null; }
+    var targetsFor = function(fMin, requireAct){ return GUESSABLE.filter(function(e){ return (ROSTERS ? true : (!requireAct || e.act===1)) && TARGET_SPORTS[e.sport] && (e.f||0)>=fMin; }); };
+    TARGETS = targetsFor(4,true);
+    if(TARGETS.length<20) TARGETS = targetsFor(3,true);
+    if(!TARGETS.length) TARGETS = targetsFor(3,false);
+    if(!TARGETS.length) TARGETS = GUESSABLE;
   }
   var HAS_DIV = !!(ROSTERS && ROSTERS.divisions && Object.keys(ROSTERS.divisions).length);
-  // Targets: ACTIVE players from the big three US leagues only, at fame>=4
-  // (recognisable to fans, not just household names) so the daily deduction is
-  // genuinely hard while the clue trail keeps it fair. With rosters, roster
-  // membership IS the active test; without them, the corpus act flag is.
-  var TARGET_SPORTS = {NBA:1,NFL:1,MLB:1};
-  function targetsFor(fMin, requireAct){
-    return GUESSABLE.filter(function(e){ return (ROSTERS ? true : (!requireAct || e.act===1)) && TARGET_SPORTS[e.sport] && (e.f||0)>=fMin; });
-  }
-  var TARGETS = targetsFor(4,true);
-  if(TARGETS.length<20) TARGETS = targetsFor(3,true);   // thin corpus: relax fame first
-  if(!TARGETS.length) TARGETS = targetsFor(3,false);    // still nothing: drop the active requirement
-  if(!TARGETS.length) TARGETS = GUESSABLE;              // absolute last resort
-  /* THE SPORT IS GIVEN. Without it the first guess or two go on working out
-     whether this is a hockey player or a point guard, which is not the puzzle.
-     Naming it up front means every guess spends itself on team, position,
-     nationality, era and number, and it is why the sport column is gone: it
-     would be a match on all eight rows. The pool you can guess from narrows to
-     that sport too, so a guess cannot be wasted on someone who was never in it.
-     All three are picked together, because a replay draws a fresh target and
-     the sport on screen has to be that target's, not the one before it. */
-  var TARGET, SPORT, POOL, byId={};
+  /* THE SPORT IS GIVEN. Naming it up front means every guess spends itself on
+     team, position, age and number, and the pool you can guess from narrows to
+     that sport too, so a guess is never wasted on the wrong league. All picked
+     together, because a replay draws a fresh target and the sport on screen
+     has to be that target's. */
+  var TARGET, SPORT, POOL;
   function pickTarget(){
     TARGET = TARGETS[Math.floor(rng()*TARGETS.length)] || TARGETS[0];
     SPORT = TARGET.sport;
@@ -398,6 +424,15 @@
     if(gd && td){ st = gd===td ? 'hit' : (gd.split(' ')[0]===td.split(' ')[0] ? 'close' : 'miss'); }
     return { st:st, v:(gd||'–') };
   } };
+  // Age: numeric axis with arrows pointing toward the target; "close" within
+  // two years. Meaningful in roster mode, where every player is current and
+  // the era column no longer separates anyone.
+  var colAge  = { label:'Age',  cell:function(g,t){
+    var ga=g.age, ta=t.age;
+    if(ga==null||ta==null) return { st:'miss', v:(ga!=null?String(ga):'–') };
+    var st = ga===ta?'hit':(Math.abs(ga-ta)<=2?'close':'miss');
+    return { st:st, v:String(ga), a:(ta>ga?'up':(ta<ga?'down':null)) };
+  } };
   var COL_SETS = {
     NFL:     [colTeam, colPos, colSide, colEra, colNo],
     DEFAULT: [colTeam, colPos, colNat,  colEra, colNo]
@@ -406,7 +441,16 @@
     NFL:     [colTeam, colPos, colSide, colDiv, colEra, colNo],
     DEFAULT: [colTeam, colPos, colDiv,  colEra, colNo]
   };
-  function activeCols(){ var m=HAS_DIV?COL_SETS_DIV:COL_SETS; return m[SPORT] || m.DEFAULT; }
+  function activeCols(){
+    if(ROSTER_MODE){
+      // current-player board: Team, [Div], Pos, Side (NFL) / Nat (NBA·MLB),
+      // Age, No. — every column carries signal for active players.
+      var cols=[colTeam]; if(HAS_DIV) cols.push(colDiv);
+      cols.push(colPos, SPORT==='NFL'?colSide:colNat, colAge, colNo);
+      return cols;
+    }
+    var m=HAS_DIV?COL_SETS_DIV:COL_SETS; return m[SPORT] || m.DEFAULT;
+  }
   function cmp(g){
     var t=TARGET;
     return activeCols().map(function(c){ return c.cell(g,t); });
@@ -436,6 +480,26 @@
     if(c.length<2) c.push("A name that comes up when fans argue about the greats.");
     return c;
   }
+  /* Roster-mode clues: vague hints built from the current player's live data
+     (nationality, experience, division, side of the ball, age, number). Never
+     names a team/position/number value — earning those is the board's job. */
+  function buildCluesRoster(t){
+    var c=[], div=divisionOf(t), side=(t.sport==='NFL')?sideOf(t.pos):null, jn=jerseyOf(t);
+    if(t.nat && !/^(usa|united states)$/i.test(t.nat)) c.push("This player was born outside the United States.");
+    if(t.exp!=null && t.exp>=12) c.push("A grizzled veteran, well over a decade in the league.");
+    else if(t.exp!=null && t.exp<=1) c.push("One of the newer arrivals in the league.");
+    if(div) c.push("Suits up in the "+div+".");
+    if(side==='Defense') c.push("Earns a living on the defensive side of the ball.");
+    else if(side==='Special') c.push("A special-teams specialist.");
+    if(t.age!=null && t.age<=23) c.push("Still one of the younger faces around.");
+    else if(t.age!=null && t.age>=35) c.push("On the wrong side of 35 and still going.");
+    if(jn!=null && jn<=9) c.push("Wears a single-digit number.");
+    else if(jn!=null && jn>=90) c.push("The number on the jersey is way up in the 90s.");
+    if(c.length<2) c.push("A current "+t.sport+" player you'll find on an active roster.");
+    if(c.length<2) c.push("Check today's box scores and you might spot this one.");
+    return c;
+  }
+  function cluesFor(t){ return (ROSTER_MODE?buildCluesRoster:buildClues)(t); }
   var CLUES=[], cluesUsed=0;
   function isProClues(){ return !!(window.RTGTokens && RTGTokens.isPro()); }
   function updateClueBtn(){
@@ -549,9 +613,13 @@
     var v=document.querySelector('.lead .v'); if(!v) return;
     var lbl = ARCHIVE ? ' · Archive practice' : (window.RTGTokens ? (' · '+RTGTokens.label('guess')+' today') : '');
     /* "This player", not "today's": a replay or an archive round is not today's. */
-    var traits = SPORT==='NFL'
-      ? (HAS_DIV ? 'team, position, side of the ball, division, era and number' : 'team, position, side of the ball, era and number')
-      : (HAS_DIV ? 'team, position, division, era and number' : 'team, position, nationality, era and number');
+    var traits = ROSTER_MODE
+      ? (SPORT==='NFL'
+          ? ((HAS_DIV?'team, division, ':'team, ')+'position, side of the ball, age and number')
+          : ((HAS_DIV?'team, division, ':'team, ')+'position, nationality, age and number'))
+      : (SPORT==='NFL'
+          ? (HAS_DIV ? 'team, position, side of the ball, division, era and number' : 'team, position, side of the ball, era and number')
+          : (HAS_DIV ? 'team, position, division, era and number' : 'team, position, nationality, era and number'));
     v.innerHTML='This player is from the <b>'+esc(SPORT)+'</b>. Name them in <b>8 tries</b>. '+
       'Every guess shows how close you are on '+traits+'.'+esc(lbl);
   }
@@ -563,7 +631,7 @@
     pickTarget();
     guesses=[]; done=false; won=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
     // fresh target → fresh clue trail (replays and archive rounds included)
-    CLUES=buildClues(TARGET); cluesUsed=0;
+    CLUES=cluesFor(TARGET); cluesUsed=0;
     var cl=document.getElementById('clues'); if(cl) cl.innerHTML='';
     updateClueBtn();
     if(tick){ clearInterval(tick); tick=null; }
@@ -587,7 +655,7 @@
     elapsed=(performance.now()-startTs)/1000;
     if(tick){ clearInterval(tick); }
     tick=setInterval(function(){ elapsed=(performance.now()-startTs)/1000; },500);
-    CLUES=buildClues(TARGET);
+    CLUES=cluesFor(TARGET);
     cluesUsed=Math.max(0, Math.min(CLUES.length, r.c|0));
     var cl=document.getElementById('clues');
     if(cl){ cl.innerHTML='';
