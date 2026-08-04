@@ -195,8 +195,17 @@ const CONSTANTS = {
    * separates: a random roster makes the playoffs 32% of the time and a
    * cap-optimal one earns the bye 78% of the time. Both are still records a real
    * team would post.
+   *
+   * THE BYE MOVED TO 16 WHEN CLASS_* ARRIVED, and for the same reason the tiers were set
+   * from the distribution in the first place. Fifteen wins was scarce when a 97 overall
+   * averaged 13.3 of them. Once the weekly edge lifted that average to 14.65, fifteen
+   * became routine and the bye rate at the top of the game went from 22% to 57%, which
+   * dragged Super Bowl odds up with it: a bye is a round skipped and a home-field floor,
+   * so it is the single biggest multiplier on a title. At 16 the top of the game is back
+   * to earning the week off 27% of the time, on records that are genuinely better than the
+   * ones that used to earn it at 15.
    */
-  BYE_SEED_WINS: 15,
+  BYE_SEED_WINS: 16,
   PLAYOFF_WINS: 12,
   PLAYOFF_ROUNDS_WITH_BYE: 3,
   PLAYOFF_ROUNDS_WILD_CARD: 4,
@@ -305,7 +314,63 @@ const CONSTANTS = {
   FINAL_EDGE_HIGH: 95,
   FINAL_EDGE_CEIL: 102,
   FINAL_EDGE_PENALTY: 0.30,
-  FINAL_EDGE_BONUS: 0.18,
+  /*
+   * Trimmed from 0.18 once the weekly edge landed. The bonus was sized against a top of the
+   * game that reached the final 9.8% of the time; better records took that to 15.8%, so the
+   * same bonus was being paid out on half again as many finals. Halving it leaves the elite
+   * clearly better off in the last game than they were this morning without the title
+   * arriving twice as often as it used to.
+   */
+  FINAL_EDGE_BONUS: 0.09,
+
+  /*
+   * ─── CLASS, OVER SEVENTEEN WEEKS ────────────────────────────────────────────
+   *
+   * A regular-season game had no notion of who the better team was beyond the two score
+   * distributions, and over seventeen of them that read wrong at the top. Measured on
+   * rosters drafted off the real wheel, a 91 overall averaged 12.6 wins and finished with
+   * FIVE OR MORE LOSSES in 48.5% of its seasons. A 94 did it 38.8% of the time. These are
+   * the best teams anybody can build under the cap, and half of them were finishing 12-5.
+   *
+   * The reason is that the sim samples every week from scratch, so a great roster is only
+   * ever a favourite by its mean and never by its class. Real teams that good are not
+   * losing five times: they lose the games they play badly, and they win the ones they
+   * should because depth and talent show up over a season even when the sampling does not.
+   *
+   * So above CLASS_FLOOR the opponent's score is divided down, and it is a STEP PLUS A RAMP:
+   * CLASS_BASE the moment you clear 90, then climbing by CLASS_EDGE on top of that up to
+   * CLASS_FULL. Below 90 nothing changes at all, which makes this a reward for building an
+   * elite roster rather than a tax on everyone else.
+   *
+   * The step is deliberate and it was not the first design. A pure ramp anchored at 90 gives
+   * a 91 one twelfth of the effect, so measured, a 91 went from 12.55 wins to 12.69 and
+   * still finished with five losses 45% of the time: it honoured the letter of "scales from
+   * 90" and did nothing whatsoever about the problem. Ninety is a threshold in this game, so
+   * clearing it buys something, and every point after it buys more.
+   *
+   *     overall            88     91     94     98
+   *     wins, before    12.07  12.55  12.90  13.29
+   *     wins, after     12.07  13.63  14.11  14.65
+   *     5+ losses, before  58%    49%    39%    29%
+   *     5+ losses, after   58%    23%    13%     7%
+   *
+   * WHO IT REACHES. Almost nobody, which is the point. A player who taps the best affordable
+   * man every single time comes out of the wheel at a median 78 overall and clears 90 in 4.6%
+   * of drafts; 96 is essentially unreachable without deliberately banking money early. The
+   * tier this rewards is rare by construction.
+   *
+   * WHAT IT COSTS. Winning more regular-season games makes 17-0 more reachable, and 17-0 is
+   * the gate on a perfect season, so this cannot be free. Priced rather than dodged: an
+   * undefeated regular season goes from 0.39% to 1.91% at a 91 and from 1.28% to 6.92% at a
+   * 98. Weighted by how often anyone actually drafts those rosters, a perfect season goes
+   * from roughly one draft in 130,000 to one in 24,000. Era mode compounds it hardest,
+   * because its bracket never had the legends at the end: there a 98 goes from 0.20% to
+   * 1.16%. CLASS_BASE and CLASS_EDGE are the dials if that ever reads too cheap.
+   */
+  CLASS_FLOOR: 90,
+  CLASS_FULL: 100,
+  CLASS_BASE: 0.10,
+  CLASS_EDGE: 0.08,
 
   /*
    * ─── THE GM MODE POSTSEASON ────────────────────────────────────────────────
@@ -598,6 +663,20 @@ function playoffShare(wins, rating) {
   const byStrength = span > 0
     ? Math.max(0, Math.min(1, (rating - CONSTANTS.ELITE_FLOOR) / span)) : 0;
   return Math.min(1, Math.max(byRecord, byStrength));
+}
+
+/*
+ * WHAT AN ELITE ROSTER IS WORTH ON AN ORDINARY SUNDAY, as a divisor on the opponent's
+ * score. 1 up to CLASS_FLOOR, then a linear climb to 1 + CLASS_EDGE at CLASS_FULL.
+ * See CONSTANTS.CLASS_*.
+ */
+function weeklyEdge(rating, constants = CONSTANTS) {
+  const C = constants;
+  const base = C.CLASS_BASE || 0, top = C.CLASS_EDGE || 0;
+  if (!(rating > C.CLASS_FLOOR) || !(base > 0 || top > 0)) return 1;
+  const span = C.CLASS_FULL - C.CLASS_FLOOR;
+  const t = span > 0 ? Math.min(1, (rating - C.CLASS_FLOOR) / span) : 1;
+  return 1 + base + top * t;
 }
 
 /*
@@ -2214,9 +2293,16 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
   const results = [];
   let wins = 0, losses = 0;
 
+  /* The same team overall the results screen prints, so the weekly edge, seeding and home
+     field are all decided by the number the player is shown rather than by a second
+     opinion. Computed up front because the regular season reads it too. */
+  const teamRating = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0)
+    * chemistryMultiplier * rosterStructure(roster).multiplier;
+  const weekly = weeklyEdge(teamRating, constants);
+
   const play = (opp, meta) => {
     const leagueAvg = leagueContext[opp.season] ?? 21.5;
-    const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants);
+    const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants, weekly);
     results.push({ opponent: opp.display, opponent_id: opp.team_season_id, ...meta, ...r });
     if (r.won) wins++; else losses++;
     return r.won;
@@ -2228,10 +2314,6 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
 
   const regularWins = wins;
   const regularLosses = losses;
-  /* The same team overall the results screen prints, so seeding and home field are decided
-     by the number the player is shown rather than by a second opinion. */
-  const teamRating = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0)
-    * chemistryMultiplier * rosterStructure(roster).multiplier;
   const seed = seedFromRecord(regularWins, { rating: teamRating });
   /* A bye means you were seeded on top, so the share is read at no less than the record
      that route normally takes — the same floor run.js applies in the live game. */
@@ -2405,7 +2487,7 @@ const publicAPI = {
   buildDivisionMap, generateSchedule, generatePlayoffs,
   resolveGame, resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
-  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge,
+  seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge, weeklyEdge,
   respinCost, respinFees, scoringScript, scoreParts, SCORE_KINDS,
   eraCode, ERA_CODES,
   NICKNAMES, nickname, CITIES, city, cityLabel, TEAM_COLORS, teamColors, washColors,
