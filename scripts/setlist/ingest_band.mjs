@@ -1,8 +1,16 @@
 /* Run The Setlist — build a band CSV from elgoose.net.
  *
  *   node scripts/setlist/ingest_band.mjs               # → setlist/data/goose.csv
+ *   node scripts/setlist/ingest_band.mjs --probe       # what does the API return?
  *   node scripts/setlist/ingest_band.mjs --out /tmp/goose.csv
- *   node scripts/setlist/ingest_band.mjs --limit 200   # quick smoke test
+ *   node scripts/setlist/ingest_band.mjs --limit 200   # last 200 shows only
+ *   node scripts/setlist/ingest_band.mjs --from 2019 --to 2024
+ *   node scripts/setlist/ingest_band.mjs --key XXXX    # or ELGOOSE_API_KEY
+ *
+ * START WITH --probe. It fetches one year, prints the field names the API
+ * actually returns, and tells you whether the mapping below still holds. If a
+ * full run produces a suspiciously small file or a sanity warning, probe first
+ * and fix the pick() calls rather than guessing.
  *
  * Writes the columns named in setlist/data/DATA_CONTRACT.md, in that order.
  *
@@ -55,38 +63,135 @@ function arg(name, fallback) {
 }
 const OUT = resolve(repoRoot, arg('out', 'setlist/data/goose.csv'));
 const LIMIT = Number(arg('limit', 0)) || 0;
+const KEY = arg('key', process.env.ELGOOSE_API_KEY || '');
+const FROM = Number(arg('from', 2014));
+const TO = Number(arg('to', new Date().getFullYear()));
+const PROBE = process.argv.includes('--probe');
 
 // ── fetch ────────────────────────────────────────────────────────────────────
+function withKey(url) {
+  if (!KEY) return url;
+  return url + (url.includes('?') ? '&' : '?') + `apikey=${encodeURIComponent(KEY)}`;
+}
+
 async function getJSON(url) {
-  const res = await fetch(url, { headers: { 'accept': 'application/json' } });
+  let res;
+  try {
+    res = await fetch(withKey(url), { headers: { accept: 'application/json' } });
+  } catch (e) {
+    throw new Error(`network: ${e.message} — ${url}`);
+  }
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} — ${url}`);
-  const body = await res.json();
-  if (body && body.error && body.error_message) throw new Error(`API: ${body.error_message}`);
-  const data = Array.isArray(body) ? body : body && body.data;
-  if (!Array.isArray(data)) throw new Error(`Unexpected payload shape from ${url}`);
+
+  const text = await res.text();
+  let body;
+  try { body = JSON.parse(text); }
+  catch { throw new Error(`not JSON (got ${text.slice(0, 60).replace(/\s+/g, ' ')}…) — ${url}`); }
+
+  // elgoose wraps results as { error, error_message, data }. Some endpoints
+  // return a bare array. Accept either, and treat error:true as fatal.
+  if (body && body.error && body.error !== '0' && body.error_message) {
+    throw new Error(`API said: ${body.error_message} — ${url}`);
+  }
+  const data = Array.isArray(body) ? body : body && (body.data || body.setlists);
+  if (!Array.isArray(data)) {
+    throw new Error(`unexpected payload shape (keys: ${Object.keys(body || {}).join(', ') || 'none'}) — ${url}`);
+  }
   return data;
 }
 
-/** Every setlist row the site has. One call; falls back to year-by-year. */
+/**
+ * Every setlist row the site has.
+ * Tries the bulk endpoint first, then falls back to year-by-year. Reports which
+ * route worked so a future schema change is obvious from the log rather than
+ * silently producing a short file.
+ */
 async function fetchAllRows() {
-  try {
-    const rows = await getJSON(`${API}/setlists.json`);
-    if (rows.length) return rows;
-  } catch (e) {
-    console.warn(`  bulk fetch failed (${e.message}) — falling back to per-year`);
+  for (const url of [`${API}/setlists.json`]) {
+    try {
+      const rows = await getJSON(url);
+      if (rows.length) { console.log(`  bulk endpoint worked: ${rows.length} rows from ${url}`); return rows; }
+      console.warn(`  ${url} returned 0 rows — falling back to per-year`);
+    } catch (e) {
+      console.warn(`  bulk fetch unavailable (${e.message})`);
+      console.warn('  falling back to per-year');
+    }
   }
-  const thisYear = new Date().getFullYear();
+
   const out = [];
-  for (let y = 2014; y <= thisYear; y++) {
+  const failures = [];
+  for (let y = FROM; y <= TO; y++) {
     try {
       const rows = await getJSON(`${API}/setlists/showyear/${y}.json`);
       out.push(...rows);
       console.log(`  ${y}: ${rows.length} rows`);
     } catch (e) {
+      failures.push(y);
       console.warn(`  ${y}: ${e.message}`);
     }
   }
+  if (failures.length && failures.length === (TO - FROM + 1)) {
+    throw new Error(
+      `every year from ${FROM} to ${TO} failed. The endpoint shape has probably ` +
+      `changed — run with --probe to see what the API actually returns.`
+    );
+  }
+  if (failures.length) console.warn(`  NOTE: ${failures.length} year(s) failed: ${failures.join(', ')}`);
   return out;
+}
+
+/**
+ * Print what the API actually returns for one year, without writing anything.
+ * The fastest way to find out whether the field mapping below still holds.
+ */
+async function probe() {
+  const year = Number(arg('probe-year', TO - 1));
+  const url = `${API}/setlists/showyear/${year}.json`;
+  console.log(`Probing ${url}\n`);
+  const rows = await getJSON(url);
+  console.log(`${rows.length} rows returned.\n`);
+  if (!rows.length) return;
+
+  console.log('Field names on the first row:');
+  console.log('  ' + Object.keys(rows[0]).join('\n  '));
+  console.log('\nFirst row verbatim:');
+  console.log(JSON.stringify(rows[0], null, 2));
+
+  const need = ['show_id', 'showdate', 'song_id', 'songname', 'setnumber', 'position',
+                'tracktime', 'transition', 'isjamchart', 'isoriginal', 'venuename'];
+  const missing = need.filter(f => !(f in rows[0]));
+  console.log(missing.length
+    ? `\nMISSING expected fields: ${missing.join(', ')}\n` +
+      `Update the pick() calls in main() to the names listed above.`
+    : '\nAll expected fields present — the mapping in this script still holds.');
+}
+
+/** Warn loudly when a column came out empty across the board. */
+function sanityCheck(rows) {
+  const checks = [
+    ['venue', r => r.venue],
+    ['length_sec', r => r.length_sec],
+    ['song_id', r => r.song_id],
+    ['set', r => r.set],
+  ];
+  const notes = [];
+  for (const [name, get] of checks) {
+    const filled = rows.filter(r => get(r) !== '' && get(r) !== undefined).length;
+    const pct = rows.length ? Math.round(filled / rows.length * 100) : 0;
+    if (pct < 50) notes.push(`  ${name}: only ${pct}% of rows have a value`);
+  }
+  const jamcharts = rows.filter(r => r.is_jamchart === 'true').length;
+  const segues = rows.filter(r => r.is_segue === 'true').length;
+  if (!jamcharts) notes.push('  is_jamchart: no row is flagged — check the isjamchart field name');
+  if (!segues) notes.push('  is_segue: no row is flagged — check the transition field name');
+
+  if (notes.length) {
+    console.warn('\nSANITY CHECK — these columns look wrong, the CSV may be degraded:');
+    notes.forEach(n => console.warn(n));
+    console.warn('Run with --probe to compare against the live field names.');
+  } else {
+    console.log('  sanity check passed — venue, length, jamcharts and segues all present');
+  }
 }
 
 // ── field helpers ────────────────────────────────────────────────────────────
@@ -197,6 +302,7 @@ export function buildCSV(raw, opts = {}) {
     });
   }
   rows.forEach(r => { r.is_segue = isSegue(r.transition) ? 'true' : 'false'; });
+  if (!opts.quiet) sanityCheck(rows);
 
   // Group into shows, ordered by date; songs ordered by set then position.
   const setRank = s => (/^E/i.test(s) ? 99 + (Number(s.slice(1)) || 0) : Number(s) || 0);
@@ -315,6 +421,8 @@ export function buildCSV(raw, opts = {}) {
 
 // ── main ─────────────────────────────────────────────────────────────────────
 async function main() {
+  if (PROBE) return probe();
+
   console.log('Fetching setlists from elgoose.net...');
   const raw = await fetchAllRows();
   if (!raw.length) throw new Error('No rows returned — nothing to write.');
@@ -327,6 +435,8 @@ async function main() {
 
   console.log(`\nWrote ${OUT}`);
   console.log(`  ${performances} performances · ${shows} shows · ${songs} distinct songs`);
+  console.log('\nExpect roughly 14k performances across ~1180 shows for Goose.');
+  console.log('If the counts are far off, run with --probe before trusting the file.');
 }
 
 // Only fetch when run directly — importing this file just gets buildCSV.
