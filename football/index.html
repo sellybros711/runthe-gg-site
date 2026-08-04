@@ -1605,6 +1605,12 @@ window.GA_ID='G-L29P5MRWKE';
   .lbr .who{flex:1;min-width:0}
   .lbr .who b{display:block;font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis}
+  /* The champion mark: a small gilded crown or trophy on a title/perfect run's row.
+     Sits before the name so a long name can never truncate it away. */
+  .champbadge{display:inline-flex;align-items:center;vertical-align:-2px;margin-right:5px;flex:0 0 auto}
+  .champbadge .champ-svg{width:14px;height:14px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+  .display .champbadge{margin-right:0;margin-left:8px;vertical-align:0}
+  .display .champbadge .champ-svg{width:22px;height:22px}
   .lbr .who span{display:block;font-size:10.5px;color:var(--dim-2);white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis}
   .lbr .rec{flex:0 0 auto;text-align:right}
@@ -7954,6 +7960,38 @@ const EMBLEM_TROPHY='<svg viewBox="0 0 48 48" aria-hidden="true">'+
   '<path fill="url(#emtro)" stroke="#a55b06" stroke-width="1" stroke-linejoin="round" d="M15 41 18 32h12l3 9Z"/>'+
   '<rect x="12" y="40" width="24" height="4.4" rx="2.2" fill="url(#emtro)" stroke="#a55b06" stroke-width="1"/></svg>';
 
+/* HOW FAR A RUN GOT, not where it seeded. The board rows and the run-detail sheet
+   used to say "Wild card" or "Top seed", which is where the playoffs STARTED; this
+   says where they ENDED. Computed the same way for your own run and for anyone
+   else's, from the wins in the bracket and whether the seed carried a bye, so the
+   two can never word the same run differently. Champions carry a badge: a crown
+   for a perfect season, a trophy for a title. */
+function runFate(x){
+  if(x.perfect) return {label:'Perfect season',badge:'crown'};
+  if(x.titleWon) return {label:'Super Bowl champions',badge:'trophy'};
+  if(!x.madePlayoffs) return {label:'Missed the playoffs',badge:null};
+  const rounds=x.bye?E.CONSTANTS.PLAYOFF_ROUNDS_WITH_BYE:E.CONSTANTS.PLAYOFF_ROUNDS_WILD_CARD;
+  const names=E.PLAYOFF_ROUND_NAMES.slice(E.PLAYOFF_ROUND_NAMES.length-rounds);
+  const pw=Math.max(0,Math.min(rounds-1,Number(x.playoffWins)||0));
+  const round=names[pw];
+  const label=round==='Super Bowl'?'Super Bowl runner-up'
+    :round==='Wild Card'?'Lost in the Wild Card round'
+    :round==='Divisional'?'Lost in the Divisional round'
+    :'Lost in the '+round;   // Conference Championship
+  return {label,badge:null};
+}
+/* From your own outcome, or from a board row, into the shape runFate reads. */
+const fateOfOutcome=(o)=>runFate({perfect:o.perfect,titleWon:o.titleWon,
+  madePlayoffs:o.madePlayoffs,playoffWins:(o.wins-o.regularWins),bye:o.seedLabel==='Top seed'});
+const fateOfRow=(r)=>runFate({perfect:r.perfect,titleWon:r.title_won,
+  madePlayoffs:r.made_playoffs,playoffWins:r.playoff_wins,bye:r.seed_label==='Top seed'});
+/* Tiny gilded marks for a champion's row, flat so many can share one board with no
+   gradient-id collisions. */
+const BADGE_TROPHY='<svg class="champ-svg" viewBox="0 0 24 24" fill="#f5b301" aria-hidden="true"><path d="M6 3h12v2h3v2.5a3.5 3.5 0 0 1-3.9 3.48A6 6 0 0 1 13 15.9V18h3.5v2h-9v-2H11v-2.1a6 6 0 0 1-4.1-4.92A3.5 3.5 0 0 1 3 7.5V5h3V3Zm0 4H5v.5A1.5 1.5 0 0 0 6 8.9V7Zm12 0v1.9a1.5 1.5 0 0 0 1-1.4V7h-1Z"/></svg>';
+const BADGE_CROWN='<svg class="champ-svg" viewBox="0 0 24 24" fill="#f5b301" aria-hidden="true"><path d="M2 8l4.2 3.6L12 4l5.8 7.6L22 8l-1.6 10.5H3.6L2 8Zm2.9 12.5h14.2V22H4.9v-1.5Z"/></svg>';
+const champBadge=(b)=>b?'<span class="champbadge" title="'+(b==='crown'?'Perfect season':'Champion')+'">'+
+  (b==='crown'?BADGE_CROWN:BADGE_TROPHY)+'</span>':'';
+
 function paintOver(){
   const o=run.outcome,s=run.season,c=$('o-card');
   c.className='verdict';
@@ -11140,7 +11178,7 @@ function paintPodium(rows){
     return '<div class="pod p'+place+(mine?' mine':'')+'" data-i="'+i+'">'+
       '<span class="pl">'+place+'</span>'+
       avatarHTML(pf,'big')+
-      '<span class="pn">'+esc(playerName(row,mine))+'</span>'+
+      '<span class="pn">'+champBadge(fateOfRow(row).badge)+esc(playerName(row,mine))+'</span>'+
       '<span class="pr">'+esc(fig)+'</span>'+
       '<span class="ps">'+esc(sub)+'</span></div>';
   }).join('')+'</div><div class="podbase"></div>';
@@ -11216,8 +11254,9 @@ function runDetail(row,back){
   const p=mine?runPayload():null;
 
   const rec=mine?o.record:row.wins+'-'+row.losses;
-  const label=mine?(o.perfect?'Perfect season':o.seedLabel)
-    :(row.perfect?'Perfect season':row.seed_label);
+  /* HOW FAR IT WENT, not where it seeded. */
+  const fate=mine?fateOfOutcome(o):fateOfRow(row);
+  const label=fate.label;
   const rating=mine?p.teamRating:(row.team_rating===null?null:Number(row.team_rating));
   const fppg=mine?p.squadFppg:(row.squad_fppg===null?null:Number(row.squad_fppg));
   const mult=mine?p.structureMult:(row.structure_mult===null?null:Number(row.structure_mult));
@@ -11249,7 +11288,7 @@ function runDetail(row,back){
   $('sheet-in').innerHTML=
     '<div class="eyebrow">'+(mine?'Your run':'Run detail')+'</div>'+
     '<h2 class="display" style="font-size:30px;margin:3px 0 1px;letter-spacing:.01em">'+
-      esc(rec)+'</h2>'+
+      esc(rec)+champBadge(fate.badge)+'</h2>'+
     '<p class="dim" style="font-size:12.5px;margin:0">'+esc(label)+
       ' &middot; '+esc(kind)+'</p>'+
     (known.length?'<div class="rost" style="margin-top:12px">'+known.map(m=>{
@@ -11313,7 +11352,7 @@ function boardRow(row,i){
   return '<div class="lbr'+(lead?' gold':'')+(mine?' mine':'')+'" data-i="'+i+'">'+
     '<span class="rk">'+rank+'</span>'+
     avatarHTML(pf)+
-    '<span class="who"><b>'+esc(playerName(row,mine))+'</b>'+
+    '<span class="who"><b>'+champBadge(fateOfRow(row).badge)+esc(playerName(row,mine))+'</b>'+
       '<span>'+esc(rowSub(row))+'</span></span>'+
     '<span class="rec">'+SORT_META[lbSort].of(row)+'</span>'+
     '<span class="go">&rsaquo;</span></div>';

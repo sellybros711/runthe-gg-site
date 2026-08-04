@@ -64,7 +64,7 @@
      run_mode collides with nothing, and a stale cache now says the column is missing, which
      is the truth and is actionable. */
   const BASE_COLS = 'id,created_at,wins,losses,games,title_won,perfect,made_playoffs,' +
-    'seed_label,point_diff,chemistry_pct,spend_musd,respins,franchise,run_mode,picks,slots,' +
+    'seed_label,playoff_wins,point_diff,chemistry_pct,spend_musd,respins,franchise,run_mode,picks,slots,' +
     'squad_fppg,structure_mult,team_rating,perfect_pct';
   /* TWO OPTIONAL SETS, DROPPED SEPARATELY, and the separateness is the whole point.
      display_name arrives with 51_football_accounts.sql and the avatar pair with
