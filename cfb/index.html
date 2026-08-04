@@ -1366,6 +1366,10 @@ window.GA_ID='G-L29P5MRWKE';
   .schemepanel .stripe{position:absolute;top:0;left:0;right:0;height:3px}
   .scheme-none .stripe{display:none}
   .scheme-badge{display:flex;align-items:center;gap:10px;margin:8px 0 10px}
+  /* Without this the [hidden] attribute loses to the display rule above and an
+     empty badge (its 34px icon and margins) reserves a gap under "Coach's take"
+     on any roster with no detected scheme. */
+  .scheme-badge[hidden]{display:none}
   .scheme-icon{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;flex-shrink:0}
   .scheme-icon svg{width:19px;height:19px}
   .scheme-name{font-family:var(--fd);font-size:21px;line-height:1.05;letter-spacing:-.01em;
@@ -4259,7 +4263,7 @@ function paintSquad(){
     $('q-verdict').innerHTML=
       '<p class="take">'+esc(cr.verdict)+'</p>'+
       '<p class="fit">'+(fitPct===0
-        ? 'These five neither help nor hold each other back.'
+        ? 'These six neither help nor hold each other back.'
         : 'Because of how these six fit together, they score '+strong+fitPct+'% '+
           (st.multiplier>1?'more':'less')+'</b> than their own numbers add up to.')+'</p>';
   }
@@ -4810,7 +4814,12 @@ function generateDrives(script,rng){
   return drives;
 }
 
-function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor){
+/* The RunThe.GG "R", keyed off its navy to a transparent glyph, painted at
+   midfield the way a real field carries a logo. Preloaded once and only drawn
+   once it has arrived, so the synchronous chart never waits on it. */
+const fieldLogo=new Image(); fieldLogo.src='field-r.png?v=1';
+
+function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor,youName,themName){
   if(!ctx)return;
   const dpr=window.devicePixelRatio||1;
   ctx.save();ctx.clearRect(0,0,w,h);
@@ -4824,6 +4833,19 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor){
   ctx.fillStyle=youColor;ctx.fillRect(fl,ft,ezW,fh);
   ctx.fillStyle=themColor;ctx.fillRect(fl+fw-ezW,ft,ezW,fh);
   ctx.globalAlpha=1;
+  /* TEAM NAMES PAINTED IN THE END ZONES, turned to read up the field the way
+     they are on a real one: yours on the left, the opponent on the right. */
+  const endName=(cx,txt,dir)=>{
+    if(!txt) return;
+    ctx.save();ctx.translate(cx,ft+fh/2);ctx.rotate(dir*Math.PI/2);
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font='700 '+(9*dpr)+'px sans-serif';
+    ctx.fillStyle='rgba(255,255,255,.62)';
+    ctx.fillText(String(txt).toUpperCase().slice(0,10),0,0);
+    ctx.restore();
+  };
+  endName(fl+ezW/2,youName,-1);
+  endName(fl+fw-ezW/2,themName,1);
   ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1.2*dpr;
   ctx.beginPath();ctx.moveTo(pfL,ft);ctx.lineTo(pfL,ft+fh);ctx.stroke();
   ctx.beginPath();ctx.moveTo(pfL+pfW,ft);ctx.lineTo(pfL+pfW,ft+fh);ctx.stroke();
@@ -4832,6 +4854,14 @@ function drawDriveChart(ctx,w,h,drives,upTo,youColor,themColor){
     if(yd===50){ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1*dpr;}
     else{ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=0.5*dpr;}
     ctx.beginPath();ctx.moveTo(x,ft);ctx.lineTo(x,ft+fh);ctx.stroke();
+  }
+  /* The midfield logo, faint, under the drives the way a painted logo sits under
+     the players. */
+  if(fieldLogo.complete&&fieldLogo.naturalWidth){
+    const lh=fh*0.78, lw=lh*(fieldLogo.naturalWidth/fieldLogo.naturalHeight);
+    ctx.globalAlpha=0.11;
+    ctx.drawImage(fieldLogo,pfL+pfW/2-lw/2,ft+fh/2-lh/2,lw,lh);
+    ctx.globalAlpha=1;
   }
   const labels=[10,20,30,40,50,40,30,20,10];
   ctx.fillStyle='rgba(255,255,255,.2)';ctx.font=(7*dpr)+'px sans-serif';ctx.textAlign='center';
@@ -4955,7 +4985,7 @@ function playPlayoffGame(r,afterFn){
   const fieldCtx=initFieldCanvas('po-fcanvas');
   const fcv=$('po-fcanvas');
   let dcY=me.bg,dcT=them.bg;
-  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,dcY,dcT):()=>{};
+  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,dcY,dcT,'YOU',(opp?E.teamColors(opp).abbreviation:'OPP')):()=>{};
   paintField(0);
 
   const setLead=(y,t)=>{
@@ -5111,7 +5141,7 @@ function playFeatureBroadcast(cfg){
   $('bowl-field').hidden=false;   // unhide before measuring, or the canvas sizes to nothing
   const fieldCtx=initFieldCanvas('bowl-fcanvas');
   const fcv=$('bowl-fcanvas');
-  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,them.bg):()=>{};
+  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,them.bg,'YOU',(opp?E.teamColors(opp).abbreviation:'OPP')):()=>{};
   paintField(0);
   const setLead=(y,t)=>{youEl.classList.toggle('lead',y>=t);themEl.classList.toggle('lead',t>=y);};
   setLead(0,0);
@@ -5981,7 +6011,8 @@ function bowlBroadcast(cfg){
   $('bowl-field').hidden=false;   // unhide before measuring, or the canvas sizes to nothing
   const fieldCtx=initFieldCanvas('bowl-fcanvas');
   const fcv=$('bowl-fcanvas');
-  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,themWash.bg):()=>{};
+  const themAbbr=(cfg.themName?cfg.themName.replace(/[^A-Za-z0-9]/g,'').slice(0,4).toUpperCase():'')||'OPP';
+  const paintField=fieldCtx?(upTo)=>drawDriveChart(fieldCtx,fcv.width,fcv.height,drives,upTo,me.bg,themWash.bg,'YOU',themAbbr):()=>{};
   paintField(0);
   const setLead=(y,t)=>{ youEl.classList.toggle('lead',y>=t); themEl.classList.toggle('lead',t>=y); };
   setLead(0,0);
