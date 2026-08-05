@@ -361,29 +361,131 @@ export function setNote(ratio, songs) {
  * Short and punchy on purpose: this plays back one song at a time, so anything
  * longer than a breath gets in the way of the next one.
  */
-export const REACTION_TIERS = [
-  { min: 130, lines: ['The place came apart.', 'Absolute bedlam.', 'Phones up. All of them.',
-                      'They will talk about this one.'] },
-  { min: 100, lines: ['Enormous roar.', 'The room went up.', 'That is why people drive six hours.'] },
-  { min: 75,  lines: ['Big cheer.', 'Heads turning to each other.', 'Real recognition in the room.'] },
-  { min: 50,  lines: ['Solid. Crowd stayed with it.', 'Nodding along.', 'Goes down easy.'] },
-  { min: 30,  lines: ['Polite. A few people sat down.', 'Bar queue got longer.', 'Fine. Just fine.'] },
-  { min: 0,   lines: ['Confused looks.', 'That killed the room a bit.', 'A lot of people checked their phones.'] },
-];
+/*
+ * The room, in the words the room actually uses.
+ *
+ * Vocabulary is taken from the community's own jamchart notes rather than
+ * invented — across 753 write-ups the curators say "peak" 769 times, "bliss"
+ * 93, "patient" 54, "whale" 50, "hose" 17, plus type II, jam vehicle, bustout
+ * and plink. If it is not in the notes it is not in here.
+ *
+ * Checked most-specific first, so the line explains WHY the pick landed: a
+ * 100-show bustout and a twenty-two minute type II are different nights and
+ * should not draw the same sentence.
+ */
+const RX = {
+  bustout: [
+    'BUSTOUT. Nobody had that on their card.',
+    'Bustout! The taper section audibly gasped.',
+    'First time in forever. Phones up before the second bar.',
+  ],
+  legend: [
+    'Full hose. The rail came apart.',
+    'That is the version people will send each other.',
+    'Type II and gone. Nobody sat down for that.',
+    'Patient, then majestic. Absolute bliss.',
+  ],
+  monster: [
+    'Twenty-plus and they went there.',
+    'Went deep type II. The whole floor is up.',
+    'Whale calls over the top. Enormous.',
+    'Peaked, dropped, peaked again.',
+  ],
+  jam: [
+    'Proper jam vehicle. Big peak on the end.',
+    'Nice patient build. Room locked in.',
+    'Plinko into bliss. Heads grinning up front.',
+    'Legs on that one. Tapers are pleased.',
+  ],
+  cover: [
+    'Cover! The floor clocked it inside two bars.',
+    'Deep cut cover. Huge pop of recognition.',
+    'Nobody expected that one. Big singalong.',
+  ],
+  breather: [
+    'Lighters up. Earned breather.',
+    'Beautiful. The room finally exhaled.',
+    'Pretty, patient, and needed after that.',
+  ],
+  opener: [
+    'Strong opener. Sets the night up.',
+    'Straight into it. Good call to start.',
+  ],
+  closer: [
+    'Set closer, and it delivered.',
+    'Big finish. Lights up on a roar.',
+  ],
+  encore: [
+    'Encore. They sent everybody home happy.',
+    'One more and it was the right one.',
+  ],
+  good: [
+    'Solid. Crowd stayed with it.',
+    'Kept it in the pocket. Easy sway.',
+    'Well played, no notes.',
+  ],
+  flat: [
+    'Straight ahead. Beer line got long.',
+    'Fine. A few people sat down on the lawn.',
+    'Polite. Setbreak energy, mid-set.',
+  ],
+  clash: [
+    'Wrong read. That killed the momentum.',
+    'Floor thinned out. The rail looked confused.',
+    'Air came out of the room a bit.',
+  ],
+};
 
-/** A reaction line for one scored pick. `seed` keeps a replay deterministic. */
-export function reactionFor(score, seed = 0) {
-  const tier = REACTION_TIERS.find(t => score.subtotal >= t.min) || REACTION_TIERS[REACTION_TIERS.length - 1];
-  return tier.lines[Math.abs(seed) % tier.lines.length];
+/**
+ * A reaction line for one scored pick.
+ * @param {object} score  the scorePerf result
+ * @param {object} perf   the performance row, for the reason behind it
+ * @param {number} seed   keeps a replay deterministic
+ */
+export function reactionFor(score, perf, seed = 0) {
+  const pick = key => RX[key][Math.abs(seed) % RX[key].length];
+  const gap = Number(perf && perf.show_gap) || 0;
+  const len = lenOf(perf);
+  const tags = tagsOf(perf);
+
+  if (score.fit === 'bad') return pick('clash');
+  if (gap >= 50) return pick('bustout');
+  if (isRecommended(perf) && len >= LEN_20MIN) return pick('legend');
+  if (len >= LEN_20MIN || (isRecommended(perf) && len >= LEN_15MIN)) return pick('monster');
+  if (isJamchart(perf) || len >= LEN_15MIN) return pick('jam');
+  if (String(perf && perf.is_cover) === 'true') return pick('cover');
+  if (tags.includes('ballad')) return pick('breather');
+  if (score.role === 'Encore') return pick('encore');
+  if (score.role === 'Closer' && score.fit !== 'neutral') return pick('closer');
+  if (score.role === 'Opener' && score.fit !== 'neutral') return pick('opener');
+  if (score.subtotal >= 55) return pick('good');
+  return pick('flat');
 }
 
-/** A louder line for the things that are not just a good song. */
-export function eventLine(kinds) {
+/** The louder line for a segue, graded by what kind it was. */
+export function eventLine(kinds, seed = 0) {
   if (!kinds) return null;
-  if (kinds.includes('sandwich')) return 'And back into it. The sandwich closes.';
-  if (kinds.includes('chain')) return 'Still going. No gaps.';
-  if (kinds.includes('exact')) return 'Straight in, exactly like the record of it.';
-  return 'No gap — straight into it.';
+  const one = a => a[Math.abs(seed) % a.length];
+  if (kinds.includes('sandwich')) return one([
+    'And back into it — sandwich closed. The floor lost it.',
+    'Came all the way back around. Sandwich complete.',
+  ]);
+  if (kinds.includes('chain')) return one([
+    'Still no gap. Third one in a row.',
+    'They have not stopped. Nobody is tuning.',
+  ]);
+  if (kinds.includes('exact')) return one([
+    'Same transition as the tape. Seamless.',
+    'Exactly like the version everybody knows. No gap.',
+  ]);
+  return one(['No gap — straight in.', 'Ran it right into the next one.']);
+}
+
+/** What the room does between sets. */
+export function setOpenLine(setIdx) {
+  return ['Lights down. Here we go.',
+          'Back from setbreak. Room is full again.',
+          'Encore break. They are coming back out.'][setIdx] || '';
 }
 
 // ── the one that got away ────────────────────────────────────────────────────

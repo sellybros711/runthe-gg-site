@@ -201,9 +201,15 @@ SET I
   Hot Tea                      +118   The place came apart.
 ```
 
-Reactions are keyed to what the pick actually scored, so they are earned rather
-than decorative, and every beat is derived from the already-computed result —
-the playback cannot disagree with the scorecard that follows it. Tap to skip.
+Reactions are keyed to **why** the pick landed, not just what it scored — a
+100-show bustout and a twenty-two minute type II are different nights and get
+different sentences. The vocabulary is the community's own: across the 753
+jamchart write-ups the curators say *peak* 769 times, *bliss* 93, *patient* 54,
+*whale* 50, *hose* 17, plus *type II*, *jam vehicle*, *bustout* and *plink*. If
+a word is not in the notes it is not in the reactions.
+
+Every beat derives from the already-computed result, so the playback cannot
+disagree with the scorecard that follows it. Tap to skip.
 
 ## Scoring
 

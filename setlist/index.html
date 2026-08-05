@@ -579,11 +579,11 @@ import {
   SETS, MAX_ROUNDS, ENCORE_INDEX, ARC_MAX, TIME_POINTS_PER_SET,
   RESPIN_COSTS, respinCost, canRespin, theOneThatGotAway,
   wouldStrand, danglingSegue, closesSandwich, SANDWICH_BONUS,
-  reactionFor, eventLine,
+  reactionFor, eventLine, setOpenLine,
   scoreShow, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=9';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=9';
+} from './scoring.js?v=10';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=10';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -1432,9 +1432,9 @@ function showBeats(){
       beats.push({
         kind: 'song', perf, sc, running,
         role: r.perSet[si][j].role.name,
-        gained: sc.subtotal + (seg ? seg.points : 0),
-        reaction: reactionFor(sc, j + si * 7 + perf.song.length),
-        event: seg ? eventLine(seg.kinds) : null,
+        gained: sc.subtotal,
+        reaction: reactionFor(sc, perf, j + si * 7 + perf.song.length),
+        event: seg ? eventLine(seg.kinds, j + perf.song.length) : null,
         segPoints: seg ? seg.points : 0,
       });
     });
@@ -1474,7 +1474,7 @@ function renderShow(){
     if (b.kind === 'set'){
       feed.insertAdjacentHTML('beforeend',
         `<div class="sim-set">${esc(b.label)}</div>`);
-      subEl.textContent = `${b.label} — here we go.`;
+      subEl.textContent = setOpenLine(SETS.findIndex(x => x.label === b.label));
     } else if (b.kind === 'song'){
       feed.insertAdjacentHTML('beforeend', `
         <div class="sim-song">
