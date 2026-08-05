@@ -22,5 +22,14 @@ jobs:
           git add arcade/former.js
           git diff --cached --quiet && echo "no changes" || {
             git commit -m "Refresh former-player dataset"
-            git push
+            # Rebase-and-retry: the rosters/leaderboard Actions push to main too,
+            # and a concurrent run can advance the ref while this job is fetching
+            # data (a long job). Rebase onto the latest main and retry so the push
+            # never fails on a non-fast-forward (former.js and rosters.js differ,
+            # so the rebase is always clean).
+            for i in 1 2 3 4 5; do
+              git push && break
+              echo "push rejected, rebasing onto latest main (attempt $i)"
+              git pull --rebase origin main || exit 1
+            done
           }

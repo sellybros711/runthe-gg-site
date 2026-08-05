@@ -26,6 +26,7 @@
   var sb = null;
   var session = null;
   var name = null;              // profiles.username for the signed-in user
+  var favTeam = null;           // profiles.fav_cfb_team {name,primary,secondary} or null
   var offline = false;
   var lastError = null;
   var listeners = [];
@@ -36,6 +37,7 @@
       ready: !!sb,
       signedIn: !!session,
       name: name,
+      favTeam: favTeam,
       userId: session && session.user && session.user.id,
       offline: offline,
       lastError: lastError
@@ -51,11 +53,11 @@
     } catch (e) { sb = null; offline = true; return false; }
     sb.auth.onAuthStateChange(function (_evt, s) {
       session = s || null;
-      if (session) { syncPro(); loadName().then(fire); } else { name = null; fire(); }
+      if (session) { syncPro(); Promise.all([loadName(), loadFav()]).then(fire); } else { name = null; favTeam = null; fire(); }
     });
     sb.auth.getSession().then(function (r) {
       session = (r && r.data && r.data.session) || null;
-      if (session) { syncPro(); return loadName().then(fire); }
+      if (session) { syncPro(); return Promise.all([loadName(), loadFav()]).then(fire); }
       fire();
     }).catch(fire);
     return true;
@@ -88,6 +90,22 @@
     return sb.from('profiles').select('username').eq('id', session.user.id).single()
       .then(function (r) { name = (r && r.data && r.data.username) || null; })
       .catch(function () { name = null; });
+  }
+
+  // The signed-in user's favorite college team (set by the College Football
+  // game). Queried on its own so a not-yet-created column can't break username.
+  // On success we mirror it into RTGFavTeam's cache so the hub + games (which
+  // read localStorage, not Supabase) pick it up on their next paint.
+  function loadFav() {
+    if (!session) { favTeam = null; return Promise.resolve(); }
+    return sb.from('profiles').select('fav_cfb_team').eq('id', session.user.id).maybeSingle()
+      .then(function (r) {
+        if (!r || r.error) return;                 // column missing / RLS → ignore
+        var v = r.data && r.data.fav_cfb_team;
+        if (typeof v === 'string') { try { v = JSON.parse(v); } catch (e) { v = null; } }
+        if (v && window.RTGFavTeam) { favTeam = window.RTGFavTeam.set(v) || favTeam; }
+      })
+      .catch(function () {});
   }
 
   function token() { return (session && session.access_token) || SB_ANON; }

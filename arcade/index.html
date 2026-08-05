@@ -637,6 +637,7 @@
   </nav>
 </div>
 
+<script src="/arcade/favteam.js"></script>
 <script src="/arcade/tokens.js"></script>
 <script>
 (function () {
@@ -651,11 +652,30 @@
     if (m) m.setAttribute('content', t === 'light' ? '#EEF2F7' : '#071426');
   }
   applyThemeMeta();
+
+  // ---- Alma Mater card: skin it in the user's favorite college team colors
+  // (set by the College Football game), falling back to the maroon default.
+  function applyFavCard() {
+    if (!window.RTGFavTeam) return;
+    var card = document.getElementById('cardAlma'); if (!card) return;
+    var t = RTGFavTeam.resolved();
+    var theme = document.documentElement.getAttribute('data-theme');
+    card.style.setProperty('--c', t.primary);
+    var nm = card.querySelector('.nm'); if (nm) nm.style.color = RTGFavTeam.readable(t.primary, theme);
+    var svg = card.querySelector('.cap svg');
+    if (svg) {
+      [].forEach.call(svg.querySelectorAll('[fill]'), function (el) { if ((el.getAttribute('fill') || '').toLowerCase() !== 'none') el.setAttribute('fill', t.primary); });
+      [].forEach.call(svg.querySelectorAll('[stroke]'), function (el) { if ((el.getAttribute('stroke') || '').toLowerCase() !== 'none') el.setAttribute('stroke', t.primary); });
+    }
+  }
+  applyFavCard();
+
   document.getElementById('themeBtn').addEventListener('click', function () {
     var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', next);
     try { LS.setItem('runthegrid_theme', next); } catch (e) {}
     applyThemeMeta();
+    applyFavCard();
   });
 
   // ---- date + live countdown to local midnight ----
