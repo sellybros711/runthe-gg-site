@@ -89,6 +89,31 @@ bugs (a 4000-row truncation trips the floor, a lost `artist_id` filter trips the
 ceiling), fails on HTML entities reaching the data, and asserts the
 discoverability choices below.
 
+## Layout
+
+Measured at 390x844 before and after the UI pass — the draft screen is the one a
+player sits on eight times a game, so its chrome is the expensive part:
+
+| Screen | Before | After |
+|---|---|---|
+| Home | 1.3 screens | **1.0** |
+| Draft | 1.8 screens | ~1.4 |
+| Result | 3.7 screens | **2.0** |
+
+Three patterns are borrowed from The Perfect Season (`football/index.html`):
+
+- **Bottom sheet.** Under 860px the setlist panel is not a column you scroll
+  past — it is a sheet that rises when you pick a song, so the slots always come
+  to you. Above 860px the exact same markup is a sticky sidebar; only one media
+  query decides which, so there is one draft interaction to reason about.
+- **Sticky, short header.** `body.playing` shrinks it further mid-game.
+- **Detail on demand.** The result screen used to print the full arithmetic for
+  all eight slots inline. Now each slot is a tap target and the working opens in
+  a sheet — same depth, a third of the page.
+
+The draft screen still scrolls, and mostly should: its chrome is about 170px and
+the rest is the show's songs, which is the thing the player came to read.
+
 ## Discoverability
 
 Three things are deliberate and checked in CI, because "temporarily" hidden

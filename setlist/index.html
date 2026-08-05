@@ -61,10 +61,16 @@
 
   /* ---------------- shell ---------------- */
   .wrap{width:100%; max-width:1080px; margin:0 auto;
-    padding:calc(12px + env(safe-area-inset-top,0)) 18px 56px;}
+    padding:0 18px calc(24px + env(safe-area-inset-bottom,0));}
   @media (max-width:640px){ .wrap{padding-left:14px; padding-right:14px;} }
 
-  .topbar{display:flex; align-items:center; gap:10px; padding:4px 0 18px;}
+  /* Sticky and short. The draft screen is the one a player sits on eight times
+     a game, so every fixed pixel here is a pixel of song list they lose. */
+  .topbar{position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:10px;
+    padding:calc(8px + env(safe-area-inset-top,0)) 0 8px; background:var(--bg);
+    border-bottom:1px solid var(--line);}
+  body.playing .topbar{padding-bottom:6px;}
+  body.playing .brand img{height:30px;}
   .icon-btn{width:34px; height:36px; display:inline-flex; align-items:center; justify-content:center;
     font-size:22px; color:var(--mut); flex:0 0 auto;}
   .icon-btn:hover{color:var(--ink);}
@@ -97,28 +103,30 @@
   .btn.ghost{background:transparent;}
 
   /* ---------------- home ---------------- */
-  .hero{text-align:center; padding:14px 0 26px;}
-  .hero h1{font-family:var(--hero); font-size:clamp(46px,11vw,86px); line-height:.92;
-    letter-spacing:.5px; margin:6px 0 10px; text-transform:uppercase;}
+  .hero{text-align:center; padding:16px 0 20px;}
+  .hero h1{font-family:var(--hero); font-size:clamp(40px,9.5vw,72px); line-height:.92;
+    letter-spacing:.5px; margin:5px 0 9px; text-transform:uppercase;}
   .hero h1 .accent{color:var(--gold);}
   .hero p{max-width:34ch; margin:0 auto; color:var(--mut); font-size:15px; line-height:1.55;
     font-weight:600;}
 
-  .steps{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:26px 0 24px;}
-  @media (max-width:600px){ .steps{grid-template-columns:1fr;} }
-  .step{padding:15px 16px; border-radius:var(--r-md); background:var(--card);
+  /* Three columns even on a phone: the copy is short, and stacked they cost
+     three times the height for the same three sentences. */
+  .steps{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:18px 0 16px;}
+  .step{padding:11px 11px 12px; border-radius:var(--r-md); background:var(--card);
     border:1px solid var(--line);}
-  .step b{display:block; font-family:var(--hero); font-size:22px; color:var(--teal); line-height:1;
-    margin-bottom:7px;}
-  .step span{font-size:13px; color:var(--mut); line-height:1.5; font-weight:600;}
+  .step b{display:block; font-family:var(--hero); font-size:17px; color:var(--teal); line-height:1;
+    margin-bottom:5px;}
+  .step span{font-size:11.5px; color:var(--mut); line-height:1.45; font-weight:600;}
+  @media (max-width:420px){ .step{padding:9px 9px 10px;} .step span{font-size:11px;} }
 
-  .bands{display:flex; flex-direction:column; gap:14px;}
-  .band{padding:18px 18px 16px;}
+  .bands{display:flex; flex-direction:column; gap:11px;}
+  .band{padding:14px 16px 14px;}
   .band-hd{display:flex; align-items:baseline; justify-content:space-between; gap:12px;
     margin-bottom:4px;}
   .band-hd h2{font-family:var(--hero); font-size:30px; margin:0; text-transform:uppercase;
     letter-spacing:.5px;}
-  .band-meta{font-size:12.5px; color:var(--dim); font-weight:700; margin-bottom:14px;}
+  .band-meta{font-size:12.5px; color:var(--dim); font-weight:700; margin-bottom:11px;}
   .band-actions{display:grid; grid-template-columns:1fr; gap:10px;}
   .warn{margin-top:12px; padding:11px 13px; border-radius:var(--r-sm); font-size:13px;
     font-weight:700; line-height:1.5; background:color-mix(in srgb,var(--gold) 12%, transparent);
@@ -153,19 +161,41 @@
 
   /* ---------------- draft ---------------- */
   .hud{display:flex; align-items:center; justify-content:space-between; gap:12px;
-    padding:12px 16px; margin-bottom:16px;}
-  .hud .rd{font-family:var(--hero); font-size:24px; line-height:1;}
+    padding:9px 14px; margin-bottom:10px;}
+  .hud .rd{font-family:var(--hero); font-size:19px; line-height:1;}
   .hud .md{font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
     color:var(--dim); margin-top:3px;}
   .pips{display:flex; gap:5px;}
   .pip{width:9px; height:9px; border-radius:50%; background:var(--line2);}
   .pip.done{background:var(--gold);} .pip.now{background:var(--teal); transform:scale(1.25);}
 
-  .board{display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:18px; align-items:start;}
-  @media (max-width:860px){ .board{grid-template-columns:minmax(0,1fr);} }
+  .board{display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:18px; align-items:start;}
 
-  .showcard{padding:16px 18px; margin-bottom:14px;}
-  .showcard .d{font-family:var(--hero); font-size:26px; line-height:1.05;}
+  /* Under 860 the setlist panel stops being a column and becomes a bottom sheet.
+     Same markup either way — only this block decides which it is — so there is
+     one draft interaction to reason about, not two. */
+  @media (max-width:860px){
+    .board{grid-template-columns:minmax(0,1fr);}
+    .board > .slotcol{position:fixed; inset:0; z-index:60; display:flex;
+      align-items:flex-end; justify-content:center; background:rgba(0,0,0,0);
+      visibility:hidden; pointer-events:none;
+      transition:background .28s ease, visibility 0s .28s;}
+    body.sheet-on .board > .slotcol{visibility:visible; pointer-events:auto;
+      background:rgba(0,0,0,.62); transition:background .28s ease, visibility 0s;}
+    .board > .slotcol > .setlist{width:100%; max-width:560px; margin:0;
+      border-radius:18px 18px 0 0; border-bottom:0; max-height:84dvh; overflow-y:auto;
+      padding-bottom:calc(14px + env(safe-area-inset-bottom,0));
+      transform:translateY(100%); opacity:0;
+      transition:transform .22s ease, opacity .16s ease;}
+    body.sheet-on .board > .slotcol > .setlist{transform:translateY(0); opacity:1;
+      transition:transform .34s cubic-bezier(.33,1,.68,1), opacity .22s ease;}
+    .sheetgrab{display:block;}
+  }
+  .sheetgrab{display:none; width:38px; height:4px; border-radius:99px;
+    background:var(--line2); margin:0 auto 12px;}
+
+  .showcard{padding:11px 15px; margin-bottom:10px;}
+  .showcard .d{font-family:var(--hero); font-size:21px; line-height:1.05;}
   .showcard .v{font-size:14px; font-weight:700; color:var(--tealT); margin-top:3px;}
   .showcard .c{font-size:13px; font-weight:600; color:var(--dim);}
 
@@ -197,8 +227,7 @@
   .chip.rare{background:color-mix(in srgb,var(--gold) 20%, transparent); color:var(--goldT);}
 
   /* ---------------- setlist panel ---------------- */
-  .setlist{position:sticky; top:14px; padding:16px 16px 14px;}
-  @media (max-width:860px){ .setlist{position:static;} }
+  .setlist{position:sticky; top:66px; padding:14px 16px 12px;}
   .setlist h2{font-family:var(--hero); font-size:22px; margin:0 0 2px; text-transform:uppercase;
     letter-spacing:.5px;}
   .setlist .sub{font-size:11.5px; font-weight:700; color:var(--dim); margin-bottom:12px;}
@@ -243,6 +272,45 @@
   .bd .k{font-size:10px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
     color:var(--dim); margin-top:5px;}
   .actions{display:flex; flex-direction:column; gap:9px; margin-top:14px;}
+
+  /* ---------------- bottom sheet ----------------
+     Same shape as The Perfect Season's: a scrim you can tap out of, a panel that
+     rises from the bottom and caps its own height so it never pushes the page. */
+  .sheet{position:fixed; inset:0; z-index:60; display:flex; align-items:flex-end;
+    justify-content:center; padding:0; background:rgba(0,0,0,0);
+    visibility:hidden; pointer-events:none;
+    transition:background .28s ease, visibility 0s .28s;}
+  .sheet.on{visibility:visible; pointer-events:auto; background:rgba(0,0,0,.62);
+    transition:background .28s ease, visibility 0s;}
+  .sheet .inner{width:100%; max-width:560px; background:var(--card);
+    border:1px solid var(--line2); border-bottom:0;
+    border-radius:18px 18px 0 0; padding:8px 16px calc(16px + env(safe-area-inset-bottom,0));
+    max-height:82dvh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    transform:translateY(100%); opacity:0;
+    transition:transform .22s ease, opacity .16s ease;}
+  .sheet.on .inner{transform:translateY(0); opacity:1;
+    transition:transform .34s cubic-bezier(.33,1,.68,1), opacity .22s ease;}
+  .grab{width:38px; height:4px; border-radius:99px; background:var(--line2);
+    margin:4px auto 12px;}
+  .sheet-hd{display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    margin-bottom:10px;}
+  .sheet-hd h2{font-family:var(--hero); font-size:21px; margin:0; text-transform:uppercase;
+    letter-spacing:.5px;}
+  .sheet-hd .x{font-size:12px; font-weight:800; color:var(--dim); background:none; border:0;
+    padding:4px 2px;}
+
+  .slot.tappable{width:100%; text-align:left; border:0; background:transparent;
+    font-family:inherit; cursor:pointer;}
+  .slot.tappable:hover{background:var(--card2);}
+  .slot.tappable:after{content:'›'; color:var(--dim); font-size:17px; margin-left:2px;}
+
+
+  .toast{position:fixed; left:50%; bottom:calc(22px + env(safe-area-inset-bottom,0)); z-index:99;
+    transform:translateX(-50%) translateY(80px); background:var(--card3);
+    border:1px solid var(--line2); padding:11px 17px; border-radius:10px;
+    font-weight:800; font-size:13.5px; opacity:0; pointer-events:none;
+    transition:transform .25s ease, opacity .25s ease; box-shadow:var(--shadow);}
+  .toast.on{transform:translateX(-50%) translateY(0); opacity:1;}
 
   /* ---------------- result: how this scored ---------------- */
   .scoresheet{padding:18px; margin-top:14px;}
@@ -327,6 +395,12 @@
   </div>
   <main id="app" aria-live="polite"></main>
 </div>
+
+<!-- Detail sheet. One element, reused: the result screen fills it per song. -->
+<div class="sheet" id="detailSheet" role="dialog" aria-modal="true" aria-label="Slot breakdown">
+  <div class="inner" id="detailInner"></div>
+</div>
+<div class="toast" id="toast" role="status"></div>
 
 <script type="module">
 import {
@@ -446,6 +520,9 @@ const app = document.getElementById('app');
 function setScreen(name){
   clearTimeout(S.revealTimer);
   S.screen = name;
+  // The sheet belongs to the draft screen only — never let it survive a screen change.
+  if (name !== 'draft') document.body.classList.remove('sheet-on');
+  document.body.classList.toggle('playing', name === 'draft' || name === 'reveal');
   render();
 }
 
@@ -568,10 +645,14 @@ function slotRowsHTML({ interactive, scored }){
         const acc = accentOf(perf);
         const pts = scored && scored.songs[i]
           ? `<span class="pts">${scored.songs[i].subtotal}</span>` : '';
-        return `${segueMark}<div class="slot filled" style="--acc:${acc.v}">
+        // Scored rows are buttons: tapping one opens its full arithmetic.
+        const tag = scored ? 'button' : 'div';
+        const attrs = scored ? ` type="button" data-peek="${i}"` : '';
+        return `${segueMark}<${tag} class="slot filled${scored ? ' tappable' : ''}"${attrs}
+          style="--acc:${acc.v}">
           <span class="nm">${esc(slot.name)}</span>
           <span class="val">${esc(perf.song)}</span>${pts}
-        </div>`;
+        </${tag}>`;
       }
 
       // Empty slot. During the draft it is a drop target and previews fit.
@@ -669,24 +750,33 @@ function renderDraft(){
         ${songsHTML}
       </div>
 
-      <aside class="card setlist">
-        <h2>Your setlist</h2>
-        <div class="sub">${S.slots.filter(Boolean).length} of ${NUM_ROUNDS} locked</div>
-        ${slotRowsHTML({ interactive: true, scored: null })}
-        <div class="lockbar">
-          <button class="btn primary" type="button" id="lockBtn" ${canLock ? '' : 'disabled'}>
-            Lock it in
-          </button>
-          <div class="hint ${S.hintBad ? 'bad' : ''}">${esc(S.hint || 'Pick a song, then a slot.')}</div>
-        </div>
-      </aside>
+      <div class="slotcol" id="slotCol">
+        <aside class="card setlist">
+          <div class="sheetgrab"></div>
+          <h2>${S.pickedSong ? 'Choose a slot' : 'Your setlist'}</h2>
+          <div class="sub">${S.pickedSong
+            ? esc(S.pickedSong.song)
+            : `${S.slots.filter(Boolean).length} of ${NUM_ROUNDS} locked`}</div>
+          ${slotRowsHTML({ interactive: true, scored: null })}
+          <div class="lockbar">
+            <button class="btn primary" type="button" id="lockBtn" ${canLock ? '' : 'disabled'}>
+              Lock it in
+            </button>
+            <div class="hint ${S.hintBad ? 'bad' : ''}">${esc(S.hint || 'Pick a song, then a slot.')}</div>
+          </div>
+        </aside>
+      </div>
     </div>`;
+
+  // The sheet is only a sheet under 860px; above that the panel is always on
+  // screen and this class does nothing.
+  document.body.classList.toggle('sheet-on', !!S.pickedSong);
 }
 
 // ── result ───────────────────────────────────────────────────────────────────
 /* One row of the per-song breakdown: the arithmetic, in the order the model
    asks its four questions, so the number is readable rather than asserted. */
-function songBreakdownHTML(perf, sc, slotIdx){
+function songBreakdownHTML(perf, sc, slotIdx, opts = {}){
   const slot = SLOTS[slotIdx];
   const fitWord = { great: 'Perfect fit', ok: 'Good fit', neutral: 'Neutral', bad: 'Wrong slot' }[sc.fit];
   const reasons = sc.versionReasons.length
@@ -697,7 +787,7 @@ function songBreakdownHTML(perf, sc, slotIdx){
     <div class="bdrow">
       <div class="bdhd">
         <div>
-          <div class="bdslot">${esc(slot.label)}</div>
+          ${opts.hideSlot ? '' : `<div class="bdslot">${esc(slot.label)}</div>`}
           <div class="bdsong">${esc(perf.song)}</div>
         </div>
         <div class="bdpts">${sc.subtotal}</div>
@@ -739,7 +829,7 @@ function renderResult(){
 
       <div class="card setlist" style="position:static">
         <h2>Your setlist</h2>
-        <div class="sub">Every slot, and where its points came from.</div>
+        <div class="sub">Tap a slot to see how it scored.</div>
         ${slotRowsHTML({ interactive: false, scored: r })}
       </div>
 
@@ -751,7 +841,8 @@ function renderResult(){
 
         <div class="sheetgrp">
           <h3>Songs <span>${r.songTotal}</span></h3>
-          ${r.songs.map((sc, i) => sc ? songBreakdownHTML(S.slots[i], sc, i) : '').join('')}
+          <div class="sub" style="margin:0">Every song scored
+            <b>esteem × version × placement</b>. Tap a slot above for its working.</div>
         </div>
 
         <div class="sheetgrp">
@@ -818,6 +909,38 @@ function renderResult(){
     requestAnimationFrame(step);
   }
 }
+
+/* The full arithmetic for one slot, on demand. This is the depth the result
+   screen used to print inline for all eight at once — 3.7 phone screens of it. */
+function openDetail(i){
+  const sc = S.result && S.result.songs[i];
+  const perf = S.slots[i];
+  if (!sc || !perf) return;
+  document.getElementById('detailInner').innerHTML = `
+    <div class="grab"></div>
+    <div class="sheet-hd">
+      <h2>${esc(SLOTS[i].label)}</h2>
+      <button class="x" type="button" id="detailClose">Close</button>
+    </div>
+    ${songBreakdownHTML(perf, sc, i, { hideSlot: true })}`;
+  document.getElementById('detailSheet').classList.add('on');
+}
+function closeDetail(){ document.getElementById('detailSheet').classList.remove('on'); }
+
+/* The sheet lives outside #app so a re-render cannot destroy it mid-animation,
+   which also means the app's click handler never sees it. Wire it separately. */
+document.getElementById('detailSheet').addEventListener('click', e => {
+  if (e.target.id === 'detailSheet' || e.target.closest('#detailClose')) closeDetail();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('detailSheet').classList.contains('on')){ closeDetail(); return; }
+  if (document.body.classList.contains('sheet-on')){
+    S.pickedSong = null; S.pickedSlot = null; S.hint = ''; S.hintBad = false;
+    renderDraft();
+  }
+});
 
 function shareText(){
   const marks = S.slots.map((p, i) => {
@@ -918,6 +1041,13 @@ app.addEventListener('click', e => {
     return;
   }
 
+  // Sheet scrim: a tap outside the panel puts the song back.
+  if (e.target.id === 'slotCol'){
+    S.pickedSong = null; S.pickedSlot = null; S.hint = ''; S.hintBad = false;
+    renderDraft();
+    return;
+  }
+
   const songBtn = e.target.closest('[data-song]');
   if (songBtn){
     if (songBtn.disabled) return;
@@ -949,6 +1079,9 @@ app.addEventListener('click', e => {
 
   if (e.target.closest('#lockBtn')){ lockIn(); return; }
   if (e.target.closest('#homeBtn')){ setScreen('home'); return; }
+
+  const peek = e.target.closest('[data-peek]');
+  if (peek){ openDetail(Number(peek.dataset.peek)); return; }
 
   const share = e.target.closest('#shareBtn');
   if (share){
