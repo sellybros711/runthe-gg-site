@@ -12,7 +12,9 @@ import {
   MULT_PERFECT, MULT_PARTIAL, MULT_NEUTRAL, MULT_CLASH,
   SEGUE_POINTS, SEGUE_EXACT_BONUS, SEGUE_CHAIN_BONUS, SANDWICH_BONUS,
   MIN_LANDING_SECONDS, wouldStrand, danglingSegue, closesSandwich,
-  ARC_MAX, ARC_ZERO_AT, VARIETY_MAX, VARIETY_MIN_ROLES,
+  ARC_MAX, ARC_ZERO_AT, BREADTH, BREADTH_MAX, BREADTH_BUSTOUT_GAP, BREADTH_BIG_JAM,
+  familiarityMult, segueDecay, segueKey, gradeScore, gradeRunning, GRADE_WARM, GRADE_HOT,
+  SEGUE_FAMILIAR_FLOOR, SEGUE_DECAY_FREE, SEGUE_DECAY_FLOOR,
   TIME_POINTS_PER_SET, SHORT_SET_RATIO, ENERGY, RESPIN_COSTS, respinCost, canRespin,
   baseOf, isJamchart, isRecommended, rarityMult, versionMult, versionParts,
   roleAt, roleFit, placementMult, energyOf, scorePerf, fmtClock,
@@ -214,7 +216,12 @@ group('graded segues', () => {
   eq(run.segues.length, 2, 'two links across three songs');
   eq(run.segues[1].points, SEGUE_POINTS, 'the second link is not yet a chain');
   const four = scoreShow([[A, B, C, mk('d')], [], []], new Set([...pair, 'c|d']));
-  eq(four.segues[2].points, SEGUE_POINTS + SEGUE_CHAIN_BONUS, 'the third link pays the chain bonus');
+  eq(four.segues[2].kinds.includes('chain'), true, 'the third link is a chain');
+  // ...and the third link of the night is also the first to be decayed, so the
+  // chain bonus arrives already scaled. Both mechanics, one number.
+  eq(four.segues[2].points,
+     Math.round((SEGUE_POINTS + SEGUE_CHAIN_BONUS) * segueDecay(3)),
+     'the third link pays the chain bonus, decayed');
 
   // A > B > A closes a sandwich.
   const sand = scoreShow([[A, B, mk('a')], [], []], pair);
@@ -225,6 +232,94 @@ group('graded segues', () => {
   eq(closesSandwich([A, B], mk('a'), pair), true, 'closesSandwich sees the return');
   eq(closesSandwich([A, B], C, pair), false, 'a new song is not a sandwich');
   eq(closesSandwich([A], mk('a'), pair), false, 'A straight back into A is not a sandwich');
+});
+
+group('familiarity brakes a routine pair', () => {
+  const mk = id => ({ ...perf({ song_id: id, len: 600 }), is_segue: 'true' });
+  const A = mk('a'), B = mk('b');
+  const pair = new Set(['a|b']);
+
+  eq(familiarityMult(1), 1, 'a pair played once pays in full');
+  eq(familiarityMult(4) < familiarityMult(2), true, 'more familiar pays less');
+  eq(familiarityMult(2) < familiarityMult(1), true, 'and it starts biting immediately');
+  eq(familiarityMult(10_000) >= SEGUE_FAMILIAR_FLOOR, true, 'never falls through the floor');
+  eq(familiarityMult(0), 1, 'an unknown count is treated as a first-time pair');
+
+  const rare = scoreShow([[A, B], [], []], pair, undefined, new Map([['a|b', 1]]));
+  const routine = scoreShow([[A, B], [], []], pair, undefined, new Map([['a|b', 56]]));
+  eq(rare.segues[0].points > routine.segues[0].points, true,
+     'Seekers pt I > pt II must not pay like a pair they played once');
+  eq(routine.segues[0].kinds.includes('routine'), true, 'and it says so');
+  eq(rare.segues[0].points, SEGUE_POINTS, 'a once-ever pair is unscaled');
+  eq(scoreShow([[A, B], [], []], pair).segues[0].points, SEGUE_POINTS,
+     'no counts at all behaves like a once-ever pair');
+});
+
+group('segue decay stops the farm', () => {
+  eq(segueDecay(1), 1, 'the first link is whole');
+  eq(segueDecay(SEGUE_DECAY_FREE), 1, 'so is the last free one');
+  eq(segueDecay(SEGUE_DECAY_FREE + 1) < 1, true, 'the next one is not');
+  eq(segueDecay(99) >= SEGUE_DECAY_FLOOR, true, 'decay has a floor');
+  let prev = 1;
+  for (let n = 1; n <= 12; n++) { const d = segueDecay(n); eq(d <= prev, true,
+    `link ${n} is worth no more than link ${n - 1}`); prev = d; }
+
+  // Eight links must not pay eight times one link.
+  const chain = [], keys = new Set();
+  for (let i = 0; i < 9; i++) chain.push({ ...perf({ song_id: `s${i}`, len: 300 }), is_segue: 'true' });
+  for (let i = 0; i < 8; i++) keys.add(`s${i}|s${i + 1}`);
+  const farmed = scoreShow([chain, [], []], keys);
+  const one = scoreShow([[chain[0], chain[1]], [], []], keys);
+  eq(farmed.segues.length, 8, 'all eight links are found');
+  eq(farmed.segues.reduce((a, x) => a + x.points, 0) < one.segues[0].points * 8, true,
+     'but they pay less than eight of the first');
+});
+
+group('breadth replaces a category nobody could fail', () => {
+  const base = (o = {}) => perf({ song_id: 'x', len: 600, ...o });
+  const has = (id, songs) => {
+    const r = scoreShow([songs, [], []], new Set());
+    return r.breadth.find(c => c.id === id).got;
+  };
+  eq(BREADTH_MAX, BREADTH.reduce((a, c) => a + c.points, 0), 'BREADTH_MAX is the sum of the cards');
+  eq(BREADTH.length, 5, 'five cards');
+  eq(has('cover', [base({ song_id: 'a' })]), false, 'no cover by default');
+  eq(has('cover', [{ ...base(), is_cover: 'true' }]), true, 'a cover is seen');
+  eq(has('bustout', [{ ...base(), show_gap: String(BREADTH_BUSTOUT_GAP) }]), true, 'a bustout is seen');
+  eq(has('bustout', [{ ...base(), show_gap: String(BREADTH_BUSTOUT_GAP - 1) }]), false,
+     'one show short of the gap is not');
+  eq(has('jamchart', [{ ...base(), is_jamchart: 'true' }]), true, 'a jamchart take is seen');
+  eq(has('bigjam', [base({ len: BREADTH_BIG_JAM })]), true, 'a 20-minute jam is seen');
+  eq(has('bigjam', [base({ len: BREADTH_BIG_JAM - 1 })]), false, 'a second short of it is not');
+
+  const empty = scoreShow([[], [], []], new Set());
+  eq(empty.breadthTotal, 0, 'an empty night earns no breadth');
+  eq(empty.breadth.every(c => !c.got), true, 'and claims no cards');
+
+  // The point of the change: a night CAN miss these. The old variety score was
+  // maxed by random play, greedy play and segue farming alike.
+  const narrow = scoreShow([[base({ song_id: 'a', tags: 'jam' }), base({ song_id: 'b', tags: 'jam' })], [], []], new Set());
+  eq(narrow.breadthTotal < BREADTH_MAX, true, 'a one-note night does not max breadth');
+});
+
+group('a score colour means a rating', () => {
+  eq(gradeScore(GRADE_WARM - 1), 'cold', 'a weak night is red');
+  eq(gradeScore(GRADE_WARM), 'warm', 'a middling night is yellow');
+  eq(gradeScore(GRADE_HOT), 'hot', 'a strong night is green');
+  eq(GRADE_HOT > GRADE_WARM, true, 'the bands are in order');
+
+  // Length must not decide the colour: time, flow and breadth are whole-show
+  // pools, so a long night was being marked down just for being long.
+  eq(gradeScore(GRADE_HOT), gradeScore(GRADE_HOT), 'the grade is on the total alone');
+
+  // Projection: the same pace grades the same however far in you are.
+  eq(gradeRunning(GRADE_HOT / 2, 0.5), 'hot', 'half a night at a green pace is green');
+  eq(gradeRunning(GRADE_HOT, 1), 'hot', 'and it still is at the end');
+  eq(gradeRunning((GRADE_WARM - 100) / 4, 0.25), 'cold', 'a cold pace is cold early');
+  eq(gradeRunning(500, 0), 'warm', 'no progress yet is neutral, not a red mark');
+  // The last playback beat must agree with the scorecard, always.
+  for (const t of [400, 900, GRADE_WARM, 1100, GRADE_HOT, 1600])
+    eq(gradeRunning(t, 1), gradeScore(t), `playback and scorecard agree at ${t}`);
 });
 
 group('respins cost stage time', () => {
@@ -356,7 +451,13 @@ group('scoreShow totals', () => {
     [mk('g', 'encore', 600)],
   ];
   const r = scoreShow(sets, new Set());
-  eq(r.total, r.songTotal + r.timeTotal + r.flowTotal, 'total is songs + time + flow');
+  eq(r.total, r.songTotal + r.timeTotal + r.flowTotal + r.breadthTotal,
+     'total is songs + time + flow + breadth');
+  // Every heading on the scoresheet must equal the rows printed beneath it.
+  eq(r.flowTotal, r.segues.reduce((a, x) => a + x.points, 0) + r.arc,
+     'Flow is exactly its segues plus its arc');
+  eq(r.breadthTotal, r.breadth.filter(c => c.got).reduce((a, c) => a + c.points, 0),
+     'Breadth is exactly the cards it earned');
   eq(r.perSet.map(x => x.length), [3, 3, 1], 'per-set breakdowns line up');
   eq(r.stats.songs, 7, 'song count');
   eq(r.perSet[0][0].role.name, 'Opener', 'first song is the opener');

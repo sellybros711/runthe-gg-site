@@ -19,13 +19,31 @@
  * You cannot know which song will close a set until you close it, which is the
  * point — you are committing without the whole picture, same as the band.
  *
- * Five things score, and the result screen shows them in this order:
+ * Six things score, and the result screen shows them in this order:
  *
  *   SONG       is this a song people treasure?      base, from crowd_rating
  *   VERSION    was this a special night for it?     multiplier
  *   PLACEMENT  does it suit where it landed?        multiplier
  *   TIME       did you use the stage you were given?
- *   FLOW       do the picks work as one show?
+ *   FLOW       do the picks work as one show?       segues + energy arc
+ *   BREADTH    what did the night actually contain? five cards
+ *
+ * WHAT CHANGED IN v5
+ *
+ * Segues were a dominant strategy. A player who ignored song quality and
+ * chased links alone beat one picking the best song every round by 16%, while
+ * playing worse songs. Three changes, measured over 500 simulated shows each:
+ *
+ *   - a link is scaled by how routine that pair is for the band, and by how
+ *     many the night has already had (see FLOW below);
+ *   - Variety, which random play, greedy play and segue farming ALL scored a
+ *     perfect 30 out of 30 on, is replaced by BREADTH, which can be missed;
+ *   - Flow and Breadth are siblings, so each scoresheet heading equals the
+ *     rows printed under it.
+ *
+ * Segues fell from 21% of a farmer's score to 10%, and the farmer's edge over
+ * a song-picker from +170 to +57. Shows containing no cover at all fell from
+ * 52% to 1% — without a penalty, just a card worth having.
  */
 
 export const NEUTRAL_BASE = 30;
@@ -131,10 +149,44 @@ export const SHORT_SET_RATIO = 0.80;
  *
  * Grading is additive on top of that.
  */
-export const SEGUE_POINTS = 45;         // the pair is canonical for this band
-export const SEGUE_EXACT_BONUS = 30;    // ...and it is the pair THAT take played
-export const SEGUE_CHAIN_BONUS = 20;    // per link past the second in a run
-export const SANDWICH_BONUS = 90;       // A > B > A, closed
+export const SEGUE_POINTS = 34;         // the pair is canonical for this band
+export const SEGUE_EXACT_BONUS = 26;    // ...and it is the pair THAT take played
+export const SEGUE_CHAIN_BONUS = 18;    // per link past the second in a run
+export const SANDWICH_BONUS = 70;       // A > B > A, closed
+
+/*
+ * TWO BRAKES ON SEGUE FARMING.
+ *
+ * A player who ignored song quality and chased links alone was scoring 16%
+ * higher than one picking the best song every round, while playing WORSE
+ * songs — 5.3 segues a show against 1.4. That is a dominant strategy, and the
+ * two reasons are worth separating.
+ *
+ * 1. Not every pair is an achievement. 1210 of the band's 1440 canonical
+ *    pairs have happened exactly once; 25 have happened five times or more.
+ *    Seekers on the Ridge pt I > pt II has happened 56 times because it is one
+ *    song in two halves. Rebuilding that is not insight, and it should not pay
+ *    like Yeti > Pumped Up Kicks. Familiarity scales the whole link.
+ *
+ * 2. Five segues in a night is not five times one segue. Past the second link
+ *    each one pays less, so a couple of well-chosen ones stay worth chasing
+ *    and a farmed row of them stops running away with the show.
+ */
+export const SEGUE_FAMILIAR_FLOOR = 0.30;
+export const SEGUE_FAMILIAR_K = 0.55;
+/** How much a link is worth given how often the band has played that pair. */
+export function familiarityMult(timesPlayed) {
+  const n = Math.max(1, Number(timesPlayed) || 1);
+  return Math.max(SEGUE_FAMILIAR_FLOOR, 1 / (1 + SEGUE_FAMILIAR_K * Math.log2(n)));
+}
+export const SEGUE_DECAY_FREE = 2;      // first two links pay in full
+export const SEGUE_DECAY_STEP = 0.22;
+export const SEGUE_DECAY_FLOOR = 0.25;
+/** How much the nth scoring link of the show is worth. */
+export function segueDecay(n) {
+  if (n <= SEGUE_DECAY_FREE) return 1;
+  return Math.max(SEGUE_DECAY_FLOOR, 1 - SEGUE_DECAY_STEP * (n - SEGUE_DECAY_FREE));
+}
 
 /* A set never ends mid-segue: across 1135 real Goose sets, not one closes on a
    song marked as segueing out. So the game will not let you either — and a
@@ -175,8 +227,47 @@ export const ARC_MAX = 60;
 /* Average energy miss, in ENERGY units, at which the arc is worth nothing.
    Energies run 1-5, so an average miss of 2 is genuinely shapeless. */
 export const ARC_ZERO_AT = 2;
-export const VARIETY_MAX = 30;
-export const VARIETY_MIN_ROLES = 4;
+
+/*
+ * BREADTH — five things a night can have, worth points for having them.
+ *
+ * Variety used to be the whole of this, and it was dead: random play, greedy
+ * play and segue-farming ALL scored 30 out of 30. A category nobody can fail
+ * is not a category, it is a constant.
+ *
+ * These replace it, and each one is a different reason to leave the obvious
+ * pick alone. The cover card is the pointed one: a player optimising song
+ * points alone played zero covers in 52% of shows, so it is a real cost to
+ * ignore. 96% of drawable shows have a cover on offer, so it is always a
+ * choice rather than a dice roll — and the three of these you can reach are
+ * worth more than the segues you would farm instead.
+ */
+export const BREADTH_BUSTOUT_GAP = 50;
+export const BREADTH_BIG_JAM = 1200;    // 20 minutes
+export const BREADTH_ROLES = 5;
+export const BREADTH = [
+  { id: 'cover',    points: 34, label: 'A cover',
+    blurb: 'Somebody else\'s song, made yours',
+    has: songs => songs.some(p => flag(p.is_cover)),
+    missed: 'No covers — every song was one of their own' },
+  { id: 'bustout',  points: 32, label: 'A bustout',
+    blurb: `Not played for ${BREADTH_BUSTOUT_GAP}+ shows`,
+    has: songs => songs.some(p => (Number(p.show_gap) || 0) >= BREADTH_BUSTOUT_GAP),
+    missed: 'Nothing anybody had been waiting for' },
+  { id: 'jamchart', points: 26, label: 'A jamchart version',
+    blurb: 'A take the archive flagged',
+    has: songs => songs.some(p => flag(p.is_jamchart)),
+    missed: 'No version the archive thought worth flagging' },
+  { id: 'bigjam',   points: 26, label: 'A 20-minute jam',
+    blurb: 'One song given the whole room',
+    has: songs => songs.some(p => lenOf(p) >= BREADTH_BIG_JAM),
+    missed: 'Nothing ran long enough to get lost in' },
+  { id: 'roles',    points: 22, label: `${BREADTH_ROLES} distinct roles`,
+    blurb: 'Openers, jams, peaks, ballads, closers',
+    has: songs => new Set(songs.flatMap(tagsOf)).size >= BREADTH_ROLES,
+    missed: 'The night only ever did one thing' },
+];
+export const BREADTH_MAX = BREADTH.reduce((a, b) => a + b.points, 0);
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 export function tagsOf(perf) {
@@ -546,7 +637,44 @@ export function theOneThatGotAway(seen, sets) {
  * @param {Array<Array>} sets  three arrays of performance rows, in running order
  * @param {Set} segues canonical "songIdA|songIdB" pairs
  */
-export function scoreShow(sets, segues, spent) {
+/*
+ * RED, YELLOW, GREEN — the only thing a score's colour is allowed to mean.
+ *
+ * Graded on the TOTAL, not on points per song. Three of the four categories
+ * are whole-show pools with fixed ceilings — time, flow and breadth do not
+ * grow when you play more songs — so dividing by song count marked a
+ * seventeen-song night down for the crime of being long.
+ *
+ * The cuts are the quartiles of 600 simulated shows across the skill range,
+ * so roughly a quarter of nights come out green and a quarter red.
+ *
+ * During playback the running total is projected to full-show pace before it
+ * is graded: "at this rate the night lands around here". At the last beat the
+ * projection is the real total, so the colour the playback ends on is always
+ * the colour the scorecard opens with.
+ */
+export const GRADE_WARM = 1036;
+export const GRADE_HOT = 1156;
+/** Songs to get through before the running colour means anything. */
+export const GRADE_SETTLE = 3;
+
+/** 'hot' | 'warm' | 'cold' — green, yellow, red. */
+export function gradeScore(total) {
+  return total >= GRADE_HOT ? 'hot' : total >= GRADE_WARM ? 'warm' : 'cold';
+}
+
+/**
+ * Grade a running total part-way through a show.
+ * @param {number} running points so far
+ * @param {number} progress 0-1, how much of the night has been played
+ */
+export function gradeRunning(running, progress) {
+  if (!progress || progress <= 0) return 'warm';
+  if (progress >= 1) return gradeScore(running);
+  return gradeScore(running / progress);
+}
+
+export function scoreShow(sets, segues, spent, segueCounts) {
   const s = [sets[0] || [], sets[1] || [], sets[2] || []];
   const bud = budgets(s, undefined, spent);
 
@@ -602,8 +730,17 @@ export function scoreShow(sets, segues, spent) {
         kinds.push('sandwich');
       }
 
+      // Then the two brakes, applied to the graded total: how routine this
+      // pair is for the band, and how many links the night has already had.
+      const times = (segueCounts && segueCounts.get(segueKey(a, b))) || 1;
+      const fam = familiarityMult(times);
+      const decay = segueDecay(segueHits.length + 1);
+      const raw = points;
+      points = Math.round(points * fam * decay);
+      if (fam < 0.75) kinds.push('routine');
+
       segueHits.push({ set: si, from: i, to: i + 1, points, kinds,
-        a: a.song, b: b.song });
+        raw, times, fam, decay, a: a.song, b: b.song });
     }
   });
 
@@ -615,10 +752,18 @@ export function scoreShow(sets, segues, spent) {
     ? Math.max(0, Math.round(ARC_MAX * (1 - avgDev / ARC_ZERO_AT))) : 0;
 
   const roles = [...new Set(all.flatMap(x => tagsOf(x.perf)))];
-  const variety = all.length
-    ? Math.round(VARIETY_MAX * Math.min(1, roles.length / VARIETY_MIN_ROLES)) : 0;
+  const flatSongs = all.map(x => x.perf);
+  const breadth = BREADTH.map(c => ({
+    id: c.id, label: c.label, blurb: c.blurb, missed: c.missed,
+    got: all.length ? c.has(flatSongs) : false,
+    points: c.points,
+  }));
+  const breadthTotal = breadth.reduce((a, c) => a + (c.got ? c.points : 0), 0);
 
-  const flowTotal = segueHits.reduce((a, x) => a + x.points, 0) + arc + variety;
+  // Flow is how the picks hang together; breadth is what the night contained.
+  // They are siblings, not one inside the other — a scoresheet heading has to
+  // equal the rows printed under it.
+  const flowTotal = segueHits.reduce((a, x) => a + x.points, 0) + arc;
 
   // The fan headline.
   const totalBudget = bud.reduce((a, b) => a + b, 0);
@@ -634,13 +779,15 @@ export function scoreShow(sets, segues, spent) {
   const headline = (HEADLINES.find(h => h.when(stats)) || HEADLINES[HEADLINES.length - 1]).text;
 
   return {
-    total: songTotal + timeTotal + flowTotal,
+    total: songTotal + timeTotal + flowTotal + breadthTotal,
     songTotal, timeTotal, flowTotal,
-    perSet, time, arc, variety, roles,
+    perSet, time, arc, breadth, breadthTotal, roles,
     segues: segueHits,
     headline, stats,
     totalUsed, totalBudget,
   };
 }
 
-export function calcTotal(sets, segues) { return scoreShow(sets, segues).total; }
+export function calcTotal(sets, segues, segueCounts) {
+  return scoreShow(sets, segues, undefined, segueCounts).total;
+}
