@@ -217,6 +217,21 @@
   .song.used{opacity:.4; cursor:not-allowed;}
   .song.used:hover{background:var(--card);}
   .song.used .t{text-decoration:line-through;}
+  .segout{display:inline-block; margin-left:5px; font-weight:900; color:var(--goldT);
+    font-size:16px; line-height:1; vertical-align:-1px;}
+  .song .o.seg{color:var(--goldT);}
+  .chip.seg{background:color-mix(in srgb,var(--green) 20%, transparent); color:var(--greenT);
+    border-color:color-mix(in srgb,var(--green) 50%, transparent);}
+  .song.finishes{border-color:color-mix(in srgb,var(--green) 55%, transparent);}
+  .hunt{margin-bottom:10px; padding:9px 12px; border-radius:var(--r-sm); font-size:12.5px;
+    font-weight:700; line-height:1.5; color:var(--mut);
+    background:color-mix(in srgb,var(--gold) 10%, transparent);
+    border:1px solid color-mix(in srgb,var(--gold) 30%, transparent);}
+  .hunt b{color:var(--goldT);}
+  .hunt.hot{background:color-mix(in srgb,var(--green) 12%, transparent);
+    border-color:color-mix(in srgb,var(--green) 38%, transparent);}
+  .hunt.hot b{color:var(--greenT);}
+
   .chip.rec{background:color-mix(in srgb,var(--violet) 20%, transparent); color:var(--violetT);
     border-color:color-mix(in srgb,var(--violet) 45%, transparent);}
   .song[aria-pressed="true"]{background:var(--card3); border-color:var(--acc);
@@ -534,8 +549,8 @@ import {
   RESPIN_COSTS, respinCost, canRespin, theOneThatGotAway,
   scoreShow, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=6';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=6';
+} from './scoring.js?v=7';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=7';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -848,6 +863,21 @@ function setsPanelHTML({ live }){
 }
 
 // ── draft ────────────────────────────────────────────────────────────────────
+/* The song at the end of the current set, if it has ever segued out. Placing a
+   partner of it next completes a real segue and scores. This is the whole point
+   of showing the arrow: a segue you cannot see coming is a segue you cannot
+   build, and until now the bonus fired by luck. */
+function huntingFor(){
+  const si = currentSet();
+  if (si === -1) return null;
+  const set = S.sets[si];
+  if (!set.length) return null;
+  const last = set[set.length - 1];
+  const p = S.data.partners && S.data.partners.get(last.song_id);
+  if (!p || !p.size) return null;
+  return { from: last, partners: p };
+}
+
 function renderDraft(){
   const show = S.show;
   const taken = lockedSongIds();
@@ -866,6 +896,10 @@ function renderDraft(){
   // Every song is shown, but one that will not fit the clock is dead — saying
   // why beats hiding it, because "no room for a 22 minute Drive" IS the game.
   const fits = show.songs.filter(p => !taken.has(p.song_id) && canPlace(S.sets, si, p, S.closed, S.spent));
+  const hunt = huntingFor();
+  const canFinish = hunt && show.songs.some(p =>
+    hunt.partners.has(p.song_id) && !taken.has(p.song_id)
+    && canPlace(S.sets, si, p, S.closed, S.spent));
 
   const songsHTML = keys.map(k => {
     const rows = bySet.get(k).map(p => {
@@ -874,7 +908,9 @@ function renderDraft(){
       const used = taken.has(p.song_id);
       const room = canPlace(S.sets, si, p, S.closed, S.spent);
       const dead = used || !room;
+      const finishes = hunt && hunt.partners.has(p.song_id) && !dead;
       const chips = [];
+      if (finishes) chips.push('<span class="chip seg">COMPLETES SEGUE</span>');
       if (isRecommended(p)) chips.push('<span class="chip rec">RECOMMENDED</span>');
       else if (isJamchart(p)) chips.push('<span class="chip">JAMCHART</span>');
       if (acc.chip) chips.push(`<span class="chip acc">${acc.chip}</span>`);
@@ -883,12 +919,15 @@ function renderDraft(){
       const why = used ? 'already in your show'
         : !room ? (lenOf(p) > left ? `needs ${fmtClock(lenOf(p) - left)} more` : 'set is full')
         : '';
-      return `<button class="song${dead ? ' used' : ''}" type="button" data-song="${idx}"
+      return `<button class="song${dead ? ' used' : ''}${finishes ? ' finishes' : ''}"
+          type="button" data-song="${idx}"
           aria-pressed="${S.pickedSong === p}" ${dead ? 'disabled aria-disabled="true"' : ''}
           style="--acc:${acc.v}">
         <span class="l">
-          <span class="t">${esc(p.song)}</span>
+          <span class="t">${esc(p.song)}${p.is_segue === 'true'
+            ? '<span class="segout" title="Segued into the next song">&rsaquo;</span>' : ''}</span>
           ${why ? `<span class="o">${esc(why)}</span>`
+            : p.segued_into ? `<span class="o seg">ran into ${esc(p.segued_into)}</span>`
             : p.is_cover === 'true' && p.original_artist
               ? `<span class="o">orig. ${esc(p.original_artist)}</span>` : ''}
         </span>
@@ -928,6 +967,12 @@ function renderDraft(){
           <div class="v">${esc(show.venue || '')}</div>
           <div class="c">${esc([show.city, show.state].filter(Boolean).join(', '))}</div>
         </div>
+        ${hunt ? `<div class="hunt ${canFinish ? 'hot' : ''}">
+          <b>${esc(hunt.from.song)} &rsaquo;</b>
+          ${canFinish
+            ? 'is still going — a song below finishes it.'
+            : 'is still going. Nothing here finishes it.'}
+        </div>` : ''}
         ${fits.length ? '' : `<div class="warn">Nothing here fits ${esc(cfg.label)}.
           Close the set and move on.</div>`}
         ${songsHTML}

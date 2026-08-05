@@ -168,6 +168,18 @@ and did not play, scored in the role it best suits, so the sting is specific.
 The show ends when the encore closes. **Round count is emergent**: chase monsters
 and the night is over in nine picks, play tight and it runs past fifteen.
 
+**Segues are visible now, and buildable.** A song that ran into the next one
+carries a `>` and says what it ran into — *"Borne › ran into The Way It Is"*.
+Play one and the set is left mid-segue; the header says so, and any song that
+would finish it is flagged **COMPLETES SEGUE**. Chains are the point.
+
+That visibility is the whole change. The bonus already existed, but nothing on
+screen said which pairs were canonical, so 45 points fired by luck or by knowing
+Goose by heart. Measured over 400 games, a player who hunts segues scores ~15%
+above one who just takes the best song each round (1379 vs 1202) and gives up
+song quality to do it (748 vs 808) — a real trade rather than a dominant line,
+so `SEGUE_POINTS` is unchanged.
+
 A song's role comes from where it lands, not from a slot you chose. First of a
 set is the opener, last is the closer, Set II's back half is peak territory. You
 cannot know which song will close a set until you close it — same as the band.

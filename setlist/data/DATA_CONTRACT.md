@@ -57,7 +57,7 @@ not enforced — but the ingester writes them in this order and should keep doin
 | `is_recommended` | `true` / `false`. The curators flagged this version a standout — the strongest quality signal in the data. 126 of 7504 rows. |
 | `jamchart_note` | The curators' prose on why this version matters. Shown on the result screen. |
 | `transition` | Raw transition mark out of this song (`>`, `->`, `,`, ``). |
-| `is_segue` | `true` when `transition` is a real segue (`>` / `->`). |
+| `is_segue` | `true` when `transition` is a real segue (`>` / `->`). Shown in the draft as a `>` on the song and drives the segue-building mechanic. 30% of performances. |
 | `tags` | Pipe-delimited role tags. **Drives placement scoring.** |
 
 ## Tags

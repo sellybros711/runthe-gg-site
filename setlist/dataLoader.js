@@ -79,7 +79,7 @@ export function setLabel(set) {
  * Build the game's view of a band's history.
  *
  * @param {string} csvText raw contents of e.g. data/goose.csv
- * @returns {{shows: Array, segues: Set<string>, performances: number}}
+ * @returns {{shows: Array, segues: Set<string>, partners: Map, performances: number}}
  *   shows — one entry per concert, songs in running order across all sets
  *   segues — canonical "songIdA|songIdB" pairs the band has actually played
  *            back-to-back with a segue transition
@@ -125,10 +125,24 @@ export function loadBand(csvText) {
       // Only within the same set — a set break is never a segue.
       if (setRank(s[i].set) !== setRank(s[i + 1].set)) continue;
       segues.add(`${s[i].song_id}|${s[i + 1].song_id}`);
+      // Remember what THIS take ran into, so the draft screen can show a player
+      // "Drive > Bob Don" rather than an unexplained arrow. A segue is only
+      // findable if you know what you are looking for.
+      s[i].segued_into = s[i + 1].song;
+      s[i].segued_into_id = s[i + 1].song_id;
     }
   }
 
-  return { shows, segues, performances: rows.length };
+  // Every song a given song has ever run into, so the game can tell a player
+  // which of tonight's songs would finish the segue they started.
+  const partners = new Map();
+  for (const key of segues) {
+    const [a, b] = key.split('|');
+    if (!partners.has(a)) partners.set(a, new Set());
+    partners.get(a).add(b);
+  }
+
+  return { shows, segues, partners, performances: rows.length };
 }
 
 export default loadBand;
