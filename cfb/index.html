@@ -1779,12 +1779,33 @@ window.GA_ID='G-L29P5MRWKE';
      on the right, then runs the players the full width underneath both. That is
      the shape the NFL game uses, and it is what keeps the top of the page from
      being one tall column with air either side of it. */
+  /* WHERE THE THRESHOLDS COME FROM. The side ad rails appear at 1200px and each
+     one owns about 200px of the window (160 of advert, 24 of margin, and room to
+     breathe), so from 1200 up the page really only has 100vw minus 400 to work
+     with. Two draft columns need about 860 of that. The bands fall out of those
+     two numbers:
+
+       under 920     one column, the phone layout, untouched.
+       920 to 1199   two columns. No rails at these widths, so the full 1080.
+       1200 to 1259  ONE column. The rails have just appeared and left only about
+                     800, which is not two columns. The rails keep the space: a
+                     cramped two-column draft is worse than a good one-column
+                     draft, and the adverts pay for the game.
+       1260 and up   two columns again, clamped to calc(100vw - 400px) so the
+                     draft can never run underneath a rail. It used to: at 1230
+                     the board overlapped both rails by 109px, and it was still
+                     colliding at 1440.
+
+     :has() on the wrap, because only the draft wants the extra width; every
+     other screen is a column of cards that reads worse wide. */
   .dcols{display:block}
   .dcol{min-width:0}
   @media(min-width:920px){
     .wrap:has(#s-draft.on){max-width:1080px}
     .wrap:has(#s-squad.on),
     .wrap:has(#s-season.on),
+    .wrap:has(#s-po.on),
+    .wrap:has(#s-bowl.on),
     .wrap:has(#s-seed.on),
     .wrap:has(#s-over.on){max-width:860px}
     .dcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
@@ -1793,6 +1814,34 @@ window.GA_ID='G-L29P5MRWKE';
        rather than sitting a row below it. */
     .dcol .reels{margin-top:0}
     .opts{grid-template-columns:repeat(3,minmax(0,1fr))}
+    /* THE LINEUP PIPS GO AWAY, height and all. They carry the lineup once the
+       field has scrolled out from under the sticky money bar, and in two columns
+       the field has its own column and never leaves the screen. Reserving a band
+       of height for something that cannot happen is just a gap. */
+    .dpips{display:none}
+    .capwrap:before{display:none}
+  }
+  /* The rails are up but the window is too narrow to seat two columns beside
+     them, so the draft goes back to the phone shape at full quality. */
+  @media(min-width:1200px) and (max-width:1259px){
+    .wrap:has(#s-draft.on){max-width:600px}
+    .dcols{display:block}
+    .dcol .reels{margin-top:11px}
+    .opts{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .dpips{display:flex}
+    .capwrap:before{display:block}
+  }
+  /* Every other screen has to clear the rails from the moment they appear. */
+  @media(min-width:1200px){
+    .wrap:has(#s-squad.on),
+    .wrap:has(#s-season.on),
+    .wrap:has(#s-po.on),
+    .wrap:has(#s-bowl.on),
+    .wrap:has(#s-seed.on),
+    .wrap:has(#s-over.on){max-width:min(860px,calc(100vw - 400px))}
+  }
+  @media(min-width:1260px){
+    .wrap:has(#s-draft.on){max-width:min(1080px,calc(100vw - 400px))}
   }
 
   /* ── footer ─────────────────────────────────────────────────── */
