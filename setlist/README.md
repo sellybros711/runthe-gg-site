@@ -1,9 +1,9 @@
 # Run The Setlist — draft a setlist from real shows
 
 A jam-band setlist-drafting game at `runthe.gg/setlist`. Pick a band; each round
-reveals one randomly-drawn real concert; you pull one song off it and lock it
-into one of eight setlist slots. You commit before the next show appears, so the
-lock is final. Eight rounds, then a score.
+spins up one real concert; you pull one song off it and spend its running time
+against your set. Two sets and an encore, a curfew on each, and every pick is
+final. When the encore closes, the fans give you a verdict.
 
 **In open testing.** Indexable and listed in `sitemap.xml`, but deliberately
 **not linked from the homepage** yet — the URL is the only way in, so it can be
@@ -14,7 +14,7 @@ shared and found without being presented as a finished game.
   index.html          the whole game UI, self-contained
   scoring.js          v4 scoring — the ONLY place a scoring constant lives
   dataLoader.js       band CSV → { shows, segues }
-  verify-scoring.mjs  QA harness: 78 assertions against the v4 spec
+  verify-scoring.mjs  QA harness: 90 assertions against the v4 spec
   data/
     DATA_CONTRACT.md  the CSV columns, and how tags are derived
     goose.csv         7504 performances · 655 shows · 366 songs · 2014–2026
@@ -73,7 +73,7 @@ the repo root, not from inside `setlist/`.
 ## Checking it
 
 ```bash
-node setlist/verify-scoring.mjs      # expect "78 passed, 0 failed"
+node setlist/verify-scoring.mjs      # expect "90 passed, 0 failed"
 node scripts/setlist/check_data.mjs  # expect "all checks passed"
 ```
 
@@ -140,11 +140,22 @@ Encore   10:00   up to 3 songs  + whatever the two sets left behind
 Those budgets are the archive's own medians, not invented: Goose's Set I runs
 75:07 across 7 songs, Set II 70:13 across 5, the encore 10:58 across 1.
 
-Each round reveals one show. Pick a song and it goes into the set you are
+Each round spins two reels — a **year**, then a **night from that year** — and
+reveals one show. (The show is drawn first; the reels animate toward a result
+already decided, so what you see is never a lie. Tap to skip.) Pick a song and
+it goes into the set you are
 currently building, spending its running time. A song that will not fit is shown
 but dead, and says why — "needs 4:12 more" — because *no room for a 22-minute
 Drive* is the game, not an error to hide. Close a set whenever you like; the
 leftover flows to the encore.
+
+**Closing a set keeps the show on screen.** The show is the night's source
+material, not a per-set handout, so closing Set I while holding a good one drops
+you into Set II still holding it.
+
+**Respins cost stage time**, taken from the set you are building: 5:00, then
+10:00, then 15:00, then no more. Time spent spinning is gone — it does not reach
+the encore — so a reroll is a real decision rather than a button to mash.
 
 The show ends when the encore closes. **Round count is emergent**: chase monsters
 and the night is over in nine picks, play tight and it runs past fifteen.

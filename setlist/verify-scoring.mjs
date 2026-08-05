@@ -11,7 +11,7 @@ import {
   V_RECOMMENDED, V_JAMCHART, V_LEN_20MIN, V_LEN_15MIN,
   MULT_PERFECT, MULT_PARTIAL, MULT_NEUTRAL, MULT_CLASH,
   SEGUE_POINTS, ARC_MAX, ARC_ZERO_AT, VARIETY_MAX, VARIETY_MIN_ROLES,
-  TIME_POINTS_PER_SET, SHORT_SET_RATIO, ENERGY,
+  TIME_POINTS_PER_SET, SHORT_SET_RATIO, ENERGY, RESPIN_COSTS, respinCost, canRespin,
   baseOf, isJamchart, isRecommended, rarityMult, versionMult, versionParts,
   roleAt, roleFit, placementMult, energyOf, scorePerf, fmtClock,
   budgets, remaining, canPlace, setFull, scoreShow, setNote, HEADLINES,
@@ -151,6 +151,39 @@ group('time scoring', () => {
   eq(setNote(0.7, 1), 'Cut short — the crowd noticed.', 'set note when short');
   eq(setNote(0.3, 1), 'Barely a set.', 'set note when barely played');
   eq(setNote(0.9, 0), 'Never happened.', 'an empty set says so regardless of ratio');
+});
+
+group('respins cost stage time', () => {
+  eq(RESPIN_COSTS, [300, 600, 900], 'five, ten, then fifteen minutes');
+  eq(respinCost(0), 300, 'the first spin is cheapest');
+  eq(respinCost(1), 600, 'the second costs double');
+  eq(respinCost(2), 900, 'the third is a jam you will never play');
+  eq(respinCost(3), null, 'there is no fourth');
+
+  const empty = [[], [], []];
+  eq(canRespin(empty, 0, 0, [false, false, false], [0, 0, 0]), true,
+     'a fresh Set I can afford a spin');
+  eq(canRespin(empty, 0, 3, [false, false, false], [0, 0, 0]), false,
+     'no spins left means no spin, however much time is going spare');
+
+  // A set with only four minutes left cannot buy a five-minute spin.
+  const nearlyFull = [[perf({ len: 4500 - 240 })], [], []];
+  eq(canRespin(nearlyFull, 0, 0, [false, false, false], [0, 0, 0]), false,
+     'a spin you cannot afford is not offered');
+
+  // Time spent spinning is gone: it shrinks the budget and the time score.
+  const sets = [[perf({ len: 4200 })], [], []];
+  const clean = scoreShow(sets, new Set(), [0, 0, 0]);
+  const spun  = scoreShow(sets, new Set(), [300, 0, 0]);
+  eq(spun.time[0].budget, 4500 - 300, 'a spin comes straight off the set clock');
+  eq(spun.time[0].ratio >= clean.time[0].ratio, true,
+     'the same songs fill more of a smaller budget');
+  eq(spun.time[0].budget < clean.time[0].budget, true, 'but the budget really is smaller');
+
+  // Spinning away time you never use is pure loss: it cannot reach the encore.
+  const idle = scoreShow([[], [], []], new Set(), [900, 0, 0]);
+  eq(idle.time[2].budget, 600 + (4500 - 900) + 4200,
+     'time burned on spins never reaches the encore');
 });
 
 group('segues count only inside a set', () => {

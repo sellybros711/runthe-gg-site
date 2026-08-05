@@ -340,6 +340,39 @@
   .rs-empty{font-size:12px; color:var(--dim); font-weight:700; padding:6px 0;}
 
   .btn.tiny{width:auto; font-size:11.5px; padding:7px 11px; font-weight:800;}
+  .hud-btns{display:flex; gap:6px; align-items:center; flex:0 0 auto;}
+  .btn.tiny.spin{border-color:color-mix(in srgb,var(--gold) 45%, transparent);
+    color:var(--goldT);}
+  .btn.tiny.spin:disabled{border-color:var(--line2); color:var(--dim);}
+  .nospin{font-size:10.5px; font-weight:800; letter-spacing:.6px; text-transform:uppercase;
+    color:var(--dim);}
+
+  /* ---------------- the reels ----------------
+     A real slot reel is one transform on one element, not a stream of text
+     swaps — the GPU interpolates it, so it stays smooth on a phone under load.
+     Each reel is a fixed-height window over a tall strip; landing is just
+     translating the strip so the target row sits in the window. */
+  .reels{display:flex; flex-direction:column; gap:10px; margin-top:6px;}
+  .reel{position:relative; overflow:hidden; border-radius:var(--r-md);
+    background:var(--card2); border:1px solid var(--line);}
+  .reel.year{height:52px;}
+  .reel.show{height:84px;}
+  .reel:after{content:''; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(var(--card2), transparent 34%, transparent 66%, var(--card2));}
+  .reel-strip{will-change:transform;}
+  .reel-item{display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:0 10px;}
+  .reel.year .reel-item{height:52px;}
+  .reel.show .reel-item{height:84px;}
+  .ri-year{font-family:var(--hero); font-size:30px; line-height:1; letter-spacing:1px;}
+  .ri-date{font-family:var(--hero); font-size:20px; line-height:1.1;}
+  .ri-venue{font-size:12px; font-weight:700; color:var(--mut); margin-top:3px;
+    max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .reel.locked{border-color:color-mix(in srgb,var(--teal) 55%, transparent);}
+  .reel.locked .ri-year, .reel.locked .ri-date{color:var(--tealT);}
+  .reel-lbl{font-size:9.5px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
+    color:var(--dim); margin-bottom:4px;}
+  .skip{margin-top:12px; font-size:11px; font-weight:700; color:var(--dim);}
   .btn.small{font-size:13px; padding:9px 14px; margin-top:7px;}
   .bdlen{font-size:12px; color:var(--dim); font-weight:700;}
   .headline{font-size:15px; font-weight:800; line-height:1.4; margin-top:8px;
@@ -466,10 +499,11 @@ setTimeout(function(){
 <script type="module">
 import {
   SETS, MAX_ROUNDS, ENCORE_INDEX, ARC_MAX, TIME_POINTS_PER_SET,
+  RESPIN_COSTS, respinCost, canRespin,
   scoreShow, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=4';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=4';
+} from './scoring.js?v=5';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=5';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -564,6 +598,8 @@ const S = {
   round: 0,
   sets: [[], [], []],  // Set I / Set II / Encore, in running order
   closed: [false, false, false],
+  spent: [0, 0, 0],    // stage time burned on respins, per set
+  respins: 0,          // how many this run — each costs more than the last
   pickedSong: null,
   hint: '',
   hintBad: false,
@@ -618,71 +654,129 @@ function renderHome(){
 }
 
 // ── reveal ───────────────────────────────────────────────────────────────────
+/* Spin one reel onto its target.
+ *
+ * The strip is built with filler rows and the target LAST, so landing is a
+ * single translateY to the end — one GPU-composited transition rather than a
+ * stream of DOM writes. Resolves when the reel stops.
+ */
+function spinReel(el, filler, target, renderItem, ms){
+  const rows = [...filler, target];
+  el.querySelector('.reel-strip').innerHTML =
+    rows.map(r => `<div class="reel-item">${renderItem(r)}</div>`).join('');
+
+  const strip = el.querySelector('.reel-strip');
+  const h = el.classList.contains('year') ? 52 : 84;
+  const distance = (rows.length - 1) * h;
+
+  return new Promise(resolve => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches){
+      strip.style.transform = `translateY(-${distance}px)`;
+      el.classList.add('locked');
+      resolve();
+      return;
+    }
+    strip.style.transform = 'translateY(0)';
+    // Force a reflow so the transition has a start value to animate from.
+    void strip.offsetHeight;
+    strip.style.transition = `transform ${ms}ms cubic-bezier(.16,.84,.3,1)`;
+    strip.style.transform = `translateY(-${distance}px)`;
+    const done = () => { el.classList.add('locked'); resolve(); };
+    strip.addEventListener('transitionend', done, { once: true });
+    // Belt and braces: transitionend does not fire if the tab is hidden.
+    setTimeout(done, ms + 120);
+  });
+}
+
+const yearOf = sh => String(sh.show_date).slice(0, 4);
+
+/* Two reels: the year lands first, then the night. Drawing happens before any
+   of this (drawShow), so the animation always agrees with the outcome — it is
+   showing you a result, not choosing one. */
 function renderReveal(){
   const show = S.show;
+  const pool = drawableShows(S.data.shows);
+  const si = Math.max(0, currentSet());
+
   app.innerHTML = `
-    <div class="reveal">
-      <div class="eyebrow">${esc(SETS[Math.max(0, currentSet())].label)} · pick ${S.round + 1}</div>
-      <div class="reveal-win" id="revealWin">
+    <div class="reveal" id="revealRoot">
+      <div class="eyebrow">${esc(SETS[si].label)} · pick ${S.round + 1}</div>
+      <div class="reveal-win landed" id="revealWin">
         <div class="reveal-bar">
-          <span class="eyebrow" id="revealLbl">Searching the archive</span>
+          <span class="eyebrow" id="revealLbl">Spinning the archive</span>
           <span class="n">${String(S.round + 1).padStart(2, '0')}</span>
         </div>
         <div class="reveal-body">
-          <div class="reveal-date" id="rDate">&nbsp;</div>
-          <div class="reveal-venue" id="rVenue">&nbsp;</div>
-          <div class="reveal-city" id="rCity">&nbsp;</div>
+          <div class="reels">
+            <div>
+              <div class="reel-lbl">Year</div>
+              <div class="reel year" id="reelYear"><div class="reel-strip"></div></div>
+            </div>
+            <div>
+              <div class="reel-lbl">Night</div>
+              <div class="reel show" id="reelShow"><div class="reel-strip"></div></div>
+            </div>
+          </div>
           <div class="reveal-count hidden" id="rCount"></div>
         </div>
       </div>
+      <div class="skip" id="skipHint">Tap to skip</div>
       <div class="reveal-cue hidden" id="rCue">Pull your song &darr;</div>
     </div>`;
 
-  const win = document.getElementById('revealWin');
-  const elDate = document.getElementById('rDate');
-  const elVenue = document.getElementById('rVenue');
-  const elCity = document.getElementById('rCity');
+  const years = [...new Set(pool.map(yearOf))].sort();
+  const target = yearOf(show);
+  const sameYear = pool.filter(x => yearOf(x) === target);
+  const pick = a => a[Math.floor(Math.random() * a.length)];
 
-  const paint = s => {
-    elDate.textContent = fmtDate(s.show_date);
-    elVenue.textContent = s.venue || '';
-    elCity.textContent = [s.city, s.state].filter(Boolean).join(', ');
-  };
+  const yearFiller = Array.from({ length: 16 }, () => pick(years));
+  const showFiller = Array.from({ length: 14 }, () => pick(sameYear.length > 1 ? sameYear : pool));
 
   const land = () => {
-    paint(show);
-    win.classList.add('landed');
     document.getElementById('revealLbl').textContent = "Tonight's show";
     const c = document.getElementById('rCount');
     c.textContent = `${show.songs.length} songs played`;
     c.classList.remove('hidden');
     document.getElementById('rCue').classList.remove('hidden');
-    S.revealTimer = setTimeout(() => setScreen('draft'), 850);
+    const sk = document.getElementById('skipHint');
+    if (sk) sk.remove();
+    S.revealTimer = setTimeout(() => setScreen('draft'), 700);
   };
 
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduce){ land(); return; }
-
-  // Spin through real shows, easing out, then land on the drawn one.
-  const pool = S.data.shows;
-  const TOTAL = 14;
-  let n = 0;
-  const tick = () => {
-    paint(pool[Math.floor(Math.random() * pool.length)]);
-    n++;
-    if (n >= TOTAL){ land(); return; }
-    const p = n / TOTAL;
-    const delay = p < 0.4 ? 55 : p < 0.65 ? 85 : p < 0.85 ? 140 : 240;
-    S.revealTimer = setTimeout(tick, delay);
+  let skipped = false;
+  const skip = () => {
+    if (skipped) return;
+    skipped = true;
+    clearTimeout(S.revealTimer);
+    document.querySelectorAll('#revealRoot .reel-strip').forEach(st => {
+      st.style.transition = 'none';
+    });
+    const y = document.getElementById('reelYear');
+    const sh = document.getElementById('reelShow');
+    y.querySelector('.reel-strip').style.transform = `translateY(-${16 * 52}px)`;
+    sh.querySelector('.reel-strip').style.transform = `translateY(-${14 * 84}px)`;
+    y.classList.add('locked'); sh.classList.add('locked');
+    land();
   };
-  S.revealTimer = setTimeout(tick, 60);
+  const root = document.getElementById('revealRoot');
+  root.addEventListener('click', skip);
+
+  (async () => {
+    await spinReel(document.getElementById('reelYear'), yearFiller, target,
+      y => `<span class="ri-year">${esc(y)}</span>`, 900);
+    if (skipped) return;
+    await spinReel(document.getElementById('reelShow'), showFiller, show,
+      sh => `<span class="ri-date">${esc(fmtDate(sh.show_date))}</span>` +
+             `<span class="ri-venue">${esc(sh.venue || '')}</span>` +
+             `<span class="ri-venue">${esc([sh.city, sh.state].filter(Boolean).join(', '))}</span>`,
+      1050);
+    if (skipped) return;
+    land();
+  })();
 }
 
-// ── setlist panel (shared by draft + result) ─────────────────────────────────
-/* The three sets, their clocks, and what is in them. This is the board: the
-   player reads remaining time here and nowhere else. */
 function setsPanelHTML({ live }){
-  const bud = budgets(S.sets, S.closed);
+  const bud = budgets(S.sets, S.closed, S.spent);
   const cur = live ? currentSet() : -1;
 
   return SETS.map((cfg, i) => {
@@ -725,7 +819,7 @@ function renderDraft(){
   const si = currentSet();
   if (si === -1){ finishShow(); return; }
   const cfg = SETS[si];
-  const left = remaining(S.sets, si, S.closed);
+  const left = remaining(S.sets, si, S.closed, S.spent);
 
   const bySet = new Map();
   for (const p of show.songs){
@@ -736,14 +830,14 @@ function renderDraft(){
 
   // Every song is shown, but one that will not fit the clock is dead — saying
   // why beats hiding it, because "no room for a 22 minute Drive" IS the game.
-  const fits = show.songs.filter(p => !taken.has(p.song_id) && canPlace(S.sets, si, p, S.closed));
+  const fits = show.songs.filter(p => !taken.has(p.song_id) && canPlace(S.sets, si, p, S.closed, S.spent));
 
   const songsHTML = keys.map(k => {
     const rows = bySet.get(k).map(p => {
       const acc = accentOf(p);
       const idx = show.songs.indexOf(p);
       const used = taken.has(p.song_id);
-      const room = canPlace(S.sets, si, p, S.closed);
+      const room = canPlace(S.sets, si, p, S.closed, S.spent);
       const dead = used || !room;
       const chips = [];
       if (isRecommended(p)) chips.push('<span class="chip rec">RECOMMENDED</span>');
@@ -778,7 +872,17 @@ function renderDraft(){
         <div class="rd">${esc(cfg.label)}<span style="color:var(--dim)"> · ${fmtClock(Math.max(0, left))} left</span></div>
         <div class="md">${esc(S.band.label)} · pick ${S.round + 1}</div>
       </div>
-      <button class="btn tiny" type="button" id="openSets">Show clock</button>
+      <div class="hud-btns">
+        ${(() => {
+          const cost = respinCost(S.respins);
+          const can = canRespin(S.sets, si, S.respins, S.closed, S.spent);
+          if (cost === null) return '<span class="nospin">No spins left</span>';
+          return `<button class="btn tiny spin" type="button" id="respinBtn" ${can ? '' : 'disabled'}
+            title="${can ? '' : 'Not enough time left in this set'}">
+            Spin again &middot; ${fmtClock(cost)}</button>`;
+        })()}
+        <button class="btn tiny" type="button" id="openSets">Clock</button>
+      </div>
     </div>
 
     <div class="board">
@@ -1049,6 +1153,8 @@ async function start(bandId){
   S.round = 0;
   S.sets = [[], [], []];
   S.closed = [false, false, false];
+  S.spent = [0, 0, 0];
+  S.respins = 0;
   S.seenShows = new Set();
   S.pickedSong = null; S.sheetForced = false;
   S.hint = ''; S.hintBad = false; S.result = null;
@@ -1079,7 +1185,7 @@ function lockIn(){
   const si = currentSet();
   if (!song || si === -1) return;
   if (lockedSongIds().has(song.song_id)) return;
-  if (!canPlace(S.sets, si, song, S.closed)) return;
+  if (!canPlace(S.sets, si, song, S.closed, S.spent)) return;
 
   S.sets[si].push(song);
   S.pickedSong = null; S.hint = ''; S.hintBad = false; S.sheetForced = false;
@@ -1090,14 +1196,35 @@ function lockIn(){
   nextRound();
 }
 
-/** Close the current set. Whatever is left flows to the encore. */
+/**
+ * Close the current set. Whatever is left flows to the encore.
+ *
+ * Deliberately does NOT draw a new show. The show on screen is the night's
+ * source material, not a per-set handout — closing Set I while looking at a
+ * good show should drop you straight into Set II still holding it. Re-spinning
+ * here also handed out a free reroll, which is exactly what respins cost time
+ * to prevent.
+ */
 function closeSet(){
   const si = currentSet();
   if (si === -1) return;
   S.closed[si] = true;
   S.pickedSong = null; S.hint = ''; S.hintBad = false; S.sheetForced = false;
   if (currentSet() === -1){ finishShow(); return; }
-  nextRound();
+  renderDraft();
+}
+
+/** Reject this show and draw another, at a price. */
+function respin(){
+  const si = currentSet();
+  if (si === -1) return;
+  if (!canRespin(S.sets, si, S.respins, S.closed, S.spent)) return;
+  S.spent[si] += respinCost(S.respins);
+  S.respins += 1;
+  S.pickedSong = null; S.sheetForced = false;
+  S.hint = ''; S.hintBad = false;
+  drawShow();
+  setScreen('reveal');
 }
 
 function nextRound(){
@@ -1109,7 +1236,7 @@ function nextRound(){
 }
 
 function finishShow(){
-  S.result = scoreShow(S.sets, S.data.segues);
+  S.result = scoreShow(S.sets, S.data.segues, S.spent);
   setScreen('result');
 }
 
@@ -1146,7 +1273,7 @@ app.addEventListener('click', e => {
       S.hintBad = true; renderDraft(); return;
     }
     const si = currentSet();
-    if (s !== S.pickedSong && si !== -1 && !canPlace(S.sets, si, s, S.closed)){
+    if (s !== S.pickedSong && si !== -1 && !canPlace(S.sets, si, s, S.closed, S.spent)){
       S.hint = `No room for ${fmtClock(lenOf(s))} in ${SETS[si].label}.`;
       S.hintBad = true; renderDraft(); return;
     }
@@ -1160,6 +1287,7 @@ app.addEventListener('click', e => {
 
   if (e.target.closest('#lockBtn')){ lockIn(); return; }
   if (e.target.closest('#closeSetBtn')){ closeSet(); return; }
+  if (e.target.closest('#respinBtn')){ respin(); return; }
   if (e.target.closest('#openSets')){
     S.sheetForced = !S.sheetForced; renderDraft(); return;
   }
