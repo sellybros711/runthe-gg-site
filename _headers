@@ -2,7 +2,7 @@
 #
 # WHY THIS EXISTS
 #
-# Run The Setlist is an HTML page that imports ES modules by name:
+# Segue is an HTML page that imports ES modules by name:
 #
 #   import { SETS, scoreShow, ... } from './scoring.js'
 #

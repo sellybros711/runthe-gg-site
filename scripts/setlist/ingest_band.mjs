@@ -1,4 +1,4 @@
-/* Run The Setlist — build a band CSV from elgoose.net.
+/* Segue — build a band CSV from elgoose.net.
  *
  *   node scripts/setlist/ingest_band.mjs               # → setlist/data/goose.csv
  *   node scripts/setlist/ingest_band.mjs --probe       # what does the API return?

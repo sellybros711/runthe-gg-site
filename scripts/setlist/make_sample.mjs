@@ -1,4 +1,4 @@
-/* Run The Setlist — synthetic sample data.
+/* Segue — synthetic sample data.
  *
  *   node scripts/setlist/make_sample.mjs      # → setlist/data/sample.csv
  *

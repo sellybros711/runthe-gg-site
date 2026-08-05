@@ -1,4 +1,4 @@
-/* Run The Setlist — guard the things that have actually gone wrong.
+/* Segue — guard the things that have actually gone wrong.
  *
  *   node scripts/setlist/check_data.mjs
  *

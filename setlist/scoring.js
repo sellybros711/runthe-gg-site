@@ -1,4 +1,4 @@
-/* Run The Setlist — scoring v4.
+/* Segue — scoring v4.
  *
  * THE single source of truth for the numbers. Nothing else in the game may
  * hardcode a scoring constant; import from here.

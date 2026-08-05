@@ -1,4 +1,4 @@
-/* Run The Setlist — band CSV → { shows, segues }.
+/* Segue — band CSV → { shows, segues }.
  *
  * The CSV is the single source of truth for the game. Columns and their
  * meanings are fixed by data/DATA_CONTRACT.md; scripts/setlist/ingest_band.mjs

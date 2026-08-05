@@ -1,9 +1,13 @@
-# Run The Setlist — draft a setlist from real shows
+# Segue: The Setlist Builder Game
 
-A jam-band setlist-drafting game at `runthe.gg/setlist`. Pick a band; each round
+A jam-band setlist builder at `runthe.gg/setlist`. (The URL keeps the old
+name — it is shared and indexed, and renaming it would break both.) Pick a band; each round
 spins up one real concert; you pull one song off it and spend its running time
 against your set. Two sets and an encore, a curfew on each, and every pick is
-final. When the encore closes, the fans give you a verdict.
+final. When the encore closes the night plays back to a crowd, song by song.
+
+The name is Segue; the URL stays `/setlist/` because it is already shared and
+indexed, and renaming it would break both for nothing.
 
 **In open testing.** Indexable and listed in `sitemap.xml`, but deliberately
 **not linked from the homepage** yet — the URL is the only way in, so it can be
