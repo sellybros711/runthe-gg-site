@@ -140,11 +140,22 @@ Encore   10:00   up to 3 songs  + whatever the two sets left behind
 Those budgets are the archive's own medians, not invented: Goose's Set I runs
 75:07 across 7 songs, Set II 70:13 across 5, the encore 10:58 across 1.
 
-Each round reveals one show. Pick a song and it goes into the set you are
+Each round spins two reels — a **year**, then a **night from that year** — and
+reveals one show. (The show is drawn first; the reels animate toward a result
+already decided, so what you see is never a lie. Tap to skip.) Pick a song and
+it goes into the set you are
 currently building, spending its running time. A song that will not fit is shown
 but dead, and says why — "needs 4:12 more" — because *no room for a 22-minute
 Drive* is the game, not an error to hide. Close a set whenever you like; the
 leftover flows to the encore.
+
+**Closing a set keeps the show on screen.** The show is the night's source
+material, not a per-set handout, so closing Set I while holding a good one drops
+you into Set II still holding it.
+
+**Respins cost stage time**, taken from the set you are building: 5:00, then
+10:00, then 15:00, then no more. Time spent spinning is gone — it does not reach
+the encore — so a reroll is a real decision rather than a button to mash.
 
 The show ends when the encore closes. **Round count is emergent**: chase monsters
 and the night is over in nine picks, play tight and it runs past fifteen.

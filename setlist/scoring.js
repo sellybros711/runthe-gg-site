@@ -45,6 +45,26 @@ export const ENCORE_INDEX = 2;
    endless. Reached only if every set fills to maxSongs. */
 export const MAX_ROUNDS = SETS.reduce((a, s) => a + s.maxSongs, 0);
 
+// ── RESPINS ──────────────────────────────────────────────────────────────────
+/* You can reject the show you drew and spin again — but stage time is the only
+   currency here, so that is what it costs, taken out of the set you are building.
+   Escalating, so a first look is cheap and a fourth is not offered at all: the
+   point is a real decision, not a reroll button you mash until you like the show.
+   Five minutes is most of a short song; fifteen is a jam you will never play. */
+export const RESPIN_COSTS = [5 * 60, 10 * 60, 15 * 60];
+
+/** What the next respin costs, or null when there are none left. */
+export function respinCost(used) {
+  return used < RESPIN_COSTS.length ? RESPIN_COSTS[used] : null;
+}
+
+/** Can the current set afford another spin? */
+export function canRespin(sets, i, used, closed, spent) {
+  const cost = respinCost(used);
+  if (cost === null) return false;
+  return remaining(sets, i, closed, spent) >= cost;
+}
+
 // ── VERSION ──────────────────────────────────────────────────────────────────
 export const V_RECOMMENDED = 0.55;
 export const V_JAMCHART    = 0.30;
@@ -146,30 +166,30 @@ export function fmtClock(sec) {
  * @param {Array<boolean>} closed which sets are finished; defaults to all of
  *   them, which is the right reading when scoring a finished show.
  */
-export function budgets(sets, closed) {
-  const out = SETS.map(s => s.seconds);
+export function budgets(sets, closed, spent) {
+  const out = SETS.map((s, i) => s.seconds - ((spent && spent[i]) || 0));
   let spare = 0;
   for (let i = 0; i < ENCORE_INDEX; i++) {
     if (closed && !closed[i]) continue;
     const used = (sets[i] || []).reduce((a, p) => a + lenOf(p), 0);
-    spare += Math.max(0, SETS[i].seconds - used);
+    spare += Math.max(0, out[i] - used);
   }
   out[ENCORE_INDEX] += spare;
   return out;
 }
 
 /** Seconds still available in a set. */
-export function remaining(sets, i, closed) {
+export function remaining(sets, i, closed, spent) {
   const used = (sets[i] || []).reduce((a, p) => a + lenOf(p), 0);
-  return budgets(sets, closed)[i] - used;
+  return budgets(sets, closed, spent)[i] - used;
 }
 
 /** Can this song still go into this set? */
-export function canPlace(sets, i, perf, closed) {
+export function canPlace(sets, i, perf, closed, spent) {
   const len = lenOf(perf);
   if (!len) return false;                                  // untimed songs cannot be spent
   if ((sets[i] || []).length >= SETS[i].maxSongs) return false;
-  return len <= remaining(sets, i, closed);
+  return len <= remaining(sets, i, closed, spent);
 }
 
 /** A set is done when it is full or nothing left could fit. */
@@ -296,9 +316,9 @@ export function setNote(ratio, songs) {
  * @param {Array<Array>} sets  three arrays of performance rows, in running order
  * @param {Set} segues canonical "songIdA|songIdB" pairs
  */
-export function scoreShow(sets, segues) {
+export function scoreShow(sets, segues, spent) {
   const s = [sets[0] || [], sets[1] || [], sets[2] || []];
-  const bud = budgets(s);
+  const bud = budgets(s, undefined, spent);
 
   // Songs, scored against the role each ended up in.
   const perSet = s.map((songs, si) => songs.map((p, i) => ({
