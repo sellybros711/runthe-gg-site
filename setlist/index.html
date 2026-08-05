@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Setlist: Daily Setlist Drafting Game | RunThe.GG</title>
-<meta name="robots" content="noindex, nofollow" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 /* theme boot: runs before first paint. Manual choice persists in
@@ -286,6 +285,19 @@ const BANDS = [
 ];
 
 const DATA_VERSION = 1;   // bump to bust the CSV cache after a regeneration
+
+// A round is only a decision if there is a setlist to read. The Goose archive
+// logs early bar gigs as one or two songs — 18 shows are a single song — and
+// drawing one hands the player a round with nothing to choose. Requiring a full
+// show keeps 529 of Goose's 655.
+const MIN_SONGS_PER_SHOW = 8;
+
+/** Shows worth drafting from. Falls back to the whole set for a band whose
+ *  archive is too thin to fill eight rounds, so a sparse band still plays. */
+function drawableShows(shows){
+  const full = shows.filter(s => s.songs.length >= MIN_SONGS_PER_SHOW);
+  return full.length >= NUM_ROUNDS ? full : shows;
+}
 
 // ── seeded RNG (mulberry32, per the house convention) ─────────────────────────
 function hash32(s){
@@ -755,7 +767,7 @@ async function start(bandId, mode){
     ? hash32(`${bandId}|${todayStr()}`)
     : hash32(`${bandId}|solo|${Date.now()}|${Math.random()}`);
 
-  S.drawn = shuffle(S.data.shows, mulberry32(seed)).slice(0, NUM_ROUNDS);
+  S.drawn = shuffle(drawableShows(S.data.shows), mulberry32(seed)).slice(0, NUM_ROUNDS);
   S.round = 0;
   S.slots = new Array(NUM_ROUNDS).fill(null);
   S.pickedSong = null; S.pickedSlot = null;

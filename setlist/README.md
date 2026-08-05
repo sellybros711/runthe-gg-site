@@ -5,8 +5,9 @@ reveals one randomly-drawn real concert; you pull one song off it and lock it
 into one of eight setlist slots. You commit before the next show appears, so the
 lock is final. Eight rounds, then a score.
 
-**Hidden for now** — `noindex`, not linked from the homepage, not in the
-sitemap, same as `/arcade/` and `/touchdown/` while in development.
+**In open testing.** Indexable and listed in `sitemap.xml`, but deliberately
+**not linked from the homepage** yet — the URL is the only way in, so it can be
+shared and found without being presented as a finished game.
 
 ```
 /setlist/
@@ -120,22 +121,21 @@ There is deliberately **no backend** — no database, no auth, no leaderboard.
 
 ## Open questions
 
-The first two surfaced only once the real Goose archive landed — the sample data
-is uniformly well-formed and hid both.
+Both of the first two surfaced only once the real Goose archive landed — the
+sample data is uniformly well-formed and hid them.
 
-1. **Thin shows make choiceless rounds.** 18 shows in the archive have exactly
-   one song and 28 have three or fewer — early bar gigs the archive only partly
-   logged. A round drawn from one of those offers no decision, and because a
-   game draws 8 shows, **~20% of games contain a single-song round** and ~29%
-   contain a round of three or fewer. The draw is one line
-   (`S.drawn = shuffle(S.data.shows, …)`), so a `songs.length >= N` filter is a
-   small change — but it changes every daily seed's result, so it is a gameplay
-   decision, not a cleanup. Requiring ≥8 songs leaves 529 of 655 shows.
-
-2. **The same song can be locked into two slots.** Each round is a different
+1. **The same song can be locked into two slots.** Each round is a different
    show, so a staple can be offered repeatedly, and nothing stops a player
    putting "Arrow" in both Set I Closer and Set II Peak — impossible in a real
    setlist. Deduping against already-locked songs is a filter in `renderDraft`.
+   Still open.
+
+2. **Thin shows made choiceless rounds — fixed.** 18 shows in the archive are a
+   single song and 28 are three or fewer (early bar gigs the archive only partly
+   logged), which put a no-decision round in ~20% of games. `drawableShows()` in
+   `index.html` now requires `MIN_SONGS_PER_SHOW` (8), leaving 529 of 655 Goose
+   shows. It falls back to the unfiltered set for any band too sparse to fill
+   eight rounds. Raising or lowering that constant changes every daily result.
 
 Two more worth revisiting:
 

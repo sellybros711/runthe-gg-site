@@ -47,6 +47,13 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://runthe.gg/setlist/</loc>
+    <lastmod>2026-08-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://runthe.gg/assets/runthegames-og_1200x630.png</image:loc></image:image>
+  </url>
   <url><loc>https://runthe.gg/about.html</loc><lastmod>2026-07-29</lastmod><priority>0.5</priority></url>
   <url><loc>https://runthe.gg/soccer/about.html</loc><lastmod>2026-07-29</lastmod><priority>0.4</priority></url>
   <url><loc>https://runthe.gg/contact.html</loc><lastmod>2026-07-29</lastmod><priority>0.4</priority></url>
