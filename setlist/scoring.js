@@ -1,57 +1,58 @@
-/* Run The Setlist — scoring v3.
+/* Run The Setlist — scoring v4.
  *
  * THE single source of truth for the numbers. Nothing else in the game may
- * hardcode a scoring constant; import from here. (If a server-side scorer is
- * ever added, it ports this file verbatim rather than re-deriving it.)
+ * hardcode a scoring constant; import from here.
  *
- * The player should be able to say, without reading this file, why they scored
- * what they scored. So the model is four questions, and the result screen shows
- * them back in the same order:
+ * WHAT CHANGED FROM v3
  *
- *   SONG       Is this a song people treasure?          → base, from crowd_rating
- *   VERSION    Was this a special night for it?         → multiplier
- *   PLACEMENT  Does it belong in that slot?             → multiplier
- *   FLOW       Do the eight work as one setlist?        → whole-setlist bonus
+ * v3 gave the player eight named slots to fill. Real bands are not handed eight
+ * slots — they are handed a stage and a curfew. v4 replaces the slots with time
+ * budgets, so the decision every round becomes the one a band actually makes:
+ * spend twenty-two minutes on this, or keep the room for what is coming.
  *
- *   perSong = round(base * versionMult * placementMult)
- *   total   = sum(perSong) + flow + completion
+ * The budgets are the archive's own medians, not invented (see sets.mjs work in
+ * DATA_CONTRACT.md): Goose's Set I runs 75:07 across 7 songs, Set II 70:13
+ * across 5, and the encore 10:58 across 1.
  *
- * WHAT CHANGED FROM v2, AND WHY
+ * A song's ROLE is now positional rather than a slot you assign it to. The first
+ * song of a set is the opener; the last is the closer; the encore is the encore.
+ * You cannot know which song will close a set until you close it, which is the
+ * point — you are committing without the whole picture, same as the band.
  *
- * v2 measured a 4000-game simulation like this: placement 57%, rarity 36%,
- * segues 1.5%. Three things were wrong with that.
+ * Five things score, and the result screen shows them in this order:
  *
- *   - Every song scored identically. base fell back to a flat 30 for all of
- *     them because elgoose publishes no ratings, so "which song" — the whole
- *     point of the game — was worth nothing. crowd_rating now carries a
- *     jamchart-derived esteem rating (see ingest_band.mjs).
- *   - Rarity was a third of the score. Show gap is real, but it is a fact about
- *     the band's routing, not a judgement the player makes, and it fired in 80%
- *     of slots. It is now one term inside VERSION rather than its own pillar.
- *   - Segues were 1.5%. The most musical thing in the game was noise. They are
- *     now part of FLOW, and they only count inside a set, because a segue
- *     across a set break is not a thing that happens.
+ *   SONG       is this a song people treasure?      base, from crowd_rating
+ *   VERSION    was this a special night for it?     multiplier
+ *   PLACEMENT  does it suit where it landed?        multiplier
+ *   TIME       did you use the stage you were given?
+ *   FLOW       do the picks work as one show?
  */
 
-export const NUM_ROUNDS = 8;
-export const COMPLETION_BONUS = 40;
-
-/* Blank crowd_rating → an ordinary song. Matches NEUTRAL_ESTEEM in the
-   ingester, which is what writes the column. */
 export const NEUTRAL_BASE = 30;
 
+// ── the show ─────────────────────────────────────────────────────────────────
+/* Budgets are the archive's medians. maxSongs caps a set so a run of four-minute
+   songs cannot turn a set into a twelve-song sprint — real Set Is top out around
+   eight. The encore also collects whatever time the two sets left behind. */
+export const SETS = [
+  { key: '1', label: 'Set I',  seconds: 75 * 60, maxSongs: 8 },
+  { key: '2', label: 'Set II', seconds: 70 * 60, maxSongs: 8 },
+  { key: 'E', label: 'Encore', seconds: 10 * 60, maxSongs: 3 },
+];
+export const ENCORE_INDEX = 2;
+
+/* A hard cap so a pathological run of very short songs cannot make a session
+   endless. Reached only if every set fills to maxSongs. */
+export const MAX_ROUNDS = SETS.reduce((a, s) => a + s.maxSongs, 0);
+
 // ── VERSION ──────────────────────────────────────────────────────────────────
-/* What made this particular take worth more than the song's usual outing.
-   Additive so a legendary version reads as a stack of reasons, not one number. */
-export const V_RECOMMENDED = 0.55;  // jamchart curators flagged it a standout
-export const V_JAMCHART    = 0.30;  // written up in the jamcharts at all
+export const V_RECOMMENDED = 0.55;
+export const V_JAMCHART    = 0.30;
 export const V_LEN_20MIN   = 0.25;
 export const V_LEN_15MIN   = 0.12;
 export const LEN_20MIN = 1200;
 export const LEN_15MIN = 900;
 
-/* Rarity, as a version term. A song the band had shelved for 100 shows is a
-   special night for it — the same kind of claim as "this one ran 22 minutes". */
 export const RARITY_TIERS = [
   { gap: 100, mult: 0.40 },
   { gap: 50,  mult: 0.25 },
@@ -60,62 +61,59 @@ export const RARITY_TIERS = [
 ];
 
 // ── PLACEMENT ────────────────────────────────────────────────────────────────
-/* Wider than v2's 0.65–1.15. Placement is the decision the player actually
-   makes every round, so it has to be able to swing the score. */
-export const MULT_PERFECT = 1.30;  // carries every tag the slot wants
-export const MULT_PARTIAL = 1.12;  // carries some of them
-export const MULT_NEUTRAL = 0.90;  // no signal either way
-export const MULT_CLASH   = 0.55;  // actively wrong for the slot
+export const MULT_PERFECT = 1.30;
+export const MULT_PARTIAL = 1.12;
+export const MULT_NEUTRAL = 0.90;
+export const MULT_CLASH   = 0.55;
 
-/* The 8 slots, in draft order, with the tags each wants and the energy the slot
-   is asking for (see ENERGY below). */
-export const SLOTS = [
-  { i: 0, set: '1', group: 'Set I',  name: 'Opener',   label: 'Set I · Opener',    tags: ['opener'],          want: 3 },
-  { i: 1, set: '1', group: 'Set I',  name: 'Mid',      label: 'Set I · Mid',       tags: [],                  want: 3 },
-  { i: 2, set: '1', group: 'Set I',  name: 'Closer',   label: 'Set I · Closer',    tags: ['closer', 'jam'],   want: 4 },
-  { i: 3, set: '2', group: 'Set II', name: 'Opener',   label: 'Set II · Opener',   tags: ['opener', 'jam'],   want: 4 },
-  { i: 4, set: '2', group: 'Set II', name: 'Peak',     label: 'Set II · Peak',     tags: ['peak'],            want: 5 },
-  { i: 5, set: '2', group: 'Set II', name: 'Breather', label: 'Set II · Breather', tags: ['ballad'],          want: 1 },
-  { i: 6, set: '2', group: 'Set II', name: 'Closer',   label: 'Set II · Closer',   tags: ['closer', 'peak'],  want: 5 },
-  { i: 7, set: 'E', group: 'Encore', name: 'Encore',   label: 'Encore',            tags: ['encore'],          want: 3 },
-];
+/* What each position in a set is asking for. Resolved at scoring time, once the
+   set is closed and it is known which song actually ended up where. */
+export function roleAt(setIdx, songIdx, setLength) {
+  if (SETS[setIdx].key === 'E') return { name: 'Encore', tags: ['encore'], energy: 3 };
+  const last = songIdx === setLength - 1;
+  if (songIdx === 0) return { name: 'Opener', tags: ['opener'], energy: 3 };
+  if (last) return {
+    name: 'Closer',
+    tags: setIdx === 1 ? ['closer', 'peak'] : ['closer', 'jam'],
+    energy: setIdx === 1 ? 5 : 4,
+  };
+  // Set II's back half is where a peak belongs; everywhere else is open ground,
+  // and a ballad sitting mid-set is a breather rather than a mistake.
+  const late = songIdx >= Math.ceil((setLength - 1) * 0.6);
+  if (setIdx === 1 && late) return { name: 'Peak', tags: ['peak'], energy: 5 };
+  return { name: 'Mid', tags: [], energy: 3 };
+}
 
-export const ENERGY_SLOTS = [2, 3, 4, 6];
-export const BREATHER_SLOT = 5;
+// ── TIME ─────────────────────────────────────────────────────────────────────
+/* Points for using the stage you were given. Linear on purpose: "you used 82% of
+   Set I, you get 82% of its time points" is a sentence a player can hold in their
+   head, and it makes leaving fifteen minutes unplayed feel exactly as bad as it
+   is. Overrunning is impossible — the game will not let a song that does not fit
+   be placed — so there is no over-run branch to reason about. */
+export const TIME_POINTS_PER_SET = 100;
+
+/* Below this, a set reads as short-changed and the fan headline says so. */
+export const SHORT_SET_RATIO = 0.80;
 
 // ── FLOW ─────────────────────────────────────────────────────────────────────
-/* A setlist is not eight independent picks, and this is the part of the score
-   that knows that. Three things a real setlist does: it segues, it has a shape,
-   and it does not play the same card eight times. */
-
-/* A true segue is worth a lot — it is the hardest thing to land, because the
-   pair has to be one the band has actually played back to back. */
 export const SEGUE_POINTS = 45;
-
-/* Energy, 1 (quietest) to 5 (biggest), inferred from the same tags the slots
-   ask for. Used only for the arc — placement still runs off tags. */
 export const ENERGY = { ballad: 1, opener: 3, closer: 4, jam: 4, peak: 5, encore: 3 };
 export const ENERGY_DEFAULT = 3;
-
-/* Arc: how closely the setlist's energy follows what the slots asked for.
-   Perfect shape pays ARC_MAX; every point of deviation costs ARC_PENALTY. */
 export const ARC_MAX = 60;
-export const ARC_PENALTY = 5;
-
-/* Variety: eight jams in a row is not a setlist. Pays when the picks span a
-   range of roles, taxes when one tag dominates. */
+/* Average energy miss, in ENERGY units, at which the arc is worth nothing.
+   Energies run 1-5, so an average miss of 2 is genuinely shapeless. */
+export const ARC_ZERO_AT = 2;
 export const VARIETY_MAX = 30;
-export const VARIETY_MIN_ROLES = 4;   // distinct tags needed for full marks
+export const VARIETY_MIN_ROLES = 4;
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-
 export function tagsOf(perf) {
   return String(perf && perf.tags || '').split('|').filter(Boolean);
 }
-
 const flag = v => v === 'true' || v === '1' || v === true || v === 1;
 export function isJamchart(perf) { return flag(perf && perf.is_jamchart); }
 export function isRecommended(perf) { return flag(perf && perf.is_recommended); }
+export function lenOf(perf) { return Number(perf && perf.length_sec) || 0; }
 
 export function baseOf(perf) {
   const r = perf && perf.crowd_rating;
@@ -128,19 +126,64 @@ export function rarityMult(gap) {
   return 0;
 }
 
-// ── the model ────────────────────────────────────────────────────────────────
+export function fmtClock(sec) {
+  const s = Math.max(0, Math.round(sec));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
 
+// ── budgets ──────────────────────────────────────────────────────────────────
 /**
- * Version multiplier, plus the reasons behind it so the result screen can show
- * its working rather than a bare number.
- * @returns {{mult:number, reasons:Array<{label:string, mult:number}>}}
+ * How much stage time each set actually has, given what the earlier sets left.
+ * Only the encore inherits leftovers — that is the whole reason to think about
+ * pace rather than just filling.
+ *
+ * A set only hands its leftovers over once it is CLOSED. An open set has not
+ * left anything behind yet, it is simply still being played. Without that, an
+ * untouched night reports an encore budget of 2h35m, which is nonsense to show
+ * a player mid-game.
+ *
+ * @param {Array<Array>} sets    three arrays of performance rows
+ * @param {Array<boolean>} closed which sets are finished; defaults to all of
+ *   them, which is the right reading when scoring a finished show.
  */
+export function budgets(sets, closed) {
+  const out = SETS.map(s => s.seconds);
+  let spare = 0;
+  for (let i = 0; i < ENCORE_INDEX; i++) {
+    if (closed && !closed[i]) continue;
+    const used = (sets[i] || []).reduce((a, p) => a + lenOf(p), 0);
+    spare += Math.max(0, SETS[i].seconds - used);
+  }
+  out[ENCORE_INDEX] += spare;
+  return out;
+}
+
+/** Seconds still available in a set. */
+export function remaining(sets, i, closed) {
+  const used = (sets[i] || []).reduce((a, p) => a + lenOf(p), 0);
+  return budgets(sets, closed)[i] - used;
+}
+
+/** Can this song still go into this set? */
+export function canPlace(sets, i, perf, closed) {
+  const len = lenOf(perf);
+  if (!len) return false;                                  // untimed songs cannot be spent
+  if ((sets[i] || []).length >= SETS[i].maxSongs) return false;
+  return len <= remaining(sets, i, closed);
+}
+
+/** A set is done when it is full or nothing left could fit. */
+export function setFull(sets, i) {
+  return (sets[i] || []).length >= SETS[i].maxSongs;
+}
+
+// ── the model ────────────────────────────────────────────────────────────────
 export function versionParts(perf) {
   const reasons = [];
   if (isRecommended(perf)) reasons.push({ label: 'Recommended version', mult: V_RECOMMENDED });
   else if (isJamchart(perf)) reasons.push({ label: 'Jamchart version', mult: V_JAMCHART });
 
-  const len = Number(perf && perf.length_sec) || 0;
+  const len = lenOf(perf);
   if (len >= LEN_20MIN) reasons.push({ label: '20+ minutes', mult: V_LEN_20MIN });
   else if (len >= LEN_15MIN) reasons.push({ label: '15+ minutes', mult: V_LEN_15MIN });
 
@@ -149,23 +192,24 @@ export function versionParts(perf) {
 
   return { mult: 1 + reasons.reduce((a, r) => a + r.mult, 0), reasons };
 }
-
 export function versionMult(perf) { return versionParts(perf).mult; }
 
-/** How well a song's tags suit a slot: 'great' | 'ok' | 'neutral' | 'bad'. */
-export function slotFit(tags, slotIdx) {
+/** How well a song's tags suit the role it ended up in. */
+export function roleFit(tags, role) {
   const t = Array.isArray(tags) ? tags : String(tags || '').split('|').filter(Boolean);
-  const want = (SLOTS[slotIdx] || {}).tags || [];
-  if (!want.length) return 'neutral';
+  const want = role.tags || [];
+  if (!want.length) {
+    // Mid-set. A ballad here is the breather a real set needs, not a misfire.
+    return t.includes('ballad') ? 'ok' : 'neutral';
+  }
   if (want.every(x => t.includes(x))) return 'great';
   if (t.some(x => want.includes(x))) return 'ok';
-  if (t.includes('ballad') && ENERGY_SLOTS.includes(slotIdx)) return 'bad';
-  if ((t.includes('jam') || t.includes('peak')) && slotIdx === BREATHER_SLOT) return 'bad';
+  if (t.includes('ballad') && role.energy >= 4) return 'bad';
   return 'neutral';
 }
 
-export function placementMult(tags, slotIdx) {
-  switch (slotFit(tags, slotIdx)) {
+export function placementMult(tags, role) {
+  switch (roleFit(tags, role)) {
     case 'great': return MULT_PERFECT;
     case 'ok':    return MULT_PARTIAL;
     case 'bad':   return MULT_CLASH;
@@ -173,105 +217,156 @@ export function placementMult(tags, slotIdx) {
   }
 }
 
-/** Loudest energy any of a song's tags implies. */
 export function energyOf(perf) {
   const t = tagsOf(perf);
   if (!t.length) return ENERGY_DEFAULT;
   return Math.max(...t.map(x => ENERGY[x] === undefined ? ENERGY_DEFAULT : ENERGY[x]));
 }
 
-/** Full breakdown for one performance in one slot. */
-export function scorePerf(perf, slotIdx) {
+/** Full breakdown for one performance, given the role it landed in. */
+export function scorePerf(perf, role) {
   const base = baseOf(perf);
   const v = versionParts(perf);
-  const fit = slotFit(perf && perf.tags, slotIdx);
-  const pm = placementMult(perf && perf.tags, slotIdx);
-  const subtotal = Math.round(base * v.mult * pm);
+  const fit = roleFit(perf && perf.tags, role);
+  const pm = placementMult(perf && perf.tags, role);
   return {
     base,
     versionMult: v.mult,
     versionReasons: v.reasons,
+    role: role.name,
     fit,
     placementMult: pm,
-    subtotal,
+    subtotal: Math.round(base * v.mult * pm),
   };
 }
 
 export function segueKey(a, b) { return `${a.song_id}|${b.song_id}`; }
 
-/** True when slots i / i+1 hold a canonical segue AND sit in the same set. */
-export function hasSegue(slots, i, segues) {
-  const a = slots[i], b = slots[i + 1];
-  if (!a || !b || !segues) return false;
-  if (SLOTS[i].set !== SLOTS[i + 1].set) return false;   // no segue across a set break
-  return segues.has(segueKey(a, b));
+// ── fan reaction ─────────────────────────────────────────────────────────────
+/* Short, punchy, and earned — each line is keyed to something the player
+   actually did, so it reads as a review rather than a fortune cookie. Ordered
+   most specific first; the first match wins. */
+export const HEADLINES = [
+  { id: 'perfect',   when: s => s.overallRatio >= 0.96 && s.segues >= 2,
+    text: 'Not a second wasted. Not a segue missed.' },
+  { id: 'tothewire', when: s => s.overallRatio >= 0.96,
+    text: 'Played the curfew like a fourth instrument.' },
+  { id: 'full',      when: s => s.overallRatio >= 0.93 && s.avgLen >= 780,
+    text: 'Heavy, patient, and right up to the curfew.' },
+  { id: 'full2',     when: s => s.overallRatio >= 0.93,
+    text: 'Every minute spent. Nobody checked a watch.' },
+  { id: 'tight',     when: s => s.overallRatio >= 0.88 && s.segues >= 2,
+    text: 'Stitched together. Barely a gap all night.' },
+  { id: 'good',      when: s => s.overallRatio >= 0.88,
+    text: 'Ran it close. A few minutes left in the tank.' },
+  { id: 'encorebig', when: s => s.setRatios[2] >= 0.9 && s.encoreSongs >= 2,
+    text: 'Banked the time and blew it all on the encore.' },
+  { id: 'shortall',  when: s => s.overallRatio < 0.7,
+    text: 'Left the fans wanting more. And wanting a full set.' },
+  { id: 'short',     when: s => s.overallRatio < 0.82,
+    text: "Ended early. The house lights came up on a confused room." },
+  { id: 'set1thin',  when: s => s.setRatios[0] < SHORT_SET_RATIO,
+    text: 'Set I ran out of road. Set II had to carry it.' },
+  { id: 'set2thin',  when: s => s.setRatios[1] < SHORT_SET_RATIO,
+    text: 'Front-loaded the night and coasted home.' },
+  { id: 'noencore',  when: s => s.encoreSongs === 0,
+    text: 'No encore. Bold. The parking lot had opinions.' },
+  { id: 'jamheavy',  when: s => s.avgLen >= 900,
+    text: 'Four songs an hour. The heads loved it.' },
+  { id: 'sprint',    when: s => s.avgLen > 0 && s.avgLen <= 420,
+    text: 'Sixteen songs, no breathing room. A greatest-hits sprint.' },
+  { id: 'seguerun',  when: s => s.segues >= 3,
+    text: 'Barely stopped to tune. One long exhale.' },
+  { id: 'solid',     when: () => true,
+    text: 'A good night. Not one they will bootleg forever.' },
+];
+
+/** Per-set reaction, same idea at set scale. */
+export function setNote(ratio, songs) {
+  if (songs === 0) return 'Never happened.';
+  if (ratio >= 0.97) return 'Filled to the curfew.';
+  if (ratio >= 0.9) return 'Paced about right.';
+  if (ratio >= SHORT_SET_RATIO) return 'A little room left on the table.';
+  if (ratio >= 0.6) return 'Cut short — the crowd noticed.';
+  return 'Barely a set.';
 }
 
+// ── scoring a whole show ─────────────────────────────────────────────────────
 /**
- * How well the eight work together, independent of what each is worth alone.
- * @returns {{total:number, segues:Array, arc:number, variety:number, roles:Array}}
+ * @param {Array<Array>} sets  three arrays of performance rows, in running order
+ * @param {Set} segues canonical "songIdA|songIdB" pairs
  */
-export function scoreFlow(slots, segues) {
-  const filled = slots.filter(Boolean);
+export function scoreShow(sets, segues) {
+  const s = [sets[0] || [], sets[1] || [], sets[2] || []];
+  const bud = budgets(s);
 
+  // Songs, scored against the role each ended up in.
+  const perSet = s.map((songs, si) => songs.map((p, i) => ({
+    perf: p,
+    role: roleAt(si, i, songs.length),
+    score: scorePerf(p, roleAt(si, i, songs.length)),
+  })));
+  const songTotal = perSet.flat().reduce((a, x) => a + x.score.subtotal, 0);
+
+  // Time — per set, and only for sets that had a budget to spend.
+  const time = s.map((songs, i) => {
+    const used = songs.reduce((a, p) => a + lenOf(p), 0);
+    const ratio = bud[i] > 0 ? Math.min(1, used / bud[i]) : 0;
+    return {
+      label: SETS[i].label,
+      used, budget: bud[i], ratio,
+      songs: songs.length,
+      points: Math.round(TIME_POINTS_PER_SET * ratio),
+      note: setNote(ratio, songs.length),
+    };
+  });
+  const timeTotal = time.reduce((a, t) => a + t.points, 0);
+
+  // Flow — segues only count between songs adjacent inside one set.
   const segueHits = [];
-  for (let i = 0; i < NUM_ROUNDS - 1; i++) {
-    if (hasSegue(slots, i, segues)) segueHits.push({ from: i, to: i + 1, points: SEGUE_POINTS });
-  }
+  s.forEach((songs, si) => {
+    for (let i = 0; i < songs.length - 1; i++) {
+      if (segues && segues.has(segueKey(songs[i], songs[i + 1]))) {
+        segueHits.push({ set: si, from: i, to: i + 1, points: SEGUE_POINTS,
+          a: songs[i].song, b: songs[i + 1].song });
+      }
+    }
+  });
 
-  // Arc — deviation from the shape the slots asked for, averaged over the
-  // slots actually filled so a partial setlist is not punished for being short.
-  let arc = 0;
-  if (filled.length) {
-    let dev = 0;
-    slots.forEach((p, i) => { if (p) dev += Math.abs(energyOf(p) - SLOTS[i].want); });
-    arc = Math.max(0, Math.round(ARC_MAX * (filled.length / NUM_ROUNDS) - dev * ARC_PENALTY));
-  }
+  const all = perSet.flat();
+  let dev = 0;
+  all.forEach(x => { dev += Math.abs(energyOf(x.perf) - x.role.energy); });
+  const avgDev = all.length ? dev / all.length : 0;
+  const arc = all.length
+    ? Math.max(0, Math.round(ARC_MAX * (1 - avgDev / ARC_ZERO_AT))) : 0;
 
-  // Variety — how many distinct roles the setlist covers.
-  const roles = [...new Set(filled.flatMap(tagsOf))];
-  const variety = Math.round(VARIETY_MAX * Math.min(1, roles.length / VARIETY_MIN_ROLES)
-    * (filled.length / NUM_ROUNDS));
+  const roles = [...new Set(all.flatMap(x => tagsOf(x.perf)))];
+  const variety = all.length
+    ? Math.round(VARIETY_MAX * Math.min(1, roles.length / VARIETY_MIN_ROLES)) : 0;
+
+  const flowTotal = segueHits.reduce((a, x) => a + x.points, 0) + arc + variety;
+
+  // The fan headline.
+  const totalBudget = bud.reduce((a, b) => a + b, 0);
+  const totalUsed = s.flat().reduce((a, p) => a + lenOf(p), 0);
+  const stats = {
+    overallRatio: totalBudget ? totalUsed / totalBudget : 0,
+    setRatios: time.map(t => t.ratio),
+    encoreSongs: s[2].length,
+    segues: segueHits.length,
+    avgLen: all.length ? totalUsed / all.length : 0,
+    songs: all.length,
+  };
+  const headline = (HEADLINES.find(h => h.when(stats)) || HEADLINES[HEADLINES.length - 1]).text;
 
   return {
-    total: segueHits.reduce((a, s) => a + s.points, 0) + arc + variety,
+    total: songTotal + timeTotal + flowTotal,
+    songTotal, timeTotal, flowTotal,
+    perSet, time, arc, variety, roles,
     segues: segueHits,
-    arc,
-    variety,
-    roles,
+    headline, stats,
+    totalUsed, totalBudget,
   };
 }
 
-/**
- * Score a full (or partial) setlist.
- * @param {Array} slots  length-8 array of performance rows or null
- * @param {Set}   segues canonical "songIdA|songIdB" pairs
- */
-export function scoreSetlist(slots, segues) {
-  const songs = [];
-  let songTotal = 0;
-
-  for (let i = 0; i < NUM_ROUNDS; i++) {
-    if (!slots[i]) { songs.push(null); continue; }
-    const s = scorePerf(slots[i], i);
-    songs.push(s);
-    songTotal += s.subtotal;
-  }
-
-  const flow = scoreFlow(slots, segues);
-  const completion = slots.filter(Boolean).length === NUM_ROUNDS ? COMPLETION_BONUS : 0;
-
-  return {
-    total: songTotal + flow.total + completion,
-    songs,
-    songTotal,
-    flow,
-    segues: flow.segues,   // kept for callers that only want the segue list
-    completion,
-  };
-}
-
-/** Convenience: just the number. */
-export function calcTotal(slots, segues) {
-  return scoreSetlist(slots, segues).total;
-}
+export function calcTotal(sets, segues) { return scoreShow(sets, segues).total; }

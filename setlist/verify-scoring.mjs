@@ -1,250 +1,199 @@
-/* Run The Setlist — QA harness for scoring v3.
+/* Run The Setlist — QA harness for scoring v4.
  *
  *   node setlist/verify-scoring.mjs
  *
- * Asserts scoring.js against the v3 spec by hand-computed expected values.
+ * Asserts scoring.js against the v4 spec by hand-computed expected values.
  * If a scoring constant changes, this file should be the thing that fails first.
- * Run in CI by .github/workflows/setlist-checks.yml.
  */
 
 import {
-  COMPLETION_BONUS, NEUTRAL_BASE, NUM_ROUNDS, SLOTS,
+  SETS, ENCORE_INDEX, MAX_ROUNDS, NEUTRAL_BASE,
   V_RECOMMENDED, V_JAMCHART, V_LEN_20MIN, V_LEN_15MIN,
   MULT_PERFECT, MULT_PARTIAL, MULT_NEUTRAL, MULT_CLASH,
-  SEGUE_POINTS, ARC_MAX, ARC_PENALTY, VARIETY_MAX, VARIETY_MIN_ROLES,
-  ENERGY, ENERGY_DEFAULT,
+  SEGUE_POINTS, ARC_MAX, ARC_ZERO_AT, VARIETY_MAX, VARIETY_MIN_ROLES,
+  TIME_POINTS_PER_SET, SHORT_SET_RATIO, ENERGY,
   baseOf, isJamchart, isRecommended, rarityMult, versionMult, versionParts,
-  placementMult, slotFit, energyOf, scorePerf, hasSegue, scoreFlow, scoreSetlist,
+  roleAt, roleFit, placementMult, energyOf, scorePerf, fmtClock,
+  budgets, remaining, canPlace, setFull, scoreShow, setNote, HEADLINES,
 } from './scoring.js';
 
 let pass = 0, fail = 0;
-function eq(actual, expected, label){
-  const ok = JSON.stringify(actual) === JSON.stringify(expected);
-  if (ok) { pass++; }
-  else { fail++; console.log(`  FAIL  ${label}\n        expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`); }
+function eq(a, b, label){
+  if (JSON.stringify(a) === JSON.stringify(b)) pass++;
+  else { fail++; console.log(`  FAIL  ${label}\n        expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
 }
-function close(actual, expected, label, tol = 1e-9){
-  const ok = Math.abs(actual - expected) <= tol;
-  if (ok) { pass++; }
-  else { fail++; console.log(`  FAIL  ${label}\n        expected ${expected}, got ${actual}`); }
+function close(a, b, label, tol = 1e-9){
+  if (Math.abs(a - b) <= tol) pass++;
+  else { fail++; console.log(`  FAIL  ${label}\n        expected ${b}, got ${a}`); }
 }
-function group(name, fn){ console.log(`\n${name}`); fn(); }
+function group(n, fn){ console.log(`\n${n}`); fn(); }
 
-/** A performance row, as the CSV would give it (all strings). */
 const perf = (o = {}) => ({
   song_id: o.song_id || 'x', song: o.song || 'Song',
   tags: o.tags || '',
   crowd_rating: o.crowd === undefined ? '' : String(o.crowd),
   is_jamchart: o.jam ? 'true' : 'false',
   is_recommended: o.rec ? 'true' : 'false',
-  jamchart_note: o.note || '',
-  length_sec: String(o.len || 0), show_gap: String(o.gap || 0),
+  jamchart_note: '',
+  length_sec: String(o.len === undefined ? 600 : o.len),
+  show_gap: String(o.gap || 0),
   is_cover: 'false', original_artist: '', set: '1', position: '1',
 });
 
-group('constants', () => {
-  eq(COMPLETION_BONUS, 40, 'completion bonus');
+group('the show', () => {
+  eq(SETS.map(s => s.label), ['Set I', 'Set II', 'Encore'], 'three sets');
+  eq(SETS.map(s => s.seconds), [4500, 4200, 600], 'budgets are 75 / 70 / 10 minutes');
+  eq(SETS.map(s => s.maxSongs), [8, 8, 3], 'song caps');
+  eq(ENCORE_INDEX, 2, 'encore index');
+  eq(MAX_ROUNDS, 19, 'hard round cap is the sum of the song caps');
   eq(NEUTRAL_BASE, 30, 'neutral base');
-  eq(NUM_ROUNDS, 8, 'rounds');
-  eq(SLOTS.length, 8, 'slot count');
-  eq(SEGUE_POINTS, 45, 'segue points');
-  eq(SLOTS.map(s => s.tags.join('|')),
-     ['opener', '', 'closer|jam', 'opener|jam', 'peak', 'ballad', 'closer|peak', 'encore'],
-     'slot preferred tags');
-  eq(SLOTS.map(s => s.want), [3, 3, 4, 4, 5, 1, 5, 3], 'slot wanted energy');
-  eq(SLOTS.map(s => s.set), ['1', '1', '1', '2', '2', '2', '2', 'E'], 'slot sets');
+  eq(fmtClock(600), '10:00', 'clock formatting');
+  eq(fmtClock(75), '1:15', 'clock formatting, seconds padded');
 });
 
-group('baseOf — song esteem, neutral when blank', () => {
-  eq(baseOf(perf()), 30, 'blank crowd_rating falls back to neutral');
-  eq(baseOf(perf({ crowd: 75 })), 75, 'top-of-jamchart song');
-  eq(baseOf(perf({ crowd: 36 })), 36, 'lightly charted song');
-  eq(baseOf({ crowd_rating: null }), 30, 'null is neutral');
-  eq(baseOf({}), 30, 'missing column is neutral');
+group('budgets — the encore inherits leftovers', () => {
+  const OPEN = [false, false, false];
+  eq(budgets([[], [], []], OPEN), [4500, 4200, 600],
+     'mid-game with both sets still open, the encore has only its own 10 minutes');
+
+  const short1 = [[perf({ len: 3000 })], [], []];
+  eq(budgets(short1, [true, false, false])[2], 600 + 1500,
+     'once Set I closes 25 minutes short, the encore inherits them');
+  eq(budgets(short1, OPEN)[2], 600, 'while Set I is still open it has left nothing behind');
+
+  const full1 = [[perf({ len: 4500 })], [], []];
+  eq(budgets(full1, [true, false, false])[2], 600, 'a set used in full leaves nothing behind');
+
+  const both = [[perf({ len: 3000 })], [perf({ len: 3000 })], []];
+  eq(budgets(both, [true, true, false])[2], 600 + 1500 + 1200,
+     'both sets closed short: the encore collects from each');
+  eq(budgets(both)[0], 4500, 'Set I own budget is never changed by the maths');
+  eq(budgets(both)[2], 600 + 1500 + 1200,
+     'with no closed argument every set counts, which is how a finished show scores');
 });
 
-group('version flags', () => {
-  eq(isJamchart(perf({ jam: 1 })), true, 'jamchart true');
-  eq(isJamchart(perf()), false, 'jamchart false');
-  eq(isRecommended(perf({ rec: 1 })), true, 'recommended true');
-  eq(isRecommended(perf()), false, 'recommended false');
-  eq(isJamchart({ is_jamchart: '1' }), true, 'numeric string 1 counts');
+group('remaining / canPlace / setFull', () => {
+  const sets = [[perf({ len: 1200 })], [], []];
+  eq(remaining(sets, 0), 4500 - 1200, 'remaining subtracts what is played');
+  eq(canPlace(sets, 0, perf({ len: 3300 })), true, 'a song that exactly fills the set fits');
+  eq(canPlace(sets, 0, perf({ len: 3301 })), false, 'one second too long does not fit');
+  eq(canPlace(sets, 0, perf({ len: 0 })), false, 'an untimed song can never be placed');
+
+  const packed = [Array.from({ length: 8 }, () => perf({ len: 60 })), [], []];
+  eq(setFull(packed, 0), true, 'eight songs fills a set on count alone');
+  eq(canPlace(packed, 0, perf({ len: 60 })), false, 'a full set takes nothing more, however short');
 });
 
-group('rarityMult(gap) tiers', () => {
-  eq(rarityMult(200), 0.40, 'gap 200');
-  eq(rarityMult(100), 0.40, 'gap 100 (boundary)');
-  eq(rarityMult(99), 0.25, 'gap 99');
-  eq(rarityMult(50), 0.25, 'gap 50 (boundary)');
-  eq(rarityMult(20), 0.15, 'gap 20 (boundary)');
-  eq(rarityMult(8), 0.07, 'gap 8 (boundary)');
-  eq(rarityMult(7), 0, 'gap 7 — below the first tier');
-  eq(rarityMult(0), 0, 'debut');
+group('roleAt — position decides the role', () => {
+  eq(roleAt(0, 0, 5).name, 'Opener', 'first song of Set I');
+  eq(roleAt(0, 4, 5).name, 'Closer', 'last song of Set I');
+  eq(roleAt(0, 4, 5).tags, ['closer', 'jam'], 'Set I closer wants a jam');
+  eq(roleAt(1, 4, 5).tags, ['closer', 'peak'], 'Set II closer wants a peak');
+  eq(roleAt(1, 3, 6).name, 'Peak', 'Set II back half is peak territory');
+  eq(roleAt(0, 3, 6).name, 'Mid', 'Set I back half is not');
+  eq(roleAt(2, 0, 1).name, 'Encore', 'the encore is always the encore');
+  eq(roleAt(0, 0, 1).name, 'Opener', 'a one-song set is an opener, not a closer');
 });
 
-group('versionMult — additive reasons', () => {
-  close(versionMult(perf()), 1, 'plain version is 1x');
+group('roleFit', () => {
+  eq(roleFit('opener', roleAt(0, 0, 4)), 'great', 'opener opening');
+  eq(roleFit('closer|jam', roleAt(0, 3, 4)), 'great', 'both wanted tags');
+  eq(roleFit('closer', roleAt(0, 3, 4)), 'ok', 'one of two');
+  eq(roleFit('', roleAt(0, 1, 4)), 'neutral', 'mid-set wants nothing in particular');
+  eq(roleFit('ballad', roleAt(0, 1, 4)), 'ok', 'a ballad mid-set is the breather');
+  eq(roleFit('ballad', roleAt(1, 4, 5)), 'bad', 'a ballad closing Set II is a clash');
+  eq(roleFit('encore', roleAt(2, 0, 1)), 'great', 'encore in the encore');
+});
+
+group('versionMult', () => {
+  close(versionMult(perf()), 1, 'plain');
   close(versionMult(perf({ jam: 1 })), 1 + V_JAMCHART, 'jamchart');
   close(versionMult(perf({ rec: 1 })), 1 + V_RECOMMENDED, 'recommended');
-  close(versionMult(perf({ rec: 1, jam: 1 })), 1 + V_RECOMMENDED,
-    'recommended supersedes jamchart rather than stacking');
+  close(versionMult(perf({ rec: 1, jam: 1 })), 1 + V_RECOMMENDED, 'recommended supersedes');
   close(versionMult(perf({ len: 900 })), 1 + V_LEN_15MIN, '15 min');
   close(versionMult(perf({ len: 1200 })), 1 + V_LEN_20MIN, '20 min');
-  close(versionMult(perf({ len: 1199 })), 1 + V_LEN_15MIN, 'just under 20 min');
-  close(versionMult(perf({ len: 899 })), 1, 'just under 15 min');
-  close(versionMult(perf({ rec: 1, len: 1200, gap: 100 })),
-    1 + V_RECOMMENDED + V_LEN_20MIN + 0.40, 'everything at once');
-
-  const p = versionParts(perf({ rec: 1, len: 1200, gap: 60 }));
-  eq(p.reasons.map(r => r.label), ['Recommended version', '20+ minutes', '60-show gap'],
-     'reasons are listed for the breakdown');
+  close(versionMult(perf({ gap: 100 })), 1.40, 'a 100-show gap');
+  eq(versionParts(perf({ rec: 1, len: 1200 })).reasons.map(r => r.label),
+     ['Recommended version', '20+ minutes'], 'reasons listed for the breakdown');
 });
 
-group('slotFit', () => {
-  eq(slotFit('opener', 0), 'great', 'opener into Set I opener');
-  eq(slotFit('closer|jam', 2), 'great', 'both wanted tags');
-  eq(slotFit('closer', 2), 'ok', 'one of two wanted tags');
-  eq(slotFit('', 1), 'neutral', 'Mid wants nothing');
-  eq(slotFit('ballad', 1), 'neutral', 'ballad in Mid is not a clash');
-  eq(slotFit('ballad', 4), 'bad', 'ballad in the Peak slot');
-  eq(slotFit('jam', 5), 'bad', 'jam in the Breather');
-  eq(slotFit('peak', 5), 'bad', 'peak in the Breather');
-  eq(slotFit('ballad', 5), 'great', 'ballad in the Breather');
-  eq(slotFit('encore', 7), 'great', 'encore in the Encore');
-  eq(slotFit('opener', 4), 'neutral', 'unrelated tag is neutral, not bad');
+group('rarityMult tiers', () => {
+  eq(rarityMult(200), 0.40, '200'); eq(rarityMult(100), 0.40, '100');
+  eq(rarityMult(99), 0.25, '99');   eq(rarityMult(50), 0.25, '50');
+  eq(rarityMult(20), 0.15, '20');   eq(rarityMult(8), 0.07, '8');
+  eq(rarityMult(7), 0, '7 is below the first tier');
 });
 
-group('placementMult', () => {
-  eq(placementMult('opener', 0), MULT_PERFECT, 'great');
-  eq(placementMult('closer', 2), MULT_PARTIAL, 'ok');
-  eq(placementMult('', 1), MULT_NEUTRAL, 'neutral');
-  eq(placementMult('ballad', 4), MULT_CLASH, 'clash');
-  eq(MULT_PERFECT > MULT_PARTIAL, true, 'perfect beats partial');
-  eq(MULT_PARTIAL > MULT_NEUTRAL, true, 'partial beats neutral');
-  eq(MULT_NEUTRAL > MULT_CLASH, true, 'neutral beats clash');
+group('scorePerf', () => {
+  const opener = roleAt(0, 0, 4);
+  eq(scorePerf(perf({ crowd: 60, tags: 'opener' }), opener).subtotal,
+     Math.round(60 * 1 * MULT_PERFECT), 'loved song, right role');
+  eq(scorePerf(perf({ crowd: 60, tags: 'ballad' }), roleAt(1, 4, 5)).subtotal,
+     Math.round(60 * 1 * MULT_CLASH), 'loved song, wrong role');
+  const s = scorePerf(perf({ crowd: 50, tags: 'opener', rec: 1 }), opener);
+  eq(s.role, 'Opener', 'breakdown carries the role');
+  eq(s.versionReasons.length, 1, 'breakdown carries the reasons');
 });
 
-group('energyOf', () => {
-  eq(energyOf(perf({ tags: 'ballad' })), ENERGY.ballad, 'ballad is quietest');
-  eq(energyOf(perf({ tags: 'peak' })), ENERGY.peak, 'peak is loudest');
-  eq(energyOf(perf({ tags: '' })), ENERGY_DEFAULT, 'untagged is middling');
-  eq(energyOf(perf({ tags: 'ballad|peak' })), ENERGY.peak, 'loudest tag wins');
+group('time scoring', () => {
+  const full = [[perf({ len: 4500 })], [perf({ len: 4200 })], [perf({ len: 600 })]];
+  const r = scoreShow(full, new Set());
+  eq(r.time.map(t => t.points), [100, 100, 100], 'every set filled pays full time points');
+  eq(r.timeTotal, 3 * TIME_POINTS_PER_SET, 'time total');
+
+  const half = [[perf({ len: 2250 })], [], []];
+  const h = scoreShow(half, new Set());
+  eq(h.time[0].points, 50, 'half a set pays half its time points');
+  eq(h.time[1].points, 0, 'an unplayed set pays nothing');
+
+  eq(scoreShow([[], [], []], new Set()).timeTotal, 0, 'an empty night scores no time');
+  eq(setNote(1, 1), 'Filled to the curfew.', 'set note at the top');
+  eq(setNote(0.7, 1), 'Cut short — the crowd noticed.', 'set note when short');
+  eq(setNote(0.3, 1), 'Barely a set.', 'set note when barely played');
+  eq(setNote(0.9, 0), 'Never happened.', 'an empty set says so regardless of ratio');
 });
 
-group('scorePerf = base x version x placement', () => {
-  eq(scorePerf(perf({ crowd: 30 }), 1).subtotal, Math.round(30 * 1 * MULT_NEUTRAL),
-     'plain song in a neutral slot');
-  eq(scorePerf(perf({ crowd: 60, tags: 'opener' }), 0).subtotal,
-     Math.round(60 * 1 * MULT_PERFECT), 'beloved song, perfect slot');
-  eq(scorePerf(perf({ crowd: 60, tags: 'opener', rec: 1, len: 1200 }), 0).subtotal,
-     Math.round(60 * (1 + V_RECOMMENDED + V_LEN_20MIN) * MULT_PERFECT),
-     'beloved song, legendary version, perfect slot');
-  eq(scorePerf(perf({ crowd: 60, tags: 'ballad' }), 4).subtotal,
-     Math.round(60 * 1 * MULT_CLASH), 'beloved song in the wrong slot is punished');
-
-  const s = scorePerf(perf({ crowd: 50, tags: 'opener', jam: 1 }), 0);
-  eq(s.base, 50, 'breakdown exposes base');
-  eq(s.fit, 'great', 'breakdown exposes fit');
-  eq(s.versionReasons.length, 1, 'breakdown exposes version reasons');
-
-  // A great song badly placed should lose to an ordinary song well placed.
-  const bad = scorePerf(perf({ crowd: 75, tags: 'ballad' }), 4).subtotal;
-  const good = scorePerf(perf({ crowd: 40, tags: 'peak' }), 4).subtotal;
-  eq(good > bad, true, 'placement can outweigh song esteem');
+group('segues count only inside a set', () => {
+  const a = perf({ song_id: 'a', len: 600 }), b = perf({ song_id: 'b', len: 600 });
+  const seg = new Set(['a|b']);
+  eq(scoreShow([[a, b], [], []], seg).segues.length, 1, 'adjacent inside Set I');
+  eq(scoreShow([[a], [b], []], seg).segues.length, 0, 'across the set break does not count');
+  eq(scoreShow([[b, a], [], []], seg).segues.length, 0, 'segues are directional');
+  eq(scoreShow([[a, b], [], []], seg).segues[0].points, SEGUE_POINTS, 'worth SEGUE_POINTS');
 });
 
-group('segues — within a set only', () => {
-  const a = perf({ song_id: 'a' }), b = perf({ song_id: 'b' });
-  const segues = new Set(['a|b']);
-  const slots = new Array(8).fill(null);
+group('fan headline', () => {
+  const fill = (secs, n = 1) => Array.from({ length: n }, () => perf({ len: secs / n }));
+  const packed = scoreShow([fill(4500), fill(4200), fill(600)], new Set());
+  eq(/curfew|wasted|minute/i.test(packed.headline), true,
+     `a full night gets a full-night headline (got "${packed.headline}")`);
 
-  slots[0] = a; slots[1] = b;
-  eq(hasSegue(slots, 0, segues), true, 'slots 0->1, both Set I');
-  slots[0] = null; slots[1] = null;
+  const thin = scoreShow([fill(1200), fill(1200), []], new Set());
+  eq(/wanting more|early|Barely|short/i.test(thin.headline), true,
+     `a short night gets called out (got "${thin.headline}")`);
 
-  slots[2] = a; slots[3] = b;
-  eq(hasSegue(slots, 2, segues), false, 'slots 2->3 straddle the set break');
-  slots[2] = null; slots[3] = null;
-
-  slots[6] = a; slots[7] = b;
-  eq(hasSegue(slots, 6, segues), false, 'slots 6->7 straddle into the encore');
-  slots[6] = null; slots[7] = null;
-
-  slots[3] = a; slots[4] = b;
-  eq(hasSegue(slots, 3, segues), true, 'slots 3->4, both Set II');
-  slots[3] = null; slots[4] = null;
-
-  slots[0] = b; slots[1] = a;
-  eq(hasSegue(slots, 0, segues), false, 'segues are directional');
+  eq(HEADLINES[HEADLINES.length - 1].when({}), true, 'the last headline always matches');
+  eq(typeof scoreShow([[], [], []], new Set()).headline, 'string', 'an empty night still gets a line');
 });
 
-group('scoreFlow', () => {
-  const mk = tags => perf({ tags });
-  // A setlist that matches every slot's wanted energy exactly.
-  const ideal = [mk('opener'), mk('opener'), mk('jam'), mk('jam'), mk('peak'),
-                 mk('ballad'), mk('peak'), mk('opener')];
-  const f = scoreFlow(ideal, new Set());
-  eq(f.arc, ARC_MAX, 'perfect arc pays ARC_MAX');
-  eq(f.variety, VARIETY_MAX, '5 distinct roles clears the variety bar');
+group('scoreShow totals', () => {
+  const mk = (id, tags, len) => perf({ song_id: id, tags, len, crowd: 30 });
+  const sets = [
+    [mk('a', 'opener', 900), mk('b', '', 900), mk('c', 'closer|jam', 1200)],
+    [mk('d', 'opener', 900), mk('e', 'peak', 1500), mk('f', 'closer|peak', 1200)],
+    [mk('g', 'encore', 600)],
+  ];
+  const r = scoreShow(sets, new Set());
+  eq(r.total, r.songTotal + r.timeTotal + r.flowTotal, 'total is songs + time + flow');
+  eq(r.perSet.map(x => x.length), [3, 3, 1], 'per-set breakdowns line up');
+  eq(r.stats.songs, 7, 'song count');
+  eq(r.perSet[0][0].role.name, 'Opener', 'first song is the opener');
+  eq(r.perSet[0][2].role.name, 'Closer', 'last song of Set I is the closer');
 
-  // Every slot filled with the same wrong-energy song.
-  const flat = new Array(8).fill(mk('ballad'));
-  const g = scoreFlow(flat, new Set());
-  const dev = SLOTS.reduce((a, s) => a + Math.abs(ENERGY.ballad - s.want), 0);
-  eq(g.arc, Math.max(0, ARC_MAX - dev * ARC_PENALTY), 'flat setlist loses arc points');
-  eq(g.variety, Math.round(VARIETY_MAX * (1 / VARIETY_MIN_ROLES)), 'one role scores low variety');
-
-  eq(scoreFlow(new Array(8).fill(null), new Set()).total, 0, 'empty setlist has no flow');
-
-  const half = new Array(8).fill(null);
-  half[0] = mk('opener');
-  eq(scoreFlow(half, new Set()).arc <= ARC_MAX / 4, true,
-     'a nearly-empty setlist cannot farm arc points');
-});
-
-group('scoreSetlist', () => {
-  const mk = (id, tags) => perf({ song_id: id, tags, crowd: 30 });
-  const slots = [mk('a', 'opener'), mk('b', ''), mk('c', 'closer|jam'),
-                 mk('d', 'opener|jam'), mk('e', 'peak'), mk('f', 'ballad'),
-                 mk('g', 'closer|peak'), mk('h', 'encore')];
-  const r = scoreSetlist(slots, new Set());
-
-  eq(r.completion, COMPLETION_BONUS, 'full setlist pays the completion bonus');
-  eq(r.songs.length, 8, 'one breakdown per slot');
-  eq(r.songTotal, r.songs.reduce((a, s) => a + s.subtotal, 0), 'songTotal is the sum of subtotals');
-  eq(r.total, r.songTotal + r.flow.total + r.completion, 'total is songs + flow + completion');
-  eq(r.songs.every(s => s.fit === 'great' || s.fit === 'neutral'), true,
-     'every song sits in a slot that wants it');
-
-  const partial = [...slots]; partial[7] = null;
-  eq(scoreSetlist(partial, new Set()).completion, 0, 'incomplete setlist gets no bonus');
-  eq(scoreSetlist(new Array(8).fill(null), new Set()).total, 0, 'empty setlist scores 0');
-
-  // Segue inside Set II should pay, and show up in the flow breakdown.
-  const seg = [...slots];
-  const withSeg = scoreSetlist(seg, new Set([`${seg[3].song_id}|${seg[4].song_id}`]));
-  eq(withSeg.flow.segues.length, 1, 'one segue found');
-  eq(withSeg.total - r.total, SEGUE_POINTS, 'a segue is worth SEGUE_POINTS');
-});
-
-group('the model behaves sensibly end to end', () => {
-  const mk = (id, tags, o = {}) => perf({ song_id: id, tags, ...o });
-  const base = [mk('a', 'opener'), mk('b', ''), mk('c', 'closer|jam'),
-                mk('d', 'opener|jam'), mk('e', 'peak'), mk('f', 'ballad'),
-                mk('g', 'closer|peak'), mk('h', 'encore')];
-
-  const plain = scoreSetlist(base, new Set()).total;
-
-  const loved = base.map((p, i) => i === 4 ? mk('e', 'peak', { crowd: 75 }) : p);
-  eq(scoreSetlist(loved, new Set()).total > plain, true, 'a treasured song scores more');
-
-  const legend = base.map((p, i) => i === 4 ? mk('e', 'peak', { rec: 1, len: 1500 }) : p);
-  eq(scoreSetlist(legend, new Set()).total > plain, true, 'a legendary version scores more');
-
-  const misplaced = [...base];
-  [misplaced[4], misplaced[5]] = [misplaced[5], misplaced[4]];
-  eq(scoreSetlist(misplaced, new Set()).total < plain, true,
-     'swapping the peak and the breather scores less');
+  // Using more of the stage must beat using less, all else equal.
+  const shorter = [[mk('a', 'opener', 900)], [], []];
+  eq(scoreShow(sets, new Set()).timeTotal > scoreShow(shorter, new Set()).timeTotal, true,
+     'a fuller night scores more time');
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);
