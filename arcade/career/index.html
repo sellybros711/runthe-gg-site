@@ -137,9 +137,15 @@
   @keyframes cfall{0%{transform:translateY(-20px) rotate(0);}100%{transform:translateY(106vh) rotate(680deg);}}
   @media (prefers-reduced-motion:reduce){ *{animation:none !important; transition:none !important;} .confetti{display:none;} }
   /* arcade tactile polish */
-  .choice{border-width:2px; border-top:4px solid var(--green); box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .1s, border-color .15s, background .15s, box-shadow .1s;}
+  .choice{position:relative; border-width:2px; border-top:4px solid var(--green); box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .1s, border-color .15s, background .15s, box-shadow .1s;}
   .choice:hover{transform:translate(-1px,-1px);}
   .choice:active{transform:translate(2px,2px);}
+  /* after a pick: tag the option you tapped so you can read the result */
+  .choice.you::after{content:"YOUR PICK"; position:absolute; right:14px; top:50%; transform:translateY(-50%);
+    font-size:9px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut);
+    border:1px solid var(--line2); border-radius:999px; padding:3px 8px; background:var(--card);}
+  .choice.correct.you::after{content:"YOUR PICK ✓"; color:var(--greenT); border-color:var(--greenT);}
+  .choice.wrong.you::after{content:"YOUR PICK ✕"; color:var(--red); border-color:var(--red);}
   .abtn{border-width:2px; box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .08s, box-shadow .08s, filter .12s;}
   .abtn:active{transform:translate(2px,2px); box-shadow:var(--a-shadow-press,2px 2px 0 rgba(7,20,38,.22));}
   .abtn.gold{border-color:rgba(0,0,0,.28);} .abtn.gold:hover{filter:brightness(1.06);}
@@ -316,15 +322,18 @@
     if(done||busy) return; busy=true; startIfNeeded();
     var r=SEQ[idx], right=id===r.target;
     var btns=choicesEl.querySelectorAll('.choice');
-    [].forEach.call(btns, function(b){ if(b.dataset.id===r.target) b.classList.add('correct'); else b.classList.add('dim'); });
-    if(!right){ bt.classList.remove('dim'); bt.classList.add('wrong'); document.getElementById('subprompt').textContent='It was '+byId[r.target].name+'.'; }
+    // reveal the full answer: the correct path goes green, every other option
+    // goes red, and the one you tapped is tagged so you can see how you did.
+    [].forEach.call(btns, function(b){ b.classList.add(b.dataset.id===r.target ? 'correct' : 'wrong'); });
+    bt.classList.add('you');
+    if(!right){ document.getElementById('subprompt').textContent='It was '+byId[r.target].name+'.'; }
     if(right){
       run++; document.getElementById('runN').textContent=run; if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
-      setTimeout(function(){ busy=false; renderRound(); }, 820);
+      setTimeout(function(){ busy=false; renderRound(); }, 1050);
     } else {
       if(window.RTGSound) RTGSound.wrong();
-      setTimeout(function(){ finish(); }, 1100);
+      setTimeout(function(){ finish(); }, 1300);
     }
   }
 
