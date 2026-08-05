@@ -367,16 +367,53 @@ group('segues count only inside a set', () => {
 });
 
 group('fan headline', () => {
-  const fill = (secs, n = 1) => Array.from({ length: n }, () => perf({ len: secs / n }));
-  const packed = scoreShow([fill(4500), fill(4200), fill(600)], new Set());
-  eq(/curfew|wasted|minute/i.test(packed.headline), true,
-     `a full night gets a full-night headline (got "${packed.headline}")`);
+  // An ORDINARY night: real-length songs, a bit of breadth, nothing anybody
+  // would still be talking about. Filler alone is not ordinary — a night with
+  // no cover and one kind of song is genuinely narrow, and gets told so.
+  let n = 0;
+  const ord = (o = {}) => perf({ song_id: `o${n++}`, len: 700, tags: 'jam', ...o });
+  const ordinary = si => [
+    ord({ tags: 'opener' }), ord({ is_cover: 'true' }), ord({ jam: 1 }),
+    ord({ tags: 'ballad' }), ord({ tags: si === 1 ? 'peak' : 'jam' }),
+    ord({ tags: 'closer' }),
+  ];
 
-  const thin = scoreShow([fill(1200), fill(1200), []], new Set());
-  eq(/wanting more|early|Barely|short/i.test(thin.headline), true,
+  const packed = scoreShow([ordinary(0), ordinary(1), [ord({ tags: 'encore', len: 600 })]], new Set());
+  eq(packed.stats.breadthGot >= 2 && packed.stats.breadthGot < 5, true,
+     'the ordinary fixture is neither barren nor a clean sweep');
+  eq(/curfew|minute|tank/i.test(packed.headline), true,
+     `an ordinary full night falls back to timing (got "${packed.headline}")`);
+
+  const thin = scoreShow([ordinary(0).slice(0, 2), ordinary(1).slice(0, 2), []], new Set());
+  eq(/wanting more|early|road|coasted/i.test(thin.headline), true,
      `a short night gets called out (got "${thin.headline}")`);
 
-  eq(HEADLINES[HEADLINES.length - 1].when({}), true, 'the last headline always matches');
+  // The point of the rewrite: something remarkable about the night outranks
+  // its clock management. A sandwich is the loudest thing a show can contain.
+  const seg = id => ({ ...perf({ song_id: id, len: 600 }), is_segue: 'true' });
+  const A = seg('a'), B = seg('b');
+  const sand = scoreShow([[A, B, seg('a')], [], []], new Set(['a|b', 'b|a']));
+  eq(sand.stats.sandwiches >= 1, true, 'the fixture really does close a sandwich');
+  eq(/inside another one/i.test(sand.headline), true,
+     `a sandwich outranks any timing line (got "${sand.headline}")`);
+
+  // Timing rules must stay at the back, or they swallow everything again —
+  // which is exactly how 10 of 16 headlines became unreachable.
+  const timingIds = ['tothewire', 'full', 'good', 'solid'];
+  const firstTiming = HEADLINES.findIndex(h => timingIds.includes(h.id));
+  const lastFeature = HEADLINES.map(h => h.id)
+    .lastIndexOf(HEADLINES.filter(h => !timingIds.includes(h.id) &&
+      !['set1thin', 'set2thin', 'shortall', 'short'].includes(h.id)).at(-1).id);
+  eq(firstTiming > lastFeature, true, 'every feature rule is checked before any timing rule');
+  eq(HEADLINES.at(-1).id, 'solid', 'the catch-all is last');
+  eq(HEADLINES.at(-1).when({}), true, 'the last headline always matches');
+
+  // No two rules may share a line, and none may be blank.
+  const texts = HEADLINES.map(h => h.text);
+  eq(new Set(texts).size, texts.length, 'every headline is distinct');
+  eq(texts.every(t => t && t.length > 10), true, 'every headline says something');
+  eq(new Set(HEADLINES.map(h => h.id)).size, HEADLINES.length, 'ids are unique');
+
   eq(typeof scoreShow([[], [], []], new Set()).headline, 'string', 'an empty night still gets a line');
 });
 
