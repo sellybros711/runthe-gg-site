@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 (function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
-  if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; }
+  if(t!=='light'&&t!=='dark'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark'; try{localStorage.setItem('runthegrid_theme',t);}catch(e){} }
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
 <meta name="description" content="Run The Table: a daily higher-or-lower sports streak game. Tap who wore the higher number and see how many you can get in a row." />
@@ -48,8 +48,8 @@
   .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
-  .brand.logo img{height:44px; width:auto; display:block;}
-  .brand.logo .sub{display:block; font-family:var(--pix); font-size:8px; letter-spacing:2px; color:var(--mut); margin-top:4px; margin-left:2px; white-space:nowrap;}
+  .brand.logo img{height:54px; width:auto; display:block;}
+  .brand.logo .sub{display:block; font-family:var(--hero); font-weight:400; font-size:13px; letter-spacing:.14em; color:var(--mut); margin-top:3px; margin-left:2px; white-space:nowrap;}
   .spacer{flex:1;}
   .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card); color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0; flex:0 0 auto;}
   .themeBtn:hover{color:var(--ink);}
