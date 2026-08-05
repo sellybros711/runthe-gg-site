@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Run The Setlist: Setlist Drafting Game | RunThe.GG</title>
+<meta name="theme-color" content="#071426" id="themeMeta" />
+<script>
+/* theme boot: runs before first paint. Manual choice persists in
+   runthegrid_theme (shared across the suite); otherwise follow the system. */
+(function(){
+  var t; try{ t = localStorage.getItem('runthegrid_theme'); }catch(e){}
+  if(t !== 'light' && t !== 'dark'){
+    t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+<meta name="description" content="Draft a setlist from real concerts. Each round reveals one show, you pull one song and lock it into a slot. Eight picks, one setlist, one score." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='8' width='18' height='2.5' rx='1.25' fill='%2337C5D5'/%3E%3Crect x='7' y='14' width='18' height='2.5' rx='1.25' fill='%23F2B632'/%3E%3Crect x='7' y='20' width='11' height='2.5' rx='1.25' fill='%23F06A5F'/%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="/assets/runthegames-icon_180.png" />
+<meta property="og:title" content="Run The Setlist | RunThe.GG" />
+<meta property="og:description" content="Draft a setlist from real concerts. Eight shows, eight picks, one score." />
+<meta property="og:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  /* ---------------- design tokens (dark default + light override) ---------------- */
+  :root{
+    --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
+    --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
+    --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
+    --teal:#37C5D5; --violet:#A982F3; --gold:#F2B632; --coral:#F06A5F;
+    --blue:#2F6BFF; --green:#48D17A; --red:#FF625F;
+    --tealT:#37C5D5; --goldT:#F2B632; --coralT:#F06A5F; --violetT:#B79BF6;
+    --greenT:#48D17A; --redT:#FF625F; --blueT:#5C8CFF;
+    --shadow:0 6px 18px -10px rgba(0,0,0,.55);
+    --r-lg:14px; --r-md:10px; --r-sm:8px;
+    --hero:'Anton', Impact, sans-serif;
+    --body:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+  :root[data-theme="light"]{
+    --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
+    --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
+    --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
+    --tealT:#0E7C89; --goldT:#A87508; --coralT:#D8452F; --violetT:#6D3BD6;
+    --greenT:#17A34A; --redT:#C4372C; --blueT:#2358E0;
+    --shadow:0 6px 18px -12px rgba(13,27,44,.25);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
+  html,body{margin:0; padding:0;}
+  body{font-family:var(--body); color:var(--ink); min-height:100dvh;
+    -webkit-font-smoothing:antialiased; background:var(--bg);}
+  a{color:inherit; text-decoration:none;}
+  button{font-family:inherit; color:inherit; cursor:pointer;}
+  :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
+  .hidden{display:none !important;}
+  .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+    clip:rect(0 0 0 0); white-space:nowrap; border:0;}
+
+  /* ---------------- shell ---------------- */
+  .wrap{width:100%; max-width:1080px; margin:0 auto;
+    padding:calc(12px + env(safe-area-inset-top,0)) 18px 56px;}
+  @media (max-width:640px){ .wrap{padding-left:14px; padding-right:14px;} }
+
+  .topbar{display:flex; align-items:center; gap:10px; padding:4px 0 18px;}
+  .icon-btn{width:34px; height:36px; display:inline-flex; align-items:center; justify-content:center;
+    font-size:22px; color:var(--mut); flex:0 0 auto;}
+  .icon-btn:hover{color:var(--ink);}
+  .brand{display:inline-flex; align-items:center; line-height:0; min-width:0;}
+  .brand img{height:44px; width:auto; display:block;}
+  @media (max-width:640px){ .brand img{height:36px;} }
+  .spacer{flex:1;}
+  .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2);
+    background:var(--card); color:var(--mut); display:inline-flex; align-items:center;
+    justify-content:center; box-shadow:var(--shadow); padding:0; flex:0 0 auto;}
+  .themeBtn:hover{color:var(--ink); border-color:var(--teal);}
+  .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
+  :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
+  :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--r-lg);
+    box-shadow:var(--shadow);}
+  .eyebrow{font-size:11px; font-weight:800; letter-spacing:2.4px; text-transform:uppercase;
+    color:var(--dim);}
+
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%;
+    border-radius:var(--r-md); border:1px solid var(--line2); background:var(--card2);
+    color:var(--ink); font-weight:800; font-size:15px; padding:13px 18px;
+    transition:background .15s, border-color .15s, color .15s, transform .1s;}
+  .btn:hover{border-color:var(--teal);}
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{background:var(--teal); border-color:var(--teal); color:#04121F;}
+  .btn.primary:hover{filter:brightness(1.08);}
+  .btn:disabled{opacity:.45; cursor:not-allowed; transform:none;}
+  .btn.ghost{background:transparent;}
+
+  /* ---------------- home ---------------- */
+  .hero{text-align:center; padding:14px 0 26px;}
+  .hero h1{font-family:var(--hero); font-size:clamp(46px,11vw,86px); line-height:.92;
+    letter-spacing:.5px; margin:6px 0 10px; text-transform:uppercase;}
+  .hero h1 .accent{color:var(--gold);}
+  .hero p{max-width:34ch; margin:0 auto; color:var(--mut); font-size:15px; line-height:1.55;
+    font-weight:600;}
+
+  .steps{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:26px 0 24px;}
+  @media (max-width:600px){ .steps{grid-template-columns:1fr;} }
+  .step{padding:15px 16px; border-radius:var(--r-md); background:var(--card);
+    border:1px solid var(--line);}
+  .step b{display:block; font-family:var(--hero); font-size:22px; color:var(--teal); line-height:1;
+    margin-bottom:7px;}
+  .step span{font-size:13px; color:var(--mut); line-height:1.5; font-weight:600;}
+
+  .bands{display:flex; flex-direction:column; gap:14px;}
+  .band{padding:18px 18px 16px;}
+  .band-hd{display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    margin-bottom:4px;}
+  .band-hd h2{font-family:var(--hero); font-size:30px; margin:0; text-transform:uppercase;
+    letter-spacing:.5px;}
+  .band-meta{font-size:12.5px; color:var(--dim); font-weight:700; margin-bottom:14px;}
+  .band-actions{display:grid; grid-template-columns:1fr; gap:10px;}
+  .warn{margin-top:12px; padding:11px 13px; border-radius:var(--r-sm); font-size:13px;
+    font-weight:700; line-height:1.5; background:color-mix(in srgb,var(--gold) 12%, transparent);
+    border:1px solid color-mix(in srgb,var(--gold) 34%, transparent); color:var(--goldT);}
+  .err{margin-top:12px; padding:11px 13px; border-radius:var(--r-sm); font-size:13px;
+    font-weight:700; line-height:1.5; background:color-mix(in srgb,var(--red) 12%, transparent);
+    border:1px solid color-mix(in srgb,var(--red) 34%, transparent); color:var(--redT);}
+
+  /* ---------------- reveal ---------------- */
+  .reveal{min-height:70dvh; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:22px; text-align:center;}
+  .reveal-win{width:100%; max-width:520px; border-radius:var(--r-lg); overflow:hidden;
+    border:1px solid var(--line2); background:var(--card); box-shadow:var(--shadow);
+    transition:border-color .35s, box-shadow .35s;}
+  .reveal-win.landed{border-color:var(--gold);
+    box-shadow:0 0 0 1px var(--gold), 0 12px 40px -14px color-mix(in srgb,var(--gold) 60%, transparent);}
+  .reveal-bar{display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:10px 16px; background:var(--card2); border-bottom:1px solid var(--line);}
+  .reveal-bar .n{font-weight:900; font-size:13px; color:var(--mut); font-variant-numeric:tabular-nums;}
+  .reveal-body{padding:34px 22px; min-height:186px; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:7px;}
+  .reveal-date{font-family:var(--hero); font-size:clamp(28px,7vw,40px); line-height:1.02;
+    color:var(--dim); transition:color .3s;}
+  .landed .reveal-date{color:var(--ink);}
+  .reveal-venue{font-size:15px; font-weight:800; color:var(--dim); transition:color .3s;}
+  .landed .reveal-venue{color:var(--tealT);}
+  .reveal-city{font-size:13px; font-weight:600; color:var(--dim);}
+  .reveal-count{margin-top:8px; font-size:12px; font-weight:800; letter-spacing:1.6px;
+    text-transform:uppercase; color:var(--goldT);}
+  .reveal-cue{font-size:13px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
+    color:var(--mut);}
+
+  /* ---------------- draft ---------------- */
+  .hud{display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:12px 16px; margin-bottom:16px;}
+  .hud .rd{font-family:var(--hero); font-size:24px; line-height:1;}
+  .hud .md{font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
+    color:var(--dim); margin-top:3px;}
+  .pips{display:flex; gap:5px;}
+  .pip{width:9px; height:9px; border-radius:50%; background:var(--line2);}
+  .pip.done{background:var(--gold);} .pip.now{background:var(--teal); transform:scale(1.25);}
+
+  .board{display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:18px; align-items:start;}
+  @media (max-width:860px){ .board{grid-template-columns:minmax(0,1fr);} }
+
+  .showcard{padding:16px 18px; margin-bottom:14px;}
+  .showcard .d{font-family:var(--hero); font-size:26px; line-height:1.05;}
+  .showcard .v{font-size:14px; font-weight:700; color:var(--tealT); margin-top:3px;}
+  .showcard .c{font-size:13px; font-weight:600; color:var(--dim);}
+
+  .setgrp{margin-bottom:14px;}
+  .setgrp h3{font-size:11px; font-weight:900; letter-spacing:2.4px; text-transform:uppercase;
+    color:var(--dim); margin:0 0 8px;}
+  .songs{display:flex; flex-direction:column; gap:6px;}
+
+  .song{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; width:100%;
+    text-align:left; padding:10px 12px; border-radius:var(--r-sm); background:var(--card);
+    border:1px solid var(--line); border-left:3px solid var(--acc, var(--line2));
+    transition:background .15s, border-color .15s, transform .1s;}
+  .song:hover{background:var(--card2);}
+  .song[aria-pressed="true"]{background:var(--card3); border-color:var(--acc);
+    box-shadow:0 0 0 1px var(--acc);}
+  .song .t{font-weight:800; font-size:14.5px; line-height:1.25;}
+  .song .o{font-size:11.5px; font-weight:600; color:var(--dim); margin-top:2px;}
+  .song .r{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0;}
+  .song .len{font-size:12.5px; font-weight:800; color:var(--mut); font-variant-numeric:tabular-nums;}
+  .chips{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;}
+  .chip{font-size:9.5px; font-weight:900; letter-spacing:.7px; text-transform:uppercase;
+    padding:2px 5px; border-radius:4px; background:var(--line); color:var(--mut);}
+  .chip.acc{background:color-mix(in srgb,var(--acc) 20%, transparent); color:var(--acc);}
+  .chip.rare{background:color-mix(in srgb,var(--gold) 20%, transparent); color:var(--goldT);}
+
+  /* ---------------- setlist panel ---------------- */
+  .setlist{position:sticky; top:14px; padding:16px 16px 14px;}
+  @media (max-width:860px){ .setlist{position:static;} }
+  .setlist h2{font-family:var(--hero); font-size:22px; margin:0 0 2px; text-transform:uppercase;
+    letter-spacing:.5px;}
+  .setlist .sub{font-size:11.5px; font-weight:700; color:var(--dim); margin-bottom:12px;}
+  .slotgrp{margin-bottom:10px;}
+  .slotgrp .lbl{font-size:10px; font-weight:900; letter-spacing:2.2px; text-transform:uppercase;
+    color:var(--dim); padding-bottom:5px; margin-bottom:6px; border-bottom:1px solid var(--line);}
+  .slot{display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:7px 9px;
+    border-radius:var(--r-sm); background:transparent; border:1px solid transparent;
+    margin-bottom:3px; transition:background .15s, border-color .15s, box-shadow .2s;}
+  .slot .nm{font-size:10.5px; font-weight:900; letter-spacing:.8px; text-transform:uppercase;
+    color:var(--dim); width:64px; flex-shrink:0;}
+  .slot .val{flex:1; min-width:0; font-weight:800; font-size:14px; line-height:1.25;
+    color:var(--acc, var(--ink)); overflow:hidden; text-overflow:ellipsis;}
+  .slot .rule{flex:1; height:0; border-bottom:1px dashed var(--line2);}
+  .slot .pts{font-size:12.5px; font-weight:900; color:var(--mut); font-variant-numeric:tabular-nums;
+    flex-shrink:0;}
+  .slot.open{cursor:pointer;}
+  .slot.open:hover{background:var(--card2);}
+  .slot.sel{background:var(--card3); border-color:var(--teal);}
+  .slot.fit-great{border-color:var(--green); box-shadow:0 0 0 1px color-mix(in srgb,var(--green) 55%, transparent);}
+  .slot.fit-ok{border-color:var(--gold); box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 55%, transparent);}
+  .slot.fit-bad{border-color:var(--red); box-shadow:0 0 0 1px color-mix(in srgb,var(--red) 55%, transparent);}
+  .slot.filled{cursor:default;}
+  .segue{display:flex; align-items:center; gap:6px; padding:1px 0 2px 73px; font-size:10.5px;
+    font-weight:900; letter-spacing:1px; color:var(--violetT);}
+  .setbreak{text-align:center; font-size:9.5px; font-weight:900; letter-spacing:2.4px;
+    text-transform:uppercase; color:var(--dim); margin:8px 0;}
+  .lockbar{margin-top:12px;}
+  .hint{margin-top:9px; font-size:12px; font-weight:700; color:var(--dim); text-align:center;
+    line-height:1.45; min-height:17px;}
+  .hint.bad{color:var(--redT);}
+
+  /* ---------------- result ---------------- */
+  .result{max-width:600px; margin:0 auto;}
+  .scorebox{text-align:center; padding:26px 20px 22px; margin-bottom:16px;}
+  .scorebox .n{font-family:var(--hero); font-size:clamp(64px,17vw,104px); line-height:.9;
+    color:var(--green); font-variant-numeric:tabular-nums;}
+  .breakdown{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin:16px 0;}
+  .bd{padding:12px 10px; text-align:center; border-radius:var(--r-md); background:var(--card2);
+    border:1px solid var(--line);}
+  .bd .v{font-family:var(--hero); font-size:24px; line-height:1;}
+  .bd .k{font-size:10px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
+    color:var(--dim); margin-top:5px;}
+  .actions{display:flex; flex-direction:column; gap:9px; margin-top:14px;}
+
+  .loading{min-height:60dvh; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:12px; color:var(--mut); font-weight:800;}
+  .spinner{width:26px; height:26px; border-radius:50%; border:3px solid var(--line2);
+    border-top-color:var(--teal); animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion:reduce){ .spinner{animation-duration:2s;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a class="icon-btn" href="/" aria-label="Back to RunThe.GG">&larr;</a>
+    <a class="brand" href="/" aria-label="RunThe.GG">
+      <img src="/assets/runthe-r-games.png" alt="RunThe.GG" />
+    </a>
+    <span class="spacer"></span>
+    <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light and dark theme">
+      <svg class="ic-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.1 5.1l1.4 1.4M17.5 17.5l1.4 1.4M18.9 5.1l-1.4 1.4M6.5 17.5l-1.4 1.4"/></svg>
+      <svg class="ic-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.2 8.2 0 0 1 9.5 4a8.3 8.3 0 1 0 10.5 10.5z"/></svg>
+    </button>
+  </div>
+  <main id="app" aria-live="polite"></main>
+</div>
+
+<script type="module">
+import {
+  SLOTS, NUM_ROUNDS, COMPLETION_BONUS,
+  scoreSetlist, scorePerf, slotFit, tagsOf, isJamchart, hasSegue,
+} from './scoring.js';
+import { loadBand, setLabel, setRank } from './dataLoader.js';
+
+// ── bands ────────────────────────────────────────────────────────────────────
+// `sample` is invented data used to exercise the pipeline — see
+// scripts/setlist/make_sample.mjs. Real bands come from the ingester.
+const BANDS = [
+  { id: 'goose',  label: 'Goose',  csv: '/setlist/data/goose.csv',  note: 'elgoose.net archive' },
+  { id: 'sample', label: 'Sample Band', csv: '/setlist/data/sample.csv',
+    note: 'Test data — not a real band', sample: true },
+];
+
+const DATA_VERSION = 1;   // bump to bust the CSV cache after a regeneration
+
+// A round is only a decision if there is a setlist to read. The Goose archive
+// logs early bar gigs as one or two songs — 18 shows are a single song — and
+// drawing one hands the player a round with nothing to choose. Requiring a full
+// show keeps 529 of Goose's 655.
+const MIN_SONGS_PER_SHOW = 8;
+
+/** Shows worth drafting from. Falls back to the whole set for a band whose
+ *  archive is too thin to fill eight rounds, so a sparse band still plays. */
+function drawableShows(shows){
+  const full = shows.filter(s => s.songs.length >= MIN_SONGS_PER_SHOW);
+  return full.length >= NUM_ROUNDS ? full : shows;
+}
+
+// ── seeded RNG (mulberry32, per the house convention) ─────────────────────────
+function hash32(s){
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h >>> 0;
+}
+function mulberry32(a){
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffle(arr, rng){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ── formatting ───────────────────────────────────────────────────────────────
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(d){
+  if (!d) return '';
+  const [y, m, day] = String(d).split('-');
+  return `${MONTHS[Number(m) - 1] || ''} ${Number(day)}, ${y}`;
+}
+function fmtLen(sec){
+  const n = Number(sec);
+  if (!n) return '';
+  return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
+}
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g,
+    c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+/* Accent for a song, mapped onto the site palette. Order matters: the most
+   characterful trait wins. */
+function accentOf(perf){
+  const t = tagsOf(perf);
+  if (perf.is_cover === 'true') return { v: 'var(--coralT)', chip: 'cover' };
+  if (t.includes('peak'))   return { v: 'var(--redT)',    chip: 'peak' };
+  if (t.includes('jam'))    return { v: 'var(--violetT)', chip: 'jam' };
+  if (t.includes('encore')) return { v: 'var(--goldT)',   chip: 'encore' };
+  if (t.includes('ballad')) return { v: 'var(--blueT)',   chip: 'ballad' };
+  if (t.includes('opener')) return { v: 'var(--greenT)',  chip: 'opener' };
+  if (t.includes('closer')) return { v: 'var(--greenT)',  chip: 'closer' };
+  return { v: 'var(--tealT)', chip: '' };
+}
+
+// ── state ────────────────────────────────────────────────────────────────────
+const S = {
+  screen: 'home',
+  band: null,          // band config
+  data: null,          // { shows, segues }
+  drawn: [],           // the 8 shows for this run
+  round: 0,
+  slots: new Array(NUM_ROUNDS).fill(null),
+  pickedSong: null,
+  pickedSlot: null,
+  hint: '',
+  hintBad: false,
+  error: '',
+  result: null,
+  revealTimer: null,
+};
+
+const app = document.getElementById('app');
+
+function setScreen(name){
+  clearTimeout(S.revealTimer);
+  S.screen = name;
+  render();
+}
+
+// ── home ─────────────────────────────────────────────────────────────────────
+function renderHome(){
+  const bands = BANDS.map(b => {
+    const warn = b.sample
+      ? `<div class="warn">Invented data for a band that doesn't exist — kept as a test fixture.</div>`
+      : '';
+    return `
+      <section class="card band">
+        <div class="band-hd"><h2>${esc(b.label)}</h2></div>
+        <div class="band-meta">${esc(b.note)}</div>
+        <div class="band-actions">
+          <button class="btn primary" data-start="${b.id}">Draft a setlist</button>
+        </div>
+        ${warn}
+      </section>`;
+  }).join('');
+
+  app.innerHTML = `
+    <div class="hero">
+      <div class="eyebrow">RunThe.GG presents</div>
+      <h1>Run The<br /><span class="accent">Setlist</span></h1>
+      <p>Eight real shows. One song from each. Build the setlist you wish they'd played.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step"><b>01</b><span>Each round reveals one real concert, drawn from the band's whole history.</span></div>
+      <div class="step"><b>02</b><span>Pull one song off it and lock it into a slot. Locked is locked.</span></div>
+      <div class="step"><b>03</b><span>Rare songs, monster versions and real segues all score. Fill all eight for the bonus.</span></div>
+    </div>
+
+    ${S.error ? `<div class="err">${esc(S.error)}</div>` : ''}
+    <div class="bands">${bands}</div>`;
+}
+
+// ── reveal ───────────────────────────────────────────────────────────────────
+function renderReveal(){
+  const show = S.drawn[S.round];
+  app.innerHTML = `
+    <div class="reveal">
+      <div class="eyebrow">Round ${S.round + 1} of ${NUM_ROUNDS}</div>
+      <div class="reveal-win" id="revealWin">
+        <div class="reveal-bar">
+          <span class="eyebrow" id="revealLbl">Searching the archive</span>
+          <span class="n">${String(S.round + 1).padStart(2, '0')} / ${NUM_ROUNDS}</span>
+        </div>
+        <div class="reveal-body">
+          <div class="reveal-date" id="rDate">&nbsp;</div>
+          <div class="reveal-venue" id="rVenue">&nbsp;</div>
+          <div class="reveal-city" id="rCity">&nbsp;</div>
+          <div class="reveal-count hidden" id="rCount"></div>
+        </div>
+      </div>
+      <div class="reveal-cue hidden" id="rCue">Pull your song &darr;</div>
+    </div>`;
+
+  const win = document.getElementById('revealWin');
+  const elDate = document.getElementById('rDate');
+  const elVenue = document.getElementById('rVenue');
+  const elCity = document.getElementById('rCity');
+
+  const paint = s => {
+    elDate.textContent = fmtDate(s.show_date);
+    elVenue.textContent = s.venue || '';
+    elCity.textContent = [s.city, s.state].filter(Boolean).join(', ');
+  };
+
+  const land = () => {
+    paint(show);
+    win.classList.add('landed');
+    document.getElementById('revealLbl').textContent = "Tonight's show";
+    const c = document.getElementById('rCount');
+    c.textContent = `${show.songs.length} songs played`;
+    c.classList.remove('hidden');
+    document.getElementById('rCue').classList.remove('hidden');
+    S.revealTimer = setTimeout(() => setScreen('draft'), 1500);
+  };
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce){ land(); return; }
+
+  // Spin through real shows, easing out, then land on the drawn one.
+  const pool = S.data.shows;
+  const TOTAL = 26;
+  let n = 0;
+  const tick = () => {
+    paint(pool[Math.floor(Math.random() * pool.length)]);
+    n++;
+    if (n >= TOTAL){ land(); return; }
+    const p = n / TOTAL;
+    const delay = p < 0.4 ? 60 : p < 0.6 ? 100 : p < 0.75 ? 170 : p < 0.88 ? 270 : 400;
+    S.revealTimer = setTimeout(tick, delay);
+  };
+  S.revealTimer = setTimeout(tick, 60);
+}
+
+// ── setlist panel (shared by draft + result) ─────────────────────────────────
+function slotRowsHTML({ interactive, scored }){
+  const groups = [
+    { label: 'Set I',  idx: [0, 1, 2] },
+    { label: 'Set II', idx: [3, 4, 5, 6] },
+    { label: 'Encore', idx: [7] },
+  ];
+
+  return groups.map((g, gi) => {
+    const rows = g.idx.map(i => {
+      const perf = S.slots[i];
+      const slot = SLOTS[i];
+
+      // Segue marker sits above the row it segues *into*.
+      let segueMark = '';
+      if (scored && i > 0 && hasSegue(S.slots, i - 1, S.data.segues)){
+        const pts = scored.segues.find(s => s.to === i);
+        segueMark = `<div class="segue">&rsaquo; segue +${pts ? pts.points : 0}</div>`;
+      }
+
+      if (perf){
+        const acc = accentOf(perf);
+        const pts = scored && scored.songs[i]
+          ? `<span class="pts">${scored.songs[i].subtotal}</span>` : '';
+        return `${segueMark}<div class="slot filled" style="--acc:${acc.v}">
+          <span class="nm">${esc(slot.name)}</span>
+          <span class="val">${esc(perf.song)}</span>${pts}
+        </div>`;
+      }
+
+      // Empty slot. During the draft it is a drop target and previews fit.
+      let cls = 'slot';
+      let fitLabel = '';
+      if (interactive){
+        cls += ' open';
+        if (S.pickedSlot === i) cls += ' sel';
+        if (S.pickedSong){
+          const fit = slotFit(S.pickedSong.tags, i);
+          if (fit !== 'neutral') cls += ` fit-${fit}`;
+          fitLabel = ` — ${fit === 'great' ? 'great fit' : fit === 'ok' ? 'decent fit' : 'poor fit'}`;
+        }
+      }
+      const tag = slot.tags.length ? slot.tags.join(' / ') : 'anything';
+      return `${segueMark}<button class="${cls}" type="button" ${interactive ? `data-slot="${i}"` : 'disabled'}
+        aria-label="${esc(slot.label)} — wants ${esc(tag)}${fitLabel}">
+        <span class="nm">${esc(slot.name)}</span><span class="rule"></span>
+      </button>`;
+    }).join('');
+
+    return `<div class="slotgrp"><div class="lbl">${g.label}</div>${rows}</div>
+      ${gi === 0 ? '<div class="setbreak">~ set break ~</div>' : ''}`;
+  }).join('');
+}
+
+// ── draft ────────────────────────────────────────────────────────────────────
+function renderDraft(){
+  const show = S.drawn[S.round];
+
+  // Songs grouped by set, in running order.
+  const bySet = new Map();
+  for (const s of show.songs){
+    if (!bySet.has(s.set)) bySet.set(s.set, []);
+    bySet.get(s.set).push(s);
+  }
+  const setKeys = Array.from(bySet.keys()).sort((a, b) => setRank(a) - setRank(b));
+
+  const songsHTML = setKeys.map(k => {
+    const rows = bySet.get(k).map(s => {
+      const acc = accentOf(s);
+      const idx = show.songs.indexOf(s);
+      const chips = [];
+      if (isJamchart(s)) chips.push('<span class="chip">JC</span>');
+      if (acc.chip) chips.push(`<span class="chip acc">${acc.chip}</span>`);
+      const gap = Number(s.show_gap) || 0;
+      if (gap >= 20) chips.push(`<span class="chip rare">${gap} show gap</span>`);
+      const len = fmtLen(s.length_sec);
+      const sel = S.pickedSong === s;
+      return `<button class="song" type="button" data-song="${idx}" aria-pressed="${sel}"
+          style="--acc:${acc.v}">
+        <span class="l">
+          <span class="t">${esc(s.song)}</span>
+          ${s.is_cover === 'true' && s.original_artist
+            ? `<span class="o">orig. ${esc(s.original_artist)}</span>` : ''}
+        </span>
+        <span class="r">
+          ${len ? `<span class="len">${len}</span>` : ''}
+          <span class="chips">${chips.join('')}</span>
+        </span>
+      </button>`;
+    }).join('');
+    return `<div class="setgrp"><h3>${esc(setLabel(k))}</h3><div class="songs">${rows}</div></div>`;
+  }).join('');
+
+  const canLock = S.pickedSong && S.pickedSlot !== null;
+
+  app.innerHTML = `
+    <div class="card hud">
+      <div>
+        <div class="rd">Round ${S.round + 1}<span style="color:var(--dim)">/${NUM_ROUNDS}</span></div>
+        <div class="md">${esc(S.band.label)}</div>
+      </div>
+      <div class="pips">${Array.from({ length: NUM_ROUNDS }, (_, i) =>
+        `<span class="pip ${i < S.round ? 'done' : i === S.round ? 'now' : ''}"></span>`).join('')}</div>
+    </div>
+
+    <div class="board">
+      <div>
+        <div class="card showcard">
+          <div class="d">${esc(fmtDate(show.show_date))}</div>
+          <div class="v">${esc(show.venue || '')}</div>
+          <div class="c">${esc([show.city, show.state].filter(Boolean).join(', '))}</div>
+        </div>
+        ${songsHTML}
+      </div>
+
+      <aside class="card setlist">
+        <h2>Your setlist</h2>
+        <div class="sub">${S.slots.filter(Boolean).length} of ${NUM_ROUNDS} locked</div>
+        ${slotRowsHTML({ interactive: true, scored: null })}
+        <div class="lockbar">
+          <button class="btn primary" type="button" id="lockBtn" ${canLock ? '' : 'disabled'}>
+            Lock it in
+          </button>
+          <div class="hint ${S.hintBad ? 'bad' : ''}">${esc(S.hint || 'Pick a song, then a slot.')}</div>
+        </div>
+      </aside>
+    </div>`;
+}
+
+// ── result ───────────────────────────────────────────────────────────────────
+function renderResult(){
+  const r = S.result;
+  const songTotal = r.songs.reduce((a, s) => a + (s ? s.subtotal : 0), 0);
+  const segueTotal = r.segues.reduce((a, s) => a + s.points, 0);
+
+  app.innerHTML = `
+    <div class="result">
+      <div class="card scorebox">
+        <div class="eyebrow">Final score</div>
+        <div class="n" id="scoreN">0</div>
+        <div class="band-meta" style="margin:8px 0 0">${esc(S.band.label)}</div>
+      </div>
+
+      <div class="breakdown">
+        <div class="bd"><div class="v">${songTotal}</div><div class="k">Songs</div></div>
+        <div class="bd"><div class="v">${segueTotal}</div><div class="k">Segues</div></div>
+        <div class="bd"><div class="v">${r.completion}</div><div class="k">Complete</div></div>
+      </div>
+
+      <div class="card setlist" style="position:static">
+        <h2>Your setlist</h2>
+        <div class="sub">Points per slot include placement and rarity.</div>
+        ${slotRowsHTML({ interactive: false, scored: r })}
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" type="button" id="shareBtn">Copy score card</button>
+        <button class="btn" type="button" data-start="${S.band.id}">Play again</button>
+        <button class="btn ghost" type="button" id="homeBtn">Back to bands</button>
+      </div>
+    </div>`;
+
+  // Count the score up.
+  const el = document.getElementById('scoreN');
+  const target = r.total;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches){
+    el.textContent = target;
+  } else {
+    const t0 = performance.now(), dur = 900;
+    const step = now => {
+      const p = Math.min((now - t0) / dur, 1);
+      el.textContent = Math.round((1 - Math.pow(1 - p, 3)) * target);
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+}
+
+function shareText(){
+  const marks = S.slots.map((p, i) => {
+    if (!p) return '⬛';
+    const fit = slotFit(p.tags, i);
+    return fit === 'great' ? '🟩' : fit === 'ok' ? '🟨' : fit === 'bad' ? '🟥' : '⬜';
+  }).join('');
+  const lines = [
+    `🎵 Run The Setlist — ${S.band.label}`,
+    `Score: ${S.result.total}`,
+    marks,
+  ];
+  if (S.result.segues.length) lines.push(`${S.result.segues.length} segue${S.result.segues.length > 1 ? 's' : ''} landed`);
+  lines.push('', 'runthe.gg/setlist');
+  return lines.join('\n');
+}
+
+// ── flow ─────────────────────────────────────────────────────────────────────
+function renderLoading(msg){
+  app.innerHTML = `<div class="loading"><div class="spinner"></div><div>${esc(msg)}</div></div>`;
+}
+
+const csvCache = new Map();
+async function fetchBand(band){
+  if (csvCache.has(band.id)) return csvCache.get(band.id);
+  const res = await fetch(`${band.csv}?v=${DATA_VERSION}`);
+  if (!res.ok){
+    throw new Error(res.status === 404
+      ? `No data file yet for ${band.label} — run scripts/setlist/ingest_band.mjs to build ${band.csv}.`
+      : `Couldn't load ${band.label} data (HTTP ${res.status}).`);
+  }
+  const data = loadBand(await res.text());
+  if (data.shows.length < NUM_ROUNDS){
+    throw new Error(`${band.label} has only ${data.shows.length} shows — needs at least ${NUM_ROUNDS}.`);
+  }
+  csvCache.set(band.id, data);
+  return data;
+}
+
+async function start(bandId){
+  const band = BANDS.find(b => b.id === bandId);
+  if (!band) return;
+
+  S.band = band; S.error = '';
+  setScreen('loading');
+  renderLoading(`Loading the ${band.label} archive…`);
+
+  try {
+    S.data = await fetchBand(band);
+  } catch (e){
+    S.error = e.message;
+    setScreen('home');
+    return;
+  }
+
+  // Fresh draw every run — there is no shared/seeded mode yet.
+  const seed = hash32(`${bandId}|${Date.now()}|${Math.random()}`);
+
+  S.drawn = shuffle(drawableShows(S.data.shows), mulberry32(seed)).slice(0, NUM_ROUNDS);
+  S.round = 0;
+  S.slots = new Array(NUM_ROUNDS).fill(null);
+  S.pickedSong = null; S.pickedSlot = null;
+  S.hint = ''; S.hintBad = false; S.result = null;
+  setScreen('reveal');
+}
+
+function lockIn(){
+  const song = S.pickedSong, slot = S.pickedSlot;
+  if (!song || slot === null) return;
+  if (S.slots[slot]) return;
+
+  S.slots[slot] = song;
+  S.pickedSong = null; S.pickedSlot = null;
+  S.hint = ''; S.hintBad = false;
+
+  if (S.round + 1 >= NUM_ROUNDS){
+    S.result = scoreSetlist(S.slots, S.data.segues);
+    setScreen('result');
+  } else {
+    S.round += 1;
+    setScreen('reveal');
+  }
+}
+
+function render(){
+  if (S.screen === 'home')   return renderHome();
+  if (S.screen === 'reveal') return renderReveal();
+  if (S.screen === 'draft')  return renderDraft();
+  if (S.screen === 'result') return renderResult();
+}
+
+// ── events ───────────────────────────────────────────────────────────────────
+app.addEventListener('click', e => {
+  const startBtn = e.target.closest('[data-start]');
+  if (startBtn && !startBtn.disabled){
+    start(startBtn.dataset.start);
+    return;
+  }
+
+  const songBtn = e.target.closest('[data-song]');
+  if (songBtn){
+    const show = S.drawn[S.round];
+    const s = show.songs[Number(songBtn.dataset.song)];
+    S.pickedSong = S.pickedSong === s ? null : s;
+    S.hint = S.pickedSong ? 'Now choose a slot.' : '';
+    S.hintBad = false;
+    renderDraft();
+    return;
+  }
+
+  const slotBtn = e.target.closest('[data-slot]');
+  if (slotBtn){
+    const i = Number(slotBtn.dataset.slot);
+    if (S.slots[i]) return;
+    S.pickedSlot = S.pickedSlot === i ? null : i;
+    if (!S.pickedSong){ S.hint = 'Pick a song first.'; S.hintBad = true; }
+    else { S.hint = 'Locked slots can’t be changed.'; S.hintBad = false; }
+    renderDraft();
+    return;
+  }
+
+  if (e.target.closest('#lockBtn')){ lockIn(); return; }
+  if (e.target.closest('#homeBtn')){ setScreen('home'); return; }
+
+  const share = e.target.closest('#shareBtn');
+  if (share){
+    const text = shareText();
+    navigator.clipboard.writeText(text).then(() => {
+      share.textContent = 'Copied';
+      setTimeout(() => { share.textContent = 'Copy score card'; }, 2200);
+    }).catch(() => { window.prompt('Copy your score card:', text); });
+  }
+});
+
+// ── theme toggle ─────────────────────────────────────────────────────────────
+document.getElementById('themeBtn').addEventListener('click', () => {
+  const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem('runthegrid_theme', next); } catch(e){}
+  const meta = document.getElementById('themeMeta');
+  if (meta) meta.setAttribute('content', next === 'light' ? '#EEF2F7' : '#071426');
+});
+
+render();
+</script>
+</body>
+</html>

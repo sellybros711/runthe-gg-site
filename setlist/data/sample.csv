@@ -1,0 +1,489 @@
+show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,original_artist,length_sec,show_gap,times_played,rarity_rating,crowd_rating,is_jamchart,transition,is_segue,tags
+sample-001,2024-05-03,2024,The Fillmore,San Francisco,CA,1,1,Dial Tone,sample-dial-tone,false,,419,0,1,0,,false,",",false,opener
+sample-001,2024-05-03,2024,The Fillmore,San Francisco,CA,1,2,Static in the Wire,sample-static,false,,409,0,1,0,,false,",",false,
+sample-001,2024-05-03,2024,The Fillmore,San Francisco,CA,1,3,November Letters,sample-november,false,,314,0,1,0,,false,",",false,
+sample-001,2024-05-03,2024,The Fillmore,San Francisco,CA,1,4,Blue Hour,sample-blue-hour,false,,395,0,1,0,,false,",",false,
+sample-001,2024-05-03,2024,The Fillmore,San Francisco,CA,1,5,Last Call,sample-last-call,false,,704,0,1,0,,false,,false,closer
+sample-001,2024-05-03,2024,The Fillmore,San Francisco,CA,2,1,First Light,sample-first-light,false,,542,0,1,0,,false,",",false,opener
+sample-001,2024-05-03,2024,The Fillmore,San Francisco,CA,2,2,Undertow,sample-undertow,false,,1373,0,1,0,,false,>,true,jam|peak
+sample-001,2024-05-03,2024,The Fillmore,San Francisco,CA,2,3,Slow Tide,sample-slow-tide,false,,213,0,1,0,,false,>,true,ballad
+sample-001,2024-05-03,2024,The Fillmore,San Francisco,CA,2,4,Freight and Salvage,sample-freight,false,,924,0,1,0,,false,",",false,opener|jam
+sample-001,2024-05-03,2024,The Fillmore,San Francisco,CA,2,5,Tall Grass,sample-tall-grass,false,,754,0,1,0,,false,,false,closer
+sample-001,2024-05-03,2024,The Fillmore,San Francisco,CA,E,1,One More Round,sample-one-more,false,,417,0,1,0,,false,,false,encore
+sample-002,2024-05-09,2024,Red Rocks Amphitheatre,Morrison,CO,1,1,Radio Hymn,sample-radio-hymn,false,,396,0,1,0,,false,",",false,opener
+sample-002,2024-05-09,2024,Red Rocks Amphitheatre,Morrison,CO,1,2,Crosstown,sample-crosstown,false,,587,0,1,0,,false,>,true,
+sample-002,2024-05-09,2024,Red Rocks Amphitheatre,Morrison,CO,1,3,Slow Tide,sample-slow-tide,false,,192,0,2,0,,false,",",false,ballad
+sample-002,2024-05-09,2024,Red Rocks Amphitheatre,Morrison,CO,1,4,Static in the Wire,sample-static,false,,540,0,2,0,,false,",",false,
+sample-002,2024-05-09,2024,Red Rocks Amphitheatre,Morrison,CO,1,5,Last Call,sample-last-call,false,,762,0,2,0,,false,,false,closer
+sample-002,2024-05-09,2024,Red Rocks Amphitheatre,Morrison,CO,2,1,Dial Tone,sample-dial-tone,false,,510,0,2,0,,false,",",false,opener
+sample-002,2024-05-09,2024,Red Rocks Amphitheatre,Morrison,CO,2,2,The Long Way Down,sample-long-way,false,,1057,0,1,0,,false,",",false,jam|peak
+sample-002,2024-05-09,2024,Red Rocks Amphitheatre,Morrison,CO,2,3,November Letters,sample-november,false,,273,0,2,0,,false,>,true,
+sample-002,2024-05-09,2024,Red Rocks Amphitheatre,Morrison,CO,2,4,Blue Hour,sample-blue-hour,false,,521,0,2,0,,false,>,true,
+sample-002,2024-05-09,2024,Red Rocks Amphitheatre,Morrison,CO,2,5,Freight and Salvage,sample-freight,false,,775,0,2,0,,false,>,true,opener|jam
+sample-002,2024-05-09,2024,Red Rocks Amphitheatre,Morrison,CO,2,6,Hammer and Tongs,sample-hammer,false,,854,0,1,0,,false,,false,closer
+sample-002,2024-05-09,2024,Red Rocks Amphitheatre,Morrison,CO,E,1,One More Round,sample-one-more,false,,355,0,2,0,,false,,false,encore
+sample-003,2024-05-14,2024,The Capitol Theatre,Port Chester,NY,1,1,First Light,sample-first-light,false,,582,1,2,0,,false,",",false,opener
+sample-003,2024-05-14,2024,The Capitol Theatre,Port Chester,NY,1,2,Crosstown,sample-crosstown,false,,395,0,2,0,,false,",",false,
+sample-003,2024-05-14,2024,The Capitol Theatre,Port Chester,NY,1,3,Honest Work,sample-honest-work,false,,329,0,1,0,,false,>,true,
+sample-003,2024-05-14,2024,The Capitol Theatre,Port Chester,NY,1,4,Ember,sample-ember,false,,421,0,1,0,,false,",",false,
+sample-003,2024-05-14,2024,The Capitol Theatre,Port Chester,NY,1,5,Slow Tide,sample-slow-tide,false,,285,0,3,0,,false,>,true,ballad
+sample-003,2024-05-14,2024,The Capitol Theatre,Port Chester,NY,1,6,Tall Grass,sample-tall-grass,false,,718,1,2,0,,false,,false,closer
+sample-003,2024-05-14,2024,The Capitol Theatre,Port Chester,NY,2,1,Dial Tone,sample-dial-tone,false,,483,0,3,0,,false,",",false,opener
+sample-003,2024-05-14,2024,The Capitol Theatre,Port Chester,NY,2,2,Undertow,sample-undertow,false,,1367,1,2,0,,true,",",false,jam|peak
+sample-003,2024-05-14,2024,The Capitol Theatre,Port Chester,NY,2,3,November Letters,sample-november,false,,270,0,3,0,,false,>,true,
+sample-003,2024-05-14,2024,The Capitol Theatre,Port Chester,NY,2,4,Freight and Salvage,sample-freight,false,,883,0,3,0,,true,>,true,opener|jam
+sample-003,2024-05-14,2024,The Capitol Theatre,Port Chester,NY,2,5,Ninth Ward,sample-ninth-ward,false,,378,0,1,0,,false,",",false,
+sample-003,2024-05-14,2024,The Capitol Theatre,Port Chester,NY,2,6,Hammer and Tongs,sample-hammer,false,,649,0,2,0,,false,,false,closer
+sample-003,2024-05-14,2024,The Capitol Theatre,Port Chester,NY,E,1,One More Round,sample-one-more,false,,328,0,3,0,,false,>,true,encore
+sample-003,2024-05-14,2024,The Capitol Theatre,Port Chester,NY,E,2,Airplane Mode,sample-airplane,false,,609,0,1,0,,false,,false,encore
+sample-004,2024-05-20,2024,Orpheum Theatre,Boston,MA,1,1,Radio Hymn,sample-radio-hymn,false,,348,1,2,0,,false,",",false,opener
+sample-004,2024-05-20,2024,Orpheum Theatre,Boston,MA,1,2,Slow Tide,sample-slow-tide,false,,209,0,4,0,,false,",",false,ballad
+sample-004,2024-05-20,2024,Orpheum Theatre,Boston,MA,1,3,Ember,sample-ember,false,,559,0,2,0,,false,",",false,
+sample-004,2024-05-20,2024,Orpheum Theatre,Boston,MA,1,4,Porch Light,sample-porch-light,false,,294,0,1,0,,false,>,true,ballad
+sample-004,2024-05-20,2024,Orpheum Theatre,Boston,MA,1,5,Last Call,sample-last-call,false,,829,1,3,0,,false,,false,closer
+sample-004,2024-05-20,2024,Orpheum Theatre,Boston,MA,2,1,Cassette Summer,sample-cassette,false,,895,0,1,0,,true,",",false,opener|jam|peak
+sample-004,2024-05-20,2024,Orpheum Theatre,Boston,MA,2,2,Undertow,sample-undertow,false,,1195,0,3,0,,false,",",false,jam|peak
+sample-004,2024-05-20,2024,Orpheum Theatre,Boston,MA,2,3,November Letters,sample-november,false,,265,0,4,0,,true,",",false,
+sample-004,2024-05-20,2024,Orpheum Theatre,Boston,MA,2,4,Honest Work,sample-honest-work,false,,396,0,2,0,,false,",",false,
+sample-004,2024-05-20,2024,Orpheum Theatre,Boston,MA,2,5,Static in the Wire,sample-static,false,,512,1,3,0,,false,>,true,
+sample-004,2024-05-20,2024,Orpheum Theatre,Boston,MA,2,6,Tall Grass,sample-tall-grass,false,,553,0,3,0,,false,,false,closer
+sample-004,2024-05-20,2024,Orpheum Theatre,Boston,MA,E,1,One More Round,sample-one-more,false,,453,0,4,0,,false,,false,encore
+sample-005,2024-05-25,2024,The Salt Shed,Chicago,IL,1,1,Dial Tone,sample-dial-tone,false,,540,1,4,0,,false,>,true,opener
+sample-005,2024-05-25,2024,The Salt Shed,Chicago,IL,1,2,Honest Work,sample-honest-work,false,,361,0,3,0,,false,>,true,
+sample-005,2024-05-25,2024,The Salt Shed,Chicago,IL,1,3,Porch Light,sample-porch-light,false,,258,0,2,0,,false,>,true,ballad
+sample-005,2024-05-25,2024,The Salt Shed,Chicago,IL,1,4,November Letters,sample-november,false,,272,0,5,0,,false,",",false,
+sample-005,2024-05-25,2024,The Salt Shed,Chicago,IL,1,5,Tall Grass,sample-tall-grass,false,,506,0,4,0,,false,,false,closer
+sample-005,2024-05-25,2024,The Salt Shed,Chicago,IL,2,1,Radio Hymn,sample-radio-hymn,false,,399,0,3,0,,false,",",false,opener
+sample-005,2024-05-25,2024,The Salt Shed,Chicago,IL,2,2,Undertow,sample-undertow,false,,1258,0,4,0,,false,",",false,jam|peak
+sample-005,2024-05-25,2024,The Salt Shed,Chicago,IL,2,3,Slow Tide,sample-slow-tide,false,,260,0,5,0,,false,>,true,ballad
+sample-005,2024-05-25,2024,The Salt Shed,Chicago,IL,2,4,Cassette Summer,sample-cassette,false,,882,0,2,0,,false,>,true,opener|jam|peak
+sample-005,2024-05-25,2024,The Salt Shed,Chicago,IL,2,5,Blue Hour,sample-blue-hour,false,,442,2,3,0,,false,",",false,
+sample-005,2024-05-25,2024,The Salt Shed,Chicago,IL,2,6,Last Call,sample-last-call,false,,840,0,4,0,,false,,false,closer
+sample-005,2024-05-25,2024,The Salt Shed,Chicago,IL,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,280,0,1,0,,false,,false,ballad|encore
+sample-006,2024-05-31,2024,Ryman Auditorium,Nashville,TN,1,1,Dial Tone,sample-dial-tone,false,,497,0,5,0,,false,",",false,opener
+sample-006,2024-05-31,2024,Ryman Auditorium,Nashville,TN,1,2,November Letters,sample-november,false,,230,0,6,0,,false,",",false,
+sample-006,2024-05-31,2024,Ryman Auditorium,Nashville,TN,1,3,Ember,sample-ember,false,,561,1,3,0,,false,>,true,
+sample-006,2024-05-31,2024,Ryman Auditorium,Nashville,TN,1,4,Porch Light,sample-porch-light,false,,274,0,3,0,,false,",",false,ballad
+sample-006,2024-05-31,2024,Ryman Auditorium,Nashville,TN,1,5,Last Call,sample-last-call,false,,682,0,5,0,,false,,false,closer
+sample-006,2024-05-31,2024,Ryman Auditorium,Nashville,TN,2,1,First Light,sample-first-light,false,,603,2,3,0,,false,",",false,opener
+sample-006,2024-05-31,2024,Ryman Auditorium,Nashville,TN,2,2,Glass Canyon,sample-glass-canyon,false,,1128,0,1,0,,true,",",false,jam|peak
+sample-006,2024-05-31,2024,Ryman Auditorium,Nashville,TN,2,3,Slow Tide,sample-slow-tide,false,,197,0,6,0,,false,",",false,ballad
+sample-006,2024-05-31,2024,Ryman Auditorium,Nashville,TN,2,4,Static in the Wire,sample-static,false,,466,1,4,0,,false,",",false,
+sample-006,2024-05-31,2024,Ryman Auditorium,Nashville,TN,2,5,Tall Grass,sample-tall-grass,false,,720,0,5,0,,false,,false,closer
+sample-006,2024-05-31,2024,Ryman Auditorium,Nashville,TN,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,359,0,2,0,,false,,false,ballad|encore
+sample-007,2024-06-05,2024,The Anthem,Washington,DC,1,1,First Light,sample-first-light,false,,526,0,4,0,,false,",",false,opener
+sample-007,2024-06-05,2024,The Anthem,Washington,DC,1,2,Porch Light,sample-porch-light,false,,214,0,4,0,,false,",",false,ballad
+sample-007,2024-06-05,2024,The Anthem,Washington,DC,1,3,Paperweight,sample-paperweight,false,,518,0,1,0,,false,>,true,
+sample-007,2024-06-05,2024,The Anthem,Washington,DC,1,4,Static in the Wire,sample-static,false,,506,0,5,0,,false,",",false,
+sample-007,2024-06-05,2024,The Anthem,Washington,DC,1,5,Ember,sample-ember,false,,552,0,4,0,,false,",",false,
+sample-007,2024-06-05,2024,The Anthem,Washington,DC,1,6,Last Call,sample-last-call,false,,587,0,6,0,,false,,false,closer
+sample-007,2024-06-05,2024,The Anthem,Washington,DC,2,1,Radio Hymn,sample-radio-hymn,false,,438,1,4,0,,false,>,true,opener
+sample-007,2024-06-05,2024,The Anthem,Washington,DC,2,2,Glass Canyon,sample-glass-canyon,false,,1495,0,2,0,,false,",",false,jam|peak
+sample-007,2024-06-05,2024,The Anthem,Washington,DC,2,3,November Letters,sample-november,false,,297,0,7,0,,false,>,true,
+sample-007,2024-06-05,2024,The Anthem,Washington,DC,2,4,Wildfire,sample-wildfire,false,,1007,0,1,0,,true,",",false,opener|jam|peak
+sample-007,2024-06-05,2024,The Anthem,Washington,DC,2,5,Tall Grass,sample-tall-grass,false,,601,0,6,0,,false,,false,closer
+sample-007,2024-06-05,2024,The Anthem,Washington,DC,E,1,One More Round,sample-one-more,false,,409,2,5,0,,false,>,true,encore
+sample-007,2024-06-05,2024,The Anthem,Washington,DC,E,2,Cold Open,sample-cold-open,true,Bettye Vaughn,492,0,1,0,,true,,false,jam|encore
+sample-008,2024-06-11,2024,Mission Ballroom,Denver,CO,1,1,First Light,sample-first-light,false,,420,0,5,0,,false,",",false,opener
+sample-008,2024-06-11,2024,Mission Ballroom,Denver,CO,1,2,Paperweight,sample-paperweight,false,,346,0,2,0,,false,",",false,
+sample-008,2024-06-11,2024,Mission Ballroom,Denver,CO,1,3,Crosstown,sample-crosstown,false,,523,4,3,0,,false,",",false,
+sample-008,2024-06-11,2024,Mission Ballroom,Denver,CO,1,4,Ninth Ward,sample-ninth-ward,false,,464,4,2,0,,false,",",false,
+sample-008,2024-06-11,2024,Mission Ballroom,Denver,CO,1,5,Static in the Wire,sample-static,false,,527,0,6,0,,false,",",false,
+sample-008,2024-06-11,2024,Mission Ballroom,Denver,CO,1,6,Tall Grass,sample-tall-grass,false,,745,0,7,0,,false,,false,closer
+sample-008,2024-06-11,2024,Mission Ballroom,Denver,CO,2,1,Radio Hymn,sample-radio-hymn,false,,437,0,5,0,,false,>,true,opener
+sample-008,2024-06-11,2024,Mission Ballroom,Denver,CO,2,2,Undertow,sample-undertow,false,,1200,2,5,0,,false,",",false,jam|peak
+sample-008,2024-06-11,2024,Mission Ballroom,Denver,CO,2,3,Porch Light,sample-porch-light,false,,278,0,5,0,,false,",",false,ballad
+sample-008,2024-06-11,2024,Mission Ballroom,Denver,CO,2,4,Cassette Summer,sample-cassette,false,,940,2,3,0,,false,",",false,opener|jam|peak
+sample-008,2024-06-11,2024,Mission Ballroom,Denver,CO,2,5,Last Call,sample-last-call,false,,795,0,7,0,,false,,false,closer
+sample-008,2024-06-11,2024,Mission Ballroom,Denver,CO,E,1,One More Round,sample-one-more,false,,436,0,6,0,,false,",",false,encore
+sample-008,2024-06-11,2024,Mission Ballroom,Denver,CO,E,2,Cold Open,sample-cold-open,true,Bettye Vaughn,483,0,2,0,,false,,false,jam|encore
+sample-009,2024-06-16,2024,The Fillmore,San Francisco,CA,1,1,First Light,sample-first-light,false,,497,0,6,0,,false,",",false,opener
+sample-009,2024-06-16,2024,The Fillmore,San Francisco,CA,1,2,Slow Tide,sample-slow-tide,false,,240,2,7,0,,false,",",false,ballad
+sample-009,2024-06-16,2024,The Fillmore,San Francisco,CA,1,3,Ember,sample-ember,false,,507,1,5,0,,false,",",false,
+sample-009,2024-06-16,2024,The Fillmore,San Francisco,CA,1,4,Paperweight,sample-paperweight,false,,456,0,3,0,,false,>,true,
+sample-009,2024-06-16,2024,The Fillmore,San Francisco,CA,1,5,Hammer and Tongs,sample-hammer,false,,615,5,3,0,,false,,false,closer
+sample-009,2024-06-16,2024,The Fillmore,San Francisco,CA,2,1,Cassette Summer,sample-cassette,false,,958,0,4,0,,true,",",false,opener|jam|peak
+sample-009,2024-06-16,2024,The Fillmore,San Francisco,CA,2,2,Undertow,sample-undertow,false,,920,0,6,0,,false,",",false,jam|peak
+sample-009,2024-06-16,2024,The Fillmore,San Francisco,CA,2,3,November Letters,sample-november,false,,296,1,8,0,,false,",",false,
+sample-009,2024-06-16,2024,The Fillmore,San Francisco,CA,2,4,Ninth Ward,sample-ninth-ward,false,,384,0,3,0,,false,",",false,
+sample-009,2024-06-16,2024,The Fillmore,San Francisco,CA,2,5,Honest Work,sample-honest-work,false,,413,3,4,0,,false,>,true,
+sample-009,2024-06-16,2024,The Fillmore,San Francisco,CA,2,6,Tall Grass,sample-tall-grass,false,,697,0,8,0,,false,,false,closer
+sample-009,2024-06-16,2024,The Fillmore,San Francisco,CA,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,261,2,3,0,,false,,false,ballad|encore
+sample-010,2024-06-22,2024,Red Rocks Amphitheatre,Morrison,CO,1,1,Dial Tone,sample-dial-tone,false,,516,3,6,0,,false,",",false,opener
+sample-010,2024-06-22,2024,Red Rocks Amphitheatre,Morrison,CO,1,2,Ember,sample-ember,false,,430,0,6,0,,false,",",false,
+sample-010,2024-06-22,2024,Red Rocks Amphitheatre,Morrison,CO,1,3,Crosstown,sample-crosstown,false,,421,1,4,0,,false,>,true,
+sample-010,2024-06-22,2024,Red Rocks Amphitheatre,Morrison,CO,1,4,Honest Work,sample-honest-work,false,,435,0,5,0,,false,>,true,
+sample-010,2024-06-22,2024,Red Rocks Amphitheatre,Morrison,CO,1,5,Ninth Ward,sample-ninth-ward,false,,518,0,4,0,,false,>,true,
+sample-010,2024-06-22,2024,Red Rocks Amphitheatre,Morrison,CO,1,6,Last Call,sample-last-call,false,,621,1,8,0,,false,,false,closer
+sample-010,2024-06-22,2024,Red Rocks Amphitheatre,Morrison,CO,2,1,Freight and Salvage,sample-freight,false,,1023,6,4,0,,false,",",false,opener|jam
+sample-010,2024-06-22,2024,Red Rocks Amphitheatre,Morrison,CO,2,2,The Long Way Down,sample-long-way,false,,1118,7,2,0,,false,>,true,jam|peak
+sample-010,2024-06-22,2024,Red Rocks Amphitheatre,Morrison,CO,2,3,November Letters,sample-november,false,,224,0,9,0,,false,",",false,
+sample-010,2024-06-22,2024,Red Rocks Amphitheatre,Morrison,CO,2,4,Blue Hour,sample-blue-hour,false,,496,4,4,0,,false,",",false,
+sample-010,2024-06-22,2024,Red Rocks Amphitheatre,Morrison,CO,2,5,Wildfire,sample-wildfire,false,,916,2,2,0,,false,",",false,opener|jam|peak
+sample-010,2024-06-22,2024,Red Rocks Amphitheatre,Morrison,CO,2,6,Hammer and Tongs,sample-hammer,false,,604,0,4,0,,false,,false,closer
+sample-010,2024-06-22,2024,Red Rocks Amphitheatre,Morrison,CO,E,1,One More Round,sample-one-more,false,,396,1,7,0,,false,,false,encore
+sample-011,2024-06-27,2024,The Capitol Theatre,Port Chester,NY,1,1,Dial Tone,sample-dial-tone,false,,403,0,7,0,,false,",",false,opener
+sample-011,2024-06-27,2024,The Capitol Theatre,Port Chester,NY,1,2,Crosstown,sample-crosstown,false,,472,0,5,0,,false,>,true,
+sample-011,2024-06-27,2024,The Capitol Theatre,Port Chester,NY,1,3,November Letters,sample-november,false,,297,0,10,0,,false,",",false,
+sample-011,2024-06-27,2024,The Capitol Theatre,Port Chester,NY,1,4,Ninth Ward,sample-ninth-ward,false,,498,0,5,0,,false,",",false,
+sample-011,2024-06-27,2024,The Capitol Theatre,Port Chester,NY,1,5,Last Call,sample-last-call,false,,688,0,9,0,,false,,false,closer
+sample-011,2024-06-27,2024,The Capitol Theatre,Port Chester,NY,2,1,Wildfire,sample-wildfire,false,,834,0,3,0,,false,",",false,opener|jam|peak
+sample-011,2024-06-27,2024,The Capitol Theatre,Port Chester,NY,2,2,The Long Way Down,sample-long-way,false,,903,0,3,0,,false,",",false,jam|peak
+sample-011,2024-06-27,2024,The Capitol Theatre,Port Chester,NY,2,3,Slow Tide,sample-slow-tide,false,,280,1,8,0,,false,>,true,ballad
+sample-011,2024-06-27,2024,The Capitol Theatre,Port Chester,NY,2,4,Paperweight,sample-paperweight,false,,502,1,4,0,,false,>,true,
+sample-011,2024-06-27,2024,The Capitol Theatre,Port Chester,NY,2,5,Hammer and Tongs,sample-hammer,false,,795,0,5,0,,false,,false,closer
+sample-011,2024-06-27,2024,The Capitol Theatre,Port Chester,NY,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,300,1,4,0,,false,,false,ballad|encore
+sample-012,2024-07-03,2024,Orpheum Theatre,Boston,MA,1,1,First Light,sample-first-light,false,,486,2,7,0,,false,",",false,opener
+sample-012,2024-07-03,2024,Orpheum Theatre,Boston,MA,1,2,Crosstown,sample-crosstown,false,,381,0,6,0,,false,>,true,
+sample-012,2024-07-03,2024,Orpheum Theatre,Boston,MA,1,3,Honest Work,sample-honest-work,false,,418,1,6,0,,false,",",false,
+sample-012,2024-07-03,2024,Orpheum Theatre,Boston,MA,1,4,Ninth Ward,sample-ninth-ward,false,,419,0,6,0,,false,>,true,
+sample-012,2024-07-03,2024,Orpheum Theatre,Boston,MA,1,5,Last Call,sample-last-call,false,,646,0,10,0,,false,,false,closer
+sample-012,2024-07-03,2024,Orpheum Theatre,Boston,MA,2,1,Radio Hymn,sample-radio-hymn,false,,440,3,6,0,,false,>,true,opener
+sample-012,2024-07-03,2024,Orpheum Theatre,Boston,MA,2,2,The Long Way Down,sample-long-way,false,,1051,0,4,0,,true,",",false,jam|peak
+sample-012,2024-07-03,2024,Orpheum Theatre,Boston,MA,2,3,November Letters,sample-november,false,,227,0,11,0,,false,>,true,
+sample-012,2024-07-03,2024,Orpheum Theatre,Boston,MA,2,4,Ember,sample-ember,false,,400,1,7,0,,false,>,true,
+sample-012,2024-07-03,2024,Orpheum Theatre,Boston,MA,2,5,Hammer and Tongs,sample-hammer,false,,772,0,6,0,,false,,false,closer
+sample-012,2024-07-03,2024,Orpheum Theatre,Boston,MA,E,1,One More Round,sample-one-more,false,,366,1,8,0,,false,,false,encore
+sample-013,2024-07-08,2024,The Salt Shed,Chicago,IL,1,1,Dial Tone,sample-dial-tone,false,,445,1,8,0,,false,>,true,opener
+sample-013,2024-07-08,2024,The Salt Shed,Chicago,IL,1,2,Honest Work,sample-honest-work,false,,314,0,7,0,,true,",",false,
+sample-013,2024-07-08,2024,The Salt Shed,Chicago,IL,1,3,Slow Tide,sample-slow-tide,false,,181,1,9,0,,false,",",false,ballad
+sample-013,2024-07-08,2024,The Salt Shed,Chicago,IL,1,4,Crosstown,sample-crosstown,false,,396,0,7,0,,false,",",false,
+sample-013,2024-07-08,2024,The Salt Shed,Chicago,IL,1,5,Last Call,sample-last-call,false,,837,0,11,0,,false,,false,closer
+sample-013,2024-07-08,2024,The Salt Shed,Chicago,IL,2,1,Radio Hymn,sample-radio-hymn,false,,447,0,7,0,,false,>,true,opener
+sample-013,2024-07-08,2024,The Salt Shed,Chicago,IL,2,2,Undertow,sample-undertow,false,,1059,3,7,0,,false,>,true,jam|peak
+sample-013,2024-07-08,2024,The Salt Shed,Chicago,IL,2,3,November Letters,sample-november,false,,273,0,12,0,,false,",",false,
+sample-013,2024-07-08,2024,The Salt Shed,Chicago,IL,2,4,Paperweight,sample-paperweight,false,,425,1,5,0,,false,>,true,
+sample-013,2024-07-08,2024,The Salt Shed,Chicago,IL,2,5,Hammer and Tongs,sample-hammer,false,,561,0,7,0,,false,,false,closer
+sample-013,2024-07-08,2024,The Salt Shed,Chicago,IL,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,324,1,5,0,,false,,false,ballad|encore
+sample-014,2024-07-14,2024,Ryman Auditorium,Nashville,TN,1,1,First Light,sample-first-light,false,,594,1,8,0,,true,",",false,opener
+sample-014,2024-07-14,2024,Ryman Auditorium,Nashville,TN,1,2,November Letters,sample-november,false,,282,0,13,0,,false,",",false,
+sample-014,2024-07-14,2024,Ryman Auditorium,Nashville,TN,1,3,Paperweight,sample-paperweight,false,,464,0,6,0,,false,",",false,
+sample-014,2024-07-14,2024,Ryman Auditorium,Nashville,TN,1,4,Crosstown,sample-crosstown,false,,500,0,8,0,,false,>,true,
+sample-014,2024-07-14,2024,Ryman Auditorium,Nashville,TN,1,5,Last Call,sample-last-call,false,,601,0,12,0,,false,,false,closer
+sample-014,2024-07-14,2024,Ryman Auditorium,Nashville,TN,2,1,Dial Tone,sample-dial-tone,false,,386,0,9,0,,false,>,true,opener
+sample-014,2024-07-14,2024,Ryman Auditorium,Nashville,TN,2,2,Undertow,sample-undertow,false,,1253,0,8,0,,false,>,true,jam|peak
+sample-014,2024-07-14,2024,Ryman Auditorium,Nashville,TN,2,3,Porch Light,sample-porch-light,false,,251,5,6,0,,false,>,true,ballad
+sample-014,2024-07-14,2024,Ryman Auditorium,Nashville,TN,2,4,Freight and Salvage,sample-freight,false,,820,3,5,0,,false,",",false,opener|jam
+sample-014,2024-07-14,2024,Ryman Auditorium,Nashville,TN,2,5,Tall Grass,sample-tall-grass,false,,497,4,9,0,,false,,false,closer
+sample-014,2024-07-14,2024,Ryman Auditorium,Nashville,TN,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,278,0,6,0,,false,,false,ballad|encore
+sample-015,2024-07-19,2024,The Anthem,Washington,DC,1,1,Dial Tone,sample-dial-tone,false,,436,0,10,0,,false,",",false,opener
+sample-015,2024-07-19,2024,The Anthem,Washington,DC,1,2,Ember,sample-ember,false,,635,2,8,0,,false,",",false,
+sample-015,2024-07-19,2024,The Anthem,Washington,DC,1,3,Ninth Ward,sample-ninth-ward,false,,470,2,7,0,,false,",",false,
+sample-015,2024-07-19,2024,The Anthem,Washington,DC,1,4,Paperweight,sample-paperweight,false,,499,0,7,0,,false,>,true,
+sample-015,2024-07-19,2024,The Anthem,Washington,DC,1,5,Last Call,sample-last-call,false,,651,0,13,0,,false,,false,closer
+sample-015,2024-07-19,2024,The Anthem,Washington,DC,2,1,First Light,sample-first-light,false,,519,0,9,0,,false,",",false,opener
+sample-015,2024-07-19,2024,The Anthem,Washington,DC,2,2,The Long Way Down,sample-long-way,false,,1273,2,5,0,,false,",",false,jam|peak
+sample-015,2024-07-19,2024,The Anthem,Washington,DC,2,3,Slow Tide,sample-slow-tide,false,,274,1,10,0,,false,",",false,ballad
+sample-015,2024-07-19,2024,The Anthem,Washington,DC,2,4,Wildfire,sample-wildfire,false,,744,3,4,0,,false,",",false,opener|jam|peak
+sample-015,2024-07-19,2024,The Anthem,Washington,DC,2,5,Static in the Wire,sample-static,false,,382,6,7,0,,false,",",false,
+sample-015,2024-07-19,2024,The Anthem,Washington,DC,2,6,Tall Grass,sample-tall-grass,false,,573,0,10,0,,false,,false,closer
+sample-015,2024-07-19,2024,The Anthem,Washington,DC,E,1,One More Round,sample-one-more,false,,347,2,9,0,,false,,false,encore
+sample-016,2024-07-25,2024,Mission Ballroom,Denver,CO,1,1,First Light,sample-first-light,false,,547,0,10,0,,false,>,true,opener
+sample-016,2024-07-25,2024,Mission Ballroom,Denver,CO,1,2,Paperweight,sample-paperweight,false,,329,0,8,0,,false,",",false,
+sample-016,2024-07-25,2024,Mission Ballroom,Denver,CO,1,3,Slow Tide,sample-slow-tide,false,,287,0,11,0,,false,",",false,ballad
+sample-016,2024-07-25,2024,Mission Ballroom,Denver,CO,1,4,Ninth Ward,sample-ninth-ward,false,,491,0,8,0,,false,",",false,
+sample-016,2024-07-25,2024,Mission Ballroom,Denver,CO,1,5,Last Call,sample-last-call,false,,733,0,14,0,,false,,false,closer
+sample-016,2024-07-25,2024,Mission Ballroom,Denver,CO,2,1,Cassette Summer,sample-cassette,false,,624,6,5,0,,true,",",false,opener|jam|peak
+sample-016,2024-07-25,2024,Mission Ballroom,Denver,CO,2,2,The Long Way Down,sample-long-way,false,,1084,0,6,0,,true,",",false,jam|peak
+sample-016,2024-07-25,2024,Mission Ballroom,Denver,CO,2,3,November Letters,sample-november,false,,258,1,14,0,,false,>,true,
+sample-016,2024-07-25,2024,Mission Ballroom,Denver,CO,2,4,Wildfire,sample-wildfire,false,,704,0,5,0,,false,>,true,opener|jam|peak
+sample-016,2024-07-25,2024,Mission Ballroom,Denver,CO,2,5,Freight and Salvage,sample-freight,false,,952,1,6,0,,false,>,true,opener|jam
+sample-016,2024-07-25,2024,Mission Ballroom,Denver,CO,2,6,Tall Grass,sample-tall-grass,false,,659,0,11,0,,false,,false,closer
+sample-016,2024-07-25,2024,Mission Ballroom,Denver,CO,E,1,One More Round,sample-one-more,false,,454,0,10,0,,false,,false,encore
+sample-017,2024-07-30,2024,The Fillmore,San Francisco,CA,1,1,Dial Tone,sample-dial-tone,false,,420,1,11,0,,false,>,true,opener
+sample-017,2024-07-30,2024,The Fillmore,San Francisco,CA,1,2,Slow Tide,sample-slow-tide,false,,261,0,12,0,,false,",",false,ballad
+sample-017,2024-07-30,2024,The Fillmore,San Francisco,CA,1,3,Ember,sample-ember,false,,625,1,9,0,,false,>,true,
+sample-017,2024-07-30,2024,The Fillmore,San Francisco,CA,1,4,Paperweight,sample-paperweight,false,,323,0,9,0,,false,",",false,
+sample-017,2024-07-30,2024,The Fillmore,San Francisco,CA,1,5,Blue Hour,sample-blue-hour,false,,553,6,5,0,,false,",",false,
+sample-017,2024-07-30,2024,The Fillmore,San Francisco,CA,1,6,Hammer and Tongs,sample-hammer,false,,891,3,8,0,,false,,false,closer
+sample-017,2024-07-30,2024,The Fillmore,San Francisco,CA,2,1,First Light,sample-first-light,false,,467,0,11,0,,true,",",false,opener
+sample-017,2024-07-30,2024,The Fillmore,San Francisco,CA,2,2,Undertow,sample-undertow,false,,1264,2,9,0,,true,>,true,jam|peak
+sample-017,2024-07-30,2024,The Fillmore,San Francisco,CA,2,3,Porch Light,sample-porch-light,false,,229,2,7,0,,false,",",false,ballad
+sample-017,2024-07-30,2024,The Fillmore,San Francisco,CA,2,4,Ninth Ward,sample-ninth-ward,false,,386,0,9,0,,false,",",false,
+sample-017,2024-07-30,2024,The Fillmore,San Francisco,CA,2,5,Last Call,sample-last-call,false,,813,0,15,0,,false,,false,closer
+sample-017,2024-07-30,2024,The Fillmore,San Francisco,CA,E,1,One More Round,sample-one-more,false,,423,0,11,0,,false,,false,encore
+sample-018,2024-08-05,2024,Red Rocks Amphitheatre,Morrison,CO,1,1,Dial Tone,sample-dial-tone,false,,423,0,12,0,,false,",",false,opener
+sample-018,2024-08-05,2024,Red Rocks Amphitheatre,Morrison,CO,1,2,Slow Tide,sample-slow-tide,false,,191,0,13,0,,false,",",false,ballad
+sample-018,2024-08-05,2024,Red Rocks Amphitheatre,Morrison,CO,1,3,Crosstown,sample-crosstown,false,,432,3,9,0,,false,",",false,
+sample-018,2024-08-05,2024,Red Rocks Amphitheatre,Morrison,CO,1,4,Paperweight,sample-paperweight,false,,468,0,10,0,,false,>,true,
+sample-018,2024-08-05,2024,Red Rocks Amphitheatre,Morrison,CO,1,5,Tall Grass,sample-tall-grass,false,,670,1,12,0,,false,,false,closer
+sample-018,2024-08-05,2024,Red Rocks Amphitheatre,Morrison,CO,2,1,Cassette Summer,sample-cassette,false,,943,1,6,0,,true,>,true,opener|jam|peak
+sample-018,2024-08-05,2024,Red Rocks Amphitheatre,Morrison,CO,2,2,The Long Way Down,sample-long-way,false,,1293,1,7,0,,true,",",false,jam|peak
+sample-018,2024-08-05,2024,Red Rocks Amphitheatre,Morrison,CO,2,3,Porch Light,sample-porch-light,false,,203,0,8,0,,false,",",false,ballad
+sample-018,2024-08-05,2024,Red Rocks Amphitheatre,Morrison,CO,2,4,Ember,sample-ember,false,,467,0,10,0,,false,",",false,
+sample-018,2024-08-05,2024,Red Rocks Amphitheatre,Morrison,CO,2,5,Wildfire,sample-wildfire,false,,773,1,6,0,,false,>,true,opener|jam|peak
+sample-018,2024-08-05,2024,Red Rocks Amphitheatre,Morrison,CO,2,6,Last Call,sample-last-call,false,,658,0,16,0,,false,,false,closer
+sample-018,2024-08-05,2024,Red Rocks Amphitheatre,Morrison,CO,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,332,3,7,0,,false,,false,ballad|encore
+sample-019,2024-08-10,2024,The Capitol Theatre,Port Chester,NY,1,1,First Light,sample-first-light,false,,584,1,12,0,,false,",",false,opener
+sample-019,2024-08-10,2024,The Capitol Theatre,Port Chester,NY,1,2,Porch Light,sample-porch-light,false,,292,0,9,0,,false,",",false,ballad
+sample-019,2024-08-10,2024,The Capitol Theatre,Port Chester,NY,1,3,Static in the Wire,sample-static,false,,457,3,8,0,,false,",",false,
+sample-019,2024-08-10,2024,The Capitol Theatre,Port Chester,NY,1,4,Crosstown,sample-crosstown,false,,460,0,10,0,,false,",",false,
+sample-019,2024-08-10,2024,The Capitol Theatre,Port Chester,NY,1,5,Ninth Ward,sample-ninth-ward,false,,450,1,10,0,,false,",",false,
+sample-019,2024-08-10,2024,The Capitol Theatre,Port Chester,NY,1,6,Hammer and Tongs,sample-hammer,false,,896,1,9,0,,false,,false,closer
+sample-019,2024-08-10,2024,The Capitol Theatre,Port Chester,NY,2,1,Freight and Salvage,sample-freight,false,,968,2,7,0,,false,>,true,opener|jam
+sample-019,2024-08-10,2024,The Capitol Theatre,Port Chester,NY,2,2,Glass Canyon,sample-glass-canyon,false,,1556,11,3,10,,false,>,true,jam|peak
+sample-019,2024-08-10,2024,The Capitol Theatre,Port Chester,NY,2,3,November Letters,sample-november,false,,249,2,15,0,,false,>,true,
+sample-019,2024-08-10,2024,The Capitol Theatre,Port Chester,NY,2,4,Honest Work,sample-honest-work,false,,376,5,8,0,,false,>,true,
+sample-019,2024-08-10,2024,The Capitol Theatre,Port Chester,NY,2,5,Wildfire,sample-wildfire,false,,997,0,7,0,,true,>,true,opener|jam|peak
+sample-019,2024-08-10,2024,The Capitol Theatre,Port Chester,NY,2,6,Tall Grass,sample-tall-grass,false,,505,0,13,0,,false,,false,closer
+sample-019,2024-08-10,2024,The Capitol Theatre,Port Chester,NY,E,1,One More Round,sample-one-more,false,,319,1,12,0,,false,>,true,encore
+sample-019,2024-08-10,2024,The Capitol Theatre,Port Chester,NY,E,2,Detour,sample-detour,false,,670,0,1,0,,false,,false,encore
+sample-020,2024-08-16,2024,Orpheum Theatre,Boston,MA,1,1,Radio Hymn,sample-radio-hymn,false,,417,6,8,0,,false,",",false,opener
+sample-020,2024-08-16,2024,Orpheum Theatre,Boston,MA,1,2,Ninth Ward,sample-ninth-ward,false,,483,0,11,0,,false,",",false,
+sample-020,2024-08-16,2024,Orpheum Theatre,Boston,MA,1,3,Paperweight,sample-paperweight,false,,432,1,11,0,,false,",",false,
+sample-020,2024-08-16,2024,Orpheum Theatre,Boston,MA,1,4,November Letters,sample-november,false,,315,0,16,0,,false,>,true,
+sample-020,2024-08-16,2024,Orpheum Theatre,Boston,MA,1,5,Static in the Wire,sample-static,false,,454,0,9,0,,false,>,true,
+sample-020,2024-08-16,2024,Orpheum Theatre,Boston,MA,1,6,Tall Grass,sample-tall-grass,false,,710,0,14,0,,false,,false,closer
+sample-020,2024-08-16,2024,Orpheum Theatre,Boston,MA,2,1,First Light,sample-first-light,false,,568,0,13,0,,false,>,true,opener
+sample-020,2024-08-16,2024,Orpheum Theatre,Boston,MA,2,2,Undertow,sample-undertow,false,,1374,2,10,0,,true,>,true,jam|peak
+sample-020,2024-08-16,2024,Orpheum Theatre,Boston,MA,2,3,Porch Light,sample-porch-light,false,,212,0,10,0,,false,>,true,ballad
+sample-020,2024-08-16,2024,Orpheum Theatre,Boston,MA,2,4,Ember,sample-ember,false,,556,1,11,0,,false,",",false,
+sample-020,2024-08-16,2024,Orpheum Theatre,Boston,MA,2,5,Crosstown,sample-crosstown,false,,420,0,11,0,,false,",",false,
+sample-020,2024-08-16,2024,Orpheum Theatre,Boston,MA,2,6,Last Call,sample-last-call,false,,812,1,17,0,,false,,false,closer
+sample-020,2024-08-16,2024,Orpheum Theatre,Boston,MA,E,1,One More Round,sample-one-more,false,,410,0,13,0,,false,,false,encore
+sample-021,2024-08-21,2024,The Salt Shed,Chicago,IL,1,1,Dial Tone,sample-dial-tone,false,,487,2,13,0,,true,",",false,opener
+sample-021,2024-08-21,2024,The Salt Shed,Chicago,IL,1,2,Ninth Ward,sample-ninth-ward,false,,403,0,12,0,,false,",",false,
+sample-021,2024-08-21,2024,The Salt Shed,Chicago,IL,1,3,Paperweight,sample-paperweight,false,,406,0,12,0,,false,",",false,
+sample-021,2024-08-21,2024,The Salt Shed,Chicago,IL,1,4,Static in the Wire,sample-static,false,,521,0,10,0,,false,",",false,
+sample-021,2024-08-21,2024,The Salt Shed,Chicago,IL,1,5,Hammer and Tongs,sample-hammer,false,,763,1,10,0,,false,,false,closer
+sample-021,2024-08-21,2024,The Salt Shed,Chicago,IL,2,1,Radio Hymn,sample-radio-hymn,false,,350,0,9,0,,false,",",false,opener
+sample-021,2024-08-21,2024,The Salt Shed,Chicago,IL,2,2,Undertow,sample-undertow,false,,1345,0,11,0,,true,",",false,jam|peak
+sample-021,2024-08-21,2024,The Salt Shed,Chicago,IL,2,3,Slow Tide,sample-slow-tide,false,,188,2,14,0,,false,>,true,ballad
+sample-021,2024-08-21,2024,The Salt Shed,Chicago,IL,2,4,Cassette Summer,sample-cassette,false,,802,2,7,0,,false,>,true,opener|jam|peak
+sample-021,2024-08-21,2024,The Salt Shed,Chicago,IL,2,5,Crosstown,sample-crosstown,false,,535,0,12,0,,false,>,true,
+sample-021,2024-08-21,2024,The Salt Shed,Chicago,IL,2,6,Last Call,sample-last-call,false,,778,0,18,0,,false,,false,closer
+sample-021,2024-08-21,2024,The Salt Shed,Chicago,IL,E,1,One More Round,sample-one-more,false,,391,0,14,0,,false,,false,encore
+sample-022,2024-08-27,2024,Ryman Auditorium,Nashville,TN,1,1,Dial Tone,sample-dial-tone,false,,418,0,14,0,,false,>,true,opener
+sample-022,2024-08-27,2024,Ryman Auditorium,Nashville,TN,1,2,Ember,sample-ember,false,,407,1,12,0,,false,",",false,
+sample-022,2024-08-27,2024,Ryman Auditorium,Nashville,TN,1,3,Paperweight,sample-paperweight,false,,439,0,13,0,,false,",",false,
+sample-022,2024-08-27,2024,Ryman Auditorium,Nashville,TN,1,4,Static in the Wire,sample-static,false,,455,0,11,0,,false,",",false,
+sample-022,2024-08-27,2024,Ryman Auditorium,Nashville,TN,1,5,Hammer and Tongs,sample-hammer,false,,893,0,11,0,,false,,false,closer
+sample-022,2024-08-27,2024,Ryman Auditorium,Nashville,TN,2,1,First Light,sample-first-light,false,,449,1,14,0,,false,>,true,opener
+sample-022,2024-08-27,2024,Ryman Auditorium,Nashville,TN,2,2,The Long Way Down,sample-long-way,false,,1018,3,8,0,,false,",",false,jam|peak
+sample-022,2024-08-27,2024,Ryman Auditorium,Nashville,TN,2,3,Slow Tide,sample-slow-tide,false,,256,0,15,0,,false,",",false,ballad
+sample-022,2024-08-27,2024,Ryman Auditorium,Nashville,TN,2,4,Freight and Salvage,sample-freight,false,,753,2,8,0,,false,",",false,opener|jam
+sample-022,2024-08-27,2024,Ryman Auditorium,Nashville,TN,2,5,Cassette Summer,sample-cassette,false,,854,0,8,0,,true,>,true,opener|jam|peak
+sample-022,2024-08-27,2024,Ryman Auditorium,Nashville,TN,2,6,Last Call,sample-last-call,false,,662,0,19,0,,false,,false,closer
+sample-022,2024-08-27,2024,Ryman Auditorium,Nashville,TN,E,1,One More Round,sample-one-more,false,,389,0,15,0,,false,,false,encore
+sample-023,2024-09-01,2024,The Anthem,Washington,DC,1,1,Radio Hymn,sample-radio-hymn,false,,359,1,10,0,,false,",",false,opener
+sample-023,2024-09-01,2024,The Anthem,Washington,DC,1,2,Ninth Ward,sample-ninth-ward,false,,390,1,13,0,,false,",",false,
+sample-023,2024-09-01,2024,The Anthem,Washington,DC,1,3,Honest Work,sample-honest-work,false,,337,3,9,0,,false,",",false,
+sample-023,2024-09-01,2024,The Anthem,Washington,DC,1,4,Ember,sample-ember,false,,630,0,13,0,,false,",",false,
+sample-023,2024-09-01,2024,The Anthem,Washington,DC,1,5,Porch Light,sample-porch-light,false,,252,2,11,0,,false,",",false,ballad
+sample-023,2024-09-01,2024,The Anthem,Washington,DC,1,6,Last Call,sample-last-call,false,,741,0,20,0,,false,,false,closer
+sample-023,2024-09-01,2024,The Anthem,Washington,DC,2,1,First Light,sample-first-light,false,,456,0,15,0,,true,>,true,opener
+sample-023,2024-09-01,2024,The Anthem,Washington,DC,2,2,Undertow,sample-undertow,false,,1324,1,12,0,,true,",",false,jam|peak
+sample-023,2024-09-01,2024,The Anthem,Washington,DC,2,3,November Letters,sample-november,false,,239,2,17,0,,false,>,true,
+sample-023,2024-09-01,2024,The Anthem,Washington,DC,2,4,Cassette Summer,sample-cassette,false,,670,0,9,0,,true,",",false,opener|jam|peak
+sample-023,2024-09-01,2024,The Anthem,Washington,DC,2,5,Wildfire,sample-wildfire,false,,660,3,8,0,,false,",",false,opener|jam|peak
+sample-023,2024-09-01,2024,The Anthem,Washington,DC,2,6,Hammer and Tongs,sample-hammer,false,,855,0,12,0,,false,,false,closer
+sample-023,2024-09-01,2024,The Anthem,Washington,DC,E,1,One More Round,sample-one-more,false,,384,0,16,0,,false,,false,encore
+sample-024,2024-09-07,2024,Mission Ballroom,Denver,CO,1,1,Dial Tone,sample-dial-tone,false,,419,1,15,0,,false,",",false,opener
+sample-024,2024-09-07,2024,Mission Ballroom,Denver,CO,1,2,Honest Work,sample-honest-work,false,,392,0,10,0,,false,",",false,
+sample-024,2024-09-07,2024,Mission Ballroom,Denver,CO,1,3,Paperweight,sample-paperweight,false,,411,1,14,0,,false,",",false,
+sample-024,2024-09-07,2024,Mission Ballroom,Denver,CO,1,4,November Letters,sample-november,false,,320,0,18,0,,false,",",false,
+sample-024,2024-09-07,2024,Mission Ballroom,Denver,CO,1,5,Crosstown,sample-crosstown,false,,550,2,13,0,,false,",",false,
+sample-024,2024-09-07,2024,Mission Ballroom,Denver,CO,1,6,Last Call,sample-last-call,false,,824,0,21,0,,false,,false,closer
+sample-024,2024-09-07,2024,Mission Ballroom,Denver,CO,2,1,Freight and Salvage,sample-freight,false,,870,1,9,0,,true,",",false,opener|jam
+sample-024,2024-09-07,2024,Mission Ballroom,Denver,CO,2,2,Glass Canyon,sample-glass-canyon,false,,989,4,4,0,,true,",",false,jam|peak
+sample-024,2024-09-07,2024,Mission Ballroom,Denver,CO,2,3,Slow Tide,sample-slow-tide,false,,226,1,16,0,,false,",",false,ballad
+sample-024,2024-09-07,2024,Mission Ballroom,Denver,CO,2,4,Ember,sample-ember,false,,478,0,14,0,,false,",",false,
+sample-024,2024-09-07,2024,Mission Ballroom,Denver,CO,2,5,Static in the Wire,sample-static,false,,487,1,12,0,,false,>,true,
+sample-024,2024-09-07,2024,Mission Ballroom,Denver,CO,2,6,Tall Grass,sample-tall-grass,false,,641,3,15,0,,false,,false,closer
+sample-024,2024-09-07,2024,Mission Ballroom,Denver,CO,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,297,5,8,0,,false,,false,ballad|encore
+sample-025,2024-09-12,2024,The Fillmore,San Francisco,CA,1,1,Dial Tone,sample-dial-tone,false,,449,0,16,0,,false,",",false,opener
+sample-025,2024-09-12,2024,The Fillmore,San Francisco,CA,1,2,November Letters,sample-november,false,,286,0,19,0,,false,",",false,
+sample-025,2024-09-12,2024,The Fillmore,San Francisco,CA,1,3,Crosstown,sample-crosstown,false,,559,0,14,0,,false,",",false,
+sample-025,2024-09-12,2024,The Fillmore,San Francisco,CA,1,4,Ninth Ward,sample-ninth-ward,false,,396,1,14,0,,false,",",false,
+sample-025,2024-09-12,2024,The Fillmore,San Francisco,CA,1,5,Last Call,sample-last-call,false,,662,0,22,0,,false,,false,closer
+sample-025,2024-09-12,2024,The Fillmore,San Francisco,CA,2,1,Freight and Salvage,sample-freight,false,,1083,0,10,0,,false,>,true,opener|jam
+sample-025,2024-09-12,2024,The Fillmore,San Francisco,CA,2,2,Undertow,sample-undertow,false,,1123,1,13,0,,true,>,true,jam|peak
+sample-025,2024-09-12,2024,The Fillmore,San Francisco,CA,2,3,Slow Tide,sample-slow-tide,false,,288,0,17,0,,false,>,true,ballad
+sample-025,2024-09-12,2024,The Fillmore,San Francisco,CA,2,4,Blue Hour,sample-blue-hour,false,,394,7,6,0,,false,",",false,
+sample-025,2024-09-12,2024,The Fillmore,San Francisco,CA,2,5,Wildfire,sample-wildfire,false,,788,1,9,0,,false,",",false,opener|jam|peak
+sample-025,2024-09-12,2024,The Fillmore,San Francisco,CA,2,6,Tall Grass,sample-tall-grass,false,,523,0,16,0,,false,,false,closer
+sample-025,2024-09-12,2024,The Fillmore,San Francisco,CA,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,389,0,9,0,,false,,false,ballad|encore
+sample-026,2024-09-18,2024,Red Rocks Amphitheatre,Morrison,CO,1,1,First Light,sample-first-light,false,,565,2,16,0,,false,",",false,opener
+sample-026,2024-09-18,2024,Red Rocks Amphitheatre,Morrison,CO,1,2,Blue Hour,sample-blue-hour,false,,554,0,7,0,,false,",",false,
+sample-026,2024-09-18,2024,Red Rocks Amphitheatre,Morrison,CO,1,3,Slow Tide,sample-slow-tide,false,,289,0,18,0,,false,",",false,ballad
+sample-026,2024-09-18,2024,Red Rocks Amphitheatre,Morrison,CO,1,4,Ember,sample-ember,false,,404,1,15,0,,false,",",false,
+sample-026,2024-09-18,2024,Red Rocks Amphitheatre,Morrison,CO,1,5,Static in the Wire,sample-static,false,,351,1,13,0,,false,",",false,
+sample-026,2024-09-18,2024,Red Rocks Amphitheatre,Morrison,CO,1,6,Last Call,sample-last-call,false,,818,0,23,0,,true,,false,closer
+sample-026,2024-09-18,2024,Red Rocks Amphitheatre,Morrison,CO,2,1,Dial Tone,sample-dial-tone,false,,490,0,17,0,,false,>,true,opener
+sample-026,2024-09-18,2024,Red Rocks Amphitheatre,Morrison,CO,2,2,The Long Way Down,sample-long-way,false,,1205,3,9,0,,false,",",false,jam|peak
+sample-026,2024-09-18,2024,Red Rocks Amphitheatre,Morrison,CO,2,3,November Letters,sample-november,false,,293,0,20,0,,false,",",false,
+sample-026,2024-09-18,2024,Red Rocks Amphitheatre,Morrison,CO,2,4,Wildfire,sample-wildfire,false,,899,0,10,0,,true,",",false,opener|jam|peak
+sample-026,2024-09-18,2024,Red Rocks Amphitheatre,Morrison,CO,2,5,Tall Grass,sample-tall-grass,false,,739,0,17,0,,false,,false,closer
+sample-026,2024-09-18,2024,Red Rocks Amphitheatre,Morrison,CO,E,1,One More Round,sample-one-more,false,,449,2,17,0,,false,,false,encore
+sample-027,2024-09-23,2024,The Capitol Theatre,Port Chester,NY,1,1,First Light,sample-first-light,false,,462,0,17,0,,false,",",false,opener
+sample-027,2024-09-23,2024,The Capitol Theatre,Port Chester,NY,1,2,Paperweight,sample-paperweight,false,,362,2,15,0,,false,",",false,
+sample-027,2024-09-23,2024,The Capitol Theatre,Port Chester,NY,1,3,Ember,sample-ember,false,,497,0,16,0,,false,",",false,
+sample-027,2024-09-23,2024,The Capitol Theatre,Port Chester,NY,1,4,Blue Hour,sample-blue-hour,false,,554,0,8,0,,false,",",false,
+sample-027,2024-09-23,2024,The Capitol Theatre,Port Chester,NY,1,5,Crosstown,sample-crosstown,false,,518,1,15,0,,false,>,true,
+sample-027,2024-09-23,2024,The Capitol Theatre,Port Chester,NY,1,6,Tall Grass,sample-tall-grass,false,,751,0,18,0,,false,,false,closer
+sample-027,2024-09-23,2024,The Capitol Theatre,Port Chester,NY,2,1,Cassette Summer,sample-cassette,false,,674,3,10,0,,true,>,true,opener|jam|peak
+sample-027,2024-09-23,2024,The Capitol Theatre,Port Chester,NY,2,2,The Long Way Down,sample-long-way,false,,1261,0,10,0,,true,",",false,jam|peak
+sample-027,2024-09-23,2024,The Capitol Theatre,Port Chester,NY,2,3,November Letters,sample-november,false,,246,0,21,0,,false,>,true,
+sample-027,2024-09-23,2024,The Capitol Theatre,Port Chester,NY,2,4,Freight and Salvage,sample-freight,false,,746,1,11,0,,true,>,true,opener|jam
+sample-027,2024-09-23,2024,The Capitol Theatre,Port Chester,NY,2,5,Honest Work,sample-honest-work,false,,385,2,11,0,,false,",",false,
+sample-027,2024-09-23,2024,The Capitol Theatre,Port Chester,NY,2,6,Hammer and Tongs,sample-hammer,false,,872,3,13,0,,false,,false,closer
+sample-027,2024-09-23,2024,The Capitol Theatre,Port Chester,NY,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,316,1,10,0,,false,",",false,ballad|encore
+sample-027,2024-09-23,2024,The Capitol Theatre,Port Chester,NY,E,2,Detour,sample-detour,false,,609,7,2,0,,false,,false,encore
+sample-028,2024-09-29,2024,Orpheum Theatre,Boston,MA,1,1,Dial Tone,sample-dial-tone,false,,496,1,18,0,,false,",",false,opener
+sample-028,2024-09-29,2024,Orpheum Theatre,Boston,MA,1,2,Slow Tide,sample-slow-tide,false,,268,1,19,0,,false,>,true,ballad
+sample-028,2024-09-29,2024,Orpheum Theatre,Boston,MA,1,3,Blue Hour,sample-blue-hour,false,,383,0,9,0,,false,",",false,
+sample-028,2024-09-29,2024,Orpheum Theatre,Boston,MA,1,4,Crosstown,sample-crosstown,false,,580,0,16,0,,false,",",false,
+sample-028,2024-09-29,2024,Orpheum Theatre,Boston,MA,1,5,Ninth Ward,sample-ninth-ward,false,,439,2,15,0,,false,",",false,
+sample-028,2024-09-29,2024,Orpheum Theatre,Boston,MA,1,6,Tall Grass,sample-tall-grass,false,,702,0,19,0,,false,,false,closer
+sample-028,2024-09-29,2024,Orpheum Theatre,Boston,MA,2,1,Wildfire,sample-wildfire,false,,763,1,11,0,,false,",",false,opener|jam|peak
+sample-028,2024-09-29,2024,Orpheum Theatre,Boston,MA,2,2,The Long Way Down,sample-long-way,false,,1371,0,11,0,,true,>,true,jam|peak
+sample-028,2024-09-29,2024,Orpheum Theatre,Boston,MA,2,3,Porch Light,sample-porch-light,false,,238,4,12,0,,false,>,true,ballad
+sample-028,2024-09-29,2024,Orpheum Theatre,Boston,MA,2,4,Paperweight,sample-paperweight,false,,414,0,16,0,,false,",",false,
+sample-028,2024-09-29,2024,Orpheum Theatre,Boston,MA,2,5,Static in the Wire,sample-static,false,,373,1,14,0,,false,>,true,
+sample-028,2024-09-29,2024,Orpheum Theatre,Boston,MA,2,6,Hammer and Tongs,sample-hammer,false,,585,0,14,0,,false,,false,closer
+sample-028,2024-09-29,2024,Orpheum Theatre,Boston,MA,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,267,0,11,0,,false,,false,ballad|encore
+sample-029,2024-10-04,2024,The Salt Shed,Chicago,IL,1,1,Radio Hymn,sample-radio-hymn,false,,441,5,11,0,,false,",",false,opener
+sample-029,2024-10-04,2024,The Salt Shed,Chicago,IL,1,2,Crosstown,sample-crosstown,false,,508,0,17,0,,false,",",false,
+sample-029,2024-10-04,2024,The Salt Shed,Chicago,IL,1,3,November Letters,sample-november,false,,291,1,22,0,,false,",",false,
+sample-029,2024-10-04,2024,The Salt Shed,Chicago,IL,1,4,Static in the Wire,sample-static,false,,411,0,15,0,,false,",",false,
+sample-029,2024-10-04,2024,The Salt Shed,Chicago,IL,1,5,Hammer and Tongs,sample-hammer,false,,817,0,15,0,,false,,false,closer
+sample-029,2024-10-04,2024,The Salt Shed,Chicago,IL,2,1,First Light,sample-first-light,false,,500,1,18,0,,false,",",false,opener
+sample-029,2024-10-04,2024,The Salt Shed,Chicago,IL,2,2,The Long Way Down,sample-long-way,false,,1058,0,12,0,,true,",",false,jam|peak
+sample-029,2024-10-04,2024,The Salt Shed,Chicago,IL,2,3,Slow Tide,sample-slow-tide,false,,289,0,20,0,,false,",",false,ballad
+sample-029,2024-10-04,2024,The Salt Shed,Chicago,IL,2,4,Cassette Summer,sample-cassette,false,,867,1,11,0,,false,>,true,opener|jam|peak
+sample-029,2024-10-04,2024,The Salt Shed,Chicago,IL,2,5,Blue Hour,sample-blue-hour,false,,467,0,10,0,,false,",",false,
+sample-029,2024-10-04,2024,The Salt Shed,Chicago,IL,2,6,Last Call,sample-last-call,false,,606,2,24,0,,false,,false,closer
+sample-029,2024-10-04,2024,The Salt Shed,Chicago,IL,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,364,0,12,0,,false,",",false,ballad|encore
+sample-029,2024-10-04,2024,The Salt Shed,Chicago,IL,E,2,Cold Open,sample-cold-open,true,Bettye Vaughn,481,20,3,20,,false,,false,jam|encore
+sample-030,2024-10-10,2024,Ryman Auditorium,Nashville,TN,1,1,Radio Hymn,sample-radio-hymn,false,,424,0,12,0,,false,",",false,opener
+sample-030,2024-10-10,2024,Ryman Auditorium,Nashville,TN,1,2,Blue Hour,sample-blue-hour,false,,548,0,11,0,,false,",",false,
+sample-030,2024-10-10,2024,Ryman Auditorium,Nashville,TN,1,3,Static in the Wire,sample-static,false,,553,0,16,0,,false,",",false,
+sample-030,2024-10-10,2024,Ryman Auditorium,Nashville,TN,1,4,November Letters,sample-november,false,,246,0,23,0,,false,",",false,
+sample-030,2024-10-10,2024,Ryman Auditorium,Nashville,TN,1,5,Hammer and Tongs,sample-hammer,false,,835,0,16,0,,false,,false,closer
+sample-030,2024-10-10,2024,Ryman Auditorium,Nashville,TN,2,1,Freight and Salvage,sample-freight,false,,868,2,12,0,,false,",",false,opener|jam
+sample-030,2024-10-10,2024,Ryman Auditorium,Nashville,TN,2,2,The Long Way Down,sample-long-way,false,,963,0,13,0,,false,>,true,jam|peak
+sample-030,2024-10-10,2024,Ryman Auditorium,Nashville,TN,2,3,Porch Light,sample-porch-light,false,,218,1,13,0,,false,",",false,ballad
+sample-030,2024-10-10,2024,Ryman Auditorium,Nashville,TN,2,4,Ninth Ward,sample-ninth-ward,false,,513,1,16,0,,false,",",false,
+sample-030,2024-10-10,2024,Ryman Auditorium,Nashville,TN,2,5,Last Call,sample-last-call,false,,719,0,25,0,,false,,false,closer
+sample-030,2024-10-10,2024,Ryman Auditorium,Nashville,TN,E,1,One More Round,sample-one-more,false,,352,3,18,0,,false,,false,encore
+sample-031,2024-10-15,2024,The Anthem,Washington,DC,1,1,First Light,sample-first-light,false,,465,1,19,0,,false,",",false,opener
+sample-031,2024-10-15,2024,The Anthem,Washington,DC,1,2,Slow Tide,sample-slow-tide,false,,270,1,21,0,,false,",",false,ballad
+sample-031,2024-10-15,2024,The Anthem,Washington,DC,1,3,Blue Hour,sample-blue-hour,false,,539,0,12,0,,false,",",false,
+sample-031,2024-10-15,2024,The Anthem,Washington,DC,1,4,Crosstown,sample-crosstown,false,,555,1,18,0,,false,",",false,
+sample-031,2024-10-15,2024,The Anthem,Washington,DC,1,5,Tall Grass,sample-tall-grass,false,,583,2,20,0,,false,,false,closer
+sample-031,2024-10-15,2024,The Anthem,Washington,DC,2,1,Freight and Salvage,sample-freight,false,,912,0,13,0,,false,>,true,opener|jam
+sample-031,2024-10-15,2024,The Anthem,Washington,DC,2,2,Glass Canyon,sample-glass-canyon,false,,1507,6,5,0,,true,",",false,jam|peak
+sample-031,2024-10-15,2024,The Anthem,Washington,DC,2,3,Porch Light,sample-porch-light,false,,243,0,14,0,,false,",",false,ballad
+sample-031,2024-10-15,2024,The Anthem,Washington,DC,2,4,Cassette Summer,sample-cassette,false,,891,1,12,0,,false,>,true,opener|jam|peak
+sample-031,2024-10-15,2024,The Anthem,Washington,DC,2,5,Ember,sample-ember,false,,504,3,17,0,,false,>,true,
+sample-031,2024-10-15,2024,The Anthem,Washington,DC,2,6,Hammer and Tongs,sample-hammer,false,,773,0,17,0,,false,,false,closer
+sample-031,2024-10-15,2024,The Anthem,Washington,DC,E,1,One More Round,sample-one-more,false,,375,0,19,0,,false,,false,encore
+sample-032,2024-10-21,2024,Mission Ballroom,Denver,CO,1,1,Dial Tone,sample-dial-tone,false,,474,3,19,0,,false,",",false,opener
+sample-032,2024-10-21,2024,Mission Ballroom,Denver,CO,1,2,Porch Light,sample-porch-light,false,,253,0,15,0,,false,",",false,ballad
+sample-032,2024-10-21,2024,Mission Ballroom,Denver,CO,1,3,Slow Tide,sample-slow-tide,false,,275,0,22,0,,false,>,true,ballad
+sample-032,2024-10-21,2024,Mission Ballroom,Denver,CO,1,4,Ember,sample-ember,false,,541,0,18,0,,false,",",false,
+sample-032,2024-10-21,2024,Mission Ballroom,Denver,CO,1,5,Ninth Ward,sample-ninth-ward,false,,535,1,17,0,,false,>,true,
+sample-032,2024-10-21,2024,Mission Ballroom,Denver,CO,1,6,Tall Grass,sample-tall-grass,false,,755,0,21,0,,false,,false,closer
+sample-032,2024-10-21,2024,Mission Ballroom,Denver,CO,2,1,Wildfire,sample-wildfire,false,,883,3,12,0,,false,>,true,opener|jam|peak
+sample-032,2024-10-21,2024,Mission Ballroom,Denver,CO,2,2,Undertow,sample-undertow,false,,856,6,14,0,,false,>,true,jam|peak
+sample-032,2024-10-21,2024,Mission Ballroom,Denver,CO,2,3,November Letters,sample-november,false,,249,1,24,0,,false,>,true,
+sample-032,2024-10-21,2024,Mission Ballroom,Denver,CO,2,4,Crosstown,sample-crosstown,false,,507,0,19,0,,false,>,true,
+sample-032,2024-10-21,2024,Mission Ballroom,Denver,CO,2,5,Cassette Summer,sample-cassette,false,,839,0,13,0,,false,",",false,opener|jam|peak
+sample-032,2024-10-21,2024,Mission Ballroom,Denver,CO,2,6,Last Call,sample-last-call,false,,748,1,26,0,,false,,false,closer
+sample-032,2024-10-21,2024,Mission Ballroom,Denver,CO,E,1,One More Round,sample-one-more,false,,427,0,20,0,,false,,false,encore
+sample-033,2024-10-26,2024,The Fillmore,San Francisco,CA,1,1,First Light,sample-first-light,false,,595,1,20,0,,false,",",false,opener
+sample-033,2024-10-26,2024,The Fillmore,San Francisco,CA,1,2,Honest Work,sample-honest-work,false,,369,5,12,0,,false,>,true,
+sample-033,2024-10-26,2024,The Fillmore,San Francisco,CA,1,3,Crosstown,sample-crosstown,false,,415,0,20,0,,false,",",false,
+sample-033,2024-10-26,2024,The Fillmore,San Francisco,CA,1,4,Ninth Ward,sample-ninth-ward,false,,403,0,18,0,,false,",",false,
+sample-033,2024-10-26,2024,The Fillmore,San Francisco,CA,1,5,Last Call,sample-last-call,false,,739,0,27,0,,false,,false,closer
+sample-033,2024-10-26,2024,The Fillmore,San Francisco,CA,2,1,Freight and Salvage,sample-freight,false,,762,1,14,0,,false,>,true,opener|jam
+sample-033,2024-10-26,2024,The Fillmore,San Francisco,CA,2,2,Undertow,sample-undertow,false,,1039,0,15,0,,true,>,true,jam|peak
+sample-033,2024-10-26,2024,The Fillmore,San Francisco,CA,2,3,November Letters,sample-november,false,,315,0,25,0,,false,>,true,
+sample-033,2024-10-26,2024,The Fillmore,San Francisco,CA,2,4,Blue Hour,sample-blue-hour,false,,425,1,13,0,,false,",",false,
+sample-033,2024-10-26,2024,The Fillmore,San Francisco,CA,2,5,Hammer and Tongs,sample-hammer,false,,724,1,18,0,,false,,false,closer
+sample-033,2024-10-26,2024,The Fillmore,San Francisco,CA,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,264,3,13,0,,false,,false,ballad|encore
+sample-034,2024-11-01,2024,Red Rocks Amphitheatre,Morrison,CO,1,1,First Light,sample-first-light,false,,571,0,21,0,,false,",",false,opener
+sample-034,2024-11-01,2024,Red Rocks Amphitheatre,Morrison,CO,1,2,Static in the Wire,sample-static,false,,476,3,17,0,,false,",",false,
+sample-034,2024-11-01,2024,Red Rocks Amphitheatre,Morrison,CO,1,3,November Letters,sample-november,false,,272,0,26,0,,false,",",false,
+sample-034,2024-11-01,2024,Red Rocks Amphitheatre,Morrison,CO,1,4,Paperweight,sample-paperweight,false,,347,5,17,0,,false,",",false,
+sample-034,2024-11-01,2024,Red Rocks Amphitheatre,Morrison,CO,1,5,Tall Grass,sample-tall-grass,false,,765,1,22,0,,false,,false,closer
+sample-034,2024-11-01,2024,Red Rocks Amphitheatre,Morrison,CO,2,1,Freight and Salvage,sample-freight,false,,779,0,15,0,,false,>,true,opener|jam
+sample-034,2024-11-01,2024,Red Rocks Amphitheatre,Morrison,CO,2,2,The Long Way Down,sample-long-way,false,,1381,3,14,0,,false,",",false,jam|peak
+sample-034,2024-11-01,2024,Red Rocks Amphitheatre,Morrison,CO,2,3,Slow Tide,sample-slow-tide,false,,200,1,23,0,,false,",",false,ballad
+sample-034,2024-11-01,2024,Red Rocks Amphitheatre,Morrison,CO,2,4,Blue Hour,sample-blue-hour,false,,381,0,14,0,,false,>,true,
+sample-034,2024-11-01,2024,Red Rocks Amphitheatre,Morrison,CO,2,5,Hammer and Tongs,sample-hammer,false,,845,0,19,0,,false,,false,closer
+sample-034,2024-11-01,2024,Red Rocks Amphitheatre,Morrison,CO,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,318,0,14,0,,false,",",false,ballad|encore
+sample-034,2024-11-01,2024,Red Rocks Amphitheatre,Morrison,CO,E,2,Detour,sample-detour,false,,538,6,3,0,,false,,false,encore
+sample-035,2024-11-06,2024,The Capitol Theatre,Port Chester,NY,1,1,First Light,sample-first-light,false,,507,0,22,0,,false,>,true,opener
+sample-035,2024-11-06,2024,The Capitol Theatre,Port Chester,NY,1,2,Slow Tide,sample-slow-tide,false,,240,0,24,0,,false,",",false,ballad
+sample-035,2024-11-06,2024,The Capitol Theatre,Port Chester,NY,1,3,November Letters,sample-november,false,,243,0,27,0,,false,",",false,
+sample-035,2024-11-06,2024,The Capitol Theatre,Port Chester,NY,1,4,Ninth Ward,sample-ninth-ward,false,,525,1,19,0,,false,",",false,
+sample-035,2024-11-06,2024,The Capitol Theatre,Port Chester,NY,1,5,Hammer and Tongs,sample-hammer,false,,820,0,20,0,,false,,false,closer
+sample-035,2024-11-06,2024,The Capitol Theatre,Port Chester,NY,2,1,Wildfire,sample-wildfire,false,,882,2,13,0,,false,>,true,opener|jam|peak
+sample-035,2024-11-06,2024,The Capitol Theatre,Port Chester,NY,2,2,The Long Way Down,sample-long-way,false,,998,0,15,0,,true,",",false,jam|peak
+sample-035,2024-11-06,2024,The Capitol Theatre,Port Chester,NY,2,3,Porch Light,sample-porch-light,false,,284,2,16,0,,false,",",false,ballad
+sample-035,2024-11-06,2024,The Capitol Theatre,Port Chester,NY,2,4,Static in the Wire,sample-static,false,,543,0,18,0,,false,",",false,
+sample-035,2024-11-06,2024,The Capitol Theatre,Port Chester,NY,2,5,Ember,sample-ember,false,,620,2,19,0,,false,>,true,
+sample-035,2024-11-06,2024,The Capitol Theatre,Port Chester,NY,2,6,Tall Grass,sample-tall-grass,false,,722,0,23,0,,false,,false,closer
+sample-035,2024-11-06,2024,The Capitol Theatre,Port Chester,NY,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,308,0,15,0,,false,,false,ballad|encore
+sample-036,2024-11-12,2024,Orpheum Theatre,Boston,MA,1,1,Radio Hymn,sample-radio-hymn,false,,428,5,13,0,,false,",",false,opener
+sample-036,2024-11-12,2024,Orpheum Theatre,Boston,MA,1,2,Blue Hour,sample-blue-hour,false,,558,1,15,0,,false,",",false,
+sample-036,2024-11-12,2024,Orpheum Theatre,Boston,MA,1,3,Slow Tide,sample-slow-tide,false,,236,0,25,0,,false,",",false,ballad
+sample-036,2024-11-12,2024,Orpheum Theatre,Boston,MA,1,4,Static in the Wire,sample-static,false,,405,0,19,0,,false,",",false,
+sample-036,2024-11-12,2024,Orpheum Theatre,Boston,MA,1,5,Honest Work,sample-honest-work,false,,369,2,13,0,,false,",",false,
+sample-036,2024-11-12,2024,Orpheum Theatre,Boston,MA,1,6,Last Call,sample-last-call,false,,609,2,28,0,,true,,false,closer
+sample-036,2024-11-12,2024,Orpheum Theatre,Boston,MA,2,1,Freight and Salvage,sample-freight,false,,1013,1,16,0,,false,",",false,opener|jam
+sample-036,2024-11-12,2024,Orpheum Theatre,Boston,MA,2,2,Undertow,sample-undertow,false,,1093,2,16,0,,true,",",false,jam|peak
+sample-036,2024-11-12,2024,Orpheum Theatre,Boston,MA,2,3,Porch Light,sample-porch-light,false,,286,0,17,0,,false,>,true,ballad
+sample-036,2024-11-12,2024,Orpheum Theatre,Boston,MA,2,4,Crosstown,sample-crosstown,false,,581,2,21,0,,false,>,true,
+sample-036,2024-11-12,2024,Orpheum Theatre,Boston,MA,2,5,Tall Grass,sample-tall-grass,false,,690,0,24,0,,false,,false,closer
+sample-036,2024-11-12,2024,Orpheum Theatre,Boston,MA,E,1,One More Round,sample-one-more,false,,448,3,21,0,,false,,false,encore
+sample-037,2024-11-17,2024,The Salt Shed,Chicago,IL,1,1,First Light,sample-first-light,false,,427,1,23,0,,false,>,true,opener
+sample-037,2024-11-17,2024,The Salt Shed,Chicago,IL,1,2,November Letters,sample-november,false,,303,1,28,0,,false,",",false,
+sample-037,2024-11-17,2024,The Salt Shed,Chicago,IL,1,3,Ninth Ward,sample-ninth-ward,false,,538,1,20,0,,false,",",false,
+sample-037,2024-11-17,2024,The Salt Shed,Chicago,IL,1,4,Slow Tide,sample-slow-tide,false,,234,0,26,0,,false,",",false,ballad
+sample-037,2024-11-17,2024,The Salt Shed,Chicago,IL,1,5,Porch Light,sample-porch-light,false,,299,0,18,0,,false,>,true,ballad
+sample-037,2024-11-17,2024,The Salt Shed,Chicago,IL,1,6,Tall Grass,sample-tall-grass,false,,772,0,25,0,,false,,false,closer
+sample-037,2024-11-17,2024,The Salt Shed,Chicago,IL,2,1,Wildfire,sample-wildfire,false,,815,1,14,0,,true,",",false,opener|jam|peak
+sample-037,2024-11-17,2024,The Salt Shed,Chicago,IL,2,2,Undertow,sample-undertow,false,,858,0,17,0,,true,",",false,jam|peak
+sample-037,2024-11-17,2024,The Salt Shed,Chicago,IL,2,3,Crosstown,sample-crosstown,false,,420,0,22,0,,false,>,true,
+sample-037,2024-11-17,2024,The Salt Shed,Chicago,IL,2,4,Last Call,sample-last-call,false,,774,0,29,0,,false,,false,closer
+sample-037,2024-11-17,2024,The Salt Shed,Chicago,IL,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,376,1,16,0,,false,,false,ballad|encore
+sample-038,2024-11-23,2024,Ryman Auditorium,Nashville,TN,1,1,Dial Tone,sample-dial-tone,false,,537,5,20,0,,false,",",false,opener
+sample-038,2024-11-23,2024,Ryman Auditorium,Nashville,TN,1,2,Static in the Wire,sample-static,false,,457,1,20,0,,false,",",false,
+sample-038,2024-11-23,2024,Ryman Auditorium,Nashville,TN,1,3,Ninth Ward,sample-ninth-ward,false,,481,0,21,0,,false,",",false,
+sample-038,2024-11-23,2024,Ryman Auditorium,Nashville,TN,1,4,Honest Work,sample-honest-work,false,,380,1,14,0,,false,",",false,
+sample-038,2024-11-23,2024,Ryman Auditorium,Nashville,TN,1,5,Tall Grass,sample-tall-grass,false,,640,0,26,0,,false,,false,closer
+sample-038,2024-11-23,2024,Ryman Auditorium,Nashville,TN,2,1,Wildfire,sample-wildfire,false,,993,0,15,0,,false,",",false,opener|jam|peak
+sample-038,2024-11-23,2024,Ryman Auditorium,Nashville,TN,2,2,Glass Canyon,sample-glass-canyon,false,,1370,6,6,0,,true,",",false,jam|peak
+sample-038,2024-11-23,2024,Ryman Auditorium,Nashville,TN,2,3,Slow Tide,sample-slow-tide,false,,237,0,27,0,,false,>,true,ballad
+sample-038,2024-11-23,2024,Ryman Auditorium,Nashville,TN,2,4,Paperweight,sample-paperweight,false,,347,3,18,0,,false,>,true,
+sample-038,2024-11-23,2024,Ryman Auditorium,Nashville,TN,2,5,Hammer and Tongs,sample-hammer,false,,662,2,21,0,,false,,false,closer
+sample-038,2024-11-23,2024,Ryman Auditorium,Nashville,TN,E,1,Goodnight Marlene,sample-goodnight,true,The Marlenes,273,0,17,0,,false,,false,ballad|encore
+sample-039,2024-11-28,2024,The Anthem,Washington,DC,1,1,Dial Tone,sample-dial-tone,false,,455,0,21,0,,false,",",false,opener
+sample-039,2024-11-28,2024,The Anthem,Washington,DC,1,2,Blue Hour,sample-blue-hour,false,,479,2,16,0,,false,",",false,
+sample-039,2024-11-28,2024,The Anthem,Washington,DC,1,3,Porch Light,sample-porch-light,false,,279,1,19,0,,false,",",false,ballad
+sample-039,2024-11-28,2024,The Anthem,Washington,DC,1,4,Ninth Ward,sample-ninth-ward,false,,419,0,22,0,,false,>,true,
+sample-039,2024-11-28,2024,The Anthem,Washington,DC,1,5,Honest Work,sample-honest-work,false,,350,0,15,0,,false,",",false,
+sample-039,2024-11-28,2024,The Anthem,Washington,DC,1,6,Last Call,sample-last-call,false,,751,1,30,0,,false,,false,closer
+sample-039,2024-11-28,2024,The Anthem,Washington,DC,2,1,Freight and Salvage,sample-freight,false,,836,2,17,0,,false,",",false,opener|jam
+sample-039,2024-11-28,2024,The Anthem,Washington,DC,2,2,Glass Canyon,sample-glass-canyon,false,,1237,0,7,0,,false,",",false,jam|peak
+sample-039,2024-11-28,2024,The Anthem,Washington,DC,2,3,November Letters,sample-november,false,,236,1,29,0,,false,",",false,
+sample-039,2024-11-28,2024,The Anthem,Washington,DC,2,4,Cassette Summer,sample-cassette,false,,945,6,14,0,,false,",",false,opener|jam|peak
+sample-039,2024-11-28,2024,The Anthem,Washington,DC,2,5,Crosstown,sample-crosstown,false,,476,1,23,0,,false,",",false,
+sample-039,2024-11-28,2024,The Anthem,Washington,DC,2,6,Tall Grass,sample-tall-grass,false,,742,0,27,0,,false,,false,closer
+sample-039,2024-11-28,2024,The Anthem,Washington,DC,E,1,One More Round,sample-one-more,false,,401,2,22,0,,false,,false,encore
+sample-040,2024-12-04,2024,Mission Ballroom,Denver,CO,1,1,First Light,sample-first-light,false,,574,2,24,0,,false,>,true,opener
+sample-040,2024-12-04,2024,Mission Ballroom,Denver,CO,1,2,Ninth Ward,sample-ninth-ward,false,,432,0,23,0,,false,",",false,
+sample-040,2024-12-04,2024,Mission Ballroom,Denver,CO,1,3,Honest Work,sample-honest-work,false,,372,0,16,0,,false,",",false,
+sample-040,2024-12-04,2024,Mission Ballroom,Denver,CO,1,4,Paperweight,sample-paperweight,false,,419,1,19,0,,false,",",false,
+sample-040,2024-12-04,2024,Mission Ballroom,Denver,CO,1,5,Ember,sample-ember,false,,599,4,20,0,,false,",",false,
+sample-040,2024-12-04,2024,Mission Ballroom,Denver,CO,1,6,Hammer and Tongs,sample-hammer,false,,658,1,22,0,,false,,false,closer
+sample-040,2024-12-04,2024,Mission Ballroom,Denver,CO,2,1,Radio Hymn,sample-radio-hymn,false,,365,3,14,0,,false,",",false,opener
+sample-040,2024-12-04,2024,Mission Ballroom,Denver,CO,2,2,Undertow,sample-undertow,false,,887,2,18,0,,false,",",false,jam|peak
+sample-040,2024-12-04,2024,Mission Ballroom,Denver,CO,2,3,Porch Light,sample-porch-light,false,,253,0,20,0,,false,>,true,ballad
+sample-040,2024-12-04,2024,Mission Ballroom,Denver,CO,2,4,Blue Hour,sample-blue-hour,false,,528,0,17,0,,false,>,true,
+sample-040,2024-12-04,2024,Mission Ballroom,Denver,CO,2,5,Crosstown,sample-crosstown,false,,546,0,24,0,,false,",",false,
+sample-040,2024-12-04,2024,Mission Ballroom,Denver,CO,2,6,Tall Grass,sample-tall-grass,false,,606,0,28,0,,false,,false,closer
+sample-040,2024-12-04,2024,Mission Ballroom,Denver,CO,E,1,One More Round,sample-one-more,false,,374,0,23,0,,false,",",false,encore
+sample-040,2024-12-04,2024,Mission Ballroom,Denver,CO,E,2,Airplane Mode,sample-airplane,false,,396,36,2,20,,false,,false,encore
