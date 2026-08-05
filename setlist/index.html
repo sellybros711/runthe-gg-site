@@ -227,6 +227,11 @@
   .segout{display:inline-block; margin-left:5px; font-weight:900; color:var(--goldT);
     font-size:16px; line-height:1; vertical-align:-1px;}
   .song .o.seg{color:var(--goldT);}
+  .song .o.seg i{font-style:normal; color:var(--dim); font-weight:600;}
+  .commit{margin-top:7px; padding:7px 10px; border-radius:var(--r-sm); font-size:11.5px;
+    font-weight:700; line-height:1.45; color:var(--goldT);
+    background:color-mix(in srgb,var(--gold) 12%, transparent);
+    border:1px solid color-mix(in srgb,var(--gold) 30%, transparent);}
   .chip.sand{background:color-mix(in srgb,var(--violet) 22%, transparent); color:var(--violetT);
     border-color:color-mix(in srgb,var(--violet) 50%, transparent);}
   .chip.seg{background:color-mix(in srgb,var(--green) 20%, transparent); color:var(--greenT);
@@ -610,8 +615,8 @@ import {
   reactionFor, eventLine, setOpenLine,
   scoreShow, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=11';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=11';
+} from './scoring.js?v=12';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=12';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -935,6 +940,8 @@ function huntingFor(){
   const set = S.sets[si];
   if (!set.length) return null;
   const last = set[set.length - 1];
+  // Only a take that actually segued leaves anything open.
+  if (String(last.is_segue) !== 'true') return null;
   const p = S.data.partners && S.data.partners.get(last.song_id);
   if (!p || !p.size) return null;
   return { from: last, partners: p };
@@ -1038,7 +1045,10 @@ function renderDraft(){
           <span class="t">${esc(p.song)}${p.is_segue === 'true'
             ? '<span class="segout" title="Segued into the next song">&rsaquo;</span>' : ''}</span>
           ${why ? `<span class="o">${esc(why)}</span>`
-            : p.segued_into ? `<span class="o seg">ran into ${esc(p.segued_into)}</span>`
+            : p.segued_into ? `<span class="o seg">&rsaquo; ${esc(p.segued_into)}${
+                (() => { const n = (S.data.partners.get(p.song_id) || new Set()).size;
+                         return n > 1 ? ` <i>or ${n - 1} other${n > 2 ? 's' : ''}</i>` : ''; })()
+              }</span>`
             : p.is_cover === 'true' && p.original_artist
               ? `<span class="o">orig. ${esc(p.original_artist)}</span>` : ''}
         </span>
@@ -1086,7 +1096,10 @@ function renderDraft(){
           <b>${esc(hunt.from.song)} &rsaquo;</b>
           ${canFinish
             ? 'is still going — a song below finishes it.'
-            : 'is still going. Nothing here finishes it.'}
+            : `is still going. Nothing here lands it${
+                canRespin(S.sets, si, S.respins, S.closed, S.spent)
+                  ? ` — spinning costs ${fmtClock(respinCost(S.respins))}.`
+                  : '. Play anything to move on.'}`}
         </div>` : ''}
         ${fits.length ? '' : `<div class="warn">Nothing here fits ${esc(cfg.label)}.
           Close the set and move on.</div>`}
@@ -1105,6 +1118,9 @@ function renderDraft(){
             <button class="btn primary" type="button" id="lockBtn" ${S.pickedSong ? '' : 'disabled'}>
               ${S.pickedSong ? `Play it (${fmtClock(lenOf(S.pickedSong))})` : 'Pick a song'}
             </button>
+            ${S.pickedSong && String(S.pickedSong.is_segue) === 'true' ? `
+              <div class="commit">This one segues — you will need to land it next
+                or the transition is lost.</div>` : ''}
             <button class="btn closeset ${!fits.length || left < 6 * 60 ? 'urge' : ''}"
               type="button" id="closeSetBtn">
               <span class="cs-t">${si === ENCORE_INDEX ? 'End the show' : `Close ${esc(cfg.label)}`}</span>

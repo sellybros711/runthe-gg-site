@@ -185,8 +185,19 @@ group('a set never ends mid-segue', () => {
   eq(danglingSegue([[], [], []], 0), null, 'an empty set is not dangling');
 });
 
+group('only a take that segued can start one', () => {
+  const seg = (id) => ({ ...perf({ song_id: id, len: 600 }), is_segue: 'true' });
+  const cleanTake = (id) => ({ ...perf({ song_id: id, len: 600 }), is_segue: 'false' });
+  const pair = new Set(['a|b']);
+
+  eq(scoreShow([[seg('a'), cleanTake('b')], [], []], pair).segues.length, 1,
+     'a take that segued starts one');
+  eq(scoreShow([[cleanTake('a'), cleanTake('b')], [], []], pair).segues.length, 0,
+     'a clean take of the same song does NOT — this is what made the arrow a lie');
+});
+
 group('graded segues', () => {
-  const mk = (id, o={}) => ({ ...perf({ song_id: id, len: 600, ...o }) });
+  const mk = (id, o={}) => ({ ...perf({ song_id: id, len: 600, ...o }), is_segue: 'true' });
   const A = mk('a'), B = mk('b'), C = mk('c');
   const pair = new Set(['a|b', 'b|c', 'c|a', 'b|a']);
 
@@ -250,7 +261,9 @@ group('respins cost stage time', () => {
 });
 
 group('segues count only inside a set', () => {
-  const a = perf({ song_id: 'a', len: 600 }), b = perf({ song_id: 'b', len: 600 });
+  // The opening take must carry is_segue — a clean take starts nothing.
+  const a = { ...perf({ song_id: 'a', len: 600 }), is_segue: 'true' };
+  const b = { ...perf({ song_id: 'b', len: 600 }), is_segue: 'true' };
   const seg = new Set(['a|b']);
   eq(scoreShow([[a, b], [], []], seg).segues.length, 1, 'adjacent inside Set I');
   eq(scoreShow([[a], [b], []], seg).segues.length, 0, 'across the set break does not count');

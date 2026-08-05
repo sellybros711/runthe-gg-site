@@ -176,6 +176,19 @@ and did not play, scored in the role it best suits, so the sting is specific.
 The show ends when the encore closes. **Round count is emergent**: chase monsters
 and the night is over in nine picks, play tight and it runs past fifteen.
 
+**Only a take that actually segued can start one.** This was wrong at first and
+it made the arrow a lie: scoring asked only "is A|B canonical", which is a fact
+about the *song*, so 94% of un-arrowed performances could start a segue too and
+a player picking arrows on purpose got nothing for it — 12 arrow picks bought
+1.8 segues. The arrow now means what it says.
+
+Because the bet is real it is also shown: an arrow says how many songs could
+land it (`› So Ready or 1 other` is a very different pick from `› ... or 14
+others`), selecting one warns that you are committing, and when nothing on
+offer lands it the banner names the price of a spin. 80 of 228 arrows have
+exactly one possible finisher, and the next show contains one about 40% of the
+time, so this is a gamble the player should be able to see.
+
 **Segues are visible now, and buildable.** A song that ran into the next one
 carries a `>` and says what it ran into — *"Borne › ran into The Way It Is"*.
 Play one and the set is left mid-segue; the header says so, and any song that

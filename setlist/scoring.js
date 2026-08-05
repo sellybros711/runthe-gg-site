@@ -116,9 +116,21 @@ export const TIME_POINTS_PER_SET = 65;
 export const SHORT_SET_RATIO = 0.80;
 
 // ── FLOW ─────────────────────────────────────────────────────────────────────
-/* Segues are graded, because "these two happen to be a canonical pair" and
-   "you rebuilt the exact transition from that night" are not the same feat.
-   Each tier is additive on the one below it. */
+/*
+ * ONLY A TAKE THAT ACTUALLY SEGUED CAN START ONE.
+ *
+ * This was wrong at first and it made the arrow a lie. Scoring asked only "is
+ * A|B a canonical pair", which is a fact about the SONG — so a take that ran
+ * into the next song and a take that ended cleanly behaved identically, and
+ * 94% of un-arrowed performances could start a segue too. A player picking
+ * arrows on purpose got nothing for it: 12 arrow picks bought 1.8 segues.
+ *
+ * Now the arrow means what it says. A segue starts only from a performance
+ * that did not finish, which is also why placing one commits you to landing it
+ * (see wouldStrand) — you have left a song hanging mid-jam.
+ *
+ * Grading is additive on top of that.
+ */
 export const SEGUE_POINTS = 45;         // the pair is canonical for this band
 export const SEGUE_EXACT_BONUS = 30;    // ...and it is the pair THAT take played
 export const SEGUE_CHAIN_BONUS = 20;    // per link past the second in a run
@@ -568,6 +580,9 @@ export function scoreShow(sets, segues, spent) {
     let run = 0;
     for (let i = 0; i < songs.length - 1; i++) {
       const a = songs[i], b = songs[i + 1];
+      // The take has to have actually segued. A clean take of the same song
+      // stops here, which is what makes the arrow worth chasing.
+      if (String(a.is_segue) !== 'true') { run = 0; continue; }
       if (!segues || !segues.has(segueKey(a, b))) { run = 0; continue; }
       run += 1;
 
