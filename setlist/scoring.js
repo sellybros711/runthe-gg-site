@@ -351,6 +351,41 @@ export function setNote(ratio, songs) {
   return 'Barely a set.';
 }
 
+// ── fan reactions, song by song ──────────────────────────────────────────────
+/*
+ * What the room does when a song lands. Keyed to how the pick actually scored
+ * relative to an ordinary one, so the reaction is earned rather than random —
+ * a beloved song in the right place at twenty-two minutes should not draw the
+ * same line as a filler track dropped in the wrong slot.
+ *
+ * Short and punchy on purpose: this plays back one song at a time, so anything
+ * longer than a breath gets in the way of the next one.
+ */
+export const REACTION_TIERS = [
+  { min: 130, lines: ['The place came apart.', 'Absolute bedlam.', 'Phones up. All of them.',
+                      'They will talk about this one.'] },
+  { min: 100, lines: ['Enormous roar.', 'The room went up.', 'That is why people drive six hours.'] },
+  { min: 75,  lines: ['Big cheer.', 'Heads turning to each other.', 'Real recognition in the room.'] },
+  { min: 50,  lines: ['Solid. Crowd stayed with it.', 'Nodding along.', 'Goes down easy.'] },
+  { min: 30,  lines: ['Polite. A few people sat down.', 'Bar queue got longer.', 'Fine. Just fine.'] },
+  { min: 0,   lines: ['Confused looks.', 'That killed the room a bit.', 'A lot of people checked their phones.'] },
+];
+
+/** A reaction line for one scored pick. `seed` keeps a replay deterministic. */
+export function reactionFor(score, seed = 0) {
+  const tier = REACTION_TIERS.find(t => score.subtotal >= t.min) || REACTION_TIERS[REACTION_TIERS.length - 1];
+  return tier.lines[Math.abs(seed) % tier.lines.length];
+}
+
+/** A louder line for the things that are not just a good song. */
+export function eventLine(kinds) {
+  if (!kinds) return null;
+  if (kinds.includes('sandwich')) return 'And back into it. The sandwich closes.';
+  if (kinds.includes('chain')) return 'Still going. No gaps.';
+  if (kinds.includes('exact')) return 'Straight in, exactly like the record of it.';
+  return 'No gap — straight into it.';
+}
+
 // ── the one that got away ────────────────────────────────────────────────────
 /**
  * The best song a player was shown and did not play.

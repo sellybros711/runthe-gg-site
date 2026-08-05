@@ -187,6 +187,24 @@ cannot know which song will close a set until you close it — same as the band.
 Only shows where **every** song has a recorded length are drawable, since time is
 the currency and 17% of the archive is untimed. That leaves 425 of 655.
 
+## The show
+
+The score is not handed over as a number. When the encore closes the night is
+**played back** — set by set, song by song, the running total climbing as each
+one lands, with the room reacting to it:
+
+```
+SET I
+  Turbulence & The Night Rays   +39   Polite. A few people sat down.
+  Atlas Dogs                    +41   Fine. Just fine.
+  › No gap — straight into it.  +75
+  Hot Tea                      +118   The place came apart.
+```
+
+Reactions are keyed to what the pick actually scored, so they are earned rather
+than decorative, and every beat is derived from the already-computed result —
+the playback cannot disagree with the scorecard that follows it. Tap to skip.
+
 ## Scoring
 
 `scoring.js` is the source of truth; this is a summary, not a spec.

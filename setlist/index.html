@@ -427,6 +427,35 @@
   .headline{font-size:15px; font-weight:800; line-height:1.4; margin-top:8px;
     color:var(--goldT); font-style:italic;}
 
+  /* ---------------- the show playback ---------------- */
+  .showsim{padding-top:6px;}
+  .sim-head{position:sticky; top:52px; z-index:20; padding:12px 16px; text-align:center;
+    margin-bottom:12px;}
+  .sim-score{font-family:var(--hero); font-size:44px; line-height:1; color:var(--greenT);
+    font-variant-numeric:tabular-nums;}
+  .sim-sub{font-size:12.5px; font-weight:700; color:var(--dim); margin-top:4px;
+    min-height:1.2em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sim-feed{display:flex; flex-direction:column; gap:8px;}
+  .sim-set{font-family:var(--hero); font-size:15px; letter-spacing:2px; text-transform:uppercase;
+    color:var(--dim); padding:10px 0 2px; border-top:1px solid var(--line);}
+  .sim-song{background:var(--card); border:1px solid var(--line); border-radius:var(--r-md);
+    padding:10px 13px; box-shadow:var(--shadow);
+    animation:simIn .28s cubic-bezier(.16,.84,.3,1) both;}
+  @keyframes simIn{ from{ opacity:0; transform:translateY(9px); } to{ opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce){ .sim-song{animation:none;} }
+  .sim-row{display:flex; align-items:baseline; justify-content:space-between; gap:10px;}
+  .sim-nm{font-size:15.5px; font-weight:800; min-width:0;}
+  .sim-pts{font-family:var(--hero); font-size:19px; color:var(--goldT); flex:0 0 auto;}
+  .sim-react{font-size:12.5px; font-weight:600; color:var(--mut); margin-top:3px; font-style:italic;}
+  .sim-seg{font-size:11.5px; font-weight:800; color:var(--violetT); margin-bottom:5px;}
+  .sim-seg b{color:var(--goldT);}
+  .sim-time{font-size:12px; font-weight:700; color:var(--mut); padding:2px 2px 6px;}
+  .sim-time b{color:var(--goldT);}
+  .sim-final{margin-top:10px; padding-top:12px; border-top:2px solid var(--line2); text-align:center;}
+  .sim-rest{font-size:12.5px; font-weight:700; color:var(--mut);}
+  .sim-rest b{color:var(--goldT);}
+  .sim-final .headline{margin:8px 0 14px;}
+
   .toast{position:fixed; left:50%; bottom:calc(22px + env(safe-area-inset-bottom,0)); z-index:99;
     transform:translateX(-50%) translateY(80px); background:var(--card3);
     border:1px solid var(--line2); padding:11px 17px; border-radius:10px;
@@ -550,10 +579,11 @@ import {
   SETS, MAX_ROUNDS, ENCORE_INDEX, ARC_MAX, TIME_POINTS_PER_SET,
   RESPIN_COSTS, respinCost, canRespin, theOneThatGotAway,
   wouldStrand, danglingSegue, closesSandwich, SANDWICH_BONUS,
+  reactionFor, eventLine,
   scoreShow, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=8';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=8';
+} from './scoring.js?v=9';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=9';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -1371,7 +1401,137 @@ function nextRound(){
 function finishShow(){
   S.result = scoreShow(S.sets, S.data.segues, S.spent);
   S.missed = theOneThatGotAway(S.seenSongs, S.sets);
-  setScreen('result');
+  setScreen('show');
+}
+
+/* THE SHOW.
+ *
+ * A score you are handed is a number. A score that arrives one song at a time,
+ * with the room reacting, is a gig. Same arithmetic either way — this just
+ * plays it in the order it would have happened, which is the order the player
+ * built it in.
+ *
+ * Every beat is derived from the already-computed result, so nothing here can
+ * disagree with the breakdown that follows it.
+ */
+function showBeats(){
+  const r = S.result;
+  const beats = [];
+  let running = 0;
+
+  S.sets.forEach((set, si) => {
+    if (!set.length) return;
+    beats.push({ kind: 'set', label: SETS[si].label, running });
+
+    set.forEach((perf, j) => {
+      const sc = r.perSet[si][j].score;
+      running += sc.subtotal;
+      // A segue INTO this song is the loud part, so it rides with the song.
+      const seg = r.segues.find(x => x.set === si && x.to === j);
+      if (seg) running += seg.points;
+      beats.push({
+        kind: 'song', perf, sc, running,
+        role: r.perSet[si][j].role.name,
+        gained: sc.subtotal + (seg ? seg.points : 0),
+        reaction: reactionFor(sc, j + si * 7 + perf.song.length),
+        event: seg ? eventLine(seg.kinds) : null,
+        segPoints: seg ? seg.points : 0,
+      });
+    });
+
+    const t = r.time[si];
+    running += t.points;
+    beats.push({ kind: 'time', label: SETS[si].label, note: t.note,
+      points: t.points, used: t.used, budget: t.budget, running });
+  });
+
+  // Whatever is left is the whole-night stuff: arc, variety, and the verdict.
+  const rest = r.total - running;
+  beats.push({ kind: 'final', rest, running: r.total, headline: r.headline });
+  return beats;
+}
+
+function renderShow(){
+  const beats = showBeats();
+  app.innerHTML = `
+    <div class="showsim" id="showSim">
+      <div class="card sim-head">
+        <div class="eyebrow">The show</div>
+        <div class="sim-score" id="simScore">0</div>
+        <div class="sim-sub" id="simSub">Lights down.</div>
+      </div>
+      <div class="sim-feed" id="simFeed"></div>
+      <div class="skip" id="simSkip">Tap to skip &rarr;</div>
+    </div>`;
+
+  const feed = document.getElementById('simFeed');
+  const scoreEl = document.getElementById('simScore');
+  const subEl = document.getElementById('simSub');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  let i = 0, stopped = false;
+  const paint = b => {
+    if (b.kind === 'set'){
+      feed.insertAdjacentHTML('beforeend',
+        `<div class="sim-set">${esc(b.label)}</div>`);
+      subEl.textContent = `${b.label} — here we go.`;
+    } else if (b.kind === 'song'){
+      feed.insertAdjacentHTML('beforeend', `
+        <div class="sim-song">
+          ${b.event ? `<div class="sim-seg">&rsaquo; ${esc(b.event)}${
+            b.segPoints ? ` <b>+${b.segPoints}</b>` : ''}</div>` : ''}
+          <div class="sim-row">
+            <span class="sim-nm">${esc(b.perf.song)}</span>
+            <span class="sim-pts">+${b.gained}</span>
+          </div>
+          <div class="sim-react">${esc(b.reaction)}</div>
+        </div>`);
+      subEl.textContent = b.perf.song;
+    } else if (b.kind === 'time'){
+      feed.insertAdjacentHTML('beforeend', `
+        <div class="sim-time">${esc(b.label)} ran ${fmtClock(b.used)} of ${fmtClock(b.budget)}
+          — ${esc(b.note)} <b>+${b.points}</b></div>`);
+    } else {
+      feed.insertAdjacentHTML('beforeend', `
+        <div class="sim-final">
+          <div class="sim-rest">Flow and the rest of the night <b>+${b.rest}</b></div>
+          <div class="headline">&ldquo;${esc(b.headline)}&rdquo;</div>
+          <button class="btn primary" type="button" id="toResult">See the scorecard</button>
+        </div>`);
+      subEl.textContent = 'House lights.';
+    }
+    scoreEl.textContent = b.running;
+    feed.lastElementChild.scrollIntoView({ block: 'nearest',
+      behavior: reduce ? 'auto' : 'smooth' });
+  };
+
+  const step = () => {
+    if (stopped) return;
+    if (i >= beats.length) return;
+    const b = beats[i++];
+    paint(b);
+    const wait = b.kind === 'song' ? (b.event ? 1150 : 850)
+      : b.kind === 'set' ? 700 : b.kind === 'time' ? 750 : 0;
+    if (i < beats.length) S.revealTimer = setTimeout(step, wait);
+  };
+
+  const skip = () => {
+    if (stopped) return;
+    stopped = true;
+    clearTimeout(S.revealTimer);
+    while (i < beats.length){ const b = beats[i++]; paint(b); }
+    stopped = false;
+    i = beats.length;
+    const sk = document.getElementById('simSkip');
+    if (sk) sk.remove();
+  };
+  document.getElementById('showSim').addEventListener('click', e => {
+    if (e.target.closest('#toResult')){ setScreen('result'); return; }
+    skip();
+  });
+
+  if (reduce){ skip(); return; }
+  S.revealTimer = setTimeout(step, 500);
 }
 
 function render(){
@@ -1379,6 +1539,7 @@ function render(){
   if (S.screen === 'loading') return;
   if (S.screen === 'reveal')  return renderReveal();
   if (S.screen === 'draft')   return renderDraft();
+  if (S.screen === 'show')    return renderShow();
   if (S.screen === 'result')  return renderResult();
 }
 
