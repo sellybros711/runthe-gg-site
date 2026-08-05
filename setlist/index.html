@@ -379,8 +379,17 @@
   .result{max-width:600px; margin:0 auto;}
   .scorebox{text-align:center; padding:26px 20px 22px; margin-bottom:16px;}
   .scorebox .n{font-family:var(--hero); font-size:clamp(64px,17vw,104px); line-height:.9;
-    color:var(--green); font-variant-numeric:tabular-nums;}
-  .breakdown{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin:16px 0;}
+    font-variant-numeric:tabular-nums;}
+
+  /* A score's colour is a rating and nothing else — green good, yellow middling,
+     red weak — so no tie dye goes anywhere near one. The dye stays on identity
+     (the wordmark, the top rule), where it has no number to contradict. */
+  .grade-hot{color:var(--greenT);}
+  .grade-warm{color:var(--goldT);}
+  .grade-cold{color:var(--redT);}
+  /* Four categories, two rows on a phone rather than four squeezed columns. */
+  .breakdown{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin:16px 0;}
+  @media (min-width:520px){ .breakdown{grid-template-columns:repeat(4,minmax(0,1fr));} }
   .bd{padding:12px 10px; text-align:center; border-radius:var(--r-md); background:var(--card2);
     border:1px solid var(--line);}
   .bd .v{font-family:var(--hero); font-size:24px; line-height:1;}
@@ -524,14 +533,8 @@
   .showsim{padding-top:6px;}
   .sim-head{position:sticky; top:52px; z-index:20; padding:12px 16px; text-align:center;
     margin-bottom:12px;}
-  .sim-score{font-family:var(--hero); font-size:44px; line-height:1; color:var(--greenT);
-    font-variant-numeric:tabular-nums;}
-  @supports (-webkit-background-clip: text) or (background-clip: text) {
-    .sim-score{ background:var(--dye); background-size:200% 200%;
-      -webkit-background-clip:text; background-clip:text;
-      -webkit-text-fill-color:transparent; color:transparent;
-      animation:dyeDrift 12s ease-in-out infinite; }
-  }
+  .sim-score{font-family:var(--hero); font-size:44px; line-height:1;
+    font-variant-numeric:tabular-nums; transition:color .5s ease;}
   .sim-sub{font-size:12.5px; font-weight:700; color:var(--dim); margin-top:4px;
     min-height:1.2em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .sim-feed{display:flex; flex-direction:column; gap:8px;}
@@ -612,6 +615,10 @@
   .flowrow{display:flex; justify-content:space-between; align-items:flex-start; gap:12px;
     padding:9px 0; border-bottom:1px solid var(--line);}
   .flowrow:last-child{border-bottom:0;}
+  /* A breadth card you did not earn still gets a row — a blank where points
+     could have been is the whole message. */
+  .flowrow.miss{opacity:.5;}
+  .flowrow.miss .fp{color:var(--dim);}
   .fl b{display:block; font-size:14px; font-weight:800;}
   .fl i{display:block; font-style:normal; font-size:12px; color:var(--mut); font-weight:600;
     line-height:1.5; margin-top:2px;}
@@ -679,10 +686,10 @@ import {
   RESPIN_COSTS, respinCost, canRespin, theOneThatGotAway,
   wouldStrand, danglingSegue, closesSandwich, SANDWICH_BONUS,
   reactionFor, eventLine, setOpenLine,
-  scoreShow, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
+  scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=12';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=12';
+} from './scoring.js?v=13';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=13';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -1299,6 +1306,7 @@ function renderResult(){
         <div class="bd"><div class="v">${r.songTotal}</div><div class="k">Songs</div></div>
         <div class="bd"><div class="v">${r.timeTotal}</div><div class="k">Time</div></div>
         <div class="bd"><div class="v">${r.flowTotal}</div><div class="k">Flow</div></div>
+        <div class="bd"><div class="v">${r.breadthTotal}</div><div class="k">Breadth</div></div>
       </div>
 
       <div class="card setlist" style="position:static">
@@ -1322,12 +1330,19 @@ function renderResult(){
 
         <div class="sheetgrp">
           <h3>Flow <span>${r.flowTotal}</span></h3>
-          <div class="flowrow">
-            <div class="fl"><b>Segues</b><i>${r.segues.length
-              ? esc(r.segues.map(x => `${x.a} → ${x.b}`).join(' · '))
-              : 'No two songs you played back to back are a segue the band has played'}</i></div>
-            <div class="fp">${r.segues.reduce((a, x) => a + x.points, 0)}</div>
-          </div>
+          ${r.segues.length
+            ? r.segues.map(x => `<div class="flowrow">
+                <div class="fl"><b>${esc(x.a)} → ${esc(x.b)}</b><i>${
+                  x.times > 1
+                    ? `The band has played this pair ${x.times} times — ${
+                        Math.round(x.fam * 100)}% of a first-time find`
+                    : 'They have played this pair once, ever'}${
+                  x.decay < 1 ? ` · ${Math.round(x.decay * 100)}% (segue ${
+                    r.segues.indexOf(x) + 1} of the night)` : ''}</i></div>
+                <div class="fp">${x.points}</div></div>`).join('')
+            : `<div class="flowrow">
+                <div class="fl"><b>Segues</b><i>No two songs you played back to back are a segue the band has played</i></div>
+                <div class="fp">0</div></div>`}
           <div class="flowrow">
             <div class="fl"><b>Energy arc</b><i>${r.arc >= ARC_MAX * 0.75
               ? 'Builds and releases where a real show does'
@@ -1335,11 +1350,13 @@ function renderResult(){
               : 'The peaks and lulls are not where the night wants them'}</i></div>
             <div class="fp">${r.arc}</div>
           </div>
-          <div class="flowrow">
-            <div class="fl"><b>Variety</b><i>${r.roles.length} distinct role${
-              r.roles.length === 1 ? '' : 's'}${r.roles.length ? ' — ' + esc(r.roles.join(', ')) : ''}</i></div>
-            <div class="fp">${r.variety}</div>
-          </div>
+        </div>
+
+        <div class="sheetgrp">
+          <h3>Breadth <span>${r.breadthTotal}</span></h3>
+          ${r.breadth.map(c => `<div class="flowrow${c.got ? '' : ' miss'}">
+            <div class="fl"><b>${esc(c.label)}</b><i>${esc(c.got ? c.blurb : c.missed)}</i></div>
+            <div class="fp">${c.got ? c.points : 0}</div></div>`).join('')}
         </div>
 
         <div class="sheettot"><span>Total</span><b>${r.total}</b></div>
@@ -1354,6 +1371,9 @@ function renderResult(){
 
   const el = document.getElementById('scoreN');
   const target = r.total;
+  // The grade is the finished night's, fixed up front — the count-up animation
+  // must not walk the colour from red to green on its way to the number.
+  el.className = 'n grade-' + gradeScore(r.total);
   if (matchMedia('(prefers-reduced-motion: reduce)').matches){ el.textContent = target; }
   else {
     const t0 = performance.now(), dur = 900;
@@ -1404,15 +1424,20 @@ function shareText(){
     if (!set.length) return;
     if (i === ENCORE_INDEX) lines.push('E:');
     set.forEach((p, j) => {
-      // A song segues if the NEXT song in this set is one it has run into.
+      // Same test scoring uses, or the written setlist prints arrows the
+      // scorecard paid nothing for: the TAKE has to have segued, not just the
+      // song pair be one the band has played.
       const nxt = set[j + 1];
-      const mark = nxt && S.data.segues.has(`${p.song_id}|${nxt.song_id}`) ? ' >' : '';
+      const mark = nxt && String(p.is_segue) === 'true'
+        && S.data.segues.has(`${p.song_id}|${nxt.song_id}`) ? ' >' : '';
       lines.push(p.song + mark);
     });
     lines.push('');
   });
 
   lines.push(`${r.total} pts · ${r.stats.songs} songs · ${fmtClock(r.totalUsed)}`);
+  const got = r.breadth.filter(c => c.got).map(c => c.label.toLowerCase());
+  if (got.length) lines.push(got.join(' · '));
   lines.push(`"${r.headline}"`);
   lines.push('');
   lines.push('runthe.gg/setlist');
@@ -1560,7 +1585,7 @@ function nextRound(){
 }
 
 function finishShow(){
-  S.result = scoreShow(S.sets, S.data.segues, S.spent);
+  S.result = scoreShow(S.sets, S.data.segues, S.spent, S.data.segueCounts);
   S.missed = theOneThatGotAway(S.seenSongs, S.sets);
   setScreen('show');
 }
@@ -1578,11 +1603,11 @@ function finishShow(){
 function showBeats(){
   const r = S.result;
   const beats = [];
-  let running = 0;
+  let running = 0, played = 0;
 
   S.sets.forEach((set, si) => {
     if (!set.length) return;
-    beats.push({ kind: 'set', label: SETS[si].label, running });
+    beats.push({ kind: 'set', label: SETS[si].label, running, played });
 
     set.forEach((perf, j) => {
       const sc = r.perSet[si][j].score;
@@ -1590,8 +1615,9 @@ function showBeats(){
       // A segue INTO this song is the loud part, so it rides with the song.
       const seg = r.segues.find(x => x.set === si && x.to === j);
       if (seg) running += seg.points;
+      played += 1;
       beats.push({
-        kind: 'song', perf, sc, running,
+        kind: 'song', perf, sc, running, played,
         role: r.perSet[si][j].role.name,
         gained: sc.subtotal,
         reaction: reactionFor(sc, perf, j + si * 7 + perf.song.length),
@@ -1603,12 +1629,15 @@ function showBeats(){
     const t = r.time[si];
     running += t.points;
     beats.push({ kind: 'time', label: SETS[si].label, note: t.note,
-      points: t.points, used: t.used, budget: t.budget, running });
+      points: t.points, used: t.used, budget: t.budget, running, played });
   });
 
-  // Whatever is left is the whole-night stuff: arc, variety, and the verdict.
+  // Whatever is left is the whole-night stuff: arc, breadth, and the verdict.
   const rest = r.total - running;
-  beats.push({ kind: 'final', rest, running: r.total, headline: r.headline });
+  beats.push({ kind: 'final', rest, running: r.total, played, headline: r.headline });
+  const totalSongs = played || 1;
+  beats.forEach(b => { b.progress = Math.min(1, (b.played || 0) / totalSongs); });
+  beats[beats.length - 1].progress = 1;
   return beats;
 }
 
@@ -1662,6 +1691,9 @@ function renderShow(){
       subEl.textContent = 'House lights.';
     }
     scoreEl.textContent = b.running;
+    // Too few songs in and a projection is noise, so hold the neutral colour.
+    scoreEl.className = 'sim-score grade-' + ((b.played || 0) < GRADE_SETTLE
+      ? 'warm' : gradeRunning(b.running, b.progress));
     feed.lastElementChild.scrollIntoView({ block: 'nearest',
       behavior: reduce ? 'auto' : 'smooth' });
   };

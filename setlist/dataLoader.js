@@ -118,13 +118,19 @@ export function loadBand(csvText) {
   // A segue is canonical if the band has ever played A directly into B with a
   // segue transition. Collected across the whole history, not per show.
   const segues = new Set();
+  // ...and how many times. 1210 of the band's 1440 pairs have happened exactly
+  // once, but Seekers pt I > pt II has happened 56 times because that is how
+  // the song is written. Scoring needs to tell those apart.
+  const segueCounts = new Map();
   for (const show of shows) {
     const s = show.songs;
     for (let i = 0; i < s.length - 1; i++) {
       if (s[i].is_segue !== 'true' && s[i].is_segue !== '1') continue;
       // Only within the same set — a set break is never a segue.
       if (setRank(s[i].set) !== setRank(s[i + 1].set)) continue;
-      segues.add(`${s[i].song_id}|${s[i + 1].song_id}`);
+      const key = `${s[i].song_id}|${s[i + 1].song_id}`;
+      segues.add(key);
+      segueCounts.set(key, (segueCounts.get(key) || 0) + 1);
       // Remember what THIS take ran into, so the draft screen can show a player
       // "Drive > Bob Don" rather than an unexplained arrow. A segue is only
       // findable if you know what you are looking for.
@@ -142,7 +148,7 @@ export function loadBand(csvText) {
     partners.get(a).add(b);
   }
 
-  return { shows, segues, partners, performances: rows.length };
+  return { shows, segues, segueCounts, partners, performances: rows.length };
 }
 
 export default loadBand;
