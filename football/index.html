@@ -809,6 +809,10 @@ window.GA_ID='G-L29P5MRWKE';
   .pod.p2 .pl{color:#cbd5e1}
   .pod.p3{border-color:rgba(180,120,70,.34)}
   .pod.p3 .pl{color:#c08457}
+  /* A PERFECT SEASON ON THE STEPS. The place colours above are medals, gold-silver-bronze,
+     which is a different claim from the gilded number and stays. What joins the rule is the
+     FIGURE: gold on the podium means the same thing it means in the list below it. */
+  .pod.perfect .pr{color:#fcd34d}
   .pod.mine{border-color:rgba(59,130,246,.6);
     background:linear-gradient(180deg,rgba(59,130,246,.18),rgba(59,130,246,.04))}
 
@@ -11426,7 +11430,8 @@ function paintPodium(rows){
       :lbSort==='rating'?'rating'
       :(row.perfect?'perfect':row.seed_label.toLowerCase());
     const pf=avatarOf(row.display_name,row.display_color,row.display_initials);
-    return '<div class="pod p'+place+(mine?' mine':'')+'" data-i="'+i+'">'+
+    return '<div class="pod p'+place+(mine?' mine':'')+(row.perfect?' perfect':'')
+      +'" data-i="'+i+'">'+
       '<span class="pl">'+place+'</span>'+
       avatarHTML(pf,'big')+
       '<span class="pn">'+champBadge(fateOfRow(row).badge)+esc(playerName(row,mine))+'</span>'+
@@ -11591,7 +11596,8 @@ function boardRow(row,i){
   const mine=submitted&&row.id===submitted;
   /* Gold is for leading a board, so it is wrong on a reversed one: row 1 there is
      the worst run in the window, and gilding it says the opposite of what it is. */
-  const lead=rank===1&&lbDir==='desc';
+  /* Gilded for a perfect season, not for leading. Rank is already said by the rank. */
+  const lead=!!row.perfect;
   /* Every row says WHO. With no rows carrying an identity the board read as a list
      of numbers rather than a list of people, which is what made it look empty of
      players. A guest still gets Anonymous, because saying that is better than
@@ -11699,7 +11705,11 @@ function ratingCell(row){
    instead of saying it is not known. */
 function gmCell(row){
   const g=(row.gm_rating===null||row.gm_rating===undefined)?null:Number(row.gm_rating);
-  return '<b class="big'+(g!==null&&g>=90?' gold':'')+'">'+(g===null?'--':g.toFixed(2))+'</b>'+
+  /* GOLD IS THE PERFECT SEASON AND NOTHING ELSE. This gilded any GM rating over 90, which
+     put gold on a board row that had lost four games while the record and rating boards were
+     spending the same colour on the rarest thing in the game. A score being high is what the
+     number itself says; the colour is reserved. */
+  return '<b class="big'+(row.perfect?' gold':'')+'">'+(g===null?'--':g.toFixed(2))+'</b>'+
     '<span>'+esc(row.wins+'-'+row.losses)+'</span>';
 }
 
@@ -11783,9 +11793,15 @@ function paintMyPin(rows){
   const p=runPayload();
   /* The same right-hand column the rows carry, so the figure your eye compares against
      is the same quantity in the same place. */
+  /* All THREE axes, not two. On the GM board this fell through to the record cell, so the
+     preview row showed a record in the column every row above it was using for a GM rating,
+     which is the one column on the row whose whole job is to be comparable. */
   const cell=lbSort==='rating'
     ? ratingCell({team_rating:p.teamRating,wins:run.outcome.wins,losses:run.outcome.losses,
                   perfect:run.outcome.perfect})
+    : lbSort==='gm'
+    ? gmCell({gm_rating:p.gmRating,wins:run.outcome.wins,losses:run.outcome.losses,
+              perfect:run.outcome.perfect})
     : recordCell({wins:run.outcome.wins,losses:run.outcome.losses,
                   perfect:run.outcome.perfect,point_diff:p.pointDiff});
   /* Whether it is a place or a preview of one is a real distinction and the label makes
@@ -11798,10 +11814,13 @@ function paintMyPin(rows){
   const pf=avatarOf(live?authState.name:null,myAvatar.color,myAvatar.initials);
   el.innerHTML='<span class="pinlab">'+(live?'Your place':'Where this run would sit')+
     ' \u00b7 '+esc(SORT_META[lbSort].label.toLowerCase())+', '+esc(of)+'</span>'+
-    '<div class="lbr mine"><span class="rk">'+
+    '<div class="lbr mine'+(run.outcome.perfect?' gold':'')+'"><span class="rk">'+
       (lbMyPlace>999?'#'+lbMyPlace.toLocaleString():lbMyPlace)+'</span>'+
     avatarHTML(pf)+
-    '<span class="who"><b>'+(live?'You':'This run')+'</b><span>'+
+    /* The same crown or trophy every other row on this board wears. It was the one place a
+       champion went unmarked, and it is the row the player is actually looking for. */
+    '<span class="who"><b>'+champBadge(fateOfOutcome(run.outcome).badge)
+      +(live?'You':'This run')+'</b><span>'+
       esc(run.outcome.record+' \u00b7 '+(rosterLine(p.picks)||'this run'))+'</span></span>'+
     '<span class="rec">'+cell+'</span>'+
     '<span class="go">&rsaquo;</span></div>';
