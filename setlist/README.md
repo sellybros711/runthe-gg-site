@@ -16,8 +16,8 @@ sitemap, same as `/arcade/` and `/touchdown/` while in development.
   verify-scoring.mjs  QA harness: 72 assertions against the v2 spec
   data/
     DATA_CONTRACT.md  the CSV columns, and how tags are derived
-    goose.csv         NOT PRESENT YET — see "Getting the data"
-    sample.csv        invented data, so the game is playable meanwhile
+    goose.csv         7504 performances · 655 shows · 366 songs · 2014–2026
+    sample.csv        invented data, kept as an offline/regression fixture
 /scripts/setlist/
   ingest_band.mjs     elgoose.net → goose.csv
   make_sample.mjs     regenerates sample.csv
@@ -28,29 +28,34 @@ by the browser. Everything persists to `localStorage`.
 
 ## Getting the data
 
-`goose.csv` is not in the repo yet. It is built from elgoose.net:
+`goose.csv` is committed. Regenerate it from elgoose.net when you want fresher
+shows:
 
 ```bash
 node scripts/setlist/ingest_band.mjs --probe   # ALWAYS run this first
 node scripts/setlist/ingest_band.mjs           # → setlist/data/goose.csv
 ```
 
-**Run `--probe` first.** The ingester was rebuilt from a schema description
-rather than from a known-good script, and has never been run against the live
-API. Probe fetches one year, prints the field names elgoose actually returns,
-and names any expected field that is missing. Without it, a renamed field shows
-up as a quietly half-empty CSV rather than an error.
+**Bump `DATA_VERSION` in `index.html` after regenerating** — the CSV is fetched
+as `goose.csv?v=<DATA_VERSION>`, so without a bump returning players keep the
+cached copy.
 
-A full run expects roughly **14k performances across ~1180 shows**. If the
-counts are far off, or the run prints a SANITY CHECK warning, probe before
-trusting the file. The fix is always the same: update the `pick()` calls in
-`ingest_band.mjs` to the field names probe reported.
+A full run should land near **7504 performances across 655 shows** (2014–2026).
+Anything far below that is a bad run, not a smaller band — the ingester prints
+a per-year row count, and the two failure modes it guards are described in
+`data/DATA_CONTRACT.md`: elgoose serves ~100 bands from one API and mixes them
+into every response, and it truncates any single response at 4000 rows without
+saying so. If a year reports `0 rows after retries`, that is throttling; re-run.
+
+`--probe` prints the field names elgoose actually returns plus the artist
+breakdown of one year. Run it before trusting a run; if a field was renamed,
+update the `pick()` calls to match.
 
 This needs outbound access to `elgoose.net`. Sessions whose network policy
 blocks it will fail with a 403 on CONNECT — that is the egress policy, not a
 bug in the script.
 
-Once the CSV exists, Goose goes live in the picker with no code change.
+Goose is already live in the picker; a regenerated CSV needs no code change.
 
 ## Running it
 
@@ -115,9 +120,26 @@ There is deliberately **no backend** — no database, no auth, no leaderboard.
 
 ## Open questions
 
-Two decisions worth revisiting once real data lands:
+The first two surfaced only once the real Goose archive landed — the sample data
+is uniformly well-formed and hid both.
 
-1. **Tag inference is a proxy.** elgoose has no field saying a song is a ballad,
+1. **Thin shows make choiceless rounds.** 18 shows in the archive have exactly
+   one song and 28 have three or fewer — early bar gigs the archive only partly
+   logged. A round drawn from one of those offers no decision, and because a
+   game draws 8 shows, **~20% of games contain a single-song round** and ~29%
+   contain a round of three or fewer. The draw is one line
+   (`S.drawn = shuffle(S.data.shows, …)`), so a `songs.length >= N` filter is a
+   small change — but it changes every daily seed's result, so it is a gameplay
+   decision, not a cleanup. Requiring ≥8 songs leaves 529 of 655 shows.
+
+2. **The same song can be locked into two slots.** Each round is a different
+   show, so a staple can be offered repeatedly, and nothing stops a player
+   putting "Arrow" in both Set I Closer and Set II Peak — impossible in a real
+   setlist. Deduping against already-locked songs is a filter in `renderDraft`.
+
+Two more worth revisiting:
+
+3. **Tag inference is a proxy.** elgoose has no field saying a song is a ballad,
    so all six tags are derived from each song's own play history — see
    `DATA_CONTRACT.md`. Thresholds live in one `TAGS` block in `ingest_band.mjs`.
    These drive every placement multiplier, so they are the highest-leverage
@@ -126,7 +148,7 @@ Two decisions worth revisiting once real data lands:
    running 5:00 one night and 22:00 another is a jam vehicle; one that is always
    4:10 is not) and **segue-out rate**.
 
-2. **Segues score across set breaks.** Slots 2→3 and 6→7 pay the segue bonus if
+4. **Segues score across set breaks.** Slots 2→3 and 6→7 pay the segue bonus if
    the pair is canonical, which cannot happen in a real setlist. This is
    faithful to the v2 spec, which says "per adjacent canonical pair" with no
    exclusions. Restricting it to within-set boundaries is a two-line change.

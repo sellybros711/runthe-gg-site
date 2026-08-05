@@ -287,10 +287,30 @@ function sanityCheck(rows) {
 }
 
 // ── field helpers ────────────────────────────────────────────────────────────
+
+/**
+ * The API returns HTML-encoded text ("Thompson&#039;s Point", "The Hollow Bar
+ * &amp; Kitchen"). Left alone it reaches the CSV verbatim and the UI escapes the
+ * ampersand a second time, so a player literally reads "Bar &amp; Kitchen".
+ * The contract says these columns hold display text, so decode here — one pass,
+ * so a decoded "&" can never be re-read as the start of another entity.
+ */
+function decodeEntities(s) {
+  const named = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+  return String(s == null ? '' : s).replace(
+    /&(?:#(\d+)|#[xX]([0-9a-fA-F]+)|([a-zA-Z]+));/g,
+    (m, dec, hex, name) => {
+      if (dec) return String.fromCodePoint(Number(dec));
+      if (hex) return String.fromCodePoint(parseInt(hex, 16));
+      return name.toLowerCase() in named ? named[name.toLowerCase()] : m;
+    }
+  );
+}
+
 const pick = (row, ...names) => {
   for (const n of names) {
     const v = row[n];
-    if (v !== undefined && v !== null && v !== '') return v;
+    if (v !== undefined && v !== null && v !== '') return decodeEntities(v);
   }
   return '';
 };

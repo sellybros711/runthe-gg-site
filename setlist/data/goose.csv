@@ -1,17 +1,17 @@
 show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,original_artist,length_sec,show_gap,times_played,rarity_rating,crowd_rating,is_jamchart,transition,is_segue,tags
-1613690131,2014-11-21,2014,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,1,A Go Go,871,true,John Scofield,,0,1,0,,false,",",false,
-1613690131,2014-11-21,2014,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,2,Gone Gone Good,483,false,,,0,1,0,,false,",",false,opener
-1613690131,2014-11-21,2014,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,3,The Waking End,569,false,,,0,1,0,,false,",",false,
-1613690131,2014-11-21,2014,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,4,Deal,873,true,Grateful Dead,,0,1,0,,false,",",false,
-1613690131,2014-11-21,2014,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,5,Turned Clouds,400,false,,,0,1,0,,false,",",false,
-1613690131,2014-11-21,2014,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,6,Chank,447,true,John Scofield,,0,1,0,,false,",",false,opener
-1613690131,2014-11-21,2014,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,7,I Wish,495,true,Stevie Wonder,,0,1,0,,false,,false,
-1613690131,2014-11-21,2014,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,2,8,Jam,802,false,,,0,1,0,,false,>,true,opener|jam
-1613690131,2014-11-21,2014,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,2,9,Use Me,581,true,Bill Withers,,0,1,0,,false,",",false,opener|closer
-1613690131,2014-11-21,2014,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,2,10,The River,872,false,,,0,1,0,,false,>,true,
-1613690131,2014-11-21,2014,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,2,11,Billie Jean,440,true,Michael Jackson,,0,1,0,,false,",",false,
-1613690131,2014-11-21,2014,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,2,12,Arcadia,403,false,,,0,1,0,,false,>,true,closer
-1613690131,2014-11-21,2014,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,2,13,Jive I,411,false,,,0,1,0,,false,,false,
+1613690131,2014-11-21,2014,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,1,A Go Go,871,true,John Scofield,,0,1,0,,false,",",false,
+1613690131,2014-11-21,2014,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,2,Gone Gone Good,483,false,,,0,1,0,,false,",",false,opener
+1613690131,2014-11-21,2014,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,3,The Waking End,569,false,,,0,1,0,,false,",",false,
+1613690131,2014-11-21,2014,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,4,Deal,873,true,Grateful Dead,,0,1,0,,false,",",false,
+1613690131,2014-11-21,2014,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,5,Turned Clouds,400,false,,,0,1,0,,false,",",false,
+1613690131,2014-11-21,2014,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,6,Chank,447,true,John Scofield,,0,1,0,,false,",",false,opener
+1613690131,2014-11-21,2014,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,7,I Wish,495,true,Stevie Wonder,,0,1,0,,false,,false,
+1613690131,2014-11-21,2014,O'Neill's Irish Pub & Restaurant,Norwalk,CT,2,8,Jam,802,false,,,0,1,0,,false,>,true,opener|jam
+1613690131,2014-11-21,2014,O'Neill's Irish Pub & Restaurant,Norwalk,CT,2,9,Use Me,581,true,Bill Withers,,0,1,0,,false,",",false,opener|closer
+1613690131,2014-11-21,2014,O'Neill's Irish Pub & Restaurant,Norwalk,CT,2,10,The River,872,false,,,0,1,0,,false,>,true,
+1613690131,2014-11-21,2014,O'Neill's Irish Pub & Restaurant,Norwalk,CT,2,11,Billie Jean,440,true,Michael Jackson,,0,1,0,,false,",",false,
+1613690131,2014-11-21,2014,O'Neill's Irish Pub & Restaurant,Norwalk,CT,2,12,Arcadia,403,false,,,0,1,0,,false,>,true,closer
+1613690131,2014-11-21,2014,O'Neill's Irish Pub & Restaurant,Norwalk,CT,2,13,Jive I,411,false,,,0,1,0,,false,,false,
 1616038775,2014-11-26,2014,Station House Bar and Grille,Norwalk,CT,1,1,Jam,802,false,,,0,2,0,,false,",",false,opener|jam
 1616038775,2014-11-26,2014,Station House Bar and Grille,Norwalk,CT,1,2,Shoe Dog,548,true,John Scofield,,0,1,0,,false,",",false,
 1616038775,2014-11-26,2014,Station House Bar and Grille,Norwalk,CT,1,3,Me & My Uncle,592,true,John Philips,,0,1,0,,false,",",false,opener
@@ -115,14 +115,14 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1616037488,2015-04-18,2015,Tavern On Seven,Norwalk,CT,2,14,Your Ocean,590,false,,,0,1,0,,false,",",false,
 1616037488,2015-04-18,2015,Tavern On Seven,Norwalk,CT,2,15,I Shot The Sheriff,493,true,Bob Marley,,5,2,0,,false,",",false,
 1616037488,2015-04-18,2015,Tavern On Seven,Norwalk,CT,2,16,Mustang Sally,427,true,Wilson Pickett,,4,2,0,,false,,false,closer|encore
-1614304463,2015-05-02,2015,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,1,Your Ocean,590,false,,,0,2,0,,false,",",false,
+1614304463,2015-05-02,2015,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,1,Your Ocean,590,false,,,0,2,0,,false,",",false,
 1616037305,2015-06-17,2015,The Acoustic,Bridgeport,CT,1,1,Lead the Way,406,false,,,2,4,0,,false,",",false,opener
 1616037305,2015-06-17,2015,The Acoustic,Bridgeport,CT,1,2,Jive II,413,false,,,1,3,0,,false,",",false,opener
 1616037305,2015-06-17,2015,The Acoustic,Bridgeport,CT,1,3,Cantaloupe Island,444,true,Herbie Hancock,,2,2,0,,false,",",false,
 1616037305,2015-06-17,2015,The Acoustic,Bridgeport,CT,1,4,Jive I,411,false,,,2,6,0,,false,",",false,
 1616037305,2015-06-17,2015,The Acoustic,Bridgeport,CT,1,5,Arcadia,403,false,,,2,6,0,,false,,false,closer
 1616037254,2015-08-18,2015,BRYAC Black Rock,Bridgeport,CT,1,1,Jive I,411,false,,,0,7,0,,false,",",false,
-1743526614,2015-09-19,2015,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,1,One More Saturday Night,528,true,Grateful Dead,,8,2,10,,false,",",false,closer|encore
+1743526614,2015-09-19,2015,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,1,One More Saturday Night,528,true,Grateful Dead,,8,2,10,,false,",",false,closer|encore
 1743792240,2015-09-26,2015,Stella Blues,New Haven,CT,1,1,So Ready,421,false,,,4,3,0,,false,",",false,closer
 1743792240,2015-09-26,2015,Stella Blues,New Haven,CT,1,2,Flodown,478,false,Vasudo,,0,1,0,,false,",",false,
 1698084503,2015-10-01,2015,The Acoustic,Bridgeport,CT,1,1,Jive I,411,false,,,2,8,0,,false,",",false,
@@ -157,17 +157,17 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1616036749,2016-03-26,2016,Rock n Roll Resort,Kerhonkson,NY,1,8,Same Old Shenanigans,541,false,,,0,2,0,,false,",",false,closer
 1616036749,2016-03-26,2016,Rock n Roll Resort,Kerhonkson,NY,1,9,One More Saturday Night,528,true,Grateful Dead,,5,3,0,,false,",",false,closer|encore
 1616036749,2016-03-26,2016,Rock n Roll Resort,Kerhonkson,NY,1,10,So Ready,421,false,,,1,6,0,,false,,false,closer
-1614304693,2016-04-15,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,1,Switchin',564,true,Wes Montgomery,,12,2,10,,false,",",false,opener
-1614304693,2016-04-15,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,2,Caution,446,true,Bob Marley,,10,4,10,,false,",",false,
-1614304693,2016-04-15,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,3,Arcadia,403,false,,,0,11,0,,false,",",false,closer
-1614304693,2016-04-15,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,4,Up On Cripple Creek,580,true,The Band,,0,1,0,,false,",",false,opener
-1614304693,2016-04-15,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,5,Jive I,411,false,,,0,11,0,,false,",",false,
-1614304693,2016-04-15,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,6,Mississippi Half-Step Uptown Toodeloo,517,true,Grateful Dead,,15,2,10,,false,,false,jam
-1614304693,2016-04-15,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,2,7,Boogie On Reggae Woman,441,true,Stevie Wonder,,15,2,10,,false,",",false,
-1614304693,2016-04-15,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,2,8,Praise You,533,true,Fatboy Slim,,0,1,0,,false,",",false,closer|encore
-1614304693,2016-04-15,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,2,9,Billie Jean,440,true,Michael Jackson,,14,3,10,,false,",",false,
-1614304693,2016-04-15,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,2,10,Crosseyed & Painless,455,true,Talking Heads,,0,1,0,,false,",",false,
-1614304693,2016-04-15,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,2,11,So Ready,421,false,,,0,7,0,,false,,false,closer
+1614304693,2016-04-15,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,1,Switchin',564,true,Wes Montgomery,,12,2,10,,false,",",false,opener
+1614304693,2016-04-15,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,2,Caution,446,true,Bob Marley,,10,4,10,,false,",",false,
+1614304693,2016-04-15,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,3,Arcadia,403,false,,,0,11,0,,false,",",false,closer
+1614304693,2016-04-15,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,4,Up On Cripple Creek,580,true,The Band,,0,1,0,,false,",",false,opener
+1614304693,2016-04-15,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,5,Jive I,411,false,,,0,11,0,,false,",",false,
+1614304693,2016-04-15,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,6,Mississippi Half-Step Uptown Toodeloo,517,true,Grateful Dead,,15,2,10,,false,,false,jam
+1614304693,2016-04-15,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,2,7,Boogie On Reggae Woman,441,true,Stevie Wonder,,15,2,10,,false,",",false,
+1614304693,2016-04-15,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,2,8,Praise You,533,true,Fatboy Slim,,0,1,0,,false,",",false,closer|encore
+1614304693,2016-04-15,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,2,9,Billie Jean,440,true,Michael Jackson,,14,3,10,,false,",",false,
+1614304693,2016-04-15,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,2,10,Crosseyed & Painless,455,true,Talking Heads,,0,1,0,,false,",",false,
+1614304693,2016-04-15,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,2,11,So Ready,421,false,,,0,7,0,,false,,false,closer
 1616036658,2016-04-16,2016,Stella Blues,New Haven,CT,1,1,Madhuvan,512,false,,,11,5,10,,false,",",false,opener|closer|jam
 1616036658,2016-04-16,2016,Stella Blues,New Haven,CT,1,2,Me & My Uncle,592,true,John Philips,,13,3,10,,false,",",false,opener
 1616036658,2016-04-16,2016,Stella Blues,New Haven,CT,1,3,Jive II,413,false,,,9,4,10,,false,",",false,opener
@@ -275,27 +275,27 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1616034185,2016-11-19,2016,The Acoustic,Bridgeport,CT,1,7,Creatures,420,false,,,3,7,0,,false,",",false,jam
 1616034185,2016-11-19,2016,The Acoustic,Bridgeport,CT,1,8,So Ready,421,false,,,1,15,0,,false,",",false,closer
 1616034185,2016-11-19,2016,The Acoustic,Bridgeport,CT,1,9,Shama Lama Ding Dong,545,true,Otis Day and The Knights,,2,2,0,,false,",",false,encore
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,1,Cantaloupe Island,444,true,Herbie Hancock,,12,4,10,,false,",",false,
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,2,Soul Shakedown Party,553,true,Bob Marley,,3,2,0,,false,",",false,
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,3,Pumped Up Kicks,534,true,Foster The People,,0,1,0,,false,",",false,
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,4,Arcadia,403,false,,,0,19,0,,false,",",false,closer
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,5,Escape (The Piña Colada Song),469,true,Rupert Holmes,,0,1,0,,false,",",false,opener|encore
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,6,Take On Me,565,true,A-Ha,,0,1,0,,false,>,true,
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,7,Psycho Killer,633,true,Talking Heads,,0,1,0,,false,>,true,ballad
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,8,First Tube,634,true,Phish,,3,2,0,,false,>,true,
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,9,Kung Fu Fighting,504,true,Carl Douglas,,0,1,0,,false,>,true,
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,10,Flodown,478,false,Vasudo,,7,6,0,,false,",",false,
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,11,Dancing In The Moonlight,456,true,King Harvest,,30,2,20,,false,>,true,encore
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,12,Danger Zone,457,true,Kenny Loggins,,0,1,0,,false,>,true,
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,13,Also Sprach Zarathustra,433,true,Deodato,,3,3,0,,false,",",false,closer
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,14,Jam,802,false,,,25,5,20,,false,",",false,opener|jam
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,15,Hard To Handle,485,true,Otis Redding,,0,3,0,,false,>,true,closer
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,16,Peaches En Regalia,530,true,Frank Zappa,,3,2,0,,false,>,true,
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,17,Crosseyed & Painless,455,true,Talking Heads,,7,4,0,,false,>,true,
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,18,I Wish,495,true,Stevie Wonder,,3,5,0,,false,",",false,
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,19,I Will Survive,635,true,Gloria Gaynor,,0,1,0,,false,>,true,
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,20,Shakedown Street,630,true,Grateful Dead,,0,1,0,,false,,false,
-1614304915,2016-11-23,2016,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,E,21,Turn On Your Love Light,578,true,Bobby Blue Bland,,3,4,0,,false,,false,closer|encore
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,1,Cantaloupe Island,444,true,Herbie Hancock,,12,4,10,,false,",",false,
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,2,Soul Shakedown Party,553,true,Bob Marley,,3,2,0,,false,",",false,
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,3,Pumped Up Kicks,534,true,Foster The People,,0,1,0,,false,",",false,
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,4,Arcadia,403,false,,,0,19,0,,false,",",false,closer
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,5,Escape (The Piña Colada Song),469,true,Rupert Holmes,,0,1,0,,false,",",false,opener|encore
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,6,Take On Me,565,true,A-Ha,,0,1,0,,false,>,true,
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,7,Psycho Killer,633,true,Talking Heads,,0,1,0,,false,>,true,ballad
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,8,First Tube,634,true,Phish,,3,2,0,,false,>,true,
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,9,Kung Fu Fighting,504,true,Carl Douglas,,0,1,0,,false,>,true,
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,10,Flodown,478,false,Vasudo,,7,6,0,,false,",",false,
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,11,Dancing In The Moonlight,456,true,King Harvest,,30,2,20,,false,>,true,encore
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,12,Danger Zone,457,true,Kenny Loggins,,0,1,0,,false,>,true,
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,13,Also Sprach Zarathustra,433,true,Deodato,,3,3,0,,false,",",false,closer
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,14,Jam,802,false,,,25,5,20,,false,",",false,opener|jam
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,15,Hard To Handle,485,true,Otis Redding,,0,3,0,,false,>,true,closer
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,16,Peaches En Regalia,530,true,Frank Zappa,,3,2,0,,false,>,true,
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,17,Crosseyed & Painless,455,true,Talking Heads,,7,4,0,,false,>,true,
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,18,I Wish,495,true,Stevie Wonder,,3,5,0,,false,",",false,
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,19,I Will Survive,635,true,Gloria Gaynor,,0,1,0,,false,>,true,
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,20,Shakedown Street,630,true,Grateful Dead,,0,1,0,,false,,false,
+1614304915,2016-11-23,2016,O'Neill's Irish Pub & Restaurant,Norwalk,CT,E,21,Turn On Your Love Light,578,true,Bobby Blue Bland,,3,4,0,,false,,false,closer|encore
 1616032614,2016-12-16,2016,Garcia's at The Capitol Theatre,Port Chester,NY,1,1,Lead the Way,406,false,,,1,14,0,,false,",",false,opener
 1616032614,2016-12-16,2016,Garcia's at The Capitol Theatre,Port Chester,NY,1,2,Jive II,413,false,,,10,6,10,,false,",",false,opener
 1616032614,2016-12-16,2016,Garcia's at The Capitol Theatre,Port Chester,NY,1,3,Mississippi Half-Step Uptown Toodeloo,517,true,Grateful Dead,,15,3,10,,false,",",false,jam
@@ -587,14 +587,14 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1615953621,2017-11-02,2017,The Abbey Bar at Appalachian Brewing Company,Harrisburg,PA,1,7,Jive I,411,false,,,1,31,0,,false,",",false,
 1615953621,2017-11-02,2017,The Abbey Bar at Appalachian Brewing Company,Harrisburg,PA,1,8,Arcadia,403,false,,,0,42,0,,false,",",false,closer
 1615953621,2017-11-02,2017,The Abbey Bar at Appalachian Brewing Company,Harrisburg,PA,1,9,Turn On Your Love Light,578,true,Bobby Blue Bland,,0,11,0,,false,,false,closer|encore
-1615874908,2017-11-03,2017,The Hollow Bar &amp; Kitchen,Albany,NY,1,1,Lead the Way,406,false,,,2,29,0,,false,>,true,opener
-1615874908,2017-11-03,2017,The Hollow Bar &amp; Kitchen,Albany,NY,1,2,Mississippi Half-Step Uptown Toodeloo,517,true,Grateful Dead,,5,7,0,,false,",",false,jam
-1615874908,2017-11-03,2017,The Hollow Bar &amp; Kitchen,Albany,NY,1,3,Wysteria Lane,405,false,Vasudo,,2,4,0,,false,>,true,opener|jam|peak
-1615874908,2017-11-03,2017,The Hollow Bar &amp; Kitchen,Albany,NY,1,4,Indian River,410,false,,,0,31,0,,false,",",false,
-1615874908,2017-11-03,2017,The Hollow Bar &amp; Kitchen,Albany,NY,1,5,Arcadia,403,false,,,0,43,0,,false,",",false,closer
-1615874908,2017-11-03,2017,The Hollow Bar &amp; Kitchen,Albany,NY,1,6,Flodown,478,false,Vasudo,,2,21,0,,false,",",false,
-1615874908,2017-11-03,2017,The Hollow Bar &amp; Kitchen,Albany,NY,1,7,Crosseyed & Painless,455,true,Talking Heads,,12,11,10,,false,",",false,
-1615874908,2017-11-03,2017,The Hollow Bar &amp; Kitchen,Albany,NY,1,8,So Ready,421,false,,,1,31,0,,false,,false,closer
+1615874908,2017-11-03,2017,The Hollow Bar & Kitchen,Albany,NY,1,1,Lead the Way,406,false,,,2,29,0,,false,>,true,opener
+1615874908,2017-11-03,2017,The Hollow Bar & Kitchen,Albany,NY,1,2,Mississippi Half-Step Uptown Toodeloo,517,true,Grateful Dead,,5,7,0,,false,",",false,jam
+1615874908,2017-11-03,2017,The Hollow Bar & Kitchen,Albany,NY,1,3,Wysteria Lane,405,false,Vasudo,,2,4,0,,false,>,true,opener|jam|peak
+1615874908,2017-11-03,2017,The Hollow Bar & Kitchen,Albany,NY,1,4,Indian River,410,false,,,0,31,0,,false,",",false,
+1615874908,2017-11-03,2017,The Hollow Bar & Kitchen,Albany,NY,1,5,Arcadia,403,false,,,0,43,0,,false,",",false,closer
+1615874908,2017-11-03,2017,The Hollow Bar & Kitchen,Albany,NY,1,6,Flodown,478,false,Vasudo,,2,21,0,,false,",",false,
+1615874908,2017-11-03,2017,The Hollow Bar & Kitchen,Albany,NY,1,7,Crosseyed & Painless,455,true,Talking Heads,,12,11,10,,false,",",false,
+1615874908,2017-11-03,2017,The Hollow Bar & Kitchen,Albany,NY,1,8,So Ready,421,false,,,1,31,0,,false,,false,closer
 1614305805,2017-11-04,2017,Arch Street Tavern,Hartford,CT,1,1,Escape (The Piña Colada Song),469,true,Rupert Holmes,,9,3,10,,false,",",false,opener|encore
 1614305805,2017-11-04,2017,Arch Street Tavern,Hartford,CT,1,2,All I Need,414,false,,,2,9,0,,false,",",false,jam
 1614305805,2017-11-04,2017,Arch Street Tavern,Hartford,CT,1,3,Jive II,413,false,,,2,16,0,,false,",",false,opener
@@ -712,32 +712,32 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1615868549,2018-02-08,2018,Globe Hall,Denver,CO,1,9,Arcadia,403,false,,,0,53,0,,false,",",false,closer
 1615868549,2018-02-08,2018,Globe Hall,Denver,CO,1,10,Madhuvan,512,false,,,0,36,0,,false,",",false,opener|closer|jam
 1615868549,2018-02-08,2018,Globe Hall,Denver,CO,1,11,Turn On Your Love Light,578,true,Bobby Blue Bland,,7,14,0,,false,,false,closer|encore
-1615868053,2018-02-09,2018,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,1,Atlas,439,true,The Wood Brothers,,1,11,0,,false,>,true,opener
-1615868053,2018-02-09,2018,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,2,Arcadia,403,false,,,0,54,0,,false,",",false,closer
-1615868053,2018-02-09,2018,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,3,Indian River,410,false,,,0,40,0,,false,",",false,
-1615868053,2018-02-09,2018,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,4,Wysteria Lane,405,false,Vasudo,,0,13,0,,false,>,true,opener|jam|peak
-1615868053,2018-02-09,2018,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,5,Shama Lama Ding Dong,545,true,Otis Day and The Knights,,1,9,0,,false,",",false,encore
-1615868053,2018-02-09,2018,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,6,Flodown,478,false,Vasudo,,0,29,0,,false,,false,
-1615868053,2018-02-09,2018,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,7,Crosseyed & Painless,455,true,Talking Heads,,1,17,0,,false,>,true,
-1615868053,2018-02-09,2018,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,8,Madhuvan,512,false,,,0,37,0,,false,",",false,opener|closer|jam
-1615868053,2018-02-09,2018,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,9,Mississippi Half-Step Uptown Toodeloo,517,true,Grateful Dead,,1,9,0,,false,>,true,jam
-1615868053,2018-02-09,2018,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,10,So Ready,421,false,,,0,40,0,,false,",",false,closer
-1615868053,2018-02-09,2018,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,11,Lead the Way,406,false,,,1,35,0,,false,,false,opener
-1615868053,2018-02-09,2018,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,E,12,Turn On Your Love Light,578,true,Bobby Blue Bland,,0,15,0,,false,,false,closer|encore
-1615430866,2018-02-10,2018,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,1,Lead the Way,406,false,,,0,36,0,,false,",",false,opener
-1615430866,2018-02-10,2018,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,2,Wysteria Lane,405,false,Vasudo,,0,14,0,,false,>,true,opener|jam|peak
-1615430866,2018-02-10,2018,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,3,Atlas,439,true,The Wood Brothers,,0,12,0,,false,",",false,opener
-1615430866,2018-02-10,2018,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,4,Cantaloupe Island,444,true,Herbie Hancock,,46,6,20,,false,",",false,
-1615430866,2018-02-10,2018,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,5,Turned Clouds,400,false,,,8,27,10,,false,",",false,
-1615430866,2018-02-10,2018,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,6,All I Need,414,false,,,1,14,0,,false,",",false,jam
-1615430866,2018-02-10,2018,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,7,Flodown,478,false,Vasudo,,0,30,0,,false,",",false,
-1615430866,2018-02-10,2018,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,8,Arcadia,403,false,,,0,55,0,,false,,false,closer
-1615430866,2018-02-10,2018,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,2,9,Madhuvan,512,false,,,0,38,0,,false,",",false,opener|closer|jam
-1615430866,2018-02-10,2018,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,2,10,Indian River,410,false,,,0,41,0,,false,",",false,
-1615430866,2018-02-10,2018,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,2,11,Let's Dance,506,true,David Bowie,,7,7,0,,false,",",false,
-1615430866,2018-02-10,2018,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,2,12,Creatures,420,false,,,2,25,0,,false,",",false,jam
-1615430866,2018-02-10,2018,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,2,13,Escape (The Piña Colada Song),469,true,Rupert Holmes,,4,6,0,,false,",",false,opener|encore
-1615430866,2018-02-10,2018,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,2,14,So Ready,421,false,,,0,41,0,,false,,false,closer
+1615868053,2018-02-09,2018,Old Town Pub & Restaurant,Steamboat Springs,CO,1,1,Atlas,439,true,The Wood Brothers,,1,11,0,,false,>,true,opener
+1615868053,2018-02-09,2018,Old Town Pub & Restaurant,Steamboat Springs,CO,1,2,Arcadia,403,false,,,0,54,0,,false,",",false,closer
+1615868053,2018-02-09,2018,Old Town Pub & Restaurant,Steamboat Springs,CO,1,3,Indian River,410,false,,,0,40,0,,false,",",false,
+1615868053,2018-02-09,2018,Old Town Pub & Restaurant,Steamboat Springs,CO,1,4,Wysteria Lane,405,false,Vasudo,,0,13,0,,false,>,true,opener|jam|peak
+1615868053,2018-02-09,2018,Old Town Pub & Restaurant,Steamboat Springs,CO,1,5,Shama Lama Ding Dong,545,true,Otis Day and The Knights,,1,9,0,,false,",",false,encore
+1615868053,2018-02-09,2018,Old Town Pub & Restaurant,Steamboat Springs,CO,1,6,Flodown,478,false,Vasudo,,0,29,0,,false,,false,
+1615868053,2018-02-09,2018,Old Town Pub & Restaurant,Steamboat Springs,CO,2,7,Crosseyed & Painless,455,true,Talking Heads,,1,17,0,,false,>,true,
+1615868053,2018-02-09,2018,Old Town Pub & Restaurant,Steamboat Springs,CO,2,8,Madhuvan,512,false,,,0,37,0,,false,",",false,opener|closer|jam
+1615868053,2018-02-09,2018,Old Town Pub & Restaurant,Steamboat Springs,CO,2,9,Mississippi Half-Step Uptown Toodeloo,517,true,Grateful Dead,,1,9,0,,false,>,true,jam
+1615868053,2018-02-09,2018,Old Town Pub & Restaurant,Steamboat Springs,CO,2,10,So Ready,421,false,,,0,40,0,,false,",",false,closer
+1615868053,2018-02-09,2018,Old Town Pub & Restaurant,Steamboat Springs,CO,2,11,Lead the Way,406,false,,,1,35,0,,false,,false,opener
+1615868053,2018-02-09,2018,Old Town Pub & Restaurant,Steamboat Springs,CO,E,12,Turn On Your Love Light,578,true,Bobby Blue Bland,,0,15,0,,false,,false,closer|encore
+1615430866,2018-02-10,2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,1,Lead the Way,406,false,,,0,36,0,,false,",",false,opener
+1615430866,2018-02-10,2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,2,Wysteria Lane,405,false,Vasudo,,0,14,0,,false,>,true,opener|jam|peak
+1615430866,2018-02-10,2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,3,Atlas,439,true,The Wood Brothers,,0,12,0,,false,",",false,opener
+1615430866,2018-02-10,2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,4,Cantaloupe Island,444,true,Herbie Hancock,,46,6,20,,false,",",false,
+1615430866,2018-02-10,2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,5,Turned Clouds,400,false,,,8,27,10,,false,",",false,
+1615430866,2018-02-10,2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,6,All I Need,414,false,,,1,14,0,,false,",",false,jam
+1615430866,2018-02-10,2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,7,Flodown,478,false,Vasudo,,0,30,0,,false,",",false,
+1615430866,2018-02-10,2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,8,Arcadia,403,false,,,0,55,0,,false,,false,closer
+1615430866,2018-02-10,2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,2,9,Madhuvan,512,false,,,0,38,0,,false,",",false,opener|closer|jam
+1615430866,2018-02-10,2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,2,10,Indian River,410,false,,,0,41,0,,false,",",false,
+1615430866,2018-02-10,2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,2,11,Let's Dance,506,true,David Bowie,,7,7,0,,false,",",false,
+1615430866,2018-02-10,2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,2,12,Creatures,420,false,,,2,25,0,,false,",",false,jam
+1615430866,2018-02-10,2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,2,13,Escape (The Piña Colada Song),469,true,Rupert Holmes,,4,6,0,,false,",",false,opener|encore
+1615430866,2018-02-10,2018,The Lazy Dog Sports Bar & Grill,Boulder,CO,2,14,So Ready,421,false,,,0,41,0,,false,,false,closer
 1615867879,2018-02-14,2018,Woodlands Tavern,Columbus,OH,1,1,Madhuvan,512,false,,,0,39,0,,false,",",false,opener|closer|jam
 1615867879,2018-02-14,2018,Woodlands Tavern,Columbus,OH,1,2,Indian River,410,false,,,0,42,0,,false,",",false,
 1615867879,2018-02-14,2018,Woodlands Tavern,Columbus,OH,1,3,Wysteria Lane,405,false,Vasudo,,0,15,0,,false,",",false,opener|jam|peak
@@ -1093,21 +1093,21 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1615002805,2018-11-17,2018,Madison Live!,Covington,KY,1,7,Jive I,411,false,,,8,46,10,,false,>,true,
 1615002805,2018-11-17,2018,Madison Live!,Covington,KY,1,8,Jive Lee,502,false,,,8,4,10,,false,",",false,closer|jam
 1615002805,2018-11-17,2018,Madison Live!,Covington,KY,1,9,So Ready,421,false,,,1,55,0,,false,,false,closer
-1614304965,2018-11-21,2018,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,1,Liza Jane,508,true,African American Folk Song,,0,6,0,,false,",",false,opener
-1614304965,2018-11-21,2018,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,2,Butter Rum,415,false,Vasudo,,1,16,0,,false,",",false,
-1614304965,2018-11-21,2018,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,3,Yeti,416,false,Great Blue,,1,4,0,,false,",",false,opener
-1614304965,2018-11-21,2018,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,4,Hot Night,492,true,Laura Branigan,,1,4,0,,false,>,true,opener|ballad
-1614304965,2018-11-21,2018,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,5,Make The Move,514,true,Kenny Loggins,,19,3,10,,false,>,true,
-1614304965,2018-11-21,2018,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,6,I'm Alright,496,true,Kenny Loggins,,19,3,10,,false,>,true,
-1614304965,2018-11-21,2018,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,7,Strokin',560,true,Clarence Carter,,24,3,20,,false,>,true,
-1614304965,2018-11-21,2018,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,8,Hot Tea,408,false,Vasudo,,1,11,0,,false,",",false,closer
-1614304965,2018-11-21,2018,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,9,Everywhere,471,true,Michelle Branch,,1,2,0,,false,",",false,ballad
-1614304965,2018-11-21,2018,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,10,Ghostbusters Rap,481,true,Run DMC,,1,3,0,,false,",",false,closer
-1614304965,2018-11-21,2018,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,11,Boogie Wonderland,442,true,"Earth, Wind & Fire and The Emotions",,19,2,10,,false,>,true,
-1614304965,2018-11-21,2018,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,12,Disco Inferno,419,true,The Trammps,,1,3,0,,false,>,true,
-1614304965,2018-11-21,2018,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,13,Pumped Up Kicks,534,true,Foster The People,,12,6,10,,false,>,true,
-1614304965,2018-11-21,2018,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,14,Shama Lama Ding Dong,545,true,Otis Day and The Knights,,12,13,10,,false,",",false,encore
-1614304965,2018-11-21,2018,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,15,What's Up?,430,true,4 Non Blondes,,25,2,20,,false,,false,closer|encore
+1614304965,2018-11-21,2018,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,1,Liza Jane,508,true,African American Folk Song,,0,6,0,,false,",",false,opener
+1614304965,2018-11-21,2018,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,2,Butter Rum,415,false,Vasudo,,1,16,0,,false,",",false,
+1614304965,2018-11-21,2018,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,3,Yeti,416,false,Great Blue,,1,4,0,,false,",",false,opener
+1614304965,2018-11-21,2018,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,4,Hot Night,492,true,Laura Branigan,,1,4,0,,false,>,true,opener|ballad
+1614304965,2018-11-21,2018,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,5,Make The Move,514,true,Kenny Loggins,,19,3,10,,false,>,true,
+1614304965,2018-11-21,2018,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,6,I'm Alright,496,true,Kenny Loggins,,19,3,10,,false,>,true,
+1614304965,2018-11-21,2018,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,7,Strokin',560,true,Clarence Carter,,24,3,20,,false,>,true,
+1614304965,2018-11-21,2018,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,8,Hot Tea,408,false,Vasudo,,1,11,0,,false,",",false,closer
+1614304965,2018-11-21,2018,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,9,Everywhere,471,true,Michelle Branch,,1,2,0,,false,",",false,ballad
+1614304965,2018-11-21,2018,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,10,Ghostbusters Rap,481,true,Run DMC,,1,3,0,,false,",",false,closer
+1614304965,2018-11-21,2018,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,11,Boogie Wonderland,442,true,"Earth, Wind & Fire and The Emotions",,19,2,10,,false,>,true,
+1614304965,2018-11-21,2018,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,12,Disco Inferno,419,true,The Trammps,,1,3,0,,false,>,true,
+1614304965,2018-11-21,2018,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,13,Pumped Up Kicks,534,true,Foster The People,,12,6,10,,false,>,true,
+1614304965,2018-11-21,2018,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,14,Shama Lama Ding Dong,545,true,Otis Day and The Knights,,12,13,10,,false,",",false,encore
+1614304965,2018-11-21,2018,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,15,What's Up?,430,true,4 Non Blondes,,25,2,20,,false,,false,closer|encore
 1615427110,2018-11-29,2018,Paradise Rock Club,Boston,MA,1,1,Flodown,478,false,Vasudo,,1,48,0,,false,",",false,
 1615427110,2018-11-29,2018,Paradise Rock Club,Boston,MA,1,2,Time to Flee,404,false,,,1,14,0,,false,",",false,
 1615427110,2018-11-29,2018,Paradise Rock Club,Boston,MA,1,3,Jive I,411,false,,,1,47,0,,false,>,true,
@@ -1213,22 +1213,22 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1614325989,2019-01-26,2019,Kenny's Westside Pub,Peoria,IL,2,14,Into the Myst,402,false,,758,30,7,20,,false,",",false,jam
 1614325989,2019-01-26,2019,Kenny's Westside Pub,Peoria,IL,2,15,Hot Tea,408,false,Vasudo,826,1,18,0,,false,,false,closer
 1614325989,2019-01-26,2019,Kenny's Westside Pub,Peoria,IL,E,16,Creatures,420,false,,589,3,37,0,,false,,false,jam
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,1,Jive II,413,false,,589,4,28,0,,false,",",false,opener
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,2,Yeti,416,false,Great Blue,804,0,9,0,,false,>,true,opener
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,3,Echo of a Rose,463,false,Vasudo,368,0,6,0,,false,>,true,jam
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,4,Yeti,416,false,Great Blue,136,0,10,0,,false,",",false,opener
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,5,Me and Julio Down By The Schoolyard,515,true,Paul Simon,599,20,7,20,,false,",",false,
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,6,Time to Flee,404,false,,191,0,20,0,,false,",",false,
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,7,Tumble,418,false,Vasudo,750,0,1,0,,false,",",false,closer|jam|peak
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,8,I'm Alright,496,true,Kenny Loggins,421,12,4,10,,false,>,true,
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,1,9,Make The Move,514,true,Kenny Loggins,497,12,4,10,,false,,false,
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,2,10,The Way It Is,570,true,Bruce Hornsby,445,3,9,0,,false,>,true,
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,2,11,Wysteria Lane,405,false,Vasudo,864,1,31,0,,false,>,true,opener|jam|peak
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,2,12,Electric Avenue,464,true,Eddy Grant,535,2,2,0,,false,",",false,
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,2,13,Flodown,478,false,Vasudo,460,1,54,0,,false,",",false,
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,2,14,Jive I,411,false,,488,5,50,0,,false,>,true,
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,2,15,Jive Lee,502,false,,527,0,10,0,,false,",",false,closer|jam
-1614325540,2019-01-31,2019,The Lazy Dog Sports Bar &amp; Grill,Boulder,CO,2,16,Same Old Shenanigans,541,false,,701,2,6,0,,false,,false,closer
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,1,Jive II,413,false,,589,4,28,0,,false,",",false,opener
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,2,Yeti,416,false,Great Blue,804,0,9,0,,false,>,true,opener
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,3,Echo of a Rose,463,false,Vasudo,368,0,6,0,,false,>,true,jam
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,4,Yeti,416,false,Great Blue,136,0,10,0,,false,",",false,opener
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,5,Me and Julio Down By The Schoolyard,515,true,Paul Simon,599,20,7,20,,false,",",false,
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,6,Time to Flee,404,false,,191,0,20,0,,false,",",false,
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,7,Tumble,418,false,Vasudo,750,0,1,0,,false,",",false,closer|jam|peak
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,8,I'm Alright,496,true,Kenny Loggins,421,12,4,10,,false,>,true,
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,1,9,Make The Move,514,true,Kenny Loggins,497,12,4,10,,false,,false,
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,2,10,The Way It Is,570,true,Bruce Hornsby,445,3,9,0,,false,>,true,
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,2,11,Wysteria Lane,405,false,Vasudo,864,1,31,0,,false,>,true,opener|jam|peak
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,2,12,Electric Avenue,464,true,Eddy Grant,535,2,2,0,,false,",",false,
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,2,13,Flodown,478,false,Vasudo,460,1,54,0,,false,",",false,
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,2,14,Jive I,411,false,,488,5,50,0,,false,>,true,
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,2,15,Jive Lee,502,false,,527,0,10,0,,false,",",false,closer|jam
+1614325540,2019-01-31,2019,The Lazy Dog Sports Bar & Grill,Boulder,CO,2,16,Same Old Shenanigans,541,false,,701,2,6,0,,false,,false,closer
 1614325187,2019-02-01,2019,The Eldo,Crested Butte,CO,1,1,Madhuvan,512,false,,,1,58,0,,false,",",false,opener|closer|jam
 1614325187,2019-02-01,2019,The Eldo,Crested Butte,CO,1,2,Atlas,439,true,The Wood Brothers,,8,16,10,,false,",",false,opener
 1614325187,2019-02-01,2019,The Eldo,Crested Butte,CO,1,3,Indian River,410,false,,,1,56,0,,false,",",false,
@@ -1260,22 +1260,22 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1614324369,2019-02-07,2019,Intrinzik,Montrose,CO,1,7,Make The Move,514,true,Kenny Loggins,,2,5,0,,false,>,true,
 1614324369,2019-02-07,2019,Intrinzik,Montrose,CO,1,8,I'm Alright,496,true,Kenny Loggins,,0,6,0,,false,",",false,
 1614324369,2019-02-07,2019,Intrinzik,Montrose,CO,1,9,Turn On Your Love Light,578,true,Bobby Blue Bland,,1,22,0,,false,,false,closer|encore
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,1,Butter Rum,415,false,Vasudo,387,1,24,0,,false,",",false,
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,2,So Ready,421,false,,683,2,62,0,,false,",",false,closer
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,3,The Way It Is,570,true,Bruce Hornsby,487,3,10,0,,false,",",false,
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,4,Flodown,478,false,Vasudo,525,3,55,0,,false,",",false,
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,5,Arcadia,403,false,,549,2,84,0,,false,",",false,closer
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,6,Disco Inferno,419,true,The Trammps,1112,2,9,0,,false,",",false,
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,7,All I Need,414,false,,709,1,39,0,,false,,false,jam
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,8,Hot Tea,408,false,Vasudo,813,1,20,0,,false,",",false,closer
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,9,Electric Avenue,464,true,Eddy Grant,496,3,3,0,,false,",",false,
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,10,Tumble,418,false,Vasudo,762,0,4,0,,false,",",false,closer|jam|peak
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,11,White Lights,586,false,,452,1,4,0,,false,",",false,closer|encore
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,12,Wysteria Lane,405,false,Vasudo,744,3,32,0,,false,>,true,opener|jam|peak
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,13,Shama Lama Ding Dong,545,true,Otis Day and The Knights,326,5,15,0,,false,",",false,encore
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,14,Indian River,410,false,,427,2,57,0,,false,>,true,
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,15,Yeti,416,false,Great Blue,514,3,11,0,,false,",",false,opener
-1614323611,2019-02-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,16,Feeling Hot Hot Hot,491,true,The Merrymen,487,1,4,0,,false,,false,opener|closer
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,1,Butter Rum,415,false,Vasudo,387,1,24,0,,false,",",false,
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,2,So Ready,421,false,,683,2,62,0,,false,",",false,closer
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,3,The Way It Is,570,true,Bruce Hornsby,487,3,10,0,,false,",",false,
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,4,Flodown,478,false,Vasudo,525,3,55,0,,false,",",false,
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,5,Arcadia,403,false,,549,2,84,0,,false,",",false,closer
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,6,Disco Inferno,419,true,The Trammps,1112,2,9,0,,false,",",false,
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,7,All I Need,414,false,,709,1,39,0,,false,,false,jam
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,8,Hot Tea,408,false,Vasudo,813,1,20,0,,false,",",false,closer
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,9,Electric Avenue,464,true,Eddy Grant,496,3,3,0,,false,",",false,
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,10,Tumble,418,false,Vasudo,762,0,4,0,,false,",",false,closer|jam|peak
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,11,White Lights,586,false,,452,1,4,0,,false,",",false,closer|encore
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,12,Wysteria Lane,405,false,Vasudo,744,3,32,0,,false,>,true,opener|jam|peak
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,13,Shama Lama Ding Dong,545,true,Otis Day and The Knights,326,5,15,0,,false,",",false,encore
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,14,Indian River,410,false,,427,2,57,0,,false,>,true,
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,15,Yeti,416,false,Great Blue,514,3,11,0,,false,",",false,opener
+1614323611,2019-02-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,16,Feeling Hot Hot Hot,491,true,The Merrymen,487,1,4,0,,false,,false,opener|closer
 1614321503,2019-02-14,2019,The Bootleg at Atomic Cowboy,St. Louis,MO,1,1,Arcadia,403,false,,,0,85,0,,false,",",false,closer
 1614319723,2019-02-15,2019,Octave,Covington,KY,1,1,So Ready,421,false,,676,1,63,0,,false,",",false,closer
 1614319723,2019-02-15,2019,Octave,Covington,KY,1,2,Elizabeth,465,false,,600,21,10,20,,false,",",false,opener|jam
@@ -1610,21 +1610,21 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1614300844,2019-06-28,2019,The Lariat,Buena Vista,CO,1,17,White Lights,586,false,,,0,14,0,,false,>,true,closer|encore
 1614300844,2019-06-28,2019,The Lariat,Buena Vista,CO,1,18,Also Sprach Zarathustra,433,true,Deodato,,4,7,0,,false,,false,closer
 1614300844,2019-06-28,2019,The Lariat,Buena Vista,CO,E,19,One More Saturday Night,528,true,Grateful Dead,,4,15,0,,false,,false,closer|encore
-1614302893,2019-06-29,2019,Beanstalk Music &amp; Mountain Festival,Bond,CO,1,1,Butter Rum,415,false,Vasudo,463,3,38,0,,false,",",false,
-1614302893,2019-06-29,2019,Beanstalk Music &amp; Mountain Festival,Bond,CO,1,2,Me & My Uncle,592,true,John Philips,331,5,22,0,,false,",",false,opener
-1614302893,2019-06-29,2019,Beanstalk Music &amp; Mountain Festival,Bond,CO,1,3,Time to Flee,404,false,,620,2,35,0,,false,",",false,
-1614302893,2019-06-29,2019,Beanstalk Music &amp; Mountain Festival,Bond,CO,1,4,Flodown,478,false,Vasudo,467,1,64,0,,false,,false,
-1614302893,2019-06-29,2019,Beanstalk Music &amp; Mountain Festival,Bond,CO,2,5,Madhuvan,512,false,,745,0,70,0,,false,",",false,opener|closer|jam
-1614302893,2019-06-29,2019,Beanstalk Music &amp; Mountain Festival,Bond,CO,2,6,All I Need,414,false,,295,2,51,0,,false,",",false,jam
-1614302893,2019-06-29,2019,Beanstalk Music &amp; Mountain Festival,Bond,CO,2,7,Green River,482,true,Creedence Clearwater Revival,643,12,12,10,,false,",",false,
-1614302893,2019-06-29,2019,Beanstalk Music &amp; Mountain Festival,Bond,CO,2,8,Crosseyed & Painless,455,true,Talking Heads,663,1,31,0,,false,,false,
-1614302893,2019-06-29,2019,Beanstalk Music &amp; Mountain Festival,Bond,CO,3,9,Drive,462,false,,1151,0,12,0,,false,,false,opener|jam
-1614302893,2019-06-29,2019,Beanstalk Music &amp; Mountain Festival,Bond,CO,4,10,So Ready,421,false,,701,2,68,0,,false,",",false,closer
-1614302893,2019-06-29,2019,Beanstalk Music &amp; Mountain Festival,Bond,CO,4,11,Yeti,416,false,Great Blue,441,0,24,0,,false,->,true,opener
-1614302893,2019-06-29,2019,Beanstalk Music &amp; Mountain Festival,Bond,CO,4,12,Electric Avenue,464,true,Eddy Grant,400,8,10,10,,false,,false,
-1614302893,2019-06-29,2019,Beanstalk Music &amp; Mountain Festival,Bond,CO,5,13,Tumble,418,false,Vasudo,874,3,20,0,,false,",",false,closer|jam|peak
-1614302893,2019-06-29,2019,Beanstalk Music &amp; Mountain Festival,Bond,CO,5,14,Arcadia,403,false,,411,0,102,0,,false,->,true,closer
-1614302893,2019-06-29,2019,Beanstalk Music &amp; Mountain Festival,Bond,CO,5,15,Hot Tea,408,false,Vasudo,462,1,36,0,,false,,false,closer
+1614302893,2019-06-29,2019,Beanstalk Music & Mountain Festival,Bond,CO,1,1,Butter Rum,415,false,Vasudo,463,3,38,0,,false,",",false,
+1614302893,2019-06-29,2019,Beanstalk Music & Mountain Festival,Bond,CO,1,2,Me & My Uncle,592,true,John Philips,331,5,22,0,,false,",",false,opener
+1614302893,2019-06-29,2019,Beanstalk Music & Mountain Festival,Bond,CO,1,3,Time to Flee,404,false,,620,2,35,0,,false,",",false,
+1614302893,2019-06-29,2019,Beanstalk Music & Mountain Festival,Bond,CO,1,4,Flodown,478,false,Vasudo,467,1,64,0,,false,,false,
+1614302893,2019-06-29,2019,Beanstalk Music & Mountain Festival,Bond,CO,2,5,Madhuvan,512,false,,745,0,70,0,,false,",",false,opener|closer|jam
+1614302893,2019-06-29,2019,Beanstalk Music & Mountain Festival,Bond,CO,2,6,All I Need,414,false,,295,2,51,0,,false,",",false,jam
+1614302893,2019-06-29,2019,Beanstalk Music & Mountain Festival,Bond,CO,2,7,Green River,482,true,Creedence Clearwater Revival,643,12,12,10,,false,",",false,
+1614302893,2019-06-29,2019,Beanstalk Music & Mountain Festival,Bond,CO,2,8,Crosseyed & Painless,455,true,Talking Heads,663,1,31,0,,false,,false,
+1614302893,2019-06-29,2019,Beanstalk Music & Mountain Festival,Bond,CO,3,9,Drive,462,false,,1151,0,12,0,,false,,false,opener|jam
+1614302893,2019-06-29,2019,Beanstalk Music & Mountain Festival,Bond,CO,4,10,So Ready,421,false,,701,2,68,0,,false,",",false,closer
+1614302893,2019-06-29,2019,Beanstalk Music & Mountain Festival,Bond,CO,4,11,Yeti,416,false,Great Blue,441,0,24,0,,false,->,true,opener
+1614302893,2019-06-29,2019,Beanstalk Music & Mountain Festival,Bond,CO,4,12,Electric Avenue,464,true,Eddy Grant,400,8,10,10,,false,,false,
+1614302893,2019-06-29,2019,Beanstalk Music & Mountain Festival,Bond,CO,5,13,Tumble,418,false,Vasudo,874,3,20,0,,false,",",false,closer|jam|peak
+1614302893,2019-06-29,2019,Beanstalk Music & Mountain Festival,Bond,CO,5,14,Arcadia,403,false,,411,0,102,0,,false,->,true,closer
+1614302893,2019-06-29,2019,Beanstalk Music & Mountain Festival,Bond,CO,5,15,Hot Tea,408,false,Vasudo,462,1,36,0,,false,,false,closer
 1613694760,2019-07-11,2019,Doc Taylor's,Virginia Beach,VA,1,1,Elizabeth,465,false,,668,6,13,0,,false,>,true,opener|jam
 1613694760,2019-07-11,2019,Doc Taylor's,Virginia Beach,VA,1,2,Echo of a Rose,463,false,Vasudo,352,5,14,0,,false,>,true,jam
 1613694760,2019-07-11,2019,Doc Taylor's,Virginia Beach,VA,1,3,Me & My Uncle,592,true,John Philips,311,0,23,0,,false,",",false,opener
@@ -1646,24 +1646,24 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1613694362,2019-07-12,2019,The Camel,Richmond,VA,1,4,Yeti,416,false,Great Blue,,1,25,0,,false,>,true,opener
 1613694362,2019-07-12,2019,The Camel,Richmond,VA,1,5,Pumped Up Kicks,534,true,Foster The People,,2,12,0,,false,",",false,
 1613694362,2019-07-12,2019,The Camel,Richmond,VA,1,6,Arcadia,403,false,,,1,103,0,,false,,false,closer
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,1,1,Jam,802,false,,,87,8,35,,false,>,true,opener|jam
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,1,2,Liza Jane,508,true,African American Folk Song,,10,12,10,,false,",",false,opener
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,1,3,Indian River,410,false,,,3,65,0,,false,",",false,
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,1,4,Switchin',564,true,Wes Montgomery,,66,12,35,,false,",",false,opener
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,1,5,Me and Julio Down By The Schoolyard,515,true,Paul Simon,,8,11,10,,false,",",false,
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,1,6,Peggy-O,531,true,Grateful Dead,,22,8,20,,false,",",false,
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,1,7,Turned Clouds,400,false,,,3,44,0,,false,,false,
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,2,8,All I Need,414,false,,1075,1,53,0,,false,",",false,jam
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,2,9,Two Tickets To Paradise,579,true,Eddie Money,318,0,1,0,,false,",",false,
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,2,10,Drive,462,false,,1182,1,14,0,,false,",",false,opener|jam
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,2,11,The Way It Is,570,true,Bruce Hornsby,511,6,16,0,,false,,false,
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,3,12,So Ready,421,false,,693,2,69,0,,false,",",false,closer
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,3,13,White Lights,586,false,,428,3,15,0,,false,",",false,closer|encore
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,3,14,Tumble,418,false,Vasudo,762,2,21,0,,false,",",false,closer|jam|peak
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,3,15,Eminence Front,468,true,The Who,443,6,5,0,,false,>,true,opener
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,3,16,Also Sprach Zarathustra,433,true,Deodato,380,3,8,0,,false,",",false,closer
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,3,17,Hot Tea,408,false,Vasudo,828,2,37,0,,false,",",false,closer
-1613697753,2019-07-13,2019,Paradise Music &amp; Beer Festival,Covington,KY,3,18,Turn On Your Love Light,578,true,Bobby Blue Bland,373,4,27,0,,false,,false,closer|encore
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,1,1,Jam,802,false,,,87,8,35,,false,>,true,opener|jam
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,1,2,Liza Jane,508,true,African American Folk Song,,10,12,10,,false,",",false,opener
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,1,3,Indian River,410,false,,,3,65,0,,false,",",false,
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,1,4,Switchin',564,true,Wes Montgomery,,66,12,35,,false,",",false,opener
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,1,5,Me and Julio Down By The Schoolyard,515,true,Paul Simon,,8,11,10,,false,",",false,
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,1,6,Peggy-O,531,true,Grateful Dead,,22,8,20,,false,",",false,
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,1,7,Turned Clouds,400,false,,,3,44,0,,false,,false,
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,2,8,All I Need,414,false,,1075,1,53,0,,false,",",false,jam
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,2,9,Two Tickets To Paradise,579,true,Eddie Money,318,0,1,0,,false,",",false,
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,2,10,Drive,462,false,,1182,1,14,0,,false,",",false,opener|jam
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,2,11,The Way It Is,570,true,Bruce Hornsby,511,6,16,0,,false,,false,
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,3,12,So Ready,421,false,,693,2,69,0,,false,",",false,closer
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,3,13,White Lights,586,false,,428,3,15,0,,false,",",false,closer|encore
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,3,14,Tumble,418,false,Vasudo,762,2,21,0,,false,",",false,closer|jam|peak
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,3,15,Eminence Front,468,true,The Who,443,6,5,0,,false,>,true,opener
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,3,16,Also Sprach Zarathustra,433,true,Deodato,380,3,8,0,,false,",",false,closer
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,3,17,Hot Tea,408,false,Vasudo,828,2,37,0,,false,",",false,closer
+1613697753,2019-07-13,2019,Paradise Music & Beer Festival,Covington,KY,3,18,Turn On Your Love Light,578,true,Bobby Blue Bland,373,4,27,0,,false,,false,closer|encore
 1614299494,2019-07-19,2019,Jerry Jam,Bath,NH,1,1,Me & My Uncle,592,true,John Philips,352,2,24,0,,false,",",false,opener
 1614299494,2019-07-19,2019,Jerry Jam,Bath,NH,1,2,Time to Flee,404,false,,581,1,37,0,,false,",",false,
 1614299494,2019-07-19,2019,Jerry Jam,Bath,NH,1,3,Flodown,478,false,Vasudo,555,2,66,0,,false,",",false,
@@ -1739,25 +1739,25 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1614297985,2019-08-14,2019,Skully's Music-Diner,Columbus,OH,1,7,Danger Zone,457,true,Kenny Loggins,240,38,11,20,,false,",",false,
 1614297985,2019-08-14,2019,Skully's Music-Diner,Columbus,OH,1,8,Tumble,418,false,Vasudo,828,0,26,0,,false,",",false,closer|jam|peak
 1614297985,2019-08-14,2019,Skully's Music-Diner,Columbus,OH,1,9,Disco Inferno,419,true,The Trammps,583,2,15,0,,false,,false,
-1613621323,2019-08-16,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,1,Jive I,411,false,,585,5,63,0,,false,>,true,
-1613621323,2019-08-16,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,2,Atlas,439,true,The Wood Brothers,688,3,21,0,,false,",",false,opener
-1613621323,2019-08-16,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,3,White Lights,586,false,,466,1,17,0,,false,",",false,closer|encore
-1613621323,2019-08-16,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,4,Wysteria Lane,405,false,Vasudo,1242,1,43,0,,false,->,true,opener|jam|peak
-1613621323,2019-08-16,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,5,Butter Rum,415,false,Vasudo,410,2,42,0,,false,",",false,
-1613621323,2019-08-16,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,6,Wild Night,588,true,Van Morrison,311,11,10,10,,false,",",false,opener|closer
-1613621323,2019-08-16,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,7,Hot Tea,408,false,Vasudo,556,1,41,0,,false,>,true,closer
-1613621323,2019-08-16,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,8,Mas Que Nada,513,true,Sergio Mendes,539,26,5,20,,false,",",false,
-1613621323,2019-08-16,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,9,Slow Ready,422,false,,788,3,11,0,,false,",",false,
-1613621323,2019-08-16,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,10,Turned Clouds,400,false,,646,5,46,0,,false,",",false,
-1613621323,2019-08-16,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,11,Into the Myst,402,false,,846,5,13,0,,false,,false,jam
-1613621568,2019-08-17,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,1,Elizabeth,465,false,,913,10,14,10,,false,",",false,opener|jam
-1613621568,2019-08-17,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,2,Flodown,478,false,Vasudo,681,4,69,0,,false,",",false,
-1613621568,2019-08-17,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,3,The W.S. Walcott Medicine Show,582,true,The Band,743,67,7,35,,false,",",false,
-1613621568,2019-08-17,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,4,Drive,462,false,,1097,1,18,0,,false,",",false,opener|jam
-1613621568,2019-08-17,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,5,Creatures,420,false,,488,4,45,0,,false,>,true,jam
-1613621568,2019-08-17,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,6,Shama Lama Ding Dong,545,true,Otis Day and The Knights,243,4,19,0,,false,>,true,encore
-1613621568,2019-08-17,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,7,Happy Birthday,747,true,,44,96,2,35,,false,>,true,opener|ballad
-1613621568,2019-08-17,2019,Birds of a Feather Music &amp; Arts Festival,Morning View,KY,1,8,Jive Lee,502,false,,465,2,23,0,,false,,false,closer|jam
+1613621323,2019-08-16,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,1,Jive I,411,false,,585,5,63,0,,false,>,true,
+1613621323,2019-08-16,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,2,Atlas,439,true,The Wood Brothers,688,3,21,0,,false,",",false,opener
+1613621323,2019-08-16,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,3,White Lights,586,false,,466,1,17,0,,false,",",false,closer|encore
+1613621323,2019-08-16,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,4,Wysteria Lane,405,false,Vasudo,1242,1,43,0,,false,->,true,opener|jam|peak
+1613621323,2019-08-16,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,5,Butter Rum,415,false,Vasudo,410,2,42,0,,false,",",false,
+1613621323,2019-08-16,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,6,Wild Night,588,true,Van Morrison,311,11,10,10,,false,",",false,opener|closer
+1613621323,2019-08-16,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,7,Hot Tea,408,false,Vasudo,556,1,41,0,,false,>,true,closer
+1613621323,2019-08-16,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,8,Mas Que Nada,513,true,Sergio Mendes,539,26,5,20,,false,",",false,
+1613621323,2019-08-16,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,9,Slow Ready,422,false,,788,3,11,0,,false,",",false,
+1613621323,2019-08-16,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,10,Turned Clouds,400,false,,646,5,46,0,,false,",",false,
+1613621323,2019-08-16,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,11,Into the Myst,402,false,,846,5,13,0,,false,,false,jam
+1613621568,2019-08-17,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,1,Elizabeth,465,false,,913,10,14,10,,false,",",false,opener|jam
+1613621568,2019-08-17,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,2,Flodown,478,false,Vasudo,681,4,69,0,,false,",",false,
+1613621568,2019-08-17,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,3,The W.S. Walcott Medicine Show,582,true,The Band,743,67,7,35,,false,",",false,
+1613621568,2019-08-17,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,4,Drive,462,false,,1097,1,18,0,,false,",",false,opener|jam
+1613621568,2019-08-17,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,5,Creatures,420,false,,488,4,45,0,,false,>,true,jam
+1613621568,2019-08-17,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,6,Shama Lama Ding Dong,545,true,Otis Day and The Knights,243,4,19,0,,false,>,true,encore
+1613621568,2019-08-17,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,7,Happy Birthday,747,true,,44,96,2,35,,false,>,true,opener|ballad
+1613621568,2019-08-17,2019,Birds of a Feather Music & Arts Festival,Morning View,KY,1,8,Jive Lee,502,false,,465,2,23,0,,false,,false,closer|jam
 1613618864,2019-08-22,2019,Night Lights Music Festival,Sherman,NY,1,1,All I Need,414,false,,,2,57,0,,false,",",false,jam
 1613618864,2019-08-22,2019,Night Lights Music Festival,Sherman,NY,1,2,Time to Flee,404,false,,,3,41,0,,false,>,true,
 1613618864,2019-08-22,2019,Night Lights Music Festival,Sherman,NY,1,3,Butter Rum,415,false,Vasudo,,1,43,0,,false,",",false,
@@ -1997,20 +1997,20 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1613444180,2019-11-16,2019,Nietzsche's,Buffalo,NY,2,9,Hot Tea,408,false,Vasudo,646,2,52,0,,false,,false,closer
 1613444180,2019-11-16,2019,Nietzsche's,Buffalo,NY,E,10,Short People,549,true,Randy Newman,441,7,2,0,,false,>,true,closer|encore
 1613444180,2019-11-16,2019,Nietzsche's,Buffalo,NY,E,11,Hot Tea,408,false,Vasudo,127,0,53,0,,false,,false,closer
-1613443194,2019-11-27,2019,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,1,Eminence Front,468,true,The Who,,30,6,20,,false,",",false,opener
-1613443194,2019-11-27,2019,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,2,Sco-Mule,543,true,Government Mule ft. John Scofield,,106,7,50,,false,",",false,
-1613443194,2019-11-27,2019,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,3,Feel Like Making Love,474,true,Bad Company,,12,2,10,,false,",",false,
-1613443194,2019-11-27,2019,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,4,Tennessee Jed,566,true,Grateful Dead,,181,3,50,,false,",",false,
-1613443194,2019-11-27,2019,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,5,Caution,446,true,Bob Marley,,84,6,35,,false,>,true,
-1613443194,2019-11-27,2019,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,6,Billie Jean,440,true,Michael Jackson,,154,5,50,,false,",",false,
-1613443194,2019-11-27,2019,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,7,Every Little Thing She Does Is Magic,470,true,The Police,,3,3,0,,false,",",false,
-1613443194,2019-11-27,2019,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,8,A Fifth Of Beethoven,434,true,Walter Murphy,,7,4,0,,false,",",false,closer
-1613443194,2019-11-27,2019,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,9,Lady Marmalade,505,true,Patti Labell,,8,2,10,,false,",",false,
-1613443194,2019-11-27,2019,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,10,Secret Agent Man,544,true,Johnny Rivers,,100,3,50,,false,",",false,opener|ballad
-1613443194,2019-11-27,2019,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,11,Trouble,576,true,Elvis Presley,,0,1,0,,false,",",false,ballad|encore
-1613443194,2019-11-27,2019,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,12,Love Me Sexy,509,true,Jackie Moon,,8,2,10,,false,",",false,
-1613443194,2019-11-27,2019,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,13,Can't Get You Out Of My Head,426,true,Kylie Minogue,,24,7,20,,false,>,true,
-1613443194,2019-11-27,2019,O'Neill's Irish Pub &amp; Restaurant,Norwalk,CT,1,14,Boogie On Reggae Woman,441,true,Stevie Wonder,,4,11,0,,false,,false,
+1613443194,2019-11-27,2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,1,Eminence Front,468,true,The Who,,30,6,20,,false,",",false,opener
+1613443194,2019-11-27,2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,2,Sco-Mule,543,true,Government Mule ft. John Scofield,,106,7,50,,false,",",false,
+1613443194,2019-11-27,2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,3,Feel Like Making Love,474,true,Bad Company,,12,2,10,,false,",",false,
+1613443194,2019-11-27,2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,4,Tennessee Jed,566,true,Grateful Dead,,181,3,50,,false,",",false,
+1613443194,2019-11-27,2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,5,Caution,446,true,Bob Marley,,84,6,35,,false,>,true,
+1613443194,2019-11-27,2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,6,Billie Jean,440,true,Michael Jackson,,154,5,50,,false,",",false,
+1613443194,2019-11-27,2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,7,Every Little Thing She Does Is Magic,470,true,The Police,,3,3,0,,false,",",false,
+1613443194,2019-11-27,2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,8,A Fifth Of Beethoven,434,true,Walter Murphy,,7,4,0,,false,",",false,closer
+1613443194,2019-11-27,2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,9,Lady Marmalade,505,true,Patti Labell,,8,2,10,,false,",",false,
+1613443194,2019-11-27,2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,10,Secret Agent Man,544,true,Johnny Rivers,,100,3,50,,false,",",false,opener|ballad
+1613443194,2019-11-27,2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,11,Trouble,576,true,Elvis Presley,,0,1,0,,false,",",false,ballad|encore
+1613443194,2019-11-27,2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,12,Love Me Sexy,509,true,Jackie Moon,,8,2,10,,false,",",false,
+1613443194,2019-11-27,2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,13,Can't Get You Out Of My Head,426,true,Kylie Minogue,,24,7,20,,false,>,true,
+1613443194,2019-11-27,2019,O'Neill's Irish Pub & Restaurant,Norwalk,CT,1,14,Boogie On Reggae Woman,441,true,Stevie Wonder,,4,11,0,,false,,false,
 1613441845,2019-12-05,2019,Aggie Theatre,Fort Collins,CO,1,1,Me & My Uncle,592,true,John Philips,443,14,27,10,,false,",",false,opener
 1613441845,2019-12-05,2019,Aggie Theatre,Fort Collins,CO,1,2,Lead the Way,406,false,,666,4,51,0,,true,",",false,opener
 1613441845,2019-12-05,2019,Aggie Theatre,Fort Collins,CO,1,3,Time to Flee,404,false,,812,4,49,0,,false,",",false,
@@ -2041,35 +2041,35 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1613439915,2019-12-06,2019,Cervantes' Other Side,Denver,CO,2,12,Ghostbusters Rap,481,true,Run DMC,1097,17,15,10,,true,,false,closer
 1613439915,2019-12-06,2019,Cervantes' Other Side,Denver,CO,E,13,Echo of a Rose,463,false,Vasudo,372,4,23,0,,false,>,true,jam
 1613439915,2019-12-06,2019,Cervantes' Other Side,Denver,CO,E,14,Feeling Hot Hot Hot,491,true,The Merrymen,710,19,14,10,,false,,false,opener|closer
-1613439018,2019-12-07,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,1,Flodown,478,false,Vasudo,670,4,76,0,,false,",",false,
-1613439018,2019-12-07,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,2,Doc Brown,459,false,Great Blue,450,4,17,0,,false,",",false,
-1613439018,2019-12-07,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,3,Green River,482,true,Creedence Clearwater Revival,461,14,16,10,,false,",",false,
-1613439018,2019-12-07,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,4,Wysteria Lane,405,false,Vasudo,1310,4,51,0,,true,",",false,opener|jam|peak
-1613439018,2019-12-07,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,5,Movin' Out (Anthony's Song),519,true,Billy Joel,500,7,8,0,,false,",",false,
-1613439018,2019-12-07,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,6,All I Need,414,false,,1043,1,65,0,,true,,false,jam
-1613439018,2019-12-07,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,7,Happy Birthday,747,true,,64,0,4,0,,false,",",false,opener|ballad
-1613439018,2019-12-07,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,8,Elizabeth,465,false,,625,9,17,10,,false,->,true,opener|jam
-1613439018,2019-12-07,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,9,Mas Que Nada,513,true,Sergio Mendes,476,12,7,10,,false,",",false,
-1613439018,2019-12-07,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,10,Arcadia,403,false,,745,3,115,0,,false,",",false,closer
-1613439018,2019-12-07,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,11,I Wish,495,true,Stevie Wonder,645,4,11,0,,false,->,true,
-1613439018,2019-12-07,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,12,Butter Rum,415,false,Vasudo,524,4,50,0,,false,",",false,
-1613439018,2019-12-07,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,13,White Lights,586,false,,562,6,23,0,,false,,false,closer|encore
-1613439018,2019-12-07,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,E,14,Don't Do It,460,true,The Band,498,13,14,10,,false,,false,closer|encore
-1613436194,2019-12-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,1,Atlas,439,true,The Wood Brothers,924,4,24,0,,false,",",false,opener
-1613436194,2019-12-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,2,Switchin',564,true,Wes Montgomery,497,8,16,10,,false,",",false,opener
-1613436194,2019-12-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,3,Tumble,418,false,Vasudo,1014,2,36,0,,true,",",false,closer|jam|peak
-1613436194,2019-12-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,4,A Western Sun,435,false,,821,13,21,10,,false,",",false,
-1613436194,2019-12-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,5,Time to Flee,404,false,,850,2,50,0,,true,",",false,
-1613436194,2019-12-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,1,6,Me and Julio Down By The Schoolyard,515,true,Paul Simon,405,13,14,10,,false,,false,
-1613436194,2019-12-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,7,Doobie Song,461,false,,402,5,5,0,,false,>,true,closer|encore
-1613436194,2019-12-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,8,Drive,462,false,,1402,1,28,0,,true,->,true,opener|jam
-1613436194,2019-12-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,9,Danger Zone,457,true,Kenny Loggins,256,23,13,20,,false,",",false,
-1613436194,2019-12-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,10,Everywhere,471,true,Michelle Branch,240,85,3,35,,false,",",false,ballad
-1613436194,2019-12-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,11,Jive Lee,502,false,,513,10,28,10,,false,",",false,closer|jam
-1613436194,2019-12-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,12,A Fifth Of Beethoven,434,true,Walter Murphy,282,3,5,0,,false,->,true,closer
-1613436194,2019-12-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,13,Also Sprach Zarathustra,433,true,Deodato,158,12,13,10,,false,>,true,closer
-1613436194,2019-12-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,14,Ain't Life Grand,437,true,Widespread Panic,457,16,2,10,,false,>,true,
-1613436194,2019-12-08,2019,Old Town Pub &amp; Restaurant,Steamboat Springs,CO,2,15,Shout,550,true,The Isley Brothers,424,15,7,10,,false,,false,closer|encore
+1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,1,Flodown,478,false,Vasudo,670,4,76,0,,false,",",false,
+1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,2,Doc Brown,459,false,Great Blue,450,4,17,0,,false,",",false,
+1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,3,Green River,482,true,Creedence Clearwater Revival,461,14,16,10,,false,",",false,
+1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,4,Wysteria Lane,405,false,Vasudo,1310,4,51,0,,true,",",false,opener|jam|peak
+1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,5,Movin' Out (Anthony's Song),519,true,Billy Joel,500,7,8,0,,false,",",false,
+1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,6,All I Need,414,false,,1043,1,65,0,,true,,false,jam
+1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,7,Happy Birthday,747,true,,64,0,4,0,,false,",",false,opener|ballad
+1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,8,Elizabeth,465,false,,625,9,17,10,,false,->,true,opener|jam
+1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,9,Mas Que Nada,513,true,Sergio Mendes,476,12,7,10,,false,",",false,
+1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,10,Arcadia,403,false,,745,3,115,0,,false,",",false,closer
+1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,11,I Wish,495,true,Stevie Wonder,645,4,11,0,,false,->,true,
+1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,12,Butter Rum,415,false,Vasudo,524,4,50,0,,false,",",false,
+1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,13,White Lights,586,false,,562,6,23,0,,false,,false,closer|encore
+1613439018,2019-12-07,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,E,14,Don't Do It,460,true,The Band,498,13,14,10,,false,,false,closer|encore
+1613436194,2019-12-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,1,Atlas,439,true,The Wood Brothers,924,4,24,0,,false,",",false,opener
+1613436194,2019-12-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,2,Switchin',564,true,Wes Montgomery,497,8,16,10,,false,",",false,opener
+1613436194,2019-12-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,3,Tumble,418,false,Vasudo,1014,2,36,0,,true,",",false,closer|jam|peak
+1613436194,2019-12-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,4,A Western Sun,435,false,,821,13,21,10,,false,",",false,
+1613436194,2019-12-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,5,Time to Flee,404,false,,850,2,50,0,,true,",",false,
+1613436194,2019-12-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,1,6,Me and Julio Down By The Schoolyard,515,true,Paul Simon,405,13,14,10,,false,,false,
+1613436194,2019-12-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,7,Doobie Song,461,false,,402,5,5,0,,false,>,true,closer|encore
+1613436194,2019-12-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,8,Drive,462,false,,1402,1,28,0,,true,->,true,opener|jam
+1613436194,2019-12-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,9,Danger Zone,457,true,Kenny Loggins,256,23,13,20,,false,",",false,
+1613436194,2019-12-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,10,Everywhere,471,true,Michelle Branch,240,85,3,35,,false,",",false,ballad
+1613436194,2019-12-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,11,Jive Lee,502,false,,513,10,28,10,,false,",",false,closer|jam
+1613436194,2019-12-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,12,A Fifth Of Beethoven,434,true,Walter Murphy,282,3,5,0,,false,->,true,closer
+1613436194,2019-12-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,13,Also Sprach Zarathustra,433,true,Deodato,158,12,13,10,,false,>,true,closer
+1613436194,2019-12-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,14,Ain't Life Grand,437,true,Widespread Panic,457,16,2,10,,false,>,true,
+1613436194,2019-12-08,2019,Old Town Pub & Restaurant,Steamboat Springs,CO,2,15,Shout,550,true,The Isley Brothers,424,15,7,10,,false,,false,closer|encore
 1613435548,2019-12-11,2019,The Bootleg at Atomic Cowboy,St. Louis,MO,1,1,Madhuvan,512,false,,771,2,79,0,,false,",",false,opener|closer|jam
 1613435548,2019-12-11,2019,The Bootleg at Atomic Cowboy,St. Louis,MO,1,2,The W.S. Walcott Medicine Show,582,true,The Band,589,8,11,10,,false,->,true,
 1613435548,2019-12-11,2019,The Bootleg at Atomic Cowboy,St. Louis,MO,1,3,Jive II,413,false,,606,2,37,0,,false,>,true,opener
@@ -3076,19 +3076,19 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1643256302,2021-11-12,2021,Historic Scoot Inn,Austin,TX,2,11,Rosewood Heart,412,false,,559,4,28,0,,false,>,true,jam|peak
 1643256302,2021-11-12,2021,Historic Scoot Inn,Austin,TX,2,12,Flodown,478,false,Vasudo,583,4,98,0,,false,,false,
 1643256302,2021-11-12,2021,Historic Scoot Inn,Austin,TX,E,13,American Woman,718,true,The Guess Who,277,5,2,0,,false,,false,opener|ballad|encore
-1643257560,2021-11-13,2021,The Echo Lounge &amp; Music Hall,Dallas,TX,1,1,Eminence Front,468,true,The Who,522,94,7,35,,false,",",false,opener
-1643257560,2021-11-13,2021,The Echo Lounge &amp; Music Hall,Dallas,TX,1,2,Bob Don,429,false,,391,3,15,0,,false,",",false,
-1643257560,2021-11-13,2021,The Echo Lounge &amp; Music Hall,Dallas,TX,1,3,Turned Clouds,400,false,,672,5,69,0,,false,",",false,
-1643257560,2021-11-13,2021,The Echo Lounge &amp; Music Hall,Dallas,TX,1,4,Arrow,438,false,,1156,4,19,0,,false,>,true,opener|closer|jam
-1643257560,2021-11-13,2021,The Echo Lounge &amp; Music Hall,Dallas,TX,1,5,It Burns Within,500,false,St. John's Revival,578,10,5,10,,false,",",false,
-1643257560,2021-11-13,2021,The Echo Lounge &amp; Music Hall,Dallas,TX,1,6,Yeti,416,false,Great Blue,495,3,58,0,,false,",",false,opener
-1643257560,2021-11-13,2021,The Echo Lounge &amp; Music Hall,Dallas,TX,1,7,Slow Ready,422,false,,760,5,36,0,,false,,false,
-1643257560,2021-11-13,2021,The Echo Lounge &amp; Music Hall,Dallas,TX,2,8,Creatures,420,false,,1095,5,76,0,,false,>,true,jam
-1643257560,2021-11-13,2021,The Echo Lounge &amp; Music Hall,Dallas,TX,2,9,State Of The Art (A.E.I.O.U.),558,true,Jim James,505,18,3,10,,false,",",false,closer
-1643257560,2021-11-13,2021,The Echo Lounge &amp; Music Hall,Dallas,TX,2,10,Jive I,411,false,,544,3,92,0,,false,>,true,
-1643257560,2021-11-13,2021,The Echo Lounge &amp; Music Hall,Dallas,TX,2,11,Jive II,413,false,,701,4,55,0,,false,>,true,opener
-1643257560,2021-11-13,2021,The Echo Lounge &amp; Music Hall,Dallas,TX,2,12,Jive Lee,502,false,,603,3,54,0,,false,,false,closer|jam
-1643257560,2021-11-13,2021,The Echo Lounge &amp; Music Hall,Dallas,TX,E,13,Hot Tea,408,false,Vasudo,835,3,83,0,,false,,false,closer
+1643257560,2021-11-13,2021,The Echo Lounge & Music Hall,Dallas,TX,1,1,Eminence Front,468,true,The Who,522,94,7,35,,false,",",false,opener
+1643257560,2021-11-13,2021,The Echo Lounge & Music Hall,Dallas,TX,1,2,Bob Don,429,false,,391,3,15,0,,false,",",false,
+1643257560,2021-11-13,2021,The Echo Lounge & Music Hall,Dallas,TX,1,3,Turned Clouds,400,false,,672,5,69,0,,false,",",false,
+1643257560,2021-11-13,2021,The Echo Lounge & Music Hall,Dallas,TX,1,4,Arrow,438,false,,1156,4,19,0,,false,>,true,opener|closer|jam
+1643257560,2021-11-13,2021,The Echo Lounge & Music Hall,Dallas,TX,1,5,It Burns Within,500,false,St. John's Revival,578,10,5,10,,false,",",false,
+1643257560,2021-11-13,2021,The Echo Lounge & Music Hall,Dallas,TX,1,6,Yeti,416,false,Great Blue,495,3,58,0,,false,",",false,opener
+1643257560,2021-11-13,2021,The Echo Lounge & Music Hall,Dallas,TX,1,7,Slow Ready,422,false,,760,5,36,0,,false,,false,
+1643257560,2021-11-13,2021,The Echo Lounge & Music Hall,Dallas,TX,2,8,Creatures,420,false,,1095,5,76,0,,false,>,true,jam
+1643257560,2021-11-13,2021,The Echo Lounge & Music Hall,Dallas,TX,2,9,State Of The Art (A.E.I.O.U.),558,true,Jim James,505,18,3,10,,false,",",false,closer
+1643257560,2021-11-13,2021,The Echo Lounge & Music Hall,Dallas,TX,2,10,Jive I,411,false,,544,3,92,0,,false,>,true,
+1643257560,2021-11-13,2021,The Echo Lounge & Music Hall,Dallas,TX,2,11,Jive II,413,false,,701,4,55,0,,false,>,true,opener
+1643257560,2021-11-13,2021,The Echo Lounge & Music Hall,Dallas,TX,2,12,Jive Lee,502,false,,603,3,54,0,,false,,false,closer|jam
+1643257560,2021-11-13,2021,The Echo Lounge & Music Hall,Dallas,TX,E,13,Hot Tea,408,false,Vasudo,835,3,83,0,,false,,false,closer
 1643257583,2021-11-16,2021,Tower Theatre,Oklahoma City,OK,1,1,Time to Flee,404,false,,1797,3,72,0,,true,",",false,
 1643257583,2021-11-16,2021,Tower Theatre,Oklahoma City,OK,1,2,Caution,446,true,Bob Marley,494,45,8,20,,false,",",false,
 1643257583,2021-11-16,2021,Tower Theatre,Oklahoma City,OK,1,3,Sco-Mule,543,true,Government Mule ft. John Scofield,553,95,8,35,,false,",",false,
@@ -3453,18 +3453,18 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1647972376,2022-03-05,2022,Brooklyn Bowl,Nashville,TN,2,10,Red Bird,536,false,,1238,4,5,0,,true,",",false,jam
 1647972376,2022-03-05,2022,Brooklyn Bowl,Nashville,TN,2,11,State Of The Art (A.E.I.O.U.),558,true,Jim James,407,26,4,20,,false,,false,closer
 1647972376,2022-03-05,2022,Brooklyn Bowl,Nashville,TN,E,12,Dripfield,738,false,,1031,4,2,0,,false,,false,closer|jam
-1647972561,2022-03-07,2022,The Mill &amp; Mine,Knoxville,TN,1,1,Time to Flee,404,false,,1231,3,79,0,,true,",",false,
-1647972561,2022-03-07,2022,The Mill &amp; Mine,Knoxville,TN,1,2,Travelers,574,false,,587,4,15,0,,false,",",false,
-1647972561,2022-03-07,2022,The Mill &amp; Mine,Knoxville,TN,1,3,Doc Brown,459,false,Great Blue,538,4,35,0,,false,",",false,
-1647972561,2022-03-07,2022,The Mill &amp; Mine,Knoxville,TN,1,4,Wysteria Lane,405,false,Vasudo,1131,4,77,0,,true,>,true,opener|jam|peak
-1647972561,2022-03-07,2022,The Mill &amp; Mine,Knoxville,TN,1,5,Dr. Darkness,712,false,,440,3,5,0,,false,",",false,opener
-1647972561,2022-03-07,2022,The Mill &amp; Mine,Knoxville,TN,1,6,Look Out Cleveland,591,true,The Band,870,39,4,20,,false,,false,closer|jam|peak
-1647972561,2022-03-07,2022,The Mill &amp; Mine,Knoxville,TN,2,7,The Empress Of Organos,604,false,Vasudo,1115,5,20,0,,false,",",false,closer|jam
-1647972561,2022-03-07,2022,The Mill &amp; Mine,Knoxville,TN,2,8,Silver Rising,736,false,,560,2,6,0,,false,>,true,
-1647972561,2022-03-07,2022,The Mill &amp; Mine,Knoxville,TN,2,9,Flodown,478,false,Vasudo,694,3,106,0,,false,",",false,
-1647972561,2022-03-07,2022,The Mill &amp; Mine,Knoxville,TN,2,10,Spirit Of The Dark Horse,557,false,,1106,9,24,10,,false,>,true,
-1647972561,2022-03-07,2022,The Mill &amp; Mine,Knoxville,TN,2,11,Mas Que Nada,513,true,Sergio Mendes,672,18,15,10,,false,,false,
-1647972561,2022-03-07,2022,The Mill &amp; Mine,Knoxville,TN,E,12,So Ready,421,false,,873,5,105,0,,false,,false,closer
+1647972561,2022-03-07,2022,The Mill & Mine,Knoxville,TN,1,1,Time to Flee,404,false,,1231,3,79,0,,true,",",false,
+1647972561,2022-03-07,2022,The Mill & Mine,Knoxville,TN,1,2,Travelers,574,false,,587,4,15,0,,false,",",false,
+1647972561,2022-03-07,2022,The Mill & Mine,Knoxville,TN,1,3,Doc Brown,459,false,Great Blue,538,4,35,0,,false,",",false,
+1647972561,2022-03-07,2022,The Mill & Mine,Knoxville,TN,1,4,Wysteria Lane,405,false,Vasudo,1131,4,77,0,,true,>,true,opener|jam|peak
+1647972561,2022-03-07,2022,The Mill & Mine,Knoxville,TN,1,5,Dr. Darkness,712,false,,440,3,5,0,,false,",",false,opener
+1647972561,2022-03-07,2022,The Mill & Mine,Knoxville,TN,1,6,Look Out Cleveland,591,true,The Band,870,39,4,20,,false,,false,closer|jam|peak
+1647972561,2022-03-07,2022,The Mill & Mine,Knoxville,TN,2,7,The Empress Of Organos,604,false,Vasudo,1115,5,20,0,,false,",",false,closer|jam
+1647972561,2022-03-07,2022,The Mill & Mine,Knoxville,TN,2,8,Silver Rising,736,false,,560,2,6,0,,false,>,true,
+1647972561,2022-03-07,2022,The Mill & Mine,Knoxville,TN,2,9,Flodown,478,false,Vasudo,694,3,106,0,,false,",",false,
+1647972561,2022-03-07,2022,The Mill & Mine,Knoxville,TN,2,10,Spirit Of The Dark Horse,557,false,,1106,9,24,10,,false,>,true,
+1647972561,2022-03-07,2022,The Mill & Mine,Knoxville,TN,2,11,Mas Que Nada,513,true,Sergio Mendes,672,18,15,10,,false,,false,
+1647972561,2022-03-07,2022,The Mill & Mine,Knoxville,TN,E,12,So Ready,421,false,,873,5,105,0,,false,,false,closer
 1647972862,2022-03-09,2022,Royal Oak Music Theatre,Royal Oak,MI,1,1,Borne,725,false,,1238,2,5,0,,true,",",false,jam
 1647972862,2022-03-09,2022,Royal Oak Music Theatre,Royal Oak,MI,1,2,Same Old Shenanigans,541,false,,878,4,20,0,,false,",",false,closer
 1647972862,2022-03-09,2022,Royal Oak Music Theatre,Royal Oak,MI,1,3,Life On The Shelf,711,false,,307,10,6,10,,false,>,true,ballad
@@ -4759,18 +4759,18 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1678977854,2023-07-04,2023,Stone Pony Summer Stage,Asbury Park,NJ,2,11,What's Up?,430,true,4 Non Blondes,344,66,7,35,,false,",",false,closer|encore
 1678977854,2023-07-04,2023,Stone Pony Summer Stage,Asbury Park,NJ,2,12,Arrow,438,false,,1008,2,54,0,,false,,false,opener|closer|jam
 1678977854,2023-07-04,2023,Stone Pony Summer Stage,Asbury Park,NJ,E,13,Slow Ready,422,false,,588,4,66,0,,false,,false,
-1680624000,2023-07-06,2023,Thompson&#039;s Point,Portland,ME,1,1,The Whales,425,false,,590,7,29,0,,false,",",false,opener
-1680624000,2023-07-06,2023,Thompson&#039;s Point,Portland,ME,1,2,Rockdale,714,false,Vasudo,878,4,39,0,,false,",",false,opener|closer|jam
-1680624000,2023-07-06,2023,Thompson&#039;s Point,Portland,ME,1,3,Borne,725,false,,1069,8,25,10,,false,>,true,jam
-1680624000,2023-07-06,2023,Thompson&#039;s Point,Portland,ME,1,4,The Way It Is,570,true,Bruce Hornsby,572,25,31,20,,false,",",false,
-1680624000,2023-07-06,2023,Thompson&#039;s Point,Portland,ME,1,5,Rosewood Heart,412,false,,845,5,51,0,,false,>,true,jam|peak
-1680624000,2023-07-06,2023,Thompson&#039;s Point,Portland,ME,1,6,Pancakes,723,false,Great Blue,1020,3,33,0,,false,,false,opener|closer|jam
-1680624000,2023-07-06,2023,Thompson&#039;s Point,Portland,ME,2,7,Feel It Now,823,false,,712,4,10,0,,false,",",false,
-1680624000,2023-07-06,2023,Thompson&#039;s Point,Portland,ME,2,8,Dr. Darkness,712,false,,432,3,23,0,,false,>,true,opener
-1680624000,2023-07-06,2023,Thompson&#039;s Point,Portland,ME,2,9,Hot Tea,408,false,Vasudo,1421,2,121,0,,true,",",false,closer
-1680624000,2023-07-06,2023,Thompson&#039;s Point,Portland,ME,2,10,726,432,false,,501,4,26,0,,false,",",false,encore
-1680624000,2023-07-06,2023,Thompson&#039;s Point,Portland,ME,2,11,Madhuvan,512,false,,963,2,142,0,,true,,false,opener|closer|jam
-1680624000,2023-07-06,2023,Thompson&#039;s Point,Portland,ME,E,12,Don't Do It,460,true,The Band,358,30,29,20,,false,,false,closer|encore
+1680624000,2023-07-06,2023,Thompson's Point,Portland,ME,1,1,The Whales,425,false,,590,7,29,0,,false,",",false,opener
+1680624000,2023-07-06,2023,Thompson's Point,Portland,ME,1,2,Rockdale,714,false,Vasudo,878,4,39,0,,false,",",false,opener|closer|jam
+1680624000,2023-07-06,2023,Thompson's Point,Portland,ME,1,3,Borne,725,false,,1069,8,25,10,,false,>,true,jam
+1680624000,2023-07-06,2023,Thompson's Point,Portland,ME,1,4,The Way It Is,570,true,Bruce Hornsby,572,25,31,20,,false,",",false,
+1680624000,2023-07-06,2023,Thompson's Point,Portland,ME,1,5,Rosewood Heart,412,false,,845,5,51,0,,false,>,true,jam|peak
+1680624000,2023-07-06,2023,Thompson's Point,Portland,ME,1,6,Pancakes,723,false,Great Blue,1020,3,33,0,,false,,false,opener|closer|jam
+1680624000,2023-07-06,2023,Thompson's Point,Portland,ME,2,7,Feel It Now,823,false,,712,4,10,0,,false,",",false,
+1680624000,2023-07-06,2023,Thompson's Point,Portland,ME,2,8,Dr. Darkness,712,false,,432,3,23,0,,false,>,true,opener
+1680624000,2023-07-06,2023,Thompson's Point,Portland,ME,2,9,Hot Tea,408,false,Vasudo,1421,2,121,0,,true,",",false,closer
+1680624000,2023-07-06,2023,Thompson's Point,Portland,ME,2,10,726,432,false,,501,4,26,0,,false,",",false,encore
+1680624000,2023-07-06,2023,Thompson's Point,Portland,ME,2,11,Madhuvan,512,false,,963,2,142,0,,true,,false,opener|closer|jam
+1680624000,2023-07-06,2023,Thompson's Point,Portland,ME,E,12,Don't Do It,460,true,The Band,358,30,29,20,,false,,false,closer|encore
 1678977867,2023-07-07,2023,Saratoga Performing Arts Center,Saratoga Springs,NY,1,1,Silver Rising,736,false,,549,5,32,0,,false,",",false,
 1678977867,2023-07-07,2023,Saratoga Performing Arts Center,Saratoga Springs,NY,1,2,California Magic,735,false,,507,8,24,10,,false,",",false,
 1678977867,2023-07-07,2023,Saratoga Performing Arts Center,Saratoga Springs,NY,1,3,Animal,764,false,,1129,2,30,0,,true,",",false,opener|closer
@@ -5315,32 +5315,32 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1707240279,2024-06-05,2024,The Factory,Chesterfield,MO,2,9,Red Bird,536,false,,1397,3,38,0,,true,->,true,jam
 1707240279,2024-06-05,2024,The Factory,Chesterfield,MO,2,10,Tomorrow Never Knows,573,true,The Beatles,937,21,11,20,,true,,false,encore
 1707240279,2024-06-05,2024,The Factory,Chesterfield,MO,E,11,Don't Do It,460,true,The Band,484,37,32,20,,false,,false,closer|encore
-1707240294,2024-06-07,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,1,Hot Love & The Lazy Poet,645,false,Vasudo,357,2,3,0,,false,>,true,opener
-1707240294,2024-06-07,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,2,The Whales,425,false,,501,14,35,10,,false,>,true,opener
-1707240294,2024-06-07,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,3,No California,911,true,Ilsey Juber,369,0,1,0,,false,",",false,
-1707240294,2024-06-07,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,4,Jive I,411,false,,667,8,119,10,,false,>,true,
-1707240294,2024-06-07,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,5,Jive Lee,502,false,,1305,8,75,10,,true,",",false,closer|jam
-1707240294,2024-06-07,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,6,Seekers on the Ridge pt I,609,false,,400,9,38,10,,false,>,true,
-1707240294,2024-06-07,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,7,Seekers on the Ridge pt II,610,false,,303,9,38,10,,false,",",false,
-1707240294,2024-06-07,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,8,Animal,764,false,,900,5,42,0,,false,,false,opener|closer
-1707240294,2024-06-07,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,9,Wysteria Lane,405,false,Vasudo,1062,7,99,0,,true,>,true,opener|jam|peak
-1707240294,2024-06-07,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,10,Feel It Now,823,false,,676,2,17,0,,false,",",false,
-1707240294,2024-06-07,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,11,Hungersite,740,false,,1254,4,45,0,,true,",",false,opener|jam
-1707240294,2024-06-07,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,12,Peggy-O,531,true,Grateful Dead,537,20,16,20,,false,",",false,
-1707240294,2024-06-07,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,13,Dripfield,738,false,,962,4,42,0,,true,,false,closer|jam
-1707240294,2024-06-07,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,E,14,(dawn),637,false,,445,11,5,10,,false,,false,closer|encore
-1707240309,2024-06-08,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,1,Turned Clouds,400,false,,642,9,100,10,,false,",",false,
-1707240309,2024-06-08,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,2,Look Out Cleveland,591,true,The Band,633,16,9,10,,false,",",false,closer|jam|peak
-1707240309,2024-06-08,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,3,Lead Up,822,false,,336,14,19,10,,false,",",false,
-1707240309,2024-06-08,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,4,California Magic,735,false,,470,5,32,0,,false,",",false,
-1707240309,2024-06-08,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,5,Drive,462,false,,1820,10,93,10,,true,>,true,opener|jam
-1707240309,2024-06-08,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,6,Give It Time,931,false,,524,6,3,0,,false,,false,closer|encore
-1707240309,2024-06-08,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,7,Madhuvan,512,false,,1979,8,152,10,,true,",",false,opener|closer|jam
-1707240309,2024-06-08,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,8,Silver Rising,736,false,,522,5,43,0,,false,",",false,
-1707240309,2024-06-08,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,9,Arrow,438,false,,770,3,66,0,,false,->,true,opener|closer|jam
-1707240309,2024-06-08,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,10,Hollywood Nights,488,true,Bob Seger & The Silver Bullet Band,447,33,9,20,,false,,false,
-1707240309,2024-06-08,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,E,11,Travelers,574,false,,601,52,23,35,,false,>,true,
-1707240309,2024-06-08,2024,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,E,12,Elmeg The Wise,466,false,St. John's Revival,747,87,18,35,,false,,false,closer|encore
+1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,1,Hot Love & The Lazy Poet,645,false,Vasudo,357,2,3,0,,false,>,true,opener
+1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,2,The Whales,425,false,,501,14,35,10,,false,>,true,opener
+1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,3,No California,911,true,Ilsey Juber,369,0,1,0,,false,",",false,
+1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,4,Jive I,411,false,,667,8,119,10,,false,>,true,
+1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,5,Jive Lee,502,false,,1305,8,75,10,,true,",",false,closer|jam
+1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,6,Seekers on the Ridge pt I,609,false,,400,9,38,10,,false,>,true,
+1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,7,Seekers on the Ridge pt II,610,false,,303,9,38,10,,false,",",false,
+1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,8,Animal,764,false,,900,5,42,0,,false,,false,opener|closer
+1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,9,Wysteria Lane,405,false,Vasudo,1062,7,99,0,,true,>,true,opener|jam|peak
+1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,10,Feel It Now,823,false,,676,2,17,0,,false,",",false,
+1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,11,Hungersite,740,false,,1254,4,45,0,,true,",",false,opener|jam
+1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,12,Peggy-O,531,true,Grateful Dead,537,20,16,20,,false,",",false,
+1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,13,Dripfield,738,false,,962,4,42,0,,true,,false,closer|jam
+1707240294,2024-06-07,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,E,14,(dawn),637,false,,445,11,5,10,,false,,false,closer|encore
+1707240309,2024-06-08,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,1,Turned Clouds,400,false,,642,9,100,10,,false,",",false,
+1707240309,2024-06-08,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,2,Look Out Cleveland,591,true,The Band,633,16,9,10,,false,",",false,closer|jam|peak
+1707240309,2024-06-08,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,3,Lead Up,822,false,,336,14,19,10,,false,",",false,
+1707240309,2024-06-08,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,4,California Magic,735,false,,470,5,32,0,,false,",",false,
+1707240309,2024-06-08,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,5,Drive,462,false,,1820,10,93,10,,true,>,true,opener|jam
+1707240309,2024-06-08,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,6,Give It Time,931,false,,524,6,3,0,,false,,false,closer|encore
+1707240309,2024-06-08,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,7,Madhuvan,512,false,,1979,8,152,10,,true,",",false,opener|closer|jam
+1707240309,2024-06-08,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,8,Silver Rising,736,false,,522,5,43,0,,false,",",false,
+1707240309,2024-06-08,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,9,Arrow,438,false,,770,3,66,0,,false,->,true,opener|closer|jam
+1707240309,2024-06-08,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,10,Hollywood Nights,488,true,Bob Seger & The Silver Bullet Band,447,33,9,20,,false,,false,
+1707240309,2024-06-08,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,E,11,Travelers,574,false,,601,52,23,35,,false,>,true,
+1707240309,2024-06-08,2024,Fiddler's Green Amphitheatre,Greenwood Village,CO,E,12,Elmeg The Wise,466,false,St. John's Revival,747,87,18,35,,false,,false,closer|encore
 1707240478,2024-06-10,2024,Steelhouse,Omaha,NE,1,1,Dr. Darkness,712,false,,422,10,30,10,,false,",",false,opener
 1707240478,2024-06-10,2024,Steelhouse,Omaha,NE,1,2,Howard Johnson's Got His Ho-Jo Working,594,true,NRBQ,315,18,5,10,,false,",",false,opener|ballad
 1707240478,2024-06-10,2024,Steelhouse,Omaha,NE,1,3,Indian River,410,false,,595,10,108,10,,false,->,true,
@@ -5485,32 +5485,32 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1707240952,2024-06-23,2024,Skyla Credit Union Amphitheatre,Charlotte,NC,2,12,Secret Agent Man,544,true,Johnny Rivers,216,239,5,50,,false,>,true,opener|ballad
 1707240952,2024-06-23,2024,Skyla Credit Union Amphitheatre,Charlotte,NC,2,13,Madhuvan,512,false,,238,0,155,0,,false,,false,opener|closer|jam
 1707240952,2024-06-23,2024,Skyla Credit Union Amphitheatre,Charlotte,NC,E,14,Arcadia,403,false,,882,5,188,0,,false,,false,closer
-1707240973,2024-06-25,2024,Thompson&#039;s Point,Portland,ME,1,1,Time to Flee,404,false,,609,5,102,0,,false,",",false,
-1707240973,2024-06-25,2024,Thompson&#039;s Point,Portland,ME,1,2,Liza Jane,508,true,African American Folk Song,615,177,19,50,,false,",",false,opener
-1707240973,2024-06-25,2024,Thompson&#039;s Point,Portland,ME,1,3,Spain,555,true,Chick Corea,524,134,4,50,,false,",",false,
-1707240973,2024-06-25,2024,Thompson&#039;s Point,Portland,ME,1,4,All I Need,414,false,,1158,3,134,0,,true,",",false,jam
-1707240973,2024-06-25,2024,Thompson&#039;s Point,Portland,ME,1,5,Indian River,410,false,,857,4,110,0,,false,,false,
-1707240973,2024-06-25,2024,Thompson&#039;s Point,Portland,ME,2,6,Drive,462,false,,1233,2,96,0,,true,->,true,opener|jam
-1707240973,2024-06-25,2024,Thompson&#039;s Point,Portland,ME,2,7,Hollywood Nights,488,true,Bob Seger & The Silver Bullet Band,546,11,10,10,,false,",",false,
-1707240973,2024-06-25,2024,Thompson&#039;s Point,Portland,ME,2,8,Into the Myst,402,false,,1152,4,63,0,,true,>,true,jam
-1707240973,2024-06-25,2024,Thompson&#039;s Point,Portland,ME,2,9,Spirit Of The Dark Horse,557,false,,645,9,32,10,,false,>,true,
-1707240973,2024-06-25,2024,Thompson&#039;s Point,Portland,ME,2,10,Slow Ready,422,false,,874,5,77,0,,false,,false,
-1707240973,2024-06-25,2024,Thompson&#039;s Point,Portland,ME,E,11,Animal,764,false,,752,4,45,0,,false,,false,opener|closer
-1707241190,2024-06-26,2024,Thompson&#039;s Point,Portland,ME,1,1,Turbulence & The Night Rays,646,false,Vasudo,591,3,31,0,,false,",",false,opener
-1707241190,2024-06-26,2024,Thompson&#039;s Point,Portland,ME,1,2,Doc Brown,459,false,Great Blue,478,9,41,10,,false,",",false,
-1707241190,2024-06-26,2024,Thompson&#039;s Point,Portland,ME,1,3,AUATC,602,true,Bon Iver,394,42,7,20,,false,",",false,
-1707241190,2024-06-26,2024,Thompson&#039;s Point,Portland,ME,1,4,It Burns Within,500,false,St. John's Revival,395,14,10,10,,false,",",false,
-1707241190,2024-06-26,2024,Thompson&#039;s Point,Portland,ME,1,5,Jive II,413,false,,681,4,78,0,,false,>,true,opener
-1707241190,2024-06-26,2024,Thompson&#039;s Point,Portland,ME,1,6,Jive Lee,502,false,,771,4,78,0,,false,",",false,closer|jam
-1707241190,2024-06-26,2024,Thompson&#039;s Point,Portland,ME,1,7,Your Ocean,590,false,,460,6,31,0,,false,",",false,
-1707241190,2024-06-26,2024,Thompson&#039;s Point,Portland,ME,1,8,Same Old Shenanigans,541,false,,888,2,47,0,,false,,false,closer
-1707241190,2024-06-26,2024,Thompson&#039;s Point,Portland,ME,2,9,Wysteria Lane,405,false,Vasudo,1397,8,101,10,,true,>,true,opener|jam|peak
-1707241190,2024-06-26,2024,Thompson&#039;s Point,Portland,ME,2,10,White Lights,586,false,,698,6,68,0,,false,->,true,closer|encore
-1707241190,2024-06-26,2024,Thompson&#039;s Point,Portland,ME,2,11,Loose Ends,762,false,Vasudo,98,53,14,35,,false,->,true,closer
-1707241190,2024-06-26,2024,Thompson&#039;s Point,Portland,ME,2,12,White Lights,586,false,,215,0,69,0,,false,",",false,closer|encore
-1707241190,2024-06-26,2024,Thompson&#039;s Point,Portland,ME,2,13,Creatures,420,false,,697,9,119,10,,false,",",false,jam
-1707241190,2024-06-26,2024,Thompson&#039;s Point,Portland,ME,2,14,State Of The Art (A.E.I.O.U.),558,true,Jim James,440,128,7,50,,false,,false,closer
-1707241190,2024-06-26,2024,Thompson&#039;s Point,Portland,ME,E,15,The Empress Of Organos,604,false,Vasudo,1055,4,62,0,,true,,false,closer|jam
+1707240973,2024-06-25,2024,Thompson's Point,Portland,ME,1,1,Time to Flee,404,false,,609,5,102,0,,false,",",false,
+1707240973,2024-06-25,2024,Thompson's Point,Portland,ME,1,2,Liza Jane,508,true,African American Folk Song,615,177,19,50,,false,",",false,opener
+1707240973,2024-06-25,2024,Thompson's Point,Portland,ME,1,3,Spain,555,true,Chick Corea,524,134,4,50,,false,",",false,
+1707240973,2024-06-25,2024,Thompson's Point,Portland,ME,1,4,All I Need,414,false,,1158,3,134,0,,true,",",false,jam
+1707240973,2024-06-25,2024,Thompson's Point,Portland,ME,1,5,Indian River,410,false,,857,4,110,0,,false,,false,
+1707240973,2024-06-25,2024,Thompson's Point,Portland,ME,2,6,Drive,462,false,,1233,2,96,0,,true,->,true,opener|jam
+1707240973,2024-06-25,2024,Thompson's Point,Portland,ME,2,7,Hollywood Nights,488,true,Bob Seger & The Silver Bullet Band,546,11,10,10,,false,",",false,
+1707240973,2024-06-25,2024,Thompson's Point,Portland,ME,2,8,Into the Myst,402,false,,1152,4,63,0,,true,>,true,jam
+1707240973,2024-06-25,2024,Thompson's Point,Portland,ME,2,9,Spirit Of The Dark Horse,557,false,,645,9,32,10,,false,>,true,
+1707240973,2024-06-25,2024,Thompson's Point,Portland,ME,2,10,Slow Ready,422,false,,874,5,77,0,,false,,false,
+1707240973,2024-06-25,2024,Thompson's Point,Portland,ME,E,11,Animal,764,false,,752,4,45,0,,false,,false,opener|closer
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,1,1,Turbulence & The Night Rays,646,false,Vasudo,591,3,31,0,,false,",",false,opener
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,1,2,Doc Brown,459,false,Great Blue,478,9,41,10,,false,",",false,
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,1,3,AUATC,602,true,Bon Iver,394,42,7,20,,false,",",false,
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,1,4,It Burns Within,500,false,St. John's Revival,395,14,10,10,,false,",",false,
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,1,5,Jive II,413,false,,681,4,78,0,,false,>,true,opener
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,1,6,Jive Lee,502,false,,771,4,78,0,,false,",",false,closer|jam
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,1,7,Your Ocean,590,false,,460,6,31,0,,false,",",false,
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,1,8,Same Old Shenanigans,541,false,,888,2,47,0,,false,,false,closer
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,2,9,Wysteria Lane,405,false,Vasudo,1397,8,101,10,,true,>,true,opener|jam|peak
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,2,10,White Lights,586,false,,698,6,68,0,,false,->,true,closer|encore
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,2,11,Loose Ends,762,false,Vasudo,98,53,14,35,,false,->,true,closer
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,2,12,White Lights,586,false,,215,0,69,0,,false,",",false,closer|encore
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,2,13,Creatures,420,false,,697,9,119,10,,false,",",false,jam
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,2,14,State Of The Art (A.E.I.O.U.),558,true,Jim James,440,128,7,50,,false,,false,closer
+1707241190,2024-06-26,2024,Thompson's Point,Portland,ME,E,15,The Empress Of Organos,604,false,Vasudo,1055,4,62,0,,true,,false,closer|jam
 1707241262,2024-06-28,2024,Mann Center for the Performing Arts,Philadelphia,PA,1,1,The Whales,425,false,,558,6,37,0,,false,>,true,opener
 1707241262,2024-06-28,2024,Mann Center for the Performing Arts,Philadelphia,PA,1,2,Silver Rising,736,false,,545,3,45,0,,false,",",false,
 1707241262,2024-06-28,2024,Mann Center for the Performing Arts,Philadelphia,PA,1,3,Atlas Dogs,727,false,,416,6,36,0,,false,>,true,opener
@@ -6099,50 +6099,50 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1730168333,2024-11-24,2024,Madison Square Garden,New York,NY,1,3,Hungersite,740,false,,316,1,57,0,,false,",",false,opener|jam
 1730168333,2024-11-24,2024,Madison Square Garden,New York,NY,1,4,Don't Do It,460,true,The Band,397,11,36,10,,false,",",false,closer|encore
 1730168333,2024-11-24,2024,Madison Square Garden,New York,NY,1,5,The Way It Is,570,true,Bruce Hornsby,417,11,38,10,,false,,false,
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,1,1,Sirius,958,true,The Alan Parsons Project,215,0,1,0,,false,",",false,
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,1,2,Yeti,416,false,Great Blue,744,1,112,0,,false,",",false,opener
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,1,3,Butter Rum,415,false,Vasudo,800,3,112,0,,false,",",false,
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,1,4,Arcadia,403,false,,1044,0,198,0,,true,",",false,closer
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,1,5,The King,967,false,,,0,1,0,,false,",",false,
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,1,6,Turbulence & The Night Rays,646,false,Vasudo,566,8,38,10,,false,",",false,opener
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,1,7,Silver Rising,736,false,,594,1,56,0,,false,,false,
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,8,Hot Love & The Lazy Poet,645,false,Vasudo,367,4,17,0,,false,",",false,opener
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,9,Give It Time,931,false,,477,0,12,0,,false,",",false,closer|encore
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,10,Mr. Action,817,false,,474,6,30,0,,false,",",false,
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,11,Hungersite,740,false,,1275,0,58,0,,true,->,true,opener|jam
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,12,Flodown,478,false,Vasudo,456,5,149,0,,false,",",false,
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,13,726,432,false,,524,1,35,0,,false,",",false,encore
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,14,Kashmir,959,true,Led Zeppelin,482,0,1,0,,false,",",false,
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,15,Into the Myst,402,false,,1108,4,70,0,,false,>,true,jam
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,16,Big Modern!,945,false,,846,1,12,0,,false,,false,opener|closer|jam|peak
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,E,17,Same Old Shenanigans,541,false,,695,5,54,0,,false,",",false,closer
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,E,18,Seekers on the Ridge pt I,609,false,,372,2,47,0,,false,>,true,
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,E,19,Seekers on the Ridge pt II,610,false,,294,2,47,0,,false,>,true,
-1719248965,2024-12-13,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,E,20,(dawn),637,false,,191,17,8,10,,false,,false,closer|encore
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,1,1,Sirius,958,true,The Alan Parsons Project,232,0,2,0,,false,>,true,
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,1,2,Madhuvan,512,false,,993,7,165,0,,false,",",false,opener|closer|jam
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,1,3,Borne,725,false,,460,4,42,0,,false,>,true,jam
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,1,4,Slip Slidin’ Away,960,true,Paul Simon,276,0,1,0,,false,",",false,
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,1,5,"One In, One Out",946,false,,844,6,8,0,,false,->,true,jam
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,1,6,Jam,802,false,,449,62,22,35,,true,->,true,opener|jam
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,1,7,Jam,802,false,,989,0,23,0,,true,->,true,opener|jam
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,1,8,Rockdale,714,false,Vasudo,879,4,61,0,,true,,false,opener|closer|jam
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,9,All I Need,414,false,,349,6,145,0,,false,->,true,jam
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,10,Creatures,420,false,,1193,7,127,0,,true,>,true,jam
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,11,The Empress Of Organos,604,false,Vasudo,557,2,76,0,,false,>,true,closer|jam
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,12,Don’t Leave Me This Way,964,true,Harold Melvin & The Blue Notes,563,0,1,0,,false,",",false,closer
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,13,Get Down Tonight,965,true,KC and the Sunshine Band,818,0,1,0,,false,",",false,
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,14,Atlas Dogs,727,false,,446,2,45,0,,false,->,true,opener
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,15,Echo of a Rose,463,false,Vasudo,242,3,107,0,,false,>,true,jam
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,16,Slow Ready,422,false,,156,4,85,0,,false,>,true,
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,17,So Ready,421,false,,135,3,139,0,,false,->,true,closer
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,2,18,Slow Ready,422,false,,458,0,86,0,,true,,false,
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,E,19,Dripfield,738,false,,771,2,53,0,,false,>,true,closer|jam
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,E,20,Jam,802,false,,586,0,24,0,,false,",",false,opener|jam
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,E,21,Help on the Way,961,true,Grateful Dead,190,0,1,0,,false,->,true,
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,E,22,Slipknot!,962,true,Grateful Dead,349,0,1,0,,false,>,true,
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,E,23,Franklin's Tower,641,true,Grateful Dead,276,0,1,0,,false,->,true,
-1719248984,2024-12-14,2024,North Charleston Coliseum &amp; Performing Arts Center,North Charleston,SC,E,24,The Empress Of Organos,604,false,Vasudo,305,0,77,0,,false,,false,closer|jam
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,1,1,Sirius,958,true,The Alan Parsons Project,215,0,1,0,,false,",",false,
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,1,2,Yeti,416,false,Great Blue,744,1,112,0,,false,",",false,opener
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,1,3,Butter Rum,415,false,Vasudo,800,3,112,0,,false,",",false,
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,1,4,Arcadia,403,false,,1044,0,198,0,,true,",",false,closer
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,1,5,The King,967,false,,,0,1,0,,false,",",false,
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,1,6,Turbulence & The Night Rays,646,false,Vasudo,566,8,38,10,,false,",",false,opener
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,1,7,Silver Rising,736,false,,594,1,56,0,,false,,false,
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,8,Hot Love & The Lazy Poet,645,false,Vasudo,367,4,17,0,,false,",",false,opener
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,9,Give It Time,931,false,,477,0,12,0,,false,",",false,closer|encore
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,10,Mr. Action,817,false,,474,6,30,0,,false,",",false,
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,11,Hungersite,740,false,,1275,0,58,0,,true,->,true,opener|jam
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,12,Flodown,478,false,Vasudo,456,5,149,0,,false,",",false,
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,13,726,432,false,,524,1,35,0,,false,",",false,encore
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,14,Kashmir,959,true,Led Zeppelin,482,0,1,0,,false,",",false,
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,15,Into the Myst,402,false,,1108,4,70,0,,false,>,true,jam
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,16,Big Modern!,945,false,,846,1,12,0,,false,,false,opener|closer|jam|peak
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,E,17,Same Old Shenanigans,541,false,,695,5,54,0,,false,",",false,closer
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,E,18,Seekers on the Ridge pt I,609,false,,372,2,47,0,,false,>,true,
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,E,19,Seekers on the Ridge pt II,610,false,,294,2,47,0,,false,>,true,
+1719248965,2024-12-13,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,E,20,(dawn),637,false,,191,17,8,10,,false,,false,closer|encore
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,1,1,Sirius,958,true,The Alan Parsons Project,232,0,2,0,,false,>,true,
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,1,2,Madhuvan,512,false,,993,7,165,0,,false,",",false,opener|closer|jam
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,1,3,Borne,725,false,,460,4,42,0,,false,>,true,jam
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,1,4,Slip Slidin’ Away,960,true,Paul Simon,276,0,1,0,,false,",",false,
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,1,5,"One In, One Out",946,false,,844,6,8,0,,false,->,true,jam
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,1,6,Jam,802,false,,449,62,22,35,,true,->,true,opener|jam
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,1,7,Jam,802,false,,989,0,23,0,,true,->,true,opener|jam
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,1,8,Rockdale,714,false,Vasudo,879,4,61,0,,true,,false,opener|closer|jam
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,9,All I Need,414,false,,349,6,145,0,,false,->,true,jam
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,10,Creatures,420,false,,1193,7,127,0,,true,>,true,jam
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,11,The Empress Of Organos,604,false,Vasudo,557,2,76,0,,false,>,true,closer|jam
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,12,Don’t Leave Me This Way,964,true,Harold Melvin & The Blue Notes,563,0,1,0,,false,",",false,closer
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,13,Get Down Tonight,965,true,KC and the Sunshine Band,818,0,1,0,,false,",",false,
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,14,Atlas Dogs,727,false,,446,2,45,0,,false,->,true,opener
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,15,Echo of a Rose,463,false,Vasudo,242,3,107,0,,false,>,true,jam
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,16,Slow Ready,422,false,,156,4,85,0,,false,>,true,
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,17,So Ready,421,false,,135,3,139,0,,false,->,true,closer
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,2,18,Slow Ready,422,false,,458,0,86,0,,true,,false,
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,E,19,Dripfield,738,false,,771,2,53,0,,false,>,true,closer|jam
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,E,20,Jam,802,false,,586,0,24,0,,false,",",false,opener|jam
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,E,21,Help on the Way,961,true,Grateful Dead,190,0,1,0,,false,->,true,
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,E,22,Slipknot!,962,true,Grateful Dead,349,0,1,0,,false,>,true,
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,E,23,Franklin's Tower,641,true,Grateful Dead,276,0,1,0,,false,->,true,
+1719248984,2024-12-14,2024,North Charleston Coliseum & Performing Arts Center,North Charleston,SC,E,24,The Empress Of Organos,604,false,Vasudo,305,0,77,0,,false,,false,closer|jam
 1721059697,2024-12-30,2024,Moody Center,Austin,TX,1,1,Big Modern!,945,false,,1123,1,13,0,,true,->,true,opener|closer|jam|peak
 1721059697,2024-12-30,2024,Moody Center,Austin,TX,1,2,Animal,764,false,,798,4,56,0,,false,",",false,opener|closer
 1721059697,2024-12-30,2024,Moody Center,Austin,TX,1,3,Dr. Darkness,712,false,,379,4,39,0,,false,",",false,opener
@@ -6458,34 +6458,34 @@ show_id,show_date,year,venue,city,state,set,position,song,song_id,is_cover,origi
 1738001942,2025-06-04,2025,Arizona Financial Theatre,Phoenix,AZ,2,11,Slow Ready,422,false,,933,6,90,0,,false,>,true,
 1738001942,2025-06-04,2025,Arizona Financial Theatre,Phoenix,AZ,2,12,Dripfield,738,false,,1518,5,58,0,,true,,false,closer|jam
 1738001942,2025-06-04,2025,Arizona Financial Theatre,Phoenix,AZ,E,13,The Way It Is,570,true,Bruce Hornsby,509,19,40,10,,false,,false,
-1736789025,2025-06-06,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,1,Drive,462,false,,1177,3,110,0,,true,",",false,opener|jam
-1736789025,2025-06-06,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,2,How It Ends,933,false,Vasudo,637,3,5,0,,false,",",false,
-1736789025,2025-06-06,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,3,Suzie Q,562,true,Creedence Clearwater Revival,315,0,1,0,,false,",",false,
-1736789025,2025-06-06,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,4,Turbulence & The Night Rays,646,false,Vasudo,606,4,41,0,,false,",",false,opener
-1736789025,2025-06-06,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,5,Indian River,410,false,,633,39,116,20,,false,->,true,
-1736789025,2025-06-06,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,6,Animal,764,false,,951,3,62,0,,false,,false,opener|closer
-1736789025,2025-06-06,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,7,Tumble,418,false,Vasudo,1331,3,119,0,,true,->,true,closer|jam|peak
-1736789025,2025-06-06,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,8,Factory Fiction,473,false,Vasudo,815,19,24,10,,true,->,true,closer|jam|peak|encore
-1736789025,2025-06-06,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,9,State Of The Art (A.E.I.O.U.),558,true,Jim James,431,11,11,10,,false,",",false,closer
-1736789025,2025-06-06,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,10,Echo of a Rose,463,false,Vasudo,351,5,112,0,,false,->,true,jam
-1736789025,2025-06-06,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,11,Psycho Killer,633,true,Talking Heads,215,31,4,20,,false,->,true,ballad
-1736789025,2025-06-06,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,12,Echo of a Rose,463,false,Vasudo,697,0,113,0,,true,>,true,jam
-1736789025,2025-06-06,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,13,Factory Fiction,473,false,Vasudo,801,0,25,0,,true,,false,closer|jam|peak|encore
-1736789025,2025-06-06,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,E,14,Arcadia,403,false,,1018,5,205,0,,false,,false,closer
-1736789092,2025-06-07,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,1,Your Direction,647,false,Vasudo,944,5,5,0,,false,>,true,
-1736789092,2025-06-07,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,2,Torero,979,false,,841,6,3,0,,false,",",false,closer|jam
-1736789092,2025-06-07,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,3,MEDIA,947,false,Swimmer,303,3,7,0,,false,",",false,opener|ballad
-1736789092,2025-06-07,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,4,A Western Sun,435,false,,434,3,71,0,,false,",",false,
-1736789092,2025-06-07,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,5,Rockdale,714,false,Vasudo,554,5,67,0,,false,->,true,opener|closer|jam
-1736789092,2025-06-07,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,6,Dustin Hoffman,970,false,,1074,2,4,0,,true,->,true,jam
-1736789092,2025-06-07,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,7,Running Up That Hill,955,true,Kate Bush,406,33,3,20,,false,->,true,
-1736789092,2025-06-07,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,1,8,Into the Myst,402,false,,394,2,74,0,,false,,false,jam
-1736789092,2025-06-07,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,9,Big Modern!,945,false,,1032,2,21,0,,false,->,true,opener|closer|jam|peak
-1736789092,2025-06-07,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,10,fast:slow,981,false,,1122,12,2,10,,false,->,true,closer|jam
-1736789092,2025-06-07,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,11,Creatures,420,false,,909,7,131,0,,false,->,true,jam
-1736789092,2025-06-07,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,12,Sinnerman,739,true,Nina Simone,463,15,13,10,,false,",",false,closer
-1736789092,2025-06-07,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,2,13,Jed Stone,663,false,Vasudo,620,0,1,0,,false,,false,closer
-1736789092,2025-06-07,2025,Fiddler&#039;s Green Amphitheatre,Greenwood Village,CO,E,14,The Empress Of Organos,604,false,Vasudo,934,12,82,10,,false,,false,closer|jam
+1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,1,Drive,462,false,,1177,3,110,0,,true,",",false,opener|jam
+1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,2,How It Ends,933,false,Vasudo,637,3,5,0,,false,",",false,
+1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,3,Suzie Q,562,true,Creedence Clearwater Revival,315,0,1,0,,false,",",false,
+1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,4,Turbulence & The Night Rays,646,false,Vasudo,606,4,41,0,,false,",",false,opener
+1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,5,Indian River,410,false,,633,39,116,20,,false,->,true,
+1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,6,Animal,764,false,,951,3,62,0,,false,,false,opener|closer
+1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,7,Tumble,418,false,Vasudo,1331,3,119,0,,true,->,true,closer|jam|peak
+1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,8,Factory Fiction,473,false,Vasudo,815,19,24,10,,true,->,true,closer|jam|peak|encore
+1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,9,State Of The Art (A.E.I.O.U.),558,true,Jim James,431,11,11,10,,false,",",false,closer
+1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,10,Echo of a Rose,463,false,Vasudo,351,5,112,0,,false,->,true,jam
+1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,11,Psycho Killer,633,true,Talking Heads,215,31,4,20,,false,->,true,ballad
+1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,12,Echo of a Rose,463,false,Vasudo,697,0,113,0,,true,>,true,jam
+1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,13,Factory Fiction,473,false,Vasudo,801,0,25,0,,true,,false,closer|jam|peak|encore
+1736789025,2025-06-06,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,E,14,Arcadia,403,false,,1018,5,205,0,,false,,false,closer
+1736789092,2025-06-07,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,1,Your Direction,647,false,Vasudo,944,5,5,0,,false,>,true,
+1736789092,2025-06-07,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,2,Torero,979,false,,841,6,3,0,,false,",",false,closer|jam
+1736789092,2025-06-07,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,3,MEDIA,947,false,Swimmer,303,3,7,0,,false,",",false,opener|ballad
+1736789092,2025-06-07,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,4,A Western Sun,435,false,,434,3,71,0,,false,",",false,
+1736789092,2025-06-07,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,5,Rockdale,714,false,Vasudo,554,5,67,0,,false,->,true,opener|closer|jam
+1736789092,2025-06-07,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,6,Dustin Hoffman,970,false,,1074,2,4,0,,true,->,true,jam
+1736789092,2025-06-07,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,7,Running Up That Hill,955,true,Kate Bush,406,33,3,20,,false,->,true,
+1736789092,2025-06-07,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,1,8,Into the Myst,402,false,,394,2,74,0,,false,,false,jam
+1736789092,2025-06-07,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,9,Big Modern!,945,false,,1032,2,21,0,,false,->,true,opener|closer|jam|peak
+1736789092,2025-06-07,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,10,fast:slow,981,false,,1122,12,2,10,,false,->,true,closer|jam
+1736789092,2025-06-07,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,11,Creatures,420,false,,909,7,131,0,,false,->,true,jam
+1736789092,2025-06-07,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,12,Sinnerman,739,true,Nina Simone,463,15,13,10,,false,",",false,closer
+1736789092,2025-06-07,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,2,13,Jed Stone,663,false,Vasudo,620,0,1,0,,false,,false,closer
+1736789092,2025-06-07,2025,Fiddler's Green Amphitheatre,Greenwood Village,CO,E,14,The Empress Of Organos,604,false,Vasudo,934,12,82,10,,false,,false,closer|jam
 1738001961,2025-06-10,2025,The Factory,Chesterfield,MO,1,1,Interlude II,409,false,,241,4,10,0,,false,->,true,ballad
 1738001961,2025-06-10,2025,The Factory,Chesterfield,MO,1,2,Jive I,411,false,,512,4,130,0,,false,",",false,
 1738001961,2025-06-10,2025,The Factory,Chesterfield,MO,1,3,Butterflies,763,false,Great Blue,423,39,20,20,,false,",",false,opener
