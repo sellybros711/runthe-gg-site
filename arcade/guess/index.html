@@ -190,29 +190,50 @@
   .search .go:active, .cluebtn:active{transform:translate(1px,1px);}
 
   /* =================================================================
-     SPORTS-MACHINE SKIN — "Scouting Terminal"
-     Replaces flat Wordle fills with bordered readout cells and frames
-     the grid as a scouting console. Visual only — no logic changes.
+     BOLD SPORTS-MACHINE — Guess "Scouting Terminal"
+     A caged terminal console: titled header bar, console column strip,
+     record-style name bars, bordered readout cells with status LEDs.
+     Visual only — no logic changes.
      ================================================================= */
-  body{ background-image:repeating-linear-gradient(135deg, color-mix(in srgb, var(--ink) 3%, transparent) 0 1px, transparent 1px 22px); background-attachment:fixed; }
+  body{ background-color:var(--bg);
+    background-image:repeating-linear-gradient(0deg, color-mix(in srgb, var(--ink) 4%, transparent) 0 1px, transparent 1px 44px);
+    background-attachment:fixed; }
 
-  /* console bezel with an accent read-out strip */
-  .board{ border-width:2px; border-color:var(--line2); border-radius:7px; position:relative; padding-top:15px; }
-  .board::before{ content:""; position:absolute; left:12px; right:12px; top:0; height:3px;
-    background:linear-gradient(90deg, var(--blue), var(--coral)); border-radius:0 0 3px 3px; }
-  .collab span{ font-size:8px; letter-spacing:.05em; }
+  /* the lead becomes a marquee dossier header */
+  .lead{ position:relative; overflow:hidden; border-radius:8px; padding-top:36px; }
+  .lead::before{ content:"📡 SCOUTING TERMINAL"; position:absolute; top:0; left:0; right:0;
+    background:var(--blue); color:#fff; font-family:var(--hero); font-weight:400; font-size:12.5px;
+    letter-spacing:.16em; padding:7px 15px; }
+
+  /* terminal cabinet */
+  .board{ position:relative; border:2px solid var(--line2); border-radius:9px; padding:14px 12px 10px;
+    background:color-mix(in srgb, var(--ink) 6%, var(--card));
+    box-shadow:inset 0 3px 16px -9px rgba(0,0,0,.75); }
+  /* console column header */
+  .collab{ background:color-mix(in srgb, var(--ink) 12%, var(--card)); border:1px solid var(--line2);
+    border-radius:5px; padding:7px 2px; margin-bottom:9px; }
+  .collab span{ font-size:8.5px; letter-spacing:.07em; }
+
+  /* record-style name bar per filled guess */
+  .guess.filled .nm{ text-transform:uppercase; letter-spacing:.04em; font-family:var(--hero); font-weight:400;
+    font-size:17px; padding:2px 2px 6px; border-bottom:1px solid var(--line); }
+  .guess:not(.filled) .nm{ font-family:var(--f); font-size:11.5px; }
 
   /* readout cells: bordered + tinted instead of solid Wordle blocks */
   .tile{ border-radius:3px; border:2px solid var(--line2); background:var(--card2); color:var(--ink); position:relative; }
-  .tile.hit{ background:color-mix(in srgb, var(--hit) 20%, var(--card2)); border-color:var(--hit); color:var(--ink); }
-  .tile.close{ background:color-mix(in srgb, var(--close) 24%, var(--card2)); border-color:var(--close); color:var(--ink); }
+  .tile.hit{ background:color-mix(in srgb, var(--hit) 22%, var(--card2)); border-color:var(--hit); color:var(--ink); }
+  .tile.close{ background:color-mix(in srgb, var(--close) 26%, var(--card2)); border-color:var(--close); color:var(--ink); }
   .tile.miss{ background:var(--card2); border-color:var(--line2); color:var(--mut); }
   .tile.blank{ background:transparent; border-style:dashed; border-color:var(--line2); }
-  .guess .nm{ text-transform:uppercase; letter-spacing:.03em; }
+  /* status LED, top-right corner */
+  .tile.hit::after, .tile.close::after{ content:""; position:absolute; top:4px; right:4px; width:7px; height:7px; border-radius:50%; }
+  .tile.hit::after{ background:var(--hit); box-shadow:0 0 6px var(--hit); }
+  .tile.close::after{ background:var(--close); box-shadow:0 0 6px var(--close); }
 
-  /* player-database input + submit */
+  /* player-database input + cut-corner submit */
   .search input{ border-width:2px; border-radius:6px; }
-  .search .go{ border-radius:6px; text-transform:uppercase; letter-spacing:.05em; }
+  .search .go{ border-radius:6px; text-transform:uppercase; letter-spacing:.06em;
+    clip-path:polygon(0 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%); }
 </style>
 </head>
 <body>
