@@ -1,9 +1,9 @@
 # Run The Setlist — draft a setlist from real shows
 
 A jam-band setlist-drafting game at `runthe.gg/setlist`. Pick a band; each round
-reveals one randomly-drawn real concert; you pull one song off it and lock it
-into one of eight setlist slots. You commit before the next show appears, so the
-lock is final. Eight rounds, then a score.
+spins up one real concert; you pull one song off it and spend its running time
+against your set. Two sets and an encore, a curfew on each, and every pick is
+final. When the encore closes, the fans give you a verdict.
 
 **In open testing.** Indexable and listed in `sitemap.xml`, but deliberately
 **not linked from the homepage** yet — the URL is the only way in, so it can be
@@ -14,7 +14,7 @@ shared and found without being presented as a finished game.
   index.html          the whole game UI, self-contained
   scoring.js          v4 scoring — the ONLY place a scoring constant lives
   dataLoader.js       band CSV → { shows, segues }
-  verify-scoring.mjs  QA harness: 78 assertions against the v4 spec
+  verify-scoring.mjs  QA harness: 90 assertions against the v4 spec
   data/
     DATA_CONTRACT.md  the CSV columns, and how tags are derived
     goose.csv         7504 performances · 655 shows · 366 songs · 2014–2026
@@ -73,7 +73,7 @@ the repo root, not from inside `setlist/`.
 ## Checking it
 
 ```bash
-node setlist/verify-scoring.mjs      # expect "78 passed, 0 failed"
+node setlist/verify-scoring.mjs      # expect "90 passed, 0 failed"
 node scripts/setlist/check_data.mjs  # expect "all checks passed"
 ```
 
