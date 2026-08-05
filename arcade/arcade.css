@@ -150,23 +150,21 @@
    Per-game accent comes from an inline --a-tc on the title element. */
 body:has(.a-gametitle) .brand.logo img{height:74px;}
 body:has(.a-gametitle) .brand.logo .sub{display:none;}
-.a-gametitle{
-  display:block; text-align:center; margin:2px 0 15px;
-  font-family:'Anton', Impact, sans-serif; font-weight:400;
-  text-transform:uppercase; letter-spacing:.02em; line-height:.9;
-  font-size:clamp(28px, 8vw, 54px);
-  color:var(--a-tc, #F2B632);
-  background:linear-gradient(179deg,
-    color-mix(in srgb, var(--a-tc, #F2B632) 78%, #fff),
-    var(--a-tc, #F2B632) 58%,
-    color-mix(in srgb, var(--a-tc, #F2B632) 82%, #000));
-  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
-  filter:drop-shadow(2px 3px 0 rgba(7,20,38,.5));
+.a-gametitle{display:block; text-align:center; margin:8px 0 18px; line-height:1;}
+.a-gametitle__plate{
+  display:inline-block; max-width:100%;
+  font-family:'Anton', Impact, sans-serif; font-weight:400; text-transform:uppercase;
+  font-size:clamp(30px, 8vw, 58px); letter-spacing:.035em; line-height:.92;
+  color:transparent; -webkit-text-stroke:2px var(--a-tc, #F2B632);
+  padding-bottom:9px; border-bottom:5px solid var(--a-tc, #F2B632);
 }
-:root[data-theme="light"] .a-gametitle{ filter:drop-shadow(2px 3px 0 rgba(13,27,44,.24)); }
+/* the key word is filled solid for a two-tone collegiate lockup */
+.a-gametitle__plate b{color:var(--a-tc, #F2B632); font-weight:400; -webkit-text-stroke:0;
+  text-shadow:3px 3px 0 color-mix(in srgb, var(--a-tc, #F2B632) 22%, transparent);}
 @media (max-width:760px){
   body:has(.a-gametitle) .brand.logo img{height:60px;}
-  .a-gametitle{margin:0 0 12px;}
+  .a-gametitle{margin:3px 0 14px;}
+  .a-gametitle__plate{-webkit-text-stroke-width:1.6px; padding-bottom:7px; border-bottom-width:4px;}
 }
 
 /* ---- shared focus + reduced motion (scoped to a- components only) --------- */
