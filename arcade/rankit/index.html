@@ -155,6 +155,34 @@
   .abtn{border-width:2px; box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .08s, box-shadow .08s, filter .12s;}
   .abtn:active{transform:translate(2px,2px); box-shadow:var(--a-shadow-press,2px 2px 0 rgba(7,20,38,.22));}
   .abtn.gold{border-color:rgba(0,0,0,.28);} .abtn.gold:hover{filter:brightness(1.06);}
+
+  /* =================================================================
+     SPORTS-MACHINE SKIN — "Starting Lineup"
+     Jersey number plates + nameplate cards, athletic type, faint hatch.
+     Visual only — drag / logic / localStorage keys untouched.
+     ================================================================= */
+  body{ background-image:repeating-linear-gradient(135deg, color-mix(in srgb, var(--ink) 3%, transparent) 0 1px, transparent 1px 22px); background-attachment:fixed; }
+
+  /* scoreboard axis header */
+  .axis{ background:var(--card); border:2px solid var(--line2); border-left:5px solid var(--pink);
+    border-radius:6px; padding:9px 13px; box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.20)); }
+
+  /* jersey number plate */
+  .rord{ width:46px; border-width:2px; border-radius:5px;
+    border-color:color-mix(in srgb, var(--pink) 40%, var(--line2));
+    background:color-mix(in srgb, var(--pink) 14%, var(--card2)); color:var(--pinkT);
+    font-size:23px; box-shadow:var(--a-shadow,3px 3px 0 rgba(7,20,38,.16)); }
+
+  /* lineup nameplate */
+  .rrow{ border-width:2px; border-left:6px solid var(--pink); border-radius:5px;
+    box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.20)); }
+  .ritem.dragging .rrow{ box-shadow:8px 8px 0 rgba(7,20,38,.30); }
+  .rmeta .nm{ font-family:var(--hero); font-weight:400; font-size:19px; letter-spacing:.02em; text-transform:uppercase; }
+  .rrow .ctrl button{ border-width:2px; border-radius:4px; }
+  .rrow.correct{ border-left-color:var(--green); }
+
+  /* start-lineup CTA */
+  .checkbtn{ border-radius:6px; text-transform:uppercase; letter-spacing:.06em; }
 </style>
 </head>
 <body>
