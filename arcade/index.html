@@ -17,7 +17,7 @@
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
-<meta name="description" content="Run The Arcade is a daily set of quick sports brain-games on RunThe.GG. A Daily Match and a Daily Crossword every day. Beat the clock, keep your streak." />
+<meta name="description" content="Run The Arcade is a daily set of quick sports brain-games on RunThe.GG. Nine games every day. Beat the clock, keep your streak." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -26,8 +26,9 @@
 <link rel="stylesheet" href="/arcade/arcade.css?v=1" />
 <script src="/arcade/icons.js?v=1"></script>
 <style>
+  /* tokens (kept inline per Stage-2 decision; values match arcade.css) */
   :root{
-    --bg:#071426; --card:#10233A; --card2:#162B44;
+    --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
     --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
     --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
     --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A; --pink:#F65C9C;
@@ -35,264 +36,169 @@
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --hero:'Anton', Impact, sans-serif;
+    --gray:#AAB6C4;
   }
   :root[data-theme="light"]{
-    --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA;
+    --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
     --coralT:#D8452F; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --violetT:#6D3BD6; --pinkT:#C43C7C; --blueT:#2358E0;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
+    --gray:#7C8A99;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
-  html{scroll-behavior:smooth;}
-  html,body{margin:0; padding:0;}
+  html{scroll-behavior:smooth;} html,body{margin:0; padding:0;}
   body{font-family:var(--f); color:var(--ink); min-height:100dvh; -webkit-font-smoothing:antialiased; background:var(--bg);}
   a{color:inherit; text-decoration:none;}
-  :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
+  :focus-visible{outline:none; box-shadow:0 0 0 3px color-mix(in srgb, var(--teal) 55%, transparent); border-radius:6px;}
 
   .stage{position:relative; min-height:100dvh; padding-bottom:86px;}
-  .wrap{width:100%; max-width:1120px; margin:0 auto; padding:calc(14px + env(safe-area-inset-top,0)) 18px 40px; position:relative;}
-  @media (max-width:640px){ .wrap{padding-left:14px; padding-right:14px;} }
+  .wrap{width:100%; max-width:1180px; margin:0 auto; padding:calc(14px + env(safe-area-inset-top,0)) 18px 40px; position:relative;}
+  @media (max-width:640px){ .wrap{padding-left:12px; padding-right:12px;} }
 
   /* ---- top bar ---- */
-  .top{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:20px;}
+  .top{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:18px;}
   .top .gg{display:inline-flex; align-items:center; line-height:0;}
-  .top .gg img{height:64px; width:auto; display:block;}
-  @media (max-width:640px){ .top .gg img{height:44px;} }
+  .top .gg img{height:60px; width:auto; display:block;}
+  @media (max-width:640px){ .top .gg img{height:42px;} }
   .topR{display:flex; align-items:center; gap:9px;}
-  .coins{display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line2); border-radius:999px; padding:7px 13px; font-weight:800; font-size:14px; background:var(--card); box-shadow:var(--shadow); color:var(--goldT);}
-  .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card);
-    color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0;}
+  .plays{display:inline-flex; align-items:center; gap:7px; border:2px solid var(--line2); border-radius:8px; padding:6px 12px;
+    font-weight:900; font-size:14px; background:var(--card); box-shadow:var(--a-shadow); color:var(--goldT); font-variant-numeric:tabular-nums;}
+  .themeBtn{width:38px; height:38px; border-radius:8px; border:2px solid var(--line2); background:var(--card);
+    color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--a-shadow); cursor:pointer; padding:0;}
   .themeBtn:hover{color:var(--ink);}
   .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
   :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
   :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
-  /* mobile-only: compact streak chip + profile bubble */
-  .mStreak{display:none; align-items:center; gap:5px; border:1px solid var(--line2); border-radius:999px; padding:6px 11px;
-    font-weight:900; font-size:13px; background:var(--card); color:var(--coralT); box-shadow:var(--shadow); font-variant-numeric:tabular-nums;}
-  .mProf{display:none; width:36px; height:36px; border-radius:50%; border:1px solid var(--line2); background:var(--card);
-    color:var(--mut); place-items:center; box-shadow:var(--shadow);}
-  @media (max-width:640px){ .mStreak{display:inline-flex;} .mProf{display:grid;} }
 
   /* ============================================================
-     DASHBOARD LAYOUT · left sticky HUD rail, right puzzle cards.
+     DASHBOARD: left control panel + right arcade floor
      ============================================================ */
-  .board{display:grid; grid-template-columns:332px minmax(0,1fr); gap:22px; align-items:start; margin-top:4px;}
-  @media (max-width:880px){ .board{grid-template-columns:minmax(0,1fr); gap:16px;} }
+  .board{display:grid; grid-template-columns:340px minmax(0,1fr); gap:22px; align-items:start;}
+  @media (max-width:980px){ .board{grid-template-columns:minmax(0,1fr);} }
 
-  /* ---- player HUD rail ---- */
-  .hud{position:sticky; top:14px; display:flex; flex-direction:column; gap:0;
-    background:var(--card); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); overflow:hidden;}
-  @media (max-width:880px){ .hud{position:static;} }
+  /* ---- left control panel (one cohesive machine) ---- */
+  .ctrl{position:sticky; top:14px;}
+  @media (max-width:980px){ .ctrl{display:none;} }              /* mobile uses .m-top instead */
+  .ctrl .a-marquee{font-size:11px; letter-spacing:.14em;}
+  .ctrl .mq-date{margin-left:auto; font-weight:800; opacity:.85; letter-spacing:.06em;}
+  .sb{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+  .sb-tile{background:var(--card2); border:1px solid var(--line); border-radius:6px; padding:10px 8px; text-align:center;}
+  .sb-tile .sb-n{display:block; font-family:var(--hero); font-weight:400; font-size:30px; line-height:1; color:var(--ink); font-variant-numeric:tabular-nums; margin:5px 0 4px;}
+  .sb-tile.today .sb-n b{color:var(--greenT);}
+  .sb-tile.streak .sb-n{color:var(--coralT);}
+  .smsg{margin:12px 0 0; font-size:13px; font-weight:800; color:var(--ink); line-height:1.4;}
 
-  /* 1 · guest row */
-  .hud-hd{display:flex; align-items:center; gap:11px; padding:15px 18px; border-bottom:1px solid var(--line);}
-  .hud-hd .av{flex:0 0 auto; width:38px; height:38px; border-radius:11px; display:grid; place-items:center;
-    background:color-mix(in srgb,var(--coral) 16%, var(--card)); border:1px solid color-mix(in srgb,var(--coral) 38%, transparent); color:var(--coralT);}
-  .hud-hd .who{min-width:0; line-height:1.2;}
-  .hud-hd .who b{display:block; font-weight:900; font-style:italic; font-size:15px; color:var(--ink);}
-  .hud-hd .who span{display:block; font-size:10px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut); margin-top:2px;}
-  .hud-hd .coins{margin-left:auto; box-shadow:none; padding:6px 11px; font-size:13px;}
-  @media (max-width:640px){ .hud-hd{display:none;} }
-
-  /* 2 · streak block */
-  .hud-streak{padding:18px 18px 14px;}
-  .hud-streak .srow{display:flex; align-items:center; gap:14px;}
-  .hud-streak .flame{flex:0 0 auto; width:52px; height:52px; border-radius:14px; display:grid; place-items:center;
-    background:color-mix(in srgb, var(--coral) 14%, var(--card)); border:1px solid color-mix(in srgb, var(--coral) 40%, transparent); color:var(--coralT);}
-  .hud-streak .big{line-height:.9;}
-  .hud-streak .big .n{font-family:var(--hero); font-weight:400; font-size:48px; color:var(--ink); font-variant-numeric:tabular-nums;}
-  .hud-streak .big .cap{display:block; font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--coralT); margin-top:4px;}
-  .hud-streak .best{margin-left:auto; text-align:right;}
-  .hud-streak .best .n{font-family:var(--hero); font-weight:400; font-size:24px; color:var(--mut); line-height:1;}
-  .hud-streak .best .cap{display:block; font-size:9px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
-  .hud-streak .m-gift{display:none; font-size:24px; margin-left:auto;}
-  .hud-streak .smsg{margin:11px 0 0; font-size:13px; font-weight:800; color:var(--ink); line-height:1.4;}
-  .hud-streak .smsg .fy{margin-right:4px;}
-  @media (max-width:640px){
-    .hud-streak{padding:15px 16px 12px;}
-    .hud-streak .best{display:none;}
-    .hud-streak .m-gift{display:block;}
-    .hud-streak .big .n{font-size:36px;}
-    .hud-streak .flame{width:44px; height:44px; border-radius:12px;}
-    .hud-streak .smsg{margin-top:8px; font-size:12.5px;}
-  }
-
-  /* 3 · NEXT GOAL panel */
-  .hud-goal{padding:14px 18px 16px; border-top:1px solid var(--line);}
-  .hud-goal .g-lab{display:block; font-size:9.5px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-bottom:6px;}
-  .hud-goal .g-row{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
-  .hud-goal .g-main{min-width:0; line-height:1.25;}
-  .hud-goal .g-main b{display:block; font-size:16px; font-weight:900; font-style:italic; letter-spacing:.02em; text-transform:uppercase; color:var(--ink);}
-  .hud-goal .g-main span{display:block; font-size:11.5px; font-weight:700; color:var(--mut); margin-top:2px;}
-  .hud-goal .g-gift{margin-left:auto; font-size:24px; flex:0 0 auto;}
-  .hud-goal .g-barrow{display:flex; align-items:center; gap:10px;}
-  .hud-goal .bar{flex:1; height:9px; border-radius:999px; background:var(--card2); border:1px solid var(--line); overflow:hidden; min-width:0;}
-  .hud-goal .bar i{display:block; height:100%; width:0; border-radius:999px; background:linear-gradient(90deg,var(--coral),var(--gold)); transition:width .8s cubic-bezier(.2,.8,.2,1);}
-  .hud-goal .g-cnt{flex:0 0 auto; font-size:11px; font-weight:900; color:var(--mut); font-variant-numeric:tabular-nums;}
-  @media (max-width:640px){ .hud-goal{padding:12px 16px 14px;} }
-
-  /* 4 · milestone path stepper */
-  .hud-path{padding:14px 14px 14px; border-top:1px solid var(--line);}
-  .mp-row{display:flex; align-items:flex-start; justify-content:space-between; position:relative; padding:0 6px;}
-  .mp-row:before{content:""; position:absolute; left:34px; right:34px; top:18px; height:2px; background:var(--line2);}
-  .mp-node{position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:6px; width:62px;}
-  .mp-dot{width:37px; height:37px; border-radius:50%; display:grid; place-items:center; position:relative;
-    background:var(--card2); border:2px solid var(--line2); color:var(--dim);}
-  .mp-dot .ic-f{display:none;}
+  /* milestone */
+  .goal .g-lab{display:block; font-size:9.5px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-bottom:6px;}
+  .goal .g-row{display:flex; align-items:center; gap:10px; margin-bottom:9px;}
+  .goal .g-main b{display:block; font-size:15px; font-weight:900; font-style:italic; text-transform:uppercase; color:var(--ink);}
+  .goal .g-main span{display:block; font-size:11.5px; font-weight:700; color:var(--mut); margin-top:2px;}
+  .goal .bar{height:9px; border-radius:999px; background:var(--card3); border:1px solid var(--line); overflow:hidden;}
+  .goal .bar i{display:block; height:100%; width:0; border-radius:999px; background:linear-gradient(90deg,var(--coral),var(--gold)); transition:width .8s cubic-bezier(.2,.8,.2,1);}
+  .goal .g-cnt{font-size:11px; font-weight:900; color:var(--mut); font-variant-numeric:tabular-nums; margin-top:6px; text-align:right;}
+  .path{display:flex; align-items:flex-start; justify-content:space-between; position:relative; margin-top:14px; padding:0 4px;}
+  .path:before{content:""; position:absolute; left:26px; right:26px; top:15px; height:2px; background:var(--line2);}
+  .mp-node{position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:6px; width:52px;}
+  .mp-dot{width:32px; height:32px; border-radius:6px; display:grid; place-items:center; background:var(--card2); border:2px solid var(--line2); color:var(--dim); font-family:var(--hero); font-size:12px;}
   .mp-node.reached .mp-dot{border-color:var(--coral); color:var(--coralT); background:color-mix(in srgb,var(--coral) 12%, var(--card));}
-  .mp-node.reached .mp-dot .ic-f{display:block;}
-  .mp-node.reached .mp-dot .ic-l{display:none;}
-  .mp-node.reached .mp-dot:after{content:"✓"; position:absolute; right:-5px; top:-5px; width:16px; height:16px; border-radius:50%;
-    background:var(--green); color:#06250F; font-size:10px; font-weight:900; display:grid; place-items:center; line-height:1;}
-  .mp-node.next .mp-dot{border-color:var(--gold); color:var(--goldT); background:color-mix(in srgb,var(--gold) 16%, var(--card));
-    box-shadow:0 0 0 4px color-mix(in srgb,var(--gold) 20%, transparent);}
-  .mp-tag{font-size:8.5px; font-weight:900; letter-spacing:.07em; text-transform:uppercase; color:var(--dim); line-height:1; padding:3px 0; text-align:center; white-space:nowrap;}
-  .mp-node.reached .mp-tag{color:var(--coralT);}
-  .mp-node.next .mp-tag{color:var(--goldT); background:color-mix(in srgb,var(--gold) 18%, var(--card)); border:1px solid color-mix(in srgb,var(--gold) 40%, transparent); padding:3px 7px; border-radius:6px;}
-  .mp-cap{margin:11px 4px 0; font-size:11px; font-weight:700; color:var(--mut); text-align:center;}
-  @media (max-width:640px){
-    .hud-path{padding:12px 12px;}
-    .mp-dot{width:32px; height:32px;}
-    .mp-row:before{top:16px; left:30px; right:30px;}
-    .mp-cap{font-size:10.5px; margin-top:9px;}
+  .mp-node.reached .mp-dot:after{content:"\2713"; position:absolute; right:-5px; top:-6px; width:15px; height:15px; border-radius:50%; background:var(--green); color:#06250F; font-size:9px; font-weight:900; display:grid; place-items:center;}
+  .mp-node.next .mp-dot{border-color:var(--gold); color:var(--goldT); background:color-mix(in srgb,var(--gold) 16%, var(--card)); box-shadow:0 0 0 4px color-mix(in srgb,var(--gold) 18%, transparent);}
+  .mp-tag{font-size:8.5px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:var(--dim);}
+  .mp-node.reached .mp-tag{color:var(--coralT);} .mp-node.next .mp-tag{color:var(--goldT);}
+
+  /* countdown row */
+  .drop{display:flex; align-items:center; gap:11px;}
+  .drop .cal{flex:0 0 auto; width:34px; height:34px; border-radius:8px; display:grid; place-items:center; background:color-mix(in srgb, var(--teal) 14%, var(--card)); border:1px solid color-mix(in srgb, var(--teal) 38%, transparent); color:var(--tealT);}
+  .drop .dcol{min-width:0; line-height:1.3;}
+  .drop .lbl{display:block; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
+  .drop .sub{display:block; font-size:11px; font-weight:700; color:var(--dim); margin-top:2px;}
+  .drop .t{margin-left:auto; font-family:var(--hero); font-weight:400; font-size:22px; letter-spacing:.04em; color:var(--tealT); font-variant-numeric:tabular-nums;}
+
+  /* CTA section */
+  .cta .a-btn{width:100%; font-style:italic; font-size:15px; letter-spacing:.02em; --a-accent:var(--coral); color:#fff;}
+  .cta-links{display:flex; flex-direction:column; gap:6px; margin-top:11px; text-align:center;}
+  .cta-links a{font-size:12px; font-weight:800; color:var(--mut);} .cta-links a:hover{color:var(--ink);}
+
+  /* ---- mobile top block (replaces the panel <=980px) ---- */
+  .m-top{display:none;}
+  @media (max-width:980px){
+    .m-top{display:block; margin-bottom:16px;}
+    .m-sum{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
+    .m-chip{display:inline-flex; align-items:center; gap:6px; border:2px solid var(--line2); border-radius:999px; padding:7px 13px; font-weight:900; font-size:14px; background:var(--card); box-shadow:var(--a-shadow); font-variant-numeric:tabular-nums;}
+    .m-chip.streak{color:var(--coralT);} .m-chip.count{color:var(--greenT);}
+    .m-cta{width:100%; font-style:italic; font-size:16px; --a-accent:var(--coral); color:#fff;}
+    .m-strip{margin-top:10px; text-align:center; font-size:12px; font-weight:900; letter-spacing:.04em; text-transform:uppercase; color:var(--mut); background:var(--card); border:1px solid var(--line2); border-radius:8px; padding:9px 10px; font-variant-numeric:tabular-nums;}
+    .m-strip b{color:var(--coralT);}
   }
 
-  /* 5 · next-drop row */
-  .hud-drop{display:flex; align-items:center; gap:12px; padding:14px 18px;
-    border-top:1px solid var(--line); background:var(--card2);}
-  .hud-drop .cal{flex:0 0 auto; width:34px; height:34px; border-radius:10px; display:grid; place-items:center;
-    background:color-mix(in srgb, var(--teal) 14%, var(--card)); border:1px solid color-mix(in srgb, var(--teal) 38%, transparent); color:var(--tealT);}
-  .hud-drop .dcol{min-width:0; line-height:1.3;}
-  .hud-drop .lbl{display:block; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
-  .hud-drop .sub{display:block; font-size:11px; font-weight:700; color:var(--dim); margin-top:2px;}
-  .hud-drop .t{margin-left:auto; font-family:var(--hero); font-weight:400; font-size:23px; letter-spacing:.04em; color:var(--tealT); font-variant-numeric:tabular-nums; line-height:1;}
-
-  /* 6 · gold note card */
-  .hud-notewrap{padding:14px 18px 0;}
-  .hud-note{border-radius:12px; padding:12px 14px; font-size:12.5px; line-height:1.5; color:var(--ink);
-    background:color-mix(in srgb, var(--gold) 13%, var(--card)); border:1px solid color-mix(in srgb, var(--gold) 38%, transparent);}
-  .hud-note b{font-weight:900;}
-  @media (max-width:640px){ .hud-notewrap{display:none;} }
-
-  /* 7 · CTA stack */
-  .hud-cta{padding:14px 18px 16px;}
-  .hud-cta .btn{display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; font-weight:900; font-style:italic; font-size:14.5px; letter-spacing:.02em;
-    min-height:48px; padding:12px 14px; border-radius:999px; color:#fff;
-    background:linear-gradient(90deg, var(--coral), #F0913C); box-shadow:0 8px 18px -10px color-mix(in srgb, var(--coral) 70%, transparent);}
-  .hud-cta .btn:hover{filter:brightness(1.06);}
-  .hud-cta .btn.ghost{margin-top:9px; font-style:normal; color:var(--ink); background:transparent; border:1.5px solid var(--line2); box-shadow:none;}
-  .hud-cta .btn.ghost:hover{border-color:var(--coral); color:var(--coralT);}
-  .cta-links{display:flex; flex-direction:column; gap:6px; margin-top:12px; text-align:center;}
-  .cta-links a{font-size:12px; font-weight:800; color:var(--mut);}
-  .cta-links a:hover{color:var(--ink);}
-  @media (max-width:640px){
-    .hud-drop{border-bottom:0;}
-    .hud-cta{padding-top:0; background:var(--card2);}
-    .hud-cta .btn.ghost{display:none;}
-    .hud-cta .cta-links{display:none;}
-  }
-
-  /* mobile-only links row under the cards */
-  .m-links{display:none; flex-direction:column; gap:8px; align-items:center; margin-top:18px;}
-  .m-links a{font-size:12.5px; font-weight:800; color:var(--mut);}
-  @media (max-width:640px){ .m-links{display:flex;} }
-
-  /* ---- play zone (right) ---- */
-  .zone-head{display:flex; align-items:baseline; gap:12px; margin:2px 2px 15px; flex-wrap:wrap;}
-  .zone-head .day{font-family:var(--hero); font-weight:400; font-size:26px; letter-spacing:.02em; color:var(--ink); line-height:1;}
-  .dprog{margin-left:auto; display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);}
+  /* ---- right: arcade floor ---- */
+  .floor-head{display:flex; align-items:center; gap:12px; margin:2px 2px 14px; flex-wrap:wrap;}
+  .floor-head h2{font-family:var(--hero); font-weight:400; font-size:26px; letter-spacing:.02em; color:var(--ink); margin:0; line-height:1;}
+  .dprog{margin-left:auto; display:inline-flex; align-items:center; gap:9px; font-size:11px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
   .dprog .pips{display:flex; gap:5px;}
-  .dprog .pip{width:11px; height:11px; border-radius:50%; border:1.5px solid var(--line2); background:transparent;}
+  .dprog .pip{width:11px; height:11px; border-radius:3px; border:1.5px solid var(--line2); background:transparent;}
   .dprog .pip.done{background:var(--green); border-color:var(--green);}
   .dprog.all{color:var(--greenT);}
-  @media (max-width:640px){ .dprog .pip{width:9px; height:9px;} }
 
-  /* ---- puzzle CARDS: pastel cap + white body + accent PLAY pill ---- */
-  .tiles{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:16px;}
-  @media (min-width:1100px){ .tiles{grid-template-columns:repeat(3, minmax(0,1fr));} }
-  @media (max-width:640px){ .tiles{gap:11px;} }
-  .tile{--c:var(--blue); position:relative; display:flex; flex-direction:column; border-radius:18px; overflow:hidden;
-    background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:transform .16s ease, box-shadow .16s ease;}
-  .tile:hover{transform:translateY(-4px); box-shadow:0 26px 50px -26px rgba(0,0,0,.6);}
-  .tile.match{--c:var(--blue);}
-  .tile.cross{--c:#AAB6C4;}   /* black-and-white / newsprint, distinct from violet Odd One Out */
-  .tile.word{--c:var(--teal);}
-  .tile.guess{--c:var(--coral);}
-  .tile.table{--c:var(--gold);}
-  .tile.oddone{--c:var(--violet);}
-  .tile.career{--c:var(--green);}
-  .tile.rankit{--c:var(--pink);}
-  .tile.alma{--c:var(--gold);}
-  /* each game's name carries its own readable accent shade */
-  .tile.match .nm{color:var(--blueT);}
-  .tile.cross .nm{color:var(--ink);}
-  .tile.word .nm{color:var(--tealT);}
-  .tile.guess .nm{color:var(--coralT);}
-  .tile.table .nm{color:var(--goldT);}
-  .tile.oddone .nm{color:var(--violetT);}
-  .tile.career .nm{color:var(--greenT);}
-  .tile.rankit .nm{color:var(--pinkT);}
-  .tile.alma .nm{color:var(--goldT);}
-  /* display order (independent of DOM, so the play-state JS is untouched) */
-  .tile.table{order:1;} .tile.match{order:2;} .tile.career{order:3;} .tile.oddone{order:4;}
-  .tile.rankit{order:5;} .tile.alma{order:6;} .tile.guess{order:7;} .tile.cross{order:8;} .tile.word{order:9;}
-  /* pastel tinted header cap with the game motif */
-  .tile .cap{position:relative; height:112px; display:grid; place-items:center; overflow:hidden;
-    background:color-mix(in srgb, var(--c) 14%, var(--card));
-    border-bottom:1px solid color-mix(in srgb, var(--c) 22%, transparent);}
-  .tile .cap svg{width:60px; height:60px; position:relative; z-index:1; filter:drop-shadow(0 4px 10px rgba(0,0,0,.18));}
-  .tile .badge{position:absolute; top:11px; left:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase;
-    padding:4px 8px; border-radius:6px; line-height:1; color:#071426; background:var(--c);}
-  .tile .status{position:absolute; top:11px; right:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.08em; text-transform:uppercase;
-    padding:4px 9px; border-radius:999px; line-height:1; border:1.5px solid color-mix(in srgb, var(--ink) 30%, transparent); color:var(--ink); background:color-mix(in srgb,var(--card) 55%, transparent);}
-  .tile .status.ready{border-color:color-mix(in srgb, var(--ink) 32%, transparent); color:var(--ink);}
-  .tile .status.done{border-color:var(--green); color:var(--greenT); background:color-mix(in srgb,var(--card) 78%, transparent);}
-  .tile .body{display:flex; flex-direction:column; flex:1; padding:15px 15px 15px;}
-  .tile .nm{font-weight:900; font-style:italic; font-size:21px; line-height:1; letter-spacing:-.01em; color:var(--ink);}
-  .tile .desc{color:var(--mut); font-size:13px; line-height:1.5; margin:9px 0 15px;}
-  .tile .play{margin-top:auto; border-radius:999px; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px;
-    font-weight:900; font-style:italic; font-size:16px; letter-spacing:.02em; color:#fff; background:var(--c); transition:filter .12s;
-    text-shadow:0 1px 2px rgba(0,0,0,.28);}   /* white PLAY, shadow keeps it legible on light accents */
-  .tile.cross .play{color:#16273B; text-shadow:none;}   /* neutral silver pill reads better with dark text */
-  .tile:hover .play{filter:brightness(1.08);}
-  .tile .play .arw{font-size:19px; transition:transform .16s;}
-  .tile:hover .play .arw{transform:translateX(4px);}
-  .tile.unplayed .play{animation:playpulse 2.2s ease-in-out infinite;}
-  @keyframes playpulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--c) 45%, transparent);}55%{box-shadow:0 0 0 9px transparent;}}
-  .tile.solved .play{background:var(--card2); color:var(--greenT); border:1.5px solid var(--green); animation:none; text-shadow:none;}
-  .tile.spent .play{background:var(--card2); color:var(--mut); border:1.5px solid var(--line2); animation:none; font-style:normal; letter-spacing:.06em; font-size:12px; text-shadow:none;}
-  .tile.spent .play .arw{display:none;}
-  /* mobile: 2-up compact cards (cap + title + PLAY) */
+  .group-h{font-family:var(--hero); font-weight:400; font-size:15px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); margin:20px 2px 11px; display:flex; align-items:center; gap:10px;}
+  .group-h:after{content:""; flex:1; height:2px; background:var(--line);}
+  .group-grid{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px;}
+  @media (min-width:1080px){ .group-grid{grid-template-columns:repeat(3, minmax(0,1fr));} }
+  @media (max-width:640px){ .group-grid{gap:11px;} }
+
+  /* ---- machine card (extends .a-card) ---- */
+  .game-card{--a-accent:var(--blue); cursor:pointer;}
+  .game-card .a-marquee{justify-content:space-between;}
+  .gc-cat{font-size:10px; font-weight:900; letter-spacing:.1em;}
+  .game-card .a-card__body{gap:9px; padding:14px;}
+  .gc-icon{display:block; font-size:30px; line-height:0; color:var(--a-accent);}
+  .gc-nm{font-family:var(--hero); font-weight:400; font-size:22px; line-height:1; letter-spacing:.01em; color:var(--ink);}
+  .gc-desc{font-size:12.5px; line-height:1.45; color:var(--mut); flex:1;}
+  .game-card .a-status{align-self:flex-start; margin-top:2px;}
   @media (max-width:640px){
-    .tile{border-radius:14px;}
-    .tile .cap{height:76px;}
-    .tile .cap svg{width:42px; height:42px;}
-    .tile .badge{top:7px; left:8px; font-size:8.5px; padding:3px 6px;}
-    .tile .status{top:7px; right:8px; font-size:8.5px; padding:3px 7px;}
-    .tile .body{padding:11px 11px 11px;}
-    .tile .nm{font-size:15px;}
-    .tile .desc{display:none;}
-    .tile .play{min-height:40px; font-size:13.5px; margin-top:10px;}
+    .game-card .a-card__body{padding:11px; gap:7px;}
+    .gc-icon{font-size:26px;}
+    .gc-nm{font-size:17px;}
+    .gc-desc{display:none;}                 /* mobile: no long descriptions */
   }
 
-  /* ---- daily double banner (all solved) ---- */
-  .double{display:none; align-items:center; gap:12px; margin-top:16px; padding:14px 18px; border-radius:16px;
-    background:linear-gradient(90deg, color-mix(in srgb,var(--coral) 18%, var(--card)), color-mix(in srgb,var(--gold) 18%, var(--card)));
-    border:1px solid color-mix(in srgb, var(--gold) 45%, transparent); font-weight:800; font-size:14px; color:var(--ink);}
-  .double.on{display:flex; animation:dpop .5s ease;}
-  @keyframes dpop{0%{transform:scale(.94); opacity:0;}100%{transform:scale(1); opacity:1;}}
+  /* ---- featured card ---- */
+  .feat{margin-bottom:6px;}
+  .feat .a-card__body{flex-direction:row; align-items:center; gap:16px; padding:16px 18px;}
+  .feat .gc-icon{font-size:46px;}
+  .feat .feat-main{min-width:0; flex:1; display:flex; flex-direction:column;}
+  .feat .feat-kick{font-size:10px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--a-accent);}
+  .feat .gc-nm{font-size:28px; margin:3px 0 4px;}
+  .feat .gc-desc{display:block; font-size:13px;}
+  .feat .feat-go{flex:0 0 auto; align-self:center; display:inline-flex; align-items:center; gap:7px;
+    font-weight:900; font-style:italic; font-size:14px; letter-spacing:.02em; color:#08111f; background:var(--a-accent);
+    border:2px solid color-mix(in srgb, var(--a-accent) 60%, #000); border-radius:6px; padding:11px 16px; box-shadow:var(--a-shadow);}
+  .feat:hover .feat-go{filter:brightness(1.06);}
+  @media (max-width:640px){
+    .feat .a-card__body{flex-wrap:wrap; gap:11px; padding:13px;}
+    .feat .gc-icon{font-size:34px;}
+    .feat .gc-nm{font-size:22px;}
+    .feat .feat-go{width:100%; justify-content:center;}
+  }
+
+  /* ---- clean sweep ---- */
+  .double{display:none; align-items:center; gap:12px; margin-top:18px; padding:14px 18px; border:2px solid color-mix(in srgb, var(--gold) 45%, transparent); border-radius:8px;
+    background:color-mix(in srgb,var(--gold) 12%, var(--card)); font-weight:800; font-size:14px; color:var(--ink); box-shadow:var(--a-shadow);}
+  .double.on{display:flex;}
   .double svg{color:var(--goldT); flex:0 0 auto;}
   .double .sub{display:block; font-weight:600; font-size:12px; color:var(--mut); margin-top:2px;}
 
-  /* ---- bottom nav ---- */
+  .m-links{display:none; flex-direction:column; gap:8px; align-items:center; margin-top:18px;}
+  .m-links a{font-size:12.5px; font-weight:800; color:var(--mut);}
+  @media (max-width:980px){ .m-links{display:flex;} }
+
+  /* ---- bottom nav (existing) ---- */
   .nav{position:fixed; left:0; right:0; bottom:0; z-index:20; display:flex; justify-content:flex-start; align-items:center; overflow-x:auto; scrollbar-width:none;
     padding:8px 6px calc(8px + env(safe-area-inset-bottom,0)); background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(10px); border-top:1px solid var(--line);}
   .nav::-webkit-scrollbar{display:none;}
   .nav a{display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--dim); font-size:9.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:4px 6px; flex:1 0 auto; min-width:60px; text-align:center;}
-  .nav a svg{width:21px; height:21px;}
-  .nav a.on{color:var(--coralT);}
-  .nav a.soon{opacity:.5;}
+  .nav a svg{width:21px; height:21px;} .nav a.on{color:var(--coralT);}
 
   .foot{text-align:center; color:var(--dim); font-size:12.5px; margin-top:26px;}
   .foot .soc{display:flex; justify-content:center; gap:16px; margin:10px 0;}
@@ -307,8 +213,7 @@
     <div class="top">
       <a class="gg" href="/arcade/" aria-label="Run The Arcade home"><img src="/arcade/assets/runthearcade-logo.png" alt="Run The Arcade" width="900" height="521" /></a>
       <span class="topR">
-        <span class="mStreak" title="Day streak" aria-label="Day streak"> <b id="mStreakVal">0</b></span>
-        <a class="mProf" href="/" aria-label="Sign in"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></a>
+        <span class="plays" id="playsChip" title="Daily plays"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg><span id="coinValH">9</span><span id="coinMax" style="font-weight:700;opacity:.7">/9</span></span>
         <button class="themeBtn" id="themeBtn" type="button" aria-label="Toggle light or dark theme" title="Light / dark">
           <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
           <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
@@ -316,295 +221,78 @@
       </span>
     </div>
 
+    <!-- MOBILE-ONLY control summary -->
+    <section class="m-top" aria-label="Your run today">
+      <div class="m-sum">
+        <span class="m-chip streak" title="Day streak"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg><span id="mStreakVal">0</span></span>
+        <span class="m-chip count" title="Games cleared today"><span id="mCount">0 / 9</span></span>
+      </div>
+      <a class="a-btn m-cta" id="ctaKeepM" href="/arcade/table/">START TODAY’S RUN</a>
+      <div class="m-strip" id="mStrip">Play a game to start your streak</div>
+    </section>
+
     <div class="board">
-      <!-- LEFT: player HUD rail -->
-      <aside class="hud">
-        <!-- 1 · guest row -->
-        <div class="hud-hd">
-          <span class="av"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
-          <span class="who"><b>Guest</b><span id="dateShort">Today</span></span>
-          <span class="coins" id="playsChip" title="One free play per game each day"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg><span id="coinValH">9</span><span id="coinMax" style="font-weight:700;opacity:.7;margin-left:1px">/9</span></span>
-        </div>
+      <!-- LEFT: control panel -->
+      <aside class="a-panel ctrl" aria-label="Player control panel">
+        <div class="a-panel__inner">
+          <div class="a-marquee">Player Control<span class="mq-date" id="dateShort">Today</span></div>
 
-        <!-- 2 · streak block -->
-        <div class="hud-streak">
-          <div class="srow">
-            <span class="flame"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg></span>
-            <span class="big"><span class="n" id="curStreak">0</span><span class="cap">Day streak</span></span>
-            <span class="best"><span class="n" id="bestStreak">0</span><span class="cap">Best</span></span>
-            <span class="m-gift" aria-hidden="true"></span>
+          <div class="a-panel__sec">
+            <div class="sb">
+              <div class="sb-tile today"><span class="a-label">Today</span><span class="sb-n"><b id="dCountBig">0</b>/9</span><span class="a-label">Cleared</span></div>
+              <div class="sb-tile streak"><span class="a-label">Streak</span><span class="sb-n" id="curStreak">0</span><span class="a-label">Days</span></div>
+              <div class="sb-tile"><span class="a-label">Best</span><span class="sb-n" id="bestStreak">0</span><span class="a-label">Days</span></div>
+            </div>
+            <p class="smsg" id="streakMsg">Play a game to start your streak!</p>
           </div>
-          <p class="smsg"><span class="fy" aria-hidden="true"></span><span id="streakMsg">Play a game to start your streak!</span></p>
-        </div>
 
-        <!-- 3 · NEXT GOAL panel -->
-        <div class="hud-goal" id="mile" hidden>
-          <span class="g-lab">Next goal</span>
-          <div class="g-row">
-            <span class="g-main"><b id="mileLab">3 Day Streak</b><span id="mileTo">3 more days to unlock</span></span>
-            <span class="g-gift" aria-hidden="true"></span>
-          </div>
-          <div class="g-barrow">
+          <div class="a-panel__sec goal" id="mile" hidden>
+            <span class="g-lab">Next goal</span>
+            <div class="g-row"><span class="g-main"><b id="mileLab">3 Day Streak</b><span id="mileTo">3 more days to unlock</span></span></div>
             <div class="bar"><i id="mileBar"></i></div>
-            <span class="g-cnt" id="mileCnt">0 / 3</span>
+            <div class="g-cnt" id="mileCnt">0 / 3</div>
+            <div class="path" id="milePath">
+              <span class="mp-node" data-days="3"><span class="mp-dot">3</span><span class="mp-tag">3 days</span></span>
+              <span class="mp-node" data-days="5"><span class="mp-dot">5</span><span class="mp-tag">5 days</span></span>
+              <span class="mp-node" data-days="7"><span class="mp-dot">7</span><span class="mp-tag">7 days</span></span>
+              <span class="mp-node" data-days="14"><span class="mp-dot">14</span><span class="mp-tag">14 days</span></span>
+            </div>
           </div>
-        </div>
 
-        <!-- 4 · milestone path -->
-        <div class="hud-path" id="milePath">
-          <div class="mp-row">
-            <span class="mp-node" data-days="3">
-              <span class="mp-dot">
-                <svg class="ic-f" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>
-                <svg class="ic-l" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-              </span>
-              <span class="mp-tag">3 days</span>
-            </span>
-            <span class="mp-node" data-days="5">
-              <span class="mp-dot">
-                <svg class="ic-f" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>
-                <svg class="ic-l" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-              </span>
-              <span class="mp-tag">5 days</span>
-            </span>
-            <span class="mp-node" data-days="7">
-              <span class="mp-dot">
-                <svg class="ic-f" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>
-                <svg class="ic-l" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-              </span>
-              <span class="mp-tag">7 days</span>
-            </span>
-            <span class="mp-node" data-days="14">
-              <span class="mp-dot">
-                <svg class="ic-f" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 1.6s.8 2.3.8 4.2c0 1.8-1.2 3.3-3 3.3S8.2 7.6 8.2 5.8c0-.4 0-.8.1-1.2C5.6 6.5 4 9.4 4 12.5 4 17.2 7.8 21 12.5 21S21 17.2 21 12.5c0-4.8-3.6-8.8-7.5-10.9z"/></svg>
-                <svg class="ic-l" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-              </span>
-              <span class="mp-tag">14 days</span>
-            </span>
+          <div class="a-panel__sec drop">
+            <span class="cal"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></span>
+            <span class="dcol"><span class="lbl">Next drop</span><span class="sub">New puzzles every day</span></span>
+            <span class="t a-num" id="cdT">--:--:--</span>
           </div>
-          <p class="mp-cap">Keep playing daily to earn bigger rewards!</p>
-        </div>
 
-        <!-- 5 · next drop -->
-        <div class="hud-drop">
-          <span class="cal"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></span>
-          <span class="dcol"><span class="lbl">Next drop</span><span class="sub">New puzzles arrive every day.</span></span>
-          <span class="t" id="cdT">--:--:--</span>
-        </div>
-
-        <!-- 6 · gold note -->
-        <div class="hud-notewrap">
-          <div class="hud-note"><b>Small steps today, big wins tomorrow.</b> Play daily. Build streaks. Earn rewards.</div>
-        </div>
-
-        <!-- 7 · CTA stack -->
-        <div class="hud-cta">
-          <a class="btn" id="ctaKeep" href="/arcade/table/">Keep streak alive</a>
-          <a class="btn ghost" href="#puzzles">Play more puzzles</a>
-          <div class="cta-links">
-            <a href="/">Sign in to save your streak →</a>
-            <a href="/arcade/archive/">Play past days →</a>
+          <div class="a-panel__sec cta">
+            <a class="a-btn" id="ctaKeep" href="/arcade/table/">START TODAY’S RUN</a>
+            <div class="cta-links">
+              <a href="/">Sign in to save your streak →</a>
+              <a href="/arcade/archive/">Play past days →</a>
+            </div>
           </div>
         </div>
       </aside>
 
-      <!-- RIGHT: today's puzzles -->
-      <main id="puzzles">
-        <div class="zone-head">
-          <span class="day">Today's Puzzles</span>
-          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipM"></span><span class="pip" id="pipC"></span><span class="pip" id="pipW"></span><span class="pip" id="pipG"></span><span class="pip" id="pipT"></span><span class="pip" id="pipO"></span><span class="pip" id="pipR"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span></span><span id="dprogT">0 / 9 played</span></span>
+      <!-- RIGHT: arcade floor -->
+      <main class="floor" id="floor">
+        <div class="floor-head">
+          <h2>Today’s Arcade Floor</h2>
+          <span class="dprog" id="dprog"><span class="pips" id="pips"></span><span id="dprogT">0 / 9 played</span></span>
         </div>
 
-        <div class="tiles">
-          <a class="tile match" id="cardMatch" href="/arcade/match/">
-            <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stM">Ready</span>
-              <svg viewBox="0 0 56 56"><g>
-                <rect x="2" y="2" width="15" height="15" rx="3" fill="#2F6BFF"/><rect x="20.5" y="2" width="15" height="15" rx="3" fill="#F2B632"/><rect x="39" y="2" width="15" height="15" rx="3" fill="#F06A5F"/>
-                <rect x="2" y="20.5" width="15" height="15" rx="3" fill="#F06A5F"/><rect x="20.5" y="20.5" width="15" height="15" rx="3" fill="#A982F3"/><rect x="39" y="20.5" width="15" height="15" rx="3" fill="#2F6BFF"/>
-                <rect x="2" y="39" width="15" height="15" rx="3" fill="#F2B632"/><rect x="20.5" y="39" width="15" height="15" rx="3" fill="#F65C9C"/><rect x="39" y="39" width="15" height="15" rx="3" fill="#F06A5F"/>
-              </g></svg>
-            </span>
-            <span class="body">
-              <span class="nm">Daily Match</span>
-              <span class="desc" id="descM">Sort 20 sports names into five hidden groups of four. Find them all before six misses.</span>
-              <span class="play" id="playM">PLAY <span class="arw">→</span></span>
-            </span>
-          </a>
+        <div id="featuredWrap"></div>
 
-          <a class="tile cross" id="cardCross" href="/arcade/crossword/">
-            <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stC">Ready</span>
-              <svg viewBox="0 0 56 56">
-                <defs><clipPath id="cwico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs>
-                <g clip-path="url(#cwico)">
-                  <rect x="4" y="4" width="48" height="48" fill="#F4F7FB"/>
-                  <!-- blocked cells cap the two answers; kept 180-degree symmetric -->
-                  <rect x="40" y="4" width="12" height="12" fill="#12202F"/>
-                  <rect x="4" y="40" width="12" height="12" fill="#12202F"/>
-                  <!-- grid lines -->
-                  <g stroke="#CBD5E1" stroke-width="1">
-                    <path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/>
-                  </g>
-                  <!-- clue numbers -->
-                  <g font-family="Archivo, sans-serif" font-size="5" font-weight="800" fill="#93A1B2">
-                    <text x="6.2" y="9.4">1</text>
-                    <text x="42.2" y="21.4">2</text>
-                  </g>
-                  <!-- 1-Across 'RUN' along the top; 2-Down 'THE' down the right column (no gibberish crossings) -->
-                  <g font-family="Archivo, sans-serif" font-size="9" font-weight="900" fill="#16273B" text-anchor="middle">
-                    <text x="10" y="13.2">R</text>
-                    <text x="22" y="13.2">U</text>
-                    <text x="34" y="13.2">N</text>
-                    <text x="46" y="25.2">T</text>
-                    <text x="46" y="37.2">H</text>
-                    <text x="46" y="49.2">E</text>
-                  </g>
-                </g>
-                <rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#93A1B2" stroke-width="2"/>
-              </svg>
-            </span>
-            <span class="body">
-              <span class="nm">Daily Crossword</span>
-              <span class="desc">A sports mini crossword, fresh every day. Beat the clock for a flawless solve.</span>
-              <span class="play" id="playC">PLAY <span class="arw">→</span></span>
-            </span>
-          </a>
+        <h3 class="group-h">Quick Plays</h3>
+        <div class="group-grid" id="groupQuick"></div>
 
-          <a class="tile word" id="cardWord" href="/arcade/wordsearch/">
-            <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stW">Ready</span>
-              <svg viewBox="0 0 56 56">
-                <defs><clipPath id="wsico"><rect x="4" y="4" width="48" height="48" rx="6"/></clipPath></defs>
-                <g clip-path="url(#wsico)">
-                  <rect x="4" y="4" width="48" height="48" fill="#E9F7F4"/>
-                  <g stroke="#B9E3DC" stroke-width="1"><path d="M16 4v48M28 4v48M40 4v48M4 16h48M4 28h48M4 40h48"/></g>
-                  <!-- teal diagonal 'found word' WIN -->
-                  <rect x="4" y="4" width="12" height="12" rx="3" fill="#37C5D5"/>
-                  <rect x="16" y="16" width="12" height="12" rx="3" fill="#37C5D5"/>
-                  <rect x="28" y="28" width="12" height="12" rx="3" fill="#37C5D5"/>
-                  <g font-family="Archivo, sans-serif" font-size="8.5" font-weight="900" text-anchor="middle">
-                    <text x="10" y="13" fill="#06333A">W</text>
-                    <text x="22" y="25" fill="#06333A">I</text>
-                    <text x="34" y="37" fill="#06333A">N</text>
-                    <g fill="#7FA8B0">
-                      <text x="34" y="13">R</text><text x="46" y="13">T</text>
-                      <text x="10" y="37">S</text><text x="46" y="37">E</text>
-                      <text x="10" y="49">A</text><text x="22" y="49">D</text><text x="34" y="49">L</text><text x="46" y="49">O</text>
-                    </g>
-                  </g>
-                </g>
-                <rect x="4" y="4" width="48" height="48" rx="6" fill="none" stroke="#37C5D5" stroke-width="2"/>
-              </svg>
-            </span>
-            <span class="body">
-              <span class="nm">Daily Word Search</span>
-              <span class="desc">Find every hidden name from today's theme. Beat the clock for a flawless run.</span>
-              <span class="play" id="playW">PLAY <span class="arw">→</span></span>
-            </span>
-          </a>
-
-          <a class="tile guess" id="cardGuess" href="/arcade/guess/">
-            <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stG">Ready</span>
-              <svg viewBox="0 0 56 56">
-                <g>
-                  <rect x="4.4" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="16.8" y="10.6" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="29.2" y="10.6" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="41.6" y="10.6" width="10" height="10" rx="2.4" fill="#2FA968"/>
-                  <rect x="4.4" y="23" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="16.8" y="23" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="29.2" y="23" width="10" height="10" rx="2.4" fill="#0E2438"/><rect x="41.6" y="23" width="10" height="10" rx="2.4" fill="#0E2438"/>
-                  <rect x="4.4" y="35.4" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="16.8" y="35.4" width="10" height="10" rx="2.4" fill="#2FA968"/><rect x="29.2" y="35.4" width="10" height="10" rx="2.4" fill="#F2B632"/><rect x="41.6" y="35.4" width="10" height="10" rx="2.4" fill="#2FA968"/>
-                </g>
-              </svg>
-            </span>
-            <span class="body">
-              <span class="nm">Guess the Player</span>
-              <span class="desc">One mystery athlete a day. Crack it in eight guesses from the clues.</span>
-              <span class="play" id="playG">PLAY <span class="arw">→</span></span>
-            </span>
-          </a>
-
-          <a class="tile table" id="cardTable" href="/arcade/table/">
-            <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stT">Ready</span>
-              <svg viewBox="0 0 56 56">
-                <rect x="9" y="28" width="13" height="20" rx="3" fill="#F2B632" opacity=".5"/>
-                <rect x="27" y="16" width="13" height="32" rx="3" fill="#F2B632"/>
-                <g fill="none" stroke="#F2B632" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M43 15h8M47 11v8"/><path d="M43 21l4-4 4 4"/></g>
-              </svg>
-            </span>
-            <span class="body">
-              <span class="nm">Run The Table</span>
-              <span class="desc">Higher or lower? Tap the bigger number and see how many you can run in a row.</span>
-              <span class="play" id="playT">PLAY <span class="arw">→</span></span>
-            </span>
-          </a>
-
-          <a class="tile oddone" id="cardOdd" href="/arcade/oddone/">
-            <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stO">Ready</span>
-              <svg viewBox="0 0 56 56">
-                <circle cx="16" cy="16" r="7.5" fill="#A982F3"/><circle cx="40" cy="16" r="7.5" fill="#A982F3"/><circle cx="16" cy="40" r="7.5" fill="#A982F3"/>
-                <rect x="32.5" y="32.5" width="15" height="15" rx="3.5" fill="#F06A5F"/>
-              </svg>
-            </span>
-            <span class="body">
-              <span class="nm">Odd One Out</span>
-              <span class="desc">Four names share a connection, one doesn't. Spot it, keep the streak going.</span>
-              <span class="play" id="playO">PLAY <span class="arw">→</span></span>
-            </span>
-          </a>
-
-          <a class="tile career" id="cardCareer" href="/arcade/career/">
-            <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stR">Ready</span>
-              <svg viewBox="0 0 56 56">
-                <g fill="none" stroke="#48D17A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 44 L22 24 L34 34 L46 12"/></g>
-                <g fill="#48D17A"><circle cx="12" cy="44" r="4.2"/><circle cx="22" cy="24" r="4.2"/><circle cx="34" cy="34" r="4.2"/><circle cx="46" cy="12" r="4.2"/></g>
-              </svg>
-            </span>
-            <span class="body">
-              <span class="nm">Career Path</span>
-              <span class="desc">Name the athlete from their team-by-team journey. How many in a row?</span>
-              <span class="play" id="playR">PLAY <span class="arw">→</span></span>
-            </span>
-          </a>
-
-          <a class="tile rankit" id="cardRank" href="/arcade/rankit/">
-            <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stK">Ready</span>
-              <svg viewBox="0 0 56 56">
-                <rect x="10" y="13" width="20" height="8" rx="3" fill="#F65C9C" opacity=".5"/>
-                <rect x="10" y="25" width="30" height="8" rx="3" fill="#F65C9C" opacity=".78"/>
-                <rect x="10" y="37" width="40" height="8" rx="3" fill="#F65C9C"/>
-              </svg>
-            </span>
-            <span class="body">
-              <span class="nm">Rank It</span>
-              <span class="desc">Put five athletes in order by the era they starred in. Fewest checks wins.</span>
-              <span class="play" id="playK">PLAY <span class="arw">→</span></span>
-            </span>
-          </a>
-
-          <a class="tile alma" id="cardAlma" href="/arcade/almamater/">
-            <span class="cap" aria-hidden="true">
-              <span class="badge">New</span><span class="status" id="stA">Ready</span>
-              <svg viewBox="0 0 56 56">
-                <path d="M28 12 L52 22 L28 32 L4 22 Z" fill="#F2B632"/>
-                <path d="M16 27 v9 c0 3.3 5.4 6 12 6 s12 -2.7 12 -6 v-9 L28 32 Z" fill="#F2B632" opacity=".55"/>
-                <path d="M52 22 v11" fill="none" stroke="#F2B632" stroke-width="2.4" stroke-linecap="round"/>
-                <circle cx="52" cy="35" r="2.6" fill="#F2B632"/>
-              </svg>
-            </span>
-            <span class="body">
-              <span class="nm">Alma Mater</span>
-              <span class="desc">Name the college each player came from. Four choices, one right. How far can you run?</span>
-              <span class="play" id="playA">PLAY <span class="arw">→</span></span>
-            </span>
-          </a>
-        </div>
+        <h3 class="group-h">Puzzle Zone</h3>
+        <div class="group-grid" id="groupPuzzle"></div>
 
         <div class="double" id="double">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <span>Clean sweep!<span class="sub">You played all nine of today's puzzles. New ones drop in <b id="cdT2">--</b>.</span></span>
+          <span>Clean sweep!<span class="sub">You played all nine of today’s puzzles. New ones drop in <b id="cdT2">--</b>.</span></span>
         </div>
 
         <div class="m-links">
@@ -643,206 +331,185 @@
 <script src="/arcade/tokens.js"></script>
 <script>
 (function () {
+  'use strict';
   var LS = window.localStorage;
   function g(k, d) { try { return LS.getItem(k) || d; } catch (e) { return d; } }
+  function jget(k){ try { return JSON.parse(g(k, '{}')) || {}; } catch (e) { return {}; } }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   var TOK = window.RTGTokens || null;
+  var ICON = window.RTGIcons ? function(k){ return RTGIcons.get(k); } : function(){ return ''; };
 
-  // ---- theme toggle (shared suite preference) ----
-  function applyThemeMeta() {
-    var t = document.documentElement.getAttribute('data-theme');
-    var m = document.getElementById('themeMeta');
-    if (m) m.setAttribute('content', t === 'light' ? '#EEF2F7' : '#071426');
-  }
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  var t = todayStr();
+
+  // ---- theme ----
+  function applyThemeMeta(){ var th=document.documentElement.getAttribute('data-theme'); var m=document.getElementById('themeMeta'); if(m) m.setAttribute('content', th==='light'?'#EEF2F7':'#071426'); }
   applyThemeMeta();
-
-  // ---- Alma Mater card: skin it in the user's favorite college team colors
-  // (set by the College Football game), falling back to the maroon default.
-  function applyFavCard() {
-    if (!window.RTGFavTeam) return;
-    var card = document.getElementById('cardAlma'); if (!card) return;
-    var t = RTGFavTeam.resolved();
-    var theme = document.documentElement.getAttribute('data-theme');
-    card.style.setProperty('--c', t.primary);
-    var nm = card.querySelector('.nm'); if (nm) nm.style.color = RTGFavTeam.readable(t.primary, theme);
-    var svg = card.querySelector('.cap svg');
-    if (svg) {
-      [].forEach.call(svg.querySelectorAll('[fill]'), function (el) { if ((el.getAttribute('fill') || '').toLowerCase() !== 'none') el.setAttribute('fill', t.primary); });
-      [].forEach.call(svg.querySelectorAll('[stroke]'), function (el) { if ((el.getAttribute('stroke') || '').toLowerCase() !== 'none') el.setAttribute('stroke', t.primary); });
-    }
-  }
-  applyFavCard();
-
-  document.getElementById('themeBtn').addEventListener('click', function () {
-    var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', next);
-    try { LS.setItem('runthegrid_theme', next); } catch (e) {}
-    applyThemeMeta();
-    applyFavCard();
+  document.getElementById('themeBtn').addEventListener('click', function(){
+    var next=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light';
+    document.documentElement.setAttribute('data-theme',next);
+    try{ LS.setItem('runthegrid_theme',next); }catch(e){}
+    applyThemeMeta(); applyFav();
   });
 
-  // ---- date + live countdown to local midnight ----
-  var now = new Date();
-  document.getElementById('dateShort').textContent =
-    now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-  function pad(n) { return String(n).padStart(2, '0'); }
-  function tickCd() {
-    var n = new Date();
-    var t = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 0, 0) - n;
-    var s = Math.max(0, Math.floor(t / 1000));
-    var str = Math.floor(s / 3600) + ':' + pad(Math.floor((s % 3600) / 60)) + ':' + pad(s % 60);
-    document.getElementById('cdT').textContent = str;
-    var c2 = document.getElementById('cdT2'); if (c2) c2.textContent = Math.floor(s / 3600) + 'h ' + pad(Math.floor((s % 3600) / 60)) + 'm';
-  }
-  tickCd(); setInterval(tickCd, 1000);
+  // ---- date + countdown ----
+  document.getElementById('dateShort').textContent = new Date().toLocaleDateString(undefined,{ weekday:'short', month:'short', day:'numeric' });
+  function tickCd(){ var n=new Date(), ms=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, s=Math.max(0,Math.floor(ms/1000));
+    document.getElementById('cdT').textContent = Math.floor(s/3600)+':'+pad(Math.floor((s%3600)/60))+':'+pad(s%60);
+    var c2=document.getElementById('cdT2'); if(c2) c2.textContent = Math.floor(s/3600)+'h '+pad(Math.floor((s%3600)/60))+'m'; }
+  tickCd(); setInterval(tickCd,1000);
 
-  // ---- daily plays wallet + streaks ----
+  // ---- plays wallet ----
   (function(){
     var chip=document.getElementById('playsChip'), val=document.getElementById('coinValH'), mx=document.getElementById('coinMax');
     if(!TOK){ return; }
     if(TOK.isPro && TOK.isPro()){ val.textContent='∞'; if(mx) mx.remove(); chip.setAttribute('title','Pro · unlimited plays'); return; }
-    var rem=TOK.remaining();
-    val.textContent = rem;
-    if(mx) mx.textContent = '/'+TOK.DAILY;
-    if(rem<=0){ chip.style.color='var(--mut)'; }
+    var rem=TOK.remaining(); val.textContent=rem; if(mx) mx.textContent='/'+TOK.DAILY; if(rem<=0) chip.style.color='var(--mut)';
   })();
-  var cur = parseInt(g('grid_match_streak', '0'), 10) || 0;
-  var best = parseInt(g('grid_best_streak', '0'), 10) || 0;
-  var cw = {}; try { cw = JSON.parse(g('rtg:cw:v1', '{}')) || {}; } catch (e) {}
-  var ws = {}; try { ws = JSON.parse(g('rtg:ws:v1', '{}')) || {}; } catch (e) {}
-  var gs = {}; try { gs = JSON.parse(g('rtg:guess:v1', '{}')) || {}; } catch (e) {}
-  var ts = {}; try { ts = JSON.parse(g('rtg:table:v1', '{}')) || {}; } catch (e) {}
-  var os = {}; try { os = JSON.parse(g('rtg:oddone:v1', '{}')) || {}; } catch (e) {}
-  var rs = {}; try { rs = JSON.parse(g('rtg:career:v1', '{}')) || {}; } catch (e) {}
-  var ks = {}; try { ks = JSON.parse(g('rtg:rankit:v2', '{}')) || {}; } catch (e) {}
-  var as = {}; try { as = JSON.parse(g('rtg:almamater:v1', '{}')) || {}; } catch (e) {}
-  cur = Math.max(cur, cw.streak | 0, ws.streak | 0, gs.streak | 0, ts.streak | 0, os.streak | 0, rs.streak | 0, ks.streak | 0, as.streak | 0);
-  best = Math.max(best, cur, cw.bestStreak | 0);
+
+  // ---- state reads (unchanged keys/logic) ----
+  var cur = parseInt(g('grid_match_streak','0'),10)||0;
+  var best = parseInt(g('grid_best_streak','0'),10)||0;
+  var cw=jget('rtg:cw:v1'), ws=jget('rtg:ws:v1'), gs=jget('rtg:guess:v1'), ts=jget('rtg:table:v1'),
+      os=jget('rtg:oddone:v1'), rs=jget('rtg:career:v1'), ks=jget('rtg:rankit:v2'), as=jget('rtg:almamater:v1');
+  cur = Math.max(cur, cw.streak|0, ws.streak|0, gs.streak|0, ts.streak|0, os.streak|0, rs.streak|0, ks.streak|0, as.streak|0);
+  best = Math.max(best, cur, cw.bestStreak|0);
   document.getElementById('curStreak').textContent = cur;
   document.getElementById('bestStreak').textContent = best;
+  document.getElementById('mStreakVal').textContent = cur;
 
-  // motivational line under the streak number + mobile header streak chip
-  var streakMsg = document.getElementById('streakMsg');
-  if (streakMsg) {
-    streakMsg.textContent =
-      cur <= 0 ? 'Play a game to start your streak!' :
-      cur <= 2 ? 'Great start! Keep it going!' :
-      cur <= 6 ? "You're on a heater!" :
-                 'Untouchable. Keep the run alive!';
-  }
-  var mSt = document.getElementById('mStreakVal'); if (mSt) mSt.textContent = cur;
+  var streakMsg = cur<=0?'Play a game to start your streak!':cur<=2?'Great start! Keep it going!':cur<=6?"You're on a heater!":'Untouchable. Keep the run alive!';
+  document.getElementById('streakMsg').textContent = streakMsg;
 
-  // NEXT GOAL panel: progress toward the next streak milestone
-  var MILES = [3, 5, 7, 14, 30];
-  var next = null;
-  for (var i = 0; i < MILES.length; i++) { if (cur < MILES[i]) { next = MILES[i]; break; } }
-  var mile = document.getElementById('mile');
-  var mileCnt = document.getElementById('mileCnt');
-  mile.hidden = false;
-  if (next) {
-    var togo = next - cur;
-    document.getElementById('mileLab').textContent = next + ' Day Streak';
-    document.getElementById('mileTo').textContent = togo + ' more day' + (togo === 1 ? '' : 's') + ' to unlock';
-    if (mileCnt) mileCnt.textContent = cur + ' / ' + next;
-    var frac = Math.max(cur > 0 ? 0.06 : 0.02, cur / next);
-    setTimeout(function () { document.getElementById('mileBar').style.width = Math.min(100, Math.round(frac * 100)) + '%'; }, 120);
+  // ---- milestone (unchanged) ----
+  var MILES=[3,5,7,14,30], nextMile=null;
+  for(var i=0;i<MILES.length;i++){ if(cur<MILES[i]){ nextMile=MILES[i]; break; } }
+  document.getElementById('mile').hidden=false;
+  if(nextMile){ var togo=nextMile-cur;
+    document.getElementById('mileLab').textContent=nextMile+' Day Streak';
+    document.getElementById('mileTo').textContent=togo+' more day'+(togo===1?'':'s')+' to unlock';
+    document.getElementById('mileCnt').textContent=cur+' / '+nextMile;
+    var frac=Math.max(cur>0?0.06:0.02, cur/nextMile);
+    setTimeout(function(){ document.getElementById('mileBar').style.width=Math.min(100,Math.round(frac*100))+'%'; },120);
   } else {
-    document.getElementById('mileLab').textContent = 'Every goal unlocked';
-    document.getElementById('mileTo').textContent = 'You passed every streak milestone!';
-    if (mileCnt) mileCnt.textContent = cur + ' days';
-    setTimeout(function () { document.getElementById('mileBar').style.width = '100%'; }, 120);
+    document.getElementById('mileLab').textContent='Every goal unlocked';
+    document.getElementById('mileTo').textContent='You passed every streak milestone!';
+    document.getElementById('mileCnt').textContent=cur+' days';
+    setTimeout(function(){ document.getElementById('mileBar').style.width='100%'; },120);
+  }
+  (function(){ var nodes=document.querySelectorAll('#milePath .mp-node'), tagged=false;
+    for(var p=0;p<nodes.length;p++){ var d=parseInt(nodes[p].getAttribute('data-days'),10)||0;
+      if(cur>=d) nodes[p].classList.add('reached'); else if(!tagged){ nodes[p].classList.add('next'); tagged=true; } } })();
+
+  // ---- completion flags (unchanged sources) ----
+  var mRes=null; try{ mRes=JSON.parse(g('grid_match_result_'+t,'null')); }catch(e){}
+  var done = {
+    table:(ts.lastDone===t), match:!!mRes, career:(rs.lastDone===t), oddone:(os.lastDone===t),
+    rankit:(ks.lastDone===t), almamater:(as.lastDone===t), guess:(gs.lastDone===t),
+    crossword:(cw.lastDone===t), wordsearch:(ws.lastDone===t)
+  };
+  // resume snapshot dated today (for IN PROGRESS / CONTINUE), guarded per game
+  function resumeActive(key){ var r=jget('rtg:resume:'+key); return !!(r && r.d===t); }
+
+  // ---- game catalog (existing routes / accents / short descriptors) ----
+  var GAMES = {
+    table:     { name:'Run The Table', route:'/arcade/table/',      icon:'table',      accent:'var(--gold)',  cat:'Streak',  group:'quick',  desc:'Higher or lower — how many can you run?' },
+    oddone:    { name:'Odd One Out',   route:'/arcade/oddone/',     icon:'oddone',     accent:'var(--violet)',cat:'Spot it', group:'quick',  desc:'Four share a link, one doesn’t. Find it.' },
+    career:    { name:'Career Path',   route:'/arcade/career/',     icon:'career',     accent:'var(--green)', cat:'Streak',  group:'quick',  desc:'Name the athlete from their team journey.' },
+    almamater: { name:'Alma Mater',    route:'/arcade/almamater/',  icon:'almamater',  accent:'var(--gold)',  cat:'Streak',  group:'quick',  desc:'Name the college. How far can you run?' },
+    match:     { name:'Daily Match',   route:'/arcade/match/',      icon:'match',      accent:'var(--blue)',  cat:'Groups',  group:'puzzle', desc:'Sort 20 names into five hidden groups.' },
+    crossword: { name:'Daily Crossword', route:'/arcade/crossword/',icon:'crossword',  accent:'var(--gray)',  cat:'Grid',    group:'puzzle', desc:'A sports mini crossword against the clock.' },
+    wordsearch:{ name:'Daily Word Search', route:'/arcade/wordsearch/', icon:'wordsearch', accent:'var(--teal)', cat:'Find', group:'puzzle', desc:'Find every hidden name from today’s theme.' },
+    guess:     { name:'Guess the Player', route:'/arcade/guess/',   icon:'guess',      accent:'var(--coral)', cat:'Deduce',  group:'puzzle', desc:'Crack the mystery athlete in eight guesses.' },
+    rankit:    { name:'Rank It',       route:'/arcade/rankit/',     icon:'rankit',     accent:'var(--pink)',  cat:'Order',   group:'puzzle', desc:'Put five athletes in the right order.' }
+  };
+  // display + first-unplayed order (preserves the previous CTA queue order)
+  var ORDER = ['table','match','career','oddone','rankit','almamater','guess','crossword','wordsearch'];
+  var QUICK  = ['table','oddone','career','almamater'];
+  var PUZZLE = ['match','crossword','wordsearch','guess','rankit'];
+  var PIP_ID = { table:'pipT', match:'pipM', career:'pipR', oddone:'pipO', rankit:'pipK', almamater:'pipA', guess:'pipG', crossword:'pipC', wordsearch:'pipW' };
+  var CARD_ID= { table:'cardTable', match:'cardMatch', career:'cardCareer', oddone:'cardOdd', rankit:'cardRank', almamater:'cardAlma', guess:'cardGuess', crossword:'cardCross', wordsearch:'cardWord' };
+  var ST_ID  = { table:'stT', match:'stM', career:'stR', oddone:'stO', rankit:'stK', almamater:'stA', guess:'stG', crossword:'stC', wordsearch:'stW' };
+
+  // state chip per game (existing data only)
+  function stateOf(key){
+    if(done[key]) return { label:'Cleared', cls:'a-status--cleared' };
+    if(resumeActive(key)) return { label:'In progress', cls:'a-status--progress' };
+    if(TOK && !TOK.canPlay(key) && !(TOK.isPro&&TOK.isPro())) return { label:'Locked', cls:'a-status--locked' };
+    return { label:'Ready', cls:'a-status--ready' };
   }
 
-  // milestone path stepper: reached / next / future from the same streak
-  (function () {
-    var nodes = document.querySelectorAll('#milePath .mp-node');
-    var tagged = false;
-    for (var p = 0; p < nodes.length; p++) {
-      var d = parseInt(nodes[p].getAttribute('data-days'), 10) || 0;
-      if (cur >= d) { nodes[p].classList.add('reached'); }
-      else if (!tagged) { nodes[p].classList.add('next'); tagged = true; }
-    }
+  function machineCard(key){
+    var gm=GAMES[key], s=stateOf(key);
+    return '<a class="a-card game-card" id="'+CARD_ID[key]+'" href="'+gm.route+'" style="--a-accent:'+gm.accent+'" aria-label="'+esc(gm.name)+' — '+s.label+'">'
+      + '<span class="a-marquee"><span class="gc-cat">'+esc(gm.cat)+'</span></span>'
+      + '<span class="a-card__body">'
+        + '<span class="gc-icon" aria-hidden="true">'+ICON(gm.icon)+'</span>'
+        + '<span class="gc-nm">'+esc(gm.name)+'</span>'
+        + '<span class="gc-desc">'+esc(gm.desc)+'</span>'
+        + '<span class="a-status '+s.cls+'" id="'+ST_ID[key]+'">'+s.label+'</span>'
+      + '</span></a>';
+  }
+  document.getElementById('groupQuick').innerHTML  = QUICK.map(machineCard).join('');
+  document.getElementById('groupPuzzle').innerHTML = PUZZLE.map(machineCard).join('');
+
+  // pips (heading progress)
+  document.getElementById('pips').innerHTML = ORDER.map(function(key){
+    return '<span class="pip'+(done[key]?' done':'')+'" id="'+PIP_ID[key]+'"></span>';
+  }).join('');
+
+  // ---- featured / CTA target: resumable → first uncompleted → first ----
+  var resumeKey=null, firstOpen=null;
+  for(var q=0;q<ORDER.length;q++){ var k=ORDER[q];
+    if(!resumeKey && resumeActive(k) && !done[k]) resumeKey=k;
+    if(!firstOpen && !done[k]) firstOpen=k;
+  }
+  var allDone = ORDER.every(function(k){ return done[k]; });
+  var featKey = resumeKey || firstOpen || ORDER[0];
+  var isContinue = !!resumeKey;
+  var isPractice = allDone && !resumeKey;
+
+  (function(){
+    var gm=GAMES[featKey];
+    var kick = isContinue ? 'Continue where you left off' : (isPractice ? 'You cleared everything today' : 'Recommended next');
+    var go = isContinue ? 'CONTINUE →' : (isPractice ? 'PRACTICE →' : 'START →');
+    document.getElementById('featuredWrap').innerHTML =
+      '<a class="a-card a-card--featured game-card feat" id="cardFeatured" href="'+gm.route+'" style="--a-accent:'+gm.accent+'" aria-label="'+esc(gm.name)+' — '+esc(go)+'">'
+      + '<span class="a-marquee"><span class="gc-cat">Featured · '+esc(gm.cat)+'</span></span>'
+      + '<span class="a-card__body">'
+        + '<span class="gc-icon" aria-hidden="true">'+ICON(gm.icon)+'</span>'
+        + '<span class="feat-main"><span class="feat-kick">'+esc(kick)+'</span><span class="gc-nm">'+esc(gm.name)+'</span><span class="gc-desc">'+esc(gm.desc)+'</span></span>'
+        + '<span class="feat-go">'+esc(go)+'</span>'
+      + '</span></a>';
   })();
 
-  // ---- today's play states -> card status + pips ----
-  function todayStr() {
-    var d = new Date();
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  // primary CTA (desktop panel + mobile) — presentation only, existing routing
+  var ctaHref = GAMES[featKey].route;
+  var ctaLabel = isContinue ? 'CONTINUE TODAY’S RUN' : (isPractice ? 'PRACTICE A GAME' : 'START TODAY’S RUN');
+  ['ctaKeep','ctaKeepM'].forEach(function(id){ var el=document.getElementById(id); if(el){ el.setAttribute('href',ctaHref); el.textContent=ctaLabel; } });
+
+  // ---- daily count + clean sweep ----
+  var n=0; ORDER.forEach(function(k){ if(done[k]) n++; });
+  document.getElementById('dprogT').textContent = n+' / 9 played';
+  document.getElementById('dCountBig').textContent = n;
+  document.getElementById('mCount').textContent = n+' / 9';
+  // mobile streak strip
+  var strip = nextMile ? (cur+' day streak · next reward at '+nextMile) : (cur+' day streak · every goal unlocked');
+  document.getElementById('mStrip').innerHTML = '<b>'+cur+'</b> day streak · '+(nextMile?('next reward at '+nextMile):'every goal unlocked');
+  if(n===9){ document.getElementById('dprog').classList.add('all'); document.getElementById('double').classList.add('on'); }
+
+  // ---- Alma Mater favorite-team accent (marquee + icon), maroon default ----
+  function applyFav(){
+    if(!window.RTGFavTeam) return;
+    var team=RTGFavTeam.resolved();
+    ['cardAlma','cardFeatured'].forEach(function(id){
+      var card=document.getElementById(id); if(!card) return;
+      if(id==='cardFeatured' && featKey!=='almamater') return;   // only recolor featured when it IS Alma Mater
+      card.style.setProperty('--a-accent', team.primary);
+    });
   }
-  var t = todayStr();
-  var mRes = null; try { mRes = JSON.parse(g('grid_match_result_' + t, 'null')); } catch (e) {}
-  var mDone = !!mRes;
-  var cDone = (cw.lastDone === t);
-  var wDone = (ws.lastDone === t);
-  var gDone = (gs.lastDone === t);
-  var tDone = (ts.lastDone === t);
-  var oDone = (os.lastDone === t);
-  var rDone = (rs.lastDone === t);
-  var kDone = (ks.lastDone === t);
-  var aDone = (as.lastDone === t);
-
-  // One free ranked play per game per day. Unplayed → PLAY. Played:
-  // Pro sees PLAY AGAIN (practice); free sees ✓ DONE until tomorrow.
-  function triesLeft(key) { return TOK ? TOK.triesLeft(key) : 1; }
-  var ARW = ' <span class="arw">→</span>';
-  function mark(cardId, pipId, stId, playId, done, statusText, key) {
-    var card = document.getElementById(cardId);
-    var st = document.getElementById(stId);
-    var play = document.getElementById(playId);
-    if (done) {
-      card.classList.add('solved');
-      st.className = 'status done'; st.textContent = statusText || 'Solved';
-      document.getElementById(pipId).classList.add('done');
-    } else {
-      card.classList.add('unplayed');
-      st.className = 'status ready';
-    }
-    var left = triesLeft(key);
-    if (!done) {
-      play.innerHTML = 'PLAY' + ARW;
-    } else if (TOK && left > 0) {
-      play.innerHTML = 'PLAY AGAIN' + ARW;   // Pro: unlimited practice
-    } else {
-      play.innerHTML = '✓ DONE';             // free: come back tomorrow
-    }
-  }
-  function runText(sv) { return (sv.last && sv.last.run != null) ? (sv.last.run + ' in a row') : 'Played'; }
-
-  mark('cardMatch', 'pipM', 'stM', 'playM', mDone, (mRes && mRes.grade) ? ('Solved · ' + mRes.grade) : 'Solved', 'match');
-  mark('cardCross', 'pipC', 'stC', 'playC', cDone, 'Solved', 'crossword');
-  mark('cardWord',  'pipW', 'stW', 'playW', wDone, 'Solved', 'wordsearch');
-  mark('cardGuess', 'pipG', 'stG', 'playG', gDone, (gs.last && gs.last.won === false) ? 'Missed' : 'Solved', 'guess');
-  mark('cardTable', 'pipT', 'stT', 'playT', tDone, runText(ts), 'table');
-  mark('cardOdd',   'pipO', 'stO', 'playO', oDone, runText(os), 'oddone');
-  mark('cardCareer','pipR', 'stR', 'playR', rDone, runText(rs), 'career');
-  mark('cardRank',  'pipK', 'stK', 'playK', kDone, 'Solved', 'rankit');
-  mark('cardAlma',  'pipA', 'stA', 'playA', aDone, runText(as), 'almamater');
-
-  // "Keep streak alive" CTA → first unplayed game today (display order)
-  (function () {
-    var keep = document.getElementById('ctaKeep');
-    if (!keep) return;
-    var q = [
-      [tDone, '/arcade/table/'],
-      [mDone, '/arcade/match/'],
-      [rDone, '/arcade/career/'],
-      [oDone, '/arcade/oddone/'],
-      [kDone, '/arcade/rankit/'],
-      [aDone, '/arcade/almamater/'],
-      [gDone, '/arcade/guess/'],
-      [cDone, '/arcade/crossword/'],
-      [wDone, '/arcade/wordsearch/']
-    ];
-    var href = '/arcade/table/';
-    for (var x = 0; x < q.length; x++) { if (!q[x][0]) { href = q[x][1]; break; } }
-    keep.setAttribute('href', href);
-  })();
-
-  var n = (mDone ? 1 : 0) + (cDone ? 1 : 0) + (wDone ? 1 : 0) + (gDone ? 1 : 0) + (tDone ? 1 : 0) + (oDone ? 1 : 0) + (rDone ? 1 : 0) + (kDone ? 1 : 0) + (aDone ? 1 : 0);
-  document.getElementById('dprogT').textContent = n + ' / 9 played';
-  if (n === 9) {
-    document.getElementById('dprog').classList.add('all');
-    document.getElementById('double').classList.add('on');
-  }
+  applyFav();
 })();
 </script>
 </body>
