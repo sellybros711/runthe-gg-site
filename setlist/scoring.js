@@ -311,6 +311,47 @@ export function setNote(ratio, songs) {
   return 'Barely a set.';
 }
 
+// ── the one that got away ────────────────────────────────────────────────────
+/**
+ * The best song a player was shown and did not play.
+ *
+ * Scored against the role it would most likely have filled, so the number is
+ * comparable with what they did play rather than a raw song value. Every show
+ * that appeared is a candidate, minus what actually made the setlist — a song
+ * offered twice and never taken should still only surface once.
+ *
+ * @param {Array} seen        every performance row the player was shown
+ * @param {Array<Array>} sets what they actually played
+ */
+export function theOneThatGotAway(seen, sets) {
+  const played = new Set(sets.flat().map(p => p.song_id));
+  let best = null, bestScore = -1;
+
+  for (const p of seen) {
+    if (played.has(p.song_id)) continue;
+    if (!lenOf(p)) continue;
+    // Judge it in the role it suits best — the fairest reading of what it was
+    // worth, rather than punishing it for a slot the player never offered it.
+    // One role of each kind the game can produce. roleAt(1,2,4) is the only way
+    // to reach a pure Peak — at length 3 the last index is the Closer instead,
+    // which was labelling every peak song a closer.
+    for (const role of [roleAt(0, 0, 3),   // Opener
+                        roleAt(0, 2, 3),   // Set I Closer  (closer|jam)
+                        roleAt(1, 2, 4),   // Set II Peak
+                        roleAt(1, 3, 4),   // Set II Closer (closer|peak)
+                        roleAt(2, 0, 1),   // Encore
+                        roleAt(0, 1, 3)]){ // Mid — where a ballad belongs
+      const sc = scorePerf(p, role);
+      if (sc.subtotal > bestScore) { bestScore = sc.subtotal; best = { perf: p, score: sc, role }; }
+    }
+  }
+  // Only claim a role when the song actually suits one. When every role scores
+  // the same the winner is just whichever was tested first, and "as opener it
+  // was worth 161" about a twenty-two minute jam reads as nonsense.
+  if (best && best.score.fit === 'neutral') best.role = null;
+  return best;
+}
+
 // ── scoring a whole show ─────────────────────────────────────────────────────
 /**
  * @param {Array<Array>} sets  three arrays of performance rows, in running order

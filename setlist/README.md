@@ -14,7 +14,7 @@ shared and found without being presented as a finished game.
   index.html          the whole game UI, self-contained
   scoring.js          v4 scoring — the ONLY place a scoring constant lives
   dataLoader.js       band CSV → { shows, segues }
-  verify-scoring.mjs  QA harness: 90 assertions against the v4 spec
+  verify-scoring.mjs  QA harness: 98 assertions against the v4 spec
   data/
     DATA_CONTRACT.md  the CSV columns, and how tags are derived
     goose.csv         7504 performances · 655 shows · 366 songs · 2014–2026
@@ -73,7 +73,7 @@ the repo root, not from inside `setlist/`.
 ## Checking it
 
 ```bash
-node setlist/verify-scoring.mjs      # expect "90 passed, 0 failed"
+node setlist/verify-scoring.mjs      # expect "98 passed, 0 failed"
 node scripts/setlist/check_data.mjs  # expect "all checks passed"
 ```
 
@@ -156,6 +156,14 @@ you into Set II still holding it.
 **Respins cost stage time**, taken from the set you are building: 5:00, then
 10:00, then 15:00, then no more. Time spent spinning is gone — it does not reach
 the encore — so a reroll is a real decision rather than a button to mash.
+
+**Closing a set is a first-class action**, not a footnote — it states what it
+banks, and turns urgent when the set is nearly spent or nothing on offer fits.
+The encore's row shows time banked from the sets and time burned on spins, so
+the trade is visible while it is being made rather than only at the end.
+
+After the final score, **the one that got away**: the best song you were shown
+and did not play, scored in the role it best suits, so the sting is specific.
 
 The show ends when the encore closes. **Round count is emergent**: chase monsters
 and the night is over in nine picks, play tight and it runs past fifteen.

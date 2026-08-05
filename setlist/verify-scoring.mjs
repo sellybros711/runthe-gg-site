@@ -15,6 +15,7 @@ import {
   baseOf, isJamchart, isRecommended, rarityMult, versionMult, versionParts,
   roleAt, roleFit, placementMult, energyOf, scorePerf, fmtClock,
   budgets, remaining, canPlace, setFull, scoreShow, setNote, HEADLINES,
+  theOneThatGotAway,
 } from './scoring.js';
 
 let pass = 0, fail = 0;
@@ -207,6 +208,36 @@ group('fan headline', () => {
 
   eq(HEADLINES[HEADLINES.length - 1].when({}), true, 'the last headline always matches');
   eq(typeof scoreShow([[], [], []], new Set()).headline, 'string', 'an empty night still gets a line');
+});
+
+group('the one that got away', () => {
+  const seen = [
+    perf({ song_id: 'a', song: 'Ordinary', crowd: 30, len: 600 }),
+    perf({ song_id: 'b', song: 'The Monster', crowd: 75, len: 1400, rec: 1, tags: 'peak' }),
+    perf({ song_id: 'c', song: 'Fine', crowd: 45, len: 700 }),
+  ];
+  const played = [[seen[0]], [], []];
+  const miss = theOneThatGotAway(seen, played);
+  eq(miss.perf.song, 'The Monster', 'the best thing left behind is what surfaces');
+  eq(miss.score.subtotal > 100, true, 'and it is scored, not just named');
+  eq(miss.role && miss.role.name, 'Peak', 'a peak song is named as a peak');
+
+  // A song that suits no role in particular must not be labelled one.
+  const bland = [perf({ song_id: 'q', song: 'Bland', crowd: 70, len: 800 })];
+  eq(theOneThatGotAway(bland, [[], [], []]).role, null,
+     'a song with no role fit is not given a role it does not have');
+
+  eq(theOneThatGotAway(seen, [[seen[0]], [seen[1]], [seen[2]]]), null,
+     'nothing got away when everything was played');
+  eq(theOneThatGotAway([], [[], [], []]), null, 'nothing seen, nothing missed');
+
+  // A song shown twice and never played should not beat itself.
+  const twice = [seen[1], seen[1]];
+  eq(theOneThatGotAway(twice, [[], [], []]).perf.song, 'The Monster', 'duplicates are fine');
+
+  // An untimed song can never be played, so it never counts as missed.
+  eq(theOneThatGotAway([perf({ song_id: 'z', song: 'No Clock', len: 0, crowd: 75 })],
+     [[], [], []]), null, 'an untimed song was never really on offer');
 });
 
 group('scoreShow totals', () => {
