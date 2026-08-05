@@ -25,8 +25,8 @@ const check = (cond, m, detail) => cond ? ok(m) : fail(`${m}${detail ? ` — ${d
 const COLUMNS = [
   'show_id', 'show_date', 'year', 'venue', 'city', 'state', 'set', 'position',
   'song', 'song_id', 'is_cover', 'original_artist', 'length_sec', 'show_gap',
-  'times_played', 'rarity_rating', 'crowd_rating', 'is_jamchart', 'transition',
-  'is_segue', 'tags',
+  'times_played', 'rarity_rating', 'crowd_rating', 'is_jamchart', 'is_recommended',
+  'jamchart_note', 'transition', 'is_segue', 'tags',
 ];
 
 // Goose today: 7504 performances / 655 shows. The bounds are deliberately wide
@@ -35,7 +35,7 @@ const COLUMNS = [
 // losing the artist_id filter (~14k rows of ~100 bands) trips the ceiling.
 // If Goose genuinely outgrows the ceiling, raise it — do not delete it.
 const BANDS = [
-  { file: 'setlist/data/goose.csv', minPerf: 6000, maxPerf: 12000, minShows: 550 },
+  { file: 'setlist/data/goose.csv', minPerf: 6000, maxPerf: 12000, minShows: 550, esteem: 60 },
   { file: 'setlist/data/sample.csv', minPerf: 100, maxPerf: 2000, minShows: 20 },
 ];
 
@@ -98,6 +98,21 @@ for (const band of BANDS) {
   check(drawable >= NUM_ROUNDS, `enough drawable shows (${drawable} with >= ${MIN_SONGS_PER_SHOW} songs)`);
 
   check(segues.size > 0, `segue pairs found (${segues.size})`);
+
+  // Scoring reads crowd_rating as song esteem. If the jamchart join silently
+  // breaks, every song collapses to the neutral base and the game goes flat —
+  // which is exactly the bug v2 shipped with, so it is worth asserting.
+  if (band.esteem) {
+    const rated = new Set(rows.filter(r => r.crowd_rating).map(r => r.song_id));
+    check(rated.size >= band.esteem, `songs carrying an esteem rating (${rated.size})`,
+      `expected at least ${band.esteem}`);
+    const vals = rows.map(r => Number(r.crowd_rating)).filter(n => Number.isFinite(n) && n > 0);
+    const spread = new Set(vals).size;
+    check(spread >= 10, `esteem takes a range of values (${spread} distinct)`,
+      'a single value means the join collapsed');
+    check(rows.some(r => r.is_recommended === 'true'), 'some versions are flagged recommended');
+    check(rows.some(r => r.jamchart_note), 'jamchart notes are present');
+  }
   console.log();
 }
 

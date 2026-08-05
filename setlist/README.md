@@ -12,9 +12,9 @@ shared and found without being presented as a finished game.
 ```
 /setlist/
   index.html          the whole game UI, self-contained
-  scoring.js          v2 scoring — the ONLY place a scoring constant lives
+  scoring.js          v3 scoring — the ONLY place a scoring constant lives
   dataLoader.js       band CSV → { shows, segues }
-  verify-scoring.mjs  QA harness: 72 assertions against the v2 spec
+  verify-scoring.mjs  QA harness: 89 assertions against the v3 spec
   data/
     DATA_CONTRACT.md  the CSV columns, and how tags are derived
     goose.csv         7504 performances · 655 shows · 366 songs · 2014–2026
@@ -22,6 +22,7 @@ shared and found without being presented as a finished game.
 /scripts/setlist/
   ingest_band.mjs     elgoose.net → goose.csv
   make_sample.mjs     regenerates sample.csv
+  check_data.mjs      data + discoverability regression net
 ```
 
 No build step, no bundler, no backend. The game is an ES module loaded directly
@@ -72,7 +73,7 @@ the repo root, not from inside `setlist/`.
 ## Checking it
 
 ```bash
-node setlist/verify-scoring.mjs      # expect "72 passed, 0 failed"
+node setlist/verify-scoring.mjs      # expect "89 passed, 0 failed"
 node scripts/setlist/check_data.mjs  # expect "all checks passed"
 ```
 
@@ -105,35 +106,65 @@ the site. Putting it on the homepage is a one-line change plus deleting the
 
 `scoring.js` is the source of truth; this is a summary, not a spec.
 
+The model asks four questions, and the result screen shows them back in the same
+order so a player can read their score rather than take it on faith:
+
 ```
-versionScore = round(base * v)
-placed       = round(versionScore * placementMult * SCALE)
-rarity       = round(rarityBase(gap) * (base/30) * SCALE)
-subtotal     = placed + rarity
-total        = sum(subtotal) + sum(segue bonuses) + completion
+perSong = base            SONG       is this a song people treasure?
+        x versionMult     VERSION    was this a special night for it?
+        x placementMult   PLACEMENT  does it belong in that slot?
+
+total   = sum(perSong) + flow + completion
 ```
 
-`SCALE` 1.3 · `SEGUE_COEF` 0.25 · completion +30 when all eight slots are full.
-Placement multipliers: 1.15 all wanted tags · 1.08 some · 0.92 neutral · 0.65
-hard clash (a ballad in an energy slot, or a jam/peak song in the breather).
-Rarity by show gap: ≥100 → 50 · ≥50 → 35 · ≥20 → 20 · ≥8 → 10 · else 0.
+**SONG** is `crowd_rating` — 30 ordinary, up to 75 at the top of the jamcharts.
+See `DATA_CONTRACT.md` for how it is derived and why it stands in for fan
+opinion.
 
-`base` is `crowd_rating`, falling back to a neutral 30 — which for Goose is
-every row, since elgoose carries no song ratings. Spotify track popularity is
-the intended real source and has not been wired up.
+**VERSION** is additive, so a legendary take reads as a stack of reasons rather
+than one number: recommended +0.55 (or jamcharted +0.30), 20+ min +0.25 (or
+15+ min +0.12), and rarity by show gap — 100+ +0.40, 50+ +0.25, 20+ +0.15,
+8+ +0.07.
 
-The eight slots and the tags each wants:
+**PLACEMENT** 1.30 all wanted tags · 1.12 some · 0.90 neutral · 0.55 hard clash
+(a ballad in an energy slot, or a jam/peak song in the breather).
 
-| # | Slot | Wants |
-|---|---|---|
-| 0 | Set I Opener | `opener` |
-| 1 | Set I Mid | anything |
-| 2 | Set I Closer | `closer` `jam` |
-| 3 | Set II Opener | `opener` `jam` |
-| 4 | Set II Peak | `peak` |
-| 5 | Set II Breather | `ballad` |
-| 6 | Set II Closer | `closer` `peak` |
-| 7 | Encore | `encore` |
+**FLOW** judges the eight as one setlist: 45 per real segue (adjacent, *and*
+inside the same set), up to 60 for an energy arc that builds and releases where
+the slots ask it to, up to 30 for covering a range of roles. Completion is +40.
+
+The eight slots, the tags each wants, and the energy each asks for:
+
+| # | Slot | Wants | Energy |
+|---|---|---|---|
+| 0 | Set I Opener | `opener` | 3 |
+| 1 | Set I Mid | anything | 3 |
+| 2 | Set I Closer | `closer` `jam` | 4 |
+| 3 | Set II Opener | `opener` `jam` | 4 |
+| 4 | Set II Peak | `peak` | 5 |
+| 5 | Set II Breather | `ballad` | 1 |
+| 6 | Set II Closer | `closer` `peak` | 5 |
+| 7 | Encore | `encore` | 3 |
+
+### What v3 changed, and why
+
+v2 was measured over 4000 simulated games: placement 57%, rarity 36%, segues
+1.5%. Three things were wrong with that.
+
+- **Every song scored the same.** `crowd_rating` was blank for all of Goose, so
+  `base` fell back to a flat 30 and song choice was worth nothing. 28 distinct
+  base values are now in play.
+- **Rarity was a third of the score.** Show gap is real, but it is a fact about
+  the band's routing rather than a judgement the player makes, and it fired in
+  80% of slots. It is now one term inside VERSION.
+- **Segues were noise.** The most musical thing in the game paid 1.5% and fired
+  in 31% of games. They now pay a flat 45, only count within a set, and fire in
+  69% of games.
+
+Measured the same way, v3 is: songs 84%, flow 11%, completion 5%. Skill is worth
+more — best play is 70% above random (v2: 47%) — and a player who thinks about
+how the setlist fits together beats one who just grabs the best song each round
+by 60 points a game, roughly tripling their segues.
 
 ## Mode
 
@@ -190,7 +221,15 @@ Two more worth revisiting:
    running 5:00 one night and 22:00 another is a jam vehicle; one that is always
    4:10 is not) and **segue-out rate**.
 
-4. **Segues score across set breaks.** Slots 2→3 and 6→7 pay the segue bonus if
-   the pair is canonical, which cannot happen in a real setlist. This is
-   faithful to the v2 spec, which says "per adjacent canonical pair" with no
-   exclusions. Restricting it to within-set boundaries is a two-line change.
+4. **Segues used to score across set breaks — fixed in v3.** Slots 2→3 and 6→7
+   paid the bonus for a canonical pair, which cannot happen in a real setlist.
+   `hasSegue()` now requires both slots to share a `set`.
+
+5. **Song esteem is a proxy for a proxy.** `crowd_rating` is derived from
+   jamchart standing because the fan *Jam of the Year* brackets — the real
+   ranking, six years of community voting — live in PDFs on sites that 403
+   automated fetches. The correlation is good (eight of nine known bracket
+   standouts land in the top 18 of 91) but it measures *jamminess*, so a beloved
+   song that is never a jam vehicle reads as ordinary. Hand-transcribing the
+   brackets into a lookup keyed on song + date would beat it, and would also
+   give per-*performance* esteem rather than per-song.

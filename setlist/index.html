@@ -182,6 +182,8 @@
   .song.used{opacity:.4; cursor:not-allowed;}
   .song.used:hover{background:var(--card);}
   .song.used .t{text-decoration:line-through;}
+  .chip.rec{background:color-mix(in srgb,var(--violet) 20%, transparent); color:var(--violetT);
+    border-color:color-mix(in srgb,var(--violet) 45%, transparent);}
   .song[aria-pressed="true"]{background:var(--card3); border-color:var(--acc);
     box-shadow:0 0 0 1px var(--acc);}
   .song .t{font-weight:800; font-size:14.5px; line-height:1.25;}
@@ -242,6 +244,66 @@
     color:var(--dim); margin-top:5px;}
   .actions{display:flex; flex-direction:column; gap:9px; margin-top:14px;}
 
+  /* ---------------- result: how this scored ---------------- */
+  .scoresheet{padding:18px; margin-top:14px;}
+  .scoresheet h2{font-family:var(--hero); font-size:24px; margin:0 0 4px; text-transform:uppercase;}
+  .scoresheet .sub{font-size:13px; color:var(--mut); font-weight:600; line-height:1.55;
+    margin-bottom:16px;}
+  .sheetgrp{margin-bottom:18px;}
+  .sheetgrp h3{display:flex; justify-content:space-between; align-items:baseline;
+    font-size:12px; font-weight:900; letter-spacing:1.8px; text-transform:uppercase;
+    color:var(--dim); margin:0 0 9px; padding-bottom:7px; border-bottom:1px solid var(--line);}
+  .sheetgrp h3 span{font-family:var(--hero); font-size:20px; letter-spacing:0; color:var(--ink);}
+
+  .bdrow{padding:11px 0; border-bottom:1px solid var(--line);}
+  .bdrow:last-child{border-bottom:0;}
+  .bdhd{display:flex; justify-content:space-between; align-items:baseline; gap:10px;}
+  .bdslot{font-size:10.5px; font-weight:900; letter-spacing:1.4px; text-transform:uppercase;
+    color:var(--dim);}
+  .bdsong{font-size:15px; font-weight:800; margin-top:1px;}
+  .bdpts{font-family:var(--hero); font-size:22px; color:var(--goldT); flex:0 0 auto;}
+  .bdmath{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .bdterm{display:inline-flex; flex-direction:column; align-items:center; gap:1px;
+    padding:4px 9px; border-radius:var(--r-sm); background:var(--card2);
+    border:1px solid var(--line);}
+  .bdterm i{font-style:normal; font-size:9.5px; font-weight:800; letter-spacing:.8px;
+    text-transform:uppercase; color:var(--dim);}
+  .bdterm b{font-size:14px; font-variant-numeric:tabular-nums;}
+  .bdterm.great{border-color:color-mix(in srgb,var(--green) 55%, transparent);}
+  .bdterm.ok{border-color:color-mix(in srgb,var(--teal) 55%, transparent);}
+  .bdterm.bad{border-color:color-mix(in srgb,var(--red) 55%, transparent);}
+  .bdterm.tot{background:var(--card3); border-color:var(--line2);}
+  .bdterm.tot b{color:var(--goldT);}
+  .bdop{color:var(--dim); font-weight:800; font-size:13px;}
+  .bdwhy{display:flex; flex-wrap:wrap; gap:5px; margin-top:8px;}
+  .vr{font-size:11px; font-weight:700; padding:3px 8px; border-radius:99px;
+    background:var(--card2); color:var(--mut); border:1px solid var(--line);}
+  .vr b{color:var(--ink);}
+  .vr.dim{color:var(--dim);}
+  .vr.fit.great{background:color-mix(in srgb,var(--green) 14%, transparent); color:var(--greenT);
+    border-color:color-mix(in srgb,var(--green) 34%, transparent);}
+  .vr.fit.ok{background:color-mix(in srgb,var(--teal) 14%, transparent); color:var(--tealT);
+    border-color:color-mix(in srgb,var(--teal) 34%, transparent);}
+  .vr.fit.bad{background:color-mix(in srgb,var(--red) 14%, transparent); color:var(--redT);
+    border-color:color-mix(in srgb,var(--red) 34%, transparent);}
+  .vr.fit.neutral{color:var(--dim);}
+  .bdnote{margin-top:9px; padding:9px 11px; border-radius:var(--r-sm); background:var(--card2);
+    border-left:3px solid var(--violet); font-size:12px; line-height:1.55; color:var(--mut);
+    font-weight:600;}
+
+  .flowrow{display:flex; justify-content:space-between; align-items:flex-start; gap:12px;
+    padding:9px 0; border-bottom:1px solid var(--line);}
+  .flowrow:last-child{border-bottom:0;}
+  .fl b{display:block; font-size:14px; font-weight:800;}
+  .fl i{display:block; font-style:normal; font-size:12px; color:var(--mut); font-weight:600;
+    line-height:1.5; margin-top:2px;}
+  .fp{font-family:var(--hero); font-size:20px; color:var(--goldT); flex:0 0 auto;}
+  .sheettot{display:flex; justify-content:space-between; align-items:baseline;
+    padding-top:13px; border-top:2px solid var(--line2);}
+  .sheettot span{font-size:12px; font-weight:900; letter-spacing:1.8px; text-transform:uppercase;
+    color:var(--dim);}
+  .sheettot b{font-family:var(--hero); font-size:30px; color:var(--goldT);}
+
   .loading{min-height:60dvh; display:flex; flex-direction:column; align-items:center;
     justify-content:center; gap:12px; color:var(--mut); font-weight:800;}
   .spinner{width:26px; height:26px; border-radius:50%; border:3px solid var(--line2);
@@ -268,8 +330,8 @@
 
 <script type="module">
 import {
-  SLOTS, NUM_ROUNDS, COMPLETION_BONUS,
-  scoreSetlist, scorePerf, slotFit, tagsOf, isJamchart, hasSegue,
+  SLOTS, NUM_ROUNDS, COMPLETION_BONUS, ARC_MAX,
+  scoreSetlist, scorePerf, slotFit, tagsOf, isJamchart, isRecommended, hasSegue,
 } from './scoring.js';
 import { loadBand, setLabel, setRank } from './dataLoader.js';
 
@@ -282,7 +344,7 @@ const BANDS = [
     note: 'Test data — not a real band', sample: true },
 ];
 
-const DATA_VERSION = 1;   // bump to bust the CSV cache after a regeneration
+const DATA_VERSION = 2;   // bump to bust the CSV cache after a regeneration
 
 // A round is only a decision if there is a setlist to read. The Goose archive
 // logs early bar gigs as one or two songs — 18 shows are a single song — and
@@ -560,7 +622,8 @@ function renderDraft(){
       const idx = show.songs.indexOf(s);
       const used = anyFree && taken.has(s.song_id);
       const chips = [];
-      if (isJamchart(s)) chips.push('<span class="chip">JC</span>');
+      if (isRecommended(s)) chips.push('<span class="chip rec">RECOMMENDED</span>');
+      else if (isJamchart(s)) chips.push('<span class="chip">JAMCHART</span>');
       if (acc.chip) chips.push(`<span class="chip acc">${acc.chip}</span>`);
       const gap = Number(s.show_gap) || 0;
       if (gap >= 20) chips.push(`<span class="chip rare">${gap} show gap</span>`);
@@ -621,10 +684,44 @@ function renderDraft(){
 }
 
 // ── result ───────────────────────────────────────────────────────────────────
+/* One row of the per-song breakdown: the arithmetic, in the order the model
+   asks its four questions, so the number is readable rather than asserted. */
+function songBreakdownHTML(perf, sc, slotIdx){
+  const slot = SLOTS[slotIdx];
+  const fitWord = { great: 'Perfect fit', ok: 'Good fit', neutral: 'Neutral', bad: 'Wrong slot' }[sc.fit];
+  const reasons = sc.versionReasons.length
+    ? sc.versionReasons.map(v => `<span class="vr">${esc(v.label)} <b>+${v.mult.toFixed(2)}</b></span>`).join('')
+    : '<span class="vr dim">Standard version</span>';
+
+  return `
+    <div class="bdrow">
+      <div class="bdhd">
+        <div>
+          <div class="bdslot">${esc(slot.label)}</div>
+          <div class="bdsong">${esc(perf.song)}</div>
+        </div>
+        <div class="bdpts">${sc.subtotal}</div>
+      </div>
+      <div class="bdmath">
+        <span class="bdterm"><i>Song</i><b>${sc.base}</b></span>
+        <span class="bdop">×</span>
+        <span class="bdterm"><i>Version</i><b>${sc.versionMult.toFixed(2)}</b></span>
+        <span class="bdop">×</span>
+        <span class="bdterm ${sc.fit}"><i>Placement</i><b>${sc.placementMult.toFixed(2)}</b></span>
+        <span class="bdop">=</span>
+        <span class="bdterm tot"><b>${sc.subtotal}</b></span>
+      </div>
+      <div class="bdwhy">${reasons}<span class="vr fit ${sc.fit}">${fitWord}</span></div>
+      ${perf.jamchart_note ? `<div class="bdnote">${esc(perf.jamchart_note)}</div>` : ''}
+    </div>`;
+}
+
 function renderResult(){
   const r = S.result;
-  const songTotal = r.songs.reduce((a, s) => a + (s ? s.subtotal : 0), 0);
-  const segueTotal = r.segues.reduce((a, s) => a + s.points, 0);
+  const f = r.flow;
+  const segueTotal = f.segues.reduce((a, s) => a + s.points, 0);
+  const segueNames = f.segues.map(s =>
+    `${S.slots[s.from].song} → ${S.slots[s.to].song}`);
 
   app.innerHTML = `
     <div class="result">
@@ -635,15 +732,68 @@ function renderResult(){
       </div>
 
       <div class="breakdown">
-        <div class="bd"><div class="v">${songTotal}</div><div class="k">Songs</div></div>
-        <div class="bd"><div class="v">${segueTotal}</div><div class="k">Segues</div></div>
+        <div class="bd"><div class="v">${r.songTotal}</div><div class="k">Songs</div></div>
+        <div class="bd"><div class="v">${f.total}</div><div class="k">Flow</div></div>
         <div class="bd"><div class="v">${r.completion}</div><div class="k">Complete</div></div>
       </div>
 
       <div class="card setlist" style="position:static">
         <h2>Your setlist</h2>
-        <div class="sub">Points per slot include placement and rarity.</div>
+        <div class="sub">Every slot, and where its points came from.</div>
         ${slotRowsHTML({ interactive: false, scored: r })}
+      </div>
+
+      <div class="card scoresheet">
+        <h2>How this scored</h2>
+        <div class="sub">Each song is worth
+          <b>how loved it is</b> × <b>how special that version was</b> ×
+          <b>how well it fits the slot</b>. Then the setlist is judged as a whole.</div>
+
+        <div class="sheetgrp">
+          <h3>Songs <span>${r.songTotal}</span></h3>
+          ${r.songs.map((sc, i) => sc ? songBreakdownHTML(S.slots[i], sc, i) : '').join('')}
+        </div>
+
+        <div class="sheetgrp">
+          <h3>Flow <span>${f.total}</span></h3>
+          <div class="flowrow">
+            <div class="fl">
+              <b>Segues</b>
+              <i>${f.segues.length
+                ? esc(segueNames.join(' · ')) + ' — pairs Goose really has played back to back'
+                : 'No two of your picks are a segue the band has actually played'}</i>
+            </div>
+            <div class="fp">${segueTotal}</div>
+          </div>
+          <div class="flowrow">
+            <div class="fl">
+              <b>Energy arc</b>
+              <i>${f.arc >= ARC_MAX * 0.75 ? 'Builds and releases where a real set does'
+                 : f.arc >= ARC_MAX * 0.4 ? 'Roughly the right shape, with some slots fighting it'
+                 : 'The peaks and lulls are not where the set wants them'}</i>
+            </div>
+            <div class="fp">${f.arc}</div>
+          </div>
+          <div class="flowrow">
+            <div class="fl">
+              <b>Variety</b>
+              <i>${f.roles.length} distinct role${f.roles.length === 1 ? '' : 's'}${
+                f.roles.length ? ' — ' + esc(f.roles.join(', ')) : ''}</i>
+            </div>
+            <div class="fp">${f.variety}</div>
+          </div>
+        </div>
+
+        <div class="sheetgrp">
+          <h3>Completion <span>${r.completion}</span></h3>
+          <div class="flowrow">
+            <div class="fl"><b>All eight slots filled</b>
+              <i>${r.completion ? 'Full setlist' : 'Some slots left empty'}</i></div>
+            <div class="fp">${r.completion}</div>
+          </div>
+        </div>
+
+        <div class="sheettot"><span>Total</span><b>${r.total}</b></div>
       </div>
 
       <div class="actions">
