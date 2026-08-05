@@ -65,6 +65,12 @@
   .runbar .best{flex:0 0 auto; text-align:right;}
   .runbar .best .n{font-family:var(--hero); font-weight:400; font-size:22px; color:var(--mut); line-height:1;}
   .runbar .best .c{display:block; font-size:8.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
+  /* Pro version switcher: change sport without leaving the game */
+  .modesw{display:flex; gap:6px; margin:0 0 14px;}
+  .modesw.hidden{display:none;}
+  .modesw button{flex:1; border:1px solid var(--line2); background:var(--card); color:var(--mut); font-family:var(--f); font-weight:900; font-size:12px; letter-spacing:.03em; text-transform:uppercase; border-radius:10px; padding:9px 4px; min-height:38px; cursor:pointer; transition:color .12s, border-color .12s, background .12s;}
+  .modesw button:hover{color:var(--ink); border-color:var(--gold);}
+  .modesw button.on{background:var(--gold); color:var(--onAccent,#20180a); border-color:transparent;}
   .prompt{text-align:center; font-weight:900; font-size:16px; color:var(--ink); margin:2px 0 12px;}
   .pcard{background:var(--card); border:1px solid var(--line2); border-radius:16px; box-shadow:var(--shadow); padding:24px 16px; margin-bottom:16px; text-align:center; position:relative; overflow:hidden;}
   .pcard:before{content:""; position:absolute; inset:0; background:radial-gradient(120% 90% at 50% -10%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 60%); pointer-events:none;}
@@ -146,6 +152,7 @@
     <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
   </div>
 
+  <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
   <div class="prompt">Where did they go to college?</div>
   <div class="pcard"><div class="plab" id="pMeta">&nbsp;</div><div class="pname" id="pName">&nbsp;</div></div>
   <div class="subprompt" id="subprompt"></div>
@@ -469,10 +476,33 @@
     READY = computeReady();
   }
 
-  // Boot the chosen version: same resume / lockout / begin logic as before, now
-  // reading the mode-keyed ids set by configureMode.
-  function startWith(mode){
+  // In-game version switcher (Pro/testing only): change sport without leaving.
+  function renderSwitcher(){
+    var el=document.getElementById('modesw'); if(!el) return;
+    if(ARCHIVE || !(window.RTGMode && RTGMode.eligible())){ el.classList.add('hidden'); el.innerHTML=''; return; }
+    el.classList.remove('hidden');
+    el.innerHTML = RTGMode.MODES.map(function(m){
+      var lab = m.k==='all' ? 'All' : m.label;
+      return '<button type="button" role="tab" data-m="'+m.k+'" aria-selected="'+(m.k===MODE)+'" class="'+(m.k===MODE?'on':'')+'">'+lab+'</button>';
+    }).join('');
+    [].forEach.call(el.querySelectorAll('button'), function(b){ b.addEventListener('click', function(){ switchMode(b.dataset.m); }); });
+  }
+  // Switch to another version in place: abandon the current run, repoint ids and
+  // start the chosen version fresh (or resume its own in-progress run).
+  function switchMode(mode){
+    if(!window.RTGMode || mode===MODE) return;
+    try{ LS.setItem('rtg:mode:'+GAME_BASE, mode); }catch(e){}   // remember choice for next load
+    if(!ARCHIVE && !done) clearResume();   // leaving mid-run abandons this version's run
     configureMode(mode);
+    servedDaily=false;                     // new version's first play is its ranked daily
+    var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
+    renderSwitcher();
+    bootCurrentMode();
+    toast((mode==='all'?'All Sports':(RTGMode.sportOf(mode)||mode))+' version');
+  }
+
+  // Boot the CURRENT (already-configured) version: resume / lockout / begin.
+  function bootCurrentMode(){
     var saved=load();
     document.getElementById('streakN').textContent=saved.streak||0;
     document.getElementById('bestRun').textContent=saved.bestRun||0;
@@ -487,6 +517,7 @@
       document.getElementById('hintline').textContent='We’re collecting college data. Check back soon.';
       return;
     }
+    choicesEl.style.pointerEvents=''; choicesEl.style.opacity='';   // re-enable if a prior mode was locked
     seedDaily(); SEQ=buildRounds();   // deterministic board for locked/resume preview
     // A mid-run snapshot from TODAY, token already spent (playsOf>0) but the run
     // never finished (lastDone!==DATE) → resume instead of lockout/replay.
@@ -505,6 +536,9 @@
       if(RTG_BOARD.state().signedIn){ RTG_BOARD.streakOf(GAME).then(function(cs){ if(cs) document.getElementById('streakN').textContent=cs.streak||0; }); }
     }
   }
+
+  // Boot a chosen version from scratch (config + switcher UI + boot).
+  function startWith(mode){ configureMode(mode); renderSwitcher(); bootCurrentMode(); }
 
   // If a version's ranked run is already in progress today, resume it directly
   // (skip the picker so a refresh never loses the run). Free/archive: 'all' only.
