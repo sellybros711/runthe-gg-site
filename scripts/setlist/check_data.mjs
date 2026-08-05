@@ -156,5 +156,37 @@ for (const token of ['hero', 'ui', 'body']) {
 }
 
 console.log();
+
+/* Two chips the same colour is invisible in review and obvious on a phone.
+   COVER and PEAK shipped 3 degrees of hue apart; OPENER and CLOSER shipped
+   identical; JAM and RECOMMENDED shipped identical twice, because outline vs
+   fill is not enough separation at 9.5px. */
+console.log('chip colour system');
+const accent = game.slice(game.indexOf('function accentOf'), game.indexOf('// ── state'));
+const roles = [...accent.matchAll(/v:\s*'var\((--[a-zA-Z]+)\)',\s*chip:\s*'([a-z]*)'/g)]
+  .map(m => ({ v: m[1], chip: m[2] || '(none)' }));
+check(roles.length >= 7, 'accentOf maps at least seven roles', `found ${roles.length}`);
+const byVar = new Map();
+for (const r of roles) byVar.set(r.v, [...(byVar.get(r.v) || []), r.chip]);
+const shared = [...byVar].filter(([, v]) => v.length > 1);
+check(shared.length === 0, 'every role has its own colour',
+  shared.map(([v, c]) => `${v} used by ${c.join(' and ')}`).join('; '));
+
+// Each family needs its own rule, or a chip silently falls back to the base
+// grey and stops meaning anything.
+for (const [sel, what] of [['.chip.acc', 'role'], ['.chip.seg', 'segue'],
+                           ['.chip.sand', 'sandwich'], ['.chip.rare', 'rarity'],
+                           ['.chip.rec', 'recommended'], ['.chip.jc', 'jamchart']])
+  check(game.includes(sel + '{'), `${what} chips are styled (${sel})`);
+
+// Tie dye is the archive family's alone — it is what makes those two chips
+// unmistakable, and it stops meaning anything if it spreads.
+// Deduped: the jamchart chip has a second rule for its selected state.
+const dyed = [...new Set([...game.matchAll(/\.chip\.([a-z]+)\{[^}]*var\(--dye\)/g)]
+  .map(m => m[1]))].sort();
+check(dyed.join(',') === 'jc,rec', 'only the archive chips use tie dye',
+  `dyed: ${dyed.join(', ') || 'none'}`);
+
+console.log();
 console.log(failures ? `${failures} check(s) failed` : 'all checks passed');
 process.exit(failures ? 1 : 0);

@@ -295,10 +295,6 @@
     font-weight:700; line-height:1.45; color:var(--goldT);
     background:color-mix(in srgb,var(--gold) 12%, transparent);
     border:1px solid color-mix(in srgb,var(--gold) 30%, transparent);}
-  .chip.sand{background:color-mix(in srgb,var(--violet) 22%, transparent); color:var(--violetT);
-    border-color:color-mix(in srgb,var(--violet) 50%, transparent);}
-  .chip.seg{background:color-mix(in srgb,var(--green) 20%, transparent); color:var(--greenT);
-    border-color:color-mix(in srgb,var(--green) 50%, transparent);}
   .song.finishes{border-color:color-mix(in srgb,var(--green) 55%, transparent);}
   /* ---------------- the setlist so far ---------------- */
   .sofar{margin-bottom:10px; padding:9px 12px 7px; border-radius:var(--r-md);
@@ -330,8 +326,6 @@
     border-color:color-mix(in srgb,var(--green) 38%, transparent);}
   .hunt.hot b{color:var(--greenT);}
 
-  .chip.rec{background:color-mix(in srgb,var(--violet) 20%, transparent); color:var(--violetT);
-    border-color:color-mix(in srgb,var(--violet) 45%, transparent);}
   /* Selection rings in teal, the UI's action colour, not in the song's accent.
      Accent is identity; selection is a thing you did. It also stops a song
      with no notable role — now grey — from getting a grey selection ring. */
@@ -341,17 +335,64 @@
   .song .o{font-size:11.5px; font-weight:600; color:var(--dim); margin-top:2px;}
   .song .r{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0;}
   .song .len{font-size:12.5px; font-weight:800; color:var(--mut); font-variant-numeric:tabular-nums;}
+  /* ── THE CHIP SYSTEM ────────────────────────────────────────────────────
+   *
+   * Every chip belongs to exactly one of four families, and a family is told
+   * apart by its TREATMENT before its hue. Two goes at this failed by trying
+   * to solve it with hue alone, then with hue plus outline-vs-fill: JAM and
+   * RECOMMENDED were both violet, and at 9.5px an outlined violet chip beside
+   * a filled violet chip still reads as two of the same thing.
+   *
+   *   ARCHIVE   jamchart, recommended     TIE DYE — the only dyed thing on a
+   *                                       card, so it can never be mistaken
+   *                                       for anything else on the row
+   *   FLOW      completes segue,          solid green
+   *             closes sandwich
+   *   RARITY    N show gap                solid gold
+   *   ROLE      cover/peak/jam/encore/    outlined, one hue each (see
+   *             ballad/opener/closer      accentOf for the hue spacing)
+   *
+   * No hue is now shared between two chips that can appear on the same row:
+   *   - violet belongs to the JAM role alone, since archive left it
+   *   - green is OPENER and FLOW, and an opener is first in its set so it can
+   *     never also complete a segue
+   *   - gold is ENCORE and RARITY, which can co-occur — outline vs solid
+   *   - sandwich and segue never co-occur; the markup picks one
+   *
+   * scripts/setlist/check_data.mjs asserts the role hues stay distinct. */
   .chips{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;}
   .chip{font-size:9.5px; font-weight:900; letter-spacing:.7px; text-transform:uppercase;
     padding:2px 5px; border-radius:4px; background:var(--line); color:var(--mut);}
-  /* The role chip is OUTLINED and the event chips (segue, sandwich,
-     recommended, gap) are FILLED. Jam and RECOMMENDED are both violet and
-     routinely sit side by side; gap and ENCORE are both gold. Rather than
-     hunt for eleven distinguishable hues, the two families differ in shape,
-     so a repeat of hue across families still reads as two different things. */
+
+  /* ROLE — outlined. What the song IS. The left strip on the card carries the
+     same colour, so this is the quiet family. */
   .chip.acc{background:transparent; color:var(--acc);
     box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 60%, transparent);}
+
+  /* FLOW — solid green. Something happens at this song. */
+  .chip.seg{background:color-mix(in srgb,var(--green) 20%, transparent); color:var(--greenT);}
+  .chip.sand{background:var(--green); color:#06210F; letter-spacing:.9px;}
+
+  /* RARITY — solid gold. */
   .chip.rare{background:color-mix(in srgb,var(--gold) 20%, transparent); color:var(--goldT);}
+
+  /* ARCHIVE — tie dye, and the only place on a card it appears. RECOMMENDED
+     is the stronger claim (worth 0.55 of a version multiplier against the
+     jamchart's 0.30) so it gets the filled dye; JAMCHART gets a dyed edge.
+     Dark ink on the fill because the dye's own colours are what carry it —
+     coloured text on a coloured ground at this size is a smudge. */
+  /* The dye must SWEEP inside a chip this small, not sit zoomed into one arc
+     of it. At 260% a jamchart border showed a single gold edge and read as
+     ENCORE; at 100% the whole wheel crosses the chip and it is unmistakable. */
+  .chip.rec{background:var(--dye); background-size:100% 100%; color:#0A1524;
+    letter-spacing:.9px;}
+  .chip.jc{color:var(--ink); border:1.5px solid transparent; padding:1px 4px;
+    background:linear-gradient(var(--card),var(--card)) padding-box,
+               var(--dye) border-box;
+    background-size:auto, 100% 100%;}
+  .song[aria-pressed="true"] .chip.jc,
+  .slot.sel .chip.jc{background:linear-gradient(var(--card3),var(--card3)) padding-box,
+               var(--dye) border-box;}
 
   /* ---------------- setlist panel ---------------- */
   .setlist{position:sticky; top:66px; padding:14px 16px 12px;}
@@ -1129,7 +1170,7 @@ function renderDraft(){
       if (sandwich && !dead) chips.push('<span class="chip sand">CLOSES SANDWICH</span>');
       else if (finishes) chips.push('<span class="chip seg">COMPLETES SEGUE</span>');
       if (isRecommended(p)) chips.push('<span class="chip rec">RECOMMENDED</span>');
-      else if (isJamchart(p)) chips.push('<span class="chip">JAMCHART</span>');
+      else if (isJamchart(p)) chips.push('<span class="chip jc">JAMCHART</span>');
       if (acc.chip) chips.push(`<span class="chip acc">${acc.chip}</span>`);
       const gap = Number(p.show_gap) || 0;
       if (gap >= 20) chips.push(`<span class="chip rare">${gap} show gap</span>`);
