@@ -179,6 +179,9 @@
     border:1px solid var(--line); border-left:3px solid var(--acc, var(--line2));
     transition:background .15s, border-color .15s, transform .1s;}
   .song:hover{background:var(--card2);}
+  .song.used{opacity:.4; cursor:not-allowed;}
+  .song.used:hover{background:var(--card);}
+  .song.used .t{text-decoration:line-through;}
   .song[aria-pressed="true"]{background:var(--card3); border-color:var(--acc);
     box-shadow:0 0 0 1px var(--acc);}
   .song .t{font-weight:800; font-size:14.5px; line-height:1.25;}
@@ -292,6 +295,17 @@ const MIN_SONGS_PER_SHOW = 8;
 function drawableShows(shows){
   const full = shows.filter(s => s.songs.length >= MIN_SONGS_PER_SHOW);
   return full.length >= NUM_ROUNDS ? full : shows;
+}
+
+/* song_ids already locked into a slot — a setlist should not repeat a song.
+ *
+ * Keyed on song_id, not the row, because the same song from two different
+ * nights is two different rows. Within one show a song CAN legitimately appear
+ * twice (a sandwich: play it, jam out, segue away, segue back), but that never
+ * reaches here — each round draws a distinct show and locks exactly one song
+ * from it, so the two halves of a sandwich can never both be picked. */
+function lockedSongIds(){
+  return new Set(S.slots.filter(Boolean).map(s => s.song_id));
 }
 
 // ── seeded RNG (mulberry32, per the house convention) ─────────────────────────
@@ -525,6 +539,7 @@ function slotRowsHTML({ interactive, scored }){
 // ── draft ────────────────────────────────────────────────────────────────────
 function renderDraft(){
   const show = S.drawn[S.round];
+  const taken = lockedSongIds();
 
   // Songs grouped by set, in running order.
   const bySet = new Map();
@@ -534,10 +549,16 @@ function renderDraft(){
   }
   const setKeys = Array.from(bySet.keys()).sort((a, b) => setRank(a) - setRank(b));
 
+  // Never leave a round unplayable. If a show's whole setlist is already in the
+  // slots there is nothing legal to pick, so allow the repeat rather than trap
+  // the player — a duplicate beats a dead end.
+  const anyFree = show.songs.some(s => !taken.has(s.song_id));
+
   const songsHTML = setKeys.map(k => {
     const rows = bySet.get(k).map(s => {
       const acc = accentOf(s);
       const idx = show.songs.indexOf(s);
+      const used = anyFree && taken.has(s.song_id);
       const chips = [];
       if (isJamchart(s)) chips.push('<span class="chip">JC</span>');
       if (acc.chip) chips.push(`<span class="chip acc">${acc.chip}</span>`);
@@ -545,12 +566,14 @@ function renderDraft(){
       if (gap >= 20) chips.push(`<span class="chip rare">${gap} show gap</span>`);
       const len = fmtLen(s.length_sec);
       const sel = S.pickedSong === s;
-      return `<button class="song" type="button" data-song="${idx}" aria-pressed="${sel}"
+      return `<button class="song${used ? ' used' : ''}" type="button" data-song="${idx}"
+          aria-pressed="${sel}" ${used ? 'disabled aria-disabled="true"' : ''}
           style="--acc:${acc.v}">
         <span class="l">
           <span class="t">${esc(s.song)}</span>
-          ${s.is_cover === 'true' && s.original_artist
-            ? `<span class="o">orig. ${esc(s.original_artist)}</span>` : ''}
+          ${used ? '<span class="o">already in your setlist</span>'
+            : s.is_cover === 'true' && s.original_artist
+              ? `<span class="o">orig. ${esc(s.original_artist)}</span>` : ''}
         </span>
         <span class="r">
           ${len ? `<span class="len">${len}</span>` : ''}
@@ -715,6 +738,7 @@ function lockIn(){
   const song = S.pickedSong, slot = S.pickedSlot;
   if (!song || slot === null) return;
   if (S.slots[slot]) return;
+  if (lockedSongIds().has(song.song_id)) return;
 
   S.slots[slot] = song;
   S.pickedSong = null; S.pickedSlot = null;
@@ -746,8 +770,15 @@ app.addEventListener('click', e => {
 
   const songBtn = e.target.closest('[data-song]');
   if (songBtn){
+    if (songBtn.disabled) return;
     const show = S.drawn[S.round];
     const s = show.songs[Number(songBtn.dataset.song)];
+    if (s !== S.pickedSong && lockedSongIds().has(s.song_id)){
+      S.hint = `${s.song} is already in your setlist.`;
+      S.hintBad = true;
+      renderDraft();
+      return;
+    }
     S.pickedSong = S.pickedSong === s ? null : s;
     S.hint = S.pickedSong ? 'Now choose a slot.' : '';
     S.hintBad = false;
