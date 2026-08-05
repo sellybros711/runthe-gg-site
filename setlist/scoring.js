@@ -409,40 +409,91 @@ export function segueKey(a, b) { return `${a.song_id}|${b.song_id}`; }
 /* Short, punchy, and earned — each line is keyed to something the player
    actually did, so it reads as a review rather than a fortune cookie. Ordered
    most specific first; the first match wins. */
+/*
+ * THE FAN HEADLINE.
+ *
+ * These were all about the clock, and it made them a lie. Only 6 of 16 could
+ * ever fire across 400 simulated shows, and all 6 were timing lines — because
+ * the game ends a set when nothing else fits, so the tenth percentile of
+ * shows still uses 93% of the stage. Everything gated above 0.93 fired for
+ * almost everyone and everything below it was dead code.
+ *
+ * So the order is now: the most SPECIFIC true thing about the night wins.
+ * A show that rebuilt a once-ever transition gets told about that, not about
+ * its curfew management. Timing lines are the fallback, not the lead, and the
+ * generic close is last. Measured after the rewrite — see heads.mjs.
+ */
 export const HEADLINES = [
-  { id: 'perfect',   when: s => s.overallRatio >= 0.96 && s.segues >= 2,
-    text: 'Not a second wasted. Not a segue missed.' },
-  { id: 'tothewire', when: s => s.overallRatio >= 0.96,
-    text: 'Played the curfew like a fourth instrument.' },
-  { id: 'full',      when: s => s.overallRatio >= 0.93 && s.avgLen >= 780,
-    text: 'Heavy, patient, and right up to the curfew.' },
-  { id: 'full2',     when: s => s.overallRatio >= 0.93,
-    text: 'Every minute spent. Nobody checked a watch.' },
-  { id: 'tight',     when: s => s.overallRatio >= 0.88 && s.segues >= 2,
-    text: 'Stitched together. Barely a gap all night.' },
-  { id: 'good',      when: s => s.overallRatio >= 0.88,
-    text: 'Ran it close. A few minutes left in the tank.' },
-  { id: 'encorebig', when: s => s.setRatios[2] >= 0.9 && s.encoreSongs >= 2,
-    text: 'Banked the time and blew it all on the encore.' },
+  /* ORDERED BY MEASURED RARITY, not by how rare the condition sounds. Whatever
+     sits at the top is what most players will read, so the top has to be the
+     thing almost nobody does — and twice now the intuition was wrong:
+     "rebuilt a once-ever segue" fired for 53% of shows, because 84% of this
+     band's pairs ARE once-ever; "three jamchart takes" fired for 66%, because
+     jamchart takes score well and good players pick them anyway.
+     The percentages below are how often each CONDITION holds, independent of
+     order, across 400 simulated shows spanning the skill range. Re-run
+     heads.mjs and re-sort after touching any rule. */
+
+  // Almost nobody does these.
+  { id: 'sandwich',  when: s => s.sandwiches >= 1,
+    text: 'Wrapped a whole song inside another one. Showoffs.' },
+  { id: 'onceever',  when: s => s.rarestSegue === 1 && s.segues >= 3,
+    text: 'Three transitions, none of which they have played twice. Tapers wept.' },
+  { id: 'seguerun',  when: s => s.segues >= 3,
+    text: 'Barely stopped to tune. One long exhale.' },
+  { id: 'bustoutbig',when: s => s.bustouts >= 2,
+    text: 'Two things nobody had heard in years. The lot is still arguing.' },
+
+  // Things that went wrong. All 0% for a competent player — the game closes a
+  // set when nothing else fits, so it is hard to run short — but when one is
+  // true it is the whole story, so it outranks anything that went right.
   { id: 'shortall',  when: s => s.overallRatio < 0.7,
     text: 'Left the fans wanting more. And wanting a full set.' },
   { id: 'short',     when: s => s.overallRatio < 0.82,
-    text: "Ended early. The house lights came up on a confused room." },
+    text: 'Ended early. The house lights came up on a confused room.' },
+  { id: 'narrow',    when: s => s.breadthGot <= 1,
+    text: 'One idea, played fifteen times. Committed, at least.' },
+  { id: 'noencore',  when: s => s.encoreSongs === 0,
+    text: 'No encore. Bold. The parking lot had opinions.' },
+  { id: 'nocover',   when: s => !s.cards.has('cover') && s.songs >= 8,
+    text: 'Not one song of somebody else\'s. Confident, that.' },
+  { id: 'sprint',    when: s => s.avgLen > 0 && s.avgLen <= 420,
+    text: 'No breathing room all night. A greatest-hits sprint.' },
   { id: 'set1thin',  when: s => s.setRatios[0] < SHORT_SET_RATIO,
     text: 'Set I ran out of road. Set II had to carry it.' },
   { id: 'set2thin',  when: s => s.setRatios[1] < SHORT_SET_RATIO,
     text: 'Front-loaded the night and coasted home.' },
-  { id: 'noencore',  when: s => s.encoreSongs === 0,
-    text: 'No encore. Bold. The parking lot had opinions.' },
+
+  // The shape of the night, rarest first.
+  { id: 'encorebig', when: s => s.encoreSongs >= 3,
+    text: 'Banked the time and blew it all on a three-song encore.' },
   { id: 'jamheavy',  when: s => s.avgLen >= 900,
     text: 'Four songs an hour. The heads loved it.' },
-  { id: 'sprint',    when: s => s.avgLen > 0 && s.avgLen <= 420,
-    text: 'Sixteen songs, no breathing room. A greatest-hits sprint.' },
-  { id: 'seguerun',  when: s => s.segues >= 3,
-    text: 'Barely stopped to tune. One long exhale.' },
+  { id: 'monsterjam',when: s => s.longest >= 1500,
+    text: 'One song ate half a set. Nobody wanted it to end.' },
+  { id: 'coverheavy',when: s => s.covers >= 3,
+    text: 'Half a covers set broke out. Depending who you ask, that is a compliment.' },
+  { id: 'everything',when: s => s.breadthGot === 5,
+    text: 'A cover, a bustout, a monster jam. Left nothing on the shelf.' },
+  { id: 'bustout',   when: s => s.bustouts >= 1 && s.longest >= LEN_20MIN,
+    text: 'A bustout and a twenty-minute jam. Somebody call in sick tomorrow.' },
+  { id: 'archive',   when: s => s.jamcharts >= 3,
+    text: 'Three takes straight out of the jamcharts. An archivist\'s night.' },
+
+  // Timing last: 'full' holds for 92% of shows and 'good' for 100%, so these
+  // can only ever be the fallback verdict rather than the story.
+  { id: 'tothewire', when: s => s.overallRatio >= 0.96,
+    text: 'Played the curfew like a fourth instrument.' },
+  { id: 'full',      when: s => s.overallRatio >= 0.93,
+    text: 'Every minute spent. Nobody checked a watch.' },
+  { id: 'good',      when: s => s.overallRatio >= 0.88,
+    text: 'Ran it close. A few minutes left in the tank.' },
   { id: 'solid',     when: () => true,
     text: 'A good night. Not one they will bootleg forever.' },
 ];
+
+
+
 
 /** Per-set reaction, same idea at set scale. */
 export function setNote(ratio, songs) {
@@ -768,6 +819,7 @@ export function scoreShow(sets, segues, spent, segueCounts) {
   // The fan headline.
   const totalBudget = bud.reduce((a, b) => a + b, 0);
   const totalUsed = s.flat().reduce((a, p) => a + lenOf(p), 0);
+  const cards = new Set(breadth.filter(c => c.got).map(c => c.id));
   const stats = {
     overallRatio: totalBudget ? totalUsed / totalBudget : 0,
     setRatios: time.map(t => t.ratio),
@@ -775,6 +827,20 @@ export function scoreShow(sets, segues, spent, segueCounts) {
     segues: segueHits.length,
     avgLen: all.length ? totalUsed / all.length : 0,
     songs: all.length,
+    // What the night CONTAINED, so a headline can be about the show rather
+    // than only about the clock.
+    cards,
+    breadthGot: cards.size,
+    breadthTotal,
+    longest: all.reduce((m, x) => Math.max(m, lenOf(x.perf)), 0),
+    jamcharts: all.filter(x => isJamchart(x.perf)).length,
+    covers: all.filter(x => flag(x.perf.is_cover)).length,
+    bustouts: all.filter(x => (Number(x.perf.show_gap) || 0) >= BREADTH_BUSTOUT_GAP).length,
+    // The rarest pair rebuilt all night — 1 means a once-ever transition.
+    rarestSegue: segueHits.length
+      ? Math.min(...segueHits.map(x => x.times)) : null,
+    sandwiches: segueHits.filter(x => x.kinds.includes('sandwich')).length,
+    total: songTotal + timeTotal + flowTotal + breadthTotal,
   };
   const headline = (HEADLINES.find(h => h.when(stats)) || HEADLINES[HEADLINES.length - 1]).text;
 

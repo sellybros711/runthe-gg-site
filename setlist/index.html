@@ -1766,7 +1766,7 @@ app.addEventListener('click', e => {
       S.hintBad = true; renderDraft(); return;
     }
     S.pickedSong = S.pickedSong === s ? null : s;
-    S.hint = S.pickedSong ? 'Now choose a slot.' : '';
+    S.hint = S.pickedSong ? `Play it, or pick a different one.` : '';
     S.hintBad = false;
     renderDraft();
     return;
