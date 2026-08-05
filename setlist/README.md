@@ -149,6 +149,14 @@ but dead, and says why — "needs 4:12 more" — because *no room for a 22-minut
 Drive* is the game, not an error to hide. Close a set whenever you like; the
 leftover flows to the encore.
 
+**What you have built stays on screen.** A compact read of the set you are
+filling sits above the song list — order, segue marks, running times — with the
+earlier sets one tap away. The full clock panel is still in the sheet; this is
+the part a decision actually depends on.
+
+**The clock says what it is and grades itself**: normal, amber under fifteen
+minutes, red and pulsing under five.
+
 **Closing a set keeps the show on screen.** The show is the night's source
 material, not a per-set handout, so closing Set I while holding a good one drops
 you into Set II still holding it.

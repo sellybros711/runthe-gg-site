@@ -166,8 +166,15 @@
   .hud > div:first-child{min-width:0;}
   .hud .rd{font-family:var(--hero); font-size:18px; line-height:1.05;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .hud .rd-clock{color:var(--mut); font-variant-numeric:tabular-nums;}
-  .hud .rd-clock.low{color:var(--coralT);}
+  .hud .rd-clock{color:var(--mut); font-variant-numeric:tabular-nums;
+    transition:color .3s ease;}
+  .hud .rd-clock.warn{color:var(--goldT);}
+  .hud .rd-clock.crit{color:var(--redT); animation:clockPulse 1.6s ease-in-out infinite;}
+  @keyframes clockPulse{ 0%,100%{opacity:1;} 50%{opacity:.55;} }
+  @media (prefers-reduced-motion: reduce){ .hud .rd-clock.crit{animation:none;} }
+  .hud .rd-rem{color:var(--dim);}
+  .hud .rd-rem.warn{color:var(--goldT);}
+  .hud .rd-rem.crit{color:var(--redT);}
   .hud .md{font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
     color:var(--dim); margin-top:3px;}
   .pips{display:flex; gap:5px;}
@@ -225,6 +232,27 @@
   .chip.seg{background:color-mix(in srgb,var(--green) 20%, transparent); color:var(--greenT);
     border-color:color-mix(in srgb,var(--green) 50%, transparent);}
   .song.finishes{border-color:color-mix(in srgb,var(--green) 55%, transparent);}
+  /* ---------------- the setlist so far ---------------- */
+  .sofar{margin-bottom:10px; padding:9px 12px 7px; border-radius:var(--r-md);
+    background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);}
+  .sf-hd{display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    margin-bottom:5px;}
+  .sf-hd b{font-size:10.5px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
+    color:var(--dim);}
+  .sf-tog{font-size:10.5px; font-weight:800; color:var(--tealT); background:none; border:0;
+    padding:2px 0;}
+  .sf-set + .sf-set{margin-top:6px;}
+  .sf-lbl{font-size:9.5px; font-weight:900; letter-spacing:1.3px; text-transform:uppercase;
+    color:var(--dim); margin:4px 0 2px;}
+  .sf-row{display:flex; align-items:baseline; gap:8px; padding:2px 0; font-size:12.5px;}
+  .sf-n{flex:0 0 14px; color:var(--dim); font-weight:800; font-size:10px;
+    font-variant-numeric:tabular-nums;}
+  .sf-song{flex:1; min-width:0; font-weight:700; overflow:hidden; text-overflow:ellipsis;
+    white-space:nowrap;}
+  .sf-seg{font-style:normal; color:var(--goldT); font-weight:900; margin-left:3px;}
+  .sf-len{color:var(--mut); font-weight:700; font-variant-numeric:tabular-nums; font-size:11.5px;}
+  .sf-none{font-size:12px; font-weight:600; color:var(--dim); padding:2px 0 3px;}
+
   .hunt{margin-bottom:10px; padding:9px 12px; border-radius:var(--r-sm); font-size:12.5px;
     font-weight:700; line-height:1.5; color:var(--mut);
     background:color-mix(in srgb,var(--gold) 10%, transparent);
@@ -582,8 +610,8 @@ import {
   reactionFor, eventLine, setOpenLine,
   scoreShow, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=10';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=10';
+} from './scoring.js?v=11';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=11';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -682,6 +710,7 @@ const S = {
   respins: 0,          // how many this run — each costs more than the last
   seenShows: new Set(),
   seenSongs: [],       // every song offered, for "the one that got away"
+  sofarAll: false,     // is the on-screen setlist showing every set?
   pickedSong: null,
   hint: '',
   hintBad: false,
@@ -911,6 +940,50 @@ function huntingFor(){
   return { from: last, partners: p };
 }
 
+/* What is already on the setlist, kept on screen while you choose the next one.
+   Collapsed to the set being built by default — that is the part a decision
+   actually depends on — with the earlier sets one tap away. */
+function sofarHTML(si){
+  const played = S.sets.flat().length;
+  if (!played) return '';
+  const showAll = S.sofarAll;
+  const blocks = [];
+
+  S.sets.forEach((set, i) => {
+    if (!set.length) return;
+    if (!showAll && i !== si) return;
+    blocks.push(`
+      <div class="sf-set">
+        <div class="sf-lbl">${esc(SETS[i].label)}</div>
+        ${set.map((p, j) => `
+          <div class="sf-row">
+            <span class="sf-n">${j + 1}</span>
+            <span class="sf-song">${esc(p.song)}${
+              j < set.length - 1 && S.data.segues.has(`${p.song_id}|${set[j + 1].song_id}`)
+                ? '<i class="sf-seg">&rsaquo;</i>' : ''}</span>
+            <span class="sf-len">${fmtClock(lenOf(p))}</span>
+          </div>`).join('')}
+      </div>`);
+  });
+
+  if (!blocks.length && !showAll) return `
+    <div class="sofar empty">
+      <div class="sf-hd"><b>Your setlist</b>
+        <button class="sf-tog" type="button" id="sofarTog">show all ${played}</button></div>
+      <div class="sf-none">${esc(SETS[si].label)} is empty — this is the opener.</div>
+    </div>`;
+
+  return `
+    <div class="sofar">
+      <div class="sf-hd">
+        <b>Your setlist</b>
+        <button class="sf-tog" type="button" id="sofarTog">${
+          showAll ? 'just this set' : `show all ${played}`}</button>
+      </div>
+      ${blocks.join('')}
+    </div>`;
+}
+
 function renderDraft(){
   const show = S.show;
   const taken = lockedSongIds();
@@ -982,8 +1055,11 @@ function renderDraft(){
     <div class="card hud">
       <div>
         <div class="rd">${esc(cfg.label)}
-          <span class="rd-clock ${left < 6 * 60 ? 'low' : ''}">${fmtClock(Math.max(0, left))}</span></div>
-        <div class="md">Pick ${S.round + 1}${S.respins ? ` · ${S.respins} spin${S.respins > 1 ? 's' : ''}` : ''}</div>
+          <span class="rd-clock ${left < 5 * 60 ? 'crit' : left < 15 * 60 ? 'warn' : ''}"
+            >${fmtClock(Math.max(0, left))}</span></div>
+        <div class="md"><span class="rd-rem ${left < 5 * 60 ? 'crit' : left < 15 * 60 ? 'warn' : ''}"
+          >remaining</span> · pick ${S.round + 1}${
+          S.respins ? ` · ${S.respins} spin${S.respins > 1 ? 's' : ''}` : ''}</div>
       </div>
       <div class="hud-btns">
         ${(() => {
@@ -1005,6 +1081,7 @@ function renderDraft(){
           <div class="v">${esc(show.venue || '')}</div>
           <div class="c">${esc([show.city, show.state].filter(Boolean).join(', '))}</div>
         </div>
+        ${sofarHTML(si)}
         ${hunt ? `<div class="hunt ${canFinish ? 'hot' : ''}">
           <b>${esc(hunt.from.song)} &rsaquo;</b>
           ${canFinish
@@ -1583,6 +1660,7 @@ app.addEventListener('click', e => {
   if (e.target.closest('#lockBtn')){ lockIn(); return; }
   if (e.target.closest('#closeSetBtn')){ closeSet(); return; }
   if (e.target.closest('#respinBtn')){ respin(); return; }
+  if (e.target.closest('#sofarTog')){ S.sofarAll = !S.sofarAll; renderDraft(); return; }
   if (e.target.closest('#openSets')){
     S.sheetForced = !S.sheetForced; renderDraft(); return;
   }
