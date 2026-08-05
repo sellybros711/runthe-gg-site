@@ -140,5 +140,21 @@ const game = read('setlist/index.html');
 check(!/noindex/i.test(game), 'game page is indexable (no noindex)');
 
 console.log();
+
+// A display font that is declared but never requested does not error — the
+// browser quietly falls back and the page just looks wrong, which is exactly
+// the kind of thing nobody notices in review.
+console.log('typography');
+const linked = new Set(
+  [...game.matchAll(/fonts\.googleapis\.com\/css2\?([^"']+)/g)]
+    .flatMap(m => [...m[1].matchAll(/family=([^&:]+)/g)].map(f => decodeURIComponent(f[1]).replace(/\+/g, ' '))));
+for (const token of ['hero', 'ui', 'body']) {
+  const decl = game.match(new RegExp(`--${token}:\\s*'([^']+)'`));
+  check(!!decl, `--${token} names a font family`);
+  if (decl) check(linked.has(decl[1]), `--${token} font "${decl[1]}" is loaded`,
+    `linked: ${[...linked].join(', ') || 'none'}`);
+}
+
+console.log();
 console.log(failures ? `${failures} check(s) failed` : 'all checks passed');
 process.exit(failures ? 1 : 0);
