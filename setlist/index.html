@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Run The Setlist: Setlist Drafting Game | RunThe.GG</title>
+<title>Segue: The Setlist Builder Game | RunThe.GG</title>
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 /* theme boot: runs before first paint. Manual choice persists in
@@ -16,11 +16,11 @@
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
-<meta name="description" content="Draft a setlist from real concerts. Each round reveals one show, you pull one song and lock it into a slot. Eight picks, one setlist, one score." />
+<meta name="description" content="Segue is a setlist builder. Spin up a real concert, pull a song, spend it against your set clock — then watch your show play back to a crowd." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='8' width='18' height='2.5' rx='1.25' fill='%2337C5D5'/%3E%3Crect x='7' y='14' width='18' height='2.5' rx='1.25' fill='%23F2B632'/%3E%3Crect x='7' y='20' width='11' height='2.5' rx='1.25' fill='%23F06A5F'/%3E%3C/svg%3E" />
 <link rel="apple-touch-icon" href="/assets/runthegames-icon_180.png" />
-<meta property="og:title" content="Run The Setlist | RunThe.GG" />
-<meta property="og:description" content="Draft a setlist from real concerts. Eight shows, eight picks, one score." />
+<meta property="og:title" content="Segue: The Setlist Builder Game | RunThe.GG" />
+<meta property="og:description" content="Build a setlist from real concerts. Two sets, an encore, and a curfew — then watch the show play back." />
 <meta property="og:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -107,6 +107,9 @@
   .hero h1{font-family:var(--hero); font-size:clamp(40px,9.5vw,72px); line-height:.92;
     letter-spacing:.5px; margin:5px 0 9px; text-transform:uppercase;}
   .hero h1 .accent{color:var(--gold);}
+  .tagline{font-size:13px; font-weight:800; letter-spacing:2.6px; text-transform:uppercase;
+    color:var(--mut); margin:2px 0 10px;}
+  @media (max-width:420px){ .tagline{font-size:11px; letter-spacing:1.8px;} }
   .hero p{max-width:34ch; margin:0 auto; color:var(--mut); font-size:15px; line-height:1.55;
     font-weight:600;}
 
@@ -755,14 +758,16 @@ function renderHome(){
   app.innerHTML = `
     <div class="hero">
       <div class="eyebrow">RunThe.GG presents</div>
-      <h1>Run The<br /><span class="accent">Setlist</span></h1>
-      <p>Eight real shows. One song from each. Build the setlist you wish they'd played.</p>
+      <h1><span class="accent">Segue</span></h1>
+      <div class="tagline">The Setlist Builder Game</div>
+      <p>Two sets, an encore, and a curfew on each. Spin up real shows, spend
+        their songs against the clock, and build the night you wish they'd played.</p>
     </div>
 
     <div class="steps">
-      <div class="step"><b>01</b><span>Each round reveals one real concert, drawn from the band's whole history.</span></div>
-      <div class="step"><b>02</b><span>Pull one song off it and lock it into a slot. Locked is locked.</span></div>
-      <div class="step"><b>03</b><span>Rare songs, monster versions and real segues all score. Fill all eight for the bonus.</span></div>
+      <div class="step"><b>01</b><span>Spin a year, then a night from it — a real concert, from the band's whole history.</span></div>
+      <div class="step"><b>02</b><span>Pull one song and play it. It spends its running time from your set. No takebacks.</span></div>
+      <div class="step"><b>03</b><span>Bustouts, monster versions and real segues all score. Then the show plays back to a crowd.</span></div>
     </div>
 
     ${S.error ? `<div class="err">${esc(S.error)}</div>` : ''}
@@ -1329,7 +1334,7 @@ function shareText(){
   const r = S.result;
   const lines = [];
 
-  lines.push('RUN THE SETLIST — ' + S.band.label.toUpperCase());
+  lines.push('SEGUE — ' + S.band.label.toUpperCase());
   lines.push('');
 
   S.sets.forEach((set, i) => {

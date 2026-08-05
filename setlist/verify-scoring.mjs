@@ -1,4 +1,4 @@
-/* Run The Setlist — QA harness for scoring v4.
+/* Segue — QA harness for scoring v4.
  *
  *   node setlist/verify-scoring.mjs
  *

@@ -1,4 +1,4 @@
-# Run The Setlist — band data contract
+# Segue — band data contract
 
 One CSV per band, served from `/setlist/data/<band>.csv`. The CSV is the single
 source of truth for the game: `dataLoader.js` turns it into `{ shows, segues }`
