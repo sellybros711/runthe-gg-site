@@ -155,12 +155,15 @@ body:has(.a-gametitle) .brand.logo .sub{display:none;}
   display:inline-block; max-width:100%;
   font-family:'Anton', Impact, sans-serif; font-weight:400; text-transform:uppercase;
   font-size:clamp(30px, 8vw, 58px); letter-spacing:.035em; line-height:.92;
-  color:transparent; -webkit-text-stroke:2px var(--a-tc, #F2B632);
+  color:transparent; -webkit-text-stroke:2px var(--a-tc, #F2B632); text-shadow:none;
   padding-bottom:9px; border-bottom:5px solid var(--a-tc, #F2B632);
 }
-/* the key word is filled solid for a two-tone collegiate lockup */
-.a-gametitle__plate b{color:var(--a-tc, #F2B632); font-weight:400; -webkit-text-stroke:0;
-  text-shadow:3px 3px 0 color-mix(in srgb, var(--a-tc, #F2B632) 22%, transparent);}
+/* uniform treatment across the whole title, so <b> just matches its surroundings */
+.a-gametitle__plate b{font-weight:400; color:inherit; -webkit-text-stroke:inherit; text-shadow:inherit;}
+/* dark = hollow accent outline; light = solid accent fill with a soft shadow */
+:root[data-theme="light"] .a-gametitle__plate{
+  color:var(--a-tc, #F2B632); -webkit-text-stroke:0;
+  text-shadow:2px 3px 0 color-mix(in srgb, var(--a-tc, #F2B632) 20%, transparent);}
 @media (max-width:760px){
   body:has(.a-gametitle) .brand.logo img{height:60px;}
   .a-gametitle{margin:3px 0 14px;}
