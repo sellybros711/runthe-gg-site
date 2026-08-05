@@ -220,6 +220,8 @@
   .segout{display:inline-block; margin-left:5px; font-weight:900; color:var(--goldT);
     font-size:16px; line-height:1; vertical-align:-1px;}
   .song .o.seg{color:var(--goldT);}
+  .chip.sand{background:color-mix(in srgb,var(--violet) 22%, transparent); color:var(--violetT);
+    border-color:color-mix(in srgb,var(--violet) 50%, transparent);}
   .chip.seg{background:color-mix(in srgb,var(--green) 20%, transparent); color:var(--greenT);
     border-color:color-mix(in srgb,var(--green) 50%, transparent);}
   .song.finishes{border-color:color-mix(in srgb,var(--green) 55%, transparent);}
@@ -547,10 +549,11 @@ setTimeout(function(){
 import {
   SETS, MAX_ROUNDS, ENCORE_INDEX, ARC_MAX, TIME_POINTS_PER_SET,
   RESPIN_COSTS, respinCost, canRespin, theOneThatGotAway,
+  wouldStrand, danglingSegue, closesSandwich, SANDWICH_BONUS,
   scoreShow, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=7';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=7';
+} from './scoring.js?v=8';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=8';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -905,12 +908,16 @@ function renderDraft(){
     const rows = bySet.get(k).map(p => {
       const acc = accentOf(p);
       const idx = show.songs.indexOf(p);
-      const used = taken.has(p.song_id);
+      const strands = wouldStrand(S.sets, si, p, S.closed, S.spent);
+      const sandwich = closesSandwich(S.sets[si], p, S.data.segues);
+      // A repeat is allowed in exactly one case: closing a sandwich.
+      const used = taken.has(p.song_id) && !sandwich;
       const room = canPlace(S.sets, si, p, S.closed, S.spent);
-      const dead = used || !room;
+      const dead = used || !room || strands;
       const finishes = hunt && hunt.partners.has(p.song_id) && !dead;
       const chips = [];
-      if (finishes) chips.push('<span class="chip seg">COMPLETES SEGUE</span>');
+      if (sandwich && !dead) chips.push('<span class="chip sand">CLOSES SANDWICH</span>');
+      else if (finishes) chips.push('<span class="chip seg">COMPLETES SEGUE</span>');
       if (isRecommended(p)) chips.push('<span class="chip rec">RECOMMENDED</span>');
       else if (isJamchart(p)) chips.push('<span class="chip">JAMCHART</span>');
       if (acc.chip) chips.push(`<span class="chip acc">${acc.chip}</span>`);
@@ -918,6 +925,7 @@ function renderDraft(){
       if (gap >= 20) chips.push(`<span class="chip rare">${gap} show gap</span>`);
       const why = used ? 'already in your show'
         : !room ? (lenOf(p) > left ? `needs ${fmtClock(lenOf(p) - left)} more` : 'set is full')
+        : strands ? 'segues — no room to land it'
         : '';
       return `<button class="song${dead ? ' used' : ''}${finishes ? ' finishes' : ''}"
           type="button" data-song="${idx}"
@@ -1196,15 +1204,27 @@ document.addEventListener('keydown', e => {
 
 function shareText(){
   const r = S.result;
-  const lines = [
-    `🎵 Run The Setlist — ${S.band.label}`,
-    `Score: ${r.total}`,
-    ...r.time.map(t => `${t.label}: ${fmtClock(t.used)}/${fmtClock(t.budget)} ${
-      '█'.repeat(Math.round(t.ratio * 10)).padEnd(10, '░')}`),
-    `"${r.headline}"`,
-  ];
-  if (r.segues.length) lines.push(`${r.segues.length} segue${r.segues.length > 1 ? 's' : ''} landed`);
-  lines.push('', 'runthe.gg/setlist');
+  const lines = [];
+
+  lines.push('RUN THE SETLIST — ' + S.band.label.toUpperCase());
+  lines.push('');
+
+  S.sets.forEach((set, i) => {
+    if (!set.length) return;
+    if (i === ENCORE_INDEX) lines.push('E:');
+    set.forEach((p, j) => {
+      // A song segues if the NEXT song in this set is one it has run into.
+      const nxt = set[j + 1];
+      const mark = nxt && S.data.segues.has(`${p.song_id}|${nxt.song_id}`) ? ' >' : '';
+      lines.push(p.song + mark);
+    });
+    lines.push('');
+  });
+
+  lines.push(`${r.total} pts · ${r.stats.songs} songs · ${fmtClock(r.totalUsed)}`);
+  lines.push(`"${r.headline}"`);
+  lines.push('');
+  lines.push('runthe.gg/setlist');
   return lines.join('\n');
 }
 
@@ -1295,7 +1315,7 @@ function lockIn(){
 
   // A set that can hold nothing more closes itself, so the player is never left
   // staring at a set with forty seconds in it.
-  if (setFull(S.sets, si)) S.closed[si] = true;
+  if (setFull(S.sets, si) && !danglingSegue(S.sets, si)) S.closed[si] = true;
   nextRound();
 }
 
@@ -1311,6 +1331,16 @@ function lockIn(){
 function closeSet(){
   const si = currentSet();
   if (si === -1) return;
+  const dangling = danglingSegue(S.sets, si);
+  const taken = lockedSongIds();
+  const couldLand = S.show && S.show.songs.some(p =>
+    !taken.has(p.song_id) && canPlace(S.sets, si, p, S.closed, S.spent));
+  if (dangling && couldLand){
+    S.hint = `${dangling.song} segues — play what it runs into before closing.`;
+    S.hintBad = true;
+    renderDraft();
+    return;
+  }
   S.closed[si] = true;
   S.pickedSong = null; S.hint = ''; S.hintBad = false; S.sheetForced = false;
   if (currentSet() === -1){ finishShow(); return; }

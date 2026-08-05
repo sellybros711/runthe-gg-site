@@ -110,13 +110,53 @@ export function roleAt(setIdx, songIdx, setLength) {
    head, and it makes leaving fifteen minutes unplayed feel exactly as bad as it
    is. Overrunning is impossible — the game will not let a song that does not fit
    be placed — so there is no over-run branch to reason about. */
-export const TIME_POINTS_PER_SET = 100;
+export const TIME_POINTS_PER_SET = 65;
 
 /* Below this, a set reads as short-changed and the fan headline says so. */
 export const SHORT_SET_RATIO = 0.80;
 
 // ── FLOW ─────────────────────────────────────────────────────────────────────
-export const SEGUE_POINTS = 45;
+/* Segues are graded, because "these two happen to be a canonical pair" and
+   "you rebuilt the exact transition from that night" are not the same feat.
+   Each tier is additive on the one below it. */
+export const SEGUE_POINTS = 45;         // the pair is canonical for this band
+export const SEGUE_EXACT_BONUS = 30;    // ...and it is the pair THAT take played
+export const SEGUE_CHAIN_BONUS = 20;    // per link past the second in a run
+export const SANDWICH_BONUS = 90;       // A > B > A, closed
+
+/* A set never ends mid-segue: across 1135 real Goose sets, not one closes on a
+   song marked as segueing out. So the game will not let you either — and a
+   song is refused when placing it would leave no room to land it. */
+export const MIN_LANDING_SECONDS = 180;
+
+/** Would placing this song leave the set unable to follow it? */
+export function wouldStrand(sets, i, perf, closed, spent) {
+  if (String(perf && perf.is_segue) !== 'true') return false;
+  const after = (sets[i] || []).length + 1;
+  if (after >= SETS[i].maxSongs) return true;                     // no slot to land in
+  return remaining(sets, i, closed, spent) - lenOf(perf) < MIN_LANDING_SECONDS;
+}
+
+/** Is the set currently ending on an unresolved segue? */
+export function danglingSegue(sets, i) {
+  const set = sets[i] || [];
+  if (!set.length) return null;
+  const last = set[set.length - 1];
+  return String(last.is_segue) === 'true' ? last : null;
+}
+
+/**
+ * A sandwich: the song already sits earlier in this set and the song now
+ * closing back into it is a canonical pair. This is the one case where
+ * repeating a song is right rather than a mistake — play it, jam out, go
+ * somewhere else, come back.
+ */
+export function closesSandwich(set, perf, segues) {
+  if (!set || set.length < 2) return false;
+  const last = set[set.length - 1];
+  if (!segues || !segues.has(segueKey(last, perf))) return false;
+  return set.slice(0, -1).some(p => p.song_id === perf.song_id);
+}
 export const ENERGY = { ballad: 1, opener: 3, closer: 4, jam: 4, peak: 5, encore: 3 };
 export const ENERGY_DEFAULT = 3;
 export const ARC_MAX = 60;
@@ -383,14 +423,35 @@ export function scoreShow(sets, segues, spent) {
   });
   const timeTotal = time.reduce((a, t) => a + t.points, 0);
 
-  // Flow — segues only count between songs adjacent inside one set.
+  // Flow — segues only count between songs adjacent inside one set, and are
+  // graded: a canonical pair, the exact pair that take played, a run of them,
+  // and a closed sandwich are four different achievements.
   const segueHits = [];
   s.forEach((songs, si) => {
+    let run = 0;
     for (let i = 0; i < songs.length - 1; i++) {
-      if (segues && segues.has(segueKey(songs[i], songs[i + 1]))) {
-        segueHits.push({ set: si, from: i, to: i + 1, points: SEGUE_POINTS,
-          a: songs[i].song, b: songs[i + 1].song });
+      const a = songs[i], b = songs[i + 1];
+      if (!segues || !segues.has(segueKey(a, b))) { run = 0; continue; }
+      run += 1;
+
+      const kinds = ['Segue'];
+      let points = SEGUE_POINTS;
+
+      // The pair this very performance played, rebuilt.
+      if (a.segued_into_id && String(a.segued_into_id) === String(b.song_id)) {
+        points += SEGUE_EXACT_BONUS;
+        kinds.push('exact');
       }
+      // Third consecutive link and beyond — a run, not a coincidence.
+      if (run >= 3) { points += SEGUE_CHAIN_BONUS; kinds.push('chain'); }
+      // Came back to where it started.
+      if (songs.slice(0, i).some(p => p.song_id === b.song_id)) {
+        points += SANDWICH_BONUS;
+        kinds.push('sandwich');
+      }
+
+      segueHits.push({ set: si, from: i, to: i + 1, points, kinds,
+        a: a.song, b: b.song });
     }
   });
 

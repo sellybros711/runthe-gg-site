@@ -10,7 +10,9 @@ import {
   SETS, ENCORE_INDEX, MAX_ROUNDS, NEUTRAL_BASE,
   V_RECOMMENDED, V_JAMCHART, V_LEN_20MIN, V_LEN_15MIN,
   MULT_PERFECT, MULT_PARTIAL, MULT_NEUTRAL, MULT_CLASH,
-  SEGUE_POINTS, ARC_MAX, ARC_ZERO_AT, VARIETY_MAX, VARIETY_MIN_ROLES,
+  SEGUE_POINTS, SEGUE_EXACT_BONUS, SEGUE_CHAIN_BONUS, SANDWICH_BONUS,
+  MIN_LANDING_SECONDS, wouldStrand, danglingSegue, closesSandwich,
+  ARC_MAX, ARC_ZERO_AT, VARIETY_MAX, VARIETY_MIN_ROLES,
   TIME_POINTS_PER_SET, SHORT_SET_RATIO, ENERGY, RESPIN_COSTS, respinCost, canRespin,
   baseOf, isJamchart, isRecommended, rarityMult, versionMult, versionParts,
   roleAt, roleFit, placementMult, energyOf, scorePerf, fmtClock,
@@ -139,12 +141,12 @@ group('scorePerf', () => {
 group('time scoring', () => {
   const full = [[perf({ len: 4500 })], [perf({ len: 4200 })], [perf({ len: 600 })]];
   const r = scoreShow(full, new Set());
-  eq(r.time.map(t => t.points), [100, 100, 100], 'every set filled pays full time points');
+  eq(r.time.map(t => t.points), [65, 65, 65], 'every set filled pays full time points');
   eq(r.timeTotal, 3 * TIME_POINTS_PER_SET, 'time total');
 
   const half = [[perf({ len: 2250 })], [], []];
   const h = scoreShow(half, new Set());
-  eq(h.time[0].points, 50, 'half a set pays half its time points');
+  eq(h.time[0].points, Math.round(TIME_POINTS_PER_SET / 2), 'half a set pays half its time points');
   eq(h.time[1].points, 0, 'an unplayed set pays nothing');
 
   eq(scoreShow([[], [], []], new Set()).timeTotal, 0, 'an empty night scores no time');
@@ -152,6 +154,65 @@ group('time scoring', () => {
   eq(setNote(0.7, 1), 'Cut short — the crowd noticed.', 'set note when short');
   eq(setNote(0.3, 1), 'Barely a set.', 'set note when barely played');
   eq(setNote(0.9, 0), 'Never happened.', 'an empty set says so regardless of ratio');
+});
+
+group('a set never ends mid-segue', () => {
+  const seg = o => perf({ ...o });
+  const segOut = (id, len) => ({ ...perf({ song_id: id, len }), is_segue: 'true' });
+
+  // Placing a segue song with plenty of room is fine.
+  eq(wouldStrand([[], [], []], 0, segOut('a', 600), [false,false,false], [0,0,0]), false,
+     'a segue song early in an empty set has room to land');
+
+  // ...but not when it would fill the set on count.
+  const nearlyFullCount = [Array.from({length: 7}, () => perf({ len: 60 })), [], []];
+  eq(wouldStrand(nearlyFullCount, 0, segOut('a', 60), [false,false,false], [0,0,0]), true,
+     'a segue song taking the last slot has nothing to land in');
+
+  // ...nor when it would leave less than a landing's worth of time.
+  const nearlyFullTime = [[perf({ len: 4500 - 700 })], [], []];
+  eq(wouldStrand(nearlyFullTime, 0, segOut('a', 600), [false,false,false], [0,0,0]), true,
+     'a segue song leaving under MIN_LANDING_SECONDS is refused');
+  eq(MIN_LANDING_SECONDS, 180, 'three minutes counts as room to land');
+
+  // A non-segue song is never stranded.
+  eq(wouldStrand(nearlyFullCount, 0, perf({ len: 60 }), [false,false,false], [0,0,0]), false,
+     'an ordinary song can close a set');
+
+  eq(danglingSegue([[perf({ len: 600 })], [], []], 0), null, 'a normal set is not dangling');
+  eq(danglingSegue([[segOut('a', 600)], [], []], 0).song_id, 'a', 'a set ending on a segue is');
+  eq(danglingSegue([[], [], []], 0), null, 'an empty set is not dangling');
+});
+
+group('graded segues', () => {
+  const mk = (id, o={}) => ({ ...perf({ song_id: id, len: 600, ...o }) });
+  const A = mk('a'), B = mk('b'), C = mk('c');
+  const pair = new Set(['a|b', 'b|c', 'c|a', 'b|a']);
+
+  const plain = scoreShow([[A, B], [], []], pair);
+  eq(plain.segues[0].points, SEGUE_POINTS, 'a canonical pair pays the base');
+
+  // The exact transition that take played is worth more.
+  const exact = { ...A, segued_into_id: 'b' };
+  eq(scoreShow([[exact, B], [], []], pair).segues[0].points,
+     SEGUE_POINTS + SEGUE_EXACT_BONUS, 'rebuilding the exact pair pays more');
+
+  // Three in a row: the third link is a run.
+  const run = scoreShow([[A, B, C], [], []], pair);
+  eq(run.segues.length, 2, 'two links across three songs');
+  eq(run.segues[1].points, SEGUE_POINTS, 'the second link is not yet a chain');
+  const four = scoreShow([[A, B, C, mk('d')], [], []], new Set([...pair, 'c|d']));
+  eq(four.segues[2].points, SEGUE_POINTS + SEGUE_CHAIN_BONUS, 'the third link pays the chain bonus');
+
+  // A > B > A closes a sandwich.
+  const sand = scoreShow([[A, B, mk('a')], [], []], pair);
+  const closing = sand.segues[sand.segues.length - 1];
+  eq(closing.kinds.includes('sandwich'), true, 'coming back closes a sandwich');
+  eq(closing.points >= SANDWICH_BONUS, true, 'and it pays for it');
+
+  eq(closesSandwich([A, B], mk('a'), pair), true, 'closesSandwich sees the return');
+  eq(closesSandwich([A, B], C, pair), false, 'a new song is not a sandwich');
+  eq(closesSandwich([A], mk('a'), pair), false, 'A straight back into A is not a sandwich');
 });
 
 group('respins cost stage time', () => {
