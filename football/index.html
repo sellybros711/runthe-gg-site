@@ -2342,6 +2342,93 @@ window.GA_ID='G-L29P5MRWKE';
     .wrap:has(#s-seed.on),
     .wrap:has(#s-over.on){max-width:min(860px,calc(100vw - 400px))}
   }
+
+  /* ================= THE TRADE MACHINE ON A WIDE SCREEN =================
+     The same system as the draft above, the same 920 / 1200 / 1260 thresholds, and the same
+     rule: EVERY RULE HERE IS INSIDE A MIN-WIDTH QUERY, so a phone renders byte-identically
+     to before. The mode was shipped at the default 600px wrap, which on a 1440 monitor is a
+     phone screenshot pasted into the middle of a desktop, and the offer sheet ran to 1,180px
+     of page against a 950px window: you could not see the lineup and the Accept button at
+     the same time, in a mode whose entire question is "is that lineup better than mine".
+
+     THE OFFER SHEET BECOMES TWO COLUMNS, split the way the decision is:
+
+       left    the team the deal would leave you with, and the three answers to it
+       right   the offer itself, which is the thing you read and page through
+
+     Consequence and decision together on the left, the proposal on the right. It is the
+     draft screen's arrangement with the roles swapped, because here the tall panel is the
+     offer rather than the field.
+
+     The columns are 0.85 / 1.15 rather than even. The deal card carries two columns of
+     player tiles inside it and gets the larger share so those tiles stay near the width
+     they were measured at; the lineup beside it is six one-line rows and needs less.
+
+     WHICH IS ALSO WHY .tt-grid GOES TO ONE COLUMN HERE, the opposite of what it does on a
+     phone. Three rows of two inside a 384px column would put each man in 180px and clip the
+     names. The left column has height to spare -- it is the short one -- so it spends it on
+     six full-width rows that read top to bottom in lineup order. */
+  @media (min-width:920px){
+    .wrap:has(#s-trade.on){max-width:1040px}
+    .wrap:has(#s-cut.on),
+    .wrap:has(#s-fa.on){max-width:860px}
+
+    /* Three rows of two. Each shop row is a name at the left and an FPPG at the right, so a
+       572px row was mostly the gap between them. */
+    .shop-list{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
+
+    /* #tw-market is shown by setting inline display to '' and hidden with 'none', so this
+       wins whenever it is visible and never fights the hide. */
+    #tw-market{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);
+      column-gap:24px;align-items:start}
+    #tw-market>.tt{grid-column:1;margin-top:0}
+    #tw-market>.deal{grid-column:2;grid-row:1/span 6;margin-top:0}
+    /* The three answers, under the lineup they act on. */
+    #tw-market>*:not(.tt):not(.deal){grid-column:1}
+    #tw-market .tt-grid{grid-template-columns:minmax(0,1fr)}
+
+    /* Cut and free agency are both "pick one of these cards", and a column of full-width
+       cards wide is the same wasted row the shop list had. */
+    .fa-cards{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+
+    /* THE INHERITED ROSTER, the mode's opening screen, gets the draft's arrangement because
+       it is the draft's shape: a formation graphic and a list beside it. The field here is
+       the same .field the draft draws and was solved for 260 to 572 wide, so a half of 1040
+       sits inside the measured range rather than outside it.
+       #rv-start-wrap and the payoff follow the roster into the right column, so the button
+       that leaves this screen is under the thing it is a reaction to. */
+    .wrap:has(#s-reveal.on){max-width:1040px}
+    /* .on, and it matters: #s-reveal beats .screen{display:none} on specificity, so an
+       unscoped display here would leave this screen showing on top of every other one. */
+    #s-reveal.on{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      column-gap:24px;align-items:start}
+    #s-reveal>.eyebrow,#s-reveal>h2,#s-reveal>p{grid-column:1/-1}
+    #s-reveal>#field-rv{grid-column:1;margin-top:0}
+    #s-reveal>#rv-roster,#s-reveal>#rv-skip,
+    #s-reveal>#rv-payoff,#s-reveal>#rv-start-wrap{grid-column:2}
+    #s-reveal>#rv-roster{margin-top:0}
+  }
+  /* The ad rails arrive at 1200 and want 200 a side, leaving 800, and 800 is not two columns
+     of offer sheet: the deal's tiles would come out under 190px against the 280 they are
+     drawn for. One good column beats two cramped ones, exactly as the draft decided. */
+  @media (min-width:1200px) and (max-width:1259px){
+    .wrap:has(#s-trade.on){max-width:600px}
+    .shop-list{display:flex;flex-direction:column}
+    #tw-market{display:block}
+    #tw-market>.tt{margin-top:8px}
+    #tw-market>.deal{margin-top:8px}
+    #tw-market .tt-grid{grid-template-columns:1fr 1fr}
+    .fa-cards{display:flex;flex-direction:column}
+    .wrap:has(#s-reveal.on){max-width:600px}
+    #s-reveal.on{display:block}
+    #s-reveal>#rv-roster{margin-top:10px}
+  }
+  @media (min-width:1260px){
+    .wrap:has(#s-trade.on),
+    .wrap:has(#s-reveal.on){max-width:min(1040px,calc(100vw - 400px))}
+    .wrap:has(#s-cut.on),
+    .wrap:has(#s-fa.on){max-width:min(860px,calc(100vw - 400px))}
+  }
   /* Tiles arrive as a consequence of the reels landing, so they come in on a short
      stagger rather than all at once out of nowhere. */
   @keyframes optin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
