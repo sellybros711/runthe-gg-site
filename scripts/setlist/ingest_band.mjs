@@ -219,6 +219,33 @@ async function fetchAllRows() {
 }
 
 /**
+ * The community jamcharts: which performances the curators wrote up, which they
+ * flagged "recommended", and the note explaining why. One small endpoint for
+ * the whole archive, joined back onto the setlist rows by uniqueid.
+ *
+ * A failure here degrades rather than breaks — the CSV still builds, just
+ * without the esteem ratings and the notes, so it says so loudly.
+ */
+async function fetchJamcharts() {
+  const map = new Map();
+  try {
+    const rows = await getJSON(`${API}/jamcharts.json`, { retryEmpty: true });
+    const mine = ARTIST_ID ? rows.filter(r => String(r.artist_id) === ARTIST_ID) : rows;
+    for (const r of mine) {
+      map.set(String(r.uniqueid), {
+        recommended: String(r.isrecommended) === '1',
+        note: decodeEntities(r.jamchartnote || '').replace(/\s+/g, ' ').trim(),
+      });
+    }
+    console.log(`  ${map.size} jamchart entries`);
+  } catch (e) {
+    console.warn(`  WARNING: jamcharts unavailable (${e.message})`);
+    console.warn('  crowd_rating and jamchart_note will be blank — scoring falls back to neutral.');
+  }
+  return map;
+}
+
+/**
  * Print what the API actually returns for one year, without writing anything.
  * The fastest way to find out whether the field mapping below still holds.
  */
@@ -351,6 +378,43 @@ function median(nums) {
   return a.length % 2 ? a[m] : Math.round((a[m - 1] + a[m]) / 2);
 }
 
+// ── song esteem → crowd_rating ───────────────────────────────────────────────
+/*
+ * crowd_rating is the game's "how much do people treasure this song" number,
+ * with NEUTRAL_ESTEEM meaning ordinary. elgoose publishes no song ratings, so
+ * it is derived from the community's own jamcharts: how many versions of a song
+ * the curators wrote up, and how many of those they flagged "recommended".
+ *
+ * Checked against the fan Jam of the Year brackets (six annual community-voted
+ * events): of the nine songs known to have won or been most-nominated, eight
+ * land in the top 18 of the 91 charted songs. The outlier is A Western Sun,
+ * which won in 2021 and has been played far less since. That is close enough to
+ * treat jamchart standing as a stand-in for fan esteem — and unlike the
+ * brackets, which live in PDFs on sites that block automated fetching, it comes
+ * down the same API as everything else and refreshes with the data.
+ */
+export const NEUTRAL_ESTEEM = 30;   // must match scoring.js NEUTRAL_BASE
+const ESTEEM_MAX = 75;              // the very top of the jamcharts
+const ESTEEM_REC_WEIGHT = 2;        // a "recommended" version counts double
+
+function esteemBySong(rows) {
+  const tally = new Map();
+  for (const r of rows) {
+    if (r.is_jamchart !== 'true') continue;
+    if (!tally.has(r.song_id)) tally.set(r.song_id, 0);
+    tally.set(r.song_id, tally.get(r.song_id) + 1 + (r.is_recommended === 'true' ? ESTEEM_REC_WEIGHT : 0));
+  }
+  // Rank-free scaling: the top song sets the ceiling, everything else lands in
+  // proportion. Songs the curators never wrote up stay neutral rather than
+  // being punished — plenty of well-loved songs are simply not jam vehicles.
+  const top = Math.max(1, ...tally.values());
+  const out = new Map();
+  for (const [id, n] of tally) {
+    out.set(id, Math.round(NEUTRAL_ESTEEM + (ESTEEM_MAX - NEUTRAL_ESTEEM) * Math.sqrt(n / top)));
+  }
+  return out;
+}
+
 function rarityTier(gap) {
   const g = Number(gap) || 0;
   if (g >= 100) return 50;
@@ -364,8 +428,8 @@ function rarityTier(gap) {
 const COLUMNS = [
   'show_id', 'show_date', 'year', 'venue', 'city', 'state', 'set', 'position',
   'song', 'song_id', 'is_cover', 'original_artist', 'length_sec', 'show_gap',
-  'times_played', 'rarity_rating', 'crowd_rating', 'is_jamchart', 'transition',
-  'is_segue', 'tags',
+  'times_played', 'rarity_rating', 'crowd_rating', 'is_jamchart', 'is_recommended',
+  'jamchart_note', 'transition', 'is_segue', 'tags',
 ];
 
 function csvCell(v) {
@@ -386,6 +450,7 @@ function csvCell(v) {
 export function buildCSV(raw, opts = {}) {
   const limit = opts.limit || 0;
   const say = opts.quiet ? () => {} : (...a) => console.log(...a);
+  const jamcharts = opts.jamcharts || new Map();
 
   // Normalise into our shape, dropping rows with nothing to key on.
   const rows = [];
@@ -394,6 +459,9 @@ export function buildCSV(raw, opts = {}) {
     const date = String(pick(r, 'showdate', 'show_date')).slice(0, 10);
     const song = pick(r, 'songname', 'song');
     if (!showId || !date || !song) continue;
+
+    // Jamchart curation for THIS performance, keyed on the row's uniqueid.
+    const jc = jamcharts.get(String(pick(r, 'uniqueid'))) || null;
 
     rows.push({
       show_id: String(showId),
@@ -410,6 +478,8 @@ export function buildCSV(raw, opts = {}) {
       original_artist: pick(r, 'original_artist', 'originalartist'),
       length_sec: toSeconds(pick(r, 'tracktime', 'duration')),
       is_jamchart: truthy(r.isjamchart) ? 'true' : 'false',
+      is_recommended: jc && jc.recommended ? 'true' : 'false',
+      jamchart_note: jc ? jc.note : '',
       transition: String(pick(r, 'transition') || '').trim(),
     });
   }
@@ -509,12 +579,13 @@ export function buildCSV(raw, opts = {}) {
   }
 
   // Write.
+  const esteem = esteemBySong(rows);
   const out = [COLUMNS.join(',')];
   let performances = 0;
   for (const show of shows) {
     for (const r of show.songs) {
       r.tags = tagsFor.get(r.song_id) || '';
-      r.crowd_rating = '';   // elgoose has no ratings — see the header comment
+      r.crowd_rating = esteem.get(r.song_id) || '';   // blank → scoring's neutral
       out.push(COLUMNS.map(c => csvCell(r[c])).join(','));
       performances += 1;
     }
@@ -522,6 +593,9 @@ export function buildCSV(raw, opts = {}) {
 
   const tagged = Array.from(tagsFor.values()).filter(Boolean).length;
   say(`  ${tagged} of ${stats.size} songs carry at least one tag`);
+  const rec = rows.filter(r => r.is_recommended === 'true').length;
+  say(`  ${esteem.size} songs carry a jamchart-derived esteem rating`);
+  say(`  ${rows.filter(r => r.is_jamchart === 'true').length} jamcharted versions, ${rec} of them "recommended"`);
 
   return {
     csv: out.join('\n') + '\n',
@@ -540,7 +614,8 @@ async function main() {
   if (!raw.length) throw new Error('No rows returned — nothing to write.');
   console.log(`  ${raw.length} raw rows`);
 
-  const { csv, shows, performances, songs } = buildCSV(raw, { limit: LIMIT });
+  const jamcharts = await fetchJamcharts();
+  const { csv, shows, performances, songs } = buildCSV(raw, { limit: LIMIT, jamcharts });
 
   mkdirSync(dirname(OUT), { recursive: true });
   writeFileSync(OUT, csv, 'utf8');

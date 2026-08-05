@@ -52,8 +52,10 @@ not enforced — but the ingester writes them in this order and should keep doin
 | `show_gap` | Shows between this play and the song's previous one. `0` on debut. **Feeds rarity scoring.** |
 | `times_played` | Running count including this play. Display only. |
 | `rarity_rating` | The rarity tier this gap lands in. Display only — `scoring.js` recomputes from `show_gap`. |
-| `crowd_rating` | Song "belovedness", ~30 = neutral. **Blank for Goose** (elgoose has no ratings); the game falls back to `NEUTRAL_BASE`. |
-| `is_jamchart` | `true` / `false`. Feeds the version multiplier. |
+| `crowd_rating` | Song esteem — how much fans treasure the song. 30 = ordinary, 75 = top of the jamcharts. Derived, see below. Blank falls back to `NEUTRAL_BASE`. |
+| `is_jamchart` | `true` / `false`. The jamchart curators wrote this version up. |
+| `is_recommended` | `true` / `false`. The curators flagged this version a standout — the strongest quality signal in the data. 126 of 7504 rows. |
+| `jamchart_note` | The curators' prose on why this version matters. Shown on the result screen. |
 | `transition` | Raw transition mark out of this song (`>`, `->`, `,`, ``). |
 | `is_segue` | `true` when `transition` is a real segue (`>` / `->`). |
 | `tags` | Pipe-delimited slot-fit tags. **Drives placement scoring.** |
@@ -82,9 +84,32 @@ none — an untagged song scores the neutral placement multiplier everywhere.
 Tuning these changes how the game plays, so treat a threshold change as a
 gameplay change: edit `TAGS`, regenerate, and replay a few rounds.
 
+## Song esteem (`crowd_rating`)
+
+elgoose publishes no song ratings, so before v3 this column was blank and every
+song scored identically — song choice, the whole point of the game, was worth
+nothing.
+
+It now comes from the community's own jamcharts: how many versions of a song the
+curators wrote up, and how many of those they marked "recommended" (worth
+double). The top song sets the ceiling at 75 and the rest scale by square root;
+songs the curators never wrote up stay at the neutral 30 rather than being
+punished, because plenty of well-loved songs are simply not jam vehicles.
+
+**Why this is a fair stand-in for fan opinion.** Checked against the six annual
+fan-voted *Goose Jam of the Year* brackets: of the nine songs known to have won
+or been most-nominated, eight land in the top 18 of the 91 charted songs. The
+outlier is A Western Sun, which won in 2021 and has been played far less since.
+
+The brackets themselves would be a better source, but they live in PDFs on sites
+that return 403 to automated fetches, so they cannot be ingested or refreshed.
+Jamchart standing comes down the same API as everything else.
+
+91 of 366 songs carry a rating; 27 distinct values are in play.
+
 ## Adding a band
 
 1. Write `setlist/data/<band>.csv` to this contract.
 2. Add an entry to `BANDS` in `setlist/index.html`.
 
-The daily seed is `hash(band + YYYY-MM-DD)`, so each band has its own daily.
+Every run draws a fresh random eight shows; there is no seeded mode.
