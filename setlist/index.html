@@ -24,7 +24,7 @@
 <meta property="og:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Anton&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
 <style>
   /* ---------------- design tokens (dark default + light override) ---------------- */
   :root{
@@ -42,7 +42,15 @@
     --dye:conic-gradient(from 210deg at 50% 50%,
       var(--coral) 0deg, var(--gold) 62deg, var(--green) 128deg,
       var(--teal) 196deg, var(--violet) 268deg, var(--coral) 360deg);
-    --hero:'Anton', Impact, sans-serif;
+    /* Two display faces, split by size rather than by taste.
+       --hero is the loud one: a 70s slab that belongs next to tie dye, and
+       wide enough that the conic gradient sweeps its whole range across a
+       word. Anton is so condensed the dye only ever showed two colours.
+       --ui is that same condensed Anton, kept for the handful of small
+       letterspaced labels where a slab turns to mush and, in the HUD, where
+       a wider face would push "remaining" back out of a 390px screen. */
+    --hero:'Alfa Slab One', Rockwell, Georgia, serif;
+    --ui:'Anton', Impact, sans-serif;
     --body:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   }
   :root[data-theme="light"]{
@@ -54,7 +62,12 @@
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
-  html,body{margin:0; padding:0;}
+  /* The hero's tie-dye spiral is deliberately larger than the hero and bleeds
+     off both edges, which was adding ~59px of sideways scroll on a phone.
+     overflow-x:clip and not hidden on purpose: clip trims the bleed without
+     making the element a scroll container, so the sticky topbar, set panel and
+     playback header keep sticking. */
+  html,body{margin:0; padding:0; overflow-x:clip;}
   body{font-family:var(--body); color:var(--ink); min-height:100dvh;
     -webkit-font-smoothing:antialiased; background:var(--bg);}
   a{color:inherit; text-decoration:none;}
@@ -130,8 +143,11 @@
     opacity:.10; pointer-events:none;
   }
   :root[data-theme="light"] .hero:before{opacity:.09;}
-  .hero h1{font-family:var(--hero); font-size:clamp(40px,9.5vw,72px); line-height:.92;
-    letter-spacing:.5px; margin:5px 0 9px; text-transform:uppercase;}
+  /* No added tracking: the slab carries its own sidebearings, and at 40px on a
+     320px screen the extra half-pixel per letter is the difference between
+     filling the line and running past the gutter. */
+  .hero h1{font-family:var(--hero); font-size:clamp(38px,9.2vw,68px); line-height:.94;
+    letter-spacing:0; margin:5px 0 9px; text-transform:uppercase;}
   .hero h1 .accent{color:var(--gold);}
   /* @supports so a browser without background-clip:text still shows the word in
      gold rather than showing nothing at all. */
@@ -159,7 +175,7 @@
   .steps{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:18px 0 16px;}
   .step{padding:11px 11px 12px; border-radius:var(--r-md); background:var(--card);
     border:1px solid var(--line);}
-  .step b{display:block; font-family:var(--hero); font-size:17px; color:var(--teal); line-height:1;
+  .step b{display:block; font-family:var(--ui); font-size:18px; color:var(--teal); line-height:1;
     margin-bottom:5px;}
   .step span{font-size:11.5px; color:var(--mut); line-height:1.45; font-weight:600;}
   @media (max-width:420px){ .step{padding:9px 9px 10px;} .step span{font-size:11px;} }
@@ -208,7 +224,7 @@
     padding:9px 14px; margin-bottom:10px;}
   .hud{gap:8px;}
   .hud > div:first-child{min-width:0;}
-  .hud .rd{font-family:var(--hero); font-size:18px; line-height:1.05;
+  .hud .rd{font-family:var(--ui); font-size:18px; line-height:1.05;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .hud .rd-clock{color:var(--mut); font-variant-numeric:tabular-nums;
     transition:color .3s ease;}
@@ -519,7 +535,7 @@
   .sim-sub{font-size:12.5px; font-weight:700; color:var(--dim); margin-top:4px;
     min-height:1.2em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .sim-feed{display:flex; flex-direction:column; gap:8px;}
-  .sim-set{font-family:var(--hero); font-size:15px; letter-spacing:2px; text-transform:uppercase;
+  .sim-set{font-family:var(--ui); font-size:15px; letter-spacing:2px; text-transform:uppercase;
     color:var(--dim); padding:10px 0 2px; border-top:1px solid var(--line);}
   .sim-song{background:var(--card); border:1px solid var(--line); border-radius:var(--r-md);
     padding:10px 13px; box-shadow:var(--shadow);
