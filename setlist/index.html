@@ -162,7 +162,12 @@
   /* ---------------- draft ---------------- */
   .hud{display:flex; align-items:center; justify-content:space-between; gap:12px;
     padding:9px 14px; margin-bottom:10px;}
-  .hud .rd{font-family:var(--hero); font-size:19px; line-height:1;}
+  .hud{gap:8px;}
+  .hud > div:first-child{min-width:0;}
+  .hud .rd{font-family:var(--hero); font-size:18px; line-height:1.05;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .hud .rd-clock{color:var(--mut); font-variant-numeric:tabular-nums;}
+  .hud .rd-clock.low{color:var(--coralT);}
   .hud .md{font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
     color:var(--dim); margin-top:3px;}
   .pips{display:flex; gap:5px;}
@@ -374,7 +379,34 @@
     color:var(--dim); margin-bottom:4px;}
   .skip{margin-top:12px; font-size:11px; font-weight:700; color:var(--dim);}
   .btn.small{font-size:13px; padding:9px 14px; margin-top:7px;}
+
+  /* Closing a set is the pivotal irreversible move, so it reads as a real
+     choice next to the primary rather than a footnote under it. */
+  .btn.closeset{flex-direction:column; gap:1px; margin-top:8px; padding:10px 14px;
+    background:transparent; border-style:dashed;}
+  .btn.closeset .cs-t{font-size:14px; font-weight:800;}
+  .btn.closeset .cs-s{font-size:11px; font-weight:700; color:var(--dim);}
+  .btn.closeset:hover{border-color:var(--gold); border-style:solid;}
+  /* When the set is nearly spent, or nothing fits, this IS the move. */
+  .btn.closeset.urge{border-style:solid; border-color:var(--gold); background:
+    color-mix(in srgb,var(--gold) 12%, transparent);}
+  .btn.closeset.urge .cs-t{color:var(--goldT);}
+
+  .banked{margin-top:5px; font-size:11px; font-weight:800; color:var(--greenT);}
+  .banked b{font-variant-numeric:tabular-nums;}
+  .burned{margin-top:3px; font-size:11px; font-weight:800; color:var(--coralT);
+    font-variant-numeric:tabular-nums;}
   .bdlen{font-size:12px; color:var(--dim); font-weight:700;}
+  .gotaway{padding:14px 16px; margin-top:12px;
+    border-left:3px solid var(--coral);}
+  .ga-lbl{font-size:10px; font-weight:900; letter-spacing:1.8px; text-transform:uppercase;
+    color:var(--coralT);}
+  .ga-song{font-family:var(--hero); font-size:22px; margin-top:4px; line-height:1.1;}
+  .ga-len{font-family:var(--body); font-size:13px; font-weight:800; color:var(--mut);}
+  .ga-meta{font-size:12px; font-weight:700; color:var(--dim); margin-top:3px;}
+  .ga-why{font-size:12.5px; font-weight:600; color:var(--mut); line-height:1.5; margin-top:7px;}
+  .ga-why b{color:var(--goldT);}
+
   .headline{font-size:15px; font-weight:800; line-height:1.4; margin-top:8px;
     color:var(--goldT); font-style:italic;}
 
@@ -499,11 +531,11 @@ setTimeout(function(){
 <script type="module">
 import {
   SETS, MAX_ROUNDS, ENCORE_INDEX, ARC_MAX, TIME_POINTS_PER_SET,
-  RESPIN_COSTS, respinCost, canRespin,
+  RESPIN_COSTS, respinCost, canRespin, theOneThatGotAway,
   scoreShow, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=5';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=5';
+} from './scoring.js?v=6';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=6';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -600,6 +632,8 @@ const S = {
   closed: [false, false, false],
   spent: [0, 0, 0],    // stage time burned on respins, per set
   respins: 0,          // how many this run — each costs more than the last
+  seenShows: new Set(),
+  seenSongs: [],       // every song offered, for "the one that got away"
   pickedSong: null,
   hint: '',
   hintBad: false,
@@ -805,8 +839,9 @@ function setsPanelHTML({ live }){
         </span>
       </div>
       <div class="bar"><span style="width:${pct}%"></span></div>
-      <div class="set-sub">${songs.length}/${cfg.maxSongs} songs · ${fmtClock(used)} of ${fmtClock(bud[i])}${
-        inherited ? ` · +${fmtClock(bud[i] - cfg.seconds)} banked` : ''}</div>
+      <div class="set-sub">${songs.length}/${cfg.maxSongs} songs · ${fmtClock(used)} of ${fmtClock(bud[i])}</div>
+      ${inherited ? `<div class="banked"><b>+${fmtClock(bud[i] - cfg.seconds)}</b> banked from the sets</div>` : ''}
+      ${S.spent[i] ? `<div class="burned">&minus;${fmtClock(S.spent[i])} spent spinning</div>` : ''}
       ${rows}
     </div>`;
   }).join('');
@@ -869,8 +904,9 @@ function renderDraft(){
   app.innerHTML = `
     <div class="card hud">
       <div>
-        <div class="rd">${esc(cfg.label)}<span style="color:var(--dim)"> · ${fmtClock(Math.max(0, left))} left</span></div>
-        <div class="md">${esc(S.band.label)} · pick ${S.round + 1}</div>
+        <div class="rd">${esc(cfg.label)}
+          <span class="rd-clock ${left < 6 * 60 ? 'low' : ''}">${fmtClock(Math.max(0, left))}</span></div>
+        <div class="md">Pick ${S.round + 1}${S.respins ? ` · ${S.respins} spin${S.respins > 1 ? 's' : ''}` : ''}</div>
       </div>
       <div class="hud-btns">
         ${(() => {
@@ -879,7 +915,7 @@ function renderDraft(){
           if (cost === null) return '<span class="nospin">No spins left</span>';
           return `<button class="btn tiny spin" type="button" id="respinBtn" ${can ? '' : 'disabled'}
             title="${can ? '' : 'Not enough time left in this set'}">
-            Spin again &middot; ${fmtClock(cost)}</button>`;
+            Spin &middot; ${fmtClock(cost)}</button>`;
         })()}
         <button class="btn tiny" type="button" id="openSets">Clock</button>
       </div>
@@ -909,13 +945,17 @@ function renderDraft(){
             <button class="btn primary" type="button" id="lockBtn" ${S.pickedSong ? '' : 'disabled'}>
               ${S.pickedSong ? `Play it (${fmtClock(lenOf(S.pickedSong))})` : 'Pick a song'}
             </button>
-            <button class="btn ghost small" type="button" id="closeSetBtn">
-              ${si === ENCORE_INDEX ? 'End the show' : `Close ${esc(cfg.label)}`}
+            <button class="btn closeset ${!fits.length || left < 6 * 60 ? 'urge' : ''}"
+              type="button" id="closeSetBtn">
+              <span class="cs-t">${si === ENCORE_INDEX ? 'End the show' : `Close ${esc(cfg.label)}`}</span>
+              <span class="cs-s">${si === ENCORE_INDEX
+                ? 'Final. Scores the night.'
+                : `Banks ${fmtClock(Math.max(0, left))} for the encore`}</span>
             </button>
             <div class="hint ${S.hintBad ? 'bad' : ''}">${esc(S.hint
-              || (si === ENCORE_INDEX
-                ? 'Leftover time from the sets is yours here.'
-                : 'Close early and the encore inherits the time.'))}</div>
+              || (!fits.length ? 'Nothing here fits — closing is the only move.'
+                : si === ENCORE_INDEX ? 'Leftover time from the sets is yours here.'
+                : 'Every minute you leave unplayed goes to the encore.'))}</div>
           </div>
         </aside>
       </div>
@@ -995,6 +1035,21 @@ function renderResult(){
         <div class="band-meta" style="margin:6px 0 0">${esc(S.band.label)} ·
           ${r.stats.songs} songs · ${fmtClock(r.totalUsed)} on stage</div>
       </div>
+
+      ${S.missed ? `
+      <div class="card gotaway">
+        <div class="ga-lbl">The one that got away</div>
+        <div class="ga-song">${esc(S.missed.perf.song)}
+          <span class="ga-len">${fmtClock(lenOf(S.missed.perf))}</span></div>
+        <div class="ga-meta">${esc(fmtDate(S.missed.perf.show_date))} ·
+          ${esc(S.missed.perf.venue || '')}</div>
+        <div class="ga-why">You were shown it and left it there.
+          ${S.missed.role ? `As ${esc(S.missed.role.name.toLowerCase())} it` : 'It'}
+          was worth <b>${S.missed.score.subtotal}</b>${
+            S.missed.score.versionReasons.length
+              ? ' — ' + esc(S.missed.score.versionReasons.map(v => v.label.toLowerCase()).join(', '))
+              : ''}.</div>
+      </div>` : ''}
 
       <div class="breakdown">
         <div class="bd"><div class="v">${r.songTotal}</div><div class="k">Songs</div></div>
@@ -1156,6 +1211,7 @@ async function start(bandId){
   S.spent = [0, 0, 0];
   S.respins = 0;
   S.seenShows = new Set();
+  S.seenSongs = [];
   S.pickedSong = null; S.sheetForced = false;
   S.hint = ''; S.hintBad = false; S.result = null;
   drawShow();
@@ -1169,6 +1225,8 @@ function drawShow(){
   const from = fresh.length ? fresh : all;
   S.show = from[Math.floor(S.rng() * from.length)];
   S.seenShows.add(S.show.show_id);
+  // Everything they were offered, for "the one that got away".
+  S.show.songs.forEach(p => S.seenSongs.push(p));
 }
 
 /** Index of the set being built, or -1 when the show is over. */
@@ -1237,6 +1295,7 @@ function nextRound(){
 
 function finishShow(){
   S.result = scoreShow(S.sets, S.data.segues, S.spent);
+  S.missed = theOneThatGotAway(S.seenSongs, S.sets);
   setScreen('result');
 }
 
