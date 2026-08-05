@@ -144,6 +144,31 @@
 .a-tap-target{min-width:var(--a-tap); min-height:var(--a-tap);}
 .a-row{display:flex; align-items:center; gap:var(--a-sp-2);}
 
+/* ---- centered game title ("word art") + bigger logo ----------------------
+   Any page that drops in a .a-gametitle gets an enlarged logo and its old
+   under-logo sublabel hidden automatically, so games opt in with one element.
+   Per-game accent comes from an inline --a-tc on the title element. */
+body:has(.a-gametitle) .brand.logo img{height:74px;}
+body:has(.a-gametitle) .brand.logo .sub{display:none;}
+.a-gametitle{
+  display:block; text-align:center; margin:2px 0 15px;
+  font-family:'Anton', Impact, sans-serif; font-weight:400;
+  text-transform:uppercase; letter-spacing:.02em; line-height:.9;
+  font-size:clamp(28px, 8vw, 54px);
+  color:var(--a-tc, #F2B632);
+  background:linear-gradient(179deg,
+    color-mix(in srgb, var(--a-tc, #F2B632) 78%, #fff),
+    var(--a-tc, #F2B632) 58%,
+    color-mix(in srgb, var(--a-tc, #F2B632) 82%, #000));
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  filter:drop-shadow(2px 3px 0 rgba(7,20,38,.5));
+}
+:root[data-theme="light"] .a-gametitle{ filter:drop-shadow(2px 3px 0 rgba(13,27,44,.24)); }
+@media (max-width:760px){
+  body:has(.a-gametitle) .brand.logo img{height:60px;}
+  .a-gametitle{margin:0 0 12px;}
+}
+
 /* ---- shared focus + reduced motion (scoped to a- components only) --------- */
 .a-btn:focus-visible,.a-card:focus-visible,.a-status:focus-visible,
 .a-panel a:focus-visible,.a-hud a:focus-visible,.a-hud button:focus-visible{

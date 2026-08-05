@@ -63,17 +63,23 @@
   .chip .n{font-family:var(--hero); font-weight:400; font-size:17px; line-height:1; color:var(--coralT); font-variant-numeric:tabular-nums;}
   .chip .l{font-size:8px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); margin-top:4px;}
 
-  /* run banner */
-  .runbar{display:flex; align-items:center; gap:14px; background:var(--card); border:1px solid var(--line); border-left:5px solid var(--gold); border-radius:14px; padding:12px 16px; box-shadow:var(--shadow); margin-bottom:14px;}
-  .runbar .big{font-family:var(--hero); font-weight:400; font-size:40px; line-height:.9; color:var(--goldT); font-variant-numeric:tabular-nums;}
-  .runbar .rl{min-width:0; flex:1;}
-  .runbar .rl .k{display:block; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
-  .runbar .rl .v{display:block; font-size:13px; color:var(--ink); margin-top:3px; font-weight:700;}
+  /* run banner: two hero stats — current run + all-time best — flank the note */
+  .runbar{display:flex; align-items:center; gap:16px; background:var(--card); border:1px solid var(--line); border-left:6px solid var(--gold); border-radius:14px; padding:12px 18px; box-shadow:var(--shadow); margin-bottom:14px;}
+  .runbar .rstat{flex:0 0 auto; text-align:center; min-width:70px;}
+  .runbar .rstat .big{display:block; font-family:var(--hero); font-weight:400; font-size:52px; line-height:.85; font-variant-numeric:tabular-nums;}
+  .runbar .rstat.cur .big{color:var(--goldT);}
+  .runbar .rstat.best .big{color:var(--ink);}
+  .runbar .rstat .lab{display:block; font-size:9px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); margin-top:5px;}
+  .runbar .rl{min-width:0; flex:1; display:flex; flex-direction:column; gap:8px; align-items:flex-start;}
+  .runbar .rl .v{display:block; font-size:12.5px; color:var(--mut); margin-top:0; font-weight:700; line-height:1.35;}
   .shieldpill{flex:0 0 auto; font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--goldT); border:1px solid var(--goldT); border-radius:999px; padding:3px 9px; white-space:nowrap;}
   .shieldpill.used{color:var(--dim); border-color:var(--line2); opacity:.6;}
-  .runbar .best{flex:0 0 auto; text-align:right;}
-  .runbar .best .n{font-family:var(--hero); font-weight:400; font-size:22px; color:var(--mut); line-height:1;}
-  .runbar .best .c{display:block; font-size:8.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-top:3px;}
+  @media (max-width:760px){
+    .runbar{gap:12px; padding:11px 13px;}
+    .runbar .rstat{min-width:56px;}
+    .runbar .rstat .big{font-size:42px;}
+    .runbar .rl .v{font-size:11.5px;}
+  }
 
   .prompt{text-align:center; font-weight:900; font-size:clamp(16px,2.6vh,23px); color:var(--ink); margin:2px 0 clamp(12px,2vh,20px); letter-spacing:.01em;}
 
@@ -163,11 +169,12 @@
     <div class="chip"><span class="n" id="streakN">0</span><span class="l">Streak</span></div>
   </div>
 
+  <div class="a-gametitle" style="--a-tc:#F2B632">Run The Table</div>
+
   <div class="runbar">
-    <div class="big" id="runN">0</div>
-    <div class="rl"><span class="k">In a row today</span><span class="v" id="runSub">One save per run. A second miss ends it.</span></div>
-    <span class="shieldpill" id="shieldPill">Save ready</span>
-    <div class="best"><span class="n" id="bestRun">0</span><span class="c">Best</span></div>
+    <div class="rstat cur"><span class="big" id="runN">0</span><span class="lab">In a row</span></div>
+    <div class="rl"><span class="v" id="runSub">One save resets you to 0 but keeps you playing. A second miss ends the run.</span><span class="shieldpill" id="shieldPill">Save ready</span></div>
+    <div class="rstat best"><span class="big" id="bestRun">0</span><span class="lab">Best ever</span></div>
   </div>
 
   <div class="playzone">
@@ -272,8 +279,8 @@
   }
   var SEQ=buildRounds();
 
-  var idx=0, run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, charged=false, attemptFirst=false;
-  var shield=true;   // arcade second chance: first wrong pick is forgiven once per run
+  var idx=0, run=0, peak=0, done=false, busy=false, started=false, startTs=0, elapsed=0, charged=false, attemptFirst=false;
+  var shield=true;   // arcade second chance: your one save resets the run to 0 but keeps you playing
   var vs=document.getElementById('versus');
   function updateShieldPill(){ var p=document.getElementById('shieldPill'); if(!p) return;
     if(shield){ p.textContent='Save ready'; p.classList.remove('used'); }
@@ -299,18 +306,19 @@
     var right = side===correct;
     cards[correct].classList.add('correct'); if(!right) cards[side].classList.add('wrong'); else cards[side===0?1:0].classList.add('dim');
     if(right){
-      run++; document.getElementById('runN').textContent=run;
+      run++; if(run>peak) peak=run; document.getElementById('runN').textContent=run;
       if(window.RTGSound) RTGSound.lock();
       idx++;
       saveResume();
       setTimeout(function(){ busy=false; renderRound(); }, 720);
     } else if(shield){
-      // Second chance: the shield eats this miss. Numbers stay revealed so the
-      // player can read them, then the run continues. The missed pair simply
-      // doesn't count — run total is untouched.
+      // Your one save: this miss doesn't end the run, but it resets your in-a-row
+      // back to 0 — your best (the peak you reached) is banked and keeps standing.
+      // Numbers stay revealed so you can read them, then play continues.
       shield=false; updateShieldPill();
+      run=0; document.getElementById('runN').textContent=run;
       if(window.RTGSound) RTGSound.soft();
-      toast('Saved. One miss forgiven');
+      toast('Saved — back to 0, keep going');
       idx++;
       saveResume();
       setTimeout(function(){ busy=false; renderRound(); }, 1400);
@@ -334,7 +342,7 @@
     var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME)>0);
     if(isReplay && !ARCHIVE) clearResume();   // replays are practice: never resumable
     if(isReplay){ seedRandom(); SEQ=buildRounds(); } else { seedDaily(); SEQ=buildRounds(); servedDaily=true; }
-    idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
+    idx=0; run=0; peak=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false;
     shield=true; updateShieldPill();
     document.getElementById('runN').textContent='0';
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
@@ -349,6 +357,7 @@
     seedDaily(); SEQ=buildRounds(); servedDaily=true;
     idx=Math.max(0, Math.min(SEQ.length, r.idx|0));
     run=Math.max(0, r.run|0);
+    peak=Math.max(run, r.peak|0);
     shield=(r.shield!==false); updateShieldPill();
     done=false; busy=false; charged=true; attemptFirst=true; started=true;
     startTs=performance.now()-Math.max(0, r.elapsed|0)*1000;
@@ -373,7 +382,7 @@
   var RESUME_KEY='rtg:resume:table';
   function loadResume(){ try{ var r=JSON.parse(LS.getItem(RESUME_KEY)); return (r&&typeof r==='object')?r:null; }catch(e){ return null; } }
   function saveResume(){ if(ARCHIVE||!attemptFirst||done) return;
-    try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), idx:idx, run:run, shield:shield })); }catch(e){} }
+    try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), idx:idx, run:run, peak:peak, shield:shield })); }catch(e){} }
   function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
 
   function finish(){
@@ -384,31 +393,33 @@
     if(s.lastDone!==today){
       s.streak=(s.lastDone===y)?(s.streak||0)+1:1;   // day-streak: played today
     }
-    s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, run); s.last={ run:run, seconds:Math.round(elapsed) };
+    var score=Math.max(run, peak);
+    s.lastDone=today; s.bestRun=Math.max(s.bestRun||0, score); s.last={ run:score, seconds:Math.round(elapsed) };
     save(s);
     showEnd(s, false);
-    if(run>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
-      RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:run }).then(function(res){
+    if(score>0 && attemptFirst && !ARCHIVE && window.RTG_BOARD){
+      RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:0, reveals:0, runLen:score }).then(function(res){
         if(res&&res.streak){ document.getElementById('streakN').textContent=res.streak; document.getElementById('mStreak').textContent=res.streak; }
         renderRealBoard();
       });
     }
   }
   function showEnd(s, locked){
+    var score=Math.max(run, peak);
     document.getElementById('streakN').textContent=s.streak||0;
-    document.getElementById('runN').textContent=run;
+    document.getElementById('runN').textContent=score;
     document.getElementById('bestRun').textContent=s.bestRun||0;
-    document.getElementById('mRun').textContent=run;
+    document.getElementById('mRun').textContent=score;
     document.getElementById('mBest').textContent=s.bestRun||0;
     document.getElementById('mStreak').textContent=s.streak||0;
-    var sub = locked ? 'Your run today' : (!attemptFirst ? 'Practice run, not ranked' : (run>=SEQ.length?'You cleared the whole table!':'Your run ended'));
+    var sub = locked ? 'Your run today' : (!attemptFirst ? 'Practice run, not ranked' : (score>=SEQ.length?'You cleared the whole table!':'Your run ended'));
     if(!locked && !shield) sub += ' · used your save';
     document.getElementById('mSub').textContent = sub;
     document.getElementById('mTitle').textContent = 'IN A ROW';
-    document.getElementById('yourTm').textContent = run+' in a row';
+    document.getElementById('yourTm').textContent = score+' in a row';
     document.getElementById('yourBest').textContent = s.bestRun||0;
     updateAgainBtn();
-    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && run>=5){ confetti(run>=15?120:70, run>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
+    setTimeout(function(){ document.getElementById('scrim').classList.remove('hidden'); if(!locked && attemptFirst && score>=5){ confetti(score>=15?120:70, score>=15); if(window.RTGSound) RTGSound.win(); } startCountdown(); }, 300);
   }
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
@@ -417,8 +428,9 @@
     beginAttempt();
   });
   document.getElementById('mShare').addEventListener('click', function(){
-    var bar=run>0?('🟩'.repeat(Math.min(run,10))+(run>10?'+':'')):'⬜';
-    var txt='Run The Arcade · Run The Table\n'+bar+'\n'+run+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/';
+    var score=Math.max(run, peak);
+    var bar=score>0?('🟩'.repeat(Math.min(score,10))+(score>10?'+':'')):'⬜';
+    var txt='Run The Arcade · Run The Table\n'+bar+'\n'+score+' in a row'+(load().bestRun?(' · best '+load().bestRun):'')+'\nrunthe.gg/arcade/';
     if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
     else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
     else toast('Sharing not supported');
