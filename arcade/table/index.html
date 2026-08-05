@@ -79,9 +79,9 @@
 
   /* versus cards — fill the tall playzone */
   .versus{display:grid; grid-template-columns:1fr; gap:clamp(12px,2vh,18px); position:relative; flex:1 1 auto; grid-auto-rows:minmax(0,1fr);}
-  .pcard{position:relative; border:1px solid var(--line2); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:clamp(18px,3.5vh,44px) 16px; text-align:center; cursor:pointer; transition:transform .1s, border-color .15s, background .15s; overflow:hidden; min-height:118px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(6px,1.4vh,12px);}
-  .pcard:hover{border-color:var(--gold);}
-  .pcard:active{transform:scale(.99);}
+  .pcard{position:relative; border:2px solid var(--line2); border-top:4px solid var(--gold); border-radius:14px; background:var(--card); box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.28)); padding:clamp(18px,3.5vh,44px) 16px; text-align:center; cursor:pointer; transition:transform .1s, border-color .15s, background .15s, box-shadow .1s; overflow:hidden; min-height:118px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(6px,1.4vh,12px);}
+  .pcard:hover{border-color:var(--gold); border-top-color:var(--gold); transform:translate(-1px,-1px); box-shadow:6px 6px 0 rgba(7,20,38,.30);}
+  .pcard:active{transform:translate(2px,2px); box-shadow:2px 2px 0 rgba(7,20,38,.28);}
   .pcard.correct{border-color:var(--green); background:color-mix(in srgb, var(--green) 16%, var(--card));}
   .pcard.wrong{border-color:var(--red); background:color-mix(in srgb, var(--red) 15%, var(--card));}
   .pcard.dim{opacity:.55;}
@@ -131,8 +131,10 @@
   .rstat .v{font-family:var(--hero); font-weight:400; font-size:24px; line-height:1; color:var(--ink);}
   .rstat .l{font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); margin-top:5px;}
   .rcta{display:flex; gap:9px; margin-top:16px;}
-  .abtn{flex:1; appearance:none; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-weight:800; font-size:13px; border-radius:11px; padding:12px; min-height:46px; display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer;}
-  .abtn.gold{background:var(--coral); color:#fff; border-color:transparent;}
+  .abtn{flex:1; appearance:none; border:2px solid var(--line2); background:var(--card2); color:var(--ink); font-weight:800; font-size:13px; border-radius:10px; padding:12px; min-height:46px; display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer; box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.28)); transition:transform .08s, box-shadow .08s, filter .12s;}
+  .abtn:active{transform:translate(2px,2px); box-shadow:2px 2px 0 rgba(7,20,38,.28);}
+  .abtn.gold{background:var(--coral); color:#fff; border-color:color-mix(in srgb, var(--coral) 60%, #000);}
+  .abtn.gold:hover{filter:brightness(1.05);}
   .abtn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
   .countdown{margin-top:14px; font-size:12px; font-weight:800; color:var(--mut);} .countdown b{color:var(--ink); font-variant-numeric:tabular-nums;}
 

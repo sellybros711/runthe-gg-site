@@ -259,6 +259,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .foot a{color:var(--coralT);}
 .pill{display:inline-block; font-size:9px; font-weight:800; letter-spacing:1px; text-transform:uppercase;
   color:var(--coralT); border:1px solid var(--coralT); border-radius:999px; padding:2px 8px; margin-left:6px;}
+  /* arcade tactile polish */
+  .btn{box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .08s, box-shadow .08s, filter .12s;}
+  .btn:active{transform:translate(2px,2px); box-shadow:var(--a-shadow-press,2px 2px 0 rgba(7,20,38,.22));}
+  .btn.gold:hover{filter:brightness(1.06);}
 </style>
 </head>
 <body>
