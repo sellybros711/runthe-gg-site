@@ -23,6 +23,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=1" />
+<script src="/arcade/icons.js?v=1"></script>
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44;
@@ -711,7 +713,7 @@
   var ts = {}; try { ts = JSON.parse(g('rtg:table:v1', '{}')) || {}; } catch (e) {}
   var os = {}; try { os = JSON.parse(g('rtg:oddone:v1', '{}')) || {}; } catch (e) {}
   var rs = {}; try { rs = JSON.parse(g('rtg:career:v1', '{}')) || {}; } catch (e) {}
-  var ks = {}; try { ks = JSON.parse(g('rtg:rankit:v1', '{}')) || {}; } catch (e) {}
+  var ks = {}; try { ks = JSON.parse(g('rtg:rankit:v2', '{}')) || {}; } catch (e) {}
   var as = {}; try { as = JSON.parse(g('rtg:almamater:v1', '{}')) || {}; } catch (e) {}
   cur = Math.max(cur, cw.streak | 0, ws.streak | 0, gs.streak | 0, ts.streak | 0, os.streak | 0, rs.streak | 0, ks.streak | 0, as.streak | 0);
   best = Math.max(best, cur, cw.bestStreak | 0);
