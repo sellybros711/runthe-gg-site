@@ -809,6 +809,10 @@ window.GA_ID='G-L29P5MRWKE';
   .pod.p2 .pl{color:#cbd5e1}
   .pod.p3{border-color:rgba(180,120,70,.34)}
   .pod.p3 .pl{color:#c08457}
+  /* A PERFECT SEASON ON THE STEPS. The place colours above are medals, gold-silver-bronze,
+     which is a different claim from the gilded number and stays. What joins the rule is the
+     FIGURE: gold on the podium means the same thing it means in the list below it. */
+  .pod.perfect .pr{color:#fcd34d}
   .pod.mine{border-color:rgba(59,130,246,.6);
     background:linear-gradient(180deg,rgba(59,130,246,.18),rgba(59,130,246,.04))}
 
@@ -1652,7 +1656,28 @@ window.GA_ID='G-L29P5MRWKE';
     .found{animation:none;border-color:rgba(96,165,250,.95) !important;
       box-shadow:0 0 0 2px rgba(59,130,246,.5)}
   }
-  .lbr .rec b.gold{color:#fcd34d}
+  /* ─── A PERFECT SEASON MOVES ────────────────────────────────────────────────────────
+     The results screen has swept a highlight across the gilded record since launch
+     (.hero-rec .big.gold, keyframe recsheen). The boards were using a flat #fcd34d for the
+     same claim, so the rarest thing in the game looked livelier on one screen than on the
+     one where it is being compared against everybody else's. Same gradient, same keyframe,
+     same 3.4s: one gold, and it is the only thing in the game that moves like this.
+
+     -webkit-text-fill-color rather than color:transparent, which is what the hero rule uses.
+     If background-clip:text is not supported the hero loses one number on one screen; a
+     board would lose a column of scores, so this degrades to flat gold instead of to
+     nothing. `color` stays as the fallback and the fill only paints over it when it works. */
+  .lbr .rec b.gold,
+  .pod.perfect .pr{color:#fcd34d;
+    background-image:linear-gradient(110deg,#fbbf24 0%,#fde68a 30%,#fffbeb 46%,#fde68a 62%,#d97706 100%);
+    background-size:260% 100%;
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    animation:recsheen 3.4s ease-in-out infinite}
+  /* NO background-repeat:no-repeat, and it cost a round to learn why. recsheen starts at
+     background-position:190%, and at a background-size of 260% that puts the whole gradient
+     clear of the text box, so with no-repeat there is nothing to clip and every gilded score
+     rendered INVISIBLE for the first part of the sweep. The hero rule tiles, which is what
+     keeps paint under the glyphs at every position. */
   /* The board is empty rather than broken: a window nobody has played yet. */
   .lbempty{margin:11px 0 0;padding:16px 12px;border-radius:12px;text-align:center;
     font-size:13px;color:var(--dim-2);background:rgba(255,255,255,.025);
@@ -3182,7 +3207,11 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes recsheen{0%{background-position:190% 0}100%{background-position:-90% 0}}
   @media (prefers-reduced-motion: reduce){
     .hero-rec .big.gold,.hero-rec .big.win,.verdict.gold.perfect,
-    .verdict.gold .emblem svg,.verdict.win .emblem svg{animation:none}}
+    .verdict.gold .emblem svg,.verdict.win .emblem svg{animation:none}
+    /* Still gold, just still. Dropping the gradient as well as the animation, because a
+       frozen sweep parks a bright band across one digit and reads as a rendering fault. */
+    .lbr .rec b.gold,.pod.perfect .pr{animation:none;background-image:none;
+      -webkit-text-fill-color:#fcd34d}}
   .hero-sub{font-family:var(--fd);font-size:15px;letter-spacing:.06em;
     text-transform:uppercase;margin-top:3px}
   .hero-note{color:var(--dim);font-size:12.5px;margin:5px 0 0}
@@ -11426,7 +11455,8 @@ function paintPodium(rows){
       :lbSort==='rating'?'rating'
       :(row.perfect?'perfect':row.seed_label.toLowerCase());
     const pf=avatarOf(row.display_name,row.display_color,row.display_initials);
-    return '<div class="pod p'+place+(mine?' mine':'')+'" data-i="'+i+'">'+
+    return '<div class="pod p'+place+(mine?' mine':'')+(row.perfect?' perfect':'')
+      +'" data-i="'+i+'">'+
       '<span class="pl">'+place+'</span>'+
       avatarHTML(pf,'big')+
       '<span class="pn">'+champBadge(fateOfRow(row).badge)+esc(playerName(row,mine))+'</span>'+
@@ -11591,7 +11621,8 @@ function boardRow(row,i){
   const mine=submitted&&row.id===submitted;
   /* Gold is for leading a board, so it is wrong on a reversed one: row 1 there is
      the worst run in the window, and gilding it says the opposite of what it is. */
-  const lead=rank===1&&lbDir==='desc';
+  /* Gilded for a perfect season, not for leading. Rank is already said by the rank. */
+  const lead=!!row.perfect;
   /* Every row says WHO. With no rows carrying an identity the board read as a list
      of numbers rather than a list of people, which is what made it look empty of
      players. A guest still gets Anonymous, because saying that is better than
@@ -11699,7 +11730,11 @@ function ratingCell(row){
    instead of saying it is not known. */
 function gmCell(row){
   const g=(row.gm_rating===null||row.gm_rating===undefined)?null:Number(row.gm_rating);
-  return '<b class="big'+(g!==null&&g>=90?' gold':'')+'">'+(g===null?'--':g.toFixed(2))+'</b>'+
+  /* GOLD IS THE PERFECT SEASON AND NOTHING ELSE. This gilded any GM rating over 90, which
+     put gold on a board row that had lost four games while the record and rating boards were
+     spending the same colour on the rarest thing in the game. A score being high is what the
+     number itself says; the colour is reserved. */
+  return '<b class="big'+(row.perfect?' gold':'')+'">'+(g===null?'--':g.toFixed(2))+'</b>'+
     '<span>'+esc(row.wins+'-'+row.losses)+'</span>';
 }
 
@@ -11783,9 +11818,15 @@ function paintMyPin(rows){
   const p=runPayload();
   /* The same right-hand column the rows carry, so the figure your eye compares against
      is the same quantity in the same place. */
+  /* All THREE axes, not two. On the GM board this fell through to the record cell, so the
+     preview row showed a record in the column every row above it was using for a GM rating,
+     which is the one column on the row whose whole job is to be comparable. */
   const cell=lbSort==='rating'
     ? ratingCell({team_rating:p.teamRating,wins:run.outcome.wins,losses:run.outcome.losses,
                   perfect:run.outcome.perfect})
+    : lbSort==='gm'
+    ? gmCell({gm_rating:p.gmRating,wins:run.outcome.wins,losses:run.outcome.losses,
+              perfect:run.outcome.perfect})
     : recordCell({wins:run.outcome.wins,losses:run.outcome.losses,
                   perfect:run.outcome.perfect,point_diff:p.pointDiff});
   /* Whether it is a place or a preview of one is a real distinction and the label makes
@@ -11798,10 +11839,13 @@ function paintMyPin(rows){
   const pf=avatarOf(live?authState.name:null,myAvatar.color,myAvatar.initials);
   el.innerHTML='<span class="pinlab">'+(live?'Your place':'Where this run would sit')+
     ' \u00b7 '+esc(SORT_META[lbSort].label.toLowerCase())+', '+esc(of)+'</span>'+
-    '<div class="lbr mine"><span class="rk">'+
+    '<div class="lbr mine'+(run.outcome.perfect?' gold':'')+'"><span class="rk">'+
       (lbMyPlace>999?'#'+lbMyPlace.toLocaleString():lbMyPlace)+'</span>'+
     avatarHTML(pf)+
-    '<span class="who"><b>'+(live?'You':'This run')+'</b><span>'+
+    /* The same crown or trophy every other row on this board wears. It was the one place a
+       champion went unmarked, and it is the row the player is actually looking for. */
+    '<span class="who"><b>'+champBadge(fateOfOutcome(run.outcome).badge)
+      +(live?'You':'This run')+'</b><span>'+
       esc(run.outcome.record+' \u00b7 '+(rosterLine(p.picks)||'this run'))+'</span></span>'+
     '<span class="rec">'+cell+'</span>'+
     '<span class="go">&rsaquo;</span></div>';
