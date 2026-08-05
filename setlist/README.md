@@ -72,8 +72,34 @@ the repo root, not from inside `setlist/`.
 ## Checking it
 
 ```bash
-node setlist/verify-scoring.mjs   # expect "72 passed, 0 failed"
+node setlist/verify-scoring.mjs      # expect "72 passed, 0 failed"
+node scripts/setlist/check_data.mjs  # expect "all checks passed"
 ```
+
+`.github/workflows/setlist-checks.yml` runs both on any PR touching the game,
+plus an XML parse of `sitemap.xml`. It is the only CI in this repo — nothing
+else here runs on pull requests.
+
+`check_data.mjs` is a regression net, not a general validator: every assertion
+is there because that mistake was shipped or nearly shipped. It guards the CSV
+header against `DATA_CONTRACT.md`, holds performance and show counts inside a
+band wide enough for a routine refresh but tight enough to catch both ingest
+bugs (a 4000-row truncation trips the floor, a lost `artist_id` filter trips the
+ceiling), fails on HTML entities reaching the data, and asserts the
+discoverability choices below.
+
+## Discoverability
+
+Three things are deliberate and checked in CI, because "temporarily" hidden
+things drift:
+
+- **Not linked from anywhere.** No link on the homepage or any other page.
+- **Listed in `sitemap.xml`** so the URL can still be found and shared.
+- **No `noindex`** on the page.
+
+The effect is a game you reach by knowing `runthe.gg/setlist`, not by browsing
+the site. Putting it on the homepage is a one-line change plus deleting the
+`homepage does not link the game` check.
 
 ## Scoring
 

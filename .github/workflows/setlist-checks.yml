@@ -1,0 +1,60 @@
+name: Setlist checks
+
+# The only automated checks the setlist game has. Nothing else in this repo runs
+# on pull requests, so without this the scoring harness only ever runs when
+# somebody remembers to type the command.
+#
+# Two scripts, both runnable locally with the same commands:
+#   node setlist/verify-scoring.mjs      72 assertions against the v2 scoring spec
+#   node scripts/setlist/check_data.mjs  data + discoverability regression net
+#
+# No secrets, no network, no deploy. Publishing is GitHub Pages serving main.
+
+on:
+  pull_request:
+    paths:
+      - 'setlist/**'
+      - 'scripts/setlist/**'
+      - 'sitemap.xml'
+      - 'index.html'
+      - '.github/workflows/setlist-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'setlist/**'
+      - 'scripts/setlist/**'
+      - 'sitemap.xml'
+      - 'index.html'
+      - '.github/workflows/setlist-checks.yml'
+  workflow_dispatch: {}
+
+# A newer push supersedes an in-flight run on the same branch.
+concurrency:
+  group: setlist-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Scoring is the part players would notice being wrong and the part with
+      # the most constants, so it is guarded assertion by assertion.
+      - name: Scoring spec
+        run: node setlist/verify-scoring.mjs
+
+      # Covers the ingest bugs that shipped (a truncated CSV, HTML entities
+      # reaching the screen) and the deliberate discoverability choices:
+      # indexable, in the sitemap, linked from nowhere.
+      - name: Data and discoverability
+        run: node scripts/setlist/check_data.mjs
+
+      # sitemap.xml is hand-edited, and a malformed one is invisible until a
+      # crawler chokes on it.
+      - name: sitemap.xml is well-formed
+        run: python3 -c "import xml.etree.ElementTree as ET; ET.parse('sitemap.xml'); print('sitemap.xml parses')"
