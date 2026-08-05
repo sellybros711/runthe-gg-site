@@ -17,7 +17,7 @@
 })();
 </script>
 <meta name="description" content="Segue is a setlist builder. Spin up a real concert, pull a song, spend it against your set clock — then watch your show play back to a crowd." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='8' width='18' height='2.5' rx='1.25' fill='%2337C5D5'/%3E%3Crect x='7' y='14' width='18' height='2.5' rx='1.25' fill='%23F2B632'/%3E%3Crect x='7' y='20' width='11' height='2.5' rx='1.25' fill='%23F06A5F'/%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Cg fill='none' stroke-width='2.6'%3E%3Ccircle cx='16' cy='16' r='2' stroke='%23F06A5F'/%3E%3Ccircle cx='16' cy='16' r='5.2' stroke='%23F2B632'/%3E%3Ccircle cx='16' cy='16' r='8.4' stroke='%2348D17A'/%3E%3Ccircle cx='16' cy='16' r='11.6' stroke='%2337C5D5'/%3E%3C/g%3E%3C/svg%3E" />
 <link rel="apple-touch-icon" href="/assets/runthegames-icon_180.png" />
 <meta property="og:title" content="Segue: The Setlist Builder Game | RunThe.GG" />
 <meta property="og:description" content="Build a setlist from real concerts. Two sets, an encore, and a curfew — then watch the show play back." />
@@ -37,6 +37,11 @@
     --greenT:#48D17A; --redT:#FF625F; --blueT:#5C8CFF;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --r-lg:14px; --r-md:10px; --r-sm:8px;
+    /* Tie dye, from the existing accents rather than a new palette — the same
+       five colours the chips and accent strips already use, swept round. */
+    --dye:conic-gradient(from 210deg at 50% 50%,
+      var(--coral) 0deg, var(--gold) 62deg, var(--green) 128deg,
+      var(--teal) 196deg, var(--violet) 268deg, var(--coral) 360deg);
     --hero:'Anton', Impact, sans-serif;
     --body:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   }
@@ -69,6 +74,11 @@
   .topbar{position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:10px;
     padding:calc(8px + env(safe-area-inset-top,0)) 0 8px; background:var(--bg);
     border-bottom:1px solid var(--line);}
+  .topbar:after{content:''; position:absolute; left:0; right:0; bottom:-1px; height:2px;
+    background:var(--dye); background-size:300% 100%; opacity:.5;
+    animation:dyeSlide 22s linear infinite;}
+  @keyframes dyeSlide{ from{background-position:0% 50%;} to{background-position:300% 50%;} }
+  @media (prefers-reduced-motion: reduce){ .topbar:after{animation:none;} }
   body.playing .topbar{padding-bottom:6px;}
   body.playing .brand img{height:30px;}
   .icon-btn{width:34px; height:36px; display:inline-flex; align-items:center; justify-content:center;
@@ -103,10 +113,41 @@
   .btn.ghost{background:transparent;}
 
   /* ---------------- home ---------------- */
-  .hero{text-align:center; padding:16px 0 20px;}
+  .hero{text-align:center; padding:16px 0 20px; position:relative; isolation:isolate;}
+  .hero:before{
+    content:''; position:absolute; z-index:-1; left:50%; top:38%;
+    width:min(560px, 130vw); aspect-ratio:1; transform:translate(-50%,-50%);
+    background:var(--dye);
+    /* Concentric rings turn the sweep into a spiral without an image. */
+    -webkit-mask:
+      repeating-radial-gradient(circle at 50% 50%, #000 0 7px, transparent 7px 20px),
+      radial-gradient(circle at 50% 50%, #000 12%, rgba(0,0,0,.55) 42%, transparent 70%);
+    -webkit-mask-composite:source-in;
+    mask:
+      repeating-radial-gradient(circle at 50% 50%, #000 0 7px, transparent 7px 20px),
+      radial-gradient(circle at 50% 50%, #000 12%, rgba(0,0,0,.55) 42%, transparent 70%);
+    mask-composite:intersect;
+    opacity:.10; pointer-events:none;
+  }
+  :root[data-theme="light"] .hero:before{opacity:.09;}
   .hero h1{font-family:var(--hero); font-size:clamp(40px,9.5vw,72px); line-height:.92;
     letter-spacing:.5px; margin:5px 0 9px; text-transform:uppercase;}
   .hero h1 .accent{color:var(--gold);}
+  /* @supports so a browser without background-clip:text still shows the word in
+     gold rather than showing nothing at all. */
+  @supports (-webkit-background-clip: text) or (background-clip: text) {
+    .hero h1 .accent{
+      background:var(--dye); background-size:180% 180%; background-position:50% 50%;
+      -webkit-background-clip:text; background-clip:text;
+      -webkit-text-fill-color:transparent; color:transparent;
+      animation:dyeDrift 18s ease-in-out infinite;
+    }
+  }
+  @keyframes dyeDrift{
+    0%,100%{ background-position:44% 46%; }
+    50%    { background-position:56% 54%; }
+  }
+  @media (prefers-reduced-motion: reduce){ .hero h1 .accent{animation:none;} }
   .tagline{font-size:13px; font-weight:800; letter-spacing:2.6px; text-transform:uppercase;
     color:var(--mut); margin:2px 0 10px;}
   @media (max-width:420px){ .tagline{font-size:11px; letter-spacing:1.8px;} }
@@ -469,6 +510,12 @@
     margin-bottom:12px;}
   .sim-score{font-family:var(--hero); font-size:44px; line-height:1; color:var(--greenT);
     font-variant-numeric:tabular-nums;}
+  @supports (-webkit-background-clip: text) or (background-clip: text) {
+    .sim-score{ background:var(--dye); background-size:200% 200%;
+      -webkit-background-clip:text; background-clip:text;
+      -webkit-text-fill-color:transparent; color:transparent;
+      animation:dyeDrift 12s ease-in-out infinite; }
+  }
   .sim-sub{font-size:12.5px; font-weight:700; color:var(--dim); margin-top:4px;
     min-height:1.2em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .sim-feed{display:flex; flex-direction:column; gap:8px;}

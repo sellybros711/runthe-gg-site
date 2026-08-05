@@ -93,6 +93,23 @@ bugs (a 4000-row truncation trips the floor, a lost `artist_id` filter trips the
 ceiling), fails on HTML entities reaching the data, and asserts the
 discoverability choices below.
 
+## Branding
+
+Tie dye, kept to three places so it stays an identity rather than a theme:
+
+- **The wordmark.** `SEGUE` is filled with `--dye`, a conic sweep built from the
+  five accent colours the game already uses — the same ones in the chips and
+  card strips — so it reads as this game's tie dye rather than a rainbow.
+- **A spiral behind the hero**, at ~10% and masked to fade out before it reaches
+  anything else. Tie dye's signature is the spiral more than the colour, so this
+  does more for the identity than more colour would.
+- **The running score during the show**, which is the other moment worth marking.
+
+Everything else keeps the existing palette. The wordmark sits inside a
+`@supports (background-clip: text)` guard so a browser without it shows solid
+gold rather than nothing, and both the drift and the header rule stop under
+`prefers-reduced-motion`.
+
 ## Layout
 
 Measured at 390x844 before and after the UI pass — the draft screen is the one a
