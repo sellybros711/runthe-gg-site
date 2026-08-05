@@ -58,6 +58,7 @@
     DAILY:DAILY, PER_GAME:PER_GAME, BONUS:0, GAMES:GAMES.slice(),
     today:todayStr,
     isPro:isPro,
+    testing:function(){ return TESTING; },   // for gating Pro-only previews while we test
     remaining:remaining,
     bonusRemaining:function(){ return unlimited()?Infinity:0; },
     playsOf:playsOf,
