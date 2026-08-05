@@ -156,11 +156,21 @@ There is deliberately **no backend** — no database, no auth, no leaderboard.
 Both of the first two surfaced only once the real Goose archive landed — the
 sample data is uniformly well-formed and hid them.
 
-1. **The same song can be locked into two slots.** Each round is a different
-   show, so a staple can be offered repeatedly, and nothing stops a player
-   putting "Arrow" in both Set I Closer and Set II Peak — impossible in a real
-   setlist. Deduping against already-locked songs is a filter in `renderDraft`.
-   Still open.
+1. **The same song could be locked into two slots — fixed.** A staple turns up
+   in many shows, so nothing stopped a player putting "Arrow" in both Set I
+   Closer and Set II Peak. `lockedSongIds()` now disables any song already in
+   the setlist, struck through and labelled, with guards in the click handler
+   and `lockIn()` so no path can write a duplicate.
+
+   **Song sandwiches are unaffected**, which is worth understanding before
+   changing this. A sandwich — play it, jam out, segue away, segue back — puts
+   the same `song_id` in one show twice, and 151 of 655 Goose shows contain
+   some kind of repeat. But a round draws one *distinct* show and locks exactly
+   one song from it, so the two halves of a sandwich can never both be picked;
+   the dedup only ever fires across two different nights. If picks-per-show ever
+   goes above one, this becomes a real decision, and note that the data cannot
+   help: elgoose has `isreprise` and `isjam` fields but both are `0` on every
+   Goose row, so a reprise is not distinguishable from a fresh play.
 
 2. **Thin shows made choiceless rounds — fixed.** 18 shows in the archive are a
    single song and 28 are three or fewer (early bar gigs the archive only partly
