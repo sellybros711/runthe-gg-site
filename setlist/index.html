@@ -436,6 +436,27 @@
   <main id="app" aria-live="polite"></main>
 </div>
 
+<script>
+/* Boot watchdog. An ES module that fails to link (a renamed export, a stale
+   cached page against fresh code) never runs, so it cannot show an error — the
+   page renders the header and stops. This runs outside the module, so it still
+   fires, and turns a blank screen into a reload button. */
+window.addEventListener('error', function(e){
+  if (e.message && /module|import/i.test(e.message)) window.__setlistBootFailed = true;
+});
+setTimeout(function(){
+  var app = document.getElementById('app');
+  if (!app || app.innerHTML.trim()) return;      // it booted; nothing to do
+  app.innerHTML =
+    '<div class="err" style="margin-top:24px">' +
+    '<b>This page needs a refresh.</b><br />' +
+    'The game updated and your browser is holding an old copy of it. ' +
+    'Reload to get the current version.' +
+    '<div style="margin-top:12px"><button class="btn" type="button" ' +
+    'onclick="location.reload(true)">Reload</button></div></div>';
+}, 4000);
+</script>
+
 <!-- Detail sheet. One element, reused: the result screen fills it per song. -->
 <div class="sheet" id="detailSheet" role="dialog" aria-modal="true" aria-label="Slot breakdown">
   <div class="inner" id="detailInner"></div>
@@ -447,8 +468,8 @@ import {
   SETS, MAX_ROUNDS, ENCORE_INDEX, ARC_MAX, TIME_POINTS_PER_SET,
   scoreShow, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js';
-import { loadBand, setLabel, setRank } from './dataLoader.js';
+} from './scoring.js?v=4';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=4';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see

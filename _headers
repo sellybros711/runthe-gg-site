@@ -1,0 +1,40 @@
+# Cloudflare Pages response headers.
+#
+# WHY THIS EXISTS
+#
+# Run The Setlist is an HTML page that imports ES modules by name:
+#
+#   import { SETS, scoreShow, ... } from './scoring.js'
+#
+# The page and the modules are separate files, cached independently. When a
+# release renames an export, a browser holding a CACHED index.html alongside a
+# FRESH scoring.js fails to link the module — and an ES module that fails to
+# link does not run at all, so the page renders its header and nothing else.
+# That is not a visible error, it is a blank screen.
+#
+# It happened: v4 renamed the scoring exports and anyone who had loaded the v3
+# page got a white page until they hard-refreshed.
+#
+# So: HTML must always be revalidated, and never served from a browser cache
+# without checking. The assets it points at are versioned in the URL and can be
+# cached hard.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# Always ask. HTML is the file that names which module versions to load, so a
+# stale copy is the one thing that can break the page outright.
+/
+  Cache-Control: no-cache
+/*.html
+  Cache-Control: no-cache
+/setlist/
+  Cache-Control: no-cache
+
+# The game's modules and data carry ?v= in their URLs, so a given URL's content
+# never changes and can be held for a year.
+/setlist/*.js
+  Cache-Control: public, max-age=31536000
+/setlist/data/*
+  Cache-Control: public, max-age=31536000
