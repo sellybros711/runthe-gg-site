@@ -35,6 +35,9 @@
     --blue:#2F6BFF; --green:#48D17A; --red:#FF625F;
     --tealT:#37C5D5; --goldT:#F2B632; --coralT:#F06A5F; --violetT:#B79BF6;
     --greenT:#48D17A; --redT:#FF625F; --blueT:#5C8CFF;
+    /* Peak's own hue. It used to borrow --redT, which sits 3 degrees off
+       --coralT, so COVER and PEAK chips were the same colour on screen. */
+    --pinkT:#FF6FC1;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --r-lg:14px; --r-md:10px; --r-sm:8px;
     /* Tie dye, from the existing accents rather than a new palette — the same
@@ -58,7 +61,7 @@
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
     --tealT:#0E7C89; --goldT:#A87508; --coralT:#D8452F; --violetT:#6D3BD6;
-    --greenT:#17A34A; --redT:#C4372C; --blueT:#2358E0;
+    --greenT:#17A34A; --redT:#C4372C; --blueT:#2358E0; --pinkT:#BE2E86;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
@@ -329,8 +332,11 @@
 
   .chip.rec{background:color-mix(in srgb,var(--violet) 20%, transparent); color:var(--violetT);
     border-color:color-mix(in srgb,var(--violet) 45%, transparent);}
-  .song[aria-pressed="true"]{background:var(--card3); border-color:var(--acc);
-    box-shadow:0 0 0 1px var(--acc);}
+  /* Selection rings in teal, the UI's action colour, not in the song's accent.
+     Accent is identity; selection is a thing you did. It also stops a song
+     with no notable role — now grey — from getting a grey selection ring. */
+  .song[aria-pressed="true"]{background:var(--card3); border-color:var(--teal);
+    box-shadow:0 0 0 1px var(--teal);}
   .song .t{font-weight:800; font-size:14.5px; line-height:1.25;}
   .song .o{font-size:11.5px; font-weight:600; color:var(--dim); margin-top:2px;}
   .song .r{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0;}
@@ -338,7 +344,13 @@
   .chips{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;}
   .chip{font-size:9.5px; font-weight:900; letter-spacing:.7px; text-transform:uppercase;
     padding:2px 5px; border-radius:4px; background:var(--line); color:var(--mut);}
-  .chip.acc{background:color-mix(in srgb,var(--acc) 20%, transparent); color:var(--acc);}
+  /* The role chip is OUTLINED and the event chips (segue, sandwich,
+     recommended, gap) are FILLED. Jam and RECOMMENDED are both violet and
+     routinely sit side by side; gap and ENCORE are both gold. Rather than
+     hunt for eleven distinguishable hues, the two families differ in shape,
+     so a repeat of hue across families still reads as two different things. */
+  .chip.acc{background:transparent; color:var(--acc);
+    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 60%, transparent);}
   .chip.rare{background:color-mix(in srgb,var(--gold) 20%, transparent); color:var(--goldT);}
 
   /* ---------------- setlist panel ---------------- */
@@ -762,17 +774,30 @@ function esc(s){
 }
 
 /* Accent for a song, mapped onto the site palette. Order matters: the most
-   characterful trait wins. */
+   characterful trait wins.
+ *
+ * Every accent here has to be tellable from every other one AT CHIP SIZE,
+ * which is nine and a half pixels of uppercase. Two were not: PEAK borrowed
+ * --redT, three degrees of hue from COVER's --coralT, and opener and closer
+ * were the same green as each other. Their hues now run
+ *
+ *   cover 5deg · encore 41 · opener 142 · closer 186 · ballad 222 ·
+ *   jam 258 · peak 326
+ *
+ * The closest pair is now 33 degrees apart, in the light theme, against 0 and
+ * 3 before. A song with no notable role goes grey
+ * rather than teal — nothing to say, nothing to colour. Re-check with
+ * hue.mjs before adding one. */
 function accentOf(perf){
   const t = tagsOf(perf);
   if (perf.is_cover === 'true') return { v: 'var(--coralT)', chip: 'cover' };
-  if (t.includes('peak'))   return { v: 'var(--redT)',    chip: 'peak' };
+  if (t.includes('peak'))   return { v: 'var(--pinkT)',   chip: 'peak' };
   if (t.includes('jam'))    return { v: 'var(--violetT)', chip: 'jam' };
   if (t.includes('encore')) return { v: 'var(--goldT)',   chip: 'encore' };
   if (t.includes('ballad')) return { v: 'var(--blueT)',   chip: 'ballad' };
   if (t.includes('opener')) return { v: 'var(--greenT)',  chip: 'opener' };
-  if (t.includes('closer')) return { v: 'var(--greenT)',  chip: 'closer' };
-  return { v: 'var(--tealT)', chip: '' };
+  if (t.includes('closer')) return { v: 'var(--tealT)',   chip: 'closer' };
+  return { v: 'var(--dim)', chip: '' };
 }
 
 // ── state ────────────────────────────────────────────────────────────────────
