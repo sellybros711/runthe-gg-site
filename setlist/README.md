@@ -149,6 +149,14 @@ but dead, and says why — "needs 4:12 more" — because *no room for a 22-minut
 Drive* is the game, not an error to hide. Close a set whenever you like; the
 leftover flows to the encore.
 
+**What you have built stays on screen.** A compact read of the set you are
+filling sits above the song list — order, segue marks, running times — with the
+earlier sets one tap away. The full clock panel is still in the sheet; this is
+the part a decision actually depends on.
+
+**The clock says what it is and grades itself**: normal, amber under fifteen
+minutes, red and pulsing under five.
+
 **Closing a set keeps the show on screen.** The show is the night's source
 material, not a per-set handout, so closing Set I while holding a good one drops
 you into Set II still holding it.
@@ -167,6 +175,19 @@ and did not play, scored in the role it best suits, so the sting is specific.
 
 The show ends when the encore closes. **Round count is emergent**: chase monsters
 and the night is over in nine picks, play tight and it runs past fifteen.
+
+**Only a take that actually segued can start one.** This was wrong at first and
+it made the arrow a lie: scoring asked only "is A|B canonical", which is a fact
+about the *song*, so 94% of un-arrowed performances could start a segue too and
+a player picking arrows on purpose got nothing for it — 12 arrow picks bought
+1.8 segues. The arrow now means what it says.
+
+Because the bet is real it is also shown: an arrow says how many songs could
+land it (`› So Ready or 1 other` is a very different pick from `› ... or 14
+others`), selecting one warns that you are committing, and when nothing on
+offer lands it the banner names the price of a spin. 80 of 228 arrows have
+exactly one possible finisher, and the next show contains one about 40% of the
+time, so this is a gamble the player should be able to see.
 
 **Segues are visible now, and buildable.** A song that ran into the next one
 carries a `>` and says what it ran into — *"Borne › ran into The Way It Is"*.
@@ -201,9 +222,15 @@ SET I
   Hot Tea                      +118   The place came apart.
 ```
 
-Reactions are keyed to what the pick actually scored, so they are earned rather
-than decorative, and every beat is derived from the already-computed result —
-the playback cannot disagree with the scorecard that follows it. Tap to skip.
+Reactions are keyed to **why** the pick landed, not just what it scored — a
+100-show bustout and a twenty-two minute type II are different nights and get
+different sentences. The vocabulary is the community's own: across the 753
+jamchart write-ups the curators say *peak* 769 times, *bliss* 93, *patient* 54,
+*whale* 50, *hose* 17, plus *type II*, *jam vehicle*, *bustout* and *plink*. If
+a word is not in the notes it is not in the reactions.
+
+Every beat derives from the already-computed result, so the playback cannot
+disagree with the scorecard that follows it. Tap to skip.
 
 ## Scoring
 

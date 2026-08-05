@@ -166,8 +166,15 @@
   .hud > div:first-child{min-width:0;}
   .hud .rd{font-family:var(--hero); font-size:18px; line-height:1.05;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .hud .rd-clock{color:var(--mut); font-variant-numeric:tabular-nums;}
-  .hud .rd-clock.low{color:var(--coralT);}
+  .hud .rd-clock{color:var(--mut); font-variant-numeric:tabular-nums;
+    transition:color .3s ease;}
+  .hud .rd-clock.warn{color:var(--goldT);}
+  .hud .rd-clock.crit{color:var(--redT); animation:clockPulse 1.6s ease-in-out infinite;}
+  @keyframes clockPulse{ 0%,100%{opacity:1;} 50%{opacity:.55;} }
+  @media (prefers-reduced-motion: reduce){ .hud .rd-clock.crit{animation:none;} }
+  .hud .rd-rem{color:var(--dim);}
+  .hud .rd-rem.warn{color:var(--goldT);}
+  .hud .rd-rem.crit{color:var(--redT);}
   .hud .md{font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
     color:var(--dim); margin-top:3px;}
   .pips{display:flex; gap:5px;}
@@ -220,11 +227,37 @@
   .segout{display:inline-block; margin-left:5px; font-weight:900; color:var(--goldT);
     font-size:16px; line-height:1; vertical-align:-1px;}
   .song .o.seg{color:var(--goldT);}
+  .song .o.seg i{font-style:normal; color:var(--dim); font-weight:600;}
+  .commit{margin-top:7px; padding:7px 10px; border-radius:var(--r-sm); font-size:11.5px;
+    font-weight:700; line-height:1.45; color:var(--goldT);
+    background:color-mix(in srgb,var(--gold) 12%, transparent);
+    border:1px solid color-mix(in srgb,var(--gold) 30%, transparent);}
   .chip.sand{background:color-mix(in srgb,var(--violet) 22%, transparent); color:var(--violetT);
     border-color:color-mix(in srgb,var(--violet) 50%, transparent);}
   .chip.seg{background:color-mix(in srgb,var(--green) 20%, transparent); color:var(--greenT);
     border-color:color-mix(in srgb,var(--green) 50%, transparent);}
   .song.finishes{border-color:color-mix(in srgb,var(--green) 55%, transparent);}
+  /* ---------------- the setlist so far ---------------- */
+  .sofar{margin-bottom:10px; padding:9px 12px 7px; border-radius:var(--r-md);
+    background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);}
+  .sf-hd{display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    margin-bottom:5px;}
+  .sf-hd b{font-size:10.5px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
+    color:var(--dim);}
+  .sf-tog{font-size:10.5px; font-weight:800; color:var(--tealT); background:none; border:0;
+    padding:2px 0;}
+  .sf-set + .sf-set{margin-top:6px;}
+  .sf-lbl{font-size:9.5px; font-weight:900; letter-spacing:1.3px; text-transform:uppercase;
+    color:var(--dim); margin:4px 0 2px;}
+  .sf-row{display:flex; align-items:baseline; gap:8px; padding:2px 0; font-size:12.5px;}
+  .sf-n{flex:0 0 14px; color:var(--dim); font-weight:800; font-size:10px;
+    font-variant-numeric:tabular-nums;}
+  .sf-song{flex:1; min-width:0; font-weight:700; overflow:hidden; text-overflow:ellipsis;
+    white-space:nowrap;}
+  .sf-seg{font-style:normal; color:var(--goldT); font-weight:900; margin-left:3px;}
+  .sf-len{color:var(--mut); font-weight:700; font-variant-numeric:tabular-nums; font-size:11.5px;}
+  .sf-none{font-size:12px; font-weight:600; color:var(--dim); padding:2px 0 3px;}
+
   .hunt{margin-bottom:10px; padding:9px 12px; border-radius:var(--r-sm); font-size:12.5px;
     font-weight:700; line-height:1.5; color:var(--mut);
     background:color-mix(in srgb,var(--gold) 10%, transparent);
@@ -579,11 +612,11 @@ import {
   SETS, MAX_ROUNDS, ENCORE_INDEX, ARC_MAX, TIME_POINTS_PER_SET,
   RESPIN_COSTS, respinCost, canRespin, theOneThatGotAway,
   wouldStrand, danglingSegue, closesSandwich, SANDWICH_BONUS,
-  reactionFor, eventLine,
+  reactionFor, eventLine, setOpenLine,
   scoreShow, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=9';
-import { loadBand, setLabel, setRank } from './dataLoader.js?v=9';
+} from './scoring.js?v=12';
+import { loadBand, setLabel, setRank } from './dataLoader.js?v=12';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -682,6 +715,7 @@ const S = {
   respins: 0,          // how many this run — each costs more than the last
   seenShows: new Set(),
   seenSongs: [],       // every song offered, for "the one that got away"
+  sofarAll: false,     // is the on-screen setlist showing every set?
   pickedSong: null,
   hint: '',
   hintBad: false,
@@ -906,9 +940,55 @@ function huntingFor(){
   const set = S.sets[si];
   if (!set.length) return null;
   const last = set[set.length - 1];
+  // Only a take that actually segued leaves anything open.
+  if (String(last.is_segue) !== 'true') return null;
   const p = S.data.partners && S.data.partners.get(last.song_id);
   if (!p || !p.size) return null;
   return { from: last, partners: p };
+}
+
+/* What is already on the setlist, kept on screen while you choose the next one.
+   Collapsed to the set being built by default — that is the part a decision
+   actually depends on — with the earlier sets one tap away. */
+function sofarHTML(si){
+  const played = S.sets.flat().length;
+  if (!played) return '';
+  const showAll = S.sofarAll;
+  const blocks = [];
+
+  S.sets.forEach((set, i) => {
+    if (!set.length) return;
+    if (!showAll && i !== si) return;
+    blocks.push(`
+      <div class="sf-set">
+        <div class="sf-lbl">${esc(SETS[i].label)}</div>
+        ${set.map((p, j) => `
+          <div class="sf-row">
+            <span class="sf-n">${j + 1}</span>
+            <span class="sf-song">${esc(p.song)}${
+              j < set.length - 1 && S.data.segues.has(`${p.song_id}|${set[j + 1].song_id}`)
+                ? '<i class="sf-seg">&rsaquo;</i>' : ''}</span>
+            <span class="sf-len">${fmtClock(lenOf(p))}</span>
+          </div>`).join('')}
+      </div>`);
+  });
+
+  if (!blocks.length && !showAll) return `
+    <div class="sofar empty">
+      <div class="sf-hd"><b>Your setlist</b>
+        <button class="sf-tog" type="button" id="sofarTog">show all ${played}</button></div>
+      <div class="sf-none">${esc(SETS[si].label)} is empty — this is the opener.</div>
+    </div>`;
+
+  return `
+    <div class="sofar">
+      <div class="sf-hd">
+        <b>Your setlist</b>
+        <button class="sf-tog" type="button" id="sofarTog">${
+          showAll ? 'just this set' : `show all ${played}`}</button>
+      </div>
+      ${blocks.join('')}
+    </div>`;
 }
 
 function renderDraft(){
@@ -965,7 +1045,10 @@ function renderDraft(){
           <span class="t">${esc(p.song)}${p.is_segue === 'true'
             ? '<span class="segout" title="Segued into the next song">&rsaquo;</span>' : ''}</span>
           ${why ? `<span class="o">${esc(why)}</span>`
-            : p.segued_into ? `<span class="o seg">ran into ${esc(p.segued_into)}</span>`
+            : p.segued_into ? `<span class="o seg">&rsaquo; ${esc(p.segued_into)}${
+                (() => { const n = (S.data.partners.get(p.song_id) || new Set()).size;
+                         return n > 1 ? ` <i>or ${n - 1} other${n > 2 ? 's' : ''}</i>` : ''; })()
+              }</span>`
             : p.is_cover === 'true' && p.original_artist
               ? `<span class="o">orig. ${esc(p.original_artist)}</span>` : ''}
         </span>
@@ -982,8 +1065,11 @@ function renderDraft(){
     <div class="card hud">
       <div>
         <div class="rd">${esc(cfg.label)}
-          <span class="rd-clock ${left < 6 * 60 ? 'low' : ''}">${fmtClock(Math.max(0, left))}</span></div>
-        <div class="md">Pick ${S.round + 1}${S.respins ? ` · ${S.respins} spin${S.respins > 1 ? 's' : ''}` : ''}</div>
+          <span class="rd-clock ${left < 5 * 60 ? 'crit' : left < 15 * 60 ? 'warn' : ''}"
+            >${fmtClock(Math.max(0, left))}</span></div>
+        <div class="md"><span class="rd-rem ${left < 5 * 60 ? 'crit' : left < 15 * 60 ? 'warn' : ''}"
+          >remaining</span> · pick ${S.round + 1}${
+          S.respins ? ` · ${S.respins} spin${S.respins > 1 ? 's' : ''}` : ''}</div>
       </div>
       <div class="hud-btns">
         ${(() => {
@@ -1005,11 +1091,15 @@ function renderDraft(){
           <div class="v">${esc(show.venue || '')}</div>
           <div class="c">${esc([show.city, show.state].filter(Boolean).join(', '))}</div>
         </div>
+        ${sofarHTML(si)}
         ${hunt ? `<div class="hunt ${canFinish ? 'hot' : ''}">
           <b>${esc(hunt.from.song)} &rsaquo;</b>
           ${canFinish
             ? 'is still going — a song below finishes it.'
-            : 'is still going. Nothing here finishes it.'}
+            : `is still going. Nothing here lands it${
+                canRespin(S.sets, si, S.respins, S.closed, S.spent)
+                  ? ` — spinning costs ${fmtClock(respinCost(S.respins))}.`
+                  : '. Play anything to move on.'}`}
         </div>` : ''}
         ${fits.length ? '' : `<div class="warn">Nothing here fits ${esc(cfg.label)}.
           Close the set and move on.</div>`}
@@ -1028,6 +1118,9 @@ function renderDraft(){
             <button class="btn primary" type="button" id="lockBtn" ${S.pickedSong ? '' : 'disabled'}>
               ${S.pickedSong ? `Play it (${fmtClock(lenOf(S.pickedSong))})` : 'Pick a song'}
             </button>
+            ${S.pickedSong && String(S.pickedSong.is_segue) === 'true' ? `
+              <div class="commit">This one segues — you will need to land it next
+                or the transition is lost.</div>` : ''}
             <button class="btn closeset ${!fits.length || left < 6 * 60 ? 'urge' : ''}"
               type="button" id="closeSetBtn">
               <span class="cs-t">${si === ENCORE_INDEX ? 'End the show' : `Close ${esc(cfg.label)}`}</span>
@@ -1432,9 +1525,9 @@ function showBeats(){
       beats.push({
         kind: 'song', perf, sc, running,
         role: r.perSet[si][j].role.name,
-        gained: sc.subtotal + (seg ? seg.points : 0),
-        reaction: reactionFor(sc, j + si * 7 + perf.song.length),
-        event: seg ? eventLine(seg.kinds) : null,
+        gained: sc.subtotal,
+        reaction: reactionFor(sc, perf, j + si * 7 + perf.song.length),
+        event: seg ? eventLine(seg.kinds, j + perf.song.length) : null,
         segPoints: seg ? seg.points : 0,
       });
     });
@@ -1474,7 +1567,7 @@ function renderShow(){
     if (b.kind === 'set'){
       feed.insertAdjacentHTML('beforeend',
         `<div class="sim-set">${esc(b.label)}</div>`);
-      subEl.textContent = `${b.label} — here we go.`;
+      subEl.textContent = setOpenLine(SETS.findIndex(x => x.label === b.label));
     } else if (b.kind === 'song'){
       feed.insertAdjacentHTML('beforeend', `
         <div class="sim-song">
@@ -1583,6 +1676,7 @@ app.addEventListener('click', e => {
   if (e.target.closest('#lockBtn')){ lockIn(); return; }
   if (e.target.closest('#closeSetBtn')){ closeSet(); return; }
   if (e.target.closest('#respinBtn')){ respin(); return; }
+  if (e.target.closest('#sofarTog')){ S.sofarAll = !S.sofarAll; renderDraft(); return; }
   if (e.target.closest('#openSets')){
     S.sheetForced = !S.sheetForced; renderDraft(); return;
   }

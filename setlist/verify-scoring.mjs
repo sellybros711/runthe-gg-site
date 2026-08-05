@@ -17,7 +17,7 @@ import {
   baseOf, isJamchart, isRecommended, rarityMult, versionMult, versionParts,
   roleAt, roleFit, placementMult, energyOf, scorePerf, fmtClock,
   budgets, remaining, canPlace, setFull, scoreShow, setNote, HEADLINES,
-  theOneThatGotAway,
+  theOneThatGotAway, reactionFor, eventLine, setOpenLine,
 } from './scoring.js';
 
 let pass = 0, fail = 0;
@@ -40,7 +40,8 @@ const perf = (o = {}) => ({
   jamchart_note: '',
   length_sec: String(o.len === undefined ? 600 : o.len),
   show_gap: String(o.gap || 0),
-  is_cover: 'false', original_artist: '', set: '1', position: '1',
+  is_cover: o.is_cover || 'false', original_artist: o.original_artist || '',
+  set: '1', position: '1',
 });
 
 group('the show', () => {
@@ -184,8 +185,19 @@ group('a set never ends mid-segue', () => {
   eq(danglingSegue([[], [], []], 0), null, 'an empty set is not dangling');
 });
 
+group('only a take that segued can start one', () => {
+  const seg = (id) => ({ ...perf({ song_id: id, len: 600 }), is_segue: 'true' });
+  const cleanTake = (id) => ({ ...perf({ song_id: id, len: 600 }), is_segue: 'false' });
+  const pair = new Set(['a|b']);
+
+  eq(scoreShow([[seg('a'), cleanTake('b')], [], []], pair).segues.length, 1,
+     'a take that segued starts one');
+  eq(scoreShow([[cleanTake('a'), cleanTake('b')], [], []], pair).segues.length, 0,
+     'a clean take of the same song does NOT — this is what made the arrow a lie');
+});
+
 group('graded segues', () => {
-  const mk = (id, o={}) => ({ ...perf({ song_id: id, len: 600, ...o }) });
+  const mk = (id, o={}) => ({ ...perf({ song_id: id, len: 600, ...o }), is_segue: 'true' });
   const A = mk('a'), B = mk('b'), C = mk('c');
   const pair = new Set(['a|b', 'b|c', 'c|a', 'b|a']);
 
@@ -249,7 +261,9 @@ group('respins cost stage time', () => {
 });
 
 group('segues count only inside a set', () => {
-  const a = perf({ song_id: 'a', len: 600 }), b = perf({ song_id: 'b', len: 600 });
+  // The opening take must carry is_segue — a clean take starts nothing.
+  const a = { ...perf({ song_id: 'a', len: 600 }), is_segue: 'true' };
+  const b = { ...perf({ song_id: 'b', len: 600 }), is_segue: 'true' };
   const seg = new Set(['a|b']);
   eq(scoreShow([[a, b], [], []], seg).segues.length, 1, 'adjacent inside Set I');
   eq(scoreShow([[a], [b], []], seg).segues.length, 0, 'across the set break does not count');
@@ -299,6 +313,39 @@ group('the one that got away', () => {
   // An untimed song can never be played, so it never counts as missed.
   eq(theOneThatGotAway([perf({ song_id: 'z', song: 'No Clock', len: 0, crowd: 75 })],
      [[], [], []]), null, 'an untimed song was never really on offer');
+});
+
+group('fan reactions are keyed to why', () => {
+  const R = (o, roleName='Mid', fit='neutral') =>
+    reactionFor({ subtotal: o.sub === undefined ? 60 : o.sub, fit, role: roleName },
+                perf(o), 0);
+
+  eq(/BUSTOUT|Bustout|forever/.test(R({ gap: 100 })), true, 'a 100-show gap is a bustout');
+  eq(/hose|send each other|type II|bliss/i.test(R({ rec: 1, len: 1300 })), true,
+     'a recommended 20-minute version is a legend line');
+  eq(/twenty|type II|Whale|Peaked/i.test(R({ len: 1300 })), true, 'a 20-minute version went there');
+  eq(/jam vehicle|patient|Plinko|Legs/i.test(R({ jam: 1 })), true, 'a jamchart version gets jam talk');
+  eq(/[Cc]over/.test(R({ is_cover: 'true' })), true, 'a cover is called out');
+  eq(/Lighters|exhale|Pretty/.test(R({ tags: 'ballad' })), true, 'a ballad is the breather');
+  eq(/momentum|thinned|Air came/.test(R({}, 'Peak', 'bad')), true, 'a clash kills the room');
+
+  // The clash line must win over everything, including a bustout.
+  eq(/momentum|thinned|Air came/.test(R({ gap: 200 }, 'Peak', 'bad')), true,
+     'a badly placed bustout still reads as a mistake');
+
+  // Every line is short enough to read in one beat of playback.
+  const all = [];
+  for (const g of [0, 100]) for (const l of [300, 1300]) for (const f of ['neutral','bad','great'])
+    all.push(R({ gap: g, len: l }, 'Mid', f));
+  eq(all.every(x => typeof x === 'string' && x.length > 0 && x.length <= 60), true,
+     'every reaction is a one-breath line');
+
+  eq(eventLine(['sandwich']).includes('andwich'), true, 'a sandwich announces itself');
+  eq(/no gap|not stopped/i.test(eventLine(['chain'])), true, 'a chain says it has not stopped');
+  eq(/tape|everybody knows/i.test(eventLine(['exact'])), true, 'an exact rebuild references the tape');
+  eq(eventLine(null), null, 'no segue, no line');
+  eq(typeof setOpenLine(0), 'string', 'each set gets an opening line');
+  eq(setOpenLine(1).toLowerCase().includes('setbreak'), true, 'Set II comes back from setbreak');
 });
 
 group('scoreShow totals', () => {
