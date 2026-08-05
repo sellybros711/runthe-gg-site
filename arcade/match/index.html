@@ -421,8 +421,9 @@
     background:color-mix(in srgb, var(--ink) 6%, var(--card));
     box-shadow:inset 0 3px 16px -9px rgba(0,0,0,.7); }
 
-  /* nameplate tiles (unplaced + in-slot; solved jersey keeps its solid team colour) */
-  .tile{ border-width:2px; border-radius:4px; text-transform:uppercase; letter-spacing:.02em; font-weight:900;
+  /* nameplate tiles (unplaced + in-slot; solved jersey keeps its solid team colour).
+     Names keep the original readable title-case font — only the frame is nameplated. */
+  .tile{ border-width:2px; border-radius:4px;
     box-shadow:var(--a-shadow,3px 3px 0 rgba(7,20,38,.16)); }
   .tile:active{ box-shadow:var(--a-shadow-press,1px 1px 0 rgba(7,20,38,.16)); }
   .tile.locked{ box-shadow:none; }
